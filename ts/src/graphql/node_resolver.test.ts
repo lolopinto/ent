@@ -18,7 +18,8 @@ import {
 } from "../testutils/fake_data/test_helpers";
 import { QueryRecorder } from "../testutils/db_mock";
 import { Pool } from "pg";
-import { Viewer, ID, Ent, LoadEntOptions, loadEnt } from "../core/ent";
+import { Viewer, ID, Ent, LoadEntOptions } from "../core/base";
+import { loadEnt } from "../core/ent";
 import {
   NodeResolver,
   EntNodeResolver,

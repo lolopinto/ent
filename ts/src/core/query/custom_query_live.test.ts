@@ -1,11 +1,9 @@
 import { QueryRecorder } from "../../testutils/db_mock";
-import { Data, Viewer } from "../ent";
-import DB from "../db";
+import { Data, Viewer } from "../base";
 import {
   FakeUser,
   UserToContactsFkeyQuery,
 } from "../../testutils/fake_data/index";
-import { createEdges } from "../../testutils/fake_data/test_helpers";
 import { commonTests } from "./shared_test";
 
 beforeEach(async () => {
@@ -14,10 +12,6 @@ beforeEach(async () => {
   //  await createEdges();
   QueryRecorder.clearQueries();
 });
-
-// afterAll(async () => {
-//   await DB.getInstance().endPool();
-// });
 
 commonTests({
   newQuery(viewer: Viewer, user: FakeUser) {

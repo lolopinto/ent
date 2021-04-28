@@ -1,4 +1,4 @@
-import { Data } from "../core/ent";
+import { Data } from "../core/base";
 
 import {
   AST,

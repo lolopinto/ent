@@ -1,4 +1,4 @@
-import { Viewer } from "../core/ent";
+import { Viewer } from "../core/base";
 import { LoggedOutViewer } from "../core/viewer";
 import { RequestContext, ContextCache } from "../core/context";
 import { IncomingMessage, ServerResponse } from "http";

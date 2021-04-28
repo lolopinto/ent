@@ -1,5 +1,4 @@
-import { ID, Ent, Viewer } from "./ent";
-import { Context } from "./context";
+import { ID, Ent, Viewer, Context } from "./base";
 
 export class LoggedOutViewer implements Viewer {
   constructor(public context?: Context) {}

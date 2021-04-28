@@ -10,21 +10,18 @@ import { Pool } from "pg";
 import { QueryRecorder } from "../testutils/db_mock";
 import { Field, StringType, UUIDType } from "../schema";
 import { createRowForTest } from "../testutils/write";
+import { ID, Ent, Data, PrivacyPolicy, Viewer } from "./base";
 import {
   AssocEdge,
   getEdgeTypeInGroup,
   loadCustomEdges,
   loadEdges,
-  ID,
-  Ent,
-  Data,
-  Viewer,
   loadDerivedEnt,
   loadDerivedEntX,
   loadEnt,
   loadEntX,
 } from "./ent";
-import { PrivacyPolicy, AlwaysDenyRule, AllowIfViewerRule } from "./privacy";
+import { AlwaysDenyRule, AllowIfViewerRule } from "./privacy";
 import { TestContext } from "../testutils/context/test_context";
 
 jest.mock("pg");

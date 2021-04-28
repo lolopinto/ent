@@ -1,5 +1,5 @@
-import { EdgeQuery, BaseEdgeQuery } from "../../core/query/query";
-import { Data, Ent, ID, Viewer } from "../../core/ent";
+import { EdgeQuery } from "../../core/query/query";
+import { Data, Ent, ID, Viewer } from "../../core/base";
 
 // TODO getCursor...
 export interface GraphQLEdge<T extends Data> {

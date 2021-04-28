@@ -1,4 +1,4 @@
-import { Viewer, Ent } from "../core/ent";
+import { Viewer, Ent } from "../core/base";
 import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
 import {
   Action,

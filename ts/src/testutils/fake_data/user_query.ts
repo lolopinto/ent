@@ -1,5 +1,6 @@
+import { Ent, ID, Viewer } from "../../core/base";
 import { CustomEdgeQueryBase } from "../../core/query/custom_query";
-import { AssocEdge, Ent, ID, Viewer } from "../../core/ent";
+import { AssocEdge } from "../../core/ent";
 import {
   AssocEdgeQueryBase,
   EdgeQuerySource,
@@ -16,7 +17,9 @@ import {
   EventToInvitedQuery,
   EventToMaybeQuery,
 } from "./internal";
-import { RawCountLoaderFactory } from "../../core/loader";
+import { RawCountLoaderFactory } from "../../core/loaders/raw_count_loader";
+import { AssocEdgeCountLoaderFactory } from "../../core/loaders/assoc_count_loader";
+import { AssocEdgeLoaderFactory } from "../../core/loaders/assoc_edge_loader";
 
 export class UserToContactsQuery extends AssocEdgeQueryBase<
   FakeUser,
@@ -27,9 +30,9 @@ export class UserToContactsQuery extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.UserToContacts,
+      new AssocEdgeCountLoaderFactory(EdgeType.UserToContacts),
+      new AssocEdgeLoaderFactory(EdgeType.UserToContacts, AssocEdge),
       FakeContact.loaderOptions(),
-      AssocEdge,
     );
   }
 
@@ -76,9 +79,9 @@ export class UserToFriendsQuery extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.UserToFriends,
+      new AssocEdgeCountLoaderFactory(EdgeType.UserToFriends),
+      new AssocEdgeLoaderFactory(EdgeType.UserToFriends, AssocEdge),
       FakeUser.loaderOptions(),
-      AssocEdge,
     );
   }
 
@@ -126,9 +129,9 @@ export class UserToCustomEdgeQuery extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.UserToCustomEdge,
+      new AssocEdgeCountLoaderFactory(EdgeType.UserToCustomEdge),
+      new AssocEdgeLoaderFactory(EdgeType.UserToCustomEdge, CustomEdge),
       FakeUser.loaderOptions(),
-      CustomEdge,
     );
   }
 
@@ -165,9 +168,9 @@ export class UserToFriendRequestsQuery extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.UserToFriendRequests,
+      new AssocEdgeCountLoaderFactory(EdgeType.UserToFriendRequests),
+      new AssocEdgeLoaderFactory(EdgeType.UserToFriendRequests, AssocEdge),
       FakeUser.loaderOptions(),
-      AssocEdge,
     );
   }
 
@@ -208,9 +211,12 @@ export class UserToIncomingFriendRequestsQuery extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.UserToIncomingFriendRequests,
+      new AssocEdgeCountLoaderFactory(EdgeType.UserToIncomingFriendRequests),
+      new AssocEdgeLoaderFactory(
+        EdgeType.UserToIncomingFriendRequests,
+        AssocEdge,
+      ),
       FakeUser.loaderOptions(),
-      AssocEdge,
     );
   }
 
@@ -251,9 +257,9 @@ export class UserToEventsAttendingQuery extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.UserToEventsAttending,
+      new AssocEdgeCountLoaderFactory(EdgeType.UserToEventsAttending),
+      new AssocEdgeLoaderFactory(EdgeType.UserToEventsAttending, AssocEdge),
       FakeEvent.loaderOptions(),
-      AssocEdge,
     );
   }
 
@@ -290,9 +296,9 @@ export class UserToHostedEventsQuery extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.UserToHostedEvents,
+      new AssocEdgeCountLoaderFactory(EdgeType.UserToHostedEvents),
+      new AssocEdgeLoaderFactory(EdgeType.UserToHostedEvents, AssocEdge),
       FakeEvent.loaderOptions(),
-      AssocEdge,
     );
   }
 

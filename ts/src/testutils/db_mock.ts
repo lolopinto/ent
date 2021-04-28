@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { Pool, PoolClient } from "pg";
 import { mocked } from "ts-jest/utils";
-import { ID, Ent, Data } from "../core/ent";
+import { ID, Ent, Data } from "../core/base";
 import { Clause } from "../core/clause";
 
 import { performQuery, queryResult, getDataToReturn } from "./parse_sql";

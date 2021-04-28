@@ -1,12 +1,5 @@
-import {
-  EditRowOptions,
-  Data,
-  ID,
-  createRow,
-  editRow,
-  deleteRows,
-  DataOptions,
-} from "../core/ent";
+import { EditRowOptions, Data, ID, DataOptions } from "../core/base";
+import { createRow, editRow, deleteRows } from "../core/ent";
 import * as clause from "../core/clause";
 import DB from "../core/db";
 

@@ -1,5 +1,23 @@
 import DB from "./db";
 import {
+  Viewer,
+  Ent,
+  ID,
+  LoadRowsOptions,
+  LoadRowOptions,
+  Loader,
+  LoaderFactory,
+  ConfigurableLoaderFactory,
+  Data,
+  DataOptions,
+  QueryableDataOptions,
+  EditRowOptions,
+  LoadEntOptions,
+  EdgeQueryableDataOptions,
+  Context,
+  SelectDataOptions,
+} from "./base";
+import {
   QueryArrayConfig,
   Submittable,
   QueryArrayResult,
@@ -7,104 +25,75 @@ import {
   QueryConfig,
   QueryResult,
 } from "pg";
-import {
-  applyPrivacyPolicy,
-  applyPrivacyPolicyX,
-  PrivacyPolicy,
-} from "./privacy";
+import { applyPrivacyPolicy, applyPrivacyPolicyX } from "./privacy";
 import { Executor } from "../action";
-import DataLoader from "dataloader";
-
-// TODO move Viewer and context into viewer.ts or something
-import { Context } from "./context";
 
 import * as clause from "./clause";
 import { WriteOperation, Builder } from "../action";
 import { log, logEnabled, logTrace } from "./logger";
+import DataLoader from "dataloader";
 
-export interface Viewer {
-  viewerID: ID | null;
-  viewer: () => Promise<Ent | null>;
-  instanceKey: () => string;
-  isOmniscient?(): boolean; // optional function to indicate a viewer that can see anything e.g. admin
-  // TODO determine if we want this here.
-  // just helpful to have it here
-  // not providing a default AllowIfOmniRule
+// TODO kill this and createDataLoader
+class cacheMap {
+  private m = new Map();
+  constructor(private options: DataOptions) {}
+  get(key) {
+    const ret = this.m.get(key);
+    if (ret) {
+      log("query", {
+        "dataloader-cache-hit": key,
+        "tableName": this.options.tableName,
+      });
+    }
+    return ret;
+  }
 
-  // where should dataloaders be put?
-  // I want dataloaders to be created on demand as needed
-  // so it seems having it in Context (per-request info makes sense)
-  // so does that mean we should pass Context all the way down and not Viewer?
-  context?: Context;
+  set(key, value) {
+    return this.m.set(key, value);
+  }
+
+  delete(key) {
+    return this.m.delete(key);
+  }
+
+  clear() {
+    return this.m.clear();
+  }
 }
 
-export interface Ent {
-  id: ID;
-  viewer: Viewer;
-  privacyPolicy: PrivacyPolicy;
-  nodeType: string;
+function createDataLoader(options: SelectDataOptions) {
+  const loaderOptions: DataLoader.Options<any, any> = {};
+
+  // if query logging is enabled, we should log what's happening with loader
+  if (logEnabled("query")) {
+    loaderOptions.cacheMap = new cacheMap(options);
+  }
+
+  return new DataLoader(async (ids: ID[]) => {
+    if (!ids.length) {
+      return [];
+    }
+    let col = options.pkey || "id";
+    const rowOptions: LoadRowOptions = {
+      ...options,
+      clause: clause.In(col, ...ids),
+    };
+
+    // TODO is there a better way of doing this?
+    // context not needed because we're creating a loader which has its own cache which is being used here
+    const nodes = await loadRows(rowOptions);
+    let result: (Data | null)[] = ids.map((id) => {
+      for (const node of nodes) {
+        if (node[col] === id) {
+          return node;
+        }
+      }
+      return null;
+    });
+
+    return result;
+  }, loaderOptions);
 }
-
-export declare type Data = {
-  [key: string]: any;
-};
-
-export interface EntConstructor<T extends Ent> {
-  new (viewer: Viewer, id: ID, options: Data): T;
-}
-
-export type ID = string | number;
-
-export interface DataOptions {
-  // TODO pool or client later since we should get it from there
-  // TODO this can be passed in for scenarios where we are not using default configuration
-  //  clientConfig?: ClientConfig;
-  tableName: string;
-  context?: Context;
-}
-
-export interface SelectDataOptions extends DataOptions {
-  // list of fields to read
-  fields: string[];
-  pkey?: string; // what key are we loading from. if not provided we're loading from column "id"
-}
-
-export interface QueryableDataOptions extends SelectDataOptions {
-  clause: clause.Clause;
-  orderby?: string; // this technically doesn't make sense when querying just one row but whatevs
-  groupby?: string;
-  limit?: number;
-}
-
-// For loading data from database
-export interface LoadRowOptions extends QueryableDataOptions {
-  //  pkey?: string; // what key are we loading from. if not provided we're loading from column "id"
-}
-
-interface LoadRowsOptions extends QueryableDataOptions {}
-
-export interface EditRowOptions extends DataOptions {
-  // fields to be edited
-  fields: Data;
-  fieldsToLog?: Data;
-  pkey?: string; // what key are we loading from. if not provided we're loading from column "id"
-}
-
-interface LoadableEntOptions<T extends Ent> extends DataOptions {
-  ent: EntConstructor<T>;
-}
-
-// information needed to load an ent from the databse
-// always id for now...
-export interface LoadEntOptions<T extends Ent>
-  extends LoadableEntOptions<T>,
-    SelectDataOptions {}
-
-// information needed to edit an ent
-export interface EditEntOptions<T extends Ent>
-  extends LoadableEntOptions<T>,
-    EditRowOptions {}
-
 // Ent accessors
 export async function loadEnt<T extends Ent>(
   viewer: Viewer,
@@ -253,140 +242,6 @@ export async function loadDerivedEntX<T extends Ent>(
   return await applyPrivacyPolicyForEntX(viewer, ent);
 }
 
-// ent based data-loader
-// keep this private to the package for now
-// ID-dataloader. simple
-// because we know exactly what we're looking for...
-
-// count-dataloader next?
-
-class cacheMap {
-  private m = new Map();
-  constructor(private options: DataOptions) {}
-  get(key) {
-    const ret = this.m.get(key);
-    if (ret) {
-      // should this be debug?
-      // might be a lot?
-      log("query", {
-        "dataloader-cache-hit": key,
-        "tableName": this.options.tableName,
-      });
-      // } else {
-      //   log("query", {
-      //     "dataloader-cache-miss": key,
-      //     "tableName": options.tableName,
-      //   });
-    }
-    return ret;
-  }
-
-  set(key, value) {
-    // log("query", {
-    //   "dataloader-cache-set": key,
-    //   "tableName": options.tableName,
-    // });
-    return this.m.set(key, value);
-  }
-
-  delete(key) {
-    // log("query", {
-    //   "dataloader-cache-delete": key,
-    //   "tableName": options.tableName,
-    // });
-    return this.m.delete(key);
-  }
-
-  clear() {
-    // log("query", {
-    //   "dataloader-cache-clear": true,
-    //   "tableName": options.tableName,
-    // });
-    return this.m.clear();
-  }
-}
-
-export function createDataLoader(options: SelectDataOptions) {
-  const loaderOptions: DataLoader.Options<any, any> = {};
-
-  // if query logging is enabled, we should log what's happening with loader
-  if (logEnabled("query")) {
-    loaderOptions.cacheMap = new cacheMap(options);
-  }
-
-  return new DataLoader(async (ids: ID[]) => {
-    if (!ids.length) {
-      return [];
-    }
-    let col = options.pkey || "id";
-    const rowOptions: LoadRowOptions = {
-      ...options,
-      clause: clause.In(col, ...ids),
-    };
-
-    // TODO is there a better way of doing this?
-    // context not needed because we're creating a loader which has its own cache which is being used here
-    const nodes = await loadRows(rowOptions);
-    let result: (Data | null)[] = ids.map((id) => {
-      for (const node of nodes) {
-        if (node[col] === id) {
-          return node;
-        }
-      }
-      return null;
-    });
-
-    return result;
-  }, loaderOptions);
-}
-
-export function createCountDataLoader(options: DataOptions, col: string) {
-  const loaderOptions: DataLoader.Options<ID, number> = {};
-
-  // if query logging is enabled, we should log what's happening with loader
-  if (logEnabled("query")) {
-    loaderOptions.cacheMap = new cacheMap(options);
-  }
-
-  // key|clause...
-  // key is id|clause is what we're transforming to...
-  return new DataLoader(async (keys: ID[]) => {
-    if (!keys.length) {
-      return [];
-    }
-
-    // keep query simple if we're only fetching for one id
-    if (keys.length == 1) {
-      const row = await loadRow({
-        ...options,
-        fields: ["count(1)"],
-        clause: clause.Eq(col, keys[0]),
-      });
-      return [parseInt(row?.count, 10) || 0];
-    }
-
-    const rowOptions: LoadRowOptions = {
-      ...options,
-      fields: ["count(1)", col],
-      groupby: col,
-      // TODO also need to make sure we test multi-count
-      // e.g. tests for RawCountLoader
-      clause: clause.In(col, ...keys),
-    };
-    const rows = await loadRows(rowOptions);
-    //    console.log("rows", rows);
-    let result: number[] = keys.map((key) => {
-      for (const row of rows) {
-        if (row[col] === key) {
-          return parseInt(row.count, 10);
-        }
-      }
-      return 0;
-    });
-    return result;
-  }, loaderOptions);
-}
-
 export async function applyPrivacyPolicyForEnt<T extends Ent>(
   viewer: Viewer,
   ent: T | null,
@@ -468,6 +323,31 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
   }
 }
 
+interface RawQueryOptions {
+  query: string;
+  values: any[];
+  logValues: any[];
+}
+
+// this always goes to the db, no cache, nothing
+export async function performRawQuery(
+  query: string,
+  values: any[],
+  logValues?: any[],
+): Promise<Data[]> {
+  const pool = DB.getInstance().getPool();
+
+  logQuery(query, logValues || []);
+  try {
+    const res = await pool.query(query, values);
+    return res.rows;
+  } catch (e) {
+    // TODO need to change every query to catch an error!
+    log("error", e);
+    return [];
+  }
+}
+
 // TODO this should throw, we can't be hiding errors here
 export async function loadRows(options: LoadRowsOptions): Promise<Data[]> {
   let cache = options.context?.cache;
@@ -479,23 +359,16 @@ export async function loadRows(options: LoadRowsOptions): Promise<Data[]> {
   }
 
   const query = buildQuery(options);
-  //  console.log("query", query);
-  const pool = DB.getInstance().getPool();
-
-  logQuery(query, options.clause.logValues());
-  try {
-    //    console.log("pool query");
-    const res = await pool.query(query, options.clause.values());
+  const r = await performRawQuery(
+    query,
+    options.clause.values(),
+    options.clause.logValues(),
+  );
+  if (cache) {
     // put the rows in the cache...
-    if (cache) {
-      cache.primeCache(options, res.rows);
-    }
-    return res.rows;
-  } catch (e) {
-    // TODO need to change every query to catch an error!
-    log("error", e);
-    return [];
+    cache.primeCache(options, r);
   }
+  return r;
 }
 
 // private to ent
@@ -1103,13 +976,29 @@ export class AssocEdge {
   }
 
   getCursor(): string {
-    // no time. no cursor. nothing to do here
-    if (!this.time) {
-      return "";
-    }
-    const str = `time:${this.time.getTime()}`;
-    return Buffer.from(str, "ascii").toString("base64");
+    return getCursor(this, "time", (t) => t.getTime());
+    // // no time. no cursor. nothing to do here
+    // if (!this.time) {
+    //   return "";
+    // }
+    // const str = `time:${this.time.getTime()}`;
+    // return Buffer.from(str, "ascii").toString("base64");
   }
+}
+
+export function getCursor(row: Data, col: string, conv?: (any) => any) {
+  if (!row) {
+    throw new Error(`no row passed to getCursor`);
+  }
+  let datum = row[col];
+  if (!datum) {
+    return "";
+  }
+  if (conv) {
+    datum = conv(datum);
+  }
+  const str = `${col}:${datum}`;
+  return Buffer.from(str, "ascii").toString("base64");
 }
 
 export interface AssocEdgeInputOptions {
@@ -1198,10 +1087,6 @@ const edgeFields = [
   "time",
   "data",
 ];
-
-export type EdgeQueryableDataOptions = Partial<
-  Pick<QueryableDataOptions, "limit" | "orderby" | "clause">
->;
 
 export interface AssocEdgeConstructor<T extends AssocEdge> {
   new (row: Data): T;

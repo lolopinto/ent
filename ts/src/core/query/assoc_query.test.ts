@@ -1,6 +1,7 @@
 import { Pool } from "pg";
 import { QueryRecorder } from "../../testutils/db_mock";
-import { AssocEdge, ID, Ent, Viewer, DefaultLimit } from "../ent";
+import { ID, Ent, Viewer } from "../base";
+import { AssocEdge, DefaultLimit } from "../ent";
 import { EdgeQuery } from "./query";
 import { EdgeQueryCtr } from "./assoc_query";
 import { IDViewer, LoggedOutViewer } from "../viewer";

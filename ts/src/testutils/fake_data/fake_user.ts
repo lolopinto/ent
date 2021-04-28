@@ -3,15 +3,14 @@ import {
   Ent,
   Viewer,
   Data,
-  loadEnt,
-  loadEntX,
   LoadEntOptions,
-} from "../../core/ent";
+  PrivacyPolicy,
+} from "../../core/base";
+import { loadEnt, loadEntX } from "../../core/ent";
 import {
   AllowIfViewerRule,
   AlwaysDenyRule,
   AllowIfViewerInboundEdgeExistsRule,
-  PrivacyPolicy,
   AllowIfConditionAppliesRule,
 } from "../../core/privacy";
 import { BuilderSchema, SimpleAction } from "../builder";

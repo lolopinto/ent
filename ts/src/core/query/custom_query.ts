@@ -4,20 +4,18 @@ import {
   ID,
   EdgeQueryableDataOptions,
   LoadEntOptions,
-  loadRows,
   Viewer,
-  applyPrivacyPolicyForRows,
-  DefaultLimit,
-} from "../ent";
+  LoaderFactory,
+} from "../base";
+import { loadRows, applyPrivacyPolicyForRows, DefaultLimit } from "../ent";
 import { BaseEdgeQuery } from "./query";
 import * as clause from "../clause";
-import { LoaderFactory } from "../loader_interfaces";
 
 export interface CustomEdgeQueryOptions<T extends Ent> {
   src: Ent | ID;
   countLoaderFactory: LoaderFactory<ID, number>;
   // TODO???
-  //  dataLoaderFactory: LoaderFactory<ID, Data>;
+  //  dataLoaderFactory: LoaderFactory<ID, Data[]>;
   // TODO filters...
   // TODO...
   options: LoadEntOptions<T>;

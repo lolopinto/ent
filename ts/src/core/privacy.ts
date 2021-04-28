@@ -1,31 +1,26 @@
 import {
   Viewer,
-  Ent,
   ID,
-  AssocEdge,
-  loadEdgeForID2,
+  Ent,
   LoadEntOptions,
-  loadEnt,
-} from "./ent";
-import { Context } from "./context";
+  PrivacyError,
+  PrivacyPolicy,
+  PrivacyPolicyRule,
+  Context,
+  PrivacyResult,
+  Allow,
+  Deny,
+  Skip,
+} from "./base";
+import { AssocEdge, loadEdgeForID2, loadEnt } from "./ent";
 
+// copied from ./base
 enum privacyResult {
   // using http status codes similar to golang for the lols
   Allow = 200,
   Deny = 401,
   Skip = 307,
 }
-
-export interface PrivacyResult {
-  result: privacyResult;
-  error?: PrivacyError;
-}
-
-export interface PrivacyError extends Error {
-  privacyPolicy: PrivacyPolicy;
-  ent?: Ent;
-}
-
 export class EntPrivacyError extends Error implements PrivacyError {
   privacyPolicy: PrivacyPolicy;
   privacyRule: PrivacyPolicyRule;
@@ -64,44 +59,6 @@ class EntInvalidPrivacyPolicyError extends Error implements PrivacyError {
     this.privacyPolicy = privacyPolicy;
     this.ent = ent;
   }
-}
-
-export function Allow(): PrivacyResult {
-  return {
-    result: privacyResult.Allow,
-  };
-}
-
-export function Skip(): PrivacyResult {
-  return {
-    result: privacyResult.Skip,
-  };
-}
-
-export function Deny(): PrivacyResult {
-  return {
-    result: privacyResult.Deny,
-  };
-}
-
-export function DenyWithReason(e: PrivacyError): PrivacyResult {
-  return {
-    result: privacyResult.Deny,
-    error: e,
-  };
-}
-
-export interface PrivacyPolicyRule {
-  apply(v: Viewer, ent?: Ent): Promise<PrivacyResult>;
-}
-
-// export interface PrivacyPolicyRuleSync {
-//   apply(v: Viewer, ent: Ent): PrivacyResult;
-// }
-
-export interface PrivacyPolicy {
-  //  rules: PrivacyPolicyRule | PrivacyPolicyRuleSync[];
-  rules: PrivacyPolicyRule[];
 }
 
 export const AlwaysAllowRule = {

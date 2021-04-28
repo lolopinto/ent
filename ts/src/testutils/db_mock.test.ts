@@ -1,7 +1,8 @@
 import { QueryRecorder } from "./db_mock";
 import { Pool } from "pg";
 import { createRowForTest, deleteRowsForTest, editRowForTest } from "./write";
-import { Data, loadRow, loadRows, ID } from "../core/ent";
+import { Data, ID } from "../core/base";
+import { loadRow, loadRows } from "../core/ent";
 import DB from "../core/db";
 import * as clause from "../core/clause";
 import { Where, EqOp } from "./parse_sql";

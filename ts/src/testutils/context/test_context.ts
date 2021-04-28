@@ -1,5 +1,5 @@
-import { Context, ContextCache } from "../../core/context";
-import { Viewer } from "../../core/ent";
+import { Context, Viewer } from "../../core/base";
+import { ContextCache } from "../../core/context";
 import { LoggedOutViewer } from "../../core/viewer";
 
 export class TestContext implements Context {

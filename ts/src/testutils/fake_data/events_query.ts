@@ -1,10 +1,13 @@
-import { AssocEdge, Viewer } from "../../core/ent";
+import { Viewer } from "../../core/base";
+import { AssocEdge } from "../../core/ent";
 import {
   AssocEdgeQueryBase,
   EdgeQuerySource,
 } from "../../core/query/assoc_query";
 import { FakeUser } from "./fake_user";
 import { EdgeType, FakeEvent } from "./internal";
+import { AssocEdgeCountLoaderFactory } from "../../core/loaders/assoc_count_loader";
+import { AssocEdgeLoaderFactory } from "../../core/loaders/assoc_edge_loader";
 
 interface EventsDestQuery {
   queryHosts(): EventToHostsQuery;
@@ -23,9 +26,9 @@ export class EventToAttendeesQuery extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.EventToAttendees,
+      new AssocEdgeCountLoaderFactory(EdgeType.EventToAttendees),
+      new AssocEdgeLoaderFactory(EdgeType.EventToAttendees, AssocEdge),
       FakeUser.loaderOptions(),
-      AssocEdge,
     );
   }
 
@@ -46,9 +49,9 @@ export class EventToInvitedQuery extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.EventToInvited,
+      new AssocEdgeCountLoaderFactory(EdgeType.EventToInvited),
+      new AssocEdgeLoaderFactory(EdgeType.EventToInvited, AssocEdge),
       FakeUser.loaderOptions(),
-      AssocEdge,
     );
   }
 
@@ -69,9 +72,9 @@ export class EventToDeclinedQuery extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.EventToDeclined,
+      new AssocEdgeCountLoaderFactory(EdgeType.EventToDeclined),
+      new AssocEdgeLoaderFactory(EdgeType.EventToDeclined, AssocEdge),
       FakeUser.loaderOptions(),
-      AssocEdge,
     );
   }
 
@@ -92,9 +95,9 @@ export class EventToMaybeQuery extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.EventToMaybe,
+      new AssocEdgeCountLoaderFactory(EdgeType.EventToMaybe),
+      new AssocEdgeLoaderFactory(EdgeType.EventToMaybe, AssocEdge),
       FakeUser.loaderOptions(),
-      AssocEdge,
     );
   }
 
@@ -115,9 +118,9 @@ export class EventToHostsQuery extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.EventToHosts,
+      new AssocEdgeCountLoaderFactory(EdgeType.EventToHosts),
+      new AssocEdgeLoaderFactory(EdgeType.EventToHosts, AssocEdge),
       FakeUser.loaderOptions(),
-      AssocEdge,
     );
   }
 

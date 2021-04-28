@@ -1,4 +1,5 @@
-import { ID, Ent, Viewer, EntConstructor, DataOperation } from "../core/ent";
+import { ID, Ent, Viewer, EntConstructor } from "../core/base";
+import { DataOperation } from "../core/ent";
 import { Changeset, Executor } from "../action";
 import { Builder } from "../action";
 import Graph from "graph-data-structure";

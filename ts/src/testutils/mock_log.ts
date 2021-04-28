@@ -29,4 +29,8 @@ export class MockLogs {
   logAt(idx: number) {
     return this.logs[idx];
   }
+
+  verifyNoErrors() {
+    expect(this.errors.length).toBe(0);
+  }
 }
