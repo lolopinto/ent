@@ -134,6 +134,8 @@ export class IndexDirectLoader implements Loader<ID, Data[]> {
   async load(id: ID): Promise<Data[]> {
     return simpleCase(this.options, this.col, id, this.opts);
   }
+
+  clearAll() {}
 }
 
 // for now this only works for single column counts
@@ -168,6 +170,10 @@ export class IndexLoader implements Loader<ID, Data[]> {
     }
 
     return simpleCase(this.options, this.col, id, this.opts);
+  }
+
+  clearAll() {
+    this.loader && this.loader.clearAll();
   }
 }
 

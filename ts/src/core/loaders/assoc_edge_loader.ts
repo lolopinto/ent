@@ -129,6 +129,10 @@ export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
       ctr: this.edgeCtr,
     });
   }
+
+  clearAll() {
+    this.loader.clearAll();
+  }
 }
 
 export class AssocDirectEdgeLoader<T extends AssocEdge>
@@ -159,6 +163,8 @@ export class AssocDirectEdgeLoader<T extends AssocEdge>
       ctr: this.edgeCtr,
     });
   }
+
+  clearAll() {}
 }
 
 export class AssocEdgeLoaderFactory<T extends AssocEdge>
