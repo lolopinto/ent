@@ -14,6 +14,7 @@ import {
   DefaultLimit,
   performRawQuery,
   loadEdgeForID2,
+  buildGroupQuery,
 } from "../ent";
 import * as clause from "../clause";
 import { logEnabled } from "../logger";
@@ -60,27 +61,34 @@ function createLoader<T extends AssocEdge>(
     }
 
     options.orderby = options.orderby || "time DESC";
-    let orderby = `ORDER BY t2.${options.orderby}`;
     // TODO defaultEdgeQueryOptions
     options.limit = options.limit || DefaultLimit;
-    let limit = `LIMIT ${options.limit}`;
 
     const tableName = edgeData.edgeTable;
-    const cls = clause.And(
-      clause.In(`${tableName}.id1`, ...keys),
-      clause.Eq(`${tableName}.edge_type`, edgeType),
-    );
-
-    const query =
-      `SELECT DISTINCT t.id1, t.id2, t.edge_type, t.time, id1_type, id2_type, data from ${tableName} inner join lateral ` +
-      `(SELECT DISTINCT id1, id2, edge_type, time from ${tableName} t2 where t2.id1 = ${tableName}.id1 ${orderby} ${limit}) t on true WHERE ` +
-      cls.clause(1) +
-      " ORDER BY time DESC";
+    const [query, cls] = buildGroupQuery({
+      tableName: tableName,
+      fields: [
+        "id1",
+        "id2",
+        "edge_type",
+        "time",
+        "id1_type",
+        "id2_type",
+        "data",
+        "time",
+      ],
+      values: keys,
+      orderby: options.orderby,
+      limit: options.limit || DefaultLimit,
+      fkeyColumn: "id1",
+      clause: clause.Eq("edge_type", edgeType),
+    });
 
     const rows = await performRawQuery(query, cls.values(), cls.logValues());
     for (const row of rows) {
       const srcID = row.id1;
       const idx = m.get(srcID);
+      delete row.row_num;
       if (idx === undefined) {
         throw new Error(
           `malformed query. got ${srcID} back but didn't query for it`,

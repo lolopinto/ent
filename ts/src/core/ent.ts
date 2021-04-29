@@ -418,6 +418,43 @@ export function buildQuery(options: QueryableDataOptions): string {
   return query;
 }
 
+interface GroupQueryOptions {
+  tableName: string;
+
+  // extra clause to join
+  clause?: clause.Clause;
+  fkeyColumn: string;
+  fields: string[];
+  values: any[];
+  orderby?: string;
+  limit: number;
+}
+
+// this is used for queries when we select multiple ids at once
+export function buildGroupQuery(
+  options: GroupQueryOptions,
+): [string, clause.Clause] {
+  const fields = [...options.fields, "row_number()"];
+
+  let cls = clause.In(options.fkeyColumn, ...options.values);
+  if (options.clause) {
+    cls = clause.And(cls, options.clause);
+  }
+  let orderby = "";
+  if (options.orderby) {
+    orderby = `ORDER BY ${options.orderby}`;
+  }
+
+  return [
+    `SELECT * FROM (SELECT ${fields.join(",")} OVER (PARTITION BY ${
+      options.fkeyColumn
+    } ${orderby}) as row_num FROM ${options.tableName} WHERE ${cls.clause(
+      1,
+    )}) t WHERE row_num <= ${options.limit}`,
+    cls,
+  ];
+}
+
 // slew of methods taken from pg
 // private to ent
 export interface Queryer {

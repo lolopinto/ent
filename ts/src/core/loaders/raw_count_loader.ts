@@ -66,9 +66,6 @@ export function createCountDataLoader(
     };
     const rows = await loadRows(rowOptions);
 
-    // TODO generalize this to work for assoc count
-    // TODO test to confirm generalizations above work for assoc count
-    // we'll use a wrapper around this because of the need to fetch assocEdge data first
     for (const row of rows) {
       const id = row[col];
       const idx = m.get(id);

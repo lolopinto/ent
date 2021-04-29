@@ -3,23 +3,20 @@ import { v4 as uuidv4 } from "uuid";
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
-import { AssocEdge, buildQuery, DefaultLimit } from "../ent";
+import { buildQuery, DefaultLimit } from "../ent";
 import * as clause from "../clause";
 
-import { EdgeQueryableDataOptions, ID, Loader } from "../base";
+import { Data, EdgeQueryableDataOptions, ID, Loader } from "../base";
 import { TempDB } from "../../testutils/db/test_db";
-import {
-  FakeUser,
-  FakeContact,
-  EdgeType,
-} from "../../testutils/fake_data/index";
+import { FakeUser, FakeContact } from "../../testutils/fake_data/index";
 import {
   createAllContacts,
   setupTempDB,
-  verifyUserToContactEdges,
+  verifyUserToContactRawData,
 } from "../../testutils/fake_data/test_helpers";
 
-import { AssocEdgeLoaderFactory } from "./assoc_edge_loader";
+import { IndexLoaderFactory } from "./index_loader";
+// most of this is copied from assoc_edge_loader.test.ts and changed to work for this
 
 const ml = new MockLogs();
 let tdb: TempDB;
@@ -47,9 +44,9 @@ afterAll(async () => {
 });
 
 const getNewLoader = (context: boolean = true) => {
-  return new AssocEdgeLoaderFactory(
-    EdgeType.UserToContacts,
-    AssocEdge,
+  return new IndexLoaderFactory(
+    FakeContact.loaderOptions(),
+    "user_id",
   ).createLoader(context ? ctx : undefined);
 };
 
@@ -57,9 +54,9 @@ const getConfigurableLoader = (
   context: boolean,
   options: EdgeQueryableDataOptions,
 ) => {
-  return new AssocEdgeLoaderFactory(
-    EdgeType.UserToContacts,
-    AssocEdge,
+  return new IndexLoaderFactory(
+    FakeContact.loaderOptions(),
+    "user_id",
   ).createConfigurableLoader(options, context ? ctx : undefined);
 };
 
@@ -69,7 +66,7 @@ test("multi-ids. with context", async () => {
     (ids) => {
       expect(ml.logs.length).toBe(1);
       expect(ml.logs[0].query).toMatch(/^SELECT * /);
-      expect(ml.logs[0].values).toEqual([...ids, EdgeType.UserToContacts]);
+      expect(ml.logs[0].values).toEqual(ids);
     },
     verifyGroupedCacheHit,
   );
@@ -84,9 +81,8 @@ test("multi-ids. without context", async () => {
 });
 
 test("multi-ids. with context, offset", async () => {
-  await testMultiQueryDataOffset(
-    (options) => getConfigurableLoader(true, options),
-    true,
+  await testMultiQueryDataOffset((options) =>
+    getConfigurableLoader(true, options),
   );
 });
 
@@ -105,7 +101,7 @@ test("multi-ids. with context different limits", async () => {
     (ids) => {
       expect(ml.logs.length).toBe(1);
       expect(ml.logs[0].query).toMatch(/^SELECT * /);
-      expect(ml.logs[0].values).toEqual([...ids, EdgeType.UserToContacts]);
+      expect(ml.logs[0].values).toEqual(ids);
     },
     verifyGroupedCacheHit,
     undefined,
@@ -128,7 +124,7 @@ test("multi-ids. with context different limits", async () => {
     (ids) => {
       expect(ml.logs.length).toBe(1);
       expect(ml.logs[0].query).toMatch(/^SELECT * /);
-      expect(ml.logs[0].values).toEqual([...ids, EdgeType.UserToContacts]);
+      expect(ml.logs[0].values).toEqual(ids);
     },
     verifyGroupedCacheHit,
     3,
@@ -150,7 +146,7 @@ test("multi-ids. with context different limits", async () => {
     (ids) => {
       expect(ml.logs.length).toBe(1);
       expect(ml.logs[0].query).toMatch(/^SELECT * /);
-      expect(ml.logs[0].values).toEqual([...ids, EdgeType.UserToContacts]);
+      expect(ml.logs[0].values).toEqual(ids);
     },
     verifyGroupedCacheHit,
     2,
@@ -212,14 +208,13 @@ test("with context. cache hit single id", async () => {
   ml.clear();
   const loader = getNewLoader();
   const edges = await loader.load(user.id);
-  verifyUserToContactEdges(user, edges, contacts.reverse());
+  verifyUserToContactRawData(user, edges, contacts.reverse());
   verifyMultiCountQueryCacheMiss([user.id]);
 
   ml.clear();
   const edges2 = await loader.load(user.id);
   expect(edges).toStrictEqual(edges2);
 
-  //  verifyUserToContactEdges(user, edges2, contacts.reverse());
   verifyGroupedCacheHit([user.id]);
 });
 
@@ -228,14 +223,13 @@ test("without context. cache hit single id", async () => {
   ml.clear();
   const loader = getNewLoader(false);
   const edges = await loader.load(user.id);
-  verifyUserToContactEdges(user, edges, contacts.reverse());
+  verifyUserToContactRawData(user, edges, contacts.reverse());
   verifyMultiCountQueryCacheMiss([user.id]);
 
   ml.clear();
   const edges2 = await loader.load(user.id);
   expect(edges).toStrictEqual(edges2);
 
-  //  verifyUserToContactEdges(user, edges2, contacts.reverse());
   verifyMultiCountQueryCacheMiss([user.id]);
 });
 
@@ -293,7 +287,7 @@ async function createData(): Promise<createdData> {
 }
 
 async function testMultiQueryDataAvail(
-  loaderFn: (opts: EdgeQueryableDataOptions) => Loader<ID, AssocEdge[]>,
+  loaderFn: (opts: EdgeQueryableDataOptions) => Loader<ID, Data[]>,
   verifyPostFirstQuery: (ids: ID[], slice?: number) => void,
   verifyPostSecondQuery: (ids: ID[], slice?: number) => void,
   slice?: number,
@@ -332,8 +326,7 @@ async function testMultiQueryDataAvail(
 }
 
 async function testMultiQueryDataOffset(
-  loaderFn: (opts: EdgeQueryableDataOptions) => Loader<ID, AssocEdge[]>,
-  context?: boolean,
+  loaderFn: (opts: EdgeQueryableDataOptions) => Loader<ID, Data[]>,
 ) {
   const { m, ids, users } = await createData();
 
@@ -346,7 +339,7 @@ async function testMultiQueryDataOffset(
       const options = {
         // how an offset query works
         // we don't (currently) test greater than but it's the same thing...
-        clause: clause.Less("time", contacts[0].createdAt.toISOString()),
+        clause: clause.Less("created_at", contacts[0].createdAt.toISOString()),
         limit: 1,
       };
 
@@ -374,7 +367,7 @@ async function testMultiQueryDataOffset(
 
     // verify the edges are as expected
     // just the one (if result exxists)
-    verifyUserToContactEdges(users[i], edges[i], expContacts);
+    verifyUserToContactRawData(users[i], edges[i], expContacts);
   }
   verifyMultiCountQueryOffset(ids, m);
 
@@ -385,7 +378,7 @@ async function testMultiQueryDataOffset(
     ids.map(async (id) => {
       const contacts = m.get(id) || [];
       const options = {
-        clause: clause.Less("time", contacts[0].createdAt.toISOString()),
+        clause: clause.Less("created_at", contacts[0].createdAt.toISOString()),
         limit: 1,
       };
 
@@ -397,13 +390,13 @@ async function testMultiQueryDataOffset(
   // query again, same data
   // if context, we hit local cache. otherwise, hit db
   expect(edges).toStrictEqual(edges2);
-  verifyMultiCountQueryOffset(ids, m, context);
+  verifyMultiCountQueryOffset(ids, m);
 }
 
 function verifyGroupedData(
   ids: ID[],
   users: FakeUser[],
-  edges: AssocEdge[][],
+  edges: Data[][],
   m: Map<ID, FakeContact[]>,
   slice?: number,
 ) {
@@ -420,8 +413,7 @@ function verifyGroupedData(
     ).toBe(contacts.length);
 
     // verify the edges are as expected
-
-    verifyUserToContactEdges(users[i], edges[i], contacts);
+    verifyUserToContactRawData(users[i], edges[i], contacts);
   }
 }
 
@@ -432,8 +424,7 @@ function verifyGroupedCacheHit(ids: ID[]) {
   ml.logs.forEach((log, idx) => {
     expect(log).toStrictEqual({
       "dataloader-cache-hit": ids[idx],
-      //      "tableName": "user_to_contacts_table",
-      "tableName": "TODO",
+      "tableName": "fake_contacts",
     });
   });
 }
@@ -443,75 +434,40 @@ function verifyMultiCountQueryCacheMiss(ids: ID[], slice?: number) {
   expect(ml.logs.length).toBe(ids.length);
   ml.logs.forEach((log, idx) => {
     const expQuery = buildQuery({
-      tableName: "user_to_contacts_table",
-      fields: [
-        "id1",
-        "id1_type",
-        "edge_type",
-        "id2",
-        "id2_type",
-        "time",
-        "data",
-      ],
-      clause: clause.And(
-        clause.Eq("id1", ids[idx]),
-        clause.Eq("edge_type", EdgeType.UserToContacts),
-      ),
-      orderby: "time DESC",
+      tableName: "fake_contacts",
+      fields: FakeContact.loaderOptions().fields,
+      clause: clause.Eq("user_id", ids[idx]),
+      orderby: "created_at DESC",
       limit: slice || DefaultLimit,
     });
     expect(log).toStrictEqual({
       query: expQuery,
-      values: [ids[idx], EdgeType.UserToContacts],
+      values: [ids[idx]],
     });
   });
 }
 
-function verifyMultiCountQueryOffset(
-  ids: ID[],
-  m: Map<ID, FakeContact[]>,
-  cachehit?: boolean,
-) {
+function verifyMultiCountQueryOffset(ids: ID[], m: Map<ID, FakeContact[]>) {
   expect(ml.logs.length).toBe(ids.length);
   ml.logs.forEach((log, idx) => {
     let contacts = m.get(ids[idx]) || [];
-    const fields = [
-      "id1",
-      "id1_type",
-      "edge_type",
-      "id2",
-      "id2_type",
-      "time",
-      "data",
-    ];
-    const cls = clause.And(
-      clause.Eq("id1", ids[idx]),
-      clause.Eq("edge_type", EdgeType.UserToContacts),
-      clause.Less("time", contacts[0].createdAt.toISOString()),
-    );
-    if (cachehit) {
-      // have queried before. we don't hit db again
-      expect(log).toStrictEqual({
-        "cache-hit": [...fields, cls.instanceKey(), "time DESC"].join(","),
-        "tableName": "user_to_contacts_table",
-      });
+    const fields = FakeContact.loaderOptions().fields;
 
-      return;
-    }
+    const cls = clause.And(
+      clause.Eq("user_id", ids[idx]),
+      clause.Less("created_at", contacts[0].createdAt.toISOString()),
+    );
+
     const expQuery = buildQuery({
-      tableName: "user_to_contacts_table",
+      tableName: "fake_contacts",
       fields: fields,
       clause: cls,
-      orderby: "time DESC",
+      orderby: "created_at DESC",
       limit: 1,
     });
     expect(log).toStrictEqual({
       query: expQuery,
-      values: [
-        ids[idx],
-        EdgeType.UserToContacts,
-        contacts[0].createdAt.toISOString(),
-      ],
+      values: [ids[idx], contacts[0].createdAt.toISOString()],
     });
   });
 }

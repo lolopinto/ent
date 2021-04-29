@@ -9,3 +9,8 @@ export {
   AssocEdgeLoader,
   AssocEdgeLoaderFactory,
 } from "./assoc_edge_loader";
+export {
+  IndexDirectLoader,
+  IndexLoader,
+  IndexLoaderFactory,
+} from "./index_loader";

@@ -6,22 +6,17 @@ import {
   LoadEntOptions,
   Viewer,
   LoaderFactory,
+  ConfigurableLoaderFactory,
 } from "../base";
-import { loadRows, applyPrivacyPolicyForRows, DefaultLimit } from "../ent";
+import { applyPrivacyPolicyForRows, DefaultLimit } from "../ent";
 import { BaseEdgeQuery } from "./query";
-import * as clause from "../clause";
 
 export interface CustomEdgeQueryOptions<T extends Ent> {
   src: Ent | ID;
   countLoaderFactory: LoaderFactory<ID, number>;
-  // TODO???
-  //  dataLoaderFactory: LoaderFactory<ID, Data[]>;
-  // TODO filters...
-  // TODO...
+  dataLoaderFactory: ConfigurableLoaderFactory<ID, Data[]>;
   options: LoadEntOptions<T>;
-  // TODO
-  clause: clause.Clause;
-  // defaults to created_at
+  // // defaults to created_at
   sortColumn?: string;
 }
 
@@ -54,24 +49,18 @@ export class CustomEdgeQueryBase<TDest extends Ent> extends BaseEdgeQuery<
     return new Map<ID, number>([[this.id, count]]);
   }
 
-  // TODO...
   protected async loadRawData(options: EdgeQueryableDataOptions) {
-    let cls = this.options.clause;
-    if (options.clause) {
-      cls = clause.And(cls, options.clause);
-    }
+    const loader = this.options.dataLoaderFactory.createConfigurableLoader(
+      options,
+      this.viewer.context,
+    );
     if (!options.orderby) {
       options.orderby = `${this.options.sortColumn} DESC`;
     }
     if (!options.limit) {
       options.limit = DefaultLimit;
     }
-    const rows = await loadRows({
-      ...this.options.options,
-      ...options,
-      clause: cls,
-      context: this.viewer.context,
-    });
+    const rows = await loader.load(this.id);
     this.edges.set(this.id, rows);
   }
 
@@ -85,7 +74,6 @@ export class CustomEdgeQueryBase<TDest extends Ent> extends BaseEdgeQuery<
       rows,
       this.options.options,
     );
-    //    console.log(ents);
     return Array.from(ents.values());
   }
 }
