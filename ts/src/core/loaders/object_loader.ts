@@ -82,6 +82,25 @@ export class ObjectLoader implements Loader<ID, Data | null> {
     };
     return await loadRow(rowOptions);
   }
+
+  clearAll() {
+    this.loader && this.loader.clearAll();
+  }
+
+  async loadMany(ids: ID[]): Promise<Data[]> {
+    if (this.loader) {
+      return await this.loader.loadMany(ids);
+    }
+
+    const col = this.options.pkey || "id";
+
+    const rowOptions: LoadRowOptions = {
+      ...this.options,
+      clause: clause.In(col, ...ids),
+      context: this.context,
+    };
+    return await loadRows(rowOptions);
+  }
 }
 
 export class ObjectLoaderFactory implements LoaderFactory<ID, Data | null> {

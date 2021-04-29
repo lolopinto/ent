@@ -695,8 +695,7 @@ describe("loadEnts", () => {
     insertStatements = await createRows(fields, selectOptions.tableName);
   });
 
-  // TODO will be fixed when loadEnts is changed to use loader from loaderFactory
-  test.skip("with context", async () => {
+  test("with context", async () => {
     const vc = getIDViewer(1);
     const ents = await ent.loadEnts(vc, User.loaderOptions(), 1, 2, 3);
 

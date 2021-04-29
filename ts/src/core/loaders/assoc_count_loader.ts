@@ -8,6 +8,7 @@ import memoize from "memoizee";
 
 export class AssocEdgeCountLoader implements Loader<ID, number> {
   private loaderFn: () => Promise<DataLoader<ID, number>>;
+  private loader: DataLoader<ID, number> | undefined;
 
   constructor(private edgeType: string, public context?: Context) {
     if (context) {
@@ -21,11 +22,12 @@ export class AssocEdgeCountLoader implements Loader<ID, number> {
       throw new Error(`error loading edge data for ${this.edgeType}`);
     }
 
-    return createCountDataLoader(
+    this.loader = createCountDataLoader(
       { tableName: edgeData.edgeTable },
       "id1",
       clause.Eq("edge_type", this.edgeType),
     );
+    return this.loader;
   }
 
   async load(id: ID): Promise<number> {
@@ -37,6 +39,10 @@ export class AssocEdgeCountLoader implements Loader<ID, number> {
     }
     const loader = await this.loaderFn();
     return await loader.load(id);
+  }
+
+  clearAll() {
+    this.loader && this.loader.clearAll();
   }
 }
 

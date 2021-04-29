@@ -107,6 +107,10 @@ export class RawCountLoader implements Loader<ID, number> {
     });
     return parseInt(row?.count, 10) || 0;
   }
+
+  clearAll() {
+    this.loader && this.loader.clearAll();
+  }
 }
 
 export class RawCountLoaderFactory implements LoaderFactory<ID, number> {

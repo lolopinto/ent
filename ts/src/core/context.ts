@@ -31,18 +31,16 @@ export interface RequestContext extends Context {
 }
 
 export class ContextCache {
-  loaders: Map<string, DataLoader<ID, Data | null>> = new Map();
-
-  realLoaders: Map<string, Loader<any, any>> = new Map();
+  loaders: Map<string, Loader<any, any>> = new Map();
 
   getLoader<T, V>(name: string, create: () => Loader<T, V>): Loader<T, V> {
-    let l = this.realLoaders.get(name);
+    let l = this.loaders.get(name);
     if (l) {
       return l;
     }
     log("debug", `new context-aware loader created for ${name}`);
     l = create();
-    this.realLoaders.set(name, l);
+    this.loaders.set(name, l);
     return l;
   }
 

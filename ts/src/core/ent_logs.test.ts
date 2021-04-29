@@ -477,7 +477,7 @@ describe("dataloader cache logging", () => {
       ent: User,
       context: ctx,
     };
-    const row = await loadEnt(ctx.getViewer(), 1, options);
+    await loadEnt(ctx.getViewer(), 1, options);
 
     // regular row fetch. hit db
     expect(ml.logs.length).toEqual(1);
@@ -533,7 +533,7 @@ describe("dataloader cache logging", () => {
     expect(ml.logs.length).toEqual(1);
     expect(ml.logs[0]).toStrictEqual({
       // TODO this will also change when loadEnts changes
-      "cache-hit": "id,col1,col2,in:id:1",
+      "dataloader-cache-hit": 1,
       "tableName": options.tableName,
     });
   });

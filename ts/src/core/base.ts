@@ -28,7 +28,8 @@ export interface Loader<T, V> {
   // maybe Context will be used to make different decisions
   load(key: T): Promise<V>;
   // what's the plural api to be?
-  //  loadMany(key: T): Promise<V | null[]>;
+  loadMany?(keys: T[]): Promise<(V | null)[]>;
+  clearAll(): any;
   // TODO we need a loadMany() API similar to DataLoaer
 }
 
