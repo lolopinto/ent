@@ -18,6 +18,7 @@ import {
 } from "../../schema";
 import { NodeType } from "./const";
 import { table, uuid, text, timestamptz } from "../db/test_db";
+import { ObjectLoaderFactory } from "../../core/loaders";
 
 export class FakeEvent implements Ent {
   readonly id: ID;
@@ -81,6 +82,10 @@ export class FakeEvent implements Ent {
       tableName: "fake_events",
       fields: FakeEvent.getFields(),
       ent: this,
+      loaderFactory: new ObjectLoaderFactory({
+        tableName: "fake_events",
+        fields: FakeEvent.getFields(),
+      }),
     };
   }
   static async load(v: Viewer, id: ID): Promise<FakeEvent | null> {

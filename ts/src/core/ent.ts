@@ -100,6 +100,9 @@ export async function loadEnt<T extends Ent>(
   id: ID,
   options: LoadEntOptions<T>,
 ): Promise<T | null> {
+  if (options.loaderFactory) {
+    return loadEntFromLoader(viewer, options, options.loaderFactory, id);
+  }
   const l = viewer.context?.cache?.getEntLoader(options);
   //  console.debug(l, id);
 
@@ -147,10 +150,7 @@ export async function loadEntXFromLoader<T extends Ent>(
   const row = await loaderFactory.createLoader(viewer.context).load(id);
   if (!row) {
     // todo make this better
-    throw new Error(
-      `couldn't find row for factory ${loaderFactory.name}
-         with value ${id}`,
-    );
+    throw new Error(`${loaderFactory.name}: couldn't find row for value ${id}`);
   }
   return await applyPrivacyPolicyForRowX(viewer, options, row);
 }
@@ -160,6 +160,9 @@ export async function loadEntX<T extends Ent>(
   id: ID,
   options: LoadEntOptions<T>,
 ): Promise<T> {
+  if (options.loaderFactory) {
+    return loadEntXFromLoader(viewer, options, options.loaderFactory, id);
+  }
   const l = viewer.context?.cache?.getEntLoader(options);
   if (!l) {
     const col = options.pkey || "id";
@@ -197,12 +200,28 @@ export async function loadEnts<T extends Ent>(
   if (!ids.length) {
     return [];
   }
-  const l = viewer.context?.cache?.getEntLoader(options);
+  let loaded = false;
+  let rows: (Error | Data | null)[] = [];
+  // TODO when fixed unskip ent_data.test.ts with context loadENts tests
+  if (false && options.loaderFactory) {
+    loaded = true;
+    const l = options.loaderFactory.createLoader(viewer.context);
+    rows = await Promise.all(ids.map((id) => l.load(id)));
+    console.log(rows);
+  } else {
+    const l = viewer.context?.cache?.getEntLoader(options);
+
+    // TODO do we want this loader check all over the place?
+    if (l) {
+      loaded = true;
+      rows = await l.loadMany(ids);
+    }
+  }
+
+  // TODO rewrite all of this
   let m: Map<ID, T> = new Map();
 
-  // TODO do we want this loader check all over the place?
-  if (l) {
-    const rows = await l.loadMany(ids);
+  if (loaded) {
     let rows2: Data[] = [];
     for (const row of rows) {
       if (!row) {

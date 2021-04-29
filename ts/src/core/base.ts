@@ -28,6 +28,9 @@ export interface Loader<T, V> {
   context?: Context;
   // maybe Context will be used to make different decisions
   load(key: T): Promise<V>;
+  // what's the plural api to be?
+  //  loadMany(key: T): Promise<V | null[]>;
+  // TODO we need a loadMany() API similar to DataLoaer
 }
 
 interface cache {
@@ -128,6 +131,7 @@ export interface EditRowOptions extends DataOptions {
 }
 
 interface LoadableEntOptions<T extends Ent> extends DataOptions {
+  loaderFactory: LoaderFactory<ID, Data>;
   ent: EntConstructor<T>;
 }
 
