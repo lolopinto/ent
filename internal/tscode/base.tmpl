@@ -168,6 +168,7 @@ export class {{$baseClass}} {
       static async loadRawDataFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
+        context?: {{useImport "Context"}},
       ): Promise<{{$dataType}} | null> {
         return await {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName}});
       }
