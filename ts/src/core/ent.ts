@@ -5,9 +5,7 @@ import {
   ID,
   LoadRowsOptions,
   LoadRowOptions,
-  Loader,
   LoaderFactory,
-  ConfigurableLoaderFactory,
   Data,
   DataOptions,
   QueryableDataOptions,
@@ -100,19 +98,7 @@ export async function loadEnt<T extends Ent>(
   id: ID,
   options: LoadEntOptions<T>,
 ): Promise<T | null> {
-  if (options.loaderFactory) {
-    return loadEntFromLoader(viewer, options, options.loaderFactory, id);
-  }
-  const l = viewer.context?.cache?.getEntLoader(options);
-  //  console.debug(l, id);
-
-  if (!l) {
-    const col = options.pkey || "id";
-    return loadEntFromClause(viewer, options, clause.Eq(col, id));
-  }
-
-  const row = await l.load(id);
-  return await applyPrivacyPolicyForRow(viewer, options, row);
+  return loadEntFromLoader(viewer, options, options.loaderFactory, id);
 }
 
 export async function loadEntFromClause<T extends Ent>(
@@ -160,19 +146,7 @@ export async function loadEntX<T extends Ent>(
   id: ID,
   options: LoadEntOptions<T>,
 ): Promise<T> {
-  if (options.loaderFactory) {
-    return loadEntXFromLoader(viewer, options, options.loaderFactory, id);
-  }
-  const l = viewer.context?.cache?.getEntLoader(options);
-  if (!l) {
-    const col = options.pkey || "id";
-    return loadEntXFromClause(viewer, options, clause.Eq(col, id));
-  }
-  const row = await l.load(id);
-  if (!row) {
-    throw new Error(`couldn't find row for id ${id}`);
-  }
-  return await applyPrivacyPolicyForRowX(viewer, options, row);
+  return loadEntXFromLoader(viewer, options, options.loaderFactory, id);
 }
 
 // same as loadEntFromClause
@@ -203,19 +177,13 @@ export async function loadEnts<T extends Ent>(
   let loaded = false;
   let rows: (Error | Data | null)[] = [];
   // TODO when fixed unskip ent_data.test.ts with context loadENts tests
+  // TODO also loadEnts in ent_logs.test.ts
+  // loadMany API...
   if (false && options.loaderFactory) {
     loaded = true;
     const l = options.loaderFactory.createLoader(viewer.context);
     rows = await Promise.all(ids.map((id) => l.load(id)));
     console.log(rows);
-  } else {
-    const l = viewer.context?.cache?.getEntLoader(options);
-
-    // TODO do we want this loader check all over the place?
-    if (l) {
-      loaded = true;
-      rows = await l.loadMany(ids);
-    }
   }
 
   // TODO rewrite all of this

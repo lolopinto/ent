@@ -22,7 +22,7 @@ export function getLoader<T, V>(
   }
 
   // g|set from context cache
-  return context.cache.getRealLoader(factory.name, create);
+  return context.cache.getLoader(factory.name, create);
 }
 
 export function getCustomLoader<T, V>(
@@ -37,7 +37,7 @@ export function getCustomLoader<T, V>(
   }
 
   // g|set from context cache
-  return context.cache.getRealLoader(key, create);
+  return context.cache.getLoader(key, create);
 }
 
 export class cacheMap {

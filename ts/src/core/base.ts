@@ -1,4 +1,3 @@
-import DataLoader from "dataloader";
 import * as clause from "./clause";
 
 export interface LoaderFactory<T, V> {
@@ -34,8 +33,7 @@ export interface Loader<T, V> {
 }
 
 interface cache {
-  getEntLoader(loaderOptions: SelectDataOptions): DataLoader<ID, Data | null>;
-  getRealLoader<T, V>(name: string, create: () => Loader<T, V>): Loader<T, V>;
+  getLoader<T, V>(name: string, create: () => Loader<T, V>): Loader<T, V>;
   getCachedRows(options: queryOptions): Data[] | null;
   getCachedRow(options: queryOptions): Data | null;
   primeCache(options: queryOptions, rows: Data[]): void;
