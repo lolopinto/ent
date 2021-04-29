@@ -5,7 +5,6 @@ import {
   ID,
   LoadRowsOptions,
   LoadRowOptions,
-  LoaderFactory,
   Data,
   DataOptions,
   QueryableDataOptions,
@@ -92,13 +91,30 @@ function createDataLoader(options: SelectDataOptions) {
     return result;
   }, loaderOptions);
 }
+
 // Ent accessors
 export async function loadEnt<T extends Ent>(
   viewer: Viewer,
   id: ID,
   options: LoadEntOptions<T>,
 ): Promise<T | null> {
-  return loadEntFromLoader(viewer, options, options.loaderFactory, id);
+  const row = await options.loaderFactory.createLoader(viewer.context).load(id);
+  return await applyPrivacyPolicyForRow(viewer, options, row);
+}
+
+export async function loadEntX<T extends Ent>(
+  viewer: Viewer,
+  id: ID,
+  options: LoadEntOptions<T>,
+): Promise<T> {
+  const row = await options.loaderFactory.createLoader(viewer.context).load(id);
+  if (!row) {
+    // todo make this better
+    throw new Error(
+      `${options.loaderFactory.name}: couldn't find row for value ${id}`,
+    );
+  }
+  return await applyPrivacyPolicyForRowX(viewer, options, row);
 }
 
 export async function loadEntFromClause<T extends Ent>(
@@ -113,40 +129,6 @@ export async function loadEntFromClause<T extends Ent>(
   };
   const row = await loadRow(rowOptions);
   return await applyPrivacyPolicyForRow(viewer, options, row);
-}
-
-// TODO new loadEnt
-// kill loadEntFromClause, loadEnt etc for this?
-export async function loadEntFromLoader<T extends Ent>(
-  viewer: Viewer,
-  options: LoadEntOptions<T>,
-  loaderFactory: LoaderFactory<ID, Data | null>,
-  id: ID,
-): Promise<T | null> {
-  const row = await loaderFactory.createLoader(viewer.context).load(id);
-  return await applyPrivacyPolicyForRow(viewer, options, row);
-}
-
-export async function loadEntXFromLoader<T extends Ent>(
-  viewer: Viewer,
-  options: LoadEntOptions<T>,
-  loaderFactory: LoaderFactory<ID, Data | null>,
-  id: ID,
-): Promise<T> {
-  const row = await loaderFactory.createLoader(viewer.context).load(id);
-  if (!row) {
-    // todo make this better
-    throw new Error(`${loaderFactory.name}: couldn't find row for value ${id}`);
-  }
-  return await applyPrivacyPolicyForRowX(viewer, options, row);
-}
-
-export async function loadEntX<T extends Ent>(
-  viewer: Viewer,
-  id: ID,
-  options: LoadEntOptions<T>,
-): Promise<T> {
-  return loadEntXFromLoader(viewer, options, options.loaderFactory, id);
 }
 
 // same as loadEntFromClause
@@ -337,12 +319,6 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
     log("error", e);
     return null;
   }
-}
-
-interface RawQueryOptions {
-  query: string;
-  values: any[];
-  logValues: any[];
 }
 
 // this always goes to the db, no cache, nothing

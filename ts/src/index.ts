@@ -1,17 +1,16 @@
 export * from "./core/base";
 export {
   loadEnt,
-  loadEntFromClause,
+  //  loadEntFromClause,
   loadEntX,
-  loadEntXFromClause,
+  //  loadEntXFromClause,
   loadEnts,
-  loadEntsFromClause,
-  loadEntFromLoader,
-  loadEntXFromLoader,
+  //  loadEntsFromClause,
   loadDerivedEnt,
   loadDerivedEntX,
   applyPrivacyPolicyForEnt,
   applyPrivacyPolicyForEntX,
+  // even these 3 need to change...
   loadRowX,
   loadRow,
   loadRows,
