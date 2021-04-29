@@ -16,6 +16,7 @@ import { Schema } from "../schema";
 import { QueryRecorder } from "./db_mock";
 import pluralize from "pluralize";
 import { snakeCase } from "snake-case";
+import { ObjectLoaderFactory } from "../core/loaders";
 
 export class User implements Ent {
   id: ID;
@@ -125,11 +126,20 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
     this.fields = fields;
 
     this.ent = schema.ent;
+    const tableName = pluralize(snakeCase(this.ent.name)).toLowerCase();
     this.orchestrator = new Orchestrator<T>({
       viewer: this.viewer,
       operation: operation,
-      tableName: pluralize(snakeCase(this.ent.name)).toLowerCase(),
-      ent: this.ent,
+      tableName: tableName,
+      loaderOptions: {
+        loaderFactory: new ObjectLoaderFactory({
+          tableName: tableName,
+          fields: [],
+        }),
+        ent: schema.ent,
+        tableName: tableName,
+        fields: [],
+      },
       builder: this,
       action: action,
       schema: this.schema,

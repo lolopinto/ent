@@ -20,6 +20,7 @@ import { LoggedOutViewer } from "./viewer";
 import { User } from "../testutils/builder";
 import { TestContext } from "../testutils/context/test_context";
 import { MockLogs } from "../testutils/mock_log";
+import { ObjectLoaderFactory } from "./loaders";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -465,44 +466,38 @@ describe("dataloader cache logging", () => {
     ctx.cache.clearCache();
   });
 
-  test("log disabled", async () => {
-    clearLogLevels();
-    await loadEnt(ctx.getViewer(), 1, {
-      fields: ["id", "col1", "col2"],
-      tableName: "users",
-      ent: User,
-    });
-
-    expect(ml.logs.length).toEqual(0);
-  });
+  const fields = ["id", "col1", "col2"];
+  const tableName = "users";
 
   test("loadEnt", async () => {
     const options = {
-      fields: ["id", "col1", "col2"],
-      tableName: "users",
+      fields,
+      tableName,
+      loaderFactory: new ObjectLoaderFactory({ fields, tableName }),
       ent: User,
       context: ctx,
     };
-    await loadEnt(ctx.getViewer(), 1, options);
+    const row = await loadEnt(ctx.getViewer(), 1, options);
 
     // regular row fetch. hit db
     expect(ml.logs.length).toEqual(1);
 
     expect(ml.logs[0]).toStrictEqual({
       query: buildQuery({
-        tableName: "users",
-        fields: ["id", "col1", "col2"],
+        tableName,
+        fields,
         // data loader always does an in fetch...
         clause: clause.In("id", 1),
       }),
       values: [1],
     });
 
+    ml.clear();
     // fetch again
     await loadEnt(ctx.getViewer(), 1, options);
 
-    expect(ml.logs.length).toEqual(2);
-    expect(ml.logs[1]).toStrictEqual({
+    expect(ml.logs.length).toEqual(1);
+    expect(ml.logs[0]).toStrictEqual({
       "dataloader-cache-hit": 1,
       "tableName": options.tableName,
     });
@@ -510,8 +505,9 @@ describe("dataloader cache logging", () => {
 
   test("loadEnts", async () => {
     const options = {
-      fields: ["id", "col1", "col2"],
-      tableName: "users",
+      fields,
+      tableName,
+      loaderFactory: new ObjectLoaderFactory({ fields, tableName }),
       ent: User,
     };
     await loadEnts(ctx.getViewer(), options, 1);
@@ -521,22 +517,61 @@ describe("dataloader cache logging", () => {
 
     expect(ml.logs[0]).toStrictEqual({
       query: buildQuery({
-        tableName: "users",
-        fields: ["id", "col1", "col2"],
+        tableName,
+        fields,
         // data loader always does an in fetch...
         clause: clause.In("id", 1),
       }),
       values: [1],
     });
 
+    ml.clear();
+
     // fetch again
     await loadEnts(ctx.getViewer(), options, 1);
 
-    expect(ml.logs.length).toEqual(2);
-    expect(ml.logs[1]).toStrictEqual({
+    expect(ml.logs.length).toEqual(1);
+    expect(ml.logs[0]).toStrictEqual({
       "dataloader-cache-hit": 1,
       "tableName": options.tableName,
     });
+  });
+});
+
+describe("dataloader cache logging disabled", () => {
+  const ctx = new TestContext();
+
+  beforeEach(async () => {
+    // prime the row
+    await createRowForTest({
+      tableName: "users",
+      fields: {
+        id: 1,
+        col1: "col",
+        col2: "col",
+      },
+    });
+    ml.clear();
+  });
+
+  afterEach(() => {
+    ctx.cache.clearCache();
+  });
+
+  const fields = ["id", "col1", "col2"];
+  const tableName = "users";
+
+  // this was interfering with above batch so we're breaking it out
+  test("log disabled", async () => {
+    clearLogLevels();
+    await loadEnt(ctx.getViewer(), 1, {
+      fields,
+      tableName,
+      loaderFactory: new ObjectLoaderFactory({ fields, tableName }),
+      ent: User,
+    });
+
+    expect(ml.logs.length).toEqual(0);
   });
 });
 
@@ -555,11 +590,15 @@ describe("loadEnt no context", () => {
     ml.clear();
   });
 
+  const fields = ["id", "col1", "col2"];
+  const tableName = "users";
+
   test("log disabled", async () => {
     clearLogLevels();
     await loadEnt(v, 1, {
-      fields: ["id", "col1", "col2"],
-      tableName: "users",
+      fields,
+      tableName,
+      loaderFactory: new ObjectLoaderFactory({ fields, tableName }),
       ent: User,
     });
 
@@ -568,9 +607,10 @@ describe("loadEnt no context", () => {
 
   test("loadEnt", async () => {
     const options = {
-      fields: ["id", "col1", "col2"],
-      tableName: "users",
+      fields,
+      tableName,
       ent: User,
+      loaderFactory: new ObjectLoaderFactory({ fields, tableName }),
     };
     await loadEnt(v, 1, options);
 
@@ -579,8 +619,8 @@ describe("loadEnt no context", () => {
 
     expect(ml.logs[0]).toStrictEqual({
       query: buildQuery({
-        tableName: "users",
-        fields: ["id", "col1", "col2"],
+        tableName,
+        fields,
         clause: clause.Eq("id", 1),
       }),
       values: [1],
@@ -596,8 +636,9 @@ describe("loadEnt no context", () => {
 
   test("loadEnts", async () => {
     const options = {
-      fields: ["id", "col1", "col2"],
-      tableName: "users",
+      fields,
+      tableName,
+      loaderFactory: new ObjectLoaderFactory({ fields, tableName }),
       ent: User,
     };
     await loadEnts(v, options, 1);
@@ -607,8 +648,8 @@ describe("loadEnt no context", () => {
 
     expect(ml.logs[0]).toStrictEqual({
       query: buildQuery({
-        tableName: "users",
-        fields: ["id", "col1", "col2"],
+        tableName,
+        fields,
         clause: clause.In("id", 1),
       }),
       values: [1],

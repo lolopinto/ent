@@ -193,7 +193,7 @@ export class QueryRecorder {
 
   static validateQueryOrder(expected: queryOptions[], ent: Ent | null) {
     let queries = QueryRecorder.queries;
-    //console.log(queries, expected);
+    //    console.log(queries, expected);
     expect(queries.length).toBe(expected.length);
 
     for (let i = 0; i < expected.length; i++) {

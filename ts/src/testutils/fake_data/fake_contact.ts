@@ -12,6 +12,7 @@ import { BuilderSchema, SimpleBuilder } from "../builder";
 import { Field, StringType, BaseEntSchema, UUIDType } from "../../schema";
 import { NodeType } from "./const";
 import { table, uuid, text, timestamptz } from "../db/test_db";
+import { ObjectLoaderFactory } from "../../core/loaders";
 
 export class FakeContact implements Ent {
   readonly id: ID;
@@ -67,6 +68,10 @@ export class FakeContact implements Ent {
       tableName: "fake_contacts",
       fields: FakeContact.getFields(),
       ent: this,
+      loaderFactory: new ObjectLoaderFactory({
+        tableName: "fake_contacts",
+        fields: FakeContact.getFields(),
+      }),
     };
   }
   static async load(v: Viewer, id: ID): Promise<FakeContact | null> {

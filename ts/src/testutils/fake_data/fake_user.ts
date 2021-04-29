@@ -19,6 +19,7 @@ import { EdgeType } from "./internal";
 import { NodeType } from "./const";
 import { IDViewer, IDViewerOptions } from "../../core/viewer";
 import { table, uuid, text, timestamptz } from "../db/test_db";
+import { ObjectLoaderFactory } from "../../core/loaders";
 
 interface TokenOptions extends IDViewerOptions {
   tokens?: {};
@@ -112,6 +113,10 @@ export class FakeUser implements Ent {
       tableName: "fake_users",
       fields: FakeUser.getFields(),
       ent: this,
+      loaderFactory: new ObjectLoaderFactory({
+        tableName: "fake_users",
+        fields: FakeUser.getFields(),
+      }),
     };
   }
   static async load(v: Viewer, id: ID): Promise<FakeUser | null> {

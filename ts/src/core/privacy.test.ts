@@ -25,7 +25,7 @@ import { LoggedOutViewer, IDViewer } from "./viewer";
 import { Pool } from "pg";
 import { QueryRecorder } from "../testutils/db_mock";
 import { createRowForTest } from "../testutils/write";
-
+import { ObjectLoaderFactory } from "./loaders";
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 afterEach(() => {
@@ -290,6 +290,10 @@ class DefinedUser extends User {
       tableName: "users",
       fields: ["id", "name"],
       ent: this,
+      loaderFactory: new ObjectLoaderFactory({
+        fields: ["id", "name"],
+        tableName: "users",
+      }),
     };
   }
 }
