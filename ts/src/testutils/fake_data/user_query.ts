@@ -5,7 +5,6 @@ import {
   AssocEdgeQueryBase,
   EdgeQuerySource,
 } from "../../core/query/assoc_query";
-import * as clause from "../../core/clause";
 import {
   EdgeType,
   FakeUser,
@@ -20,6 +19,7 @@ import {
 import { RawCountLoaderFactory } from "../../core/loaders/raw_count_loader";
 import { AssocEdgeCountLoaderFactory } from "../../core/loaders/assoc_count_loader";
 import { AssocEdgeLoaderFactory } from "../../core/loaders/assoc_edge_loader";
+import { IndexLoaderFactory } from "../../core/loaders/index_loader";
 
 export class UserToContactsQuery extends AssocEdgeQueryBase<
   FakeUser,
@@ -60,8 +60,11 @@ export class UserToContactsFkeyQuery extends CustomEdgeQueryBase<FakeContact> {
         FakeContact.loaderOptions(),
         "user_id",
       ),
+      dataLoaderFactory: new IndexLoaderFactory(
+        FakeContact.loaderOptions(),
+        "user_id",
+      ),
       options: FakeContact.loaderOptions(),
-      clause: clause.Eq("user_id", getID(src)),
     });
   }
 
