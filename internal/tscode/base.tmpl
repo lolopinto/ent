@@ -217,6 +217,7 @@ export class {{$baseClass}} {
       tableName: tableName,
       fields: fields,
       ent: this,
+      loaderFactory: {{$loaderName}},
     };
   }
 
@@ -391,12 +392,15 @@ export class {{$baseClass}} {
   {{end}}
 }
 
-export const {{$loaderName}} = new {{useImport "ObjectLoaderFactory"}}({{$baseClass}}.loaderOptions());
+export const {{$loaderName}} = new {{useImport "ObjectLoaderFactory"}}(
+  {fields, tableName},
+);
 {{ range $field := .FieldInfo.Fields -}}
   {{ if $field.Unique -}}
   export const {{printf "%s%sLoader" $pkgName $field.CamelCaseName}} = new {{useImport "ObjectLoaderFactory"}}(
       {
-        ...{{$baseClass}}.loaderOptions(),
+        fields, 
+        tableName,
         pkey: {{$field.GetQuotedDBColName}},
       },
     );
