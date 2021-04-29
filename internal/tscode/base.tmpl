@@ -1,4 +1,4 @@
-{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadEdges" "loadRawEdgeCountX" "loadNodesByEdge" "loadEdgeForID2" "loadEntsFromClause" "loadEntFromClause" "loadEntXFromClause" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AlwaysDenyRule" "AllowIfViewerRule" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "loadEntXFromLoader" "loadEntFromLoader"}}
+{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadEdges" "loadRawEdgeCountX" "loadNodesByEdge" "loadEdgeForID2" "loadEntsFromClause" "loadEntFromClause" "loadEntXFromClause" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AlwaysDenyRule" "AllowIfViewerRule" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" }}
 {{ reserveImport .Package.SchemaPackagePath "Field" "getFields"}}
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
 {{ reserveImport "src/ent/loadAny" "loadEntByType" "loadEntXByType"}}
@@ -135,11 +135,13 @@ export class {{$baseClass}} {
         viewer: {{$viewerType}},
         {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
       ): Promise<T | null> {
-        return {{useImport "loadEntFromLoader"}}(
+        return {{useImport "loadEnt"}}(
           viewer, 
-          {{$baseClass}}.loaderOptions.apply(this), 
-          {{$fieldLoader}},
           {{$field.TsFieldName}},
+          {
+            ...{{$baseClass}}.loaderOptions.apply(this), 
+            loaderFactory: {{$fieldLoader}},
+          },
         );
       }
 
@@ -148,11 +150,13 @@ export class {{$baseClass}} {
         viewer: Viewer,
         {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
       ): Promise<T> {
-        return {{useImport "loadEntXFromLoader"}}(
+        return {{useImport "loadEntX"}}(
           viewer, 
-          {{$baseClass}}.loaderOptions.apply(this), 
-          {{$fieldLoader}},
           {{$field.TsFieldName}},
+          {
+            ...{{$baseClass}}.loaderOptions.apply(this), 
+            loaderFactory: {{$fieldLoader}},
+          },
         );
       }
 
@@ -178,6 +182,7 @@ export class {{$baseClass}} {
         viewer: {{$viewerType}},
         {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
       ): Promise<T[]> {
+        // TODO...
         const m = await {{useImport "loadEntsFromClause"}}(
           viewer, 
           {{useImport "query"}}.Eq({{$field.GetQuotedDBColName}}, {{$field.TsFieldName}}),
