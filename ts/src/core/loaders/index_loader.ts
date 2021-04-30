@@ -7,6 +7,7 @@ import {
   Loader,
   LoaderFactory,
   EdgeQueryableDataOptions,
+  PrimableLoader,
   QueryableDataOptions,
 } from "../base";
 import {
@@ -18,6 +19,8 @@ import {
 import * as clause from "../clause";
 import { logEnabled } from "../logger";
 import { cacheMap, getCustomLoader, getLoader } from "./loader";
+import { ObjectLoaderFactory } from "./object_loader";
+import memoizee from "memoizee";
 
 async function simpleCase(
   options: SelectDataOptions,
@@ -142,7 +145,11 @@ export class IndexDirectLoader implements Loader<ID, Data[]> {
 // e.g. foreign key count
 export class IndexLoader implements Loader<ID, Data[]> {
   private loader: DataLoader<ID, Data[]> | undefined;
-  // tableName, columns
+  private primedLoaders:
+    | Map<string, PrimableLoader<any, Data | null>>
+    | undefined;
+  private memoizedInitPrime: () => void;
+
   constructor(
     private options: SelectDataOptions,
     private col: string,
@@ -151,6 +158,7 @@ export class IndexLoader implements Loader<ID, Data[]> {
       extraClause?: clause.Clause;
       sortColumn?: string;
       queryOptions?: EdgeQueryableDataOptions;
+      toPrime?: ObjectLoaderFactory<ID>[];
     },
   ) {
     if (context) {
@@ -162,11 +170,41 @@ export class IndexLoader implements Loader<ID, Data[]> {
         opts?.queryOptions,
       );
     }
+    this.memoizedInitPrime = memoizee(this.initPrime.bind(this));
+  }
+
+  private initPrime() {
+    if (!this.context || !this.opts?.toPrime) {
+      return;
+    }
+
+    let primedLoaders = new Map();
+    this.opts.toPrime.forEach((prime) => {
+      const l2 = prime.createLoader(this.context);
+      if ((l2 as PrimableLoader<any, Data | null>).prime === undefined) {
+        return;
+      }
+      const key = prime.options.pkey || "id";
+      primedLoaders.set(key, l2);
+    });
+    this.primedLoaders = primedLoaders;
   }
 
   async load(id: ID): Promise<Data[]> {
     if (this.loader) {
-      return await this.loader.load(id);
+      this.memoizedInitPrime();
+      const rows = await this.loader.load(id);
+      if (this.primedLoaders) {
+        for (const row of rows) {
+          for (const [key, loader] of this.primedLoaders) {
+            const value = row[key];
+            if (value !== undefined) {
+              loader.prime(row);
+            }
+          }
+        }
+      }
+      return rows;
     }
 
     return simpleCase(this.options, this.col, id, this.opts);
@@ -185,6 +223,7 @@ export class IndexLoaderFactory implements LoaderFactory<ID, Data[]> {
     private opts?: {
       extraClause?: clause.Clause;
       sortColumn?: string;
+      toPrime?: ObjectLoaderFactory<ID>[];
     },
   ) {
     this.name = `indexLoader:${options.tableName}:${this.col}`;

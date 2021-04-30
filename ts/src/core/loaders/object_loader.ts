@@ -8,12 +8,14 @@ import {
   Context,
   Loader,
   LoaderFactory,
+  PrimableLoader,
 } from "../base";
 import { loadRow, loadRows } from "../ent";
 import * as clause from "../clause";
 import { log, logEnabled } from "../logger";
 
 import { getLoader, cacheMap } from "./loader";
+import memoizee from "memoizee";
 
 function createDataLoader(options: SelectDataOptions) {
   const loaderOptions: DataLoader.Options<any, any> = {};
@@ -58,26 +60,66 @@ function createDataLoader(options: SelectDataOptions) {
   }, loaderOptions);
 }
 
-export class ObjectLoader implements Loader<ID, Data | null> {
-  private loader: DataLoader<ID, Data> | undefined;
-  constructor(private options: SelectDataOptions, public context?: Context) {
+export class ObjectLoader<T> implements Loader<T, Data | null> {
+  private loader: DataLoader<T, Data> | undefined;
+  private primedLoaders:
+    | Map<string, PrimableLoader<T, Data | null>>
+    | undefined;
+  private memoizedInitPrime: () => void;
+
+  constructor(
+    private options: SelectDataOptions,
+    public context?: Context,
+    private toPrime?: ObjectLoaderFactory<T>[],
+  ) {
     if (context) {
       this.loader = createDataLoader(options);
     }
+    this.memoizedInitPrime = memoizee(this.initPrime.bind(this));
   }
 
-  async load(id: ID): Promise<Data | null> {
+  private initPrime() {
+    if (!this.context || !this.toPrime) {
+      return;
+    }
+    let primedLoaders = new Map();
+    this.toPrime.forEach((prime) => {
+      const l2 = prime.createLoader(this.context);
+      if ((l2 as PrimableLoader<T, Data | null>).prime === undefined) {
+        return;
+      }
+      const key = prime.options.pkey || "id";
+
+      primedLoaders.set(key, l2);
+    });
+    this.primedLoaders = primedLoaders;
+  }
+
+  async load(key: T): Promise<Data | null> {
     // simple case. we get parallelization etc
     if (this.loader) {
-      return await this.loader.load(id);
+      this.memoizedInitPrime();
+      // prime the result if we got primable loaders
+      const result = await this.loader.load(key);
+      if (result && this.primedLoaders) {
+        for (const [key, loader] of this.primedLoaders) {
+          const value = result[key];
+          if (value !== undefined) {
+            loader.prime(result);
+          }
+        }
+      }
+
+      return result;
     }
 
     // fetch every time
+    // TODO make this required...
     const col = this.options.pkey || "id";
 
     const rowOptions: LoadRowOptions = {
       ...this.options,
-      clause: clause.Eq(col, id),
+      clause: clause.Eq(col, key),
       context: this.context,
     };
     return await loadRow(rowOptions);
@@ -87,33 +129,52 @@ export class ObjectLoader implements Loader<ID, Data | null> {
     this.loader && this.loader.clearAll();
   }
 
-  async loadMany(ids: ID[]): Promise<Data[]> {
+  async loadMany(keys: T[]): Promise<Data[]> {
     if (this.loader) {
-      return await this.loader.loadMany(ids);
+      return await this.loader.loadMany(keys);
     }
 
     const col = this.options.pkey || "id";
 
     const rowOptions: LoadRowOptions = {
       ...this.options,
-      clause: clause.In(col, ...ids),
+      clause: clause.In(col, ...keys),
       context: this.context,
     };
     return await loadRows(rowOptions);
   }
+
+  prime(data: Data) {
+    // we have this data from somewhere else, prime it in the c
+    if (this.loader) {
+      const col = this.options.pkey || "id";
+      const key = data[col];
+      this.loader.prime(key, data);
+    }
+  }
 }
 
-export class ObjectLoaderFactory implements LoaderFactory<ID, Data | null> {
+export class ObjectLoaderFactory<T> implements LoaderFactory<T, Data | null> {
   name: string;
-  constructor(private options: SelectDataOptions) {
+  private toPrime: ObjectLoaderFactory<T>[] = [];
+
+  constructor(public options: SelectDataOptions) {
     this.name = `${options.tableName}:${options.pkey || "id"}`;
   }
 
-  createLoader(context?: Context) {
+  createLoader(context?: Context): ObjectLoader<T> {
     return getLoader(
       this,
-      () => new ObjectLoader(this.options, context),
+      () => {
+        return new ObjectLoader(this.options, context, this.toPrime);
+      },
       context,
-    );
+    ) as ObjectLoader<T>;
+  }
+
+  // keep track of loaders to prime. needs to be done not in the constructor
+  // because there's usually self references here
+  addToPrime(factory: ObjectLoaderFactory<T>) {
+    this.toPrime.push(factory);
   }
 }

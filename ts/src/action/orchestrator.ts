@@ -555,6 +555,7 @@ export class Orchestrator<T extends Ent> {
       this.options.loaderOptions,
       row,
     );
+
     if (!ent) {
       if (this.options.operation == WriteOperation.Insert) {
         throw new Error(`was able to create ent but not load it`);

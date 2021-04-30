@@ -8,7 +8,14 @@ import * as clause from "../clause";
 
 import { Data, EdgeQueryableDataOptions, ID, Loader } from "../base";
 import { TempDB } from "../../testutils/db/test_db";
-import { FakeUser, FakeContact } from "../../testutils/fake_data/index";
+import {
+  FakeUser,
+  FakeContact,
+  userLoader,
+  contactLoader,
+  UserToContactsFkeyQuery,
+  userToContactsDataLoaderFactory,
+} from "../../testutils/fake_data/index";
 import {
   createAllContacts,
   setupTempDB,
@@ -16,6 +23,7 @@ import {
 } from "../../testutils/fake_data/test_helpers";
 
 import { IndexLoaderFactory } from "./index_loader";
+import { LoggedOutViewer } from "../viewer";
 // most of this is copied from assoc_edge_loader.test.ts and changed to work for this
 
 const ml = new MockLogs();
@@ -261,6 +269,50 @@ test("without context. cache miss single id", async () => {
   expect(edges).toStrictEqual(edges2);
 
   verifyMultiCountQueryCacheMiss([id]);
+});
+
+test("primed object", async () => {
+  const [user, contacts] = await createAllContacts();
+  ml.clear();
+
+  const loader = userToContactsDataLoaderFactory.createLoader(ctx);
+  const edges = await loader.load(user.id);
+  verifyUserToContactRawData(user, edges, contacts.reverse());
+  verifyMultiCountQueryCacheMiss([user.id]);
+
+  ml.clear();
+
+  await contactLoader.createLoader(ctx).load(contacts[0].id);
+  expect(ml.logs.length).toBe(1);
+  expect(ml.logs[0]).toStrictEqual({
+    "dataloader-cache-hit": contacts[0].id,
+    "tableName": "fake_contacts",
+  });
+});
+
+test("not-primed object", async () => {
+  const [user, contacts] = await createAllContacts();
+  ml.clear();
+
+  // this loader not primed so trying to fetch object later hits the db
+  const loader = getNewLoader(true);
+  const edges = await loader.load(user.id);
+  verifyUserToContactRawData(user, edges, contacts.reverse());
+  verifyMultiCountQueryCacheMiss([user.id]);
+
+  ml.clear();
+
+  // fetching object hits the db since unprimed loader
+  await contactLoader.createLoader(ctx).load(contacts[0].id);
+  expect(ml.logs.length).toBe(1);
+  expect(ml.logs[0]).toStrictEqual({
+    query: buildQuery({
+      tableName: "fake_contacts",
+      fields: FakeContact.getFields(),
+      clause: clause.In("id", [contacts[0].id]),
+    }),
+    values: [contacts[0].id],
+  });
 });
 
 interface createdData {
