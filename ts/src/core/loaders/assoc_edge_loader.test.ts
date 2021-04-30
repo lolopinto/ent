@@ -223,10 +223,48 @@ test("with context. cache hit single id", async () => {
   verifyGroupedCacheHit([user.id]);
 });
 
+test("with context. cache hit single id. loader function passed", async () => {
+  const loader = new AssocEdgeLoaderFactory(
+    EdgeType.UserToContacts,
+    () => AssocEdge,
+  ).createLoader(ctx);
+  const [user, contacts] = await createAllContacts();
+  ml.clear();
+  const edges = await loader.load(user.id);
+  verifyUserToContactEdges(user, edges, contacts.reverse());
+  verifyMultiCountQueryCacheMiss([user.id]);
+
+  ml.clear();
+  const edges2 = await loader.load(user.id);
+  expect(edges).toStrictEqual(edges2);
+
+  //  verifyUserToContactEdges(user, edges2, contacts.reverse());
+  verifyGroupedCacheHit([user.id]);
+});
+
 test("without context. cache hit single id", async () => {
   const [user, contacts] = await createAllContacts();
   ml.clear();
   const loader = getNewLoader(false);
+  const edges = await loader.load(user.id);
+  verifyUserToContactEdges(user, edges, contacts.reverse());
+  verifyMultiCountQueryCacheMiss([user.id]);
+
+  ml.clear();
+  const edges2 = await loader.load(user.id);
+  expect(edges).toStrictEqual(edges2);
+
+  //  verifyUserToContactEdges(user, edges2, contacts.reverse());
+  verifyMultiCountQueryCacheMiss([user.id]);
+});
+
+test("without context. cache hit single id.loader function passed", async () => {
+  const [user, contacts] = await createAllContacts();
+  ml.clear();
+  const loader = new AssocEdgeLoaderFactory(
+    EdgeType.UserToContacts,
+    () => AssocEdge,
+  ).createLoader();
   const edges = await loader.load(user.id);
   verifyUserToContactEdges(user, edges, contacts.reverse());
   verifyMultiCountQueryCacheMiss([user.id]);

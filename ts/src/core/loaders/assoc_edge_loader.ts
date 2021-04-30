@@ -173,7 +173,7 @@ export class AssocEdgeLoaderFactory<T extends AssocEdge>
 
   constructor(
     private edgeType: string,
-    private edgeCtr: AssocEdgeConstructor<T>,
+    private edgeCtr: AssocEdgeConstructor<T> | (() => AssocEdgeConstructor<T>),
   ) {
     this.name = `assocEdgeLoader:${edgeType}`;
   }
@@ -182,10 +182,27 @@ export class AssocEdgeLoaderFactory<T extends AssocEdge>
     return this.createConfigurableLoader({}, context);
   }
 
+  private isFunction(
+    edgeCtr: AssocEdgeConstructor<T> | (() => AssocEdgeConstructor<T>),
+  ): edgeCtr is () => AssocEdgeConstructor<T> {
+    // not constructor
+    return !(edgeCtr.prototype && edgeCtr.prototype.constructor === edgeCtr);
+  }
+
   createConfigurableLoader(
     options: EdgeQueryableDataOptions,
     context?: Context,
   ): AssocLoader<T> {
+    let edgeCtr = this.edgeCtr;
+    // in generated code, the edge is not necessarily defined at the time of loading
+    // so we call this as follows:
+    // const loader = new AssocEdgeLoaderFactory(EdgeType.Foo, ()=>DerivedEdgeClass);
+    if (this.isFunction(edgeCtr)) {
+      edgeCtr = edgeCtr();
+    }
+    // rename to make TS happy
+    let ctr: AssocEdgeConstructor<T> = edgeCtr;
+
     // there's a clause which implies there's an offset or something else complicated
     // let's be simple for now and just return a regular Loader that does nothing fancy and hits
     // the db for each query
@@ -193,7 +210,7 @@ export class AssocEdgeLoaderFactory<T extends AssocEdge>
     if (options?.clause || !context) {
       return new AssocDirectEdgeLoader(
         this.edgeType,
-        this.edgeCtr,
+        edgeCtr,
         options,
         context,
       );
@@ -203,7 +220,7 @@ export class AssocEdgeLoaderFactory<T extends AssocEdge>
     const key = `${this.name}:limit:${options.limit}:orderby:${options.orderby}`;
     return getCustomLoader(
       key,
-      () => new AssocEdgeLoader(this.edgeType, this.edgeCtr, options, context),
+      () => new AssocEdgeLoader(this.edgeType, ctr, options, context),
       context,
     ) as AssocEdgeLoader<T>;
   }
