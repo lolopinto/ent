@@ -13,6 +13,7 @@ import {
   Skip,
 } from "./base";
 import { AssocEdge, loadEdgeForID2, loadEnt } from "./ent";
+import { log } from "./logger";
 
 // copied from ./base
 enum privacyResult {
@@ -444,6 +445,10 @@ export async function applyPrivacyPolicy(
   try {
     return await applyPrivacyPolicyX(v, policy, ent);
   } catch (e) {
+    // TODO privacy errors should not throw
+    // but other expected errors should throw...
+    // we shouldn't just hide them
+    log("error", e);
     return false;
   }
 }

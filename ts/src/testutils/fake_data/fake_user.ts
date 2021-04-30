@@ -12,6 +12,8 @@ import {
   AlwaysDenyRule,
   AllowIfViewerInboundEdgeExistsRule,
   AllowIfConditionAppliesRule,
+  AlwaysAllowRule,
+  AlwaysAllowPrivacyPolicy,
 } from "../../core/privacy";
 import { BuilderSchema, SimpleAction } from "../builder";
 import { Field, StringType, BaseEntSchema } from "../../schema";
@@ -81,7 +83,7 @@ export class FakeUser implements Ent {
     this.password = data.password;
   }
 
-  private static getFields(): string[] {
+  static getFields(): string[] {
     return [
       "id",
       "created_at",
@@ -113,10 +115,7 @@ export class FakeUser implements Ent {
       tableName: "fake_users",
       fields: FakeUser.getFields(),
       ent: this,
-      loaderFactory: new ObjectLoaderFactory({
-        tableName: "fake_users",
-        fields: FakeUser.getFields(),
-      }),
+      loaderFactory: userLoader,
     };
   }
   static async load(v: Viewer, id: ID): Promise<FakeUser | null> {
@@ -183,3 +182,29 @@ export async function createUser(viewer: Viewer, input: UserCreateInput) {
   const action = getUserAction(viewer, input);
   return action.saveX();
 }
+
+export const userLoader = new ObjectLoaderFactory({
+  tableName: "fake_users",
+  fields: FakeUser.getFields(),
+});
+
+export const userEmailLoader = new ObjectLoaderFactory({
+  tableName: "fake_users",
+  fields: FakeUser.getFields(),
+  pkey: "email_address",
+});
+
+export const userPhoneNumberLoader = new ObjectLoaderFactory({
+  tableName: "fake_users",
+  fields: FakeUser.getFields(),
+  pkey: "phone_number",
+});
+
+userLoader.addToPrime(userEmailLoader);
+userLoader.addToPrime(userPhoneNumberLoader);
+
+userEmailLoader.addToPrime(userLoader);
+userEmailLoader.addToPrime(userPhoneNumberLoader);
+
+userPhoneNumberLoader.addToPrime(userLoader);
+userPhoneNumberLoader.addToPrime(userEmailLoader);

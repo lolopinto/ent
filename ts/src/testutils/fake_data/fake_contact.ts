@@ -38,7 +38,7 @@ export class FakeContact implements Ent {
     this.userID = data.user_id;
   }
 
-  private static getFields(): string[] {
+  static getFields(): string[] {
     return [
       "id",
       "created_at",
@@ -127,3 +127,8 @@ export async function createContact(viewer: Viewer, input: ContactCreateInput) {
   const builder = getContactBuilder(viewer, input);
   return await builder.saveX();
 }
+
+export const contactLoader = new ObjectLoaderFactory({
+  tableName: "fake_contacts",
+  fields: FakeContact.getFields(),
+});

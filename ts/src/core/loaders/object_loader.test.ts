@@ -1,4 +1,4 @@
-import { ObjectLoader } from "./object_loader";
+import { ObjectLoader, ObjectLoaderFactory } from "./object_loader";
 import { Pool } from "pg";
 import { QueryRecorder } from "../../testutils/db_mock";
 
@@ -9,13 +9,26 @@ import { MockLogs } from "../../testutils/mock_log";
 import { ID } from "../base";
 import { buildQuery } from "../ent";
 import * as clause from "../clause";
+import {
+  createTestUser,
+  createEdges,
+} from "../../testutils/fake_data/test_helpers";
+import {
+  userLoader,
+  userEmailLoader,
+  userPhoneNumberLoader,
+  FakeUser,
+} from "../../testutils/fake_data/";
+
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 
 const ml = new MockLogs();
-beforeAll(() => {
+beforeAll(async () => {
   setLogLevels("query");
   ml.mock();
+
+  await createEdges();
 });
 
 afterEach(() => {
@@ -189,8 +202,226 @@ test("multi-ids. no data. without context", async () => {
   );
 });
 
+describe("primed loaders", () => {
+  test("id first", async () => {
+    const user = await createTestUser();
+    ml.clear();
+
+    const ctx = new TestContext();
+    await userLoader.createLoader(ctx).load(user.id);
+
+    expect(ml.logs.length).toBe(1);
+
+    const expQuery = buildQuery({
+      ...FakeUser.loaderOptions(),
+      clause: clause.In("id", user.id),
+    });
+    expect(ml.logs[0]).toStrictEqual({
+      query: expQuery,
+      values: [user.id],
+    });
+
+    ml.clear();
+
+    await userPhoneNumberLoader.createLoader(ctx).load(user.phoneNumber);
+    expect(ml.logs.length).toBeGreaterThan(1);
+
+    const phoneQuery = buildQuery({
+      ...FakeUser.loaderOptions(),
+      clause: clause.In("phone_number", user.phoneNumber),
+    });
+    // because of the nature of the nodejs event loop, we don't know when the priming will fire
+    // so all we can easily confirm is that this was primed
+    expect(ml.logs).toEqual(
+      expect.arrayContaining([
+        {
+          "dataloader-cache-hit": user.phoneNumber,
+          "tableName": "fake_users",
+        },
+      ]),
+    );
+
+    // confirm phone number query not seen
+    ml.logs.forEach((log) =>
+      expect(log).not.toMatchObject({
+        query: phoneQuery,
+        values: [user.phoneNumber],
+      }),
+    );
+
+    ml.clear();
+
+    await userEmailLoader.createLoader(ctx).load(user.emailAddress);
+    expect(ml.logs.length).toBeGreaterThan(1);
+
+    const emailQuery = buildQuery({
+      ...FakeUser.loaderOptions(),
+      clause: clause.In("email_address", user.emailAddress),
+    });
+    // because of the nature of the nodejs event loop, we don't know when the priming will fire
+    // so all we can easily confirm is that this was primed
+    expect(ml.logs).toEqual(
+      expect.arrayContaining([
+        {
+          "dataloader-cache-hit": user.emailAddress,
+          "tableName": "fake_users",
+        },
+      ]),
+    );
+
+    // confirm email query not seen
+    ml.logs.forEach((log) =>
+      expect(log).not.toMatchObject({
+        query: emailQuery,
+        values: [user.emailAddress],
+      }),
+    );
+  });
+
+  // showing order shouldn't matter
+  test("other key first", async () => {
+    const user = await createTestUser();
+    ml.clear();
+
+    const ctx = new TestContext();
+    await userPhoneNumberLoader.createLoader(ctx).load(user.phoneNumber);
+    expect(ml.logs.length).toBe(1);
+
+    const phoneQuery = buildQuery({
+      ...FakeUser.loaderOptions(),
+      clause: clause.In("phone_number", user.phoneNumber),
+    });
+
+    // confirm phone number query not seen
+    expect(ml.logs[0]).toStrictEqual({
+      query: phoneQuery,
+      values: [user.phoneNumber],
+    });
+
+    ml.clear();
+
+    await userLoader.createLoader(ctx).load(user.id);
+
+    expect(ml.logs.length).toBeGreaterThanOrEqual(1);
+
+    // because of the nature of the nodejs event loop, we don't know when the priming will fire
+    // so all we can easily confirm is that this was primed
+    expect(ml.logs).toEqual(
+      expect.arrayContaining([
+        {
+          "dataloader-cache-hit": user.id,
+          "tableName": "fake_users",
+        },
+      ]),
+    );
+
+    const expQuery = buildQuery({
+      ...FakeUser.loaderOptions(),
+      clause: clause.In("id", user.id),
+    });
+    // confirm id query not seen
+    ml.logs.forEach((log) =>
+      expect(log).not.toMatchObject({
+        query: expQuery,
+        values: [user.id],
+      }),
+    );
+    ml.clear();
+
+    await userEmailLoader.createLoader(ctx).load(user.emailAddress);
+    expect(ml.logs.length).toBeGreaterThan(1);
+
+    const emailQuery = buildQuery({
+      ...FakeUser.loaderOptions(),
+      clause: clause.In("email_address", user.emailAddress),
+    });
+    // because of the nature of the nodejs event loop, we don't know when the priming will fire
+    // so all we can easily confirm is that this was primed
+    expect(ml.logs).toEqual(
+      expect.arrayContaining([
+        {
+          "dataloader-cache-hit": user.emailAddress,
+          "tableName": "fake_users",
+        },
+      ]),
+    );
+
+    // confirm email query not seen
+    ml.logs.forEach((log) =>
+      expect(log).not.toMatchObject({
+        query: emailQuery,
+        values: [user.emailAddress],
+      }),
+    );
+  });
+});
+
+test("not-primed loaders", async () => {
+  const user = await createTestUser();
+  ml.clear();
+
+  const ctx = new TestContext();
+  const newUserLoader = new ObjectLoaderFactory(FakeUser.loaderOptions());
+  const newUserPhoneLoader = new ObjectLoaderFactory({
+    ...FakeUser.loaderOptions(),
+    pkey: "phone_number",
+  });
+  const newUserEmailAddressLoader = new ObjectLoaderFactory({
+    ...FakeUser.loaderOptions(),
+    pkey: "email_address",
+  });
+
+  await newUserLoader.createLoader(ctx).load(user.id);
+
+  expect(ml.logs.length).toBe(1);
+
+  const expQuery = buildQuery({
+    ...FakeUser.loaderOptions(),
+    clause: clause.In("id", user.id),
+  });
+  expect(ml.logs[0]).toStrictEqual({
+    query: expQuery,
+    values: [user.id],
+  });
+
+  ml.clear();
+
+  await newUserPhoneLoader.createLoader(ctx).load(user.phoneNumber);
+  //  console.debug(user.phoneNumber);
+  expect(ml.logs.length).toBe(1);
+
+  const phoneQuery = buildQuery({
+    ...FakeUser.loaderOptions(),
+    clause: clause.In("phone_number", user.phoneNumber),
+  });
+
+  // confirm phone number query seen
+  expect(ml.logs[0]).toStrictEqual({
+    query: phoneQuery,
+    values: [user.phoneNumber],
+  });
+
+  ml.clear();
+
+  await newUserEmailAddressLoader.createLoader(ctx).load(user.emailAddress);
+  expect(ml.logs.length).toEqual(1);
+
+  const emailQuery = buildQuery({
+    ...FakeUser.loaderOptions(),
+    clause: clause.In("email_address", user.emailAddress),
+  });
+
+  expect(ml.logs.length).toBe(1);
+
+  // confirm email query  seen
+  expect(ml.logs[0]).toStrictEqual({
+    query: emailQuery,
+    values: [user.emailAddress],
+  });
+});
+
 async function verifyMultiIDsDataAvail(
-  loaderFn: () => ObjectLoader,
+  loaderFn: () => ObjectLoader<ID>,
   verifyPostFirstQuery: (ids: ID[]) => void,
   verifyPostSecondQuery: (ids: ID[]) => void,
 ) {
@@ -217,7 +448,7 @@ async function verifyMultiIDsDataAvail(
 }
 
 async function verifyMultiIDsNoDataAvail(
-  loaderFn: () => ObjectLoader,
+  loaderFn: () => ObjectLoader<ID>,
   verifyPostFirstQuery: (ids: ID[]) => void,
   verifyPostSecondQuery: (ids: ID[]) => void,
 ) {

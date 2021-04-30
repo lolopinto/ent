@@ -33,6 +33,10 @@ export interface Loader<T, V> {
   // TODO we need a loadMany() API similar to DataLoaer
 }
 
+export interface PrimableLoader<T, V> extends Loader<T, V> {
+  prime(d: Data): void;
+}
+
 interface cache {
   getLoader<T, V>(name: string, create: () => Loader<T, V>): Loader<T, V>;
   getCachedRows(options: queryOptions): Data[] | null;
@@ -130,7 +134,7 @@ export interface EditRowOptions extends DataOptions {
 }
 
 interface LoadableEntOptions<T extends Ent> extends DataOptions {
-  loaderFactory: LoaderFactory<ID, Data>;
+  loaderFactory: LoaderFactory<ID, Data | null>;
   ent: EntConstructor<T>;
 }
 

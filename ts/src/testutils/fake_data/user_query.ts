@@ -20,6 +20,7 @@ import { RawCountLoaderFactory } from "../../core/loaders/raw_count_loader";
 import { AssocEdgeCountLoaderFactory } from "../../core/loaders/assoc_count_loader";
 import { AssocEdgeLoaderFactory } from "../../core/loaders/assoc_edge_loader";
 import { IndexLoaderFactory } from "../../core/loaders/index_loader";
+import { contactLoader } from "./fake_contact";
 
 export class UserToContactsQuery extends AssocEdgeQueryBase<
   FakeUser,
@@ -44,26 +45,25 @@ export class UserToContactsQuery extends AssocEdgeQueryBase<
   }
 }
 
-function getID(src: Ent | ID) {
-  if (typeof src === "object") {
-    return src.id;
-  } else {
-    return src;
-  }
-}
+export const userToContactsCountLoaderFactory = new RawCountLoaderFactory(
+  FakeContact.loaderOptions(),
+  "user_id",
+);
+export const userToContactsDataLoaderFactory = new IndexLoaderFactory(
+  FakeContact.loaderOptions(),
+  "user_id",
+  {
+    toPrime: [contactLoader],
+  },
+);
 
 export class UserToContactsFkeyQuery extends CustomEdgeQueryBase<FakeContact> {
   constructor(viewer: Viewer, src: ID | FakeUser) {
     super(viewer, {
       src,
-      countLoaderFactory: new RawCountLoaderFactory(
-        FakeContact.loaderOptions(),
-        "user_id",
-      ),
-      dataLoaderFactory: new IndexLoaderFactory(
-        FakeContact.loaderOptions(),
-        "user_id",
-      ),
+      // we want to reuse this and not create a new one every time...
+      countLoaderFactory: userToContactsCountLoaderFactory,
+      dataLoaderFactory: userToContactsDataLoaderFactory,
       options: FakeContact.loaderOptions(),
     });
   }
