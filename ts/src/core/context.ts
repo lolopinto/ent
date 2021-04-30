@@ -110,6 +110,8 @@ export class ContextCache {
 
   clearCache(): void {
     for (const [_key, loader] of this.loaders) {
+      // may not need this since we're clearing the loaders themselves...
+      // but may have some benefits by explicitily doing so?
       loader.clearAll();
     }
     this.loaders.clear();
