@@ -21,7 +21,7 @@
 {{$idType := useImport "ID" }}
 {{$dataType := useImport "Data" }}
 {{$loaderName := printf "%sLoader" .NodeInstance }}
-{{$pkgName := .PackageName -}}
+{{$this := .}}
 
 const tableName = "{{.TableName}}";
 const fields =[
@@ -129,7 +129,7 @@ export class {{$baseClass}} {
 
   {{ range $field := .FieldInfo.Fields -}}
     {{ if $field.Unique -}}
-      {{$fieldLoader := printf "%s%sLoader" $pkgName $field.CamelCaseName -}}
+      {{$fieldLoader := $this.GetFieldLoaderName $field -}}
       static async loadFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         viewer: {{$viewerType}},
@@ -164,7 +164,7 @@ export class {{$baseClass}} {
         this: {{$thisType}},
         {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
         context?: {{useImport "Context"}},
-      ): Promise<{{$idType}} | null> {
+      ): Promise<{{$idType}} | undefined> {
         const row = await {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName}});
         return row?.id;
       }
@@ -397,20 +397,22 @@ export class {{$baseClass}} {
   {{end}}
 }
 
-export const {{$loaderName}} = new {{useImport "ObjectLoaderFactory"}}(
-  {fields, tableName},
-);
-{{ range $field := .FieldInfo.Fields -}}
-  {{ if $field.Unique -}}
-  export const {{printf "%s%sLoader" $pkgName $field.CamelCaseName}} = new {{useImport "ObjectLoaderFactory"}}(
-      {
-        fields, 
-        tableName,
-        pkey: {{$field.GetQuotedDBColName}},
-      },
-    );
-  {{ end -}}
+{{range .GetNodeLoaders -}}
+  export const {{.Name}} = new {{useImport "ObjectLoaderFactory"}}({
+    tableName,
+    fields,
+    pkey: {{.Pkey}},
+  });
 
+{{end}}
+
+{{$loaders := .GetNodeLoaders -}}
+{{ range $loader := $loaders -}}
+  {{ range $loader2 := $loaders -}}
+    {{if ne $loader.Name $loader2.Name -}}
+      {{$loader.Name}}.addToPrime({{$loader2.Name}});
+    {{end -}}
+  {{end -}}
 {{end -}}
 
 {{end -}}

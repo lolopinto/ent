@@ -18,10 +18,35 @@
   {{$node := useImport .Node}}
 
   {{range $edge := .EdgeInfo.Associations}}
+    {{$edgeType := printf "%s.%s" (useImport "EdgeType") $edge.TsEdgeConst -}}
+    {{ reserveImport $importPath $edge.TsEdgeQueryEdgeName -}}
+    {{$edgeName := useImport $edge.TsEdgeQueryEdgeName -}}
+    export const {{$edge.GetCountFactoryName}} = new {{useImport "AssocEdgeCountLoaderFactory"}}(
+      {{$edgeType}},
+    );
+    export const {{$edge.GetDataFactoryName}} = new {{useImport "AssocEdgeLoaderFactory"}}(
+      {{$edgeType}},
+      () => {{$edgeName}},
+    );
+
+  {{end -}}
+
+  {{range $edge := .EdgeInfo.ForeignKeys -}}
+    {{$node := useImport $edge.NodeInfo.Node -}}
+      export const {{$edge.GetCountFactoryName}} = new {{useImport "RawCountLoaderFactory"}}(
+        {{$node}}.loaderOptions(),
+        {{$edge.QuotedDBColName}},
+      );
+      export const {{$edge.GetDataFactoryName}} = new {{useImport "IndexLoaderFactory"}}(
+        {{$node}}.loaderOptions(),
+        {{$edge.QuotedDBColName}},
+      );
+  {{end -}}
+
+  {{range $edge := .EdgeInfo.Associations}}
     {{$name := printf "%sBase" $edge.TsEdgeQueryName -}}
     {{ reserveImport $importPath $edge.TsEdgeQueryEdgeName -}}
     {{$edgeName := useImport $edge.TsEdgeQueryEdgeName -}}
-    {{$edgeType := printf "%s.%s" (useImport "EdgeType") $edge.TsEdgeConst -}}
     {{$thisType := printf "new (viewer: Viewer, src: EdgeQuerySource<%s>) => T" $node }}
 
   export class {{$name}} extends {{useImport "AssocEdgeQueryBase"}}<{{$node}}, {{useImport .NodeInfo.Node}}, {{$edgeName}}> {
@@ -29,13 +54,8 @@
       super(
         viewer, 
         src, 
-        new {{useImport "AssocEdgeCountLoaderFactory"}}(
-          {{$edgeType}},
-        ),
-        new {{useImport "AssocEdgeLoaderFactory"}}(
-          {{$edgeType}},
-          {{$edgeName}},
-        ),
+        {{$edge.GetCountFactoryName}},
+        {{$edge.GetDataFactoryName}},
         {{useImport .NodeInfo.Node}}.loaderOptions(),
       );
     }
@@ -67,22 +87,10 @@
 
     export class {{$name}} extends {{useImport "CustomEdgeQueryBase"}}<{{$node}}> {
       constructor(viewer: {{useImport "Viewer"}}, src: {{$srcNode}} | {{useImport "ID"}}) {
-        let id: {{useImport "ID"}};
-        if (typeof src === "object") {
-          id = src.id;
-        } else {
-          id = src;
-        }
         super(viewer, {
           src: src, 
-          countLoaderFactory: new {{useImport "RawCountLoaderFactory"}}(
-            {{$node}}.loaderOptions(),
-            {{$edge.QuotedDBColName}},
-          ),
-          dataLoaderFactory: new {{useImport "IndexLoaderFactory"}}(
-            {{$node}}.loaderOptions(),
-            {{$edge.QuotedDBColName}},
-          ),
+          countLoaderFactory: {{$edge.GetCountFactoryName}},
+          dataLoaderFactory: {{$edge.GetDataFactoryName}},
           options:{{$node}}.loaderOptions(), 
         });
       }

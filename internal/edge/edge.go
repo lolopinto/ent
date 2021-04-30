@@ -323,6 +323,18 @@ func (e *ForeignKeyEdge) GetGraphQLEdgePrefix() string {
 	return fmt.Sprintf("%sTo%s", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
 }
 
+func (e *ForeignKeyEdge) tsEdgeConst() string {
+	return fmt.Sprintf("%sTo%s", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
+}
+
+func (e *ForeignKeyEdge) GetCountFactoryName() string {
+	return strcase.ToLowerCamel(fmt.Sprintf("%sCountLoaderFactory", e.tsEdgeConst()))
+}
+
+func (e *ForeignKeyEdge) GetDataFactoryName() string {
+	return strcase.ToLowerCamel(fmt.Sprintf("%sDataLoaderFactory", e.tsEdgeConst()))
+}
+
 var _ Edge = &ForeignKeyEdge{}
 var _ PluralEdge = &ForeignKeyEdge{}
 var _ ConnectionEdge = &ForeignKeyEdge{}
@@ -493,6 +505,14 @@ func (e *AssociationEdge) CloneWithCommonInfo(configName string) *AssociationEdg
 			schemaparser.GetEntConfigFromEntConfig(configName),
 		),
 	}
+}
+
+func (e *AssociationEdge) GetCountFactoryName() string {
+	return strcase.ToLowerCamel(fmt.Sprintf("%sCountLoaderFactory", e.TsEdgeConst()))
+}
+
+func (e *AssociationEdge) GetDataFactoryName() string {
+	return strcase.ToLowerCamel(fmt.Sprintf("%sDataLoaderFactory", e.TsEdgeConst()))
 }
 
 var _ Edge = &AssociationEdge{}
