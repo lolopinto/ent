@@ -8,20 +8,26 @@ import {
   loadEntX,
   loadEnts,
   LoadEntOptions,
-  loadEntFromClause,
-  loadEntXFromClause,
-  loadRow,
-  loadRowX,
   AlwaysDenyRule,
   AllowIfViewerRule,
   PrivacyPolicy,
-  query,
+  ObjectLoaderFactory,
+  Context,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import { NodeType, Guest } from "src/ent/internal";
 import schema from "src/schema/auth_code";
 
 const tableName = "auth_codes";
+const fields = [
+  "id",
+  "created_at",
+  "updated_at",
+  "code",
+  "guest_id",
+  "email_address",
+  "sent_code",
+];
 
 export class AuthCodeBase {
   readonly nodeType = NodeType.AuthCode;
@@ -79,21 +85,21 @@ export class AuthCodeBase {
   static async loadRawData<T extends AuthCodeBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data | null> {
-    return await loadRow({
-      ...AuthCodeBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    return await authCodeLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends AuthCodeBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data> {
-    return await loadRowX({
-      ...AuthCodeBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    const row = await authCodeLoader.createLoader(context).load(id);
+    if (!row) {
+      throw new Error(`couldn't load row for ${id}`);
+    }
+    return row;
   }
 
   static async loadFromGuestID<T extends AuthCodeBase>(
@@ -101,11 +107,10 @@ export class AuthCodeBase {
     viewer: Viewer,
     guestID: ID,
   ): Promise<T | null> {
-    return loadEntFromClause(
-      viewer,
-      AuthCodeBase.loaderOptions.apply(this),
-      query.Eq("guest_id", guestID),
-    );
+    return loadEnt(viewer, guestID, {
+      ...AuthCodeBase.loaderOptions.apply(this),
+      loaderFactory: authCodeGuestIDLoader,
+    });
   }
 
   static async loadFromGuestIDX<T extends AuthCodeBase>(
@@ -113,35 +118,27 @@ export class AuthCodeBase {
     viewer: Viewer,
     guestID: ID,
   ): Promise<T> {
-    return loadEntXFromClause(
-      viewer,
-      AuthCodeBase.loaderOptions.apply(this),
-      query.Eq("guest_id", guestID),
-    );
+    return loadEntX(viewer, guestID, {
+      ...AuthCodeBase.loaderOptions.apply(this),
+      loaderFactory: authCodeGuestIDLoader,
+    });
   }
 
   static async loadIDFromGuestID<T extends AuthCodeBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     guestID: ID,
-  ): Promise<ID | null> {
-    const row = await loadRow({
-      ...AuthCodeBase.loaderOptions.apply(this),
-      clause: query.Eq("guest_id", guestID),
-    });
-    if (!row) {
-      return null;
-    }
-    return row["id"];
+    context?: Context,
+  ): Promise<ID | undefined> {
+    const row = await authCodeGuestIDLoader.createLoader(context).load(guestID);
+    return row?.id;
   }
 
   static async loadRawDataFromGuestID<T extends AuthCodeBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     guestID: ID,
+    context?: Context,
   ): Promise<Data | null> {
-    return await loadRow({
-      ...AuthCodeBase.loaderOptions.apply(this),
-      clause: query.Eq("guest_id", guestID),
-    });
+    return await authCodeGuestIDLoader.createLoader(context).load(guestID);
   }
 
   static loaderOptions<T extends AuthCodeBase>(
@@ -149,21 +146,10 @@ export class AuthCodeBase {
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
-      fields: AuthCodeBase.getFields(),
+      fields: fields,
       ent: this,
+      loaderFactory: authCodeLoader,
     };
-  }
-
-  private static getFields(): string[] {
-    return [
-      "id",
-      "created_at",
-      "updated_at",
-      "code",
-      "guest_id",
-      "email_address",
-      "sent_code",
-    ];
   }
 
   private static schemaFields: Map<string, Field>;
@@ -187,3 +173,18 @@ export class AuthCodeBase {
     return loadEntX(this.viewer, this.guestID, Guest.loaderOptions());
   }
 }
+
+export const authCodeLoader = new ObjectLoaderFactory({
+  tableName,
+  fields,
+  pkey: "id",
+});
+
+export const authCodeGuestIDLoader = new ObjectLoaderFactory({
+  tableName,
+  fields,
+  pkey: "guest_id",
+});
+
+authCodeLoader.addToPrime(authCodeGuestIDLoader);
+authCodeGuestIDLoader.addToPrime(authCodeLoader);

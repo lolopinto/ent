@@ -3,7 +3,7 @@ import {
   expectQueryFromRoot,
 } from "@lolopinto/ent-graphql-tests";
 import { Event } from "src/ent";
-import { DB, ID } from "@lolopinto/ent";
+import { DB, ID, setLogLevels, loadConfig } from "@lolopinto/ent";
 import schema from "src/graphql/schema";
 import { encodeGQLID, mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { createUser } from "src/testutils";
@@ -11,6 +11,10 @@ import DeleteEventAction from "src/ent/event/actions/delete_event_action";
 
 afterAll(async () => {
   await DB.getInstance().endPool();
+});
+
+afterEach(() => {
+  loadConfig(Buffer.from(`log: error`));
 });
 
 test("create event", async () => {

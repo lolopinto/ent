@@ -18,8 +18,44 @@ import {
   EdgeQuerySource,
   AssocEdgeQueryBase,
   CustomEdgeQueryBase,
-  query,
+  RawCountLoaderFactory,
+  AssocEdgeCountLoaderFactory,
+  AssocEdgeLoaderFactory,
+  IndexLoaderFactory,
 } from "@lolopinto/ent";
+
+export const guestToAttendingEventsCountLoaderFactory = new AssocEdgeCountLoaderFactory(
+  EdgeType.GuestToAttendingEvents,
+);
+export const guestToAttendingEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.GuestToAttendingEvents,
+  () => GuestToAttendingEventsEdge,
+);
+
+export const guestToDeclinedEventsCountLoaderFactory = new AssocEdgeCountLoaderFactory(
+  EdgeType.GuestToDeclinedEvents,
+);
+export const guestToDeclinedEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.GuestToDeclinedEvents,
+  () => GuestToDeclinedEventsEdge,
+);
+
+export const guestToAuthCodesCountLoaderFactory = new RawCountLoaderFactory(
+  AuthCode.loaderOptions(),
+  "guest_id",
+);
+export const guestToAuthCodesDataLoaderFactory = new IndexLoaderFactory(
+  AuthCode.loaderOptions(),
+  "guest_id",
+);
+export const guestToGuestDataCountLoaderFactory = new RawCountLoaderFactory(
+  GuestData.loaderOptions(),
+  "guest_id",
+);
+export const guestToGuestDataDataLoaderFactory = new IndexLoaderFactory(
+  GuestData.loaderOptions(),
+  "guest_id",
+);
 
 export class GuestToAttendingEventsQueryBase extends AssocEdgeQueryBase<
   Guest,
@@ -30,9 +66,9 @@ export class GuestToAttendingEventsQueryBase extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.GuestToAttendingEvents,
+      guestToAttendingEventsCountLoaderFactory,
+      guestToAttendingEventsDataLoaderFactory,
       EventActivity.loaderOptions(),
-      GuestToAttendingEventsEdge,
     );
   }
 
@@ -66,9 +102,9 @@ export class GuestToDeclinedEventsQueryBase extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.GuestToDeclinedEvents,
+      guestToDeclinedEventsCountLoaderFactory,
+      guestToDeclinedEventsDataLoaderFactory,
       EventActivity.loaderOptions(),
-      GuestToDeclinedEventsEdge,
     );
   }
 
@@ -95,13 +131,12 @@ export class GuestToDeclinedEventsQueryBase extends AssocEdgeQueryBase<
 
 export class GuestToAuthCodesQueryBase extends CustomEdgeQueryBase<AuthCode> {
   constructor(viewer: Viewer, src: Guest | ID) {
-    let id: ID;
-    if (typeof src === "object") {
-      id = src.id;
-    } else {
-      id = src;
-    }
-    super(viewer, src, AuthCode.loaderOptions(), query.Eq("guest_id", id));
+    super(viewer, {
+      src: src,
+      countLoaderFactory: guestToAuthCodesCountLoaderFactory,
+      dataLoaderFactory: guestToAuthCodesDataLoaderFactory,
+      options: AuthCode.loaderOptions(),
+    });
   }
 
   static query<T extends GuestToAuthCodesQueryBase>(
@@ -115,13 +150,12 @@ export class GuestToAuthCodesQueryBase extends CustomEdgeQueryBase<AuthCode> {
 
 export class GuestToGuestDataQueryBase extends CustomEdgeQueryBase<GuestData> {
   constructor(viewer: Viewer, src: Guest | ID) {
-    let id: ID;
-    if (typeof src === "object") {
-      id = src.id;
-    } else {
-      id = src;
-    }
-    super(viewer, src, GuestData.loaderOptions(), query.Eq("guest_id", id));
+    super(viewer, {
+      src: src,
+      countLoaderFactory: guestToGuestDataCountLoaderFactory,
+      dataLoaderFactory: guestToGuestDataDataLoaderFactory,
+      options: GuestData.loaderOptions(),
+    });
   }
 
   static query<T extends GuestToGuestDataQueryBase>(

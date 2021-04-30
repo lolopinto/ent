@@ -8,14 +8,11 @@ import {
   loadEntX,
   loadEnts,
   LoadEntOptions,
-  loadEntFromClause,
-  loadEntXFromClause,
-  loadRow,
-  loadRowX,
   AlwaysDenyRule,
   AllowIfViewerRule,
   PrivacyPolicy,
-  query,
+  ObjectLoaderFactory,
+  Context,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import {
@@ -29,6 +26,7 @@ import {
 import schema from "src/schema/event";
 
 const tableName = "events";
+const fields = ["id", "created_at", "updated_at", "name", "slug", "creator_id"];
 
 export class EventBase {
   readonly nodeType = NodeType.Event;
@@ -84,21 +82,21 @@ export class EventBase {
   static async loadRawData<T extends EventBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data | null> {
-    return await loadRow({
-      ...EventBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    return await eventLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends EventBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data> {
-    return await loadRowX({
-      ...EventBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    const row = await eventLoader.createLoader(context).load(id);
+    if (!row) {
+      throw new Error(`couldn't load row for ${id}`);
+    }
+    return row;
   }
 
   static async loadFromSlug<T extends EventBase>(
@@ -106,11 +104,10 @@ export class EventBase {
     viewer: Viewer,
     slug: string,
   ): Promise<T | null> {
-    return loadEntFromClause(
-      viewer,
-      EventBase.loaderOptions.apply(this),
-      query.Eq("slug", slug),
-    );
+    return loadEnt(viewer, slug, {
+      ...EventBase.loaderOptions.apply(this),
+      loaderFactory: eventSlugLoader,
+    });
   }
 
   static async loadFromSlugX<T extends EventBase>(
@@ -118,35 +115,27 @@ export class EventBase {
     viewer: Viewer,
     slug: string,
   ): Promise<T> {
-    return loadEntXFromClause(
-      viewer,
-      EventBase.loaderOptions.apply(this),
-      query.Eq("slug", slug),
-    );
+    return loadEntX(viewer, slug, {
+      ...EventBase.loaderOptions.apply(this),
+      loaderFactory: eventSlugLoader,
+    });
   }
 
   static async loadIDFromSlug<T extends EventBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     slug: string,
-  ): Promise<ID | null> {
-    const row = await loadRow({
-      ...EventBase.loaderOptions.apply(this),
-      clause: query.Eq("slug", slug),
-    });
-    if (!row) {
-      return null;
-    }
-    return row["id"];
+    context?: Context,
+  ): Promise<ID | undefined> {
+    const row = await eventSlugLoader.createLoader(context).load(slug);
+    return row?.id;
   }
 
   static async loadRawDataFromSlug<T extends EventBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     slug: string,
+    context?: Context,
   ): Promise<Data | null> {
-    return await loadRow({
-      ...EventBase.loaderOptions.apply(this),
-      clause: query.Eq("slug", slug),
-    });
+    return await eventSlugLoader.createLoader(context).load(slug);
   }
 
   static loaderOptions<T extends EventBase>(
@@ -154,13 +143,10 @@ export class EventBase {
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
-      fields: EventBase.getFields(),
+      fields: fields,
       ent: this,
+      loaderFactory: eventLoader,
     };
-  }
-
-  private static getFields(): string[] {
-    return ["id", "created_at", "updated_at", "name", "slug", "creator_id"];
   }
 
   private static schemaFields: Map<string, Field>;
@@ -200,3 +186,18 @@ export class EventBase {
     return loadEntX(this.viewer, this.creatorID, User.loaderOptions());
   }
 }
+
+export const eventLoader = new ObjectLoaderFactory({
+  tableName,
+  fields,
+  pkey: "id",
+});
+
+export const eventSlugLoader = new ObjectLoaderFactory({
+  tableName,
+  fields,
+  pkey: "slug",
+});
+
+eventLoader.addToPrime(eventSlugLoader);
+eventSlugLoader.addToPrime(eventLoader);

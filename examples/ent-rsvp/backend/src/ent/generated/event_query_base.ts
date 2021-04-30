@@ -7,19 +7,57 @@ import {
   GuestGroup,
   Guest,
 } from "src/ent/internal";
-import { ID, Viewer, CustomEdgeQueryBase, query } from "@lolopinto/ent";
+import {
+  ID,
+  Viewer,
+  CustomEdgeQueryBase,
+  RawCountLoaderFactory,
+  IndexLoaderFactory,
+} from "@lolopinto/ent";
+
+export const eventToEventActivitiesCountLoaderFactory = new RawCountLoaderFactory(
+  EventActivity.loaderOptions(),
+  "event_id",
+);
+export const eventToEventActivitiesDataLoaderFactory = new IndexLoaderFactory(
+  EventActivity.loaderOptions(),
+  "event_id",
+);
+export const eventToGuestDataCountLoaderFactory = new RawCountLoaderFactory(
+  GuestData.loaderOptions(),
+  "event_id",
+);
+export const eventToGuestDataDataLoaderFactory = new IndexLoaderFactory(
+  GuestData.loaderOptions(),
+  "event_id",
+);
+export const eventToGuestGroupsCountLoaderFactory = new RawCountLoaderFactory(
+  GuestGroup.loaderOptions(),
+  "event_id",
+);
+export const eventToGuestGroupsDataLoaderFactory = new IndexLoaderFactory(
+  GuestGroup.loaderOptions(),
+  "event_id",
+);
+export const eventToGuestsCountLoaderFactory = new RawCountLoaderFactory(
+  Guest.loaderOptions(),
+  "event_id",
+);
+export const eventToGuestsDataLoaderFactory = new IndexLoaderFactory(
+  Guest.loaderOptions(),
+  "event_id",
+);
 
 export class EventToEventActivitiesQueryBase extends CustomEdgeQueryBase<
   EventActivity
 > {
   constructor(viewer: Viewer, src: Event | ID) {
-    let id: ID;
-    if (typeof src === "object") {
-      id = src.id;
-    } else {
-      id = src;
-    }
-    super(viewer, src, EventActivity.loaderOptions(), query.Eq("event_id", id));
+    super(viewer, {
+      src: src,
+      countLoaderFactory: eventToEventActivitiesCountLoaderFactory,
+      dataLoaderFactory: eventToEventActivitiesDataLoaderFactory,
+      options: EventActivity.loaderOptions(),
+    });
   }
 
   static query<T extends EventToEventActivitiesQueryBase>(
@@ -33,13 +71,12 @@ export class EventToEventActivitiesQueryBase extends CustomEdgeQueryBase<
 
 export class EventToGuestDataQueryBase extends CustomEdgeQueryBase<GuestData> {
   constructor(viewer: Viewer, src: Event | ID) {
-    let id: ID;
-    if (typeof src === "object") {
-      id = src.id;
-    } else {
-      id = src;
-    }
-    super(viewer, src, GuestData.loaderOptions(), query.Eq("event_id", id));
+    super(viewer, {
+      src: src,
+      countLoaderFactory: eventToGuestDataCountLoaderFactory,
+      dataLoaderFactory: eventToGuestDataDataLoaderFactory,
+      options: GuestData.loaderOptions(),
+    });
   }
 
   static query<T extends EventToGuestDataQueryBase>(
@@ -55,13 +92,12 @@ export class EventToGuestGroupsQueryBase extends CustomEdgeQueryBase<
   GuestGroup
 > {
   constructor(viewer: Viewer, src: Event | ID) {
-    let id: ID;
-    if (typeof src === "object") {
-      id = src.id;
-    } else {
-      id = src;
-    }
-    super(viewer, src, GuestGroup.loaderOptions(), query.Eq("event_id", id));
+    super(viewer, {
+      src: src,
+      countLoaderFactory: eventToGuestGroupsCountLoaderFactory,
+      dataLoaderFactory: eventToGuestGroupsDataLoaderFactory,
+      options: GuestGroup.loaderOptions(),
+    });
   }
 
   static query<T extends EventToGuestGroupsQueryBase>(
@@ -75,13 +111,12 @@ export class EventToGuestGroupsQueryBase extends CustomEdgeQueryBase<
 
 export class EventToGuestsQueryBase extends CustomEdgeQueryBase<Guest> {
   constructor(viewer: Viewer, src: Event | ID) {
-    let id: ID;
-    if (typeof src === "object") {
-      id = src.id;
-    } else {
-      id = src;
-    }
-    super(viewer, src, Guest.loaderOptions(), query.Eq("event_id", id));
+    super(viewer, {
+      src: src,
+      countLoaderFactory: eventToGuestsCountLoaderFactory,
+      dataLoaderFactory: eventToGuestsDataLoaderFactory,
+      options: Guest.loaderOptions(),
+    });
   }
 
   static query<T extends EventToGuestsQueryBase>(

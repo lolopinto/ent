@@ -49,7 +49,7 @@ export class GuestBuilder implements Builder<Guest> {
       viewer: viewer,
       operation: this.operation,
       tableName: "guests",
-      ent: Guest,
+      loaderOptions: Guest.loaderOptions(),
       builder: this,
       action: action,
       schema: schema,

@@ -8,18 +8,25 @@ import {
   loadEntX,
   loadEnts,
   LoadEntOptions,
-  loadRow,
-  loadRowX,
   AlwaysDenyRule,
   AllowIfViewerRule,
   PrivacyPolicy,
-  query,
+  ObjectLoaderFactory,
+  Context,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import { NodeType, Event, Guest } from "src/ent/internal";
 import schema from "src/schema/guest_data";
 
 const tableName = "guest_data";
+const fields = [
+  "id",
+  "created_at",
+  "updated_at",
+  "guest_id",
+  "event_id",
+  "dietary_restrictions",
+];
 
 export class GuestDataBase {
   readonly nodeType = NodeType.GuestData;
@@ -75,21 +82,21 @@ export class GuestDataBase {
   static async loadRawData<T extends GuestDataBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data | null> {
-    return await loadRow({
-      ...GuestDataBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    return await guestDataLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends GuestDataBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data> {
-    return await loadRowX({
-      ...GuestDataBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    const row = await guestDataLoader.createLoader(context).load(id);
+    if (!row) {
+      throw new Error(`couldn't load row for ${id}`);
+    }
+    return row;
   }
 
   static loaderOptions<T extends GuestDataBase>(
@@ -97,20 +104,10 @@ export class GuestDataBase {
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
-      fields: GuestDataBase.getFields(),
+      fields: fields,
       ent: this,
+      loaderFactory: guestDataLoader,
     };
-  }
-
-  private static getFields(): string[] {
-    return [
-      "id",
-      "created_at",
-      "updated_at",
-      "guest_id",
-      "event_id",
-      "dietary_restrictions",
-    ];
   }
 
   private static schemaFields: Map<string, Field>;
@@ -142,3 +139,9 @@ export class GuestDataBase {
     return loadEntX(this.viewer, this.guestID, Guest.loaderOptions());
   }
 }
+
+export const guestDataLoader = new ObjectLoaderFactory({
+  tableName,
+  fields,
+  pkey: "id",
+});

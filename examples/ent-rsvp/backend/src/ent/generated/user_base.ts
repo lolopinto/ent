@@ -8,20 +8,26 @@ import {
   loadEntX,
   loadEnts,
   LoadEntOptions,
-  loadEntFromClause,
-  loadEntXFromClause,
-  loadRow,
-  loadRowX,
   AlwaysDenyRule,
   AllowIfViewerRule,
   PrivacyPolicy,
-  query,
+  ObjectLoaderFactory,
+  Context,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import { NodeType, UserToEventsQuery } from "src/ent/internal";
 import schema from "src/schema/user";
 
 const tableName = "users";
+const fields = [
+  "id",
+  "created_at",
+  "updated_at",
+  "first_name",
+  "last_name",
+  "email_address",
+  "password",
+];
 
 export class UserBase {
   readonly nodeType = NodeType.User;
@@ -79,21 +85,21 @@ export class UserBase {
   static async loadRawData<T extends UserBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data | null> {
-    return await loadRow({
-      ...UserBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    return await userLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends UserBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data> {
-    return await loadRowX({
-      ...UserBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    const row = await userLoader.createLoader(context).load(id);
+    if (!row) {
+      throw new Error(`couldn't load row for ${id}`);
+    }
+    return row;
   }
 
   static async loadFromEmailAddress<T extends UserBase>(
@@ -101,11 +107,10 @@ export class UserBase {
     viewer: Viewer,
     emailAddress: string,
   ): Promise<T | null> {
-    return loadEntFromClause(
-      viewer,
-      UserBase.loaderOptions.apply(this),
-      query.Eq("email_address", emailAddress),
-    );
+    return loadEnt(viewer, emailAddress, {
+      ...UserBase.loaderOptions.apply(this),
+      loaderFactory: userEmailAddressLoader,
+    });
   }
 
   static async loadFromEmailAddressX<T extends UserBase>(
@@ -113,35 +118,31 @@ export class UserBase {
     viewer: Viewer,
     emailAddress: string,
   ): Promise<T> {
-    return loadEntXFromClause(
-      viewer,
-      UserBase.loaderOptions.apply(this),
-      query.Eq("email_address", emailAddress),
-    );
+    return loadEntX(viewer, emailAddress, {
+      ...UserBase.loaderOptions.apply(this),
+      loaderFactory: userEmailAddressLoader,
+    });
   }
 
   static async loadIDFromEmailAddress<T extends UserBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     emailAddress: string,
-  ): Promise<ID | null> {
-    const row = await loadRow({
-      ...UserBase.loaderOptions.apply(this),
-      clause: query.Eq("email_address", emailAddress),
-    });
-    if (!row) {
-      return null;
-    }
-    return row["id"];
+    context?: Context,
+  ): Promise<ID | undefined> {
+    const row = await userEmailAddressLoader
+      .createLoader(context)
+      .load(emailAddress);
+    return row?.id;
   }
 
   static async loadRawDataFromEmailAddress<T extends UserBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     emailAddress: string,
+    context?: Context,
   ): Promise<Data | null> {
-    return await loadRow({
-      ...UserBase.loaderOptions.apply(this),
-      clause: query.Eq("email_address", emailAddress),
-    });
+    return await userEmailAddressLoader
+      .createLoader(context)
+      .load(emailAddress);
   }
 
   static loaderOptions<T extends UserBase>(
@@ -149,21 +150,10 @@ export class UserBase {
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
-      fields: UserBase.getFields(),
+      fields: fields,
       ent: this,
+      loaderFactory: userLoader,
     };
-  }
-
-  private static getFields(): string[] {
-    return [
-      "id",
-      "created_at",
-      "updated_at",
-      "first_name",
-      "last_name",
-      "email_address",
-      "password",
-    ];
   }
 
   private static schemaFields: Map<string, Field>;
@@ -183,3 +173,18 @@ export class UserBase {
     return UserToEventsQuery.query(this.viewer, this.id);
   }
 }
+
+export const userLoader = new ObjectLoaderFactory({
+  tableName,
+  fields,
+  pkey: "id",
+});
+
+export const userEmailAddressLoader = new ObjectLoaderFactory({
+  tableName,
+  fields,
+  pkey: "email_address",
+});
+
+userLoader.addToPrime(userEmailAddressLoader);
+userEmailAddressLoader.addToPrime(userLoader);

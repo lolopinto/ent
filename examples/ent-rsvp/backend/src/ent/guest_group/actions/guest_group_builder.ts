@@ -46,7 +46,7 @@ export class GuestGroupBuilder implements Builder<GuestGroup> {
       viewer: viewer,
       operation: this.operation,
       tableName: "guest_groups",
-      ent: GuestGroup,
+      loaderOptions: GuestGroup.loaderOptions(),
       builder: this,
       action: action,
       schema: schema,

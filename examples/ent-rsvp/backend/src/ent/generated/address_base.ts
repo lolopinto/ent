@@ -8,15 +8,12 @@ import {
   loadEntX,
   loadEnts,
   LoadEntOptions,
-  loadEntFromClause,
-  loadEntXFromClause,
-  loadRow,
-  loadRowX,
   AlwaysDenyRule,
   AllowIfViewerRule,
   PrivacyPolicy,
-  query,
   Ent,
+  ObjectLoaderFactory,
+  Context,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import { NodeType } from "src/ent/internal";
@@ -24,6 +21,18 @@ import { loadEntByType, loadEntXByType } from "src/ent/loadAny";
 import schema from "src/schema/address";
 
 const tableName = "addresses";
+const fields = [
+  "id",
+  "created_at",
+  "updated_at",
+  "street",
+  "city",
+  "state",
+  "zip_code",
+  "apartment",
+  "owner_id",
+  "owner_type",
+];
 
 export class AddressBase {
   readonly nodeType = NodeType.Address;
@@ -87,21 +96,21 @@ export class AddressBase {
   static async loadRawData<T extends AddressBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data | null> {
-    return await loadRow({
-      ...AddressBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    return await addressLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends AddressBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data> {
-    return await loadRowX({
-      ...AddressBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    const row = await addressLoader.createLoader(context).load(id);
+    if (!row) {
+      throw new Error(`couldn't load row for ${id}`);
+    }
+    return row;
   }
 
   static async loadFromOwnerID<T extends AddressBase>(
@@ -109,11 +118,10 @@ export class AddressBase {
     viewer: Viewer,
     ownerID: ID,
   ): Promise<T | null> {
-    return loadEntFromClause(
-      viewer,
-      AddressBase.loaderOptions.apply(this),
-      query.Eq("owner_id", ownerID),
-    );
+    return loadEnt(viewer, ownerID, {
+      ...AddressBase.loaderOptions.apply(this),
+      loaderFactory: addressOwnerIDLoader,
+    });
   }
 
   static async loadFromOwnerIDX<T extends AddressBase>(
@@ -121,35 +129,27 @@ export class AddressBase {
     viewer: Viewer,
     ownerID: ID,
   ): Promise<T> {
-    return loadEntXFromClause(
-      viewer,
-      AddressBase.loaderOptions.apply(this),
-      query.Eq("owner_id", ownerID),
-    );
+    return loadEntX(viewer, ownerID, {
+      ...AddressBase.loaderOptions.apply(this),
+      loaderFactory: addressOwnerIDLoader,
+    });
   }
 
   static async loadIDFromOwnerID<T extends AddressBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     ownerID: ID,
-  ): Promise<ID | null> {
-    const row = await loadRow({
-      ...AddressBase.loaderOptions.apply(this),
-      clause: query.Eq("owner_id", ownerID),
-    });
-    if (!row) {
-      return null;
-    }
-    return row["id"];
+    context?: Context,
+  ): Promise<ID | undefined> {
+    const row = await addressOwnerIDLoader.createLoader(context).load(ownerID);
+    return row?.id;
   }
 
   static async loadRawDataFromOwnerID<T extends AddressBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     ownerID: ID,
+    context?: Context,
   ): Promise<Data | null> {
-    return await loadRow({
-      ...AddressBase.loaderOptions.apply(this),
-      clause: query.Eq("owner_id", ownerID),
-    });
+    return await addressOwnerIDLoader.createLoader(context).load(ownerID);
   }
 
   static loaderOptions<T extends AddressBase>(
@@ -157,24 +157,10 @@ export class AddressBase {
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
-      fields: AddressBase.getFields(),
+      fields: fields,
       ent: this,
+      loaderFactory: addressLoader,
     };
-  }
-
-  private static getFields(): string[] {
-    return [
-      "id",
-      "created_at",
-      "updated_at",
-      "street",
-      "city",
-      "state",
-      "zip_code",
-      "apartment",
-      "owner_id",
-      "owner_type",
-    ];
   }
 
   private static schemaFields: Map<string, Field>;
@@ -206,3 +192,18 @@ export class AddressBase {
     );
   }
 }
+
+export const addressLoader = new ObjectLoaderFactory({
+  tableName,
+  fields,
+  pkey: "id",
+});
+
+export const addressOwnerIDLoader = new ObjectLoaderFactory({
+  tableName,
+  fields,
+  pkey: "owner_id",
+});
+
+addressLoader.addToPrime(addressOwnerIDLoader);
+addressOwnerIDLoader.addToPrime(addressLoader);

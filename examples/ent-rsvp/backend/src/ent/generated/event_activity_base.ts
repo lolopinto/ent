@@ -9,13 +9,12 @@ import {
   loadEnts,
   LoadEntOptions,
   AssocEdge,
-  loadRow,
-  loadRowX,
   AlwaysDenyRule,
   AllowIfViewerRule,
   PrivacyPolicy,
-  query,
   getEdgeTypeInGroup,
+  ObjectLoaderFactory,
+  Context,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import {
@@ -29,6 +28,18 @@ import {
 import schema from "src/schema/event_activity";
 
 const tableName = "event_activities";
+const fields = [
+  "id",
+  "created_at",
+  "updated_at",
+  "name",
+  "event_id",
+  "start_time",
+  "end_time",
+  "location",
+  "description",
+  "invite_all_guests",
+];
 
 export enum EventActivityRsvpStatus {
   Attending = "attending",
@@ -112,21 +123,21 @@ export class EventActivityBase {
   static async loadRawData<T extends EventActivityBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data | null> {
-    return await loadRow({
-      ...EventActivityBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    return await eventActivityLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends EventActivityBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data> {
-    return await loadRowX({
-      ...EventActivityBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    const row = await eventActivityLoader.createLoader(context).load(id);
+    if (!row) {
+      throw new Error(`couldn't load row for ${id}`);
+    }
+    return row;
   }
 
   static loaderOptions<T extends EventActivityBase>(
@@ -134,24 +145,10 @@ export class EventActivityBase {
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
-      fields: EventActivityBase.getFields(),
+      fields: fields,
       ent: this,
+      loaderFactory: eventActivityLoader,
     };
-  }
-
-  private static getFields(): string[] {
-    return [
-      "id",
-      "created_at",
-      "updated_at",
-      "name",
-      "event_id",
-      "start_time",
-      "end_time",
-      "location",
-      "description",
-      "invite_all_guests",
-    ];
   }
 
   private static schemaFields: Map<string, Field>;
@@ -216,3 +213,9 @@ export class EventActivityBase {
     return loadEntX(this.viewer, this.eventID, Event.loaderOptions());
   }
 }
+
+export const eventActivityLoader = new ObjectLoaderFactory({
+  tableName,
+  fields,
+  pkey: "id",
+});

@@ -47,7 +47,7 @@ export class AuthCodeBuilder implements Builder<AuthCode> {
       viewer: viewer,
       operation: this.operation,
       tableName: "auth_codes",
-      ent: AuthCode,
+      loaderOptions: AuthCode.loaderOptions(),
       builder: this,
       action: action,
       schema: schema,

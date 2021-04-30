@@ -51,7 +51,7 @@ export class EventActivityBuilder implements Builder<EventActivity> {
       viewer: viewer,
       operation: this.operation,
       tableName: "event_activities",
-      ent: EventActivity,
+      loaderOptions: EventActivity.loaderOptions(),
       builder: this,
       action: action,
       schema: schema,

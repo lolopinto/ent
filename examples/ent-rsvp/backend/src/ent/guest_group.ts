@@ -15,7 +15,7 @@ class AllowIfGuestInGuestGroupRule implements PrivacyPolicyRule {
     if (!viewer.viewerID) {
       return Skip();
     }
-    const data = await Guest.loadRawData(viewer.viewerID);
+    const data = await Guest.loadRawData(viewer.viewerID, viewer.context);
     if (data && data.guest_group_id == ent.id) {
       return Allow();
     }

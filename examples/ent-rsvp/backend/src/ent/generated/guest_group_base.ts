@@ -9,12 +9,11 @@ import {
   loadEnts,
   LoadEntOptions,
   AssocEdge,
-  loadRow,
-  loadRowX,
   AlwaysDenyRule,
   AllowIfViewerRule,
   PrivacyPolicy,
-  query,
+  ObjectLoaderFactory,
+  Context,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import {
@@ -27,6 +26,13 @@ import {
 import schema from "src/schema/guest_group";
 
 const tableName = "guest_groups";
+const fields = [
+  "id",
+  "created_at",
+  "updated_at",
+  "invitation_name",
+  "event_id",
+];
 
 export class GuestGroupBase {
   readonly nodeType = NodeType.GuestGroup;
@@ -80,21 +86,21 @@ export class GuestGroupBase {
   static async loadRawData<T extends GuestGroupBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data | null> {
-    return await loadRow({
-      ...GuestGroupBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    return await guestGroupLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends GuestGroupBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data> {
-    return await loadRowX({
-      ...GuestGroupBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    const row = await guestGroupLoader.createLoader(context).load(id);
+    if (!row) {
+      throw new Error(`couldn't load row for ${id}`);
+    }
+    return row;
   }
 
   static loaderOptions<T extends GuestGroupBase>(
@@ -102,13 +108,10 @@ export class GuestGroupBase {
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
-      fields: GuestGroupBase.getFields(),
+      fields: fields,
       ent: this,
+      loaderFactory: guestGroupLoader,
     };
-  }
-
-  private static getFields(): string[] {
-    return ["id", "created_at", "updated_at", "invitation_name", "event_id"];
   }
 
   private static schemaFields: Map<string, Field>;
@@ -140,3 +143,9 @@ export class GuestGroupBase {
     return loadEntX(this.viewer, this.eventID, Event.loaderOptions());
   }
 }
+
+export const guestGroupLoader = new ObjectLoaderFactory({
+  tableName,
+  fields,
+  pkey: "id",
+});

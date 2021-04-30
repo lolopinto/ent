@@ -12,7 +12,37 @@ import {
   EventActivityToDeclinedEdge,
   EventActivityToInvitesEdge,
 } from "src/ent/internal";
-import { Viewer, EdgeQuerySource, AssocEdgeQueryBase } from "@lolopinto/ent";
+import {
+  Viewer,
+  EdgeQuerySource,
+  AssocEdgeQueryBase,
+  AssocEdgeCountLoaderFactory,
+  AssocEdgeLoaderFactory,
+} from "@lolopinto/ent";
+
+export const eventActivityToAttendingCountLoaderFactory = new AssocEdgeCountLoaderFactory(
+  EdgeType.EventActivityToAttending,
+);
+export const eventActivityToAttendingDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.EventActivityToAttending,
+  () => EventActivityToAttendingEdge,
+);
+
+export const eventActivityToDeclinedCountLoaderFactory = new AssocEdgeCountLoaderFactory(
+  EdgeType.EventActivityToDeclined,
+);
+export const eventActivityToDeclinedDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.EventActivityToDeclined,
+  () => EventActivityToDeclinedEdge,
+);
+
+export const eventActivityToInvitesCountLoaderFactory = new AssocEdgeCountLoaderFactory(
+  EdgeType.EventActivityToInvites,
+);
+export const eventActivityToInvitesDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.EventActivityToInvites,
+  () => EventActivityToInvitesEdge,
+);
 
 export class EventActivityToAttendingQueryBase extends AssocEdgeQueryBase<
   EventActivity,
@@ -23,9 +53,9 @@ export class EventActivityToAttendingQueryBase extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.EventActivityToAttending,
+      eventActivityToAttendingCountLoaderFactory,
+      eventActivityToAttendingDataLoaderFactory,
       Guest.loaderOptions(),
-      EventActivityToAttendingEdge,
     );
   }
 
@@ -55,9 +85,9 @@ export class EventActivityToDeclinedQueryBase extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.EventActivityToDeclined,
+      eventActivityToDeclinedCountLoaderFactory,
+      eventActivityToDeclinedDataLoaderFactory,
       Guest.loaderOptions(),
-      EventActivityToDeclinedEdge,
     );
   }
 
@@ -87,9 +117,9 @@ export class EventActivityToInvitesQueryBase extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.EventActivityToInvites,
+      eventActivityToInvitesCountLoaderFactory,
+      eventActivityToInvitesDataLoaderFactory,
       GuestGroup.loaderOptions(),
-      EventActivityToInvitesEdge,
     );
   }
 

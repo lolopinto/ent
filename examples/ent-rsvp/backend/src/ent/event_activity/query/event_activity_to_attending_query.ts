@@ -1,7 +1,7 @@
 import { EventActivityToAttendingQueryBase } from "src/ent/internal";
-import { AssocEdge, Context } from "@lolopinto/ent";
+import { AssocEdge, Context, EdgeQuerySource, Viewer } from "@lolopinto/ent";
 import { gqlContextType, gqlField } from "@lolopinto/ent/graphql";
-import { GuestData } from "src/ent";
+import { EventActivity, GuestData } from "src/ent";
 
 export class EventActivityToAttendingEdge extends AssocEdge {
   @gqlField({ type: "String", nullable: true })
@@ -14,4 +14,8 @@ export class EventActivityToAttendingEdge extends AssocEdge {
   }
 }
 
-export class EventActivityToAttendingQuery extends EventActivityToAttendingQueryBase {}
+export class EventActivityToAttendingQuery extends EventActivityToAttendingQueryBase {
+  // constructor(viewer: Viewer, src: EdgeQuerySource<EventActivity>) {
+  //   super(viewer, src);
+  // }
+}

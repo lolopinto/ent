@@ -23,7 +23,8 @@ import schema from "./schema";
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN || "",
-  tracesSampleRate: 1.0,
+  tracesSampleRate: 1,
+  environment: process.env.NODE_ENV || "development",
   integrations: [
     new Sentry.Integrations.Http({ tracing: true }),
     new Tracing.Integrations.Express({
@@ -96,6 +97,11 @@ app.use(
     return doWork();
   }),
 );
+
+process.on("uncaughtException", (err) => {
+  console.error("There was an uncaught error", err);
+  //  process.exit(1); //mandatory (as per the Node.js docs)
+});
 
 app.listen(process.env.PORT || 4000);
 console.log("graphql");

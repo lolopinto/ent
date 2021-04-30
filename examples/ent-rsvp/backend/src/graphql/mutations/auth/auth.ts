@@ -95,7 +95,7 @@ export class AuthResolver {
     }
     const val = f.format(email);
     const id = await User.loadIDFromEmailAddress(val);
-    return id === null;
+    return id === undefined;
   }
 
   @gqlMutation({ name: "emailAvailable", type: Boolean })
@@ -132,7 +132,6 @@ export class AuthResolver {
     if (!viewer) {
       throw new Error(`not the right credentials`);
     }
-    console.log(viewer, token);
     return {
       viewer: new ViewerType(viewer),
       token,

@@ -46,7 +46,7 @@ export class GuestDataBuilder implements Builder<GuestData> {
       viewer: viewer,
       operation: this.operation,
       tableName: "guest_data",
-      ent: GuestData,
+      loaderOptions: GuestData.loaderOptions(),
       builder: this,
       action: action,
       schema: schema,
