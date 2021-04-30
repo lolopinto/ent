@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"fmt"
 	"sort"
 	"strconv"
 
@@ -339,4 +340,32 @@ func (nodeData *NodeData) getUniqueNodes(forceSelf bool) []uniqueNodeInfo {
 		processNode(edge.NodeInfo)
 	}
 	return ret
+}
+
+type loader struct {
+	Name string
+	Pkey string
+}
+
+func (nodeData *NodeData) GetNodeLoaders() []*loader {
+	ret := []*loader{
+		{
+			Name: fmt.Sprintf("%sLoader", nodeData.NodeInstance),
+			Pkey: strconv.Quote("id"),
+		},
+	}
+
+	for _, field := range nodeData.FieldInfo.Fields {
+		if field.Unique() {
+			ret = append(ret, &loader{
+				Name: nodeData.GetFieldLoaderName(field),
+				Pkey: field.GetQuotedDBColName(),
+			})
+		}
+	}
+	return ret
+}
+
+func (nodeData *NodeData) GetFieldLoaderName(field *field.Field) string {
+	return fmt.Sprintf("%s%sLoader", nodeData.NodeInstance, field.CamelCaseName())
 }
