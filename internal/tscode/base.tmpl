@@ -1,4 +1,4 @@
-{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadEdges" "loadRawEdgeCountX" "loadNodesByEdge" "loadEdgeForID2" "loadEntsFromClause" "loadEntFromClause" "loadEntXFromClause" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AlwaysDenyRule" "AllowIfViewerRule" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" }}
+{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadEdges" "loadRawEdgeCountX" "loadNodesByEdge" "loadEdgeForID2" "loadEntsFromClause" "loadEntFromClause" "loadEntXFromClause" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AlwaysDenyRule" "AllowIfViewerRule" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory"}}
 {{ reserveImport .Package.SchemaPackagePath "Field" "getFields"}}
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
 {{ reserveImport "src/ent/loadAny" "loadEntByType" "loadEntXByType"}}
@@ -177,40 +177,36 @@ export class {{$baseClass}} {
         return await {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName}});
       }
     {{ else if $field.Index -}}
+      {{$fieldLoader := $this.GetFieldLoaderName $field -}}
       static async loadFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         viewer: {{$viewerType}},
         {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
       ): Promise<T[]> {
-        // TODO...
-        const m = await {{useImport "loadEntsFromClause"}}(
+        const rows = await {{$fieldLoader}}.createLoader(viewer.context).load({{$field.TsFieldName}});
+        const ids = rows.map(row => row['id']);
+        return {{useImport "loadEnts"}}(
           viewer, 
-          {{useImport "query"}}.Eq({{$field.GetQuotedDBColName}}, {{$field.TsFieldName}}),
           {{$baseClass}}.loaderOptions.apply(this), 
+          ...ids,
         );
-        return Array.from(m.values()) as T[];
       }
 
       static async loadIDsFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
+        context?: {{useImport "Context"}},
       ): Promise<{{$idType}}[] | null> {
-        const rows = await {{useImport "loadRows"}}({
-          ...{{$baseClass}}.loaderOptions.apply(this),
-          clause: {{useImport "query"}}.Eq({{$field.GetQuotedDBColName}}, {{$field.TsFieldName}}),
-        }); 
-        if (!rows) { return null;}
-        return rows.map(row=> row['id']);
+        const rows = await {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName}});
+        return rows.map(row => row['id']);
       }
 
       static async loadRawDataFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
+        context?: {{useImport "Context"}},
       ): Promise<{{$dataType}}[] | null> {
-        return await {{useImport "loadRows"}}({
-          ...{{$baseClass}}.loaderOptions.apply(this),
-          clause: {{useImport "query"}}.Eq({{$field.GetQuotedDBColName}}, {{$field.TsFieldName}}),
-        }); 
+        return {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName}});
       }
     {{end}}
   {{end -}}
@@ -415,4 +411,19 @@ export class {{$baseClass}} {
   {{end -}}
 {{end -}}
 
+{{/* TODO replace all this with an EntQuery and do this right */}}
+{{ range $field := .FieldInfo.Fields -}}
+  {{ if $field.Index -}}
+    {{$fieldLoader := $this.GetFieldLoaderName $field -}}
+    export const {{$fieldLoader}} = new {{useImport "IndexLoaderFactory"}}(
+      {tableName,fields},
+      {{$field.GetQuotedDBColName}},
+      {
+        toPrime: [{{$loaderName}}],
+      },
+    );
+  {{end -}}
+{{ end -}}
+
 {{end -}}
+
