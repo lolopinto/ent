@@ -46,7 +46,7 @@ export class HoursOfOperationBuilder implements Builder<HoursOfOperation> {
       viewer: viewer,
       operation: this.operation,
       tableName: "hours_of_operations",
-      ent: HoursOfOperation,
+      loaderOptions: HoursOfOperation.loaderOptions(),
       builder: this,
       action: action,
       schema: schema,

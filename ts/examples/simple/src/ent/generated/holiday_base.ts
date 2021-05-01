@@ -8,18 +8,18 @@ import {
   loadEntX,
   loadEnts,
   LoadEntOptions,
-  loadRow,
-  loadRowX,
   AlwaysDenyRule,
   AllowIfViewerRule,
   PrivacyPolicy,
-  query,
+  ObjectLoaderFactory,
+  Context,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import { NodeType } from "src/ent/internal";
 import schema from "src/schema/holiday";
 
 const tableName = "holidays";
+const fields = ["id", "created_at", "updated_at", "label", "date"];
 
 export class HolidayBase {
   readonly nodeType = NodeType.Holiday;
@@ -73,21 +73,21 @@ export class HolidayBase {
   static async loadRawData<T extends HolidayBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data | null> {
-    return await loadRow({
-      ...HolidayBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    return await holidayLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends HolidayBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data> {
-    return await loadRowX({
-      ...HolidayBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    const row = await holidayLoader.createLoader(context).load(id);
+    if (!row) {
+      throw new Error(`couldn't load row for ${id}`);
+    }
+    return row;
   }
 
   static loaderOptions<T extends HolidayBase>(
@@ -95,13 +95,10 @@ export class HolidayBase {
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
-      fields: HolidayBase.getFields(),
+      fields: fields,
       ent: this,
+      loaderFactory: holidayLoader,
     };
-  }
-
-  private static getFields(): string[] {
-    return ["id", "created_at", "updated_at", "label", "date"];
   }
 
   private static schemaFields: Map<string, Field>;
@@ -117,3 +114,9 @@ export class HolidayBase {
     return HolidayBase.getSchemaFields().get(key);
   }
 }
+
+export const holidayLoader = new ObjectLoaderFactory({
+  tableName,
+  fields,
+  pkey: "id",
+});
