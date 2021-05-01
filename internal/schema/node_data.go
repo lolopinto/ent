@@ -301,6 +301,13 @@ func (nodeData *NodeData) GetImportsForQueryBaseFile(s *Schema) []ImportPath {
 		}
 	}
 
+	for _, edge := range nodeData.EdgeInfo.ForeignKeys {
+		ret = append(ret, ImportPath{
+			Import:      fmt.Sprintf("%sLoader", edge.NodeInfo.NodeInstance),
+			PackagePath: codepath.GetInternalImportPath(),
+		})
+	}
+
 	return ret
 }
 

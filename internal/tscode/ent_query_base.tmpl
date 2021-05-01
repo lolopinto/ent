@@ -40,6 +40,9 @@
       export const {{$edge.GetDataFactoryName}} = new {{useImport "IndexLoaderFactory"}}(
         {{$node}}.loaderOptions(),
         {{$edge.QuotedDBColName}},
+        {
+          toPrime: [{{useImport (printf "%sLoader" $edge.NodeInfo.NodeInstance)}}],
+        }
       );
   {{end -}}
 
