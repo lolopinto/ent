@@ -8,9 +8,6 @@ import { commonTests } from "./shared_test";
 
 beforeEach(async () => {
   QueryRecorder.clear();
-  // TODO figure out why this failed in the absence of this and have it fail loudly...
-  //  await createEdges();
-  QueryRecorder.clearQueries();
 });
 
 commonTests({

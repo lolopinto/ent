@@ -369,8 +369,6 @@ function parseSelectStatement(
   map: Map<string, Data[]>,
 ): Data[] {
   // TODO support these as needed
-  // console.log(ast);
-  // console.log(ast.groupby === null);
   assert(ast.groupby === null, "non-null groupby");
   assert(ast.having === null, "non-null having");
   assert(ast.with === null, "non-null with");

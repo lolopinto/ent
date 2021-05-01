@@ -119,7 +119,6 @@ export function getContactBuilder(viewer: Viewer, input: ContactCreateInput) {
   m.set("createdAt", new Date());
   m.set("updatedAt", new Date());
 
-  //  console.debug(m);
   return new SimpleBuilder(viewer, new FakeContactSchema(), m);
 }
 

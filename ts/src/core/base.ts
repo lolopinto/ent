@@ -1,17 +1,36 @@
 import * as clause from "./clause";
 
+// Loader is the primitive data fetching abstraction in the framework
+// implementation details up to each instance
+// A DataLoader could be used internally or not.
+// For Loaders that use DataLoader, there's batching done to fetch multiple pieces
+// of information.
+// Using Loader and LoaderFactory allows us to use the same instance of Loader across a
+// request and potentially batch data as needed when possible
+export interface Loader<T, V> {
+  context?: Context;
+  load(key: T): Promise<V>;
+  // TODO we need a loadMany() API similar to DataLoaer
+  // what's the plural api to be?
+  loadMany?(keys: T[]): Promise<(V | null)[]>;
+  clearAll(): any;
+}
+
+// A LoaderFactory is used to create a Loader
+// We cache data on a per-request basis therefore for each new request, createLoader
+// is called to get a new instance of Loader which will then be used to load data as needed
 export interface LoaderFactory<T, V> {
   name: string; // used to have a per-request cache of each loader type
 
-  // having Context here as opposed to fetch can mean we have different loaders if we care about Context
-  // or it can just be completely ignored!
+  // factory method.
+  // when context is passed, there's potentially opportunities to batch data in the same
+  // request
+  // when no context is passed, no batching possible (except with explicit call to loadMany API)
   createLoader(context?: Context): Loader<T, V>;
 }
 
-// TODO better name for this
-// this is used by entquery
-// and then smart decision is made of what to do
-
+// better name for this?
+// this is used by EntQuery and then smart decision is made of what to do
 export interface ConfigurableLoaderFactory<T, V> extends LoaderFactory<T, V> {
   createConfigurableLoader(
     options: EdgeQueryableDataOptions,
@@ -23,16 +42,8 @@ export type EdgeQueryableDataOptions = Partial<
   Pick<QueryableDataOptions, "limit" | "orderby" | "clause">
 >;
 
-export interface Loader<T, V> {
-  context?: Context;
-  // maybe Context will be used to make different decisions
-  load(key: T): Promise<V>;
-  // what's the plural api to be?
-  loadMany?(keys: T[]): Promise<(V | null)[]>;
-  clearAll(): any;
-  // TODO we need a loadMany() API similar to DataLoaer
-}
-
+// PrimableLoader allows us to prime data in the cache that's retrieved from
+// other sources
 export interface PrimableLoader<T, V> extends Loader<T, V> {
   prime(d: Data): void;
 }
@@ -58,7 +69,7 @@ export interface Context {
   // absence means we are not doing any caching
   // presence means we have loader, ent cache etc
 
-  // TODO
+  // TODO expose this? use
   cache?: cache;
 }
 
@@ -66,7 +77,7 @@ export interface Viewer {
   viewerID: ID | null;
   viewer: () => Promise<Ent | null>;
   instanceKey: () => string;
-  isOmniscient?(): boolean; // optional function to indicate a viewer that can see anything e.g. admin
+  //  isOmniscient?(): boolean; // optional function to indicate a viewer that can see anything e.g. admin
   // TODO determine if we want this here.
   // just helpful to have it here
   // not providing a default AllowIfOmniRule

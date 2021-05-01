@@ -125,7 +125,6 @@ async function saveBuilderImpl<T extends Ent>(
   }
   const executor = changeset!.executor();
 
-  const instance = DB.getInstance();
   const client = await DB.getInstance().getNewClient();
 
   let error = false;

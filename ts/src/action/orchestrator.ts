@@ -28,7 +28,6 @@ export interface OrchestratorOptions<T extends Ent> {
   viewer: Viewer;
   operation: WriteOperation;
   tableName: string;
-  //  ent: EntConstructor<T>;
   // should we make it nullable for delete?
   loaderOptions: LoadEntOptions<T>;
 
@@ -480,7 +479,6 @@ export class Orchestrator<T extends Ent> {
 
     this.validatedFields = data;
     this.logValues = logValues;
-    //    console.log(this.validatedFields);
   }
 
   async valid(): Promise<boolean> {
@@ -503,7 +501,6 @@ export class Orchestrator<T extends Ent> {
 
     let ops: DataOperation[] = [this.buildMainOp()];
     await this.buildEdgeOps(ops);
-    //    console.log("post build");
 
     return new EntChangeset(
       this.options.viewer,

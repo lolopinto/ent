@@ -282,8 +282,7 @@ export async function loadRowX(options: LoadRowOptions): Promise<Data> {
   return result;
 }
 
-///
-// and make this use DataLoader if possible
+// primitive data fetching. called by loaders
 export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
   let cache = options.context?.cache;
   if (cache) {
@@ -494,7 +493,6 @@ export class EditNodeOperation implements DataOperation {
       ...this.options,
       context,
     };
-    //    console.log("performWrite", options);
     if (this.existingEnt) {
       this.row = await editRow(
         queryer,
@@ -855,7 +853,6 @@ async function mutateRow(
     }
     return res;
   } catch (err) {
-    // TODO:::why is this not rethrowing?
     log("error", err);
     throw err;
   }
@@ -900,7 +897,6 @@ export async function createRow(
 ): Promise<Data | null> {
   const [query, values, logValues] = buildInsertQuery(options, suffix);
 
-  //  console.log("createRow", query, values, logValues);
   const res = await mutateRow(queryer, query, values, logValues, options);
 
   if (res?.rowCount === 1) {
@@ -1003,12 +999,6 @@ export class AssocEdge {
 
   getCursor(): string {
     return getCursor(this, "time", (t) => t.getTime());
-    // // no time. no cursor. nothing to do here
-    // if (!this.time) {
-    //   return "";
-    // }
-    // const str = `time:${this.time.getTime()}`;
-    // return Buffer.from(str, "ascii").toString("base64");
   }
 }
 

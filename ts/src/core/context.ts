@@ -1,26 +1,9 @@
-import {
-  Viewer,
-  ID,
-  Data,
-  DataOptions,
-  SelectDataOptions,
-  Loader,
-} from "./base";
+import { Viewer, Data, Loader } from "./base";
 import { IncomingMessage, ServerResponse } from "http";
 
-import DataLoader from "dataloader";
 import * as clause from "./clause";
-import { log, logEnabled } from "./logger";
-import { Context, LoadRowOptions } from "./base";
-import { loadRows } from "./ent";
-
-// export interface Context {
-//   getViewer(): Viewer;
-//   // optional per (request)contet
-//   // absence means we are not doing any caching
-//   // presence means we have loader, ent cache etc
-//   cache?: ContextCache;
-// }
+import { log } from "./logger";
+import { Context } from "./base";
 
 // RequestBasedContext e.g. from an HTTP request with a server/response conponent
 export interface RequestContext extends Context {
