@@ -4,6 +4,9 @@ import {
   Ent,
   Viewer,
   EntConstructor,
+  LoadEntOptions,
+} from "../core/base";
+import {
   AssocEdgeInputOptions,
   DataOperation,
   EdgeOperation,
@@ -19,12 +22,14 @@ import { WriteOperation, Builder, Action } from "../action";
 import { snakeCase } from "snake-case";
 import { applyPrivacyPolicyX } from "../core/privacy";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
+import { log } from "../core/logger";
 
 export interface OrchestratorOptions<T extends Ent> {
   viewer: Viewer;
   operation: WriteOperation;
   tableName: string;
-  ent: EntConstructor<T>; // should we make it nullable for delete?
+  // should we make it nullable for delete?
+  loaderOptions: LoadEntOptions<T>;
 
   builder: Builder<T>;
   action?: Action<T>;
@@ -480,6 +485,7 @@ export class Orchestrator<T extends Ent> {
     try {
       await this.validate();
     } catch (e) {
+      log("error", e);
       return false;
     }
     return true;
@@ -499,7 +505,7 @@ export class Orchestrator<T extends Ent> {
     return new EntChangeset(
       this.options.viewer,
       this.options.builder.placeholderID,
-      this.options.ent,
+      this.options.loaderOptions.ent,
       ops,
       this.dependencies,
       this.changesets,
@@ -530,12 +536,7 @@ export class Orchestrator<T extends Ent> {
     const viewer = await this.viewerForEntLoad(row);
     return await applyPrivacyPolicyForRow(
       viewer,
-      {
-        ent: this.options.ent,
-        tableName: this.options.tableName,
-        fields: [], // don't need actual fields here
-        context: viewer.context,
-      },
+      this.options.loaderOptions,
       row,
     );
   }
@@ -548,14 +549,10 @@ export class Orchestrator<T extends Ent> {
     const viewer = await this.viewerForEntLoad(row);
     const ent = await applyPrivacyPolicyForRow(
       viewer,
-      {
-        ent: this.options.ent,
-        tableName: this.options.tableName,
-        fields: [], // don't need actual fields here
-        context: viewer.context,
-      },
+      this.options.loaderOptions,
       row,
     );
+
     if (!ent) {
       if (this.options.operation == WriteOperation.Insert) {
         throw new Error(`was able to create ent but not load it`);

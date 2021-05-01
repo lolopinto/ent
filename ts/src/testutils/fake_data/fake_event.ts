@@ -3,11 +3,11 @@ import {
   Ent,
   Viewer,
   Data,
-  loadEnt,
-  loadEntX,
   LoadEntOptions,
-} from "../../core/ent";
-import { AlwaysAllowRule, PrivacyPolicy } from "../../core/privacy";
+  PrivacyPolicy,
+} from "../../core/base";
+import { loadEnt, loadEntX } from "../../core/ent";
+import { AlwaysAllowRule } from "../../core/privacy";
 import { BuilderSchema, SimpleBuilder } from "../builder";
 import {
   Field,
@@ -17,6 +17,8 @@ import {
   TimestampType,
 } from "../../schema";
 import { NodeType } from "./const";
+import { table, uuid, text, timestamptz } from "../db/test_db";
+import { ObjectLoaderFactory } from "../../core/loaders";
 
 export class FakeEvent implements Ent {
   readonly id: ID;
@@ -60,11 +62,30 @@ export class FakeEvent implements Ent {
     ];
   }
 
+  static getTestTable() {
+    return table(
+      "fake_events",
+      uuid("id", { primaryKey: true }),
+      timestamptz("created_at"),
+      timestamptz("updated_at"),
+      timestamptz("start_time"),
+      timestamptz("end_time", { nullable: true }),
+      text("location"),
+      text("title"),
+      text("description", { nullable: true }),
+      uuid("user_id"),
+    );
+  }
+
   static loaderOptions(): LoadEntOptions<FakeEvent> {
     return {
       tableName: "fake_events",
       fields: FakeEvent.getFields(),
       ent: this,
+      loaderFactory: new ObjectLoaderFactory({
+        tableName: "fake_events",
+        fields: FakeEvent.getFields(),
+      }),
     };
   }
   static async load(v: Viewer, id: ID): Promise<FakeEvent | null> {

@@ -11,7 +11,7 @@ import {
   gqlFileUpload,
 } from "./graphql";
 import { GraphQLBoolean, GraphQLID } from "graphql";
-import { ID, Viewer } from "../core/ent";
+import { ID, Viewer } from "../core/base";
 
 import {
   validateCustomFields,

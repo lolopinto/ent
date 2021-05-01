@@ -11,15 +11,17 @@ import {
   buildInsertQuery,
   buildUpdateQuery,
   buildQuery,
-  Viewer,
   loadEnt,
   loadEnts,
 } from "./ent";
 import { clearLogLevels, setLogLevels } from "./logger";
 import * as clause from "./clause";
-import { Context, ContextCache } from "./context";
 import { LoggedOutViewer } from "./viewer";
 import { User } from "../testutils/builder";
+import { TestContext } from "../testutils/context/test_context";
+import { MockLogs } from "../testutils/mock_log";
+import { ObjectLoaderFactory } from "./loaders";
+
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 
@@ -27,26 +29,13 @@ afterEach(() => {
   QueryRecorder.clear();
 });
 
-let oldConsoleError;
-let oldConsoleLog;
-let logs: any[] = [];
-let errors: any[] = [];
-
+const ml = new MockLogs();
 beforeAll(() => {
-  oldConsoleLog = console.log;
-  oldConsoleError = console.error;
-
-  console.log = (...any) => {
-    logs.push(...any);
-  };
-  console.error = (...any) => {
-    errors.push(...any);
-  };
+  ml.mock();
 });
 
 afterAll(() => {
-  console.log = oldConsoleLog;
-  console.error = oldConsoleError;
+  ml.restore();
 });
 
 beforeEach(() => {
@@ -55,8 +44,7 @@ beforeEach(() => {
 
 afterEach(() => {
   clearLogLevels();
-  logs = [];
-  errors = [];
+  ml.clear();
 });
 
 describe("raw data access", () => {
@@ -73,8 +61,8 @@ describe("raw data access", () => {
       fields,
       tableName: "t1",
     });
-    expect(logs.length).toEqual(1);
-    expect(logs[0]).toStrictEqual({
+    expect(ml.logs.length).toEqual(1);
+    expect(ml.logs[0]).toStrictEqual({
       query: expQuery,
       // no values since fieldsToLog not passed
       values: [],
@@ -95,8 +83,8 @@ describe("raw data access", () => {
       fields,
       tableName: "t1",
     });
-    expect(logs.length).toEqual(1);
-    expect(logs[0]).toStrictEqual({
+    expect(ml.logs.length).toEqual(1);
+    expect(ml.logs[0]).toStrictEqual({
       query: expQuery,
       values: ["bar", "baz"],
     });
@@ -119,8 +107,8 @@ describe("raw data access", () => {
       fields,
       tableName: "t1",
     });
-    expect(logs.length).toEqual(1);
-    expect(logs[0]).toStrictEqual({
+    expect(ml.logs.length).toEqual(1);
+    expect(ml.logs[0]).toStrictEqual({
       query: expQuery,
       values: ["bar", "***"],
     });
@@ -140,7 +128,7 @@ describe("raw data access", () => {
         f2: "***",
       },
     });
-    expect(logs.length).toEqual(0);
+    expect(ml.logs.length).toEqual(0);
   });
 
   test("editRow no fieldsToLog", async () => {
@@ -156,8 +144,8 @@ describe("raw data access", () => {
     await editRowForTest(options, "1");
     const [expQuery] = buildUpdateQuery(options, "1");
 
-    expect(logs.length).toEqual(1);
-    expect(logs[0]).toStrictEqual({
+    expect(ml.logs.length).toEqual(1);
+    expect(ml.logs[0]).toStrictEqual({
       query: expQuery,
       values: [],
     });
@@ -177,8 +165,8 @@ describe("raw data access", () => {
     await editRowForTest(options, "1");
     const [expQuery] = buildUpdateQuery(options, "1");
 
-    expect(logs.length).toEqual(1);
-    expect(logs[0]).toStrictEqual({
+    expect(ml.logs.length).toEqual(1);
+    expect(ml.logs[0]).toStrictEqual({
       query: expQuery,
       values: ["bar", "baz"],
     });
@@ -201,8 +189,8 @@ describe("raw data access", () => {
     await editRowForTest(options, "1");
     const [expQuery] = buildUpdateQuery(options, "1");
 
-    expect(logs.length).toEqual(1);
-    expect(logs[0]).toStrictEqual({
+    expect(ml.logs.length).toEqual(1);
+    expect(ml.logs[0]).toStrictEqual({
       query: expQuery,
       values: ["bar", "***"],
     });
@@ -223,7 +211,7 @@ describe("raw data access", () => {
     await editRowForTest(options, "1");
     const [expQuery] = buildUpdateQuery(options, "1");
 
-    expect(logs.length).toEqual(0);
+    expect(ml.logs.length).toEqual(0);
   });
 
   test("deleteRow", async () => {
@@ -234,8 +222,8 @@ describe("raw data access", () => {
       clause.Eq("col", 1),
     );
 
-    expect(logs.length).toEqual(1);
-    expect(logs[0]).toStrictEqual({
+    expect(ml.logs.length).toEqual(1);
+    expect(ml.logs[0]).toStrictEqual({
       query: "DELETE FROM t1 WHERE col = $1",
       values: [1],
     });
@@ -249,8 +237,8 @@ describe("raw data access", () => {
       clause.Eq("col", clause.sensitiveValue(1)),
     );
 
-    expect(logs.length).toEqual(1);
-    expect(logs[0]).toStrictEqual({
+    expect(ml.logs.length).toEqual(1);
+    expect(ml.logs[0]).toStrictEqual({
       query: "DELETE FROM t1 WHERE col = $1",
       values: ["*"],
     });
@@ -265,7 +253,7 @@ describe("raw data access", () => {
       clause.Eq("col", 1),
     );
 
-    expect(logs.length).toEqual(0);
+    expect(ml.logs.length).toEqual(0);
   });
 
   test("loadRow", async () => {
@@ -275,8 +263,8 @@ describe("raw data access", () => {
       clause: clause.Eq("id", 1),
     });
 
-    expect(logs.length).toEqual(1);
-    expect(logs[0]).toStrictEqual({
+    expect(ml.logs.length).toEqual(1);
+    expect(ml.logs[0]).toStrictEqual({
       query: buildQuery({
         tableName: "t1",
         fields: ["col1", "col2"],
@@ -293,8 +281,8 @@ describe("raw data access", () => {
       clause: clause.Eq("id", clause.sensitiveValue(1)),
     });
 
-    expect(logs.length).toEqual(1);
-    expect(logs[0]).toStrictEqual({
+    expect(ml.logs.length).toEqual(1);
+    expect(ml.logs[0]).toStrictEqual({
       query: buildQuery({
         tableName: "t1",
         fields: ["col1", "col2"],
@@ -312,7 +300,7 @@ describe("raw data access", () => {
       clause: clause.Eq("id", clause.sensitiveValue(1)),
     });
 
-    expect(logs.length).toEqual(0);
+    expect(ml.logs.length).toEqual(0);
   });
 
   test("loadRows", async () => {
@@ -322,8 +310,8 @@ describe("raw data access", () => {
       clause: clause.Eq("id", 1),
     });
 
-    expect(logs.length).toEqual(1);
-    expect(logs[0]).toStrictEqual({
+    expect(ml.logs.length).toEqual(1);
+    expect(ml.logs[0]).toStrictEqual({
       query: buildQuery({
         tableName: "t1",
         fields: ["col1", "col2"],
@@ -340,8 +328,8 @@ describe("raw data access", () => {
       clause: clause.Eq("id", clause.sensitiveValue(1)),
     });
 
-    expect(logs.length).toEqual(1);
-    expect(logs[0]).toStrictEqual({
+    expect(ml.logs.length).toEqual(1);
+    expect(ml.logs[0]).toStrictEqual({
       query: buildQuery({
         tableName: "t1",
         fields: ["col1", "col2"],
@@ -359,21 +347,12 @@ describe("raw data access", () => {
       clause: clause.Eq("id", clause.sensitiveValue(1)),
     });
 
-    expect(logs.length).toEqual(0);
+    expect(ml.logs.length).toEqual(0);
   });
 });
 
-class contextImpl implements Context {
-  cache: ContextCache = new ContextCache();
-  viewer = new LoggedOutViewer(this);
-
-  getViewer(): Viewer {
-    return this.viewer;
-  }
-}
-
 describe("ent cache logging", () => {
-  const ctx = new contextImpl();
+  const ctx = new TestContext();
 
   beforeEach(async () => {
     // prime the row
@@ -385,7 +364,7 @@ describe("ent cache logging", () => {
         col2: "col",
       },
     });
-    logs = [];
+    ml.clear();
   });
 
   afterEach(() => {
@@ -401,7 +380,7 @@ describe("ent cache logging", () => {
       context: ctx,
     });
 
-    expect(logs.length).toEqual(0);
+    expect(ml.logs.length).toEqual(0);
   });
 
   test("loadRow", async () => {
@@ -414,9 +393,9 @@ describe("ent cache logging", () => {
     await loadRow(options);
 
     // regular row fetch. hit db
-    expect(logs.length).toEqual(1);
+    expect(ml.logs.length).toEqual(1);
 
-    expect(logs[0]).toStrictEqual({
+    expect(ml.logs[0]).toStrictEqual({
       query: buildQuery({
         tableName: "t1",
         fields: ["col1", "col2"],
@@ -428,8 +407,8 @@ describe("ent cache logging", () => {
     // fetch again
     await loadRow(options);
 
-    expect(logs.length).toEqual(2);
-    expect(logs[1]).toStrictEqual({
+    expect(ml.logs.length).toEqual(2);
+    expect(ml.logs[1]).toStrictEqual({
       "cache-hit": "col1,col2,id=1",
       "tableName": options.tableName,
     });
@@ -445,9 +424,9 @@ describe("ent cache logging", () => {
     await loadRows(options);
 
     // regular row fetch. hit db
-    expect(logs.length).toEqual(1);
+    expect(ml.logs.length).toEqual(1);
 
-    expect(logs[0]).toStrictEqual({
+    expect(ml.logs[0]).toStrictEqual({
       query: buildQuery({
         tableName: "t1",
         fields: ["col1", "col2"],
@@ -459,8 +438,8 @@ describe("ent cache logging", () => {
     // fetch again
     await loadRows(options);
 
-    expect(logs.length).toEqual(2);
-    expect(logs[1]).toStrictEqual({
+    expect(ml.logs.length).toEqual(2);
+    expect(ml.logs[1]).toStrictEqual({
       "cache-hit": "col1,col2,in:id:1",
       "tableName": options.tableName,
     });
@@ -468,7 +447,7 @@ describe("ent cache logging", () => {
 });
 
 describe("dataloader cache logging", () => {
-  const ctx = new contextImpl();
+  const ctx = new TestContext();
 
   beforeEach(async () => {
     // prime the row
@@ -480,51 +459,45 @@ describe("dataloader cache logging", () => {
         col2: "col",
       },
     });
-    logs = [];
+    ml.clear();
   });
 
   afterEach(() => {
     ctx.cache.clearCache();
   });
 
-  test("log disabled", async () => {
-    clearLogLevels();
-    await loadEnt(ctx.getViewer(), 1, {
-      fields: ["id", "col1", "col2"],
-      tableName: "users",
-      ent: User,
-    });
-
-    expect(logs.length).toEqual(0);
-  });
+  const fields = ["id", "col1", "col2"];
+  const tableName = "users";
 
   test("loadEnt", async () => {
     const options = {
-      fields: ["id", "col1", "col2"],
-      tableName: "users",
+      fields,
+      tableName,
+      loaderFactory: new ObjectLoaderFactory({ fields, tableName }),
       ent: User,
       context: ctx,
     };
     await loadEnt(ctx.getViewer(), 1, options);
 
     // regular row fetch. hit db
-    expect(logs.length).toEqual(1);
+    expect(ml.logs.length).toEqual(1);
 
-    expect(logs[0]).toStrictEqual({
+    expect(ml.logs[0]).toStrictEqual({
       query: buildQuery({
-        tableName: "users",
-        fields: ["id", "col1", "col2"],
+        tableName,
+        fields,
         // data loader always does an in fetch...
         clause: clause.In("id", 1),
       }),
       values: [1],
     });
 
+    ml.clear();
     // fetch again
     await loadEnt(ctx.getViewer(), 1, options);
 
-    expect(logs.length).toEqual(2);
-    expect(logs[1]).toStrictEqual({
+    expect(ml.logs.length).toEqual(1);
+    expect(ml.logs[0]).toStrictEqual({
       "dataloader-cache-hit": 1,
       "tableName": options.tableName,
     });
@@ -532,33 +505,74 @@ describe("dataloader cache logging", () => {
 
   test("loadEnts", async () => {
     const options = {
-      fields: ["id", "col1", "col2"],
-      tableName: "users",
+      fields,
+      tableName,
+      loaderFactory: new ObjectLoaderFactory({ fields, tableName }),
       ent: User,
     };
     await loadEnts(ctx.getViewer(), options, 1);
 
     // regular row fetch. hit db
-    expect(logs.length).toEqual(1);
+    expect(ml.logs.length).toEqual(1);
 
-    expect(logs[0]).toStrictEqual({
+    expect(ml.logs[0]).toStrictEqual({
       query: buildQuery({
-        tableName: "users",
-        fields: ["id", "col1", "col2"],
+        tableName,
+        fields,
         // data loader always does an in fetch...
         clause: clause.In("id", 1),
       }),
       values: [1],
     });
 
+    ml.clear();
+
     // fetch again
     await loadEnts(ctx.getViewer(), options, 1);
 
-    expect(logs.length).toEqual(2);
-    expect(logs[1]).toStrictEqual({
+    expect(ml.logs.length).toEqual(1);
+    expect(ml.logs[0]).toStrictEqual({
+      // TODO this will also change when loadEnts changes
       "dataloader-cache-hit": 1,
       "tableName": options.tableName,
     });
+  });
+});
+
+describe("dataloader cache logging disabled", () => {
+  const ctx = new TestContext();
+
+  beforeEach(async () => {
+    // prime the row
+    await createRowForTest({
+      tableName: "users",
+      fields: {
+        id: 1,
+        col1: "col",
+        col2: "col",
+      },
+    });
+    ml.clear();
+  });
+
+  afterEach(() => {
+    ctx.cache.clearCache();
+  });
+
+  const fields = ["id", "col1", "col2"];
+  const tableName = "users";
+
+  // this was interfering with above batch so we're breaking it out
+  test("log disabled", async () => {
+    clearLogLevels();
+    await loadEnt(ctx.getViewer(), 1, {
+      fields,
+      tableName,
+      loaderFactory: new ObjectLoaderFactory({ fields, tableName }),
+      ent: User,
+    });
+
+    expect(ml.logs.length).toEqual(0);
   });
 });
 
@@ -574,35 +588,40 @@ describe("loadEnt no context", () => {
         col2: "col",
       },
     });
-    logs = [];
+    ml.clear();
   });
+
+  const fields = ["id", "col1", "col2"];
+  const tableName = "users";
 
   test("log disabled", async () => {
     clearLogLevels();
     await loadEnt(v, 1, {
-      fields: ["id", "col1", "col2"],
-      tableName: "users",
+      fields,
+      tableName,
+      loaderFactory: new ObjectLoaderFactory({ fields, tableName }),
       ent: User,
     });
 
-    expect(logs.length).toEqual(0);
+    expect(ml.logs.length).toEqual(0);
   });
 
   test("loadEnt", async () => {
     const options = {
-      fields: ["id", "col1", "col2"],
-      tableName: "users",
+      fields,
+      tableName,
       ent: User,
+      loaderFactory: new ObjectLoaderFactory({ fields, tableName }),
     };
     await loadEnt(v, 1, options);
 
     // regular row fetch. hit db
-    expect(logs.length).toEqual(1);
+    expect(ml.logs.length).toEqual(1);
 
-    expect(logs[0]).toStrictEqual({
+    expect(ml.logs[0]).toStrictEqual({
       query: buildQuery({
-        tableName: "users",
-        fields: ["id", "col1", "col2"],
+        tableName,
+        fields,
         clause: clause.Eq("id", 1),
       }),
       values: [1],
@@ -611,26 +630,27 @@ describe("loadEnt no context", () => {
     // fetch again
     await loadEnt(v, 1, options);
 
-    expect(logs.length).toEqual(2);
+    expect(ml.logs.length).toEqual(2);
     // no context. hit db
-    expect(logs[0]).toStrictEqual(logs[1]);
+    expect(ml.logs[0]).toStrictEqual(ml.logs[1]);
   });
 
   test("loadEnts", async () => {
     const options = {
-      fields: ["id", "col1", "col2"],
-      tableName: "users",
+      fields,
+      tableName,
+      loaderFactory: new ObjectLoaderFactory({ fields, tableName }),
       ent: User,
     };
     await loadEnts(v, options, 1);
 
     // regular row fetch. hit db
-    expect(logs.length).toEqual(1);
+    expect(ml.logs.length).toEqual(1);
 
-    expect(logs[0]).toStrictEqual({
+    expect(ml.logs[0]).toStrictEqual({
       query: buildQuery({
-        tableName: "users",
-        fields: ["id", "col1", "col2"],
+        tableName,
+        fields,
         clause: clause.In("id", 1),
       }),
       values: [1],
@@ -639,8 +659,8 @@ describe("loadEnt no context", () => {
     // fetch again
     await loadEnts(v, options, 1);
 
-    expect(logs.length).toEqual(2);
+    expect(ml.logs.length).toEqual(2);
     // no context. hit db
-    expect(logs[0]).toStrictEqual(logs[1]);
+    expect(ml.logs[0]).toStrictEqual(ml.logs[1]);
   });
 });

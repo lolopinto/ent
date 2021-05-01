@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import { Data } from "../../core/ent";
+import { Data } from "../../core/base";
 import { QueryRecorder } from "../../testutils/db_mock";
 
 import {

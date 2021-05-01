@@ -1,12 +1,7 @@
-import {
-  ID,
-  Ent,
-  Viewer,
-  EdgeQueryableDataOptions,
-  DefaultLimit,
-  Data,
-} from "../ent";
+import { ID, Ent, Viewer, EdgeQueryableDataOptions, Data } from "../base";
+import { DefaultLimit, getCursor } from "../ent";
 import * as clause from "../clause";
+import memoize from "memoizee";
 
 export interface EdgeQuery<T extends Ent, TEdge extends Data> {
   // if more than one, the single-version methods should throw
@@ -141,11 +136,12 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     if (this.offset) {
       if (this.options.sortColNotTime) {
         options.clause = clause.Less(this.sortCol, this.offset);
+      } else {
+        options.clause = clause.Less(
+          this.sortCol,
+          new Date(this.offset).toISOString(),
+        );
       }
-      options.clause = clause.Less(
-        this.sortCol,
-        new Date(this.offset).toISOString(),
-      );
     }
     return options;
   }
@@ -234,13 +230,21 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
   private queryDispatched: boolean;
   protected edges: Map<ID, TEdge[]> = new Map();
   private pagination: Map<ID, PaginationInfo> = new Map();
+  private memoizedloadEdges: () => Promise<Map<ID, TEdge[]>>;
 
-  constructor(public viewer: Viewer, private sortCol: string) {}
+  constructor(public viewer: Viewer, private sortCol: string) {
+    this.memoizedloadEdges = memoize(this.loadEdges.bind(this));
+  }
 
   first(n: number, after?: string): this {
     this.assertQueryNotDispatched("first");
     this.filters.push(
-      new FirstFilter({ limit: n, after, sortCol: this.sortCol, query: this }),
+      new FirstFilter({
+        limit: n,
+        after,
+        sortCol: this.sortCol,
+        query: this,
+      }),
     );
     return this;
   }
@@ -248,13 +252,18 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
   last(n: number, before?: string): this {
     this.assertQueryNotDispatched("last");
     this.filters.push(
-      new LastFilter({ limit: n, before, sortCol: this.sortCol, query: this }),
+      new LastFilter({
+        limit: n,
+        before,
+        sortCol: this.sortCol,
+        query: this,
+      }),
     );
     return this;
   }
 
   private async querySingleEdge(method: string): Promise<TEdge[]> {
-    const edges = await this.loadEdges();
+    const edges = await this.memoizedloadEdges();
     if (edges.size !== 1) {
       throw new Error(
         `cannot call ${method} when more than one id is requested`,
@@ -272,7 +281,7 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
   };
 
   readonly queryAllEdges = async (): Promise<Map<ID, TEdge[]>> => {
-    return await this.loadEdges();
+    return await this.memoizedloadEdges();
   };
 
   abstract dataToID(edge: TEdge): ID;
@@ -283,7 +292,7 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
   };
 
   readonly queryAllIDs = async (): Promise<Map<ID, ID[]>> => {
-    const edges = await this.loadEdges();
+    const edges = await this.memoizedloadEdges();
     let results: Map<ID, ID[]> = new Map();
     for (const [id, edge_data] of edges) {
       results.set(
@@ -301,7 +310,7 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
 
   readonly queryAllCount = async (): Promise<Map<ID, number>> => {
     let results: Map<ID, number> = new Map();
-    const edges = await this.loadEdges();
+    const edges = await this.memoizedloadEdges();
     edges.forEach((list, id) => {
       results.set(id, list.length);
     });
@@ -320,7 +329,7 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
 
   readonly queryAllEnts = async (): Promise<Map<ID, TDest[]>> => {
     // applies filters and then gets things after
-    const edges = await this.loadEdges();
+    const edges = await this.memoizedloadEdges();
     let promises: Promise<void>[] = [];
     const results: Map<ID, TDest[]> = new Map();
 
@@ -357,11 +366,7 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
     options: EdgeQueryableDataOptions,
   ): Promise<void>;
 
-  private async loadEdges() {
-    if (this.queryDispatched) {
-      return this.edges;
-    }
-
+  private async loadEdges(): Promise<Map<ID, TEdge[]>> {
     // if no filter, we add the firstN filter to ensure we get pagination info
     if (!this.filters.length) {
       this.first(DefaultLimit);
@@ -399,21 +404,22 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
       });
       this.edges.set(id, edges);
     }
-    // TODO how does one memoize this call?
+
     this.queryDispatched = true;
 
     return this.edges;
   }
 
   getCursor(row: TEdge): string {
-    let datum = row[this.sortCol];
-    if (!datum) {
-      return "";
-    }
-    if (datum instanceof Date) {
-      datum = datum.getTime();
-    }
-    const str = `${this.sortCol}:${datum}`;
-    return Buffer.from(str, "ascii").toString("base64");
+    return getCursor({
+      row,
+      col: this.sortCol,
+      conv: (datum) => {
+        if (datum instanceof Date) {
+          return datum.getTime();
+        }
+        return datum;
+      },
+    });
   }
 }

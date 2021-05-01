@@ -1,10 +1,10 @@
+import { Ent, ID, Viewer } from "../../core/base";
 import { CustomEdgeQueryBase } from "../../core/query/custom_query";
-import { AssocEdge, Ent, ID, Viewer } from "../../core/ent";
+import { AssocEdge } from "../../core/ent";
 import {
   AssocEdgeQueryBase,
   EdgeQuerySource,
 } from "../../core/query/assoc_query";
-import * as clause from "../../core/clause";
 import {
   EdgeType,
   FakeUser,
@@ -16,6 +16,11 @@ import {
   EventToInvitedQuery,
   EventToMaybeQuery,
 } from "./internal";
+import { RawCountLoaderFactory } from "../../core/loaders/raw_count_loader";
+import { AssocEdgeCountLoaderFactory } from "../../core/loaders/assoc_count_loader";
+import { AssocEdgeLoaderFactory } from "../../core/loaders/assoc_edge_loader";
+import { IndexLoaderFactory } from "../../core/loaders/index_loader";
+import { contactLoader } from "./fake_contact";
 
 export class UserToContactsQuery extends AssocEdgeQueryBase<
   FakeUser,
@@ -26,9 +31,9 @@ export class UserToContactsQuery extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.UserToContacts,
+      new AssocEdgeCountLoaderFactory(EdgeType.UserToContacts),
+      new AssocEdgeLoaderFactory(EdgeType.UserToContacts, AssocEdge),
       FakeContact.loaderOptions(),
-      AssocEdge,
     );
   }
 
@@ -40,22 +45,27 @@ export class UserToContactsQuery extends AssocEdgeQueryBase<
   }
 }
 
-function getID(src: Ent | ID) {
-  if (typeof src === "object") {
-    return src.id;
-  } else {
-    return src;
-  }
-}
+export const userToContactsCountLoaderFactory = new RawCountLoaderFactory(
+  FakeContact.loaderOptions(),
+  "user_id",
+);
+export const userToContactsDataLoaderFactory = new IndexLoaderFactory(
+  FakeContact.loaderOptions(),
+  "user_id",
+  {
+    toPrime: [contactLoader],
+  },
+);
 
 export class UserToContactsFkeyQuery extends CustomEdgeQueryBase<FakeContact> {
   constructor(viewer: Viewer, src: ID | FakeUser) {
-    super(
-      viewer,
+    super(viewer, {
       src,
-      FakeContact.loaderOptions(),
-      clause.Eq("user_id", getID(src)),
-    );
+      // we want to reuse this and not create a new one every time...
+      countLoaderFactory: userToContactsCountLoaderFactory,
+      dataLoaderFactory: userToContactsDataLoaderFactory,
+      options: FakeContact.loaderOptions(),
+    });
   }
 
   static query(viewer: Viewer, src: FakeUser | ID): UserToContactsFkeyQuery {
@@ -72,9 +82,9 @@ export class UserToFriendsQuery extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.UserToFriends,
+      new AssocEdgeCountLoaderFactory(EdgeType.UserToFriends),
+      new AssocEdgeLoaderFactory(EdgeType.UserToFriends, AssocEdge),
       FakeUser.loaderOptions(),
-      AssocEdge,
     );
   }
 
@@ -122,9 +132,9 @@ export class UserToCustomEdgeQuery extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.UserToCustomEdge,
+      new AssocEdgeCountLoaderFactory(EdgeType.UserToCustomEdge),
+      new AssocEdgeLoaderFactory(EdgeType.UserToCustomEdge, CustomEdge),
       FakeUser.loaderOptions(),
-      CustomEdge,
     );
   }
 
@@ -161,9 +171,9 @@ export class UserToFriendRequestsQuery extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.UserToFriendRequests,
+      new AssocEdgeCountLoaderFactory(EdgeType.UserToFriendRequests),
+      new AssocEdgeLoaderFactory(EdgeType.UserToFriendRequests, AssocEdge),
       FakeUser.loaderOptions(),
-      AssocEdge,
     );
   }
 
@@ -204,9 +214,12 @@ export class UserToIncomingFriendRequestsQuery extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.UserToIncomingFriendRequests,
+      new AssocEdgeCountLoaderFactory(EdgeType.UserToIncomingFriendRequests),
+      new AssocEdgeLoaderFactory(
+        EdgeType.UserToIncomingFriendRequests,
+        AssocEdge,
+      ),
       FakeUser.loaderOptions(),
-      AssocEdge,
     );
   }
 
@@ -247,9 +260,9 @@ export class UserToEventsAttendingQuery extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.UserToEventsAttending,
+      new AssocEdgeCountLoaderFactory(EdgeType.UserToEventsAttending),
+      new AssocEdgeLoaderFactory(EdgeType.UserToEventsAttending, AssocEdge),
       FakeEvent.loaderOptions(),
-      AssocEdge,
     );
   }
 
@@ -286,9 +299,9 @@ export class UserToHostedEventsQuery extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.UserToHostedEvents,
+      new AssocEdgeCountLoaderFactory(EdgeType.UserToHostedEvents),
+      new AssocEdgeLoaderFactory(EdgeType.UserToHostedEvents, AssocEdge),
       FakeEvent.loaderOptions(),
-      AssocEdge,
     );
   }
 

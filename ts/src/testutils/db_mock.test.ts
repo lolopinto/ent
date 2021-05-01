@@ -1,12 +1,20 @@
 import { QueryRecorder } from "./db_mock";
 import { Pool } from "pg";
 import { createRowForTest, deleteRowsForTest, editRowForTest } from "./write";
-import { Data, loadRow, loadRows, ID } from "../core/ent";
+import { Data, ID } from "../core/base";
+import { loadRow, loadRows } from "../core/ent";
 import DB from "../core/db";
 import * as clause from "../core/clause";
 import { Where, EqOp } from "./parse_sql";
+import { setLogLevels } from "../core/logger";
+import { MockLogs } from "./mock_log";
+
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
+
+beforeAll(() => {
+  setLogLevels("error");
+});
 
 beforeEach(() => {});
 
@@ -423,6 +431,26 @@ describe("select", () => {
       expected.push({ id, bar: "bar", baz: "baz", name: "John" });
     });
     expect(expected).toStrictEqual(result.rows);
+  });
+
+  test("groupby", async () => {
+    const ml = new MockLogs();
+    ml.mock();
+
+    // TODO loadRowsX
+    await loadRows({
+      tableName: "t",
+      fields: ["count(1)", "name"],
+      clause: clause.Eq("name", "Jane"),
+      //      orderby: "id DESC",
+      groupby: "name",
+      limit: 2,
+    });
+    ml.restore();
+    expect(ml.errors.length).toBe(1);
+
+    // we currently hide errors so we have to do this nonsense instead
+    expect(ml.errors[0].message).toMatch(/^non-null groupby/);
   });
 });
 

@@ -1,12 +1,14 @@
 import { Builder } from "./action";
-import { Viewer, ID, Ent } from "../core/ent";
 import {
+  Viewer,
+  ID,
+  Ent,
   PrivacyResult,
   PrivacyPolicyRule,
   Deny,
   Allow,
   Skip,
-} from "../core/privacy";
+} from "../core/base";
 
 function isBuilder(node: ID | Builder<Ent>): node is Builder<Ent> {
   return (node as Builder<Ent>).placeholderID !== undefined;

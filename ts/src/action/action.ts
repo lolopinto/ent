@@ -1,15 +1,17 @@
 import {
-  DataOperation,
   Ent,
   EntConstructor,
   Viewer,
   ID,
   Data,
+  PrivacyPolicy,
+} from "../core/base";
+import {
+  DataOperation,
   loadEdgeForID2,
   AssocEdge,
   AssocEdgeInputOptions,
 } from "../core/ent";
-import { PrivacyPolicy } from "../core/privacy";
 import DB from "../core/db";
 import { log } from "../core/logger";
 
@@ -113,6 +115,7 @@ async function saveBuilderImpl<T extends Ent>(
   try {
     changeset = await builder.build();
   } catch (e) {
+    log("error", e);
     if (throwErr) {
       throw e;
     } else {
@@ -139,11 +142,10 @@ async function saveBuilderImpl<T extends Ent>(
   } catch (e) {
     error = true;
     await client.query("ROLLBACK");
+    log("error", e);
     // rethrow the exception to be caught
     if (throwErr) {
       throw e;
-    } else {
-      log("error", e);
     }
   } finally {
     client.release();

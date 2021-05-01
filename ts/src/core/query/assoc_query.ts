@@ -1,16 +1,13 @@
 import {
   ID,
-  AssocEdge,
   Ent,
   Viewer,
-  loadRawEdgeCountX,
   LoadEntOptions,
-  loadEnts,
   EdgeQueryableDataOptions,
-  AssocEdgeConstructor,
-  loadCustomEdges,
-  loadEdgeForID2,
-} from "../ent";
+} from "../base";
+import { AssocEdge, loadEnts } from "../ent";
+import { AssocEdgeCountLoaderFactory } from "../loaders/assoc_count_loader";
+import { AssocEdgeLoaderFactory } from "../loaders/assoc_edge_loader";
 import { EdgeQuery, BaseEdgeQuery } from "./query";
 
 // TODO no more plurals for privacy reasons?
@@ -32,9 +29,9 @@ export class AssocEdgeQueryBase<
   constructor(
     public viewer: Viewer,
     public src: EdgeQuerySource<TSource>,
-    private edgeType: string,
+    private countLoaderFactory: AssocEdgeCountLoaderFactory,
+    private dataLoaderFactory: AssocEdgeLoaderFactory<TEdge>,
     private options: LoadEntOptions<TDest>,
-    private edgeCtr: AssocEdgeConstructor<TEdge>,
   ) {
     super(viewer, "time");
   }
@@ -89,23 +86,17 @@ export class AssocEdgeQueryBase<
   async queryRawCount(): Promise<number> {
     const id = await this.getSingleID();
 
-    return await loadRawEdgeCountX({
-      id1: id,
-      edgeType: this.edgeType,
-      context: this.viewer.context,
-    });
+    return this.countLoaderFactory.createLoader(this.viewer.context).load(id);
   }
 
   async queryAllRawCount(): Promise<Map<ID, number>> {
     let results: Map<ID, number> = new Map();
     const ids = await this.resolveIDs();
+
+    const loader = this.countLoaderFactory.createLoader(this.viewer.context);
     await Promise.all(
       ids.map(async (id) => {
-        const count = await loadRawEdgeCountX({
-          id1: id,
-          edgeType: this.edgeType,
-          context: this.viewer.context,
-        });
+        const count = await loader.load(id);
         results.set(id, count);
       }),
     );
@@ -126,6 +117,11 @@ export class AssocEdgeQueryBase<
 
   protected async loadRawData(options: EdgeQueryableDataOptions) {
     const ids = await this.resolveIDs();
+
+    const loader = this.dataLoaderFactory.createConfigurableLoader(
+      options,
+      this.viewer.context,
+    );
     await Promise.all(
       ids.map(async (id) => {
         // there'll be filters for special edges here...
@@ -135,13 +131,7 @@ export class AssocEdgeQueryBase<
         // so only makes sense if one of these...
 
         // Id2 needs to be an option
-        const edges = await loadCustomEdges({
-          id1: id,
-          edgeType: this.edgeType,
-          context: this.viewer.context,
-          queryOptions: options,
-          ctr: this.edgeCtr,
-        });
+        const edges = await loader.load(id);
         this.edges.set(id, edges);
       }),
     );
@@ -150,28 +140,19 @@ export class AssocEdgeQueryBase<
   async queryID2(id2: ID): Promise<TEdge | undefined> {
     const id = await this.getSingleID();
 
-    return loadEdgeForID2({
-      id1: id,
-      edgeType: this.edgeType,
-      id2,
-      context: this.viewer.context,
-      ctr: this.edgeCtr,
-    });
+    const loader = this.dataLoaderFactory.createLoader(this.viewer.context);
+    return loader.loadEdgeForID2(id, id2);
   }
 
   async queryAllID2(id2: ID): Promise<Map<ID, TEdge>> {
     const ids = await this.resolveIDs();
 
+    const loader = this.dataLoaderFactory.createLoader(this.viewer.context);
+
     const m = new Map<ID, TEdge>();
     await Promise.all(
       ids.map(async (id) => {
-        const edge = await loadEdgeForID2({
-          id1: id,
-          edgeType: this.edgeType,
-          id2,
-          context: this.viewer.context,
-          ctr: this.edgeCtr,
-        });
+        const edge = await loader.loadEdgeForID2(id, id2);
         if (edge) {
           m.set(id, edge);
         }

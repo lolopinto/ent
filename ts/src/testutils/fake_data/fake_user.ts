@@ -3,23 +3,25 @@ import {
   Ent,
   Viewer,
   Data,
-  loadEnt,
-  loadEntX,
   LoadEntOptions,
-} from "../../core/ent";
+  PrivacyPolicy,
+} from "../../core/base";
+import { loadEnt, loadEntX } from "../../core/ent";
 import {
   AllowIfViewerRule,
   AlwaysDenyRule,
   AllowIfViewerInboundEdgeExistsRule,
-  PrivacyPolicy,
   AllowIfConditionAppliesRule,
   AlwaysAllowRule,
+  AlwaysAllowPrivacyPolicy,
 } from "../../core/privacy";
 import { BuilderSchema, SimpleAction } from "../builder";
 import { Field, StringType, BaseEntSchema } from "../../schema";
 import { EdgeType } from "./internal";
 import { NodeType } from "./const";
 import { IDViewer, IDViewerOptions } from "../../core/viewer";
+import { table, uuid, text, timestamptz } from "../db/test_db";
+import { ObjectLoaderFactory } from "../../core/loaders";
 
 interface TokenOptions extends IDViewerOptions {
   tokens?: {};
@@ -81,7 +83,7 @@ export class FakeUser implements Ent {
     this.password = data.password;
   }
 
-  private static getFields(): string[] {
+  static getFields(): string[] {
     return [
       "id",
       "created_at",
@@ -94,11 +96,26 @@ export class FakeUser implements Ent {
     ];
   }
 
+  static getTestTable() {
+    return table(
+      "fake_users",
+      uuid("id", { primaryKey: true }),
+      timestamptz("created_at"),
+      timestamptz("updated_at"),
+      text("first_name"),
+      text("last_name"),
+      text("email_address"),
+      text("phone_number"),
+      text("password"),
+    );
+  }
+
   static loaderOptions(): LoadEntOptions<FakeUser> {
     return {
       tableName: "fake_users",
       fields: FakeUser.getFields(),
       ent: this,
+      loaderFactory: userLoader,
     };
   }
   static async load(v: Viewer, id: ID): Promise<FakeUser | null> {
@@ -165,3 +182,29 @@ export async function createUser(viewer: Viewer, input: UserCreateInput) {
   const action = getUserAction(viewer, input);
   return action.saveX();
 }
+
+export const userLoader = new ObjectLoaderFactory({
+  tableName: "fake_users",
+  fields: FakeUser.getFields(),
+});
+
+export const userEmailLoader = new ObjectLoaderFactory({
+  tableName: "fake_users",
+  fields: FakeUser.getFields(),
+  pkey: "email_address",
+});
+
+export const userPhoneNumberLoader = new ObjectLoaderFactory({
+  tableName: "fake_users",
+  fields: FakeUser.getFields(),
+  pkey: "phone_number",
+});
+
+userLoader.addToPrime(userEmailLoader);
+userLoader.addToPrime(userPhoneNumberLoader);
+
+userEmailLoader.addToPrime(userLoader);
+userEmailLoader.addToPrime(userPhoneNumberLoader);
+
+userPhoneNumberLoader.addToPrime(userLoader);
+userPhoneNumberLoader.addToPrime(userEmailLoader);

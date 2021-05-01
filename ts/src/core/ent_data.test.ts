@@ -1,24 +1,39 @@
+import {
+  PrivacyPolicy,
+  ID,
+  Ent,
+  Data,
+  Viewer,
+  Context,
+  SelectDataOptions,
+  LoadEntOptions,
+  LoadRowOptions,
+  EditRowOptions,
+} from "./base";
 import { LoggedOutViewer, IDViewer } from "./viewer";
-import { PrivacyPolicy, AlwaysDenyRule, AllowIfViewerRule } from "./privacy";
-import { ID, Ent, Data, Viewer, buildInsertQuery } from "./ent";
+import { AlwaysDenyRule, AllowIfViewerRule } from "./privacy";
+import { buildInsertQuery } from "./ent";
 import { QueryRecorder, queryOptions } from "../testutils/db_mock";
 import { createRowForTest, editRowForTest } from "../testutils/write";
 import { Pool } from "pg";
 import * as ent from "./ent";
-import { Context, ContextCache } from "./context";
+import { ContextCache } from "./context";
 import * as clause from "./clause";
 import DB from "./db";
 import each from "jest-each";
+import { ObjectLoaderFactory } from "./loaders";
 
 const loggedOutViewer = new LoggedOutViewer();
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 
-const selectOptions: ent.SelectDataOptions = {
+const selectOptions: SelectDataOptions = {
   tableName: "users",
   fields: ["bar", "baz", "foo"],
+  pkey: "bar",
 };
+const loaderFactory = new ObjectLoaderFactory(selectOptions);
 
 class User implements Ent {
   id: ID;
@@ -39,11 +54,11 @@ class User implements Ent {
     return ent.loadEntX(v, id, User.loaderOptions());
   }
 
-  static loaderOptions(): ent.LoadEntOptions<User> {
+  static loaderOptions(): LoadEntOptions<User> {
     return {
       ...selectOptions,
       ent: this,
-      pkey: "bar",
+      loaderFactory,
     };
   }
 }
@@ -76,11 +91,11 @@ function getIDViewer(id: ID, ctx?: TestCtx) {
 }
 
 interface loadRowFn {
-  (options: ent.LoadRowOptions): Promise<Data | null>;
+  (options: LoadRowOptions): Promise<Data | null>;
 }
 
 interface getQueriesFn {
-  (options: ent.LoadRowOptions): [queryOptions[], queryOptions[]];
+  (options: LoadRowOptions): [queryOptions[], queryOptions[]];
 }
 
 async function createRows(
@@ -131,7 +146,7 @@ async function loadTestRow(
     insertStatements = await createDefaultRow();
   }
 
-  let options: ent.LoadRowOptions = {
+  let options: LoadRowOptions = {
     ...selectOptions,
     clause: clause.Eq("bar", 1),
   };
@@ -160,7 +175,7 @@ async function loadTestRow(
 }
 
 interface loadRowsFn {
-  (options: ent.LoadRowOptions): Promise<Data | null>;
+  (options: LoadRowOptions): Promise<Data | null>;
 }
 
 async function loadTestRows(
@@ -177,7 +192,7 @@ async function loadTestRows(
   });
   const insertStatements = await createRows(fields, selectOptions.tableName);
 
-  let options: ent.LoadRowOptions = {
+  let options: LoadRowOptions = {
     ...selectOptions,
     clause: clause.In("bar", 1, 2, 3),
   };
@@ -853,7 +868,7 @@ describe("writes", () => {
     baz: "baz",
     foo: "foo",
   };
-  let options: ent.EditRowOptions;
+  let options: EditRowOptions;
   let pool = DB.getInstance().getPool();
   let insertStatements: queryOptions[] = [];
 

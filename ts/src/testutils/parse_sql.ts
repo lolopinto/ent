@@ -1,4 +1,4 @@
-import { Data } from "../core/ent";
+import { Data } from "../core/base";
 
 import {
   AST,
@@ -9,8 +9,7 @@ import {
   Select,
   Update,
 } from "node-sql-parser";
-import { assert } from "console";
-
+//import { assert } from "console";
 interface InsertReplace extends Insert_Replace {
   returning: any;
 }
@@ -356,6 +355,14 @@ function buildWhereStatement(ast: Select, values: any[]): Where | null {
   return getOp(ast.where, values);
 }
 
+// existing assert not throwing :(
+function assert(val: boolean, msg?: string) {
+  //  console.log(val);
+  if (!val) {
+    throw new Error(msg || "assertion error");
+  }
+}
+
 function parseSelectStatement(
   ast: Select,
   values: any[], // values passed to query
@@ -363,7 +370,7 @@ function parseSelectStatement(
 ): Data[] {
   // TODO support these as needed
   assert(ast.groupby === null, "non-null groupby");
-  assert(ast.having === null), "non-null having";
+  assert(ast.having === null, "non-null having");
   assert(ast.with === null, "non-null with");
   assert(ast.distinct == null, "non-null distinct");
   assert(ast.options === null, "non-null options");
@@ -385,6 +392,7 @@ function parseSelectStatement(
       const col = getColumnFromRef(order.expr);
       orderings.push([col, order.type]);
     }
+    // TODO fix this
     if (colsInfo.count) {
       throw new Error("cannot do count and order by");
     }

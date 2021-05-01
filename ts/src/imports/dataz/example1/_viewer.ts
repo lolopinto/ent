@@ -5,7 +5,7 @@ import {
   gqlContextType,
   gqlQuery,
 } from "../../../graphql/graphql";
-import { Viewer } from "../../../core/ent";
+import { Viewer } from "../../../core/base";
 import { GraphQLID } from "graphql";
 import { RequestContext } from "../../../core/context";
 

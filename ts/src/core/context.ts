@@ -1,25 +1,11 @@
-import {
-  Viewer,
-  ID,
-  Data,
-  SelectDataOptions,
-  createDataLoader,
-} from "../core/ent";
+import { Viewer, Data, Loader } from "./base";
 import { IncomingMessage, ServerResponse } from "http";
 
-import DataLoader from "dataloader";
 import * as clause from "./clause";
 import { log } from "./logger";
+import { Context } from "./base";
 
-export interface Context {
-  getViewer(): Viewer;
-  // optional per (request)contet
-  // absence means we are not doing any caching
-  // presence means we have loader, ent cache etc
-  cache?: ContextCache;
-}
-
-// RequestBasedContet e.g. from an HTTP request with a server/response conponent
+// RequestBasedContext e.g. from an HTTP request with a server/response conponent
 export interface RequestContext extends Context {
   authViewer(viewer: Viewer): Promise<void>; //logs user in and changes viewer to this
   logout(): Promise<void>;
@@ -28,17 +14,16 @@ export interface RequestContext extends Context {
 }
 
 export class ContextCache {
-  loaders: Map<string, DataLoader<ID, Data | null>> = new Map();
+  loaders: Map<string, Loader<any, any>> = new Map();
 
-  // only create as needed for the "requests" which need it
-  getEntLoader(loaderOptions: SelectDataOptions) {
-    let l = this.loaders.get(loaderOptions.tableName);
-
+  getLoader<T, V>(name: string, create: () => Loader<T, V>): Loader<T, V> {
+    let l = this.loaders.get(name);
     if (l) {
       return l;
     }
-    l = createDataLoader(loaderOptions);
-    this.loaders.set(loaderOptions.tableName, l);
+    log("debug", `new context-aware loader created for ${name}`);
+    l = create();
+    this.loaders.set(name, l);
     return l;
   }
 
@@ -108,6 +93,8 @@ export class ContextCache {
 
   clearCache(): void {
     for (const [_key, loader] of this.loaders) {
+      // may not need this since we're clearing the loaders themselves...
+      // but may have some benefits by explicitily doing so?
       loader.clearAll();
     }
     this.loaders.clear();

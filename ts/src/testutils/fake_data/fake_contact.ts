@@ -3,18 +3,16 @@ import {
   Ent,
   Viewer,
   Data,
-  loadEnt,
-  loadEntX,
   LoadEntOptions,
-} from "../../core/ent";
-import {
-  AllowIfViewerIsRule,
-  AlwaysDenyRule,
   PrivacyPolicy,
-} from "../../core/privacy";
+} from "../../core/base";
+import { loadEnt, loadEntX } from "../../core/ent";
+import { AllowIfViewerIsRule, AlwaysDenyRule } from "../../core/privacy";
 import { BuilderSchema, SimpleBuilder } from "../builder";
 import { Field, StringType, BaseEntSchema, UUIDType } from "../../schema";
 import { NodeType } from "./const";
+import { table, uuid, text, timestamptz } from "../db/test_db";
+import { ObjectLoaderFactory } from "../../core/loaders";
 
 export class FakeContact implements Ent {
   readonly id: ID;
@@ -40,7 +38,7 @@ export class FakeContact implements Ent {
     this.userID = data.user_id;
   }
 
-  private static getFields(): string[] {
+  static getFields(): string[] {
     return [
       "id",
       "created_at",
@@ -52,11 +50,28 @@ export class FakeContact implements Ent {
     ];
   }
 
+  static getTestTable() {
+    return table(
+      "fake_contacts",
+      uuid("id", { primaryKey: true }),
+      timestamptz("created_at"),
+      timestamptz("updated_at"),
+      text("first_name"),
+      text("last_name"),
+      text("email_address"),
+      uuid("user_id"),
+    );
+  }
+
   static loaderOptions(): LoadEntOptions<FakeContact> {
     return {
       tableName: "fake_contacts",
       fields: FakeContact.getFields(),
       ent: this,
+      loaderFactory: new ObjectLoaderFactory({
+        tableName: "fake_contacts",
+        fields: FakeContact.getFields(),
+      }),
     };
   }
   static async load(v: Viewer, id: ID): Promise<FakeContact | null> {
@@ -100,6 +115,10 @@ export function getContactBuilder(viewer: Viewer, input: ContactCreateInput) {
   for (const key in input) {
     m.set(key, input[key]);
   }
+  //To lock in the value of Date now incase of advanceTo/advanceBy
+  m.set("createdAt", new Date());
+  m.set("updatedAt", new Date());
+
   return new SimpleBuilder(viewer, new FakeContactSchema(), m);
 }
 
@@ -107,3 +126,8 @@ export async function createContact(viewer: Viewer, input: ContactCreateInput) {
   const builder = getContactBuilder(viewer, input);
   return await builder.saveX();
 }
+
+export const contactLoader = new ObjectLoaderFactory({
+  tableName: "fake_contacts",
+  fields: FakeContact.getFields(),
+});

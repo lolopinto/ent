@@ -1,9 +1,15 @@
 import { fail } from "assert";
-import { advanceBy } from "jest-date-mock";
+import { advanceBy, advanceTo } from "jest-date-mock";
 import { IDViewer, LoggedOutViewer } from "../../core/viewer";
-import { ID, AssocEdge, Data, loadEdgeData } from "../../core/ent";
+import { Data } from "../../core/base";
+import { AssocEdge, loadEdgeData } from "../../core/ent";
 import { snakeCase } from "snake-case";
 import { createRowForTest } from "../write";
+import {
+  TempDB,
+  assoc_edge_config_table,
+  assoc_edge_table,
+} from "../db/test_db";
 
 import {
   createUser,
@@ -87,11 +93,13 @@ export const inputs: Partial<ContactCreateInput>[] = [
 
 export async function createAllContacts(
   input?: Partial<UserCreateInput>,
+  slice?: number,
 ): Promise<[FakeUser, FakeContact[]]> {
   const user = await createTestUser(input);
 
+  let userInputs = inputs.slice(0, slice || inputs.length);
   const contacts = await Promise.all(
-    inputs.map(async (input) => {
+    userInputs.map(async (input) => {
       // just to make times deterministic so that tests can consistently work
       advanceBy(100);
       const builder = getContactBuilder(
@@ -111,7 +119,7 @@ export async function createAllContacts(
       return await builder.editedEntX();
     }),
   );
-  expect(contacts.length).toBe(inputs.length);
+  expect(contacts.length).toBe(userInputs.length);
   return [user, contacts];
 }
 
@@ -186,10 +194,18 @@ export async function createEdges() {
         inverse_edge_type: InverseEdges.get(edge) || null,
         edge_type: edge,
         edge_name: edgeNames[i],
+        created_at: new Date(),
+        updated_at: new Date(),
       },
     });
-    await loadEdgeData(edge);
+    const edgeData = await loadEdgeData(edge);
+    expect(edgeData).toBeDefined();
   }
+}
+
+export function edgeTableNames() {
+  const edges = Object.values(EdgeType);
+  return edges.map((edge) => snakeCase(`${edge}_table`));
 }
 
 export async function createTestEvent(
@@ -209,4 +225,24 @@ export async function createTestEvent(
 
   await builder.saveX();
   return await builder.editedEntX();
+}
+
+export async function setupTempDB() {
+  const tables = [
+    FakeUser.getTestTable(),
+    FakeContact.getTestTable(),
+    assoc_edge_config_table(),
+  ];
+  edgeTableNames().forEach((tableName) =>
+    tables.push(assoc_edge_table(tableName)),
+  );
+
+  const tdb = new TempDB(...tables);
+
+  await tdb.beforeAll();
+
+  // create once
+  await createEdges();
+
+  return tdb;
 }

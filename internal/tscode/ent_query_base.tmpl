@@ -1,5 +1,5 @@
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
-{{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery" "AssocEdge" "AssocEdgeQueryBase" "CustomEdgeQueryBase" "query"}}
+{{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery" "AssocEdge" "AssocEdgeQueryBase" "CustomEdgeQueryBase" "query" "RawCountLoaderFactory" "AssocEdgeCountLoaderFactory" "AssocEdgeLoaderFactory" "IndexLoaderFactory"}}
 {{$importPath := .Package.InternalImportPath -}}
 
 {{$schema := .Schema}}
@@ -18,6 +18,35 @@
   {{$node := useImport .Node}}
 
   {{range $edge := .EdgeInfo.Associations}}
+    {{$edgeType := printf "%s.%s" (useImport "EdgeType") $edge.TsEdgeConst -}}
+    {{ reserveImport $importPath $edge.TsEdgeQueryEdgeName -}}
+    {{$edgeName := useImport $edge.TsEdgeQueryEdgeName -}}
+    export const {{$edge.GetCountFactoryName}} = new {{useImport "AssocEdgeCountLoaderFactory"}}(
+      {{$edgeType}},
+    );
+    export const {{$edge.GetDataFactoryName}} = new {{useImport "AssocEdgeLoaderFactory"}}(
+      {{$edgeType}},
+      () => {{$edgeName}},
+    );
+
+  {{end -}}
+
+  {{range $edge := .EdgeInfo.ForeignKeys -}}
+    {{$node := useImport $edge.NodeInfo.Node -}}
+      export const {{$edge.GetCountFactoryName}} = new {{useImport "RawCountLoaderFactory"}}(
+        {{$node}}.loaderOptions(),
+        {{$edge.QuotedDBColName}},
+      );
+      export const {{$edge.GetDataFactoryName}} = new {{useImport "IndexLoaderFactory"}}(
+        {{$node}}.loaderOptions(),
+        {{$edge.QuotedDBColName}},
+        {
+          toPrime: [{{useImport (printf "%sLoader" $edge.NodeInfo.NodeInstance)}}],
+        }
+      );
+  {{end -}}
+
+  {{range $edge := .EdgeInfo.Associations}}
     {{$name := printf "%sBase" $edge.TsEdgeQueryName -}}
     {{ reserveImport $importPath $edge.TsEdgeQueryEdgeName -}}
     {{$edgeName := useImport $edge.TsEdgeQueryEdgeName -}}
@@ -25,7 +54,13 @@
 
   export class {{$name}} extends {{useImport "AssocEdgeQueryBase"}}<{{$node}}, {{useImport .NodeInfo.Node}}, {{$edgeName}}> {
     constructor(viewer: {{useImport "Viewer"}}, src: {{useImport "EdgeQuerySource"}}<{{$node}}>) {
-      super(viewer, src, {{useImport "EdgeType"}}.{{$edge.TsEdgeConst}}, {{useImport .NodeInfo.Node}}.loaderOptions(), {{$edgeName}});
+      super(
+        viewer, 
+        src, 
+        {{$edge.GetCountFactoryName}},
+        {{$edge.GetDataFactoryName}},
+        {{useImport .NodeInfo.Node}}.loaderOptions(),
+      );
     }
 
     static query<T extends {{$name}}>(
@@ -55,13 +90,12 @@
 
     export class {{$name}} extends {{useImport "CustomEdgeQueryBase"}}<{{$node}}> {
       constructor(viewer: {{useImport "Viewer"}}, src: {{$srcNode}} | {{useImport "ID"}}) {
-        let id: {{useImport "ID"}};
-        if (typeof src === "object") {
-          id = src.id;
-        } else {
-          id = src;
-        }
-        super(viewer, src, {{$node}}.loaderOptions(), {{useImport "query"}}.Eq({{$edge.QuotedDBColName}}, id));
+        super(viewer, {
+          src: src, 
+          countLoaderFactory: {{$edge.GetCountFactoryName}},
+          dataLoaderFactory: {{$edge.GetDataFactoryName}},
+          options:{{$node}}.loaderOptions(), 
+        });
       }
 
       static query<T extends {{$name}}>(

@@ -4,14 +4,21 @@ import {
   ID,
   EdgeQueryableDataOptions,
   LoadEntOptions,
-  loadRows,
-  loadRow,
   Viewer,
-  applyPrivacyPolicyForRows,
-  DefaultLimit,
-} from "../ent";
+  LoaderFactory,
+  ConfigurableLoaderFactory,
+} from "../base";
+import { applyPrivacyPolicyForRows, DefaultLimit } from "../ent";
 import { BaseEdgeQuery } from "./query";
-import * as clause from "../clause";
+
+export interface CustomEdgeQueryOptions<T extends Ent> {
+  src: Ent | ID;
+  countLoaderFactory: LoaderFactory<ID, number>;
+  dataLoaderFactory: ConfigurableLoaderFactory<ID, Data[]>;
+  options: LoadEntOptions<T>;
+  // // defaults to created_at
+  sortColumn?: string;
+}
 
 export class CustomEdgeQueryBase<TDest extends Ent> extends BaseEdgeQuery<
   TDest,
@@ -20,29 +27,21 @@ export class CustomEdgeQueryBase<TDest extends Ent> extends BaseEdgeQuery<
   private id: ID;
   constructor(
     public viewer: Viewer,
-    src: Ent | ID,
-    private options: LoadEntOptions<TDest>,
-    private clause: clause.Clause,
-    private sortColumn: string = "created_at",
+    private options: CustomEdgeQueryOptions<TDest>,
   ) {
-    super(viewer, sortColumn);
-    if (typeof src === "object") {
-      this.id = src.id;
+    super(viewer, options.sortColumn || "created_at");
+    options.sortColumn = options.sortColumn || "created_at";
+    if (typeof options.src === "object") {
+      this.id = options.src.id;
     } else {
-      this.id = src;
+      this.id = options.src;
     }
   }
 
   async queryRawCount(): Promise<number> {
-    const row = await loadRow({
-      ...this.options,
-      fields: ["count(1)"],
-      clause: this.clause,
-    });
-    if (!row) {
-      throw new Error(`could not find count`);
-    }
-    return parseInt(row.count, 10);
+    return await this.options.countLoaderFactory
+      .createLoader(this.viewer.context)
+      .load(this.id);
   }
 
   async queryAllRawCount(): Promise<Map<ID, number>> {
@@ -51,22 +50,17 @@ export class CustomEdgeQueryBase<TDest extends Ent> extends BaseEdgeQuery<
   }
 
   protected async loadRawData(options: EdgeQueryableDataOptions) {
-    let cls = this.clause;
-    if (options.clause) {
-      cls = clause.And(cls, options.clause);
-    }
+    const loader = this.options.dataLoaderFactory.createConfigurableLoader(
+      options,
+      this.viewer.context,
+    );
     if (!options.orderby) {
-      options.orderby = `${this.sortColumn} DESC`;
+      options.orderby = `${this.options.sortColumn} DESC`;
     }
     if (!options.limit) {
       options.limit = DefaultLimit;
     }
-    const rows = await loadRows({
-      ...this.options,
-      ...options,
-      clause: cls,
-      context: this.viewer.context,
-    });
+    const rows = await loader.load(this.id);
     this.edges.set(this.id, rows);
   }
 
@@ -78,9 +72,8 @@ export class CustomEdgeQueryBase<TDest extends Ent> extends BaseEdgeQuery<
     const ents = await applyPrivacyPolicyForRows(
       this.viewer,
       rows,
-      this.options,
+      this.options.options,
     );
-    //    console.log(ents);
     return Array.from(ents.values());
   }
 }

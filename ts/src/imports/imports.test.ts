@@ -32,7 +32,7 @@ test("AuthResolver", () => {
   let importInfo = file.imports.get("ID");
   expect(importInfo).toBeDefined();
   expect(importInfo!.defaultImport).toBeFalsy();
-  expect(importInfo!.importPath).toBe("../../../core/ent");
+  expect(importInfo!.importPath).toBe("../../../core/base");
 });
 
 test("ViewerResolver", () => {

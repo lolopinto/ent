@@ -26,8 +26,7 @@ import { defaultTimestampParser } from "../core/db";
 import { BaseEntSchemaWithTZ } from "./base_schema";
 import { DBType } from "./schema";
 import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
-import { ID, Ent, Viewer, Data } from "../core/ent";
-import { validate } from "graphql";
+import { ID, Ent, Viewer, Data } from "../core/base";
 
 class UserSchema extends BaseEntSchema {
   fields: Field[] = [

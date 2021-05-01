@@ -1,6 +1,7 @@
 import pg, { Pool, ClientConfig, PoolClient } from "pg";
 import * as fs from "fs";
 import { safeLoad } from "js-yaml";
+import { log } from "./logger";
 
 export interface Database {
   database?: string;
@@ -93,11 +94,15 @@ function getClientConfig(args?: {
 }
 
 export default class DB {
-  private static instance: DB;
+  static instance: DB;
 
   private pool: Pool;
   private constructor(public config: ClientConfig) {
     this.pool = new Pool(config);
+
+    this.pool.on("error", (err, client) => {
+      log("error", err);
+    });
   }
 
   getPool(): Pool {

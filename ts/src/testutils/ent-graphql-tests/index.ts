@@ -2,7 +2,7 @@
 // the circular dependencies btw this package and ent-graphql-tests seems to imply something needs to change
 import express, { Express, RequestHandler } from "express";
 import { graphqlHTTP } from "express-graphql";
-import { Viewer } from "../../core/ent";
+import { Viewer } from "../../core/base";
 import {
   GraphQLSchema,
   GraphQLObjectType,

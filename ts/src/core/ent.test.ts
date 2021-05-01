@@ -10,22 +10,20 @@ import { Pool } from "pg";
 import { QueryRecorder } from "../testutils/db_mock";
 import { Field, StringType, UUIDType } from "../schema";
 import { createRowForTest } from "../testutils/write";
+import { ID, Ent, Data, PrivacyPolicy, Viewer } from "./base";
 import {
   AssocEdge,
   getEdgeTypeInGroup,
   loadCustomEdges,
   loadEdges,
-  ID,
-  Ent,
-  Data,
-  Viewer,
   loadDerivedEnt,
   loadDerivedEntX,
   loadEnt,
   loadEntX,
 } from "./ent";
-import { PrivacyPolicy, AlwaysDenyRule, AllowIfViewerRule } from "./privacy";
-import { Context, ContextCache } from "./context";
+import { AlwaysDenyRule, AllowIfViewerRule } from "./privacy";
+import { TestContext } from "../testutils/context/test_context";
+import { ObjectLoaderFactory } from "./loaders";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -251,23 +249,18 @@ test("custom edge", async () => {
   expect(edge2).toBeInstanceOf(AssocEdge);
 });
 
-class contextImpl implements Context {
-  cache?: ContextCache = new ContextCache();
-  viewer = new LoggedOutViewer(this);
-
-  getViewer(): Viewer {
-    return this.viewer;
-  }
-}
-
 describe("loadEnt(X)", () => {
   const noCtxV = new LoggedOutViewer();
+  const fields = ["id", "foo"];
+  const tableName = "users";
+
   const options = {
     ent: User,
-    fields: ["id", "foo"],
-    tableName: "users",
+    fields,
+    tableName,
+    loaderFactory: new ObjectLoaderFactory({ fields, tableName }),
   };
-  const ctx = new contextImpl();
+  const ctx = new TestContext();
 
   test("loadEnt. no data. no context", async () => {
     const ent = await loadEnt(noCtxV, "1", options);
@@ -284,7 +277,7 @@ describe("loadEnt(X)", () => {
       await loadEntX(noCtxV, "1", options);
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toMatch(/couldn't find row for query id/);
+      expect(e.message).toMatch(/couldn't find row for value/);
     }
   });
 
@@ -293,7 +286,7 @@ describe("loadEnt(X)", () => {
       await loadEntX(ctx.getViewer(), "1", options);
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toMatch(/couldn't find row for id 1/);
+      expect(e.message).toMatch(/couldn't find row for value 1/);
     }
   });
 
@@ -363,16 +356,23 @@ describe("loadEnt(X)", () => {
     return action.builder;
   }
 
+  const user2Options = {
+    ent: User2,
+    fields: ["id", "foo"],
+    tableName: "user2s",
+    loaderFactory: new ObjectLoaderFactory({
+      fields: ["id", "foo"],
+      tableName: "user2s",
+    }),
+  };
+
   test("loadEntX. not visible privacy. with context", async () => {
     const b = getBuilder();
     await b.saveX();
     const user = await b.editedEntX();
     try {
-      await loadEntX(ctx.getViewer(), user.id, {
-        ent: User2,
-        fields: ["id", "foo"],
-        tableName: "user2s",
-      });
+      await loadEntX(ctx.getViewer(), user.id, user2Options);
+
       fail("should have thrown");
     } catch (e) {
       expect(e.message).toMatch(
@@ -386,11 +386,7 @@ describe("loadEnt(X)", () => {
     await b.saveX();
     const user = await b.editedEntX();
     try {
-      await loadEntX(noCtxV, user.id, {
-        ent: User2,
-        fields: ["id", "foo"],
-        tableName: "user2s",
-      });
+      await loadEntX(noCtxV, user.id, user2Options);
       fail("should have thrown");
     } catch (e) {
       expect(e.message).toMatch(
@@ -409,10 +405,14 @@ describe("loadEnt(X)", () => {
         // this would throw in SQL land since columns don't exist but we're more flexible with parse_sql so need to handle this
         fields: ["firstName", "lastName"],
         tableName: "user2s",
+        loaderFactory: new ObjectLoaderFactory({
+          fields: ["id", "foo"],
+          tableName: "user2s",
+        }),
       });
     } catch (e) {
       expect(e.message).toMatch(
-        /ent undefined of type User2 is not visible for privacy reasons/,
+        /ent (.+) of type User2 is not visible for privacy reasons/,
       );
     }
   });
