@@ -9,13 +9,12 @@ import {
   loadEnts,
   LoadEntOptions,
   AssocEdge,
-  loadRow,
-  loadRowX,
   AlwaysDenyRule,
   AllowIfViewerRule,
   PrivacyPolicy,
-  query,
   getEdgeTypeInGroup,
+  ObjectLoaderFactory,
+  Context,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import {
@@ -31,6 +30,16 @@ import {
 import schema from "src/schema/event";
 
 const tableName = "events";
+const fields = [
+  "id",
+  "created_at",
+  "updated_at",
+  "name",
+  "user_id",
+  "start_time",
+  "end_time",
+  "location",
+];
 
 export enum EventRsvpStatus {
   Invited = "invited",
@@ -108,21 +117,21 @@ export class EventBase {
   static async loadRawData<T extends EventBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data | null> {
-    return await loadRow({
-      ...EventBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    return await eventLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends EventBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data> {
-    return await loadRowX({
-      ...EventBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    const row = await eventLoader.createLoader(context).load(id);
+    if (!row) {
+      throw new Error(`couldn't load row for ${id}`);
+    }
+    return row;
   }
 
   static loaderOptions<T extends EventBase>(
@@ -130,22 +139,10 @@ export class EventBase {
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
-      fields: EventBase.getFields(),
+      fields: fields,
       ent: this,
+      loaderFactory: eventLoader,
     };
-  }
-
-  private static getFields(): string[] {
-    return [
-      "id",
-      "created_at",
-      "updated_at",
-      "name",
-      "user_id",
-      "start_time",
-      "end_time",
-      "location",
-    ];
   }
 
   private static schemaFields: Map<string, Field>;
@@ -215,3 +212,9 @@ export class EventBase {
     return loadEntX(this.viewer, this.creatorID, User.loaderOptions());
   }
 }
+
+export const eventLoader = new ObjectLoaderFactory({
+  tableName,
+  fields,
+  pkey: "id",
+});

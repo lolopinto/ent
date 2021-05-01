@@ -19,6 +19,8 @@ import {
   UserToMaybeEventsQuery,
   UserToSelfContactQuery,
   UserToHostedEventsQuery,
+  authCodeLoader,
+  contactLoader,
   UserToCreatedEventsEdge,
   UserToDeclinedEventsEdge,
   UserToEventsAttendingEdge,
@@ -34,8 +36,98 @@ import {
   EdgeQuerySource,
   AssocEdgeQueryBase,
   CustomEdgeQueryBase,
-  query,
+  RawCountLoaderFactory,
+  AssocEdgeCountLoaderFactory,
+  AssocEdgeLoaderFactory,
+  IndexLoaderFactory,
 } from "@lolopinto/ent";
+
+export const userToCreatedEventsCountLoaderFactory = new AssocEdgeCountLoaderFactory(
+  EdgeType.UserToCreatedEvents,
+);
+export const userToCreatedEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.UserToCreatedEvents,
+  () => UserToCreatedEventsEdge,
+);
+
+export const userToDeclinedEventsCountLoaderFactory = new AssocEdgeCountLoaderFactory(
+  EdgeType.UserToDeclinedEvents,
+);
+export const userToDeclinedEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.UserToDeclinedEvents,
+  () => UserToDeclinedEventsEdge,
+);
+
+export const userToEventsAttendingCountLoaderFactory = new AssocEdgeCountLoaderFactory(
+  EdgeType.UserToEventsAttending,
+);
+export const userToEventsAttendingDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.UserToEventsAttending,
+  () => UserToEventsAttendingEdge,
+);
+
+export const userToFriendsCountLoaderFactory = new AssocEdgeCountLoaderFactory(
+  EdgeType.UserToFriends,
+);
+export const userToFriendsDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.UserToFriends,
+  () => UserToFriendsEdge,
+);
+
+export const userToInvitedEventsCountLoaderFactory = new AssocEdgeCountLoaderFactory(
+  EdgeType.UserToInvitedEvents,
+);
+export const userToInvitedEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.UserToInvitedEvents,
+  () => UserToInvitedEventsEdge,
+);
+
+export const userToMaybeEventsCountLoaderFactory = new AssocEdgeCountLoaderFactory(
+  EdgeType.UserToMaybeEvents,
+);
+export const userToMaybeEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.UserToMaybeEvents,
+  () => UserToMaybeEventsEdge,
+);
+
+export const userToSelfContactCountLoaderFactory = new AssocEdgeCountLoaderFactory(
+  EdgeType.UserToSelfContact,
+);
+export const userToSelfContactDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.UserToSelfContact,
+  () => UserToSelfContactEdge,
+);
+
+export const userToHostedEventsCountLoaderFactory = new AssocEdgeCountLoaderFactory(
+  EdgeType.UserToHostedEvents,
+);
+export const userToHostedEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.UserToHostedEvents,
+  () => UserToHostedEventsEdge,
+);
+
+export const userToAuthCodesCountLoaderFactory = new RawCountLoaderFactory(
+  AuthCode.loaderOptions(),
+  "user_id",
+);
+export const userToAuthCodesDataLoaderFactory = new IndexLoaderFactory(
+  AuthCode.loaderOptions(),
+  "user_id",
+  {
+    toPrime: [authCodeLoader],
+  },
+);
+export const userToContactsCountLoaderFactory = new RawCountLoaderFactory(
+  Contact.loaderOptions(),
+  "user_id",
+);
+export const userToContactsDataLoaderFactory = new IndexLoaderFactory(
+  Contact.loaderOptions(),
+  "user_id",
+  {
+    toPrime: [contactLoader],
+  },
+);
 
 export class UserToCreatedEventsQueryBase extends AssocEdgeQueryBase<
   User,
@@ -46,9 +138,9 @@ export class UserToCreatedEventsQueryBase extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.UserToCreatedEvents,
+      userToCreatedEventsCountLoaderFactory,
+      userToCreatedEventsDataLoaderFactory,
       Event.loaderOptions(),
-      UserToCreatedEventsEdge,
     );
   }
 
@@ -90,9 +182,9 @@ export class UserToDeclinedEventsQueryBase extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.UserToDeclinedEvents,
+      userToDeclinedEventsCountLoaderFactory,
+      userToDeclinedEventsDataLoaderFactory,
       Event.loaderOptions(),
-      UserToDeclinedEventsEdge,
     );
   }
 
@@ -134,9 +226,9 @@ export class UserToEventsAttendingQueryBase extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.UserToEventsAttending,
+      userToEventsAttendingCountLoaderFactory,
+      userToEventsAttendingDataLoaderFactory,
       Event.loaderOptions(),
-      UserToEventsAttendingEdge,
     );
   }
 
@@ -178,9 +270,9 @@ export class UserToFriendsQueryBase extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.UserToFriends,
+      userToFriendsCountLoaderFactory,
+      userToFriendsDataLoaderFactory,
       User.loaderOptions(),
-      UserToFriendsEdge,
     );
   }
 
@@ -234,9 +326,9 @@ export class UserToInvitedEventsQueryBase extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.UserToInvitedEvents,
+      userToInvitedEventsCountLoaderFactory,
+      userToInvitedEventsDataLoaderFactory,
       Event.loaderOptions(),
-      UserToInvitedEventsEdge,
     );
   }
 
@@ -278,9 +370,9 @@ export class UserToMaybeEventsQueryBase extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.UserToMaybeEvents,
+      userToMaybeEventsCountLoaderFactory,
+      userToMaybeEventsDataLoaderFactory,
       Event.loaderOptions(),
-      UserToMaybeEventsEdge,
     );
   }
 
@@ -322,9 +414,9 @@ export class UserToSelfContactQueryBase extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.UserToSelfContact,
+      userToSelfContactCountLoaderFactory,
+      userToSelfContactDataLoaderFactory,
       Contact.loaderOptions(),
-      UserToSelfContactEdge,
     );
   }
 
@@ -346,9 +438,9 @@ export class UserToHostedEventsQueryBase extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.UserToHostedEvents,
+      userToHostedEventsCountLoaderFactory,
+      userToHostedEventsDataLoaderFactory,
       Event.loaderOptions(),
-      UserToHostedEventsEdge,
     );
   }
 
@@ -383,13 +475,12 @@ export class UserToHostedEventsQueryBase extends AssocEdgeQueryBase<
 
 export class UserToAuthCodesQueryBase extends CustomEdgeQueryBase<AuthCode> {
   constructor(viewer: Viewer, src: User | ID) {
-    let id: ID;
-    if (typeof src === "object") {
-      id = src.id;
-    } else {
-      id = src;
-    }
-    super(viewer, src, AuthCode.loaderOptions(), query.Eq("user_id", id));
+    super(viewer, {
+      src: src,
+      countLoaderFactory: userToAuthCodesCountLoaderFactory,
+      dataLoaderFactory: userToAuthCodesDataLoaderFactory,
+      options: AuthCode.loaderOptions(),
+    });
   }
 
   static query<T extends UserToAuthCodesQueryBase>(
@@ -403,13 +494,12 @@ export class UserToAuthCodesQueryBase extends CustomEdgeQueryBase<AuthCode> {
 
 export class UserToContactsQueryBase extends CustomEdgeQueryBase<Contact> {
   constructor(viewer: Viewer, src: User | ID) {
-    let id: ID;
-    if (typeof src === "object") {
-      id = src.id;
-    } else {
-      id = src;
-    }
-    super(viewer, src, Contact.loaderOptions(), query.Eq("user_id", id));
+    super(viewer, {
+      src: src,
+      countLoaderFactory: userToContactsCountLoaderFactory,
+      dataLoaderFactory: userToContactsDataLoaderFactory,
+      options: Contact.loaderOptions(),
+    });
   }
 
   static query<T extends UserToContactsQueryBase>(

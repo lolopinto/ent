@@ -49,7 +49,7 @@ export class EventBuilder implements Builder<Event> {
       viewer: viewer,
       operation: this.operation,
       tableName: "events",
-      ent: Event,
+      loaderOptions: Event.loaderOptions(),
       builder: this,
       action: action,
       schema: schema,

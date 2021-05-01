@@ -18,7 +18,53 @@ import {
   EventToInvitedEdge,
   EventToMaybeEdge,
 } from "src/ent/internal";
-import { Viewer, EdgeQuerySource, AssocEdgeQueryBase } from "@lolopinto/ent";
+import {
+  Viewer,
+  EdgeQuerySource,
+  AssocEdgeQueryBase,
+  AssocEdgeCountLoaderFactory,
+  AssocEdgeLoaderFactory,
+} from "@lolopinto/ent";
+
+export const eventToAttendingCountLoaderFactory = new AssocEdgeCountLoaderFactory(
+  EdgeType.EventToAttending,
+);
+export const eventToAttendingDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.EventToAttending,
+  () => EventToAttendingEdge,
+);
+
+export const eventToDeclinedCountLoaderFactory = new AssocEdgeCountLoaderFactory(
+  EdgeType.EventToDeclined,
+);
+export const eventToDeclinedDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.EventToDeclined,
+  () => EventToDeclinedEdge,
+);
+
+export const eventToHostsCountLoaderFactory = new AssocEdgeCountLoaderFactory(
+  EdgeType.EventToHosts,
+);
+export const eventToHostsDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.EventToHosts,
+  () => EventToHostsEdge,
+);
+
+export const eventToInvitedCountLoaderFactory = new AssocEdgeCountLoaderFactory(
+  EdgeType.EventToInvited,
+);
+export const eventToInvitedDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.EventToInvited,
+  () => EventToInvitedEdge,
+);
+
+export const eventToMaybeCountLoaderFactory = new AssocEdgeCountLoaderFactory(
+  EdgeType.EventToMaybe,
+);
+export const eventToMaybeDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.EventToMaybe,
+  () => EventToMaybeEdge,
+);
 
 export class EventToAttendingQueryBase extends AssocEdgeQueryBase<
   Event,
@@ -29,9 +75,9 @@ export class EventToAttendingQueryBase extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.EventToAttending,
+      eventToAttendingCountLoaderFactory,
+      eventToAttendingDataLoaderFactory,
       User.loaderOptions(),
-      EventToAttendingEdge,
     );
   }
 
@@ -85,9 +131,9 @@ export class EventToDeclinedQueryBase extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.EventToDeclined,
+      eventToDeclinedCountLoaderFactory,
+      eventToDeclinedDataLoaderFactory,
       User.loaderOptions(),
-      EventToDeclinedEdge,
     );
   }
 
@@ -141,9 +187,9 @@ export class EventToHostsQueryBase extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.EventToHosts,
+      eventToHostsCountLoaderFactory,
+      eventToHostsDataLoaderFactory,
       User.loaderOptions(),
-      EventToHostsEdge,
     );
   }
 
@@ -197,9 +243,9 @@ export class EventToInvitedQueryBase extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.EventToInvited,
+      eventToInvitedCountLoaderFactory,
+      eventToInvitedDataLoaderFactory,
       User.loaderOptions(),
-      EventToInvitedEdge,
     );
   }
 
@@ -253,9 +299,9 @@ export class EventToMaybeQueryBase extends AssocEdgeQueryBase<
     super(
       viewer,
       src,
-      EdgeType.EventToMaybe,
+      eventToMaybeCountLoaderFactory,
+      eventToMaybeDataLoaderFactory,
       User.loaderOptions(),
-      EventToMaybeEdge,
     );
   }
 

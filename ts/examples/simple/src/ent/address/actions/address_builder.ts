@@ -49,7 +49,7 @@ export class AddressBuilder implements Builder<Address> {
       viewer: viewer,
       operation: this.operation,
       tableName: "addresses",
-      ent: Address,
+      loaderOptions: Address.loaderOptions(),
       builder: this,
       action: action,
       schema: schema,
