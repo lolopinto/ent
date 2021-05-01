@@ -470,8 +470,7 @@ function verifyGroupedCacheHit(ids: ID[]) {
   ml.logs.forEach((log, idx) => {
     expect(log).toStrictEqual({
       "dataloader-cache-hit": ids[idx],
-      //      "tableName": "user_to_contacts_table",
-      "tableName": "TODO",
+      "tableName": "user_to_contacts_table",
     });
   });
 }

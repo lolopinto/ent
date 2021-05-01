@@ -15,22 +15,24 @@ import {
   performRawQuery,
   loadEdgeForID2,
   buildGroupQuery,
+  AssocEdgeData,
 } from "../ent";
 import * as clause from "../clause";
 import { logEnabled } from "../logger";
 import { cacheMap, getCustomLoader } from "./loader";
+import memoizee from "memoizee";
 
 function createLoader<T extends AssocEdge>(
   options: EdgeQueryableDataOptions,
   edgeType: string,
   edgeCtr: AssocEdgeConstructor<T>,
+  edgeData: AssocEdgeData,
 ) {
   const loaderOptions: DataLoader.Options<ID, T[]> = {};
 
   if (logEnabled("query")) {
-    // This is fetched later...
     loaderOptions.cacheMap = new cacheMap({
-      tableName: "TODO",
+      tableName: edgeData.edgeTable,
     });
   }
 
@@ -45,11 +47,6 @@ function createLoader<T extends AssocEdge>(
         ctr: edgeCtr,
       });
       return [r];
-    }
-
-    const edgeData = await loadEdgeData(edgeType);
-    if (!edgeData) {
-      throw new Error(`error loading edge data for ${edgeType}`);
     }
 
     let m = new Map<ID, number>();
@@ -105,18 +102,34 @@ interface AssocLoader<T extends AssocEdge> extends Loader<ID, T[]> {
 }
 
 export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
-  private loader: DataLoader<ID, T[]>;
+  private loaderFn: () => Promise<DataLoader<ID, T[]>>;
+  private loader: DataLoader<ID, T[]> | undefined;
   constructor(
     private edgeType: string,
     private edgeCtr: AssocEdgeConstructor<T>,
-    options: EdgeQueryableDataOptions,
+    private options: EdgeQueryableDataOptions,
     public context: Context,
   ) {
-    this.loader = createLoader(options, edgeType, edgeCtr);
+    this.loaderFn = memoizee(this.getLoader);
+  }
+
+  private async getLoader() {
+    const edgeData = await loadEdgeData(this.edgeType);
+    if (!edgeData) {
+      throw new Error(`error loading edge data for ${this.edgeType}`);
+    }
+    this.loader = createLoader(
+      this.options,
+      this.edgeType,
+      this.edgeCtr,
+      edgeData,
+    );
+    return this.loader;
   }
 
   async load(id: ID): Promise<T[]> {
-    return this.loader.load(id);
+    const loader = await this.loaderFn();
+    return loader.load(id);
   }
 
   // maybe eventually optimize this
@@ -131,7 +144,7 @@ export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
   }
 
   clearAll() {
-    this.loader.clearAll();
+    this.loader && this.loader.clearAll();
   }
 }
 
