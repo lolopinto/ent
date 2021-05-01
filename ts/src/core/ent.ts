@@ -998,11 +998,24 @@ export class AssocEdge {
   }
 
   getCursor(): string {
-    return getCursor(this, "time", (t) => t.getTime());
+    return getCursor({
+      row: this,
+      col: "time",
+      conv: (t) => t.getTime(),
+    });
   }
 }
 
-export function getCursor(row: Data, col: string, conv?: (any) => any) {
+interface cursorOptions {
+  row: Data;
+  col: string;
+  cursorKey?: string; // used by tests. if cursor is from one column but the key in the name is different e.g. time for assocs and created_at when taken from the object
+  conv?: (any) => any;
+}
+
+export function getCursor(opts: cursorOptions) {
+  const { row, col, conv } = opts;
+  //  row: Data, col: string, conv?: (any) => any) {
   if (!row) {
     throw new Error(`no row passed to getCursor`);
   }
@@ -1013,7 +1026,8 @@ export function getCursor(row: Data, col: string, conv?: (any) => any) {
   if (conv) {
     datum = conv(datum);
   }
-  const str = `${col}:${datum}`;
+  const cursorKey = opts.cursorKey || col;
+  const str = `${cursorKey}:${datum}`;
   return Buffer.from(str, "ascii").toString("base64");
 }
 

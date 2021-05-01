@@ -448,7 +448,7 @@ export async function applyPrivacyPolicy(
     // TODO privacy errors should not throw
     // but other expected errors should throw...
     // we shouldn't just hide them
-    log("error", e);
+    log("debug", e);
     return false;
   }
 }

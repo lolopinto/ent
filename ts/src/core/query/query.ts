@@ -411,11 +411,15 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
   }
 
   getCursor(row: TEdge): string {
-    return getCursor(row, this.sortCol, (datum) => {
-      if (datum instanceof Date) {
-        return datum.getTime();
-      }
-      return datum;
+    return getCursor({
+      row,
+      col: this.sortCol,
+      conv: (datum) => {
+        if (datum instanceof Date) {
+          return datum.getTime();
+        }
+        return datum;
+      },
     });
   }
 }
