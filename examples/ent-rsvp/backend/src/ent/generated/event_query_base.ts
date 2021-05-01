@@ -6,6 +6,10 @@ import {
   GuestData,
   GuestGroup,
   Guest,
+  eventActivityLoader,
+  guestDataLoader,
+  guestGroupLoader,
+  guestLoader,
 } from "src/ent/internal";
 import {
   ID,
@@ -22,6 +26,9 @@ export const eventToEventActivitiesCountLoaderFactory = new RawCountLoaderFactor
 export const eventToEventActivitiesDataLoaderFactory = new IndexLoaderFactory(
   EventActivity.loaderOptions(),
   "event_id",
+  {
+    toPrime: [eventActivityLoader],
+  },
 );
 export const eventToGuestDataCountLoaderFactory = new RawCountLoaderFactory(
   GuestData.loaderOptions(),
@@ -30,6 +37,9 @@ export const eventToGuestDataCountLoaderFactory = new RawCountLoaderFactory(
 export const eventToGuestDataDataLoaderFactory = new IndexLoaderFactory(
   GuestData.loaderOptions(),
   "event_id",
+  {
+    toPrime: [guestDataLoader],
+  },
 );
 export const eventToGuestGroupsCountLoaderFactory = new RawCountLoaderFactory(
   GuestGroup.loaderOptions(),
@@ -38,6 +48,9 @@ export const eventToGuestGroupsCountLoaderFactory = new RawCountLoaderFactory(
 export const eventToGuestGroupsDataLoaderFactory = new IndexLoaderFactory(
   GuestGroup.loaderOptions(),
   "event_id",
+  {
+    toPrime: [guestGroupLoader],
+  },
 );
 export const eventToGuestsCountLoaderFactory = new RawCountLoaderFactory(
   Guest.loaderOptions(),
@@ -46,6 +59,9 @@ export const eventToGuestsCountLoaderFactory = new RawCountLoaderFactory(
 export const eventToGuestsDataLoaderFactory = new IndexLoaderFactory(
   Guest.loaderOptions(),
   "event_id",
+  {
+    toPrime: [guestLoader],
+  },
 );
 
 export class EventToEventActivitiesQueryBase extends CustomEdgeQueryBase<

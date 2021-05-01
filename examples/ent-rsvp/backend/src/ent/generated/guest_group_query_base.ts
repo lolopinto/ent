@@ -8,6 +8,7 @@ import {
   EventActivityToAttendingQuery,
   EventActivityToDeclinedQuery,
   EventActivityToInvitesQuery,
+  guestLoader,
   GuestGroupToInvitedEventsEdge,
 } from "src/ent/internal";
 import {
@@ -37,6 +38,9 @@ export const guestGroupToGuestsCountLoaderFactory = new RawCountLoaderFactory(
 export const guestGroupToGuestsDataLoaderFactory = new IndexLoaderFactory(
   Guest.loaderOptions(),
   "guest_group_id",
+  {
+    toPrime: [guestLoader],
+  },
 );
 
 export class GuestGroupToInvitedEventsQueryBase extends AssocEdgeQueryBase<

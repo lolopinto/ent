@@ -9,6 +9,8 @@ import {
   EventActivityToAttendingQuery,
   EventActivityToDeclinedQuery,
   EventActivityToInvitesQuery,
+  authCodeLoader,
+  guestDataLoader,
   GuestToAttendingEventsEdge,
   GuestToDeclinedEventsEdge,
 } from "src/ent/internal";
@@ -47,6 +49,9 @@ export const guestToAuthCodesCountLoaderFactory = new RawCountLoaderFactory(
 export const guestToAuthCodesDataLoaderFactory = new IndexLoaderFactory(
   AuthCode.loaderOptions(),
   "guest_id",
+  {
+    toPrime: [authCodeLoader],
+  },
 );
 export const guestToGuestDataCountLoaderFactory = new RawCountLoaderFactory(
   GuestData.loaderOptions(),
@@ -55,6 +60,9 @@ export const guestToGuestDataCountLoaderFactory = new RawCountLoaderFactory(
 export const guestToGuestDataDataLoaderFactory = new IndexLoaderFactory(
   GuestData.loaderOptions(),
   "guest_id",
+  {
+    toPrime: [guestDataLoader],
+  },
 );
 
 export class GuestToAttendingEventsQueryBase extends AssocEdgeQueryBase<
