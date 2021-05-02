@@ -236,15 +236,6 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
     this.memoizedloadEdges = memoize(this.loadEdges.bind(this));
   }
 
-  // async memoizedloadEdges(): Promise<Map<ID, TEdge[]>> {
-  //   let ret = this.memoizedloadEdges;
-  //   if (!ret) {
-  //     ret = memoize(this.loadEdges.bind(this));
-  //     this.memoizedloadEdges = ret;
-  //   }
-  //   return await ret();
-  // }
-
   first(n: number, after?: string): this {
     this.assertQueryNotDispatched("first");
     this.filters.push(
@@ -420,23 +411,15 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
   }
 
   getCursor(row: TEdge): string {
-    return getCursor(row, this.sortCol, (datum) => {
-      if (datum instanceof Date) {
-        return datum.getTime();
-      }
-      return datum;
+    return getCursor({
+      row,
+      col: this.sortCol,
+      conv: (datum) => {
+        if (datum instanceof Date) {
+          return datum.getTime();
+        }
+        return datum;
+      },
     });
-    // if (!row) {
-    //   throw new Error(`no row passed to getCursor`);
-    // }
-    // let datum = row[this.sortCol];
-    // if (!datum) {
-    //   return "";
-    // }
-    // if (datum instanceof Date) {
-    //   datum = datum.getTime();
-    // }
-    // const str = `${this.sortCol}:${datum}`;
-    // return Buffer.from(str, "ascii").toString("base64");
   }
 }

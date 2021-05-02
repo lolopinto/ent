@@ -28,7 +28,6 @@ export interface OrchestratorOptions<T extends Ent> {
   viewer: Viewer;
   operation: WriteOperation;
   tableName: string;
-  //  ent: EntConstructor<T>;
   // should we make it nullable for delete?
   loaderOptions: LoadEntOptions<T>;
 

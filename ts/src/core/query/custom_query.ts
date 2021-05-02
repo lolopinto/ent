@@ -27,7 +27,7 @@ export class CustomEdgeQueryBase<TDest extends Ent> extends BaseEdgeQuery<
   private id: ID;
   constructor(
     public viewer: Viewer,
-    private options: CustomEdgeQueryOptions<TDest>, // src: Ent | ID, // private options: LoadEntOptions<TDest>, // private clause: clause.Clause, // // count loaderFactory // // TODO make this an options array // private loaderFactory: LoaderFactory<ID, number>, // private sortColumn: string = "created_at",
+    private options: CustomEdgeQueryOptions<TDest>,
   ) {
     super(viewer, options.sortColumn || "created_at");
     options.sortColumn = options.sortColumn || "created_at";

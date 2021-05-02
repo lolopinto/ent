@@ -98,13 +98,7 @@ export default class DB {
 
   private pool: Pool;
   private constructor(public config: ClientConfig) {
-    // TODO...
-    this.pool = new Pool({
-      ...config,
-      //      min: 5,
-      // max: 10, //needed for tests
-      // idleTimeoutMillis: 4000,
-    });
+    this.pool = new Pool(config);
 
     this.pool.on("error", (err, client) => {
       log("error", err);

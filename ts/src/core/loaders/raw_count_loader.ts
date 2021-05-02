@@ -25,8 +25,6 @@ export function createCountDataLoader(
     loaderOptions.cacheMap = new cacheMap(options);
   }
 
-  // key|clause...
-  // key is id|clause is what we're transforming to...
   return new DataLoader(async (keys: ID[]) => {
     if (!keys.length) {
       return [];

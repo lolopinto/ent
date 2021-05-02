@@ -46,11 +46,6 @@ commonTests({
     return UserToContactsQuery.query(viewer, user);
   },
   tableName: "user_to_contacts_table",
-  getFilterFn(user: FakeUser) {
-    return function(row: AssocEdge) {
-      return row.id1 === user.id;
-    };
-  },
   entsLength: 2,
   where: "id1 = $1 AND edge_type = $2",
   sortCol: "time",
