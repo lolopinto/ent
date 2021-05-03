@@ -14,6 +14,7 @@ import {
   PrivacyPolicy,
   ObjectLoaderFactory,
   Context,
+  IndexLoaderFactory,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import {
@@ -103,6 +104,37 @@ export class GuestGroupBase {
     return row;
   }
 
+  static async loadFromEventID<T extends GuestGroupBase>(
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    viewer: Viewer,
+    eventID: ID,
+  ): Promise<T[]> {
+    const rows = await guestGroupEventIDLoader
+      .createLoader(viewer.context)
+      .load(eventID);
+    const ids = rows.map((row) => row["id"]);
+    return loadEnts(viewer, GuestGroupBase.loaderOptions.apply(this), ...ids);
+  }
+
+  static async loadIDsFromEventID<T extends GuestGroupBase>(
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    eventID: ID,
+    context?: Context,
+  ): Promise<ID[] | null> {
+    const rows = await guestGroupEventIDLoader
+      .createLoader(context)
+      .load(eventID);
+    return rows.map((row) => row["id"]);
+  }
+
+  static async loadRawDataFromEventID<T extends GuestGroupBase>(
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    eventID: ID,
+    context?: Context,
+  ): Promise<Data[] | null> {
+    return guestGroupEventIDLoader.createLoader(context).load(eventID);
+  }
+
   static loaderOptions<T extends GuestGroupBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
   ): LoadEntOptions<T> {
@@ -149,3 +181,11 @@ export const guestGroupLoader = new ObjectLoaderFactory({
   fields,
   pkey: "id",
 });
+
+export const guestGroupEventIDLoader = new IndexLoaderFactory(
+  { tableName, fields },
+  "event_id",
+  {
+    toPrime: [guestGroupLoader],
+  },
+);
