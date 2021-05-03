@@ -169,9 +169,10 @@ func (fieldInfo *FieldInfo) GraphQLFields() []*Field {
 
 // ForeignKeyInfo stores config and field name of the foreign key object
 type ForeignKeyInfo struct {
-	Config string
-	Field  string
-	Name   string
+	Config       string
+	Field        string
+	Name         string
+	DisableIndex bool
 }
 
 func GetNilableGoType(f *Field) string {

@@ -148,6 +148,7 @@ func TestParseInputWithForeignKey(t *testing.T) {
 							DBType: input.UUID,
 						},
 						ForeignKey: &input.ForeignKey{Schema: "User", Column: "id"},
+						Index:      true,
 					},
 				},
 			},
@@ -172,6 +173,60 @@ func TestParseInputWithForeignKey(t *testing.T) {
 
 	eventsEdge := userConfig.NodeData.EdgeInfo.GetForeignKeyEdgeByName("Events")
 	assert.NotNil(t, eventsEdge)
+}
+
+func TestParseInputWithForeignKeyIndexDisabled(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+					},
+				},
+			},
+			"Event": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+					},
+					{
+						Name: "UserID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						ForeignKey: &input.ForeignKey{Schema: "User", Column: "id", DisableIndex: true},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	// still config name because of artifact of go and old schema
+	eventConfig := schema.Nodes["EventConfig"]
+	assert.NotNil(t, eventConfig)
+
+	// hmm should there be a fieldEdge here? it seems like yes
+	userEdge := eventConfig.NodeData.EdgeInfo.GetFieldEdgeByName("User")
+	assert.NotNil(t, userEdge)
+
+	// still config name because of artifact of go and old schema
+	userConfig := schema.Nodes["UserConfig"]
+	assert.NotNil(t, userConfig)
+
+	eventsEdge := userConfig.NodeData.EdgeInfo.GetForeignKeyEdgeByName("Events")
+	assert.Nil(t, eventsEdge)
 }
 
 func TestParseInputWithForeignKeyWithCustomName(t *testing.T) {

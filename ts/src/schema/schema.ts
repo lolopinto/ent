@@ -178,6 +178,7 @@ export interface ForeignKey {
   column: string;
   name?: string; // optional but if we have multiple foreign keys to the same schema, it becomes required for all but one
   // defaults to pluralize(schema) if not provided
+  disableIndex?: boolean;
 }
 
 export interface FieldEdge {
