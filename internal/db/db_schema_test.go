@@ -84,9 +84,9 @@ func TestTableForNode(t *testing.T) {
 	// 1 primary key, 1 unique, 1 index constraints expected
 	testConstraints(t, table, 3)
 
-	// 1 primary key and 1 foreign key constraint expected
+	// 1 primary key, 1 foreign key constraint, 1 index expected
 	table = getTestTable("TodoConfig", t)
-	testConstraints(t, table, 2)
+	testConstraints(t, table, 3)
 }
 
 func TestTablesFromSchema(t *testing.T) {
@@ -780,7 +780,7 @@ func TestMultiColumnUniqueKey(t *testing.T) {
 
 	table := getTestTableFromSchema("ContactConfig", dbSchema, t)
 	constraints := table.Constraints
-	require.Len(t, constraints, 3)
+	require.Len(t, constraints, 4)
 
 	constraint := getTestUniqueKeyConstraintFromTable(t, table, "emailAddress", "userID")
 
@@ -1043,6 +1043,124 @@ func TestPolymorphicFieldWithRestrictedTypes(t *testing.T) {
 	)
 }
 
+func TestForeignKeyTS(t *testing.T) {
+	dbSchema := getSchemaFromCode(
+		t,
+		map[string]string{
+			"user.ts": testhelper.GetCodeWithSchema(`
+				import {Field, StringType, BaseEntSchema} from "{schema}";
+
+				export default class User extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({
+							name: 'firstName',
+						}),
+						StringType({
+							name: 'lastName',
+						}),
+					];
+				}
+			`),
+			"contact.ts": testhelper.GetCodeWithSchema(`
+				import {BaseEntSchema, Field, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
+
+				export default class Contact extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({
+							name: "emailAddress",
+						}),
+						UUIDType({
+							name: "userID",
+							foreignKey: {schema: "User", column:"ID"},
+						}),
+					];
+				}
+			`),
+		},
+	)
+
+	table := getTestTableFromSchema("ContactConfig", dbSchema, t)
+	constraints := table.Constraints
+	// pkey, index, fkey
+	require.Len(t, constraints, 3)
+
+	constraint := getTestForeignKeyConstraintFromTable(t, table, "userID")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.ForeignKeyConstraint([%s], [%s], name=%s, ondelete=%s)",
+			strconv.Quote("user_id"),
+			strconv.Quote("users.id"),
+			strconv.Quote("contacts_user_id_fkey"),
+			strconv.Quote("CASCADE"),
+		),
+	)
+
+	constraint2 := getTestIndexedConstraintFromTable(t, table, "userID")
+
+	testConstraint(
+		t,
+		constraint2,
+		fmt.Sprintf("sa.Index(%s, %s)", strconv.Quote("contacts_user_id_idx"), strconv.Quote("user_id")),
+	)
+}
+
+func TestForeignKeyIndexDisabled(t *testing.T) {
+	dbSchema := getSchemaFromCode(
+		t,
+		map[string]string{
+			"user.ts": testhelper.GetCodeWithSchema(`
+				import {Field, StringType, BaseEntSchema} from "{schema}";
+
+				export default class User extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({
+							name: 'firstName',
+						}),
+						StringType({
+							name: 'lastName',
+						}),
+					];
+				}
+			`),
+			"contact.ts": testhelper.GetCodeWithSchema(`
+				import {BaseEntSchema, Field, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
+
+				export default class Contact extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({
+							name: "emailAddress",
+						}),
+						UUIDType({
+							name: "userID",
+							foreignKey: {schema: "User", column:"ID", disableIndex:true},
+						}),
+					];
+				}
+			`),
+		},
+	)
+
+	table := getTestTableFromSchema("ContactConfig", dbSchema, t)
+	constraints := table.Constraints
+	// pkey, fkey
+	require.Len(t, constraints, 2)
+
+	constraint := getTestForeignKeyConstraintFromTable(t, table, "userID")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.ForeignKeyConstraint([%s], [%s], name=%s, ondelete=%s)",
+			strconv.Quote("user_id"),
+			strconv.Quote("users.id"),
+			strconv.Quote("contacts_user_id_fkey"),
+			strconv.Quote("CASCADE"),
+		),
+	)
+}
+
 func TestMultiColumnIndex(t *testing.T) {
 	dbSchema := getSchemaFromCode(
 		t,
@@ -1137,7 +1255,7 @@ func TestMultiColumnUniqueIndex(t *testing.T) {
 
 	table := getTestTableFromSchema("ContactConfig", dbSchema, t)
 	constraints := table.Constraints
-	require.Len(t, constraints, 3)
+	require.Len(t, constraints, 4)
 
 	constraint := getTestIndexedConstraintFromTable(t, table, "emailAddress", "userID")
 

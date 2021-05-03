@@ -151,10 +151,14 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 	}
 
 	if f.ForeignKey != nil {
+		if !f.ForeignKey.DisableIndex && !f.Unique {
+			ret.index = true
+		}
 		ret.fkey = &ForeignKeyInfo{
-			Config: getConfigName(f.ForeignKey.Schema),
-			Field:  f.ForeignKey.Column,
-			Name:   f.ForeignKey.Name,
+			Config:       getConfigName(f.ForeignKey.Schema),
+			Field:        f.ForeignKey.Column,
+			Name:         f.ForeignKey.Name,
+			DisableIndex: f.ForeignKey.DisableIndex,
 		}
 	}
 
@@ -243,6 +247,10 @@ func (f *Field) AddForeignKeyEdgeToInverseEdgeInfo(edgeInfo *edge.EdgeInfo, node
 	fkeyInfo := f.ForeignKeyInfo()
 	if fkeyInfo == nil {
 		panic(fmt.Errorf("invalid field %s added", f.FieldName))
+	}
+	// nothing to do here
+	if fkeyInfo.DisableIndex {
+		return
 	}
 	edgeName := fkeyInfo.Name
 	if edgeName == "" {
