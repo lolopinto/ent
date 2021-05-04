@@ -256,7 +256,7 @@ func (f *Field) AddForeignKeyEdgeToInverseEdgeInfo(edgeInfo *edge.EdgeInfo, node
 	if edgeName == "" {
 		edgeName = inflection.Plural(nodeName)
 	}
-	edgeInfo.AddForeignKeyEdgeFromInverseFieldInfo(
+	edgeInfo.AddEdgeFromForeignKeyIndex(
 		f.GetQuotedDBColName(),
 		edgeName,
 		nodeName,

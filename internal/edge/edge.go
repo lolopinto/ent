@@ -22,17 +22,23 @@ import (
 	"github.com/lolopinto/ent/internal/util"
 )
 
+// new concepts: IndexedEdgeQueries
+// EdgeQueries that will be in _query_base.tmpl file
+
+// DestinationEdges. edges that can be gotten from this node
+// foreign key edges + polymorphic indexed fields...
+// foreign
 type EdgeInfo struct {
 	// TODO hide FieldEdges etc
 	// make them accessors since we want to control mutations
-	FieldEdges        []*FieldEdge
-	fieldEdgeMap      map[string]*FieldEdge
-	ForeignKeys       []*ForeignKeyEdge
-	IndexedEdges      []*IndexedEdge
-	indexedEdgeMap    map[string]*IndexedEdge
-	SrcIndexedEdges   []*IndexedEdge
-	srcIndexedEdgeMap map[string]*IndexedEdge
-	foreignKeyMap     map[string]*ForeignKeyEdge
+	FieldEdges   []*FieldEdge
+	fieldEdgeMap map[string]*FieldEdge
+
+	IndexedEdgeQueries    []ConnectionEdge
+	indexedEdgeQueriesMap map[string]ConnectionEdge
+	DestinationEdges      []ConnectionEdge
+	destinationEdgesMap   map[string]ConnectionEdge
+
 	Associations      []*AssociationEdge
 	assocMap          map[string]*AssociationEdge
 	AssocGroups       []*AssociationEdgeGroup
@@ -49,11 +55,10 @@ func NewEdgeInfo(packageName string) *EdgeInfo {
 	ret.SourcePackageName = packageName
 	ret.SourceNodeName = strcase.ToCamel(packageName)
 	ret.fieldEdgeMap = make(map[string]*FieldEdge)
-	ret.foreignKeyMap = make(map[string]*ForeignKeyEdge)
-	ret.indexedEdgeMap = make(map[string]*IndexedEdge)
 	ret.assocMap = make(map[string]*AssociationEdge)
 	ret.assocGroupsMap = make(map[string]*AssociationEdgeGroup)
-	ret.srcIndexedEdgeMap = make(map[string]*IndexedEdge)
+	ret.indexedEdgeQueriesMap = make(map[string]ConnectionEdge)
+	ret.destinationEdgesMap = make(map[string]ConnectionEdge)
 	ret.keys = make(map[string]bool)
 	return ret
 }
@@ -73,26 +78,10 @@ func (e *EdgeInfo) addEdge(edge Edge) {
 		e.fieldEdgeMap[fieldEdge.EdgeName] = fieldEdge
 		return
 	}
-	fkeyEdge, ok := edge.(*ForeignKeyEdge)
-	if ok {
-		e.ForeignKeys = append(e.ForeignKeys, fkeyEdge)
-		e.foreignKeyMap[fkeyEdge.EdgeName] = fkeyEdge
-		return
-	}
 	assocEdge, ok := edge.(*AssociationEdge)
 	if ok {
 		e.Associations = append(e.Associations, assocEdge)
 		e.assocMap[assocEdge.EdgeName] = assocEdge
-	}
-	indexedEdge, ok := edge.(*IndexedEdge)
-	if ok {
-		if indexedEdge.src {
-			e.SrcIndexedEdges = append(e.SrcIndexedEdges, indexedEdge)
-			e.srcIndexedEdgeMap[indexedEdge.EdgeName] = indexedEdge
-		} else {
-			e.IndexedEdges = append(e.IndexedEdges, indexedEdge)
-			e.indexedEdgeMap[indexedEdge.EdgeName] = indexedEdge
-		}
 	}
 }
 
@@ -107,7 +96,16 @@ func (e *EdgeInfo) GetFieldEdgeByName(edgeName string) *FieldEdge {
 }
 
 func (e *EdgeInfo) GetForeignKeyEdgeByName(edgeName string) *ForeignKeyEdge {
-	return e.foreignKeyMap[edgeName]
+	edge := e.destinationEdgesMap[edgeName]
+	fkey, ok := edge.(*ForeignKeyEdge)
+	if ok {
+		return fkey
+	}
+	return nil
+}
+
+func (e *EdgeInfo) GetDestinationEdgeByName(edgeName string) ConnectionEdge {
+	return e.destinationEdgesMap[edgeName]
 }
 
 func (e *EdgeInfo) GetAssociationEdgeByName(edgeName string) *AssociationEdge {
@@ -115,7 +113,12 @@ func (e *EdgeInfo) GetAssociationEdgeByName(edgeName string) *AssociationEdge {
 }
 
 func (e *EdgeInfo) GetIndexedEdgeByName(edgeName string) *IndexedEdge {
-	return e.indexedEdgeMap[edgeName]
+	edge := e.destinationEdgesMap[edgeName]
+	iEdge, ok := edge.(*IndexedEdge)
+	if ok {
+		return iEdge
+	}
+	return nil
 }
 
 func (e *EdgeInfo) GetAssociationEdgeGroupByStatusName(groupStatusName string) *AssociationEdgeGroup {
@@ -130,10 +133,6 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo
 	e.addFieldEdgeFromInfo(fieldName, fieldEdgeInfo.Config, fieldEdgeInfo.EdgeName, fieldEdgeInfo.Polymorphic, nullable)
 }
 
-// TODO...
-// replace.
-// come back
-// fixx the things
 func (e *EdgeInfo) GetConnectionEdges() []ConnectionEdge {
 	var ret []ConnectionEdge
 
@@ -144,16 +143,13 @@ func (e *EdgeInfo) GetConnectionEdges() []ConnectionEdge {
 		ret = append(ret, edge)
 	}
 
-	for _, edge := range e.ForeignKeys {
-		ret = append(ret, edge)
-	}
-
-	for _, edge := range e.IndexedEdges {
-		if edge.Unique {
+	for _, edge := range e.DestinationEdges {
+		if edge.UniqueEdge() {
 			continue
 		}
 		ret = append(ret, edge)
 	}
+
 	return ret
 }
 
@@ -165,8 +161,8 @@ func (e *EdgeInfo) GetSingularEdges() []Edge {
 			ret = append(ret, edge)
 		}
 	}
-	for _, edge := range e.IndexedEdges {
-		if edge.Unique {
+	for _, edge := range e.DestinationEdges {
+		if edge.UniqueEdge() {
 			ret = append(ret, edge)
 		}
 	}
@@ -174,22 +170,11 @@ func (e *EdgeInfo) GetSingularEdges() []Edge {
 }
 
 func (e *EdgeInfo) GetEdgesForIndexLoader() []ConnectionEdge {
-	var ret []ConnectionEdge
-	for _, edge := range e.SrcIndexedEdges {
-		if edge.Unique {
-			continue
-		}
-		ret = append(ret, edge)
-	}
-
-	for _, edge := range e.ForeignKeys {
-		ret = append(ret, edge)
-	}
-	return ret
+	return e.IndexedEdgeQueries
 }
 
 func (e *EdgeInfo) HasConnectionEdges() bool {
-	return len(e.Associations) > 0 || len(e.ForeignKeys) > 0 || len(e.SrcIndexedEdges) > 0
+	return len(e.Associations) > 0 || len(e.indexedEdgeQueriesMap) > 0
 }
 
 func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName string, polymorphic *base.PolymorphicOptions, nullable bool) {
@@ -227,7 +212,7 @@ func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName s
 	e.addEdge(edge)
 }
 
-func (e *EdgeInfo) AddForeignKeyEdgeFromInverseFieldInfo(dbColName, edgeName, nodeName string) {
+func (e *EdgeInfo) AddEdgeFromForeignKeyIndex(dbColName, edgeName, nodeName string) {
 	edge := &ForeignKeyEdge{
 		QuotedDBColName: dbColName,
 		SourceNodeName:  e.SourceNodeName,
@@ -237,12 +222,36 @@ func (e *EdgeInfo) AddForeignKeyEdgeFromInverseFieldInfo(dbColName, edgeName, no
 		),
 	}
 	e.addEdge(edge)
+	e.indexedEdgeQueriesMap[edgeName] = edge
+	e.destinationEdgesMap[edgeName] = edge
+	e.IndexedEdgeQueries = append(e.IndexedEdgeQueries, edge)
+	e.DestinationEdges = append(e.DestinationEdges, edge)
 }
 
-func (e *EdgeInfo) AddIndexEdgeFromPolymorphicOptions(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) {
+func (e *EdgeInfo) AddIndexedEdgeFromSource(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions) {
 	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
-	//	spew.Dump(tsFieldName, nodeName)
-	// TODO this src
+	edge := &IndexedEdge{
+		tsEdgeName:      tsEdgeName,
+		TSFieldName:     strcase.ToCamel(tsFieldName),
+		QuotedDBColName: quotedDBColName,
+		commonEdgeInfo: getCommonEdgeInfo(
+			inflection.Plural(nodeName),
+			schemaparser.GetEntConfigFromName(nodeName),
+		),
+		Unique: polymorphic.Unique,
+		src:    true,
+	}
+	if polymorphic.HideFromInverseGraphQL {
+		edge._HideFromGraphQL = true
+	}
+	e.addEdge(edge)
+	edgeName := edge.GetEdgeName()
+	e.indexedEdgeQueriesMap[edgeName] = edge
+	e.IndexedEdgeQueries = append(e.IndexedEdgeQueries, edge)
+}
+
+func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) {
+	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
 	edge := &IndexedEdge{
 		tsEdgeName:      tsEdgeName,
 		TSFieldName:     strcase.ToCamel(tsFieldName),
@@ -252,13 +261,15 @@ func (e *EdgeInfo) AddIndexEdgeFromPolymorphicOptions(tsFieldName, quotedDBColNa
 			schemaparser.GetEntConfigFromName(nodeName),
 		),
 		Unique:      polymorphic.Unique,
-		src:         foreignNode == "",
 		foreignNode: foreignNode,
 	}
 	if polymorphic.HideFromInverseGraphQL {
 		edge._HideFromGraphQL = true
 	}
 	e.addEdge(edge)
+	edgeName := edge.GetEdgeName()
+	e.destinationEdgesMap[edgeName] = edge
+	e.DestinationEdges = append(e.DestinationEdges, edge)
 }
 
 // ActionableEdge indicates an edge that can be used in an action.
@@ -286,6 +297,7 @@ type ConnectionEdge interface {
 	GetGraphQLConnectionName() string
 	TsEdgeQueryEdgeName() string
 	TsEdgeQueryName() string
+	UniqueEdge() bool
 }
 
 // marker interface
@@ -418,6 +430,10 @@ func (e *ForeignKeyEdge) GetDataFactoryName() string {
 	return strcase.ToLowerCamel(fmt.Sprintf("%sDataLoaderFactory", e.tsEdgeConst()))
 }
 
+func (e *ForeignKeyEdge) UniqueEdge() bool {
+	return false
+}
+
 var _ Edge = &ForeignKeyEdge{}
 var _ PluralEdge = &ForeignKeyEdge{}
 var _ ConnectionEdge = &ForeignKeyEdge{}
@@ -427,6 +443,7 @@ var _ ConnectionEdge = &ForeignKeyEdge{}
 // currently best use case is as a polymorphic field but nothing stopping this from being non-polymorphic
 type IndexedEdge struct {
 	QuotedDBColName string
+	SourceNodeName  string
 	TSFieldName     string
 	tsEdgeName      string
 	Unique          bool // plural or single
@@ -501,6 +518,10 @@ func (e *IndexedEdge) GetCountFactoryName() string {
 
 func (e *IndexedEdge) GetDataFactoryName() string {
 	return strcase.ToLowerCamel(fmt.Sprintf("%sDataLoaderFactory", e.tsEdgeConst()))
+}
+
+func (e *IndexedEdge) UniqueEdge() bool {
+	return e.Unique
 }
 
 var _ Edge = &IndexedEdge{}
@@ -649,6 +670,10 @@ func (e *AssociationEdge) GetCountFactoryName() string {
 
 func (e *AssociationEdge) GetDataFactoryName() string {
 	return strcase.ToLowerCamel(fmt.Sprintf("%sDataLoaderFactory", e.TsEdgeConst()))
+}
+
+func (e *AssociationEdge) UniqueEdge() bool {
+	return e.Unique
 }
 
 var _ Edge = &AssociationEdge{}

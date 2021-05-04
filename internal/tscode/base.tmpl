@@ -285,21 +285,13 @@ export class {{$baseClass}} {
     {{end -}}
   {{end -}}
 
-  {{ range $edge := .EdgeInfo.ForeignKeys -}}
+  {{ range $edge := .EdgeInfo.DestinationEdges -}}
     {{$edgeName := .CamelCaseEdgeName -}}
     {{$queryName := useImport .TsEdgeQueryName -}}
-      query{{$edgeName}}(): {{$queryName}} {
-        {{/* TODO change entquery to NodeBase and use this instead of id here? */}}
-        return {{$queryName}}.query(this.viewer, this.id);
-      }
 
-  {{end -}}
+    {{ if .UniqueEdge -}}
+      {{$fNode := .NodeInfo.Node -}}
 
-  {{ range $edge := .EdgeInfo.IndexedEdges -}}
-    {{$edgeName := .CamelCaseEdgeName -}}
-    {{$fNode := .NodeInfo.Node -}}
-
-    {{ if .Unique -}}
       async load{{$edge.Singular}}(): Promise<{{useImport $fNode}} | null> {
         const nodes = await {{useImport $fNode}}.loadFrom{{$edge.TsFieldName}}(this.viewer, this.id);
         return nodes[0];

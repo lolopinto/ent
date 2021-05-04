@@ -38,8 +38,8 @@ type NodeDataInfo struct {
 func (info *NodeDataInfo) PostProcess() error {
 	edgeInfo := info.NodeData.EdgeInfo
 	// sort for consistent ordering
-	sort.Slice(edgeInfo.ForeignKeys, func(i, j int) bool {
-		return edgeInfo.ForeignKeys[i].EdgeName < edgeInfo.ForeignKeys[j].EdgeName
+	sort.Slice(edgeInfo.DestinationEdges, func(i, j int) bool {
+		return edgeInfo.DestinationEdges[i].GetEdgeName() < edgeInfo.DestinationEdges[j].GetEdgeName()
 	})
 
 	sort.Slice(edgeInfo.Associations, func(i, j int) bool {
@@ -50,9 +50,6 @@ func (info *NodeDataInfo) PostProcess() error {
 		return edgeInfo.FieldEdges[i].EdgeName < edgeInfo.FieldEdges[j].EdgeName
 	})
 
-	sort.Slice(edgeInfo.IndexedEdges, func(i, j int) bool {
-		return edgeInfo.IndexedEdges[i].EdgeName < edgeInfo.IndexedEdges[j].EdgeName
-	})
 	return nil
 }
 
@@ -331,24 +328,13 @@ func (m NodeMapInfo) addLinkedEdges(info *NodeDataInfo) {
 			panic(fmt.Errorf("invalid edge with Name %s", e.FieldName))
 		}
 
-		// there's different concepts
-		// there's add edgequery to OwnerToAddressesQueryLoader
-		// and then there's load EdgeQuery from source which is a different edge type
-		// e.g. stored in the Address object
-
-		// So ForeignKeyEdge needs to be changed to work for the Recipient, User, PickupLocation parts in HH
-
-		// and IndexedEdge used for the source: Address object
-		// but then we can't make ForeignKeyEdge an EntQuery the other way...
-
 		if e.Polymorphic != nil {
 			// so we want to add it to edges for
-			edgeInfo.AddIndexEdgeFromPolymorphicOptions(
+			edgeInfo.AddIndexedEdgeFromSource(
 				f.TsFieldName(),
 				f.GetQuotedDBColName(),
 				nodeData.Node,
 				e.Polymorphic,
-				"",
 			)
 			for _, typ := range e.Polymorphic.Types {
 				// convert to Node type
@@ -360,7 +346,7 @@ func (m NodeMapInfo) addLinkedEdges(info *NodeDataInfo) {
 					if f.Index() || f.Unique() {
 						fEdgeInfo := foreign.NodeData.EdgeInfo
 						//						spew.Dump(nodeData.Node, foreign.NodeData.Node)
-						fEdgeInfo.AddIndexEdgeFromPolymorphicOptions(
+						fEdgeInfo.AddDestinationEdgeFromPolymorphicOptions(
 							f.TsFieldName(),
 							f.GetQuotedDBColName(),
 							nodeData.Node,

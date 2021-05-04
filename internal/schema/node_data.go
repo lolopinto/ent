@@ -112,6 +112,13 @@ func (nodeData *NodeData) GetForeignKeyEdgeByName(edgeName string) *edge.Foreign
 	return nodeData.EdgeInfo.GetForeignKeyEdgeByName(edgeName)
 }
 
+func (nodeData *NodeData) GetDestinationEdgeByName(edgeName string) edge.ConnectionEdge {
+	if nodeData.EdgeInfo == nil {
+		return nil
+	}
+	return nodeData.EdgeInfo.GetDestinationEdgeByName(edgeName)
+}
+
 func (nodeData *NodeData) GetAssociationEdgeByName(edgeName string) *edge.AssociationEdge {
 	if nodeData.EdgeInfo == nil {
 		return nil
@@ -352,12 +359,8 @@ func (nodeData *NodeData) getUniqueNodes(forceSelf bool) []uniqueNodeInfo {
 		processNode(edge.NodeInfo)
 	}
 
-	for _, edge := range nodeData.EdgeInfo.ForeignKeys {
-		processNode(edge.NodeInfo)
-	}
-
-	for _, edge := range nodeData.EdgeInfo.IndexedEdges {
-		processNode(edge.NodeInfo)
+	for _, edge := range nodeData.EdgeInfo.DestinationEdges {
+		processNode(edge.GetNodeInfo())
 	}
 
 	// we get id fields from this...

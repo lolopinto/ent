@@ -9,6 +9,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 
@@ -469,11 +470,15 @@ func (s *graphQLSchema) addGraphQLInfoForType(nodeMap schema.NodeMapInfo, nodeDa
 			}
 		}
 
-		for _, edge := range nodeData.EdgeInfo.ForeignKeys {
-			if nodeMap.HideFromGraphQL(edge) {
+		for _, e := range nodeData.EdgeInfo.DestinationEdges {
+			if nodeMap.HideFromGraphQL(e) {
 				continue
 			}
-			schemaInfo.addPluralEdge(&graphqlPluralEdge{PluralEdge: edge})
+			plural, ok := e.(edge.PluralEdge)
+			if !ok {
+				spew.Dump("warn: non-plural edge returned", e.GetEdgeName())
+			}
+			schemaInfo.addPluralEdge(&graphqlPluralEdge{PluralEdge: plural})
 		}
 
 		for _, edgeGroup := range nodeData.EdgeInfo.AssocGroups {

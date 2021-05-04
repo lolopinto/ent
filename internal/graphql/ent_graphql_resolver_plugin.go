@@ -85,8 +85,8 @@ func (p *entGraphQLResolverPlugin) pluralEdge(field *codegen.Field) bool {
 		return false
 	}
 
-	fkeyEdge := nodeData.GetForeignKeyEdgeByName(field.GoFieldName)
-	if fkeyEdge != nil {
+	edge := nodeData.GetDestinationEdgeByName(field.GoFieldName)
+	if edge != nil {
 		return true
 	}
 
