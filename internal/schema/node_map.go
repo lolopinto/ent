@@ -326,21 +326,47 @@ func (m NodeMapInfo) addLinkedEdges(info *NodeDataInfo) {
 	edgeInfo := nodeData.EdgeInfo
 
 	for _, e := range edgeInfo.FieldEdges {
+		f := fieldInfo.GetFieldByName(e.FieldName)
+		if f == nil {
+			panic(fmt.Errorf("invalid edge with Name %s", e.FieldName))
+		}
+
+		// there's different concepts
+		// there's add edgequery to OwnerToAddressesQueryLoader
+		// and then there's load EdgeQuery from source which is a different edge type
+		// e.g. stored in the Address object
+
+		// So ForeignKeyEdge needs to be changed to work for the Recipient, User, PickupLocation parts in HH
+
+		// and IndexedEdge used for the source: Address object
+		// but then we can't make ForeignKeyEdge an EntQuery the other way...
+
 		if e.Polymorphic != nil {
+			// so we want to add it to edges for
+			edgeInfo.AddIndexEdgeFromPolymorphicOptions(
+				f.TsFieldName(),
+				f.GetQuotedDBColName(),
+				nodeData.Node,
+				e.Polymorphic,
+				"",
+			)
 			for _, typ := range e.Polymorphic.Types {
 				// convert to Node type
 				typ = strcase.ToCamel(typ) + "Config"
 				foreign, ok := m[typ]
 				if ok {
-					f := fieldInfo.GetFieldByName(e.FieldName)
-					if f == nil {
-						panic(fmt.Errorf("invalid edge with Name %s", e.FieldName))
-					}
 
 					// only add polymorphic accessors on foreign if index or unique
 					if f.Index() || f.Unique() {
 						fEdgeInfo := foreign.NodeData.EdgeInfo
-						fEdgeInfo.AddIndexEdgeFromPolymorphicOptions(f.TsFieldName(), nodeData.Node, e.Polymorphic)
+						//						spew.Dump(nodeData.Node, foreign.NodeData.Node)
+						fEdgeInfo.AddIndexEdgeFromPolymorphicOptions(
+							f.TsFieldName(),
+							f.GetQuotedDBColName(),
+							nodeData.Node,
+							e.Polymorphic,
+							foreign.NodeData.Node,
+						)
 					}
 				} else {
 					panic(fmt.Errorf("couldn't find config for typ %s", typ))
@@ -351,10 +377,6 @@ func (m NodeMapInfo) addLinkedEdges(info *NodeDataInfo) {
 		// no inverse edge name, nothing to do here
 		if e.InverseEdgeName == "" {
 			continue
-		}
-		f := fieldInfo.GetFieldByName(e.FieldName)
-		if f == nil {
-			panic(fmt.Errorf("invalid edge with Name %s", e.FieldName))
 		}
 
 		config := e.GetEntConfig()

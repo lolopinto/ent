@@ -376,6 +376,18 @@ func (f *Field) EvolvedIDField() bool {
 	return f.fieldEdge != nil || f.fkey != nil || f.inverseEdge != nil || f.polymorphic != nil
 }
 
+func (f *Field) QueryFromID() bool {
+	return f.index && f.polymorphic != nil
+}
+
+// TODO probably gonna collapse into above
+func (f *Field) QueryFrom() bool {
+	if !f.index || f.polymorphic != nil {
+		return false
+	}
+	return !strings.HasSuffix(f.FieldName, "ID")
+}
+
 func (f *Field) Nullable() bool {
 	return f.nullable
 }

@@ -847,15 +847,7 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 
 				edgeInfo := nodeData.EdgeInfo
 				if edgeInfo != nil {
-					for _, edge := range edgeInfo.Associations {
-						if nodeMap.HideFromGraphQL(edge) || edge.Unique {
-							continue
-						}
-						conn := getGqlConnection(nodeData, edge, data)
-						obj.connections = append(obj.connections, conn)
-					}
-
-					for _, edge := range edgeInfo.ForeignKeys {
+					for _, edge := range edgeInfo.GetConnectionEdges() {
 						if nodeMap.HideFromGraphQL(edge) {
 							continue
 						}
@@ -1213,15 +1205,18 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 		fields = append(fields, gqlField)
 	}
 
-	for _, edge := range nodeData.EdgeInfo.Associations {
+	for _, edge := range nodeData.EdgeInfo.GetSingularEdges() {
 		if nodeMap.HideFromGraphQL(edge) {
 			continue
 		}
-		if edge.Unique {
-			addSingularEdge(edge, &fields, instance)
-		} else {
-			addConnection(nodeData, edge, &fields, instance)
+		addSingularEdge(edge, &fields, instance)
+	}
+
+	for _, edge := range nodeData.EdgeInfo.GetConnectionEdges() {
+		if nodeMap.HideFromGraphQL(edge) {
+			continue
 		}
+		addConnection(nodeData, edge, &fields, instance)
 	}
 
 	for _, group := range nodeData.EdgeInfo.AssocGroups {
@@ -1263,23 +1258,6 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 		})
 	}
 
-	for _, edge := range nodeData.EdgeInfo.ForeignKeys {
-		if nodeMap.HideFromGraphQL(edge) {
-			continue
-		}
-		addConnection(nodeData, edge, &fields, instance)
-	}
-
-	for _, edge := range nodeData.EdgeInfo.IndexedEdges {
-		if nodeMap.HideFromGraphQL(edge) {
-			continue
-		}
-		if edge.Unique {
-			addSingularEdge(edge, &fields, instance)
-		} else {
-			addPluralEdge(edge, &fields, instance)
-		}
-	}
 	result.Fields = fields
 	return result
 }
