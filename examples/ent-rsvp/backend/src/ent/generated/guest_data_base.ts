@@ -13,7 +13,6 @@ import {
   PrivacyPolicy,
   ObjectLoaderFactory,
   Context,
-  IndexLoaderFactory,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import { NodeType, Event, Guest } from "src/ent/internal";
@@ -51,7 +50,6 @@ export class GuestDataBase {
 
   // by default, we always deny and it's up to the ent
   // to overwrite this privacy policy in its subclasses
-
   privacyPolicy: PrivacyPolicy = {
     rules: [AllowIfViewerRule, AlwaysDenyRule],
   };
@@ -100,68 +98,6 @@ export class GuestDataBase {
     return row;
   }
 
-  static async loadFromGuestID<T extends GuestDataBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
-    viewer: Viewer,
-    guestID: ID,
-  ): Promise<T[]> {
-    const rows = await guestDataGuestIDLoader
-      .createLoader(viewer.context)
-      .load(guestID);
-    const ids = rows.map((row) => row["id"]);
-    return loadEnts(viewer, GuestDataBase.loaderOptions.apply(this), ...ids);
-  }
-
-  static async loadIDsFromGuestID<T extends GuestDataBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
-    guestID: ID,
-    context?: Context,
-  ): Promise<ID[] | null> {
-    const rows = await guestDataGuestIDLoader
-      .createLoader(context)
-      .load(guestID);
-    return rows.map((row) => row["id"]);
-  }
-
-  static async loadRawDataFromGuestID<T extends GuestDataBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
-    guestID: ID,
-    context?: Context,
-  ): Promise<Data[] | null> {
-    return guestDataGuestIDLoader.createLoader(context).load(guestID);
-  }
-
-  static async loadFromEventID<T extends GuestDataBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
-    viewer: Viewer,
-    eventID: ID,
-  ): Promise<T[]> {
-    const rows = await guestDataEventIDLoader
-      .createLoader(viewer.context)
-      .load(eventID);
-    const ids = rows.map((row) => row["id"]);
-    return loadEnts(viewer, GuestDataBase.loaderOptions.apply(this), ...ids);
-  }
-
-  static async loadIDsFromEventID<T extends GuestDataBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
-    eventID: ID,
-    context?: Context,
-  ): Promise<ID[] | null> {
-    const rows = await guestDataEventIDLoader
-      .createLoader(context)
-      .load(eventID);
-    return rows.map((row) => row["id"]);
-  }
-
-  static async loadRawDataFromEventID<T extends GuestDataBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
-    eventID: ID,
-    context?: Context,
-  ): Promise<Data[] | null> {
-    return guestDataEventIDLoader.createLoader(context).load(eventID);
-  }
-
   static loaderOptions<T extends GuestDataBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
   ): LoadEntOptions<T> {
@@ -208,18 +144,3 @@ export const guestDataLoader = new ObjectLoaderFactory({
   fields,
   pkey: "id",
 });
-
-export const guestDataGuestIDLoader = new IndexLoaderFactory(
-  { tableName, fields },
-  "guest_id",
-  {
-    toPrime: [guestDataLoader],
-  },
-);
-export const guestDataEventIDLoader = new IndexLoaderFactory(
-  { tableName, fields },
-  "event_id",
-  {
-    toPrime: [guestDataLoader],
-  },
-);

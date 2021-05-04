@@ -6,10 +6,10 @@ import {
   GuestData,
   GuestGroup,
   Guest,
+  guestLoader,
   eventActivityLoader,
   guestDataLoader,
   guestGroupLoader,
-  guestLoader,
 } from "src/ent/internal";
 import {
   ID,
@@ -19,6 +19,17 @@ import {
   IndexLoaderFactory,
 } from "@lolopinto/ent";
 
+export const eventToGuestsCountLoaderFactory = new RawCountLoaderFactory(
+  Guest.loaderOptions(),
+  "event_id",
+);
+export const eventToGuestsDataLoaderFactory = new IndexLoaderFactory(
+  Guest.loaderOptions(),
+  "event_id",
+  {
+    toPrime: [guestLoader],
+  },
+);
 export const eventToEventActivitiesCountLoaderFactory = new RawCountLoaderFactory(
   EventActivity.loaderOptions(),
   "event_id",
@@ -52,17 +63,25 @@ export const eventToGuestGroupsDataLoaderFactory = new IndexLoaderFactory(
     toPrime: [guestGroupLoader],
   },
 );
-export const eventToGuestsCountLoaderFactory = new RawCountLoaderFactory(
-  Guest.loaderOptions(),
-  "event_id",
-);
-export const eventToGuestsDataLoaderFactory = new IndexLoaderFactory(
-  Guest.loaderOptions(),
-  "event_id",
-  {
-    toPrime: [guestLoader],
-  },
-);
+
+export class EventToGuestsQueryBase extends CustomEdgeQueryBase<Guest> {
+  constructor(viewer: Viewer, src: Event | ID) {
+    super(viewer, {
+      src: src,
+      countLoaderFactory: eventToGuestsCountLoaderFactory,
+      dataLoaderFactory: eventToGuestsDataLoaderFactory,
+      options: Guest.loaderOptions(),
+    });
+  }
+
+  static query<T extends EventToGuestsQueryBase>(
+    this: new (viewer: Viewer, src: Event | ID) => T,
+    viewer: Viewer,
+    src: Event | ID,
+  ): T {
+    return new this(viewer, src);
+  }
+}
 
 export class EventToEventActivitiesQueryBase extends CustomEdgeQueryBase<
   EventActivity
@@ -117,25 +136,6 @@ export class EventToGuestGroupsQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends EventToGuestGroupsQueryBase>(
-    this: new (viewer: Viewer, src: Event | ID) => T,
-    viewer: Viewer,
-    src: Event | ID,
-  ): T {
-    return new this(viewer, src);
-  }
-}
-
-export class EventToGuestsQueryBase extends CustomEdgeQueryBase<Guest> {
-  constructor(viewer: Viewer, src: Event | ID) {
-    super(viewer, {
-      src: src,
-      countLoaderFactory: eventToGuestsCountLoaderFactory,
-      dataLoaderFactory: eventToGuestsDataLoaderFactory,
-      options: Guest.loaderOptions(),
-    });
-  }
-
-  static query<T extends EventToGuestsQueryBase>(
     this: new (viewer: Viewer, src: Event | ID) => T,
     viewer: Viewer,
     src: Event | ID,

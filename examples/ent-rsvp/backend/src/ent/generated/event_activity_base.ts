@@ -15,7 +15,6 @@ import {
   getEdgeTypeInGroup,
   ObjectLoaderFactory,
   Context,
-  IndexLoaderFactory,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import {
@@ -88,7 +87,6 @@ export class EventActivityBase {
 
   // by default, we always deny and it's up to the ent
   // to overwrite this privacy policy in its subclasses
-
   privacyPolicy: PrivacyPolicy = {
     rules: [AllowIfViewerRule, AlwaysDenyRule],
   };
@@ -139,41 +137,6 @@ export class EventActivityBase {
       throw new Error(`couldn't load row for ${id}`);
     }
     return row;
-  }
-
-  static async loadFromEventID<T extends EventActivityBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
-    viewer: Viewer,
-    eventID: ID,
-  ): Promise<T[]> {
-    const rows = await eventActivityEventIDLoader
-      .createLoader(viewer.context)
-      .load(eventID);
-    const ids = rows.map((row) => row["id"]);
-    return loadEnts(
-      viewer,
-      EventActivityBase.loaderOptions.apply(this),
-      ...ids,
-    );
-  }
-
-  static async loadIDsFromEventID<T extends EventActivityBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
-    eventID: ID,
-    context?: Context,
-  ): Promise<ID[] | null> {
-    const rows = await eventActivityEventIDLoader
-      .createLoader(context)
-      .load(eventID);
-    return rows.map((row) => row["id"]);
-  }
-
-  static async loadRawDataFromEventID<T extends EventActivityBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
-    eventID: ID,
-    context?: Context,
-  ): Promise<Data[] | null> {
-    return eventActivityEventIDLoader.createLoader(context).load(eventID);
   }
 
   static loaderOptions<T extends EventActivityBase>(
@@ -255,11 +218,3 @@ export const eventActivityLoader = new ObjectLoaderFactory({
   fields,
   pkey: "id",
 });
-
-export const eventActivityEventIDLoader = new IndexLoaderFactory(
-  { tableName, fields },
-  "event_id",
-  {
-    toPrime: [eventActivityLoader],
-  },
-);

@@ -13,7 +13,6 @@ import {
   PrivacyPolicy,
   ObjectLoaderFactory,
   Context,
-  IndexLoaderFactory,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import {
@@ -51,7 +50,6 @@ export class EventBase {
 
   // by default, we always deny and it's up to the ent
   // to overwrite this privacy policy in its subclasses
-
   privacyPolicy: PrivacyPolicy = {
     rules: [AllowIfViewerRule, AlwaysDenyRule],
   };
@@ -139,37 +137,6 @@ export class EventBase {
     return await eventSlugLoader.createLoader(context).load(slug);
   }
 
-  static async loadFromCreatorID<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
-    viewer: Viewer,
-    creatorID: ID,
-  ): Promise<T[]> {
-    const rows = await eventCreatorIDLoader
-      .createLoader(viewer.context)
-      .load(creatorID);
-    const ids = rows.map((row) => row["id"]);
-    return loadEnts(viewer, EventBase.loaderOptions.apply(this), ...ids);
-  }
-
-  static async loadIDsFromCreatorID<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
-    creatorID: ID,
-    context?: Context,
-  ): Promise<ID[] | null> {
-    const rows = await eventCreatorIDLoader
-      .createLoader(context)
-      .load(creatorID);
-    return rows.map((row) => row["id"]);
-  }
-
-  static async loadRawDataFromCreatorID<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
-    creatorID: ID,
-    context?: Context,
-  ): Promise<Data[] | null> {
-    return eventCreatorIDLoader.createLoader(context).load(creatorID);
-  }
-
   static loaderOptions<T extends EventBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
   ): LoadEntOptions<T> {
@@ -233,11 +200,3 @@ export const eventSlugLoader = new ObjectLoaderFactory({
 
 eventLoader.addToPrime(eventSlugLoader);
 eventSlugLoader.addToPrime(eventLoader);
-
-export const eventCreatorIDLoader = new IndexLoaderFactory(
-  { tableName, fields },
-  "creator_id",
-  {
-    toPrime: [eventLoader],
-  },
-);
