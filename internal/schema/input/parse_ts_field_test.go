@@ -622,6 +622,61 @@ func TestParseFields(t *testing.T) {
 				},
 			},
 		},
+		"disable index in foreign key": {
+			code: map[string]string{
+				"user.ts": getCodeWithSchema(`
+				import {Schema, Field, BaseEntSchema, UUIDType, StringType } from "{schema}"
+
+				export default class User extends BaseEntSchema implements Schema {
+					fields: Field[] = [
+						StringType({name: "first_name"}),
+						StringType({name: "last_name"}),
+						StringType({name: "email", unique: true}),
+					]
+				}`),
+				"event.ts": getCodeWithSchema(`
+				import {Schema, BaseEntSchema, Field, TimestampType, StringType, UUIDType} from "{schema}"
+
+				export default class Event extends BaseEntSchema implements Schema {
+					fields: Field[] = [
+						StringType({name: "name"}),
+						UUIDType({name: "creator_id", foreignKey: {schema:"User", column:"ID", disableIndex: true}}),
+					]
+				}`),
+			},
+			expectedOutput: map[string]node{
+				"User": {
+					fields: fieldsWithNodeFields(
+						field{
+							name:   "first_name",
+							dbType: input.String,
+						},
+						field{
+							name:   "last_name",
+							dbType: input.String,
+						},
+						field{
+							name:   "email",
+							dbType: input.String,
+							unique: true,
+						},
+					),
+				},
+				"Event": {
+					fields: fieldsWithNodeFields(
+						field{
+							name:   "name",
+							dbType: input.String,
+						},
+						field{
+							name:       "creator_id",
+							dbType:     input.UUID,
+							foreignKey: &input.ForeignKey{Schema: "User", Column: "ID", DisableIndex: true},
+						},
+					),
+				},
+			},
+		},
 	}
 
 	runTestCases(t, testCases)
