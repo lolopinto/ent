@@ -4,10 +4,6 @@
 {{ reserveImport "src/ent/loadAny" "loadEntByType" "loadEntXByType"}}
 
 {{with .NodeData -}}
-{{/* TODO break this up to make it easier to use? */}}
-{{/* these are dependent on having the right tsconfig.json file... */}}
-{{ $schemaPath := printf "src/schema/%s" .PackageName }}
-{{ reserveDefaultImport $schemaPath "schema"}}
 
 {{ range .GetImportsForBaseFile -}} 
   {{ if .DefaultImport -}}
@@ -64,7 +60,7 @@ export class {{$baseClass}} {
 
   // by default, we always deny and it's up to the ent 
   // to overwrite this privacy policy in its subclasses
-  {{/* TODO: make this configurable */}} 
+  {{/* TODO: make this configurable */ -}} 
   privacyPolicy: {{useImport "PrivacyPolicy"}} = {
     rules: [{{useImport "AllowIfViewerRule"}}, {{useImport "AlwaysDenyRule"}}],
   };
@@ -127,7 +123,7 @@ export class {{$baseClass}} {
 
 
   {{ range $field := .FieldInfo.Fields -}}
-    {{ if $field.Unique -}}
+    {{ if $field.Unique  -}}
       {{$fieldLoader := $this.GetFieldLoaderName $field -}}
       static async loadFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
@@ -175,38 +171,17 @@ export class {{$baseClass}} {
       ): Promise<{{$dataType}} | null> {
         return await {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName}});
       }
-    {{ else if $field.Index -}}
-      {{$fieldLoader := $this.GetFieldLoaderName $field -}}
-      static async loadFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
+    {{ else if $field.QueryFromID -}}
+      {{$queryName := useImport ($this.GetFieldQueryName $field) -}}
+      static queryFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         viewer: {{$viewerType}},
         {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
-      ): Promise<T[]> {
-        const rows = await {{$fieldLoader}}.createLoader(viewer.context).load({{$field.TsFieldName}});
-        const ids = rows.map(row => row['id']);
-        return {{useImport "loadEnts"}}(
-          viewer, 
-          {{$baseClass}}.loaderOptions.apply(this), 
-          ...ids,
-        );
+      ): {{$queryName}} {
+        return {{$queryName}}.query(viewer, {{$field.TsFieldName}});
       }
-
-      static async loadIDsFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
-        this: {{$thisType}},
-        {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
-        context?: {{useImport "Context"}},
-      ): Promise<{{$idType}}[] | null> {
-        const rows = await {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName}});
-        return rows.map(row => row['id']);
-      }
-
-      static async loadRawDataFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
-        this: {{$thisType}},
-        {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
-        context?: {{useImport "Context"}},
-      ): Promise<{{$dataType}}[] | null> {
-        return {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName}});
-      }
+    {{ else if $field.QueryFrom -}}
+    // TODO index {{$field.FieldName}} not id... we want an indexQueryLoader...
     {{end}}
   {{end -}}
 
@@ -281,7 +256,6 @@ export class {{$baseClass}} {
     {{with .NodeInfo -}}
     {{$edgeType := useImport "EdgeType"}}
     {{$assocEdgeType := useImport "AssocEdge"}}
-     {{/* TODO unique edges */}}
      {{ if $uniqueEdge -}}
       load{{$edgeName}}Edge(): Promise<{{$assocEdgeType}} | null> {
         return {{useImport "loadUniqueEdge"}}({
@@ -331,8 +305,9 @@ export class {{$baseClass}} {
       }
 
     {{ else -}}
-      load{{$edgeName}}(): Promise<{{useImport $fNode}}[]> {
-        return {{useImport $fNode}}.loadFrom{{$edge.TSFieldName}}(this.viewer, this.id);
+      {{$queryName := useImport .TsEdgeQueryName -}}
+      query{{$edgeName}}(): {{useImport $queryName}} {
+        return {{$queryName}}.query(this.viewer, this.id);
       }
 
     {{end -}}
@@ -409,20 +384,6 @@ export class {{$baseClass}} {
     {{end -}}
   {{end -}}
 {{end -}}
-
-{{/* TODO replace all this with an EntQuery and do this right */}}
-{{ range $field := .FieldInfo.Fields -}}
-  {{ if $field.Index -}}
-    {{$fieldLoader := $this.GetFieldLoaderName $field -}}
-    export const {{$fieldLoader}} = new {{useImport "IndexLoaderFactory"}}(
-      {tableName,fields},
-      {{$field.GetQuotedDBColName}},
-      {
-        toPrime: [{{$loaderName}}],
-      },
-    );
-  {{end -}}
-{{ end -}}
 
 {{end -}}
 

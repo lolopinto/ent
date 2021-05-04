@@ -31,8 +31,8 @@
 
   {{end -}}
 
-  {{range $edge := .EdgeInfo.ForeignKeys -}}
-    {{$node := useImport $edge.NodeInfo.Node -}}
+  {{range $edge := .EdgeInfo.GetEdgesForIndexLoader -}}
+    {{$node := useImport $edge.GetNodeInfo.Node -}}
       export const {{$edge.GetCountFactoryName}} = new {{useImport "RawCountLoaderFactory"}}(
         {{$node}}.loaderOptions(),
         {{$edge.QuotedDBColName}},
@@ -41,7 +41,7 @@
         {{$node}}.loaderOptions(),
         {{$edge.QuotedDBColName}},
         {
-          toPrime: [{{useImport (printf "%sLoader" $edge.NodeInfo.NodeInstance)}}],
+          toPrime: [{{useImport (printf "%sLoader" $edge.GetNodeInfo.NodeInstance)}}],
         }
       );
   {{end -}}
@@ -82,10 +82,10 @@
   }
   {{end}}
 
-  {{range $edge := .EdgeInfo.ForeignKeys -}}
+  {{range $edge := .EdgeInfo.GetEdgesForIndexLoader -}}
     {{$name := printf "%sBase" $edge.TsEdgeQueryName -}}
-    {{$srcNode := useImport $edge.SourceNodeName -}}
-    {{$node := useImport $edge.NodeInfo.Node -}}
+    {{$srcNode := useImport $edge.GetSourceNodeName -}}
+    {{$node := useImport $edge.GetNodeInfo.Node -}}
     {{$thisType := printf "new (viewer: Viewer, src: %s | ID ) => T" $srcNode }}
 
     export class {{$name}} extends {{useImport "CustomEdgeQueryBase"}}<{{$node}}> {
