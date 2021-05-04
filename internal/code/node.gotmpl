@@ -293,9 +293,9 @@ const (
         }
       {{end}}
     {{end}}
-    {{range $edge := .ForeignKeys -}}
-      {{$edgeName := .EdgeName -}}
-      {{with .NodeInfo -}}
+    {{range $edge := .DestinationEdges -}}
+      {{$edgeName := .GetEdgeName -}}
+      {{with .GetNodeInfo -}}
         // Gen{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance
         func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}() <-chan *{{.NodesResult}} {
           res := make(chan *{{.NodesResult}})
