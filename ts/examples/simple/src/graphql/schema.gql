@@ -21,13 +21,13 @@ type User implements Node {
   phoneNumber: String
   accountStatus: String
   bio: String
+  selfContact: Contact
   createdEvents(first: Int, after: String, last: Int, before: String): UserToCreatedEventsConnection!
   declinedEvents(first: Int, after: String, last: Int, before: String): UserToDeclinedEventsConnection!
   eventsAttending(first: Int, after: String, last: Int, before: String): UserToEventsAttendingConnection!
   friends(first: Int, after: String, last: Int, before: String): UserToFriendsConnection!
   invitedEvents(first: Int, after: String, last: Int, before: String): UserToInvitedEventsConnection!
   maybeEvents(first: Int, after: String, last: Int, before: String): UserToMaybeEventsConnection!
-  selfContact: Contact
   userToHostedEvents(first: Int, after: String, last: Int, before: String): UserToHostedEventsConnection!
   contacts(first: Int, after: String, last: Int, before: String): UserToContactsConnection!
   fullName: String!
@@ -37,6 +37,15 @@ type User implements Node {
   contactsSameDomainNullable: [Contact!]
   contactsSameDomainNullableContents: [Contact]!
   contactsSameDomainNullableContentsAndList: [Contact]
+}
+
+type Contact implements Node {
+  user: User
+  id: ID!
+  emailAddress: String!
+  firstName: String!
+  lastName: String!
+  fullName: String!
 }
 
 type UserToCreatedEventsConnection implements Connection {
@@ -215,15 +224,6 @@ type UserToMaybeEventsConnection implements Connection {
 type UserToMaybeEventsEdge implements Edge {
   node: Event!
   cursor: String!
-}
-
-type Contact implements Node {
-  user: User
-  id: ID!
-  emailAddress: String!
-  firstName: String!
-  lastName: String!
-  fullName: String!
 }
 
 type UserToHostedEventsConnection implements Connection {
