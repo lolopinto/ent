@@ -63,6 +63,12 @@ export const UserType = new GraphQLObjectType({
     bio: {
       type: GraphQLString,
     },
+    selfContact: {
+      type: ContactType,
+      resolve: (user: User, args: {}, context: RequestContext) => {
+        return user.loadSelfContact();
+      },
+    },
     createdEvents: {
       type: GraphQLNonNull(UserToCreatedEventsConnectionType()),
       args: {
@@ -235,12 +241,6 @@ export const UserType = new GraphQLObjectType({
           (v, user: User) => UserToMaybeEventsQuery.query(v, user),
           args,
         );
-      },
-    },
-    selfContact: {
-      type: ContactType,
-      resolve: (user: User, args: {}, context: RequestContext) => {
-        return user.loadSelfContact();
       },
     },
     userToHostedEvents: {
