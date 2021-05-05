@@ -124,6 +124,15 @@ func (e *EdgeInfo) GetIndexedEdgeByName(edgeName string) *IndexedEdge {
 	return nil
 }
 
+func (e *EdgeInfo) GetEdgeQueryIndexedEdgeByName(edgeName string) *IndexedEdge {
+	edge := e.indexedEdgeQueriesMap[edgeName]
+	iEdge, ok := edge.(*IndexedEdge)
+	if ok {
+		return iEdge
+	}
+	return nil
+}
+
 func (e *EdgeInfo) GetAssociationEdgeGroupByStatusName(groupStatusName string) *AssociationEdgeGroup {
 	return e.assocGroupsMap[groupStatusName]
 }
@@ -484,6 +493,9 @@ func (e *IndexedEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
 }
 
 func (e *IndexedEdge) TsEdgeQueryName() string {
+	if e.foreignNode != "" {
+		panic("cannot call TsEdgeQueryName when foreignNode is not empty")
+	}
 	return fmt.Sprintf("%sTo%sQuery", e.tsEdgeName, strcase.ToCamel(e.EdgeName))
 }
 
@@ -499,6 +511,9 @@ func (e *IndexedEdge) GetGraphQLConnectionName() string {
 }
 
 func (e *IndexedEdge) TsEdgeQueryEdgeName() string {
+	if e.foreignNode != "" {
+		panic("cannot call TsEdgeQueryEdgeName when foreignNode is not empty")
+	}
 	return fmt.Sprintf("%sTo%sEdge", e.tsEdgeName, strcase.ToCamel(e.EdgeName))
 }
 
