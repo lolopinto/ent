@@ -8,18 +8,25 @@ import {
   loadEntX,
   loadEnts,
   LoadEntOptions,
-  loadRow,
-  loadRowX,
   AlwaysDenyRule,
   AllowIfViewerRule,
   PrivacyPolicy,
-  query,
+  ObjectLoaderFactory,
+  Context,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import { NodeType } from "src/ent/internal";
 import schema from "src/schema/hours_of_operation";
 
 const tableName = "hours_of_operations";
+const fields = [
+  "id",
+  "created_at",
+  "updated_at",
+  "day_of_week",
+  "open",
+  "close",
+];
 
 export enum dayOfWeek {
   Sunday = "Sunday",
@@ -101,21 +108,21 @@ export class HoursOfOperationBase {
   static async loadRawData<T extends HoursOfOperationBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data | null> {
-    return await loadRow({
-      ...HoursOfOperationBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    return await hoursOfOperationLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends HoursOfOperationBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data> {
-    return await loadRowX({
-      ...HoursOfOperationBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    const row = await hoursOfOperationLoader.createLoader(context).load(id);
+    if (!row) {
+      throw new Error(`couldn't load row for ${id}`);
+    }
+    return row;
   }
 
   static loaderOptions<T extends HoursOfOperationBase>(
@@ -123,13 +130,10 @@ export class HoursOfOperationBase {
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
-      fields: HoursOfOperationBase.getFields(),
+      fields: fields,
       ent: this,
+      loaderFactory: hoursOfOperationLoader,
     };
-  }
-
-  private static getFields(): string[] {
-    return ["id", "created_at", "updated_at", "day_of_week", "open", "close"];
   }
 
   private static schemaFields: Map<string, Field>;
@@ -145,3 +149,9 @@ export class HoursOfOperationBase {
     return HoursOfOperationBase.getSchemaFields().get(key);
   }
 }
+
+export const hoursOfOperationLoader = new ObjectLoaderFactory({
+  tableName,
+  fields,
+  pkey: "id",
+});

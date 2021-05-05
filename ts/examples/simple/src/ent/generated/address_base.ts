@@ -8,18 +8,28 @@ import {
   loadEntX,
   loadEnts,
   LoadEntOptions,
-  loadRow,
-  loadRowX,
   AlwaysDenyRule,
   AllowIfViewerRule,
   PrivacyPolicy,
-  query,
+  ObjectLoaderFactory,
+  Context,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import { NodeType } from "src/ent/internal";
 import schema from "src/schema/address";
 
 const tableName = "addresses";
+const fields = [
+  "id",
+  "created_at",
+  "updated_at",
+  "street_name",
+  "city",
+  "state",
+  "zip",
+  "apartment",
+  "country",
+];
 
 export class AddressBase {
   readonly nodeType = NodeType.Address;
@@ -81,21 +91,21 @@ export class AddressBase {
   static async loadRawData<T extends AddressBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data | null> {
-    return await loadRow({
-      ...AddressBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    return await addressLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends AddressBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data> {
-    return await loadRowX({
-      ...AddressBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    const row = await addressLoader.createLoader(context).load(id);
+    if (!row) {
+      throw new Error(`couldn't load row for ${id}`);
+    }
+    return row;
   }
 
   static loaderOptions<T extends AddressBase>(
@@ -103,23 +113,10 @@ export class AddressBase {
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
-      fields: AddressBase.getFields(),
+      fields: fields,
       ent: this,
+      loaderFactory: addressLoader,
     };
-  }
-
-  private static getFields(): string[] {
-    return [
-      "id",
-      "created_at",
-      "updated_at",
-      "street_name",
-      "city",
-      "state",
-      "zip",
-      "apartment",
-      "country",
-    ];
   }
 
   private static schemaFields: Map<string, Field>;
@@ -135,3 +132,9 @@ export class AddressBase {
     return AddressBase.getSchemaFields().get(key);
   }
 }
+
+export const addressLoader = new ObjectLoaderFactory({
+  tableName,
+  fields,
+  pkey: "id",
+});

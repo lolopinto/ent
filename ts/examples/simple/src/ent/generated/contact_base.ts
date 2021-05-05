@@ -8,18 +8,26 @@ import {
   loadEntX,
   loadEnts,
   LoadEntOptions,
-  loadRow,
-  loadRowX,
   AlwaysDenyRule,
   AllowIfViewerRule,
   PrivacyPolicy,
-  query,
+  ObjectLoaderFactory,
+  Context,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import { NodeType, User } from "src/ent/internal";
 import schema from "src/schema/contact";
 
 const tableName = "contacts";
+const fields = [
+  "id",
+  "created_at",
+  "updated_at",
+  "email_address",
+  "first_name",
+  "last_name",
+  "user_id",
+];
 
 export class ContactBase {
   readonly nodeType = NodeType.Contact;
@@ -77,21 +85,21 @@ export class ContactBase {
   static async loadRawData<T extends ContactBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data | null> {
-    return await loadRow({
-      ...ContactBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    return await contactLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends ContactBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data> {
-    return await loadRowX({
-      ...ContactBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    const row = await contactLoader.createLoader(context).load(id);
+    if (!row) {
+      throw new Error(`couldn't load row for ${id}`);
+    }
+    return row;
   }
 
   static loaderOptions<T extends ContactBase>(
@@ -99,21 +107,10 @@ export class ContactBase {
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
-      fields: ContactBase.getFields(),
+      fields: fields,
       ent: this,
+      loaderFactory: contactLoader,
     };
-  }
-
-  private static getFields(): string[] {
-    return [
-      "id",
-      "created_at",
-      "updated_at",
-      "email_address",
-      "first_name",
-      "last_name",
-      "user_id",
-    ];
   }
 
   private static schemaFields: Map<string, Field>;
@@ -137,3 +134,9 @@ export class ContactBase {
     return loadEntX(this.viewer, this.userID, User.loaderOptions());
   }
 }
+
+export const contactLoader = new ObjectLoaderFactory({
+  tableName,
+  fields,
+  pkey: "id",
+});

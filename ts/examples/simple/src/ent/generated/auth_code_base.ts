@@ -8,18 +8,26 @@ import {
   loadEntX,
   loadEnts,
   LoadEntOptions,
-  loadRow,
-  loadRowX,
   AlwaysDenyRule,
   AllowIfViewerRule,
   PrivacyPolicy,
-  query,
+  ObjectLoaderFactory,
+  Context,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import { NodeType, User } from "src/ent/internal";
 import schema from "src/schema/auth_code";
 
 const tableName = "auth_codes";
+const fields = [
+  "id",
+  "created_at",
+  "updated_at",
+  "code",
+  "user_id",
+  "email_address",
+  "phone_number",
+];
 
 export class AuthCodeBase {
   readonly nodeType = NodeType.AuthCode;
@@ -77,21 +85,21 @@ export class AuthCodeBase {
   static async loadRawData<T extends AuthCodeBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data | null> {
-    return await loadRow({
-      ...AuthCodeBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    return await authCodeLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends AuthCodeBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
+    context?: Context,
   ): Promise<Data> {
-    return await loadRowX({
-      ...AuthCodeBase.loaderOptions.apply(this),
-      clause: query.Eq("id", id),
-    });
+    const row = await authCodeLoader.createLoader(context).load(id);
+    if (!row) {
+      throw new Error(`couldn't load row for ${id}`);
+    }
+    return row;
   }
 
   static loaderOptions<T extends AuthCodeBase>(
@@ -99,21 +107,10 @@ export class AuthCodeBase {
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
-      fields: AuthCodeBase.getFields(),
+      fields: fields,
       ent: this,
+      loaderFactory: authCodeLoader,
     };
-  }
-
-  private static getFields(): string[] {
-    return [
-      "id",
-      "created_at",
-      "updated_at",
-      "code",
-      "user_id",
-      "email_address",
-      "phone_number",
-    ];
   }
 
   private static schemaFields: Map<string, Field>;
@@ -137,3 +134,9 @@ export class AuthCodeBase {
     return loadEntX(this.viewer, this.userID, User.loaderOptions());
   }
 }
+
+export const authCodeLoader = new ObjectLoaderFactory({
+  tableName,
+  fields,
+  pkey: "id",
+});

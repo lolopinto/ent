@@ -45,7 +45,7 @@ export class HolidayBuilder implements Builder<Holiday> {
       viewer: viewer,
       operation: this.operation,
       tableName: "holidays",
-      ent: Holiday,
+      loaderOptions: Holiday.loaderOptions(),
       builder: this,
       action: action,
       schema: schema,

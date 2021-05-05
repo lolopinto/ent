@@ -467,7 +467,7 @@ test("loadFromEmailAddress", async () => {
   expect(rawID).toBe(jon.id);
 
   const rando = await User.loadIDFromEmailAddress(randomEmail());
-  expect(rando).toBe(null);
+  expect(rando).toBe(undefined);
 });
 
 test("uniqueEdge|Node", async () => {
