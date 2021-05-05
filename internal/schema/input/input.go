@@ -98,9 +98,10 @@ type Field struct {
 }
 
 type ForeignKey struct {
-	Schema string `json:"schema"`
-	Column string `json:"column"`
-	Name   string `json:"name"`
+	Schema       string `json:"schema"`
+	Column       string `json:"column"`
+	Name         string `json:"name"`
+	DisableIndex bool   `json:"disableIndex"`
 }
 
 type FieldEdge struct {

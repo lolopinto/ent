@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 
+	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/codepath"
@@ -107,6 +110,13 @@ func (nodeData *NodeData) GetForeignKeyEdgeByName(edgeName string) *edge.Foreign
 		return nil
 	}
 	return nodeData.EdgeInfo.GetForeignKeyEdgeByName(edgeName)
+}
+
+func (nodeData *NodeData) GetDestinationEdgeByName(edgeName string) edge.ConnectionEdge {
+	if nodeData.EdgeInfo == nil {
+		return nil
+	}
+	return nodeData.EdgeInfo.GetDestinationEdgeByName(edgeName)
 }
 
 func (nodeData *NodeData) GetAssociationEdgeByName(edgeName string) *edge.AssociationEdge {
@@ -221,7 +231,15 @@ type ImportPath struct {
 
 // GetImportsForBaseFile returns list of imports needed in the base generated file
 func (nodeData *NodeData) GetImportsForBaseFile() []ImportPath {
-	var ret []ImportPath
+	//var ret []ImportPath
+	ret := []ImportPath{
+		{
+			Import:        "schema",
+			DefaultImport: true,
+			// this is dependent on having the right tsconfig.json file but that's pretty standard at this point
+			PackagePath: fmt.Sprintf("src/schema/%s", nodeData.PackageName),
+		},
+	}
 	for _, nodeInfo := range nodeData.getUniqueNodes(false) {
 		ret = append(ret, ImportPath{
 			Import:      nodeInfo.Node,
@@ -238,17 +256,24 @@ func (nodeData *NodeData) GetImportsForBaseFile() []ImportPath {
 		}
 	}
 
-	for _, edge := range nodeData.EdgeInfo.Associations {
+	for _, edge := range nodeData.EdgeInfo.GetConnectionEdges() {
 		ret = append(ret, ImportPath{
 			Import:      edge.TsEdgeQueryName(),
 			PackagePath: codepath.GetInternalImportPath(),
 		})
 	}
-	for _, edge := range nodeData.EdgeInfo.ForeignKeys {
-		ret = append(ret, ImportPath{
-			Import:      edge.TsEdgeQueryName(),
-			PackagePath: codepath.GetInternalImportPath(),
-		})
+
+	for _, f := range nodeData.FieldInfo.Fields {
+		if f.Index() && f.EvolvedIDField() {
+			imp, err := nodeData.GetFieldQueryName(f)
+			if err != nil {
+				panic(err)
+			}
+			ret = append(ret, ImportPath{
+				Import:      imp,
+				PackagePath: codepath.GetInternalImportPath(),
+			})
+		}
 	}
 	return ret
 }
@@ -301,9 +326,9 @@ func (nodeData *NodeData) GetImportsForQueryBaseFile(s *Schema) []ImportPath {
 		}
 	}
 
-	for _, edge := range nodeData.EdgeInfo.ForeignKeys {
+	for _, edge := range nodeData.EdgeInfo.GetEdgesForIndexLoader() {
 		ret = append(ret, ImportPath{
-			Import:      fmt.Sprintf("%sLoader", edge.NodeInfo.NodeInstance),
+			Import:      fmt.Sprintf("%sLoader", edge.GetNodeInfo().NodeInstance),
 			PackagePath: codepath.GetInternalImportPath(),
 		})
 	}
@@ -334,12 +359,8 @@ func (nodeData *NodeData) getUniqueNodes(forceSelf bool) []uniqueNodeInfo {
 		processNode(edge.NodeInfo)
 	}
 
-	for _, edge := range nodeData.EdgeInfo.ForeignKeys {
-		processNode(edge.NodeInfo)
-	}
-
-	for _, edge := range nodeData.EdgeInfo.IndexedEdges {
-		processNode(edge.NodeInfo)
+	for _, edge := range nodeData.EdgeInfo.DestinationEdges {
+		processNode(edge.GetNodeInfo())
 	}
 
 	// we get id fields from this...
@@ -375,4 +396,13 @@ func (nodeData *NodeData) GetNodeLoaders() []*loader {
 
 func (nodeData *NodeData) GetFieldLoaderName(field *field.Field) string {
 	return fmt.Sprintf("%s%sLoader", nodeData.NodeInstance, field.CamelCaseName())
+}
+
+func (nodeData *NodeData) GetFieldQueryName(field *field.Field) (string, error) {
+	if !field.Index() {
+		return "", fmt.Errorf("cannot call GetFieldQueryName on field %s since it's not an indexed field", field.FieldName)
+	}
+
+	fieldName := strcase.ToCamel(strings.TrimSuffix(field.FieldName, "ID"))
+	return fmt.Sprintf("%sTo%sQuery", fieldName, strcase.ToCamel(inflection.Plural(nodeData.Node))), nil
 }

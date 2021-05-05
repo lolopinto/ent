@@ -97,7 +97,7 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 			actionsWg.Wait()
 
 			// write base edge file for all the edges and then eventually one per edge...
-			if len(nodeData.EdgeInfo.Associations) == 0 && len(nodeData.EdgeInfo.ForeignKeys) == 0 {
+			if !nodeData.EdgeInfo.HasConnectionEdges() {
 				return
 			}
 
@@ -120,13 +120,14 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 				}(idx)
 			}
 
-			edgesWg.Add(len(nodeData.EdgeInfo.ForeignKeys))
-
-			for idx := range nodeData.EdgeInfo.ForeignKeys {
+			// edges with IndexLoaderFactory
+			edges := nodeData.EdgeInfo.GetEdgesForIndexLoader()
+			edgesWg.Add(len(edges))
+			for idx := range edges {
 				go func(idx int) {
 					defer edgesWg.Done()
 
-					edge := nodeData.EdgeInfo.ForeignKeys[idx]
+					edge := edges[idx]
 
 					if err := writeCustomEdgeQueryFile(data.Schema, nodeData, edge, data.CodePath); err != nil {
 						serr.Append(err)
@@ -276,7 +277,7 @@ func getFilePathForAssocEdgeQueryFile(nodeData *schema.NodeData, e *edge.Associa
 	)
 }
 
-func getFilePathForCustomEdgeQueryFile(nodeData *schema.NodeData, e *edge.ForeignKeyEdge) string {
+func getFilePathForCustomEdgeQueryFile(nodeData *schema.NodeData, e edge.ConnectionEdge) string {
 	return fmt.Sprintf(
 		"src/ent/%s/query/%s.ts",
 		nodeData.PackageName,
@@ -292,7 +293,7 @@ func getImportPathForAssocEdgeQueryFile(nodeData *schema.NodeData, e *edge.Assoc
 	)
 }
 
-func getImportPathForCustomEdgeQueryFile(nodeData *schema.NodeData, e *edge.ForeignKeyEdge) string {
+func getImportPathForCustomEdgeQueryFile(nodeData *schema.NodeData, e edge.ConnectionEdge) string {
 	return fmt.Sprintf(
 		"src/ent/%s/query/%s",
 		nodeData.PackageName,
@@ -448,7 +449,7 @@ func writeAssocEdgeQueryFile(s *schema.Schema, nodeData *schema.NodeData, e *edg
 	}, file.WriteOnce())
 }
 
-func writeCustomEdgeQueryFile(s *schema.Schema, nodeData *schema.NodeData, e *edge.ForeignKeyEdge, codePathInfo *codegen.CodePath) error {
+func writeCustomEdgeQueryFile(s *schema.Schema, nodeData *schema.NodeData, e edge.ConnectionEdge, codePathInfo *codegen.CodePath) error {
 	imps := tsimport.NewImports()
 
 	return file.Write(&file.TemplatedBasedFileWriter{
@@ -564,11 +565,9 @@ func getSortedInternalEntFileLines(s *schema.Schema) []string {
 			}
 		}
 
-		if len(info.NodeData.EdgeInfo.ForeignKeys) != 0 {
+		for _, edge := range info.NodeData.EdgeInfo.GetEdgesForIndexLoader() {
 			hasBaseQueryFile = true
-			for _, edge := range info.NodeData.EdgeInfo.ForeignKeys {
-				append2(&queryFiles, getImportPathForCustomEdgeQueryFile(info.NodeData, edge))
-			}
+			append2(&queryFiles, getImportPathForCustomEdgeQueryFile(info.NodeData, edge))
 		}
 
 		if hasBaseQueryFile {

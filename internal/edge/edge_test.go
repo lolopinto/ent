@@ -420,8 +420,8 @@ func testEdgeInfo(t *testing.T, edgeInfo *EdgeInfo, expAssocs int) {
 	}
 
 	// foreign keys are never passed in. they are generated in node_map
-	if len(edgeInfo.ForeignKeys) != 0 {
-		t.Errorf("expected %d foreign key edges. got %d instead", 0, len(edgeInfo.ForeignKeys))
+	if len(edgeInfo.DestinationEdges) != 0 {
+		t.Errorf("expected %d foreign key edges. got %d instead", 0, len(edgeInfo.DestinationEdges))
 	}
 
 	if len(edgeInfo.Associations) != expAssocs {
