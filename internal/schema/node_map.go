@@ -38,8 +38,8 @@ type NodeDataInfo struct {
 func (info *NodeDataInfo) PostProcess() error {
 	edgeInfo := info.NodeData.EdgeInfo
 	// sort for consistent ordering
-	sort.Slice(edgeInfo.ForeignKeys, func(i, j int) bool {
-		return edgeInfo.ForeignKeys[i].EdgeName < edgeInfo.ForeignKeys[j].EdgeName
+	sort.Slice(edgeInfo.DestinationEdges, func(i, j int) bool {
+		return edgeInfo.DestinationEdges[i].GetEdgeName() < edgeInfo.DestinationEdges[j].GetEdgeName()
 	})
 
 	sort.Slice(edgeInfo.Associations, func(i, j int) bool {
@@ -50,9 +50,6 @@ func (info *NodeDataInfo) PostProcess() error {
 		return edgeInfo.FieldEdges[i].EdgeName < edgeInfo.FieldEdges[j].EdgeName
 	})
 
-	sort.Slice(edgeInfo.IndexedEdges, func(i, j int) bool {
-		return edgeInfo.IndexedEdges[i].EdgeName < edgeInfo.IndexedEdges[j].EdgeName
-	})
 	return nil
 }
 
@@ -326,21 +323,36 @@ func (m NodeMapInfo) addLinkedEdges(info *NodeDataInfo) {
 	edgeInfo := nodeData.EdgeInfo
 
 	for _, e := range edgeInfo.FieldEdges {
+		f := fieldInfo.GetFieldByName(e.FieldName)
+		if f == nil {
+			panic(fmt.Errorf("invalid edge with Name %s", e.FieldName))
+		}
+
 		if e.Polymorphic != nil {
+			// so we want to add it to edges for
+			edgeInfo.AddIndexedEdgeFromSource(
+				f.TsFieldName(),
+				f.GetQuotedDBColName(),
+				nodeData.Node,
+				e.Polymorphic,
+			)
 			for _, typ := range e.Polymorphic.Types {
 				// convert to Node type
 				typ = strcase.ToCamel(typ) + "Config"
 				foreign, ok := m[typ]
 				if ok {
-					f := fieldInfo.GetFieldByName(e.FieldName)
-					if f == nil {
-						panic(fmt.Errorf("invalid edge with Name %s", e.FieldName))
-					}
 
 					// only add polymorphic accessors on foreign if index or unique
 					if f.Index() || f.Unique() {
 						fEdgeInfo := foreign.NodeData.EdgeInfo
-						fEdgeInfo.AddIndexEdgeFromPolymorphicOptions(f.TsFieldName(), nodeData.Node, e.Polymorphic)
+						//						spew.Dump(nodeData.Node, foreign.NodeData.Node)
+						fEdgeInfo.AddDestinationEdgeFromPolymorphicOptions(
+							f.TsFieldName(),
+							f.GetQuotedDBColName(),
+							nodeData.Node,
+							e.Polymorphic,
+							foreign.NodeData.Node,
+						)
 					}
 				} else {
 					panic(fmt.Errorf("couldn't find config for typ %s", typ))
@@ -351,10 +363,6 @@ func (m NodeMapInfo) addLinkedEdges(info *NodeDataInfo) {
 		// no inverse edge name, nothing to do here
 		if e.InverseEdgeName == "" {
 			continue
-		}
-		f := fieldInfo.GetFieldByName(e.FieldName)
-		if f == nil {
-			panic(fmt.Errorf("invalid edge with Name %s", e.FieldName))
 		}
 
 		config := e.GetEntConfig()

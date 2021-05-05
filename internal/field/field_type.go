@@ -256,7 +256,7 @@ func (f *Field) AddForeignKeyEdgeToInverseEdgeInfo(edgeInfo *edge.EdgeInfo, node
 	if edgeName == "" {
 		edgeName = inflection.Plural(nodeName)
 	}
-	edgeInfo.AddForeignKeyEdgeFromInverseFieldInfo(
+	edgeInfo.AddEdgeFromForeignKeyIndex(
 		f.GetQuotedDBColName(),
 		edgeName,
 		nodeName,
@@ -374,6 +374,18 @@ func (f *Field) EvolvedIDField() bool {
 	// if there's a fieldEdge or a foreign key or an inverse edge to this, this is an ID field
 	// and we should use the ID type and add a builder
 	return f.fieldEdge != nil || f.fkey != nil || f.inverseEdge != nil || f.polymorphic != nil
+}
+
+func (f *Field) QueryFromID() bool {
+	return f.index && f.polymorphic != nil
+}
+
+// TODO probably gonna collapse into above
+func (f *Field) QueryFrom() bool {
+	if !f.index || f.polymorphic != nil {
+		return false
+	}
+	return !strings.HasSuffix(f.FieldName, "ID")
 }
 
 func (f *Field) Nullable() bool {
