@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ master ]
     paths:
-      - '*.go'
+      - '**.go'
       - ts/src/**
       - .github/workflows/go_ci.yml
 
