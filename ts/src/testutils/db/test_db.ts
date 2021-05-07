@@ -239,6 +239,10 @@ export class TempDB {
     }
   }
 
+  getDBClient() {
+    return this.dbClient;
+  }
+
   async afterAll() {
     // end our connection to db
     await this.dbClient.end();
