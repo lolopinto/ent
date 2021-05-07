@@ -10,7 +10,7 @@ interface Column extends SchemaItem {
   nullable?: boolean; // defaults to false
   primaryKey?: boolean;
   default?: string;
-  //  foreignKey?: string; // TODO...
+  foreignKey?: { table: string; col: string };
 }
 
 interface Constraint extends SchemaItem {
@@ -26,13 +26,31 @@ export interface Table {
   drop(): string;
 }
 
-type options = Pick<Column, "nullable" | "primaryKey" | "default">;
+type options = Pick<
+  Column,
+  "nullable" | "primaryKey" | "default" | "foreignKey"
+>;
 
 export function primaryKey(name: string, cols: string[]): Constraint {
   return {
     name: name,
     generate() {
       return `CONSTRAINT ${name} PRIMARY KEY(${cols.join(",")})`;
+    },
+  };
+}
+
+export function foreignKey(
+  name: string,
+  cols: string[],
+  fkey: { table: string; cols: string[] },
+): Constraint {
+  return {
+    name,
+    generate() {
+      return `CONSTRAINT ${name} FOREIGN KEY(${cols.join(",")}) REFERENCES ${
+        fkey.table
+      }(${fkey.cols.join(",")})`;
     },
   };
 }
@@ -122,6 +140,16 @@ export function table(name: string, ...items: SchemaItem[]): Table {
   let constraints: Constraint[] = [];
   for (const item of items) {
     if ((item as Column).datatype !== undefined) {
+      const col = item as Column;
+      // add it as a constraint
+      if (col.foreignKey) {
+        constraints.push(
+          foreignKey(`${name}_${col.name}_fkey`, [col.name], {
+            table: col.foreignKey.table,
+            cols: [col.foreignKey.col],
+          }),
+        );
+      }
       cols.push(item as Column);
     } else if ((item as Constraint).generate !== undefined) {
       constraints.push(item as Constraint);
@@ -209,6 +237,10 @@ export class TempDB {
     for (const [_, table] of this.tables) {
       await this.dbClient.query(table.create());
     }
+  }
+
+  getDBClient() {
+    return this.dbClient;
   }
 
   async afterAll() {

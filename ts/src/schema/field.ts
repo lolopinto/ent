@@ -7,6 +7,7 @@ import {
   ForeignKey,
 } from "./schema";
 import { snakeCase } from "snake-case";
+import { DateTime } from "luxon";
 
 export abstract class BaseField {
   name: string;
@@ -239,11 +240,16 @@ export class TimestampField extends BaseField implements Field {
   }
 
   format(val: Date): any {
-    // don't format this way if with timeone
     if (this.withTimezone) {
-      return val;
+      // send ISO down so that if it's saved in different format e.g. csv and then
+      // later saved in the db  e.g. with COPY, correct value is saved.
+      return DateTime.fromJSDate(val).toISO();
     }
-    return val.toISOString();
+
+    // without timezone, make sure to store UTC value...
+    return DateTime.fromJSDate(val)
+      .toUTC()
+      .toISO();
   }
 }
 

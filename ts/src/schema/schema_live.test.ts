@@ -6,6 +6,7 @@ import {
   UUIDType,
   leftPad,
   DateType,
+  TimestamptzType,
 } from "../schema/field";
 import { BaseEntSchema, Schema, Field } from "../schema";
 import { User, SimpleAction } from "../testutils/builder";
@@ -27,6 +28,8 @@ import { BaseEntSchemaWithTZ } from "./base_schema";
 import { DBType } from "./schema";
 import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
 import { ID, Ent, Viewer, Data } from "../core/base";
+import * as fs from "fs";
+import * as path from "path";
 
 class UserSchema extends BaseEntSchema {
   fields: Field[] = [
@@ -131,9 +134,12 @@ describe("timestamp", () => {
     const action = new SimpleAction(
       new LoggedOutViewer(),
       new UserSchema(),
-      new Map([
+      new Map<string, any>([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
+        // set the createdAt and updatedAt values so we don't depend on how long it takes before this is called later...
+        ["createdAt", date],
+        ["updatedAt", date],
       ]),
     );
     const user = await action.saveX();
@@ -142,8 +148,8 @@ describe("timestamp", () => {
 
     // created at and updated at even though stored in utc with timestamp without timezone
     // when retrieved, we get a timestamp that's close to what we expect.
-    expect(Math.abs(createdAt.getTime() - date.getTime())).toBeLessThan(10);
-    expect(Math.abs(updatedAt.getTime() - date.getTime())).toBeLessThan(10);
+    expect(createdAt.getTime()).toBe(date.getTime());
+    expect(updatedAt.getTime()).toBe(date.getTime());
   });
 
   test("no setTypeParser", async () => {
@@ -151,9 +157,12 @@ describe("timestamp", () => {
     const action = new SimpleAction(
       new LoggedOutViewer(),
       new UserSchema(),
-      new Map([
+      new Map<string, any>([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
+        // set the createdAt and updatedAt values so we don't depend on how long it takes before this is called later...
+        ["createdAt", date],
+        ["updatedAt", date],
       ]),
     );
 
@@ -182,7 +191,7 @@ describe("timestamp", () => {
   function expectWithinTZ(date1: Date, date2: Date) {
     let diff = Math.abs(date1.getTime() - date2.getTime());
     let offset = date1.getTimezoneOffset() * 60000;
-    expect(Math.abs(offset - diff)).toBeLessThan(10);
+    expect(offset - diff).toBe(0);
   }
 
   test("no toISO formattting", async () => {
@@ -190,9 +199,12 @@ describe("timestamp", () => {
     const action = new SimpleAction(
       new LoggedOutViewer(),
       new UserWithTimestampNoFormatSchema(),
-      new Map([
+      new Map<string, any>([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
+        // set the createdAt and updatedAt values so we don't depend on how long it takes before this is called later...
+        ["createdAt", date],
+        ["updatedAt", date],
       ]),
     );
     const user = await action.saveX();
@@ -209,9 +221,12 @@ describe("timestamp", () => {
     const action = new SimpleAction(
       new LoggedOutViewer(),
       new UserWithTimestampNoFormatSchema(),
-      new Map([
+      new Map<string, any>([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
+        // set the createdAt and updatedAt values so we don't depend on how long it takes before this is called later...
+        ["createdAt", date],
+        ["updatedAt", date],
       ]),
     );
     // reset to default ts parser
@@ -224,8 +239,8 @@ describe("timestamp", () => {
 
     // this is fine but depends on db and node server being in sync
     // don't currently have a good way to test this so showing this in action
-    expect(Math.abs(createdAt.getTime() - date.getTime())).toBeLessThan(10);
-    expect(Math.abs(updatedAt.getTime() - date.getTime())).toBeLessThan(10);
+    expect(createdAt.getTime()).toBe(date.getTime());
+    expect(updatedAt.getTime()).toBe(date.getTime());
 
     // restore parser
     pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, prevParser);
@@ -238,9 +253,12 @@ test("timestamptz", async () => {
   const action = new SimpleAction(
     new LoggedOutViewer(),
     new UserWithTimezoneSchema(),
-    new Map([
+    new Map<string, any>([
       ["FirstName", "Jon"],
       ["LastName", "Snow"],
+      // set the createdAt and updatedAt values so we don't depend on how long it takes before this is called later...
+      ["createdAt", date],
+      ["updatedAt", date],
     ]),
   );
 
@@ -249,8 +267,8 @@ test("timestamptz", async () => {
   const updatedAt: Date = user.data.updated_at;
 
   // stored with timezone. no formatting is done and no magic is done and we get what we want back
-  expect(Math.abs(createdAt.getTime() - date.getTime())).toBeLessThan(10);
-  expect(Math.abs(updatedAt.getTime() - date.getTime())).toBeLessThan(10);
+  expect(createdAt.getTime()).toBe(date.getTime());
+  expect(updatedAt.getTime()).toBe(updatedAt.getTime());
 
   expect(date.getTimezoneOffset()).toBe(createdAt.getTimezoneOffset());
   expect(date.getTimezoneOffset()).toBe(updatedAt.getTimezoneOffset());
@@ -493,4 +511,56 @@ describe("date", () => {
     const holiday = await action.saveX();
     expect(holiday.data.date).toEqual(expectedValue());
   });
+});
+
+test("timestamptz copy", async () => {
+  // lame version of skip for ci since test is failing
+  // TODO: https://github.com/lolopinto/ent/issues/294
+  if (process.env.NODE_AUTH_TOKEN) {
+    return;
+  }
+  await createUsersWithTZ();
+
+  const file = path.join(
+    process.cwd(),
+    Math.random()
+      .toString(16)
+      .substring(2),
+  );
+
+  const tzType = TimestamptzType({
+    name: "field",
+  });
+  const date = new Date();
+  const rows = [
+    ["id", "first_name", "last_name", "created_at", "updated_at"],
+    [uuidv4(), "Jon", "Snow", tzType.format(date), tzType.format(date)],
+  ];
+
+  let lines: string[] = [];
+
+  for (const row of rows) {
+    lines.push(row.join(","));
+  }
+
+  fs.writeFileSync(file, lines.join("\n"));
+
+  try {
+    const client = tdb.getDBClient();
+
+    const query = `COPY users (${rows[0].join(",")}) FROM '${file}' CSV HEADER`;
+    await client.query(query);
+
+    const r = await client.query("SELECT COUNT(1) FROM users");
+    expect(r.rowCount).toBe(1);
+    const row = r.rows[0];
+    expect(row.count).toBe("1");
+  } catch (err) {
+    fail(err);
+  } finally {
+    fs.rmSync(file, {
+      force: true,
+      recursive: true,
+    });
+  }
 });
