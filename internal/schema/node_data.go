@@ -231,7 +231,6 @@ type ImportPath struct {
 
 // GetImportsForBaseFile returns list of imports needed in the base generated file
 func (nodeData *NodeData) GetImportsForBaseFile() []ImportPath {
-	//var ret []ImportPath
 	ret := []ImportPath{
 		{
 			Import:        "schema",
