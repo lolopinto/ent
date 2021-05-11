@@ -11,6 +11,7 @@ export default interface Schema {
 
   // edges in the schema
   edges?: Edge[];
+  edgeGroups?: AssocEdgeGroup[];
 
   actions?: Action[];
 
@@ -132,7 +133,8 @@ export interface AssocEdgeGroup {
 // there are some implied edges that are derived from fields: foreignKeys/fieldEdges
 // writing to those fields automatically writes to the defined edges
 // TODO other edges such as join tables 3-way id1->id2 (data)
-export type Edge = AssocEdge | AssocEdgeGroup;
+// TODO clean this up with 1-1, 1-many, many-many etc
+export type Edge = AssocEdge;
 
 // Pattern is reusable functionality that leads to code sharing
 // The most commonly used pattern in the ent framework is going to be the Node pattern

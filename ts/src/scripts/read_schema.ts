@@ -5,10 +5,6 @@ import { pascalCase } from "pascal-case";
 import minimist from "minimist";
 import { ActionField } from "../schema/schema";
 
-function isAssocEdge(edge: Edge): edge is AssocEdge {
-  return (edge as AssocEdge).schemaName != undefined;
-}
-
 function processFields(dst: {}[], src: Field[]) {
   for (const field of src) {
     let f = {};
@@ -128,28 +124,30 @@ async function main() {
     }
     processFields(fields, schema.fields);
     let assocEdges: ProcessedAssocEdge[] = [];
-    let assocEdgeGroups: AssocEdgeGroup[] = [];
+    let assocEdgeGroups: ProcessedAssocEdgeGroup[] = [];
     if (schema.edges) {
       for (const edge of schema.edges) {
-        if (isAssocEdge(edge)) {
-          let edge2: ProcessedAssocEdge = edge;
-          edge2.edgeActions = edge.edgeActions?.map((action) =>
-            processAction(action),
-          );
-          assocEdges.push(edge2);
-        } else {
-          // array-ify this
-          if (edge.nullStates && !Array.isArray(edge.nullStates)) {
-            edge.nullStates = [edge.nullStates];
-          }
-          let group: ProcessedAssocEdgeGroup = edge;
-          if (edge.edgeAction) {
-            group.edgeAction = processAction(edge.edgeAction);
-          }
-          assocEdgeGroups.push(edge);
-        }
+        let edge2: ProcessedAssocEdge = edge;
+        edge2.edgeActions = edge.edgeActions?.map((action) =>
+          processAction(action),
+        );
+        assocEdges.push(edge2);
       }
     }
+    if (schema.edgeGroups) {
+      // array-ify this
+      for (const group of schema.edgeGroups) {
+        if (group.nullStates && !Array.isArray(group.nullStates)) {
+          group.nullStates = [group.nullStates];
+        }
+        let group2: ProcessedAssocEdgeGroup = group;
+        if (group.edgeAction) {
+          group2.edgeAction = processAction(group.edgeAction);
+        }
+        assocEdgeGroups.push(group2);
+      }
+    }
+
     schemas[key] = {
       tableName: schema.tableName,
       fields: fields,
