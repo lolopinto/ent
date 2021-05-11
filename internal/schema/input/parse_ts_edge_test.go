@@ -156,12 +156,12 @@ func TestParseEdges(t *testing.T) {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(
 					`
-					import {Schema, Field, Edge} from "{schema}";
+					import {Schema, Field, AssocEdgeGroup} from "{schema}";
 
 					export default class User implements Schema {
 						fields: Field[] = [];
 
-						edges: Edge[] = [
+						edgeGroups: AssocEdgeGroup[] = [
 							{
 								name: "friendships",
 								groupStatusName: "friendshipStatus",
@@ -293,11 +293,11 @@ func TestParseEdges(t *testing.T) {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(
 					`
-				import {Schema, Field, Edge, ActionOperation} from "{schema}";
+				import {Schema, Field, AssocEdgeGroup, ActionOperation} from "{schema}";
 
 				export default class User implements Schema {
 					fields: Field[] = [];
-					edges: Edge[] = [
+					edgeGroups: AssocEdgeGroup[] = [
 						{
 							name: "friendships",
 							groupStatusName: "friendshipStatus",
@@ -360,11 +360,11 @@ func TestParseEdges(t *testing.T) {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(
 					`
-				import {Schema, Field, Edge, ActionOperation} from "{schema}";
+				import {Schema, Field, AssocEdgeGroup, ActionOperation} from "{schema}";
 
 				export default class User implements Schema {
 					fields: Field[] = [];
-					edges: Edge[] = [
+					edgeGroups: AssocEdgeGroup[] = [
 						{
 							name: "friendships",
 							groupStatusName: "friendshipStatus",

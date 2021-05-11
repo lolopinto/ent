@@ -8,6 +8,7 @@ import {
   StringType,
   TimestampType,
   UUIDType,
+  AssocEdgeGroup,
 } from "@lolopinto/ent/schema/";
 
 /// explicit schema
@@ -42,6 +43,9 @@ export default class Event extends BaseEntSchema implements Schema {
         },
       ],
     },
+  ];
+
+  edgeGroups: AssocEdgeGroup[] = [
     {
       name: "rsvps",
       groupStatusName: "rsvpStatus",
