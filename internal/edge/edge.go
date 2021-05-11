@@ -493,9 +493,6 @@ func (e *IndexedEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
 }
 
 func (e *IndexedEdge) TsEdgeQueryName() string {
-	if e.foreignNode != "" {
-		panic("cannot call TsEdgeQueryName when foreignNode is not empty")
-	}
 	return fmt.Sprintf("%sTo%sQuery", e.tsEdgeName, strcase.ToCamel(e.EdgeName))
 }
 
@@ -511,9 +508,6 @@ func (e *IndexedEdge) GetGraphQLConnectionName() string {
 }
 
 func (e *IndexedEdge) TsEdgeQueryEdgeName() string {
-	if e.foreignNode != "" {
-		panic("cannot call TsEdgeQueryEdgeName when foreignNode is not empty")
-	}
 	return fmt.Sprintf("%sTo%sEdge", e.tsEdgeName, strcase.ToCamel(e.EdgeName))
 }
 
