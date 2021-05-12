@@ -2,6 +2,7 @@ import pg, { Pool, ClientConfig, PoolClient } from "pg";
 import * as fs from "fs";
 import { safeLoad } from "js-yaml";
 import { log } from "./logger";
+import { DateTime } from "luxon";
 
 export interface Database {
   database?: string;
@@ -148,12 +149,11 @@ export default class DB {
 export const defaultTimestampParser = pg.types.getTypeParser(
   pg.types.builtins.TIMESTAMP,
 );
-// add (UTC) timezone to it so it's parsed as UTC time correctly
-pg.types.builtins.TIMESTAMP;
-pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, function(val: string) {
-  let d = new Date(val + "Z");
-  return d;
-});
 
-// tell pg to treat this as UTC time when parsing and store it that way
-//(pg.defaults as any).parseInputDatesAsUTC = true;
+// this is stored in the db without timezone but we want to make sure
+// it's parsed as UTC time as opposed to the local time
+pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, function(val: string) {
+  return DateTime.fromSQL(val + "Z").toJSDate();
+  // let d = new Date(val + "Z");
+  // return d;
+});

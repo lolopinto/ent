@@ -14,7 +14,6 @@ services:
     volumes: 
       - .:/app:rw,delegated
     environment:
-      # golang which we use needs the sslmode=disable bit
-      - DB_CONNECTION_STRING=postgres://ola:@host.docker.internal/tsent_test?sslmode=disable
+      - DB_CONNECTION_STRING=postgres://ola:@host.docker.internal/tsent_test
       - GITHUB_TOKEN=${GITHUB_TOKEN}
 
