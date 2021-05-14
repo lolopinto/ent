@@ -69,6 +69,7 @@ sa.Table("event_hosts_edges", metadata,
     sa.Column("time", sa.TIMESTAMP(), nullable=False),
     sa.Column("data", sa.Text(), nullable=True),
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="event_hosts_edges_id1_edge_type_id2_pkey"),
+    sa.Index("event_hosts_edges_time_idx", "time"),
 )
    
 sa.Table("event_rsvps_edges", metadata,
@@ -80,6 +81,7 @@ sa.Table("event_rsvps_edges", metadata,
     sa.Column("time", sa.TIMESTAMP(), nullable=False),
     sa.Column("data", sa.Text(), nullable=True),
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="event_rsvps_edges_id1_edge_type_id2_pkey"),
+    sa.Index("event_rsvps_edges_time_idx", "time"),
 )
    
 sa.Table("events", metadata,
@@ -122,6 +124,7 @@ sa.Table("user_created_events_edges", metadata,
     sa.Column("time", sa.TIMESTAMP(), nullable=False),
     sa.Column("data", sa.Text(), nullable=True),
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="user_created_events_edges_id1_edge_type_id2_pkey"),
+    sa.Index("user_created_events_edges_time_idx", "time"),
 )
    
 sa.Table("user_friends_edges", metadata,
@@ -133,6 +136,7 @@ sa.Table("user_friends_edges", metadata,
     sa.Column("time", sa.TIMESTAMP(), nullable=False),
     sa.Column("data", sa.Text(), nullable=True),
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="user_friends_edges_id1_edge_type_id2_pkey"),
+    sa.Index("user_friends_edges_time_idx", "time"),
 )
    
 sa.Table("user_self_contact_edges", metadata,
@@ -144,6 +148,7 @@ sa.Table("user_self_contact_edges", metadata,
     sa.Column("time", sa.TIMESTAMP(), nullable=False),
     sa.Column("data", sa.Text(), nullable=True),
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="user_self_contact_edges_id1_edge_type_id2_pkey"),
+    sa.Index("user_self_contact_edges_time_idx", "time"),
     sa.UniqueConstraint("id1", "edge_type", name="user_self_contact_edges_unique_id1_edge_type"),
 )
    
