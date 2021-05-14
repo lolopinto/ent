@@ -1,6 +1,6 @@
 {
   "name": "@lolopinto/ent-phonenumber",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "phone number datatype",
   "main": "dist/phonenumber.js",
   "types": "dist/phonenumber.d.ts",
@@ -31,15 +31,15 @@
     "registry": "https://npm.pkg.github.com/"
   },
   "devDependencies": {
-    "@lolopinto/ent": "0.0.13",
-    "@types/jest": "^26.0.9",
-    "jest": "^26.2.2",
-    "ts-jest": "^26.1.4"
+    "@lolopinto/ent": "0.0.88",
+    "@types/jest": "^26.0.23",
+    "jest": "^26.6.3",
+    "ts-jest": "^26.5.6"
   },
   "dependencies": {
-    "libphonenumber-js": "^1.7.56"
+    "libphonenumber-js": "^1.9.17"
   },
   "peerDependencies": {
-    "@lolopinto/ent": "0.0.83"
+    "@lolopinto/ent": "^0.0.88"
   }
 }
