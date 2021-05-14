@@ -6,12 +6,13 @@ import {
   BaseField,
 } from "@lolopinto/ent/schema";
 
-import phonenumber, {
+import {
   CountryCode,
   NumberFormat,
   PhoneNumber as LibPhoneNumber,
+  parsePhoneNumberFromString,
+  FormatNumberOptions,
 } from "libphonenumber-js";
-import { FormatNumberOptions } from "libphonenumber-js/types";
 
 export class PhoneNumber extends BaseField implements Field {
   type: Type = { dbType: DBType.String };
@@ -60,10 +61,7 @@ export class PhoneNumber extends BaseField implements Field {
   }
 
   valid(val: any): boolean {
-    const phoneNumber = phonenumber.parsePhoneNumberFromString(
-      val,
-      this._region,
-    );
+    const phoneNumber = parsePhoneNumberFromString(val, this._region);
     if (!phoneNumber) {
       return false;
     }
