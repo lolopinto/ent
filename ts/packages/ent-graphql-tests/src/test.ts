@@ -412,7 +412,7 @@ test("with async callback", async () => {
       "lastName",
       async (arg) => {
         await new Promise((resolve, reject) => {
-          setTimeout(() => resolve(), 10);
+          setTimeout(() => resolve(null), 10);
         });
       },
     ],
