@@ -489,7 +489,16 @@ func TestTimeEdgeColumn(t *testing.T) {
 		"sa.TIMESTAMP()",
 		"nullable=False",
 	}
+		table := getTestTableByName("account_folders_edges", t)
+
+	constraint := getTestIndexedConstraintFromTable(t, table, "Time")
 	testColumn(t, col, "time", "Time", "time", parts)
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s)", strconv.Quote("account_folders_edges_time_idx"), strconv.Quote("time")),
+	)
 }
 
 func TestDataEdgeColumn(t *testing.T) {

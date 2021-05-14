@@ -3,6 +3,8 @@ import {
   Data,
   ID,
   IDViewer,
+  LoadEntOptions,
+  ObjectLoaderFactory,
   RequestContext,
   Viewer,
 } from "@lolopinto/ent";
@@ -68,11 +70,18 @@ class UserClass implements Ent {
     this.emailAddress = options.email_address;
   }
 
-  static loaderOptions() {
+  static loaderOptions(): LoadEntOptions<UserClass> {
+    const tableName = "users";
+    const fields = ["id", "first_name", "last_name", "email_address"];
+
     return {
       ent: UserClass,
-      tableName: "users",
-      fields: ["id", "first_name", "last_name", "email_address"],
+      tableName,
+      fields,
+      loaderFactory: new ObjectLoaderFactory({
+        tableName,
+        fields,
+      }),
     };
   }
 }
