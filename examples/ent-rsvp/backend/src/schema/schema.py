@@ -73,6 +73,7 @@ sa.Table("event_rsvps", metadata,
     sa.Column("time", sa.TIMESTAMP(), nullable=False),
     sa.Column("data", sa.Text(), nullable=True),
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="event_rsvps_id1_edge_type_id2_pkey"),
+    sa.Index("event_rsvps_time_idx", "time"),
 )
    
 sa.Table("events", metadata,
