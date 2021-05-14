@@ -656,13 +656,18 @@ func (s *dbSchema) createEdgeTable(nodeData *schema.NodeData, assocEdge *edge.As
 	id2Col := s.getID2Column()
 	columns = append(columns, id2Col)
 	columns = append(columns, s.getID2TypeColumn())
-	columns = append(columns, s.getTimeColumn())
+	timeCol := s.getTimeColumn()
+	columns = append(columns, timeCol)
 	columns = append(columns, s.getDataColumn())
 
 	constraints := []dbConstraint{
 		&primaryKeyConstraint{
 			dbColumns: []*dbColumn{id1Col, edgeTypeCol, id2Col},
 			tableName: tableName,
+		},
+		&indexConstraint{
+			dbColumns: []*dbColumn{timeCol},
+			tableName: tableName,			
 		},
 	}
 
