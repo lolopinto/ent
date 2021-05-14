@@ -1,6 +1,6 @@
 import pg, { Pool, ClientConfig, PoolClient } from "pg";
 import * as fs from "fs";
-import { safeLoad } from "js-yaml";
+import { load } from "js-yaml";
 import { log } from "./logger";
 import { DateTime } from "luxon";
 
@@ -27,6 +27,9 @@ function isDbDict(v: Database | DBDict): v is DBDict {
   );
 }
 
+interface customClientConfig extends ClientConfig {
+  sslmode?: string;
+}
 // order
 // env variable
 // connString in config
@@ -76,17 +79,19 @@ function getClientConfig(args?: {
     // TODO support multiple environments in database/config.yaml file.
     // if needed for now, general yaml file should be used
     let data = fs.readFileSync(file, { encoding: "utf8" });
-    let yaml = safeLoad(data);
-    if (yaml) {
+    let yaml = load(data);
+    if (yaml && typeof yaml === "object") {
+      let cfg: customClientConfig = yaml;
       return {
-        database: yaml.database,
-        user: yaml.user,
-        password: yaml.password,
-        host: yaml.host,
-        port: yaml.port,
-        ssl: yaml.sslmode == "enable",
+        database: cfg.database,
+        user: cfg.user,
+        password: cfg.password,
+        host: cfg.host,
+        port: cfg.port,
+        ssl: cfg.sslmode == "enable",
       };
     }
+    throw new Error(`invalid yaml configuration in file`);
   } catch (e) {
     console.error("error reading file" + e.message);
     return null;
