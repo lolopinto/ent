@@ -1,5 +1,5 @@
 import * as fs from "fs";
-import { safeLoad } from "js-yaml";
+import { load } from "js-yaml";
 import DB, { Database, DBDict } from "./db";
 import * as path from "path";
 import { setLogLevels } from "./logger";
@@ -37,16 +37,20 @@ export function loadConfig(file?: string | Buffer) {
   }
 
   try {
-    let yaml: Config = safeLoad(data);
-    if (yaml.log) {
-      setLogLevels(yaml.log);
+    let yaml = load(data);
+    if (typeof yaml !== "object") {
+      throw new Error(`invalid yaml passed`);
+    }
+    let cfg = yaml as Config;
+    if (cfg.log) {
+      setLogLevels(cfg.log);
     }
 
-    if (yaml.dbConnectionString || yaml.dbFile || yaml.db) {
+    if (cfg.dbConnectionString || cfg.dbFile || cfg.db) {
       DB.initDB({
-        connectionString: yaml.dbConnectionString,
-        dbFile: yaml.dbFile,
-        db: yaml.db,
+        connectionString: cfg.dbConnectionString,
+        dbFile: cfg.dbFile,
+        db: cfg.db,
       });
     }
   } catch (e) {

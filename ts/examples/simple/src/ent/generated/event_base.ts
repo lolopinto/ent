@@ -85,7 +85,6 @@ export class EventBase {
 
   // by default, we always deny and it's up to the ent
   // to overwrite this privacy policy in its subclasses
-
   privacyPolicy: PrivacyPolicy = {
     rules: [AllowIfViewerRule, AlwaysDenyRule],
   };

@@ -42,6 +42,10 @@ func (info *NodeDataInfo) PostProcess() error {
 		return edgeInfo.DestinationEdges[i].GetEdgeName() < edgeInfo.DestinationEdges[j].GetEdgeName()
 	})
 
+	sort.Slice(edgeInfo.IndexedEdgeQueries, func(i, j int) bool {
+		return edgeInfo.IndexedEdgeQueries[i].GetEdgeName() < edgeInfo.IndexedEdgeQueries[j].GetEdgeName()
+	})
+
 	sort.Slice(edgeInfo.Associations, func(i, j int) bool {
 		return edgeInfo.Associations[i].EdgeName < edgeInfo.Associations[j].EdgeName
 	})

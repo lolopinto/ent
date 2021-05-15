@@ -1,4 +1,4 @@
-import phonenumber from "libphonenumber-js";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 export function random(): string {
   return Math.random()
@@ -16,6 +16,6 @@ export function randomPhoneNumber(): string {
   const phone = Math.random()
     .toString(10)
     .substring(2, 12);
-  const phoneNumber = phonenumber.parsePhoneNumberFromString(phone, "US");
+  const phoneNumber = parsePhoneNumberFromString(phone, "US");
   return phoneNumber!.format("E.164");
 }
