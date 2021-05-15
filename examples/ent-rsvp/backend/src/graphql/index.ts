@@ -9,7 +9,7 @@ import { graphqlUploadExpress } from "graphql-upload";
 import * as Sentry from "@sentry/node";
 import * as Tracing from "@sentry/tracing";
 import { config } from "dotenv";
-import { loadConfig } from "@lolopinto/ent";
+import { DB, loadConfig } from "@lolopinto/ent";
 
 // load env
 config();
@@ -100,8 +100,34 @@ app.use(
 
 process.on("uncaughtException", (err) => {
   console.error("There was an uncaught error", err);
-  //  process.exit(1); //mandatory (as per the Node.js docs)
+  process.exit(1); //mandatory (as per the Node.js docs)
 });
 
-app.listen(process.env.PORT || 4000);
+const server = app.listen(process.env.PORT || 4000);
+
+app.get("/healthz", async (req, res, params) => {
+  const pool = DB.getInstance().getPool();
+  try {
+    await pool.query("SELECT now()");
+    res.sendStatus(200);
+  } catch (err) {
+    console.error("error sending health check", err);
+    res.sendStatus(403);
+  }
+});
+
+function handleShutdown(signal) {
+  server.close(() => {
+    console.log("signal", signal);
+    DB.getInstance()
+      .endPool()
+      .then(() => {
+        process.exit(0);
+      });
+  });
+}
+process.on("SIGTERM", handleShutdown);
+process.on("SIGINT", handleShutdown);
+process.on("SIGHUP", handleShutdown);
+
 console.log("graphql");
