@@ -3,6 +3,7 @@
 {{reserveDefaultImport "./schema" "schema"}}
 
 {{reserveImport "http" "IncomingMessage" "ServerResponse" }}
+{{reserveImport "@lolopinto/ent" "DB"}}
 {{reserveImport "@lolopinto/ent/auth" "buildContext" }}
 
 let app = {{useImport "express"}}();
@@ -21,5 +22,28 @@ app.use(
     return doWork();
   })
 );
-app.listen(4000);
+const server = app.listen(process.env.port || 4000);
 
+app.get("/healthz", async (req, res, params) => {
+  const pool = {{useImport "DB"}}.getInstance().getPool();
+  try {
+    await pool.query("SELECT now()");
+    res.sendStatus(200);
+  } catch (err) {
+    console.error("error sending health check", err);
+    res.sendStatus(403);
+  }
+});
+
+function handleShutdown(signal) {
+  server.close(() => {
+    DB.getInstance()
+      .endPool()
+      .then(() => {
+        process.exit(0);
+      });
+  });
+}
+process.on("SIGTERM", handleShutdown);
+process.on("SIGINT", handleShutdown);
+process.on("SIGHUP", handleShutdown);

@@ -1,10 +1,11 @@
 import express from "express";
-import graphqlHTTP from "express-graphql";
+import { graphqlHTTP } from "express-graphql";
 
 import schema from "./schema";
 import { IncomingMessage, ServerResponse } from "http";
 import passport from "passport";
 import session from "express-session";
+import { DB } from "@lolopinto/ent";
 import { buildContext, registerAuthHandler } from "@lolopinto/ent/auth";
 import {
   PassportAuthHandler,
@@ -50,5 +51,31 @@ app.use(
     return doWork();
   }),
 );
-app.listen(4000);
+const server = app.listen(process.env.port || 4000);
+
+app.get("/healthz", async (req, res, params) => {
+  const pool = DB.getInstance().getPool();
+  try {
+    await pool.query("SELECT now()");
+    res.sendStatus(200);
+  } catch (err) {
+    console.error("error sending health check", err);
+    res.sendStatus(403);
+  }
+});
+
+function handleShutdown(signal) {
+  server.close(() => {
+    console.log("signal", signal);
+    DB.getInstance()
+      .endPool()
+      .then(() => {
+        process.exit(0);
+      });
+  });
+}
+process.on("SIGTERM", handleShutdown);
+process.on("SIGINT", handleShutdown);
+process.on("SIGHUP", handleShutdown);
+
 console.log("graphql");
