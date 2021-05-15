@@ -54,8 +54,8 @@ app.use(
 const server = app.listen(process.env.port || 4000);
 
 app.get("/healthz", async (req, res, params) => {
-  const pool = DB.getInstance().getPool();
   try {
+    const pool = DB.getInstance().getPool();
     await pool.query("SELECT now()");
     res.sendStatus(200);
   } catch (err) {
