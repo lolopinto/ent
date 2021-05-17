@@ -103,6 +103,19 @@ export async function loadEnt<T extends Ent>(
   return await applyPrivacyPolicyForRow(viewer, options, row);
 }
 
+// this is the same implementation-wise (right now) as loadEnt. it's just clearer that it's not loaded via ID.
+// used for load via email address etc
+export async function loadEntViaKey<T extends Ent>(
+  viewer: Viewer,
+  key: any,
+  options: LoadEntOptions<T>,
+): Promise<T | null> {
+  const row = await options.loaderFactory
+    .createLoader(viewer.context)
+    .load(key);
+  return await applyPrivacyPolicyForRow(viewer, options, row);
+}
+
 export async function loadEntX<T extends Ent>(
   viewer: Viewer,
   id: ID,
@@ -113,6 +126,23 @@ export async function loadEntX<T extends Ent>(
     // todo make this better
     throw new Error(
       `${options.loaderFactory.name}: couldn't find row for value ${id}`,
+    );
+  }
+  return await applyPrivacyPolicyForRowX(viewer, options, row);
+}
+
+export async function loadEntXViaKey<T extends Ent>(
+  viewer: Viewer,
+  key: any,
+  options: LoadEntOptions<T>,
+): Promise<T> {
+  const row = await options.loaderFactory
+    .createLoader(viewer.context)
+    .load(key);
+  if (!row) {
+    // todo make this better
+    throw new Error(
+      `${options.loaderFactory.name}: couldn't find row for value ${key}`,
     );
   }
   return await applyPrivacyPolicyForRowX(viewer, options, row);

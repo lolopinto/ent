@@ -150,7 +150,7 @@ export interface EditRowOptions extends CreateRowOptions {
 }
 
 interface LoadableEntOptions<T extends Ent> {
-  loaderFactory: LoaderFactory<ID, Data | null>;
+  loaderFactory: LoaderFactory<any, Data | null>;
   ent: EntConstructor<T>;
 }
 

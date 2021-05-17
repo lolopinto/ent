@@ -20,6 +20,7 @@ import {
   loadDerivedEntX,
   loadEnt,
   loadEntX,
+  loadEntViaKey,
 } from "./ent";
 import { AlwaysDenyRule, AllowIfViewerRule } from "./privacy";
 import { TestContext } from "../testutils/context/test_context";
@@ -81,7 +82,6 @@ async function createEdgeRows(edges: string[]) {
   for (const edge of edges) {
     await createRowForTest({
       tableName: "assoc_edge_config",
-      key: "edge_type",
       fields: {
         edge_table: `${edge}_table`,
         symmetric_edge: false,
@@ -425,9 +425,6 @@ describe("loadEnt(X)", () => {
     await createUser();
     const opts2: LoadEntOptions<User> = {
       ...options,
-      // idKey is different from pkey
-      // so need to clean up the APIs here...
-      //      pkey: "foo",
       loaderFactory: new ObjectLoaderFactory({
         fields,
         tableName,
@@ -435,7 +432,7 @@ describe("loadEnt(X)", () => {
       }),
     };
 
-    const ent = await loadEnt(ctx.getViewer(), "bar", opts2);
+    const ent = await loadEntViaKey(ctx.getViewer(), "bar", opts2);
     expect(ent).not.toBeNull();
     if (!ent) {
       fail("impossible");
