@@ -27,8 +27,8 @@ const fields = [
 ];
 
 {{$baseClass := printf "%sBase" .Node -}}
-{{$constructor := "arg: new (viewer: Viewer, id: ID, data: Data) => T"}}
-{{$thisType := "new (viewer: Viewer, id: ID, data: Data) => T"}}
+{{$constructor := "arg: new (viewer: Viewer, data: Data) => T"}}
+{{$thisType := "new (viewer: Viewer, data: Data) => T"}}
 
 {{ range .GetTSEnums -}}
   {{if not .Imported -}}
@@ -50,9 +50,7 @@ export class {{$baseClass}} {
     {{end -}}
   {{end}}
 
-  constructor(public viewer: {{$viewerType}}, id: {{$idType}}, data:{{$dataType}}) {
-    this.id = id;
-    // TODO don't double read id
+  constructor(public viewer: {{$viewerType}}, data:{{$dataType}}) {
     {{range $field := .FieldInfo.Fields -}}
       this.{{$field.TsFieldName}} = data.{{$field.GetDbColName}};
     {{end}}
@@ -186,7 +184,7 @@ export class {{$baseClass}} {
   {{end -}}
 
   static loaderOptions<T extends {{$baseClass}}>(
-    this: new (viewer: {{$viewerType}}, id: {{$idType}}, data: Data) => T,
+    this: new (viewer: {{$viewerType}}, data: Data) => T,
   ): {{useImport "LoadEntOptions"}}<T> {
     return {
       tableName: tableName,
@@ -363,7 +361,7 @@ export class {{$baseClass}} {
   export const {{.Name}} = new {{useImport "ObjectLoaderFactory"}}({
     tableName,
     fields,
-    pkey: {{.Pkey}},
+    key: {{.Pkey}},
   });
 
 {{end}}

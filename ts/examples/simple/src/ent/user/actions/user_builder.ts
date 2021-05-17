@@ -52,6 +52,7 @@ export class UserBuilder implements Builder<User> {
       viewer: viewer,
       operation: this.operation,
       tableName: "users",
+      key: "id",
       loaderOptions: User.loaderOptions(),
       builder: this,
       action: action,

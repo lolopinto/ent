@@ -47,6 +47,7 @@ export class ContactBuilder implements Builder<Contact> {
       viewer: viewer,
       operation: this.operation,
       tableName: "contacts",
+      key: "id",
       loaderOptions: Contact.loaderOptions(),
       builder: this,
       action: action,

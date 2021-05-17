@@ -39,9 +39,7 @@ export class ContactBase {
   readonly lastName: string;
   readonly userID: ID;
 
-  constructor(public viewer: Viewer, id: ID, data: Data) {
-    this.id = id;
-    // TODO don't double read id
+  constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -58,7 +56,7 @@ export class ContactBase {
   };
 
   static async load<T extends ContactBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -66,7 +64,7 @@ export class ContactBase {
   }
 
   static async loadX<T extends ContactBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -74,7 +72,7 @@ export class ContactBase {
   }
 
   static async loadMany<T extends ContactBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
@@ -82,7 +80,7 @@ export class ContactBase {
   }
 
   static async loadRawData<T extends ContactBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
@@ -90,7 +88,7 @@ export class ContactBase {
   }
 
   static async loadRawDataX<T extends ContactBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data> {
@@ -102,7 +100,7 @@ export class ContactBase {
   }
 
   static loaderOptions<T extends ContactBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
@@ -137,5 +135,5 @@ export class ContactBase {
 export const contactLoader = new ObjectLoaderFactory({
   tableName,
   fields,
-  pkey: "id",
+  key: "id",
 });

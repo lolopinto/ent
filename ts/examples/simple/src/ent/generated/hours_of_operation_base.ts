@@ -59,9 +59,7 @@ export class HoursOfOperationBase {
   readonly open: Date;
   readonly close: Date;
 
-  constructor(public viewer: Viewer, id: ID, data: Data) {
-    this.id = id;
-    // TODO don't double read id
+  constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -77,7 +75,7 @@ export class HoursOfOperationBase {
   };
 
   static async load<T extends HoursOfOperationBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -85,7 +83,7 @@ export class HoursOfOperationBase {
   }
 
   static async loadX<T extends HoursOfOperationBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -93,7 +91,7 @@ export class HoursOfOperationBase {
   }
 
   static async loadMany<T extends HoursOfOperationBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
@@ -105,7 +103,7 @@ export class HoursOfOperationBase {
   }
 
   static async loadRawData<T extends HoursOfOperationBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
@@ -113,7 +111,7 @@ export class HoursOfOperationBase {
   }
 
   static async loadRawDataX<T extends HoursOfOperationBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data> {
@@ -125,7 +123,7 @@ export class HoursOfOperationBase {
   }
 
   static loaderOptions<T extends HoursOfOperationBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
@@ -152,5 +150,5 @@ export class HoursOfOperationBase {
 export const hoursOfOperationLoader = new ObjectLoaderFactory({
   tableName,
   fields,
-  pkey: "id",
+  key: "id",
 });

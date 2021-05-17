@@ -49,6 +49,7 @@ export class EventBuilder implements Builder<Event> {
       viewer: viewer,
       operation: this.operation,
       tableName: "events",
+      key: "id",
       loaderOptions: Event.loaderOptions(),
       builder: this,
       action: action,
