@@ -81,6 +81,7 @@ async function createEdgeRows(edges: string[]) {
   for (const edge of edges) {
     await createRowForTest({
       tableName: "assoc_edge_config",
+      key: "edge_type",
       fields: {
         edge_table: `${edge}_table`,
         symmetric_edge: false,
@@ -259,7 +260,7 @@ describe("loadEnt(X)", () => {
     ent: User,
     fields,
     tableName,
-    loaderFactory: new ObjectLoaderFactory({ fields, tableName }),
+    loaderFactory: new ObjectLoaderFactory({ fields, tableName, key: "id" }),
   };
   const ctx = new TestContext();
 
@@ -364,6 +365,7 @@ describe("loadEnt(X)", () => {
     loaderFactory: new ObjectLoaderFactory({
       fields: ["id", "foo"],
       tableName: "user2s",
+      key: "id",
     }),
   };
 
@@ -409,6 +411,7 @@ describe("loadEnt(X)", () => {
         loaderFactory: new ObjectLoaderFactory({
           fields: ["id", "foo"],
           tableName: "user2s",
+          key: "id",
         }),
       });
     } catch (e) {
@@ -416,26 +419,6 @@ describe("loadEnt(X)", () => {
         /ent (.+) of type User2 is not visible for privacy reasons/,
       );
     }
-  });
-
-  test.skip("from different key", async () => {
-    await createUser();
-    const opts2: LoadEntOptions<User> = {
-      ...options,
-      pkey: "foo",
-      loaderFactory: new ObjectLoaderFactory({
-        fields,
-        tableName,
-        pkey: "foo",
-      }),
-    };
-
-    const ent = await loadEnt(ctx.getViewer(), "bar", opts2);
-    expect(ent).not.toBeNull();
-    expect(ent?.data.foo).toBe("bar");
-    expect(ent?.id).not.toBe("bar");
-    // ctr needs to be changed to kill the id...
-    // (viewer, Data)
   });
 
   test("from different key", async () => {
@@ -448,7 +431,7 @@ describe("loadEnt(X)", () => {
       loaderFactory: new ObjectLoaderFactory({
         fields,
         tableName,
-        pkey: "foo",
+        key: "foo",
       }),
     };
 

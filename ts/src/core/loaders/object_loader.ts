@@ -29,7 +29,7 @@ function createDataLoader(options: SelectDataOptions) {
     if (!ids.length) {
       return [];
     }
-    let col = options.pkey || "id";
+    let col = options.key;
     const rowOptions: LoadRowOptions = {
       ...options,
       clause: clause.In(col, ...ids),
@@ -72,6 +72,9 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
     public context?: Context,
     private toPrime?: ObjectLoaderFactory<T>[],
   ) {
+    if (options.key === undefined) {
+      console.trace();
+    }
     if (context) {
       this.loader = createDataLoader(options);
     }
@@ -88,9 +91,8 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
       if ((l2 as PrimableLoader<T, Data | null>).prime === undefined) {
         return;
       }
-      const key = prime.options.pkey || "id";
 
-      primedLoaders.set(key, l2);
+      primedLoaders.set(prime.options.key, l2);
     });
     this.primedLoaders = primedLoaders;
   }
@@ -113,13 +115,9 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
       return result;
     }
 
-    // fetch every time
-    // TODO make this required...
-    const col = this.options.pkey || "id";
-
     const rowOptions: LoadRowOptions = {
       ...this.options,
-      clause: clause.Eq(col, key),
+      clause: clause.Eq(this.options.key, key),
       context: this.context,
     };
     return await loadRow(rowOptions);
@@ -134,11 +132,9 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
       return await this.loader.loadMany(keys);
     }
 
-    const col = this.options.pkey || "id";
-
     const rowOptions: LoadRowOptions = {
       ...this.options,
-      clause: clause.In(col, ...keys),
+      clause: clause.In(this.options.key, ...keys),
       context: this.context,
     };
     return await loadRows(rowOptions);
@@ -147,7 +143,7 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
   prime(data: Data) {
     // we have this data from somewhere else, prime it in the c
     if (this.loader) {
-      const col = this.options.pkey || "id";
+      const col = this.options.key;
       const key = data[col];
       this.loader.prime(key, data);
     }
@@ -159,7 +155,7 @@ export class ObjectLoaderFactory<T> implements LoaderFactory<T, Data | null> {
   private toPrime: ObjectLoaderFactory<T>[] = [];
 
   constructor(public options: SelectDataOptions) {
-    this.name = `${options.tableName}:${options.pkey || "id"}`;
+    this.name = `${options.tableName}:${options.key}`;
   }
 
   createLoader(context?: Context): ObjectLoader<T> {

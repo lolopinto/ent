@@ -13,6 +13,7 @@ import {
   EdgeQueryableDataOptions,
   Context,
   SelectDataOptions,
+  CreateRowOptions,
 } from "./base";
 import {
   QueryArrayConfig,
@@ -70,7 +71,7 @@ function createDataLoader(options: SelectDataOptions) {
     if (!ids.length) {
       return [];
     }
-    let col = options.pkey || "id";
+    let col = options.key;
     const rowOptions: LoadRowOptions = {
       ...options,
       clause: clause.In(col, ...ids),
@@ -132,6 +133,8 @@ export async function loadEntFromClause<T extends Ent>(
 }
 
 // same as loadEntFromClause
+// only works for ents where primary key is "id"
+// use loadEnt with a loaderFactory if different
 export async function loadEntXFromClause<T extends Ent>(
   viewer: Viewer,
   options: LoadEntOptions<T>,
@@ -180,8 +183,12 @@ export async function loadEnts<T extends Ent>(
     }
     m = await applyPrivacyPolicyForRows(viewer, rows2, options);
   } else {
-    const col = options.pkey || "id";
-    m = await loadEntsFromClause(viewer, clause.In(col, ...ids), options);
+    m = await loadEntsFromClause(
+      viewer,
+      // this is always "id" if not using an ObjectLoaderFactory
+      clause.In("id", ...ids),
+      options,
+    );
   }
 
   // TODO do we want to change this to be a map not a list so that it's easy to check for existence?
@@ -346,6 +353,7 @@ export async function loadRows(options: LoadRowsOptions): Promise<Data[]> {
   }
 
   const query = buildQuery(options);
+  //  console.debug("query", options, query);
   const r = await performRawQuery(
     query,
     options.clause.values(),
@@ -861,7 +869,7 @@ async function mutateRow(
 }
 
 export function buildInsertQuery(
-  options: EditRowOptions,
+  options: CreateRowOptions,
   suffix?: string,
 ): [string, string[], string[]] {
   let fields: string[] = [];
@@ -894,7 +902,7 @@ export function buildInsertQuery(
 // only from this file
 export async function createRow(
   queryer: Queryer,
-  options: EditRowOptions,
+  options: CreateRowOptions,
   suffix: string,
 ): Promise<Data | null> {
   const [query, values, logValues] = buildInsertQuery(options, suffix);
@@ -927,9 +935,8 @@ export function buildUpdateQuery(
   }
 
   const vals = valsString.join(", ");
-  const col = options.pkey || "id";
 
-  let query = `UPDATE ${options.tableName} SET ${vals} WHERE ${col} = $${idx}`;
+  let query = `UPDATE ${options.tableName} SET ${vals} WHERE ${options.key} = $${idx}`;
   if (suffix) {
     query = query + " " + suffix;
   }
@@ -1073,7 +1080,7 @@ const assocEdgeFields = [
 const assocEdgeLoader = createDataLoader({
   tableName: "assoc_edge_config",
   fields: assocEdgeFields,
-  pkey: "edge_type",
+  key: "edge_type",
 });
 
 // we don't expect assoc_edge_config information to change

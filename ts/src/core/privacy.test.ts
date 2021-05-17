@@ -296,6 +296,7 @@ class DefinedUser extends User {
       loaderFactory: new ObjectLoaderFactory({
         fields: ["id", "name"],
         tableName: "users",
+        key: "id",
       }),
     };
   }

@@ -84,6 +84,7 @@ export class FakeEvent implements Ent {
       ent: this,
       loaderFactory: new ObjectLoaderFactory({
         tableName: "fake_events",
+        key: "id",
         fields: FakeEvent.getFields(),
       }),
     };

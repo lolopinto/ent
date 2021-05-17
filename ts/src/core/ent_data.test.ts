@@ -31,7 +31,7 @@ QueryRecorder.mockPool(Pool);
 const selectOptions: SelectDataOptions = {
   tableName: "users",
   fields: ["bar", "baz", "foo"],
-  pkey: "bar",
+  key: "bar",
 };
 const loaderFactory = new ObjectLoaderFactory(selectOptions);
 
@@ -875,7 +875,7 @@ describe("writes", () => {
   beforeEach(async () => {
     options = {
       fields: fields,
-      pkey: "bar",
+      key: "bar",
       tableName: selectOptions.tableName,
       context: ctx!, // reuse "global" context
     };

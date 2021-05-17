@@ -131,10 +131,12 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
       viewer: this.viewer,
       operation: operation,
       tableName: tableName,
+      key: "id",
       loaderOptions: {
         loaderFactory: new ObjectLoaderFactory({
           tableName: tableName,
           fields: [],
+          key: "id",
         }),
         ent: schema.ent,
         tableName: tableName,

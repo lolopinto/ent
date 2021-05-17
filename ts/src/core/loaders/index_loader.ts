@@ -1,14 +1,13 @@
 import DataLoader from "dataloader";
 import {
   ID,
-  SelectDataOptions,
+  SelectBaseDataOptions,
   Context,
   Data,
   Loader,
   LoaderFactory,
   EdgeQueryableDataOptions,
   PrimableLoader,
-  QueryableDataOptions,
 } from "../base";
 import {
   performRawQuery,
@@ -23,7 +22,7 @@ import { ObjectLoaderFactory } from "./object_loader";
 import memoizee from "memoizee";
 
 async function simpleCase(
-  options: SelectDataOptions,
+  options: SelectBaseDataOptions,
   col: string,
   id: ID,
   opts?: {
@@ -52,7 +51,7 @@ async function simpleCase(
 }
 
 function createLoader(
-  options: SelectDataOptions,
+  options: SelectBaseDataOptions,
   col: string,
   extraClause?: clause.Clause,
   sortColumn?: string,
@@ -125,7 +124,7 @@ function createLoader(
 
 export class IndexDirectLoader implements Loader<ID, Data[]> {
   constructor(
-    private options: SelectDataOptions,
+    private options: SelectBaseDataOptions,
     private col: string,
     private opts: {
       queryOptions: EdgeQueryableDataOptions;
@@ -151,7 +150,7 @@ export class IndexLoader implements Loader<ID, Data[]> {
   private memoizedInitPrime: () => void;
 
   constructor(
-    private options: SelectDataOptions,
+    private options: SelectBaseDataOptions,
     private col: string,
     public context?: Context,
     private opts?: {
@@ -184,8 +183,7 @@ export class IndexLoader implements Loader<ID, Data[]> {
       if ((l2 as PrimableLoader<any, Data | null>).prime === undefined) {
         return;
       }
-      const key = prime.options.pkey || "id";
-      primedLoaders.set(key, l2);
+      primedLoaders.set(prime.options.key, l2);
     });
     this.primedLoaders = primedLoaders;
   }
@@ -218,7 +216,7 @@ export class IndexLoader implements Loader<ID, Data[]> {
 export class IndexLoaderFactory implements LoaderFactory<ID, Data[]> {
   name: string;
   constructor(
-    private options: SelectDataOptions,
+    private options: SelectBaseDataOptions,
     private col: string,
     private opts?: {
       extraClause?: clause.Clause;

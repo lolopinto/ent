@@ -70,6 +70,7 @@ export class FakeContact implements Ent {
       ent: this,
       loaderFactory: new ObjectLoaderFactory({
         tableName: "fake_contacts",
+        key: "id",
         fields: FakeContact.getFields(),
       }),
     };
@@ -130,4 +131,5 @@ export async function createContact(viewer: Viewer, input: ContactCreateInput) {
 export const contactLoader = new ObjectLoaderFactory({
   tableName: "fake_contacts",
   fields: FakeContact.getFields(),
+  key: "id",
 });

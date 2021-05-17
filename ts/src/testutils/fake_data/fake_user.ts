@@ -12,8 +12,6 @@ import {
   AlwaysDenyRule,
   AllowIfViewerInboundEdgeExistsRule,
   AllowIfConditionAppliesRule,
-  AlwaysAllowRule,
-  AlwaysAllowPrivacyPolicy,
 } from "../../core/privacy";
 import { BuilderSchema, SimpleAction } from "../builder";
 import { Field, StringType, BaseEntSchema } from "../../schema";
@@ -186,18 +184,19 @@ export async function createUser(viewer: Viewer, input: UserCreateInput) {
 export const userLoader = new ObjectLoaderFactory({
   tableName: "fake_users",
   fields: FakeUser.getFields(),
+  key: "id",
 });
 
 export const userEmailLoader = new ObjectLoaderFactory({
   tableName: "fake_users",
   fields: FakeUser.getFields(),
-  pkey: "email_address",
+  key: "email_address",
 });
 
 export const userPhoneNumberLoader = new ObjectLoaderFactory({
   tableName: "fake_users",
   fields: FakeUser.getFields(),
-  pkey: "phone_number",
+  key: "phone_number",
 });
 
 userLoader.addToPrime(userEmailLoader);
