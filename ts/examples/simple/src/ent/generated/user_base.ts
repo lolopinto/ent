@@ -16,6 +16,8 @@ import {
   PrivacyPolicy,
   ObjectLoaderFactory,
   Context,
+  loadEntViaKey,
+  loadEntXViaKey,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import {
@@ -132,7 +134,7 @@ export class UserBase {
     viewer: Viewer,
     emailAddress: string,
   ): Promise<T | null> {
-    return loadEnt(viewer, emailAddress, {
+    return loadEntViaKey(viewer, emailAddress, {
       ...UserBase.loaderOptions.apply(this),
       loaderFactory: userEmailAddressLoader,
     });
@@ -143,7 +145,7 @@ export class UserBase {
     viewer: Viewer,
     emailAddress: string,
   ): Promise<T> {
-    return loadEntX(viewer, emailAddress, {
+    return loadEntXViaKey(viewer, emailAddress, {
       ...UserBase.loaderOptions.apply(this),
       loaderFactory: userEmailAddressLoader,
     });
@@ -175,7 +177,7 @@ export class UserBase {
     viewer: Viewer,
     phoneNumber: string,
   ): Promise<T | null> {
-    return loadEnt(viewer, phoneNumber, {
+    return loadEntViaKey(viewer, phoneNumber, {
       ...UserBase.loaderOptions.apply(this),
       loaderFactory: userPhoneNumberLoader,
     });
@@ -186,7 +188,7 @@ export class UserBase {
     viewer: Viewer,
     phoneNumber: string,
   ): Promise<T> {
-    return loadEntX(viewer, phoneNumber, {
+    return loadEntXViaKey(viewer, phoneNumber, {
       ...UserBase.loaderOptions.apply(this),
       loaderFactory: userPhoneNumberLoader,
     });
