@@ -10,7 +10,7 @@ import { Pool } from "pg";
 import { QueryRecorder } from "../testutils/db_mock";
 import { Field, StringType, UUIDType } from "../schema";
 import { createRowForTest } from "../testutils/write";
-import { ID, Ent, Data, PrivacyPolicy, Viewer } from "./base";
+import { ID, Ent, Data, PrivacyPolicy, Viewer, LoadEntOptions } from "./base";
 import {
   AssocEdge,
   getEdgeTypeInGroup,
@@ -24,6 +24,7 @@ import {
 import { AlwaysDenyRule, AllowIfViewerRule } from "./privacy";
 import { TestContext } from "../testutils/context/test_context";
 import { ObjectLoaderFactory } from "./loaders";
+import { validate as validatev4 } from "uuid";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -254,7 +255,7 @@ describe("loadEnt(X)", () => {
   const fields = ["id", "foo"];
   const tableName = "users";
 
-  const options = {
+  const options: LoadEntOptions<User> = {
     ent: User,
     fields,
     tableName,
@@ -356,7 +357,7 @@ describe("loadEnt(X)", () => {
     return action.builder;
   }
 
-  const user2Options = {
+  const user2Options: LoadEntOptions<User2> = {
     ent: User2,
     fields: ["id", "foo"],
     tableName: "user2s",
@@ -415,5 +416,50 @@ describe("loadEnt(X)", () => {
         /ent (.+) of type User2 is not visible for privacy reasons/,
       );
     }
+  });
+
+  test.skip("from different key", async () => {
+    await createUser();
+    const opts2: LoadEntOptions<User> = {
+      ...options,
+      pkey: "foo",
+      loaderFactory: new ObjectLoaderFactory({
+        fields,
+        tableName,
+        pkey: "foo",
+      }),
+    };
+
+    const ent = await loadEnt(ctx.getViewer(), "bar", opts2);
+    expect(ent).not.toBeNull();
+    expect(ent?.data.foo).toBe("bar");
+    expect(ent?.id).not.toBe("bar");
+    // ctr needs to be changed to kill the id...
+    // (viewer, Data)
+  });
+
+  test("from different key", async () => {
+    await createUser();
+    const opts2: LoadEntOptions<User> = {
+      ...options,
+      // idKey is different from pkey
+      // so need to clean up the APIs here...
+      //      pkey: "foo",
+      loaderFactory: new ObjectLoaderFactory({
+        fields,
+        tableName,
+        pkey: "foo",
+      }),
+    };
+
+    const ent = await loadEnt(ctx.getViewer(), "bar", opts2);
+    expect(ent).not.toBeNull();
+    if (!ent) {
+      fail("impossible");
+    }
+    expect(ent.data.foo).toBe("bar");
+
+    expect(ent.id).not.toBe("bar");
+    expect(validatev4(ent.id.toString())).toBe(true);
   });
 });
