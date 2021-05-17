@@ -143,8 +143,7 @@ export async function loadEntXFromClause<T extends Ent>(
     context: viewer.context,
   };
   const row = await loadRowX(rowOptions);
-  const col = options.pkey || "id";
-  const ent = new options.ent(viewer, row[col], row);
+  const ent = new options.ent(viewer, row);
   return await applyPrivacyPolicyForEntX(viewer, ent);
 }
 
@@ -604,6 +603,9 @@ export class EdgeOperation implements DataOperation {
       throw new Error(
         `could not resolve placeholder value ${placeholder} for ${desc} for edge ${this.edgeInput.edgeType}`,
       );
+    }
+    if (ent.id === undefined) {
+      throw new Error(`id of resolved ent is not defined`);
     }
     return [ent.id, ent.nodeType];
   }
@@ -1277,8 +1279,7 @@ export async function applyPrivacyPolicyForRow<T extends Ent>(
   if (!row) {
     return null;
   }
-  const col = options.pkey || "id";
-  const ent = new options.ent(viewer, row[col], row);
+  const ent = new options.ent(viewer, row);
   return await applyPrivacyPolicyForEnt(viewer, ent);
 }
 
@@ -1287,9 +1288,7 @@ export async function applyPrivacyPolicyForRowX<T extends Ent>(
   options: LoadEntOptions<T>,
   row: Data,
 ): Promise<T> {
-  const col = options.pkey || "id";
-
-  const ent = new options.ent(viewer, row[col], row);
+  const ent = new options.ent(viewer, row);
   return await applyPrivacyPolicyForEntX(viewer, ent);
 }
 
@@ -1302,11 +1301,10 @@ export async function applyPrivacyPolicyForRows<T extends Ent>(
   // apply privacy logic
   const ents = await Promise.all(
     rows.map(async (row) => {
-      const col = options.pkey || "id";
-      const ent = new options.ent(viewer, row[col], row);
+      const ent = new options.ent(viewer, row);
       let privacyEnt = await applyPrivacyPolicyForEnt(viewer, ent);
       if (privacyEnt) {
-        m.set(row[col], privacyEnt);
+        m.set(privacyEnt.id, privacyEnt);
       }
     }),
   );

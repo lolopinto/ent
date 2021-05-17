@@ -101,7 +101,7 @@ export declare type Data = {
 };
 
 export interface EntConstructor<T extends Ent> {
-  new (viewer: Viewer, id: ID, options: Data): T;
+  new (viewer: Viewer, data: Data): T;
 }
 
 export type ID = string | number;

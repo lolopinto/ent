@@ -325,8 +325,8 @@ describe("loadEnt(X)", () => {
       rules: [AllowIfViewerRule, AlwaysDenyRule],
     };
 
-    constructor(public viewer: Viewer, id: ID, public data: Data) {
-      this.id = id;
+    constructor(public viewer: Viewer, public data: Data) {
+      this.id = data.id;
     }
   }
 

@@ -42,7 +42,7 @@ class User implements Ent {
   privacyPolicy: PrivacyPolicy = {
     rules: [AllowIfViewerRule, AlwaysDenyRule],
   };
-  constructor(public viewer: Viewer, id: ID, public data: Data) {
+  constructor(public viewer: Viewer, public data: Data) {
     this.id = data["bar"];
   }
 

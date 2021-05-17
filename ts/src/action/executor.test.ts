@@ -141,7 +141,7 @@ async function createGroup() {
     tableName: "groups",
     fields: groupFields,
   });
-  return new Group(new LoggedOutViewer(), groupID, groupFields);
+  return new Group(new LoggedOutViewer(), groupFields);
 }
 
 class UserSchema extends BaseEntSchema {
@@ -160,8 +160,8 @@ class Account implements Ent {
   nodeType = "Account";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
-  constructor(public viewer: Viewer, id: ID, public data: Data) {
-    this.id = id;
+  constructor(public viewer: Viewer, public data: Data) {
+    this.id = data.id;
   }
 }
 
@@ -276,7 +276,7 @@ function randomEmail(): string {
 
 test.only("empty", async () => {
   const viewer = new LoggedOutViewer();
-  const user = new User(viewer, "1", {});
+  const user = new User(viewer, { id: "1" });
 
   const builder = new SimpleBuilder(
     viewer,
@@ -328,7 +328,7 @@ test("simple-one-op-no-created-ent", async () => {
     },
   });
   const viewer = new IDViewer(id);
-  const user = new User(viewer, id, {});
+  const user = new User(viewer, { id });
   const action = new SimpleAction(
     viewer,
     new UserSchema(),
@@ -482,7 +482,7 @@ test("list-with-complex-layers", async () => {
     ];
   }
   async function getInvitee(viewer: Viewer): Promise<User> {
-    return new User(viewer, QueryRecorder.newID(), {});
+    return new User(viewer, { id: QueryRecorder.newID() });
   }
 
   const group = await createGroup();

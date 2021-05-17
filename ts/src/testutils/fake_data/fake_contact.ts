@@ -28,8 +28,8 @@ export class FakeContact implements Ent {
     rules: [new AllowIfViewerIsRule("userID"), AlwaysDenyRule],
   };
 
-  constructor(public viewer: Viewer, id: ID, data: Data) {
-    this.id = data["id"];
+  constructor(public viewer: Viewer, data: Data) {
+    this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
     this.firstName = data.first_name;
