@@ -184,6 +184,7 @@ class Compiler {
       // it doesn't seem to be coming here for node_modules here which is good
       console.error(
         "couldn't resolve everything",
+        containingFile,
         moduleNames,
         resolvedModules,
       );
