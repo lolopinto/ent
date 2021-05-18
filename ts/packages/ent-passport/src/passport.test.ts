@@ -58,13 +58,15 @@ let userType = new GraphQLObjectType({
 });
 
 class UserClass implements Ent {
+  id: ID;
   nodeType = "User";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
   firstName: string;
   lastName: string;
   emailAddress: string;
 
-  constructor(public viewer: Viewer, public id: ID, options: Data) {
+  constructor(public viewer: Viewer, options: Data) {
+    this.id = options.id;
     this.firstName = options.first_name;
     this.lastName = options.last_name;
     this.emailAddress = options.email_address;
@@ -81,6 +83,7 @@ class UserClass implements Ent {
       loaderFactory: new ObjectLoaderFactory({
         tableName,
         fields,
+        key: "id",
       }),
     };
   }
