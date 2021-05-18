@@ -1,6 +1,6 @@
 {
   "name": "@lolopinto/ent-passport",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "ent passport integration",
   "main": "dist/passport.js",
   "types": "dist/passport.d.ts",
@@ -31,11 +31,11 @@
     "registry": "https://npm.pkg.github.com/"
   },
   "peerDependencies": {
-    "@lolopinto/ent": "^0.0.88"
+    "@lolopinto/ent": ">= 0.0.89"
   },
   "devDependencies": {
-    "@lolopinto/ent": "0.0.88",
-    "@lolopinto/ent-graphql-tests": "^0.0.13",
+    "@lolopinto/ent": "0.0.89",
+    "@lolopinto/ent-graphql-tests": "^0.0.14",
     "@types/express-session": "^1.17.3",
     "@types/jest": "^26.0.23",
     "@types/passport-strategy": "^0.2.35",
