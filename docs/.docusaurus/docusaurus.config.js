@@ -1,16 +1,16 @@
 export default {
-  "title": "My Site",
-  "tagline": "Dinosaurs are cool",
+  "title": "Ent docs",
+  "tagline": "sample docs",
   "url": "https://your-docusaurus-test-site.com",
   "baseUrl": "/",
   "onBrokenLinks": "throw",
   "onBrokenMarkdownLinks": "warn",
   "favicon": "img/favicon.ico",
-  "organizationName": "facebook",
-  "projectName": "docusaurus",
+  "organizationName": "lolopinto",
+  "projectName": "ent",
   "themeConfig": {
     "navbar": {
-      "title": "My Site",
+      "title": "Into",
       "logo": {
         "alt": "My Site Logo",
         "src": "img/logo.svg"
@@ -24,12 +24,7 @@ export default {
           "activeSidebarClassName": "navbar__link--active"
         },
         {
-          "to": "/blog",
-          "label": "Blog",
-          "position": "left"
-        },
-        {
-          "href": "https://github.com/facebook/docusaurus",
+          "href": "https://github.com/lolopinto/ent",
           "label": "GitHub",
           "position": "right"
         }
@@ -47,39 +42,9 @@ export default {
               "to": "/docs/intro"
             }
           ]
-        },
-        {
-          "title": "Community",
-          "items": [
-            {
-              "label": "Stack Overflow",
-              "href": "https://stackoverflow.com/questions/tagged/docusaurus"
-            },
-            {
-              "label": "Discord",
-              "href": "https://discordapp.com/invite/docusaurus"
-            },
-            {
-              "label": "Twitter",
-              "href": "https://twitter.com/docusaurus"
-            }
-          ]
-        },
-        {
-          "title": "More",
-          "items": [
-            {
-              "label": "Blog",
-              "to": "/blog"
-            },
-            {
-              "label": "GitHub",
-              "href": "https://github.com/facebook/docusaurus"
-            }
-          ]
         }
       ],
-      "copyright": "Copyright © 2021 My Project, Inc. Built with Docusaurus."
+      "copyright": "Copyright © 2021 Lolopinto Labs, Inc. Built with Docusaurus."
     },
     "colorMode": {
       "defaultMode": "light",
@@ -107,11 +72,7 @@ export default {
       {
         "docs": {
           "sidebarPath": "/Users/ola/code/ent/docs/sidebars.js",
-          "editUrl": "https://github.com/facebook/docusaurus/edit/master/website/"
-        },
-        "blog": {
-          "showReadingTime": true,
-          "editUrl": "https://github.com/facebook/docusaurus/edit/master/website/blog/"
+          "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/"
         },
         "theme": {
           "customCss": "/Users/ola/code/ent/docs/src/css/custom.css"

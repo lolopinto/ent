@@ -6,8 +6,8 @@
           "versionName": "current",
           "versionLabel": "Next",
           "versionPath": "/docs",
-          "versionEditUrl": "https://github.com/facebook/docusaurus/edit/master/website/docs",
-          "versionEditUrlLocalized": "https://github.com/facebook/docusaurus/edit/master/website/i18n/en/docusaurus-plugin-content-docs/current",
+          "versionEditUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs",
+          "versionEditUrlLocalized": "https://github.com/lolopinto/ent/edit/main/docs/i18n/en/docusaurus-plugin-content-docs/current",
           "isLast": true,
           "routePriority": -1,
           "sidebarFilePath": "/Users/ola/code/ent/docs/sidebars.js",
@@ -96,7 +96,7 @@
               "sourceDirName": ".",
               "slug": "/hello",
               "permalink": "/docs/hello",
-              "editUrl": "https://github.com/facebook/docusaurus/edit/master/website/docs/hello.md",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/hello.md",
               "version": "current",
               "sidebar_label": "Hi!",
               "sidebarPosition": 3,
@@ -124,7 +124,7 @@
               "sourceDirName": ".",
               "slug": "/intro",
               "permalink": "/docs/intro",
-              "editUrl": "https://github.com/facebook/docusaurus/edit/master/website/docs/intro.md",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/intro.md",
               "version": "current",
               "sidebarPosition": 1,
               "frontMatter": {
@@ -146,7 +146,7 @@
               "sourceDirName": "tutorial-basics",
               "slug": "/tutorial-basics/congratulations",
               "permalink": "/docs/tutorial-basics/congratulations",
-              "editUrl": "https://github.com/facebook/docusaurus/edit/master/website/docs/tutorial-basics/congratulations.md",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/tutorial-basics/congratulations.md",
               "version": "current",
               "sidebarPosition": 6,
               "frontMatter": {
@@ -172,7 +172,7 @@
               "sourceDirName": "tutorial-basics",
               "slug": "/tutorial-basics/create-a-blog-post",
               "permalink": "/docs/tutorial-basics/create-a-blog-post",
-              "editUrl": "https://github.com/facebook/docusaurus/edit/master/website/docs/tutorial-basics/create-a-blog-post.md",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/tutorial-basics/create-a-blog-post.md",
               "version": "current",
               "sidebarPosition": 3,
               "frontMatter": {
@@ -198,7 +198,7 @@
               "sourceDirName": "tutorial-basics",
               "slug": "/tutorial-basics/create-a-document",
               "permalink": "/docs/tutorial-basics/create-a-document",
-              "editUrl": "https://github.com/facebook/docusaurus/edit/master/website/docs/tutorial-basics/create-a-document.md",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/tutorial-basics/create-a-document.md",
               "version": "current",
               "sidebarPosition": 2,
               "frontMatter": {
@@ -224,7 +224,7 @@
               "sourceDirName": "tutorial-basics",
               "slug": "/tutorial-basics/create-a-page",
               "permalink": "/docs/tutorial-basics/create-a-page",
-              "editUrl": "https://github.com/facebook/docusaurus/edit/master/website/docs/tutorial-basics/create-a-page.md",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/tutorial-basics/create-a-page.md",
               "version": "current",
               "sidebarPosition": 1,
               "frontMatter": {
@@ -250,7 +250,7 @@
               "sourceDirName": "tutorial-basics",
               "slug": "/tutorial-basics/deploy-your-site",
               "permalink": "/docs/tutorial-basics/deploy-your-site",
-              "editUrl": "https://github.com/facebook/docusaurus/edit/master/website/docs/tutorial-basics/deploy-your-site.md",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/tutorial-basics/deploy-your-site.md",
               "version": "current",
               "sidebarPosition": 5,
               "frontMatter": {
@@ -276,7 +276,7 @@
               "sourceDirName": "tutorial-basics",
               "slug": "/tutorial-basics/markdown-features",
               "permalink": "/docs/tutorial-basics/markdown-features",
-              "editUrl": "https://github.com/facebook/docusaurus/edit/master/website/docs/tutorial-basics/markdown-features.mdx",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/tutorial-basics/markdown-features.mdx",
               "version": "current",
               "sidebarPosition": 4,
               "frontMatter": {
@@ -302,7 +302,7 @@
               "sourceDirName": "tutorial-extras",
               "slug": "/tutorial-extras/manage-docs-versions",
               "permalink": "/docs/tutorial-extras/manage-docs-versions",
-              "editUrl": "https://github.com/facebook/docusaurus/edit/master/website/docs/tutorial-extras/manage-docs-versions.md",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/tutorial-extras/manage-docs-versions.md",
               "version": "current",
               "sidebarPosition": 1,
               "frontMatter": {
@@ -328,7 +328,7 @@
               "sourceDirName": "tutorial-extras",
               "slug": "/tutorial-extras/translate-your-site",
               "permalink": "/docs/tutorial-extras/translate-your-site",
-              "editUrl": "https://github.com/facebook/docusaurus/edit/master/website/docs/tutorial-extras/translate-your-site.md",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/tutorial-extras/translate-your-site.md",
               "version": "current",
               "sidebarPosition": 2,
               "frontMatter": {
@@ -346,192 +346,7 @@
     }
   },
   "docusaurus-plugin-content-blog": {
-    "default": {
-      "blogPosts": [
-        {
-          "id": "greetings",
-          "metadata": {
-            "permalink": "/blog/greetings",
-            "editUrl": "https://github.com/facebook/docusaurus/edit/master/website/blog/blog/2021-02-28-greetings.md",
-            "source": "@site/blog/2021-02-28-greetings.md",
-            "title": "Greetings!",
-            "description": "Congratulations, you have made your first post!",
-            "date": "2021-02-28T00:00:00.000Z",
-            "formattedDate": "February 27, 2021",
-            "tags": [
-              {
-                "label": "greetings",
-                "permalink": "/blog/tags/greetings"
-              }
-            ],
-            "readingTime": 0.1,
-            "truncated": false,
-            "nextItem": {
-              "title": "Welcome",
-              "permalink": "/blog/welcome"
-            }
-          }
-        },
-        {
-          "id": "welcome",
-          "metadata": {
-            "permalink": "/blog/welcome",
-            "editUrl": "https://github.com/facebook/docusaurus/edit/master/website/blog/blog/2019-05-30-welcome.md",
-            "source": "@site/blog/2019-05-30-welcome.md",
-            "title": "Welcome",
-            "description": "Blog features are powered by the blog plugin. Simply add files to the blog directory. It supports tags as well!",
-            "date": "2019-05-30T00:00:00.000Z",
-            "formattedDate": "May 29, 2019",
-            "tags": [
-              {
-                "label": "facebook",
-                "permalink": "/blog/tags/facebook"
-              },
-              {
-                "label": "hello",
-                "permalink": "/blog/tags/hello"
-              },
-              {
-                "label": "docusaurus",
-                "permalink": "/blog/tags/docusaurus"
-              }
-            ],
-            "readingTime": 0.175,
-            "truncated": false,
-            "prevItem": {
-              "title": "Greetings!",
-              "permalink": "/blog/greetings"
-            },
-            "nextItem": {
-              "title": "Hello",
-              "permalink": "/blog/hello-world"
-            }
-          }
-        },
-        {
-          "id": "hello-world",
-          "metadata": {
-            "permalink": "/blog/hello-world",
-            "editUrl": "https://github.com/facebook/docusaurus/edit/master/website/blog/blog/2019-05-29-hello-world.md",
-            "source": "@site/blog/2019-05-29-hello-world.md",
-            "title": "Hello",
-            "description": "Welcome to this blog. This blog is created with Docusaurus 2 alpha.",
-            "date": "2019-05-29T00:00:00.000Z",
-            "formattedDate": "May 28, 2019",
-            "tags": [
-              {
-                "label": "hello",
-                "permalink": "/blog/tags/hello"
-              },
-              {
-                "label": "docusaurus",
-                "permalink": "/blog/tags/docusaurus"
-              }
-            ],
-            "readingTime": 0.12,
-            "truncated": true,
-            "prevItem": {
-              "title": "Welcome",
-              "permalink": "/blog/welcome"
-            },
-            "nextItem": {
-              "title": "Hola",
-              "permalink": "/blog/hola"
-            }
-          }
-        },
-        {
-          "id": "hola",
-          "metadata": {
-            "permalink": "/blog/hola",
-            "editUrl": "https://github.com/facebook/docusaurus/edit/master/website/blog/blog/2019-05-28-hola.md",
-            "source": "@site/blog/2019-05-28-hola.md",
-            "title": "Hola",
-            "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet",
-            "date": "2019-05-28T00:00:00.000Z",
-            "formattedDate": "May 27, 2019",
-            "tags": [
-              {
-                "label": "hola",
-                "permalink": "/blog/tags/hola"
-              },
-              {
-                "label": "docusaurus",
-                "permalink": "/blog/tags/docusaurus"
-              }
-            ],
-            "readingTime": 0.12,
-            "truncated": false,
-            "prevItem": {
-              "title": "Hello",
-              "permalink": "/blog/hello-world"
-            }
-          }
-        }
-      ],
-      "blogListPaginated": [
-        {
-          "metadata": {
-            "permalink": "/blog",
-            "page": 1,
-            "postsPerPage": 10,
-            "totalPages": 1,
-            "totalCount": 4,
-            "previousPage": null,
-            "nextPage": null,
-            "blogDescription": "Blog",
-            "blogTitle": "Blog"
-          },
-          "items": [
-            "greetings",
-            "welcome",
-            "hello-world",
-            "hola"
-          ]
-        }
-      ],
-      "blogTags": {
-        "greetings": {
-          "name": "greetings",
-          "items": [
-            "greetings"
-          ],
-          "permalink": "/blog/tags/greetings"
-        },
-        "facebook": {
-          "name": "facebook",
-          "items": [
-            "welcome"
-          ],
-          "permalink": "/blog/tags/facebook"
-        },
-        "hello": {
-          "name": "hello",
-          "items": [
-            "welcome",
-            "hello-world"
-          ],
-          "permalink": "/blog/tags/hello"
-        },
-        "docusaurus": {
-          "name": "docusaurus",
-          "items": [
-            "welcome",
-            "hello-world",
-            "hola"
-          ],
-          "permalink": "/blog/tags/docusaurus"
-        },
-        "hola": {
-          "name": "hola",
-          "items": [
-            "hola"
-          ],
-          "permalink": "/blog/tags/hola"
-        }
-      },
-      "blogTagsListPath": "/blog/tags"
-    }
+    "default": null
   },
   "docusaurus-plugin-content-pages": {
     "default": [
@@ -544,16 +359,6 @@
         "type": "mdx",
         "permalink": "/markdown-page",
         "source": "@site/src/pages/markdown-page.md"
-      },
-      {
-        "type": "mdx",
-        "permalink": "/my-markdown-page",
-        "source": "@site/src/pages/my-markdown-page.md"
-      },
-      {
-        "type": "jsx",
-        "permalink": "/my-react-page",
-        "source": "@site/src/pages/my-react-page.js"
       }
     ]
   },
