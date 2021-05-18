@@ -45,6 +45,7 @@ const getNewLoader = (context: boolean = true) => {
     {
       tableName: "users",
       fields: ["id", "first_name"],
+      key: "id",
     },
     context ? new TestContext() : undefined,
   );
@@ -361,14 +362,17 @@ test("not-primed loaders", async () => {
   ml.clear();
 
   const ctx = new TestContext();
-  const newUserLoader = new ObjectLoaderFactory(FakeUser.loaderOptions());
+  const newUserLoader = new ObjectLoaderFactory({
+    ...FakeUser.loaderOptions(),
+    key: "id",
+  });
   const newUserPhoneLoader = new ObjectLoaderFactory({
     ...FakeUser.loaderOptions(),
-    pkey: "phone_number",
+    key: "phone_number",
   });
   const newUserEmailAddressLoader = new ObjectLoaderFactory({
     ...FakeUser.loaderOptions(),
-    pkey: "email_address",
+    key: "email_address",
   });
 
   await newUserLoader.createLoader(ctx).load(user.id);

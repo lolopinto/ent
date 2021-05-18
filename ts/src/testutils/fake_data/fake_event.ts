@@ -36,8 +36,8 @@ export class FakeEvent implements Ent {
     rules: [AlwaysAllowRule],
   };
 
-  constructor(public viewer: Viewer, id: ID, data: Data) {
-    this.id = data["id"];
+  constructor(public viewer: Viewer, data: Data) {
+    this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
     this.startTime = data.start_time;
@@ -84,6 +84,7 @@ export class FakeEvent implements Ent {
       ent: this,
       loaderFactory: new ObjectLoaderFactory({
         tableName: "fake_events",
+        key: "id",
         fields: FakeEvent.getFields(),
       }),
     };

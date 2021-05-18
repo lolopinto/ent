@@ -1,10 +1,16 @@
-import { EditRowOptions, Data, ID, DataOptions } from "../core/base";
+import {
+  EditRowOptions,
+  Data,
+  ID,
+  DataOptions,
+  CreateRowOptions,
+} from "../core/base";
 import { createRow, editRow, deleteRows } from "../core/ent";
 import * as clause from "../core/clause";
 import DB from "../core/db";
 
 export async function createRowForTest(
-  options: EditRowOptions,
+  options: CreateRowOptions,
   suffix?: string,
 ): Promise<Data | null> {
   const client = await DB.getInstance().getNewClient();

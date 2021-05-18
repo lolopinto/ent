@@ -8,6 +8,8 @@ export {
   //  loadEntsFromClause,
   loadDerivedEnt,
   loadDerivedEntX,
+  loadEntViaKey,
+  loadEntXViaKey,
   applyPrivacyPolicyForEnt,
   applyPrivacyPolicyForEntX,
   // even these 3 need to change...

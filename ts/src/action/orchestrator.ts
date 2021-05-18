@@ -30,6 +30,8 @@ export interface OrchestratorOptions<T extends Ent> {
   tableName: string;
   // should we make it nullable for delete?
   loaderOptions: LoadEntOptions<T>;
+  // key, usually 'id' that's being updated
+  key: string;
 
   builder: Builder<T>;
   action?: Action<T>;
@@ -213,13 +215,13 @@ export class Orchestrator<T extends Ent> {
           fields: this.validatedFields!,
           tableName: this.options.tableName,
           fieldsToResolve: this.fieldsToResolve,
+          key: this.options.key,
         };
         if (this.logValues) {
           opts.fieldsToLog = this.logValues;
         }
         this.mainOp = new EditNodeOperation(
           opts,
-
           this.options.builder.existingEnt,
         );
         return this.mainOp;

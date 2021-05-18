@@ -70,9 +70,7 @@ export class EventBase {
   readonly endTime: Date | null;
   readonly location: string;
 
-  constructor(public viewer: Viewer, id: ID, data: Data) {
-    this.id = id;
-    // TODO don't double read id
+  constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -90,7 +88,7 @@ export class EventBase {
   };
 
   static async load<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -98,7 +96,7 @@ export class EventBase {
   }
 
   static async loadX<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -106,7 +104,7 @@ export class EventBase {
   }
 
   static async loadMany<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
@@ -114,7 +112,7 @@ export class EventBase {
   }
 
   static async loadRawData<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
@@ -122,7 +120,7 @@ export class EventBase {
   }
 
   static async loadRawDataX<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data> {
@@ -134,7 +132,7 @@ export class EventBase {
   }
 
   static loaderOptions<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
@@ -215,5 +213,5 @@ export class EventBase {
 export const eventLoader = new ObjectLoaderFactory({
   tableName,
   fields,
-  pkey: "id",
+  key: "id",
 });

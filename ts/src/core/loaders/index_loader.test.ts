@@ -11,9 +11,7 @@ import { TempDB } from "../../testutils/db/test_db";
 import {
   FakeUser,
   FakeContact,
-  userLoader,
   contactLoader,
-  UserToContactsFkeyQuery,
   userToContactsDataLoaderFactory,
 } from "../../testutils/fake_data/index";
 import {
@@ -23,7 +21,6 @@ import {
 } from "../../testutils/fake_data/test_helpers";
 
 import { IndexLoaderFactory } from "./index_loader";
-import { LoggedOutViewer } from "../viewer";
 // most of this is copied from assoc_edge_loader.test.ts and changed to work for this
 
 const ml = new MockLogs();

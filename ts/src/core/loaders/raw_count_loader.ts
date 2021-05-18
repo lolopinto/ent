@@ -2,11 +2,11 @@ import DataLoader from "dataloader";
 import {
   LoadRowOptions,
   ID,
-  SelectDataOptions,
   DataOptions,
   Context,
   Loader,
   LoaderFactory,
+  SelectBaseDataOptions,
 } from "../base";
 import { loadRow, loadRows } from "../ent";
 import * as clause from "../clause";
@@ -113,7 +113,7 @@ export class RawCountLoader implements Loader<ID, number> {
 
 export class RawCountLoaderFactory implements LoaderFactory<ID, number> {
   name: string;
-  constructor(private options: SelectDataOptions, private col: string) {
+  constructor(private options: SelectBaseDataOptions, private col: string) {
     this.name = `${options.tableName}:${this.col}`;
   }
 

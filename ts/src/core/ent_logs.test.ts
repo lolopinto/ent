@@ -21,6 +21,13 @@ import { User } from "../testutils/builder";
 import { TestContext } from "../testutils/context/test_context";
 import { MockLogs } from "../testutils/mock_log";
 import { ObjectLoaderFactory } from "./loaders";
+import {
+  EditRowOptions,
+  LoadEntOptions,
+  LoadRowOptions,
+  LoadRowsOptions,
+} from "./base";
+import { Use } from "node-sql-parser";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -136,9 +143,9 @@ describe("raw data access", () => {
       f1: "bar",
       f2: "baz",
     };
-    const options = {
+    const options: EditRowOptions = {
       fields: fields,
-      pkey: "bar",
+      key: "bar",
       tableName: "t1",
     };
     await editRowForTest(options, "1");
@@ -156,9 +163,9 @@ describe("raw data access", () => {
       f1: "bar",
       f2: "baz",
     };
-    const options = {
+    const options: EditRowOptions = {
       fields: fields,
-      pkey: "bar",
+      key: "bar",
       tableName: "t1",
       fieldsToLog: fields,
     };
@@ -177,9 +184,9 @@ describe("raw data access", () => {
       f1: "bar",
       f2: "baz",
     };
-    const options = {
+    const options: EditRowOptions = {
       fields: fields,
-      pkey: "bar",
+      key: "bar",
       tableName: "t1",
       fieldsToLog: {
         f1: "bar",
@@ -201,9 +208,9 @@ describe("raw data access", () => {
       f1: "bar",
       f2: "baz",
     };
-    const options = {
+    const options: EditRowOptions = {
       fields: fields,
-      pkey: "bar",
+      key: "bar",
       tableName: "t1",
       fieldsToLog: fields,
     };
@@ -384,7 +391,7 @@ describe("ent cache logging", () => {
   });
 
   test("loadRow", async () => {
-    const options = {
+    const options: LoadRowOptions = {
       tableName: "t1",
       fields: ["col1", "col2"],
       clause: clause.Eq("id", 1),
@@ -415,7 +422,7 @@ describe("ent cache logging", () => {
   });
 
   test("loadRows", async () => {
-    const options = {
+    const options: LoadRowsOptions = {
       tableName: "t1",
       fields: ["col1", "col2"],
       clause: clause.In("id", 1),
@@ -470,10 +477,10 @@ describe("dataloader cache logging", () => {
   const tableName = "users";
 
   test("loadEnt", async () => {
-    const options = {
+    const options: LoadEntOptions<User> = {
       fields,
       tableName,
-      loaderFactory: new ObjectLoaderFactory({ fields, tableName }),
+      loaderFactory: new ObjectLoaderFactory({ fields, tableName, key: "id" }),
       ent: User,
       context: ctx,
     };
@@ -504,10 +511,10 @@ describe("dataloader cache logging", () => {
   });
 
   test("loadEnts", async () => {
-    const options = {
+    const options: LoadEntOptions<User> = {
       fields,
       tableName,
-      loaderFactory: new ObjectLoaderFactory({ fields, tableName }),
+      loaderFactory: new ObjectLoaderFactory({ fields, tableName, key: "id" }),
       ent: User,
     };
     await loadEnts(ctx.getViewer(), options, 1);
@@ -568,7 +575,7 @@ describe("dataloader cache logging disabled", () => {
     await loadEnt(ctx.getViewer(), 1, {
       fields,
       tableName,
-      loaderFactory: new ObjectLoaderFactory({ fields, tableName }),
+      loaderFactory: new ObjectLoaderFactory({ fields, tableName, key: "id" }),
       ent: User,
     });
 
@@ -599,7 +606,7 @@ describe("loadEnt no context", () => {
     await loadEnt(v, 1, {
       fields,
       tableName,
-      loaderFactory: new ObjectLoaderFactory({ fields, tableName }),
+      loaderFactory: new ObjectLoaderFactory({ fields, tableName, key: "id" }),
       ent: User,
     });
 
@@ -607,11 +614,11 @@ describe("loadEnt no context", () => {
   });
 
   test("loadEnt", async () => {
-    const options = {
+    const options: LoadEntOptions<User> = {
       fields,
       tableName,
       ent: User,
-      loaderFactory: new ObjectLoaderFactory({ fields, tableName }),
+      loaderFactory: new ObjectLoaderFactory({ fields, tableName, key: "id" }),
     };
     await loadEnt(v, 1, options);
 
@@ -636,10 +643,10 @@ describe("loadEnt no context", () => {
   });
 
   test("loadEnts", async () => {
-    const options = {
+    const options: LoadEntOptions<User> = {
       fields,
       tableName,
-      loaderFactory: new ObjectLoaderFactory({ fields, tableName }),
+      loaderFactory: new ObjectLoaderFactory({ fields, tableName, key: "id" }),
       ent: User,
     };
     await loadEnts(v, options, 1);

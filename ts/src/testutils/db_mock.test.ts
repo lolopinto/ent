@@ -546,6 +546,7 @@ describe("ops", () => {
               bar: "bar2",
               baz: "baz3",
             },
+            key: "id",
           },
           id,
         );
@@ -575,6 +576,7 @@ describe("ops", () => {
               bar: "bar2",
               baz: "baz3",
             },
+            key: "id",
           },
           id,
         );
@@ -633,6 +635,7 @@ describe("ops", () => {
               bar: "bar2",
               baz: "baz3",
             },
+            key: "id",
           },
           id,
         );
@@ -672,6 +675,7 @@ describe("update", () => {
         fields: {
           bar: "bar2",
         },
+        key: "id",
       },
       1,
     );
@@ -686,6 +690,7 @@ describe("update", () => {
         fields: {
           bar: "bar2",
         },
+        key: "id",
       },
       1,
       "RETURNING *",
@@ -701,6 +706,7 @@ describe("update", () => {
         fields: {
           bar: "bar2",
         },
+        key: "id",
       },
       1,
       "RETURNING id, bar",

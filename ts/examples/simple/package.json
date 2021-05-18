@@ -10,7 +10,8 @@
     "test": "jest",
     "compile": "rm -rf dist && ./node_modules/.bin/ent-custom-compiler",
     "start": "docker-compose -f docker-compose.dev.yml up --build",
-    "codegen": "docker-compose -f docker-compose.dev.yml run --rm app tsent codegen"
+    "codegen": "docker-compose -f docker-compose.dev.yml run --rm app tsent codegen",
+    "start-fast": "npm run compile && node dist/graphql/index.js"
   },
   "author": "",
   "license": "ISC",
@@ -29,7 +30,7 @@
     "ts-jest": "^26.5.6"
   },
   "dependencies": {
-    "@lolopinto/ent": "^0.0.88",
+    "@lolopinto/ent": "^0.0.89",
     "@lolopinto/ent-email": "^0.0.2",
     "@lolopinto/ent-passport": "^0.0.3",
     "@lolopinto/ent-password": "^0.0.3",

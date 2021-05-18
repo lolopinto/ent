@@ -31,7 +31,7 @@ QueryRecorder.mockPool(Pool);
 const selectOptions: SelectDataOptions = {
   tableName: "users",
   fields: ["bar", "baz", "foo"],
-  pkey: "bar",
+  key: "bar",
 };
 const loaderFactory = new ObjectLoaderFactory(selectOptions);
 
@@ -42,7 +42,7 @@ class User implements Ent {
   privacyPolicy: PrivacyPolicy = {
     rules: [AllowIfViewerRule, AlwaysDenyRule],
   };
-  constructor(public viewer: Viewer, id: ID, public data: Data) {
+  constructor(public viewer: Viewer, public data: Data) {
     this.id = data["bar"];
   }
 
@@ -875,7 +875,7 @@ describe("writes", () => {
   beforeEach(async () => {
     options = {
       fields: fields,
-      pkey: "bar",
+      key: "bar",
       tableName: selectOptions.tableName,
       context: ctx!, // reuse "global" context
     };

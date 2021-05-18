@@ -13,6 +13,7 @@ import {
   EdgeQueryableDataOptions,
   Context,
   SelectDataOptions,
+  CreateRowOptions,
 } from "./base";
 import {
   QueryArrayConfig,
@@ -70,7 +71,7 @@ function createDataLoader(options: SelectDataOptions) {
     if (!ids.length) {
       return [];
     }
-    let col = options.pkey || "id";
+    let col = options.key;
     const rowOptions: LoadRowOptions = {
       ...options,
       clause: clause.In(col, ...ids),
@@ -102,6 +103,19 @@ export async function loadEnt<T extends Ent>(
   return await applyPrivacyPolicyForRow(viewer, options, row);
 }
 
+// this is the same implementation-wise (right now) as loadEnt. it's just clearer that it's not loaded via ID.
+// used for load via email address etc
+export async function loadEntViaKey<T extends Ent>(
+  viewer: Viewer,
+  key: any,
+  options: LoadEntOptions<T>,
+): Promise<T | null> {
+  const row = await options.loaderFactory
+    .createLoader(viewer.context)
+    .load(key);
+  return await applyPrivacyPolicyForRow(viewer, options, row);
+}
+
 export async function loadEntX<T extends Ent>(
   viewer: Viewer,
   id: ID,
@@ -112,6 +126,23 @@ export async function loadEntX<T extends Ent>(
     // todo make this better
     throw new Error(
       `${options.loaderFactory.name}: couldn't find row for value ${id}`,
+    );
+  }
+  return await applyPrivacyPolicyForRowX(viewer, options, row);
+}
+
+export async function loadEntXViaKey<T extends Ent>(
+  viewer: Viewer,
+  key: any,
+  options: LoadEntOptions<T>,
+): Promise<T> {
+  const row = await options.loaderFactory
+    .createLoader(viewer.context)
+    .load(key);
+  if (!row) {
+    // todo make this better
+    throw new Error(
+      `${options.loaderFactory.name}: couldn't find row for value ${key}`,
     );
   }
   return await applyPrivacyPolicyForRowX(viewer, options, row);
@@ -132,6 +163,8 @@ export async function loadEntFromClause<T extends Ent>(
 }
 
 // same as loadEntFromClause
+// only works for ents where primary key is "id"
+// use loadEnt with a loaderFactory if different
 export async function loadEntXFromClause<T extends Ent>(
   viewer: Viewer,
   options: LoadEntOptions<T>,
@@ -143,8 +176,7 @@ export async function loadEntXFromClause<T extends Ent>(
     context: viewer.context,
   };
   const row = await loadRowX(rowOptions);
-  const col = options.pkey || "id";
-  const ent = new options.ent(viewer, row[col], row);
+  const ent = new options.ent(viewer, row);
   return await applyPrivacyPolicyForEntX(viewer, ent);
 }
 
@@ -181,8 +213,12 @@ export async function loadEnts<T extends Ent>(
     }
     m = await applyPrivacyPolicyForRows(viewer, rows2, options);
   } else {
-    const col = options.pkey || "id";
-    m = await loadEntsFromClause(viewer, clause.In(col, ...ids), options);
+    m = await loadEntsFromClause(
+      viewer,
+      // this is always "id" if not using an ObjectLoaderFactory
+      clause.In("id", ...ids),
+      options,
+    );
   }
 
   // TODO do we want to change this to be a map not a list so that it's easy to check for existence?
@@ -347,6 +383,7 @@ export async function loadRows(options: LoadRowsOptions): Promise<Data[]> {
   }
 
   const query = buildQuery(options);
+  //  console.debug("query", options, query);
   const r = await performRawQuery(
     query,
     options.clause.values(),
@@ -607,6 +644,9 @@ export class EdgeOperation implements DataOperation {
         `could not resolve placeholder value ${placeholder} for ${desc} for edge ${this.edgeInput.edgeType}`,
       );
     }
+    if (ent.id === undefined) {
+      throw new Error(`id of resolved ent is not defined`);
+    }
     return [ent.id, ent.nodeType];
   }
 
@@ -862,7 +902,7 @@ async function mutateRow(
 }
 
 export function buildInsertQuery(
-  options: EditRowOptions,
+  options: CreateRowOptions,
   suffix?: string,
 ): [string, string[], string[]] {
   let fields: string[] = [];
@@ -895,7 +935,7 @@ export function buildInsertQuery(
 // only from this file
 export async function createRow(
   queryer: Queryer,
-  options: EditRowOptions,
+  options: CreateRowOptions,
   suffix: string,
 ): Promise<Data | null> {
   const [query, values, logValues] = buildInsertQuery(options, suffix);
@@ -929,9 +969,8 @@ export function buildUpdateQuery(
   }
 
   const vals = valsString.join(", ");
-  const col = options.pkey || "id";
 
-  let query = `UPDATE ${options.tableName} SET ${vals} WHERE ${col} = $${idx}`;
+  let query = `UPDATE ${options.tableName} SET ${vals} WHERE ${options.key} = $${idx}`;
   if (suffix) {
     query = query + " " + suffix;
   }
@@ -1075,7 +1114,7 @@ const assocEdgeFields = [
 const assocEdgeLoader = createDataLoader({
   tableName: "assoc_edge_config",
   fields: assocEdgeFields,
-  pkey: "edge_type",
+  key: "edge_type",
 });
 
 // we don't expect assoc_edge_config information to change
@@ -1281,8 +1320,7 @@ export async function applyPrivacyPolicyForRow<T extends Ent>(
   if (!row) {
     return null;
   }
-  const col = options.pkey || "id";
-  const ent = new options.ent(viewer, row[col], row);
+  const ent = new options.ent(viewer, row);
   return await applyPrivacyPolicyForEnt(viewer, ent);
 }
 
@@ -1291,9 +1329,7 @@ export async function applyPrivacyPolicyForRowX<T extends Ent>(
   options: LoadEntOptions<T>,
   row: Data,
 ): Promise<T> {
-  const col = options.pkey || "id";
-
-  const ent = new options.ent(viewer, row[col], row);
+  const ent = new options.ent(viewer, row);
   return await applyPrivacyPolicyForEntX(viewer, ent);
 }
 
@@ -1306,11 +1342,10 @@ export async function applyPrivacyPolicyForRows<T extends Ent>(
   // apply privacy logic
   const ents = await Promise.all(
     rows.map(async (row) => {
-      const col = options.pkey || "id";
-      const ent = new options.ent(viewer, row[col], row);
+      const ent = new options.ent(viewer, row);
       let privacyEnt = await applyPrivacyPolicyForEnt(viewer, ent);
       if (privacyEnt) {
-        m.set(row[col], privacyEnt);
+        m.set(privacyEnt.id, privacyEnt);
       }
     }),
   );

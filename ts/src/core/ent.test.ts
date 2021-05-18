@@ -10,7 +10,7 @@ import { Pool } from "pg";
 import { QueryRecorder } from "../testutils/db_mock";
 import { Field, StringType, UUIDType } from "../schema";
 import { createRowForTest } from "../testutils/write";
-import { ID, Ent, Data, PrivacyPolicy, Viewer } from "./base";
+import { ID, Ent, Data, PrivacyPolicy, Viewer, LoadEntOptions } from "./base";
 import {
   AssocEdge,
   getEdgeTypeInGroup,
@@ -20,10 +20,12 @@ import {
   loadDerivedEntX,
   loadEnt,
   loadEntX,
+  loadEntViaKey,
 } from "./ent";
 import { AlwaysDenyRule, AllowIfViewerRule } from "./privacy";
 import { TestContext } from "../testutils/context/test_context";
 import { ObjectLoaderFactory } from "./loaders";
+import { validate as validatev4 } from "uuid";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -254,11 +256,11 @@ describe("loadEnt(X)", () => {
   const fields = ["id", "foo"];
   const tableName = "users";
 
-  const options = {
+  const options: LoadEntOptions<User> = {
     ent: User,
     fields,
     tableName,
-    loaderFactory: new ObjectLoaderFactory({ fields, tableName }),
+    loaderFactory: new ObjectLoaderFactory({ fields, tableName, key: "id" }),
   };
   const ctx = new TestContext();
 
@@ -324,8 +326,8 @@ describe("loadEnt(X)", () => {
       rules: [AllowIfViewerRule, AlwaysDenyRule],
     };
 
-    constructor(public viewer: Viewer, id: ID, public data: Data) {
-      this.id = id;
+    constructor(public viewer: Viewer, public data: Data) {
+      this.id = data.id;
     }
   }
 
@@ -356,13 +358,14 @@ describe("loadEnt(X)", () => {
     return action.builder;
   }
 
-  const user2Options = {
+  const user2Options: LoadEntOptions<User2> = {
     ent: User2,
     fields: ["id", "foo"],
     tableName: "user2s",
     loaderFactory: new ObjectLoaderFactory({
       fields: ["id", "foo"],
       tableName: "user2s",
+      key: "id",
     }),
   };
 
@@ -408,6 +411,7 @@ describe("loadEnt(X)", () => {
         loaderFactory: new ObjectLoaderFactory({
           fields: ["id", "foo"],
           tableName: "user2s",
+          key: "id",
         }),
       });
     } catch (e) {
@@ -415,5 +419,27 @@ describe("loadEnt(X)", () => {
         /ent (.+) of type User2 is not visible for privacy reasons/,
       );
     }
+  });
+
+  test("from different key", async () => {
+    await createUser();
+    const opts2: LoadEntOptions<User> = {
+      ...options,
+      loaderFactory: new ObjectLoaderFactory({
+        fields,
+        tableName,
+        key: "foo",
+      }),
+    };
+
+    const ent = await loadEntViaKey(ctx.getViewer(), "bar", opts2);
+    expect(ent).not.toBeNull();
+    if (!ent) {
+      fail("impossible");
+    }
+    expect(ent.data.foo).toBe("bar");
+
+    expect(ent.id).not.toBe("bar");
+    expect(validatev4(ent.id.toString())).toBe(true);
   });
 });
