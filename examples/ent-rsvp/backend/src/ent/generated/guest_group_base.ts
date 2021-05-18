@@ -42,9 +42,7 @@ export class GuestGroupBase {
   readonly invitationName: string;
   readonly eventID: ID;
 
-  constructor(public viewer: Viewer, id: ID, data: Data) {
-    this.id = id;
-    // TODO don't double read id
+  constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -59,7 +57,7 @@ export class GuestGroupBase {
   };
 
   static async load<T extends GuestGroupBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -67,7 +65,7 @@ export class GuestGroupBase {
   }
 
   static async loadX<T extends GuestGroupBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -75,7 +73,7 @@ export class GuestGroupBase {
   }
 
   static async loadMany<T extends GuestGroupBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
@@ -83,7 +81,7 @@ export class GuestGroupBase {
   }
 
   static async loadRawData<T extends GuestGroupBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
@@ -91,7 +89,7 @@ export class GuestGroupBase {
   }
 
   static async loadRawDataX<T extends GuestGroupBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data> {
@@ -103,7 +101,7 @@ export class GuestGroupBase {
   }
 
   static loaderOptions<T extends GuestGroupBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
@@ -146,5 +144,5 @@ export class GuestGroupBase {
 export const guestGroupLoader = new ObjectLoaderFactory({
   tableName,
   fields,
-  pkey: "id",
+  key: "id",
 });

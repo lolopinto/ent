@@ -70,9 +70,7 @@ export class EventActivityBase {
   readonly description: string | null;
   readonly inviteAllGuests: boolean;
 
-  constructor(public viewer: Viewer, id: ID, data: Data) {
-    this.id = id;
-    // TODO don't double read id
+  constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -92,7 +90,7 @@ export class EventActivityBase {
   };
 
   static async load<T extends EventActivityBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -100,7 +98,7 @@ export class EventActivityBase {
   }
 
   static async loadX<T extends EventActivityBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -108,7 +106,7 @@ export class EventActivityBase {
   }
 
   static async loadMany<T extends EventActivityBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
@@ -120,7 +118,7 @@ export class EventActivityBase {
   }
 
   static async loadRawData<T extends EventActivityBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
@@ -128,7 +126,7 @@ export class EventActivityBase {
   }
 
   static async loadRawDataX<T extends EventActivityBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data> {
@@ -140,7 +138,7 @@ export class EventActivityBase {
   }
 
   static loaderOptions<T extends EventActivityBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
@@ -216,5 +214,5 @@ export class EventActivityBase {
 export const eventActivityLoader = new ObjectLoaderFactory({
   tableName,
   fields,
-  pkey: "id",
+  key: "id",
 });

@@ -50,6 +50,7 @@ export class AddressBuilder implements Builder<Address> {
       viewer: viewer,
       operation: this.operation,
       tableName: "addresses",
+      key: "id",
       loaderOptions: Address.loaderOptions(),
       builder: this,
       action: action,

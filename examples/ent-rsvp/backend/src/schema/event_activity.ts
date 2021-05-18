@@ -6,8 +6,8 @@ import {
   UUIDType,
   Action,
   TimestampType,
-  Edge,
   BooleanType,
+  AssocEdgeGroup,
 } from "@lolopinto/ent";
 
 export default class EventActivity extends BaseEntSchema {
@@ -22,7 +22,7 @@ export default class EventActivity extends BaseEntSchema {
     // Name of location, not address. TODO address
     StringType({ name: "Location" }),
     StringType({ name: "Description", nullable: true }),
-    BooleanType({name: "InviteAllGuests", serverDefault: "FALSE"})
+    BooleanType({ name: "InviteAllGuests", serverDefault: "FALSE" }),
   ];
 
   actions: Action[] = [
@@ -45,7 +45,7 @@ export default class EventActivity extends BaseEntSchema {
     },
   ];
 
-  edges: Edge[] = [
+  edgeGroups: AssocEdgeGroup[] = [
     {
       name: "rsvp",
       groupStatusName: "rsvpStatus",

@@ -73,6 +73,7 @@ sa.Table("event_rsvps", metadata,
     sa.Column("time", sa.TIMESTAMP(), nullable=False),
     sa.Column("data", sa.Text(), nullable=True),
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="event_rsvps_id1_edge_type_id2_pkey"),
+    sa.Index("event_rsvps_time_idx", "time"),
 )
    
 sa.Table("events", metadata,
@@ -148,6 +149,7 @@ metadata.info["edges"] = {
     'EventActivityToAttendingEdge': {"edge_name":"EventActivityToAttendingEdge", "edge_type":"8025c416-c0a9-42dd-9bf4-f97f283d31a2", "edge_table":"event_rsvps", "symmetric_edge":False, "inverse_edge_type":"ea0de57e-25de-47ab-8ddc-324f41c892a3"},
     'EventActivityToDeclinedEdge': {"edge_name":"EventActivityToDeclinedEdge", "edge_type":"f3ff6b74-c055-4562-b5dd-07e4e2d8c8e3", "edge_table":"event_rsvps", "symmetric_edge":False, "inverse_edge_type":"5798e422-75d3-42ac-9ef8-30bd35e34f9f"},
     'EventActivityToInvitesEdge': {"edge_name":"EventActivityToInvitesEdge", "edge_type":"64ef93f6-7edf-42ce-a3e4-8c30d9851645", "edge_table":"event_rsvps", "symmetric_edge":False, "inverse_edge_type":"759e4abe-f866-41b7-aae8-40be4e8ab21e"},
+    'EventActivityToRsvpEdge': {"edge_name":"EventActivityToRsvpEdge", "edge_type":"3696b55b-d54d-41ee-a586-3ec6dc563ccb", "edge_table":"event_rsvps", "symmetric_edge":False, "inverse_edge_type":None},
     'GuestGroupToInvitedEventsEdge': {"edge_name":"GuestGroupToInvitedEventsEdge", "edge_type":"759e4abe-f866-41b7-aae8-40be4e8ab21e", "edge_table":"event_rsvps", "symmetric_edge":False, "inverse_edge_type":"64ef93f6-7edf-42ce-a3e4-8c30d9851645"},
     'GuestToAttendingEventsEdge': {"edge_name":"GuestToAttendingEventsEdge", "edge_type":"ea0de57e-25de-47ab-8ddc-324f41c892a3", "edge_table":"event_rsvps", "symmetric_edge":False, "inverse_edge_type":"8025c416-c0a9-42dd-9bf4-f97f283d31a2"},
     'GuestToDeclinedEventsEdge': {"edge_name":"GuestToDeclinedEventsEdge", "edge_type":"5798e422-75d3-42ac-9ef8-30bd35e34f9f", "edge_table":"event_rsvps", "symmetric_edge":False, "inverse_edge_type":"f3ff6b74-c055-4562-b5dd-07e4e2d8c8e3"},

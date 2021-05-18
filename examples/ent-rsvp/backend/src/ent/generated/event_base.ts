@@ -13,6 +13,8 @@ import {
   PrivacyPolicy,
   ObjectLoaderFactory,
   Context,
+  loadEntViaKey,
+  loadEntXViaKey,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import {
@@ -37,9 +39,7 @@ export class EventBase {
   readonly slug: string | null;
   readonly creatorID: ID;
 
-  constructor(public viewer: Viewer, id: ID, data: Data) {
-    this.id = id;
-    // TODO don't double read id
+  constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -55,7 +55,7 @@ export class EventBase {
   };
 
   static async load<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -63,7 +63,7 @@ export class EventBase {
   }
 
   static async loadX<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -71,7 +71,7 @@ export class EventBase {
   }
 
   static async loadMany<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
@@ -79,7 +79,7 @@ export class EventBase {
   }
 
   static async loadRawData<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
@@ -87,7 +87,7 @@ export class EventBase {
   }
 
   static async loadRawDataX<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data> {
@@ -99,29 +99,29 @@ export class EventBase {
   }
 
   static async loadFromSlug<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     slug: string,
   ): Promise<T | null> {
-    return loadEnt(viewer, slug, {
+    return loadEntViaKey(viewer, slug, {
       ...EventBase.loaderOptions.apply(this),
       loaderFactory: eventSlugLoader,
     });
   }
 
   static async loadFromSlugX<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     slug: string,
   ): Promise<T> {
-    return loadEntX(viewer, slug, {
+    return loadEntXViaKey(viewer, slug, {
       ...EventBase.loaderOptions.apply(this),
       loaderFactory: eventSlugLoader,
     });
   }
 
   static async loadIDFromSlug<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     slug: string,
     context?: Context,
   ): Promise<ID | undefined> {
@@ -130,7 +130,7 @@ export class EventBase {
   }
 
   static async loadRawDataFromSlug<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     slug: string,
     context?: Context,
   ): Promise<Data | null> {
@@ -138,7 +138,7 @@ export class EventBase {
   }
 
   static loaderOptions<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
@@ -189,13 +189,13 @@ export class EventBase {
 export const eventLoader = new ObjectLoaderFactory({
   tableName,
   fields,
-  pkey: "id",
+  key: "id",
 });
 
 export const eventSlugLoader = new ObjectLoaderFactory({
   tableName,
   fields,
-  pkey: "slug",
+  key: "slug",
 });
 
 eventLoader.addToPrime(eventSlugLoader);

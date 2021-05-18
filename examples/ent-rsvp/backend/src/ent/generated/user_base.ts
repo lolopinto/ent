@@ -13,6 +13,8 @@ import {
   PrivacyPolicy,
   ObjectLoaderFactory,
   Context,
+  loadEntViaKey,
+  loadEntXViaKey,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import { NodeType, UserToEventsQuery } from "src/ent/internal";
@@ -39,9 +41,7 @@ export class UserBase {
   readonly emailAddress: string;
   protected readonly password: string;
 
-  constructor(public viewer: Viewer, id: ID, data: Data) {
-    this.id = id;
-    // TODO don't double read id
+  constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -58,7 +58,7 @@ export class UserBase {
   };
 
   static async load<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -66,7 +66,7 @@ export class UserBase {
   }
 
   static async loadX<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -74,7 +74,7 @@ export class UserBase {
   }
 
   static async loadMany<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
@@ -82,7 +82,7 @@ export class UserBase {
   }
 
   static async loadRawData<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
@@ -90,7 +90,7 @@ export class UserBase {
   }
 
   static async loadRawDataX<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data> {
@@ -102,29 +102,29 @@ export class UserBase {
   }
 
   static async loadFromEmailAddress<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     emailAddress: string,
   ): Promise<T | null> {
-    return loadEnt(viewer, emailAddress, {
+    return loadEntViaKey(viewer, emailAddress, {
       ...UserBase.loaderOptions.apply(this),
       loaderFactory: userEmailAddressLoader,
     });
   }
 
   static async loadFromEmailAddressX<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     emailAddress: string,
   ): Promise<T> {
-    return loadEntX(viewer, emailAddress, {
+    return loadEntXViaKey(viewer, emailAddress, {
       ...UserBase.loaderOptions.apply(this),
       loaderFactory: userEmailAddressLoader,
     });
   }
 
   static async loadIDFromEmailAddress<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     emailAddress: string,
     context?: Context,
   ): Promise<ID | undefined> {
@@ -135,7 +135,7 @@ export class UserBase {
   }
 
   static async loadRawDataFromEmailAddress<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     emailAddress: string,
     context?: Context,
   ): Promise<Data | null> {
@@ -145,7 +145,7 @@ export class UserBase {
   }
 
   static loaderOptions<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
@@ -176,13 +176,13 @@ export class UserBase {
 export const userLoader = new ObjectLoaderFactory({
   tableName,
   fields,
-  pkey: "id",
+  key: "id",
 });
 
 export const userEmailAddressLoader = new ObjectLoaderFactory({
   tableName,
   fields,
-  pkey: "email_address",
+  key: "email_address",
 });
 
 userLoader.addToPrime(userEmailAddressLoader);

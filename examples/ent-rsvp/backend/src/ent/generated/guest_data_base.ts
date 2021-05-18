@@ -37,9 +37,7 @@ export class GuestDataBase {
   readonly eventID: ID;
   readonly dietaryRestrictions: string;
 
-  constructor(public viewer: Viewer, id: ID, data: Data) {
-    this.id = id;
-    // TODO don't double read id
+  constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -55,7 +53,7 @@ export class GuestDataBase {
   };
 
   static async load<T extends GuestDataBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -63,7 +61,7 @@ export class GuestDataBase {
   }
 
   static async loadX<T extends GuestDataBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -71,7 +69,7 @@ export class GuestDataBase {
   }
 
   static async loadMany<T extends GuestDataBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
@@ -79,7 +77,7 @@ export class GuestDataBase {
   }
 
   static async loadRawData<T extends GuestDataBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
@@ -87,7 +85,7 @@ export class GuestDataBase {
   }
 
   static async loadRawDataX<T extends GuestDataBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data> {
@@ -99,7 +97,7 @@ export class GuestDataBase {
   }
 
   static loaderOptions<T extends GuestDataBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
@@ -142,5 +140,5 @@ export class GuestDataBase {
 export const guestDataLoader = new ObjectLoaderFactory({
   tableName,
   fields,
-  pkey: "id",
+  key: "id",
 });

@@ -13,6 +13,8 @@ import {
   PrivacyPolicy,
   ObjectLoaderFactory,
   Context,
+  loadEntViaKey,
+  loadEntXViaKey,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import { NodeType, Guest } from "src/ent/internal";
@@ -39,9 +41,7 @@ export class AuthCodeBase {
   readonly emailAddress: string;
   readonly sentCode: boolean;
 
-  constructor(public viewer: Viewer, id: ID, data: Data) {
-    this.id = id;
-    // TODO don't double read id
+  constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -58,7 +58,7 @@ export class AuthCodeBase {
   };
 
   static async load<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -66,7 +66,7 @@ export class AuthCodeBase {
   }
 
   static async loadX<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -74,7 +74,7 @@ export class AuthCodeBase {
   }
 
   static async loadMany<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
@@ -82,7 +82,7 @@ export class AuthCodeBase {
   }
 
   static async loadRawData<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
@@ -90,7 +90,7 @@ export class AuthCodeBase {
   }
 
   static async loadRawDataX<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data> {
@@ -102,29 +102,29 @@ export class AuthCodeBase {
   }
 
   static async loadFromGuestID<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     guestID: ID,
   ): Promise<T | null> {
-    return loadEnt(viewer, guestID, {
+    return loadEntViaKey(viewer, guestID, {
       ...AuthCodeBase.loaderOptions.apply(this),
       loaderFactory: authCodeGuestIDLoader,
     });
   }
 
   static async loadFromGuestIDX<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     guestID: ID,
   ): Promise<T> {
-    return loadEntX(viewer, guestID, {
+    return loadEntXViaKey(viewer, guestID, {
       ...AuthCodeBase.loaderOptions.apply(this),
       loaderFactory: authCodeGuestIDLoader,
     });
   }
 
   static async loadIDFromGuestID<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     guestID: ID,
     context?: Context,
   ): Promise<ID | undefined> {
@@ -133,7 +133,7 @@ export class AuthCodeBase {
   }
 
   static async loadRawDataFromGuestID<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     guestID: ID,
     context?: Context,
   ): Promise<Data | null> {
@@ -141,7 +141,7 @@ export class AuthCodeBase {
   }
 
   static loaderOptions<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
@@ -176,13 +176,13 @@ export class AuthCodeBase {
 export const authCodeLoader = new ObjectLoaderFactory({
   tableName,
   fields,
-  pkey: "id",
+  key: "id",
 });
 
 export const authCodeGuestIDLoader = new ObjectLoaderFactory({
   tableName,
   fields,
-  pkey: "guest_id",
+  key: "guest_id",
 });
 
 authCodeLoader.addToPrime(authCodeGuestIDLoader);

@@ -14,6 +14,8 @@ import {
   Ent,
   ObjectLoaderFactory,
   Context,
+  loadEntViaKey,
+  loadEntXViaKey,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import { NodeType } from "src/ent/internal";
@@ -47,9 +49,7 @@ export class AddressBase {
   readonly ownerID: ID;
   readonly ownerType: string;
 
-  constructor(public viewer: Viewer, id: ID, data: Data) {
-    this.id = id;
-    // TODO don't double read id
+  constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -69,7 +69,7 @@ export class AddressBase {
   };
 
   static async load<T extends AddressBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -77,7 +77,7 @@ export class AddressBase {
   }
 
   static async loadX<T extends AddressBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -85,7 +85,7 @@ export class AddressBase {
   }
 
   static async loadMany<T extends AddressBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
@@ -93,7 +93,7 @@ export class AddressBase {
   }
 
   static async loadRawData<T extends AddressBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
@@ -101,7 +101,7 @@ export class AddressBase {
   }
 
   static async loadRawDataX<T extends AddressBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data> {
@@ -113,29 +113,29 @@ export class AddressBase {
   }
 
   static async loadFromOwnerID<T extends AddressBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ownerID: ID,
   ): Promise<T | null> {
-    return loadEnt(viewer, ownerID, {
+    return loadEntViaKey(viewer, ownerID, {
       ...AddressBase.loaderOptions.apply(this),
       loaderFactory: addressOwnerIDLoader,
     });
   }
 
   static async loadFromOwnerIDX<T extends AddressBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ownerID: ID,
   ): Promise<T> {
-    return loadEntX(viewer, ownerID, {
+    return loadEntXViaKey(viewer, ownerID, {
       ...AddressBase.loaderOptions.apply(this),
       loaderFactory: addressOwnerIDLoader,
     });
   }
 
   static async loadIDFromOwnerID<T extends AddressBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     ownerID: ID,
     context?: Context,
   ): Promise<ID | undefined> {
@@ -144,7 +144,7 @@ export class AddressBase {
   }
 
   static async loadRawDataFromOwnerID<T extends AddressBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     ownerID: ID,
     context?: Context,
   ): Promise<Data | null> {
@@ -152,7 +152,7 @@ export class AddressBase {
   }
 
   static loaderOptions<T extends AddressBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
@@ -195,13 +195,13 @@ export class AddressBase {
 export const addressLoader = new ObjectLoaderFactory({
   tableName,
   fields,
-  pkey: "id",
+  key: "id",
 });
 
 export const addressOwnerIDLoader = new ObjectLoaderFactory({
   tableName,
   fields,
-  pkey: "owner_id",
+  key: "owner_id",
 });
 
 addressLoader.addToPrime(addressOwnerIDLoader);
