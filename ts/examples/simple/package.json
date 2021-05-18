@@ -16,7 +16,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@lolopinto/ent-graphql-tests": "^0.0.13",
+    "@lolopinto/ent-graphql-tests": "^0.0.14",
     "@types/express": "^4.17.11",
     "@types/jest": "^26.0.23",
     "@types/jest-expect-message": "^1.0.3",
@@ -30,11 +30,11 @@
     "ts-jest": "^26.5.6"
   },
   "dependencies": {
-    "@lolopinto/ent": "^0.0.89",
-    "@lolopinto/ent-email": "^0.0.2",
-    "@lolopinto/ent-passport": "^0.0.3",
-    "@lolopinto/ent-password": "^0.0.3",
-    "@lolopinto/ent-phonenumber": "^0.0.2",
+    "@lolopinto/ent": "^0.0.90",
+    "@lolopinto/ent-email": "^0.0.3",
+    "@lolopinto/ent-passport": "^0.0.4",
+    "@lolopinto/ent-password": "^0.0.4",
+    "@lolopinto/ent-phonenumber": "^0.0.3",
     "@types/express-session": "^1.17.3",
     "@types/graphql-upload": "^8.0.4",
     "@types/luxon": "^1.26.5",
