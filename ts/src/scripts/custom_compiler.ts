@@ -184,6 +184,7 @@ class Compiler {
       // it doesn't seem to be coming here for node_modules here which is good
       console.error(
         "couldn't resolve everything",
+        containingFile,
         moduleNames,
         resolvedModules,
       );
@@ -347,7 +348,7 @@ class Compiler {
 // TODO use includes and exclude in tsconfig.json if it exists
 new Compiler(
   glob.sync("**/*.ts", {
-    ignore: ["node_modules/**", "tests/**"],
+    ignore: ["node_modules/**", "tests/**", "**/*.test.ts"],
   }),
   ["node_modules/@types/node"],
 ).compile();

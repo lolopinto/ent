@@ -1,6 +1,6 @@
 {
   "name": "@lolopinto/ent",
-  "version": "0.0.90",
+  "version": "0.0.91",
   "description": "ent framework",
   "main": "index.js",
   "types": "index.d.ts",
@@ -8,6 +8,7 @@
     "example": "examples"
   },
   "dependencies": {
+    "@types/node": "^15.0.2",
     "dataloader": "^2.0.0",
     "glob": "^7.1.6",
     "graph-data-structure": "^1.12.0",
@@ -40,7 +41,6 @@
     "@types/luxon": "^1.25.1",
     "@types/memoizee": "^0.4.5",
     "@types/minimist": "^1.2.0",
-    "@types/node": "^15.0.2",
     "@types/passport": "^1.0.3",
     "@types/passport-jwt": "^3.0.3",
     "@types/pg": "^7.14.1",
