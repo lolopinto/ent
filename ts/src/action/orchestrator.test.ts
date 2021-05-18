@@ -199,7 +199,7 @@ test("required field fine when server default exists", async () => {
 });
 
 test("schema on edit", async () => {
-  const user = new User(new LoggedOutViewer(), "1", { id: "1" });
+  const user = new User(new LoggedOutViewer(), { id: "1" });
   const builder = new SimpleBuilder(
     new LoggedOutViewer(),
     new UserSchema(),
@@ -217,7 +217,7 @@ test("schema on edit", async () => {
 });
 
 test("schema on delete", async () => {
-  const user = new User(new LoggedOutViewer(), "1", { id: "1" });
+  const user = new User(new LoggedOutViewer(), { id: "1" });
   const builder = new SimpleBuilder(
     new LoggedOutViewer(),
     new UserSchema(),
@@ -342,7 +342,7 @@ describe("schema_with_processors", () => {
 
 const getLoggedInBuilder = () => {
   const viewer = new IDViewer("1");
-  const user = new User(viewer, "1", { id: "1" });
+  const user = new User(viewer, { id: "1" });
   return new SimpleBuilder(
     viewer,
     new UserSchema(),
@@ -1407,7 +1407,7 @@ test("multi-ids then take and add to other edge", async () => {
 describe("remove inbound edge", () => {
   test("existing ent", async () => {
     const viewer = new IDViewer("1");
-    const user = new User(viewer, "1", { id: "1" });
+    const user = new User(viewer, { id: "1" });
     const builder = new SimpleBuilder(
       viewer,
       new UserSchema(),
@@ -1464,7 +1464,7 @@ describe("remove inbound edge", () => {
 describe("remove outbound edge", () => {
   test("existing ent", async () => {
     const viewer = new IDViewer("1");
-    const user = new User(viewer, "1", { id: "1" });
+    const user = new User(viewer, { id: "1" });
     const builder = new SimpleBuilder(
       viewer,
       new UserSchema(),
@@ -2053,7 +2053,7 @@ async function getEdgeOpFromBuilder<T extends Ent>(
 // TODO serverDefault change...
 
 test("schema with derived fields", async () => {
-  const user = new User(new LoggedOutViewer(), "1", { id: "1" });
+  const user = new User(new LoggedOutViewer(), { id: "1" });
 
   const builder = new SimpleBuilder(
     new LoggedOutViewer(),
@@ -2081,8 +2081,8 @@ describe("viewer for ent load", () => {
     privacyPolicy: PrivacyPolicy = {
       rules: [AllowIfViewerRule, AlwaysDenyRule],
     };
-    constructor(public viewer: Viewer, id: ID, public data: Data) {
-      this.id = id;
+    constructor(public viewer: Viewer, public data: Data) {
+      this.id = data.id;
     }
   }
 
@@ -2199,8 +2199,8 @@ describe("logging queries", () => {
     nodeType = "User";
     privacyPolicy: PrivacyPolicy = AlwaysAllowPrivacyPolicy;
 
-    constructor(public viewer: Viewer, id: ID, public data: Data) {
-      this.id = id;
+    constructor(public viewer: Viewer, public data: Data) {
+      this.id = data.id;
     }
   }
   class SensitiveValuesSchema extends BaseEntSchema {

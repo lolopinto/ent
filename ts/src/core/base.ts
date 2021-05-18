@@ -101,7 +101,7 @@ export declare type Data = {
 };
 
 export interface EntConstructor<T extends Ent> {
-  new (viewer: Viewer, id: ID, options: Data): T;
+  new (viewer: Viewer, data: Data): T;
 }
 
 export type ID = string | number;
@@ -116,13 +116,17 @@ export interface DataOptions {
   context?: Context;
 }
 
-export interface SelectDataOptions extends DataOptions {
+export interface SelectBaseDataOptions extends DataOptions {
   // list of fields to read
   fields: string[];
-  pkey?: string; // what key are we loading from. if not provided we're loading from column "id"
 }
 
-export interface QueryableDataOptions extends SelectDataOptions {
+export interface SelectDataOptions extends SelectBaseDataOptions {
+  // primary key we're selecting from most often 'id'
+  key: string;
+}
+
+export interface QueryableDataOptions extends SelectBaseDataOptions {
   distinct?: boolean;
   clause: clause.Clause;
   orderby?: string; // this technically doesn't make sense when querying just one row but whatevs
@@ -131,29 +135,30 @@ export interface QueryableDataOptions extends SelectDataOptions {
 }
 
 // For loading data from database
-export interface LoadRowOptions extends QueryableDataOptions {
-  //  pkey?: string; // what key are we loading from. if not provided we're loading from column "id"
-}
+export interface LoadRowOptions extends QueryableDataOptions {}
 
 export interface LoadRowsOptions extends QueryableDataOptions {}
 
-export interface EditRowOptions extends DataOptions {
+export interface CreateRowOptions extends DataOptions {
   // fields to be edited
   fields: Data;
   fieldsToLog?: Data;
-  pkey?: string; // what key are we loading from. if not provided we're loading from column "id"
 }
 
-interface LoadableEntOptions<T extends Ent> extends DataOptions {
-  loaderFactory: LoaderFactory<ID, Data | null>;
+export interface EditRowOptions extends CreateRowOptions {
+  key: string; // what key are we loading from. if not provided we're loading from column "id"
+}
+
+interface LoadableEntOptions<T extends Ent> {
+  loaderFactory: LoaderFactory<any, Data | null>;
   ent: EntConstructor<T>;
 }
 
 // information needed to load an ent from the databse
-// always id for now...
 export interface LoadEntOptions<T extends Ent>
   extends LoadableEntOptions<T>,
-    SelectDataOptions {}
+    // extending DataOptions and fields is to make APIs like loadEntsFromClause work until we come up with a cleaner API
+    SelectBaseDataOptions {}
 
 // information needed to edit an ent
 export interface EditEntOptions<T extends Ent>

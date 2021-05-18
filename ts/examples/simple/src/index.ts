@@ -48,8 +48,8 @@ async function main() {
       const vc = new IDViewer(id2, { context });
       const user = await User.loadX(vc, id2);
 
-      await user.loadFriends();
-      await user.loadFriends();
+      await user.queryFriends().queryEnts();
+      await user.queryFriends().queryEnts();
       await user.queryContacts().queryEnts();
       // await loadEdges({
       //   id1: user.id,

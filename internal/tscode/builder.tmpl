@@ -60,6 +60,7 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
       viewer: viewer,
       operation: this.operation,
       tableName: "{{.TableName}}", 
+      key: "id",
       loaderOptions: {{$node}}.loaderOptions(),
       builder: this,
       action: action,

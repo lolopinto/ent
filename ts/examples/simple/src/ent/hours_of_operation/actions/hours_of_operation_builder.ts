@@ -46,6 +46,7 @@ export class HoursOfOperationBuilder implements Builder<HoursOfOperation> {
       viewer: viewer,
       operation: this.operation,
       tableName: "hours_of_operations",
+      key: "id",
       loaderOptions: HoursOfOperation.loaderOptions(),
       builder: this,
       action: action,

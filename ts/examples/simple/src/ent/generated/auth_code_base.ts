@@ -39,9 +39,7 @@ export class AuthCodeBase {
   readonly emailAddress: string | null;
   readonly phoneNumber: string | null;
 
-  constructor(public viewer: Viewer, id: ID, data: Data) {
-    this.id = id;
-    // TODO don't double read id
+  constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -58,7 +56,7 @@ export class AuthCodeBase {
   };
 
   static async load<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -66,7 +64,7 @@ export class AuthCodeBase {
   }
 
   static async loadX<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -74,7 +72,7 @@ export class AuthCodeBase {
   }
 
   static async loadMany<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
@@ -82,7 +80,7 @@ export class AuthCodeBase {
   }
 
   static async loadRawData<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
@@ -90,7 +88,7 @@ export class AuthCodeBase {
   }
 
   static async loadRawDataX<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data> {
@@ -102,7 +100,7 @@ export class AuthCodeBase {
   }
 
   static loaderOptions<T extends AuthCodeBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
@@ -137,5 +135,5 @@ export class AuthCodeBase {
 export const authCodeLoader = new ObjectLoaderFactory({
   tableName,
   fields,
-  pkey: "id",
+  key: "id",
 });

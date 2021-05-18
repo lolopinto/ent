@@ -1,4 +1,4 @@
-{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AlwaysDenyRule" "AllowIfViewerRule" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory"}}
+{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AlwaysDenyRule" "AllowIfViewerRule" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey"}}
 {{ reserveImport .Package.SchemaPackagePath "Field" "getFields"}}
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
 {{ reserveImport "src/ent/loadAny" "loadEntByType" "loadEntXByType"}}
@@ -27,8 +27,8 @@ const fields = [
 ];
 
 {{$baseClass := printf "%sBase" .Node -}}
-{{$constructor := "arg: new (viewer: Viewer, id: ID, data: Data) => T"}}
-{{$thisType := "new (viewer: Viewer, id: ID, data: Data) => T"}}
+{{$constructor := "arg: new (viewer: Viewer, data: Data) => T"}}
+{{$thisType := "new (viewer: Viewer, data: Data) => T"}}
 
 {{ range .GetTSEnums -}}
   {{if not .Imported -}}
@@ -50,9 +50,7 @@ export class {{$baseClass}} {
     {{end -}}
   {{end}}
 
-  constructor(public viewer: {{$viewerType}}, id: {{$idType}}, data:{{$dataType}}) {
-    this.id = id;
-    // TODO don't double read id
+  constructor(public viewer: {{$viewerType}}, data:{{$dataType}}) {
     {{range $field := .FieldInfo.Fields -}}
       this.{{$field.TsFieldName}} = data.{{$field.GetDbColName}};
     {{end}}
@@ -130,7 +128,7 @@ export class {{$baseClass}} {
         viewer: {{$viewerType}},
         {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
       ): Promise<T | null> {
-        return {{useImport "loadEnt"}}(
+        return {{useImport "loadEntViaKey"}}(
           viewer, 
           {{$field.TsFieldName}},
           {
@@ -145,7 +143,7 @@ export class {{$baseClass}} {
         viewer: Viewer,
         {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
       ): Promise<T> {
-        return {{useImport "loadEntX"}}(
+        return {{useImport "loadEntXViaKey"}}(
           viewer, 
           {{$field.TsFieldName}},
           {
@@ -186,7 +184,7 @@ export class {{$baseClass}} {
   {{end -}}
 
   static loaderOptions<T extends {{$baseClass}}>(
-    this: new (viewer: {{$viewerType}}, id: {{$idType}}, data: Data) => T,
+    this: new (viewer: {{$viewerType}}, data: Data) => T,
   ): {{useImport "LoadEntOptions"}}<T> {
     return {
       tableName: tableName,
@@ -363,7 +361,7 @@ export class {{$baseClass}} {
   export const {{.Name}} = new {{useImport "ObjectLoaderFactory"}}({
     tableName,
     fields,
-    pkey: {{.Pkey}},
+    key: {{.Pkey}},
   });
 
 {{end}}

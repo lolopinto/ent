@@ -29,9 +29,7 @@ export class HolidayBase {
   readonly label: string;
   readonly date: Date;
 
-  constructor(public viewer: Viewer, id: ID, data: Data) {
-    this.id = id;
-    // TODO don't double read id
+  constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -46,7 +44,7 @@ export class HolidayBase {
   };
 
   static async load<T extends HolidayBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -54,7 +52,7 @@ export class HolidayBase {
   }
 
   static async loadX<T extends HolidayBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -62,7 +60,7 @@ export class HolidayBase {
   }
 
   static async loadMany<T extends HolidayBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
@@ -70,7 +68,7 @@ export class HolidayBase {
   }
 
   static async loadRawData<T extends HolidayBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
@@ -78,7 +76,7 @@ export class HolidayBase {
   }
 
   static async loadRawDataX<T extends HolidayBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data> {
@@ -90,7 +88,7 @@ export class HolidayBase {
   }
 
   static loaderOptions<T extends HolidayBase>(
-    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
@@ -117,5 +115,5 @@ export class HolidayBase {
 export const holidayLoader = new ObjectLoaderFactory({
   tableName,
   fields,
-  pkey: "id",
+  key: "id",
 });

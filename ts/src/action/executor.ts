@@ -68,7 +68,7 @@ function getCreatedEnt<T extends Ent>(
   if (op && op.returnedEntRow) {
     let row = op.returnedEntRow();
     if (row) {
-      return new ent(viewer, row["id"], row);
+      return new ent(viewer, row);
     }
   }
   return null;

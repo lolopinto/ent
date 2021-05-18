@@ -280,8 +280,8 @@ class Hours implements Ent {
   nodeType = "Hours";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
-  constructor(public viewer: Viewer, id: ID, public data: Data) {
-    this.id = id;
+  constructor(public viewer: Viewer, public data: Data) {
+    this.id = data.id;
   }
 }
 
@@ -445,8 +445,8 @@ class Holiday implements Ent {
   nodeType = "Holiday";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
-  constructor(public viewer: Viewer, id: ID, public data: Data) {
-    this.id = id;
+  constructor(public viewer: Viewer, public data: Data) {
+    this.id = data.id;
   }
 }
 

@@ -4,11 +4,11 @@ import { graphqlHTTP } from "express-graphql";
 import schema from "./schema";
 import { IncomingMessage, ServerResponse } from "http";
 import passport from "passport";
-import session from "express-session";
+//import session from "express-session";
 import { DB } from "@lolopinto/ent";
 import { buildContext, registerAuthHandler } from "@lolopinto/ent/auth";
 import {
-  PassportAuthHandler,
+  //  PassportAuthHandler,
   PassportStrategyHandler,
 } from "@lolopinto/ent-passport";
 import { graphqlUploadExpress } from "graphql-upload";

@@ -35,11 +35,14 @@ afterEach(() => {
 const loggedOutViewer = new LoggedOutViewer();
 
 class User implements Ent {
+  id: ID;
   accountID: string;
   privacyPolicy: PrivacyPolicy;
   nodeType = "User";
   // TODO add policy here
-  constructor(public viewer: Viewer, public id: ID, data?: Data) {}
+  constructor(public viewer: Viewer, data: Data) {
+    this.id = data.id;
+  }
 }
 
 const getUser = function(
@@ -48,7 +51,7 @@ const getUser = function(
   privacyPolicy: PrivacyPolicy,
   accountID: string = "2",
 ): User {
-  const user = new User(v, id);
+  const user = new User(v, { id });
   user.privacyPolicy = privacyPolicy;
   user.accountID = accountID;
   return user;
@@ -293,6 +296,7 @@ class DefinedUser extends User {
       loaderFactory: new ObjectLoaderFactory({
         fields: ["id", "name"],
         tableName: "users",
+        key: "id",
       }),
     };
   }
@@ -309,13 +313,21 @@ describe("AllowIfEntIsVisibleRule", () => {
 
   test("passes", async () => {
     const vc = new IDViewer("1");
-    const bool = await applyPrivacyPolicy(vc, policy, new DefinedUser(vc, "1"));
+    const bool = await applyPrivacyPolicy(
+      vc,
+      policy,
+      new DefinedUser(vc, { id: "1" }),
+    );
     expect(bool).toBe(true);
   });
 
   test("fails", async () => {
     const vc = new IDViewer("2");
-    const bool = await applyPrivacyPolicy(vc, policy, new DefinedUser(vc, "1"));
+    const bool = await applyPrivacyPolicy(
+      vc,
+      policy,
+      new DefinedUser(vc, { id: "1" }),
+    );
     expect(bool).toBe(false);
   });
 });
@@ -328,13 +340,21 @@ describe("DenyIfEntIsVisibleRule", () => {
 
   test("passes", async () => {
     const vc = new IDViewer("1");
-    const bool = await applyPrivacyPolicy(vc, policy, new DefinedUser(vc, "1"));
+    const bool = await applyPrivacyPolicy(
+      vc,
+      policy,
+      new DefinedUser(vc, { id: "1" }),
+    );
     expect(bool).toBe(false);
   });
 
   test("fails", async () => {
     const vc = new IDViewer("2");
-    const bool = await applyPrivacyPolicy(vc, policy, new DefinedUser(vc, "1"));
+    const bool = await applyPrivacyPolicy(
+      vc,
+      policy,
+      new DefinedUser(vc, { id: "1" }),
+    );
     expect(bool).toBe(true);
   });
 });

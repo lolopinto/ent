@@ -24,8 +24,8 @@ export class User implements Ent {
   nodeType = "User";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
-  constructor(public viewer: Viewer, id: ID, public data: Data) {
-    this.id = id;
+  constructor(public viewer: Viewer, public data: Data) {
+    this.id = data.id;
   }
 }
 
@@ -35,8 +35,8 @@ export class Event implements Ent {
   nodeType = "Event";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
-  constructor(public viewer: Viewer, id: ID, public data: Data) {
-    this.id = id;
+  constructor(public viewer: Viewer, public data: Data) {
+    this.id = data.id;
   }
 }
 
@@ -46,8 +46,8 @@ export class Contact implements Ent {
   nodeType = "Contact";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
-  constructor(public viewer: Viewer, id: ID, public data: Data) {
-    this.id = id;
+  constructor(public viewer: Viewer, public data: Data) {
+    this.id = data.id;
   }
 }
 
@@ -57,8 +57,8 @@ export class Group implements Ent {
   nodeType = "Group";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
-  constructor(public viewer: Viewer, id: ID, public data: Data) {
-    this.id = id;
+  constructor(public viewer: Viewer, public data: Data) {
+    this.id = data.id;
   }
 }
 
@@ -68,8 +68,8 @@ export class Message implements Ent {
   nodeType = "Message";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
-  constructor(public viewer: Viewer, id: ID, public data: Data) {
-    this.id = id;
+  constructor(public viewer: Viewer, public data: Data) {
+    this.id = data.id;
   }
 }
 
@@ -79,8 +79,8 @@ export class Address implements Ent {
   nodeType = "Address";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
-  constructor(public viewer: Viewer, id: ID, public data: Data) {
-    this.id = id;
+  constructor(public viewer: Viewer, public data: Data) {
+    this.id = data.id;
   }
 }
 
@@ -131,10 +131,12 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
       viewer: this.viewer,
       operation: operation,
       tableName: tableName,
+      key: "id",
       loaderOptions: {
         loaderFactory: new ObjectLoaderFactory({
           tableName: tableName,
           fields: [],
+          key: "id",
         }),
         ent: schema.ent,
         tableName: tableName,
