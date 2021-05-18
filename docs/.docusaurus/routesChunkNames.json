@@ -1,0 +1,187 @@
+{
+  "/-deb": {
+    "component": "component---site-src-pages-index-jsc-4-f-f99",
+    "config": "config---5-e-9-4f3"
+  },
+  "/__docusaurus/debug-3d6": {
+    "component": "component---theme-debug-config-23-a-2ff"
+  },
+  "/__docusaurus/debug/config-914": {
+    "component": "component---theme-debug-config-23-a-2ff"
+  },
+  "/__docusaurus/debug/content-c28": {
+    "component": "component---theme-debug-contentba-8-ce7",
+    "allContent": "allContent---docusaurus-debug-content-246-9aa"
+  },
+  "/__docusaurus/debug/globalData-3cf": {
+    "component": "component---theme-debug-global-dataede-0fa"
+  },
+  "/__docusaurus/debug/metadata-31b": {
+    "component": "component---theme-debug-site-metadata-68-e-3d4"
+  },
+  "/__docusaurus/debug/registry-0da": {
+    "component": "component---theme-debug-registry-679-501"
+  },
+  "/__docusaurus/debug/routes-244": {
+    "component": "component---theme-debug-routes-946-699"
+  },
+  "/blog-abb": {
+    "component": "component---theme-blog-list-pagea-6-a-7ba",
+    "sidebar": "sidebar---blogf-16-93e",
+    "items": [
+      {
+        "content": "content---blogf-96-107"
+      },
+      {
+        "content": "content---blogaf-1-856"
+      },
+      {
+        "content": "content---blog-357-22b"
+      },
+      {
+        "content": "content---blog-8-e-9-35c"
+      }
+    ],
+    "metadata": "metadata---blogb-2-b-df1"
+  },
+  "/blog/greetings-686": {
+    "component": "component---theme-blog-post-pageccc-cab",
+    "sidebar": "sidebar---blogf-16-93e",
+    "content": "content---blog-greetingsa-7-a-c48"
+  },
+  "/blog/hello-world-a27": {
+    "component": "component---theme-blog-post-pageccc-cab",
+    "sidebar": "sidebar---blogf-16-93e",
+    "content": "content---blog-hello-worldd-61-086"
+  },
+  "/blog/hola-8d4": {
+    "component": "component---theme-blog-post-pageccc-cab",
+    "sidebar": "sidebar---blogf-16-93e",
+    "content": "content---blog-holabdd-150"
+  },
+  "/blog/tags-645": {
+    "component": "component---theme-blog-tags-list-page-01-a-d0b",
+    "sidebar": "sidebar---blogf-16-93e",
+    "tags": "tags---blog-tagsa-70-da2"
+  },
+  "/blog/tags/docusaurus-0db": {
+    "component": "component---theme-blog-tags-posts-page-687-b6c",
+    "sidebar": "sidebar---blogf-16-93e",
+    "items": [
+      {
+        "content": "content---blogaf-1-856"
+      },
+      {
+        "content": "content---blog-357-22b"
+      },
+      {
+        "content": "content---blog-8-e-9-35c"
+      }
+    ],
+    "metadata": "metadata---blog-tags-docusaurusa-80-728"
+  },
+  "/blog/tags/facebook-ef4": {
+    "component": "component---theme-blog-tags-posts-page-687-b6c",
+    "sidebar": "sidebar---blogf-16-93e",
+    "items": [
+      {
+        "content": "content---blogaf-1-856"
+      }
+    ],
+    "metadata": "metadata---blog-tags-facebook-031-c52"
+  },
+  "/blog/tags/greetings-86f": {
+    "component": "component---theme-blog-tags-posts-page-687-b6c",
+    "sidebar": "sidebar---blogf-16-93e",
+    "items": [
+      {
+        "content": "content---blogf-96-107"
+      }
+    ],
+    "metadata": "metadata---blog-tags-greetingsce-0-3c2"
+  },
+  "/blog/tags/hello-8b4": {
+    "component": "component---theme-blog-tags-posts-page-687-b6c",
+    "sidebar": "sidebar---blogf-16-93e",
+    "items": [
+      {
+        "content": "content---blogaf-1-856"
+      },
+      {
+        "content": "content---blog-357-22b"
+      }
+    ],
+    "metadata": "metadata---blog-tags-hello-30-a-bed"
+  },
+  "/blog/tags/hola-980": {
+    "component": "component---theme-blog-tags-posts-page-687-b6c",
+    "sidebar": "sidebar---blogf-16-93e",
+    "items": [
+      {
+        "content": "content---blog-8-e-9-35c"
+      }
+    ],
+    "metadata": "metadata---blog-tags-holae-16-18a"
+  },
+  "/blog/welcome-9b5": {
+    "component": "component---theme-blog-post-pageccc-cab",
+    "sidebar": "sidebar---blogf-16-93e",
+    "content": "content---blog-welcome-286-e55"
+  },
+  "/markdown-page-be1": {
+    "component": "component---theme-mdx-page-1-f-3-b90",
+    "content": "content---markdown-page-393-028"
+  },
+  "/my-markdown-page-81e": {
+    "component": "component---theme-mdx-page-1-f-3-b90",
+    "content": "content---my-markdown-page-031-4dc"
+  },
+  "/my-react-page-86f": {
+    "component": "component---site-src-pages-my-react-page-jsf-85-e77",
+    "config": "config---5-e-9-4f3"
+  },
+  "/docs-2d7": {
+    "component": "component---theme-doc-page-1-be-9be",
+    "versionMetadata": "versionMetadata---docs-935-398"
+  },
+  "/docs/hello-bc1": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-hello-9-df-13a"
+  },
+  "/docs/intro-e84": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-intro-0-e-3-be1"
+  },
+  "/docs/tutorial-basics/congratulations-7ef": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-tutorial-basics-congratulations-822-958"
+  },
+  "/docs/tutorial-basics/create-a-blog-post-2c8": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-tutorial-basics-create-a-blog-post-533-e85"
+  },
+  "/docs/tutorial-basics/create-a-document-f0d": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-tutorial-basics-create-a-document-1-e-4-078"
+  },
+  "/docs/tutorial-basics/create-a-page-ca5": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-tutorial-basics-create-a-page-5-c-8-e19"
+  },
+  "/docs/tutorial-basics/deploy-your-site-508": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-tutorial-basics-deploy-your-sitef-55-a3f"
+  },
+  "/docs/tutorial-basics/markdown-features-f90": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-tutorial-basics-markdown-features-18-c-a79"
+  },
+  "/docs/tutorial-extras/manage-docs-versions-d64": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-tutorial-extras-manage-docs-versionsdff-6d4"
+  },
+  "/docs/tutorial-extras/translate-your-site-16a": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-tutorial-extras-translate-your-sitee-44-ddf"
+  }
+}
