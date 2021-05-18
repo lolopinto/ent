@@ -5,11 +5,20 @@
 
 {{ end -}}
 
+{{range $typ := .AllTypes -}}
+  {{reserveImport "./resolvers" $typ}}
+{{ end -}} 
+
 export default new {{useImport "GraphQLSchema"}}({
   query: {{useImport "QueryType"}},
   {{if .HasMutations -}}
     mutation: {{useImport "MutationType"}},
   {{end -}}
+  types: [
+    {{range $typ := .AllTypes -}}
+      {{useImport $typ}},
+    {{ end -}} 
+  ],
 });
 
 

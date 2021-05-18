@@ -912,6 +912,57 @@ func writeEnumFile(enum *gqlEnum) error {
 	}))
 }
 
+// this is very similar to getSortedLines below but there's
+// just enough differences here that we duplicated
+// there's query types
+// and mutation types...
+func getQueryTypes(s *gqlSchema) []string {
+	// this works based on what we're currently doing
+	// if we eventually add other things here, may not work?
+
+	var nodes []string
+	var conns []string
+	for _, node := range s.nodes {
+		// nodes [0]
+		// FilePath
+		// we need different objects here
+		// so maybe we change the resolvers...
+		for _, n := range node.ObjData.GQLNodes {
+			nodes = append(nodes, n.Type)
+		}
+		for _, conn := range node.connections {
+			conns = append(conns, conn.NodeType)
+		}
+	}
+	var enums []string
+	for _, enum := range s.enums {
+		enums = append(enums, enum.Enum.Type)
+	}
+
+	var customQueries []string
+	for _, node := range s.customQueries {
+		customQueries = append(customQueries, node.ObjData.Node)
+	}
+
+	var lines []string
+	// get the enums
+	// get top level nodes e.g. User, Photo
+	// get the connections
+	// get the custom queries
+	list := [][]string{
+		enums,
+		nodes,
+		conns,
+		customQueries,
+	}
+	for _, l := range list {
+		sort.Strings(l)
+		lines = append(lines, l...)
+	}
+	spew.Dump(lines)
+	return lines
+}
+
 func getSortedLines(s *gqlSchema) []string {
 	append2 := func(list *[]string, str string) {
 		*list = append(*list, strings.TrimSuffix(str, ".ts"))
@@ -2112,10 +2163,12 @@ func writeTSSchemaFile(data *codegen.Data, s *gqlSchema) error {
 			HasMutations bool
 			QueryPath    string
 			MutationPath string
+			AllTypes []string
 		}{
 			s.hasMutations,
 			getQueryImportPath(),
 			getMutationImportPath(),
+			getObjTypes(s),
 		},
 
 		CreateDirIfNeeded: true,

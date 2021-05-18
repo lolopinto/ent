@@ -1,15 +1,7 @@
-{{ reserveImport .QueryPath "QueryType" }}
-{{ reserveImport .MutationPath "MutationType" }}
-{{ reserveImport "graphql" "GraphQLSchema" }}
+import schema from "./schema";
+
 {{ reserveImport "graphql/utilities" "printSchema" }}
 {{ reserveDefaultImport "fs" "fs" }}
-
-const schema = new {{useImport "GraphQLSchema"}}({
-  query: {{useImport "QueryType"}},
-  {{ if .HasMutations}} 
-    mutation: {{useImport "MutationType"}},
-  {{end -}}
-});
 
 let str = {{useImport "printSchema"}}(schema);
 
