@@ -10,7 +10,7 @@ export default {
   "projectName": "ent",
   "themeConfig": {
     "navbar": {
-      "title": "Into",
+      "title": "Home",
       "logo": {
         "alt": "My Site Logo",
         "src": "img/logo.svg"

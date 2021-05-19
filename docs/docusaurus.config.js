@@ -11,7 +11,7 @@ module.exports = {
   projectName: 'ent', // Usually your repo name.
   themeConfig: {
     navbar: {
-      title: 'Into',
+      title: 'Home',
       logo: {
         alt: 'My Site Logo',
         src: 'img/logo.svg',
