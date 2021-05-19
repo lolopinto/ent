@@ -49,9 +49,14 @@ export default [
 },
 {
   path: '/docs',
-  component: ComponentCreator('/docs','65a'),
+  component: ComponentCreator('/docs','6f2'),
   
   routes: [
+{
+  path: '/docs/ent-schema/actions',
+  component: ComponentCreator('/docs/ent-schema/actions','428'),
+  exact: true,
+},
 {
   path: '/docs/ent-schema/edge-groups',
   component: ComponentCreator('/docs/ent-schema/edge-groups','ac6'),

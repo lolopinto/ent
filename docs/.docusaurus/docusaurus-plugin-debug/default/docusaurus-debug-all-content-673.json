@@ -43,6 +43,10 @@
                   {
                     "type": "doc",
                     "id": "ent-schema/edge-groups"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "ent-schema/actions"
                   }
                 ],
                 "collapsed": true
@@ -50,6 +54,7 @@
             ]
           },
           "permalinkToSidebar": {
+            "/docs/ent-schema/actions": "tutorialSidebar",
             "/docs/ent-schema/edge-groups": "tutorialSidebar",
             "/docs/ent-schema/edges": "tutorialSidebar",
             "/docs/ent-schema/fields": "tutorialSidebar",
@@ -58,6 +63,28 @@
             "/docs/intro": "tutorialSidebar"
           },
           "docs": [
+            {
+              "unversionedId": "ent-schema/actions",
+              "id": "ent-schema/actions",
+              "isDocsHomePage": false,
+              "title": "Actions",
+              "description": "Actions are the way to configure writes in the system. Instead of just a blanket create, edit and delete option, we believe it makes more sense to have more nuanced options.",
+              "source": "@site/docs/ent-schema/actions.md",
+              "sourceDirName": "ent-schema",
+              "slug": "/ent-schema/actions",
+              "permalink": "/docs/ent-schema/actions",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/ent-schema/actions.md",
+              "version": "current",
+              "sidebarPosition": 6,
+              "frontMatter": {
+                "sidebar_position": 6
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Edge Groups",
+                "permalink": "/docs/ent-schema/edge-groups"
+              }
+            },
             {
               "unversionedId": "ent-schema/edge-groups",
               "id": "ent-schema/edge-groups",
@@ -78,6 +105,10 @@
               "previous": {
                 "title": "Edges",
                 "permalink": "/docs/ent-schema/edges"
+              },
+              "next": {
+                "title": "Actions",
+                "permalink": "/docs/ent-schema/actions"
               }
             },
             {

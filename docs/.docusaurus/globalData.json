@@ -11,6 +11,11 @@
           "mainDocId": "intro",
           "docs": [
             {
+              "id": "ent-schema/actions",
+              "path": "/docs/ent-schema/actions",
+              "sidebar": "tutorialSidebar"
+            },
+            {
               "id": "ent-schema/edge-groups",
               "path": "/docs/ent-schema/edge-groups",
               "sidebar": "tutorialSidebar"

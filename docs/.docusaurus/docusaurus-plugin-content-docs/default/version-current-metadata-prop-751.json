@@ -38,6 +38,11 @@
             "type": "link",
             "label": "Edge Groups",
             "href": "/docs/ent-schema/edge-groups"
+          },
+          {
+            "type": "link",
+            "label": "Actions",
+            "href": "/docs/ent-schema/actions"
           }
         ],
         "collapsed": true
@@ -45,6 +50,7 @@
     ]
   },
   "permalinkToSidebar": {
+    "/docs/ent-schema/actions": "tutorialSidebar",
     "/docs/ent-schema/edge-groups": "tutorialSidebar",
     "/docs/ent-schema/edges": "tutorialSidebar",
     "/docs/ent-schema/fields": "tutorialSidebar",
