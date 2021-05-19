@@ -29,9 +29,29 @@
     "component": "component---theme-mdx-page-1-f-3-b90",
     "content": "content---markdown-page-393-028"
   },
-  "/docs-93b": {
+  "/docs-65a": {
     "component": "component---theme-doc-page-1-be-9be",
     "versionMetadata": "versionMetadata---docs-935-398"
+  },
+  "/docs/ent-schema/edge-groups-ac6": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-ent-schema-edge-groups-34-b-200"
+  },
+  "/docs/ent-schema/edges-8fd": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-ent-schema-edges-5-ac-f8d"
+  },
+  "/docs/ent-schema/fields-b6e": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-ent-schema-fieldse-3-b-d02"
+  },
+  "/docs/ent-schema/patterns-40e": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-ent-schema-patternsc-19-cef"
+  },
+  "/docs/ent-schema/schema-465": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-ent-schema-schema-389-d29"
   },
   "/docs/intro-e84": {
     "component": "component---theme-doc-item-178-a40",

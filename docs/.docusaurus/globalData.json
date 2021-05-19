@@ -11,6 +11,31 @@
           "mainDocId": "intro",
           "docs": [
             {
+              "id": "ent-schema/edge-groups",
+              "path": "/docs/ent-schema/edge-groups",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "ent-schema/edges",
+              "path": "/docs/ent-schema/edges",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "ent-schema/fields",
+              "path": "/docs/ent-schema/fields",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "ent-schema/patterns",
+              "path": "/docs/ent-schema/patterns",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "ent-schema/schema",
+              "path": "/docs/ent-schema/schema",
+              "sidebar": "tutorialSidebar"
+            },
+            {
               "id": "intro",
               "path": "/docs/intro",
               "sidebar": "tutorialSidebar"

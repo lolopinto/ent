@@ -14,5 +14,9 @@
   "frontMatter": {
     "sidebar_position": 1
   },
-  "sidebar": "tutorialSidebar"
+  "sidebar": "tutorialSidebar",
+  "next": {
+    "title": "Schema",
+    "permalink": "/docs/ent-schema/schema"
+  }
 }

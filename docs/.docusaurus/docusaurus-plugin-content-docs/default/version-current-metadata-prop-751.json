@@ -9,10 +9,47 @@
         "type": "link",
         "label": "Ent Intro",
         "href": "/docs/intro"
+      },
+      {
+        "type": "category",
+        "label": "Ent Schema",
+        "items": [
+          {
+            "type": "link",
+            "label": "Schema",
+            "href": "/docs/ent-schema/schema"
+          },
+          {
+            "type": "link",
+            "label": "Fields",
+            "href": "/docs/ent-schema/fields"
+          },
+          {
+            "type": "link",
+            "label": "Patterns",
+            "href": "/docs/ent-schema/patterns"
+          },
+          {
+            "type": "link",
+            "label": "Edges",
+            "href": "/docs/ent-schema/edges"
+          },
+          {
+            "type": "link",
+            "label": "Edge Groups",
+            "href": "/docs/ent-schema/edge-groups"
+          }
+        ],
+        "collapsed": true
       }
     ]
   },
   "permalinkToSidebar": {
+    "/docs/ent-schema/edge-groups": "tutorialSidebar",
+    "/docs/ent-schema/edges": "tutorialSidebar",
+    "/docs/ent-schema/fields": "tutorialSidebar",
+    "/docs/ent-schema/patterns": "tutorialSidebar",
+    "/docs/ent-schema/schema": "tutorialSidebar",
     "/docs/intro": "tutorialSidebar"
   }
 }

@@ -25,7 +25,7 @@ let tsFields: Field[] = [
 ];
 
 // Timestamps is a Pattern that adds a createdAt and updatedAt timestamp fields to the ent
-export const Timestamps = {
+export const Timestamps: Pattern = {
   fields: tsFields,
 };
 
@@ -66,7 +66,7 @@ let nodeFieldsWithTZ: Field[] = [
 ];
 
 // Node is a Pattern that adds 3 fields to the ent: (id, createdAt, and updatedAt timestamps)
-export const Node = {
+export const Node: Pattern = {
   fields: nodeFields,
 };
 

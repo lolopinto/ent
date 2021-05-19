@@ -50,6 +50,9 @@ export default class Event extends BaseEntSchema implements Schema {
       name: "rsvps",
       groupStatusName: "rsvpStatus",
       nullStates: ["canRsvp"],
+      edgeAction: {
+        operation: ActionOperation.EdgeGroup,
+      },
       assocEdges: [
         {
           name: "invited",

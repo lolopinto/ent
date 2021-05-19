@@ -19,13 +19,171 @@
               {
                 "type": "doc",
                 "id": "intro"
+              },
+              {
+                "type": "category",
+                "label": "Ent Schema",
+                "items": [
+                  {
+                    "type": "doc",
+                    "id": "ent-schema/schema"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "ent-schema/fields"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "ent-schema/patterns"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "ent-schema/edges"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "ent-schema/edge-groups"
+                  }
+                ],
+                "collapsed": true
               }
             ]
           },
           "permalinkToSidebar": {
+            "/docs/ent-schema/edge-groups": "tutorialSidebar",
+            "/docs/ent-schema/edges": "tutorialSidebar",
+            "/docs/ent-schema/fields": "tutorialSidebar",
+            "/docs/ent-schema/patterns": "tutorialSidebar",
+            "/docs/ent-schema/schema": "tutorialSidebar",
             "/docs/intro": "tutorialSidebar"
           },
           "docs": [
+            {
+              "unversionedId": "ent-schema/edge-groups",
+              "id": "ent-schema/edge-groups",
+              "isDocsHomePage": false,
+              "title": "Edge Groups",
+              "description": "Edge Groups provide the ability to group a related collection of edges together.",
+              "source": "@site/docs/ent-schema/edge-groups.md",
+              "sourceDirName": "ent-schema",
+              "slug": "/ent-schema/edge-groups",
+              "permalink": "/docs/ent-schema/edge-groups",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/ent-schema/edge-groups.md",
+              "version": "current",
+              "sidebarPosition": 5,
+              "frontMatter": {
+                "sidebar_position": 5
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Edges",
+                "permalink": "/docs/ent-schema/edges"
+              }
+            },
+            {
+              "unversionedId": "ent-schema/edges",
+              "id": "ent-schema/edges",
+              "isDocsHomePage": false,
+              "title": "Edges",
+              "description": "Edges provide the ability to express connections between nodes in the graph. They allow a standardized way to indicate a relationship.",
+              "source": "@site/docs/ent-schema/edges.md",
+              "sourceDirName": "ent-schema",
+              "slug": "/ent-schema/edges",
+              "permalink": "/docs/ent-schema/edges",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/ent-schema/edges.md",
+              "version": "current",
+              "sidebarPosition": 4,
+              "frontMatter": {
+                "sidebar_position": 4
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Patterns",
+                "permalink": "/docs/ent-schema/patterns"
+              },
+              "next": {
+                "title": "Edge Groups",
+                "permalink": "/docs/ent-schema/edge-groups"
+              }
+            },
+            {
+              "unversionedId": "ent-schema/fields",
+              "id": "ent-schema/fields",
+              "isDocsHomePage": false,
+              "title": "Fields",
+              "description": "A field represents each unique item that's part of the object. Each implementation of field configures its representation in the database, TypeScript generated code, and in GraphQL.",
+              "source": "@site/docs/ent-schema/fields.md",
+              "sourceDirName": "ent-schema",
+              "slug": "/ent-schema/fields",
+              "permalink": "/docs/ent-schema/fields",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/ent-schema/fields.md",
+              "version": "current",
+              "sidebarPosition": 2,
+              "frontMatter": {
+                "sidebar_position": 2
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Schema",
+                "permalink": "/docs/ent-schema/schema"
+              },
+              "next": {
+                "title": "Patterns",
+                "permalink": "/docs/ent-schema/patterns"
+              }
+            },
+            {
+              "unversionedId": "ent-schema/patterns",
+              "id": "ent-schema/patterns",
+              "isDocsHomePage": false,
+              "title": "Patterns",
+              "description": "Patterns are shared objects for reusable concepts across schemas.",
+              "source": "@site/docs/ent-schema/patterns.md",
+              "sourceDirName": "ent-schema",
+              "slug": "/ent-schema/patterns",
+              "permalink": "/docs/ent-schema/patterns",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/ent-schema/patterns.md",
+              "version": "current",
+              "sidebarPosition": 3,
+              "frontMatter": {
+                "sidebar_position": 3
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Fields",
+                "permalink": "/docs/ent-schema/fields"
+              },
+              "next": {
+                "title": "Edges",
+                "permalink": "/docs/ent-schema/edges"
+              }
+            },
+            {
+              "unversionedId": "ent-schema/schema",
+              "id": "ent-schema/schema",
+              "isDocsHomePage": false,
+              "title": "Schema",
+              "description": "The Schema is the core building block that's used to configure each node in the product.",
+              "source": "@site/docs/ent-schema/schema.md",
+              "sourceDirName": "ent-schema",
+              "slug": "/ent-schema/schema",
+              "permalink": "/docs/ent-schema/schema",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/ent-schema/schema.md",
+              "version": "current",
+              "sidebarPosition": 1,
+              "frontMatter": {
+                "sidebar_position": 1
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Ent Intro",
+                "permalink": "/docs/intro"
+              },
+              "next": {
+                "title": "Fields",
+                "permalink": "/docs/ent-schema/fields"
+              }
+            },
             {
               "unversionedId": "intro",
               "id": "intro",
@@ -42,7 +200,11 @@
               "frontMatter": {
                 "sidebar_position": 1
               },
-              "sidebar": "tutorialSidebar"
+              "sidebar": "tutorialSidebar",
+              "next": {
+                "title": "Schema",
+                "permalink": "/docs/ent-schema/schema"
+              }
             }
           ]
         }

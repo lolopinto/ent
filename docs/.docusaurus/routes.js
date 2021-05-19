@@ -49,9 +49,34 @@ export default [
 },
 {
   path: '/docs',
-  component: ComponentCreator('/docs','93b'),
+  component: ComponentCreator('/docs','65a'),
   
   routes: [
+{
+  path: '/docs/ent-schema/edge-groups',
+  component: ComponentCreator('/docs/ent-schema/edge-groups','ac6'),
+  exact: true,
+},
+{
+  path: '/docs/ent-schema/edges',
+  component: ComponentCreator('/docs/ent-schema/edges','8fd'),
+  exact: true,
+},
+{
+  path: '/docs/ent-schema/fields',
+  component: ComponentCreator('/docs/ent-schema/fields','b6e'),
+  exact: true,
+},
+{
+  path: '/docs/ent-schema/patterns',
+  component: ComponentCreator('/docs/ent-schema/patterns','40e'),
+  exact: true,
+},
+{
+  path: '/docs/ent-schema/schema',
+  component: ComponentCreator('/docs/ent-schema/schema','465'),
+  exact: true,
+},
 {
   path: '/docs/intro',
   component: ComponentCreator('/docs/intro','e84'),
