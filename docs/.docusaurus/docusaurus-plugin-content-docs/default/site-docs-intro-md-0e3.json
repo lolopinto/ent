@@ -14,9 +14,5 @@
   "frontMatter": {
     "sidebar_position": 1
   },
-  "sidebar": "tutorialSidebar",
-  "next": {
-    "title": "Create a Page",
-    "permalink": "/docs/tutorial-basics/create-a-page"
-  }
+  "sidebar": "tutorialSidebar"
 }

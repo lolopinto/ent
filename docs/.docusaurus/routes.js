@@ -49,57 +49,12 @@ export default [
 },
 {
   path: '/docs',
-  component: ComponentCreator('/docs','2d7'),
+  component: ComponentCreator('/docs','93b'),
   
   routes: [
 {
-  path: '/docs/hello',
-  component: ComponentCreator('/docs/hello','bc1'),
-  exact: true,
-},
-{
   path: '/docs/intro',
   component: ComponentCreator('/docs/intro','e84'),
-  exact: true,
-},
-{
-  path: '/docs/tutorial-basics/congratulations',
-  component: ComponentCreator('/docs/tutorial-basics/congratulations','7ef'),
-  exact: true,
-},
-{
-  path: '/docs/tutorial-basics/create-a-blog-post',
-  component: ComponentCreator('/docs/tutorial-basics/create-a-blog-post','2c8'),
-  exact: true,
-},
-{
-  path: '/docs/tutorial-basics/create-a-document',
-  component: ComponentCreator('/docs/tutorial-basics/create-a-document','f0d'),
-  exact: true,
-},
-{
-  path: '/docs/tutorial-basics/create-a-page',
-  component: ComponentCreator('/docs/tutorial-basics/create-a-page','ca5'),
-  exact: true,
-},
-{
-  path: '/docs/tutorial-basics/deploy-your-site',
-  component: ComponentCreator('/docs/tutorial-basics/deploy-your-site','508'),
-  exact: true,
-},
-{
-  path: '/docs/tutorial-basics/markdown-features',
-  component: ComponentCreator('/docs/tutorial-basics/markdown-features','f90'),
-  exact: true,
-},
-{
-  path: '/docs/tutorial-extras/manage-docs-versions',
-  component: ComponentCreator('/docs/tutorial-extras/manage-docs-versions','d64'),
-  exact: true,
-},
-{
-  path: '/docs/tutorial-extras/translate-your-site',
-  component: ComponentCreator('/docs/tutorial-extras/translate-your-site','16a'),
   exact: true,
 },
 ]

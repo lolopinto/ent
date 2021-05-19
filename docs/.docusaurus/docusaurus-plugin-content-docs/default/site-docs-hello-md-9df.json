@@ -18,11 +18,7 @@
   },
   "sidebar": "tutorialSidebar",
   "previous": {
-    "title": "Congratulations!",
-    "permalink": "/docs/tutorial-basics/congratulations"
-  },
-  "next": {
-    "title": "Manage Docs Versions",
-    "permalink": "/docs/tutorial-extras/manage-docs-versions"
+    "title": "Ent Intro",
+    "permalink": "/docs/intro"
   }
 }
