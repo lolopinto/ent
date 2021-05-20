@@ -49,7 +49,7 @@ export default [
 },
 {
   path: '/docs',
-  component: ComponentCreator('/docs','6f2'),
+  component: ComponentCreator('/docs','93f'),
   
   routes: [
 {
@@ -65,6 +65,11 @@ export default [
 {
   path: '/docs/ent-schema/edges',
   component: ComponentCreator('/docs/ent-schema/edges','8fd'),
+  exact: true,
+},
+{
+  path: '/docs/ent-schema/enums',
+  component: ComponentCreator('/docs/ent-schema/enums','aa1'),
   exact: true,
 },
 {

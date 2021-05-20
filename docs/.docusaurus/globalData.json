@@ -26,6 +26,11 @@
               "sidebar": "tutorialSidebar"
             },
             {
+              "id": "ent-schema/enums",
+              "path": "/docs/ent-schema/enums",
+              "sidebar": "tutorialSidebar"
+            },
+            {
               "id": "ent-schema/fields",
               "path": "/docs/ent-schema/fields",
               "sidebar": "tutorialSidebar"

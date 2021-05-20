@@ -43,6 +43,11 @@
             "type": "link",
             "label": "Actions",
             "href": "/docs/ent-schema/actions"
+          },
+          {
+            "type": "link",
+            "label": "Enums",
+            "href": "/docs/ent-schema/enums"
           }
         ],
         "collapsed": true
@@ -53,6 +58,7 @@
     "/docs/ent-schema/actions": "tutorialSidebar",
     "/docs/ent-schema/edge-groups": "tutorialSidebar",
     "/docs/ent-schema/edges": "tutorialSidebar",
+    "/docs/ent-schema/enums": "tutorialSidebar",
     "/docs/ent-schema/fields": "tutorialSidebar",
     "/docs/ent-schema/patterns": "tutorialSidebar",
     "/docs/ent-schema/schema": "tutorialSidebar",

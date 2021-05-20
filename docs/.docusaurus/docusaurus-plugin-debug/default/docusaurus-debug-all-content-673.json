@@ -47,6 +47,10 @@
                   {
                     "type": "doc",
                     "id": "ent-schema/actions"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "ent-schema/enums"
                   }
                 ],
                 "collapsed": true
@@ -57,6 +61,7 @@
             "/docs/ent-schema/actions": "tutorialSidebar",
             "/docs/ent-schema/edge-groups": "tutorialSidebar",
             "/docs/ent-schema/edges": "tutorialSidebar",
+            "/docs/ent-schema/enums": "tutorialSidebar",
             "/docs/ent-schema/fields": "tutorialSidebar",
             "/docs/ent-schema/patterns": "tutorialSidebar",
             "/docs/ent-schema/schema": "tutorialSidebar",
@@ -83,6 +88,10 @@
               "previous": {
                 "title": "Edge Groups",
                 "permalink": "/docs/ent-schema/edge-groups"
+              },
+              "next": {
+                "title": "Enums",
+                "permalink": "/docs/ent-schema/enums"
               }
             },
             {
@@ -135,6 +144,28 @@
               "next": {
                 "title": "Edge Groups",
                 "permalink": "/docs/ent-schema/edge-groups"
+              }
+            },
+            {
+              "unversionedId": "ent-schema/enums",
+              "id": "ent-schema/enums",
+              "isDocsHomePage": false,
+              "title": "Enums",
+              "description": "Enums can be configured in three different ways.",
+              "source": "@site/docs/ent-schema/enums.md",
+              "sourceDirName": "ent-schema",
+              "slug": "/ent-schema/enums",
+              "permalink": "/docs/ent-schema/enums",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/ent-schema/enums.md",
+              "version": "current",
+              "sidebarPosition": 7,
+              "frontMatter": {
+                "sidebar_position": 7
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Actions",
+                "permalink": "/docs/ent-schema/actions"
               }
             },
             {
