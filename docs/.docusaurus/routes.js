@@ -49,9 +49,34 @@ export default [
 },
 {
   path: '/docs',
-  component: ComponentCreator('/docs','d3e'),
+  component: ComponentCreator('/docs','fb2'),
   
   routes: [
+{
+  path: '/docs/core-concepts/context',
+  component: ComponentCreator('/docs/core-concepts/context','45b'),
+  exact: true,
+},
+{
+  path: '/docs/core-concepts/ent',
+  component: ComponentCreator('/docs/core-concepts/ent','448'),
+  exact: true,
+},
+{
+  path: '/docs/core-concepts/ent-query',
+  component: ComponentCreator('/docs/core-concepts/ent-query','cfd'),
+  exact: true,
+},
+{
+  path: '/docs/core-concepts/privacy-policy',
+  component: ComponentCreator('/docs/core-concepts/privacy-policy','23c'),
+  exact: true,
+},
+{
+  path: '/docs/core-concepts/viewer',
+  component: ComponentCreator('/docs/core-concepts/viewer','4a7'),
+  exact: true,
+},
 {
   path: '/docs/ent-schema/actions',
   component: ComponentCreator('/docs/ent-schema/actions','428'),

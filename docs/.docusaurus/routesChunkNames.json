@@ -29,9 +29,29 @@
     "component": "component---theme-mdx-page-1-f-3-b90",
     "content": "content---markdown-page-393-028"
   },
-  "/docs-d3e": {
+  "/docs-fb2": {
     "component": "component---theme-doc-page-1-be-9be",
     "versionMetadata": "versionMetadata---docs-935-398"
+  },
+  "/docs/core-concepts/context-45b": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-core-concepts-context-89-b-e1f"
+  },
+  "/docs/core-concepts/ent-448": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-core-concepts-ent-69-a-28d"
+  },
+  "/docs/core-concepts/ent-query-cfd": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-core-concepts-ent-queryfa-5-5bb"
+  },
+  "/docs/core-concepts/privacy-policy-23c": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-core-concepts-privacy-policy-673-3bf"
+  },
+  "/docs/core-concepts/viewer-4a7": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-core-concepts-viewerd-42-b38"
   },
   "/docs/ent-schema/actions-428": {
     "component": "component---theme-doc-item-178-a40",

@@ -11,6 +11,31 @@
           "mainDocId": "intro",
           "docs": [
             {
+              "id": "core-concepts/context",
+              "path": "/docs/core-concepts/context",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "core-concepts/ent",
+              "path": "/docs/core-concepts/ent",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "core-concepts/ent-query",
+              "path": "/docs/core-concepts/ent-query",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "core-concepts/privacy-policy",
+              "path": "/docs/core-concepts/privacy-policy",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "core-concepts/viewer",
+              "path": "/docs/core-concepts/viewer",
+              "sidebar": "tutorialSidebar"
+            },
+            {
               "id": "ent-schema/actions",
               "path": "/docs/ent-schema/actions",
               "sidebar": "tutorialSidebar"

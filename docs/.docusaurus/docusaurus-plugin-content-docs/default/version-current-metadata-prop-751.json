@@ -61,10 +61,47 @@
           }
         ],
         "collapsed": true
+      },
+      {
+        "type": "category",
+        "label": "Core Concepts",
+        "items": [
+          {
+            "type": "link",
+            "label": "Viewer",
+            "href": "/docs/core-concepts/viewer"
+          },
+          {
+            "type": "link",
+            "label": "Ent",
+            "href": "/docs/core-concepts/ent"
+          },
+          {
+            "type": "link",
+            "label": "context",
+            "href": "/docs/core-concepts/context"
+          },
+          {
+            "type": "link",
+            "label": "ent-query",
+            "href": "/docs/core-concepts/ent-query"
+          },
+          {
+            "type": "link",
+            "label": "privacy-policy",
+            "href": "/docs/core-concepts/privacy-policy"
+          }
+        ],
+        "collapsed": true
       }
     ]
   },
   "permalinkToSidebar": {
+    "/docs/core-concepts/context": "tutorialSidebar",
+    "/docs/core-concepts/ent": "tutorialSidebar",
+    "/docs/core-concepts/ent-query": "tutorialSidebar",
+    "/docs/core-concepts/privacy-policy": "tutorialSidebar",
+    "/docs/core-concepts/viewer": "tutorialSidebar",
     "/docs/ent-schema/actions": "tutorialSidebar",
     "/docs/ent-schema/constraints": "tutorialSidebar",
     "/docs/ent-schema/edge-groups": "tutorialSidebar",

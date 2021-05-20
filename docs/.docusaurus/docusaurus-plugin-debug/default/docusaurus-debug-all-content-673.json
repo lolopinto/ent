@@ -62,10 +62,42 @@
                   }
                 ],
                 "collapsed": true
+              },
+              {
+                "type": "category",
+                "label": "Core Concepts",
+                "items": [
+                  {
+                    "type": "doc",
+                    "id": "core-concepts/viewer"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "core-concepts/ent"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "core-concepts/context"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "core-concepts/ent-query"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "core-concepts/privacy-policy"
+                  }
+                ],
+                "collapsed": true
               }
             ]
           },
           "permalinkToSidebar": {
+            "/docs/core-concepts/context": "tutorialSidebar",
+            "/docs/core-concepts/ent": "tutorialSidebar",
+            "/docs/core-concepts/ent-query": "tutorialSidebar",
+            "/docs/core-concepts/privacy-policy": "tutorialSidebar",
+            "/docs/core-concepts/viewer": "tutorialSidebar",
             "/docs/ent-schema/actions": "tutorialSidebar",
             "/docs/ent-schema/constraints": "tutorialSidebar",
             "/docs/ent-schema/edge-groups": "tutorialSidebar",
@@ -78,6 +110,123 @@
             "/docs/intro": "tutorialSidebar"
           },
           "docs": [
+            {
+              "unversionedId": "core-concepts/context",
+              "id": "core-concepts/context",
+              "isDocsHomePage": false,
+              "title": "context",
+              "description": "",
+              "source": "@site/docs/core-concepts/context.md",
+              "sourceDirName": "core-concepts",
+              "slug": "/core-concepts/context",
+              "permalink": "/docs/core-concepts/context",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/core-concepts/context.md",
+              "version": "current",
+              "frontMatter": {},
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Ent",
+                "permalink": "/docs/core-concepts/ent"
+              },
+              "next": {
+                "title": "ent-query",
+                "permalink": "/docs/core-concepts/ent-query"
+              }
+            },
+            {
+              "unversionedId": "core-concepts/ent",
+              "id": "core-concepts/ent",
+              "isDocsHomePage": false,
+              "title": "Ent",
+              "description": "The Ent represents a single node in the graph. Generated from the schema, it can be configured as needed based on the application.",
+              "source": "@site/docs/core-concepts/ent.md",
+              "sourceDirName": "core-concepts",
+              "slug": "/core-concepts/ent",
+              "permalink": "/docs/core-concepts/ent",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/core-concepts/ent.md",
+              "version": "current",
+              "sidebarPosition": 2,
+              "frontMatter": {
+                "sidebar_position": 2
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Viewer",
+                "permalink": "/docs/core-concepts/viewer"
+              },
+              "next": {
+                "title": "context",
+                "permalink": "/docs/core-concepts/context"
+              }
+            },
+            {
+              "unversionedId": "core-concepts/ent-query",
+              "id": "core-concepts/ent-query",
+              "isDocsHomePage": false,
+              "title": "ent-query",
+              "description": "",
+              "source": "@site/docs/core-concepts/ent-query.md",
+              "sourceDirName": "core-concepts",
+              "slug": "/core-concepts/ent-query",
+              "permalink": "/docs/core-concepts/ent-query",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/core-concepts/ent-query.md",
+              "version": "current",
+              "frontMatter": {},
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "context",
+                "permalink": "/docs/core-concepts/context"
+              },
+              "next": {
+                "title": "privacy-policy",
+                "permalink": "/docs/core-concepts/privacy-policy"
+              }
+            },
+            {
+              "unversionedId": "core-concepts/privacy-policy",
+              "id": "core-concepts/privacy-policy",
+              "isDocsHomePage": false,
+              "title": "privacy-policy",
+              "description": "",
+              "source": "@site/docs/core-concepts/privacy-policy.md",
+              "sourceDirName": "core-concepts",
+              "slug": "/core-concepts/privacy-policy",
+              "permalink": "/docs/core-concepts/privacy-policy",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/core-concepts/privacy-policy.md",
+              "version": "current",
+              "frontMatter": {},
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "ent-query",
+                "permalink": "/docs/core-concepts/ent-query"
+              }
+            },
+            {
+              "unversionedId": "core-concepts/viewer",
+              "id": "core-concepts/viewer",
+              "isDocsHomePage": false,
+              "title": "Viewer",
+              "description": "Viewer represents who's viewing the content in your product or app. Every time data is loaded or changed, the Viewer is required to determine if that action can be performed.",
+              "source": "@site/docs/core-concepts/viewer.md",
+              "sourceDirName": "core-concepts",
+              "slug": "/core-concepts/viewer",
+              "permalink": "/docs/core-concepts/viewer",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/core-concepts/viewer.md",
+              "version": "current",
+              "sidebarPosition": 1,
+              "frontMatter": {
+                "sidebar_position": 1
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Indices",
+                "permalink": "/docs/ent-schema/indices"
+              },
+              "next": {
+                "title": "Ent",
+                "permalink": "/docs/core-concepts/ent"
+              }
+            },
             {
               "unversionedId": "ent-schema/actions",
               "id": "ent-schema/actions",
@@ -254,6 +403,10 @@
               "previous": {
                 "title": "Constraints",
                 "permalink": "/docs/ent-schema/constraints"
+              },
+              "next": {
+                "title": "Viewer",
+                "permalink": "/docs/core-concepts/viewer"
               }
             },
             {

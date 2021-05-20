@@ -116,8 +116,9 @@ method that returns a default value if none is provided when editing an instance
 
 ### polymorphic
 Only currently works with `UUIDType`.
-Indicates that this id field can represent different types and we need to keep track of the type so that we know how to find it
-We end up generating a derivedField to represent the `type` of the object set.
+Indicates that this id field can represent different types and we need to keep track of the type so that we know how to find it.
+
+We end up generating a [derivedField](#derivedFields) to represent the `type` of the object set.
 
 If not `true` and a list of types is instead passed, only types that matches the given types are allowed to be passed in.
 
