@@ -11,8 +11,18 @@
           "mainDocId": "intro",
           "docs": [
             {
+              "id": "core-concepts/auth",
+              "path": "/docs/core-concepts/auth",
+              "sidebar": "tutorialSidebar"
+            },
+            {
               "id": "core-concepts/context",
               "path": "/docs/core-concepts/context",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "core-concepts/context-caching",
+              "path": "/docs/core-concepts/context-caching",
               "sidebar": "tutorialSidebar"
             },
             {

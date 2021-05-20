@@ -73,19 +73,27 @@
                   },
                   {
                     "type": "doc",
-                    "id": "core-concepts/ent"
-                  },
-                  {
-                    "type": "doc",
                     "id": "core-concepts/context"
                   },
                   {
                     "type": "doc",
-                    "id": "core-concepts/ent-query"
+                    "id": "core-concepts/ent"
                   },
                   {
                     "type": "doc",
                     "id": "core-concepts/privacy-policy"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "core-concepts/auth"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "core-concepts/context-caching"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "core-concepts/ent-query"
                   }
                 ],
                 "collapsed": true
@@ -93,7 +101,9 @@
             ]
           },
           "permalinkToSidebar": {
+            "/docs/core-concepts/auth": "tutorialSidebar",
             "/docs/core-concepts/context": "tutorialSidebar",
+            "/docs/core-concepts/context-caching": "tutorialSidebar",
             "/docs/core-concepts/ent": "tutorialSidebar",
             "/docs/core-concepts/ent-query": "tutorialSidebar",
             "/docs/core-concepts/privacy-policy": "tutorialSidebar",
@@ -111,22 +121,71 @@
           },
           "docs": [
             {
+              "unversionedId": "core-concepts/auth",
+              "id": "core-concepts/auth",
+              "isDocsHomePage": false,
+              "title": "auth",
+              "description": "",
+              "source": "@site/docs/core-concepts/auth.md",
+              "sourceDirName": "core-concepts",
+              "slug": "/core-concepts/auth",
+              "permalink": "/docs/core-concepts/auth",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/core-concepts/auth.md",
+              "version": "current",
+              "frontMatter": {},
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Privacy Policy",
+                "permalink": "/docs/core-concepts/privacy-policy"
+              },
+              "next": {
+                "title": "context-caching",
+                "permalink": "/docs/core-concepts/context-caching"
+              }
+            },
+            {
               "unversionedId": "core-concepts/context",
               "id": "core-concepts/context",
               "isDocsHomePage": false,
-              "title": "context",
-              "description": "",
+              "title": "Context",
+              "description": "Context is a simple object that represents, well, the context of what's happening.",
               "source": "@site/docs/core-concepts/context.md",
               "sourceDirName": "core-concepts",
               "slug": "/core-concepts/context",
               "permalink": "/docs/core-concepts/context",
               "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/core-concepts/context.md",
               "version": "current",
+              "sidebarPosition": 2,
+              "frontMatter": {
+                "sidebar_position": 2
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Viewer",
+                "permalink": "/docs/core-concepts/viewer"
+              },
+              "next": {
+                "title": "Ent",
+                "permalink": "/docs/core-concepts/ent"
+              }
+            },
+            {
+              "unversionedId": "core-concepts/context-caching",
+              "id": "core-concepts/context-caching",
+              "isDocsHomePage": false,
+              "title": "context-caching",
+              "description": "",
+              "source": "@site/docs/core-concepts/context-caching.md",
+              "sourceDirName": "core-concepts",
+              "slug": "/core-concepts/context-caching",
+              "permalink": "/docs/core-concepts/context-caching",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/core-concepts/context-caching.md",
+              "version": "current",
               "frontMatter": {},
               "sidebar": "tutorialSidebar",
               "previous": {
-                "title": "Ent",
-                "permalink": "/docs/core-concepts/ent"
+                "title": "auth",
+                "permalink": "/docs/core-concepts/auth"
               },
               "next": {
                 "title": "ent-query",
@@ -145,18 +204,18 @@
               "permalink": "/docs/core-concepts/ent",
               "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/core-concepts/ent.md",
               "version": "current",
-              "sidebarPosition": 2,
+              "sidebarPosition": 3,
               "frontMatter": {
-                "sidebar_position": 2
+                "sidebar_position": 3
               },
               "sidebar": "tutorialSidebar",
               "previous": {
-                "title": "Viewer",
-                "permalink": "/docs/core-concepts/viewer"
+                "title": "Context",
+                "permalink": "/docs/core-concepts/context"
               },
               "next": {
-                "title": "context",
-                "permalink": "/docs/core-concepts/context"
+                "title": "Privacy Policy",
+                "permalink": "/docs/core-concepts/privacy-policy"
               }
             },
             {
@@ -174,31 +233,34 @@
               "frontMatter": {},
               "sidebar": "tutorialSidebar",
               "previous": {
-                "title": "context",
-                "permalink": "/docs/core-concepts/context"
-              },
-              "next": {
-                "title": "privacy-policy",
-                "permalink": "/docs/core-concepts/privacy-policy"
+                "title": "context-caching",
+                "permalink": "/docs/core-concepts/context-caching"
               }
             },
             {
               "unversionedId": "core-concepts/privacy-policy",
               "id": "core-concepts/privacy-policy",
               "isDocsHomePage": false,
-              "title": "privacy-policy",
-              "description": "",
+              "title": "Privacy Policy",
+              "description": "The PrivacyPolicy is used to apply permission checks on an object. It's used in Ents and Actions.",
               "source": "@site/docs/core-concepts/privacy-policy.md",
               "sourceDirName": "core-concepts",
               "slug": "/core-concepts/privacy-policy",
               "permalink": "/docs/core-concepts/privacy-policy",
               "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/core-concepts/privacy-policy.md",
               "version": "current",
-              "frontMatter": {},
+              "sidebarPosition": 4,
+              "frontMatter": {
+                "sidebar_position": 4
+              },
               "sidebar": "tutorialSidebar",
               "previous": {
-                "title": "ent-query",
-                "permalink": "/docs/core-concepts/ent-query"
+                "title": "Ent",
+                "permalink": "/docs/core-concepts/ent"
+              },
+              "next": {
+                "title": "auth",
+                "permalink": "/docs/core-concepts/auth"
               }
             },
             {
@@ -223,8 +285,8 @@
                 "permalink": "/docs/ent-schema/indices"
               },
               "next": {
-                "title": "Ent",
-                "permalink": "/docs/core-concepts/ent"
+                "title": "Context",
+                "permalink": "/docs/core-concepts/context"
               }
             },
             {

@@ -49,7 +49,7 @@ ent-rsvp=#
 ```
 
 ## primary key constraint
-The easiest way to add a unique constraint on a single column is to use the [primaryKey modifier](http://localhost:3000/docs/ent-schema/fields#primaryKey) on the field.
+The easiest way to add a unique constraint on a single column is to use the [primaryKey modifier](http://localhost:3000/docs/ent-schema/fields#primarykey) on the field.
 
 To add a multi-column constraint:
 ```ts title="src/schema/user_photo.ts"
@@ -90,7 +90,7 @@ TODO: Currently, there's an issue here that needs to be fixed: https://github.co
 
 
 ## foreign key constraint
-The easiest way to add a foreign key constraint on a single column is to use the [foreignKey modifier](http://localhost:3000/docs/ent-schema/fields#foreignKey) on the field.
+The easiest way to add a foreign key constraint on a single column is to use the [foreignKey modifier](http://localhost:3000/docs/ent-schema/fields#foreignkey) on the field.
 
 The columns being referenced on the other table need to be unique either via a multi-column unique constraint or primary key.
 

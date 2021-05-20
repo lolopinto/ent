@@ -22,7 +22,7 @@ There are three types of edges supported.
 ### one-way edge
 This is the default. This can be used for 1-many edges.
 
-For example, given an events based system, the creator can be stored in the `events` table and the list of created events for a user can be represented with an edge. This can also be represented with an [indexed foreign key](/docs/ent-schema/fields#foreignKey) on the `events` table but if you'd rather not have foreign keys, here's an easy alternative.
+For example, given an events based system, the creator can be stored in the `events` table and the list of created events for a user can be represented with an edge. This can also be represented with an [indexed foreign key](/docs/ent-schema/fields#foreignkey) on the `events` table but if you'd rather not have foreign keys, here's an easy alternative.
 ```ts  title="src/schema/event.ts"
 export default class Event extends BaseEntSchema implements Schema {
   fields: Field[] = [

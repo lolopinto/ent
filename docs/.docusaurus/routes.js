@@ -49,12 +49,22 @@ export default [
 },
 {
   path: '/docs',
-  component: ComponentCreator('/docs','fb2'),
+  component: ComponentCreator('/docs','f7e'),
   
   routes: [
 {
+  path: '/docs/core-concepts/auth',
+  component: ComponentCreator('/docs/core-concepts/auth','847'),
+  exact: true,
+},
+{
   path: '/docs/core-concepts/context',
   component: ComponentCreator('/docs/core-concepts/context','45b'),
+  exact: true,
+},
+{
+  path: '/docs/core-concepts/context-caching',
+  component: ComponentCreator('/docs/core-concepts/context-caching','650'),
   exact: true,
 },
 {

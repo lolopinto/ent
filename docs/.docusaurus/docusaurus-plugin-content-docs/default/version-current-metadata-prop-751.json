@@ -73,23 +73,33 @@
           },
           {
             "type": "link",
+            "label": "Context",
+            "href": "/docs/core-concepts/context"
+          },
+          {
+            "type": "link",
             "label": "Ent",
             "href": "/docs/core-concepts/ent"
           },
           {
             "type": "link",
-            "label": "context",
-            "href": "/docs/core-concepts/context"
+            "label": "Privacy Policy",
+            "href": "/docs/core-concepts/privacy-policy"
+          },
+          {
+            "type": "link",
+            "label": "auth",
+            "href": "/docs/core-concepts/auth"
+          },
+          {
+            "type": "link",
+            "label": "context-caching",
+            "href": "/docs/core-concepts/context-caching"
           },
           {
             "type": "link",
             "label": "ent-query",
             "href": "/docs/core-concepts/ent-query"
-          },
-          {
-            "type": "link",
-            "label": "privacy-policy",
-            "href": "/docs/core-concepts/privacy-policy"
           }
         ],
         "collapsed": true
@@ -97,7 +107,9 @@
     ]
   },
   "permalinkToSidebar": {
+    "/docs/core-concepts/auth": "tutorialSidebar",
     "/docs/core-concepts/context": "tutorialSidebar",
+    "/docs/core-concepts/context-caching": "tutorialSidebar",
     "/docs/core-concepts/ent": "tutorialSidebar",
     "/docs/core-concepts/ent-query": "tutorialSidebar",
     "/docs/core-concepts/privacy-policy": "tutorialSidebar",
