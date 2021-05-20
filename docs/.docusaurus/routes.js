@@ -49,12 +49,12 @@ export default [
 },
 {
   path: '/docs',
-  component: ComponentCreator('/docs','f7e'),
+  component: ComponentCreator('/docs','dae'),
   
   routes: [
 {
-  path: '/docs/core-concepts/auth',
-  component: ComponentCreator('/docs/core-concepts/auth','847'),
+  path: '/docs/core-concepts/authentication',
+  component: ComponentCreator('/docs/core-concepts/authentication','cdd'),
   exact: true,
 },
 {

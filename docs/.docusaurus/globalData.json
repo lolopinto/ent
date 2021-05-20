@@ -11,8 +11,8 @@
           "mainDocId": "intro",
           "docs": [
             {
-              "id": "core-concepts/auth",
-              "path": "/docs/core-concepts/auth",
+              "id": "core-concepts/authentication",
+              "path": "/docs/core-concepts/authentication",
               "sidebar": "tutorialSidebar"
             },
             {

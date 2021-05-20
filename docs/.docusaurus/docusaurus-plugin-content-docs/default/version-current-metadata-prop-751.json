@@ -88,8 +88,8 @@
           },
           {
             "type": "link",
-            "label": "auth",
-            "href": "/docs/core-concepts/auth"
+            "label": "Authentication",
+            "href": "/docs/core-concepts/authentication"
           },
           {
             "type": "link",
@@ -107,7 +107,7 @@
     ]
   },
   "permalinkToSidebar": {
-    "/docs/core-concepts/auth": "tutorialSidebar",
+    "/docs/core-concepts/authentication": "tutorialSidebar",
     "/docs/core-concepts/context": "tutorialSidebar",
     "/docs/core-concepts/context-caching": "tutorialSidebar",
     "/docs/core-concepts/ent": "tutorialSidebar",

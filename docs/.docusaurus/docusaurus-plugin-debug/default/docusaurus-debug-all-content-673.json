@@ -85,7 +85,7 @@
                   },
                   {
                     "type": "doc",
-                    "id": "core-concepts/auth"
+                    "id": "core-concepts/authentication"
                   },
                   {
                     "type": "doc",
@@ -101,7 +101,7 @@
             ]
           },
           "permalinkToSidebar": {
-            "/docs/core-concepts/auth": "tutorialSidebar",
+            "/docs/core-concepts/authentication": "tutorialSidebar",
             "/docs/core-concepts/context": "tutorialSidebar",
             "/docs/core-concepts/context-caching": "tutorialSidebar",
             "/docs/core-concepts/ent": "tutorialSidebar",
@@ -121,18 +121,21 @@
           },
           "docs": [
             {
-              "unversionedId": "core-concepts/auth",
-              "id": "core-concepts/auth",
+              "unversionedId": "core-concepts/authentication",
+              "id": "core-concepts/authentication",
               "isDocsHomePage": false,
-              "title": "auth",
-              "description": "",
-              "source": "@site/docs/core-concepts/auth.md",
+              "title": "Authentication",
+              "description": "Authentication is a very complicated topic and we're not going to dive too deep into all that it entails here.",
+              "source": "@site/docs/core-concepts/authentication.md",
               "sourceDirName": "core-concepts",
-              "slug": "/core-concepts/auth",
-              "permalink": "/docs/core-concepts/auth",
-              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/core-concepts/auth.md",
+              "slug": "/core-concepts/authentication",
+              "permalink": "/docs/core-concepts/authentication",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/core-concepts/authentication.md",
               "version": "current",
-              "frontMatter": {},
+              "sidebarPosition": 5,
+              "frontMatter": {
+                "sidebar_position": 5
+              },
               "sidebar": "tutorialSidebar",
               "previous": {
                 "title": "Privacy Policy",
@@ -184,8 +187,8 @@
               "frontMatter": {},
               "sidebar": "tutorialSidebar",
               "previous": {
-                "title": "auth",
-                "permalink": "/docs/core-concepts/auth"
+                "title": "Authentication",
+                "permalink": "/docs/core-concepts/authentication"
               },
               "next": {
                 "title": "ent-query",
@@ -259,8 +262,8 @@
                 "permalink": "/docs/core-concepts/ent"
               },
               "next": {
-                "title": "auth",
-                "permalink": "/docs/core-concepts/auth"
+                "title": "Authentication",
+                "permalink": "/docs/core-concepts/authentication"
               }
             },
             {
