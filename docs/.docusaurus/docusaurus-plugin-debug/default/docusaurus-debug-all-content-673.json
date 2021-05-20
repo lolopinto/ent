@@ -51,6 +51,10 @@
                   {
                     "type": "doc",
                     "id": "ent-schema/enums"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "ent-schema/constraints"
                   }
                 ],
                 "collapsed": true
@@ -59,6 +63,7 @@
           },
           "permalinkToSidebar": {
             "/docs/ent-schema/actions": "tutorialSidebar",
+            "/docs/ent-schema/constraints": "tutorialSidebar",
             "/docs/ent-schema/edge-groups": "tutorialSidebar",
             "/docs/ent-schema/edges": "tutorialSidebar",
             "/docs/ent-schema/enums": "tutorialSidebar",
@@ -90,6 +95,28 @@
                 "permalink": "/docs/ent-schema/edge-groups"
               },
               "next": {
+                "title": "Enums",
+                "permalink": "/docs/ent-schema/enums"
+              }
+            },
+            {
+              "unversionedId": "ent-schema/constraints",
+              "id": "ent-schema/constraints",
+              "isDocsHomePage": false,
+              "title": "Constraints",
+              "description": "This allows configuring constraints in the database",
+              "source": "@site/docs/ent-schema/constraints.md",
+              "sourceDirName": "ent-schema",
+              "slug": "/ent-schema/constraints",
+              "permalink": "/docs/ent-schema/constraints",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/ent-schema/constraints.md",
+              "version": "current",
+              "sidebarPosition": 8,
+              "frontMatter": {
+                "sidebar_position": 8
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
                 "title": "Enums",
                 "permalink": "/docs/ent-schema/enums"
               }
@@ -166,6 +193,10 @@
               "previous": {
                 "title": "Actions",
                 "permalink": "/docs/ent-schema/actions"
+              },
+              "next": {
+                "title": "Constraints",
+                "permalink": "/docs/ent-schema/constraints"
               }
             },
             {

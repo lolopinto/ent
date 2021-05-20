@@ -49,12 +49,17 @@ export default [
 },
 {
   path: '/docs',
-  component: ComponentCreator('/docs','93f'),
+  component: ComponentCreator('/docs','a01'),
   
   routes: [
 {
   path: '/docs/ent-schema/actions',
   component: ComponentCreator('/docs/ent-schema/actions','428'),
+  exact: true,
+},
+{
+  path: '/docs/ent-schema/constraints',
+  component: ComponentCreator('/docs/ent-schema/constraints','00d'),
   exact: true,
 },
 {
