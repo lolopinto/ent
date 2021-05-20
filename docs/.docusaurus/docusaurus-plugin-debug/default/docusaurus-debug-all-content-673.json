@@ -55,6 +55,10 @@
                   {
                     "type": "doc",
                     "id": "ent-schema/constraints"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "ent-schema/indices"
                   }
                 ],
                 "collapsed": true
@@ -68,6 +72,7 @@
             "/docs/ent-schema/edges": "tutorialSidebar",
             "/docs/ent-schema/enums": "tutorialSidebar",
             "/docs/ent-schema/fields": "tutorialSidebar",
+            "/docs/ent-schema/indices": "tutorialSidebar",
             "/docs/ent-schema/patterns": "tutorialSidebar",
             "/docs/ent-schema/schema": "tutorialSidebar",
             "/docs/intro": "tutorialSidebar"
@@ -119,6 +124,10 @@
               "previous": {
                 "title": "Enums",
                 "permalink": "/docs/ent-schema/enums"
+              },
+              "next": {
+                "title": "Indices",
+                "permalink": "/docs/ent-schema/indices"
               }
             },
             {
@@ -223,6 +232,28 @@
               "next": {
                 "title": "Patterns",
                 "permalink": "/docs/ent-schema/patterns"
+              }
+            },
+            {
+              "unversionedId": "ent-schema/indices",
+              "id": "ent-schema/indices",
+              "isDocsHomePage": false,
+              "title": "Indices",
+              "description": "This allows configuring indices in the database.",
+              "source": "@site/docs/ent-schema/indices.md",
+              "sourceDirName": "ent-schema",
+              "slug": "/ent-schema/indices",
+              "permalink": "/docs/ent-schema/indices",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/ent-schema/indices.md",
+              "version": "current",
+              "sidebarPosition": 9,
+              "frontMatter": {
+                "sidebar_position": 9
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Constraints",
+                "permalink": "/docs/ent-schema/constraints"
               }
             },
             {

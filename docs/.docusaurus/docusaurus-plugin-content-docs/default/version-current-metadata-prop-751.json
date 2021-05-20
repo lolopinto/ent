@@ -53,6 +53,11 @@
             "type": "link",
             "label": "Constraints",
             "href": "/docs/ent-schema/constraints"
+          },
+          {
+            "type": "link",
+            "label": "Indices",
+            "href": "/docs/ent-schema/indices"
           }
         ],
         "collapsed": true
@@ -66,6 +71,7 @@
     "/docs/ent-schema/edges": "tutorialSidebar",
     "/docs/ent-schema/enums": "tutorialSidebar",
     "/docs/ent-schema/fields": "tutorialSidebar",
+    "/docs/ent-schema/indices": "tutorialSidebar",
     "/docs/ent-schema/patterns": "tutorialSidebar",
     "/docs/ent-schema/schema": "tutorialSidebar",
     "/docs/intro": "tutorialSidebar"

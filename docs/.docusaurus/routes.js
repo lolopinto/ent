@@ -49,7 +49,7 @@ export default [
 },
 {
   path: '/docs',
-  component: ComponentCreator('/docs','a01'),
+  component: ComponentCreator('/docs','d3e'),
   
   routes: [
 {
@@ -80,6 +80,11 @@ export default [
 {
   path: '/docs/ent-schema/fields',
   component: ComponentCreator('/docs/ent-schema/fields','b6e'),
+  exact: true,
+},
+{
+  path: '/docs/ent-schema/indices',
+  component: ComponentCreator('/docs/ent-schema/indices','675'),
   exact: true,
 },
 {
