@@ -3,9 +3,8 @@
 import { Action, WriteOperation, Changeset } from "@lolopinto/ent/action";
 import {
   Viewer,
-  AllowIfHasIdentity,
+  AllowIfViewerHasIdentityPrivacyPolicy,
   PrivacyPolicy,
-  AlwaysDenyRule,
 } from "@lolopinto/ent";
 import { User } from "src/ent/";
 import { UserBuilder, UserInput } from "src/ent/user/actions/user_builder";
@@ -30,9 +29,7 @@ export class CreateUserActionBase implements Action<User> {
   }
 
   getPrivacyPolicy(): PrivacyPolicy {
-    return {
-      rules: [AllowIfHasIdentity, AlwaysDenyRule],
-    };
+    return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
   getInput(): UserInput {

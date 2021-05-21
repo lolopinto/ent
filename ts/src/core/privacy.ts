@@ -486,14 +486,18 @@ export async function applyPrivacyPolicyX(
   throw new EntInvalidPrivacyPolicyError(policy, ent);
 }
 
-export const AlwaysAllowPrivacyPolicy = {
+export const AlwaysAllowPrivacyPolicy: PrivacyPolicy = {
   rules: [AlwaysAllowRule],
 };
 
-export const AlwaysDenyPrivacyPolicy = {
+export const AlwaysDenyPrivacyPolicy: PrivacyPolicy = {
   rules: [AlwaysDenyRule],
 };
 
-export const AllowIfViewerPrivacyPolicy = {
+export const AllowIfViewerPrivacyPolicy: PrivacyPolicy = {
   rules: [AllowIfViewerRule, AlwaysDenyRule],
+};
+
+export const AllowIfViewerHasIdentityPrivacyPolicy: PrivacyPolicy = {
+  rules: [AllowIfHasIdentity, AlwaysDenyRule],
 };

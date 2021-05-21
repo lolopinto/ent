@@ -8,8 +8,7 @@ import {
   loadEntX,
   loadEnts,
   LoadEntOptions,
-  AlwaysDenyRule,
-  AllowIfViewerRule,
+  AllowIfViewerPrivacyPolicy,
   PrivacyPolicy,
   ObjectLoaderFactory,
   Context,
@@ -55,11 +54,8 @@ export class AddressBase {
     this.country = data.country;
   }
 
-  // by default, we always deny and it's up to the ent
-  // to overwrite this privacy policy in its subclasses
-  privacyPolicy: PrivacyPolicy = {
-    rules: [AllowIfViewerRule, AlwaysDenyRule],
-  };
+  // default privacyPolicy is Viewer can see themselves
+  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
 
   static async load<T extends AddressBase>(
     this: new (viewer: Viewer, data: Data) => T,

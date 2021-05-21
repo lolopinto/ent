@@ -159,7 +159,6 @@ type EventToMaybeEdge implements Edge {
 }
 
 enum EventRsvpStatus {
-  INVITED
   ATTENDING
   DECLINED
   MAYBE
@@ -263,6 +262,8 @@ type Mutation {
   eventCreate(input: EventCreateInput!): EventCreatePayload!
   eventDelete(input: EventDeleteInput!): EventDeletePayload!
   eventEdit(input: EventEditInput!): EventEditPayload!
+  eventRemoveHost(input: EventRemoveHostInput!): EventRemoveHostPayload!
+  eventRsvpStatusEdit(input: EventRsvpStatusEditInput!): EventRsvpStatusEditPayload!
   holidayCreate(input: HolidayCreateInput!): HolidayCreatePayload!
   hoursOfOperationCreate(input: HoursOfOperationCreateInput!): HoursOfOperationCreatePayload!
   phoneNumberEdit(input: PhoneNumberEditInput!): PhoneNumberEditPayload!
@@ -399,6 +400,31 @@ input EventEditInput {
   startTime: Time
   endTime: Time
   eventLocation: String
+}
+
+type EventRemoveHostPayload {
+  event: Event!
+}
+
+input EventRemoveHostInput {
+  eventID: ID!
+  hostID: ID!
+}
+
+type EventRsvpStatusEditPayload {
+  event: Event!
+}
+
+input EventRsvpStatusEditInput {
+  eventID: ID!
+  rsvpStatus: EventRsvpStatusInput!
+  userID: ID!
+}
+
+enum EventRsvpStatusInput {
+  ATTENDING
+  DECLINED
+  MAYBE
 }
 
 type HolidayCreatePayload {

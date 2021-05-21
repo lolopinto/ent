@@ -71,8 +71,11 @@ export {
   applyPrivacyPolicy,
   applyPrivacyPolicyX,
   AlwaysAllowPrivacyPolicy,
+  AlwaysDenyPrivacyPolicy,
   AllowIfConditionAppliesRule,
   AllowIfSubPolicyAllowsRule,
+  AllowIfViewerPrivacyPolicy,
+  AllowIfViewerHasIdentityPrivacyPolicy,
 } from "./core/privacy";
 export * from "./core/query";
 
