@@ -771,13 +771,8 @@ export class EdgeOperation implements DataOperation {
     nodeType: string,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation {
-    let [
-      id2Val,
-      id2Type,
-      id2Placeholder,
-      id1Val,
-      id1Placeholder,
-    ] = EdgeOperation.resolveIDs(builder, id1);
+    let [id2Val, id2Type, id2Placeholder, id1Val, id1Placeholder] =
+      EdgeOperation.resolveIDs(builder, id1);
     let [data, dataPlaceholder] = EdgeOperation.resolveData(options?.data);
     const edge: AssocEdgeInput = {
       id1: id1Val,
@@ -806,13 +801,8 @@ export class EdgeOperation implements DataOperation {
     nodeType: string,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation {
-    let [
-      id1Val,
-      id1Type,
-      id1Placeholder,
-      id2Val,
-      id2Placeholder,
-    ] = EdgeOperation.resolveIDs(builder, id2);
+    let [id1Val, id1Type, id1Placeholder, id2Val, id2Placeholder] =
+      EdgeOperation.resolveIDs(builder, id2);
     let [data, dataPlaceholder] = EdgeOperation.resolveData(options?.data);
 
     const edge: AssocEdgeInput = {
@@ -1023,7 +1013,7 @@ export class AssocEdge {
   edgeType: string;
   id2: ID;
   id2Type: string;
-  time?: Date;
+  time: Date;
   data?: string | null;
 
   constructor(data: Data) {

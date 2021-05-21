@@ -98,7 +98,7 @@
           },
           {
             "type": "link",
-            "label": "ent-query",
+            "label": "Ent Query",
             "href": "/docs/core-concepts/ent-query"
           }
         ],

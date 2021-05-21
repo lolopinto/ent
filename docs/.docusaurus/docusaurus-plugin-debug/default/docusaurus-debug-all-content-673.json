@@ -194,7 +194,7 @@
                 "permalink": "/docs/core-concepts/authentication"
               },
               "next": {
-                "title": "ent-query",
+                "title": "Ent Query",
                 "permalink": "/docs/core-concepts/ent-query"
               }
             },
@@ -228,15 +228,18 @@
               "unversionedId": "core-concepts/ent-query",
               "id": "core-concepts/ent-query",
               "isDocsHomePage": false,
-              "title": "ent-query",
-              "description": "",
+              "title": "Ent Query",
+              "description": "Ent Query is the way to query for edge data, counts, or the ents at the end of the edge. It provides pagination and eventually ordering, filtering and custom ways to slice the data. We currently have two types of EntQueries:",
               "source": "@site/docs/core-concepts/ent-query.md",
               "sourceDirName": "core-concepts",
               "slug": "/core-concepts/ent-query",
               "permalink": "/docs/core-concepts/ent-query",
               "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/core-concepts/ent-query.md",
               "version": "current",
-              "frontMatter": {},
+              "sidebarPosition": 7,
+              "frontMatter": {
+                "sidebar_position": 7
+              },
               "sidebar": "tutorialSidebar",
               "previous": {
                 "title": "Context Caching",
