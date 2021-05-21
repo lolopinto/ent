@@ -93,7 +93,7 @@
           },
           {
             "type": "link",
-            "label": "context-caching",
+            "label": "Context Caching",
             "href": "/docs/core-concepts/context-caching"
           },
           {

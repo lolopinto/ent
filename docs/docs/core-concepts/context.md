@@ -13,7 +13,7 @@ export interface Context {
 }
 ```
 
-There's the simple `Context` interface shown above which has a `getViewer` method which returns the [`Viewer`](/docs/core-concepts/viewer) and a `cache` property which is used for [context-caching](/docs/core-concepts/caching).
+There's the simple `Context` interface shown above which has a `getViewer` method which returns the [`Viewer`](/docs/core-concepts/viewer) and a `cache` property which is used for [context-caching](/docs/core-concepts/context-caching).
 
 
 ## RequestContext
@@ -47,7 +47,7 @@ It's highly recommended that a new `Context` is created for each new request. Th
 
 Since we implement [context-caching](/docs/core-concepts/caching), we want to make sure that any data cached in one request is not inadvertently served incorrectly in a different request.
 
-The default generated graphql handler helps with that:
+The default generated GraphQL handler helps with that:
 
 ```ts title="src/graphql/index.ts"
 //...

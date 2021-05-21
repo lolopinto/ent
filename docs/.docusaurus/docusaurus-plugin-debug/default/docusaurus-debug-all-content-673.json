@@ -142,7 +142,7 @@
                 "permalink": "/docs/core-concepts/privacy-policy"
               },
               "next": {
-                "title": "context-caching",
+                "title": "Context Caching",
                 "permalink": "/docs/core-concepts/context-caching"
               }
             },
@@ -176,15 +176,18 @@
               "unversionedId": "core-concepts/context-caching",
               "id": "core-concepts/context-caching",
               "isDocsHomePage": false,
-              "title": "context-caching",
-              "description": "",
+              "title": "Context Caching",
+              "description": "To speed up applications, we end up caching data in memory to avoid repeated trips to the database. Since we create a new Context per request, we depend on the context cache (if available).",
               "source": "@site/docs/core-concepts/context-caching.md",
               "sourceDirName": "core-concepts",
               "slug": "/core-concepts/context-caching",
               "permalink": "/docs/core-concepts/context-caching",
               "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/core-concepts/context-caching.md",
               "version": "current",
-              "frontMatter": {},
+              "sidebarPosition": 6,
+              "frontMatter": {
+                "sidebar_position": 6
+              },
               "sidebar": "tutorialSidebar",
               "previous": {
                 "title": "Authentication",
@@ -236,7 +239,7 @@
               "frontMatter": {},
               "sidebar": "tutorialSidebar",
               "previous": {
-                "title": "context-caching",
+                "title": "Context Caching",
                 "permalink": "/docs/core-concepts/context-caching"
               }
             },
