@@ -152,6 +152,21 @@
             "type": "link",
             "label": "Triggers",
             "href": "/docs/actions/triggers"
+          },
+          {
+            "type": "link",
+            "label": "Observers",
+            "href": "/docs/actions/observers"
+          },
+          {
+            "type": "link",
+            "label": "Builder",
+            "href": "/docs/actions/builder"
+          },
+          {
+            "type": "link",
+            "label": "Input",
+            "href": "/docs/actions/input"
           }
         ],
         "collapsed": true
@@ -161,10 +176,13 @@
   "permalinkToSidebar": {
     "/docs/actions/action": "tutorialSidebar",
     "/docs/actions/add-edge-action": "tutorialSidebar",
+    "/docs/actions/builder": "tutorialSidebar",
     "/docs/actions/create-action": "tutorialSidebar",
     "/docs/actions/delete-action": "tutorialSidebar",
     "/docs/actions/edge-group-action": "tutorialSidebar",
     "/docs/actions/edit-action": "tutorialSidebar",
+    "/docs/actions/input": "tutorialSidebar",
+    "/docs/actions/observers": "tutorialSidebar",
     "/docs/actions/remove-edge-action": "tutorialSidebar",
     "/docs/actions/triggers": "tutorialSidebar",
     "/docs/actions/validators": "tutorialSidebar",

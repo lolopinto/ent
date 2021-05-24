@@ -7,6 +7,9 @@ Triggers allows for coordinating other changes that should be made at the same t
 
 The beauty of Triggers is that there's **one** place that needs to be changed and the action can be confidently called from anywhere and we know that everything that should happen will be executed.
 
+Any errors in Triggers fails the entire transaction.
+
+## Trigger Interface
 ```ts
 export interface Changeset<T extends Ent> {
   // bunch of things that aren't currently relevant
@@ -31,7 +34,7 @@ Each Trigger takes the [Builder](/docs/actions/builder) and the [Input](/docs/ac
 
 A Trigger can update the Builder of the ent that's being edited or it can return the [Changeset](#changeset) of another Action.
 
-## update builder
+## Update Builder
 For example, in the example schema, to add the creator as a host of the event when it's being created:
 
 ```ts title="src/ent/events/action/create_event_action.ts"
@@ -46,7 +49,7 @@ export default class CreateEventAction extends CreateEventActionBase {
 }
 ```
 
-## changeset
+## Changeset
 The full power of Triggers is seen when there are dependent objects that need to be created or modified.
 
 Assume there's an `Address` associated with the `Event` with multiple objects possibly having an Address so we have a separate object for it.
@@ -117,6 +120,8 @@ export default class CreateEventAction extends CreateEventActionBase {
 ```
 
 Now anytime an Event is created, if the address is passed, the address info is passed to `CreateAddressAction` and a `Changeset` is generated which ensures that all details associated with the address creation are handled as part of the Event creation.
+
+### input
 
 Note that we pass a `Builder` to the `ownerID` field. This will get the correct `id` that was generated either in code or by the database so that the right information is stored in the `owner_id` column in the database. That also lets the framework know there's a dependency between the operations and it'll first write a row to the `events` table before writing to the `addresses` table.
 

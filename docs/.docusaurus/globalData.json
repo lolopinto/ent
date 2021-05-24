@@ -21,6 +21,11 @@
               "sidebar": "tutorialSidebar"
             },
             {
+              "id": "actions/builder",
+              "path": "/docs/actions/builder",
+              "sidebar": "tutorialSidebar"
+            },
+            {
               "id": "actions/create-action",
               "path": "/docs/actions/create-action",
               "sidebar": "tutorialSidebar"
@@ -38,6 +43,16 @@
             {
               "id": "actions/edit-action",
               "path": "/docs/actions/edit-action",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "actions/input",
+              "path": "/docs/actions/input",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "actions/observers",
+              "path": "/docs/actions/observers",
               "sidebar": "tutorialSidebar"
             },
             {

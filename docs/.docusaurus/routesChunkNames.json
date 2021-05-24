@@ -29,7 +29,7 @@
     "component": "component---theme-mdx-page-1-f-3-b90",
     "content": "content---markdown-page-393-028"
   },
-  "/docs-3a2": {
+  "/docs-2c9": {
     "component": "component---theme-doc-page-1-be-9be",
     "versionMetadata": "versionMetadata---docs-935-398"
   },
@@ -40,6 +40,10 @@
   "/docs/actions/add-edge-action-a22": {
     "component": "component---theme-doc-item-178-a40",
     "content": "content---docs-actions-add-edge-actionb-8-d-de2"
+  },
+  "/docs/actions/builder-398": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-actions-builderb-87-34d"
   },
   "/docs/actions/create-action-439": {
     "component": "component---theme-doc-item-178-a40",
@@ -56,6 +60,14 @@
   "/docs/actions/edit-action-879": {
     "component": "component---theme-doc-item-178-a40",
     "content": "content---docs-actions-edit-action-1-be-d67"
+  },
+  "/docs/actions/input-6dd": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-actions-inpute-7-e-8bd"
+  },
+  "/docs/actions/observers-332": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-actions-observersf-6-c-3fe"
   },
   "/docs/actions/remove-edge-action-abd": {
     "component": "component---theme-doc-item-178-a40",

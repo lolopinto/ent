@@ -137,6 +137,18 @@
                   {
                     "type": "doc",
                     "id": "actions/triggers"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "actions/observers"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "actions/builder"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "actions/input"
                   }
                 ],
                 "collapsed": true
@@ -146,10 +158,13 @@
           "permalinkToSidebar": {
             "/docs/actions/action": "tutorialSidebar",
             "/docs/actions/add-edge-action": "tutorialSidebar",
+            "/docs/actions/builder": "tutorialSidebar",
             "/docs/actions/create-action": "tutorialSidebar",
             "/docs/actions/delete-action": "tutorialSidebar",
             "/docs/actions/edge-group-action": "tutorialSidebar",
             "/docs/actions/edit-action": "tutorialSidebar",
+            "/docs/actions/input": "tutorialSidebar",
+            "/docs/actions/observers": "tutorialSidebar",
             "/docs/actions/remove-edge-action": "tutorialSidebar",
             "/docs/actions/triggers": "tutorialSidebar",
             "/docs/actions/validators": "tutorialSidebar",
@@ -222,6 +237,32 @@
               "next": {
                 "title": "Remove Edge Action",
                 "permalink": "/docs/actions/remove-edge-action"
+              }
+            },
+            {
+              "unversionedId": "actions/builder",
+              "id": "actions/builder",
+              "isDocsHomePage": false,
+              "title": "Builder",
+              "description": "The Builder is the building block for Actions. Even though Action provides the ability to restrict the fields and edges that are exposed to external clients, developers should still have the full power to mutate the object as they see fit.",
+              "source": "@site/docs/actions/builder.md",
+              "sourceDirName": "actions",
+              "slug": "/actions/builder",
+              "permalink": "/docs/actions/builder",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/actions/builder.md",
+              "version": "current",
+              "sidebarPosition": 11,
+              "frontMatter": {
+                "sidebar_position": 11
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Observers",
+                "permalink": "/docs/actions/observers"
+              },
+              "next": {
+                "title": "Input",
+                "permalink": "/docs/actions/input"
               }
             },
             {
@@ -329,6 +370,54 @@
               }
             },
             {
+              "unversionedId": "actions/input",
+              "id": "actions/input",
+              "isDocsHomePage": false,
+              "title": "Input",
+              "description": "Most Actions have an Input associated with them. This is generated based on how the action is configured.",
+              "source": "@site/docs/actions/input.md",
+              "sourceDirName": "actions",
+              "slug": "/actions/input",
+              "permalink": "/docs/actions/input",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/actions/input.md",
+              "version": "current",
+              "sidebarPosition": 12,
+              "frontMatter": {
+                "sidebar_position": 12
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Builder",
+                "permalink": "/docs/actions/builder"
+              }
+            },
+            {
+              "unversionedId": "actions/observers",
+              "id": "actions/observers",
+              "isDocsHomePage": false,
+              "title": "Observers",
+              "description": "Observers allow for coordinating changes that shouldn't be made within the same transaction as the write.",
+              "source": "@site/docs/actions/observers.md",
+              "sourceDirName": "actions",
+              "slug": "/actions/observers",
+              "permalink": "/docs/actions/observers",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/actions/observers.md",
+              "version": "current",
+              "sidebarPosition": 10,
+              "frontMatter": {
+                "sidebar_position": 10
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Triggers",
+                "permalink": "/docs/actions/triggers"
+              },
+              "next": {
+                "title": "Builder",
+                "permalink": "/docs/actions/builder"
+              }
+            },
+            {
               "unversionedId": "actions/remove-edge-action",
               "id": "actions/remove-edge-action",
               "isDocsHomePage": false,
@@ -374,6 +463,10 @@
               "previous": {
                 "title": "Validators",
                 "permalink": "/docs/actions/validators"
+              },
+              "next": {
+                "title": "Observers",
+                "permalink": "/docs/actions/observers"
               }
             },
             {

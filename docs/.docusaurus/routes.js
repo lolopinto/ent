@@ -49,7 +49,7 @@ export default [
 },
 {
   path: '/docs',
-  component: ComponentCreator('/docs','3a2'),
+  component: ComponentCreator('/docs','2c9'),
   
   routes: [
 {
@@ -60,6 +60,11 @@ export default [
 {
   path: '/docs/actions/add-edge-action',
   component: ComponentCreator('/docs/actions/add-edge-action','a22'),
+  exact: true,
+},
+{
+  path: '/docs/actions/builder',
+  component: ComponentCreator('/docs/actions/builder','398'),
   exact: true,
 },
 {
@@ -80,6 +85,16 @@ export default [
 {
   path: '/docs/actions/edit-action',
   component: ComponentCreator('/docs/actions/edit-action','879'),
+  exact: true,
+},
+{
+  path: '/docs/actions/input',
+  component: ComponentCreator('/docs/actions/input','6dd'),
+  exact: true,
+},
+{
+  path: '/docs/actions/observers',
+  component: ComponentCreator('/docs/actions/observers','332'),
   exact: true,
 },
 {
