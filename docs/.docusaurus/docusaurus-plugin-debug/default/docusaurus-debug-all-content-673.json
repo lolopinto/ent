@@ -149,6 +149,10 @@
                   {
                     "type": "doc",
                     "id": "actions/input"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "actions/action-only-fields"
                   }
                 ],
                 "collapsed": true
@@ -157,6 +161,7 @@
           },
           "permalinkToSidebar": {
             "/docs/actions/action": "tutorialSidebar",
+            "/docs/actions/action-only-fields": "tutorialSidebar",
             "/docs/actions/add-edge-action": "tutorialSidebar",
             "/docs/actions/builder": "tutorialSidebar",
             "/docs/actions/create-action": "tutorialSidebar",
@@ -211,6 +216,28 @@
               "next": {
                 "title": "Create Action",
                 "permalink": "/docs/actions/create-action"
+              }
+            },
+            {
+              "unversionedId": "actions/action-only-fields",
+              "id": "actions/action-only-fields",
+              "isDocsHomePage": false,
+              "title": "Action Only Fields",
+              "description": "Allows configuring other fields to be added in the input of an Action.",
+              "source": "@site/docs/actions/action-only-fields.md",
+              "sourceDirName": "actions",
+              "slug": "/actions/action-only-fields",
+              "permalink": "/docs/actions/action-only-fields",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/actions/action-only-fields.md",
+              "version": "current",
+              "sidebarPosition": 13,
+              "frontMatter": {
+                "sidebar_position": 13
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Input",
+                "permalink": "/docs/actions/input"
               }
             },
             {
@@ -389,6 +416,10 @@
               "previous": {
                 "title": "Builder",
                 "permalink": "/docs/actions/builder"
+              },
+              "next": {
+                "title": "Action Only Fields",
+                "permalink": "/docs/actions/action-only-fields"
               }
             },
             {

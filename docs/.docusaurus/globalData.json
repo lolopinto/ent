@@ -16,6 +16,11 @@
               "sidebar": "tutorialSidebar"
             },
             {
+              "id": "actions/action-only-fields",
+              "path": "/docs/actions/action-only-fields",
+              "sidebar": "tutorialSidebar"
+            },
+            {
               "id": "actions/add-edge-action",
               "path": "/docs/actions/add-edge-action",
               "sidebar": "tutorialSidebar"

@@ -49,12 +49,17 @@ export default [
 },
 {
   path: '/docs',
-  component: ComponentCreator('/docs','2c9'),
+  component: ComponentCreator('/docs','0ad'),
   
   routes: [
 {
   path: '/docs/actions/action',
   component: ComponentCreator('/docs/actions/action','46b'),
+  exact: true,
+},
+{
+  path: '/docs/actions/action-only-fields',
+  component: ComponentCreator('/docs/actions/action-only-fields','496'),
   exact: true,
 },
 {

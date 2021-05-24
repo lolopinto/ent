@@ -167,6 +167,11 @@
             "type": "link",
             "label": "Input",
             "href": "/docs/actions/input"
+          },
+          {
+            "type": "link",
+            "label": "Action Only Fields",
+            "href": "/docs/actions/action-only-fields"
           }
         ],
         "collapsed": true
@@ -175,6 +180,7 @@
   },
   "permalinkToSidebar": {
     "/docs/actions/action": "tutorialSidebar",
+    "/docs/actions/action-only-fields": "tutorialSidebar",
     "/docs/actions/add-edge-action": "tutorialSidebar",
     "/docs/actions/builder": "tutorialSidebar",
     "/docs/actions/create-action": "tutorialSidebar",
