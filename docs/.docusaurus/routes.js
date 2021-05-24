@@ -49,7 +49,7 @@ export default [
 },
 {
   path: '/docs',
-  component: ComponentCreator('/docs','0ad'),
+  component: ComponentCreator('/docs','c6a'),
   
   routes: [
 {
@@ -103,6 +103,11 @@ export default [
   exact: true,
 },
 {
+  path: '/docs/actions/permissions',
+  component: ComponentCreator('/docs/actions/permissions','0ab'),
+  exact: true,
+},
+{
   path: '/docs/actions/remove-edge-action',
   component: ComponentCreator('/docs/actions/remove-edge-action','abd'),
   exact: true,
@@ -115,6 +120,11 @@ export default [
 {
   path: '/docs/actions/validators',
   component: ComponentCreator('/docs/actions/validators','7bb'),
+  exact: true,
+},
+{
+  path: '/docs/actions/viewer-ent-load',
+  component: ComponentCreator('/docs/actions/viewer-ent-load','bc7'),
   exact: true,
 },
 {

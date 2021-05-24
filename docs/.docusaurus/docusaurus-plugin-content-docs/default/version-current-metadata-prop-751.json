@@ -172,6 +172,16 @@
             "type": "link",
             "label": "Action Only Fields",
             "href": "/docs/actions/action-only-fields"
+          },
+          {
+            "type": "link",
+            "label": "Permissions",
+            "href": "/docs/actions/permissions"
+          },
+          {
+            "type": "link",
+            "label": "Viewer For Ent Load",
+            "href": "/docs/actions/viewer-ent-load"
           }
         ],
         "collapsed": true
@@ -189,9 +199,11 @@
     "/docs/actions/edit-action": "tutorialSidebar",
     "/docs/actions/input": "tutorialSidebar",
     "/docs/actions/observers": "tutorialSidebar",
+    "/docs/actions/permissions": "tutorialSidebar",
     "/docs/actions/remove-edge-action": "tutorialSidebar",
     "/docs/actions/triggers": "tutorialSidebar",
     "/docs/actions/validators": "tutorialSidebar",
+    "/docs/actions/viewer-ent-load": "tutorialSidebar",
     "/docs/core-concepts/authentication": "tutorialSidebar",
     "/docs/core-concepts/context": "tutorialSidebar",
     "/docs/core-concepts/context-caching": "tutorialSidebar",

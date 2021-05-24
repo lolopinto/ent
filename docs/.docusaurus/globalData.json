@@ -61,6 +61,11 @@
               "sidebar": "tutorialSidebar"
             },
             {
+              "id": "actions/permissions",
+              "path": "/docs/actions/permissions",
+              "sidebar": "tutorialSidebar"
+            },
+            {
               "id": "actions/remove-edge-action",
               "path": "/docs/actions/remove-edge-action",
               "sidebar": "tutorialSidebar"
@@ -73,6 +78,11 @@
             {
               "id": "actions/validators",
               "path": "/docs/actions/validators",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "actions/viewer-ent-load",
+              "path": "/docs/actions/viewer-ent-load",
               "sidebar": "tutorialSidebar"
             },
             {

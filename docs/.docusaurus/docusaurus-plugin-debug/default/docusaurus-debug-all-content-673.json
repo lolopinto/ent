@@ -153,6 +153,14 @@
                   {
                     "type": "doc",
                     "id": "actions/action-only-fields"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "actions/permissions"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "actions/viewer-ent-load"
                   }
                 ],
                 "collapsed": true
@@ -170,9 +178,11 @@
             "/docs/actions/edit-action": "tutorialSidebar",
             "/docs/actions/input": "tutorialSidebar",
             "/docs/actions/observers": "tutorialSidebar",
+            "/docs/actions/permissions": "tutorialSidebar",
             "/docs/actions/remove-edge-action": "tutorialSidebar",
             "/docs/actions/triggers": "tutorialSidebar",
             "/docs/actions/validators": "tutorialSidebar",
+            "/docs/actions/viewer-ent-load": "tutorialSidebar",
             "/docs/core-concepts/authentication": "tutorialSidebar",
             "/docs/core-concepts/context": "tutorialSidebar",
             "/docs/core-concepts/context-caching": "tutorialSidebar",
@@ -238,6 +248,10 @@
               "previous": {
                 "title": "Input",
                 "permalink": "/docs/actions/input"
+              },
+              "next": {
+                "title": "Permissions",
+                "permalink": "/docs/actions/permissions"
               }
             },
             {
@@ -449,6 +463,32 @@
               }
             },
             {
+              "unversionedId": "actions/permissions",
+              "id": "actions/permissions",
+              "isDocsHomePage": false,
+              "title": "Permissions",
+              "description": "To control who can perform an action, a Privacy Policy is used.",
+              "source": "@site/docs/actions/permissions.md",
+              "sourceDirName": "actions",
+              "slug": "/actions/permissions",
+              "permalink": "/docs/actions/permissions",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/actions/permissions.md",
+              "version": "current",
+              "sidebarPosition": 14,
+              "frontMatter": {
+                "sidebar_position": 14
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Action Only Fields",
+                "permalink": "/docs/actions/action-only-fields"
+              },
+              "next": {
+                "title": "Viewer For Ent Load",
+                "permalink": "/docs/actions/viewer-ent-load"
+              }
+            },
+            {
               "unversionedId": "actions/remove-edge-action",
               "id": "actions/remove-edge-action",
               "isDocsHomePage": false,
@@ -524,6 +564,28 @@
               "next": {
                 "title": "Triggers",
                 "permalink": "/docs/actions/triggers"
+              }
+            },
+            {
+              "unversionedId": "actions/viewer-ent-load",
+              "id": "actions/viewer-ent-load",
+              "isDocsHomePage": false,
+              "title": "Viewer For Ent Load",
+              "description": "After an action is performed, often the object is reloaded as follows:",
+              "source": "@site/docs/actions/viewer-ent-load.md",
+              "sourceDirName": "actions",
+              "slug": "/actions/viewer-ent-load",
+              "permalink": "/docs/actions/viewer-ent-load",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/actions/viewer-ent-load.md",
+              "version": "current",
+              "sidebarPosition": 15,
+              "frontMatter": {
+                "sidebar_position": 15
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Permissions",
+                "permalink": "/docs/actions/permissions"
               }
             },
             {

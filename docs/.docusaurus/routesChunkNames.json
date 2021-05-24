@@ -29,7 +29,7 @@
     "component": "component---theme-mdx-page-1-f-3-b90",
     "content": "content---markdown-page-393-028"
   },
-  "/docs-0ad": {
+  "/docs-c6a": {
     "component": "component---theme-doc-page-1-be-9be",
     "versionMetadata": "versionMetadata---docs-935-398"
   },
@@ -73,6 +73,10 @@
     "component": "component---theme-doc-item-178-a40",
     "content": "content---docs-actions-observersf-6-c-3fe"
   },
+  "/docs/actions/permissions-0ab": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-actions-permissions-6-db-452"
+  },
   "/docs/actions/remove-edge-action-abd": {
     "component": "component---theme-doc-item-178-a40",
     "content": "content---docs-actions-remove-edge-action-97-c-23d"
@@ -84,6 +88,10 @@
   "/docs/actions/validators-7bb": {
     "component": "component---theme-doc-item-178-a40",
     "content": "content---docs-actions-validators-7-a-2-15c"
+  },
+  "/docs/actions/viewer-ent-load-bc7": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-actions-viewer-ent-load-0-f-3-235"
   },
   "/docs/core-concepts/authentication-cdd": {
     "component": "component---theme-doc-item-178-a40",
