@@ -49,9 +49,54 @@ export default [
 },
 {
   path: '/docs',
-  component: ComponentCreator('/docs','dae'),
+  component: ComponentCreator('/docs','3a2'),
   
   routes: [
+{
+  path: '/docs/actions/action',
+  component: ComponentCreator('/docs/actions/action','46b'),
+  exact: true,
+},
+{
+  path: '/docs/actions/add-edge-action',
+  component: ComponentCreator('/docs/actions/add-edge-action','a22'),
+  exact: true,
+},
+{
+  path: '/docs/actions/create-action',
+  component: ComponentCreator('/docs/actions/create-action','439'),
+  exact: true,
+},
+{
+  path: '/docs/actions/delete-action',
+  component: ComponentCreator('/docs/actions/delete-action','215'),
+  exact: true,
+},
+{
+  path: '/docs/actions/edge-group-action',
+  component: ComponentCreator('/docs/actions/edge-group-action','e93'),
+  exact: true,
+},
+{
+  path: '/docs/actions/edit-action',
+  component: ComponentCreator('/docs/actions/edit-action','879'),
+  exact: true,
+},
+{
+  path: '/docs/actions/remove-edge-action',
+  component: ComponentCreator('/docs/actions/remove-edge-action','abd'),
+  exact: true,
+},
+{
+  path: '/docs/actions/triggers',
+  component: ComponentCreator('/docs/actions/triggers','c86'),
+  exact: true,
+},
+{
+  path: '/docs/actions/validators',
+  component: ComponentCreator('/docs/actions/validators','7bb'),
+  exact: true,
+},
 {
   path: '/docs/core-concepts/authentication',
   component: ComponentCreator('/docs/core-concepts/authentication','cdd'),

@@ -103,10 +103,71 @@
           }
         ],
         "collapsed": true
+      },
+      {
+        "type": "category",
+        "label": "Actions",
+        "items": [
+          {
+            "type": "link",
+            "label": "Action",
+            "href": "/docs/actions/action"
+          },
+          {
+            "type": "link",
+            "label": "Create Action",
+            "href": "/docs/actions/create-action"
+          },
+          {
+            "type": "link",
+            "label": "Edit Action",
+            "href": "/docs/actions/edit-action"
+          },
+          {
+            "type": "link",
+            "label": "Delete Action",
+            "href": "/docs/actions/delete-action"
+          },
+          {
+            "type": "link",
+            "label": "Add Edge Action",
+            "href": "/docs/actions/add-edge-action"
+          },
+          {
+            "type": "link",
+            "label": "Remove Edge Action",
+            "href": "/docs/actions/remove-edge-action"
+          },
+          {
+            "type": "link",
+            "label": "Edge Group Action",
+            "href": "/docs/actions/edge-group-action"
+          },
+          {
+            "type": "link",
+            "label": "Validators",
+            "href": "/docs/actions/validators"
+          },
+          {
+            "type": "link",
+            "label": "Triggers",
+            "href": "/docs/actions/triggers"
+          }
+        ],
+        "collapsed": true
       }
     ]
   },
   "permalinkToSidebar": {
+    "/docs/actions/action": "tutorialSidebar",
+    "/docs/actions/add-edge-action": "tutorialSidebar",
+    "/docs/actions/create-action": "tutorialSidebar",
+    "/docs/actions/delete-action": "tutorialSidebar",
+    "/docs/actions/edge-group-action": "tutorialSidebar",
+    "/docs/actions/edit-action": "tutorialSidebar",
+    "/docs/actions/remove-edge-action": "tutorialSidebar",
+    "/docs/actions/triggers": "tutorialSidebar",
+    "/docs/actions/validators": "tutorialSidebar",
     "/docs/core-concepts/authentication": "tutorialSidebar",
     "/docs/core-concepts/context": "tutorialSidebar",
     "/docs/core-concepts/context-caching": "tutorialSidebar",

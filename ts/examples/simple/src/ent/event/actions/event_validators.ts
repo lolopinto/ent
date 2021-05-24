@@ -3,13 +3,9 @@ import { Validator } from "@lolopinto/ent/action";
 import { Event } from "src/ent/";
 
 export class EventTimeValidator implements Validator<Event> {
-  // generic validator can't enforce 2nd param
   validate(builder: EventBuilder): void {
-    const input = builder.getInput();
-
-    const existingEnt = builder.existingEnt;
-    const startTime = input.startTime || existingEnt?.startTime;
-    const endTime = input.endTime || existingEnt?.endTime;
+    const startTime = builder.getStartTime();
+    const endTime = builder.getEndTime();
 
     if (!startTime) {
       throw new Error("startTime required");

@@ -97,10 +97,62 @@
                   }
                 ],
                 "collapsed": true
+              },
+              {
+                "type": "category",
+                "label": "Actions",
+                "items": [
+                  {
+                    "type": "doc",
+                    "id": "actions/action"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "actions/create-action"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "actions/edit-action"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "actions/delete-action"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "actions/add-edge-action"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "actions/remove-edge-action"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "actions/edge-group-action"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "actions/validators"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "actions/triggers"
+                  }
+                ],
+                "collapsed": true
               }
             ]
           },
           "permalinkToSidebar": {
+            "/docs/actions/action": "tutorialSidebar",
+            "/docs/actions/add-edge-action": "tutorialSidebar",
+            "/docs/actions/create-action": "tutorialSidebar",
+            "/docs/actions/delete-action": "tutorialSidebar",
+            "/docs/actions/edge-group-action": "tutorialSidebar",
+            "/docs/actions/edit-action": "tutorialSidebar",
+            "/docs/actions/remove-edge-action": "tutorialSidebar",
+            "/docs/actions/triggers": "tutorialSidebar",
+            "/docs/actions/validators": "tutorialSidebar",
             "/docs/core-concepts/authentication": "tutorialSidebar",
             "/docs/core-concepts/context": "tutorialSidebar",
             "/docs/core-concepts/context-caching": "tutorialSidebar",
@@ -120,6 +172,236 @@
             "/docs/intro": "tutorialSidebar"
           },
           "docs": [
+            {
+              "unversionedId": "actions/action",
+              "id": "actions/action",
+              "isDocsHomePage": false,
+              "title": "Action",
+              "description": "Action is the way to perform writes in the system. The configuration determines what code is generated and the developer is able to further customize as needed.",
+              "source": "@site/docs/actions/action.md",
+              "sourceDirName": "actions",
+              "slug": "/actions/action",
+              "permalink": "/docs/actions/action",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/actions/action.md",
+              "version": "current",
+              "sidebarPosition": 1,
+              "frontMatter": {
+                "sidebar_position": 1
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Ent Query",
+                "permalink": "/docs/core-concepts/ent-query"
+              },
+              "next": {
+                "title": "Create Action",
+                "permalink": "/docs/actions/create-action"
+              }
+            },
+            {
+              "unversionedId": "actions/add-edge-action",
+              "id": "actions/add-edge-action",
+              "isDocsHomePage": false,
+              "title": "Add Edge Action",
+              "description": "This is done via the ActionOperation.AddEdge operation.",
+              "source": "@site/docs/actions/add-edge-action.md",
+              "sourceDirName": "actions",
+              "slug": "/actions/add-edge-action",
+              "permalink": "/docs/actions/add-edge-action",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/actions/add-edge-action.md",
+              "version": "current",
+              "sidebarPosition": 5,
+              "frontMatter": {
+                "sidebar_position": 5
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Delete Action",
+                "permalink": "/docs/actions/delete-action"
+              },
+              "next": {
+                "title": "Remove Edge Action",
+                "permalink": "/docs/actions/remove-edge-action"
+              }
+            },
+            {
+              "unversionedId": "actions/create-action",
+              "id": "actions/create-action",
+              "isDocsHomePage": false,
+              "title": "Create Action",
+              "description": "This is done via the ActionOperation.Create or ActionOperation.Mutations operation.",
+              "source": "@site/docs/actions/create-action.md",
+              "sourceDirName": "actions",
+              "slug": "/actions/create-action",
+              "permalink": "/docs/actions/create-action",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/actions/create-action.md",
+              "version": "current",
+              "sidebarPosition": 2,
+              "frontMatter": {
+                "sidebar_position": 2
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Action",
+                "permalink": "/docs/actions/action"
+              },
+              "next": {
+                "title": "Edit Action",
+                "permalink": "/docs/actions/edit-action"
+              }
+            },
+            {
+              "unversionedId": "actions/delete-action",
+              "id": "actions/delete-action",
+              "isDocsHomePage": false,
+              "title": "Delete Action",
+              "description": "This is done via the ActionOperation.Delete or ActionOperation.Mutations operation.",
+              "source": "@site/docs/actions/delete-action.md",
+              "sourceDirName": "actions",
+              "slug": "/actions/delete-action",
+              "permalink": "/docs/actions/delete-action",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/actions/delete-action.md",
+              "version": "current",
+              "sidebarPosition": 4,
+              "frontMatter": {
+                "sidebar_position": 4
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Edit Action",
+                "permalink": "/docs/actions/edit-action"
+              },
+              "next": {
+                "title": "Add Edge Action",
+                "permalink": "/docs/actions/add-edge-action"
+              }
+            },
+            {
+              "unversionedId": "actions/edge-group-action",
+              "id": "actions/edge-group-action",
+              "isDocsHomePage": false,
+              "title": "Edge Group Action",
+              "description": "This is done via the ActionOperation.EdgeGroup operation.",
+              "source": "@site/docs/actions/edge-group-action.md",
+              "sourceDirName": "actions",
+              "slug": "/actions/edge-group-action",
+              "permalink": "/docs/actions/edge-group-action",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/actions/edge-group-action.md",
+              "version": "current",
+              "sidebarPosition": 7,
+              "frontMatter": {
+                "sidebar_position": 7
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Remove Edge Action",
+                "permalink": "/docs/actions/remove-edge-action"
+              },
+              "next": {
+                "title": "Validators",
+                "permalink": "/docs/actions/validators"
+              }
+            },
+            {
+              "unversionedId": "actions/edit-action",
+              "id": "actions/edit-action",
+              "isDocsHomePage": false,
+              "title": "Edit Action",
+              "description": "This is done via the ActionOperation.Edit or ActionOperation.Mutations operation.",
+              "source": "@site/docs/actions/edit-action.md",
+              "sourceDirName": "actions",
+              "slug": "/actions/edit-action",
+              "permalink": "/docs/actions/edit-action",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/actions/edit-action.md",
+              "version": "current",
+              "sidebarPosition": 3,
+              "frontMatter": {
+                "sidebar_position": 3
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Create Action",
+                "permalink": "/docs/actions/create-action"
+              },
+              "next": {
+                "title": "Delete Action",
+                "permalink": "/docs/actions/delete-action"
+              }
+            },
+            {
+              "unversionedId": "actions/remove-edge-action",
+              "id": "actions/remove-edge-action",
+              "isDocsHomePage": false,
+              "title": "Remove Edge Action",
+              "description": "This is done via the ActionOperation.RemoveEdge operation.",
+              "source": "@site/docs/actions/remove-edge-action.md",
+              "sourceDirName": "actions",
+              "slug": "/actions/remove-edge-action",
+              "permalink": "/docs/actions/remove-edge-action",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/actions/remove-edge-action.md",
+              "version": "current",
+              "sidebarPosition": 6,
+              "frontMatter": {
+                "sidebar_position": 6
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Add Edge Action",
+                "permalink": "/docs/actions/add-edge-action"
+              },
+              "next": {
+                "title": "Edge Group Action",
+                "permalink": "/docs/actions/edge-group-action"
+              }
+            },
+            {
+              "unversionedId": "actions/triggers",
+              "id": "actions/triggers",
+              "isDocsHomePage": false,
+              "title": "Triggers",
+              "description": "Triggers allows for coordinating other changes that should be made at the same time within the same transaction. No actual write should be made within the trigger. Changes should be queued up as needed within the trigger.",
+              "source": "@site/docs/actions/triggers.md",
+              "sourceDirName": "actions",
+              "slug": "/actions/triggers",
+              "permalink": "/docs/actions/triggers",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/actions/triggers.md",
+              "version": "current",
+              "sidebarPosition": 9,
+              "frontMatter": {
+                "sidebar_position": 9
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Validators",
+                "permalink": "/docs/actions/validators"
+              }
+            },
+            {
+              "unversionedId": "actions/validators",
+              "id": "actions/validators",
+              "isDocsHomePage": false,
+              "title": "Validators",
+              "description": "Sometimes you need more than per-field validation in an action and Validators associated with an action enables that.",
+              "source": "@site/docs/actions/validators.md",
+              "sourceDirName": "actions",
+              "slug": "/actions/validators",
+              "permalink": "/docs/actions/validators",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/actions/validators.md",
+              "version": "current",
+              "sidebarPosition": 8,
+              "frontMatter": {
+                "sidebar_position": 8
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Edge Group Action",
+                "permalink": "/docs/actions/edge-group-action"
+              },
+              "next": {
+                "title": "Triggers",
+                "permalink": "/docs/actions/triggers"
+              }
+            },
             {
               "unversionedId": "core-concepts/authentication",
               "id": "core-concepts/authentication",
@@ -244,6 +526,10 @@
               "previous": {
                 "title": "Context Caching",
                 "permalink": "/docs/core-concepts/context-caching"
+              },
+              "next": {
+                "title": "Action",
+                "permalink": "/docs/actions/action"
               }
             },
             {

@@ -11,6 +11,51 @@
           "mainDocId": "intro",
           "docs": [
             {
+              "id": "actions/action",
+              "path": "/docs/actions/action",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "actions/add-edge-action",
+              "path": "/docs/actions/add-edge-action",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "actions/create-action",
+              "path": "/docs/actions/create-action",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "actions/delete-action",
+              "path": "/docs/actions/delete-action",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "actions/edge-group-action",
+              "path": "/docs/actions/edge-group-action",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "actions/edit-action",
+              "path": "/docs/actions/edit-action",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "actions/remove-edge-action",
+              "path": "/docs/actions/remove-edge-action",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "actions/triggers",
+              "path": "/docs/actions/triggers",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "actions/validators",
+              "path": "/docs/actions/validators",
+              "sidebar": "tutorialSidebar"
+            },
+            {
               "id": "core-concepts/authentication",
               "path": "/docs/core-concepts/authentication",
               "sidebar": "tutorialSidebar"

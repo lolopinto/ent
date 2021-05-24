@@ -126,6 +126,38 @@ If not `true` and a list of types is instead passed, only types that matches the
 ### derivedFields
 fields that are derived from this one. very esoteric. see [polymorphic](#polymorphic)
 
+## Field interface
+The `Field` interface is as follows:
+
+```ts
+interface Field extends FieldOptions {
+  // type of field: db, typescript, graphql types encoded in here
+  type: Type;
+
+  // optional valid and format to validate and format before storing
+  valid?(val: any): boolean;
+  format?(val: any): any;
+
+  // value to be logged 
+  logValue(val: any): any;
+}
+```
+
+### type
+Determines database, TypeScript, and GraphQL types.
+
+### valid
+If implemented, validates that the data passed to the field is valid
+
+### format
+If implemented, formats the value passed to the field before storing in the database. This ensures that we have consistent and normalized formats for fields.
+
+
+### logValue
+Provides the value to be logged when the field is logged. For sensitive values like passwords, SSNs, it doesn't log the sensitive value.
+
 
 ## Postscript
 PS: the `PasswordType` field is private, hidden from GraphQL and sensitive by default.
+
+
