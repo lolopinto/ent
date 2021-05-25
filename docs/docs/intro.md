@@ -402,7 +402,7 @@ password      | $2a$10$q1cwrLhDIiXOXQAjz7zN5u2KC2.QJ.WADfA2ozNuOTvjxrntJGNEC
 ent-starter=# \q
 ```
 
-## Attempt to create new user with email
+## Unique Constraint
 Running the following GraphQL query:
 ```graphql
 mutation {
@@ -417,7 +417,7 @@ mutation {
   }
 }
 ```
-should end with this error:
+should end with this error because we identified the `EmailAddress` as `unique` in the schema above: 
 
 ```json
 {
