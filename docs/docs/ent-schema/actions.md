@@ -175,7 +175,7 @@ export default class Event extends BaseEntSchema {
 ```
 
 results in this schema (assuming an `Address` object with the fields `street`, `city`, `state`, `zipCode`, `apartment`):
-```gql title="src/graphql/schema.gql"
+```graphql title="src/graphql/schema.gql"
 input EventCreateInput {
   name: String!
   startTime: Time!

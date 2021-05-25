@@ -164,6 +164,41 @@
                   }
                 ],
                 "collapsed": true
+              },
+              {
+                "type": "category",
+                "label": "Custom Queries",
+                "items": [
+                  {
+                    "type": "doc",
+                    "id": "custom-queries/custom-accessors"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "custom-queries/gql-field"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "custom-queries/custom-queries"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "custom-queries/custom-mutations"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "custom-queries/file-uploads"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "custom-queries/gql-context"
+                  },
+                  {
+                    "type": "doc",
+                    "id": "custom-queries/gql-arg"
+                  }
+                ],
+                "collapsed": true
               }
             ]
           },
@@ -190,6 +225,13 @@
             "/docs/core-concepts/ent-query": "tutorialSidebar",
             "/docs/core-concepts/privacy-policy": "tutorialSidebar",
             "/docs/core-concepts/viewer": "tutorialSidebar",
+            "/docs/custom-queries/custom-accessors": "tutorialSidebar",
+            "/docs/custom-queries/custom-mutations": "tutorialSidebar",
+            "/docs/custom-queries/custom-queries": "tutorialSidebar",
+            "/docs/custom-queries/file-uploads": "tutorialSidebar",
+            "/docs/custom-queries/gql-arg": "tutorialSidebar",
+            "/docs/custom-queries/gql-context": "tutorialSidebar",
+            "/docs/custom-queries/gql-field": "tutorialSidebar",
             "/docs/ent-schema/actions": "tutorialSidebar",
             "/docs/ent-schema/constraints": "tutorialSidebar",
             "/docs/ent-schema/edge-groups": "tutorialSidebar",
@@ -586,6 +628,10 @@
               "previous": {
                 "title": "Permissions",
                 "permalink": "/docs/actions/permissions"
+              },
+              "next": {
+                "title": "Custom Accessors",
+                "permalink": "/docs/custom-queries/custom-accessors"
               }
             },
             {
@@ -768,6 +814,184 @@
               "next": {
                 "title": "Context",
                 "permalink": "/docs/core-concepts/context"
+              }
+            },
+            {
+              "unversionedId": "custom-queries/custom-accessors",
+              "id": "custom-queries/custom-accessors",
+              "isDocsHomePage": false,
+              "title": "Custom Accessors",
+              "description": "We briefly showed how to add custom functionality in an object but didn't show how to expose it in GraphQL to end users. This explains how to do so.",
+              "source": "@site/docs/custom-queries/custom-accessors.md",
+              "sourceDirName": "custom-queries",
+              "slug": "/custom-queries/custom-accessors",
+              "permalink": "/docs/custom-queries/custom-accessors",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/custom-queries/custom-accessors.md",
+              "version": "current",
+              "sidebarPosition": 1,
+              "frontMatter": {
+                "sidebar_position": 1
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Viewer For Ent Load",
+                "permalink": "/docs/actions/viewer-ent-load"
+              },
+              "next": {
+                "title": "gqlField",
+                "permalink": "/docs/custom-queries/gql-field"
+              }
+            },
+            {
+              "unversionedId": "custom-queries/custom-mutations",
+              "id": "custom-queries/custom-mutations",
+              "isDocsHomePage": false,
+              "title": "Custom Mutations",
+              "description": "As a product gets more complicated, the need to eventually add custom mutations to the schema arises. This shows how to do so.",
+              "source": "@site/docs/custom-queries/custom-mutations.md",
+              "sourceDirName": "custom-queries",
+              "slug": "/custom-queries/custom-mutations",
+              "permalink": "/docs/custom-queries/custom-mutations",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/custom-queries/custom-mutations.md",
+              "version": "current",
+              "sidebarPosition": 4,
+              "frontMatter": {
+                "sidebar_position": 4
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Custom Queries",
+                "permalink": "/docs/custom-queries/custom-queries"
+              },
+              "next": {
+                "title": "File Uploads",
+                "permalink": "/docs/custom-queries/file-uploads"
+              }
+            },
+            {
+              "unversionedId": "custom-queries/custom-queries",
+              "id": "custom-queries/custom-queries",
+              "isDocsHomePage": false,
+              "title": "Custom Queries",
+              "description": "As a product gets more complicated, adding custom queries to the schema becomes essential. This shows how to do so.",
+              "source": "@site/docs/custom-queries/custom-queries.md",
+              "sourceDirName": "custom-queries",
+              "slug": "/custom-queries/custom-queries",
+              "permalink": "/docs/custom-queries/custom-queries",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/custom-queries/custom-queries.md",
+              "version": "current",
+              "sidebarPosition": 3,
+              "frontMatter": {
+                "sidebar_position": 3
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "gqlField",
+                "permalink": "/docs/custom-queries/gql-field"
+              },
+              "next": {
+                "title": "Custom Mutations",
+                "permalink": "/docs/custom-queries/custom-mutations"
+              }
+            },
+            {
+              "unversionedId": "custom-queries/file-uploads",
+              "id": "custom-queries/file-uploads",
+              "isDocsHomePage": false,
+              "title": "File Uploads",
+              "description": "Uploading files is a common of part of applications and we need a way to support that.",
+              "source": "@site/docs/custom-queries/file-uploads.md",
+              "sourceDirName": "custom-queries",
+              "slug": "/custom-queries/file-uploads",
+              "permalink": "/docs/custom-queries/file-uploads",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/custom-queries/file-uploads.md",
+              "version": "current",
+              "sidebarPosition": 5,
+              "frontMatter": {
+                "sidebar_position": 5
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Custom Mutations",
+                "permalink": "/docs/custom-queries/custom-mutations"
+              },
+              "next": {
+                "title": "gqlContextType",
+                "permalink": "/docs/custom-queries/gql-context"
+              }
+            },
+            {
+              "unversionedId": "custom-queries/gql-arg",
+              "id": "custom-queries/gql-arg",
+              "isDocsHomePage": false,
+              "title": "gqlArg",
+              "description": "gqlArg annotates an argument to a method to indicate that it's an argument of a GraphQL field.",
+              "source": "@site/docs/custom-queries/gql-arg.md",
+              "sourceDirName": "custom-queries",
+              "slug": "/custom-queries/gql-arg",
+              "permalink": "/docs/custom-queries/gql-arg",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/custom-queries/gql-arg.md",
+              "version": "current",
+              "sidebarPosition": 7,
+              "frontMatter": {
+                "sidebar_position": 7
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "gqlContextType",
+                "permalink": "/docs/custom-queries/gql-context"
+              }
+            },
+            {
+              "unversionedId": "custom-queries/gql-context",
+              "id": "custom-queries/gql-context",
+              "isDocsHomePage": false,
+              "title": "gqlContextType",
+              "description": "gqlContextType annotates a method to indicate that it needs the RequestContext and the generated GraphQL code should pass it down to the method.",
+              "source": "@site/docs/custom-queries/gql-context.md",
+              "sourceDirName": "custom-queries",
+              "slug": "/custom-queries/gql-context",
+              "permalink": "/docs/custom-queries/gql-context",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/custom-queries/gql-context.md",
+              "version": "current",
+              "sidebarPosition": 6,
+              "frontMatter": {
+                "sidebar_position": 6
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "File Uploads",
+                "permalink": "/docs/custom-queries/file-uploads"
+              },
+              "next": {
+                "title": "gqlArg",
+                "permalink": "/docs/custom-queries/gql-arg"
+              }
+            },
+            {
+              "unversionedId": "custom-queries/gql-field",
+              "id": "custom-queries/gql-field",
+              "isDocsHomePage": false,
+              "title": "gqlField",
+              "description": "gqlField annotates a property or method to indicate that it should be exposed as a GraphQL Field on the source object.",
+              "source": "@site/docs/custom-queries/gql-field.md",
+              "sourceDirName": "custom-queries",
+              "slug": "/custom-queries/gql-field",
+              "permalink": "/docs/custom-queries/gql-field",
+              "editUrl": "https://github.com/lolopinto/ent/edit/main/docs/docs/custom-queries/gql-field.md",
+              "version": "current",
+              "sidebarPosition": 2,
+              "frontMatter": {
+                "sidebar_position": 2
+              },
+              "sidebar": "tutorialSidebar",
+              "previous": {
+                "title": "Custom Accessors",
+                "permalink": "/docs/custom-queries/custom-accessors"
+              },
+              "next": {
+                "title": "Custom Queries",
+                "permalink": "/docs/custom-queries/custom-queries"
               }
             },
             {

@@ -121,6 +121,41 @@
               "sidebar": "tutorialSidebar"
             },
             {
+              "id": "custom-queries/custom-accessors",
+              "path": "/docs/custom-queries/custom-accessors",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "custom-queries/custom-mutations",
+              "path": "/docs/custom-queries/custom-mutations",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "custom-queries/custom-queries",
+              "path": "/docs/custom-queries/custom-queries",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "custom-queries/file-uploads",
+              "path": "/docs/custom-queries/file-uploads",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "custom-queries/gql-arg",
+              "path": "/docs/custom-queries/gql-arg",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "custom-queries/gql-context",
+              "path": "/docs/custom-queries/gql-context",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "custom-queries/gql-field",
+              "path": "/docs/custom-queries/gql-field",
+              "sidebar": "tutorialSidebar"
+            },
+            {
               "id": "ent-schema/actions",
               "path": "/docs/ent-schema/actions",
               "sidebar": "tutorialSidebar"

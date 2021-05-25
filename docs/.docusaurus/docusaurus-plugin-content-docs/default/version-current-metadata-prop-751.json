@@ -185,6 +185,48 @@
           }
         ],
         "collapsed": true
+      },
+      {
+        "type": "category",
+        "label": "Custom Queries",
+        "items": [
+          {
+            "type": "link",
+            "label": "Custom Accessors",
+            "href": "/docs/custom-queries/custom-accessors"
+          },
+          {
+            "type": "link",
+            "label": "gqlField",
+            "href": "/docs/custom-queries/gql-field"
+          },
+          {
+            "type": "link",
+            "label": "Custom Queries",
+            "href": "/docs/custom-queries/custom-queries"
+          },
+          {
+            "type": "link",
+            "label": "Custom Mutations",
+            "href": "/docs/custom-queries/custom-mutations"
+          },
+          {
+            "type": "link",
+            "label": "File Uploads",
+            "href": "/docs/custom-queries/file-uploads"
+          },
+          {
+            "type": "link",
+            "label": "gqlContextType",
+            "href": "/docs/custom-queries/gql-context"
+          },
+          {
+            "type": "link",
+            "label": "gqlArg",
+            "href": "/docs/custom-queries/gql-arg"
+          }
+        ],
+        "collapsed": true
       }
     ]
   },
@@ -211,6 +253,13 @@
     "/docs/core-concepts/ent-query": "tutorialSidebar",
     "/docs/core-concepts/privacy-policy": "tutorialSidebar",
     "/docs/core-concepts/viewer": "tutorialSidebar",
+    "/docs/custom-queries/custom-accessors": "tutorialSidebar",
+    "/docs/custom-queries/custom-mutations": "tutorialSidebar",
+    "/docs/custom-queries/custom-queries": "tutorialSidebar",
+    "/docs/custom-queries/file-uploads": "tutorialSidebar",
+    "/docs/custom-queries/gql-arg": "tutorialSidebar",
+    "/docs/custom-queries/gql-context": "tutorialSidebar",
+    "/docs/custom-queries/gql-field": "tutorialSidebar",
     "/docs/ent-schema/actions": "tutorialSidebar",
     "/docs/ent-schema/constraints": "tutorialSidebar",
     "/docs/ent-schema/edge-groups": "tutorialSidebar",

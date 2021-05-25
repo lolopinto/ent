@@ -72,7 +72,7 @@ export interface EventCreateInput {
 }
 ```
 
-```gql title="src/graphql/schema.gql"
+```graphql title="src/graphql/schema.gql"
 input EventCreateInput {
   name: String!
   creatorID: ID!

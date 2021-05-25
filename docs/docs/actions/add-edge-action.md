@@ -97,7 +97,7 @@ type Event implements Node {
 ```
 
 and called as follows:
-```gql
+```graphql
 mutation eventAddHostMutation($input: EventAddHostInput!) {
   eventAddHost(input: $input) {
     event {

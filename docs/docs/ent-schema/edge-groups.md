@@ -73,7 +73,7 @@ In each stage, the product developer only has to bother with writing one edge an
 
 To retrieve the current *status* of Alice's rsvp, a nice helper is provided to query this. Here's what the GraphQL representation looks like based on the schema above:
 
-```gql 
+```graphql 
 enum EventRsvpStatus {
   INVITED
   ATTENDING

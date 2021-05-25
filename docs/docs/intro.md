@@ -74,7 +74,7 @@ Let's go over a few:
 * `src/schema/versions/*_add_users_tabl.py` is the generated database migration to add the `users` table
 * `src/graphql` is where all the generated `GraphQL` files are with the `GraphQL` schema file being:
 
-```gql title="src/graphql/schema.gql"
+```graphql title="src/graphql/schema.gql"
 type User implements Node {
   id: ID!
   firstName: String!
@@ -158,7 +158,7 @@ which leads to the following changed files:
 ```
 
 and the GraphQL schema updated as follows:
-```gql title="src/graphql/schema.gql"
+```graphql title="src/graphql/schema.gql"
 type Query {
   node(id: ID!): Node
 }

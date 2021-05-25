@@ -95,7 +95,7 @@ type Event implements Node {
 ```
 
 and called as follows:
-```gql
+```graphql
 mutation eventDeleteMutation($input: EventDeleteInput!) {
   eventDelete(input: $input) {
     deletedEventID

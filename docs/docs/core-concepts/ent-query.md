@@ -64,7 +64,7 @@ This EntQuery is also exposed as a GraphQL [Connection](https://graphql.org/lear
 
 The schema above leads to the following GraphQL schema
 
-```gql title="src/graphql/schema.gql"
+```graphql title="src/graphql/schema.gql"
 
 interface Edge {
   node: Node!
@@ -108,7 +108,7 @@ type UserToFriendsEdge implements Edge {
 
 and to make the graphql query
 
-```gql
+```graphql
 query friendsQuery($id: ID!, $cursor: String!) {
   node(id: $id) {
     id,
@@ -172,7 +172,7 @@ This EntQuery is also exposed as a GraphQL [Connection](https://graphql.org/lear
 
 The schema above leads to the following GraphQL schema
 
-```gql title="src/graphql/schema.gql"
+```graphql title="src/graphql/schema.gql"
 
 interface Edge {
   node: Node!
@@ -221,7 +221,7 @@ type UserToContactsEdge implements Edge {
 
 and to make the graphql query
 
-```gql
+```graphql
 query contactsQuery($id: ID!, $cursor: String!) {
   node(id: $id) {
     id,

@@ -125,7 +125,7 @@ type Event implements Node {
 ```
 
 and called as follows:
-```gql
+```graphql
 mutation eventEditMutation($input: EventEditInput!) {
   eventEdit(input: $input) {
     event {

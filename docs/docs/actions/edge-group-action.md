@@ -116,7 +116,7 @@ type Event implements Node {
 ```
 
 and called as follows:
-```gql
+```graphql
 mutation eventRsvpStatusEditMutation($input: EventRsvpStatusEditInput!) {
   eventRsvpStatusEdit(input: $input) {
     event {

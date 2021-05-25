@@ -49,7 +49,7 @@ export default [
 },
 {
   path: '/docs',
-  component: ComponentCreator('/docs','c6a'),
+  component: ComponentCreator('/docs','224'),
   
   routes: [
 {
@@ -160,6 +160,41 @@ export default [
 {
   path: '/docs/core-concepts/viewer',
   component: ComponentCreator('/docs/core-concepts/viewer','4a7'),
+  exact: true,
+},
+{
+  path: '/docs/custom-queries/custom-accessors',
+  component: ComponentCreator('/docs/custom-queries/custom-accessors','f30'),
+  exact: true,
+},
+{
+  path: '/docs/custom-queries/custom-mutations',
+  component: ComponentCreator('/docs/custom-queries/custom-mutations','2c0'),
+  exact: true,
+},
+{
+  path: '/docs/custom-queries/custom-queries',
+  component: ComponentCreator('/docs/custom-queries/custom-queries','060'),
+  exact: true,
+},
+{
+  path: '/docs/custom-queries/file-uploads',
+  component: ComponentCreator('/docs/custom-queries/file-uploads','88d'),
+  exact: true,
+},
+{
+  path: '/docs/custom-queries/gql-arg',
+  component: ComponentCreator('/docs/custom-queries/gql-arg','ef6'),
+  exact: true,
+},
+{
+  path: '/docs/custom-queries/gql-context',
+  component: ComponentCreator('/docs/custom-queries/gql-context','76d'),
+  exact: true,
+},
+{
+  path: '/docs/custom-queries/gql-field',
+  component: ComponentCreator('/docs/custom-queries/gql-field','896'),
   exact: true,
 },
 {

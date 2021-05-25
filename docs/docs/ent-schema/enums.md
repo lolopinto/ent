@@ -112,7 +112,7 @@ export enum RequestStatus {
 ```
 
 and the following GraphQL enum
-```gql
+```graphql
 enum RequestStatus {
   OPEN
   PENDING_FULFILLMENT

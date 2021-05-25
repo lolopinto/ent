@@ -29,7 +29,7 @@
     "component": "component---theme-mdx-page-1-f-3-b90",
     "content": "content---markdown-page-393-028"
   },
-  "/docs-c6a": {
+  "/docs-224": {
     "component": "component---theme-doc-page-1-be-9be",
     "versionMetadata": "versionMetadata---docs-935-398"
   },
@@ -120,6 +120,34 @@
   "/docs/core-concepts/viewer-4a7": {
     "component": "component---theme-doc-item-178-a40",
     "content": "content---docs-core-concepts-viewerd-42-b38"
+  },
+  "/docs/custom-queries/custom-accessors-f30": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-custom-queries-custom-accessorsca-0-91f"
+  },
+  "/docs/custom-queries/custom-mutations-2c0": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-custom-queries-custom-mutations-957-ec8"
+  },
+  "/docs/custom-queries/custom-queries-060": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-custom-queries-custom-queriesf-1-a-fbf"
+  },
+  "/docs/custom-queries/file-uploads-88d": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-custom-queries-file-uploadsfae-132"
+  },
+  "/docs/custom-queries/gql-arg-ef6": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-custom-queries-gql-argba-2-b78"
+  },
+  "/docs/custom-queries/gql-context-76d": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-custom-queries-gql-contexte-28-27d"
+  },
+  "/docs/custom-queries/gql-field-896": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-custom-queries-gql-fieldc-2-e-e82"
   },
   "/docs/ent-schema/actions-428": {
     "component": "component---theme-doc-item-178-a40",
