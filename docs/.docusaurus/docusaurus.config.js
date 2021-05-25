@@ -1,7 +1,6 @@
 export default {
   "title": "Ent docs",
-  "tagline": "sample docs",
-  "url": "https://your-docusaurus-test-site.com",
+  "url": "https://ent-docs.onrender.com/",
   "baseUrl": "/",
   "onBrokenLinks": "throw",
   "onBrokenMarkdownLinks": "warn",
