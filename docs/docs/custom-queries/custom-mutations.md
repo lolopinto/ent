@@ -75,7 +75,7 @@ This uses the following concepts to implement this:
 ## gqlMutation
 This adds a new field to the GraphQL `Mutation` type. See example usage [above](#auth-example).
 
-Accepts the following options which overlap with [gqlField](/docs/custom-queries/gqlField):
+Accepts the following options which overlap with [gqlField](/docs/custom-queries/gql-field):
 * `name` for the name of the GraphQL field 
 * `description` of the field
 * `type`: type returned by the field

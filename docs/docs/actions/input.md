@@ -22,7 +22,7 @@ export interface EventCreateInput {
 }
 ```
 
-but in the [edit action](/docs/actions/event-action), it looks slightly different with each field optional:
+but in the [edit action](/docs/actions/edit-action), it looks slightly different with each field optional:
 
 
 ```ts title="src/ent/event/actions/generated/edit_event_action_base.ts"

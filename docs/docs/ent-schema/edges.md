@@ -211,8 +211,6 @@ hides the edge from being exposed as a `Connection` in GraphQL. This is used for
 
 
 ### edgeActions
-allows configuring the [actions](/docs/actions/) generated for this edge. Two actions are currently supported:
- * add edge
- * remove edge
-
-We dive into this further [here](/docs/actions/edge-actions).
+allows configuring the [actions](/docs/actions/action) generated for this edge. Two actions are currently supported:
+ * [add edge](/docs/actions/add-edge-action)
+ * [remove edge](/docs/actions/remove-edge-action)

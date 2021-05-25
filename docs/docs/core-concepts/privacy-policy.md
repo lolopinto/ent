@@ -3,7 +3,7 @@ sidebar_position: 4
 ---
 
 # Privacy Policy
-The `PrivacyPolicy` is used to apply permission checks on an object. It's used in [Ents](/docs/core-concepts) and [Actions](/docs/actions/intro).
+The `PrivacyPolicy` is used to apply permission checks on an object. It's used in [Ents](/docs/core-concepts/ent) and [Actions](/docs/actions/action).
 
 ```ts
 interface PrivacyPolicyRule {

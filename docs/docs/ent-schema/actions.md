@@ -115,7 +115,7 @@ hides the action from being exposed as a `Mutation` in GraphQL. This is used for
 
 
 ### actionOnlyFields
-sometimes, we need fields that are not in the schema that need to be generated in the [action input](/docs/actions/inputs)] or in the [input to the graphql mutation](https://graphql.org/learn/schema/#input-types).
+sometimes, we need fields that are not in the schema that need to be generated in the [action input](/docs/actions/input) or in the [input to the graphql mutation](https://graphql.org/learn/schema/#input-types).
 
 For example, a possible confirm email address action which was referenced above, can be configured as follows:
 

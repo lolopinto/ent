@@ -82,7 +82,7 @@ For more on edge groups, [visit](/docs/ent-schema/edge-groups).
 
 ### actions
 Configures the types of writes that can be performed on this object. 
-For a deep dive into actions, please [visit](/docs/actions/).
+For a deep dive into actions, please [visit](/docs/actions/action).
 
 
 ### enumTable

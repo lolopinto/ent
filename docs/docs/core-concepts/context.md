@@ -29,7 +29,7 @@ export interface RequestContext extends Context {
 ```
 
 ### authViewer
-`authViewer` is used to change who the currently logged in `Viewer` is. It's called by the built-in [auth](/docs/core-concepts/auth) to change the viewer from the previous one -often the [LoggedOutViewer](/docs/core-concepts/viewer#loggedoutviewer) - to the newly logged in `Viewer`.
+`authViewer` is used to change who the currently logged in `Viewer` is. It's called by the built-in [auth](/docs/core-concepts/authentication) to change the viewer from the previous one -often the [LoggedOutViewer](/docs/core-concepts/viewer#loggedoutviewer) - to the newly logged in `Viewer`.
 
 ### logout
 Changes the viewer to the [LoggedOutViewer](/docs/core-concepts/viewer#loggedoutviewer). 
@@ -43,9 +43,9 @@ Instance of HTTP [Request](https://nodejs.org/api/http.html#http_class_http_inco
 Instance of HTTP [Response](https://nodejs.org/api/http.html#http_class_http_serverresponse) object.
 
 ## New Request
-It's highly recommended that a new `Context` is created for each new request. The framework comes with a helper method `buildContext` which helps with this. It takes the `request` and `response` above and returns a new [`RequestContext`](#requestcontext). It calls into the [auth](/docs/core-concepts/auth) system to ensure the right `Viewer` is returned.
+It's highly recommended that a new `Context` is created for each new request. The framework comes with a helper method `buildContext` which helps with this. It takes the `request` and `response` above and returns a new [`RequestContext`](#requestcontext). It calls into the [auth](/docs/core-concepts/authentication) system to ensure the right `Viewer` is returned.
 
-Since we implement [context-caching](/docs/core-concepts/caching), we want to make sure that any data cached in one request is not inadvertently served incorrectly in a different request.
+Since we implement [context-caching](/docs/core-concepts/context-caching), we want to make sure that any data cached in one request is not inadvertently served incorrectly in a different request.
 
 The default generated GraphQL handler helps with that:
 
