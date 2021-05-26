@@ -9,8 +9,7 @@ import {
   loadEnts,
   LoadEntOptions,
   AssocEdge,
-  AlwaysDenyRule,
-  AllowIfViewerRule,
+  AllowIfViewerPrivacyPolicy,
   PrivacyPolicy,
   ObjectLoaderFactory,
   Context,
@@ -62,11 +61,8 @@ export class GuestBase {
     this.title = data.title;
   }
 
-  // by default, we always deny and it's up to the ent
-  // to overwrite this privacy policy in its subclasses
-  privacyPolicy: PrivacyPolicy = {
-    rules: [AllowIfViewerRule, AlwaysDenyRule],
-  };
+  // default privacyPolicy is Viewer can see themselves
+  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
 
   static async load<T extends GuestBase>(
     this: new (viewer: Viewer, data: Data) => T,

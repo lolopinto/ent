@@ -9,9 +9,8 @@ import {
 import {
   Viewer,
   ID,
-  AllowIfHasIdentity,
+  AllowIfViewerHasIdentityPrivacyPolicy,
   PrivacyPolicy,
-  AlwaysDenyRule,
 } from "@lolopinto/ent";
 import { GuestGroup, Event } from "src/ent/";
 import {
@@ -47,9 +46,7 @@ export class CreateGuestGroupActionBase implements Action<GuestGroup> {
   }
 
   getPrivacyPolicy(): PrivacyPolicy {
-    return {
-      rules: [AllowIfHasIdentity, AlwaysDenyRule],
-    };
+    return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
   getInput(): GuestGroupInput {
