@@ -45,4 +45,11 @@ Diving into the code here shows usage of all the supprted features of the Ent fr
 
 The site is currently available live at https://ent-rsvp-static-site.onrender.com/.
 
-It doesn't currenly support logging out and it currently doesn't send an email to guests so the login link isn't available for anyone without database access.
+It currently doesn't send an email to guests so the login link isn't available for anyone without database access.
+
+## Running locally
+* Create database via `createdb ent-rsvp`
+* Run `npm run upgrade` to upgrade the database
+* Create `.env.local` with `NEXT_PUBLIC_RELAY_ENDPOINT=http://localhost:4000/graphql`
+* Run `npm run dev` from `ent-rsvp-web` for the web
+* Run `npm run start-fast` from `backend` to start the web server.
