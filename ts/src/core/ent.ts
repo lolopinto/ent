@@ -516,6 +516,7 @@ export class EditNodeOperation implements DataOperation {
       }
       let ent = executor.resolveValue(value.placeholderID);
       if (!ent) {
+        //        console.log(executor);
         throw new Error(
           `couldn't resolve field \`${fieldName}\` with value ${value.placeholderID}`,
         );
@@ -530,6 +531,7 @@ export class EditNodeOperation implements DataOperation {
       ...this.options,
       context,
     };
+    //    console.log("performWrite", options);
     if (this.existingEnt) {
       this.row = await editRow(
         queryer,
@@ -883,6 +885,7 @@ async function mutateRow(
     }
     return res;
   } catch (err) {
+    // TODO:::why is this not rethrowing?
     log("error", err);
     throw err;
   }
@@ -927,6 +930,7 @@ export async function createRow(
 ): Promise<Data | null> {
   const [query, values, logValues] = buildInsertQuery(options, suffix);
 
+  //  console.log("createRow", query, values, logValues);
   const res = await mutateRow(queryer, query, values, logValues, options);
 
   if (res?.rowCount === 1) {

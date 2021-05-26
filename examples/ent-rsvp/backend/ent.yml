@@ -1,0 +1,6 @@
+log: 
+  - query
+  - error
+  - warn
+  - info
+#  - debug

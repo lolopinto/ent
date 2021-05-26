@@ -604,3 +604,6 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     await verify(-1, false, false, query!.getCursor(edges[0]));
   });
 };
+
+// TODO parse_sql group by...
+// or test it with real db...

@@ -34,6 +34,7 @@ export interface Builder<T extends Ent> {
 export interface Executor
   extends Iterable<DataOperation>,
     Iterator<DataOperation> {
+  placeholderID: ID;
   // this returns a non-privacy checked "ent"
   resolveValue(val: any): Ent | null;
   executeObservers?(): Promise<void>;
@@ -125,6 +126,7 @@ async function saveBuilderImpl<T extends Ent>(
   }
   const executor = changeset!.executor();
 
+  const instance = DB.getInstance();
   const client = await DB.getInstance().getNewClient();
 
   let error = false;

@@ -1076,7 +1076,6 @@ func getGQLFileImports(imps []enttype.FileImport, mutation bool) []*fileImport {
 			if imp.ImportType == enttype.Connection {
 				fn = true
 			}
-			// TODO this depends on if mutation or not
 			if mutation {
 				importPath = codepath.GetImportPathForExternalGQLFile()
 			} else {

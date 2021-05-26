@@ -10,7 +10,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
   private idx: number = 0;
   constructor(
     private viewer: Viewer,
-    private placeholderID: ID,
+    public placeholderID: ID,
     private ent: EntConstructor<T>,
     private operations: DataOperation[],
     private options?: OrchestratorOptions<T>,
@@ -85,7 +85,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
 
   constructor(
     private viewer: Viewer,
-    private placeholderID: ID,
+    public placeholderID: ID,
     private ent: EntConstructor<T>,
     operations: DataOperation[],
     dependencies: Map<ID, Builder<T>>,
