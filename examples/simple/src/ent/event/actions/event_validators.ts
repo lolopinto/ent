@@ -1,11 +1,13 @@
-import { EventBuilder } from "./event_builder";
+import { EventBuilder, EventInput } from "./event_builder";
 import { Validator } from "@lolopinto/ent/action";
 import { Event } from "src/ent/";
 
 export class EventTimeValidator implements Validator<Event> {
-  validate(builder: EventBuilder): void {
-    const startTime = builder.getStartTime();
-    const endTime = builder.getEndTime();
+  validate(builder: EventBuilder, input: EventInput): void {
+    const startTime = input.startTime || builder.existingEnt?.startTime;
+    //    const startTime = builder.getStartTime();
+    const endTime = input.endTime || builder.existingEnt?.endTime;
+    // const endTime = builder.getEndTime();
 
     if (!startTime) {
       throw new Error("startTime required");

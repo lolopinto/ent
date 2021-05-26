@@ -5,11 +5,24 @@
 
 {{ end -}}
 
+{{range $typ := .AllTypes -}}
+  {{reserveImport $typ.Path $typ.Type}}
+{{ end -}} 
+
 export default new {{useImport "GraphQLSchema"}}({
   query: {{useImport "QueryType"}},
   {{if .HasMutations -}}
     mutation: {{useImport "MutationType"}},
   {{end -}}
+  types: [
+    {{range $typ := .AllTypes -}}
+    {{if $typ.Function -}}
+      {{useImport $typ.Type}}(),
+    {{else -}}
+      {{useImport $typ.Type}},
+    {{end -}}
+    {{ end -}} 
+  ],
 });
 
 
