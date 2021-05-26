@@ -19,8 +19,8 @@ For example, to validate that the start time is before the end time in the examp
 ```ts title="src/ent/event/actions/event_validators.ts"
 export class EventTimeValidator implements Validator<Event> {
   validate(builder: EventBuilder): void {
-    const startTime = builder.getStartTime();
-    const endTime = builder.getEndTime();
+    const startTime = builder.getNewStartTimeValue();
+    const endTime = builder.getNewEndTimeValue();
 
     if (!startTime) {
       throw new Error("startTime required");

@@ -118,4 +118,24 @@ export class UserBuilder implements Builder<User> {
   isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
     return (node as Builder<Ent>).placeholderID !== undefined;
   }
+
+  // get value of FirstName. Retrieves it from the input if specified or takes it from existingEnt
+  getNewFirstNameValue(): string | undefined {
+    return this.input.firstName || this.existingEnt?.firstName;
+  }
+
+  // get value of LastName. Retrieves it from the input if specified or takes it from existingEnt
+  getNewLastNameValue(): string | undefined {
+    return this.input.lastName || this.existingEnt?.lastName;
+  }
+
+  // get value of EmailAddress. Retrieves it from the input if specified or takes it from existingEnt
+  getNewEmailAddressValue(): string | undefined {
+    return this.input.emailAddress || this.existingEnt?.emailAddress;
+  }
+
+  // get value of Password. Retrieves it from the input if specified or takes it from existingEnt
+  getNewPasswordValue(): string | undefined {
+    return this.input.password;
+  }
 }

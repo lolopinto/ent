@@ -4,10 +4,8 @@ import { Event } from "src/ent/";
 
 export class EventTimeValidator implements Validator<Event> {
   validate(builder: EventBuilder, input: EventInput): void {
-    const startTime = input.startTime || builder.existingEnt?.startTime;
-    //    const startTime = builder.getStartTime();
-    const endTime = input.endTime || builder.existingEnt?.endTime;
-    // const endTime = builder.getEndTime();
+    const startTime = builder.getNewStartTimeValue();
+    const endTime = builder.getNewEndTimeValue();
 
     if (!startTime) {
       throw new Error("startTime required");

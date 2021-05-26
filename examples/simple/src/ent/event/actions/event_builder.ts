@@ -350,4 +350,29 @@ export class EventBuilder implements Builder<Event> {
   isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
     return (node as Builder<Ent>).placeholderID !== undefined;
   }
+
+  // get value of name. Retrieves it from the input if specified or takes it from existingEnt
+  getNewNameValue(): string | undefined {
+    return this.input.name || this.existingEnt?.name;
+  }
+
+  // get value of creatorID. Retrieves it from the input if specified or takes it from existingEnt
+  getNewCreatorIDValue(): ID | Builder<User> | undefined {
+    return this.input.creatorID || this.existingEnt?.creatorID;
+  }
+
+  // get value of start_time. Retrieves it from the input if specified or takes it from existingEnt
+  getNewStartTimeValue(): Date | undefined {
+    return this.input.startTime || this.existingEnt?.startTime;
+  }
+
+  // get value of end_time. Retrieves it from the input if specified or takes it from existingEnt
+  getNewEndTimeValue(): Date | null | undefined {
+    return this.input.endTime || this.existingEnt?.endTime;
+  }
+
+  // get value of location. Retrieves it from the input if specified or takes it from existingEnt
+  getNewLocationValue(): string | undefined {
+    return this.input.location || this.existingEnt?.location;
+  }
 }

@@ -167,6 +167,16 @@ func (fieldInfo *FieldInfo) GraphQLFields() []*Field {
 	return fields
 }
 
+func (fieldInfo *FieldInfo) GetEditableFields() []*Field {
+	var fields []*Field
+	for _, f := range fieldInfo.Fields {
+		if f.EditableField() {
+			fields = append(fields, f)
+		}
+	}
+	return fields
+}
+
 // ForeignKeyInfo stores config and field name of the foreign key object
 type ForeignKeyInfo struct {
 	Config       string
