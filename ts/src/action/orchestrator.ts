@@ -481,6 +481,7 @@ export class Orchestrator<T extends Ent> {
 
     this.validatedFields = data;
     this.logValues = logValues;
+    //    console.log(this.validatedFields);
   }
 
   async valid(): Promise<boolean> {
@@ -503,6 +504,7 @@ export class Orchestrator<T extends Ent> {
 
     let ops: DataOperation[] = [this.buildMainOp()];
     await this.buildEdgeOps(ops);
+    //    console.log("post build");
 
     return new EntChangeset(
       this.options.viewer,

@@ -83,7 +83,8 @@ export class {{$baseClass}} {
     return {{useImport "loadEntX"}}(
       viewer, 
       id, 
-      {{$baseClass}}.loaderOptions.apply(this),
+      {{$baseClass}}.
+      loaderOptions.apply(this),
     );
   }
 

@@ -25,7 +25,7 @@ function rawValue(val: any) {
 }
 
 class simpleClause implements Clause {
-  constructor(private col: string, private value: any, private op: string) {}
+  constructor(protected col: string, private value: any, private op: string) {}
 
   clause(idx: number): string {
     return `${this.col} ${this.op} $${idx}`;

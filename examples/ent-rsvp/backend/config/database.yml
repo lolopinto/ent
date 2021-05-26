@@ -1,0 +1,8 @@
+dialect: postgres
+database: ent-rsvp
+user: ola
+password: ''
+host: localhost
+port: 5432
+pool: 5 # ¯\_(ツ)_/¯
+sslmode: disable

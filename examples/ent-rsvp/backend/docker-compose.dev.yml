@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile:
+        develop.Dockerfile
+        # change to name of your app
+    container_name: ent-rsvp
+    ports:
+      - 4000:4000
+      - 9229:9229 # for debugger apparently
+    volumes:
+      - .:/app:rw,delegated
+    environment:
+      - DB_CONNECTION_STRING=postgres://ola:@host.docker.internal/ent-rsvp
