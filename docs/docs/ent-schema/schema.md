@@ -104,3 +104,18 @@ database indices added to the table. [Visit](/docs/ent-schema/indices) to learn 
 
 ### hideFromGraphQL
 hide this object from GraphQL. This automatically hides all related actions to it from GraphQL. It also hides all edges pointing to it since we can't return the object.
+
+
+## BaseEntSchema
+`BaseEntSchema` is a schema that uses a [Pattern](/docs/ent-schema/patterns) and adds 3 fields to the object:
+* `id` field of type `uuid`
+* `createdAt` field of type `timestamp`: `timestamp without time zone` in the database
+* `updatedAt` field of type `timestamp`: `timestamp without time zone` in the database.
+
+## BaseEntSchemaWithTZ
+`BaseEntSchema` is a schema that uses a [Pattern](/docs/ent-schema/patterns) and adds 3 fields to the object:
+* `id` field of type `uuid`
+* `createdAt` field of type `timestamptz`: `timestamp with time zone` in the database
+* `updatedAt` field of type `timestamptz`: `timestamp with time zone` in the database.
+
+We'll go into the differences and what's happening here at some point later.
