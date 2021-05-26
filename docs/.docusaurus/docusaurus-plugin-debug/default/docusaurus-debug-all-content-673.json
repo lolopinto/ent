@@ -1277,5 +1277,8 @@
   },
   "docusaurus-theme-classic": {
     "default": null
+  },
+  "heap-integration": {
+    "default": null
   }
 }

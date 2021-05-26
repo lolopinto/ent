@@ -7,6 +7,9 @@ export default {
   "favicon": "img/favicon.ico",
   "organizationName": "lolopinto",
   "projectName": "ent",
+  "plugins": [
+    "/Users/ola/code/ent/docs/src/heap/index.js"
+  ],
   "themeConfig": {
     "navbar": {
       "title": "Home",
@@ -89,7 +92,6 @@ export default {
   },
   "onDuplicateRoutes": "warn",
   "customFields": {},
-  "plugins": [],
   "themes": [],
   "titleDelimiter": "|",
   "noIndex": false

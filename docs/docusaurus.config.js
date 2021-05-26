@@ -1,3 +1,5 @@
+const path = require('path');
+
 /** @type {import('@docusaurus/types').DocusaurusConfig} */
 module.exports = {
   title: 'Ent docs',
@@ -8,6 +10,9 @@ module.exports = {
   favicon: 'img/favicon.ico',
   organizationName: 'lolopinto', // Usually your GitHub org/user name.
   projectName: 'ent', // Usually your repo name.
+  plugins: [
+    path.resolve(__dirname, 'src/heap/index.js'),
+  ],
   themeConfig: {
     navbar: {
       title: 'Home',
