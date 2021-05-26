@@ -1,4 +1,4 @@
-{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AlwaysDenyRule" "AllowIfViewerRule" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey"}}
+{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey"}}
 {{ reserveImport .Package.SchemaPackagePath "Field" "getFields"}}
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
 {{ reserveImport "src/ent/loadAny" "loadEntByType" "loadEntXByType"}}
@@ -56,12 +56,9 @@ export class {{$baseClass}} {
     {{end}}
   }
 
-  // by default, we always deny and it's up to the ent 
-  // to overwrite this privacy policy in its subclasses
+  // default privacyPolicy is Viewer can see themselves
   {{/* TODO: make this configurable */ -}} 
-  privacyPolicy: {{useImport "PrivacyPolicy"}} = {
-    rules: [{{useImport "AllowIfViewerRule"}}, {{useImport "AlwaysDenyRule"}}],
-  };
+  privacyPolicy: {{useImport "PrivacyPolicy"}} = {{useImport "AllowIfViewerPrivacyPolicy"}};
 
   static async load<T extends {{$baseClass}}>(
     this: {{$thisType}},

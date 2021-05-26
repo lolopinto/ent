@@ -1,5 +1,5 @@
 export {
-  Auth,
+  AuthHandler,
   AuthViewer,
   registerAuthHandler,
   clearAuthHandlers,

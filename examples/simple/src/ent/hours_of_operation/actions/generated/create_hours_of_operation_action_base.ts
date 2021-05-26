@@ -3,9 +3,8 @@
 import { Action, WriteOperation, Changeset } from "@lolopinto/ent/action";
 import {
   Viewer,
-  AllowIfHasIdentity,
+  AllowIfViewerHasIdentityPrivacyPolicy,
   PrivacyPolicy,
-  AlwaysDenyRule,
 } from "@lolopinto/ent";
 import { dayOfWeek, HoursOfOperation } from "src/ent/";
 import {
@@ -36,9 +35,7 @@ export class CreateHoursOfOperationActionBase
   }
 
   getPrivacyPolicy(): PrivacyPolicy {
-    return {
-      rules: [AllowIfHasIdentity, AlwaysDenyRule],
-    };
+    return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
   getInput(): HoursOfOperationInput {

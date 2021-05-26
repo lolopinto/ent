@@ -9,8 +9,7 @@ import {
   loadEnts,
   LoadEntOptions,
   AssocEdge,
-  AlwaysDenyRule,
-  AllowIfViewerRule,
+  AllowIfViewerPrivacyPolicy,
   PrivacyPolicy,
   getEdgeTypeInGroup,
   ObjectLoaderFactory,
@@ -42,7 +41,6 @@ const fields = [
 ];
 
 export enum EventRsvpStatus {
-  Invited = "invited",
   Attending = "attending",
   Declined = "declined",
   Maybe = "maybe",
@@ -51,7 +49,6 @@ export enum EventRsvpStatus {
 
 export function getEventRsvpStatusValues() {
   return [
-    EventRsvpStatus.Invited,
     EventRsvpStatus.Attending,
     EventRsvpStatus.Declined,
     EventRsvpStatus.Maybe,
@@ -81,11 +78,8 @@ export class EventBase {
     this.location = data.location;
   }
 
-  // by default, we always deny and it's up to the ent
-  // to overwrite this privacy policy in its subclasses
-  privacyPolicy: PrivacyPolicy = {
-    rules: [AllowIfViewerRule, AlwaysDenyRule],
-  };
+  // default privacyPolicy is Viewer can see themselves
+  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
 
   static async load<T extends EventBase>(
     this: new (viewer: Viewer, data: Data) => T,
@@ -159,7 +153,6 @@ export class EventBase {
     let m: Map<EventRsvpStatus, EdgeType> = new Map();
     m.set(EventRsvpStatus.Attending, EdgeType.EventToAttending);
     m.set(EventRsvpStatus.Declined, EdgeType.EventToDeclined);
-    m.set(EventRsvpStatus.Invited, EdgeType.EventToInvited);
     m.set(EventRsvpStatus.Maybe, EdgeType.EventToMaybe);
     return m;
   }

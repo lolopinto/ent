@@ -170,7 +170,8 @@ export class AllowIfViewerIsRule implements PrivacyPolicyRule {
 }
 
 export class AllowIfEntIsVisibleRule<T extends Ent>
-  implements PrivacyPolicyRule {
+  implements PrivacyPolicyRule
+{
   constructor(private id: ID, private options: LoadEntOptions<T>) {}
 
   async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
@@ -183,7 +184,8 @@ export class AllowIfEntIsVisibleRule<T extends Ent>
 }
 
 export class AllowIfEntIsNotVisibleRule<T extends Ent>
-  implements PrivacyPolicyRule {
+  implements PrivacyPolicyRule
+{
   constructor(private id: ID, private options: LoadEntOptions<T>) {}
 
   async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
@@ -208,7 +210,8 @@ export class DenyIfEntIsVisiblePolicy<T extends Ent> implements PrivacyPolicy {
 }
 
 export class DenyIfEntIsVisibleRule<T extends Ent>
-  implements PrivacyPolicyRule {
+  implements PrivacyPolicyRule
+{
   constructor(private id: ID, private options: LoadEntOptions<T>) {}
 
   async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
@@ -221,7 +224,8 @@ export class DenyIfEntIsVisibleRule<T extends Ent>
 }
 
 export class DenyIfEntIsNotVisibleRule<T extends Ent>
-  implements PrivacyPolicyRule {
+  implements PrivacyPolicyRule
+{
   constructor(private id: ID, private options: LoadEntOptions<T>) {}
 
   async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
@@ -361,7 +365,8 @@ export class DenyIfEdgeDoesNotExistRule implements PrivacyPolicyRule {
 }
 
 export class DenyIfViewerInboundEdgeDoesNotExistRule
-  implements PrivacyPolicyRule {
+  implements PrivacyPolicyRule
+{
   constructor(private edgeType: string) {}
 
   async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
@@ -375,7 +380,8 @@ export class DenyIfViewerInboundEdgeDoesNotExistRule
 }
 
 export class DenyIfViewerOutboundEdgeDoesNotExistRule
-  implements PrivacyPolicyRule {
+  implements PrivacyPolicyRule
+{
   constructor(private edgeType: string) {}
 
   async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
@@ -480,10 +486,18 @@ export async function applyPrivacyPolicyX(
   throw new EntInvalidPrivacyPolicyError(policy, ent);
 }
 
-export const AlwaysAllowPrivacyPolicy = {
+export const AlwaysAllowPrivacyPolicy: PrivacyPolicy = {
   rules: [AlwaysAllowRule],
 };
 
-export const AlwaysDenyPrivacyPolicy = {
+export const AlwaysDenyPrivacyPolicy: PrivacyPolicy = {
   rules: [AlwaysDenyRule],
+};
+
+export const AllowIfViewerPrivacyPolicy: PrivacyPolicy = {
+  rules: [AllowIfViewerRule, AlwaysDenyRule],
+};
+
+export const AllowIfViewerHasIdentityPrivacyPolicy: PrivacyPolicy = {
+  rules: [AllowIfHasIdentity, AlwaysDenyRule],
 };

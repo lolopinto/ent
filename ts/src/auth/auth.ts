@@ -5,12 +5,12 @@ import { IncomingMessage, ServerResponse } from "http";
 import { log } from "../core/logger";
 
 export type AuthViewer = Viewer | null;
-export interface Auth {
+export interface AuthHandler {
   authViewer(ctx: RequestContext): AuthViewer | Promise<AuthViewer>;
 }
 
-let handlers: Map<string, Auth> = new Map();
-export async function registerAuthHandler(name: string, auth: Auth) {
+let handlers: Map<string, AuthHandler> = new Map();
+export async function registerAuthHandler(name: string, auth: AuthHandler) {
   handlers.set(name, auth);
 }
 

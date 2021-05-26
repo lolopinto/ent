@@ -3,9 +3,8 @@
 import { Action, WriteOperation, Changeset } from "@lolopinto/ent/action";
 import {
   Viewer,
-  AllowIfHasIdentity,
+  AllowIfViewerHasIdentityPrivacyPolicy,
   PrivacyPolicy,
-  AlwaysDenyRule,
 } from "@lolopinto/ent";
 import { Holiday } from "src/ent/";
 import {
@@ -30,9 +29,7 @@ export class CreateHolidayActionBase implements Action<Holiday> {
   }
 
   getPrivacyPolicy(): PrivacyPolicy {
-    return {
-      rules: [AllowIfHasIdentity, AlwaysDenyRule],
-    };
+    return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
   getInput(): HolidayInput {

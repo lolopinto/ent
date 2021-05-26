@@ -350,4 +350,18 @@ export class EventBuilder implements Builder<Event> {
   isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
     return (node as Builder<Ent>).placeholderID !== undefined;
   }
+
+  getStartTime(): Date | undefined {
+    if (this.input.startTime) {
+      return this.input.startTime;
+    }
+    return this.existingEnt?.startTime;
+  }
+
+  getEndTime(): Date | null | undefined {
+    if (this.input.endTime) {
+      return this.input.endTime;
+    }
+    return this.existingEnt?.endTime;
+  }
 }

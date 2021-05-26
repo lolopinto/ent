@@ -4,9 +4,8 @@ import { Action, WriteOperation, Changeset } from "@lolopinto/ent/action";
 import {
   Viewer,
   ID,
-  AllowIfHasIdentity,
+  AllowIfViewerHasIdentityPrivacyPolicy,
   PrivacyPolicy,
-  AlwaysDenyRule,
 } from "@lolopinto/ent";
 import { Contact } from "src/ent/";
 import {
@@ -29,9 +28,7 @@ export class DeleteContactActionBase implements Action<Contact> {
   }
 
   getPrivacyPolicy(): PrivacyPolicy {
-    return {
-      rules: [AllowIfHasIdentity, AlwaysDenyRule],
-    };
+    return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
   getInput(): ContactInput {
