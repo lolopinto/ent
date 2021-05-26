@@ -746,6 +746,13 @@ type gqlConnection struct {
 
 func getGqlConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, data *codegen.Data) *gqlConnection {
 	nodeType := fmt.Sprintf("%sType", edge.GetNodeInfo().Node)
+
+	var edgeImpPath string
+	if edge.TsEdgeQueryEdgeName() == "Data" {
+		edgeImpPath = codepath.Package
+	} else {
+		edgeImpPath = codepath.GetExternalImportPath()
+	}
 	return &gqlConnection{
 		ConnType: fmt.Sprintf("%sType", edge.GetGraphQLConnectionName()),
 		Edge:     edge,
@@ -757,7 +764,7 @@ func getGqlConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, data 
 				Type:       nodeType,
 			},
 			{
-				ImportPath: codepath.GetExternalImportPath(),
+				ImportPath: edgeImpPath,
 				Type:       edge.TsEdgeQueryEdgeName(),
 			},
 		},

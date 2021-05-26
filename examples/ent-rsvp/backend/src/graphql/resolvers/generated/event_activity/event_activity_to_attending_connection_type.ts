@@ -5,12 +5,15 @@ import {
   GraphQLString,
   GraphQLFieldConfigMap,
 } from "graphql";
-import { RequestContext, AssocEdge } from "@lolopinto/ent";
+import { RequestContext } from "@lolopinto/ent";
 import { GraphQLConnectionType, GraphQLEdge } from "@lolopinto/ent/graphql";
 import { GuestType } from "src/graphql/resolvers/internal";
 import { EventActivityToAttendingEdge } from "src/ent/";
 
-var connType: GraphQLConnectionType<GraphQLObjectType, AssocEdge>;
+var connType: GraphQLConnectionType<
+  GraphQLObjectType,
+  EventActivityToAttendingEdge
+>;
 
 export const EventActivityToAttendingConnectionType = () => {
   if (connType === undefined) {

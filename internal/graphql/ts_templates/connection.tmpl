@@ -8,7 +8,7 @@
   {{reserveImport .ImportPath .Type}}
 {{ end -}}
 
-var connType: {{useImport "GraphQLConnectionType"}}<{{useImport "GraphQLObjectType"}}, {{useImport "AssocEdge"}}>;
+var connType: {{useImport "GraphQLConnectionType"}}<{{useImport "GraphQLObjectType"}}, {{useImport $conn.Edge.TsEdgeQueryEdgeName}}>;
 
 export const {{ $conn.ConnType}} = () => {
 {{/* memoizee or something that actually confirms this is run only once is better here but memoizee doesn't work because GraphQLSchema */ -}}
