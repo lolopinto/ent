@@ -11,11 +11,11 @@ import { GraphQLEdge, GraphQLEdgeConnection } from "./edge_connection";
 import { GraphQLPageInfo } from "./page_info";
 import { GraphQLEdgeInterface } from "../builtins/edge";
 import { GraphQLConnectionInterface } from "../builtins/connection";
-import { AssocEdge } from "../../core/ent";
+import { Data } from "src/core/base";
 
 export class GraphQLEdgeType<
   TNode extends GraphQLObjectType,
-  TEdge extends AssocEdge
+  TEdge extends Data,
 > extends GraphQLObjectType {
   constructor(
     name: string,
@@ -50,19 +50,19 @@ export class GraphQLEdgeType<
   }
 }
 
-interface connectionOptions<T extends AssocEdge> {
+interface connectionOptions<T extends Data> {
   fields?(): GraphQLFieldConfigMap<GraphQLEdge<T>, RequestContext>;
 }
 
 export class GraphQLConnectionType<
   TNode extends GraphQLObjectType,
-  TEdge extends AssocEdge
+  TEdge extends Data,
 > extends GraphQLObjectType {
   edgeType: GraphQLEdgeType<TNode, TEdge>;
   constructor(
     name: string,
     nodeType: TNode,
-    options?: connectionOptions<TEdge>,
+    options?: connectionOptions<Data>,
   ) {
     const edgeType = new GraphQLEdgeType(name, nodeType, options?.fields);
 

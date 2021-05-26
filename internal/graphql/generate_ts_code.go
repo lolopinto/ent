@@ -736,6 +736,7 @@ type gqlEnum struct {
 }
 
 type gqlConnection struct {
+	ConnType string
 	FilePath string
 	Edge     edge.ConnectionEdge
 	Imports  []*fileImport
@@ -746,6 +747,7 @@ type gqlConnection struct {
 func getGqlConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, data *codegen.Data) *gqlConnection {
 	nodeType := fmt.Sprintf("%sType", edge.GetNodeInfo().Node)
 	return &gqlConnection{
+		ConnType: fmt.Sprintf("%sType", edge.GetGraphQLConnectionName()),
 		Edge:     edge,
 		FilePath: getFilePathForConnection(nodeData, edge.GetGraphQLConnectionName()),
 		NodeType: nodeType,
@@ -912,80 +914,118 @@ func writeEnumFile(enum *gqlEnum) error {
 	}))
 }
 
-// this is very similar to getSortedLines below but there's
-// just enough differences here that we duplicated
-// there's query types
-// and mutation types...
-func getQueryTypes(s *gqlSchema) []string {
-	// this works based on what we're currently doing
-	// if we eventually add other things here, may not work?
+type typeInfo struct {
+	Type string
+	Function bool
+	Path string
+}
 
-	var nodes []string
-	var conns []string
+const resolverPath = "./resolvers"
+
+// get all types to be passed to GraphQLschema
+func getAllTypes(s *gqlSchema) []typeInfo {
+	var nodes []typeInfo
+	var conns []typeInfo
+	var actionTypes []typeInfo
 	for _, node := range s.nodes {
-		// nodes [0]
-		// FilePath
-		// we need different objects here
-		// so maybe we change the resolvers...
 		for _, n := range node.ObjData.GQLNodes {
-			nodes = append(nodes, n.Type)
+			nodes = append(nodes, typeInfo{
+				Type: n.Type,
+				Path: resolverPath,
+			})
 		}
 		for _, conn := range node.connections {
-			conns = append(conns, conn.NodeType)
+			conns = append(conns, typeInfo{
+				Type: conn.ConnType,
+				Path: resolverPath,
+				Function: true,
+			})
+		}
+
+		// right now, only actions are dependents
+		for _, dep := range node.Dependents {
+			for _, depObj := range dep.ObjData.GQLNodes {
+				actionTypes = append(actionTypes, typeInfo{
+					Type: depObj.Type,
+					Path: trimPath(dep.FilePath),
+				})
+			}
 		}
 	}
-	var enums []string
+	var enums []typeInfo
 	for _, enum := range s.enums {
-		enums = append(enums, enum.Enum.Type)
+		enums = append(enums, typeInfo{
+			Type: enum.Type,
+		Path:resolverPath,
+		})
 	}
 
-	var customQueries []string
+	var customQueries []typeInfo
 	for _, node := range s.customQueries {
-		customQueries = append(customQueries, node.ObjData.Node)
+		for _, n := range node.ObjData.GQLNodes {
+			customQueries = append(customQueries, typeInfo{
+				Type: n.Type,
+				Path:resolverPath,
+			})
+		}
 	}
 
-	var lines []string
+		var customMutations []typeInfo
+	for _, node := range s.customMutations {
+		for _, n := range node.ObjData.GQLNodes {
+			customMutations = append(customMutations, typeInfo{
+				Type: n.Type,
+				Path: trimPath(node.FilePath),
+			})
+		}
+	}
+
+	var lines []typeInfo
 	// get the enums
 	// get top level nodes e.g. User, Photo
 	// get the connections
 	// get the custom queries
-	list := [][]string{
+	list := [][]typeInfo{
 		enums,
 		nodes,
 		conns,
 		customQueries,
+		// input, payload in Actions
+		actionTypes,
 	}
 	for _, l := range list {
-		sort.Strings(l)
+		sort.Slice(l, func(i, j int) bool {
+			return l[i].Type < l[j].Type
+		})
 		lines = append(lines, l...)
 	}
-	spew.Dump(lines)
 	return lines
 }
 
+func trimPath(path string) string {
+	return strings.TrimSuffix(path, ".ts")
+}
+
 func getSortedLines(s *gqlSchema) []string {
-	append2 := func(list *[]string, str string) {
-		*list = append(*list, strings.TrimSuffix(str, ".ts"))
-	}
 	// this works based on what we're currently doing
 	// if we eventually add other things here, may not work?
 
 	var nodes []string
 	var conns []string
 	for _, node := range s.nodes {
-		append2(&nodes, node.FilePath)
+		nodes = append(nodes, trimPath((node.FilePath)))
 		for _, conn := range node.connections {
-			append2(&conns, conn.FilePath)
+			conns = append(conns, trimPath(conn.FilePath))
 		}
 	}
 	var enums []string
 	for _, enum := range s.enums {
-		append2(&enums, enum.FilePath)
+		enums = append(enums, trimPath(enum.FilePath))
 	}
 
 	var customQueries []string
 	for _, node := range s.customQueries {
-		append2(&customQueries, node.FilePath)
+		customQueries = append(customQueries, trimPath(node.FilePath))
 	}
 
 	random := []string{
@@ -993,7 +1033,7 @@ func getSortedLines(s *gqlSchema) []string {
 	}
 	var randomImports []string
 	for _, imp := range random {
-		append2(&randomImports, imp)
+		randomImports = append(randomImports, trimPath(imp))
 	}
 
 	var lines []string
@@ -2163,12 +2203,12 @@ func writeTSSchemaFile(data *codegen.Data, s *gqlSchema) error {
 			HasMutations bool
 			QueryPath    string
 			MutationPath string
-			AllTypes []string
+			AllTypes []typeInfo
 		}{
 			s.hasMutations,
 			getQueryImportPath(),
 			getMutationImportPath(),
-			getObjTypes(s),
+			getAllTypes(s),
 		},
 
 		CreateDirIfNeeded: true,

@@ -7,10 +7,10 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   PrivacyPolicy,
 } from "@lolopinto/ent";
-import { Event } from "src/ent/";
+import { Event, User } from "src/ent/";
 import { EventBuilder, EventInput } from "src/ent/event/actions/event_builder";
 
-export class DeleteEventActionBase implements Action<Event> {
+export class EventRemoveHostActionBase implements Action<Event> {
   public readonly builder: EventBuilder;
   public readonly viewer: Viewer;
 
@@ -18,7 +18,7 @@ export class DeleteEventActionBase implements Action<Event> {
     this.viewer = viewer;
     this.builder = new EventBuilder(
       this.viewer,
-      WriteOperation.Delete,
+      WriteOperation.Edit,
       this,
       event,
     );
@@ -32,6 +32,12 @@ export class DeleteEventActionBase implements Action<Event> {
     return {};
   }
 
+  removeHost(...ids: ID[]): this;
+  removeHost(...nodes: User[]): this;
+  removeHost(...nodes: ID[] | User[]): this {
+    nodes.forEach((node) => this.builder.removeHost(node));
+    return this;
+  }
   async changeset(): Promise<Changeset<Event>> {
     return this.builder.build();
   }
@@ -44,28 +50,31 @@ export class DeleteEventActionBase implements Action<Event> {
     await this.builder.validX();
   }
 
-  async save(): Promise<void> {
+  async save(): Promise<Event | null> {
     await this.builder.save();
+    return await this.builder.editedEnt();
   }
 
-  async saveX(): Promise<void> {
+  async saveX(): Promise<Event> {
     await this.builder.saveX();
+    return await this.builder.editedEntX();
   }
 
-  static create<T extends DeleteEventActionBase>(
+  static create<T extends EventRemoveHostActionBase>(
     this: new (viewer: Viewer, event: Event) => T,
     viewer: Viewer,
     event: Event,
-  ): DeleteEventActionBase {
+  ): EventRemoveHostActionBase {
     return new this(viewer, event);
   }
 
-  static async saveXFromID<T extends DeleteEventActionBase>(
+  static async saveXFromID<T extends EventRemoveHostActionBase>(
     this: new (viewer: Viewer, event: Event) => T,
     viewer: Viewer,
     id: ID,
-  ): Promise<void> {
+    hostID: ID,
+  ): Promise<Event> {
     let event = await Event.loadX(viewer, id);
-    return await new this(viewer, event).saveX();
+    return await new this(viewer, event).removeHost(hostID).saveX();
   }
 }

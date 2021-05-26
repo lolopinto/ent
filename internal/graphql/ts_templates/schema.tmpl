@@ -6,7 +6,7 @@
 {{ end -}}
 
 {{range $typ := .AllTypes -}}
-  {{reserveImport "./resolvers" $typ}}
+  {{reserveImport $typ.Path $typ.Type}}
 {{ end -}} 
 
 export default new {{useImport "GraphQLSchema"}}({
@@ -16,7 +16,11 @@ export default new {{useImport "GraphQLSchema"}}({
   {{end -}}
   types: [
     {{range $typ := .AllTypes -}}
-      {{useImport $typ}},
+    {{if $typ.Function -}}
+      {{useImport $typ.Type}}(),
+    {{else -}}
+      {{useImport $typ.Type}},
+    {{end -}}
     {{ end -}} 
   ],
 });

@@ -1,7 +1,6 @@
 {{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" "GraphQLBoolean" }}
-{{reserveImport .Package.PackagePath "ID" "RequestContext" }}
+{{reserveImport .Package.PackagePath "ID" "RequestContext" "AssocEdge"}}
 {{reserveImport .Package.GraphQLPackagePath "GraphQLTime" "GraphQLEdgeType" "GraphQLConnectionType" "GraphQLEdge"}}
-
 {{$conn := .Connection}}
 {{$baseObj := .BaseObj}}
 {{/* import types that we may need e.g. UserType, ContactType, etc */}}
@@ -9,30 +8,37 @@
   {{reserveImport .ImportPath .Type}}
 {{ end -}}
 
-export const {{ printf "%sType" $conn.Edge.GetGraphQLConnectionName}} = () => {
-  return new {{useImport "GraphQLConnectionType"}}(
-   "{{$conn.Edge.GetGraphQLEdgePrefix}}",
-   {{useImport $conn.NodeType -}},
-   {{ $obj := .CustomObject -}}
-   {{ if $obj -}}
-    {{ range $obj.Imports -}} 
-      {{if .ImportPath -}}
-        {{reserveImport .ImportPath .Type -}}
-      {{end -}}
+var connType: {{useImport "GraphQLConnectionType"}}<{{useImport "GraphQLObjectType"}}, {{useImport "AssocEdge"}}>;
+
+export const {{ $conn.ConnType}} = () => {
+{{/* memoizee or something that actually confirms this is run only once is better here but memoizee doesn't work because GraphQLSchema */ -}}
+  if (connType === undefined) {
+    connType = new {{useImport "GraphQLConnectionType"}}(
+    "{{$conn.Edge.GetGraphQLEdgePrefix}}",
+    {{useImport $conn.NodeType -}},
+    {{ $obj := .CustomObject -}}
+    {{ if $obj -}}
+      {{ range $obj.Imports -}} 
+        {{if .ImportPath -}}
+          {{reserveImport .ImportPath .Type -}}
+        {{end -}}
+      {{ end -}}
+      {{ range $obj.DefaultImports -}}    
+        {{if .ImportPath -}}
+          {{reserveDefaultImport .ImportPath .Type -}}
+        {{end -}}
+      {{ end -}}
+      {
+        fields: (): {{useImport "GraphQLFieldConfigMap"}}<
+          {{useImport "GraphQLEdge"}}<{{useImport $conn.Edge.TsEdgeQueryEdgeName}}>,
+          {{useImport "RequestContext"}}
+        > => ({
+          {{ template "field.tmpl" (dict "Base" $baseObj "Node" $obj "NodeInstance" "edge") -}}
+        }),
+      },
     {{ end -}}
-    {{ range $obj.DefaultImports -}}    
-      {{if .ImportPath -}}
-        {{reserveDefaultImport .ImportPath .Type -}}
-      {{end -}}
-    {{ end -}}
-    {
-      fields: (): {{useImport "GraphQLFieldConfigMap"}}<
-        {{useImport "GraphQLEdge"}}<{{useImport $conn.Edge.TsEdgeQueryEdgeName}}>,
-        {{useImport "RequestContext"}}
-      > => ({
-        {{ template "field.tmpl" (dict "Base" $baseObj "Node" $obj "NodeInstance" "edge") -}}
-      }),
-    },
-   {{ end -}}
-  );
-}
+    );
+  } 
+  return connType;
+};
+
