@@ -5,6 +5,8 @@ import {
   Viewer,
   EntConstructor,
   LoadEntOptions,
+  PrivacyError,
+  PrivacyPolicy,
 } from "../core/base";
 import {
   AssocEdgeInputOptions,
@@ -88,6 +90,46 @@ type OperationMap = Map<WriteOperation, IDMap>;
 //   }
 // }
 type EdgeMap = Map<string, OperationMap>;
+
+function getViewer(action: Action<Ent>) {
+  if (!action.viewer.viewerID) {
+    return "Logged out Viewer";
+  } else {
+    return `Viewer with ID ${action.viewer.viewerID}`;
+  }
+}
+class EntCannotCreateEntError extends Error implements PrivacyError {
+  privacyPolicy: PrivacyPolicy;
+  constructor(privacyPolicy: PrivacyPolicy, action: Action<Ent>) {
+    let msg = `${getViewer(action)} does not have permission to create ${
+      action.builder.ent.name
+    }`;
+    super(msg);
+    this.privacyPolicy = privacyPolicy;
+  }
+}
+
+class EntCannotEditEntError extends Error implements PrivacyError {
+  privacyPolicy: PrivacyPolicy;
+  constructor(privacyPolicy: PrivacyPolicy, action: Action<Ent>, ent: Ent) {
+    let msg = `${getViewer(action)} does not have permission to edit ${
+      ent.constructor.name
+    }`;
+    super(msg);
+    this.privacyPolicy = privacyPolicy;
+  }
+}
+
+class EntCannotDeleteEntError extends Error implements PrivacyError {
+  privacyPolicy: PrivacyPolicy;
+  constructor(privacyPolicy: PrivacyPolicy, action: Action<Ent>, ent: Ent) {
+    let msg = `${getViewer(action)} does not have permission to delete ${
+      ent.constructor.name
+    }`;
+    super(msg);
+    this.privacyPolicy = privacyPolicy;
+  }
+}
 
 export class Orchestrator<T extends Ent> {
   private edgeSet: Set<string> = new Set<string>();
@@ -313,6 +355,29 @@ export class Orchestrator<T extends Ent> {
     }
   }
 
+  private throwError(): PrivacyError {
+    const action = this.options.action;
+    let privacyPolicy = action?.getPrivacyPolicy();
+    if (!privacyPolicy || !action) {
+      throw new Error(`shouldn't get here if no privacyPolicy for action`);
+    }
+
+    if (this.options.operation === WriteOperation.Insert) {
+      return new EntCannotCreateEntError(privacyPolicy, action);
+    } else if (this.options.operation === WriteOperation.Edit) {
+      return new EntCannotEditEntError(
+        privacyPolicy,
+        action,
+        this.options.builder.existingEnt!,
+      );
+    }
+    return new EntCannotDeleteEntError(
+      privacyPolicy,
+      action,
+      this.options.builder.existingEnt!,
+    );
+  }
+
   private async validate(): Promise<void> {
     const action = this.options.action;
     let privacyPolicy = action?.getPrivacyPolicy();
@@ -325,6 +390,7 @@ export class Orchestrator<T extends Ent> {
           this.options.viewer,
           privacyPolicy,
           builder.existingEnt,
+          this.throwError.bind(this),
         ),
       );
     }

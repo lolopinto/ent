@@ -464,6 +464,7 @@ export async function applyPrivacyPolicyX(
   v: Viewer,
   policy: PrivacyPolicy,
   ent: Ent | undefined,
+  throwErr?: () => Error,
 ): Promise<boolean> {
   // right now we apply all at same time. todo: be smart about this in the future
   const results = await Promise.all(
@@ -478,6 +479,9 @@ export async function applyPrivacyPolicyX(
       // specific error throw that
       if (res.error) {
         throw res.error;
+      }
+      if (throwErr) {
+        throw throwErr();
       }
       throw new EntPrivacyError(policy, rule, ent);
     }

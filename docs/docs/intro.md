@@ -250,7 +250,7 @@ We get this error back:
 {
   "errors": [
     {
-      "message": "ent undefined is not visible for privacy reasons",
+      "message": "Logged out Viewer does not have permission to create User",
       "locations": [
         {
           "line": 2,
