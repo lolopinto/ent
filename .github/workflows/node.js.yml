@@ -10,6 +10,7 @@ on:
       - python/**
       - /examples/**
       - .github/**
+      - docs/**
 
 defaults: 
   run: 
