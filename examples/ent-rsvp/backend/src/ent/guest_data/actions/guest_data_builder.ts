@@ -116,4 +116,21 @@ export class GuestDataBuilder implements Builder<GuestData> {
   isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
     return (node as Builder<Ent>).placeholderID !== undefined;
   }
+
+  // get value of guestID. Retrieves it from the input if specified or takes it from existingEnt
+  getNewGuestIDValue(): ID | Builder<Guest> | undefined {
+    return this.input.guestID || this.existingEnt?.guestID;
+  }
+
+  // get value of eventID. Retrieves it from the input if specified or takes it from existingEnt
+  getNewEventIDValue(): ID | Builder<Event> | undefined {
+    return this.input.eventID || this.existingEnt?.eventID;
+  }
+
+  // get value of dietaryRestrictions. Retrieves it from the input if specified or takes it from existingEnt
+  getNewDietaryRestrictionsValue(): string | undefined {
+    return (
+      this.input.dietaryRestrictions || this.existingEnt?.dietaryRestrictions
+    );
+  }
 }

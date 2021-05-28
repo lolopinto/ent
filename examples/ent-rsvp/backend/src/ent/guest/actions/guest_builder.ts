@@ -230,4 +230,29 @@ export class GuestBuilder implements Builder<Guest> {
   isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
     return (node as Builder<Ent>).placeholderID !== undefined;
   }
+
+  // get value of Name. Retrieves it from the input if specified or takes it from existingEnt
+  getNewNameValue(): string | undefined {
+    return this.input.name || this.existingEnt?.name;
+  }
+
+  // get value of eventID. Retrieves it from the input if specified or takes it from existingEnt
+  getNewEventIDValue(): ID | Builder<Event> | undefined {
+    return this.input.eventID || this.existingEnt?.eventID;
+  }
+
+  // get value of EmailAddress. Retrieves it from the input if specified or takes it from existingEnt
+  getNewEmailAddressValue(): string | null | undefined {
+    return this.input.emailAddress || this.existingEnt?.emailAddress;
+  }
+
+  // get value of guestGroupID. Retrieves it from the input if specified or takes it from existingEnt
+  getNewGuestGroupIDValue(): ID | Builder<GuestGroup> | undefined {
+    return this.input.guestGroupID || this.existingEnt?.guestGroupID;
+  }
+
+  // get value of title. Retrieves it from the input if specified or takes it from existingEnt
+  getNewTitleValue(): string | null | undefined {
+    return this.input.title || this.existingEnt?.title;
+  }
 }

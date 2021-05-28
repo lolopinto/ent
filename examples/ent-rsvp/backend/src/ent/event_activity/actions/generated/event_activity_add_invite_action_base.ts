@@ -10,9 +10,8 @@ import {
   Viewer,
   ID,
   AssocEdgeInputOptions,
-  AllowIfHasIdentity,
+  AllowIfViewerHasIdentityPrivacyPolicy,
   PrivacyPolicy,
-  AlwaysDenyRule,
 } from "@lolopinto/ent";
 import { EventActivity, GuestGroup } from "src/ent/";
 import {
@@ -35,9 +34,7 @@ export class EventActivityAddInviteActionBase implements Action<EventActivity> {
   }
 
   getPrivacyPolicy(): PrivacyPolicy {
-    return {
-      rules: [AllowIfHasIdentity, AlwaysDenyRule],
-    };
+    return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
   getInput(): EventActivityInput {

@@ -422,7 +422,8 @@ func (e *ForeignKeyEdge) GetGraphQLConnectionName() string {
 }
 
 func (e *ForeignKeyEdge) TsEdgeQueryEdgeName() string {
-	return fmt.Sprintf("%sTo%sEdge", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
+	// For ForeignKeyEdge, we only use this with GraphQLConnectionType and the EdgeType is "Data"
+	return "Data"
 }
 
 func (e *ForeignKeyEdge) GetGraphQLEdgePrefix() string {
@@ -508,7 +509,8 @@ func (e *IndexedEdge) GetGraphQLConnectionName() string {
 }
 
 func (e *IndexedEdge) TsEdgeQueryEdgeName() string {
-	return fmt.Sprintf("%sTo%sEdge", e.tsEdgeName, strcase.ToCamel(e.EdgeName))
+	// For IndexedEdge, we only use this with GraphQLConnectionType and the EdgeType is "Data"
+	return "Data"
 }
 
 func (e *IndexedEdge) GetGraphQLEdgePrefix() string {

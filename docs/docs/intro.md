@@ -78,6 +78,8 @@ npm run codegen
 
 After running `npm run codegen`, here's a list of generated files:
 
+(The first time this is run, it'll take a while because it's downloading the base Docker image).
+
 ```
 	new file:   src/ent/const.ts
 	new file:   src/ent/generated/user_base.ts
@@ -123,13 +125,13 @@ type Query {
 
 After running
 ```shell
-npm run compile && npm run start
+npm run compile && npm start
 ```
 
 we have a **live** GraphQL server.
 
 ## Database changes
-Note that the database was also updated by the command run above:
+Note that the database was also updated by the command run above. Running `psql ent-starter` shows:
 ```db
 ent-starter=# \d+ users
                                                  Table "public.users"
@@ -226,7 +228,7 @@ input UserCreateInput {
 Re-compile and restart the server:
 
 ```shell
-npm run compile && npm run start
+npm run compile && npm start
 ```
 
 Visit `http://localhost:4000/graphql` in your browser and then execute this query:
@@ -250,7 +252,7 @@ We get this error back:
 {
   "errors": [
     {
-      "message": "ent undefined is not visible for privacy reasons",
+      "message": "Logged out Viewer does not have permission to create User",
       "locations": [
         {
           "line": 2,
@@ -269,7 +271,7 @@ We get this error back:
 Update `src/ent/user/actions/create_user_action.ts` as follows:
 
 ```ts title="src/ent/user/actions/create_user_action.ts"
-import { Data, IDViewer } from "@lolopinto/ent";
+import { Data, IDViewer, AlwaysAllowPrivacyPolicy } from "@lolopinto/ent";
 import {
   CreateUserActionBase,
   UserCreateInput,
@@ -294,7 +296,7 @@ What changed above:
 
 Re-compile and restart the server:
 ```shell
-npm run compile && npm run start
+npm run compile && npm start
 ```
 
 Then rerun the GraphQL query again and you should get a response similar to:
@@ -334,7 +336,7 @@ export class User extends UserBase {
 
 and then run the following command:
 ```shell
-npm run codegen && npm run compile && npm run start
+npm run codegen && npm run compile && npm start
 ```
 
 and then run the following GraphQL query:

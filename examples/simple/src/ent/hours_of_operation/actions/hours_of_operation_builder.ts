@@ -116,4 +116,19 @@ export class HoursOfOperationBuilder implements Builder<HoursOfOperation> {
   isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
     return (node as Builder<Ent>).placeholderID !== undefined;
   }
+
+  // get value of dayOfWeek. Retrieves it from the input if specified or takes it from existingEnt
+  getNewDayOfWeekValue(): dayOfWeek | undefined {
+    return this.input.dayOfWeek || this.existingEnt?.dayOfWeek;
+  }
+
+  // get value of open. Retrieves it from the input if specified or takes it from existingEnt
+  getNewOpenValue(): Date | undefined {
+    return this.input.open || this.existingEnt?.open;
+  }
+
+  // get value of close. Retrieves it from the input if specified or takes it from existingEnt
+  getNewCloseValue(): Date | undefined {
+    return this.input.close || this.existingEnt?.close;
+  }
 }

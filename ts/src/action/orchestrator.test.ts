@@ -36,6 +36,7 @@ import {
   DenyIfLoggedInRule,
   AlwaysDenyRule,
   AlwaysAllowPrivacyPolicy,
+  DenyIfLoggedOutRule,
 } from "../core/privacy";
 import { edgeDirection } from "./orchestrator";
 import { createRowForTest } from "../testutils/write";
@@ -1589,7 +1590,7 @@ describe("validators", () => {
 });
 
 describe("privacyPolicy", () => {
-  test("valid simple policy", async () => {
+  test("valid", async () => {
     let action = new SimpleAction(
       new LoggedOutViewer(),
       new UserSchema(),
@@ -1608,7 +1609,7 @@ describe("privacyPolicy", () => {
     expect(valid).toBe(true);
   });
 
-  test("invalid simple policy", async () => {
+  test("invalid", async () => {
     const viewer = new IDViewer("1");
     const action = new SimpleAction(
       viewer,
@@ -1628,7 +1629,7 @@ describe("privacyPolicy", () => {
     expect(valid).toBe(false);
   });
 
-  test("invalidX simple policy", async () => {
+  test("invalidX. create", async () => {
     const viewer = new IDViewer("1");
     const action = new SimpleAction(
       viewer,
@@ -1649,7 +1650,88 @@ describe("privacyPolicy", () => {
       fail("should have thrown");
     } catch (e) {
       expect(e.message).toMatch(
-        /ent undefined is not visible for privacy reasons/,
+        /Viewer with ID 1 does not have permission to create User/,
+      );
+    }
+  });
+
+  test("invalidX. edit", async () => {
+    const viewer = new IDViewer("1");
+    const action = new SimpleAction(
+      viewer,
+      new UserSchema(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Edit,
+      new User(new LoggedOutViewer(), { id: "1" }),
+    );
+    action.getPrivacyPolicy = () => {
+      return {
+        rules: [DenyIfLoggedInRule, AlwaysAllowRule],
+      };
+    };
+    try {
+      await action.validX();
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toMatch(
+        /Viewer with ID 1 does not have permission to edit User/,
+      );
+    }
+  });
+
+  test("invalidX. delete", async () => {
+    const viewer = new IDViewer("1");
+    const action = new SimpleAction(
+      viewer,
+      new UserSchema(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Delete,
+      new User(new LoggedOutViewer(), { id: "1" }),
+    );
+    action.getPrivacyPolicy = () => {
+      return {
+        rules: [DenyIfLoggedInRule, AlwaysAllowRule],
+      };
+    };
+    try {
+      await action.validX();
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toMatch(
+        /Viewer with ID 1 does not have permission to delete User/,
+      );
+    }
+  });
+
+  test("invalidX. logged out. delete", async () => {
+    const viewer = new LoggedOutViewer();
+    const action = new SimpleAction(
+      viewer,
+      new UserSchema(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Delete,
+      new User(new LoggedOutViewer(), { id: "1" }),
+    );
+    action.getPrivacyPolicy = () => {
+      return {
+        rules: [DenyIfLoggedOutRule, AlwaysAllowRule],
+      };
+    };
+    try {
+      await action.validX();
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toMatch(
+        /Logged out Viewer does not have permission to delete User/,
       );
     }
   });
@@ -1971,7 +2053,9 @@ describe("combo", () => {
       await action.saveX();
       fail("expected error");
     } catch (err) {
-      expect(err.message).toMatch(/is not visible for privacy reasons$/);
+      expect(err.message).toMatch(
+        /Viewer with ID 1 does not have permission to create User$/,
+      );
     }
     FakeComms.verifyNoEmailSent();
   });

@@ -5,5 +5,4 @@ import {
 
 export { EditEventRsvpStatusInput };
 
-// we're only writing this once except with --force and packageName provided
 export default class EditEventRsvpStatusAction extends EditEventRsvpStatusActionBase {}

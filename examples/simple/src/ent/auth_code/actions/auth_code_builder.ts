@@ -118,4 +118,24 @@ export class AuthCodeBuilder implements Builder<AuthCode> {
   isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
     return (node as Builder<Ent>).placeholderID !== undefined;
   }
+
+  // get value of code. Retrieves it from the input if specified or takes it from existingEnt
+  getNewCodeValue(): string | undefined {
+    return this.input.code || this.existingEnt?.code;
+  }
+
+  // get value of userID. Retrieves it from the input if specified or takes it from existingEnt
+  getNewUserIDValue(): ID | Builder<User> | undefined {
+    return this.input.userID || this.existingEnt?.userID;
+  }
+
+  // get value of emailAddress. Retrieves it from the input if specified or takes it from existingEnt
+  getNewEmailAddressValue(): string | null | undefined {
+    return this.input.emailAddress || this.existingEnt?.emailAddress;
+  }
+
+  // get value of phoneNumber. Retrieves it from the input if specified or takes it from existingEnt
+  getNewPhoneNumberValue(): string | null | undefined {
+    return this.input.phoneNumber || this.existingEnt?.phoneNumber;
+  }
 }

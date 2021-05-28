@@ -10,9 +10,8 @@ import {
   Viewer,
   ID,
   Ent,
-  AllowIfHasIdentity,
+  AllowIfViewerHasIdentityPrivacyPolicy,
   PrivacyPolicy,
-  AlwaysDenyRule,
 } from "@lolopinto/ent";
 import { Address } from "src/ent/";
 import {
@@ -42,9 +41,7 @@ export class CreateAddressActionBase implements Action<Address> {
   }
 
   getPrivacyPolicy(): PrivacyPolicy {
-    return {
-      rules: [AllowIfHasIdentity, AlwaysDenyRule],
-    };
+    return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
   getInput(): AddressInput {

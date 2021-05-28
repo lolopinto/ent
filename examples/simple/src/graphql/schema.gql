@@ -1,6 +1,28 @@
-type Query {
-  node(id: ID!): Node
-  viewer: Viewer!
+enum EventRsvpStatus {
+  ATTENDING
+  DECLINED
+  MAYBE
+  CAN_RSVP
+}
+
+enum dayOfWeek {
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+}
+
+type Address implements Node {
+  id: ID!
+  streetName: String!
+  city: String!
+  state: String!
+  zip: String!
+  apartment: String
+  country: String!
 }
 
 """node interface"""
@@ -8,9 +30,44 @@ interface Node {
   id: ID!
 }
 
-type Viewer {
-  viewerID: ID
+type Contact implements Node {
   user: User
+  id: ID!
+  emailAddress: String!
+  firstName: String!
+  lastName: String!
+  fullName: String!
+}
+
+type Event implements Node {
+  creator: User
+  id: ID!
+  name: String!
+  startTime: Time!
+  endTime: Time
+  eventLocation: String!
+  attending(first: Int, after: String, last: Int, before: String): EventToAttendingConnection!
+  declined(first: Int, after: String, last: Int, before: String): EventToDeclinedConnection!
+  hosts(first: Int, after: String, last: Int, before: String): EventToHostsConnection!
+  invited(first: Int, after: String, last: Int, before: String): EventToInvitedConnection!
+  maybe(first: Int, after: String, last: Int, before: String): EventToMaybeConnection!
+  viewerRsvpStatus: EventRsvpStatus
+}
+
+"""Time scalar type"""
+scalar Time
+
+type Holiday implements Node {
+  id: ID!
+  label: String!
+  date: Time!
+}
+
+type HoursOfOperation implements Node {
+  id: ID!
+  dayOfWeek: dayOfWeek!
+  open: String!
+  close: String!
 }
 
 type User implements Node {
@@ -39,18 +96,9 @@ type User implements Node {
   contactsSameDomainNullableContentsAndList: [Contact]
 }
 
-type Contact implements Node {
-  user: User
-  id: ID!
-  emailAddress: String!
-  firstName: String!
-  lastName: String!
-  fullName: String!
-}
-
-type UserToCreatedEventsConnection implements Connection {
-  edges: [UserToCreatedEventsEdge!]!
-  nodes: [Event!]!
+type EventToAttendingConnection implements Connection {
+  edges: [EventToAttendingEdge!]!
+  nodes: [User!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -73,36 +121,6 @@ type PageInfo {
   hasPreviousPage: Boolean!
   startCursor: String!
   endCursor: String!
-}
-
-type UserToCreatedEventsEdge implements Edge {
-  node: Event!
-  cursor: String!
-}
-
-type Event implements Node {
-  creator: User
-  id: ID!
-  name: String!
-  startTime: Time!
-  endTime: Time
-  eventLocation: String!
-  attending(first: Int, after: String, last: Int, before: String): EventToAttendingConnection!
-  declined(first: Int, after: String, last: Int, before: String): EventToDeclinedConnection!
-  hosts(first: Int, after: String, last: Int, before: String): EventToHostsConnection!
-  invited(first: Int, after: String, last: Int, before: String): EventToInvitedConnection!
-  maybe(first: Int, after: String, last: Int, before: String): EventToMaybeConnection!
-  viewerRsvpStatus: EventRsvpStatus
-}
-
-"""Time scalar type"""
-scalar Time
-
-type EventToAttendingConnection implements Connection {
-  edges: [EventToAttendingEdge!]!
-  nodes: [User!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
 }
 
 type EventToAttendingEdge implements Edge {
@@ -158,11 +176,28 @@ type EventToMaybeEdge implements Edge {
   cursor: String!
 }
 
-enum EventRsvpStatus {
-  ATTENDING
-  DECLINED
-  MAYBE
-  CAN_RSVP
+type UserToContactsConnection implements Connection {
+  edges: [UserToContactsEdge!]!
+  nodes: [Contact!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToContactsEdge implements Edge {
+  node: Contact!
+  cursor: String!
+}
+
+type UserToCreatedEventsConnection implements Connection {
+  edges: [UserToCreatedEventsEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToCreatedEventsEdge implements Edge {
+  node: Event!
+  cursor: String!
 }
 
 type UserToDeclinedEventsConnection implements Connection {
@@ -201,6 +236,18 @@ type UserToFriendsEdge implements Edge {
   cursor: String!
 }
 
+type UserToHostedEventsConnection implements Connection {
+  edges: [UserToHostedEventsEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToHostedEventsEdge implements Edge {
+  node: Event!
+  cursor: String!
+}
+
 type UserToInvitedEventsConnection implements Connection {
   edges: [UserToInvitedEventsEdge!]!
   nodes: [Event!]!
@@ -225,28 +272,212 @@ type UserToMaybeEventsEdge implements Edge {
   cursor: String!
 }
 
-type UserToHostedEventsConnection implements Connection {
-  edges: [UserToHostedEventsEdge!]!
-  nodes: [Event!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
+type Viewer {
+  viewerID: ID
+  user: User
 }
 
-type UserToHostedEventsEdge implements Edge {
-  node: Event!
-  cursor: String!
+input AddressCreateInput {
+  streetName: String!
+  city: String!
+  state: String!
+  zip: String!
+  apartment: String
+  country: String
 }
 
-type UserToContactsConnection implements Connection {
-  edges: [UserToContactsEdge!]!
-  nodes: [Contact!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
+type AddressCreatePayload {
+  address: Address!
 }
 
-type UserToContactsEdge implements Edge {
-  node: Contact!
-  cursor: String!
+input ConfirmEmailAddressEditInput {
+  userID: ID!
+  emailAddress: String!
+  code: String!
+}
+
+type ConfirmEmailAddressEditPayload {
+  user: User!
+}
+
+input ConfirmPhoneNumberEditInput {
+  userID: ID!
+  phoneNumber: String!
+  code: String!
+}
+
+type ConfirmPhoneNumberEditPayload {
+  user: User!
+}
+
+input ContactCreateInput {
+  emailAddress: String!
+  firstName: String!
+  lastName: String!
+  userID: ID!
+}
+
+type ContactCreatePayload {
+  contact: Contact!
+}
+
+input ContactDeleteInput {
+  contactID: ID!
+}
+
+type ContactDeletePayload {
+  deletedContactID: ID
+}
+
+input ContactEditInput {
+  contactID: ID!
+  emailAddress: String
+  firstName: String
+  lastName: String
+  userID: ID
+}
+
+type ContactEditPayload {
+  contact: Contact!
+}
+
+input EmailAddressEditInput {
+  userID: ID!
+  newEmail: String!
+}
+
+type EmailAddressEditPayload {
+  user: User!
+}
+
+input EventAddHostInput {
+  eventID: ID!
+  hostID: ID!
+}
+
+type EventAddHostPayload {
+  event: Event!
+}
+
+input EventCreateInput {
+  name: String!
+  creatorID: ID!
+  startTime: Time!
+  endTime: Time
+  eventLocation: String!
+}
+
+type EventCreatePayload {
+  event: Event!
+}
+
+input EventDeleteInput {
+  eventID: ID!
+}
+
+type EventDeletePayload {
+  deletedEventID: ID
+}
+
+input EventEditInput {
+  eventID: ID!
+  name: String
+  creatorID: ID
+  startTime: Time
+  endTime: Time
+  eventLocation: String
+}
+
+type EventEditPayload {
+  event: Event!
+}
+
+input EventRemoveHostInput {
+  eventID: ID!
+  hostID: ID!
+}
+
+type EventRemoveHostPayload {
+  event: Event!
+}
+
+input EventRsvpStatusEditInput {
+  eventID: ID!
+  rsvpStatus: EventRsvpStatusInput!
+  userID: ID!
+}
+
+enum EventRsvpStatusInput {
+  ATTENDING
+  DECLINED
+  MAYBE
+}
+
+type EventRsvpStatusEditPayload {
+  event: Event!
+}
+
+input HolidayCreateInput {
+  label: String!
+  date: Time!
+}
+
+type HolidayCreatePayload {
+  holiday: Holiday!
+}
+
+input HoursOfOperationCreateInput {
+  dayOfWeek: dayOfWeek!
+  open: String!
+  close: String!
+}
+
+type HoursOfOperationCreatePayload {
+  hoursOfOperation: HoursOfOperation!
+}
+
+input PhoneNumberEditInput {
+  userID: ID!
+  newPhoneNumber: String!
+}
+
+type PhoneNumberEditPayload {
+  user: User!
+}
+
+input UserCreateInput {
+  firstName: String!
+  lastName: String!
+  emailAddress: String!
+  phoneNumber: String!
+  password: String!
+}
+
+type UserCreatePayload {
+  user: User!
+}
+
+input UserDeleteInput {
+  userID: ID!
+}
+
+type UserDeletePayload {
+  deletedUserID: ID
+}
+
+input UserEditInput {
+  userID: ID!
+  firstName: String
+  lastName: String
+}
+
+type UserEditPayload {
+  user: User!
+}
+
+type Query {
+  node(id: ID!): Node
+  viewer: Viewer!
 }
 
 type Mutation {
@@ -274,209 +505,8 @@ type Mutation {
   userEdit(input: UserEditInput!): UserEditPayload!
 }
 
-type AddressCreatePayload {
-  address: Address!
-}
-
-type Address implements Node {
-  id: ID!
-  streetName: String!
-  city: String!
-  state: String!
-  zip: String!
-  apartment: String
-  country: String!
-}
-
-input AddressCreateInput {
-  streetName: String!
-  city: String!
-  state: String!
-  zip: String!
-  apartment: String
-  country: String
-}
-
 """The `Upload` scalar type represents a file upload."""
 scalar Upload
-
-type ConfirmEmailAddressEditPayload {
-  user: User!
-}
-
-input ConfirmEmailAddressEditInput {
-  userID: ID!
-  emailAddress: String!
-  code: String!
-}
-
-type ConfirmPhoneNumberEditPayload {
-  user: User!
-}
-
-input ConfirmPhoneNumberEditInput {
-  userID: ID!
-  phoneNumber: String!
-  code: String!
-}
-
-type ContactCreatePayload {
-  contact: Contact!
-}
-
-input ContactCreateInput {
-  emailAddress: String!
-  firstName: String!
-  lastName: String!
-  userID: ID!
-}
-
-type ContactDeletePayload {
-  deletedContactID: ID
-}
-
-input ContactDeleteInput {
-  contactID: ID!
-}
-
-type ContactEditPayload {
-  contact: Contact!
-}
-
-input ContactEditInput {
-  contactID: ID!
-  emailAddress: String
-  firstName: String
-  lastName: String
-  userID: ID
-}
-
-type EmailAddressEditPayload {
-  user: User!
-}
-
-input EmailAddressEditInput {
-  userID: ID!
-  newEmail: String!
-}
-
-type EventAddHostPayload {
-  event: Event!
-}
-
-input EventAddHostInput {
-  eventID: ID!
-  hostID: ID!
-}
-
-type EventCreatePayload {
-  event: Event!
-}
-
-input EventCreateInput {
-  name: String!
-  creatorID: ID!
-  startTime: Time!
-  endTime: Time
-  eventLocation: String!
-}
-
-type EventDeletePayload {
-  deletedEventID: ID
-}
-
-input EventDeleteInput {
-  eventID: ID!
-}
-
-type EventEditPayload {
-  event: Event!
-}
-
-input EventEditInput {
-  eventID: ID!
-  name: String
-  creatorID: ID
-  startTime: Time
-  endTime: Time
-  eventLocation: String
-}
-
-type EventRemoveHostPayload {
-  event: Event!
-}
-
-input EventRemoveHostInput {
-  eventID: ID!
-  hostID: ID!
-}
-
-type EventRsvpStatusEditPayload {
-  event: Event!
-}
-
-input EventRsvpStatusEditInput {
-  eventID: ID!
-  rsvpStatus: EventRsvpStatusInput!
-  userID: ID!
-}
-
-enum EventRsvpStatusInput {
-  ATTENDING
-  DECLINED
-  MAYBE
-}
-
-type HolidayCreatePayload {
-  holiday: Holiday!
-}
-
-type Holiday implements Node {
-  id: ID!
-  label: String!
-  date: Time!
-}
-
-input HolidayCreateInput {
-  label: String!
-  date: Time!
-}
-
-type HoursOfOperationCreatePayload {
-  hoursOfOperation: HoursOfOperation!
-}
-
-type HoursOfOperation implements Node {
-  id: ID!
-  dayOfWeek: dayOfWeek!
-  open: String!
-  close: String!
-}
-
-enum dayOfWeek {
-  SUNDAY
-  MONDAY
-  TUESDAY
-  WEDNESDAY
-  THURSDAY
-  FRIDAY
-  SATURDAY
-}
-
-input HoursOfOperationCreateInput {
-  dayOfWeek: dayOfWeek!
-  open: String!
-  close: String!
-}
-
-type PhoneNumberEditPayload {
-  user: User!
-}
-
-input PhoneNumberEditInput {
-  userID: ID!
-  newPhoneNumber: String!
-}
 
 type UserAuthPayload {
   viewerID: ID!
@@ -495,34 +525,4 @@ type UserAuthJWTPayload {
 input UserAuthJWTInput {
   emailAddress: String!
   password: String!
-}
-
-type UserCreatePayload {
-  user: User!
-}
-
-input UserCreateInput {
-  firstName: String!
-  lastName: String!
-  emailAddress: String!
-  phoneNumber: String!
-  password: String!
-}
-
-type UserDeletePayload {
-  deletedUserID: ID
-}
-
-input UserDeleteInput {
-  userID: ID!
-}
-
-type UserEditPayload {
-  user: User!
-}
-
-input UserEditInput {
-  userID: ID!
-  firstName: String
-  lastName: String
 }

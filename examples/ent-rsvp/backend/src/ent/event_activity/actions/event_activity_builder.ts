@@ -284,4 +284,39 @@ export class EventActivityBuilder implements Builder<EventActivity> {
   isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
     return (node as Builder<Ent>).placeholderID !== undefined;
   }
+
+  // get value of Name. Retrieves it from the input if specified or takes it from existingEnt
+  getNewNameValue(): string | undefined {
+    return this.input.name || this.existingEnt?.name;
+  }
+
+  // get value of eventID. Retrieves it from the input if specified or takes it from existingEnt
+  getNewEventIDValue(): ID | Builder<Event> | undefined {
+    return this.input.eventID || this.existingEnt?.eventID;
+  }
+
+  // get value of StartTime. Retrieves it from the input if specified or takes it from existingEnt
+  getNewStartTimeValue(): Date | undefined {
+    return this.input.startTime || this.existingEnt?.startTime;
+  }
+
+  // get value of EndTime. Retrieves it from the input if specified or takes it from existingEnt
+  getNewEndTimeValue(): Date | null | undefined {
+    return this.input.endTime || this.existingEnt?.endTime;
+  }
+
+  // get value of Location. Retrieves it from the input if specified or takes it from existingEnt
+  getNewLocationValue(): string | undefined {
+    return this.input.location || this.existingEnt?.location;
+  }
+
+  // get value of Description. Retrieves it from the input if specified or takes it from existingEnt
+  getNewDescriptionValue(): string | null | undefined {
+    return this.input.description || this.existingEnt?.description;
+  }
+
+  // get value of InviteAllGuests. Retrieves it from the input if specified or takes it from existingEnt
+  getNewInviteAllGuestsValue(): boolean | undefined {
+    return this.input.inviteAllGuests || this.existingEnt?.inviteAllGuests;
+  }
 }

@@ -1,10 +1,43 @@
-type Query {
-  emailAvailable(email: String!): Boolean!
-  event(slug: String!): Event
-  eventSlugAvailable(slug: String!): Boolean!
-  node(id: ID!): Node
-  viewer: Viewer
+enum EventActivityRsvpStatus {
+  ATTENDING
+  DECLINED
+  CAN_RSVP
+  CANNOT_RSVP
 }
+
+type Address implements Node {
+  owner: Node
+  id: ID!
+  street: String!
+  city: String!
+  state: String!
+  zipCode: String!
+  apartment: String
+}
+
+"""node interface"""
+interface Node {
+  id: ID!
+}
+
+type EventActivity implements Node {
+  event: Event
+  id: ID!
+  name: String!
+  startTime: Time!
+  endTime: Time
+  location: String!
+  description: String
+  inviteAllGuests: Boolean!
+  attending(first: Int, after: String, last: Int, before: String): EventActivityToAttendingConnection!
+  declined(first: Int, after: String, last: Int, before: String): EventActivityToDeclinedConnection!
+  invites(first: Int, after: String, last: Int, before: String): EventActivityToInvitesConnection!
+  viewerRsvpStatus: EventActivityRsvpStatus
+  address: Address
+}
+
+"""Time scalar type"""
+scalar Time
 
 type Event implements Node {
   creator: User
@@ -16,9 +49,23 @@ type Event implements Node {
   guests(first: Int, after: String, last: Int, before: String): EventToGuestsConnection!
 }
 
-"""node interface"""
-interface Node {
+type GuestGroup implements Node {
+  event: Event
   id: ID!
+  invitationName: String!
+  guestGroupToInvitedEvents(first: Int, after: String, last: Int, before: String): GuestGroupToInvitedEventsConnection!
+  guests(first: Int, after: String, last: Int, before: String): GuestGroupToGuestsConnection!
+}
+
+type Guest implements Node {
+  event: Event
+  guestGroup: GuestGroup
+  id: ID!
+  name: String!
+  emailAddress: String
+  title: String
+  guestToAttendingEvents(first: Int, after: String, last: Int, before: String): GuestToAttendingEventsConnection!
+  guestToDeclinedEvents(first: Int, after: String, last: Int, before: String): GuestToDeclinedEventsConnection!
 }
 
 type User implements Node {
@@ -29,9 +76,9 @@ type User implements Node {
   events(first: Int, after: String, last: Int, before: String): UserToEventsConnection!
 }
 
-type UserToEventsConnection implements Connection {
-  edges: [UserToEventsEdge!]!
-  nodes: [Event!]!
+type EventActivityToAttendingConnection implements Connection {
+  edges: [EventActivityToAttendingEdge!]!
+  nodes: [Guest!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -56,8 +103,33 @@ type PageInfo {
   endCursor: String!
 }
 
-type UserToEventsEdge implements Edge {
-  node: Event!
+type EventActivityToAttendingEdge implements Edge {
+  node: Guest!
+  cursor: String!
+  dietaryRestrictions: String
+}
+
+type EventActivityToDeclinedConnection implements Connection {
+  edges: [EventActivityToDeclinedEdge!]!
+  nodes: [Guest!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventActivityToDeclinedEdge implements Edge {
+  node: Guest!
+  cursor: String!
+}
+
+type EventActivityToInvitesConnection implements Connection {
+  edges: [EventActivityToInvitesEdge!]!
+  nodes: [GuestGroup!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventActivityToInvitesEdge implements Edge {
+  node: GuestGroup!
   cursor: String!
 }
 
@@ -73,66 +145,27 @@ type EventToEventActivitiesEdge implements Edge {
   cursor: String!
 }
 
-type EventActivity implements Node {
-  event: Event
-  id: ID!
-  name: String!
-  startTime: Time!
-  endTime: Time
-  location: String!
-  description: String
-  inviteAllGuests: Boolean!
-  attending(first: Int, after: String, last: Int, before: String): EventActivityToAttendingConnection!
-  declined(first: Int, after: String, last: Int, before: String): EventActivityToDeclinedConnection!
-  invites(first: Int, after: String, last: Int, before: String): EventActivityToInvitesConnection!
-  viewerRsvpStatus: EventActivityRsvpStatus
-  address: Address
+type EventToGuestGroupsConnection implements Connection {
+  edges: [EventToGuestGroupsEdge!]!
+  nodes: [GuestGroup!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
 }
 
-"""Time scalar type"""
-scalar Time
+type EventToGuestGroupsEdge implements Edge {
+  node: GuestGroup!
+  cursor: String!
+}
 
-type EventActivityToAttendingConnection implements Connection {
-  edges: [EventActivityToAttendingEdge!]!
+type EventToGuestsConnection implements Connection {
+  edges: [EventToGuestsEdge!]!
   nodes: [Guest!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
 
-type EventActivityToAttendingEdge implements Edge {
+type EventToGuestsEdge implements Edge {
   node: Guest!
-  cursor: String!
-  dietaryRestrictions: String
-}
-
-type Guest implements Node {
-  event: Event
-  guestGroup: GuestGroup
-  id: ID!
-  name: String!
-  emailAddress: String
-  title: String
-  guestToAttendingEvents(first: Int, after: String, last: Int, before: String): GuestToAttendingEventsConnection!
-  guestToDeclinedEvents(first: Int, after: String, last: Int, before: String): GuestToDeclinedEventsConnection!
-}
-
-type GuestGroup implements Node {
-  event: Event
-  id: ID!
-  invitationName: String!
-  guestGroupToInvitedEvents(first: Int, after: String, last: Int, before: String): GuestGroupToInvitedEventsConnection!
-  guests(first: Int, after: String, last: Int, before: String): GuestGroupToGuestsConnection!
-}
-
-type GuestGroupToInvitedEventsConnection implements Connection {
-  edges: [GuestGroupToInvitedEventsEdge!]!
-  nodes: [EventActivity!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
-}
-
-type GuestGroupToInvitedEventsEdge implements Edge {
-  node: EventActivity!
   cursor: String!
 }
 
@@ -145,6 +178,18 @@ type GuestGroupToGuestsConnection implements Connection {
 
 type GuestGroupToGuestsEdge implements Edge {
   node: Guest!
+  cursor: String!
+}
+
+type GuestGroupToInvitedEventsConnection implements Connection {
+  edges: [GuestGroupToInvitedEventsEdge!]!
+  nodes: [EventActivity!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type GuestGroupToInvitedEventsEdge implements Edge {
+  node: EventActivity!
   cursor: String!
 }
 
@@ -173,40 +218,71 @@ type GuestToDeclinedEventsEdge implements Edge {
   cursor: String!
 }
 
-type EventActivityToDeclinedConnection implements Connection {
-  edges: [EventActivityToDeclinedEdge!]!
-  nodes: [Guest!]!
+type UserToEventsConnection implements Connection {
+  edges: [UserToEventsEdge!]!
+  nodes: [Event!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
 
-type EventActivityToDeclinedEdge implements Edge {
-  node: Guest!
+type UserToEventsEdge implements Edge {
+  node: Event!
   cursor: String!
 }
 
-type EventActivityToInvitesConnection implements Connection {
-  edges: [EventActivityToInvitesEdge!]!
-  nodes: [GuestGroup!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
+type Viewer {
+  user: User
+  guest: Guest
 }
 
-type EventActivityToInvitesEdge implements Edge {
-  node: GuestGroup!
-  cursor: String!
+input ActivityEventCreateInput {
+  name: String!
+  startTime: Time!
+  endTime: Time
+  location: String!
+  description: String
+  inviteAllGuests: Boolean!
+  address: AddressEventActivityCreateInput
 }
 
-enum EventActivityRsvpStatus {
-  ATTENDING
-  DECLINED
-  CAN_RSVP
-  CANNOT_RSVP
+input AddressCreateInput {
+  street: String!
+  city: String!
+  state: String!
+  zipCode: String!
+  apartment: String
+  ownerID: ID!
+  ownerType: String!
 }
 
-type Address implements Node {
-  owner: Node
-  id: ID!
+type AddressCreatePayload {
+  address: Address!
+}
+
+input AddressDeleteInput {
+  addressID: ID!
+}
+
+type AddressDeletePayload {
+  deletedAddressID: ID
+}
+
+input AddressEditInput {
+  addressID: ID!
+  street: String
+  city: String
+  state: String
+  zipCode: String
+  apartment: String
+  ownerID: ID
+  ownerType: String
+}
+
+type AddressEditPayload {
+  address: Address!
+}
+
+input AddressEventActivityCreateInput {
   street: String!
   city: String!
   state: String!
@@ -214,33 +290,169 @@ type Address implements Node {
   apartment: String
 }
 
-type EventToGuestGroupsConnection implements Connection {
-  edges: [EventToGuestGroupsEdge!]!
-  nodes: [GuestGroup!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
+input EventActivityAddInviteInput {
+  eventActivityID: ID!
+  inviteID: ID!
 }
 
-type EventToGuestGroupsEdge implements Edge {
-  node: GuestGroup!
-  cursor: String!
+type EventActivityAddInvitePayload {
+  eventActivity: EventActivity!
 }
 
-type EventToGuestsConnection implements Connection {
-  edges: [EventToGuestsEdge!]!
-  nodes: [Guest!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
+input EventActivityCreateInput {
+  name: String!
+  eventID: ID!
+  startTime: Time!
+  endTime: Time
+  location: String!
+  description: String
+  inviteAllGuests: Boolean
+  address: AddressEventActivityCreateInput
 }
 
-type EventToGuestsEdge implements Edge {
-  node: Guest!
-  cursor: String!
+type EventActivityCreatePayload {
+  eventActivity: EventActivity!
 }
 
-type Viewer {
-  user: User
-  guest: Guest
+input EventActivityDeleteInput {
+  eventActivityID: ID!
+}
+
+type EventActivityDeletePayload {
+  deletedEventActivityID: ID
+}
+
+input EventActivityEditInput {
+  eventActivityID: ID!
+  name: String
+  eventID: ID
+  startTime: Time
+  endTime: Time
+  location: String
+  description: String
+  inviteAllGuests: Boolean
+}
+
+type EventActivityEditPayload {
+  eventActivity: EventActivity!
+}
+
+input EventActivityRemoveInviteInput {
+  eventActivityID: ID!
+  inviteID: ID!
+}
+
+type EventActivityRemoveInvitePayload {
+  eventActivity: EventActivity!
+}
+
+input EventActivityRsvpStatusEditInput {
+  eventActivityID: ID!
+  rsvpStatus: EventActivityRsvpStatusInput!
+  guestID: ID!
+  dietaryRestrictions: String
+}
+
+enum EventActivityRsvpStatusInput {
+  ATTENDING
+  DECLINED
+}
+
+type EventActivityRsvpStatusEditPayload {
+  eventActivity: EventActivity!
+}
+
+input EventCreateInput {
+  name: String!
+  slug: String
+  creatorID: ID!
+  activities: [ActivityEventCreateInput!]
+}
+
+type EventCreatePayload {
+  event: Event!
+}
+
+input GuestCreateInput {
+  name: String!
+  eventID: ID!
+  emailAddress: String
+  guestGroupID: ID!
+  title: String
+}
+
+type GuestCreatePayload {
+  guest: Guest!
+}
+
+input GuestDeleteInput {
+  guestID: ID!
+}
+
+type GuestDeletePayload {
+  deletedGuestID: ID
+}
+
+input GuestEditInput {
+  guestID: ID!
+  name: String
+  emailAddress: String
+}
+
+type GuestEditPayload {
+  guest: Guest!
+}
+
+input GuestGroupCreateInput {
+  invitationName: String!
+  eventID: ID!
+  guests: [GuestGuestGroupCreateInput!]
+}
+
+type GuestGroupCreatePayload {
+  guestGroup: GuestGroup!
+}
+
+input GuestGroupDeleteInput {
+  guestGroupID: ID!
+}
+
+type GuestGroupDeletePayload {
+  deletedGuestGroupID: ID
+}
+
+input GuestGroupEditInput {
+  guestGroupID: ID!
+  invitationName: String
+}
+
+type GuestGroupEditPayload {
+  guestGroup: GuestGroup!
+}
+
+input GuestGuestGroupCreateInput {
+  name: String!
+  emailAddress: String
+  title: String
+}
+
+input UserCreateInput {
+  firstName: String!
+  lastName: String!
+  emailAddress: String!
+  password: String!
+}
+
+type UserCreatePayload {
+  user: User!
+}
+
+type Query {
+  emailAvailable(email: String!): Boolean!
+  event(slug: String!): Event
+  eventSlugAvailable(slug: String!): Boolean!
+  node(id: ID!): Node
+  viewer: Viewer
 }
 
 type Mutation {
@@ -267,43 +479,6 @@ type Mutation {
   userCreate(input: UserCreateInput!): UserCreatePayload!
 }
 
-type AddressCreatePayload {
-  address: Address!
-}
-
-input AddressCreateInput {
-  street: String!
-  city: String!
-  state: String!
-  zipCode: String!
-  apartment: String
-  ownerID: ID!
-  ownerType: String!
-}
-
-type AddressDeletePayload {
-  deletedAddressID: ID
-}
-
-input AddressDeleteInput {
-  addressID: ID!
-}
-
-type AddressEditPayload {
-  address: Address!
-}
-
-input AddressEditInput {
-  addressID: ID!
-  street: String
-  city: String
-  state: String
-  zipCode: String
-  apartment: String
-  ownerID: ID
-  ownerType: String
-}
-
 type AuthGuestPayload {
   token: String!
   viewer: Viewer!
@@ -324,180 +499,5 @@ input AuthUserInput {
   password: String!
 }
 
-type EventActivityAddInvitePayload {
-  eventActivity: EventActivity!
-}
-
-input EventActivityAddInviteInput {
-  eventActivityID: ID!
-  inviteID: ID!
-}
-
-type EventActivityCreatePayload {
-  eventActivity: EventActivity!
-}
-
-input EventActivityCreateInput {
-  name: String!
-  eventID: ID!
-  startTime: Time!
-  endTime: Time
-  location: String!
-  description: String
-  inviteAllGuests: Boolean
-  address: AddressEventActivityCreateInput
-}
-
-input AddressEventActivityCreateInput {
-  street: String!
-  city: String!
-  state: String!
-  zipCode: String!
-  apartment: String
-}
-
-type EventActivityDeletePayload {
-  deletedEventActivityID: ID
-}
-
-input EventActivityDeleteInput {
-  eventActivityID: ID!
-}
-
-type EventActivityEditPayload {
-  eventActivity: EventActivity!
-}
-
-input EventActivityEditInput {
-  eventActivityID: ID!
-  name: String
-  eventID: ID
-  startTime: Time
-  endTime: Time
-  location: String
-  description: String
-  inviteAllGuests: Boolean
-}
-
-type EventActivityRemoveInvitePayload {
-  eventActivity: EventActivity!
-}
-
-input EventActivityRemoveInviteInput {
-  eventActivityID: ID!
-  inviteID: ID!
-}
-
-type EventActivityRsvpStatusEditPayload {
-  eventActivity: EventActivity!
-}
-
-input EventActivityRsvpStatusEditInput {
-  eventActivityID: ID!
-  rsvpStatus: EventActivityRsvpStatusInput!
-  guestID: ID!
-  dietaryRestrictions: String
-}
-
-enum EventActivityRsvpStatusInput {
-  ATTENDING
-  DECLINED
-}
-
-type EventCreatePayload {
-  event: Event!
-}
-
-input EventCreateInput {
-  name: String!
-  slug: String
-  creatorID: ID!
-  activities: [ActivityEventCreateInput!]
-}
-
-input ActivityEventCreateInput {
-  name: String!
-  startTime: Time!
-  endTime: Time
-  location: String!
-  description: String
-  inviteAllGuests: Boolean!
-  address: AddressEventActivityCreateInput
-}
-
-type GuestCreatePayload {
-  guest: Guest!
-}
-
-input GuestCreateInput {
-  name: String!
-  eventID: ID!
-  emailAddress: String
-  guestGroupID: ID!
-  title: String
-}
-
-type GuestDeletePayload {
-  deletedGuestID: ID
-}
-
-input GuestDeleteInput {
-  guestID: ID!
-}
-
-type GuestEditPayload {
-  guest: Guest!
-}
-
-input GuestEditInput {
-  guestID: ID!
-  name: String
-  emailAddress: String
-}
-
-type GuestGroupCreatePayload {
-  guestGroup: GuestGroup!
-}
-
-input GuestGroupCreateInput {
-  invitationName: String!
-  eventID: ID!
-  guests: [GuestGuestGroupCreateInput!]
-}
-
-input GuestGuestGroupCreateInput {
-  name: String!
-  emailAddress: String
-  title: String
-}
-
-type GuestGroupDeletePayload {
-  deletedGuestGroupID: ID
-}
-
-input GuestGroupDeleteInput {
-  guestGroupID: ID!
-}
-
-type GuestGroupEditPayload {
-  guestGroup: GuestGroup!
-}
-
-input GuestGroupEditInput {
-  guestGroupID: ID!
-  invitationName: String
-}
-
 """The `Upload` scalar type represents a file upload."""
 scalar Upload
-
-type UserCreatePayload {
-  user: User!
-}
-
-input UserCreateInput {
-  firstName: String!
-  lastName: String!
-  emailAddress: String!
-  password: String!
-}

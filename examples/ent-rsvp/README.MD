@@ -23,25 +23,25 @@ There are 8 different node types supported:
 
 Diving into the code here shows usage of all the supprted features of the Ent framework. For example:
 
-* [Groups and Edges](https://github.com/lolopinto/ent/blob/ent-rsvp/examples/ent-rsvp/backend/src/schema/event_activity.ts#L48-L97)
-* [File Uploads](https://github.com/lolopinto/ent/blob/ent-rsvp/examples/ent-rsvp/backend/src/graphql/mutations/import_guests.ts)
-* [Custom](https://github.com/lolopinto/ent/blob/ent-rsvp/examples/ent-rsvp/backend/src/graphql/resolvers/event.ts) [Query](https://github.com/lolopinto/ent/blob/ent-rsvp/examples/ent-rsvp/backend/src/graphql/resolvers/viewer.ts)
-* [Custom Mutation](https://github.com/lolopinto/ent/blob/ent-rsvp/examples/ent-rsvp/backend/src/graphql/mutations/auth/auth.ts)
+* [Groups and Edges](https://github.com/lolopinto/ent/blob/main/examples/ent-rsvp/backend/src/schema/event_activity.ts#L48-L97)
+* [File Uploads](https://github.com/lolopinto/ent/blob/main/examples/ent-rsvp/backend/src/graphql/mutations/import_guests.ts)
+* [Custom](https://github.com/lolopinto/ent/blob/main/examples/ent-rsvp/backend/src/graphql/resolvers/event.ts) [Query](https://github.com/lolopinto/ent/blob/main/examples/ent-rsvp/backend/src/graphql/resolvers/viewer.ts)
+* [Custom Mutation](https://github.com/lolopinto/ent/blob/main/examples/ent-rsvp/backend/src/graphql/mutations/auth/auth.ts)
 * Custom relatively complex Privacy policies:
-  - [EventActivity](https://github.com/lolopinto/ent/blob/ent-rsvp/examples/ent-rsvp/backend/src/ent/event_activity.ts#L22)
-  - [GuestGroup](https://github.com/lolopinto/ent/blob/ent-rsvp/examples/ent-rsvp/backend/src/ent/guest_group.ts#L30)
-  - [Guest](https://github.com/lolopinto/ent/blob/ent-rsvp/examples/ent-rsvp/backend/src/ent/guest.ts#L12)
-  - [EditEventActivityRsvpStatusAction](https://github.com/lolopinto/ent/blob/ent-rsvp/examples/ent-rsvp/backend/src/ent/event_activity/actions/edit_event_activity_rsvp_status_action.ts#L25-L46)
+  - [EventActivity](https://github.com/lolopinto/ent/blob/main/examples/ent-rsvp/backend/src/ent/event_activity.ts#L22)
+  - [GuestGroup](https://github.com/lolopinto/ent/blob/main/examples/ent-rsvp/backend/src/ent/guest_group.ts#L30)
+  - [Guest](https://github.com/lolopinto/ent/blob/main/examples/ent-rsvp/backend/src/ent/guest.ts#L12)
+  - [EditEventActivityRsvpStatusAction](https://github.com/lolopinto/ent/blob/main/examples/ent-rsvp/backend/src/ent/event_activity/actions/edit_event_activity_rsvp_status_action.ts#L25-L46)
 * Custom Edge Data:
-  - [Event Activity to Atttending Edge](https://github.com/lolopinto/ent/blob/ent-rsvp/examples/ent-rsvp/backend/src/ent/event_activity/query/event_activity_to_attending_query.ts#L8) for dietary restrictions
-  - [Guest to Attending Activities Edge](https://github.com/lolopinto/ent/blob/ent-rsvp/examples/ent-rsvp/backend/src/ent/guest/query/guest_to_attending_events_query.ts#L8)
-* [Polymorphic field](https://github.com/lolopinto/ent/blob/ent-rsvp/examples/ent-rsvp/backend/src/schema/address.ts#L21)
-* [Unique Constraint multiple fields](https://github.com/lolopinto/ent/blob/ent-rsvp/examples/ent-rsvp/backend/src/schema/auth_code.ts#L34)
+  - [Event Activity to Atttending Edge](https://github.com/lolopinto/ent/blob/main/examples/ent-rsvp/backend/src/ent/event_activity/query/event_activity_to_attending_query.ts#L8) for dietary restrictions
+  - [Guest to Attending Activities Edge](https://github.com/lolopinto/ent/blob/main/examples/ent-rsvp/backend/src/ent/guest/query/guest_to_attending_events_query.ts#L8)
+* [Polymorphic field](https://github.com/lolopinto/ent/blob/main/examples/ent-rsvp/backend/src/schema/address.ts#L21)
+* [Unique Constraint multiple fields](https://github.com/lolopinto/ent/blob/main/examples/ent-rsvp/backend/src/schema/auth_code.ts#L34)
 * Action Only Fields:
-  - [EventActivity creating Address](https://github.com/lolopinto/ent/blob/ent-rsvp/examples/ent-rsvp/backend/src/schema/event.ts#L24) seen in use at https://github.com/lolopinto/ent/blob/ent-rsvp/examples/ent-rsvp/backend/src/ent/event_activity/actions/create_event_activity_action.ts#L23-L33
-  - [GuestGroup creating multiple Guests](https://github.com/lolopinto/ent/blob/ent-rsvp/examples/ent-rsvp/backend/src/schema/guest_group.ts#L22) seen in use at https://github.com/lolopinto/ent/blob/ent-rsvp/examples/ent-rsvp/backend/src/ent/guest_group/actions/create_guest_group_action.ts#L49-L68 
-* [Schema hidden from GraphQL](https://github.com/lolopinto/ent/blob/ent-rsvp/examples/ent-rsvp/backend/src/schema/guest_data.ts#L11)
-* [Storing an id the data field of an edge to create a 3-way edge](https://github.com/lolopinto/ent/blob/ent-rsvp/examples/ent-rsvp/backend/src/ent/event_activity/actions/edit_event_activity_rsvp_status_action.ts#L49-L83)
+  - [EventActivity creating Address](https://github.com/lolopinto/ent/blob/main/examples/ent-rsvp/backend/src/schema/event.ts#L24) seen in use at https://github.com/lolopinto/ent/blob/main/examples/ent-rsvp/backend/src/ent/event_activity/actions/create_event_activity_action.ts#L23-L33
+  - [GuestGroup creating multiple Guests](https://github.com/lolopinto/ent/blob/main/examples/ent-rsvp/backend/src/schema/guest_group.ts#L22) seen in use at https://github.com/lolopinto/ent/blob/main/examples/ent-rsvp/backend/src/ent/guest_group/actions/create_guest_group_action.ts#L49-L68 
+* [Schema hidden from GraphQL](https://github.com/lolopinto/ent/blob/main/examples/ent-rsvp/backend/src/schema/guest_data.ts#L11)
+* [Storing an id the data field of an edge to create a 3-way edge](https://github.com/lolopinto/ent/blob/main/examples/ent-rsvp/backend/src/ent/event_activity/actions/edit_event_activity_rsvp_status_action.ts#L49-L83)
 
 The site is currently available live at https://ent-rsvp-static-site.onrender.com/.
 

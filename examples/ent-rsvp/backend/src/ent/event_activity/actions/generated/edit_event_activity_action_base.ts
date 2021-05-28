@@ -9,9 +9,8 @@ import {
 import {
   Viewer,
   ID,
-  AllowIfHasIdentity,
+  AllowIfViewerHasIdentityPrivacyPolicy,
   PrivacyPolicy,
-  AlwaysDenyRule,
 } from "@lolopinto/ent";
 import { EventActivity, Event } from "src/ent/";
 import {
@@ -50,9 +49,7 @@ export class EditEventActivityActionBase implements Action<EventActivity> {
   }
 
   getPrivacyPolicy(): PrivacyPolicy {
-    return {
-      rules: [AllowIfHasIdentity, AlwaysDenyRule],
-    };
+    return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
   getInput(): EventActivityInput {

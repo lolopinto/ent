@@ -9,8 +9,7 @@ import {
   loadEnts,
   LoadEntOptions,
   AssocEdge,
-  AlwaysDenyRule,
-  AllowIfViewerRule,
+  AllowIfViewerPrivacyPolicy,
   PrivacyPolicy,
   getEdgeTypeInGroup,
   ObjectLoaderFactory,
@@ -83,11 +82,8 @@ export class EventActivityBase {
     this.inviteAllGuests = data.invite_all_guests;
   }
 
-  // by default, we always deny and it's up to the ent
-  // to overwrite this privacy policy in its subclasses
-  privacyPolicy: PrivacyPolicy = {
-    rules: [AllowIfViewerRule, AlwaysDenyRule],
-  };
+  // default privacyPolicy is Viewer can see themselves
+  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
 
   static async load<T extends EventActivityBase>(
     this: new (viewer: Viewer, data: Data) => T,
