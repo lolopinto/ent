@@ -16,14 +16,12 @@
 {{ end}}
 
 export interface {{.Node}}Input {
-  {{range $field := .FieldInfo.Fields -}}
-    {{ if $field.EditableField -}}
-      {{$type := $field.TsBuilderType -}}
-        {{range $import := $field.TsBuilderImports -}}
-          {{ $ignore := useImport $import -}}
-        {{end -}}
-      {{$field.TsFieldName}}?: {{$type}};
-    {{end -}}
+  {{range $field := .FieldInfo.GetEditableFields -}}
+    {{$type := $field.TsBuilderType -}}
+      {{range $import := $field.TsBuilderImports -}}
+        {{ $ignore := useImport $import -}}
+      {{end -}}
+    {{$field.TsFieldName}}?: {{$type}};
   {{end -}}
 }
 
@@ -181,20 +179,18 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
         result.set(key, value);
       }
     };
-    {{range $field := .FieldInfo.Fields -}}
-      {{ if $field.EditableField -}}
-        {{$tsFieldName := $field.TsFieldName -}}
-        addField("{{$field.FieldName}}", fields.{{$tsFieldName}});
-        {{ $inverseEdge := $field.GetInverseEdge -}}
-        {{ if $inverseEdge -}}
-          if (fields.{{$tsFieldName}}) {
-            this.orchestrator.addInboundEdge(
-              fields.{{$tsFieldName}},
-              {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
-              {{useImport "NodeType"}}.{{$inverseEdge.NodeInfo.Node}},
-            );
-          }
-        {{end -}}
+    {{range $field := .FieldInfo.GetEditableFields -}}
+      {{$tsFieldName := $field.TsFieldName -}}
+      addField("{{$field.FieldName}}", fields.{{$tsFieldName}});
+      {{ $inverseEdge := $field.GetInverseEdge -}}
+      {{ if $inverseEdge -}}
+        if (fields.{{$tsFieldName}}) {
+          this.orchestrator.addInboundEdge(
+            fields.{{$tsFieldName}},
+            {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
+            {{useImport "NodeType"}}.{{$inverseEdge.NodeInfo.Node}},
+          );
+        }
       {{end -}}
     {{end -}}
     return result;
@@ -203,6 +199,18 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
   isBuilder(node: ID | {{useImport "Ent"}} | Builder<{{useImport "Ent"}}>): node is Builder<{{useImport "Ent"}}> {
     return (node as Builder<{{useImport "Ent"}}>).placeholderID !== undefined;
   }
+
+  {{range $field := .FieldInfo.GetEditableFields}}
+    // get value of {{$field.FieldName}}. Retrieves it from the input if specified or takes it from existingEnt
+    getNew{{$field.CamelCaseName}}Value(): {{$field.TsBuilderType}} | undefined {
+      {{if $field.Private -}}
+        return this.input.{{$field.TsFieldName}};
+      {{ else -}}
+        return this.input.{{$field.TsFieldName}} || this.existingEnt?.{{$field.TsFieldName}};
+      {{end -}}
+    }
+
+  {{end}}
 }
 
 {{end -}}

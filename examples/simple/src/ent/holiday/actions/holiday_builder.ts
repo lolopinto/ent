@@ -114,4 +114,14 @@ export class HolidayBuilder implements Builder<Holiday> {
   isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
     return (node as Builder<Ent>).placeholderID !== undefined;
   }
+
+  // get value of label. Retrieves it from the input if specified or takes it from existingEnt
+  getNewLabelValue(): string | undefined {
+    return this.input.label || this.existingEnt?.label;
+  }
+
+  // get value of date. Retrieves it from the input if specified or takes it from existingEnt
+  getNewDateValue(): Date | undefined {
+    return this.input.date || this.existingEnt?.date;
+  }
 }

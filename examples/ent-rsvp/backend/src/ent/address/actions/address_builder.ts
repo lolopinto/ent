@@ -124,4 +124,39 @@ export class AddressBuilder implements Builder<Address> {
   isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
     return (node as Builder<Ent>).placeholderID !== undefined;
   }
+
+  // get value of Street. Retrieves it from the input if specified or takes it from existingEnt
+  getNewStreetValue(): string | undefined {
+    return this.input.street || this.existingEnt?.street;
+  }
+
+  // get value of City. Retrieves it from the input if specified or takes it from existingEnt
+  getNewCityValue(): string | undefined {
+    return this.input.city || this.existingEnt?.city;
+  }
+
+  // get value of State. Retrieves it from the input if specified or takes it from existingEnt
+  getNewStateValue(): string | undefined {
+    return this.input.state || this.existingEnt?.state;
+  }
+
+  // get value of ZipCode. Retrieves it from the input if specified or takes it from existingEnt
+  getNewZipCodeValue(): string | undefined {
+    return this.input.zipCode || this.existingEnt?.zipCode;
+  }
+
+  // get value of Apartment. Retrieves it from the input if specified or takes it from existingEnt
+  getNewApartmentValue(): string | null | undefined {
+    return this.input.apartment || this.existingEnt?.apartment;
+  }
+
+  // get value of OwnerID. Retrieves it from the input if specified or takes it from existingEnt
+  getNewOwnerIDValue(): ID | Builder<Ent> | undefined {
+    return this.input.ownerID || this.existingEnt?.ownerID;
+  }
+
+  // get value of OwnerType. Retrieves it from the input if specified or takes it from existingEnt
+  getNewOwnerTypeValue(): string | undefined {
+    return this.input.ownerType || this.existingEnt?.ownerType;
+  }
 }

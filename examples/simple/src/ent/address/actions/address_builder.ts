@@ -122,4 +122,34 @@ export class AddressBuilder implements Builder<Address> {
   isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
     return (node as Builder<Ent>).placeholderID !== undefined;
   }
+
+  // get value of street_name. Retrieves it from the input if specified or takes it from existingEnt
+  getNewStreetNameValue(): string | undefined {
+    return this.input.streetName || this.existingEnt?.streetName;
+  }
+
+  // get value of city. Retrieves it from the input if specified or takes it from existingEnt
+  getNewCityValue(): string | undefined {
+    return this.input.city || this.existingEnt?.city;
+  }
+
+  // get value of state. Retrieves it from the input if specified or takes it from existingEnt
+  getNewStateValue(): string | undefined {
+    return this.input.state || this.existingEnt?.state;
+  }
+
+  // get value of zip. Retrieves it from the input if specified or takes it from existingEnt
+  getNewZipValue(): string | undefined {
+    return this.input.zip || this.existingEnt?.zip;
+  }
+
+  // get value of apartment. Retrieves it from the input if specified or takes it from existingEnt
+  getNewApartmentValue(): string | null | undefined {
+    return this.input.apartment || this.existingEnt?.apartment;
+  }
+
+  // get value of country. Retrieves it from the input if specified or takes it from existingEnt
+  getNewCountryValue(): string | undefined {
+    return this.input.country || this.existingEnt?.country;
+  }
 }

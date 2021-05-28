@@ -178,4 +178,14 @@ export class GuestGroupBuilder implements Builder<GuestGroup> {
   isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
     return (node as Builder<Ent>).placeholderID !== undefined;
   }
+
+  // get value of InvitationName. Retrieves it from the input if specified or takes it from existingEnt
+  getNewInvitationNameValue(): string | undefined {
+    return this.input.invitationName || this.existingEnt?.invitationName;
+  }
+
+  // get value of EventID. Retrieves it from the input if specified or takes it from existingEnt
+  getNewEventIDValue(): ID | Builder<Event> | undefined {
+    return this.input.eventID || this.existingEnt?.eventID;
+  }
 }

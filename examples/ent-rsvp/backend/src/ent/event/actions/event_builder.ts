@@ -116,4 +116,19 @@ export class EventBuilder implements Builder<Event> {
   isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
     return (node as Builder<Ent>).placeholderID !== undefined;
   }
+
+  // get value of Name. Retrieves it from the input if specified or takes it from existingEnt
+  getNewNameValue(): string | undefined {
+    return this.input.name || this.existingEnt?.name;
+  }
+
+  // get value of Slug. Retrieves it from the input if specified or takes it from existingEnt
+  getNewSlugValue(): string | null | undefined {
+    return this.input.slug || this.existingEnt?.slug;
+  }
+
+  // get value of creatorID. Retrieves it from the input if specified or takes it from existingEnt
+  getNewCreatorIDValue(): ID | Builder<User> | undefined {
+    return this.input.creatorID || this.existingEnt?.creatorID;
+  }
 }
