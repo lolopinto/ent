@@ -1,5 +1,13 @@
 import "reflect-metadata";
-import { GraphQLScalarType } from "graphql";
+import {
+  GraphQLScalarType,
+  GraphQLID,
+  GraphQLBoolean,
+  GraphQLInt,
+  GraphQLFloat,
+  GraphQLString,
+} from "graphql";
+import { GraphQLTime } from "./scalars/time";
 
 interface ClassType<T = any> {
   new (...args: any[]): T;
@@ -11,6 +19,14 @@ export interface CustomType {
   tsType?: string;
   tsImportPath?: string;
 }
+
+// type knownScalars =
+//   | typeof GraphQLID
+//   | typeof GraphQLInt
+//   | typeof GraphQLFloat
+//   | typeof GraphQLString
+//   | typeof GraphQLTime
+//   | typeof GraphQLBoolean;
 // scalars or classes
 // string for GraphQL name in situation where we can't load the object
 // e.g. User, Contact etc
@@ -286,6 +302,10 @@ export class GQLCapture {
       return (type as CustomType).importPath !== undefined;
     };
 
+    const isGraphQLScalarType = (type: Type): type is GraphQLScalarType => {
+      return (type as GraphQLScalarType).serialize !== undefined;
+    };
+
     const addCustomType = (type: CustomType) => {
       const customType = this.customTypes.get(type.type);
 
@@ -299,6 +319,7 @@ export class GQLCapture {
     };
 
     let list: boolean | undefined;
+    let scalarType = false;
 
     if (options?.type) {
       if (isArray(options.type)) {
@@ -311,6 +332,7 @@ export class GQLCapture {
           type = ofType.type;
           addCustomType(ofType);
         } else {
+          scalarType = isGraphQLScalarType(ofType);
           // GraphQLScalarType or ClassType
           type = ofType.name;
         }
@@ -325,6 +347,7 @@ export class GQLCapture {
         type = options.type.type;
         addCustomType(options.type);
       } else {
+        scalarType = isGraphQLScalarType(options.type);
         // GraphQLScalarType or ClassType
         type = options.type.name;
       }
@@ -339,20 +362,26 @@ export class GQLCapture {
     let result: Field = {
       name: metadata.paramName || "",
       type,
-      tsType: this.knownAllowedNames.get(type),
+      tsType:
+        this.knownAllowedNames.get(type) || this.customTypes.get(type)?.tsType,
       nullable: options?.nullable,
       list: list,
       isContextArg: metadata.isContextArg,
     };
     // unknown type. we need to flag that this field needs to eventually be resolved
     if (!GQLCapture.knownAllowedNames.has(type)) {
+      if (scalarType) {
+        throw new Error(
+          `custom scalar type ${type} is not supported this way. use CustomType syntax. see \`gqlFileUpload\` as an example`,
+        );
+      }
       result.needsResolving = true;
     }
     return result;
   }
 
   static gqlField(options?: gqlFieldOptions): any {
-    return function(
+    return function (
       target,
       propertyKey: string,
       descriptor: PropertyDescriptor,
@@ -485,7 +514,7 @@ export class GQLCapture {
     isContextArg?: boolean,
     options?: gqlFieldOptions,
   ): any {
-    return function(
+    return function (
       target,
       propertyKey: string,
       index: number, // not PropertyKeyDescriptor?
@@ -527,7 +556,7 @@ export class GQLCapture {
   }
 
   static gqlArgType(options?: gqlObjectOptions): any {
-    return function(
+    return function (
       target: Function,
       _propertyKey: string,
       _descriptor: PropertyDescriptor,
@@ -537,7 +566,7 @@ export class GQLCapture {
   }
 
   static gqlInputObjectType(options?: gqlObjectOptions): any {
-    return function(
+    return function (
       target: Function,
       _propertyKey: string,
       _descriptor: PropertyDescriptor,
@@ -551,7 +580,7 @@ export class GQLCapture {
   }
 
   static gqlObjectType(options?: gqlObjectOptions): any {
-    return function(
+    return function (
       target: Function,
       _propertyKey: string,
       _descriptor: PropertyDescriptor,
@@ -586,7 +615,7 @@ export class GQLCapture {
   // TODO query and mutation
   // we want to specify args if any, name, response if any
   static gqlQuery(options?: gqlTopLevelOptions): any {
-    return function(
+    return function (
       target: Function,
       propertyKey: string,
       descriptor: PropertyDescriptor,
@@ -604,7 +633,7 @@ export class GQLCapture {
   // input is via gqlArg
   // should it be gqlInputArg?
   static gqlMutation(options?: gqlTopLevelOptions): any {
-    return function(
+    return function (
       target: Function,
       propertyKey: string,
       descriptor: PropertyDescriptor,
