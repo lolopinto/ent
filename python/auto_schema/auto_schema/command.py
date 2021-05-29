@@ -56,3 +56,32 @@ class Command(object):
     # Simulates running the `alembic downgrade` command
     def downgrade(self, revision=''):
         command.downgrade(self.alembic_cfg, revision)
+
+    # Simulates running the `alembic history` command
+    def history(self):
+        command.history(self.alembic_cfg, indicate_current=True)
+
+    # Simulates running the `alembic current` command
+    def current(self):
+        command.current(self.alembic_cfg)
+
+    # Simulates running the `alembic show` command
+    def show(self, revision):
+        command.show(self.alembic_cfg, revision)
+
+    # Simulates running the `alembic heads` command
+    def heads(self):
+        command.heads(self.alembic_cfg, verbose=True)
+
+    # Simulates running the `alembic branches` command
+    def branches(self):
+        command.branches(self.alembic_cfg, verbose=True)
+
+    # Simulates running the `alembic stamp` command
+    def stamp(self, revision):
+        command.stamp(self.alembic_cfg, revision)
+
+    # Simulates running the `alembic edit` command
+    # this should probably not be exposed at the moment?
+    def edit(self, revision):
+        command.edit(self.alembic_cfg, revision)

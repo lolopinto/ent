@@ -309,3 +309,24 @@ class Runner(object):
 
     def downgrade(self, revision):
         self.cmd.downgrade(revision)
+
+    def history(self):
+        self.cmd.history()
+    
+    def current(self):
+        self.cmd.current()
+
+    def show(self, revision):
+        self.cmd.show(revision)
+
+    def heads(self):
+        self.cmd.heads()
+
+    def branches(self):
+        self.cmd.branches()
+
+    def stamp(self, revision):
+        self.cmd.stamp(revision)
+
+    def edit(self, revision):
+        self.cmd.edit(revision)
