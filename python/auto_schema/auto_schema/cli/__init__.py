@@ -45,8 +45,8 @@ def main():
         Runner.fix_edges(metadata, args)
     else:
         r = Runner.from_command_line(metadata, args)
-        if args.upgrade:
-            r.upgrade()
+        if args.upgrade is not None:
+            r.upgrade(args.upgrade)
         elif args.downgrade is not None:
             r.downgrade(args.downgrade)
         elif args.history is True:
