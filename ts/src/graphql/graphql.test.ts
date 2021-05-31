@@ -5,7 +5,14 @@ import {
   gqlArgType,
   CustomFieldType,
 } from "./graphql";
-import { GraphQLInt, GraphQLFloat, GraphQLString } from "graphql";
+import {
+  GraphQLInt,
+  GraphQLFloat,
+  GraphQLString,
+  GraphQLScalarType,
+  GraphQLError,
+} from "graphql";
+import { Kind, ValueNode } from "graphql/language";
 
 import {
   validateOneCustomField,
@@ -441,6 +448,58 @@ describe("property", () => {
     } catch (e) {
       expect(e.message).toMatch(/^type is required (.)+/);
     }
+    validateNoCustom();
+  });
+
+  test("enabled. custom scalar", () => {
+    class Point {
+      constructor(private x: number, private y: number) {}
+
+      serialize(): string {
+        return `${this.x},${this.y}`;
+      }
+    }
+
+    const GraphQLPoint = new GraphQLScalarType({
+      name: "Point",
+      description: "Point scalar type",
+      serialize: (outputValue: Point) => {
+        return outputValue.serialize();
+      },
+      parseValue: (input: any) => {
+        if (typeof input !== "string") {
+          throw new GraphQLError(`invalid input value ${input}`);
+        }
+        const parts = input.split(",");
+        if (parts.length !== 2) {
+          throw new GraphQLError(`invalid input value ${input}`);
+        }
+        return new Point(parseInt(parts[0], 10), parseInt(parts[1], 10));
+      },
+      parseLiteral: (ast: ValueNode) => {
+        if (ast.kind === Kind.STRING) {
+          const parts = ast.value.split(",");
+          if (parts.length !== 2) {
+            throw new GraphQLError(`invalid input value ${ast.value}`);
+          }
+          return new Point(parseInt(parts[0], 10), parseInt(parts[1], 10));
+        }
+        throw new GraphQLError(`Time cannot represent literal value ${ast}`);
+      },
+    });
+
+    try {
+      class User {
+        @gqlField({ type: GraphQLPoint })
+        point: Point;
+      }
+      fail("should not get here");
+    } catch (e) {
+      expect(e.message).toMatch(
+        /custom scalar type Point is not supported this way. use CustomType syntax/,
+      );
+    }
+
     validateNoCustom();
   });
 });
