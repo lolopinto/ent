@@ -535,7 +535,7 @@ func TestCustomUploadType(t *testing.T) {
 	assert.Equal(t, arg.Nullable, NullableItem(""))
 	assert.Equal(t, arg.List, false)
 	assert.Equal(t, arg.IsContextArg, false)
-	assert.Equal(t, arg.TSType, "")
+	assert.Equal(t, arg.TSType, "FileUpload")
 
 	require.Len(t, item.Results, 1)
 	result := item.Results[0]
