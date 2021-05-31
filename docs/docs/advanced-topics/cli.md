@@ -42,7 +42,7 @@ tsent codegen --step graphql
 ```
 
 ## upgrade
-`upgrade` is used to update the database. Most commonly used after pulling from `main` or [when deploying](/docs/advanced-topcs/deploying) to upgrade the database in case there have been any changes.
+`upgrade` is used to update the database. Most commonly used after pulling from `main` or [when deploying](/docs/advanced-topics/deploying) to upgrade the database in case there have been any changes.
 
 Run as follows:
 ```shell
