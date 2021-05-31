@@ -429,8 +429,9 @@ func FixEdges(codePathInfo *codegen.CodePath) {
 func RunAlembicCommand(codePathInfo *codegen.CodePath, command string, args...string) {
 	if len(args) == 0 {
 		runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("--%s", command))
+	} else {
+		runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("--%s=%s", command, strings.Join(args, ",")))
 	}
-	runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("--%s=%s", command, strings.Join(args, ",")))
 }
 
 func (s *dbSchema) writeSchemaFile() {

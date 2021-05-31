@@ -386,6 +386,7 @@ test("custom type", () => {
           type: "GraphQLUpload",
           name: "file",
           needsResolving: true,
+          tsType: "FileUpload",
         },
       ],
     },

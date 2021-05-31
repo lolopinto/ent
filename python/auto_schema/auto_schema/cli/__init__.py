@@ -9,6 +9,12 @@ from alembic.command import heads
 if os.getenv('LOCAL_AUTO_SCHEMA') == 'true':
     sys.path.insert(0, os.getcwd())
 
+# if env variable is set, manipulate the path to put local
+# current directory over possibly installed auto_schema so that we 
+# see local changes
+if os.getenv('LOCAL_AUTO_SCHEMA') == 'true':
+    sys.path.insert(0, os.getcwd())
+
 # run from auto_schema root. conflicts with pip-installed auto_schema when that exists so can't have
 # that installed when runnning this...
 from auto_schema.runner import Runner
