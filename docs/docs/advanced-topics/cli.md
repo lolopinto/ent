@@ -31,6 +31,7 @@ tsent codegen
 
 or via docker:
 ```shell
+npm run codegen # (via) ent-starter OR
 docker-compose -f docker-compose.dev.yml run --rm app tsent codegen
 ```
 
@@ -50,6 +51,7 @@ tsent upgrade
 
 or via docker:
 ```shell
+npm run upgrade # (via) ent-starter OR
 docker-compose -f docker-compose.dev.yml run --rm app tsent upgrade
 ```
 
@@ -91,3 +93,18 @@ docker-compose -f docker-compose.dev.yml run --rm app tsent downgrade {rev}
 
 ## fix-edges
 Fixes the [edges](/docs/ent-schema/edges#assoc-edge-config-table) in the database if corrupted for some reason. It basically goes through the schema and tries to reinsert all edges. If already in the database, does nothing.
+
+## alembic
+Runs [alembic commands](https://alembic.sqlalchemy.org/en/latest/api/commands.html).
+
+For example, to show the current database revision:
+
+```shell
+tsent alembic current
+```
+
+or to show the database history:
+
+```shell
+tsent alembic history
+```
