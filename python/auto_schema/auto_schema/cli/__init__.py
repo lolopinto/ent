@@ -1,6 +1,13 @@
 import os
 import sys
 import argparse
+from alembic.command import heads
+
+# if env variable is set, manipulate the path to put local
+# current directory over possibly installed auto_schema so that we 
+# see local changes
+if os.getenv('LOCAL_AUTO_SCHEMA') == 'true':
+    sys.path.insert(0, os.getcwd())
 
 # if env variable is set, manipulate the path to put local
 # current directory over possibly installed auto_schema so that we 

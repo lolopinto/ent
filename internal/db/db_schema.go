@@ -414,8 +414,8 @@ func (s *dbSchema) generateDbSchema() {
 	runPythonCommand(s.pathToConfigs)
 }
 
-func UpgradeDB(codePathInfo *codegen.CodePath) {
-	runPythonCommand(codePathInfo.GetRootPathToConfigs(), "-u=True")
+func UpgradeDB(codePathInfo *codegen.CodePath, revision string) {
+	runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("-u=%s", revision))
 }
 
 func DowngradeDB(codePathInfo *codegen.CodePath, revision string) {

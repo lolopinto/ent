@@ -214,3 +214,32 @@ hides the edge from being exposed as a `Connection` in GraphQL. This is used for
 allows configuring the [actions](/docs/actions/action) generated for this edge. Two actions are currently supported:
  * [add edge](/docs/actions/add-edge-action)
  * [remove edge](/docs/actions/remove-edge-action)
+
+
+## assoc-edge-config table
+Each created edge is stored in the `assoc_edge_config` table. This is the source of truth for the edge and ensures a consistent data source for edge data.
+
+Here's what the table looks like:
+
+```db
+ent-starter=# \d+ assoc_edge_config
+                                             Table "public.assoc_edge_config"
+      Column       |            Type             | Collation | Nullable | Default | Storage  | Stats target | Description 
+-------------------+-----------------------------+-----------+----------+---------+----------+--------------+-------------
+ edge_type         | uuid                        |           | not null |         | plain    |              | 
+ edge_name         | text                        |           | not null |         | extended |              | 
+ symmetric_edge    | boolean                     |           | not null | false   | plain    |              | 
+ inverse_edge_type | uuid                        |           |          |         | plain    |              | 
+ edge_table        | text                        |           | not null |         | extended |              | 
+ created_at        | timestamp without time zone |           | not null |         | plain    |              | 
+ updated_at        | timestamp without time zone |           | not null |         | plain    |              | 
+Indexes:
+    "assoc_edge_config_edge_type_pkey" PRIMARY KEY, btree (edge_type)
+    "assoc_edge_config_unique_edge_name" UNIQUE CONSTRAINT, btree (edge_name)
+Foreign-key constraints:
+    "assoc_edge_config_inverse_edge_type_fkey" FOREIGN KEY (inverse_edge_type) REFERENCES assoc_edge_config(edge_type) ON DELETE RESTRICT
+Referenced by:
+    TABLE "assoc_edge_config" CONSTRAINT "assoc_edge_config_inverse_edge_type_fkey" FOREIGN KEY (inverse_edge_type) REFERENCES assoc_edge_config(edge_type) ON DELETE RESTRICT
+
+ent-starter=# 
+```
