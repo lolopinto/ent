@@ -11,7 +11,7 @@ import { GraphQLEdge, GraphQLEdgeConnection } from "./edge_connection";
 import { GraphQLPageInfo } from "./page_info";
 import { GraphQLEdgeInterface } from "../builtins/edge";
 import { GraphQLConnectionInterface } from "../builtins/connection";
-import { Data } from "src/core/base";
+import { Data } from "../../core/base";
 
 export class GraphQLEdgeType<
   TNode extends GraphQLObjectType,

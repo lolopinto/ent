@@ -93,7 +93,7 @@ export function validateFields(actual: Field[], expected: Field[]) {
 
     // TODO set this for everyone and then don't need this...
     if (expField.tsType) {
-      expect(field.tsType, expField.tsType);
+      expect(field.tsType).toBe(expField.tsType);
     }
   }
 }
