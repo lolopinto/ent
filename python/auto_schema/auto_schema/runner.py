@@ -304,7 +304,7 @@ class Runner(object):
         # understand diff and make changes as needed
         # pprint.pprint(migrations, indent=2, width=30)
 
-    def upgrade(self, revision):
+    def upgrade(self, revision='head'):
         self.cmd.upgrade(revision)
 
     def downgrade(self, revision):

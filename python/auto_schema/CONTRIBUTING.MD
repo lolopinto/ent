@@ -1,8 +1,10 @@
 make changes to code and then run as following:
 
 * `pipenv shell` to get into virtual environment.
-* run a test: `python -m pytest -k test_enum_type `
+* run a test: `python -m pytest -k test_enum_type`
 * run all tests: `python -m pytest`
+
+* `pipenv install` to install dependencies from `Pipfile`
 
 assumes a local postgres db named `autoschema_test` exists
 
