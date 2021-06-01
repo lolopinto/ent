@@ -156,7 +156,7 @@ func getSortBucket(path string) int {
 		return 100
 	} else if strings.HasPrefix(path, codepath.Package) {
 		return 10
-	} else if strings.HasPrefix(path, "./") {
+	} else if strings.HasPrefix(path, "./") || strings.HasPrefix(path, "..") {
 		return 1000
 	} else {
 		// absolute path like "graphql"

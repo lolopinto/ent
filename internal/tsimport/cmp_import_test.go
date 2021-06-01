@@ -19,6 +19,8 @@ func TestSortOrder(t *testing.T) {
 
 	assert.True(t, cmp("src/ent/user", "./auth"))
 	assert.False(t, cmp( "./auth", "src/ent/user"))
+	assert.False(t, cmp( "../auth", "src/ent/user"))
+	assert.True(t, cmp(  "src/ent/user", "../auth"))
 
 	assert.True(t, cmp("graphql", "src/ent/user"))
 }
