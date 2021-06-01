@@ -269,9 +269,11 @@ func (imp *importInfo) String(usedExportsMap map[string]bool) (string, error) {
 			imports = append(imports, defaultExport)
 		}
 		if len(usedExports) != 0 {
+			sort.Strings(usedExports)
 			imports = append(imports, fmt.Sprintf("{%s}", strings.Join(usedExports, ", ")))
 		}
 	}
+	sort.Strings(imports)
 
 	return fmt.Sprintf(
 		"import %s from %s;",
@@ -292,7 +294,7 @@ func (exp *exportInfo) String() string {
 	if exp.as != "" {
 		return fmt.Sprintf("export * as %s from %s;", exp.as, strconv.Quote(exp.path))
 	}
-
+	sort.Strings(exp.exports)
 	return fmt.Sprintf(
 		"export {%s} from %s;",
 		strings.Join(exp.exports, ", "),

@@ -191,7 +191,7 @@ func TestImports(t *testing.T) {
 			},
 			expectedLines: []string{
 				getLine("import {GraphQLString} from {path};", "graphql"),
-				getLine("import {loadEnt, loadEntX, ID} from {root};"),
+				getLine("import {ID, loadEnt, loadEntX} from {root};"),
 				getLine("import {GraphQLTime} from {path};", codepath.GraphQLPackage),
 				getLine("import User, {editUser} from {path};", "src/ent/user"),
 				getLine("import {UserType} from {path};", "src/graphql/resolvers/internal"),
@@ -207,7 +207,7 @@ func TestImports(t *testing.T) {
 				useImport(imps, "loadEnt")
 			},
 			expectedLines: []string{
-				getLine("import {loadEnt, ID} from {root};"),
+				getLine("import {ID, loadEnt} from {root};"),
 			},
 		},
 		"reserve default separately": {
@@ -224,7 +224,7 @@ func TestImports(t *testing.T) {
 				useImport(imps, "createUser")
 			},
 			expectedLines: []string{
-				getLine("import {loadEnt, ID} from {root};"),
+				getLine("import {ID, loadEnt} from {root};"),
 				getLine("import User, {createUser} from {path};", "src/ent/user"),
 			},
 		},
@@ -242,7 +242,7 @@ func TestImports(t *testing.T) {
 				useImport(imps, "createUser")
 			},
 			expectedLines: []string{
-				getLine("import {loadEnt, ID} from {path};", codepath.Package),
+				getLine("import {ID, loadEnt} from {path};", codepath.Package),
 				getLine("import User, {createUser} from {path};", "src/ent/user"),
 			},
 		},
@@ -285,20 +285,20 @@ func TestImports(t *testing.T) {
 				export(imps, "src/ent/const", "foo", "bar")
 			},
 			expectedLines: []string{
-				getLine("export {foo, bar} from {path};", "src/ent/const"),
+				getLine("export {bar, foo} from {path};", "src/ent/const"),
 			},
 		},
 		"import + export": {
 			fn: func(imps *tsimport.Imports) {
 				reserveImport(imps, codepath.Package, "loadEnt", "loadEntX", "Viewer")
 
-				useImport(imps, "loadEnt")
 				useImport(imps, "loadEntX")
+				useImport(imps, "loadEnt")
 				export(imps, "src/ent/const", "foo", "bar")
 			},
 			expectedLines: []string{
 				// export first regardless of order
-				getLine("export {foo, bar} from {path};", "src/ent/const"),
+				getLine("export {bar, foo} from {path};", "src/ent/const"),
 				getLine("import {loadEnt, loadEntX} from {path};", codepath.Package),
 			},
 		},
