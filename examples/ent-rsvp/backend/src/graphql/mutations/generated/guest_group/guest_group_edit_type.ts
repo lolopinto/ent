@@ -14,10 +14,10 @@ import {
 import { RequestContext } from "@lolopinto/ent";
 import { mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { GuestGroup } from "src/ent/";
-import { GuestGroupType } from "src/graphql/resolvers/";
 import EditGuestGroupAction, {
   GuestGroupEditInput,
 } from "src/ent/guest_group/actions/edit_guest_group_action";
+import { GuestGroupType } from "src/graphql/resolvers/";
 
 interface customGuestGroupEditInput extends GuestGroupEditInput {
   guestGroupID: string;

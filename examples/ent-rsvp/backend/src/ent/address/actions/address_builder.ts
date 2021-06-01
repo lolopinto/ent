@@ -10,8 +10,8 @@ import {
   saveBuilderX,
   Orchestrator,
 } from "@lolopinto/ent/action";
-import schema from "src/schema/address";
 import { Address } from "src/ent/";
+import schema from "src/schema/address";
 
 export interface AddressInput {
   street?: string;

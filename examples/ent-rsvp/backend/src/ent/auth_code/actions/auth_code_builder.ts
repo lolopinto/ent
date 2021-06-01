@@ -10,8 +10,8 @@ import {
   saveBuilderX,
   Orchestrator,
 } from "@lolopinto/ent/action";
-import schema from "src/schema/auth_code";
 import { AuthCode, Guest } from "src/ent/";
+import schema from "src/schema/auth_code";
 
 export interface AuthCodeInput {
   code?: string;

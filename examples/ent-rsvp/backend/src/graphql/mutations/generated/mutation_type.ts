@@ -7,13 +7,13 @@ import { AddressEditType } from "src/graphql/mutations/generated/address/address
 import { AuthGuestType } from "src/graphql/mutations/generated/auth_guest_type";
 import { AuthUserType } from "src/graphql/mutations/generated/auth_user_type";
 import { EmailAvailableType } from "src/graphql/mutations/generated/email_available_type";
+import { EventCreateType } from "src/graphql/mutations/generated/event/event_create_type";
 import { EventActivityAddInviteType } from "src/graphql/mutations/generated/event_activity/event_activity_add_invite_type";
 import { EventActivityCreateType } from "src/graphql/mutations/generated/event_activity/event_activity_create_type";
 import { EventActivityDeleteType } from "src/graphql/mutations/generated/event_activity/event_activity_delete_type";
 import { EventActivityEditType } from "src/graphql/mutations/generated/event_activity/event_activity_edit_type";
 import { EventActivityRemoveInviteType } from "src/graphql/mutations/generated/event_activity/event_activity_remove_invite_type";
 import { EventActivityRsvpStatusEditType } from "src/graphql/mutations/generated/event_activity/event_activity_rsvp_status_edit_type";
-import { EventCreateType } from "src/graphql/mutations/generated/event/event_create_type";
 import { GuestCreateType } from "src/graphql/mutations/generated/guest/guest_create_type";
 import { GuestDeleteType } from "src/graphql/mutations/generated/guest/guest_delete_type";
 import { GuestEditType } from "src/graphql/mutations/generated/guest/guest_edit_type";

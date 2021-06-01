@@ -15,10 +15,10 @@ import {
 import { RequestContext } from "@lolopinto/ent";
 import { GraphQLTime, mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { EventActivity } from "src/ent/";
-import { EventActivityType } from "src/graphql/resolvers/";
 import CreateEventActivityAction, {
   EventActivityCreateInput,
 } from "src/ent/event_activity/actions/create_event_activity_action";
+import { EventActivityType } from "src/graphql/resolvers/";
 
 interface customEventActivityCreateInput extends EventActivityCreateInput {
   eventID: string;

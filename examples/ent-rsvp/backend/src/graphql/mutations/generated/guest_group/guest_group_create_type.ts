@@ -15,10 +15,10 @@ import {
 import { RequestContext } from "@lolopinto/ent";
 import { mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { GuestGroup } from "src/ent/";
-import { GuestGroupType } from "src/graphql/resolvers/";
 import CreateGuestGroupAction, {
   GuestGroupCreateInput,
 } from "src/ent/guest_group/actions/create_guest_group_action";
+import { GuestGroupType } from "src/graphql/resolvers/";
 
 interface customGuestGroupCreateInput extends GuestGroupCreateInput {
   eventID: string;

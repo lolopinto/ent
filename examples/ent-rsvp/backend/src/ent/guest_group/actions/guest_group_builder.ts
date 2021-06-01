@@ -10,9 +10,9 @@ import {
   saveBuilderX,
   Orchestrator,
 } from "@lolopinto/ent/action";
-import schema from "src/schema/guest_group";
-import { EdgeType, NodeType } from "src/ent/const";
 import { GuestGroup, EventActivity, Event } from "src/ent/";
+import { EdgeType, NodeType } from "src/ent/const";
+import schema from "src/schema/guest_group";
 
 export interface GuestGroupInput {
   invitationName?: string;

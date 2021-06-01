@@ -14,10 +14,10 @@ import {
 import { RequestContext } from "@lolopinto/ent";
 import { mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { Address } from "src/ent/";
-import { AddressType } from "src/graphql/resolvers/";
 import EditAddressAction, {
   AddressEditInput,
 } from "src/ent/address/actions/edit_address_action";
+import { AddressType } from "src/graphql/resolvers/";
 
 interface customAddressEditInput extends AddressEditInput {
   addressID: string;

@@ -18,6 +18,13 @@ import {
   convertToGQLEnum,
 } from "@lolopinto/ent/graphql";
 import {
+  EventActivity,
+  EventActivityToAttendingQuery,
+  EventActivityToDeclinedQuery,
+  EventActivityToInvitesQuery,
+  getEventActivityRsvpStatusValues,
+} from "src/ent/";
+import {
   EventType,
   AddressType,
   EventActivityToAttendingConnectionType,
@@ -25,13 +32,6 @@ import {
   EventActivityToInvitesConnectionType,
   EventActivityRsvpStatusType,
 } from "src/graphql/resolvers/internal";
-import {
-  EventActivity,
-  EventActivityToAttendingQuery,
-  EventActivityToDeclinedQuery,
-  EventActivityToInvitesQuery,
-  getEventActivityRsvpStatusValues,
-} from "src/ent/";
 
 export const EventActivityType = new GraphQLObjectType({
   name: "EventActivity",

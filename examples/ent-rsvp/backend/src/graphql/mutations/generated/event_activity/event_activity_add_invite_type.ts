@@ -13,8 +13,8 @@ import {
 import { RequestContext } from "@lolopinto/ent";
 import { mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { EventActivity } from "src/ent/";
-import { EventActivityType } from "src/graphql/resolvers/";
 import EventActivityAddInviteAction from "src/ent/event_activity/actions/event_activity_add_invite_action";
+import { EventActivityType } from "src/graphql/resolvers/";
 
 interface customEventActivityAddInviteInput {
   eventActivityID: string;

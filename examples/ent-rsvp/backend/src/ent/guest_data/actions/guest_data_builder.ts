@@ -10,8 +10,8 @@ import {
   saveBuilderX,
   Orchestrator,
 } from "@lolopinto/ent/action";
-import schema from "src/schema/guest_data";
 import { GuestData, Event, Guest } from "src/ent/";
+import schema from "src/schema/guest_data";
 
 export interface GuestDataInput {
   guestID?: ID | Builder<Guest>;

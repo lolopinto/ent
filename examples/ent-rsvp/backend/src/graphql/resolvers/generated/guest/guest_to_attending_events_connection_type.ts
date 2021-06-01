@@ -7,8 +7,8 @@ import {
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
 import { GraphQLConnectionType, GraphQLEdge } from "@lolopinto/ent/graphql";
-import { EventActivityType } from "src/graphql/resolvers/internal";
 import { GuestToAttendingEventsEdge } from "src/ent/";
+import { EventActivityType } from "src/graphql/resolvers/internal";
 
 var connType: GraphQLConnectionType<
   GraphQLObjectType,

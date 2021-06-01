@@ -14,8 +14,8 @@ import {
   nodeIDEncoder,
   GraphQLEdgeConnection,
 } from "@lolopinto/ent/graphql";
-import { UserToEventsConnectionType } from "src/graphql/resolvers/internal";
 import { User, UserToEventsQuery } from "src/ent/";
+import { UserToEventsConnectionType } from "src/graphql/resolvers/internal";
 
 export const UserType = new GraphQLObjectType({
   name: "User",

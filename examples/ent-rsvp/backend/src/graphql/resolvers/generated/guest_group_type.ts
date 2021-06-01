@@ -15,15 +15,15 @@ import {
   GraphQLEdgeConnection,
 } from "@lolopinto/ent/graphql";
 import {
-  EventType,
-  GuestGroupToInvitedEventsConnectionType,
-  GuestGroupToGuestsConnectionType,
-} from "src/graphql/resolvers/internal";
-import {
   GuestGroup,
   GuestGroupToInvitedEventsQuery,
   GuestGroupToGuestsQuery,
 } from "src/ent/";
+import {
+  EventType,
+  GuestGroupToInvitedEventsConnectionType,
+  GuestGroupToGuestsConnectionType,
+} from "src/graphql/resolvers/internal";
 
 export const GuestGroupType = new GraphQLObjectType({
   name: "GuestGroup",
