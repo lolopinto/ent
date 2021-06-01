@@ -2,11 +2,11 @@
 
 import ViewerResolver, { GQLViewer } from "../viewer";
 import {
-  GraphQLObjectType,
-  GraphQLID,
-  GraphQLNonNull,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
+  GraphQLID,
+  GraphQLNonNull,
+  GraphQLObjectType,
   GraphQLResolveInfo,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";

@@ -2,15 +2,15 @@
 
 import { AuthResolver } from "../auth";
 import {
-  GraphQLObjectType,
-  GraphQLInputObjectType,
-  GraphQLID,
-  GraphQLString,
-  GraphQLNonNull,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
-  GraphQLResolveInfo,
+  GraphQLID,
   GraphQLInputFieldConfigMap,
+  GraphQLInputObjectType,
+  GraphQLNonNull,
+  GraphQLObjectType,
+  GraphQLResolveInfo,
+  GraphQLString,
 } from "graphql";
 import { ID, RequestContext } from "@lolopinto/ent";
 

@@ -80,19 +80,18 @@ import {
 } from "src/graphql/mutations/generated/user/user_edit_type";
 import { QueryType } from "src/graphql/resolvers/generated/query_type";
 import {
-  EventRsvpStatusType,
-  dayOfWeekType,
   AddressType,
   ContactType,
-  EventType,
-  HolidayType,
-  HoursOfOperationType,
-  UserType,
+  EventRsvpStatusType,
   EventToAttendingConnectionType,
   EventToDeclinedConnectionType,
   EventToHostsConnectionType,
   EventToInvitedConnectionType,
   EventToMaybeConnectionType,
+  EventType,
+  GQLViewerType,
+  HolidayType,
+  HoursOfOperationType,
   UserToContactsConnectionType,
   UserToCreatedEventsConnectionType,
   UserToDeclinedEventsConnectionType,
@@ -101,7 +100,8 @@ import {
   UserToHostedEventsConnectionType,
   UserToInvitedEventsConnectionType,
   UserToMaybeEventsConnectionType,
-  GQLViewerType,
+  UserType,
+  dayOfWeekType,
 } from "./resolvers";
 
 export default new GraphQLSchema({

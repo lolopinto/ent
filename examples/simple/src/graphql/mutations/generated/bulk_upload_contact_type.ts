@@ -2,9 +2,9 @@
 
 import { ImportContactResolver } from "../import_contact";
 import {
+  GraphQLFieldConfig,
   GraphQLID,
   GraphQLNonNull,
-  GraphQLFieldConfig,
   GraphQLResolveInfo,
 } from "graphql";
 import { GraphQLUpload } from "graphql-upload";
