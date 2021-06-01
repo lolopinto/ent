@@ -16,6 +16,7 @@ import {
 export class DeleteEventActivityActionBase implements Action<EventActivity> {
   public readonly builder: EventActivityBuilder;
   public readonly viewer: Viewer;
+  protected eventActivity: EventActivity;
 
   constructor(viewer: Viewer, eventActivity: EventActivity) {
     this.viewer = viewer;
@@ -25,6 +26,7 @@ export class DeleteEventActivityActionBase implements Action<EventActivity> {
       this,
       eventActivity,
     );
+    this.eventActivity = eventActivity;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {

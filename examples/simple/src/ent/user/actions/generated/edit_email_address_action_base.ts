@@ -18,6 +18,7 @@ export class EditEmailAddressActionBase implements Action<User> {
   public readonly builder: UserBuilder;
   public readonly viewer: Viewer;
   protected input: EditEmailAddressInput;
+  protected user: User;
 
   constructor(viewer: Viewer, user: User, input: EditEmailAddressInput) {
     this.viewer = viewer;
@@ -28,6 +29,7 @@ export class EditEmailAddressActionBase implements Action<User> {
       this,
       user,
     );
+    this.user = user;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {

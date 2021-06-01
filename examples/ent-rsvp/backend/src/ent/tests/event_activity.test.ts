@@ -547,4 +547,34 @@ describe("rsvps", () => {
       );
     }
   });
+
+  test("non-saveXFromID API", async () => {
+    const [activity, guests] = await createAndInvitePlusGuests(0);
+    const guest = guests[0];
+    const vc = new IDViewer(guest.id);
+
+    const activity2 = await EditEventActivityRsvpStatusAction.create(
+      vc,
+      activity,
+      {
+        guestID: guest.id,
+        rsvpStatus: EventActivityRsvpStatusInput.Attending,
+      },
+    ).saveX();
+
+    const rsvpStatus = await activity2.viewerRsvpStatus();
+    expect(rsvpStatus).toBe(EventActivityRsvpStatus.Attending);
+
+    const activity3 = await EditEventActivityRsvpStatusAction.create(
+      vc,
+      activity,
+      {
+        guestID: guest.id,
+        rsvpStatus: EventActivityRsvpStatusInput.Declined,
+      },
+    ).saveX();
+
+    const rsvpStatus2 = await activity3.viewerRsvpStatus();
+    expect(rsvpStatus2).toBe(EventActivityRsvpStatus.Declined);
+  });
 });

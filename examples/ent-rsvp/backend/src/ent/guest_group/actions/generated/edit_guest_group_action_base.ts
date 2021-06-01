@@ -21,6 +21,7 @@ export class EditGuestGroupActionBase implements Action<GuestGroup> {
   public readonly builder: GuestGroupBuilder;
   public readonly viewer: Viewer;
   protected input: GuestGroupEditInput;
+  protected guestGroup: GuestGroup;
 
   constructor(
     viewer: Viewer,
@@ -35,6 +36,7 @@ export class EditGuestGroupActionBase implements Action<GuestGroup> {
       this,
       guestGroup,
     );
+    this.guestGroup = guestGroup;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {

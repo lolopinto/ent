@@ -16,6 +16,7 @@ import {
 export class DeleteAuthCodeActionBase implements Action<AuthCode> {
   public readonly builder: AuthCodeBuilder;
   public readonly viewer: Viewer;
+  protected authCode: AuthCode;
 
   constructor(viewer: Viewer, authCode: AuthCode) {
     this.viewer = viewer;
@@ -25,6 +26,7 @@ export class DeleteAuthCodeActionBase implements Action<AuthCode> {
       this,
       authCode,
     );
+    this.authCode = authCode;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {

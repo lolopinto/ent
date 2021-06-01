@@ -39,6 +39,7 @@ export class EditEventRsvpStatusActionBase implements Action<Event> {
   public readonly builder: EventBuilder;
   public readonly viewer: Viewer;
   protected input: EditEventRsvpStatusInput;
+  protected event: Event;
 
   constructor(viewer: Viewer, event: Event, input: EditEventRsvpStatusInput) {
     this.viewer = viewer;
@@ -49,6 +50,7 @@ export class EditEventRsvpStatusActionBase implements Action<Event> {
       this,
       event,
     );
+    this.event = event;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {
@@ -64,20 +66,35 @@ export class EditEventRsvpStatusActionBase implements Action<Event> {
     return this.builder.build();
   }
 
+  private async setEdgeType() {
+    await setEdgeTypeInGroup(
+      this.builder.orchestrator,
+      this.input.rsvpStatus,
+      this.event.id,
+      this.input.userID,
+      NodeType.Event,
+      this.event.getEventRsvpStatusMap(),
+    );
+  }
+
   async valid(): Promise<boolean> {
+    await this.setEdgeType();
     return this.builder.valid();
   }
 
   async validX(): Promise<void> {
+    await this.setEdgeType();
     await this.builder.validX();
   }
 
   async save(): Promise<Event | null> {
+    await this.setEdgeType();
     await this.builder.save();
     return await this.builder.editedEnt();
   }
 
   async saveX(): Promise<Event> {
+    await this.setEdgeType();
     await this.builder.saveX();
     return await this.builder.editedEntX();
   }
@@ -106,15 +123,6 @@ export class EditEventRsvpStatusActionBase implements Action<Event> {
     input: EditEventRsvpStatusInput,
   ): Promise<Event> {
     let event = await Event.loadX(viewer, id);
-    const action = new this(viewer, event, input);
-    await setEdgeTypeInGroup(
-      action.builder.orchestrator,
-      input.rsvpStatus,
-      event.id,
-      input.userID,
-      NodeType.Event,
-      event.getEventRsvpStatusMap(),
-    );
-    return await action.saveX();
+    return await new this(viewer, event, input).saveX();
   }
 }

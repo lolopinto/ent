@@ -13,6 +13,7 @@ import { EventBuilder, EventInput } from "src/ent/event/actions/event_builder";
 export class EventRemoveHostActionBase implements Action<Event> {
   public readonly builder: EventBuilder;
   public readonly viewer: Viewer;
+  protected event: Event;
 
   constructor(viewer: Viewer, event: Event) {
     this.viewer = viewer;
@@ -22,6 +23,7 @@ export class EventRemoveHostActionBase implements Action<Event> {
       this,
       event,
     );
+    this.event = event;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {

@@ -109,6 +109,9 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
   public readonly viewer: {{$viewer}}
   {{ if $hasInput -}}
     protected input: {{$inputName}};
+  {{end -}}
+  {{if $action.MutatingExistingObject -}}
+    protected {{$instance}}: {{$node}};
   {{end}}
 
   constructor({{$constructor}}) {
@@ -124,6 +127,9 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
         {{$instance}},
       {{end -}}
     );
+    {{if $action.MutatingExistingObject -}}
+      this.{{$instance}} = {{$instance}};
+    {{end -}}
   }
 
   getPrivacyPolicy(): {{useImport "PrivacyPolicy"}} {
@@ -174,11 +180,31 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
     return this.builder.build();
   }
 
+  {{ if edgeGroupAction $action -}}
+    {{$edgeGroup := $action.GetEdgeGroup -}}
+    private async setEdgeType() {
+      await {{useImport "setEdgeTypeInGroup"}}(
+        this.builder.orchestrator,
+        this.input.{{$edgeGroup.TSGroupStatusName}},
+        this.{{$instance}}.id,
+        this.input.{{$edgeGroup.GetIDArg}},
+        {{useImport "NodeType"}}.{{$edgeGroup.NodeInfo.Node}},
+        this.{{$instance}}.{{$edgeGroup.GetStatusMapMethod}}(),
+      );
+    }
+  {{end}}
+
   async valid(): Promise<boolean> {
+    {{if edgeGroupAction $action }}
+      await this.setEdgeType();
+    {{ end -}}
     return this.builder.valid();
   }
 
   async validX(): Promise<void> {
+    {{ if edgeGroupAction $action }}
+      await this.setEdgeType();
+    {{ end -}}
     await this.builder.validX();
   }
 
@@ -187,6 +213,9 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
       await this.builder.save();
   {{ else -}}
     async save(): Promise<{{$node}} | null> {
+      {{ if edgeGroupAction $action }}
+        await this.setEdgeType();
+      {{ end -}}
       await this.builder.save();
       return await this.builder.editedEnt();
   {{ end -}}
@@ -197,6 +226,9 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
       await this.builder.saveX();
   {{ else -}}
     async saveX(): Promise<{{$node}}> {
+      {{ if edgeGroupAction $action }}
+        await this.setEdgeType();
+      {{ end -}}
       await this.builder.saveX();
       return await this.builder.editedEntX();
   {{ end -}}
@@ -228,19 +260,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
         ): Promise<{{$node}}> {
       {{end -}}
       let {{$instance}} = await {{$node}}.loadX(viewer, id);
-      {{ if edgeGroupAction $action -}}
-        {{$edgeGroup := $action.GetEdgeGroup -}}
-        const action = new this(viewer, {{$instance}}, input);
-        await {{useImport "setEdgeTypeInGroup"}}(
-          action.builder.orchestrator,
-          input.{{$edgeGroup.TSGroupStatusName}},
-          {{$instance}}.id,
-          input.{{$edgeGroup.GetIDArg}},
-          {{useImport "NodeType"}}.{{$edgeGroup.NodeInfo.Node}},
-          {{$instance}}.{{$edgeGroup.GetStatusMapMethod}}(),
-        );
-        return await action.saveX();
-      {{else if $hasInput -}}
+      {{if $hasInput -}}
         return await new this(viewer, {{$instance}}, input).saveX();
       {{else if edgeAction $action -}}
         return await new this(viewer, {{$instance}})
