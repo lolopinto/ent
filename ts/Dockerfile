@@ -6,7 +6,7 @@ LABEL org.opencontainers.image.source https://github.com/lolopinto/ent
 RUN apt update && apt --assume-yes install zsh
 
 # install auto_schema
-RUN python3 -m pip install auto_schema==0.0.6
+RUN python3 -m pip install auto_schema==0.0.7
 
 # get go
 RUN wget https://storage.googleapis.com/golang/go1.16.3.linux-amd64.tar.gz
@@ -15,16 +15,12 @@ RUN tar -C /usr/local -xzf go1.16.3.linux-amd64.tar.gz
 
 ENV PATH $PATH:/usr/local/go/bin
 
-ARG GITHUB_TOKEN=$GITHUB_TOKEN
-RUN go env -w GOPRIVATE=github.com/lolopinto/ent
-RUN git config --global url."https://golang:$GITHUB_TOKEN@github.com".insteadOf "https://github.com"
-
 # default path but make it explicit
 ENV GOPATH=$HOME/go
 ENV GOBIN $GOPATH/bin
 ENV PATH $PATH:$GOPATH/bin
 
-RUN go install github.com/lolopinto/ent/tsent@v0.0.11
+RUN go install github.com/lolopinto/ent/tsent@v0.0.12
 
 # needed to tell tsent where to get tsconfig-paths + make it possible to test locally 
 ENV TSCONFIG_PATHS="/node_modules/tsconfig-paths/register"
