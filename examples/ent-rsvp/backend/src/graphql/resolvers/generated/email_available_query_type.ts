@@ -2,11 +2,11 @@
 
 import { AuthResolver } from "../../mutations/auth/auth";
 import {
-  GraphQLString,
-  GraphQLNonNull,
-  GraphQLFieldConfig,
-  GraphQLResolveInfo,
   GraphQLBoolean,
+  GraphQLFieldConfig,
+  GraphQLNonNull,
+  GraphQLResolveInfo,
+  GraphQLString,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
 

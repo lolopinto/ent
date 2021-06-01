@@ -2,13 +2,13 @@
 
 import ViewerResolver, { ViewerType } from "../viewer";
 import {
-  GraphQLObjectType,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
+  GraphQLObjectType,
   GraphQLResolveInfo,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
-import { UserType, GuestType } from "src/graphql/resolvers/internal";
+import { GuestType, UserType } from "src/graphql/resolvers/internal";
 
 export const ViewerTypeType = new GraphQLObjectType({
   name: "Viewer",

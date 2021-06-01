@@ -75,24 +75,24 @@ import {
 } from "src/graphql/mutations/generated/user/user_create_type";
 import { QueryType } from "src/graphql/resolvers/generated/query_type";
 import {
-  EventActivityRsvpStatusType,
   AddressType,
-  EventActivityType,
-  EventType,
-  GuestGroupType,
-  GuestType,
-  UserType,
+  EventActivityRsvpStatusType,
   EventActivityToAttendingConnectionType,
   EventActivityToDeclinedConnectionType,
   EventActivityToInvitesConnectionType,
+  EventActivityType,
   EventToEventActivitiesConnectionType,
   EventToGuestGroupsConnectionType,
   EventToGuestsConnectionType,
+  EventType,
   GuestGroupToGuestsConnectionType,
   GuestGroupToInvitedEventsConnectionType,
+  GuestGroupType,
   GuestToAttendingEventsConnectionType,
   GuestToDeclinedEventsConnectionType,
+  GuestType,
   UserToEventsConnectionType,
+  UserType,
   ViewerTypeType,
 } from "./resolvers";
 

@@ -2,9 +2,9 @@
 
 import { ImportGuestResolver } from "../import_guests";
 import {
+  GraphQLFieldConfig,
   GraphQLID,
   GraphQLNonNull,
-  GraphQLFieldConfig,
   GraphQLResolveInfo,
 } from "graphql";
 import { GraphQLUpload } from "graphql-upload";

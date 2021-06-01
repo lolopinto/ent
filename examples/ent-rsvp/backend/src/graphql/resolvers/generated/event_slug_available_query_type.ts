@@ -2,11 +2,11 @@
 
 import { EventResolver } from "../event";
 import {
-  GraphQLString,
-  GraphQLNonNull,
-  GraphQLFieldConfig,
-  GraphQLResolveInfo,
   GraphQLBoolean,
+  GraphQLFieldConfig,
+  GraphQLNonNull,
+  GraphQLResolveInfo,
+  GraphQLString,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
 
