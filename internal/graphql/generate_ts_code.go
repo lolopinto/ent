@@ -397,8 +397,8 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 		writeQueryStep{},
 		writeMutationStep{},
 		writeInternalIndexStep{},
-		generateGQLSchemaStep{},
 		writeSchemaStep{},
+		generateGQLSchemaStep{},
 		writeIndexStep{},
 	}
 
@@ -922,9 +922,9 @@ func writeEnumFile(enum *gqlEnum) error {
 }
 
 type typeInfo struct {
-	Type string
+	Type     string
 	Function bool
-	Path string
+	Path     string
 }
 
 const resolverPath = "./resolvers"
@@ -943,8 +943,8 @@ func getAllTypes(s *gqlSchema) []typeInfo {
 		}
 		for _, conn := range node.connections {
 			conns = append(conns, typeInfo{
-				Type: conn.ConnType,
-				Path: resolverPath,
+				Type:     conn.ConnType,
+				Path:     resolverPath,
 				Function: true,
 			})
 		}
@@ -963,7 +963,7 @@ func getAllTypes(s *gqlSchema) []typeInfo {
 	for _, enum := range s.enums {
 		enums = append(enums, typeInfo{
 			Type: enum.Type,
-		Path:resolverPath,
+			Path: resolverPath,
 		})
 	}
 
@@ -972,12 +972,12 @@ func getAllTypes(s *gqlSchema) []typeInfo {
 		for _, n := range node.ObjData.GQLNodes {
 			customQueries = append(customQueries, typeInfo{
 				Type: n.Type,
-				Path:resolverPath,
+				Path: resolverPath,
 			})
 		}
 	}
 
-		var customMutations []typeInfo
+	var customMutations []typeInfo
 	for _, node := range s.customMutations {
 		for _, n := range node.ObjData.GQLNodes {
 			customMutations = append(customMutations, typeInfo{
@@ -2210,7 +2210,7 @@ func writeTSSchemaFile(data *codegen.Data, s *gqlSchema) error {
 			HasMutations bool
 			QueryPath    string
 			MutationPath string
-			AllTypes []typeInfo
+			AllTypes     []typeInfo
 		}{
 			s.hasMutations,
 			getQueryImportPath(),
