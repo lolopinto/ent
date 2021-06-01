@@ -2,8 +2,8 @@
 
 import { GraphQLObjectType } from "graphql";
 import { GraphQLConnectionType } from "@lolopinto/ent/graphql";
-import { GuestType } from "src/graphql/resolvers/internal";
 import { EventActivityToDeclinedEdge } from "src/ent/";
+import { GuestType } from "src/graphql/resolvers/internal";
 
 var connType: GraphQLConnectionType<
   GraphQLObjectType,

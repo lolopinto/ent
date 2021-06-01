@@ -2,8 +2,8 @@
 
 import { GraphQLObjectType } from "graphql";
 import { GraphQLConnectionType } from "@lolopinto/ent/graphql";
-import { UserType } from "src/graphql/resolvers/internal";
 import { UserToFriendsEdge } from "src/ent/";
+import { UserType } from "src/graphql/resolvers/internal";
 
 var connType: GraphQLConnectionType<GraphQLObjectType, UserToFriendsEdge>;
 

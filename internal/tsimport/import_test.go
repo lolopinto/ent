@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
@@ -17,8 +18,23 @@ type testCase struct {
 	panicInFn     bool
 }
 
-func getLine(line, path string) string {
-	r := strings.NewReplacer("{path}", strconv.Quote(path))
+func getLine(line string, paths... string) string {
+	path := ""
+	if len(paths) > 1 {
+		panic("only 1 path supported")
+	}
+	if len(paths) ==1 {
+		path = paths[0]
+	}
+	r := strings.NewReplacer(
+		"{path}", 
+		strconv.Quote(path),
+		"{root}",
+		strconv.Quote(codepath.Package),
+		"{graphql}",
+		strconv.Quote(codepath.GraphQLPackage),
+	)
+
 	return r.Replace(line)
 }
 
@@ -61,18 +77,18 @@ func TestImports(t *testing.T) {
 	testCases := map[string]testCase{
 		"reserve some": {
 			fn: func(imps *tsimport.Imports) {
-				reserveImport(imps, "ent/ent", "loadEnt", "loadEntX", "Viewer")
+				reserveImport(imps, codepath.Package, "loadEnt", "loadEntX", "Viewer")
 
 				useImport(imps, "loadEnt")
 				useImport(imps, "loadEntX")
 			},
 			expectedLines: []string{
-				getLine("import {loadEnt, loadEntX} from {path};", "ent/ent"),
+				getLine("import {loadEnt, loadEntX} from {root};"),
 			},
 		},
 		"nothing used": {
 			fn: func(imps *tsimport.Imports) {
-				reserveImport(imps, "ent/ent", "loadEnt", "loadEntX", "Viewer")
+				reserveImport(imps, codepath.Package, "loadEnt", "loadEntX", "Viewer")
 			},
 			expectedLines: []string{},
 		},
@@ -111,17 +127,17 @@ func TestImports(t *testing.T) {
 		},
 		"reserve all. used": {
 			fn: func(imps *tsimport.Imports) {
-				reserveAllImport(imps, "ent/query", "query")
+				reserveAllImport(imps, "./core/clause", "clause")
 
-				useImport(imps, "query")
+				useImport(imps, "clause")
 			},
 			expectedLines: []string{
-				getLine("import * as query from {path};", "ent/query"),
+				getLine("import * as clause from {path};", "./core/clause"),
 			},
 		},
 		"reserve all. not used": {
 			fn: func(imps *tsimport.Imports) {
-				reserveAllImport(imps, "ent/query", "query")
+				reserveAllImport(imps, "./core/clause", "clause")
 			},
 			expectedLines: []string{},
 		},
@@ -129,35 +145,38 @@ func TestImports(t *testing.T) {
 		// simpler version of * as query?
 		"reserve same thing multiple times": {
 			fn: func(imps *tsimport.Imports) {
-				reserveAllImport(imps, "ent/query", "query")
-				reserveAllImport(imps, "bar/foo", "query")
+				reserveAllImport(imps, "./core/clause", "clause")
+				reserveAllImport(imps, "./core/foo", "clause")
 			},
 			panicInFn: true,
 		},
 		"use not reserved": {
 			fn: func(imps *tsimport.Imports) {
-				useImport(imps, "query")
+				useImport(imps, "clause")
 			},
 			panicInFn: true,
 		},
 		"use multiple times": {
 			fn: func(imps *tsimport.Imports) {
-				reserveAllImport(imps, "ent/query", "query")
+				reserveAllImport(imps, "./core/clause", "clause")
 
-				useImport(imps, "query")
-				useImport(imps, "query")
+				useImport(imps, "clause")
+				useImport(imps, "clause")
 			},
 			expectedLines: []string{
-				getLine("import * as query from {path};", "ent/query"),
+				getLine("import * as clause from {path};", "./core/clause"),
 			},
 		},
-		"combo": {
+		"sorted_combo": {
 			fn: func(imps *tsimport.Imports) {
-				reserveImport(imps, "ent/ent", "loadEnt", "loadEntX", "Viewer", "ID")
+				reserveImport(imps, codepath.Package, "loadEnt", "loadEntX", "Viewer", "ID")
+				reserveImport(imps, "src/graphql/resolvers/internal", "UserType")
 				reserveDefaultImport(imps, "src/ent/user", "User", "createUser", "editUser")
 				reserveDefaultImport(imps, "src/ent/contact", "Contact", "createContact", "editContact")
+				reserveImport(imps, "graphql", "GraphQLString")
+				reserveImport(imps, codepath.GraphQLPackage, "GraphQLTime")
 
-				reserveAllImport(imps, "ent/query", "query")
+				reserveAllImport(imps, "./core/clause", "clause")
 
 				useImport(imps, "ID")
 				useImport(imps, "loadEnt")
@@ -165,24 +184,30 @@ func TestImports(t *testing.T) {
 
 				useImport(imps, "User")
 				useImport(imps, "editUser")
-				useImport(imps, "query")
+				useImport(imps, "clause")
+				useImport(imps, "GraphQLString")
+				useImport(imps, "GraphQLTime")
+				useImport(imps, "UserType")
 			},
 			expectedLines: []string{
-				getLine("import {loadEnt, loadEntX, ID} from {path};", "ent/ent"),
+				getLine("import {GraphQLString} from {path};", "graphql"),
+				getLine("import {ID, loadEnt, loadEntX} from {root};"),
+				getLine("import {GraphQLTime} from {path};", codepath.GraphQLPackage),
 				getLine("import User, {editUser} from {path};", "src/ent/user"),
-				getLine("import * as query from {path};", "ent/query"),
+				getLine("import {UserType} from {path};", "src/graphql/resolvers/internal"),
+				getLine("import * as clause from {path};", "./core/clause"),
 			},
 		},
 		"reserve separately": {
 			fn: func(imps *tsimport.Imports) {
-				reserveImport(imps, "ent/ent", "loadEnt")
-				reserveImport(imps, "ent/ent", "ID")
+				reserveImport(imps, codepath.Package, "loadEnt")
+				reserveImport(imps, codepath.Package, "ID")
 
 				useImport(imps, "ID")
 				useImport(imps, "loadEnt")
 			},
 			expectedLines: []string{
-				getLine("import {loadEnt, ID} from {path};", "ent/ent"),
+				getLine("import {ID, loadEnt} from {root};"),
 			},
 		},
 		"reserve default separately": {
@@ -190,8 +215,8 @@ func TestImports(t *testing.T) {
 				reserveDefaultImport(imps, "src/ent/user", "User")
 				reserveImport(imps, "src/ent/user", "createUser", "editUser")
 
-				reserveImport(imps, "ent/ent", "loadEnt")
-				reserveImport(imps, "ent/ent", "ID")
+				reserveImport(imps, codepath.Package, "loadEnt")
+				reserveImport(imps, codepath.Package, "ID")
 
 				useImport(imps, "ID")
 				useImport(imps, "loadEnt")
@@ -199,8 +224,8 @@ func TestImports(t *testing.T) {
 				useImport(imps, "createUser")
 			},
 			expectedLines: []string{
+				getLine("import {ID, loadEnt} from {root};"),
 				getLine("import User, {createUser} from {path};", "src/ent/user"),
-				getLine("import {loadEnt, ID} from {path};", "ent/ent"),
 			},
 		},
 		"reserve default import after import": {
@@ -208,8 +233,8 @@ func TestImports(t *testing.T) {
 				reserveImport(imps, "src/ent/user", "createUser", "editUser")
 				reserveDefaultImport(imps, "src/ent/user", "User")
 
-				reserveImport(imps, "ent/ent", "loadEnt")
-				reserveImport(imps, "ent/ent", "ID")
+				reserveImport(imps, codepath.Package, "loadEnt")
+				reserveImport(imps, codepath.Package, "ID")
 
 				useImport(imps, "ID")
 				useImport(imps, "loadEnt")
@@ -217,8 +242,8 @@ func TestImports(t *testing.T) {
 				useImport(imps, "createUser")
 			},
 			expectedLines: []string{
+				getLine("import {ID, loadEnt} from {path};", codepath.Package),
 				getLine("import User, {createUser} from {path};", "src/ent/user"),
-				getLine("import {loadEnt, ID} from {path};", "ent/ent"),
 			},
 		},
 		"reserve exact same thing": {
@@ -260,21 +285,21 @@ func TestImports(t *testing.T) {
 				export(imps, "src/ent/const", "foo", "bar")
 			},
 			expectedLines: []string{
-				getLine("export {foo, bar} from {path};", "src/ent/const"),
+				getLine("export {bar, foo} from {path};", "src/ent/const"),
 			},
 		},
 		"import + export": {
 			fn: func(imps *tsimport.Imports) {
-				reserveImport(imps, "ent/ent", "loadEnt", "loadEntX", "Viewer")
+				reserveImport(imps, codepath.Package, "loadEnt", "loadEntX", "Viewer")
 
-				useImport(imps, "loadEnt")
 				useImport(imps, "loadEntX")
+				useImport(imps, "loadEnt")
 				export(imps, "src/ent/const", "foo", "bar")
 			},
 			expectedLines: []string{
 				// export first regardless of order
-				getLine("export {foo, bar} from {path};", "src/ent/const"),
-				getLine("import {loadEnt, loadEntX} from {path};", "ent/ent"),
+				getLine("export {bar, foo} from {path};", "src/ent/const"),
+				getLine("import {loadEnt, loadEntX} from {path};", codepath.Package),
 			},
 		},
 	}

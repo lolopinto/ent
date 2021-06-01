@@ -2,8 +2,8 @@
 
 import { GraphQLObjectType } from "graphql";
 import { GraphQLConnectionType } from "@lolopinto/ent/graphql";
-import { EventActivityType } from "src/graphql/resolvers/internal";
 import { GuestGroupToInvitedEventsEdge } from "src/ent/";
+import { EventActivityType } from "src/graphql/resolvers/internal";
 
 var connType: GraphQLConnectionType<
   GraphQLObjectType,

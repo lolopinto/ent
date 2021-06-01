@@ -2,11 +2,13 @@ package tsimport
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"text/template"
 
 	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/internal/codepath"
 )
 
 // Imports keeps track of imports in a generated typescript file
@@ -149,6 +151,34 @@ func (imps *Imports) Use(export string) (string, error) {
 	return export, nil
 }
 
+func getSortBucket(path string) int {
+	if strings.HasPrefix(path, "src") {
+		return 100
+	} else if strings.HasPrefix(path, codepath.Package) {
+		return 10
+	} else if strings.HasPrefix(path, "./") || strings.HasPrefix(path, "..") {
+		return 1000
+	} else {
+		// absolute path like "graphql"
+		return 0
+	}
+}
+
+func cmp(path1, path2 string) bool {
+	order1 := getSortBucket(path1)
+	order2 := getSortBucket(path2)
+
+	if order1 == order2 {
+	// if equal, sort within the bucket
+	// currently, this depends on src/ent < src/graphql
+		return path1 < path2
+
+	} else if order1 < order2 {
+	return true
+	}
+	return false
+}
+
 // Returns a list of imported lines
 func (imps *Imports) String() (string, error) {
 	var sb strings.Builder
@@ -164,6 +194,11 @@ func (imps *Imports) String() (string, error) {
 		}
 		sb.WriteString("\n")
 	}
+
+	sort.Slice(imps.imports, func(i, j int) bool {
+		return cmp(imps.imports[i].path, imps.imports[j].path)
+	})
+
 	for _, imp := range imps.imports {
 
 		str, err := imp.String(imps.usedExports)
@@ -234,9 +269,11 @@ func (imp *importInfo) String(usedExportsMap map[string]bool) (string, error) {
 			imports = append(imports, defaultExport)
 		}
 		if len(usedExports) != 0 {
+			sort.Strings(usedExports)
 			imports = append(imports, fmt.Sprintf("{%s}", strings.Join(usedExports, ", ")))
 		}
 	}
+	sort.Strings(imports)
 
 	return fmt.Sprintf(
 		"import %s from %s;",
@@ -257,7 +294,7 @@ func (exp *exportInfo) String() string {
 	if exp.as != "" {
 		return fmt.Sprintf("export * as %s from %s;", exp.as, strconv.Quote(exp.path))
 	}
-
+	sort.Strings(exp.exports)
 	return fmt.Sprintf(
 		"export {%s} from %s;",
 		strings.Join(exp.exports, ", "),
