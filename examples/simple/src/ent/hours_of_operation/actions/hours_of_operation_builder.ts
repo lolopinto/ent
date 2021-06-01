@@ -10,8 +10,8 @@ import {
   saveBuilderX,
   Orchestrator,
 } from "@lolopinto/ent/action";
-import schema from "src/schema/hours_of_operation";
 import { dayOfWeek, HoursOfOperation } from "src/ent/";
+import schema from "src/schema/hours_of_operation";
 
 export interface HoursOfOperationInput {
   dayOfWeek?: dayOfWeek;

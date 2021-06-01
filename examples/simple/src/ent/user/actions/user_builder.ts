@@ -10,9 +10,9 @@ import {
   saveBuilderX,
   Orchestrator,
 } from "@lolopinto/ent/action";
-import schema from "src/schema/user";
-import { EdgeType, NodeType } from "src/ent/const";
 import { User, Event, Contact } from "src/ent/";
+import { EdgeType, NodeType } from "src/ent/const";
+import schema from "src/schema/user";
 
 export interface UserInput {
   firstName?: string;

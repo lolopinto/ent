@@ -13,10 +13,10 @@ import {
 import { RequestContext } from "@lolopinto/ent";
 import { GraphQLTime } from "@lolopinto/ent/graphql";
 import { Holiday } from "src/ent/";
-import { HolidayType } from "src/graphql/resolvers/";
 import CreateHolidayAction, {
   HolidayCreateInput,
 } from "src/ent/holiday/actions/create_holiday_action";
+import { HolidayType } from "src/graphql/resolvers/";
 
 interface HolidayCreatePayload {
   holiday: Holiday;

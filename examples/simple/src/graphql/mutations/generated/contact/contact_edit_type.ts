@@ -14,10 +14,10 @@ import {
 import { RequestContext } from "@lolopinto/ent";
 import { mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { Contact } from "src/ent/";
-import { ContactType } from "src/graphql/resolvers/";
 import EditContactAction, {
   ContactEditInput,
 } from "src/ent/contact/actions/edit_contact_action";
+import { ContactType } from "src/graphql/resolvers/";
 
 interface customContactEditInput extends ContactEditInput {
   contactID: string;

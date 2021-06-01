@@ -14,10 +14,10 @@ import {
 import { RequestContext } from "@lolopinto/ent";
 import { mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { User } from "src/ent/";
-import { UserType } from "src/graphql/resolvers/";
 import EditPhoneNumberAction, {
   EditPhoneNumberInput,
 } from "src/ent/user/actions/edit_phone_number_action";
+import { UserType } from "src/graphql/resolvers/";
 
 interface customPhoneNumberEditInput extends EditPhoneNumberInput {
   userID: string;

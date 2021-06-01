@@ -16,7 +16,6 @@ import {
   mustDecodeIDFromGQLID,
   convertFromGQLEnum,
 } from "@lolopinto/ent/graphql";
-import { EventType } from "src/graphql/resolvers/";
 import { Event } from "src/ent/";
 import EditEventRsvpStatusAction, {
   EditEventRsvpStatusInput,
@@ -25,6 +24,7 @@ import {
   getEventRsvpStatusInputValues,
   EventRsvpStatusInput,
 } from "src/ent/event/actions/generated/edit_event_rsvp_status_action_base";
+import { EventType } from "src/graphql/resolvers/";
 
 interface customEventRsvpStatusEditInput extends EditEventRsvpStatusInput {
   eventID: string;

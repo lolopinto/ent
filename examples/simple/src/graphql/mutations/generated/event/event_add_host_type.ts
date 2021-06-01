@@ -13,8 +13,8 @@ import {
 import { RequestContext } from "@lolopinto/ent";
 import { mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { Event } from "src/ent/";
-import { EventType } from "src/graphql/resolvers/";
 import EventAddHostAction from "src/ent/event/actions/event_add_host_action";
+import { EventType } from "src/graphql/resolvers/";
 
 interface customEventAddHostInput {
   eventID: string;

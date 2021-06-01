@@ -10,9 +10,9 @@ import {
   saveBuilderX,
   Orchestrator,
 } from "@lolopinto/ent/action";
-import schema from "src/schema/event";
-import { EdgeType, NodeType } from "src/ent/const";
 import { Event, User } from "src/ent/";
+import { EdgeType, NodeType } from "src/ent/const";
+import schema from "src/schema/event";
 
 export interface EventInput {
   name?: string;

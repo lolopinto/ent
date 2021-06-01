@@ -17,15 +17,6 @@ import {
   convertToGQLEnum,
 } from "@lolopinto/ent/graphql";
 import {
-  UserType,
-  EventToAttendingConnectionType,
-  EventToDeclinedConnectionType,
-  EventToHostsConnectionType,
-  EventToInvitedConnectionType,
-  EventToMaybeConnectionType,
-  EventRsvpStatusType,
-} from "src/graphql/resolvers/internal";
-import {
   Event,
   EventToAttendingQuery,
   EventToDeclinedQuery,
@@ -34,6 +25,15 @@ import {
   EventToMaybeQuery,
   getEventRsvpStatusValues,
 } from "src/ent/";
+import {
+  UserType,
+  EventToAttendingConnectionType,
+  EventToDeclinedConnectionType,
+  EventToHostsConnectionType,
+  EventToInvitedConnectionType,
+  EventToMaybeConnectionType,
+  EventRsvpStatusType,
+} from "src/graphql/resolvers/internal";
 
 export const EventType = new GraphQLObjectType({
   name: "Event",

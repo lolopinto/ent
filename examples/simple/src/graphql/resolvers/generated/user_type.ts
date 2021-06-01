@@ -16,17 +16,6 @@ import {
   GraphQLEdgeConnection,
 } from "@lolopinto/ent/graphql";
 import {
-  ContactType,
-  UserToCreatedEventsConnectionType,
-  UserToDeclinedEventsConnectionType,
-  UserToEventsAttendingConnectionType,
-  UserToFriendsConnectionType,
-  UserToInvitedEventsConnectionType,
-  UserToMaybeEventsConnectionType,
-  UserToHostedEventsConnectionType,
-  UserToContactsConnectionType,
-} from "src/graphql/resolvers/internal";
-import {
   User,
   UserToCreatedEventsQuery,
   UserToDeclinedEventsQuery,
@@ -37,6 +26,17 @@ import {
   UserToHostedEventsQuery,
   UserToContactsQuery,
 } from "src/ent/";
+import {
+  ContactType,
+  UserToCreatedEventsConnectionType,
+  UserToDeclinedEventsConnectionType,
+  UserToEventsAttendingConnectionType,
+  UserToFriendsConnectionType,
+  UserToInvitedEventsConnectionType,
+  UserToMaybeEventsConnectionType,
+  UserToHostedEventsConnectionType,
+  UserToContactsConnectionType,
+} from "src/graphql/resolvers/internal";
 
 export const UserType = new GraphQLObjectType({
   name: "User",

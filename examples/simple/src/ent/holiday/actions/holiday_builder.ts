@@ -10,8 +10,8 @@ import {
   saveBuilderX,
   Orchestrator,
 } from "@lolopinto/ent/action";
-import schema from "src/schema/holiday";
 import { Holiday } from "src/ent/";
+import schema from "src/schema/holiday";
 
 export interface HolidayInput {
   label?: string;

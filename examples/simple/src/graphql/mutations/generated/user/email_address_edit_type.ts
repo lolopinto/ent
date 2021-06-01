@@ -14,10 +14,10 @@ import {
 import { RequestContext } from "@lolopinto/ent";
 import { mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { User } from "src/ent/";
-import { UserType } from "src/graphql/resolvers/";
 import EditEmailAddressAction, {
   EditEmailAddressInput,
 } from "src/ent/user/actions/edit_email_address_action";
+import { UserType } from "src/graphql/resolvers/";
 
 interface customEmailAddressEditInput extends EditEmailAddressInput {
   userID: string;

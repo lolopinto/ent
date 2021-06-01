@@ -10,8 +10,8 @@ import {
   saveBuilderX,
   Orchestrator,
 } from "@lolopinto/ent/action";
-import schema from "src/schema/contact";
 import { Contact, User } from "src/ent/";
+import schema from "src/schema/contact";
 
 export interface ContactInput {
   emailAddress?: string;
