@@ -16,6 +16,7 @@ import {
 export class DeleteContactActionBase implements Action<Contact> {
   public readonly builder: ContactBuilder;
   public readonly viewer: Viewer;
+  protected contact: Contact;
 
   constructor(viewer: Viewer, contact: Contact) {
     this.viewer = viewer;
@@ -25,6 +26,7 @@ export class DeleteContactActionBase implements Action<Contact> {
       this,
       contact,
     );
+    this.contact = contact;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {

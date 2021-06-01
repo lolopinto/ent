@@ -13,6 +13,7 @@ import { UserBuilder, UserInput } from "src/ent/user/actions/user_builder";
 export class DeleteUserActionBase implements Action<User> {
   public readonly builder: UserBuilder;
   public readonly viewer: Viewer;
+  protected user: User;
 
   constructor(viewer: Viewer, user: User) {
     this.viewer = viewer;
@@ -22,6 +23,7 @@ export class DeleteUserActionBase implements Action<User> {
       this,
       user,
     );
+    this.user = user;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {

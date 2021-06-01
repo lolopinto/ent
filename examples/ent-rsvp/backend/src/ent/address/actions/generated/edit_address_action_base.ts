@@ -33,6 +33,7 @@ export class EditAddressActionBase implements Action<Address> {
   public readonly builder: AddressBuilder;
   public readonly viewer: Viewer;
   protected input: AddressEditInput;
+  protected address: Address;
 
   constructor(viewer: Viewer, address: Address, input: AddressEditInput) {
     this.viewer = viewer;
@@ -43,6 +44,7 @@ export class EditAddressActionBase implements Action<Address> {
       this,
       address,
     );
+    this.address = address;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {

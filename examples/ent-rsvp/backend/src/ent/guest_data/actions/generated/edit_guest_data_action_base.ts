@@ -28,6 +28,7 @@ export class EditGuestDataActionBase implements Action<GuestData> {
   public readonly builder: GuestDataBuilder;
   public readonly viewer: Viewer;
   protected input: GuestDataEditInput;
+  protected guestData: GuestData;
 
   constructor(viewer: Viewer, guestData: GuestData, input: GuestDataEditInput) {
     this.viewer = viewer;
@@ -38,6 +39,7 @@ export class EditGuestDataActionBase implements Action<GuestData> {
       this,
       guestData,
     );
+    this.guestData = guestData;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {

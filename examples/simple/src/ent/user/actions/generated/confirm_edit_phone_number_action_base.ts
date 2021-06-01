@@ -19,6 +19,7 @@ export class ConfirmEditPhoneNumberActionBase implements Action<User> {
   public readonly builder: UserBuilder;
   public readonly viewer: Viewer;
   protected input: ConfirmEditPhoneNumberInput;
+  protected user: User;
 
   constructor(viewer: Viewer, user: User, input: ConfirmEditPhoneNumberInput) {
     this.viewer = viewer;
@@ -29,6 +30,7 @@ export class ConfirmEditPhoneNumberActionBase implements Action<User> {
       this,
       user,
     );
+    this.user = user;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {

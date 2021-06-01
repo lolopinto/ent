@@ -29,6 +29,7 @@ export class EditContactActionBase implements Action<Contact> {
   public readonly builder: ContactBuilder;
   public readonly viewer: Viewer;
   protected input: ContactEditInput;
+  protected contact: Contact;
 
   constructor(viewer: Viewer, contact: Contact, input: ContactEditInput) {
     this.viewer = viewer;
@@ -39,6 +40,7 @@ export class EditContactActionBase implements Action<Contact> {
       this,
       contact,
     );
+    this.contact = contact;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {

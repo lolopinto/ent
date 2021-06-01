@@ -18,6 +18,7 @@ export class EditPhoneNumberActionBase implements Action<User> {
   public readonly builder: UserBuilder;
   public readonly viewer: Viewer;
   protected input: EditPhoneNumberInput;
+  protected user: User;
 
   constructor(viewer: Viewer, user: User, input: EditPhoneNumberInput) {
     this.viewer = viewer;
@@ -28,6 +29,7 @@ export class EditPhoneNumberActionBase implements Action<User> {
       this,
       user,
     );
+    this.user = user;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {

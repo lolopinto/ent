@@ -13,6 +13,7 @@ import { GuestBuilder, GuestInput } from "src/ent/guest/actions/guest_builder";
 export class DeleteGuestActionBase implements Action<Guest> {
   public readonly builder: GuestBuilder;
   public readonly viewer: Viewer;
+  protected guest: Guest;
 
   constructor(viewer: Viewer, guest: Guest) {
     this.viewer = viewer;
@@ -22,6 +23,7 @@ export class DeleteGuestActionBase implements Action<Guest> {
       this,
       guest,
     );
+    this.guest = guest;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {

@@ -19,6 +19,7 @@ export class EditUserActionBase implements Action<User> {
   public readonly builder: UserBuilder;
   public readonly viewer: Viewer;
   protected input: UserEditInput;
+  protected user: User;
 
   constructor(viewer: Viewer, user: User, input: UserEditInput) {
     this.viewer = viewer;
@@ -29,6 +30,7 @@ export class EditUserActionBase implements Action<User> {
       this,
       user,
     );
+    this.user = user;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {

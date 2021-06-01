@@ -27,6 +27,7 @@ export class EditEventActionBase implements Action<Event> {
   public readonly builder: EventBuilder;
   public readonly viewer: Viewer;
   protected input: EventEditInput;
+  protected event: Event;
 
   constructor(viewer: Viewer, event: Event, input: EventEditInput) {
     this.viewer = viewer;
@@ -37,6 +38,7 @@ export class EditEventActionBase implements Action<Event> {
       this,
       event,
     );
+    this.event = event;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {

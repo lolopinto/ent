@@ -16,6 +16,7 @@ import {
 export class DeleteAddressActionBase implements Action<Address> {
   public readonly builder: AddressBuilder;
   public readonly viewer: Viewer;
+  protected address: Address;
 
   constructor(viewer: Viewer, address: Address) {
     this.viewer = viewer;
@@ -25,6 +26,7 @@ export class DeleteAddressActionBase implements Action<Address> {
       this,
       address,
     );
+    this.address = address;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {

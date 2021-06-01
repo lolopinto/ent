@@ -16,6 +16,7 @@ import {
 export class DeleteGuestDataActionBase implements Action<GuestData> {
   public readonly builder: GuestDataBuilder;
   public readonly viewer: Viewer;
+  protected guestData: GuestData;
 
   constructor(viewer: Viewer, guestData: GuestData) {
     this.viewer = viewer;
@@ -25,6 +26,7 @@ export class DeleteGuestDataActionBase implements Action<GuestData> {
       this,
       guestData,
     );
+    this.guestData = guestData;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {

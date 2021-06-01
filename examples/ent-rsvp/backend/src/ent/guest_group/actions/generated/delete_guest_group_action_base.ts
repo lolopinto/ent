@@ -16,6 +16,7 @@ import {
 export class DeleteGuestGroupActionBase implements Action<GuestGroup> {
   public readonly builder: GuestGroupBuilder;
   public readonly viewer: Viewer;
+  protected guestGroup: GuestGroup;
 
   constructor(viewer: Viewer, guestGroup: GuestGroup) {
     this.viewer = viewer;
@@ -25,6 +26,7 @@ export class DeleteGuestGroupActionBase implements Action<GuestGroup> {
       this,
       guestGroup,
     );
+    this.guestGroup = guestGroup;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {

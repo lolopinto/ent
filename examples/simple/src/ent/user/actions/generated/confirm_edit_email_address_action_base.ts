@@ -19,6 +19,7 @@ export class ConfirmEditEmailAddressActionBase implements Action<User> {
   public readonly builder: UserBuilder;
   public readonly viewer: Viewer;
   protected input: ConfirmEditEmailAddressInput;
+  protected user: User;
 
   constructor(viewer: Viewer, user: User, input: ConfirmEditEmailAddressInput) {
     this.viewer = viewer;
@@ -29,6 +30,7 @@ export class ConfirmEditEmailAddressActionBase implements Action<User> {
       this,
       user,
     );
+    this.user = user;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {
