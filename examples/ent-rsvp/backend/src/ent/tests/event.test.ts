@@ -26,8 +26,8 @@ describe("create event", () => {
       }).saveX();
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toBe(
-        "ent undefined is not visible for privacy reasons",
+      expect(e.message).toMatch(
+        /Viewer with ID (.+) does not have permission to create Event/,
       );
     }
   });
