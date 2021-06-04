@@ -25,7 +25,7 @@
   },
   "homepage": "https://github.com/lolopinto/ent-starter#readme",
   "dependencies": {
-    "@lolopinto/ent": "^0.0.93",
+    "@lolopinto/ent": "^0.0.95",
     "@lolopinto/ent-email": "0.0.3",
     "@lolopinto/ent-passport": "0.0.4",
     "@lolopinto/ent-password": "0.0.4",

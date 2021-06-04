@@ -174,7 +174,7 @@ export class AddressBase {
   async loadOwner(): Promise<Ent | null> {
     return loadEntByType(
       this.viewer,
-      (this.ownerType as unknown) as NodeType,
+      this.ownerType as unknown as NodeType,
       this.ownerID,
     );
   }
@@ -182,7 +182,7 @@ export class AddressBase {
   loadOwnerX(): Promise<Ent> {
     return loadEntXByType(
       this.viewer,
-      (this.ownerType as unknown) as NodeType,
+      this.ownerType as unknown as NodeType,
       this.ownerID,
     );
   }

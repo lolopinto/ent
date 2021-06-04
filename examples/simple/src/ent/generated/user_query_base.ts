@@ -42,29 +42,27 @@ import {
   contactLoader,
 } from "src/ent/internal";
 
-export const userToCreatedEventsCountLoaderFactory = new AssocEdgeCountLoaderFactory(
-  EdgeType.UserToCreatedEvents,
-);
+export const userToCreatedEventsCountLoaderFactory =
+  new AssocEdgeCountLoaderFactory(EdgeType.UserToCreatedEvents);
 export const userToCreatedEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
   EdgeType.UserToCreatedEvents,
   () => UserToCreatedEventsEdge,
 );
 
-export const userToDeclinedEventsCountLoaderFactory = new AssocEdgeCountLoaderFactory(
-  EdgeType.UserToDeclinedEvents,
-);
+export const userToDeclinedEventsCountLoaderFactory =
+  new AssocEdgeCountLoaderFactory(EdgeType.UserToDeclinedEvents);
 export const userToDeclinedEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
   EdgeType.UserToDeclinedEvents,
   () => UserToDeclinedEventsEdge,
 );
 
-export const userToEventsAttendingCountLoaderFactory = new AssocEdgeCountLoaderFactory(
-  EdgeType.UserToEventsAttending,
-);
-export const userToEventsAttendingDataLoaderFactory = new AssocEdgeLoaderFactory(
-  EdgeType.UserToEventsAttending,
-  () => UserToEventsAttendingEdge,
-);
+export const userToEventsAttendingCountLoaderFactory =
+  new AssocEdgeCountLoaderFactory(EdgeType.UserToEventsAttending);
+export const userToEventsAttendingDataLoaderFactory =
+  new AssocEdgeLoaderFactory(
+    EdgeType.UserToEventsAttending,
+    () => UserToEventsAttendingEdge,
+  );
 
 export const userToFriendsCountLoaderFactory = new AssocEdgeCountLoaderFactory(
   EdgeType.UserToFriends,
@@ -74,33 +72,29 @@ export const userToFriendsDataLoaderFactory = new AssocEdgeLoaderFactory(
   () => UserToFriendsEdge,
 );
 
-export const userToInvitedEventsCountLoaderFactory = new AssocEdgeCountLoaderFactory(
-  EdgeType.UserToInvitedEvents,
-);
+export const userToInvitedEventsCountLoaderFactory =
+  new AssocEdgeCountLoaderFactory(EdgeType.UserToInvitedEvents);
 export const userToInvitedEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
   EdgeType.UserToInvitedEvents,
   () => UserToInvitedEventsEdge,
 );
 
-export const userToMaybeEventsCountLoaderFactory = new AssocEdgeCountLoaderFactory(
-  EdgeType.UserToMaybeEvents,
-);
+export const userToMaybeEventsCountLoaderFactory =
+  new AssocEdgeCountLoaderFactory(EdgeType.UserToMaybeEvents);
 export const userToMaybeEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
   EdgeType.UserToMaybeEvents,
   () => UserToMaybeEventsEdge,
 );
 
-export const userToSelfContactCountLoaderFactory = new AssocEdgeCountLoaderFactory(
-  EdgeType.UserToSelfContact,
-);
+export const userToSelfContactCountLoaderFactory =
+  new AssocEdgeCountLoaderFactory(EdgeType.UserToSelfContact);
 export const userToSelfContactDataLoaderFactory = new AssocEdgeLoaderFactory(
   EdgeType.UserToSelfContact,
   () => UserToSelfContactEdge,
 );
 
-export const userToHostedEventsCountLoaderFactory = new AssocEdgeCountLoaderFactory(
-  EdgeType.UserToHostedEvents,
-);
+export const userToHostedEventsCountLoaderFactory =
+  new AssocEdgeCountLoaderFactory(EdgeType.UserToHostedEvents);
 export const userToHostedEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
   EdgeType.UserToHostedEvents,
   () => UserToHostedEventsEdge,

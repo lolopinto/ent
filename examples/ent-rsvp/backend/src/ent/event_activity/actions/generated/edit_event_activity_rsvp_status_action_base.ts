@@ -38,7 +38,8 @@ export interface EditEventActivityRsvpStatusInput {
 }
 
 export class EditEventActivityRsvpStatusActionBase
-  implements Action<EventActivity> {
+  implements Action<EventActivity>
+{
   public readonly builder: EventActivityBuilder;
   public readonly viewer: Viewer;
   protected input: EditEventActivityRsvpStatusInput;

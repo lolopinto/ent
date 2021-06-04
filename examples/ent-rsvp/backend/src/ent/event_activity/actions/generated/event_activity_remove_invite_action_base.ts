@@ -14,7 +14,8 @@ import {
 } from "src/ent/event_activity/actions/event_activity_builder";
 
 export class EventActivityRemoveInviteActionBase
-  implements Action<EventActivity> {
+  implements Action<EventActivity>
+{
   public readonly builder: EventActivityBuilder;
   public readonly viewer: Viewer;
   protected eventActivity: EventActivity;

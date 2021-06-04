@@ -64,7 +64,7 @@ describe("edit address", () => {
       }).saveX();
     } catch (e) {
       expect(e.message).toMatch(
-        /^ent (.+) is not visible for privacy reasons$/,
+        /Viewer with ID (.+) does not have permission to edit Address/,
       );
     }
   });
@@ -84,7 +84,7 @@ describe("delete address", () => {
       await DeleteAddressAction.create(new IDViewer(user.id), address).saveX();
     } catch (e) {
       expect(e.message).toMatch(
-        /^ent (.+) is not visible for privacy reasons$/,
+        /Viewer with ID (.+) does not have permission to delete Address/,
       );
     }
   });

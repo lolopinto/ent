@@ -26,21 +26,21 @@ import {
   guestDataLoader,
 } from "src/ent/internal";
 
-export const guestToAttendingEventsCountLoaderFactory = new AssocEdgeCountLoaderFactory(
-  EdgeType.GuestToAttendingEvents,
-);
-export const guestToAttendingEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
-  EdgeType.GuestToAttendingEvents,
-  () => GuestToAttendingEventsEdge,
-);
+export const guestToAttendingEventsCountLoaderFactory =
+  new AssocEdgeCountLoaderFactory(EdgeType.GuestToAttendingEvents);
+export const guestToAttendingEventsDataLoaderFactory =
+  new AssocEdgeLoaderFactory(
+    EdgeType.GuestToAttendingEvents,
+    () => GuestToAttendingEventsEdge,
+  );
 
-export const guestToDeclinedEventsCountLoaderFactory = new AssocEdgeCountLoaderFactory(
-  EdgeType.GuestToDeclinedEvents,
-);
-export const guestToDeclinedEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
-  EdgeType.GuestToDeclinedEvents,
-  () => GuestToDeclinedEventsEdge,
-);
+export const guestToDeclinedEventsCountLoaderFactory =
+  new AssocEdgeCountLoaderFactory(EdgeType.GuestToDeclinedEvents);
+export const guestToDeclinedEventsDataLoaderFactory =
+  new AssocEdgeLoaderFactory(
+    EdgeType.GuestToDeclinedEvents,
+    () => GuestToDeclinedEventsEdge,
+  );
 
 export const guestToAuthCodesCountLoaderFactory = new RawCountLoaderFactory(
   AuthCode.loaderOptions(),

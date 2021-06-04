@@ -19,7 +19,8 @@ export interface HoursOfOperationCreateInput {
 }
 
 export class CreateHoursOfOperationActionBase
-  implements Action<HoursOfOperation> {
+  implements Action<HoursOfOperation>
+{
   public readonly builder: HoursOfOperationBuilder;
   public readonly viewer: Viewer;
   protected input: HoursOfOperationCreateInput;
