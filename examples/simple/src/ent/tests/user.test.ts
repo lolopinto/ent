@@ -105,7 +105,9 @@ test("edit user", async () => {
     }).saveX();
     fail("should have thrown exception");
   } catch (err) {
-    expect(err.message).toMatch(/is not visible for privacy reasons$/);
+    expect(err.message).toMatch(
+      /Logged out Viewer does not have permission to edit User/,
+    );
   }
 
   let vc = new IDViewer(user.id, { ent: user });
@@ -143,7 +145,9 @@ test("delete user", async () => {
     await DeleteUserAction.create(loggedOutViewer, user).saveX();
     fail("should have thrown exception");
   } catch (err) {
-    expect(err.message).toMatch(/is not visible for privacy reasons$/);
+    expect(err.message).toMatch(
+      /Logged out Viewer does not have permission to delete User/,
+    );
   }
   let vc = new IDViewer(user.id, { ent: user });
   await DeleteUserAction.create(vc, user).saveX();
