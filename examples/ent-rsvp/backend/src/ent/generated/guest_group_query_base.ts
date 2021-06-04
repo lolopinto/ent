@@ -23,13 +23,13 @@ import {
   guestLoader,
 } from "src/ent/internal";
 
-export const guestGroupToInvitedEventsCountLoaderFactory = new AssocEdgeCountLoaderFactory(
-  EdgeType.GuestGroupToInvitedEvents,
-);
-export const guestGroupToInvitedEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
-  EdgeType.GuestGroupToInvitedEvents,
-  () => GuestGroupToInvitedEventsEdge,
-);
+export const guestGroupToInvitedEventsCountLoaderFactory =
+  new AssocEdgeCountLoaderFactory(EdgeType.GuestGroupToInvitedEvents);
+export const guestGroupToInvitedEventsDataLoaderFactory =
+  new AssocEdgeLoaderFactory(
+    EdgeType.GuestGroupToInvitedEvents,
+    () => GuestGroupToInvitedEventsEdge,
+  );
 
 export const guestGroupToGuestsCountLoaderFactory = new RawCountLoaderFactory(
   Guest.loaderOptions(),

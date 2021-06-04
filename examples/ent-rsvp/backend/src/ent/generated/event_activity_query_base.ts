@@ -20,29 +20,29 @@ import {
   GuestToDeclinedEventsQuery,
 } from "src/ent/internal";
 
-export const eventActivityToAttendingCountLoaderFactory = new AssocEdgeCountLoaderFactory(
-  EdgeType.EventActivityToAttending,
-);
-export const eventActivityToAttendingDataLoaderFactory = new AssocEdgeLoaderFactory(
-  EdgeType.EventActivityToAttending,
-  () => EventActivityToAttendingEdge,
-);
+export const eventActivityToAttendingCountLoaderFactory =
+  new AssocEdgeCountLoaderFactory(EdgeType.EventActivityToAttending);
+export const eventActivityToAttendingDataLoaderFactory =
+  new AssocEdgeLoaderFactory(
+    EdgeType.EventActivityToAttending,
+    () => EventActivityToAttendingEdge,
+  );
 
-export const eventActivityToDeclinedCountLoaderFactory = new AssocEdgeCountLoaderFactory(
-  EdgeType.EventActivityToDeclined,
-);
-export const eventActivityToDeclinedDataLoaderFactory = new AssocEdgeLoaderFactory(
-  EdgeType.EventActivityToDeclined,
-  () => EventActivityToDeclinedEdge,
-);
+export const eventActivityToDeclinedCountLoaderFactory =
+  new AssocEdgeCountLoaderFactory(EdgeType.EventActivityToDeclined);
+export const eventActivityToDeclinedDataLoaderFactory =
+  new AssocEdgeLoaderFactory(
+    EdgeType.EventActivityToDeclined,
+    () => EventActivityToDeclinedEdge,
+  );
 
-export const eventActivityToInvitesCountLoaderFactory = new AssocEdgeCountLoaderFactory(
-  EdgeType.EventActivityToInvites,
-);
-export const eventActivityToInvitesDataLoaderFactory = new AssocEdgeLoaderFactory(
-  EdgeType.EventActivityToInvites,
-  () => EventActivityToInvitesEdge,
-);
+export const eventActivityToInvitesCountLoaderFactory =
+  new AssocEdgeCountLoaderFactory(EdgeType.EventActivityToInvites);
+export const eventActivityToInvitesDataLoaderFactory =
+  new AssocEdgeLoaderFactory(
+    EdgeType.EventActivityToInvites,
+    () => EventActivityToInvitesEdge,
+  );
 
 export class EventActivityToAttendingQueryBase extends AssocEdgeQueryBase<
   EventActivity,

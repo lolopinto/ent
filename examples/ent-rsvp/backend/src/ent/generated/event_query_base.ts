@@ -19,10 +19,8 @@ import {
   guestLoader,
 } from "src/ent/internal";
 
-export const eventToEventActivitiesCountLoaderFactory = new RawCountLoaderFactory(
-  EventActivity.loaderOptions(),
-  "event_id",
-);
+export const eventToEventActivitiesCountLoaderFactory =
+  new RawCountLoaderFactory(EventActivity.loaderOptions(), "event_id");
 export const eventToEventActivitiesDataLoaderFactory = new IndexLoaderFactory(
   EventActivity.loaderOptions(),
   "event_id",

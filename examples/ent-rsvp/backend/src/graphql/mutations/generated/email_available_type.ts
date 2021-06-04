@@ -10,24 +10,22 @@ import {
 import { RequestContext } from "@lolopinto/ent";
 import { AuthResolver } from "../auth/auth";
 
-export const EmailAvailableType: GraphQLFieldConfig<
-  undefined,
-  RequestContext
-> = {
-  type: GraphQLNonNull(GraphQLBoolean),
-  args: {
-    email: {
-      description: "",
-      type: GraphQLNonNull(GraphQLString),
+export const EmailAvailableType: GraphQLFieldConfig<undefined, RequestContext> =
+  {
+    type: GraphQLNonNull(GraphQLBoolean),
+    args: {
+      email: {
+        description: "",
+        type: GraphQLNonNull(GraphQLString),
+      },
     },
-  },
-  resolve: async (
-    _source,
-    { email },
-    context: RequestContext,
-    _info: GraphQLResolveInfo,
-  ) => {
-    const r = new AuthResolver();
-    return r.emailAvailableMutation(email);
-  },
-};
+    resolve: async (
+      _source,
+      { email },
+      context: RequestContext,
+      _info: GraphQLResolveInfo,
+    ) => {
+      const r = new AuthResolver();
+      return r.emailAvailableMutation(email);
+    },
+  };
