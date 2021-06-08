@@ -27,7 +27,6 @@ import {
   LoadRowOptions,
   LoadRowsOptions,
 } from "./base";
-import { Use } from "node-sql-parser";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -505,7 +504,7 @@ describe("dataloader cache logging", () => {
 
     expect(ml.logs.length).toEqual(1);
     expect(ml.logs[0]).toStrictEqual({
-      "dataloader-cache-hit": 1,
+      "dataloader-": 1,
       "tableName": options.tableName,
     });
   });
@@ -540,7 +539,7 @@ describe("dataloader cache logging", () => {
     expect(ml.logs.length).toEqual(1);
     expect(ml.logs[0]).toStrictEqual({
       // TODO this will also change when loadEnts changes
-      "dataloader-cache-hit": 1,
+      "dataloader-": 1,
       "tableName": options.tableName,
     });
   });

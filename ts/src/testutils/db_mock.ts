@@ -192,6 +192,7 @@ export class QueryRecorder {
   }
 
   static validateQueryOrder(expected: queryOptions[], ent: Ent | null) {
+    //    return;
     let queries = QueryRecorder.queries;
     //    console.log(queries, expected);
     expect(queries.length).toBe(expected.length);
@@ -293,40 +294,38 @@ export class QueryRecorder {
 
   static mockPool(pool: typeof Pool) {
     const mockedPool = mocked(pool, true);
-    mockedPool.mockImplementation(
-      (): Pool => {
-        return {
-          totalCount: 1,
-          idleCount: 1,
-          waitingCount: 1,
-          connect: async (): Promise<PoolClient> => {
-            return {
-              connect: jest.fn(),
-              release: jest.fn(),
-              query: jest
-                .fn()
-                .mockImplementation((query: string, values: any[]) => {
-                  return QueryRecorder.recordQuery(query, values);
-                }),
-              copyFrom: jest.fn(),
-              copyTo: jest.fn(),
-              pauseDrain: jest.fn(),
-              resumeDrain: jest.fn(),
-              escapeIdentifier: jest.fn(),
-              escapeLiteral: jest.fn(),
+    mockedPool.mockImplementation((): Pool => {
+      return {
+        totalCount: 1,
+        idleCount: 1,
+        waitingCount: 1,
+        connect: async (): Promise<PoolClient> => {
+          return {
+            connect: jest.fn(),
+            release: jest.fn(),
+            query: jest
+              .fn()
+              .mockImplementation((query: string, values: any[]) => {
+                return QueryRecorder.recordQuery(query, values);
+              }),
+            copyFrom: jest.fn(),
+            copyTo: jest.fn(),
+            pauseDrain: jest.fn(),
+            resumeDrain: jest.fn(),
+            escapeIdentifier: jest.fn(),
+            escapeLiteral: jest.fn(),
 
-              // EventEmitter
-              ...eventEmitter,
-            };
-          },
-          end: jest.fn(),
-          query: jest.fn().mockImplementation(QueryRecorder.recordQuery),
+            // EventEmitter
+            ...eventEmitter,
+          };
+        },
+        end: jest.fn(),
+        query: jest.fn().mockImplementation(QueryRecorder.recordQuery),
 
-          // EventEmitter
-          ...eventEmitter,
-        };
-      },
-    );
+        // EventEmitter
+        ...eventEmitter,
+      };
+    });
   }
 }
 

@@ -1,5 +1,8 @@
 import { Client } from "pg";
-import DB from "../../core/db";
+import DB, { Dialect } from "../../core/db";
+// import { open, Database } from "sqlite";
+// import sqlite3 from "sqlite3";
+import sqlite, { Database as SqliteDatabase } from "better-sqlite3";
 
 interface SchemaItem {
   name: string;
@@ -135,6 +138,16 @@ export function bool(name: string, opts?: options): Column {
   };
 }
 
+export function integer(name: string, opts?: options): Column {
+  return {
+    name,
+    datatype() {
+      return "INTEGER";
+    },
+    ...opts,
+  };
+}
+
 export function table(name: string, ...items: SchemaItem[]): Table {
   let cols: Column[] = [];
   let constraints: Constraint[] = [];
@@ -178,21 +191,23 @@ export function table(name: string, ...items: SchemaItem[]): Table {
         schemaStr.push(constraint.generate()),
       );
 
-      return `CREATE TABLE ${name} (\n ${schemaStr})`;
+      return `CREATE TABLE IF NOT EXISTS ${name} (\n ${schemaStr})`;
     },
     drop() {
-      return `DROP TABLE ${name}`;
+      return `DROP TABLE IF EXISTS ${name}`;
     },
   };
 }
 
 function randomDB(): string {
-  let str = Math.random()
-    .toString(16)
-    .substring(2);
+  let str = Math.random().toString(16).substring(2);
 
   // always ensure it starts with an alpha character
   return "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)] + str;
+}
+
+function isDialect(dialect: Dialect | Table[]): dialect is Dialect {
+  return !Array.isArray(dialect);
 }
 
 export class TempDB {
@@ -200,50 +215,102 @@ export class TempDB {
   private client: Client;
   private dbClient: Client;
   private tables = new Map<string, Table>();
+  private dialect: Dialect;
+  private sqlite: SqliteDatabase;
 
-  constructor(...tables: Table[]) {
-    tables.forEach((table) => this.tables.set(table.name, table));
+  constructor(dialect: Dialect, tables: Table[]);
+  constructor(tables: Table[]);
+  constructor(dialect: Dialect | Table[], tables?: Table[]) {
+    let tbles: Table[] = [];
+    if (isDialect(dialect)) {
+      this.dialect = dialect;
+      if (tables) {
+        tbles = tables;
+      } else {
+        throw new Error("tables required");
+      }
+    } else {
+      this.dialect = Dialect.Postgres;
+      tbles = dialect;
+    }
+    tbles.forEach((table) => this.tables.set(table.name, table));
+  }
+
+  getDialect() {
+    return this.dialect;
+  }
+
+  getTables() {
+    return this.tables;
   }
 
   async beforeAll() {
-    const user = process.env.POSTGRES_USER || "";
-    const password = process.env.POSTGRES_PASSWORD || "";
+    if (this.dialect === Dialect.Postgres) {
+      const user = process.env.POSTGRES_USER || "";
+      const password = process.env.POSTGRES_PASSWORD || "";
 
-    this.client = new Client({
-      host: "localhost",
-      user,
-      password,
-    });
-    await this.client.connect();
+      this.client = new Client({
+        host: "localhost",
+        user,
+        password,
+      });
+      await this.client.connect();
 
-    this.db = randomDB();
+      this.db = randomDB();
 
-    await this.client.query(`CREATE DATABASE ${this.db}`);
+      await this.client.query(`CREATE DATABASE ${this.db}`);
 
-    if (user && password) {
-      process.env.DB_CONNECTION_STRING = `postgres://${user}:${password}@localhost:5432/${this.db}`;
+      if (user && password) {
+        process.env.DB_CONNECTION_STRING = `postgres://${user}:${password}@localhost:5432/${this.db}`;
+      } else {
+        process.env.DB_CONNECTION_STRING = `postgres://localhost/${this.db}?`;
+      }
+
+      this.dbClient = new Client({
+        host: "localhost",
+        database: this.db,
+        user,
+        password,
+      });
+      await this.dbClient.connect();
     } else {
-      process.env.DB_CONNECTION_STRING = `postgres://localhost/${this.db}?`;
+      // TODO better...
+      if (process.env.DB_CONNECTION_STRING === undefined) {
+        throw new Error(`DB_CONNECTION_STRING required for sqlite `);
+      }
+      console.log(process.env.DB_CONNECTION_STRING);
+      const filePath = process.env.DB_CONNECTION_STRING.substr(10);
+      this.sqlite = sqlite(filePath);
+      // this.sqlite = await open({
+      //   filename: process.env.DB_CONNECTION_STRING.substr(10),
+      //   driver: sqlite3.Database,
+      // });
     }
-
-    this.dbClient = new Client({
-      host: "localhost",
-      database: this.db,
-      user,
-      password,
-    });
-    await this.dbClient.connect();
 
     for (const [_, table] of this.tables) {
-      await this.dbClient.query(table.create());
+      if (this.dialect == Dialect.Postgres) {
+        await this.dbClient.query(table.create());
+      } else {
+        console.log(table.create());
+        this.sqlite.exec(table.create());
+      }
     }
+    //    await this.sqlite.exec("nonsense");
   }
 
   getDBClient() {
-    return this.dbClient;
+    if (this.dialect === Dialect.Postgres) {
+      return this.dbClient;
+    }
+    return this.sqlite;
   }
 
   async afterAll() {
+    if (this.dialect === Dialect.SQLite) {
+      await this.sqlite.close();
+      return;
+    }
+
     // end our connection to db
     await this.dbClient.end();
     // end any pool connection
@@ -261,7 +328,11 @@ export class TempDB {
       if (!table) {
         continue;
       }
-      await this.dbClient.query(table.drop());
+      if (this.dialect === Dialect.Postgres) {
+        await this.dbClient.query(table.drop());
+      } else {
+        await this.sqlite.exec(table.drop());
+      }
       this.tables.delete(tableName);
     }
   }
@@ -271,7 +342,11 @@ export class TempDB {
       if (this.tables.has(table.name)) {
         throw new Error(`table with name ${table.name} already exists`);
       }
-      await this.dbClient.query(table.create());
+      if (this.dialect === Dialect.Postgres) {
+        await this.dbClient.query(table.create());
+      } else {
+        this.sqlite.exec(table.create());
+      }
       this.tables.set(table.name, table);
     }
   }

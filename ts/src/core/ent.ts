@@ -1,4 +1,4 @@
-import DB from "./db";
+import DB, { Dialect, Queryer } from "./db";
 import {
   Viewer,
   Ent,
@@ -23,6 +23,7 @@ import {
   QueryConfig,
   QueryResult,
 } from "pg";
+
 import { applyPrivacyPolicy, applyPrivacyPolicyX } from "./privacy";
 import { Executor } from "../action";
 
@@ -363,7 +364,7 @@ export async function performRawQuery(
 
   logQuery(query, logValues || []);
   try {
-    const res = await pool.query(query, values);
+    const res = await pool.queryAll(query, values);
     return res.rows;
   } catch (e) {
     // TODO need to change every query to catch an error!
@@ -453,35 +454,38 @@ export function buildGroupQuery(
 
 // slew of methods taken from pg
 // private to ent
-export interface Queryer {
-  query<T extends Submittable>(queryStream: T): T;
-  // tslint:disable:no-unnecessary-generics
-  query<R extends any[] = any[], I extends any[] = any[]>(
-    queryConfig: QueryArrayConfig<I>,
-    values?: I,
-  ): Promise<QueryArrayResult<R>>;
-  query<R extends QueryResultRow = any, I extends any[] = any[]>(
-    queryConfig: QueryConfig<I>,
-  ): Promise<QueryResult<R>>;
-  query<R extends QueryResultRow = any, I extends any[] = any[]>(
-    queryTextOrConfig: string | QueryConfig<I>,
-    values?: I,
-  ): Promise<QueryResult<R>>;
-  query<R extends any[] = any[], I extends any[] = any[]>(
-    queryConfig: QueryArrayConfig<I>,
-    callback: (err: Error, result: QueryArrayResult<R>) => void,
-  ): void;
-  query<R extends QueryResultRow = any, I extends any[] = any[]>(
-    queryTextOrConfig: string | QueryConfig<I>,
-    callback: (err: Error, result: QueryResult<R>) => void,
-  ): void;
-  query<R extends QueryResultRow = any, I extends any[] = any[]>(
-    queryText: string,
-    values: I,
-    callback: (err: Error, result: QueryResult<R>) => void,
-  ): void;
-  // tslint:enable:no-unnecessary-generics
-}
+// export interface Queryer {
+//   //  query<T extends Submittable>(queryStream: T): T;
+//   // tslint:disable:no-unnecessary-generics
+
+//   // query<R extends any[] = any[], I extends any[] = any[]>(
+//   //   queryConfig: QueryArrayConfig<I>,
+//   //   values?: I,
+//   // ): Promise<QueryArrayResult<R>>;
+//   // query<R extends QueryResultRow = any, I extends any[] = any[]>(
+//   //   queryConfig: QueryConfig<I>,
+//   // ): Promise<QueryResult<R>>;
+//   // only one currently used.
+//   // single result
+//   query<R extends QueryResultRow = any, I extends any[] = any[]>(
+//     queryTextOrConfig: string,
+//     values?: I,
+//   ): Promise<QueryResult<R>>;
+//   // query<R extends any[] = any[], I extends any[] = any[]>(
+//   //   queryConfig: QueryArrayConfig<I>,
+//   //   callback: (err: Error, result: QueryArrayResult<R>) => void,
+//   // ): void;
+//   // query<R extends QueryResultRow = any, I extends any[] = any[]>(
+//   //   queryTextOrConfig: string | QueryConfig<I>,
+//   //   callback: (err: Error, result: QueryResult<R>) => void,
+//   // ): void;
+//   // query<R extends QueryResultRow = any, I extends any[] = any[]>(
+//   //   queryText: string,
+//   //   values: I,
+//   //   callback: (err: Error, result: QueryResult<R>) => void,
+//   // ): void;
+//   // tslint:enable:no-unnecessary-generics
+// }
 
 export interface DataOperation {
   performWrite(queryer: Queryer, context?: Context): Promise<void>;
@@ -879,7 +883,7 @@ async function mutateRow(
 
   let cache = options.context?.cache;
   try {
-    const res = await queryer.query(query, values);
+    const res = await queryer.exec(query, values);
     if (cache) {
       cache.clearCache();
     }
@@ -900,13 +904,18 @@ export function buildInsertQuery(
   let logValues: any[] = [];
   let valsString: string[] = [];
   let idx = 1;
+  const dialect = DB.getDialect();
   for (const key in options.fields) {
     fields.push(key);
     values.push(options.fields[key]);
     if (options.fieldsToLog) {
       logValues.push(options.fieldsToLog[key]);
     }
-    valsString.push(`$${idx}`);
+    if (dialect === Dialect.Postgres) {
+      valsString.push(`$${idx}`);
+    } else {
+      valsString.push("?");
+    }
     idx++;
   }
 
@@ -947,6 +956,7 @@ export function buildUpdateQuery(
   let valsString: string[] = [];
   let values: any[] = [];
   let logValues: any[] = [];
+  const dialect = DB.getDialect();
 
   let idx = 1;
   for (const key in options.fields) {
@@ -954,13 +964,23 @@ export function buildUpdateQuery(
     if (options.fieldsToLog) {
       logValues.push(options.fieldsToLog[key]);
     }
-    valsString.push(`${key} = $${idx}`);
-    idx++;
+    if (dialect === Dialect.Postgres) {
+      valsString.push(`${key} = $${idx}`);
+      idx++;
+    } else {
+      valsString.push(`${key} = ?`);
+    }
   }
 
   const vals = valsString.join(", ");
 
-  let query = `UPDATE ${options.tableName} SET ${vals} WHERE ${options.key} = $${idx}`;
+  let query = `UPDATE ${options.tableName} SET ${vals} WHERE `;
+
+  if (dialect === Dialect.Postgres) {
+    query = query + `${options.key} = $${idx}`;
+  } else {
+    query = query + `${options.key} = ?`;
+  }
   if (suffix) {
     query = query + " " + suffix;
   }

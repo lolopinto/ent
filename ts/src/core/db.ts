@@ -3,6 +3,9 @@ import * as fs from "fs";
 import { load } from "js-yaml";
 import { log } from "./logger";
 import { DateTime } from "luxon";
+//import { open, Database as SqliteDatabase } from "sqlite";
+//import sqlite3 from "sqlite3";
+import sqlite, { Database as SqliteDatabase } from "better-sqlite3";
 
 export interface Database {
   database?: string;
@@ -30,6 +33,43 @@ function isDbDict(v: Database | DBDict): v is DBDict {
 interface customClientConfig extends ClientConfig {
   sslmode?: string;
 }
+
+export enum Dialect {
+  Postgres = "postgres",
+  SQLite = "sqlite",
+}
+
+function parseConnectionString(str: string): DatabaseInfo {
+  if (str.startsWith("sqlite:///")) {
+    let filePath = str.substr(10);
+    if (filePath === "") {
+      filePath = ":memory";
+    }
+
+    return {
+      dialect: Dialect.SQLite,
+      config: {
+        connectionString: str,
+      },
+      filePath,
+    };
+  }
+
+  return {
+    dialect: Dialect.Postgres,
+    config: {
+      connectionString: str,
+    },
+  };
+}
+
+interface DatabaseInfo {
+  dialect: Dialect;
+  config: ClientConfig;
+  /// filePath for sqlite
+  filePath?: string;
+}
+
 // order
 // env variable
 // connString in config
@@ -40,21 +80,17 @@ function getClientConfig(args?: {
   connectionString?: string;
   dbFile?: string;
   db?: Database | DBDict;
-}): ClientConfig | null {
+}): DatabaseInfo | null {
   // if there's a db connection string, use that first
   const str = process.env.DB_CONNECTION_STRING;
   if (str) {
-    return {
-      connectionString: str,
-    };
+    return parseConnectionString(str);
   }
 
   let file = "config/database.yml";
   if (args) {
     if (args.connectionString) {
-      return {
-        connectionString: args.connectionString,
-      };
+      return parseConnectionString(args.connectionString);
     }
 
     if (args.db) {
@@ -67,7 +103,10 @@ function getClientConfig(args?: {
       } else {
         db = args.db;
       }
-      return db;
+      return {
+        dialect: Dialect.Postgres,
+        config: db,
+      };
     }
 
     if (args.dbFile) {
@@ -83,12 +122,15 @@ function getClientConfig(args?: {
     if (yaml && typeof yaml === "object") {
       let cfg: customClientConfig = yaml;
       return {
-        database: cfg.database,
-        user: cfg.user,
-        password: cfg.password,
-        host: cfg.host,
-        port: cfg.port,
-        ssl: cfg.sslmode == "enable",
+        dialect: Dialect.Postgres,
+        config: {
+          database: cfg.database,
+          user: cfg.user,
+          password: cfg.password,
+          host: cfg.host,
+          port: cfg.port,
+          ssl: cfg.sslmode == "enable",
+        },
       };
     }
     throw new Error(`invalid yaml configuration in file`);
@@ -96,33 +138,56 @@ function getClientConfig(args?: {
     console.error("error reading file" + e.message);
     return null;
   }
-  return null;
 }
 
 export default class DB {
   static instance: DB;
 
   private pool: Pool;
-  private constructor(public config: ClientConfig) {
-    this.pool = new Pool(config);
+  //  private sqliteDB: SqliteDatabase;
+  // private sqlite: Sqlite;
+  // private postgres: Postgres;
+  private q: Connection;
+  //  private sqlite:
+  private constructor(public db: DatabaseInfo) {
+    if (db.dialect === Dialect.Postgres) {
+      this.pool = new Pool(db.config);
+      console.debug("sss");
+      this.q = new Postgres(this.pool);
 
-    this.pool.on("error", (err, client) => {
-      log("error", err);
-    });
+      this.pool.on("error", (err, client) => {
+        log("error", err);
+      });
+    } else {
+      if (!db.filePath) {
+        throw new Error(`filePath is required for sqlite dialect. given`);
+      }
+      console.debug("ttt");
+      this.q = new Sqlite(sqlite(db.filePath));
+      // TODO this apparently needs to be awaited.
+      // open({
+      //   filename: db.filePath,
+      //   driver: sqlite3.Database,
+      // }).then((sqlitedb) => {
+      //   this.q = new Sqlite(sqlitedb);
+      // });
+    }
   }
 
-  getPool(): Pool {
-    return this.pool;
+  // TODO rename all these...
+  getPool(): Queryer {
+    return this.q.self();
   }
 
+  // TODO rename
   // expect to release client as needed
-  async getNewClient(): Promise<PoolClient> {
-    return this.pool.connect();
+  async getNewClient(): Promise<Client> {
+    return this.q.newClient();
   }
 
   // this should be called when the server is shutting down or end of tests.
   async endPool(): Promise<void> {
-    return this.pool.end();
+    return this.q.close();
   }
 
   // throws if invalid
@@ -135,8 +200,13 @@ export default class DB {
     if (!clientConfig) {
       throw new Error("could not load client config");
     }
+    console.debug("new instance", clientConfig);
     DB.instance = new DB(clientConfig);
     return DB.instance;
+  }
+
+  static getDialect(): Dialect {
+    return DB.getInstance().db.dialect;
   }
 
   static initDB(args?: {
@@ -146,6 +216,7 @@ export default class DB {
   }) {
     const config = getClientConfig(args);
     if (config) {
+      console.debug("new instance", config);
       DB.instance = new DB(config);
     }
   }
@@ -157,8 +228,190 @@ export const defaultTimestampParser = pg.types.getTypeParser(
 
 // this is stored in the db without timezone but we want to make sure
 // it's parsed as UTC time as opposed to the local time
-pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, function(val: string) {
+pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, function (val: string) {
   return DateTime.fromSQL(val + "Z").toJSDate();
   // let d = new Date(val + "Z");
   // return d;
 });
+
+export interface Queryer {
+  query(query: string, values?: any[]): Promise<QueryResult<QueryResultRow>>;
+  queryAll(query: string, values?: any[]): Promise<QueryResult<QueryResultRow>>;
+  // exec a query with no result
+  // e.g. insert in sqlite etc
+  exec(query: string, values?: any[]): Promise<ExecResult>;
+}
+
+export interface Connection extends Queryer {
+  self(): Queryer;
+  newClient(): Promise<Client>;
+  close(): Promise<void>;
+}
+
+interface QueryResultRow {
+  [column: string]: any;
+}
+
+interface QueryResult<R extends QueryResultRow = any> {
+  rows: R[];
+  //  command: string;
+  rowCount: number;
+  //  oid: number;
+  //  fields: FieldDef[];
+}
+
+interface ExecResult {
+  rows: QueryResultRow[];
+  rowCount: number;
+}
+
+interface Client extends Queryer {
+  release(err?: Error | boolean): void;
+}
+
+class Sqlite implements Connection {
+  constructor(private db: SqliteDatabase) {}
+
+  self() {
+    return this;
+  }
+
+  // returns self
+  async newClient() {
+    return this;
+  }
+
+  async query(
+    query: string,
+    values?: any[],
+  ): Promise<QueryResult<QueryResultRow>> {
+    //    console.debug("q", query, values);
+    const r = this.db.prepare(query).get(values);
+    //    const r = await this.db.get(query, values);
+    //    console.debug("query", query, values);
+    return {
+      rowCount: r === undefined ? 0 : 1,
+      rows: [r],
+    };
+  }
+
+  async queryAll(
+    query: string,
+    values?: any[],
+  ): Promise<QueryResult<QueryResultRow>> {
+    //    console.debug("q", query, values);
+    const r = this.db.prepare(query).all(values);
+    //    const r = await this.db.get(query, values);
+    //    console.debug("query", query, values);
+    return {
+      rowCount: r.length,
+      rows: r,
+    };
+  }
+
+  async exec(query: string, values?: any[]): Promise<ExecResult> {
+    //    console.debug("exec", query, values);
+    let r: sqlite.RunResult;
+    if (values) {
+      r = this.db.prepare(query).run(values);
+    } else {
+      r = this.db.prepare(query).run();
+    }
+    //    const r = await this.db.get(query, values);
+    //    console.debug("query", query, values, r);
+    return {
+      rowCount: r.changes,
+      rows: [],
+    };
+  }
+
+  async close() {
+    this.db.close();
+    //    return this.db.close();
+  }
+
+  async release(err?: Error | boolean) {}
+}
+
+class Postgres implements Connection {
+  constructor(private pool: Pool) {}
+
+  self() {
+    return this;
+  }
+
+  // returns new Pool client
+  async newClient() {
+    const client = await this.pool.connect();
+    if (!client) {
+      throw new Error(`couldn't get new client`);
+    }
+    return new PostgresClient(client);
+  }
+
+  async query(
+    query: string,
+    values?: any[],
+  ): Promise<QueryResult<QueryResultRow>> {
+    const r = await this.pool.query(query, values);
+    console.debug(r);
+    return r;
+  }
+
+  async queryAll(
+    query: string,
+    values?: any[],
+  ): Promise<QueryResult<QueryResultRow>> {
+    const r = await this.pool.query(query, values);
+    console.debug(r);
+    return r;
+  }
+
+  async exec(query: string, values?: any[]): Promise<ExecResult> {
+    const r = await this.pool.query(query, values);
+    console.debug(r);
+    return {
+      rowCount: r.rowCount,
+      rows: r.rows,
+    };
+  }
+
+  async close() {
+    return this.pool.end();
+  }
+}
+
+class PostgresClient implements Client {
+  constructor(private client: PoolClient) {}
+
+  async query(
+    query: string,
+    values?: any[],
+  ): Promise<QueryResult<QueryResultRow>> {
+    const r = await this.client.query(query, values);
+    console.debug(r);
+    return r;
+  }
+
+  async queryAll(
+    query: string,
+    values?: any[],
+  ): Promise<QueryResult<QueryResultRow>> {
+    const r = await this.client.query(query, values);
+    console.debug(r);
+    return r;
+  }
+
+  async exec(query: string, values?: any[]): Promise<ExecResult> {
+    const r = await this.client.query(query, values);
+    console.debug(r);
+    return {
+      rowCount: r.rowCount,
+      rows: r.rows,
+    };
+  }
+
+  async release(err?: Error | boolean) {
+    return this.client.release(err);
+  }
+}
