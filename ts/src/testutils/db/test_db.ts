@@ -1,8 +1,10 @@
 import { Client } from "pg";
-import DB, { Dialect } from "../../core/db";
+import DB, { Connection, Dialect } from "../../core/db";
 // import { open, Database } from "sqlite";
 // import sqlite3 from "sqlite3";
 import sqlite, { Database as SqliteDatabase } from "better-sqlite3";
+import { loadConfig } from "../../core/config";
+import * as fs from "fs";
 
 interface SchemaItem {
   name: string;
@@ -274,17 +276,11 @@ export class TempDB {
       });
       await this.dbClient.connect();
     } else {
-      // TODO better...
       if (process.env.DB_CONNECTION_STRING === undefined) {
         throw new Error(`DB_CONNECTION_STRING required for sqlite `);
       }
-      console.log(process.env.DB_CONNECTION_STRING);
       const filePath = process.env.DB_CONNECTION_STRING.substr(10);
       this.sqlite = sqlite(filePath);
-      // this.sqlite = await open({
-      //   filename: process.env.DB_CONNECTION_STRING.substr(10),
-      //   driver: sqlite3.Database,
-      // });
     }
 
     for (const [_, table] of this.tables) {
@@ -296,6 +292,10 @@ export class TempDB {
       }
     }
     //    await this.sqlite.exec("nonsense");
+  }
+
+  getSqliteClient(): SqliteDatabase {
+    return this.sqlite;
   }
 
   getDBClient() {
@@ -379,4 +379,25 @@ export function assoc_edge_table(name: string) {
     text("data", { nullable: true }),
     primaryKey(`${name}_pkey`, ["id1", "id2", "edge_type"]),
   );
+}
+
+export function setupSqlite(connString: string, tables: Table[]) {
+  let tdb: TempDB;
+  beforeAll(async () => {
+    (process.env.DB_CONNECTION_STRING = connString), loadConfig();
+    tdb = new TempDB(Dialect.SQLite, tables);
+    await tdb.beforeAll();
+  });
+
+  afterEach(async () => {
+    for (const [key, _] of tdb.getTables()) {
+      await (await DB.getInstance().getNewClient()).exec(`delete from ${key}`);
+    }
+  });
+
+  afterAll(async () => {
+    await tdb.afterAll();
+
+    fs.rmSync(tdb.getSqliteClient().name);
+  });
 }

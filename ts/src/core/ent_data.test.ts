@@ -19,11 +19,11 @@ import { Pool } from "pg";
 import * as ent from "./ent";
 import { ContextCache } from "./context";
 import * as clause from "./clause";
-import DB, { Dialect } from "./db";
+import DB from "./db";
 import each from "jest-each";
 import { ObjectLoaderFactory } from "./loaders";
-import { loadConfig } from "./config";
-import { integer, table, TempDB, text } from "../testutils/db/test_db";
+
+import { integer, table, text, setupSqlite } from "../testutils/db/test_db";
 import * as fs from "fs";
 import { MockLogs } from "../testutils/mock_log";
 import { clearLogLevels, setLogLevels } from "./logger";
@@ -78,12 +78,12 @@ afterAll(() => {
 beforeEach(() => {
   ctx = getCtx();
   setLogLevels(["query", "error"]);
+  ml.clear();
 });
 
 afterEach(() => {
   ctx.cache?.clearCache();
   clearLogLevels();
-  ml.clear();
 });
 
 interface TestCtx extends Context {
@@ -1104,29 +1104,14 @@ describe("postgres", () => {
 });
 
 describe("sqlite", () => {
-  let tdb: TempDB;
-  beforeAll(async () => {
-    process.env.DB_CONNECTION_STRING = `sqlite:///ent_data_test.db`;
-    loadConfig();
-    tdb = new TempDB(Dialect.SQLite, [
-      table(
-        "users",
-        integer("bar", { primaryKey: true }),
-        text("baz"),
-        text("foo"),
-      ),
-    ]);
-    await tdb.beforeAll();
-  });
+  setupSqlite(`sqlite:///ent_data_test.db`, [
+    table(
+      "users",
+      integer("bar", { primaryKey: true }),
+      text("baz"),
+      text("foo"),
+    ),
+  ]);
 
-  afterEach(async () => {
-    await (await DB.getInstance().getNewClient()).exec("delete from users");
-  });
-
-  afterAll(async () => {
-    await tdb.afterAll();
-
-    fs.rmSync("ent_data_test.db");
-  });
   commonTests();
 });
