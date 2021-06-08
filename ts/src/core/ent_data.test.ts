@@ -12,7 +12,7 @@ import {
 } from "./base";
 import { LoggedOutViewer, IDViewer } from "./viewer";
 import { AlwaysDenyRule, AllowIfViewerRule } from "./privacy";
-import { buildInsertQuery } from "./ent";
+import { buildInsertQuery, buildUpdateQuery } from "./ent";
 import { QueryRecorder, queryOptions } from "../testutils/db_mock";
 import { createRowForTest, editRowForTest } from "../testutils/write";
 import { Pool } from "pg";
@@ -120,10 +120,19 @@ interface getQueriesFn {
   (options: LoadRowOptions): [Data[], Data[]];
 }
 
-async function createRows(
-  fields: Data[],
-  tableName: string,
-): Promise<queryOptions[]> {
+function validateQueries(expQueries: Data[]) {
+  if (ml.logs.length !== expQueries.length) {
+    console.debug(ml.logs, expQueries);
+  }
+  expect(ml.logs.length).toBe(expQueries.length);
+  if (ml.logs != expQueries) {
+    //    console.debug(ml.logs, expQueries);
+  }
+  expect(ml.logs).toStrictEqual(expQueries);
+}
+
+async function createRows(fields: Data[], tableName: string): Promise<void> {
+  ml.clear();
   let insertStatements: queryOptions[] = [];
 
   await Promise.all(
@@ -142,12 +151,12 @@ async function createRows(
     }),
   );
 
-  return insertStatements;
+  validateQueries(insertStatements);
+  ml.clear();
 }
 
 async function createDefaultRow() {
-  ml.clear();
-  const insertStatements = await createRows(
+  await createRows(
     [
       {
         bar: 1,
@@ -157,9 +166,6 @@ async function createDefaultRow() {
     ],
     selectOptions.tableName,
   );
-  expect(ml.logs.length).toBe(insertStatements.length);
-  expect(ml.logs).toStrictEqual(insertStatements);
-  ml.clear();
 }
 
 async function loadTestRow(
@@ -184,13 +190,10 @@ async function loadTestRow(
   const [expQueries1, expQueries2] = getExpQueries(options);
 
   const row = await fn(options);
-
-  expect(ml.logs.length).toEqual(expQueries1.length);
-  expect(ml.logs).toStrictEqual(expQueries1);
+  validateQueries(expQueries1);
 
   const row2 = await fn(options);
-  expect(ml.logs.length).toEqual(expQueries2.length);
-  expect(ml.logs).toStrictEqual(expQueries2);
+  validateQueries(expQueries2);
 
   if (addCtx) {
     // exact same row when there's context
@@ -218,10 +221,7 @@ async function loadTestRows(
       foo: "foo",
     };
   });
-  const insertStatements = await createRows(fields, selectOptions.tableName);
-  expect(ml.logs.length).toBe(insertStatements.length);
-  expect(ml.logs).toStrictEqual(insertStatements);
-  ml.clear();
+  await createRows(fields, selectOptions.tableName);
 
   let options: LoadRowOptions = {
     ...selectOptions,
@@ -371,7 +371,7 @@ function commonTests() {
     });
   });
 
-  describe.only("loadEnt", () => {
+  describe("loadEnt", () => {
     test("with context", async () => {
       // write it once before all the checks since
       // repeated calls to loadTestEnt
@@ -463,7 +463,6 @@ function commonTests() {
   describe("loadEnt parallel queries", () => {
     // write it once before all the tests since
     // repeated calls to loadTestEnt
-    let insertStatements: queryOptions[] = [];
 
     beforeEach(async () => {
       const fields = [1, 2, 3].map((id) => {
@@ -473,7 +472,7 @@ function commonTests() {
           foo: "foo",
         };
       });
-      insertStatements = await createRows(fields, selectOptions.tableName);
+      await createRows(fields, selectOptions.tableName);
     });
 
     test("parallel queries with context", async () => {
@@ -497,15 +496,13 @@ function commonTests() {
         clause: clause.In("bar", 1, 2, 3),
       };
       const expQueries = [
-        ...insertStatements,
         {
           query: ent.buildQuery(options),
           values: options.clause.values(),
         },
       ];
 
-      // only one query
-      QueryRecorder.validateQueryOrder(expQueries, null);
+      validateQueries(expQueries);
 
       // load the data again
       // everything should still be in cache
@@ -520,8 +517,23 @@ function commonTests() {
       expect(ent5).toBe(null);
       expect(ent6).toBe(null);
 
-      // still only that same query
-      QueryRecorder.validateQueryOrder(expQueries, null);
+      // cache hit now
+      const expQueries2 = [
+        ...expQueries,
+        {
+          "dataloader-cache-hit": 1,
+          "tableName": options.tableName,
+        },
+        {
+          "dataloader-cache-hit": 2,
+          "tableName": options.tableName,
+        },
+        {
+          "dataloader-cache-hit": 3,
+          "tableName": options.tableName,
+        },
+      ];
+      validateQueries(expQueries2);
 
       // exact same row.
       expect(ent1?.data).toBe(ent4?.data);
@@ -554,10 +566,7 @@ function commonTests() {
         };
       });
 
-      QueryRecorder.validateQueryOrder(
-        [...insertStatements, ...expQueries],
-        null,
-      );
+      validateQueries(expQueries);
 
       // load the data again
       const [ent4, ent5, ent6] = await Promise.all([
@@ -571,11 +580,7 @@ function commonTests() {
       expect(ent5).toBe(null);
       expect(ent6).toBe(null);
 
-      // 3 more queries for 9
-      QueryRecorder.validateQueryOrder(
-        [...insertStatements, ...expQueries, ...expQueries],
-        null,
-      );
+      validateQueries([...expQueries, ...expQueries]);
     });
   });
 
@@ -593,15 +598,19 @@ function commonTests() {
         return await loadTestEnt(
           () => ent.loadEntX(vc, 1, User.loaderOptions()),
           () => {
-            const expQueries = [
-              {
-                query: ent.buildQuery(options),
-                values: options.clause.values(),
-              },
+            const qOption = {
+              query: ent.buildQuery(options),
+              values: options.clause.values(),
+            };
+            // when there's a context cache, we only run the query once
+            // 2nd time there's a dataloader cache hit
+            return [
+              [qOption],
+              [
+                qOption,
+                { "dataloader-cache-hit": 1, "tableName": options.tableName },
+              ],
             ];
-            // when there's a context cache, we only run the query once so should be the same result
-            // need to clone 2nd one
-            return [expQueries, [...expQueries]];
           },
           true,
         );
@@ -653,14 +662,21 @@ function commonTests() {
       await loadTestEnt(
         () => ent.loadEntFromClause(vc, User.loaderOptions(), cls),
         () => {
-          const expQueries = [
-            {
-              query: ent.buildQuery(options),
-              values: options.clause.values(),
-            },
-          ];
+          const qOption = {
+            query: ent.buildQuery(options),
+            values: options.clause.values(),
+          };
           // when there's a context cache, we only run the query once so should be the same result
-          return [expQueries, [...expQueries]];
+          return [
+            [qOption],
+            [
+              qOption,
+              {
+                "cache-hit": "bar,baz,foo,bar=1 AND baz=baz",
+                "tableName": options.tableName,
+              },
+            ],
+          ];
         },
         true,
       );
@@ -689,14 +705,21 @@ function commonTests() {
       await loadTestEnt(
         () => ent.loadEntXFromClause(vc, User.loaderOptions(), cls),
         () => {
-          const expQueries = [
-            {
-              query: ent.buildQuery(options),
-              values: options.clause.values(),
-            },
-          ];
+          const qOption = {
+            query: ent.buildQuery(options),
+            values: options.clause.values(),
+          };
           // when there's a context cache, we only run the query once so should be the same result
-          return [expQueries, [...expQueries]];
+          return [
+            [qOption],
+            [
+              qOption,
+              {
+                "cache-hit": "bar,baz,foo,bar=1 AND baz=baz",
+                "tableName": options.tableName,
+              },
+            ],
+          ];
         },
         true,
       );
@@ -721,7 +744,6 @@ function commonTests() {
   });
 
   describe("loadEnts", () => {
-    let insertStatements: queryOptions[] = [];
     beforeEach(async () => {
       const fields: Data[] = [1, 2, 3].map((id) => {
         return {
@@ -730,7 +752,7 @@ function commonTests() {
           foo: "foo",
         };
       });
-      insertStatements = await createRows(fields, selectOptions.tableName);
+      await createRows(fields, selectOptions.tableName);
     });
 
     test("with context", async () => {
@@ -746,15 +768,13 @@ function commonTests() {
         clause: clause.In("bar", 1, 2, 3),
       };
       const expQueries = [
-        ...insertStatements,
         {
           query: ent.buildQuery(options),
           values: options.clause.values(),
         },
       ];
 
-      // only one query
-      QueryRecorder.validateQueryOrder(expQueries, null);
+      validateQueries(expQueries);
 
       // reload each of these in a different place
       await Promise.all([
@@ -763,14 +783,28 @@ function commonTests() {
         ent.loadEnt(vc, 3, User.loaderOptions()),
       ]);
 
-      // still the same one query
-      QueryRecorder.validateQueryOrder(expQueries, null);
+      const cacheHits = [
+        {
+          "dataloader-cache-hit": 1,
+          "tableName": options.tableName,
+        },
+        {
+          "dataloader-cache-hit": 2,
+          "tableName": options.tableName,
+        },
+        {
+          "dataloader-cache-hit": 3,
+          "tableName": options.tableName,
+        },
+      ];
+      const expQueries2 = [...expQueries, ...cacheHits];
+      validateQueries(expQueries2);
 
       // reload all
       await ent.loadEnts(vc, User.loaderOptions(), 1, 2, 3);
 
-      // still the same one query
-      QueryRecorder.validateQueryOrder(expQueries, null);
+      // more cache hits
+      validateQueries([...expQueries2, ...cacheHits]);
     });
 
     test("without context", async () => {
@@ -789,10 +823,9 @@ function commonTests() {
         query: ent.buildQuery(options),
         values: options.clause.values(),
       };
-      const expQueries = [...insertStatements, inQuery];
+      const expQueries = [inQuery];
 
-      // the insert + in queries
-      QueryRecorder.validateQueryOrder(expQueries, null);
+      validateQueries(expQueries);
 
       // add each clause.Eq for the one-offs
       const ids = [1, 2, 3];
@@ -817,7 +850,7 @@ function commonTests() {
       ]);
 
       // should now have 3 more queries
-      QueryRecorder.validateQueryOrder(expQueries2, null);
+      validateQueries(expQueries2);
 
       // reload all
       await ent.loadEnts(vc, User.loaderOptions(), 1, 2, 3);
@@ -825,17 +858,17 @@ function commonTests() {
       const expQueries3 = expQueries2.concat(inQuery);
 
       // in query added again
-      QueryRecorder.validateQueryOrder(expQueries3, null);
+      validateQueries(expQueries3);
     });
   });
 
   describe("loadEntsFromClause", () => {
     let idResults = [1, 2, 3];
-    let cls = clause.Eq("baz", "baz");
-
-    let insertStatements: queryOptions[] = [];
+    let cls: clause.Clause;
+    let options, qOption: Data;
 
     beforeEach(async () => {
+      cls = clause.Eq("baz", "baz");
       const fields: Data[] = idResults.map((id) => {
         return {
           bar: id,
@@ -843,17 +876,17 @@ function commonTests() {
           foo: "foo",
         };
       });
-      insertStatements = await createRows(fields, selectOptions.tableName);
-    });
+      await createRows(fields, selectOptions.tableName);
 
-    const options = {
-      ...User.loaderOptions(),
-      clause: cls,
-    };
-    const qOption = {
-      query: ent.buildQuery(options),
-      values: options.clause.values(),
-    };
+      options = {
+        ...User.loaderOptions(),
+        clause: cls!,
+      };
+      qOption = {
+        query: ent.buildQuery(options),
+        values: options.clause.values(),
+      };
+    });
 
     test("with context", async () => {
       const vc = getIDViewer(1);
@@ -863,18 +896,20 @@ function commonTests() {
       expect(ents.size).toBe(1);
       expect(ents.has(1)).toBe(true);
 
-      const expQueries = [...insertStatements, qOption];
-
-      // insert statemetns +  query
-      QueryRecorder.validateQueryOrder(expQueries, null);
+      validateQueries([qOption]);
 
       const ents2 = await ent.loadEntsFromClause(vc, cls, User.loaderOptions());
       // only loading self worked because of privacy
       expect(ents2.size).toBe(1);
       expect(ents2.has(1)).toBe(true);
 
-      // still same
-      QueryRecorder.validateQueryOrder(expQueries, null);
+      validateQueries([
+        qOption,
+        {
+          "cache-hit": "bar,baz,foo,baz=baz",
+          "tableName": options.tableName,
+        },
+      ]);
     });
 
     test("without context", async () => {
@@ -885,18 +920,16 @@ function commonTests() {
       expect(ents.size).toBe(1);
       expect(ents.has(1)).toBe(true);
 
-      const expQueries = [...insertStatements, qOption];
+      const expQueries = [qOption];
 
-      // expected queries
-      QueryRecorder.validateQueryOrder(expQueries, null);
+      validateQueries([qOption]);
 
       const ents2 = await ent.loadEntsFromClause(vc, cls, User.loaderOptions());
       // only loading self worked because of privacy
       expect(ents2.size).toBe(1);
       expect(ents2.has(1)).toBe(true);
 
-      // extra query
-      QueryRecorder.validateQueryOrder(expQueries.concat(qOption), null);
+      validateQueries([qOption, qOption]);
     });
   });
 
@@ -927,23 +960,42 @@ function commonTests() {
         async () => {
           // want a deep copy here...
           let options2 = options;
-          options2.fields = { ...options.fields };
-          options2.fields.bar = 2;
+          options2.fields = { ...options.fields, bar: 2 };
+          options2.fieldsToLog = options2.fields;
           // we need a different row so that querying after still returns one row
           return createRowForTest(options2);
         },
-        {
-          query: `INSERT INTO ${selectOptions.tableName} (bar, baz, foo) VALUES ($1, $2, $3)`,
-          values: [2, "baz", "foo"],
+        () => {
+          const [query, _, logValues] = buildInsertQuery({
+            fields: { ...fields, bar: 2 },
+            fieldsToLog: { ...fields, bar: 2 },
+            tableName: selectOptions.tableName,
+          });
+          return { query, values: logValues };
         },
       ],
       [
         "editRow",
         // should be ent.editRow but doesn't work so changing for now
-        async () => editRowForTest(options, 1),
-        {
-          query: `UPDATE ${selectOptions.tableName} SET bar = $1, baz = $2, foo = $3 WHERE bar = $4`,
-          values: [...Object.values(fields), 1],
+        async () => {
+          // want a deep copy here...
+          let options2 = options;
+          options2.fields = { ...options.fields, baz: "baz3" };
+          options2.fieldsToLog = options2.fields;
+          // we need a different row so that querying after still returns one row
+          return editRowForTest(options2, 1);
+        },
+        () => {
+          const [query, _, logValues] = buildUpdateQuery(
+            {
+              fields: { ...fields, baz: "baz3" },
+              fieldsToLog: { ...fields, baz: "baz3" },
+              tableName: selectOptions.tableName,
+              key: "bar",
+            },
+            1,
+          );
+          return { query, values: logValues };
         },
       ],
       [
@@ -953,9 +1005,13 @@ function commonTests() {
           const pool = DB.getInstance().getPool();
           return await ent.deleteRows(pool, options, clause.Eq("bar", 1));
         },
-        {
-          query: `DELETE FROM ${selectOptions.tableName} WHERE bar = $1`,
-          values: [1],
+        () => {
+          return {
+            query: `DELETE FROM ${selectOptions.tableName} WHERE ${clause
+              .Eq("bar", 1)
+              .clause(1)}`,
+            values: [1],
+          };
         },
       ],
     ];
@@ -967,12 +1023,15 @@ function commonTests() {
     each(args).test("with context: %s", async (_name, writeFn, query) => {
       await loadRowFromCache(true);
 
-      // reload. still hits same cache with one row
-      await loadRowFromCache(true);
+      ml.clear();
 
       // performWrite
       // this clears the context cache
       await writeFn();
+      if (typeof query === "function") {
+        query = query();
+      }
+      validateQueries([query]);
 
       // this does additional queries
       await loadTestRow(
@@ -983,20 +1042,19 @@ function commonTests() {
             values: options.clause.values(),
           };
 
-          // since we cleared the cache, this will now show an additional read query
-
-          const queries = [queryOption, query, queryOption];
-          let queries2 = [...queries];
+          const queries = [queryOption];
+          let queries2: Data[] = [];
           if (query.query.startsWith("DELETE")) {
-            queries2.push(queries2[queries2.length - 1]);
+            // cache miss so we hit db again
+            // TODO we should cache this in non-dataloader paths...
+            queries2 = [queryOption, queryOption];
+          } else {
+            queries2 = [
+              queryOption,
+              { "cache-hit": "bar,baz,foo,bar=1", "tableName": "users" },
+            ];
           }
-          return [
-            queries,
-            queries2,
-            // [...insertStatements, queryOption, query, queryOption],
-            // // no data so we query again!
-            // [...insertStatements, queryOption, query, queryOption, queryOption],
-          ];
+          return [queries, queries2];
         },
         true,
         true,
@@ -1006,9 +1064,15 @@ function commonTests() {
     each(args).test("without context: %s", async (_name, writeFn, query) => {
       // no context, multiple queries
       await loadRowFromCache(false);
+      ml.clear();
 
       // performWrite
       await writeFn();
+
+      if (typeof query === "function") {
+        query = query();
+      }
+      validateQueries([query]);
 
       // this does additional queries
       await loadTestRow(
@@ -1020,10 +1084,7 @@ function commonTests() {
           };
 
           // no context cache so it just keeps making queries
-          return [
-            [queryOption, queryOption, query, queryOption],
-            [queryOption, queryOption, query, queryOption, queryOption],
-          ];
+          return [[queryOption], [queryOption, queryOption]];
         },
         false,
         true,
@@ -1032,18 +1093,17 @@ function commonTests() {
   });
 }
 
-// describe.skip("postgres", () => {
-// jest.mock("pg");
-// QueryRecorder.mockPool(Pool);
+jest.mock("pg");
+QueryRecorder.mockPool(Pool);
 
-//   //  commonTests();
-// afterEach(() => {
-//   QueryRecorder.clear();
-// });
+describe("postgres", () => {
+  afterEach(() => {
+    QueryRecorder.clear();
+  });
+  commonTests();
+});
 
-// });
-
-describe.only("sqlite", () => {
+describe("sqlite", () => {
   let tdb: TempDB;
   beforeAll(async () => {
     process.env.DB_CONNECTION_STRING = `sqlite:///ent_data_test.db`;

@@ -114,6 +114,10 @@ function getClientConfig(args?: {
     }
   }
 
+  if (!fs.existsSync(file)) {
+    return null;
+  }
+
   try {
     // TODO support multiple environments in database/config.yaml file.
     // if needed for now, general yaml file should be used
@@ -152,7 +156,6 @@ export default class DB {
   private constructor(public db: DatabaseInfo) {
     if (db.dialect === Dialect.Postgres) {
       this.pool = new Pool(db.config);
-      console.debug("sss");
       this.q = new Postgres(this.pool);
 
       this.pool.on("error", (err, client) => {
@@ -162,15 +165,7 @@ export default class DB {
       if (!db.filePath) {
         throw new Error(`filePath is required for sqlite dialect. given`);
       }
-      console.debug("ttt");
       this.q = new Sqlite(sqlite(db.filePath));
-      // TODO this apparently needs to be awaited.
-      // open({
-      //   filename: db.filePath,
-      //   driver: sqlite3.Database,
-      // }).then((sqlitedb) => {
-      //   this.q = new Sqlite(sqlitedb);
-      // });
     }
   }
 
@@ -200,7 +195,6 @@ export default class DB {
     if (!clientConfig) {
       throw new Error("could not load client config");
     }
-    console.debug("new instance", clientConfig);
     DB.instance = new DB(clientConfig);
     return DB.instance;
   }
@@ -216,7 +210,6 @@ export default class DB {
   }) {
     const config = getClientConfig(args);
     if (config) {
-      console.debug("new instance", config);
       DB.instance = new DB(config);
     }
   }
@@ -254,8 +247,9 @@ interface QueryResultRow {
 
 interface QueryResult<R extends QueryResultRow = any> {
   rows: R[];
-  //  command: string;
   rowCount: number;
+  // postgres fields
+  //  command: string;
   //  oid: number;
   //  fields: FieldDef[];
 }
@@ -285,10 +279,7 @@ class Sqlite implements Connection {
     query: string,
     values?: any[],
   ): Promise<QueryResult<QueryResultRow>> {
-    //    console.debug("q", query, values);
     const r = this.db.prepare(query).get(values);
-    //    const r = await this.db.get(query, values);
-    //    console.debug("query", query, values);
     return {
       rowCount: r === undefined ? 0 : 1,
       rows: [r],
@@ -299,10 +290,7 @@ class Sqlite implements Connection {
     query: string,
     values?: any[],
   ): Promise<QueryResult<QueryResultRow>> {
-    //    console.debug("q", query, values);
     const r = this.db.prepare(query).all(values);
-    //    const r = await this.db.get(query, values);
-    //    console.debug("query", query, values);
     return {
       rowCount: r.length,
       rows: r,
@@ -317,8 +305,6 @@ class Sqlite implements Connection {
     } else {
       r = this.db.prepare(query).run();
     }
-    //    const r = await this.db.get(query, values);
-    //    console.debug("query", query, values, r);
     return {
       rowCount: r.changes,
       rows: [],
@@ -327,7 +313,6 @@ class Sqlite implements Connection {
 
   async close() {
     this.db.close();
-    //    return this.db.close();
   }
 
   async release(err?: Error | boolean) {}
@@ -354,7 +339,6 @@ class Postgres implements Connection {
     values?: any[],
   ): Promise<QueryResult<QueryResultRow>> {
     const r = await this.pool.query(query, values);
-    console.debug(r);
     return r;
   }
 
@@ -363,16 +347,14 @@ class Postgres implements Connection {
     values?: any[],
   ): Promise<QueryResult<QueryResultRow>> {
     const r = await this.pool.query(query, values);
-    console.debug(r);
     return r;
   }
 
   async exec(query: string, values?: any[]): Promise<ExecResult> {
     const r = await this.pool.query(query, values);
-    console.debug(r);
     return {
-      rowCount: r.rowCount,
-      rows: r.rows,
+      rowCount: r?.rowCount || 0,
+      rows: r?.rows || [],
     };
   }
 
@@ -389,7 +371,6 @@ class PostgresClient implements Client {
     values?: any[],
   ): Promise<QueryResult<QueryResultRow>> {
     const r = await this.client.query(query, values);
-    console.debug(r);
     return r;
   }
 
@@ -398,16 +379,14 @@ class PostgresClient implements Client {
     values?: any[],
   ): Promise<QueryResult<QueryResultRow>> {
     const r = await this.client.query(query, values);
-    console.debug(r);
     return r;
   }
 
   async exec(query: string, values?: any[]): Promise<ExecResult> {
     const r = await this.client.query(query, values);
-    console.debug(r);
     return {
-      rowCount: r.rowCount,
-      rows: r.rows,
+      rowCount: r?.rowCount || 0,
+      rows: r?.rows || [],
     };
   }
 
