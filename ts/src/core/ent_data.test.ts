@@ -24,7 +24,6 @@ import each from "jest-each";
 import { ObjectLoaderFactory } from "./loaders";
 
 import { integer, table, text, setupSqlite } from "../testutils/db/test_db";
-import * as fs from "fs";
 import { MockLogs } from "../testutils/mock_log";
 import { clearLogLevels, setLogLevels } from "./logger";
 
@@ -1104,7 +1103,7 @@ describe("postgres", () => {
 });
 
 describe("sqlite", () => {
-  setupSqlite(`sqlite:///ent_data_test.db`, [
+  setupSqlite(`sqlite:///ent_data_test.db`, () => [
     table(
       "users",
       integer("bar", { primaryKey: true }),

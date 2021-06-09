@@ -94,7 +94,11 @@ export function timestamptz(name: string, opts?: options): Column {
   return {
     name,
     datatype() {
-      return "TIMESTAMP WITH TIME ZONE";
+      if (DB.getDialect() === Dialect.Postgres) {
+        return "TIMESTAMP WITH TIME ZONE";
+      } else {
+        return "TEXT";
+      }
     },
     ...opts,
   };
@@ -131,10 +135,17 @@ export function date(name: string, opts?: options): Column {
 }
 
 export function bool(name: string, opts?: options): Column {
+  const dialect = DB.getDialect();
+  if (opts?.default === "FALSE" && dialect === Dialect.SQLite) {
+    opts.default = "0";
+  }
   return {
     name,
     datatype() {
-      return "BOOLEAN";
+      if (dialect === Dialect.Postgres) {
+        return "BOOLEAN";
+      }
+      return "INTEGER";
     },
     ...opts,
   };
@@ -287,7 +298,7 @@ export class TempDB {
       if (this.dialect == Dialect.Postgres) {
         await this.dbClient.query(table.create());
       } else {
-        console.log(table.create());
+        //        console.log(table.create());
         this.sqlite.exec(table.create());
       }
     }
@@ -298,6 +309,7 @@ export class TempDB {
     return this.sqlite;
   }
 
+  // TODO
   getDBClient() {
     if (this.dialect === Dialect.Postgres) {
       return this.dbClient;
@@ -381,11 +393,12 @@ export function assoc_edge_table(name: string) {
   );
 }
 
-export function setupSqlite(connString: string, tables: Table[]) {
+export function setupSqlite(connString: string, tables: () => Table[]) {
   let tdb: TempDB;
   beforeAll(async () => {
-    (process.env.DB_CONNECTION_STRING = connString), loadConfig();
-    tdb = new TempDB(Dialect.SQLite, tables);
+    process.env.DB_CONNECTION_STRING = connString;
+    loadConfig();
+    tdb = new TempDB(Dialect.SQLite, tables());
     await tdb.beforeAll();
   });
 

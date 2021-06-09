@@ -545,6 +545,16 @@ export class EditNodeOperation implements DataOperation {
       );
     } else {
       this.row = await createRow(queryer, options, "RETURNING *");
+      // doesn't support returning * so have to manually load the ent back
+      if (this.row === undefined && DB.getDialect() === Dialect.SQLite) {
+        const id = options.fields[options.key];
+        const row = await loadRow({
+          fields: ["*"],
+          tableName: options.tableName,
+          clause: clause.Eq(options.key, id),
+        });
+        this.row = row;
+      }
     }
   }
 

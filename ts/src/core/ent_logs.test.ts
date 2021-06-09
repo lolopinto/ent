@@ -703,7 +703,7 @@ describe("postgres", () => {
 });
 
 describe("sqlite", () => {
-  setupSqlite(`sqlite:///ent_logs_test.db`, [
+  setupSqlite(`sqlite:///ent_logs_test.db`, () => [
     table(
       "t1",
       integer("id", { primaryKey: true }),

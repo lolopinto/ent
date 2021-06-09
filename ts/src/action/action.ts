@@ -131,7 +131,7 @@ async function saveBuilderImpl<T extends Ent>(
 
   let error = false;
   try {
-    await client.query("BEGIN");
+    await client.begin();
     for (const operation of executor) {
       // resolve any placeholders before writes
       if (operation.resolve) {
@@ -140,10 +140,10 @@ async function saveBuilderImpl<T extends Ent>(
 
       await operation.performWrite(client, builder.viewer.context);
     }
-    await client.query("COMMIT");
+    await client.commit();
   } catch (e) {
     error = true;
-    await client.query("ROLLBACK");
+    await client.rollback();
     log("error", e);
     // rethrow the exception to be caught
     if (throwErr) {

@@ -261,9 +261,15 @@ interface ExecResult {
 
 interface Client extends Queryer {
   release(err?: Error | boolean): void;
+  begin(): Promise<void>;
+  commit(): Promise<void>;
+  rollback(): Promise<void>;
+
+  // TODO kill
+  runTransaction(cb: () => void | Promise<void>): Promise<void>;
 }
 
-class Sqlite implements Connection {
+class Sqlite implements Connection, Client {
   constructor(private db: SqliteDatabase) {}
 
   self() {
@@ -273,16 +279,23 @@ class Sqlite implements Connection {
   // returns self
   async newClient() {
     return this;
+    //    return new Sqlite(sqlite(this.db.name));
   }
 
   async query(
     query: string,
     values?: any[],
   ): Promise<QueryResult<QueryResultRow>> {
-    const r = this.db.prepare(query).get(values);
+    //    this.db.transaction;
+    let r: sqlite.RunResult;
+    if (values) {
+      r = this.db.prepare(query).get(values);
+    } else {
+      r = this.db.prepare(query).run();
+    }
     return {
       rowCount: r === undefined ? 0 : 1,
-      rows: [r],
+      rows: r ? [r] : [],
     };
   }
 
@@ -290,7 +303,12 @@ class Sqlite implements Connection {
     query: string,
     values?: any[],
   ): Promise<QueryResult<QueryResultRow>> {
-    const r = this.db.prepare(query).all(values);
+    let r: any[];
+    if (values) {
+      r = this.db.prepare(query).all(values);
+    } else {
+      r = this.db.prepare(query).all();
+    }
     return {
       rowCount: r.length,
       rows: r,
@@ -301,8 +319,19 @@ class Sqlite implements Connection {
     //    console.debug("exec", query, values);
     let r: sqlite.RunResult;
     if (values) {
+      for (const key in values) {
+        let value = values[key];
+        if (value === true) {
+          values[key] = 1;
+        } else if (value === false) {
+          values[key] = 0;
+        }
+      }
+      //      console.debug(query, values);
       r = this.db.prepare(query).run(values);
     } else {
+      //      console.debug(query);
+      //      console.trace();
       r = this.db.prepare(query).run();
     }
     return {
@@ -316,6 +345,37 @@ class Sqlite implements Connection {
   }
 
   async release(err?: Error | boolean) {}
+
+  async begin() {
+    this.db.prepare("BEGIN");
+  }
+
+  async commit() {
+    this.db.prepare("COMMIT");
+  }
+
+  async rollback() {
+    this.db.prepare("ROLLBACK");
+  }
+
+  // TODO kill???
+  async runTransaction(cb: () => void | Promise<void>) {
+    //    console.debug("sss");
+    const r = this.db.transaction(() => {
+      //      console.debug("ttt");
+      const r = cb();
+      if (
+        r !== undefined &&
+        r["then"] != undefined &&
+        typeof r["then"] === "function"
+      ) {
+        r["then"](() => {
+          //          console.debug("UUU");
+        });
+      }
+    });
+    r();
+  }
 }
 
 class Postgres implements Connection {
@@ -392,5 +452,28 @@ class PostgresClient implements Client {
 
   async release(err?: Error | boolean) {
     return this.client.release(err);
+  }
+
+  async runTransaction(cb: () => void | Promise<void>) {
+    try {
+      await this.client.query("BEGIN");
+
+      await cb();
+      await this.client.query("COMMIT");
+    } catch (e) {
+      await this.client.query("ROLLBACK");
+    }
+  }
+
+  async begin() {
+    this.client.query("BEGIN");
+  }
+
+  async commit() {
+    this.client.query("COMMIT");
+  }
+
+  async rollback() {
+    this.client.query("ROLLBACK");
   }
 }

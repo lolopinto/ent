@@ -28,6 +28,9 @@ export function loadConfig(file?: string | Buffer) {
     if (!path.isAbsolute(file)) {
       file = path.join(process.cwd(), file);
     }
+    if (!fs.existsSync(file)) {
+      return DB.initDB();
+    }
     try {
       data = fs.readFileSync(file, { encoding: "utf8" });
     } catch (e) {
