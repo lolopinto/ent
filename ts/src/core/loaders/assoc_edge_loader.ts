@@ -149,7 +149,8 @@ export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
 }
 
 export class AssocDirectEdgeLoader<T extends AssocEdge>
-  implements Loader<ID, T[]> {
+  implements Loader<ID, T[]>
+{
   constructor(
     private edgeType: string,
     private edgeCtr: AssocEdgeConstructor<T>,
@@ -181,7 +182,8 @@ export class AssocDirectEdgeLoader<T extends AssocEdge>
 }
 
 export class AssocEdgeLoaderFactory<T extends AssocEdge>
-  implements LoaderFactory<ID, T[]> {
+  implements LoaderFactory<ID, T[]>
+{
   name: string;
 
   constructor(

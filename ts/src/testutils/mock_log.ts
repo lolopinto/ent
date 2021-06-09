@@ -31,6 +31,9 @@ export class MockLogs {
   }
 
   verifyNoErrors() {
+    if (this.errors.length !== 0) {
+      console.debug(this.errors);
+    }
     expect(this.errors.length).toBe(0);
   }
 }

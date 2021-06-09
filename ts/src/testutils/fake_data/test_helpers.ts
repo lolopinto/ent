@@ -155,6 +155,11 @@ export function verifyUserToContactRawData(
   for (let i = 0; i < contacts.length; i++) {
     const contact = contacts[i];
     const edge = edges[i];
+    // for SQLite not automatically converting
+    if (typeof edge.created_at === "string") {
+      edge.created_at = new Date(Date.parse(edge.created_at));
+      edge.updated_at = new Date(Date.parse(edge.updated_at));
+    }
     const expectedEdge = {
       id: contact.id,
       created_at: contact.createdAt,

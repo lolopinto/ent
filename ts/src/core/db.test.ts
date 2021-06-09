@@ -1,7 +1,3 @@
-// TODO sqlite tests
-
-//reads, writes
-//transactions
 import DB from "./db";
 import {
   integer,
@@ -9,6 +5,7 @@ import {
   text,
   setupSqlite,
   assoc_edge_config_table,
+  timestamp,
 } from "../testutils/db/test_db";
 import {
   createRowForTest,
@@ -25,6 +22,7 @@ describe("sqlite", () => {
       text("foo"),
       text("bar"),
     ),
+    table("with_time", integer("id", { primaryKey: true }), timestamp("time")),
   ]);
 
   test("create", async () => {
@@ -132,7 +130,7 @@ describe("sqlite", () => {
     ]);
   });
 
-  test.only("manual transactions", async () => {
+  test("manual transactions", async () => {
     const client = await DB.getInstance().getNewClient();
 
     await client.begin();
@@ -225,5 +223,20 @@ describe("sqlite", () => {
     expect(r.rowCount).toBe(0);
     expect(r.rows.length).toBe(0);
     expect(r.rows).toEqual([]);
+  });
+
+  test("time", async () => {
+    const d = new Date();
+    const client = await DB.getInstance().getNewClient();
+    await client.exec(`INSERT INTO with_time (id, time) VALUES(?,?)`, [1, d]);
+
+    const r = await DB.getInstance()
+      .getPool()
+      .queryAll("SELECT id, time FROM with_time");
+
+    expect(r).toEqual({
+      rowCount: 1,
+      rows: [{ id: 1, time: d.toISOString() }],
+    });
   });
 });

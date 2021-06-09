@@ -442,6 +442,8 @@ export function buildGroupQuery(
     orderby = `ORDER BY ${options.orderby}`;
   }
 
+  // window functions work in sqlite!
+  //    https://www.sqlite.org/windowfunctions.html
   return [
     `SELECT * FROM (SELECT ${fields.join(",")} OVER (PARTITION BY ${
       options.fkeyColumn
