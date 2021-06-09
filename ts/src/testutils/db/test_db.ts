@@ -1,5 +1,5 @@
 import { Client } from "pg";
-import DB, { Connection, Dialect } from "../../core/db";
+import DB, { Sqlite, Dialect } from "../../core/db";
 // import { open, Database } from "sqlite";
 // import sqlite3 from "sqlite3";
 import sqlite, { Database as SqliteDatabase } from "better-sqlite3";
@@ -400,6 +400,9 @@ export function setupSqlite(connString: string, tables: () => Table[]) {
     loadConfig();
     tdb = new TempDB(Dialect.SQLite, tables());
     await tdb.beforeAll();
+
+    const conn = DB.getInstance().getConnection();
+    expect((conn as Sqlite).db.memory).toBe(false);
   });
 
   afterEach(async () => {

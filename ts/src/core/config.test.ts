@@ -128,7 +128,7 @@ describe("postgres", () => {
 
 describe("sqlite", () => {
   test("db connection string", () => {
-    const connStr = `sqlite:///foo.db`;
+    const connStr = `sqlite:///`;
     loadConfig(Buffer.from(`dbConnectionString: ${connStr}`));
     const db = DB.getInstance();
     expect(db.db.config.connectionString).toEqual(connStr);
@@ -136,7 +136,7 @@ describe("sqlite", () => {
   });
 
   test("env variable", () => {
-    process.env.DB_CONNECTION_STRING = `sqlite:///foo.db`;
+    process.env.DB_CONNECTION_STRING = `sqlite:///`;
     const ml = new MockLogs();
     ml.mock();
     loadConfig();
@@ -150,7 +150,7 @@ describe("sqlite", () => {
   });
 
   test("env variable + db conn string", () => {
-    process.env.DB_CONNECTION_STRING = `sqlite:///foo.db`;
+    process.env.DB_CONNECTION_STRING = `sqlite:///`;
     const connStr = `sqlite:///bar.db`;
     loadConfig(Buffer.from(`dbConnectionString: ${connStr}`));
 

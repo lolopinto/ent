@@ -42,9 +42,6 @@ export enum Dialect {
 function parseConnectionString(str: string): DatabaseInfo {
   if (str.startsWith("sqlite:///")) {
     let filePath = str.substr(10);
-    if (filePath === "") {
-      filePath = ":memory";
-    }
 
     return {
       dialect: Dialect.SQLite,
@@ -163,11 +160,12 @@ export default class DB {
         log("error", err);
       });
     } else {
-      if (!db.filePath) {
-        throw new Error(`filePath is required for sqlite dialect. given`);
-      }
-      this.q = new Sqlite(sqlite(db.filePath));
+      this.q = new Sqlite(sqlite(db.filePath || ""));
     }
+  }
+
+  getConnection(): Connection {
+    return this.q;
   }
 
   // TODO rename all these...
@@ -218,9 +216,9 @@ export default class DB {
   }) {
     const config = getClientConfig(args);
     if (config) {
-      //      console.debug("new db instance initDB");
       DB.instance = new DB(config);
       DB.dialect = DB.instance.db.dialect;
+      //      console.debug("new db instance initDB", DB.instance);
     }
   }
 }
@@ -279,8 +277,8 @@ interface Client extends Queryer {
   runTransaction(cb: () => void | Promise<void>): Promise<void>;
 }
 
-class Sqlite implements Connection, Client {
-  constructor(private db: SqliteDatabase) {}
+export class Sqlite implements Connection, Client {
+  constructor(public db: SqliteDatabase) {}
 
   self() {
     return this;
@@ -390,7 +388,7 @@ class Sqlite implements Connection, Client {
   }
 }
 
-class Postgres implements Connection {
+export class Postgres implements Connection {
   constructor(private pool: Pool) {}
 
   self() {
@@ -435,7 +433,7 @@ class Postgres implements Connection {
   }
 }
 
-class PostgresClient implements Client {
+export class PostgresClient implements Client {
   constructor(private client: PoolClient) {}
 
   async query(

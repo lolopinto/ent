@@ -288,7 +288,7 @@ describe("postgres", () => {
 describe("sqlite", () => {
   beforeAll(() => {
     // specify dialect as sqlite
-    const connStr = `sqlite:///foo.db`;
+    const connStr = `sqlite:///`;
     loadConfig(Buffer.from(`dbConnectionString: ${connStr}`));
   });
 

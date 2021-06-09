@@ -1,4 +1,4 @@
-import DB from "./db";
+import DB, { Sqlite } from "./db";
 import {
   integer,
   table,
@@ -13,6 +13,7 @@ import {
   editRowForTest,
 } from "../testutils/write";
 import * as clause from "./clause";
+import { loadConfig } from "./config";
 
 describe("sqlite", () => {
   setupSqlite(`sqlite:///db.test.db`, () => [
@@ -238,5 +239,42 @@ describe("sqlite", () => {
       rowCount: 1,
       rows: [{ id: 1, time: d.toISOString() }],
     });
+  });
+});
+
+function validateSQLiteMemory(memory: boolean) {
+  const conn = DB.getInstance().getConnection();
+  expect((conn as Sqlite).db.memory).toBe(memory);
+}
+
+test("sqlite memory", async () => {
+  // specify dialect as sqlite
+  const connStr = `sqlite:///`;
+
+  delete process.env.DB_CONNECTION_STRING;
+  loadConfig(Buffer.from(`dbConnectionString: ${connStr}`));
+  validateSQLiteMemory(true);
+
+  // incorrect instance...
+  // what's the right instance?
+  const client = await DB.getInstance().getNewClient();
+  await client.exec(
+    table(
+      "users",
+      integer("id", { primaryKey: true }),
+      text("foo"),
+      text("bar"),
+    ).create(),
+  );
+
+  await client.exec(`INSERT INTO users (id, bar, foo) VALUES (?, ?, ?)`, [
+    100,
+    "bar",
+    "foo",
+  ]);
+  const r = await client.queryAll("SELECT * FROM users");
+  expect(r).toEqual({
+    rowCount: 1,
+    rows: [{ id: 100, bar: "bar", foo: "foo" }],
   });
 });
