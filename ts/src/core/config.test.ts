@@ -22,8 +22,7 @@ describe("postgres", () => {
     ml.mock();
     loadConfig();
     ml.restore();
-    expect(ml.errors.length).toEqual(1);
-    expect(ml.errors[0]).toMatch(/^error opening file/);
+    expect(ml.errors.length).toEqual(0);
     const db = DB.getInstance();
     expect(db.db.config.connectionString).toEqual(
       process.env.DB_CONNECTION_STRING,
@@ -142,8 +141,7 @@ describe("sqlite", () => {
     ml.mock();
     loadConfig();
     ml.restore();
-    expect(ml.errors.length).toEqual(1);
-    expect(ml.errors[0]).toMatch(/^error opening file/);
+    expect(ml.errors.length).toEqual(0);
     const db = DB.getInstance();
     expect(db.db.config.connectionString).toEqual(
       process.env.DB_CONNECTION_STRING,

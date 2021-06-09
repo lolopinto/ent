@@ -40,9 +40,7 @@ export function loadConfig(file?: string | Buffer) {
   }
 
   try {
-    console.log("data", data);
     let yaml = load(data);
-    console.log("yaml", yaml);
     if (typeof yaml !== "object") {
       throw new Error(`invalid yaml passed`);
     }
@@ -52,7 +50,6 @@ export function loadConfig(file?: string | Buffer) {
     }
 
     if (cfg.dbConnectionString || cfg.dbFile || cfg.db) {
-      console.log("pre-init db,", cfg);
       DB.initDB({
         connectionString: cfg.dbConnectionString,
         dbFile: cfg.dbFile,

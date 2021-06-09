@@ -237,7 +237,7 @@ export async function setupTempDB() {
     tables.push(assoc_edge_table(tableName)),
   );
 
-  const tdb = new TempDB(...tables);
+  const tdb = new TempDB(tables);
 
   await tdb.beforeAll();
 

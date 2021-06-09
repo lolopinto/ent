@@ -111,7 +111,7 @@ async function createUsersWithTZ() {
 
 let tdb: TempDB;
 beforeAll(async () => {
-  tdb = new TempDB();
+  tdb = new TempDB([]);
 
   await tdb.beforeAll();
 });
@@ -523,9 +523,7 @@ test("timestamptz copy", async () => {
 
   const file = path.join(
     process.cwd(),
-    Math.random()
-      .toString(16)
-      .substring(2),
+    Math.random().toString(16).substring(2),
   );
 
   const tzType = TimestamptzType({
