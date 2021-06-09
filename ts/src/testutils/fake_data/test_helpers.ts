@@ -22,7 +22,7 @@ import {
   SymmetricEdges,
   InverseEdges,
 } from ".";
-import { EventCreateInput, getEventBuilder } from "./fake_event";
+import { EventCreateInput, FakeEvent, getEventBuilder } from "./fake_event";
 import { NodeType } from "./const";
 
 export function getContactInput(
@@ -228,16 +228,7 @@ export async function createTestEvent(
 }
 
 export async function setupTempDB() {
-  const tables = [
-    FakeUser.getTestTable(),
-    FakeContact.getTestTable(),
-    assoc_edge_config_table(),
-  ];
-  edgeTableNames().forEach((tableName) =>
-    tables.push(assoc_edge_table(tableName)),
-  );
-
-  const tdb = new TempDB(tables);
+  const tdb = new TempDB(tempDBTables());
 
   await tdb.beforeAll();
 
@@ -245,4 +236,18 @@ export async function setupTempDB() {
   await createEdges();
 
   return tdb;
+}
+
+export function tempDBTables() {
+  const tables = [
+    FakeUser.getTestTable(),
+    FakeContact.getTestTable(),
+    FakeEvent.getTestTable(),
+    assoc_edge_config_table(),
+  ];
+  edgeTableNames().forEach((tableName) =>
+    tables.push(assoc_edge_table(tableName)),
+  );
+
+  return tables;
 }

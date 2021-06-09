@@ -132,7 +132,7 @@ describe("sqlite", () => {
     ]);
   });
 
-  test("manual transactions", async () => {
+  test.only("manual transactions", async () => {
     const client = await DB.getInstance().getNewClient();
 
     await client.begin();
@@ -157,6 +157,14 @@ describe("sqlite", () => {
       { id: 1, foo: "foo", bar: "bar" },
       { id: 2, foo: "foo2", bar: "bar2" },
     ]);
+
+    // count
+    const r2 = await DB.getInstance()
+      .getPool()
+      .queryAll("SELECT count(1) as count FROM users");
+    expect(r2.rowCount).toBe(1);
+    expect(r2.rows.length).toBe(1);
+    expect(r2.rows).toEqual([{ count: 2 }]);
   });
 
   const createUsers = async (ids: number[]) => {

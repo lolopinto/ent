@@ -146,6 +146,7 @@ function getClientConfig(args?: {
 
 export default class DB {
   static instance: DB;
+  static dialect: Dialect;
 
   private pool: Pool;
   //  private sqliteDB: SqliteDatabase;
@@ -195,12 +196,19 @@ export default class DB {
     if (!clientConfig) {
       throw new Error("could not load client config");
     }
+    // console.debug("new db instance getIntsance");
+    // console.trace();
     DB.instance = new DB(clientConfig);
+    DB.dialect = DB.instance.db.dialect;
     return DB.instance;
   }
 
   static getDialect(): Dialect {
-    return DB.getInstance().db.dialect;
+    if (DB.dialect) {
+      return DB.dialect;
+    }
+    // default to postgres
+    return Dialect.Postgres;
   }
 
   static initDB(args?: {
@@ -210,7 +218,9 @@ export default class DB {
   }) {
     const config = getClientConfig(args);
     if (config) {
+      //      console.debug("new db instance initDB");
       DB.instance = new DB(config);
+      DB.dialect = DB.instance.db.dialect;
     }
   }
 }
@@ -325,6 +335,8 @@ class Sqlite implements Connection, Client {
           values[key] = 1;
         } else if (value === false) {
           values[key] = 0;
+        } else if (value instanceof Date) {
+          values[key] = value.toISOString();
         }
       }
       //      console.debug(query, values);

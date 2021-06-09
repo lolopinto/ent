@@ -1064,7 +1064,12 @@ export class AssocEdge {
     return getCursor({
       row: this,
       col: "time",
-      conv: (t) => t.getTime(),
+      conv: (t) => {
+        if (typeof t === "string") {
+          return Date.parse(t);
+        }
+        return t.getTime();
+      },
     });
   }
 }
@@ -1292,7 +1297,8 @@ export async function loadRawEdgeCountX(
 
   const row = await loadRowX({
     tableName: edgeData.edgeTable,
-    fields: ["count(1)"],
+    // sqlite needs as count otherwise it returns count(1)
+    fields: ["count(1) as count"],
     clause: clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
     context,
   });

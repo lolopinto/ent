@@ -15,9 +15,10 @@ import {
   verifyUserToContacts,
   createEdges,
   setupTempDB,
+  tempDBTables,
 } from "../../testutils/fake_data/test_helpers";
 import { EdgeQuery } from "./query";
-import { TempDB } from "../../testutils/db/test_db";
+import { setupSqlite, TempDB } from "../../testutils/db/test_db";
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 
@@ -62,9 +63,7 @@ class TestQueryFilter<TData extends Data> {
   }
 
   private verifyIDs(ids: ID[]) {
-    expect(ids).toStrictEqual(
-      this.filteredContacts.map((contact) => contact.id),
-    );
+    expect(ids).toEqual(this.filteredContacts.map((contact) => contact.id));
   }
 
   // rawCount isn't affected by filters...
@@ -141,7 +140,8 @@ interface options<TData extends Data> {
   entsLength?: number;
   where: string;
   sortCol: string;
-  liveDB?: boolean; // if livedb creates temp db and not depending on mock
+  livePostgresDB?: boolean; // if livedb creates temp db and not depending on mock
+  sqlite?: boolean; // do this in sqlite
 }
 
 export const commonTests = <TData extends Data>(opts: options<TData>) => {
@@ -151,7 +151,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     limit = DefaultLimit,
     disablePaginationBump = false,
   }) {
-    if (opts.liveDB) {
+    if (opts.livePostgresDB || opts.sqlite) {
       return;
     }
     const queries = QueryRecorder.getCurrentQueries();
@@ -167,7 +167,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   }
 
   function verifyCountQuery({ length = 1, numQueries = 1 }) {
-    if (opts.liveDB) {
+    if (opts.livePostgresDB || opts.sqlite) {
       return;
     }
     const queries = QueryRecorder.getCurrentQueries();
@@ -176,12 +176,12 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       const query = queries[i];
       expect(query.qs?.whereClause).toBe(opts.where);
       expect(query.qs?.columns).toHaveLength(1);
-      expect(query.qs?.columns).toStrictEqual(["count(1)"]);
+      expect(query.qs?.columns).toStrictEqual(["count(1) as count"]);
     }
   }
 
   function verifyFirstAfterCursorQuery(length: number = 1) {
-    if (opts.liveDB) {
+    if (opts.livePostgresDB || opts.sqlite) {
       return;
     }
     const queries = QueryRecorder.getCurrentQueries();
@@ -197,7 +197,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   }
 
   function verifyLastBeforeCursorQuery(length: number = 1) {
-    if (opts.liveDB) {
+    if (opts.livePostgresDB || opts.sqlite) {
       return;
     }
     const queries = QueryRecorder.getCurrentQueries();
@@ -220,7 +220,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     // opts.liveDB no context too...
     // maybe this one we just always hit the db
     // we don't get value out of testing parse_sql no context....
-    if (opts.liveDB) {
+    if (opts.livePostgresDB || opts.sqlite) {
       return new TestContext().getViewer();
     }
     // no context when not live db
@@ -235,7 +235,13 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     return getCursor({
       row: contacts[idx],
       col: "createdAt",
-      conv: (t) => t.getTime(),
+      conv: (t) => {
+        //sqlite
+        if (typeof t === "string") {
+          return Date.parse(t);
+        }
+        return t.getTime();
+      },
       // we want the right column to be encoded in the cursor as opposed e.g. time for
       // assoc queries, created_at for index/custom queries
       cursorKey: opts.sortCol,
@@ -243,10 +249,15 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   }
 
   let tdb: TempDB;
+  if (opts.sqlite) {
+    // tableName just to make it unique
+    setupSqlite(`sqlite:///shared_test+${opts.tableName}.db`, tempDBTables);
+  }
+
   beforeAll(async () => {
     // want error on by default in tests?
     setLogLevels(["error", "warn", "info"]);
-    if (opts.liveDB) {
+    if (opts.livePostgresDB) {
       tdb = await setupTempDB();
     }
   });
@@ -255,13 +266,13 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     //    console.log("beforeEach");
     // TODO figure out why this failed in the absence of this and have it fail loudly...
 
-    if (!opts.liveDB) {
+    if (!opts.livePostgresDB) {
       await createEdges();
     }
   });
 
   afterAll(async () => {
-    if (opts.liveDB && tdb) {
+    if (opts.livePostgresDB && tdb) {
       await tdb.afterAll();
     }
   });
@@ -269,7 +280,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   describe("simple queries", () => {
     const filter = new TestQueryFilter(
       (q: EdgeQuery<FakeContact, TData>) => {
-        // no filters
+        // no filterzs
         return q;
       },
       opts.newQuery,
@@ -466,7 +477,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       await filter.testAll();
     });
   });
-
+  // TODO
   test("first. after each cursor", async () => {
     let [user, contacts] = await createAllContacts();
     contacts = contacts.reverse();
@@ -522,10 +533,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       opts.newQuery,
       (contacts: FakeContact[]) => {
         // > check so we don't want that index
-        return contacts
-          .reverse()
-          .slice(0, idx)
-          .reverse(); // because of order returned
+        return contacts.reverse().slice(0, idx).reverse(); // because of order returned
       },
       getViewer(),
     );
