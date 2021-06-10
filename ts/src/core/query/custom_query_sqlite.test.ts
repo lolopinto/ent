@@ -1,4 +1,3 @@
-import { QueryRecorder } from "../../testutils/db_mock";
 import { Viewer } from "../base";
 import {
   FakeUser,

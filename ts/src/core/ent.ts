@@ -545,6 +545,14 @@ export class EditNodeOperation implements DataOperation {
         this.existingEnt.id,
         "RETURNING *",
       );
+      if (this.row === undefined && DB.getDialect() === Dialect.SQLite) {
+        const row = await loadRow({
+          fields: ["*"],
+          tableName: options.tableName,
+          clause: clause.Eq(options.key, this.existingEnt.id),
+        });
+        this.row = row;
+      }
     } else {
       this.row = await createRow(queryer, options, "RETURNING *");
       // doesn't support returning * so have to manually load the ent back
