@@ -7,8 +7,8 @@ import {
   leftPad,
   DateType,
   TimestamptzType,
-} from "../schema/field";
-import { BaseEntSchema, Schema, Field } from "../schema";
+} from "./field";
+import { BaseEntSchema, Schema, Field } from ".";
 import { User, SimpleAction } from "../testutils/builder";
 import {
   table,
@@ -544,7 +544,7 @@ test("timestamptz copy", async () => {
   fs.writeFileSync(file, lines.join("\n"));
 
   try {
-    const client = tdb.getDBClient();
+    const client = tdb.getPostgresClient();
 
     const query = `COPY users (${rows[0].join(",")}) FROM '${file}' CSV HEADER`;
     await client.query(query);

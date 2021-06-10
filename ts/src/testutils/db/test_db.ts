@@ -309,12 +309,8 @@ export class TempDB {
     return this.sqlite;
   }
 
-  // TODO
-  getDBClient() {
-    if (this.dialect === Dialect.Postgres) {
-      return this.dbClient;
-    }
-    return this.sqlite;
+  getPostgresClient(): Client {
+    return this.dbClient;
   }
 
   async afterAll() {

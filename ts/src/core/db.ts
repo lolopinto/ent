@@ -267,7 +267,7 @@ interface ExecResult {
   rowCount: number;
 }
 
-interface Client extends Queryer {
+export interface Client extends Queryer {
   release(err?: Error | boolean): void;
   begin(): Promise<void>;
   commit(): Promise<void>;
