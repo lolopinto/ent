@@ -345,7 +345,7 @@ export class Sqlite implements Connection, Client {
       r = this.db.prepare(query).run();
     }
     return {
-      rowCount: r.changes,
+      rowCount: r!.changes,
       rows: [],
     };
   }

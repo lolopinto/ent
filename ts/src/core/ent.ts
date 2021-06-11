@@ -1146,7 +1146,7 @@ const assocEdgeFields = [
   "edge_table",
 ];
 
-const assocEdgeLoader = createDataLoader({
+export const assocEdgeLoader = createDataLoader({
   tableName: "assoc_edge_config",
   fields: assocEdgeFields,
   key: "edge_type",

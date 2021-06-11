@@ -5,6 +5,10 @@ import DB, { Sqlite, Dialect } from "../../core/db";
 import sqlite, { Database as SqliteDatabase } from "better-sqlite3";
 import { loadConfig } from "../../core/config";
 import * as fs from "fs";
+import { DBType, Field, getFields, SchemaInputType } from "../../schema";
+import { snakeCase } from "snake-case";
+import { BuilderSchema, getTableName } from "../builder";
+import { Ent } from "../../core/base";
 
 interface SchemaItem {
   name: string;
@@ -412,4 +416,65 @@ export function setupSqlite(connString: string, tables: () => Table[]) {
 
     fs.rmSync(tdb.getSqliteClient().name);
   });
+}
+
+export function getSchemaTable(schema: BuilderSchema<Ent>, dialect: Dialect) {
+  const fields = getFields(schema);
+
+  const columns: Column[] = [];
+  for (const [_, field] of fields) {
+    columns.push(getColumnFromField(field, dialect));
+  }
+  return table(getTableName(schema), ...columns);
+}
+
+function getColumnFromField(f: Field, dialect: Dialect) {
+  switch (f.type.dbType) {
+    case DBType.UUID:
+      if (dialect === Dialect.Postgres) {
+        return getColumn(f, uuid);
+      }
+      return getColumn(f, text);
+    case DBType.Int64ID:
+      return getColumn(f, integer);
+    case DBType.Boolean:
+      return getColumn(f, bool);
+    case DBType.Timestamp:
+      return getColumn(f, timestamp);
+    case DBType.Timestamptz:
+      return getColumn(f, timestamptz);
+    case DBType.String:
+      return getColumn(f, text);
+    default:
+      throw new Error(`unsupported type ${f.type.dbType}`);
+  }
+}
+
+function getColumn(f: Field, col: (name: string, opts?: options) => Column) {
+  return col(storageKey(f), buildOpts(f));
+}
+
+function buildOpts(f: Field): options {
+  let ret: options = {};
+  if (f.primaryKey) {
+    ret.primaryKey = true;
+  }
+  if (f.nullable) {
+    ret.nullable = true;
+  }
+  if (f.foreignKey !== undefined) {
+    //    ret.foreignKey =
+  }
+  if (f.serverDefault) {
+    ret.default = f.serverDefault;
+  }
+  return ret;
+}
+
+function storageKey(f: Field): string {
+  if (f.storageKey) {
+    return f.storageKey;
+  }
+
+  return snakeCase(f.name);
 }

@@ -5,6 +5,7 @@ import { ID, Ent, Data } from "../core/base";
 import { Clause } from "../core/clause";
 
 import { performQuery, queryResult, getDataToReturn } from "./parse_sql";
+import { MockLogs } from "./mock_log";
 
 const eventEmitter = {
   on: jest.fn(),
@@ -145,6 +146,14 @@ export class QueryRecorder {
     return QueryRecorder.ids;
   }
 
+  static getLastID(): ID {
+    const l = QueryRecorder.ids.length;
+    if (!l) {
+      throw new Error(`no ID`);
+    }
+    return QueryRecorder.ids[l - 1];
+  }
+
   static getData() {
     return QueryRecorder.data;
   }
@@ -244,11 +253,41 @@ export class QueryRecorder {
     this.validateQueryStructures(expected, true);
   }
 
+  static validateQueryStructuresFromLogs(
+    ml: MockLogs,
+    expected: queryStructure[],
+    skipSelect?: boolean,
+  ) {
+    const queries = ml.logs.map((log) => {
+      const qs = QueryRecorder.getQueryStructure(log.query);
+      if (!qs) {
+        throw new Error(`invalid query ${log.querya}`);
+      }
+      return {
+        query: log.query,
+        qs,
+      };
+    });
+
+    QueryRecorder.validateQuryStructuresImpl(expected, queries, skipSelect);
+  }
+
   static validateQueryStructures(
     expected: queryStructure[],
     skipSelect: boolean,
   ) {
-    let queries = QueryRecorder.queries;
+    QueryRecorder.validateQuryStructuresImpl(
+      expected,
+      QueryRecorder.queries,
+      skipSelect,
+    );
+  }
+
+  private static validateQuryStructuresImpl(
+    expected: queryStructure[],
+    queries: queryOptions[],
+    skipSelect?: boolean,
+  ) {
     if (skipSelect) {
       queries = queries.filter((query) => query.qs?.type !== queryType.SELECT);
     }
