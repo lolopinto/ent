@@ -476,14 +476,14 @@ export class PostgresClient implements Client {
   }
 
   async begin() {
-    this.client.query("BEGIN");
+    await this.client.query("BEGIN");
   }
 
   async commit() {
-    this.client.query("COMMIT");
+    await this.client.query("COMMIT");
   }
 
   async rollback() {
-    this.client.query("ROLLBACK");
+    await this.client.query("ROLLBACK");
   }
 }
