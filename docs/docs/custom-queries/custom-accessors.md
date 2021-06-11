@@ -3,7 +3,7 @@ sidebar_position: 1
 ---
 
 # Custom Accessors
-We briefly showed how to add [custom functionality](//docs/core-concepts/ent#custom-functionality) in an object but didn't show how to expose it in GraphQL to end users. This explains how to do so.
+We briefly showed how to add [custom functionality](/docs/core-concepts/ent#custom-functionality) in an object but didn't show how to expose it in GraphQL to end users. This explains how to do so.
 
 Given the following schema:
 ```ts title="src/schema/user.ts"
