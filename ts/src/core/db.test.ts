@@ -1,4 +1,4 @@
-import DB, { Sqlite } from "./db";
+import DB, { Client, Sqlite, SyncClient } from "./db";
 import {
   integer,
   table,
@@ -40,11 +40,10 @@ describe("sqlite", () => {
       .getPool()
       .query("SELECT * From users WHERE id = ?", [1]);
 
-    const row = r.rows[0];
-    expect(row.id).toBe(1);
-    expect(row.bar).toBe("bar");
-    expect(row.foo).toBe("foo");
-    // /    expect(row).toStrictEqual({ id: 1, bar: "bar", foo: "foo" });
+    expect(r).toEqual({
+      rowCount: 1,
+      rows: [{ id: 1, bar: "bar", foo: "foo" }],
+    });
   });
 
   test("update", async () => {
@@ -72,11 +71,11 @@ describe("sqlite", () => {
       .getPool()
       .query("SELECT * From users WHERE id = ?", [1]);
 
-    const row = r.rows[0];
-    expect(row.id).toBe(1);
-    expect(row.bar).toBe("bar2");
-    expect(row.foo).toBe("foo");
-    // /    expect(row).toStrictEqual({ id: 1, bar: "bar2", foo: "foo" });
+    expect(r).toEqual({
+      rowCount: 1,
+      // TODO...
+      rows: [{ id: 1, bar: "bar2", foo: "foo" }],
+    });
   });
 
   test("delete", async () => {
@@ -103,24 +102,27 @@ describe("sqlite", () => {
     expect(r).toStrictEqual({ rowCount: 0, rows: [] });
   });
 
-  // TODO
+  function isSyncClient(client: Client): client is SyncClient {
+    return (client as SyncClient).execSync !== undefined;
+  }
   test("transaction", async () => {
     const client = await DB.getInstance().getNewClient();
 
-    await client.runTransaction(() => {
-      client.exec(`INSERT INTO users (id, bar, foo) VALUES (?, ?, ?)`, [
+    if (!isSyncClient(client)) {
+      throw new Error("runInTransaction method not supported");
+    }
+    client.runInTransaction(() => {
+      client.execSync(`INSERT INTO users (id, bar, foo) VALUES (?, ?, ?)`, [
         1,
         "bar",
         "foo",
       ]);
-      client.exec(`INSERT INTO users (id, bar, foo) VALUES (?, ?, ?)`, [
+      client.execSync(`INSERT INTO users (id, bar, foo) VALUES (?, ?, ?)`, [
         2,
         "bar",
         "foo",
       ]);
     });
-
-    client.release();
 
     const r = await DB.getInstance().getPool().queryAll("SELECT * FROM users");
     expect(r.rowCount).toBe(2);
@@ -131,105 +133,142 @@ describe("sqlite", () => {
     ]);
   });
 
+  // not the supported way?
   test("manual transactions", async () => {
-    const client = await DB.getInstance().getNewClient();
+    const client = await DB.getInstance().getSQLiteClient();
 
-    await client.begin();
-    await client.exec(`INSERT INTO users (id, bar, foo) VALUES (?, ?, ?)`, [
+    client.execSync("BEGIN");
+    client.execSync(`INSERT INTO users (id, bar, foo) VALUES (?, ?, ?)`, [
       1,
       "bar",
       "foo",
     ]);
-    await client.exec(`INSERT INTO users (id, bar, foo) VALUES (?, ?, ?)`, [
+    client.execSync(`INSERT INTO users (id, bar, foo) VALUES (?, ?, ?)`, [
       2,
       "bar2",
       "foo2",
     ]);
-    await client.commit();
+    client.execSync("COMMIT");
 
-    client.release();
+    await client.release();
 
     const r = await DB.getInstance().getPool().queryAll("SELECT * FROM users");
-    expect(r.rowCount).toBe(2);
-    expect(r.rows.length).toBe(2);
-    expect(r.rows).toEqual([
-      { id: 1, foo: "foo", bar: "bar" },
-      { id: 2, foo: "foo2", bar: "bar2" },
-    ]);
+    expect(r).toEqual({
+      rowCount: 2,
+      rows: [
+        { id: 1, foo: "foo", bar: "bar" },
+        { id: 2, foo: "foo2", bar: "bar2" },
+      ],
+    });
 
     // count
     const r2 = await DB.getInstance()
       .getPool()
       .queryAll("SELECT count(1) as count FROM users");
-    expect(r2.rowCount).toBe(1);
-    expect(r2.rows.length).toBe(1);
-    expect(r2.rows).toEqual([{ count: 2 }]);
+    expect(r2).toEqual({
+      rowCount: 1,
+      rows: [{ count: 2 }],
+    });
   });
 
-  const createUsers = async (ids: number[]) => {
-    const client = await DB.getInstance().getNewClient();
+  const throwbackErr = new Error(`rollback this transaction`);
 
-    await client.begin();
-    ids.map(async (id) => {
-      await client.exec(`INSERT INTO users (id, bar, foo) VALUES (?, ?, ?)`, [
-        id,
-        `bar${id}`,
-        `foo${id}`,
-      ]);
+  const createUsers = async (
+    ids: number[],
+    opts?: { checkRows?: boolean; rollback?: boolean },
+  ) => {
+    const client = await DB.getInstance().getSQLiteClient();
+
+    client.runInTransaction(() => {
+      ids.map(async (id) => {
+        client.execSync(`INSERT INTO users (id, bar, foo) VALUES (?, ?, ?)`, [
+          id,
+          `bar${id}`,
+          `foo${id}`,
+        ]);
+      });
+      // we only check for the first one because of how sqlite transactions work
+      // there's an argument to be made that we should alwas perform writes sequentially
+      // to not deal with this
+      if (opts?.checkRows) {
+        const r = client.queryAllSync("SELECT * FROM users");
+        expect(r).toEqual({
+          rowCount: 3,
+          rows: [
+            { id: 1, foo: "foo1", bar: "bar1" },
+            { id: 3, foo: "foo3", bar: "bar3" },
+            { id: 5, foo: "foo5", bar: "bar5" },
+          ],
+        });
+      }
+
+      if (opts?.rollback) {
+        throw throwbackErr;
+      }
     });
-
-    await client.commit();
 
     client.release();
   };
 
-  // TODO load row in transaction in this test
   test("mixed transactions", async () => {
-    await Promise.all([createUsers([1, 3, 5]), createUsers([2, 4, 6])]);
+    await Promise.all([
+      createUsers([1, 3, 5], { checkRows: true }),
+      createUsers([2, 4, 6]),
+    ]);
 
     const r = await DB.getInstance().getPool().queryAll("SELECT * FROM users");
-    expect(r.rowCount).toBe(6);
-    expect(r.rows.length).toBe(6);
-    expect(r.rows).toEqual([
-      { id: 1, foo: "foo1", bar: "bar1" },
-      { id: 2, foo: "foo2", bar: "bar2" },
-      { id: 3, foo: "foo3", bar: "bar3" },
-      { id: 4, foo: "foo4", bar: "bar4" },
-      { id: 5, foo: "foo5", bar: "bar5" },
-      { id: 6, foo: "foo6", bar: "bar6" },
-    ]);
+    expect(r).toEqual({
+      rowCount: 6,
+      rows: [
+        { id: 1, foo: "foo1", bar: "bar1" },
+        { id: 2, foo: "foo2", bar: "bar2" },
+        { id: 3, foo: "foo3", bar: "bar3" },
+        { id: 4, foo: "foo4", bar: "bar4" },
+        { id: 5, foo: "foo5", bar: "bar5" },
+        { id: 6, foo: "foo6", bar: "bar6" },
+      ],
+    });
   });
 
-  // doesn't work because of the event loop. how this works
-  // TODO would have to rewrite things to get this to work
-  test.skip("rollback transaction", async () => {
-    const client = await DB.getInstance().getNewClient();
+  test("rollback transaction", async () => {
+    const client = await DB.getInstance().getSQLiteClient();
 
-    await client.begin();
-    await client.exec(`INSERT INTO users (id, bar, foo) VALUES (?, ?, ?)`, [
-      1,
-      "bar",
-      "foo",
-    ]);
-    await client.exec(`INSERT INTO users (id, bar, foo) VALUES (?, ?, ?)`, [
-      2,
-      "bar2",
-      "foo2",
-    ]);
-    await client.rollback();
-
-    client.release();
+    try {
+      await createUsers([1, 2], { rollback: true });
+      fail("should have thrown");
+    } catch (err) {
+      expect(err).toEqual(throwbackErr);
+    }
 
     const r = await DB.getInstance().getPool().queryAll("SELECT * FROM users");
-    expect(r.rowCount).toBe(0);
-    expect(r.rows.length).toBe(0);
-    expect(r.rows).toEqual([]);
+    expect(r).toEqual({ rowCount: 0, rows: [] });
+  });
+
+  test("mixed rollback", async () => {
+    try {
+      await Promise.all([
+        createUsers([1, 2, 3]),
+        createUsers([4, 5, 6], { rollback: true }),
+      ]);
+    } catch (err) {
+      expect(err).toEqual(throwbackErr);
+    }
+
+    const r = await DB.getInstance().getPool().queryAll("SELECT * FROM users");
+    expect(r).toEqual({
+      rowCount: 3,
+      rows: [
+        { id: 1, foo: "foo1", bar: "bar1" },
+        { id: 2, foo: "foo2", bar: "bar2" },
+        { id: 3, foo: "foo3", bar: "bar3" },
+      ],
+    });
   });
 
   test("time", async () => {
     const d = new Date();
-    const client = await DB.getInstance().getNewClient();
-    await client.exec(`INSERT INTO with_time (id, time) VALUES(?,?)`, [1, d]);
+    const client = await DB.getInstance().getSQLiteClient();
+    client.execSync(`INSERT INTO with_time (id, time) VALUES(?,?)`, [1, d]);
 
     const r = await DB.getInstance()
       .getPool()
@@ -255,10 +294,8 @@ test("sqlite memory", async () => {
   loadConfig(Buffer.from(`dbConnectionString: ${connStr}`));
   validateSQLiteMemory(true);
 
-  // incorrect instance...
-  // what's the right instance?
-  const client = await DB.getInstance().getNewClient();
-  await client.exec(
+  const client = await DB.getInstance().getSQLiteClient();
+  client.execSync(
     table(
       "users",
       integer("id", { primaryKey: true }),
@@ -267,7 +304,7 @@ test("sqlite memory", async () => {
     ).create(),
   );
 
-  await client.exec(`INSERT INTO users (id, bar, foo) VALUES (?, ?, ?)`, [
+  client.execSync(`INSERT INTO users (id, bar, foo) VALUES (?, ?, ?)`, [
     100,
     "bar",
     "foo",

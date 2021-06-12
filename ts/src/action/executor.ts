@@ -201,6 +201,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     this.mapper.set(placeholderID, createdEnt);
   }
 
+  // lesigh. this doesn't work with the new format
   next(): IteratorResult<DataOperation> {
     if (this.lastOp) {
       this.handleCreatedEnt();

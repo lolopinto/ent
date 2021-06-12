@@ -406,8 +406,14 @@ export function setupSqlite(connString: string, tables: () => Table[]) {
   });
 
   afterEach(async () => {
+    const client = await DB.getInstance().getNewClient();
     for (const [key, _] of tdb.getTables()) {
-      await (await DB.getInstance().getNewClient()).exec(`delete from ${key}`);
+      const query = `delete from ${key}`;
+      if (client.execSync) {
+        client.execSync(query);
+      } else {
+        await client.exec(query);
+      }
     }
   });
 

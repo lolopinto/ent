@@ -10,6 +10,7 @@ import {
   Observer,
 } from "../action";
 import * as action from "../action";
+import { executeOperations } from "../action/action";
 
 import DB, { Dialect } from "../core/db";
 
@@ -130,7 +131,7 @@ jest.spyOn(action, "saveBuilder").mockImplementation(saveBuilder);
 async function saveBuilder<T extends Ent>(builder: Builder<T>): Promise<void> {
   const changeset = await builder.build();
   const executor = changeset.executor();
-  await executeOperations(executor, builder);
+  await executeOperations(executor, builder, true);
 }
 
 async function executeAction<T extends Ent, E = any>(
@@ -141,39 +142,8 @@ async function executeAction<T extends Ent, E = any>(
   if (name !== undefined) {
     expect(exec).toBeInstanceOf(name);
   }
-  await executeOperations(exec, action.builder);
+  await executeOperations(exec, action.builder, true);
   return exec;
-}
-
-async function executeOperations<T extends Ent>(
-  executor: Executor,
-  builder: Builder<T>,
-): Promise<void> {
-  const client = await DB.getInstance().getNewClient();
-
-  try {
-    await client.query("BEGIN");
-    for (const operation of executor) {
-      // resolve any placeholders before writes
-      operations.push(operation);
-      if (operation.resolve) {
-        operation.resolve(executor);
-      }
-
-      await operation.performWrite(client, builder.viewer.context);
-    }
-    await client.query("COMMIT");
-
-    if (executor.executeObservers) {
-      await executor.executeObservers();
-    }
-  } catch (e) {
-    await client.query("ROLLBACK");
-    // rethrow
-    throw e;
-  } finally {
-    client.release();
-  }
 }
 
 async function executor<T extends Ent>(builder: Builder<T>): Promise<Executor> {

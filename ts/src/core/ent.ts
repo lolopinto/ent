@@ -1,4 +1,4 @@
-import DB, { Dialect, Queryer } from "./db";
+import DB, { Dialect, Queryer, SyncQueryer } from "./db";
 import {
   Viewer,
   Ent,
@@ -490,9 +490,20 @@ export function buildGroupQuery(
 // }
 
 export interface DataOperation {
+  // any data that needs to be fetched before the write
+  // because of how SQLite works, we can't use asynchronous fetches here
+  // and also
+  // TODO more words.
+  preFetch?(queryer: Queryer, context?: Context): Promise<void>;
+
+  // performWriteSync is called for SQLITE and APIs that don't support asynchronous writes
+  performWriteSync(queryer: SyncQueryer, context?: Context): void;
   performWrite(queryer: Queryer, context?: Context): Promise<void>;
+
   returnedEntRow?(): Data | null; // optional to indicate the row that was created
   resolve?(executor: Executor): void; //throws?
+
+  postFetch?(queryer: Queryer, context?: Context): Promise<void>;
 }
 
 export interface EditNodeOptions extends EditRowOptions {
@@ -545,28 +556,70 @@ export class EditNodeOperation implements DataOperation {
         this.existingEnt.id,
         "RETURNING *",
       );
-      if (this.row === undefined && DB.getDialect() === Dialect.SQLite) {
-        const row = await loadRow({
-          fields: ["*"],
-          tableName: options.tableName,
-          clause: clause.Eq(options.key, this.existingEnt.id),
-        });
-        this.row = row;
-      }
     } else {
       this.row = await createRow(queryer, options, "RETURNING *");
-      // doesn't support returning * so have to manually load the ent back
-      if (this.row === undefined && DB.getDialect() === Dialect.SQLite) {
-        const id = options.fields[options.key];
-        const row = await loadRow({
-          fields: ["*"],
-          tableName: options.tableName,
-          clause: clause.Eq(options.key, id),
-        });
-        this.row = row;
-      }
     }
   }
+
+  reloadRow(queryer: SyncQueryer, id: ID, options: EditNodeOptions) {
+    const query = buildQuery({
+      fields: ["*"],
+      tableName: options.tableName,
+      clause: clause.Eq(options.key, id),
+    });
+    const r = queryer.querySync(query, [id]);
+    if (r.rows.length !== 1) {
+      throw new Error(`couldn't reload row for ${id}`);
+    }
+    this.row = r.rows[0];
+    console.debug(this.row);
+  }
+
+  performWriteSync(queryer: SyncQueryer, context?: Context): void {
+    let options = {
+      ...this.options,
+      context,
+    };
+    console.debug("performWriteSync");
+    //    console.log("performWrite", options);
+    if (this.existingEnt) {
+      editRowSync(queryer, options, this.existingEnt.id, "RETURNING *");
+      this.reloadRow(queryer, this.existingEnt.id, options);
+    } else {
+      createRowSync(queryer, options, "RETURNING *");
+      const id = options.fields[options.key];
+      this.reloadRow(queryer, id, options);
+    }
+  }
+
+  // async postFetch(queryer: Queryer, context?: Context): Promise<void> {
+  //   console.debug("postfetch");
+  //   if (!(this.row === undefined && DB.getDialect() === Dialect.SQLite)) {
+  //     return;
+  //   }
+  //   console.debug("fetching");
+  //   // doesn't support returning * so have to manually load the ent back
+  //   let options = {
+  //     ...this.options,
+  //     context,
+  //   };
+
+  //   if (this.existingEnt) {
+  //     // TODO have to support queryer here...
+  //     this.row = await loadRow({
+  //       fields: ["*"],
+  //       tableName: options.tableName,
+  //       clause: clause.Eq(options.key, this.existingEnt.id),
+  //     });
+  //   } else {
+  //     const id = options.fields[options.key];
+  //     this.row = await loadRow({
+  //       fields: ["*"],
+  //       tableName: options.tableName,
+  //       clause: clause.Eq(options.key, id),
+  //     });
+  //   }
+  // }
 
   returnedEntRow(): Data | null {
     return this.row;
@@ -581,25 +634,67 @@ interface EdgeOperationOptions {
 }
 
 export class EdgeOperation implements DataOperation {
+  private edgeData: AssocEdgeData | undefined;
   private constructor(
     public edgeInput: AssocEdgeInput,
     private options: EdgeOperationOptions,
   ) {}
 
-  async performWrite(queryer: Queryer, context?: Context): Promise<void> {
-    const edge = this.edgeInput;
-
-    let edgeData = await loadEdgeData(edge.edgeType);
+  async preFetch(queryer: Queryer, context?: Context): Promise<void> {
+    let edgeData = await loadEdgeData(this.edgeInput.edgeType);
     if (!edgeData) {
-      throw new Error(`error loading edge data for ${edge.edgeType}`);
+      throw new Error(`error loading edge data for ${this.edgeInput.edgeType}`);
     }
+    this.edgeData = edgeData;
+  }
 
+  async performWrite(queryer: Queryer, context?: Context): Promise<void> {
+    if (!this.edgeData) {
+      throw new Error(
+        `error fetching edgeData for type ${this.edgeInput.edgeType}`,
+      );
+    }
     switch (this.options.operation) {
       case WriteOperation.Delete:
-        return this.performDeleteWrite(queryer, edgeData, edge, context);
+        return this.performDeleteWrite(
+          queryer,
+          this.edgeData,
+          this.edgeInput,
+          context,
+        );
       case WriteOperation.Insert:
       case WriteOperation.Edit:
-        return this.performInsertWrite(queryer, edgeData, edge, context);
+        return this.performInsertWrite(
+          queryer,
+          this.edgeData,
+          this.edgeInput,
+          context,
+        );
+    }
+  }
+
+  performWriteSync(queryer: SyncQueryer, context?: Context): void {
+    if (!this.edgeData) {
+      throw new Error(
+        `error fetching edgeData for type ${this.edgeInput.edgeType}`,
+      );
+    }
+    switch (this.options.operation) {
+      case WriteOperation.Delete:
+        return this.performDeleteWriteSync(
+          queryer,
+          this.edgeData,
+          this.edgeInput,
+          context,
+        );
+      case WriteOperation.Insert:
+      case WriteOperation.Edit:
+        return this.performInsertWriteSync(
+          queryer,
+          this.edgeData,
+          this.edgeInput,
+          context,
+        );
     }
   }
 
@@ -610,6 +705,26 @@ export class EdgeOperation implements DataOperation {
     context?: Context,
   ): Promise<void> {
     return deleteRows(
+      q,
+      {
+        tableName: edgeData.edgeTable,
+        context,
+      },
+      clause.And(
+        clause.Eq("id1", edge.id1),
+        clause.Eq("id2", edge.id2),
+        clause.Eq("edge_type", edge.edgeType),
+      ),
+    );
+  }
+
+  private performDeleteWriteSync(
+    q: SyncQueryer,
+    edgeData: AssocEdgeData,
+    edge: AssocEdgeInput,
+    context?: Context,
+  ): void {
+    return deleteRowsSync(
       q,
       {
         tableName: edgeData.edgeTable,
@@ -646,6 +761,39 @@ export class EdgeOperation implements DataOperation {
     }
 
     await createRow(
+      q,
+      {
+        tableName: edgeData.edgeTable,
+        fields: fields,
+        fieldsToLog: fields,
+        context,
+      },
+      "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
+    );
+  }
+  private performInsertWriteSync(
+    q: SyncQueryer,
+    edgeData: AssocEdgeData,
+    edge: AssocEdgeInput,
+    context?: Context,
+  ): void {
+    const fields = {
+      id1: edge.id1,
+      id2: edge.id2,
+      id1_type: edge.id1Type,
+      id2_type: edge.id2Type,
+      edge_type: edge.edgeType,
+      data: edge.data || null,
+    };
+    if (edge.time) {
+      fields["time"] = edge.time.toISOString();
+    } else {
+      // todo make this a schema field like what we do in generated base files...
+      // maybe when actions exist?
+      fields["time"] = new Date().toISOString();
+    }
+
+    createRowSync(
       q,
       {
         tableName: edgeData.edgeTable,
@@ -915,6 +1063,29 @@ async function mutateRow(
   }
 }
 
+function mutateRowSync(
+  queryer: SyncQueryer,
+  query: string,
+  values: any[],
+  logValues: any[],
+  options: DataOptions,
+) {
+  logQuery(query, logValues);
+
+  let cache = options.context?.cache;
+  try {
+    const res = queryer.execSync(query, values);
+    if (cache) {
+      cache.clearCache();
+    }
+    return res;
+  } catch (err) {
+    // TODO:::why is this not rethrowing?
+    log("error", err);
+    throw err;
+  }
+}
+
 export function buildInsertQuery(
   options: CreateRowOptions,
   suffix?: string,
@@ -961,6 +1132,22 @@ export async function createRow(
 
   //  console.log("createRow", query, values, logValues);
   const res = await mutateRow(queryer, query, values, logValues, options);
+
+  if (res?.rowCount === 1) {
+    return res.rows[0];
+  }
+  return null;
+}
+
+export function createRowSync(
+  queryer: SyncQueryer,
+  options: CreateRowOptions,
+  suffix: string,
+): Data | null {
+  const [query, values, logValues] = buildInsertQuery(options, suffix);
+
+  //  console.log("createRow", query, values, logValues);
+  const res = mutateRowSync(queryer, query, values, logValues, options);
 
   if (res?.rowCount === 1) {
     return res.rows[0];
@@ -1030,6 +1217,28 @@ export async function editRow(
   return null;
 }
 
+export function editRowSync(
+  queryer: SyncQueryer,
+  options: EditRowOptions,
+  id: ID,
+  suffix?: string,
+): Data | null {
+  const [query, values, logValues] = buildUpdateQuery(options, id, suffix);
+
+  // add id as value to prepared query
+  values.push(id);
+
+  const res = mutateRowSync(queryer, query, values, logValues, options);
+
+  if (res?.rowCount == 1) {
+    // for now assume id primary key
+    // TODO make this extensible as needed.
+    let row = res.rows[0];
+    return row;
+  }
+  return null;
+}
+
 export async function deleteRows(
   queryer: Queryer,
   options: DataOptions,
@@ -1037,6 +1246,15 @@ export async function deleteRows(
 ): Promise<void> {
   const query = `DELETE FROM ${options.tableName} WHERE ${cls.clause(1)}`;
   await mutateRow(queryer, query, cls.values(), cls.logValues(), options);
+}
+
+export function deleteRowsSync(
+  queryer: SyncQueryer,
+  options: DataOptions,
+  cls: clause.Clause,
+): void {
+  const query = `DELETE FROM ${options.tableName} WHERE ${cls.clause(1)}`;
+  mutateRowSync(queryer, query, cls.values(), cls.logValues(), options);
 }
 
 export class DeleteNodeOperation implements DataOperation {
@@ -1048,6 +1266,14 @@ export class DeleteNodeOperation implements DataOperation {
       context,
     };
     return deleteRows(queryer, options, clause.Eq("id", this.id));
+  }
+
+  performWriteSync(queryer: SyncQueryer, context?: Context): void {
+    let options = {
+      ...this.options,
+      context,
+    };
+    return deleteRowsSync(queryer, options, clause.Eq("id", this.id));
   }
 }
 

@@ -179,6 +179,13 @@ export default class DB {
     return this.q.newClient();
   }
 
+  async getSQLiteClient(): Promise<Sqlite> {
+    if (this.db.dialect == Dialect.Postgres) {
+      throw new Error(`can't call getSQLiteClient when dialect is postgres`);
+    }
+    return this.q as Sqlite;
+  }
+
   // this should be called when the server is shutting down or end of tests.
   async endPool(): Promise<void> {
     return this.q.close();
@@ -240,7 +247,16 @@ export interface Queryer {
   queryAll(query: string, values?: any[]): Promise<QueryResult<QueryResultRow>>;
   // exec a query with no result
   // e.g. insert in sqlite etc
+  // exec has no async/await in sqlite...
   exec(query: string, values?: any[]): Promise<ExecResult>;
+}
+
+// if this exists, we don't want to use async/await
+// e.g. SQLite
+export interface SyncQueryer extends Queryer {
+  execSync(query: string, values?: any[]): ExecResult;
+  queryAllSync(query: string, values?: any[]): QueryResult<QueryResultRow>;
+  querySync(query: string, values?: any[]): QueryResult<QueryResultRow>;
 }
 
 export interface Connection extends Queryer {
@@ -269,15 +285,13 @@ interface ExecResult {
 
 export interface Client extends Queryer {
   release(err?: Error | boolean): void;
-  begin(): Promise<void>;
-  commit(): Promise<void>;
-  rollback(): Promise<void>;
-
-  // TODO kill
-  runTransaction(cb: () => void | Promise<void>): Promise<void>;
 }
 
-export class Sqlite implements Connection, Client {
+export interface SyncClient extends Client, SyncQueryer {
+  runInTransaction(cb: () => void): void;
+}
+
+export class Sqlite implements Connection, SyncClient {
   constructor(public db: SqliteDatabase) {}
 
   self() {
@@ -294,6 +308,10 @@ export class Sqlite implements Connection, Client {
     query: string,
     values?: any[],
   ): Promise<QueryResult<QueryResultRow>> {
+    return this.querySync(query, values);
+  }
+
+  querySync(query: string, values?: any[]): QueryResult<QueryResultRow> {
     //    this.db.transaction;
     let r: sqlite.RunResult;
     if (values) {
@@ -311,6 +329,10 @@ export class Sqlite implements Connection, Client {
     query: string,
     values?: any[],
   ): Promise<QueryResult<QueryResultRow>> {
+    return this.queryAllSync(query, values);
+  }
+
+  queryAllSync(query: string, values?: any[]): QueryResult<QueryResultRow> {
     let r: any[];
     if (values) {
       r = this.db.prepare(query).all(values);
@@ -324,6 +346,12 @@ export class Sqlite implements Connection, Client {
   }
 
   async exec(query: string, values?: any[]): Promise<ExecResult> {
+    throw new Error(
+      `exec shouldn't be called. execSync() should be called instead`,
+    );
+  }
+
+  execSync(query: string, values?: any[]): ExecResult {
     //    console.debug("exec", query, values);
     let r: sqlite.RunResult;
     if (values) {
@@ -356,35 +384,12 @@ export class Sqlite implements Connection, Client {
 
   async release(err?: Error | boolean) {}
 
-  async begin() {
-    this.db.prepare("BEGIN");
-  }
-
-  async commit() {
-    this.db.prepare("COMMIT");
-  }
-
-  async rollback() {
-    this.db.prepare("ROLLBACK");
-  }
-
-  // TODO kill???
-  async runTransaction(cb: () => void | Promise<void>) {
+  runInTransaction(cb: () => void | Promise<void>) {
     //    console.debug("sss");
-    const r = this.db.transaction(() => {
-      //      console.debug("ttt");
-      const r = cb();
-      if (
-        r !== undefined &&
-        r["then"] != undefined &&
-        typeof r["then"] === "function"
-      ) {
-        r["then"](() => {
-          //          console.debug("UUU");
-        });
-      }
+    const tr = this.db.transaction(() => {
+      cb();
     });
-    r();
+    tr();
   }
 }
 
@@ -462,28 +467,5 @@ export class PostgresClient implements Client {
 
   async release(err?: Error | boolean) {
     return this.client.release(err);
-  }
-
-  async runTransaction(cb: () => void | Promise<void>) {
-    try {
-      await this.client.query("BEGIN");
-
-      await cb();
-      await this.client.query("COMMIT");
-    } catch (e) {
-      await this.client.query("ROLLBACK");
-    }
-  }
-
-  async begin() {
-    await this.client.query("BEGIN");
-  }
-
-  async commit() {
-    await this.client.query("COMMIT");
-  }
-
-  async rollback() {
-    await this.client.query("ROLLBACK");
   }
 }
