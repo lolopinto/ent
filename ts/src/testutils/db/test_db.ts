@@ -1,11 +1,11 @@
-import { Client } from "pg";
-import DB, { Sqlite, Dialect } from "../../core/db";
+import { Client as PGClient } from "pg";
+import DB, { Sqlite, Dialect, Client, SyncClient } from "../../core/db";
 // import { open, Database } from "sqlite";
 // import sqlite3 from "sqlite3";
 import sqlite, { Database as SqliteDatabase } from "better-sqlite3";
 import { loadConfig } from "../../core/config";
 import * as fs from "fs";
-import { DBType, Field, getFields, SchemaInputType } from "../../schema";
+import { DBType, Field, getFields } from "../../schema";
 import { snakeCase } from "snake-case";
 import { BuilderSchema, getTableName } from "../builder";
 import { Ent } from "../../core/base";
@@ -229,8 +229,8 @@ function isDialect(dialect: Dialect | Table[]): dialect is Dialect {
 
 export class TempDB {
   private db: string;
-  private client: Client;
-  private dbClient: Client;
+  private client: PGClient;
+  private dbClient: PGClient;
   private tables = new Map<string, Table>();
   private dialect: Dialect;
   private sqlite: SqliteDatabase;
@@ -266,7 +266,7 @@ export class TempDB {
       const user = process.env.POSTGRES_USER || "";
       const password = process.env.POSTGRES_PASSWORD || "";
 
-      this.client = new Client({
+      this.client = new PGClient({
         host: "localhost",
         user,
         password,
@@ -283,7 +283,7 @@ export class TempDB {
         process.env.DB_CONNECTION_STRING = `postgres://localhost/${this.db}?`;
       }
 
-      this.dbClient = new Client({
+      this.dbClient = new PGClient({
         host: "localhost",
         database: this.db,
         user,
@@ -313,7 +313,7 @@ export class TempDB {
     return this.sqlite;
   }
 
-  getPostgresClient(): Client {
+  getPostgresClient(): PGClient {
     return this.dbClient;
   }
 
@@ -409,11 +409,12 @@ export function setupSqlite(connString: string, tables: () => Table[]) {
     const client = await DB.getInstance().getNewClient();
     for (const [key, _] of tdb.getTables()) {
       const query = `delete from ${key}`;
-      if (client.execSync) {
-        client.execSync(query);
-      } else {
-        await client.exec(query);
-      }
+      if (isSyncClient(client))
+        if (client.execSync) {
+          client.execSync(query);
+        } else {
+          await client.exec(query);
+        }
     }
   });
 
@@ -483,4 +484,8 @@ function storageKey(f: Field): string {
   }
 
   return snakeCase(f.name);
+}
+
+function isSyncClient(client: Client): client is SyncClient {
+  return (client as SyncClient).execSync !== undefined;
 }
