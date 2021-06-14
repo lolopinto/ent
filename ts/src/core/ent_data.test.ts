@@ -124,9 +124,6 @@ function validateQueries(expQueries: Data[]) {
     console.debug(ml.logs, expQueries);
   }
   expect(ml.logs.length).toBe(expQueries.length);
-  if (ml.logs != expQueries) {
-    //    console.debug(ml.logs, expQueries);
-  }
   expect(ml.logs).toStrictEqual(expQueries);
 }
 

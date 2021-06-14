@@ -382,7 +382,6 @@ export async function loadRows(options: LoadRowsOptions): Promise<Data[]> {
   }
 
   const query = buildQuery(options);
-  //  console.debug("query", options, query);
   const r = await performRawQuery(
     query,
     options.clause.values(),
@@ -453,10 +452,9 @@ export function buildGroupQuery(
 }
 
 export interface DataOperation {
-  // any data that needs to be fetched before the write
-  // because of how SQLite works, we can't use asynchronous fetches here
-  // and also
-  // TODO more words.
+  // any data that needs to be fetched before the write should be fetched here
+  // because of how SQLite works, we can't use asynchronous fetches during the write
+  // so we batch up fetching to be done beforehand here
   preFetch?(queryer: Queryer, context?: Context): Promise<void>;
 
   // performWriteSync is called for SQLITE and APIs that don't support asynchronous writes
@@ -466,6 +464,7 @@ export interface DataOperation {
   returnedEntRow?(): Data | null; // optional to indicate the row that was created
   resolve?(executor: Executor): void; //throws?
 
+  // any data that needs to be fetched asynchronously post write|post transaction
   postFetch?(queryer: Queryer, context?: Context): Promise<void>;
 }
 
@@ -1056,7 +1055,6 @@ export async function createRow(
 ): Promise<Data | null> {
   const [query, values, logValues] = buildInsertQuery(options, suffix);
 
-  //  console.log("createRow", query, values, logValues);
   const res = await mutateRow(queryer, query, values, logValues, options);
 
   if (res?.rowCount === 1) {
@@ -1072,7 +1070,6 @@ export function createRowSync(
 ): Data | null {
   const [query, values, logValues] = buildInsertQuery(options, suffix);
 
-  //  console.log("createRow", query, values, logValues);
   const res = mutateRowSync(queryer, query, values, logValues, options);
 
   if (res?.rowCount === 1) {

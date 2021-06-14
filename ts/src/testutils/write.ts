@@ -14,7 +14,7 @@ import {
   deleteRowsSync,
 } from "../core/ent";
 import * as clause from "../core/clause";
-import DB, { Sqlite, SyncQueryer, Client, SyncClient } from "../core/db";
+import DB, { Client, SyncClient } from "../core/db";
 
 function isSyncClient(client: Client): client is SyncClient {
   return (client as SyncClient).execSync !== undefined;

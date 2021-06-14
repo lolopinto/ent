@@ -22,7 +22,6 @@ import {
 } from "../../testutils/fake_data/test_helpers";
 
 import { IndexLoaderFactory } from "./index_loader";
-import { type } from "os";
 // most of this is copied from assoc_edge_loader.test.ts and changed to work for this
 
 const ml = new MockLogs();
@@ -438,8 +437,6 @@ async function testMultiQueryDataOffset(
     if (i > 0) {
       expContacts = [(m.get(user.id) || [])[1]];
     }
-    //    console.debug(edges, expContacts);
-    //    if (i !=0)
     expect(
       edges[i].length,
       `count for idx ${i} for id ${ids[0]} was not as expected`,

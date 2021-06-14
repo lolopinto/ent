@@ -1,10 +1,4 @@
-import {
-  Loader,
-  LoaderFactory,
-  Context,
-  DataOptions,
-  SelectDataOptions,
-} from "../base";
+import { Loader, LoaderFactory, Context, DataOptions } from "../base";
 import { log } from "../logger";
 
 // this is like factory factory FML

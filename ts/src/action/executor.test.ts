@@ -25,7 +25,7 @@ import {
   SimpleAction,
 } from "../testutils/builder";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
-import { BaseEntSchema, Field, SchemaInputType } from "../schema";
+import { BaseEntSchema, Field } from "../schema";
 import {
   StringType,
   TimestampType,
@@ -128,8 +128,7 @@ jest.spyOn(action, "saveBuilder").mockImplementation(saveBuilder);
 async function saveBuilder<T extends Ent>(builder: Builder<T>): Promise<void> {
   const changeset = await builder.build();
   const executor = changeset.executor();
-  const ops = await executeOperations(executor, builder.viewer.context, true);
-  operations = ops;
+  operations = await executeOperations(executor, builder.viewer.context, true);
 }
 
 async function executeAction<T extends Ent, E = any>(
@@ -140,12 +139,11 @@ async function executeAction<T extends Ent, E = any>(
   if (name !== undefined) {
     expect(exec).toBeInstanceOf(name);
   }
-  const ops = await executeOperations(
+  operations = await executeOperations(
     exec,
     action.builder.viewer.context,
     true,
   );
-  operations = ops;
   return exec;
 }
 

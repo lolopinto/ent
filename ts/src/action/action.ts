@@ -15,7 +15,6 @@ import {
 } from "../core/ent";
 import { Queryer } from "../core/db";
 import { log } from "../core/logger";
-import { executeOperations } from "./executor";
 
 export enum WriteOperation {
   Insert = "insert",

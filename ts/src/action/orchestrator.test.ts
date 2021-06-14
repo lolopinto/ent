@@ -35,7 +35,6 @@ import {
   AlwaysAllowRule,
   DenyIfLoggedInRule,
   AlwaysDenyRule,
-  AlwaysAllowPrivacyPolicy,
   DenyIfLoggedOutRule,
 } from "../core/privacy";
 import { edgeDirection } from "./orchestrator";

@@ -2,7 +2,6 @@ import { ID, Ent, Viewer, EdgeQueryableDataOptions, Data } from "../base";
 import { DefaultLimit, getCursor } from "../ent";
 import * as clause from "../clause";
 import memoize from "memoizee";
-import { type } from "os";
 
 export interface EdgeQuery<T extends Ent, TEdge extends Data> {
   // if more than one, the single-version methods should throw
@@ -63,7 +62,6 @@ function assertValidCursor(cursor: string, col: string): number {
   let parts = decoded.split(":");
   // invalid or unknown cursor. nothing to do here.
   if (parts.length !== 2 || parts[0] !== col) {
-    console.debug(parts, col);
     throw new Error(`invalid cursor ${cursor} passed`);
   }
   // TODO check if numeric or not but for now we're only doing numbers

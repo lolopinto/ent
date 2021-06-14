@@ -435,8 +435,6 @@ async function testMultiQueryDataOffset(
     if (i > 0) {
       expContacts = [(m.get(user.id) || [])[1]];
     }
-    //    console.debug(edges, expContacts);
-    //    if (i !=0)
     expect(
       edges[i].length,
       `count for idx ${i} for id ${ids[0]} was not as expected`,

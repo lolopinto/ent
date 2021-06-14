@@ -144,11 +144,7 @@ export default class DB {
   static dialect: Dialect;
 
   private pool: Pool;
-  //  private sqliteDB: SqliteDatabase;
-  // private sqlite: Sqlite;
-  // private postgres: Postgres;
   private q: Connection;
-  //  private sqlite:
   private constructor(public db: DatabaseInfo) {
     if (db.dialect === Dialect.Postgres) {
       this.pool = new Pool(db.config);
@@ -199,8 +195,6 @@ export default class DB {
     if (!clientConfig) {
       throw new Error("could not load client config");
     }
-    // console.debug("new db instance getIntsance");
-    // console.trace();
     DB.instance = new DB(clientConfig);
     DB.dialect = DB.instance.db.dialect;
     return DB.instance;
@@ -223,7 +217,6 @@ export default class DB {
     if (config) {
       DB.instance = new DB(config);
       DB.dialect = DB.instance.db.dialect;
-      //      console.debug("new db instance initDB", DB.instance);
     }
   }
 }
@@ -299,7 +292,6 @@ export class Sqlite implements Connection, SyncClient {
   // returns self
   async newClient() {
     return this;
-    //    return new Sqlite(sqlite(this.db.name));
   }
 
   async query(
@@ -350,7 +342,6 @@ export class Sqlite implements Connection, SyncClient {
   }
 
   execSync(query: string, values?: any[]): ExecResult {
-    //    console.debug("exec", query, values);
     let r: sqlite.RunResult;
     if (values) {
       for (const key in values) {
@@ -363,11 +354,8 @@ export class Sqlite implements Connection, SyncClient {
           values[key] = value.toISOString();
         }
       }
-      //      console.debug(query, values);
       r = this.db.prepare(query).run(values);
     } else {
-      //      console.debug(query);
-      //      console.trace();
       r = this.db.prepare(query).run();
     }
     return {
@@ -383,7 +371,6 @@ export class Sqlite implements Connection, SyncClient {
   async release(err?: Error | boolean) {}
 
   runInTransaction(cb: () => void | Promise<void>) {
-    //    console.debug("sss");
     const tr = this.db.transaction(() => {
       cb();
     });

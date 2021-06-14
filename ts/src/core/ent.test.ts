@@ -27,7 +27,6 @@ import { TestContext } from "../testutils/context/test_context";
 import { ObjectLoaderFactory } from "./loaders";
 import { validate as validatev4 } from "uuid";
 import {
-  integer,
   table,
   text,
   setupSqlite,

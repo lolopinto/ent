@@ -428,7 +428,6 @@ function commonTests() {
     ml.clear();
 
     await newUserPhoneLoader.createLoader(ctx).load(user.phoneNumber);
-    //  console.debug(user.phoneNumber);
     expect(ml.logs.length).toBe(1);
 
     const phoneQuery = buildQuery({

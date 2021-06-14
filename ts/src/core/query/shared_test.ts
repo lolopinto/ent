@@ -477,7 +477,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       await filter.testAll();
     });
   });
-  // TODO
+
   test("first. after each cursor", async () => {
     let [user, contacts] = await createAllContacts();
     contacts = contacts.reverse();

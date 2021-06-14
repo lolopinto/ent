@@ -4,7 +4,6 @@ import {
   table,
   text,
   setupSqlite,
-  assoc_edge_config_table,
   timestamp,
 } from "../testutils/db/test_db";
 import {

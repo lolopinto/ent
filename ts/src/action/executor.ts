@@ -1,4 +1,4 @@
-import { ID, Ent, Viewer, EntConstructor, Context, Data } from "../core/base";
+import { ID, Ent, Viewer, EntConstructor, Context } from "../core/base";
 import { DataOperation } from "../core/ent";
 import { Changeset, Executor } from "../action";
 import { Builder } from "../action";
@@ -229,7 +229,6 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     this.mapper.set(placeholderID, createdEnt);
   }
 
-  // lesigh. this doesn't work with the new format
   next(): IteratorResult<DataOperation> {
     if (this.lastOp) {
       this.handleCreatedEnt();
@@ -294,7 +293,6 @@ function isSyncClient(client: Client): client is SyncClient {
   return (client as SyncClient).execSync !== undefined;
 }
 
-// TODO flag to keep track of operations
 export async function executeOperations(
   executor: Executor,
   context?: Context,

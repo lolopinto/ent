@@ -188,71 +188,6 @@ export class QueryRecorder {
     return QueryRecorder.queries;
   }
 
-  static validateQueriesInTx(expected: queryOptions[], ent: Ent | null) {
-    expected.unshift({ query: "BEGIN" });
-    expected.push({ query: "COMMIT" });
-    this.validateQueryOrder(expected, ent);
-  }
-
-  static validateFailedQueriesInTx(expected: queryOptions[], ent: Ent | null) {
-    expected.unshift({ query: "BEGIN" });
-    expected.push({ query: "ROLLBACK" });
-    this.validateQueryOrder(expected, ent);
-  }
-
-  static validateQueryOrder(expected: queryOptions[], ent: Ent | null) {
-    //    return;
-    let queries = QueryRecorder.queries;
-    //    console.log(queries, expected);
-    expect(queries.length).toBe(expected.length);
-
-    for (let i = 0; i < expected.length; i++) {
-      expect(queries[i].query, `${i}th query`).toBe(expected[i].query);
-
-      if (expected[i].values === undefined) {
-        expect(queries[i].values, `${i}th query`).toBe(undefined);
-      } else {
-        let expectedVals = expected[i].values!;
-        let actualVals = queries[i].values!;
-        expect(actualVals.length, `${i}th query`).toBe(expectedVals.length);
-
-        for (let j = 0; j < expectedVals.length; j++) {
-          let expectedVal = expectedVals[j];
-          let actualVal = actualVals[j];
-
-          if (expectedVal === "{id}") {
-            expectedVal = ent?.id;
-          }
-          expect(actualVal, `${i}th query`).toStrictEqual(expectedVal);
-        }
-      }
-    }
-  }
-
-  static validateQueryStructuresInTx(
-    expected: queryStructure[],
-    pre?: queryStructure[],
-  ) {
-    expected.unshift({ type: queryType.BEGIN });
-    expected.push({ type: queryType.COMMIT });
-    // we don't care about reads so skipping them for now.
-    let pre2 = pre || [];
-    expected.unshift(...pre2);
-    this.validateQueryStructures(expected, true);
-  }
-
-  static validateFailedQueryStructuresInTx(
-    expected: queryStructure[],
-    pre?: queryStructure[],
-  ) {
-    expected.unshift({ type: queryType.BEGIN });
-    expected.push({ type: queryType.ROLLBACK });
-    // we don't care about reads so skipping them for now.
-    let pre2 = pre || [];
-    expected.unshift(...pre2);
-    this.validateQueryStructures(expected, true);
-  }
-
   static validateQueryStructuresFromLogs(
     ml: MockLogs,
     expected: queryStructure[],
@@ -270,17 +205,6 @@ export class QueryRecorder {
     });
 
     QueryRecorder.validateQuryStructuresImpl(expected, queries, skipSelect);
-  }
-
-  static validateQueryStructures(
-    expected: queryStructure[],
-    skipSelect: boolean,
-  ) {
-    QueryRecorder.validateQuryStructuresImpl(
-      expected,
-      QueryRecorder.queries,
-      skipSelect,
-    );
   }
 
   private static validateQuryStructuresImpl(

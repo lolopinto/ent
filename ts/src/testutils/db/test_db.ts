@@ -1,7 +1,5 @@
 import { Client as PGClient } from "pg";
 import DB, { Sqlite, Dialect, Client, SyncClient } from "../../core/db";
-// import { open, Database } from "sqlite";
-// import sqlite3 from "sqlite3";
 import sqlite, { Database as SqliteDatabase } from "better-sqlite3";
 import { loadConfig } from "../../core/config";
 import * as fs from "fs";
@@ -470,6 +468,7 @@ function buildOpts(f: Field): options {
     ret.nullable = true;
   }
   if (f.foreignKey !== undefined) {
+    console.error("TODO:foreign key not yet converted");
     //    ret.foreignKey =
   }
   if (f.serverDefault) {
