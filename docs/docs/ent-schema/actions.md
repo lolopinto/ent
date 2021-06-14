@@ -61,7 +61,7 @@ actions: Action[] = [
 }
 ```
 
-That adds a `eventCreate`, `eventEdit` and `deleteEvent` action with all the editable fields showing up in the create and delete actions.
+That adds a `eventCreate`, `eventEdit` and `eventDelete` action with all the editable fields showing up in the create and delete actions.
 
 And over time as the product evolves, the action(s) can be configured and updated to simplify or make things more complicated.
 
