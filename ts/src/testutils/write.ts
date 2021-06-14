@@ -14,7 +14,11 @@ import {
   deleteRowsSync,
 } from "../core/ent";
 import * as clause from "../core/clause";
-import DB, { Sqlite, SyncQueryer } from "../core/db";
+import DB, { Sqlite, SyncQueryer, Client, SyncClient } from "../core/db";
+
+function isSyncClient(client: Client): client is SyncClient {
+  return (client as SyncClient).execSync !== undefined;
+}
 
 export async function createRowForTest(
   options: CreateRowOptions,
@@ -23,7 +27,7 @@ export async function createRowForTest(
   const client = await DB.getInstance().getNewClient();
 
   try {
-    if (client instanceof Sqlite) {
+    if (isSyncClient(client)) {
       return createRowSync(client, options, suffix || "");
     }
     return await createRow(client, options, suffix || "");
@@ -40,8 +44,7 @@ export async function editRowForTest(
   const client = await DB.getInstance().getNewClient();
 
   try {
-    // TODO instanceof Sqlite is terrible here
-    if (client instanceof Sqlite) {
+    if (isSyncClient(client)) {
       return editRowSync(client, options, id, suffix || "");
     }
     return await editRow(client, options, id, suffix);
@@ -57,7 +60,7 @@ export async function deleteRowsForTest(
   const client = await DB.getInstance().getNewClient();
 
   try {
-    if (client instanceof Sqlite) {
+    if (isSyncClient(client)) {
       return deleteRowsSync(client, options, cls);
     }
     return await deleteRows(client, options, cls);

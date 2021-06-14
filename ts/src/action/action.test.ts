@@ -41,22 +41,22 @@ afterEach(() => {
   assocEdgeLoader.clearAll();
 });
 
-// describe("postgres", () => {
-//   beforeAll(() => {
-//     ml.mock();
-//     setLogLevels(["query", "error", "debug"]);
-//   });
+describe("postgres", () => {
+  beforeAll(() => {
+    ml.mock();
+    setLogLevels(["query", "error", "debug"]);
+  });
 
-//   afterAll(() => {
-//     ml.restore();
-//   });
+  afterAll(() => {
+    ml.restore();
+  });
 
-//   afterEach(() => {
-//     ml.clear();
-//     QueryRecorder.clear();
-//   });
-//   commonTests();
-// });
+  afterEach(() => {
+    ml.clear();
+    QueryRecorder.clear();
+  });
+  commonTests();
+});
 
 describe("sqlite", () => {
   beforeAll(() => {
@@ -230,7 +230,7 @@ function commonTests() {
     augmentAndVerifyLogs(ent.id, expectedLogs);
   });
 
-  test.only("new ent with edge", async () => {
+  test("new ent with edge", async () => {
     const date = new Date();
     const builder = getUserCreateBuilder();
     const id2 = QueryRecorder.newID();
@@ -246,7 +246,6 @@ function commonTests() {
       lastIdx = 3;
       expect(ml.logs[2]).toEqual(selectQuery);
     }
-    console.debug(ml.logs);
     expect(ml.logs.length).toEqual(expLength);
     expect(ml.logs[0].query).toMatch(/SELECT (.+) FROM assoc_edge_config/);
     expect(ml.logs[1]).toEqual(getInsertQuery(ent.id));

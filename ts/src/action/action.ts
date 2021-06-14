@@ -5,6 +5,7 @@ import {
   ID,
   Data,
   PrivacyPolicy,
+  Context,
 } from "../core/base";
 import {
   DataOperation,
@@ -12,9 +13,9 @@ import {
   AssocEdge,
   AssocEdgeInputOptions,
 } from "../core/ent";
-import DB, { Client, SyncClient } from "../core/db";
+import { Queryer } from "../core/db";
 import { log } from "../core/logger";
-import { exec } from "child_process";
+import { executeOperations } from "./executor";
 
 export enum WriteOperation {
   Insert = "insert",
@@ -38,6 +39,11 @@ export interface Executor
   placeholderID: ID;
   // this returns a non-privacy checked "ent"
   resolveValue(val: any): Ent | null;
+  execute(): Promise<void>;
+
+  // these 3 are to help chained/contained executors
+  preFetch?(queryer: Queryer, context?: Context): Promise<void>;
+  postFetch?(queryer: Queryer, context?: Context): Promise<void>;
   executeObservers?(): Promise<void>;
 }
 
@@ -109,88 +115,6 @@ export async function saveBuilderX<T extends Ent>(
   await saveBuilderImpl(builder, true);
 }
 
-function isSyncClient(client: Client): client is SyncClient {
-  return (client as SyncClient).execSync !== undefined;
-}
-
-// exposed to tests...
-export async function executeOperations<T extends Ent>(
-  executor: Executor,
-  builder: Builder<T>,
-  throwErr?: boolean,
-) {
-  console.debug("execute");
-  const client = await DB.getInstance().getNewClient();
-  const context = builder.viewer.context;
-
-  let error = false;
-  try {
-    let prefetches: Promise<void>[] = [];
-    const operations: DataOperation[] = [];
-    for (const operation of executor) {
-      operations.push(operation);
-      if (operation.preFetch) {
-        prefetches.push(operation.preFetch(client, context));
-      }
-    }
-    if (prefetches.length) {
-      await Promise.all(prefetches);
-    }
-    console.debug(operations, operations.length);
-
-    if (isSyncClient(client)) {
-      console.debug("sync client");
-      client.runInTransaction(() => {
-        for (const operation of operations) {
-          if (operation.resolve) {
-            operation.resolve(executor);
-          }
-          operation.performWriteSync(client, context);
-        }
-      });
-    } else {
-      await client.query("BEGIN");
-      for (const operation of operations) {
-        // resolve any placeholders before writes
-        if (operation.resolve) {
-          operation.resolve(executor);
-        }
-
-        await operation.performWrite(client, context);
-      }
-      await client.query("COMMIT");
-    }
-
-    const postfetches: Promise<void>[] = [];
-    for (const operation of operations) {
-      if (operation.postFetch) {
-        console.debug("psotfetch");
-        postfetches.push(operation.postFetch(client, context));
-      }
-    }
-    if (postfetches) {
-      await Promise.all(postfetches);
-    }
-  } catch (e) {
-    console.debug(e);
-    error = true;
-    if (!isSyncClient(client)) {
-      await client.query("ROLLBACK");
-    }
-    log("error", e);
-    // rethrow the exception to be caught
-    if (throwErr) {
-      throw e;
-    }
-  } finally {
-    client.release();
-  }
-
-  if (!error && executor.executeObservers) {
-    await executor.executeObservers();
-  }
-}
-
 async function saveBuilderImpl<T extends Ent>(
   builder: Builder<T>,
   throwErr: boolean,
@@ -208,7 +132,15 @@ async function saveBuilderImpl<T extends Ent>(
     }
   }
   const executor = changeset!.executor();
-  await executeOperations(executor, builder);
+  if (throwErr) {
+    return executor.execute();
+  } else {
+    try {
+      return executor.execute();
+    } catch (e) {
+      // it's already caught and logged upstream
+    }
+  }
 }
 
 // Orchestrator in orchestrator.ts in generated Builders

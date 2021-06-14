@@ -3,8 +3,6 @@ import * as fs from "fs";
 import { load } from "js-yaml";
 import { log } from "./logger";
 import { DateTime } from "luxon";
-//import { open, Database as SqliteDatabase } from "sqlite";
-//import sqlite3 from "sqlite3";
 import sqlite, { Database as SqliteDatabase } from "better-sqlite3";
 
 export interface Database {
@@ -265,11 +263,11 @@ export interface Connection extends Queryer {
   close(): Promise<void>;
 }
 
-interface QueryResultRow {
+export interface QueryResultRow {
   [column: string]: any;
 }
 
-interface QueryResult<R extends QueryResultRow = any> {
+export interface QueryResult<R extends QueryResultRow = any> {
   rows: R[];
   rowCount: number;
   // postgres fields
@@ -312,8 +310,8 @@ export class Sqlite implements Connection, SyncClient {
   }
 
   querySync(query: string, values?: any[]): QueryResult<QueryResultRow> {
-    //    this.db.transaction;
     let r: sqlite.RunResult;
+
     if (values) {
       r = this.db.prepare(query).get(values);
     } else {

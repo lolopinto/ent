@@ -10,9 +10,9 @@ import {
   Observer,
 } from "../action";
 import * as action from "../action";
-import { executeOperations } from "../action/action";
+import { executeOperations } from "../action/executor";
 
-import DB, { Dialect } from "../core/db";
+import { Dialect } from "../core/db";
 
 import { Pool } from "pg";
 import { QueryRecorder, queryType } from "../testutils/db_mock";
@@ -45,8 +45,6 @@ import {
   getSchemaTable,
   setupSqlite,
   Table,
-  table,
-  text,
 } from "../testutils/db/test_db";
 
 jest.mock("pg");
@@ -125,13 +123,13 @@ describe("sqlite", () => {
   commonTests();
 });
 
-// TODO: why do we still need these???
 jest.spyOn(action, "saveBuilder").mockImplementation(saveBuilder);
 
 async function saveBuilder<T extends Ent>(builder: Builder<T>): Promise<void> {
   const changeset = await builder.build();
   const executor = changeset.executor();
-  await executeOperations(executor, builder, true);
+  const ops = await executeOperations(executor, builder.viewer.context, true);
+  operations = ops;
 }
 
 async function executeAction<T extends Ent, E = any>(
@@ -142,7 +140,12 @@ async function executeAction<T extends Ent, E = any>(
   if (name !== undefined) {
     expect(exec).toBeInstanceOf(name);
   }
-  await executeOperations(exec, action.builder, true);
+  const ops = await executeOperations(
+    exec,
+    action.builder.viewer.context,
+    true,
+  );
+  operations = ops;
   return exec;
 }
 
@@ -301,8 +304,19 @@ function randomEmail(): string {
 
 function commonTests() {
   test("empty", async () => {
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      new UserSchema(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+    );
+    const user = await action.saveX();
+    ml.clear();
+
     const viewer = new LoggedOutViewer();
-    const user = new User(viewer, { id: "1" });
 
     const builder = new SimpleBuilder(
       viewer,
@@ -432,7 +446,6 @@ function commonTests() {
       expect(e.message).toBe(
         `couldn't resolve field \`user_id\` with value ${userBuilder.placeholderID}`,
       );
-      expect(operations.length).toBe(1);
     }
   });
 

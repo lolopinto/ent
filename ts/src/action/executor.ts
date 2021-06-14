@@ -1,9 +1,11 @@
-import { ID, Ent, Viewer, EntConstructor } from "../core/base";
+import { ID, Ent, Viewer, EntConstructor, Context, Data } from "../core/base";
 import { DataOperation } from "../core/ent";
 import { Changeset, Executor } from "../action";
 import { Builder } from "../action";
 import Graph from "graph-data-structure";
 import { OrchestratorOptions } from "./orchestrator";
+import DB, { Client, Queryer, SyncClient } from "../core/db";
+import { log } from "../core/logger";
 
 // private to ent
 export class ListBasedExecutor<T extends Ent> implements Executor {
@@ -57,6 +59,32 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
         observer.observe(builder, action.getInput());
       }),
     );
+  }
+
+  async execute(): Promise<void> {
+    await executeOperations(this, this.viewer.context);
+  }
+
+  async preFetch?(queryer: Queryer, context: Context): Promise<void> {
+    const prefetches: Promise<void>[] = [];
+
+    for (const op of this.operations) {
+      if (op.preFetch) {
+        prefetches.push(op.preFetch(queryer, context));
+      }
+    }
+    await Promise.all(prefetches);
+  }
+
+  async postFetch?(queryer: Queryer, context: Context): Promise<void> {
+    const postfetches: Promise<void>[] = [];
+
+    for (const op of this.operations) {
+      if (op.postFetch) {
+        postfetches.push(op.postFetch(queryer, context));
+      }
+    }
+    await Promise.all(postfetches);
   }
 }
 
@@ -234,4 +262,95 @@ export class ComplexExecutor<T extends Ent> implements Executor {
       }),
     );
   }
+
+  async execute(): Promise<void> {
+    await executeOperations(this, this.viewer.context);
+  }
+
+  async preFetch?(queryer: Queryer, context: Context): Promise<void> {
+    const prefetches: Promise<void>[] = [];
+
+    for (const exec of this.executors) {
+      if (exec.preFetch) {
+        prefetches.push(exec.preFetch(queryer, context));
+      }
+    }
+    await Promise.all(prefetches);
+  }
+
+  async postFetch?(queryer: Queryer, context: Context): Promise<void> {
+    const postfetches: Promise<void>[] = [];
+
+    for (const exec of this.executors) {
+      if (exec.postFetch) {
+        postfetches.push(exec.postFetch(queryer, context));
+      }
+    }
+    await Promise.all(postfetches);
+  }
+}
+
+function isSyncClient(client: Client): client is SyncClient {
+  return (client as SyncClient).execSync !== undefined;
+}
+
+// TODO flag to keep track of operations
+export async function executeOperations(
+  executor: Executor,
+  context?: Context,
+  trackOps?: true,
+) {
+  const client = await DB.getInstance().getNewClient();
+
+  const operations: DataOperation[] = [];
+  try {
+    if (executor.preFetch) {
+      await executor.preFetch(client, context);
+    }
+
+    if (isSyncClient(client)) {
+      client.runInTransaction(() => {
+        for (const operation of executor) {
+          if (trackOps) {
+            operations.push(operation);
+          }
+          if (operation.resolve) {
+            operation.resolve(executor);
+          }
+          operation.performWriteSync(client, context);
+        }
+      });
+    } else {
+      await client.query("BEGIN");
+      for (const operation of executor) {
+        if (trackOps) {
+          operations.push(operation);
+        }
+        // resolve any placeholders before writes
+        if (operation.resolve) {
+          operation.resolve(executor);
+        }
+
+        await operation.performWrite(client, context);
+      }
+      await client.query("COMMIT");
+    }
+
+    if (executor.postFetch) {
+      await executor.postFetch(client, context);
+    }
+
+    if (executor.executeObservers) {
+      await executor.executeObservers();
+    }
+  } catch (e) {
+    if (!isSyncClient(client)) {
+      await client.query("ROLLBACK");
+    }
+    log("error", e);
+    throw e;
+  } finally {
+    client.release();
+  }
+  return operations;
 }
