@@ -2,3 +2,5 @@
 
 export * from "src/graphql/resolvers/generated/node_query_type";
 export * from "src/graphql/resolvers/generated/account_type";
+export * from "src/graphql/resolvers/generated/todo_type";
+export * from "src/graphql/resolvers/generated/account/account_to_todos_connection_type";

@@ -2,11 +2,51 @@ type Account implements Node {
   id: ID!
   name: String!
   phoneNumber: String!
+  todos(first: Int, after: String, last: Int, before: String): AccountToTodosConnection!
 }
 
 """node interface"""
 interface Node {
   id: ID!
+}
+
+type Todo implements Node {
+  creator: Account
+  id: ID!
+  text: String!
+  completed: Boolean!
+}
+
+type AccountToTodosConnection implements Connection {
+  edges: [AccountToTodosEdge!]!
+  nodes: [Todo!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+"""connection interface"""
+interface Connection {
+  edges: [Edge!]!
+  nodes: [Node!]!
+  pageInfo: PageInfo!
+}
+
+"""edge interface"""
+interface Edge {
+  node: Node!
+  cursor: String!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String!
+  endCursor: String!
+}
+
+type AccountToTodosEdge implements Edge {
+  node: Todo!
+  cursor: String!
 }
 
 input AccountCreateInput {

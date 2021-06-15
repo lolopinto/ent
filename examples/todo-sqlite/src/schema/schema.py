@@ -15,6 +15,19 @@ sa.Table("accounts", metadata,
     sa.PrimaryKeyConstraint("id", name="accounts_id_pkey"),
     sa.UniqueConstraint("phone_number", name="accounts_unique_phone_number"),
 )
+   
+sa.Table("todos", metadata,
+    sa.Column("id", sa.Text(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("text", sa.Text(), nullable=False),
+    sa.Column("completed", sa.Boolean(), nullable=False),
+    sa.Column("creator_id", sa.Text(), nullable=False),
+    sa.Index("todos_completed_idx", "completed"),
+    sa.Index("todos_creator_id_idx", "creator_id"),
+    sa.PrimaryKeyConstraint("id", name="todos_id_pkey"),
+    sa.ForeignKeyConstraint(["creator_id"], ["accounts.id"], name="todos_creator_id_fkey", ondelete="CASCADE"),
+)
   
 
 metadata.info["edges"] = {

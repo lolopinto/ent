@@ -16,7 +16,7 @@ import {
   loadEnts,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
-import { NodeType } from "src/ent/internal";
+import { AccountToTodosQuery, NodeType } from "src/ent/internal";
 import schema from "src/schema/account";
 
 const tableName = "accounts";
@@ -150,6 +150,10 @@ export class AccountBase {
 
   static getField(key: string): Field | undefined {
     return AccountBase.getSchemaFields().get(key);
+  }
+
+  queryTodos(): AccountToTodosQuery {
+    return AccountToTodosQuery.query(this.viewer, this.id);
   }
 }
 

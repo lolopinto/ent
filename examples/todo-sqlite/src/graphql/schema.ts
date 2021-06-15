@@ -15,13 +15,19 @@ import {
 } from "src/graphql/mutations/generated/account/account_edit_type";
 import { MutationType } from "src/graphql/mutations/generated/mutation_type";
 import { QueryType } from "src/graphql/resolvers/generated/query_type";
-import { AccountType } from "./resolvers";
+import {
+  AccountToTodosConnectionType,
+  AccountType,
+  TodoType,
+} from "./resolvers";
 
 export default new GraphQLSchema({
   query: QueryType,
   mutation: MutationType,
   types: [
     AccountType,
+    TodoType,
+    AccountToTodosConnectionType(),
     AccountCreateInputType,
     AccountCreatePayloadType,
     AccountDeleteInputType,

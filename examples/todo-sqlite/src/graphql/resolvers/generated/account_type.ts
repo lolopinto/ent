@@ -3,13 +3,19 @@
 import {
   GraphQLFieldConfigMap,
   GraphQLID,
+  GraphQLInt,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
-import { GraphQLNodeInterface, nodeIDEncoder } from "@lolopinto/ent/graphql";
-import { Account } from "src/ent/";
+import {
+  GraphQLEdgeConnection,
+  GraphQLNodeInterface,
+  nodeIDEncoder,
+} from "@lolopinto/ent/graphql";
+import { Account, AccountToTodosQuery } from "src/ent/";
+import { AccountToTodosConnectionType } from "src/graphql/resolvers/internal";
 
 export const AccountType = new GraphQLObjectType({
   name: "Account",
@@ -23,6 +29,35 @@ export const AccountType = new GraphQLObjectType({
     },
     phoneNumber: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    todos: {
+      type: GraphQLNonNull(AccountToTodosConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (account: Account, args: {}, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          account.viewer,
+          account,
+          (v, account: Account) => AccountToTodosQuery.query(v, account),
+          args,
+        );
+      },
     },
   }),
   interfaces: [GraphQLNodeInterface],
