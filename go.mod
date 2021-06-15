@@ -15,6 +15,7 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/khaiql/dbcleaner v2.3.0+incompatible
 	github.com/lib/pq v1.0.0
+	github.com/mattn/go-sqlite3 v1.14.7 // indirect
 	github.com/nyaruka/phonenumbers v1.0.54
 	github.com/onsi/ginkgo v1.12.0 // indirect
 	github.com/onsi/gomega v1.9.0 // indirect
