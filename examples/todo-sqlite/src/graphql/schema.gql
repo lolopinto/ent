@@ -1,0 +1,14 @@
+type Account implements Node {
+  id: ID!
+  name: String!
+  phoneNumber: String!
+}
+
+"""node interface"""
+interface Node {
+  id: ID!
+}
+
+type Query {
+  node(id: ID!): Node
+}
