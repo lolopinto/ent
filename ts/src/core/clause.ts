@@ -1,3 +1,7 @@
+import DB, { Dialect } from "./db";
+
+// NOTE: we use ? for sqlite dialect even though it supports $1 like postgres so that it'll be easier to support different dialects down the line
+
 export interface Clause {
   clause(idx: number): string;
   values(): any[];
@@ -28,7 +32,10 @@ class simpleClause implements Clause {
   constructor(protected col: string, private value: any, private op: string) {}
 
   clause(idx: number): string {
-    return `${this.col} ${this.op} $${idx}`;
+    if (DB.getDialect() === Dialect.Postgres) {
+      return `${this.col} ${this.op} $${idx}`;
+    }
+    return `${this.col} ${this.op} ?`;
   }
 
   values(): any[] {
@@ -54,11 +61,19 @@ class inClause implements Clause {
   constructor(private col: string, private value: any[]) {}
 
   clause(idx: number): string {
-    let indices: string[] = [];
-    for (let i = 0; i < this.value.length; i++) {
-      indices.push(`$${idx}`);
-      idx++;
+    const dialect = DB.getDialect();
+    let indices: string[];
+    if (dialect === Dialect.Postgres) {
+      indices = [];
+      for (let i = 0; i < this.value.length; i++) {
+        indices.push(`$${idx}`);
+        idx++;
+      }
+    } else {
+      indices = new Array(this.value.length);
+      indices.fill("?", 0);
     }
+
     const inValue = indices.join(", ");
     return `${this.col} IN (${inValue})`;
     // TODO we need to return idx at end to query builder...

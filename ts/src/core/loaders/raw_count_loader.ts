@@ -38,7 +38,8 @@ export function createCountDataLoader(
       }
       const row = await loadRow({
         ...options,
-        fields: ["count(1)"],
+        // sqlite needs as count otherwise it returns count(1)
+        fields: ["count(1) as count"],
         clause: cls,
       });
       return [parseInt(row?.count, 10) || 0];
@@ -58,7 +59,7 @@ export function createCountDataLoader(
 
     const rowOptions: LoadRowOptions = {
       ...options,
-      fields: ["count(1)", col],
+      fields: ["count(1) as count", col],
       groupby: col,
       clause: cls,
     };
@@ -100,7 +101,7 @@ export class RawCountLoader implements Loader<ID, number> {
 
     const row = await loadRow({
       ...this.options,
-      fields: ["count(1)"],
+      fields: ["count(1) as count"],
       clause: clause.Eq(this.col, id),
     });
     return parseInt(row?.count, 10) || 0;

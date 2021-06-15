@@ -7,8 +7,8 @@ import {
   leftPad,
   DateType,
   TimestamptzType,
-} from "../schema/field";
-import { BaseEntSchema, Schema, Field } from "../schema";
+} from "./field";
+import { BaseEntSchema, Schema, Field } from ".";
 import { User, SimpleAction } from "../testutils/builder";
 import {
   table,
@@ -111,7 +111,7 @@ async function createUsersWithTZ() {
 
 let tdb: TempDB;
 beforeAll(async () => {
-  tdb = new TempDB();
+  tdb = new TempDB([]);
 
   await tdb.beforeAll();
 });
@@ -523,9 +523,7 @@ test("timestamptz copy", async () => {
 
   const file = path.join(
     process.cwd(),
-    Math.random()
-      .toString(16)
-      .substring(2),
+    Math.random().toString(16).substring(2),
   );
 
   const tzType = TimestamptzType({
@@ -546,7 +544,7 @@ test("timestamptz copy", async () => {
   fs.writeFileSync(file, lines.join("\n"));
 
   try {
-    const client = tdb.getDBClient();
+    const client = tdb.getPostgresClient();
 
     const query = `COPY users (${rows[0].join(",")}) FROM '${file}' CSV HEADER`;
     await client.query(query);

@@ -1,6 +1,7 @@
 import { Pool } from "pg";
 import { IDViewer } from "../../core/viewer";
 import { Viewer, Data, Ent } from "../../core/base";
+import { getCursor } from "../../core/ent";
 import { QueryRecorder } from "../../testutils/db_mock";
 import { GraphQLEdgeConnection } from "./edge_connection";
 import { FakeUser, FakeContact } from "../../testutils/fake_data/index";
@@ -14,7 +15,9 @@ QueryRecorder.mockPool(Pool);
 
 class TestConnection<TEdge extends Data> {
   private user: FakeUser;
-  private contacts: FakeContact[];
+  private allContacts: FakeContact[];
+  private filteredContacts: FakeContact[] = [];
+
   conn: GraphQLEdgeConnection<TEdge>;
   constructor(
     private getQuery: (
@@ -25,20 +28,22 @@ class TestConnection<TEdge extends Data> {
     private filter?: (
       conn: GraphQLEdgeConnection<TEdge>,
       user: FakeUser,
+      contacts: FakeContact[],
     ) => void,
   ) {}
 
   async beforeEach() {
-    [this.user, this.contacts] = await createAllContacts();
+    [this.user, this.allContacts] = await createAllContacts();
+    this.allContacts = this.allContacts.reverse();
     this.conn = new GraphQLEdgeConnection<TEdge>(
       new IDViewer(this.user.id),
       this.user,
       (v, user: FakeUser) => this.getQuery(v, user),
     );
     if (this.filter) {
-      this.filter(this.conn, this.user);
+      this.filter(this.conn, this.user, this.allContacts);
     }
-    this.contacts = this.ents(this.contacts);
+    this.filteredContacts = this.ents(this.allContacts);
   }
 
   async testTotalCount() {
@@ -48,19 +53,21 @@ class TestConnection<TEdge extends Data> {
 
   async testNodes() {
     const nodes = await this.conn.queryNodes();
-    expect(nodes.length).toBe(this.contacts.length);
-    for (let i = 0; i < this.contacts.length; i++) {
-      expect(nodes[i].id).toBe(this.contacts[i].id);
+    expect(nodes.length).toBe(this.filteredContacts.length);
+    for (let i = 0; i < this.filteredContacts.length; i++) {
+      expect(nodes[i].id).toBe(this.filteredContacts[i].id);
     }
   }
 
   async testEdges() {
     const edges = await this.conn.queryEdges();
-    expect(edges.length).toBe(this.contacts.length);
-    for (let i = 0; i < this.contacts.length; i++) {
+    expect(edges.length).toBe(this.filteredContacts.length);
+    for (let i = 0; i < this.filteredContacts.length; i++) {
       const edge = edges[i];
-      expect(edge.node.id).toBe(this.contacts[i].id);
-      expect(this.conn.query.dataToID(edge.edge)).toBe(this.contacts[i].id);
+      expect(edge.node.id).toBe(this.filteredContacts[i].id);
+      expect(this.conn.query.dataToID(edge.edge)).toBe(
+        this.filteredContacts[i].id,
+      );
     }
   }
 }
@@ -68,16 +75,37 @@ class TestConnection<TEdge extends Data> {
 interface options<TEnt extends Ent, TEdge extends Data> {
   getQuery: (v: Viewer, src: Ent) => EdgeQuery<TEnt, TEdge>;
   tableName: string;
-  getFilterFn(user: FakeUser): (row: Data) => boolean;
+  sortCol: string;
 }
 
 export const commonTests = <TEdge extends Data>(
   opts: options<FakeContact, TEdge>,
 ) => {
+  function getCursorFrom(contacts: FakeContact[], idx: number) {
+    // we depend on the fact that the same time is used for the edge and created_at
+    // based on getContactBuilder
+    // so regardless of if we're doing assoc or custom queries, we can get the time
+    // from the created_at field
+    return getCursor({
+      row: contacts[idx],
+      col: "createdAt",
+      conv: (t) => {
+        //sqlite
+        if (typeof t === "string") {
+          return Date.parse(t);
+        }
+        return t.getTime();
+      },
+      // we want the right column to be encoded in the cursor as opposed e.g. time for
+      // assoc queries, created_at for index/custom queries
+      cursorKey: opts.sortCol,
+    });
+  }
+
   describe("no filters", () => {
     const filter = new TestConnection(
       (v, user: FakeUser) => opts.getQuery(v, user),
-      (contacts) => contacts.reverse(),
+      (contacts) => contacts,
     );
 
     beforeEach(async () => {
@@ -106,7 +134,7 @@ export const commonTests = <TEdge extends Data>(
   describe("filters. firstN", () => {
     const filter = new TestConnection(
       (v, user: FakeUser) => opts.getQuery(v, user),
-      (contacts) => contacts.reverse().slice(0, 2),
+      (contacts) => contacts.slice(0, 2),
       (conn: GraphQLEdgeConnection<TEdge>) => {
         conn.first(2);
       },
@@ -142,18 +170,18 @@ export const commonTests = <TEdge extends Data>(
   });
 
   describe("filters. firstN + cursor", () => {
+    const idx = 1;
+    const N = 3;
     const filter = new TestConnection(
       (v, user: FakeUser) => opts.getQuery(v, user),
       // get the next 2
-      (contacts) => contacts.reverse().slice(2, 4),
-      (conn: GraphQLEdgeConnection<TEdge>, user: FakeUser) => {
-        let rows = QueryRecorder.filterData(
-          opts.tableName,
-          opts.getFilterFn(user),
-        ).reverse();
-        // need to reverse
-        const cursor = conn.query.getCursor(rows[1] as TEdge);
-
+      (contacts) => contacts.slice(idx + 1, idx + N),
+      (
+        conn: GraphQLEdgeConnection<TEdge>,
+        user: FakeUser,
+        contacts: FakeContact[],
+      ) => {
+        const cursor = getCursorFrom(contacts, idx);
         conn.first(2, cursor);
       },
     );
@@ -190,20 +218,14 @@ export const commonTests = <TEdge extends Data>(
   describe("filters. before  cursor", () => {
     const filter = new TestConnection(
       (v, user: FakeUser) => opts.getQuery(v, user),
-      (contacts) =>
-        contacts
-          .reverse()
-          // get 2, 3
-          .slice(2, 4)
-          .reverse(),
-      (conn: GraphQLEdgeConnection<TEdge>, user: FakeUser) => {
-        let rows = QueryRecorder.filterData(
-          opts.tableName,
-          opts.getFilterFn(user),
-        ).reverse();
-
+      (contacts) => contacts.slice(2, 4).reverse(),
+      (
+        conn: GraphQLEdgeConnection<TEdge>,
+        user: FakeUser,
+        contacts: FakeContact[],
+      ) => {
         // get the 2 before it
-        const cursor = conn.query.getCursor(rows[4] as TEdge);
+        const cursor = getCursorFrom(contacts, 4);
 
         conn.last(2, cursor);
       },

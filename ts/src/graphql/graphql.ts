@@ -1,13 +1,5 @@
 import "reflect-metadata";
-import {
-  GraphQLScalarType,
-  GraphQLID,
-  GraphQLBoolean,
-  GraphQLInt,
-  GraphQLFloat,
-  GraphQLString,
-} from "graphql";
-import { GraphQLTime } from "./scalars/time";
+import { GraphQLScalarType } from "graphql";
 
 interface ClassType<T = any> {
   new (...args: any[]): T;
@@ -20,13 +12,6 @@ export interface CustomType {
   tsImportPath?: string;
 }
 
-// type knownScalars =
-//   | typeof GraphQLID
-//   | typeof GraphQLInt
-//   | typeof GraphQLFloat
-//   | typeof GraphQLString
-//   | typeof GraphQLTime
-//   | typeof GraphQLBoolean;
 // scalars or classes
 // string for GraphQL name in situation where we can't load the object
 // e.g. User, Contact etc

@@ -418,6 +418,10 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
         if (datum instanceof Date) {
           return datum.getTime();
         }
+        // sqlite stores it as string and doesn't convert back
+        if (typeof datum === "string") {
+          return Date.parse(datum);
+        }
         return datum;
       },
     });

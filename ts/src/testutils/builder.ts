@@ -12,7 +12,7 @@ import {
   saveBuilderX,
   Observer,
 } from "../action";
-import { Schema } from "../schema";
+import { Schema, SchemaInputType } from "../schema";
 import { QueryRecorder } from "./db_mock";
 import pluralize from "pluralize";
 import { snakeCase } from "snake-case";
@@ -25,6 +25,11 @@ export class User implements Ent {
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
   constructor(public viewer: Viewer, public data: Data) {
+    // TODO generalize this. sqlite ish
+    if (typeof data.created_at === "string") {
+      this.data.created_at = new Date(Date.parse(data.created_at));
+      this.data.updated_at = new Date(Date.parse(data.updated_at));
+    }
     this.id = data.id;
   }
 }
@@ -47,6 +52,11 @@ export class Contact implements Ent {
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
   constructor(public viewer: Viewer, public data: Data) {
+    // TODO generalize this. sqlite ish
+    if (typeof data.created_at === "string") {
+      this.data.created_at = new Date(Date.parse(data.created_at));
+      this.data.updated_at = new Date(Date.parse(data.updated_at));
+    }
     this.id = data.id;
   }
 }
@@ -88,10 +98,16 @@ export interface BuilderSchema<T extends Ent> extends Schema {
   ent: EntConstructor<T>;
 }
 
+export function getSchemaName(value: BuilderSchema<Ent>) {
+  return value.ent.name;
+}
+
+export function getTableName(value: BuilderSchema<Ent>) {
+  return pluralize(snakeCase(value.ent.name)).toLowerCase();
+}
+
 function randomNum(): string {
-  return Math.random()
-    .toString(10)
-    .substring(2);
+  return Math.random().toString(10).substring(2);
 }
 
 // reuses orchestrator and standard things
@@ -126,7 +142,7 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
     this.fields = fields;
 
     this.ent = schema.ent;
-    const tableName = pluralize(snakeCase(this.ent.name)).toLowerCase();
+    const tableName = getTableName(schema);
     this.orchestrator = new Orchestrator<T>({
       viewer: this.viewer,
       operation: operation,

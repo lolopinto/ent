@@ -8,32 +8,16 @@ import { buildQuery } from "../ent";
 
 import * as clause from "../clause";
 
-import { TempDB } from "../../testutils/db/test_db";
+import { setupSqlite, TempDB } from "../../testutils/db/test_db";
 import { EdgeType, FakeContact } from "../../testutils/fake_data/index";
 import {
   createAllContacts,
   setupTempDB,
+  tempDBTables,
 } from "../../testutils/fake_data/test_helpers";
 import { AssocEdgeCountLoader } from "./assoc_count_loader";
 
 const ml = new MockLogs();
-let tdb: TempDB;
-
-beforeAll(async () => {
-  setLogLevels(["query", "error"]);
-  ml.mock();
-
-  tdb = await setupTempDB();
-});
-
-afterEach(() => {
-  ml.clear();
-});
-
-afterAll(async () => {
-  ml.restore();
-  await tdb.afterAll();
-});
 
 const getNewLoader = (context: boolean = true) => {
   return new AssocEdgeCountLoader(
@@ -42,69 +26,110 @@ const getNewLoader = (context: boolean = true) => {
   );
 };
 
-test("with context. cache hit. single id", async () => {
-  await verifySingleIDHit(
-    getNewLoader,
-    verifySingleIDQuery,
-    verifySingleIDCacheHit,
-  );
+describe("postgres", () => {
+  let tdb: TempDB;
+  beforeAll(async () => {
+    setLogLevels(["query", "error"]);
+    ml.mock();
+
+    tdb = await setupTempDB();
+  });
+
+  afterEach(() => {
+    ml.clear();
+  });
+
+  afterAll(async () => {
+    ml.restore();
+    await tdb.afterAll();
+  });
+  commonTests();
 });
 
-test("with context. cache miss. single id", async () => {
-  await verifySingleIDMiss(
-    getNewLoader,
-    verifySingleIDQuery,
-    verifySingleIDCacheHit,
-  );
+describe("sqlite", () => {
+  setupSqlite(`sqlite:///assoc_count_loader.db`, tempDBTables);
+
+  beforeAll(async () => {
+    setLogLevels(["query", "error"]);
+    ml.mock();
+  });
+
+  afterEach(() => {
+    ml.clear();
+  });
+
+  afterAll(async () => {
+    ml.restore();
+  });
+
+  commonTests();
 });
 
-test("without context. cache hit. single id", async () => {
-  await verifySingleIDHit(
-    () => getNewLoader(false),
-    verifySingleIDQuery,
-    verifySingleIDQuery,
-  );
-});
+function commonTests() {
+  test("with context. cache hit. single id", async () => {
+    await verifySingleIDHit(
+      getNewLoader,
+      verifySingleIDQuery,
+      verifySingleIDCacheHit,
+    );
+  });
 
-test("without context. cache miss. single id", async () => {
-  await verifySingleIDMiss(
-    () => getNewLoader(false),
-    verifySingleIDQuery,
-    verifySingleIDQuery,
-  );
-});
+  test("with context. cache miss. single id", async () => {
+    await verifySingleIDMiss(
+      getNewLoader,
+      verifySingleIDQuery,
+      verifySingleIDCacheHit,
+    );
+  });
 
-test("with context. cache hit. multi -ids", async () => {
-  await testMultiQueryDataAvail(
-    getNewLoader,
-    verifyGroupedQuery,
-    verifyGroupedCacheHit,
-  );
-});
+  test("without context. cache hit. single id", async () => {
+    await verifySingleIDHit(
+      () => getNewLoader(false),
+      verifySingleIDQuery,
+      verifySingleIDQuery,
+    );
+  });
 
-test("without context. cache hit. multi -ids", async () => {
-  await testMultiQueryDataAvail(
-    () => getNewLoader(false),
-    verifyMultiCountQueryCacheMiss,
-    verifyMultiCountQueryCacheMiss,
-  );
-});
+  test("without context. cache miss. single id", async () => {
+    await verifySingleIDMiss(
+      () => getNewLoader(false),
+      verifySingleIDQuery,
+      verifySingleIDQuery,
+    );
+  });
 
-test("with context. cache miss. multi -ids", async () => {
-  await testMultiQueryNoData(
-    getNewLoader,
-    verifyGroupedQuery,
-    verifyGroupedCacheHit,
-  );
-});
+  test("with context. cache hit. multi -ids", async () => {
+    await testMultiQueryDataAvail(
+      getNewLoader,
+      verifyGroupedQuery,
+      verifyGroupedCacheHit,
+    );
+  });
 
-test("without context. cache miss. multi -ids", async () => {
-  await testMultiQueryNoData(
-    () => getNewLoader(false),
-    verifyMultiCountQueryCacheMiss,
-    verifyMultiCountQueryCacheMiss,
-  );
-});
+  test("without context. cache hit. multi -ids", async () => {
+    await testMultiQueryDataAvail(
+      () => getNewLoader(false),
+      verifyMultiCountQueryCacheMiss,
+      verifyMultiCountQueryCacheMiss,
+    );
+  });
+
+  test("with context. cache miss. multi -ids", async () => {
+    await testMultiQueryNoData(
+      getNewLoader,
+      verifyGroupedQuery,
+      verifyGroupedCacheHit,
+    );
+  });
+
+  test("without context. cache miss. multi -ids", async () => {
+    await testMultiQueryNoData(
+      () => getNewLoader(false),
+      verifyMultiCountQueryCacheMiss,
+      verifyMultiCountQueryCacheMiss,
+    );
+  });
+}
 
 async function verifySingleIDHit(
   loaderFn: () => AssocEdgeCountLoader,
@@ -159,7 +184,7 @@ function verifySingleIDQuery(id) {
   expect(ml.logs[0]).toStrictEqual({
     query: buildQuery({
       tableName: "user_to_contacts_table",
-      fields: ["count(1)"],
+      fields: ["count(1) as count"],
       clause: clause.And(
         clause.Eq("id1", id),
         clause.Eq("edge_type", EdgeType.UserToContacts),
@@ -249,7 +274,7 @@ function verifyGroupedQuery(ids: ID[]) {
   // loader, we combine the query...
   const expQuery = buildQuery({
     tableName: "user_to_contacts_table",
-    fields: ["count(1)", "id1"],
+    fields: ["count(1) as count", "id1"],
     clause: clause.And(
       clause.In("id1", ...ids),
       clause.Eq("edge_type", EdgeType.UserToContacts),
@@ -279,7 +304,7 @@ function verifyMultiCountQueryCacheMiss(ids: ID[]) {
   ml.logs.forEach((log, idx) => {
     const expQuery = buildQuery({
       tableName: "user_to_contacts_table",
-      fields: ["count(1)"],
+      fields: ["count(1) as count"],
       clause: clause.And(
         clause.Eq("id1", ids[idx]),
         clause.Eq("edge_type", EdgeType.UserToContacts),

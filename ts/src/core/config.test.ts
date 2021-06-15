@@ -1,5 +1,5 @@
 import { loadConfig } from "./config";
-import DB from "./db";
+import DB, { Dialect } from "./db";
 import { logIf } from "./logger";
 import { MockLogs } from "../testutils/mock_log";
 
@@ -7,68 +7,77 @@ afterEach(() => {
   delete process.env.DB_CONNECTION_STRING;
 });
 
-test("db connection string", () => {
-  const connStr = `postgres://:@localhost/ent_test`;
-  loadConfig(Buffer.from(`dbConnectionString: ${connStr}`));
-  const db = DB.getInstance();
-  expect(db.config.connectionString).toEqual(connStr);
-});
+describe("postgres", () => {
+  test("db connection string", () => {
+    const connStr = `postgres://:@localhost/ent_test`;
+    loadConfig(Buffer.from(`dbConnectionString: ${connStr}`));
+    const db = DB.getInstance();
+    expect(db.db.config.connectionString).toEqual(connStr);
+    expect(db.db.dialect).toBe(Dialect.Postgres);
+  });
 
-test("env variable", () => {
-  process.env.DB_CONNECTION_STRING = `postgres://:@localhost/ent_test`;
-  const ml = new MockLogs();
-  ml.mock();
-  loadConfig();
-  ml.restore();
-  expect(ml.errors.length).toEqual(1);
-  expect(ml.errors[0]).toMatch(/^error opening file/);
-  const db = DB.getInstance();
-  expect(db.config.connectionString).toEqual(process.env.DB_CONNECTION_STRING);
-});
+  test("env variable", () => {
+    process.env.DB_CONNECTION_STRING = `postgres://:@localhost/ent_test`;
+    const ml = new MockLogs();
+    ml.mock();
+    loadConfig();
+    ml.restore();
+    expect(ml.errors.length).toEqual(0);
+    const db = DB.getInstance();
+    expect(db.db.config.connectionString).toEqual(
+      process.env.DB_CONNECTION_STRING,
+    );
+    expect(db.db.dialect).toBe(Dialect.Postgres);
+  });
 
-test("env variable + db conn string", () => {
-  process.env.DB_CONNECTION_STRING = `postgres://ola:@localhost/ent_test`;
-  const connStr = `postgres://:@localhost/ent_test`;
-  loadConfig(Buffer.from(`dbConnectionString: ${connStr}`));
+  test("env variable + db conn string", () => {
+    process.env.DB_CONNECTION_STRING = `postgres://ola:@localhost/ent_test`;
+    const connStr = `postgres://:@localhost/ent_test`;
+    loadConfig(Buffer.from(`dbConnectionString: ${connStr}`));
 
-  const db = DB.getInstance();
-  expect(db.config.connectionString).toEqual(process.env.DB_CONNECTION_STRING);
-  expect(connStr).not.toEqual(process.env.DB_CONNECTION_STRING);
-});
+    const db = DB.getInstance();
+    expect(db.db.config.connectionString).toEqual(
+      process.env.DB_CONNECTION_STRING,
+    );
+    expect(connStr).not.toEqual(process.env.DB_CONNECTION_STRING);
+    expect(db.db.dialect).toBe(Dialect.Postgres);
+  });
 
-test("db in config file", () => {
-  const data = `
+  test("db in config file", () => {
+    const data = `
   db:
     database: postgres
     host: localhost  
   `;
-  loadConfig(Buffer.from(data));
-  const db = DB.getInstance();
-  expect(db.config).toStrictEqual({
-    database: "postgres",
-    host: "localhost",
+    loadConfig(Buffer.from(data));
+    const db = DB.getInstance();
+    expect(db.db.config).toStrictEqual({
+      database: Dialect.Postgres,
+      host: "localhost",
+    });
+    expect(db.db.dialect).toBe(Dialect.Postgres);
   });
-});
 
-test("db + conn string in config file", () => {
-  const connStr = `postgres://:@localhost/ent_test`;
+  test("db + conn string in config file", () => {
+    const connStr = `postgres://:@localhost/ent_test`;
 
-  const data = `
+    const data = `
   dbConnectionString: ${connStr}
   db:
     database: postgres
     host: localhost  
   `;
-  loadConfig(Buffer.from(data));
-  const db = DB.getInstance();
-  expect(db.config).toStrictEqual({
-    connectionString: connStr,
+    loadConfig(Buffer.from(data));
+    const db = DB.getInstance();
+    expect(db.db.config).toStrictEqual({
+      connectionString: connStr,
+    });
+    expect(db.db.dialect).toBe(Dialect.Postgres);
   });
-});
 
-test("db scoped to env in config file", () => {
-  expect(process.env.NODE_ENV).toEqual("test");
-  const data = `
+  test("db scoped to env in config file", () => {
+    expect(process.env.NODE_ENV).toEqual("test");
+    const data = `
   db:
     development:
       database: project_development
@@ -77,40 +86,79 @@ test("db scoped to env in config file", () => {
       database: project_test
       host: localhost
   `;
-  loadConfig(Buffer.from(data));
-  const db = DB.getInstance();
-  expect(db.config).toStrictEqual({
-    database: "project_test",
-    host: "localhost",
+    loadConfig(Buffer.from(data));
+    const db = DB.getInstance();
+    expect(db.db.config).toStrictEqual({
+      database: "project_test",
+      host: "localhost",
+    });
+    expect(db.db.dialect).toBe(Dialect.Postgres);
+  });
+
+  test("logger", () => {
+    loadConfig(Buffer.from(`log: info`));
+
+    logIf("error", () => {
+      fail("error logQuery not set. shouldn't be called");
+    });
+
+    logIf("warn", () => {
+      fail("warn logQuery not set. shouldn't be called");
+    });
+
+    logIf("query", () => {
+      fail("query logQuery not set. shouldn't be called");
+    });
+
+    logIf("debug", () => {
+      fail("debug logQuery not set. shouldn't be called");
+    });
+
+    const ml = new MockLogs();
+    ml.mock();
+
+    logIf("info", () => {
+      return "hallo";
+    });
+    ml.restore();
+    expect(ml.logs.length).toBe(1);
+    expect(ml.logs[0]).toBe("hallo");
   });
 });
 
-test("logger", () => {
-  loadConfig(Buffer.from(`log: info`));
-
-  logIf("error", () => {
-    fail("error logQuery not set. shouldn't be called");
+describe("sqlite", () => {
+  test("db connection string", () => {
+    const connStr = `sqlite:///`;
+    loadConfig(Buffer.from(`dbConnectionString: ${connStr}`));
+    const db = DB.getInstance();
+    expect(db.db.config.connectionString).toEqual(connStr);
+    expect(db.db.dialect).toBe(Dialect.SQLite);
   });
 
-  logIf("warn", () => {
-    fail("warn logQuery not set. shouldn't be called");
+  test("env variable", () => {
+    process.env.DB_CONNECTION_STRING = `sqlite:///`;
+    const ml = new MockLogs();
+    ml.mock();
+    loadConfig();
+    ml.restore();
+    expect(ml.errors.length).toEqual(0);
+    const db = DB.getInstance();
+    expect(db.db.config.connectionString).toEqual(
+      process.env.DB_CONNECTION_STRING,
+    );
+    expect(db.db.dialect).toBe(Dialect.SQLite);
   });
 
-  logIf("query", () => {
-    fail("query logQuery not set. shouldn't be called");
-  });
+  test("env variable + db conn string", () => {
+    process.env.DB_CONNECTION_STRING = `sqlite:///`;
+    const connStr = `sqlite:///bar.db`;
+    loadConfig(Buffer.from(`dbConnectionString: ${connStr}`));
 
-  logIf("debug", () => {
-    fail("debug logQuery not set. shouldn't be called");
+    const db = DB.getInstance();
+    expect(db.db.config.connectionString).toEqual(
+      process.env.DB_CONNECTION_STRING,
+    );
+    expect(connStr).not.toEqual(process.env.DB_CONNECTION_STRING);
+    expect(db.db.dialect).toBe(Dialect.SQLite);
   });
-
-  const ml = new MockLogs();
-  ml.mock();
-
-  logIf("info", () => {
-    return "hallo";
-  });
-  ml.restore();
-  expect(ml.logs.length).toBe(1);
-  expect(ml.logs[0]).toBe("hallo");
 });

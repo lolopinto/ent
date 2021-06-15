@@ -5,6 +5,7 @@ import { ID, Ent, Data } from "../core/base";
 import { Clause } from "../core/clause";
 
 import { performQuery, queryResult, getDataToReturn } from "./parse_sql";
+import { MockLogs } from "./mock_log";
 
 const eventEmitter = {
   on: jest.fn(),
@@ -145,6 +146,14 @@ export class QueryRecorder {
     return QueryRecorder.ids;
   }
 
+  static getLastID(): ID {
+    const l = QueryRecorder.ids.length;
+    if (!l) {
+      throw new Error(`no ID`);
+    }
+    return QueryRecorder.ids[l - 1];
+  }
+
   static getData() {
     return QueryRecorder.data;
   }
@@ -179,75 +188,30 @@ export class QueryRecorder {
     return QueryRecorder.queries;
   }
 
-  static validateQueriesInTx(expected: queryOptions[], ent: Ent | null) {
-    expected.unshift({ query: "BEGIN" });
-    expected.push({ query: "COMMIT" });
-    this.validateQueryOrder(expected, ent);
-  }
-
-  static validateFailedQueriesInTx(expected: queryOptions[], ent: Ent | null) {
-    expected.unshift({ query: "BEGIN" });
-    expected.push({ query: "ROLLBACK" });
-    this.validateQueryOrder(expected, ent);
-  }
-
-  static validateQueryOrder(expected: queryOptions[], ent: Ent | null) {
-    let queries = QueryRecorder.queries;
-    //    console.log(queries, expected);
-    expect(queries.length).toBe(expected.length);
-
-    for (let i = 0; i < expected.length; i++) {
-      expect(queries[i].query, `${i}th query`).toBe(expected[i].query);
-
-      if (expected[i].values === undefined) {
-        expect(queries[i].values, `${i}th query`).toBe(undefined);
-      } else {
-        let expectedVals = expected[i].values!;
-        let actualVals = queries[i].values!;
-        expect(actualVals.length, `${i}th query`).toBe(expectedVals.length);
-
-        for (let j = 0; j < expectedVals.length; j++) {
-          let expectedVal = expectedVals[j];
-          let actualVal = actualVals[j];
-
-          if (expectedVal === "{id}") {
-            expectedVal = ent?.id;
-          }
-          expect(actualVal, `${i}th query`).toStrictEqual(expectedVal);
-        }
+  static validateQueryStructuresFromLogs(
+    ml: MockLogs,
+    expected: queryStructure[],
+    skipSelect?: boolean,
+  ) {
+    const queries = ml.logs.map((log) => {
+      const qs = QueryRecorder.getQueryStructure(log.query);
+      if (!qs) {
+        throw new Error(`invalid query ${log.querya}`);
       }
-    }
+      return {
+        query: log.query,
+        qs,
+      };
+    });
+
+    QueryRecorder.validateQuryStructuresImpl(expected, queries, skipSelect);
   }
 
-  static validateQueryStructuresInTx(
+  private static validateQuryStructuresImpl(
     expected: queryStructure[],
-    pre?: queryStructure[],
+    queries: queryOptions[],
+    skipSelect?: boolean,
   ) {
-    expected.unshift({ type: queryType.BEGIN });
-    expected.push({ type: queryType.COMMIT });
-    // we don't care about reads so skipping them for now.
-    let pre2 = pre || [];
-    expected.unshift(...pre2);
-    this.validateQueryStructures(expected, true);
-  }
-
-  static validateFailedQueryStructuresInTx(
-    expected: queryStructure[],
-    pre?: queryStructure[],
-  ) {
-    expected.unshift({ type: queryType.BEGIN });
-    expected.push({ type: queryType.ROLLBACK });
-    // we don't care about reads so skipping them for now.
-    let pre2 = pre || [];
-    expected.unshift(...pre2);
-    this.validateQueryStructures(expected, true);
-  }
-
-  static validateQueryStructures(
-    expected: queryStructure[],
-    skipSelect: boolean,
-  ) {
-    let queries = QueryRecorder.queries;
     if (skipSelect) {
       queries = queries.filter((query) => query.qs?.type !== queryType.SELECT);
     }
@@ -293,40 +257,38 @@ export class QueryRecorder {
 
   static mockPool(pool: typeof Pool) {
     const mockedPool = mocked(pool, true);
-    mockedPool.mockImplementation(
-      (): Pool => {
-        return {
-          totalCount: 1,
-          idleCount: 1,
-          waitingCount: 1,
-          connect: async (): Promise<PoolClient> => {
-            return {
-              connect: jest.fn(),
-              release: jest.fn(),
-              query: jest
-                .fn()
-                .mockImplementation((query: string, values: any[]) => {
-                  return QueryRecorder.recordQuery(query, values);
-                }),
-              copyFrom: jest.fn(),
-              copyTo: jest.fn(),
-              pauseDrain: jest.fn(),
-              resumeDrain: jest.fn(),
-              escapeIdentifier: jest.fn(),
-              escapeLiteral: jest.fn(),
+    mockedPool.mockImplementation((): Pool => {
+      return {
+        totalCount: 1,
+        idleCount: 1,
+        waitingCount: 1,
+        connect: async (): Promise<PoolClient> => {
+          return {
+            connect: jest.fn(),
+            release: jest.fn(),
+            query: jest
+              .fn()
+              .mockImplementation((query: string, values: any[]) => {
+                return QueryRecorder.recordQuery(query, values);
+              }),
+            copyFrom: jest.fn(),
+            copyTo: jest.fn(),
+            pauseDrain: jest.fn(),
+            resumeDrain: jest.fn(),
+            escapeIdentifier: jest.fn(),
+            escapeLiteral: jest.fn(),
 
-              // EventEmitter
-              ...eventEmitter,
-            };
-          },
-          end: jest.fn(),
-          query: jest.fn().mockImplementation(QueryRecorder.recordQuery),
+            // EventEmitter
+            ...eventEmitter,
+          };
+        },
+        end: jest.fn(),
+        query: jest.fn().mockImplementation(QueryRecorder.recordQuery),
 
-          // EventEmitter
-          ...eventEmitter,
-        };
-      },
-    );
+        // EventEmitter
+        ...eventEmitter,
+      };
+    });
   }
 }
 

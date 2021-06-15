@@ -7,7 +7,7 @@ import { AssocEdge, buildQuery, DefaultLimit } from "../ent";
 import * as clause from "../clause";
 
 import { EdgeQueryableDataOptions, ID, Loader } from "../base";
-import { TempDB } from "../../testutils/db/test_db";
+import { setupSqlite, TempDB } from "../../testutils/db/test_db";
 import {
   FakeUser,
   FakeContact,
@@ -16,35 +16,16 @@ import {
 import {
   createAllContacts,
   setupTempDB,
+  tempDBTables,
   verifyUserToContactEdges,
+  createEdges,
 } from "../../testutils/fake_data/test_helpers";
 
 import { AssocEdgeLoaderFactory } from "./assoc_edge_loader";
 
 const ml = new MockLogs();
-let tdb: TempDB;
 
 let ctx: TestContext;
-beforeAll(async () => {
-  setLogLevels(["query", "error"]);
-  ml.mock();
-
-  tdb = await setupTempDB();
-});
-
-beforeEach(() => {
-  // reset context for each test
-  ctx = new TestContext();
-});
-
-afterEach(() => {
-  ml.clear();
-});
-
-afterAll(async () => {
-  ml.restore();
-  await tdb.afterAll();
-});
 
 const getNewLoader = (context: boolean = true) => {
   return new AssocEdgeLoaderFactory(
@@ -63,249 +44,301 @@ const getConfigurableLoader = (
   ).createConfigurableLoader(options, context ? ctx : undefined);
 };
 
-test("multi-ids. with context", async () => {
-  await testMultiQueryDataAvail(
-    (opts) => getConfigurableLoader(true, opts),
-    (ids) => {
-      expect(ml.logs.length).toBe(1);
-      expect(ml.logs[0].query).toMatch(/^SELECT * /);
-      expect(ml.logs[0].values).toEqual([...ids, EdgeType.UserToContacts]);
-    },
-    verifyGroupedCacheHit,
-  );
+describe("postgres", () => {
+  let tdb: TempDB;
+
+  beforeAll(async () => {
+    setLogLevels(["query", "error"]);
+    ml.mock();
+
+    tdb = await setupTempDB();
+  });
+
+  beforeEach(() => {
+    // reset context for each test
+    ctx = new TestContext();
+  });
+
+  afterEach(() => {
+    ml.clear();
+  });
+
+  afterAll(async () => {
+    ml.restore();
+    await tdb.afterAll();
+  });
+  commonTests();
 });
 
-test("multi-ids. without context", async () => {
-  await testMultiQueryDataAvail(
-    (opts) => getConfigurableLoader(false, opts),
-    verifyMultiCountQueryCacheMiss,
-    verifyMultiCountQueryCacheMiss,
-  );
+describe("sqlite", () => {
+  setupSqlite(`sqlite:///assoc_edge_loader.db`, tempDBTables);
+
+  beforeAll(async () => {
+    setLogLevels(["query", "error"]);
+    ml.mock();
+  });
+
+  beforeEach(async () => {
+    // reset context for each test
+    ctx = new TestContext();
+    await createEdges();
+  });
+
+  afterEach(() => {
+    ml.clear();
+  });
+
+  afterAll(async () => {
+    ml.restore();
+  });
+  commonTests();
 });
 
-test("multi-ids. with context, offset", async () => {
-  await testMultiQueryDataOffset(
-    (options) => getConfigurableLoader(true, options),
-    true,
-  );
-});
+function commonTests() {
+  test("multi-ids. with context", async () => {
+    await testMultiQueryDataAvail(
+      (opts) => getConfigurableLoader(true, opts),
+      (ids) => {
+        expect(ml.logs.length).toBe(1);
+        expect(ml.logs[0].query).toMatch(/^SELECT * /);
+        expect(ml.logs[0].values).toEqual([...ids, EdgeType.UserToContacts]);
+      },
+      verifyGroupedCacheHit,
+    );
+  });
 
-test("multi-ids. without context, offset", async () => {
-  await testMultiQueryDataOffset((options) =>
-    getConfigurableLoader(false, options),
-  );
-});
+  test("multi-ids. without context", async () => {
+    await testMultiQueryDataAvail(
+      (opts) => getConfigurableLoader(false, opts),
+      verifyMultiCountQueryCacheMiss,
+      verifyMultiCountQueryCacheMiss,
+    );
+  });
 
-test("multi-ids. with context different limits", async () => {
-  let data = await createData();
+  test("multi-ids. with context, offset", async () => {
+    await testMultiQueryDataOffset(
+      (options) => getConfigurableLoader(true, options),
+      true,
+    );
+  });
 
-  // initial. default limit
-  await testMultiQueryDataAvail(
-    (opts) => getConfigurableLoader(true, opts),
-    (ids) => {
-      expect(ml.logs.length).toBe(1);
-      expect(ml.logs[0].query).toMatch(/^SELECT * /);
-      expect(ml.logs[0].values).toEqual([...ids, EdgeType.UserToContacts]);
-    },
-    verifyGroupedCacheHit,
-    undefined,
-    data,
-  );
+  test("multi-ids. without context, offset", async () => {
+    await testMultiQueryDataOffset((options) =>
+      getConfigurableLoader(false, options),
+    );
+  });
 
-  // query again with same data and same limit and it should all be cache hits
-  await testMultiQueryDataAvail(
-    (opts) => getConfigurableLoader(true, opts),
-    verifyGroupedCacheHit,
-    verifyGroupedCacheHit,
-    undefined,
-    data,
-  );
+  test("multi-ids. with context different limits", async () => {
+    let data = await createData();
 
-  // change slice e.g. first N and now we hit the db again
+    // initial. default limit
+    await testMultiQueryDataAvail(
+      (opts) => getConfigurableLoader(true, opts),
+      (ids) => {
+        expect(ml.logs.length).toBe(1);
+        expect(ml.logs[0].query).toMatch(/^SELECT * /);
+        expect(ml.logs[0].values).toEqual([...ids, EdgeType.UserToContacts]);
+      },
+      verifyGroupedCacheHit,
+      undefined,
+      data,
+    );
 
-  await testMultiQueryDataAvail(
-    (opts) => getConfigurableLoader(true, opts),
-    (ids) => {
-      expect(ml.logs.length).toBe(1);
-      expect(ml.logs[0].query).toMatch(/^SELECT * /);
-      expect(ml.logs[0].values).toEqual([...ids, EdgeType.UserToContacts]);
-    },
-    verifyGroupedCacheHit,
-    3,
-    data,
-  );
+    // query again with same data and same limit and it should all be cache hits
+    await testMultiQueryDataAvail(
+      (opts) => getConfigurableLoader(true, opts),
+      verifyGroupedCacheHit,
+      verifyGroupedCacheHit,
+      undefined,
+      data,
+    );
 
-  // query for first 3 again and all hits
-  await testMultiQueryDataAvail(
-    (opts) => getConfigurableLoader(true, opts),
-    verifyGroupedCacheHit,
-    verifyGroupedCacheHit,
-    3,
-    data,
-  );
+    // change slice e.g. first N and now we hit the db again
 
-  // change slice e.g. first N and now we hit the db again
-  await testMultiQueryDataAvail(
-    (opts) => getConfigurableLoader(true, opts),
-    (ids) => {
-      expect(ml.logs.length).toBe(1);
-      expect(ml.logs[0].query).toMatch(/^SELECT * /);
-      expect(ml.logs[0].values).toEqual([...ids, EdgeType.UserToContacts]);
-    },
-    verifyGroupedCacheHit,
-    2,
-    data,
-  );
-});
+    await testMultiQueryDataAvail(
+      (opts) => getConfigurableLoader(true, opts),
+      (ids) => {
+        expect(ml.logs.length).toBe(1);
+        expect(ml.logs[0].query).toMatch(/^SELECT * /);
+        expect(ml.logs[0].values).toEqual([...ids, EdgeType.UserToContacts]);
+      },
+      verifyGroupedCacheHit,
+      3,
+      data,
+    );
 
-test("multi-ids. with no context different limits", async () => {
-  let data = await createData();
+    // query for first 3 again and all hits
+    await testMultiQueryDataAvail(
+      (opts) => getConfigurableLoader(true, opts),
+      verifyGroupedCacheHit,
+      verifyGroupedCacheHit,
+      3,
+      data,
+    );
 
-  // initial. default limit
-  await testMultiQueryDataAvail(
-    (opts) => getConfigurableLoader(false, opts),
-    verifyMultiCountQueryCacheMiss,
-    verifyMultiCountQueryCacheMiss,
-    undefined,
-    data,
-  );
+    // change slice e.g. first N and now we hit the db again
+    await testMultiQueryDataAvail(
+      (opts) => getConfigurableLoader(true, opts),
+      (ids) => {
+        expect(ml.logs.length).toBe(1);
+        expect(ml.logs[0].query).toMatch(/^SELECT * /);
+        expect(ml.logs[0].values).toEqual([...ids, EdgeType.UserToContacts]);
+      },
+      verifyGroupedCacheHit,
+      2,
+      data,
+    );
+  });
 
-  // // query again with same data and same limit and still we refetch it all
-  await testMultiQueryDataAvail(
-    (opts) => getConfigurableLoader(false, opts),
-    verifyMultiCountQueryCacheMiss,
-    verifyMultiCountQueryCacheMiss,
-    undefined,
-    data,
-  );
+  test("multi-ids. with no context different limits", async () => {
+    let data = await createData();
 
-  // change slice e.g. first N and now we hit the db again
-  await testMultiQueryDataAvail(
-    (opts) => getConfigurableLoader(false, opts),
-    verifyMultiCountQueryCacheMiss,
-    verifyMultiCountQueryCacheMiss,
-    3,
-    data,
-  );
+    // initial. default limit
+    await testMultiQueryDataAvail(
+      (opts) => getConfigurableLoader(false, opts),
+      verifyMultiCountQueryCacheMiss,
+      verifyMultiCountQueryCacheMiss,
+      undefined,
+      data,
+    );
 
-  // refetch for 3. hit db again
-  await testMultiQueryDataAvail(
-    (opts) => getConfigurableLoader(false, opts),
-    verifyMultiCountQueryCacheMiss,
-    verifyMultiCountQueryCacheMiss,
-    3,
-    data,
-  );
+    // // query again with same data and same limit and still we refetch it all
+    await testMultiQueryDataAvail(
+      (opts) => getConfigurableLoader(false, opts),
+      verifyMultiCountQueryCacheMiss,
+      verifyMultiCountQueryCacheMiss,
+      undefined,
+      data,
+    );
 
-  // change slice e.g. first N and now we hit the db again
-  await testMultiQueryDataAvail(
-    (opts) => getConfigurableLoader(false, opts),
-    verifyMultiCountQueryCacheMiss,
-    verifyMultiCountQueryCacheMiss,
-    3,
-    data,
-  );
-});
+    // change slice e.g. first N and now we hit the db again
+    await testMultiQueryDataAvail(
+      (opts) => getConfigurableLoader(false, opts),
+      verifyMultiCountQueryCacheMiss,
+      verifyMultiCountQueryCacheMiss,
+      3,
+      data,
+    );
 
-test("with context. cache hit single id", async () => {
-  const [user, contacts] = await createAllContacts();
-  ml.clear();
-  const loader = getNewLoader();
-  const edges = await loader.load(user.id);
-  verifyUserToContactEdges(user, edges, contacts.reverse());
-  verifyMultiCountQueryCacheMiss([user.id]);
+    // refetch for 3. hit db again
+    await testMultiQueryDataAvail(
+      (opts) => getConfigurableLoader(false, opts),
+      verifyMultiCountQueryCacheMiss,
+      verifyMultiCountQueryCacheMiss,
+      3,
+      data,
+    );
 
-  ml.clear();
-  const edges2 = await loader.load(user.id);
-  expect(edges).toStrictEqual(edges2);
+    // change slice e.g. first N and now we hit the db again
+    await testMultiQueryDataAvail(
+      (opts) => getConfigurableLoader(false, opts),
+      verifyMultiCountQueryCacheMiss,
+      verifyMultiCountQueryCacheMiss,
+      3,
+      data,
+    );
+  });
 
-  //  verifyUserToContactEdges(user, edges2, contacts.reverse());
-  verifyGroupedCacheHit([user.id]);
-});
+  test("with context. cache hit single id", async () => {
+    const [user, contacts] = await createAllContacts();
+    ml.clear();
+    const loader = getNewLoader();
+    const edges = await loader.load(user.id);
+    verifyUserToContactEdges(user, edges, contacts.reverse());
+    verifyMultiCountQueryCacheMiss([user.id]);
 
-test("with context. cache hit single id. loader function passed", async () => {
-  const loader = new AssocEdgeLoaderFactory(
-    EdgeType.UserToContacts,
-    () => AssocEdge,
-  ).createLoader(ctx);
-  const [user, contacts] = await createAllContacts();
-  ml.clear();
-  const edges = await loader.load(user.id);
-  verifyUserToContactEdges(user, edges, contacts.reverse());
-  verifyMultiCountQueryCacheMiss([user.id]);
+    ml.clear();
+    const edges2 = await loader.load(user.id);
+    expect(edges).toStrictEqual(edges2);
 
-  ml.clear();
-  const edges2 = await loader.load(user.id);
-  expect(edges).toStrictEqual(edges2);
+    //  verifyUserToContactEdges(user, edges2, contacts.reverse());
+    verifyGroupedCacheHit([user.id]);
+  });
 
-  //  verifyUserToContactEdges(user, edges2, contacts.reverse());
-  verifyGroupedCacheHit([user.id]);
-});
+  test("with context. cache hit single id. loader function passed", async () => {
+    const loader = new AssocEdgeLoaderFactory(
+      EdgeType.UserToContacts,
+      () => AssocEdge,
+    ).createLoader(ctx);
+    const [user, contacts] = await createAllContacts();
+    ml.clear();
+    const edges = await loader.load(user.id);
+    verifyUserToContactEdges(user, edges, contacts.reverse());
+    verifyMultiCountQueryCacheMiss([user.id]);
 
-test("without context. cache hit single id", async () => {
-  const [user, contacts] = await createAllContacts();
-  ml.clear();
-  const loader = getNewLoader(false);
-  const edges = await loader.load(user.id);
-  verifyUserToContactEdges(user, edges, contacts.reverse());
-  verifyMultiCountQueryCacheMiss([user.id]);
+    ml.clear();
+    const edges2 = await loader.load(user.id);
+    expect(edges).toStrictEqual(edges2);
 
-  ml.clear();
-  const edges2 = await loader.load(user.id);
-  expect(edges).toStrictEqual(edges2);
+    //  verifyUserToContactEdges(user, edges2, contacts.reverse());
+    verifyGroupedCacheHit([user.id]);
+  });
 
-  //  verifyUserToContactEdges(user, edges2, contacts.reverse());
-  verifyMultiCountQueryCacheMiss([user.id]);
-});
+  test("without context. cache hit single id", async () => {
+    const [user, contacts] = await createAllContacts();
+    ml.clear();
+    const loader = getNewLoader(false);
+    const edges = await loader.load(user.id);
+    verifyUserToContactEdges(user, edges, contacts.reverse());
+    verifyMultiCountQueryCacheMiss([user.id]);
 
-test("without context. cache hit single id.loader function passed", async () => {
-  const [user, contacts] = await createAllContacts();
-  ml.clear();
-  const loader = new AssocEdgeLoaderFactory(
-    EdgeType.UserToContacts,
-    () => AssocEdge,
-  ).createLoader();
-  const edges = await loader.load(user.id);
-  verifyUserToContactEdges(user, edges, contacts.reverse());
-  verifyMultiCountQueryCacheMiss([user.id]);
+    ml.clear();
+    const edges2 = await loader.load(user.id);
+    expect(edges).toStrictEqual(edges2);
 
-  ml.clear();
-  const edges2 = await loader.load(user.id);
-  expect(edges).toStrictEqual(edges2);
+    //  verifyUserToContactEdges(user, edges2, contacts.reverse());
+    verifyMultiCountQueryCacheMiss([user.id]);
+  });
 
-  //  verifyUserToContactEdges(user, edges2, contacts.reverse());
-  verifyMultiCountQueryCacheMiss([user.id]);
-});
+  test("without context. cache hit single id.loader function passed", async () => {
+    const [user, contacts] = await createAllContacts();
+    ml.clear();
+    const loader = new AssocEdgeLoaderFactory(
+      EdgeType.UserToContacts,
+      () => AssocEdge,
+    ).createLoader();
+    const edges = await loader.load(user.id);
+    verifyUserToContactEdges(user, edges, contacts.reverse());
+    verifyMultiCountQueryCacheMiss([user.id]);
 
-test("with context. cache miss single id", async () => {
-  const id = uuidv4();
-  ml.clear();
-  const loader = getNewLoader();
-  const edges = await loader.load(id);
-  expect(edges.length).toBe(0);
-  verifyMultiCountQueryCacheMiss([id]);
+    ml.clear();
+    const edges2 = await loader.load(user.id);
+    expect(edges).toStrictEqual(edges2);
 
-  ml.clear();
-  const edges2 = await loader.load(id);
-  expect(edges).toStrictEqual(edges2);
+    //  verifyUserToContactEdges(user, edges2, contacts.reverse());
+    verifyMultiCountQueryCacheMiss([user.id]);
+  });
 
-  verifyGroupedCacheHit([id]);
-});
+  test("with context. cache miss single id", async () => {
+    const id = uuidv4();
+    ml.clear();
+    const loader = getNewLoader();
+    const edges = await loader.load(id);
+    expect(edges.length).toBe(0);
+    verifyMultiCountQueryCacheMiss([id]);
 
-test("without context. cache miss single id", async () => {
-  const id = uuidv4();
-  ml.clear();
-  const loader = getNewLoader(false);
-  const edges = await loader.load(id);
-  expect(edges.length).toBe(0);
-  verifyMultiCountQueryCacheMiss([id]);
+    ml.clear();
+    const edges2 = await loader.load(id);
+    expect(edges).toStrictEqual(edges2);
 
-  ml.clear();
-  const edges2 = await loader.load(id);
-  expect(edges).toStrictEqual(edges2);
+    verifyGroupedCacheHit([id]);
+  });
 
-  verifyMultiCountQueryCacheMiss([id]);
-});
+  test("without context. cache miss single id", async () => {
+    const id = uuidv4();
+    ml.clear();
+    const loader = getNewLoader(false);
+    const edges = await loader.load(id);
+    expect(edges.length).toBe(0);
+    verifyMultiCountQueryCacheMiss([id]);
+
+    ml.clear();
+    const edges2 = await loader.load(id);
+    expect(edges).toStrictEqual(edges2);
+
+    verifyMultiCountQueryCacheMiss([id]);
+  });
+}
 
 interface createdData {
   m: Map<ID, FakeContact[]>;
@@ -402,8 +435,6 @@ async function testMultiQueryDataOffset(
     if (i > 0) {
       expContacts = [(m.get(user.id) || [])[1]];
     }
-    //    console.debug(edges, expContacts);
-    //    if (i !=0)
     expect(
       edges[i].length,
       `count for idx ${i} for id ${ids[0]} was not as expected`,
