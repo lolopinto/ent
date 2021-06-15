@@ -23,6 +23,10 @@ import {
   TodoCreatePayloadType,
 } from "src/graphql/mutations/generated/todo/todo_create_type";
 import {
+  TodoDeleteInputType,
+  TodoDeletePayloadType,
+} from "src/graphql/mutations/generated/todo/todo_delete_type";
+import {
   TodoRenameInputType,
   TodoRenamePayloadType,
 } from "src/graphql/mutations/generated/todo/todo_rename_type";
@@ -50,6 +54,8 @@ export default new GraphQLSchema({
     TodoChangeStatusPayloadType,
     TodoCreateInputType,
     TodoCreatePayloadType,
+    TodoDeleteInputType,
+    TodoDeletePayloadType,
     TodoRenameInputType,
     TodoRenamePayloadType,
   ],

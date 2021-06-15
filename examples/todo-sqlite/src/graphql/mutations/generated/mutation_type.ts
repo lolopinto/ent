@@ -6,6 +6,7 @@ import { AccountDeleteType } from "src/graphql/mutations/generated/account/accou
 import { AccountEditType } from "src/graphql/mutations/generated/account/account_edit_type";
 import { TodoChangeStatusType } from "src/graphql/mutations/generated/todo/todo_change_status_type";
 import { TodoCreateType } from "src/graphql/mutations/generated/todo/todo_create_type";
+import { TodoDeleteType } from "src/graphql/mutations/generated/todo/todo_delete_type";
 import { TodoRenameType } from "src/graphql/mutations/generated/todo/todo_rename_type";
 
 export const MutationType = new GraphQLObjectType({
@@ -16,6 +17,7 @@ export const MutationType = new GraphQLObjectType({
     accountEdit: AccountEditType,
     todoChangeStatus: TodoChangeStatusType,
     todoCreate: TodoCreateType,
+    todoDelete: TodoDeleteType,
     todoRename: TodoRenameType,
   }),
 });

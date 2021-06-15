@@ -94,6 +94,14 @@ type TodoCreatePayload {
   todo: Todo!
 }
 
+input TodoDeleteInput {
+  todoID: ID!
+}
+
+type TodoDeletePayload {
+  deletedTodoID: ID
+}
+
 input TodoRenameInput {
   todoID: ID!
   text: String
@@ -113,5 +121,6 @@ type Mutation {
   accountEdit(input: AccountEditInput!): AccountEditPayload!
   todoChangeStatus(input: TodoChangeStatusInput!): TodoChangeStatusPayload!
   todoCreate(input: TodoCreateInput!): TodoCreatePayload!
+  todoDelete(input: TodoDeleteInput!): TodoDeletePayload!
   todoRename(input: TodoRenameInput!): TodoRenamePayload!
 }

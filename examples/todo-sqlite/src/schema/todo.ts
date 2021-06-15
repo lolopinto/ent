@@ -46,5 +46,8 @@ export default class Todo extends BaseEntSchema {
       graphQLName: "todoRename",
       inputName: "RenameTodoInput",
     },
+    {
+      operation: ActionOperation.Delete,
+    },
   ];
 }

@@ -4,8 +4,9 @@ import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { validate } from "uuid";
 import CreateTodoAction from "../todo/actions/create_todo_action";
 import ChangeTodoStatusAction from "../todo/actions/change_todo_status_action";
-import { TodoChangeStatusInputType } from "src/graphql/mutations/generated/todo/todo_change_status_type";
 import RenameTodoStatusAction from "../todo/actions/rename_todo_status_action";
+import DeleteTodoAction from "../todo/actions/delete_todo_action";
+import { Todo } from "src/ent/";
 beforeAll(() => {
   process.env.DB_CONNECTION_STRING = `sqlite:///todo.db`;
 });
@@ -73,4 +74,13 @@ test("rename todo", async () => {
   }).saveX();
 
   expect(todo.text).toBe("re-watch GOT");
+});
+
+test("delete todo", async () => {
+  let todo = await createTodo();
+
+  await DeleteTodoAction.create(todo.viewer, todo).saveX();
+
+  const reloaded = await Todo.load(todo.viewer, todo.id);
+  expect(reloaded).toBeNull();
 });
