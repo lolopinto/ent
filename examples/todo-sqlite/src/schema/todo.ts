@@ -39,5 +39,12 @@ export default class Todo extends BaseEntSchema {
       graphQLName: "todoChangeStatus",
       inputName: "ChangeTodoStatusInput",
     },
+    {
+      operation: ActionOperation.Edit,
+      fields: ["Text"],
+      actionName: "RenameTodoStatusAction",
+      graphQLName: "todoRename",
+      inputName: "RenameTodoInput",
+    },
   ];
 }
