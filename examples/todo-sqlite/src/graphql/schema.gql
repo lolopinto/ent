@@ -9,6 +9,39 @@ interface Node {
   id: ID!
 }
 
+input AccountCreateInput {
+  name: String!
+  phoneNumber: String!
+}
+
+type AccountCreatePayload {
+  account: Account!
+}
+
+input AccountDeleteInput {
+  accountID: ID!
+}
+
+type AccountDeletePayload {
+  deletedAccountID: ID
+}
+
+input AccountEditInput {
+  accountID: ID!
+  name: String
+  phoneNumber: String
+}
+
+type AccountEditPayload {
+  account: Account!
+}
+
 type Query {
   node(id: ID!): Node
+}
+
+type Mutation {
+  accountCreate(input: AccountCreateInput!): AccountCreatePayload!
+  accountDelete(input: AccountDeleteInput!): AccountDeletePayload!
+  accountEdit(input: AccountEditInput!): AccountEditPayload!
 }
