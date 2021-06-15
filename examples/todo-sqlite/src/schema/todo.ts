@@ -32,5 +32,12 @@ export default class Todo extends BaseEntSchema {
       // TODO can it know not to make completed required if defaultValueOnCreate is set?
       fields: ["Text", "creatorID"],
     },
+    {
+      operation: ActionOperation.Edit,
+      fields: ["Completed"],
+      actionName: "ChangeTodoStatusAction",
+      graphQLName: "todoChangeStatus",
+      inputName: "ChangeTodoStatusInput",
+    },
   ];
 }

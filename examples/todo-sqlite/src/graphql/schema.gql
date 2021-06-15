@@ -76,6 +76,15 @@ type AccountEditPayload {
   account: Account!
 }
 
+input TodoChangeStatusInput {
+  todoID: ID!
+  completed: Boolean
+}
+
+type TodoChangeStatusPayload {
+  todo: Todo!
+}
+
 input TodoCreateInput {
   text: String!
   creatorID: ID!
@@ -93,5 +102,6 @@ type Mutation {
   accountCreate(input: AccountCreateInput!): AccountCreatePayload!
   accountDelete(input: AccountDeleteInput!): AccountDeletePayload!
   accountEdit(input: AccountEditInput!): AccountEditPayload!
+  todoChangeStatus(input: TodoChangeStatusInput!): TodoChangeStatusPayload!
   todoCreate(input: TodoCreateInput!): TodoCreatePayload!
 }

@@ -2,10 +2,9 @@ import { LoggedOutViewer } from "@lolopinto/ent";
 import CreateAccountAction from "src/ent/account/actions/create_account_action";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { validate } from "uuid";
-import EditAccountAction from "../account/actions/edit_account_action";
-import DeleteAccountAction from "../account/actions/delete_account_action";
-import { Account } from "../internal";
 import CreateTodoAction from "../todo/actions/create_todo_action";
+import ChangeTodoStatusAction from "../todo/actions/change_todo_status_action";
+import { TodoChangeStatusInputType } from "src/graphql/mutations/generated/todo/todo_change_status_type";
 beforeAll(() => {
   process.env.DB_CONNECTION_STRING = `sqlite:///todo.db`;
 });
@@ -28,7 +27,7 @@ async function createAccount() {
   return account;
 }
 
-test("create", async () => {
+async function createTodo() {
   const account = await createAccount();
   const todo = await CreateTodoAction.create(account.viewer, {
     text: "watch Game of Thrones",
@@ -37,5 +36,30 @@ test("create", async () => {
   expect(todo.text).toBe("watch Game of Thrones");
   expect(todo.creatorID).toBe(account.id);
   // TODO need to convert sqlite...
+  expect(todo.completed).toBe(0);
+
+  return todo;
+}
+
+test("create", async () => {
+  await createTodo();
+});
+
+test("mark as completed", async () => {
+  let todo = await createTodo();
+
+  todo = await ChangeTodoStatusAction.create(todo.viewer, todo, {
+    completed: true,
+  }).saveX();
+
+  // TODO boolean
+  expect(todo.completed).toBe(1);
+
+  // reopen
+  todo = await ChangeTodoStatusAction.create(todo.viewer, todo, {
+    completed: false,
+  }).saveX();
+
+  // TODO boolean
   expect(todo.completed).toBe(0);
 });
