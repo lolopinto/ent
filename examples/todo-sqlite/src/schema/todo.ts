@@ -7,7 +7,6 @@ import {
   StringType,
   UUIDType,
 } from "@lolopinto/ent";
-import { PhoneNumberType } from "@lolopinto/ent-phonenumber";
 
 export default class Todo extends BaseEntSchema {
   fields: Field[] = [
@@ -27,9 +26,11 @@ export default class Todo extends BaseEntSchema {
     }),
   ];
 
-  // actions: Action[] = [
-  //   {
-  //     operation: ActionOperation.Mutations,
-  //   },
-  // ];
+  actions: Action[] = [
+    {
+      operation: ActionOperation.Create,
+      // TODO can it know not to make completed required if defaultValueOnCreate is set?
+      fields: ["Text", "creatorID"],
+    },
+  ];
 }

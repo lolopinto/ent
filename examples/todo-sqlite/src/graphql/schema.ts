@@ -14,6 +14,10 @@ import {
   AccountEditPayloadType,
 } from "src/graphql/mutations/generated/account/account_edit_type";
 import { MutationType } from "src/graphql/mutations/generated/mutation_type";
+import {
+  TodoCreateInputType,
+  TodoCreatePayloadType,
+} from "src/graphql/mutations/generated/todo/todo_create_type";
 import { QueryType } from "src/graphql/resolvers/generated/query_type";
 import {
   AccountToTodosConnectionType,
@@ -34,5 +38,7 @@ export default new GraphQLSchema({
     AccountDeletePayloadType,
     AccountEditInputType,
     AccountEditPayloadType,
+    TodoCreateInputType,
+    TodoCreatePayloadType,
   ],
 });

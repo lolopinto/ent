@@ -76,6 +76,15 @@ type AccountEditPayload {
   account: Account!
 }
 
+input TodoCreateInput {
+  text: String!
+  creatorID: ID!
+}
+
+type TodoCreatePayload {
+  todo: Todo!
+}
+
 type Query {
   node(id: ID!): Node
 }
@@ -84,4 +93,5 @@ type Mutation {
   accountCreate(input: AccountCreateInput!): AccountCreatePayload!
   accountDelete(input: AccountDeleteInput!): AccountDeletePayload!
   accountEdit(input: AccountEditInput!): AccountEditPayload!
+  todoCreate(input: TodoCreateInput!): TodoCreatePayload!
 }
