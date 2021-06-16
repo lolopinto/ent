@@ -3,6 +3,7 @@ import {
   ActionOperation,
   BaseEntSchema,
   BooleanType,
+  Edge,
   Field,
   StringType,
   UUIDType,
@@ -24,6 +25,24 @@ export default class Todo extends BaseEntSchema {
       name: "creatorID",
       foreignKey: { schema: "Account", column: "ID" },
     }),
+  ];
+
+  edges: Edge[] = [
+    {
+      name: "tags",
+      schemaName: "Tag",
+      inverseEdge: {
+        name: "todos",
+      },
+      edgeActions: [
+        {
+          operation: ActionOperation.AddEdge,
+        },
+        {
+          operation: ActionOperation.RemoveEdge,
+        },
+      ],
+    },
   ];
 
   actions: Action[] = [

@@ -16,6 +16,19 @@ sa.Table("accounts", metadata,
     sa.UniqueConstraint("phone_number", name="accounts_unique_phone_number"),
 )
    
+sa.Table("assoc_edge_config", metadata,
+    sa.Column("edge_type", sa.Text(), nullable=False),
+    sa.Column("edge_name", sa.Text(), nullable=False),
+    sa.Column("symmetric_edge", sa.Boolean(), nullable=False, server_default='false'),
+    sa.Column("inverse_edge_type", sa.Text(), nullable=True),
+    sa.Column("edge_table", sa.Text(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.PrimaryKeyConstraint("edge_type", name="assoc_edge_config_edge_type_pkey"),
+    sa.UniqueConstraint("edge_name", name="assoc_edge_config_unique_edge_name"),
+    sa.ForeignKeyConstraint(["inverse_edge_type"], ["assoc_edge_config.edge_type"], name="assoc_edge_config_inverse_edge_type_fkey", ondelete="RESTRICT"),
+)
+   
 sa.Table("tags", metadata,
     sa.Column("id", sa.Text(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -27,6 +40,18 @@ sa.Table("tags", metadata,
     sa.PrimaryKeyConstraint("id", name="tags_id_pkey"),
     sa.ForeignKeyConstraint(["owner_id"], ["accounts.id"], name="tags_owner_id_fkey", ondelete="CASCADE"),
     sa.UniqueConstraint("canonical_name", "owner_id", name="uniqueForOwner"),
+)
+   
+sa.Table("todo_tags_edges", metadata,
+    sa.Column("id1", sa.Text(), nullable=False),
+    sa.Column("id1_type", sa.Text(), nullable=False),
+    sa.Column("edge_type", sa.Text(), nullable=False),
+    sa.Column("id2", sa.Text(), nullable=False),
+    sa.Column("id2_type", sa.Text(), nullable=False),
+    sa.Column("time", sa.TIMESTAMP(), nullable=False),
+    sa.Column("data", sa.Text(), nullable=True),
+    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="todo_tags_edges_id1_edge_type_id2_pkey"),
+    sa.Index("todo_tags_edges_time_idx", "time"),
 )
    
 sa.Table("todos", metadata,
@@ -45,6 +70,8 @@ sa.Table("todos", metadata,
 
 metadata.info["edges"] = {
   'public': {
+    'TagToTodosEdge': {"edge_name":"TagToTodosEdge", "edge_type":"33dd169d-a290-4d3f-8b09-b74628bec247", "edge_table":"todo_tags_edges", "symmetric_edge":False, "inverse_edge_type":"546160e1-224a-42ef-92c7-46089ab5e06e"},
+    'TodoToTagsEdge': {"edge_name":"TodoToTagsEdge", "edge_type":"546160e1-224a-42ef-92c7-46089ab5e06e", "edge_table":"todo_tags_edges", "symmetric_edge":False, "inverse_edge_type":"33dd169d-a290-4d3f-8b09-b74628bec247"},
   }
 }
 

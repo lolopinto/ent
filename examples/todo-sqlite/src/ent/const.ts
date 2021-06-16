@@ -12,3 +12,14 @@ export enum NodeType {
 export function getNodeTypeValues() {
   return [NodeType.Account, NodeType.Tag, NodeType.Todo];
 }
+
+export enum EdgeType {
+  // TagToTodos is the edgeType for the tag to todos edge.
+  TagToTodos = "33dd169d-a290-4d3f-8b09-b74628bec247",
+  // TodoToTags is the edgeType for the todo to tags edge.
+  TodoToTags = "546160e1-224a-42ef-92c7-46089ab5e06e",
+}
+
+export function getEdgeTypeValues() {
+  return [EdgeType.TagToTodos, EdgeType.TodoToTags];
+}

@@ -4,14 +4,22 @@ import {
   GraphQLBoolean,
   GraphQLFieldConfigMap,
   GraphQLID,
+  GraphQLInt,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
-import { GraphQLNodeInterface, nodeIDEncoder } from "@lolopinto/ent/graphql";
-import { Todo } from "src/ent/";
-import { AccountType } from "src/graphql/resolvers/internal";
+import {
+  GraphQLEdgeConnection,
+  GraphQLNodeInterface,
+  nodeIDEncoder,
+} from "@lolopinto/ent/graphql";
+import { Todo, TodoToTagsQuery } from "src/ent/";
+import {
+  AccountType,
+  TodoToTagsConnectionType,
+} from "src/graphql/resolvers/internal";
 
 export const TodoType = new GraphQLObjectType({
   name: "Todo",
@@ -31,6 +39,35 @@ export const TodoType = new GraphQLObjectType({
     },
     completed: {
       type: GraphQLNonNull(GraphQLBoolean),
+    },
+    tags: {
+      type: GraphQLNonNull(TodoToTagsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (todo: Todo, args: {}, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          todo.viewer,
+          todo,
+          (v, todo: Todo) => TodoToTagsQuery.query(v, todo),
+          args,
+        );
+      },
     },
   }),
   interfaces: [GraphQLNodeInterface],

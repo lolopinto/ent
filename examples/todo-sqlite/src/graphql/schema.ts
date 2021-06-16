@@ -19,6 +19,10 @@ import {
   TagCreatePayloadType,
 } from "src/graphql/mutations/generated/tag/tag_create_type";
 import {
+  TodoAddTagInputType,
+  TodoAddTagPayloadType,
+} from "src/graphql/mutations/generated/todo/todo_add_tag_type";
+import {
   TodoChangeStatusInputType,
   TodoChangeStatusPayloadType,
 } from "src/graphql/mutations/generated/todo/todo_change_status_type";
@@ -31,6 +35,10 @@ import {
   TodoDeletePayloadType,
 } from "src/graphql/mutations/generated/todo/todo_delete_type";
 import {
+  TodoRemoveTagInputType,
+  TodoRemoveTagPayloadType,
+} from "src/graphql/mutations/generated/todo/todo_remove_tag_type";
+import {
   TodoRenameInputType,
   TodoRenamePayloadType,
 } from "src/graphql/mutations/generated/todo/todo_rename_type";
@@ -39,7 +47,9 @@ import {
   AccountToTagsConnectionType,
   AccountToTodosConnectionType,
   AccountType,
+  TagToTodosConnectionType,
   TagType,
+  TodoToTagsConnectionType,
   TodoType,
 } from "./resolvers";
 
@@ -52,6 +62,8 @@ export default new GraphQLSchema({
     TodoType,
     AccountToTagsConnectionType(),
     AccountToTodosConnectionType(),
+    TagToTodosConnectionType(),
+    TodoToTagsConnectionType(),
     AccountCreateInputType,
     AccountCreatePayloadType,
     AccountDeleteInputType,
@@ -60,12 +72,16 @@ export default new GraphQLSchema({
     AccountEditPayloadType,
     TagCreateInputType,
     TagCreatePayloadType,
+    TodoAddTagInputType,
+    TodoAddTagPayloadType,
     TodoChangeStatusInputType,
     TodoChangeStatusPayloadType,
     TodoCreateInputType,
     TodoCreatePayloadType,
     TodoDeleteInputType,
     TodoDeletePayloadType,
+    TodoRemoveTagInputType,
+    TodoRemoveTagPayloadType,
     TodoRenameInputType,
     TodoRenamePayloadType,
   ],

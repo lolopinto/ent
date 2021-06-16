@@ -16,6 +16,7 @@ type Tag implements Node {
   id: ID!
   displayName: String!
   canonicalName: String!
+  todos(first: Int, after: String, last: Int, before: String): TagToTodosConnection!
 }
 
 type Todo implements Node {
@@ -23,6 +24,7 @@ type Todo implements Node {
   id: ID!
   text: String!
   completed: Boolean!
+  tags(first: Int, after: String, last: Int, before: String): TodoToTagsConnection!
 }
 
 type AccountToTagsConnection implements Connection {
@@ -69,6 +71,30 @@ type AccountToTodosEdge implements Edge {
   cursor: String!
 }
 
+type TagToTodosConnection implements Connection {
+  edges: [TagToTodosEdge!]!
+  nodes: [Todo!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type TagToTodosEdge implements Edge {
+  node: Todo!
+  cursor: String!
+}
+
+type TodoToTagsConnection implements Connection {
+  edges: [TodoToTagsEdge!]!
+  nodes: [Tag!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type TodoToTagsEdge implements Edge {
+  node: Tag!
+  cursor: String!
+}
+
 input AccountCreateInput {
   name: String!
   phoneNumber: String!
@@ -105,6 +131,15 @@ type TagCreatePayload {
   tag: Tag!
 }
 
+input TodoAddTagInput {
+  todoID: ID!
+  tagID: ID!
+}
+
+type TodoAddTagPayload {
+  todo: Todo!
+}
+
 input TodoChangeStatusInput {
   todoID: ID!
   completed: Boolean
@@ -131,6 +166,15 @@ type TodoDeletePayload {
   deletedTodoID: ID
 }
 
+input TodoRemoveTagInput {
+  todoID: ID!
+  tagID: ID!
+}
+
+type TodoRemoveTagPayload {
+  todo: Todo!
+}
+
 input TodoRenameInput {
   todoID: ID!
   text: String
@@ -149,9 +193,11 @@ type Mutation {
   accountDelete(input: AccountDeleteInput!): AccountDeletePayload!
   accountEdit(input: AccountEditInput!): AccountEditPayload!
   tagCreate(input: TagCreateInput!): TagCreatePayload!
+  todoAddTag(input: TodoAddTagInput!): TodoAddTagPayload!
   todoChangeStatus(input: TodoChangeStatusInput!): TodoChangeStatusPayload!
   todoCreate(input: TodoCreateInput!): TodoCreatePayload!
   todoDelete(input: TodoDeleteInput!): TodoDeletePayload!
+  todoRemoveTag(input: TodoRemoveTagInput!): TodoRemoveTagPayload!
   todoRename(input: TodoRenameInput!): TodoRenamePayload!
   todosMarkAllAs(accountID: ID!, completed: Boolean!): Account!
   todosRemoveCompleted(accountID: ID!): Account!

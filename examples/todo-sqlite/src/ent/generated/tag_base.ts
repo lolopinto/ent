@@ -2,6 +2,7 @@
 
 import {
   AllowIfViewerPrivacyPolicy,
+  AssocEdge,
   Context,
   Data,
   ID,
@@ -14,7 +15,7 @@ import {
   loadEnts,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
-import { Account, NodeType } from "src/ent/internal";
+import { Account, EdgeType, NodeType, TagToTodosQuery } from "src/ent/internal";
 import schema from "src/schema/tag";
 
 const tableName = "tags";
@@ -114,6 +115,10 @@ export class TagBase {
 
   static getField(key: string): Field | undefined {
     return TagBase.getSchemaFields().get(key);
+  }
+
+  queryTodos(): TagToTodosQuery {
+    return TagToTodosQuery.query(this.viewer, this.id);
   }
 
   async loadOwner(): Promise<Account | null> {

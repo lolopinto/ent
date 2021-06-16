@@ -3,14 +3,22 @@
 import {
   GraphQLFieldConfigMap,
   GraphQLID,
+  GraphQLInt,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
-import { GraphQLNodeInterface, nodeIDEncoder } from "@lolopinto/ent/graphql";
-import { Tag } from "src/ent/";
-import { AccountType } from "src/graphql/resolvers/internal";
+import {
+  GraphQLEdgeConnection,
+  GraphQLNodeInterface,
+  nodeIDEncoder,
+} from "@lolopinto/ent/graphql";
+import { Tag, TagToTodosQuery } from "src/ent/";
+import {
+  AccountType,
+  TagToTodosConnectionType,
+} from "src/graphql/resolvers/internal";
 
 export const TagType = new GraphQLObjectType({
   name: "Tag",
@@ -30,6 +38,35 @@ export const TagType = new GraphQLObjectType({
     },
     canonicalName: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    todos: {
+      type: GraphQLNonNull(TagToTodosConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (tag: Tag, args: {}, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          tag.viewer,
+          tag,
+          (v, tag: Tag) => TagToTodosQuery.query(v, tag),
+          args,
+        );
+      },
     },
   }),
   interfaces: [GraphQLNodeInterface],
