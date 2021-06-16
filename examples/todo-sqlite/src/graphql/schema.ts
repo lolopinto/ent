@@ -15,6 +15,10 @@ import {
 } from "src/graphql/mutations/generated/account/account_edit_type";
 import { MutationType } from "src/graphql/mutations/generated/mutation_type";
 import {
+  TagCreateInputType,
+  TagCreatePayloadType,
+} from "src/graphql/mutations/generated/tag/tag_create_type";
+import {
   TodoChangeStatusInputType,
   TodoChangeStatusPayloadType,
 } from "src/graphql/mutations/generated/todo/todo_change_status_type";
@@ -54,6 +58,8 @@ export default new GraphQLSchema({
     AccountDeletePayloadType,
     AccountEditInputType,
     AccountEditPayloadType,
+    TagCreateInputType,
+    TagCreatePayloadType,
     TodoChangeStatusInputType,
     TodoChangeStatusPayloadType,
     TodoCreateInputType,

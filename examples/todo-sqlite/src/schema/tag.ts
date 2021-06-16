@@ -2,7 +2,6 @@ import {
   Action,
   ActionOperation,
   BaseEntSchema,
-  BooleanType,
   Constraint,
   ConstraintType,
   Field,
@@ -25,6 +24,13 @@ export default class Tag extends BaseEntSchema {
       name: "uniqueForOwner",
       type: ConstraintType.Unique,
       columns: ["canonicalName", "ownerID"],
+    },
+  ];
+
+  actions: Action[] = [
+    {
+      operation: ActionOperation.Create,
+      fields: ["DisplayName", "ownerID"],
     },
   ];
 }
