@@ -9,6 +9,7 @@ import { TodoCreateType } from "src/graphql/mutations/generated/todo/todo_create
 import { TodoDeleteType } from "src/graphql/mutations/generated/todo/todo_delete_type";
 import { TodoRenameType } from "src/graphql/mutations/generated/todo/todo_rename_type";
 import { TodosMarkAllAsType } from "src/graphql/mutations/generated/todos_mark_all_as_type";
+import { TodosRemoveCompletedType } from "src/graphql/mutations/generated/todos_remove_completed_type";
 
 export const MutationType = new GraphQLObjectType({
   name: "Mutation",
@@ -21,5 +22,6 @@ export const MutationType = new GraphQLObjectType({
     todoDelete: TodoDeleteType,
     todoRename: TodoRenameType,
     todosMarkAllAs: TodosMarkAllAsType,
+    todosRemoveCompleted: TodosRemoveCompletedType,
   }),
 });
