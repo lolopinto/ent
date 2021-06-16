@@ -33,7 +33,6 @@ type DBConfig struct {
 	connString string
 }
 
-// TODO support sqlite for these two..
 func (db *DBConfig) GetConnectionStr() string {
 	if db.Dialect == "postgres" {
 		return db.getConnectionStr("postgres", true)
@@ -43,8 +42,6 @@ func (db *DBConfig) GetConnectionStr() string {
 
 func (db *DBConfig) GetSQLAlchemyDatabaseURIgo() string {
 	if db.Dialect == "postgres" {
-		// postgres only for now as above. specific driver also
-		// no ssl mode
 		return db.getConnectionStr("postgresql+psycopg2", false)
 	}
 	return db.connString

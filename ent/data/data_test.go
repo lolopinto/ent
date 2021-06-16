@@ -43,5 +43,4 @@ func doTest(t *testing.T, file string) {
 	err = row.MapScan(g)
 	assert.NoError(t, err)
 	assert.Equal(t, g["col"], int64(1))
-
 }
