@@ -1,0 +1,30 @@
+import {
+  Action,
+  ActionOperation,
+  BaseEntSchema,
+  BooleanType,
+  Constraint,
+  ConstraintType,
+  Field,
+  StringType,
+  UUIDType,
+} from "@lolopinto/ent";
+
+export default class Tag extends BaseEntSchema {
+  fields: Field[] = [
+    StringType({ name: "DisplayName" }),
+    StringType({ name: "canonicalName" }).trim().toLowerCase(),
+    UUIDType({
+      name: "ownerID",
+      foreignKey: { schema: "Account", column: "ID" },
+    }),
+  ];
+
+  constraints: Constraint[] = [
+    {
+      name: "uniqueForOwner",
+      type: ConstraintType.Unique,
+      columns: ["canonicalName", "ownerID"],
+    },
+  ];
+}

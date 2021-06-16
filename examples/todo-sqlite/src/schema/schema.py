@@ -16,6 +16,19 @@ sa.Table("accounts", metadata,
     sa.UniqueConstraint("phone_number", name="accounts_unique_phone_number"),
 )
    
+sa.Table("tags", metadata,
+    sa.Column("id", sa.Text(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("display_name", sa.Text(), nullable=False),
+    sa.Column("canonical_name", sa.Text(), nullable=False),
+    sa.Column("owner_id", sa.Text(), nullable=False),
+    sa.Index("tags_owner_id_idx", "owner_id"),
+    sa.PrimaryKeyConstraint("id", name="tags_id_pkey"),
+    sa.ForeignKeyConstraint(["owner_id"], ["accounts.id"], name="tags_owner_id_fkey", ondelete="CASCADE"),
+    sa.UniqueConstraint("canonical_name", "owner_id", name="uniqueForOwner"),
+)
+   
 sa.Table("todos", metadata,
     sa.Column("id", sa.Text(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),

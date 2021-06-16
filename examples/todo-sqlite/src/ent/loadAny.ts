@@ -8,7 +8,7 @@ import {
   loadEnt,
   loadEntX,
 } from "@lolopinto/ent";
-import { Account, Todo } from "src/ent/";
+import { Account, Tag, Todo } from "src/ent/";
 import { NodeType } from "./const";
 
 export async function loadEntByType(
@@ -31,6 +31,8 @@ export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent> {
   switch (type) {
     case NodeType.Account:
       return Account.loaderOptions();
+    case NodeType.Tag:
+      return Tag.loaderOptions();
     case NodeType.Todo:
       return Todo.loaderOptions();
   }

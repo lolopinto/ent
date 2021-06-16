@@ -3,10 +3,12 @@
 export enum NodeType {
   // Account is the node type for the Account object. Used to identify this node in edges and other places.
   Account = "account",
+  // Tag is the node type for the Tag object. Used to identify this node in edges and other places.
+  Tag = "tag",
   // Todo is the node type for the Todo object. Used to identify this node in edges and other places.
   Todo = "todo",
 }
 
 export function getNodeTypeValues() {
-  return [NodeType.Account, NodeType.Todo];
+  return [NodeType.Account, NodeType.Tag, NodeType.Todo];
 }

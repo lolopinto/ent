@@ -2,12 +2,20 @@ type Account implements Node {
   id: ID!
   name: String!
   phoneNumber: String!
+  tags(first: Int, after: String, last: Int, before: String): AccountToTagsConnection!
   todos(first: Int, after: String, last: Int, before: String): AccountToTodosConnection!
 }
 
 """node interface"""
 interface Node {
   id: ID!
+}
+
+type Tag implements Node {
+  owner: Account
+  id: ID!
+  displayName: String!
+  canonicalName: String!
 }
 
 type Todo implements Node {
@@ -17,9 +25,9 @@ type Todo implements Node {
   completed: Boolean!
 }
 
-type AccountToTodosConnection implements Connection {
-  edges: [AccountToTodosEdge!]!
-  nodes: [Todo!]!
+type AccountToTagsConnection implements Connection {
+  edges: [AccountToTagsEdge!]!
+  nodes: [Tag!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -42,6 +50,18 @@ type PageInfo {
   hasPreviousPage: Boolean!
   startCursor: String!
   endCursor: String!
+}
+
+type AccountToTagsEdge implements Edge {
+  node: Tag!
+  cursor: String!
+}
+
+type AccountToTodosConnection implements Connection {
+  edges: [AccountToTodosEdge!]!
+  nodes: [Todo!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
 }
 
 type AccountToTodosEdge implements Edge {

@@ -14,8 +14,11 @@ import {
   GraphQLNodeInterface,
   nodeIDEncoder,
 } from "@lolopinto/ent/graphql";
-import { Account, AccountToTodosQuery } from "src/ent/";
-import { AccountToTodosConnectionType } from "src/graphql/resolvers/internal";
+import { Account, AccountToTagsQuery, AccountToTodosQuery } from "src/ent/";
+import {
+  AccountToTagsConnectionType,
+  AccountToTodosConnectionType,
+} from "src/graphql/resolvers/internal";
 
 export const AccountType = new GraphQLObjectType({
   name: "Account",
@@ -29,6 +32,35 @@ export const AccountType = new GraphQLObjectType({
     },
     phoneNumber: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    tags: {
+      type: GraphQLNonNull(AccountToTagsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (account: Account, args: {}, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          account.viewer,
+          account,
+          (v, account: Account) => AccountToTagsQuery.query(v, account),
+          args,
+        );
+      },
     },
     todos: {
       type: GraphQLNonNull(AccountToTodosConnectionType()),
