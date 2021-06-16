@@ -16,7 +16,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@lolopinto/ent-graphql-tests": "^0.0.14",
+    "@lolopinto/ent-graphql-tests": "^0.0.15",
     "@types/express": "^4.17.11",
     "@types/jest": "^26.0.23",
     "@types/jest-expect-message": "^1.0.3",
