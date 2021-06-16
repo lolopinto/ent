@@ -2,10 +2,10 @@ import { LoggedOutViewer } from "@lolopinto/ent";
 import CreateAccountAction from "src/ent/account/actions/create_account_action";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { validate } from "uuid";
-import CreateTodoAction from "../todo/actions/create_todo_action";
-import ChangeTodoStatusAction from "../todo/actions/change_todo_status_action";
-import RenameTodoStatusAction from "../todo/actions/rename_todo_status_action";
-import DeleteTodoAction from "../todo/actions/delete_todo_action";
+import CreateTodoAction from "src/ent/todo/actions/create_todo_action";
+import ChangeTodoStatusAction from "src/ent/todo/actions/change_todo_status_action";
+import RenameTodoStatusAction from "src/ent/todo/actions/rename_todo_status_action";
+import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
 import { Todo } from "src/ent/";
 beforeAll(() => {
   process.env.DB_CONNECTION_STRING = `sqlite:///todo.db`;

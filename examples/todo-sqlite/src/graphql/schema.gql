@@ -123,4 +123,5 @@ type Mutation {
   todoCreate(input: TodoCreateInput!): TodoCreatePayload!
   todoDelete(input: TodoDeleteInput!): TodoDeletePayload!
   todoRename(input: TodoRenameInput!): TodoRenamePayload!
+  todosMarkAllAs(accountID: ID!, completed: Boolean!): Account!
 }
