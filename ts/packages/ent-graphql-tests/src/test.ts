@@ -781,11 +781,11 @@ describe("file upload", () => {
     return await new Promise((resolve) => {
       const stream = file.createReadStream();
       let data: string[] = [];
-      stream.on("data", function(chunk) {
+      stream.on("data", function (chunk) {
         data.push(chunk.toString());
       });
 
-      stream.on("close", function() {
+      stream.on("close", function () {
         return resolve(data.join(""));
       });
     });
@@ -949,4 +949,55 @@ describe("file upload", () => {
       [".", true],
     );
   });
+});
+
+test("false boolean", async () => {
+  let schema = new GraphQLSchema({
+    query: rootQuery,
+    mutation: new GraphQLObjectType({
+      name: "RootMutationType",
+      fields: {
+        userEdit: {
+          args: {
+            id: {
+              type: GraphQLNonNull(GraphQLID),
+            },
+            firstName: {
+              type: GraphQLString,
+            },
+            lastName: {
+              type: GraphQLString,
+            },
+            log: {
+              type: GraphQLBoolean,
+            },
+          },
+          type: userType,
+          resolve(_source, { id, ...args }) {
+            return editUser(id, args);
+          },
+        },
+      },
+    }),
+  });
+
+  let cfg: mutationRootConfig = {
+    schema: schema,
+    args: {
+      id: "1",
+      firstName: "Aegon",
+      lastName: "Targaryen",
+      log: false,
+    },
+    mutation: "userEdit",
+    disableInputWrapping: true,
+  };
+
+  // mutation query
+  await expectMutation(
+    cfg,
+    ["id", "1"],
+    ["firstName", "Aegon"],
+    ["lastName", "Targaryen"],
+  );
 });

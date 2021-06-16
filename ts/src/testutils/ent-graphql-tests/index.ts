@@ -343,7 +343,7 @@ async function expectFromRoot(
   fieldArgs.forEach((fieldArg) => {
     let arg = config.args[fieldArg.name];
     // let the graphql runtime handle this (it may be optional for example)
-    if (!arg) {
+    if (arg === undefined) {
       return;
     }
     queryParams.push(`$${fieldArg.name}: ${fieldArg.type}`);
