@@ -12,11 +12,12 @@ import {
   saveBuilderX,
   Observer,
 } from "../action";
-import { Schema, SchemaInputType } from "../schema";
+import { Schema } from "../schema";
 import { QueryRecorder } from "./db_mock";
 import pluralize from "pluralize";
 import { snakeCase } from "snake-case";
 import { ObjectLoaderFactory } from "../core/loaders";
+import { convertDate } from "../core/convert";
 
 export class User implements Ent {
   id: ID;
@@ -25,11 +26,8 @@ export class User implements Ent {
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
   constructor(public viewer: Viewer, public data: Data) {
-    // TODO generalize this. sqlite ish
-    if (typeof data.created_at === "string") {
-      this.data.created_at = new Date(Date.parse(data.created_at));
-      this.data.updated_at = new Date(Date.parse(data.updated_at));
-    }
+    this.data.created_at = convertDate(data.created_at);
+    this.data.updated_at = convertDate(data.updated_at);
     this.id = data.id;
   }
 }
@@ -52,11 +50,8 @@ export class Contact implements Ent {
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
   constructor(public viewer: Viewer, public data: Data) {
-    // TODO generalize this. sqlite ish
-    if (typeof data.created_at === "string") {
-      this.data.created_at = new Date(Date.parse(data.created_at));
-      this.data.updated_at = new Date(Date.parse(data.updated_at));
-    }
+    this.data.created_at = convertDate(data.created_at);
+    this.data.updated_at = convertDate(data.updated_at);
     this.id = data.id;
   }
 }

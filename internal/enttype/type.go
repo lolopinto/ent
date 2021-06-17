@@ -56,6 +56,11 @@ type IDMarkerInterface interface {
 	IsIDType() bool
 }
 
+type ConvertDataType interface {
+	TSType
+	Convert() FileImport
+}
+
 type TSTypeWithActionFields interface {
 	TSGraphQLType
 	GetActionName() string
@@ -70,6 +75,7 @@ const (
 	Connection ImportType = "connection"
 	// EntGraphQL refers to graphql scalars or things in the ent graphql space
 	EntGraphQL ImportType = "ent_graphql"
+	Package    ImportType = "package"
 )
 
 // for imports that are not from "graphql"
@@ -194,6 +200,13 @@ func (t *boolType) GetZeroValue() string {
 	return "false"
 }
 
+func (t *boolType) Convert() FileImport {
+	return FileImport{
+		Type:       "convertBool",
+		ImportType: Package,
+	}
+}
+
 type BoolType struct {
 	boolType
 }
@@ -243,6 +256,13 @@ func (t *NullableBoolType) GetNonNullableType() Type {
 func (t *NullableBoolType) GetTSGraphQLImports() []FileImport {
 	return []FileImport{
 		NewGQLFileImport("GraphQLBoolean"),
+	}
+}
+
+func (t *NullableBoolType) Convert() FileImport {
+	return FileImport{
+		Type:       "convertNullableBool",
+		ImportType: Package,
 	}
 }
 
@@ -452,6 +472,13 @@ func (t *timestampType) DefaultGraphQLFieldName() string {
 	return "time"
 }
 
+func (t *timestampType) Convert() FileImport {
+	return FileImport{
+		Type:       "convertDate",
+		ImportType: Package,
+	}
+}
+
 type TimestampType struct {
 	timestampType
 }
@@ -533,6 +560,13 @@ func (t *NullableTimestampType) GetTSGraphQLImports() []FileImport {
 			Type:       "GraphQLTime",
 			ImportType: EntGraphQL,
 		},
+	}
+}
+
+func (t *NullableTimestampType) Convert() FileImport {
+	return FileImport{
+		Type:       "convertNullableDate",
+		ImportType: Package,
 	}
 }
 
@@ -1364,4 +1398,17 @@ func GetGoType(typ types.Type) string {
 		return fp
 	}
 	return str[:letterIdx] + fp
+}
+
+func IsConvertDataType(t EntType) bool {
+	_, ok := t.(ConvertDataType)
+	return ok
+}
+
+func ConvertFunc(t EntType) string {
+	tt, ok := t.(ConvertDataType)
+	if !ok {
+		return ""
+	}
+	return tt.Convert().Type
 }

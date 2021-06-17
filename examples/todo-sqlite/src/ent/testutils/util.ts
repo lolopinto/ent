@@ -21,6 +21,8 @@ export async function createAccount() {
   expect(account.name).toBe("Jon Snow");
   expect(account.phoneNumber).toBe(number);
   expect(validate(account.id as string)).toBe(true);
+  expect(account.createdAt).toBeInstanceOf(Date);
+  expect(account.updatedAt).toBeInstanceOf(Date);
   return account;
 }
 
@@ -40,8 +42,7 @@ export async function createTodo(opts?: Partial<TodoCreateInput>) {
   }).saveX();
   expect(todo.text).toBe(text);
   expect(todo.creatorID).toBe(creatorID);
-  // TODO need to convert sqlite...
-  expect(todo.completed).toBe(0);
+  expect(todo.completed).toBe(false);
 
   return todo;
 }

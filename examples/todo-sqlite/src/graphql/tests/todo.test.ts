@@ -34,7 +34,6 @@ test("mark all as completed", async () => {
     account.viewer,
     account,
   ).queryEnts();
-  // TODO sqlite
   expect(loadedTodos.every((todo) => !todo.completed)).toBe(true);
 
   await expectMutation(
@@ -53,8 +52,7 @@ test("mark all as completed", async () => {
     account,
   ).queryEnts();
 
-  // TODO sqlite
-  expect(loadedTodos2.every((todo) => !!todo.completed)).toBe(true);
+  expect(loadedTodos2.every((todo) => todo.completed)).toBe(true);
 
   await expectMutation(
     {
@@ -72,7 +70,6 @@ test("mark all as completed", async () => {
     account,
   ).queryEnts();
 
-  // TODO sqlite
   expect(loadedTodos3.every((todo) => !todo.completed)).toBe(true);
 });
 

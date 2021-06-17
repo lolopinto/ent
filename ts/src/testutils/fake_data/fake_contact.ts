@@ -13,6 +13,7 @@ import { Field, StringType, BaseEntSchema, UUIDType } from "../../schema";
 import { NodeType } from "./const";
 import { table, uuid, text, timestamptz } from "../db/test_db";
 import { ObjectLoaderFactory } from "../../core/loaders";
+import { convertDate } from "../../core/convert";
 
 export class FakeContact implements Ent {
   readonly id: ID;
@@ -30,14 +31,8 @@ export class FakeContact implements Ent {
 
   constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
-    // TODO generalize this...
-    if (typeof data.created_at === "string") {
-      this.createdAt = new Date(Date.parse(data.created_at));
-      this.updatedAt = new Date(Date.parse(data.updated_at));
-    } else {
-      this.createdAt = data.created_at;
-      this.updatedAt = data.updated_at;
-    }
+    this.createdAt = convertDate(data.created_at);
+    this.updatedAt = convertDate(data.updated_at);
     this.firstName = data.first_name;
     this.lastName = data.last_name;
     this.emailAddress = data.email_address;

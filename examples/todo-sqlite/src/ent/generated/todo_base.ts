@@ -10,6 +10,8 @@ import {
   ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
+  convertBool,
+  convertDate,
   loadEnt,
   loadEntX,
   loadEnts,
@@ -39,10 +41,10 @@ export class TodoBase {
 
   constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
-    this.createdAt = data.created_at;
-    this.updatedAt = data.updated_at;
+    this.createdAt = convertDate(data.created_at);
+    this.updatedAt = convertDate(data.updated_at);
     this.text = data.text;
-    this.completed = data.completed;
+    this.completed = convertBool(data.completed);
     this.creatorID = data.creator_id;
   }
 
