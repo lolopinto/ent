@@ -21,6 +21,8 @@ export async function createAccount() {
   expect(account.name).toBe("Jon Snow");
   expect(account.phoneNumber).toBe(number);
   expect(validate(account.id as string)).toBe(true);
+  expect(account.createdAt).toBeInstanceOf(Date);
+  expect(account.updatedAt).toBeInstanceOf(Date);
   return account;
 }
 
