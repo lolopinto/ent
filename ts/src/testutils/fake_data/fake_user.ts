@@ -20,6 +20,7 @@ import { NodeType } from "./const";
 import { IDViewer, IDViewerOptions } from "../../core/viewer";
 import { table, uuid, text, timestamptz } from "../db/test_db";
 import { ObjectLoaderFactory } from "../../core/loaders";
+import { convertDate } from "../../core/convert";
 
 interface TokenOptions extends IDViewerOptions {
   tokens?: {};
@@ -72,8 +73,8 @@ export class FakeUser implements Ent {
 
   constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
-    this.createdAt = data.created_at;
-    this.updatedAt = data.updated_at;
+    this.createdAt = convertDate(data.created_at);
+    this.updatedAt = convertDate(data.updated_at);
     this.firstName = data.first_name;
     this.lastName = data.last_name;
     this.emailAddress = data.email_address;
@@ -125,8 +126,10 @@ export class FakeUser implements Ent {
   }
 }
 
-export class FakeUserSchema extends BaseEntSchema
-  implements BuilderSchema<FakeUser> {
+export class FakeUserSchema
+  extends BaseEntSchema
+  implements BuilderSchema<FakeUser>
+{
   ent = FakeUser;
   fields: Field[] = [
     StringType({

@@ -52,7 +52,13 @@ export class {{$baseClass}} {
 
   constructor(public viewer: {{$viewerType}}, data:{{$dataType}}) {
     {{range $field := .FieldInfo.Fields -}}
-      this.{{$field.TsFieldName}} = data.{{$field.GetDbColName}};
+      {{$val := printf "data.%s" $field.GetDbColName -}}
+      {{$convertType := convertFunc $field.GetFieldType -}}
+      {{if $convertType -}} 
+        this.{{$field.TsFieldName}} = {{useImport $convertType}}({{$val}});
+      {{ else -}}
+        this.{{$field.TsFieldName}} = {{$val}};
+      {{end -}}
     {{end}}
   }
 

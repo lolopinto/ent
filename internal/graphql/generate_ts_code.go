@@ -1184,6 +1184,8 @@ func getGQLFileImports(imps []enttype.FileImport, mutation bool) []*fileImport {
 		case enttype.EntGraphQL:
 			importPath = codepath.GraphQLPackage
 			break
+		case enttype.Package:
+			importPath = codepath.Package
 		default:
 			// empty means nothing to import and that's ok...
 			if imp.ImportType != "" {

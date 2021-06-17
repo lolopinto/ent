@@ -10,6 +10,7 @@ import {
   ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
+  convertDate,
   loadEnt,
   loadEntX,
   loadEnts,
@@ -39,8 +40,8 @@ export class TagBase {
 
   constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
-    this.createdAt = data.created_at;
-    this.updatedAt = data.updated_at;
+    this.createdAt = convertDate(data.created_at);
+    this.updatedAt = convertDate(data.updated_at);
     this.displayName = data.display_name;
     this.canonicalName = data.canonical_name;
     this.ownerID = data.owner_id;

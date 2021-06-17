@@ -12,6 +12,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
+	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
@@ -273,6 +274,18 @@ func (nodeData *NodeData) GetImportsForBaseFile() []ImportPath {
 				PackagePath: codepath.GetInternalImportPath(),
 			})
 		}
+
+		t := f.GetFieldType()
+		if !enttype.IsConvertDataType(t) {
+			continue
+		}
+		t2 := t.(enttype.ConvertDataType)
+		c := t2.Convert()
+		ret = append(ret, ImportPath{
+			Import: c.Type,
+			// TODO currently hardcoded
+			PackagePath: codepath.Package,
+		})
 	}
 	return ret
 }

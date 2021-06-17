@@ -101,3 +101,5 @@ export { IDViewer, LoggedOutViewer, IDViewerOptions } from "./core/viewer";
 export { loadConfig } from "./core/config";
 
 export { setLogLevels } from "./core/logger";
+
+export * from "./core/convert";

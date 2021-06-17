@@ -28,6 +28,7 @@ type expType struct {
 	contextType         bool
 	goType              string
 	tsType              string
+	convertFn           string
 }
 
 func TestStringType(t *testing.T) {
@@ -122,6 +123,7 @@ func f() bool {
 		goType:       "bool",
 		nullableType: &enttype.NullableBoolType{},
 		tsType:       "boolean",
+		convertFn:    "convertBool",
 	}, ret)
 }
 
@@ -144,6 +146,7 @@ func f() *bool {
 		nonNullableType: &enttype.BoolType{},
 		goType:          "*bool",
 		tsType:          "boolean | null",
+		convertFn:       "convertNullableBool",
 	}, ret)
 }
 
@@ -320,6 +323,7 @@ func f() time.Time {
 		defaultGQLFieldName: "time",
 		goType:              "time.Time",
 		tsType:              "Date",
+		convertFn:           "convertDate",
 	}, ret)
 }
 
@@ -348,6 +352,7 @@ func f() *time.Time {
 		defaultGQLFieldName: "time",
 		goType:              "*time.Time",
 		tsType:              "Date | null",
+		convertFn:           "convertNullableDate",
 	}, ret)
 }
 
@@ -1035,6 +1040,7 @@ func TestTimestamptzType(t *testing.T) {
 				castToMethod:        "cast.ToNullableTime",
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
+				convertFn:           "convertNullableDate",
 			},
 			nil,
 		},
@@ -1055,6 +1061,7 @@ func TestTimestamptzType(t *testing.T) {
 				castToMethod:        "cast.ToTime",
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
+				convertFn:           "convertDate",
 			},
 			nil,
 		},
@@ -1076,6 +1083,7 @@ func TestTimeType(t *testing.T) {
 				castToMethod:        "cast.ToNullableTime",
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
+				convertFn:           "convertNullableDate",
 			},
 			nil,
 		},
@@ -1093,6 +1101,7 @@ func TestTimeType(t *testing.T) {
 				castToMethod:        "cast.ToTime",
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
+				convertFn:           "convertDate",
 			},
 			nil,
 		},
@@ -1114,6 +1123,7 @@ func TestTimetzType(t *testing.T) {
 				castToMethod:        "cast.ToNullableTime",
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
+				convertFn:           "convertNullableDate",
 			},
 			nil,
 		},
@@ -1131,6 +1141,7 @@ func TestTimetzType(t *testing.T) {
 				castToMethod:        "cast.ToTime",
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
+				convertFn:           "convertDate",
 			},
 			nil,
 		},
@@ -1155,6 +1166,7 @@ func TestDateType(t *testing.T) {
 				castToMethod:        "cast.ToNullableTime",
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
+				convertFn:           "convertNullableDate",
 			},
 			nil,
 		},
@@ -1175,6 +1187,7 @@ func TestDateType(t *testing.T) {
 				castToMethod:        "cast.ToTime",
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
+				convertFn:           "convertDate",
 			},
 			nil,
 		},
@@ -1334,4 +1347,10 @@ func testType(t *testing.T, exp expType, ret returnType) {
 
 	assert.Equal(t, exp.errorType, enttype.IsErrorType(typ))
 	assert.Equal(t, exp.contextType, enttype.IsContextType(typ))
+
+	convType, ok := typ.(enttype.ConvertDataType)
+	if ok {
+		assert.Equal(t, exp.convertFn, convType.Convert().Type)
+	}
+
 }

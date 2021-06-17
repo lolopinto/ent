@@ -18,16 +18,14 @@ test("mark as completed", async () => {
     completed: true,
   }).saveX();
 
-  // TODO boolean
-  expect(todo.completed).toBe(1);
+  expect(todo.completed).toBe(true);
 
   // reopen
   todo = await ChangeTodoStatusAction.create(todo.viewer, todo, {
     completed: false,
   }).saveX();
 
-  // TODO boolean
-  expect(todo.completed).toBe(0);
+  expect(todo.completed).toBe(false);
 });
 
 test("rename todo", async () => {

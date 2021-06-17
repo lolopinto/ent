@@ -40,8 +40,7 @@ export async function createTodo(opts?: Partial<TodoCreateInput>) {
   }).saveX();
   expect(todo.text).toBe(text);
   expect(todo.creatorID).toBe(creatorID);
-  // TODO need to convert sqlite...
-  expect(todo.completed).toBe(0);
+  expect(todo.completed).toBe(false);
 
   return todo;
 }
