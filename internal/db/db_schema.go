@@ -19,6 +19,7 @@ import (
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema/input"
 
+	"github.com/lolopinto/ent/ent/config"
 	"github.com/lolopinto/ent/ent/data"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema"
@@ -426,7 +427,7 @@ func FixEdges(codePathInfo *codegen.CodePath) {
 	runPythonCommand(codePathInfo.GetRootPathToConfigs(), "-f=True")
 }
 
-func RunAlembicCommand(codePathInfo *codegen.CodePath, command string, args...string) {
+func RunAlembicCommand(codePathInfo *codegen.CodePath, command string, args ...string) {
 	if len(args) == 0 {
 		runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("--%s", command))
 	} else {
@@ -675,7 +676,7 @@ func (s *dbSchema) createEdgeTable(nodeData *schema.NodeData, assocEdge *edge.As
 		},
 		&indexConstraint{
 			dbColumns: []*dbColumn{timeCol},
-			tableName: tableName,			
+			tableName: tableName,
 		},
 	}
 
@@ -873,12 +874,19 @@ func (s *dbSchema) getUpdatedAtColumn() *dbColumn {
 	)
 }
 
+func (s *dbSchema) getIDColumn() string {
+	if config.IsSQLiteDialect() {
+		return "sa.Text()"
+	}
+	return "postgresql.UUID()"
+}
+
 // getID1Column returns the id1 column for the first id in an edge table.
 func (s *dbSchema) getID1Column() *dbColumn {
 	return s.getColumn(
 		"ID1",
 		"id1",
-		"postgresql.UUID()",
+		s.getIDColumn(),
 		[]string{
 			"nullable=False",
 		},
@@ -902,7 +910,7 @@ func (s *dbSchema) getEdgeTypeColumn() *dbColumn {
 	return s.getColumn(
 		"EdgeType",
 		"edge_type",
-		"postgresql.UUID()",
+		s.getIDColumn(),
 		[]string{
 			"nullable=False",
 		},
@@ -914,7 +922,7 @@ func (s *dbSchema) getID2Column() *dbColumn {
 	return s.getColumn(
 		"ID2",
 		"id2",
-		"postgresql.UUID()",
+		s.getIDColumn(),
 		[]string{
 			"nullable=False",
 		},
@@ -987,7 +995,7 @@ func (s *dbSchema) getInverseEdgeTypeColumn() *dbColumn {
 	return s.getColumn(
 		"InverseEdgeType",
 		"inverse_edge_type",
-		"postgresql.UUID()",
+		s.getIDColumn(),
 		[]string{
 			"nullable=True",
 		},

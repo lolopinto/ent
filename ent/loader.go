@@ -5,6 +5,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/ent/ent/cast"
+	"github.com/lolopinto/ent/ent/config"
 	"github.com/lolopinto/ent/ent/sql"
 	"github.com/pkg/errors"
 )
@@ -90,12 +91,6 @@ type customMultiLoader interface {
 
 type configurableLoader interface {
 	Configure() configureQueryResult
-}
-
-// terrible name
-type abortEarlyLoader interface {
-	loader
-	AbortEarly() bool
 }
 
 type loaderConfig struct {
@@ -458,7 +453,8 @@ func (l *loadEdgesByType) LoadData() ([]*AssocEdge, error) {
 }
 
 type nodeExists struct {
-	Exists bool `db:"exists"`
+	Exists bool   `db:"exists"`
+	Name   string `db:"name"`
 }
 
 func (n *nodeExists) GetID() string {
@@ -470,30 +466,44 @@ func (n *nodeExists) DBFields() DBFields {
 }
 
 type loadAssocEdgeConfigExists struct {
-	n nodeExists
+	n []*nodeExists
 }
 
 func (l *loadAssocEdgeConfigExists) GetSQLBuilder() (*sqlBuilder, error) {
+	query := "SELECT to_regclass($1) IS NOT NULL as exists"
+	if config.IsSQLiteDialect() {
+		query = "SELECT name FROM sqlite_master WHERE type='table' AND name=$1"
+	}
+
 	return &sqlBuilder{
-		rawQuery: "SELECT to_regclass($1) IS NOT NULL as exists",
+		rawQuery: query,
 		rawValues: []interface{}{
 			"assoc_edge_config",
 		},
 	}, nil
 }
 
-func (l *loadAssocEdgeConfigExists) GetEntity() DBObject {
-	return &l.n
+func (l *loadAssocEdgeConfigExists) GetNewInstance() DBObject {
+	n := &nodeExists{}
+	l.n = append(l.n, n)
+	return n
 }
 
 func (l *loadAssocEdgeConfigExists) GetOutput() interface{} {
 	// has an output that's not necessary passable. just indicates whether we should continue
 	// so GetOutput has 2 different meanings. This should mean continue chaining vs input/output
 	// maybe decouple this later?
-	if l.n.Exists {
-		return l.n.Exists
+	// 0 no row in sqlite
+	if len(l.n) == 0 {
+		return nil
 	}
-	return nil
+	n := l.n[0]
+	// postgres, table exists
+	if n.Exists {
+		return n.Exists
+	}
+	// sqlite table exists
+	return n.Name != ""
 }
 
 type loadNodesLoader struct {

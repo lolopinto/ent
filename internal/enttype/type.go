@@ -10,6 +10,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
+	"github.com/lolopinto/ent/ent/config"
 )
 
 // Type represents a Type that's expressed in the framework
@@ -255,6 +256,10 @@ func (t *idType) IsIDType() bool {
 }
 
 func (t *idType) GetDBType() string {
+	if config.IsSQLiteDialect() {
+		// SQLite doesn't support UUID so do the translation here
+		return "sa.Text()"
+	}
 	return "postgresql.UUID()"
 }
 

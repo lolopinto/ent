@@ -1,12 +1,12 @@
 package data
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq" //driver not used
 	"github.com/lolopinto/ent/ent/config"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var db *sqlx.DB
@@ -15,18 +15,9 @@ var dbMutex sync.RWMutex
 // init() initializes the database connection pool for use later
 // init function called as package is initalized. Maybe make this explicit with InitDB()?
 func init() {
-	connStr := config.GetConnectionStr()
-	var err error
-	db, err = sqlx.Open("postgres", connStr)
-	if err != nil {
-		fmt.Println("error opening db", err)
-		return
-	}
+	cfg := config.Get()
+	db, _ = cfg.DB.Init()
 
-	err = db.Ping()
-	if err != nil {
-		fmt.Println("DB unreachable", err)
-	}
 }
 
 // GetSQLAlchemyDatabaseURIgo returns the databause uri needed by sqlalchemy to generate a schema file

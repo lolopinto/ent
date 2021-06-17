@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	"github.com/lib/pq"
 	"github.com/lolopinto/ent/internal/util"
@@ -20,24 +21,54 @@ type Config struct {
 }
 
 type DBConfig struct {
-	Dialect  string `yaml:"dialect"`
-	Database string `yaml:"database"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
-	Pool     int    `yaml:"pool"`
-	SslMode  string `yaml:"sslmode"`
+	Dialect    string `yaml:"dialect"`
+	Database   string `yaml:"database"`
+	User       string `yaml:"user"`
+	Password   string `yaml:"password"`
+	Host       string `yaml:"host"`
+	Port       int    `yaml:"port"`
+	Pool       int    `yaml:"pool"`
+	SslMode    string `yaml:"sslmode"`
+	FilePath   string `yaml:"filePath"`
+	connString string
 }
 
 func (db *DBConfig) GetConnectionStr() string {
-	return db.getConnectionStr("postgres", true)
+	if db.Dialect == "postgres" {
+		return db.getConnectionStr("postgres", true)
+	}
+	return db.connString
 }
 
 func (db *DBConfig) GetSQLAlchemyDatabaseURIgo() string {
-	// postgres only for now as above. specific driver also
-	// no ssl mode
-	return db.getConnectionStr("postgresql+psycopg2", false)
+	if db.Dialect == "postgres" {
+		return db.getConnectionStr("postgresql+psycopg2", false)
+	}
+	return db.connString
+}
+
+func (db *DBConfig) Init() (*sqlx.DB, error) {
+	var driverName, connString string
+	if db.Dialect == "sqlite" {
+		driverName = "sqlite3"
+		connString = db.FilePath
+	} else {
+		driverName = "postgres"
+		connString = db.GetConnectionStr()
+	}
+
+	db2, err := sqlx.Open(driverName, connString)
+	if err != nil {
+		fmt.Println("error opening db", err)
+		return nil, err
+	}
+
+	err = db2.Ping()
+	if err != nil {
+		fmt.Println("DB unreachable", err)
+		return nil, err
+	}
+	return db2, nil
 }
 
 func (r *DBConfig) setDbName(val string) {
@@ -111,6 +142,10 @@ func Get() *Config {
 	return cfg
 }
 
+func IsSQLiteDialect() bool {
+	return Get().DB.Dialect == "sqlite"
+}
+
 func GetConnectionStr() string {
 	cfg := Get()
 	if cfg == nil {
@@ -131,6 +166,16 @@ func parseConnectionString() (*DBConfig, error) {
 
 	if conn == "" {
 		return nil, nil
+	}
+
+	// sqlite...
+	if strings.HasPrefix(conn, "sqlite:///") {
+		filePath := strings.TrimPrefix(conn, "sqlite:///")
+		return &DBConfig{
+			Dialect:    "sqlite",
+			FilePath:   filePath,
+			connString: conn,
+		}, nil
 	}
 
 	url, err := pq.ParseURL(conn)

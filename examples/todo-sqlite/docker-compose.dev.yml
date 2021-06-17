@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  app:
+    build: 
+      context: .
+      dockerfile: develop.Dockerfile
+      args:
+        - GITHUB_TOKEN=${GITHUB_TOKEN}
+    container_name: example_app
+    ports: 
+      - 4000:4000
+      - 9229:9229 # for debugger apparently
+    volumes: 
+      - .:/app:rw,delegated
+    environment:
+      - DB_CONNECTION_STRING=sqlite:///todo.db
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+
