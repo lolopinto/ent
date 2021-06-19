@@ -44,9 +44,7 @@ export class Email extends BaseField implements Field {
 
   format(val: any): any {
     // always trim and store in lowercase
-    const type = StringType({ name: "s" })
-      .toLowerCase()
-      .trim();
+    const type = StringType({ name: "s" }).toLowerCase().trim();
     return type.format(val);
   }
 

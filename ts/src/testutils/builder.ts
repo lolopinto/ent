@@ -12,7 +12,7 @@ import {
   saveBuilderX,
   Observer,
 } from "../action";
-import { Schema } from "../schema";
+import { getFields, Schema } from "../schema";
 import { QueryRecorder } from "./db_mock";
 import pluralize from "pluralize";
 import { snakeCase } from "snake-case";
@@ -136,18 +136,30 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
     }
     this.fields = fields;
 
+    const schemaFields = getFields(schema);
+    let key = "id";
+    if (!schemaFields.has("id") && !schemaFields.has("ID")) {
+      if (schemaFields.size !== 1) {
+        throw new Error(
+          `no id field and multiple fields so can't deduce key. add an id field to schema`,
+        );
+      }
+      for (const [name, _] of fields) {
+        key = snakeCase(name);
+      }
+    }
     this.ent = schema.ent;
     const tableName = getTableName(schema);
     this.orchestrator = new Orchestrator<T>({
       viewer: this.viewer,
       operation: operation,
       tableName: tableName,
-      key: "id",
+      key,
       loaderOptions: {
         loaderFactory: new ObjectLoaderFactory({
           tableName: tableName,
           fields: [],
-          key: "id",
+          key,
         }),
         ent: schema.ent,
         tableName: tableName,

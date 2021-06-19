@@ -164,11 +164,17 @@ export enum DBType {
   Date = "Date",
   Time = "Time",
   Timetz = "Timetz",
+
+  List = "List",
 }
 
 // represents the type of each field
 export interface Type {
   dbType: DBType; // type in the db
+  // if DBType is a list, we need this for what list type
+  // e.g. text[], integer[] in postgres
+  // For SQLite, we'll just store as text and json encode/decode
+  dbElemType?: DBType;
   // TODO make these required eventually once we get there
   type?: string; // typescript type
   graphQLType?: string; // graphql type

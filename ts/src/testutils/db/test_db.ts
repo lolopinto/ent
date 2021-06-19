@@ -163,6 +163,62 @@ export function integer(name: string, opts?: options): Column {
   };
 }
 
+export function float(name: string, opts?: options): Column {
+  return {
+    name,
+    datatype() {
+      return "REAL";
+    },
+    ...opts,
+  };
+}
+
+function list(name: string, col: Column, opts?: options): Column {
+  return {
+    name,
+    datatype() {
+      return `${col.datatype()}[]`;
+    },
+    ...opts,
+  };
+}
+
+export function textList(name: string, opts?: options): Column {
+  return list(name, text(name), opts);
+}
+
+export function integerList(name: string, opts?: options): Column {
+  return list(name, integer(name), opts);
+}
+
+export function uuidList(name: string, opts?: options): Column {
+  return list(name, uuid(name), opts);
+}
+
+export function timestampList(name: string, opts?: options): Column {
+  return list(name, timestamp(name), opts);
+}
+
+export function timestamptzList(name: string, opts?: options): Column {
+  return list(name, timestamptz(name), opts);
+}
+
+export function timeList(name: string, opts?: options): Column {
+  return list(name, time(name), opts);
+}
+
+export function timetzList(name: string, opts?: options): Column {
+  return list(name, timetz(name), opts);
+}
+
+export function dateList(name: string, opts?: options): Column {
+  return list(name, date(name), opts);
+}
+
+export function boolList(name: string, opts?: options): Column {
+  return list(name, bool(name), opts);
+}
+
 export function table(name: string, ...items: SchemaItem[]): Table {
   let cols: Column[] = [];
   let constraints: Constraint[] = [];
@@ -233,7 +289,7 @@ export class TempDB {
   private dialect: Dialect;
   private sqlite: SqliteDatabase;
 
-  constructor(dialect: Dialect, tables: Table[]);
+  constructor(dialect: Dialect, tables?: Table[]);
   constructor(tables: Table[]);
   constructor(dialect: Dialect | Table[], tables?: Table[]) {
     let tbles: Table[] = [];
@@ -241,8 +297,6 @@ export class TempDB {
       this.dialect = dialect;
       if (tables) {
         tbles = tables;
-      } else {
-        throw new Error("tables required");
       }
     } else {
       this.dialect = Dialect.Postgres;
@@ -330,6 +384,12 @@ export class TempDB {
     await this.client.query(`DROP DATABASE ${this.db}`);
 
     await this.client.end();
+  }
+
+  async dropAll() {
+    for (const [t, _] of this.tables) {
+      await this.drop(t);
+    }
   }
 
   async drop(...tables: string[]) {
@@ -433,25 +493,61 @@ export function getSchemaTable(schema: BuilderSchema<Ent>, dialect: Dialect) {
   return table(getTableName(schema), ...columns);
 }
 
-function getColumnFromField(f: Field, dialect: Dialect) {
-  switch (f.type.dbType) {
+function getColumnForDbType(
+  t: DBType,
+  dialect: Dialect,
+): ((name: string) => Column) | undefined {
+  switch (t) {
     case DBType.UUID:
       if (dialect === Dialect.Postgres) {
-        return getColumn(f, uuid);
+        return uuid;
       }
-      return getColumn(f, text);
+      return text;
     case DBType.Int64ID:
-      return getColumn(f, integer);
+    case DBType.Int:
+      return integer;
     case DBType.Boolean:
-      return getColumn(f, bool);
+      return bool;
     case DBType.Timestamp:
-      return getColumn(f, timestamp);
+      return timestamp;
     case DBType.Timestamptz:
-      return getColumn(f, timestamptz);
+      return timestamptz;
     case DBType.String:
-      return getColumn(f, text);
+    case DBType.StringEnum:
+      return text;
+    case DBType.Float:
+      return float;
+    case DBType.Date:
+      return date;
+    case DBType.Time:
+      return time;
+    case DBType.Timetz:
+      return timetz;
+
     default:
-      throw new Error(`unsupported type ${f.type.dbType}`);
+      return undefined;
+  }
+}
+
+function getColumnFromField(f: Field, dialect: Dialect) {
+  switch (f.type.dbType) {
+    case DBType.List:
+      const elemType = f.type.dbElemType;
+      if (elemType === undefined) {
+        throw new Error(`unsupported list type with no elem type`);
+      }
+      const elemFn = getColumnForDbType(elemType, dialect);
+      if (elemFn === undefined) {
+        throw new Error(`unsupported type for ${elemType}`);
+      }
+      return list(storageKey(f), elemFn("ignore"), buildOpts(f));
+
+    default:
+      const fn = getColumnForDbType(f.type.dbType, dialect);
+      if (fn === undefined) {
+        throw new Error(`unsupported type ${f.type.dbType}`);
+      }
+      return getColumn(f, fn);
   }
 }
 
