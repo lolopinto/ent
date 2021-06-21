@@ -32,20 +32,17 @@ export class Password extends BaseField implements Field {
   }
 
   minLen(length: number): this {
-    // TODO...
-    this.stringType.minLen = length;
+    this.stringType.minLen(length);
     return this;
   }
 
   maxLen(length: number): this {
-    // TODO...
-    this.stringType.maxLen = length;
+    this.stringType.maxLen(length);
     return this;
   }
 
   length(length: number): this {
-    // TODO...
-    this.stringType.length = length;
+    this.stringType.length(length);
     return this;
   }
 
