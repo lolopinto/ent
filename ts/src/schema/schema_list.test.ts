@@ -5,7 +5,6 @@ import {
   EnumListType,
   FloatListType,
   IntListType,
-  ListField,
   StringListType,
   StringType,
   TimeListType,
@@ -21,7 +20,6 @@ import { Ent } from "../core/base";
 import * as fs from "fs";
 import { loadConfig } from "../core/config";
 import { convertBool, convertDate, convertList } from "../core/convert";
-import { EmailType } from "@lolopinto/ent-email";
 let tdb: TempDB;
 async function setupTempDB(dialect: Dialect, connString?: string) {
   beforeAll(async () => {
@@ -323,28 +321,5 @@ function commonTests() {
     } catch (err) {
       expect(err.message).toBe("invalid field days with value red,Tuesday");
     }
-  });
-
-  test("custom type", async () => {
-    class Contact extends User {}
-    class ContactSchema implements Schema {
-      fields: Field[] = [
-        new ListField(EmailType({ name: "contacts" }), { name: "contacts" }),
-      ];
-      ent = Contact;
-    }
-
-    const emails = ["foo@EMAIL.com", "test@BAR.com", " baz@ggg.com"];
-    const expected = emails.map((e) => e.toLowerCase().trim());
-
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
-      new ContactSchema(),
-      new Map<string, any>([["contacts", emails]]),
-    );
-    await createTables(new ContactSchema());
-
-    const contact = await action.saveX();
-    expect(convertList(contact.data.contacts)).toEqual(expected);
   });
 }
