@@ -15,8 +15,8 @@ import schema from "src/schema/hours_of_operation";
 
 export interface HoursOfOperationInput {
   dayOfWeek?: dayOfWeek;
-  open?: Date;
-  close?: Date;
+  open?: string;
+  close?: string;
 }
 
 export interface HoursOfOperationAction extends Action<HoursOfOperation> {
@@ -123,12 +123,12 @@ export class HoursOfOperationBuilder implements Builder<HoursOfOperation> {
   }
 
   // get value of open. Retrieves it from the input if specified or takes it from existingEnt
-  getNewOpenValue(): Date | undefined {
+  getNewOpenValue(): string | undefined {
     return this.input.open || this.existingEnt?.open;
   }
 
   // get value of close. Retrieves it from the input if specified or takes it from existingEnt
-  getNewCloseValue(): Date | undefined {
+  getNewCloseValue(): string | undefined {
     return this.input.close || this.existingEnt?.close;
   }
 }

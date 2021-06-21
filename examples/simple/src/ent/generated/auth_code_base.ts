@@ -9,6 +9,7 @@ import {
   ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
+  convertDate,
   loadEnt,
   loadEntX,
   loadEnts,
@@ -40,8 +41,8 @@ export class AuthCodeBase {
 
   constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
-    this.createdAt = data.created_at;
-    this.updatedAt = data.updated_at;
+    this.createdAt = convertDate(data.created_at);
+    this.updatedAt = convertDate(data.updated_at);
     this.code = data.code;
     this.userID = data.user_id;
     this.emailAddress = data.email_address;

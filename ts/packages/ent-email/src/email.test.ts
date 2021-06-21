@@ -1,4 +1,5 @@
-import { EmailType, Email } from "./email";
+import exp from "constants";
+import { EmailType, EmailListType, Email } from "./email";
 
 function testCase(exp: expectedResult) {
   let typ = EmailType({ name: "emailAddress" });
@@ -133,4 +134,22 @@ test("restrict domain. invalid ", () => {
     input: "first_last@bar.com",
     invalid: true,
   });
+});
+
+test("list", () => {
+  const tt = EmailListType({ name: "emails" });
+  const input = ["first_last@email.com", "first_last@bar.com"];
+  expect(tt.valid(input)).toBe(true);
+  // postgres stored in db style
+  expect(tt.format(input)).toEqual(`{${input.join(",")}}`);
+});
+
+test("list with invalid", () => {
+  const tt = EmailListType({ name: "emails" });
+  const input = [
+    "first_last@email.com",
+    "first_last@bar.com",
+    "  first last(comment) < first.last@email.com>",
+  ];
+  expect(tt.valid(input)).toBe(false);
 });

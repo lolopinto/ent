@@ -776,3 +776,15 @@ describe("edit phone number", () => {
     }
   });
 });
+
+test("nicknames", async () => {
+  const n = ["Lord Snow", "The Prince That was Promised"];
+
+  let user = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+    nicknames: n,
+  });
+
+  expect(user.nicknames).toEqual(n);
+});

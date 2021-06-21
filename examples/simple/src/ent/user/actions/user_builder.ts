@@ -23,6 +23,7 @@ export interface UserInput {
   accountStatus?: string | null;
   emailVerified?: boolean;
   bio?: string | null;
+  nicknames?: string[] | null;
 }
 
 export interface UserAction extends Action<User> {
@@ -501,6 +502,7 @@ export class UserBuilder implements Builder<User> {
     addField("AccountStatus", fields.accountStatus);
     addField("emailVerified", fields.emailVerified);
     addField("Bio", fields.bio);
+    addField("nicknames", fields.nicknames);
     return result;
   }
 
@@ -546,5 +548,10 @@ export class UserBuilder implements Builder<User> {
   // get value of Bio. Retrieves it from the input if specified or takes it from existingEnt
   getNewBioValue(): string | null | undefined {
     return this.input.bio || this.existingEnt?.bio;
+  }
+
+  // get value of nicknames. Retrieves it from the input if specified or takes it from existingEnt
+  getNewNicknamesValue(): string[] | null | undefined {
+    return this.input.nicknames || this.existingEnt?.nicknames;
   }
 }

@@ -8,6 +8,7 @@ import {
 } from "./schema";
 import { snakeCase } from "snake-case";
 import { DateTime } from "luxon";
+import DB, { Dialect } from "../core/db";
 
 export abstract class BaseField {
   name: string;
@@ -126,34 +127,75 @@ export interface StringOptions extends FieldOptions {
   minLen?: number;
   maxLen?: number;
   length?: number;
+  toLowerCase?: boolean;
+  toUpperCase?: boolean;
+  match?: string | RegExp;
+  doesNotMatch?: string | RegExp;
+  trim?: boolean;
+  trimLeft?: boolean;
+  trimRight?: boolean;
 }
 
-export class StringField extends BaseField implements Field, StringOptions {
-  minLen: number | undefined;
-  maxLen: number | undefined;
-  length: number | undefined;
-
+export class StringField extends BaseField implements Field {
   type: Type = { dbType: DBType.String };
-
   private validators: { (str: string): boolean }[] = [];
   private formatters: { (str: string): string }[] = [];
 
+  constructor(options?: StringOptions) {
+    super();
+    // for legacy callers
+    this.handleOptions(options || { name: "field" });
+  }
+
+  getOptions(): StringOptions {
+    return this.getOptions;
+  }
+
+  private handleOptions(options: StringOptions) {
+    const noParams = {
+      toLowerCase: this.toLowerCase,
+      toUpperCase: this.toUpperCase,
+      trim: this.trim,
+      trimLeft: this.trimLeft,
+      trimRight: this.trimRight,
+    };
+
+    const params = {
+      minLen: this.minLen,
+      maxLen: this.maxLen,
+      length: this.length,
+      match: this.match,
+      doesNotMatch: this.doesNotMatch,
+    };
+
+    for (const k in params) {
+      const v = options[k];
+      if (v !== undefined) {
+        params[k].apply(this, [v]);
+      }
+    }
+    for (const k in noParams) {
+      if (options[k] === true) {
+        noParams[k].apply(this);
+      }
+    }
+  }
+
+  minLen(l: number): StringField {
+    return this.validate((val) => {
+      return val.length >= l;
+    });
+  }
+
+  maxLen(l: number): StringField {
+    return this.validate((val) => val.length <= l);
+  }
+
+  length(l: number) {
+    return this.validate((val) => val.length === l);
+  }
+
   valid(val: any): boolean {
-    if (this.minLen) {
-      let minLen = this.minLen;
-      this.validators.push((val) => val.length >= minLen);
-    }
-
-    if (this.maxLen) {
-      let maxLen = this.maxLen;
-      this.validators.push((val) => val.length <= maxLen);
-    }
-
-    if (this.length) {
-      let length = this.length;
-      this.validators.push((val) => val.length === length);
-    }
-
     // TODO play with API more and figure out if I want functions ala below
     // or properties ala this
     // both doable but which API is better ?
@@ -183,14 +225,14 @@ export class StringField extends BaseField implements Field, StringOptions {
   }
 
   match(pattern: string | RegExp): StringField {
-    return this.validate(function(str: string): boolean {
+    return this.validate(function (str: string): boolean {
       let r = new RegExp(pattern);
       return r.test(str);
     });
   }
 
   doesNotMatch(pattern: string | RegExp): StringField {
-    return this.validate(function(str: string): boolean {
+    return this.validate(function (str: string): boolean {
       let r = new RegExp(pattern);
       return !r.test(str);
     });
@@ -218,8 +260,15 @@ export class StringField extends BaseField implements Field, StringOptions {
 }
 
 export function StringType(options: StringOptions): StringField {
-  let result = new StringField();
-  return Object.assign(result, options);
+  let result = new StringField(options);
+  const options2 = { ...options };
+  for (const key in options) {
+    // key already exists here e.g. the method toLowerCase
+    if (result[key]) {
+      delete options2[key];
+    }
+  }
+  return Object.assign(result, options2);
 }
 
 export interface TimestampOptions extends FieldOptions {
@@ -240,16 +289,20 @@ export class TimestampField extends BaseField implements Field {
   }
 
   format(val: Date): any {
+    let dt: DateTime;
+    if (typeof val === "string") {
+      dt = DateTime.fromISO(val);
+    } else {
+      dt = DateTime.fromJSDate(val);
+    }
     if (this.withTimezone) {
       // send ISO down so that if it's saved in different format e.g. csv and then
       // later saved in the db  e.g. with COPY, correct value is saved.
-      return DateTime.fromJSDate(val).toISO();
+      return dt.toISO();
     }
 
     // without timezone, make sure to store UTC value...
-    return DateTime.fromJSDate(val)
-      .toUTC()
-      .toISO();
+    return dt.toUTC().toISO();
   }
 }
 
@@ -313,8 +366,11 @@ export class TimeField extends BaseField implements Field {
     let mm = leftPad(val.getMinutes());
     let ss = leftPad(val.getSeconds());
     let ms = leftPad(val.getMilliseconds());
-    let ret = `${hh}:${mm}:${ss}.${ms}${offset}`;
-    return ret;
+    if (ms !== "00" && offset) {
+      return `${hh}:${mm}:${ss}.${ms}${offset}`;
+    } else {
+      return `${hh}:${mm}:${ss}`;
+    }
   }
 }
 
@@ -456,4 +512,106 @@ export class EnumField extends BaseField implements Field {
 export function EnumType(options: EnumOptions): EnumField {
   let result = new EnumField(options);
   return Object.assign(result, options);
+}
+
+export class ListField extends BaseField {
+  type: Type;
+
+  constructor(private field: Field, options: FieldOptions) {
+    super();
+    if (field.type.dbType === DBType.List) {
+      throw new Error(`nested lists not currently supported`);
+    }
+    this.type = {
+      dbType: DBType.List,
+      listElemType: field.type,
+    };
+    Object.assign(this, options);
+  }
+
+  valid(val: any): boolean {
+    if (!Array.isArray(val)) {
+      return false;
+    }
+    if (!this.field.valid) {
+      return true;
+    }
+    for (const v of val) {
+      if (!this.field.valid(v)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  format(val: any): any {
+    if (!Array.isArray(val)) {
+      throw new Error(`need an array to format`);
+    }
+
+    if (this.field.format) {
+      for (let i = 0; i < val.length; i++) {
+        val[i] = this.field.format(val[i]);
+      }
+    }
+
+    // postgres supports arrays natively so we
+    // structure it in the expected format
+    if (DB.getDialect() === Dialect.Postgres) {
+      return `{${val.join(",")}}`;
+    }
+    // For SQLite, we store a JSON string
+    return JSON.stringify(val);
+  }
+}
+
+export function StringListType(options: StringOptions) {
+  return new ListField(StringType(options), options);
+}
+
+export function IntListType(options: FieldOptions) {
+  return new ListField(IntegerType(options), options);
+}
+
+export function FloatListType(options: FieldOptions) {
+  return new ListField(FloatType(options), options);
+}
+
+export function BooleanListType(options: FieldOptions) {
+  return new ListField(BooleanType(options), options);
+}
+
+export function TimestampListType(options: TimestampOptions) {
+  return new ListField(TimestampType(options), options);
+}
+
+export function TimestamptzListType(options: TimestampOptions) {
+  return new ListField(TimestamptzType(options), options);
+}
+
+export function TimeListType(options: TimeOptions) {
+  return new ListField(TimeType(options), options);
+}
+
+export function TimetzListType(options: TimeOptions) {
+  return new ListField(TimetzType(options), options);
+}
+
+export function DateListType(options: FieldOptions) {
+  return new ListField(DateType(options), options);
+}
+
+export function EnumListType(options: EnumOptions) {
+  if (options.createEnumType) {
+    throw new Error(`createEnumType is currently unsupported in enum list`);
+  }
+  if (options.foreignKey) {
+    throw new Error(`foreignKey is currently unsupported in enum list`);
+  }
+
+  // not all of these will make sense in a list...
+  // can make it work eventually but involves work we're not currently trying to do
+  // developer can try to work around it by calling below on their own.
+  // unclear what the behavior is
+  return new ListField(EnumType(options), options);
 }

@@ -211,6 +211,32 @@ def metadata_table_with_timetz():
     return metadata
 
 
+@pytest.fixture
+def metadata_with_arrays():
+    metadata = sa.MetaData()
+    sa.Table("tbl", metadata,
+             sa.Column('string_list', postgresql.ARRAY(
+                 sa.Text), nullable=False),
+             sa.Column('string_list_2', postgresql.ARRAY(
+                 sa.Text()), nullable=False),
+             sa.Column('int_list', postgresql.ARRAY(
+                 sa.Integer), nullable=False),
+             sa.Column('bool_list', postgresql.ARRAY(
+                 sa.Boolean), nullable=False),
+             sa.Column('date_list', postgresql.ARRAY(sa.Date), nullable=False),
+             sa.Column('time_list', postgresql.ARRAY(sa.Time), nullable=False),
+             sa.Column('timetz_list', postgresql.ARRAY(
+                 sa.Time(timezone=True)), nullable=False),
+             sa.Column('timestamp_list', postgresql.ARRAY(
+                 sa.TIMESTAMP), nullable=False),
+             sa.Column('timestamptz_list', postgresql.ARRAY(
+                 sa.TIMESTAMP(timezone=True)), nullable=False),
+             sa.Column('float_list', postgresql.ARRAY(
+                 sa.Float), nullable=False)
+             )
+    return metadata
+
+
 def identity_metadata_func(metadata):
     return metadata
 

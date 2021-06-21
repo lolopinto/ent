@@ -10,6 +10,8 @@ import {
   ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
+  convertDate,
+  convertNullableDate,
   getEdgeTypeInGroup,
   loadEnt,
   loadEntX,
@@ -69,12 +71,12 @@ export class EventBase {
 
   constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
-    this.createdAt = data.created_at;
-    this.updatedAt = data.updated_at;
+    this.createdAt = convertDate(data.created_at);
+    this.updatedAt = convertDate(data.updated_at);
     this.name = data.name;
     this.creatorID = data.user_id;
-    this.startTime = data.start_time;
-    this.endTime = data.end_time;
+    this.startTime = convertDate(data.start_time);
+    this.endTime = convertNullableDate(data.end_time);
     this.location = data.location;
   }
 

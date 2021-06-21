@@ -4,9 +4,10 @@ make changes to code and then run as following:
 * run a test: `python -m pytest -k test_enum_type`
 * run all tests: `python -m pytest`
 
-* `pipenv install` to install dependencies from `Pipfile`
+* `pip3 install pipenv` to install `pipenv`
+* `pipenv install --dev` to install dependencies from `Pipfile`
 
-assumes a local postgres db named `autoschema_test` exists
+assumes a local postgres db named `autoschema_test` exists. create via `createdb autoschema_test`
 
 credentials: `postgresql://localhost/autoschema_test`
 

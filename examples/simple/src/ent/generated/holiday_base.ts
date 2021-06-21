@@ -9,6 +9,7 @@ import {
   ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
+  convertDate,
   loadEnt,
   loadEntX,
   loadEnts,
@@ -30,10 +31,10 @@ export class HolidayBase {
 
   constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
-    this.createdAt = data.created_at;
-    this.updatedAt = data.updated_at;
+    this.createdAt = convertDate(data.created_at);
+    this.updatedAt = convertDate(data.updated_at);
     this.label = data.label;
-    this.date = data.date;
+    this.date = convertDate(data.date);
   }
 
   // default privacyPolicy is Viewer can see themselves

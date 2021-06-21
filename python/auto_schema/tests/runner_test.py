@@ -222,33 +222,46 @@ def validate_column_server_default(schema_column, db_column):
 
 
 def validate_column_type(schema_column, db_column, metadata, dialect):
-    # print(type(schema_column.type).__name__, schema_column.type, db_column.type, schema_column.type == db_column.type, str(schema_column.type) == str(db_column.type))
+    # array type. validate contents
+    if isinstance(schema_column.type, postgresql.ARRAY):
+        assert isinstance(db_column.type, postgresql.ARRAY)
 
-    if isinstance(schema_column.type, sa.TIMESTAMP):
+        validate_column_type_impl(
+            schema_column.type.item_type, db_column.type.item_type, metadata, dialect, db_column, schema_column)
+    else:
+
+        validate_column_type_impl(
+            schema_column.type, db_column.type, metadata, dialect, db_column, schema_column)
+    pass
+
+
+def validate_column_type_impl(schema_column_type, db_column_type, metadata, dialect, db_column, schema_column):
+
+    if isinstance(schema_column_type, sa.TIMESTAMP):
         # timezone not supported in sqlite so this is just ignored there
         if dialect != 'sqlite':
-            assert schema_column.type.timezone == db_column.type.timezone
+            assert schema_column_type.timezone == db_column_type.timezone
         else:
-            assert str(db_column.type) == "TIMESTAMP"
-    elif isinstance(schema_column.type, sa.Time):
+            assert str(db_column_type) == "TIMESTAMP"
+    elif isinstance(schema_column_type, sa.Time):
         # timezone not supported in sqlite so this is just ignored there
         if dialect != 'sqlite':
-            assert schema_column.type.timezone == db_column.type.timezone
+            assert schema_column_type.timezone == db_column_type.timezone
         else:
-            assert str(db_column.type) == "TIME"
-    elif isinstance(schema_column.type, sa.Numeric):
-        assert isinstance(db_column.type, sa.Numeric)
+            assert str(db_column_type) == "TIME"
+    elif isinstance(schema_column_type, sa.Numeric):
+        assert isinstance(db_column_type, sa.Numeric)
         # precision is tricky so ignore this for now
         # assert schema_column.type.precision == db_column.type.precision
-    elif isinstance(schema_column.type, postgresql.ENUM):
+    elif isinstance(schema_column_type, postgresql.ENUM):
         # enum type if possible otherwise check constraint...
-        assert isinstance(db_column.type, postgresql.ENUM)
+        assert isinstance(db_column_type, postgresql.ENUM)
         validate_enum_column_type(metadata, db_column, schema_column)
     else:
         # compare types by using the string version of the types.
         # seems to account for differences btw Integer and INTEGER, String(255) and VARCHAR(255) etc
 
-        assert str(schema_column.type) == str(db_column.type)
+        assert str(schema_column_type) == str(db_column_type)
 
 
 def validate_enum_column_type(metadata, db_column, schema_column):
@@ -1282,6 +1295,12 @@ class TestPostgresRunner(BaseTestRunner):
         r2.run()
         assert_num_files(r2, 2)
         validate_metadata_after_change(r2, new_metadata)
+
+    @pytest.mark.usefixtures("metadata_with_arrays")
+    def test_tables_with_arrays(self, new_test_runner, metadata_with_arrays):
+        r = new_test_runner(metadata_with_arrays)
+        run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_arrays, new_table_names=['tbl'])
 
 
 class TestSqliteRunner(BaseTestRunner):

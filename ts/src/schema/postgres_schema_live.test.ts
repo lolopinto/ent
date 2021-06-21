@@ -9,21 +9,19 @@ import {
   TimestamptzType,
 } from "./field";
 import { BaseEntSchema, Schema, Field } from ".";
-import { User, SimpleAction } from "../testutils/builder";
+import { User, SimpleAction, BuilderSchema } from "../testutils/builder";
 import {
   table,
   TempDB,
   text,
   timestamp,
   timestamptz,
-  time,
-  timetz,
   uuid,
-  date,
+  getSchemaTable,
 } from "../testutils/db/test_db";
 import { v4 as uuidv4 } from "uuid";
 import pg from "pg";
-import { defaultTimestampParser } from "../core/db";
+import { defaultTimestampParser, Dialect } from "../core/db";
 import { BaseEntSchemaWithTZ } from "./base_schema";
 import { DBType } from "./schema";
 import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
@@ -285,7 +283,7 @@ class Hours implements Ent {
   }
 }
 
-class HoursSchema implements Schema {
+class HoursSchema extends BaseEntSchema {
   fields: Field[] = [
     // should be an enum but let's ignore that
     StringType({ name: "dayOfWeek" }),
@@ -295,7 +293,7 @@ class HoursSchema implements Schema {
   ent = Hours;
 }
 
-class HoursTZSchema implements Schema {
+class HoursTZSchema extends BaseEntSchema {
   fields: Field[] = [
     // should be an enum but let's ignore that
     StringType({ name: "dayOfWeek" }),
@@ -304,8 +302,6 @@ class HoursTZSchema implements Schema {
   ];
   ent = Hours;
 }
-
-const timeRegex = /^([01][0-9]):([0-5][0-9]):([0-5][0-9])(.[0-9]+)?$/;
 
 describe("time", () => {
   beforeAll(async () => {
@@ -317,23 +313,15 @@ describe("time", () => {
   });
 
   async function createTimeTable() {
-    await tdb.create(
-      table("hours", text("day_of_week"), time("open"), time("close")),
-    );
+    await tdb.create(getSchemaTable(new HoursSchema(), Dialect.Postgres));
   }
 
   test("date object", async () => {
     const open = new Date();
-    open.setHours(8);
-    open.setMinutes(0);
-    open.setSeconds(0);
-    open.setMilliseconds(0);
+    open.setHours(8, 0, 0, 0);
 
     const close = new Date();
-    close.setHours(17);
-    close.setMinutes(0);
-    close.setSeconds(0);
-    close.setMilliseconds(0);
+    close.setHours(17, 0, 0, 0);
     const action = new SimpleAction(
       new LoggedOutViewer(),
       new HoursSchema(),
@@ -385,9 +373,7 @@ describe("timetz", () => {
   });
 
   async function createTimeTable() {
-    await tdb.create(
-      table("hours", text("day_of_week"), timetz("open"), timetz("close")),
-    );
+    await tdb.create(getSchemaTable(new HoursTZSchema(), Dialect.Postgres));
   }
 
   test("date object", async () => {
@@ -450,7 +436,7 @@ class Holiday implements Ent {
   }
 }
 
-class HolidaySchema implements Schema {
+class HolidaySchema extends BaseEntSchema {
   fields: Field[] = [
     // should be an enum but let's ignore that
     StringType({ name: "label" }),
@@ -469,7 +455,7 @@ describe("date", () => {
   });
 
   async function createHolidaysTable() {
-    await tdb.create(table("holidays", text("label"), date("date")));
+    await tdb.create(getSchemaTable(new HolidaySchema(), Dialect.Postgres));
   }
 
   // for some reason, a Date object is returned here and it accounts for timezone

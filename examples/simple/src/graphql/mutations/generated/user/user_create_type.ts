@@ -5,6 +5,7 @@ import {
   GraphQLFieldConfigMap,
   GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLResolveInfo,
@@ -38,6 +39,9 @@ export const UserCreateInputType = new GraphQLInputObjectType({
     },
     password: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    nicknames: {
+      type: GraphQLList(GraphQLNonNull(GraphQLString)),
     },
   }),
 });
@@ -75,6 +79,7 @@ export const UserCreateType: GraphQLFieldConfig<
       emailAddress: input.emailAddress,
       phoneNumber: input.phoneNumber,
       password: input.password,
+      nicknames: input.nicknames,
     }).saveX();
     return { user: user };
   },

@@ -1,4 +1,9 @@
-import { PhoneNumberType, PhoneNumber } from "./phonenumber";
+import exp from "constants";
+import {
+  PhoneNumberType,
+  PhoneNumber,
+  PhoneNumberListType,
+} from "./phonenumber";
 
 function testCase(exp: expectedResult) {
   let typ = PhoneNumberType({ name: "phone" });
@@ -228,5 +233,22 @@ describe("with numeric country code", () => {
       pre: (typ) => typ.numberFormat("RFC3966"),
       output: "tel:+447911123456",
     });
+  });
+});
+
+describe("list", () => {
+  test("valid", () => {
+    let typ = PhoneNumberListType({ name: "numbers" });
+    const input = ["4159876543", "6501234567"];
+    const expected = ["+14159876543", "+16501234567"];
+    expect(typ.valid(input)).toBe(true);
+    // postgres stored in db style
+    expect(typ.format(input)).toEqual(`{${expected.join(",")}}`);
+  });
+
+  test("invalid", () => {
+    let typ = PhoneNumberListType({ name: "numbers" });
+    const input = ["4159876543", "4152"];
+    expect(typ.valid(input)).toBe(false);
   });
 });
