@@ -394,7 +394,7 @@ describe("postgres", () => {
 });
 
 describe("sqlite", () => {
-  setupSqlite(`sqlite:///index_loader.db`, tempDBTables);
+  setupSqlite(`sqlite:///node_resolver.db`, tempDBTables);
 
   beforeEach(async () => {
     await createEdges();
