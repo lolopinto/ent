@@ -4,6 +4,7 @@ import {
   Field,
   FieldOptions,
   BaseField,
+  ListField,
 } from "@lolopinto/ent/schema";
 
 import {
@@ -20,7 +21,7 @@ export class PhoneNumber extends BaseField implements Field {
   private _region: CountryCode = "US";
   private _format: NumberFormat = "E.164";
   private _formatOptions: FormatNumberOptions | undefined;
-  private _number: LibPhoneNumber | undefined;
+  private _numbers: Map<string, LibPhoneNumber> = new Map();
 
   // This calls isPossible() by default and doesn't call isValid() by default
   // Provides a way to change the default behavior
@@ -83,19 +84,24 @@ export class PhoneNumber extends BaseField implements Field {
       }
     }
 
-    this._number = phoneNumber;
+    this._numbers.set(val, phoneNumber);
     return true;
   }
 
-  format(_val: any) {
-    if (!this._number) {
+  format(val: any) {
+    const number = this._numbers.get(val);
+    if (!number) {
       throw new Error(`need a valid number to format it`);
     }
-    return this._number.format(this._format, this._formatOptions);
+    return number.format(this._format, this._formatOptions);
   }
 }
 
 export function PhoneNumberType(options: FieldOptions): PhoneNumber {
   let result = new PhoneNumber();
   return Object.assign(result, options);
+}
+
+export function PhoneNumberListType(options: FieldOptions) {
+  return new ListField(PhoneNumberType(options), options);
 }
