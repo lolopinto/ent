@@ -1323,7 +1323,6 @@ func (t *arrayListType) getDBType(elemType TSType) string {
 }
 
 func (t *arrayListType) getTsTypeImports(elemType TSType) []string {
-	// TODO test
 	t2, ok := elemType.(TSTypeWithImports)
 	if !ok {
 		return []string{}
@@ -1344,11 +1343,6 @@ func (t *ArrayListType) GetDBType() string {
 
 func (t *ArrayListType) GetGraphQLType() string {
 	return fmt.Sprintf("[%s]!", t.ElemType.GetGraphQLType())
-	// ?
-	//GetElemGraphQLType
-	//DefaultGraphQLFieldName
-	//GetTSName
-	//GetGraphQLName
 }
 
 func (t *ArrayListType) GetTSType() string {
@@ -1368,8 +1362,7 @@ func (t *ArrayListType) GetNullableType() Type {
 func (t *ArrayListType) GetTSGraphQLImports() []FileImport {
 	gqlType, ok := t.ElemType.(TSGraphQLType)
 	if !ok {
-		// TODO should not happen
-		return []FileImport{}
+		panic(fmt.Sprintf("got TSType %v which is not a GraphQL type", t.ElemType))
 	}
 	ret := []FileImport{
 		{
@@ -1426,8 +1419,7 @@ func (t *NullableArrayListType) GetTSType() string {
 func (t *NullableArrayListType) GetTSGraphQLImports() []FileImport {
 	gqlType, ok := t.ElemType.(TSGraphQLType)
 	if !ok {
-		// TODO should not happen
-		return []FileImport{}
+		panic(fmt.Sprintf("got TSType %v which is not a GraphQL type", t.ElemType))
 	}
 	ret := []FileImport{
 		{

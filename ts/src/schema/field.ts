@@ -268,7 +268,6 @@ export function StringType(options: StringOptions): StringField {
       delete options2[key];
     }
   }
-  //hmm...
   return Object.assign(result, options2);
 }
 
@@ -352,7 +351,6 @@ export class TimeField extends BaseField implements Field {
   format(val: any): any {
     // allow database handle it
     // https://www.postgresql.org/docs/9.1/datatype-datetime.html#AEN5668
-    console.debug("val", val);
     if (!(val instanceof Date)) {
       return val;
     }
@@ -532,8 +530,6 @@ export class ListField extends BaseField {
   }
 
   valid(val: any): boolean {
-    // console.debug("val", val);
-    // console.debug("field", this.field);
     if (!Array.isArray(val)) {
       return false;
     }
@@ -546,7 +542,6 @@ export class ListField extends BaseField {
       }
     }
     return true;
-    //    return val.every(this.field.valid);
   }
 
   format(val: any): any {
@@ -558,7 +553,6 @@ export class ListField extends BaseField {
       for (let i = 0; i < val.length; i++) {
         val[i] = this.field.format(val[i]);
       }
-      //      val = val.map(this.field.format);
     }
 
     // postgres supports arrays natively so we

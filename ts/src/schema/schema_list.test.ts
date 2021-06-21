@@ -122,8 +122,6 @@ function commonTests() {
     );
     await createTables(new LotterySchema());
 
-    //    await tdb.create(table("lotteries", integerList("numbers")));
-
     const lottery = await action.saveX();
     expect(convertList(lottery.data.numbers)).toEqual(n);
   });
