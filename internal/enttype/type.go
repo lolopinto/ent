@@ -61,6 +61,12 @@ type ConvertDataType interface {
 	Convert() FileImport
 }
 
+type convertListElemType interface {
+	ConvertDataType
+	convertListWithItem() FileImport
+	convertNullableListWithItem() FileImport
+}
+
 type TSTypeWithActionFields interface {
 	TSGraphQLType
 	GetActionName() string
@@ -203,6 +209,20 @@ func (t *boolType) GetZeroValue() string {
 func (t *boolType) Convert() FileImport {
 	return FileImport{
 		Type:       "convertBool",
+		ImportType: Package,
+	}
+}
+
+func (t *boolType) convertListWithItem() FileImport {
+	return FileImport{
+		Type:       "convertBoolList",
+		ImportType: Package,
+	}
+}
+
+func (t *boolType) convertNullableListWithItem() FileImport {
+	return FileImport{
+		Type:       "convertNullableBoolList",
 		ImportType: Package,
 	}
 }
@@ -475,6 +495,20 @@ func (t *timestampType) DefaultGraphQLFieldName() string {
 func (t *timestampType) Convert() FileImport {
 	return FileImport{
 		Type:       "convertDate",
+		ImportType: Package,
+	}
+}
+
+func (t *timestampType) convertListWithItem() FileImport {
+	return FileImport{
+		Type:       "convertDateList",
+		ImportType: Package,
+	}
+}
+
+func (t *timestampType) convertNullableListWithItem() FileImport {
+	return FileImport{
+		Type:       "convertNullableDateList",
 		ImportType: Package,
 	}
 }
@@ -1047,6 +1081,10 @@ func (t *RawJSONType) GetGraphQLType() string {
 	panic("TODO implement this later")
 }
 
+func (t *RawJSONType) GetTSType() string {
+	panic("TODO. not supported yet")
+}
+
 type SliceType struct {
 	typ *types.Slice
 	jsonTypeImpl
@@ -1243,6 +1281,141 @@ func (t *NullableEnumType) GetTSGraphQLImports() []FileImport {
 			Type:       t.GraphQLType,
 		},
 	}
+}
+
+type arrayListType struct {
+}
+
+func (t *arrayListType) GetCastToMethod() string {
+	panic("castToMethod. ArrayListType not supported in go-lang yet")
+}
+
+func (t *arrayListType) GetZeroValue() string {
+	panic("zeroValue. ArrayListType not supported in go-lang yet")
+}
+
+func (t *arrayListType) getDBType(elemType TSType) string {
+	if config.IsSQLiteDialect() {
+		return "sa.Text()"
+	}
+
+	return fmt.Sprintf("postgresql.ARRAY(%s)", elemType.GetDBType())
+}
+
+// actual list type that we use
+// not ArrayType or SliceType
+type ArrayListType struct {
+	arrayListType
+	ElemType TSType
+}
+
+func (t *ArrayListType) GetDBType() string {
+	return t.getDBType(t.ElemType)
+}
+
+func (t *ArrayListType) GetGraphQLType() string {
+	return fmt.Sprintf("[%s]!", t.ElemType.GetGraphQLType())
+	// ?
+	//GetElemGraphQLType
+	//DefaultGraphQLFieldName
+	//GetTSName
+	//GetGraphQLName
+}
+
+func (t *ArrayListType) GetTSType() string {
+	return fmt.Sprintf("%s[]", t.ElemType.GetTSType())
+}
+
+func (t *ArrayListType) GetTsTypeImports() []string {
+	// hmm
+	return []string{t.ElemType.GetTSType()}
+}
+
+func (t *ArrayListType) GetNullableType() Type {
+	return &NullableArrayListType{
+		ElemType: t.ElemType,
+	}
+}
+
+func (t *ArrayListType) GetTSGraphQLImports() []FileImport {
+	gqlType, ok := t.ElemType.(TSGraphQLType)
+	if !ok {
+		// TODO should not happen
+		return []FileImport{}
+	}
+	ret := []FileImport{
+		{
+			ImportType: GraphQL,
+			Type:       "GraphQLNonNull",
+		},
+		{
+			ImportType: GraphQL,
+			Type:       "GraphQList",
+		},
+	}
+	ret = append(ret, gqlType.GetTSGraphQLImports()...)
+	return ret
+}
+
+func (t *ArrayListType) Convert() FileImport {
+	elem, ok := t.ElemType.(convertListElemType)
+	if !ok {
+		return FileImport{
+			Type:       "convertList",
+			ImportType: Package,
+		}
+	}
+	return elem.convertListWithItem()
+}
+
+type NullableArrayListType struct {
+	arrayListType
+	ElemType TSType
+}
+
+func (t *NullableArrayListType) GetDBType() string {
+	return t.getDBType(t.ElemType)
+}
+
+func (t *NullableArrayListType) GetNonNullableType() Type {
+	return &ArrayListType{
+		ElemType: t.ElemType,
+	}
+}
+
+func (t *NullableArrayListType) GetGraphQLType() string {
+	return fmt.Sprintf("[%s]", t.ElemType.GetGraphQLType())
+}
+
+func (t *NullableArrayListType) GetTSType() string {
+	return fmt.Sprintf("%s[] | null", t.ElemType.GetTSType())
+}
+
+func (t *NullableArrayListType) GetTSGraphQLImports() []FileImport {
+	gqlType, ok := t.ElemType.(TSGraphQLType)
+	if !ok {
+		// TODO should not happen
+		return []FileImport{}
+	}
+	ret := []FileImport{
+		{
+			ImportType: GraphQL,
+			Type:       "GraphQList",
+		},
+	}
+	ret = append(ret, gqlType.GetTSGraphQLImports()...)
+	return ret
+}
+
+func (t *NullableArrayListType) Convert() FileImport {
+	elem, ok := t.ElemType.(convertListElemType)
+	if !ok {
+		return FileImport{
+			Type:       "convertNullableList",
+			ImportType: Package,
+		}
+	}
+	return elem.convertNullableListWithItem()
 }
 
 func getBasicType(typ types.Type) Type {

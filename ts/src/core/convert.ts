@@ -55,3 +55,29 @@ export function convertList<T>(val: any, conv?: (val: any) => T): T[] {
   }
   return res;
 }
+
+export function convertNullableList<T>(
+  val: any,
+  conv?: (val: any) => T,
+): T[] | null {
+  if (val === null) {
+    return null;
+  }
+  return convertList(val, conv);
+}
+
+export function convertDateList(val: any): Date[] {
+  return convertList(val, convertDate);
+}
+
+export function convertNullableDateList(val: any): Date[] | null {
+  return convertNullableList(val, convertDate);
+}
+
+export function convertBoolList(val: any): boolean[] {
+  return convertList(val, convertBool);
+}
+
+export function convertNullableBoolList(val: any): boolean[] | null {
+  return convertNullableList(val, convertBool);
+}

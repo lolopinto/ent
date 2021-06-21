@@ -524,7 +524,7 @@ export class ListField extends BaseField {
     }
     this.type = {
       dbType: DBType.List,
-      dbElemType: field.type.dbType,
+      listElemType: field.type,
     };
     Object.assign(this, options);
   }

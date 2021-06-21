@@ -532,11 +532,11 @@ function getColumnForDbType(
 function getColumnFromField(f: Field, dialect: Dialect) {
   switch (f.type.dbType) {
     case DBType.List:
-      const elemType = f.type.dbElemType;
+      const elemType = f.type.listElemType;
       if (elemType === undefined) {
         throw new Error(`unsupported list type with no elem type`);
       }
-      const elemFn = getColumnForDbType(elemType, dialect);
+      const elemFn = getColumnForDbType(elemType.dbType, dialect);
       if (elemFn === undefined) {
         throw new Error(`unsupported type for ${elemType}`);
       }

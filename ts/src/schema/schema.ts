@@ -174,7 +174,9 @@ export interface Type {
   // if DBType is a list, we need this for what list type
   // e.g. text[], integer[] in postgres
   // For SQLite, we'll just store as text and json encode/decode
-  dbElemType?: DBType;
+  // this should be list type...
+  // list type: Type;;;
+  listElemType?: Type;
   // TODO make these required eventually once we get there
   type?: string; // typescript type
   graphQLType?: string; // graphql type
