@@ -64,6 +64,7 @@ class User implements Node {
   lastName: string;
   address?: Address | null;
   contacts?({ first: number }): Contact[];
+  nicknames?: string[] | null;
 }
 
 class Contact implements Node {
@@ -97,6 +98,7 @@ export const names: Partial<Pick<Contact, "firstName" | "lastName">>[] = [
   },
 ];
 
+const NickNames = ["Lord Snow", "The Prince That was Promised"];
 function getUser(id: string): User {
   let result = new User();
   result.id = id;
@@ -129,6 +131,10 @@ function getUser(id: string): User {
       }
       return ret;
     };
+  }
+
+  if (num === 1001) {
+    result.nicknames = NickNames;
   }
   return result;
 }
@@ -210,6 +216,9 @@ let userType = new GraphQLObjectType({
           type: GraphQLNonNull(GraphQLInt),
         },
       },
+    },
+    nicknames: {
+      type: GraphQLList(GraphQLNonNull(GraphQLString)),
     },
   },
   interfaces: [GraphQLNodeInterface],
@@ -510,6 +519,29 @@ test("query with object values", async () => {
         apartment: null,
       },
     ],
+    ["nicknames", null],
+  );
+});
+
+test("query scalar list", async () => {
+  let schema = new GraphQLSchema({
+    query: rootQuery,
+  });
+
+  let cfg: queryRootConfig = {
+    schema: schema,
+    args: {
+      id: "1001",
+    },
+    root: "user",
+  };
+
+  await expectQueryFromRoot(
+    cfg,
+    ["id", "1001"],
+    ["firstName", "Jon"],
+    ["lastName", "Snow"],
+    ["nicknames", NickNames],
   );
 });
 
@@ -695,7 +727,7 @@ test("undefinedQueryPaths", async () => {
   );
 });
 
-test("inline fragments", async () => {
+describe("inline fragments", () => {
   let rootQuery = new GraphQLObjectType({
     name: "RootQueryType",
     fields: {
@@ -726,14 +758,34 @@ test("inline fragments", async () => {
     root: "node",
   };
 
-  await expectQueryFromRoot(cfg, [
-    "...on User",
-    {
-      id: "10",
-      firstName: "Jon",
-      lastName: "Snow",
-    },
-  ]);
+  test("basic", async () => {
+    await expectQueryFromRoot(cfg, [
+      "...on User",
+      {
+        id: "10",
+        firstName: "Jon",
+        lastName: "Snow",
+      },
+    ]);
+  });
+
+  test("list", async () => {
+    let cfg2 = {
+      ...cfg,
+      args: {
+        id: "1001",
+      },
+    };
+    await expectQueryFromRoot(cfg2, [
+      "...on User",
+      {
+        id: "1001",
+        firstName: "Jon",
+        lastName: "Snow",
+        nicknames: NickNames,
+      },
+    ]);
+  });
 });
 
 test("inline root fragment", async () => {
