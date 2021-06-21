@@ -13,6 +13,7 @@ import {
 import { EmailType } from "@lolopinto/ent-email";
 import { PasswordType } from "@lolopinto/ent-password";
 import { PhoneNumberType } from "@lolopinto/ent-phonenumber";
+import { StringListType } from "@lolopinto/ent/schema/field";
 
 export default class User extends BaseEntSchema implements Schema {
   fields: Field[] = [
@@ -37,6 +38,7 @@ export default class User extends BaseEntSchema implements Schema {
       serverDefault: "FALSE",
     }),
     StringType({ name: "Bio", nullable: true }),
+    StringListType({ name: "nicknames", nullable: true }),
   ];
 
   edges: Edge[] = [
@@ -66,6 +68,7 @@ export default class User extends BaseEntSchema implements Schema {
         "EmailAddress",
         requiredField("PhoneNumber"),
         requiredField("Password"),
+        "nicknames",
       ],
     },
 

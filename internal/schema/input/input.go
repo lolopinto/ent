@@ -213,6 +213,11 @@ func (f *Field) GetEntType() enttype.TSType {
 			panic("list elem type for list is nil")
 		}
 		elemType := getTypeFor(f.Type.ListElemType, false, nil)
+		if f.Nullable {
+			return &enttype.NullableArrayListType{
+				ElemType: elemType,
+			}
+		}
 		return &enttype.ArrayListType{
 			ElemType: elemType,
 		}

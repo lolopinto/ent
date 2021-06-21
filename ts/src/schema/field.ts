@@ -141,9 +141,10 @@ export class StringField extends BaseField implements Field {
   private validators: { (str: string): boolean }[] = [];
   private formatters: { (str: string): string }[] = [];
 
-  constructor(options: StringOptions) {
+  constructor(options?: StringOptions) {
     super();
-    this.handleOptions(options);
+    // for legacy callers
+    this.handleOptions(options || { name: "field" });
   }
 
   getOptions(): StringOptions {
@@ -351,6 +352,7 @@ export class TimeField extends BaseField implements Field {
   format(val: any): any {
     // allow database handle it
     // https://www.postgresql.org/docs/9.1/datatype-datetime.html#AEN5668
+    console.debug("val", val);
     if (!(val instanceof Date)) {
       return val;
     }

@@ -5,6 +5,7 @@ import {
   FieldOptions,
   BaseField,
   StringField,
+  StringType,
 } from "@lolopinto/ent/schema";
 
 import * as bcrypt from "bcryptjs";
@@ -22,7 +23,7 @@ export class Password extends BaseField implements Field {
 
   constructor() {
     super();
-    this.stringType = new StringField();
+    this.stringType = StringType({ name: "field" });
   }
 
   cost(cost: number): this {
@@ -31,16 +32,19 @@ export class Password extends BaseField implements Field {
   }
 
   minLen(length: number): this {
+    // TODO...
     this.stringType.minLen = length;
     return this;
   }
 
   maxLen(length: number): this {
+    // TODO...
     this.stringType.maxLen = length;
     return this;
   }
 
   length(length: number): this {
+    // TODO...
     this.stringType.length = length;
     return this;
   }

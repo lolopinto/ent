@@ -63,6 +63,9 @@ export const UserType = new GraphQLObjectType({
     bio: {
       type: GraphQLString,
     },
+    nicknames: {
+      type: GraphQLList(GraphQLNonNull(GraphQLString)),
+    },
     selfContact: {
       type: ContactType,
       resolve: (user: User, args: {}, context: RequestContext) => {

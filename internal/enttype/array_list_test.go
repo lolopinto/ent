@@ -22,7 +22,7 @@ func TestArrayListType(t *testing.T) {
 						ImportType: enttype.GraphQL,
 					},
 					{
-						Type:       "GraphQList",
+						Type:       "GraphQLList",
 						ImportType: enttype.GraphQL,
 					},
 					{
@@ -52,7 +52,7 @@ func TestArrayListType(t *testing.T) {
 				graphql: "[String!]",
 				graphqlImports: []enttype.FileImport{
 					{
-						Type:       "GraphQList",
+						Type:       "GraphQLList",
 						ImportType: enttype.GraphQL,
 					},
 					{
@@ -86,7 +86,7 @@ func TestArrayListType(t *testing.T) {
 						ImportType: enttype.GraphQL,
 					},
 					{
-						Type:       "GraphQList",
+						Type:       "GraphQLList",
 						ImportType: enttype.GraphQL,
 					},
 					{
@@ -116,7 +116,7 @@ func TestArrayListType(t *testing.T) {
 				graphql: "[Int!]",
 				graphqlImports: []enttype.FileImport{
 					{
-						Type:       "GraphQList",
+						Type:       "GraphQLList",
 						ImportType: enttype.GraphQL,
 					},
 					{
@@ -150,7 +150,7 @@ func TestArrayListType(t *testing.T) {
 						ImportType: enttype.GraphQL,
 					},
 					{
-						Type:       "GraphQList",
+						Type:       "GraphQLList",
 						ImportType: enttype.GraphQL,
 					},
 					{
@@ -180,7 +180,7 @@ func TestArrayListType(t *testing.T) {
 				graphql: "[Boolean!]",
 				graphqlImports: []enttype.FileImport{
 					{
-						Type:       "GraphQList",
+						Type:       "GraphQLList",
 						ImportType: enttype.GraphQL,
 					},
 					{
@@ -214,7 +214,7 @@ func TestArrayListType(t *testing.T) {
 						ImportType: enttype.GraphQL,
 					},
 					{
-						Type:       "GraphQList",
+						Type:       "GraphQLList",
 						ImportType: enttype.GraphQL,
 					},
 					{
@@ -244,7 +244,7 @@ func TestArrayListType(t *testing.T) {
 				graphql: "[Float!]",
 				graphqlImports: []enttype.FileImport{
 					{
-						Type:       "GraphQList",
+						Type:       "GraphQLList",
 						ImportType: enttype.GraphQL,
 					},
 					{
@@ -278,7 +278,7 @@ func TestArrayListType(t *testing.T) {
 						ImportType: enttype.GraphQL,
 					},
 					{
-						Type:       "GraphQList",
+						Type:       "GraphQLList",
 						ImportType: enttype.GraphQL,
 					},
 					{
@@ -308,7 +308,7 @@ func TestArrayListType(t *testing.T) {
 				graphql: "[Time!]",
 				graphqlImports: []enttype.FileImport{
 					{
-						Type:       "GraphQList",
+						Type:       "GraphQLList",
 						ImportType: enttype.GraphQL,
 					},
 					{
@@ -342,7 +342,7 @@ func TestArrayListType(t *testing.T) {
 						ImportType: enttype.GraphQL,
 					},
 					{
-						Type:       "GraphQList",
+						Type:       "GraphQLList",
 						ImportType: enttype.GraphQL,
 					},
 					{
@@ -354,12 +354,12 @@ func TestArrayListType(t *testing.T) {
 						ImportType: enttype.GraphQL,
 					},
 				},
-				tsType: "Date[]",
+				tsType: "string[]",
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.TimeType{},
 				},
 				goTypePanics: true,
-				convertFn:    "convertDateList",
+				convertFn:    "convertList",
 			},
 			nil,
 		},
@@ -372,7 +372,7 @@ func TestArrayListType(t *testing.T) {
 				graphql: "[String!]",
 				graphqlImports: []enttype.FileImport{
 					{
-						Type:       "GraphQList",
+						Type:       "GraphQLList",
 						ImportType: enttype.GraphQL,
 					},
 					{
@@ -384,12 +384,12 @@ func TestArrayListType(t *testing.T) {
 						ImportType: enttype.GraphQL,
 					},
 				},
-				tsType: "Date[] | null",
+				tsType: "string[] | null",
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.TimeType{},
 				},
 				goTypePanics: true,
-				convertFn:    "convertNullableDateList",
+				convertFn:    "convertNullableList",
 			},
 			nil,
 		},
@@ -406,7 +406,7 @@ func TestArrayListType(t *testing.T) {
 						ImportType: enttype.GraphQL,
 					},
 					{
-						Type:       "GraphQList",
+						Type:       "GraphQLList",
 						ImportType: enttype.GraphQL,
 					},
 					{
@@ -418,12 +418,12 @@ func TestArrayListType(t *testing.T) {
 						ImportType: enttype.GraphQL,
 					},
 				},
-				tsType: "Date[]",
+				tsType: "string[]",
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.TimetzType{},
 				},
 				goTypePanics: true,
-				convertFn:    "convertDateList",
+				convertFn:    "convertList",
 			},
 			nil,
 		},
@@ -436,7 +436,7 @@ func TestArrayListType(t *testing.T) {
 				graphql: "[String!]",
 				graphqlImports: []enttype.FileImport{
 					{
-						Type:       "GraphQList",
+						Type:       "GraphQLList",
 						ImportType: enttype.GraphQL,
 					},
 					{
@@ -448,12 +448,12 @@ func TestArrayListType(t *testing.T) {
 						ImportType: enttype.GraphQL,
 					},
 				},
-				tsType: "Date[] | null",
+				tsType: "string[] | null",
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.TimetzType{},
 				},
 				goTypePanics: true,
-				convertFn:    "convertNullableDateList",
+				convertFn:    "convertNullableList",
 			},
 			nil,
 		},
@@ -470,7 +470,7 @@ func TestArrayListType(t *testing.T) {
 						ImportType: enttype.GraphQL,
 					},
 					{
-						Type:       "GraphQList",
+						Type:       "GraphQLList",
 						ImportType: enttype.GraphQL,
 					},
 					{
@@ -500,7 +500,7 @@ func TestArrayListType(t *testing.T) {
 				graphql: "[Time!]",
 				graphqlImports: []enttype.FileImport{
 					{
-						Type:       "GraphQList",
+						Type:       "GraphQLList",
 						ImportType: enttype.GraphQL,
 					},
 					{
@@ -534,7 +534,7 @@ func TestArrayListType(t *testing.T) {
 						ImportType: enttype.GraphQL,
 					},
 					{
-						Type:       "GraphQList",
+						Type:       "GraphQLList",
 						ImportType: enttype.GraphQL,
 					},
 					{
@@ -564,7 +564,7 @@ func TestArrayListType(t *testing.T) {
 				graphql: "[Time!]",
 				graphqlImports: []enttype.FileImport{
 					{
-						Type:       "GraphQList",
+						Type:       "GraphQLList",
 						ImportType: enttype.GraphQL,
 					},
 					{
@@ -607,7 +607,7 @@ func TestArrayListType(t *testing.T) {
 						ImportType: enttype.GraphQL,
 					},
 					{
-						Type:       "GraphQList",
+						Type:       "GraphQLList",
 						ImportType: enttype.GraphQL,
 					},
 					{
@@ -655,7 +655,7 @@ func TestArrayListType(t *testing.T) {
 				graphql: "[AccountStatus!]",
 				graphqlImports: []enttype.FileImport{
 					{
-						Type:       "GraphQList",
+						Type:       "GraphQLList",
 						ImportType: enttype.GraphQL,
 					},
 					{

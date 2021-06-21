@@ -69,6 +69,7 @@ test("query user", async () => {
     ["lastName", user.lastName],
     ["emailAddress", user.emailAddress],
     ["accountStatus", user.accountStatus],
+    ["nicknames", null],
   );
 });
 
@@ -83,6 +84,24 @@ test("query custom field", async () => {
     ["firstName", user.firstName],
     ["lastName", user.lastName],
     ["fullName", user.fullName],
+    ["nicknames", null],
+  );
+});
+
+test.only("query list", async () => {
+  const n = ["Lord Snow", "The Prince That was Promised"];
+  let user = await create({
+    firstName: "first",
+    nicknames: n,
+  });
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), user),
+    ["id", encodeGQLID(user)],
+    ["firstName", user.firstName],
+    ["lastName", user.lastName],
+    ["fullName", user.fullName],
+    ["nicknames", n],
   );
 });
 
@@ -110,6 +129,7 @@ test("query custom function", async () => {
     ["lastName", user.lastName],
     // returns id when logged in user is same
     ["bar", user.id],
+    ["nicknames", null],
   );
   clearAuthHandlers();
 
@@ -121,6 +141,7 @@ test("query custom function", async () => {
     ["lastName", user.lastName],
     // returns null when viewed as different user
     ["bar", null],
+    ["nicknames", null],
   );
 });
 
@@ -429,7 +450,7 @@ test("load assoc connection", async () => {
     ["friends(first:1).edges[0].node.id", encodeGQLID(user5)],
     [
       "friends(first:1).edges[0].cursor",
-      function(c: string) {
+      function (c: string) {
         cursor = c;
       },
     ],
@@ -445,7 +466,7 @@ test("load assoc connection", async () => {
     ],
     [
       `friends(after: "${cursor!}", first:1).edges[0].cursor`,
-      function(c: string) {
+      function (c: string) {
         cursor = c;
       },
     ],
@@ -461,7 +482,7 @@ test("load assoc connection", async () => {
     ],
     [
       `friends(after: "${cursor!}", first:1).edges[0].cursor`,
-      function(c: string) {
+      function (c: string) {
         cursor = c;
       },
     ],
@@ -477,7 +498,7 @@ test("load assoc connection", async () => {
     ],
     [
       `friends(after: "${cursor!}", first:1).edges[0].cursor`,
-      function(c: string) {
+      function (c: string) {
         cursor = c;
       },
     ],

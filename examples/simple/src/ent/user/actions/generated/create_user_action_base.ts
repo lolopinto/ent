@@ -15,6 +15,7 @@ export interface UserCreateInput {
   emailAddress: string;
   phoneNumber: string;
   password: string;
+  nicknames?: string[] | null;
 }
 
 export class CreateUserActionBase implements Action<User> {
