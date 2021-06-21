@@ -9,7 +9,7 @@ import {
   GraphQLArgument,
   GraphQLList,
   isScalarType,
-  GraphQLField,
+  GraphQLType,
   GraphQLFieldMap,
 } from "graphql";
 import { buildContext, registerAuthHandler } from "@lolopinto/ent/auth";
@@ -150,13 +150,12 @@ function makeGraphQLRequest(
 
 function buildTreeFromQueryPaths(
   schema: GraphQLSchema,
-  field: GraphQLField<any, any, any>,
+  fieldType: GraphQLType,
   ...options: Option[]
 ) {
-  const outputType = field.type;
   let fields: GraphQLFieldMap<any, any>;
-  if (outputType instanceof GraphQLObjectType) {
-    fields = outputType.getFields();
+  if (fieldType instanceof GraphQLObjectType) {
+    fields = fieldType.getFields();
   }
   let topLevelTree = {};
   options.forEach((option) => {
@@ -256,10 +255,10 @@ function constructQueryFromTreePath(treePath: {}) {
 
 function expectQueryResult(
   schema: GraphQLSchema,
-  field: GraphQLField<any, any, any>,
+  fieldType: GraphQLType,
   ...options: Option[]
 ) {
-  let topLevelTree = buildTreeFromQueryPaths(schema, field, ...options);
+  let topLevelTree = buildTreeFromQueryPaths(schema, fieldType, ...options);
   //  console.log(topLevelTree);
 
   let query = constructQueryFromTreePath(topLevelTree);
@@ -397,7 +396,17 @@ async function expectFromRoot(
   for (let key in config.args) {
     params.push(`${key}: $${key}`);
   }
-  let q = expectQueryResult(config.schema, field, ...options);
+  let fieldType: GraphQLType = field.type;
+  if (config.inlineFragmentRoot) {
+    const rootType = config.schema.getType(config.inlineFragmentRoot);
+    if (!rootType) {
+      throw new Error(
+        `couldn't find inline fragment root ${config.inlineFragmentRoot} in the schema`,
+      );
+    }
+    fieldType = rootType;
+  }
+  let q = expectQueryResult(config.schema, fieldType, ...options);
   let queryVar = "";
   let callVar = "";
   if (queryParams.length) {

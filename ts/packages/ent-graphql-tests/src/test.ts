@@ -786,46 +786,43 @@ describe("inline fragments", () => {
       },
     ]);
   });
-});
 
-test("inline root fragment", async () => {
-  let rootQuery = new GraphQLObjectType({
-    name: "RootQueryType",
-    fields: {
-      node: {
-        args: {
-          id: {
-            type: GraphQLNonNull(GraphQLID),
-          },
-        },
-        type: GraphQLNodeInterface,
-        resolve(_source, { id }) {
-          return getUser(id);
-        },
+  test("inline fragment root", async () => {
+    let cfg: queryRootConfig = {
+      schema: schema,
+      args: {
+        id: "10",
       },
-    },
+      root: "node",
+      inlineFragmentRoot: "User",
+    };
+
+    await expectQueryFromRoot(
+      cfg,
+      ["id", "10"],
+      ["firstName", "Jon"],
+      ["lastName", "Snow"],
+    );
   });
 
-  let schema = new GraphQLSchema({
-    query: rootQuery,
-    types: [userType, contactType, addressType],
+  test("inline fragment root with list", async () => {
+    let cfg: queryRootConfig = {
+      schema: schema,
+      args: {
+        id: "1001",
+      },
+      root: "node",
+      inlineFragmentRoot: "User",
+    };
+
+    await expectQueryFromRoot(
+      cfg,
+      ["id", "1001"],
+      ["firstName", "Jon"],
+      ["lastName", "Snow"],
+      ["nicknames", NickNames],
+    );
   });
-
-  let cfg: queryRootConfig = {
-    schema: schema,
-    args: {
-      id: "10",
-    },
-    root: "node",
-    inlineFragmentRoot: "User",
-  };
-
-  await expectQueryFromRoot(
-    cfg,
-    ["id", "10"],
-    ["firstName", "Jon"],
-    ["lastName", "Snow"],
-  );
 });
 
 describe("file upload", () => {
