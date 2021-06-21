@@ -88,7 +88,7 @@ test("query custom field", async () => {
   );
 });
 
-test.only("query list", async () => {
+test("query list", async () => {
   const n = ["Lord Snow", "The Prince That was Promised"];
   let user = await create({
     firstName: "first",
