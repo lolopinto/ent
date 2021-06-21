@@ -10,6 +10,9 @@ import {
   isWrappingType,
   GraphQLArgument,
   GraphQLList,
+  isScalarType,
+  GraphQLType,
+  GraphQLFieldMap,
 } from "graphql";
 import { buildContext, registerAuthHandler } from "../../auth";
 import { IncomingMessage, ServerResponse } from "http";
@@ -48,6 +51,16 @@ function server(config: queryConfig): Express {
   return app;
 }
 
+function getInnerType(typ, list) {
+  if (isWrappingType(typ)) {
+    if (typ instanceof GraphQLList) {
+      return getInnerType(typ.ofType, true);
+    }
+    return getInnerType(typ.ofType, list);
+  }
+  return [typ, list];
+}
+
 function makeGraphQLRequest(
   config: queryConfig,
   query: string,
@@ -63,16 +76,6 @@ function makeGraphQLRequest(
     }
   } else {
     test = supertest(server(config));
-  }
-
-  function getInnerType(typ, list) {
-    if (isWrappingType(typ)) {
-      if (typ instanceof GraphQLList) {
-        return getInnerType(typ.ofType, true);
-      }
-      return getInnerType(typ.ofType, list);
-    }
-    return [typ, list];
   }
 
   let files = new Map();
@@ -144,7 +147,15 @@ function makeGraphQLRequest(
   }
 }
 
-function buildTreeFromQueryPaths(...options: Option[]) {
+function buildTreeFromQueryPaths(
+  schema: GraphQLSchema,
+  fieldType: GraphQLType,
+  ...options: Option[]
+) {
+  let fields: GraphQLFieldMap<any, any>;
+  if (fieldType instanceof GraphQLObjectType) {
+    fields = fieldType.getFields();
+  }
   let topLevelTree = {};
   options.forEach((option) => {
     let path = option[0];
@@ -153,6 +164,14 @@ function buildTreeFromQueryPaths(...options: Option[]) {
     if (match) {
       // fragment, keep the part of the fragment e.g.  ...onUser, and then split the rest....
       parts = [match[0], ...match[2].split(".")];
+
+      const typ = schema.getType(match[1]);
+      if (!typ) {
+        throw new Error(`can't find type for ${match[1]} in schema`);
+      }
+      if (typ instanceof GraphQLObjectType) {
+        fields = typ.getFields();
+      }
     } else {
       parts = splitPath(path);
     }
@@ -186,12 +205,32 @@ function buildTreeFromQueryPaths(...options: Option[]) {
             tree[key] = {};
           }
           if (typeof obj[key] === "object") {
-            handleSubtree(obj[key], tree[key]);
+            if (!isScalarField(key)) {
+              handleSubtree(obj[key], tree[key]);
+            }
           }
         }
       }
+
+      // TODO this needs to work for super complicated objects and have fields update as nesting applies...
+      function isScalarField(f: string) {
+        const subField = fields?.[f];
+        if (!subField) {
+          return false;
+        }
+        if (!isWrappingType(subField.type)) {
+          return false;
+        }
+
+        // only spread out if an object
+        const [typ, _] = getInnerType(subField.type, true);
+        return isScalarType(typ);
+      }
+
       if (i === parts.length - 1 && typeof option[1] === "object") {
-        handleSubtree(option[1], tree);
+        if (!isScalarField(part)) {
+          handleSubtree(option[1], tree);
+        }
       }
     }
   });
@@ -213,8 +252,12 @@ function constructQueryFromTreePath(treePath: {}) {
   return query.join(",");
 }
 
-function expectQueryResult(...options: Option[]) {
-  let topLevelTree = buildTreeFromQueryPaths(...options);
+function expectQueryResult(
+  schema: GraphQLSchema,
+  fieldType: GraphQLType,
+  ...options: Option[]
+) {
+  let topLevelTree = buildTreeFromQueryPaths(schema, fieldType, ...options);
   //  console.log(topLevelTree);
 
   let query = constructQueryFromTreePath(topLevelTree);
@@ -352,7 +395,17 @@ async function expectFromRoot(
   for (let key in config.args) {
     params.push(`${key}: $${key}`);
   }
-  let q = expectQueryResult(...options);
+  let fieldType: GraphQLType = field.type;
+  if (config.inlineFragmentRoot) {
+    const rootType = config.schema.getType(config.inlineFragmentRoot);
+    if (!rootType) {
+      throw new Error(
+        `couldn't find inline fragment root ${config.inlineFragmentRoot} in the schema`,
+      );
+    }
+    fieldType = rootType;
+  }
+  let q = expectQueryResult(config.schema, fieldType, ...options);
   let queryVar = "";
   let callVar = "";
   if (queryParams.length) {
