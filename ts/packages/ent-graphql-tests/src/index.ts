@@ -385,7 +385,6 @@ async function expectFromRoot(
   let fieldArgs = field.args;
 
   let queryParams: string[] = [];
-
   fieldArgs.forEach((fieldArg) => {
     let arg = config.args[fieldArg.name];
     // let the graphql runtime handle this (it may be optional for example)
