@@ -5,6 +5,7 @@ import {
   FieldOptions,
   BaseField,
   StringType,
+  ListField,
 } from "@lolopinto/ent";
 import email from "email-addresses";
 
@@ -54,4 +55,8 @@ export class Email extends BaseField implements Field {
 export function EmailType(options: FieldOptions): Email {
   let result = new Email();
   return Object.assign(result, options);
+}
+
+export function EmailListType(options: FieldOptions) {
+  return new ListField(EmailType(options), options);
 }
