@@ -342,7 +342,7 @@ query ByID {
 }
 ```
 
-Note: The ID exposed to GraphQL is not the same as the ID for the row in the database. GraphQL IDs should be considered opaque by clients of your service.
+Note: The ID exposed to GraphQL is not the same as the ID for the row in the database. GraphQL IDs should be considered opaque by clients of your service. Learn more in the [GraphQL Docs](https://graphql.org/learn/global-object-identification/).
 
 ## Custom accessors
 Update `src/ent/user.ts` as follows:
