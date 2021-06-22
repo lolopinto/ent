@@ -6,7 +6,7 @@ import {
 export { ContactCreateInput };
 import { Contact } from "src/ent/";
 // TODO...
-import { EntCreationObserver } from "@lolopinto/ent/testutils/fake_log";
+import { EntCreationObserver } from "@snowtop/snowtop-ts/testutils/fake_log";
 import {
   AllowIfViewerEqualsRule,
   AllowIfViewerRule,
@@ -14,8 +14,8 @@ import {
   PrivacyPolicy,
   Data,
   IDViewer,
-} from "@lolopinto/ent";
-import { AllowIfBuilder } from "@lolopinto/ent/action";
+} from "@snowtop/snowtop-ts";
+import { AllowIfBuilder } from "@snowtop/snowtop-ts/action";
 
 // we're only writing this once except with --force and packageName provided
 export default class CreateContactAction extends CreateContactActionBase {

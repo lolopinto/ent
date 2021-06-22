@@ -1,10 +1,10 @@
 import { User, Event, EdgeType } from "src/ent/"; // default removes the suffix and transforms it...
-import { IDViewer } from "@lolopinto/ent";
+import { IDViewer } from "@snowtop/snowtop-ts";
 import CreateContactAction from "./ent/contact/actions/create_contact_action";
 import { randomEmail } from "./util/random";
 import EditUserAction from "./ent/user/actions/edit_user_action";
 import * as http from "http";
-import { buildContext } from "@lolopinto/ent/auth";
+import { buildContext } from "@snowtop/snowtop-ts/auth";
 import CreateUserAction from "./ent/user/actions/create_user_action";
 import CreateEventAction from "./ent/event/actions/create_event_action";
 async function loadUserAndCreate() {
@@ -33,7 +33,7 @@ const id3 = "127d5d51-f588-463d-b347-9dfbcc67fae0";
 
 async function main() {
   http
-    .createServer(async function(req, res) {
+    .createServer(async function (req, res) {
       let context = await buildContext(req, res);
       //      const loaders = createLoaders();
 

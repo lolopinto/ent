@@ -2,11 +2,11 @@ import {
   CreateEventActionBase,
   EventCreateInput,
 } from "src/ent/event/actions/generated/create_event_action_base";
-import { Trigger, Validator } from "@lolopinto/ent/action";
+import { Trigger, Validator } from "@snowtop/snowtop-ts/action";
 import { SharedValidators } from "./event_validators";
 import { Event } from "src/ent/";
 import { EventBuilder } from "./event_builder";
-import { AlwaysAllowPrivacyPolicy, PrivacyPolicy } from "@lolopinto/ent";
+import { AlwaysAllowPrivacyPolicy, PrivacyPolicy } from "@snowtop/snowtop-ts";
 
 export { EventCreateInput };
 

@@ -4,8 +4,8 @@ import {
 } from "src/ent/user/actions/generated/confirm_edit_phone_number_action_base";
 import { User } from "src/ent/";
 import { UserBuilder } from "./user_builder";
-import { Trigger, Validator } from "@lolopinto/ent/action";
-import { Ent } from "@lolopinto/ent";
+import { Trigger, Validator } from "@snowtop/snowtop-ts/action";
+import { Ent } from "@snowtop/snowtop-ts";
 import DeleteAuthCodeAction from "src/ent/auth_code/actions/delete_auth_code_action";
 
 export { ConfirmEditPhoneNumberInput };

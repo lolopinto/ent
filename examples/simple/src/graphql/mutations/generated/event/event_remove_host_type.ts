@@ -10,8 +10,8 @@ import {
   GraphQLObjectType,
   GraphQLResolveInfo,
 } from "graphql";
-import { RequestContext } from "@lolopinto/ent";
-import { mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
+import { RequestContext } from "@snowtop/snowtop-ts";
+import { mustDecodeIDFromGQLID } from "@snowtop/snowtop-ts/graphql";
 import { Event } from "src/ent/";
 import EventRemoveHostAction from "src/ent/event/actions/event_remove_host_action";
 import { EventType } from "src/graphql/resolvers/";

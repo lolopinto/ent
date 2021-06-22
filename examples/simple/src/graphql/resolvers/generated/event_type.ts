@@ -8,14 +8,14 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@lolopinto/ent";
+import { RequestContext } from "@snowtop/snowtop-ts";
 import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
   GraphQLTime,
   convertToGQLEnum,
   nodeIDEncoder,
-} from "@lolopinto/ent/graphql";
+} from "@snowtop/snowtop-ts/graphql";
 import {
   Event,
   EventToAttendingQuery,

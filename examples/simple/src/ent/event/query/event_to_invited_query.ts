@@ -1,5 +1,5 @@
 import { EventToInvitedQueryBase } from "src/ent/internal";
-import { AssocEdge } from "@lolopinto/ent";
+import { AssocEdge } from "@snowtop/snowtop-ts";
 
 export class EventToInvitedEdge extends AssocEdge {}
 
