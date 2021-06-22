@@ -38,6 +38,7 @@ func (suite *noTableSuite) TestLoadAssocEdges() {
 }
 
 func TestNoTableSuite(t *testing.T) {
+	t.Parallel()
 	suite.Run(t, new(noTableSuite))
 }
 
@@ -84,5 +85,6 @@ func (suite *tableExistsSuite) TestLoadAssocEdges() {
 }
 
 func TestTableExistsSuite(t *testing.T) {
+	t.Parallel()
 	suite.Run(t, new(tableExistsSuite))
 }
