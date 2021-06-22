@@ -1,9 +1,7 @@
 package codepath
 
-import "fmt"
-
 // Package refers to the name of the package
-const Package = "@lolopinto/ent"
+const Package = "@snowtop/snowtop-ts"
 
 // ActionPackage refers to the name of the action package
 const ActionPackage = Package + "/action"
@@ -18,11 +16,11 @@ const SchemaPackage = Package + "/schema"
 const GraphQLPackage = Package + "/graphql"
 
 func GetFilePathForInternalFile() string {
-	return fmt.Sprintf("src/ent/internal.ts")
+	return "src/ent/internal.ts"
 }
 
 func GetFilePathForEntIndexFile() string {
-	return fmt.Sprintf("src/ent/index.ts")
+	return "src/ent/index.ts"
 }
 
 func GetInternalImportPath() string {
@@ -34,17 +32,17 @@ func GetExternalImportPath() string {
 }
 
 func GetFilePathForInternalGQLFile() string {
-	return fmt.Sprintf("src/graphql/resolvers/internal.ts")
+	return "src/graphql/resolvers/internal.ts"
 }
 
 func GetFilePathForExternalGQLFile() string {
-	return fmt.Sprintf("src/graphql/resolvers/index.ts")
+	return "src/graphql/resolvers/index.ts"
 }
 
 func GetImportPathForInternalGQLFile() string {
-	return fmt.Sprintf("src/graphql/resolvers/internal")
+	return "src/graphql/resolvers/internal"
 }
 
 func GetImportPathForExternalGQLFile() string {
-	return fmt.Sprintf("src/graphql/resolvers/")
+	return "src/graphql/resolvers/"
 }

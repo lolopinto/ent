@@ -4,9 +4,9 @@ import {
   gqlContextType,
   gqlQuery,
   encodeGQLID,
-} from "@lolopinto/ent/graphql";
+} from "@snowtop/snowtop-ts/graphql";
 import { GraphQLID } from "graphql";
-import { Viewer, RequestContext } from "@lolopinto/ent";
+import { Viewer, RequestContext } from "@snowtop/snowtop-ts";
 
 import { User } from "src/ent/";
 

@@ -5,8 +5,8 @@ import schema from "./schema";
 import { IncomingMessage, ServerResponse } from "http";
 import passport from "passport";
 //import session from "express-session";
-import { DB } from "@lolopinto/ent";
-import { buildContext, registerAuthHandler } from "@lolopinto/ent/auth";
+import { DB } from "@snowtop/snowtop-ts";
+import { buildContext, registerAuthHandler } from "@snowtop/snowtop-ts/auth";
 import {
   //  PassportAuthHandler,
   PassportStrategyHandler,

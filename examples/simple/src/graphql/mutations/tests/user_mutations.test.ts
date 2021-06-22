@@ -1,5 +1,5 @@
 import schema from "src/graphql/schema";
-import { DB, ID, Viewer, LoggedOutViewer, IDViewer } from "@lolopinto/ent";
+import { DB, ID, Viewer, LoggedOutViewer, IDViewer } from "@snowtop/snowtop-ts";
 import { User } from "src/ent/";
 import { randomEmail, randomPhoneNumber } from "src/util/random";
 import CreateUserAction, {
@@ -9,8 +9,11 @@ import {
   expectMutation,
   mutationRootConfig,
 } from "@lolopinto/ent-graphql-tests";
-import { clearAuthHandlers } from "@lolopinto/ent/auth";
-import { mustDecodeIDFromGQLID, encodeGQLID } from "@lolopinto/ent/graphql";
+import { clearAuthHandlers } from "@snowtop/snowtop-ts/auth";
+import {
+  mustDecodeIDFromGQLID,
+  encodeGQLID,
+} from "@snowtop/snowtop-ts/graphql";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {

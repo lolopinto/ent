@@ -4,7 +4,7 @@ import {
   StringType,
   DateType,
   ActionOperation,
-} from "@lolopinto/ent";
+} from "@snowtop/snowtop-ts";
 
 export default class Holiday extends BaseEntSchemaWithTZ {
   fields: Field[] = [StringType({ name: "label" }), DateType({ name: "date" })];

@@ -6,7 +6,7 @@ import {
   BaseEntSchema,
   StringType,
   UUIDType,
-} from "@lolopinto/ent/schema/";
+} from "@snowtop/snowtop-ts/schema/";
 import { EmailType } from "@lolopinto/ent-email";
 
 export default class Contact extends BaseEntSchema implements Schema {

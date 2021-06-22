@@ -9,12 +9,12 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@lolopinto/ent";
+import { RequestContext } from "@snowtop/snowtop-ts";
 import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
   nodeIDEncoder,
-} from "@lolopinto/ent/graphql";
+} from "@snowtop/snowtop-ts/graphql";
 import {
   User,
   UserToContactsQuery,

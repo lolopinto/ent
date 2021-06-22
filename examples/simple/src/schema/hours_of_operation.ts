@@ -5,7 +5,7 @@ import {
   EnumType,
   TimeType,
   TimetzType,
-} from "@lolopinto/ent";
+} from "@snowtop/snowtop-ts";
 
 export default class HoursOfOperation extends BaseEntSchemaWithTZ {
   fields: Field[] = [

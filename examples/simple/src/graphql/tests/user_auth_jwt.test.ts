@@ -4,18 +4,18 @@ import {
   expectQueryFromRoot,
   expectMutation,
 } from "@lolopinto/ent-graphql-tests";
-import { DB, LoggedOutViewer } from "@lolopinto/ent";
+import { DB, LoggedOutViewer } from "@snowtop/snowtop-ts";
 import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
 import { randomEmail, random, randomPhoneNumber } from "src/util/random";
-import { clearAuthHandlers } from "@lolopinto/ent/auth";
+import { clearAuthHandlers } from "@snowtop/snowtop-ts/auth";
 import { User } from "src/ent/";
 import { Express } from "express";
 import { PassportStrategyHandler } from "@lolopinto/ent-passport";
 import supertest from "supertest";
 import jwt from "jsonwebtoken";
-import { encodeGQLID } from "@lolopinto/ent/graphql";
+import { encodeGQLID } from "@snowtop/snowtop-ts/graphql";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
