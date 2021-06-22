@@ -5,8 +5,8 @@ import {
   ID,
   PrivacyPolicy,
   Viewer,
-} from "@lolopinto/ent";
-import { Action, Changeset, WriteOperation } from "@lolopinto/ent/action";
+} from "@snowtop/snowtop-ts";
+import { Action, Changeset, WriteOperation } from "@snowtop/snowtop-ts/action";
 import { Contact } from "src/ent/";
 import {
   ContactBuilder,

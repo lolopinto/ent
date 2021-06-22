@@ -1,5 +1,5 @@
-import { Ent } from "@lolopinto/ent";
-import { Trigger, Validator } from "@lolopinto/ent/action";
+import { Ent } from "@snowtop/snowtop-ts";
+import { Trigger, Validator } from "@snowtop/snowtop-ts/action";
 import DeleteAuthCodeAction from "src/ent/auth_code/actions/delete_auth_code_action";
 import { User } from "src/ent/user";
 import {

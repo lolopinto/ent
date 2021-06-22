@@ -1,7 +1,7 @@
-import { DB, LoggedOutViewer } from "@lolopinto/ent";
+import { DB, LoggedOutViewer } from "@snowtop/snowtop-ts";
 import { randomEmail, randomPhoneNumber } from "src/util/random";
 import { expectMutation } from "@lolopinto/ent-graphql-tests";
-import { encodeGQLID } from "@lolopinto/ent/graphql";
+import { encodeGQLID } from "@snowtop/snowtop-ts/graphql";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 import schema from "src/graphql/schema";
 import { graphqlUploadExpress } from "graphql-upload";

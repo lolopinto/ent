@@ -1,5 +1,5 @@
 import { Event } from "src/ent/";
-import { LoggedOutViewer, IDViewer, DB } from "@lolopinto/ent";
+import { LoggedOutViewer, IDViewer, DB } from "@snowtop/snowtop-ts";
 import { randomEmail, randomPhoneNumber } from "src/util/random";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 import CreateEventAction from "src/ent/event/actions/create_event_action";

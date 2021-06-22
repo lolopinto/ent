@@ -5,11 +5,11 @@ import {
   AlwaysDenyRule,
   AllowIfViewerInboundEdgeExistsRule,
   Data,
-} from "@lolopinto/ent";
+} from "@snowtop/snowtop-ts";
 import { AllowIfOmniRule } from "./../privacy/omni";
 import { GraphQLString } from "graphql";
 import { Contact, EdgeType } from "src/ent/internal";
-import { gqlField } from "@lolopinto/ent/graphql";
+import { gqlField } from "@snowtop/snowtop-ts/graphql";
 import * as bcrypt from "bcryptjs";
 
 // we're only writing this once except with --force and packageName provided

@@ -11,7 +11,7 @@ import {
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@lolopinto/ent";
+import { RequestContext } from "@snowtop/snowtop-ts";
 import { User } from "src/ent/";
 import CreateUserAction, {
   UserCreateInput,

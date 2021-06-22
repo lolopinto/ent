@@ -13,8 +13,8 @@ import {
   loadEnt,
   loadEntX,
   loadEnts,
-} from "@lolopinto/ent";
-import { Field, getFields } from "@lolopinto/ent/schema";
+} from "@snowtop/snowtop-ts";
+import { Field, getFields } from "@snowtop/snowtop-ts/schema";
 import { NodeType, User } from "src/ent/internal";
 import schema from "src/schema/contact";
 

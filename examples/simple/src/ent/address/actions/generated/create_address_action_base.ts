@@ -4,8 +4,8 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   PrivacyPolicy,
   Viewer,
-} from "@lolopinto/ent";
-import { Action, Changeset, WriteOperation } from "@lolopinto/ent/action";
+} from "@snowtop/snowtop-ts";
+import { Action, Changeset, WriteOperation } from "@snowtop/snowtop-ts/action";
 import { Address } from "src/ent/";
 import {
   AddressBuilder,

@@ -4,7 +4,7 @@ import {
   EditPhoneNumberInput,
 } from "src/ent/user/actions/generated/edit_phone_number_action_base";
 import { UserBuilder } from "./user_builder";
-import { FakeComms, Mode } from "@lolopinto/ent/testutils/fake_comms";
+import { FakeComms, Mode } from "@snowtop/snowtop-ts/testutils/fake_comms";
 import { User } from "src/ent/user";
 import { EditUserPrivacy } from "./edit_user_privacy";
 

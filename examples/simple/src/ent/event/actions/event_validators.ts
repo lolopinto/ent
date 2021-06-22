@@ -1,5 +1,5 @@
 import { EventBuilder, EventInput } from "./event_builder";
-import { Validator } from "@lolopinto/ent/action";
+import { Validator } from "@snowtop/snowtop-ts/action";
 import { Event } from "src/ent/";
 
 export class EventTimeValidator implements Validator<Event> {
