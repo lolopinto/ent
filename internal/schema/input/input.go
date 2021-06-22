@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go/types"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/ent"
@@ -465,6 +466,7 @@ type InverseAssocEdge struct {
 func ParseSchema(input []byte) (*Schema, error) {
 	nodes := make(map[string]*Node)
 	if err := json.Unmarshal(input, &nodes); err != nil {
+		spew.Dump("json issue. json:", input)
 		return nil, err
 	}
 
