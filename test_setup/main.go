@@ -8,6 +8,9 @@ import (
 	"github.com/lolopinto/ent/internal/db"
 )
 
+// run locally to fix db
+// in test_setup folder
+// `DB_CONNECTION_STRING=postgres://ola@localhost/ent_test go run .`
 func main() {
 	env := os.Getenv("DB_CONNECTION_STRING")
 	if env == "" {

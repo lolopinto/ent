@@ -27,8 +27,8 @@ func GetSQLAlchemyDatabaseURIgo() string {
 
 // DBConn returns a database connection pool to the DB for use
 func DBConn() *sqlx.DB {
-	dbMutex.RLock()
-	defer dbMutex.RUnlock()
+	dbMutex.Lock()
+	defer dbMutex.Unlock()
 	return db
 }
 
