@@ -503,7 +503,10 @@ func (l *loadAssocEdgeConfigExists) GetOutput() interface{} {
 		return n.Exists
 	}
 	// sqlite table exists
-	return n.Name != ""
+	if n.Name != "" {
+		return true
+	}
+	return nil
 }
 
 type loadNodesLoader struct {
