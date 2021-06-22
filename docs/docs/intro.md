@@ -30,6 +30,7 @@ This requires the following:
 * a database created via `createdb ent-starter` (or replace with your own database name)
   - if a different database is used, make sure to update the `environment` in `docker-compose.dev.yml`
 * [Docker](https://docs.docker.com/get-docker/) installed.
+* [Node 14](https://nodejs.org/en/download/) or later installed
 
 ## Your first schema
 
