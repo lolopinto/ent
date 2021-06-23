@@ -11,6 +11,7 @@ import * as readline from "readline";
 import * as path from "path";
 import * as fs from "fs";
 import { parseCustomInput, file } from "../imports";
+import { exit } from "process";
 
 // need to use the GQLCapture from the package so that when we call GQLCapture.enable()
 // we're affecting the local paths as opposed to a different instance
@@ -214,4 +215,9 @@ async function main() {
   );
 }
 
-Promise.resolve(main());
+main()
+  .then()
+  .catch((err) => {
+    console.error(err);
+    exit(1);
+  });
