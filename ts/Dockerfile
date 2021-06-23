@@ -1,4 +1,4 @@
-FROM nikolaik/python-nodejs:python3.8-nodejs14
+FROM nikolaik/python-nodejs:python3.8-nodejs16
 
 # this is associating this image with this repo
 LABEL org.opencontainers.image.source https://github.com/lolopinto/ent
@@ -20,15 +20,13 @@ ENV GOPATH=$HOME/go
 ENV GOBIN $GOPATH/bin
 ENV PATH $PATH:$GOPATH/bin
 
-RUN go install github.com/lolopinto/ent/tsent@v0.0.13
-
-# needed to tell tsent where to get tsconfig-paths + make it possible to test locally 
-ENV TSCONFIG_PATHS="/node_modules/tsconfig-paths/register"
+RUN go install github.com/lolopinto/ent/tsent@v0.0.17
 
 # first 3 need to move from ts/package.json
 # maybe typescript?
 RUN npm install -g ts-node prettier typescript
 # this needs to be local apparently
+WORKDIR /app
 RUN npm install --save-dev tsconfig-paths 
 
 CMD ["node"]
