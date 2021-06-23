@@ -3,8 +3,8 @@
 {{reserveDefaultImport "./schema" "schema"}}
 
 {{reserveImport "http" "IncomingMessage" "ServerResponse" }}
-{{reserveImport "@lolopinto/ent" "DB"}}
-{{reserveImport "@lolopinto/ent/auth" "buildContext" }}
+{{reserveImport .Package "DB"}}
+{{reserveImport .AuthPackage "buildContext" }}
 
 let app = {{useImport "express"}}();
 
