@@ -2233,6 +2233,13 @@ func writeTSSchemaFile(data *codegen.Data, s *gqlSchema) error {
 func writeTSIndexFile(data *codegen.Data, s *gqlSchema) error {
 	imps := tsimport.NewImports()
 	return file.Write((&file.TemplatedBasedFileWriter{
+		Data: struct {
+			Package     string
+			AuthPackage string
+		}{
+			codepath.Package,
+			codepath.AuthPackage,
+		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/index.tmpl"),
 		TemplateName:      "index.tmpl",
