@@ -6,7 +6,7 @@ import {
   BaseField,
   StringField,
   StringType,
-} from "@lolopinto/ent/schema";
+} from "@snowtop/snowtop-ts/schema";
 
 import * as bcrypt from "bcryptjs";
 
