@@ -15,7 +15,7 @@ import { parseCustomInput, file } from "../imports";
 // need to use the GQLCapture from the package so that when we call GQLCapture.enable()
 // we're affecting the local paths as opposed to a different instance
 // life is hard
-const MODULE_PATH = "@lolopinto/ent/graphql";
+const MODULE_PATH = "@snowtop/snowtop-ts/graphql";
 
 async function readInputs(): Promise<string[]> {
   return await new Promise((resolve) => {
@@ -25,11 +25,11 @@ async function readInputs(): Promise<string[]> {
       terminal: false,
     });
     let nodes: string[] = [];
-    rl.on("line", function(line: string) {
+    rl.on("line", function (line: string) {
       nodes.push(line);
     });
 
-    rl.on("close", function() {
+    rl.on("close", function () {
       return resolve(nodes);
     });
   });
