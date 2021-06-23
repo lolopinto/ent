@@ -17,6 +17,7 @@
     "directory": "packages/snowtop-email"
   },
   "keywords": [
+    "snowtop",
     "ent",
     "email",
     "datatype"
