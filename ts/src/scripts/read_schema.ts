@@ -1,9 +1,10 @@
-import { Schema, Field, Edge, AssocEdge, AssocEdgeGroup } from "../schema";
+import { Schema, Field, AssocEdge, AssocEdgeGroup } from "../schema";
 import glob from "glob";
 import * as path from "path";
 import { pascalCase } from "pascal-case";
 import minimist from "minimist";
 import { ActionField } from "../schema/schema";
+import { exit } from "process";
 
 function processFields(dst: {}[], src: Field[]) {
   for (const field of src) {
@@ -82,7 +83,7 @@ function processAction(action: InputAction): OutputAction {
   return ret;
 }
 
-async function main() {
+function main() {
   const options = minimist(process.argv.slice(2));
 
   if (!options.path) {
@@ -116,7 +117,6 @@ async function main() {
     // let's put patterns first just so we have id, created_at, updated_at first
     // ¯\_(ツ)_/¯
     let fields: Field[] = [];
-    //  let fields = [...schema.fields];
     if (schema.patterns) {
       for (const pattern of schema.patterns) {
         processFields(fields, pattern.fields);
@@ -164,4 +164,9 @@ async function main() {
   console.log(JSON.stringify(schemas));
 }
 
-Promise.resolve(main());
+try {
+  main();
+} catch (err) {
+  console.error(err);
+  exit(1);
+}

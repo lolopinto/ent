@@ -11,11 +11,12 @@ import * as readline from "readline";
 import * as path from "path";
 import * as fs from "fs";
 import { parseCustomInput, file } from "../imports";
+import { exit } from "process";
 
 // need to use the GQLCapture from the package so that when we call GQLCapture.enable()
 // we're affecting the local paths as opposed to a different instance
 // life is hard
-const MODULE_PATH = "@lolopinto/ent/graphql";
+const MODULE_PATH = "@snowtop/snowtop-ts/graphql";
 
 async function readInputs(): Promise<string[]> {
   return await new Promise((resolve) => {
@@ -25,11 +26,11 @@ async function readInputs(): Promise<string[]> {
       terminal: false,
     });
     let nodes: string[] = [];
-    rl.on("line", function(line: string) {
+    rl.on("line", function (line: string) {
       nodes.push(line);
     });
 
-    rl.on("close", function() {
+    rl.on("close", function () {
       return resolve(nodes);
     });
   });
@@ -214,4 +215,9 @@ async function main() {
   );
 }
 
-Promise.resolve(main());
+main()
+  .then()
+  .catch((err) => {
+    console.error(err);
+    exit(1);
+  });
