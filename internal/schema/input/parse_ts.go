@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/cmd"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/util"
@@ -57,6 +58,7 @@ func ParseSchemaFromTSDir(dirPath string, fromTest bool) (*Schema, error) {
 		err = errors.Wrap(err, str)
 		return nil, err
 	}
+	spew.Dump("command", cmdName, cmdArgs)
 
 	return ParseSchema(out.Bytes())
 }
