@@ -20,7 +20,7 @@ ENV GOPATH=$HOME/go
 ENV GOBIN $GOPATH/bin
 ENV PATH $PATH:$GOPATH/bin
 
-RUN go install github.com/lolopinto/ent/tsent@v0.0.16
+RUN go install github.com/lolopinto/ent/tsent@v0.0.17
 
 # needed to tell tsent where to get tsconfig-paths + make it possible to test locally 
 ENV TSCONFIG_PATHS="/node_modules/tsconfig-paths/register"
