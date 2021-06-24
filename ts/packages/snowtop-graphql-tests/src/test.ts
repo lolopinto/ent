@@ -18,7 +18,7 @@ import {
   expectMutation,
 } from "./index";
 
-import { GraphQLNodeInterface } from "@lolopinto/ent/graphql";
+import { GraphQLNodeInterface } from "@snowtop/snowtop-ts/graphql";
 
 test("simplest query", async () => {
   let schema = new GraphQLSchema({

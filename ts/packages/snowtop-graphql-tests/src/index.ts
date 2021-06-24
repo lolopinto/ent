@@ -1,6 +1,6 @@
 import express, { Express, RequestHandler } from "express";
 import { graphqlHTTP } from "express-graphql";
-import { Viewer } from "@lolopinto/ent";
+import { Viewer } from "@snowtop/snowtop-ts";
 import {
   GraphQLSchema,
   GraphQLObjectType,
@@ -12,7 +12,7 @@ import {
   GraphQLType,
   GraphQLFieldMap,
 } from "graphql";
-import { buildContext, registerAuthHandler } from "@lolopinto/ent/auth";
+import { buildContext, registerAuthHandler } from "@snowtop/snowtop-ts/auth";
 import { IncomingMessage, ServerResponse } from "http";
 import supertest from "supertest";
 import * as fs from "fs";
