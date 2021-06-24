@@ -301,11 +301,24 @@ export class Sqlite implements Connection, SyncClient {
     return this.querySync(query, values);
   }
 
+  private convertValues(values: any[]) {
+    for (const key in values) {
+      let value = values[key];
+      if (value === true) {
+        values[key] = 1;
+      } else if (value === false) {
+        values[key] = 0;
+      } else if (value instanceof Date) {
+        values[key] = value.toISOString();
+      }
+    }
+    return values;
+  }
   querySync(query: string, values?: any[]): QueryResult<QueryResultRow> {
     let r: sqlite.RunResult;
 
     if (values) {
-      r = this.db.prepare(query).get(values);
+      r = this.db.prepare(query).get(this.convertValues(values));
     } else {
       r = this.db.prepare(query).run();
     }
@@ -325,7 +338,7 @@ export class Sqlite implements Connection, SyncClient {
   queryAllSync(query: string, values?: any[]): QueryResult<QueryResultRow> {
     let r: any[];
     if (values) {
-      r = this.db.prepare(query).all(values);
+      r = this.db.prepare(query).all(this.convertValues(values));
     } else {
       r = this.db.prepare(query).all();
     }
@@ -344,17 +357,7 @@ export class Sqlite implements Connection, SyncClient {
   execSync(query: string, values?: any[]): ExecResult {
     let r: sqlite.RunResult;
     if (values) {
-      for (const key in values) {
-        let value = values[key];
-        if (value === true) {
-          values[key] = 1;
-        } else if (value === false) {
-          values[key] = 0;
-        } else if (value instanceof Date) {
-          values[key] = value.toISOString();
-        }
-      }
-      r = this.db.prepare(query).run(values);
+      r = this.db.prepare(query).run(this.convertValues(values));
     } else {
       r = this.db.prepare(query).run();
     }
