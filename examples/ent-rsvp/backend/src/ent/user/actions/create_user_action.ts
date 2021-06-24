@@ -2,7 +2,7 @@ import {
   CreateUserActionBase,
   UserCreateInput,
 } from "src/ent/user/actions/generated/create_user_action_base";
-import { Data, IDViewer, AlwaysAllowPrivacyPolicy } from "@lolopinto/ent";
+import { Data, IDViewer, AlwaysAllowPrivacyPolicy } from "@snowtop/snowtop-ts";
 
 export { UserCreateInput };
 

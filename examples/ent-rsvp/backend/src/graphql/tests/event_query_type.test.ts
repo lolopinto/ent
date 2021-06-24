@@ -1,11 +1,14 @@
 import {
   expectMutation,
   expectQueryFromRoot,
-} from "@lolopinto/ent-graphql-tests";
+} from "@snowtop/snowtop-graphql-tests";
 import { Event } from "src/ent";
-import { DB, ID, setLogLevels, loadConfig } from "@lolopinto/ent";
+import { DB, ID, setLogLevels, loadConfig } from "@snowtop/snowtop-ts";
 import schema from "src/graphql/schema";
-import { encodeGQLID, mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
+import {
+  encodeGQLID,
+  mustDecodeIDFromGQLID,
+} from "@snowtop/snowtop-ts/graphql";
 import { createUser } from "src/testutils";
 import DeleteEventAction from "src/ent/event/actions/delete_event_action";
 
@@ -52,7 +55,7 @@ test("create event with slug", async () => {
     ["event.slug", "fun-event"],
     [
       "event.id",
-      async function(id) {
+      async function (id) {
         id = mustDecodeIDFromGQLID(id);
         const evt = await Event.loadX(user.viewer, id);
         await DeleteEventAction.create(user.viewer, evt).saveX();
@@ -91,7 +94,7 @@ test("event slug available", async () => {
     ["event.slug", "fun-event"],
     [
       "event.id",
-      async function(id) {
+      async function (id) {
         eventID = mustDecodeIDFromGQLID(id);
       },
     ],
@@ -142,7 +145,7 @@ test("query from slug", async () => {
     ["event.slug", "fun-event"],
     [
       "event.id",
-      async function(id) {
+      async function (id) {
         eventID = mustDecodeIDFromGQLID(id);
       },
     ],

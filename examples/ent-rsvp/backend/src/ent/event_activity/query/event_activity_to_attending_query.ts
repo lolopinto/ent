@@ -1,6 +1,11 @@
 import { EventActivityToAttendingQueryBase } from "src/ent/internal";
-import { AssocEdge, Context, EdgeQuerySource, Viewer } from "@lolopinto/ent";
-import { gqlContextType, gqlField } from "@lolopinto/ent/graphql";
+import {
+  AssocEdge,
+  Context,
+  EdgeQuerySource,
+  Viewer,
+} from "@snowtop/snowtop-ts";
+import { gqlContextType, gqlField } from "@snowtop/snowtop-ts/graphql";
 import { EventActivity, GuestData } from "src/ent";
 
 export class EventActivityToAttendingEdge extends AssocEdge {

@@ -12,11 +12,11 @@ import {
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@lolopinto/ent";
+import { RequestContext } from "@snowtop/snowtop-ts";
 import {
   convertFromGQLEnum,
   mustDecodeIDFromGQLID,
-} from "@lolopinto/ent/graphql";
+} from "@snowtop/snowtop-ts/graphql";
 import { EventActivity } from "src/ent/";
 import EditEventActivityRsvpStatusAction, {
   EditEventActivityRsvpStatusInput,

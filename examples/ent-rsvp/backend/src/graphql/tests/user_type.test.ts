@@ -1,8 +1,8 @@
-import { expectMutation } from "@lolopinto/ent-graphql-tests";
+import { expectMutation } from "@snowtop/snowtop-graphql-tests";
 import { User } from "src/ent";
-import { DB, IDViewer } from "@lolopinto/ent";
+import { DB, IDViewer } from "@snowtop/snowtop-ts";
 import schema from "src/graphql/schema";
-import { mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
+import { mustDecodeIDFromGQLID } from "@snowtop/snowtop-ts/graphql";
 import { randomEmail } from "src/util/random";
 
 afterAll(async () => {
@@ -27,7 +27,7 @@ test("create user", async () => {
     ["user.emailAddress", email],
     [
       "user.id",
-      async function(id) {
+      async function (id) {
         const decoded = mustDecodeIDFromGQLID(id);
         const vc = new IDViewer(decoded);
         await User.loadX(vc, decoded);

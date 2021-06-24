@@ -1,6 +1,9 @@
-import { expectMutation } from "@lolopinto/ent-graphql-tests";
-import { IDViewer, DB } from "@lolopinto/ent";
-import { encodeGQLID, mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
+import { expectMutation } from "@snowtop/snowtop-graphql-tests";
+import { IDViewer, DB } from "@snowtop/snowtop-ts";
+import {
+  encodeGQLID,
+  mustDecodeIDFromGQLID,
+} from "@snowtop/snowtop-ts/graphql";
 import { createEvent, createGuestPlus } from "src/testutils";
 // this needs to be the last line becasue of load order or at least after src/testutils
 import schema from "src/graphql/schema";
@@ -40,9 +43,7 @@ test("create activity", async () => {
           id: encodeGQLID(event),
         },
         location: "location",
-        startTime: DateTime.fromJSDate(date)
-          .toUTC()
-          .toISO(),
+        startTime: DateTime.fromJSDate(date).toUTC().toISO(),
         address: {
           street: "1 main street",
           city: "San Francisco",

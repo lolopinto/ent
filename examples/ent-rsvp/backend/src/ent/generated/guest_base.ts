@@ -10,11 +10,12 @@ import {
   ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
+  convertDate,
   loadEnt,
   loadEntX,
   loadEnts,
-} from "@lolopinto/ent";
-import { Field, getFields } from "@lolopinto/ent/schema";
+} from "@snowtop/snowtop-ts";
+import { Field, getFields } from "@snowtop/snowtop-ts/schema";
 import {
   EdgeType,
   Event,
@@ -52,8 +53,8 @@ export class GuestBase {
 
   constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
-    this.createdAt = data.created_at;
-    this.updatedAt = data.updated_at;
+    this.createdAt = convertDate(data.created_at);
+    this.updatedAt = convertDate(data.updated_at);
     this.name = data.name;
     this.eventID = data.event_id;
     this.emailAddress = data.email_address;

@@ -9,13 +9,15 @@ import {
   ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
+  convertBool,
+  convertDate,
   loadEnt,
   loadEntViaKey,
   loadEntX,
   loadEntXViaKey,
   loadEnts,
-} from "@lolopinto/ent";
-import { Field, getFields } from "@lolopinto/ent/schema";
+} from "@snowtop/snowtop-ts";
+import { Field, getFields } from "@snowtop/snowtop-ts/schema";
 import { Guest, NodeType } from "src/ent/internal";
 import schema from "src/schema/auth_code";
 
@@ -42,12 +44,12 @@ export class AuthCodeBase {
 
   constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
-    this.createdAt = data.created_at;
-    this.updatedAt = data.updated_at;
+    this.createdAt = convertDate(data.created_at);
+    this.updatedAt = convertDate(data.updated_at);
     this.code = data.code;
     this.guestID = data.guest_id;
     this.emailAddress = data.email_address;
-    this.sentCode = data.sent_code;
+    this.sentCode = convertBool(data.sent_code);
   }
 
   // default privacyPolicy is Viewer can see themselves

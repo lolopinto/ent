@@ -5,13 +5,13 @@ import {
   ID,
   PrivacyPolicy,
   Viewer,
-} from "@lolopinto/ent";
+} from "@snowtop/snowtop-ts";
 import {
   Action,
   Changeset,
   WriteOperation,
   setEdgeTypeInGroup,
-} from "@lolopinto/ent/action";
+} from "@snowtop/snowtop-ts/action";
 import { NodeType } from "src/ent";
 import { EventActivity } from "src/ent/";
 import {

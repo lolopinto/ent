@@ -1,4 +1,4 @@
-import { DB, IDViewer } from "@lolopinto/ent";
+import { DB, IDViewer } from "@snowtop/snowtop-ts";
 import CreateAddressAction from "../address/actions/create_address_action";
 import { Address } from "../internal";
 import EditAddressAction from "../address/actions/edit_address_action";

@@ -9,13 +9,14 @@ import {
   ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
+  convertDate,
   loadEnt,
   loadEntViaKey,
   loadEntX,
   loadEntXViaKey,
   loadEnts,
-} from "@lolopinto/ent";
-import { Field, getFields } from "@lolopinto/ent/schema";
+} from "@snowtop/snowtop-ts";
+import { Field, getFields } from "@snowtop/snowtop-ts/schema";
 import { NodeType, UserToEventsQuery } from "src/ent/internal";
 import schema from "src/schema/user";
 
@@ -42,8 +43,8 @@ export class UserBase {
 
   constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
-    this.createdAt = data.created_at;
-    this.updatedAt = data.updated_at;
+    this.createdAt = convertDate(data.created_at);
+    this.updatedAt = convertDate(data.updated_at);
     this.firstName = data.first_name;
     this.lastName = data.last_name;
     this.emailAddress = data.email_address;

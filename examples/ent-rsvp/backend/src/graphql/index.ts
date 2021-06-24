@@ -1,15 +1,15 @@
 import express from "express";
 import { graphqlHTTP } from "express-graphql";
 import { IncomingMessage, ServerResponse } from "http";
-import { buildContext, registerAuthHandler } from "@lolopinto/ent/auth";
-import { PassportStrategyHandler } from "@lolopinto/ent-passport";
+import { buildContext, registerAuthHandler } from "@snowtop/snowtop-ts/auth";
+import { PassportStrategyHandler } from "@snowtop/snowtop-passport";
 import passport from "passport";
 import cors, { CorsOptions, CorsOptionsDelegate } from "cors";
 import { graphqlUploadExpress } from "graphql-upload";
 import * as Sentry from "@sentry/node";
 import * as Tracing from "@sentry/tracing";
 import { config } from "dotenv";
-import { DB, loadConfig } from "@lolopinto/ent";
+import { DB, loadConfig } from "@snowtop/snowtop-ts";
 
 // load env
 config();
@@ -52,7 +52,7 @@ registerAuthHandler(
   }),
 );
 
-const delegagte: CorsOptionsDelegate = function(req, callback) {
+const delegagte: CorsOptionsDelegate = function (req, callback) {
   const corsOptions: CorsOptions = {
     origin: req.headers.origin || "*",
     methods: ["POST", "OPTIONS", "GET", "DELETE", "PATCH"],

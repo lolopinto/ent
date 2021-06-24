@@ -9,13 +9,14 @@ import {
   ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
+  convertDate,
   loadEnt,
   loadEntViaKey,
   loadEntX,
   loadEntXViaKey,
   loadEnts,
-} from "@lolopinto/ent";
-import { Field, getFields } from "@lolopinto/ent/schema";
+} from "@snowtop/snowtop-ts";
+import { Field, getFields } from "@snowtop/snowtop-ts/schema";
 import {
   EventToEventActivitiesQuery,
   EventToGuestDataQuery,
@@ -40,8 +41,8 @@ export class EventBase {
 
   constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
-    this.createdAt = data.created_at;
-    this.updatedAt = data.updated_at;
+    this.createdAt = convertDate(data.created_at);
+    this.updatedAt = convertDate(data.updated_at);
     this.name = data.name;
     this.slug = data.slug;
     this.creatorID = data.creator_id;
