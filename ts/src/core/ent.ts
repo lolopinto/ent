@@ -16,10 +16,14 @@ import {
   QueryableDataOptions,
   EditRowOptions,
   LoadEntOptions,
+  LoadCustomEntOptions,
   EdgeQueryableDataOptions,
   Context,
+  SelectBaseDataOptions,
   SelectDataOptions,
   CreateRowOptions,
+  QueryDataOptions,
+  EntConstructor,
 } from "./base";
 
 import { applyPrivacyPolicy, applyPrivacyPolicyX } from "./privacy";
@@ -251,6 +255,63 @@ export async function loadEntsFromClause<T extends Ent>(
 
   const rows = await loadRows(rowOptions);
   return await applyPrivacyPolicyForRows(viewer, rows, options);
+}
+
+function isClause(
+  opts: clause.Clause | QueryDataOptions,
+): opts is clause.Clause {
+  const cls = opts as clause.Clause;
+
+  return cls.clause !== undefined && cls.values !== undefined;
+}
+
+export async function loadCustomEnts<T extends Ent>(
+  viewer: Viewer,
+  options: LoadCustomEntOptions<T>,
+  query: CustomQuery,
+  values?: any[],
+) {
+  const rows = await loadCustomData(viewer.context, options, query, values);
+
+  const result: T[] = new Array(rows.length);
+  await Promise.all(
+    rows.map(async (row, idx) => {
+      const ent = new options.ent(viewer, row);
+      let privacyEnt = await applyPrivacyPolicyForEnt(viewer, ent);
+      if (privacyEnt) {
+        result[idx] = privacyEnt;
+      }
+    }),
+  );
+  // filter ents that aren't visible because of privacy
+  return result.filter((r) => r !== undefined);
+}
+
+export type CustomQuery = string | clause.Clause | QueryDataOptions;
+export async function loadCustomData(
+  context: Context | undefined,
+  options: SelectBaseDataOptions,
+  query: CustomQuery,
+  values?: any[],
+  logValues?: any[],
+): Promise<Data[]> {
+  if (typeof query === "string") {
+    // no caching, perform raw query
+    return await performRawQuery(query, values || [], logValues);
+  } else if (isClause(query)) {
+    // these 2 will have rudimentary caching but nothing crazy
+    return await loadRows({
+      ...options,
+      clause: query,
+      context: context,
+    });
+  } else {
+    return await loadRows({
+      ...query,
+      ...options,
+      context: context,
+    });
+  }
 }
 
 // Derived ents
@@ -1525,7 +1586,7 @@ export async function applyPrivacyPolicyForRows<T extends Ent>(
 ) {
   let m: Map<ID, T> = new Map();
   // apply privacy logic
-  const ents = await Promise.all(
+  await Promise.all(
     rows.map(async (row) => {
       const ent = new options.ent(viewer, row);
       let privacyEnt = await applyPrivacyPolicyForEnt(viewer, ent);
