@@ -32,8 +32,8 @@
     "@snowtop/snowtop-ts": ">= 0.0.2"
   },
   "devDependencies": {
+    "@snowtop/snowtop-graphql-tests": "^0.0.1",
     "@snowtop/snowtop-ts": "^0.0.2",
-    "@lolopinto/ent-graphql-tests": "^0.0.14",
     "@types/express-session": "^1.17.3",
     "@types/jest": "^26.0.23",
     "@types/passport-strategy": "^0.2.35",
