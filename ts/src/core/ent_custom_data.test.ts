@@ -239,9 +239,9 @@ function commonTests() {
 
   async function queryRawData(ctx: Context | undefined) {
     const data = await loadCustomData(
-      ctx,
       options,
       "select * from users order by id desc",
+      ctx,
     );
     expect(data.length).toBe(10);
     expect(data.map((row) => row.id)).toEqual(reversed);
@@ -249,22 +249,22 @@ function commonTests() {
 
     // re-query. hits the db
     const data2 = await loadCustomData(
-      ctx,
       options,
       "select * from users order by id desc",
+      ctx,
     );
     expect(data).toEqual(data2);
     expect(ml.logs.length).toBe(2);
   }
 
   async function queryViaClause(ctx: Context | undefined) {
-    const data = await loadCustomData(ctx, options, clause.Greater("id", 5));
+    const data = await loadCustomData(options, clause.Greater("id", 5), ctx);
     expect(data.length).toBe(5);
     expect(data.map((row) => row.id)).toEqual(ids.slice(5, 10));
     expect(ml.logs.length).toBe(1);
 
     // re-query. hits the db
-    const data2 = await loadCustomData(ctx, options, clause.Greater("id", 5));
+    const data2 = await loadCustomData(options, clause.Greater("id", 5), ctx);
     expect(data).toEqual(data2);
     expect(ml.logs.length).toBe(2);
     const lastLog = ml.logs[1];
@@ -284,14 +284,14 @@ function commonTests() {
       clause: clause.LessEq("id", 5),
       orderby: "id desc",
     };
-    const data = await loadCustomData(ctx, options, opts);
+    const data = await loadCustomData(options, opts, ctx);
 
     expect(data.length).toBe(5);
     expect(data.map((row) => row.id)).toEqual(ids.slice(0, 5).reverse());
     expect(ml.logs.length).toBe(1);
 
     // re-query. hits the db
-    const data2 = await loadCustomData(ctx, options, opts);
+    const data2 = await loadCustomData(options, opts, ctx);
     expect(data).toEqual(data2);
     expect(ml.logs.length).toBe(2);
     const lastLog = ml.logs[1];

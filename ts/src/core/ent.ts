@@ -257,21 +257,12 @@ export async function loadEntsFromClause<T extends Ent>(
   return await applyPrivacyPolicyForRows(viewer, rows, options);
 }
 
-function isClause(
-  opts: clause.Clause | QueryDataOptions,
-): opts is clause.Clause {
-  const cls = opts as clause.Clause;
-
-  return cls.clause !== undefined && cls.values !== undefined;
-}
-
 export async function loadCustomEnts<T extends Ent>(
   viewer: Viewer,
   options: LoadCustomEntOptions<T>,
   query: CustomQuery,
-  values?: any[],
 ) {
-  const rows = await loadCustomData(viewer.context, options, query, values);
+  const rows = await loadCustomData(options, query, viewer.context);
 
   const result: T[] = new Array(rows.length);
   await Promise.all(
@@ -287,25 +278,56 @@ export async function loadCustomEnts<T extends Ent>(
   return result.filter((r) => r !== undefined);
 }
 
-export type CustomQuery = string | clause.Clause | QueryDataOptions;
+interface rawQueryOptions {
+  query: string;
+  values?: any[];
+  logValues?: any[];
+}
+
+export type CustomQuery =
+  | string
+  | rawQueryOptions
+  | clause.Clause
+  | QueryDataOptions;
+
+function isClause(
+  opts: clause.Clause | QueryDataOptions | rawQueryOptions,
+): opts is clause.Clause {
+  const cls = opts as clause.Clause;
+
+  return cls.clause !== undefined && cls.values !== undefined;
+}
+
+function isRawQuery(
+  opts: QueryDataOptions | rawQueryOptions,
+): opts is rawQueryOptions {
+  return (opts as rawQueryOptions).query !== undefined;
+}
+
 export async function loadCustomData(
-  context: Context | undefined,
   options: SelectBaseDataOptions,
   query: CustomQuery,
-  values?: any[],
-  logValues?: any[],
+  context: Context | undefined,
 ): Promise<Data[]> {
   if (typeof query === "string") {
     // no caching, perform raw query
-    return await performRawQuery(query, values || [], logValues);
+    return await performRawQuery(query, [], []);
   } else if (isClause(query)) {
-    // these 2 will have rudimentary caching but nothing crazy
+    // this will have rudimentary caching but nothing crazy
     return await loadRows({
       ...options,
       clause: query,
       context: context,
     });
+  } else if (isRawQuery(query)) {
+    // no caching, perform raw query
+    return await performRawQuery(
+      query.query,
+      query.values || [],
+      query.logValues,
+    );
   } else {
+    // this will have rudimentary caching but nothing crazy
     return await loadRows({
       ...query,
       ...options,
