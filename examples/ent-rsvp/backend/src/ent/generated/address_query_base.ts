@@ -7,7 +7,7 @@ import {
   IndexLoaderFactory,
   RawCountLoaderFactory,
   Viewer,
-} from "@lolopinto/ent";
+} from "@snowtop/snowtop-ts";
 import { Address, addressLoader } from "src/ent/internal";
 
 export const ownerToAddressesCountLoaderFactory = new RawCountLoaderFactory(

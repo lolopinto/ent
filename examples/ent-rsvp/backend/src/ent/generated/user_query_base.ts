@@ -6,7 +6,7 @@ import {
   IndexLoaderFactory,
   RawCountLoaderFactory,
   Viewer,
-} from "@lolopinto/ent";
+} from "@snowtop/snowtop-ts";
 import { Event, User, eventLoader } from "src/ent/internal";
 
 export const userToEventsCountLoaderFactory = new RawCountLoaderFactory(

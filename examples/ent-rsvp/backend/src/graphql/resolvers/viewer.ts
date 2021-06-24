@@ -3,8 +3,8 @@ import {
   gqlObjectType,
   gqlContextType,
   gqlQuery,
-} from "@lolopinto/ent/graphql";
-import { Viewer, RequestContext } from "@lolopinto/ent";
+} from "@snowtop/snowtop-ts/graphql";
+import { Viewer, RequestContext } from "@snowtop/snowtop-ts";
 
 import { Guest, User } from "src/ent/";
 

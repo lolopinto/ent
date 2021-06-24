@@ -3,7 +3,7 @@ import {
   AllowIfViewerRule,
   AlwaysDenyRule,
   PrivacyPolicy,
-} from "@lolopinto/ent";
+} from "@snowtop/snowtop-ts";
 import { AllowIfEventCreatorRule } from "src/ent/event/privacy/event_creator";
 import { AllowIfGuestInSameGuestGroupRule } from "src/ent/guest/privacy/guest_rule_privacy";
 

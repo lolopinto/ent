@@ -1,4 +1,4 @@
-import { AlwaysAllowPrivacyPolicy } from "@lolopinto/ent";
+import { AlwaysAllowPrivacyPolicy } from "@snowtop/snowtop-ts";
 import {
   CreateGuestDataActionBase,
   GuestDataCreateInput,

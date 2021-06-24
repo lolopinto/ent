@@ -6,13 +6,13 @@ import {
   ID,
   PrivacyPolicy,
   Viewer,
-} from "@lolopinto/ent";
+} from "@snowtop/snowtop-ts";
 import {
   Action,
   Builder,
   Changeset,
   WriteOperation,
-} from "@lolopinto/ent/action";
+} from "@snowtop/snowtop-ts/action";
 import { EventActivity, GuestGroup } from "src/ent/";
 import {
   EventActivityBuilder,

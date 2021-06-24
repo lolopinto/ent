@@ -1,5 +1,5 @@
-import { AlwaysDenyRule } from "@lolopinto/ent";
-import { WriteOperation } from "@lolopinto/ent/action";
+import { AlwaysDenyRule } from "@snowtop/snowtop-ts";
+import { WriteOperation } from "@snowtop/snowtop-ts/action";
 import { EventActivityAddInviteActionBase } from "src/ent/event_activity/actions/generated/event_activity_add_invite_action_base";
 import { EdgeType } from "src/ent/";
 import { AllowIfGuestGroupPartOfEventRule } from "src/ent/event_activity/actions/privacy/guest_group_event_rule";

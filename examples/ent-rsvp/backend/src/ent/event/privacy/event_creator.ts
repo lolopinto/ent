@@ -8,8 +8,8 @@ import {
   AlwaysDenyRule,
   Deny,
   Data,
-} from "@lolopinto/ent";
-import { Builder } from "@lolopinto/ent/action";
+} from "@snowtop/snowtop-ts";
+import { Builder } from "@snowtop/snowtop-ts/action";
 import { EventActivity } from "src/ent";
 import { Event } from "src/ent/internal";
 

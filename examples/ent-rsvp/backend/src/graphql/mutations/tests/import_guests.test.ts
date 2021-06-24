@@ -1,7 +1,7 @@
-import { DB } from "@lolopinto/ent";
+import { DB } from "@snowtop/snowtop-ts";
 import { randomEmail } from "src/util/random";
-import { expectMutation } from "@lolopinto/ent-graphql-tests";
-import { encodeGQLID } from "@lolopinto/ent/graphql";
+import { expectMutation } from "@snowtop/snowtop-graphql-tests";
+import { encodeGQLID } from "@snowtop/snowtop-ts/graphql";
 import schema from "src/graphql/schema";
 import { graphqlUploadExpress } from "graphql-upload";
 import { createEvent } from "src/testutils";

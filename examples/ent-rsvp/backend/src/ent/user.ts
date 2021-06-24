@@ -1,4 +1,4 @@
-import { Data } from "@lolopinto/ent";
+import { Data } from "@snowtop/snowtop-ts";
 import { UserBase } from "src/ent/internal";
 import * as bcrypt from "bcryptjs";
 

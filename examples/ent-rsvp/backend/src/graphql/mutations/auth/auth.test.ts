@@ -1,13 +1,13 @@
-import { DB } from "@lolopinto/ent";
+import { DB } from "@snowtop/snowtop-ts";
 import {
   expectMutation,
   expectQueryFromRoot,
-} from "@lolopinto/ent-graphql-tests";
+} from "@snowtop/snowtop-graphql-tests";
 import { createUser, createAndInvitePlusGuests } from "src/testutils";
 import schema from "src/graphql/schema";
 import { AuthCode } from "src/ent/auth_code";
-import { encodeGQLID } from "@lolopinto/ent/graphql";
-import { PassportStrategyHandler } from "@lolopinto/ent-passport";
+import { encodeGQLID } from "@snowtop/snowtop-ts/graphql";
+import { PassportStrategyHandler } from "@snowtop/snowtop-passport";
 import supertest from "supertest";
 import { Guest, User } from "src/ent";
 
@@ -65,7 +65,7 @@ test("log guest in", async () => {
     ["viewer.guest.id", encodeGQLID(guest)],
     [
       "token",
-      function(token) {
+      function (token) {
         jwtToken = token;
       },
     ],
@@ -143,7 +143,7 @@ test("log user in", async () => {
     ["viewer.user.id", encodeGQLID(user)],
     [
       "token",
-      function(token) {
+      function (token) {
         jwtToken = token;
       },
     ],

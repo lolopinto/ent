@@ -3,7 +3,7 @@ import {
   queryRootConfig,
   expectQueryFromRoot,
   expectMutation,
-} from "@lolopinto/ent-graphql-tests";
+} from "@snowtop/snowtop-graphql-tests";
 import { DB, LoggedOutViewer } from "@snowtop/snowtop-ts";
 import CreateUserAction, {
   UserCreateInput,
@@ -12,7 +12,7 @@ import { randomEmail, random, randomPhoneNumber } from "src/util/random";
 import { clearAuthHandlers } from "@snowtop/snowtop-ts/auth";
 import { User } from "src/ent/";
 import { Express } from "express";
-import { PassportStrategyHandler } from "@lolopinto/ent-passport";
+import { PassportStrategyHandler } from "@snowtop/snowtop-passport";
 import supertest from "supertest";
 import jwt from "jsonwebtoken";
 import { encodeGQLID } from "@snowtop/snowtop-ts/graphql";

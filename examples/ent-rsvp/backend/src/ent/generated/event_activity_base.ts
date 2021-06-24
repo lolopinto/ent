@@ -10,12 +10,15 @@ import {
   ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
+  convertBool,
+  convertDate,
+  convertNullableDate,
   getEdgeTypeInGroup,
   loadEnt,
   loadEntX,
   loadEnts,
-} from "@lolopinto/ent";
-import { Field, getFields } from "@lolopinto/ent/schema";
+} from "@snowtop/snowtop-ts";
+import { Field, getFields } from "@snowtop/snowtop-ts/schema";
 import {
   EdgeType,
   Event,
@@ -71,15 +74,15 @@ export class EventActivityBase {
 
   constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
-    this.createdAt = data.created_at;
-    this.updatedAt = data.updated_at;
+    this.createdAt = convertDate(data.created_at);
+    this.updatedAt = convertDate(data.updated_at);
     this.name = data.name;
     this.eventID = data.event_id;
-    this.startTime = data.start_time;
-    this.endTime = data.end_time;
+    this.startTime = convertDate(data.start_time);
+    this.endTime = convertNullableDate(data.end_time);
     this.location = data.location;
     this.description = data.description;
-    this.inviteAllGuests = data.invite_all_guests;
+    this.inviteAllGuests = convertBool(data.invite_all_guests);
   }
 
   // default privacyPolicy is Viewer can see themselves

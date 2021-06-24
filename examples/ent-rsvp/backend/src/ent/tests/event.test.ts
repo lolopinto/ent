@@ -1,5 +1,5 @@
 import { Address, Event } from "src/ent";
-import { DB, IDViewer } from "@lolopinto/ent";
+import { DB, IDViewer } from "@snowtop/snowtop-ts";
 import CreateEventAction from "../event/actions/create_event_action";
 import { createUser } from "src/testutils";
 

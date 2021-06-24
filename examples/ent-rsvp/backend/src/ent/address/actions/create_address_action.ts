@@ -1,13 +1,13 @@
-import { ID, Ent, AllowIfEntIsVisibleRule } from "@lolopinto/ent";
+import { ID, Ent, AllowIfEntIsVisibleRule } from "@snowtop/snowtop-ts";
 import {
   AllowIfConditionAppliesRule,
   AlwaysDenyRule,
-} from "@lolopinto/ent/core/privacy";
+} from "@snowtop/snowtop-ts/core/privacy";
 import {
   CreateAddressActionBase,
   AddressCreateInput,
 } from "src/ent/address/actions/generated/create_address_action_base";
-import { AllowIfBuilder, Builder } from "@lolopinto/ent/action";
+import { AllowIfBuilder, Builder } from "@snowtop/snowtop-ts/action";
 import { getLoaderOptions } from "src/ent/loadAny";
 import { NodeType } from "src/ent/const";
 
@@ -27,7 +27,7 @@ export default class CreateAddressAction extends CreateAddressActionBase {
           return (
             (this.input.ownerID as Builder<Ent>).placeholderID === undefined
           );
-        }, new AllowIfEntIsVisibleRule(this.input.ownerID as ID, getLoaderOptions((this.input.ownerType as unknown) as NodeType))),
+        }, new AllowIfEntIsVisibleRule(this.input.ownerID as ID, getLoaderOptions(this.input.ownerType as unknown as NodeType))),
         AlwaysDenyRule,
       ],
     };

@@ -7,7 +7,7 @@ import {
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@lolopinto/ent";
+import { RequestContext } from "@snowtop/snowtop-ts";
 import { EventResolver } from "../event";
 
 export const EventSlugAvailableQueryType: GraphQLFieldConfig<

@@ -1,10 +1,15 @@
-import { AlwaysDenyRule, AssocEdge, Ent, loadEdgeForID2 } from "@lolopinto/ent";
-import { Changeset, Trigger, WriteOperation } from "@lolopinto/ent/action";
+import {
+  AlwaysDenyRule,
+  AssocEdge,
+  Ent,
+  loadEdgeForID2,
+} from "@snowtop/snowtop-ts";
+import { Changeset, Trigger, WriteOperation } from "@snowtop/snowtop-ts/action";
 import {
   DenyIfEdgeDoesNotExistRule,
   DelayedResultRule,
   DenyIfLoggedOutRule,
-} from "@lolopinto/ent/core/privacy";
+} from "@snowtop/snowtop-ts/core/privacy";
 import { Guest, GuestData } from "src/ent";
 import { EdgeType } from "src/ent/const";
 import {
