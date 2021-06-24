@@ -1,7 +1,7 @@
 {
-  "name": "@lolopinto/ent-passport",
-  "version": "0.0.4",
-  "description": "ent passport integration",
+  "name": "@snowtop/snowtop-passport",
+  "version": "0.0.1",
+  "description": "snowtop ent passport integration",
   "main": "dist/passport.js",
   "types": "dist/passport.d.ts",
   "files": [
@@ -14,9 +14,10 @@
   "repository": {
     "type": "git",
     "url": "git@github.com:lolopinto/ent.git",
-    "directory": "packages/ent-passport"
+    "directory": "/snowtop-passport"
   },
   "keywords": [
+    "snowtop",
     "ent",
     "passport",
     "auth"
@@ -27,14 +28,11 @@
     "url": "https://github.com/lolopinto/ent/issues"
   },
   "homepage": "https://github.com/lolopinto/ent#readme",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
-  },
   "peerDependencies": {
-    "@lolopinto/ent": ">= 0.0.89"
+    "@snowtop/snowtop-ts": ">= 0.0.2"
   },
   "devDependencies": {
-    "@lolopinto/ent": "0.0.89",
+    "@snowtop/snowtop-ts": "^0.0.2",
     "@lolopinto/ent-graphql-tests": "^0.0.14",
     "@types/express-session": "^1.17.3",
     "@types/jest": "^26.0.23",

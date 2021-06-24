@@ -7,12 +7,15 @@ import {
   ObjectLoaderFactory,
   RequestContext,
   Viewer,
-} from "@lolopinto/ent";
+  loadRow,
+  query,
+  Ent,
+} from "@snowtop/snowtop-ts";
 import {
   expectQueryFromRoot,
   expectMutation,
 } from "@lolopinto/ent-graphql-tests";
-import { clearAuthHandlers } from "@lolopinto/ent/auth";
+import { clearAuthHandlers } from "@snowtop/snowtop-ts/auth";
 import {
   GraphQLSchema,
   GraphQLObjectType,
@@ -21,10 +24,9 @@ import {
   GraphQLID,
   GraphQLFieldConfig,
 } from "graphql";
-import { QueryRecorder } from "@lolopinto/ent/testutils/db_mock";
-import { createRowForTest } from "@lolopinto/ent/testutils/write";
+import { QueryRecorder } from "@snowtop/snowtop-ts/testutils/db_mock";
+import { createRowForTest } from "@snowtop/snowtop-ts/testutils/write";
 import { Pool } from "pg";
-import { loadRow, query, Ent } from "@lolopinto/ent";
 import { useAndVerifyAuth, useAndVerifyAuthJWT } from "./passport";
 import { PassportStrategyHandler, PassportAuthHandler } from "./passport";
 import { Express } from "express";
@@ -275,7 +277,7 @@ describe("jwt", () => {
       ["viewer.user.id", "1"],
       [
         "token",
-        function(token) {
+        function (token) {
           const decoded = jwt.decode(token);
           expect(decoded).not.toBe(null);
           expect(decoded!["viewerID"]).toBe(user?.id);
