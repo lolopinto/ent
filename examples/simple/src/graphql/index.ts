@@ -10,7 +10,7 @@ import { buildContext, registerAuthHandler } from "@snowtop/snowtop-ts/auth";
 import {
   //  PassportAuthHandler,
   PassportStrategyHandler,
-} from "@lolopinto/ent-passport";
+} from "@snowtop/snowtop-passport";
 import { graphqlUploadExpress } from "graphql-upload";
 import { User } from "src/ent";
 

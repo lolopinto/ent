@@ -3,7 +3,7 @@ import {
   queryRootConfig,
   expectQueryFromRoot,
   expectMutation,
-} from "@lolopinto/ent-graphql-tests";
+} from "@snowtop/snowtop-graphql-tests";
 import { DB, LoggedOutViewer } from "@snowtop/snowtop-ts";
 import { encodeGQLID } from "@snowtop/snowtop-ts/graphql";
 import CreateUserAction, {
@@ -15,7 +15,7 @@ import { User } from "src/ent/";
 import passport from "passport";
 import session from "express-session";
 import { Express } from "express";
-import { PassportAuthHandler } from "@lolopinto/ent-passport";
+import { PassportAuthHandler } from "@snowtop/snowtop-passport";
 import supertest from "supertest";
 
 // TODO we need something that does this by default for all tests

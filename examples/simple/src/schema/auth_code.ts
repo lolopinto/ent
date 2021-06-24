@@ -8,8 +8,8 @@ import {
   StringType,
   UUIDType,
 } from "@snowtop/snowtop-ts";
-import { EmailType } from "@lolopinto/ent-email";
-import { PhoneNumberType } from "@lolopinto/ent-phonenumber";
+import { EmailType } from "@snowtop/snowtop-email";
+import { PhoneNumberType } from "@snowtop/snowtop-phonenumber";
 
 export default class AuthCode extends BaseEntSchema {
   fields: Field[] = [

@@ -10,7 +10,7 @@ import { advanceBy } from "jest-date-mock";
 import {
   queryRootConfig,
   expectQueryFromRoot,
-} from "@lolopinto/ent-graphql-tests";
+} from "@snowtop/snowtop-graphql-tests";
 import CreateContactAction, {
   ContactCreateInput,
 } from "src/ent/contact/actions/create_contact_action";
