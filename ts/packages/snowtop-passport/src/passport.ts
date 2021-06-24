@@ -1,5 +1,9 @@
 import passport, { AuthenticateOptions } from "passport";
-import { Auth, AuthViewer } from "@lolopinto/ent/auth";
+import {
+  AuthHandler,
+  AuthViewer,
+  registerAuthHandler,
+} from "@snowtop/snowtop-ts/auth";
 import { IncomingMessage } from "http";
 import { Strategy } from "passport-strategy";
 import {
@@ -11,8 +15,7 @@ import {
   RequestContext,
   IDViewer,
   loadEntX,
-} from "@lolopinto/ent";
-import { registerAuthHandler } from "@lolopinto/ent/auth";
+} from "@snowtop/snowtop-ts";
 import {
   ExtractJwt,
   JwtFromRequestFunction,
@@ -36,7 +39,7 @@ export interface PassportAuthOptions {
 }
 
 // should this be renamed to session?
-export class PassportAuthHandler implements Auth {
+export class PassportAuthHandler implements AuthHandler {
   private options: PassportAuthOptions | undefined;
   constructor(options?: PassportAuthOptions) {
     this.options = options;
@@ -44,7 +47,7 @@ export class PassportAuthHandler implements Auth {
 
   async authViewer(context: RequestContext) {
     let that = this;
-    passport.serializeUser(function(viewer: Viewer, done) {
+    passport.serializeUser(function (viewer: Viewer, done) {
       let serializeUser = that.options?.serializeViewer;
       if (!serializeUser) {
         serializeUser = (viewer: Viewer) => {
@@ -55,7 +58,7 @@ export class PassportAuthHandler implements Auth {
       done(null, serializeUser!(viewer));
     });
 
-    passport.deserializeUser(function(id: unknown, done) {
+    passport.deserializeUser(function (id: unknown, done) {
       let deserializeUser = that.options?.deserializeViewer;
       if (!deserializeUser) {
         deserializeUser = async (id: ID) => {
@@ -131,7 +134,7 @@ function defaultReqToViewer(loadOptions?: LoadEntOptions<Ent>) {
   };
 }
 
-export class PassportStrategyHandler implements Auth {
+export class PassportStrategyHandler implements AuthHandler {
   constructor(
     private strategy: passport.Strategy,
     private options?: AuthenticateOptions,
@@ -182,7 +185,7 @@ export class PassportStrategyHandler implements Auth {
       opts.reqToViewer || defaultReqToViewer(opts.loaderOptions);
 
     return new PassportStrategyHandler(
-      new JWTStrategy(strategyOpts, function(jwt_payload: {}, next) {
+      new JWTStrategy(strategyOpts, function (jwt_payload: {}, next) {
         return next(null, jwt_payload["viewerID"].toString(), {});
       }),
       opts.authOptions,

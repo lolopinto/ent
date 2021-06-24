@@ -1,6 +1,6 @@
 {
-  "name": "@lolopinto/ent-password",
-  "version": "0.0.5",
+  "name": "@snowtop/snowtop-password",
+  "version": "0.0.1",
   "description": "password datatype for ents",
   "main": "dist/password.js",
   "types": "dist/password.d.ts",
@@ -14,9 +14,10 @@
   "repository": {
     "type": "git",
     "url": "git@github.com:lolopinto/ent.git",
-    "directory": "packages/ent-password"
+    "directory": "packages/snowtop-password"
   },
   "keywords": [
+    "snowtop",
     "password",
     "ent",
     "datatype"
@@ -27,20 +28,17 @@
     "url": "https://github.com/lolopinto/ent/issues"
   },
   "homepage": "https://github.com/lolopinto/ent#readme",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
-  },
   "dependencies": {
     "bcryptjs": "^2.4.3"
   },
   "devDependencies": {
-    "@lolopinto/ent": "^0.0.98",
+    "@snowtop/snowtop-ts": "^0.0.2",
     "@types/jest": "^26.0.9",
     "jest": "^26.2.2",
     "password-validator": "^5.1.0",
     "ts-jest": "^26.1.4"
   },
   "peerDependencies": {
-    "@lolopinto/ent": ">= 0.0.98"
+    "@snowtop/snowtop-ts": ">= 0.0.2"
   }
 }
