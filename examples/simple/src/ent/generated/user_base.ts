@@ -20,6 +20,9 @@ import {
   loadEnts,
   loadUniqueEdge,
   loadUniqueNode,
+  CustomQuery,
+  loadCustomEnts,
+  loadCustomData,
 } from "@snowtop/snowtop-ts";
 import { Field, getFields } from "@snowtop/snowtop-ts/schema";
 import {
@@ -109,6 +112,34 @@ export class UserBase {
     ...ids: ID[]
   ): Promise<T[]> {
     return loadEnts(viewer, UserBase.loaderOptions.apply(this), ...ids);
+  }
+
+  static async loadCustom<T extends UserBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
+    query: CustomQuery,
+    values?: any[],
+  ): Promise<T[]> {
+    return loadCustomEnts(
+      viewer,
+      UserBase.loaderOptions.apply(this),
+      query,
+      values,
+    );
+  }
+
+  static async loadCustomData<T extends UserBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
+    query: CustomQuery,
+    values?: any[],
+  ): Promise<Data[]> {
+    return loadCustomData(
+      viewer.context,
+      UserBase.loaderOptions.apply(this),
+      query,
+      values,
+    );
   }
 
   static async loadRawData<T extends UserBase>(

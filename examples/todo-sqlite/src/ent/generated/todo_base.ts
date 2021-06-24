@@ -15,6 +15,9 @@ import {
   loadEnt,
   loadEntX,
   loadEnts,
+  CustomQuery,
+  loadCustomEnts,
+  loadCustomData,
 } from "@snowtop/snowtop-ts";
 import { Field, getFields } from "@snowtop/snowtop-ts/schema";
 import { Account, EdgeType, NodeType, TodoToTagsQuery } from "src/ent/internal";
@@ -73,6 +76,34 @@ export class TodoBase {
     ...ids: ID[]
   ): Promise<T[]> {
     return loadEnts(viewer, TodoBase.loaderOptions.apply(this), ...ids);
+  }
+
+  static async loadCustom<T extends TodoBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
+    query: CustomQuery,
+    values?: any[],
+  ): Promise<T[]> {
+    return loadCustomEnts(
+      viewer,
+      TodoBase.loaderOptions.apply(this),
+      query,
+      values,
+    );
+  }
+
+  static async loadCustomData<T extends TodoBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
+    query: CustomQuery,
+    values?: any[],
+  ): Promise<Data[]> {
+    return loadCustomData(
+      viewer.context,
+      TodoBase.loaderOptions.apply(this),
+      query,
+      values,
+    );
   }
 
   static async loadRawData<T extends TodoBase>(
