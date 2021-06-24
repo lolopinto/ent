@@ -1,6 +1,6 @@
 {
   "name": "@snowtop/snowtop-ts",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "snowtop ent framework",
   "main": "index.js",
   "types": "index.d.ts",
@@ -67,7 +67,7 @@
     "test": "jest",
     "clean": "rm -rf dist",
     "prepare-code": "npm run clean && npm run compile && node src/setupPackage.js",
-    "prepublishOnly": "npm run prepare-code && cd dist"
+    "actual-publish": "npm run prepare-code && npm publish ./dist --verbose --access public"
   },
   "bin": {
     "ent-custom-graphql": "scripts/custom_graphql.js",
