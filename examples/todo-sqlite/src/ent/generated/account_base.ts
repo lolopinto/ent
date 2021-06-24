@@ -15,8 +15,8 @@ import {
   loadEntX,
   loadEntXViaKey,
   loadEnts,
-} from "@lolopinto/ent";
-import { Field, getFields } from "@lolopinto/ent/schema";
+} from "@snowtop/snowtop-ts";
+import { Field, getFields } from "@snowtop/snowtop-ts/schema";
 import {
   AccountToTagsQuery,
   AccountToTodosQuery,

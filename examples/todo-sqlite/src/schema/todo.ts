@@ -7,7 +7,7 @@ import {
   Field,
   StringType,
   UUIDType,
-} from "@lolopinto/ent";
+} from "@snowtop/snowtop-ts";
 
 export default class Todo extends BaseEntSchema {
   fields: Field[] = [

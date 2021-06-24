@@ -6,7 +6,7 @@ import {
   IndexLoaderFactory,
   RawCountLoaderFactory,
   Viewer,
-} from "@lolopinto/ent";
+} from "@snowtop/snowtop-ts";
 import { Account, Tag, Todo, tagLoader, todoLoader } from "src/ent/internal";
 
 export const accountToTagsCountLoaderFactory = new RawCountLoaderFactory(

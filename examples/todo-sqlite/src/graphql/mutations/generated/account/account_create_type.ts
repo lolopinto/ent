@@ -10,7 +10,7 @@ import {
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@lolopinto/ent";
+import { RequestContext } from "@snowtop/snowtop-ts";
 import { Account } from "src/ent/";
 import CreateAccountAction, {
   AccountCreateInput,

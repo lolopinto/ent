@@ -1,4 +1,4 @@
-import { AlwaysAllowPrivacyPolicy } from "@lolopinto/ent";
+import { AlwaysAllowPrivacyPolicy } from "@snowtop/snowtop-ts";
 import { DeleteTodoActionBase } from "src/ent/todo/actions/generated/delete_todo_action_base";
 
 export default class DeleteTodoAction extends DeleteTodoActionBase {
