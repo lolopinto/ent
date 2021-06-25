@@ -334,11 +334,10 @@ func TestCustomListQuery(t *testing.T) {
 	code := testhelper.GetCodeWithSchema(`
 			import {RequestContext} from "{root}";
 			import {gqlQuery, gqlArg} from "{graphql}";
-			import {GraphQLString} from "graphql"
 
 			export class AuthResolver {
 			  @gqlQuery({ name: "emailsAvailable", type: [Boolean] })
-			  async emailsAvailable(@gqlArg("emails", {type: [GraphQLString]}) emails: string[]) {
+			  async emailsAvailable(@gqlArg("emails", {type: [String]}) emails: string[]) {
 					const arr = new Array(emails.length);
 					return arr.fill(false);
 				}
