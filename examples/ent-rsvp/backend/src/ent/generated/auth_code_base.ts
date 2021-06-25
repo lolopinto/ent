@@ -3,6 +3,7 @@
 import {
   AllowIfViewerPrivacyPolicy,
   Context,
+  CustomQuery,
   Data,
   ID,
   LoadEntOptions,
@@ -11,6 +12,8 @@ import {
   Viewer,
   convertBool,
   convertDate,
+  loadCustomData,
+  loadCustomEnts,
   loadEnt,
   loadEntViaKey,
   loadEntX,
@@ -77,6 +80,30 @@ export class AuthCodeBase {
     ...ids: ID[]
   ): Promise<T[]> {
     return loadEnts(viewer, AuthCodeBase.loaderOptions.apply(this), ...ids);
+  }
+
+  static async loadCustom<T extends AuthCodeBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
+    query: CustomQuery,
+  ): Promise<T[]> {
+    return loadCustomEnts(
+      viewer,
+      AuthCodeBase.loaderOptions.apply(this),
+      query,
+    );
+  }
+
+  static async loadCustomData<T extends AuthCodeBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<Data[]> {
+    return loadCustomData(
+      AuthCodeBase.loaderOptions.apply(this),
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends AuthCodeBase>(

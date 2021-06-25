@@ -4,6 +4,7 @@ import {
   AllowIfViewerPrivacyPolicy,
   AssocEdge,
   Context,
+  CustomQuery,
   Data,
   ID,
   LoadEntOptions,
@@ -14,6 +15,8 @@ import {
   convertDate,
   convertNullableDate,
   getEdgeTypeInGroup,
+  loadCustomData,
+  loadCustomEnts,
   loadEnt,
   loadEntX,
   loadEnts,
@@ -113,6 +116,30 @@ export class EventActivityBase {
       viewer,
       EventActivityBase.loaderOptions.apply(this),
       ...ids,
+    );
+  }
+
+  static async loadCustom<T extends EventActivityBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
+    query: CustomQuery,
+  ): Promise<T[]> {
+    return loadCustomEnts(
+      viewer,
+      EventActivityBase.loaderOptions.apply(this),
+      query,
+    );
+  }
+
+  static async loadCustomData<T extends EventActivityBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<Data[]> {
+    return loadCustomData(
+      EventActivityBase.loaderOptions.apply(this),
+      query,
+      context,
     );
   }
 

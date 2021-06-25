@@ -34,7 +34,7 @@
     "@snowtop/snowtop-passport": "^0.0.1",
     "@snowtop/snowtop-password": "^0.0.1",
     "@snowtop/snowtop-phonenumber": "^0.0.1",
-    "@snowtop/snowtop-ts": "^0.0.2",
+    "@snowtop/snowtop-ts": "^0.0.3",
     "@types/express-session": "^1.17.3",
     "@types/graphql-upload": "^8.0.4",
     "@types/luxon": "^1.26.5",

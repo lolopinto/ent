@@ -4,6 +4,7 @@ import {
   AllowIfViewerPrivacyPolicy,
   AssocEdge,
   Context,
+  CustomQuery,
   Data,
   ID,
   LoadEntOptions,
@@ -13,6 +14,8 @@ import {
   convertBool,
   convertDate,
   convertNullableList,
+  loadCustomData,
+  loadCustomEnts,
   loadEnt,
   loadEntViaKey,
   loadEntX,
@@ -20,9 +23,6 @@ import {
   loadEnts,
   loadUniqueEdge,
   loadUniqueNode,
-  CustomQuery,
-  loadCustomEnts,
-  loadCustomData,
 } from "@snowtop/snowtop-ts";
 import { Field, getFields } from "@snowtop/snowtop-ts/schema";
 import {
@@ -118,28 +118,16 @@ export class UserBase {
     this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     query: CustomQuery,
-    values?: any[],
   ): Promise<T[]> {
-    return loadCustomEnts(
-      viewer,
-      UserBase.loaderOptions.apply(this),
-      query,
-      values,
-    );
+    return loadCustomEnts(viewer, UserBase.loaderOptions.apply(this), query);
   }
 
   static async loadCustomData<T extends UserBase>(
     this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
     query: CustomQuery,
-    values?: any[],
+    context?: Context,
   ): Promise<Data[]> {
-    return loadCustomData(
-      viewer.context,
-      UserBase.loaderOptions.apply(this),
-      query,
-      values,
-    );
+    return loadCustomData(UserBase.loaderOptions.apply(this), query, context);
   }
 
   static async loadRawData<T extends UserBase>(

@@ -4,6 +4,7 @@ import {
   AllowIfViewerPrivacyPolicy,
   AssocEdge,
   Context,
+  CustomQuery,
   Data,
   ID,
   LoadEntOptions,
@@ -12,12 +13,11 @@ import {
   Viewer,
   convertBool,
   convertDate,
+  loadCustomData,
+  loadCustomEnts,
   loadEnt,
   loadEntX,
   loadEnts,
-  CustomQuery,
-  loadCustomEnts,
-  loadCustomData,
 } from "@snowtop/snowtop-ts";
 import { Field, getFields } from "@snowtop/snowtop-ts/schema";
 import { Account, EdgeType, NodeType, TodoToTagsQuery } from "src/ent/internal";
@@ -82,28 +82,16 @@ export class TodoBase {
     this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     query: CustomQuery,
-    values?: any[],
   ): Promise<T[]> {
-    return loadCustomEnts(
-      viewer,
-      TodoBase.loaderOptions.apply(this),
-      query,
-      values,
-    );
+    return loadCustomEnts(viewer, TodoBase.loaderOptions.apply(this), query);
   }
 
   static async loadCustomData<T extends TodoBase>(
     this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
     query: CustomQuery,
-    values?: any[],
+    context?: Context,
   ): Promise<Data[]> {
-    return loadCustomData(
-      viewer.context,
-      TodoBase.loaderOptions.apply(this),
-      query,
-      values,
-    );
+    return loadCustomData(TodoBase.loaderOptions.apply(this), query, context);
   }
 
   static async loadRawData<T extends TodoBase>(

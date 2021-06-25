@@ -3,6 +3,7 @@
 import {
   AllowIfViewerPrivacyPolicy,
   Context,
+  CustomQuery,
   Data,
   ID,
   LoadEntOptions,
@@ -10,6 +11,8 @@ import {
   PrivacyPolicy,
   Viewer,
   convertDate,
+  loadCustomData,
+  loadCustomEnts,
   loadEnt,
   loadEntX,
   loadEnts,
@@ -62,6 +65,26 @@ export class HolidayBase {
     ...ids: ID[]
   ): Promise<T[]> {
     return loadEnts(viewer, HolidayBase.loaderOptions.apply(this), ...ids);
+  }
+
+  static async loadCustom<T extends HolidayBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
+    query: CustomQuery,
+  ): Promise<T[]> {
+    return loadCustomEnts(viewer, HolidayBase.loaderOptions.apply(this), query);
+  }
+
+  static async loadCustomData<T extends HolidayBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<Data[]> {
+    return loadCustomData(
+      HolidayBase.loaderOptions.apply(this),
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends HolidayBase>(
