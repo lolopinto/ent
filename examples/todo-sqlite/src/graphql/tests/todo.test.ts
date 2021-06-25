@@ -108,7 +108,7 @@ test("remove completed", async () => {
   );
 });
 
-test("open todos", async () => {
+test("open todos from account", async () => {
   const [account, todos] = await createTodos();
 
   // complete the first
@@ -128,6 +128,35 @@ test("open todos", async () => {
     },
     [
       "openTodosLegacy",
+
+      todos.slice(1).map((todo) => {
+        return {
+          text: todo.text,
+        };
+      }),
+    ],
+  );
+});
+
+test("open todos from root", async () => {
+  const [account, todos] = await createTodos();
+
+  // complete the first
+  await ChangeTodoStatusAction.create(account.viewer, todos[0], {
+    completed: true,
+  }).saveX();
+
+  await expectQueryFromRoot(
+    {
+      viewer: account.viewer,
+      schema: schema,
+      root: "openTodos",
+      args: {
+        id: encodeGQLID(account),
+      },
+    },
+    [
+      "",
 
       todos.slice(1).map((todo) => {
         return {

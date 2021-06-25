@@ -259,13 +259,14 @@ func (mfcg *mutationFieldConfigBuilder) getTypeImports(s *gqlSchema) []*fileImpo
 		panic("invalid number of results for custom field")
 	}
 	r := mfcg.field.Results[0]
-	var ret []*fileImport
-	if r.Nullable == "" {
-		ret = append(ret, &fileImport{
-			Type:       "GraphQLNonNull",
-			ImportPath: "graphql",
-		})
+	// use the initialized imports to seed this
+	// TODO use s.getImports and make these be consistent
+	// https://github.com/lolopinto/ent/issues/240
+	if err := r.initialize(); err != nil {
+		panic(err)
 	}
+	var ret = r.imports[:]
+
 	imp := s.getImportFor(r.Type, true)
 	if imp != nil {
 		ret = append(ret, imp)
@@ -352,13 +353,14 @@ func (qfcg *queryFieldConfigBuilder) getTypeImports(s *gqlSchema) []*fileImport 
 		panic("invalid number of results for custom field")
 	}
 	r := qfcg.field.Results[0]
-	var ret []*fileImport
-	if r.Nullable == "" {
-		ret = append(ret, &fileImport{
-			Type:       "GraphQLNonNull",
-			ImportPath: "graphql",
-		})
+
+	// use the initialized imports to seed this
+	// TODO use s.getImports and make these be consistent
+	// https://github.com/lolopinto/ent/issues/240
+	if err := r.initialize(); err != nil {
+		panic(err)
 	}
+	var ret = r.imports[:]
 
 	imp := s.getImportFor(r.Type, false)
 	if imp != nil {

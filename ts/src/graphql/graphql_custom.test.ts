@@ -356,6 +356,83 @@ test("query with return type", () => {
   GQLCapture.resolve([]);
 });
 
+test("query with list return type", () => {
+  @gqlObjectType({ name: "Viewer" })
+  class ViewerType {
+    constructor(private viewer: Viewer) {}
+    @gqlField({ type: GraphQLID, nullable: true })
+    get viewerID() {
+      return this.viewer.viewerID;
+    }
+
+    // user, friends, etc all come here
+  }
+
+  class ViewerResolver {
+    @gqlQuery({ type: "[ViewerType]" })
+    viewer(@gqlContextType() context: RequestContext): [ViewerType] {
+      return [new ViewerType(context.getViewer())];
+    }
+  }
+
+  validateCustomQueries([
+    {
+      nodeName: "ViewerResolver",
+      functionName: "viewer",
+      gqlName: "viewer",
+      fieldType: CustomFieldType.Function,
+      results: [
+        {
+          type: "ViewerType", // there needs to be something else that does the translation to Viewer
+          needsResolving: true,
+          name: "",
+          list: true,
+        },
+      ],
+      args: [
+        {
+          type: "Context",
+          name: "context",
+          needsResolving: true,
+          isContextArg: true,
+        },
+      ],
+    },
+  ]);
+
+  validateCustomObjects([
+    {
+      nodeName: "Viewer",
+      className: "ViewerType",
+    },
+  ]);
+
+  validateCustomFields([
+    {
+      nodeName: "ViewerType",
+      functionName: "viewerID",
+      gqlName: "viewerID",
+      fieldType: CustomFieldType.Accessor,
+      results: [
+        {
+          type: "ID",
+          name: "",
+          nullable: true,
+        },
+      ],
+      args: [],
+    },
+  ]);
+
+  validateNoCustom(
+    CustomObjectTypes.Field,
+    CustomObjectTypes.Object,
+    CustomObjectTypes.Query,
+  );
+
+  GQLCapture.resolve([]);
+});
+
 test("custom type", () => {
   class ProfilePictureUploadResolver {
     @gqlMutation({ name: "profilePictureUpload", type: GraphQLBoolean })

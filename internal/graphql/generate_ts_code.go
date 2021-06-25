@@ -118,21 +118,18 @@ func (item *CustomItem) initialize() error {
 		if item.List {
 			item.addImportImpl("GraphQLList", "GraphQLNonNull")
 		}
-		break
 
 	case NullableContents:
 		if !item.List {
 			return fmt.Errorf("list required to use this option")
 		}
 		item.addImportImpl("GraphQLNonNull", "GraphQLList")
-		break
 
 	case NullableContentsAndList:
 		if !item.List {
 			return fmt.Errorf("list required to use this option")
 		}
 		item.addImportImpl("GraphQLList")
-		break
 
 	default:
 		if item.List {
@@ -425,23 +422,23 @@ func getFilePathForConnection(nodeData *schema.NodeData, connectionName string) 
 }
 
 func getQueryFilePath() string {
-	return fmt.Sprintf("src/graphql/resolvers/generated/query_type.ts")
+	return "src/graphql/resolvers/generated/query_type.ts"
 }
 
 func getNodeQueryTypeFilePath() string {
-	return fmt.Sprintf("src/graphql/resolvers/generated/node_query_type.ts")
+	return "src/graphql/resolvers/generated/node_query_type.ts"
 }
 
 func getMutationFilePath() string {
-	return fmt.Sprintf("src/graphql/mutations/generated/mutation_type.ts")
+	return "src/graphql/mutations/generated/mutation_type.ts"
 }
 
 func getQueryImportPath() string {
-	return fmt.Sprintf("src/graphql/resolvers/generated/query_type")
+	return "src/graphql/resolvers/generated/query_type"
 }
 
 func getMutationImportPath() string {
-	return fmt.Sprintf("src/graphql/mutations/generated/mutation_type")
+	return "src/graphql/mutations/generated/mutation_type"
 }
 
 func getTSSchemaFilePath() string {
@@ -1169,7 +1166,7 @@ func getGQLFileImports(imps []enttype.FileImport, mutation bool) []*fileImport {
 		case enttype.GraphQL:
 			importPath = "graphql"
 			typ = imp.Type
-			break
+
 		case enttype.Enum, enttype.Connection, enttype.Node:
 			if imp.ImportType == enttype.Connection {
 				fn = true
@@ -1180,10 +1177,10 @@ func getGQLFileImports(imps []enttype.FileImport, mutation bool) []*fileImport {
 				importPath = codepath.GetImportPathForInternalGQLFile()
 			}
 			typ = fmt.Sprintf("%sType", typ)
-			break
+
 		case enttype.EntGraphQL:
 			importPath = codepath.GraphQLPackage
-			break
+
 		case enttype.Package:
 			importPath = codepath.Package
 		default:
