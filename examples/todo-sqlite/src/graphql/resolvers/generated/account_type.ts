@@ -4,6 +4,7 @@ import {
   GraphQLFieldConfigMap,
   GraphQLID,
   GraphQLInt,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
@@ -18,6 +19,7 @@ import { Account, AccountToTagsQuery, AccountToTodosQuery } from "src/ent/";
 import {
   AccountToTagsConnectionType,
   AccountToTodosConnectionType,
+  TodoType,
 } from "src/graphql/resolvers/internal";
 
 export const AccountType = new GraphQLObjectType({
@@ -89,6 +91,12 @@ export const AccountType = new GraphQLObjectType({
           (v, account: Account) => AccountToTodosQuery.query(v, account),
           args,
         );
+      },
+    },
+    openTodosLegacy: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TodoType))),
+      resolve: async (account: Account, args: {}, context: RequestContext) => {
+        return account.openTodos();
       },
     },
   }),

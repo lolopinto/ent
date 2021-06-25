@@ -4,6 +4,7 @@ type Account implements Node {
   phoneNumber: String!
   tags(first: Int, after: String, last: Int, before: String): AccountToTagsConnection!
   todos(first: Int, after: String, last: Int, before: String): AccountToTodosConnection!
+  openTodosLegacy: [Todo!]!
 }
 
 """node interface"""
@@ -186,6 +187,7 @@ type TodoRenamePayload {
 
 type Query {
   node(id: ID!): Node
+  openTodos(id: ID!): [Todo!]!
 }
 
 type Mutation {

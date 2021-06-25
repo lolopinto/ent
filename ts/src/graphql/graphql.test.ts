@@ -848,11 +848,15 @@ describe("function", () => {
           return 0;
         }
       }
+      GQLCapture.resolve([]);
+      fail("should throw");
     } catch (error) {
       // TODO need a better message here
-      expect(error.message).toMatch(/^args were not captured correctly/);
+      expect(error.message).toMatch(
+        /arg searchArgs of field search needs resolving. should not be possible/,
+      );
     }
-    validateNoCustom();
+    validateNoCustom(CustomObjectTypes.Field);
   });
 
   test("enabled. resolve return types", () => {

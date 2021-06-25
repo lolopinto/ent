@@ -313,6 +313,158 @@ func TestCustomQuery(t *testing.T) {
 	})
 }
 
+func TestCustomListQuery(t *testing.T) {
+	m := map[string]string{}
+
+	absPath, err := filepath.Abs(".")
+	require.NoError(t, err)
+	dirPath, err := ioutil.TempDir(absPath, "project")
+	defer os.RemoveAll(dirPath)
+	require.NoError(t, err)
+
+	schema := testhelper.ParseSchemaForTest(t, m, base.TypeScript, testhelper.TempDir(dirPath))
+	data := &codegen.Data{
+		Schema:   schema,
+		CodePath: codegen.NewCodePath(filepath.Join(dirPath, "src/schema"), ""),
+	}
+
+	schemaDir := filepath.Join(dirPath, "src", "graphql", "resolvers", "auth")
+	require.NoError(t, os.MkdirAll(schemaDir, os.ModePerm))
+
+	code := testhelper.GetCodeWithSchema(`
+			import {RequestContext} from "{root}";
+			import {gqlQuery, gqlArg} from "{graphql}";
+
+			export class AuthResolver {
+			  @gqlQuery({ name: "emailsAvailable", type: [Boolean] })
+			  async emailsAvailable(@gqlArg("emails", {type: [String]}) emails: string[]) {
+					const arr = new Array(emails.length);
+					return arr.fill(false);
+				}
+		  }
+		`)
+
+	path := filepath.Join(schemaDir, "auth.ts")
+	require.NoError(t, ioutil.WriteFile(path, []byte(code), os.ModePerm))
+
+	s, err := buildSchema(data, true)
+	require.NoError(t, err)
+
+	require.Len(t, s.customData.Args, 0)
+	require.Len(t, s.customData.Inputs, 0)
+	require.Len(t, s.customData.Objects, 0)
+	require.Len(t, s.customData.Fields, 0)
+	require.Len(t, s.customData.Queries, 1)
+	require.Len(t, s.customData.Mutations, 0)
+	require.Len(t, s.customData.Classes, 1)
+	require.Len(t, s.customData.Files, 1)
+	require.Len(t, s.customData.CustomTypes, 0)
+
+	item := s.customData.Queries[0]
+	assert.Equal(t, item.Node, "AuthResolver")
+	assert.Equal(t, item.GraphQLName, "emailsAvailable")
+	assert.Equal(t, item.FunctionName, "emailsAvailable")
+	assert.Equal(t, item.FieldType, AsyncFunction)
+
+	require.Len(t, item.Args, 1)
+	arg := item.Args[0]
+	assert.Equal(t, arg.Name, "emails")
+	assert.Equal(t, arg.Type, "String")
+	assert.Equal(t, arg.Nullable, NullableItem(""))
+	assert.Equal(t, arg.List, true)
+	assert.Equal(t, arg.IsContextArg, false)
+	assert.Equal(t, arg.TSType, "string")
+
+	require.Len(t, item.Results, 1)
+	result := item.Results[0]
+	assert.Equal(t, result.Name, "")
+	assert.Equal(t, result.Type, "Boolean")
+	assert.Equal(t, result.Nullable, NullableItem(""))
+	assert.Equal(t, result.List, true)
+	assert.Equal(t, result.IsContextArg, false)
+	assert.Equal(t, result.TSType, "boolean")
+
+	require.Len(t, s.customQueries, 1)
+	require.Len(t, s.customMutations, 0)
+
+	gqlNode := s.customQueries[0]
+	assert.Len(t, gqlNode.connections, 0)
+	assert.Len(t, gqlNode.Dependents, 0)
+	assert.Equal(t, gqlNode.Field, &item)
+	assert.Equal(t, gqlNode.FilePath, "src/graphql/resolvers/generated/emails_available_query_type.ts")
+
+	objData := gqlNode.ObjData
+	require.NotNil(t, objData)
+	assert.Nil(t, objData.NodeData)
+	assert.Equal(t, objData.Node, "AuthResolver")
+	assert.Equal(t, objData.NodeInstance, "obj")
+	assert.Len(t, objData.Enums, 0)
+	assert.Len(t, objData.GQLNodes, 0)
+
+	fcfg := objData.FieldConfig
+	require.NotNil(t, fcfg)
+
+	assert.True(t, fcfg.Exported)
+	assert.Equal(t, fcfg.Name, "EmailsAvailableQueryType")
+	assert.Equal(t, fcfg.Arg, "")
+	assert.Equal(t, fcfg.ResolveMethodArg, "{emails}")
+	assert.Equal(t, fcfg.ReturnTypeHint, "")
+	assert.Equal(t, fcfg.TypeImports, []*fileImport{
+		{
+			Type:       "GraphQLNonNull",
+			ImportPath: "graphql",
+		},
+		{
+			Type:       "GraphQLList",
+			ImportPath: "graphql",
+		},
+		{
+			Type:       "GraphQLNonNull",
+			ImportPath: "graphql",
+		},
+		{
+			Type:       "GraphQLBoolean",
+			ImportPath: "graphql",
+		},
+	})
+	assert.Equal(t, fcfg.ArgImports, []*fileImport{
+		{
+			Type:       "AuthResolver",
+			ImportPath: "../auth/auth",
+		},
+	})
+	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
+		{
+			Name: "emails",
+			Imports: []*fileImport{
+				{
+					Type:       "GraphQLNonNull",
+					ImportPath: "graphql",
+				},
+				{
+					Type:       "GraphQLList",
+					ImportPath: "graphql",
+				},
+				{
+					Type:       "GraphQLNonNull",
+					ImportPath: "graphql",
+				},
+
+				{
+					Type:       "GraphQLString",
+					ImportPath: "graphql",
+				},
+			},
+		},
+	})
+	assert.Equal(t, fcfg.FunctionContents, []string{
+		"const r = new AuthResolver();",
+		"return r.emailsAvailable(",
+		"emails",
+		");",
+	})
+}
+
 func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	m := map[string]string{
 		"user.ts": testhelper.GetCodeWithSchema(`

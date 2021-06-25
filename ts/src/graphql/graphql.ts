@@ -164,6 +164,7 @@ export class GQLCapture {
     this.customInputObjects.clear();
     this.customObjects.clear();
     this.customTypes.clear();
+    this.argMap.clear();
   }
 
   static getCustomFields(): Map<string, CustomField[]> {
