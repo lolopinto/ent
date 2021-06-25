@@ -67,7 +67,9 @@
     "test": "jest",
     "clean": "rm -rf dist",
     "prepare-code": "npm run clean && npm run compile && node src/setupPackage.js",
-    "actual-publish": "npm run prepare-code && npm publish ./dist --verbose --access public"
+    "prepare-code-legacy": "npm run clean && npm run compile && node src/setupPackage.js --legacy",
+    "actual-publish": "npm run prepare-code && npm publish ./dist --verbose --access public",
+    "legacy-publish": "npm run prepare-code-legacy && npm publish ./dist --verbose --registry https://npm.pkg.github.com/"
   },
   "bin": {
     "ent-custom-graphql": "scripts/custom_graphql.js",
