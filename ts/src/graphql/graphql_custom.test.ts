@@ -288,8 +288,6 @@ test("query with return type", () => {
     get viewerID() {
       return this.viewer.viewerID;
     }
-
-    // user, friends, etc all come here
   }
 
   class ViewerResolver {
@@ -364,8 +362,6 @@ test("query with list return type", () => {
     get viewerID() {
       return this.viewer.viewerID;
     }
-
-    // user, friends, etc all come here
   }
 
   class ViewerResolver {

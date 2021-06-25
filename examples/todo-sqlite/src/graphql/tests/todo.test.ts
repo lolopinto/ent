@@ -157,7 +157,6 @@ test("open todos from root", async () => {
     },
     [
       "",
-
       todos.slice(1).map((todo) => {
         return {
           text: todo.text,

@@ -771,5 +771,3 @@ func TestCustomUploadType(t *testing.T) {
 	assert.Equal(t, typ.TSType, "FileUpload")
 	assert.Equal(t, typ.TSImportPath, "graphql-upload")
 }
-
-// TODO TestCustomList?
