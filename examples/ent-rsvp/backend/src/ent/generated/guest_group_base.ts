@@ -4,6 +4,7 @@ import {
   AllowIfViewerPrivacyPolicy,
   AssocEdge,
   Context,
+  CustomQuery,
   Data,
   ID,
   LoadEntOptions,
@@ -11,6 +12,8 @@ import {
   PrivacyPolicy,
   Viewer,
   convertDate,
+  loadCustomData,
+  loadCustomEnts,
   loadEnt,
   loadEntX,
   loadEnts,
@@ -75,6 +78,30 @@ export class GuestGroupBase {
     ...ids: ID[]
   ): Promise<T[]> {
     return loadEnts(viewer, GuestGroupBase.loaderOptions.apply(this), ...ids);
+  }
+
+  static async loadCustom<T extends GuestGroupBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
+    query: CustomQuery,
+  ): Promise<T[]> {
+    return loadCustomEnts(
+      viewer,
+      GuestGroupBase.loaderOptions.apply(this),
+      query,
+    );
+  }
+
+  static async loadCustomData<T extends GuestGroupBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<Data[]> {
+    return loadCustomData(
+      GuestGroupBase.loaderOptions.apply(this),
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends GuestGroupBase>(

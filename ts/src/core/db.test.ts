@@ -5,6 +5,7 @@ import {
   text,
   setupSqlite,
   timestamp,
+  bool,
 } from "../testutils/db/test_db";
 import {
   createRowForTest,
@@ -23,6 +24,7 @@ describe("sqlite", () => {
       text("bar"),
     ),
     table("with_time", integer("id", { primaryKey: true }), timestamp("time")),
+    table("with_bool", integer("id", { primaryKey: true }), bool("valid")),
   ]);
 
   test("create", async () => {
@@ -72,7 +74,6 @@ describe("sqlite", () => {
 
     expect(r).toEqual({
       rowCount: 1,
-      // TODO...
       rows: [{ id: 1, bar: "bar2", foo: "foo" }],
     });
   });
@@ -276,6 +277,131 @@ describe("sqlite", () => {
     expect(r).toEqual({
       rowCount: 1,
       rows: [{ id: 1, time: d.toISOString() }],
+    });
+  });
+
+  test("query single", async () => {
+    await createUsers([1, 2, 3, 4, 5, 6]);
+
+    const r = await DB.getInstance()
+      .getPool()
+      .query("select * from users where id = ?", [1]);
+    expect(r).toEqual({
+      rowCount: 1,
+      rows: [{ id: 1, foo: "foo1", bar: "bar1" }],
+    });
+  });
+
+  test("query multi", async () => {
+    await createUsers([1, 2, 3, 4, 5, 6]);
+
+    const r = await DB.getInstance()
+      .getPool()
+      .queryAll("select * from users where id in (?,?)", [1, 2]);
+    expect(r).toEqual({
+      rowCount: 2,
+      rows: [
+        { id: 1, foo: "foo1", bar: "bar1" },
+        { id: 2, foo: "foo2", bar: "bar2" },
+      ],
+    });
+  });
+
+  test("query multi args", async () => {
+    await createUsers([1, 2, 3, 4, 5, 6]);
+
+    const r = await DB.getInstance()
+      .getPool()
+      .queryAll("select * from users where id = ? and foo = ?", [1, "foo1"]);
+    expect(r).toEqual({
+      rowCount: 1,
+      rows: [{ id: 1, foo: "foo1", bar: "bar1" }],
+    });
+  });
+
+  test("query bool", async () => {
+    const client = await DB.getInstance().getSQLiteClient();
+    client.execSync(`INSERT INTO with_bool (id, valid) VALUES(?,?)`, [1, true]);
+    client.execSync(`INSERT INTO with_bool (id, valid) VALUES(?,?)`, [
+      2,
+      false,
+    ]);
+    client.execSync(`INSERT INTO with_bool (id, valid) VALUES(?,?)`, [3, true]);
+    client.execSync(`INSERT INTO with_bool (id, valid) VALUES(?,?)`, [
+      4,
+      false,
+    ]);
+
+    const r = await DB.getInstance()
+      .getPool()
+      .queryAll("SELECT id, valid FROM with_bool");
+
+    expect(r).toEqual({
+      rowCount: 4,
+      rows: [
+        { id: 1, valid: 1 },
+        { id: 2, valid: 0 },
+        { id: 3, valid: 1 },
+        { id: 4, valid: 0 },
+      ],
+    });
+
+    const r2 = await DB.getInstance()
+      .getPool()
+      .queryAll(
+        "SELECT id, valid FROM with_bool WHERE id >= ? AND valid = ?",
+        [1, 1],
+      );
+    expect(r2).toEqual({
+      rowCount: 2,
+      rows: [
+        { id: 1, valid: 1 },
+        { id: 3, valid: 1 },
+      ],
+    });
+
+    const r3 = await DB.getInstance()
+      .getPool()
+      .queryAll(
+        "SELECT id, valid FROM with_bool WHERE id >= ? AND valid = ?",
+        [1, 0],
+      );
+    expect(r3).toEqual({
+      rowCount: 2,
+      rows: [
+        { id: 2, valid: 0 },
+        { id: 4, valid: 0 },
+      ],
+    });
+
+    const r4 = await DB.getInstance()
+      .getPool()
+      .queryAll("SELECT id, valid FROM with_bool WHERE id >= ? AND valid = ?", [
+        1,
+        //        // we convert from true to 0
+        true,
+      ]);
+    expect(r4).toEqual({
+      rowCount: 2,
+      rows: [
+        { id: 1, valid: 1 },
+        { id: 3, valid: 1 },
+      ],
+    });
+
+    const r5 = await DB.getInstance()
+      .getPool()
+      .queryAll("SELECT id, valid FROM with_bool WHERE id >= ? AND valid = ?", [
+        1,
+        // we convert from false to 0
+        false,
+      ]);
+    expect(r5).toEqual({
+      rowCount: 2,
+      rows: [
+        { id: 2, valid: 0 },
+        { id: 4, valid: 0 },
+      ],
     });
   });
 });

@@ -1,1 +1,3 @@
 setupPackage.*
+*.test.js
+*.test.d.ts

@@ -451,7 +451,14 @@ export function assoc_edge_table(name: string) {
   );
 }
 
-export function setupSqlite(connString: string, tables: () => Table[]) {
+interface sqliteSetupOptions {
+  disableDeleteAfterEachTest?: boolean;
+}
+export function setupSqlite(
+  connString: string,
+  tables: () => Table[],
+  opts?: sqliteSetupOptions,
+) {
   let tdb: TempDB;
   beforeAll(async () => {
     process.env.DB_CONNECTION_STRING = connString;
@@ -463,18 +470,20 @@ export function setupSqlite(connString: string, tables: () => Table[]) {
     expect((conn as Sqlite).db.memory).toBe(false);
   });
 
-  afterEach(async () => {
-    const client = await DB.getInstance().getNewClient();
-    for (const [key, _] of tdb.getTables()) {
-      const query = `delete from ${key}`;
-      if (isSyncClient(client))
-        if (client.execSync) {
-          client.execSync(query);
-        } else {
-          await client.exec(query);
-        }
-    }
-  });
+  if (!opts?.disableDeleteAfterEachTest) {
+    afterEach(async () => {
+      const client = await DB.getInstance().getNewClient();
+      for (const [key, _] of tdb.getTables()) {
+        const query = `delete from ${key}`;
+        if (isSyncClient(client))
+          if (client.execSync) {
+            client.execSync(query);
+          } else {
+            await client.exec(query);
+          }
+      }
+    });
+  }
 
   afterAll(async () => {
     await tdb.afterAll();

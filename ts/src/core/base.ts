@@ -126,7 +126,11 @@ export interface SelectDataOptions extends SelectBaseDataOptions {
   key: string;
 }
 
-export interface QueryableDataOptions extends SelectBaseDataOptions {
+export interface QueryableDataOptions
+  extends SelectBaseDataOptions,
+    QueryDataOptions {}
+
+export interface QueryDataOptions {
   distinct?: boolean;
   clause: clause.Clause;
   orderby?: string; // this technically doesn't make sense when querying just one row but whatevs
@@ -159,6 +163,12 @@ export interface LoadEntOptions<T extends Ent>
   extends LoadableEntOptions<T>,
     // extending DataOptions and fields is to make APIs like loadEntsFromClause work until we come up with a cleaner API
     SelectBaseDataOptions {}
+
+export interface LoadCustomEntOptions<T extends Ent>
+  // extending DataOptions and fields is to make APIs like loadEntsFromClause work until we come up with a cleaner API
+  extends SelectBaseDataOptions {
+  ent: EntConstructor<T>;
+}
 
 // information needed to edit an ent
 export interface EditEntOptions<T extends Ent>

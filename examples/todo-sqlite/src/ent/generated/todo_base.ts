@@ -4,6 +4,7 @@ import {
   AllowIfViewerPrivacyPolicy,
   AssocEdge,
   Context,
+  CustomQuery,
   Data,
   ID,
   LoadEntOptions,
@@ -12,6 +13,8 @@ import {
   Viewer,
   convertBool,
   convertDate,
+  loadCustomData,
+  loadCustomEnts,
   loadEnt,
   loadEntX,
   loadEnts,
@@ -73,6 +76,22 @@ export class TodoBase {
     ...ids: ID[]
   ): Promise<T[]> {
     return loadEnts(viewer, TodoBase.loaderOptions.apply(this), ...ids);
+  }
+
+  static async loadCustom<T extends TodoBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
+    query: CustomQuery,
+  ): Promise<T[]> {
+    return loadCustomEnts(viewer, TodoBase.loaderOptions.apply(this), query);
+  }
+
+  static async loadCustomData<T extends TodoBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<Data[]> {
+    return loadCustomData(TodoBase.loaderOptions.apply(this), query, context);
   }
 
   static async loadRawData<T extends TodoBase>(

@@ -4,6 +4,7 @@ import {
   AllowIfViewerPrivacyPolicy,
   AssocEdge,
   Context,
+  CustomQuery,
   Data,
   ID,
   LoadEntOptions,
@@ -11,6 +12,8 @@ import {
   PrivacyPolicy,
   Viewer,
   convertDate,
+  loadCustomData,
+  loadCustomEnts,
   loadEnt,
   loadEntX,
   loadEnts,
@@ -72,6 +75,22 @@ export class TagBase {
     ...ids: ID[]
   ): Promise<T[]> {
     return loadEnts(viewer, TagBase.loaderOptions.apply(this), ...ids);
+  }
+
+  static async loadCustom<T extends TagBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
+    query: CustomQuery,
+  ): Promise<T[]> {
+    return loadCustomEnts(viewer, TagBase.loaderOptions.apply(this), query);
+  }
+
+  static async loadCustomData<T extends TagBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<Data[]> {
+    return loadCustomData(TagBase.loaderOptions.apply(this), query, context);
   }
 
   static async loadRawData<T extends TagBase>(

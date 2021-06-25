@@ -3,6 +3,7 @@
 import {
   AllowIfViewerPrivacyPolicy,
   Context,
+  CustomQuery,
   Data,
   ID,
   LoadEntOptions,
@@ -10,6 +11,8 @@ import {
   PrivacyPolicy,
   Viewer,
   convertDate,
+  loadCustomData,
+  loadCustomEnts,
   loadEnt,
   loadEntViaKey,
   loadEntX,
@@ -73,6 +76,22 @@ export class EventBase {
     ...ids: ID[]
   ): Promise<T[]> {
     return loadEnts(viewer, EventBase.loaderOptions.apply(this), ...ids);
+  }
+
+  static async loadCustom<T extends EventBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
+    query: CustomQuery,
+  ): Promise<T[]> {
+    return loadCustomEnts(viewer, EventBase.loaderOptions.apply(this), query);
+  }
+
+  static async loadCustomData<T extends EventBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<Data[]> {
+    return loadCustomData(EventBase.loaderOptions.apply(this), query, context);
   }
 
   static async loadRawData<T extends EventBase>(
