@@ -398,9 +398,8 @@ async function testMultiQueryDataAvail(
   // reload data
   const edges2 = await Promise.all(ids.map(async (id) => loader.load(id)));
 
-  //verifyGroupedData(ids, users, edges2, m);
   // same data
-  verifyEdges(edges, edges2);
+  expect(edges).toStrictEqual(edges2);
 
   verifyPostSecondQuery(ids, slice);
 }
@@ -439,7 +438,7 @@ async function testMultiQueryDataOffset(
     }
     expect(
       edges[i].length,
-      `count for idx ${i} for id ${ids[0]} was not as expected`,
+      `count for idx ${i} for id ${ids[i]} was not as expected`,
       // 1 row returned for everything but first one
     ).toBe(expContacts.length);
 
@@ -467,7 +466,7 @@ async function testMultiQueryDataOffset(
 
   // query again, same data
   // if context, we hit local cache. otherwise, hit db
-  verifyEdges(edges, edges2);
+  expect(edges).toStrictEqual(edges2);
   verifyMultiCountQueryOffset(ids, m);
 }
 
@@ -487,7 +486,7 @@ function verifyGroupedData(
 
     expect(
       edges[i].length,
-      `count for idx ${i} for id ${ids[0]} was not as expected`,
+      `count for idx ${i} for id ${ids[i]} was not as expected`,
     ).toBe(contacts.length);
 
     // verify the edges are as expected
@@ -548,29 +547,4 @@ function verifyMultiCountQueryOffset(ids: ID[], m: Map<ID, FakeContact[]>) {
       values: [ids[idx], contacts[0].createdAt.toISOString()],
     });
   });
-}
-
-function verifyEdges(edgess: Data[][], edgess2: Data[][]) {
-  if (edgess.length !== edgess2.length) {
-    fail("edges of different length");
-  }
-  for (let j = 0; j < edgess.length; j++) {
-    const edges = edgess[j];
-    const edges2 = edgess2[j];
-    for (let i = 0; i < edges.length; i++) {
-      const edge = edges[i];
-      const edge2 = edges2[i];
-
-      // sqlite issues
-      if (typeof edge.created_at === "string") {
-        edge.created_at = new Date(Date.parse(edge.created_at));
-        edge.updated_at = new Date(Date.parse(edge.updated_at));
-      }
-      if (typeof edge2.created_at === "string") {
-        edge2.created_at = new Date(Date.parse(edge2.created_at));
-        edge2.updated_at = new Date(Date.parse(edge2.updated_at));
-      }
-    }
-  }
-  expect(edgess).toStrictEqual(edgess2);
 }

@@ -500,6 +500,8 @@ interface GroupQueryOptions {
 
   // extra clause to join
   clause?: clause.Clause;
+
+  // TODO rename from fkeyColumn to groupColumn or something like that
   fkeyColumn: string;
   fields: string[];
   values: any[];

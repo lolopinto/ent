@@ -68,7 +68,6 @@ function createLoader<T extends AssocEdge>(
         "id1",
         "id2",
         "edge_type",
-        "time",
         "id1_type",
         "id2_type",
         "data",

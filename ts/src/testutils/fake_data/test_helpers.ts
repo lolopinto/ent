@@ -24,6 +24,7 @@ import {
 } from ".";
 import { EventCreateInput, FakeEvent, getEventBuilder } from "./fake_event";
 import { NodeType } from "./const";
+import { convertDate } from "../../core/convert";
 
 export function getContactInput(
   user: FakeUser,
@@ -47,6 +48,20 @@ export function getUserInput(
     emailAddress: "foo@bar.com",
     phoneNumber: "415-212-1212",
     password: "pa$$w0rd",
+    ...input,
+  };
+}
+
+export function getEventInput(
+  user: FakeUser,
+  input?: Partial<EventCreateInput>,
+): EventCreateInput {
+  return {
+    startTime: new Date(),
+    location: "fun location",
+    title: "title",
+    description: "fun event",
+    userID: user.id,
     ...input,
   };
 }
@@ -153,22 +168,10 @@ export function verifyUserToContactRawData(
   expect(edges.length).toBe(contacts.length);
 
   for (let i = 0; i < contacts.length; i++) {
-    const contact = contacts[i];
     const edge = edges[i];
-    // for SQLite not automatically converting
-    if (typeof edge.created_at === "string") {
-      edge.created_at = new Date(Date.parse(edge.created_at));
-      edge.updated_at = new Date(Date.parse(edge.updated_at));
-    }
-    const expectedEdge = {
-      id: contact.id,
-      created_at: contact.createdAt,
-      updated_at: contact.updatedAt,
-      first_name: contact.firstName,
-      last_name: contact.lastName,
-      email_address: contact.emailAddress,
-      user_id: contact.userID,
-    };
+    const expectedEdge = contacts[i].data;
+    // getting data from db so just checking that data's as expected
+
     expect(edge, `${i}th index`).toMatchObject(expectedEdge);
   }
 }
@@ -255,4 +258,33 @@ export function tempDBTables() {
   );
 
   return tables;
+}
+
+interface options {
+  howMany: number;
+  interval: number;
+  userInput?: Partial<UserCreateInput>;
+  eventInputs?: Partial<EventCreateInput>[];
+}
+export async function createAllEvents(
+  opts: options,
+): Promise<[FakeUser, FakeEvent[]]> {
+  const user = await createTestUser(opts.userInput);
+
+  let arr = new Array(opts.howMany);
+  arr.fill(1);
+  const events = await Promise.all(
+    arr.map(async (v, idx: number) => {
+      // just to make times deterministic so that tests can consistently work
+      if (opts.interval > 0) {
+        advanceBy(opts.interval);
+      }
+      const input = opts.eventInputs?.[idx];
+      const builder = getEventBuilder(user.viewer, getEventInput(user, input));
+      await builder.saveX();
+      return await builder.editedEntX();
+    }),
+  );
+  expect(events.length).toBe(opts.howMany);
+  return [user, events];
 }

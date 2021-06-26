@@ -39,6 +39,7 @@ export class ViewerWithAccessToken extends IDViewer {
 
 export class FakeUser implements Ent {
   readonly id: ID;
+  readonly data: Data;
   readonly nodeType = NodeType.FakeUser;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -72,6 +73,7 @@ export class FakeUser implements Ent {
   };
 
   constructor(public viewer: Viewer, data: Data) {
+    this.data = data;
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
