@@ -13,43 +13,63 @@ import * as clause from "../clause";
 import { logEnabled } from "../logger";
 import { cacheMap, getLoader } from "./loader";
 
-export function createCountDataLoader(
-  options: DataOptions,
-  col: string,
-  extraClause?: clause.Clause,
+interface QueryCountOptions {
+  tableName: string;
+
+  // must provide at least one or both of these
+  // if groupCol provided, we can do group by queries for multiple
+  // if not, can't group. similar philosophy to QueryLoader
+  groupCol?: string;
+  clause?: clause.Clause;
+}
+
+async function simpleCase<K extends any>(options: QueryCountOptions, key: K) {
+  let cls: clause.Clause;
+  if (options.groupCol && options.clause) {
+    cls = clause.And(clause.Eq(options.groupCol, key), options.clause);
+  } else if (options.groupCol) {
+    cls = clause.Eq(options.groupCol, key);
+  } else if (options.clause) {
+    cls = options.clause;
+  } else {
+    throw new Error(`need options.groupCol or options.clause`);
+  }
+
+  const row = await loadRow({
+    ...options,
+    // sqlite needs as count otherwise it returns count(1)
+    fields: ["count(1) as count"],
+    clause: cls,
+  });
+  return [parseInt(row?.count, 10) || 0];
+}
+
+export function createCountDataLoader<K extends any>(
+  options: QueryCountOptions,
 ) {
-  const loaderOptions: DataLoader.Options<ID, number> = {};
+  const loaderOptions: DataLoader.Options<K, number> = {};
 
   // if query logging is enabled, we should log what's happening with loader
   if (logEnabled("query")) {
     loaderOptions.cacheMap = new cacheMap(options);
   }
 
-  return new DataLoader(async (keys: ID[]) => {
+  return new DataLoader(async (keys: K[]) => {
     if (!keys.length) {
       return [];
     }
 
     // keep query simple if we're only fetching for one id
-    if (keys.length == 1) {
-      let cls: clause.Clause = clause.Eq(col, keys[0]);
-      if (extraClause) {
-        cls = clause.And(cls, extraClause);
-      }
-      const row = await loadRow({
-        ...options,
-        // sqlite needs as count otherwise it returns count(1)
-        fields: ["count(1) as count"],
-        clause: cls,
-      });
-      return [parseInt(row?.count, 10) || 0];
-    }
-    let cls: clause.Clause = clause.In(col, ...keys);
-    if (extraClause) {
-      cls = clause.And(cls, extraClause);
+    if (keys.length == 1 || !options.groupCol) {
+      return simpleCase(options, keys[0]);
     }
 
-    let m = new Map<ID, number>();
+    let cls: clause.Clause = clause.In(options.groupCol, ...keys);
+    if (options.clause) {
+      cls = clause.And(cls, options.clause);
+    }
+
+    let m = new Map<K, number>();
     let result: number[] = [];
     for (let i = 0; i < keys.length; i++) {
       result.push(0);
@@ -59,14 +79,15 @@ export function createCountDataLoader(
 
     const rowOptions: LoadRowOptions = {
       ...options,
-      fields: ["count(1) as count", col],
-      groupby: col,
+      fields: ["count(1) as count", options.groupCol],
+      groupby: options.groupCol,
       clause: cls,
     };
+
     const rows = await loadRows(rowOptions);
 
     for (const row of rows) {
-      const id = row[col];
+      const id = row[options.groupCol];
       const idx = m.get(id);
       if (idx === undefined) {
         throw new Error(
@@ -81,30 +102,22 @@ export function createCountDataLoader(
 
 // for now this only works for single column counts
 // e.g. foreign key count
-export class RawCountLoader implements Loader<ID, number> {
-  private loader: DataLoader<ID, number> | undefined;
+export class RawCountLoader<K extends any> implements Loader<K, number> {
+  private loader: DataLoader<K, number> | undefined;
   // tableName, columns
-  constructor(
-    private options: DataOptions,
-    private col: string,
-    public context?: Context,
-  ) {
-    if (context) {
-      this.loader = createCountDataLoader(options, this.col);
+  constructor(private options: QueryCountOptions, public context?: Context) {
+    if (context && options.groupCol) {
+      this.loader = createCountDataLoader(options);
     }
   }
 
-  async load(id: ID): Promise<number> {
+  async load(id: K): Promise<number> {
     if (this.loader) {
       return await this.loader.load(id);
     }
 
-    const row = await loadRow({
-      ...this.options,
-      fields: ["count(1) as count"],
-      clause: clause.Eq(this.col, id),
-    });
-    return parseInt(row?.count, 10) || 0;
+    const rows = await simpleCase(this.options, id);
+    return rows[0];
   }
 
   clearAll() {
@@ -114,14 +127,22 @@ export class RawCountLoader implements Loader<ID, number> {
 
 export class RawCountLoaderFactory implements LoaderFactory<ID, number> {
   name: string;
-  constructor(private options: SelectBaseDataOptions, private col: string) {
-    this.name = `${options.tableName}:${this.col}`;
+  constructor(private options: QueryCountOptions) {
+    if (this.options.groupCol) {
+      this.name = `${options.tableName}:${this.options.groupCol}`;
+    } else if (this.options.clause) {
+      this.name = `${options.tableName}:${this.options.clause.instanceKey()}`;
+    } else {
+      throw new Error(
+        `must pass at least one of groupCol and clause to QueryLoaderFactory`,
+      );
+    }
   }
 
   createLoader(context?: Context) {
     return getLoader(
       this,
-      () => new RawCountLoader(this.options, this.col, context),
+      () => new RawCountLoader(this.options, context),
       context,
     );
   }

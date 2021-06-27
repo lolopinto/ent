@@ -371,7 +371,7 @@ export class TempDB {
 
   async afterAll() {
     if (this.dialect === Dialect.SQLite) {
-      await this.sqlite.close();
+      this.sqlite.close();
       return;
     }
 

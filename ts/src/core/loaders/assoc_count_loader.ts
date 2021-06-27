@@ -22,11 +22,11 @@ export class AssocEdgeCountLoader implements Loader<ID, number> {
       throw new Error(`error loading edge data for ${this.edgeType}`);
     }
 
-    this.loader = createCountDataLoader(
-      { tableName: edgeData.edgeTable },
-      "id1",
-      clause.Eq("edge_type", this.edgeType),
-    );
+    this.loader = createCountDataLoader({
+      tableName: edgeData.edgeTable,
+      groupCol: "id1",
+      clause: clause.Eq("edge_type", this.edgeType),
+    });
     return this.loader;
   }
 

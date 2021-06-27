@@ -45,10 +45,10 @@ export class UserToContactsQuery extends AssocEdgeQueryBase<
   }
 }
 
-export const userToContactsCountLoaderFactory = new RawCountLoaderFactory(
-  FakeContact.loaderOptions(),
-  "user_id",
-);
+export const userToContactsCountLoaderFactory = new RawCountLoaderFactory({
+  ...FakeContact.loaderOptions(),
+  groupCol: "user_id",
+});
 export const userToContactsDataLoaderFactory = new IndexLoaderFactory(
   FakeContact.loaderOptions(),
   "user_id",

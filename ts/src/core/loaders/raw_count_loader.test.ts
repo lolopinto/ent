@@ -23,8 +23,8 @@ const getNewLoader = (context: boolean = true) => {
   return new RawCountLoader(
     {
       tableName: "fake_contacts",
+      groupCol: "user_id",
     },
-    "user_id",
     context ? new TestContext() : undefined,
   );
 };
@@ -236,7 +236,7 @@ function commonTests() {
 }
 
 async function testMultiQueryDataAvail(
-  loaderFn: () => RawCountLoader,
+  loaderFn: () => RawCountLoader<ID>,
   verifyPostFirstQuery: (ids: ID[]) => void,
   verifyPostSecondQuery: (ids: ID[]) => void,
 ) {
@@ -281,7 +281,7 @@ async function testMultiQueryDataAvail(
 }
 
 async function testMultiQueryNoData(
-  loaderFn: () => RawCountLoader,
+  loaderFn: () => RawCountLoader<ID>,
   verifyPostFirstQuery: (ids: ID[]) => void,
   verifyPostSecondQuery: (ids: ID[]) => void,
 ) {
