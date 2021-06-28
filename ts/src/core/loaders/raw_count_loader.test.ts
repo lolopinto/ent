@@ -1,4 +1,4 @@
-import { RawCountLoader } from "./raw_count_loader";
+import { RawCountLoader, RawCountLoaderFactory } from "./raw_count_loader";
 import { v4 as uuidv4 } from "uuid";
 
 import { TestContext } from "../../testutils/context/test_context";
@@ -326,6 +326,31 @@ function commonTests() {
       expect(ml.logs.length).toBe(2);
       // same query, different values
       expect(ml.logs[0].query).toBe(ml.logs[1].query);
+    });
+  });
+
+  test("lad API", async () => {
+    const [user, contacts] = await createAllContacts(undefined, 5);
+
+    const loader = new RawCountLoaderFactory(
+      FakeContact.loaderOptions(),
+      "user_id",
+    ).createLoader(new TestContext());
+
+    // clear post creation
+    ml.clear();
+
+    const count = await loader.load(user.id);
+    expect(count).toBe(contacts.length);
+
+    expect(ml.logs.length).toBe(1);
+    expect(ml.logs[0]).toStrictEqual({
+      query: buildQuery({
+        tableName: "fake_contacts",
+        fields: ["count(1) as count"],
+        clause: clause.Eq("user_id", user.id),
+      }),
+      values: [user.id],
     });
   });
 }

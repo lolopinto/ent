@@ -132,11 +132,28 @@ export class RawCountLoader<K extends any> implements Loader<K, number> {
 
 export class RawCountLoaderFactory implements LoaderFactory<ID, number> {
   name: string;
-  constructor(private options: QueryCountOptions) {
+  private options: QueryCountOptions;
+  constructor(options: SelectBaseDataOptions, col: string);
+  constructor(options: QueryCountOptions);
+  constructor(
+    options: SelectBaseDataOptions | QueryCountOptions,
+    col?: string,
+  ) {
+    if (typeof col === "string") {
+      // old API
+      this.options = {
+        ...options,
+        groupCol: col,
+      };
+    } else {
+      this.options = options;
+    }
     if (this.options.groupCol) {
-      this.name = `${options.tableName}:${this.options.groupCol}`;
+      this.name = `${this.options.tableName}:${this.options.groupCol}`;
     } else if (this.options.clause) {
-      this.name = `${options.tableName}:${this.options.clause.instanceKey()}`;
+      this.name = `${
+        this.options.tableName
+      }:${this.options.clause.instanceKey()}`;
     } else {
       throw new Error(
         `must pass at least one of groupCol and clause to QueryLoaderFactory`,
