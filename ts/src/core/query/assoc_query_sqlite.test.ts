@@ -17,7 +17,8 @@ commonTests({
 });
 
 describe("custom assoc", () => {
-  setupSqlite(`sqlite:///assoc_query.db`, tempDBTables);
+  // DB.getInstance is broken. so we need the same assoc instance to be used
+  //  setupSqlite(`sqlite:///assoc_query_sqlite.db`, tempDBTables);
 
   // TODO there's a weird dependency with commonTest above where commenting that out breaks this...
   assocTests();

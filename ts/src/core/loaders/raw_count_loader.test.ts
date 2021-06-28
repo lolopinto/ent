@@ -13,9 +13,12 @@ import { setupSqlite, TempDB } from "../../testutils/db/test_db";
 import { FakeContact } from "../../testutils/fake_data/index";
 import {
   createAllContacts,
+  createAllEvents,
   setupTempDB,
   tempDBTables,
 } from "../../testutils/fake_data/test_helpers";
+import { Interval } from "luxon";
+import { clear } from "jest-date-mock";
 
 const ml = new MockLogs();
 
@@ -232,6 +235,98 @@ function commonTests() {
       verifyMultiCountQueryCacheMiss,
       verifyMultiCountQueryCacheMiss,
     );
+  });
+
+  // assoc_edge_loader is testing clause being passed
+  // so all we need is just the no groupCol path
+
+  describe("no group col", () => {
+    // we get 7 back because we're looking at a week
+    const DAYS = 7;
+    const HOW_MANY = 10;
+    // every 24 hours
+    const INTERVAL = 24 * 60 * 60 * 1000;
+
+    const getClause = () => {
+      // get events starting within the next week
+
+      clear();
+      const start = new Date();
+      // 7 days
+      const end = Interval.after(start, 86400 * 1000 * DAYS)
+        .end.toUTC()
+        .toISO();
+      return clause.And(
+        clause.GreaterEq("start_time", start.toISOString()),
+        clause.LessEq("start_time", end),
+      );
+    };
+
+    function getCompleteClause(id: ID) {
+      return clause.And(clause.Eq("user_id", id), getClause());
+    }
+    const getNonGroupableLoader = (id: ID, context: boolean = true) => {
+      return new RawCountLoader(
+        {
+          tableName: "fake_events",
+          clause: getCompleteClause(id),
+        },
+        context ? new TestContext() : undefined,
+      );
+    };
+
+    test("single id. with context", async () => {
+      clear();
+      const [user, events] = await createAllEvents({
+        howMany: HOW_MANY,
+        interval: INTERVAL,
+      });
+      await createAllEvents({ howMany: 5, interval: INTERVAL });
+
+      ml.clear();
+
+      const loader = getNonGroupableLoader(user.id);
+
+      const count = await loader.load(user.id);
+      expect(count).toEqual(DAYS);
+      expect(ml.logs.length).toBe(1);
+      expect(ml.logs[0].query).toEqual(
+        buildQuery({
+          tableName: "fake_events",
+          fields: ["count(1) as count"],
+          clause: getCompleteClause(user.id),
+        }),
+      );
+      expect(ml.logs[0].values.length).toBe(3);
+
+      const count2 = await loader.load(user.id);
+      expect(count2).toEqual(count);
+      expect(ml.logs.length).toBe(2);
+      expect(ml.logs[1].tableName).toBe("fake_events");
+      expect(ml.logs[1]["cache-hit"]).toBeDefined();
+    });
+
+    test("multi- id. with context", async () => {
+      const [user] = await createAllEvents({
+        howMany: HOW_MANY,
+        interval: INTERVAL,
+      });
+      //reset day
+      clear();
+      const [user2] = await createAllEvents({ howMany: 5, interval: INTERVAL });
+
+      ml.clear();
+
+      // have to use different loaders...
+      const [count, count2] = await Promise.all(
+        [user, user2].map((a) => getNonGroupableLoader(a.id).load(a.id)),
+      );
+      expect(count).toEqual(DAYS);
+      expect(count2).toBe(5);
+      expect(ml.logs.length).toBe(2);
+      // same query, different values
+      expect(ml.logs[0].query).toBe(ml.logs[1].query);
+    });
   });
 }
 

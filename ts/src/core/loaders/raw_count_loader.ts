@@ -23,7 +23,11 @@ interface QueryCountOptions {
   clause?: clause.Clause;
 }
 
-async function simpleCase<K extends any>(options: QueryCountOptions, key: K) {
+async function simpleCase<K extends any>(
+  options: QueryCountOptions,
+  key: K,
+  context?: Context,
+) {
   let cls: clause.Clause;
   if (options.groupCol && options.clause) {
     cls = clause.And(clause.Eq(options.groupCol, key), options.clause);
@@ -40,6 +44,7 @@ async function simpleCase<K extends any>(options: QueryCountOptions, key: K) {
     // sqlite needs as count otherwise it returns count(1)
     fields: ["count(1) as count"],
     clause: cls,
+    context,
   });
   return [parseInt(row?.count, 10) || 0];
 }
@@ -116,7 +121,7 @@ export class RawCountLoader<K extends any> implements Loader<K, number> {
       return await this.loader.load(id);
     }
 
-    const rows = await simpleCase(this.options, id);
+    const rows = await simpleCase(this.options, id, this.context);
     return rows[0];
   }
 

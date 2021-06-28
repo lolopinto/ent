@@ -33,6 +33,7 @@ import * as clause from "./clause";
 import { WriteOperation, Builder } from "../action";
 import { log, logEnabled, logTrace } from "./logger";
 import DataLoader from "dataloader";
+import { SqliteError } from "better-sqlite3";
 
 // TODO kill this and createDataLoader
 class cacheMap {

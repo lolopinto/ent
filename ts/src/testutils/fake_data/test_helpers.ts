@@ -24,7 +24,6 @@ import {
 } from ".";
 import { EventCreateInput, FakeEvent, getEventBuilder } from "./fake_event";
 import { NodeType } from "./const";
-import { convertDate } from "../../core/convert";
 
 export function getContactInput(
   user: FakeUser,

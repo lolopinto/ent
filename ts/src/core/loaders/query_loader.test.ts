@@ -118,7 +118,7 @@ describe("sqlite", () => {
     // reset context for each test
     ctx = new TestContext();
     // create once
-    await createEdges();
+    //    await createEdges();
   });
 
   afterEach(() => {

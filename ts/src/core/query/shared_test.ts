@@ -263,12 +263,10 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   });
 
   beforeEach(async () => {
-    //    console.log("beforeEach");
-    // TODO figure out why this failed in the absence of this and have it fail loudly...
-
-    if (!opts.livePostgresDB) {
-      await createEdges();
+    if (opts.livePostgresDB) {
+      return;
     }
+    await createEdges();
   });
 
   afterAll(async () => {
