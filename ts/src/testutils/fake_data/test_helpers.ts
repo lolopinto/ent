@@ -1,5 +1,5 @@
 import { fail } from "assert";
-import { advanceBy, advanceTo } from "jest-date-mock";
+import { advanceBy, advanceTo, clear } from "jest-date-mock";
 import { IDViewer, LoggedOutViewer } from "../../core/viewer";
 import { Data } from "../../core/base";
 import { AssocEdge, loadEdgeData } from "../../core/ent";
@@ -24,6 +24,7 @@ import {
 } from ".";
 import { EventCreateInput, FakeEvent, getEventBuilder } from "./fake_event";
 import { NodeType } from "./const";
+import { MockDate } from "./../mock_date";
 
 export function getContactInput(
   user: FakeUser,
@@ -272,6 +273,10 @@ export async function createAllEvents(
 
   let arr = new Array(opts.howMany);
   arr.fill(1);
+
+  // start at date in case something else has used a date already
+  advanceTo(MockDate.getDate());
+
   const events = await Promise.all(
     arr.map(async (v, idx: number) => {
       // just to make times deterministic so that tests can consistently work

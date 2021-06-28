@@ -220,7 +220,6 @@ export class QueryLoaderFactory<K extends any>
   name: string;
   constructor(private options: QueryOptions) {
     if (options.groupCol) {
-      // TODO tableName?
       this.name = `queryLoader:${options.tableName}:${options.groupCol}`;
     } else if (options.clause) {
       this.name = `queryLoader:${
@@ -249,11 +248,7 @@ export class QueryLoaderFactory<K extends any>
       return new QueryDirectLoader(this.options, options);
     }
 
-    // todo tableName
-    // we create a loader which can combine first X queries in the same fetch
-    //        const key = `indexLoader:limit:${options.limit}:orderby:${options.orderby}`;
     const key = `${this.name}:limit:${options.limit}:orderby:${options.orderby}`;
-    //    console.debug(key);
     return getCustomLoader(
       key,
       () => new QueryLoader(this.options, context, options),
