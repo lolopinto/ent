@@ -501,9 +501,7 @@ interface GroupQueryOptions {
 
   // extra clause to join
   clause?: clause.Clause;
-
-  // TODO rename from fkeyColumn to groupColumn or something like that
-  fkeyColumn: string;
+  groupColumn: string;
   fields: string[];
   values: any[];
   orderby?: string;
@@ -516,7 +514,7 @@ export function buildGroupQuery(
 ): [string, clause.Clause] {
   const fields = [...options.fields, "row_number()"];
 
-  let cls = clause.In(options.fkeyColumn, ...options.values);
+  let cls = clause.In(options.groupColumn, ...options.values);
   if (options.clause) {
     cls = clause.And(cls, options.clause);
   }
@@ -529,7 +527,7 @@ export function buildGroupQuery(
   //    https://www.sqlite.org/windowfunctions.html
   return [
     `SELECT * FROM (SELECT ${fields.join(",")} OVER (PARTITION BY ${
-      options.fkeyColumn
+      options.groupColumn
     } ${orderby}) as row_num FROM ${options.tableName} WHERE ${cls.clause(
       1,
     )}) t WHERE row_num <= ${options.limit}`,

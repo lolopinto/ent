@@ -11,7 +11,7 @@ import { ObjectLoaderFactory } from "./object_loader";
 import { QueryLoaderFactory } from "./query_loader";
 
 // we're keeping this for legacy reasons so as to not break existing callers
-// and to decouple the change here but all callers can safely be changed here to use IndexLoaderFactory
+// and to decouple the change here but all callers can safely be changed here to use QueryLoaderFactory
 export class IndexLoaderFactory implements LoaderFactory<ID, Data[]> {
   name: string;
   private factory: QueryLoaderFactory<ID>;

@@ -63,10 +63,6 @@ export class FakeEvent implements Ent {
     ];
   }
 
-  // let's do events in the last day...
-  // and then we query for multiple ids
-  // vs not
-
   static getTestTable() {
     return table(
       "fake_events",

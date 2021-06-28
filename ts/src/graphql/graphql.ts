@@ -708,5 +708,3 @@ const gqlFileUpload: CustomType = {
 };
 
 export { gqlFileUpload };
-
-//const gqlConnection:

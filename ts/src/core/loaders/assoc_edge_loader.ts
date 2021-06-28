@@ -76,7 +76,7 @@ function createLoader<T extends AssocEdge>(
       values: keys,
       orderby: options.orderby,
       limit: options.limit || DefaultLimit,
-      fkeyColumn: "id1",
+      groupColumn: "id1",
       clause: clause.Eq("edge_type", edgeType),
     });
 

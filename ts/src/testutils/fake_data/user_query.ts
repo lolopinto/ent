@@ -334,7 +334,7 @@ export class UserToHostedEventsQuery extends AssocEdgeQueryBase<
   }
 }
 
-export const getNextWeekClause = () => {
+export const getNextWeekClause = (): clause.Clause => {
   // get events starting within the next week
 
   clear();
@@ -349,6 +349,10 @@ export const getNextWeekClause = () => {
     clause.LessEq("start_time", end),
   );
 };
+
+export function getCompleteClause(id: ID): clause.Clause {
+  return clause.And(clause.Eq("user_id", id), getNextWeekClause());
+}
 
 export const userToEventsInNextWeekCountLoaderFactory =
   new RawCountLoaderFactory({

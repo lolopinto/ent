@@ -108,7 +108,7 @@ function createLoader<K extends any>(
       values: keys,
       orderby: getOrderBy(sortCol, queryOptions?.orderby),
       limit: queryOptions?.limit || DefaultLimit,
-      fkeyColumn: col,
+      groupColumn: col,
       clause: extraClause,
     });
 

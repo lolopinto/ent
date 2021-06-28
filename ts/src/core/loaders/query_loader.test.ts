@@ -3,25 +3,25 @@ import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
 import { buildQuery, DefaultLimit } from "../ent";
 import * as clause from "../clause";
-
 import { Data, EdgeQueryableDataOptions, ID, Loader } from "../base";
 import { setupSqlite, TempDB } from "../../testutils/db/test_db";
 import {
   FakeUser,
   FakeEvent,
   EventCreateInput,
+  getNextWeekClause,
+  getCompleteClause,
 } from "../../testutils/fake_data/index";
 import {
   createAllEvents,
-  createEdges,
   createTestUser,
   setupTempDB,
   tempDBTables,
 } from "../../testutils/fake_data/test_helpers";
 
 import { QueryLoaderFactory } from "./query_loader";
-import { advanceBy, clear } from "jest-date-mock";
-import { Interval } from "luxon";
+import { advanceBy, advanceTo, clear } from "jest-date-mock";
+import { MockDate } from "../../testutils/mock_date";
 
 const ml = new MockLogs();
 let tdb: TempDB;
@@ -34,30 +34,11 @@ const HOW_MANY = 10;
 // every 24 hours
 const INTERVAL = 24 * 60 * 60 * 1000;
 
-const getClause = () => {
-  // get events starting within the next week
-
-  clear();
-  const start = new Date();
-  // 7 days
-  const end = Interval.after(start, 86400 * 1000 * DAYS)
-    .end.toUTC()
-    .toISO();
-  return clause.And(
-    clause.GreaterEq("start_time", start.toISOString()),
-    clause.LessEq("start_time", end),
-  );
-};
-
-function getCompleteClause(id: ID) {
-  return clause.And(clause.Eq("user_id", id), getClause());
-}
-
 const getNewLoader = (context: boolean = true) => {
   return new QueryLoaderFactory({
     groupCol: "user_id",
     ...FakeEvent.loaderOptions(),
-    clause: getClause(),
+    clause: getNextWeekClause(),
     sortColumn: "start_time asc",
   }).createLoader(context ? ctx : undefined);
 };
@@ -69,7 +50,7 @@ const getConfigurableLoader = (
   return new QueryLoaderFactory({
     groupCol: "user_id",
     ...FakeEvent.loaderOptions(),
-    clause: getClause(),
+    clause: getNextWeekClause(),
     sortColumn: "start_time asc",
   }).createConfigurableLoader(options, context ? ctx : undefined);
 };
@@ -310,12 +291,12 @@ function commonTests() {
       );
 
       ml.clear();
-      // different loader hits the db again
-      // TODO would be nice to somehow avoid this by using the same key/dataloader
+
       const loader2 = getNonGroupableLoader(user.id);
       const edges = await loader2.load(user.id);
       verifyUserToEventsRawData(edges, events);
-      verifyMultiCountQueryCacheMiss([user.id]);
+      // if query made with same starttime and endtime, we hit the in-memory cache now
+      verifyGroupedCacheHit([user.id]);
 
       // even with different user, same result since id is baked into query
       const user2 = await createTestUser();
@@ -460,7 +441,9 @@ function commonTests() {
     const ids: ID[] = [];
     const users: FakeUser[] = [];
 
-    const date = new Date();
+    //    const date = MockDate.getDate();
+    // resets
+    advanceTo(MockDate.getDate());
     const inputs: Partial<EventCreateInput>[] = [];
     for (let i = 0; i < HOW_MANY; i++) {
       // we only care about startTime here and that's the sortCol

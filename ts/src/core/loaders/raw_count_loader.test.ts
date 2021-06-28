@@ -6,18 +6,18 @@ import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
 import { ID } from "../base";
 import { buildQuery } from "../ent";
-
 import * as clause from "../clause";
-
 import { setupSqlite, TempDB } from "../../testutils/db/test_db";
-import { FakeContact } from "../../testutils/fake_data/index";
+import {
+  FakeContact,
+  getCompleteClause,
+} from "../../testutils/fake_data/index";
 import {
   createAllContacts,
   createAllEvents,
   setupTempDB,
   tempDBTables,
 } from "../../testutils/fake_data/test_helpers";
-import { Interval } from "luxon";
 import { clear } from "jest-date-mock";
 
 const ml = new MockLogs();
@@ -247,24 +247,6 @@ function commonTests() {
     // every 24 hours
     const INTERVAL = 24 * 60 * 60 * 1000;
 
-    const getClause = () => {
-      // get events starting within the next week
-
-      clear();
-      const start = new Date();
-      // 7 days
-      const end = Interval.after(start, 86400 * 1000 * DAYS)
-        .end.toUTC()
-        .toISO();
-      return clause.And(
-        clause.GreaterEq("start_time", start.toISOString()),
-        clause.LessEq("start_time", end),
-      );
-    };
-
-    function getCompleteClause(id: ID) {
-      return clause.And(clause.Eq("user_id", id), getClause());
-    }
     const getNonGroupableLoader = (id: ID, context: boolean = true) => {
       return new RawCountLoader(
         {
