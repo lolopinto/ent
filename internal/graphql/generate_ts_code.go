@@ -74,13 +74,14 @@ type customData struct {
 	Inputs  map[string]*CustomObject `json:"inputs"`
 	Objects map[string]*CustomObject `json:"objects"`
 	// map of class to fields in that class
-	Fields      map[string][]CustomField    `json:"fields"`
-	Queries     []CustomField               `json:"queries"`
-	Mutations   []CustomField               `json:"mutations"`
-	Classes     map[string]*CustomClassInfo `json:"classes"`
-	Files       map[string]*CustomFile      `json:"files"`
-	CustomTypes map[string]*CustomType      `json:"customTypes"`
-	Error       error
+	Fields            map[string][]CustomField    `json:"fields"`
+	Queries           []CustomField               `json:"queries"`
+	Mutations         []CustomField               `json:"mutations"`
+	CustomConnections []CustomField               `json:"customConnections"`
+	Classes           map[string]*CustomClassInfo `json:"classes"`
+	Files             map[string]*CustomFile      `json:"files"`
+	CustomTypes       map[string]*CustomType      `json:"customTypes"`
+	Error             error
 }
 
 type CustomItem struct {
@@ -575,6 +576,10 @@ func processCustomData(data *codegen.Data, s *gqlSchema) error {
 	}
 
 	if err := processCustomQueries(data, cd, s); err != nil {
+		return err
+	}
+
+	if err := processCustomConnections(data, cd, s); err != nil {
 		return err
 	}
 	return nil
@@ -1313,7 +1318,7 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 		if nodeMap.HideFromGraphQL(edge) {
 			continue
 		}
-		addConnection(nodeData, edge, &fields, instance)
+		addConnection(nodeData, edge, &fields, instance, nil)
 	}
 
 	for _, group := range nodeData.EdgeInfo.AssocGroups {
@@ -1379,22 +1384,34 @@ func addPluralEdge(edge edge.Edge, fields *[]*fieldType, instance string) {
 	*fields = append(*fields, gqlField)
 }
 
-func addConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, fields *[]*fieldType, instance string) {
+func addConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, fields *[]*fieldType, instance string, customField *CustomField) {
+
+	// import GraphQLEdgeConnection and EdgeQuery file
+	extraImports := []*fileImport{
+		{
+			ImportPath: codepath.GraphQLPackage,
+			Type:       "GraphQLEdgeConnection",
+		},
+	}
+
+	var buildQuery string
+	if customField == nil {
+		// for custom fields, EntQuery is an implementation detail
+		// and may or may not be exposed so we don't depend on it here
+		extraImports = append(extraImports, &fileImport{
+			ImportPath: codepath.GetExternalImportPath(),
+			Type:       edge.TsEdgeQueryName(),
+		})
+		buildQuery = fmt.Sprintf("%s.query(v, %s)", edge.TsEdgeQueryName(), instance)
+	} else {
+		buildQuery = fmt.Sprintf("%s.%s()", instance, customField.FunctionName)
+	}
+
 	gqlField := &fieldType{
 		Name:               edge.GraphQLEdgeName(),
 		HasResolveFunction: true,
 		FieldImports:       getGQLFileImports(edge.GetTSGraphQLTypeImports(), false),
-		// import GraphQLEdgeConnection and EdgeQuery file
-		ExtraImports: []*fileImport{
-			{
-				ImportPath: codepath.GraphQLPackage,
-				Type:       "GraphQLEdgeConnection",
-			},
-			{
-				ImportPath: codepath.GetExternalImportPath(),
-				Type:       edge.TsEdgeQueryName(),
-			},
-		},
+		ExtraImports:       extraImports,
 		Args: []*fieldConfigArg{
 			{
 				Name:    "first",
@@ -1416,13 +1433,12 @@ func addConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, fields *
 		// TODO typing for args later?
 		FunctionContents: []string{
 			fmt.Sprintf(
-				"return new GraphQLEdgeConnection(%s.viewer, %s, (v, %s: %s) => %s.query(v, %s), args);",
+				"return new GraphQLEdgeConnection(%s.viewer, %s, (v, %s: %s) => %s, args);",
 				instance,
 				instance,
 				instance,
 				nodeData.Node,
-				edge.TsEdgeQueryName(),
-				instance,
+				buildQuery,
 			),
 		},
 	}

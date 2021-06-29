@@ -7,7 +7,11 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/codepath"
+	"github.com/lolopinto/ent/internal/edge"
+	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/schemaparser"
 )
 
 type processCustomRoot interface {
@@ -701,6 +705,37 @@ func processCustomFields(cd *customData, s *gqlSchema) error {
 	return nil
 }
 
+func processCustomConnections(data *codegen.Data, cd *customData, s *gqlSchema) error {
+	for _, conn := range cd.CustomConnections {
+		nodeInfo, ok := s.nodes[conn.Node]
+
+		if !ok {
+			return fmt.Errorf("unknown node %s", conn.Node)
+		}
+
+		if len(conn.Results) != 1 {
+			return fmt.Errorf("need 1 result. got %d", len(conn.Results))
+		}
+
+		objData := nodeInfo.ObjData
+		nodeData := objData.NodeData
+		// always has a node for now
+		obj := objData.GQLNodes[0]
+
+		customEdge := &CustomEdge{
+			SourceNodeName: conn.Node,
+			Type:           conn.Results[0].Type,
+			EdgeName:       strcase.ToLowerCamel(conn.GraphQLName),
+		}
+		// add as connection for the node
+		nodeInfo.connections = append(nodeInfo.connections, getGqlConnection(nodeData, customEdge, data))
+
+		// add connection to fields of the node
+		addConnection(nodeData, customEdge, &obj.Fields, nodeData.NodeInstance, &conn)
+	}
+	return nil
+}
+
 func getCustomGQLField(cd *customData, field CustomField, s *gqlSchema, instance string) (*fieldType, error) {
 	imports, err := getGraphQLImportsForField(cd, field, s)
 	if err != nil {
@@ -781,3 +816,74 @@ func getGraphQLImportsForField(cd *customData, f CustomField, s *gqlSchema) ([]*
 	}
 	return imports, nil
 }
+
+type CustomEdge struct {
+	SourceNodeName string
+	EdgeName       string
+	Type           string
+}
+
+func (e *CustomEdge) GetEdgeName() string {
+	return e.EdgeName
+}
+
+func (e *CustomEdge) GetNodeInfo() nodeinfo.NodeInfo {
+	return nodeinfo.GetNodeInfo(e.Type)
+}
+
+func (e *CustomEdge) GetEntConfig() schemaparser.EntConfigInfo {
+	return schemaparser.GetEntConfigFromName(e.Type)
+}
+
+func (e *CustomEdge) GraphQLEdgeName() string {
+	return strcase.ToLowerCamel(e.EdgeName)
+}
+
+func (e *CustomEdge) CamelCaseEdgeName() string {
+	return strcase.ToCamel(e.EdgeName)
+
+}
+
+func (e *CustomEdge) HideFromGraphQL() bool {
+	return false
+}
+
+func (e *CustomEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
+	return []enttype.FileImport{
+		enttype.NewGQLFileImport("GraphQLNonNull"),
+		{
+			ImportType: enttype.Connection,
+			Type:       e.GetGraphQLConnectionName(),
+		},
+	}
+}
+
+func (e *CustomEdge) GetSourceNodeName() string {
+	return e.SourceNodeName
+}
+
+func (e *CustomEdge) GetGraphQLEdgePrefix() string {
+	return fmt.Sprintf("%sTo%s", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
+
+}
+
+func (e *CustomEdge) GetGraphQLConnectionName() string {
+	return fmt.Sprintf("%sTo%sConnection", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
+
+}
+
+func (e *CustomEdge) TsEdgeQueryEdgeName() string {
+	// For CustomEdge, we only use this with GraphQLConnectionType and the EdgeType is "Data"
+	return "Data"
+}
+
+func (e *CustomEdge) TsEdgeQueryName() string {
+	return fmt.Sprintf("%sTo%sQuery", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
+}
+
+func (e *CustomEdge) UniqueEdge() bool {
+	return false
+}
+
+var _ edge.Edge = &CustomEdge{}
+var _ edge.ConnectionEdge = &CustomEdge{}
