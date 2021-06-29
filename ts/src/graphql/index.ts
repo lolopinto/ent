@@ -9,6 +9,7 @@ export {
   gqlQuery,
   gqlMutation,
   gqlContextType,
+  gqlConnection,
   GQLCapture,
   gqlFileUpload,
   CustomType,

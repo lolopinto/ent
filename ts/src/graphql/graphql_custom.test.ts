@@ -9,6 +9,7 @@ import {
   gqlQuery,
   gqlContextType,
   gqlFileUpload,
+  gqlConnection,
 } from "./graphql";
 import { GraphQLBoolean, GraphQLID } from "graphql";
 import { ID, Viewer } from "../core/base";
@@ -24,6 +25,7 @@ import {
   CustomObjectTypes,
   validateNoCustomQueries,
   validateCustomTypes,
+  validateCustomConnections,
 } from "./graphql_field_helpers";
 import { RequestContext } from "../core/context";
 
@@ -427,6 +429,47 @@ test("query with list return type", () => {
   );
 
   GQLCapture.resolve([]);
+});
+
+test.only("query which returns connection", async () => {
+  class ViewerResolver {
+    @gqlQuery({ type: "User" })
+    @gqlConnection({ type: "User", name: "peopleYouMayKnow" })
+    pymk() {
+      return 1;
+    }
+  }
+
+  validateCustomQueries([
+    {
+      nodeName: "ViewerResolver",
+      functionName: "pymk",
+      gqlName: "pymk",
+      fieldType: CustomFieldType.Function,
+      results: [
+        {
+          type: "User",
+          needsResolving: true,
+          name: "",
+        },
+      ],
+      args: [],
+    },
+  ]);
+
+  validateCustomConnections([
+    {
+      nodeName: "ViewerResolver",
+      functionName: "pymk",
+      gqlName: "peopleYouMayKnow",
+      fieldType: CustomFieldType.Function,
+      results: [],
+      args: [],
+    },
+  ]);
+
+  GQLCapture.resolve(["User"]);
+  validateNoCustom(CustomObjectTypes.Connection, CustomObjectTypes.Query);
 });
 
 test("custom type", () => {

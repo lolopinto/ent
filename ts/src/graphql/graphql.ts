@@ -25,6 +25,13 @@ export interface gqlFieldOptions {
   type?: Type | Array<Type>; // types or lists of types
 }
 
+export interface gqlConnectionOptions {
+  // e.g. UserToEvents
+  name: string;
+  // end type at end of Connection
+  type: string; //Type;
+}
+
 interface fieldOptions extends gqlFieldOptions {
   // implies no return type...
   allowFunctionType?: boolean;
@@ -155,6 +162,7 @@ export class GQLCapture {
   private static customInputObjects: Map<string, CustomObject> = new Map();
   private static customObjects: Map<string, CustomObject> = new Map();
   private static customTypes: Map<string, CustomType> = new Map();
+  private static customConnections: CustomField[] = [];
 
   static clear(): void {
     this.customFields.clear();
@@ -165,6 +173,7 @@ export class GQLCapture {
     this.customObjects.clear();
     this.customTypes.clear();
     this.argMap.clear();
+    this.customConnections = [];
   }
 
   static getCustomFields(): Map<string, CustomField[]> {
@@ -193,6 +202,10 @@ export class GQLCapture {
 
   static getCustomTypes(): Map<string, CustomType> {
     return this.customTypes;
+  }
+
+  static getCustomConnections(): CustomField[] {
+    return this.customConnections;
   }
 
   private static getNullableArg(fd: Field): ProcessedField {
@@ -224,6 +237,10 @@ export class GQLCapture {
 
   static getProcessedCustomQueries(): ProcessedCustomField[] {
     return this.getProcessedCustomFieldsImpl(this.customQueries);
+  }
+
+  static getProcessedCustomConnections(): ProcessedCustomField[] {
+    return this.getProcessedCustomFieldsImpl(this.customConnections);
   }
 
   private static getProcessedCustomFieldsImpl(
@@ -637,10 +654,51 @@ export class GQLCapture {
     };
   }
 
+  static gqlConnection(options: gqlConnectionOptions): any {
+    return function (
+      target: Function,
+      propertyKey: string,
+      descriptor: PropertyDescriptor,
+    ): void {
+      if (!GQLCapture.isEnabled()) {
+        return;
+      }
+
+      let customField = GQLCapture.getCustomField(
+        target,
+        propertyKey,
+        descriptor,
+        {
+          ...options,
+          allowFunctionType: true,
+        },
+      );
+      if (customField.args.length !== 0) {
+        throw new Error(`gqlConnection with args not currently supported`);
+      }
+      if (customField.results.length > 1) {
+        throw new Error(`gqlConnection needs to return only one result`);
+      }
+      const result = customField.results[0];
+      if (result) {
+        if (result.list) {
+          throw new Error("gqlConnection result cannot be a list");
+        }
+        if (result.nullable) {
+          throw new Error("gqlConnection result cannot be nullable");
+        }
+        if (result.isContextArg) {
+          throw new Error("gqlConnection result cannot be contextArg");
+        }
+      }
+      GQLCapture.customConnections.push(customField);
+    };
+  }
+
   static resolve(objects: string[]): void {
-    let baseEnts = new Map<string, boolean>();
-    objects.map((object) => baseEnts.set(object, true));
-    this.customObjects.forEach((_val, key) => baseEnts.set(key, true));
+    let baseObjects = new Map<string, boolean>();
+    objects.map((object) => baseObjects.set(object, true));
+    this.customObjects.forEach((_val, key) => baseObjects.set(key, true));
 
     let baseArgs = new Map<string, boolean>();
     this.customArgs.forEach((_val, key) => baseArgs.set(key, true));
@@ -669,7 +727,7 @@ export class GQLCapture {
         // but i don't think it applies
         field.results.forEach((result) => {
           if (result.needsResolving) {
-            if (baseEnts.has(result.type)) {
+            if (baseObjects.has(result.type)) {
               result.needsResolving = false;
             } else {
               throw new Error(
@@ -685,6 +743,7 @@ export class GQLCapture {
     );
     resolveFields(GQLCapture.customQueries);
     resolveFields(GQLCapture.customMutations);
+    resolveFields(GQLCapture.customConnections);
   }
 }
 
@@ -698,6 +757,7 @@ export const gqlObjectType = GQLCapture.gqlObjectType;
 export const gqlQuery = GQLCapture.gqlQuery;
 export const gqlMutation = GQLCapture.gqlMutation;
 export const gqlContextType = GQLCapture.gqlContextType;
+export const gqlConnection = GQLCapture.gqlConnection;
 
 // this requires the developer to npm-install "graphql-upload on their own"
 const gqlFileUpload: CustomType = {

@@ -1,3 +1,4 @@
+import exp from "constants";
 import {
   GQLCapture,
   CustomField,
@@ -78,6 +79,10 @@ export function validateCustomQueries(expected: CustomQuery[]) {
   validateCustomFieldsImpl(expected, GQLCapture.getCustomQueries());
 }
 
+export function validateCustomConnections(expected: CustomField[]) {
+  validateCustomFieldsImpl(expected, GQLCapture.getCustomConnections());
+}
+
 export function validateFields(actual: Field[], expected: Field[]) {
   expect(actual.length).toBe(expected.length);
 
@@ -155,6 +160,10 @@ export function validateNoCustomTypes() {
   expect(GQLCapture.getCustomTypes().size).toBe(0);
 }
 
+export function validateNoCustomConnections() {
+  expect(GQLCapture.getCustomConnections().length).toBe(0);
+}
+
 export enum CustomObjectTypes {
   Field = 0x1,
   Arg = 0x2,
@@ -163,6 +172,7 @@ export enum CustomObjectTypes {
   Query = 0x10,
   Mutation = 0x20,
   CustomTypes = 0x40,
+  Connection = 0x80,
 }
 
 // TODO what's a good name for this instead
@@ -181,6 +191,7 @@ export function validateNoCustom(...exceptions: number[]) {
   validate(CustomObjectTypes.Mutation, validateNoCustomMutations);
   validate(CustomObjectTypes.InputObject, validateNoCustomInputObjects);
   validate(CustomObjectTypes.CustomTypes, validateNoCustomTypes);
+  validate(CustomObjectTypes.Connection, validateNoCustomConnections);
 }
 
 export function validateCustomTypes(expected: CustomType[]) {
