@@ -431,7 +431,7 @@ test("query with list return type", () => {
   GQLCapture.resolve([]);
 });
 
-test.only("query which returns connection", async () => {
+test("query which returns connection", async () => {
   class ViewerResolver {
     @gqlQuery({ type: "User" })
     @gqlConnection({ type: "User", name: "peopleYouMayKnow" })
@@ -463,7 +463,13 @@ test.only("query which returns connection", async () => {
       functionName: "pymk",
       gqlName: "peopleYouMayKnow",
       fieldType: CustomFieldType.Function,
-      results: [],
+      results: [
+        {
+          type: "User",
+          needsResolving: true,
+          name: "",
+        },
+      ],
       args: [],
     },
   ]);

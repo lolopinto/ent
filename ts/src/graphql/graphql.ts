@@ -668,28 +668,29 @@ export class GQLCapture {
         target,
         propertyKey,
         descriptor,
-        {
-          ...options,
-          allowFunctionType: true,
-        },
+        options,
       );
+
+      if (customField.fieldType === CustomFieldType.AsyncFunction) {
+        throw new Error(
+          `async function not currently supported for gqlConnection`,
+        );
+      }
       if (customField.args.length !== 0) {
         throw new Error(`gqlConnection with args not currently supported`);
       }
-      if (customField.results.length > 1) {
+      if (customField.results.length != 1) {
         throw new Error(`gqlConnection needs to return only one result`);
       }
       const result = customField.results[0];
-      if (result) {
-        if (result.list) {
-          throw new Error("gqlConnection result cannot be a list");
-        }
-        if (result.nullable) {
-          throw new Error("gqlConnection result cannot be nullable");
-        }
-        if (result.isContextArg) {
-          throw new Error("gqlConnection result cannot be contextArg");
-        }
+      if (result.list) {
+        throw new Error("gqlConnection result cannot be a list");
+      }
+      if (result.nullable) {
+        throw new Error("gqlConnection result cannot be nullable");
+      }
+      if (result.isContextArg) {
+        throw new Error("gqlConnection result cannot be contextArg");
       }
       GQLCapture.customConnections.push(customField);
     };

@@ -1015,7 +1015,7 @@ describe("function", () => {
   test("connection", async () => {
     class User {
       @gqlConnection({ type: "User", name: "userToSelves" })
-      async loadSelves() {
+      loadSelves() {
         // ignore
         return [new User()];
       }
@@ -1026,7 +1026,7 @@ describe("function", () => {
         nodeName: "User",
         functionName: "loadSelves",
         gqlName: "userToSelves",
-        fieldType: CustomFieldType.AsyncFunction,
+        fieldType: CustomFieldType.Function,
         results: [
           {
             type: "User",
@@ -1039,5 +1039,24 @@ describe("function", () => {
     ]);
 
     validateNoCustom(CustomObjectTypes.Connection);
+  });
+
+  test("connection with async", async () => {
+    try {
+      class User {
+        @gqlConnection({ type: "User", name: "userToSelves" })
+        async loadSelves() {
+          // ignore
+          return [new User()];
+        }
+      }
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toBe(
+        "async function not currently supported for gqlConnection",
+      );
+    }
+
+    validateNoCustom();
   });
 });
