@@ -54,7 +54,7 @@ describe("sqlite", () => {
     ml.mock();
   });
 
-  afterEach(() => {
+  beforeEach(() => {
     ml.clear();
   });
 

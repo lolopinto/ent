@@ -33,10 +33,10 @@
 
   {{range $edge := .EdgeInfo.GetEdgesForIndexLoader -}}
     {{$node := useImport $edge.GetNodeInfo.Node -}}
-      export const {{$edge.GetCountFactoryName}} = new {{useImport "RawCountLoaderFactory"}}(
-        {{$node}}.loaderOptions(),
-        {{$edge.QuotedDBColName}},
-      );
+      export const {{$edge.GetCountFactoryName}} = new {{useImport "RawCountLoaderFactory"}}({
+        ...{{$node}}.loaderOptions(),
+        groupCol: {{$edge.QuotedDBColName}},
+      });
       export const {{$edge.GetDataFactoryName}} = new {{useImport "IndexLoaderFactory"}}(
         {{$node}}.loaderOptions(),
         {{$edge.QuotedDBColName}},

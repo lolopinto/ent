@@ -33,6 +33,7 @@ import * as clause from "./clause";
 import { WriteOperation, Builder } from "../action";
 import { log, logEnabled, logTrace } from "./logger";
 import DataLoader from "dataloader";
+import { SqliteError } from "better-sqlite3";
 
 // TODO kill this and createDataLoader
 class cacheMap {
@@ -500,7 +501,7 @@ interface GroupQueryOptions {
 
   // extra clause to join
   clause?: clause.Clause;
-  fkeyColumn: string;
+  groupColumn: string;
   fields: string[];
   values: any[];
   orderby?: string;
@@ -513,7 +514,7 @@ export function buildGroupQuery(
 ): [string, clause.Clause] {
   const fields = [...options.fields, "row_number()"];
 
-  let cls = clause.In(options.fkeyColumn, ...options.values);
+  let cls = clause.In(options.groupColumn, ...options.values);
   if (options.clause) {
     cls = clause.And(cls, options.clause);
   }
@@ -526,7 +527,7 @@ export function buildGroupQuery(
   //    https://www.sqlite.org/windowfunctions.html
   return [
     `SELECT * FROM (SELECT ${fields.join(",")} OVER (PARTITION BY ${
-      options.fkeyColumn
+      options.groupColumn
     } ${orderby}) as row_num FROM ${options.tableName} WHERE ${cls.clause(
       1,
     )}) t WHERE row_num <= ${options.limit}`,

@@ -130,6 +130,9 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     const limit = this.options.limit + 1;
 
     options.limit = limit;
+    // todo may not be desc
+    // and if asc
+    // clause below should switch to greater...
     options.orderby = `${this.sortCol} DESC`;
     // we sort by most recent first
     // so when paging, we fetch afterCursor X

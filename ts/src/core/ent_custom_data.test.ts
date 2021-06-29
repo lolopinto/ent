@@ -38,7 +38,7 @@ describe("postgres", () => {
 
 describe("sqlite", () => {
   setupSqlite(
-    `sqlite:///ent_data_test.db`,
+    `sqlite:///ent_custom_data_test.db`,
     () => [
       table(
         "users",

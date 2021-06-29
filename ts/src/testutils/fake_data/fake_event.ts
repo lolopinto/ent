@@ -23,6 +23,7 @@ import { convertDate, convertNullableDate } from "../../core/convert";
 
 export class FakeEvent implements Ent {
   readonly id: ID;
+  readonly data: Data;
   readonly nodeType = NodeType.FakeEvent;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -36,6 +37,7 @@ export class FakeEvent implements Ent {
   privacyPolicy: PrivacyPolicy = AlwaysAllowPrivacyPolicy;
 
   constructor(public viewer: Viewer, data: Data) {
+    this.data = data;
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
@@ -67,6 +69,7 @@ export class FakeEvent implements Ent {
       uuid("id", { primaryKey: true }),
       timestamptz("created_at"),
       timestamptz("updated_at"),
+      // TODO index:true
       timestamptz("start_time"),
       timestamptz("end_time", { nullable: true }),
       text("location"),
@@ -105,6 +108,7 @@ export class FakeEventSchema
   fields: Field[] = [
     TimestampType({
       name: "startTime",
+      index: true,
     }),
     TimestampType({
       name: "endTime",
