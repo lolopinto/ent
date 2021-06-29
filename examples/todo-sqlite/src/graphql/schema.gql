@@ -5,6 +5,7 @@ type Account implements Node {
   tags(first: Int, after: String, last: Int, before: String): AccountToTagsConnection!
   todos(first: Int, after: String, last: Int, before: String): AccountToTodosConnection!
   openTodosLegacy: [Todo!]!
+  openTodos(first: Int, after: String, last: Int, before: String): AccountToOpenTodosConnection!
 }
 
 """node interface"""
@@ -28,9 +29,9 @@ type Todo implements Node {
   tags(first: Int, after: String, last: Int, before: String): TodoToTagsConnection!
 }
 
-type AccountToTagsConnection implements Connection {
-  edges: [AccountToTagsEdge!]!
-  nodes: [Tag!]!
+type AccountToOpenTodosConnection implements Connection {
+  edges: [AccountToOpenTodosEdge!]!
+  nodes: [Todo!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -53,6 +54,18 @@ type PageInfo {
   hasPreviousPage: Boolean!
   startCursor: String!
   endCursor: String!
+}
+
+type AccountToOpenTodosEdge implements Edge {
+  node: Todo!
+  cursor: String!
+}
+
+type AccountToTagsConnection implements Connection {
+  edges: [AccountToTagsEdge!]!
+  nodes: [Tag!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
 }
 
 type AccountToTagsEdge implements Edge {

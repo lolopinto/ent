@@ -51,7 +51,7 @@ export class Account extends AccountBase {
 
   // showing connection
   @gqlConnection({ name: "openTodos", type: "Todo" })
-  async openTodos() {
+  openTodos() {
     return new AccountToOpenTodosQuery(this.viewer, this);
   }
 }
