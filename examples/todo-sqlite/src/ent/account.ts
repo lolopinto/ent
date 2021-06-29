@@ -1,17 +1,57 @@
-import { AlwaysAllowPrivacyPolicy, query } from "@snowtop/snowtop-ts";
-import { gqlField } from "@snowtop/snowtop-ts/graphql";
+import {
+  AlwaysAllowPrivacyPolicy,
+  CustomEdgeQueryBase,
+  ID,
+  query,
+  QueryLoaderFactory,
+  RawCountLoaderFactory,
+  Viewer,
+} from "@snowtop/snowtop-ts";
+import { gqlConnection, gqlField } from "@snowtop/snowtop-ts/graphql";
 import { AccountBase } from "src/ent/internal";
+import { todoLoader } from "./generated/todo_base";
 import { Todo } from "./todo";
+
+const openTodosLoader = new QueryLoaderFactory({
+  ...Todo.loaderOptions(),
+  groupCol: "creator_id",
+  clause: query.Eq("completed", false),
+  toPrime: [todoLoader],
+});
+
+const openTodosCountLoader = new RawCountLoaderFactory({
+  ...Todo.loaderOptions(),
+  groupCol: "creator_id",
+  clause: query.Eq("completed", false),
+});
+
+class AccountToOpenTodosQuery extends CustomEdgeQueryBase<Todo> {
+  constructor(viewer: Viewer, src: ID | Account) {
+    super(viewer, {
+      src,
+      // we want to reuse this and not create a new one every time...
+      countLoaderFactory: openTodosCountLoader,
+      dataLoaderFactory: openTodosLoader,
+      options: Todo.loaderOptions(),
+    });
+  }
+}
 
 export class Account extends AccountBase {
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
-  // TODO this should eventually be a connection but we're starting here.
+  // showing plural
   @gqlField({ name: "openTodosLegacy", type: "[Todo]" })
-  async openTodos() {
+  async openTodosLegacy() {
     return await Todo.loadCustom(
       this.viewer,
       query.And(query.Eq("creator_id", this.id), query.Eq("completed", false)),
     );
+  }
+
+  // showing connection
+  @gqlConnection({ name: "openTodos", type: "Todo" })
+  async openTodos() {
+    return new AccountToOpenTodosQuery(this.viewer, this);
   }
 }

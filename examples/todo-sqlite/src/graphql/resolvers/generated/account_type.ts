@@ -96,7 +96,7 @@ export const AccountType = new GraphQLObjectType({
     openTodosLegacy: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TodoType))),
       resolve: async (account: Account, args: {}, context: RequestContext) => {
-        return account.openTodos();
+        return account.openTodosLegacy();
       },
     },
   }),
