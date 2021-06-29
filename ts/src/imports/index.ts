@@ -65,8 +65,9 @@ export function parseCustomInput(filePath: string, opts?: Options): PathResult {
       let files = classMap.get(className);
       if (files?.length !== 1) {
         throw new Error(
-          `expected 1 class with name ${className}, got ${files?.length ||
-            0} classes instead`,
+          `expected 1 class with name ${className}, got ${
+            files?.length || 0
+          } classes instead`,
         );
       }
       let f = files[0];
@@ -143,7 +144,7 @@ function traverse(
   f: file,
   classMap: Map<string, file[]>,
 ) {
-  ts.forEachChild(sourceFile, function(node: ts.Node) {
+  ts.forEachChild(sourceFile, function (node: ts.Node) {
     switch (node.kind) {
       case ts.SyntaxKind.ImportDeclaration:
         let importNode = node as ts.ImportDeclaration;

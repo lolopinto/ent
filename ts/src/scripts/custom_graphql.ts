@@ -18,7 +18,10 @@ import { exit } from "process";
 // life is hard
 const MODULE_PATH = "@snowtop/snowtop-ts/graphql";
 
-async function readInputs(): Promise<string[]> {
+async function readInputs(): Promise<{
+  nodes: string[];
+  nodesMap: Map<string, boolean>;
+}> {
   return await new Promise((resolve) => {
     const rl = readline.createInterface({
       input: process.stdin,
@@ -26,12 +29,14 @@ async function readInputs(): Promise<string[]> {
       terminal: false,
     });
     let nodes: string[] = [];
+    let nodesMap: Map<string, boolean> = new Map();
     rl.on("line", function (line: string) {
       nodes.push(line);
+      nodesMap.set(line, true);
     });
 
     rl.on("close", function () {
-      return resolve(nodes);
+      return resolve({ nodes, nodesMap });
     });
   });
 }
@@ -124,11 +129,12 @@ async function main() {
   const GQLCapture = r.GQLCapture;
   GQLCapture.enable(true);
 
-  const [nodes, _, imports] = await Promise.all([
+  const [inputsRead, _, imports] = await Promise.all([
     readInputs(),
     captureCustom(options.path),
     parseImports(options.path),
   ]);
+  const { nodes, nodesMap } = inputsRead;
 
   function fromMap<T extends any>(m: Map<string, T>) {
     let result = {};
@@ -146,6 +152,7 @@ async function main() {
   let mutations = GQLCapture.getProcessedCustomMutations();
   let objects = fromMap(GQLCapture.getCustomObjects());
   let customTypes = fromMap(GQLCapture.getCustomTypes());
+  let customConnections = GQLCapture.getProcessedCustomConnections();
 
   let classes = {};
   let allFiles = {};
@@ -189,16 +196,19 @@ async function main() {
 
   const buildClasses = (fields: ProcessedCustomField[]) => {
     fields.forEach((field) => {
-      let info = imports.getInfoForClass(field.nodeName);
-      classes[field.nodeName] = { ...info.class, path: info.file.path };
+      if (!nodesMap.has(field.nodeName)) {
+        let info = imports.getInfoForClass(field.nodeName);
+        classes[field.nodeName] = { ...info.class, path: info.file.path };
+        buildFiles(info.file);
+      }
 
       buildClasses2(field.args);
       buildClasses2(field.results);
-      buildFiles(info.file);
     });
   };
   buildClasses(mutations);
   buildClasses(queries);
+  buildClasses(customConnections);
 
   console.log(
     JSON.stringify({
@@ -211,6 +221,7 @@ async function main() {
       objects,
       files: allFiles,
       customTypes,
+      customConnections,
     }),
   );
 }
