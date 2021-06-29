@@ -181,7 +181,7 @@ test("open todos from root", async () => {
     {
       viewer: account.viewer,
       schema: schema,
-      root: "openTodos",
+      root: "openTodosLegacy",
       args: {
         id: encodeGQLID(account),
       },

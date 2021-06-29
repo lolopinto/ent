@@ -200,7 +200,7 @@ type TodoRenamePayload {
 
 type Query {
   node(id: ID!): Node
-  openTodos(id: ID!): [Todo!]!
+  openTodosLegacy(id: ID!): [Todo!]!
 }
 
 type Mutation {

@@ -5,8 +5,10 @@ import { Todo } from "src/ent";
 
 export class TodoResolver {
   // TODO this should eventually be a connection but we're starting here.
-  @gqlQuery({ name: "openTodos", type: "[Todo]" })
-  async openTodos(@gqlArg("id", { type: GraphQLID }) id: ID): Promise<Todo[]> {
+  @gqlQuery({ name: "openTodosLegacy", type: "[Todo]" })
+  async openTodosLegacy(
+    @gqlArg("id", { type: GraphQLID }) id: ID,
+  ): Promise<Todo[]> {
     const viewer = new IDViewer(id);
     return await Todo.loadCustom(
       viewer,
