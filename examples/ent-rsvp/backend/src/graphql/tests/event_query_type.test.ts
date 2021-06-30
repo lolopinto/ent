@@ -78,41 +78,44 @@ test("event slug available", async () => {
 
   const user = await createUser();
   let eventID: ID = "";
-  await expectMutation(
-    {
-      viewer: user.viewer,
-      mutation: "eventCreate",
-      schema,
-      args: {
-        creatorID: encodeGQLID(user),
-        name: "fun event",
-        slug: "fun-event",
-      },
-    },
-    ["event.name", "fun event"],
-    ["event.creator.id", encodeGQLID(user)],
-    ["event.slug", "fun-event"],
-    [
-      "event.id",
-      async function (id) {
-        eventID = mustDecodeIDFromGQLID(id);
-      },
-    ],
-  );
 
-  await expectQueryFromRoot(
-    {
-      root: "eventSlugAvailable",
-      schema,
-      args: {
-        slug: "fun-event",
+  try {
+    await expectMutation(
+      {
+        viewer: user.viewer,
+        mutation: "eventCreate",
+        schema,
+        args: {
+          creatorID: encodeGQLID(user),
+          name: "fun event",
+          slug: "fun-event",
+        },
       },
-    },
-    [".", false],
-  );
+      ["event.name", "fun event"],
+      ["event.creator.id", encodeGQLID(user)],
+      ["event.slug", "fun-event"],
+      [
+        "event.id",
+        async function (id) {
+          eventID = mustDecodeIDFromGQLID(id);
+        },
+      ],
+    );
 
-  const evt = await Event.loadX(user.viewer, eventID);
-  await DeleteEventAction.create(user.viewer, evt).saveX();
+    await expectQueryFromRoot(
+      {
+        root: "eventSlugAvailable",
+        schema,
+        args: {
+          slug: "fun-event",
+        },
+      },
+      [".", false],
+    );
+  } finally {
+    const evt = await Event.loadX(user.viewer, eventID);
+    await DeleteEventAction.create(user.viewer, evt).saveX();
+  }
 
   await expectQueryFromRoot(
     {

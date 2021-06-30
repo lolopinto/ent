@@ -42,10 +42,10 @@ export const guestToDeclinedEventsDataLoaderFactory =
     () => GuestToDeclinedEventsEdge,
   );
 
-export const guestToAuthCodesCountLoaderFactory = new RawCountLoaderFactory(
-  AuthCode.loaderOptions(),
-  "guest_id",
-);
+export const guestToAuthCodesCountLoaderFactory = new RawCountLoaderFactory({
+  ...AuthCode.loaderOptions(),
+  groupCol: "guest_id",
+});
 export const guestToAuthCodesDataLoaderFactory = new IndexLoaderFactory(
   AuthCode.loaderOptions(),
   "guest_id",
@@ -53,10 +53,10 @@ export const guestToAuthCodesDataLoaderFactory = new IndexLoaderFactory(
     toPrime: [authCodeLoader],
   },
 );
-export const guestToGuestDataCountLoaderFactory = new RawCountLoaderFactory(
-  GuestData.loaderOptions(),
-  "guest_id",
-);
+export const guestToGuestDataCountLoaderFactory = new RawCountLoaderFactory({
+  ...GuestData.loaderOptions(),
+  groupCol: "guest_id",
+});
 export const guestToGuestDataDataLoaderFactory = new IndexLoaderFactory(
   GuestData.loaderOptions(),
   "guest_id",

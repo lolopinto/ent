@@ -20,7 +20,10 @@ import {
 } from "src/ent/internal";
 
 export const eventToEventActivitiesCountLoaderFactory =
-  new RawCountLoaderFactory(EventActivity.loaderOptions(), "event_id");
+  new RawCountLoaderFactory({
+    ...EventActivity.loaderOptions(),
+    groupCol: "event_id",
+  });
 export const eventToEventActivitiesDataLoaderFactory = new IndexLoaderFactory(
   EventActivity.loaderOptions(),
   "event_id",
@@ -28,10 +31,10 @@ export const eventToEventActivitiesDataLoaderFactory = new IndexLoaderFactory(
     toPrime: [eventActivityLoader],
   },
 );
-export const eventToGuestDataCountLoaderFactory = new RawCountLoaderFactory(
-  GuestData.loaderOptions(),
-  "event_id",
-);
+export const eventToGuestDataCountLoaderFactory = new RawCountLoaderFactory({
+  ...GuestData.loaderOptions(),
+  groupCol: "event_id",
+});
 export const eventToGuestDataDataLoaderFactory = new IndexLoaderFactory(
   GuestData.loaderOptions(),
   "event_id",
@@ -39,10 +42,10 @@ export const eventToGuestDataDataLoaderFactory = new IndexLoaderFactory(
     toPrime: [guestDataLoader],
   },
 );
-export const eventToGuestGroupsCountLoaderFactory = new RawCountLoaderFactory(
-  GuestGroup.loaderOptions(),
-  "event_id",
-);
+export const eventToGuestGroupsCountLoaderFactory = new RawCountLoaderFactory({
+  ...GuestGroup.loaderOptions(),
+  groupCol: "event_id",
+});
 export const eventToGuestGroupsDataLoaderFactory = new IndexLoaderFactory(
   GuestGroup.loaderOptions(),
   "event_id",
@@ -50,10 +53,10 @@ export const eventToGuestGroupsDataLoaderFactory = new IndexLoaderFactory(
     toPrime: [guestGroupLoader],
   },
 );
-export const eventToGuestsCountLoaderFactory = new RawCountLoaderFactory(
-  Guest.loaderOptions(),
-  "event_id",
-);
+export const eventToGuestsCountLoaderFactory = new RawCountLoaderFactory({
+  ...Guest.loaderOptions(),
+  groupCol: "event_id",
+});
 export const eventToGuestsDataLoaderFactory = new IndexLoaderFactory(
   Guest.loaderOptions(),
   "event_id",

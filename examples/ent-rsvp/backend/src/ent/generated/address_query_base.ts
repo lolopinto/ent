@@ -10,10 +10,10 @@ import {
 } from "@snowtop/snowtop-ts";
 import { Address, addressLoader } from "src/ent/internal";
 
-export const ownerToAddressesCountLoaderFactory = new RawCountLoaderFactory(
-  Address.loaderOptions(),
-  "owner_id",
-);
+export const ownerToAddressesCountLoaderFactory = new RawCountLoaderFactory({
+  ...Address.loaderOptions(),
+  groupCol: "owner_id",
+});
 export const ownerToAddressesDataLoaderFactory = new IndexLoaderFactory(
   Address.loaderOptions(),
   "owner_id",

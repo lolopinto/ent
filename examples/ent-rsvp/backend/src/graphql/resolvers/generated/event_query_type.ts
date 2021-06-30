@@ -20,11 +20,11 @@ export const EventQueryType: GraphQLFieldConfig<undefined, RequestContext> = {
   },
   resolve: async (
     _source,
-    { slug },
+    args: { slug },
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
     const r = new EventResolver();
-    return r.event(context, slug);
+    return r.event(context, args.slug);
   },
 };

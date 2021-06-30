@@ -21,11 +21,11 @@ export const EmailAvailableType: GraphQLFieldConfig<undefined, RequestContext> =
     },
     resolve: async (
       _source,
-      { email },
+      args: { email },
       context: RequestContext,
       _info: GraphQLResolveInfo,
     ) => {
       const r = new AuthResolver();
-      return r.emailAvailableMutation(email);
+      return r.emailAvailableMutation(args.email);
     },
   };

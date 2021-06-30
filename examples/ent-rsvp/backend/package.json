@@ -30,7 +30,7 @@
     "@snowtop/snowtop-email": "0.0.1",
     "@snowtop/snowtop-passport": "0.0.1",
     "@snowtop/snowtop-password": "0.0.1",
-    "@snowtop/snowtop-ts": "^0.0.3",
+    "@snowtop/snowtop-ts": "^0.0.4",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "csv-parse": "^4.15.3",
