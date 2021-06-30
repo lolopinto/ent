@@ -31,10 +31,10 @@ export const guestGroupToInvitedEventsDataLoaderFactory =
     () => GuestGroupToInvitedEventsEdge,
   );
 
-export const guestGroupToGuestsCountLoaderFactory = new RawCountLoaderFactory(
-  Guest.loaderOptions(),
-  "guest_group_id",
-);
+export const guestGroupToGuestsCountLoaderFactory = new RawCountLoaderFactory({
+  ...Guest.loaderOptions(),
+  groupCol: "guest_group_id",
+});
 export const guestGroupToGuestsDataLoaderFactory = new IndexLoaderFactory(
   Guest.loaderOptions(),
   "guest_group_id",

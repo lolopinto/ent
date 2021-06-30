@@ -3,31 +3,55 @@
 import {
   GraphQLFieldConfig,
   GraphQLID,
-  GraphQLList,
+  GraphQLInt,
   GraphQLNonNull,
   GraphQLResolveInfo,
+  GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/snowtop-ts";
-import { mustDecodeIDFromGQLID } from "@snowtop/snowtop-ts/graphql";
-import { TodoType } from "src/graphql/resolvers/internal";
+import {
+  GraphQLEdgeConnection,
+  mustDecodeIDFromGQLID,
+} from "@snowtop/snowtop-ts/graphql";
+import { RootToOpenTodosConnectionType } from "src/graphql/resolvers/internal";
 import { TodoResolver } from "../open_todos";
 
 export const OpenTodosQueryType: GraphQLFieldConfig<undefined, RequestContext> =
   {
-    type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TodoType))),
+    type: GraphQLNonNull(RootToOpenTodosConnectionType()),
     args: {
       id: {
         description: "",
         type: GraphQLNonNull(GraphQLID),
       },
+      first: {
+        description: "",
+        type: GraphQLInt,
+      },
+      after: {
+        description: "",
+        type: GraphQLString,
+      },
+      last: {
+        description: "",
+        type: GraphQLInt,
+      },
+      before: {
+        description: "",
+        type: GraphQLString,
+      },
     },
     resolve: async (
       _source,
-      { id },
+      args: { id; first; after; last; before },
       context: RequestContext,
       _info: GraphQLResolveInfo,
     ) => {
       const r = new TodoResolver();
-      return r.openTodos(mustDecodeIDFromGQLID(id));
+      return new GraphQLEdgeConnection(
+        context.getViewer(),
+        (v) => r.openTodos(context, mustDecodeIDFromGQLID(args.id)),
+        args,
+      );
     },
   };

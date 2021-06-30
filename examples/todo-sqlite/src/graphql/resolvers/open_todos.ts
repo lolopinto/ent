@@ -1,16 +1,35 @@
-import { ID, IDViewer, query } from "@snowtop/snowtop-ts";
-import { gqlArg, gqlQuery } from "@snowtop/snowtop-ts/graphql";
+import { ID, IDViewer, query, RequestContext } from "@snowtop/snowtop-ts";
+import {
+  gqlArg,
+  gqlConnection,
+  gqlContextType,
+  gqlQuery,
+  GraphQLEdgeConnection,
+} from "@snowtop/snowtop-ts/graphql";
 import { GraphQLID } from "graphql";
-import { Todo } from "src/ent";
+import { Todo, Account, AccountToOpenTodosQuery } from "src/ent";
 
 export class TodoResolver {
-  // TODO this should eventually be a connection but we're starting here.
-  @gqlQuery({ name: "openTodos", type: "[Todo]" })
-  async openTodos(@gqlArg("id", { type: GraphQLID }) id: ID): Promise<Todo[]> {
+  // showing plural
+  @gqlQuery({ name: "openTodosPlural", type: "[Todo]" })
+  async openTodosPlural(
+    @gqlArg("id", { type: GraphQLID }) id: ID,
+  ): Promise<Todo[]> {
     const viewer = new IDViewer(id);
     return await Todo.loadCustom(
       viewer,
       query.And(query.Eq("creator_id", id), query.Eq("completed", false)),
     );
+  }
+
+  // showing connection
+  @gqlQuery({ type: gqlConnection("Todo") })
+  openTodos(
+    // we're not using context but have it here to show that it works
+    @gqlContextType() _context: RequestContext,
+    @gqlArg("id", { type: GraphQLID }) id: ID,
+  ) {
+    const viewer = new IDViewer(id);
+    return new AccountToOpenTodosQuery(viewer, id);
   }
 }

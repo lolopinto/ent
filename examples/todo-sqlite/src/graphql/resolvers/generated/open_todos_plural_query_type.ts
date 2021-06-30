@@ -3,32 +3,33 @@
 import {
   GraphQLFieldConfig,
   GraphQLID,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLResolveInfo,
 } from "graphql";
 import { RequestContext } from "@snowtop/snowtop-ts";
 import { mustDecodeIDFromGQLID } from "@snowtop/snowtop-ts/graphql";
-import { AccountType } from "src/graphql/resolvers/";
-import { TodosResolver } from "../todo/todo_resolver";
+import { TodoType } from "src/graphql/resolvers/internal";
+import { TodoResolver } from "../open_todos";
 
-export const TodosRemoveCompletedType: GraphQLFieldConfig<
+export const OpenTodosPluralQueryType: GraphQLFieldConfig<
   undefined,
   RequestContext
 > = {
-  type: GraphQLNonNull(AccountType),
+  type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TodoType))),
   args: {
-    accountID: {
+    id: {
       description: "",
       type: GraphQLNonNull(GraphQLID),
     },
   },
   resolve: async (
     _source,
-    args: { accountID },
+    args: { id },
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
-    const r = new TodosResolver();
-    return r.removeCompletedTodos(mustDecodeIDFromGQLID(args.accountID));
+    const r = new TodoResolver();
+    return r.openTodosPlural(mustDecodeIDFromGQLID(args.id));
   },
 };

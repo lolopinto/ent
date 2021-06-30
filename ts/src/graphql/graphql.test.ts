@@ -4,6 +4,8 @@ import {
   GQLCapture,
   gqlArgType,
   CustomFieldType,
+  gqlConnection,
+  GraphQLConnection,
 } from "./graphql";
 import {
   GraphQLInt,
@@ -1008,5 +1010,60 @@ describe("function", () => {
       args: [],
     });
     validateNoCustom(CustomObjectTypes.Field);
+  });
+
+  test("connection", async () => {
+    class User {
+      @gqlField({
+        type: gqlConnection("User"),
+        name: "userToSelves",
+      })
+      loadSelves() {
+        // ignore
+        return [new User()];
+      }
+    }
+
+    validateCustomFields([
+      {
+        nodeName: "User",
+        functionName: "loadSelves",
+        gqlName: "userToSelves",
+        fieldType: CustomFieldType.Function,
+        results: [
+          {
+            type: "User",
+            name: "",
+            connection: true,
+            needsResolving: true,
+          },
+        ],
+        args: [],
+      },
+    ]);
+
+    validateNoCustom(CustomObjectTypes.Field);
+  });
+
+  test("connection with async", async () => {
+    try {
+      class User {
+        @gqlField({
+          type: gqlConnection("User"),
+          name: "userToSelves",
+        })
+        async loadSelves() {
+          // ignore
+          return [new User()];
+        }
+      }
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toBe(
+        "async function not currently supported for GraphQLConnection",
+      );
+    }
+
+    validateNoCustom();
   });
 });

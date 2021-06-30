@@ -9,10 +9,10 @@ import {
 } from "@snowtop/snowtop-ts";
 import { Account, Tag, Todo, tagLoader, todoLoader } from "src/ent/internal";
 
-export const accountToTagsCountLoaderFactory = new RawCountLoaderFactory(
-  Tag.loaderOptions(),
-  "owner_id",
-);
+export const accountToTagsCountLoaderFactory = new RawCountLoaderFactory({
+  ...Tag.loaderOptions(),
+  groupCol: "owner_id",
+});
 export const accountToTagsDataLoaderFactory = new IndexLoaderFactory(
   Tag.loaderOptions(),
   "owner_id",
@@ -20,10 +20,10 @@ export const accountToTagsDataLoaderFactory = new IndexLoaderFactory(
     toPrime: [tagLoader],
   },
 );
-export const accountToTodosCountLoaderFactory = new RawCountLoaderFactory(
-  Todo.loaderOptions(),
-  "creator_id",
-);
+export const accountToTodosCountLoaderFactory = new RawCountLoaderFactory({
+  ...Todo.loaderOptions(),
+  groupCol: "creator_id",
+});
 export const accountToTodosDataLoaderFactory = new IndexLoaderFactory(
   Todo.loaderOptions(),
   "creator_id",

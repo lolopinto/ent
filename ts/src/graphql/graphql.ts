@@ -18,11 +18,14 @@ export interface CustomType {
 // CustomType for types that are not in "graphql" and we need to know where to load it from...
 type Type = GraphQLScalarType | ClassType | string | CustomType;
 
+// node in a connection
+export type GraphQLConnection<T> = { node: T };
+
 export interface gqlFieldOptions {
   name?: string;
   nullable?: boolean | NullableListOptions;
   description?: string;
-  type?: Type | Array<Type>; // types or lists of types
+  type?: Type | Array<Type> | GraphQLConnection<Type>; // types or lists of types
 }
 
 interface fieldOptions extends gqlFieldOptions {
@@ -100,6 +103,7 @@ interface FieldImpl {
   importPath?: string;
   needsResolving?: boolean; // unknown type that we need to resolve eventually
   list?: boolean;
+  connection?: boolean;
   name: string;
 }
 
@@ -277,6 +281,15 @@ export class GQLCapture {
       return (type as Array<Type>).push !== undefined;
     };
 
+    const isConnection = (
+      type: Type | Array<Type> | GraphQLConnection<Type>,
+    ): type is GraphQLConnection<Type> => {
+      if (typeof type !== "object") {
+        return false;
+      }
+      return (type as GraphQLConnection<Type>).node !== undefined;
+    };
+
     const isString = (type: Type | Array<Type>): type is string => {
       if ((type as string).lastIndexOf !== undefined) {
         return true;
@@ -304,39 +317,58 @@ export class GQLCapture {
       this.customTypes.set(type.type, type);
     };
 
+    interface typeInfo {
+      list?: boolean | undefined;
+      scalarType?: boolean;
+      connection?: boolean | undefined;
+      type: string;
+    }
+
+    const getType = (
+      typ: Type | Array<Type> | GraphQLConnection<Type>,
+      result: typeInfo,
+    ) => {
+      if (isConnection(typ)) {
+        result.connection = true;
+        return getType(typ.node, result);
+      }
+
+      if (isArray(typ)) {
+        result.list = true;
+        return getType(typ[0], result);
+      }
+
+      if (isString(typ)) {
+        if (typ.lastIndexOf("]") !== -1) {
+          result.list = true;
+          result.type = typ.substr(1, typ.length - 2);
+        } else {
+          result.type = typ;
+        }
+        return;
+      }
+      if (isCustomType(typ)) {
+        result.type = typ.type;
+        addCustomType(typ);
+        return;
+      }
+      // GraphQLScalarType or ClassType
+      result.scalarType = isGraphQLScalarType(typ);
+      result.type = typ.name;
+      return;
+    };
+
     let list: boolean | undefined;
     let scalarType = false;
+    let connection: boolean | undefined;
 
     if (options?.type) {
-      if (isArray(options.type)) {
-        list = true;
-        const ofType = options.type[0];
-        //console.log(options);
-        if (isString(ofType)) {
-          type = ofType;
-        } else if (isCustomType(ofType)) {
-          type = ofType.type;
-          addCustomType(ofType);
-        } else {
-          scalarType = isGraphQLScalarType(ofType);
-          // GraphQLScalarType or ClassType
-          type = ofType.name;
-        }
-      } else if (isString(options.type)) {
-        type = options.type;
-        if (type.lastIndexOf("]") !== -1) {
-          // list
-          list = true;
-          type = type.substr(1, type.length - 2);
-        }
-      } else if (isCustomType(options.type)) {
-        type = options.type.type;
-        addCustomType(options.type);
-      } else {
-        scalarType = isGraphQLScalarType(options.type);
-        // GraphQLScalarType or ClassType
-        type = options.type.name;
-      }
+      let r: typeInfo = { type: "" };
+      getType(options.type, r);
+      list = r.list;
+      scalarType = r.scalarType || false;
+      connection = r.connection;
+      type = r.type;
     }
 
     if (GQLCapture.knownDisAllowedNames.has(type)) {
@@ -352,6 +384,7 @@ export class GQLCapture {
         this.knownAllowedNames.get(type) || this.customTypes.get(type)?.tsType,
       nullable: options?.nullable,
       list: list,
+      connection: connection,
       isContextArg: metadata.isContextArg,
     };
     // unknown type. we need to flag that this field needs to eventually be resolved
@@ -384,6 +417,30 @@ export class GQLCapture {
       );
       if (!customField) {
         return;
+      }
+      const connections = customField.results.filter(
+        (result) => result.connection,
+      );
+      if (connections.length > 1) {
+        throw new Error(`if using a connection, need to only return one item`);
+      }
+      if (connections.length === 1) {
+        const conn = connections[0];
+        if (conn.list) {
+          throw new Error("GraphQLConnection result cannot be a list");
+        }
+        if (conn.nullable) {
+          throw new Error("GraphQLConnection result cannot be nullable");
+        }
+        if (conn.isContextArg) {
+          throw new Error("GraphQLConnection result cannot be contextArg");
+        }
+
+        if (customField.fieldType === CustomFieldType.AsyncFunction) {
+          throw new Error(
+            `async function not currently supported for GraphQLConnection`,
+          );
+        }
       }
       let list = GQLCapture.customFields.get(customField.nodeName);
       if (list === undefined) {
@@ -637,10 +694,16 @@ export class GQLCapture {
     };
   }
 
+  static gqlConnection(type: Type): any {
+    return {
+      node: type,
+    };
+  }
+
   static resolve(objects: string[]): void {
-    let baseEnts = new Map<string, boolean>();
-    objects.map((object) => baseEnts.set(object, true));
-    this.customObjects.forEach((_val, key) => baseEnts.set(key, true));
+    let baseObjects = new Map<string, boolean>();
+    objects.map((object) => baseObjects.set(object, true));
+    this.customObjects.forEach((_val, key) => baseObjects.set(key, true));
 
     let baseArgs = new Map<string, boolean>();
     this.customArgs.forEach((_val, key) => baseArgs.set(key, true));
@@ -669,7 +732,7 @@ export class GQLCapture {
         // but i don't think it applies
         field.results.forEach((result) => {
           if (result.needsResolving) {
-            if (baseEnts.has(result.type)) {
+            if (baseObjects.has(result.type)) {
               result.needsResolving = false;
             } else {
               throw new Error(
@@ -698,6 +761,7 @@ export const gqlObjectType = GQLCapture.gqlObjectType;
 export const gqlQuery = GQLCapture.gqlQuery;
 export const gqlMutation = GQLCapture.gqlMutation;
 export const gqlContextType = GQLCapture.gqlContextType;
+export const gqlConnection = GQLCapture.gqlConnection;
 
 // this requires the developer to npm-install "graphql-upload on their own"
 const gqlFileUpload: CustomType = {

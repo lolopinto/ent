@@ -3,6 +3,7 @@
 import { GraphQLObjectType } from "graphql";
 import {
   NodeQueryType,
+  OpenTodosPluralQueryType,
   OpenTodosQueryType,
 } from "src/graphql/resolvers/internal";
 
@@ -11,5 +12,6 @@ export const QueryType = new GraphQLObjectType({
   fields: () => ({
     node: NodeQueryType,
     openTodos: OpenTodosQueryType,
+    openTodosPlural: OpenTodosPluralQueryType,
   }),
 });

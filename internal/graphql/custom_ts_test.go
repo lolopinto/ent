@@ -123,7 +123,7 @@ func TestCustomMutation(t *testing.T) {
 	assert.True(t, fcfg.Exported)
 	assert.Equal(t, fcfg.Name, "EmailAvailableType")
 	assert.Equal(t, fcfg.Arg, "")
-	assert.Equal(t, fcfg.ResolveMethodArg, "{email}")
+	assert.Equal(t, fcfg.ResolveMethodArg, "args: {email}")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*fileImport{
 		{
@@ -158,9 +158,7 @@ func TestCustomMutation(t *testing.T) {
 	})
 	assert.Equal(t, fcfg.FunctionContents, []string{
 		"const r = new AuthResolver();",
-		"return r.emailAvailableMutation(",
-		"email",
-		");",
+		"return r.emailAvailableMutation(args.email);",
 	})
 }
 
@@ -272,7 +270,7 @@ func TestCustomQuery(t *testing.T) {
 	assert.True(t, fcfg.Exported)
 	assert.Equal(t, fcfg.Name, "EmailAvailableQueryType")
 	assert.Equal(t, fcfg.Arg, "")
-	assert.Equal(t, fcfg.ResolveMethodArg, "{email}")
+	assert.Equal(t, fcfg.ResolveMethodArg, "args: {email}")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*fileImport{
 		{
@@ -307,9 +305,7 @@ func TestCustomQuery(t *testing.T) {
 	})
 	assert.Equal(t, fcfg.FunctionContents, []string{
 		"const r = new AuthResolver();",
-		"return r.emailAvailable(",
-		"email",
-		");",
+		"return r.emailAvailable(args.email);",
 	})
 }
 
@@ -407,7 +403,7 @@ func TestCustomListQuery(t *testing.T) {
 	assert.True(t, fcfg.Exported)
 	assert.Equal(t, fcfg.Name, "EmailsAvailableQueryType")
 	assert.Equal(t, fcfg.Arg, "")
-	assert.Equal(t, fcfg.ResolveMethodArg, "{emails}")
+	assert.Equal(t, fcfg.ResolveMethodArg, "args: {emails}")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*fileImport{
 		{
@@ -459,9 +455,7 @@ func TestCustomListQuery(t *testing.T) {
 	})
 	assert.Equal(t, fcfg.FunctionContents, []string{
 		"const r = new AuthResolver();",
-		"return r.emailsAvailable(",
-		"emails",
-		");",
+		"return r.emailsAvailable(args.emails);",
 	})
 }
 
@@ -590,7 +584,7 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	assert.True(t, fcfg.Exported)
 	assert.Equal(t, fcfg.Name, "UsernameQueryType")
 	assert.Equal(t, fcfg.Arg, "")
-	assert.Equal(t, fcfg.ResolveMethodArg, "{username}")
+	assert.Equal(t, fcfg.ResolveMethodArg, "args: {username}")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*fileImport{
 		{
@@ -621,9 +615,7 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	})
 	assert.Equal(t, fcfg.FunctionContents, []string{
 		"const r = new UsernameResolver();",
-		"return r.username(",
-		"username",
-		");",
+		"return r.username(args.username);",
 	})
 }
 
@@ -721,7 +713,7 @@ func TestCustomUploadType(t *testing.T) {
 	assert.True(t, fcfg.Exported)
 	assert.Equal(t, fcfg.Name, "ProfilePicUploadType")
 	assert.Equal(t, fcfg.Arg, "")
-	assert.Equal(t, fcfg.ResolveMethodArg, "{file}")
+	assert.Equal(t, fcfg.ResolveMethodArg, "args: {file}")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*fileImport{
 		{
@@ -756,9 +748,7 @@ func TestCustomUploadType(t *testing.T) {
 	})
 	assert.Equal(t, fcfg.FunctionContents, []string{
 		"const r = new ProfilePicResolver();",
-		"return r.profilePicUpload(",
-		"file",
-		");",
+		"return r.profilePicUpload(args.file);",
 	})
 
 	typ := s.customData.CustomTypes["GraphQLUpload"]

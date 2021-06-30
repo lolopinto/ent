@@ -1,7 +1,7 @@
 import express from "express";
 import { graphqlHTTP } from "express-graphql";
 import { IncomingMessage, ServerResponse } from "http";
-import { DB } from "@lolopinto/ent";
+import { DB } from "@snowtop/snowtop-ts";
 import { buildContext } from "@snowtop/snowtop-ts/auth";
 import schema from "./schema";
 

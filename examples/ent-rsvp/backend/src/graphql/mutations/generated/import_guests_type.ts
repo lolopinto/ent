@@ -26,11 +26,15 @@ export const ImportGuestsType: GraphQLFieldConfig<undefined, RequestContext> = {
   },
   resolve: async (
     _source,
-    { eventID, file },
+    args: { eventID; file },
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
     const r = new ImportGuestResolver();
-    return r.importGuests(context, mustDecodeIDFromGQLID(eventID), file);
+    return r.importGuests(
+      context,
+      mustDecodeIDFromGQLID(args.eventID),
+      args.file,
+    );
   },
 };

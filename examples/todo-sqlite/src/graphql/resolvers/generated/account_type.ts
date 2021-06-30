@@ -17,6 +17,7 @@ import {
 } from "@snowtop/snowtop-ts/graphql";
 import { Account, AccountToTagsQuery, AccountToTodosQuery } from "src/ent/";
 import {
+  AccountToOpenTodosConnectionType,
   AccountToTagsConnectionType,
   AccountToTodosConnectionType,
   TodoType,
@@ -93,10 +94,39 @@ export const AccountType = new GraphQLObjectType({
         );
       },
     },
-    openTodosLegacy: {
+    openTodosPlural: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TodoType))),
       resolve: async (account: Account, args: {}, context: RequestContext) => {
-        return account.openTodos();
+        return account.openTodosPlural();
+      },
+    },
+    openTodos: {
+      type: GraphQLNonNull(AccountToOpenTodosConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (account: Account, args: {}, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          account.viewer,
+          account,
+          (v, account: Account) => account.openTodos(),
+          args,
+        );
       },
     },
   }),

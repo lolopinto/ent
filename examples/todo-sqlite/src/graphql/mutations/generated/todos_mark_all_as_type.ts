@@ -27,11 +27,14 @@ export const TodosMarkAllAsType: GraphQLFieldConfig<undefined, RequestContext> =
     },
     resolve: async (
       _source,
-      { accountID, completed },
+      args: { accountID; completed },
       context: RequestContext,
       _info: GraphQLResolveInfo,
     ) => {
       const r = new TodosResolver();
-      return r.markAllTodos(mustDecodeIDFromGQLID(accountID), completed);
+      return r.markAllTodos(
+        mustDecodeIDFromGQLID(args.accountID),
+        args.completed,
+      );
     },
   };
