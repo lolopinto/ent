@@ -265,7 +265,7 @@ func (mfcg *mutationFieldConfigBuilder) getResolveMethodArg() string {
 		args = append(args, arg.Name)
 	}
 
-	return fmt.Sprintf("{%s}", strings.Join(args, ", "))
+	return fmt.Sprintf("args: {%s}", strings.Join(args, ", "))
 }
 
 func (mfcg *mutationFieldConfigBuilder) getTypeImports(s *gqlSchema) []*fileImport {
@@ -359,7 +359,12 @@ func (qfcg *queryFieldConfigBuilder) getResolveMethodArg() string {
 		}
 		args = append(args, arg.Name)
 	}
-	return fmt.Sprintf("{%s}", strings.Join(args, ", "))
+	if isConnection(qfcg.field) {
+		for _, arg := range getConnectionArgs() {
+			args = append(args, arg.Name)
+		}
+	}
+	return fmt.Sprintf("args: {%s}", strings.Join(args, ", "))
 }
 
 func (qfcg *queryFieldConfigBuilder) getTypeImports(s *gqlSchema) []*fileImport {
@@ -496,9 +501,9 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.Data, s *gql
 					Type:       "mustDecodeIDFromGQLID",
 					ImportPath: codepath.GraphQLPackage,
 				})
-				argContents[idx] = fmt.Sprintf("mustDecodeIDFromGQLID(%s)", arg.Name)
+				argContents[idx] = fmt.Sprintf("mustDecodeIDFromGQLID(args.%s)", arg.Name)
 			} else {
-				argContents[idx] = arg.Name
+				argContents[idx] = fmt.Sprintf("args.%s", arg.Name)
 			}
 		} else {
 			fields, ok := cd.Fields[arg.Type]
@@ -508,12 +513,24 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.Data, s *gql
 			args := make([]string, len(fields))
 
 			for idx, f := range fields {
-				args[idx] = fmt.Sprintf("%s:%s.%s", f.GraphQLName, arg.Name, f.GraphQLName)
+				args[idx] = fmt.Sprintf("%s:args.%s.%s", f.GraphQLName, arg.Name, f.GraphQLName)
 			}
 			argContents[idx] = fmt.Sprintf("{%s},", strings.Join(args, ","))
 		}
 	}
 	var conn *gqlConnection
+
+	functionCall := []string{
+		fmt.Sprintf("r.%s(", field.FunctionName),
+		// put all the args on one line separated by a comma. we'll depend on prettier to format correctly
+		strings.Join(argContents, ","),
+		// closing the funtion call..
+		")",
+	}
+
+	functionContents := []string{
+		fmt.Sprintf("const r = new %s();", field.Node),
+	}
 
 	if isConnection(field) {
 		// nodeName is root or something...
@@ -522,8 +539,16 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.Data, s *gql
 		// RootQuery?
 		conn = getGqlConnection("root", customEdge, data)
 
-		// TODO...
-		//		typeImports := customEdge.GetTSGraphQLTypeImports()
+		functionContents = append(
+			functionContents,
+			fmt.Sprintf(
+				"return new GraphQLEdgeConnection(context.getViewer(), (v) => %s, args)",
+				strings.Join(functionCall, "\n")),
+		)
+
+		argImports = append(argImports, getEntGQLImportFor("GraphQLEdgeConnection"))
+	} else {
+		functionContents = append(functionContents, fmt.Sprintf("return %s", strings.Join(functionCall, "\n")))
 	}
 
 	// fieldConfig can have connection
@@ -532,21 +557,12 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.Data, s *gql
 		Name:             builder.getName(),
 		Arg:              builder.getArg(),
 		ResolveMethodArg: builder.getResolveMethodArg(),
-		// custom type imports...
-		TypeImports:    builder.getTypeImports(s),
-		ArgImports:     argImports,
-		Args:           builder.getArgs(s),
-		ReturnTypeHint: builder.getReturnTypeHint(),
-		connection:     conn,
-		FunctionContents: []string{
-			// this needs to be replaced with function contents of addConnection
-			fmt.Sprintf("const r = new %s();", field.Node),
-			fmt.Sprintf("return r.%s(", field.FunctionName),
-			// put all the args on one line separated by a comma. we'll depend on prettier to format correctly
-			strings.Join(argContents, ","),
-			// closing the funtion call..
-			");",
-		},
+		TypeImports:      builder.getTypeImports(s),
+		ArgImports:       argImports,
+		Args:             builder.getArgs(s),
+		ReturnTypeHint:   builder.getReturnTypeHint(),
+		connection:       conn,
+		FunctionContents: functionContents,
 	}
 
 	return result, nil
@@ -746,42 +762,6 @@ func processCustomFields(data *codegen.Data, cd *customData, s *gqlSchema) error
 	}
 	return nil
 }
-
-// func processCustomConnections(data *codegen.Data, cd *customData, s *gqlSchema) error {
-// 	for _, conn := range cd.CustomConnections {
-// 		nodeInfo, ok := s.nodes[conn.Node]
-
-// 		if !ok {
-// 			//			spew.Dump(s.customQueries)
-// 			// TODO...
-
-// 			// assume customQuery...
-// 			return nil
-// 			//			return fmt.Errorf("unknown node %s", conn.Node)
-// 		}
-
-// 		if len(conn.Results) != 1 {
-// 			return fmt.Errorf("need 1 result. got %d", len(conn.Results))
-// 		}
-
-// 		objData := nodeInfo.ObjData
-// 		nodeData := objData.NodeData
-// 		// always has a node for now
-// 		obj := objData.GQLNodes[0]
-
-// 		customEdge := &CustomEdge{
-// 			SourceNodeName: conn.Node,
-// 			Type:           conn.Results[0].Type,
-// 			EdgeName:       strcase.ToLowerCamel(conn.GraphQLName),
-// 		}
-// 		// add as connection for the node
-// 		nodeInfo.connections = append(nodeInfo.connections, getGqlConnection(nodeData, customEdge, data))
-
-// 		// add connection to fields of the node
-// 		addConnection(nodeData, customEdge, &obj.Fields, nodeData.NodeInstance, &conn)
-// 	}
-// 	return nil
-// }
 
 func isConnection(field CustomField) bool {
 	if len(field.Results) != 1 {

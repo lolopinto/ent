@@ -62,6 +62,26 @@ type CustomField struct {
 	FieldType    CustomFieldType `json:"fieldType"`
 }
 
+// custom marshall...
+// type CustomField struct {
+// 	customField
+// }
+
+// func (f *CustomField) UnmarshalJSON(data []byte) error {
+// 	var cf *customField
+
+// 	err := json.Unmarshal(data, &cf)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	f.customField = *cf
+// 	if isConnection(*f) {
+// 		connArgs := getConnectionArgs()
+// 		f.Args = append(f.Args, connArgs...)
+// 	}
+// }
+
 type CustomClassInfo struct {
 	Name          string `json:"name"`
 	Exported      bool   `json:"exported"`
@@ -1464,22 +1484,18 @@ func addConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, fields *
 		ExtraImports:       extraImports,
 		Args:               getConnectionArgs(),
 		// TODO typing for args later?
-		FunctionContents: getEdgeConnectionFunctionContents(instance, nodeData.Node, buildQuery),
+		FunctionContents: []string{
+			fmt.Sprintf(
+				"return new GraphQLEdgeConnection(%s.viewer, %s, (v, %s: %s) => %s, args);",
+				instance,
+				instance,
+				instance,
+				nodeData.Node,
+				buildQuery,
+			),
+		},
 	}
 	*fields = append(*fields, gqlField)
-}
-
-func getEdgeConnectionFunctionContents(instance, nodeName, buildQuery string) []string {
-	return []string{
-		fmt.Sprintf(
-			"return new GraphQLEdgeConnection(%s.viewer, %s, (v, %s: %s) => %s, args);",
-			instance,
-			instance,
-			instance,
-			nodeName,
-			buildQuery,
-		),
-	}
 }
 
 func buildActionNodes(nodeData *schema.NodeData, action action.Action, actionPrefix string) []*objectType {
