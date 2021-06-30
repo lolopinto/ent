@@ -24,11 +24,11 @@ export const TodosRemoveCompletedType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    { accountID },
+    args: { accountID },
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
     const r = new TodosResolver();
-    return r.removeCompletedTodos(mustDecodeIDFromGQLID(accountID));
+    return r.removeCompletedTodos(mustDecodeIDFromGQLID(args.accountID));
   },
 };

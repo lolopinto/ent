@@ -259,4 +259,47 @@ export const commonTests = <TEdge extends Data>(
       expect(edges[1].cursor).toBe(pagination.endCursor);
     });
   });
+
+  describe("no source", () => {
+    test("no filter", async () => {
+      const [user, allContacts] = await createAllContacts();
+
+      const conn = new GraphQLEdgeConnection<TEdge>(
+        new IDViewer(user.id),
+        (v) => opts.getQuery(v, user),
+      );
+      allContacts.reverse();
+
+      const nodes = await conn.queryNodes();
+      expect(nodes.length).toBe(allContacts.length);
+      for (let i = 0; i < allContacts.length; i++) {
+        expect(nodes[i].id).toBe(allContacts[i].id);
+      }
+
+      const pagination = await conn.queryPageInfo();
+      expect(pagination.hasNextPage).toBe(false);
+      expect(pagination.hasPreviousPage).toBe(false);
+    });
+
+    test("with filter", async () => {
+      const [user, allContacts] = await createAllContacts();
+
+      const conn = new GraphQLEdgeConnection<TEdge>(
+        new IDViewer(user.id),
+        (v) => opts.getQuery(v, user).first(2),
+      );
+      allContacts.reverse();
+      const filtered = allContacts.slice(0, 2);
+
+      const nodes = await conn.queryNodes();
+      expect(nodes.length).toBe(filtered.length);
+      for (let i = 0; i < filtered.length; i++) {
+        expect(nodes[i].id).toBe(filtered[i].id);
+      }
+
+      const pagination = await conn.queryPageInfo();
+      expect(pagination.hasNextPage).toBe(true);
+      expect(pagination.hasPreviousPage).toBe(false);
+    });
+  });
 };

@@ -122,7 +122,7 @@ export const AccountType = new GraphQLObjectType({
       },
       resolve: (account: Account, args: {}, context: RequestContext) => {
         return new GraphQLEdgeConnection(
-          context.getViewer(),
+          account.viewer,
           account,
           (v, account: Account) => account.openTodos(),
           args,

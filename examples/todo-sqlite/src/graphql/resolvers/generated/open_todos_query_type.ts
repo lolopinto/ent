@@ -48,11 +48,9 @@ export const OpenTodosQueryType: GraphQLFieldConfig<undefined, RequestContext> =
       _info: GraphQLResolveInfo,
     ) => {
       const r = new TodoResolver();
-      //      return r.openTodos(context, mustDecodeIDFromGQLID(id));
       return new GraphQLEdgeConnection(
         context.getViewer(),
-        "1", // TODO...
-        () => r.openTodos(context, mustDecodeIDFromGQLID(args.id)),
+        (v) => r.openTodos(context, mustDecodeIDFromGQLID(args.id)),
         args,
       );
     },

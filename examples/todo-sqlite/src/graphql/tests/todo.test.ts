@@ -7,31 +7,26 @@ import schema from "src/graphql/schema";
 import { encodeGQLID } from "@snowtop/snowtop-ts/graphql";
 import ChangeTodoStatusAction from "src/ent/todo/actions/change_todo_status_action";
 import { createAccount, createTodo } from "src/ent/testutils/util";
-
+import { advanceBy } from "jest-date-mock";
 beforeAll(() => {
   process.env.DB_CONNECTION_STRING = `sqlite:///todo.db`;
 });
 
 async function createTodos(): Promise<[Account, Todo[]]> {
   const account = await createAccount();
-  const todos = await Promise.all([
-    createTodo({
+  const texts = ["watch GOT", "take dog out", "take out trash", "call mom"];
+
+  const todos: Todo[] = [];
+  for (const text of texts) {
+    // make deterministic
+    advanceBy(-10);
+    const todo = await createTodo({
       creatorID: account.id,
-      text: "watch GOT",
-    }),
-    createTodo({
-      creatorID: account.id,
-      text: "take dog out",
-    }),
-    createTodo({
-      creatorID: account.id,
-      text: "take out trash",
-    }),
-    createTodo({
-      creatorID: account.id,
-      text: "call mom",
-    }),
-  ]);
+      text: text,
+    });
+    todos.push(todo);
+  }
+
   return [account, todos];
 }
 
@@ -188,6 +183,36 @@ test("open todos from root", async () => {
     },
     [
       "",
+      todos.slice(1).map((todo) => {
+        return {
+          text: todo.text,
+        };
+      }),
+    ],
+  );
+});
+
+test("open todos connection from root", async () => {
+  const [account, todos] = await createTodos();
+
+  // complete the first
+  await ChangeTodoStatusAction.create(account.viewer, todos[0], {
+    completed: true,
+  }).saveX();
+
+  await expectQueryFromRoot(
+    {
+      viewer: account.viewer,
+      schema: schema,
+      root: "openTodos",
+      args: {
+        id: encodeGQLID(account),
+      },
+    },
+    ["rawCount", todos.length - 1],
+    [
+      "nodes",
+
       todos.slice(1).map((todo) => {
         return {
           text: todo.text,

@@ -25,11 +25,11 @@ export const OpenTodosLegacyQueryType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    { id },
+    args: { id },
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
     const r = new TodoResolver();
-    return r.openTodosLegacy(mustDecodeIDFromGQLID(id));
+    return r.openTodosLegacy(mustDecodeIDFromGQLID(args.id));
   },
 };

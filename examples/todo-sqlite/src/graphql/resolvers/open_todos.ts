@@ -24,23 +24,12 @@ export class TodoResolver {
 
   // showing connection
   @gqlQuery({ type: gqlConnection("Todo") })
-  async openTodos(
+  openTodos(
     // we're not using context but have it here just in case.
     @gqlContextType() _context: RequestContext,
     @gqlArg("id", { type: GraphQLID }) id: ID,
   ) {
     const viewer = new IDViewer(id);
-    //    return new AccountToOpenTodosQuery(viewer, id);
-    const account = await Account.loadX(viewer, id);
-    return new GraphQLEdgeConnection(
-      viewer,
-      account,
-      () => new AccountToOpenTodosQuery(viewer, id),
-      // lesigh
-      // missing args... if we do it this way
-      // or...
-      // so issue is either we have args or we don't have source
-      // and have to make async work by updating graphqledgeconnection
-    );
+    return new AccountToOpenTodosQuery(viewer, id);
   }
 }

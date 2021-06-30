@@ -1,4 +1,4 @@
-import { EdgeQuery } from "../../core/query/query";
+import { EdgeQuery, PaginationInfo } from "../../core/query/query";
 import { Data, Ent, ID, Viewer } from "../../core/base";
 
 // TODO getCursor...
@@ -12,18 +12,48 @@ interface edgeQueryCtr<T extends Ent, TEdge extends Data> {
   (v: Viewer, src: Ent): EdgeQuery<T, TEdge>;
 }
 
+interface edgeQueryCtr2<T extends Ent, TEdge extends Data> {
+  (v: Viewer): EdgeQuery<T, TEdge>;
+}
+
 // TODO probably need to template Ent. maybe 2 ents?
 export class GraphQLEdgeConnection<TEdge extends Data> {
   query: EdgeQuery<Ent, TEdge>;
   private results: GraphQLEdge<TEdge>[] = [];
+  private viewer: Viewer;
+  private source?: Ent;
+  private args?: Data;
 
   constructor(
-    private viewer: Viewer,
-    private source: Ent,
+    viewer: Viewer,
+    source: Ent,
     getQuery: edgeQueryCtr<Ent, TEdge>,
-    private args?: Data,
+    args?: Data,
+  );
+  constructor(viewer: Viewer, getQuery: edgeQueryCtr2<Ent, TEdge>, args?: Data);
+  constructor(
+    viewer: Viewer,
+    arg2: Ent | edgeQueryCtr2<Ent, TEdge>,
+    arg3: edgeQueryCtr<Ent, TEdge> | Data,
+    args?: Data,
   ) {
-    this.query = getQuery(this.viewer, this.source);
+    this.viewer = viewer;
+    if (typeof arg2 === "function") {
+      this.query = arg2(this.viewer);
+    } else {
+      this.source = arg2;
+    }
+    if (typeof arg3 === "function") {
+      this.query = arg3(this.viewer, this.source!);
+    } else {
+      this.args = arg3;
+    }
+    if (args !== undefined) {
+      this.args = args;
+    }
+    // this.source = source;
+    // this.args = args;
+    //    this.query = getQuery(this.viewer, this.source);
     if (this.args) {
       if (this.args.after && !this.args.first) {
         throw new Error("cannot process after without first");
@@ -72,16 +102,28 @@ export class GraphQLEdgeConnection<TEdge extends Data> {
     return await this.query.queryEnts();
   }
 
-  async queryPageInfo() {
+  private defaultPageInfo() {
+    return {
+      hasNextPage: false,
+      hasPreviousPage: false,
+      startCursor: "",
+      endCursor: "",
+    };
+  }
+
+  async queryPageInfo(): Promise<PaginationInfo> {
     await this.queryData();
-    return (
-      this.query.paginationInfo().get(this.source.id) || {
-        hasNextPage: false,
-        hasPreviousPage: false,
-        startCursor: "",
-        endCursor: "",
-      }
-    );
+    const paginationInfo = this.query.paginationInfo();
+    if (this.source !== undefined) {
+      return paginationInfo.get(this.source.id) || this.defaultPageInfo();
+    }
+    if (paginationInfo.size > 1) {
+      throw new Error(`Query mas more than one item yet no source was given`);
+    }
+    for (const [_, value] of paginationInfo) {
+      return value;
+    }
+    return this.defaultPageInfo();
   }
 
   private async queryData() {
