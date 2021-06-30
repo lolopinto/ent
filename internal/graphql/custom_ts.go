@@ -519,13 +519,7 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.Data, s *gql
 	}
 	var conn *gqlConnection
 
-	functionCall := []string{
-		fmt.Sprintf("r.%s(", field.FunctionName),
-		// put all the args on one line separated by a comma. we'll depend on prettier to format correctly
-		strings.Join(argContents, ","),
-		// closing the funtion call..
-		")",
-	}
+	functionCall := fmt.Sprintf("r.%s(%s)", field.FunctionName, strings.Join(argContents, ","))
 
 	functionContents := []string{
 		fmt.Sprintf("const r = new %s();", field.Node),
@@ -540,13 +534,14 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.Data, s *gql
 		functionContents = append(
 			functionContents,
 			fmt.Sprintf(
-				"return new GraphQLEdgeConnection(context.getViewer(), (v) => %s, args)",
-				strings.Join(functionCall, "\n")),
+				"return new GraphQLEdgeConnection(context.getViewer(), (v) => %s, args);",
+				functionCall,
+			),
 		)
 
 		argImports = append(argImports, getEntGQLImportFor("GraphQLEdgeConnection"))
 	} else {
-		functionContents = append(functionContents, fmt.Sprintf("return %s", strings.Join(functionCall, "\n")))
+		functionContents = append(functionContents, fmt.Sprintf("return %s;", functionCall))
 	}
 
 	// fieldConfig can have connection
