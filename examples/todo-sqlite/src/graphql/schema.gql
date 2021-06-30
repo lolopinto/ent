@@ -200,7 +200,20 @@ type TodoRenamePayload {
 
 type Query {
   node(id: ID!): Node
+  openTodos(id: ID!, first: Int, after: String, last: Int, before: String): rootToOpenTodosConnection!
   openTodosLegacy(id: ID!): [Todo!]!
+}
+
+type rootToOpenTodosConnection implements Connection {
+  edges: [rootToOpenTodosEdge!]!
+  nodes: [Todo!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type rootToOpenTodosEdge implements Edge {
+  node: Todo!
+  cursor: String!
 }
 
 type Mutation {

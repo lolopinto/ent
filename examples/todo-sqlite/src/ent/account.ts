@@ -25,7 +25,7 @@ const openTodosCountLoader = new RawCountLoaderFactory({
   clause: query.Eq("completed", false),
 });
 
-class AccountToOpenTodosQuery extends CustomEdgeQueryBase<Todo> {
+export class AccountToOpenTodosQuery extends CustomEdgeQueryBase<Todo> {
   constructor(viewer: Viewer, src: ID | Account) {
     super(viewer, {
       src,
@@ -50,7 +50,7 @@ export class Account extends AccountBase {
   }
 
   // showing connection
-  @gqlConnection({ name: "openTodos", type: "Todo" })
+  @gqlField({ name: "openTodos", type: gqlConnection("Todo") })
   openTodos() {
     return new AccountToOpenTodosQuery(this.viewer, this);
   }

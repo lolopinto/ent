@@ -152,7 +152,6 @@ async function main() {
   let mutations = GQLCapture.getProcessedCustomMutations();
   let objects = fromMap(GQLCapture.getCustomObjects());
   let customTypes = fromMap(GQLCapture.getCustomTypes());
-  let customConnections = GQLCapture.getProcessedCustomConnections();
 
   let classes = {};
   let allFiles = {};
@@ -208,7 +207,6 @@ async function main() {
   };
   buildClasses(mutations);
   buildClasses(queries);
-  buildClasses(customConnections);
 
   console.log(
     JSON.stringify({
@@ -221,7 +219,6 @@ async function main() {
       objects,
       files: allFiles,
       customTypes,
-      customConnections,
     }),
   );
 }

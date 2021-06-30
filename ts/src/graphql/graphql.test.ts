@@ -5,6 +5,7 @@ import {
   gqlArgType,
   CustomFieldType,
   gqlConnection,
+  GraphQLConnection,
 } from "./graphql";
 import {
   GraphQLInt,
@@ -21,7 +22,6 @@ import {
   validateCustomFields,
   validateNoCustom,
   validateCustomArgs,
-  validateCustomConnections,
 } from "./graphql_field_helpers";
 
 beforeEach(() => {
@@ -1014,14 +1014,17 @@ describe("function", () => {
 
   test("connection", async () => {
     class User {
-      @gqlConnection({ type: "User", name: "userToSelves" })
+      @gqlField({
+        type: gqlConnection("User"),
+        name: "userToSelves",
+      })
       loadSelves() {
         // ignore
         return [new User()];
       }
     }
 
-    validateCustomConnections([
+    validateCustomFields([
       {
         nodeName: "User",
         functionName: "loadSelves",
@@ -1031,6 +1034,7 @@ describe("function", () => {
           {
             type: "User",
             name: "",
+            connection: true,
             needsResolving: true,
           },
         ],
@@ -1038,13 +1042,16 @@ describe("function", () => {
       },
     ]);
 
-    validateNoCustom(CustomObjectTypes.Connection);
+    validateNoCustom(CustomObjectTypes.Field);
   });
 
   test("connection with async", async () => {
     try {
       class User {
-        @gqlConnection({ type: "User", name: "userToSelves" })
+        @gqlField({
+          type: gqlConnection("User"),
+          name: "userToSelves",
+        })
         async loadSelves() {
           // ignore
           return [new User()];
@@ -1053,7 +1060,7 @@ describe("function", () => {
       fail("should have thrown");
     } catch (e) {
       expect(e.message).toBe(
-        "async function not currently supported for gqlConnection",
+        "async function not currently supported for GraphQLConnection",
       );
     }
 

@@ -18,11 +18,14 @@ export interface CustomType {
 // CustomType for types that are not in "graphql" and we need to know where to load it from...
 type Type = GraphQLScalarType | ClassType | string | CustomType;
 
+// node in a connection
+export type GraphQLConnection<T> = { node: T };
+
 export interface gqlFieldOptions {
   name?: string;
   nullable?: boolean | NullableListOptions;
   description?: string;
-  type?: Type | Array<Type>; // types or lists of types
+  type?: Type | Array<Type> | GraphQLConnection<Type>; // types or lists of types
 }
 
 export interface gqlConnectionOptions {
@@ -107,6 +110,7 @@ interface FieldImpl {
   importPath?: string;
   needsResolving?: boolean; // unknown type that we need to resolve eventually
   list?: boolean;
+  connection?: boolean;
   name: string;
 }
 
@@ -162,7 +166,6 @@ export class GQLCapture {
   private static customInputObjects: Map<string, CustomObject> = new Map();
   private static customObjects: Map<string, CustomObject> = new Map();
   private static customTypes: Map<string, CustomType> = new Map();
-  private static customConnections: CustomField[] = [];
 
   static clear(): void {
     this.customFields.clear();
@@ -173,7 +176,6 @@ export class GQLCapture {
     this.customObjects.clear();
     this.customTypes.clear();
     this.argMap.clear();
-    this.customConnections = [];
   }
 
   static getCustomFields(): Map<string, CustomField[]> {
@@ -202,10 +204,6 @@ export class GQLCapture {
 
   static getCustomTypes(): Map<string, CustomType> {
     return this.customTypes;
-  }
-
-  static getCustomConnections(): CustomField[] {
-    return this.customConnections;
   }
 
   private static getNullableArg(fd: Field): ProcessedField {
@@ -237,10 +235,6 @@ export class GQLCapture {
 
   static getProcessedCustomQueries(): ProcessedCustomField[] {
     return this.getProcessedCustomFieldsImpl(this.customQueries);
-  }
-
-  static getProcessedCustomConnections(): ProcessedCustomField[] {
-    return this.getProcessedCustomFieldsImpl(this.customConnections);
   }
 
   private static getProcessedCustomFieldsImpl(
@@ -294,6 +288,15 @@ export class GQLCapture {
       return (type as Array<Type>).push !== undefined;
     };
 
+    const isConnection = (
+      type: Type | Array<Type> | GraphQLConnection<Type>,
+    ): type is GraphQLConnection<Type> => {
+      if (typeof type !== "object") {
+        return false;
+      }
+      return (type as GraphQLConnection<Type>).node !== undefined;
+    };
+
     const isString = (type: Type | Array<Type>): type is string => {
       if ((type as string).lastIndexOf !== undefined) {
         return true;
@@ -321,39 +324,59 @@ export class GQLCapture {
       this.customTypes.set(type.type, type);
     };
 
+    interface r {
+      list?: boolean | undefined;
+      scalarType?: boolean;
+      connection?: boolean | undefined;
+      type: string;
+    }
+
+    const getType = (
+      typ: Type | Array<Type> | GraphQLConnection<Type>,
+      result: r,
+    ) => {
+      //      let r2:r = {};
+      if (isConnection(typ)) {
+        result.connection = true;
+        return getType(typ.node, result);
+        //        return
+      }
+      if (isArray(typ)) {
+        result.list = true;
+        return getType(typ[0], result);
+      }
+
+      if (isString(typ)) {
+        if (typ.lastIndexOf("]") !== -1) {
+          result.list = true;
+          result.type = typ.substr(1, typ.length - 2);
+        } else {
+          result.type = typ;
+        }
+        return;
+      }
+      if (isCustomType(typ)) {
+        result.type = typ.type;
+        addCustomType(typ);
+        return;
+      }
+      // GraphQLScalarType or ClassType
+      result.scalarType = isGraphQLScalarType(typ);
+      result.type = typ.name;
+      return;
+    };
+
     let list: boolean | undefined;
     let scalarType = false;
+    let connection: boolean | undefined;
 
     if (options?.type) {
-      if (isArray(options.type)) {
-        list = true;
-        const ofType = options.type[0];
-        //console.log(options);
-        if (isString(ofType)) {
-          type = ofType;
-        } else if (isCustomType(ofType)) {
-          type = ofType.type;
-          addCustomType(ofType);
-        } else {
-          scalarType = isGraphQLScalarType(ofType);
-          // GraphQLScalarType or ClassType
-          type = ofType.name;
-        }
-      } else if (isString(options.type)) {
-        type = options.type;
-        if (type.lastIndexOf("]") !== -1) {
-          // list
-          list = true;
-          type = type.substr(1, type.length - 2);
-        }
-      } else if (isCustomType(options.type)) {
-        type = options.type.type;
-        addCustomType(options.type);
-      } else {
-        scalarType = isGraphQLScalarType(options.type);
-        // GraphQLScalarType or ClassType
-        type = options.type.name;
-      }
+      let r2: r = { type: "" };
+      getType(options.type, r2);
+      list = r2.list;
+      scalarType = r2.scalarType || false;
+      connection = r2.connection;
+      type = r2.type;
     }
 
     if (GQLCapture.knownDisAllowedNames.has(type)) {
@@ -369,6 +392,7 @@ export class GQLCapture {
         this.knownAllowedNames.get(type) || this.customTypes.get(type)?.tsType,
       nullable: options?.nullable,
       list: list,
+      connection: connection,
       isContextArg: metadata.isContextArg,
     };
     // unknown type. we need to flag that this field needs to eventually be resolved
@@ -402,6 +426,31 @@ export class GQLCapture {
       if (!customField) {
         return;
       }
+      const connections = customField.results.filter(
+        (result) => result.connection,
+      );
+      if (connections.length > 1) {
+        throw new Error(`if using a connection, need to only return one item`);
+      }
+      if (connections.length === 1) {
+        const conn = connections[0];
+        if (conn.list) {
+          throw new Error("GraphQLConnection result cannot be a list");
+        }
+        if (conn.nullable) {
+          throw new Error("GraphQLConnection result cannot be nullable");
+        }
+        if (conn.isContextArg) {
+          throw new Error("GraphQLConnection result cannot be contextArg");
+        }
+
+        if (customField.fieldType === CustomFieldType.AsyncFunction) {
+          throw new Error(
+            `async function not currently supported for GraphQLConnection`,
+          );
+        }
+      }
+      //      if (customField.)
       let list = GQLCapture.customFields.get(customField.nodeName);
       if (list === undefined) {
         list = [];
@@ -654,42 +703,9 @@ export class GQLCapture {
     };
   }
 
-  static gqlConnection(options: gqlConnectionOptions): any {
-    return function (
-      target: Function,
-      propertyKey: string,
-      descriptor: PropertyDescriptor,
-    ): void {
-      if (!GQLCapture.isEnabled()) {
-        return;
-      }
-
-      let customField = GQLCapture.getCustomField(
-        target,
-        propertyKey,
-        descriptor,
-        options,
-      );
-
-      if (customField.fieldType === CustomFieldType.AsyncFunction) {
-        throw new Error(
-          `async function not currently supported for gqlConnection`,
-        );
-      }
-      if (customField.results.length != 1) {
-        throw new Error(`gqlConnection needs to return only one result`);
-      }
-      const result = customField.results[0];
-      if (result.list) {
-        throw new Error("gqlConnection result cannot be a list");
-      }
-      if (result.nullable) {
-        throw new Error("gqlConnection result cannot be nullable");
-      }
-      if (result.isContextArg) {
-        throw new Error("gqlConnection result cannot be contextArg");
-      }
-      GQLCapture.customConnections.push(customField);
+  static gqlConnection(type: Type): any {
+    return {
+      node: type,
     };
   }
 
@@ -741,7 +757,6 @@ export class GQLCapture {
     );
     resolveFields(GQLCapture.customQueries);
     resolveFields(GQLCapture.customMutations);
-    resolveFields(GQLCapture.customConnections);
   }
 }
 

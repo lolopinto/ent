@@ -4,12 +4,14 @@ import { GraphQLObjectType } from "graphql";
 import {
   NodeQueryType,
   OpenTodosLegacyQueryType,
+  OpenTodosQueryType,
 } from "src/graphql/resolvers/internal";
 
 export const QueryType = new GraphQLObjectType({
   name: "Query",
   fields: () => ({
     node: NodeQueryType,
+    openTodos: OpenTodosQueryType,
     openTodosLegacy: OpenTodosLegacyQueryType,
   }),
 });

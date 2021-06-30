@@ -25,7 +25,6 @@ import {
   CustomObjectTypes,
   validateNoCustomQueries,
   validateCustomTypes,
-  validateCustomConnections,
 } from "./graphql_field_helpers";
 import { RequestContext } from "../core/context";
 
@@ -433,8 +432,10 @@ test("query with list return type", () => {
 
 test("query which returns connection", async () => {
   class ViewerResolver {
-    @gqlQuery({ type: "User" })
-    @gqlConnection({ type: "User", name: "peopleYouMayKnow" })
+    @gqlQuery({
+      type: gqlConnection("User"),
+      name: "peopleYouMayKnow",
+    })
     pymk() {
       return 1;
     }
@@ -444,29 +445,13 @@ test("query which returns connection", async () => {
     {
       nodeName: "ViewerResolver",
       functionName: "pymk",
-      gqlName: "pymk",
-      fieldType: CustomFieldType.Function,
-      results: [
-        {
-          type: "User",
-          needsResolving: true,
-          name: "",
-        },
-      ],
-      args: [],
-    },
-  ]);
-
-  validateCustomConnections([
-    {
-      nodeName: "ViewerResolver",
-      functionName: "pymk",
       gqlName: "peopleYouMayKnow",
       fieldType: CustomFieldType.Function,
       results: [
         {
           type: "User",
           needsResolving: true,
+          connection: true,
           name: "",
         },
       ],
@@ -475,16 +460,15 @@ test("query which returns connection", async () => {
   ]);
 
   GQLCapture.resolve(["User"]);
-  validateNoCustom(CustomObjectTypes.Connection, CustomObjectTypes.Query);
+  validateNoCustom(CustomObjectTypes.Query);
 });
 
 test("query with args which returns connection", async () => {
   class ViewerResolver {
-    // TODO do we need a flag in gqlQuery that says connection or flag in gqlConnection that says query??
-    // seems like the better approach
-    // or change type to indicate connection?
-    @gqlQuery({ type: "User" })
-    @gqlConnection({ type: "User", name: "peopleYouMayKnow" })
+    @gqlQuery({
+      type: gqlConnection("User"),
+      name: "peopleYouMayKnow",
+    })
     pymk(
       @gqlContextType() context: RequestContext,
       @gqlArg("id", { type: GraphQLID }) id: ID,
@@ -497,40 +481,13 @@ test("query with args which returns connection", async () => {
     {
       nodeName: "ViewerResolver",
       functionName: "pymk",
-      gqlName: "pymk",
-      fieldType: CustomFieldType.Function,
-      results: [
-        {
-          type: "User",
-          needsResolving: true,
-          name: "",
-        },
-      ],
-      args: [
-        {
-          type: "Context",
-          isContextArg: true,
-          name: "context",
-          needsResolving: true,
-        },
-        {
-          type: "ID",
-          name: "id",
-        },
-      ],
-    },
-  ]);
-
-  validateCustomConnections([
-    {
-      nodeName: "ViewerResolver",
-      functionName: "pymk",
       gqlName: "peopleYouMayKnow",
       fieldType: CustomFieldType.Function,
       results: [
         {
           type: "User",
           needsResolving: true,
+          connection: true,
           name: "",
         },
       ],
@@ -550,7 +507,7 @@ test("query with args which returns connection", async () => {
   ]);
 
   GQLCapture.resolve(["User"]);
-  validateNoCustom(CustomObjectTypes.Connection, CustomObjectTypes.Query);
+  validateNoCustom(CustomObjectTypes.Query);
 });
 
 test("custom type", () => {
