@@ -4,7 +4,7 @@ type Account implements Node {
   phoneNumber: String!
   tags(first: Int, after: String, last: Int, before: String): AccountToTagsConnection!
   todos(first: Int, after: String, last: Int, before: String): AccountToTodosConnection!
-  openTodosLegacy: [Todo!]!
+  openTodosPlural: [Todo!]!
   openTodos(first: Int, after: String, last: Int, before: String): AccountToOpenTodosConnection!
 }
 
@@ -200,18 +200,18 @@ type TodoRenamePayload {
 
 type Query {
   node(id: ID!): Node
-  openTodos(id: ID!, first: Int, after: String, last: Int, before: String): rootToOpenTodosConnection!
-  openTodosLegacy(id: ID!): [Todo!]!
+  openTodos(id: ID!, first: Int, after: String, last: Int, before: String): RootToOpenTodosConnection!
+  openTodosPlural(id: ID!): [Todo!]!
 }
 
-type rootToOpenTodosConnection implements Connection {
-  edges: [rootToOpenTodosEdge!]!
+type RootToOpenTodosConnection implements Connection {
+  edges: [RootToOpenTodosEdge!]!
   nodes: [Todo!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
 
-type rootToOpenTodosEdge implements Edge {
+type RootToOpenTodosEdge implements Edge {
   node: Todo!
   cursor: String!
 }

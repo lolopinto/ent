@@ -94,10 +94,10 @@ export const AccountType = new GraphQLObjectType({
         );
       },
     },
-    openTodosLegacy: {
+    openTodosPlural: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TodoType))),
       resolve: async (account: Account, args: {}, context: RequestContext) => {
-        return account.openTodosLegacy();
+        return account.openTodosPlural();
       },
     },
     openTodos: {

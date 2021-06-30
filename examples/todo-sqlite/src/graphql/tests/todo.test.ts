@@ -122,8 +122,7 @@ test("open todos plural from account", async () => {
       inlineFragmentRoot: "Account",
     },
     [
-      "openTodosLegacy",
-
+      "openTodosPlural",
       todos.slice(1).map((todo) => {
         return {
           text: todo.text,
@@ -154,7 +153,6 @@ test("open todos connection from account", async () => {
     ["openTodos.rawCount", todos.length - 1],
     [
       "openTodos.nodes",
-
       todos.slice(1).map((todo) => {
         return {
           text: todo.text,
@@ -164,7 +162,7 @@ test("open todos connection from account", async () => {
   );
 });
 
-test("open todos from root", async () => {
+test("open todos plural from root", async () => {
   const [account, todos] = await createTodos();
 
   // complete the first
@@ -176,7 +174,7 @@ test("open todos from root", async () => {
     {
       viewer: account.viewer,
       schema: schema,
-      root: "openTodosLegacy",
+      root: "openTodosPlural",
       args: {
         id: encodeGQLID(account),
       },
@@ -212,7 +210,6 @@ test("open todos connection from root", async () => {
     ["rawCount", todos.length - 1],
     [
       "nodes",
-
       todos.slice(1).map((todo) => {
         return {
           text: todo.text,

@@ -28,13 +28,6 @@ export interface gqlFieldOptions {
   type?: Type | Array<Type> | GraphQLConnection<Type>; // types or lists of types
 }
 
-export interface gqlConnectionOptions {
-  // e.g. UserToEvents
-  name: string;
-  // end type at end of Connection
-  type: string; //Type;
-}
-
 interface fieldOptions extends gqlFieldOptions {
   // implies no return type...
   allowFunctionType?: boolean;
@@ -324,7 +317,7 @@ export class GQLCapture {
       this.customTypes.set(type.type, type);
     };
 
-    interface r {
+    interface typeInfo {
       list?: boolean | undefined;
       scalarType?: boolean;
       connection?: boolean | undefined;
@@ -333,14 +326,13 @@ export class GQLCapture {
 
     const getType = (
       typ: Type | Array<Type> | GraphQLConnection<Type>,
-      result: r,
+      result: typeInfo,
     ) => {
-      //      let r2:r = {};
       if (isConnection(typ)) {
         result.connection = true;
         return getType(typ.node, result);
-        //        return
       }
+
       if (isArray(typ)) {
         result.list = true;
         return getType(typ[0], result);
@@ -371,12 +363,12 @@ export class GQLCapture {
     let connection: boolean | undefined;
 
     if (options?.type) {
-      let r2: r = { type: "" };
-      getType(options.type, r2);
-      list = r2.list;
-      scalarType = r2.scalarType || false;
-      connection = r2.connection;
-      type = r2.type;
+      let r: typeInfo = { type: "" };
+      getType(options.type, r);
+      list = r.list;
+      scalarType = r.scalarType || false;
+      connection = r.connection;
+      type = r.type;
     }
 
     if (GQLCapture.knownDisAllowedNames.has(type)) {
@@ -450,7 +442,6 @@ export class GQLCapture {
           );
         }
       }
-      //      if (customField.)
       let list = GQLCapture.customFields.get(customField.nodeName);
       if (list === undefined) {
         list = [];

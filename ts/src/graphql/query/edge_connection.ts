@@ -51,9 +51,6 @@ export class GraphQLEdgeConnection<TEdge extends Data> {
     if (args !== undefined) {
       this.args = args;
     }
-    // this.source = source;
-    // this.args = args;
-    //    this.query = getQuery(this.viewer, this.source);
     if (this.args) {
       if (this.args.after && !this.args.first) {
         throw new Error("cannot process after without first");

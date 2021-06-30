@@ -8,10 +8,11 @@ import {
   Viewer,
 } from "@snowtop/snowtop-ts";
 import { gqlConnection, gqlField } from "@snowtop/snowtop-ts/graphql";
-import { AccountBase } from "src/ent/internal";
-import { todoLoader } from "./generated/todo_base";
+import { AccountBase, todoLoader } from "src/ent/internal";
 import { Todo } from "./todo";
 
+// we want to reuse these and not create a new one every time...
+// so that the cache is shared
 const openTodosLoader = new QueryLoaderFactory({
   ...Todo.loaderOptions(),
   groupCol: "creator_id",
@@ -29,7 +30,6 @@ export class AccountToOpenTodosQuery extends CustomEdgeQueryBase<Todo> {
   constructor(viewer: Viewer, src: ID | Account) {
     super(viewer, {
       src,
-      // we want to reuse this and not create a new one every time...
       countLoaderFactory: openTodosCountLoader,
       dataLoaderFactory: openTodosLoader,
       options: Todo.loaderOptions(),
@@ -41,8 +41,8 @@ export class Account extends AccountBase {
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
   // showing plural
-  @gqlField({ name: "openTodosLegacy", type: "[Todo]" })
-  async openTodosLegacy() {
+  @gqlField({ name: "openTodosPlural", type: "[Todo]" })
+  async openTodosPlural() {
     return await Todo.loadCustom(
       this.viewer,
       query.And(query.Eq("creator_id", this.id), query.Eq("completed", false)),

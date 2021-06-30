@@ -12,7 +12,7 @@ import { mustDecodeIDFromGQLID } from "@snowtop/snowtop-ts/graphql";
 import { TodoType } from "src/graphql/resolvers/internal";
 import { TodoResolver } from "../open_todos";
 
-export const OpenTodosLegacyQueryType: GraphQLFieldConfig<
+export const OpenTodosPluralQueryType: GraphQLFieldConfig<
   undefined,
   RequestContext
 > = {
@@ -30,6 +30,6 @@ export const OpenTodosLegacyQueryType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ) => {
     const r = new TodoResolver();
-    return r.openTodosLegacy(mustDecodeIDFromGQLID(args.id));
+    return r.openTodosPlural(mustDecodeIDFromGQLID(args.id));
   },
 };

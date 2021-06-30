@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
@@ -106,7 +105,6 @@ func processFields(data *codegen.Data, cd *customData, s *gqlSchema, cr processC
 	var result []*gqlNode
 	fields := cr.getFields(cd)
 
-	//	spew.Dump(fields)
 	for idx := range fields {
 		// field having weird issues unless broken down like this
 		field := fields[idx]
@@ -185,12 +183,12 @@ func processFields(data *codegen.Data, cd *customData, s *gqlSchema, cr processC
 		if err != nil {
 			return nil, err
 		}
+		// take connection here and add to result...
 		var connections []*gqlConnection
 		if fieldConfig.connection != nil {
 			connections = append(connections, fieldConfig.connection)
 		}
 
-		// take connection here and add to result...
 		result = append(result, &gqlNode{
 			ObjData: &gqlobjectData{
 				// TODO kill node and NodeInstance they don't make sense here...
@@ -534,7 +532,6 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.Data, s *gql
 
 	if isConnection(field) {
 		// nodeName is root or something...
-		spew.Dump("connection fix")
 		customEdge := getRootGQLEdge(field)
 		// RootQuery?
 		conn = getGqlConnection("root", customEdge, data)
@@ -892,11 +889,11 @@ func (e *CustomEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
 }
 
 func (e *CustomEdge) GetSourceNodeName() string {
-	return e.SourceNodeName
+	return strcase.ToCamel(e.SourceNodeName)
 }
 
 func (e *CustomEdge) GetGraphQLEdgePrefix() string {
-	return fmt.Sprintf("%sTo%s", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
+	return fmt.Sprintf("%sTo%s", strcase.ToCamel(e.SourceNodeName), strcase.ToCamel(e.EdgeName))
 
 }
 
@@ -911,7 +908,7 @@ func (e *CustomEdge) TsEdgeQueryEdgeName() string {
 }
 
 func (e *CustomEdge) TsEdgeQueryName() string {
-	return fmt.Sprintf("%sTo%sQuery", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
+	return fmt.Sprintf("%sTo%sQuery", strcase.ToCamel(e.SourceNodeName), strcase.ToCamel(e.EdgeName))
 }
 
 func (e *CustomEdge) UniqueEdge() bool {

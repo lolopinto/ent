@@ -9,7 +9,7 @@ var connType: GraphQLConnectionType<GraphQLObjectType, Data>;
 
 export const RootToOpenTodosConnectionType = () => {
   if (connType === undefined) {
-    connType = new GraphQLConnectionType("rootToOpenTodos", TodoType);
+    connType = new GraphQLConnectionType("RootToOpenTodos", TodoType);
   }
   return connType;
 };
