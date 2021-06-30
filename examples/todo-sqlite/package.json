@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@snowtop/snowtop-phonenumber": "^0.0.1",
-    "@snowtop/snowtop-ts": "^0.0.4",
+    "@snowtop/snowtop-ts": "^0.0.5",
     "@types/node": "^15.0.3",
     "express": "^4.17.1",
     "express-graphql": "^0.12.0",
