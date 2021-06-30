@@ -676,9 +676,6 @@ export class GQLCapture {
           `async function not currently supported for gqlConnection`,
         );
       }
-      if (customField.args.length !== 0) {
-        throw new Error(`gqlConnection with args not currently supported`);
-      }
       if (customField.results.length != 1) {
         throw new Error(`gqlConnection needs to return only one result`);
       }

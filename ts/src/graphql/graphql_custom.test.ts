@@ -478,6 +478,81 @@ test("query which returns connection", async () => {
   validateNoCustom(CustomObjectTypes.Connection, CustomObjectTypes.Query);
 });
 
+test("query with args which returns connection", async () => {
+  class ViewerResolver {
+    // TODO do we need a flag in gqlQuery that says connection or flag in gqlConnection that says query??
+    // seems like the better approach
+    // or change type to indicate connection?
+    @gqlQuery({ type: "User" })
+    @gqlConnection({ type: "User", name: "peopleYouMayKnow" })
+    pymk(
+      @gqlContextType() context: RequestContext,
+      @gqlArg("id", { type: GraphQLID }) id: ID,
+    ) {
+      return 1;
+    }
+  }
+
+  validateCustomQueries([
+    {
+      nodeName: "ViewerResolver",
+      functionName: "pymk",
+      gqlName: "pymk",
+      fieldType: CustomFieldType.Function,
+      results: [
+        {
+          type: "User",
+          needsResolving: true,
+          name: "",
+        },
+      ],
+      args: [
+        {
+          type: "Context",
+          isContextArg: true,
+          name: "context",
+          needsResolving: true,
+        },
+        {
+          type: "ID",
+          name: "id",
+        },
+      ],
+    },
+  ]);
+
+  validateCustomConnections([
+    {
+      nodeName: "ViewerResolver",
+      functionName: "pymk",
+      gqlName: "peopleYouMayKnow",
+      fieldType: CustomFieldType.Function,
+      results: [
+        {
+          type: "User",
+          needsResolving: true,
+          name: "",
+        },
+      ],
+      args: [
+        {
+          type: "Context",
+          isContextArg: true,
+          name: "context",
+          needsResolving: true,
+        },
+        {
+          type: "ID",
+          name: "id",
+        },
+      ],
+    },
+  ]);
+
+  GQLCapture.resolve(["User"]);
+  validateNoCustom(CustomObjectTypes.Connection, CustomObjectTypes.Query);
+});
+
 test("custom type", () => {
   class ProfilePictureUploadResolver {
     @gqlMutation({ name: "profilePictureUpload", type: GraphQLBoolean })
