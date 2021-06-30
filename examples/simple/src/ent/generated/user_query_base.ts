@@ -100,10 +100,10 @@ export const userToHostedEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
   () => UserToHostedEventsEdge,
 );
 
-export const userToAuthCodesCountLoaderFactory = new RawCountLoaderFactory(
-  AuthCode.loaderOptions(),
-  "user_id",
-);
+export const userToAuthCodesCountLoaderFactory = new RawCountLoaderFactory({
+  ...AuthCode.loaderOptions(),
+  groupCol: "user_id",
+});
 export const userToAuthCodesDataLoaderFactory = new IndexLoaderFactory(
   AuthCode.loaderOptions(),
   "user_id",
@@ -111,10 +111,10 @@ export const userToAuthCodesDataLoaderFactory = new IndexLoaderFactory(
     toPrime: [authCodeLoader],
   },
 );
-export const userToContactsCountLoaderFactory = new RawCountLoaderFactory(
-  Contact.loaderOptions(),
-  "user_id",
-);
+export const userToContactsCountLoaderFactory = new RawCountLoaderFactory({
+  ...Contact.loaderOptions(),
+  groupCol: "user_id",
+});
 export const userToContactsDataLoaderFactory = new IndexLoaderFactory(
   Contact.loaderOptions(),
   "user_id",

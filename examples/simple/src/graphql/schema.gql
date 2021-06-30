@@ -278,6 +278,25 @@ type Viewer {
   user: User
 }
 
+input UserAuthInput {
+  emailAddress: String!
+  password: String!
+}
+
+input UserAuthJWTInput {
+  emailAddress: String!
+  password: String!
+}
+
+type UserAuthJWTPayload {
+  token: String!
+  viewerID: ID!
+}
+
+type UserAuthPayload {
+  viewerID: ID!
+}
+
 input AddressCreateInput {
   streetName: String!
   city: String!
@@ -509,22 +528,3 @@ type Mutation {
 
 """The `Upload` scalar type represents a file upload."""
 scalar Upload
-
-type UserAuthPayload {
-  viewerID: ID!
-}
-
-input UserAuthInput {
-  emailAddress: String!
-  password: String!
-}
-
-type UserAuthJWTPayload {
-  token: String!
-  viewerID: ID!
-}
-
-input UserAuthJWTInput {
-  emailAddress: String!
-  password: String!
-}

@@ -511,7 +511,8 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.Data, s *gql
 			args := make([]string, len(fields))
 
 			for idx, f := range fields {
-				args[idx] = fmt.Sprintf("%s:args.%s.%s", f.GraphQLName, arg.Name, f.GraphQLName)
+				// input.foo
+				args[idx] = fmt.Sprintf("%s:%s.%s", f.GraphQLName, arg.Name, f.GraphQLName)
 			}
 			argContents[idx] = fmt.Sprintf("{%s},", strings.Join(args, ","))
 		}

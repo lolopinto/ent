@@ -29,11 +29,15 @@ export const BulkUploadContactType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    { userID, file },
+    args: { userID; file },
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
     const r = new ImportContactResolver();
-    return r.bulkUploadContact(context, mustDecodeIDFromGQLID(userID), file);
+    return r.bulkUploadContact(
+      context,
+      mustDecodeIDFromGQLID(args.userID),
+      args.file,
+    );
   },
 };
