@@ -33,8 +33,8 @@ var NODE_VERSIONS = []dockerfileData{
 
 // can change platforms here to test locally
 var PLATFORMS = []string{
-	"linux/amd64",
-	//	"linux/arm64",
+	//"linux/amd64",
+	"linux/arm64",
 }
 
 func main() {
