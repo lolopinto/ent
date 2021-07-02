@@ -26,9 +26,9 @@ const REPO = "ghcr.io/lolopinto/ent"
 const UPDATE_LATEST = true
 
 var NODE_VERSIONS = []dockerfileData{
-	//	{14, 6},
+	{14, 6},
 	{15, 7},
-	//	{16, 7},
+	{16, 7},
 }
 
 // can change platforms here to test locally
