@@ -27,13 +27,13 @@ const UPDATE_LATEST = true
 
 var NODE_VERSIONS = []dockerfileData{
 	//	{14, 6},
-	{15, 6},
+	{15, 7},
 	//	{16, 7},
 }
 
 // can change platforms here to test locally
 var PLATFORMS = []string{
-	//"linux/amd64",
+	"linux/amd64",
 	"linux/arm64",
 }
 
