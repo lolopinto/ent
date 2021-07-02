@@ -1,4 +1,4 @@
-name: New Dockerfile image
+name: New Docker image
 
 on: 
   pull_request:
@@ -21,6 +21,12 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
+  
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.16
+
 
     - name: install buildx
       id: buildx
