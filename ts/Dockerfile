@@ -1,5 +1,26 @@
-FROM nikolaik/python-nodejs:python3.8-nodejs16
+#FROM nikolaik/python-nodejs:python3.8-nodejs16
+ARG ARCH=
+FROM ${ARCH}python:3.8.11-buster 
 
+# gotten from https://github.com/nikolaik/docker-python-nodejs/blob/master/Dockerfile
+
+# Install node prereqs, nodejs and yarn
+# Ref: https://deb.nodesource.com/setup_16.x
+# Ref: https://yarnpkg.com/en/docs/install
+RUN \
+  echo "deb https://deb.nodesource.com/node_16.x buster main" > /etc/apt/sources.list.d/nodesource.list && \
+  wget -qO- https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - && \
+  echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.list.d/yarn.list && \
+  wget -qO- https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && \
+  apt-get update && \
+  apt-get install -yqq nodejs yarn && \
+  pip install -U pip && pip install pipenv 
+
+RUN  npm i -g npm@^7 
+RUN  curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python && ln -s /root/.poetry/bin/poetry /usr/local/bin 
+RUN  rm -rf /var/lib/apt/lists/*
+
+ARG TARGETARCH
 # this is associating this image with this repo
 LABEL org.opencontainers.image.source https://github.com/lolopinto/ent
 
@@ -9,9 +30,9 @@ RUN apt update && apt --assume-yes install zsh
 RUN python3 -m pip install auto_schema==0.0.7
 
 # get go
-RUN wget https://storage.googleapis.com/golang/go1.16.3.linux-amd64.tar.gz
+RUN wget https://storage.googleapis.com/golang/go1.16.5.linux-$TARGETARCH.tar.gz
 
-RUN tar -C /usr/local -xzf go1.16.3.linux-amd64.tar.gz
+RUN tar -C /usr/local -xzf go1.16.5.linux-$TARGETARCH.tar.gz
 
 ENV PATH $PATH:/usr/local/go/bin
 
@@ -20,7 +41,7 @@ ENV GOPATH=$HOME/go
 ENV GOBIN $GOPATH/bin
 ENV PATH $PATH:$GOPATH/bin
 
-RUN go install github.com/lolopinto/ent/tsent@v0.0.17
+RUN go install github.com/lolopinto/ent/tsent@v0.0.18
 
 # first 3 need to move from ts/package.json
 # maybe typescript?

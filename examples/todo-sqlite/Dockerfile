@@ -1,4 +1,4 @@
-FROM lolopinto/ent:0.0.1
+FROM lolopinto/ent:0.0.17
 
 # TODO this needs to be tested for "production"
 # works locally when run here but needs to be tested in hostile environments

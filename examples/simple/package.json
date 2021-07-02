@@ -10,7 +10,9 @@
     "test": "jest",
     "compile": "rm -rf dist && ./node_modules/.bin/ent-custom-compiler",
     "start": "docker-compose -f docker-compose.dev.yml up --build",
+    "init": "docker-compose -f docker-compose.dev.yml run --rm app npm install",
     "codegen": "docker-compose -f docker-compose.dev.yml run --rm app tsent codegen",
+    "upgrade": "docker-compose -f docker-compose.dev.yml run --rm app tsent upgrade",
     "start-fast": "npm run compile && node dist/graphql/index.js"
   },
   "author": "",
@@ -34,7 +36,7 @@
     "@snowtop/snowtop-passport": "^0.0.1",
     "@snowtop/snowtop-password": "^0.0.1",
     "@snowtop/snowtop-phonenumber": "^0.0.1",
-    "@snowtop/snowtop-ts": "^0.0.4",
+    "@snowtop/snowtop-ts": "^0.0.5",
     "@types/express-session": "^1.17.3",
     "@types/graphql-upload": "^8.0.4",
     "@types/luxon": "^1.26.5",
