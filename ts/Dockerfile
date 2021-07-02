@@ -1,5 +1,4 @@
 #FROM nikolaik/python-nodejs:python3.8-nodejs16
-# buster supports 6.4
 ARG ARCH=
 FROM ${ARCH}python:3.8.11-buster 
 
@@ -7,6 +6,7 @@ FROM ${ARCH}python:3.8.11-buster
 # Ref: https://deb.nodesource.com/setup_14.x
 # Ref: https://yarnpkg.com/en/docs/install
 
+# gotten from https://github.com/nikolaik/docker-python-nodejs/blob/master/Dockerfile
 RUN \
   echo "deb https://deb.nodesource.com/node_14.x buster main" > /etc/apt/sources.list.d/nodesource.list && \
   wget -qO- https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - && \
@@ -17,7 +17,6 @@ RUN \
   pip install -U pip && pip install pipenv 
 
 RUN  npm i -g npm@^7 
-#RUN  npm i -g yarn
 RUN  curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python && ln -s /root/.poetry/bin/poetry /usr/local/bin 
 RUN  rm -rf /var/lib/apt/lists/*
 
