@@ -1,0 +1,43 @@
+name: New Docker image
+
+on: 
+  pull_request:
+    branches: [main]
+    paths:
+      - ts/Dockerfile.tmpl
+      - release_image/**
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: actions/cache@v2
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+  
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.16
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: docker login
+      env:
+        DOCKER_TOKEN: ${{secrets.DOCKER_TOKEN}}
+      run: echo $DOCKER_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
+
+    - name: build the image
+      run: cd release_image && go run .
+
