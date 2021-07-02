@@ -1,9 +1,9 @@
 import {
   expectMutation,
   expectQueryFromRoot,
-} from "@lolopinto/ent-graphql-tests";
-import { IDViewer, DB } from "@lolopinto/ent";
-// import { encodeGQLID } from "@lolopinto/ent/graphql";
+} from "@snowtop/snowtop-graphql-tests";
+import { IDViewer, DB } from "@snowtop/snowtop-ts";
+// import { encodeGQLID } from "@snowtop/snowtop-ts/graphql";
 // import { createGuestPlus } from "src/testutils";
 // this needs to be the last line becasue of load order or at least after src/testutils
 import { randomEmail } from "src/util/random";

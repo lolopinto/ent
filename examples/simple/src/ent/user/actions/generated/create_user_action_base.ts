@@ -4,8 +4,8 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   PrivacyPolicy,
   Viewer,
-} from "@lolopinto/ent";
-import { Action, Changeset, WriteOperation } from "@lolopinto/ent/action";
+} from "@snowtop/snowtop-ts";
+import { Action, Changeset, WriteOperation } from "@snowtop/snowtop-ts/action";
 import { User } from "src/ent/";
 import { UserBuilder, UserInput } from "src/ent/user/actions/user_builder";
 
@@ -15,6 +15,7 @@ export interface UserCreateInput {
   emailAddress: string;
   phoneNumber: string;
   password: string;
+  nicknames?: string[] | null;
 }
 
 export class CreateUserActionBase implements Action<User> {

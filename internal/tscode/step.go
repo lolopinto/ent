@@ -13,6 +13,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
+	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/enum"
@@ -364,7 +365,7 @@ func writeBaseModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePat
 		PathToFile:         getFilePathForBaseModelFile(nodeData),
 		FormatSource:       true,
 		TsImports:          imps,
-		FuncMap:            imps.FuncMap(),
+		FuncMap:            getBaseFuncs(imps),
 	})
 }
 
@@ -641,6 +642,13 @@ func writeBuilderFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath)
 func getBuilderFuncs(imps *tsimport.Imports) template.FuncMap {
 	m := imps.FuncMap()
 	m["edgeInfos"] = action.GetEdgesFromEdges
+
+	return m
+}
+
+func getBaseFuncs(imps *tsimport.Imports) template.FuncMap {
+	m := imps.FuncMap()
+	m["convertFunc"] = enttype.ConvertFunc
 
 	return m
 }

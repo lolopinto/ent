@@ -4,6 +4,8 @@ import {
   GQLCapture,
   gqlArgType,
   CustomFieldType,
+  gqlConnection,
+  GraphQLConnection,
 } from "./graphql";
 import {
   GraphQLInt,
@@ -848,11 +850,15 @@ describe("function", () => {
           return 0;
         }
       }
+      GQLCapture.resolve([]);
+      fail("should throw");
     } catch (error) {
       // TODO need a better message here
-      expect(error.message).toMatch(/^args were not captured correctly/);
+      expect(error.message).toMatch(
+        /arg searchArgs of field search needs resolving. should not be possible/,
+      );
     }
-    validateNoCustom();
+    validateNoCustom(CustomObjectTypes.Field);
   });
 
   test("enabled. resolve return types", () => {
@@ -1004,5 +1010,60 @@ describe("function", () => {
       args: [],
     });
     validateNoCustom(CustomObjectTypes.Field);
+  });
+
+  test("connection", async () => {
+    class User {
+      @gqlField({
+        type: gqlConnection("User"),
+        name: "userToSelves",
+      })
+      loadSelves() {
+        // ignore
+        return [new User()];
+      }
+    }
+
+    validateCustomFields([
+      {
+        nodeName: "User",
+        functionName: "loadSelves",
+        gqlName: "userToSelves",
+        fieldType: CustomFieldType.Function,
+        results: [
+          {
+            type: "User",
+            name: "",
+            connection: true,
+            needsResolving: true,
+          },
+        ],
+        args: [],
+      },
+    ]);
+
+    validateNoCustom(CustomObjectTypes.Field);
+  });
+
+  test("connection with async", async () => {
+    try {
+      class User {
+        @gqlField({
+          type: gqlConnection("User"),
+          name: "userToSelves",
+        })
+        async loadSelves() {
+          // ignore
+          return [new User()];
+        }
+      }
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toBe(
+        "async function not currently supported for GraphQLConnection",
+      );
+    }
+
+    validateNoCustom();
   });
 });

@@ -7,7 +7,7 @@ import {
   IDViewer,
   LoggedOutViewer,
   DB,
-} from "@lolopinto/ent";
+} from "@snowtop/snowtop-ts";
 
 import { v4 as uuidv4 } from "uuid";
 import { NodeType, EdgeType } from "src/ent/const";
@@ -20,8 +20,8 @@ import EditUserAction from "src/ent/user/actions/edit_user_action";
 import DeleteUserAction from "src/ent/user/actions/delete_user_action";
 import CreateEventAction from "src/ent/event/actions/create_event_action";
 import CreateContactAction from "src/ent/contact/actions/create_contact_action";
-import { FakeLogger } from "@lolopinto/ent/testutils/fake_log";
-import { FakeComms, Mode } from "@lolopinto/ent/testutils/fake_comms";
+import { FakeLogger } from "@snowtop/snowtop-ts/testutils/fake_log";
+import { FakeComms, Mode } from "@snowtop/snowtop-ts/testutils/fake_comms";
 import EditEmailAddressAction from "src/ent/user/actions/edit_email_address_action";
 import ConfirmEditEmailAddressAction from "../user/actions/confirm_edit_email_address_action";
 import EditPhoneNumberAction from "../user/actions/edit_phone_number_action";
@@ -105,7 +105,9 @@ test("edit user", async () => {
     }).saveX();
     fail("should have thrown exception");
   } catch (err) {
-    expect(err.message).toMatch(/is not visible for privacy reasons$/);
+    expect(err.message).toMatch(
+      /Logged out Viewer does not have permission to edit User/,
+    );
   }
 
   let vc = new IDViewer(user.id, { ent: user });
@@ -143,7 +145,9 @@ test("delete user", async () => {
     await DeleteUserAction.create(loggedOutViewer, user).saveX();
     fail("should have thrown exception");
   } catch (err) {
-    expect(err.message).toMatch(/is not visible for privacy reasons$/);
+    expect(err.message).toMatch(
+      /Logged out Viewer does not have permission to delete User/,
+    );
   }
   let vc = new IDViewer(user.id, { ent: user });
   await DeleteUserAction.create(vc, user).saveX();
@@ -771,4 +775,16 @@ describe("edit phone number", () => {
       expect(e.message).toMatch(/code (\d+) not found associated with user/);
     }
   });
+});
+
+test("nicknames", async () => {
+  const n = ["Lord Snow", "The Prince That was Promised"];
+
+  let user = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+    nicknames: n,
+  });
+
+  expect(user.nicknames).toEqual(n);
 });

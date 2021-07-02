@@ -10,7 +10,7 @@ import {
   IndexLoaderFactory,
   RawCountLoaderFactory,
   Viewer,
-} from "@lolopinto/ent";
+} from "@snowtop/snowtop-ts";
 import {
   AuthCode,
   EdgeType,
@@ -26,26 +26,26 @@ import {
   guestDataLoader,
 } from "src/ent/internal";
 
-export const guestToAttendingEventsCountLoaderFactory = new AssocEdgeCountLoaderFactory(
-  EdgeType.GuestToAttendingEvents,
-);
-export const guestToAttendingEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
-  EdgeType.GuestToAttendingEvents,
-  () => GuestToAttendingEventsEdge,
-);
+export const guestToAttendingEventsCountLoaderFactory =
+  new AssocEdgeCountLoaderFactory(EdgeType.GuestToAttendingEvents);
+export const guestToAttendingEventsDataLoaderFactory =
+  new AssocEdgeLoaderFactory(
+    EdgeType.GuestToAttendingEvents,
+    () => GuestToAttendingEventsEdge,
+  );
 
-export const guestToDeclinedEventsCountLoaderFactory = new AssocEdgeCountLoaderFactory(
-  EdgeType.GuestToDeclinedEvents,
-);
-export const guestToDeclinedEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
-  EdgeType.GuestToDeclinedEvents,
-  () => GuestToDeclinedEventsEdge,
-);
+export const guestToDeclinedEventsCountLoaderFactory =
+  new AssocEdgeCountLoaderFactory(EdgeType.GuestToDeclinedEvents);
+export const guestToDeclinedEventsDataLoaderFactory =
+  new AssocEdgeLoaderFactory(
+    EdgeType.GuestToDeclinedEvents,
+    () => GuestToDeclinedEventsEdge,
+  );
 
-export const guestToAuthCodesCountLoaderFactory = new RawCountLoaderFactory(
-  AuthCode.loaderOptions(),
-  "guest_id",
-);
+export const guestToAuthCodesCountLoaderFactory = new RawCountLoaderFactory({
+  ...AuthCode.loaderOptions(),
+  groupCol: "guest_id",
+});
 export const guestToAuthCodesDataLoaderFactory = new IndexLoaderFactory(
   AuthCode.loaderOptions(),
   "guest_id",
@@ -53,10 +53,10 @@ export const guestToAuthCodesDataLoaderFactory = new IndexLoaderFactory(
     toPrime: [authCodeLoader],
   },
 );
-export const guestToGuestDataCountLoaderFactory = new RawCountLoaderFactory(
-  GuestData.loaderOptions(),
-  "guest_id",
-);
+export const guestToGuestDataCountLoaderFactory = new RawCountLoaderFactory({
+  ...GuestData.loaderOptions(),
+  groupCol: "guest_id",
+});
 export const guestToGuestDataDataLoaderFactory = new IndexLoaderFactory(
   GuestData.loaderOptions(),
   "guest_id",

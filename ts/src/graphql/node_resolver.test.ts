@@ -15,6 +15,7 @@ import {
   createTestEvent,
   createEdges,
   createAllContacts,
+  tempDBTables,
 } from "../testutils/fake_data/test_helpers";
 import { QueryRecorder } from "../testutils/db_mock";
 import { Pool } from "pg";
@@ -26,6 +27,7 @@ import {
   resolveID,
   registerResolver,
   nodeIDEncoder,
+  clearResolvers,
 } from "./node_resolver";
 import { IDViewer } from "../core/viewer";
 import { RequestContext } from "../core/context";
@@ -43,6 +45,7 @@ import {
   queryRootConfig,
   expectQueryFromRoot,
 } from "../testutils/ent-graphql-tests";
+import { setupSqlite } from "../testutils/db/test_db";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -67,12 +70,11 @@ export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent> {
 }
 
 const resolver = new EntNodeResolver(loadEntByType);
-registerResolver("entNode", resolver);
-
-beforeEach(async () => {
-  QueryRecorder.clear();
-  await createEdges();
-  QueryRecorder.clearQueries();
+beforeEach(() => {
+  registerResolver("entNode", resolver);
+});
+afterEach(() => {
+  clearResolvers();
 });
 
 async function testObj(ent: Ent, vc?: Viewer) {
@@ -87,25 +89,6 @@ async function testObj(ent: Ent, vc?: Viewer) {
   expect(decodedObj).not.toBeNull();
   expect(decodedObj!.id).toBe(ent.id);
 }
-
-test("user", async () => {
-  const user = await createTestUser();
-
-  await testObj(user);
-});
-
-test("event", async () => {
-  const user = await createTestUser();
-  const event = await createTestEvent(user);
-
-  await testObj(event, new IDViewer(user.id));
-});
-
-test("contact", async () => {
-  const [user, contacts] = await createAllContacts();
-
-  await testObj(contacts[0], new IDViewer(user.id));
-});
 
 interface SearchResultData {
   id: ID;
@@ -123,15 +106,12 @@ class SearchResult {
   }
 
   static async search(v: Viewer, user: FakeUser) {
-    const [
-      friendsEdge,
-      friendRequestsEdge,
-      incomingFriendRequestsEdge,
-    ] = await Promise.all([
-      UserToFriendsQuery.query(v, user).queryEdges(),
-      UserToFriendRequestsQuery.query(v, user).queryEdges(),
-      UserToIncomingFriendRequestsQuery.query(v, user).queryEdges(),
-    ]);
+    const [friendsEdge, friendRequestsEdge, incomingFriendRequestsEdge] =
+      await Promise.all([
+        UserToFriendsQuery.query(v, user).queryEdges(),
+        UserToFriendRequestsQuery.query(v, user).queryEdges(),
+        UserToIncomingFriendRequestsQuery.query(v, user).queryEdges(),
+      ]);
 
     let results: SearchResult[] = [];
 
@@ -192,200 +172,232 @@ class SearchResultResolver implements NodeResolver {
   }
 }
 
-test("customresolver", async () => {
-  let [
-    user,
-    friend,
-    friendRequestSent,
-    friendRequestReceived,
-  ] = await Promise.all([
-    createTestUser(),
-    createTestUser(),
-    createTestUser(),
-    createTestUser(),
-  ]);
+function commonTests() {
+  test("user", async () => {
+    const user = await createTestUser();
 
-  const vc = new IDViewer(user.id);
-  const builder = new SimpleBuilder(
-    vc,
-    new FakeUserSchema(),
-    new Map(),
-    WriteOperation.Edit,
-    user,
-  );
-
-  builder.orchestrator.addOutboundEdge(
-    friend.id,
-    EdgeType.UserToFriends,
-    NodeType.FakeUser,
-  );
-  builder.orchestrator.addOutboundEdge(
-    friendRequestSent.id,
-    EdgeType.UserToFriendRequests,
-    NodeType.FakeUser,
-  );
-  builder.orchestrator.addOutboundEdge(
-    friendRequestReceived.id,
-    EdgeType.UserToIncomingFriendRequests,
-    NodeType.FakeUser,
-  );
-
-  await builder.saveX();
-  user = await builder.editedEntX();
-
-  const [
-    friendsEdge,
-    friendRequestsEdge,
-    incomingFriendRequestsEdge,
-  ] = await Promise.all([
-    UserToFriendsQuery.query(user.viewer, user).queryEdges(),
-    UserToFriendRequestsQuery.query(user.viewer, user).queryEdges(),
-    UserToIncomingFriendRequestsQuery.query(user.viewer, user).queryEdges(),
-  ]);
-
-  expect(friendsEdge.length).toEqual(1);
-  expect(friendRequestsEdge.length).toEqual(1);
-  expect(incomingFriendRequestsEdge.length).toEqual(1);
-
-  // can't load these users in this context
-  let friendRequestLoaded = await FakeUser.load(
-    user.viewer,
-    friendRequestSent.id,
-  );
-  expect(friendRequestLoaded).toBe(null);
-  let friendRequestReceivedLoaded = await FakeUser.load(
-    user.viewer,
-    friendRequestReceived.id,
-  );
-  expect(friendRequestReceivedLoaded).toBe(null);
-  let friendLoaded = await FakeUser.load(user.viewer, friend.id);
-  expect(friendLoaded).not.toBe(null);
-
-  const vc2 = new ViewerWithAccessToken(user.id, {
-    tokens: {
-      allow_outbound_friend_request: true,
-      allow_incoming_friend_request: true,
-    },
-  });
-  friendRequestLoaded = await FakeUser.load(vc2, friendRequestSent.id);
-  expect(friendRequestLoaded).not.toBe(null);
-  friendRequestReceivedLoaded = await FakeUser.load(
-    vc2,
-    friendRequestReceived.id,
-  );
-  expect(friendRequestReceivedLoaded).not.toBe(null);
-  friendLoaded = await FakeUser.load(vc2, friend.id);
-  expect(friendLoaded).not.toBe(null);
-
-  // can do a "search" and have the eventual node() call work by resolving the ids
-  const searchResults = await SearchResult.search(vc2, user);
-  const ids = searchResults.map((result) => result.decodedID());
-
-  // not registered so we can't do anything with this
-  for (const id of ids) {
-    const node = await resolveID(vc, id);
-    expect(node).toBeNull();
-  }
-
-  // now registered and loaded!
-  registerResolver("searchResult", new SearchResultResolver());
-  for (const id of ids) {
-    const node = await resolveID(vc, id);
-    expect(node).not.toBeNull();
-    expect(node).toBeInstanceOf(SearchResult);
-  }
-});
-
-test("node id encoder", async () => {
-  let userType = new GraphQLObjectType({
-    name: "User",
-    fields: {
-      id: {
-        type: GraphQLNonNull(GraphQLID),
-        resolve: nodeIDEncoder,
-      },
-      firstName: {
-        type: GraphQLString,
-      },
-      lastName: {
-        type: GraphQLString,
-      },
-    },
-    interfaces: [GraphQLNodeInterface],
-    isTypeOf(obj, _context: RequestContext) {
-      return obj instanceof FakeUser;
-    },
+    await testObj(user);
   });
 
-  let viewerType = new GraphQLObjectType({
-    name: "Viewer",
-    fields: {
-      user: {
-        type: GraphQLNonNull(userType),
-        resolve: (_source, {}, context: RequestContext) => {
-          const v = context.getViewer();
-          if (!v.viewerID) {
-            // will throw. we claim non-null
-            return null;
-          }
-          return FakeUser.load(v, v.viewerID);
+  test("event", async () => {
+    const user = await createTestUser();
+    const event = await createTestEvent(user);
+
+    await testObj(event, new IDViewer(user.id));
+  });
+
+  test("contact", async () => {
+    const [user, contacts] = await createAllContacts();
+
+    await testObj(contacts[0], new IDViewer(user.id));
+  });
+
+  test("customresolver", async () => {
+    let [user, friend, friendRequestSent, friendRequestReceived] =
+      await Promise.all([
+        createTestUser(),
+        createTestUser(),
+        createTestUser(),
+        createTestUser(),
+      ]);
+
+    const vc = new IDViewer(user.id);
+    const builder = new SimpleBuilder(
+      vc,
+      new FakeUserSchema(),
+      new Map(),
+      WriteOperation.Edit,
+      user,
+    );
+
+    builder.orchestrator.addOutboundEdge(
+      friend.id,
+      EdgeType.UserToFriends,
+      NodeType.FakeUser,
+    );
+    builder.orchestrator.addOutboundEdge(
+      friendRequestSent.id,
+      EdgeType.UserToFriendRequests,
+      NodeType.FakeUser,
+    );
+    builder.orchestrator.addOutboundEdge(
+      friendRequestReceived.id,
+      EdgeType.UserToIncomingFriendRequests,
+      NodeType.FakeUser,
+    );
+
+    await builder.saveX();
+    user = await builder.editedEntX();
+
+    const [friendsEdge, friendRequestsEdge, incomingFriendRequestsEdge] =
+      await Promise.all([
+        UserToFriendsQuery.query(user.viewer, user).queryEdges(),
+        UserToFriendRequestsQuery.query(user.viewer, user).queryEdges(),
+        UserToIncomingFriendRequestsQuery.query(user.viewer, user).queryEdges(),
+      ]);
+
+    expect(friendsEdge.length).toEqual(1);
+    expect(friendRequestsEdge.length).toEqual(1);
+    expect(incomingFriendRequestsEdge.length).toEqual(1);
+
+    // can't load these users in this context
+    let friendRequestLoaded = await FakeUser.load(
+      user.viewer,
+      friendRequestSent.id,
+    );
+    expect(friendRequestLoaded).toBe(null);
+    let friendRequestReceivedLoaded = await FakeUser.load(
+      user.viewer,
+      friendRequestReceived.id,
+    );
+    expect(friendRequestReceivedLoaded).toBe(null);
+    let friendLoaded = await FakeUser.load(user.viewer, friend.id);
+    expect(friendLoaded).not.toBe(null);
+
+    const vc2 = new ViewerWithAccessToken(user.id, {
+      tokens: {
+        allow_outbound_friend_request: true,
+        allow_incoming_friend_request: true,
+      },
+    });
+    friendRequestLoaded = await FakeUser.load(vc2, friendRequestSent.id);
+    expect(friendRequestLoaded).not.toBe(null);
+    friendRequestReceivedLoaded = await FakeUser.load(
+      vc2,
+      friendRequestReceived.id,
+    );
+    expect(friendRequestReceivedLoaded).not.toBe(null);
+    friendLoaded = await FakeUser.load(vc2, friend.id);
+    expect(friendLoaded).not.toBe(null);
+
+    // can do a "search" and have the eventual node() call work by resolving the ids
+    const searchResults = await SearchResult.search(vc2, user);
+    const ids = searchResults.map((result) => result.decodedID());
+
+    // not registered so we can't do anything with this
+    for (const id of ids) {
+      const node = await resolveID(vc, id);
+      expect(node).toBeNull();
+    }
+
+    // now registered and loaded!
+    registerResolver("searchResult", new SearchResultResolver());
+    for (const id of ids) {
+      const node = await resolveID(vc, id);
+      expect(node).not.toBeNull();
+      expect(node).toBeInstanceOf(SearchResult);
+    }
+  });
+
+  test("node id encoder", async () => {
+    let userType = new GraphQLObjectType({
+      name: "User",
+      fields: {
+        id: {
+          type: GraphQLNonNull(GraphQLID),
+          resolve: nodeIDEncoder,
+        },
+        firstName: {
+          type: GraphQLString,
+        },
+        lastName: {
+          type: GraphQLString,
         },
       },
-    },
-  });
+      interfaces: [GraphQLNodeInterface],
+      isTypeOf(obj, _context: RequestContext) {
+        return obj instanceof FakeUser;
+      },
+    });
 
-  let rootQuery = new GraphQLObjectType({
-    name: "RootQueryType",
-    fields: {
-      node: {
-        args: {
-          id: {
-            type: GraphQLNonNull(GraphQLID),
+    let viewerType = new GraphQLObjectType({
+      name: "Viewer",
+      fields: {
+        user: {
+          type: GraphQLNonNull(userType),
+          resolve: (_source, {}, context: RequestContext) => {
+            const v = context.getViewer();
+            if (!v.viewerID) {
+              // will throw. we claim non-null
+              return null;
+            }
+            return FakeUser.load(v, v.viewerID);
           },
         },
-        type: GraphQLNodeInterface,
-        resolve(_source, { id }, context: RequestContext) {
-          return resolveID(context.getViewer(), id);
+      },
+    });
+
+    let rootQuery = new GraphQLObjectType({
+      name: "RootQueryType",
+      fields: {
+        node: {
+          args: {
+            id: {
+              type: GraphQLNonNull(GraphQLID),
+            },
+          },
+          type: GraphQLNodeInterface,
+          resolve(_source, { id }, context: RequestContext) {
+            return resolveID(context.getViewer(), id);
+          },
+        },
+        viewer: {
+          type: viewerType,
+          resolve: (_source, _args, context: RequestContext) => {
+            return context.getViewer();
+          },
         },
       },
-      viewer: {
-        type: viewerType,
-        resolve: (_source, _args, context: RequestContext) => {
-          return context.getViewer();
-        },
+    });
+
+    let schema = new GraphQLSchema({
+      query: rootQuery,
+    });
+
+    const user = await createTestUser();
+
+    let cfg: queryRootConfig = {
+      schema: schema,
+      root: "viewer",
+      viewer: new IDViewer(user.id),
+      args: {},
+    };
+
+    const expectedID = resolver.encode(user);
+    await expectQueryFromRoot(cfg, ["user.id", expectedID]);
+
+    let cfg2: queryRootConfig = {
+      schema: schema,
+      root: "node",
+      viewer: new IDViewer(user.id),
+      args: { id: expectedID },
+    };
+
+    await expectQueryFromRoot(cfg2, [
+      "...on User",
+      {
+        id: expectedID,
+        firstName: user.firstName,
+        lastName: user.lastName,
       },
-    },
+    ]);
   });
+}
 
-  let schema = new GraphQLSchema({
-    query: rootQuery,
+describe("postgres", () => {
+  beforeEach(async () => {
+    QueryRecorder.clear();
+    await createEdges();
+    QueryRecorder.clearQueries();
   });
+  commonTests();
+});
 
-  const user = await createTestUser();
+describe("sqlite", () => {
+  setupSqlite(`sqlite:///node_resolver.db`, tempDBTables);
 
-  let cfg: queryRootConfig = {
-    schema: schema,
-    root: "viewer",
-    viewer: new IDViewer(user.id),
-    args: {},
-  };
-
-  const expectedID = resolver.encode(user);
-  await expectQueryFromRoot(cfg, ["user.id", expectedID]);
-
-  let cfg2: queryRootConfig = {
-    schema: schema,
-    root: "node",
-    viewer: new IDViewer(user.id),
-    args: { id: expectedID },
-  };
-
-  await expectQueryFromRoot(cfg2, [
-    "...on User",
-    {
-      id: expectedID,
-      firstName: user.firstName,
-      lastName: user.lastName,
-    },
-  ]);
+  beforeEach(async () => {
+    await createEdges();
+  });
+  commonTests();
 });

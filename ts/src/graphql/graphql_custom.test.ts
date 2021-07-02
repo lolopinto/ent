@@ -9,6 +9,7 @@ import {
   gqlQuery,
   gqlContextType,
   gqlFileUpload,
+  gqlConnection,
 } from "./graphql";
 import { GraphQLBoolean, GraphQLID } from "graphql";
 import { ID, Viewer } from "../core/base";
@@ -288,8 +289,6 @@ test("query with return type", () => {
     get viewerID() {
       return this.viewer.viewerID;
     }
-
-    // user, friends, etc all come here
   }
 
   class ViewerResolver {
@@ -354,6 +353,161 @@ test("query with return type", () => {
   );
 
   GQLCapture.resolve([]);
+});
+
+test("query with list return type", () => {
+  @gqlObjectType({ name: "Viewer" })
+  class ViewerType {
+    constructor(private viewer: Viewer) {}
+    @gqlField({ type: GraphQLID, nullable: true })
+    get viewerID() {
+      return this.viewer.viewerID;
+    }
+  }
+
+  class ViewerResolver {
+    @gqlQuery({ type: "[ViewerType]" })
+    viewer(@gqlContextType() context: RequestContext): [ViewerType] {
+      return [new ViewerType(context.getViewer())];
+    }
+  }
+
+  validateCustomQueries([
+    {
+      nodeName: "ViewerResolver",
+      functionName: "viewer",
+      gqlName: "viewer",
+      fieldType: CustomFieldType.Function,
+      results: [
+        {
+          type: "ViewerType", // there needs to be something else that does the translation to Viewer
+          needsResolving: true,
+          name: "",
+          list: true,
+        },
+      ],
+      args: [
+        {
+          type: "Context",
+          name: "context",
+          needsResolving: true,
+          isContextArg: true,
+        },
+      ],
+    },
+  ]);
+
+  validateCustomObjects([
+    {
+      nodeName: "Viewer",
+      className: "ViewerType",
+    },
+  ]);
+
+  validateCustomFields([
+    {
+      nodeName: "ViewerType",
+      functionName: "viewerID",
+      gqlName: "viewerID",
+      fieldType: CustomFieldType.Accessor,
+      results: [
+        {
+          type: "ID",
+          name: "",
+          nullable: true,
+        },
+      ],
+      args: [],
+    },
+  ]);
+
+  validateNoCustom(
+    CustomObjectTypes.Field,
+    CustomObjectTypes.Object,
+    CustomObjectTypes.Query,
+  );
+
+  GQLCapture.resolve([]);
+});
+
+test("query which returns connection", async () => {
+  class ViewerResolver {
+    @gqlQuery({
+      type: gqlConnection("User"),
+      name: "peopleYouMayKnow",
+    })
+    pymk() {
+      return 1;
+    }
+  }
+
+  validateCustomQueries([
+    {
+      nodeName: "ViewerResolver",
+      functionName: "pymk",
+      gqlName: "peopleYouMayKnow",
+      fieldType: CustomFieldType.Function,
+      results: [
+        {
+          type: "User",
+          needsResolving: true,
+          connection: true,
+          name: "",
+        },
+      ],
+      args: [],
+    },
+  ]);
+
+  GQLCapture.resolve(["User"]);
+  validateNoCustom(CustomObjectTypes.Query);
+});
+
+test("query with args which returns connection", async () => {
+  class ViewerResolver {
+    @gqlQuery({
+      type: gqlConnection("User"),
+      name: "peopleYouMayKnow",
+    })
+    pymk(
+      @gqlContextType() context: RequestContext,
+      @gqlArg("id", { type: GraphQLID }) id: ID,
+    ) {
+      return 1;
+    }
+  }
+
+  validateCustomQueries([
+    {
+      nodeName: "ViewerResolver",
+      functionName: "pymk",
+      gqlName: "peopleYouMayKnow",
+      fieldType: CustomFieldType.Function,
+      results: [
+        {
+          type: "User",
+          needsResolving: true,
+          connection: true,
+          name: "",
+        },
+      ],
+      args: [
+        {
+          type: "Context",
+          isContextArg: true,
+          name: "context",
+          needsResolving: true,
+        },
+        {
+          type: "ID",
+          name: "id",
+        },
+      ],
+    },
+  ]);
+
+  GQLCapture.resolve(["User"]);
+  validateNoCustom(CustomObjectTypes.Query);
 });
 
 test("custom type", () => {

@@ -8,7 +8,7 @@ import {
   GraphQLObjectType,
   GraphQLResolveInfo,
 } from "graphql";
-import { RequestContext } from "@lolopinto/ent";
+import { RequestContext } from "@snowtop/snowtop-ts";
 import { UserType } from "src/graphql/resolvers/internal";
 import ViewerResolver, { GQLViewer } from "../viewer";
 
@@ -34,7 +34,7 @@ export const ViewerQueryType: GraphQLFieldConfig<undefined, RequestContext> = {
   type: GraphQLNonNull(GQLViewerType),
   resolve: async (
     _source,
-    {},
+    args: {},
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {

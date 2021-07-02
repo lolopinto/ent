@@ -1,6 +1,6 @@
 import { GuestToAttendingEventsQueryBase } from "src/ent/internal";
-import { AssocEdge, Context } from "@lolopinto/ent";
-import { gqlContextType, gqlField } from "@lolopinto/ent/graphql";
+import { AssocEdge, Context } from "@snowtop/snowtop-ts";
+import { gqlContextType, gqlField } from "@snowtop/snowtop-ts/graphql";
 import { GuestData } from "src/ent";
 
 export class GuestToAttendingEventsEdge extends AssocEdge {

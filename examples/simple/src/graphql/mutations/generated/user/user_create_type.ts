@@ -5,12 +5,13 @@ import {
   GraphQLFieldConfigMap,
   GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@lolopinto/ent";
+import { RequestContext } from "@snowtop/snowtop-ts";
 import { User } from "src/ent/";
 import CreateUserAction, {
   UserCreateInput,
@@ -38,6 +39,9 @@ export const UserCreateInputType = new GraphQLInputObjectType({
     },
     password: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    nicknames: {
+      type: GraphQLList(GraphQLNonNull(GraphQLString)),
     },
   }),
 });
@@ -75,6 +79,7 @@ export const UserCreateType: GraphQLFieldConfig<
       emailAddress: input.emailAddress,
       phoneNumber: input.phoneNumber,
       password: input.password,
+      nicknames: input.nicknames,
     }).saveX();
     return { user: user };
   },

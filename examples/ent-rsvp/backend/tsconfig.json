@@ -15,7 +15,7 @@
     "emitDecoratorMetadata": true,
     "paths": {
       "ent/*": [
-        "@lolopinto/ent/*",
+        "@snowtop/snowtop-ts/*",
       ],
       "src/*": [
         "./src/*"

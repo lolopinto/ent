@@ -7,8 +7,8 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { GraphQLUpload } from "graphql-upload";
-import { RequestContext } from "@lolopinto/ent";
-import { mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
+import { RequestContext } from "@snowtop/snowtop-ts";
+import { mustDecodeIDFromGQLID } from "@snowtop/snowtop-ts/graphql";
 import { EventType } from "src/graphql/resolvers/";
 import { ImportGuestResolver } from "../import_guests";
 
@@ -26,11 +26,15 @@ export const ImportGuestsType: GraphQLFieldConfig<undefined, RequestContext> = {
   },
   resolve: async (
     _source,
-    { eventID, file },
+    args: { eventID; file },
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
     const r = new ImportGuestResolver();
-    return r.importGuests(context, mustDecodeIDFromGQLID(eventID), file);
+    return r.importGuests(
+      context,
+      mustDecodeIDFromGQLID(args.eventID),
+      args.file,
+    );
   },
 };

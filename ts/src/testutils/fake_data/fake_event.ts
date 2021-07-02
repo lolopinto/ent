@@ -7,7 +7,7 @@ import {
   PrivacyPolicy,
 } from "../../core/base";
 import { loadEnt, loadEntX } from "../../core/ent";
-import { AlwaysAllowRule } from "../../core/privacy";
+import { AlwaysAllowPrivacyPolicy, AlwaysAllowRule } from "../../core/privacy";
 import { BuilderSchema, SimpleBuilder } from "../builder";
 import {
   Field,
@@ -19,9 +19,11 @@ import {
 import { NodeType } from "./const";
 import { table, uuid, text, timestamptz } from "../db/test_db";
 import { ObjectLoaderFactory } from "../../core/loaders";
+import { convertDate, convertNullableDate } from "../../core/convert";
 
 export class FakeEvent implements Ent {
   readonly id: ID;
+  readonly data: Data;
   readonly nodeType = NodeType.FakeEvent;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -32,16 +34,15 @@ export class FakeEvent implements Ent {
   readonly description: string | null;
   readonly userID: ID;
 
-  privacyPolicy: PrivacyPolicy = {
-    rules: [AlwaysAllowRule],
-  };
+  privacyPolicy: PrivacyPolicy = AlwaysAllowPrivacyPolicy;
 
   constructor(public viewer: Viewer, data: Data) {
+    this.data = data;
     this.id = data.id;
-    this.createdAt = data.created_at;
-    this.updatedAt = data.updated_at;
-    this.startTime = data.start_time;
-    this.endTime = data.end_time;
+    this.createdAt = convertDate(data.created_at);
+    this.updatedAt = convertDate(data.updated_at);
+    this.startTime = convertDate(data.start_time);
+    this.endTime = convertNullableDate(data.end_time);
     this.location = data.location;
     this.title = data.title;
     this.description = data.description;
@@ -68,6 +69,7 @@ export class FakeEvent implements Ent {
       uuid("id", { primaryKey: true }),
       timestamptz("created_at"),
       timestamptz("updated_at"),
+      // TODO index:true
       timestamptz("start_time"),
       timestamptz("end_time", { nullable: true }),
       text("location"),
@@ -98,12 +100,15 @@ export class FakeEvent implements Ent {
   }
 }
 
-export class FakeEventSchema extends BaseEntSchema
-  implements BuilderSchema<FakeEvent> {
+export class FakeEventSchema
+  extends BaseEntSchema
+  implements BuilderSchema<FakeEvent>
+{
   ent = FakeEvent;
   fields: Field[] = [
     TimestampType({
       name: "startTime",
+      index: true,
     }),
     TimestampType({
       name: "endTime",

@@ -1,16 +1,16 @@
-import { ID, RequestContext, Ent } from "@lolopinto/ent";
+import { ID, RequestContext, Ent } from "@snowtop/snowtop-ts";
 import {
   gqlArg,
   gqlContextType,
   gqlMutation,
   gqlFileUpload,
-} from "@lolopinto/ent/graphql";
+} from "@snowtop/snowtop-ts/graphql";
 import { GraphQLID } from "graphql";
 import { FileUpload } from "graphql-upload";
 import { User } from "src/ent";
 import parse from "csv-parse";
-import { Action } from "@lolopinto/ent/action";
-import { BaseAction } from "@lolopinto/ent/action/experimental_action";
+import { Action } from "@snowtop/snowtop-ts/action";
+import { BaseAction } from "@snowtop/snowtop-ts/action/experimental_action";
 import CreateContactAction from "src/ent/contact/actions/create_contact_action";
 import { UserBuilder } from "src/ent/user/actions/user_builder";
 

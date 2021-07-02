@@ -235,6 +235,26 @@ type Viewer {
   guest: Guest
 }
 
+input AuthGuestInput {
+  emailAddress: String!
+  code: String!
+}
+
+type AuthGuestPayload {
+  token: String!
+  viewer: Viewer!
+}
+
+input AuthUserInput {
+  emailAddress: String!
+  password: String!
+}
+
+type AuthUserPayload {
+  token: String!
+  viewer: Viewer!
+}
+
 input ActivityEventCreateInput {
   name: String!
   startTime: Time!
@@ -477,26 +497,6 @@ type Mutation {
   guestGroupEdit(input: GuestGroupEditInput!): GuestGroupEditPayload!
   importGuests(eventID: ID!, file: Upload!): Event!
   userCreate(input: UserCreateInput!): UserCreatePayload!
-}
-
-type AuthGuestPayload {
-  token: String!
-  viewer: Viewer!
-}
-
-input AuthGuestInput {
-  emailAddress: String!
-  code: String!
-}
-
-type AuthUserPayload {
-  token: String!
-  viewer: Viewer!
-}
-
-input AuthUserInput {
-  emailAddress: String!
-  password: String!
 }
 
 """The `Upload` scalar type represents a file upload."""

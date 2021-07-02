@@ -1,6 +1,7 @@
 import { Ent, ID, Viewer } from "../../core/base";
 import { CustomEdgeQueryBase } from "../../core/query/custom_query";
 import { AssocEdge } from "../../core/ent";
+import * as clause from "../../core/clause";
 import {
   AssocEdgeQueryBase,
   EdgeQuerySource,
@@ -21,6 +22,10 @@ import { AssocEdgeCountLoaderFactory } from "../../core/loaders/assoc_count_load
 import { AssocEdgeLoaderFactory } from "../../core/loaders/assoc_edge_loader";
 import { IndexLoaderFactory } from "../../core/loaders/index_loader";
 import { contactLoader } from "./fake_contact";
+import { clear } from "jest-date-mock";
+import { Interval } from "luxon";
+import { QueryLoaderFactory } from "../../core/loaders/query_loader";
+import { MockDate } from "./../mock_date";
 
 export class UserToContactsQuery extends AssocEdgeQueryBase<
   FakeUser,
@@ -45,10 +50,10 @@ export class UserToContactsQuery extends AssocEdgeQueryBase<
   }
 }
 
-export const userToContactsCountLoaderFactory = new RawCountLoaderFactory(
-  FakeContact.loaderOptions(),
-  "user_id",
-);
+export const userToContactsCountLoaderFactory = new RawCountLoaderFactory({
+  ...FakeContact.loaderOptions(),
+  groupCol: "user_id",
+});
 export const userToContactsDataLoaderFactory = new IndexLoaderFactory(
   FakeContact.loaderOptions(),
   "user_id",
@@ -326,5 +331,61 @@ export class UserToHostedEventsQuery extends AssocEdgeQueryBase<
   }
   queryMaybe(): EventToMaybeQuery {
     return EventToDeclinedQuery.query(this.viewer, this);
+  }
+}
+
+export const getNextWeekClause = (): clause.Clause => {
+  // get events starting within the next week
+
+  clear();
+  const start = MockDate.getDate();
+  // 7 days
+  const end = Interval.after(start, 86400 * 1000 * 7)
+    .end.toUTC()
+    .toISO();
+
+  return clause.And(
+    clause.GreaterEq("start_time", start.toISOString()),
+    clause.LessEq("start_time", end),
+  );
+};
+
+export function getCompleteClause(id: ID): clause.Clause {
+  return clause.And(clause.Eq("user_id", id), getNextWeekClause());
+}
+
+export const userToEventsInNextWeekCountLoaderFactory =
+  new RawCountLoaderFactory({
+    ...FakeEvent.loaderOptions(),
+    groupCol: "user_id",
+    clause: getNextWeekClause(),
+  });
+
+export const userToEventsInNextWeekDataLoaderFactory = new QueryLoaderFactory({
+  ...FakeEvent.loaderOptions(),
+  groupCol: "user_id",
+  clause: getNextWeekClause(),
+  toPrime: [contactLoader],
+  sortColumn: "start_time",
+});
+
+export class UserToEventsInNextWeekQuery extends CustomEdgeQueryBase<FakeEvent> {
+  constructor(viewer: Viewer, src: ID | FakeUser) {
+    super(viewer, {
+      src,
+      // we want to reuse this and not create a new one every time...
+      countLoaderFactory: userToEventsInNextWeekCountLoaderFactory,
+      dataLoaderFactory: userToEventsInNextWeekDataLoaderFactory,
+      options: FakeEvent.loaderOptions(),
+      // hmm TODO shouldn't need to write this twice...
+      sortColumn: "start_time",
+    });
+  }
+
+  static query(
+    viewer: Viewer,
+    src: FakeUser | ID,
+  ): UserToEventsInNextWeekQuery {
+    return new UserToEventsInNextWeekQuery(viewer, src);
   }
 }

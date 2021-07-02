@@ -1,4 +1,10 @@
-import DB from "./db";
+import DB, {
+  Dialect,
+  Queryer,
+  SyncQueryer,
+  QueryResult,
+  QueryResultRow,
+} from "./db";
 import {
   Viewer,
   Ent,
@@ -10,19 +16,16 @@ import {
   QueryableDataOptions,
   EditRowOptions,
   LoadEntOptions,
+  LoadCustomEntOptions,
   EdgeQueryableDataOptions,
   Context,
+  SelectBaseDataOptions,
   SelectDataOptions,
   CreateRowOptions,
+  QueryDataOptions,
+  EntConstructor,
 } from "./base";
-import {
-  QueryArrayConfig,
-  Submittable,
-  QueryArrayResult,
-  QueryResultRow,
-  QueryConfig,
-  QueryResult,
-} from "pg";
+
 import { applyPrivacyPolicy, applyPrivacyPolicyX } from "./privacy";
 import { Executor } from "../action";
 
@@ -30,6 +33,7 @@ import * as clause from "./clause";
 import { WriteOperation, Builder } from "../action";
 import { log, logEnabled, logTrace } from "./logger";
 import DataLoader from "dataloader";
+import { SqliteError } from "better-sqlite3";
 
 // TODO kill this and createDataLoader
 class cacheMap {
@@ -254,6 +258,85 @@ export async function loadEntsFromClause<T extends Ent>(
   return await applyPrivacyPolicyForRows(viewer, rows, options);
 }
 
+export async function loadCustomEnts<T extends Ent>(
+  viewer: Viewer,
+  options: LoadCustomEntOptions<T>,
+  query: CustomQuery,
+) {
+  const rows = await loadCustomData(options, query, viewer.context);
+
+  const result: T[] = new Array(rows.length);
+  await Promise.all(
+    rows.map(async (row, idx) => {
+      const ent = new options.ent(viewer, row);
+      let privacyEnt = await applyPrivacyPolicyForEnt(viewer, ent);
+      if (privacyEnt) {
+        result[idx] = privacyEnt;
+      }
+    }),
+  );
+  // filter ents that aren't visible because of privacy
+  return result.filter((r) => r !== undefined);
+}
+
+interface rawQueryOptions {
+  query: string;
+  values?: any[];
+  logValues?: any[];
+}
+
+export type CustomQuery =
+  | string
+  | rawQueryOptions
+  | clause.Clause
+  | QueryDataOptions;
+
+function isClause(
+  opts: clause.Clause | QueryDataOptions | rawQueryOptions,
+): opts is clause.Clause {
+  const cls = opts as clause.Clause;
+
+  return cls.clause !== undefined && cls.values !== undefined;
+}
+
+function isRawQuery(
+  opts: QueryDataOptions | rawQueryOptions,
+): opts is rawQueryOptions {
+  return (opts as rawQueryOptions).query !== undefined;
+}
+
+export async function loadCustomData(
+  options: SelectBaseDataOptions,
+  query: CustomQuery,
+  context: Context | undefined,
+): Promise<Data[]> {
+  if (typeof query === "string") {
+    // no caching, perform raw query
+    return await performRawQuery(query, [], []);
+  } else if (isClause(query)) {
+    // this will have rudimentary caching but nothing crazy
+    return await loadRows({
+      ...options,
+      clause: query,
+      context: context,
+    });
+  } else if (isRawQuery(query)) {
+    // no caching, perform raw query
+    return await performRawQuery(
+      query.query,
+      query.values || [],
+      query.logValues,
+    );
+  } else {
+    // this will have rudimentary caching but nothing crazy
+    return await loadRows({
+      ...query,
+      ...options,
+      context: context,
+    });
+  }
+}
+
 // Derived ents
 export async function loadDerivedEnt<T extends Ent>(
   viewer: Viewer,
@@ -328,11 +411,11 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
     }
   }
 
-  const pool = DB.getInstance().getPool();
-
   const query = buildQuery(options);
   logQuery(query, options.clause.logValues());
   try {
+    const pool = DB.getInstance().getPool();
+
     const res = await pool.query(query, options.clause.values());
     if (res.rowCount != 1) {
       if (res.rowCount > 1) {
@@ -363,7 +446,7 @@ export async function performRawQuery(
 
   logQuery(query, logValues || []);
   try {
-    const res = await pool.query(query, values);
+    const res = await pool.queryAll(query, values);
     return res.rows;
   } catch (e) {
     // TODO need to change every query to catch an error!
@@ -383,7 +466,6 @@ export async function loadRows(options: LoadRowsOptions): Promise<Data[]> {
   }
 
   const query = buildQuery(options);
-  //  console.debug("query", options, query);
   const r = await performRawQuery(
     query,
     options.clause.values(),
@@ -419,7 +501,7 @@ interface GroupQueryOptions {
 
   // extra clause to join
   clause?: clause.Clause;
-  fkeyColumn: string;
+  groupColumn: string;
   fields: string[];
   values: any[];
   orderby?: string;
@@ -432,7 +514,7 @@ export function buildGroupQuery(
 ): [string, clause.Clause] {
   const fields = [...options.fields, "row_number()"];
 
-  let cls = clause.In(options.fkeyColumn, ...options.values);
+  let cls = clause.In(options.groupColumn, ...options.values);
   if (options.clause) {
     cls = clause.And(cls, options.clause);
   }
@@ -441,9 +523,11 @@ export function buildGroupQuery(
     orderby = `ORDER BY ${options.orderby}`;
   }
 
+  // window functions work in sqlite!
+  //    https://www.sqlite.org/windowfunctions.html
   return [
     `SELECT * FROM (SELECT ${fields.join(",")} OVER (PARTITION BY ${
-      options.fkeyColumn
+      options.groupColumn
     } ${orderby}) as row_num FROM ${options.tableName} WHERE ${cls.clause(
       1,
     )}) t WHERE row_num <= ${options.limit}`,
@@ -451,42 +535,21 @@ export function buildGroupQuery(
   ];
 }
 
-// slew of methods taken from pg
-// private to ent
-export interface Queryer {
-  query<T extends Submittable>(queryStream: T): T;
-  // tslint:disable:no-unnecessary-generics
-  query<R extends any[] = any[], I extends any[] = any[]>(
-    queryConfig: QueryArrayConfig<I>,
-    values?: I,
-  ): Promise<QueryArrayResult<R>>;
-  query<R extends QueryResultRow = any, I extends any[] = any[]>(
-    queryConfig: QueryConfig<I>,
-  ): Promise<QueryResult<R>>;
-  query<R extends QueryResultRow = any, I extends any[] = any[]>(
-    queryTextOrConfig: string | QueryConfig<I>,
-    values?: I,
-  ): Promise<QueryResult<R>>;
-  query<R extends any[] = any[], I extends any[] = any[]>(
-    queryConfig: QueryArrayConfig<I>,
-    callback: (err: Error, result: QueryArrayResult<R>) => void,
-  ): void;
-  query<R extends QueryResultRow = any, I extends any[] = any[]>(
-    queryTextOrConfig: string | QueryConfig<I>,
-    callback: (err: Error, result: QueryResult<R>) => void,
-  ): void;
-  query<R extends QueryResultRow = any, I extends any[] = any[]>(
-    queryText: string,
-    values: I,
-    callback: (err: Error, result: QueryResult<R>) => void,
-  ): void;
-  // tslint:enable:no-unnecessary-generics
-}
-
 export interface DataOperation {
+  // any data that needs to be fetched before the write should be fetched here
+  // because of how SQLite works, we can't use asynchronous fetches during the write
+  // so we batch up fetching to be done beforehand here
+  preFetch?(queryer: Queryer, context?: Context): Promise<void>;
+
+  // performWriteSync is called for SQLITE and APIs that don't support asynchronous writes
+  performWriteSync(queryer: SyncQueryer, context?: Context): void;
   performWrite(queryer: Queryer, context?: Context): Promise<void>;
+
   returnedEntRow?(): Data | null; // optional to indicate the row that was created
   resolve?(executor: Executor): void; //throws?
+
+  // any data that needs to be fetched asynchronously post write|post transaction
+  postFetch?(queryer: Queryer, context?: Context): Promise<void>;
 }
 
 export interface EditNodeOptions extends EditRowOptions {
@@ -516,7 +579,6 @@ export class EditNodeOperation implements DataOperation {
       }
       let ent = executor.resolveValue(value.placeholderID);
       if (!ent) {
-        //        console.log(executor);
         throw new Error(
           `couldn't resolve field \`${fieldName}\` with value ${value.placeholderID}`,
         );
@@ -531,7 +593,6 @@ export class EditNodeOperation implements DataOperation {
       ...this.options,
       context,
     };
-    //    console.log("performWrite", options);
     if (this.existingEnt) {
       this.row = await editRow(
         queryer,
@@ -541,6 +602,38 @@ export class EditNodeOperation implements DataOperation {
       );
     } else {
       this.row = await createRow(queryer, options, "RETURNING *");
+    }
+  }
+
+  reloadRow(queryer: SyncQueryer, id: ID, options: EditNodeOptions) {
+    const query = buildQuery({
+      fields: ["*"],
+      tableName: options.tableName,
+      clause: clause.Eq(options.key, id),
+    });
+    // special case log here because we're not going through any of the normal
+    // methods here because those are async and this is sync
+    // this is the only place we're doing this so only handling here
+    logQuery(query, [id]);
+    const r = queryer.querySync(query, [id]);
+    if (r.rows.length !== 1) {
+      throw new Error(`couldn't reload row for ${id}`);
+    }
+    this.row = r.rows[0];
+  }
+
+  performWriteSync(queryer: SyncQueryer, context?: Context): void {
+    let options = {
+      ...this.options,
+      context,
+    };
+    if (this.existingEnt) {
+      editRowSync(queryer, options, this.existingEnt.id, "RETURNING *");
+      this.reloadRow(queryer, this.existingEnt.id, options);
+    } else {
+      createRowSync(queryer, options, "RETURNING *");
+      const id = options.fields[options.key];
+      this.reloadRow(queryer, id, options);
     }
   }
 
@@ -557,26 +650,86 @@ interface EdgeOperationOptions {
 }
 
 export class EdgeOperation implements DataOperation {
+  private edgeData: AssocEdgeData | undefined;
   private constructor(
     public edgeInput: AssocEdgeInput,
     private options: EdgeOperationOptions,
   ) {}
 
-  async performWrite(queryer: Queryer, context?: Context): Promise<void> {
-    const edge = this.edgeInput;
-
-    let edgeData = await loadEdgeData(edge.edgeType);
+  async preFetch(queryer: Queryer, context?: Context): Promise<void> {
+    let edgeData = await loadEdgeData(this.edgeInput.edgeType);
     if (!edgeData) {
-      throw new Error(`error loading edge data for ${edge.edgeType}`);
+      throw new Error(`error loading edge data for ${this.edgeInput.edgeType}`);
     }
+    this.edgeData = edgeData;
+  }
 
+  async performWrite(queryer: Queryer, context?: Context): Promise<void> {
+    if (!this.edgeData) {
+      throw new Error(
+        `error fetching edgeData for type ${this.edgeInput.edgeType}`,
+      );
+    }
     switch (this.options.operation) {
       case WriteOperation.Delete:
-        return this.performDeleteWrite(queryer, edgeData, edge, context);
+        return this.performDeleteWrite(
+          queryer,
+          this.edgeData,
+          this.edgeInput,
+          context,
+        );
       case WriteOperation.Insert:
       case WriteOperation.Edit:
-        return this.performInsertWrite(queryer, edgeData, edge, context);
+        return this.performInsertWrite(
+          queryer,
+          this.edgeData,
+          this.edgeInput,
+          context,
+        );
     }
+  }
+
+  performWriteSync(queryer: SyncQueryer, context?: Context): void {
+    if (!this.edgeData) {
+      throw new Error(
+        `error fetching edgeData for type ${this.edgeInput.edgeType}`,
+      );
+    }
+    switch (this.options.operation) {
+      case WriteOperation.Delete:
+        return this.performDeleteWriteSync(
+          queryer,
+          this.edgeData,
+          this.edgeInput,
+          context,
+        );
+      case WriteOperation.Insert:
+      case WriteOperation.Edit:
+        return this.performInsertWriteSync(
+          queryer,
+          this.edgeData,
+          this.edgeInput,
+          context,
+        );
+    }
+  }
+
+  private getDeleteRowParams(
+    edgeData: AssocEdgeData,
+    edge: AssocEdgeInput,
+    context?: Context,
+  ) {
+    return {
+      options: {
+        tableName: edgeData.edgeTable,
+        context,
+      },
+      clause: clause.And(
+        clause.Eq("id1", edge.id1),
+        clause.Eq("id2", edge.id2),
+        clause.Eq("edge_type", edge.edgeType),
+      ),
+    };
   }
 
   private async performDeleteWrite(
@@ -585,26 +738,25 @@ export class EdgeOperation implements DataOperation {
     edge: AssocEdgeInput,
     context?: Context,
   ): Promise<void> {
-    return deleteRows(
-      q,
-      {
-        tableName: edgeData.edgeTable,
-        context,
-      },
-      clause.And(
-        clause.Eq("id1", edge.id1),
-        clause.Eq("id2", edge.id2),
-        clause.Eq("edge_type", edge.edgeType),
-      ),
-    );
+    const params = this.getDeleteRowParams(edgeData, edge, context);
+    return deleteRows(q, params.options, params.clause);
   }
 
-  private async performInsertWrite(
-    q: Queryer,
+  private performDeleteWriteSync(
+    q: SyncQueryer,
     edgeData: AssocEdgeData,
     edge: AssocEdgeInput,
     context?: Context,
-  ): Promise<void> {
+  ): void {
+    const params = this.getDeleteRowParams(edgeData, edge, context);
+    return deleteRowsSync(q, params.options, params.clause);
+  }
+
+  private getInsertRowParams(
+    edgeData: AssocEdgeData,
+    edge: AssocEdgeInput,
+    context?: Context,
+  ): [CreateRowOptions, string] {
     const fields = {
       id1: edge.id1,
       id2: edge.id2,
@@ -621,8 +773,7 @@ export class EdgeOperation implements DataOperation {
       fields["time"] = new Date().toISOString();
     }
 
-    await createRow(
-      q,
+    return [
       {
         tableName: edgeData.edgeTable,
         fields: fields,
@@ -630,10 +781,31 @@ export class EdgeOperation implements DataOperation {
         context,
       },
       "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
-    );
+    ];
   }
 
-  private resolveImpl<T extends Ent>(
+  private async performInsertWrite(
+    q: Queryer,
+    edgeData: AssocEdgeData,
+    edge: AssocEdgeInput,
+    context?: Context,
+  ): Promise<void> {
+    const [options, suffix] = this.getInsertRowParams(edgeData, edge, context);
+
+    await createRow(q, options, suffix);
+  }
+  private performInsertWriteSync(
+    q: SyncQueryer,
+    edgeData: AssocEdgeData,
+    edge: AssocEdgeInput,
+    context?: Context,
+  ): void {
+    const [options, suffix] = this.getInsertRowParams(edgeData, edge, context);
+
+    createRowSync(q, options, suffix);
+  }
+
+  private resolveImpl(
     executor: Executor,
     placeholder: ID,
     desc: string,
@@ -868,6 +1040,10 @@ export class EdgeOperation implements DataOperation {
   }
 }
 
+function isSyncQueryer(queryer: Queryer): queryer is SyncQueryer {
+  return (queryer as SyncQueryer).execSync !== undefined;
+}
+
 async function mutateRow(
   queryer: Queryer,
   query: string,
@@ -879,7 +1055,35 @@ async function mutateRow(
 
   let cache = options.context?.cache;
   try {
-    const res = await queryer.query(query, values);
+    let res: QueryResult<QueryResultRow>;
+    if (isSyncQueryer(queryer)) {
+      res = queryer.execSync(query, values);
+    } else {
+      res = await queryer.exec(query, values);
+    }
+    if (cache) {
+      cache.clearCache();
+    }
+    return res;
+  } catch (err) {
+    // TODO:::why is this not rethrowing?
+    log("error", err);
+    throw err;
+  }
+}
+
+function mutateRowSync(
+  queryer: SyncQueryer,
+  query: string,
+  values: any[],
+  logValues: any[],
+  options: DataOptions,
+) {
+  logQuery(query, logValues);
+
+  let cache = options.context?.cache;
+  try {
+    const res = queryer.execSync(query, values);
     if (cache) {
       cache.clearCache();
     }
@@ -900,13 +1104,18 @@ export function buildInsertQuery(
   let logValues: any[] = [];
   let valsString: string[] = [];
   let idx = 1;
+  const dialect = DB.getDialect();
   for (const key in options.fields) {
     fields.push(key);
     values.push(options.fields[key]);
     if (options.fieldsToLog) {
       logValues.push(options.fieldsToLog[key]);
     }
-    valsString.push(`$${idx}`);
+    if (dialect === Dialect.Postgres) {
+      valsString.push(`$${idx}`);
+    } else {
+      valsString.push("?");
+    }
     idx++;
   }
 
@@ -930,8 +1139,22 @@ export async function createRow(
 ): Promise<Data | null> {
   const [query, values, logValues] = buildInsertQuery(options, suffix);
 
-  //  console.log("createRow", query, values, logValues);
   const res = await mutateRow(queryer, query, values, logValues, options);
+
+  if (res?.rowCount === 1) {
+    return res.rows[0];
+  }
+  return null;
+}
+
+export function createRowSync(
+  queryer: SyncQueryer,
+  options: CreateRowOptions,
+  suffix: string,
+): Data | null {
+  const [query, values, logValues] = buildInsertQuery(options, suffix);
+
+  const res = mutateRowSync(queryer, query, values, logValues, options);
 
   if (res?.rowCount === 1) {
     return res.rows[0];
@@ -947,6 +1170,7 @@ export function buildUpdateQuery(
   let valsString: string[] = [];
   let values: any[] = [];
   let logValues: any[] = [];
+  const dialect = DB.getDialect();
 
   let idx = 1;
   for (const key in options.fields) {
@@ -954,13 +1178,23 @@ export function buildUpdateQuery(
     if (options.fieldsToLog) {
       logValues.push(options.fieldsToLog[key]);
     }
-    valsString.push(`${key} = $${idx}`);
-    idx++;
+    if (dialect === Dialect.Postgres) {
+      valsString.push(`${key} = $${idx}`);
+      idx++;
+    } else {
+      valsString.push(`${key} = ?`);
+    }
   }
 
   const vals = valsString.join(", ");
 
-  let query = `UPDATE ${options.tableName} SET ${vals} WHERE ${options.key} = $${idx}`;
+  let query = `UPDATE ${options.tableName} SET ${vals} WHERE `;
+
+  if (dialect === Dialect.Postgres) {
+    query = query + `${options.key} = $${idx}`;
+  } else {
+    query = query + `${options.key} = ?`;
+  }
   if (suffix) {
     query = query + " " + suffix;
   }
@@ -990,6 +1224,28 @@ export async function editRow(
   return null;
 }
 
+export function editRowSync(
+  queryer: SyncQueryer,
+  options: EditRowOptions,
+  id: ID,
+  suffix?: string,
+): Data | null {
+  const [query, values, logValues] = buildUpdateQuery(options, id, suffix);
+
+  // add id as value to prepared query
+  values.push(id);
+
+  const res = mutateRowSync(queryer, query, values, logValues, options);
+
+  if (res?.rowCount == 1) {
+    // for now assume id primary key
+    // TODO make this extensible as needed.
+    let row = res.rows[0];
+    return row;
+  }
+  return null;
+}
+
 export async function deleteRows(
   queryer: Queryer,
   options: DataOptions,
@@ -997,6 +1253,15 @@ export async function deleteRows(
 ): Promise<void> {
   const query = `DELETE FROM ${options.tableName} WHERE ${cls.clause(1)}`;
   await mutateRow(queryer, query, cls.values(), cls.logValues(), options);
+}
+
+export function deleteRowsSync(
+  queryer: SyncQueryer,
+  options: DataOptions,
+  cls: clause.Clause,
+): void {
+  const query = `DELETE FROM ${options.tableName} WHERE ${cls.clause(1)}`;
+  mutateRowSync(queryer, query, cls.values(), cls.logValues(), options);
 }
 
 export class DeleteNodeOperation implements DataOperation {
@@ -1008,6 +1273,14 @@ export class DeleteNodeOperation implements DataOperation {
       context,
     };
     return deleteRows(queryer, options, clause.Eq("id", this.id));
+  }
+
+  performWriteSync(queryer: SyncQueryer, context?: Context): void {
+    let options = {
+      ...this.options,
+      context,
+    };
+    return deleteRowsSync(queryer, options, clause.Eq("id", this.id));
   }
 }
 
@@ -1034,7 +1307,12 @@ export class AssocEdge {
     return getCursor({
       row: this,
       col: "time",
-      conv: (t) => t.getTime(),
+      conv: (t) => {
+        if (typeof t === "string") {
+          return Date.parse(t);
+        }
+        return t.getTime();
+      },
     });
   }
 }
@@ -1101,7 +1379,7 @@ const assocEdgeFields = [
   "edge_table",
 ];
 
-const assocEdgeLoader = createDataLoader({
+export const assocEdgeLoader = createDataLoader({
   tableName: "assoc_edge_config",
   fields: assocEdgeFields,
   key: "edge_type",
@@ -1262,7 +1540,8 @@ export async function loadRawEdgeCountX(
 
   const row = await loadRowX({
     tableName: edgeData.edgeTable,
-    fields: ["count(1)"],
+    // sqlite needs as count otherwise it returns count(1)
+    fields: ["count(1) as count"],
     clause: clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
     context,
   });
@@ -1330,7 +1609,7 @@ export async function applyPrivacyPolicyForRows<T extends Ent>(
 ) {
   let m: Map<ID, T> = new Map();
   // apply privacy logic
-  const ents = await Promise.all(
+  await Promise.all(
     rows.map(async (row) => {
       const ent = new options.ent(viewer, row);
       let privacyEnt = await applyPrivacyPolicyForEnt(viewer, ent);

@@ -130,6 +130,9 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     const limit = this.options.limit + 1;
 
     options.limit = limit;
+    // todo may not be desc
+    // and if asc
+    // clause below should switch to greater...
     options.orderby = `${this.sortCol} DESC`;
     // we sort by most recent first
     // so when paging, we fetch afterCursor X
@@ -417,6 +420,10 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
       conv: (datum) => {
         if (datum instanceof Date) {
           return datum.getTime();
+        }
+        // sqlite stores it as string and doesn't convert back
+        if (typeof datum === "string") {
+          return Date.parse(datum);
         }
         return datum;
       },

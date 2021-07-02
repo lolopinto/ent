@@ -5,7 +5,7 @@ import {
   StringType,
   UUIDType,
   Action,
-} from "@lolopinto/ent";
+} from "@snowtop/snowtop-ts";
 
 export default class GuestGroup extends BaseEntSchema {
   fields: Field[] = [

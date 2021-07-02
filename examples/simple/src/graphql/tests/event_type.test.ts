@@ -1,17 +1,17 @@
 import schema from "src/graphql/schema";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
-import { DB, LoggedOutViewer, IDViewer, ID, Viewer } from "@lolopinto/ent";
+import { DB, LoggedOutViewer, IDViewer, ID, Viewer } from "@snowtop/snowtop-ts";
 import { Event } from "src/ent/";
 import { randomEmail, randomPhoneNumber } from "src/util/random";
 import {
   expectQueryFromRoot,
   queryRootConfig,
-} from "@lolopinto/ent-graphql-tests";
+} from "@snowtop/snowtop-graphql-tests";
 import CreateEventAction, {
   EventCreateInput,
 } from "src/ent/event/actions/create_event_action";
-import { clearAuthHandlers } from "@lolopinto/ent/auth";
-import { encodeGQLID } from "@lolopinto/ent/graphql";
+import { clearAuthHandlers } from "@snowtop/snowtop-ts/auth";
+import { encodeGQLID } from "@snowtop/snowtop-ts/graphql";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {

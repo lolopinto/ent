@@ -5,7 +5,7 @@ import {
   Field,
   StringType,
   UUIDType,
-} from "@lolopinto/ent/schema";
+} from "@snowtop/snowtop-ts/schema";
 
 export default class GuestData extends BaseEntSchema {
   hideFromGraphQL = true;

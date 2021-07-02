@@ -6,10 +6,13 @@ import {
   gqlArg,
   gqlObjectType,
   encodeGQLID,
-} from "@lolopinto/ent/graphql";
-import { useAndVerifyAuth, useAndVerifyAuthJWT } from "@lolopinto/ent-passport";
+} from "@snowtop/snowtop-ts/graphql";
+import {
+  useAndVerifyAuth,
+  useAndVerifyAuthJWT,
+} from "@snowtop/snowtop-passport";
 import { User } from "src/ent/";
-import { ID, RequestContext } from "@lolopinto/ent";
+import { ID, RequestContext } from "@snowtop/snowtop-ts";
 import { GraphQLID } from "graphql";
 
 @gqlInputObjectType()

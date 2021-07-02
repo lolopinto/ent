@@ -6,7 +6,7 @@ import {
   Ent,
   Skip,
   Allow,
-} from "@lolopinto/ent";
+} from "@snowtop/snowtop-ts";
 
 export class AllowIfGuestInSameGuestGroupRule implements PrivacyPolicyRule {
   constructor(private id?: ID) {}

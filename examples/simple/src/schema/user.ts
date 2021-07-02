@@ -9,10 +9,11 @@ import {
   BooleanType,
   requiredField,
   NoFields,
-} from "@lolopinto/ent/schema";
-import { EmailType } from "@lolopinto/ent-email";
-import { PasswordType } from "@lolopinto/ent-password";
-import { PhoneNumberType } from "@lolopinto/ent-phonenumber";
+} from "@snowtop/snowtop-ts/schema";
+import { EmailType } from "@snowtop/snowtop-email";
+import { PasswordType } from "@snowtop/snowtop-password";
+import { PhoneNumberType } from "@snowtop/snowtop-phonenumber";
+import { StringListType } from "@snowtop/snowtop-ts/schema/field";
 
 export default class User extends BaseEntSchema implements Schema {
   fields: Field[] = [
@@ -37,6 +38,7 @@ export default class User extends BaseEntSchema implements Schema {
       serverDefault: "FALSE",
     }),
     StringType({ name: "Bio", nullable: true }),
+    StringListType({ name: "nicknames", nullable: true }),
   ];
 
   edges: Edge[] = [
@@ -66,6 +68,7 @@ export default class User extends BaseEntSchema implements Schema {
         "EmailAddress",
         requiredField("PhoneNumber"),
         requiredField("Password"),
+        "nicknames",
       ],
     },
 

@@ -3,8 +3,8 @@ import {
   PrivacyPolicy,
   AllowIfViewerIsRule,
   AlwaysDenyRule,
-} from "@lolopinto/ent";
-import { gqlField } from "@lolopinto/ent/graphql";
+} from "@snowtop/snowtop-ts";
+import { gqlField } from "@snowtop/snowtop-ts/graphql";
 
 // we're only writing this once except with --force and packageName provided
 export class Contact extends ContactBase {

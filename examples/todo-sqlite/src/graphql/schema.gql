@@ -1,0 +1,232 @@
+type Account implements Node {
+  id: ID!
+  name: String!
+  phoneNumber: String!
+  tags(first: Int, after: String, last: Int, before: String): AccountToTagsConnection!
+  todos(first: Int, after: String, last: Int, before: String): AccountToTodosConnection!
+  openTodosPlural: [Todo!]!
+  openTodos(first: Int, after: String, last: Int, before: String): AccountToOpenTodosConnection!
+}
+
+"""node interface"""
+interface Node {
+  id: ID!
+}
+
+type Tag implements Node {
+  owner: Account
+  id: ID!
+  displayName: String!
+  canonicalName: String!
+  todos(first: Int, after: String, last: Int, before: String): TagToTodosConnection!
+}
+
+type Todo implements Node {
+  creator: Account
+  id: ID!
+  text: String!
+  completed: Boolean!
+  tags(first: Int, after: String, last: Int, before: String): TodoToTagsConnection!
+}
+
+type AccountToOpenTodosConnection implements Connection {
+  edges: [AccountToOpenTodosEdge!]!
+  nodes: [Todo!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+"""connection interface"""
+interface Connection {
+  edges: [Edge!]!
+  nodes: [Node!]!
+  pageInfo: PageInfo!
+}
+
+"""edge interface"""
+interface Edge {
+  node: Node!
+  cursor: String!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String!
+  endCursor: String!
+}
+
+type AccountToOpenTodosEdge implements Edge {
+  node: Todo!
+  cursor: String!
+}
+
+type AccountToTagsConnection implements Connection {
+  edges: [AccountToTagsEdge!]!
+  nodes: [Tag!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type AccountToTagsEdge implements Edge {
+  node: Tag!
+  cursor: String!
+}
+
+type AccountToTodosConnection implements Connection {
+  edges: [AccountToTodosEdge!]!
+  nodes: [Todo!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type AccountToTodosEdge implements Edge {
+  node: Todo!
+  cursor: String!
+}
+
+type TagToTodosConnection implements Connection {
+  edges: [TagToTodosEdge!]!
+  nodes: [Todo!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type TagToTodosEdge implements Edge {
+  node: Todo!
+  cursor: String!
+}
+
+type TodoToTagsConnection implements Connection {
+  edges: [TodoToTagsEdge!]!
+  nodes: [Tag!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type TodoToTagsEdge implements Edge {
+  node: Tag!
+  cursor: String!
+}
+
+input AccountCreateInput {
+  name: String!
+  phoneNumber: String!
+}
+
+type AccountCreatePayload {
+  account: Account!
+}
+
+input AccountDeleteInput {
+  accountID: ID!
+}
+
+type AccountDeletePayload {
+  deletedAccountID: ID
+}
+
+input AccountEditInput {
+  accountID: ID!
+  name: String
+  phoneNumber: String
+}
+
+type AccountEditPayload {
+  account: Account!
+}
+
+input TagCreateInput {
+  displayName: String!
+  ownerID: ID!
+}
+
+type TagCreatePayload {
+  tag: Tag!
+}
+
+input TodoAddTagInput {
+  todoID: ID!
+  tagID: ID!
+}
+
+type TodoAddTagPayload {
+  todo: Todo!
+}
+
+input TodoChangeStatusInput {
+  todoID: ID!
+  completed: Boolean
+}
+
+type TodoChangeStatusPayload {
+  todo: Todo!
+}
+
+input TodoCreateInput {
+  text: String!
+  creatorID: ID!
+}
+
+type TodoCreatePayload {
+  todo: Todo!
+}
+
+input TodoDeleteInput {
+  todoID: ID!
+}
+
+type TodoDeletePayload {
+  deletedTodoID: ID
+}
+
+input TodoRemoveTagInput {
+  todoID: ID!
+  tagID: ID!
+}
+
+type TodoRemoveTagPayload {
+  todo: Todo!
+}
+
+input TodoRenameInput {
+  todoID: ID!
+  text: String
+}
+
+type TodoRenamePayload {
+  todo: Todo!
+}
+
+type Query {
+  node(id: ID!): Node
+  openTodos(id: ID!, first: Int, after: String, last: Int, before: String): RootToOpenTodosConnection!
+  openTodosPlural(id: ID!): [Todo!]!
+}
+
+type RootToOpenTodosConnection implements Connection {
+  edges: [RootToOpenTodosEdge!]!
+  nodes: [Todo!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type RootToOpenTodosEdge implements Edge {
+  node: Todo!
+  cursor: String!
+}
+
+type Mutation {
+  accountCreate(input: AccountCreateInput!): AccountCreatePayload!
+  accountDelete(input: AccountDeleteInput!): AccountDeletePayload!
+  accountEdit(input: AccountEditInput!): AccountEditPayload!
+  tagCreate(input: TagCreateInput!): TagCreatePayload!
+  todoAddTag(input: TodoAddTagInput!): TodoAddTagPayload!
+  todoChangeStatus(input: TodoChangeStatusInput!): TodoChangeStatusPayload!
+  todoCreate(input: TodoCreateInput!): TodoCreatePayload!
+  todoDelete(input: TodoDeleteInput!): TodoDeletePayload!
+  todoRemoveTag(input: TodoRemoveTagInput!): TodoRemoveTagPayload!
+  todoRename(input: TodoRenameInput!): TodoRenamePayload!
+  todosMarkAllAs(accountID: ID!, completed: Boolean!): Account!
+  todosRemoveCompleted(accountID: ID!): Account!
+}

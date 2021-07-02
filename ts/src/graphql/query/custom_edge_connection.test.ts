@@ -1,5 +1,4 @@
 import { Pool } from "pg";
-import { Data } from "../../core/base";
 import { QueryRecorder } from "../../testutils/db_mock";
 
 import {
@@ -20,9 +19,5 @@ beforeEach(async () => {
 commonTests({
   getQuery: (v, user: FakeUser) => UserToContactsFkeyQuery.query(v, user),
   tableName: "fake_contacts",
-  getFilterFn(user: FakeUser) {
-    return function(row: Data) {
-      return row.user_id === user.id;
-    };
-  },
+  sortCol: "created_at",
 });

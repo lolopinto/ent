@@ -55,10 +55,13 @@ const (
 	JSON               = "JSON"
 	Enum               = "Enum"
 	StringEnum         = "StringEnum"
+	List               = "List"
 )
 
 type FieldType struct {
 	DBType DBType `json:"dbType"`
+	// required when DBType == DBType.List
+	ListElemType *FieldType `json:"listElemType"`
 	// required when DBType == DBType.Enum || DBType.StringEnum
 	Values      []string `json:"values"`
 	Type        string   `json:"type"`
@@ -114,10 +117,10 @@ type PolymorphicOptions struct {
 	HideFromInverseGraphQL bool     `json:"hideFromInverseGraphQL"`
 }
 
-func (f *Field) GetEntType() enttype.EntType {
-	switch f.Type.DBType {
+func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) enttype.TSType {
+	switch typ.DBType {
 	case UUID:
-		if f.Nullable {
+		if nullable {
 			return &enttype.NullableIDType{}
 		}
 		return &enttype.IDType{}
@@ -125,47 +128,47 @@ func (f *Field) GetEntType() enttype.EntType {
 		panic("unsupported type")
 		return &enttype.IntegerType{}
 	case Boolean:
-		if f.Nullable {
+		if nullable {
 			return &enttype.NullableBoolType{}
 		}
 		return &enttype.BoolType{}
 	case Int:
-		if f.Nullable {
+		if nullable {
 			return &enttype.NullableIntegerType{}
 		}
 		return &enttype.IntegerType{}
 	case Float:
-		if f.Nullable {
+		if nullable {
 			return &enttype.NullableFloatType{}
 		}
 		return &enttype.FloatType{}
 	case String:
-		if f.Nullable {
+		if nullable {
 			return &enttype.NullableStringType{}
 		}
 		return &enttype.StringType{}
 	case Timestamp:
-		if f.Nullable {
+		if nullable {
 			return &enttype.NullableTimestampType{}
 		}
 		return &enttype.TimestampType{}
 	case Timestamptz:
-		if f.Nullable {
+		if nullable {
 			return &enttype.NullableTimestamptzType{}
 		}
 		return &enttype.TimestamptzType{}
 	case Time:
-		if f.Nullable {
+		if nullable {
 			return &enttype.NullableTimeType{}
 		}
 		return &enttype.TimeType{}
 	case Timetz:
-		if f.Nullable {
+		if nullable {
 			return &enttype.NullableTimetzType{}
 		}
 		return &enttype.TimetzType{}
 	case Date:
-		if f.Nullable {
+		if nullable {
 			return &enttype.NullableDateType{}
 		}
 		return &enttype.DateType{}
@@ -173,34 +176,54 @@ func (f *Field) GetEntType() enttype.EntType {
 		return &enttype.RawJSONType{}
 
 	case StringEnum, Enum:
-		typ := f.Type.Type
-		graphqlType := f.Type.GraphQLType
-		if f.ForeignKey != nil {
-			typ = f.ForeignKey.Schema
-			graphqlType = f.ForeignKey.Schema
+		tsType := typ.Type
+		graphqlType := typ.GraphQLType
+		if foreignKey != nil {
+			tsType = foreignKey.Schema
+			graphqlType = foreignKey.Schema
 		}
-		if f.Type.Type == "" {
+		if typ.Type == "" {
 			panic("enum type name is required")
 		}
-		if f.Type.GraphQLType == "" {
+		if typ.GraphQLType == "" {
 			panic("enum graphql name is required")
 		}
-		if f.Nullable {
+		if nullable {
 			return &enttype.NullableEnumType{
-				EnumDBType:  f.Type.DBType == Enum,
-				Type:        typ,
+				EnumDBType:  typ.DBType == Enum,
+				Type:        tsType,
 				GraphQLType: graphqlType,
-				Values:      f.Type.Values,
+				Values:      typ.Values,
 			}
 		}
 		return &enttype.EnumType{
-			EnumDBType:  f.Type.DBType == Enum,
-			Type:        typ,
+			EnumDBType:  typ.DBType == Enum,
+			Type:        tsType,
 			GraphQLType: graphqlType,
-			Values:      f.Type.Values,
+			Values:      typ.Values,
 		}
 	}
-	panic(fmt.Sprintf("unsupported type %s", f.Type.DBType))
+	panic(fmt.Sprintf("unsupported type %s", typ.DBType))
+
+}
+
+func (f *Field) GetEntType() enttype.TSType {
+	if f.Type.DBType == List {
+		if f.Type.ListElemType == nil {
+			panic("list elem type for list is nil")
+		}
+		elemType := getTypeFor(f.Type.ListElemType, false, nil)
+		if f.Nullable {
+			return &enttype.NullableArrayListType{
+				ElemType: elemType,
+			}
+		}
+		return &enttype.ArrayListType{
+			ElemType: elemType,
+		}
+	} else {
+		return getTypeFor(f.Type, f.Nullable, f.ForeignKey)
+	}
 }
 
 type AssocEdge struct {

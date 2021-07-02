@@ -2,14 +2,14 @@ import {
   EditEventActionBase,
   EventEditInput,
 } from "src/ent/event/actions/generated/edit_event_action_base";
-import { Validator } from "@lolopinto/ent/action";
+import { Validator } from "@snowtop/snowtop-ts/action";
 import { SharedValidators } from "./event_validators";
 import { Event } from "src/ent/";
 import {
   AllowIfViewerIsRule,
   AlwaysDenyRule,
   PrivacyPolicy,
-} from "@lolopinto/ent";
+} from "@snowtop/snowtop-ts";
 
 export { EventEditInput };
 

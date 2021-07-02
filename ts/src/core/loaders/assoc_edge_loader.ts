@@ -68,7 +68,6 @@ function createLoader<T extends AssocEdge>(
         "id1",
         "id2",
         "edge_type",
-        "time",
         "id1_type",
         "id2_type",
         "data",
@@ -77,7 +76,7 @@ function createLoader<T extends AssocEdge>(
       values: keys,
       orderby: options.orderby,
       limit: options.limit || DefaultLimit,
-      fkeyColumn: "id1",
+      groupColumn: "id1",
       clause: clause.Eq("edge_type", edgeType),
     });
 
@@ -149,7 +148,8 @@ export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
 }
 
 export class AssocDirectEdgeLoader<T extends AssocEdge>
-  implements Loader<ID, T[]> {
+  implements Loader<ID, T[]>
+{
   constructor(
     private edgeType: string,
     private edgeCtr: AssocEdgeConstructor<T>,
@@ -181,7 +181,8 @@ export class AssocDirectEdgeLoader<T extends AssocEdge>
 }
 
 export class AssocEdgeLoaderFactory<T extends AssocEdge>
-  implements LoaderFactory<ID, T[]> {
+  implements LoaderFactory<ID, T[]>
+{
   name: string;
 
   constructor(

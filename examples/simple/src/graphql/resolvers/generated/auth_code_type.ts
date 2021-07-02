@@ -9,7 +9,7 @@ import {
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
 } from "graphql";
-import { ID, RequestContext } from "@lolopinto/ent";
+import { ID, RequestContext } from "@snowtop/snowtop-ts";
 import { UserType } from "src/graphql/resolvers/";
 import { AuthCode } from "src/ent/";
 

@@ -11,13 +11,17 @@ import * as readline from "readline";
 import * as path from "path";
 import * as fs from "fs";
 import { parseCustomInput, file } from "../imports";
+import { exit } from "process";
 
 // need to use the GQLCapture from the package so that when we call GQLCapture.enable()
 // we're affecting the local paths as opposed to a different instance
 // life is hard
-const MODULE_PATH = "@lolopinto/ent/graphql";
+const MODULE_PATH = "@snowtop/snowtop-ts/graphql";
 
-async function readInputs(): Promise<string[]> {
+async function readInputs(): Promise<{
+  nodes: string[];
+  nodesMap: Map<string, boolean>;
+}> {
   return await new Promise((resolve) => {
     const rl = readline.createInterface({
       input: process.stdin,
@@ -25,12 +29,14 @@ async function readInputs(): Promise<string[]> {
       terminal: false,
     });
     let nodes: string[] = [];
-    rl.on("line", function(line: string) {
+    let nodesMap: Map<string, boolean> = new Map();
+    rl.on("line", function (line: string) {
       nodes.push(line);
+      nodesMap.set(line, true);
     });
 
-    rl.on("close", function() {
-      return resolve(nodes);
+    rl.on("close", function () {
+      return resolve({ nodes, nodesMap });
     });
   });
 }
@@ -123,11 +129,12 @@ async function main() {
   const GQLCapture = r.GQLCapture;
   GQLCapture.enable(true);
 
-  const [nodes, _, imports] = await Promise.all([
+  const [inputsRead, _, imports] = await Promise.all([
     readInputs(),
     captureCustom(options.path),
     parseImports(options.path),
   ]);
+  const { nodes, nodesMap } = inputsRead;
 
   function fromMap<T extends any>(m: Map<string, T>) {
     let result = {};
@@ -188,12 +195,14 @@ async function main() {
 
   const buildClasses = (fields: ProcessedCustomField[]) => {
     fields.forEach((field) => {
-      let info = imports.getInfoForClass(field.nodeName);
-      classes[field.nodeName] = { ...info.class, path: info.file.path };
+      if (!nodesMap.has(field.nodeName)) {
+        let info = imports.getInfoForClass(field.nodeName);
+        classes[field.nodeName] = { ...info.class, path: info.file.path };
+        buildFiles(info.file);
+      }
 
       buildClasses2(field.args);
       buildClasses2(field.results);
-      buildFiles(info.file);
     });
   };
   buildClasses(mutations);
@@ -214,4 +223,9 @@ async function main() {
   );
 }
 
-Promise.resolve(main());
+main()
+  .then()
+  .catch((err) => {
+    console.error(err);
+    exit(1);
+  });

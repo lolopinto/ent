@@ -4,7 +4,6 @@ import {
   ID,
   Data,
   SelectDataOptions,
-  DataOptions,
   Context,
   Loader,
   LoaderFactory,
@@ -12,7 +11,7 @@ import {
 } from "../base";
 import { loadRow, loadRows } from "../ent";
 import * as clause from "../clause";
-import { log, logEnabled } from "../logger";
+import { logEnabled } from "../logger";
 
 import { getLoader, cacheMap } from "./loader";
 import memoizee from "memoizee";

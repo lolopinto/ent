@@ -7,7 +7,12 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/codepath"
+	"github.com/lolopinto/ent/internal/edge"
+	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/schemaparser"
 )
 
 type processCustomRoot interface {
@@ -111,7 +116,7 @@ func processFields(data *codegen.Data, cd *customData, s *gqlSchema, cr processC
 		}
 
 		if !class.Exported {
-			return nil, fmt.Errorf("Resolver class %s needs to be exported", class.Name)
+			return nil, fmt.Errorf("resolver class %s needs to be exported", class.Name)
 		}
 
 		var objTypes []*objectType
@@ -178,6 +183,12 @@ func processFields(data *codegen.Data, cd *customData, s *gqlSchema, cr processC
 		if err != nil {
 			return nil, err
 		}
+		// take connection here and add to result...
+		var connections []*gqlConnection
+		if fieldConfig.connection != nil {
+			connections = append(connections, fieldConfig.connection)
+		}
+
 		result = append(result, &gqlNode{
 			ObjData: &gqlobjectData{
 				// TODO kill node and NodeInstance they don't make sense here...
@@ -187,8 +198,9 @@ func processFields(data *codegen.Data, cd *customData, s *gqlSchema, cr processC
 				FieldConfig:  fieldConfig,
 				Package:      data.CodePath.GetImportPackage(),
 			},
-			FilePath: filePath,
-			Field:    &field,
+			FilePath:    filePath,
+			Field:       &field,
+			connections: connections,
 		})
 	}
 
@@ -251,7 +263,7 @@ func (mfcg *mutationFieldConfigBuilder) getResolveMethodArg() string {
 		args = append(args, arg.Name)
 	}
 
-	return fmt.Sprintf("{%s}", strings.Join(args, ", "))
+	return fmt.Sprintf("args: {%s}", strings.Join(args, ", "))
 }
 
 func (mfcg *mutationFieldConfigBuilder) getTypeImports(s *gqlSchema) []*fileImport {
@@ -259,13 +271,14 @@ func (mfcg *mutationFieldConfigBuilder) getTypeImports(s *gqlSchema) []*fileImpo
 		panic("invalid number of results for custom field")
 	}
 	r := mfcg.field.Results[0]
-	var ret []*fileImport
-	if r.Nullable == "" {
-		ret = append(ret, &fileImport{
-			Type:       "GraphQLNonNull",
-			ImportPath: "graphql",
-		})
+	// use the initialized imports to seed this
+	// TODO use s.getImports and make these be consistent
+	// https://github.com/lolopinto/ent/issues/240
+	if err := r.initialize(); err != nil {
+		panic(err)
 	}
+	var ret = r.imports[:]
+
 	imp := s.getImportFor(r.Type, true)
 	if imp != nil {
 		ret = append(ret, imp)
@@ -344,21 +357,31 @@ func (qfcg *queryFieldConfigBuilder) getResolveMethodArg() string {
 		}
 		args = append(args, arg.Name)
 	}
-	return fmt.Sprintf("{%s}", strings.Join(args, ", "))
+	if isConnection(qfcg.field) {
+		for _, arg := range getConnectionArgs() {
+			args = append(args, arg.Name)
+		}
+	}
+	return fmt.Sprintf("args: {%s}", strings.Join(args, ", "))
 }
 
 func (qfcg *queryFieldConfigBuilder) getTypeImports(s *gqlSchema) []*fileImport {
 	if len(qfcg.field.Results) != 1 {
 		panic("invalid number of results for custom field")
 	}
-	r := qfcg.field.Results[0]
-	var ret []*fileImport
-	if r.Nullable == "" {
-		ret = append(ret, &fileImport{
-			Type:       "GraphQLNonNull",
-			ImportPath: "graphql",
-		})
+
+	if isConnection(qfcg.field) {
+		return getGQLFileImports(getRootGQLEdge(qfcg.field).GetTSGraphQLTypeImports(), false)
 	}
+	r := qfcg.field.Results[0]
+
+	// use the initialized imports to seed this
+	// TODO use s.getImports and make these be consistent
+	// https://github.com/lolopinto/ent/issues/240
+	if err := r.initialize(); err != nil {
+		panic(err)
+	}
+	var ret = r.imports[:]
 
 	imp := s.getImportFor(r.Type, false)
 	if imp != nil {
@@ -381,6 +404,13 @@ func getFieldConfigArgs(field CustomField, s *gqlSchema, mutation bool) []*field
 			continue
 		}
 
+		// use the initialized imports to seed this
+		// TODO use s.getImports and make these be consistent
+		// https://github.com/lolopinto/ent/issues/240
+		if err := arg.initialize(); err != nil {
+			panic(err)
+		}
+
 		imp := s.getImportFor(arg.Type, mutation)
 		if imp == nil {
 			// local
@@ -388,20 +418,17 @@ func getFieldConfigArgs(field CustomField, s *gqlSchema, mutation bool) []*field
 				Type: arg.Type,
 			}
 		}
+		var imports = arg.imports[:]
+		imports = append(imports, imp)
 
-		// non-null
-		var imports []*fileImport
-		if arg.Nullable == "" {
-			imports = []*fileImport{
-				getNativeGQLImportFor("GraphQLNonNull"), imp,
-			}
-		} else {
-			imports = []*fileImport{imp}
-		}
 		args = append(args, &fieldConfigArg{
 			Name:    arg.Name,
 			Imports: imports,
 		})
+	}
+	// add connection args
+	if isConnection(field) {
+		args = append(args, getConnectionArgs()...)
 	}
 	return args
 }
@@ -472,9 +499,9 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.Data, s *gql
 					Type:       "mustDecodeIDFromGQLID",
 					ImportPath: codepath.GraphQLPackage,
 				})
-				argContents[idx] = fmt.Sprintf("mustDecodeIDFromGQLID(%s)", arg.Name)
+				argContents[idx] = fmt.Sprintf("mustDecodeIDFromGQLID(args.%s)", arg.Name)
 			} else {
-				argContents[idx] = arg.Name
+				argContents[idx] = fmt.Sprintf("args.%s", arg.Name)
 			}
 		} else {
 			fields, ok := cd.Fields[arg.Type]
@@ -484,11 +511,40 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.Data, s *gql
 			args := make([]string, len(fields))
 
 			for idx, f := range fields {
+				// input.foo
 				args[idx] = fmt.Sprintf("%s:%s.%s", f.GraphQLName, arg.Name, f.GraphQLName)
 			}
 			argContents[idx] = fmt.Sprintf("{%s},", strings.Join(args, ","))
 		}
 	}
+	var conn *gqlConnection
+
+	functionCall := fmt.Sprintf("r.%s(%s)", field.FunctionName, strings.Join(argContents, ","))
+
+	functionContents := []string{
+		fmt.Sprintf("const r = new %s();", field.Node),
+	}
+
+	if isConnection(field) {
+		// nodeName is root or something...
+		customEdge := getRootGQLEdge(field)
+		// RootQuery?
+		conn = getGqlConnection("root", customEdge, data)
+
+		functionContents = append(
+			functionContents,
+			fmt.Sprintf(
+				"return new GraphQLEdgeConnection(context.getViewer(), (v) => %s, args);",
+				functionCall,
+			),
+		)
+
+		argImports = append(argImports, getEntGQLImportFor("GraphQLEdgeConnection"))
+	} else {
+		functionContents = append(functionContents, fmt.Sprintf("return %s;", functionCall))
+	}
+
+	// fieldConfig can have connection
 	result := &fieldConfig{
 		Exported:         true,
 		Name:             builder.getName(),
@@ -498,14 +554,8 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.Data, s *gql
 		ArgImports:       argImports,
 		Args:             builder.getArgs(s),
 		ReturnTypeHint:   builder.getReturnTypeHint(),
-		FunctionContents: []string{
-			fmt.Sprintf("const r = new %s();", field.Node),
-			fmt.Sprintf("return r.%s(", field.FunctionName),
-			// put all the args on one line separated by a comma. we'll depend on prettier to format correctly
-			strings.Join(argContents, ","),
-			// closing the funtion call..
-			");",
-		},
+		connection:       conn,
+		FunctionContents: functionContents,
 	}
 
 	return result, nil
@@ -635,7 +685,7 @@ func getRelativeImportPath(data *codegen.Data, basepath, targetpath string) (str
 	return strings.TrimSuffix(rel, ".ts"), nil
 }
 
-func processCustomFields(cd *customData, s *gqlSchema) error {
+func processCustomFields(data *codegen.Data, cd *customData, s *gqlSchema) error {
 	for nodeName, fields := range cd.Fields {
 		if cd.Inputs[nodeName] != nil {
 			continue
@@ -650,9 +700,10 @@ func processCustomFields(cd *customData, s *gqlSchema) error {
 
 		var obj *objectType
 		var instance string
+		var nodeData *schema.NodeData
 		if nodeInfo != nil {
 			objData := nodeInfo.ObjData
-			nodeData := objData.NodeData
+			nodeData = objData.NodeData
 			// always has a node for now
 			obj = objData.GQLNodes[0]
 			instance = nodeData.NodeInstance
@@ -672,6 +723,12 @@ func processCustomFields(cd *customData, s *gqlSchema) error {
 		}
 
 		for _, field := range fields {
+			if isConnection(field) {
+				customEdge := getGQLEdge(field, nodeName)
+				nodeInfo.connections = append(nodeInfo.connections, getGqlConnection(nodeData.PackageName, customEdge, data))
+				addConnection(nodeData, customEdge, &obj.Fields, nodeData.NodeInstance, &field)
+				continue
+			}
 
 			gqlField, err := getCustomGQLField(cd, field, s, instance)
 			if err != nil {
@@ -699,7 +756,17 @@ func processCustomFields(cd *customData, s *gqlSchema) error {
 	return nil
 }
 
+func isConnection(field CustomField) bool {
+	if len(field.Results) != 1 {
+		return false
+	}
+	return field.Results[0].Connection
+}
+
 func getCustomGQLField(cd *customData, field CustomField, s *gqlSchema, instance string) (*fieldType, error) {
+	if isConnection(field) {
+		return nil, fmt.Errorf("field is a connection. this should be handled elsewhere")
+	}
 	imports, err := getGraphQLImportsForField(cd, field, s)
 	if err != nil {
 		return nil, err
@@ -726,9 +793,7 @@ func getCustomGQLField(cd *customData, field CustomField, s *gqlSchema, instance
 		if err != nil {
 			return nil, err
 		}
-		for _, imp := range imps {
-			cfgArg.Imports = append(cfgArg.Imports, imp)
-		}
+		cfgArg.Imports = append(cfgArg.Imports, imps...)
 
 		gqlField.Args = append(gqlField.Args, cfgArg)
 	}
@@ -742,7 +807,6 @@ func getCustomGQLField(cd *customData, field CustomField, s *gqlSchema, instance
 				fmt.Sprintf("return %s.%s;", instance, field.FunctionName),
 			}
 		}
-		break
 
 	case Function, AsyncFunction:
 		gqlField.HasAsyncModifier = field.FieldType == AsyncFunction
@@ -750,7 +814,6 @@ func getCustomGQLField(cd *customData, field CustomField, s *gqlSchema, instance
 		gqlField.FunctionContents = []string{
 			fmt.Sprintf("return %s.%s(%s);", instance, field.FunctionName, strings.Join(args, ",")),
 		}
-		break
 	}
 
 	return gqlField, nil
@@ -778,4 +841,87 @@ func getGraphQLImportsForField(cd *customData, f CustomField, s *gqlSchema) ([]*
 		imports = append(imports, imps...)
 	}
 	return imports, nil
+}
+
+type CustomEdge struct {
+	SourceNodeName string
+	EdgeName       string
+	Type           string
+}
+
+func (e *CustomEdge) GetEdgeName() string {
+	return e.EdgeName
+}
+
+func (e *CustomEdge) GetNodeInfo() nodeinfo.NodeInfo {
+	return nodeinfo.GetNodeInfo(e.Type)
+}
+
+func (e *CustomEdge) GetEntConfig() schemaparser.EntConfigInfo {
+	return schemaparser.GetEntConfigFromName(e.Type)
+}
+
+func (e *CustomEdge) GraphQLEdgeName() string {
+	return strcase.ToLowerCamel(e.EdgeName)
+}
+
+func (e *CustomEdge) CamelCaseEdgeName() string {
+	return strcase.ToCamel(e.EdgeName)
+
+}
+
+func (e *CustomEdge) HideFromGraphQL() bool {
+	return false
+}
+
+func (e *CustomEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
+	return []enttype.FileImport{
+		enttype.NewGQLFileImport("GraphQLNonNull"),
+		{
+			ImportType: enttype.Connection,
+			Type:       e.GetGraphQLConnectionName(),
+		},
+	}
+}
+
+func (e *CustomEdge) GetSourceNodeName() string {
+	return strcase.ToCamel(e.SourceNodeName)
+}
+
+func (e *CustomEdge) GetGraphQLEdgePrefix() string {
+	return fmt.Sprintf("%sTo%s", strcase.ToCamel(e.SourceNodeName), strcase.ToCamel(e.EdgeName))
+
+}
+
+func (e *CustomEdge) GetGraphQLConnectionName() string {
+	return fmt.Sprintf("%sTo%sConnection", strcase.ToCamel(e.SourceNodeName), strcase.ToCamel(e.EdgeName))
+
+}
+
+func (e *CustomEdge) TsEdgeQueryEdgeName() string {
+	// For CustomEdge, we only use this with GraphQLConnectionType and the EdgeType is "Data"
+	return "Data"
+}
+
+func (e *CustomEdge) TsEdgeQueryName() string {
+	return fmt.Sprintf("%sTo%sQuery", strcase.ToCamel(e.SourceNodeName), strcase.ToCamel(e.EdgeName))
+}
+
+func (e *CustomEdge) UniqueEdge() bool {
+	return false
+}
+
+var _ edge.Edge = &CustomEdge{}
+var _ edge.ConnectionEdge = &CustomEdge{}
+
+func getGQLEdge(field CustomField, nodeName string) *CustomEdge {
+	return &CustomEdge{
+		SourceNodeName: nodeName,
+		Type:           field.Results[0].Type,
+		EdgeName:       strcase.ToLowerCamel(field.GraphQLName),
+	}
+}
+
+func getRootGQLEdge(field CustomField) *CustomEdge {
+	return getGQLEdge(field, "root")
 }

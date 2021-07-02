@@ -10,7 +10,7 @@ import {
   IndexLoaderFactory,
   RawCountLoaderFactory,
   Viewer,
-} from "@lolopinto/ent";
+} from "@snowtop/snowtop-ts";
 import {
   EdgeType,
   EventActivity,
@@ -23,18 +23,18 @@ import {
   guestLoader,
 } from "src/ent/internal";
 
-export const guestGroupToInvitedEventsCountLoaderFactory = new AssocEdgeCountLoaderFactory(
-  EdgeType.GuestGroupToInvitedEvents,
-);
-export const guestGroupToInvitedEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
-  EdgeType.GuestGroupToInvitedEvents,
-  () => GuestGroupToInvitedEventsEdge,
-);
+export const guestGroupToInvitedEventsCountLoaderFactory =
+  new AssocEdgeCountLoaderFactory(EdgeType.GuestGroupToInvitedEvents);
+export const guestGroupToInvitedEventsDataLoaderFactory =
+  new AssocEdgeLoaderFactory(
+    EdgeType.GuestGroupToInvitedEvents,
+    () => GuestGroupToInvitedEventsEdge,
+  );
 
-export const guestGroupToGuestsCountLoaderFactory = new RawCountLoaderFactory(
-  Guest.loaderOptions(),
-  "guest_group_id",
-);
+export const guestGroupToGuestsCountLoaderFactory = new RawCountLoaderFactory({
+  ...Guest.loaderOptions(),
+  groupCol: "guest_group_id",
+});
 export const guestGroupToGuestsDataLoaderFactory = new IndexLoaderFactory(
   Guest.loaderOptions(),
   "guest_group_id",

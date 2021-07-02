@@ -3,17 +3,21 @@
 import {
   AllowIfViewerPrivacyPolicy,
   Context,
+  CustomQuery,
   Data,
   ID,
   LoadEntOptions,
   ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
+  convertDate,
+  loadCustomData,
+  loadCustomEnts,
   loadEnt,
   loadEntX,
   loadEnts,
-} from "@lolopinto/ent";
-import { Field, getFields } from "@lolopinto/ent/schema";
+} from "@snowtop/snowtop-ts";
+import { Field, getFields } from "@snowtop/snowtop-ts/schema";
 import { NodeType, User } from "src/ent/internal";
 import schema from "src/schema/contact";
 
@@ -40,8 +44,8 @@ export class ContactBase {
 
   constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
-    this.createdAt = data.created_at;
-    this.updatedAt = data.updated_at;
+    this.createdAt = convertDate(data.created_at);
+    this.updatedAt = convertDate(data.updated_at);
     this.emailAddress = data.email_address;
     this.firstName = data.first_name;
     this.lastName = data.last_name;
@@ -73,6 +77,26 @@ export class ContactBase {
     ...ids: ID[]
   ): Promise<T[]> {
     return loadEnts(viewer, ContactBase.loaderOptions.apply(this), ...ids);
+  }
+
+  static async loadCustom<T extends ContactBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
+    query: CustomQuery,
+  ): Promise<T[]> {
+    return loadCustomEnts(viewer, ContactBase.loaderOptions.apply(this), query);
+  }
+
+  static async loadCustomData<T extends ContactBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<Data[]> {
+    return loadCustomData(
+      ContactBase.loaderOptions.apply(this),
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends ContactBase>(

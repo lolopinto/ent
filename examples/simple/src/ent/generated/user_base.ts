@@ -4,12 +4,18 @@ import {
   AllowIfViewerPrivacyPolicy,
   AssocEdge,
   Context,
+  CustomQuery,
   Data,
   ID,
   LoadEntOptions,
   ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
+  convertBool,
+  convertDate,
+  convertNullableList,
+  loadCustomData,
+  loadCustomEnts,
   loadEnt,
   loadEntViaKey,
   loadEntX,
@@ -17,8 +23,8 @@ import {
   loadEnts,
   loadUniqueEdge,
   loadUniqueNode,
-} from "@lolopinto/ent";
-import { Field, getFields } from "@lolopinto/ent/schema";
+} from "@snowtop/snowtop-ts";
+import { Field, getFields } from "@snowtop/snowtop-ts/schema";
 import {
   Contact,
   EdgeType,
@@ -48,6 +54,7 @@ const fields = [
   "account_status",
   "email_verified",
   "bio",
+  "nicknames",
 ];
 
 export class UserBase {
@@ -63,19 +70,21 @@ export class UserBase {
   readonly accountStatus: string | null;
   readonly emailVerified: boolean;
   readonly bio: string | null;
+  readonly nicknames: string[] | null;
 
   constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
-    this.createdAt = data.created_at;
-    this.updatedAt = data.updated_at;
+    this.createdAt = convertDate(data.created_at);
+    this.updatedAt = convertDate(data.updated_at);
     this.firstName = data.first_name;
     this.lastName = data.last_name;
     this.emailAddress = data.email_address;
     this.phoneNumber = data.phone_number;
     this.password = data.password;
     this.accountStatus = data.account_status;
-    this.emailVerified = data.email_verified;
+    this.emailVerified = convertBool(data.email_verified);
     this.bio = data.bio;
+    this.nicknames = convertNullableList(data.nicknames);
   }
 
   // default privacyPolicy is Viewer can see themselves
@@ -103,6 +112,22 @@ export class UserBase {
     ...ids: ID[]
   ): Promise<T[]> {
     return loadEnts(viewer, UserBase.loaderOptions.apply(this), ...ids);
+  }
+
+  static async loadCustom<T extends UserBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
+    query: CustomQuery,
+  ): Promise<T[]> {
+    return loadCustomEnts(viewer, UserBase.loaderOptions.apply(this), query);
+  }
+
+  static async loadCustomData<T extends UserBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<Data[]> {
+    return loadCustomData(UserBase.loaderOptions.apply(this), query, context);
   }
 
   static async loadRawData<T extends UserBase>(

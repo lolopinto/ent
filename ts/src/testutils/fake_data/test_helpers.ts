@@ -1,5 +1,5 @@
 import { fail } from "assert";
-import { advanceBy, advanceTo } from "jest-date-mock";
+import { advanceBy, advanceTo, clear } from "jest-date-mock";
 import { IDViewer, LoggedOutViewer } from "../../core/viewer";
 import { Data } from "../../core/base";
 import { AssocEdge, loadEdgeData } from "../../core/ent";
@@ -22,8 +22,9 @@ import {
   SymmetricEdges,
   InverseEdges,
 } from ".";
-import { EventCreateInput, getEventBuilder } from "./fake_event";
+import { EventCreateInput, FakeEvent, getEventBuilder } from "./fake_event";
 import { NodeType } from "./const";
+import { MockDate } from "./../mock_date";
 
 export function getContactInput(
   user: FakeUser,
@@ -47,6 +48,20 @@ export function getUserInput(
     emailAddress: "foo@bar.com",
     phoneNumber: "415-212-1212",
     password: "pa$$w0rd",
+    ...input,
+  };
+}
+
+export function getEventInput(
+  user: FakeUser,
+  input?: Partial<EventCreateInput>,
+): EventCreateInput {
+  return {
+    startTime: new Date(),
+    location: "fun location",
+    title: "title",
+    description: "fun event",
+    userID: user.id,
     ...input,
   };
 }
@@ -153,17 +168,10 @@ export function verifyUserToContactRawData(
   expect(edges.length).toBe(contacts.length);
 
   for (let i = 0; i < contacts.length; i++) {
-    const contact = contacts[i];
     const edge = edges[i];
-    const expectedEdge = {
-      id: contact.id,
-      created_at: contact.createdAt,
-      updated_at: contact.updatedAt,
-      first_name: contact.firstName,
-      last_name: contact.lastName,
-      email_address: contact.emailAddress,
-      user_id: contact.userID,
-    };
+    const expectedEdge = contacts[i].data;
+    // getting data from db so just checking that data's as expected
+
     expect(edge, `${i}th index`).toMatchObject(expectedEdge);
   }
 }
@@ -228,16 +236,7 @@ export async function createTestEvent(
 }
 
 export async function setupTempDB() {
-  const tables = [
-    FakeUser.getTestTable(),
-    FakeContact.getTestTable(),
-    assoc_edge_config_table(),
-  ];
-  edgeTableNames().forEach((tableName) =>
-    tables.push(assoc_edge_table(tableName)),
-  );
-
-  const tdb = new TempDB(...tables);
+  const tdb = new TempDB(tempDBTables());
 
   await tdb.beforeAll();
 
@@ -245,4 +244,51 @@ export async function setupTempDB() {
   await createEdges();
 
   return tdb;
+}
+
+export function tempDBTables() {
+  const tables = [
+    FakeUser.getTestTable(),
+    FakeContact.getTestTable(),
+    FakeEvent.getTestTable(),
+    assoc_edge_config_table(),
+  ];
+  edgeTableNames().forEach((tableName) =>
+    tables.push(assoc_edge_table(tableName)),
+  );
+
+  return tables;
+}
+
+interface options {
+  howMany: number;
+  interval: number;
+  userInput?: Partial<UserCreateInput>;
+  eventInputs?: Partial<EventCreateInput>[];
+}
+export async function createAllEvents(
+  opts: options,
+): Promise<[FakeUser, FakeEvent[]]> {
+  const user = await createTestUser(opts.userInput);
+
+  let arr = new Array(opts.howMany);
+  arr.fill(1);
+
+  // start at date in case something else has used a date already
+  advanceTo(MockDate.getDate());
+
+  const events = await Promise.all(
+    arr.map(async (v, idx: number) => {
+      // just to make times deterministic so that tests can consistently work
+      if (opts.interval > 0) {
+        advanceBy(opts.interval);
+      }
+      const input = opts.eventInputs?.[idx];
+      const builder = getEventBuilder(user.viewer, getEventInput(user, input));
+      await builder.saveX();
+      return await builder.editedEntX();
+    }),
+  );
+  expect(events.length).toBe(opts.howMany);
+  return [user, events];
 }

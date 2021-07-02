@@ -1,5 +1,12 @@
-import { Client } from "pg";
-import DB from "../../core/db";
+import { Client as PGClient } from "pg";
+import DB, { Sqlite, Dialect, Client, SyncClient } from "../../core/db";
+import sqlite, { Database as SqliteDatabase } from "better-sqlite3";
+import { loadConfig } from "../../core/config";
+import * as fs from "fs";
+import { DBType, Field, getFields } from "../../schema";
+import { snakeCase } from "snake-case";
+import { BuilderSchema, getTableName } from "../builder";
+import { Ent } from "../../core/base";
 
 interface SchemaItem {
   name: string;
@@ -89,7 +96,11 @@ export function timestamptz(name: string, opts?: options): Column {
   return {
     name,
     datatype() {
-      return "TIMESTAMP WITH TIME ZONE";
+      if (DB.getDialect() === Dialect.Postgres) {
+        return "TIMESTAMP WITH TIME ZONE";
+      } else {
+        return "TEXT";
+      }
     },
     ...opts,
   };
@@ -126,13 +137,86 @@ export function date(name: string, opts?: options): Column {
 }
 
 export function bool(name: string, opts?: options): Column {
+  const dialect = DB.getDialect();
+  if (opts?.default === "FALSE" && dialect === Dialect.SQLite) {
+    opts.default = "0";
+  }
   return {
     name,
     datatype() {
-      return "BOOLEAN";
+      if (dialect === Dialect.Postgres) {
+        return "BOOLEAN";
+      }
+      return "INTEGER";
     },
     ...opts,
   };
+}
+
+export function integer(name: string, opts?: options): Column {
+  return {
+    name,
+    datatype() {
+      return "INTEGER";
+    },
+    ...opts,
+  };
+}
+
+export function float(name: string, opts?: options): Column {
+  return {
+    name,
+    datatype() {
+      return "REAL";
+    },
+    ...opts,
+  };
+}
+
+function list(name: string, col: Column, opts?: options): Column {
+  return {
+    name,
+    datatype() {
+      return `${col.datatype()}[]`;
+    },
+    ...opts,
+  };
+}
+
+export function textList(name: string, opts?: options): Column {
+  return list(name, text(name), opts);
+}
+
+export function integerList(name: string, opts?: options): Column {
+  return list(name, integer(name), opts);
+}
+
+export function uuidList(name: string, opts?: options): Column {
+  return list(name, uuid(name), opts);
+}
+
+export function timestampList(name: string, opts?: options): Column {
+  return list(name, timestamp(name), opts);
+}
+
+export function timestamptzList(name: string, opts?: options): Column {
+  return list(name, timestamptz(name), opts);
+}
+
+export function timeList(name: string, opts?: options): Column {
+  return list(name, time(name), opts);
+}
+
+export function timetzList(name: string, opts?: options): Column {
+  return list(name, timetz(name), opts);
+}
+
+export function dateList(name: string, opts?: options): Column {
+  return list(name, date(name), opts);
+}
+
+export function boolList(name: string, opts?: options): Column {
+  return list(name, bool(name), opts);
 }
 
 export function table(name: string, ...items: SchemaItem[]): Table {
@@ -178,72 +262,119 @@ export function table(name: string, ...items: SchemaItem[]): Table {
         schemaStr.push(constraint.generate()),
       );
 
-      return `CREATE TABLE ${name} (\n ${schemaStr})`;
+      return `CREATE TABLE IF NOT EXISTS ${name} (\n ${schemaStr})`;
     },
     drop() {
-      return `DROP TABLE ${name}`;
+      return `DROP TABLE IF EXISTS ${name}`;
     },
   };
 }
 
 function randomDB(): string {
-  let str = Math.random()
-    .toString(16)
-    .substring(2);
+  let str = Math.random().toString(16).substring(2);
 
   // always ensure it starts with an alpha character
   return "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)] + str;
 }
 
+function isDialect(dialect: Dialect | Table[]): dialect is Dialect {
+  return !Array.isArray(dialect);
+}
+
 export class TempDB {
   private db: string;
-  private client: Client;
-  private dbClient: Client;
+  private client: PGClient;
+  private dbClient: PGClient;
   private tables = new Map<string, Table>();
+  private dialect: Dialect;
+  private sqlite: SqliteDatabase;
 
-  constructor(...tables: Table[]) {
-    tables.forEach((table) => this.tables.set(table.name, table));
+  constructor(dialect: Dialect, tables?: Table[]);
+  constructor(tables: Table[]);
+  constructor(dialect: Dialect | Table[], tables?: Table[]) {
+    let tbles: Table[] = [];
+    if (isDialect(dialect)) {
+      this.dialect = dialect;
+      if (tables) {
+        tbles = tables;
+      }
+    } else {
+      this.dialect = Dialect.Postgres;
+      tbles = dialect;
+    }
+    tbles.forEach((table) => this.tables.set(table.name, table));
+  }
+
+  getDialect() {
+    return this.dialect;
+  }
+
+  getTables() {
+    return this.tables;
   }
 
   async beforeAll() {
-    const user = process.env.POSTGRES_USER || "";
-    const password = process.env.POSTGRES_PASSWORD || "";
+    if (this.dialect === Dialect.Postgres) {
+      const user = process.env.POSTGRES_USER || "";
+      const password = process.env.POSTGRES_PASSWORD || "";
 
-    this.client = new Client({
-      host: "localhost",
-      user,
-      password,
-    });
-    await this.client.connect();
+      this.client = new PGClient({
+        host: "localhost",
+        user,
+        password,
+      });
+      await this.client.connect();
 
-    this.db = randomDB();
+      this.db = randomDB();
 
-    await this.client.query(`CREATE DATABASE ${this.db}`);
+      await this.client.query(`CREATE DATABASE ${this.db}`);
 
-    if (user && password) {
-      process.env.DB_CONNECTION_STRING = `postgres://${user}:${password}@localhost:5432/${this.db}`;
+      if (user && password) {
+        process.env.DB_CONNECTION_STRING = `postgres://${user}:${password}@localhost:5432/${this.db}`;
+      } else {
+        process.env.DB_CONNECTION_STRING = `postgres://localhost/${this.db}?`;
+      }
+
+      this.dbClient = new PGClient({
+        host: "localhost",
+        database: this.db,
+        user,
+        password,
+      });
+      await this.dbClient.connect();
     } else {
-      process.env.DB_CONNECTION_STRING = `postgres://localhost/${this.db}?`;
+      if (process.env.DB_CONNECTION_STRING === undefined) {
+        throw new Error(`DB_CONNECTION_STRING required for sqlite `);
+      }
+      const filePath = process.env.DB_CONNECTION_STRING.substr(10);
+      this.sqlite = sqlite(filePath);
     }
-
-    this.dbClient = new Client({
-      host: "localhost",
-      database: this.db,
-      user,
-      password,
-    });
-    await this.dbClient.connect();
 
     for (const [_, table] of this.tables) {
-      await this.dbClient.query(table.create());
+      if (this.dialect == Dialect.Postgres) {
+        await this.dbClient.query(table.create());
+      } else {
+        //        console.log(table.create());
+        this.sqlite.exec(table.create());
+      }
     }
+    //    await this.sqlite.exec("nonsense");
   }
 
-  getDBClient() {
+  getSqliteClient(): SqliteDatabase {
+    return this.sqlite;
+  }
+
+  getPostgresClient(): PGClient {
     return this.dbClient;
   }
 
   async afterAll() {
+    if (this.dialect === Dialect.SQLite) {
+      this.sqlite.close();
+      return;
+    }
+
     // end our connection to db
     await this.dbClient.end();
     // end any pool connection
@@ -255,13 +386,23 @@ export class TempDB {
     await this.client.end();
   }
 
+  async dropAll() {
+    for (const [t, _] of this.tables) {
+      await this.drop(t);
+    }
+  }
+
   async drop(...tables: string[]) {
     for (const tableName of tables) {
       const table = this.tables.get(tableName);
       if (!table) {
         continue;
       }
-      await this.dbClient.query(table.drop());
+      if (this.dialect === Dialect.Postgres) {
+        await this.dbClient.query(table.drop());
+      } else {
+        await this.sqlite.exec(table.drop());
+      }
       this.tables.delete(tableName);
     }
   }
@@ -271,7 +412,11 @@ export class TempDB {
       if (this.tables.has(table.name)) {
         throw new Error(`table with name ${table.name} already exists`);
       }
-      await this.dbClient.query(table.create());
+      if (this.dialect === Dialect.Postgres) {
+        await this.dbClient.query(table.create());
+      } else {
+        this.sqlite.exec(table.create());
+      }
       this.tables.set(table.name, table);
     }
   }
@@ -304,4 +449,147 @@ export function assoc_edge_table(name: string) {
     text("data", { nullable: true }),
     primaryKey(`${name}_pkey`, ["id1", "id2", "edge_type"]),
   );
+}
+
+interface sqliteSetupOptions {
+  disableDeleteAfterEachTest?: boolean;
+}
+export function setupSqlite(
+  connString: string,
+  tables: () => Table[],
+  opts?: sqliteSetupOptions,
+) {
+  let tdb: TempDB;
+  beforeAll(async () => {
+    process.env.DB_CONNECTION_STRING = connString;
+    loadConfig();
+    tdb = new TempDB(Dialect.SQLite, tables());
+    await tdb.beforeAll();
+
+    const conn = DB.getInstance().getConnection();
+    expect((conn as Sqlite).db.memory).toBe(false);
+  });
+
+  if (!opts?.disableDeleteAfterEachTest) {
+    afterEach(async () => {
+      const client = await DB.getInstance().getNewClient();
+      for (const [key, _] of tdb.getTables()) {
+        const query = `delete from ${key}`;
+        if (isSyncClient(client))
+          if (client.execSync) {
+            client.execSync(query);
+          } else {
+            await client.exec(query);
+          }
+      }
+    });
+  }
+
+  afterAll(async () => {
+    await tdb.afterAll();
+
+    fs.rmSync(tdb.getSqliteClient().name);
+  });
+}
+
+export function getSchemaTable(schema: BuilderSchema<Ent>, dialect: Dialect) {
+  const fields = getFields(schema);
+
+  const columns: Column[] = [];
+  for (const [_, field] of fields) {
+    columns.push(getColumnFromField(field, dialect));
+  }
+  return table(getTableName(schema), ...columns);
+}
+
+function getColumnForDbType(
+  t: DBType,
+  dialect: Dialect,
+): ((name: string) => Column) | undefined {
+  switch (t) {
+    case DBType.UUID:
+      if (dialect === Dialect.Postgres) {
+        return uuid;
+      }
+      return text;
+    case DBType.Int64ID:
+    case DBType.Int:
+      return integer;
+    case DBType.Boolean:
+      return bool;
+    case DBType.Timestamp:
+      return timestamp;
+    case DBType.Timestamptz:
+      return timestamptz;
+    case DBType.String:
+    case DBType.StringEnum:
+      return text;
+    case DBType.Float:
+      return float;
+    case DBType.Date:
+      return date;
+    case DBType.Time:
+      return time;
+    case DBType.Timetz:
+      return timetz;
+
+    default:
+      return undefined;
+  }
+}
+
+function getColumnFromField(f: Field, dialect: Dialect) {
+  switch (f.type.dbType) {
+    case DBType.List:
+      const elemType = f.type.listElemType;
+      if (elemType === undefined) {
+        throw new Error(`unsupported list type with no elem type`);
+      }
+      const elemFn = getColumnForDbType(elemType.dbType, dialect);
+      if (elemFn === undefined) {
+        throw new Error(`unsupported type for ${elemType}`);
+      }
+      return list(storageKey(f), elemFn("ignore"), buildOpts(f));
+
+    default:
+      const fn = getColumnForDbType(f.type.dbType, dialect);
+      if (fn === undefined) {
+        throw new Error(`unsupported type ${f.type.dbType}`);
+      }
+      return getColumn(f, fn);
+  }
+}
+
+function getColumn(f: Field, col: (name: string, opts?: options) => Column) {
+  return col(storageKey(f), buildOpts(f));
+}
+
+function buildOpts(f: Field): options {
+  let ret: options = {};
+  if (f.primaryKey) {
+    ret.primaryKey = true;
+  }
+  if (f.nullable) {
+    ret.nullable = true;
+  }
+  if (f.foreignKey !== undefined) {
+    console.error("TODO:foreign key not yet converted");
+    //    ret.foreignKey =
+  }
+  if (f.serverDefault) {
+    ret.default = f.serverDefault;
+  }
+  return ret;
+}
+
+function storageKey(f: Field): string {
+  if (f.storageKey) {
+    return f.storageKey;
+  }
+
+  return snakeCase(f.name);
+}
+
+function isSyncClient(client: Client): client is SyncClient {
+  return (client as SyncClient).execSync !== undefined;
 }

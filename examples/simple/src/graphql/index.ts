@@ -4,29 +4,29 @@ import { graphqlHTTP } from "express-graphql";
 import schema from "./schema";
 import { IncomingMessage, ServerResponse } from "http";
 import passport from "passport";
-//import session from "express-session";
-import { DB } from "@lolopinto/ent";
-import { buildContext, registerAuthHandler } from "@lolopinto/ent/auth";
+import session from "express-session";
+import { DB } from "@snowtop/snowtop-ts";
+import { buildContext, registerAuthHandler } from "@snowtop/snowtop-ts/auth";
 import {
-  //  PassportAuthHandler,
+  PassportAuthHandler,
   PassportStrategyHandler,
-} from "@lolopinto/ent-passport";
+} from "@snowtop/snowtop-passport";
 import { graphqlUploadExpress } from "graphql-upload";
 import { User } from "src/ent";
 
 let app = express();
-// app.use(
-//   session({
-//     secret: "ss",
-//   }),
-// );
+app.use(
+  session({
+    secret: "ss",
+  }),
+);
 app.use(passport.initialize());
 // session and PassportAuthHandler for non-JWT flows
-//app.use(passport.session());
+app.use(passport.session());
 
-//registerAuthHandler("viewer", new PassportAuthHandler());
+registerAuthHandler("passportViewer", new PassportAuthHandler());
 registerAuthHandler(
-  "viewer",
+  "jwtViewer",
   PassportStrategyHandler.jwtHandler({
     secretOrKey: "secret",
     authOptions: {

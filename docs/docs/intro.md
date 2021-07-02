@@ -30,6 +30,7 @@ This requires the following:
 * a database created via `createdb ent-starter` (or replace with your own database name)
   - if a different database is used, make sure to update the `environment` in `docker-compose.dev.yml`
 * [Docker](https://docs.docker.com/get-docker/) installed.
+* [Node 14](https://nodejs.org/en/download/) or later installed
 
 ## Your first schema
 
@@ -315,6 +316,33 @@ Then rerun the GraphQL query again and you should get a response similar to:
   }
 }
 ```
+
+## Query via GraphQL
+
+The generated GraphQL schema allows you to access any node in your entity graph via the following Query:
+
+```graphql title="src/graphql/schema.gql
+type Query {
+  node(id: ID!): Node
+}
+```
+
+`Node` is a polymorphic type and can accept an ID for any type of object. You can query for the User you just created with the following GraphQL query - replacing the ID with the ID returned when you created the user!
+
+```graphql
+query ByID {
+  node(id:"bm9kZTp1c2VyOjQ1Y2RkNmUyLWY2ZmItNDVlMC1iNWIwLWEwN2JlZWVmM2QxOQ==") {
+    id
+    ... on User {
+      firstName
+      lastName
+      emailAddress
+    }
+  }
+}
+```
+
+Note: The ID exposed to GraphQL is not the same as the ID for the row in the database. GraphQL IDs should be considered opaque by clients of your service. Learn more in the [GraphQL Docs](https://graphql.org/learn/global-object-identification/).
 
 ## Custom accessors
 Update `src/ent/user.ts` as follows:

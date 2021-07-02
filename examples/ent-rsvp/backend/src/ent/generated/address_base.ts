@@ -3,6 +3,7 @@
 import {
   AllowIfViewerPrivacyPolicy,
   Context,
+  CustomQuery,
   Data,
   Ent,
   ID,
@@ -10,13 +11,16 @@ import {
   ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
+  convertDate,
+  loadCustomData,
+  loadCustomEnts,
   loadEnt,
   loadEntViaKey,
   loadEntX,
   loadEntXViaKey,
   loadEnts,
-} from "@lolopinto/ent";
-import { Field, getFields } from "@lolopinto/ent/schema";
+} from "@snowtop/snowtop-ts";
+import { Field, getFields } from "@snowtop/snowtop-ts/schema";
 import { NodeType } from "src/ent/internal";
 import { loadEntByType, loadEntXByType } from "src/ent/loadAny";
 import schema from "src/schema/address";
@@ -50,8 +54,8 @@ export class AddressBase {
 
   constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
-    this.createdAt = data.created_at;
-    this.updatedAt = data.updated_at;
+    this.createdAt = convertDate(data.created_at);
+    this.updatedAt = convertDate(data.updated_at);
     this.street = data.street;
     this.city = data.city;
     this.state = data.state;
@@ -86,6 +90,26 @@ export class AddressBase {
     ...ids: ID[]
   ): Promise<T[]> {
     return loadEnts(viewer, AddressBase.loaderOptions.apply(this), ...ids);
+  }
+
+  static async loadCustom<T extends AddressBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
+    query: CustomQuery,
+  ): Promise<T[]> {
+    return loadCustomEnts(viewer, AddressBase.loaderOptions.apply(this), query);
+  }
+
+  static async loadCustomData<T extends AddressBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<Data[]> {
+    return loadCustomData(
+      AddressBase.loaderOptions.apply(this),
+      query,
+      context,
+    );
   }
 
   static async loadRawData<T extends AddressBase>(
@@ -174,7 +198,7 @@ export class AddressBase {
   async loadOwner(): Promise<Ent | null> {
     return loadEntByType(
       this.viewer,
-      (this.ownerType as unknown) as NodeType,
+      this.ownerType as unknown as NodeType,
       this.ownerID,
     );
   }
@@ -182,7 +206,7 @@ export class AddressBase {
   loadOwnerX(): Promise<Ent> {
     return loadEntXByType(
       this.viewer,
-      (this.ownerType as unknown) as NodeType,
+      this.ownerType as unknown as NodeType,
       this.ownerID,
     );
   }

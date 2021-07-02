@@ -6,7 +6,7 @@ import {
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@lolopinto/ent";
+import { RequestContext } from "@snowtop/snowtop-ts";
 import { EventType } from "src/graphql/resolvers/internal";
 import { EventResolver } from "../event";
 
@@ -20,11 +20,11 @@ export const EventQueryType: GraphQLFieldConfig<undefined, RequestContext> = {
   },
   resolve: async (
     _source,
-    { slug },
+    args: { slug },
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
     const r = new EventResolver();
-    return r.event(context, slug);
+    return r.event(context, args.slug);
   },
 };

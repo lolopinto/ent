@@ -1,4 +1,4 @@
-{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey"}}
+{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData"}}
 {{ reserveImport .Package.SchemaPackagePath "Field" "getFields"}}
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
 {{ reserveImport "src/ent/loadAny" "loadEntByType" "loadEntXByType"}}
@@ -52,7 +52,13 @@ export class {{$baseClass}} {
 
   constructor(public viewer: {{$viewerType}}, data:{{$dataType}}) {
     {{range $field := .FieldInfo.Fields -}}
-      this.{{$field.TsFieldName}} = data.{{$field.GetDbColName}};
+      {{$val := printf "data.%s" $field.GetDbColName -}}
+      {{$convertType := convertFunc $field.GetFieldType -}}
+      {{if $convertType -}} 
+        this.{{$field.TsFieldName}} = {{useImport $convertType}}({{$val}});
+      {{ else -}}
+        this.{{$field.TsFieldName}} = {{$val}};
+      {{end -}}
     {{end}}
   }
 
@@ -94,6 +100,30 @@ export class {{$baseClass}} {
       viewer, 
       {{$baseClass}}.loaderOptions.apply(this), 
       ...ids,
+    );
+  }
+
+  static async loadCustom<T extends {{$baseClass}}>(
+    this: {{$thisType}},
+    viewer: {{$viewerType}},
+    query: {{useImport "CustomQuery"}},
+  ): Promise<T[]> {
+    return {{useImport "loadCustomEnts"}}(
+      viewer,
+      {{$baseClass}}.loaderOptions.apply(this),
+      query,
+    );
+  }
+
+  static async loadCustomData<T extends {{$baseClass}}>(
+    this: {{$thisType}},
+    query: {{useImport "CustomQuery"}},
+    context?: {{useImport "Context"}}
+  ): Promise<Data[]> {
+    return {{useImport "loadCustomData"}}(
+      {{$baseClass}}.loaderOptions.apply(this),
+      query,
+      context,
     );
   }
 

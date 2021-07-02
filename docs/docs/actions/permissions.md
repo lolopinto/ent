@@ -8,7 +8,7 @@ To control who can perform an action, a [Privacy Policy](/docs/core-concepts/pri
 The [Default Privacy Policy](/docs/actions/action#default-privacy-policy) is that any logged in user can perform the action. This doesn't work for all scenarios so naturally, this can be overriden and it's respected *everywhere*.
 
 
-## Create Action Axample
+## Create Action Example
 For example, to specify who can [create an event](/docs/actions/create-action), it can be configured as follows:
 
 ```ts title="src/ent/event/actions/create_event_action.ts"

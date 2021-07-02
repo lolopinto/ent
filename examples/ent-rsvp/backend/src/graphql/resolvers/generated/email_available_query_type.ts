@@ -7,7 +7,7 @@ import {
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@lolopinto/ent";
+import { RequestContext } from "@snowtop/snowtop-ts";
 import { AuthResolver } from "../../mutations/auth/auth";
 
 export const EmailAvailableQueryType: GraphQLFieldConfig<
@@ -23,11 +23,11 @@ export const EmailAvailableQueryType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    { email },
+    args: { email },
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
     const r = new AuthResolver();
-    return r.emailAvailable(email);
+    return r.emailAvailable(args.email);
   },
 };

@@ -131,7 +131,8 @@ function isPreparedStatementValue(val: any) {
 }
 
 // regex from https://www.regextester.com/97766
-const isoStringRegex = /^(-?(?:[1-9][0-9]*)?[0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])T(2[0-3]|[01][0-9]):([0-5][0-9]):([0-5][0-9])(.[0-9]+)?(Z)?$/;
+const isoStringRegex =
+  /^(-?(?:[1-9][0-9]*)?[0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])T(2[0-3]|[01][0-9]):([0-5][0-9]):([0-5][0-9])(.[0-9]+)?(Z)?$/;
 
 function formatForReturn(val: any): any {
   if (typeof val === "string" && isoStringRegex.test(val)) {
@@ -603,6 +604,7 @@ function getAst(query: string): [AST | AST[] | undefined, boolean] {
     });
     ast = parsed.ast;
   } catch (err) {
+    console.trace();
     console.log(query, err);
     throw err;
   }

@@ -2,7 +2,7 @@ import {
   AllowIfViewerIsRule,
   AlwaysDenyRule,
   PrivacyPolicy,
-} from "@lolopinto/ent";
+} from "@snowtop/snowtop-ts";
 import { AuthCodeBase } from "src/ent/internal";
 
 // we're only writing this once except with --force and packageName provided

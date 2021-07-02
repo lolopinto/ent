@@ -4,7 +4,7 @@ import {
   EventActivityToAttendingQuery,
   GuestToAttendingEventsQuery,
 } from "src/ent";
-import { DB, IDViewer } from "@lolopinto/ent";
+import { DB, IDViewer } from "@snowtop/snowtop-ts";
 import CreateEventActivityAction from "../event_activity/actions/create_event_activity_action";
 import CreateGuestGroupAction from "../guest_group/actions/create_guest_group_action";
 import EventActivityAddInviteAction from "../event_activity/actions/event_activity_add_invite_action";
@@ -44,8 +44,8 @@ describe("create event activity", () => {
       }).saveX();
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toBe(
-        "ent undefined is not visible for privacy reasons",
+      expect(e.message).toMatch(
+        /Viewer with ID (.+) does not have permission to create EventActivity/,
       );
     }
   });
@@ -151,7 +151,7 @@ describe("invites", () => {
       fail("should have thrown");
     } catch (e) {
       expect(e.message).toMatch(
-        /^ent (.+) is not visible for privacy reasons$/,
+        /Viewer with ID (.+) does not have permission to edit EventActivity/,
       );
     }
   });
@@ -212,7 +212,7 @@ describe("invites", () => {
       fail("should have thrown");
     } catch (e) {
       expect(e.message).toMatch(
-        /^ent (.+) is not visible for privacy reasons$/,
+        /Viewer with ID (.+) does not have permission to edit EventActivity/,
       );
     }
   });

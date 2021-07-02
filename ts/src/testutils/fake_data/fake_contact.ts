@@ -13,9 +13,11 @@ import { Field, StringType, BaseEntSchema, UUIDType } from "../../schema";
 import { NodeType } from "./const";
 import { table, uuid, text, timestamptz } from "../db/test_db";
 import { ObjectLoaderFactory } from "../../core/loaders";
+import { convertDate } from "../../core/convert";
 
 export class FakeContact implements Ent {
   readonly id: ID;
+  readonly data: Data;
   readonly nodeType = NodeType.FakeContact;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -29,9 +31,10 @@ export class FakeContact implements Ent {
   };
 
   constructor(public viewer: Viewer, data: Data) {
+    this.data = data;
     this.id = data.id;
-    this.createdAt = data.created_at;
-    this.updatedAt = data.updated_at;
+    this.createdAt = convertDate(data.created_at);
+    this.updatedAt = convertDate(data.updated_at);
     this.firstName = data.first_name;
     this.lastName = data.last_name;
     this.emailAddress = data.email_address;
@@ -84,8 +87,10 @@ export class FakeContact implements Ent {
   }
 }
 
-export class FakeContactSchema extends BaseEntSchema
-  implements BuilderSchema<FakeContact> {
+export class FakeContactSchema
+  extends BaseEntSchema
+  implements BuilderSchema<FakeContact>
+{
   ent = FakeContact;
   fields: Field[] = [
     StringType({

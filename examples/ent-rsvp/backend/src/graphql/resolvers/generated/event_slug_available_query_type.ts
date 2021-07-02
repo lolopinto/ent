@@ -7,7 +7,7 @@ import {
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@lolopinto/ent";
+import { RequestContext } from "@snowtop/snowtop-ts";
 import { EventResolver } from "../event";
 
 export const EventSlugAvailableQueryType: GraphQLFieldConfig<
@@ -23,11 +23,11 @@ export const EventSlugAvailableQueryType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    { slug },
+    args: { slug },
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
     const r = new EventResolver();
-    return r.emailAvailable(slug);
+    return r.emailAvailable(args.slug);
   },
 };

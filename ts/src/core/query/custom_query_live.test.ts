@@ -1,5 +1,5 @@
 import { QueryRecorder } from "../../testutils/db_mock";
-import { Data, Viewer } from "../base";
+import { Viewer } from "../base";
 import {
   FakeUser,
   UserToContactsFkeyQuery,
@@ -17,5 +17,5 @@ commonTests({
   tableName: "fake_contacts",
   where: "user_id = $1",
   sortCol: "created_at",
-  liveDB: true, // doing this on a db as opposed to in memory
+  livePostgresDB: true, // doing this on a db as opposed to in memory
 });

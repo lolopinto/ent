@@ -9,7 +9,7 @@ import {
   TimestampType,
   UUIDType,
   AssocEdgeGroup,
-} from "@lolopinto/ent/schema/";
+} from "@snowtop/snowtop-ts/schema/";
 
 /// explicit schema
 export default class Event extends BaseEntSchema implements Schema {

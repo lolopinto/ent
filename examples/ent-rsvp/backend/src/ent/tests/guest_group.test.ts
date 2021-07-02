@@ -1,12 +1,11 @@
 import { Event, GuestGroup } from "src/ent";
-import { DB, IDViewer } from "@lolopinto/ent";
+import { DB, IDViewer } from "@snowtop/snowtop-ts";
 import { randomEmail } from "src/util/random";
 import CreateGuestGroupAction from "../guest_group/actions/create_guest_group_action";
 import EditGuestGroupAction from "../guest_group/actions/edit_guest_group_action";
 import DeleteGuestGroupAction from "../guest_group/actions/delete_guest_group_action";
 import CreateGuestAction from "../guest/actions/create_guest_action";
 import { createUser, createEvent, createActivity } from "src/testutils";
-import e from "express";
 
 afterAll(async () => {
   await DB.getInstance().endPool();
@@ -40,8 +39,8 @@ describe("create guest group", () => {
       }).saveX();
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toBe(
-        "ent undefined is not visible for privacy reasons",
+      expect(e.message).toMatch(
+        /Viewer with ID (.+) does not have permission to create GuestGroup/,
       );
     }
   });
@@ -137,7 +136,7 @@ describe("edit guest group", () => {
       fail("should have thrown");
     } catch (e) {
       expect(e.message).toMatch(
-        /^ent (.+) is not visible for privacy reasons$/,
+        /Viewer with ID (.+) does not have permission to edit GuestGroup/,
       );
     }
   });
@@ -158,7 +157,7 @@ describe("delete guest group", () => {
       fail("should have thrown");
     } catch (e) {
       expect(e.message).toMatch(
-        /^ent (.+) is not visible for privacy reasons$/,
+        /Viewer with ID (.+) does not have permission to delete GuestGroup/,
       );
     }
   });

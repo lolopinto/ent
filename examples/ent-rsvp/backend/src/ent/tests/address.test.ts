@@ -1,4 +1,4 @@
-import { DB, IDViewer } from "@lolopinto/ent";
+import { DB, IDViewer } from "@snowtop/snowtop-ts";
 import CreateAddressAction from "../address/actions/create_address_action";
 import { Address } from "../internal";
 import EditAddressAction from "../address/actions/edit_address_action";
@@ -64,7 +64,7 @@ describe("edit address", () => {
       }).saveX();
     } catch (e) {
       expect(e.message).toMatch(
-        /^ent (.+) is not visible for privacy reasons$/,
+        /Viewer with ID (.+) does not have permission to edit Address/,
       );
     }
   });
@@ -84,7 +84,7 @@ describe("delete address", () => {
       await DeleteAddressAction.create(new IDViewer(user.id), address).saveX();
     } catch (e) {
       expect(e.message).toMatch(
-        /^ent (.+) is not visible for privacy reasons$/,
+        /Viewer with ID (.+) does not have permission to delete Address/,
       );
     }
   });

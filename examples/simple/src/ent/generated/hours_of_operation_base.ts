@@ -3,17 +3,21 @@
 import {
   AllowIfViewerPrivacyPolicy,
   Context,
+  CustomQuery,
   Data,
   ID,
   LoadEntOptions,
   ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
+  convertDate,
+  loadCustomData,
+  loadCustomEnts,
   loadEnt,
   loadEntX,
   loadEnts,
-} from "@lolopinto/ent";
-import { Field, getFields } from "@lolopinto/ent/schema";
+} from "@snowtop/snowtop-ts";
+import { Field, getFields } from "@snowtop/snowtop-ts/schema";
 import { NodeType } from "src/ent/internal";
 import schema from "src/schema/hours_of_operation";
 
@@ -55,13 +59,13 @@ export class HoursOfOperationBase {
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly dayOfWeek: dayOfWeek;
-  readonly open: Date;
-  readonly close: Date;
+  readonly open: string;
+  readonly close: string;
 
   constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
-    this.createdAt = data.created_at;
-    this.updatedAt = data.updated_at;
+    this.createdAt = convertDate(data.created_at);
+    this.updatedAt = convertDate(data.updated_at);
     this.dayOfWeek = data.day_of_week;
     this.open = data.open;
     this.close = data.close;
@@ -95,6 +99,30 @@ export class HoursOfOperationBase {
       viewer,
       HoursOfOperationBase.loaderOptions.apply(this),
       ...ids,
+    );
+  }
+
+  static async loadCustom<T extends HoursOfOperationBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
+    query: CustomQuery,
+  ): Promise<T[]> {
+    return loadCustomEnts(
+      viewer,
+      HoursOfOperationBase.loaderOptions.apply(this),
+      query,
+    );
+  }
+
+  static async loadCustomData<T extends HoursOfOperationBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<Data[]> {
+    return loadCustomData(
+      HoursOfOperationBase.loaderOptions.apply(this),
+      query,
+      context,
     );
   }
 

@@ -78,6 +78,14 @@ import {
   UserEditInputType,
   UserEditPayloadType,
 } from "src/graphql/mutations/generated/user/user_edit_type";
+import {
+  UserAuthJWTInputType,
+  UserAuthJWTPayloadType,
+} from "src/graphql/mutations/generated/user_auth_jwt_type";
+import {
+  UserAuthInputType,
+  UserAuthPayloadType,
+} from "src/graphql/mutations/generated/user_auth_type";
 import { QueryType } from "src/graphql/resolvers/generated/query_type";
 import {
   AddressType,
@@ -130,6 +138,10 @@ export default new GraphQLSchema({
     UserToInvitedEventsConnectionType(),
     UserToMaybeEventsConnectionType(),
     GQLViewerType,
+    UserAuthInputType,
+    UserAuthJWTInputType,
+    UserAuthJWTPayloadType,
+    UserAuthPayloadType,
     AddressCreateInputType,
     AddressCreatePayloadType,
     ConfirmEmailAddressEditInputType,

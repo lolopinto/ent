@@ -5,8 +5,6 @@ services:
     build: 
       context: .
       dockerfile: develop.Dockerfile
-      args:
-        - GITHUB_TOKEN=${GITHUB_TOKEN}
     container_name: example_app
     ports: 
       - 4000:4000
@@ -15,5 +13,4 @@ services:
       - .:/app:rw,delegated
     environment:
       - DB_CONNECTION_STRING=postgres://ola:@host.docker.internal/tsent_test
-      - GITHUB_TOKEN=${GITHUB_TOKEN}
 

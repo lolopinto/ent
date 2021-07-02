@@ -5,6 +5,7 @@ import {
   ID,
   Data,
   PrivacyPolicy,
+  Context,
 } from "../core/base";
 import {
   DataOperation,
@@ -12,7 +13,7 @@ import {
   AssocEdge,
   AssocEdgeInputOptions,
 } from "../core/ent";
-import DB from "../core/db";
+import { Queryer } from "../core/db";
 import { log } from "../core/logger";
 
 export enum WriteOperation {
@@ -37,6 +38,11 @@ export interface Executor
   placeholderID: ID;
   // this returns a non-privacy checked "ent"
   resolveValue(val: any): Ent | null;
+  execute(): Promise<void>;
+
+  // these 3 are to help chained/contained executors
+  preFetch?(queryer: Queryer, context?: Context): Promise<void>;
+  postFetch?(queryer: Queryer, context?: Context): Promise<void>;
   executeObservers?(): Promise<void>;
 }
 
@@ -125,36 +131,14 @@ async function saveBuilderImpl<T extends Ent>(
     }
   }
   const executor = changeset!.executor();
-
-  const instance = DB.getInstance();
-  const client = await DB.getInstance().getNewClient();
-
-  let error = false;
-  try {
-    await client.query("BEGIN");
-    for (const operation of executor) {
-      // resolve any placeholders before writes
-      if (operation.resolve) {
-        operation.resolve(executor);
-      }
-
-      await operation.performWrite(client, builder.viewer.context);
+  if (throwErr) {
+    return executor.execute();
+  } else {
+    try {
+      return executor.execute();
+    } catch (e) {
+      // it's already caught and logged upstream
     }
-    await client.query("COMMIT");
-  } catch (e) {
-    error = true;
-    await client.query("ROLLBACK");
-    log("error", e);
-    // rethrow the exception to be caught
-    if (throwErr) {
-      throw e;
-    }
-  } finally {
-    client.release();
-  }
-
-  if (!error && executor.executeObservers) {
-    await executor.executeObservers();
   }
 }
 

@@ -1,5 +1,5 @@
 import { Guest, Event, User, EventActivity, GuestGroup } from "src/ent";
-import { ID, IDViewer, LoggedOutViewer } from "@lolopinto/ent";
+import { ID, IDViewer, LoggedOutViewer } from "@snowtop/snowtop-ts";
 import { randomEmail } from "src/util/random";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 import CreateEventAction from "src/ent/event/actions/create_event_action";
@@ -11,7 +11,7 @@ import CreateGuestAction, {
   GuestCreateInput,
 } from "src/ent/guest/actions/create_guest_action";
 import EventActivityAddInviteAction from "src/ent/event_activity/actions/event_activity_add_invite_action";
-import { Builder } from "@lolopinto/ent/action";
+import { Builder } from "@snowtop/snowtop-ts/action";
 
 export async function createUser() {
   const user = await CreateUserAction.create(new LoggedOutViewer(), {

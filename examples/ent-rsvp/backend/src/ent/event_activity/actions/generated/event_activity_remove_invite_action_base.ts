@@ -5,8 +5,8 @@ import {
   ID,
   PrivacyPolicy,
   Viewer,
-} from "@lolopinto/ent";
-import { Action, Changeset, WriteOperation } from "@lolopinto/ent/action";
+} from "@snowtop/snowtop-ts";
+import { Action, Changeset, WriteOperation } from "@snowtop/snowtop-ts/action";
 import { EventActivity, GuestGroup } from "src/ent/";
 import {
   EventActivityBuilder,
@@ -14,7 +14,8 @@ import {
 } from "src/ent/event_activity/actions/event_activity_builder";
 
 export class EventActivityRemoveInviteActionBase
-  implements Action<EventActivity> {
+  implements Action<EventActivity>
+{
   public readonly builder: EventActivityBuilder;
   public readonly viewer: Viewer;
   protected eventActivity: EventActivity;

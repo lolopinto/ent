@@ -7,7 +7,7 @@ import {
   Allow,
   Skip,
   AlwaysDenyRule,
-} from "@lolopinto/ent";
+} from "@snowtop/snowtop-ts";
 import { AllowIfEventCreatorRule } from "src/ent/event/privacy/event_creator";
 
 class AllowIfGuestInGuestGroupRule implements PrivacyPolicyRule {

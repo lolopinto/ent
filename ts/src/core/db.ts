@@ -3,6 +3,7 @@ import * as fs from "fs";
 import { load } from "js-yaml";
 import { log } from "./logger";
 import { DateTime } from "luxon";
+import sqlite, { Database as SqliteDatabase } from "better-sqlite3";
 
 export interface Database {
   database?: string;
@@ -30,6 +31,40 @@ function isDbDict(v: Database | DBDict): v is DBDict {
 interface customClientConfig extends ClientConfig {
   sslmode?: string;
 }
+
+export enum Dialect {
+  Postgres = "postgres",
+  SQLite = "sqlite",
+}
+
+function parseConnectionString(str: string): DatabaseInfo {
+  if (str.startsWith("sqlite:///")) {
+    let filePath = str.substr(10);
+
+    return {
+      dialect: Dialect.SQLite,
+      config: {
+        connectionString: str,
+      },
+      filePath,
+    };
+  }
+
+  return {
+    dialect: Dialect.Postgres,
+    config: {
+      connectionString: str,
+    },
+  };
+}
+
+interface DatabaseInfo {
+  dialect: Dialect;
+  config: ClientConfig;
+  /// filePath for sqlite
+  filePath?: string;
+}
+
 // order
 // env variable
 // connString in config
@@ -40,21 +75,17 @@ function getClientConfig(args?: {
   connectionString?: string;
   dbFile?: string;
   db?: Database | DBDict;
-}): ClientConfig | null {
+}): DatabaseInfo | null {
   // if there's a db connection string, use that first
   const str = process.env.DB_CONNECTION_STRING;
   if (str) {
-    return {
-      connectionString: str,
-    };
+    return parseConnectionString(str);
   }
 
   let file = "config/database.yml";
   if (args) {
     if (args.connectionString) {
-      return {
-        connectionString: args.connectionString,
-      };
+      return parseConnectionString(args.connectionString);
     }
 
     if (args.db) {
@@ -67,12 +98,19 @@ function getClientConfig(args?: {
       } else {
         db = args.db;
       }
-      return db;
+      return {
+        dialect: Dialect.Postgres,
+        config: db,
+      };
     }
 
     if (args.dbFile) {
       file = args.dbFile;
     }
+  }
+
+  if (!fs.existsSync(file)) {
+    return null;
   }
 
   try {
@@ -83,12 +121,15 @@ function getClientConfig(args?: {
     if (yaml && typeof yaml === "object") {
       let cfg: customClientConfig = yaml;
       return {
-        database: cfg.database,
-        user: cfg.user,
-        password: cfg.password,
-        host: cfg.host,
-        port: cfg.port,
-        ssl: cfg.sslmode == "enable",
+        dialect: Dialect.Postgres,
+        config: {
+          database: cfg.database,
+          user: cfg.user,
+          password: cfg.password,
+          host: cfg.host,
+          port: cfg.port,
+          ssl: cfg.sslmode == "enable",
+        },
       };
     }
     throw new Error(`invalid yaml configuration in file`);
@@ -96,33 +137,52 @@ function getClientConfig(args?: {
     console.error("error reading file" + e.message);
     return null;
   }
-  return null;
 }
 
 export default class DB {
   static instance: DB;
+  static dialect: Dialect;
 
   private pool: Pool;
-  private constructor(public config: ClientConfig) {
-    this.pool = new Pool(config);
+  private q: Connection;
+  private constructor(public db: DatabaseInfo) {
+    if (db.dialect === Dialect.Postgres) {
+      this.pool = new Pool(db.config);
+      this.q = new Postgres(this.pool);
 
-    this.pool.on("error", (err, client) => {
-      log("error", err);
-    });
+      this.pool.on("error", (err, client) => {
+        log("error", err);
+      });
+    } else {
+      this.q = new Sqlite(sqlite(db.filePath || ""));
+    }
   }
 
-  getPool(): Pool {
-    return this.pool;
+  getConnection(): Connection {
+    return this.q;
   }
 
+  // TODO rename all these...
+  getPool(): Queryer {
+    return this.q.self();
+  }
+
+  // TODO rename
   // expect to release client as needed
-  async getNewClient(): Promise<PoolClient> {
-    return this.pool.connect();
+  async getNewClient(): Promise<Client> {
+    return this.q.newClient();
+  }
+
+  async getSQLiteClient(): Promise<Sqlite> {
+    if (this.db.dialect == Dialect.Postgres) {
+      throw new Error(`can't call getSQLiteClient when dialect is postgres`);
+    }
+    return this.q as Sqlite;
   }
 
   // this should be called when the server is shutting down or end of tests.
   async endPool(): Promise<void> {
-    return this.pool.end();
+    return this.q.close();
   }
 
   // throws if invalid
@@ -136,7 +196,16 @@ export default class DB {
       throw new Error("could not load client config");
     }
     DB.instance = new DB(clientConfig);
+    DB.dialect = DB.instance.db.dialect;
     return DB.instance;
+  }
+
+  static getDialect(): Dialect {
+    if (DB.dialect) {
+      return DB.dialect;
+    }
+    // default to postgres
+    return Dialect.Postgres;
   }
 
   static initDB(args?: {
@@ -147,6 +216,7 @@ export default class DB {
     const config = getClientConfig(args);
     if (config) {
       DB.instance = new DB(config);
+      DB.dialect = DB.instance.db.dialect;
     }
   }
 }
@@ -157,8 +227,233 @@ export const defaultTimestampParser = pg.types.getTypeParser(
 
 // this is stored in the db without timezone but we want to make sure
 // it's parsed as UTC time as opposed to the local time
-pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, function(val: string) {
+pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, function (val: string) {
   return DateTime.fromSQL(val + "Z").toJSDate();
   // let d = new Date(val + "Z");
   // return d;
 });
+
+export interface Queryer {
+  query(query: string, values?: any[]): Promise<QueryResult<QueryResultRow>>;
+  queryAll(query: string, values?: any[]): Promise<QueryResult<QueryResultRow>>;
+  // exec a query with no result
+  // e.g. insert in sqlite etc
+  // exec has no async/await in sqlite...
+  exec(query: string, values?: any[]): Promise<ExecResult>;
+}
+
+// if this exists, we don't want to use async/await
+// e.g. SQLite
+export interface SyncQueryer extends Queryer {
+  execSync(query: string, values?: any[]): ExecResult;
+  queryAllSync(query: string, values?: any[]): QueryResult<QueryResultRow>;
+  querySync(query: string, values?: any[]): QueryResult<QueryResultRow>;
+}
+
+export interface Connection extends Queryer {
+  self(): Queryer;
+  newClient(): Promise<Client>;
+  close(): Promise<void>;
+}
+
+export interface QueryResultRow {
+  [column: string]: any;
+}
+
+export interface QueryResult<R extends QueryResultRow = any> {
+  rows: R[];
+  rowCount: number;
+  // postgres fields
+  //  command: string;
+  //  oid: number;
+  //  fields: FieldDef[];
+}
+
+interface ExecResult {
+  rows: QueryResultRow[];
+  rowCount: number;
+}
+
+export interface Client extends Queryer {
+  release(err?: Error | boolean): void;
+}
+
+export interface SyncClient extends Client, SyncQueryer {
+  runInTransaction(cb: () => void): void;
+}
+
+export class Sqlite implements Connection, SyncClient {
+  constructor(public db: SqliteDatabase) {}
+
+  self() {
+    return this;
+  }
+
+  // returns self
+  async newClient() {
+    return this;
+  }
+
+  async query(
+    query: string,
+    values?: any[],
+  ): Promise<QueryResult<QueryResultRow>> {
+    return this.querySync(query, values);
+  }
+
+  private convertValues(values: any[]) {
+    for (const key in values) {
+      let value = values[key];
+      if (value === true) {
+        values[key] = 1;
+      } else if (value === false) {
+        values[key] = 0;
+      } else if (value instanceof Date) {
+        values[key] = value.toISOString();
+      }
+    }
+    return values;
+  }
+  querySync(query: string, values?: any[]): QueryResult<QueryResultRow> {
+    let r: sqlite.RunResult;
+
+    if (values) {
+      r = this.db.prepare(query).get(this.convertValues(values));
+    } else {
+      r = this.db.prepare(query).run();
+    }
+    return {
+      rowCount: r === undefined ? 0 : 1,
+      rows: r ? [r] : [],
+    };
+  }
+
+  async queryAll(
+    query: string,
+    values?: any[],
+  ): Promise<QueryResult<QueryResultRow>> {
+    return this.queryAllSync(query, values);
+  }
+
+  queryAllSync(query: string, values?: any[]): QueryResult<QueryResultRow> {
+    let r: any[];
+    if (values) {
+      r = this.db.prepare(query).all(this.convertValues(values));
+    } else {
+      r = this.db.prepare(query).all();
+    }
+    return {
+      rowCount: r.length,
+      rows: r,
+    };
+  }
+
+  async exec(query: string, values?: any[]): Promise<ExecResult> {
+    throw new Error(
+      `exec shouldn't be called. execSync() should be called instead`,
+    );
+  }
+
+  execSync(query: string, values?: any[]): ExecResult {
+    let r: sqlite.RunResult;
+    if (values) {
+      r = this.db.prepare(query).run(this.convertValues(values));
+    } else {
+      r = this.db.prepare(query).run();
+    }
+    return {
+      rowCount: r!.changes,
+      rows: [],
+    };
+  }
+
+  async close() {
+    this.db.close();
+  }
+
+  async release(err?: Error | boolean) {}
+
+  runInTransaction(cb: () => void | Promise<void>) {
+    const tr = this.db.transaction(() => {
+      cb();
+    });
+    tr();
+  }
+}
+
+export class Postgres implements Connection {
+  constructor(private pool: Pool) {}
+
+  self() {
+    return this;
+  }
+
+  // returns new Pool client
+  async newClient() {
+    const client = await this.pool.connect();
+    if (!client) {
+      throw new Error(`couldn't get new client`);
+    }
+    return new PostgresClient(client);
+  }
+
+  async query(
+    query: string,
+    values?: any[],
+  ): Promise<QueryResult<QueryResultRow>> {
+    const r = await this.pool.query(query, values);
+    return r;
+  }
+
+  async queryAll(
+    query: string,
+    values?: any[],
+  ): Promise<QueryResult<QueryResultRow>> {
+    const r = await this.pool.query(query, values);
+    return r;
+  }
+
+  async exec(query: string, values?: any[]): Promise<ExecResult> {
+    const r = await this.pool.query(query, values);
+    return {
+      rowCount: r?.rowCount || 0,
+      rows: r?.rows || [],
+    };
+  }
+
+  async close() {
+    return this.pool.end();
+  }
+}
+
+export class PostgresClient implements Client {
+  constructor(private client: PoolClient) {}
+
+  async query(
+    query: string,
+    values?: any[],
+  ): Promise<QueryResult<QueryResultRow>> {
+    const r = await this.client.query(query, values);
+    return r;
+  }
+
+  async queryAll(
+    query: string,
+    values?: any[],
+  ): Promise<QueryResult<QueryResultRow>> {
+    const r = await this.client.query(query, values);
+    return r;
+  }
+
+  async exec(query: string, values?: any[]): Promise<ExecResult> {
+    const r = await this.client.query(query, values);
+    return {
+      rowCount: r?.rowCount || 0,
+      rows: r?.rows || [],
+    };
+  }
+
+  async release(err?: Error | boolean) {
+    return this.client.release(err);
+  }
+}

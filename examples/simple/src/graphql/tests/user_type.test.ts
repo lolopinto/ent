@@ -2,7 +2,7 @@ import schema from "src/graphql/schema";
 import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
-import { DB, LoggedOutViewer, IDViewer, ID, Viewer } from "@lolopinto/ent";
+import { DB, LoggedOutViewer, IDViewer, ID, Viewer } from "@snowtop/snowtop-ts";
 import { Contact, User } from "src/ent/";
 import { randomEmail, randomPhoneNumber } from "src/util/random";
 import EditUserAction from "src/ent/user/actions/edit_user_action";
@@ -10,12 +10,12 @@ import { advanceBy } from "jest-date-mock";
 import {
   queryRootConfig,
   expectQueryFromRoot,
-} from "@lolopinto/ent-graphql-tests";
+} from "@snowtop/snowtop-graphql-tests";
 import CreateContactAction, {
   ContactCreateInput,
 } from "src/ent/contact/actions/create_contact_action";
-import { clearAuthHandlers } from "@lolopinto/ent/auth";
-import { encodeGQLID } from "@lolopinto/ent/graphql";
+import { clearAuthHandlers } from "@snowtop/snowtop-ts/auth";
+import { encodeGQLID } from "@snowtop/snowtop-ts/graphql";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
@@ -69,6 +69,7 @@ test("query user", async () => {
     ["lastName", user.lastName],
     ["emailAddress", user.emailAddress],
     ["accountStatus", user.accountStatus],
+    ["nicknames", null],
   );
 });
 
@@ -83,6 +84,24 @@ test("query custom field", async () => {
     ["firstName", user.firstName],
     ["lastName", user.lastName],
     ["fullName", user.fullName],
+    ["nicknames", null],
+  );
+});
+
+test("query list", async () => {
+  const n = ["Lord Snow", "The Prince That was Promised"];
+  let user = await create({
+    firstName: "first",
+    nicknames: n,
+  });
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), user),
+    ["id", encodeGQLID(user)],
+    ["firstName", user.firstName],
+    ["lastName", user.lastName],
+    ["fullName", user.fullName],
+    ["nicknames", n],
   );
 });
 
@@ -110,6 +129,7 @@ test("query custom function", async () => {
     ["lastName", user.lastName],
     // returns id when logged in user is same
     ["bar", user.id],
+    ["nicknames", null],
   );
   clearAuthHandlers();
 
@@ -121,6 +141,7 @@ test("query custom function", async () => {
     ["lastName", user.lastName],
     // returns null when viewed as different user
     ["bar", null],
+    ["nicknames", null],
   );
 });
 
@@ -429,7 +450,7 @@ test("load assoc connection", async () => {
     ["friends(first:1).edges[0].node.id", encodeGQLID(user5)],
     [
       "friends(first:1).edges[0].cursor",
-      function(c: string) {
+      function (c: string) {
         cursor = c;
       },
     ],
@@ -445,7 +466,7 @@ test("load assoc connection", async () => {
     ],
     [
       `friends(after: "${cursor!}", first:1).edges[0].cursor`,
-      function(c: string) {
+      function (c: string) {
         cursor = c;
       },
     ],
@@ -461,7 +482,7 @@ test("load assoc connection", async () => {
     ],
     [
       `friends(after: "${cursor!}", first:1).edges[0].cursor`,
-      function(c: string) {
+      function (c: string) {
         cursor = c;
       },
     ],
@@ -477,7 +498,7 @@ test("load assoc connection", async () => {
     ],
     [
       `friends(after: "${cursor!}", first:1).edges[0].cursor`,
-      function(c: string) {
+      function (c: string) {
         cursor = c;
       },
     ],

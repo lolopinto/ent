@@ -5,8 +5,11 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@lolopinto/ent";
-import { GraphQLConnectionType, GraphQLEdge } from "@lolopinto/ent/graphql";
+import { RequestContext } from "@snowtop/snowtop-ts";
+import {
+  GraphQLConnectionType,
+  GraphQLEdge,
+} from "@snowtop/snowtop-ts/graphql";
 import { GuestToAttendingEventsEdge } from "src/ent/";
 import { EventActivityType } from "src/graphql/resolvers/internal";
 

@@ -6,7 +6,7 @@ import {
   AssocEdgeQueryBase,
   EdgeQuerySource,
   Viewer,
-} from "@lolopinto/ent";
+} from "@snowtop/snowtop-ts";
 import {
   EdgeType,
   Event,
@@ -26,17 +26,15 @@ import {
   UserToSelfContactQuery,
 } from "src/ent/internal";
 
-export const eventToAttendingCountLoaderFactory = new AssocEdgeCountLoaderFactory(
-  EdgeType.EventToAttending,
-);
+export const eventToAttendingCountLoaderFactory =
+  new AssocEdgeCountLoaderFactory(EdgeType.EventToAttending);
 export const eventToAttendingDataLoaderFactory = new AssocEdgeLoaderFactory(
   EdgeType.EventToAttending,
   () => EventToAttendingEdge,
 );
 
-export const eventToDeclinedCountLoaderFactory = new AssocEdgeCountLoaderFactory(
-  EdgeType.EventToDeclined,
-);
+export const eventToDeclinedCountLoaderFactory =
+  new AssocEdgeCountLoaderFactory(EdgeType.EventToDeclined);
 export const eventToDeclinedDataLoaderFactory = new AssocEdgeLoaderFactory(
   EdgeType.EventToDeclined,
   () => EventToDeclinedEdge,

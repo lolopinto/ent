@@ -1,7 +1,7 @@
 {
-  "name": "@lolopinto/ent",
-  "version": "0.0.95",
-  "description": "ent framework",
+  "name": "@snowtop/snowtop-ts",
+  "version": "0.0.5",
+  "description": "snowtop ent framework",
   "main": "index.js",
   "types": "index.d.ts",
   "directories": {
@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@types/node": "^15.0.2",
+    "better-sqlite3": "^7.4.1",
     "dataloader": "^2.0.0",
     "glob": "^7.1.6",
     "graph-data-structure": "^1.12.0",
@@ -32,6 +33,7 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.2",
+    "@types/better-sqlite3": "^5.4.1",
     "@types/express": "^4.17.9",
     "@types/glob": "^7.1.1",
     "@types/graphql-upload": "^8.0.4",
@@ -65,22 +67,25 @@
     "test": "jest",
     "clean": "rm -rf dist",
     "prepare-code": "npm run clean && npm run compile && node src/setupPackage.js",
-    "actual-publish": "npm run prepare-code && cd dist && npm publish --verbose --registry https://npm.pkg.github.com/ && cd .."
+    "prepare-code-legacy": "npm run clean && npm run compile && node src/setupPackage.js --legacy",
+    "actual-publish": "npm run prepare-code && npm publish ./dist --verbose --access public",
+    "legacy-publish": "npm run prepare-code-legacy && npm publish ./dist --verbose --registry https://npm.pkg.github.com/"
   },
   "bin": {
-    "ent-custom-graphql": "./scripts/custom_graphql.js",
-    "ent-custom-compiler": "./scripts/custom_compiler.js"
+    "ent-custom-graphql": "scripts/custom_graphql.js",
+    "ent-custom-compiler": "scripts/custom_compiler.js"
   },
   "author": "lolopinto",
-  "license": "ISC",
+  "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git@github.com:lolopinto/ent.git"
-  },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "url": "git+ssh://git@github.com/lolopinto/ent.git"
   },
   "resolutions": {
     "graphql": "^15.3.0"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/lolopinto/ent/issues"
+  },
+  "homepage": "https://github.com/lolopinto/ent#readme"
 }
