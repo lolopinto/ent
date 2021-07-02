@@ -1,0 +1,38 @@
+name: New Dockerfile image
+
+on: 
+  pull_request:
+    branches: [main]
+    paths:
+      - ts/Dockerfile.tmpl
+      - release_image/**
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: actions/cache@v2
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: install buildx
+      id: buildx
+      uses: crazy-max/ghaction-docker-buildx@v1
+      with:
+        version: latest
+
+    - name: docker login
+      env:
+        DOCKER_TOKEN: ${{secrets.DOCKER_TOKEN}}
+      run: echo $DOCKER_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
+
+    - name: build the image
+      run: cd release_image && go run .
+
