@@ -12,10 +12,7 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import {
-  GraphQLTime,
-  mustDecodeIDFromGQLID,
-} from "@snowtop/ent/graphql";
+import { GraphQLTime, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { Event } from "src/ent/";
 import CreateEventAction, {
   EventCreateInput,
