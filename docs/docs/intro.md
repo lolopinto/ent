@@ -9,11 +9,13 @@ The `Ent` framework was created to free up time for engineers and teams to focus
 This is done by providing a balance of code generation + ways to customize things as needed to integrate nicely with the generated code.
 
 It takes a holistic approach and uses the Schema generated to integrate with the following 3 core layers:
+
 * database
 * middle layer where most of the application logic lives
 * GraphQL layer for exposing the data to clients.
 
 It handles the following high level things:
+
 * managing the database along with database migrations using [alembic](https://alembic.sqlalchemy.org/en/latest/)
 * handles CRUD operations based on the application
 * first class GraphQL support
@@ -26,15 +28,17 @@ It handles the following high level things:
 The easiest way to get started is by using the template from the `ent-starter` [repository](https://github.com/lolopinto/ent-starter).
 
 This requires the following:
-* a local [PostgresQL](https://www.postgresql.org/download/) instance installed 
+
+* a local [PostgresQL](https://www.postgresql.org/download/) instance installed
 * a database created via `createdb ent-starter` (or replace with your own database name)
-  - if a different database is used, make sure to update the `environment` in `docker-compose.dev.yml`
+  * if a different database is used, make sure to update the `environment` in `docker-compose.dev.yml`
 * [Docker](https://docs.docker.com/get-docker/) installed.
 * [Node 14](https://nodejs.org/en/download/) or later installed
 
 ## Your first schema
 
 In the root of your application, run to create the schema directory:
+
 ```shell
 mkdir -p src/schema
 ```
@@ -57,10 +61,11 @@ export default class User extends BaseEntSchema {
 ```
 
 This does a few things:
+
 * It specifies a new node in the schema called `User`.
 * It adds 4 explicitly listed fields here: `FirstName`, `LastName`, `EmailAddress`, `Password`.
 * and 3 implicitly listed by virtue of extending `BaseEntSchema`: `id`, `createdAt`, `updatedAt`.
-* `FirstName` and `LastName` are strings. 
+* `FirstName` and `LastName` are strings.
 * `EmailAddress` is of type `email` and will be [parsed](https://www.npmjs.com/package/email-addresses) to be a "valid" email address before storing in the database. 
 * `EmailAddress` field is marked as unique so we don't have multiple users with the same email address.
 * `Password` is of type `password` and hashed and salted using [`bcrypt`](https://www.npmjs.com/package/bcryptjs) before storing in the database.
@@ -81,26 +86,27 @@ After running `npm run codegen`, here's a list of generated files:
 
 (The first time this is run, it'll take a while because it's downloading the base Docker image).
 
-```
-	new file:   src/ent/const.ts
-	new file:   src/ent/generated/user_base.ts
-	new file:   src/ent/index.ts
-	new file:   src/ent/internal.ts
-	new file:   src/ent/loadAny.ts
-	new file:   src/ent/user.ts
-	new file:   src/graphql/index.ts
-	new file:   src/graphql/resolvers/generated/node_query_type.ts
-	new file:   src/graphql/resolvers/generated/query_type.ts
-	new file:   src/graphql/resolvers/generated/user_type.ts
-	new file:   src/graphql/resolvers/index.ts
-	new file:   src/graphql/resolvers/internal.ts
-	new file:   src/graphql/schema.gql
-	new file:   src/graphql/schema.ts
-	new file:   src/schema/schema.py
-	new file:   src/schema/versions/e3b78fe1bfa3_2021518203057_add_users_table.py
+```shell
+  new file:   src/ent/const.ts
+  new file:   src/ent/generated/user_base.ts
+  new file:   src/ent/index.ts
+  new file:   src/ent/internal.ts
+  new file:   src/ent/loadAny.ts
+  new file:   src/ent/user.ts
+  new file:   src/graphql/index.ts
+  new file:   src/graphql/resolvers/generated/node_query_type.ts
+  new file:   src/graphql/resolvers/generated/query_type.ts
+  new file:   src/graphql/resolvers/generated/user_type.ts
+  new file:   src/graphql/resolvers/index.ts
+  new file:   src/graphql/resolvers/internal.ts
+  new file:   src/graphql/schema.gql
+  new file:   src/graphql/schema.ts
+  new file:   src/schema/schema.py
+  new file:   src/schema/versions/e3b78fe1bfa3_2021518203057_add_users_table.py
 ```
 
-Let's go over a few: 
+Let's go over a few:
+
 * `src/ent/user.ts` is the public facing API of the `User` object and what's consumed. It's also where [**custom code**](/docs/custom-queries/custom-accessors) can be added.
 * `src/ent/generated/user_base.ts` is the base class for the `User` where more generated code will be added as the schema is changed over time.
 * `src/schema/versions/*_add_users_tabl.py` is the generated database migration to add the `users` table
@@ -125,6 +131,7 @@ type Query {
 ```
 
 After running
+
 ```shell
 npm run compile && npm start
 ```
@@ -132,7 +139,9 @@ npm run compile && npm start
 we have a **live** GraphQL server.
 
 ## Database changes
+
 Note that the database was also updated by the command run above. Running `psql ent-starter` shows:
+
 ```db
 ent-starter=# \d+ users
                                                  Table "public.users"
@@ -153,6 +162,7 @@ ent-starter=#
 ```
 
 ## Adding writes
+
 To support writes, update the schema as follows:
 
 ```ts title="src/schema/user.ts"
@@ -182,17 +192,18 @@ re-run ```npm run codegen```
 which leads to the following changed files:
 
 ```
-    new file:   src/ent/user/actions/create_user_action.ts
-	new file:   src/ent/user/actions/generated/create_user_action_base.ts
-	new file:   src/ent/user/actions/user_builder.ts
-	new file:   src/graphql/mutations/generated/mutation_type.ts
-	new file:   src/graphql/mutations/generated/user/user_create_type.ts
-	modified:   src/graphql/schema.gql
-	modified:   src/graphql/schema.ts
-	modified:   src/schema/user.ts
+  new file:   src/ent/user/actions/create_user_action.ts
+  new file:   src/ent/user/actions/generated/create_user_action_base.ts
+  new file:   src/ent/user/actions/user_builder.ts
+  new file:   src/graphql/mutations/generated/mutation_type.ts
+  new file:   src/graphql/mutations/generated/user/user_create_type.ts
+  modified:   src/graphql/schema.gql
+  modified:   src/graphql/schema.ts
+  modified:   src/schema/user.ts
 ```
 
 and the GraphQL schema updated as follows:
+
 ```graphql title="src/graphql/schema.gql"
 type Query {
   node(id: ID!): Node
@@ -247,7 +258,7 @@ mutation {
 }
 ```
 
-We get this error back: 
+We get this error back:
 
 ```json
 {
@@ -291,11 +302,13 @@ export default class CreateUserAction extends CreateUserActionBase {
 }
 ```
 
-What changed above: 
+What changed above:
+
 * added `getPrivacyPolicy` method to change [permissions](/docs/actions/permissions) of who can perform the [action](/docs/actions/action).
 * added `viewerForEntLoad` method to change who the [Viewer](/docs/core-concepts/viewer) is for the [Ent](/docs/core-concepts/ent) [load after](/docs/actions/viewer-ent-load).
 
 Re-compile and restart the server:
+
 ```shell
 npm run compile && npm start
 ```
@@ -345,7 +358,9 @@ query ByID {
 Note: The ID exposed to GraphQL is not the same as the ID for the row in the database. GraphQL IDs should be considered opaque by clients of your service. Learn more in the [GraphQL Docs](https://graphql.org/learn/global-object-identification/).
 
 ## Custom accessors
+
 Update `src/ent/user.ts` as follows:
+
 ```ts title="src/ent/user.ts"
 import { UserBase } from "src/ent/internal";
 import { Interval } from "luxon";
@@ -363,11 +378,13 @@ export class User extends UserBase {
 ```
 
 and then run the following command:
+
 ```shell
 npm run codegen && npm run compile && npm start
 ```
 
 and then run the following GraphQL query:
+
 ```graphql
 mutation {
   userCreate(input:{firstName:"Sansa", lastName:"Stark", emailAddress:"sansa@stark.com", password:"12345678"}) {
@@ -401,14 +418,17 @@ you should get a response similar to:
 ```
 
 What changed above:
+
 * added a [custom accessor](/docs/custom-queries/custom-accessors) using [gqlField](/docs/custom-queries/gql-field)
 
 ## Query the Database
+
 Run the following command:
 `psql ent-starter`
 
 And then run the following two commands:
-```
+
+```db
 ent-starter=# \x on 
 Expanded display is on.
 ent-starter=# select * from users;
@@ -433,7 +453,9 @@ ent-starter=# \q
 ```
 
 ## Unique Constraint
+
 Running the following GraphQL query:
+
 ```graphql
 mutation {
   userCreate(input:{firstName:"Arya", lastName:"Stark", emailAddress:"sansa@stark.com", password:"12345678"}) {
@@ -447,7 +469,8 @@ mutation {
   }
 }
 ```
-should end with this error because we identified the `EmailAddress` as `unique` in the schema above: 
+
+should end with this error because we identified the `EmailAddress` as `unique` in the schema above:
 
 ```json
 {
@@ -470,4 +493,3 @@ should end with this error because we identified the `EmailAddress` as `unique` 
 ```
 
 That's a quick introduction to what's supported here. We'll dive deeper into these concepts in the following sections.
-
