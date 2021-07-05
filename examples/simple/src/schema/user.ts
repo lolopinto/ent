@@ -10,7 +10,7 @@ import {
   requiredField,
   NoFields,
 } from "@snowtop/ent/schema";
-import { EmailType } from "@snowtop/snowtop-email";
+import { EmailType } from "@snowtop/ent-email";
 import { PasswordType } from "@snowtop/snowtop-password";
 import { PhoneNumberType } from "@snowtop/snowtop-phonenumber";
 import { StringListType } from "@snowtop/ent/schema/field";
