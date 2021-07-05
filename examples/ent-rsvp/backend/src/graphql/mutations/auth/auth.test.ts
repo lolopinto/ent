@@ -7,7 +7,7 @@ import { createUser, createAndInvitePlusGuests } from "src/testutils";
 import schema from "src/graphql/schema";
 import { AuthCode } from "src/ent/auth_code";
 import { encodeGQLID } from "@snowtop/ent/graphql";
-import { PassportStrategyHandler } from "@snowtop/snowtop-passport";
+import { PassportStrategyHandler } from "@snowtop/ent-passport";
 import supertest from "supertest";
 import { Guest, User } from "src/ent";
 

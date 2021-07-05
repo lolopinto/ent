@@ -8,7 +8,7 @@ import {
   gqlObjectType,
   gqlQuery,
 } from "@snowtop/ent/graphql";
-import { useAndVerifyAuthJWT } from "@snowtop/snowtop-passport";
+import { useAndVerifyAuthJWT } from "@snowtop/ent-passport";
 import { Guest, User } from "src/ent";
 import { ViewerType } from "../../resolvers/viewer";
 

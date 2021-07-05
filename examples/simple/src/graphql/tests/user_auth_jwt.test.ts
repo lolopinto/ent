@@ -12,7 +12,7 @@ import { randomEmail, random, randomPhoneNumber } from "src/util/random";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { User } from "src/ent/";
 import { Express } from "express";
-import { PassportStrategyHandler } from "@snowtop/snowtop-passport";
+import { PassportStrategyHandler } from "@snowtop/ent-passport";
 import supertest from "supertest";
 import jwt from "jsonwebtoken";
 import { encodeGQLID } from "@snowtop/ent/graphql";

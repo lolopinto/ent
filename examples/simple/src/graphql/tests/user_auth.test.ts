@@ -15,7 +15,7 @@ import { User } from "src/ent/";
 import passport from "passport";
 import session from "express-session";
 import { Express } from "express";
-import { PassportAuthHandler } from "@snowtop/snowtop-passport";
+import { PassportAuthHandler } from "@snowtop/ent-passport";
 import supertest from "supertest";
 
 // TODO we need something that does this by default for all tests
