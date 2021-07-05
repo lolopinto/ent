@@ -11,7 +11,7 @@ import {
   NoFields,
 } from "@snowtop/ent/schema";
 import { EmailType } from "@snowtop/ent-email";
-import { PasswordType } from "@snowtop/snowtop-password";
+import { PasswordType } from "@snowtop/ent-password";
 import { PhoneNumberType } from "@snowtop/snowtop-phonenumber";
 import { StringListType } from "@snowtop/ent/schema/field";
 
