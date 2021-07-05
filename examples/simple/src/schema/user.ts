@@ -12,7 +12,7 @@ import {
 } from "@snowtop/ent/schema";
 import { EmailType } from "@snowtop/ent-email";
 import { PasswordType } from "@snowtop/ent-password";
-import { PhoneNumberType } from "@snowtop/snowtop-phonenumber";
+import { PhoneNumberType } from "@snowtop/ent-phonenumber";
 import { StringListType } from "@snowtop/ent/schema/field";
 
 export default class User extends BaseEntSchema implements Schema {

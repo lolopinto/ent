@@ -5,7 +5,7 @@ import {
   Field,
   StringType,
 } from "@snowtop/ent";
-import { PhoneNumberType } from "@snowtop/snowtop-phonenumber";
+import { PhoneNumberType } from "@snowtop/ent-phonenumber";
 
 export default class Account extends BaseEntSchema {
   fields: Field[] = [
