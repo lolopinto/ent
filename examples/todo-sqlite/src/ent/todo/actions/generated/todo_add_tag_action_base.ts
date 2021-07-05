@@ -6,13 +6,13 @@ import {
   ID,
   PrivacyPolicy,
   Viewer,
-} from "@snowtop/snowtop-ts";
+} from "@snowtop/ent";
 import {
   Action,
   Builder,
   Changeset,
   WriteOperation,
-} from "@snowtop/snowtop-ts/action";
+} from "@snowtop/ent/action";
 import { Tag, Todo } from "src/ent/";
 import { TodoBuilder, TodoInput } from "src/ent/todo/actions/todo_builder";
 

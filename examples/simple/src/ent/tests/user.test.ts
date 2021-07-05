@@ -7,7 +7,7 @@ import {
   IDViewer,
   LoggedOutViewer,
   DB,
-} from "@snowtop/snowtop-ts";
+} from "@snowtop/ent";
 
 import { v4 as uuidv4 } from "uuid";
 import { NodeType, EdgeType } from "src/ent/const";
@@ -20,8 +20,8 @@ import EditUserAction from "src/ent/user/actions/edit_user_action";
 import DeleteUserAction from "src/ent/user/actions/delete_user_action";
 import CreateEventAction from "src/ent/event/actions/create_event_action";
 import CreateContactAction from "src/ent/contact/actions/create_contact_action";
-import { FakeLogger } from "@snowtop/snowtop-ts/testutils/fake_log";
-import { FakeComms, Mode } from "@snowtop/snowtop-ts/testutils/fake_comms";
+import { FakeLogger } from "@snowtop/ent/testutils/fake_log";
+import { FakeComms, Mode } from "@snowtop/ent/testutils/fake_comms";
 import EditEmailAddressAction from "src/ent/user/actions/edit_email_address_action";
 import ConfirmEditEmailAddressAction from "../user/actions/confirm_edit_email_address_action";
 import EditPhoneNumberAction from "../user/actions/edit_phone_number_action";

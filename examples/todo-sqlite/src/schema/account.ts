@@ -4,7 +4,7 @@ import {
   BaseEntSchema,
   Field,
   StringType,
-} from "@snowtop/snowtop-ts";
+} from "@snowtop/ent";
 import { PhoneNumberType } from "@snowtop/snowtop-phonenumber";
 
 export default class Account extends BaseEntSchema {

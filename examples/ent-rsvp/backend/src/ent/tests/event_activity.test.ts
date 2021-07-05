@@ -4,7 +4,7 @@ import {
   EventActivityToAttendingQuery,
   GuestToAttendingEventsQuery,
 } from "src/ent";
-import { DB, IDViewer } from "@snowtop/snowtop-ts";
+import { DB, IDViewer } from "@snowtop/ent";
 import CreateEventActivityAction from "../event_activity/actions/create_event_activity_action";
 import CreateGuestGroupAction from "../guest_group/actions/create_guest_group_action";
 import EventActivityAddInviteAction from "../event_activity/actions/event_activity_add_invite_action";

@@ -1,4 +1,4 @@
-import { AllowIfEntIsVisiblePolicy, PrivacyPolicy } from "@snowtop/snowtop-ts";
+import { AllowIfEntIsVisiblePolicy, PrivacyPolicy } from "@snowtop/ent";
 import { AddressBase, NodeType } from "src/ent/internal";
 import { getLoaderOptions } from "./loadAny";
 

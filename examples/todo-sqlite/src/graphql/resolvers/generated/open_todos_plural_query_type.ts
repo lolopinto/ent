@@ -7,8 +7,8 @@ import {
   GraphQLNonNull,
   GraphQLResolveInfo,
 } from "graphql";
-import { RequestContext } from "@snowtop/snowtop-ts";
-import { mustDecodeIDFromGQLID } from "@snowtop/snowtop-ts/graphql";
+import { RequestContext } from "@snowtop/ent";
+import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { TodoType } from "src/graphql/resolvers/internal";
 import { TodoResolver } from "../open_todos";
 

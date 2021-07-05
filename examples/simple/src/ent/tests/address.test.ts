@@ -1,4 +1,4 @@
-import { DB, LoggedOutViewer } from "@snowtop/snowtop-ts";
+import { DB, LoggedOutViewer } from "@snowtop/ent";
 import CreateAddressAction from "../address/actions/create_address_action";
 
 const vc = new LoggedOutViewer();

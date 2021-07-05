@@ -7,11 +7,11 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/snowtop-ts";
+import { RequestContext } from "@snowtop/ent";
 import {
   GraphQLNodeInterface,
   nodeIDEncoder,
-} from "@snowtop/snowtop-ts/graphql";
+} from "@snowtop/ent/graphql";
 import { Contact } from "src/ent/";
 import { UserType } from "src/graphql/resolvers/internal";
 

@@ -5,13 +5,13 @@ import {
   ID,
   PrivacyPolicy,
   Viewer,
-} from "@snowtop/snowtop-ts";
+} from "@snowtop/ent";
 import {
   Action,
   Builder,
   Changeset,
   WriteOperation,
-} from "@snowtop/snowtop-ts/action";
+} from "@snowtop/ent/action";
 import { AuthCode, User } from "src/ent/";
 import {
   AuthCodeBuilder,

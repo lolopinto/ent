@@ -5,7 +5,7 @@ import {
   FieldOptions,
   BaseField,
   ListField,
-} from "@snowtop/snowtop-ts/schema";
+} from "@snowtop/ent/schema";
 
 import {
   CountryCode,

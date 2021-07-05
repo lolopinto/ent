@@ -1,10 +1,10 @@
 import { User, Event, EdgeType } from "src/ent/"; // default removes the suffix and transforms it...
-import { IDViewer } from "@snowtop/snowtop-ts";
+import { IDViewer } from "@snowtop/ent";
 import CreateContactAction from "./ent/contact/actions/create_contact_action";
 import { randomEmail } from "./util/random";
 import EditUserAction from "./ent/user/actions/edit_user_action";
 import * as http from "http";
-import { buildContext } from "@snowtop/snowtop-ts/auth";
+import { buildContext } from "@snowtop/ent/auth";
 import CreateUserAction from "./ent/user/actions/create_user_action";
 import CreateEventAction from "./ent/event/actions/create_event_action";
 async function loadUserAndCreate() {

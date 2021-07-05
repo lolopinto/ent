@@ -7,7 +7,7 @@ import {
   Viewer,
   loadEnt,
   loadEntX,
-} from "@snowtop/snowtop-ts";
+} from "@snowtop/ent";
 import { Account, Tag, Todo } from "src/ent/";
 import { NodeType } from "./const";
 

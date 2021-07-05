@@ -7,12 +7,12 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/snowtop-ts";
+import { RequestContext } from "@snowtop/ent";
 import {
   GraphQLNodeInterface,
   GraphQLTime,
   nodeIDEncoder,
-} from "@snowtop/snowtop-ts/graphql";
+} from "@snowtop/ent/graphql";
 import { Holiday } from "src/ent/";
 
 export const HolidayType = new GraphQLObjectType({

@@ -10,7 +10,7 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { ID, RequestContext } from "@snowtop/snowtop-ts";
+import { ID, RequestContext } from "@snowtop/ent";
 import { AuthCode } from "src/ent/";
 import DeleteAuthCodeAction from "src/ent/auth_code/actions/delete_auth_code_action";
 

@@ -10,8 +10,8 @@ import {
   GraphQLObjectType,
   GraphQLResolveInfo,
 } from "graphql";
-import { RequestContext } from "@snowtop/snowtop-ts";
-import { mustDecodeIDFromGQLID } from "@snowtop/snowtop-ts/graphql";
+import { RequestContext } from "@snowtop/ent";
+import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { Todo } from "src/ent/";
 import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
 

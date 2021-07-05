@@ -1,6 +1,6 @@
 import { User, UserToFriendsQuery, UserToSelfContactQuery } from "src/ent/";
 
-import { IDViewer, LoggedOutViewer, DB, ID } from "@snowtop/snowtop-ts";
+import { IDViewer, LoggedOutViewer, DB, ID } from "@snowtop/ent";
 
 import CreateUserAction, {
   UserCreateInput,

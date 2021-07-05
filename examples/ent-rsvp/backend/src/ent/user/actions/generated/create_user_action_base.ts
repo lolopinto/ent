@@ -4,8 +4,8 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   PrivacyPolicy,
   Viewer,
-} from "@snowtop/snowtop-ts";
-import { Action, Changeset, WriteOperation } from "@snowtop/snowtop-ts/action";
+} from "@snowtop/ent";
+import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { User } from "src/ent/";
 import { UserBuilder, UserInput } from "src/ent/user/actions/user_builder";
 

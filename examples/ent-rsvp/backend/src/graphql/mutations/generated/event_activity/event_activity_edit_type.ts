@@ -12,11 +12,11 @@ import {
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/snowtop-ts";
+import { RequestContext } from "@snowtop/ent";
 import {
   GraphQLTime,
   mustDecodeIDFromGQLID,
-} from "@snowtop/snowtop-ts/graphql";
+} from "@snowtop/ent/graphql";
 import { EventActivity } from "src/ent/";
 import EditEventActivityAction, {
   EventActivityEditInput,

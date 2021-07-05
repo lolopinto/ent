@@ -6,7 +6,7 @@ import {
   Action,
   ActionOperation,
   UUIDType,
-} from "@snowtop/snowtop-ts/schema";
+} from "@snowtop/ent/schema";
 
 export default class Address extends BaseEntSchema implements Schema {
   fields: Field[] = [

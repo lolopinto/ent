@@ -7,7 +7,7 @@ import {
   Action,
   Constraint,
   ConstraintType,
-} from "@snowtop/snowtop-ts";
+} from "@snowtop/ent";
 import { EmailType } from "@snowtop/snowtop-email";
 
 export default class Guest extends BaseEntSchema {

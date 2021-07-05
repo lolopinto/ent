@@ -7,7 +7,7 @@ import {
   Field,
   StringType,
   UUIDType,
-} from "@snowtop/snowtop-ts";
+} from "@snowtop/ent";
 import { EmailType } from "@snowtop/snowtop-email";
 import { PhoneNumberType } from "@snowtop/snowtop-phonenumber";
 

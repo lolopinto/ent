@@ -4,7 +4,7 @@ import {
   BaseEntSchema,
   Field,
   StringType,
-} from "@snowtop/snowtop-ts";
+} from "@snowtop/ent";
 import { EmailType } from "@snowtop/snowtop-email";
 import { PasswordType } from "@snowtop/snowtop-password";
 

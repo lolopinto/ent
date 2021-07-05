@@ -9,11 +9,11 @@ import {
   BooleanType,
   requiredField,
   NoFields,
-} from "@snowtop/snowtop-ts/schema";
+} from "@snowtop/ent/schema";
 import { EmailType } from "@snowtop/snowtop-email";
 import { PasswordType } from "@snowtop/snowtop-password";
 import { PhoneNumberType } from "@snowtop/snowtop-phonenumber";
-import { StringListType } from "@snowtop/snowtop-ts/schema/field";
+import { StringListType } from "@snowtop/ent/schema/field";
 
 export default class User extends BaseEntSchema implements Schema {
   fields: Field[] = [

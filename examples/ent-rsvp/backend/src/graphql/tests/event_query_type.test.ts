@@ -3,12 +3,12 @@ import {
   expectQueryFromRoot,
 } from "@snowtop/snowtop-graphql-tests";
 import { Event } from "src/ent";
-import { DB, ID, setLogLevels, loadConfig } from "@snowtop/snowtop-ts";
+import { DB, ID, setLogLevels, loadConfig } from "@snowtop/ent";
 import schema from "src/graphql/schema";
 import {
   encodeGQLID,
   mustDecodeIDFromGQLID,
-} from "@snowtop/snowtop-ts/graphql";
+} from "@snowtop/ent/graphql";
 import { createUser } from "src/testutils";
 import DeleteEventAction from "src/ent/event/actions/delete_event_action";
 

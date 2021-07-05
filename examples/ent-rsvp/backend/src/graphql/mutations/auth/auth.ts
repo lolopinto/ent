@@ -1,4 +1,4 @@
-import { RequestContext, loadRow, query } from "@snowtop/snowtop-ts";
+import { RequestContext, loadRow, query } from "@snowtop/ent";
 import {
   gqlContextType,
   gqlArg,
@@ -7,7 +7,7 @@ import {
   gqlField,
   gqlObjectType,
   gqlQuery,
-} from "@snowtop/snowtop-ts/graphql";
+} from "@snowtop/ent/graphql";
 import { useAndVerifyAuthJWT } from "@snowtop/snowtop-passport";
 import { Guest, User } from "src/ent";
 import { ViewerType } from "../../resolvers/viewer";

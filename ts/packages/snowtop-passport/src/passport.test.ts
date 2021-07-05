@@ -10,12 +10,12 @@ import {
   loadRow,
   query,
   Ent,
-} from "@snowtop/snowtop-ts";
+} from "@snowtop/ent";
 import {
   expectQueryFromRoot,
   expectMutation,
 } from "@snowtop/snowtop-graphql-tests";
-import { clearAuthHandlers } from "@snowtop/snowtop-ts/auth";
+import { clearAuthHandlers } from "@snowtop/ent/auth";
 import {
   GraphQLSchema,
   GraphQLObjectType,
@@ -24,8 +24,8 @@ import {
   GraphQLID,
   GraphQLFieldConfig,
 } from "graphql";
-import { QueryRecorder } from "@snowtop/snowtop-ts/testutils/db_mock";
-import { createRowForTest } from "@snowtop/snowtop-ts/testutils/write";
+import { QueryRecorder } from "@snowtop/ent/testutils/db_mock";
+import { createRowForTest } from "@snowtop/ent/testutils/write";
 import { Pool } from "pg";
 import { useAndVerifyAuth, useAndVerifyAuthJWT } from "./passport";
 import { PassportStrategyHandler, PassportAuthHandler } from "./passport";
