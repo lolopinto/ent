@@ -1,4 +1,4 @@
-import { LoggedOutViewer, ID, IDViewer } from "@snowtop/snowtop-ts";
+import { LoggedOutViewer, ID, IDViewer } from "@snowtop/ent";
 import CreateAccountAction from "src/ent/account/actions/create_account_action";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { validate } from "uuid";

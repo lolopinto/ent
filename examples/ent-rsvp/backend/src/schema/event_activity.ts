@@ -8,7 +8,7 @@ import {
   TimestampType,
   BooleanType,
   AssocEdgeGroup,
-} from "@snowtop/snowtop-ts";
+} from "@snowtop/ent";
 
 export default class EventActivity extends BaseEntSchema {
   fields: Field[] = [

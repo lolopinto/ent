@@ -1,5 +1,5 @@
 import { User, Contact } from "src/ent/";
-import { DB, LoggedOutViewer, IDViewer } from "@snowtop/snowtop-ts";
+import { DB, LoggedOutViewer, IDViewer } from "@snowtop/ent";
 import { randomEmail, randomPhoneNumber } from "src/util/random";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 import CreateContactAction, {

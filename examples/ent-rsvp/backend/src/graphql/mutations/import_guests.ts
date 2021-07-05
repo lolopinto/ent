@@ -1,18 +1,18 @@
-import { ID, RequestContext, Data, Ent } from "@snowtop/snowtop-ts";
+import { ID, RequestContext, Data, Ent } from "@snowtop/ent";
 import {
   gqlArg,
   gqlContextType,
   gqlFileUpload,
   gqlMutation,
-} from "@snowtop/snowtop-ts/graphql";
-import { Action } from "@snowtop/snowtop-ts/action";
+} from "@snowtop/ent/graphql";
+import { Action } from "@snowtop/ent/action";
 import { GraphQLID } from "graphql";
 import { Event } from "src/ent";
 import { FileUpload } from "graphql-upload";
 import parse from "csv-parse";
 import CreateGuestGroupAction from "src/ent/guest_group/actions/create_guest_group_action";
 import CreateGuestAction from "src/ent/guest/actions/create_guest_action";
-import { BaseAction } from "@snowtop/snowtop-ts/action/experimental_action";
+import { BaseAction } from "@snowtop/ent/action/experimental_action";
 import { EventBuilder } from "src/ent/event/actions/event_builder";
 
 export class ImportGuestResolver {

@@ -1,4 +1,4 @@
-import { AlwaysAllowPrivacyPolicy } from "@snowtop/snowtop-ts";
+import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
 import {
   RenameTodoInput,
   RenameTodoStatusActionBase,

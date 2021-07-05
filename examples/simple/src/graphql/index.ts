@@ -5,12 +5,12 @@ import schema from "./schema";
 import { IncomingMessage, ServerResponse } from "http";
 import passport from "passport";
 import session from "express-session";
-import { DB } from "@snowtop/snowtop-ts";
-import { buildContext, registerAuthHandler } from "@snowtop/snowtop-ts/auth";
+import { DB } from "@snowtop/ent";
+import { buildContext, registerAuthHandler } from "@snowtop/ent/auth";
 import {
   PassportAuthHandler,
   PassportStrategyHandler,
-} from "@snowtop/snowtop-passport";
+} from "@snowtop/ent-passport";
 import { graphqlUploadExpress } from "graphql-upload";
 import { User } from "src/ent";
 

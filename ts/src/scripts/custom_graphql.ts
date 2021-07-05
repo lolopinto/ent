@@ -16,7 +16,7 @@ import { exit } from "process";
 // need to use the GQLCapture from the package so that when we call GQLCapture.enable()
 // we're affecting the local paths as opposed to a different instance
 // life is hard
-const MODULE_PATH = "@snowtop/snowtop-ts/graphql";
+const MODULE_PATH = "@snowtop/ent/graphql";
 
 async function readInputs(): Promise<{
   nodes: string[];

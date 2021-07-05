@@ -1,11 +1,11 @@
-import { ID, IDViewer, query, RequestContext } from "@snowtop/snowtop-ts";
+import { ID, IDViewer, query, RequestContext } from "@snowtop/ent";
 import {
   gqlArg,
   gqlConnection,
   gqlContextType,
   gqlQuery,
   GraphQLEdgeConnection,
-} from "@snowtop/snowtop-ts/graphql";
+} from "@snowtop/ent/graphql";
 import { GraphQLID } from "graphql";
 import { Todo, Account, AccountToOpenTodosQuery } from "src/ent";
 

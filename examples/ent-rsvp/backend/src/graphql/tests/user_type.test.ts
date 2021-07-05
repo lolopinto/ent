@@ -1,8 +1,8 @@
-import { expectMutation } from "@snowtop/snowtop-graphql-tests";
+import { expectMutation } from "@snowtop/ent-graphql-tests";
 import { User } from "src/ent";
-import { DB, IDViewer } from "@snowtop/snowtop-ts";
+import { DB, IDViewer } from "@snowtop/ent";
 import schema from "src/graphql/schema";
-import { mustDecodeIDFromGQLID } from "@snowtop/snowtop-ts/graphql";
+import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { randomEmail } from "src/util/random";
 
 afterAll(async () => {

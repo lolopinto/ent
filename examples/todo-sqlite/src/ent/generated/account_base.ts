@@ -18,8 +18,8 @@ import {
   loadEntX,
   loadEntXViaKey,
   loadEnts,
-} from "@snowtop/snowtop-ts";
-import { Field, getFields } from "@snowtop/snowtop-ts/schema";
+} from "@snowtop/ent";
+import { Field, getFields } from "@snowtop/ent/schema";
 import {
   AccountToTagsQuery,
   AccountToTodosQuery,

@@ -4,13 +4,13 @@ import {
   GraphQLFieldConfig,
   GraphQLResolveInfo,
 } from "graphql";
-import { RequestContext } from "@snowtop/snowtop-ts";
+import { RequestContext } from "@snowtop/ent";
 import {
   GraphQLNodeInterface,
   registerResolver,
   EntNodeResolver,
   resolveID,
-} from "@snowtop/snowtop-ts/graphql";
+} from "@snowtop/ent/graphql";
 import { loadEntByType } from "src/ent/loadAny";
 
 interface NodeQueryArgs {

@@ -3,13 +3,13 @@ import {
   AssocEdge,
   Ent,
   loadEdgeForID2,
-} from "@snowtop/snowtop-ts";
-import { Changeset, Trigger, WriteOperation } from "@snowtop/snowtop-ts/action";
+} from "@snowtop/ent";
+import { Changeset, Trigger, WriteOperation } from "@snowtop/ent/action";
 import {
   DenyIfEdgeDoesNotExistRule,
   DelayedResultRule,
   DenyIfLoggedOutRule,
-} from "@snowtop/snowtop-ts/core/privacy";
+} from "@snowtop/ent/core/privacy";
 import { Guest, GuestData } from "src/ent";
 import { EdgeType } from "src/ent/const";
 import {

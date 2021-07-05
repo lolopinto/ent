@@ -1,7 +1,7 @@
 package codepath
 
 // Package refers to the name of the package
-const Package = "@snowtop/snowtop-ts"
+const Package = "@snowtop/ent"
 
 // ActionPackage refers to the name of the action package
 const ActionPackage = Package + "/action"

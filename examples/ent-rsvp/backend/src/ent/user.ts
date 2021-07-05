@@ -1,4 +1,4 @@
-import { Data } from "@snowtop/snowtop-ts";
+import { Data } from "@snowtop/ent";
 import { UserBase } from "src/ent/internal";
 import * as bcrypt from "bcryptjs";
 

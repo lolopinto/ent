@@ -1,4 +1,4 @@
-import { AssocEdge } from "@snowtop/snowtop-ts";
+import { AssocEdge } from "@snowtop/ent";
 import { TodoToTagsQueryBase } from "src/ent/internal";
 
 export class TodoToTagsEdge extends AssocEdge {}

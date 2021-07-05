@@ -6,8 +6,8 @@ import {
   QueryLoaderFactory,
   RawCountLoaderFactory,
   Viewer,
-} from "@snowtop/snowtop-ts";
-import { gqlConnection, gqlField } from "@snowtop/snowtop-ts/graphql";
+} from "@snowtop/ent";
+import { gqlConnection, gqlField } from "@snowtop/ent/graphql";
 import { AccountBase, todoLoader } from "src/ent/internal";
 import { Todo } from "./todo";
 

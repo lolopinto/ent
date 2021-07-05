@@ -6,7 +6,7 @@ import {
   AssocEdgeQueryBase,
   EdgeQuerySource,
   Viewer,
-} from "@snowtop/snowtop-ts";
+} from "@snowtop/ent";
 import {
   EdgeType,
   EventActivity,

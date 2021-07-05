@@ -7,11 +7,8 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/snowtop-ts";
-import {
-  GraphQLNodeInterface,
-  nodeIDEncoder,
-} from "@snowtop/snowtop-ts/graphql";
+import { RequestContext } from "@snowtop/ent";
+import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
 import { Address } from "src/ent/";
 
 export const AddressType = new GraphQLObjectType({

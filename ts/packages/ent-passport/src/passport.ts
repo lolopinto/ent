@@ -3,7 +3,7 @@ import {
   AuthHandler,
   AuthViewer,
   registerAuthHandler,
-} from "@snowtop/snowtop-ts/auth";
+} from "@snowtop/ent/auth";
 import { IncomingMessage } from "http";
 import { Strategy } from "passport-strategy";
 import {
@@ -15,7 +15,7 @@ import {
   RequestContext,
   IDViewer,
   loadEntX,
-} from "@snowtop/snowtop-ts";
+} from "@snowtop/ent";
 import {
   ExtractJwt,
   JwtFromRequestFunction,

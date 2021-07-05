@@ -2,7 +2,7 @@ import schema from "src/graphql/schema";
 import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
-import { DB, LoggedOutViewer, IDViewer, ID, Viewer } from "@snowtop/snowtop-ts";
+import { DB, LoggedOutViewer, IDViewer, ID, Viewer } from "@snowtop/ent";
 import { Contact, User } from "src/ent/";
 import { randomEmail, randomPhoneNumber } from "src/util/random";
 import EditUserAction from "src/ent/user/actions/edit_user_action";
@@ -10,12 +10,12 @@ import { advanceBy } from "jest-date-mock";
 import {
   queryRootConfig,
   expectQueryFromRoot,
-} from "@snowtop/snowtop-graphql-tests";
+} from "@snowtop/ent-graphql-tests";
 import CreateContactAction, {
   ContactCreateInput,
 } from "src/ent/contact/actions/create_contact_action";
-import { clearAuthHandlers } from "@snowtop/snowtop-ts/auth";
-import { encodeGQLID } from "@snowtop/snowtop-ts/graphql";
+import { clearAuthHandlers } from "@snowtop/ent/auth";
+import { encodeGQLID } from "@snowtop/ent/graphql";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {

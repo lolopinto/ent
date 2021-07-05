@@ -10,8 +10,8 @@ import {
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/snowtop-ts";
-import { GraphQLTime } from "@snowtop/snowtop-ts/graphql";
+import { RequestContext } from "@snowtop/ent";
+import { GraphQLTime } from "@snowtop/ent/graphql";
 import { Holiday } from "src/ent/";
 import CreateHolidayAction, {
   HolidayCreateInput,

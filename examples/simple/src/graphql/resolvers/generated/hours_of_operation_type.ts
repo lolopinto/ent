@@ -7,12 +7,12 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/snowtop-ts";
+import { RequestContext } from "@snowtop/ent";
 import {
   GraphQLNodeInterface,
   convertToGQLEnum,
   nodeIDEncoder,
-} from "@snowtop/snowtop-ts/graphql";
+} from "@snowtop/ent/graphql";
 import { HoursOfOperation, getDayOfWeekValues } from "src/ent/";
 import { dayOfWeekType } from "src/graphql/resolvers/internal";
 

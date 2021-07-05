@@ -1,15 +1,15 @@
 import express from "express";
 import { graphqlHTTP } from "express-graphql";
 import { IncomingMessage, ServerResponse } from "http";
-import { buildContext, registerAuthHandler } from "@snowtop/snowtop-ts/auth";
-import { PassportStrategyHandler } from "@snowtop/snowtop-passport";
+import { buildContext, registerAuthHandler } from "@snowtop/ent/auth";
+import { PassportStrategyHandler } from "@snowtop/ent-passport";
 import passport from "passport";
 import cors, { CorsOptions, CorsOptionsDelegate } from "cors";
 import { graphqlUploadExpress } from "graphql-upload";
 import * as Sentry from "@sentry/node";
 import * as Tracing from "@sentry/tracing";
 import { config } from "dotenv";
-import { DB, loadConfig } from "@snowtop/snowtop-ts";
+import { DB, loadConfig } from "@snowtop/ent";
 
 // load env
 config();

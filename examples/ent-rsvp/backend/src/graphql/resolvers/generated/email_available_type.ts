@@ -7,7 +7,7 @@ import {
   GraphQLResolveInfo,
   GraphQLBoolean,
 } from "graphql";
-import { RequestContext } from "@snowtop/snowtop-ts";
+import { RequestContext } from "@snowtop/ent";
 import { AuthResolver } from "../../mutations/auth/auth";
 
 export const EmailAvailableType: GraphQLFieldConfig<undefined, RequestContext> =

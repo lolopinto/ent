@@ -1,5 +1,5 @@
-import { DB } from "@snowtop/snowtop-ts";
-import { expectMutation } from "@snowtop/snowtop-graphql-tests";
+import { DB } from "@snowtop/ent";
+import { expectMutation } from "@snowtop/ent-graphql-tests";
 import schema from "src/graphql/schema";
 import luxon, { DateTime } from "luxon";
 

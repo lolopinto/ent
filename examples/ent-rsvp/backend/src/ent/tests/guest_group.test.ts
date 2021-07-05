@@ -1,5 +1,5 @@
 import { Event, GuestGroup } from "src/ent";
-import { DB, IDViewer } from "@snowtop/snowtop-ts";
+import { DB, IDViewer } from "@snowtop/ent";
 import { randomEmail } from "src/util/random";
 import CreateGuestGroupAction from "../guest_group/actions/create_guest_group_action";
 import EditGuestGroupAction from "../guest_group/actions/edit_guest_group_action";
