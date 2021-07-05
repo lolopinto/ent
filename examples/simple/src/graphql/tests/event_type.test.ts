@@ -6,7 +6,7 @@ import { randomEmail, randomPhoneNumber } from "src/util/random";
 import {
   expectQueryFromRoot,
   queryRootConfig,
-} from "@snowtop/snowtop-graphql-tests";
+} from "@snowtop/ent-graphql-tests";
 import CreateEventAction, {
   EventCreateInput,
 } from "src/ent/event/actions/create_event_action";

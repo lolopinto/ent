@@ -1,6 +1,6 @@
 import { DB, LoggedOutViewer } from "@snowtop/ent";
 import { randomEmail, randomPhoneNumber } from "src/util/random";
-import { expectMutation } from "@snowtop/snowtop-graphql-tests";
+import { expectMutation } from "@snowtop/ent-graphql-tests";
 import { encodeGQLID } from "@snowtop/ent/graphql";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 import schema from "src/graphql/schema";

@@ -1,4 +1,4 @@
-import { expectMutation } from "@snowtop/snowtop-graphql-tests";
+import { expectMutation } from "@snowtop/ent-graphql-tests";
 import { IDViewer, DB } from "@snowtop/ent";
 import {
   encodeGQLID,

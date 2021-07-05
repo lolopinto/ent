@@ -3,7 +3,7 @@ import {
   queryRootConfig,
   expectQueryFromRoot,
   expectMutation,
-} from "@snowtop/snowtop-graphql-tests";
+} from "@snowtop/ent-graphql-tests";
 import { DB, LoggedOutViewer } from "@snowtop/ent";
 import { encodeGQLID } from "@snowtop/ent/graphql";
 import CreateUserAction, {

@@ -14,7 +14,7 @@ import {
 import {
   expectQueryFromRoot,
   expectMutation,
-} from "@snowtop/snowtop-graphql-tests";
+} from "@snowtop/ent-graphql-tests";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import {
   GraphQLSchema,

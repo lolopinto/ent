@@ -1,7 +1,7 @@
 import {
   expectMutation,
   expectQueryFromRoot,
-} from "@snowtop/snowtop-graphql-tests";
+} from "@snowtop/ent-graphql-tests";
 import { Event } from "src/ent";
 import { DB, ID, setLogLevels, loadConfig } from "@snowtop/ent";
 import schema from "src/graphql/schema";

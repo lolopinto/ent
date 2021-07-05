@@ -6,7 +6,7 @@ import { randomEmail, randomPhoneNumber } from "src/util/random";
 import {
   expectQueryFromRoot,
   queryRootConfig,
-} from "@snowtop/snowtop-graphql-tests";
+} from "@snowtop/ent-graphql-tests";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { encodeGQLID } from "@snowtop/ent/graphql";
 

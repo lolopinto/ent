@@ -2,7 +2,7 @@ import { DB } from "@snowtop/ent";
 import {
   expectMutation,
   expectQueryFromRoot,
-} from "@snowtop/snowtop-graphql-tests";
+} from "@snowtop/ent-graphql-tests";
 import { createUser, createAndInvitePlusGuests } from "src/testutils";
 import schema from "src/graphql/schema";
 import { AuthCode } from "src/ent/auth_code";

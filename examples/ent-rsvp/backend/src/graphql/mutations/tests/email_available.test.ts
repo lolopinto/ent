@@ -1,7 +1,7 @@
 import {
   expectMutation,
   expectQueryFromRoot,
-} from "@snowtop/snowtop-graphql-tests";
+} from "@snowtop/ent-graphql-tests";
 import { IDViewer, DB } from "@snowtop/ent";
 // import { encodeGQLID } from "@snowtop/ent/graphql";
 // import { createGuestPlus } from "src/testutils";

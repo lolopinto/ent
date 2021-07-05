@@ -8,7 +8,7 @@ import CreateUserAction, {
 import {
   expectMutation,
   mutationRootConfig,
-} from "@snowtop/snowtop-graphql-tests";
+} from "@snowtop/ent-graphql-tests";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import {
   mustDecodeIDFromGQLID,
