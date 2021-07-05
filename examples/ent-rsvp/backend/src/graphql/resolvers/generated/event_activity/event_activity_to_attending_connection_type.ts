@@ -6,10 +6,7 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import {
-  GraphQLConnectionType,
-  GraphQLEdge,
-} from "@snowtop/ent/graphql";
+import { GraphQLConnectionType, GraphQLEdge } from "@snowtop/ent/graphql";
 import { EventActivityToAttendingEdge } from "src/ent/";
 import { GuestType } from "src/graphql/resolvers/internal";
 
