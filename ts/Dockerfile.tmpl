@@ -41,7 +41,7 @@ ENV GOPATH=$HOME/go
 ENV GOBIN $GOPATH/bin
 ENV PATH $PATH:$GOPATH/bin
 
-RUN go install github.com/lolopinto/ent/tsent@v0.0.18
+RUN go install github.com/lolopinto/ent/tsent@v0.0.19
 
 # first 3 need to move from ts/package.json
 # maybe typescript?
