@@ -260,7 +260,7 @@ And then we have a subclass for each query which can be customized as needed. Th
 
 ```ts title="src/ent/user/query/user_to_friends_query.ts"
 import { UserToFriendsQueryBase } from "src/ent/internal";
-import { AssocEdge } from "@lolopinto/ent";
+import { AssocEdge } from "@snowtop/ent";
 
 export class UserToFriendsEdge extends AssocEdge {}
 
@@ -280,7 +280,7 @@ To know how long the users have been friends:
 
 ```ts title="src/ent/user/query/user_to_friends_query.ts"
 import { UserToFriendsQueryBase } from "src/ent/internal";
-import { AssocEdge } from "@lolopinto/ent";
+import { AssocEdge } from "@snowtop/ent";
 
 export class UserToFriendsEdge extends AssocEdge {
   howLong() {

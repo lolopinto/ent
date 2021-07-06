@@ -36,9 +36,9 @@ Also used when this is id is stored in a [polymorphic](/docs/ent-schema/fields#p
 ## Example
 Given the following schema:
 ```ts title="src/schema/user.ts"
-import { BaseEntSchema, Field, StringType } from "@lolopinto/ent";
-import { EmailType } from "@lolopinto/ent-email";
-import { PasswordType } from "@lolopinto/ent-password";
+import { BaseEntSchema, Field, StringType } from "@snowtop/ent";
+import { EmailType } from "@snowtop/ent-email";
+import { PasswordType } from "@snowtop/ent-password";
 
 export default class User extends BaseEntSchema {
   fields: Field[] = [
@@ -110,7 +110,7 @@ For example, to make it so that anyone can see any `User`, you can change `src/e
 
 ```ts title="src/ent/user.ts"
 import { UserBase } from "src/ent/internal";
-import { AlwaysAllowPrivacyPolicy, PrivacyPolicy } from "@lolopinto/ent"
+import { AlwaysAllowPrivacyPolicy, PrivacyPolicy } from "@snowtop/ent"
 
 export class User extends UserBase {
   privacyPolicy: PrivacyPolicy = AlwaysAllowPrivacyPolicy;
@@ -139,7 +139,7 @@ To add custom functionality, just add it in the `User` class.
 For example, to return how long the user's account has existed, 
 ```ts title="src/ent/user.ts"
 import { UserBase } from "src/ent/internal";
-import { AlwaysAllowPrivacyPolicy, ID, LoggedOutViewer, PrivacyPolicy } from "@lolopinto/ent"
+import { AlwaysAllowPrivacyPolicy, ID, LoggedOutViewer, PrivacyPolicy } from "@snowtop/ent"
 import { Interval } from "luxon";
 
 export class User extends UserBase {

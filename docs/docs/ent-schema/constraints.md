@@ -53,7 +53,7 @@ The easiest way to add a unique constraint on a single column is to use the [pri
 
 To add a multi-column constraint:
 ```ts title="src/schema/user_photo.ts"
-import { Schema, Field, UUIDType, Constraint, ConstraintType } from "@lolopinto/ent";
+import { Schema, Field, UUIDType, Constraint, ConstraintType } from "@snowtop/ent";
 
 export default class UserPhoto implements Schema {
   fields: Field[] = [
@@ -96,9 +96,9 @@ The columns being referenced on the other table need to be unique either via a m
 
 In this contrived example with the following schema,
 ```ts title="src/schema/user.ts"
-import { BaseEntSchema, Field, StringType, Pattern, Action, ActionOperation, TimestampType, Node, Constraint, ConstraintType } from "@lolopinto/ent/schema";
-import { EmailType } from "@lolopinto/ent-email";
-import { PasswordType } from "@lolopinto/ent-password";
+import { BaseEntSchema, Field, StringType, Pattern, Action, ActionOperation, TimestampType, Node, Constraint, ConstraintType } from "@snowtop/ent/schema";
+import { EmailType } from "@snowtop/ent-email";
+import { PasswordType } from "@snowtop/ent-password";
 
 export default class User extends BaseEntSchema {
   fields: Field[] = [
@@ -119,7 +119,7 @@ export default class User extends BaseEntSchema {
 ```
 
 ```ts title="src/schema/contact.ts"
-import { BaseEntSchema, Field, UUIDType, StringType, Constraint, ConstraintType } from "@lolopinto/ent";
+import { BaseEntSchema, Field, UUIDType, StringType, Constraint, ConstraintType } from "@snowtop/ent";
 
 export default class Contact extends BaseEntSchema {
   fields: Field[] = [
@@ -190,7 +190,7 @@ adds a [check constraint](https://www.postgresql.org/docs/current/ddl-constraint
 
 For example,
 ```ts title="src/schema/item.ts"
-import { Field, FloatType, BaseEntSchema, Constraint, ConstraintType } from "@lolopinto/ent";
+import { Field, FloatType, BaseEntSchema, Constraint, ConstraintType } from "@snowtop/ent";
 
 export default class Item extends BaseEntSchema {
   fields: Field[] = [
@@ -230,7 +230,7 @@ ent-test=#
 
 or for something more complicated
 ```ts title="src/schema/product_item.ts"
-import { Field, FloatType, BaseEntSchema, Constraint, ConstraintType } from "@lolopinto/ent";
+import { Field, FloatType, BaseEntSchema, Constraint, ConstraintType } from "@snowtop/ent";
 
 export default class ProductItem extends BaseEntSchema {
   fields: Field[] = [

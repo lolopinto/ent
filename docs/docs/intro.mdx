@@ -47,9 +47,9 @@ mkdir -p src/schema
 After setting the environment up, make your first change by specifying a schema as follows:
 
 ```ts title="src/schema/user.ts"
-import { BaseEntSchema, Field, StringType } from "@lolopinto/ent";
-import { EmailType } from "@lolopinto/ent-email";
-import { PasswordType } from "@lolopinto/ent-password";
+import { BaseEntSchema, Field, StringType } from "@snowtop/ent";
+import { EmailType } from "@snowtop/ent-email";
+import { PasswordType } from "@snowtop/ent-password";
 
 export default class User extends BaseEntSchema {
   fields: Field[] = [
@@ -77,7 +77,7 @@ Then run the following commands:
 ```shell
 # install additional dependencies
 # TODO...
-npm install @lolopinto/ent-email @lolopinto/ent-password
+npm install @snowtop/ent-email @snowtop/ent-password
 # install all the things in the docker container
 npm run init
 # generate code + update the database
@@ -156,9 +156,9 @@ import SqliteUsersSrc from "./sqlite_users.txt";
 To support writes, update the schema as follows:
 
 ```ts title="src/schema/user.ts"
-import { BaseEntSchema, Field, StringType, Action, ActionOperation } from "@lolopinto/ent/schema";
-import { EmailType } from "@lolopinto/ent-email";
-import { PasswordType } from "@lolopinto/ent-password";
+import { BaseEntSchema, Field, StringType, Action, ActionOperation } from "@snowtop/ent/schema";
+import { EmailType } from "@snowtop/ent-email";
+import { PasswordType } from "@snowtop/ent-password";
 
 export default class User extends BaseEntSchema {
   fields: Field[] = [
@@ -273,7 +273,7 @@ We get this error back:
 Update `src/ent/user/actions/create_user_action.ts` as follows:
 
 ```ts title="src/ent/user/actions/create_user_action.ts"
-import { Data, IDViewer, AlwaysAllowPrivacyPolicy } from "@lolopinto/ent";
+import { Data, IDViewer, AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
 import {
   CreateUserActionBase,
   UserCreateInput,
@@ -355,7 +355,7 @@ Update `src/ent/user.ts` as follows:
 import { UserBase } from "src/ent/internal";
 import { Interval } from "luxon";
 import { GraphQLInt } from "graphql"
-import { gqlField } from "@lolopinto/ent/graphql"
+import { gqlField } from "@snowtop/ent/graphql"
 
 export class User extends UserBase {
   @gqlField({

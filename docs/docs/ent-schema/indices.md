@@ -10,7 +10,7 @@ The easiest way to add an index on a single column is to use the [index modifier
 For example, if we're querying a lot on the price of items, we can add a multi-column index as follows:
 
 ```ts title="src/schema/product_item.ts"
-import { Field, FloatType, BaseEntSchema, Constraint, Index, ConstraintType } from "@lolopinto/ent";
+import { Field, FloatType, BaseEntSchema, Constraint, Index, ConstraintType } from "@snowtop/ent";
 
 export default class ProductItem extends BaseEntSchema {
   fields: Field[] = [

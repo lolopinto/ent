@@ -7,9 +7,9 @@ We briefly showed how to add [custom functionality](/docs/core-concepts/ent#cust
 
 Given the following schema:
 ```ts title="src/schema/user.ts"
-import { BaseEntSchema, Field, StringType } from "@lolopinto/ent";
-import { EmailType } from "@lolopinto/ent-email";
-import { PasswordType } from "@lolopinto/ent-password";
+import { BaseEntSchema, Field, StringType } from "@snowtop/ent";
+import { EmailType } from "@snowtop/ent-email";
+import { PasswordType } from "@snowtop/ent-password";
 
 export default class User extends BaseEntSchema {
   fields: Field[] = [
@@ -37,7 +37,7 @@ Even after the custom method `howLong` is added below, it's not exposed to the G
 
 ```ts title="src/ent/user.ts"
 import { UserBase } from "src/ent/internal";
-import { AlwaysAllowPrivacyPolicy, ID, LoggedOutViewer, PrivacyPolicy } from "@lolopinto/ent"
+import { AlwaysAllowPrivacyPolicy, ID, LoggedOutViewer, PrivacyPolicy } from "@snowtop/ent"
 import { Interval } from "luxon";
 
 export class User extends UserBase {

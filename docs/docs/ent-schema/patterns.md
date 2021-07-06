@@ -16,9 +16,9 @@ We have the following patterns that come with the framework:
 The fields on the Pattern are copied over onto the schema.
 
 ```ts title="src/schema/user.ts"
-import { Timestamps, Field, StringType, Schema, Pattern } from "@lolopinto/ent/schema";
-import { EmailType } from "@lolopinto/ent-email";
-import { PasswordType } from "@lolopinto/ent-password";
+import { Timestamps, Field, StringType, Schema, Pattern } from "@snowtop/ent/schema";
+import { EmailType } from "@snowtop/ent-email";
+import { PasswordType } from "@snowtop/ent-password";
 
 export default class User implements Schema {
   fields: Field[] = [
@@ -35,7 +35,7 @@ export default class User implements Schema {
 For example, in the above schema, we reuse the `Timestamps` pattern and add a new primaryKey on the table: `username`.
 
 ```ts title="src/pattern/deleted_at.ts"
-import { Field, Pattern, TimestampType } from "@lolopinto/ent/schema";
+import { Field, Pattern, TimestampType } from "@snowtop/ent/schema";
 
 export const DeletedAt: Pattern = {
   fields: Field[] = [
