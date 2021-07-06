@@ -1,0 +1,16 @@
+sqlite3 ent-starter.db
+
+# and then 
+sqlite> .schema users
+CREATE TABLE users (
+	id TEXT NOT NULL, 
+	created_at TIMESTAMP NOT NULL, 
+	updated_at TIMESTAMP NOT NULL, 
+	first_name TEXT NOT NULL, 
+	last_name TEXT NOT NULL, 
+	email_address TEXT NOT NULL, 
+	password TEXT NOT NULL, 
+	CONSTRAINT users_id_pkey PRIMARY KEY (id), 
+	CONSTRAINT users_unique_email_address UNIQUE (email_address)
+);
+sqlite> 

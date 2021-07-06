@@ -29,11 +29,12 @@ The easiest way to get started is by using the template from the `ent-starter` [
 
 This requires the following:
 
-* a local [PostgresQL](https://www.postgresql.org/download/) instance installed
-* a database created via `createdb ent-starter` (or replace with your own database name)
+* a local [PostgresQL](https://www.postgresql.org/download/) instance installed or [SQLite](https://www.sqlite.org/index.html).
+* If using Postgres, a database created via `createdb ent-starter` (or replace with your own database name).
   * if a different database is used, make sure to update the `environment` in `docker-compose.dev.yml`
+* If using SQLite, update the `DB_CONNECTION_STRING` env variable in `docker-compose.dev.yml` to something like `sqlite:///ent-starter.db` to indicate where the db should be stored.
 * [Docker](https://docs.docker.com/get-docker/) installed.
-* [Node 14](https://nodejs.org/en/download/) or later installed
+* [Node 14](https://nodejs.org/en/download/) or later installed.
 
 ## Your first schema
 
@@ -66,7 +67,7 @@ This does a few things:
 * It adds 4 explicitly listed fields here: `FirstName`, `LastName`, `EmailAddress`, `Password`.
 * and 3 implicitly listed by virtue of extending `BaseEntSchema`: `id`, `createdAt`, `updatedAt`.
 * `FirstName` and `LastName` are strings.
-* `EmailAddress` is of type `email` and will be [parsed](https://www.npmjs.com/package/email-addresses) to be a "valid" email address before storing in the database. 
+* `EmailAddress` is of type `email` and will be [parsed](https://www.npmjs.com/package/email-addresses) to be a "valid" email address before storing in the database.
 * `EmailAddress` field is marked as unique so we don't have multiple users with the same email address.
 * `Password` is of type `password` and hashed and salted using [`bcrypt`](https://www.npmjs.com/package/bcryptjs) before storing in the database.
 * The implicit fields are exactly what you'd expect. The default `id` provided by the framework is of type `uuid`.
@@ -75,9 +76,10 @@ Then run the following commands:
 
 ```shell
 # install additional dependencies
+# TODO...
 npm install @lolopinto/ent-email @lolopinto/ent-password
-# install all the things
-npm install 
+# install all the things in the docker container
+npm run init
 # generate code + update the database
 npm run codegen
 ```
@@ -140,26 +142,14 @@ we have a **live** GraphQL server.
 
 ## Database changes
 
-Note that the database was also updated by the command run above. Running `psql ent-starter` shows:
+import DatabaseTabs from "../src/components/DatabaseTabs";
 
-```db
-ent-starter=# \d+ users
-                                                 Table "public.users"
-    Column     |            Type             | Collation | Nullable | Default | Storage  | Stats target | Description 
----------------+-----------------------------+-----------+----------+---------+----------+--------------+-------------
- id            | uuid                        |           | not null |         | plain    |              | 
- created_at    | timestamp without time zone |           | not null |         | plain    |              | 
- updated_at    | timestamp without time zone |           | not null |         | plain    |              | 
- first_name    | text                        |           | not null |         | extended |              | 
- last_name     | text                        |           | not null |         | extended |              | 
- email_address | text                        |           | not null |         | extended |              | 
- password      | text                        |           | not null |         | extended |              | 
-Indexes:
-    "users_id_pkey" PRIMARY KEY, btree (id)
-    "users_unique_email_address" UNIQUE CONSTRAINT, btree (email_address)
+Note that the database was also updated by the command run above.
 
-ent-starter=# 
-```
+import PostgresUsersSrc from "./postgres_users.txt";
+import SqliteUsersSrc from "./sqlite_users.txt";
+
+<DatabaseTabs postgres={PostgresUsersSrc} sqlite={SqliteUsersSrc} />
 
 ## Adding writes
 
@@ -334,7 +324,7 @@ Then rerun the GraphQL query again and you should get a response similar to:
 
 The generated GraphQL schema allows you to access any node in your entity graph via the following Query:
 
-```graphql title="src/graphql/schema.gql
+```graphql title="src/graphql/schema.gql"
 type Query {
   node(id: ID!): Node
 }
@@ -423,34 +413,13 @@ What changed above:
 
 ## Query the Database
 
-Run the following command:
-`psql ent-starter`
+Run the following commands:
 
-And then run the following two commands:
+import PostgresQueryUsersSrc from "./postgres_query_users.txt";
+import SqliteQueryUsersSrc from "./sqlite_query_users.txt";
 
-```db
-ent-starter=# \x on 
-Expanded display is on.
-ent-starter=# select * from users;
--[ RECORD 1 ]-+-------------------------------------------------------------
-id            | 45cdd6e2-f6fb-45e0-b5b0-a07beeef3d19
-created_at    | 2021-05-25 22:37:18.662
-updated_at    | 2021-05-25 22:37:18.7
-first_name    | John
-last_name     | Snow
-email_address | test@foo.com
-password      | $2a$10$vMDRfwWIacuBHnQsLSym2OwB77Xd.ERj5myqRQEEaAqyXZ5r3xmby
--[ RECORD 2 ]-+-------------------------------------------------------------
-id            | d7f33873-809e-4fd2-8b68-d13d04d0660c
-created_at    | 2021-05-25 22:43:39.078
-updated_at    | 2021-05-25 22:43:39.113
-first_name    | Sansa
-last_name     | Stark
-email_address | sansa@stark.com
-password      | $2a$10$q1cwrLhDIiXOXQAjz7zN5u2KC2.QJ.WADfA2ozNuOTvjxrntJGNEC
+<DatabaseTabs postgres={PostgresQueryUsersSrc} sqlite={SqliteQueryUsersSrc} />
 
-ent-starter=# \q
-```
 
 ## Unique Constraint
 
