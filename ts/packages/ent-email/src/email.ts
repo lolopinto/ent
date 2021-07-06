@@ -6,7 +6,7 @@ import {
   BaseField,
   StringType,
   ListField,
-} from "@snowtop/snowtop-ts";
+} from "@snowtop/ent";
 import email from "email-addresses";
 
 function isParsedMailbox(

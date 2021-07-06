@@ -1,11 +1,11 @@
-import { Data, Ent, AlwaysDenyRule } from "@snowtop/snowtop-ts";
+import { Data, Ent, AlwaysDenyRule } from "@snowtop/ent";
 import {
   CreateEventActivityActionBase,
   EventActivityCreateInput,
 } from "src/ent/event_activity/actions/generated/create_event_activity_action_base";
 import { AllowIfEventCreatorPrivacyPolicy } from "src/ent/event/privacy/event_creator";
 export { EventActivityCreateInput };
-import { Trigger } from "@snowtop/snowtop-ts/action";
+import { Trigger } from "@snowtop/ent/action";
 import CreateAddressAction from "src/ent/address/actions/create_address_action";
 import { NodeType } from "src/ent/const";
 import { EventActivityBuilder } from "./event_activity_builder";

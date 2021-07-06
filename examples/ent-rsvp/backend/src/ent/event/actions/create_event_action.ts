@@ -3,8 +3,8 @@ import {
   AlwaysDenyRule,
   PrivacyPolicy,
   Ent,
-} from "@snowtop/snowtop-ts";
-import { Trigger } from "@snowtop/snowtop-ts/action";
+} from "@snowtop/ent";
+import { Trigger } from "@snowtop/ent/action";
 
 import {
   CreateEventActionBase,

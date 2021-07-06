@@ -1,4 +1,4 @@
-import { AlwaysAllowPrivacyPolicy, PrivacyPolicy } from "@snowtop/snowtop-ts";
+import { AlwaysAllowPrivacyPolicy, PrivacyPolicy } from "@snowtop/ent";
 import { TagBase } from "src/ent/internal";
 
 export class Tag extends TagBase {

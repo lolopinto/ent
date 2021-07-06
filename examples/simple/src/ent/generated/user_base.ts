@@ -23,8 +23,8 @@ import {
   loadEnts,
   loadUniqueEdge,
   loadUniqueNode,
-} from "@snowtop/snowtop-ts";
-import { Field, getFields } from "@snowtop/snowtop-ts/schema";
+} from "@snowtop/ent";
+import { Field, getFields } from "@snowtop/ent/schema";
 import {
   Contact,
   EdgeType,

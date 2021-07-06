@@ -5,7 +5,7 @@ import {
   StringType,
   UUIDType,
   Action,
-} from "@snowtop/snowtop-ts";
+} from "@snowtop/ent";
 
 export default class Event extends BaseEntSchema {
   fields: Field[] = [

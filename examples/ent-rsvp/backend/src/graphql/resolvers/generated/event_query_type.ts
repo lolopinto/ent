@@ -6,7 +6,7 @@ import {
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/snowtop-ts";
+import { RequestContext } from "@snowtop/ent";
 import { EventType } from "src/graphql/resolvers/internal";
 import { EventResolver } from "../event";
 

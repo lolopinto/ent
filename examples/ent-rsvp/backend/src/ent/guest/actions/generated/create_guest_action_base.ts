@@ -5,13 +5,13 @@ import {
   ID,
   PrivacyPolicy,
   Viewer,
-} from "@snowtop/snowtop-ts";
+} from "@snowtop/ent";
 import {
   Action,
   Builder,
   Changeset,
   WriteOperation,
-} from "@snowtop/snowtop-ts/action";
+} from "@snowtop/ent/action";
 import { Event, Guest, GuestGroup } from "src/ent/";
 import { GuestBuilder, GuestInput } from "src/ent/guest/actions/guest_builder";
 

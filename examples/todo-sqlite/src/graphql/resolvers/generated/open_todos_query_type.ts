@@ -8,11 +8,11 @@ import {
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/snowtop-ts";
+import { RequestContext } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
   mustDecodeIDFromGQLID,
-} from "@snowtop/snowtop-ts/graphql";
+} from "@snowtop/ent/graphql";
 import { RootToOpenTodosConnectionType } from "src/graphql/resolvers/internal";
 import { TodoResolver } from "../open_todos";
 

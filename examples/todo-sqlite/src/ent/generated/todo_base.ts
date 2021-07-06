@@ -18,8 +18,8 @@ import {
   loadEnt,
   loadEntX,
   loadEnts,
-} from "@snowtop/snowtop-ts";
-import { Field, getFields } from "@snowtop/snowtop-ts/schema";
+} from "@snowtop/ent";
+import { Field, getFields } from "@snowtop/ent/schema";
 import { Account, EdgeType, NodeType, TodoToTagsQuery } from "src/ent/internal";
 import schema from "src/schema/todo";
 

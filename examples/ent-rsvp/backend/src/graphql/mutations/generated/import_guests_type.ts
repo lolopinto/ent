@@ -7,8 +7,8 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { GraphQLUpload } from "graphql-upload";
-import { RequestContext } from "@snowtop/snowtop-ts";
-import { mustDecodeIDFromGQLID } from "@snowtop/snowtop-ts/graphql";
+import { RequestContext } from "@snowtop/ent";
+import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { EventType } from "src/graphql/resolvers/";
 import { ImportGuestResolver } from "../import_guests";
 

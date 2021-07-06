@@ -1,5 +1,5 @@
 import { User } from "src/ent";
-import { DB, LoggedOutViewer } from "@snowtop/snowtop-ts";
+import { DB, LoggedOutViewer } from "@snowtop/ent";
 import CreateUserAction from "../user/actions/create_user_action";
 import { randomEmail } from "src/util/random";
 

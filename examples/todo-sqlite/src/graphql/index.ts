@@ -1,8 +1,8 @@
 import express from "express";
 import { graphqlHTTP } from "express-graphql";
 import { IncomingMessage, ServerResponse } from "http";
-import { DB } from "@snowtop/snowtop-ts";
-import { buildContext } from "@snowtop/snowtop-ts/auth";
+import { DB } from "@snowtop/ent";
+import { buildContext } from "@snowtop/ent/auth";
 import schema from "./schema";
 
 let app = express();

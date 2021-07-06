@@ -7,8 +7,8 @@ import {
   Action,
   Constraint,
   ConstraintType,
-} from "@snowtop/snowtop-ts";
-import { EmailType } from "@snowtop/snowtop-email";
+} from "@snowtop/ent";
+import { EmailType } from "@snowtop/ent-email";
 
 export default class Guest extends BaseEntSchema {
   fields: Field[] = [

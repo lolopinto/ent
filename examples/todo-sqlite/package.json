@@ -17,7 +17,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@snowtop/snowtop-graphql-tests": "^0.0.1",
+    "@snowtop/ent-graphql-tests": "^0.0.1",
     "@types/express": "^4.17.11",
     "@types/jest": "^26.0.23",
     "@types/jest-expect-message": "^1.0.3",
@@ -30,8 +30,8 @@
     "ts-jest": "^26.5.6"
   },
   "dependencies": {
-    "@snowtop/snowtop-phonenumber": "^0.0.1",
-    "@snowtop/snowtop-ts": "^0.0.5",
+    "@snowtop/ent-phonenumber": "^0.0.1",
+    "@snowtop/ent": "^0.0.1",
     "@types/node": "^15.0.3",
     "express": "^4.17.1",
     "express-graphql": "^0.12.0",

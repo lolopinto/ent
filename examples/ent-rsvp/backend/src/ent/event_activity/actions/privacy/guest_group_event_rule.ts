@@ -6,8 +6,8 @@ import {
   Skip,
   Data,
   Viewer,
-} from "@snowtop/snowtop-ts";
-import { EdgeInputData } from "@snowtop/snowtop-ts/action";
+} from "@snowtop/ent";
+import { EdgeInputData } from "@snowtop/ent/action";
 import { GuestGroup } from "src/ent/";
 import { GuestGroupBuilder } from "src/ent/guest_group/actions/guest_group_builder";
 

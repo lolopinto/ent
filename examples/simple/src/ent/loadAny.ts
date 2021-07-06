@@ -7,7 +7,7 @@ import {
   Viewer,
   loadEnt,
   loadEntX,
-} from "@snowtop/snowtop-ts";
+} from "@snowtop/ent";
 import {
   Address,
   AuthCode,

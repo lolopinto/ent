@@ -1,5 +1,5 @@
-import { AlwaysAllowPrivacyPolicy, Ent } from "@snowtop/snowtop-ts";
-import { Trigger } from "@snowtop/snowtop-ts/action";
+import { AlwaysAllowPrivacyPolicy, Ent } from "@snowtop/ent";
+import { Trigger } from "@snowtop/ent/action";
 import {
   CreateTagActionBase,
   TagCreateInput,

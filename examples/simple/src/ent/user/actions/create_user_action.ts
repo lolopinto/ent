@@ -6,10 +6,10 @@ import { UserBuilder } from "./user_builder";
 import CreateContactAction from "src/ent/contact/actions/create_contact_action";
 import { Contact, User } from "src/ent/";
 
-import { Changeset } from "@snowtop/snowtop-ts/action";
-import { EntCreationObserver } from "@snowtop/snowtop-ts/testutils/fake_log";
-import { FakeComms, Mode } from "@snowtop/snowtop-ts/testutils/fake_comms";
-import { AlwaysAllowPrivacyPolicy, Data, IDViewer } from "@snowtop/snowtop-ts";
+import { Changeset } from "@snowtop/ent/action";
+import { EntCreationObserver } from "@snowtop/ent/testutils/fake_log";
+import { FakeComms, Mode } from "@snowtop/ent/testutils/fake_comms";
+import { AlwaysAllowPrivacyPolicy, Data, IDViewer } from "@snowtop/ent";
 
 export { UserCreateInput };
 

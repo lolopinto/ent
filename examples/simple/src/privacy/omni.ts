@@ -1,4 +1,4 @@
-import { Allow, Skip, PrivacyResult, Ent, Viewer } from "@snowtop/snowtop-ts";
+import { Allow, Skip, PrivacyResult, Ent, Viewer } from "@snowtop/ent";
 
 interface OmniViewer extends Viewer {
   isOmniscient(): boolean;

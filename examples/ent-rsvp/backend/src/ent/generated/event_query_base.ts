@@ -6,7 +6,7 @@ import {
   IndexLoaderFactory,
   RawCountLoaderFactory,
   Viewer,
-} from "@snowtop/snowtop-ts";
+} from "@snowtop/ent";
 import {
   Event,
   EventActivity,

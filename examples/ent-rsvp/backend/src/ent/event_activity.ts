@@ -6,8 +6,8 @@ import {
   DelayedResultRule,
   DenyIfEntIsNotVisibleRule,
   PrivacyPolicy,
-} from "@snowtop/snowtop-ts";
-import { gqlField } from "@snowtop/snowtop-ts/graphql";
+} from "@snowtop/ent";
+import { gqlField } from "@snowtop/ent/graphql";
 import {
   Event,
   EventActivityBase,

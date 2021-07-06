@@ -2,7 +2,7 @@ import {
   PrivacyPolicy,
   AllowIfViewerRule,
   AlwaysDenyRule,
-} from "@snowtop/snowtop-ts";
+} from "@snowtop/ent";
 
 export const EditUserPrivacy: PrivacyPolicy = {
   rules: [AllowIfViewerRule, AlwaysDenyRule],

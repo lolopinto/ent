@@ -1,7 +1,7 @@
-import { ID, IDViewer } from "@snowtop/snowtop-ts";
-import { gqlArg, gqlMutation } from "@snowtop/snowtop-ts/graphql";
+import { ID, IDViewer } from "@snowtop/ent";
+import { gqlArg, gqlMutation } from "@snowtop/ent/graphql";
 import { Account, AccountToTodosQuery, Todo } from "src/ent";
-import { BaseAction } from "@snowtop/snowtop-ts/action/experimental_action";
+import { BaseAction } from "@snowtop/ent/action/experimental_action";
 import { AccountBuilder } from "src/ent/account/actions/account_builder";
 import ChangeTodoStatusAction from "src/ent/todo/actions/change_todo_status_action";
 import { GraphQLID } from "graphql";

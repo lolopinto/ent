@@ -3,7 +3,7 @@ import {
   AllowIfViewerIsRule,
   AlwaysDenyRule,
   PrivacyPolicy,
-} from "@snowtop/snowtop-ts";
+} from "@snowtop/ent";
 
 // we're only writing this once except with --force and packageName provided
 export default class DeleteEventAction extends DeleteEventActionBase {

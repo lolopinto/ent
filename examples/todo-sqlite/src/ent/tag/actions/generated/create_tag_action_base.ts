@@ -5,13 +5,13 @@ import {
   ID,
   PrivacyPolicy,
   Viewer,
-} from "@snowtop/snowtop-ts";
+} from "@snowtop/ent";
 import {
   Action,
   Builder,
   Changeset,
   WriteOperation,
-} from "@snowtop/snowtop-ts/action";
+} from "@snowtop/ent/action";
 import { Account, Tag } from "src/ent/";
 import { TagBuilder, TagInput } from "src/ent/tag/actions/tag_builder";
 

@@ -5,7 +5,7 @@ import {
   Field,
   StringType,
   UUIDType,
-} from "@snowtop/snowtop-ts/schema";
+} from "@snowtop/ent/schema";
 
 export default class GuestData extends BaseEntSchema {
   hideFromGraphQL = true;

@@ -4,9 +4,9 @@ import {
   BaseEntSchema,
   Field,
   StringType,
-} from "@snowtop/snowtop-ts";
-import { EmailType } from "@snowtop/snowtop-email";
-import { PasswordType } from "@snowtop/snowtop-password";
+} from "@snowtop/ent";
+import { EmailType } from "@snowtop/ent-email";
+import { PasswordType } from "@snowtop/ent-password";
 
 export default class User extends BaseEntSchema {
   fields: Field[] = [

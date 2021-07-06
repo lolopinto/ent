@@ -5,8 +5,8 @@ import {
   ID,
   PrivacyPolicy,
   Viewer,
-} from "@snowtop/snowtop-ts";
-import { Action, Changeset, WriteOperation } from "@snowtop/snowtop-ts/action";
+} from "@snowtop/ent";
+import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { EventActivity } from "src/ent/";
 import {
   EventActivityBuilder,

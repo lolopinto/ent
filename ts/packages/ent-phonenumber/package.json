@@ -1,9 +1,9 @@
 {
-  "name": "@snowtop/snowtop-password",
+  "name": "@snowtop/ent-phonenumber",
   "version": "0.0.1",
-  "description": "password datatype for ents",
-  "main": "dist/password.js",
-  "types": "dist/password.d.ts",
+  "description": "snowtop ent phone number datatype",
+  "main": "dist/phonenumber.js",
+  "types": "dist/phonenumber.d.ts",
   "files": [
     "dist/"
   ],
@@ -14,13 +14,13 @@
   "repository": {
     "type": "git",
     "url": "git@github.com:lolopinto/ent.git",
-    "directory": "packages/snowtop-password"
+    "directory": "packages/ent-phonenumber"
   },
   "keywords": [
     "snowtop",
-    "password",
     "ent",
-    "datatype"
+    "phone",
+    "phonenumber"
   ],
   "author": "lolopinto",
   "license": "ISC",
@@ -28,17 +28,16 @@
     "url": "https://github.com/lolopinto/ent/issues"
   },
   "homepage": "https://github.com/lolopinto/ent#readme",
-  "dependencies": {
-    "bcryptjs": "^2.4.3"
-  },
   "devDependencies": {
-    "@snowtop/snowtop-ts": "^0.0.2",
-    "@types/jest": "^26.0.9",
-    "jest": "^26.2.2",
-    "password-validator": "^5.1.0",
-    "ts-jest": "^26.1.4"
+    "@snowtop/ent": "^0.0.1",
+    "@types/jest": "^26.0.23",
+    "jest": "^26.6.3",
+    "ts-jest": "^26.5.6"
+  },
+  "dependencies": {
+    "libphonenumber-js": "^1.9.17"
   },
   "peerDependencies": {
-    "@snowtop/snowtop-ts": ">= 0.0.2"
+    "@snowtop/ent": ">= 0.0.1"
   }
 }

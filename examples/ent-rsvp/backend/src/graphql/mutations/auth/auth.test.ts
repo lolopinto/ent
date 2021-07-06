@@ -1,13 +1,13 @@
-import { DB } from "@snowtop/snowtop-ts";
+import { DB } from "@snowtop/ent";
 import {
   expectMutation,
   expectQueryFromRoot,
-} from "@snowtop/snowtop-graphql-tests";
+} from "@snowtop/ent-graphql-tests";
 import { createUser, createAndInvitePlusGuests } from "src/testutils";
 import schema from "src/graphql/schema";
 import { AuthCode } from "src/ent/auth_code";
-import { encodeGQLID } from "@snowtop/snowtop-ts/graphql";
-import { PassportStrategyHandler } from "@snowtop/snowtop-passport";
+import { encodeGQLID } from "@snowtop/ent/graphql";
+import { PassportStrategyHandler } from "@snowtop/ent-passport";
 import supertest from "supertest";
 import { Guest, User } from "src/ent";
 

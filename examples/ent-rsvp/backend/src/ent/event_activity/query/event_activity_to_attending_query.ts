@@ -4,8 +4,8 @@ import {
   Context,
   EdgeQuerySource,
   Viewer,
-} from "@snowtop/snowtop-ts";
-import { gqlContextType, gqlField } from "@snowtop/snowtop-ts/graphql";
+} from "@snowtop/ent";
+import { gqlContextType, gqlField } from "@snowtop/ent/graphql";
 import { EventActivity, GuestData } from "src/ent";
 
 export class EventActivityToAttendingEdge extends AssocEdge {

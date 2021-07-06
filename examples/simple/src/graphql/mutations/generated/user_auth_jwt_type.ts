@@ -11,7 +11,7 @@ import {
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
-import { ID, RequestContext } from "@snowtop/snowtop-ts";
+import { ID, RequestContext } from "@snowtop/ent";
 import { AuthResolver } from "../auth";
 
 interface UserAuthJWTInput {

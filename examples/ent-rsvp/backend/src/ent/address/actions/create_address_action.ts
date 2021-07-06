@@ -1,13 +1,13 @@
-import { ID, Ent, AllowIfEntIsVisibleRule } from "@snowtop/snowtop-ts";
+import { ID, Ent, AllowIfEntIsVisibleRule } from "@snowtop/ent";
 import {
   AllowIfConditionAppliesRule,
   AlwaysDenyRule,
-} from "@snowtop/snowtop-ts/core/privacy";
+} from "@snowtop/ent/core/privacy";
 import {
   CreateAddressActionBase,
   AddressCreateInput,
 } from "src/ent/address/actions/generated/create_address_action_base";
-import { AllowIfBuilder, Builder } from "@snowtop/snowtop-ts/action";
+import { AllowIfBuilder, Builder } from "@snowtop/ent/action";
 import { getLoaderOptions } from "src/ent/loadAny";
 import { NodeType } from "src/ent/const";
 
