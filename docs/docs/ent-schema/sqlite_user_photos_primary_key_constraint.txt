@@ -1,0 +1,7 @@
+sqlite> .schema user_photos
+CREATE TABLE user_photos (
+	user_id TEXT NOT NULL, 
+	photo_id TEXT NOT NULL, 
+	CONSTRAINT user_photos_pkey PRIMARY KEY (user_id, photo_id)
+);
+sqlite> 

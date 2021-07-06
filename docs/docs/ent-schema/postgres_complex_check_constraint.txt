@@ -1,39 +1,3 @@
----
-sidebar_position: 9
----
-
-# Indices
-This allows configuring indices in the database.
-
-The easiest way to add an index on a single column is to use the [index modifier](/docs/ent-schema/fields#index) on the field.
-
-For example, if we're querying a lot on the price of items, we can add a multi-column index as follows:
-
-```ts title="src/schema/product_item.ts"
-import { Field, FloatType, BaseEntSchema, Constraint, Index, ConstraintType } from "@snowtop/ent";
-
-export default class ProductItem extends BaseEntSchema {
-  fields: Field[] = [
-    FloatType({
-      name: 'price',
-    }),
-    FloatType({
-      name: 'discount_price',
-    }),
-  ];
-
-  indices: Index[] = [
-    {
-      name: "product_items_idx",
-      columns: ["price", "discount_price"],
-    },
-  ];
-}
-```
-
-which leads to 
-
-```db
 ent-test=# \d+ product_items
                                              Table "public.product_items"
      Column     |            Type             | Collation | Nullable | Default | Storage | Stats target | Description 
@@ -45,5 +9,7 @@ ent-test=# \d+ product_items
  discount_price | double precision            |           | not null |         | plain   |              | 
 Indexes:
     "product_items_id_pkey" PRIMARY KEY, btree (id)
-    "product_items_idx" btree (price, discount_price)
-```
+Check constraints:
+    "item_positive_discount_price" CHECK (discount_price > 0::double precision)
+    "item_positive_price" CHECK (price > 0::double precision)
+    "item_price_greater_than_discount" CHECK (price > discount_price)

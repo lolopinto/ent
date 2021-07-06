@@ -1,0 +1,30 @@
+ent-test=# \d+ users
+                                                 Table "public.users"
+    Column     |            Type             | Collation | Nullable | Default | Storage  | Stats target | Description 
+---------------+-----------------------------+-----------+----------+---------+----------+--------------+-------------
+ id            | uuid                        |           | not null |         | plain    |              | 
+ created_at    | timestamp without time zone |           | not null |         | plain    |              | 
+ updated_at    | timestamp without time zone |           | not null |         | plain    |              | 
+ first_name    | text                        |           | not null |         | extended |              | 
+ last_name     | text                        |           | not null |         | extended |              | 
+ email_address | text                        |           | not null |         | extended |              | 
+ password      | text                        |           | not null |         | extended |              | 
+Indexes:
+    "users_id_pkey" PRIMARY KEY, btree (id)
+    "user_uniqueEmail" UNIQUE CONSTRAINT, btree (id, email_address)
+Referenced by:
+    TABLE "contacts" CONSTRAINT "contacts_user_fkey" FOREIGN KEY (user_id, email_address) REFERENCES users(id, email_address) ON DELETE CASCADE
+
+ent-test=# \d+ contacts
+                                               Table "public.contacts"
+    Column     |            Type             | Collation | Nullable | Default | Storage  | Stats target | Description 
+---------------+-----------------------------+-----------+----------+---------+----------+--------------+-------------
+ id            | uuid                        |           | not null |         | plain    |              | 
+ created_at    | timestamp without time zone |           | not null |         | plain    |              | 
+ updated_at    | timestamp without time zone |           | not null |         | plain    |              | 
+ email_address | text                        |           | not null |         | extended |              | 
+ user_id       | uuid                        |           | not null |         | plain    |              | 
+Indexes:
+    "contacts_id_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "contacts_user_fkey" FOREIGN KEY (user_id, email_address) REFERENCES users(id, email_address) ON DELETE CASCADE

@@ -1,0 +1,10 @@
+sqlite> .schema items
+CREATE TABLE items (
+	id TEXT NOT NULL, 
+	created_at TIMESTAMP NOT NULL, 
+	updated_at TIMESTAMP NOT NULL, 
+	price FLOAT NOT NULL, 
+	CONSTRAINT items_id_pkey PRIMARY KEY (id), 
+	CONSTRAINT item_positive_price CHECK (price > 0)
+);
+sqlite> 

@@ -1,0 +1,8 @@
+ent-test=# \d+ user_photos
+                               Table "public.user_photos"
+  Column  | Type | Collation | Nullable | Default | Storage | Stats target | Description 
+----------+------+-----------+----------+---------+---------+--------------+-------------
+ user_id  | uuid |           | not null |         | plain   |              | 
+ photo_id | uuid |           | not null |         | plain   |              | 
+Indexes:
+    "user_photos_pkey" PRIMARY KEY, btree (user_id, photo_id)

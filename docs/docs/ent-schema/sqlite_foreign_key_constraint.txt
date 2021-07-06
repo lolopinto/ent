@@ -1,0 +1,23 @@
+sqlite> .schema users
+CREATE TABLE users (
+	id TEXT NOT NULL, 
+	created_at TIMESTAMP NOT NULL, 
+	updated_at TIMESTAMP NOT NULL, 
+	first_name TEXT NOT NULL, 
+	last_name TEXT NOT NULL, 
+	email_address TEXT NOT NULL, 
+	password TEXT NOT NULL, 
+	CONSTRAINT users_id_pkey PRIMARY KEY (id), 
+	CONSTRAINT users_unique_email_address UNIQUE (email_address)
+);
+sqlite> .schema contacts
+CREATE TABLE contacts (
+	id TEXT NOT NULL, 
+	created_at TIMESTAMP NOT NULL, 
+	updated_at TIMESTAMP NOT NULL, 
+	email_address TEXT NOT NULL, 
+	user_id TEXT NOT NULL, 
+	CONSTRAINT contacts_id_pkey PRIMARY KEY (id), 
+	CONSTRAINT contacts_user_fkey FOREIGN KEY(user_id, email_address) REFERENCES users (id, email_address) ON DELETE CASCADE
+);
+sqlite> 
