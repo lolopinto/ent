@@ -3,6 +3,7 @@ sidebar_position: 2
 ---
 
 # Create Action
+
 This is done via the `ActionOperation.Create` or `ActionOperation.Mutations` [operation](/docs/ent-schema/actions#operation).
 
 Based on the [schema](/docs/actions/action#schema) with the following extra configuration:
@@ -17,6 +18,7 @@ export default class Event extends BaseEntSchema implements Schema {
   ];
 }
 ```
+
 leads to 2 classes.
 
 First, the base class:
@@ -49,6 +51,7 @@ export class CreateEventActionBase implements Action<Event> {
   ///....
 }
 ```
+
 and then the subclass:
 
 ```ts title="src/ent/event/actions/create_event_action.ts"
@@ -70,6 +73,7 @@ The subclass will be generated **once** and any customizations can be applied th
 `EventCreateInput` is an interface that indicates what the input for the action is. What's in there is determined by a combination of the fields in the [schema](/docs/actions/action#schema) and the [fields](/docs/ent-schema/actions#fields) property in the action.
 
 ## Usage
+
 ```ts
   const user = await getUser();
 
@@ -95,6 +99,7 @@ The subclass will be generated **once** and any customizations can be applied th
 ```
 
 ## GraphQL
+
 The following GraphQL schema is generated which uses the above API.
 
 ``` title="src/graphql/schema.gql"
@@ -126,6 +131,7 @@ type Event implements Node {
 ```
 
 and called as follows:
+
 ```graphql
 mutation eventCreateMutation($input: EventCreateInput!) {
   eventCreate(input: $input) {
@@ -141,5 +147,4 @@ mutation eventCreateMutation($input: EventCreateInput!) {
     }
   }
 }
-
 ```

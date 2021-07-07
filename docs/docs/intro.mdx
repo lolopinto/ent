@@ -9,11 +9,13 @@ The `Ent` framework was created to free up time for engineers and teams to focus
 This is done by providing a balance of code generation + ways to customize things as needed to integrate nicely with the generated code.
 
 It takes a holistic approach and uses the Schema generated to integrate with the following 3 core layers:
-* database
-* middle layer where most of the application logic lives
+
+* database.
+* middle layer where most of the application logic lives.
 * GraphQL layer for exposing the data to clients.
 
 It handles the following high level things:
+
 * managing the database along with database migrations using [alembic](https://alembic.sqlalchemy.org/en/latest/)
 * handles CRUD operations based on the application
 * first class GraphQL support
@@ -26,15 +28,18 @@ It handles the following high level things:
 The easiest way to get started is by using the template from the `ent-starter` [repository](https://github.com/lolopinto/ent-starter).
 
 This requires the following:
-* a local [PostgresQL](https://www.postgresql.org/download/) instance installed 
-* a database created via `createdb ent-starter` (or replace with your own database name)
-  - if a different database is used, make sure to update the `environment` in `docker-compose.dev.yml`
+
+* a local [PostgresQL](https://www.postgresql.org/download/) instance installed or [SQLite](https://www.sqlite.org/index.html).
+* If using Postgres, a database created via `createdb ent-starter` (or replace with your own database name).
+  * if a different database is used, make sure to update the `DB_CONNECTION_STRING`  env in `docker-compose.dev.yml`
+* If using SQLite, update the `DB_CONNECTION_STRING` env in `docker-compose.dev.yml` to something like `sqlite:///ent-starter.db` to indicate where the db should be stored.
 * [Docker](https://docs.docker.com/get-docker/) installed.
-* [Node 14](https://nodejs.org/en/download/) or later installed
+* [Node 14](https://nodejs.org/en/download/) or later installed.
 
 ## Your first schema
 
 In the root of your application, run to create the schema directory:
+
 ```shell
 mkdir -p src/schema
 ```
@@ -42,9 +47,9 @@ mkdir -p src/schema
 After setting the environment up, make your first change by specifying a schema as follows:
 
 ```ts title="src/schema/user.ts"
-import { BaseEntSchema, Field, StringType } from "@lolopinto/ent";
-import { EmailType } from "@lolopinto/ent-email";
-import { PasswordType } from "@lolopinto/ent-password";
+import { BaseEntSchema, Field, StringType } from "@snowtop/ent";
+import { EmailType } from "@snowtop/ent-email";
+import { PasswordType } from "@snowtop/ent-password";
 
 export default class User extends BaseEntSchema {
   fields: Field[] = [
@@ -57,11 +62,12 @@ export default class User extends BaseEntSchema {
 ```
 
 This does a few things:
+
 * It specifies a new node in the schema called `User`.
 * It adds 4 explicitly listed fields here: `FirstName`, `LastName`, `EmailAddress`, `Password`.
 * and 3 implicitly listed by virtue of extending `BaseEntSchema`: `id`, `createdAt`, `updatedAt`.
-* `FirstName` and `LastName` are strings. 
-* `EmailAddress` is of type `email` and will be [parsed](https://www.npmjs.com/package/email-addresses) to be a "valid" email address before storing in the database. 
+* `FirstName` and `LastName` are strings.
+* `EmailAddress` is of type `email` and will be [parsed](https://www.npmjs.com/package/email-addresses) to be a "valid" email address before storing in the database.
 * `EmailAddress` field is marked as unique so we don't have multiple users with the same email address.
 * `Password` is of type `password` and hashed and salted using [`bcrypt`](https://www.npmjs.com/package/bcryptjs) before storing in the database.
 * The implicit fields are exactly what you'd expect. The default `id` provided by the framework is of type `uuid`.
@@ -70,9 +76,9 @@ Then run the following commands:
 
 ```shell
 # install additional dependencies
-npm install @lolopinto/ent-email @lolopinto/ent-password
-# install all the things
-npm install 
+npm install @snowtop/ent-email @snowtop/ent-password
+# install all the things in the docker container
+npm run init
 # generate code + update the database
 npm run codegen
 ```
@@ -81,26 +87,27 @@ After running `npm run codegen`, here's a list of generated files:
 
 (The first time this is run, it'll take a while because it's downloading the base Docker image).
 
-```
-	new file:   src/ent/const.ts
-	new file:   src/ent/generated/user_base.ts
-	new file:   src/ent/index.ts
-	new file:   src/ent/internal.ts
-	new file:   src/ent/loadAny.ts
-	new file:   src/ent/user.ts
-	new file:   src/graphql/index.ts
-	new file:   src/graphql/resolvers/generated/node_query_type.ts
-	new file:   src/graphql/resolvers/generated/query_type.ts
-	new file:   src/graphql/resolvers/generated/user_type.ts
-	new file:   src/graphql/resolvers/index.ts
-	new file:   src/graphql/resolvers/internal.ts
-	new file:   src/graphql/schema.gql
-	new file:   src/graphql/schema.ts
-	new file:   src/schema/schema.py
-	new file:   src/schema/versions/e3b78fe1bfa3_2021518203057_add_users_table.py
+```shell
+  new file:   src/ent/const.ts
+  new file:   src/ent/generated/user_base.ts
+  new file:   src/ent/index.ts
+  new file:   src/ent/internal.ts
+  new file:   src/ent/loadAny.ts
+  new file:   src/ent/user.ts
+  new file:   src/graphql/index.ts
+  new file:   src/graphql/resolvers/generated/node_query_type.ts
+  new file:   src/graphql/resolvers/generated/query_type.ts
+  new file:   src/graphql/resolvers/generated/user_type.ts
+  new file:   src/graphql/resolvers/index.ts
+  new file:   src/graphql/resolvers/internal.ts
+  new file:   src/graphql/schema.gql
+  new file:   src/graphql/schema.ts
+  new file:   src/schema/schema.py
+  new file:   src/schema/versions/e3b78fe1bfa3_2021518203057_add_users_table.py
 ```
 
-Let's go over a few: 
+Let's go over a few:
+
 * `src/ent/user.ts` is the public facing API of the `User` object and what's consumed. It's also where [**custom code**](/docs/custom-queries/custom-accessors) can be added.
 * `src/ent/generated/user_base.ts` is the base class for the `User` where more generated code will be added as the schema is changed over time.
 * `src/schema/versions/*_add_users_tabl.py` is the generated database migration to add the `users` table
@@ -125,6 +132,7 @@ type Query {
 ```
 
 After running
+
 ```shell
 npm run compile && npm start
 ```
@@ -132,33 +140,23 @@ npm run compile && npm start
 we have a **live** GraphQL server.
 
 ## Database changes
-Note that the database was also updated by the command run above. Running `psql ent-starter` shows:
-```db
-ent-starter=# \d+ users
-                                                 Table "public.users"
-    Column     |            Type             | Collation | Nullable | Default | Storage  | Stats target | Description 
----------------+-----------------------------+-----------+----------+---------+----------+--------------+-------------
- id            | uuid                        |           | not null |         | plain    |              | 
- created_at    | timestamp without time zone |           | not null |         | plain    |              | 
- updated_at    | timestamp without time zone |           | not null |         | plain    |              | 
- first_name    | text                        |           | not null |         | extended |              | 
- last_name     | text                        |           | not null |         | extended |              | 
- email_address | text                        |           | not null |         | extended |              | 
- password      | text                        |           | not null |         | extended |              | 
-Indexes:
-    "users_id_pkey" PRIMARY KEY, btree (id)
-    "users_unique_email_address" UNIQUE CONSTRAINT, btree (email_address)
 
-ent-starter=# 
-```
+Note that the database was also updated by the command run above.
+
+import DatabaseTabs from "../src/components/DatabaseTabs";
+import PostgresUsersSrc from "./postgres_users.txt";
+import SqliteUsersSrc from "./sqlite_users.txt";
+
+<DatabaseTabs postgres={PostgresUsersSrc} sqlite={SqliteUsersSrc} />
 
 ## Adding writes
+
 To support writes, update the schema as follows:
 
 ```ts title="src/schema/user.ts"
-import { BaseEntSchema, Field, StringType, Action, ActionOperation } from "@lolopinto/ent/schema";
-import { EmailType } from "@lolopinto/ent-email";
-import { PasswordType } from "@lolopinto/ent-password";
+import { BaseEntSchema, Field, StringType, Action, ActionOperation } from "@snowtop/ent/schema";
+import { EmailType } from "@snowtop/ent-email";
+import { PasswordType } from "@snowtop/ent-password";
 
 export default class User extends BaseEntSchema {
   fields: Field[] = [
@@ -182,17 +180,18 @@ re-run ```npm run codegen```
 which leads to the following changed files:
 
 ```
-    new file:   src/ent/user/actions/create_user_action.ts
-	new file:   src/ent/user/actions/generated/create_user_action_base.ts
-	new file:   src/ent/user/actions/user_builder.ts
-	new file:   src/graphql/mutations/generated/mutation_type.ts
-	new file:   src/graphql/mutations/generated/user/user_create_type.ts
-	modified:   src/graphql/schema.gql
-	modified:   src/graphql/schema.ts
-	modified:   src/schema/user.ts
+  new file:   src/ent/user/actions/create_user_action.ts
+  new file:   src/ent/user/actions/generated/create_user_action_base.ts
+  new file:   src/ent/user/actions/user_builder.ts
+  new file:   src/graphql/mutations/generated/mutation_type.ts
+  new file:   src/graphql/mutations/generated/user/user_create_type.ts
+  modified:   src/graphql/schema.gql
+  modified:   src/graphql/schema.ts
+  modified:   src/schema/user.ts
 ```
 
 and the GraphQL schema updated as follows:
+
 ```graphql title="src/graphql/schema.gql"
 type Query {
   node(id: ID!): Node
@@ -247,7 +246,7 @@ mutation {
 }
 ```
 
-We get this error back: 
+We get this error back:
 
 ```json
 {
@@ -272,7 +271,7 @@ We get this error back:
 Update `src/ent/user/actions/create_user_action.ts` as follows:
 
 ```ts title="src/ent/user/actions/create_user_action.ts"
-import { Data, IDViewer, AlwaysAllowPrivacyPolicy } from "@lolopinto/ent";
+import { Data, IDViewer, AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
 import {
   CreateUserActionBase,
   UserCreateInput,
@@ -291,11 +290,13 @@ export default class CreateUserAction extends CreateUserActionBase {
 }
 ```
 
-What changed above: 
+What changed above:
+
 * added `getPrivacyPolicy` method to change [permissions](/docs/actions/permissions) of who can perform the [action](/docs/actions/action).
 * added `viewerForEntLoad` method to change who the [Viewer](/docs/core-concepts/viewer) is for the [Ent](/docs/core-concepts/ent) [load after](/docs/actions/viewer-ent-load).
 
 Re-compile and restart the server:
+
 ```shell
 npm run compile && npm start
 ```
@@ -321,7 +322,7 @@ Then rerun the GraphQL query again and you should get a response similar to:
 
 The generated GraphQL schema allows you to access any node in your entity graph via the following Query:
 
-```graphql title="src/graphql/schema.gql
+```graphql title="src/graphql/schema.gql"
 type Query {
   node(id: ID!): Node
 }
@@ -345,12 +346,14 @@ query ByID {
 Note: The ID exposed to GraphQL is not the same as the ID for the row in the database. GraphQL IDs should be considered opaque by clients of your service. Learn more in the [GraphQL Docs](https://graphql.org/learn/global-object-identification/).
 
 ## Custom accessors
+
 Update `src/ent/user.ts` as follows:
+
 ```ts title="src/ent/user.ts"
 import { UserBase } from "src/ent/internal";
 import { Interval } from "luxon";
 import { GraphQLInt } from "graphql"
-import { gqlField } from "@lolopinto/ent/graphql"
+import { gqlField } from "@snowtop/ent/graphql"
 
 export class User extends UserBase {
   @gqlField({
@@ -363,11 +366,13 @@ export class User extends UserBase {
 ```
 
 and then run the following command:
+
 ```shell
 npm run codegen && npm run compile && npm start
 ```
 
 and then run the following GraphQL query:
+
 ```graphql
 mutation {
   userCreate(input:{firstName:"Sansa", lastName:"Stark", emailAddress:"sansa@stark.com", password:"12345678"}) {
@@ -401,39 +406,23 @@ you should get a response similar to:
 ```
 
 What changed above:
+
 * added a [custom accessor](/docs/custom-queries/custom-accessors) using [gqlField](/docs/custom-queries/gql-field)
 
 ## Query the Database
-Run the following command:
-`psql ent-starter`
 
-And then run the following two commands:
-```
-ent-starter=# \x on 
-Expanded display is on.
-ent-starter=# select * from users;
--[ RECORD 1 ]-+-------------------------------------------------------------
-id            | 45cdd6e2-f6fb-45e0-b5b0-a07beeef3d19
-created_at    | 2021-05-25 22:37:18.662
-updated_at    | 2021-05-25 22:37:18.7
-first_name    | John
-last_name     | Snow
-email_address | test@foo.com
-password      | $2a$10$vMDRfwWIacuBHnQsLSym2OwB77Xd.ERj5myqRQEEaAqyXZ5r3xmby
--[ RECORD 2 ]-+-------------------------------------------------------------
-id            | d7f33873-809e-4fd2-8b68-d13d04d0660c
-created_at    | 2021-05-25 22:43:39.078
-updated_at    | 2021-05-25 22:43:39.113
-first_name    | Sansa
-last_name     | Stark
-email_address | sansa@stark.com
-password      | $2a$10$q1cwrLhDIiXOXQAjz7zN5u2KC2.QJ.WADfA2ozNuOTvjxrntJGNEC
+Run the following commands:
 
-ent-starter=# \q
-```
+import PostgresQueryUsersSrc from "./postgres_query_users.txt";
+import SqliteQueryUsersSrc from "./sqlite_query_users.txt";
+
+<DatabaseTabs postgres={PostgresQueryUsersSrc} sqlite={SqliteQueryUsersSrc} />
+
 
 ## Unique Constraint
+
 Running the following GraphQL query:
+
 ```graphql
 mutation {
   userCreate(input:{firstName:"Arya", lastName:"Stark", emailAddress:"sansa@stark.com", password:"12345678"}) {
@@ -447,7 +436,8 @@ mutation {
   }
 }
 ```
-should end with this error because we identified the `EmailAddress` as `unique` in the schema above: 
+
+should end with this error because we identified the `EmailAddress` as `unique` in the schema above:
 
 ```json
 {
@@ -470,4 +460,3 @@ should end with this error because we identified the `EmailAddress` as `unique` 
 ```
 
 That's a quick introduction to what's supported here. We'll dive deeper into these concepts in the following sections.
-

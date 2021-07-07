@@ -3,6 +3,7 @@ sidebar_position: 5
 ---
 
 # Add Edge Action
+
 This is done via the `ActionOperation.AddEdge` [operation](/docs/ent-schema/actions#operation).
 
 Based on the [schema](/docs/actions/action#schema) with the `AddEdge` action in the edge named `hosts` leads to 2 classes.
@@ -34,6 +35,7 @@ export class EventAddHostActionBase implements Action<Event> {
   // ...
 }
 ```
+
 and then the subclass:
 
 ```ts title="src/ent/event/actions/event_add_host_action.ts"
@@ -47,8 +49,8 @@ The base class `EventAddHostActionBase` is where all shared functionality is and
 
 The subclass will be generated **once** and any customizations can be applied there.
 
-
 ## Usage
+
 ```ts
   const [event, host] = await Promise.all([
     createEvent(),
@@ -69,6 +71,7 @@ The subclass will be generated **once** and any customizations can be applied th
 ```
 
 ## GraphQL
+
 The following GraphQL schema is generated which uses the above API.
 
 ``` title="src/graphql/schema.gql"
@@ -97,6 +100,7 @@ type Event implements Node {
 ```
 
 and called as follows:
+
 ```graphql
 mutation eventAddHostMutation($input: EventAddHostInput!) {
   eventAddHost(input: $input) {

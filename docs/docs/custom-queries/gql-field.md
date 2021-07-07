@@ -3,6 +3,7 @@ sidebar_position: 2
 ---
 
 # gqlField
+
 `gqlField` annotates a property or method to indicate that it should be exposed as a GraphQL Field on the source object.
 
 When a property or method explicitly returns a scalar type and isn't nullable, we can usually infer everything but as things get more complicated, have to specify more options.
@@ -34,6 +35,7 @@ export class User extends UserBase {
   }
 }
 ```
+
 Updating the above to indicate it's returning `number` actually still leads to an error because GraphQL differentiates between `Int` and `Float` even though TypeScript/JavaScript doesn't.
 
 So, the way to actually get this to work is as follows:
@@ -96,13 +98,17 @@ type User implements Node {
 Considering how annoying it is to remember, it's probably best to just always indicate the `type`.
 
 ## name
+
 Indicates the name of the GraphQL field. Should be used when we want a different name than the name of the function, method or property.
 
 ## description
+
 Indicates the description of the GraphQL field. Will be added to the Schema and exposed in tools like [GraphiQL](https://github.com/graphql/graphiql) or [Playground](https://github.com/graphql/graphql-playground).
 
-## type 
+## type
+
 Indicates the GraphQL type of the field.
+
 ```ts
 interface ClassType<T = any> {
     new (...args: any[]): T;
@@ -120,10 +126,12 @@ declare type Type = GraphQLScalarType | ClassType | string | CustomType;
 Supported type formats:
 
 ### GraphQLScalarType
+
 `GraphQLScalarType` refers to a GraphQL Scalar like `GraphQLInt`, `GraphQLFloat`, `GraphQLBoolean` like seen above in `howLong`.
 
 ### ClassType
-refers to objects such as Ents which are exposed to GraphQL. 
+
+refers to objects such as Ents which are exposed to GraphQL.
 
 For example, this contrived example:
 
@@ -172,7 +180,8 @@ type User implements Node {
 ```
 
 ### string
-refers to the names of objects such as Ents which are exposed to GraphQL. This is usually needed in weird cases where there's circular-ish references between classes and the object isn't in scope. We're not going to dive into the intricacies here but this provides a workaround in that scenario. 
+
+refers to the names of objects such as Ents which are exposed to GraphQL. This is usually needed in weird cases where there's circular-ish references between classes and the object isn't in scope. We're not going to dive into the intricacies here but this provides a workaround in that scenario.
 
 For example:
 
@@ -225,15 +234,17 @@ type User implements Node {
 ```
 
 ### CustomType
+
 This allows the flexibility for custom types that are not the built-in GraphQL Scalar Types.
 
 We'll dive into a specific example of this in [gqlFileUpload](/docs/custom-queries/file-uploads#gqlfileupload).
 
 
 ## nullable
+
 Indicates this field is nullable.
 
-If `true` and a list, means the list is nullable even if the contents of the list isn't: 
+If `true` and a list, means the list is nullable even if the contents of the list isn't:
 
 ```ts
 class User {
@@ -255,10 +266,12 @@ type User implements Node {
   contactsSameDomain: [Contact!]
 }
 ```
+
 If not `true` and a list, there are two other options:
 
 ### contents
-Indicates that the contents of the list is nullable. 
+
+Indicates that the contents of the list is nullable.
 
 ```ts
 class User {
@@ -282,7 +295,8 @@ type User implements Node {
 ```
 
 ### contentsAndList
-Indicates that both the list and its contents are nullable. 
+
+Indicates that both the list and its contents are nullable.
 
 ```ts
 class User {
@@ -304,6 +318,5 @@ type User implements Node {
   contactsSameDomain: [Contact]
 }
 ```
+
 [Check out](https://graphql.org/learn/schema/#lists-and-non-null) for more about lists and null in GraphQL.
-
-

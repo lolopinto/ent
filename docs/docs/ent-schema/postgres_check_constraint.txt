@@ -1,0 +1,14 @@
+ent-test=# \d+ items
+                                               Table "public.items"
+   Column   |            Type             | Collation | Nullable | Default | Storage | Stats target | Description 
+------------+-----------------------------+-----------+----------+---------+---------+--------------+-------------
+ id         | uuid                        |           | not null |         | plain   |              | 
+ created_at | timestamp without time zone |           | not null |         | plain   |              | 
+ updated_at | timestamp without time zone |           | not null |         | plain   |              | 
+ price      | double precision            |           | not null |         | plain   |              | 
+Indexes:
+    "items_id_pkey" PRIMARY KEY, btree (id)
+Check constraints:
+    "item_positive_price" CHECK (price > 0::double precision)
+
+ent-test=# 

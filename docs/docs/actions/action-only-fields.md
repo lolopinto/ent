@@ -3,6 +3,7 @@ sidebar_position: 13
 ---
 
 # Action Only Fields
+
 Allows [configuring](/docs/ent-schema/actions#actiononlyfields) other fields to be added in the [input](/docs/actions/input#action-input) of an Action.
 
 In the [address example](/docs/actions/triggers#changeset), with the Event schema configured as follows:

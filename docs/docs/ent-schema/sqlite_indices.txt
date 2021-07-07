@@ -1,0 +1,14 @@
+sqlite> .schema product_items
+CREATE TABLE product_items (
+	id TEXT NOT NULL, 
+	created_at TIMESTAMP NOT NULL, 
+	updated_at TIMESTAMP NOT NULL, 
+	price FLOAT NOT NULL, 
+	discount_price FLOAT NOT NULL, 
+	CONSTRAINT product_items_id_pkey PRIMARY KEY (id), 
+	CONSTRAINT item_positive_discount_price CHECK (discount_price > 0), 
+	CONSTRAINT item_positive_price CHECK (price > 0), 
+	CONSTRAINT item_price_greater_than_discount CHECK (price > discount_price)
+);
+CREATE INDEX product_items_idx ON product_items (price, discount_price);
+sqlite> 

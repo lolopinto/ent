@@ -1,0 +1,12 @@
+sqlite3 ent-starter.db
+# and then the following commands
+SQLite version 3.32.3 2020-06-18 14:16:19
+Enter ".help" for usage hints.
+sqlite> .headers on
+sqlite> .mode column
+sqlite> .separator ROW "\n"
+sqlite> select * from users;
+id                                    created_at                updated_at                first_name  last_name   email_address  password                                                    
+------------------------------------  ------------------------  ------------------------  ----------  ----------  -------------  ------------------------------------------------------------
+2b00ec39-12cc-4941-8343-6bb58d958a35  2021-07-06T19:24:55.268Z  2021-07-06T19:24:55.269Z  John        Snow        test@foo.com   $2a$10$s8OvbQbzGqXN6AZ9XujTLOg58u5bmS7sFi8VGbgz0gk/S3lBDki.m
+c425044c-55d0-4e0e-a7f9-79e36744df68  2021-07-06T19:27:23.623Z  2021-07-06T19:27:23.637Z  Sansa       Stark       sansa@stark.c  $2a$10$tOr3jfrR/idizjrcgrrR1euibQqNJ3y.O2ntODMthUs94DnxHcQCm

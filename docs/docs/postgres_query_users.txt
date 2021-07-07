@@ -1,0 +1,25 @@
+psql ent-starter
+
+# and then
+
+ent-starter=# \x on 
+Expanded display is on.
+ent-starter=# select * from users;
+-[ RECORD 1 ]-+-------------------------------------------------------------
+id            | 45cdd6e2-f6fb-45e0-b5b0-a07beeef3d19
+created_at    | 2021-05-25 22:37:18.662
+updated_at    | 2021-05-25 22:37:18.7
+first_name    | John
+last_name     | Snow
+email_address | test@foo.com
+password      | $2a$10$vMDRfwWIacuBHnQsLSym2OwB77Xd.ERj5myqRQEEaAqyXZ5r3xmby
+-[ RECORD 2 ]-+-------------------------------------------------------------
+id            | d7f33873-809e-4fd2-8b68-d13d04d0660c
+created_at    | 2021-05-25 22:43:39.078
+updated_at    | 2021-05-25 22:43:39.113
+first_name    | Sansa
+last_name     | Stark
+email_address | sansa@stark.com
+password      | $2a$10$q1cwrLhDIiXOXQAjz7zN5u2KC2.QJ.WADfA2ozNuOTvjxrntJGNEC
+
+ent-starter=# 

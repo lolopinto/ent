@@ -3,11 +3,13 @@ sidebar_position: 5
 ---
 
 # Authentication
+
 Authentication is a very complicated topic and we're not going to dive too deep into all that it entails here.
 
 Assuming you've chosen an authentication system and want to figure out how to integrate your authed user into this system, here's how you do it.
 
 ## AuthHandler
+
 ```ts
 export type AuthViewer = Viewer | null;
 export interface AuthHandler {
@@ -17,11 +19,12 @@ export interface AuthHandler {
 
 AuthHandler takes a [`RequestContext`](/docs/core-concepts/context#requestcontext) and returns a `Viewer` or `null` if that handler can successfully authenticate the Viewer.
 
-
 ## registerAuthHandler
+
 ```ts
 export declare function registerAuthHandler(name: string, auth: Auth): Promise<void>;
 ```
+
 Each `AuthHandler` should be registered via `registerAuthHandler`. You can register as many as you need as long as they have a unique name.
 
 Note that `registerAuthHandler` should be called at the root of your application (presumably in the same file as your server such as `src/graphql/index.ts`). If your handler successfully authenticates a `Viewer`, that Viewer is returned as the `Viewer` in the `Context` returned by [`buildContext`](/docs/core-concepts/context#new-request).
@@ -57,7 +60,7 @@ registerAuthHandler("viewer", new PassportAuthHandler());
 
 ```
 
-And the `Viewer` is authenticated in an endpoint with that same package via 
+And the `Viewer` is authenticated in an endpoint with that same package via
 
 ```ts title="src/graphql/mutations/auth.ts"
   // non-JWT. session based
@@ -101,4 +104,3 @@ And the `Viewer` is authenticated in an endpoint with that same package via
   );
   // return whatever you want to client
 ```
-

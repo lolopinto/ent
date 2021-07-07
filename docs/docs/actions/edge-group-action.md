@@ -3,6 +3,7 @@ sidebar_position: 7
 ---
 
 # Edge Group Action
+
 This is done via the `ActionOperation.EdgeGroup` [operation](/docs/ent-schema/actions#operation).
 
 Based on the [schema](/docs/actions/action#schema) with the `edgeAction` property in the group named `rsvps` leads to 2 classes.
@@ -42,6 +43,7 @@ export class EditEventRsvpStatusActionBase implements Action<Event> {
   }
 }
 ```
+
 and then the subclass:
 
 ```ts title="src/ent/event/actions/edit_event_rsvp_status_action.ts"
@@ -60,6 +62,7 @@ The base class `EditEventRsvpStatusActionBase` is where all shared functionality
 The subclass will be generated **once** and any customizations can be applied there.
 
 ## Usage
+
 ```ts
   const [event, user] = await Promise.all([
     createEvent(),
@@ -80,6 +83,7 @@ The subclass will be generated **once** and any customizations can be applied th
 ```
 
 ## GraphQL
+
 The following GraphQL schema is generated which uses the above API.
 
 ``` title="src/graphql/schema.gql"
@@ -116,6 +120,7 @@ type Event implements Node {
 ```
 
 and called as follows:
+
 ```graphql
 mutation eventRsvpStatusEditMutation($input: EventRsvpStatusEditInput!) {
   eventRsvpStatusEdit(input: $input) {

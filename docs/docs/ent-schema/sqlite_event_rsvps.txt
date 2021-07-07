@@ -1,0 +1,12 @@
+sqlite> .schema event_rsvps
+CREATE TABLE event_rsvps (
+	id1 TEXT NOT NULL, 
+	id1_type TEXT NOT NULL, 
+	edge_type TEXT NOT NULL, 
+	id2 TEXT NOT NULL, 
+	id2_type TEXT NOT NULL, 
+	time TIMESTAMP NOT NULL, 
+	data TEXT, 
+	CONSTRAINT event_rsvps_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
+);
+CREATE INDEX event_rsvps_time_idx ON event_rsvps (time);

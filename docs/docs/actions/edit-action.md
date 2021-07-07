@@ -3,6 +3,7 @@ sidebar_position: 3
 ---
 
 # Edit Action
+
 This is done via the `ActionOperation.Edit` or `ActionOperation.Mutations` [operation](/docs/ent-schema/actions#operation).
 
 Based on the [schema](/docs/actions/action#schema) with the following extra configuration:
@@ -17,6 +18,7 @@ export default class Event extends BaseEntSchema implements Schema {
   ];
 }
 ```
+
 leads to 2 classes.
 
 First, the base class:
@@ -49,6 +51,7 @@ export class EditEventActionBase implements Action<Event> {
   ///....
 }
 ```
+
 and then the subclass:
 
 ```ts title="src/ent/event/actions/edit_event_action.ts"
@@ -69,8 +72,8 @@ The subclass will be generated **once** and any customizations can be applied th
 
 `EventEditInput` is an interface that indicates what the input for the action is. What's in there is determined by a combination of the fields in the [schema](/docs/actions/action#schema) and the [fields](/docs/ent-schema/actions#fields) property in the action.
 
-
 ## Usage
+
 ```ts
   const event = await createEvent();
 
@@ -93,6 +96,7 @@ The subclass will be generated **once** and any customizations can be applied th
 ```
 
 ## GraphQL
+
 The following GraphQL schema is generated which uses the above API.
 
 ``` title="src/graphql/schema.gql"
@@ -125,6 +129,7 @@ type Event implements Node {
 ```
 
 and called as follows:
+
 ```graphql
 mutation eventEditMutation($input: EventEditInput!) {
   eventEdit(input: $input) {
@@ -144,6 +149,7 @@ mutation eventEditMutation($input: EventEditInput!) {
 ```
 
 ## Input
+
 When editing an object, every field is optional and isn't required to be passed in. Only fields passed in will be changed. To set a nullable field to `null`, explicitly set it to null either via the API in TypeScript or GraphQL.
 
 To explicitly make a field required in an action, use [requiredField](/docs/ent-schema/actions#requiredfield) when configuring it.

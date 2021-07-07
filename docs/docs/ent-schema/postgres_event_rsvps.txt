@@ -1,0 +1,16 @@
+ent-rsvp=# \d+ event_rsvps
+                                            Table "public.event_rsvps"
+  Column   |            Type             | Collation | Nullable | Default | Storage  | Stats target | Description 
+-----------+-----------------------------+-----------+----------+---------+----------+--------------+-------------
+ id1       | uuid                        |           | not null |         | plain    |              | 
+ id1_type  | text                        |           | not null |         | extended |              | 
+ edge_type | uuid                        |           | not null |         | plain    |              | 
+ id2       | uuid                        |           | not null |         | plain    |              | 
+ id2_type  | text                        |           | not null |         | extended |              | 
+ time      | timestamp without time zone |           | not null |         | plain    |              | 
+ data      | text                        |           |          |         | extended |              | 
+Indexes:
+    "event_rsvps_id1_edge_type_id2_pkey" PRIMARY KEY, btree (id1, edge_type, id2)
+    "event_rsvps_time_idx" btree ("time")
+
+ent-rsvp=# 

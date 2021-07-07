@@ -3,6 +3,7 @@ sidebar_position: 4
 ---
 
 # Delete Action
+
 This is done via the `ActionOperation.Delete` or `ActionOperation.Mutations` [operation](/docs/ent-schema/actions#operation).
 
 Based on the [schema](/docs/actions/action#schema) with the following extra configuration:
@@ -17,6 +18,7 @@ export default class Event extends BaseEntSchema implements Schema {
   ];
 }
 ```
+
 leads to 2 classes.
 
 First, the base class:
@@ -42,6 +44,7 @@ export class DeleteEventActionBase implements Action<Event> {
   // ...
 }
 ```
+
 and then the subclass:
 
 ```ts title="src/ent/event/actions/delete_event_action.ts"
@@ -55,8 +58,8 @@ The base class `DeleteEventActionBase` is where all shared functionality is and 
 
 The subclass will be generated **once** and any customizations can be applied there.
 
-
 ## Usage
+
 ```ts
   const event = await createEvent();
 
@@ -68,6 +71,7 @@ The subclass will be generated **once** and any customizations can be applied th
 ```
 
 ## GraphQL
+
 The following GraphQL schema is generated which uses the above API.
 
 ``` title="src/graphql/schema.gql"
@@ -95,6 +99,7 @@ type Event implements Node {
 ```
 
 and called as follows:
+
 ```graphql
 mutation eventDeleteMutation($input: EventDeleteInput!) {
   eventDelete(input: $input) {

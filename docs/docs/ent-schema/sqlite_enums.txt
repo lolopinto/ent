@@ -1,0 +1,10 @@
+sqlite> .schema request_statuses
+CREATE TABLE request_statuses (
+	status TEXT NOT NULL, 
+	CONSTRAINT request_statuses_status_pkey PRIMARY KEY (status)
+);
+sqlite> select * from request_statuses;
+OPEN
+PENDING_FULFILLMENT
+CLOSED
+sqlite> 

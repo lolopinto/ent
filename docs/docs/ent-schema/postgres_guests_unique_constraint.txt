@@ -1,0 +1,16 @@
+ent-rsvp=# \d+ guests
+                                                 Table "public.guests"
+     Column     |            Type             | Collation | Nullable | Default | Storage  | Stats target | Description 
+----------------+-----------------------------+-----------+----------+---------+----------+--------------+-------------
+ id             | uuid                        |           | not null |         | plain    |              | 
+ created_at     | timestamp without time zone |           | not null |         | plain    |              | 
+ updated_at     | timestamp without time zone |           | not null |         | plain    |              | 
+ email_address  | text                        |           |          |         | extended |              | 
+ event_id       | uuid                        |           | not null |         | plain    |              | 
+Indexes:
+    "guests_id_pkey" PRIMARY KEY, btree (id)
+    "uniqueEmail" UNIQUE CONSTRAINT, btree (event_id, email_address)
+    "guests_event_id_idx" btree (event_id)
+Foreign-key constraints:
+    "guests_event_id_fkey" FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+ent-rsvp=# 

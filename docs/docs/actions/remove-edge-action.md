@@ -3,6 +3,7 @@ sidebar_position: 6
 ---
 
 # Remove Edge Action
+
 This is done via the `ActionOperation.RemoveEdge` [operation](/docs/ent-schema/actions#operation).
 
 Based on the [schema](/docs/actions/action#schema) with the `RemoveEdge` action in the edge named `hosts` leads to 2 classes.
@@ -34,6 +35,7 @@ export class EventRemoveHostActionBase implements Action<Event> {
   // ...
 }
 ```
+
 and then the subclass:
 
 ```ts title="src/ent/event/actions/event_remove_host_action.ts"
@@ -47,8 +49,8 @@ The base class `EventRemoveHostActionBase` is where all shared functionality is 
 
 The subclass will be generated **once** and any customizations can be applied there.
 
-
 ## Usage
+
 ```ts
   const event = await queryEvent();
   const hosts = await event.queryHosts().first(1).queryEnts();
@@ -71,6 +73,7 @@ The subclass will be generated **once** and any customizations can be applied th
 ```
 
 ## GraphQL
+
 The following GraphQL schema is generated which uses the above API.
 
 ``` title="src/graphql/schema.gql"
@@ -99,6 +102,7 @@ type Event implements Node {
 ```
 
 and called as follows:
+
 ```graphql
 mutation eventRemoveHostMutation($input: EventRemoveHostInput!) {
   eventRemoveHost(input: $input) {

@@ -3,9 +3,11 @@ sidebar_position: 5
 ---
 
 # File Uploads
+
 Uploading files is a common of part of applications and we need a way to support that.
 
 ## gqlFileUpload
+
 ```ts
 const gqlFileUpload: CustomType = {
   type: "GraphQLUpload",
@@ -32,7 +34,6 @@ export class ImportGuestResolver {
 ```
 
 leads to this schema:
-
 
 ```graphql title="src/graphql/schema.gql"
 type Mutation {

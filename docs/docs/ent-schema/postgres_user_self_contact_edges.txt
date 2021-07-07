@@ -1,0 +1,18 @@
+tsent_test=# \d+ user_self_contact_edges
+                                      Table "public.user_self_contact_edges"
+  Column   |            Type             | Collation | Nullable | Default | Storage  | Stats target | Description 
+-----------+-----------------------------+-----------+----------+---------+----------+--------------+-------------
+ id1       | uuid                        |           | not null |         | plain    |              | 
+ id1_type  | text                        |           | not null |         | extended |              | 
+ edge_type | uuid                        |           | not null |         | plain    |              | 
+ id2       | uuid                        |           | not null |         | plain    |              | 
+ id2_type  | text                        |           | not null |         | extended |              | 
+ time      | timestamp without time zone |           | not null |         | plain    |              | 
+ data      | text                        |           |          |         | extended |              | 
+Indexes:
+    "user_self_contact_edges_id1_edge_type_id2_pkey" PRIMARY KEY, btree (id1, edge_type, id2)
+    "user_self_contact_edges_unique_id1_edge_type" UNIQUE CONSTRAINT, btree (id1, edge_type)
+    "user_self_contact_edges_time_idx" btree ("time")
+
+tsent_test=# 
+```

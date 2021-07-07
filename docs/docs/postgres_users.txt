@@ -1,0 +1,19 @@
+psql ent-starter
+
+# and then
+ent-starter=# \d+ users
+                                                 Table "public.users"
+    Column     |            Type             | Collation | Nullable | Default | Storage  | Stats target | Description 
+---------------+-----------------------------+-----------+----------+---------+----------+--------------+-------------
+ id            | uuid                        |           | not null |         | plain    |              | 
+ created_at    | timestamp without time zone |           | not null |         | plain    |              | 
+ updated_at    | timestamp without time zone |           | not null |         | plain    |              | 
+ first_name    | text                        |           | not null |         | extended |              | 
+ last_name     | text                        |           | not null |         | extended |              | 
+ email_address | text                        |           | not null |         | extended |              | 
+ password      | text                        |           | not null |         | extended |              | 
+Indexes:
+    "users_id_pkey" PRIMARY KEY, btree (id)
+    "users_unique_email_address" UNIQUE CONSTRAINT, btree (email_address)
+
+ent-starter=# 
