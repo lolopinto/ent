@@ -1,0 +1,17 @@
+ent-test=# \d+ request_statuses;
+                            Table "public.request_statuses"
+ Column | Type | Collation | Nullable | Default | Storage  | Stats target | Description 
+--------+------+-----------+----------+---------+----------+--------------+-------------
+ status | text |           | not null |         | extended |              | 
+Indexes:
+    "request_statuses_status_pkey" PRIMARY KEY, btree (status)
+
+ent-test=# select * from request_statuses;
+       status        
+---------------------
+ OPEN
+ PENDING_FULFILLMENT
+ CLOSED
+(3 rows)
+
+ent-test=# 
