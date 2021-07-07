@@ -1,0 +1,14 @@
+sqlite> .schema assoc_edge_config
+CREATE TABLE assoc_edge_config (
+	edge_type TEXT NOT NULL, 
+	edge_name TEXT NOT NULL, 
+	symmetric_edge BOOLEAN DEFAULT 'false' NOT NULL, 
+	inverse_edge_type TEXT, 
+	edge_table TEXT NOT NULL, 
+	created_at TIMESTAMP NOT NULL, 
+	updated_at TIMESTAMP NOT NULL, 
+	CONSTRAINT assoc_edge_config_edge_type_pkey PRIMARY KEY (edge_type), 
+	CONSTRAINT assoc_edge_config_inverse_edge_type_fkey FOREIGN KEY(inverse_edge_type) REFERENCES assoc_edge_config (edge_type) ON DELETE RESTRICT, 
+	CONSTRAINT assoc_edge_config_unique_edge_name UNIQUE (edge_name)
+);
+sqlite> 
