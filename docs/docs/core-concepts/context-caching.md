@@ -3,6 +3,7 @@ sidebar_position: 6
 ---
 
 # Context Caching
+
 To speed up applications, we end up caching data in memory to avoid repeated trips to the database. Since we create a [new `Context` per request](/docs/core-concepts/context#new-request), we depend on the context cache (if available).
 
 ```ts
@@ -23,6 +24,7 @@ We'll dive deeper into how we handle queries later.
 By default, all queries have context, learn more [here](/docs/core-concepts/context#new-request).
 
 ## clearing the cache
+
 Anytime there's a write to the database, we clear the *entire* cache. It's possible there are clever things we can do to selectively clear the cache but that's not currently happening.
 
 ```ts
@@ -38,6 +40,7 @@ const user3 = await User.loadX(viewer, id);
 ```
 
 ## no context
+
 If the `Viewer` has no context, all queries hit the database.
 
 ```ts

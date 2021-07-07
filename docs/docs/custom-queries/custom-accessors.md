@@ -3,9 +3,11 @@ sidebar_position: 1
 ---
 
 # Custom Accessors
+
 We briefly showed how to add [custom functionality](/docs/core-concepts/ent#custom-functionality) in an object but didn't show how to expose it in GraphQL to end users. This explains how to do so.
 
 Given the following schema:
+
 ```ts title="src/schema/user.ts"
 import { BaseEntSchema, Field, StringType } from "@snowtop/ent";
 import { EmailType } from "@snowtop/ent-email";
@@ -49,11 +51,10 @@ export class User extends UserBase {
 }
 ```
 
-To do so, we'll dive into the Custom GraphQL API. 
+To do so, we'll dive into the Custom GraphQL API.
 
 We use [TypeScript Decorators](https://www.typescriptlang.org/docs/handbook/decorators.html) to annotate methods to indicate what we're exposing to GraphQL.
 
 These decorators are evaluated during code generation and they do as little as possible (nothing) otherwise to reduce the overhead of using them.
 
 [gqlField](/docs/custom-queries/gql-field) is how we annotate the property or method to expose in GraphQL.
-

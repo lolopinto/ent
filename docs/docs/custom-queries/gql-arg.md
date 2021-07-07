@@ -3,9 +3,11 @@ sidebar_position: 7
 ---
 
 # gqlArg
+
 `gqlArg` annotates an argument to a method to indicate that it's an [argument](https://graphql.org/learn/schema/#arguments) of a GraphQL field.
 
 For example:
+
 ```ts title="src/graphql/mutations/auth.ts"
 
 export class AuthResolver {

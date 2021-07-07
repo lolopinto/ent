@@ -3,6 +3,7 @@ sidebar_position: 15
 ---
 
 # Viewer For Ent Load
+
 After an action is performed, often the object is reloaded as follows:
 
 ```ts
@@ -10,7 +11,8 @@ const user = await CreateUserAction.create(vc, input).saveX();
 ```
 
 There's usually 2 privacy checks performed:
-* before the write - can viewer perform action 
+
+* before the write - can viewer perform action
 * loading the object back - can viewer see this ent
 
 Usually, these are 2 different policies. In most scenarios, this works fine and nothing needs to be done.
@@ -40,7 +42,6 @@ export class User extends UserBase {
 
 Here, the `CreateUserAction` Policy allows a [Logged Out Viewer](/docs/core-concepts/viewer#loggedoutviewer) to create the User but the `User` Ent policy says only the Viewer or their friends can see the user.
 
-
 ```ts
 // this will throw an error:
 // Error:    was able to create ent but not load it
@@ -58,6 +59,7 @@ interface Action<T extends Ent> {
 If provided, this takes the row returned from the database (currently, there's a `RETURN *`) as part of the `INSERT` or `UPDATE` queries and passes that to `viewerForEntLoad` which can then return a different Viewer to use to load the Ent.
 
 In this case, we'll update `CreateUserAction` as follows:
+
 ```ts title="src/ent/user/actions/create_user_action.ts"
 
 export default class CreateUserAction extends CreateUserActionBase {

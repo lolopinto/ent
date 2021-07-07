@@ -3,6 +3,7 @@ sidebar_position: 1
 ---
 
 # Viewer
+
 Viewer represents *who's* viewing the content in your product or app. Every time data is loaded or changed, the Viewer is required to determine if that action can be performed.
 
 Viewer is just an interface that can easily be implemented by any object and is not tied to any implementation or authentication mechanism.
@@ -19,20 +20,24 @@ interface Viewer {
 ```
 
 ## viewerID
-The `viewerID` indicates a unique identifier, usually the id in the database of the User or Account that's associated with whoever's logged in. 
+
+The `viewerID` indicates a unique identifier, usually the id in the database of the User or Account that's associated with whoever's logged in.
 
 ## viewer
+
 The `viewer` method returns the [`Ent`](/docs/core-concepts/ent) associated with the logged in user or `null` if there's no logged in viewer.
 
 ## instanceKey
+
 The `instanceKey` returns a unique identifier associated with this `Viewer`. It may be used to perform caching to save requests to the database.
 
 ## context
-The `context` returns the [`Context`](/docs/core-concepts/context) associated with the "request". 
 
+The `context` returns the [`Context`](/docs/core-concepts/context) associated with the "request".
 
 ## LoggedOutViewer
-The framework comes with a simple `Viewer` to represent the logged out viewer. It's the default Viewer used if none is provided. It can be instantiated as follows: 
+
+The framework comes with a simple `Viewer` to represent the logged out viewer. It's the default Viewer used if none is provided. It can be instantiated as follows:
 
 ```ts
 const vc1 = new LoggedOutViewer();
@@ -40,6 +45,7 @@ const vc2 = new LoggedOutViewer(context);
 ```
 
 ## IDViewer
+
 There's also a simple IDViewer which takes the viewerID and can be used for simple projects. It can be instantiated as follows:
 
 ```ts

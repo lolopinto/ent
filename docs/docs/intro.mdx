@@ -10,8 +10,8 @@ This is done by providing a balance of code generation + ways to customize thing
 
 It takes a holistic approach and uses the Schema generated to integrate with the following 3 core layers:
 
-* database
-* middle layer where most of the application logic lives
+* database.
+* middle layer where most of the application logic lives.
 * GraphQL layer for exposing the data to clients.
 
 It handles the following high level things:
@@ -31,8 +31,8 @@ This requires the following:
 
 * a local [PostgresQL](https://www.postgresql.org/download/) instance installed or [SQLite](https://www.sqlite.org/index.html).
 * If using Postgres, a database created via `createdb ent-starter` (or replace with your own database name).
-  * if a different database is used, make sure to update the `environment` in `docker-compose.dev.yml`
-* If using SQLite, update the `DB_CONNECTION_STRING` env variable in `docker-compose.dev.yml` to something like `sqlite:///ent-starter.db` to indicate where the db should be stored.
+  * if a different database is used, make sure to update the `DB_CONNECTION_STRING`  env in `docker-compose.dev.yml`
+* If using SQLite, update the `DB_CONNECTION_STRING` env in `docker-compose.dev.yml` to something like `sqlite:///ent-starter.db` to indicate where the db should be stored.
 * [Docker](https://docs.docker.com/get-docker/) installed.
 * [Node 14](https://nodejs.org/en/download/) or later installed.
 
@@ -76,7 +76,6 @@ Then run the following commands:
 
 ```shell
 # install additional dependencies
-# TODO...
 npm install @snowtop/ent-email @snowtop/ent-password
 # install all the things in the docker container
 npm run init

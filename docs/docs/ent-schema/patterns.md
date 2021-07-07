@@ -3,6 +3,7 @@ sidebar_position: 3
 ---
 
 # Patterns
+
 Patterns are shared objects for reusable concepts across schemas.
 
 You can think of them like `mixins` or `traits` that exist in some programming languages.
@@ -10,6 +11,7 @@ You can think of them like `mixins` or `traits` that exist in some programming l
 Right now, the only concept that's shared is `fields`. Over time, we'll add other concepts e.g. `edges` and even some possible business logic to build on top of to make it more powerful.
 
 We have the following patterns that come with the framework:
+
 * `Node`: adds `id`, `createdAt` and `updatedAt` fields to any schema.
 * `Timestamps`: adds `createdAt` and `updatedAt` fields to any schema. used by `Node`
 

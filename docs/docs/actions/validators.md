@@ -3,6 +3,7 @@ sidebar_position: 8
 ---
 
 # Validators
+
 Sometimes you need more than [per-field validation](/docs/ent-schema/fields#valid) in an action and Validators associated with an action enables that.
 
 ```ts
@@ -39,6 +40,7 @@ export class EventTimeValidator implements Validator<Event> {
 ```
 
 and then update the actions as follows:
+
 ```ts title="/src/ent/event/actions/create_event_action.ts"
 export default class CreateEventAction extends CreateEventActionBase {
 
@@ -54,7 +56,6 @@ export default class EditEventAction extends EditEventActionBase {
 ```
 
 so now when creating or editing an event, we'll ensure that the `startTime` (either new or existing) is before the `endTime`.
-
 
 ```ts
   const user = await getUser();
