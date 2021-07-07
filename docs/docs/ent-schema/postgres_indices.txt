@@ -1,0 +1,12 @@
+ent-test=# \d+ product_items
+                                             Table "public.product_items"
+     Column     |            Type             | Collation | Nullable | Default | Storage | Stats target | Description 
+----------------+-----------------------------+-----------+----------+---------+---------+--------------+-------------
+ id             | uuid                        |           | not null |         | plain   |              | 
+ created_at     | timestamp without time zone |           | not null |         | plain   |              | 
+ updated_at     | timestamp without time zone |           | not null |         | plain   |              | 
+ price          | double precision            |           | not null |         | plain   |              | 
+ discount_price | double precision            |           | not null |         | plain   |              | 
+Indexes:
+    "product_items_id_pkey" PRIMARY KEY, btree (id)
+    "product_items_idx" btree (price, discount_price)
