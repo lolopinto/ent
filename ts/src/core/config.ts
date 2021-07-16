@@ -19,9 +19,30 @@ export interface Config {
   // query includes cache hit. redis|memcache etc eventually
 }
 
-export function loadConfig(file?: string | Buffer) {
+function setConfig(cfg: Config) {
+  if (cfg.log) {
+    setLogLevels(cfg.log);
+  }
+
+  if (cfg.dbConnectionString || cfg.dbFile || cfg.db) {
+    DB.initDB({
+      connectionString: cfg.dbConnectionString,
+      dbFile: cfg.dbFile,
+      db: cfg.db,
+    });
+  }
+}
+
+function isBuffer(b: Buffer | Config): b is Buffer {
+  return (b as Buffer).write !== undefined;
+}
+
+export function loadConfig(file?: string | Buffer | Config) {
   let data: string;
   if (typeof file === "object") {
+    if (!isBuffer(file)) {
+      return setConfig(file);
+    }
     data = file.toString();
   } else {
     file = file || "ent.yml";
@@ -44,18 +65,7 @@ export function loadConfig(file?: string | Buffer) {
     if (typeof yaml !== "object") {
       throw new Error(`invalid yaml passed`);
     }
-    let cfg = yaml as Config;
-    if (cfg.log) {
-      setLogLevels(cfg.log);
-    }
-
-    if (cfg.dbConnectionString || cfg.dbFile || cfg.db) {
-      DB.initDB({
-        connectionString: cfg.dbConnectionString,
-        dbFile: cfg.dbFile,
-        db: cfg.db,
-      });
-    }
+    setConfig(yaml as Config);
   } catch (e) {
     console.error(`error parsing yaml file`, e);
     throw e;
