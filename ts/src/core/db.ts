@@ -18,7 +18,7 @@ export interface Database {
 // probably should just be string?
 // depends on NODE_ENV values.
 export type env = "production" | "test" | "development";
-export declare type DBDict = Record<env, Database>;
+export declare type DBDict = Partial<Record<env, Database>>;
 
 function isDbDict(v: Database | DBDict): v is DBDict {
   return (

@@ -28,10 +28,10 @@
   "dependencies": {
     "@sentry/node": "^6.3.0",
     "@sentry/tracing": "^6.3.0",
+    "@snowtop/ent": "^0.0.1",
     "@snowtop/ent-email": "0.0.1",
     "@snowtop/ent-passport": "0.0.1",
     "@snowtop/ent-password": "0.0.1",
-    "@snowtop/ent": "^0.0.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "csv-parse": "^4.15.3",
