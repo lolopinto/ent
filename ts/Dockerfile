@@ -34,7 +34,8 @@ LABEL org.opencontainers.image.source https://github.com/lolopinto/ent
 RUN \
   apt-get update && \
   # wget and gnupg are dependencies needed below
-  apt-get install -yqq wget gnupg && \
+  # libpq-dev for libpq
+  apt-get install -yqq wget gnupg libpq-dev && \
   echo "deb https://deb.nodesource.com/node_$NODE_VERSION.x buster main" > /etc/apt/sources.list.d/nodesource.list && \
   wget -qO- https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - && \
   echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.list.d/yarn.list && \
