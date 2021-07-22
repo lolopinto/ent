@@ -10,7 +10,6 @@
     "test": "jest",
     "compile": "rm -rf dist && ./node_modules/.bin/ent-custom-compiler",
     "start": "docker-compose -f docker-compose.dev.yml up --build",
-    "init": "rm -rf node_modules && docker-compose -f docker-compose.dev.yml run --rm app npm install",
     "codegen": "docker-compose -f docker-compose.dev.yml run --rm app tsent codegen",
     "upgrade": "docker-compose -f docker-compose.dev.yml run --rm app tsent upgrade",
     "rebuild-image": "docker-compose -f docker-compose.dev.yml build",
