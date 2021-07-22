@@ -17,7 +17,7 @@ import (
 )
 
 // next tag
-const TAG = "0.0.20-test"
+const TAG = "0.0.20-test2"
 
 // if current node gets latest tag...
 const CURRENT_NODE_VERSION = 16
@@ -26,8 +26,8 @@ const REPO = "ghcr.io/lolopinto/ent"
 const UPDATE_LATEST = false
 
 var NODE_VERSIONS = []int{
-	14,
-	15,
+	// 14,
+	// 15,
 	16,
 }
 
@@ -45,14 +45,14 @@ var PLATFORMS = []string{
 func main() {
 	var wg sync.WaitGroup
 	wg.Add(len(NODE_VERSIONS) * len(SUFFIXES))
-	errs := make([]error, len(NODE_VERSIONS))
+	errs := make([]error, len(NODE_VERSIONS)*len(SUFFIXES))
 	for i := range NODE_VERSIONS {
 		for j := range SUFFIXES {
 			go func(i, j int) {
 				defer wg.Done()
 				v := NODE_VERSIONS[i]
 				suffix := SUFFIXES[j]
-				errs[i] = <-run(dockerfileData{
+				errs[i*len(SUFFIXES)+j] = <-run(dockerfileData{
 					NodeVersion: v,
 					Suffix:      suffix,
 				})
@@ -108,10 +108,10 @@ func getCommandArgs(d dockerfileData, builder string) []string {
 		builder,
 		"--platform",
 		strings.Join(PLATFORMS, ","),
-		"--cache-from",
-		"type=local,src=/tmp/.buildx-cache",
-		"--cache-to",
-		"type=local,mode=max,dest=/tmp/.buildx-cache-new",
+		// "--cache-from",
+		// "type=local,src=/tmp/.buildx-cache",
+		// "--cache-to",
+		// "type=local,mode=max,dest=/tmp/.buildx-cache-new",
 	}
 
 	for _, tag := range tags {
