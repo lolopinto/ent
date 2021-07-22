@@ -1,20 +1,26 @@
+ARG GOLANG_VERSION=v0.0.19
+ARG AUTO_SCHEMA_VERSION=0.0.7
+
 # get and install tsent
 FROM golang:1.16.5-buster As golang-image
+ARG GOLANG_VERSION
 ENV GOPATH=$HOME/go
 ENV GOBIN $GOPATH/bin
 ENV PATH $PATH:$GOPATH/bin
-RUN go install github.com/lolopinto/ent/tsent@v0.0.19
+RUN go install github.com/lolopinto/ent/tsent@$GOLANG_VERSION
 
 # get and install auto_schema
 FROM python:3.8.11-buster AS python-image
+ARG AUTO_SCHEMA_VERSION
 RUN python -m venv /opt/venv
 # Make sure we use the virtualenv
 ENV PATH /opt/venv/bin:$PATH
 
-RUN python3 -m pip install auto_schema==0.0.7
+RUN python3 -m pip install auto_schema==$AUTO_SCHEMA_VERSION
 
 # final image needs to be python-based to have auto-schema work
 FROM python:3.8.11-slim AS final-image
+ARG GOLANG_VERSION
 
 ENV PATH /opt/venv/bin:$PATH
 ENV PATH /go/bin:$PATH
@@ -47,6 +53,7 @@ RUN npm install --save-dev tsconfig-paths
 
 COPY --from=golang-image /go/bin/tsent /go/bin/tsent
 COPY --from=python-image /opt/venv /opt/venv
+COPY --from=golang-image /go/pkg/mod/github.com/lolopinto/ent@$GOLANG_VERSION /go/pkg/mod/github.com/lolopinto/ent@$GOLANG_VERSION
 
 CMD ["node"]
 
