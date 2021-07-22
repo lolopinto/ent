@@ -26,8 +26,8 @@ const REPO = "ghcr.io/lolopinto/ent"
 const UPDATE_LATEST = true
 
 var NODE_VERSIONS = []int{
-	// 14,
-	// 15,
+	14,
+	15,
 	16,
 }
 
@@ -41,7 +41,7 @@ var SUFFIXES = []string{
 
 // can change platforms here to test locally
 var PLATFORMS = []string{
-	//	"linux/amd64",
+	"linux/amd64",
 	"linux/arm64",
 }
 
@@ -100,7 +100,8 @@ func getTags(d dockerfileData) []string {
 	ret := []string{
 		fmt.Sprintf("%s:%s-nodejs-%d-%s", REPO, TAG, d.NodeVersion, d.Suffix),
 	}
-	if d.NodeVersion == CURRENT_NODE_VERSION && UPDATE_LATEST {
+	// current node development gets latest since it should have full ish
+	if d.NodeVersion == CURRENT_NODE_VERSION && UPDATE_LATEST && d.Development() {
 		ret = append(ret, fmt.Sprintf("%s:latest", REPO))
 	}
 	return ret
