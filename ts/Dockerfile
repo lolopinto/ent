@@ -15,8 +15,6 @@ RUN python3 -m pip install auto_schema==0.0.7
 
 # final image needs to be python-based to have auto-schema work
 FROM python:3.8.11-slim AS final-image
-COPY --from=golang-image /go/bin/tsent /go/bin/tsent
-COPY --from=python-image /opt/venv /opt/venv
 
 ENV PATH /opt/venv/bin:$PATH
 ENV PATH /go/bin:$PATH
@@ -46,6 +44,9 @@ RUN npm install -g typescript prettier ts-node
 
 WORKDIR /app
 RUN npm install --save-dev tsconfig-paths 
+
+COPY --from=golang-image /go/bin/tsent /go/bin/tsent
+COPY --from=python-image /opt/venv /opt/venv
 
 CMD ["node"]
 

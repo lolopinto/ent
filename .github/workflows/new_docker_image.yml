@@ -33,14 +33,6 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@master
 
-    - name: Cache Docker layers
-      uses: actions/cache@v2
-      with:
-        path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-buildx-
-
     - name: docker login
       env:
         DOCKER_TOKEN: ${{secrets.DOCKER_TOKEN}}
@@ -49,7 +41,3 @@ jobs:
     - name: build the image
       run: cd release_image && go run .
 
-    - name: Move cache
-      run: |
-        rm -rf /tmp/.buildx-cache
-        mv /tmp/.buildx-cache-new /tmp/.buildx-cache

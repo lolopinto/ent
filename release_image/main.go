@@ -23,13 +23,16 @@ const TAG = "0.0.20-test2"
 const CURRENT_NODE_VERSION = 16
 const REPO = "ghcr.io/lolopinto/ent"
 
-const UPDATE_LATEST = false
+const UPDATE_LATEST = true
 
 var NODE_VERSIONS = []int{
-	// 14,
-	// 15,
+	14,
+	15,
 	16,
 }
+
+const AUTO_SCHEMA_VERSION = "0.0.7"
+const TSENT_VERSION = "v0.0.19"
 
 var SUFFIXES = []string{
 	"dev",
@@ -53,8 +56,10 @@ func main() {
 				v := NODE_VERSIONS[i]
 				suffix := SUFFIXES[j]
 				errs[i*len(SUFFIXES)+j] = <-run(dockerfileData{
-					NodeVersion: v,
-					Suffix:      suffix,
+					NodeVersion:       v,
+					Suffix:            suffix,
+					TsentVersion:      TSENT_VERSION,
+					AutoSchemaVersion: AUTO_SCHEMA_VERSION,
 				})
 			}(i, j)
 		}
@@ -67,8 +72,10 @@ func main() {
 }
 
 type dockerfileData struct {
-	NodeVersion int
-	Suffix      string
+	NodeVersion       int
+	Suffix            string
+	TsentVersion      string
+	AutoSchemaVersion string
 }
 
 func (d *dockerfileData) Development() bool {
@@ -100,6 +107,9 @@ func getTags(d dockerfileData) []string {
 }
 
 func getCommandArgs(d dockerfileData, builder string) []string {
+	// cache image based on tsent and auto_schema
+	// is that enough?
+	cacheTag := fmt.Sprintf("%s:cache-%s-%s", REPO, TSENT_VERSION, AUTO_SCHEMA_VERSION)
 	tags := getTags(d)
 	ret := []string{
 		"buildx",
@@ -108,10 +118,11 @@ func getCommandArgs(d dockerfileData, builder string) []string {
 		builder,
 		"--platform",
 		strings.Join(PLATFORMS, ","),
-		// "--cache-from",
-		// "type=local,src=/tmp/.buildx-cache",
-		// "--cache-to",
-		// "type=local,mode=max,dest=/tmp/.buildx-cache-new",
+		"--cache-from",
+		fmt.Sprintf("type=registry,ref=%s", cacheTag),
+		"--cache-to",
+		fmt.Sprintf("type=registry,mode=max,ref=%s", cacheTag),
+		"--push",
 	}
 
 	for _, tag := range tags {
