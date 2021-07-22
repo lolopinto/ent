@@ -22,7 +22,7 @@ export function clearLogLevels() {
 export function log(level: logType, msg: any) {
   if (logLevels.has(level)) {
     // mostly for sqlite error but fine for any type of error
-    if (level == "error" && msg instanceof Error) {
+    if (level == "error" && msg instanceof Error && msg.message !== undefined) {
       console.error(msg.message);
       return;
     }

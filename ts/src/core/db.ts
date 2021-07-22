@@ -154,6 +154,7 @@ export default class DB {
         log("error", err);
       });
     } else {
+      let sqlite = require("better-sqlite3");
       this.q = new Sqlite(sqlite(db.filePath || ""));
     }
   }
