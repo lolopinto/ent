@@ -4,13 +4,11 @@ services:
   app:
     build:
       context: .
-      dockerfile:
-        develop.Dockerfile
-        # change to name of your app
+      dockerfile:  develop.Dockerfile
     container_name: ent-rsvp
     ports:
       - 4000:4000
-      - 9229:9229 # for debugger apparently
+      - 9229:9229 # for debugger
     volumes:
       - .:/app:rw,delegated
     environment:

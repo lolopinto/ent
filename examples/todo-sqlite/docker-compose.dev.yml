@@ -5,15 +5,12 @@ services:
     build: 
       context: .
       dockerfile: develop.Dockerfile
-      args:
-        - GITHUB_TOKEN=${GITHUB_TOKEN}
-    container_name: example_app
+    container_name: todo-sqlite
     ports: 
       - 4000:4000
-      - 9229:9229 # for debugger apparently
+      - 9229:9229 # for debugger 
     volumes: 
       - .:/app:rw,delegated
     environment:
       - DB_CONNECTION_STRING=sqlite:///todo.db
-      - GITHUB_TOKEN=${GITHUB_TOKEN}
 
