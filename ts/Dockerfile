@@ -1,5 +1,6 @@
 ARG GOLANG_VERSION=v0.0.19
 ARG AUTO_SCHEMA_VERSION=0.0.7
+ARG NODE_VERSION=16
 
 # get and install tsent
 FROM golang:1.16.5-buster As golang-image
@@ -21,6 +22,7 @@ RUN python3 -m pip install auto_schema==$AUTO_SCHEMA_VERSION
 # final image needs to be python-based to have auto-schema work
 FROM python:3.8.11-slim AS final-image
 ARG GOLANG_VERSION
+ARG NODE_VERSION
 
 ENV PATH /opt/venv/bin:$PATH
 ENV PATH /go/bin:$PATH
@@ -33,7 +35,7 @@ RUN \
   apt-get update && \
   # wget and gnupg are dependencies needed below
   apt-get install -yqq wget gnupg && \
-  echo "deb https://deb.nodesource.com/node_16.x buster main" > /etc/apt/sources.list.d/nodesource.list && \
+  echo "deb https://deb.nodesource.com/node_$NODE_VERSION.x buster main" > /etc/apt/sources.list.d/nodesource.list && \
   wget -qO- https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - && \
   echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.list.d/yarn.list && \
   wget -qO- https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && \
