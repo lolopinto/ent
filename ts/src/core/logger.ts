@@ -1,5 +1,3 @@
-import { SqliteError } from "better-sqlite3";
-
 type logType = "query" | "warn" | "info" | "error" | "debug";
 var m = {
   query: "log",
@@ -23,7 +21,8 @@ export function clearLogLevels() {
 
 export function log(level: logType, msg: any) {
   if (logLevels.has(level)) {
-    if (level == "error" && msg instanceof SqliteError) {
+    // mostly for sqlite error but fine for any type of error
+    if (level == "error" && msg instanceof Error) {
       console.error(msg.message);
       return;
     }

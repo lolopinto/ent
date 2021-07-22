@@ -3,7 +3,7 @@ import * as fs from "fs";
 import { load } from "js-yaml";
 import { log } from "./logger";
 import { DateTime } from "luxon";
-import sqlite, { Database as SqliteDatabase } from "better-sqlite3";
+import type { RunResult, Database as SqliteDatabase } from "better-sqlite3";
 
 export interface Database {
   database?: string;
@@ -315,7 +315,7 @@ export class Sqlite implements Connection, SyncClient {
     return values;
   }
   querySync(query: string, values?: any[]): QueryResult<QueryResultRow> {
-    let r: sqlite.RunResult;
+    let r: RunResult;
 
     if (values) {
       r = this.db.prepare(query).get(this.convertValues(values));
@@ -355,7 +355,7 @@ export class Sqlite implements Connection, SyncClient {
   }
 
   execSync(query: string, values?: any[]): ExecResult {
-    let r: sqlite.RunResult;
+    let r: RunResult;
     if (values) {
       r = this.db.prepare(query).run(this.convertValues(values));
     } else {
