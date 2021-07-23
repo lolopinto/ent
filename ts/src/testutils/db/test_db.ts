@@ -1,5 +1,6 @@
 import { Client as PGClient } from "pg";
 import DB, { Sqlite, Dialect, Client, SyncClient } from "../../core/db";
+// this should only be used in tests so we expect to be able to import without shenanigans
 import sqlite, { Database as SqliteDatabase } from "better-sqlite3";
 import { loadConfig } from "../../core/config";
 import * as fs from "fs";

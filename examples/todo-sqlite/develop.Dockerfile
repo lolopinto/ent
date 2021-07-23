@@ -1,6 +1,8 @@
-FROM ghcr.io/lolopinto/ent:0.0.17
+FROM ghcr.io/lolopinto/ent:0.0.20-nodejs-16-dev
 
 WORKDIR /app
+
+RUN apt-get update && apt-get install build-essential -yqq
 
 COPY . .
 

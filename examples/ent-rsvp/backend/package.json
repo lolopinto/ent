@@ -7,9 +7,9 @@
     "test": "jest",
     "compile": "rm -rf dist && ./node_modules/.bin/ent-custom-compiler",
     "start": "docker-compose -f docker-compose.dev.yml up --build",
-    "init": "docker-compose -f docker-compose.dev.yml run --rm app npm install",
     "codegen": "docker-compose -f docker-compose.dev.yml run --rm app tsent codegen",
     "upgrade": "docker-compose -f docker-compose.dev.yml run --rm app tsent upgrade",
+    "rebuild-image": "docker-compose -f docker-compose.dev.yml build",
     "start-fast": "npm run compile && node dist/graphql/index.js"
   },
   "repository": {
@@ -28,7 +28,7 @@
   "dependencies": {
     "@sentry/node": "^6.3.0",
     "@sentry/tracing": "^6.3.0",
-    "@snowtop/ent": "^0.0.1",
+    "@snowtop/ent": "^0.0.4",
     "@snowtop/ent-email": "0.0.1",
     "@snowtop/ent-passport": "0.0.1",
     "@snowtop/ent-password": "0.0.1",

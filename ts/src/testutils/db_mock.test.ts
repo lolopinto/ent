@@ -450,7 +450,7 @@ describe("select", () => {
     expect(ml.errors.length).toBe(1);
 
     // we currently hide errors so we have to do this nonsense instead
-    expect(ml.errors[0].message).toMatch(/^non-null groupby/);
+    expect(ml.errors[0]).toMatch(/^non-null groupby/);
   });
 });
 
