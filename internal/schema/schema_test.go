@@ -210,36 +210,21 @@ func (config *TodoConfig) GetFields() ent.FieldMap {
 func verifyInverseAssocEdgeSameEnt(t *testing.T, s *schema.Schema) {
 	friendRequests := getEdgeFromSchema(t, s, "AccountConfig", "FriendRequests")
 
-	if friendRequests == nil {
-		t.Error(
-			"expected the friend requests edge to not be nil",
-		)
-	}
+	require.NotNil(t, friendRequests, "expected the friend requests edge to not be nil")
 
-	if friendRequests.InverseEdge == nil {
-		t.Error("expected the friend requests edge to have an inverse edge")
-	}
+	assert.NotNil(t, friendRequests.InverseEdge, "expected the friend requests edge to have an inverse edge")
 
 	friendRequestsReceived := getEdgeFromSchema(t, s, "AccountConfig", "FriendRequestsReceived")
-	if friendRequestsReceived == nil {
-		t.Error(
-			"expected the friend requests received edge to not be nil",
-		)
-	}
+	require.NotNil(t, friendRequestsReceived, "expected the friend requests received edge to not be nil")
 
-	if friendRequestsReceived.InverseEdge != nil {
-		t.Error("expected the friend requests inverse edge field to be nil")
-	}
+	assert.Nil(t, friendRequestsReceived.InverseEdge, "expected the friend requests inverse edge field to be nil")
 
-	if !friendRequestsReceived.IsInverseEdge {
-		t.Error("expected the friend request is inverse edge field to be true")
-	}
+	assert.True(t, friendRequestsReceived.IsInverseEdge, "expected the friend request is inverse edge field to be true")
 
 	edges := s.GetEdges()
 
-	if len(edges) != 2 {
-		t.Errorf("Expected 2 edges generated in schema, got %d instead", len(edges))
-	}
+	assert.Len(t, edges, 2, "Expected 2 edges generated in schema, got %d instead", len(edges))
+
 	friendRequestsEdge := edges["AccountToFriendRequestsEdge"]
 	friendRequestsReceivedEdge := edges["AccountToFriendRequestsReceivedEdge"]
 
@@ -272,10 +257,10 @@ func verifyInverseAssocEdgeSameEnt(t *testing.T, s *schema.Schema) {
 		t,
 		accountInfo,
 		map[string]map[string]string{
-			"ent.NodeType": map[string]string{
+			"ent.NodeType": {
 				"AccountType": "account",
 			},
-			"ent.EdgeType": map[string]string{
+			"ent.EdgeType": {
 				"AccountToFriendRequestsEdge":         "",
 				"AccountToFriendRequestsReceivedEdge": "",
 			},
@@ -325,30 +310,17 @@ type TodoConfig struct {
 	s := parseSchema(t, sources, "InverseAssocEdge")
 	todos := getEdgeFromSchema(t, s, "AccountConfig", "Todos")
 
-	if todos == nil {
-		t.Error(
-			"expected the todos edge to not be nil",
-		)
-	}
+	require.NotNil(t, todos, "expected the todos edge to not be nil")
 
-	if todos.InverseEdge == nil {
-		t.Error("expected the todos edge to have an inverse edge")
-	}
+	require.NotNil(t, todos.InverseEdge, "expected the todos edge to have an inverse edge")
 
 	accounts := getEdgeFromSchema(t, s, "TodoConfig", "Accounts")
-	if accounts == nil {
-		t.Error(
-			"expected the todo -> accounts edge to not be nil",
-		)
-	}
 
-	if accounts.InverseEdge != nil {
-		t.Error("expected the accounts inverse edge field to be nil")
-	}
+	require.NotNil(t, accounts, "expected the todo -> accounts edge to not be nil")
 
-	if !accounts.IsInverseEdge {
-		t.Error("expected the todo -> todo accounts inverse edge field to be true")
-	}
+	require.Nil(t, accounts.InverseEdge, "expected the accounts inverse edge field to be nil")
+
+	require.True(t, accounts.IsInverseEdge, "expected the todo -> todo accounts inverse edge field to be true")
 
 	edges := s.GetEdges()
 
@@ -385,10 +357,10 @@ type TodoConfig struct {
 		t,
 		accountInfo,
 		map[string]map[string]string{
-			"ent.NodeType": map[string]string{
+			"ent.NodeType": {
 				"AccountType": "account",
 			},
-			"ent.EdgeType": map[string]string{
+			"ent.EdgeType": {
 				"AccountToTodosEdge": "",
 			},
 		},
@@ -399,10 +371,10 @@ type TodoConfig struct {
 		t,
 		todoInfo,
 		map[string]map[string]string{
-			"ent.NodeType": map[string]string{
+			"ent.NodeType": {
 				"TodoType": "todo",
 			},
-			"ent.EdgeType": map[string]string{
+			"ent.EdgeType": {
 				"TodoToAccountsEdge": "",
 			},
 		},
@@ -463,30 +435,16 @@ type EventConfig struct {
 	s := parseSchema(t, sources, "EdgeGroup")
 	attendees := getEdgeFromSchema(t, s, "EventConfig", "AttendingUsers")
 
-	if attendees == nil {
-		t.Error(
-			"expected the attendees edge to not be nil",
-		)
-	}
+	require.NotNil(t, attendees, "expected the attendees edge to not be nil")
 
-	if attendees.InverseEdge == nil {
-		t.Error("expected the attendes edge to have an inverse edge")
-	}
+	require.NotNil(t, attendees.InverseEdge, "expected the attendes edge to have an inverse edge")
 
 	eventsAttending := getEdgeFromSchema(t, s, "AccountConfig", "EventsAttending")
-	if eventsAttending == nil {
-		t.Error(
-			"expected the account -> events attending edge to not be nil",
-		)
-	}
+	require.NotNil(t, eventsAttending, "expected the account -> events attending edge to not be nil")
 
-	if eventsAttending.InverseEdge != nil {
-		t.Error("expected the events attending inverse edge field to be nil")
-	}
+	require.Nil(t, eventsAttending.InverseEdge, "expected the events attending inverse edge field to be nil")
 
-	if !eventsAttending.IsInverseEdge {
-		t.Error("expected the user -> events attending inverse edge field to be true")
-	}
+	require.True(t, eventsAttending.IsInverseEdge, "expected the user -> events attending inverse edge field to be true")
 
 	edges := s.GetEdges()
 
@@ -598,17 +556,13 @@ func parseSchema(t *testing.T, sources map[string]string, uniqueKeyForSources st
 
 func getEdgeFromSchema(t *testing.T, s *schema.Schema, configName, edgeName string) *edge.AssociationEdge {
 	ret, err := s.GetAssocEdgeByName(configName, edgeName)
-	if err != nil {
-		t.Errorf("error getting edge from schema")
-	}
+	require.Nil(t, err)
 	return ret
 }
 
 func getFieldFromSchema(t *testing.T, s *schema.Schema, configName, fieldName string) *field.Field {
 	ret, err := s.GetFieldByName(configName, fieldName)
-	if err != nil {
-		t.Errorf("error getting field from schema")
-	}
+	require.Nil(t, err)
 	return ret
 }
 
@@ -754,105 +708,127 @@ func testEdgesFromConstsAndEdges(t *testing.T, s *schema.Schema) {
 
 func testEdge(t *testing.T, edge, expectedEdge *ent.AssocEdgeData) {
 	_, err := uuid.Parse(string(edge.EdgeType))
-	if err != nil {
-		t.Errorf("Expected an edge type of uuid. didn't get it, got %s instead", edge.EdgeType)
-	}
+	require.Nil(t, err, "Expected an edge type of uuid. didn't get it, got %s instead", edge.EdgeType)
 
-	if edge.EdgeName != expectedEdge.EdgeName {
-		t.Errorf(
-			"name of edge was not as expected, expected %s, got %s instead",
-			expectedEdge.EdgeName,
-			edge.EdgeName,
-		)
-	}
+	assert.Equal(
+		t,
+		edge.EdgeName,
+		expectedEdge.EdgeName,
+		"name of edge was not as expected, expected %s, got %s instead",
+		expectedEdge.EdgeName,
+		edge.EdgeName,
+	)
 
-	if edge.SymmetricEdge != expectedEdge.SymmetricEdge {
-		t.Errorf(
-			"symmetric edge value of edge was not as expected. expected %v got %v instead",
-			expectedEdge.SymmetricEdge,
-			edge.SymmetricEdge,
-		)
-	}
+	assert.Equal(t,
+		edge.SymmetricEdge,
+		expectedEdge.SymmetricEdge,
+		"symmetric edge value of edge was not as expected. expected %v got %v instead",
+		expectedEdge.SymmetricEdge,
+		edge.SymmetricEdge,
+	)
 
-	if expectedEdge.InverseEdgeType.Valid != edge.InverseEdgeType.Valid {
-		t.Errorf(
-			"inverse edge validity of edge was not as expecfted. expected %v got %v instead",
-			expectedEdge.InverseEdgeType.Valid,
-			edge.InverseEdgeType.Valid,
-		)
-	}
+	assert.Equal(
+		t,
+		expectedEdge.InverseEdgeType.Valid,
+		edge.InverseEdgeType.Valid,
 
-	if expectedEdge.InverseEdgeType.Valid && expectedEdge.InverseEdgeType.String != edge.InverseEdgeType.String {
-		t.Errorf(
-			"inverse edge value of edge was not as expecfted. expected %s got %s instead",
+		"inverse edge validity of edge was not as expected. expected %v got %v instead",
+		expectedEdge.InverseEdgeType.Valid,
+		edge.InverseEdgeType.Valid,
+	)
+
+	if expectedEdge.InverseEdgeType.Valid {
+		assert.Equal(
+			t,
+			expectedEdge.InverseEdgeType.String,
+			edge.InverseEdgeType.String,
+			"inverse edge value of edge was not as expected. expected %s got %s instead",
 			expectedEdge.InverseEdgeType.String,
 			edge.InverseEdgeType.String,
 		)
 	}
 
-	if edge.EdgeTable != expectedEdge.EdgeTable {
-		t.Errorf(
-			"invalid edge table in newly generated edge. expected %s, got %s instead",
-			expectedEdge.EdgeTable,
-			edge.EdgeTable,
-		)
-	}
+	assert.Equal(t,
+		edge.EdgeTable,
+		expectedEdge.EdgeTable,
+
+		"invalid edge table in newly generated edge. expected %s, got %s instead",
+		expectedEdge.EdgeTable,
+		edge.EdgeTable,
+	)
 }
 
 func testConstants(t *testing.T, info *schema.NodeDataInfo, constMap map[string]map[string]string) {
 	numConsts := len(info.NodeData.ConstantGroups)
-	if numConsts != len(constMap) {
-		t.Errorf(
-			"expected %d constants for %s node. got %d instead",
-			len(constMap),
-			info.NodeData.PackageName,
-			numConsts,
-		)
-	}
+	require.Len(
+		t,
+		info.NodeData.ConstantGroups,
+		len(constMap),
+		"expected %d constants for %s node. got %d instead",
+		len(constMap),
+		info.NodeData.PackageName,
+		numConsts,
+	)
 
 	for constType, constDeetsMap := range constMap {
 		nodeGroup := info.NodeData.ConstantGroups[constType]
-		if nodeGroup == nil {
-			t.Errorf(
-				"expected group of const type %s for node %s to exist. it doesn't",
-				constType,
-				info.NodeData.PackageName,
-			)
-		}
-		if nodeGroup.ConstType != constType {
-			t.Errorf(
-				"expected const type of node %s to be %s. it was %s instead",
-				info.NodeData.PackageName,
-				constType,
-				nodeGroup.ConstType,
-			)
-		}
+		require.NotNil(
+			t,
+			nodeGroup,
+			"expected group of const type %s for node %s to exist. it doesn't",
+			constType,
+			info.NodeData.PackageName,
+		)
+
+		assert.Equal(
+			t,
+			nodeGroup.ConstType,
+			constType,
+			"expected const type of node %s to be %s. it was %s instead",
+			info.NodeData.PackageName,
+			constType,
+			nodeGroup.ConstType,
+		)
 
 		for constName, constValue := range constDeetsMap {
 			constant := nodeGroup.Constants[constName]
-			if constant == nil {
-				t.Errorf(
-					"expected constant with name %s for node %s to exist. it doesn't",
-					constName,
-					info.NodeData.PackageName,
-				)
-			}
+			require.NotNil(
+				t,
+				constant,
+				"expected constant with name %s for node %s to exist. it doesn't",
+				constName,
+				info.NodeData.PackageName,
+			)
 
-			if constant.ConstName != constName {
-				t.Errorf(
-					"unexpected constant name generated for %s node, got %s instead of expected %s",
-					info.NodeData.PackageName,
-					constant.ConstName,
-					constName,
-				)
-			}
+			assert.Equal(
+				t,
+				constant.ConstName,
+				constName,
+
+				"unexpected constant name generated for %s node, got %s instead of expected %s",
+				info.NodeData.PackageName,
+				constant.ConstName,
+				constName,
+			)
+
 			if constType == "ent.EdgeType" {
 				_, err := uuid.Parse(constant.ConstValue)
-				if err != nil {
-					t.Errorf("expected uuid as constant value for edge, got %s with err %s parsing uuid instead", constant.ConstValue, err)
-				}
-			} else if constant.ConstValue != strconv.Quote(constValue) {
-				t.Errorf("unexpected constant value for %s type constant, got %s", info.NodeData.PackageName, constant.ConstValue)
+				require.NoError(
+					t,
+					err,
+					"expected uuid as constant value for edge, got %s with err %s parsing uuid instead",
+					constant.ConstValue,
+					err,
+				)
+			} else {
+				assert.Equal(
+					t,
+					constant.ConstValue,
+					strconv.Quote(constValue),
+					"unexpected constant value for %s type constant, got %s",
+					info.NodeData.PackageName,
+					constant.ConstValue,
+				)
 			}
 		}
 	}
@@ -915,21 +891,28 @@ func (suite *edgeTestSuite) TestInverseAssocEdgeAddedAfter() {
 	s := parseSchema(suite.T(), sources, "InverseAssocEdgeFirstTry")
 	friendRequests := getEdgeFromSchema(suite.T(), s, "AccountConfig", "FriendRequests")
 
-	if friendRequests == nil {
-		suite.T().Error(
-			"expected the friend requests edge to not be nil",
-		)
-	}
+	require.NotNil(
+		suite.T(),
+		friendRequests,
+		"expected the friend requests edge to not be nil",
+	)
 
-	if friendRequests.InverseEdge != nil {
-		suite.T().Error("expected the friend requests edge to have an inverse edge")
-	}
+	require.Nil(
+		suite.T(),
+		friendRequests.InverseEdge,
+		"expected the friend requests edge not to have an inverse edge",
+	)
 
 	edges := s.GetEdges()
 
-	if len(edges) != 1 {
-		suite.T().Errorf("Expected 1 edge generated in schema, got %d instead", len(edges))
-	}
+	require.Len(
+		suite.T(),
+		edges,
+		1,
+		"Expected 1 edge generated in schema, got %d instead",
+		len(edges),
+	)
+
 	friendRequestsEdge := edges["AccountToFriendRequestsEdge"]
 
 	expectedEdge := &ent.AssocEdgeData{
