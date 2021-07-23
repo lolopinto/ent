@@ -17,7 +17,7 @@ import (
 )
 
 // next tag
-const TAG = "0.0.19"
+const TAG = "0.0.20"
 
 // if current node gets latest tag...
 const CURRENT_NODE_VERSION = 16
@@ -25,10 +25,18 @@ const REPO = "ghcr.io/lolopinto/ent"
 
 const UPDATE_LATEST = true
 
-var NODE_VERSIONS = []dockerfileData{
-	{14, 6},
-	{15, 7},
-	{16, 7},
+var NODE_VERSIONS = []int{
+	14,
+	15,
+	16,
+}
+
+const AUTO_SCHEMA_VERSION = "0.0.7"
+const TSENT_VERSION = "v0.0.19"
+
+var SUFFIXES = []string{
+	"dev",
+	"slim",
 }
 
 // can change platforms here to test locally
@@ -39,14 +47,22 @@ var PLATFORMS = []string{
 
 func main() {
 	var wg sync.WaitGroup
-	wg.Add(len(NODE_VERSIONS))
-	errs := make([]error, len(NODE_VERSIONS))
+	wg.Add(len(NODE_VERSIONS) * len(SUFFIXES))
+	errs := make([]error, len(NODE_VERSIONS)*len(SUFFIXES))
 	for i := range NODE_VERSIONS {
-		go func(i int) {
-			defer wg.Done()
-			v := NODE_VERSIONS[i]
-			errs[i] = <-run(v.NODE_VERSION, v.NPM_VERSION)
-		}(i)
+		for j := range SUFFIXES {
+			go func(i, j int) {
+				defer wg.Done()
+				v := NODE_VERSIONS[i]
+				suffix := SUFFIXES[j]
+				errs[i*len(SUFFIXES)+j] = <-run(dockerfileData{
+					NodeVersion:       v,
+					Suffix:            suffix,
+					TsentVersion:      TSENT_VERSION,
+					AutoSchemaVersion: AUTO_SCHEMA_VERSION,
+				})
+			}(i, j)
+		}
 	}
 	wg.Wait()
 
@@ -56,15 +72,21 @@ func main() {
 }
 
 type dockerfileData struct {
-	NODE_VERSION int
-	NPM_VERSION  int
+	NodeVersion       int
+	Suffix            string
+	TsentVersion      string
+	AutoSchemaVersion string
+}
+
+func (d *dockerfileData) Development() bool {
+	return d.Suffix == "dev"
 }
 
 func createDockerfile(path string, d dockerfileData) error {
 	imps := tsimport.NewImports()
 
 	return file.Write((&file.TemplatedBasedFileWriter{
-		Data:              d,
+		Data:              &d,
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("../ts/Dockerfile.tmpl"),
 		TemplateName:      "Dockerfile.tmpl",
@@ -74,18 +96,22 @@ func createDockerfile(path string, d dockerfileData) error {
 	}))
 }
 
-func getTags(node int) []string {
+func getTags(d dockerfileData) []string {
 	ret := []string{
-		fmt.Sprintf("%s:%s-nodejs-%d", REPO, TAG, node),
+		fmt.Sprintf("%s:%s-nodejs-%d-%s", REPO, TAG, d.NodeVersion, d.Suffix),
 	}
-	if node == CURRENT_NODE_VERSION && UPDATE_LATEST {
+	// current node development gets latest since it should have full ish
+	if d.NodeVersion == CURRENT_NODE_VERSION && UPDATE_LATEST && d.Development() {
 		ret = append(ret, fmt.Sprintf("%s:latest", REPO))
 	}
 	return ret
 }
 
-func getCommandArgs(node int, builder string) []string {
-	tags := getTags(node)
+func getCommandArgs(d dockerfileData, builder string) []string {
+	// cache image based on tsent and auto_schema
+	// is that enough?
+	cacheTag := fmt.Sprintf("%s:cache-%s-%s", REPO, TSENT_VERSION, AUTO_SCHEMA_VERSION)
+	tags := getTags(d)
 	ret := []string{
 		"buildx",
 		"build",
@@ -93,6 +119,11 @@ func getCommandArgs(node int, builder string) []string {
 		builder,
 		"--platform",
 		strings.Join(PLATFORMS, ","),
+		"--cache-from",
+		fmt.Sprintf("type=registry,ref=%s", cacheTag),
+		"--cache-to",
+		fmt.Sprintf("type=registry,mode=max,ref=%s", cacheTag),
+		"--push",
 	}
 
 	for _, tag := range tags {
@@ -104,23 +135,31 @@ func getCommandArgs(node int, builder string) []string {
 	return ret
 }
 
-func run(node, npm int) <-chan error {
+func run(d dockerfileData) <-chan error {
 	c := make(chan error)
 	go func() {
-		dir := fmt.Sprintf("node_%d", node)
-		err := os.Mkdir(dir, os.ModePerm)
-		if err != nil {
-			c <- errors.Wrap(err, "error creating directory")
-			return
+		dir := fmt.Sprintf("node_%d_%s", d.NodeVersion, d.Suffix)
+		info, err := os.Stat(dir)
+		if err == nil {
+			if !info.IsDir() {
+				c <- errors.Wrapf(err, "path %s exists and is not a directory", dir)
+			}
+		} else if os.IsNotExist(err) {
+			// only create if directory exists
+			err := os.Mkdir(dir, os.ModePerm)
+			if err != nil {
+				c <- errors.Wrap(err, "error creating directory")
+				return
+			}
+		} else {
+			c <- errors.Wrap(err, "unexpected error")
 		}
 
 		defer os.RemoveAll(dir)
 		dockerfile := path.Join(dir, "Dockerfile")
 
-		err = createDockerfile(dockerfile, dockerfileData{
-			NODE_VERSION: node,
-			NPM_VERSION:  npm,
-		})
+		err = createDockerfile(dockerfile, d)
+
 		if err != nil {
 			c <- errors.Wrap(err, "error creating docker file")
 			return
@@ -138,7 +177,7 @@ func run(node, npm int) <-chan error {
 		builder := strings.TrimSpace(out.String())
 
 		// build image
-		cmd := exec.Command("docker", getCommandArgs(node, builder)...)
+		cmd := exec.Command("docker", getCommandArgs(d, builder)...)
 		cmd.Dir = dir
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr

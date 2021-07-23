@@ -1,58 +1,62 @@
-#FROM nikolaik/python-nodejs:python3.8-nodejs16
-ARG ARCH=
-FROM ${ARCH}python:3.8.11-buster 
+ARG GOLANG_VERSION=v0.0.19
+ARG AUTO_SCHEMA_VERSION=0.0.7
+ARG NODE_VERSION=16
 
-# gotten from https://github.com/nikolaik/docker-python-nodejs/blob/master/Dockerfile
+# get and install tsent
+FROM golang:1.16.5-buster As golang-image
+ARG GOLANG_VERSION
+ENV GOPATH=$HOME/go
+ENV GOBIN $GOPATH/bin
+ENV PATH $PATH:$GOPATH/bin
+RUN go install github.com/lolopinto/ent/tsent@$GOLANG_VERSION
 
-# Install node prereqs, nodejs and yarn
-# Ref: https://deb.nodesource.com/setup_16.x
-# Ref: https://yarnpkg.com/en/docs/install
+# get and install auto_schema
+FROM python:3.8.11-buster AS python-image
+ARG AUTO_SCHEMA_VERSION
+RUN python -m venv /opt/venv
+# Make sure we use the virtualenv
+ENV PATH /opt/venv/bin:$PATH
+
+RUN python3 -m pip install auto_schema==$AUTO_SCHEMA_VERSION
+
+# final image needs to be python-based to have auto-schema work
+FROM python:3.8.11-slim AS final-image
+ARG GOLANG_VERSION
+ARG NODE_VERSION
+
+ENV PATH /opt/venv/bin:$PATH
+ENV PATH /go/bin:$PATH
+
+# this is associating this image with this repo
+LABEL org.opencontainers.image.source https://github.com/lolopinto/ent
+
+# install node and dependencies
 RUN \
-  echo "deb https://deb.nodesource.com/node_16.x buster main" > /etc/apt/sources.list.d/nodesource.list && \
+  apt-get update && \
+  # wget and gnupg are dependencies needed below
+  # libpq-dev for libpq
+  apt-get install -yqq wget gnupg libpq-dev && \
+  echo "deb https://deb.nodesource.com/node_$NODE_VERSION.x buster main" > /etc/apt/sources.list.d/nodesource.list && \
   wget -qO- https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - && \
   echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.list.d/yarn.list && \
   wget -qO- https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && \
   apt-get update && \
   apt-get install -yqq nodejs yarn && \
-  pip install -U pip && pip install pipenv 
+  apt-get autoremove wget -yqq && \
+  rm -rf /var/lib/apt/lists/*
 
-RUN  npm i -g npm@^7 
-RUN  curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python && ln -s /root/.poetry/bin/poetry /usr/local/bin 
-RUN  rm -rf /var/lib/apt/lists/*
+# these next ones are not included in slim variants
 
-ARG TARGETARCH
-# this is associating this image with this repo
-LABEL org.opencontainers.image.source https://github.com/lolopinto/ent
+RUN apt update && apt --assume-yes install zsh && \
+  rm -rf /var/lib/apt/lists/*
+RUN npm install -g typescript prettier ts-node
 
-RUN apt update && apt --assume-yes install zsh
-
-# install auto_schema
-RUN python3 -m pip install auto_schema==0.0.7
-
-# get go
-RUN wget https://storage.googleapis.com/golang/go1.16.5.linux-$TARGETARCH.tar.gz
-
-RUN tar -C /usr/local -xzf go1.16.5.linux-$TARGETARCH.tar.gz
-
-ENV PATH $PATH:/usr/local/go/bin
-
-# default path but make it explicit
-ENV GOPATH=$HOME/go
-ENV GOBIN $GOPATH/bin
-ENV PATH $PATH:$GOPATH/bin
-
-RUN go install github.com/lolopinto/ent/tsent@v0.0.19
-
-# first 3 need to move from ts/package.json
-# maybe typescript?
-RUN npm install -g ts-node prettier typescript
-# this needs to be local apparently
 WORKDIR /app
 RUN npm install --save-dev tsconfig-paths 
 
+COPY --from=golang-image /go/bin/tsent /go/bin/tsent
+COPY --from=python-image /opt/venv /opt/venv
+COPY --from=golang-image /go/pkg/mod/github.com/lolopinto/ent@$GOLANG_VERSION /go/pkg/mod/github.com/lolopinto/ent@$GOLANG_VERSION
+
 CMD ["node"]
 
-# TODO eventually need a production Dockerfile that's lighter than this...
-# don't need ts-node, prettier, tsconfig-paths for example
-
-# still need go, python and node tho because of CLI and db 

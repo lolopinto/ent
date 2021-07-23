@@ -4,7 +4,8 @@ on:
   pull_request:
     branches: [ main ]
     paths:
-      - '**.go'
+      - 'ent/**.go'
+      - 'internal/**.go'
       - ts/src/**
       - .github/workflows/go_ci.yml
 
