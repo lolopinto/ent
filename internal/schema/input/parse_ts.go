@@ -14,19 +14,17 @@ import (
 	"github.com/pkg/errors"
 )
 
-// TODO probably want an environment variable flag here instead
+// TODO: environment variable flag for fromTest instead of passing it in
+// TODO: environment variable or flag for src/schema path instead of hardcoding it here
 func ParseSchemaFromTSDir(dirPath string, fromTest bool) (*Schema, error) {
-	// TODO provide flag for this and pass it here
 	schemaPath := filepath.Join(dirPath, "src", "schema")
 	info, err := os.Stat(schemaPath)
 	if err != nil {
-		return nil, errors.Wrap(err, "no schema file")
+		return nil, errors.Wrap(err, "no schema directory")
 	}
 	if !info.IsDir() {
 		return nil, fmt.Errorf("expected schema to be a directory")
 	}
-
-	// TODO dependencies as needed docker file?
 
 	var cmdArgs []string
 	cmdName := "ts-node"
@@ -59,11 +57,6 @@ func ParseSchemaFromTSDir(dirPath string, fromTest bool) (*Schema, error) {
 	}
 
 	return ParseSchema(out.Bytes())
-}
-
-type schemaData struct {
-	Name string
-	Path string
 }
 
 func GetAbsoluteRootPathForTest() string {

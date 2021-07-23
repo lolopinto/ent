@@ -869,10 +869,10 @@ func assocEdgeFromInput(packageName string, node *input.Node, edge *input.AssocE
 	if assocEdge.TableName == "" {
 		tableNameParts := []string{
 			packageName,
-			strings.ToLower(strcase.ToSnake(edge.Name)),
+			base.GetSnakeCaseName(edge.Name),
 			"edges",
 		}
-		assocEdge.TableName = getNameFromParts(tableNameParts)
+		assocEdge.TableName = base.GetNameFromParts(tableNameParts)
 	}
 
 	assocEdge.EdgeActions = edgeActionsFromInput(edge.EdgeActions)
@@ -1129,10 +1129,10 @@ func getParsedAssociationEdgeItem(containingPackageName, edgeName string, result
 func getDefaultTableName(packageName, groupName string) string {
 	tableNameParts := []string{
 		packageName,
-		strings.ToLower(strcase.ToSnake(groupName)),
+		base.GetSnakeCaseName(groupName),
 		"edges",
 	}
-	return getNameFromParts(tableNameParts)
+	return base.GetNameFromParts(tableNameParts)
 }
 
 func parseAssociationEdgeGroupItem(node *input.Node, containingPackageName, groupKey string, result *astparser.Result) error {
@@ -1257,9 +1257,4 @@ func getEdgeConstName(packageName, edgeName string) string {
 	}
 	// todo... need to support custom edges at some point...
 	return strcase.ToCamel(packageName) + "To" + strcase.ToCamel(edgeName) + "Edge"
-}
-
-// duplicated from db_schema.go
-func getNameFromParts(nameParts []string) string {
-	return strings.Join(nameParts, "_")
 }

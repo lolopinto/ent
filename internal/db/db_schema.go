@@ -17,6 +17,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/file"
+	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 
 	"github.com/lolopinto/ent/ent/config"
@@ -42,10 +43,6 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 }
 
 var _ codegen.Step = &Step{}
-
-func getNameFromParts(nameParts []string) string {
-	return strings.Join(nameParts, "_")
-}
 
 type dbTable struct {
 	Columns         []*dbColumn
@@ -117,7 +114,7 @@ func (constraint *primaryKeyConstraint) getName() string {
 	if constraint.name != "" {
 		return constraint.name
 	}
-	return schema.GetPrimaryKeyName(constraint.tableName, getNamesFromColumns(constraint.dbColumns)...)
+	return base.GetPrimaryKeyName(constraint.tableName, getNamesFromColumns(constraint.dbColumns)...)
 }
 
 func (constraint *primaryKeyConstraint) getConstraintMethod() string {
@@ -190,7 +187,7 @@ func (constraint *uniqueConstraint) getName() string {
 	if constraint.name != "" {
 		return constraint.name
 	}
-	return schema.GetUniqueKeyName(constraint.tableName, getNamesFromColumns(constraint.dbColumns)...)
+	return base.GetUniqueKeyName(constraint.tableName, getNamesFromColumns(constraint.dbColumns)...)
 }
 
 func (constraint *uniqueConstraint) getConstraintMethod() string {
@@ -221,7 +218,7 @@ func (constraint *indexConstraint) getConstraintString() string {
 	idxName := constraint.name
 	if idxName == "" {
 		idxNameParts = append(idxNameParts, "idx")
-		idxName = getNameFromParts(idxNameParts)
+		idxName = base.GetNameFromParts(idxNameParts)
 	}
 
 	args := []string{

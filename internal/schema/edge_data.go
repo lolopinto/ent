@@ -8,23 +8,6 @@ import (
 	"github.com/lolopinto/ent/internal/util"
 )
 
-func (m NodeMapInfo) loadExistingEdges() *assocEdgeData {
-	// load all edges in db
-	result := <-ent.GenLoadAssocEdges()
-	if result.Err != nil {
-		fmt.Println("error loading data. assoc_edge_config related", result.Err)
-	}
-	util.Die(result.Err)
-
-	edgeMap := make(map[string]*ent.AssocEdgeData)
-	for _, assocEdgeData := range result.Edges {
-		edgeMap[assocEdgeData.EdgeName] = assocEdgeData
-	}
-	return &assocEdgeData{
-		edgeMap: edgeMap,
-	}
-}
-
 type assocEdgeData struct {
 	// differentiate between new edges and existing edges for tests
 	edgeMap  map[string]*ent.AssocEdgeData

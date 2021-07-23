@@ -42,20 +42,20 @@ type DBType string
 const (
 	// Note that these types should match enum DBType in schema.ts
 	UUID        DBType = "UUID"
-	Int64ID            = "Int64ID"
-	Boolean            = "Boolean"
-	Int                = "Int"
-	Float              = "Float"
-	String             = "String"
-	Timestamp          = "Timestamp"
-	Timestamptz        = "Timestamptz"
-	Time               = "Time"
-	Timetz             = "Timetz"
-	Date               = "Date"
-	JSON               = "JSON"
-	Enum               = "Enum"
-	StringEnum         = "StringEnum"
-	List               = "List"
+	Int64ID     DBType = "Int64ID"
+	Boolean     DBType = "Boolean"
+	Int         DBType = "Int"
+	Float       DBType = "Float"
+	String      DBType = "String"
+	Timestamp   DBType = "Timestamp"
+	Timestamptz DBType = "Timestamptz"
+	Time        DBType = "Time"
+	Timetz      DBType = "Timetz"
+	Date        DBType = "Date"
+	JSON        DBType = "JSON"
+	Enum        DBType = "Enum"
+	StringEnum  DBType = "StringEnum"
+	List        DBType = "List"
 )
 
 type FieldType struct {
@@ -317,18 +317,16 @@ func (f *ActionField) UnmarshalJSON(data []byte) error {
 		}
 		f.Nullable = true
 		f.nullableContents = true
-		break
 
 	case NullableContents:
 		if !af.List {
 			return fmt.Errorf("list required to use this option")
 		}
 		f.nullableContents = true
-		break
 
 	case NullableTrue:
 		f.Nullable = true
-		break
+
 	}
 
 	return nil
@@ -403,12 +401,12 @@ type ActionType string
 const (
 	// Note that these types should match ActionField.Type in schema.ts
 	ActionTypeID      ActionType = "ID"
-	ActionTypeBoolean            = "Boolean"
-	ActionTypeInt                = "Int"
-	ActionTypeFloat              = "Float"
-	ActionTypeString             = "String"
-	ActionTypeTime               = "Time"
-	ActionTypeObject             = "Object"
+	ActionTypeBoolean ActionType = "Boolean"
+	ActionTypeInt     ActionType = "Int"
+	ActionTypeFloat   ActionType = "Float"
+	ActionTypeString  ActionType = "String"
+	ActionTypeTime    ActionType = "Time"
+	ActionTypeObject  ActionType = "Object"
 )
 
 type Constraint struct {
@@ -430,9 +428,9 @@ type ConstraintType string
 const (
 	// Note that these type should match enum ConstraintType in schema.ts
 	PrimaryKeyConstraint ConstraintType = "primary"
-	ForeignKeyConstraint                = "foreign"
-	UniqueConstraint                    = "unique"
-	CheckConstraint                     = "check"
+	ForeignKeyConstraint ConstraintType = "foreign"
+	UniqueConstraint     ConstraintType = "unique"
+	CheckConstraint      ConstraintType = "check"
 )
 
 type ForeignKeyInfo struct {
@@ -446,10 +444,10 @@ type OnDeleteFkey string
 const (
 	// Note that these type should match enum ForeignKeyInfo.ondelete in schema.ts
 	Restrict   OnDeleteFkey = "RESTRICT"
-	Cascade                 = "CASCADE"
-	SetNull                 = "SET NULL"
-	SetDefault              = "SET DEFAULT"
-	NoAction                = "NO ACTION"
+	Cascade    OnDeleteFkey = "CASCADE"
+	SetNull    OnDeleteFkey = "SET NULL"
+	SetDefault OnDeleteFkey = "SET DEFAULT"
+	NoAction   OnDeleteFkey = "NO ACTION"
 )
 
 func (g *AssocEdgeGroup) AddAssocEdge(edge *AssocEdge) {
