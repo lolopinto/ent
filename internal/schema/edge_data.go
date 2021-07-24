@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/lolopinto/ent/ent"
-	"github.com/lolopinto/ent/internal/util"
 )
 
 type assocEdgeData struct {
@@ -32,14 +31,17 @@ func (edgeData *assocEdgeData) addNewEdge(newEdge *ent.AssocEdgeData) {
 	edgeData.edgeMap[newEdge.EdgeName] = newEdge
 }
 
-func (edgeData *assocEdgeData) updateInverseEdgeTypeForEdge(constName string, constValue string) {
+func (edgeData *assocEdgeData) updateInverseEdgeTypeForEdge(constName string, constValue string) error {
 	edge := edgeData.edgeMap[constName]
 	if edge == nil {
-		panic(fmt.Sprintf("couldn't find edge with constName %s", constName))
+		return fmt.Errorf("couldn't find edge with constName %s", constName)
 	}
 
 	ns := sql.NullString{}
-	util.Die(ns.Scan(constValue))
+	if err := ns.Scan(constValue); err != nil {
+		return err
+	}
 	edge.InverseEdgeType = ns
 	edgeData.edgesToUpdate = append(edgeData.edgesToUpdate, edge)
+	return nil
 }

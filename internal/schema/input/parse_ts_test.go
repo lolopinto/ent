@@ -265,7 +265,9 @@ func verifyActionOnlyFields(t *testing.T, expActionFields []actionField, actionF
 		assert.Equal(t, expActionField.typ, actionField.Type)
 
 		if expActionField.tsType != nil {
-			assert.Equal(t, expActionField.tsType, actionField.GetEntType("field"))
+			typ, err := actionField.GetEntType("field")
+			assert.Nil(t, err)
+			assert.Equal(t, expActionField.tsType, typ)
 		}
 	}
 }

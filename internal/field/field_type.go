@@ -131,7 +131,11 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 			ret.setFieldType(enttype.GetType(ret.entType))
 		}
 	} else if f.Type != nil {
-		ret.setFieldType(f.GetEntType())
+		typ, err := f.GetEntType()
+		if err != nil {
+			return nil, err
+		}
+		ret.setFieldType(typ)
 	} else {
 		return nil, errors.New("invalid input. no way to get the type")
 	}

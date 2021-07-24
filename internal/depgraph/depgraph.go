@@ -35,14 +35,16 @@ func (g *Depgraph) AddOptionalItem(key string, value interface{}) {
 
 // Run runs the dependency graph. takes a func that takes an interface{}, calls it exactly once for everything that has been added
 // and makes sure it's called exactly once for each
-func (g *Depgraph) Run(exec func(interface{})) {
+func (g *Depgraph) Run(exec func(interface{}) error) error {
 	itemsToCheck := []*data{}
 	for _, item := range g.items {
 		if !g.checkDependenciesCompleted(item) {
 			itemsToCheck = append(itemsToCheck, item)
 			continue
 		}
-		exec(item.value)
+		if err := exec(item.value); err != nil {
+			return err
+		}
 		item.completed = true
 	}
 
@@ -52,22 +54,28 @@ func (g *Depgraph) Run(exec func(interface{})) {
 		if i == 5 {
 			panic("dependency graph not resolving. halp!")
 		}
-		newItems := g.runDepgraph(itemsToCheck, exec)
+		newItems, err := g.runDepgraph(itemsToCheck, exec)
+		if err != nil {
+			return err
+		}
 		itemsToCheck = newItems
 	}
+	return nil
 }
 
-func (g *Depgraph) runDepgraph(itemsToCheck []*data, exec func(interface{})) []*data {
+func (g *Depgraph) runDepgraph(itemsToCheck []*data, exec func(interface{}) error) ([]*data, error) {
 	newItems := []*data{}
 	for _, item := range itemsToCheck {
 		if !g.checkDependenciesCompleted(item) {
 			newItems = append(newItems, item)
 			continue
 		}
-		exec(item.value)
+		if err := exec(item.value); err != nil {
+			return nil, err
+		}
 		item.completed = true
 	}
-	return newItems
+	return newItems, nil
 }
 
 type queueItem struct {

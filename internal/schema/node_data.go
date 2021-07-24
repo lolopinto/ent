@@ -231,7 +231,7 @@ type ImportPath struct {
 }
 
 // GetImportsForBaseFile returns list of imports needed in the base generated file
-func (nodeData *NodeData) GetImportsForBaseFile() []ImportPath {
+func (nodeData *NodeData) GetImportsForBaseFile() ([]ImportPath, error) {
 	ret := []ImportPath{
 		{
 			Import:        "schema",
@@ -267,7 +267,7 @@ func (nodeData *NodeData) GetImportsForBaseFile() []ImportPath {
 		if f.Index() && f.EvolvedIDField() {
 			imp, err := nodeData.GetFieldQueryName(f)
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 			ret = append(ret, ImportPath{
 				Import:      imp,
@@ -287,7 +287,7 @@ func (nodeData *NodeData) GetImportsForBaseFile() []ImportPath {
 			PackagePath: codepath.Package,
 		})
 	}
-	return ret
+	return ret, nil
 }
 
 // GetImportPathsForDependencies returns imports needed in dependencies e.g. actions and builders
@@ -313,7 +313,7 @@ func (nodeData *NodeData) GetImportPathsForDependencies() []ImportPath {
 	return ret
 }
 
-func (nodeData *NodeData) GetImportsForQueryBaseFile(s *Schema) []ImportPath {
+func (nodeData *NodeData) GetImportsForQueryBaseFile(s *Schema) ([]ImportPath, error) {
 	var ret []ImportPath
 
 	for _, unique := range nodeData.getUniqueNodes(true) {
@@ -327,7 +327,7 @@ func (nodeData *NodeData) GetImportsForQueryBaseFile(s *Schema) []ImportPath {
 	for _, edge := range nodeData.EdgeInfo.Associations {
 		node, err := s.GetNodeDataForNode(edge.NodeInfo.Node)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		// need a flag of if imported or something
 		for _, edge2 := range node.EdgeInfo.Associations {
@@ -345,7 +345,7 @@ func (nodeData *NodeData) GetImportsForQueryBaseFile(s *Schema) []ImportPath {
 		})
 	}
 
-	return ret
+	return ret, nil
 }
 
 // don't need this distinction at the moment but why not

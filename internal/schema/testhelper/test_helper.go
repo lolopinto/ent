@@ -70,12 +70,16 @@ func ParseInputSchemaForTest(t *testing.T, code map[string]string, opts ...func(
 }
 
 func ParseSchemaForTest(t *testing.T, code map[string]string, lang base.Language, opts ...func(*Options)) *schema.Schema {
-	inputSchema := ParseInputSchemaForTest(t, code, opts...)
-	s, err := schema.ParseFromInputSchema(inputSchema, lang)
+	s, err := ParseSchemaForTestFull(t, code, lang, opts...)
 	require.NoError(t, err)
 
 	require.NotNil(t, s)
 	return s
+}
+
+func ParseSchemaForTestFull(t *testing.T, code map[string]string, lang base.Language, opts ...func(*Options)) (*schema.Schema, error) {
+	inputSchema := ParseInputSchemaForTest(t, code, opts...)
+	return schema.ParseFromInputSchema(inputSchema, lang)
 }
 
 func ParseActionInfoForTest(t *testing.T, code map[string]string, lang base.Language, nodeName string) *action.ActionInfo {

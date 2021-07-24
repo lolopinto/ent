@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/token"
@@ -14,7 +15,6 @@ import (
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schemaparser"
-	"github.com/lolopinto/ent/internal/util"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -24,7 +24,10 @@ func (s *Schema) parsePackage(pkg *packages.Package, specificConfigs ...string) 
 	typeInfo := pkg.TypesInfo
 	fset := pkg.Fset
 
-	edgeData := s.loadExistingEdges()
+	edgeData, err := s.loadExistingEdges()
+	if err != nil {
+		return nil, err
+	}
 
 	// first pass to parse the files and do as much as we can
 	for idx, filePath := range pkg.GoFiles {
@@ -38,7 +41,10 @@ func (s *Schema) parsePackage(pkg *packages.Package, specificConfigs ...string) 
 
 		file := pkg.Syntax[idx]
 
-		codegenInfo := s.parseFile(packageName, pkg, file, fset, specificConfigs, typeInfo, edgeData)
+		codegenInfo, err := s.parseFile(packageName, pkg, file, fset, specificConfigs, typeInfo, edgeData)
+		if err != nil {
+			return nil, err
+		}
 		if err := s.addConfig(codegenInfo); err != nil {
 			return nil, err
 		}
@@ -65,7 +71,7 @@ func (s *Schema) parseFile(
 	specificConfigs []string,
 	typeInfo *types.Info,
 	edgeData *assocEdgeData,
-) *NodeDataInfo {
+) (*NodeDataInfo, error) {
 
 	// initial parsing
 	g := &depgraph.Depgraph{}
@@ -101,10 +107,10 @@ func (s *Schema) parseFile(
 				}
 
 				// pass the structtype to get the config
-				g.AddItem("ParseFields", func(nodeData *NodeData) {
+				g.AddItem("ParseFields", func(nodeData *NodeData) error {
 					var err error
 					fieldInfoFields, err = field.GetFieldInfoForStruct(s, typeInfo)
-					util.Die(err)
+					return err
 				})
 			}
 		}
@@ -112,29 +118,32 @@ func (s *Schema) parseFile(
 		if fn, ok := node.(*ast.FuncDecl); ok {
 			switch fn.Name.Name {
 			case "GetEdges":
-				g.AddItem("GetEdges", func(nodeData *NodeData) {
+				g.AddItem("GetEdges", func(nodeData *NodeData) error {
 					// TODO: validate edges. can only have one of each type etc
 					var err error
 					nodeData.EdgeInfo, err = edge.ParseEdgesFunc(packageName, fn)
-					util.Die(err)
+					if err != nil {
+						return err
+					}
 
 					s.addConstsFromEdgeGroups(nodeData)
+					return nil
 				})
 
 			case "GetFields":
-				g.AddItem("GetFields", func(nodeData *NodeData) {
+				g.AddItem("GetFields", func(nodeData *NodeData) error {
 					var err error
 					fieldInfoMethod, err = field.ParseFieldsFunc(pkg, fn)
-					util.Die(err)
+					return err
 				})
 
 			case "GetActions":
 				// queue up to run later since it depends on parsed fieldInfo and edges
-				g2.AddItem("GetActions", func(info *NodeDataInfo) {
+				g2.AddItem("GetActions", func(info *NodeDataInfo) error {
 					var err error
 					nodeData := info.NodeData
 					nodeData.ActionInfo, err = action.ParseActions(packageName, fn, nodeData.FieldInfo, nodeData.EdgeInfo, base.GoLang)
-					util.Die(err)
+					return err
 				}, "LinkedEdges")
 
 			case "GetTableName":
@@ -154,29 +163,40 @@ func (s *Schema) parseFile(
 	nodeData := newNodeData(packageName)
 
 	// run the depgraph to get as much data as we can get now.
-	g.Run(func(item interface{}) {
+	if err := g.Run(func(item interface{}) error {
 		execFn, ok := item.(func(*NodeData))
-		if !ok {
-			panic("invalid function passed")
+		execFn2, ok2 := item.(func(*NodeData) error)
+
+		if !ok && !ok2 {
+			return fmt.Errorf("invalid function passed")
 		}
-		execFn(nodeData)
-	})
+		if ok {
+			execFn(nodeData)
+			return nil
+		}
+		if ok2 {
+			return execFn2(nodeData)
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
 
 	if fieldInfoFields != nil && fieldInfoMethod != nil {
-		panic("don't support both fields in struct and GetFields method")
+		return nil, errors.New("don't support both fields in struct and GetFields method")
 	} else if fieldInfoFields != nil {
 		nodeData.FieldInfo = fieldInfoFields
 	} else if fieldInfoMethod != nil {
 		nodeData.FieldInfo = fieldInfoMethod
 	} else {
-		panic("no fields why??")
+		return nil, errors.New("no fields why??")
 	}
 
 	return &NodeDataInfo{
 		depgraph:      g2,
 		NodeData:      nodeData,
 		ShouldCodegen: shouldCodegen,
-	}
+	}, nil
 }
 
 // getTableName returns the name of the table the node should be stored in

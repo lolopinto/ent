@@ -202,9 +202,8 @@ func (config *TodoConfig) GetFields() ent.FieldMap {
 	}
 	`
 
-	require.Panics(t, func() {
-		parseSchema(t, sources, "ForeignKeyEdgeInvalid")
-	})
+	_, err := parseSchemaPlusError(t, sources, "ForeignKeyEdgeInvalid")
+	assert.Error(t, err)
 }
 
 func verifyInverseAssocEdgeSameEnt(t *testing.T, s *schema.Schema) {
@@ -545,13 +544,18 @@ func TestGeneratedConstants(t *testing.T) {
 
 // inlining this in a bunch of places to break the import cycle
 func parseSchema(t *testing.T, sources map[string]string, uniqueKeyForSources string) *schema.Schema {
+	s, err := parseSchemaPlusError(t, sources, uniqueKeyForSources)
+	require.NoError(t, err)
+	return s
+}
+
+func parseSchemaPlusError(t *testing.T, sources map[string]string, uniqueKeyForSources string) (*schema.Schema, error) {
 	data := parsehelper.ParseFilesForTest(
 		t,
 		parsehelper.Sources(uniqueKeyForSources, sources),
 	)
-	s, err := schema.ParsePackage(data.Pkg)
-	require.NoError(t, err)
-	return s
+	return schema.ParsePackage(data.Pkg)
+
 }
 
 func getEdgeFromSchema(t *testing.T, s *schema.Schema, configName, edgeName string) *edge.AssociationEdge {

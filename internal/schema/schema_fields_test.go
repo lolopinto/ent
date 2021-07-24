@@ -70,9 +70,8 @@ func TestSchemaWithBoth(t *testing.T) {
 		}
 	}`
 
-	assert.Panics(t, func() {
-		parseSchema(t, sources, "SchemaWithBoth")
-	})
+	_, err := parseSchemaPlusError(t, sources, "SchemaWithBoth")
+	assert.Error(t, err)
 }
 
 func TestSchemaWithNeither(t *testing.T) {
@@ -81,7 +80,6 @@ func TestSchemaWithNeither(t *testing.T) {
 
 	type UserConfig struct {}`
 
-	assert.Panics(t, func() {
-		parseSchema(t, sources, "SchemaWithNeither")
-	})
+	_, err := parseSchemaPlusError(t, sources, "SchemaWithNeither")
+	assert.Error(t, err)
 }

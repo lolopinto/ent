@@ -144,10 +144,13 @@ func MultiChangesets(changesetFn ...func() (ent.Changeset, error)) (ent.Changese
 	}
 
 	// resolve the order of the items with dependencies and add them to the ordered changesets
-	g.Run(func(val interface{}) {
+	if err := g.Run(func(val interface{}) error {
 		placeholderID := fmt.Sprintf("%v", val)
 		orderedChangesets = append(orderedChangesets, changesetsWithDep[placeholderID])
-	})
+		return nil
+	}); err != nil {
+		return nil, err
+	}
 
 	// create a new changeset and wrap everything in the right order
 	// we use the last item as the "main changeset" for testing purposes so we have access to the right

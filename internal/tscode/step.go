@@ -622,12 +622,16 @@ func writeEntIndexFile() error {
 func writeBuilderFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {
 	imps := tsimport.NewImports()
 
+	imports, err := nodeData.GetImportsForBaseFile()
+	if err != nil {
+		return err
+	}
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data: nodeTemplateCodePath{
 			NodeData: nodeData,
 			CodePath: codePathInfo,
 			Package:  codePathInfo.GetImportPackage(),
-			Imports:  nodeData.GetImportsForBaseFile(),
+			Imports:  imports,
 		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("builder.tmpl"),

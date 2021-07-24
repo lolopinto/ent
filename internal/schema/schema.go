@@ -2,7 +2,6 @@ package schema
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -21,6 +20,7 @@ import (
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/util"
+	"github.com/pkg/errors"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -234,7 +234,10 @@ func (s *Schema) GetEdgesToUpdate() []*ent.AssocEdgeData {
 func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*assocEdgeData, error) {
 	// TODO right now this is also depending on config/database.yml
 	// figure out if best place for this
-	edgeData := s.loadExistingEdges()
+	edgeData, err := s.loadExistingEdges()
+	if err != nil {
+		return nil, err
+	}
 
 	var errs []error
 
@@ -320,13 +323,12 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 	return s.processDepgrah(edgeData)
 }
 
-func (s *Schema) loadExistingEdges() *assocEdgeData {
+func (s *Schema) loadExistingEdges() (*assocEdgeData, error) {
 	// load all edges in db
 	result := <-ent.GenLoadAssocEdges()
 	if result.Err != nil {
-		fmt.Println("error loading data. assoc_edge_config related", result.Err)
+		return nil, errors.Wrap(result.Err, "error loading data. assoc_edge_config related")
 	}
-	util.Die(result.Err)
 
 	edgeMap := make(map[string]*ent.AssocEdgeData)
 	for _, assocEdgeData := range result.Edges {
@@ -334,7 +336,7 @@ func (s *Schema) loadExistingEdges() *assocEdgeData {
 	}
 	return &assocEdgeData{
 		edgeMap: edgeMap,
-	}
+	}, nil
 }
 
 func (s *Schema) addConfig(info *NodeDataInfo) error {
@@ -354,25 +356,25 @@ func (s *Schema) buildPostRunDepgraph(edgeData *assocEdgeData) *depgraph.Depgrap
 		// want all configs loaded for this.
 		// Actions depends on this.
 		// this adds the linked assoc edge to the field
-		"LinkedEdges", func(info *NodeDataInfo) {
-			s.addLinkedEdges(info)
+		"LinkedEdges", func(info *NodeDataInfo) error {
+			return s.addLinkedEdges(info)
 		},
 		"EdgesFromFields",
 	)
 
-	g.AddItem("EdgesFromFields", func(info *NodeDataInfo) {
-		s.addEdgesFromFields(info)
+	g.AddItem("EdgesFromFields", func(info *NodeDataInfo) error {
+		return s.addEdgesFromFields(info)
 	})
 
 	// inverse edges also require everything to be loaded
 	g.AddItem(
-		"InverseEdges", func(info *NodeDataInfo) {
-			s.addInverseAssocEdges(info)
+		"InverseEdges", func(info *NodeDataInfo) error {
+			return s.addInverseAssocEdges(info)
 		}, "EdgesFromFields")
 
 	// add new consts and edges as a dependency of linked edges and inverse edges
-	g.AddItem("ConstsAndEdges", func(info *NodeDataInfo) {
-		s.addNewConstsAndEdges(info, edgeData)
+	g.AddItem("ConstsAndEdges", func(info *NodeDataInfo) error {
+		return s.addNewConstsAndEdges(info, edgeData)
 	}, "LinkedEdges", "InverseEdges")
 
 	g.AddItem("ActionFields", func(info *NodeDataInfo) {
@@ -390,15 +392,13 @@ func (s *Schema) processDepgrah(edgeData *assocEdgeData) (*assocEdgeData, error)
 		}
 
 		// probably make this concurrent in the future
-		info.depgraph.Run(func(item interface{}) {
-			execFn, ok := item.(func(*NodeDataInfo))
-			if !ok {
-				panic(fmt.Errorf("invalid function passed"))
-			}
-			execFn(info)
-		})
+		if err := s.runDepgraph(info); err != nil {
+			return nil, err
+		}
 
-		s.processConstraints(info.NodeData)
+		if err := s.processConstraints(info.NodeData); err != nil {
+			return nil, err
+		}
 	}
 
 	// need to run this after running everything above
@@ -409,11 +409,11 @@ func (s *Schema) processDepgrah(edgeData *assocEdgeData) (*assocEdgeData, error)
 	}
 
 	// need to also process enums too
-	// TODO refactor all of these to not be on NodeMapInfo but be on Schema
-	// this no longer works anymore
 	for _, enumInfo := range s.Enums {
 		if enumInfo.LookupTableEnum() {
-			s.processConstraints(enumInfo.NodeData)
+			if err := s.processConstraints(enumInfo.NodeData); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -421,7 +421,7 @@ func (s *Schema) processDepgrah(edgeData *assocEdgeData) (*assocEdgeData, error)
 }
 
 // this adds the linked assoc edge to the field
-func (s *Schema) addLinkedEdges(info *NodeDataInfo) {
+func (s *Schema) addLinkedEdges(info *NodeDataInfo) error {
 	nodeData := info.NodeData
 	fieldInfo := nodeData.FieldInfo
 	edgeInfo := nodeData.EdgeInfo
@@ -429,7 +429,7 @@ func (s *Schema) addLinkedEdges(info *NodeDataInfo) {
 	for _, e := range edgeInfo.FieldEdges {
 		f := fieldInfo.GetFieldByName(e.FieldName)
 		if f == nil {
-			panic(fmt.Errorf("invalid edge with Name %s", e.FieldName))
+			return fmt.Errorf("invalid edge with Name %s", e.FieldName)
 		}
 
 		if e.Polymorphic != nil {
@@ -459,7 +459,7 @@ func (s *Schema) addLinkedEdges(info *NodeDataInfo) {
 						)
 					}
 				} else {
-					panic(fmt.Errorf("couldn't find config for typ %s", typ))
+					return fmt.Errorf("couldn't find config for typ %s", typ)
 				}
 			}
 			continue
@@ -476,18 +476,19 @@ func (s *Schema) addLinkedEdges(info *NodeDataInfo) {
 
 		foreignInfo, ok := s.Nodes[config.ConfigName]
 		if !ok {
-			panic(fmt.Errorf("could not find the EntConfig codegen info for %s", config.ConfigName))
+			return fmt.Errorf("could not find the EntConfig codegen info for %s", config.ConfigName)
 		}
 		foreignEdgeInfo := foreignInfo.NodeData.EdgeInfo
 		fEdge := foreignEdgeInfo.GetAssociationEdgeByName(e.InverseEdgeName)
 		if fEdge == nil {
-			panic(fmt.Errorf("couldn't find inverse edge with name %s", e.InverseEdgeName))
+			return fmt.Errorf("couldn't find inverse edge with name %s", e.InverseEdgeName)
 		}
 		f.AddInverseEdge(fEdge)
 	}
+	return nil
 }
 
-func (s *Schema) addEdgesFromFields(info *NodeDataInfo) {
+func (s *Schema) addEdgesFromFields(info *NodeDataInfo) error {
 	nodeData := info.NodeData
 	fieldInfo := nodeData.FieldInfo
 	edgeInfo := nodeData.EdgeInfo
@@ -495,7 +496,9 @@ func (s *Schema) addEdgesFromFields(info *NodeDataInfo) {
 	for _, f := range fieldInfo.Fields {
 		fkeyInfo := f.ForeignKeyInfo()
 		if fkeyInfo != nil {
-			s.addForeignKeyEdges(nodeData, fieldInfo, edgeInfo, f, fkeyInfo)
+			if err := s.addForeignKeyEdges(nodeData, fieldInfo, edgeInfo, f, fkeyInfo); err != nil {
+				return err
+			}
 		}
 
 		fieldEdgeInfo := f.FieldEdgeInfo()
@@ -503,6 +506,7 @@ func (s *Schema) addEdgesFromFields(info *NodeDataInfo) {
 			s.addFieldEdge(edgeInfo, f)
 		}
 	}
+	return nil
 }
 
 func (s *Schema) addForeignKeyEdges(
@@ -511,23 +515,23 @@ func (s *Schema) addForeignKeyEdges(
 	edgeInfo *edge.EdgeInfo,
 	f *field.Field,
 	fkeyInfo *field.ForeignKeyInfo,
-) {
+) error {
 	foreignInfo, ok := s.Nodes[fkeyInfo.Config]
 	if !ok {
 		match := structNameRegex.FindStringSubmatch(fkeyInfo.Config)
 		if len(match) != 2 {
-			panic("invalid config name")
+			return fmt.Errorf("invalid config name %s", fkeyInfo.Config)
 		}
 		// enum, that's ok. nothing to do here
 		_, ok := s.Enums[match[1]]
 		if ok {
-			return
+			return nil
 		}
-		panic(fmt.Errorf("could not find the EntConfig codegen info for %s", fkeyInfo.Config))
+		return fmt.Errorf("could not find the EntConfig codegen info for %s", fkeyInfo.Config)
 	}
 
 	if f := foreignInfo.NodeData.GetFieldByName(fkeyInfo.Field); f == nil {
-		panic(fmt.Errorf("could not find field %s by name", fkeyInfo.Field))
+		return fmt.Errorf("could not find field %s by name", fkeyInfo.Field)
 	}
 
 	// add a field edge on current config so we can load underlying user
@@ -537,6 +541,7 @@ func (s *Schema) addForeignKeyEdges(
 	// TODO need to make sure this is not nil if no fields
 	foreignEdgeInfo := foreignInfo.NodeData.EdgeInfo
 	f.AddForeignKeyEdgeToInverseEdgeInfo(foreignEdgeInfo, nodeData.Node)
+	return nil
 }
 
 func (s *Schema) addFieldEdge(
@@ -550,7 +555,7 @@ func (s *Schema) addFieldEdge(
 	f.AddFieldEdgeToEdgeInfo(edgeInfo)
 }
 
-func (s *Schema) addInverseAssocEdges(info *NodeDataInfo) {
+func (s *Schema) addInverseAssocEdges(info *NodeDataInfo) error {
 	nodeData := info.NodeData
 	edgeInfo := nodeData.EdgeInfo
 
@@ -561,17 +566,18 @@ func (s *Schema) addInverseAssocEdges(info *NodeDataInfo) {
 		configName := assocEdge.NodeInfo.EntConfigName
 		inverseInfo, ok := s.Nodes[configName]
 		if !ok {
-			panic(fmt.Errorf("could not find the EntConfig codegen info for %s", configName))
+			return fmt.Errorf("could not find the EntConfig codegen info for %s", configName)
 		}
 
 		inverseEdgeInfo := inverseInfo.NodeData.EdgeInfo
 
 		assocEdge.AddInverseEdge(inverseEdgeInfo)
 	}
+	return nil
 }
 
 // this seems like go only?
-func (s *Schema) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdgeData) {
+func (s *Schema) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdgeData) error {
 	nodeData := info.NodeData
 
 	nodeData.addConstInfo(
@@ -630,7 +636,9 @@ func (s *Schema) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdgeDat
 			}
 
 			if inverseConstValue != "" {
-				util.Die(newEdge.InverseEdgeType.Scan(inverseConstValue))
+				if err := newEdge.InverseEdgeType.Scan(inverseConstValue); err != nil {
+					return err
+				}
 			}
 
 			edgeData.addNewEdge(newEdge)
@@ -638,7 +646,9 @@ func (s *Schema) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdgeDat
 
 		if newInverseEdge {
 			ns := sql.NullString{}
-			util.Die(ns.Scan(constValue))
+			if err := ns.Scan(constValue); err != nil {
+				return err
+			}
 
 			// add inverse edge to list of new edges
 			edgeData.addNewEdge(&ent.AssocEdgeData{
@@ -652,13 +662,16 @@ func (s *Schema) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdgeDat
 			// if the inverse edge already existed in the db, we need to update that edge to let it know of its new inverse
 			if !isNewEdge {
 				// potential improvement: we can do it automatically in addNewEdge
-				edgeData.updateInverseEdgeTypeForEdge(
-					constName, inverseConstValue)
+				if err := edgeData.updateInverseEdgeTypeForEdge(
+					constName, inverseConstValue); err != nil {
+					return err
+				}
 			}
 		}
 
 		s.addNewEdgeType(nodeData, constName, constValue, assocEdge)
 	}
+	return nil
 }
 
 func (s *Schema) addActionFields(info *NodeDataInfo) {
@@ -708,31 +721,30 @@ func (s *Schema) addActionFields(info *NodeDataInfo) {
 	}
 }
 
-func (s *Schema) processConstraints(nodeData *NodeData) {
-	// TODO errors instead of panicing
+func (s *Schema) processConstraints(nodeData *NodeData) error {
 
 	// verify constraints are correct
 	for _, constraint := range nodeData.Constraints {
 		switch constraint.Type {
 		case input.ForeignKeyConstraint:
 			if constraint.ForeignKey == nil {
-				panic("ForeignKey cannot be nil when type is ForeignKey")
+				return errors.New("ForeignKey cannot be nil when type is ForeignKey")
 			}
 			if len(constraint.Columns) != len(constraint.ForeignKey.Columns) {
-				panic("Foreign Key column length should be equal to the length of source columns")
+				return errors.New("Foreign Key column length should be equal to the length of source columns")
 			}
 
 		case input.CheckConstraint:
 			if constraint.Condition == "" {
-				panic("Condition is required when constraint type is Check")
+				return errors.New("Condition is required when constraint type is Check")
 			}
 		}
 
 		if constraint.Condition != "" && constraint.Type != input.CheckConstraint {
-			panic("Condition can only be set when constraint is check type")
+			return errors.New("Condition can only be set when constraint is check type")
 		}
 		if constraint.ForeignKey != nil && constraint.Type != input.ForeignKeyConstraint {
-			panic("ForeignKey can only be set when constraint is ForeignKey type")
+			return errors.New("ForeignKey can only be set when constraint is ForeignKey type")
 		}
 	}
 
@@ -765,15 +777,15 @@ func (s *Schema) processConstraints(nodeData *NodeData) {
 			if foreignInfo == nil {
 				match := structNameRegex.FindStringSubmatch(fkey.Config)
 				if len(match) != 2 {
-					panic("invalid config name")
+					return fmt.Errorf("invalid config name %s", fkey.Config)
 				}
 				var ok bool
 				enumInfo, ok = s.Enums[match[1]]
 				if !ok {
-					panic(fmt.Errorf("invalid foreign key table %s", fkey.Config))
+					return fmt.Errorf("invalid foreign key table %s", fkey.Config)
 				}
 				if !enumInfo.LookupTableEnum() {
-					panic(fmt.Sprintf("trying to set a foreign key to non-enum lookup table %s", match[1]))
+					return fmt.Errorf("trying to set a foreign key to non-enum lookup table %s", match[1])
 				}
 			}
 			var foreignNodeData *NodeData
@@ -784,7 +796,7 @@ func (s *Schema) processConstraints(nodeData *NodeData) {
 			}
 			foreignField := foreignNodeData.FieldInfo.GetFieldByName(fkey.Field)
 			if foreignField == nil {
-				panic(fmt.Errorf("invalid foreign key field %s", fkey.Field))
+				return fmt.Errorf("invalid foreign key field %s", fkey.Field)
 			}
 			constraints = append(constraints, &input.Constraint{
 				Name:    base.GetFKeyName(nodeData.TableName, f.GetDbColName()),
@@ -805,6 +817,7 @@ func (s *Schema) processConstraints(nodeData *NodeData) {
 	// user defined constraints
 	constraints = append(constraints, nodeData.Constraints...)
 	nodeData.Constraints = constraints
+	return nil
 }
 
 func (s *Schema) addConstsFromEdgeGroups(nodeData *NodeData) {
@@ -894,4 +907,23 @@ func (s *Schema) addNewEdgeType(nodeData *NodeData, constName, constValue string
 			),
 		},
 	)
+}
+
+func (s *Schema) runDepgraph(info *NodeDataInfo) error {
+	return info.depgraph.Run(func(item interface{}) error {
+		execFn, ok := item.(func(*NodeDataInfo))
+		execFn2, ok2 := item.(func(*NodeDataInfo) error)
+
+		if !ok && !ok2 {
+			return fmt.Errorf("invalid function passed")
+		}
+		if ok {
+			execFn(info)
+			return nil
+		}
+		if ok2 {
+			return execFn2(info)
+		}
+		return nil
+	})
 }

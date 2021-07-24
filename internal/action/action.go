@@ -86,6 +86,11 @@ func parseActionsFromInput(nodeName string, action *input.Action, fieldInfo *fie
 			return nil, err
 		}
 
+		nonEntFields, err := getNonEntFieldsFromInput(nodeName, action, concreteAction)
+		if err != nil {
+			return nil, err
+		}
+
 		commonInfo := getCommonInfo(
 			nodeName,
 			concreteAction,
@@ -94,7 +99,7 @@ func parseActionsFromInput(nodeName string, action *input.Action, fieldInfo *fie
 			action.CustomInputName,
 			exposeToGraphQL,
 			fields,
-			getNonEntFieldsFromInput(nodeName, action, concreteAction),
+			nonEntFields,
 		)
 		return []Action{concreteAction.getAction(commonInfo)}, nil
 	}
@@ -238,34 +243,47 @@ func getFieldsForAction(fieldNames []string, fieldInfo *field.FieldInfo, typ con
 	return fields, nil
 }
 
-func getNonEntFieldsFromInput(nodeName string, action *input.Action, typ concreteNodeActionType) []*NonEntField {
+func getNonEntFieldsFromInput(nodeName string, action *input.Action, typ concreteNodeActionType) ([]*NonEntField, error) {
 	var fields []*NonEntField
 
 	inputName := getInputNameForNodeActionType(typ, nodeName, action.CustomInputName)
 
 	for _, field := range action.ActionOnlyFields {
+		typ, err := field.GetEntType(inputName)
+		if err != nil {
+			return nil, err
+		}
 		fields = append(fields, &NonEntField{
 			FieldName: field.Name,
-			FieldType: field.GetEntType(inputName),
+			FieldType: typ,
 			Nullable:  field.Nullable,
 		})
 	}
-	return fields
+	return fields, nil
 }
 
-func getNonEntFieldsFromAssocGroup(nodeName string, assocGroup *edge.AssociationEdgeGroup, action *edge.EdgeAction, typ concreteEdgeActionType) []*NonEntField {
+func getNonEntFieldsFromAssocGroup(
+	nodeName string,
+	assocGroup *edge.AssociationEdgeGroup,
+	action *edge.EdgeAction,
+	typ concreteEdgeActionType,
+) ([]*NonEntField, error) {
 	var fields []*NonEntField
 
 	inputName := getInputNameForEdgeActionType(typ, assocGroup, nodeName, "")
 
 	for _, field := range action.ActionOnlyFields {
+		typ, err := field.GetEntType(inputName)
+		if err != nil {
+			return nil, err
+		}
 		fields = append(fields, &NonEntField{
 			FieldName: field.Name,
-			FieldType: field.GetEntType(inputName),
+			FieldType: typ,
 			Nullable:  field.Nullable,
 		})
 	}
-	return fields
+	return fields, nil
 }
 
 func getEdgeActionType(actionStr string) concreteEdgeActionType {
@@ -309,10 +327,10 @@ func processEdgeActions(nodeName string, assocEdge *edge.AssociationEdge, lang b
 	return actions
 }
 
-func processEdgeGroupActions(nodeName string, assocGroup *edge.AssociationEdgeGroup, lang base.Language) []Action {
+func processEdgeGroupActions(nodeName string, assocGroup *edge.AssociationEdgeGroup, lang base.Language) ([]Action, error) {
 	edgeActions := assocGroup.EdgeActions
 	if len(edgeActions) == 0 {
-		return nil
+		return nil, nil
 	}
 	actions := make([]Action, len(edgeActions))
 
@@ -358,7 +376,10 @@ func processEdgeGroupActions(nodeName string, assocGroup *edge.AssociationEdgeGr
 			tsEnums = append(tsEnums, tsEnum)
 			gqlEnums = append(gqlEnums, gqlEnum)
 		}
-		nonEntFields := getNonEntFieldsFromAssocGroup(nodeName, assocGroup, edgeAction, typ)
+		nonEntFields, err := getNonEntFieldsFromAssocGroup(nodeName, assocGroup, edgeAction, typ)
+		if err != nil {
+			return nil, err
+		}
 		fields = append(fields, nonEntFields...)
 
 		commonInfo := getCommonInfoForGroupEdgeAction(nodeName,
@@ -374,7 +395,7 @@ func processEdgeGroupActions(nodeName string, assocGroup *edge.AssociationEdgeGr
 
 		actions[idx] = typ.getAction(commonInfo)
 	}
-	return actions
+	return actions, nil
 }
 
 // todo

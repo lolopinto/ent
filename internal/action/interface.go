@@ -366,7 +366,11 @@ func ParseFromInput(nodeName string, actions []*input.Action, fieldInfo *field.F
 		}
 
 		for _, assocGroup := range edgeInfo.AssocGroups {
-			actionInfo.addActions(processEdgeGroupActions(nodeName, assocGroup, lang)...)
+			actions, err := processEdgeGroupActions(nodeName, assocGroup, lang)
+			if err != nil {
+				return nil, err
+			}
+			actionInfo.addActions(actions...)
 		}
 	}
 

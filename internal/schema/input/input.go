@@ -117,63 +117,63 @@ type PolymorphicOptions struct {
 	HideFromInverseGraphQL bool     `json:"hideFromInverseGraphQL"`
 }
 
-func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) enttype.TSType {
+func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.TSType, error) {
 	switch typ.DBType {
 	case UUID:
 		if nullable {
-			return &enttype.NullableIDType{}
+			return &enttype.NullableIDType{}, nil
 		}
-		return &enttype.IDType{}
+		return &enttype.IDType{}, nil
 	case Int64ID:
-		panic("unsupported type")
-		return &enttype.IntegerType{}
+		return nil, fmt.Errorf("unsupported Int64ID type")
+		//		return &enttype.IntegerType{}, nil
 	case Boolean:
 		if nullable {
-			return &enttype.NullableBoolType{}
+			return &enttype.NullableBoolType{}, nil
 		}
-		return &enttype.BoolType{}
+		return &enttype.BoolType{}, nil
 	case Int:
 		if nullable {
-			return &enttype.NullableIntegerType{}
+			return &enttype.NullableIntegerType{}, nil
 		}
-		return &enttype.IntegerType{}
+		return &enttype.IntegerType{}, nil
 	case Float:
 		if nullable {
-			return &enttype.NullableFloatType{}
+			return &enttype.NullableFloatType{}, nil
 		}
-		return &enttype.FloatType{}
+		return &enttype.FloatType{}, nil
 	case String:
 		if nullable {
-			return &enttype.NullableStringType{}
+			return &enttype.NullableStringType{}, nil
 		}
-		return &enttype.StringType{}
+		return &enttype.StringType{}, nil
 	case Timestamp:
 		if nullable {
-			return &enttype.NullableTimestampType{}
+			return &enttype.NullableTimestampType{}, nil
 		}
-		return &enttype.TimestampType{}
+		return &enttype.TimestampType{}, nil
 	case Timestamptz:
 		if nullable {
-			return &enttype.NullableTimestamptzType{}
+			return &enttype.NullableTimestamptzType{}, nil
 		}
-		return &enttype.TimestamptzType{}
+		return &enttype.TimestamptzType{}, nil
 	case Time:
 		if nullable {
-			return &enttype.NullableTimeType{}
+			return &enttype.NullableTimeType{}, nil
 		}
-		return &enttype.TimeType{}
+		return &enttype.TimeType{}, nil
 	case Timetz:
 		if nullable {
-			return &enttype.NullableTimetzType{}
+			return &enttype.NullableTimetzType{}, nil
 		}
-		return &enttype.TimetzType{}
+		return &enttype.TimetzType{}, nil
 	case Date:
 		if nullable {
-			return &enttype.NullableDateType{}
+			return &enttype.NullableDateType{}, nil
 		}
-		return &enttype.DateType{}
+		return &enttype.DateType{}, nil
 	case JSON:
-		return &enttype.RawJSONType{}
+		return &enttype.RawJSONType{}, nil
 
 	case StringEnum, Enum:
 		tsType := typ.Type
@@ -183,10 +183,10 @@ func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) enttype.T
 			graphqlType = foreignKey.Schema
 		}
 		if typ.Type == "" {
-			panic("enum type name is required")
+			return nil, fmt.Errorf("enum type name is required")
 		}
 		if typ.GraphQLType == "" {
-			panic("enum graphql name is required")
+			return nil, fmt.Errorf("enum graphql name is required")
 		}
 		if nullable {
 			return &enttype.NullableEnumType{
@@ -194,33 +194,35 @@ func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) enttype.T
 				Type:        tsType,
 				GraphQLType: graphqlType,
 				Values:      typ.Values,
-			}
+			}, nil
 		}
 		return &enttype.EnumType{
 			EnumDBType:  typ.DBType == Enum,
 			Type:        tsType,
 			GraphQLType: graphqlType,
 			Values:      typ.Values,
-		}
+		}, nil
 	}
-	panic(fmt.Sprintf("unsupported type %s", typ.DBType))
-
+	return nil, fmt.Errorf("unsupported type %s", typ.DBType)
 }
 
-func (f *Field) GetEntType() enttype.TSType {
+func (f *Field) GetEntType() (enttype.TSType, error) {
 	if f.Type.DBType == List {
 		if f.Type.ListElemType == nil {
-			panic("list elem type for list is nil")
+			return nil, fmt.Errorf("list elem type for list is nil")
 		}
-		elemType := getTypeFor(f.Type.ListElemType, false, nil)
+		elemType, err := getTypeFor(f.Type.ListElemType, false, nil)
+		if err != nil {
+			return nil, err
+		}
 		if f.Nullable {
 			return &enttype.NullableArrayListType{
 				ElemType: elemType,
-			}
+			}, nil
 		}
 		return &enttype.ArrayListType{
 			ElemType: elemType,
-		}
+		}, nil
 	} else {
 		return getTypeFor(f.Type, f.Nullable, f.ForeignKey)
 	}
@@ -332,49 +334,52 @@ func (f *ActionField) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (f *ActionField) GetEntType(inputName string) enttype.TSGraphQLType {
+func (f *ActionField) GetEntType(inputName string) (enttype.TSGraphQLType, error) {
 	if !f.list {
 		return f.getEntTypeHelper(inputName, f.Nullable)
 	}
-	typ := f.getEntTypeHelper(inputName, f.nullableContents)
+	typ, err := f.getEntTypeHelper(inputName, f.nullableContents)
+	if err != nil {
+		return nil, err
+	}
 	return &enttype.ListWrapperType{
 		Type:     typ,
 		Nullable: f.Nullable,
-	}
+	}, nil
 }
 
-func (f *ActionField) getEntTypeHelper(inputName string, nullable bool) enttype.TSGraphQLType {
+func (f *ActionField) getEntTypeHelper(inputName string, nullable bool) (enttype.TSGraphQLType, error) {
 	switch f.Type {
 	case ActionTypeID:
 		if nullable {
-			return &enttype.NullableIDType{}
+			return &enttype.NullableIDType{}, nil
 		}
-		return &enttype.IDType{}
+		return &enttype.IDType{}, nil
 	case ActionTypeBoolean:
 		if nullable {
-			return &enttype.NullableBoolType{}
+			return &enttype.NullableBoolType{}, nil
 		}
-		return &enttype.BoolType{}
+		return &enttype.BoolType{}, nil
 	case ActionTypeInt:
 		if nullable {
-			return &enttype.NullableIntegerType{}
+			return &enttype.NullableIntegerType{}, nil
 		}
-		return &enttype.IntegerType{}
+		return &enttype.IntegerType{}, nil
 	case ActionTypeFloat:
 		if nullable {
-			return &enttype.NullableFloatType{}
+			return &enttype.NullableFloatType{}, nil
 		}
-		return &enttype.FloatType{}
+		return &enttype.FloatType{}, nil
 	case ActionTypeString:
 		if nullable {
-			return &enttype.NullableStringType{}
+			return &enttype.NullableStringType{}, nil
 		}
-		return &enttype.StringType{}
+		return &enttype.StringType{}, nil
 	case ActionTypeTime:
 		if nullable {
-			return &enttype.NullableTimestampType{}
+			return &enttype.NullableTimestampType{}, nil
 		}
-		return &enttype.TimestampType{}
+		return &enttype.TimestampType{}, nil
 	case ActionTypeObject:
 		tsType := fmt.Sprintf("custom%sInput", strcase.ToCamel(inflection.Singular(f.Name)))
 		gqlType := fmt.Sprintf("%s%s", strcase.ToCamel(inflection.Singular(f.Name)), strcase.ToCamel(inputName))
@@ -385,15 +390,15 @@ func (f *ActionField) getEntTypeHelper(inputName string, nullable bool) enttype.
 			typ.ActionName = f.ActionName
 			typ.GraphQLType = gqlType
 
-			return typ
+			return typ, nil
 		}
 		typ := &enttype.ObjectType{}
 		typ.TSType = tsType
 		typ.GraphQLType = gqlType
 		typ.ActionName = f.ActionName
-		return typ
+		return typ, nil
 	}
-	panic(fmt.Sprintf("unsupported type %s", f.Type))
+	return nil, fmt.Errorf("unsupported type %s", f.Type)
 }
 
 type ActionType string

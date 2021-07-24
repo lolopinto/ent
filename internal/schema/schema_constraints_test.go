@@ -37,6 +37,7 @@ func TestPrimaryKeyFieldConstraint(t *testing.T) {
 				Constraints: constraintsWithNodeConstraints("users"),
 			},
 		},
+		nil,
 	)
 }
 
@@ -98,6 +99,7 @@ func TestForeignKeyFieldConstraint(t *testing.T) {
 					}),
 			},
 		},
+		nil,
 	)
 }
 
@@ -136,6 +138,7 @@ func TestUniqueFieldConstraint(t *testing.T) {
 				),
 			},
 		},
+		nil,
 	)
 }
 
@@ -659,23 +662,29 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 	for key, tt := range testCases {
 		t.Run(key, func(t *testing.T) {
 
-			if tt.expectedErr != nil {
-				assert.PanicsWithValue(t, tt.expectedErr.Error(), func() {
-					testConstraints(t, tt.code, tt.expectedMap)
-				})
-			} else {
-				testConstraints(t, tt.code, tt.expectedMap)
-			}
+			testConstraints(t, tt.code, tt.expectedMap, tt.expectedErr)
+
 		})
 	}
 }
 
-func testConstraints(t *testing.T, code map[string]string, expectedMap map[string]*schema.NodeData) {
-	s := testhelper.ParseSchemaForTest(
+func testConstraints(
+	t *testing.T,
+	code map[string]string,
+	expectedMap map[string]*schema.NodeData,
+	expectedErr error,
+) {
+	s, err := testhelper.ParseSchemaForTestFull(
 		t,
 		code,
 		base.TypeScript,
 	)
+	if expectedErr != nil {
+		assert.Error(t, err)
+		assert.Equal(t, err.Error(), expectedErr.Error())
+	} else {
+		assert.Nil(t, err)
+	}
 
 	for k, expNodeData := range expectedMap {
 		info := s.Nodes[k+"Config"]
