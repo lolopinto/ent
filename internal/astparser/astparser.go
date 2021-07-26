@@ -6,6 +6,8 @@ import (
 	"strconv"
 
 	"go/token"
+
+	"github.com/lolopinto/ent/internal/util"
 )
 
 func GetLastReturnStmtExpr(fn *ast.FuncDecl) ast.Expr {
@@ -16,11 +18,11 @@ func GetLastReturnStmtExpr(fn *ast.FuncDecl) ast.Expr {
 	// not really a valid case but handle it anyways
 	returnStmt, ok := lastStmt.(*ast.ReturnStmt)
 	if !ok {
-		panic("last statement in function was not a return statement. ")
+		util.GoSchemaKill("last statement in function was not a return statement. ")
 	}
 
 	if len(returnStmt.Results) != 1 {
-		panic("invalid number or format of return statement")
+		util.GoSchemaKill("invalid number or format of return statement")
 	}
 
 	return GetLastExpr(returnStmt.Results)
@@ -53,7 +55,7 @@ func GetLastExpr(exprs []ast.Expr) ast.Expr {
 func GetExprToCompositeLit(expr ast.Expr) *ast.CompositeLit {
 	value, ok := expr.(*ast.CompositeLit)
 	if !ok {
-		panic("invalid value for Expr. Expr was not of type CompositeLit")
+		util.GoSchemaKill("invalid value for Expr. Expr was not of type CompositeLit")
 	}
 	return value
 }
@@ -61,7 +63,7 @@ func GetExprToCompositeLit(expr ast.Expr) *ast.CompositeLit {
 func GetExprToBasicLit(expr ast.Expr) *ast.BasicLit {
 	value, ok := expr.(*ast.BasicLit)
 	if !ok {
-		panic("invalid value for Expr. Expr was not of type BasicLit")
+		util.GoSchemaKill("invalid value for Expr. Expr was not of type BasicLit")
 	}
 	return value
 }
@@ -69,7 +71,7 @@ func GetExprToBasicLit(expr ast.Expr) *ast.BasicLit {
 func GetExprToSelectorExpr(expr ast.Expr) *ast.SelectorExpr {
 	value, ok := expr.(*ast.SelectorExpr)
 	if !ok {
-		panic("invalid value for Expr. Expr was not of type SelectorExpr")
+		util.GoSchemaKill("invalid value for Expr. Expr was not of type SelectorExpr")
 	}
 	return value
 }
@@ -77,7 +79,7 @@ func GetExprToSelectorExpr(expr ast.Expr) *ast.SelectorExpr {
 func GetExprToKeyValueExpr(expr ast.Expr) *ast.KeyValueExpr {
 	value, ok := expr.(*ast.KeyValueExpr)
 	if !ok {
-		panic("invalid value for Expr. Expr was not of type KeyValueExpr")
+		util.GoSchemaKill("invalid value for Expr. Expr was not of type KeyValueExpr")
 	}
 	return value
 }
@@ -85,7 +87,7 @@ func GetExprToKeyValueExpr(expr ast.Expr) *ast.KeyValueExpr {
 func GetExprToIdent(expr ast.Expr) *ast.Ident {
 	value, ok := expr.(*ast.Ident)
 	if !ok {
-		panic("invalid value for Expr. Expr was not of type Ident")
+		util.GoSchemaKill("invalid value for Expr. Expr was not of type Ident")
 	}
 	return value
 }
@@ -93,7 +95,7 @@ func GetExprToIdent(expr ast.Expr) *ast.Ident {
 func GetExprToUnaryExpr(expr ast.Expr) *ast.UnaryExpr {
 	value, ok := expr.(*ast.UnaryExpr)
 	if !ok {
-		panic("invalid value for Expr. Expr was not of type UnaryExpr")
+		util.GoSchemaKill("invalid value for Expr. Expr was not of type UnaryExpr")
 	}
 	return value
 }
@@ -144,11 +146,11 @@ func GetTypeNameFromExpr(expr ast.Expr) string {
 func GetUnderylingStringFromLiteralExpr(expr ast.Expr) string {
 	key, ok := expr.(*ast.BasicLit)
 	if !ok || key.Kind != token.STRING {
-		panic("invalid string literal in basic lit")
+		util.GoSchemaKill("invalid string literal in basic lit")
 	}
 	str, err := strconv.Unquote(key.Value)
 	if err != nil {
-		panic(fmt.Sprintf("%s is formatted weirdly as a string literal err %s", key.Value, err))
+		util.GoSchemaKill(fmt.Sprintf("%s is formatted weirdly as a string literal err %s", key.Value, err))
 	}
 	return str
 }

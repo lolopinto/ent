@@ -377,8 +377,8 @@ func (s *Schema) buildPostRunDepgraph(edgeData *assocEdgeData) *depgraph.Depgrap
 		return s.addNewConstsAndEdges(info, edgeData)
 	}, "LinkedEdges", "InverseEdges")
 
-	g.AddItem("ActionFields", func(info *NodeDataInfo) {
-		s.addActionFields(info)
+	g.AddItem("ActionFields", func(info *NodeDataInfo) error {
+		return s.addActionFields(info)
 	})
 	return g
 }
@@ -483,7 +483,9 @@ func (s *Schema) addLinkedEdges(info *NodeDataInfo) error {
 		if fEdge == nil {
 			return fmt.Errorf("couldn't find inverse edge with name %s", e.InverseEdgeName)
 		}
-		f.AddInverseEdge(fEdge)
+		if err := f.AddInverseEdge(fEdge); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -516,18 +518,15 @@ func (s *Schema) addForeignKeyEdges(
 	f *field.Field,
 	fkeyInfo *field.ForeignKeyInfo,
 ) error {
-	foreignInfo, ok := s.Nodes[fkeyInfo.Config]
+	// TODO s.Nodes still keyed by Config
+	foreignInfo, ok := s.Nodes[fkeyInfo.Schema+"Config"]
 	if !ok {
-		match := structNameRegex.FindStringSubmatch(fkeyInfo.Config)
-		if len(match) != 2 {
-			return fmt.Errorf("invalid config name %s", fkeyInfo.Config)
-		}
 		// enum, that's ok. nothing to do here
-		_, ok := s.Enums[match[1]]
+		_, ok := s.Enums[fkeyInfo.Schema]
 		if ok {
 			return nil
 		}
-		return fmt.Errorf("could not find the EntConfig codegen info for %s", fkeyInfo.Config)
+		return fmt.Errorf("could not find the EntConfig codegen info for %s", fkeyInfo.Schema)
 	}
 
 	if f := foreignInfo.NodeData.GetFieldByName(fkeyInfo.Field); f == nil {
@@ -536,12 +535,13 @@ func (s *Schema) addForeignKeyEdges(
 
 	// add a field edge on current config so we can load underlying user
 	// and return it in GraphQL appropriately
-	f.AddForeignKeyFieldEdgeToEdgeInfo(edgeInfo)
+	if err := f.AddForeignKeyFieldEdgeToEdgeInfo(edgeInfo); err != nil {
+		return err
+	}
 
 	// TODO need to make sure this is not nil if no fields
 	foreignEdgeInfo := foreignInfo.NodeData.EdgeInfo
-	f.AddForeignKeyEdgeToInverseEdgeInfo(foreignEdgeInfo, nodeData.Node)
-	return nil
+	return f.AddForeignKeyEdgeToInverseEdgeInfo(foreignEdgeInfo, nodeData.Node)
 }
 
 func (s *Schema) addFieldEdge(
@@ -674,7 +674,7 @@ func (s *Schema) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdgeDat
 	return nil
 }
 
-func (s *Schema) addActionFields(info *NodeDataInfo) {
+func (s *Schema) addActionFields(info *NodeDataInfo) error {
 	for _, a := range info.NodeData.ActionInfo.Actions {
 		for _, f := range a.GetNonEntFields() {
 			typ := f.FieldType
@@ -702,7 +702,11 @@ func (s *Schema) addActionFields(info *NodeDataInfo) {
 
 						f3 := f2
 						if action.IsRequiredField(a2, f2) {
-							f3 = f2.Clone(field.Required())
+							var err error
+							f3, err = f2.Clone(field.Required())
+							if err != nil {
+								return err
+							}
 						}
 						a.AddCustomField(t, f3)
 					}
@@ -719,6 +723,7 @@ func (s *Schema) addActionFields(info *NodeDataInfo) {
 
 		}
 	}
+	return nil
 }
 
 func (s *Schema) processConstraints(nodeData *NodeData) error {
@@ -773,19 +778,16 @@ func (s *Schema) processConstraints(nodeData *NodeData) error {
 		fkey := f.ForeignKeyInfo()
 		var enumInfo *EnumInfo
 		if fkey != nil {
-			foreignInfo := s.Nodes[fkey.Config]
+			// s.Nodes still keyed by Config :(
+			foreignInfo := s.Nodes[fkey.Schema+"Config"]
 			if foreignInfo == nil {
-				match := structNameRegex.FindStringSubmatch(fkey.Config)
-				if len(match) != 2 {
-					return fmt.Errorf("invalid config name %s", fkey.Config)
-				}
 				var ok bool
-				enumInfo, ok = s.Enums[match[1]]
+				enumInfo, ok = s.Enums[fkey.Schema]
 				if !ok {
-					return fmt.Errorf("invalid foreign key table %s", fkey.Config)
+					return fmt.Errorf("invalid foreign key table %s", fkey.Schema)
 				}
 				if !enumInfo.LookupTableEnum() {
-					return fmt.Errorf("trying to set a foreign key to non-enum lookup table %s", match[1])
+					return fmt.Errorf("trying to set a foreign key to non-enum lookup table %s", fkey.Schema)
 				}
 			}
 			var foreignNodeData *NodeData

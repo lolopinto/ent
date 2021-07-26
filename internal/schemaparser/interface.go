@@ -113,7 +113,7 @@ func (p *SourceSchemaParser) Cleanup() {
 func LoadPackageX(p Parser) *packages.Package {
 	pkg, err := LoadPackage(p)
 	if err != nil {
-		panic(err)
+		util.GoSchemaKill(err)
 	}
 	return pkg
 }
@@ -132,7 +132,7 @@ func LoadPackage(p Parser) (*packages.Package, error) {
 func LoadPackagesX(p Parser) []*packages.Package {
 	pkgs, err := LoadPackages(p)
 	if err != nil {
-		panic(err)
+		util.GoSchemaKill(err)
 	}
 	return pkgs
 }

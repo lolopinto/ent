@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/lolopinto/ent/internal/astparser"
+	"github.com/lolopinto/ent/internal/util"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -115,7 +116,7 @@ func (explorer *packageExplorer) gatherStructs(
 		// come back
 		t, ok := k.Obj.Decl.(*ast.TypeSpec)
 		if !ok {
-			panic("invalid typespec")
+			util.GoSchemaKill("invalid typespec")
 		}
 
 		s, ok := t.Type.(*ast.StructType)
@@ -147,10 +148,10 @@ func (explorer *packageExplorer) annotateFuncs(
 					if len(results.List) == 1 {
 						result, err := astparser.ParseFieldType(results.List[0])
 						if err != nil {
-							panic(err)
+							util.GoSchemaKill(err)
 						}
 						if result.PkgName != "" {
-							panic("do not currently support functions that return Types in a different package")
+							util.GoSchemaKill("do not currently support functions that return Types in a different package")
 						}
 
 						// if this is not one of the functions we care about, bye
@@ -162,7 +163,7 @@ func (explorer *packageExplorer) annotateFuncs(
 						retStmt := astparser.GetLastReturnStmtExpr(fn)
 						retResult, err := astparser.Parse(retStmt)
 						if err != nil {
-							panic(err)
+							util.GoSchemaKill(err)
 						}
 						// TODO validate that it's field.JSONTypeType
 						// right now we assume just JSON but will break if something else does this that's not expected
@@ -180,7 +181,7 @@ func (explorer *packageExplorer) annotateFuncs(
 
 				recv, err := astparser.ParseFieldType(fn.Recv.List[0])
 				if err != nil {
-					panic(err)
+					util.GoSchemaKill(err)
 				}
 
 				s, ok := parsedPkg.structMap[recv.IdentName]
@@ -213,7 +214,7 @@ func (explorer *packageExplorer) buildStruct(
 		// todo we need to get the imports and get full path etc
 		info, err := astparser.ParseFieldType(f)
 		if err != nil {
-			panic(err)
+			util.GoSchemaKill(err)
 		}
 
 		var depPkg *packages.Package
@@ -517,5 +518,7 @@ func getImportedPackageThatMatchesIdent(
 			return importedPkg
 		}
 	}
-	panic("couldn't find the right package for function. shouldn't get here")
+	util.GoSchemaKill("couldn't find the right package for function. shouldn't get here")
+	// won't get here
+	return nil
 }

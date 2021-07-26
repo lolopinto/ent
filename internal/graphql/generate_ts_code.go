@@ -1311,7 +1311,10 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 
 		// TODO this shouldn't be here but be somewhere else...
 		if f != nil {
-			fieldInfo.InvalidateFieldForGraphQL(f)
+			if err := fieldInfo.InvalidateFieldForGraphQL(f); err != nil {
+				// TODO move this validation up
+				panic(err)
+			}
 		}
 		addSingularEdge(edge, &fields, instance)
 	}

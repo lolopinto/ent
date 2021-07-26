@@ -12,6 +12,7 @@ import (
 	"github.com/lolopinto/ent/internal/parsehelper"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schemaparser"
+	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -425,7 +426,7 @@ func getTestGraphQLObject(typeName string, t *testing.T) *graphQLSchemaInfo {
 func getTestGraphQLObjectFromSchema(typeName string, schema *graphQLSchema, t *testing.T) *graphQLSchemaInfo {
 	s, ok := schema.Types[typeName]
 	if !ok {
-		panic(fmt.Errorf("couldn't get graphql object for %s object", typeName))
+		util.GoSchemaKill(fmt.Errorf("couldn't get graphql object for %s object", typeName))
 	}
 	return s
 }
@@ -438,7 +439,7 @@ func getTestGraphQLField(typeName, fieldName string, t *testing.T) *graphQLField
 func getTestGraphQLFieldFromObject(typeName, fieldName string, s *graphQLSchemaInfo, t *testing.T) *graphQLField {
 	f := s.getFieldByName(fieldName)
 	if f == nil {
-		panic(fmt.Errorf("couldn't get graphql field %s for %s object", fieldName, typeName))
+		util.GoSchemaKill(fmt.Errorf("couldn't get graphql field %s for %s object", fieldName, typeName))
 	}
 	return f
 }
@@ -463,7 +464,7 @@ func getTestGraphQLFieldEdge(typeName, edgeName string, t *testing.T) *graphqlFi
 	s := getTestGraphQLObject(typeName, t)
 	e := s.getFieldEdgeByName(edgeName)
 	if e == nil {
-		panic(fmt.Errorf("couldn't get graphql field edge %s for %s object", edgeName, typeName))
+		util.GoSchemaKill(fmt.Errorf("couldn't get graphql field edge %s for %s object", edgeName, typeName))
 	}
 	return e
 }
@@ -472,7 +473,7 @@ func getTestGraphqlPluralEdge(typeName, edgeName string, t *testing.T) *graphqlP
 	s := getTestGraphQLObject(typeName, t)
 	e := s.getPluralEdgeByName(edgeName)
 	if e == nil {
-		panic(fmt.Errorf("couldn't get graphql field edge %s for %s object", edgeName, typeName))
+		util.GoSchemaKill(fmt.Errorf("couldn't get graphql field edge %s for %s object", edgeName, typeName))
 	}
 	return e
 }

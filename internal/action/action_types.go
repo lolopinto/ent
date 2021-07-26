@@ -261,24 +261,24 @@ func (action *groupEdgeActionType) getOperation() ent.ActionOperation {
 
 var _ concreteEdgeActionType = &groupEdgeActionType{}
 
-func getActionTypeFromOperation(op ent.ActionOperation) actionType {
+func getActionTypeFromOperation(op ent.ActionOperation) (actionType, error) {
 	switch op {
 	case ent.CreateAction:
-		return &createActionType{}
+		return &createActionType{}, nil
 	case ent.EditAction:
-		return &editActionType{}
+		return &editActionType{}, nil
 	case ent.DeleteAction:
-		return &deleteActionType{}
+		return &deleteActionType{}, nil
 	case ent.MutationsAction:
-		return &mutationsActionType{}
+		return &mutationsActionType{}, nil
 	case ent.AddEdgeAction:
-		return &addEdgeActionType{}
+		return &addEdgeActionType{}, nil
 	case ent.RemoveEdgeAction:
-		return &removeEdgeActionType{}
+		return &removeEdgeActionType{}, nil
 	case ent.EdgeGroupAction:
-		return &groupEdgeActionType{}
+		return &groupEdgeActionType{}, nil
 	}
-	panic(fmt.Errorf("invalid action type passed %v", op))
+	return nil, fmt.Errorf("invalid action type passed %v", op)
 }
 
 func getActionNameForNodeActionType(typ concreteNodeActionType, nodeName, customName string) string {

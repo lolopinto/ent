@@ -84,7 +84,9 @@ func getKey(cfg *Config) string {
 		util.Die(err)
 		return path + parseFlags
 	}
-	panic("invalid configuration")
+	util.GoSchemaKill("invalid configuration")
+	// panics but need a return value
+	return ""
 }
 
 func ParseFilesForTest(t *testing.T, options ...func(*Config)) *FileConfigData {

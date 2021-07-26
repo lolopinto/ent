@@ -339,7 +339,7 @@ func TestForeignKey(t *testing.T) {
 			exposeToActionsByDefault: true,
 			dbColumn:                 true,
 			fkey: &ForeignKeyInfo{
-				Config: "UserConfig",
+				Schema: "User",
 				Field:  "ID",
 			},
 		},

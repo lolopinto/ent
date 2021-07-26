@@ -117,7 +117,7 @@ type PolymorphicOptions struct {
 	HideFromInverseGraphQL bool     `json:"hideFromInverseGraphQL"`
 }
 
-func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.TSType, error) {
+func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.TSGraphQLType, error) {
 	switch typ.DBType {
 	case UUID:
 		if nullable {
@@ -173,7 +173,8 @@ func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.
 		}
 		return &enttype.DateType{}, nil
 	case JSON:
-		return &enttype.RawJSONType{}, nil
+		return nil, fmt.Errorf("JSON type unsupported for now")
+		//		return &enttype.RawJSONType{}, nil
 
 	case StringEnum, Enum:
 		tsType := typ.Type
@@ -206,7 +207,7 @@ func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.
 	return nil, fmt.Errorf("unsupported type %s", typ.DBType)
 }
 
-func (f *Field) GetEntType() (enttype.TSType, error) {
+func (f *Field) GetEntType() (enttype.TSGraphQLType, error) {
 	if f.Type.DBType == List {
 		if f.Type.ListElemType == nil {
 			return nil, fmt.Errorf("list elem type for list is nil")

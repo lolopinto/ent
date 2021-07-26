@@ -43,7 +43,8 @@ func GetEntConfigFromExpr(expr ast.Expr) EntConfigInfo {
 			ConfigName:  entIdent.Name,
 		}
 	}
-	panic("Invalid value for Expr. Could not get EntConfig from Expr")
+	util.GoSchemaKill("Invalid value for Expr. Could not get EntConfig from Expr")
+	return EntConfigInfo{}
 }
 
 func getNodeNameFromEntConfig(configName string) (string, error) {

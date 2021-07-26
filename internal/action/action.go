@@ -20,24 +20,24 @@ import (
 )
 
 // copied to internal/edge/edge.go
-func getActionOperationFromTypeName(typeName string) ent.ActionOperation {
+func getActionOperationFromTypeName(typeName string) (ent.ActionOperation, error) {
 	switch typeName {
 	case "ent.CreateAction":
-		return ent.CreateAction
+		return ent.CreateAction, nil
 	case "ent.EditAction":
-		return ent.EditAction
+		return ent.EditAction, nil
 	case "ent.DeleteAction":
-		return ent.DeleteAction
+		return ent.DeleteAction, nil
 	case "ent.MutationsAction":
-		return ent.MutationsAction
+		return ent.MutationsAction, nil
 	case "ent.AddEdgeAction":
-		return ent.AddEdgeAction
+		return ent.AddEdgeAction, nil
 	case "ent.RemoveEdgeAction":
-		return ent.RemoveEdgeAction
+		return ent.RemoveEdgeAction, nil
 	case "ent.EdgeGroupAction":
-		return ent.EdgeGroupAction
+		return ent.EdgeGroupAction, nil
 	}
-	panic(fmt.Errorf("invalid action type passed %s", typeName))
+	return 0, fmt.Errorf("invalid action type passed %s", typeName)
 }
 
 func getInputAction(nodeName string, result *astparser.Result) (*input.Action, error) {
@@ -49,7 +49,11 @@ func getInputAction(nodeName string, result *astparser.Result) (*input.Action, e
 
 		switch elem.IdentName {
 		case "Action":
-			action.Operation = getActionOperationFromTypeName(elem.Value.GetTypeName())
+			var err error
+			action.Operation, err = getActionOperationFromTypeName(elem.Value.GetTypeName())
+			if err != nil {
+				return nil, err
+			}
 
 		case "Fields":
 			for _, child := range elem.Value.Elems {
@@ -76,7 +80,10 @@ func getInputAction(nodeName string, result *astparser.Result) (*input.Action, e
 func parseActionsFromInput(nodeName string, action *input.Action, fieldInfo *field.FieldInfo) ([]Action, error) {
 	// exposeToGraphQL is inverse of HideFromGraphQL
 	exposeToGraphQL := !action.HideFromGraphQL
-	typ := getActionTypeFromOperation(action.Operation)
+	typ, err := getActionTypeFromOperation(action.Operation)
+	if err != nil {
+		return nil, err
+	}
 
 	// create/edit/delete
 	concreteAction, ok := typ.(concreteNodeActionType)
@@ -230,11 +237,19 @@ func getFieldsForAction(fieldNames []string, fieldInfo *field.FieldInfo, typ con
 			// or field is now required in an edit mutation, by default, all fields are required...
 			if required {
 				// required
-				f2 = f.Clone(field.Required())
+				var err error
+				f2, err = f.Clone(field.Required())
+				if err != nil {
+					return nil, err
+				}
 			}
 			if optional {
 				// optional
-				f2 = f.Clone(field.Optional())
+				var err error
+				f2, err = f.Clone(field.Optional())
+				if err != nil {
+					return nil, err
+				}
 			}
 			fields = append(fields, f2)
 		}
@@ -286,7 +301,7 @@ func getNonEntFieldsFromAssocGroup(
 	return fields, nil
 }
 
-func getEdgeActionType(actionStr string) concreteEdgeActionType {
+func getEdgeActionType(actionStr string) (concreteEdgeActionType, error) {
 	var typ concreteEdgeActionType
 	switch actionStr {
 	case "ent.AddEdgeAction":
@@ -296,20 +311,23 @@ func getEdgeActionType(actionStr string) concreteEdgeActionType {
 	case "ent.EdgeGroupAction":
 		typ = &groupEdgeActionType{}
 	default:
-		panic(fmt.Errorf("invalid action type %s for edge action", actionStr))
+		return nil, fmt.Errorf("invalid action type %s for edge action", actionStr)
 	}
-	return typ
+	return typ, nil
 }
 
-func processEdgeActions(nodeName string, assocEdge *edge.AssociationEdge, lang base.Language) []Action {
+func processEdgeActions(nodeName string, assocEdge *edge.AssociationEdge, lang base.Language) ([]Action, error) {
 	edgeActions := assocEdge.EdgeActions
 	if len(edgeActions) == 0 {
-		return nil
+		return nil, nil
 	}
 	actions := make([]Action, len(edgeActions))
 
 	for idx, edgeAction := range edgeActions {
-		typ := getEdgeActionType(edgeAction.Action)
+		typ, err := getEdgeActionType(edgeAction.Action)
+		if err != nil {
+			return nil, err
+		}
 
 		actions[idx] = typ.getAction(
 			getCommonInfoForEdgeAction(
@@ -324,7 +342,7 @@ func processEdgeActions(nodeName string, assocEdge *edge.AssociationEdge, lang b
 			),
 		)
 	}
-	return actions
+	return actions, nil
 }
 
 func processEdgeGroupActions(nodeName string, assocGroup *edge.AssociationEdgeGroup, lang base.Language) ([]Action, error) {
@@ -335,7 +353,10 @@ func processEdgeGroupActions(nodeName string, assocGroup *edge.AssociationEdgeGr
 	actions := make([]Action, len(edgeActions))
 
 	for idx, edgeAction := range edgeActions {
-		typ := getEdgeActionType(edgeAction.Action)
+		typ, err := getEdgeActionType(edgeAction.Action)
+		if err != nil {
+			return nil, err
+		}
 
 		var tsEnums []*enum.Enum
 		var gqlEnums []*enum.GQLEnum

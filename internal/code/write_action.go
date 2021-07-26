@@ -97,16 +97,16 @@ func getActionArgsFromContextToViewerMethod(action action.Action) string {
 	return strings.Join(args, ", ")
 }
 
-func getWriteOperation(action action.Action) string {
+func getWriteOperation(action action.Action) (string, error) {
 	switch action.GetOperation() {
 	case ent.CreateAction:
-		return "ent.InsertOperation"
+		return "ent.InsertOperation", nil
 	case ent.EditAction, ent.AddEdgeAction, ent.RemoveEdgeAction, ent.EdgeGroupAction:
-		return "ent.EditOperation"
+		return "ent.EditOperation", nil
 	case ent.DeleteAction:
-		return "ent.DeleteOperation"
+		return "ent.DeleteOperation", nil
 	}
-	panic(fmt.Sprintf("invalid action %s not a supported type", action.GetActionName()))
+	return "", fmt.Errorf("invalid action %s not a supported type", action.GetActionName())
 }
 
 func getSaveActionType(action action.Action) string {

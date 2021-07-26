@@ -108,15 +108,14 @@ func (info *ActionInfo) GetByName(name string) Action {
 	return info.actionMap[name]
 }
 
-func (info *ActionInfo) addActions(actions ...Action) {
+func (info *ActionInfo) addActions(actions ...Action) error {
 	for _, action := range actions {
 		info.Actions = append(info.Actions, action)
 		actionName := action.GetActionName()
 		_, ok := info.actionMap[actionName]
 		if ok {
-			panic(
-				fmt.Errorf("action with name %s already exists. cannot have multiple actions with the same name", actionName),
-			)
+			return fmt.Errorf("action with name %s already exists. cannot have multiple actions with the same name", actionName)
+
 		}
 		info.actionMap[actionName] = action
 
@@ -126,12 +125,12 @@ func (info *ActionInfo) addActions(actions ...Action) {
 		graphQLActionName := action.GetGraphQLName()
 		_, ok = info.graphQLActionMap[graphQLActionName]
 		if ok {
-			panic(
-				fmt.Errorf("graphql action with name %s already exists. cannot have multiple actions with the same name", graphQLActionName),
-			)
+			return fmt.Errorf("graphql action with name %s already exists. cannot have multiple actions with the same name", graphQLActionName)
+
 		}
 		info.graphQLActionMap[graphQLActionName] = action
 	}
+	return nil
 }
 
 type commonActionInfo struct {
@@ -357,12 +356,20 @@ func ParseFromInput(nodeName string, actions []*input.Action, fieldInfo *field.F
 		if err != nil {
 			return nil, err
 		}
-		actionInfo.addActions(actions...)
+		if err := actionInfo.addActions(actions...); err != nil {
+			return nil, err
+		}
 	}
 
 	if edgeInfo != nil {
 		for _, assocEdge := range edgeInfo.Associations {
-			actionInfo.addActions(processEdgeActions(nodeName, assocEdge, lang)...)
+			actions, err := processEdgeActions(nodeName, assocEdge, lang)
+			if err != nil {
+				return nil, err
+			}
+			if err := actionInfo.addActions(actions...); err != nil {
+				return nil, err
+			}
 		}
 
 		for _, assocGroup := range edgeInfo.AssocGroups {
@@ -370,7 +377,9 @@ func ParseFromInput(nodeName string, actions []*input.Action, fieldInfo *field.F
 			if err != nil {
 				return nil, err
 			}
-			actionInfo.addActions(actions...)
+			if err := actionInfo.addActions(actions...); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -396,15 +405,15 @@ type FieldActionTemplateInfo struct {
 	Field                    *field.Field
 }
 
-func GetActionMethodName(action Action) string {
+func GetActionMethodName(action Action) (string, error) {
 	r := regexp.MustCompile(`(\w+)Action`)
 
 	// TODO need to verify that any name ends with Action or EntAction.
 	match := r.FindStringSubmatch(action.GetActionName())
 	if len(match) != 2 {
-		panic("invalid action name which should have been caught in validation. action names should end with Action or EntAction")
+		return "", fmt.Errorf("invalid action name which should have been caught in validation. action names should end with Action or EntAction")
 	}
-	return match[1]
+	return match[1], nil
 }
 
 func GetFields(action Action) []FieldActionTemplateInfo {

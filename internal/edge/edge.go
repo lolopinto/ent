@@ -67,9 +67,9 @@ func (e *EdgeInfo) HasAssociationEdges() bool {
 	return len(e.Associations) > 0
 }
 
-func (e *EdgeInfo) addEdge(edge Edge) {
+func (e *EdgeInfo) addEdge(edge Edge) error {
 	if e.keys[edge.GetEdgeName()] {
-		panic(fmt.Errorf("tried to add a new edge named %s to node %s when name already taken", edge.GetEdgeName(), e.SourcePackageName))
+		return fmt.Errorf("tried to add a new edge named %s to node %s when name already taken", edge.GetEdgeName(), e.SourcePackageName)
 	}
 	e.keys[edge.GetEdgeName()] = true
 
@@ -77,7 +77,7 @@ func (e *EdgeInfo) addEdge(edge Edge) {
 	if ok {
 		e.FieldEdges = append(e.FieldEdges, fieldEdge)
 		e.fieldEdgeMap[fieldEdge.EdgeName] = fieldEdge
-		return
+		return nil
 	}
 	assocEdge, ok := edge.(*AssociationEdge)
 	if ok {
@@ -86,6 +86,7 @@ func (e *EdgeInfo) addEdge(edge Edge) {
 	}
 
 	// other edge types are handled separately
+	return nil
 }
 
 // this is not an edge so doesn't implement Edge interface
@@ -137,12 +138,12 @@ func (e *EdgeInfo) GetAssociationEdgeGroupByStatusName(groupStatusName string) *
 	return e.assocGroupsMap[groupStatusName]
 }
 
-func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(fieldName, configName string, nullable bool) {
-	e.addFieldEdgeFromInfo(fieldName, configName, "", nil, nullable)
+func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(fieldName, configName string, nullable bool) error {
+	return e.addFieldEdgeFromInfo(fieldName, configName, "", nil, nullable)
 }
 
-func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo *base.FieldEdgeInfo, nullable bool) {
-	e.addFieldEdgeFromInfo(fieldName, fieldEdgeInfo.Config, fieldEdgeInfo.EdgeName, fieldEdgeInfo.Polymorphic, nullable)
+func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo *base.FieldEdgeInfo, nullable bool) error {
+	return e.addFieldEdgeFromInfo(fieldName, fieldEdgeInfo.Schema, fieldEdgeInfo.EdgeName, fieldEdgeInfo.Polymorphic, nullable)
 }
 
 func (e *EdgeInfo) GetConnectionEdges() []ConnectionEdge {
@@ -189,10 +190,10 @@ func (e *EdgeInfo) HasConnectionEdges() bool {
 	return len(e.Associations) > 0 || len(e.indexedEdgeQueriesMap) > 0
 }
 
-func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName string, polymorphic *base.PolymorphicOptions, nullable bool) {
+func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName string, polymorphic *base.PolymorphicOptions, nullable bool) error {
 	if !strings.HasSuffix(fieldName, "ID") {
 		// TODO make this more flexible...
-		panic(fmt.Sprintf("expected field name to end with ID. FieldName was %s", fieldName))
+		return fmt.Errorf("expected field name to end with ID. FieldName was %s", fieldName)
 	}
 	trim := strings.TrimSuffix(fieldName, "ID")
 	if trim == "" {
@@ -221,10 +222,10 @@ func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName s
 		Polymorphic:     polymorphic,
 	}
 
-	e.addEdge(edge)
+	return e.addEdge(edge)
 }
 
-func (e *EdgeInfo) AddEdgeFromForeignKeyIndex(dbColName, edgeName, nodeName string) {
+func (e *EdgeInfo) AddEdgeFromForeignKeyIndex(dbColName, edgeName, nodeName string) error {
 	edge := &ForeignKeyEdge{
 		SourceNodeName: e.SourceNodeName,
 		destinationEdge: destinationEdge{
@@ -235,14 +236,14 @@ func (e *EdgeInfo) AddEdgeFromForeignKeyIndex(dbColName, edgeName, nodeName stri
 			quotedDbColName: dbColName,
 		},
 	}
-	e.addEdge(edge)
 	e.indexedEdgeQueriesMap[edgeName] = edge
 	e.destinationEdgesMap[edgeName] = edge
 	e.IndexedEdgeQueries = append(e.IndexedEdgeQueries, edge)
 	e.DestinationEdges = append(e.DestinationEdges, edge)
+	return e.addEdge(edge)
 }
 
-func (e *EdgeInfo) AddIndexedEdgeFromSource(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions) {
+func (e *EdgeInfo) AddIndexedEdgeFromSource(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions) error {
 	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
 	edge := &IndexedEdge{
 		tsEdgeName: tsEdgeName,
@@ -258,13 +259,13 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(tsFieldName, quotedDBColName, nodeNa
 	if polymorphic.HideFromInverseGraphQL {
 		edge._HideFromGraphQL = true
 	}
-	e.addEdge(edge)
 	edgeName := edge.GetEdgeName()
 	e.indexedEdgeQueriesMap[edgeName] = edge
 	e.IndexedEdgeQueries = append(e.IndexedEdgeQueries, edge)
+	return e.addEdge(edge)
 }
 
-func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) {
+func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) error {
 	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
 	edge := &IndexedEdge{
 		tsEdgeName: tsEdgeName,
@@ -281,10 +282,10 @@ func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(tsFieldName, quotedD
 	if polymorphic.HideFromInverseGraphQL {
 		edge._HideFromGraphQL = true
 	}
-	e.addEdge(edge)
 	edgeName := edge.GetEdgeName()
 	e.destinationEdgesMap[edgeName] = edge
 	e.DestinationEdges = append(e.DestinationEdges, edge)
+	return e.addEdge(edge)
 }
 
 // ActionableEdge indicates an edge that can be used in an action.

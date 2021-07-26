@@ -89,10 +89,12 @@ func TestEdgeActions(t *testing.T) {
 			)
 		}
 
+		name, err := action.GetActionMethodName(a)
+		assert.Nil(t, err)
 		assert.Equal(
 			t,
 			tt.actionMethodName,
-			action.GetActionMethodName(a),
+			name,
 		)
 	}
 }
@@ -970,7 +972,9 @@ func verifyFields(t *testing.T, fields []*field.Field, expFields []expectedField
 		require.Equal(t, expField.name, field.FieldName, "fieldname %s not equal", field.FieldName)
 		require.Equal(t, expField.nullable, field.Nullable(), "fieldname %s not equal", field.FieldName)
 		require.Equal(t, expField.gqlType, field.GetGraphQLTypeForField(), "fieldname %s not equal", field.FieldName)
-		require.Equal(t, expField.tsType, field.TsBuilderType(), "fieldname %s not equal", field.FieldName)
+		typ, err := field.TsBuilderType()
+		require.Nil(t, err)
+		require.Equal(t, expField.tsType, typ, "fieldname %s not equal", field.FieldName)
 	}
 }
 

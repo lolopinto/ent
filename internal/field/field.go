@@ -2,6 +2,7 @@ package field
 
 import (
 	"errors"
+	"fmt"
 	"go/ast"
 	"go/types"
 	"sort"
@@ -134,15 +135,16 @@ func (fieldInfo *FieldInfo) GetFieldByName(fieldName string) *Field {
 	return fieldInfo.fieldMap[fieldName]
 }
 
-func (fieldInfo *FieldInfo) InvalidateFieldForGraphQL(f *Field) {
+func (fieldInfo *FieldInfo) InvalidateFieldForGraphQL(f *Field) error {
 	fByName := fieldInfo.GetFieldByName(f.FieldName)
 	if fByName == nil {
-		panic("invalid field passed to InvalidateFieldForGraphQL")
+		return fmt.Errorf("invalid field passed to InvalidateFieldForGraphQL")
 	}
 	if fByName != f {
-		panic("invalid field passed to InvalidateFieldForGraphQL")
+		return fmt.Errorf("invalid field passed to InvalidateFieldForGraphQL")
 	}
 	f.hideFromGraphQL = true
+	return nil
 }
 
 func (fieldInfo *FieldInfo) TopLevelFields() []*Field {
@@ -179,7 +181,7 @@ func (fieldInfo *FieldInfo) GetEditableFields() []*Field {
 
 // ForeignKeyInfo stores config and field name of the foreign key object
 type ForeignKeyInfo struct {
-	Config       string
+	Schema       string
 	Field        string
 	Name         string
 	DisableIndex bool
@@ -325,7 +327,7 @@ func parseFieldTag(fieldName string, tag *ast.BasicLit) map[string]string {
 		// struct tag format should be something like `graphql:"firstName" db:"first_name"`
 		tags := strings.Split(t.Value, "`")
 		if len(tags) != 3 {
-			panic("invalid struct tag format. handle better. struct tag not enclosed by backticks")
+			util.GoSchemaKill("invalid struct tag format. handle better. struct tag not enclosed by backticks")
 		}
 
 		// each tag is separated by a space
@@ -335,7 +337,7 @@ func parseFieldTag(fieldName string, tag *ast.BasicLit) map[string]string {
 			// get each tag and create a map
 			singleTag := strings.Split(tagInfo, ":")
 			if len(singleTag) != 2 {
-				panic("invalid struct tag format. handle better")
+				util.GoSchemaKill("invalid struct tag format. handle better")
 			}
 			tagsMap[singleTag[0]] = singleTag[1]
 		}

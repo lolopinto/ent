@@ -84,14 +84,14 @@ func getFuncMapForActionBase(imps *tsimport.Imports) template.FuncMap {
 	return m
 }
 
-func getWriteOperation(action action.Action) string {
+func getWriteOperation(action action.Action) (string, error) {
 	switch action.GetOperation() {
 	case ent.CreateAction:
-		return "Insert"
+		return "Insert", nil
 	case ent.EditAction, ent.AddEdgeAction, ent.RemoveEdgeAction, ent.EdgeGroupAction:
-		return "Edit"
+		return "Edit", nil
 	case ent.DeleteAction:
-		return "Delete"
+		return "Delete", nil
 	}
-	panic(fmt.Sprintf("invalid action %s not a supported type", action.GetActionName()))
+	return "", fmt.Errorf("invalid action %s not a supported type", action.GetActionName())
 }

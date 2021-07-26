@@ -11,7 +11,7 @@ import (
 // common things needed across edges/fields etc
 // only allowed to import input
 type FieldEdgeInfo struct {
-	Config      string
+	Schema      string
 	EdgeName    string
 	Name        string
 	Polymorphic *PolymorphicOptions
