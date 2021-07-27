@@ -291,37 +291,40 @@ func (s *dbSchema) createTableForNode(nodeData *schema.NodeData) *dbTable {
 	}
 }
 
-func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbColumn, constraints *[]dbConstraint) {
+func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbColumn, constraints *[]dbConstraint) error {
 	for _, constraint := range nodeData.Constraints {
 		switch constraint.Type {
 		case input.PrimaryKeyConstraint:
-			err := s.addPrimaryKeyConstraint(nodeData, constraint, columns, constraints)
-			util.Die(err)
-			break
+			if err := s.addPrimaryKeyConstraint(nodeData, constraint, columns, constraints); err != nil {
+				return err
+			}
 
 		case input.UniqueConstraint:
-			err := s.addUniqueConstraint(nodeData, constraint, columns, constraints)
-			util.Die(err)
-			break
+			if err := s.addUniqueConstraint(nodeData, constraint, columns, constraints); err != nil {
+				return err
+			}
 
 		case input.ForeignKeyConstraint:
-			err := s.addForeignKeyConstraint(nodeData, constraint, columns, constraints)
-			util.Die(err)
-			break
+			if err := s.addForeignKeyConstraint(nodeData, constraint, columns, constraints); err != nil {
+				return err
+			}
 
 		case input.CheckConstraint:
-			err := s.addCheckConstraint(nodeData, constraint, constraints)
-			util.Die(err)
+			if err := s.addCheckConstraint(nodeData, constraint, constraints); err != nil {
+				return err
+			}
 
 		default:
-			util.Die(fmt.Errorf("unsupported constraint type %s", constraint.Type))
+			return fmt.Errorf("unsupported constraint type %s", constraint.Type)
 		}
 	}
 
 	// let's just use exising constraint for this
 	for _, index := range nodeData.Indices {
 		cols, err := findConstraintDBColumns(index.Columns, columns)
-		util.Die(err)
+		if err != nil {
+			return err
+		}
 		constraint := &indexConstraint{
 			dbColumns: cols,
 			tableName: nodeData.GetTableName(),
@@ -330,6 +333,7 @@ func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbCo
 		}
 		*constraints = append(*constraints, constraint)
 	}
+	return nil
 }
 
 func (s *dbSchema) addTable(table *dbTable) {
@@ -338,7 +342,9 @@ func (s *dbSchema) addTable(table *dbTable) {
 }
 
 func (s *dbSchema) generateSchema() error {
-	s.generateShemaTables()
+	if err := s.generateShemaTables(); err != nil {
+		return err
+	}
 
 	if err := s.writeSchemaFile(); err != nil {
 		return err
@@ -347,7 +353,7 @@ func (s *dbSchema) generateSchema() error {
 	return s.generateDbSchema()
 }
 
-func (s *dbSchema) generateShemaTables() {
+func (s *dbSchema) generateShemaTables() error {
 
 	addedAtLeastOneTable := false
 	for _, info := range s.schema.Nodes {
@@ -368,7 +374,9 @@ func (s *dbSchema) generateShemaTables() {
 		table := s.getTableForNode(info.NodeData)
 		s.addTable(table)
 		// can process enum constraints immediately
-		s.processConstraints(info.NodeData, table.Columns, &table.Constraints)
+		if err := s.processConstraints(info.NodeData, table.Columns, &table.Constraints); err != nil {
+			return err
+		}
 	}
 
 	// process constraints after because easier to access tableMap for fkey constraints
@@ -377,7 +385,9 @@ func (s *dbSchema) generateShemaTables() {
 
 		table := s.tableMap[nodeData.TableName]
 
-		s.processConstraints(nodeData, table.Columns, &table.Constraints)
+		if err := s.processConstraints(nodeData, table.Columns, &table.Constraints); err != nil {
+			return err
+		}
 	}
 
 	if addedAtLeastOneTable {
@@ -388,6 +398,7 @@ func (s *dbSchema) generateShemaTables() {
 	sort.Slice(s.Tables, func(i, j int) bool {
 		return s.Tables[i].TableName < s.Tables[j].TableName
 	})
+	return nil
 }
 
 func runPythonCommand(pathToConfigs string, extraArgs ...string) error {

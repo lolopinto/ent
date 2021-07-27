@@ -107,7 +107,10 @@ func (p *SourceSchemaParser) GetConfig() (*packages.Config, string, error) {
 }
 
 func (p *SourceSchemaParser) Cleanup() {
-	util.Die(os.RemoveAll(p.tempDir))
+	err := os.RemoveAll(p.tempDir)
+	if err != nil {
+		util.GoSchemaKill(err)
+	}
 }
 
 func LoadPackageX(p Parser) *packages.Package {

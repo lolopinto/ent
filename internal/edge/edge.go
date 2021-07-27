@@ -202,10 +202,15 @@ func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName s
 
 	var edgeInfo commonEdgeInfo
 	if polymorphic == nil {
+		config, err := schemaparser.GetEntConfigFromEntConfig(configName)
+		if err != nil {
+			return err
+		}
+
 		// Edge name: User from UserID field
 		edgeInfo = getCommonEdgeInfo(
 			trim,
-			schemaparser.GetEntConfigFromEntConfig(configName),
+			config,
 		)
 	} else {
 		edgeInfo = commonEdgeInfo{
@@ -298,7 +303,7 @@ type ActionableEdge interface {
 type Edge interface {
 	GetEdgeName() string
 	GetNodeInfo() nodeinfo.NodeInfo
-	GetEntConfig() schemaparser.EntConfigInfo
+	GetEntConfig() *schemaparser.EntConfigInfo
 	GraphQLEdgeName() string
 	CamelCaseEdgeName() string
 	HideFromGraphQL() bool
@@ -330,7 +335,7 @@ type PluralEdge interface {
 
 type commonEdgeInfo struct {
 	EdgeName         string
-	entConfig        schemaparser.EntConfigInfo
+	entConfig        *schemaparser.EntConfigInfo
 	NodeInfo         nodeinfo.NodeInfo
 	_HideFromGraphQL bool
 }
@@ -343,7 +348,7 @@ func (e *commonEdgeInfo) GetNodeInfo() nodeinfo.NodeInfo {
 	return e.NodeInfo
 }
 
-func (e *commonEdgeInfo) GetEntConfig() schemaparser.EntConfigInfo {
+func (e *commonEdgeInfo) GetEntConfig() *schemaparser.EntConfigInfo {
 	return e.entConfig
 }
 
@@ -657,7 +662,12 @@ func (e *AssociationEdge) AddInverseEdge(inverseEdgeInfo *EdgeInfo) error {
 	})
 }
 
-func (e *AssociationEdge) CloneWithCommonInfo(configName string) *AssociationEdge {
+func (e *AssociationEdge) CloneWithCommonInfo(configName string) (*AssociationEdge, error) {
+	config, err := schemaparser.GetEntConfigFromEntConfig(configName)
+	if err != nil {
+		return nil, err
+	}
+
 	return &AssociationEdge{
 		EdgeConst:   e.EdgeConst,
 		Symmetric:   e.Symmetric,
@@ -667,9 +677,9 @@ func (e *AssociationEdge) CloneWithCommonInfo(configName string) *AssociationEdg
 		EdgeActions: e.EdgeActions,
 		commonEdgeInfo: getCommonEdgeInfo(
 			e.EdgeName,
-			schemaparser.GetEntConfigFromEntConfig(configName),
+			config,
 		),
-	}
+	}, nil
 }
 
 func (e *AssociationEdge) GetCountFactoryName() string {
@@ -917,7 +927,7 @@ func assocEdgeFromInput(packageName string, node *input.Node, edge *input.AssocE
 
 	// golang
 	if edge.EntConfig != nil {
-		assocEdge.commonEdgeInfo = getCommonEdgeInfo(edge.Name, *edge.EntConfig)
+		assocEdge.commonEdgeInfo = getCommonEdgeInfo(edge.Name, edge.EntConfig)
 	} else { // typescript
 		assocEdge.commonEdgeInfo = getCommonEdgeInfo(
 			edge.Name,
@@ -1059,7 +1069,11 @@ type parseEdgeGraph struct {
 func initDepgraph(result *astparser.Result, entConfig *schemaparser.EntConfigInfo) *parseEdgeGraph {
 	g := &parseEdgeGraph{result: result}
 	g.AddItem("EntConfig", func(elem *astparser.Result) {
-		*entConfig = schemaparser.GetEntConfigFromEntConfig(elem.IdentName)
+		g, err := schemaparser.GetEntConfigFromEntConfig(elem.IdentName)
+		if err != nil {
+			util.GoSchemaKill(err)
+		}
+		*entConfig = *g
 	})
 	return g
 }
@@ -1086,7 +1100,7 @@ func (g *parseEdgeGraph) RunLoop() error {
 	return g.RunQueuedUpItems()
 }
 
-func getCommonEdgeInfo(edgeName string, entConfig schemaparser.EntConfigInfo) commonEdgeInfo {
+func getCommonEdgeInfo(edgeName string, entConfig *schemaparser.EntConfigInfo) commonEdgeInfo {
 	return commonEdgeInfo{
 		EdgeName:  edgeName,
 		entConfig: entConfig,

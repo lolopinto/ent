@@ -248,7 +248,9 @@ func GetFieldInfoForStruct(s *ast.StructType, info *types.Info) (*FieldInfo, err
 			return ""
 		}
 		rawVal, err := strconv.Unquote(val)
-		util.Die(err)
+		if err != nil {
+			util.GoSchemaKill(err)
+		}
 		return rawVal
 	}
 

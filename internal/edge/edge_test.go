@@ -430,7 +430,7 @@ func testEdgeInfo(t *testing.T, edgeInfo *EdgeInfo, expAssocs int) {
 	}
 }
 
-func testEntConfig(t *testing.T, entConfig schemaparser.EntConfigInfo, expectedPackageName, expectedConfigName string) {
+func testEntConfig(t *testing.T, entConfig *schemaparser.EntConfigInfo, expectedPackageName, expectedConfigName string) {
 	// TODO PackageName is useless and we should fix it/remove it in this instance
 	if entConfig.PackageName != expectedPackageName {
 		t.Errorf(

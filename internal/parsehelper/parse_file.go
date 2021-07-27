@@ -81,7 +81,9 @@ func getKey(cfg *Config) string {
 	}
 	if cfg.rootPath != "" {
 		path, err := filepath.Abs(cfg.rootPath)
-		util.Die(err)
+		if err != nil {
+			util.GoSchemaKill(err)
+		}
 		return path + parseFlags
 	}
 	util.GoSchemaKill("invalid configuration")
@@ -110,7 +112,9 @@ func ParseFilesForTest(t *testing.T, options ...func(*Config)) *FileConfigData {
 		}
 	} else {
 		absRootPath, err := filepath.Abs(cfg.rootPath)
-		util.Die(err)
+		if err != nil {
+			util.GoSchemaKill(err)
+		}
 		p = &schemaparser.ConfigSchemaParser{
 			AbsRootPath: absRootPath,
 			//		DisableSyntax: cfg.disableSyntax,

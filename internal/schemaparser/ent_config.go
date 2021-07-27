@@ -2,49 +2,15 @@ package schemaparser
 
 import (
 	"fmt"
-	"go/ast"
 	"regexp"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
-	"github.com/lolopinto/ent/internal/astparser"
-	"github.com/lolopinto/ent/internal/util"
 )
 
 type EntConfigInfo struct {
 	PackageName string
 	ConfigName  string
-}
-
-func GetEntConfigFromExpr(expr ast.Expr) EntConfigInfo {
-	lit := astparser.GetExprToCompositeLit(expr)
-	// inlining getExprToSelectorExpr...
-	typ, ok := lit.Type.(*ast.SelectorExpr)
-	// This is when the EntConfig is of the form user.UserConfig
-	// don't actually support this case right now since all the configs are local
-	if ok {
-		entIdent := astparser.GetExprToIdent(typ.X)
-		return EntConfigInfo{
-			PackageName: entIdent.Name,
-			ConfigName:  typ.Sel.Name,
-		}
-	}
-
-	// inlining getExprToIdent...
-	// TODO figure out what we wanna do here
-	// This supports when the EntConfig is local to the module
-	entIdent, ok := lit.Type.(*ast.Ident)
-	if ok {
-		configName, err := getNodeNameFromEntConfig(entIdent.Name)
-		util.Die(err)
-		return EntConfigInfo{
-			// return a fake packageName e.g. user, contact to be used
-			// TODO fix places using this to return Node instead of fake packageName
-			PackageName: configName,
-			ConfigName:  entIdent.Name,
-		}
-	}
-	util.GoSchemaKill("Invalid value for Expr. Could not get EntConfig from Expr")
-	return EntConfigInfo{}
 }
 
 func getNodeNameFromEntConfig(configName string) (string, error) {
@@ -56,19 +22,24 @@ func getNodeNameFromEntConfig(configName string) (string, error) {
 	return "", fmt.Errorf("couldn't match EntConfig name")
 }
 
-func GetEntConfigFromName(packageName string) EntConfigInfo {
+func GetEntConfigFromName(packageName string) *EntConfigInfo {
 	name := strcase.ToCamel(packageName)
-	return EntConfigInfo{
+	spew.Dump(name)
+
+	return &EntConfigInfo{
 		PackageName: name,
 		ConfigName:  fmt.Sprintf("%sConfig", name),
 	}
 }
 
-func GetEntConfigFromEntConfig(configName string) EntConfigInfo {
+func GetEntConfigFromEntConfig(configName string) (*EntConfigInfo, error) {
 	nodeName, err := getNodeNameFromEntConfig(configName)
-	util.Die(err)
-	return EntConfigInfo{
+	if err != nil {
+		return nil, err
+	}
+	spew.Dump(nodeName, configName)
+	return &EntConfigInfo{
 		PackageName: nodeName,
 		ConfigName:  configName,
-	}
+	}, nil
 }

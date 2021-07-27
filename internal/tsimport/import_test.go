@@ -7,7 +7,6 @@ import (
 
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/tsimport"
-	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,19 +14,19 @@ import (
 type testCase struct {
 	fn            func(*tsimport.Imports)
 	expectedLines []string
-	panicInFn     bool
+	errorThrown   bool
 }
 
-func getLine(line string, paths... string) string {
+func getLine(line string, paths ...string) string {
 	path := ""
 	if len(paths) > 1 {
 		panic("only 1 path supported")
 	}
-	if len(paths) ==1 {
+	if len(paths) == 1 {
 		path = paths[0]
 	}
 	r := strings.NewReplacer(
-		"{path}", 
+		"{path}",
 		strconv.Quote(path),
 		"{root}",
 		strconv.Quote(codepath.Package),
@@ -38,49 +37,49 @@ func getLine(line string, paths... string) string {
 	return r.Replace(line)
 }
 
-func reserveImport(imps *tsimport.Imports, path string, exports ...string) {
+func reserveImport(imps *tsimport.Imports, path string, exports ...string) error {
 	_, err := imps.Reserve(path, exports...)
-	util.Die(err)
+	return err
 }
 
-func useImport(imps *tsimport.Imports, export string) {
+func useImport(imps *tsimport.Imports, export string) error {
 	_, err := imps.Use(export)
-	util.Die(err)
+	return err
 }
 
-func reserveDefaultImport(imps *tsimport.Imports, path, defaultExport string, exports ...string) {
+func reserveDefaultImport(imps *tsimport.Imports, path, defaultExport string, exports ...string) error {
 	_, err := imps.ReserveDefault(path, defaultExport, exports...)
-	util.Die(err)
+	return err
 }
 
-func reserveAllImport(imps *tsimport.Imports, path, as string) {
+func reserveAllImport(imps *tsimport.Imports, path, as string) error {
 	_, err := imps.ReserveAll(path, as)
-	util.Die(err)
+	return err
 }
 
-func exportAll(imps *tsimport.Imports, path string) {
+func exportAll(imps *tsimport.Imports, path string) error {
 	_, err := imps.ExportAll(path)
-	util.Die(err)
+	return err
 }
 
-func exportAllAs(imps *tsimport.Imports, path, as string) {
+func exportAllAs(imps *tsimport.Imports, path, as string) error {
 	_, err := imps.ExportAllAs(path, as)
-	util.Die(err)
+	return err
 }
 
-func export(imps *tsimport.Imports, path string, exports ...string) {
+func export(imps *tsimport.Imports, path string, exports ...string) error {
 	_, err := imps.Export(path, exports...)
-	util.Die(err)
+	return err
 }
 
 func TestImports(t *testing.T) {
 	testCases := map[string]testCase{
 		"reserve some": {
 			fn: func(imps *tsimport.Imports) {
-				reserveImport(imps, codepath.Package, "loadEnt", "loadEntX", "Viewer")
+				require.Nil(t, reserveImport(imps, codepath.Package, "loadEnt", "loadEntX", "Viewer"))
 
-				useImport(imps, "loadEnt")
-				useImport(imps, "loadEntX")
+				require.Nil(t, useImport(imps, "loadEnt"))
+				require.Nil(t, useImport(imps, "loadEntX"))
 			},
 			expectedLines: []string{
 				getLine("import {loadEnt, loadEntX} from {root};"),
@@ -88,15 +87,15 @@ func TestImports(t *testing.T) {
 		},
 		"nothing used": {
 			fn: func(imps *tsimport.Imports) {
-				reserveImport(imps, codepath.Package, "loadEnt", "loadEntX", "Viewer")
+				require.Nil(t, reserveImport(imps, codepath.Package, "loadEnt", "loadEntX", "Viewer"))
 			},
 			expectedLines: []string{},
 		},
 		"reserve default. only default used": {
 			fn: func(imps *tsimport.Imports) {
-				reserveDefaultImport(imps, "src/ent/user", "User", "createUser", "editUser")
+				require.Nil(t, reserveDefaultImport(imps, "src/ent/user", "User", "createUser", "editUser"))
 
-				useImport(imps, "User")
+				require.Nil(t, useImport(imps, "User"))
 			},
 			expectedLines: []string{
 				getLine("import User from {path};", "src/ent/user"),
@@ -104,10 +103,10 @@ func TestImports(t *testing.T) {
 		},
 		"reserve default. non-default used": {
 			fn: func(imps *tsimport.Imports) {
-				reserveDefaultImport(imps, "src/ent/user", "User", "createUser", "editUser")
+				require.Nil(t, reserveDefaultImport(imps, "src/ent/user", "User", "createUser", "editUser"))
 
-				useImport(imps, "createUser")
-				useImport(imps, "editUser")
+				require.Nil(t, useImport(imps, "createUser"))
+				require.Nil(t, useImport(imps, "editUser"))
 			},
 			expectedLines: []string{
 				getLine("import {createUser, editUser} from {path};", "src/ent/user"),
@@ -115,11 +114,11 @@ func TestImports(t *testing.T) {
 		},
 		"reserve default. mix used": {
 			fn: func(imps *tsimport.Imports) {
-				reserveDefaultImport(imps, "src/ent/user", "User", "createUser", "editUser")
+				require.Nil(t, reserveDefaultImport(imps, "src/ent/user", "User", "createUser", "editUser"))
 
-				useImport(imps, "createUser")
-				useImport(imps, "editUser")
-				useImport(imps, "User")
+				require.Nil(t, useImport(imps, "createUser"))
+				require.Nil(t, useImport(imps, "editUser"))
+				require.Nil(t, useImport(imps, "User"))
 			},
 			expectedLines: []string{
 				getLine("import User, {createUser, editUser} from {path};", "src/ent/user"),
@@ -127,9 +126,9 @@ func TestImports(t *testing.T) {
 		},
 		"reserve all. used": {
 			fn: func(imps *tsimport.Imports) {
-				reserveAllImport(imps, "./core/clause", "clause")
+				require.Nil(t, reserveAllImport(imps, "./core/clause", "clause"))
 
-				useImport(imps, "clause")
+				require.Nil(t, useImport(imps, "clause"))
 			},
 			expectedLines: []string{
 				getLine("import * as clause from {path};", "./core/clause"),
@@ -137,7 +136,7 @@ func TestImports(t *testing.T) {
 		},
 		"reserve all. not used": {
 			fn: func(imps *tsimport.Imports) {
-				reserveAllImport(imps, "./core/clause", "clause")
+				require.Nil(t, reserveAllImport(imps, "./core/clause", "clause"))
 			},
 			expectedLines: []string{},
 		},
@@ -145,16 +144,16 @@ func TestImports(t *testing.T) {
 		// simpler version of * as query?
 		"reserve same thing multiple times": {
 			fn: func(imps *tsimport.Imports) {
-				reserveAllImport(imps, "./core/clause", "clause")
-				reserveAllImport(imps, "./core/foo", "clause")
+				require.Nil(t, reserveAllImport(imps, "./core/clause", "clause"))
+				require.Error(t, reserveAllImport(imps, "./core/foo", "clause"))
 			},
-			panicInFn: true,
+			errorThrown: true,
 		},
 		"use not reserved": {
 			fn: func(imps *tsimport.Imports) {
-				useImport(imps, "clause")
+				require.Error(t, useImport(imps, "clause"))
 			},
-			panicInFn: true,
+			errorThrown: true,
 		},
 		"use multiple times": {
 			fn: func(imps *tsimport.Imports) {
@@ -259,14 +258,14 @@ func TestImports(t *testing.T) {
 		},
 		"reserve different paths": {
 			fn: func(imps *tsimport.Imports) {
-				reserveDefaultImport(imps, "src/ent/user", "User")
-				reserveDefaultImport(imps, "/user", "User")
+				require.Nil(t, reserveDefaultImport(imps, "src/ent/user", "User"))
+				require.Error(t, reserveDefaultImport(imps, "/user", "User"))
 			},
-			panicInFn: true,
+			errorThrown: true,
 		},
 		"export all": {
 			fn: func(imps *tsimport.Imports) {
-				exportAll(imps, "src/ent/const")
+				require.Nil(t, exportAll(imps, "src/ent/const"))
 			},
 			expectedLines: []string{
 				getLine("export * from {path};", "src/ent/const"),
@@ -274,7 +273,7 @@ func TestImports(t *testing.T) {
 		},
 		"export all as ": {
 			fn: func(imps *tsimport.Imports) {
-				exportAllAs(imps, "src/ent/const", "foo")
+				require.Nil(t, exportAllAs(imps, "src/ent/const", "foo"))
 			},
 			expectedLines: []string{
 				getLine("export * as foo from {path};", "src/ent/const"),
@@ -282,7 +281,7 @@ func TestImports(t *testing.T) {
 		},
 		"export": {
 			fn: func(imps *tsimport.Imports) {
-				export(imps, "src/ent/const", "foo", "bar")
+				require.Nil(t, export(imps, "src/ent/const", "foo", "bar"))
 			},
 			expectedLines: []string{
 				getLine("export {bar, foo} from {path};", "src/ent/const"),
@@ -290,11 +289,11 @@ func TestImports(t *testing.T) {
 		},
 		"import + export": {
 			fn: func(imps *tsimport.Imports) {
-				reserveImport(imps, codepath.Package, "loadEnt", "loadEntX", "Viewer")
+				require.Nil(t, reserveImport(imps, codepath.Package, "loadEnt", "loadEntX", "Viewer"))
 
-				useImport(imps, "loadEntX")
-				useImport(imps, "loadEnt")
-				export(imps, "src/ent/const", "foo", "bar")
+				require.Nil(t, useImport(imps, "loadEntX"))
+				require.Nil(t, useImport(imps, "loadEnt"))
+				require.Nil(t, export(imps, "src/ent/const", "foo", "bar"))
 			},
 			expectedLines: []string{
 				// export first regardless of order
@@ -308,11 +307,11 @@ func TestImports(t *testing.T) {
 		t.Run(key, func(t *testing.T) {
 			imps := tsimport.NewImports()
 
-			if tt.panicInFn {
+			if tt.errorThrown {
 				assert.Len(t, tt.expectedLines, 0)
-				assert.Panics(t, func() {
-					tt.fn(imps)
-				})
+				tt.fn(imps)
+				validateExpectedLines(t, imps, tt.expectedLines)
+
 			} else {
 				tt.fn(imps)
 
@@ -329,5 +328,9 @@ func validateExpectedLines(t *testing.T, imps *tsimport.Imports, expLines []stri
 	// remove last element since it's always nonsense
 	lines = lines[:len(lines)-1]
 
-	assert.Equal(t, expLines, lines)
+	if expLines == nil {
+		assert.Len(t, lines, 0)
+	} else {
+		assert.Equal(t, expLines, lines)
+	}
 }

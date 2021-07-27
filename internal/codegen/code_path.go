@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/lolopinto/ent/internal/codepath"
-	"github.com/lolopinto/ent/internal/util"
 )
 
 type CodePath struct {
@@ -16,19 +15,21 @@ type CodePath struct {
 	absPathToConfigs      string
 }
 
-func NewCodePath(configPath, modulePath string) *CodePath {
+func NewCodePath(configPath, modulePath string) (*CodePath, error) {
 	// TODO all this logic is dependent on passing "models/configs". TODO fix it
 	rootPath, err := filepath.Abs(configPath)
 
+	if err != nil {
+		return nil, err
+	}
 	// TODO we need to store absPathToRoot at some point
-	util.Die(err)
 	return &CodePath{
 		relativePathToConfigs: configPath,
 		absPathToConfigs:      rootPath, // this is part to configs root but not root of dir TODO...
 		importPathToRoot:      modulePath,
 		importPathToConfigs:   filepath.Join(modulePath, configPath),
 		importPathToModels:    filepath.Join(modulePath, "models"),
-	}
+	}, nil
 }
 
 func (cp *CodePath) OverrideImportPathToModels(importPath string) {

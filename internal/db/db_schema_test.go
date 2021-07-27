@@ -91,7 +91,7 @@ func TestTableForNode(t *testing.T) {
 
 func TestTablesFromSchema(t *testing.T) {
 	schema := getTestSchema(t)
-	schema.generateShemaTables()
+	require.Nil(t, schema.generateShemaTables())
 
 	// accounts
 	// events
@@ -1278,7 +1278,7 @@ func getSchemaFromCode(t *testing.T, code map[string]string) *dbSchema {
 		base.TypeScript,
 	)
 	dbSchema := newDBSchema(schema, "models/configs")
-	dbSchema.generateShemaTables()
+	require.Nil(t, dbSchema.generateShemaTables())
 
 	return dbSchema
 }
@@ -1393,7 +1393,7 @@ func getInMemoryTestSchemas(t *testing.T, sources map[string]string, uniqueKey s
 func getTestTable(configName string, t *testing.T) *dbTable {
 	schema := getTestSchema(t)
 	// need to do this now because constraints are generated separately
-	schema.generateShemaTables()
+	require.Nil(t, schema.generateShemaTables())
 
 	return getTestTableFromSchema(configName, schema, t)
 }
@@ -1549,7 +1549,7 @@ func getAccountConfigContents(t *testing.T) string {
 func getTestTableByName(tableName string, t *testing.T) *dbTable {
 	tableName = strconv.Quote(tableName)
 	schema := getTestSchema(t)
-	schema.generateShemaTables()
+	require.Nil(t, schema.generateShemaTables())
 
 	for _, table := range schema.Tables {
 		if table.QuotedTableName == tableName {

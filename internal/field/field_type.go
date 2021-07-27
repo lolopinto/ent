@@ -558,8 +558,9 @@ func (f *Field) AddInverseEdge(edge *edge.AssociationEdge) error {
 	if f.fieldEdge == nil {
 		return fmt.Errorf("cannot add an inverse edge on a field without a field edge")
 	}
-	f.inverseEdge = edge.CloneWithCommonInfo(f.fieldEdge.Schema + "Config")
-	return nil
+	var err error
+	f.inverseEdge, err = edge.CloneWithCommonInfo(f.fieldEdge.Schema + "Config")
+	return err
 }
 
 func (f *Field) GetInverseEdge() *edge.AssociationEdge {

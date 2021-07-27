@@ -16,7 +16,10 @@ var upgradeCmd = &cobra.Command{
 		if len(args) == 1 {
 			revision = args[0]
 		}
-		codePathInfo := getPathToCode(getPathToConfig())
+		codePathInfo, err := getPathToCode(getPathToConfig())
+		if err != nil {
+			return err
+		}
 		return db.UpgradeDB(codePathInfo, revision)
 	},
 }
