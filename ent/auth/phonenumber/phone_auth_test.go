@@ -57,11 +57,13 @@ func (suite *phoneAuthTestSuite) SetupTest() {
 }
 
 func (suite *phoneAuthTestSuite) createUser() *models.User {
+	pw, err := util.GenerateRandPassword()
+	require.Nil(suite.T(), err)
 	user, err := action.CreateUser(viewer.LoggedOutViewer()).
 		SetFirstName("Jon").
 		SetLastName("Snow").
 		SetEmailAddress(util.GenerateRandEmail()).
-		SetPassword(util.GenerateRandPassword()).
+		SetPassword(pw).
 		SetPhoneNumber(util.GenerateRandPhoneNumber()).Save()
 
 	require.NoError(suite.T(), err)

@@ -260,12 +260,17 @@ func SaveAddress(t *testing.T, b ent.MutationBuilder) *models.Address {
 }
 
 func GetDefaultUserBuilder(email string) *actions.EntMutationBuilder {
+	pwd, err := util.GenerateRandPassword()
+	if err != nil {
+		util.GoSchemaKill(err)
+	}
+
 	return GetUserBuilderWithFields(
 		ent.InsertOperation,
 		nil,
 		map[string]interface{}{
 			"email_address": email,
-			"password":      util.GenerateRandPassword(),
+			"password":      pwd,
 			"first_name":    "Ola",
 			"last_name":     "Okelola",
 		},

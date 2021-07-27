@@ -27,21 +27,25 @@ func GenerateRandCode(n int) string {
 }
 
 // Generate a random alphanumeric string
-func GenerateRandAlphaNumericKey(n int) string {
+func GenerateRandAlphaNumericKey(n int) (string, error) {
 	var sb strings.Builder
-	Die(generateRandKey(n, alphanumeric, &sb))
-	return sb.String()
+	if err := generateRandKey(n, alphanumeric, &sb); err != nil {
+		return "", err
+	}
+	return sb.String(), nil
 }
 
-func GenerateRandDBName() string {
+func GenerateRandDBName() (string, error) {
 	var sb strings.Builder
-	Die(generateRandKey(10, alphanumeric, &sb))
+	if err := generateRandKey(10, alphanumeric, &sb); err != nil {
+		return "", err
+	}
 	str := strings.ToLower(sb.String())
 	if unicode.IsNumber(rune(str[0])) {
 		// add leading digit
-		return string(lowerCase[rand.Intn(len(lowerCase))]) + str
+		return string(lowerCase[rand.Intn(len(lowerCase))]) + str, nil
 	}
-	return str
+	return str, nil
 }
 
 func generateRandKey(n int, charset string, sb *strings.Builder) error {
@@ -59,14 +63,22 @@ func GenerateRandEmail() string {
 	return fmt.Sprintf("test-%s@email.com", GenerateRandCode(9))
 }
 
-func GenerateRandPassword() string {
+func GenerateRandPassword() (string, error) {
 	// generate a random password. used for tests
 	// not going to win any awards
 	var sb strings.Builder
-	Die(generateRandKey(3, symbols, &sb))
-	Die(generateRandKey(3, numbers, &sb))
-	Die(generateRandKey(14, lowerCase, &sb))
-	Die(generateRandKey(10, upperCase, &sb))
+	if err := generateRandKey(3, symbols, &sb); err != nil {
+		return "", err
+	}
+	if err := generateRandKey(3, numbers, &sb); err != nil {
+		return "", err
+	}
+	if err := generateRandKey(14, lowerCase, &sb); err != nil {
+		return "", err
+	}
+	if err := generateRandKey(10, upperCase, &sb); err != nil {
+		return "", err
+	}
 
 	result := []byte(sb.String())
 
@@ -78,7 +90,7 @@ func GenerateRandPassword() string {
 		// result[i] = swap
 		result[i], result[idx] = result[idx], result[i]
 	}
-	return string(result)
+	return string(result), nil
 }
 
 func GenerateRandPhoneNumber() string {

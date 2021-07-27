@@ -107,7 +107,9 @@ func (suite *emailAuthTestSuite) createUser(passwords ...string) *models.User {
 	if len(passwords) == 1 {
 		password = passwords[0]
 	} else {
-		password = util.GenerateRandPassword()
+		var err error
+		password, err = util.GenerateRandPassword()
+		require.Nil(suite.T(), err)
 	}
 	user, err := action.CreateUser(viewer.LoggedOutViewer()).
 		SetFirstName("Jon").
@@ -125,14 +127,19 @@ func (suite *emailAuthTestSuite) createUser(passwords ...string) *models.User {
 func (suite *emailAuthTestSuite) TestInvalidPassword() {
 	user := suite.createUser()
 
-	identity, err := authEmailPassword(user.EmailAddress, util.GenerateRandPassword())
+	pwd, err := util.GenerateRandPassword()
+	require.Nil(suite.T(), err)
+
+	identity, err := authEmailPassword(user.EmailAddress, pwd)
 	require.Nil(suite.T(), identity)
 	require.NotNil(suite.T(), err)
 	require.Contains(suite.T(), err.Error(), "hashedPassword is not the hash")
 }
 
 func (suite *emailAuthTestSuite) TestValidAuth() {
-	pwd := util.GenerateRandPassword()
+	pwd, err := util.GenerateRandPassword()
+	require.Nil(suite.T(), err)
+
 	user := suite.createUser(pwd)
 
 	testCases := map[string]string{
@@ -150,7 +157,9 @@ func (suite *emailAuthTestSuite) TestValidAuth() {
 }
 
 func (suite *emailAuthTestSuite) TestCustomDuration() {
-	pwd := util.GenerateRandPassword()
+	pwd, err := util.GenerateRandPassword()
+	require.Nil(suite.T(), err)
+
 	user := suite.createUser(pwd)
 
 	auth := getDefaultAuth()
@@ -160,7 +169,8 @@ func (suite *emailAuthTestSuite) TestCustomDuration() {
 }
 
 func (suite *emailAuthTestSuite) TestCustomSigningMethod() {
-	pwd := util.GenerateRandPassword()
+	pwd, err := util.GenerateRandPassword()
+	require.Nil(suite.T(), err)
 	user := suite.createUser(pwd)
 
 	auth := getDefaultAuth()
@@ -186,7 +196,8 @@ func (c *claims) ID() string {
 }
 
 func (suite *emailAuthTestSuite) TestCustomClaims() {
-	pwd := util.GenerateRandPassword()
+	pwd, err := util.GenerateRandPassword()
+	require.Nil(suite.T(), err)
 	user := suite.createUser(pwd)
 
 	auth := getDefaultAuth()
@@ -217,7 +228,8 @@ func (suite *emailAuthTestSuite) TestAuthFromRequestNoHeader() {
 }
 
 func (suite *emailAuthTestSuite) TestAuthFromRequestWithHeader() {
-	pwd := util.GenerateRandPassword()
+	pwd, err := util.GenerateRandPassword()
+	require.Nil(suite.T(), err)
 	user := suite.createUser(pwd)
 
 	auth.Register("email_password_auth", getDefaultAuth())
@@ -248,7 +260,8 @@ func (suite *emailAuthTestSuite) TestInvalidAuthorizationHeader() {
 
 func (suite *emailAuthTestSuite) TestExtendTokenExpiration() {
 	// just testing that it works.
-	pwd := util.GenerateRandPassword()
+	pwd, err := util.GenerateRandPassword()
+	require.Nil(suite.T(), err)
 	user := suite.createUser(pwd)
 
 	auth := getDefaultAuth()
