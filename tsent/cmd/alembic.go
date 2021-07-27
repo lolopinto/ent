@@ -23,8 +23,11 @@ var validCmds = map[string]int{
 var alembicCmd = &cobra.Command{
 	Use:   "alembic",
 	Short: "alembic command",
-	Long:  `This runs the passed in alembic command`,
-	Args:  cobra.MinimumNArgs(1),
+	Long:  `This runs the passed in alembic command. Valid alembic commands are upgrade, downgrade, history, current, heads, branches, show, stamp, edit`,
+	Example: `tsent alembic history 
+tsent alembic current
+	`,
+	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// another hardcoded place
 		codePathInfo, err := codegen.NewCodePath("src/schema", "")

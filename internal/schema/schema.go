@@ -68,7 +68,7 @@ func (s *Schema) addEnumFromInputNode(nodeName string, node *input.Node, nodeDat
 		}
 	}
 	if len(pkeyFields) != 1 {
-		return errors.New("need exactly 1 primary key for ")
+		return fmt.Errorf("need exactly 1 primary key to add enum from input node. have %d", len(pkeyFields))
 	}
 	field := pkeyFields[0]
 	fieldName := field.Name
@@ -207,11 +207,11 @@ func (s *Schema) GetAssocEdgeByName(entConfig, edgeName string) (*edge.Associati
 func (s *Schema) GetFieldByName(entConfig, fieldName string) (*field.Field, error) {
 	info := s.Nodes[entConfig]
 	if info == nil {
-		return nil, errors.New("invalid EntConfig passed to getFieldByName")
+		return nil, fmt.Errorf("invalid EntConfig %s passed to getFieldByName", entConfig)
 	}
 	ret := info.NodeData.GetFieldByName(fieldName)
 	if ret == nil {
-		return nil, errors.New("error getting field")
+		return nil, fmt.Errorf("error getting field %s by name in EntConfig %s", fieldName, entConfig)
 	}
 	return ret, nil
 }
@@ -434,12 +434,14 @@ func (s *Schema) addLinkedEdges(info *NodeDataInfo) error {
 
 		if e.Polymorphic != nil {
 			// so we want to add it to edges for
-			edgeInfo.AddIndexedEdgeFromSource(
+			if err := edgeInfo.AddIndexedEdgeFromSource(
 				f.TsFieldName(),
 				f.GetQuotedDBColName(),
 				nodeData.Node,
 				e.Polymorphic,
-			)
+			); err != nil {
+				return err
+			}
 			for _, typ := range e.Polymorphic.Types {
 				// convert to Node type
 				typ = strcase.ToCamel(typ) + "Config"
@@ -450,13 +452,15 @@ func (s *Schema) addLinkedEdges(info *NodeDataInfo) error {
 					if f.Index() || f.Unique() {
 						fEdgeInfo := foreign.NodeData.EdgeInfo
 						//						spew.Dump(nodeData.Node, foreign.NodeData.Node)
-						fEdgeInfo.AddDestinationEdgeFromPolymorphicOptions(
+						if err := fEdgeInfo.AddDestinationEdgeFromPolymorphicOptions(
 							f.TsFieldName(),
 							f.GetQuotedDBColName(),
 							nodeData.Node,
 							e.Polymorphic,
 							foreign.NodeData.Node,
-						)
+						); err != nil {
+							return err
+						}
 					}
 				} else {
 					return fmt.Errorf("couldn't find config for typ %s", typ)
@@ -505,7 +509,9 @@ func (s *Schema) addEdgesFromFields(info *NodeDataInfo) error {
 
 		fieldEdgeInfo := f.FieldEdgeInfo()
 		if fieldEdgeInfo != nil {
-			s.addFieldEdge(edgeInfo, f)
+			if err := s.addFieldEdge(edgeInfo, f); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -547,12 +553,12 @@ func (s *Schema) addForeignKeyEdges(
 func (s *Schema) addFieldEdge(
 	edgeInfo *edge.EdgeInfo,
 	f *field.Field,
-) {
+) error {
 	// add a field edge on current config so we can load underlying user
 	// and return it in GraphQL appropriately
 	// this also flags that when we write data to this field, we write the inverse edge also
 	// e.g. writing user_id field on an event will also write corresponding user -> events edge
-	f.AddFieldEdgeToEdgeInfo(edgeInfo)
+	return f.AddFieldEdgeToEdgeInfo(edgeInfo)
 }
 
 func (s *Schema) addInverseAssocEdges(info *NodeDataInfo) error {
