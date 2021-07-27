@@ -7,6 +7,7 @@ import (
 	"github.com/lolopinto/ent/ent/cast"
 	"github.com/lolopinto/ent/ent/config"
 	"github.com/lolopinto/ent/ent/sql"
+	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
 )
 
@@ -130,7 +131,7 @@ func loadData(l loader, options ...func(*loaderConfig)) error {
 			return nil
 		case errorQuery:
 			if len(res.errs) == 0 {
-				panic("errorQuery returned without specifying errors")
+				util.GoSchemaKill("errorQuery returned without specifying errors")
 			}
 			// get error and return it
 			return CoalesceErr(res.errs...)
@@ -153,7 +154,8 @@ func loadData(l loader, options ...func(*loaderConfig)) error {
 	if ok {
 		return loadRowData(singleRowLoader, q)
 	}
-	panic("invalid loader passed")
+	util.GoSchemaKill("invalid loader passed")
+	return nil
 }
 
 func chainLoaders(loaders []loader, options ...func(*loaderConfig)) error {
@@ -165,11 +167,11 @@ func chainLoaders(loaders []loader, options ...func(*loaderConfig)) error {
 
 		if ok {
 			if idx == 0 {
-				panic("first loader cannot require an input")
+				util.GoSchemaKill("first loader cannot require an input")
 			}
 
 			if output == nil {
-				panic("loader requires an input but no input to pass in")
+				util.GoSchemaKill("loader requires an input but no input to pass in")
 			}
 			inputLoader.SetInput(output)
 		}
@@ -194,7 +196,7 @@ func chainLoaders(loaders []loader, options ...func(*loaderConfig)) error {
 		}
 	}
 	if output != nil {
-		panic("ended with an output loader which didn't do anything with it")
+		util.GoSchemaKill("ended with an output loader which didn't do anything with it")
 	}
 	return nil
 }
@@ -458,11 +460,13 @@ type nodeExists struct {
 }
 
 func (n *nodeExists) GetID() string {
-	panic("whaa")
+	util.GoSchemaKill("whaa")
+	return ""
 }
 
 func (n *nodeExists) DBFields() DBFields {
-	panic("should never be called since not cacheable")
+	util.GoSchemaKill("should never be called since not cacheable")
+	return nil
 }
 
 type loadAssocEdgeConfigExists struct {

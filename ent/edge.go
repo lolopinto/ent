@@ -7,6 +7,7 @@ import (
 
 	"github.com/lolopinto/ent/ent/cast"
 	"github.com/lolopinto/ent/ent/viewer"
+	"github.com/lolopinto/ent/internal/util"
 )
 
 // AssocEdge is the information about an edge between two Nodes
@@ -64,7 +65,8 @@ func (edge *AssocEdge) DBFields() DBFields {
 // GetID returns a unique id for this ent
 // TODO ola. audit where this is used right now
 func (edge *AssocEdge) GetID() string {
-	panic(fmt.Sprintf("AssocEdge.GetID called for edge %s", edge.EdgeType))
+	util.GoSchemaKill(fmt.Sprintf("AssocEdge.GetID called for edge %s", edge.EdgeType))
+	return ""
 	//	return string(edge.EdgeType)
 }
 
@@ -160,15 +162,18 @@ func (edgeData *AssocEdgeData) GetID() string {
 }
 
 func (edgeData *AssocEdgeData) GetPrivacyPolicy() PrivacyPolicy {
-	panic("AssocEdgedata.GetPrivacyPolicy called")
+	util.GoSchemaKill("AssocEdgedata.GetPrivacyPolicy called")
+	return nil
 }
 
 func (edgeData *AssocEdgeData) GetType() NodeType {
-	panic("AssocEdgedata.GetType called")
+	util.GoSchemaKill("AssocEdgedata.GetType called")
+	return ""
 }
 
 func (edgeData *AssocEdgeData) GetViewer() viewer.ViewerContext {
-	panic("AssocEdgedata.GetViewer called")
+	util.GoSchemaKill("AssocEdgedata.GetViewer called")
+	return nil
 }
 
 func (edgeData *AssocEdgeData) GetConfig() Config {

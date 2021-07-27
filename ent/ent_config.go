@@ -1,6 +1,9 @@
 package ent
 
-import "github.com/lolopinto/ent/ent/field"
+import (
+	"github.com/lolopinto/ent/ent/field"
+	"github.com/lolopinto/ent/internal/util"
+)
 
 // Config interface that configurations for an ent should implement.
 type Config interface {
@@ -67,7 +70,7 @@ func (AssociationEdge) Name() string {
 }
 
 func (AssociationEdge) marker() {
-	panic("do not call")
+	util.GoSchemaKill("do not call")
 }
 
 // AssocEdgeMap is a mapping of name of edge to EdgeType
@@ -91,7 +94,7 @@ func (AssociationEdgeGroup) Name() string {
 }
 
 func (AssociationEdgeGroup) marker() {
-	panic("do not call")
+	util.GoSchemaKill("do not call")
 }
 
 type AssociationEdgeGroupStatusInfo struct {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/lolopinto/ent/ent/request"
 	"github.com/lolopinto/ent/ent/viewer"
+	"github.com/lolopinto/ent/internal/util"
 )
 
 // Auth interface should be implemented to get information from the request (such as header or cookie) to authenticate
@@ -33,11 +34,11 @@ func Register(name string, handlers ...Auth) {
 	authMutex.Lock()
 	defer authMutex.Unlock()
 	if handlers == nil {
-		panic("auth: Register Auth is nil")
+		util.GoSchemaKill("auth: Register Auth is nil")
 	}
 
 	if _, dup := authHandlers[name]; dup {
-		panic("auth: Register called twice for handler " + name)
+		util.GoSchemaKill("auth: Register called twice for handler " + name)
 	}
 	authHandlers[name] = handlers
 }

@@ -3,6 +3,8 @@ package request
 import (
 	"net/http"
 	"sync"
+
+	"github.com/lolopinto/ent/internal/util"
 )
 
 var (
@@ -20,11 +22,11 @@ func Register(name string, fns ...func(http.Handler) http.Handler) {
 	middlewareMutex.Lock()
 	defer middlewareMutex.Unlock()
 	if fns == nil {
-		panic("request: Register function is nil")
+		util.GoSchemaKill("request: Register function is nil")
 	}
 
 	if _, dup := middlewares[name]; dup {
-		panic("request: Register called twice for middleware func " + name)
+		util.GoSchemaKill("request: Register called twice for middleware func " + name)
 	}
 	middlewares[name] = fns
 }

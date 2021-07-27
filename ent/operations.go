@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/ent/ent/sql"
+	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
 	"github.com/rocketlaunchr/remember-go"
 )
@@ -411,7 +412,7 @@ func (op *DeleteNodeOperation) GetCacheKeys() []string {
 func getKeyForNode(id, tableName string) string {
 	if id == "" {
 		debug.PrintStack()
-		panic(errors.WithStack(errors.New("empty id passed")))
+		util.GoSchemaKill(errors.WithStack(errors.New("empty id passed")))
 	}
 	return remember.CreateKey(false, "_", "table_id", tableName, id)
 }

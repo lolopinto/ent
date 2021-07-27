@@ -5,6 +5,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/ent/ent/data"
+	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
 )
 
@@ -93,7 +94,7 @@ func (q *dbQuery) query(processor *processRawData) error {
 	} else if processor.multiRows != nil {
 		err = q.processMultiRows(stmt, values, processor.multiRows)
 	} else {
-		panic("invalid processor passed")
+		util.GoSchemaKill("invalid processor passed")
 	}
 	if err != nil {
 		fmt.Println(query, err)

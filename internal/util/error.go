@@ -26,7 +26,7 @@ func ErrSlice(err []packages.Error) {
 	for _, e := range err {
 		str += e.Error() + "\n"
 	}
-	panic(str)
+	GoSchemaKill(str)
 }
 
 func CoalesceErrSlice(err []packages.Error) error {
