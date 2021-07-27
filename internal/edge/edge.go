@@ -1064,23 +1064,26 @@ func initDepgraph(result *astparser.Result, entConfig *schemaparser.EntConfigInf
 	return g
 }
 
-func (g *parseEdgeGraph) RunLoop() {
+func (g *parseEdgeGraph) RunLoop() error {
 	for idx := range g.result.Elems {
 		elem := g.result.Elems[idx]
 		if elem.IdentName == "" {
-			panic("invalid elem")
+			return fmt.Errorf("invalid elem")
 		}
 
-		g.CheckAndQueue(elem.IdentName, func(item interface{}) {
+		if err := g.CheckAndQueue(elem.IdentName, func(item interface{}) error {
 			valueFunc, ok := item.(func(*astparser.Result))
 			if !ok {
-				panic("invalid func passed")
+				return fmt.Errorf("invalid func passed")
 			}
 			valueFunc(elem.Value)
-		})
+			return nil
+		}); err != nil {
+			return err
+		}
 	}
 	g.ClearOptionalItems()
-	g.RunQueuedUpItems()
+	return g.RunQueuedUpItems()
 }
 
 func getCommonEdgeInfo(edgeName string, entConfig schemaparser.EntConfigInfo) commonEdgeInfo {
@@ -1115,13 +1118,16 @@ func parseInverseAssocEdge(entConfig schemaparser.EntConfigInfo, containingPacka
 }
 
 func parseAssociationEdgeItem(node *input.Node, containingPackageName, edgeName string, result *astparser.Result) error {
-	assocEdge := getParsedAssociationEdgeItem(containingPackageName, edgeName, result)
+	assocEdge, err := getParsedAssociationEdgeItem(containingPackageName, edgeName, result)
+	if err != nil {
+		return err
+	}
 
 	node.AddAssocEdge(assocEdge)
 	return nil
 }
 
-func getParsedAssociationEdgeItem(containingPackageName, edgeName string, result *astparser.Result) *input.AssocEdge {
+func getParsedAssociationEdgeItem(containingPackageName, edgeName string, result *astparser.Result) (*input.AssocEdge, error) {
 	var entConfig schemaparser.EntConfigInfo
 	g := initDepgraph(result, &entConfig)
 
@@ -1154,10 +1160,12 @@ func getParsedAssociationEdgeItem(containingPackageName, edgeName string, result
 		}
 	}, "EntConfig")
 
-	g.RunLoop()
+	if err := g.RunLoop(); err != nil {
+		return nil, err
+	}
 	assocEdge.EntConfig = &entConfig
 
-	return assocEdge
+	return assocEdge, nil
 }
 
 func getDefaultTableName(packageName, groupName string) string {
@@ -1183,7 +1191,10 @@ func parseAssociationEdgeGroupItem(node *input.Node, containingPackageName, grou
 	g.AddItem("EdgeGroups", func(elem *astparser.Result) {
 		for _, elem := range elem.Elems {
 			edgeName := elem.Key
-			assocEdge := getParsedAssociationEdgeItem(containingPackageName, edgeName, elem.Value)
+			assocEdge, err := getParsedAssociationEdgeItem(containingPackageName, edgeName, elem.Value)
+			if err != nil {
+				util.GoSchemaKill(err)
+			}
 			edgeGroup.AddAssocEdge(assocEdge)
 		}
 	})
@@ -1204,7 +1215,9 @@ func parseAssociationEdgeGroupItem(node *input.Node, containingPackageName, grou
 		edgeGroup.ActionEdges = astparser.GetStringList(elem)
 	})
 
-	g.RunLoop()
+	if err := g.RunLoop(); err != nil {
+		return err
+	}
 	node.AddAssocEdgeGroup(edgeGroup)
 	return nil
 }

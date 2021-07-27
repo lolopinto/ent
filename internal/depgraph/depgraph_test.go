@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func getKey(i int) string {
@@ -21,17 +22,21 @@ func (g *depgraphTest) sumFunc(i int) {
 	g.sum = g.sum + i
 }
 
-func (g *depgraphTest) RunLoop() {
+func (g *depgraphTest) RunLoop() error {
 	for i := 0; i < 10; i++ {
 		j := i // to capture the loop variable correctly
-		g.CheckAndQueue(getKey(i), func(item interface{}) {
+		if err := g.CheckAndQueue(getKey(i), func(item interface{}) error {
 			passedFunc, ok := item.(func(int))
 			if !ok {
-				panic("invalid func passed")
+				return fmt.Errorf("invalid func passed")
 			}
 			passedFunc(j)
-		})
+			return nil
+		}); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 type depgraphTestSimple struct {
@@ -67,7 +72,8 @@ func TestRunLoopNoDeps(t *testing.T) {
 		t.Errorf("expected 10 items to be added. got %d instead", len(g.items))
 	}
 
-	g.RunLoop()
+	err := g.RunLoop()
+	require.Nil(t, err)
 
 	if len(g.queue) != 0 {
 		t.Errorf("expected no items queued up. %d items were queued up instead", len(g.queue))
@@ -94,7 +100,8 @@ func verifyRunLoopSimpleDeps(t *testing.T, g *depgraphTest, runQueuePanics bool)
 	}
 
 	if runQueuePanics {
-		assert.Panics(t, g.RunQueuedUpItems)
+		err := g.RunQueuedUpItems()
+		assert.Error(t, err)
 		return
 	}
 	g.RunQueuedUpItems()
@@ -132,7 +139,8 @@ func TestRunLoopWithSimpleDeps(t *testing.T) {
 		t.Errorf("expected 10 items to be added. got %d instead", len(g.items))
 	}
 
-	g.RunLoop()
+	err := g.RunLoop()
+	require.Nil(t, err)
 
 	verifyRunLoopSimpleDeps(t, g, false)
 }
@@ -157,7 +165,8 @@ func TestRunLoopOptionalItemsNotCleared(t *testing.T) {
 		t.Errorf("expected 11 items to be added. got %d instead", len(g.items))
 	}
 
-	g.RunLoop()
+	err := g.RunLoop()
+	require.Nil(t, err)
 	verifyRunLoopSimpleDeps(t, g, true)
 }
 
@@ -181,7 +190,8 @@ func TestRunLoopOptionalItemsCleared(t *testing.T) {
 		t.Errorf("expected 11 items to be added. got %d instead", len(g.items))
 	}
 
-	g.RunLoop()
+	err := g.RunLoop()
+	require.Nil(t, err)
 	g.ClearOptionalItems()
 	verifyRunLoopSimpleDeps(t, g, false)
 }
@@ -204,13 +214,15 @@ func TestRunLoopTooManyDeps(t *testing.T) {
 		t.Errorf("expected 10 items to be added. got %d instead", len(g.items))
 	}
 
-	g.RunLoop()
+	err := g.RunLoop()
+	require.Nil(t, err)
 
 	if len(g.queue) != 9 {
 		t.Errorf("expected 9 items queued up. %d items were queued up instead", len(g.queue))
 	}
 
-	assert.Panics(t, g.RunQueuedUpItems)
+	err = g.RunQueuedUpItems()
+	assert.Error(t, err)
 }
 
 func TestInvalidDep(t *testing.T) {
@@ -225,8 +237,8 @@ func TestInvalidDep(t *testing.T) {
 		}
 	}
 
-	// panics here
-	assert.Panics(t, g.RunLoop)
+	err := g.RunLoop()
+	assert.Error(t, err)
 }
 
 func TestRunNoDeps(t *testing.T) {
@@ -254,13 +266,14 @@ func TestRunNoDeps(t *testing.T) {
 
 	var hardToCalObj object
 
-	g.Run(func(item interface{}) {
+	assert.Nil(t, g.Run(func(item interface{}) error {
 		execFn, ok := item.(func(*object))
 		if !ok {
-			panic("invalid object passed")
+			return fmt.Errorf("invalid object passed")
 		}
 		execFn(&hardToCalObj)
-	})
+		return nil
+	}))
 
 	if len(g.queue) != 0 {
 		t.Errorf("expected no items queued up. %d items were queued up instead", len(g.queue))
@@ -305,13 +318,14 @@ func TestRunWithDeps(t *testing.T) {
 
 	var hardToCalObj object
 
-	g.Run(func(item interface{}) {
+	assert.Nil(t, g.Run(func(item interface{}) error {
 		execFn, ok := item.(func(*object))
 		if !ok {
-			panic("invalid function passed")
+			return fmt.Errorf("invalid function passed")
 		}
 		execFn(&hardToCalObj)
-	})
+		return nil
+	}))
 
 	if len(g.queue) != 0 {
 		t.Errorf("expected no items queued up. %d items were queued up instead", len(g.queue))
