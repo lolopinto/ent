@@ -27,7 +27,10 @@ var alembicCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// another hardcoded place
-		codePathInfo := codegen.NewCodePath("src/schema", "")
+		codePathInfo, err := codegen.NewCodePath("src/schema", "")
+		if err != nil {
+			return err
+		}
 		command := args[0]
 		count, ok := validCmds[command]
 		if !ok {

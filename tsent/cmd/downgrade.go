@@ -13,7 +13,10 @@ var downgradeCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// another hardcoded place
-		codePathInfo := codegen.NewCodePath("src/schema", "")
+		codePathInfo, err := codegen.NewCodePath("src/schema", "")
+		if err != nil {
+			return err
+		}
 
 		return db.DowngradeDB(codePathInfo, args[0])
 	},

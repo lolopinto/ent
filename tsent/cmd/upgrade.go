@@ -18,7 +18,10 @@ var upgradeCmd = &cobra.Command{
 			revision = args[0]
 		}
 		// another hardcoded place
-		codePathInfo := codegen.NewCodePath("src/schema", "")
+		codePathInfo, err := codegen.NewCodePath("src/schema", "")
+		if err != nil {
+			return err
+		}
 
 		return db.UpgradeDB(codePathInfo, revision)
 	},

@@ -567,6 +567,7 @@ func TsEdgeConst(constName string) (string, error) {
 type AssociationEdge struct {
 	commonEdgeInfo
 	EdgeConst     string
+	TsEdgeConst   string
 	Symmetric     bool
 	Unique        bool
 	InverseEdge   *InverseAssocEdge
@@ -576,33 +577,23 @@ type AssociationEdge struct {
 	EdgeActions []*EdgeAction
 }
 
-// TsEdgeConst returns the Edge const as used in typescript.
-// It transforms UserToFriendsEdge to UserToFriends since that's
-// in an enum
-// will evntually fix at edge creation
-func (e *AssociationEdge) TsEdgeConst() string {
-	edgeConst, err := TsEdgeConst(e.EdgeConst)
-	util.Die(err)
-	return edgeConst
-}
-
 func (e *AssociationEdge) TsEdgeQueryName() string {
-	return fmt.Sprintf("%sQuery", e.TsEdgeConst())
+	return fmt.Sprintf("%sQuery", e.TsEdgeConst)
 }
 
 func (e *AssociationEdge) GetGraphQLEdgePrefix() string {
-	return e.TsEdgeConst()
+	return e.TsEdgeConst
 }
 
 func (e *AssociationEdge) TsEdgeQueryEdgeName() string {
-	return fmt.Sprintf("%sEdge", e.TsEdgeConst())
+	return fmt.Sprintf("%sEdge", e.TsEdgeConst)
 }
 
 func (e *AssociationEdge) GetGraphQLConnectionName() string {
 	// we need a unique graphql name
 	// there's nothing stopping multiple edges of different types having the same connection and then there'll be a conflict here
 	// so we use the UserToFoo names to have UserToFriendsConnection and UserToFriendsEdge names
-	return fmt.Sprintf("%sConnection", e.TsEdgeConst())
+	return fmt.Sprintf("%sConnection", e.TsEdgeConst)
 }
 
 func (e *AssociationEdge) GetSourceNodeName() string {
@@ -655,8 +646,13 @@ func (e *AssociationEdge) AddInverseEdge(inverseEdgeInfo *EdgeInfo) error {
 		)
 	}
 
+	tsConst, err := TsEdgeConst(inverseEdge.EdgeConst)
+	if err != nil {
+		return err
+	}
 	return inverseEdgeInfo.addEdge(&AssociationEdge{
 		EdgeConst:      inverseEdge.EdgeConst,
+		TsEdgeConst:    tsConst,
 		commonEdgeInfo: inverseEdge.commonEdgeInfo,
 		IsInverseEdge:  true,
 	})
@@ -670,6 +666,7 @@ func (e *AssociationEdge) CloneWithCommonInfo(configName string) (*AssociationEd
 
 	return &AssociationEdge{
 		EdgeConst:   e.EdgeConst,
+		TsEdgeConst: e.TsEdgeConst,
 		Symmetric:   e.Symmetric,
 		Unique:      e.Unique,
 		InverseEdge: e.InverseEdge,
@@ -683,11 +680,11 @@ func (e *AssociationEdge) CloneWithCommonInfo(configName string) (*AssociationEd
 }
 
 func (e *AssociationEdge) GetCountFactoryName() string {
-	return strcase.ToLowerCamel(fmt.Sprintf("%sCountLoaderFactory", e.TsEdgeConst()))
+	return strcase.ToLowerCamel(fmt.Sprintf("%sCountLoaderFactory", e.TsEdgeConst))
 }
 
 func (e *AssociationEdge) GetDataFactoryName() string {
-	return strcase.ToLowerCamel(fmt.Sprintf("%sDataLoaderFactory", e.TsEdgeConst()))
+	return strcase.ToLowerCamel(fmt.Sprintf("%sDataLoaderFactory", e.TsEdgeConst))
 }
 
 func (e *AssociationEdge) UniqueEdge() bool {
@@ -732,7 +729,7 @@ func (edgeGroup *AssociationEdgeGroup) DefaultNullState() string {
 func (edgeGroup *AssociationEdgeGroup) GetStatusMap() map[string]string {
 	m := make(map[string]string)
 	for _, edge := range edgeGroup.statusEdges {
-		m[enum.GetTSEnumNameForVal(edge.EdgeName)] = edge.TsEdgeConst()
+		m[enum.GetTSEnumNameForVal(edge.EdgeName)] = edge.TsEdgeConst
 	}
 	return m
 }
@@ -924,6 +921,12 @@ func assocEdgeFromInput(packageName string, node *input.Node, edge *input.AssocE
 	}
 
 	assocEdge.EdgeConst = getEdgeConstName(packageName, edge.Name)
+	// It transforms UserToFriendsEdge to UserToFriends since that's in an enum
+	edgeConst, err := TsEdgeConst(assocEdge.EdgeConst)
+	if err != nil {
+		return nil, err
+	}
+	assocEdge.TsEdgeConst = edgeConst
 
 	// golang
 	if edge.EntConfig != nil {

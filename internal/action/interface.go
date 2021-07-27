@@ -516,7 +516,7 @@ func GetEdgesFromEdges(edges []*edge.AssociationEdge) []EdgeActionTemplateInfo {
 			InstanceName:             edge.NodeInfo.NodeInstance,
 			InstanceType:             fmt.Sprintf("*models.%s", edge.NodeInfo.Node),
 			EdgeConst:                edge.EdgeConst,
-			TSEdgeConst:              edge.TsEdgeConst(),
+			TSEdgeConst:              edge.TsEdgeConst,
 			//AssocEdge:    edge,
 			NodeType: edge.NodeInfo.NodeType,
 			// matches what we do in graphQLSchema.processAction
