@@ -40,27 +40,27 @@ type nonStandardClaims struct {
 
 func TestIDFromClaims(t *testing.T) {
 	testCases := map[string]testCase{
-		"mapClaims": testCase{
+		"mapClaims": {
 			claims: jwt.MapClaims{
 				"jti": "1",
 			},
 			id: "1",
 		},
-		"standardclaims": testCase{
+		"standardclaims": {
 			claims: jwt.StandardClaims{
 				Id:        "1",
 				ExpiresAt: time.Now().Add(1 * time.Hour).Unix(),
 			},
 			id: "1",
 		},
-		"standardclaimsPtr": testCase{
+		"standardclaimsPtr": {
 			claims: &jwt.StandardClaims{
 				Id:        "1",
 				ExpiresAt: time.Now().Add(1 * time.Hour).Unix(),
 			},
 			id: "1",
 		},
-		"customClaims": testCase{
+		"customClaims": {
 			claims: customClaims{
 				StandardClaims: jwt.StandardClaims{
 					Id: "1",
@@ -69,7 +69,7 @@ func TestIDFromClaims(t *testing.T) {
 			id: "1",
 		},
 		// this uses json encoding to get it even though it doesn't implement ID() func
-		"nonStandardClaims": testCase{
+		"nonStandardClaims": {
 			claims: nonStandardClaims{
 				StandardClaims: jwt.StandardClaims{
 					Id: "1",
@@ -91,25 +91,25 @@ func TestIDFromClaims(t *testing.T) {
 
 func TestSubjectFromClaims(t *testing.T) {
 	testCases := map[string]testCase{
-		"mapClaims": testCase{
+		"mapClaims": {
 			claims: jwt.MapClaims{
 				"sub": "1",
 			},
 			subj: "1",
 		},
-		"standardclaims": testCase{
+		"standardclaims": {
 			claims: jwt.StandardClaims{
 				Subject: "1",
 			},
 			subj: "1",
 		},
-		"standardclaimsPtr": testCase{
+		"standardclaimsPtr": {
 			claims: &jwt.StandardClaims{
 				Subject: "1",
 			},
 			subj: "1",
 		},
-		"customClaims": testCase{
+		"customClaims": {
 			claims: customClaims{
 				StandardClaims: jwt.StandardClaims{
 					Subject: "1",
@@ -118,7 +118,7 @@ func TestSubjectFromClaims(t *testing.T) {
 			subj: "1",
 		},
 		// this uses json encoding to get it even though it doesn't implement Subject() func
-		"nonStandardClaims": testCase{
+		"nonStandardClaims": {
 			claims: nonStandardClaims{
 				StandardClaims: jwt.StandardClaims{
 					Subject: "1",
@@ -140,33 +140,33 @@ func TestSubjectFromClaims(t *testing.T) {
 
 func TestKeyFromClaims(t *testing.T) {
 	testCases := map[string]testCase{
-		"mapClaims": testCase{
+		"mapClaims": {
 			claims: jwt.MapClaims{
 				"email": "test@email.com",
 			},
 			email: "test@email.com",
 		},
-		"standardclaims": testCase{
+		"standardclaims": {
 			claims: jwt.StandardClaims{
 				Subject: "1",
 			},
 			err: errors.New("invalid claims"),
 		},
-		"standardclaimsPtr": testCase{
+		"standardclaimsPtr": {
 			claims: &jwt.StandardClaims{
 				Subject: "1",
 			},
 			err: errors.New("invalid claims"),
 		},
 		// this uses json encoding to get it
-		"customClaims": testCase{
+		"customClaims": {
 			claims: customClaims{
 				Email: "test@email.com",
 			},
 			email: "test@email.com",
 		},
 		// can't get it with json encoding even though field is there
-		"nonStandardClaims": testCase{
+		"nonStandardClaims": {
 			claims: nonStandardClaims{
 				Email: "test@email.com",
 			},
@@ -193,28 +193,28 @@ func TestKeyFromClaims(t *testing.T) {
 func TestExpiryTimeFromClaims(t *testing.T) {
 	future := time.Now().Add(1 * time.Hour).Unix()
 	testCases := map[string]testCase{
-		"mapClaims": testCase{
+		"mapClaims": {
 			claims: jwt.MapClaims{
 				"jti": "1",
 				"exp": future,
 			},
 			expTime: future,
 		},
-		"standardclaims": testCase{
+		"standardclaims": {
 			claims: jwt.StandardClaims{
 				Id:        "1",
 				ExpiresAt: future,
 			},
 			expTime: future,
 		},
-		"standardclaimsPtr": testCase{
+		"standardclaimsPtr": {
 			claims: &jwt.StandardClaims{
 				Id:        "1",
 				ExpiresAt: future,
 			},
 			expTime: future,
 		},
-		"customClaims": testCase{
+		"customClaims": {
 			claims: customClaims{
 				StandardClaims: jwt.StandardClaims{
 					ExpiresAt: future,
