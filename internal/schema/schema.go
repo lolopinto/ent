@@ -571,7 +571,9 @@ func (s *Schema) addInverseAssocEdges(info *NodeDataInfo) error {
 
 		inverseEdgeInfo := inverseInfo.NodeData.EdgeInfo
 
-		assocEdge.AddInverseEdge(inverseEdgeInfo)
+		if err := assocEdge.AddInverseEdge(inverseEdgeInfo); err != nil {
+			return err
+		}
 	}
 	return nil
 }

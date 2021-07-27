@@ -132,7 +132,8 @@ func TestAddingInverseEdge(t *testing.T) {
 		t.Errorf("expected no associations since nothing is defined for Todo")
 	}
 
-	edge.AddInverseEdge(inverseEdgeInfo)
+	err := edge.AddInverseEdge(inverseEdgeInfo)
+	require.Nil(t, err)
 	if len(inverseEdgeInfo.Associations) != 1 {
 		t.Errorf("expected 1 association since edge.AddInverseEdge was called")
 	}
