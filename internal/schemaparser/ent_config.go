@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 )
 
@@ -24,7 +23,6 @@ func getNodeNameFromEntConfig(configName string) (string, error) {
 
 func GetEntConfigFromName(packageName string) *EntConfigInfo {
 	name := strcase.ToCamel(packageName)
-	spew.Dump(name)
 
 	return &EntConfigInfo{
 		PackageName: name,
@@ -37,7 +35,6 @@ func GetEntConfigFromEntConfig(configName string) (*EntConfigInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	spew.Dump(nodeName, configName)
 	return &EntConfigInfo{
 		PackageName: nodeName,
 		ConfigName:  configName,
