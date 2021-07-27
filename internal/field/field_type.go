@@ -233,7 +233,7 @@ func (f *Field) AddForeignKeyFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) error 
 		return fmt.Errorf("invalid field %s added", f.FieldName)
 	}
 
-	return edgeInfo.AddFieldEdgeFromForeignKeyInfo(f.FieldName, fkeyInfo.Schema, f.Nullable())
+	return edgeInfo.AddFieldEdgeFromForeignKeyInfo(f.FieldName, fkeyInfo.Schema+"Config", f.Nullable())
 }
 
 func (f *Field) AddFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) error {
@@ -558,7 +558,7 @@ func (f *Field) AddInverseEdge(edge *edge.AssociationEdge) error {
 	if f.fieldEdge == nil {
 		return fmt.Errorf("cannot add an inverse edge on a field without a field edge")
 	}
-	f.inverseEdge = edge.CloneWithCommonInfo(f.fieldEdge.Schema)
+	f.inverseEdge = edge.CloneWithCommonInfo(f.fieldEdge.Schema + "Config")
 	return nil
 }
 

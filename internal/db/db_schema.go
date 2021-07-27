@@ -3,7 +3,6 @@ package db
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"regexp"
@@ -37,9 +36,7 @@ func (s *Step) Name() string {
 func (s *Step) ProcessData(data *codegen.Data) error {
 	// generate python schema file and then make changes to underlying db
 	db := newDBSchema(data.Schema, data.CodePath.GetRootPathToConfigs())
-	db.generateSchema()
-	// right now it all panics but we have to change that lol
-	return nil
+	return db.generateSchema()
 }
 
 var _ codegen.Step = &Step{}
@@ -340,12 +337,14 @@ func (s *dbSchema) addTable(table *dbTable) {
 	s.tableMap[table.TableName] = table
 }
 
-func (s *dbSchema) generateSchema() {
+func (s *dbSchema) generateSchema() error {
 	s.generateShemaTables()
 
-	s.writeSchemaFile()
+	if err := s.writeSchemaFile(); err != nil {
+		return err
+	}
 
-	s.generateDbSchema()
+	return s.generateDbSchema()
 }
 
 func (s *dbSchema) generateShemaTables() {
@@ -391,7 +390,7 @@ func (s *dbSchema) generateShemaTables() {
 	})
 }
 
-func runPythonCommand(pathToConfigs string, extraArgs ...string) {
+func runPythonCommand(pathToConfigs string, extraArgs ...string) error {
 	args := []string{
 		fmt.Sprintf("-s=%s", pathToConfigs),
 		fmt.Sprintf("-e=%s", data.GetSQLAlchemyDatabaseURIgo()),
@@ -402,46 +401,49 @@ func runPythonCommand(pathToConfigs string, extraArgs ...string) {
 	cmd := exec.Command("auto_schema", args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		log.Fatalf("cmd.Run() failed with %s\n", err)
-	}
+	return cmd.Run()
 }
 
-func (s *dbSchema) generateDbSchema() {
-	runPythonCommand(s.pathToConfigs)
+func (s *dbSchema) generateDbSchema() error {
+	return runPythonCommand(s.pathToConfigs)
 }
 
-func UpgradeDB(codePathInfo *codegen.CodePath, revision string) {
-	runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("-u=%s", revision))
+func UpgradeDB(codePathInfo *codegen.CodePath, revision string) error {
+	return runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("-u=%s", revision))
 }
 
-func DowngradeDB(codePathInfo *codegen.CodePath, revision string) {
-	runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("-d=%s", revision))
+func DowngradeDB(codePathInfo *codegen.CodePath, revision string) error {
+	return runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("-d=%s", revision))
 }
 
-func FixEdges(codePathInfo *codegen.CodePath) {
-	runPythonCommand(codePathInfo.GetRootPathToConfigs(), "-f=True")
+func FixEdges(codePathInfo *codegen.CodePath) error {
+	return runPythonCommand(codePathInfo.GetRootPathToConfigs(), "-f=True")
 }
 
-func RunAlembicCommand(codePathInfo *codegen.CodePath, command string, args ...string) {
+func RunAlembicCommand(codePathInfo *codegen.CodePath, command string, args ...string) error {
 	if len(args) == 0 {
-		runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("--%s", command))
+		return runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("--%s", command))
 	} else {
-		runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("--%s=%s", command, strings.Join(args, ",")))
+		return runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("--%s=%s", command, strings.Join(args, ",")))
 	}
 }
 
-func (s *dbSchema) writeSchemaFile() {
-	util.Die(file.Write(&file.TemplatedBasedFileWriter{
-		Data:              s.getSchemaForTemplate(),
-		AbsPathToTemplate: util.GetAbsolutePath("db_schema.tmpl"),
-		TemplateName:      "db_schema.tmpl",
-		PathToFile:        fmt.Sprintf("%s/schema.py", s.pathToConfigs),
-	}))
+func (s *dbSchema) writeSchemaFile() error {
+	data, err := s.getSchemaForTemplate()
+	if err != nil {
+		return err
+	}
+	return file.Write(
+		&file.TemplatedBasedFileWriter{
+			Data:              data,
+			AbsPathToTemplate: util.GetAbsolutePath("db_schema.tmpl"),
+			TemplateName:      "db_schema.tmpl",
+			PathToFile:        fmt.Sprintf("%s/schema.py", s.pathToConfigs),
+		},
+	)
 }
 
-func (s *dbSchema) getSchemaForTemplate() *dbSchemaTemplate {
+func (s *dbSchema) getSchemaForTemplate() (*dbSchemaTemplate, error) {
 	ret := &dbSchemaTemplate{}
 
 	for _, table := range s.Tables {
@@ -469,7 +471,7 @@ func (s *dbSchema) getSchemaForTemplate() *dbSchemaTemplate {
 		})
 	}
 
-	addData := func(nodeData *schema.NodeData) {
+	addData := func(nodeData *schema.NodeData) error {
 		pkeys := []string{}
 		for _, field := range nodeData.FieldInfo.Fields {
 			// we only support single field primary keys here so this is the solution
@@ -510,7 +512,7 @@ func (s *dbSchema) getSchemaForTemplate() *dbSchemaTemplate {
 					b, err := json.Marshal(v)
 					val = string(b)
 					if err != nil {
-						panic(errors.Wrap(err, "Error unmarshalling value"))
+						return errors.Wrap(err, "Error unmarshalling value")
 					}
 				}
 				kvPairs = append(kvPairs, fmt.Sprintf("'%s': %v", k, val))
@@ -523,12 +525,15 @@ func (s *dbSchema) getSchemaForTemplate() *dbSchemaTemplate {
 			Rows:      rows,
 			Pkeys:     fmt.Sprintf("[%s]", strings.Join(pkeys, ", ")),
 		})
+		return nil
 	}
 
 	// add data values
 	for _, info := range s.schema.Enums {
 		if info.LookupTableEnum() {
-			addData(info.NodeData)
+			if err := addData(info.NodeData); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -538,7 +543,9 @@ func (s *dbSchema) getSchemaForTemplate() *dbSchemaTemplate {
 		}
 
 		nodeData := node.NodeData
-		addData(nodeData)
+		if err := addData(nodeData); err != nil {
+			return nil, err
+		}
 	}
 
 	// sort edges
@@ -550,7 +557,7 @@ func (s *dbSchema) getSchemaForTemplate() *dbSchemaTemplate {
 	sort.Slice(ret.Data, func(i, j int) bool {
 		return ret.Data[i].TableName < ret.Data[j].TableName
 	})
-	return ret
+	return ret, nil
 }
 
 func (s *dbSchema) getEdgeLine(edge *ent.AssocEdgeData) string {

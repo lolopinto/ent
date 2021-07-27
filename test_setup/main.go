@@ -18,8 +18,12 @@ func main() {
 	}
 
 	codepath := codegen.NewCodePath("../internal/test_schema/models/configs", "")
-	db.UpgradeDB(codepath, "head")
+	if err := db.UpgradeDB(codepath, "head"); err != nil {
+		log.Fatal(err)
+	}
 
 	// fix edges if broken
-	db.FixEdges(codepath)
+	if err := db.FixEdges(codepath); err != nil {
+		log.Fatal(err)
+	}
 }

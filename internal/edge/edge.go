@@ -143,7 +143,7 @@ func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(fieldName, configName string, 
 }
 
 func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo *base.FieldEdgeInfo, nullable bool) error {
-	return e.addFieldEdgeFromInfo(fieldName, fieldEdgeInfo.Schema, fieldEdgeInfo.EdgeName, fieldEdgeInfo.Polymorphic, nullable)
+	return e.addFieldEdgeFromInfo(fieldName, fieldEdgeInfo.Schema+"Config", fieldEdgeInfo.EdgeName, fieldEdgeInfo.Polymorphic, nullable)
 }
 
 func (e *EdgeInfo) GetConnectionEdges() []ConnectionEdge {

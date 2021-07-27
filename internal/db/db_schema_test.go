@@ -121,7 +121,8 @@ func TestEdgesFromSchema(t *testing.T) {
 	//for tests like this and the one above and in graphql, we need to change things to get the value from node_schema or something and then do math based on that
 	t.Skip()
 	schema := getTestSchema(t)
-	template := schema.getSchemaForTemplate()
+	template, err := schema.getSchemaForTemplate()
+	require.NotNil(t, err)
 
 	expEdges := 22
 	assert.Equal(
@@ -270,13 +271,10 @@ type TodoConfig struct {
 	}
 	`
 
-	assert.Panics(
-		t,
-		func() {
-			getInMemoryTestSchemas(t, sources, "InvalidForeignKeyConfig")
-		},
-		"invalid EntConfig accounts set as ForeignKey of field AccountID on ent config TodoConfig",
-	)
+	s, err := parseSchemaFull(t, sources, "InvalidForeignKeyConfig")
+	require.Error(t, err)
+	require.Equal(t, err.Error(), "could not find the EntConfig codegen info for accounts")
+	require.Nil(t, s)
 }
 
 func TestInvalidForeignKeyColumn(t *testing.T) {
@@ -295,13 +293,10 @@ type TodoConfig struct {
 	}
 	`
 
-	assert.Panics(
-		t,
-		func() {
-			getInMemoryTestSchemas(t, sources, "InvalidForeignKey")
-		},
-		"invalid Field Bar set as ForeignKey of field AccountID on ent config TodoConfig",
-	)
+	s, err := parseSchemaFull(t, sources, "InvalidForeignKeyColumn")
+	require.Error(t, err)
+	require.Equal(t, err.Error(), "could not find field Bar by name")
+	require.Nil(t, s)
 }
 
 func TestGeneratedEdgeConfigTable(t *testing.T) {
@@ -489,7 +484,7 @@ func TestTimeEdgeColumn(t *testing.T) {
 		"sa.TIMESTAMP()",
 		"nullable=False",
 	}
-		table := getTestTableByName("account_folders_edges", t)
+	table := getTestTableByName("account_folders_edges", t)
 
 	constraint := getTestIndexedConstraintFromTable(t, table, "Time")
 	testColumn(t, col, "time", "Time", "time", parts)
@@ -669,7 +664,8 @@ func TestEnumTableInSchema(t *testing.T) {
 				};`),
 		},
 	)
-	templateData := dbSchema.getSchemaForTemplate()
+	templateData, err := dbSchema.getSchemaForTemplate()
+	require.Nil(t, err)
 
 	assert.Len(t, templateData.Data, 1)
 	data := templateData.Data[0]
@@ -1582,7 +1578,8 @@ func getColumnFromNamedTable(colDBName, tableName string, t *testing.T) *dbColum
 
 func getEdgeByName(edgeName string, t *testing.T) *dbEdgeInfo {
 	s := getTestSchema(t)
-	template := s.getSchemaForTemplate()
+	template, err := s.getSchemaForTemplate()
+	require.Nil(t, err)
 
 	//	spew.Dump(template.Edges)
 	for _, edge := range template.Edges {
@@ -1596,11 +1593,15 @@ func getEdgeByName(edgeName string, t *testing.T) *dbEdgeInfo {
 
 // inlining this in a bunch of places to break the import cycle
 func parseSchema(t *testing.T, sources map[string]string, uniqueKeyForSources string) *schema.Schema {
+	s, err := parseSchemaFull(t, sources, uniqueKeyForSources)
+	require.Nil(t, err)
+	return s
+}
+
+func parseSchemaFull(t *testing.T, sources map[string]string, uniqueKeyForSources string) (*schema.Schema, error) {
 	data := parsehelper.ParseFilesForTest(
 		t,
 		parsehelper.Sources(uniqueKeyForSources, sources),
 	)
-	schema, err := schema.ParsePackage(data.Pkg)
-	require.Nil(t, err)
-	return schema
+	return schema.ParsePackage(data.Pkg)
 }
