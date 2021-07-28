@@ -68,36 +68,29 @@ func TestRunLoopNoDeps(t *testing.T) {
 		g.AddItem(getKey(i), g.sumFunc)
 	}
 
-	if len(g.items) != 10 {
-		t.Errorf("expected 10 items to be added. got %d instead", len(g.items))
-	}
+	require.Len(t, g.items, 10, "expected 10 items to be added. got %d instead", len(g.items))
 
 	err := g.RunLoop()
 	require.Nil(t, err)
 
-	if len(g.queue) != 0 {
-		t.Errorf("expected no items queued up. %d items were queued up instead", len(g.queue))
-	}
+	require.Len(t, g.queue, 0, "expected no items queued up. %d items were queued up instead", len(g.queue))
 
 	expectedSum := (10 * 9) / 2
-	if g.sum != expectedSum {
-		t.Errorf(
-			"expected the sum to be %d, it was %d instead implying every function wasn't called exactly once",
-			expectedSum,
-			g.sum,
-		)
-	}
+	assert.Equal(
+		t,
+		expectedSum,
+		g.sum,
+		"expected the sum to be %d, it was %d instead implying every function wasn't called exactly once",
+		expectedSum,
+		g.sum,
+	)
 }
 
 func verifyRunLoopSimpleDeps(t *testing.T, g *depgraphTest, runQueuePanics bool) {
-	if len(g.queue) != 5 {
-		t.Errorf("expected 5 items queued up. %d items were queued up instead", len(g.queue))
-	}
+	require.Len(t, g.queue, 5, "expected 5 items queued up. %d items were queued up instead", len(g.queue))
 
 	expectedSum := 1 + 3 + 5 + 7 + 9
-	if g.sum != expectedSum {
-		t.Errorf("expected sum for the items run so far is not as expected")
-	}
+	require.Equal(t, expectedSum, g.sum, "expected sum for the items run so far is not as expected")
 
 	if runQueuePanics {
 		err := g.RunQueuedUpItems()
@@ -106,19 +99,17 @@ func verifyRunLoopSimpleDeps(t *testing.T, g *depgraphTest, runQueuePanics bool)
 	}
 	g.RunQueuedUpItems()
 
-	if len(g.queue) != 0 {
-		t.Errorf("expected no items queued up. %d items were queued up instead", len(g.queue))
-	}
+	require.Len(t, g.queue, 0, "expected no items queued up. %d items were queued up instead", len(g.queue))
 
 	expectedSum = (10 * 9) / 2
-	if g.sum != expectedSum {
-		t.Errorf(
-			"expected the sum to be %d, it was %d instead implying every function wasn't called exactly once",
-			expectedSum,
-			g.sum,
-		)
-	}
-
+	require.Equal(
+		t,
+		expectedSum,
+		g.sum,
+		"expected the sum to be %d, it was %d instead implying every function wasn't called exactly once",
+		expectedSum,
+		g.sum,
+	)
 }
 
 func TestRunLoopWithSimpleDeps(t *testing.T) {
@@ -135,9 +126,7 @@ func TestRunLoopWithSimpleDeps(t *testing.T) {
 		}
 	}
 
-	if len(g.items) != 10 {
-		t.Errorf("expected 10 items to be added. got %d instead", len(g.items))
-	}
+	require.Len(t, g.items, 10, "expected 10 items to be added. got %d instead", len(g.items))
 
 	err := g.RunLoop()
 	require.Nil(t, err)
@@ -161,9 +150,7 @@ func TestRunLoopOptionalItemsNotCleared(t *testing.T) {
 		}
 	}
 
-	if len(g.items) != 11 {
-		t.Errorf("expected 11 items to be added. got %d instead", len(g.items))
-	}
+	require.Len(t, g.items, 11, "expected 11 items to be added. got %d instead", len(g.items))
 
 	err := g.RunLoop()
 	require.Nil(t, err)
@@ -186,9 +173,7 @@ func TestRunLoopOptionalItemsCleared(t *testing.T) {
 		}
 	}
 
-	if len(g.items) != 11 {
-		t.Errorf("expected 11 items to be added. got %d instead", len(g.items))
-	}
+	require.Len(t, g.items, 11, "expected 11 items to be added. got %d instead", len(g.items))
 
 	err := g.RunLoop()
 	require.Nil(t, err)
@@ -210,16 +195,12 @@ func TestRunLoopTooManyDeps(t *testing.T) {
 		}
 	}
 
-	if len(g.items) != 10 {
-		t.Errorf("expected 10 items to be added. got %d instead", len(g.items))
-	}
+	require.Len(t, g.items, 10, "expected 10 items to be added. got %d instead", len(g.items))
 
 	err := g.RunLoop()
 	require.Nil(t, err)
 
-	if len(g.queue) != 9 {
-		t.Errorf("expected 9 items queued up. %d items were queued up instead", len(g.queue))
-	}
+	require.Len(t, g.queue, 9, "expected 9 items queued up. %d items were queued up instead", len(g.queue))
 
 	err = g.RunQueuedUpItems()
 	assert.Error(t, err)
@@ -260,9 +241,7 @@ func TestRunNoDeps(t *testing.T) {
 		obj.field4 = "field4"
 	})
 
-	if len(g.items) != 4 {
-		t.Errorf("expected 4 items to be added. got %d instead", len(g.items))
-	}
+	require.Len(t, g.items, 4, "expected 4 items to be added. got %d instead", len(g.items))
 
 	var hardToCalObj object
 
@@ -275,22 +254,15 @@ func TestRunNoDeps(t *testing.T) {
 		return nil
 	}))
 
-	if len(g.queue) != 0 {
-		t.Errorf("expected no items queued up. %d items were queued up instead", len(g.queue))
-	}
+	require.Len(t, g.queue, 0, "expected no items queued up. %d items were queued up instead", len(g.queue))
 
-	if hardToCalObj.field1 != 1 {
-		t.Errorf("field1 was not set when Run() was called")
-	}
-	if hardToCalObj.field2 != "field2" {
-		t.Errorf("field2 was not set when Run() was called")
-	}
-	if hardToCalObj.field3 != 3 {
-		t.Errorf("field3 was not set when Run() was called")
-	}
-	if hardToCalObj.field4 != "field4" {
-		t.Errorf("field4 was not set when Run() was called")
-	}
+	assert.Len(t, hardToCalObj.field1, 1, "field1 was not set when Run() was called")
+
+	assert.Equal(t, hardToCalObj.field2, "field2", "field2 was not set when Run() was called")
+
+	assert.Equal(t, hardToCalObj.field3, "field3", "field4 was not set when Run() was called")
+
+	assert.Equal(t, hardToCalObj.field4, "field3", "field4 was not set when Run() was called")
 }
 
 func TestRunWithDeps(t *testing.T) {
@@ -312,9 +284,7 @@ func TestRunWithDeps(t *testing.T) {
 		obj.field4 = "field4"
 	})
 
-	if len(g.items) != 4 {
-		t.Errorf("expected 4 items to be added. got %d instead", len(g.items))
-	}
+	require.Len(t, g.items, 4, "expected 4 items to be added. got %d instead", len(g.items))
 
 	var hardToCalObj object
 
@@ -327,21 +297,15 @@ func TestRunWithDeps(t *testing.T) {
 		return nil
 	}))
 
-	if len(g.queue) != 0 {
-		t.Errorf("expected no items queued up. %d items were queued up instead", len(g.queue))
-	}
+	require.Len(t, g.queue, 0, "expected no items queued up. %d items were queued up instead", len(g.queue))
 
 	// shows the dependency btw 1 and 2 since 2 has to be set before 1 can be
 	// 4 and 3 is random right now and doesn't necessarily prove anything but that's fine
 	field2Uuid := uuid.MustParse(hardToCalObj.field2)
 
-	if hardToCalObj.field1 != field2Uuid.ClockSequence() {
-		t.Errorf("field1 was not set when Run() was called")
-	}
-	if hardToCalObj.field3 != 3 {
-		t.Errorf("field3 was not set when Run() was called")
-	}
-	if hardToCalObj.field4 != "field4" {
-		t.Errorf("field4 was not set when Run() was called")
-	}
+	require.Equal(t, hardToCalObj.field1, field2Uuid.ClockSequence(), "field1 was not set when Run() was called")
+
+	require.Equal(t, hardToCalObj.field3, 3, "field3 was not set when Run() was called")
+
+	require.Equal(t, hardToCalObj.field4, "field4", "field4 was not set when Run() was called")
 }
