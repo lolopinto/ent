@@ -210,7 +210,7 @@ func getFieldsForAction(fieldNames []string, fieldInfo *field.FieldInfo, typ con
 				fields = append(fields, f)
 			}
 		}
-	} else {
+	} else if fieldInfo != nil {
 		// if a field is explicitly referenced, we want to automatically add it
 		for _, fieldName := range fieldNames {
 			parts := strings.Split(fieldName, ".")
@@ -221,10 +221,10 @@ func getFieldsForAction(fieldNames []string, fieldInfo *field.FieldInfo, typ con
 				switch parts[0] {
 				case "__required__":
 					required = true
-					break
+
 				case "__optional__":
 					optional = true
-					break
+
 				}
 			}
 			f := fieldInfo.GetFieldByName(fieldName)

@@ -262,12 +262,13 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 		)
 		if err != nil {
 			errs = append(errs, err)
-		}
-		for _, f := range nodeData.FieldInfo.Fields {
-			entType := f.GetFieldType()
-			enumType, ok := entType.(enttype.EnumeratedType)
-			if ok {
-				s.addEnum(enumType, nodeData)
+		} else {
+			for _, f := range nodeData.FieldInfo.Fields {
+				entType := f.GetFieldType()
+				enumType, ok := entType.(enttype.EnumeratedType)
+				if ok {
+					s.addEnum(enumType, nodeData)
+				}
 			}
 		}
 
