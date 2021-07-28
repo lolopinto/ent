@@ -47,8 +47,12 @@ func getEmailAuthFilePath() string {
 }
 
 func defaultAuthData(codePathInfo *codegen.CodePath, options *Options) (*authData, error) {
+	key, err := util.GenerateRandAlphaNumericKey(63)
+	if err != nil {
+		return nil, err
+	}
 	data := &authData{
-		SigningKey:        util.GenerateRandAlphaNumericKey(63),
+		SigningKey:        key,
 		NodeName:          options.Node,
 		CodePath:          codePathInfo,
 		CreateLocalViewer: true,

@@ -323,10 +323,10 @@ func TestMultipleForeignKeysDuplicateEdgeName(t *testing.T) {
 		},
 	}
 
-	// panics because duplicate edge name since edgeName wasn't given for either
-	assert.Panics(t, func() {
-		schema.ParseFromInputSchema(inputSchema, base.GoLang)
-	})
+	// errors because duplicate edge name since edgeName wasn't given for either
+	s, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
+	require.Error(t, err)
+	require.Nil(t, s)
 }
 
 func TestMultipleForeignKeysOneEdgeName(t *testing.T) {

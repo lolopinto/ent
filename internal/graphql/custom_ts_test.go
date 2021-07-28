@@ -13,6 +13,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func getCodePath(t *testing.T, dirPath string) *codegen.CodePath {
+	codepath, err := codegen.NewCodePath(filepath.Join(dirPath, "src/schema"), "")
+	require.Nil(t, err)
+	return codepath
+}
+
 func TestCustomMutation(t *testing.T) {
 	// simple test that just tests the entire flow.
 	// very complicated but simplest no-frills way to test things
@@ -42,7 +48,7 @@ func TestCustomMutation(t *testing.T) {
 	schema := testhelper.ParseSchemaForTest(t, m, base.TypeScript, testhelper.TempDir(dirPath))
 	data := &codegen.Data{
 		Schema:   schema,
-		CodePath: codegen.NewCodePath(filepath.Join(dirPath, "src/schema"), ""),
+		CodePath: getCodePath(t, dirPath),
 	}
 
 	schemaDir := filepath.Join(dirPath, "src", "graphql", "mutations", "auth")
@@ -189,7 +195,7 @@ func TestCustomQuery(t *testing.T) {
 	schema := testhelper.ParseSchemaForTest(t, m, base.TypeScript, testhelper.TempDir(dirPath))
 	data := &codegen.Data{
 		Schema:   schema,
-		CodePath: codegen.NewCodePath(filepath.Join(dirPath, "src/schema"), ""),
+		CodePath: getCodePath(t, dirPath),
 	}
 
 	schemaDir := filepath.Join(dirPath, "src", "graphql", "resolvers", "auth")
@@ -321,7 +327,7 @@ func TestCustomListQuery(t *testing.T) {
 	schema := testhelper.ParseSchemaForTest(t, m, base.TypeScript, testhelper.TempDir(dirPath))
 	data := &codegen.Data{
 		Schema:   schema,
-		CodePath: codegen.NewCodePath(filepath.Join(dirPath, "src/schema"), ""),
+		CodePath: getCodePath(t, dirPath),
 	}
 
 	schemaDir := filepath.Join(dirPath, "src", "graphql", "resolvers", "auth")
@@ -502,7 +508,7 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	schema := testhelper.ParseSchemaForTest(t, m, base.TypeScript, testhelper.TempDir(dirPath))
 	data := &codegen.Data{
 		Schema:   schema,
-		CodePath: codegen.NewCodePath(filepath.Join(dirPath, "src/schema"), ""),
+		CodePath: getCodePath(t, dirPath),
 	}
 
 	schemaDir := filepath.Join(dirPath, "src", "graphql", "resolvers", "username")
@@ -631,7 +637,7 @@ func TestCustomUploadType(t *testing.T) {
 	schema := testhelper.ParseSchemaForTest(t, m, base.TypeScript, testhelper.TempDir(dirPath))
 	data := &codegen.Data{
 		Schema:   schema,
-		CodePath: codegen.NewCodePath(filepath.Join(dirPath, "src/schema"), ""),
+		CodePath: getCodePath(t, dirPath),
 	}
 
 	schemaDir := filepath.Join(dirPath, "src", "graphql", "mutations", "file")

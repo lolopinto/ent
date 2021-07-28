@@ -113,7 +113,7 @@ type TodoConfig struct {
 	s := newGraphQLSchema(&codegen.Data{
 		Schema: parseSchema(t, sources, "GraphQLOtherIDWithNoEdge"),
 		// TODO fix this. shouldn't need to be manual...
-		CodePath: codegen.NewCodePath("../testdata/models/configs", ""),
+		CodePath: getCodePath(t, "../testdata/models/configs"),
 	})
 
 	s.generateGraphQLSchemaData()
@@ -143,7 +143,7 @@ type HiddenObjConfig struct {
 
 	s := newGraphQLSchema(&codegen.Data{
 		Schema:   parseSchema(t, sources, "GraphQLHiddenObj"),
-		CodePath: codegen.NewCodePath("", ""),
+		CodePath: getCodePath(t, ""),
 	})
 
 	assert.Panics(
@@ -272,7 +272,7 @@ func (account *Account) GetFoo(baz int) string {
 		// don't need real values here since we're not testing this
 		// can do lazy schema for now since we're not testing the loaded schema path
 		// probably fragile and needs to change
-		CodePath: codegen.NewCodePath("", ""),
+		CodePath: getCodePath(t, ""),
 		Schema: &schema.Schema{
 			Nodes: map[string]*schema.NodeDataInfo{
 				"Account": &schema.NodeDataInfo{
@@ -453,7 +453,7 @@ func getTestGraphQLSchema(t *testing.T) *graphQLSchema {
 	data := &codegen.Data{
 		Schema: getParsedTestSchema(t),
 		// TODO fix this. shouldn't need to be manual...
-		CodePath: codegen.NewCodePath("../testdata/models/configs", ""),
+		CodePath: getCodePath(t, "../testdata/models/configs"),
 	}
 	schema := newGraphQLSchema(data)
 	schema.generateGraphQLSchemaData()

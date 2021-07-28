@@ -985,6 +985,10 @@ type NamedType struct {
 	jsonTypeImpl
 }
 
+func (t *NamedType) GetTSType() string {
+	return getTsType(t.actualType.Underlying())
+}
+
 func (t *NamedType) GetZeroValue() string {
 	if types.IsInterface(t.actualType) {
 		return "nil"
@@ -1049,6 +1053,10 @@ func (t *PointerType) GetNullableType() Type {
 	}
 }
 
+func (t *PointerType) GetTSType() string {
+	return getTsType(t.ptrType.Elem())
+}
+
 func (t *PointerType) GetNonNullableType() Type {
 	return &PointerType{
 		ptrType:             t.ptrType,
@@ -1093,10 +1101,6 @@ func (t *jsonTypeImpl) GetCastToMethod() string {
 	return "cast.UnmarshallJSON"
 }
 
-func (t *jsonTypeImpl) GetTSType() string {
-	panic("jsonType TSType not implemented")
-}
-
 func (t *jsonTypeImpl) GetTSGraphQLImports() []FileImport {
 	// intentionally empty since TSType not implemented
 	return []FileImport{}
@@ -1124,7 +1128,7 @@ func (t *SliceType) GetGraphQLType() string {
 }
 
 func (t *SliceType) GetTSType() string {
-	panic("SliceType TSType not implemented")
+	return getTsType(t.typ.Elem()) + "[]"
 }
 
 func (t *SliceType) GetTSGraphQLImports() []FileImport {
@@ -1153,6 +1157,20 @@ func (t *ArrayType) GetGraphQLType() string {
 	return getSliceGraphQLType(t.typ, t.typ.Elem())
 }
 
+func getTsType(elem types.Type) string {
+	typ := GetType(elem)
+	tsType, ok := typ.(TSType)
+	if ok {
+		return tsType.GetTSType()
+	}
+	panic("jsonType TSType not implemented")
+
+}
+
+func (t *ArrayType) GetTSType() string {
+	return getTsType(t.typ.Elem()) + "[]"
+}
+
 func (t *ArrayType) GetElemGraphQLType() string {
 	return getGraphQLType(t.typ.Elem())
 }
@@ -1172,6 +1190,11 @@ func (t *MapType) GetGraphQLType() string {
 	// this is sadly not consistent with behavior of slices
 	// TODO: need to add Map scalar to schema.graphql if we encounter this
 	// TODO need to convert to/from map[string]interface{} to return in gql
+}
+
+func (t *MapType) GetTSType() string {
+	// TODO nullable vs not. not really used in tstype anyways
+	return "Map"
 }
 
 type enumType struct {
