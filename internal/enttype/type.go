@@ -1057,7 +1057,7 @@ func (t *PointerType) GetTSType() string {
 	return getTsType(t.ptrType.Elem())
 }
 
-func (t *PointerType) GetNonNullableType() Type {
+func (t *PointerType) GetNonNullableType() TSGraphQLType {
 	return &PointerType{
 		ptrType:             t.ptrType,
 		fieldWithActualType: t.getNonNullableType(),
