@@ -28,6 +28,7 @@ type expType struct {
 	contextType         bool
 	goType              string
 	tsType              string
+	tsTypePanics        bool
 	convertFn           string
 }
 
@@ -392,6 +393,7 @@ func TestNamedType(t *testing.T) {
 				expType{
 					db:                  "sa.Text()",
 					graphql:             "Context!",
+					tsTypePanics:        true,
 					defaultGQLFieldName: "context",
 					contextType:         true,
 					goType:              "context.Context",
@@ -409,6 +411,7 @@ func TestNamedType(t *testing.T) {
 				expType{
 					db:            "sa.Text()",
 					graphqlPanics: true,
+					tsTypePanics:  true,
 					errorType:     true,
 					goType:        "error",
 					zeroValue:     "nil",
@@ -428,6 +431,7 @@ func TestNamedType(t *testing.T) {
 				expType{
 					db:                  "sa.Text()",
 					graphql:             "User!",
+					tsTypePanics:        true,
 					defaultGQLFieldName: "user",
 					goType:              "models.User",
 					zeroValue:           "models.User{}",
@@ -468,6 +472,7 @@ func TestPointerType(t *testing.T) {
 				expType{
 					db:                  "sa.Text()",
 					graphql:             "User",
+					tsTypePanics:        true,
 					defaultGQLFieldName: "user",
 					goType:              "*models.User",
 					zeroValue:           "nil",
@@ -486,6 +491,7 @@ func TestPointerType(t *testing.T) {
 					graphql:      "[String!]",
 					goType:       "*[]string",
 					zeroValue:    "nil",
+					tsType:       "string[]",
 					castToMethod: "cast.UnmarshallJSON",
 				},
 				defaultFn,
@@ -501,6 +507,7 @@ func TestPointerType(t *testing.T) {
 					graphql:      "[String]",
 					goType:       "*[]*string",
 					zeroValue:    "nil",
+					tsType:       "string | null[]",
 					castToMethod: "cast.UnmarshallJSON",
 				},
 				defaultFn,
@@ -516,6 +523,7 @@ func TestPointerType(t *testing.T) {
 				expType{
 					db:                  "sa.Text()",
 					graphql:             "[User]",
+					tsTypePanics:        true,
 					defaultGQLFieldName: "users",
 					goType:              "*[]*models.User",
 					zeroValue:           "nil",
@@ -534,7 +542,7 @@ func TestSliceType(t *testing.T) {
 		map[string]testCase{
 			"string": {
 				`package main
-	
+
 				func f() []string {
 					return []string{}
 			}`,
@@ -542,6 +550,7 @@ func TestSliceType(t *testing.T) {
 					db:           "sa.Text()",
 					graphql:      "[String!]!",
 					elemGraphql:  "String!",
+					tsType:       "string[]",
 					zeroValue:    "nil",
 					goType:       "[]string",
 					castToMethod: "cast.UnmarshallJSON",
@@ -550,7 +559,7 @@ func TestSliceType(t *testing.T) {
 			},
 			"stringPointer": {
 				`package main
-	
+
 				func f() []*string {
 					return []*string{}
 			}`,
@@ -558,6 +567,7 @@ func TestSliceType(t *testing.T) {
 					db:           "sa.Text()",
 					graphql:      "[String]!",
 					elemGraphql:  "String",
+					tsType:       "string | null[]",
 					zeroValue:    "nil",
 					goType:       "[]*string",
 					castToMethod: "cast.UnmarshallJSON",
@@ -566,7 +576,7 @@ func TestSliceType(t *testing.T) {
 			},
 			"bool": {
 				`package main
-	
+
 				func f() []bool {
 					return []bool{}
 			}`,
@@ -574,6 +584,7 @@ func TestSliceType(t *testing.T) {
 					db:           "sa.Text()",
 					graphql:      "[Boolean!]!",
 					elemGraphql:  "Boolean!",
+					tsType:       "boolean[]",
 					zeroValue:    "nil",
 					goType:       "[]bool",
 					castToMethod: "cast.UnmarshallJSON",
@@ -582,7 +593,7 @@ func TestSliceType(t *testing.T) {
 			},
 			"boolPointer": {
 				`package main
-	
+
 				func f() []*bool {
 					return []*bool{}
 			}`,
@@ -590,6 +601,7 @@ func TestSliceType(t *testing.T) {
 					db:           "sa.Text()",
 					graphql:      "[Boolean]!",
 					elemGraphql:  "Boolean",
+					tsType:       "boolean | null[]",
 					zeroValue:    "nil",
 					goType:       "[]*bool",
 					castToMethod: "cast.UnmarshallJSON",
@@ -598,7 +610,7 @@ func TestSliceType(t *testing.T) {
 			},
 			"int": {
 				`package main
-	
+
 				func f() []int {
 					return []int{}
 			}`,
@@ -607,6 +619,7 @@ func TestSliceType(t *testing.T) {
 					graphql:      "[Int!]!",
 					elemGraphql:  "Int!",
 					zeroValue:    "nil",
+					tsType:       "number[]",
 					goType:       "[]int",
 					castToMethod: "cast.UnmarshallJSON",
 				},
@@ -614,24 +627,24 @@ func TestSliceType(t *testing.T) {
 			},
 			"intPointer": {
 				`package main
-	
+
 				func f() []*int {
 					return []*int{}
 			}`,
 				expType{
-					db: "sa.Text()",
-
+					db:           "sa.Text()",
 					graphql:      "[Int]!",
 					elemGraphql:  "Int",
 					zeroValue:    "nil",
 					goType:       "[]*int",
+					tsType:       "number | null[]",
 					castToMethod: "cast.UnmarshallJSON",
 				},
 				nil,
 			},
 			"float64": {
 				`package main
-	
+
 				func f() []float64 {
 					return []float64{}
 			}`,
@@ -640,6 +653,7 @@ func TestSliceType(t *testing.T) {
 					zeroValue:    "nil",
 					graphql:      "[Float!]!",
 					elemGraphql:  "Float!",
+					tsType:       "number[]",
 					goType:       "[]float64",
 					castToMethod: "cast.UnmarshallJSON",
 				},
@@ -647,7 +661,7 @@ func TestSliceType(t *testing.T) {
 			},
 			"float64Pointer": {
 				`package main
-	
+
 				func f() []*float64 {
 					return []*float64{}
 			}`,
@@ -657,13 +671,14 @@ func TestSliceType(t *testing.T) {
 					elemGraphql:  "Float",
 					zeroValue:    "nil",
 					goType:       "[]*float64",
+					tsType:       "number | null[]",
 					castToMethod: "cast.UnmarshallJSON",
 				},
 				nil,
 			},
 			"float32": {
 				`package main
-	
+
 				func f() []float32 {
 					return []float32{}
 			}`,
@@ -673,13 +688,14 @@ func TestSliceType(t *testing.T) {
 					elemGraphql:  "Float!",
 					zeroValue:    "nil",
 					goType:       "[]float32",
+					tsType:       "number[]",
 					castToMethod: "cast.UnmarshallJSON",
 				},
 				nil,
 			},
 			"float32Pointer": {
 				`package main
-	
+
 				func f() []*float32 {
 					return []*float32{}
 			}`,
@@ -689,15 +705,16 @@ func TestSliceType(t *testing.T) {
 					elemGraphql:  "Float",
 					zeroValue:    "nil",
 					goType:       "[]*float32",
+					tsType:       "number | null[]",
 					castToMethod: "cast.UnmarshallJSON",
 				},
 				nil,
 			},
 			"time": {
 				`package main
-	
+
 				import "time"
-	
+
 				func f() []time.Time {
 					return []time.Time{}
 			}`,
@@ -707,6 +724,7 @@ func TestSliceType(t *testing.T) {
 					defaultGQLFieldName: "times",
 					elemGraphql:         "Time!",
 					zeroValue:           "nil",
+					tsType:              "Date[]",
 					goType:              "[]time.Time",
 					castToMethod:        "cast.UnmarshallJSON",
 				},
@@ -714,9 +732,9 @@ func TestSliceType(t *testing.T) {
 			},
 			"timePointer": {
 				`package main
-	
+
 				import "time"
-	
+
 				func f() []*time.Time {
 					return []*time.Time{}
 			}`,
@@ -727,6 +745,7 @@ func TestSliceType(t *testing.T) {
 					elemGraphql:         "Time",
 					zeroValue:           "nil",
 					goType:              "[]*time.Time",
+					tsType:              "Date | null[]",
 					castToMethod:        "cast.UnmarshallJSON",
 				},
 				nil,
@@ -746,15 +765,16 @@ func TestSliceType(t *testing.T) {
 					elemGraphql:         "User!",
 					zeroValue:           "nil",
 					goType:              "[]models.User",
+					tsTypePanics:        true,
 					castToMethod:        "cast.UnmarshallJSON",
 				},
 				nil,
 			},
 			"models.UserPointer": {
 				`package main
-	
+
 				import "github.com/lolopinto/ent/internal/test_schema/models"
-	
+
 				func f() []*models.User {
 					return []*models.User{}
 			}`,
@@ -765,6 +785,7 @@ func TestSliceType(t *testing.T) {
 					elemGraphql:         "User",
 					zeroValue:           "nil",
 					goType:              "[]*models.User",
+					tsTypePanics:        true,
 					castToMethod:        "cast.UnmarshallJSON",
 				},
 				nil,
@@ -792,6 +813,7 @@ func TestArrayType(t *testing.T) {
 					db:           "sa.Text()",
 					zeroValue:    "nil",
 					goType:       "[2]string",
+					tsType:       "string[]",
 					castToMethod: "cast.UnmarshallJSON",
 				},
 				nil,
@@ -808,6 +830,7 @@ func TestArrayType(t *testing.T) {
 					db:           "sa.Text()",
 					zeroValue:    "nil",
 					goType:       "[2]*string",
+					tsType:       "string | null[]",
 					castToMethod: "cast.UnmarshallJSON",
 				},
 				nil,
@@ -834,6 +857,7 @@ func TestMapType(t *testing.T) {
 					db:           "sa.Text()",
 					zeroValue:    "nil",
 					goType:       "map[string]string",
+					tsType:       "Map",
 					castToMethod: "cast.UnmarshallJSON",
 				},
 				nil,
@@ -849,6 +873,7 @@ func TestMapType(t *testing.T) {
 					db:           "sa.Text()",
 					zeroValue:    "nil",
 					goType:       "map[string]*bool",
+					tsType:       "Map",
 					castToMethod: "cast.UnmarshallJSON",
 				},
 				nil,
@@ -1256,7 +1281,11 @@ func testType(t *testing.T, exp expType, ret returnType) {
 		assert.Equal(t, exp.graphql, typ.GetGraphQLType())
 		gqlType, ok := typ.(enttype.TSGraphQLType)
 		if ok {
-			assert.Equal(t, exp.graphqlImports, gqlType.GetTSGraphQLImports())
+			if exp.graphqlImports == nil {
+				assert.Len(t, gqlType.GetTSGraphQLImports(), 0)
+			} else {
+				assert.Equal(t, exp.graphqlImports, gqlType.GetTSGraphQLImports())
+			}
 		} else {
 			// not a gqlType. this should be 0
 			assert.Len(t, exp.graphqlImports, 0)
@@ -1335,7 +1364,9 @@ func testType(t *testing.T, exp expType, ret returnType) {
 	}
 
 	tsType, ok := typ.(enttype.TSType)
-	if ok {
+	if ok && exp.tsTypePanics {
+		assert.Panics(t, func() { tsType.GetTSType() })
+	} else if ok {
 		assert.Equal(t, exp.tsType, tsType.GetTSType())
 	} else {
 		assert.Equal(t, "", exp.tsType)

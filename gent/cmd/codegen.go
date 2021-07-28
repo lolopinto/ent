@@ -23,7 +23,10 @@ var codegenCmd = &cobra.Command{
 	Long:  `This runs the codegen steps. It generates the ent, db, and graphql code based on the arguments passed in`,
 	Args:  configRequired,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		codePathInfo := getPathToCode(pathToConfig)
+		codePathInfo, err := getPathToCode(pathToConfig)
+		if err != nil {
+			return err
+		}
 		return parseSchemasAndGenerate(codePathInfo, codegenInfo.specificConfig, codegenInfo.step)
 	},
 }

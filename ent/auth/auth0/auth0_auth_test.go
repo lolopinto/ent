@@ -215,11 +215,14 @@ func (suite *auth0TestSuite) getTestInfoHMAC(audience, issue string) *testInfo {
 }
 
 func (suite *auth0TestSuite) createUser(email string) *models.User {
+	pwd, err := util.GenerateRandPassword()
+	require.Nil(suite.T(), err)
+
 	user, err := action.CreateUser(viewer.LoggedOutViewer()).
 		SetFirstName("Jon").
 		SetLastName("Snow").
 		SetEmailAddress(email).
-		SetPassword(util.GenerateRandPassword()).
+		SetPassword(pwd).
 		Save()
 
 	require.NoError(suite.T(), err)

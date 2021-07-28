@@ -9,8 +9,11 @@ var fixEdgesCmd = &cobra.Command{
 	Use:   "fix-edges",
 	Short: "fix edges db",
 	Long:  `this fixes the edges in the db`,
-	Run: func(cmd *cobra.Command, args []string) {
-		codePathInfo := getPathToCode(getPathToConfig())
-		db.FixEdges(codePathInfo)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		codePathInfo, err := getPathToCode(getPathToConfig())
+		if err != nil {
+			return err
+		}
+		return db.FixEdges(codePathInfo)
 	},
 }

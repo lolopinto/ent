@@ -10,6 +10,7 @@ import (
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -82,12 +83,15 @@ func (suite *mutationBuilderSuite) TestAddSimpleEdgeAtCreation() {
 	user2 := testingutils.CreateTestUserWithEmail(suite.T(), util.GenerateRandEmail())
 
 	email := util.GenerateRandEmail()
+	pwd, err := util.GenerateRandPassword()
+	require.Nil(suite.T(), err)
+
 	b := testingutils.GetUserBuilderWithFields(
 		ent.InsertOperation,
 		nil,
 		map[string]interface{}{
 			"email_address": email,
-			"password":      util.GenerateRandPassword(),
+			"password":      pwd,
 			"first_name":    "Ola",
 			"last_name":     "Okelola",
 		},

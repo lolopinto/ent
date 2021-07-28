@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"go/types"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -21,9 +20,10 @@ type Field struct {
 	// todo: abstract out these 2 also...
 	FieldName           string
 	tagMap              map[string]string
-	topLevelStructField bool            // id, updated_at, created_at no...
-	entType             types.Type      // not all fields will have an entType. probably don't need this...
-	fieldType           enttype.EntType // this is the underlying type for the field for graphql, db, etc
+	topLevelStructField bool       // id, updated_at, created_at no...
+	entType             types.Type // not all fields will have an entType. probably don't need this...
+
+	fieldType enttype.TSGraphQLType // this is the underlying type for the field for graphql, db, etc
 	// in certain scenarios we need a different type for graphql vs typescript
 	graphqlFieldType enttype.TSGraphQLType
 	dbColumn         bool
@@ -126,12 +126,22 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 
 	if ret.entType != nil {
 		if ret.nullable {
-			ret.setFieldType(enttype.GetNullableType(ret.entType, true))
+			if err := ret.setFieldType(enttype.GetNullableType(ret.entType, true)); err != nil {
+				return nil, err
+			}
 		} else {
-			ret.setFieldType(enttype.GetType(ret.entType))
+			if err := ret.setFieldType(enttype.GetType(ret.entType)); err != nil {
+				return nil, err
+			}
 		}
 	} else if f.Type != nil {
-		ret.setFieldType(f.GetEntType())
+		typ, err := f.GetEntType()
+		if err != nil {
+			return nil, err
+		}
+		if err := ret.setFieldType(typ); err != nil {
+			return nil, err
+		}
 	} else {
 		return nil, errors.New("invalid input. no way to get the type")
 	}
@@ -140,14 +150,10 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 		ret.setPrivate()
 	}
 
-	getConfigName := func(config string) string {
-		if strings.HasSuffix(config, "Config") {
-			return config
-		}
-
-		// to make typescript and golang consistent
-		// TODO. we're going to eliminate config from go and won't need this anymore
-		return config + "Config"
+	getSchemaName := func(config string) string {
+		// making TS and golang consistent
+		// removing the Config suffix from golang
+		return strings.TrimSuffix(config, "Config")
 	}
 
 	if f.ForeignKey != nil {
@@ -155,7 +161,7 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 			ret.index = true
 		}
 		ret.fkey = &ForeignKeyInfo{
-			Config:       getConfigName(f.ForeignKey.Schema),
+			Schema:       getSchemaName(f.ForeignKey.Schema),
 			Field:        f.ForeignKey.Column,
 			Name:         f.ForeignKey.Name,
 			DisableIndex: f.ForeignKey.DisableIndex,
@@ -164,7 +170,7 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 
 	if f.FieldEdge != nil {
 		ret.fieldEdge = &base.FieldEdgeInfo{
-			Config:   getConfigName(f.FieldEdge.Schema),
+			Schema:   getSchemaName(f.FieldEdge.Schema),
 			EdgeName: f.FieldEdge.InverseEdge,
 		}
 	}
@@ -221,42 +227,42 @@ func (f *Field) GetQuotedDBColName() string {
 
 // We're going from field -> edge to be consistent and
 // not have circular dependencies
-func (f *Field) AddForeignKeyFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) {
+func (f *Field) AddForeignKeyFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) error {
 	fkeyInfo := f.ForeignKeyInfo()
 	if fkeyInfo == nil {
-		panic(fmt.Errorf("invalid field %s added", f.FieldName))
+		return fmt.Errorf("invalid field %s added", f.FieldName)
 	}
 
-	edgeInfo.AddFieldEdgeFromForeignKeyInfo(f.FieldName, fkeyInfo.Config, f.Nullable())
+	return edgeInfo.AddFieldEdgeFromForeignKeyInfo(f.FieldName, fkeyInfo.Schema+"Config", f.Nullable())
 }
 
-func (f *Field) AddFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) {
+func (f *Field) AddFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) error {
 	fieldEdgeInfo := f.FieldEdgeInfo()
 	if fieldEdgeInfo == nil {
-		panic(fmt.Errorf("invalid field %s added", f.FieldName))
+		return fmt.Errorf("invalid field %s added", f.FieldName)
 	}
 
-	edgeInfo.AddFieldEdgeFromFieldEdgeInfo(
+	return edgeInfo.AddFieldEdgeFromFieldEdgeInfo(
 		f.FieldName,
 		fieldEdgeInfo,
 		f.Nullable(),
 	)
 }
 
-func (f *Field) AddForeignKeyEdgeToInverseEdgeInfo(edgeInfo *edge.EdgeInfo, nodeName string) {
+func (f *Field) AddForeignKeyEdgeToInverseEdgeInfo(edgeInfo *edge.EdgeInfo, nodeName string) error {
 	fkeyInfo := f.ForeignKeyInfo()
 	if fkeyInfo == nil {
-		panic(fmt.Errorf("invalid field %s added", f.FieldName))
+		return fmt.Errorf("invalid field %s added", f.FieldName)
 	}
 	// nothing to do here
 	if fkeyInfo.DisableIndex {
-		return
+		return nil
 	}
 	edgeName := fkeyInfo.Name
 	if edgeName == "" {
 		edgeName = inflection.Plural(nodeName)
 	}
-	edgeInfo.AddEdgeFromForeignKeyIndex(
+	return edgeInfo.AddEdgeFromForeignKeyIndex(
 		f.GetQuotedDBColName(),
 		edgeName,
 		nodeName,
@@ -438,17 +444,13 @@ func (f *Field) CamelCaseName() string {
 }
 
 func (f *Field) TsType() string {
-	tsType, ok := f.fieldType.(enttype.TSType)
-	if !ok {
-		panic("cannot get typescript type from invalid type")
-	}
 	if f.EvolvedIDField() {
 		if f.Nullable() {
 			return (&enttype.NullableIDType{}).GetTSType()
 		}
 		return (&enttype.IDType{}).GetTSType()
 	}
-	return tsType.GetTSType()
+	return f.fieldType.GetTSType()
 }
 
 func (f *Field) ForeignImport() string {
@@ -462,8 +464,6 @@ func (f *Field) ForeignImport() string {
 	}
 	return ""
 }
-
-var structNameRegex = regexp.MustCompile("([A-Za-z]+)Config")
 
 func (f *Field) getIDFieldTypeName() string {
 	_, ok := f.fieldType.(enttype.EnumeratedType)
@@ -479,23 +479,15 @@ func (f *Field) getIDFieldTypeName() string {
 	}
 	var typeName string
 	if f.fkey != nil {
-		typeName = f.fkey.Config
+		typeName = f.fkey.Schema
 	} else if f.fieldEdge != nil {
-		typeName = f.fieldEdge.Config
+		typeName = f.fieldEdge.Schema
 	}
 	return typeName
 }
 
 func (f *Field) getIDFieldType() string {
-	typeName := f.getIDFieldTypeName()
-	if typeName == "" || typeName == "Ent" {
-		return typeName
-	}
-	match := structNameRegex.FindStringSubmatch(typeName)
-	if len(match) != 2 {
-		panic(fmt.Sprintf("invalid config name %s", typeName))
-	}
-	return match[1]
+	return f.getIDFieldTypeName()
 }
 
 func (f *Field) TsBuilderType() string {
@@ -522,42 +514,38 @@ func (f *Field) TsBuilderImports() []string {
 }
 
 func (f *Field) GetNotNullableTsType() string {
-	var baseType enttype.Type
+	var baseType enttype.TSGraphQLType
 	baseType = f.fieldType
 	nonNullableType, ok := f.fieldType.(enttype.NonNullableType)
 	if ok {
 		baseType = nonNullableType.GetNonNullableType()
 	}
-	tsType, ok := baseType.(enttype.TSType)
-	if !ok {
-		panic("cannot get typescript type from invalid type")
-	}
-	return tsType.GetTSType()
+	return baseType.GetTSType()
 }
 
 func (f *Field) GetFieldType() enttype.EntType {
 	return f.fieldType
 }
 
-func (f *Field) setFieldType(fieldType enttype.Type) {
-	fieldEntType, ok := fieldType.(enttype.EntType)
+func (f *Field) setFieldType(fieldType enttype.Type) error {
+	// TODO does this break golang?
+	// if so, might be time?
+	// we can pin to an old release to get the golang code generation working
+	fieldEntType, ok := fieldType.(enttype.TSGraphQLType)
 	if !ok {
-		panic(fmt.Errorf("invalid type %T that cannot be stored in db etc", fieldType))
+		return fmt.Errorf("invalid type %T that cannot be stored in db etc", fieldType)
 	}
 	f.fieldType = fieldEntType
+	return nil
 }
 
-func (f *Field) setGraphQLFieldType(fieldType enttype.Type) {
+func (f *Field) setGraphQLFieldType(fieldType enttype.Type) error {
 	gqlType, ok := fieldType.(enttype.TSGraphQLType)
 	if !ok {
-		panic(fmt.Errorf("invalid type %T that's not a graphql type", fieldType))
+		return fmt.Errorf("invalid type %T that's not a graphql type", fieldType)
 	}
 	f.graphqlFieldType = gqlType
-}
-
-func (f *Field) setDBName(dbName string) {
-	f.dbName = dbName
-	f.addTag("db", f.dbName)
+	return nil
 }
 
 func (f *Field) setPrivate() {
@@ -566,11 +554,13 @@ func (f *Field) setPrivate() {
 	f.exposeToActionsByDefault = false
 }
 
-func (f *Field) AddInverseEdge(edge *edge.AssociationEdge) {
+func (f *Field) AddInverseEdge(edge *edge.AssociationEdge) error {
 	if f.fieldEdge == nil {
-		panic("cannot add an inverse edge on a field without a field edge")
+		return fmt.Errorf("cannot add an inverse edge on a field without a field edge")
 	}
-	f.inverseEdge = edge.CloneWithCommonInfo(f.fieldEdge.Config)
+	var err error
+	f.inverseEdge, err = edge.CloneWithCommonInfo(f.fieldEdge.Schema + "Config")
+	return err
 }
 
 func (f *Field) GetInverseEdge() *edge.AssociationEdge {
@@ -581,23 +571,13 @@ func (f *Field) GetInverseEdge() *edge.AssociationEdge {
 // in the action
 func (f *Field) GetTSGraphQLTypeForFieldImports(forceOptional bool) []enttype.FileImport {
 	var tsGQLType enttype.TSGraphQLType
-	var ok bool
 	nullableType, ok := f.fieldType.(enttype.NullableType)
 
 	if forceOptional && ok {
-		tsGQLType2, ok := nullableType.GetNullableType().(enttype.TSGraphQLType)
-		if ok {
-			tsGQLType = tsGQLType2
-		}
+		tsGQLType = nullableType.GetNullableType()
 	} else {
 		// already null and/or not forceOptional
-		tsGQLType, ok = f.fieldType.(enttype.TSGraphQLType)
-		if !ok {
-			panic("field doesn't support TS graphql.TODO " + f.FieldName)
-		}
-	}
-	if tsGQLType == nil {
-		panic("field doesn't support TS graphql.TODO" + f.FieldName)
+		tsGQLType = f.fieldType
 	}
 	return tsGQLType.GetTSGraphQLImports()
 }
@@ -639,7 +619,7 @@ func Required() Option {
 	}
 }
 
-func (f *Field) Clone(opts ...Option) *Field {
+func (f *Field) Clone(opts ...Option) (*Field, error) {
 	ret := &Field{
 		FieldName:                f.FieldName,
 		nullable:                 f.nullable,
@@ -684,16 +664,20 @@ func (f *Field) Clone(opts ...Option) *Field {
 	if ret.nullable != f.nullable && !ret.nullable {
 		nonNullableType, ok := ret.fieldType.(enttype.NonNullableType)
 		if !ok {
-			panic(fmt.Errorf("couldn't covert the type %v to its non-nullable version for field %s", ret.fieldType, ret.FieldName))
+			return nil, fmt.Errorf("couldn't covert the type %v to its non-nullable version for field %s", ret.fieldType, ret.FieldName)
 		}
-		ret.setFieldType(nonNullableType.GetNonNullableType())
+		if err := ret.setFieldType(nonNullableType.GetNonNullableType()); err != nil {
+			return nil, err
+		}
 	}
 	if ret.graphqlNullable && !f.graphqlNullable {
 		nullableType, ok := ret.fieldType.(enttype.NullableType)
 		if !ok {
-			panic(fmt.Errorf("couldn't covert the type %v to its nullable version for field %s", ret.fieldType, ret.FieldName))
+			return nil, fmt.Errorf("couldn't covert the type %v to its nullable version for field %s", ret.fieldType, ret.FieldName)
 		}
-		ret.setGraphQLFieldType(nullableType.GetNullableType())
+		if err := ret.setGraphQLFieldType(nullableType.GetNullableType()); err != nil {
+			return nil, err
+		}
 	}
-	return ret
+	return ret, nil
 }

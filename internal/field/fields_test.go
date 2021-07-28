@@ -52,3 +52,24 @@ func TestDerivedFields(t *testing.T) {
 	assert.Equal(t, f2.TsBuilderImports(), []string{"ID", "Ent", "Builder"})
 	assert.Equal(t, f2.TsBuilderType(), "ID | Builder<Ent>")
 }
+
+func TestDuplicateFields(t *testing.T) {
+	schema, err := testhelper.ParseSchemaForTestFull(t,
+		map[string]string{
+			"address.ts": testhelper.GetCodeWithSchema(`
+		import {Schema, Field, StringType, UUIDType} from "{schema}";
+
+		export default class Address implements Schema {
+			fields: Field[] = [
+				StringType({ name: "Street" }),
+				StringType({ name: "street" }),
+			];
+		}`),
+		},
+		base.TypeScript,
+	)
+
+	require.Error(t, err)
+	require.Equal(t, err.Error(), "field with column street already exists")
+	require.Nil(t, schema)
+}

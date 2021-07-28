@@ -6,6 +6,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/ent/ent/sql"
+	"github.com/lolopinto/ent/internal/util"
 )
 
 type queryType uint
@@ -104,7 +105,8 @@ func (s *sqlBuilder) Build() (string, []interface{}, error) {
 	case deleteQuery:
 		return s.buildDeleteQuery()
 	}
-	panic("unsupported query")
+	util.GoSchemaKill("unsupported query")
+	return "", nil, nil
 }
 
 func (s *sqlBuilder) buildInsertQuery() (string, []interface{}, error) {

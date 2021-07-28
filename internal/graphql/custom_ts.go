@@ -857,7 +857,7 @@ func (e *CustomEdge) GetNodeInfo() nodeinfo.NodeInfo {
 	return nodeinfo.GetNodeInfo(e.Type)
 }
 
-func (e *CustomEdge) GetEntConfig() schemaparser.EntConfigInfo {
+func (e *CustomEdge) GetEntConfig() *schemaparser.EntConfigInfo {
 	return schemaparser.GetEntConfigFromName(e.Type)
 }
 

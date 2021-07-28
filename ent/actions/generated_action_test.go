@@ -45,9 +45,12 @@ func (suite *generatedActionSuite) createUser() *models.User {
 
 	email := util.GenerateRandEmail()
 
+	pwd, err := util.GenerateRandPassword()
+	require.Nil(suite.T(), err)
+
 	user, err := action.CreateUser(v).
 		SetEmailAddress(email).
-		SetPassword(util.GenerateRandPassword()).
+		SetPassword(pwd).
 		SetFirstName("Ola").
 		SetLastName("Okelola").
 		Save()
@@ -95,10 +98,12 @@ func (suite *generatedActionSuite) TestCreationNilField() {
 	v := viewer.LoggedOutViewer()
 
 	email := util.GenerateRandEmail()
+	pwd, err := util.GenerateRandPassword()
+	require.Nil(suite.T(), err)
 
 	user, err := action.CreateUser(v).
 		SetEmailAddress(email).
-		SetPassword(util.GenerateRandPassword()).
+		SetPassword(pwd).
 		SetFirstName("Ola").
 		SetLastName("Okelola").
 		SetBio("long bio").
@@ -134,7 +139,10 @@ func (suite *generatedActionSuite) TestValidate() {
 	assert.Error(suite.T(), err)
 
 	action.SetEmailAddress(util.GenerateRandEmail())
-	action.SetPassword(util.GenerateRandPassword())
+	pwd, err := util.GenerateRandPassword()
+	require.Nil(suite.T(), err)
+
+	action.SetPassword(pwd)
 
 	err = action.Validate()
 	assert.Nil(suite.T(), err)
@@ -152,7 +160,10 @@ func (suite *generatedActionSuite) TestGetChangeset() {
 	assert.Error(suite.T(), err)
 
 	action.SetEmailAddress(util.GenerateRandEmail())
-	action.SetPassword(util.GenerateRandPassword())
+	pwd, err := util.GenerateRandPassword()
+	require.Nil(suite.T(), err)
+
+	action.SetPassword(pwd)
 
 	c, err := action.GetChangeset()
 	assert.Nil(suite.T(), err)
@@ -308,10 +319,12 @@ func (suite *generatedActionSuite) TestInboundEdge() {
 
 func (suite *generatedActionSuite) TestInboundEdgeBuilder() {
 	v := viewer.LoggedOutViewer()
+	pwd, err := util.GenerateRandPassword()
+	require.Nil(suite.T(), err)
 
 	userAction := action.CreateUser(v).
 		SetEmailAddress(util.GenerateRandEmail()).
-		SetPassword(util.GenerateRandPassword()).
+		SetPassword(pwd).
 		SetFirstName("Ola").
 		SetLastName("Okelola")
 

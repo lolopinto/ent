@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
 	"github.com/rocketlaunchr/remember-go"
 	"github.com/rocketlaunchr/remember-go/memory"
@@ -31,7 +32,7 @@ var ms = memory.NewMemoryStore(cacheTTL)
 // which handles cache hit/ get/miss
 func getItemFromCacheMaybe(key string, dataFunc func() (map[string]interface{}, error)) (map[string]interface{}, error) {
 	if key == "" {
-		panic("invalid key")
+		util.GoSchemaKill("invalid key")
 	}
 
 	ctx := context.Background()
@@ -60,7 +61,7 @@ func getItemFromCacheMaybe(key string, dataFunc func() (map[string]interface{}, 
 
 func getItemsFromCacheMaybe(key string, dataFunc func() ([]map[string]interface{}, error)) ([]map[string]interface{}, error) {
 	if key == "" {
-		panic("invalid key")
+		util.GoSchemaKill("invalid key")
 	}
 	ctx := context.Background()
 	// memory store

@@ -3,7 +3,6 @@ package db
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"regexp"
@@ -17,6 +16,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/file"
+	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 
 	"github.com/lolopinto/ent/ent/config"
@@ -36,16 +36,10 @@ func (s *Step) Name() string {
 func (s *Step) ProcessData(data *codegen.Data) error {
 	// generate python schema file and then make changes to underlying db
 	db := newDBSchema(data.Schema, data.CodePath.GetRootPathToConfigs())
-	db.generateSchema()
-	// right now it all panics but we have to change that lol
-	return nil
+	return db.generateSchema()
 }
 
 var _ codegen.Step = &Step{}
-
-func getNameFromParts(nameParts []string) string {
-	return strings.Join(nameParts, "_")
-}
 
 type dbTable struct {
 	Columns         []*dbColumn
@@ -117,7 +111,7 @@ func (constraint *primaryKeyConstraint) getName() string {
 	if constraint.name != "" {
 		return constraint.name
 	}
-	return schema.GetPrimaryKeyName(constraint.tableName, getNamesFromColumns(constraint.dbColumns)...)
+	return base.GetPrimaryKeyName(constraint.tableName, getNamesFromColumns(constraint.dbColumns)...)
 }
 
 func (constraint *primaryKeyConstraint) getConstraintMethod() string {
@@ -190,7 +184,7 @@ func (constraint *uniqueConstraint) getName() string {
 	if constraint.name != "" {
 		return constraint.name
 	}
-	return schema.GetUniqueKeyName(constraint.tableName, getNamesFromColumns(constraint.dbColumns)...)
+	return base.GetUniqueKeyName(constraint.tableName, getNamesFromColumns(constraint.dbColumns)...)
 }
 
 func (constraint *uniqueConstraint) getConstraintMethod() string {
@@ -221,7 +215,7 @@ func (constraint *indexConstraint) getConstraintString() string {
 	idxName := constraint.name
 	if idxName == "" {
 		idxNameParts = append(idxNameParts, "idx")
-		idxName = getNameFromParts(idxNameParts)
+		idxName = base.GetNameFromParts(idxNameParts)
 	}
 
 	args := []string{
@@ -297,37 +291,40 @@ func (s *dbSchema) createTableForNode(nodeData *schema.NodeData) *dbTable {
 	}
 }
 
-func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbColumn, constraints *[]dbConstraint) {
+func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbColumn, constraints *[]dbConstraint) error {
 	for _, constraint := range nodeData.Constraints {
 		switch constraint.Type {
 		case input.PrimaryKeyConstraint:
-			err := s.addPrimaryKeyConstraint(nodeData, constraint, columns, constraints)
-			util.Die(err)
-			break
+			if err := s.addPrimaryKeyConstraint(nodeData, constraint, columns, constraints); err != nil {
+				return err
+			}
 
 		case input.UniqueConstraint:
-			err := s.addUniqueConstraint(nodeData, constraint, columns, constraints)
-			util.Die(err)
-			break
+			if err := s.addUniqueConstraint(nodeData, constraint, columns, constraints); err != nil {
+				return err
+			}
 
 		case input.ForeignKeyConstraint:
-			err := s.addForeignKeyConstraint(nodeData, constraint, columns, constraints)
-			util.Die(err)
-			break
+			if err := s.addForeignKeyConstraint(nodeData, constraint, columns, constraints); err != nil {
+				return err
+			}
 
 		case input.CheckConstraint:
-			err := s.addCheckConstraint(nodeData, constraint, constraints)
-			util.Die(err)
+			if err := s.addCheckConstraint(nodeData, constraint, constraints); err != nil {
+				return err
+			}
 
 		default:
-			util.Die(fmt.Errorf("unsupported constraint type %s", constraint.Type))
+			return fmt.Errorf("unsupported constraint type %s", constraint.Type)
 		}
 	}
 
 	// let's just use exising constraint for this
 	for _, index := range nodeData.Indices {
 		cols, err := findConstraintDBColumns(index.Columns, columns)
-		util.Die(err)
+		if err != nil {
+			return err
+		}
 		constraint := &indexConstraint{
 			dbColumns: cols,
 			tableName: nodeData.GetTableName(),
@@ -336,6 +333,7 @@ func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbCo
 		}
 		*constraints = append(*constraints, constraint)
 	}
+	return nil
 }
 
 func (s *dbSchema) addTable(table *dbTable) {
@@ -343,15 +341,19 @@ func (s *dbSchema) addTable(table *dbTable) {
 	s.tableMap[table.TableName] = table
 }
 
-func (s *dbSchema) generateSchema() {
-	s.generateShemaTables()
+func (s *dbSchema) generateSchema() error {
+	if err := s.generateShemaTables(); err != nil {
+		return err
+	}
 
-	s.writeSchemaFile()
+	if err := s.writeSchemaFile(); err != nil {
+		return err
+	}
 
-	s.generateDbSchema()
+	return s.generateDbSchema()
 }
 
-func (s *dbSchema) generateShemaTables() {
+func (s *dbSchema) generateShemaTables() error {
 
 	addedAtLeastOneTable := false
 	for _, info := range s.schema.Nodes {
@@ -372,7 +374,9 @@ func (s *dbSchema) generateShemaTables() {
 		table := s.getTableForNode(info.NodeData)
 		s.addTable(table)
 		// can process enum constraints immediately
-		s.processConstraints(info.NodeData, table.Columns, &table.Constraints)
+		if err := s.processConstraints(info.NodeData, table.Columns, &table.Constraints); err != nil {
+			return err
+		}
 	}
 
 	// process constraints after because easier to access tableMap for fkey constraints
@@ -381,7 +385,9 @@ func (s *dbSchema) generateShemaTables() {
 
 		table := s.tableMap[nodeData.TableName]
 
-		s.processConstraints(nodeData, table.Columns, &table.Constraints)
+		if err := s.processConstraints(nodeData, table.Columns, &table.Constraints); err != nil {
+			return err
+		}
 	}
 
 	if addedAtLeastOneTable {
@@ -392,9 +398,10 @@ func (s *dbSchema) generateShemaTables() {
 	sort.Slice(s.Tables, func(i, j int) bool {
 		return s.Tables[i].TableName < s.Tables[j].TableName
 	})
+	return nil
 }
 
-func runPythonCommand(pathToConfigs string, extraArgs ...string) {
+func runPythonCommand(pathToConfigs string, extraArgs ...string) error {
 	args := []string{
 		fmt.Sprintf("-s=%s", pathToConfigs),
 		fmt.Sprintf("-e=%s", data.GetSQLAlchemyDatabaseURIgo()),
@@ -405,46 +412,49 @@ func runPythonCommand(pathToConfigs string, extraArgs ...string) {
 	cmd := exec.Command("auto_schema", args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		log.Fatalf("cmd.Run() failed with %s\n", err)
-	}
+	return cmd.Run()
 }
 
-func (s *dbSchema) generateDbSchema() {
-	runPythonCommand(s.pathToConfigs)
+func (s *dbSchema) generateDbSchema() error {
+	return runPythonCommand(s.pathToConfigs)
 }
 
-func UpgradeDB(codePathInfo *codegen.CodePath, revision string) {
-	runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("-u=%s", revision))
+func UpgradeDB(codePathInfo *codegen.CodePath, revision string) error {
+	return runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("-u=%s", revision))
 }
 
-func DowngradeDB(codePathInfo *codegen.CodePath, revision string) {
-	runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("-d=%s", revision))
+func DowngradeDB(codePathInfo *codegen.CodePath, revision string) error {
+	return runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("-d=%s", revision))
 }
 
-func FixEdges(codePathInfo *codegen.CodePath) {
-	runPythonCommand(codePathInfo.GetRootPathToConfigs(), "-f=True")
+func FixEdges(codePathInfo *codegen.CodePath) error {
+	return runPythonCommand(codePathInfo.GetRootPathToConfigs(), "-f=True")
 }
 
-func RunAlembicCommand(codePathInfo *codegen.CodePath, command string, args ...string) {
+func RunAlembicCommand(codePathInfo *codegen.CodePath, command string, args ...string) error {
 	if len(args) == 0 {
-		runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("--%s", command))
+		return runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("--%s", command))
 	} else {
-		runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("--%s=%s", command, strings.Join(args, ",")))
+		return runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("--%s=%s", command, strings.Join(args, ",")))
 	}
 }
 
-func (s *dbSchema) writeSchemaFile() {
-	util.Die(file.Write(&file.TemplatedBasedFileWriter{
-		Data:              s.getSchemaForTemplate(),
-		AbsPathToTemplate: util.GetAbsolutePath("db_schema.tmpl"),
-		TemplateName:      "db_schema.tmpl",
-		PathToFile:        fmt.Sprintf("%s/schema.py", s.pathToConfigs),
-	}))
+func (s *dbSchema) writeSchemaFile() error {
+	data, err := s.getSchemaForTemplate()
+	if err != nil {
+		return err
+	}
+	return file.Write(
+		&file.TemplatedBasedFileWriter{
+			Data:              data,
+			AbsPathToTemplate: util.GetAbsolutePath("db_schema.tmpl"),
+			TemplateName:      "db_schema.tmpl",
+			PathToFile:        fmt.Sprintf("%s/schema.py", s.pathToConfigs),
+		},
+	)
 }
 
-func (s *dbSchema) getSchemaForTemplate() *dbSchemaTemplate {
+func (s *dbSchema) getSchemaForTemplate() (*dbSchemaTemplate, error) {
 	ret := &dbSchemaTemplate{}
 
 	for _, table := range s.Tables {
@@ -472,7 +482,7 @@ func (s *dbSchema) getSchemaForTemplate() *dbSchemaTemplate {
 		})
 	}
 
-	addData := func(nodeData *schema.NodeData) {
+	addData := func(nodeData *schema.NodeData) error {
 		pkeys := []string{}
 		for _, field := range nodeData.FieldInfo.Fields {
 			// we only support single field primary keys here so this is the solution
@@ -513,7 +523,7 @@ func (s *dbSchema) getSchemaForTemplate() *dbSchemaTemplate {
 					b, err := json.Marshal(v)
 					val = string(b)
 					if err != nil {
-						panic(errors.Wrap(err, "Error unmarshalling value"))
+						return errors.Wrap(err, "Error unmarshalling value")
 					}
 				}
 				kvPairs = append(kvPairs, fmt.Sprintf("'%s': %v", k, val))
@@ -526,12 +536,15 @@ func (s *dbSchema) getSchemaForTemplate() *dbSchemaTemplate {
 			Rows:      rows,
 			Pkeys:     fmt.Sprintf("[%s]", strings.Join(pkeys, ", ")),
 		})
+		return nil
 	}
 
 	// add data values
 	for _, info := range s.schema.Enums {
 		if info.LookupTableEnum() {
-			addData(info.NodeData)
+			if err := addData(info.NodeData); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -541,7 +554,9 @@ func (s *dbSchema) getSchemaForTemplate() *dbSchemaTemplate {
 		}
 
 		nodeData := node.NodeData
-		addData(nodeData)
+		if err := addData(nodeData); err != nil {
+			return nil, err
+		}
 	}
 
 	// sort edges
@@ -553,7 +568,7 @@ func (s *dbSchema) getSchemaForTemplate() *dbSchemaTemplate {
 	sort.Slice(ret.Data, func(i, j int) bool {
 		return ret.Data[i].TableName < ret.Data[j].TableName
 	})
-	return ret
+	return ret, nil
 }
 
 func (s *dbSchema) getEdgeLine(edge *ent.AssocEdgeData) string {

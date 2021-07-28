@@ -89,10 +89,12 @@ func TestEdgeActions(t *testing.T) {
 			)
 		}
 
+		name, err := action.GetActionMethodName(a)
+		assert.Nil(t, err)
 		assert.Equal(
 			t,
 			tt.actionMethodName,
-			action.GetActionMethodName(a),
+			name,
 		)
 	}
 }

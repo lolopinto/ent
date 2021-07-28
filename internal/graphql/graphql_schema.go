@@ -198,11 +198,11 @@ func (schema *graphQLSchema) runSpecificSteps(steps []gqlStep) {
 
 	// TOOD make sure they are run in the correct order
 	if err != nil {
-		util.Die(err)
+		util.GoSchemaKill(err)
 	}
 	for _, fn := range fns {
 		if err := fn(); err != nil {
-			util.Die(err)
+			util.GoSchemaKill(err)
 		}
 	}
 }
@@ -453,7 +453,9 @@ func (s *graphQLSchema) addGraphQLInfoForType(nodeMap schema.NodeMapInfo, nodeDa
 			f := fieldInfo.GetFieldByName(edge.FieldName)
 			// TODO this shouldn't be here but be somewhere else...
 			if f != nil {
-				fieldInfo.InvalidateFieldForGraphQL(f)
+				if err := fieldInfo.InvalidateFieldForGraphQL(f); err != nil {
+					util.GoSchemaKill(err)
+				}
 			}
 			schemaInfo.addFieldEdge(&graphqlFieldEdge{edge})
 		}
@@ -677,7 +679,9 @@ func (s *graphQLSchema) processConstantForEnum(cg *schema.ConstGroupInfo) *graph
 	for _, constant := range cg.Constants {
 		unquoted, err := strconv.Unquote(constant.ConstValue)
 
-		util.Die(err)
+		if err != nil {
+			util.GoSchemaKill(err)
+		}
 		// TODO deal with this
 		enumSchemaInfo.addNonEntField(&graphQLNonEntField{
 			fieldName: strcase.ToScreamingSnake(unquoted),

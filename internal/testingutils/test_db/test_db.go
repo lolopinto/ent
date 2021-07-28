@@ -39,7 +39,10 @@ func (tdb *TestDB) BeforeAll() error {
 	}
 	tdb.rootDB = db
 
-	tdb.dbName = util.GenerateRandDBName()
+	tdb.dbName, err = util.GenerateRandDBName()
+	if err != nil {
+		return err
+	}
 	_, err = db.Query(fmt.Sprintf("CREATE DATABASE %s", tdb.dbName))
 	if err != nil {
 		return err

@@ -17,9 +17,16 @@ func main() {
 		log.Fatal("DB_CONNECTION_STRING env variable is required")
 	}
 
-	codepath := codegen.NewCodePath("../internal/test_schema/models/configs", "")
-	db.UpgradeDB(codepath, "head")
+	codepath, err := codegen.NewCodePath("../internal/test_schema/models/configs", "")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := db.UpgradeDB(codepath, "head"); err != nil {
+		log.Fatal(err)
+	}
 
 	// fix edges if broken
-	db.FixEdges(codepath)
+	if err := db.FixEdges(codepath); err != nil {
+		log.Fatal(err)
+	}
 }

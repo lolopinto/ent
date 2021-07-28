@@ -5,6 +5,7 @@ import (
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/util"
+	"github.com/stretchr/testify/require"
 
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/ent/viewertesting"
@@ -17,10 +18,13 @@ import (
 // TODO need multi-insert, multi-delete etc APIs
 
 func BenchmarkInsert(b *testing.B) {
+	pwd, err := util.GenerateRandPassword()
+	require.Nil(b, err)
+
 	for i := 0; i < b.N; i++ {
 		_, err := useraction.CreateUser(viewer.LoggedOutViewer()).
 			SetEmailAddress(util.GenerateRandEmail()).
-			SetPassword(util.GenerateRandPassword()).
+			SetPassword(pwd).
 			SetFirstName("Jon").
 			SetLastName("Snow").
 			Save()
@@ -32,9 +36,12 @@ func BenchmarkInsert(b *testing.B) {
 }
 
 func createUser(b *testing.B) (viewer.ViewerContext, *models.User) {
+	pwd, err := util.GenerateRandPassword()
+	require.Nil(b, err)
+
 	user, err := useraction.CreateUser(viewer.LoggedOutViewer()).
 		SetEmailAddress(util.GenerateRandEmail()).
-		SetPassword(util.GenerateRandPassword()).
+		SetPassword(pwd).
 		SetFirstName("Jon").
 		SetLastName("Snow").
 		Save()

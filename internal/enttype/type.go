@@ -109,13 +109,13 @@ type ListType interface {
 
 // NullableType refers to a Type that has the nullable version of the same type
 type NullableType interface {
-	Type
-	GetNullableType() Type
+	TSGraphQLType
+	GetNullableType() TSGraphQLType
 }
 
 type NonNullableType interface {
-	Type
-	GetNonNullableType() Type
+	TSGraphQLType
+	GetNonNullableType() TSGraphQLType
 }
 
 type DefaulFieldNameType interface {
@@ -160,7 +160,7 @@ func (t *StringType) GetCastToMethod() string {
 	return "cast.ToString"
 }
 
-func (t *StringType) GetNullableType() Type {
+func (t *StringType) GetNullableType() TSGraphQLType {
 	return &NullableStringType{}
 }
 
@@ -186,7 +186,7 @@ func (t *NullableStringType) GetCastToMethod() string {
 	return "cast.ToNullableString"
 }
 
-func (t *NullableStringType) GetNonNullableType() Type {
+func (t *NullableStringType) GetNonNullableType() TSGraphQLType {
 	return &StringType{}
 }
 
@@ -243,7 +243,7 @@ func (t *BoolType) GetCastToMethod() string {
 	return "cast.ToBool"
 }
 
-func (t *BoolType) GetNullableType() Type {
+func (t *BoolType) GetNullableType() TSGraphQLType {
 	return &NullableBoolType{}
 }
 
@@ -269,7 +269,7 @@ func (t *NullableBoolType) GetCastToMethod() string {
 	return "cast.ToNullableBool"
 }
 
-func (t *NullableBoolType) GetNonNullableType() Type {
+func (t *NullableBoolType) GetNonNullableType() TSGraphQLType {
 	return &BoolType{}
 }
 
@@ -328,7 +328,7 @@ func (t *IDType) GetCastToMethod() string {
 	return "cast.ToUUIDString"
 }
 
-func (t *IDType) GetNullableType() Type {
+func (t *IDType) GetNullableType() TSGraphQLType {
 	return &NullableIDType{}
 }
 
@@ -355,7 +355,7 @@ func (t *NullableIDType) GetCastToMethod() string {
 	return "cast.ToNullableUUIDString"
 }
 
-func (t *NullableIDType) GetNonNullableType() Type {
+func (t *NullableIDType) GetNonNullableType() TSGraphQLType {
 	return &IDType{}
 }
 
@@ -388,7 +388,7 @@ func (t *IntegerType) GetCastToMethod() string {
 	return "cast.ToInt"
 }
 
-func (t *IntegerType) GetNullableType() Type {
+func (t *IntegerType) GetNullableType() TSGraphQLType {
 	return &NullableIntegerType{}
 }
 
@@ -412,7 +412,7 @@ func (t *NullableIntegerType) GetCastToMethod() string {
 	return "cast.ToNullableInt"
 }
 
-func (t *NullableIntegerType) GetNonNullableType() Type {
+func (t *NullableIntegerType) GetNonNullableType() TSGraphQLType {
 	return &IntegerType{}
 }
 
@@ -446,7 +446,7 @@ func (t *FloatType) GetCastToMethod() string {
 	return "cast.ToFloat"
 }
 
-func (t *FloatType) GetNullableType() Type {
+func (t *FloatType) GetNullableType() TSGraphQLType {
 	return &NullableFloatType{}
 }
 
@@ -470,7 +470,7 @@ func (t *NullableFloatType) GetCastToMethod() string {
 	return "cast.ToNullableFloat"
 }
 
-func (t *NullableFloatType) GetNonNullableType() Type {
+func (t *NullableFloatType) GetNonNullableType() TSGraphQLType {
 	return &FloatType{}
 }
 
@@ -538,7 +538,7 @@ func (t *TimestampType) GetTSType() string {
 	return "Date"
 }
 
-func (t *TimestampType) GetNullableType() Type {
+func (t *TimestampType) GetNullableType() TSGraphQLType {
 	return &NullableTimestampType{}
 }
 
@@ -560,7 +560,7 @@ func (t *TimestamptzType) GetDBType() string {
 	return "sa.TIMESTAMP(timezone=True)"
 }
 
-func (t *TimestamptzType) GetNullableType() Type {
+func (t *TimestamptzType) GetNullableType() TSGraphQLType {
 	return &NullableTimestamptzType{}
 }
 
@@ -572,7 +572,7 @@ func (t *DateType) GetDBType() string {
 	return "sa.Date()"
 }
 
-func (t *DateType) GetNullableType() Type {
+func (t *DateType) GetNullableType() TSGraphQLType {
 	return &NullableDateType{}
 }
 
@@ -592,7 +592,7 @@ func (t *NullableTimestampType) GetTSType() string {
 	return "Date | null"
 }
 
-func (t *NullableTimestampType) GetNonNullableType() Type {
+func (t *NullableTimestampType) GetNonNullableType() TSGraphQLType {
 	return &TimestampType{}
 }
 
@@ -620,7 +620,7 @@ func (t *NullableTimestamptzType) GetDBType() string {
 	return "sa.TIMESTAMP(timezone=True)"
 }
 
-func (t *NullableTimestamptzType) GetNonNullableType() Type {
+func (t *NullableTimestamptzType) GetNonNullableType() TSGraphQLType {
 	return &TimestamptzType{}
 }
 
@@ -632,7 +632,7 @@ func (t *NullableDateType) GetDBType() string {
 	return "sa.Date()"
 }
 
-func (t *NullableDateType) GetNonNullableType() Type {
+func (t *NullableDateType) GetNonNullableType() TSGraphQLType {
 	return &DateType{}
 }
 
@@ -648,7 +648,7 @@ func (t *TimeType) GetTSType() string {
 	return "string"
 }
 
-func (t *TimeType) GetNullableType() Type {
+func (t *TimeType) GetNullableType() TSGraphQLType {
 	return &NullableTimeType{}
 }
 
@@ -672,7 +672,7 @@ func (t *TimetzType) GetDBType() string {
 	return "sa.Time(timezone=True)"
 }
 
-func (t *TimetzType) GetNullableType() Type {
+func (t *TimetzType) GetNullableType() TSGraphQLType {
 	return &NullableTimetzType{}
 }
 
@@ -692,7 +692,7 @@ func (t *NullableTimeType) GetCastToMethod() string {
 	return "cast.ToNullableTime"
 }
 
-func (t *NullableTimeType) GetNonNullableType() Type {
+func (t *NullableTimeType) GetNonNullableType() TSGraphQLType {
 	return &TimeType{}
 }
 
@@ -715,7 +715,7 @@ func (t *NullableTimetzType) GetDBType() string {
 	return "sa.Time(timezone=True)"
 }
 
-func (t *NullableTimetzType) GetNonNullableType() Type {
+func (t *NullableTimetzType) GetNonNullableType() TSGraphQLType {
 	return &TimetzType{}
 }
 
@@ -754,7 +754,7 @@ func (t *ObjectType) GetTSType() string {
 	return t.TSType
 }
 
-func (t *ObjectType) GetNullableType() Type {
+func (t *ObjectType) GetNullableType() TSGraphQLType {
 	return &NullableObjectType{}
 }
 
@@ -779,7 +779,7 @@ func (t *NullableObjectType) GetTSType() string {
 	return fmt.Sprintf("%s | null", t.TSType)
 }
 
-func (t *NullableObjectType) GetNullableType() Type {
+func (t *NullableObjectType) GetNullableType() TSGraphQLType {
 	return &ObjectType{}
 }
 
@@ -823,14 +823,14 @@ func (t *ListWrapperType) GetTSType() string {
 	return fmt.Sprintf("%s[]", t.Type.GetTSType())
 }
 
-func (t *ListWrapperType) GetNullableType() Type {
+func (t *ListWrapperType) GetNullableType() TSGraphQLType {
 	return &ListWrapperType{
 		Type:     t.Type,
 		Nullable: true,
 	}
 }
 
-func (t *ListWrapperType) GetNonNullableType() Type {
+func (t *ListWrapperType) GetNonNullableType() TSGraphQLType {
 	return &ListWrapperType{
 		Type:     t.Type,
 		Nullable: false,
@@ -985,6 +985,10 @@ type NamedType struct {
 	jsonTypeImpl
 }
 
+func (t *NamedType) GetTSType() string {
+	return getTsType(t.actualType.Underlying())
+}
+
 func (t *NamedType) GetZeroValue() string {
 	if types.IsInterface(t.actualType) {
 		return "nil"
@@ -1049,7 +1053,11 @@ func (t *PointerType) GetNullableType() Type {
 	}
 }
 
-func (t *PointerType) GetNonNullableType() Type {
+func (t *PointerType) GetTSType() string {
+	return getTsType(t.ptrType.Elem())
+}
+
+func (t *PointerType) GetNonNullableType() TSGraphQLType {
 	return &PointerType{
 		ptrType:             t.ptrType,
 		fieldWithActualType: t.getNonNullableType(),
@@ -1093,6 +1101,11 @@ func (t *jsonTypeImpl) GetCastToMethod() string {
 	return "cast.UnmarshallJSON"
 }
 
+func (t *jsonTypeImpl) GetTSGraphQLImports() []FileImport {
+	// intentionally empty since TSType not implemented
+	return []FileImport{}
+}
+
 type RawJSONType struct {
 	jsonTypeImpl
 }
@@ -1112,6 +1125,15 @@ type SliceType struct {
 
 func (t *SliceType) GetGraphQLType() string {
 	return getSliceGraphQLType(t.typ, t.typ.Elem())
+}
+
+func (t *SliceType) GetTSType() string {
+	return getTsType(t.typ.Elem()) + "[]"
+}
+
+func (t *SliceType) GetTSGraphQLImports() []FileImport {
+	// intentionally empty since TSType not implemented
+	return []FileImport{}
 }
 
 func (t *SliceType) DefaultGraphQLFieldName() string {
@@ -1135,6 +1157,20 @@ func (t *ArrayType) GetGraphQLType() string {
 	return getSliceGraphQLType(t.typ, t.typ.Elem())
 }
 
+func getTsType(elem types.Type) string {
+	typ := GetType(elem)
+	tsType, ok := typ.(TSType)
+	if ok {
+		return tsType.GetTSType()
+	}
+	panic("jsonType TSType not implemented")
+
+}
+
+func (t *ArrayType) GetTSType() string {
+	return getTsType(t.typ.Elem()) + "[]"
+}
+
 func (t *ArrayType) GetElemGraphQLType() string {
 	return getGraphQLType(t.typ.Elem())
 }
@@ -1154,6 +1190,11 @@ func (t *MapType) GetGraphQLType() string {
 	// this is sadly not consistent with behavior of slices
 	// TODO: need to add Map scalar to schema.graphql if we encounter this
 	// TODO need to convert to/from map[string]interface{} to return in gql
+}
+
+func (t *MapType) GetTSType() string {
+	// TODO nullable vs not. not really used in tstype anyways
+	return "Map"
 }
 
 type enumType struct {
@@ -1222,7 +1263,7 @@ func (t *EnumType) GetCastToMethod() string {
 	panic("enum type not supported in go-lang yet")
 }
 
-func (t *EnumType) GetNullableType() Type {
+func (t *EnumType) GetNullableType() TSGraphQLType {
 	return &NullableEnumType{
 		Type:        t.Type,
 		GraphQLType: t.GraphQLType,
@@ -1286,7 +1327,7 @@ func (t *NullableEnumType) GetCastToMethod() string {
 	panic("enum type not supported in go-lang yet")
 }
 
-func (t *NullableEnumType) GetNonNullableType() Type {
+func (t *NullableEnumType) GetNonNullableType() TSGraphQLType {
 	return &EnumType{
 		Type:        t.Type,
 		GraphQLType: t.GraphQLType,
@@ -1353,7 +1394,7 @@ func (t *ArrayListType) GetTsTypeImports() []string {
 	return t.getTsTypeImports(t.ElemType)
 }
 
-func (t *ArrayListType) GetNullableType() Type {
+func (t *ArrayListType) GetNullableType() TSGraphQLType {
 	return &NullableArrayListType{
 		ElemType: t.ElemType,
 	}
@@ -1402,7 +1443,7 @@ func (t *NullableArrayListType) GetTsTypeImports() []string {
 	return t.getTsTypeImports(t.ElemType)
 }
 
-func (t *NullableArrayListType) GetNonNullableType() Type {
+func (t *NullableArrayListType) GetNonNullableType() TSGraphQLType {
 	return &ArrayListType{
 		ElemType: t.ElemType,
 	}

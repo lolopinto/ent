@@ -22,6 +22,7 @@ import (
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/syncerr"
@@ -450,11 +451,11 @@ func getFilePathForNode(nodeData *schema.NodeData) string {
 }
 
 func getFilePathForEnum(e *enum.GQLEnum) string {
-	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", strings.ToLower(strcase.ToSnake(e.Name)))
+	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", base.GetSnakeCaseName(e.Name))
 }
 
 func getFilePathForConnection(packageName string, connectionName string) string {
-	return fmt.Sprintf("src/graphql/resolvers/generated/%s/%s_type.ts", packageName, strings.ToLower(strcase.ToSnake(connectionName)))
+	return fmt.Sprintf("src/graphql/resolvers/generated/%s/%s_type.ts", packageName, base.GetSnakeCaseName(connectionName))
 }
 
 func getQueryFilePath() string {
@@ -1310,7 +1311,10 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 
 		// TODO this shouldn't be here but be somewhere else...
 		if f != nil {
-			fieldInfo.InvalidateFieldForGraphQL(f)
+			if err := fieldInfo.InvalidateFieldForGraphQL(f); err != nil {
+				// TODO move this validation up
+				panic(err)
+			}
 		}
 		addSingularEdge(edge, &fields, instance)
 	}

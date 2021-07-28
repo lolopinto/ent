@@ -26,7 +26,9 @@ func readTemplateFile(fileName string) string {
 	path := util.GetAbsolutePath(fileName)
 
 	contents, err := ioutil.ReadFile(path)
-	util.Die(err)
+	if err != nil {
+		util.GoSchemaKill(err)
+	}
 	return string(contents)
 }
 

@@ -2,6 +2,7 @@ package field
 
 import (
 	"errors"
+	"fmt"
 	"go/ast"
 	"go/types"
 	"sort"
@@ -28,25 +29,42 @@ func NewFieldInfoFromInputs(fields []*input.Field, options *Options) (*FieldInfo
 		fieldMap:       make(map[string]*Field),
 		emailFields:    make(map[string]bool),
 		passwordFields: make(map[string]bool),
+		names:          make(map[string]bool),
+		cols:           make(map[string]bool),
 	}
-	// TODO we'll eventually kill this since this shouldn't
+	var errs []error
+
+	// this is only done in go-lang.
+	// we'll eventually kill this since this shouldn't
 	// be done automatically
 	if options.AddBaseFields {
-		addBaseFields(fieldInfo)
+		if err := addBaseFields(fieldInfo); err != nil {
+			errs = append(errs, err)
+		}
 	}
+
 	for _, field := range fields {
 		f, err := newFieldFromInput(field)
 		if err != nil {
 			return nil, err
 		}
-		fieldInfo.addField(f)
+		if err := fieldInfo.addField(f); err != nil {
+			errs = append(errs, err)
+		}
 		for _, derivedField := range field.DerivedFields {
 			f2, err := newFieldFromInput(derivedField)
 			if err != nil {
-				return nil, err
+				errs = append(errs, err)
 			}
-			fieldInfo.addField(f2)
+			if err := fieldInfo.addField(f2); err != nil {
+				errs = append(errs, err)
+			}
 		}
+	}
+
+	if len(errs) > 0 {
+		// we're getting list of errors and coalescing
+		return nil, util.CoalesceErr(errs...)
 	}
 
 	if options.SortFields {
@@ -76,6 +94,9 @@ type FieldInfo struct {
 
 	emailFields    map[string]bool
 	passwordFields map[string]bool
+
+	names map[string]bool
+	cols  map[string]bool
 }
 
 const (
@@ -86,7 +107,22 @@ const (
 	PasswordPkgPath = "github.com/lolopinto/ent/ent/field/password"
 )
 
-func (fieldInfo *FieldInfo) addField(f *Field) {
+func (fieldInfo *FieldInfo) addField(f *Field) error {
+	if fieldInfo.cols[f.dbName] {
+		return fmt.Errorf("field with column %s already exists", f.dbName)
+	}
+
+	// normalized
+	name := strings.ToLower(f.FieldName)
+	if fieldInfo.cols[f.dbName] {
+		return fmt.Errorf("field with column %s already exists", f.dbName)
+	}
+	if fieldInfo.cols[name] {
+		return fmt.Errorf("field with normalized name %s already exists", name)
+	}
+	fieldInfo.cols[f.dbName] = true
+	fieldInfo.names[name] = true
+
 	fieldInfo.Fields = append(fieldInfo.Fields, f)
 	fieldInfo.fieldMap[f.FieldName] = f
 
@@ -96,6 +132,7 @@ func (fieldInfo *FieldInfo) addField(f *Field) {
 	if f.dataTypePkgPath == PasswordPkgPath {
 		fieldInfo.passwordFields[f.FieldName] = true
 	}
+	return nil
 }
 
 // EmailPasswordCombo holds a Pair of EmailPassword field used for validation
@@ -134,15 +171,16 @@ func (fieldInfo *FieldInfo) GetFieldByName(fieldName string) *Field {
 	return fieldInfo.fieldMap[fieldName]
 }
 
-func (fieldInfo *FieldInfo) InvalidateFieldForGraphQL(f *Field) {
+func (fieldInfo *FieldInfo) InvalidateFieldForGraphQL(f *Field) error {
 	fByName := fieldInfo.GetFieldByName(f.FieldName)
 	if fByName == nil {
-		panic("invalid field passed to InvalidateFieldForGraphQL")
+		return fmt.Errorf("invalid field passed to InvalidateFieldForGraphQL")
 	}
 	if fByName != f {
-		panic("invalid field passed to InvalidateFieldForGraphQL")
+		return fmt.Errorf("invalid field passed to InvalidateFieldForGraphQL")
 	}
 	f.hideFromGraphQL = true
+	return nil
 }
 
 func (fieldInfo *FieldInfo) TopLevelFields() []*Field {
@@ -179,7 +217,7 @@ func (fieldInfo *FieldInfo) GetEditableFields() []*Field {
 
 // ForeignKeyInfo stores config and field name of the foreign key object
 type ForeignKeyInfo struct {
-	Config       string
+	Schema       string
 	Field        string
 	Name         string
 	DisableIndex bool
@@ -208,7 +246,7 @@ func GetNonNilableGoType(f *Field) string {
 	return enttype.GetGoType(f.entType)
 }
 
-func addBaseFields(fieldInfo *FieldInfo) {
+func addBaseFields(fieldInfo *FieldInfo) error {
 	// TODO eventually get these from ent.Node instead of doing this manually
 	// add id field
 	idField := newField("ID")
@@ -216,7 +254,9 @@ func addBaseFields(fieldInfo *FieldInfo) {
 	idField.topLevelStructField = false
 	idField.singleFieldPrimaryKey = true
 	idField.fieldType = &enttype.IDType{}
-	fieldInfo.addField(idField)
+	if err := fieldInfo.addField(idField); err != nil {
+		return err
+	}
 
 	// going to assume we don't want created at and updated at in graphql
 	// TODO when we get this from ent.Node, use struct tag graphql: "_"
@@ -228,7 +268,9 @@ func addBaseFields(fieldInfo *FieldInfo) {
 	createdAtField.exposeToActionsByDefault = false
 	createdAtField.topLevelStructField = false
 	createdAtField.fieldType = &enttype.TimestampType{}
-	fieldInfo.addField(createdAtField)
+	if err := fieldInfo.addField(createdAtField); err != nil {
+		return err
+	}
 
 	updatedAtField := newField("UpdatedAt")
 	updatedAtField.hideFromGraphQL = true
@@ -236,7 +278,7 @@ func addBaseFields(fieldInfo *FieldInfo) {
 	updatedAtField.exposeToActionsByDefault = false
 	updatedAtField.topLevelStructField = false
 	updatedAtField.fieldType = &enttype.TimestampType{}
-	fieldInfo.addField(updatedAtField)
+	return fieldInfo.addField(updatedAtField)
 }
 
 func GetFieldInfoForStruct(s *ast.StructType, info *types.Info) (*FieldInfo, error) {
@@ -246,7 +288,9 @@ func GetFieldInfoForStruct(s *ast.StructType, info *types.Info) (*FieldInfo, err
 			return ""
 		}
 		rawVal, err := strconv.Unquote(val)
-		util.Die(err)
+		if err != nil {
+			util.GoSchemaKill(err)
+		}
 		return rawVal
 	}
 
@@ -325,7 +369,7 @@ func parseFieldTag(fieldName string, tag *ast.BasicLit) map[string]string {
 		// struct tag format should be something like `graphql:"firstName" db:"first_name"`
 		tags := strings.Split(t.Value, "`")
 		if len(tags) != 3 {
-			panic("invalid struct tag format. handle better. struct tag not enclosed by backticks")
+			util.GoSchemaKill("invalid struct tag format. handle better. struct tag not enclosed by backticks")
 		}
 
 		// each tag is separated by a space
@@ -335,7 +379,7 @@ func parseFieldTag(fieldName string, tag *ast.BasicLit) map[string]string {
 			// get each tag and create a map
 			singleTag := strings.Split(tagInfo, ":")
 			if len(singleTag) != 2 {
-				panic("invalid struct tag format. handle better")
+				util.GoSchemaKill("invalid struct tag format. handle better")
 			}
 			tagsMap[singleTag[0]] = singleTag[1]
 		}

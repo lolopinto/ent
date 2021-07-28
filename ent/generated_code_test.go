@@ -3,7 +3,6 @@ package ent_test
 import (
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/ent/viewertesting"
 	"github.com/lolopinto/ent/internal/test_schema/models"
@@ -155,7 +154,6 @@ func (suite *generatedCodeSuite) TestLoadUserFrom() {
 		suite.T().Run(key, func(t *testing.T) {
 			fn := tt.fn
 			loadedUser, err := fn(tt.viewer, tt.queryParam)
-			spew.Dump(loadedUser, err)
 
 			if tt.found {
 				require.NoError(t, err)
@@ -169,7 +167,8 @@ func (suite *generatedCodeSuite) TestLoadUserFrom() {
 }
 
 func (suite *generatedCodeSuite) TestValidateEmailPassword() {
-	password := util.GenerateRandPassword()
+	password, err := util.GenerateRandPassword()
+	require.Nil(suite.T(), err)
 	user, err := action.CreateUser(viewer.LoggedOutViewer()).
 		SetEmailAddress(util.GenerateRandEmail()).
 		SetFirstName("Jon").
@@ -178,6 +177,11 @@ func (suite *generatedCodeSuite) TestValidateEmailPassword() {
 
 	require.NoError(suite.T(), err)
 	require.NotNil(suite.T(), user)
+
+	pw1, err := util.GenerateRandPassword()
+	require.Nil(suite.T(), err)
+	pw2, err := util.GenerateRandPassword()
+	require.Nil(suite.T(), err)
 
 	testCases := map[string]struct {
 		email    string
@@ -196,12 +200,12 @@ func (suite *generatedCodeSuite) TestValidateEmailPassword() {
 		},
 		"wrong password": {
 			user.EmailAddress,
-			util.GenerateRandPassword(),
+			pw1,
 			false,
 		},
 		"wrong combo": {
 			"foo@bar.com",
-			util.GenerateRandPassword(),
+			pw2,
 			false,
 		},
 	}

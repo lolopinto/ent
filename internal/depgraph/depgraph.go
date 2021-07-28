@@ -1,6 +1,7 @@
 package depgraph
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -35,14 +36,20 @@ func (g *Depgraph) AddOptionalItem(key string, value interface{}) {
 
 // Run runs the dependency graph. takes a func that takes an interface{}, calls it exactly once for everything that has been added
 // and makes sure it's called exactly once for each
-func (g *Depgraph) Run(exec func(interface{})) {
+func (g *Depgraph) Run(exec func(interface{}) error) error {
 	itemsToCheck := []*data{}
 	for _, item := range g.items {
-		if !g.checkDependenciesCompleted(item) {
+		check, err := g.checkDependenciesCompleted(item)
+		if err != nil {
+			return err
+		}
+		if !check {
 			itemsToCheck = append(itemsToCheck, item)
 			continue
 		}
-		exec(item.value)
+		if err := exec(item.value); err != nil {
+			return err
+		}
 		item.completed = true
 	}
 
@@ -50,38 +57,52 @@ func (g *Depgraph) Run(exec func(interface{})) {
 	for len(itemsToCheck) > 0 {
 		i++
 		if i == 5 {
-			panic("dependency graph not resolving. halp!")
+			return errors.New("dependency graph not resolving. halp")
 		}
-		newItems := g.runDepgraph(itemsToCheck, exec)
+		newItems, err := g.runDepgraph(itemsToCheck, exec)
+		if err != nil {
+			return err
+		}
 		itemsToCheck = newItems
 	}
+	return nil
 }
 
-func (g *Depgraph) runDepgraph(itemsToCheck []*data, exec func(interface{})) []*data {
+func (g *Depgraph) runDepgraph(itemsToCheck []*data, exec func(interface{}) error) ([]*data, error) {
 	newItems := []*data{}
 	for _, item := range itemsToCheck {
-		if !g.checkDependenciesCompleted(item) {
+		check, err := g.checkDependenciesCompleted(item)
+		if err != nil {
+			return nil, err
+		}
+		if !check {
 			newItems = append(newItems, item)
 			continue
 		}
-		exec(item.value)
+		if err := exec(item.value); err != nil {
+			return nil, err
+		}
 		item.completed = true
 	}
-	return newItems
+	return newItems, nil
 }
 
 type queueItem struct {
 	item *data
-	exec func(interface{})
+	exec func(interface{}) error
 }
 
-func (g *Depgraph) CheckAndQueue(key string, exec func(interface{})) {
+func (g *Depgraph) CheckAndQueue(key string, exec func(interface{}) error) error {
 	item, ok := g.items[key]
 	if !ok {
-		panic(fmt.Sprintf("no function exists for key item %s", key))
+		return fmt.Errorf("no function exists for key item %s", key)
 	}
 	item.flagged = true
-	if g.checkDependenciesCompleted(item) {
+	check, err := g.checkDependenciesCompleted(item)
+	if err != nil {
+		return err
+	}
+	if check {
 		exec(item.value)
 		item.completed = true
 	} else {
@@ -90,6 +111,7 @@ func (g *Depgraph) CheckAndQueue(key string, exec func(interface{})) {
 			exec: exec,
 		})
 	}
+	return nil
 }
 
 func (g *Depgraph) ClearOptionalItems() {
@@ -100,51 +122,59 @@ func (g *Depgraph) ClearOptionalItems() {
 	}
 }
 
-func (g *Depgraph) RunQueuedUpItems() {
+func (g *Depgraph) RunQueuedUpItems() error {
 	i := 1
 	queue := g.queue
 	for len(queue) > 0 {
 		if i == 5 {
-			panic("dependency graph not resolving. halp!")
+			return errors.New("dependency graph not resolving. halp")
 		}
-		newQueue := g.runQueue(queue)
+		newQueue, err := g.runQueue(queue)
+		if err != nil {
+			return err
+		}
 		queue = newQueue
 		i = i + 1
 	}
 	g.queue = nil
+	return nil
 }
 
-func (g *Depgraph) runQueue(queue []*queueItem) []*queueItem {
+func (g *Depgraph) runQueue(queue []*queueItem) ([]*queueItem, error) {
 	newQueue := []*queueItem{}
 	for _, q := range queue {
-		if !g.checkDependenciesCompleted(q.item) {
+		check, err := g.checkDependenciesCompleted(q.item)
+		if err != nil {
+			return nil, err
+		}
+		if !check {
 			newQueue = append(newQueue, q)
 			continue
 		}
 		q.exec(q.item.value)
 		q.item.completed = true
 	}
-	return newQueue
+	return newQueue, nil
 }
 
 // RunLoop is used in scenarios where the client needs to control what's run and what's passed. they should
 // "override" RunLoop(), call CheckAndQueue() for each item and then call RunQueuedUpItems once afterwards to run the rest
-func (g *Depgraph) RunLoop() {
-	panic("need client to implement")
+func (g *Depgraph) RunLoop() error {
+	return fmt.Errorf("need client to implement")
 }
 
-func (g *Depgraph) checkDependenciesCompleted(item *data) bool {
+func (g *Depgraph) checkDependenciesCompleted(item *data) (bool, error) {
 	if len(item.deps) == 0 {
-		return true
+		return true, nil
 	}
 	for _, dep := range item.deps {
 		depItem, ok := g.items[dep]
 		if !ok {
-			panic(fmt.Errorf("a dependency was added on key %s but no function exists for it", dep))
+			return false, fmt.Errorf("a dependency was added on key %s but no function exists for it", dep)
 		}
 		if !depItem.completed {
-			return false
+			return false, nil
 		}
 	}
-	return true
+	return true, nil
 }

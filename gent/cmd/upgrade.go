@@ -9,14 +9,17 @@ var upgradeCmd = &cobra.Command{
 	Use:   "upgrade",
 	Short: "upgrade db",
 	Long:  `This upgrades the database to the latest version`,
-		Args: cobra.RangeArgs(0, 1),
-	Run: func(cmd *cobra.Command, args []string) {
+	Args:  cobra.RangeArgs(0, 1),
+	RunE: func(cmd *cobra.Command, args []string) error {
 		// default to head if not passed in
 		revision := "head"
 		if len(args) == 1 {
 			revision = args[0]
 		}
-		codePathInfo := getPathToCode(getPathToConfig())
-		db.UpgradeDB(codePathInfo,revision)
+		codePathInfo, err := getPathToCode(getPathToConfig())
+		if err != nil {
+			return err
+		}
+		return db.UpgradeDB(codePathInfo, revision)
 	},
 }

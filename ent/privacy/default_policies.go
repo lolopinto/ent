@@ -3,6 +3,7 @@ package privacy
 import (
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/viewer"
+	"github.com/lolopinto/ent/internal/util"
 )
 
 type AlwaysAllowPrivacyPolicy struct {
@@ -44,5 +45,6 @@ func (p AlwaysPanicPrivacyPolicy) GetPrivacyPolicy() ent.PrivacyPolicy {
 type alwaysPanicRule struct{}
 
 func (rule alwaysPanicRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
-	panic("this is just a default implementation that should be overriden")
+	util.GoSchemaKill("this is just a default implementation that should be overriden")
+	return nil
 }

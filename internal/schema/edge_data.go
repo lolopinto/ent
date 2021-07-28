@@ -5,25 +5,7 @@ import (
 	"fmt"
 
 	"github.com/lolopinto/ent/ent"
-	"github.com/lolopinto/ent/internal/util"
 )
-
-func (m NodeMapInfo) loadExistingEdges() *assocEdgeData {
-	// load all edges in db
-	result := <-ent.GenLoadAssocEdges()
-	if result.Err != nil {
-		fmt.Println("error loading data. assoc_edge_config related", result.Err)
-	}
-	util.Die(result.Err)
-
-	edgeMap := make(map[string]*ent.AssocEdgeData)
-	for _, assocEdgeData := range result.Edges {
-		edgeMap[assocEdgeData.EdgeName] = assocEdgeData
-	}
-	return &assocEdgeData{
-		edgeMap: edgeMap,
-	}
-}
 
 type assocEdgeData struct {
 	// differentiate between new edges and existing edges for tests
@@ -49,14 +31,17 @@ func (edgeData *assocEdgeData) addNewEdge(newEdge *ent.AssocEdgeData) {
 	edgeData.edgeMap[newEdge.EdgeName] = newEdge
 }
 
-func (edgeData *assocEdgeData) updateInverseEdgeTypeForEdge(constName string, constValue string) {
+func (edgeData *assocEdgeData) updateInverseEdgeTypeForEdge(constName string, constValue string) error {
 	edge := edgeData.edgeMap[constName]
 	if edge == nil {
-		panic(fmt.Sprintf("couldn't find edge with constName %s", constName))
+		return fmt.Errorf("couldn't find edge with constName %s", constName)
 	}
 
 	ns := sql.NullString{}
-	util.Die(ns.Scan(constValue))
+	if err := ns.Scan(constValue); err != nil {
+		return err
+	}
 	edge.InverseEdgeType = ns
 	edgeData.edgesToUpdate = append(edgeData.edgesToUpdate, edge)
+	return nil
 }

@@ -74,9 +74,11 @@ func getPathToConfig() string {
 	return pathToConfig
 }
 
-func getPathToCode(pathToConfig string) *codegen.CodePath {
+func getPathToCode(pathToConfig string) (*codegen.CodePath, error) {
 	dir, err := filepath.Abs(".")
-	util.Die(err)
+	if err != nil {
+		util.GoSchemaKill(err)
+	}
 	dir = filepath.ToSlash(dir)
 
 	r := regexp.MustCompile(`module (.*)\n`)
@@ -98,7 +100,9 @@ func getPathToCode(pathToConfig string) *codegen.CodePath {
 		suffix = "/" + filepath.Base(curDir) + suffix
 		// go up one directory
 		curDir, err = filepath.Abs(filepath.Join(curDir, ".."))
-		util.Die(err)
+		if err != nil {
+			return nil, err
+		}
 
 		// got all the way to the top. bye felicia
 		if curDir == "/" {
@@ -111,8 +115,13 @@ func getPathToCode(pathToConfig string) *codegen.CodePath {
 	// probably manually going up to find paths in gopaths that had . e.g. "github.com/lolopinto"
 	// TODO fix this for non-module users
 	abs, err := filepath.Abs(".")
-	util.Die(err)
+	if err != nil {
+		return nil, err
+	}
 	pathPastSymlinks, err := filepath.EvalSymlinks(abs)
+	if err != nil {
+		return nil, err
+	}
 	// TODO: probably better to put this in some yml file but we're not there yet so reading from the filesystem instead...
 	pathParts := strings.Split(pathPastSymlinks, string(filepath.Separator))
 

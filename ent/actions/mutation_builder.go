@@ -118,7 +118,7 @@ func (b *EntMutationBuilder) SetRawFields(m map[string]interface{}) {
 
 func (b *EntMutationBuilder) OverrideRawField(key string, val interface{}) {
 	if b.rawDBFields == nil {
-		panic("cannot call OverideRawField without having already previouslyset it")
+		util.GoSchemaKill("cannot call OverideRawField without having already previouslyset it")
 	}
 	b.mu.Lock()
 	defer b.mu.Unlock()

@@ -30,7 +30,6 @@ var codegenCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		// TODO init generates schema, db, tsconfig etc
 
 		inputSchema, err := input.ParseSchemaFromTSDir(path, false)
 		if err != nil {
@@ -48,7 +47,10 @@ var codegenCmd = &cobra.Command{
 
 		// module path empty because not go
 		// same as ParseSchemaFromTSDir. default to schema. we want a flag here eventually
-		codePathInfo := codegen.NewCodePath("src/schema", "")
+		codePathInfo, err := codegen.NewCodePath("src/schema", "")
+		if err != nil {
+			return err
+		}
 
 		data := &codegen.Data{
 			Schema:   schema,

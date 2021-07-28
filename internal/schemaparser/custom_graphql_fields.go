@@ -213,7 +213,7 @@ func inspectStruct(
 	if cg := commentAssociatedWithType(graphqlComments, t); cg != nil {
 		doc := graphQLDoc(cg)
 		if doc == nil {
-			panic("should not get here")
+			util.GoSchemaKill("should not get here")
 		}
 
 		obj := &Object{

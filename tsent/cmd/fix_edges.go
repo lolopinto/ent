@@ -10,10 +10,13 @@ var fixEdgesCmd = &cobra.Command{
 	Use:   "fix-edges",
 	Short: "fix edges db",
 	Long:  `this fixes the edges in the db`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		// another hardcoded place
-		codePathInfo := codegen.NewCodePath("src/schema", "")
+		codePathInfo, err := codegen.NewCodePath("src/schema", "")
+		if err != nil {
+			return err
+		}
 
-		db.FixEdges(codePathInfo)
+		return db.FixEdges(codePathInfo)
 	},
 }

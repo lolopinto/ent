@@ -67,9 +67,9 @@ func (e *EdgeInfo) HasAssociationEdges() bool {
 	return len(e.Associations) > 0
 }
 
-func (e *EdgeInfo) addEdge(edge Edge) {
+func (e *EdgeInfo) addEdge(edge Edge) error {
 	if e.keys[edge.GetEdgeName()] {
-		panic(fmt.Errorf("tried to add a new edge named %s to node %s when name already taken", edge.GetEdgeName(), e.SourcePackageName))
+		return fmt.Errorf("tried to add a new edge named %s to node %s when name already taken", edge.GetEdgeName(), e.SourcePackageName)
 	}
 	e.keys[edge.GetEdgeName()] = true
 
@@ -77,7 +77,7 @@ func (e *EdgeInfo) addEdge(edge Edge) {
 	if ok {
 		e.FieldEdges = append(e.FieldEdges, fieldEdge)
 		e.fieldEdgeMap[fieldEdge.EdgeName] = fieldEdge
-		return
+		return nil
 	}
 	assocEdge, ok := edge.(*AssociationEdge)
 	if ok {
@@ -86,6 +86,7 @@ func (e *EdgeInfo) addEdge(edge Edge) {
 	}
 
 	// other edge types are handled separately
+	return nil
 }
 
 // this is not an edge so doesn't implement Edge interface
@@ -137,12 +138,12 @@ func (e *EdgeInfo) GetAssociationEdgeGroupByStatusName(groupStatusName string) *
 	return e.assocGroupsMap[groupStatusName]
 }
 
-func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(fieldName, configName string, nullable bool) {
-	e.addFieldEdgeFromInfo(fieldName, configName, "", nil, nullable)
+func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(fieldName, configName string, nullable bool) error {
+	return e.addFieldEdgeFromInfo(fieldName, configName, "", nil, nullable)
 }
 
-func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo *base.FieldEdgeInfo, nullable bool) {
-	e.addFieldEdgeFromInfo(fieldName, fieldEdgeInfo.Config, fieldEdgeInfo.EdgeName, fieldEdgeInfo.Polymorphic, nullable)
+func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo *base.FieldEdgeInfo, nullable bool) error {
+	return e.addFieldEdgeFromInfo(fieldName, fieldEdgeInfo.Schema+"Config", fieldEdgeInfo.EdgeName, fieldEdgeInfo.Polymorphic, nullable)
 }
 
 func (e *EdgeInfo) GetConnectionEdges() []ConnectionEdge {
@@ -189,10 +190,10 @@ func (e *EdgeInfo) HasConnectionEdges() bool {
 	return len(e.Associations) > 0 || len(e.indexedEdgeQueriesMap) > 0
 }
 
-func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName string, polymorphic *base.PolymorphicOptions, nullable bool) {
+func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName string, polymorphic *base.PolymorphicOptions, nullable bool) error {
 	if !strings.HasSuffix(fieldName, "ID") {
 		// TODO make this more flexible...
-		panic(fmt.Sprintf("expected field name to end with ID. FieldName was %s", fieldName))
+		return fmt.Errorf("expected field name to end with ID. FieldName was %s", fieldName)
 	}
 	trim := strings.TrimSuffix(fieldName, "ID")
 	if trim == "" {
@@ -201,10 +202,15 @@ func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName s
 
 	var edgeInfo commonEdgeInfo
 	if polymorphic == nil {
+		config, err := schemaparser.GetEntConfigFromEntConfig(configName)
+		if err != nil {
+			return err
+		}
+
 		// Edge name: User from UserID field
 		edgeInfo = getCommonEdgeInfo(
 			trim,
-			schemaparser.GetEntConfigFromEntConfig(configName),
+			config,
 		)
 	} else {
 		edgeInfo = commonEdgeInfo{
@@ -221,10 +227,10 @@ func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName s
 		Polymorphic:     polymorphic,
 	}
 
-	e.addEdge(edge)
+	return e.addEdge(edge)
 }
 
-func (e *EdgeInfo) AddEdgeFromForeignKeyIndex(dbColName, edgeName, nodeName string) {
+func (e *EdgeInfo) AddEdgeFromForeignKeyIndex(dbColName, edgeName, nodeName string) error {
 	edge := &ForeignKeyEdge{
 		SourceNodeName: e.SourceNodeName,
 		destinationEdge: destinationEdge{
@@ -235,14 +241,14 @@ func (e *EdgeInfo) AddEdgeFromForeignKeyIndex(dbColName, edgeName, nodeName stri
 			quotedDbColName: dbColName,
 		},
 	}
-	e.addEdge(edge)
 	e.indexedEdgeQueriesMap[edgeName] = edge
 	e.destinationEdgesMap[edgeName] = edge
 	e.IndexedEdgeQueries = append(e.IndexedEdgeQueries, edge)
 	e.DestinationEdges = append(e.DestinationEdges, edge)
+	return e.addEdge(edge)
 }
 
-func (e *EdgeInfo) AddIndexedEdgeFromSource(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions) {
+func (e *EdgeInfo) AddIndexedEdgeFromSource(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions) error {
 	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
 	edge := &IndexedEdge{
 		tsEdgeName: tsEdgeName,
@@ -258,13 +264,13 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(tsFieldName, quotedDBColName, nodeNa
 	if polymorphic.HideFromInverseGraphQL {
 		edge._HideFromGraphQL = true
 	}
-	e.addEdge(edge)
 	edgeName := edge.GetEdgeName()
 	e.indexedEdgeQueriesMap[edgeName] = edge
 	e.IndexedEdgeQueries = append(e.IndexedEdgeQueries, edge)
+	return e.addEdge(edge)
 }
 
-func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) {
+func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) error {
 	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
 	edge := &IndexedEdge{
 		tsEdgeName: tsEdgeName,
@@ -281,10 +287,10 @@ func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(tsFieldName, quotedD
 	if polymorphic.HideFromInverseGraphQL {
 		edge._HideFromGraphQL = true
 	}
-	e.addEdge(edge)
 	edgeName := edge.GetEdgeName()
 	e.destinationEdgesMap[edgeName] = edge
 	e.DestinationEdges = append(e.DestinationEdges, edge)
+	return e.addEdge(edge)
 }
 
 // ActionableEdge indicates an edge that can be used in an action.
@@ -297,7 +303,7 @@ type ActionableEdge interface {
 type Edge interface {
 	GetEdgeName() string
 	GetNodeInfo() nodeinfo.NodeInfo
-	GetEntConfig() schemaparser.EntConfigInfo
+	GetEntConfig() *schemaparser.EntConfigInfo
 	GraphQLEdgeName() string
 	CamelCaseEdgeName() string
 	HideFromGraphQL() bool
@@ -329,7 +335,7 @@ type PluralEdge interface {
 
 type commonEdgeInfo struct {
 	EdgeName         string
-	entConfig        schemaparser.EntConfigInfo
+	entConfig        *schemaparser.EntConfigInfo
 	NodeInfo         nodeinfo.NodeInfo
 	_HideFromGraphQL bool
 }
@@ -342,7 +348,7 @@ func (e *commonEdgeInfo) GetNodeInfo() nodeinfo.NodeInfo {
 	return e.NodeInfo
 }
 
-func (e *commonEdgeInfo) GetEntConfig() schemaparser.EntConfigInfo {
+func (e *commonEdgeInfo) GetEntConfig() *schemaparser.EntConfigInfo {
 	return e.entConfig
 }
 
@@ -561,6 +567,7 @@ func TsEdgeConst(constName string) (string, error) {
 type AssociationEdge struct {
 	commonEdgeInfo
 	EdgeConst     string
+	TsEdgeConst   string
 	Symmetric     bool
 	Unique        bool
 	InverseEdge   *InverseAssocEdge
@@ -570,33 +577,23 @@ type AssociationEdge struct {
 	EdgeActions []*EdgeAction
 }
 
-// TsEdgeConst returns the Edge const as used in typescript.
-// It transforms UserToFriendsEdge to UserToFriends since that's
-// in an enum
-// will evntually fix at edge creation
-func (e *AssociationEdge) TsEdgeConst() string {
-	edgeConst, err := TsEdgeConst(e.EdgeConst)
-	util.Die(err)
-	return edgeConst
-}
-
 func (e *AssociationEdge) TsEdgeQueryName() string {
-	return fmt.Sprintf("%sQuery", e.TsEdgeConst())
+	return fmt.Sprintf("%sQuery", e.TsEdgeConst)
 }
 
 func (e *AssociationEdge) GetGraphQLEdgePrefix() string {
-	return e.TsEdgeConst()
+	return e.TsEdgeConst
 }
 
 func (e *AssociationEdge) TsEdgeQueryEdgeName() string {
-	return fmt.Sprintf("%sEdge", e.TsEdgeConst())
+	return fmt.Sprintf("%sEdge", e.TsEdgeConst)
 }
 
 func (e *AssociationEdge) GetGraphQLConnectionName() string {
 	// we need a unique graphql name
 	// there's nothing stopping multiple edges of different types having the same connection and then there'll be a conflict here
 	// so we use the UserToFoo names to have UserToFriendsConnection and UserToFriendsEdge names
-	return fmt.Sprintf("%sConnection", e.TsEdgeConst())
+	return fmt.Sprintf("%sConnection", e.TsEdgeConst)
 }
 
 func (e *AssociationEdge) GetSourceNodeName() string {
@@ -635,32 +632,41 @@ func (edge *AssociationEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
 	}
 }
 
-func (e *AssociationEdge) AddInverseEdge(inverseEdgeInfo *EdgeInfo) {
+func (e *AssociationEdge) AddInverseEdge(inverseEdgeInfo *EdgeInfo) error {
 	inverseEdge := e.InverseEdge
 	if inverseEdge == nil {
-		return
+		return nil
 	}
 
 	inverseAssocEdge := inverseEdgeInfo.GetAssociationEdgeByName(inverseEdge.EdgeName)
 	if inverseAssocEdge != nil {
-		panic(
-			fmt.Errorf(
-				"trying to add inverse assoc edge with name %s when edge already exists",
-				inverseEdge.EdgeName,
-			),
+		return fmt.Errorf(
+			"trying to add inverse assoc edge with name %s when edge already exists",
+			inverseEdge.EdgeName,
 		)
 	}
 
-	inverseEdgeInfo.addEdge(&AssociationEdge{
+	tsConst, err := TsEdgeConst(inverseEdge.EdgeConst)
+	if err != nil {
+		return err
+	}
+	return inverseEdgeInfo.addEdge(&AssociationEdge{
 		EdgeConst:      inverseEdge.EdgeConst,
+		TsEdgeConst:    tsConst,
 		commonEdgeInfo: inverseEdge.commonEdgeInfo,
 		IsInverseEdge:  true,
 	})
 }
 
-func (e *AssociationEdge) CloneWithCommonInfo(configName string) *AssociationEdge {
+func (e *AssociationEdge) CloneWithCommonInfo(configName string) (*AssociationEdge, error) {
+	config, err := schemaparser.GetEntConfigFromEntConfig(configName)
+	if err != nil {
+		return nil, err
+	}
+
 	return &AssociationEdge{
 		EdgeConst:   e.EdgeConst,
+		TsEdgeConst: e.TsEdgeConst,
 		Symmetric:   e.Symmetric,
 		Unique:      e.Unique,
 		InverseEdge: e.InverseEdge,
@@ -668,17 +674,17 @@ func (e *AssociationEdge) CloneWithCommonInfo(configName string) *AssociationEdg
 		EdgeActions: e.EdgeActions,
 		commonEdgeInfo: getCommonEdgeInfo(
 			e.EdgeName,
-			schemaparser.GetEntConfigFromEntConfig(configName),
+			config,
 		),
-	}
+	}, nil
 }
 
 func (e *AssociationEdge) GetCountFactoryName() string {
-	return strcase.ToLowerCamel(fmt.Sprintf("%sCountLoaderFactory", e.TsEdgeConst()))
+	return strcase.ToLowerCamel(fmt.Sprintf("%sCountLoaderFactory", e.TsEdgeConst))
 }
 
 func (e *AssociationEdge) GetDataFactoryName() string {
-	return strcase.ToLowerCamel(fmt.Sprintf("%sDataLoaderFactory", e.TsEdgeConst()))
+	return strcase.ToLowerCamel(fmt.Sprintf("%sDataLoaderFactory", e.TsEdgeConst))
 }
 
 func (e *AssociationEdge) UniqueEdge() bool {
@@ -723,7 +729,7 @@ func (edgeGroup *AssociationEdgeGroup) DefaultNullState() string {
 func (edgeGroup *AssociationEdgeGroup) GetStatusMap() map[string]string {
 	m := make(map[string]string)
 	for _, edge := range edgeGroup.statusEdges {
-		m[enum.GetTSEnumNameForVal(edge.EdgeName)] = edge.TsEdgeConst()
+		m[enum.GetTSEnumNameForVal(edge.EdgeName)] = edge.TsEdgeConst
 	}
 	return m
 }
@@ -832,33 +838,45 @@ func EdgeInfoFromInput(packageName string, node *input.Node) (*EdgeInfo, error) 
 	edgeInfo := NewEdgeInfo(packageName)
 
 	for _, edge := range node.AssocEdges {
-		edgeInfo.addEdge(assocEdgeFromInput(packageName, node, edge))
+		e, err := assocEdgeFromInput(packageName, node, edge)
+		if err != nil {
+			return nil, err
+		}
+		edgeInfo.addEdge(e)
 	}
 
 	for _, edgeGroup := range node.AssocEdgeGroups {
-		assocEdgeGroupFromInput(packageName, node, edgeGroup, edgeInfo)
+		group, err := assocEdgeGroupFromInput(packageName, node, edgeGroup, edgeInfo)
+		if err != nil {
+			return nil, err
+		}
+		edgeInfo.addEdgeGroup(group)
 	}
 	return edgeInfo, nil
 }
 
-func edgeActionsFromInput(actions []*input.EdgeAction) []*EdgeAction {
+func edgeActionsFromInput(actions []*input.EdgeAction) ([]*EdgeAction, error) {
 	if actions == nil {
-		return nil
+		return nil, nil
 	}
 	ret := make([]*EdgeAction, len(actions))
 	for idx, action := range actions {
+		a, err := getTypeNameActionOperationFromTypeName(action.Operation)
+		if err != nil {
+			return nil, err
+		}
 		ret[idx] = &EdgeAction{
 			ExposeToGraphQL:   !action.HideFromGraphQL,
 			CustomActionName:  action.CustomActionName,
 			CustomGraphQLName: action.CustomGraphQLName,
-			Action:            getTypeNameActionOperationFromTypeName(action.Operation),
+			Action:            a,
 			ActionOnlyFields:  action.ActionOnlyFields,
 		}
 	}
-	return ret
+	return ret, nil
 }
 
-func assocEdgeFromInput(packageName string, node *input.Node, edge *input.AssocEdge) *AssociationEdge {
+func assocEdgeFromInput(packageName string, node *input.Node, edge *input.AssocEdge) (*AssociationEdge, error) {
 	assocEdge := &AssociationEdge{
 		Symmetric: edge.Symmetric,
 		Unique:    edge.Unique,
@@ -869,13 +887,17 @@ func assocEdgeFromInput(packageName string, node *input.Node, edge *input.AssocE
 	if assocEdge.TableName == "" {
 		tableNameParts := []string{
 			packageName,
-			strings.ToLower(strcase.ToSnake(edge.Name)),
+			base.GetSnakeCaseName(edge.Name),
 			"edges",
 		}
-		assocEdge.TableName = getNameFromParts(tableNameParts)
+		assocEdge.TableName = base.GetNameFromParts(tableNameParts)
 	}
 
-	assocEdge.EdgeActions = edgeActionsFromInput(edge.EdgeActions)
+	var err error
+	assocEdge.EdgeActions, err = edgeActionsFromInput(edge.EdgeActions)
+	if err != nil {
+		return nil, err
+	}
 
 	if edge.InverseEdge != nil {
 		inverseEdge := &InverseAssocEdge{}
@@ -899,10 +921,16 @@ func assocEdgeFromInput(packageName string, node *input.Node, edge *input.AssocE
 	}
 
 	assocEdge.EdgeConst = getEdgeConstName(packageName, edge.Name)
+	// It transforms UserToFriendsEdge to UserToFriends since that's in an enum
+	edgeConst, err := TsEdgeConst(assocEdge.EdgeConst)
+	if err != nil {
+		return nil, err
+	}
+	assocEdge.TsEdgeConst = edgeConst
 
 	// golang
 	if edge.EntConfig != nil {
-		assocEdge.commonEdgeInfo = getCommonEdgeInfo(edge.Name, *edge.EntConfig)
+		assocEdge.commonEdgeInfo = getCommonEdgeInfo(edge.Name, edge.EntConfig)
 	} else { // typescript
 		assocEdge.commonEdgeInfo = getCommonEdgeInfo(
 			edge.Name,
@@ -911,10 +939,10 @@ func assocEdgeFromInput(packageName string, node *input.Node, edge *input.AssocE
 	}
 	assocEdge._HideFromGraphQL = edge.HideFromGraphQL
 
-	return assocEdge
+	return assocEdge, nil
 }
 
-func assocEdgeGroupFromInput(packageName string, node *input.Node, edgeGroup *input.AssocEdgeGroup, edgeInfo *EdgeInfo) *AssociationEdgeGroup {
+func assocEdgeGroupFromInput(packageName string, node *input.Node, edgeGroup *input.AssocEdgeGroup, edgeInfo *EdgeInfo) (*AssociationEdgeGroup, error) {
 	assocEdgeGroup := &AssociationEdgeGroup{
 		GroupName:         edgeGroup.Name,
 		GroupStatusName:   edgeGroup.GroupStatusName,
@@ -930,16 +958,23 @@ func assocEdgeGroupFromInput(packageName string, node *input.Node, edgeGroup *in
 
 	assocEdgeGroup.Edges = make(map[string]*AssociationEdge)
 
+	var err error
 	if edgeGroup.EdgeAction != nil {
-		assocEdgeGroup.EdgeActions = edgeActionsFromInput([]*input.EdgeAction{edgeGroup.EdgeAction})
+		assocEdgeGroup.EdgeActions, err = edgeActionsFromInput([]*input.EdgeAction{edgeGroup.EdgeAction})
+		if err != nil {
+			return nil, err
+		}
 	} else {
-		assocEdgeGroup.EdgeActions = edgeActionsFromInput(edgeGroup.EdgeActions)
+		assocEdgeGroup.EdgeActions, err = edgeActionsFromInput(edgeGroup.EdgeActions)
+		if err != nil {
+			return nil, err
+		}
 	}
 	assocEdgeGroup.StatusEnums = edgeGroup.StatusEnums
 	assocEdgeGroup.NullStateFn = edgeGroup.NullStateFn
 	assocEdgeGroup.NullStates = edgeGroup.NullStates
 	if assocEdgeGroup.NullStateFn != "" && len(assocEdgeGroup.NullStates) == 0 {
-		panic("cannot have null state fn with no null states")
+		return nil, fmt.Errorf("cannot have null state fn with no null states")
 	}
 
 	var statusEdges []*AssociationEdge
@@ -949,13 +984,18 @@ func assocEdgeGroupFromInput(packageName string, node *input.Node, edgeGroup *in
 		if edge.TableName == "" {
 			edge.TableName = tableName
 		}
-		assocEdge := assocEdgeFromInput(packageName, node, edge)
+		assocEdge, err := assocEdgeFromInput(packageName, node, edge)
+		if err != nil {
+			return nil, err
+		}
 		assocEdgeGroup.Edges[edge.Name] = assocEdge
 		// if assocEdge.InverseEdge != nil {
 		// TODO should we add inverse edges to this map?
 		// need to audit everything related to assoc groups anyways
 		// }
-		edgeInfo.addEdge(assocEdge)
+		if err := edgeInfo.addEdge(assocEdge); err != nil {
+			return nil, err
+		}
 
 		// do it in the order this was written
 		if len(assocEdgeGroup.StatusEnums) == 0 {
@@ -967,7 +1007,7 @@ func assocEdgeGroupFromInput(packageName string, node *input.Node, edgeGroup *in
 		for _, v := range edgeGroup.StatusEnums {
 			edge := assocEdgeGroup.GetAssociationByName(v)
 			if edge == nil {
-				panic(fmt.Errorf("invalid assoc %s in group %s", v, assocEdgeGroup.GroupName))
+				return nil, fmt.Errorf("invalid assoc %s in group %s", v, assocEdgeGroup.GroupName)
 			}
 			statusEdges = append(statusEdges, edge)
 		}
@@ -980,7 +1020,7 @@ func assocEdgeGroupFromInput(packageName string, node *input.Node, edgeGroup *in
 	}
 
 	if len(edgeMap) != 1 {
-		panic("AssocEdgeGroup with mismatched edges. All edges in Group should have the same Schema Name")
+		return nil, fmt.Errorf("AssocEdgeGroup with mismatched edges. All edges in Group should have the same Schema Name")
 	}
 
 	for k := range edgeMap {
@@ -990,9 +1030,8 @@ func assocEdgeGroupFromInput(packageName string, node *input.Node, edgeGroup *in
 	assocEdgeGroup.AddActionEdges(edgeGroup.ActionEdges)
 
 	assocEdgeGroup.ConstType = strcase.ToCamel(assocEdgeGroup.NodeInfo.Node + strcase.ToCamel(edgeGroup.GroupStatusName))
-	edgeInfo.addEdgeGroup(assocEdgeGroup)
 
-	return assocEdgeGroup
+	return assocEdgeGroup, nil
 }
 
 func parseEdgeItem(node *input.Node, containingPackageName string, expr ast.Expr) error {
@@ -1033,31 +1072,38 @@ type parseEdgeGraph struct {
 func initDepgraph(result *astparser.Result, entConfig *schemaparser.EntConfigInfo) *parseEdgeGraph {
 	g := &parseEdgeGraph{result: result}
 	g.AddItem("EntConfig", func(elem *astparser.Result) {
-		*entConfig = schemaparser.GetEntConfigFromEntConfig(elem.IdentName)
+		g, err := schemaparser.GetEntConfigFromEntConfig(elem.IdentName)
+		if err != nil {
+			util.GoSchemaKill(err)
+		}
+		*entConfig = *g
 	})
 	return g
 }
 
-func (g *parseEdgeGraph) RunLoop() {
+func (g *parseEdgeGraph) RunLoop() error {
 	for idx := range g.result.Elems {
 		elem := g.result.Elems[idx]
 		if elem.IdentName == "" {
-			panic("invalid elem")
+			return fmt.Errorf("invalid elem")
 		}
 
-		g.CheckAndQueue(elem.IdentName, func(item interface{}) {
+		if err := g.CheckAndQueue(elem.IdentName, func(item interface{}) error {
 			valueFunc, ok := item.(func(*astparser.Result))
 			if !ok {
-				panic("invalid func passed")
+				return fmt.Errorf("invalid func passed")
 			}
 			valueFunc(elem.Value)
-		})
+			return nil
+		}); err != nil {
+			return err
+		}
 	}
 	g.ClearOptionalItems()
-	g.RunQueuedUpItems()
+	return g.RunQueuedUpItems()
 }
 
-func getCommonEdgeInfo(edgeName string, entConfig schemaparser.EntConfigInfo) commonEdgeInfo {
+func getCommonEdgeInfo(edgeName string, entConfig *schemaparser.EntConfigInfo) commonEdgeInfo {
 	return commonEdgeInfo{
 		EdgeName:  edgeName,
 		entConfig: entConfig,
@@ -1065,9 +1111,9 @@ func getCommonEdgeInfo(edgeName string, entConfig schemaparser.EntConfigInfo) co
 	}
 }
 
-func parseInverseAssocEdge(entConfig schemaparser.EntConfigInfo, containingPackageName string, result *astparser.Result) *input.InverseAssocEdge {
+func parseInverseAssocEdge(entConfig schemaparser.EntConfigInfo, containingPackageName string, result *astparser.Result) (*input.InverseAssocEdge, error) {
 	if result.GetTypeName() != "ent.InverseAssocEdge" {
-		panic("invalid format")
+		return nil, fmt.Errorf("invalid format")
 	}
 
 	var edgeName string
@@ -1080,22 +1126,25 @@ func parseInverseAssocEdge(entConfig schemaparser.EntConfigInfo, containingPacka
 
 	// we only support one key now so keeping it simple like this.
 	if edgeName == "" {
-		panic("no edge name provided for inverse assoc edge")
+		return nil, fmt.Errorf("no edge name provided for inverse assoc edge")
 	}
 
 	return &input.InverseAssocEdge{
 		Name: edgeName,
-	}
+	}, nil
 }
 
 func parseAssociationEdgeItem(node *input.Node, containingPackageName, edgeName string, result *astparser.Result) error {
-	assocEdge := getParsedAssociationEdgeItem(containingPackageName, edgeName, result)
+	assocEdge, err := getParsedAssociationEdgeItem(containingPackageName, edgeName, result)
+	if err != nil {
+		return err
+	}
 
 	node.AddAssocEdge(assocEdge)
 	return nil
 }
 
-func getParsedAssociationEdgeItem(containingPackageName, edgeName string, result *astparser.Result) *input.AssocEdge {
+func getParsedAssociationEdgeItem(containingPackageName, edgeName string, result *astparser.Result) (*input.AssocEdge, error) {
 	var entConfig schemaparser.EntConfigInfo
 	g := initDepgraph(result, &entConfig)
 
@@ -1112,27 +1161,37 @@ func getParsedAssociationEdgeItem(containingPackageName, edgeName string, result
 	})
 
 	g.AddItem("EdgeActions", func(elem *astparser.Result) {
-		assocEdge.EdgeActions = parseEdgeActions(elem)
+		var err error
+		assocEdge.EdgeActions, err = parseEdgeActions(elem)
+		if err != nil {
+			util.GoSchemaKill(err)
+		}
 	})
 
 	g.AddItem("InverseEdge", func(elem *astparser.Result) {
 		// EntConfig is a pre-requisite so indicate as much since we don't wanna parse it twice
-		assocEdge.InverseEdge = parseInverseAssocEdge(entConfig, containingPackageName, elem)
+		var err error
+		assocEdge.InverseEdge, err = parseInverseAssocEdge(entConfig, containingPackageName, elem)
+		if err != nil {
+			util.GoSchemaKill(err)
+		}
 	}, "EntConfig")
 
-	g.RunLoop()
+	if err := g.RunLoop(); err != nil {
+		return nil, err
+	}
 	assocEdge.EntConfig = &entConfig
 
-	return assocEdge
+	return assocEdge, nil
 }
 
 func getDefaultTableName(packageName, groupName string) string {
 	tableNameParts := []string{
 		packageName,
-		strings.ToLower(strcase.ToSnake(groupName)),
+		base.GetSnakeCaseName(groupName),
 		"edges",
 	}
-	return getNameFromParts(tableNameParts)
+	return base.GetNameFromParts(tableNameParts)
 }
 
 func parseAssociationEdgeGroupItem(node *input.Node, containingPackageName, groupKey string, result *astparser.Result) error {
@@ -1149,7 +1208,10 @@ func parseAssociationEdgeGroupItem(node *input.Node, containingPackageName, grou
 	g.AddItem("EdgeGroups", func(elem *astparser.Result) {
 		for _, elem := range elem.Elems {
 			edgeName := elem.Key
-			assocEdge := getParsedAssociationEdgeItem(containingPackageName, edgeName, elem.Value)
+			assocEdge, err := getParsedAssociationEdgeItem(containingPackageName, edgeName, elem.Value)
+			if err != nil {
+				util.GoSchemaKill(err)
+			}
 			edgeGroup.AddAssocEdge(assocEdge)
 		}
 	})
@@ -1159,70 +1221,80 @@ func parseAssociationEdgeGroupItem(node *input.Node, containingPackageName, grou
 	})
 
 	g.AddItem("EdgeActions", func(elem *astparser.Result) {
-		edgeGroup.EdgeActions = parseEdgeActions(elem)
+		var err error
+		edgeGroup.EdgeActions, err = parseEdgeActions(elem)
+		if err != nil {
+			util.GoSchemaKill(err)
+		}
 	})
 
 	g.AddItem("ActionEdges", func(elem *astparser.Result) {
 		edgeGroup.ActionEdges = astparser.GetStringList(elem)
 	})
 
-	g.RunLoop()
+	if err := g.RunLoop(); err != nil {
+		return err
+	}
 	node.AddAssocEdgeGroup(edgeGroup)
 	return nil
 }
 
-func parseEdgeActions(result *astparser.Result) []*input.EdgeAction {
+func parseEdgeActions(result *astparser.Result) ([]*input.EdgeAction, error) {
 	edgeActions := make([]*input.EdgeAction, len(result.Elems))
 	for idx, elem := range result.Elems {
-		edgeActions[idx] = parseEdgeAction(elem)
+		var err error
+		edgeActions[idx], err = parseEdgeAction(elem)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return edgeActions
+	return edgeActions, nil
 }
 
 // copied from internal/action/action.go
-func getActionOperationFromTypeName(typeName string) ent.ActionOperation {
+func getActionOperationFromTypeName(typeName string) (ent.ActionOperation, error) {
 	switch typeName {
 	case "ent.CreateAction":
-		return ent.CreateAction
+		return ent.CreateAction, nil
 	case "ent.EditAction":
-		return ent.EditAction
+		return ent.EditAction, nil
 	case "ent.DeleteAction":
-		return ent.DeleteAction
+		return ent.DeleteAction, nil
 	case "ent.MutationsAction":
-		return ent.MutationsAction
+		return ent.MutationsAction, nil
 	case "ent.AddEdgeAction":
-		return ent.AddEdgeAction
+		return ent.AddEdgeAction, nil
 	case "ent.RemoveEdgeAction":
-		return ent.RemoveEdgeAction
+		return ent.RemoveEdgeAction, nil
 	case "ent.EdgeGroupAction":
-		return ent.EdgeGroupAction
+		return ent.EdgeGroupAction, nil
 	}
-	panic(fmt.Errorf("invalid action type passed %s", typeName))
+	return 0, fmt.Errorf("invalid action type passed %s", typeName)
 }
 
-func getTypeNameActionOperationFromTypeName(op ent.ActionOperation) string {
+func getTypeNameActionOperationFromTypeName(op ent.ActionOperation) (string, error) {
 	switch op {
 	case ent.CreateAction:
-		return "ent.CreateAction"
+		return "ent.CreateAction", nil
 	case ent.EditAction:
-		return "ent.EditAction"
+		return "ent.EditAction", nil
 	case ent.DeleteAction:
-		return "ent.DeleteAction"
+		return "ent.DeleteAction", nil
 	case ent.MutationsAction:
-		return "ent.MutationsAction"
+		return "ent.MutationsAction", nil
 	case ent.AddEdgeAction:
-		return "ent.AddEdgeAction"
+		return "ent.AddEdgeAction", nil
 	case ent.RemoveEdgeAction:
-		return "ent.RemoveEdgeAction"
+		return "ent.RemoveEdgeAction", nil
 	case ent.EdgeGroupAction:
-		return "ent.EdgeGroupAction"
+		return "ent.EdgeGroupAction", nil
 	}
-	panic(fmt.Errorf("invalid action type passed %v", op))
+	return "", fmt.Errorf("invalid action type passed %v", op)
 }
 
-func parseEdgeAction(elem *astparser.Result) *input.EdgeAction {
+func parseEdgeAction(elem *astparser.Result) (*input.EdgeAction, error) {
 	if elem.GetTypeName() != "ent.EdgeActionConfig" {
-		panic("invalid format")
+		return nil, fmt.Errorf("invalid format")
 	}
 	ret := &input.EdgeAction{
 		HideFromGraphQL: false,
@@ -1231,23 +1303,24 @@ func parseEdgeAction(elem *astparser.Result) *input.EdgeAction {
 	for _, elem := range elem.Elems {
 		switch elem.IdentName {
 		case "Action":
-			ret.Operation = getActionOperationFromTypeName(elem.Value.GetTypeName())
-			break
+			var err error
+			ret.Operation, err = getActionOperationFromTypeName(elem.Value.GetTypeName())
+			if err != nil {
+				return nil, err
+			}
 
 		case "CustomActionName":
 			ret.CustomActionName = elem.Value.Literal
-			break
 
 		case "CustomGraphQLName":
 			ret.CustomGraphQLName = elem.Value.Literal
-			break
 
 		case "HideFromGraphQL":
 			ret.HideFromGraphQL = astparser.IsTrueBooleanResult(elem.Value)
 		}
 	}
 
-	return ret
+	return ret, nil
 }
 
 func getEdgeConstName(packageName, edgeName string) string {
@@ -1257,9 +1330,4 @@ func getEdgeConstName(packageName, edgeName string) string {
 	}
 	// todo... need to support custom edges at some point...
 	return strcase.ToCamel(packageName) + "To" + strcase.ToCamel(edgeName) + "Edge"
-}
-
-// duplicated from db_schema.go
-func getNameFromParts(nameParts []string) string {
-	return strings.Join(nameParts, "_")
 }

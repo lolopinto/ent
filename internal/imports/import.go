@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
+
+	"github.com/lolopinto/ent/internal/util"
 )
 
 // inspired by github.com/99designs/gqlgen/codegen/templates
@@ -45,7 +47,7 @@ func nameForPackage(path string) string {
 
 func (s *Imports) Reserve(path string, aliases ...string) (string, error) {
 	if path == "" {
-		panic("empty ambient import")
+		return "", fmt.Errorf("empty ambient import")
 	}
 
 	var err error
@@ -132,7 +134,7 @@ func (s *Imports) Lookup(path string) string {
 		alias = imp.Name + strconv.Itoa(i)
 		i++
 		if i > 10 {
-			panic(fmt.Errorf("too many collisions, last attempt was %s", alias))
+			util.GoSchemaKill(fmt.Errorf("too many collisions, last attempt was %s", alias))
 		}
 	}
 	imp.Alias = alias

@@ -57,11 +57,13 @@ func (suite *phoneAuthTestSuite) SetupTest() {
 }
 
 func (suite *phoneAuthTestSuite) createUser() *models.User {
+	pw, err := util.GenerateRandPassword()
+	require.Nil(suite.T(), err)
 	user, err := action.CreateUser(viewer.LoggedOutViewer()).
 		SetFirstName("Jon").
 		SetLastName("Snow").
 		SetEmailAddress(util.GenerateRandEmail()).
-		SetPassword(util.GenerateRandPassword()).
+		SetPassword(pw).
 		SetPhoneNumber(util.GenerateRandPhoneNumber()).Save()
 
 	require.NoError(suite.T(), err)
@@ -577,7 +579,9 @@ func setPinInCacheVal(phoneNumber string, validator phonenumber.Validator) {
 	memoryValidator, ok := validator.(*phonenumber.MemoryValidator)
 
 	num, err := phonenumbers.Parse(phoneNumber, "US")
-	util.Die(err)
+	if err != nil {
+		util.GoSchemaKill(err)
+	}
 
 	key := fmt.Sprintf("phone_number:%s", phonenumbers.Format(num, phonenumbers.E164))
 	if ok {

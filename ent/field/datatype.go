@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/lolopinto/ent/ent/cast"
+	"github.com/lolopinto/ent/internal/util"
 )
 
 // StringType returns a new Datatype with type StringType
@@ -607,7 +608,7 @@ func PkgPath(typ reflect.Type) string {
 		// can provide a hook or have this return multiple strings or something
 		return PkgPath(typ.Elem())
 	case reflect.Chan:
-		panic("trying to store a channel. why??")
+		util.GoSchemaKill("trying to store a channel. why??")
 	}
 
 	return typ.PkgPath()
