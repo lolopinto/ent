@@ -27,6 +27,7 @@ import (
 // Schema is the representation of the parsed schema. Has everything needed to
 type Schema struct {
 	Nodes         NodeMapInfo
+	tables        map[string]bool
 	edges         map[string]*ent.AssocEdgeData
 	newEdges      []*ent.AssocEdgeData
 	edgesToUpdate []*ent.AssocEdgeData
@@ -170,6 +171,7 @@ func parse(parseFn func(*Schema) (*assocEdgeData, error)) (*Schema, error) {
 func (s *Schema) init() {
 	s.Nodes = make(map[string]*NodeDataInfo)
 	s.Enums = make(map[string]*EnumInfo)
+	s.tables = make(map[string]bool)
 }
 
 func (s *Schema) GetNodeDataFromGraphQLName(nodeName string) *NodeData {
@@ -246,13 +248,12 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 		// user.ts, address.ts etc
 		nodeData := newNodeData(packageName)
 
-		// default nodeName goes from address -> addresses, user -> users etc
+		// default tableName goes from address -> addresses, user -> users etc
 		if node.TableName == nil {
 			nodeData.TableName = inflection.Plural(packageName)
 		} else {
 			nodeData.TableName = *node.TableName
 		}
-		// we also want to validate that tableName is unique...
 
 		var err error
 		nodeData.FieldInfo, err = field.NewFieldInfoFromInputs(
@@ -314,9 +315,9 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 		}
 	}
 
+	// TODO convert more things to do something like this?
 	if len(errs) > 0 {
 		// we're getting list of errors and coalescing
-		// TODO we actually want to do something different here
 		return nil, util.CoalesceErr(errs...)
 	}
 
@@ -340,10 +341,15 @@ func (s *Schema) loadExistingEdges() (*assocEdgeData, error) {
 }
 
 func (s *Schema) addConfig(info *NodeDataInfo) error {
+	// validate schema and table name
 	if s.Nodes[info.NodeData.EntConfigName] != nil {
-		return fmt.Errorf("config with name %s already exists", info.NodeData.EntConfigName)
+		return fmt.Errorf("schema with name %s already exists", info.NodeData.EntConfigName)
+	}
+	if s.tables[info.NodeData.TableName] {
+		return fmt.Errorf("schema with table name %s already exists", info.NodeData.TableName)
 	}
 	s.Nodes[info.NodeData.EntConfigName] = info
+	s.tables[info.NodeData.TableName] = true
 	return nil
 }
 
