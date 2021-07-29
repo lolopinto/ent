@@ -178,9 +178,7 @@ func (c *FileConfigData) parseStructs(t *testing.T) {
 			return true
 		})
 
-		if st == nil || structName == "" {
-			t.Errorf("could not parse a struct type for config file %s", file.Name.Name)
-		}
+		assert.True(t, st != nil && structName != "", "could not parse a struct type for config file %s", file.Name.Name)
 		c.StructMap[structName] = st
 	}
 }

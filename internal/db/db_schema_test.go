@@ -1309,24 +1309,21 @@ func testEdgeTable(t *testing.T, table *dbTable) {
 }
 
 func testColumn(t *testing.T, col *dbColumn, colName string, expectedFieldName, expectedDBColName string, colStringParts []string) {
-	if col.EntFieldName != expectedFieldName {
-		t.Errorf("EntFieldName for the %s column was not as expected. expected %s, got %s instead", colName, expectedFieldName, col.EntFieldName)
-	}
-	if col.DBColName != expectedDBColName {
-		t.Errorf("DBColName for the %s column was not as expected. expected %s, got %s instead", colName, expectedDBColName, col.DBColName)
-	}
+	assert.Equal(t, expectedFieldName, col.EntFieldName, "EntFieldName for the %s column was not as expected. expected %s, got %s instead", colName, expectedFieldName, col.EntFieldName)
+	assert.Equal(t, expectedDBColName, col.DBColName, "DBColName for the %s column was not as expected. expected %s, got %s instead", colName, expectedDBColName, col.DBColName)
 
 	colString := col.getColString()
 	expectedColString := strings.Join(colStringParts, ", ")
-	if col.getColString() != expectedColString {
-		t.Errorf("ColString for the %s column was not as expected. expected %s, got %s instead", colName, expectedColString, colString)
-	}
+	assert.Equal(t, expectedColString, col.getColString(), "ColString for the %s column was not as expected. expected %s, got %s instead", colName, expectedColString, colString)
 }
 
 func testConstraint(t *testing.T, constraint dbConstraint, expectedConstraintString string) {
-	if constraint.getConstraintString() != expectedConstraintString {
-		t.Errorf("getConstraintString() for constraint was not as expected. expected %s, got %s instead", expectedConstraintString, constraint.getConstraintString())
-	}
+	assert.Equal(
+		t,
+		expectedConstraintString,
+		constraint.getConstraintString(),
+		"getConstraintString() for constraint was not as expected. expected %s, got %s instead", expectedConstraintString, constraint.getConstraintString(),
+	)
 }
 
 func testEdgeInSchema(t *testing.T, edge *dbEdgeInfo, expectedParts map[string]string) {
@@ -1334,9 +1331,7 @@ func testEdgeInSchema(t *testing.T, edge *dbEdgeInfo, expectedParts map[string]s
 	for _, part := range parts {
 		str := strings.TrimRight(strings.TrimLeft(part, "{"), "}")
 		strParts := strings.Split(str, ":")
-		if len(strParts) != 2 {
-			t.Errorf("invalid format")
-		}
+		require.Len(t, strParts, 2, "invalid format")
 		key, err := strconv.Unquote(strings.TrimSpace(strParts[0]))
 		assert.Nil(t, err)
 		val := strParts[1]
@@ -1400,25 +1395,17 @@ func getTestTable(configName string, t *testing.T) *dbTable {
 
 func getTestTableFromSchema(configName string, s *dbSchema, t *testing.T) *dbTable {
 	node := s.schema.Nodes[configName]
-	if node == nil {
-		t.Errorf("no codegen info for %s table", configName)
-	}
+	require.NotNil(t, node, "no codegen info for %s table", configName)
 	table := s.getTableForNode(node.NodeData)
-	if table == nil {
-		t.Errorf("no dbtable info for %s", configName)
-	}
+	require.NotNil(t, table, "no dbtable info for %s", configName)
 	return table
 }
 
 func getTestEnumTableFromSchema(name string, s *dbSchema, t *testing.T) *dbTable {
 	enumInfo := s.schema.Enums[name]
-	if enumInfo == nil {
-		t.Errorf("no enum info for %s table", name)
-	}
+	require.NotNil(t, enumInfo, "no enum info for %s table", name)
 	table := s.getTableForNode(enumInfo.NodeData)
-	if table == nil {
-		t.Errorf("no dbtable info for %s", name)
-	}
+	require.NotNil(t, table, "no dbtable info for %s", name)
 	return table
 }
 
@@ -1430,7 +1417,7 @@ func getTestColumn(tableConfigName, colFieldName string, t *testing.T) *dbColumn
 			return column
 		}
 	}
-	t.Errorf("no column %s for %s table", colFieldName, tableConfigName)
+	require.Fail(t, "no column %s for %s table", colFieldName, tableConfigName)
 	return nil
 }
 
@@ -1474,7 +1461,7 @@ func getTestForeignKeyConstraintFromTable(t *testing.T, table *dbTable, colField
 			}
 		}
 	}
-	t.Errorf("no foreign key constraint for %v column(s) for %s table", colFieldName, table.QuotedTableName)
+	require.Fail(t, "no foreign key constraint for %v column(s) for %s table", colFieldName, table.QuotedTableName)
 	return nil
 }
 
@@ -1491,7 +1478,7 @@ func getTestPrimaryKeyConstraintFromTable(t *testing.T, table *dbTable, colField
 			return pKeyConstraint
 		}
 	}
-	t.Errorf("no primary key constraint in table %s for column(s) %v", table.QuotedTableName, colFieldName)
+	require.Fail(t, "no primary key constraint in table %s for column(s) %v", table.QuotedTableName, colFieldName)
 	return nil
 }
 
@@ -1508,7 +1495,7 @@ func getTestUniqueKeyConstraintFromTable(t *testing.T, table *dbTable, colFieldN
 			return uniqConstraint
 		}
 	}
-	t.Errorf("no unique constraint in table %s for column(s) %v", table.QuotedTableName, colFieldName)
+	require.Fail(t, "no unique constraint in table %s for column(s) %v", table.QuotedTableName, colFieldName)
 	return nil
 }
 
@@ -1519,7 +1506,7 @@ func getTestIndexedConstraintFromTable(t *testing.T, table *dbTable, colFieldNam
 			return indConstraint
 		}
 	}
-	t.Errorf("no index constraint in table %s for column(s) %v", table.QuotedTableName, colFieldName)
+	require.Fail(t, "no index constraint in table %s for column(s) %v", table.QuotedTableName, colFieldName)
 	return nil
 }
 
@@ -1533,7 +1520,7 @@ func getTestIndexedConstraint(tableConfigName, colFieldName string, t *testing.T
 			return idxConstraint
 		}
 	}
-	t.Errorf("no unique constraint for %s column for %s table", colFieldName, tableConfigName)
+	require.Fail(t, "no unique constraint for %s column for %s table", colFieldName, tableConfigName)
 	return nil
 }
 
@@ -1556,7 +1543,7 @@ func getTestTableByName(tableName string, t *testing.T) *dbTable {
 			return table
 		}
 	}
-	t.Errorf("no dbtable info for table %s", tableName)
+	require.Fail(t, "no dbtable info for table %s", tableName)
 	return nil
 }
 
@@ -1572,7 +1559,7 @@ func getColumnFromNamedTable(colDBName, tableName string, t *testing.T) *dbColum
 			return col
 		}
 	}
-	t.Errorf("no db column %s for account_folders_edges table", colDBName)
+	require.Fail(t, "no db column %s for account_folders_edges table", colDBName)
 	return nil
 }
 
@@ -1587,7 +1574,7 @@ func getEdgeByName(edgeName string, t *testing.T) *dbEdgeInfo {
 			return &edge
 		}
 	}
-	t.Errorf("no edge for %s found", edgeName)
+	require.Fail(t, "no edge for %s found", edgeName)
 	return nil
 }
 

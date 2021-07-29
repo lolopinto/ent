@@ -349,15 +349,11 @@ func testBuilder(
 				)
 			}
 
-			if len(actualValues) != len(tt.expectedValues) {
-				t.Errorf("length of slice was not as expected")
-			}
+			require.Len(t, actualValues, len(tt.expectedValues), "length of slice was not as expected")
 
 			if testFn == nil || len(origActualCols) == 0 {
 				for idx, actualValue := range actualValues {
-					if actualValue != tt.expectedValues[idx] {
-						t.Errorf("value was not as expected, expected %v, got %v instead", tt.expectedValues[idx], actualValue)
-					}
+					require.Equal(t, tt.expectedValues[idx], actualValue, "value was not as expected, expected %v, got %v instead", tt.expectedValues[idx], actualValue)
 				}
 			} else {
 				testFn(t, &tt, origExpectedCols, origActualCols, actualValues)
@@ -370,13 +366,8 @@ func colsFromRegex(r *regexp.Regexp) func(*testing.T, string, *sqlTestCase) ([]s
 	return func(t *testing.T, actualQuery string, tt *sqlTestCase) ([]string, []string) {
 		actualMatch := r.FindStringSubmatch(actualQuery)
 		expectedMatch := r.FindStringSubmatch(tt.expectedQuery)
-		if len(actualMatch) != len(expectedMatch) {
-			t.Errorf("regex query was not as expected")
-		}
-
-		if len(actualMatch) != 2 {
-			t.Errorf("expected match to have length of 2")
-		}
+		require.Len(t, actualMatch, 2, "expected match to have length of 2")
+		require.Len(t, actualMatch, len(expectedMatch), "regex query was not as expected")
 
 		actualCols := strings.Split(actualMatch[1], ", ")
 		expectedCols := strings.Split(expectedMatch[1], ", ")
@@ -388,13 +379,8 @@ func colsFromUpdateRegex(r *regexp.Regexp) func(*testing.T, string, *sqlTestCase
 	return func(t *testing.T, actualQuery string, tt *sqlTestCase) ([]string, []string) {
 		actualMatch := r.FindStringSubmatch(actualQuery)
 		expectedMatch := r.FindStringSubmatch(tt.expectedQuery)
-		if len(actualMatch) != len(expectedMatch) {
-			t.Errorf("regex query was not as expected")
-		}
-
-		if len(actualMatch) != 2 {
-			t.Errorf("expected match to have length of 2")
-		}
+		require.Len(t, actualMatch, 2, "expected match to have length of 2")
+		require.Len(t, actualMatch, len(expectedMatch), "regex query was not as expected")
 
 		actualCols := strings.Split(actualMatch[1], ", ")
 		expectedCols := strings.Split(expectedMatch[1], ", ")

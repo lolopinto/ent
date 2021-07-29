@@ -128,15 +128,11 @@ func TestAddingInverseEdge(t *testing.T) {
 
 	inverseEdgeInfo := getTestEdgeInfo(t, "todo")
 
-	if len(inverseEdgeInfo.Associations) != 0 {
-		t.Errorf("expected no associations since nothing is defined for Todo")
-	}
+	require.Len(t, inverseEdgeInfo.Associations, 0, "expected no associations since nothing is defined for Todo")
 
 	err := edge.AddInverseEdge(inverseEdgeInfo)
 	require.Nil(t, err)
-	if len(inverseEdgeInfo.Associations) != 1 {
-		t.Errorf("expected 1 association since edge.AddInverseEdge was called")
-	}
+	require.Len(t, inverseEdgeInfo.Associations, 1, "expected 1 association since edge.AddInverseEdge was called")
 	edge2 := inverseEdgeInfo.GetAssociationEdgeByName("Folders")
 
 	expectedAssocEdge := &AssociationEdge{
@@ -261,41 +257,52 @@ func TestEdgeGroupWithCustomActionEdges(t *testing.T) {
 
 func testAssocEdge(t *testing.T, edge, expectedAssocEdge *AssociationEdge) {
 	require.NotNil(t, edge)
-	if edge.GetEdgeName() != expectedAssocEdge.EdgeName {
-		t.Errorf(
-			"name of edge was not as expected, expected %s, got %s instead",
-			expectedAssocEdge.EdgeName,
-			edge.EdgeName,
-		)
-	}
+	assert.Equal(
+		t,
+		expectedAssocEdge.EdgeName,
+		edge.GetEdgeName(),
+		"name of edge was not as expected, expected %s, got %s instead",
+		expectedAssocEdge.EdgeName,
+		edge.EdgeName,
+	)
 
 	edgeName := edge.GetEdgeName()
 
-	if edge.EdgeConst != expectedAssocEdge.EdgeConst {
-		t.Errorf(
-			"edge const of edge %s was not as expected, expected %s, got %s instead",
-			edgeName,
-			expectedAssocEdge.EdgeConst,
-			edge.EdgeConst,
-		)
-	}
+	assert.Equal(
+		t,
+		expectedAssocEdge.EdgeConst,
+		edge.EdgeConst,
+		"edge const of edge %s was not as expected, expected %s, got %s instead",
+		edgeName,
+		expectedAssocEdge.EdgeConst,
+		edge.EdgeConst,
+	)
 
-	if edge.Symmetric != expectedAssocEdge.Symmetric {
-		t.Errorf("assoc edge with name %s symmetric value was not as expected", edgeName)
-	}
+	assert.Equal(
+		t,
+		expectedAssocEdge.Symmetric,
+		edge.Symmetric,
+		"assoc edge with name %s symmetric value was not as expected",
+		edgeName,
+	)
 
-	if edge.Unique != expectedAssocEdge.Unique {
-		t.Errorf("assoc edge with name %s unique value was not as expected", edgeName)
-	}
+	assert.Equal(
+		t,
+		expectedAssocEdge.Unique,
+		edge.Unique,
+		"assoc edge with name %s unique value was not as expected",
+		edgeName,
+	)
 
-	if edge.IsInverseEdge != expectedAssocEdge.IsInverseEdge {
-		t.Errorf(
-			"is inverse edge flag for assoc edge with name %s was not as expected, expected %v, got %v instead",
-			edgeName,
-			expectedAssocEdge.IsInverseEdge,
-			edge.IsInverseEdge,
-		)
-	}
+	assert.Equal(
+		t,
+		expectedAssocEdge.IsInverseEdge,
+		edge.IsInverseEdge,
+		"is inverse edge flag for assoc edge with name %s was not as expected, expected %v, got %v instead",
+		edgeName,
+		expectedAssocEdge.IsInverseEdge,
+		edge.IsInverseEdge,
+	)
 
 	testInverseAssociationEdge(t, edgeName, edge, expectedAssocEdge)
 
@@ -312,37 +319,43 @@ func testInverseAssociationEdge(t *testing.T, edgeName string, edge, expectedAss
 	inverseEdge := edge.InverseEdge
 	expectedInverseEdge := expectedAssocEdge.InverseEdge
 
-	if expectedInverseEdge == nil && inverseEdge != nil {
-		t.Errorf("expected inverse edge with edge name %s to be nil and it was not nil", edgeName)
-		return
-	}
+	require.False(
+		t,
+		expectedInverseEdge == nil && inverseEdge != nil,
+		"expected inverse edge with edge name %s to be nil and it was not nil",
+		edgeName,
+	)
 
-	if expectedInverseEdge != nil && inverseEdge == nil {
-		t.Errorf("expected inverse edge with edge name %s to be non-nil and it was nil", edgeName)
-		return
-	}
+	require.False(
+		t,
+		expectedInverseEdge != nil && inverseEdge == nil,
+		"expected inverse edge with edge name %s to be non-nil and it was nil",
+		edgeName,
+	)
 
 	if expectedInverseEdge == nil && inverseEdge == nil {
 		return
 	}
 
-	if inverseEdge.GetEdgeName() != expectedInverseEdge.EdgeName {
-		t.Errorf(
-			"name of inverse edge for edge %s was not as expected, expected %s, got %s instead",
-			edgeName,
-			expectedInverseEdge.EdgeName,
-			inverseEdge.EdgeName,
-		)
-	}
+	assert.Equal(
+		t,
+		expectedInverseEdge.EdgeName,
+		inverseEdge.GetEdgeName(),
+		"name of inverse edge for edge %s was not as expected, expected %s, got %s instead",
+		edgeName,
+		expectedInverseEdge.EdgeName,
+		inverseEdge.EdgeName,
+	)
 
-	if inverseEdge.EdgeConst != expectedInverseEdge.EdgeConst {
-		t.Errorf(
-			"edge const of inverse edge %s was not as expected, expected %s, got %s instead",
-			edgeName,
-			inverseEdge.EdgeConst,
-			expectedInverseEdge.EdgeConst,
-		)
-	}
+	assert.Equal(
+		t,
+		expectedInverseEdge.EdgeConst,
+		inverseEdge.EdgeConst,
+		"edge const of inverse edge %s was not as expected, expected %s, got %s instead",
+		edgeName,
+		inverseEdge.EdgeConst,
+		expectedInverseEdge.EdgeConst,
+	)
 
 	expectedPackageName := inverseEdge.entConfig.PackageName
 	expectedConfigName := inverseEdge.entConfig.ConfigName
@@ -358,15 +371,19 @@ func testEdgeActions(t *testing.T, edgeName string, edgeActions, expectedEdgeAct
 	for idx, expectedEdgeAction := range expectedEdgeActions {
 		edgeAction := edgeActions[idx]
 
-		if expectedEdgeAction == nil && edgeAction != nil {
-			t.Errorf("expected edge action with edge name %s to be nil and it was not nil", edgeName)
-			continue
-		}
+		require.False(
+			t,
+			expectedEdgeAction == nil && edgeAction != nil,
+			"expected edge action with edge name %s to be nil and it was not nil",
+			edgeName,
+		)
 
-		if expectedEdgeAction != nil && edgeAction == nil {
-			t.Errorf("expected edge action with edge name %s to be non-nil and it was nil", edgeName)
-			continue
-		}
+		require.False(
+			t,
+			expectedEdgeAction != nil && edgeAction == nil,
+			"expected edge action with edge name %s to be non-nil and it was nil",
+			edgeName,
+		)
 
 		if expectedEdgeAction == nil && edgeAction == nil {
 			continue
@@ -416,90 +433,110 @@ func testEdgeActions(t *testing.T, edgeName string, edgeActions, expectedEdgeAct
 
 func testEdgeInfo(t *testing.T, edgeInfo *EdgeInfo, expAssocs int) {
 	// field edges are never passed in. they are generated in node_map
-	if len(edgeInfo.FieldEdges) != 0 {
-		t.Errorf("expected %d field edges. got %d instead", 0, len(edgeInfo.FieldEdges))
-	}
+	assert.Len(t,
+		edgeInfo.FieldEdges,
+		0,
+		"expected %d field edges. got %d instead", 0, len(edgeInfo.FieldEdges),
+	)
 
 	// foreign keys are never passed in. they are generated in node_map
-	if len(edgeInfo.DestinationEdges) != 0 {
-		t.Errorf("expected %d foreign key edges. got %d instead", 0, len(edgeInfo.DestinationEdges))
-	}
+	assert.Len(
+		t,
+		edgeInfo.DestinationEdges,
+		0,
+		"expected %d foreign key edges. got %d instead",
+		0,
+		len(edgeInfo.DestinationEdges),
+	)
 
-	if len(edgeInfo.Associations) != expAssocs {
-		t.Errorf("expected %d association edges. got %d instead", expAssocs, len(edgeInfo.Associations))
-	}
+	assert.Len(
+		t,
+		edgeInfo.Associations,
+		expAssocs,
+		"expected %d association edges. got %d instead",
+		expAssocs,
+		len(edgeInfo.Associations),
+	)
 }
 
 func testEntConfig(t *testing.T, entConfig *schemaparser.EntConfigInfo, expectedPackageName, expectedConfigName string) {
 	// TODO PackageName is useless and we should fix it/remove it in this instance
-	if entConfig.PackageName != expectedPackageName {
-		t.Errorf(
-			"package name for ent config was not as expected. expected %s, got %s instead",
-			expectedPackageName,
-			entConfig.PackageName,
-		)
-	}
-	if entConfig.ConfigName != expectedConfigName {
-		t.Errorf(
-			"config name for ent config was not as expected. expected %s, got %s instead",
-			expectedConfigName,
-			entConfig.ConfigName,
-		)
-	}
+	assert.Equal(
+		t,
+		expectedPackageName,
+		entConfig.PackageName,
+		"package name for ent config was not as expected. expected %s, got %s instead",
+		expectedPackageName,
+		entConfig.PackageName,
+	)
+
+	assert.Equal(
+		t,
+		expectedConfigName,
+		entConfig.ConfigName,
+		"config name for ent config was not as expected. expected %s, got %s instead",
+		expectedConfigName,
+		entConfig.ConfigName,
+	)
 }
 
 func testNodeInfo(t *testing.T, nodeInfo nodeinfo.NodeInfo, expectedNodename string) {
-	if nodeInfo.Node != expectedNodename {
-		t.Errorf(
-			"node info for ent config was not as expected, expected %s, got %s instead",
-			expectedNodename,
-			nodeInfo.Node,
-		)
-	}
+	assert.Equal(
+		t,
+		expectedNodename,
+		nodeInfo.Node,
+		"node info for ent config was not as expected, expected %s, got %s instead",
+		expectedNodename,
+		nodeInfo.Node,
+	)
 }
 
 func testAssocEdgeGroup(t *testing.T, edgeGroup, expectedAssocEdgeGroup *AssociationEdgeGroup, actionEdges []string) {
-	if edgeGroup.GroupName != expectedAssocEdgeGroup.GroupName {
-		t.Errorf(
-			"group name of edge group was not as expected, expected %s, got %s instead",
-			expectedAssocEdgeGroup.GroupName,
-			edgeGroup.GroupName,
-		)
-	}
+	assert.Equal(
+		t,
+		expectedAssocEdgeGroup.GroupName,
+		edgeGroup.GroupName,
+		"group name of edge group was not as expected, expected %s, got %s instead",
+		expectedAssocEdgeGroup.GroupName,
+		edgeGroup.GroupName,
+	)
 
-	if edgeGroup.GroupStatusName != expectedAssocEdgeGroup.GroupStatusName {
-		t.Errorf(
-			"group status name of edge group was not as expected, expected %s, got %s instead",
-			expectedAssocEdgeGroup.GroupStatusName,
-			edgeGroup.GroupStatusName,
-		)
-	}
+	assert.Equal(
+		t,
+		expectedAssocEdgeGroup.GroupStatusName,
+		edgeGroup.GroupStatusName,
+		"group status name of edge group was not as expected, expected %s, got %s instead",
+		expectedAssocEdgeGroup.GroupStatusName,
+		edgeGroup.GroupStatusName,
+	)
 
-	if edgeGroup.ConstType != expectedAssocEdgeGroup.ConstType {
-		t.Errorf(
-			"const type of edge group was not as expected, expected %s, got %s instead",
-			expectedAssocEdgeGroup.ConstType,
-			edgeGroup.ConstType,
-		)
-	}
+	assert.Equal(
+		t,
+		expectedAssocEdgeGroup.ConstType,
+		edgeGroup.ConstType,
+		"const type of edge group was not as expected, expected %s, got %s instead",
+		expectedAssocEdgeGroup.ConstType,
+		edgeGroup.ConstType,
+	)
 
-	if len(edgeGroup.Edges) != len(expectedAssocEdgeGroup.Edges) {
-		t.Errorf(
-			"number of edges for edge group was not as expected, expected %d, got %d instead",
-			len(expectedAssocEdgeGroup.Edges),
-			len(edgeGroup.Edges),
-		)
-	}
+	assert.Len(
+		t,
+		edgeGroup.Edges,
+		len(expectedAssocEdgeGroup.Edges),
+		"number of edges for edge group was not as expected, expected %d, got %d instead",
+		len(expectedAssocEdgeGroup.Edges),
+		len(edgeGroup.Edges),
+	)
 
 	for edgeName, expectedAssocEdge := range expectedAssocEdgeGroup.Edges {
 		assocEdge := edgeGroup.Edges[edgeName]
 
-		if assocEdge == nil {
-			t.Errorf(
-				"expected an assoc edge of name %s to exist. it didn't",
-				edgeName,
-			)
-		}
+		require.NotNil(
+			t,
+			assocEdge,
+			"expected an assoc edge of name %s to exist. it didn't",
+			edgeName,
+		)
 		testAssocEdge(t, assocEdge, expectedAssocEdge)
 
 		// confirm that edgeGroup.UseEdgeInStatusAction() is correct.

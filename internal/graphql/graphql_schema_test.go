@@ -378,24 +378,27 @@ func getFakeGeneratedFile() string {
 
 func testLine(t *testing.T, lineItem graphqlLineItem, expectedSchemaLine, itemName string) {
 	line := lineItem.GetSchemaLine()
-	if line != expectedSchemaLine {
-		t.Errorf(
-			"schema line for the %s field/edge was not as expected, expected %s, got %s instead",
-			itemName,
-			expectedSchemaLine,
-			line,
-		)
-	}
+	assert.Equal(
+		t,
+		expectedSchemaLine,
+		line,
+		"schema line for the %s field/edge was not as expected, expected %s, got %s instead",
+		itemName,
+		expectedSchemaLine,
+		line,
+	)
 }
 
 func testField(t *testing.T, f *graphQLField, expectedFieldName, expectedSchemaLine string) {
-	if f.FieldName != expectedFieldName {
-		t.Errorf(
-			"field name for field was not as expected, expected %s, got %s instead",
-			expectedFieldName,
-			f.FieldName,
-		)
-	}
+	assert.Equal(
+		t,
+		expectedFieldName,
+		f.FieldName,
+		"field name for field was not as expected, expected %s, got %s instead",
+		expectedFieldName,
+		f.FieldName,
+	)
+
 	testFieldLine(t, f, expectedSchemaLine)
 }
 
@@ -404,13 +407,14 @@ func testFieldLine(t *testing.T, f *graphQLField, expectedSchemaLine string) {
 }
 
 func testEdge(t *testing.T, e graphqlEdge, expectedEdgeName, expectedSchemaLine string) {
-	if e.GetEdgeName() != expectedEdgeName {
-		t.Errorf(
-			"edge name for edge was not as expected, expected %s, got %s",
-			e.GetEdgeName(),
-			expectedEdgeName,
-		)
-	}
+	assert.Equal(
+		t,
+		expectedEdgeName,
+		e.GetEdgeName(),
+		"edge name for edge was not as expected, expected %s, got %s",
+		e.GetEdgeName(),
+		expectedEdgeName,
+	)
 	testEdgeLine(t, e, expectedSchemaLine)
 }
 
