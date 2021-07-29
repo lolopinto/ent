@@ -256,13 +256,13 @@ func TestRunNoDeps(t *testing.T) {
 
 	require.Len(t, g.queue, 0, "expected no items queued up. %d items were queued up instead", len(g.queue))
 
-	assert.Len(t, hardToCalObj.field1, 1, "field1 was not set when Run() was called")
+	assert.Equal(t, hardToCalObj.field1, 1, "field1 was not set when Run() was called")
 
 	assert.Equal(t, hardToCalObj.field2, "field2", "field2 was not set when Run() was called")
 
-	assert.Equal(t, hardToCalObj.field3, "field3", "field4 was not set when Run() was called")
+	assert.Equal(t, hardToCalObj.field3, 3, "field3 was not set when Run() was called")
 
-	assert.Equal(t, hardToCalObj.field4, "field3", "field4 was not set when Run() was called")
+	assert.Equal(t, hardToCalObj.field4, "field4", "field4 was not set when Run() was called")
 }
 
 func TestRunWithDeps(t *testing.T) {
