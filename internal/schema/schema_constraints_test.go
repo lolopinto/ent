@@ -90,7 +90,7 @@ func TestForeignKeyFieldConstraint(t *testing.T) {
 					&input.Constraint{
 						Name:    "contacts_owner_id_fkey",
 						Type:    input.ForeignKeyConstraint,
-						Columns: []string{"ownerID"},
+						Columns: []string{"owner_id"},
 						ForeignKey: &input.ForeignKeyInfo{
 							TableName: "users",
 							Columns:   []string{"id"},
@@ -133,7 +133,7 @@ func TestUniqueFieldConstraint(t *testing.T) {
 					&input.Constraint{
 						Name:    "users_unique_email_address",
 						Type:    input.UniqueConstraint,
-						Columns: []string{"emailAddress"},
+						Columns: []string{"email_address"},
 					},
 				),
 			},
@@ -175,7 +175,7 @@ func TestConstraints(t *testing.T) {
 						{
 							Name:    "user_photos_pkey",
 							Type:    input.PrimaryKeyConstraint,
-							Columns: []string{"UserID", "PhotoID"},
+							Columns: []string{"user_id", "photo_id"},
 						},
 					},
 				},
@@ -230,7 +230,7 @@ func TestConstraints(t *testing.T) {
 						&input.Constraint{
 							Name:    "contacts_user_id_fkey",
 							Type:    input.ForeignKeyConstraint,
-							Columns: []string{"userID"},
+							Columns: []string{"user_id"},
 							ForeignKey: &input.ForeignKeyInfo{
 								TableName: "users",
 								Columns:   []string{"id"},
@@ -240,7 +240,7 @@ func TestConstraints(t *testing.T) {
 						&input.Constraint{
 							Name:    "contacts_unique_email",
 							Type:    input.UniqueConstraint,
-							Columns: []string{"emailAddress", "userID"},
+							Columns: []string{"email_address", "user_id"},
 						}),
 				},
 			},
@@ -248,7 +248,7 @@ func TestConstraints(t *testing.T) {
 		"multi-column-foreign key": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(`
-					import {Field, StringType, BaseEntSchema} from "{schema}";
+					import {Field, StringType, BaseEntSchema, Constraint, ConstraintType} from "{schema}";
 
 					export default class User extends BaseEntSchema {
 						fields: Field[] = [
@@ -260,8 +260,15 @@ func TestConstraints(t *testing.T) {
 							}),
 							StringType({
 								name: 'emailAddress',
-								unique: true,
 							}),
+						];
+
+						constraints: Constraint[] = [
+							{
+								name: "users_unique",
+								type: ConstraintType.Unique,
+								columns: ["id", "emailAddress"],
+							},
 						];
 					}
 				`),
@@ -284,7 +291,7 @@ func TestConstraints(t *testing.T) {
 								type: ConstraintType.ForeignKey,
 								columns: ["userID", "emailAddress"],
 								fkey: {
-									tableName: "users", 
+									tableName: "users",
 									ondelete: "CASCADE",
 									columns: ["ID", "emailAddress"],
 								}
@@ -295,21 +302,22 @@ func TestConstraints(t *testing.T) {
 			},
 			expectedMap: map[string]*schema.NodeData{
 				"User": {
-					Constraints: constraintsWithNodeConstraints("users", &input.Constraint{
-						Name:    "users_unique_email_address",
-						Type:    input.UniqueConstraint,
-						Columns: []string{"emailAddress"},
-					}),
+					Constraints: constraintsWithNodeConstraints("users",
+						&input.Constraint{
+							Name:    "users_unique",
+							Type:    input.UniqueConstraint,
+							Columns: []string{"id", "email_address"},
+						}),
 				},
 				"Contact": {
 					Constraints: constraintsWithNodeConstraints("contacts",
 						&input.Constraint{
 							Name:    "contacts_user_fkey",
 							Type:    input.ForeignKeyConstraint,
-							Columns: []string{"userID", "emailAddress"},
+							Columns: []string{"user_id", "email_address"},
 							ForeignKey: &input.ForeignKeyInfo{
 								TableName: "users",
-								Columns:   []string{"ID", "emailAddress"},
+								Columns:   []string{"id", "email_address"},
 								OnDelete:  "CASCADE",
 							},
 						},
@@ -648,6 +656,91 @@ func TestInvalidConstraints(t *testing.T) {
 			},
 			expectedErr: fmt.Errorf("Condition is required when constraint type is Check"),
 		},
+		"fkey on non-unique field": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Field, StringType, BaseEntSchema} from "{schema}";
+
+				export default class User extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({
+							name: 'firstName',
+						}),
+						StringType({
+							name: 'lastName',
+						}),
+					];
+				}
+			`,
+				),
+				"contact.ts": testhelper.GetCodeWithSchema(
+					`import {Field, StringType, BaseEntSchema, UUIDType} from "{schema}";
+
+				export default class Contact extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({
+							name: 'firstName',
+							foreignKey: {schema:"User", column:"firstName"},
+						}),
+						StringType({
+							name: 'lastName',
+						}),
+					];
+				}
+			`,
+				),
+			},
+			expectedErr: fmt.Errorf("foreign key contacts_first_name_fkey with columns which aren't unique in table users"),
+		},
+		"multi-column-foreign on non unique keys": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(`
+					import {Field, StringType, BaseEntSchema, Constraint, ConstraintType} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: 'firstName',
+							}),
+							StringType({
+								name: 'lastName',
+							}),
+							StringType({
+								name: 'emailAddress',
+							}),
+						];
+					}
+				`),
+				"contact.ts": testhelper.GetCodeWithSchema(`
+					import {BaseEntSchema, Field, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
+
+					export default class Contact extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: "emailAddress",
+							}),
+							UUIDType({
+								name: "userID",
+							}),
+						];
+
+						constraints: Constraint[] = [
+							{
+								name: "contacts_user_fkey",
+								type: ConstraintType.ForeignKey,
+								columns: ["userID", "emailAddress"],
+								fkey: {
+									tableName: "users",
+									ondelete: "CASCADE",
+									columns: ["ID", "emailAddress"],
+								}
+							},
+						];
+					}
+				`),
+			},
+			expectedErr: fmt.Errorf("foreign key contacts_user_fkey with columns which aren't unique in table users"),
+		},
 	}
 	runTestCases(t, testCases)
 }
@@ -680,10 +773,11 @@ func testConstraints(
 		base.TypeScript,
 	)
 	if expectedErr != nil {
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Equal(t, err.Error(), expectedErr.Error())
 	} else {
-		assert.Nil(t, err)
+		require.NotNil(t, s)
+		require.Nil(t, err)
 	}
 
 	for k, expNodeData := range expectedMap {
@@ -728,7 +822,7 @@ func constraintsWithNodeConstraints(tableName string, constraints ...*input.Cons
 		{
 			Name:    fmt.Sprintf("%s_id_pkey", tableName),
 			Type:    input.PrimaryKeyConstraint,
-			Columns: []string{"ID"},
+			Columns: []string{"id"},
 		},
 	}, constraints...)
 }

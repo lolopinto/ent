@@ -191,9 +191,10 @@ func (e *EdgeInfo) HasConnectionEdges() bool {
 }
 
 func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName string, polymorphic *base.PolymorphicOptions, nullable bool) error {
+	// not an id field, do nothing
+	// TODO we need a test for this
 	if !strings.HasSuffix(fieldName, "ID") {
-		// TODO make this more flexible...
-		return fmt.Errorf("expected field name to end with ID. FieldName was %s", fieldName)
+		return nil
 	}
 	trim := strings.TrimSuffix(fieldName, "ID")
 	if trim == "" {

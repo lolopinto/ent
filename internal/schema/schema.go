@@ -3,6 +3,7 @@ package schema
 import (
 	"database/sql"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -27,17 +28,18 @@ import (
 // Schema is the representation of the parsed schema. Has everything needed to
 type Schema struct {
 	Nodes         NodeMapInfo
-	tables        map[string]bool
+	tables        NodeMapInfo
 	edges         map[string]*ent.AssocEdgeData
 	newEdges      []*ent.AssocEdgeData
 	edgesToUpdate []*ent.AssocEdgeData
 	// unlike Nodes, the key is "EnumName" instead of "EnumNameConfig"
 	// confusing but gets us closer to what we want
-	Enums map[string]*EnumInfo
+	Enums      map[string]*EnumInfo
+	enumTables map[string]*EnumInfo
 }
 
-func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData) {
-	s.addEnumFrom(
+func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData) error {
+	return s.addEnumFrom(
 		enumType.GetTSName(),
 		enumType.GetGraphQLName(),
 		enumType.GetTSType(),
@@ -107,7 +109,7 @@ func (s *Schema) addEnumFromInputNode(nodeName string, node *input.Node, nodeDat
 		}
 	}
 
-	s.addEnumFrom(
+	return s.addEnumFrom(
 		nodeName,
 		nodeName,
 		fmt.Sprintf("%s!", nodeName),
@@ -115,12 +117,14 @@ func (s *Schema) addEnumFromInputNode(nodeName string, node *input.Node, nodeDat
 		nodeData,
 		node,
 	)
-	return nil
 }
 
-func (s *Schema) addEnumFrom(tsName, gqlName, gqlType string, enumValues []string, nodeData *NodeData, inputNode *input.Node) {
+func (s *Schema) addEnumFrom(tsName, gqlName, gqlType string, enumValues []string, nodeData *NodeData, inputNode *input.Node) error {
 	// first create EnumInfo...
 
+	if s.enumTables[nodeData.TableName] != nil {
+		return fmt.Errorf("enum schema with table name %s already exists", nodeData.TableName)
+	}
 	tsEnum, gqlEnum := enum.GetEnums(tsName, gqlName, gqlType, enumValues)
 
 	info := &EnumInfo{
@@ -130,7 +134,9 @@ func (s *Schema) addEnumFrom(tsName, gqlName, gqlType string, enumValues []strin
 		InputNode: inputNode,
 	}
 	s.Enums[nodeData.Node] = info
+	s.enumTables[nodeData.TableName] = info
 	nodeData.addEnum(info)
+	return nil
 }
 
 // Given a schema file parser, Parse parses the schema to return the completely
@@ -171,7 +177,8 @@ func parse(parseFn func(*Schema) (*assocEdgeData, error)) (*Schema, error) {
 func (s *Schema) init() {
 	s.Nodes = make(map[string]*NodeDataInfo)
 	s.Enums = make(map[string]*EnumInfo)
-	s.tables = make(map[string]bool)
+	s.tables = make(map[string]*NodeDataInfo)
+	s.enumTables = make(map[string]*EnumInfo)
 }
 
 func (s *Schema) GetNodeDataFromGraphQLName(nodeName string) *NodeData {
@@ -267,7 +274,9 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 				entType := f.GetFieldType()
 				enumType, ok := entType.(enttype.EnumeratedType)
 				if ok {
-					s.addEnum(enumType, nodeData)
+					if err := s.addEnum(enumType, nodeData); err != nil {
+						errs = append(errs, err)
+					}
 				}
 			}
 		}
@@ -278,14 +287,16 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 		}
 
 		for _, group := range nodeData.EdgeInfo.AssocGroups {
-			s.addEnumFrom(
+			if err := s.addEnumFrom(
 				group.ConstType,
 				group.ConstType,
 				fmt.Sprintf("%s!", group.ConstType),
 				group.GetEnumValues(),
 				nodeData,
 				nil,
-			)
+			); err != nil {
+				errs = append(errs, err)
+			}
 		}
 
 		nodeData.ActionInfo, err = action.ParseFromInput(packageName, node.Actions, nodeData.FieldInfo, nodeData.EdgeInfo, lang)
@@ -346,11 +357,18 @@ func (s *Schema) addConfig(info *NodeDataInfo) error {
 	if s.Nodes[info.NodeData.EntConfigName] != nil {
 		return fmt.Errorf("schema with name %s already exists", info.NodeData.EntConfigName)
 	}
-	if s.tables[info.NodeData.TableName] {
+	if s.tables[info.NodeData.TableName] != nil {
 		return fmt.Errorf("schema with table name %s already exists", info.NodeData.TableName)
 	}
+
+	// it's confusing that this is stored in 2 places :(
+	if s.enumTables[info.NodeData.TableName] != nil {
+		if s.enumTables[info.NodeData.TableName].NodeData != info.NodeData {
+			return fmt.Errorf("enum schema with table name %s already exists", info.NodeData.TableName)
+		}
+	}
 	s.Nodes[info.NodeData.EntConfigName] = info
-	s.tables[info.NodeData.TableName] = true
+	s.tables[info.NodeData.TableName] = info
 	return nil
 }
 
@@ -390,6 +408,99 @@ func (s *Schema) buildPostRunDepgraph(edgeData *assocEdgeData) *depgraph.Depgrap
 	return g
 }
 
+func (s *Schema) listEqual(cols []string, list []string) bool {
+	if len(cols) != len(list) {
+		return false
+	}
+	for i, v := range cols {
+		if v != list[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func (s *Schema) postProcess(nodeData *NodeData) error {
+	// this is where validation that depends on all the data happens
+	primaryKeyCount := 0
+	for _, constraint := range nodeData.Constraints {
+
+		switch constraint.Type {
+		case input.PrimaryKeyConstraint:
+			primaryKeyCount++
+
+		case input.ForeignKeyConstraint:
+			// TODO need to validate each column/group of columns is unique
+			// either primary key or unique
+			fkey := constraint.ForeignKey
+			var foreignNodeData *NodeData
+			if s.tables[fkey.TableName] != nil {
+				foreignNodeData = s.tables[fkey.TableName].NodeData
+			} else {
+				enumInfo := s.enumTables[fkey.TableName]
+				if enumInfo != nil {
+					foreignNodeData = enumInfo.NodeData
+				}
+			}
+
+			if foreignNodeData == nil {
+				return fmt.Errorf("foreign key from table %s to table %s not correct", nodeData.TableName, fkey.TableName)
+			}
+
+			// done here as opposed to processConstraints since we need everything processed
+			columns, err := s.convertCols(foreignNodeData.FieldInfo, fkey.Columns)
+			if err != nil {
+				return err
+			}
+			fkey.Columns = columns
+
+			found := false
+			for _, fConstraint := range foreignNodeData.Constraints {
+				if fConstraint.Type != input.PrimaryKeyConstraint && fConstraint.Type != input.UniqueConstraint {
+					continue
+				}
+
+				// unique or primary key
+				if s.listEqual(fkey.Columns, fConstraint.Columns) {
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				return fmt.Errorf("foreign key %s with columns which aren't unique in table %s", constraint.Name, fkey.TableName)
+			}
+		}
+	}
+
+	// should there be a way to disable this eventually
+	// it's perfectly fine for a table with no primary key
+	// if we disable it, should be at most one
+	if primaryKeyCount != 1 {
+		return fmt.Errorf("we require 1 primary key for each table. %s had %d", nodeData.TableName, primaryKeyCount)
+	}
+
+	edgeInfo := nodeData.EdgeInfo
+	// sort for consistent ordering
+	sort.SliceStable(edgeInfo.DestinationEdges, func(i, j int) bool {
+		return edgeInfo.DestinationEdges[i].GetEdgeName() < edgeInfo.DestinationEdges[j].GetEdgeName()
+	})
+
+	sort.SliceStable(edgeInfo.IndexedEdgeQueries, func(i, j int) bool {
+		return edgeInfo.IndexedEdgeQueries[i].GetEdgeName() < edgeInfo.IndexedEdgeQueries[j].GetEdgeName()
+	})
+
+	sort.SliceStable(edgeInfo.Associations, func(i, j int) bool {
+		return edgeInfo.Associations[i].EdgeName < edgeInfo.Associations[j].EdgeName
+	})
+
+	sort.SliceStable(edgeInfo.FieldEdges, func(i, j int) bool {
+		return edgeInfo.FieldEdges[i].EdgeName < edgeInfo.FieldEdges[j].EdgeName
+	})
+
+	return nil
+}
+
 func (s *Schema) processDepgrah(edgeData *assocEdgeData) (*assocEdgeData, error) {
 	// second pass to run things that depend on the entire data being loaded
 	for _, info := range s.Nodes {
@@ -408,19 +519,19 @@ func (s *Schema) processDepgrah(edgeData *assocEdgeData) (*assocEdgeData, error)
 		}
 	}
 
-	// need to run this after running everything above
-	for _, info := range s.Nodes {
-		if err := info.PostProcess(); err != nil {
-			return nil, err
-		}
-	}
-
 	// need to also process enums too
 	for _, enumInfo := range s.Enums {
 		if enumInfo.LookupTableEnum() {
 			if err := s.processConstraints(enumInfo.NodeData); err != nil {
 				return nil, err
 			}
+		}
+	}
+
+	// need to run this after running everything above
+	for _, info := range s.Nodes {
+		if err := s.postProcess(info.NodeData); err != nil {
+			return nil, err
 		}
 	}
 
@@ -742,37 +853,18 @@ func (s *Schema) addActionFields(info *NodeDataInfo) error {
 }
 
 func (s *Schema) processConstraints(nodeData *NodeData) error {
-
-	// verify constraints are correct
-	for _, constraint := range nodeData.Constraints {
-		switch constraint.Type {
-		case input.ForeignKeyConstraint:
-			if constraint.ForeignKey == nil {
-				return errors.New("ForeignKey cannot be nil when type is ForeignKey")
-			}
-			if len(constraint.Columns) != len(constraint.ForeignKey.Columns) {
-				return errors.New("Foreign Key column length should be equal to the length of source columns")
-			}
-
-		case input.CheckConstraint:
-			if constraint.Condition == "" {
-				return errors.New("Condition is required when constraint type is Check")
-			}
-		}
-
-		if constraint.Condition != "" && constraint.Type != input.CheckConstraint {
-			return errors.New("Condition can only be set when constraint is check type")
-		}
-		if constraint.ForeignKey != nil && constraint.Type != input.ForeignKeyConstraint {
-			return errors.New("ForeignKey can only be set when constraint is ForeignKey type")
-		}
-	}
+	// doing this way so that it's consistent and easy to test
+	// primary key
+	// unique
+	// fkey
+	// user defined constraints
 
 	tableName := nodeData.TableName
 
 	var constraints []*input.Constraint
 	for _, f := range nodeData.FieldInfo.Fields {
-		cols := []string{f.FieldName}
+		// always use db col name here
+		cols := []string{f.GetDbColName()}
 
 		if f.SingleFieldPrimaryKey() {
 			constraints = append(constraints, &input.Constraint{
@@ -827,14 +919,62 @@ func (s *Schema) processConstraints(nodeData *NodeData) error {
 			})
 		}
 	}
-	// doing this way so that it's consistent and easy to test
-	// primary key
-	// unique
-	// fkey
-	// user defined constraints
-	constraints = append(constraints, nodeData.Constraints...)
+
+	fieldInfo := nodeData.FieldInfo
+
+	// verify constraints are correct
+	for _, constraint := range nodeData.Constraints {
+		switch constraint.Type {
+		case input.ForeignKeyConstraint:
+			if constraint.ForeignKey == nil {
+				return errors.New("ForeignKey cannot be nil when type is ForeignKey")
+			}
+			if len(constraint.Columns) != len(constraint.ForeignKey.Columns) {
+				return errors.New("Foreign Key column length should be equal to the length of source columns")
+			}
+
+		case input.CheckConstraint:
+			if constraint.Condition == "" {
+				return errors.New("Condition is required when constraint type is Check")
+			}
+		}
+
+		if constraint.Condition != "" && constraint.Type != input.CheckConstraint {
+			return errors.New("Condition can only be set when constraint is check type")
+		}
+		if constraint.ForeignKey != nil && constraint.Type != input.ForeignKeyConstraint {
+			return errors.New("ForeignKey can only be set when constraint is ForeignKey type")
+		}
+
+		columns, err := s.convertCols(fieldInfo, constraint.Columns)
+		if err != nil {
+			return err
+		}
+
+		constraint.Columns = columns
+		constraints = append(constraints, constraint)
+	}
+
 	nodeData.Constraints = constraints
 	return nil
+}
+
+// convert columns to columns instead of fields
+func (s *Schema) convertCols(fieldInfo *field.FieldInfo, cols []string) ([]string, error) {
+
+	result := make([]string, len(cols))
+	for idx, col := range cols {
+		f := fieldInfo.GetFieldByName(col)
+		if f == nil {
+			f = fieldInfo.GetFieldByColName(col)
+		}
+		if f == nil {
+			return nil, fmt.Errorf("cannot find field by name or col %s", col)
+		}
+		// always use db columns.
+		result[idx] = f.GetDbColName()
+	}
+	return result, nil
 }
 
 func (s *Schema) addConstsFromEdgeGroups(nodeData *NodeData) {

@@ -20,6 +20,7 @@ func TestParseFromInputSchema(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 					{
 						Name: "firstName",
@@ -58,6 +59,7 @@ func TestCompoundName(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 					{
 						Name: "name",
@@ -103,6 +105,7 @@ func TestParseInputWithOverridenTable(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 				},
 			},
@@ -131,6 +134,7 @@ func TestParseInputWithForeignKey(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 				},
 			},
@@ -141,6 +145,7 @@ func TestParseInputWithForeignKey(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 					{
 						Name: "UserID",
@@ -185,6 +190,7 @@ func TestParseInputWithForeignKeyIndexDisabled(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 				},
 			},
@@ -195,6 +201,7 @@ func TestParseInputWithForeignKeyIndexDisabled(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 					{
 						Name: "UserID",
@@ -239,6 +246,7 @@ func TestParseInputWithForeignKeyWithCustomName(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 				},
 			},
@@ -249,6 +257,7 @@ func TestParseInputWithForeignKeyWithCustomName(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 					{
 						Name: "UserID",
@@ -293,6 +302,7 @@ func TestMultipleForeignKeysDuplicateEdgeName(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 				},
 			},
@@ -303,6 +313,7 @@ func TestMultipleForeignKeysDuplicateEdgeName(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 					{
 						Name: "CreatorID",
@@ -339,6 +350,7 @@ func TestMultipleForeignKeysOneEdgeName(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 				},
 			},
@@ -349,6 +361,7 @@ func TestMultipleForeignKeysOneEdgeName(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 					{
 						Name: "CreatorID",
@@ -404,6 +417,7 @@ func TestMultipleForeignKeys(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 				},
 			},
@@ -414,6 +428,7 @@ func TestMultipleForeignKeys(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 					{
 						Name: "CreatorID",
@@ -469,6 +484,7 @@ func TestParseInputWithFieldEdge(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 				},
 				AssocEdges: []*input.AssocEdge{
@@ -485,6 +501,7 @@ func TestParseInputWithFieldEdge(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 					{
 						Name: "UserID",
@@ -529,6 +546,7 @@ func TestParseInputWithAssocEdgeGroup(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 				},
 				AssocEdgeGroups: []*input.AssocEdgeGroup{
@@ -594,6 +612,7 @@ func TestParseInputWithPolymorphicFieldEdge(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 					{
 						Name: "ownerID",
@@ -637,6 +656,7 @@ func TestParseInputWithPolymorphicFieldEdgeInverseTypes(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 					{
 						Name: "firstName",
@@ -653,6 +673,7 @@ func TestParseInputWithPolymorphicFieldEdgeInverseTypes(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 					{
 						Name: "ownerID",
@@ -717,6 +738,7 @@ func TestParseInputWithPolymorphicFieldEdgeNotIndexed(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 					{
 						Name: "firstName",
@@ -733,6 +755,7 @@ func TestParseInputWithPolymorphicFieldEdgeNotIndexed(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
+						PrimaryKey: true,
 					},
 					{
 						Name: "ownerID",

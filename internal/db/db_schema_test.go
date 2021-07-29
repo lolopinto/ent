@@ -560,9 +560,9 @@ func TestEnumType(t *testing.T) {
 		t,
 		map[string]string{
 			"request.ts": testhelper.GetCodeWithSchema(
-				`import {Schema, Field, EnumType} from "{schema}";
+				`import {BaseEntSchema, Field, EnumType} from "{schema}";
 
-				export default class Request implements Schema {
+				export default class Request extends BaseEntSchema {
 					fields: Field[] = [
 						EnumType({name: "Status", values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus", createEnumType: true}),
 					]
@@ -591,9 +591,9 @@ func TestNullableEnumType(t *testing.T) {
 	dbSchema := getSchemaFromCode(t,
 		map[string]string{
 			"request.ts": testhelper.GetCodeWithSchema(
-				`import {Schema, Field, EnumType} from "{schema}";
+				`import {BaseEntSchema, Field, EnumType} from "{schema}";
 
-				export default class Request implements Schema {
+				export default class Request extends BaseEntSchema {
 					fields: Field[] = [
 						EnumType({name: "Status", values: ["OPEN", "PENDING", "CLOSED"], createEnumType: true, nullable: true}),
 					]
@@ -801,7 +801,7 @@ func TestMultiColumnForeignKey(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(`
-				import {Field, StringType, BaseEntSchema} from "{schema}";
+				import {Field, StringType, BaseEntSchema, Constraint, ConstraintType} from "{schema}";
 
 				export default class User extends BaseEntSchema {
 					fields: Field[] = [
@@ -815,6 +815,14 @@ func TestMultiColumnForeignKey(t *testing.T) {
 							name: 'emailAddress',
 							unique: true,
 						}),
+					];
+
+					constraints: Constraint[] = [
+						{
+							name: "users_unique",
+							type: ConstraintType.Unique,
+							columns: ["id", "emailAddress"],
+						},
 					];
 				}
 			`),
@@ -947,9 +955,9 @@ func TestPolymorphicField(t *testing.T) {
 				}
 			`),
 			"address.ts": testhelper.GetCodeWithSchema(`
-		import {Schema, Field, StringType, UUIDType} from "{schema}";
+		import {BaseEntSchema, Field, StringType, UUIDType} from "{schema}";
 
-		export default class Address implements Schema {
+		export default class Address extends BaseEntSchema {
 			fields: Field[] = [
 				StringType({ name: "Street" }),
 				StringType({ name: "City" }),
@@ -967,8 +975,8 @@ func TestPolymorphicField(t *testing.T) {
 
 	table := getTestTableFromSchema("AddressConfig", dbSchema, t)
 	columns := table.Columns
-	// address. 5 obvious fields + owner_type
-	require.Len(t, columns, 6)
+	// address. 5 obvious fields + owner_type + id/created_at/updated_at
+	require.Len(t, columns, 9)
 
 	col := getTestColumnFromTable(t, table, "owner_type")
 	testColumn(
@@ -1011,9 +1019,9 @@ func TestPolymorphicFieldWithRestrictedTypes(t *testing.T) {
 				}
 			`),
 			"address.ts": testhelper.GetCodeWithSchema(`
-		import {Schema, Field, StringType, UUIDType} from "{schema}";
+		import {BaseEntSchema, Field, StringType, UUIDType} from "{schema}";
 
-		export default class Address implements Schema {
+		export default class Address extends BaseEntSchema {
 			fields: Field[] = [
 				StringType({ name: "Street" }),
 				StringType({ name: "City" }),
@@ -1034,8 +1042,8 @@ func TestPolymorphicFieldWithRestrictedTypes(t *testing.T) {
 
 	table := getTestTableFromSchema("AddressConfig", dbSchema, t)
 	columns := table.Columns
-	// address. 5 obvious fields + owner_type
-	require.Len(t, columns, 6)
+	// address. 5 obvious fields + owner_type + id/created_at/updated_at
+	require.Len(t, columns, 9)
 
 	col := getTestColumnFromTable(t, table, "owner_type")
 	testColumn(
@@ -1377,12 +1385,6 @@ func getParsedTestSchema(t *testing.T) *schema.Schema {
 
 func getTestSchema(t *testing.T) *dbSchema {
 	return newDBSchema(getParsedTestSchema(t), "models/configs")
-}
-
-func getInMemoryTestSchemas(t *testing.T, sources map[string]string, uniqueKey string) *dbSchema {
-	return newDBSchema(parseSchema(
-		t, sources, uniqueKey,
-	), "models/configs")
 }
 
 func getTestTable(configName string, t *testing.T) *dbTable {
