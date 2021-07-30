@@ -427,33 +427,18 @@ func TestDefaultNoFields(t *testing.T) {
 			{
 				name: "EditUserAction",
 				// TODO action.GetFields() shouldn't include fields that are not editable by the action
-				fields: []expectedField{
-					{
-						name:    "ID",
-						tsType:  "ID",
-						gqlType: "ID!",
-					},
-					{
-						name:    "createdAt",
-						tsType:  "Date",
-						gqlType: "Time!",
-					},
-					{
-						name:    "updatedAt",
-						tsType:  "Date",
-						gqlType: "Time!",
-					},
-					{
+				fields: expectedFieldsPlusDefault(
+					expectedField{
 						name:    "FirstName",
 						tsType:  "string",
 						gqlType: "String!",
 					},
-					{
+					expectedField{
 						name:    "LastName",
 						tsType:  "string",
 						gqlType: "String!",
 					},
-				},
+				),
 			},
 		},
 	)
@@ -654,9 +639,9 @@ func TestActionOnlyFields(t *testing.T) {
 		map[string]string{
 			"event.ts": testhelper.GetCodeWithSchema(
 				`
-				import {Schema, Action, Field, ActionOperation, StringType, TimestampType} from "{schema}";
+				import {BaseEntSchema, Action, Field, ActionOperation, StringType, TimestampType} from "{schema}";
 
-				export default class Event implements Schema {
+				export default class Event extends BaseEntSchema {
 					fields: Field[] = [
 						StringType({name: "name"}),
 						TimestampType({name: "start_time"}),
@@ -688,18 +673,18 @@ func TestActionOnlyFields(t *testing.T) {
 		[]expectedAction{
 			{
 				name: "CreateEventAction",
-				fields: []expectedField{
-					{
+				fields: expectedFieldsPlusDefault(
+					expectedField{
 						name:    "name",
 						tsType:  "string",
 						gqlType: "String!",
 					},
-					{
+					expectedField{
 						name:    "start_time",
 						tsType:  "Date",
 						gqlType: "Time!",
 					},
-				},
+				),
 				actionOnlyFields: []actionOnlyField{
 					{
 						name: "addCreatorAsAdmin",
@@ -727,9 +712,9 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 		t,
 		map[string]string{
 			"address.ts": testhelper.GetCodeWithSchema(
-				`import {Schema, Action, Field, StringType, UUIDType, ActionOperation} from "{schema}";
+				`import {BaseEntSchema, Action, Field, StringType, UUIDType, ActionOperation} from "{schema}";
 
-	export default class Address implements Schema {
+		export default class Address extends BaseEntSchema {
 		fields: Field[] = [
 			StringType({ name: "Street" }),
 			StringType({ name: "City" }),
@@ -743,9 +728,10 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 			},
 		];
 	}`),
-			"event_activity.ts": testhelper.GetCodeWithSchema(`				import {Schema, Action, Field, ActionOperation, StringType, TimestampType, UUIDType} from "{schema}";
+			"event_activity.ts": testhelper.GetCodeWithSchema(`
+				import {BaseEntSchema, Action, Field, ActionOperation, StringType, TimestampType, UUIDType} from "{schema}";
 
-				export default class EventActivity implements Schema {
+				export default class EventActivity extends BaseEntSchema {
 					fields: Field[] = [
 						StringType({name: "name"}),
 						UUIDType({name: "eventID"}),
@@ -764,9 +750,9 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 				};`),
 			"event.ts": testhelper.GetCodeWithSchema(
 				`
-				import {Schema, Action, Field, ActionOperation, StringType, TimestampType} from "{schema}";
+				import {BaseEntSchema, Action, Field, ActionOperation, StringType, TimestampType} from "{schema}";
 
-				export default class Event implements Schema {
+				export default class Event extends BaseEntSchema {
 					fields: Field[] = [
 						StringType({name: "name"}),
 						TimestampType({name: "start_time"}),
@@ -791,7 +777,7 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 	activityActionInfo := schema.Nodes["EventActivityConfig"].NodeData.ActionInfo
 	require.NotNil(t, activityActionInfo)
 
-	activityFields := []expectedField{
+	activityCoreFields := []expectedField{
 		{
 			name:    "name",
 			tsType:  "string",
@@ -803,8 +789,9 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 			gqlType: "ID!",
 		},
 	}
+	activityFields := expectedFieldsPlusDefault(activityCoreFields...)
 
-	addressFields := []expectedField{
+	addressCoreFields := []expectedField{
 		{
 			name:    "Street",
 			tsType:  "string",
@@ -845,7 +832,7 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 				},
 				customInterfaces: []customInterface{
 					{
-						fields:  addressFields,
+						fields:  addressCoreFields,
 						tsType:  "customAddressInput",
 						gqlType: "AddressEventActivityCreateInput",
 					},
@@ -862,18 +849,18 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 		[]expectedAction{
 			{
 				name: "CreateEventAction",
-				fields: []expectedField{
-					{
+				fields: expectedFieldsPlusDefault(
+					expectedField{
 						name:    "name",
 						tsType:  "string",
 						gqlType: "String!",
 					},
-					{
+					expectedField{
 						name:    "start_time",
 						tsType:  "Date",
 						gqlType: "Time!",
 					},
-				},
+				),
 				actionOnlyFields: []actionOnlyField{
 					{
 						name: "activities",
@@ -885,7 +872,7 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 				},
 				customInterfaces: []customInterface{
 					{
-						fields:  activityFields,
+						fields:  activityCoreFields,
 						tsType:  "customActivityInput",
 						gqlType: "ActivityEventCreateInput",
 						nonEntFields: []actionOnlyField{
@@ -899,7 +886,7 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 						},
 					},
 					{
-						fields:     addressFields,
+						fields:     addressCoreFields,
 						tsType:     "customAddressInput",
 						gqlType:    "AddressEventActivityCreateInput",
 						actionName: "CreateEventActivityAction",
@@ -1077,4 +1064,27 @@ func getTestEdgeInfo(t *testing.T, configName string) *edge.EdgeInfo {
 func getTestFieldByName(t *testing.T, configName string, fieldName string) *field.Field {
 	fieldInfo := getTestFieldInfo(t, configName)
 	return fieldInfo.GetFieldByName(fieldName)
+}
+
+func expectedFieldsPlusDefault(fields ...expectedField) []expectedField {
+	// TODO action.GetFields() shouldn't include fields that are not editable by the action
+	ret := []expectedField{
+		{
+			name:    "ID",
+			tsType:  "ID",
+			gqlType: "ID!",
+		},
+		{
+			name:    "createdAt",
+			tsType:  "Date",
+			gqlType: "Time!",
+		},
+		{
+			name:    "updatedAt",
+			tsType:  "Date",
+			gqlType: "Time!",
+		},
+	}
+	ret = append(ret, fields...)
+	return ret
 }

@@ -13,9 +13,9 @@ func TestDerivedFields(t *testing.T) {
 	schema := testhelper.ParseSchemaForTest(t,
 		map[string]string{
 			"address.ts": testhelper.GetCodeWithSchema(`
-		import {Schema, Field, StringType, UUIDType} from "{schema}";
+		import {BaseEntSchema, Field, StringType, UUIDType} from "{schema}";
 
-		export default class Address implements Schema {
+		export default class Address extends BaseEntSchema {
 			fields: Field[] = [
 				StringType({ name: "Street" }),
 				StringType({ name: "City" }),
@@ -36,8 +36,8 @@ func TestDerivedFields(t *testing.T) {
 
 	fieldInfo := info.NodeData.FieldInfo
 
-	// 5 fields above + OwnerType field
-	require.Len(t, fieldInfo.Fields, 6)
+	// 5 fields above + OwnerType field + id,createdat,updatedat
+	require.Len(t, fieldInfo.Fields, 9)
 
 	// field exists
 	f := fieldInfo.GetFieldByName("OwnerType")

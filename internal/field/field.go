@@ -30,7 +30,7 @@ func NewFieldInfoFromInputs(fields []*input.Field, options *Options) (*FieldInfo
 		emailFields:    make(map[string]bool),
 		passwordFields: make(map[string]bool),
 		names:          make(map[string]bool),
-		cols:           make(map[string]bool),
+		cols:           make(map[string]*Field),
 	}
 	var errs []error
 
@@ -96,7 +96,7 @@ type FieldInfo struct {
 	passwordFields map[string]bool
 
 	names map[string]bool
-	cols  map[string]bool
+	cols  map[string]*Field
 }
 
 const (
@@ -108,19 +108,15 @@ const (
 )
 
 func (fieldInfo *FieldInfo) addField(f *Field) error {
-	if fieldInfo.cols[f.dbName] {
-		return fmt.Errorf("field with column %s already exists", f.dbName)
-	}
-
 	// normalized
 	name := strings.ToLower(f.FieldName)
-	if fieldInfo.cols[f.dbName] {
+	if fieldInfo.cols[f.dbName] != nil {
 		return fmt.Errorf("field with column %s already exists", f.dbName)
 	}
-	if fieldInfo.cols[name] {
+	if fieldInfo.names[name] {
 		return fmt.Errorf("field with normalized name %s already exists", name)
 	}
-	fieldInfo.cols[f.dbName] = true
+	fieldInfo.cols[f.dbName] = f
 	fieldInfo.names[name] = true
 
 	fieldInfo.Fields = append(fieldInfo.Fields, f)
@@ -169,6 +165,10 @@ func (fieldInfo *FieldInfo) GetFieldsFn() bool {
 
 func (fieldInfo *FieldInfo) GetFieldByName(fieldName string) *Field {
 	return fieldInfo.fieldMap[fieldName]
+}
+
+func (fieldInfo *FieldInfo) GetFieldByColName(col string) *Field {
+	return fieldInfo.cols[col]
 }
 
 func (fieldInfo *FieldInfo) InvalidateFieldForGraphQL(f *Field) error {
