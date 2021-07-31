@@ -1,4 +1,5 @@
 from alembic.autogenerate import renderers
+from alembic.autogenerate.api import AutogenContext
 from . import ops
 from . import util
 import sqlalchemy as sa
@@ -8,17 +9,17 @@ _IGNORED_KEYS = ['created_at', 'updated_at']
 
 
 @renderers.dispatch_for(ops.AddEdgesOp)
-def render_add_edges(autogen_context, op):
+def render_add_edges(autogen_context: AutogenContext, op: ops.AddEdgesOp):
     return _render_edge_from_edges(op.edges, "op.add_edges")
 
 
 @renderers.dispatch_for(ops.RemoveEdgesOp)
-def render_remove_edges(autogen_context, op):
+def render_remove_edges(autogen_context: AutogenContext, op: ops.RemoveEdgesOp):
     return _render_edge_from_edges(op.edges, "op.remove_edges")
 
 
 @renderers.dispatch_for(ops.ModifyEdgeOp)
-def render_modify_edge(autogen_context, op):
+def render_modify_edge(autogen_context: AutogenContext, op: ops.ModifyEdgeOp):
     return (
         "op.modify_edge(\n"
         "'%(edge_type)s',\n"
@@ -92,17 +93,17 @@ def _render_row(row):
 
 
 @renderers.dispatch_for(ops.AddRowsOp)
-def render_add_edges(autogen_context, op):
-    return _render_row_from_op("op.add_rows", op.table_name, op.pkeys, op.rows)
+def render_add_edges(autogen_context: AutogenContext, op: ops.AddRowsOp):
+    return _render_row_from_op("op.add_rows", op.table_name(), op.pkeys, op.rows)
 
 
 @renderers.dispatch_for(ops.RemoveRowsOp)
-def render_remove_edges(autogen_context, op):
-    return _render_row_from_op("op.remove_rows", op.table_name, op.pkeys, op.rows)
+def render_remove_edges(autogen_context: AutogenContext, op: ops.RemoveRowsOp):
+    return _render_row_from_op("op.remove_rows", op.table_name(), op.pkeys, op.rows)
 
 
 @renderers.dispatch_for(ops.ModifyRowsOp)
-def render_modify_rows(autogen_context, op):
+def render_modify_rows(autogen_context: AutogenContext, op: ops.ModifyRowsOp):
     rows = [_render_row(row) for row in op.rows]
     old_rows = [_render_row(row) for row in op.old_rows]
 
@@ -111,7 +112,7 @@ def render_modify_rows(autogen_context, op):
         "%(rows)s],"
         "[\n%(old_rows)s"
         "])" % {
-            "table_name": op.table_name,
+            "table_name": op.table_name(),
             "pkeys": util.render_list_csv_as_list(op.pkeys),
             "rows": "".join(rows),
             "old_rows": "".join(old_rows),
@@ -120,7 +121,7 @@ def render_modify_rows(autogen_context, op):
 
 
 @renderers.dispatch_for(ops.AlterEnumOp)
-def render_alter_enum(autogen_context, op):
+def render_alter_enum(autogen_context: AutogenContext, op: ops.AlterEnumOp):
     if op.before is None:
         return (
             # manual indentation
@@ -143,21 +144,21 @@ def render_alter_enum(autogen_context, op):
 
 
 @renderers.dispatch_for(ops.NoDowngradeOp)
-def render_no_downgrade_op(autogen_context, op):
+def render_no_downgrade_op(autogen_context: AutogenContext, op: ops.NoDowngradeOp):
     return "raise ValueError('operation is not reversible')"
 
 
 @renderers.dispatch_for(ops.AddEnumOp)
-def render_add_enum_op(autogen_context, op):
+def render_add_enum_op(autogen_context: AutogenContext, op: ops.AddEnumOp):
     return "op.add_enum_type('%s', [%s])" % (op.enum_name, util.render_list_csv(op.values))
 
 
 @renderers.dispatch_for(ops.DropEnumOp)
-def render_drop_enum_op(autogen_context, op):
+def render_drop_enum_op(autogen_context: AutogenContext, op: ops.DropEnumOp):
     return "op.drop_enum_type('%s', [%s])" % (op.enum_name, util.render_list_csv(op.values))
 
 
 # hmm not sure why we need this. there's probably an easier way to do this that doesn't require this...
 @renderers.dispatch_for(ops.OurCreateCheckConstraintOp)
-def render_check_constraint(autogen_context, op):
+def render_check_constraint(autogen_context: AutogenContext, op: ops.OurCreateCheckConstraintOp):
     return "op.create_check_constraint('%s', '%s', '%s')" % (op.constraint_name, op.table_name, op.condition)

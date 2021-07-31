@@ -9,6 +9,7 @@ from sqlalchemy.dialects import postgresql
 from . import conftest
 from auto_schema import runner
 from auto_schema import ops
+from auto_schema.clause_text import get_clause_text
 
 
 def get_new_metadata_for_runner(r):
@@ -206,9 +207,9 @@ def validate_column(schema_column, db_column, metadata, dialect):
 
 
 def validate_column_server_default(schema_column, db_column):
-    schema_clause_text = runner.Runner.get_clause_text(
+    schema_clause_text = get_clause_text(
         schema_column.server_default)
-    db_clause_text = runner.Runner.get_clause_text(db_column.server_default)
+    db_clause_text = get_clause_text(db_column.server_default)
 
     if isinstance(schema_column.type, sa.Boolean):
         schema_clause_text = runner.Runner.convert_postgres_boolean(
@@ -1224,7 +1225,7 @@ class TestPostgresRunner(BaseTestRunner):
 
         assert len(diff) == 1
 
-        assert r2.revision_message() == 'drop column meaning_of_life'
+        assert r2.revision_message() == 'drop column meaning_of_life from table accounts'
 
         r2.run()
         assert_num_files(r2, 2)
