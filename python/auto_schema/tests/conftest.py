@@ -128,6 +128,23 @@ def metadata_with_table():
     return metadata_with_base_table_restored()
 
 
+def metadata_with_cols_added_to_table(metadata):
+    changes = default_children_of_table()
+
+    changes.append(
+        sa.Column('rainbow', sa.Text(), nullable=True),
+    )
+    changes.append(
+        sa.Column('new_column', sa.Integer(), nullable=True)
+    )
+    metadata = sa.MetaData()
+    sa.Table('accounts', metadata,
+             *changes,
+             )
+
+    return metadata
+
+
 def metadata_with_base_table_restored():
     metadata = sa.MetaData()
     changes = default_children_of_table()

@@ -6,7 +6,7 @@ from .ops import MigrateOpInterface
 
 import alembic.operations.ops as alembicops
 
-from typing import Any, Dict, TypedDict
+from typing import List, Sequence, TypedDict
 
 
 class Change(TypedDict):
@@ -17,8 +17,7 @@ class Change(TypedDict):
 
 class Diff(object):
 
-    # TODO sequence this
-    def __init__(self, diff: Any, group_by_table=True):
+    def __init__(self: Diff, diff: Sequence[alembicops.MigrateOperation], group_by_table=True):
         self._diff = diff
         self._changes = {}
         self._changes_list = []
@@ -26,15 +25,13 @@ class Diff(object):
 
         self._exec_ops(self._diff)
 
-# TODO type
-    def list_changes(self):
+    def list_changes(self: Diff) -> List[Change]:
         return self._changes_list
 
-# TODO type
-    def changes(self):
+    def changes(self: Diff):
         return self._changes
 
-    def _exec_ops(self, ops):
+    def _exec_ops(self: Diff, ops: Sequence[alembicops.MigrateOperation]):
         class_name_map = {
             'CreateTableOp': self._create_table,
             'DropTableOp': self._drop_table,
@@ -48,7 +45,7 @@ class Diff(object):
             'CreateUniqueConstraintOp': self._create_unique_constraint,
             # this is still sadly used
             'DropConstraintOp': self._drop_constraint,
-            #           CreateCheckConstraintOp too ''
+            'CreateCheckConstraintOp': self._create_check_constraint,
         }
 
         for op in ops:
@@ -58,7 +55,7 @@ class Diff(object):
                 class_name_map[type(op).__name__](op)
 
     def _custom_migrate_op(self: Diff, op: MigrateOpInterface):
-        self._append_change(op.table_name, {
+        self._append_change(op.table_name(), {
             "change": op.get_change_type(),
             "desc": op.get_revision_message(),
         })
@@ -81,13 +78,15 @@ class Diff(object):
     def _add_column(self: Diff, op: alembicops.AddColumnOp):
         self._append_change(op.table_name, {
             "change": ChangeType.ADD_COLUMN,
-            "desc": "add column %s to table %s" % (op.column.name, op.table_name)
+            "desc": "add column %s to table %s" % (op.column.name, op.table_name),
+            "col": op.column.name,
         })
 
     def _drop_column(self: Diff, op: alembicops.DropColumnOp):
         self._append_change(op.table_name, {
             "change": ChangeType.DROP_COLUMN,
-            "desc": "drop column %s from table %s" % (op.column_name, op.table_name)
+            "desc": "drop column %s from table %s" % (op.column_name, op.table_name),
+            "col": op.column_name,
         })
 
     def _create_index(self: Diff, op: alembicops.CreateIndexOp):
