@@ -7,17 +7,16 @@ from .change_type import ChangeType
 
 
 class MigrateOpInterface(MigrateOperation, metaclass=abc.ABCMeta):
-    @abc.abstractclassmethod
+    @abc.abstractmethod
     def get_revision_message(self) -> String:
         pass
 
-    @abc.abstractclassmethod
+    @abc.abstractmethod
     def get_change_type(self) -> ChangeType:
         pass
 
-    @abc.abstractproperty
-    @property
-    def table_name(self) -> String:
+    @abc.abstractmethod
+    def get_table_name(self) -> String:
         pass
 
 
@@ -46,7 +45,7 @@ class AddEdgesOp(MigrateOpInterface):
     def get_change_type(self) -> ChangeType:
         return ChangeType.ADD_EDGES
 
-    def table_name(self) -> String:
+    def get_table_name(self) -> String:
         return "assoc_edge_config"
 
 
@@ -75,7 +74,7 @@ class RemoveEdgesOp(MigrateOpInterface):
     def get_change_type(self) -> ChangeType:
         return ChangeType.REMOVE_EDGES
 
-    def table_name(self) -> String:
+    def get_table_name(self) -> String:
         return "assoc_edge_config"
 
 
@@ -122,7 +121,7 @@ class ModifyEdgeOp(MigrateOpInterface):
     def get_change_type(self) -> ChangeType:
         return ChangeType.MODIFY_EDGE
 
-    def table_name(self) -> String:
+    def get_table_name(self) -> String:
         return "assoc_edge_config"
 
 
@@ -132,7 +131,7 @@ class AddRowsOp(MigrateOpInterface):
     """Add one or more new rows to table."""
 
     def __init__(self, table_name, pkeys, rows, schema=None):
-        self._table_name = table_name
+        self.table_name = table_name
         self.rows = rows
         self.pkeys = pkeys
         self.schema = schema
@@ -145,16 +144,16 @@ class AddRowsOp(MigrateOpInterface):
         return operations.invoke(op)
 
     def reverse(self):
-        return RemoveRowsOp(self._table_name, self.pkeys, self.rows, schema=self.schema)
+        return RemoveRowsOp(self.table_name, self.pkeys, self.rows, schema=self.schema)
 
     def get_revision_message(self) -> String:
-        return _get_revision_message_for_rows(self.rows, self._table_name, "add row to %s", "add rows to %s")
+        return _get_revision_message_for_rows(self.rows, self.table_name, "add row to %s", "add rows to %s")
 
     def get_change_type(self) -> ChangeType:
         return ChangeType.ADD_ROWS
 
-    def table_name(self) -> String:
-        return self._table_name
+    def get_table_name(self) -> String:
+        return self.table_name
 
 
 @Operations.register_operation("remove_rows")
@@ -163,7 +162,7 @@ class RemoveRowsOp(MigrateOpInterface):
     """Removes one or more existing rows."""
 
     def __init__(self, table_name, pkeys, rows, schema=None):
-        self._table_name = table_name
+        self.table_name = table_name
         self.rows = rows
         self.pkeys = pkeys
         self.schema = schema
@@ -176,16 +175,16 @@ class RemoveRowsOp(MigrateOpInterface):
         return operations.invoke(op)
 
     def reverse(self):
-        return AddRowsOp(self._table_name, self.pkeys, self.rows, schema=self.schema)
+        return AddRowsOp(self.table_name, self.pkeys, self.rows, schema=self.schema)
 
     def get_revision_message(self) -> String:
-        return _get_revision_message_for_rows(self.rows, self._table_name, "remove row from %s", "remove rows from %s")
+        return _get_revision_message_for_rows(self.rows, self.table_name, "remove row from %s", "remove rows from %s")
 
     def get_change_type(self) -> ChangeType:
         return ChangeType.REMOVE_ROWS
 
-    def table_name(self) -> String:
-        return self._table_name
+    def get_table_name(self) -> String:
+        return self.table_name
 
 
 @Operations.register_operation("modify_rows")
@@ -194,7 +193,7 @@ class ModifyRowsOp(MigrateOpInterface):
     """Modify an existing row"""
 
     def __init__(self, table_name, pkeys, rows, old_rows, schema=None):
-        self._table_name = table_name
+        self.table_name = table_name
         self.rows = rows
         self.pkeys = pkeys
         self.old_rows = old_rows
@@ -208,16 +207,16 @@ class ModifyRowsOp(MigrateOpInterface):
         return operations.invoke(op)
 
     def reverse(self):
-        return ModifyRowsOp(self._table_name, self.pkeys, self.old_rows, self.rows, schema=self.schema)
+        return ModifyRowsOp(self.table_name, self.pkeys, self.old_rows, self.rows, schema=self.schema)
 
     def get_revision_message(self) -> String:
-        return "modify rows in %s" % self._table_name
+        return "modify rows in %s" % self.table_name
 
     def get_change_type(self) -> ChangeType:
         return ChangeType.MODIFY_ROWS
 
-    def table_name(self) -> String:
-        return self._table_name
+    def get_table_name(self) -> String:
+        return self.table_name
 
 
 @Operations.register_operation("alter_enum")
@@ -247,7 +246,7 @@ class AlterEnumOp(MigrateOpInterface):
     def get_change_type(self) -> ChangeType:
         return ChangeType.ALTER_ENUM
 
-    def table_name(self) -> String:
+    def get_table_name(self) -> String:
         return "enum_schema"
 
 
@@ -287,7 +286,7 @@ class AddEnumOp(MigrateOpInterface):
     def get_change_type(self) -> ChangeType:
         return ChangeType.ADD_ENUM
 
-    def table_name(self) -> String:
+    def get_table_name(self) -> String:
         return "enum_schema"
 
 
@@ -317,7 +316,7 @@ class DropEnumOp(MigrateOpInterface):
     def get_change_type(self) -> ChangeType:
         return ChangeType.DROP_ENUM
 
-    def table_name(self) -> String:
+    def get_table_name(self) -> String:
         return "enum_schema"
 
 # overriding this so that we can implement dispatch and render
@@ -332,8 +331,8 @@ class OurCreateCheckConstraintOp(MigrateOpInterface, alembicops.CreateCheckConst
     def get_change_type(self) -> ChangeType:
         return ChangeType.CREATE_CHECK_CONSTRAINT
 
-    def table_name(self) -> String:
-        return super(alembicops.CreateCheckConstraintOp, self).table_name
+    def get_table_name(self) -> String:
+        return self.table_name
 
 # need to override this so that when we reverse, we render ours instead of theirs
 
@@ -354,5 +353,5 @@ class OurDropConstraintOp(MigrateOpInterface, alembicops.DropConstraintOp):
     def get_change_type(self) -> ChangeType:
         return ChangeType.DROP_CHECK_CONSTRAINT
 
-    def table_name(self) -> String:
-        return super(alembicops.DropConstraintOp, self).table_name
+    def get_table_name(self) -> String:
+        return self.table_name

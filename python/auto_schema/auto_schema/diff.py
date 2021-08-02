@@ -55,7 +55,7 @@ class Diff(object):
                 class_name_map[type(op).__name__](op)
 
     def _custom_migrate_op(self: Diff, op: MigrateOpInterface):
-        self._append_change(op.table_name(), {
+        self._append_change(op.get_table_name(), {
             "change": op.get_change_type(),
             "desc": op.get_revision_message(),
         })

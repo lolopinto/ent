@@ -94,12 +94,12 @@ def _render_row(row):
 
 @renderers.dispatch_for(ops.AddRowsOp)
 def render_add_edges(autogen_context: AutogenContext, op: ops.AddRowsOp):
-    return _render_row_from_op("op.add_rows", op.table_name(), op.pkeys, op.rows)
+    return _render_row_from_op("op.add_rows", op.table_name, op.pkeys, op.rows)
 
 
 @renderers.dispatch_for(ops.RemoveRowsOp)
 def render_remove_edges(autogen_context: AutogenContext, op: ops.RemoveRowsOp):
-    return _render_row_from_op("op.remove_rows", op.table_name(), op.pkeys, op.rows)
+    return _render_row_from_op("op.remove_rows", op.table_name, op.pkeys, op.rows)
 
 
 @renderers.dispatch_for(ops.ModifyRowsOp)
@@ -112,7 +112,7 @@ def render_modify_rows(autogen_context: AutogenContext, op: ops.ModifyRowsOp):
         "%(rows)s],"
         "[\n%(old_rows)s"
         "])" % {
-            "table_name": op.table_name(),
+            "table_name": op.table_name,
             "pkeys": util.render_list_csv_as_list(op.pkeys),
             "rows": "".join(rows),
             "old_rows": "".join(old_rows),

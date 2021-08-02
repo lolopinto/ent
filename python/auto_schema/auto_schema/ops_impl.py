@@ -70,7 +70,7 @@ def _get_table(connection: sa.engine.Connection, name: String = 'assoc_edge_conf
 @ Operations.implementation_for(ops.AddRowsOp)
 def add_rows(operations: ops.Operations, operation: ops.AddRowsOp):
     connection = operations.get_bind()
-    table = _get_table(connection, name=operation.table_name())
+    table = _get_table(connection, name=operation.table_name)
 
     connection.execute(
         table.insert().values(operation.rows)
@@ -80,7 +80,7 @@ def add_rows(operations: ops.Operations, operation: ops.AddRowsOp):
 @ Operations.implementation_for(ops.RemoveRowsOp)
 def remove_rows(operations: ops.Operations, operation: ops.RemoveRowsOp):
     connection = operations.get_bind()
-    table = _get_table(connection, name=operation.table_name())
+    table = _get_table(connection, name=operation.table_name)
     if len(operation.pkeys) == 1:
         key = operation.pkeys[0]
         keys = [row[key] for row in operation.rows]
@@ -99,7 +99,7 @@ def remove_rows(operations: ops.Operations, operation: ops.RemoveRowsOp):
 @Operations.implementation_for(ops.ModifyRowsOp)
 def modify_rows(operations: ops.Operations, operation: ops.ModifyRowsOp):
     connection = operations.get_bind()
-    table = _get_table(connection, operation.table_name())
+    table = _get_table(connection, operation.table_name)
 
     if len(operation.pkeys) == 1:
         key = operation.pkeys[0]
