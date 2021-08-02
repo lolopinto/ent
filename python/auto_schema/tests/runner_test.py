@@ -1,4 +1,6 @@
 import pprint
+from auto_schema.diff import Diff
+from auto_schema.change_type import ChangeType
 import pytest
 import os
 
@@ -9,6 +11,7 @@ from sqlalchemy.dialects import postgresql
 from . import conftest
 from auto_schema import runner
 from auto_schema import ops
+from auto_schema.clause_text import get_clause_text
 
 
 def get_new_metadata_for_runner(r):
@@ -206,9 +209,9 @@ def validate_column(schema_column, db_column, metadata, dialect):
 
 
 def validate_column_server_default(schema_column, db_column):
-    schema_clause_text = runner.Runner.get_clause_text(
+    schema_clause_text = get_clause_text(
         schema_column.server_default)
-    db_clause_text = runner.Runner.get_clause_text(db_column.server_default)
+    db_clause_text = get_clause_text(db_column.server_default)
 
     if isinstance(schema_column.type, sa.Boolean):
         schema_clause_text = runner.Runner.convert_postgres_boolean(
@@ -1222,13 +1225,48 @@ class TestPostgresRunner(BaseTestRunner):
 
         diff = r2.compute_changes()
 
+        exp_message = 'drop column meaning_of_life from table accounts'
+        assert r2.revision_message() == exp_message
         assert len(diff) == 1
 
-        assert r2.revision_message() == 'drop column meaning_of_life'
+        d = Diff(diff)
+        changes = d.changes()
+        assert len(changes) == 1
+        l = changes.get('accounts')
+        exp_change = {
+            'change': ChangeType.DROP_COLUMN,
+            'desc': exp_message,
+            'col': 'meaning_of_life',
+        }
+        assert len(l) == 1
+        assert l[0] == exp_change
+        d2 = Diff(diff, group_by_table=False)
+        assert d2.list_changes() == [exp_change]
 
         r2.run()
         assert_num_files(r2, 2)
         validate_metadata_after_change(r2, new_metadata)
+
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_add_multiple_cols(self, new_test_runner, metadata_with_table):
+        r = new_test_runner(metadata_with_table)
+        run_and_validate_with_standard_metadata_tables(r, metadata_with_table)
+
+        new_metadata = conftest.metadata_with_cols_added_to_table(
+            metadata_with_table)
+        new_metadata.bind = r.get_connection()
+        r2 = new_test_runner(new_metadata, r)
+
+        diff = r2.compute_changes()
+
+        d = Diff(diff)
+        changes = d.changes()
+        assert len(changes) == 1
+        l = changes.get('accounts')
+        assert len(l) == 2
+        for change in l:
+            assert change['change'] == ChangeType.ADD_COLUMN
+            assert change['col'] in ['new_column', 'rainbow']
 
     @pytest.mark.usefixtures("metadata_with_table")
     def test_new_enum_column_added_then_removed(self, new_test_runner, metadata_with_table):
@@ -1243,6 +1281,24 @@ class TestPostgresRunner(BaseTestRunner):
         diff = r2.compute_changes()
 
         assert len(diff) == 2
+
+        d = Diff(diff)
+        changes = d.changes()
+        assert len(changes) == 2
+        l = changes.get('accounts')
+        assert len(l) == 1
+        assert l[0] == {
+            'change': ChangeType.ADD_COLUMN,
+            'desc': 'add column rainbow to table accounts',
+            'col': 'rainbow',
+        }
+
+        l2 = changes.get('enum_schema')
+        assert len(l2) == 1
+        assert l2[0] == {
+            'change': ChangeType.ADD_ENUM,
+            'desc': 'add enum rainbow_type',
+        }
 
         add_enum = [op for op in diff if isinstance(op, ops.AddEnumOp)]
         modify_table_ops = [op for op in diff if isinstance(

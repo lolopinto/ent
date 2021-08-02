@@ -2,11 +2,13 @@ from alembic.operations import Operations, MigrateOperation
 import datetime
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.sql.schema import Table
+from sqlalchemy.sql.sqltypes import String
 
 from . import ops
 
 
-def add_edges_from(connection, edges):
+def add_edges_from(connection: sa.engine.Connection, edges):
     t = datetime.datetime.now()
     table = _get_table(connection)
 
@@ -28,13 +30,13 @@ def add_edges_from(connection, edges):
 
 
 @ Operations.implementation_for(ops.AddEdgesOp)
-def add_edges(operations, operation):
+def add_edges(operations: ops.Operations, operation: ops.AddEdgesOp):
     connection = operations.get_bind()
     add_edges_from(connection, operation.edges)
 
 
 @ Operations.implementation_for(ops.RemoveEdgesOp)
-def drop_edge(operations, operation):
+def drop_edge(operations: ops.Operations, operation: ops.RemoveEdgesOp):
     edge_types = [edge['edge_type'] for edge in operation.edges]
 
     connection = operations.get_bind()
@@ -45,7 +47,7 @@ def drop_edge(operations, operation):
 
 
 @ Operations.implementation_for(ops.ModifyEdgeOp)
-def modify_edge(operations, operation):
+def modify_edge(operations: ops.Operations, operation: ops.ModifyEdgeOp):
     connection = operations.get_bind()
     table = _get_table(connection)
     t = datetime.datetime.now()
@@ -57,7 +59,7 @@ def modify_edge(operations, operation):
     )
 
 
-def _get_table(connection, name='assoc_edge_config'):
+def _get_table(connection: sa.engine.Connection, name: String = 'assoc_edge_config'):
     # todo there has to be a better way to do this instead of reflecting again
     metadata = sa.MetaData()
     metadata.reflect(connection)
@@ -66,7 +68,7 @@ def _get_table(connection, name='assoc_edge_config'):
 
 
 @ Operations.implementation_for(ops.AddRowsOp)
-def add_rows(operations, operation):
+def add_rows(operations: ops.Operations, operation: ops.AddRowsOp):
     connection = operations.get_bind()
     table = _get_table(connection, name=operation.table_name)
 
@@ -76,7 +78,7 @@ def add_rows(operations, operation):
 
 
 @ Operations.implementation_for(ops.RemoveRowsOp)
-def remove_rows(operations, operation):
+def remove_rows(operations: ops.Operations, operation: ops.RemoveRowsOp):
     connection = operations.get_bind()
     table = _get_table(connection, name=operation.table_name)
     if len(operation.pkeys) == 1:
@@ -95,7 +97,7 @@ def remove_rows(operations, operation):
 
 
 @Operations.implementation_for(ops.ModifyRowsOp)
-def modify_rows(operations, operation):
+def modify_rows(operations: ops.Operations, operation: ops.ModifyRowsOp):
     connection = operations.get_bind()
     table = _get_table(connection, operation.table_name)
 
@@ -114,7 +116,7 @@ def modify_rows(operations, operation):
 
 
 @Operations.implementation_for(ops.AlterEnumOp)
-def alter_enum(operations, operation):
+def alter_enum(operations: ops.Operations, operation: ops.AlterEnumOp):
     connection = operations.get_bind()
     if operation.before is None:
         connection.execute(
@@ -129,12 +131,12 @@ def alter_enum(operations, operation):
 
 
 @Operations.implementation_for(ops.AddEnumOp)
-def add_enum_type(operations, operation):
+def add_enum_type(operations: ops.Operations, operation: ops.AddEnumOp):
     postgresql.ENUM(*operation.values, name=operation.enum_name).create(
         operations.get_bind())
 
 
 @Operations.implementation_for(ops.DropEnumOp)
-def drop_enum_type(operations, operation):
+def drop_enum_type(operations: ops.Operations, operation: ops.DropEnumOp):
     postgresql.ENUM(*operation.values, name=operation.enum_name).drop(
         operations.get_bind())

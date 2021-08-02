@@ -1,9 +1,27 @@
 import alembic.operations.ops as alembicops
 from alembic.operations import Operations, MigrateOperation
+import abc
+
+from sqlalchemy.sql.sqltypes import String
+from .change_type import ChangeType
+
+
+class MigrateOpInterface(MigrateOperation, metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def get_revision_message(self) -> String:
+        pass
+
+    @abc.abstractmethod
+    def get_change_type(self) -> ChangeType:
+        pass
+
+    @abc.abstractmethod
+    def get_table_name(self) -> String:
+        pass
 
 
 @Operations.register_operation("add_edges")
-class AddEdgesOp(MigrateOperation):
+class AddEdgesOp(MigrateOpInterface):
 
     """Add one or more new edges."""
 
@@ -21,12 +39,18 @@ class AddEdgesOp(MigrateOperation):
     def reverse(self):
         return RemoveEdgesOp(self.edges, schema=self.schema)
 
-    def get_revision_message(self):
+    def get_revision_message(self) -> String:
         return _get_revision_message_for_edges(self.edges, "add edge %s", "add edges %s")
+
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.ADD_EDGES
+
+    def get_table_name(self) -> String:
+        return "assoc_edge_config"
 
 
 @Operations.register_operation("remove_edges")
-class RemoveEdgesOp(MigrateOperation):
+class RemoveEdgesOp(MigrateOpInterface):
 
     """Removes one or more existing edges."""
 
@@ -44,8 +68,14 @@ class RemoveEdgesOp(MigrateOperation):
     def reverse(self):
         return AddEdgesOp(self.edges, schema=self.schema)
 
-    def get_revision_message(self):
+    def get_revision_message(self) -> String:
         return _get_revision_message_for_edges(self.edges, "remove edge %s", "remove edges %s")
+
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.REMOVE_EDGES
+
+    def get_table_name(self) -> String:
+        return "assoc_edge_config"
 
 
 def _get_revision_message_for_edges(edges, single_edge_msg, multi_edge_msg):
@@ -64,7 +94,7 @@ def _get_revision_message_for_rows(rows, table_name, single_row_msg, multi_row_m
 
 
 @Operations.register_operation("modify_edge")
-class ModifyEdgeOp(MigrateOperation):
+class ModifyEdgeOp(MigrateOpInterface):
 
     """Modify an existing edge"""
 
@@ -84,13 +114,19 @@ class ModifyEdgeOp(MigrateOperation):
     def reverse(self):
         return ModifyEdgeOp(self.edge_type, self.old_edge, self.new_edge, schema=self.schema)
 
-    def get_revision_message(self):
+    def get_revision_message(self) -> String:
         # assume name is not changing. if this is changing, this needs to be smarter
         return "modify edge %s" % (self.old_edge['edge_name'])
 
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.MODIFY_EDGE
+
+    def get_table_name(self) -> String:
+        return "assoc_edge_config"
+
 
 @Operations.register_operation("add_rows")
-class AddRowsOp(MigrateOperation):
+class AddRowsOp(MigrateOpInterface):
 
     """Add one or more new rows to table."""
 
@@ -110,12 +146,18 @@ class AddRowsOp(MigrateOperation):
     def reverse(self):
         return RemoveRowsOp(self.table_name, self.pkeys, self.rows, schema=self.schema)
 
-    def get_revision_message(self):
+    def get_revision_message(self) -> String:
         return _get_revision_message_for_rows(self.rows, self.table_name, "add row to %s", "add rows to %s")
+
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.ADD_ROWS
+
+    def get_table_name(self) -> String:
+        return self.table_name
 
 
 @Operations.register_operation("remove_rows")
-class RemoveRowsOp(MigrateOperation):
+class RemoveRowsOp(MigrateOpInterface):
 
     """Removes one or more existing rows."""
 
@@ -135,20 +177,18 @@ class RemoveRowsOp(MigrateOperation):
     def reverse(self):
         return AddRowsOp(self.table_name, self.pkeys, self.rows, schema=self.schema)
 
-    def get_revision_message(self):
+    def get_revision_message(self) -> String:
         return _get_revision_message_for_rows(self.rows, self.table_name, "remove row from %s", "remove rows from %s")
 
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.REMOVE_ROWS
 
-def _get_revision_message(edges, single_edge_msg, multi_edge_msg):
-    if len(edges) == 1:
-        return single_edge_msg % (edges[0]['edge_name'])
-
-    edge_names = [edge['edge_name'] for edge in edges]
-    return multi_edge_msg % (", ".join(sorted(edge_names)))
+    def get_table_name(self) -> String:
+        return self.table_name
 
 
 @Operations.register_operation("modify_rows")
-class ModifyRowsOp(MigrateOperation):
+class ModifyRowsOp(MigrateOpInterface):
 
     """Modify an existing row"""
 
@@ -169,12 +209,18 @@ class ModifyRowsOp(MigrateOperation):
     def reverse(self):
         return ModifyRowsOp(self.table_name, self.pkeys, self.old_rows, self.rows, schema=self.schema)
 
-    def get_revision_message(self):
+    def get_revision_message(self) -> String:
         return "modify rows in %s" % self.table_name
+
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.MODIFY_ROWS
+
+    def get_table_name(self) -> String:
+        return self.table_name
 
 
 @Operations.register_operation("alter_enum")
-class AlterEnumOp(MigrateOperation):
+class AlterEnumOp(MigrateOpInterface):
 
     """Alters enum."""
 
@@ -194,8 +240,14 @@ class AlterEnumOp(MigrateOperation):
     def reverse(self):
         return NoDowngradeOp()
 
-    def get_revision_message(self):
+    def get_revision_message(self) -> String:
         return 'alter enum %s, add value %s' % (self.enum_name, self.value)
+
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.ALTER_ENUM
+
+    def get_table_name(self) -> String:
+        return "enum_schema"
 
 
 @Operations.register_operation("no_downgrade")
@@ -209,7 +261,7 @@ class NoDowngradeOp(MigrateOperation):
 
 
 @Operations.register_operation("add_enum_type")
-class AddEnumOp(MigrateOperation):
+class AddEnumOp(MigrateOpInterface):
 
     """Adds enum type."""
 
@@ -228,12 +280,18 @@ class AddEnumOp(MigrateOperation):
     def reverse(self):
         return DropEnumOp(self.enum_name, self.values)
 
-    def get_revision_message(self):
+    def get_revision_message(self) -> String:
         return 'add enum %s' % (self.enum_name)
+
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.ADD_ENUM
+
+    def get_table_name(self) -> String:
+        return "enum_schema"
 
 
 @Operations.register_operation("drop_enum_type")
-class DropEnumOp(MigrateOperation):
+class DropEnumOp(MigrateOpInterface):
 
     """Drop enum type."""
 
@@ -252,18 +310,34 @@ class DropEnumOp(MigrateOperation):
     def reverse(self):
         return AddEnumOp(self.enum_name, self.values)
 
-    def get_revision_message(self):
+    def get_revision_message(self) -> String:
         return 'drop enum %s' % (self.enum_name)
 
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.DROP_ENUM
+
+    def get_table_name(self) -> String:
+        return "enum_schema"
 
 # overriding this so that we can implement dispatch and render
 # alembic for some reason doesn't have it...
-class OurCreateCheckConstraintOp(alembicops.CreateCheckConstraintOp):
-    pass
 
+
+class OurCreateCheckConstraintOp(MigrateOpInterface, alembicops.CreateCheckConstraintOp):
+
+    def get_revision_message(self) -> String:
+        return 'add constraint %s to %s' % (self.constraint_name, self.table_name)
+
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.CREATE_CHECK_CONSTRAINT
+
+    def get_table_name(self) -> String:
+        return self.table_name
 
 # need to override this so that when we reverse, we render ours instead of theirs
-class OurDropConstraintOp(alembicops.DropConstraintOp):
+
+
+class OurDropConstraintOp(MigrateOpInterface, alembicops.DropConstraintOp):
 
     def reverse(self):
         if self._orig_constraint is None:
@@ -272,3 +346,12 @@ class OurDropConstraintOp(alembicops.DropConstraintOp):
                 "original constraint is not present"
             )
         return OurCreateCheckConstraintOp.from_constraint(self._orig_constraint)
+
+    def get_revision_message(self) -> String:
+        return 'drop constraint %s from %s' % (self.constraint_name, self.table_name)
+
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.DROP_CHECK_CONSTRAINT
+
+    def get_table_name(self) -> String:
+        return self.table_name

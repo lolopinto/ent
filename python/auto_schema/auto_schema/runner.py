@@ -1,14 +1,15 @@
+import json
 from collections.abc import Mapping
-
+from .diff import Diff
+from .clause_text import get_clause_text
 import sqlalchemy as sa
+from sqlalchemy.sql.elements import TextClause
 
 from alembic.migration import MigrationContext
 from alembic.autogenerate import produce_migrations
 from alembic.autogenerate import render_python_code
 from alembic.util.exc import CommandError
 
-from sqlalchemy.sql.schema import DefaultClause
-from sqlalchemy.sql.elements import TextClause
 from sqlalchemy.dialects import postgresql
 import alembic.operations.ops as alembicops
 
@@ -121,8 +122,8 @@ class Runner(object):
         # let's just do simple comparison for now.
         # Things may get more complicated in the future but this works for now
 
-        new_inspected_default = cls.get_clause_text(inspected_default)
-        new_metadata_default = cls.get_clause_text(metadata_default)
+        new_inspected_default = get_clause_text(inspected_default)
+        new_metadata_default = get_clause_text(metadata_default)
         if isinstance(metadata_column.type, sa.Boolean):
             new_inspected_default = cls.convert_postgres_boolean(
                 new_inspected_default)
@@ -163,28 +164,6 @@ class Runner(object):
             return type_map[type_]()
 
         return False
-
-    @classmethod
-    def get_clause_text(cls, server_default):
-        if server_default is None:
-            return server_default
-
-        def normalize(arg):
-            # return the underlying string instead of quoted
-            arg = str(arg).strip("'")
-
-            # strip the extra text padding added so we can compare effectively
-            if arg.endswith("'::text"):
-                return arg.strip("'::text")
-            return arg
-
-        if isinstance(server_default, TextClause):
-            return normalize(server_default.text)
-
-        if isinstance(server_default, DefaultClause):
-            return normalize(server_default.arg)
-
-        return normalize(server_default)
 
     def get_schema_path(self):
         return self.schema_path
@@ -229,64 +208,8 @@ class Runner(object):
             migrations = produce_migrations(self.mc, config.metadata)
             diff = migrations.upgrade_ops.ops
 
-        def alter_column_op(op):
-            if op.modify_type is not None:
-                return 'modify column %s type from %s to %s' % (op.column_name, op.existing_type, op.modify_type)
-            elif op.modify_nullable is not None:
-                return 'modify nullable value of column %s from %s to %s' % (op.column_name, op.existing_nullable, op.modify_nullable)
-            elif op.modify_server_default is not None:
-                return 'modify server_default value of column %s from %s to %s' % (
-                    op.column_name,
-                    Runner.get_clause_text(op.existing_server_default),
-                    Runner.get_clause_text(op.modify_server_default))
-            elif op.modify_comment:
-                return "modify comment of column %s"
-            elif op.modify_name:
-                return "modify name of column %s"
-            elif op.modify_server_default is None and op.existing_server_default is not None:
-                return 'modify server_default value of column %s from %s to None' % (
-                    op.column_name,
-                    Runner.get_clause_text(op.existing_server_default)
-                )
-            else:
-                raise ValueError("unsupported alter_column op")
-
-        # for op in diff:
-        #     if isinstance(op, alembicops.ModifyTableOps):
-        #         for op2 in op.ops:
-        #             print(op2, op2.__dict__)
-
-        class_name_map = {
-            'CreateTableOp': lambda op: 'add %s table' % op.table_name,
-            'DropTableOp': lambda op: 'drop %s table' % op.table_name,
-            'ModifyTableOps': lambda op: "\n".join([class_name_map[type(child_op).__name__](child_op) for child_op in op.ops]),
-            'AlterColumnOp': lambda op: alter_column_op(op),
-            'CreateUniqueConstraintOp': lambda op: 'add unique constraint %s' % op.constraint_name,
-            'CreateIndexOp': lambda op: 'add index %s to %s' % (op.index_name, op.table_name),
-            'DropIndexOp': lambda op: 'drop index %s from %s' % (op.index_name, op.table_name),
-            'AddColumnOp': lambda op: 'add column %s to table %s' % (op.column.name, op.table_name),
-            # TODO check for this by default
-            'AddEdgesOp': lambda op: op.get_revision_message(),
-            'RemoveEdgesOp': lambda op: op.get_revision_message(),
-            'ModifyEdgeOp': lambda op: op.get_revision_message(),
-            'AlterEnumOp': lambda op: op.get_revision_message(),
-            'DropColumnOp': lambda op: 'drop column %s' % op.column_name,
-            'AddEnumOp': lambda op: op.get_revision_message(),
-            'DropEnumOp': lambda op: op.get_revision_message(),
-            # todo test these
-            # effectively rename a column by dropping column with fkey constraint and readding it back
-            'DropConstraintOp': lambda op: 'drop constraint %s from %s' % (op.constraint_name, op.table_name),
-            'OurDropConstraintOp': lambda op: 'drop constraint %s from %s' % (op.constraint_name, op.table_name),
-            'CreateForeignKeyOp': lambda op: 'create fk constraint %s on %s' % (op.constraint_name, op.source_table),
-            # TODO go through all alembic ops and create default values here
-            'AddRowsOp': lambda op: op.get_revision_message(),
-            'RemoveRowsOp': lambda op: op.get_revision_message(),
-            'ModifyRowsOp': lambda op: op.get_revision_message(),
-            'CreateCheckConstraintOp': lambda op: 'add constraint %s to %s' % (op.constraint_name, op.table_name),
-            'OurCreateCheckConstraintOp': lambda op: 'add constraint %s to %s' % (op.constraint_name, op.table_name),
-        }
-
-        changes = [class_name_map[type(op).__name__](op) for op in diff]
+        d = Diff(diff, group_by_table=False)
+        changes = [c["desc"] for c in d.list_changes()]
 
         message = "\n".join(changes)
         return message
@@ -312,7 +235,7 @@ class Runner(object):
 
     def history(self):
         self.cmd.history()
-    
+
     def current(self):
         self.cmd.current()
 
@@ -330,3 +253,8 @@ class Runner(object):
 
     def edit(self, revision):
         self.cmd.edit(revision)
+
+    def changes(self):
+        diff = self.compute_changes()
+        d = Diff(diff, group_by_table=True)
+        print(json.dumps(d.changes()))

@@ -1,19 +1,13 @@
 import os
 import sys
 import argparse
-from alembic.command import heads
 
 # if env variable is set, manipulate the path to put local
-# current directory over possibly installed auto_schema so that we 
+# current directory over possibly installed auto_schema so that we
 # see local changes
 if os.getenv('LOCAL_AUTO_SCHEMA') == 'true':
     sys.path.insert(0, os.getcwd())
 
-# if env variable is set, manipulate the path to put local
-# current directory over possibly installed auto_schema so that we 
-# see local changes
-if os.getenv('LOCAL_AUTO_SCHEMA') == 'true':
-    sys.path.insert(0, os.getcwd())
 
 # run from auto_schema root. conflicts with pip-installed auto_schema when that exists so can't have
 # that installed when runnning this...
@@ -39,6 +33,9 @@ parser.add_argument('--heads', help='alembic heads', action='store_true')
 parser.add_argument('--branches', help='alembic branches', action='store_true')
 parser.add_argument('--stamp', help='alembic stamp')
 parser.add_argument('--edit', help='alembic edit')
+parser.add_argument(
+    '--changes', help='get changes in schema', action='store_true')
+
 
 def main():
     args = parser.parse_args()
@@ -69,6 +66,8 @@ def main():
             r.stamp(args.stamp)
         elif args.edit is not None:
             r.edit(args.edit)
+        elif args.changes is not None:
+            r.changes()
         else:
             r.run()
 
