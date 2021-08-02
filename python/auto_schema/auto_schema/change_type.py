@@ -1,7 +1,8 @@
 from enum import Enum
 
 
-class ChangeType(Enum):
+# subclass of str for enum encoding
+class ChangeType(str, Enum):
     ADD_TABLE = "add_table"
     DROP_TABLE = "drop_table"
     ADD_COLUMN = "add_column"

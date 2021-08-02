@@ -1,3 +1,4 @@
+import json
 from collections.abc import Mapping
 from .diff import Diff
 from .clause_text import get_clause_text
@@ -252,3 +253,8 @@ class Runner(object):
 
     def edit(self, revision):
         self.cmd.edit(revision)
+
+    def changes(self):
+        diff = self.compute_changes()
+        d = Diff(diff, group_by_table=True)
+        print(json.dumps(d.changes()))
