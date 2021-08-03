@@ -2,6 +2,7 @@ package codegen
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -70,31 +71,30 @@ func (q *YesNoQuestion) HandleRune(r rune, size int) *promptResponse {
 // TODO: this should all be in schema but there's dependency issues
 // because codegen depends on schema and we need schema to depend on the path to schema which we need to fix
 func checkAndHandlePrompts(s *schema.Schema, codePathInfo *CodePath) error {
+	// get db changes and store in Buffer (output of auto_schema --changes)
+	buf, err := dbChanges(codePathInfo)
+	if err != nil {
+		return err
+	}
+
+	m := make(map[string][]change)
+
+	if err := json.Unmarshal(buf.Bytes(), &m); err != nil {
+		return err
+	}
+
+	prompts, err := getPrompts(s, m)
+	if err != nil {
+		return err
+	}
+
+	if len(prompts) > 0 {
+		if err := handlePrompts(prompts); err != nil {
+			return err
+		}
+	}
+
 	return nil
-	// // get db changes and store in Buffer (output of auto_schema --changes)
-	// buf, err := dbChanges(codePathInfo)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// m := make(map[string][]change)
-
-	// if err := json.Unmarshal(buf.Bytes(), &m); err != nil {
-	// 	return err
-	// }
-
-	// prompts, err := getPrompts(s, m)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// if len(prompts) > 0 {
-	// 	if err := handlePrompts(prompts); err != nil {
-	// 		return err
-	// 	}
-	// }
-
-	// return nil
 }
 
 func getPrompts(s *schema.Schema, changes map[string][]change) ([]prompt, error) {
@@ -118,7 +118,7 @@ func getPrompts(s *schema.Schema, changes map[string][]change) ([]prompt, error)
 			if !field.Nullable() {
 				prompts = append(prompts, &YesNoQuestion{
 					question: fmt.Sprintf(
-						"You're adding a new field %s to Node %s which isn't nullable. Are you sure you want to do that? Y/N: ",
+						"You're adding a new field '%s' to an existing Node '%s' which isn't nullable. It'll result in database issues. Are you sure you want to do that? Y/N: ",
 						field.FieldName,
 						nodeData.Node,
 					),
