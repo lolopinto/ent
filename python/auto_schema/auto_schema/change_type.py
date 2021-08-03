@@ -2,6 +2,7 @@ from enum import Enum
 
 
 # subclass of str for enum encoding
+# NOTE: these need to be in sync with golang internal/schema/change.go
 class ChangeType(str, Enum):
     ADD_TABLE = "add_table"
     DROP_TABLE = "drop_table"
