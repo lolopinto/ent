@@ -33,6 +33,7 @@ import (
 )
 
 type TSStep struct {
+	s *gqlSchema
 }
 
 func (p *TSStep) Name() string {
@@ -411,6 +412,16 @@ func buildSchema(processor *codegen.Processor, fromTest bool) (*gqlSchema, error
 	return s, nil
 }
 
+func (p *TSStep) PreProcessData(processor *codegen.Processor) error {
+	s, err := buildSchema(processor, false)
+	if err != nil {
+		return err
+	}
+
+	p.s = s
+	return nil
+}
+
 func (p *TSStep) ProcessData(processor *codegen.Processor) error {
 	// these all need to be done after
 	// 1a/ build processor (actions and nodes)
@@ -420,9 +431,8 @@ func (p *TSStep) ProcessData(processor *codegen.Processor) error {
 	// 4/ write query/mutation/schema file
 	// schema file depends on query/mutation so not quite worth the complication of breaking those 2 up
 
-	s, err := buildSchema(processor, false)
-	if err != nil {
-		return err
+	if p.s == nil {
+		return errors.New("weirdness. graphqlSchema is nil when it shouldn't be")
 	}
 
 	steps := []step{
@@ -437,7 +447,7 @@ func (p *TSStep) ProcessData(processor *codegen.Processor) error {
 	}
 
 	for _, st := range steps {
-		if err := st.process(processor, s); err != nil {
+		if err := st.process(processor, p.s); err != nil {
 			return err
 		}
 	}
