@@ -23,9 +23,9 @@ import (
 )
 
 type Step struct {
-	m        sync.Mutex
-	nodeType []enum.Data
-	edgeType []enum.Data
+	m         sync.Mutex
+	nodeTypes []enum.Data
+	edgeTypes []enum.Data
 }
 
 func (s *Step) Name() string {
@@ -159,15 +159,15 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 		return err
 	}
 	// sort data so that the enum is stable
-	sort.Slice(s.nodeType, func(i, j int) bool {
-		return s.nodeType[i].Name < s.nodeType[j].Name
+	sort.Slice(s.nodeTypes, func(i, j int) bool {
+		return s.nodeTypes[i].Name < s.nodeTypes[j].Name
 	})
-	sort.Slice(s.edgeType, func(i, j int) bool {
-		return s.edgeType[i].Name < s.edgeType[j].Name
+	sort.Slice(s.edgeTypes, func(i, j int) bool {
+		return s.edgeTypes[i].Name < s.edgeTypes[j].Name
 	})
 	funcs := []func() error{
 		func() error {
-			return writeConstFile(s.nodeType, s.edgeType)
+			return writeConstFile(s.nodeTypes, s.edgeTypes)
 		},
 		func() error {
 			return writeInternalEntFile(processor.Schema, processor.CodePath)
@@ -176,7 +176,7 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 			return writeEntIndexFile()
 		},
 		func() error {
-			return writeLoadAnyFile(s.nodeType, processor.CodePath)
+			return writeLoadAnyFile(s.nodeTypes, processor.CodePath)
 		},
 	}
 
@@ -191,7 +191,7 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 func (s *Step) addNodeType(name, value, comment string, nodeData *schema.NodeData) {
 	s.m.Lock()
 	defer s.m.Unlock()
-	s.nodeType = append(s.nodeType, enum.Data{
+	s.nodeTypes = append(s.nodeTypes, enum.Data{
 		Name:    name,
 		Value:   value,
 		Comment: comment,
@@ -201,7 +201,7 @@ func (s *Step) addNodeType(name, value, comment string, nodeData *schema.NodeDat
 func (s *Step) addEdgeType(name, value, comment string) {
 	s.m.Lock()
 	defer s.m.Unlock()
-	s.edgeType = append(s.edgeType, enum.Data{
+	s.edgeTypes = append(s.edgeTypes, enum.Data{
 		Name:    name,
 		Value:   value,
 		Comment: comment,
@@ -227,7 +227,6 @@ func (s *Step) accumulateConsts(nodeData *schema.NodeData) error {
 				comment := strings.ReplaceAll(constant.Comment, constant.ConstName, match[1])
 
 				s.addNodeType(match[1], constant.ConstValue, comment, nodeData)
-				break
 
 			case "EdgeType":
 				constName, err := edge.TsEdgeConst(constant.ConstName)
@@ -237,7 +236,6 @@ func (s *Step) accumulateConsts(nodeData *schema.NodeData) error {
 				comment := strings.ReplaceAll(constant.Comment, constant.ConstName, constName)
 
 				s.addEdgeType(constName, constant.ConstValue, comment)
-				break
 			}
 		}
 	}
@@ -319,11 +317,11 @@ func getImportPathForBaseQueryFile(packageName string) string {
 }
 
 func getFilePathForConstFile() string {
-	return fmt.Sprintf("src/ent/const.ts")
+	return "src/ent/const.ts"
 }
 
 func getFilePathForLoadAnyFile() string {
-	return fmt.Sprintf("src/ent/loadAny.ts")
+	return "src/ent/loadAny.ts"
 }
 
 func getFilePathForBuilderFile(nodeData *schema.NodeData) string {
