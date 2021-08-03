@@ -66,7 +66,7 @@ def main():
             r.stamp(args.stamp)
         elif args.edit is not None:
             r.edit(args.edit)
-        elif args.changes is not None:
+        elif args.changes:
             r.changes()
         else:
             r.run()
