@@ -46,7 +46,7 @@ func TestCustomMutation(t *testing.T) {
 	require.NoError(t, err)
 
 	schema := testhelper.ParseSchemaForTest(t, m, base.TypeScript, testhelper.TempDir(dirPath))
-	data := &codegen.Data{
+	data := &codegen.CodegenProcessor{
 		Schema:   schema,
 		CodePath: getCodePath(t, dirPath),
 	}
@@ -193,7 +193,7 @@ func TestCustomQuery(t *testing.T) {
 	require.NoError(t, err)
 
 	schema := testhelper.ParseSchemaForTest(t, m, base.TypeScript, testhelper.TempDir(dirPath))
-	data := &codegen.Data{
+	data := &codegen.CodegenProcessor{
 		Schema:   schema,
 		CodePath: getCodePath(t, dirPath),
 	}
@@ -325,7 +325,7 @@ func TestCustomListQuery(t *testing.T) {
 	require.NoError(t, err)
 
 	schema := testhelper.ParseSchemaForTest(t, m, base.TypeScript, testhelper.TempDir(dirPath))
-	data := &codegen.Data{
+	data := &codegen.CodegenProcessor{
 		Schema:   schema,
 		CodePath: getCodePath(t, dirPath),
 	}
@@ -506,7 +506,7 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	require.NoError(t, err)
 
 	schema := testhelper.ParseSchemaForTest(t, m, base.TypeScript, testhelper.TempDir(dirPath))
-	data := &codegen.Data{
+	data := &codegen.CodegenProcessor{
 		Schema:   schema,
 		CodePath: getCodePath(t, dirPath),
 	}
@@ -635,7 +635,7 @@ func TestCustomUploadType(t *testing.T) {
 	require.NoError(t, err)
 
 	schema := testhelper.ParseSchemaForTest(t, m, base.TypeScript, testhelper.TempDir(dirPath))
-	data := &codegen.Data{
+	data := &codegen.CodegenProcessor{
 		Schema:   schema,
 		CodePath: getCodePath(t, dirPath),
 	}

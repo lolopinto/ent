@@ -615,7 +615,7 @@ func parse(t *testing.T, code, dirPath, packagePath string, nodes []string) {
 		"github.com/lolopinto/ent/internal/graphql/"+basePath+"/graphql",
 	)
 	require.Nil(t, err)
-	s := newGraphQLSchema(&codegen.Data{
+	s := newGraphQLSchema(&codegen.CodegenProcessor{
 		CodePath: codepath,
 		Schema:   &schema.Schema{},
 	})

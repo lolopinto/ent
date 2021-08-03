@@ -243,12 +243,12 @@ const NullableContentsAndList NullableItem = "contentsAndList"
 const NullableTrue NullableItem = "true"
 
 type step interface {
-	process(data *codegen.Data, s *gqlSchema) error
+	process(data *codegen.CodegenProcessor, s *gqlSchema) error
 }
 
 type writeGraphQLTypesStep struct{}
 
-func (st writeGraphQLTypesStep) process(data *codegen.Data, s *gqlSchema) error {
+func (st writeGraphQLTypesStep) process(data *codegen.CodegenProcessor, s *gqlSchema) error {
 	var wg sync.WaitGroup
 	var serr syncerr.Error
 
@@ -349,13 +349,13 @@ func (st writeGraphQLTypesStep) process(data *codegen.Data, s *gqlSchema) error 
 
 type writeQueryStep struct{}
 
-func (st writeQueryStep) process(data *codegen.Data, s *gqlSchema) error {
+func (st writeQueryStep) process(data *codegen.CodegenProcessor, s *gqlSchema) error {
 	return writeQueryFile(data, s)
 }
 
 type writeMutationStep struct{}
 
-func (st writeMutationStep) process(data *codegen.Data, s *gqlSchema) error {
+func (st writeMutationStep) process(data *codegen.CodegenProcessor, s *gqlSchema) error {
 	if s.hasMutations {
 		return writeMutationFile(data, s)
 	}
@@ -364,14 +364,14 @@ func (st writeMutationStep) process(data *codegen.Data, s *gqlSchema) error {
 
 type writeNodeQueryStep struct{}
 
-func (st writeNodeQueryStep) process(data *codegen.Data, s *gqlSchema) error {
+func (st writeNodeQueryStep) process(data *codegen.CodegenProcessor, s *gqlSchema) error {
 	return writeNodeQueryFile(data, s)
 }
 
 type writeInternalIndexStep struct {
 }
 
-func (st writeInternalIndexStep) process(data *codegen.Data, s *gqlSchema) error {
+func (st writeInternalIndexStep) process(data *codegen.CodegenProcessor, s *gqlSchema) error {
 	if err := writeInternalGQLResolversFile(s, data.CodePath); err != nil {
 		return err
 	}
@@ -380,23 +380,23 @@ func (st writeInternalIndexStep) process(data *codegen.Data, s *gqlSchema) error
 
 type generateGQLSchemaStep struct{}
 
-func (st generateGQLSchemaStep) process(data *codegen.Data, s *gqlSchema) error {
+func (st generateGQLSchemaStep) process(data *codegen.CodegenProcessor, s *gqlSchema) error {
 	return generateSchemaFile(s.hasMutations)
 }
 
 type writeSchemaStep struct{}
 
-func (st writeSchemaStep) process(data *codegen.Data, s *gqlSchema) error {
+func (st writeSchemaStep) process(data *codegen.CodegenProcessor, s *gqlSchema) error {
 	return writeTSSchemaFile(data, s)
 }
 
 type writeIndexStep struct{}
 
-func (st writeIndexStep) process(data *codegen.Data, s *gqlSchema) error {
+func (st writeIndexStep) process(data *codegen.CodegenProcessor, s *gqlSchema) error {
 	return writeTSIndexFile(data, s)
 }
 
-func buildSchema(data *codegen.Data, fromTest bool) (*gqlSchema, error) {
+func buildSchema(data *codegen.CodegenProcessor, fromTest bool) (*gqlSchema, error) {
 	cd, s := <-parseCustomData(data, fromTest), <-buildGQLSchema(data)
 	if cd.Error != nil {
 		return nil, cd.Error
@@ -411,7 +411,7 @@ func buildSchema(data *codegen.Data, fromTest bool) (*gqlSchema, error) {
 	return s, nil
 }
 
-func (p *TSStep) ProcessData(data *codegen.Data) error {
+func (p *TSStep) ProcessData(data *codegen.CodegenProcessor) error {
 	// these all need to be done after
 	// 1a/ build data (actions and nodes)
 	// 1b/ parse custom files
@@ -519,7 +519,7 @@ func getFilePathForCustomQuery(name string) string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/%s_query_type.ts", strcase.ToSnake(name))
 }
 
-func parseCustomData(data *codegen.Data, fromTest bool) chan *customData {
+func parseCustomData(data *codegen.CodegenProcessor, fromTest bool) chan *customData {
 	var res = make(chan *customData)
 	go func() {
 		var cd customData
@@ -596,7 +596,7 @@ func parseCustomData(data *codegen.Data, fromTest bool) chan *customData {
 	return res
 }
 
-func processCustomData(data *codegen.Data, s *gqlSchema) error {
+func processCustomData(data *codegen.CodegenProcessor, s *gqlSchema) error {
 	cd := s.customData
 	// TODO remove this
 	if len(cd.Args) > 0 {
@@ -779,7 +779,7 @@ type gqlConnection struct {
 	Package  *codegen.ImportPackage
 }
 
-func getGqlConnection(packageName string, edge edge.ConnectionEdge, data *codegen.Data) *gqlConnection {
+func getGqlConnection(packageName string, edge edge.ConnectionEdge, data *codegen.CodegenProcessor) *gqlConnection {
 	nodeType := fmt.Sprintf("%sType", edge.GetNodeInfo().Node)
 
 	var edgeImpPath string
@@ -807,7 +807,7 @@ func getGqlConnection(packageName string, edge edge.ConnectionEdge, data *codege
 	}
 }
 
-func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
+func buildGQLSchema(data *codegen.CodegenProcessor) chan *gqlSchema {
 	var result = make(chan *gqlSchema)
 	go func() {
 		var hasMutations bool
@@ -1143,7 +1143,7 @@ func (n *connectionBaseObj) ForeignImport(name string) bool {
 	return true
 }
 
-func writeConnectionFile(data *codegen.Data, s *gqlSchema, conn *gqlConnection) error {
+func writeConnectionFile(data *codegen.CodegenProcessor, s *gqlSchema, conn *gqlConnection) error {
 	imps := tsimport.NewImports()
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Data: struct {
@@ -2107,7 +2107,7 @@ type gqlRootData struct {
 	Node       string
 }
 
-func getQueryData(data *codegen.Data, s *gqlSchema) []rootField {
+func getQueryData(data *codegen.CodegenProcessor, s *gqlSchema) []rootField {
 	// add node query
 	results := []rootField{
 		{
@@ -2136,7 +2136,7 @@ func getQueryData(data *codegen.Data, s *gqlSchema) []rootField {
 	return results
 }
 
-func getMutationData(data *codegen.Data, s *gqlSchema) []rootField {
+func getMutationData(data *codegen.CodegenProcessor, s *gqlSchema) []rootField {
 	var results []rootField
 	for key := range data.Schema.Nodes {
 
@@ -2176,7 +2176,7 @@ func getMutationData(data *codegen.Data, s *gqlSchema) []rootField {
 	return results
 }
 
-func writeQueryFile(data *codegen.Data, s *gqlSchema) error {
+func writeQueryFile(data *codegen.CodegenProcessor, s *gqlSchema) error {
 	imps := tsimport.NewImports()
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Data: gqlRootData{
@@ -2194,7 +2194,7 @@ func writeQueryFile(data *codegen.Data, s *gqlSchema) error {
 	}))
 }
 
-func writeMutationFile(data *codegen.Data, s *gqlSchema) error {
+func writeMutationFile(data *codegen.CodegenProcessor, s *gqlSchema) error {
 	imps := tsimport.NewImports()
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Data: gqlRootData{
@@ -2212,7 +2212,7 @@ func writeMutationFile(data *codegen.Data, s *gqlSchema) error {
 	}))
 }
 
-func buildNodeFieldConfig(data *codegen.Data, s *gqlSchema) *fieldConfig {
+func buildNodeFieldConfig(data *codegen.CodegenProcessor, s *gqlSchema) *fieldConfig {
 	return &fieldConfig{
 		Exported: true,
 		Name:     "NodeQueryType",
@@ -2247,7 +2247,7 @@ func (n *nodeBaseObj) ForeignImport(name string) bool {
 	return true
 }
 
-func writeNodeQueryFile(data *codegen.Data, s *gqlSchema) error {
+func writeNodeQueryFile(data *codegen.CodegenProcessor, s *gqlSchema) error {
 	imps := tsimport.NewImports()
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data: struct {
@@ -2275,7 +2275,7 @@ func writeNodeQueryFile(data *codegen.Data, s *gqlSchema) error {
 	}, file.WriteOnce())
 }
 
-func writeTSSchemaFile(data *codegen.Data, s *gqlSchema) error {
+func writeTSSchemaFile(data *codegen.CodegenProcessor, s *gqlSchema) error {
 	imps := tsimport.NewImports()
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Data: struct {
@@ -2300,7 +2300,7 @@ func writeTSSchemaFile(data *codegen.Data, s *gqlSchema) error {
 	}))
 }
 
-func writeTSIndexFile(data *codegen.Data, s *gqlSchema) error {
+func writeTSIndexFile(data *codegen.CodegenProcessor, s *gqlSchema) error {
 	imps := tsimport.NewImports()
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Data: struct {

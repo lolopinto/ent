@@ -3,9 +3,6 @@ package db
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"os/exec"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -13,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/internal/auto_schema"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/file"
@@ -20,23 +18,32 @@ import (
 	"github.com/lolopinto/ent/internal/schema/input"
 
 	"github.com/lolopinto/ent/ent/config"
-	"github.com/lolopinto/ent/ent/data"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/util"
 )
 
 type Step struct {
+	db *dbSchema
 }
 
 func (s *Step) Name() string {
 	return "db"
 }
 
-func (s *Step) ProcessData(data *codegen.Data) error {
+func (s *Step) PreProcessData(data *codegen.CodegenProcessor) error {
 	// generate python schema file and then make changes to underlying db
 	db := newDBSchema(data.Schema, data.CodePath.GetRootPathToConfigs())
-	return db.generateSchema()
+	s.db = db
+
+	return db.processSchema()
+}
+
+func (s *Step) ProcessData(data *codegen.CodegenProcessor) error {
+	if s.db == nil {
+		return errors.New("weirdness. dbSchema is nil when it shouldn't be")
+	}
+	return s.db.makeDBChanges()
 }
 
 var _ codegen.Step = &Step{}
@@ -341,16 +348,14 @@ func (s *dbSchema) addTable(table *dbTable) {
 	s.tableMap[table.TableName] = table
 }
 
-func (s *dbSchema) generateSchema() error {
+// this processes the schema and writes the schema.py file but doesn't
+// acutally make any changes to the db yet
+func (s *dbSchema) processSchema() error {
 	if err := s.generateShemaTables(); err != nil {
 		return err
 	}
 
-	if err := s.writeSchemaFile(); err != nil {
-		return err
-	}
-
-	return s.generateDbSchema()
+	return s.writeSchemaFile()
 }
 
 func (s *dbSchema) generateShemaTables() error {
@@ -401,41 +406,27 @@ func (s *dbSchema) generateShemaTables() error {
 	return nil
 }
 
-func runPythonCommand(pathToConfigs string, extraArgs ...string) error {
-	args := []string{
-		fmt.Sprintf("-s=%s", pathToConfigs),
-		fmt.Sprintf("-e=%s", data.GetSQLAlchemyDatabaseURIgo()),
-	}
-	if len(extraArgs) > 0 {
-		args = append(args, extraArgs...)
-	}
-	cmd := exec.Command("auto_schema", args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
-}
-
-func (s *dbSchema) generateDbSchema() error {
-	return runPythonCommand(s.pathToConfigs)
+func (s *dbSchema) makeDBChanges() error {
+	return auto_schema.RunPythonCommand(s.pathToConfigs)
 }
 
 func UpgradeDB(codePathInfo *codegen.CodePath, revision string) error {
-	return runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("-u=%s", revision))
+	return auto_schema.RunPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("-u=%s", revision))
 }
 
 func DowngradeDB(codePathInfo *codegen.CodePath, revision string) error {
-	return runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("-d=%s", revision))
+	return auto_schema.RunPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("-d=%s", revision))
 }
 
 func FixEdges(codePathInfo *codegen.CodePath) error {
-	return runPythonCommand(codePathInfo.GetRootPathToConfigs(), "-f=True")
+	return auto_schema.RunPythonCommand(codePathInfo.GetRootPathToConfigs(), "-f=True")
 }
 
 func RunAlembicCommand(codePathInfo *codegen.CodePath, command string, args ...string) error {
 	if len(args) == 0 {
-		return runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("--%s", command))
+		return auto_schema.RunPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("--%s", command))
 	} else {
-		return runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("--%s=%s", command, strings.Join(args, ",")))
+		return auto_schema.RunPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("--%s=%s", command, strings.Join(args, ",")))
 	}
 }
 
@@ -773,8 +764,6 @@ func (s *dbSchema) addPrimaryKeyConstraint(nodeData *schema.NodeData, inputConst
 	return nil
 }
 
-var structNameRegex = regexp.MustCompile("([A-Za-z]+)Config")
-
 // adds a foreignKeyConstraint to the array of constraints
 // also returns new dbType of column
 func (s *dbSchema) addForeignKeyConstraint(nodeData *schema.NodeData, inputConstraint *input.Constraint, columns []*dbColumn, constraints *[]dbConstraint) error {
@@ -817,7 +806,7 @@ func (s *dbSchema) addForeignKeyConstraint(nodeData *schema.NodeData, inputConst
 		fkeyTableName: fkeyTable.TableName,
 		fkeyColumns:   fkeyColumns,
 		name:          inputConstraint.Name,
-		onDelete:      fmt.Sprintf("%s", inputConstraint.ForeignKey.OnDelete),
+		onDelete:      string(inputConstraint.ForeignKey.OnDelete),
 	}
 	*constraints = append(*constraints, constraint)
 	return nil

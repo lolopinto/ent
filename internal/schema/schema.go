@@ -181,6 +181,14 @@ func (s *Schema) init() {
 	s.enumTables = make(map[string]*EnumInfo)
 }
 
+func (s *Schema) GetNodeDataFromTableName(tableName string) *NodeData {
+	info := s.tables[tableName]
+	if info == nil {
+		return nil
+	}
+	return info.NodeData
+}
+
 func (s *Schema) GetNodeDataFromGraphQLName(nodeName string) *NodeData {
 	return s.Nodes.getNodeDataFromGraphQLName(nodeName)
 }

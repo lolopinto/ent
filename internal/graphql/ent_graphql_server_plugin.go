@@ -55,7 +55,7 @@ type ServerBuild struct {
 	ResolverPackageName string
 }
 
-func newGraphQLServerPlugin(data *intcodegen.Data) plugin.Plugin {
+func newGraphQLServerPlugin(data *intcodegen.CodegenProcessor) plugin.Plugin {
 	return &entGraphQLServerPlugin{
 		codePath: data.CodePath,
 	}

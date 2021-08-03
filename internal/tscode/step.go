@@ -34,7 +34,7 @@ func (s *Step) Name() string {
 
 var nodeType = regexp.MustCompile(`(\w+)Type`)
 
-func (s *Step) ProcessData(data *codegen.Data) error {
+func (s *Step) ProcessData(data *codegen.CodegenProcessor) error {
 	var wg sync.WaitGroup
 	wg.Add(len(data.Schema.Nodes))
 	var serr syncerr.Error

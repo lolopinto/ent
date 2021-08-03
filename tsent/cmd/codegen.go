@@ -35,6 +35,9 @@ var codegenCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		// need a codepath here...
+		// instead of lang, we want Options
+		// lang, pathToRoot, allowUserInput
 		schema, err := schema.ParseFromInputSchema(inputSchema, base.TypeScript)
 		if err != nil {
 			return err
@@ -47,14 +50,9 @@ var codegenCmd = &cobra.Command{
 
 		// module path empty because not go
 		// same as ParseSchemaFromTSDir. default to schema. we want a flag here eventually
-		codePathInfo, err := codegen.NewCodePath("src/schema", "")
+		processor, err := codegen.NewCodegenProcessor(schema, "src/schema", "")
 		if err != nil {
 			return err
-		}
-
-		data := &codegen.Data{
-			Schema:   schema,
-			CodePath: codePathInfo,
 		}
 
 		steps := []codegen.Step{
@@ -62,6 +60,7 @@ var codegenCmd = &cobra.Command{
 			new(tscode.Step),
 			new(graphql.TSStep),
 		}
-		return codegen.RunSteps(data, steps, codegenInfo.step)
+
+		return processor.Run(steps, codegenInfo.step)
 	},
 }

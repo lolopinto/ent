@@ -51,18 +51,10 @@ func parseSchemasAndGenerate(codePathInfo *codegen.CodePath, specificConfig, ste
 		return nil
 	}
 
-	// TOOD validate things here first.
-
-	data := &codegen.Data{schema, codePathInfo}
-
-	// TODO refactor these from being called sequentially to something that can be called in parallel
-	// Right now, they're being called sequentially
-	// I don't see any reason why some can't be done in parrallel
-	// 0/ generate consts. has to block everything (not a plugin could be?) however blocking
-	// 1/ db
-	// 2/ create new nodes (blocked by db) since assoc_edge_config table may not exist yet
-	// 3/ model files. should be able to run on its own
-	// 4/ graphql should be able to run on its own
+	processor := &codegen.CodegenProcessor{
+		Schema:   schema,
+		CodePath: codePathInfo,
+	}
 
 	steps := []codegen.Step{
 		new(db.Step),
@@ -70,5 +62,5 @@ func parseSchemasAndGenerate(codePathInfo *codegen.CodePath, specificConfig, ste
 		new(graphql.Step),
 	}
 
-	return codegen.RunSteps(data, steps, step)
+	return processor.Run(steps, step, codegen.DisablePrompts())
 }
