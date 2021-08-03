@@ -69,10 +69,10 @@ type CustomField struct {
 // 	customField
 // }
 
-// func (f *CustomField) UnmarshalJSON(processor []byte) error {
+// func (f *CustomField) UnmarshalJSON(data []byte) error {
 // 	var cf *customField
 
-// 	err := json.Unmarshal(processor, &cf)
+// 	err := json.Unmarshal(data, &cf)
 // 	if err != nil {
 // 		return err
 // 	}
@@ -424,9 +424,9 @@ func (p *TSStep) PreProcessData(processor *codegen.Processor) error {
 
 func (p *TSStep) ProcessData(processor *codegen.Processor) error {
 	// these all need to be done after
-	// 1a/ build processor (actions and nodes)
+	// 1a/ build data (actions and nodes)
 	// 1b/ parse custom files
-	// 2/ inject any custom processor in there
+	// 2/ inject any custom data in there
 	// 3/ write node files first then action files since there's a dependency...
 	// 4/ write query/mutation/schema file
 	// schema file depends on query/mutation so not quite worth the complication of breaking those 2 up
