@@ -30,7 +30,7 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 			}
 
 			for _, action := range nodeData.ActionInfo.Actions {
-				if err := writeActionFile(nodeData, action, data.CodePath); err != nil {
+				if err := writeActionFile(nodeData, action, processor.CodePath); err != nil {
 					return err
 				}
 			}
