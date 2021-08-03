@@ -31,15 +31,15 @@ func (s *Step) Name() string {
 	return "db"
 }
 
-func (s *Step) PreProcessData(data *codegen.CodegenProcessor) error {
+func (s *Step) PreProcessData(processor *codegen.Processor) error {
 	// generate python schema file and then make changes to underlying db
-	db := newDBSchema(data.Schema, data.CodePath.GetRootPathToConfigs())
+	db := newDBSchema(processor.Schema, processor.CodePath.GetRootPathToConfigs())
 	s.db = db
 
 	return db.processSchema()
 }
 
-func (s *Step) ProcessData(data *codegen.CodegenProcessor) error {
+func (s *Step) ProcessData(processor *codegen.Processor) error {
 	if s.db == nil {
 		return errors.New("weirdness. dbSchema is nil when it shouldn't be")
 	}

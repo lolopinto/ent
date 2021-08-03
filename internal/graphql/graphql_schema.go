@@ -50,8 +50,8 @@ var sortedGQLlSteps = []gqlStep{
 	"generate_code",
 }
 
-func (p *Step) ProcessData(data *codegen.CodegenProcessor) error {
-	graphql := newGraphQLSchema(data)
+func (p *Step) ProcessData(processor *codegen.Processor) error {
+	graphql := newGraphQLSchema(processor)
 	graphql.generateSchema()
 
 	// right now it all panics but we have to change that lol
@@ -63,7 +63,7 @@ var _ codegen.Step = &Step{}
 var defaultGraphQLFolder = "graphql"
 
 type graphQLSchema struct {
-	config                *codegen.CodegenProcessor
+	config                *codegen.Processor
 	Types                 map[string]*graphQLSchemaInfo
 	sortedTypes           []*graphQLSchemaInfo
 	pathsToGraphQLObjects map[string]string
@@ -84,7 +84,7 @@ type graphQLSchema struct {
 	disableServerGO bool
 }
 
-func newGraphQLSchema(data *codegen.CodegenProcessor) *graphQLSchema {
+func newGraphQLSchema(processor *codegen.Processor) *graphQLSchema {
 	types := make(map[string]*graphQLSchemaInfo)
 	// TODO this is initially going to be just the ents but will eventually be used for
 	// config.TypeMapEntry in buildYmlConfig as it gets more complicated and we add other objects
@@ -93,7 +93,7 @@ func newGraphQLSchema(data *codegen.CodegenProcessor) *graphQLSchema {
 	mutationCustomImpls := make(map[string]*customFunction)
 
 	schema := &graphQLSchema{
-		config:                data,
+		config:                processor,
 		Types:                 types,
 		pathsToGraphQLObjects: pathsToGraphQLObjects,
 		mutationCustomImpls:   mutationCustomImpls,
@@ -101,12 +101,12 @@ func newGraphQLSchema(data *codegen.CodegenProcessor) *graphQLSchema {
 
 		// parsing custom ent code
 		customEntParser: &schemaparser.ConfigSchemaParser{
-			AbsRootPath: data.CodePath.GetAbsPathToModels(),
+			AbsRootPath: processor.CodePath.GetAbsPathToModels(),
 		},
 
 		// parsing top level functions
 		topLevelParser: &schemaparser.ConfigSchemaParser{
-			AbsRootPath: data.CodePath.GetAbsPathToGraphQL() + "...",
+			AbsRootPath: processor.CodePath.GetAbsPathToGraphQL() + "...",
 			// for default generated files, don't parse them and treat them as basically empty files
 			// errors in there shouldn't affect this process since if everything succeeds now, we are fine
 			FilesToIgnore: defaultGraphQLFiles,

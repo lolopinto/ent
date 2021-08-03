@@ -1,15 +1,15 @@
 package codegen
 
 import (
-	"errors"
+	"fmt"
+	"sync"
 
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/syncerr"
 )
 
-// CodegenProcessor stores the parsed data needed for codegen
-// this needs a new name
-// CodegenProcessor?
-type CodegenProcessor struct {
+// Processor stores the parsed data needed for codegen
+type Processor struct {
 	Schema   *schema.Schema
 	CodePath *CodePath
 }
@@ -26,7 +26,7 @@ func DisablePrompts() Option {
 	}
 }
 
-func (cp *CodegenProcessor) Run(steps []Step, step string, options ...Option) error {
+func (cp *Processor) Run(steps []Step, step string, options ...Option) error {
 	opt := &option{}
 	for _, o := range options {
 		o(opt)
@@ -40,16 +40,34 @@ func (cp *CodegenProcessor) Run(steps []Step, step string, options ...Option) er
 			}
 		}
 		if len(steps) != 1 {
-			return errors.New("invalid step passed")
+			return fmt.Errorf("invalid step %s passed", step)
 		}
 	}
 
+	var pre_steps []StepWithPreProcess
 	for _, s := range steps {
 		ps, ok := s.(StepWithPreProcess)
-		if !ok {
-			continue
+		if ok {
+			pre_steps = append(pre_steps, ps)
 		}
-		if err := ps.PreProcessData(cp); err != nil {
+	}
+
+	if len(pre_steps) > 0 {
+		var wg sync.WaitGroup
+		wg.Add(len(pre_steps))
+		var serr syncerr.Error
+
+		for i := range pre_steps {
+			go func(i int) {
+				defer wg.Done()
+				ps := pre_steps[i]
+				serr.Append(ps.PreProcessData(cp))
+			}(i)
+		}
+
+		wg.Wait()
+
+		if err := serr.Err(); err != nil {
 			return err
 		}
 	}
@@ -82,23 +100,23 @@ func (cp *CodegenProcessor) Run(steps []Step, step string, options ...Option) er
 // e.g. db/ graphql/code etc
 type Step interface {
 	Name() string
-	ProcessData(data *CodegenProcessor) error
+	ProcessData(data *Processor) error
 }
 
 type StepWithPreProcess interface {
 	Step
 	// any pre-process steps can be done here
 	// this is where things like user input and other
-	PreProcessData(data *CodegenProcessor) error
+	PreProcessData(data *Processor) error
 }
 
-func NewCodegenProcessor(schema *schema.Schema, configPath, modulePath string) (*CodegenProcessor, error) {
+func NewCodegenProcessor(schema *schema.Schema, configPath, modulePath string) (*Processor, error) {
 	codePathInfo, err := NewCodePath(configPath, modulePath)
 	if err != nil {
 		return nil, err
 	}
 
-	data := &CodegenProcessor{
+	data := &Processor{
 		Schema:   schema,
 		CodePath: codePathInfo,
 	}
