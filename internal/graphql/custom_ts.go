@@ -16,18 +16,18 @@ import (
 )
 
 type processCustomRoot interface {
-	process(data *codegen.CodegenProcessor, cd *customData, s *gqlSchema) error
+	process(processor *codegen.Processor, cd *customData, s *gqlSchema) error
 	getFilePath(string) string
 	getArgObject(cd *customData, arg CustomItem) *CustomObject
 	getFields(cd *customData) []CustomField
-	buildFieldConfig(data *codegen.CodegenProcessor, cd *customData, s *gqlSchema, field CustomField) (*fieldConfig, error)
+	buildFieldConfig(processor *codegen.Processor, cd *customData, s *gqlSchema, field CustomField) (*fieldConfig, error)
 }
 
 type customMutationsProcesser struct {
 }
 
-func (cm *customMutationsProcesser) process(data *codegen.CodegenProcessor, cd *customData, s *gqlSchema) error {
-	arr, err := processFields(data, cd, s, cm)
+func (cm *customMutationsProcesser) process(processor *codegen.Processor, cd *customData, s *gqlSchema) error {
+	arr, err := processFields(processor, cd, s, cm)
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func (cm *customMutationsProcesser) getFields(cd *customData) []CustomField {
 	return cd.Mutations
 }
 
-func (cm *customMutationsProcesser) buildFieldConfig(data *codegen.CodegenProcessor, cd *customData, s *gqlSchema, field CustomField) (*fieldConfig, error) {
+func (cm *customMutationsProcesser) buildFieldConfig(processor *codegen.Processor, cd *customData, s *gqlSchema, field CustomField) (*fieldConfig, error) {
 	b := &mutationFieldConfigBuilder{
 		field:    field,
 		filePath: cm.getFilePath(field.GraphQLName),
@@ -68,14 +68,14 @@ func (cm *customMutationsProcesser) buildFieldConfig(data *codegen.CodegenProces
 			b.inputArg = &arg
 		}
 	}
-	return b.build(data, cd, s, field)
+	return b.build(processor, cd, s, field)
 }
 
 type customQueriesProcesser struct {
 }
 
-func (cq *customQueriesProcesser) process(data *codegen.CodegenProcessor, cd *customData, s *gqlSchema) error {
-	arr, err := processFields(data, cd, s, cq)
+func (cq *customQueriesProcesser) process(processor *codegen.Processor, cd *customData, s *gqlSchema) error {
+	arr, err := processFields(processor, cd, s, cq)
 	s.customQueries = arr
 
 	return err
@@ -93,15 +93,15 @@ func (cq *customQueriesProcesser) getFields(cd *customData) []CustomField {
 	return cd.Queries
 }
 
-func (cq *customQueriesProcesser) buildFieldConfig(data *codegen.CodegenProcessor, cd *customData, s *gqlSchema, field CustomField) (*fieldConfig, error) {
+func (cq *customQueriesProcesser) buildFieldConfig(processor *codegen.Processor, cd *customData, s *gqlSchema, field CustomField) (*fieldConfig, error) {
 	b := &queryFieldConfigBuilder{
 		field,
 		cq.getFilePath(field.GraphQLName),
 	}
-	return b.build(data, cd, s, field)
+	return b.build(processor, cd, s, field)
 }
 
-func processFields(data *codegen.CodegenProcessor, cd *customData, s *gqlSchema, cr processCustomRoot) ([]*gqlNode, error) {
+func processFields(processor *codegen.Processor, cd *customData, s *gqlSchema, cr processCustomRoot) ([]*gqlNode, error) {
 	var result []*gqlNode
 	fields := cr.getFields(cd)
 
@@ -139,7 +139,7 @@ func processFields(data *codegen.CodegenProcessor, cd *customData, s *gqlSchema,
 				continue
 			}
 			// not always going to be GraphQLInputObjectType (for queries)
-			argType, err := buildObjectType(data, cd, s, arg, argObj, filePath, "GraphQLInputObjectType")
+			argType, err := buildObjectType(processor, cd, s, arg, argObj, filePath, "GraphQLInputObjectType")
 			if err != nil {
 				return nil, err
 			}
@@ -153,14 +153,14 @@ func processFields(data *codegen.CodegenProcessor, cd *customData, s *gqlSchema,
 				continue
 			}
 
-			payloadType, err := buildObjectType(data, cd, s, result, object, filePath, "GraphQLObjectType")
+			payloadType, err := buildObjectType(processor, cd, s, result, object, filePath, "GraphQLObjectType")
 			if err != nil {
 				return nil, err
 			}
 
 			cls := cd.Classes[field.Node]
 			if cls != nil {
-				importPath, err := getRelativeImportPath(data, filePath, cls.Path)
+				importPath, err := getRelativeImportPath(processor, filePath, cls.Path)
 				if err != nil {
 					return nil, err
 				}
@@ -179,7 +179,7 @@ func processFields(data *codegen.CodegenProcessor, cd *customData, s *gqlSchema,
 			objTypes = append(objTypes, payloadType)
 		}
 
-		fieldConfig, err := cr.buildFieldConfig(data, cd, s, field)
+		fieldConfig, err := cr.buildFieldConfig(processor, cd, s, field)
 		if err != nil {
 			return nil, err
 		}
@@ -196,7 +196,7 @@ func processFields(data *codegen.CodegenProcessor, cd *customData, s *gqlSchema,
 				NodeInstance: "obj",
 				GQLNodes:     objTypes,
 				FieldConfig:  fieldConfig,
-				Package:      data.CodePath.GetImportPackage(),
+				Package:      processor.CodePath.GetImportPackage(),
 			},
 			FilePath:    filePath,
 			Field:       &field,
@@ -208,7 +208,7 @@ func processFields(data *codegen.CodegenProcessor, cd *customData, s *gqlSchema,
 }
 
 type fieldConfigBuilder interface {
-	build(data *codegen.CodegenProcessor, cd *customData, s *gqlSchema, field CustomField) (*fieldConfig, error)
+	build(processor *codegen.Processor, cd *customData, s *gqlSchema, field CustomField) (*fieldConfig, error)
 	getArg() string
 	getName() string
 	getResolveMethodArg() string
@@ -230,8 +230,8 @@ func (mfcg *mutationFieldConfigBuilder) getName() string {
 	return fmt.Sprintf("%sType", strcase.ToCamel(mfcg.field.GraphQLName))
 }
 
-func (mfcg *mutationFieldConfigBuilder) build(data *codegen.CodegenProcessor, cd *customData, s *gqlSchema, field CustomField) (*fieldConfig, error) {
-	return buildFieldConfigFrom(mfcg, data, s, cd, field)
+func (mfcg *mutationFieldConfigBuilder) build(processor *codegen.Processor, cd *customData, s *gqlSchema, field CustomField) (*fieldConfig, error) {
+	return buildFieldConfigFrom(mfcg, processor, s, cd, field)
 }
 
 func (mfcg *mutationFieldConfigBuilder) getFilePath() string {
@@ -336,8 +336,8 @@ func (qfcg *queryFieldConfigBuilder) getName() string {
 	return fmt.Sprintf("%sQueryType", strcase.ToCamel(qfcg.field.GraphQLName))
 }
 
-func (qfcg *queryFieldConfigBuilder) build(data *codegen.CodegenProcessor, cd *customData, s *gqlSchema, field CustomField) (*fieldConfig, error) {
-	return buildFieldConfigFrom(qfcg, data, s, cd, field)
+func (qfcg *queryFieldConfigBuilder) build(processor *codegen.Processor, cd *customData, s *gqlSchema, field CustomField) (*fieldConfig, error) {
+	return buildFieldConfigFrom(qfcg, processor, s, cd, field)
 }
 
 func (qfcg *queryFieldConfigBuilder) getFilePath() string {
@@ -446,7 +446,7 @@ func (qfcg *queryFieldConfigBuilder) getArgMap(cd *customData) map[string]*Custo
 	return cd.Args
 }
 
-func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.CodegenProcessor, s *gqlSchema, cd *customData, field CustomField) (*fieldConfig, error) {
+func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Processor, s *gqlSchema, cd *customData, field CustomField) (*fieldConfig, error) {
 	var argImports []*fileImport
 
 	// args that "useImport" should be called on
@@ -455,7 +455,7 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.CodegenProce
 	addToArgImport := func(typ string) error {
 		cls := cd.Classes[typ]
 		if cls != nil && cls.Exported {
-			path, err := getRelativeImportPath(data, builder.getFilePath(), cls.Path)
+			path, err := getRelativeImportPath(processor, builder.getFilePath(), cls.Path)
 			if err != nil {
 				return err
 			}
@@ -529,7 +529,7 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.CodegenProce
 		// nodeName is root or something...
 		customEdge := getRootGQLEdge(field)
 		// RootQuery?
-		conn = getGqlConnection("root", customEdge, data)
+		conn = getGqlConnection("root", customEdge, processor)
 
 		functionContents = append(
 			functionContents,
@@ -561,7 +561,7 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.CodegenProce
 	return result, nil
 }
 
-func buildObjectType(data *codegen.CodegenProcessor, cd *customData, s *gqlSchema, item CustomItem, obj *CustomObject, destPath, gqlType string) (*objectType, error) {
+func buildObjectType(processor *codegen.Processor, cd *customData, s *gqlSchema, item CustomItem, obj *CustomObject, destPath, gqlType string) (*objectType, error) {
 	// TODO right now it depends on custom inputs and outputs being FooInput and FooPayload to work
 	// we shouldn't do that and we should be smarter
 	// maybe add PayloadType if no Payload suffix otherwise Payload. Same for InputType and Input
@@ -592,7 +592,7 @@ func buildObjectType(data *codegen.CodegenProcessor, cd *customData, s *gqlSchem
 	cls := cd.Classes[item.Type]
 	createInterface := true
 	if cls != nil {
-		importPath, err := getRelativeImportPath(data, destPath, cls.Path)
+		importPath, err := getRelativeImportPath(processor, destPath, cls.Path)
 		if err != nil {
 			return nil, err
 		}
@@ -671,9 +671,9 @@ func buildObjectType(data *codegen.CodegenProcessor, cd *customData, s *gqlSchem
 	return typ, nil
 }
 
-func getRelativeImportPath(data *codegen.CodegenProcessor, basepath, targetpath string) (string, error) {
+func getRelativeImportPath(processor *codegen.Processor, basepath, targetpath string) (string, error) {
 	// BONUS: instead of this, we should use the nice paths in tsconfig...
-	absPath := filepath.Join(data.CodePath.GetAbsPathToRoot(), basepath)
+	absPath := filepath.Join(processor.CodePath.GetAbsPathToRoot(), basepath)
 
 	// need to do any relative imports from the directory not from the file itself
 	dir := filepath.Dir(absPath)
@@ -685,7 +685,7 @@ func getRelativeImportPath(data *codegen.CodegenProcessor, basepath, targetpath 
 	return strings.TrimSuffix(rel, ".ts"), nil
 }
 
-func processCustomFields(data *codegen.CodegenProcessor, cd *customData, s *gqlSchema) error {
+func processCustomFields(processor *codegen.Processor, cd *customData, s *gqlSchema) error {
 	for nodeName, fields := range cd.Fields {
 		if cd.Inputs[nodeName] != nil {
 			continue
@@ -716,7 +716,7 @@ func processCustomFields(data *codegen.CodegenProcessor, cd *customData, s *gqlS
 				Node:   nodeName,
 			}
 			s.customEdges[nodeName] = obj
-			// the edge property of GraphQLEdge is where the data is
+			// the edge property of GraphQLEdge is where the processor is
 			instance = "edge.edge"
 		} else {
 			return fmt.Errorf("can't find %s node that has custom fields", nodeName)
@@ -725,7 +725,7 @@ func processCustomFields(data *codegen.CodegenProcessor, cd *customData, s *gqlS
 		for _, field := range fields {
 			if isConnection(field) {
 				customEdge := getGQLEdge(field, nodeName)
-				nodeInfo.connections = append(nodeInfo.connections, getGqlConnection(nodeData.PackageName, customEdge, data))
+				nodeInfo.connections = append(nodeInfo.connections, getGqlConnection(nodeData.PackageName, customEdge, processor))
 				addConnection(nodeData, customEdge, &obj.Fields, nodeData.NodeInstance, &field)
 				continue
 			}
@@ -819,14 +819,14 @@ func getCustomGQLField(cd *customData, field CustomField, s *gqlSchema, instance
 	return gqlField, nil
 }
 
-func processCustomMutations(data *codegen.CodegenProcessor, cd *customData, s *gqlSchema) error {
+func processCustomMutations(processor *codegen.Processor, cd *customData, s *gqlSchema) error {
 	cm := &customMutationsProcesser{}
-	return cm.process(data, cd, s)
+	return cm.process(processor, cd, s)
 }
 
-func processCustomQueries(data *codegen.CodegenProcessor, cd *customData, s *gqlSchema) error {
+func processCustomQueries(processor *codegen.Processor, cd *customData, s *gqlSchema) error {
 	cq := &customQueriesProcesser{}
-	return cq.process(data, cd, s)
+	return cq.process(processor, cd, s)
 }
 
 func getGraphQLImportsForField(cd *customData, f CustomField, s *gqlSchema) ([]*fileImport, error) {

@@ -6,10 +6,10 @@ import (
 	"github.com/lolopinto/ent/internal/schema"
 )
 
-// CodegenProcessor stores the parsed data needed for codegen
+// Processor stores the parsed data needed for codegen
 // this needs a new name
-// CodegenProcessor?
-type CodegenProcessor struct {
+// Processor?
+type Processor struct {
 	Schema   *schema.Schema
 	CodePath *CodePath
 }
@@ -26,7 +26,7 @@ func DisablePrompts() Option {
 	}
 }
 
-func (cp *CodegenProcessor) Run(steps []Step, step string, options ...Option) error {
+func (cp *Processor) Run(steps []Step, step string, options ...Option) error {
 	opt := &option{}
 	for _, o := range options {
 		o(opt)
@@ -82,23 +82,23 @@ func (cp *CodegenProcessor) Run(steps []Step, step string, options ...Option) er
 // e.g. db/ graphql/code etc
 type Step interface {
 	Name() string
-	ProcessData(data *CodegenProcessor) error
+	ProcessData(data *Processor) error
 }
 
 type StepWithPreProcess interface {
 	Step
 	// any pre-process steps can be done here
 	// this is where things like user input and other
-	PreProcessData(data *CodegenProcessor) error
+	PreProcessData(data *Processor) error
 }
 
-func NewCodegenProcessor(schema *schema.Schema, configPath, modulePath string) (*CodegenProcessor, error) {
+func NewCodegenProcessor(schema *schema.Schema, configPath, modulePath string) (*Processor, error) {
 	codePathInfo, err := NewCodePath(configPath, modulePath)
 	if err != nil {
 		return nil, err
 	}
 
-	data := &CodegenProcessor{
+	data := &Processor{
 		Schema:   schema,
 		CodePath: codePathInfo,
 	}

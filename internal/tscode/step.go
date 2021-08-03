@@ -34,16 +34,16 @@ func (s *Step) Name() string {
 
 var nodeType = regexp.MustCompile(`(\w+)Type`)
 
-func (s *Step) ProcessData(data *codegen.CodegenProcessor) error {
+func (s *Step) ProcessData(processor *codegen.Processor) error {
 	var wg sync.WaitGroup
-	wg.Add(len(data.Schema.Nodes))
+	wg.Add(len(processor.Schema.Nodes))
 	var serr syncerr.Error
 
-	for key := range data.Schema.Nodes {
+	for key := range processor.Schema.Nodes {
 		go func(key string) {
 			defer wg.Done()
 
-			info := data.Schema.Nodes[key]
+			info := processor.Schema.Nodes[key]
 			nodeData := info.NodeData
 
 			if err := s.accumulateConsts(nodeData); err != nil {
@@ -60,11 +60,11 @@ func (s *Step) ProcessData(data *codegen.CodegenProcessor) error {
 				return
 			}
 
-			if err := writeBaseModelFile(nodeData, data.CodePath); err != nil {
+			if err := writeBaseModelFile(nodeData, processor.CodePath); err != nil {
 				serr.Append(err)
 				return
 			}
-			if err := writeEntFile(nodeData, data.CodePath); err != nil {
+			if err := writeEntFile(nodeData, processor.CodePath); err != nil {
 				serr.Append(err)
 				return
 			}
@@ -73,7 +73,7 @@ func (s *Step) ProcessData(data *codegen.CodegenProcessor) error {
 				return
 			}
 
-			if err := writeBuilderFile(nodeData, data.CodePath); err != nil {
+			if err := writeBuilderFile(nodeData, processor.CodePath); err != nil {
 				serr.Append(err)
 			}
 
@@ -85,11 +85,11 @@ func (s *Step) ProcessData(data *codegen.CodegenProcessor) error {
 					defer actionsWg.Done()
 
 					action := nodeData.ActionInfo.Actions[idx]
-					if err := writeBaseActionFile(nodeData, data.CodePath, action); err != nil {
+					if err := writeBaseActionFile(nodeData, processor.CodePath, action); err != nil {
 						serr.Append(err)
 					}
 
-					if err := writeActionFile(nodeData, data.CodePath, action); err != nil {
+					if err := writeActionFile(nodeData, processor.CodePath, action); err != nil {
 						serr.Append(err)
 					}
 
@@ -102,7 +102,7 @@ func (s *Step) ProcessData(data *codegen.CodegenProcessor) error {
 				return
 			}
 
-			if err := writeBaseQueryFile(data.Schema, nodeData, data.CodePath); err != nil {
+			if err := writeBaseQueryFile(processor.Schema, nodeData, processor.CodePath); err != nil {
 				serr.Append(err)
 			}
 
@@ -115,7 +115,7 @@ func (s *Step) ProcessData(data *codegen.CodegenProcessor) error {
 
 					edge := nodeData.EdgeInfo.Associations[idx]
 
-					if err := writeAssocEdgeQueryFile(data.Schema, nodeData, edge, data.CodePath); err != nil {
+					if err := writeAssocEdgeQueryFile(processor.Schema, nodeData, edge, processor.CodePath); err != nil {
 						serr.Append(err)
 					}
 				}(idx)
@@ -130,7 +130,7 @@ func (s *Step) ProcessData(data *codegen.CodegenProcessor) error {
 
 					edge := edges[idx]
 
-					if err := writeCustomEdgeQueryFile(data.Schema, nodeData, edge, data.CodePath); err != nil {
+					if err := writeCustomEdgeQueryFile(processor.Schema, nodeData, edge, processor.CodePath); err != nil {
 						serr.Append(err)
 					}
 				}(idx)
@@ -139,19 +139,19 @@ func (s *Step) ProcessData(data *codegen.CodegenProcessor) error {
 		}(key)
 	}
 
-	wg.Add(len(data.Schema.Enums))
-	for key := range data.Schema.Enums {
+	wg.Add(len(processor.Schema.Enums))
+	for key := range processor.Schema.Enums {
 		go func(key string) {
 			defer wg.Done()
 
-			info := data.Schema.Enums[key]
+			info := processor.Schema.Enums[key]
 
 			// only lookup table enums get their own files
 			if !info.LookupTableEnum() {
 				return
 			}
 
-			serr.Append(writeEnumFile(info, data.CodePath))
+			serr.Append(writeEnumFile(info, processor.CodePath))
 		}(key)
 	}
 	wg.Wait()
@@ -170,13 +170,13 @@ func (s *Step) ProcessData(data *codegen.CodegenProcessor) error {
 			return writeConstFile(s.nodeType, s.edgeType)
 		},
 		func() error {
-			return writeInternalEntFile(data.Schema, data.CodePath)
+			return writeInternalEntFile(processor.Schema, processor.CodePath)
 		},
 		func() error {
 			return writeEntIndexFile()
 		},
 		func() error {
-			return writeLoadAnyFile(s.nodeType, data.CodePath)
+			return writeLoadAnyFile(s.nodeType, processor.CodePath)
 		},
 	}
 

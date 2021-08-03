@@ -51,7 +51,7 @@ func parseSchemasAndGenerate(codePathInfo *codegen.CodePath, specificConfig, ste
 		return nil
 	}
 
-	processor := &codegen.CodegenProcessor{
+	processor := &codegen.Processor{
 		Schema:   schema,
 		CodePath: codePathInfo,
 	}
