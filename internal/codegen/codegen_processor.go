@@ -9,8 +9,6 @@ import (
 )
 
 // Processor stores the parsed data needed for codegen
-// this needs a new name
-// Processor?
 type Processor struct {
 	Schema   *schema.Schema
 	CodePath *CodePath
