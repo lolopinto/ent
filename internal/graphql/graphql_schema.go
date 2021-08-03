@@ -50,7 +50,7 @@ var sortedGQLlSteps = []gqlStep{
 	"generate_code",
 }
 
-func (p *Step) ProcessData(data *codegen.Data) error {
+func (p *Step) ProcessData(data *codegen.CodegenProcessor) error {
 	graphql := newGraphQLSchema(data)
 	graphql.generateSchema()
 
@@ -63,7 +63,7 @@ var _ codegen.Step = &Step{}
 var defaultGraphQLFolder = "graphql"
 
 type graphQLSchema struct {
-	config                *codegen.Data
+	config                *codegen.CodegenProcessor
 	Types                 map[string]*graphQLSchemaInfo
 	sortedTypes           []*graphQLSchemaInfo
 	pathsToGraphQLObjects map[string]string
@@ -84,7 +84,7 @@ type graphQLSchema struct {
 	disableServerGO bool
 }
 
-func newGraphQLSchema(data *codegen.Data) *graphQLSchema {
+func newGraphQLSchema(data *codegen.CodegenProcessor) *graphQLSchema {
 	types := make(map[string]*graphQLSchemaInfo)
 	// TODO this is initially going to be just the ents but will eventually be used for
 	// config.TypeMapEntry in buildYmlConfig as it gets more complicated and we add other objects

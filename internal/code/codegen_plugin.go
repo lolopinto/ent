@@ -11,7 +11,7 @@ func (s *Step) Name() string {
 	return "codegen"
 }
 
-func (s *Step) ProcessData(data *codegen.Data) error {
+func (s *Step) ProcessData(data *codegen.CodegenProcessor) error {
 	for _, info := range data.Schema.Nodes {
 		if !info.ShouldCodegen {
 			continue
