@@ -64,9 +64,9 @@ Here's what's happening here:
 This uses the following concepts to implement this:
 
 * [gqlQuery](#gqlquery)
-* [gqlField](/docs/custom-queries/gql-field)
+* [gqlField](/docs/custom-code/gql-field)
 * [gqlObjectType](#gqlobjecttype)
-* [gqlContextType](/docs/custom-queries/gql-context)
+* [gqlContextType](/docs/custom-code/gql-context)
 
 ## gqlQuery
 
