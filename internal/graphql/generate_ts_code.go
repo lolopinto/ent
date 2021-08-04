@@ -435,6 +435,8 @@ func (p *TSStep) ProcessData(processor *codegen.Processor) error {
 		return errors.New("weirdness. graphqlSchema is nil when it shouldn't be")
 	}
 
+	fmt.Println("generating graphql code...")
+
 	steps := []step{
 		writeGraphQLTypesStep{},
 		writeNodeQueryStep{},

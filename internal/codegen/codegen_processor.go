@@ -4,15 +4,10 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/syncerr"
 )
-
-// Processor stores the parsed data needed for codegen
-type Processor struct {
-	Schema   *schema.Schema
-	CodePath *CodePath
-}
 
 type option struct {
 	disablePrompts bool
@@ -24,6 +19,13 @@ func DisablePrompts() Option {
 	return func(opt *option) {
 		opt.disablePrompts = true
 	}
+}
+
+// Processor stores the parsed data needed for codegen
+type Processor struct {
+	Schema    *schema.Schema
+	CodePath  *CodePath
+	debugMode bool
 }
 
 func (cp *Processor) Run(steps []Step, step string, options ...Option) error {
@@ -110,16 +112,19 @@ type StepWithPreProcess interface {
 	PreProcessData(data *Processor) error
 }
 
-func NewCodegenProcessor(schema *schema.Schema, configPath, modulePath string) (*Processor, error) {
+func NewCodegenProcessor(schema *schema.Schema, configPath, modulePath string, debugMode bool) (*Processor, error) {
 	codePathInfo, err := NewCodePath(configPath, modulePath)
 	if err != nil {
 		return nil, err
 	}
 
 	data := &Processor{
-		Schema:   schema,
-		CodePath: codePathInfo,
+		Schema:    schema,
+		CodePath:  codePathInfo,
+		debugMode: debugMode,
 	}
 
+	// if in debug mode can log things
+	file.SetGlobalLogStatus(debugMode)
 	return data, nil
 }

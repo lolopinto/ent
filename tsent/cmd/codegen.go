@@ -14,7 +14,8 @@ import (
 )
 
 type codegenArgs struct {
-	step string
+	step  string
+	debug bool
 }
 
 var codegenInfo codegenArgs
@@ -50,7 +51,7 @@ var codegenCmd = &cobra.Command{
 
 		// module path empty because not go
 		// same as ParseSchemaFromTSDir. default to schema. we want a flag here eventually
-		processor, err := codegen.NewCodegenProcessor(schema, "src/schema", "")
+		processor, err := codegen.NewCodegenProcessor(schema, "src/schema", "", codegenInfo.debug)
 		if err != nil {
 			return err
 		}

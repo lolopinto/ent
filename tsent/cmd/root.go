@@ -24,6 +24,7 @@ func init() {
 	rootCmd.AddCommand(alembicCmd)
 
 	codegenCmd.Flags().StringVarP(&codegenInfo.step, "step", "s", "", "limit to only run a particular step e.g. db, graphql, codegen")
+	codegenCmd.Flags().BoolVar(&codegenInfo.debug, "debug", false, "debug mode. add debug information to codegen e.g. files written etc")
 }
 
 func Execute() {
