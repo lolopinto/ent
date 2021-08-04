@@ -108,7 +108,7 @@ After running `npm run codegen`, here's a list of generated files:
 
 Let's go over a few:
 
-* `src/ent/user.ts` is the public facing API of the `User` object and what's consumed. It's also where [**custom code**](/docs/custom-queries/custom-accessors) can be added.
+* `src/ent/user.ts` is the public facing API of the `User` object and what's consumed. It's also where [**custom code**](/docs/custom-code/custom-accessors) can be added.
 * `src/ent/generated/user_base.ts` is the base class for the `User` where more generated code will be added as the schema is changed over time.
 * `src/schema/versions/*_add_users_tabl.py` is the generated database migration to add the `users` table
 * `src/graphql` is where all the generated GraphQL files are with the GraphQL schema file being:
@@ -407,7 +407,7 @@ you should get a response similar to:
 
 What changed above:
 
-* added a [custom accessor](/docs/custom-queries/custom-accessors) using [gqlField](/docs/custom-queries/gql-field)
+* added a [custom accessor](/docs/custom-code/custom-accessors) using [gqlField](/docs/custom-code/gql-field)
 
 ## Query the Database
 
