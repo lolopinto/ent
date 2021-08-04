@@ -17,7 +17,7 @@ const gqlFileUpload: CustomType = {
 };
 ```
 
-`gqlFileUpload` uses the [graphql-upload](https://www.npmjs.com/package/graphql-upload) package to support File Uploads. It's also a good example of  [CustomType](/docs/custom-queries/file-uploads#customtype) usage.
+`gqlFileUpload` uses the [graphql-upload](https://www.npmjs.com/package/graphql-upload) package to support File Uploads. It's also a good example of  [CustomType](/docs/custom-code/file-uploads#customtype) usage.
 
 Here's an example usage:
 

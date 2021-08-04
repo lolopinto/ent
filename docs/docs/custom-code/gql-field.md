@@ -8,7 +8,7 @@ sidebar_position: 2
 
 When a property or method explicitly returns a scalar type and isn't nullable, we can usually infer everything but as things get more complicated, have to specify more options.
 
-We continue with the [example](/docs/custom-queries/custom-accessors).
+We continue with the [example](/docs/custom-code/custom-accessors).
 
 ```ts title="src/ent/user.ts"
 export class User extends UserBase {
@@ -237,7 +237,7 @@ type User implements Node {
 
 This allows the flexibility for custom types that are not the built-in GraphQL Scalar Types.
 
-We'll dive into a specific example of this in [gqlFileUpload](/docs/custom-queries/file-uploads#gqlfileupload).
+We'll dive into a specific example of this in [gqlFileUpload](/docs/custom-code/file-uploads#gqlfileupload).
 
 
 ## nullable
