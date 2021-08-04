@@ -35,6 +35,7 @@ func (s *Step) Name() string {
 var nodeType = regexp.MustCompile(`(\w+)Type`)
 
 func (s *Step) ProcessData(processor *codegen.Processor) error {
+	fmt.Println("generating ent code...")
 	var wg sync.WaitGroup
 	wg.Add(len(processor.Schema.Nodes))
 	var serr syncerr.Error

@@ -43,6 +43,7 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 	if s.db == nil {
 		return errors.New("weirdness. dbSchema is nil when it shouldn't be")
 	}
+	fmt.Println("updating db...")
 	return s.db.makeDBChanges()
 }
 
