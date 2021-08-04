@@ -2,9 +2,9 @@ name: Update Docs
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
     paths:
-      - docs
+      - 'docs/**'
 
 jobs:
   merge-branch:

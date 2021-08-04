@@ -3,25 +3,27 @@ sidebar_position: 1
 ---
 
 # Running Locally
+
 You may notice that running via Docker is slow. It's something that we eventually need to fix. For now, the workaround is to run things locally.
 
-There's 3 major runtimes we use: 
+There's 3 major runtimes we use:
 
 * TypeScript: all the production code is in TypeScript
 * Go: the CLI and orchestration
 * Python: For the database migrations. We use the [Alembic](https://alembic.sqlalchemy.org/en/latest/) framework.
 
-
 Here's the steps to install locally:
+
 * Install latest version of [golang](https://golang.org/doc/install#download)
 * Get the latest version of the Ent CLI:
- 
+
 ```shell
 go install github.com/lolopinto/ent/tsent@v0.0.18
 ```
+
 * Install [Python](https://www.python.org/downloads/) >= 3.8
-  - Ensure you have `pip` [installed](https://pip.pypa.io/en/stable/installing/)
-* Install [autoschema](https://pypi.org/project/auto-schema/): 
+  * Ensure you have `pip` [installed](https://pip.pypa.io/en/stable/installing/)
+* Install [autoschema](https://pypi.org/project/auto-schema/):
 
 ```shell
 python3 -m pip install auto_schema==0.0.7
