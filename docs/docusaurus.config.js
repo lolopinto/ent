@@ -3,7 +3,7 @@ const path = require("path");
 /** @type {import('@docusaurus/types').DocusaurusConfig} */
 module.exports = {
   title: "Ent docs",
-  url: "https://ent-docs.onrender.com/",
+  url: "https://ent.dev/",
   baseUrl: "/",
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
