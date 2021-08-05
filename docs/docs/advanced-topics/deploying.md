@@ -9,16 +9,8 @@ If using the [ent-starter](https://github.com/lolopinto/ent-starter) repository,
 
 * add `DB_CONNECTION_STRING` environment variable pointing to the database connection string
 * add `PORT` environment variable with value `80`
-* add a secret `.npmrc` file with value:
 
-```file
-//npm.pkg.github.com/:_authToken={token}
-@lolopinto:registry=https://npm.pkg.github.com/
-```
-
-where `{token}` is a [Github Personal Access Token](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token).
-
-Deploy to a Docker environment with the `Dockerfile` in the ent-starter repository as the dockerfile used.
+Deploy to a Docker environment with the `Dockerfile` in the ent-starter repository as the Dockerfile used.
 
 That installs dependencies, compiles, [upgrades](/docs/advanced-topics/cli#upgrade) the database and starts the Node server.
 

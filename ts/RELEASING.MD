@@ -4,9 +4,10 @@ We use a Github Action to release a new docker image anytime anything relevant c
 
 To update the Docker image, following steps are needed:
 
-* Update `TAG` const in  `release_image/main.go` by bumping e.g. from `0.0.17` to `0.0.18` 
+* Update `TAG` const in `release_image/main.go` by bumping e.g. from `0.0.17` to `0.0.18`
 * Update `AUTO_SCHEMA_VERSION` in `release_image/main.go` const for new `auto_schema` version or `TSENT_VERSION` const for new golang `tsent` release version
 * Also update `GOLANG_VERSION`, or `AUTO_SCHEMA_VERSION` or `NODE_VERSION` args at the top of `Dockerfile` so that is up to date.
+* Update `auto_schema` and `tsent` versions in `docs/docs/advanced-topics/runnng-locally.md` so that the latest versions are being used there.
 
 To update locally, we're high level following [these steps](https://docs.github.com/en/free-pro-team@latest/packages/managing-container-images-with-github-container-registry/pushing-and-pulling-docker-images#authenticating-to-github-container-registry):
 
