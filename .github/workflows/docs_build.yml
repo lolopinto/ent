@@ -1,0 +1,31 @@
+name: Docs CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/**'
+
+defaults:
+  run:
+    working-directory: ./docs
+
+jobs:
+  docs-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - run: npm ci 
+      - run: npm run build 
