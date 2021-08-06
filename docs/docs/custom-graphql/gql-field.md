@@ -8,7 +8,7 @@ sidebar_position: 2
 
 When a property or method explicitly returns a scalar type and isn't nullable, we can usually infer everything but as things get more complicated, have to specify more options.
 
-We continue with the [example](/docs/custom-code/custom-accessors).
+We continue with the [example](/docs/custom-graphql/custom-accessors).
 
 ```ts title="src/ent/user.ts"
 export class User extends UserBase {
@@ -120,7 +120,14 @@ export interface CustomType {
     tsType?: string;
     tsImportPath?: string;
 }
+
+export type GraphQLConnection<T> = { node: T };
+
 declare type Type = GraphQLScalarType | ClassType | string | CustomType;
+
+interface gqlFieldOptions {
+  type?: Type | Array<Type> | GraphQLConnection<Type>; // types or lists of types or GraphQLConnectionType
+}
 ```
 
 Supported type formats:
@@ -237,7 +244,7 @@ type User implements Node {
 
 This allows the flexibility for custom types that are not the built-in GraphQL Scalar Types.
 
-We'll dive into a specific example of this in [gqlFileUpload](/docs/custom-code/file-uploads#gqlfileupload).
+We'll dive into a specific example of this in [gqlFileUpload](/docs/custom-graphql/file-uploads#gqlfileupload).
 
 
 ## nullable

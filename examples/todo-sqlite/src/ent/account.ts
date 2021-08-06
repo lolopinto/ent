@@ -21,7 +21,8 @@ const openTodosLoader = new QueryLoaderFactory({
 });
 
 const openTodosCountLoader = new RawCountLoaderFactory({
-  ...Todo.loaderOptions(),
+  //  ...Todo.loaderOptions(),
+  tableName: Todo.loaderOptions().tableName,
   groupCol: "creator_id",
   clause: query.Eq("completed", false),
 });

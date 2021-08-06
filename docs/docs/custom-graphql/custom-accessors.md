@@ -57,4 +57,4 @@ We use [TypeScript Decorators](https://www.typescriptlang.org/docs/handbook/deco
 
 These decorators are evaluated during code generation and they do as little as possible (nothing) otherwise to reduce the overhead of using them.
 
-[gqlField](/docs/custom-code/gql-field) is how we annotate the property or method to expose in GraphQL.
+[gqlField](/docs/custom-graphql/gql-field) is how we annotate the property or method to expose in GraphQL.
