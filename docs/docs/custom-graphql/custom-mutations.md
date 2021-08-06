@@ -70,16 +70,16 @@ This uses the following concepts to implement this:
 
 * [gqlMutation](#gqlMutation)
 * [gqlInputObjectType](#gqlInputObjectType)
-* [gqlField](/docs/custom-code/gql-field)
+* [gqlField](/docs/custom-graphql/gql-field)
 * [gqlObjectType](#gqlObjectType)
-* [gqlContextType](/docs/custom-code/gql-context)
-* [gqlArg](/docs/custom-code/gql-arg)
+* [gqlContextType](/docs/custom-graphql/gql-context)
+* [gqlArg](/docs/custom-graphql/gql-arg)
 
 ## gqlMutation
 
 This adds a new field to the GraphQL `Mutation` type. See example usage [above](#auth-example).
 
-Accepts the following options which overlap with [gqlField](/docs/custom-code/gql-field):
+Accepts the following options which overlap with [gqlField](/docs/custom-graphql/gql-field):
 
 * `name` for the name of the GraphQL field
 * `description` of the field
