@@ -120,7 +120,14 @@ export interface CustomType {
     tsType?: string;
     tsImportPath?: string;
 }
+
+export type GraphQLConnection<T> = { node: T };
+
 declare type Type = GraphQLScalarType | ClassType | string | CustomType;
+
+interface gqlFieldOptions {
+  type?: Type | Array<Type> | GraphQLConnection<Type>; // types or lists of types or GraphQLConnectionType
+}
 ```
 
 Supported type formats:
