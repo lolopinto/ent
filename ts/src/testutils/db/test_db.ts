@@ -17,6 +17,7 @@ interface Column extends SchemaItem {
   datatype(): string;
   nullable?: boolean; // defaults to false
   primaryKey?: boolean;
+  unique?: boolean;
   default?: string;
   foreignKey?: { table: string; col: string };
 }
@@ -25,18 +26,22 @@ interface Constraint extends SchemaItem {
   generate(): string;
 }
 
-export interface Table {
+// TODO need a better shared name for Table|Type
+export interface CoreConcept {
   name: string;
-  columns: Column[];
-  constraints?: Constraint[];
 
   create(): string;
   drop(): string;
 }
 
+export interface Table extends CoreConcept {
+  columns: Column[];
+  constraints?: Constraint[];
+}
+
 type options = Pick<
   Column,
-  "nullable" | "primaryKey" | "default" | "foreignKey"
+  "nullable" | "primaryKey" | "default" | "foreignKey" | "unique"
 >;
 
 export function primaryKey(name: string, cols: string[]): Constraint {
@@ -63,6 +68,15 @@ export function foreignKey(
   };
 }
 
+export function uniqueIndex(name: string): Constraint {
+  return {
+    name: "", //ignore...
+    generate() {
+      return `UNIQUE (${name})`;
+    },
+  };
+}
+
 export function uuid(name: string, opts?: options): Column {
   return {
     name,
@@ -80,6 +94,15 @@ export function text(name: string, opts?: options): Column {
       return "TEXT";
     },
     ...opts,
+  };
+}
+
+export function enumCol(name: string, type: string): Column {
+  return {
+    name,
+    datatype() {
+      return type;
+    },
   };
 }
 
@@ -256,6 +279,10 @@ export function table(name: string, ...items: SchemaItem[]): Table {
         if (col.default !== undefined) {
           parts.push(`DEFAULT ${col.default}`);
         }
+
+        if (col.unique) {
+          parts.push("UNIQUE");
+        }
         return parts.join(" ");
       });
 
@@ -271,6 +298,18 @@ export function table(name: string, ...items: SchemaItem[]): Table {
   };
 }
 
+export function enumType(name: string, values: string[]): CoreConcept {
+  return {
+    name,
+    drop() {
+      return `DROP TYPE ${name}`;
+    },
+    create() {
+      return `CREATE TYPE ${name} as ENUM(${values.join(", ")})`;
+    },
+  };
+}
+
 function randomDB(): string {
   let str = Math.random().toString(16).substring(2);
 
@@ -278,7 +317,9 @@ function randomDB(): string {
   return "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)] + str;
 }
 
-function isDialect(dialect: Dialect | Table[]): dialect is Dialect {
+function isDialect(
+  dialect: Dialect | Table[] | CoreConcept[],
+): dialect is Dialect {
   return !Array.isArray(dialect);
 }
 
@@ -286,14 +327,14 @@ export class TempDB {
   private db: string;
   private client: PGClient;
   private dbClient: PGClient;
-  private tables = new Map<string, Table>();
+  private tables = new Map<string, CoreConcept>();
   private dialect: Dialect;
   private sqlite: SqliteDatabase;
 
-  constructor(dialect: Dialect, tables?: Table[]);
-  constructor(tables: Table[]);
-  constructor(dialect: Dialect | Table[], tables?: Table[]) {
-    let tbles: Table[] = [];
+  constructor(dialect: Dialect, tables?: CoreConcept[]);
+  constructor(tables: CoreConcept[]);
+  constructor(dialect: Dialect | CoreConcept[], tables?: CoreConcept[]) {
+    let tbles: CoreConcept[] = [];
     if (isDialect(dialect)) {
       this.dialect = dialect;
       if (tables) {
@@ -402,13 +443,13 @@ export class TempDB {
       if (this.dialect === Dialect.Postgres) {
         await this.dbClient.query(table.drop());
       } else {
-        await this.sqlite.exec(table.drop());
+        this.sqlite.exec(table.drop());
       }
       this.tables.delete(tableName);
     }
   }
 
-  async create(...tables: Table[]) {
+  async create(...tables: CoreConcept[]) {
     for (const table of tables) {
       if (this.tables.has(table.name)) {
         throw new Error(`table with name ${table.name} already exists`);
