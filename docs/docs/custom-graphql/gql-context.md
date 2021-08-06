@@ -6,7 +6,7 @@ sidebar_position: 6
 
 `gqlContextType` annotates a method to indicate that it needs the [RequestContext](/docs/core-concepts/context#requestcontext) and the generated GraphQL code should pass it down to the method.
 
-It's required to be the first argument to the method. It can be used in custom [queries](/docs/custom-code/custom-queries) or [mutations](/docs/custom-code/custom-mutations).
+It's required to be the first argument to the method. It can be used in custom [queries](/docs/custom-graphql/custom-queries) or [mutations](/docs/custom-graphql/custom-mutations).
 
 For example:
 
