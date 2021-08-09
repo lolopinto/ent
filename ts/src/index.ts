@@ -84,6 +84,7 @@ export * from "./schema/";
 import * as q from "./core/clause";
 const query = {
   Eq: q.Eq,
+  NotEq: q.NotEq,
   And: q.And,
   Or: q.Or,
   In: q.In,
