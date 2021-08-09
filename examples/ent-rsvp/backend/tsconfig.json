@@ -13,9 +13,11 @@
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    // "skipLibCheck": true,
+    // "skipDefaultLibCheck":true,
     "paths": {
       "ent/*": [
-        "@snowtop/snowtop-ts/*",
+        "@snowtop/ent/*",
       ],
       "src/*": [
         "./src/*"
