@@ -61,10 +61,13 @@ class Compiler {
     return result.resolvedModule;
   }
 
-  private resolvePaths(moduleName: string, _containingFile: string) {
+  private resolvePaths(
+    moduleName: string,
+    _containingFile: string,
+  ): ts.ResolvedModule | undefined {
     //      console.log("resolvePaths", moduleName);
     if (!this.options.paths) {
-      return null;
+      return undefined;
     }
 
     let paths = this.options.paths;
@@ -94,17 +97,17 @@ class Compiler {
         };
       }
     }
-    return null;
+    return undefined;
   }
 
-  private otherLocations(moduleName: string, containingFile: string) {
+  private otherLocations(moduleName: string, _containingFile: string) {
     for (const location of this.moduleSearchLocations) {
       const modulePath = path.join(location, moduleName + ".d.ts");
       if (ts.sys.fileExists(modulePath)) {
         return { resolvedFileName: modulePath };
       }
     }
-    return null;
+    return undefined;
   }
 
   private readCompilerOptions(): ts.CompilerOptions {
@@ -165,30 +168,23 @@ class Compiler {
   private resolveModuleNames(
     moduleNames: string[],
     containingFile: string,
-  ): ts.ResolvedModule[] {
+  ): (ts.ResolvedModule | undefined)[] {
     // go through each moduleName and resolvers in order to see if we find what we're looking for
-    let resolvedModules: ts.ResolvedModule[] = [];
+    let resolvedModules: (ts.ResolvedModule | undefined)[] = [];
     for (const moduleName of moduleNames) {
+      // undefined is valid
+      let resolved: ts.ResolvedModule | undefined;
       for (const resolver of this.resolvers) {
         let result = resolver(moduleName, containingFile);
         // yay!
         if (result) {
-          resolvedModules.push(result);
+          resolved = result;
           break;
         }
       }
+      resolvedModules.push(resolved);
     }
 
-    if (moduleNames.length !== resolvedModules.length) {
-      // TODO if not equal, we need to do more
-      // it doesn't seem to be coming here for node_modules here which is good
-      console.error(
-        "couldn't resolve everything",
-        containingFile,
-        moduleNames,
-        resolvedModules,
-      );
-    }
     return resolvedModules;
   }
 
@@ -196,7 +192,7 @@ class Compiler {
     let cwd = this.cwd;
     let paths = this.options.paths;
     let regexMap = this.regexMap;
-    return function(node: ts.SourceFile) {
+    return function (node: ts.SourceFile) {
       // don't do anything with declaration files
       // nothing to do here
       if (node.isDeclarationFile) {
