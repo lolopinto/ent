@@ -28,7 +28,7 @@ col = ?
 ```
 
 * `Greater`, like `Eq` above except the check is for values in row greater than value.
-* `Less`, like `Less` above except the check is for values in row less than value.
+* `Less`, like `Eq` above except the check is for values in row less than value.
 * `GreaterEq`, like `Eq` above except the check is for values in row greater than or equal to value.
 * `LessEq`, like `Eq` above except the check is for values in row less than or equal to value.
 * `And`
