@@ -27,6 +27,7 @@ col = $1
 col = ?
 ```
 
+* `Not Equal`, like `Eq` above except the check is for values that are not equal.
 * `Greater`, like `Eq` above except the check is for values in row greater than value.
 * `Less`, like `Eq` above except the check is for values in row less than value.
 * `GreaterEq`, like `Eq` above except the check is for values in row greater than or equal to value.

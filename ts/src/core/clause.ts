@@ -150,6 +150,10 @@ export function Eq(col: string, value: any): simpleClause {
   return new simpleClause(col, value, "=");
 }
 
+export function NotEq(col: string, value: any): simpleClause {
+  return new simpleClause(col, value, "!=");
+}
+
 export function Greater(col: string, value: any): simpleClause {
   return new simpleClause(col, value, ">");
 }

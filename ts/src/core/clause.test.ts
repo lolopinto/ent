@@ -28,6 +28,26 @@ describe("postgres", () => {
     });
   });
 
+  describe("NotEq", () => {
+    test("normal", () => {
+      const cls = clause.NotEq("id", 4);
+      expect(cls.clause(1)).toBe("id != $1");
+      expect(cls.clause(2)).toBe("id != $2");
+      expect(cls.values()).toStrictEqual([4]);
+      expect(cls.logValues()).toStrictEqual([4]);
+      expect(cls.instanceKey()).toEqual("id!=4");
+    });
+
+    test("sensitive value", () => {
+      const cls = clause.NotEq("id", clause.sensitiveValue(4));
+      expect(cls.clause(1)).toBe("id != $1");
+      expect(cls.clause(2)).toBe("id != $2");
+      expect(cls.values()).toStrictEqual([4]);
+      expect(cls.logValues()).toStrictEqual(["*"]);
+      expect(cls.instanceKey()).toEqual("id!=4");
+    });
+  });
+
   describe("Greater", () => {
     test("normal", () => {
       const cls = clause.Greater("id", 4);
