@@ -118,7 +118,7 @@ func getPrompts(s *schema.Schema, changes map[string][]change) ([]prompt, error)
 			if !field.Nullable() {
 				prompts = append(prompts, &YesNoQuestion{
 					question: fmt.Sprintf(
-						"You're adding a new field '%s' to an existing Node '%s' which isn't nullable. It'll result in database issues. Are you sure you want to do that? Y/N: ",
+						"You're adding a new field '%s' to an existing Node '%s' which isn't nullable. This could result in database errors. Are you sure you want to do that? Y/N: ",
 						field.FieldName,
 						nodeData.Node,
 					),
