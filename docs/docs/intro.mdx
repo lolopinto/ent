@@ -29,12 +29,20 @@ The easiest way to get started is by using the template from the `ent-starter` [
 
 This requires the following:
 
-* a local [PostgresQL](https://www.postgresql.org/download/) instance installed or [SQLite](https://www.sqlite.org/index.html).
-* If using Postgres, a database created via `createdb ent-starter` (or replace with your own database name).
-  * if a different database is used, make sure to update the `DB_CONNECTION_STRING`  env in `docker-compose.dev.yml`
-* If using SQLite, update the `DB_CONNECTION_STRING` env in `docker-compose.dev.yml` to something like `sqlite:///ent-starter.db` to indicate where the db should be stored.
 * [Docker](https://docs.docker.com/get-docker/) installed.
 * [Node 14](https://nodejs.org/en/download/) or later installed.
+* And one of the database options from below.
+
+There are 3 Database options:
+* a local [PostgresQL](https://www.postgresql.org/download/) instance installed 
+  * a database created via `createdb ent-starter` (or replace with your own database name).
+  * if a different database is used, make sure to update the `DB_CONNECTION_STRING` env in `docker-compose.dev.yml`
+* Postgres Docker image
+  * follow the steps in the [README](https://github.com/lolopinto/ent-starter#postgres-docker-image) in the [ent-starter repository](https://github.com/lolopinto/ent-starter)
+  * **Note**: instead of `psql`, run `npm run psql` when following the examples below.
+* local [SQLite](https://www.sqlite.org/index.html) file.
+  * update the `DB_CONNECTION_STRING` env in `docker-compose.dev.yml` to something like `sqlite:///ent-starter.db` to indicate where the db should be stored.
+
 
 ## Your first schema
 
@@ -77,8 +85,6 @@ Then run the following commands:
 ```shell
 # install additional dependencies
 npm install @snowtop/ent-email @snowtop/ent-password
-# install all the things in the docker container
-npm run init
 # generate code + update the database
 npm run codegen
 ```

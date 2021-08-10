@@ -33,7 +33,7 @@
     "ts-jest": "^26.5.6"
   },
   "dependencies": {
-    "@snowtop/ent": "^0.0.4",
+    "@snowtop/ent": "^0.0.7",
     "@snowtop/ent-phonenumber": "^0.0.1",
     "@types/node": "^15.0.3",
     "better-sqlite3": "^7.4.3",
