@@ -2290,7 +2290,7 @@ function commonTests() {
     });
   });
 
-  test.only("defaultValueOnCreate", async () => {
+  test("defaultValueOnCreate", async () => {
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
       new UserSchema(),
