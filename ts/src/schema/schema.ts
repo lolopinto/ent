@@ -1,3 +1,6 @@
+import { Data, Ent } from "../core/base";
+import { Builder } from "../action/action";
+
 // Schema is the base for every schema in typescript
 export default interface Schema {
   // schema has list of fields that are unique to each node
@@ -215,8 +218,8 @@ export interface FieldOptions {
   // indicates that this can't be edited by the user
   // must have a defaultValueOnCreate() field if set
   disableUserEditable?: boolean;
-  defaultValueOnCreate?(): any;
-  defaultValueOnEdit?(): any;
+  defaultValueOnCreate?(builder: Builder<Ent>, input: Data): any;
+  defaultValueOnEdit?(builder: Builder<Ent>, input: Data): any;
   // this is very specific.
   // maybe there's a better way to indicate this
   // we sometimes have actionOnlyFields when an action creates a child object and we want to skip

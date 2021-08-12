@@ -413,7 +413,7 @@ export class Orchestrator<T extends Ent> {
       promises.push(this.triggers(triggerPromises));
     }
 
-    promises.push(this.validateFields());
+    promises.push(this.validateFields(builder, action));
 
     let validators = action?.validators || [];
     if (validators) {
@@ -461,7 +461,10 @@ export class Orchestrator<T extends Ent> {
     return (val as Builder<T>).placeholderID !== undefined;
   }
 
-  private async validateFields(): Promise<void> {
+  private async validateFields(
+    builder: Builder<T>,
+    action?: Action<T> | undefined,
+  ): Promise<void> {
     // existing ent required for edit or delete operations
     switch (this.options.operation) {
       case WriteOperation.Delete:
@@ -480,6 +483,10 @@ export class Orchestrator<T extends Ent> {
     let data = {};
     let logValues = {};
     const schemaFields = getFields(this.options.schema);
+    let input: Data = {};
+    if (action !== undefined) {
+      input = action.getInput();
+    }
     for (const [fieldName, field] of schemaFields) {
       let value = editedFields.get(fieldName);
       let dbKey = field.storageKey || snakeCase(field.name);
@@ -489,14 +496,14 @@ export class Orchestrator<T extends Ent> {
           field.defaultValueOnCreate &&
           this.options.operation === WriteOperation.Insert
         ) {
-          value = field.defaultValueOnCreate();
+          value = field.defaultValueOnCreate(builder, input);
         }
 
         if (
           field.defaultValueOnEdit &&
           this.options.operation === WriteOperation.Edit
         ) {
-          value = field.defaultValueOnEdit();
+          value = field.defaultValueOnEdit(builder, input);
           // TODO special case this if this is the onlything changing and don't do the write.
         }
       }
