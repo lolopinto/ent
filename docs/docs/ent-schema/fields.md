@@ -102,8 +102,45 @@ By default, `foreignKey` creates an index on the source table because we expect 
 
 ### fieldEdge
 
-Only currently works with `UUIDType`.
-TODO explain this...
+Only currently works with `UUIDType`. Indicates that an accessor on the source schema should be generated pointing to the other schema.
+
+For example, given the following schemas:
+
+```ts title="src/schema/user.ts"
+export default class User extends BaseEntSchema {
+  edges: Edge[] = [
+    {
+      name: "createdEvents",
+      schemaName: "Event",
+    }
+  ];
+}
+```
+
+```ts title="src/schema/event.ts"
+export default class Event extends BaseEntSchema implements Schema {
+  fields: Field[] = [
+    UUIDType({
+      name: "creatorID",
+      fieldEdge: { schema: "User", inverseEdge: "createdEvents" },
+    }),
+  ]
+```
+
+* we have a 1-many [Edge](/docs/ent-schema/edges) from `User` to `Event` for events the User has created.
+* we store the creator of the `Event` in the `creatorID` field of the `Event`.
+
+The `fieldEdge` tells us that this field references schema `User` and edge `createdEvents` in that schema. That ends up generating a `creator` accessor in the Ent and GraphQL instead of `creator_id` accessor.
+
+```ts
+const event = await event.loadCreator();
+```
+
+```graphql
+type Event implements Node {
+  creator: User
+}
+```
 
 ### primaryKey
 
@@ -111,15 +148,68 @@ adds this column as a primary key on the table. should be used rarely
 
 ### disableUserEditable
 
-indicates that this can't be edited by the user. must have a `defaultValueOnCreate` field if set. If set, we don't generate a field in the action or graphql mutation.
+indicates that this can't be edited by the user. must have a `defaultValueOnCreate` field if set. If set, we don't generate a field in the action or GraphQL mutation.
 
 ### defaultValueOnCreate
 
-method that returns a default value if none is provided when creating a new instance of the object.
+method that returns a default value if none is provided when creating a new instance of the object. For example, a `Todo` in a simple todo app with a default value of false:
+
+```ts
+  BooleanType({
+    name: "Completed",
+    index: true,
+    defaultValueOnCreate: () => {
+      return false;
+    },
+  }),
+```
+
+The `defaultValueOnCreate` method is passed 2 arguments that can be used to compute the value:
+
+* [Builder](/docs/actions/builder)
+* [Input](/docs/actions/input)
+
+This can be used to compute a value at runtime. For example, to default to the [Viewer](/docs/core-concepts/viewer) in the todo app above, you can do:
+
+```ts
+  UUIDType({
+    name: "creatorID",
+    foreignKey: { schema: "Account", column: "ID" },
+    defaultValueOnCreate: (builder) => builder.viewer.viewerID,
+  }),
+```
+
+This can simplify your API so that you don't have to expose the `creatorID` above in your GraphQL mutation.
+
+PS: It's recommended to either use implicit typing here or if using explicit typing, to type with `Builder<Ent>` or `Builder<NameOfEnt>` as opposed to the generated `FooBuilder` so as to not run into issues with circular dependencies.
 
 ### defaultValueOnEdit
 
 method that returns a default value if none is provided when editing an instance of the object.
+
+Like `defaultValueOnCreate` above, it's passed the builder and input.
+
+### defaultToViewerOnCreate
+
+Boolean. Shorthand to default to the viewer when creating an object if field not provided. The following are equivalent:
+
+```ts
+  UUIDType({
+    name: "creatorID",
+    foreignKey: { schema: "Account", column: "ID" },
+    defaultToViewerOnCreate: true,
+  }),
+```
+
+```ts
+  UUIDType({
+    name: "creatorID",
+    foreignKey: { schema: "Account", column: "ID" },
+    defaultValueOnCreate: (builder) => builder.viewer.viewerID,
+  }),
+```
+
+This exists because it's a common enough pattern for a field to default to the logged in viewer.
 
 ### polymorphic
 
