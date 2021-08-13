@@ -2,17 +2,11 @@
 
 import {
   AllowIfViewerHasIdentityPrivacyPolicy,
-  ID,
   PrivacyPolicy,
   Viewer,
 } from "@snowtop/ent";
-import {
-  Action,
-  Builder,
-  Changeset,
-  WriteOperation,
-} from "@snowtop/ent/action";
-import { Event, User } from "src/ent/";
+import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
+import { Event } from "src/ent/";
 import { EventBuilder, EventInput } from "src/ent/event/actions/event_builder";
 
 interface customActivityInput {
@@ -36,7 +30,6 @@ interface customAddressInput {
 export interface EventCreateInput {
   name: string;
   slug?: string | null;
-  creatorID: ID | Builder<User>;
   activities?: customActivityInput[] | null;
 }
 

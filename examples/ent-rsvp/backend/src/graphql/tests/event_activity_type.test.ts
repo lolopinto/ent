@@ -1,9 +1,6 @@
 import { expectMutation } from "@snowtop/ent-graphql-tests";
 import { IDViewer, DB } from "@snowtop/ent";
-import {
-  encodeGQLID,
-  mustDecodeIDFromGQLID,
-} from "@snowtop/ent/graphql";
+import { encodeGQLID } from "@snowtop/ent/graphql";
 import { createEvent, createGuestPlus } from "src/testutils";
 // this needs to be the last line becasue of load order or at least after src/testutils
 import schema from "src/graphql/schema";

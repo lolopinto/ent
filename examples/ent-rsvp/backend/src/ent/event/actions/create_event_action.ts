@@ -1,8 +1,7 @@
 import {
-  AllowIfViewerEqualsRule,
-  AlwaysDenyRule,
   PrivacyPolicy,
   Ent,
+  AllowIfViewerHasIdentityPrivacyPolicy,
 } from "@snowtop/ent";
 import { Trigger } from "@snowtop/ent/action";
 
@@ -15,15 +14,9 @@ import { EventBuilder } from "./event_builder";
 
 export { EventCreateInput };
 
-// we're only writing this once except with --force and packageName provided
 export default class CreateEventAction extends CreateEventActionBase {
   getPrivacyPolicy(): PrivacyPolicy {
-    return {
-      rules: [
-        new AllowIfViewerEqualsRule(this.input.creatorID),
-        AlwaysDenyRule,
-      ],
-    };
+    return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
   triggers: Trigger<Ent>[] = [

@@ -247,7 +247,6 @@ type EventActivityToInvitesEdge implements Edge {
 input EventCreateInput {
   name: String!
   slug: String
-  creatorID: ID!
   activities: [ActivityEventCreateInput!]
 }
 
