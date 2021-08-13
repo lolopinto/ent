@@ -209,7 +209,7 @@ Boolean. Shorthand to default to the viewer when creating an object if field not
   }),
 ```
 
-This exists because it's a common enough pattern for a field to default to the logged in viewer.
+This exists because it's a common enough pattern for a field to default to the logged in Viewer.
 
 ### polymorphic
 
