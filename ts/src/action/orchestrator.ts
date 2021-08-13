@@ -492,11 +492,18 @@ export class Orchestrator<T extends Ent> {
       let dbKey = field.storageKey || snakeCase(field.name);
 
       if (value === undefined) {
-        if (
-          field.defaultValueOnCreate &&
-          this.options.operation === WriteOperation.Insert
-        ) {
-          value = field.defaultValueOnCreate(builder, input);
+        if (this.options.operation === WriteOperation.Insert) {
+          if (field.defaultToViewerOnCreate && field.defaultValueOnCreate) {
+            throw new Error(
+              `cannot set both defaultToViewerOnCreate and defaultValueOnCreate`,
+            );
+          }
+          if (field.defaultToViewerOnCreate) {
+            value = builder.viewer.viewerID;
+          }
+          if (field.defaultValueOnCreate) {
+            value = field.defaultValueOnCreate(builder, input);
+          }
         }
 
         if (

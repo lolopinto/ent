@@ -219,6 +219,9 @@ export interface FieldOptions {
   // must have a defaultValueOnCreate() field if set
   disableUserEditable?: boolean;
   defaultValueOnCreate?(builder: Builder<Ent>, input: Data): any;
+  // shorthand for defaultValueOnCreate: (builder)=>builder.viewer.viewerID;
+  // exists for common scenario to set a field to the logged in viewerID.
+  defaultToViewerOnCreate?: boolean;
   defaultValueOnEdit?(builder: Builder<Ent>, input: Data): any;
   // this is very specific.
   // maybe there's a better way to indicate this
