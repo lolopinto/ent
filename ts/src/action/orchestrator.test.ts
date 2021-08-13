@@ -189,7 +189,22 @@ class ContactSchema extends BaseEntSchema {
   fields: Field[] = [
     StringType({ name: "FirstName" }),
     StringType({ name: "LastName" }),
-    StringType({ name: "UserID" }),
+    StringType({
+      name: "UserID",
+      defaultValueOnCreate: (builder) => builder.viewer.viewerID,
+    }),
+  ];
+  ent = Contact;
+}
+
+class ContactSchema2 extends BaseEntSchema {
+  fields: Field[] = [
+    StringType({ name: "FirstName" }),
+    StringType({ name: "LastName" }),
+    StringType({
+      name: "UserID",
+      defaultToViewerOnCreate: true,
+    }),
   ];
   ent = Contact;
 }
@@ -2285,6 +2300,90 @@ function commonTests() {
       // get the last two. Snow replaced with **** since sensitive
       expect(lastLog.values.slice(3)).toStrictEqual(["Jon", "****"]);
     });
+  });
+
+  test("defaultValueOnCreate", async () => {
+    const builder = new SimpleBuilder(
+      new LoggedOutViewer(),
+      new UserSchema(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+    await builder.saveX();
+    const user = await builder.editedEntX();
+
+    const builder2 = new SimpleBuilder(
+      new IDViewer(user.id),
+      new ContactSchema(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+
+    await builder2.saveX();
+    const contact = await builder2.editedEntX();
+    expect(contact.data.user_id).toEqual(user.id);
+
+    const builder3 = new SimpleBuilder(
+      new LoggedOutViewer(),
+      new ContactSchema(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+    // logged out viewer with null viewer throws since it's still required
+    try {
+      await builder3.saveX();
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("required field UserID not set");
+    }
+  });
+
+  test("defaultToViewerOnCreate", async () => {
+    const builder = new SimpleBuilder(
+      new LoggedOutViewer(),
+      new UserSchema(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+    await builder.saveX();
+    const user = await builder.editedEntX();
+
+    const builder2 = new SimpleBuilder(
+      new IDViewer(user.id),
+      new ContactSchema2(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+
+    await builder2.saveX();
+    const contact = await builder2.editedEntX();
+    expect(contact.data.user_id).toEqual(user.id);
+
+    const builder3 = new SimpleBuilder(
+      new LoggedOutViewer(),
+      new ContactSchema2(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+    // logged out viewer with null viewer throws since it's still required
+    try {
+      await builder3.saveX();
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toBe("required field UserID not set");
+    }
   });
 }
 const getLoggedInBuilder = () => {
