@@ -15,12 +15,14 @@ export default class Event extends BaseEntSchema {
     UUIDType({
       name: "creatorID",
       foreignKey: { schema: "User", column: "ID" },
+      defaultToViewerOnCreate: true,
     }),
   ];
 
   actions: Action[] = [
     {
       operation: ActionOperation.Create,
+      fields: ["Name", "Slug"],
       actionOnlyFields: [
         {
           name: "activities",

@@ -5,10 +5,7 @@ import {
 import { Event } from "src/ent";
 import { DB, ID, setLogLevels, loadConfig } from "@snowtop/ent";
 import schema from "src/graphql/schema";
-import {
-  encodeGQLID,
-  mustDecodeIDFromGQLID,
-} from "@snowtop/ent/graphql";
+import { encodeGQLID, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { createUser } from "src/testutils";
 import DeleteEventAction from "src/ent/event/actions/delete_event_action";
 
@@ -28,7 +25,6 @@ test("create event", async () => {
       mutation: "eventCreate",
       schema,
       args: {
-        creatorID: encodeGQLID(user),
         name: "fun event",
       },
     },
@@ -45,7 +41,6 @@ test("create event with slug", async () => {
       mutation: "eventCreate",
       schema,
       args: {
-        creatorID: encodeGQLID(user),
         name: "fun event",
         slug: "fun-event",
       },
@@ -86,7 +81,6 @@ test("event slug available", async () => {
         mutation: "eventCreate",
         schema,
         args: {
-          creatorID: encodeGQLID(user),
           name: "fun event",
           slug: "fun-event",
         },
@@ -138,7 +132,6 @@ test("query from slug", async () => {
       mutation: "eventCreate",
       schema,
       args: {
-        creatorID: encodeGQLID(user),
         name: "fun event",
         slug: "fun-event",
       },

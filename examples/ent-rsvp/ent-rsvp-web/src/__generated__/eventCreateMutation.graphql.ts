@@ -7,7 +7,6 @@ import { FragmentRefs } from "relay-runtime";
 export type EventCreateInput = {
     name: string;
     slug?: string | null;
-    creatorID: string;
     activities?: Array<ActivityEventCreateInput> | null;
 };
 export type ActivityEventCreateInput = {

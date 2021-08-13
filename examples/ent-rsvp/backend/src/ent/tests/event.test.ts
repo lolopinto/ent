@@ -1,5 +1,5 @@
 import { Address, Event } from "src/ent";
-import { DB, IDViewer } from "@snowtop/ent";
+import { DB, IDViewer, LoggedOutViewer } from "@snowtop/ent";
 import CreateEventAction from "../event/actions/create_event_action";
 import { createUser } from "src/testutils";
 
@@ -11,23 +11,22 @@ describe("create event", () => {
   test("valid", async () => {
     const user = await createUser();
     const event = await CreateEventAction.create(new IDViewer(user.id), {
-      creatorID: user.id,
       name: `${user.firstName}'s wedding`,
     }).saveX();
     expect(event).toBeInstanceOf(Event);
+    expect(event.creatorID).toBe(user.id);
   });
 
-  test("invalid", async () => {
-    const [user, user2] = await Promise.all([createUser(), createUser()]);
+  test("invalid. logged out user", async () => {
+    const user = await createUser();
     try {
-      await CreateEventAction.create(new IDViewer(user.id), {
-        creatorID: user2.id,
+      await CreateEventAction.create(new LoggedOutViewer(), {
         name: `${user.firstName}'s wedding`,
       }).saveX();
       fail("should have thrown");
     } catch (e) {
       expect(e.message).toMatch(
-        /Viewer with ID (.+) does not have permission to create Event/,
+        /Logged out Viewer does not have permission to create Event/,
       );
     }
   });
@@ -37,7 +36,6 @@ describe("create event", () => {
 
     const event = await CreateEventAction.create(user.viewer, {
       name: "fun event",
-      creatorID: user.id,
       activities: [
         {
           startTime: new Date(),
