@@ -27,7 +27,6 @@ export async function createUser() {
 export async function createEvent() {
   const user = await createUser();
   const event = await CreateEventAction.create(new IDViewer(user.id), {
-    creatorID: user.id,
     name: `${user.firstName}'s wedding`,
   }).saveX();
   expect(event).toBeInstanceOf(Event);
