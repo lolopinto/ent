@@ -17,7 +17,7 @@ import (
 )
 
 // next tag
-const TAG = "0.0.21"
+const TAG = "0.0.22"
 
 // if current node gets latest tag...
 const CURRENT_NODE_VERSION = 16
