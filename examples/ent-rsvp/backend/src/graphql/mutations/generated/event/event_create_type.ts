@@ -4,7 +4,6 @@ import {
   GraphQLBoolean,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
-  GraphQLID,
   GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
   GraphQLList,
@@ -14,17 +13,13 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { GraphQLTime, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
+import { GraphQLTime } from "@snowtop/ent/graphql";
 import { Event } from "src/ent/";
 import CreateEventAction, {
   EventCreateInput,
 } from "src/ent/event/actions/create_event_action";
 import { AddressEventActivityCreateInput } from "src/graphql/mutations/generated/event_activity/event_activity_create_type";
 import { EventType } from "src/graphql/resolvers/";
-
-interface customEventCreateInput extends EventCreateInput {
-  creatorID: string;
-}
 
 interface EventCreatePayload {
   event: Event;
@@ -66,9 +61,6 @@ export const EventCreateInputType = new GraphQLInputObjectType({
     slug: {
       type: GraphQLString,
     },
-    creatorID: {
-      type: GraphQLNonNull(GraphQLID),
-    },
     activities: {
       type: GraphQLList(GraphQLNonNull(ActivityEventCreateInput)),
     },
@@ -87,7 +79,7 @@ export const EventCreatePayloadType = new GraphQLObjectType({
 export const EventCreateType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: customEventCreateInput }
+  { [input: string]: EventCreateInput }
 > = {
   type: GraphQLNonNull(EventCreatePayloadType),
   args: {
@@ -105,7 +97,6 @@ export const EventCreateType: GraphQLFieldConfig<
     let event = await CreateEventAction.create(context.getViewer(), {
       name: input.name,
       slug: input.slug,
-      creatorID: mustDecodeIDFromGQLID(input.creatorID),
       activities: input.activities,
     }).saveX();
     return { event: event };

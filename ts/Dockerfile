@@ -1,4 +1,4 @@
-ARG GOLANG_VERSION=v0.0.20
+ARG GOLANG_VERSION=v0.0.21
 ARG AUTO_SCHEMA_VERSION=0.0.9
 ARG NODE_VERSION=16
 
@@ -35,11 +35,12 @@ RUN \
   apt-get update && \
   # wget and gnupg are dependencies needed below
   # libpq-dev for libpq
-  apt-get install -yqq wget gnupg libpq-dev && \
-  echo "deb https://deb.nodesource.com/node_$NODE_VERSION.x buster main" > /etc/apt/sources.list.d/nodesource.list && \
-  wget -qO- https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - && \
+  apt-get install -yqq wget gnupg libpq-dev curl && \
+  #  echo "deb https://deb.nodesource.com/node_$NODE_VERSION.x/ buster main" > /etc/apt/sources.list.d/nodesource.list && \
+  #  wget -qO- https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - && \
   echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.list.d/yarn.list && \
   wget -qO- https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && \
+  curl -fsSL https://deb.nodesource.com/setup_$NODE_VERSION.x | bash - && \
   apt-get update && \
   apt-get install -yqq nodejs yarn && \
   apt-get autoremove wget -yqq && \

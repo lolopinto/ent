@@ -55,7 +55,6 @@ function Events(arg: { props: homeQueryResponse; environment: Environment }) {
   }
 
   const eventsConnection = props.viewer.user.events;
-  const creatorID = props.viewer.user.id;
   const edges = eventsConnection.edges;
   if (eventsConnection.rawCount === 0) {
     console.log("no events");
@@ -74,16 +73,12 @@ function Events(arg: { props: homeQueryResponse; environment: Environment }) {
       <Button size="lg" variant="primary" onClick={createEventClicked}>
         Create Event
       </Button>
-      <CreateEvent
-        environment={environment}
-        visible={showCreateEvent}
-        creatorID={creatorID}
-      />
+      <CreateEvent environment={environment} visible={showCreateEvent} />
     </div>
   );
 }
 
-function CreateEvent({ environment, visible, creatorID }) {
+function CreateEvent({ environment, visible }) {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugAvailable, setSlugAvailable] = useState(true);
@@ -108,7 +103,6 @@ function CreateEvent({ environment, visible, creatorID }) {
       environment,
       {
         name,
-        creatorID,
         slug,
         activities: activities.map((activity) => {
           return {

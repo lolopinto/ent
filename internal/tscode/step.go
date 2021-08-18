@@ -34,6 +34,106 @@ func (s *Step) Name() string {
 
 var nodeType = regexp.MustCompile(`(\w+)Type`)
 
+func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataInfo, serr *syncerr.Error) {
+	nodeData := info.NodeData
+
+	if err := s.accumulateConsts(nodeData); err != nil {
+		serr.Append(err)
+		return
+	}
+
+	if !info.ShouldCodegen {
+		return
+	}
+
+	if nodeData.PackageName == "" {
+		serr.Append(fmt.Errorf("invalid node with no package"))
+		return
+	}
+
+	if err := writeBaseModelFile(nodeData, processor.CodePath); err != nil {
+		serr.Append(err)
+		return
+	}
+	if err := writeEntFile(nodeData, processor.CodePath); err != nil {
+		serr.Append(err)
+		return
+	}
+
+	s.processActions(processor, nodeData, serr)
+}
+
+func (s *Step) processActions(processor *codegen.Processor, nodeData *schema.NodeData, serr *syncerr.Error) {
+	if len(nodeData.ActionInfo.Actions) == 0 {
+		return
+	}
+
+	if err := writeBuilderFile(nodeData, processor.CodePath); err != nil {
+		serr.Append(err)
+	}
+
+	// write all the actions concurrently
+	var actionsWg sync.WaitGroup
+	actionsWg.Add(len(nodeData.ActionInfo.Actions))
+	for idx := range nodeData.ActionInfo.Actions {
+		go func(idx int) {
+			defer actionsWg.Done()
+
+			action := nodeData.ActionInfo.Actions[idx]
+			if err := writeBaseActionFile(nodeData, processor.CodePath, action); err != nil {
+				serr.Append(err)
+			}
+
+			if err := writeActionFile(nodeData, processor.CodePath, action); err != nil {
+				serr.Append(err)
+			}
+
+		}(idx)
+	}
+	actionsWg.Wait()
+}
+
+func (s *Step) processEdges(processor *codegen.Processor, nodeData *schema.NodeData, serr *syncerr.Error) {
+	if !nodeData.EdgeInfo.HasConnectionEdges() {
+		return
+	}
+
+	if err := writeBaseQueryFile(processor.Schema, nodeData, processor.CodePath); err != nil {
+		serr.Append(err)
+	}
+
+	var edgesWg sync.WaitGroup
+	edgesWg.Add(len(nodeData.EdgeInfo.Associations))
+
+	for idx := range nodeData.EdgeInfo.Associations {
+		go func(idx int) {
+			defer edgesWg.Done()
+
+			edge := nodeData.EdgeInfo.Associations[idx]
+
+			if err := writeAssocEdgeQueryFile(processor.Schema, nodeData, edge, processor.CodePath); err != nil {
+				serr.Append(err)
+			}
+		}(idx)
+	}
+
+	// edges with IndexLoaderFactory
+	edges := nodeData.EdgeInfo.GetEdgesForIndexLoader()
+	edgesWg.Add(len(edges))
+	for idx := range edges {
+		go func(idx int) {
+			defer edgesWg.Done()
+
+			edge := edges[idx]
+
+			if err := writeCustomEdgeQueryFile(processor.Schema, nodeData, edge, processor.CodePath); err != nil {
+				serr.Append(err)
+			}
+		}(idx)
+	}
+	edgesWg.Wait()
+}
+
 func (s *Step) ProcessData(processor *codegen.Processor) error {
 	fmt.Println("generating ent code...")
 	var wg sync.WaitGroup
@@ -45,98 +145,7 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 			defer wg.Done()
 
 			info := processor.Schema.Nodes[key]
-			nodeData := info.NodeData
-
-			if err := s.accumulateConsts(nodeData); err != nil {
-				serr.Append(err)
-				return
-			}
-
-			if !info.ShouldCodegen {
-				return
-			}
-
-			if nodeData.PackageName == "" {
-				serr.Append(fmt.Errorf("invalid node with no package"))
-				return
-			}
-
-			if err := writeBaseModelFile(nodeData, processor.CodePath); err != nil {
-				serr.Append(err)
-				return
-			}
-			if err := writeEntFile(nodeData, processor.CodePath); err != nil {
-				serr.Append(err)
-				return
-			}
-
-			if len(nodeData.ActionInfo.Actions) == 0 {
-				return
-			}
-
-			if err := writeBuilderFile(nodeData, processor.CodePath); err != nil {
-				serr.Append(err)
-			}
-
-			// write all the actions concurrently
-			var actionsWg sync.WaitGroup
-			actionsWg.Add(len(nodeData.ActionInfo.Actions))
-			for idx := range nodeData.ActionInfo.Actions {
-				go func(idx int) {
-					defer actionsWg.Done()
-
-					action := nodeData.ActionInfo.Actions[idx]
-					if err := writeBaseActionFile(nodeData, processor.CodePath, action); err != nil {
-						serr.Append(err)
-					}
-
-					if err := writeActionFile(nodeData, processor.CodePath, action); err != nil {
-						serr.Append(err)
-					}
-
-				}(idx)
-			}
-			actionsWg.Wait()
-
-			// write base edge file for all the edges and then eventually one per edge...
-			if !nodeData.EdgeInfo.HasConnectionEdges() {
-				return
-			}
-
-			if err := writeBaseQueryFile(processor.Schema, nodeData, processor.CodePath); err != nil {
-				serr.Append(err)
-			}
-
-			var edgesWg sync.WaitGroup
-			edgesWg.Add(len(nodeData.EdgeInfo.Associations))
-
-			for idx := range nodeData.EdgeInfo.Associations {
-				go func(idx int) {
-					defer edgesWg.Done()
-
-					edge := nodeData.EdgeInfo.Associations[idx]
-
-					if err := writeAssocEdgeQueryFile(processor.Schema, nodeData, edge, processor.CodePath); err != nil {
-						serr.Append(err)
-					}
-				}(idx)
-			}
-
-			// edges with IndexLoaderFactory
-			edges := nodeData.EdgeInfo.GetEdgesForIndexLoader()
-			edgesWg.Add(len(edges))
-			for idx := range edges {
-				go func(idx int) {
-					defer edgesWg.Done()
-
-					edge := edges[idx]
-
-					if err := writeCustomEdgeQueryFile(processor.Schema, nodeData, edge, processor.CodePath); err != nil {
-						serr.Append(err)
-					}
-				}(idx)
-			}
-			edgesWg.Wait()
+			s.processNode(processor, info, &serr)
 		}(key)
 	}
 

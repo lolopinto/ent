@@ -387,7 +387,6 @@ type EventActivityRsvpStatusEditPayload {
 input EventCreateInput {
   name: String!
   slug: String
-  creatorID: ID!
   activities: [ActivityEventCreateInput!]
 }
 
