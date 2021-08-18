@@ -70,9 +70,9 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 				return
 			}
 
-			if len(nodeData.ActionInfo.Actions) == 0 {
-				return
-			}
+			// if len(nodeData.ActionInfo.Actions) == 0 {
+			// 	return
+			// }
 
 			if err := writeBuilderFile(nodeData, processor.CodePath); err != nil {
 				serr.Append(err)
