@@ -64,6 +64,7 @@ export class {{$baseClass}} {
 
   // default privacyPolicy is Viewer can see themselves
   {{/* TODO: make this configurable */ -}} 
+  // here
   privacyPolicy: {{useImport "PrivacyPolicy"}} = {{useImport "AllowIfViewerPrivacyPolicy"}};
 
   static async load<T extends {{$baseClass}}>(

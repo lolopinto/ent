@@ -132,6 +132,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
     {{end -}}
   }
 
+  // here
   getPrivacyPolicy(): {{useImport "PrivacyPolicy"}} {
     return {{useImport "AllowIfViewerHasIdentityPrivacyPolicy"}};
   };
