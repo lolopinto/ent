@@ -22,6 +22,9 @@ func init() {
 	rootCmd.AddCommand(upgradeCmd)
 	rootCmd.AddCommand(fixEdgesCmd)
 	rootCmd.AddCommand(alembicCmd)
+	rootCmd.AddCommand(generateCmd)
+
+	generateCmd.AddCommand(generateSchemaCmd)
 
 	codegenCmd.Flags().StringVarP(&codegenInfo.step, "step", "s", "", "limit to only run a particular step e.g. db, graphql, codegen")
 	codegenCmd.Flags().BoolVar(&codegenInfo.debug, "debug", false, "debug mode. add debug information to codegen e.g. files written etc")

@@ -1,0 +1,16 @@
+{{ reserveImport .Package.SchemaPackagePath "BaseEntSchema" "Field" }}
+
+export default class {{.Node}} extends {{useImport "BaseEntSchema"}} {
+  fields: {{useImport "Field"}} [] = [
+
+  {{ range $field := .Fields -}}
+    {{$imp := $field.Import -}}
+    {{ if $imp.DefaultImport -}}
+      {{reserveDefaultImport $imp.ImportPath $imp.Import -}}
+    {{ else -}}
+      {{reserveImport $imp.ImportPath $imp.Import -}}
+    {{ end -}}
+    {{useImport $imp.Import}}({name: "{{$field.Name}}"}),
+  {{ end -}}
+  ];
+}

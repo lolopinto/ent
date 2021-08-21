@@ -52,6 +52,10 @@ func GetSnakeCaseName(s string) string {
 	return strings.ToLower(strcase.ToSnake(s))
 }
 
+func GetCamelName(s string) string {
+	return strcase.ToCamel(s)
+}
+
 func GetNameFromParts(nameParts []string) string {
 	return strings.Join(nameParts, "_")
 }
