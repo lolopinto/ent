@@ -157,7 +157,7 @@ type emailImport struct {
 }
 
 func (imp *emailImport) ImportPath() string {
-	return "@snowtop/ent-email"
+	return codepath.EmailPackage
 }
 
 func (imp *emailImport) Import() string {
@@ -173,7 +173,7 @@ type phoneImport struct {
 }
 
 func (imp *phoneImport) ImportPath() string {
-	return "@snowtop/ent-phonenumber"
+	return codepath.PhonenumberPackage
 }
 
 func (imp *phoneImport) Import() string {
@@ -189,7 +189,7 @@ type passwordImport struct {
 }
 
 func (imp *passwordImport) ImportPath() string {
-	return "@snowtop/ent-password"
+	return codepath.PasswordPackage
 }
 
 func (imp *passwordImport) Import() string {
@@ -233,17 +233,14 @@ func init() {
 	}
 }
 
-// func IsValidType(s string) bool {
-// 	return m[s] != nil
-// }
+func GetTypeForField(s string) Import {
+	return m[s]
+}
 
-// func GetTypeForField(s string) Import {
-// 	return m[s]
-// }
-
-// ParseFields given the format foo:string, bar:int
+// parseFields given the format foo:string, bar:int
 func parseFields(fields []string) ([]*Field, error) {
 	res := make([]*Field, len(fields))
+	seen := make(map[string]bool)
 	for idx, f := range fields {
 		parts := strings.Split(f, ":")
 		if len(parts) != 2 {
@@ -252,7 +249,7 @@ func parseFields(fields []string) ([]*Field, error) {
 
 		normalized := field.NormalizedField(parts[0])
 
-		if m[normalized] != nil {
+		if seen[normalized] {
 			return nil, fmt.Errorf("field %s in schema more than once", normalized)
 		}
 		typ := strings.ToLower(parts[1])
@@ -262,17 +259,15 @@ func parseFields(fields []string) ([]*Field, error) {
 			return nil, fmt.Errorf("%s is not a valid type for a field", typ)
 		}
 		res[idx] = &Field{
-			Name:   typ,
+			Name:   normalized,
 			Import: imp,
 		}
+		seen[normalized] = true
 	}
 	return res, nil
 }
 
 type CodegenData struct {
-	// what ever this is for Package
-	//	Package *codegen.CodePath
-	// get this from codePath...
 	Package *codegen.ImportPackage
 	Node    string
 	Fields  []*Field
@@ -283,6 +278,7 @@ type Field struct {
 	Import Import
 }
 
+// TODO test ...
 func ParseAndGenerateSchema(codePathInfo *codegen.CodePath, node string, fields []string) error {
 	parsed, err := parseFields(fields)
 	if err != nil {

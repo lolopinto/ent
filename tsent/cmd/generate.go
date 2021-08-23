@@ -4,20 +4,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// etc
 var generateCmd = &cobra.Command{
 	Use:   "generate",
-	Short: "generate something",
-	Long:  `generates schema given things. TODO`,
-	Args:  cobra.MinimumNArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		// another hardcoded place
-		// codePathInfo, err := codegen.NewCodePath("src/schema", "")
-		// if err != nil {
-		// 	return err
-		// }
-
-		// return db.DowngradeDB(codePathInfo, args[0])
-		return nil
-	},
+	Short: "generate a schema or other object",
+	Example: `tsent generate schema User name:string
+	`,
+	Args: cobra.MinimumNArgs(1),
+	// no Run or RunE. child commands do the work
 }

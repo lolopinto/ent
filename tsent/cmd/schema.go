@@ -11,11 +11,11 @@ import (
 
 // generate a schema
 var generateSchemaCmd = &cobra.Command{
-	Use:   "schema",
-	Short: "generate schema",
-	Long:  `generates schema given things. TODO`,
-	Args:  cobra.MinimumNArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Use:     "schema",
+	Short:   "generate schema",
+	Example: `tsent generate schema User name:string email:email`,
+	Args:    cobra.MinimumNArgs(2),
+	RunE: func(_ *cobra.Command, args []string) error {
 		schema, err := parseSchema()
 		if err != nil {
 			return err
