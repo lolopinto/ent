@@ -10,7 +10,7 @@ export default class {{.Node}} extends {{useImport "BaseEntSchema"}} {
     {{ else -}}
       {{reserveImport $imp.ImportPath $imp.Import -}}
     {{ end -}}
-    {{useImport $imp.Import}}({name: "{{$field.Name}}"}),
+    {{useImport $imp.Import}}({{$field.FieldObjectCall}}),
   {{ end -}}
   ];
 }

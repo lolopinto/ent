@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/internal/codepath"
+	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,24 +23,29 @@ func TestParse(t *testing.T) {
 			fields: "foo:string bar:email baz:password foo2:int hello:bool",
 			result: []*Field{
 				{
-					Name:   "foo",
-					Import: &stringImport{},
+					Name:               "foo",
+					Import:             &stringImport{},
+					expFieldObjectCall: "{name: \"foo\"}",
 				},
 				{
-					Name:   "bar",
-					Import: &emailImport{},
+					Name:               "bar",
+					Import:             &emailImport{},
+					expFieldObjectCall: "{name: \"bar\"}",
 				},
 				{
-					Name:   "baz",
-					Import: &passwordImport{},
+					Name:               "baz",
+					Import:             &passwordImport{},
+					expFieldObjectCall: "{name: \"baz\"}",
 				},
 				{
-					Name:   "foo2",
-					Import: &intImport{},
+					Name:               "foo2",
+					Import:             &intImport{},
+					expFieldObjectCall: "{name: \"foo2\"}",
 				},
 				{
-					Name:   "hello",
-					Import: &boolImport{},
+					Name:               "hello",
+					Import:             &boolImport{},
+					expFieldObjectCall: "{name: \"hello\"}",
 				},
 			},
 		},
@@ -47,24 +53,29 @@ func TestParse(t *testing.T) {
 			fields: "foo:String bar:EMAIL baz:PasSWORD foo2:INTEGER hello:BOOLEAN",
 			result: []*Field{
 				{
-					Name:   "foo",
-					Import: &stringImport{},
+					Name:               "foo",
+					Import:             &stringImport{},
+					expFieldObjectCall: "{name: \"foo\"}",
 				},
 				{
-					Name:   "bar",
-					Import: &emailImport{},
+					Name:               "bar",
+					Import:             &emailImport{},
+					expFieldObjectCall: "{name: \"bar\"}",
 				},
 				{
-					Name:   "baz",
-					Import: &passwordImport{},
+					Name:               "baz",
+					Import:             &passwordImport{},
+					expFieldObjectCall: "{name: \"baz\"}",
 				},
 				{
-					Name:   "foo2",
-					Import: &intImport{},
+					Name:               "foo2",
+					Import:             &intImport{},
+					expFieldObjectCall: "{name: \"foo2\"}",
 				},
 				{
-					Name:   "hello",
-					Import: &boolImport{},
+					Name:               "hello",
+					Import:             &boolImport{},
+					expFieldObjectCall: "{name: \"hello\"}",
 				},
 			},
 		},
@@ -80,6 +91,72 @@ func TestParse(t *testing.T) {
 			fields:      "bar:string bar:int",
 			expectedErr: errors.New("field bar in schema more than once"),
 		},
+		"other keys": {
+			fields: "foo:string:index bar:email:unique baz:password:private:hideFromGraphQL foo2:int:nullable hello:bool",
+			result: []*Field{
+				{
+					Name:               "foo",
+					Import:             &stringImport{},
+					Index:              true,
+					expFieldObjectCall: "{name: \"foo\", index: true}",
+				},
+				{
+					Name:               "bar",
+					Import:             &emailImport{},
+					Unique:             true,
+					expFieldObjectCall: "{name: \"bar\", unique: true}",
+				},
+				{
+					Name:               "baz",
+					Import:             &passwordImport{},
+					Private:            true,
+					HideFromGraphQL:    true,
+					expFieldObjectCall: "{name: \"baz\", private: true, hideFromGraphQL: true}",
+				},
+				{
+					Name:               "foo2",
+					Import:             &intImport{},
+					Nullable:           true,
+					expFieldObjectCall: "{name: \"foo2\", nullable: true}",
+				},
+				{
+					Name:   "hello",
+					Import: &boolImport{},
+				},
+			},
+		},
+		"invalid other key": {
+			fields:      "foo:string:index bar:email:unique baz:password:invalid foo2:int:nullable hello:bool",
+			expectedErr: errors.New("invalid key invalid in field format"),
+		},
+		"complex other keys": {
+			fields: "foo;string;serverDefault:bar bar:email:unique accountId;uuid;foreignKey:{schema:User;column:id};storageKey:user_id;defaultToViewerOnCreate",
+			result: []*Field{
+				{
+					Name:               "foo",
+					Import:             &stringImport{},
+					ServerDefault:      "bar",
+					expFieldObjectCall: "{name: \"foo\", serverDefault: \"bar\"}",
+				},
+				{
+					Name:               "bar",
+					Import:             &emailImport{},
+					Unique:             true,
+					expFieldObjectCall: "{name: \"bar\", unique: true}",
+				},
+				{
+					Name:   "accountId",
+					Import: &uuidImport{},
+					ForeignKey: &input.ForeignKey{
+						Schema: "User",
+						Column: "id",
+					},
+					DefaultToViewerOnCreate: true,
+					StorageKey:              "user_id",
+					expFieldObjectCall:      "{name: \"accountId\", defaultToViewerOnCreate: true, storageKey: \"user_id\", foreignKey: {schema: \"User\", column: \"id\"}}",
+				},
+			},
+		},
 	}
 
 	for k, v := range tests {
@@ -89,7 +166,28 @@ func TestParse(t *testing.T) {
 			if v.expectedErr == nil {
 				require.Nil(t, err)
 
-				require.Equal(t, v.result, res)
+				require.Equal(t, len(v.result), len(res))
+				for i, expF := range v.result {
+					f := res[i]
+					require.Equal(t, expF.Name, f.Name, f.Name)
+					assert.Equal(t, expF.Import, f.Import, f.Name)
+					assert.Equal(t, expF.Unique, f.Unique, f.Name)
+					assert.Equal(t, expF.PrimaryKey, f.PrimaryKey, f.Name)
+					assert.Equal(t, expF.Index, f.Index, f.Name)
+					assert.Equal(t, expF.Nullable, f.Nullable, f.Name)
+					assert.Equal(t, expF.Private, f.Private, f.Name)
+					assert.Equal(t, expF.HideFromGraphQL, f.HideFromGraphQL, f.Name)
+					assert.Equal(t, expF.DefaultToViewerOnCreate, f.DefaultToViewerOnCreate, f.Name)
+					assert.Equal(t, expF.ServerDefault, f.ServerDefault, f.Name)
+					assert.Equal(t, expF.ForeignKey, f.ForeignKey, f.Name)
+					assert.Equal(t, expF.StorageKey, f.StorageKey, f.Name)
+					assert.Equal(t, expF.GraphQLName, f.GraphQLName, f.Name)
+
+					// TODO unconditional test
+					if expF.expFieldObjectCall != "" {
+						assert.Equal(t, expF.expFieldObjectCall, f.FieldObjectCall(), f.Name)
+					}
+				}
 			} else {
 				require.NotNil(t, err)
 				require.Equal(t, err.Error(), v.expectedErr.Error())
