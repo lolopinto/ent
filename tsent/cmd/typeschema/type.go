@@ -364,12 +364,6 @@ func parseFields(fields []string) ([]*Field, error) {
 	return res, nil
 }
 
-type CodegenData struct {
-	Package *codegen.ImportPackage
-	Node    string
-	Fields  []*Field
-}
-
 type kvPair struct {
 	key   string
 	value string //interface{}
@@ -595,22 +589,85 @@ var booleanKeys = map[string]bool{
 	"defaultToViewerOnCreate": true,
 }
 
+type CodegenData struct {
+	Package    *codegen.ImportPackage
+	Node       string
+	EnumTable  bool
+	Fields     []*Field
+	DBRows     []kvList // list of lists...
+	Extends    bool
+	Base       string
+	Implements bool
+}
+
+func (c *CodegenData) DBRowsCall() string {
+	var sb strings.Builder
+
+	sb.WriteString("[")
+	for i, r := range c.DBRows {
+		if i != 0 {
+			sb.WriteString(", ")
+		}
+		sb.WriteString(r.String())
+	}
+	sb.WriteString("]")
+	return sb.String()
+}
+
+func NewEnumCodegenData(codePathInfo *codegen.CodePath, schema, col string, values []string) *CodegenData {
+	ret := &CodegenData{
+		Node:      schema,
+		EnumTable: true,
+		Package:   codePathInfo.GetImportPackage(),
+
+		Implements: true,
+		Base:       "Schema",
+	}
+	ret.Fields = []*Field{
+		{
+			Name:       col,
+			Import:     &stringImport{},
+			PrimaryKey: true,
+		},
+	}
+	ret.DBRows = make([]kvList, len(values))
+	for idx, v := range values {
+		ret.DBRows[idx] = kvList{
+			kvPair{
+				key:   col,
+				value: strconv.Quote(v),
+			},
+		}
+	}
+
+	return ret
+}
+
 // TODO test ...
 func ParseAndGenerateSchema(codePathInfo *codegen.CodePath, node string, fields []string) error {
 	parsed, err := parseFields(fields)
 	if err != nil {
 		return err
 	}
+
+	data := &CodegenData{
+		Node:    node,
+		Fields:  parsed,
+		Package: codePathInfo.GetImportPackage(),
+		Extends: true,
+		Base:    "BaseEntSchema",
+	}
+
+	return GenerateSchema(codePathInfo, data, node)
+}
+
+func GenerateSchema(codePathInfo *codegen.CodePath, data *CodegenData, node string) error {
 	tsimps := tsimport.NewImports()
 
 	filePath := path.Join(codePathInfo.GetRootPathToConfigs(), base.GetSnakeCaseName(node)+".ts")
 
 	return file.Write(&file.TemplatedBasedFileWriter{
-		Data: CodegenData{
-			Node:    node,
-			Fields:  parsed,
-			Package: codePathInfo.GetImportPackage(),
-		},
+		Data:              data,
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("schema.tmpl"),
 		TemplateName:      "schema.tmpl",

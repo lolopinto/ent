@@ -2,9 +2,11 @@ package typeschema
 
 import (
 	"errors"
+	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/stretchr/testify/assert"
@@ -120,8 +122,9 @@ func TestParse(t *testing.T) {
 					expFieldObjectCall: "{name: \"foo2\", nullable: true}",
 				},
 				{
-					Name:   "hello",
-					Import: &boolImport{},
+					Name:               "hello",
+					Import:             &boolImport{},
+					expFieldObjectCall: "{name: \"hello\"}",
 				},
 			},
 		},
@@ -166,33 +169,34 @@ func TestParse(t *testing.T) {
 			if v.expectedErr == nil {
 				require.Nil(t, err)
 
-				require.Equal(t, len(v.result), len(res))
-				for i, expF := range v.result {
-					f := res[i]
-					require.Equal(t, expF.Name, f.Name, f.Name)
-					assert.Equal(t, expF.Import, f.Import, f.Name)
-					assert.Equal(t, expF.Unique, f.Unique, f.Name)
-					assert.Equal(t, expF.PrimaryKey, f.PrimaryKey, f.Name)
-					assert.Equal(t, expF.Index, f.Index, f.Name)
-					assert.Equal(t, expF.Nullable, f.Nullable, f.Name)
-					assert.Equal(t, expF.Private, f.Private, f.Name)
-					assert.Equal(t, expF.HideFromGraphQL, f.HideFromGraphQL, f.Name)
-					assert.Equal(t, expF.DefaultToViewerOnCreate, f.DefaultToViewerOnCreate, f.Name)
-					assert.Equal(t, expF.ServerDefault, f.ServerDefault, f.Name)
-					assert.Equal(t, expF.ForeignKey, f.ForeignKey, f.Name)
-					assert.Equal(t, expF.StorageKey, f.StorageKey, f.Name)
-					assert.Equal(t, expF.GraphQLName, f.GraphQLName, f.Name)
-
-					// TODO unconditional test
-					if expF.expFieldObjectCall != "" {
-						assert.Equal(t, expF.expFieldObjectCall, f.FieldObjectCall(), f.Name)
-					}
-				}
+				testFields(t, v.result, res)
 			} else {
 				require.NotNil(t, err)
 				require.Equal(t, err.Error(), v.expectedErr.Error())
 			}
 		})
+	}
+}
+
+func testFields(t *testing.T, exp, fields []*Field) {
+	require.Equal(t, len(exp), len(fields))
+	for i, expF := range exp {
+		f := fields[i]
+		require.Equal(t, expF.Name, f.Name, f.Name)
+		assert.Equal(t, expF.Import, f.Import, f.Name)
+		assert.Equal(t, expF.Unique, f.Unique, f.Name)
+		assert.Equal(t, expF.PrimaryKey, f.PrimaryKey, f.Name)
+		assert.Equal(t, expF.Index, f.Index, f.Name)
+		assert.Equal(t, expF.Nullable, f.Nullable, f.Name)
+		assert.Equal(t, expF.Private, f.Private, f.Name)
+		assert.Equal(t, expF.HideFromGraphQL, f.HideFromGraphQL, f.Name)
+		assert.Equal(t, expF.DefaultToViewerOnCreate, f.DefaultToViewerOnCreate, f.Name)
+		assert.Equal(t, expF.ServerDefault, f.ServerDefault, f.Name)
+		assert.Equal(t, expF.ForeignKey, f.ForeignKey, f.Name)
+		assert.Equal(t, expF.StorageKey, f.StorageKey, f.Name)
+		assert.Equal(t, expF.GraphQLName, f.GraphQLName, f.Name)
+
+		assert.Equal(t, expF.expFieldObjectCall, f.FieldObjectCall(), f.Name)
 	}
 }
 
@@ -286,4 +290,62 @@ func TestTypes(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestEnumCodegenData(t *testing.T) {
+	codepathInfo, err := codegen.NewCodePath("src/schema", "")
+	require.Nil(t, err)
+
+	c := NewEnumCodegenData(codepathInfo, "RequestStatus", "status", []string{"open", "pending", "closed"})
+
+	testCodegenData(t,
+		&CodegenData{
+			Node:       "RequestStatus",
+			EnumTable:  true,
+			Implements: true,
+			Base:       "Schema",
+			Fields: []*Field{
+				{
+					Name:               "status",
+					Import:             &stringImport{},
+					PrimaryKey:         true,
+					expFieldObjectCall: "{name: \"status\", primaryKey: true}",
+				},
+			},
+			DBRows: []kvList{
+				{
+					kvPair{
+						key:   "status",
+						value: strconv.Quote("open"),
+					},
+				},
+				{
+					kvPair{
+						key:   "status",
+						value: strconv.Quote("pending"),
+					},
+				},
+				{
+					kvPair{
+						key:   "status",
+						value: strconv.Quote("closed"),
+					},
+				},
+			},
+		},
+		c,
+	)
+}
+
+func testCodegenData(t *testing.T, exp, c *CodegenData) {
+	assert.Equal(t, exp.Node, c.Node)
+	assert.Equal(t, exp.EnumTable, c.EnumTable)
+	assert.Equal(t, exp.Implements, c.Implements)
+	assert.Equal(t, exp.Extends, c.Extends)
+	assert.Equal(t, exp.Base, c.Base)
+
+	testFields(t, exp.Fields, c.Fields)
+
+	require.Len(t, c.DBRows, len(exp.DBRows))
+	assert.Equal(t, exp.DBRows, c.DBRows)
 }

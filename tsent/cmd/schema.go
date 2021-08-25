@@ -10,21 +10,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// simplest
-// name:uuid
-
-// more complex. only works for booleans
-// name:uuid:primaryKey
-// email:email:unique
-// phone:phone:index:nullable
-
-// OR
-// ownerId:uuid:primaryKey:true;private:false:hideFromGraphQL:true:storageKey:user_id;
-//fkey:{schema:User;column:ID;name:accounts;disableIndex}
-
-// account_id;uuid;fkey:{schema:User;column:ID;name:accounts}
-
-// name;string;nullable:true;unique;primaryKey;private;hideFromGraphQL
 // generate a schema
 var generateSchemaCmd = &cobra.Command{
 	Use:   "schema",
@@ -34,7 +19,8 @@ Format: modelName [fieldSpecfication] [fieldSpecification] ...
 Each field specification supports 3 formats: 
 * fieldName:type e.g. firstName:string
 * fieldName:type:booleanProperty e.g. email_address:email:unique
-* fieldName;type;complexFieldProperties e.g. verified;bool;serverDefault:false or accountId;uuid;foreignKey:{schema:Account;column:id};storageKey:user_id;defaultToViewerOnCreate
+* fieldName
+;type;complexFieldProperties e.g. verified;bool;serverDefault:false or accountId;uuid;foreignKey:{schema:Account;column:id};storageKey:user_id;defaultToViewerOnCreate
 When using the 3rd format above, the entire field specification should be quoted in strings`,
 	Example: `tsent generate schema User name:string email:email
 tsent generate schema User phone:phone:index email:email:unique password:password:private:hideFromGraphQL age:int:nullable activated:bool
@@ -48,7 +34,7 @@ tsent generate schema User "account_status;string;serverDefault:DEACTIVATED emai
 
 		schemaName := base.GetCamelName(args[0])
 
-		if schema.NodeNameExists(schemaName) {
+		if schema.NameExists(schemaName) {
 			return fmt.Errorf("cannot generate a schema for %s since schema with name %s already exists", args[0], schemaName)
 		}
 

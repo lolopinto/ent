@@ -1,6 +1,11 @@
-{{ reserveImport .Package.SchemaPackagePath "BaseEntSchema" "Field" }}
+{{ reserveImport .Package.SchemaPackagePath "BaseEntSchema" "Field" "Schema"}}
 
-export default class {{.Node}} extends {{useImport "BaseEntSchema"}} {
+{{if .Extends -}}
+  export default class {{.Node}} extends {{useImport .Base}} {
+{{ end -}}
+{{if .Implements -}}
+  export default class {{.Node}} implements {{useImport .Base}} {
+{{end -}}
   fields: {{useImport "Field"}} [] = [
 
   {{ range $field := .Fields -}}
@@ -13,4 +18,12 @@ export default class {{.Node}} extends {{useImport "BaseEntSchema"}} {
     {{useImport $imp.Import}}({{$field.FieldObjectCall}}),
   {{ end -}}
   ];
+
+  {{if .EnumTable -}}
+    enumTable = true;
+  {{end -}}
+
+ {{if gt (len .DBRows) 0}}
+    dbRows = {{.DBRowsCall}};
+ {{ end -}}
 }

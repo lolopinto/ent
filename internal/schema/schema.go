@@ -63,6 +63,15 @@ func (s *Schema) NodeNameExists(nodeName string) bool {
 	return ok
 }
 
+func (s *Schema) EnumNameExists(enum string) bool {
+	_, ok := s.Enums[enum]
+	return ok
+}
+
+func (s *Schema) NameExists(k string) bool {
+	return s.NodeNameExists(k) || s.EnumNameExists(k)
+}
+
 func (s *Schema) addEnumFromInputNode(nodeName string, node *input.Node, nodeData *NodeData) error {
 	if !node.EnumTable || len(node.DBRows) == 0 {
 		return errors.New("can't create enum from NodeData that's not an enum table or has no rows")
