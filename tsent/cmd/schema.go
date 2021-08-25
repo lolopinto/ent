@@ -6,7 +6,7 @@ import (
 
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/schema/base"
-	"github.com/lolopinto/ent/tsent/cmd/typeschema"
+	"github.com/lolopinto/ent/tsent/cmd/generateschema"
 	"github.com/spf13/cobra"
 )
 
@@ -52,6 +52,6 @@ tsent generate schema User "account_status;string;serverDefault:DEACTIVATED emai
 				fields = strings.Split(args[1], " ")
 			}
 		}
-		return typeschema.ParseAndGenerateSchema(codePathInfo, schemaName, fields)
+		return generateschema.ParseAndGenerateSchema(codePathInfo, schemaName, fields)
 	},
 }

@@ -26,9 +26,12 @@ func init() {
 
 	generateCmd.AddCommand(generateSchemaCmd)
 	generateCmd.AddCommand(generateEnumSchemaCmd)
+	generateCmd.AddCommand(generateSchemasCmd)
 
 	codegenCmd.Flags().StringVarP(&codegenInfo.step, "step", "s", "", "limit to only run a particular step e.g. db, graphql, codegen")
 	codegenCmd.Flags().BoolVar(&codegenInfo.debug, "debug", false, "debug mode. add debug information to codegen e.g. files written etc")
+
+	generateSchemasCmd.Flags().StringVar(&schemasInfo.file, "file", "", "file to get data from. also supports piping it through")
 }
 
 func Execute() {

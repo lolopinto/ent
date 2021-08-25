@@ -46,6 +46,11 @@ type TSGraphQLType interface {
 	GetTSGraphQLImports() []FileImport
 }
 
+type TSCodegenableType interface {
+	TSGraphQLType
+	GetImportType() Import
+}
+
 // type TSObjectType interface {
 // 	TSGraphQLType
 // 	GetTSName() string
@@ -144,6 +149,10 @@ func (t *stringType) GetZeroValue() string {
 	return strconv.Quote("")
 }
 
+func (t *stringType) GetImportType() Import {
+	return &StringImport{}
+}
+
 type StringType struct {
 	stringType
 }
@@ -204,6 +213,10 @@ func (t *boolType) GetDBType() string {
 
 func (t *boolType) GetZeroValue() string {
 	return "false"
+}
+
+func (t *boolType) GetImportType() Import {
+	return &BoolImport{}
 }
 
 func (t *boolType) Convert() FileImport {
@@ -312,6 +325,10 @@ func (t *idType) GetTsTypeImports() []string {
 	return []string{"ID"}
 }
 
+func (t *idType) GetImportType() Import {
+	return &UUIDImport{}
+}
+
 type IDType struct {
 	idType
 }
@@ -372,6 +389,10 @@ func (t *intType) GetZeroValue() string {
 	return "0"
 }
 
+func (t *intType) GetImportType() Import {
+	return &IntImport{}
+}
+
 type IntegerType struct {
 	intType
 }
@@ -428,6 +449,10 @@ func (t *floatType) GetDBType() string {
 
 func (t *floatType) GetZeroValue() string {
 	return "0.0"
+}
+
+func (t *floatType) GetImportType() Import {
+	return &FloatImport{}
 }
 
 type FloatType struct {
@@ -496,6 +521,10 @@ func (t *timestampType) GetCastToMethod() string {
 	return "cast.ToTime"
 }
 
+func (t *timestampType) GetImportType() Import {
+	return &TimestampImport{}
+}
+
 type dateType struct {
 	timestampType
 }
@@ -525,6 +554,10 @@ func (t *dateType) GetTSType() string {
 	return "Date"
 }
 
+func (t *dateType) GetImportType() Import {
+	return &DateImport{}
+}
+
 type TimestampType struct {
 	dateType
 }
@@ -552,6 +585,10 @@ func (t *TimestampType) GetTSGraphQLImports() []FileImport {
 	}
 }
 
+func (t *TimestampType) GetImportType() Import {
+	return &TimestampImport{}
+}
+
 type TimestamptzType struct {
 	TimestampType
 }
@@ -564,6 +601,10 @@ func (t *TimestamptzType) GetNullableType() TSGraphQLType {
 	return &NullableTimestamptzType{}
 }
 
+func (t *TimestamptzType) GetImportType() Import {
+	return &TimestamptzImport{}
+}
+
 type DateType struct {
 	TimestampType
 }
@@ -574,6 +615,10 @@ func (t *DateType) GetDBType() string {
 
 func (t *DateType) GetNullableType() TSGraphQLType {
 	return &NullableDateType{}
+}
+
+func (t *DateType) GetImportType() Import {
+	return &DateImport{}
 }
 
 type NullableTimestampType struct {
@@ -624,6 +669,10 @@ func (t *NullableTimestamptzType) GetNonNullableType() TSGraphQLType {
 	return &TimestamptzType{}
 }
 
+func (t *NullableTimestamptzType) GetImportType() Import {
+	return &TimestamptzImport{}
+}
+
 type NullableDateType struct {
 	NullableTimestampType
 }
@@ -634,6 +683,10 @@ func (t *NullableDateType) GetDBType() string {
 
 func (t *NullableDateType) GetNonNullableType() TSGraphQLType {
 	return &DateType{}
+}
+
+func (t *NullableDateType) GetImportType() Import {
+	return &DateImport{}
 }
 
 type TimeType struct {
@@ -664,6 +717,10 @@ func (t *TimeType) GetGraphQLType() string {
 	return "String!"
 }
 
+func (t *TimeType) GetImportType() Import {
+	return &TimeImport{}
+}
+
 type TimetzType struct {
 	TimeType
 }
@@ -674,6 +731,10 @@ func (t *TimetzType) GetDBType() string {
 
 func (t *TimetzType) GetNullableType() TSGraphQLType {
 	return &NullableTimetzType{}
+}
+
+func (t *TimetzType) GetImportType() Import {
+	return &TimetzImport{}
 }
 
 type NullableTimeType struct {
@@ -707,6 +768,10 @@ func (t *NullableTimeType) GetGraphQLType() string {
 	return "String"
 }
 
+func (t *NullableTimeType) GetImportType() Import {
+	return &TimeImport{}
+}
+
 type NullableTimetzType struct {
 	NullableTimeType
 }
@@ -717,6 +782,10 @@ func (t *NullableTimetzType) GetDBType() string {
 
 func (t *NullableTimetzType) GetNonNullableType() TSGraphQLType {
 	return &TimetzType{}
+}
+
+func (t *NullableTimetzType) GetImportType() Import {
+	return &TimetzImport{}
 }
 
 // public for tests

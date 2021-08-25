@@ -30,6 +30,7 @@ type expType struct {
 	tsType              string
 	tsTypePanics        bool
 	convertFn           string
+	importType          enttype.Import
 }
 
 func TestStringType(t *testing.T) {
@@ -52,6 +53,7 @@ func f() string {
 		goType:       "string",
 		nullableType: &enttype.NullableStringType{},
 		tsType:       "string",
+		importType:   &enttype.StringImport{},
 	}, ret)
 }
 
@@ -79,6 +81,7 @@ func f() ent.NodeType {
 		goType:       "ent.NodeType",
 		nullableType: &enttype.NullableStringType{},
 		tsType:       "string",
+		importType:   &enttype.StringImport{},
 	}, ret)
 }
 
@@ -101,6 +104,7 @@ func f() *string {
 		goType:          "*string",
 		nonNullableType: &enttype.StringType{},
 		tsType:          "string | null",
+		importType:      &enttype.StringImport{},
 	}, ret)
 }
 
@@ -125,6 +129,7 @@ func f() bool {
 		nullableType: &enttype.NullableBoolType{},
 		tsType:       "boolean",
 		convertFn:    "convertBool",
+		importType:   &enttype.BoolImport{},
 	}, ret)
 }
 
@@ -148,6 +153,7 @@ func f() *bool {
 		goType:          "*bool",
 		tsType:          "boolean | null",
 		convertFn:       "convertNullableBool",
+		importType:      &enttype.BoolImport{},
 	}, ret)
 }
 
@@ -163,6 +169,7 @@ func TestIDType(t *testing.T) {
 		castToMethod: "cast.ToUUIDString",
 		nullableType: &enttype.NullableIDType{},
 		tsType:       "ID",
+		importType:   &enttype.UUIDImport{},
 	}, returnType{
 		entType: &enttype.IDType{},
 	})
@@ -179,6 +186,7 @@ func TestNullableIDType(t *testing.T) {
 		castToMethod:    "cast.ToNullableUUIDString",
 		nonNullableType: &enttype.IDType{},
 		tsType:          "ID | null",
+		importType:      &enttype.UUIDImport{},
 	}, returnType{
 		entType: &enttype.NullableIDType{},
 	})
@@ -204,6 +212,7 @@ func f() int {
 		goType:       "int",
 		nullableType: &enttype.NullableIntegerType{},
 		tsType:       "number",
+		importType:   &enttype.IntImport{},
 	}, ret)
 }
 
@@ -226,6 +235,7 @@ func f() *int {
 		nonNullableType: &enttype.IntegerType{},
 		goType:          "*int",
 		tsType:          "number | null",
+		importType:      &enttype.IntImport{},
 	}, ret)
 }
 
@@ -261,6 +271,7 @@ func testFloatType(t *testing.T, ret returnType, goType string) {
 		goType:       goType,
 		nullableType: &enttype.NullableFloatType{},
 		tsType:       "number",
+		importType:   &enttype.FloatImport{},
 	}, ret)
 }
 
@@ -295,6 +306,7 @@ func testNullableFloatType(t *testing.T, ret returnType, goType string) {
 		goType:          goType,
 		nonNullableType: &enttype.FloatType{},
 		tsType:          "number | null",
+		importType:      &enttype.FloatImport{},
 	}, ret)
 }
 
@@ -325,6 +337,7 @@ func f() time.Time {
 		goType:              "time.Time",
 		tsType:              "Date",
 		convertFn:           "convertDate",
+		importType:          &enttype.TimestampImport{},
 	}, ret)
 }
 
@@ -354,6 +367,7 @@ func f() *time.Time {
 		goType:              "*time.Time",
 		tsType:              "Date | null",
 		convertFn:           "convertNullableDate",
+		importType:          &enttype.TimestampImport{},
 	}, ret)
 }
 
@@ -1066,6 +1080,7 @@ func TestTimestamptzType(t *testing.T) {
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
 				convertFn:           "convertNullableDate",
+				importType:          &enttype.TimestamptzImport{},
 			},
 			nil,
 		},
@@ -1087,6 +1102,7 @@ func TestTimestamptzType(t *testing.T) {
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
 				convertFn:           "convertDate",
+				importType:          &enttype.TimestamptzImport{},
 			},
 			nil,
 		},
@@ -1108,6 +1124,7 @@ func TestTimeType(t *testing.T) {
 				castToMethod:        "cast.ToNullableTime",
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
+				importType:          &enttype.TimeImport{},
 			},
 			nil,
 		},
@@ -1125,6 +1142,7 @@ func TestTimeType(t *testing.T) {
 				castToMethod:        "cast.ToTime",
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
+				importType:          &enttype.TimeImport{},
 			},
 			nil,
 		},
@@ -1146,6 +1164,7 @@ func TestTimetzType(t *testing.T) {
 				castToMethod:        "cast.ToNullableTime",
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
+				importType:          &enttype.TimetzImport{},
 			},
 			nil,
 		},
@@ -1163,6 +1182,7 @@ func TestTimetzType(t *testing.T) {
 				castToMethod:        "cast.ToTime",
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
+				importType:          &enttype.TimetzImport{},
 			},
 			nil,
 		},
@@ -1188,6 +1208,7 @@ func TestDateType(t *testing.T) {
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
 				convertFn:           "convertNullableDate",
+				importType:          &enttype.DateImport{},
 			},
 			nil,
 		},
@@ -1209,6 +1230,7 @@ func TestDateType(t *testing.T) {
 				defaultGQLFieldName: "time",
 				zeroValue:           "time.Time{}",
 				convertFn:           "convertDate",
+				importType:          &enttype.DateImport{},
 			},
 			nil,
 		},
@@ -1380,4 +1402,8 @@ func testType(t *testing.T, exp expType, ret returnType) {
 		assert.Equal(t, exp.convertFn, convType.Convert().Type)
 	}
 
+	impType, ok := typ.(enttype.TSCodegenableType)
+	if ok {
+		assert.Equal(t, exp.importType, impType.GetImportType())
+	}
 }

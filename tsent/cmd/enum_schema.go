@@ -6,7 +6,7 @@ import (
 
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/schema/base"
-	"github.com/lolopinto/ent/tsent/cmd/typeschema"
+	"github.com/lolopinto/ent/tsent/cmd/generateschema"
 	"github.com/spf13/cobra"
 )
 
@@ -41,9 +41,9 @@ e.g. tsent generate enum_schema RequestStatus status open,pending,closed`,
 			return err
 		}
 
-		return typeschema.GenerateSchema(
+		return generateschema.GenerateSchema(
 			codePathInfo,
-			typeschema.NewEnumCodegenData(codePathInfo, schemaName, args[1], strings.Split(args[2], ",")),
+			generateschema.NewEnumCodegenData(codePathInfo, schemaName, args[1], strings.Split(args[2], ",")),
 			schemaName,
 		)
 	},

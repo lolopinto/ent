@@ -1,0 +1,55 @@
+{
+  "Hello": {
+    "fields":[
+      {
+        "name": "foo",
+        "type": {
+          "dbType": "String"
+        },
+        "serverDefault": "bar"
+      },
+      {
+        "name": "bar",
+        "type": {
+          "dbType": "String"
+        },
+        "unique":true
+      },
+      {
+        "name": "accountId",
+        "type": {
+          "dbType": "UUID"
+        },
+        "foreignKey": {
+          "schema": "User",
+          "column": "id"
+        },
+        "storageKey": "user_id",
+        "defaultToViewerOnCreate": true
+      }
+    ]
+  },
+  "RequestStatus": {
+    "enumTable": true,
+    "fields":[
+      {
+        "name": "status",
+        "primaryKey": true,
+        "type": {
+          "dbType": "String"
+        }
+      }
+    ],
+    "dbRows": [
+      {
+        "status": "open"
+      },
+            {
+        "status": "pending"
+      },
+      {
+        "status": "closed"
+      }
+    ]
+  }
+}

@@ -9,13 +9,13 @@
   fields: {{useImport "Field"}} [] = [
 
   {{ range $field := .Fields -}}
-    {{$imp := $field.Import -}}
+    {{$imp := $field.GetImport -}}
     {{ if $imp.DefaultImport -}}
       {{reserveDefaultImport $imp.ImportPath $imp.Import -}}
     {{ else -}}
       {{reserveImport $imp.ImportPath $imp.Import -}}
     {{ end -}}
-    {{useImport $imp.Import}}({{$field.FieldObjectCall}}),
+    {{useImport $imp.Import}}({{fieldObjectCall $field}}),
   {{ end -}}
   ];
 

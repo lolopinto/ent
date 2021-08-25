@@ -74,12 +74,13 @@ type Field struct {
 	Nullable   bool       `json:"nullable"`
 	StorageKey string     `json:"storageKey"`
 	// TODO need a way to indicate unique edge is Required also. this changes type generated in ent and graphql
-	Unique          bool   `json:"unique"`
-	HideFromGraphQL bool   `json:"hideFromGraphQL"`
-	Private         bool   `json:"private"`
-	GraphQLName     string `json:"graphqlName"`
-	Index           bool   `json:"index"`
-	PrimaryKey      bool   `json:"primaryKey"`
+	Unique                  bool   `json:"unique"`
+	HideFromGraphQL         bool   `json:"hideFromGraphQL"`
+	Private                 bool   `json:"private"`
+	GraphQLName             string `json:"graphqlName"`
+	Index                   bool   `json:"index"`
+	PrimaryKey              bool   `json:"primaryKey"`
+	DefaultToViewerOnCreate bool   `json:"defaultToViewerOnCreate"`
 
 	FieldEdge     *FieldEdge  `json:"fieldEdge"` // this only really makes sense on id fields...
 	ForeignKey    *ForeignKey `json:"foreignKey"`
@@ -98,6 +99,9 @@ type Field struct {
 	GoType          types.Type
 	PkgPath         string
 	DataTypePkgPath string
+
+	// set when parsed via tsent generate schema
+	Import enttype.Import
 }
 
 type ForeignKey struct {
@@ -205,6 +209,21 @@ func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.
 		}, nil
 	}
 	return nil, fmt.Errorf("unsupported type %s", typ.DBType)
+}
+
+func (f *Field) GetImport() (enttype.Import, error) {
+	if f.Import != nil {
+		return f.Import, nil
+	}
+	typ, err := f.GetEntType()
+	if err != nil {
+		return nil, err
+	}
+	ctype, ok := typ.(enttype.TSCodegenableType)
+	if !ok {
+		return nil, fmt.Errorf("%s doesn't have a valid codegenable type", f.Name)
+	}
+	return ctype.GetImportType(), nil
 }
 
 func (f *Field) GetEntType() (enttype.TSGraphQLType, error) {
