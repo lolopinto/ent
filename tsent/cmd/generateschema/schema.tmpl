@@ -1,4 +1,15 @@
-{{ reserveImport .Package.SchemaPackagePath "BaseEntSchema" "Field" "Schema"}}
+{{ reserveImport .Package.SchemaPackagePath "BaseEntSchema" "Field" "Schema" "Edge"}}
+
+{{/* takes an Import with ImportPath Import DefaultImport fields */ -}}
+{{define "reserveImport"}}
+  {{ $imp := . -}}
+  {{ if $imp.DefaultImport -}}
+    {{reserveDefaultImport $imp.ImportPath $imp.Import -}}
+  {{ else -}}
+    {{reserveImport $imp.ImportPath $imp.Import -}}
+  {{ end -}}
+{{end}}
+
 
 {{if .Extends -}}
   export default class {{.Node}} extends {{useImport .Base}} {
@@ -6,24 +17,40 @@
 {{if .Implements -}}
   export default class {{.Node}} implements {{useImport .Base}} {
 {{end -}}
-  fields: {{useImport "Field"}} [] = [
 
-  {{ range $field := .Fields -}}
-    {{$imp := $field.GetImport -}}
-    {{ if $imp.DefaultImport -}}
-      {{reserveDefaultImport $imp.ImportPath $imp.Import -}}
-    {{ else -}}
-      {{reserveImport $imp.ImportPath $imp.Import -}}
-    {{ end -}}
-    {{useImport $imp.Import}}({{fieldObjectCall $field}}),
-  {{ end -}}
-  ];
-
-  {{if .EnumTable -}}
-    enumTable = true;
+  {{ if .TableName -}}
+    tableName = {{.TableName}};
+    
   {{end -}}
 
- {{if gt (len .DBRows) 0}}
+  {{ if .EnumTable -}}
+    enumTable = true;
+
+  {{end -}}
+
+  fields: {{useImport "Field"}} [] = [
+  {{ range $field := .Fields -}}
+    {{$imp := $field.GetImport -}}
+    {{- template "reserveImport" $imp -}}
+    {{useImport $imp.Import}}({{fieldObjectCall $field}}),
+  {{- end -}}
+  ];
+
+
+  {{ if gt .DBRows.Len 0 -}}
     dbRows = {{.DBRowsCall}};
- {{ end -}}
+  {{ end -}}
+
+  {{ if gt (len .Edges) 0 -}}
+    edges: {{useImport "Edge"}} [] = [
+    {{ range $edge := .Edges -}}
+      {{$obj := edgeObjectCall $edge -}}
+      {{ range $imp := $obj.GetImports -}}
+        {{- template "reserveImport" $imp -}}
+        {{ $ignore := useImport $imp.Import -}}
+      {{ end -}}
+      {{ $obj.String }},
+    {{- end -}}
+    ];
+  {{end -}}
 }

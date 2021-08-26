@@ -287,6 +287,28 @@ type EdgeAction struct {
 	ActionOnlyFields  []*ActionField      `json:"actionOnlyFields"`
 }
 
+func (e *EdgeAction) GetTSStringOperation() string {
+	switch e.Operation {
+	case ent.CreateAction:
+		return "ActionOperation.Create"
+	case ent.EditAction:
+		return "ActionOperation.Edit"
+	case ent.DeleteAction:
+		return "ActionOperation.Delete"
+	case ent.MutationsAction:
+		return "ActionOperation.Mutations"
+	case ent.AddEdgeAction:
+		return "ActionOperation.AddEdge"
+	case ent.RemoveEdgeAction:
+		return "ActionOperation.RemoveEdge"
+	case ent.EdgeGroupAction:
+		return "ActionOperation.EdgeGroup"
+	default:
+		// TODO throw?
+		return ""
+	}
+}
+
 type Action struct {
 	Operation         ent.ActionOperation `json:"operation"`
 	Fields            []string            `json:"fields"`

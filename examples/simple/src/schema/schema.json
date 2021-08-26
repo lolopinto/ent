@@ -1,5 +1,6 @@
 {
   "Hello": {
+    "tableName": "table",
     "fields":[
       {
         "name": "foo",
@@ -26,6 +27,32 @@
         },
         "storageKey": "user_id",
         "defaultToViewerOnCreate": true
+      }
+    ],
+    "assocEdges": [
+      {
+        "name": "edgeName",
+        "schemaName": "User",
+        "tableName": "edge_name_table"
+      },
+      {
+        "name": "edgeName2",
+        "schemaName": "User",
+        "symmetric":true,
+        "edgeActions":[
+          {
+            "operation": 16,
+            "hideFromGraphQL":true
+          }
+        ]
+      },
+      {
+        "name": "edgeName2",
+        "schemaName": "User",
+        "unique":true,
+        "inverseEdge": {
+          "name": "inverseEdgeName2"
+        }
       }
     ]
   },

@@ -2,10 +2,12 @@ package generateschema
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/kv"
@@ -275,26 +277,26 @@ func TestEnumCodegenData(t *testing.T) {
 			EnumTable:  true,
 			Implements: true,
 			Base:       "Schema",
-			DBRows: []kv.List{
-				{
+			DBRows: kv.NewList(
+				kv.NewObjectFromPairs(
 					kv.Pair{
 						Key:   "status",
 						Value: strconv.Quote("open"),
 					},
-				},
-				{
+				),
+				kv.NewObjectFromPairs(
 					kv.Pair{
 						Key:   "status",
 						Value: strconv.Quote("pending"),
 					},
-				},
-				{
+				),
+				kv.NewObjectFromPairs(
 					kv.Pair{
 						Key:   "status",
 						Value: strconv.Quote("closed"),
 					},
-				},
-			},
+				),
+			),
 		},
 		c,
 		// breaking out in separate arg because of type mismatch
@@ -322,6 +324,78 @@ func testCodegenData(t *testing.T, exp, c *CodegenData, expFields []*expField) {
 	require.Len(t, exp.Fields, 0)
 	testFields(t, expFields, c.Fields)
 
-	require.Len(t, c.DBRows, len(exp.DBRows))
+	require.Equal(t, c.DBRows.Len(), exp.DBRows.Len())
 	assert.Equal(t, exp.DBRows, c.DBRows)
+}
+
+// doesn't test all the options but gets us there
+func TestFieldObjectCall(t *testing.T) {
+	f := input.Field{
+		Name:       "accountID",
+		StorageKey: "user_id",
+		ForeignKey: &input.ForeignKey{
+			Schema: "User",
+			Column: "id",
+		},
+	}
+	assert.Equal(
+		t,
+		fmt.Sprintf(
+			"{name: %s, storageKey: %s, foreignKey: {schema: %s, column: %s}}",
+			strconv.Quote("accountID"),
+			strconv.Quote("user_id"),
+			strconv.Quote("User"),
+			strconv.Quote("id"),
+		),
+		FieldObjectCall(&f),
+	)
+}
+
+func TestEdgeObjectCall(t *testing.T) {
+	edge := &input.AssocEdge{
+		Name:       "followers",
+		SchemaName: "User",
+		TableName:  "user_to_followers",
+		InverseEdge: &input.InverseAssocEdge{
+			Name: "followees",
+		},
+		EdgeActions: []*input.EdgeAction{
+			{
+				Operation:         ent.AddEdgeAction,
+				CustomActionName:  "AddFollowersAction",
+				CustomGraphQLName: "addFollowers",
+				CustomInputName:   "AddFollowersInput",
+			},
+			{
+				Operation:       ent.RemoveEdgeAction,
+				HideFromGraphQL: true,
+				ActionOnlyFields: []*input.ActionField{
+					{
+						Name:     "log",
+						Type:     input.ActionTypeBoolean,
+						Nullable: true,
+					},
+				},
+			},
+		},
+	}
+	o := EdgeObjectCall(edge)
+
+	assert.Equal(t,
+		fmt.Sprintf(
+			"{name: %s, schemaName: %s, tableName: %s, inverseEdge: {name: %s}, edgeActions: [{operation: %s, actionName: %s, graphQLName: %s, inputName: %s}, {operation: %s, hideFromGraphQL: true, actionOnlyFields: [{name: %s, type: %s, nullable: true}]}]}",
+			strconv.Quote(edge.Name),
+			strconv.Quote(edge.SchemaName),
+			strconv.Quote(edge.TableName),
+			strconv.Quote(edge.InverseEdge.Name),
+			edge.EdgeActions[0].GetTSStringOperation(),
+			strconv.Quote(edge.EdgeActions[0].CustomActionName),
+			strconv.Quote(edge.EdgeActions[0].CustomGraphQLName),
+			strconv.Quote(edge.EdgeActions[0].CustomInputName),
+			edge.EdgeActions[1].GetTSStringOperation(),
+			strconv.Quote("log"),
+			strconv.Quote("Boolean"),
+		),
+		o.String(),
+	)
 }

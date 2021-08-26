@@ -10,6 +10,7 @@ import (
 	"text/template"
 
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/file"
@@ -118,8 +119,6 @@ func parseField(s string, seen map[string]bool) (*input.Field, error) {
 	return ret, nil
 }
 
-// TODO keep these. kill Field. use *input.Field and go from there?
-// or wrap ours oround *input.Field
 // parseFields given the format foo:string, bar:int
 func parseFields(fields []string) ([]*input.Field, error) {
 	res := make([]*input.Field, len(fields))
@@ -136,30 +135,6 @@ func parseFields(fields []string) ([]*input.Field, error) {
 	}
 	return res, nil
 }
-
-//func
-// func NewFieldFromInput(f *input.Field) (*Field, error) {
-// 	typ, err := f.GetEntType()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	ret := &Field{
-// 		Name:                    f.Name,
-// 		Unique:                  f.Unique,
-// 		PrimaryKey:              f.PrimaryKey,
-// 		Index:                   f.Index,
-// 		Nullable:                f.Nullable,
-// 		Private:                 f.Private,
-// 		HideFromGraphQL:         f.HideFromGraphQL,
-// 		DefaultToViewerOnCreate: f.DefaultToViewerOnCreate,
-// 		ServerDefault:           fmt.Sprintf("%v", f.ServerDefault),
-// 		ForeignKey:              f.ForeignKey,
-// 		StorageKey:              f.StorageKey,
-// 		GraphQLName:             f.GraphQLName,
-// 	}
-
-// 	return ret, nil
-// }
 
 func setBooleanValue(f *input.Field, key string) {
 	switch key {
@@ -220,103 +195,235 @@ func setValue(f *input.Field, key string, val string) error {
 
 // returns {name: "sss"...}
 func FieldObjectCall(f *input.Field) string {
-	l := kv.List{
-		{
-			Key:   "name",
-			Value: strconv.Quote(f.Name),
-		},
-	}
+	o := kv.Object{}
+	o.Append(kv.Pair{
+		Key:   "name",
+		Value: strconv.Quote(f.Name),
+	},
+	)
 	if f.PrimaryKey {
-		l = append(l, kv.Pair{
+		o.Append(kv.Pair{
 			Key:   "primaryKey",
 			Value: "true",
 		})
 	}
 	if f.Unique {
-		l = append(l, kv.Pair{
+		o.Append(kv.Pair{
 			Key:   "unique",
 			Value: "true",
 		})
 	}
 	if f.Nullable {
-		l = append(l, kv.Pair{
+		o.Append(kv.Pair{
 			Key:   "nullable",
 			Value: "true",
 		})
 	}
 	if f.Index {
-		l = append(l, kv.Pair{
+		o.Append(kv.Pair{
 			Key:   "index",
 			Value: "true",
 		})
 	}
 	if f.Private {
-		l = append(l, kv.Pair{
+		o.Append(kv.Pair{
 			Key:   "private",
 			Value: "true",
 		})
 	}
 	if f.HideFromGraphQL {
-		l = append(l, kv.Pair{
+		o.Append(kv.Pair{
 			Key:   "hideFromGraphQL",
 			Value: "true",
 		})
 	}
 	if f.DefaultToViewerOnCreate {
-		l = append(l, kv.Pair{
+		o.Append(kv.Pair{
 			Key:   "defaultToViewerOnCreate",
 			Value: "true",
 		})
 	}
 	if f.ServerDefault != "" && f.ServerDefault != nil {
-		l = append(l, kv.Pair{
+		o.Append(kv.Pair{
 			Key:   "serverDefault",
 			Value: strconv.Quote(fmt.Sprintf("%v", f.ServerDefault)),
 		})
 	}
 	if f.StorageKey != "" {
-		l = append(l, kv.Pair{
+		o.Append(kv.Pair{
 			Key:   "storageKey",
 			Value: strconv.Quote(f.StorageKey),
 		})
 	}
 	if f.GraphQLName != "" {
-		l = append(l, kv.Pair{
+		o.Append(kv.Pair{
 			Key:   "graphqlName",
 			Value: strconv.Quote(f.GraphQLName),
 		})
 	}
 
 	if f.ForeignKey != nil {
-		fkeyKv := kv.List{
-			{
+		fkeyKv := kv.Object{}
+		fkeyKv.Append(
+			kv.Pair{
 				Key:   "schema",
 				Value: strconv.Quote(f.ForeignKey.Schema),
 			},
-			{
+			kv.Pair{
 				Key:   "column",
 				Value: strconv.Quote(f.ForeignKey.Column),
 			},
-		}
+		)
 		if f.ForeignKey.Name != "" {
-			fkeyKv = append(fkeyKv, kv.Pair{
+			fkeyKv.Append(kv.Pair{
 				Key:   "name",
 				Value: f.ForeignKey.Name,
 			})
 		}
 		if f.ForeignKey.DisableIndex {
-			fkeyKv = append(fkeyKv, kv.Pair{
+			fkeyKv.Append(kv.Pair{
 				Key:   "disableIndex",
 				Value: "true",
 			})
 		}
-		l = append(l, kv.Pair{
-			Key:   "foreignKey",
-			Value: fkeyKv.String(),
+		o.AppendObject(
+			"foreignKey",
+			fkeyKv,
+		)
+	}
+
+	// TODO fieldEdge
+
+	return o.String()
+}
+
+// this should be everything we need just need to test it
+func EdgeObjectCall(e *input.AssocEdge) *kv.Object {
+	o := &kv.Object{}
+	o.Append(
+		kv.Pair{
+			Key:   "name",
+			Value: strconv.Quote(e.Name),
+		},
+		kv.Pair{
+			Key:   "schemaName",
+			Value: strconv.Quote(e.SchemaName),
+		},
+	)
+	if e.TableName != "" {
+		o.Append(kv.Pair{
+			Key:   "tableName",
+			Value: strconv.Quote(e.TableName),
+		})
+	}
+	if e.Unique {
+		o.Append(kv.Pair{
+			Key:   "unique",
+			Value: "true",
+		})
+	}
+	if e.Symmetric {
+		o.Append(kv.Pair{
+			Key:   "symmetric",
+			Value: "true",
+		})
+	}
+	if e.HideFromGraphQL {
+		o.Append(kv.Pair{
+			Key:   "hideFromGraphQL",
+			Value: "true",
+		})
+	}
+	if e.InverseEdge != nil {
+		invEdge := kv.Object{}
+		invEdge.Append(
+			kv.Pair{
+				Key:   "name",
+				Value: strconv.Quote(e.InverseEdge.Name),
+			})
+		o.AppendObject("inverseEdge", invEdge)
+	}
+	if len(e.EdgeActions) > 0 {
+		edgeKvs := kv.List{}
+		for _, action := range e.EdgeActions {
+			edgeKvs.Append(getEdgeAction(action))
+		}
+		o.AppendList("edgeActions", edgeKvs)
+	}
+	return o
+}
+
+func getEdgeAction(action *input.EdgeAction) kv.Object {
+	actionKv := kv.Object{}
+	actionKv.Append(
+		kv.Pair{
+			Key:   "operation",
+			Value: action.GetTSStringOperation(),
+			Import: &kv.Import{
+				ImportPath: codepath.SchemaPackage,
+				Import:     "ActionOperation",
+			},
+		},
+	)
+	if action.CustomActionName != "" {
+		actionKv.Append(kv.Pair{
+			Key:   "actionName",
+			Value: strconv.Quote(action.CustomActionName),
+		})
+	}
+	if action.CustomGraphQLName != "" {
+		actionKv.Append(kv.Pair{
+			Key:   "graphQLName",
+			Value: strconv.Quote(action.CustomGraphQLName),
+		})
+	}
+	if action.CustomInputName != "" {
+		actionKv.Append(kv.Pair{
+			Key:   "inputName",
+			Value: strconv.Quote(action.CustomInputName),
+		})
+	}
+	if action.HideFromGraphQL {
+		actionKv.Append(kv.Pair{
+			Key:   "hideFromGraphQL",
+			Value: "true",
 		})
 	}
 
-	return l.String()
+	if len(action.ActionOnlyFields) > 0 {
+		l := kv.List{}
+		for _, f := range action.ActionOnlyFields {
+			l.Append(getActionOnlyField(f))
+		}
+		actionKv.AppendList("actionOnlyFields", l)
+	}
+	return actionKv
+}
+
+func getActionOnlyField(f *input.ActionField) kv.Object {
+	o := kv.NewObjectFromPairs(kv.Pair{
+		Key:   "name",
+		Value: strconv.Quote(f.Name),
+	}, kv.Pair{
+		Key:   "type",
+		Value: strconv.Quote(string(f.Type)),
+	})
+
+	if f.Nullable {
+		o.Append(kv.Pair{
+			Key:   "nullable",
+			Value: "true",
+		})
+	}
+	if f.ActionName != "" {
+		o.Append(kv.Pair{
+			Key:   "actionName",
+			Value: f.ActionName,
+		})
+	}
+	// TODO list shenanigans
+
+	return o
 }
 
 func validKey(key string) bool {
@@ -338,25 +445,17 @@ type CodegenData struct {
 	Package    *codegen.ImportPackage
 	Node       string
 	EnumTable  bool
+	TableName  string
 	Fields     []*input.Field
-	DBRows     []kv.List // list of lists...
+	Edges      []*input.AssocEdge
+	DBRows     kv.List
 	Extends    bool
 	Base       string
 	Implements bool
 }
 
 func (c *CodegenData) DBRowsCall() string {
-	var sb strings.Builder
-
-	sb.WriteString("[")
-	for i, r := range c.DBRows {
-		if i != 0 {
-			sb.WriteString(", ")
-		}
-		sb.WriteString(r.String())
-	}
-	sb.WriteString("]")
-	return sb.String()
+	return c.DBRows.String()
 }
 
 func NewEnumCodegenData(codePathInfo *codegen.CodePath, schema, col string, values []string) *CodegenData {
@@ -375,14 +474,15 @@ func NewEnumCodegenData(codePathInfo *codegen.CodePath, schema, col string, valu
 			PrimaryKey: true,
 		},
 	}
-	ret.DBRows = make([]kv.List, len(values))
-	for idx, v := range values {
-		ret.DBRows[idx] = kv.List{
-			kv.Pair{
-				Key:   col,
-				Value: strconv.Quote(v),
-			},
-		}
+	ret.DBRows = kv.List{}
+
+	for _, v := range values {
+		o := kv.Object{}
+		o.Append(kv.Pair{
+			Key:   col,
+			Value: strconv.Quote(v),
+		})
+		ret.DBRows.Append(o)
 	}
 
 	return ret
@@ -393,6 +493,7 @@ func NewCodegenDataFromInputNode(codePathInfo *codegen.CodePath, node string, n 
 		Node:    node,
 		Package: codePathInfo.GetImportPackage(),
 		Fields:  n.Fields,
+		Edges:   n.AssocEdges,
 	}
 	if n.EnumTable {
 		ret.EnumTable = true
@@ -403,21 +504,24 @@ func NewCodegenDataFromInputNode(codePathInfo *codegen.CodePath, node string, n 
 		ret.Extends = true
 		ret.Base = "BaseEntSchema"
 	}
+	if n.TableName != nil {
+		ret.TableName = strconv.Quote(*n.TableName)
+	}
 
 	// TODO throw for unsupported Fields?
 	// TODO email, password, phone not currently supported
 
 	// convert db rows
-	ret.DBRows = make([]kv.List, len(n.DBRows))
-	for i, dbrow := range n.DBRows {
-		var l kv.List
+	ret.DBRows = kv.List{}
+	for _, dbrow := range n.DBRows {
+		var o kv.Object
 		for k, v := range dbrow {
-			l = append(l, kv.Pair{
+			o.Append(kv.Pair{
 				Key:   k,
-				Value: fmt.Sprintf("%v", v),
+				Value: strconv.Quote(fmt.Sprintf("%v", v)),
 			})
 		}
-		ret.DBRows[i] = l
+		ret.DBRows.Append(o)
 	}
 
 	return ret
@@ -482,6 +586,7 @@ func GenerateSchema(codePathInfo *codegen.CodePath, data *CodegenData, node stri
 func getFuncMap(imps *tsimport.Imports) template.FuncMap {
 	m := imps.FuncMap()
 	m["fieldObjectCall"] = FieldObjectCall
+	m["edgeObjectCall"] = EdgeObjectCall
 
 	return m
 }
