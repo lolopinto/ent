@@ -93,3 +93,15 @@ func TestNestedObject(t *testing.T) {
 	})
 	require.Equal(t, o.String(), "{list: [{key1: value1, key2: value2, key3: value3}, {col1: val1}]}")
 }
+
+func TestListItem(t *testing.T) {
+	li := &kv.ListItem{
+		Items: []string{
+			"one",
+			"two",
+			"three",
+			"four",
+		},
+	}
+	require.Equal(t, li.String(), "[one, two, three, four]")
+}

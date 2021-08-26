@@ -1,4 +1,4 @@
-{{ reserveImport .Package.SchemaPackagePath "BaseEntSchema" "Field" "Schema" "Edge"}}
+{{ reserveImport .Package.SchemaPackagePath "BaseEntSchema" "Field" "Schema" "Edge" "AssocEdgeGroup"}}
 
 {{/* takes an Import with ImportPath Import DefaultImport fields */ -}}
 {{define "reserveImport"}}
@@ -8,7 +8,16 @@
   {{ else -}}
     {{reserveImport $imp.ImportPath $imp.Import -}}
   {{ end -}}
-{{end}}
+{{- end -}}
+
+{{define "kvObjectLine" -}}
+  {{ $obj := . -}}
+  {{- range $imp := $obj.GetImports -}}
+    {{- template "reserveImport" $imp -}}
+    {{ $ignore := useImport $imp.Import -}}
+  {{- end -}}
+  {{ $obj.String }},
+{{- end -}}
 
 
 {{if .Extends -}}
@@ -41,15 +50,20 @@
     dbRows = {{.DBRowsCall}};
   {{ end -}}
 
-  {{ if gt (len .Edges) 0 -}}
+  {{ if gt (len .Edges) 0 }}
     edges: {{useImport "Edge"}} [] = [
     {{ range $edge := .Edges -}}
       {{$obj := edgeObjectCall $edge -}}
-      {{ range $imp := $obj.GetImports -}}
-        {{- template "reserveImport" $imp -}}
-        {{ $ignore := useImport $imp.Import -}}
-      {{ end -}}
-      {{ $obj.String }},
+      {{- template "kvObjectLine" $obj -}}
+    {{- end -}}
+    ];
+  {{end -}}
+
+  {{ if gt (len .EdgeGroups) 0 }}
+    edgeGroups: {{useImport "AssocEdgeGroup"}} [] = [
+    {{ range $group := .EdgeGroups -}}
+      {{$obj := edgeGroupObjectCall $group -}}
+      {{- template "kvObjectLine" $obj -}}
     {{- end -}}
     ];
   {{end -}}

@@ -426,6 +426,65 @@ func getActionOnlyField(f *input.ActionField) kv.Object {
 	return o
 }
 
+func EdgeGroupObjectCall(eg *input.AssocEdgeGroup) *kv.Object {
+	o := kv.NewObjectFromPairs(
+		kv.Pair{
+			Key:   "name",
+			Value: strconv.Quote(eg.Name),
+		},
+		kv.Pair{
+			Key:   "groupStatusName",
+			Value: strconv.Quote(eg.GroupStatusName),
+		},
+	)
+
+	if eg.TableName != "" {
+		o.Append(kv.Pair{
+			Key:   "tableName",
+			Value: strconv.Quote(eg.TableName),
+		})
+	}
+	if len(eg.AssocEdges) > 0 {
+		l := kv.List{}
+		for _, edge := range eg.AssocEdges {
+			edgeObj := EdgeObjectCall(edge)
+			l.Append(*edgeObj)
+		}
+		o.AppendList("assocEdges", l)
+	}
+	if len(eg.StatusEnums) > 0 {
+		o.Append(kv.Pair{
+			Key: "statusEnums",
+			Value: (&kv.ListItem{
+				Items: eg.StatusEnums,
+			}).String(),
+		})
+	}
+	if len(eg.NullStates) > 0 {
+		nullStates := make([]string, len(eg.NullStates))
+		for i, ns := range eg.NullStates {
+			nullStates[i] = strconv.Quote(ns)
+		}
+		o.Append(kv.Pair{
+			Key: "nullStates",
+			Value: (&kv.ListItem{
+				Items: nullStates,
+			}).String(),
+		})
+	}
+	if eg.NullStateFn != "" {
+		o.Append(kv.Pair{
+			Key:   "nullStateFn",
+			Value: strconv.Quote(eg.NullStateFn),
+		})
+	}
+	// TODO edgeActions is not a typescript thing but can be here. throw?
+	if eg.EdgeAction != nil {
+		o.AppendObject("edgeAction", getEdgeAction(eg.EdgeAction))
+	}
+
+	return &o
+}
 func validKey(key string) bool {
 	return booleanKeys[key]
 }
@@ -448,6 +507,7 @@ type CodegenData struct {
 	TableName  string
 	Fields     []*input.Field
 	Edges      []*input.AssocEdge
+	EdgeGroups []*input.AssocEdgeGroup
 	DBRows     kv.List
 	Extends    bool
 	Base       string
@@ -490,10 +550,11 @@ func NewEnumCodegenData(codePathInfo *codegen.CodePath, schema, col string, valu
 
 func NewCodegenDataFromInputNode(codePathInfo *codegen.CodePath, node string, n *input.Node) *CodegenData {
 	ret := &CodegenData{
-		Node:    node,
-		Package: codePathInfo.GetImportPackage(),
-		Fields:  n.Fields,
-		Edges:   n.AssocEdges,
+		Node:       node,
+		Package:    codePathInfo.GetImportPackage(),
+		Fields:     n.Fields,
+		Edges:      n.AssocEdges,
+		EdgeGroups: n.AssocEdgeGroups,
 	}
 	if n.EnumTable {
 		ret.EnumTable = true
@@ -587,6 +648,7 @@ func getFuncMap(imps *tsimport.Imports) template.FuncMap {
 	m := imps.FuncMap()
 	m["fieldObjectCall"] = FieldObjectCall
 	m["edgeObjectCall"] = EdgeObjectCall
+	m["edgeGroupObjectCall"] = EdgeGroupObjectCall
 
 	return m
 }

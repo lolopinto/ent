@@ -399,3 +399,68 @@ func TestEdgeObjectCall(t *testing.T) {
 		o.String(),
 	)
 }
+
+func TestEdgeGroupObjectCall(t *testing.T) {
+	g := &input.AssocEdgeGroup{
+		Name:            "friendships",
+		GroupStatusName: "friendshipStatus",
+		NullStates:      []string{"canRequest", "cannotRequest"},
+		NullStateFn:     "friendshipStatus",
+		AssocEdges: []*input.AssocEdge{
+			{
+				Name:       "outgoingRequest",
+				SchemaName: "User",
+				InverseEdge: &input.InverseAssocEdge{
+					Name: "incomingRequest",
+				},
+			},
+			{
+				Name:       "friends",
+				SchemaName: "User",
+				Symmetric:  true,
+			},
+		},
+		EdgeAction: &input.EdgeAction{
+			Operation: ent.EdgeGroupAction,
+			ActionOnlyFields: []*input.ActionField{
+				{
+					Name: "blah",
+					Type: input.ActionTypeString,
+				},
+			},
+		},
+	}
+	o := EdgeGroupObjectCall(g)
+
+	assert.Equal(
+		t,
+		fmt.Sprintf(
+			"{name: %s, groupStatusName: %s, assocEdges: %s, nullStates: %s, nullStateFn: %s, edgeAction: %s}",
+			strconv.Quote(g.Name),
+			strconv.Quote(g.GroupStatusName),
+			// assocEdges
+			fmt.Sprintf(
+				"[{name: %s, schemaName: %s, inverseEdge: {name: %s}}, {name: %s, schemaName: %s, symmetric: true}]",
+				strconv.Quote("outgoingRequest"),
+				strconv.Quote("User"),
+				strconv.Quote("incomingRequest"),
+				strconv.Quote("friends"),
+				strconv.Quote("User"),
+			),
+			fmt.Sprintf(
+				"[%s, %s]",
+				strconv.Quote(g.NullStates[0]),
+				strconv.Quote(g.NullStates[1]),
+			),
+			strconv.Quote(g.NullStateFn),
+			// edgeAction
+			fmt.Sprintf(
+				"{operation: %s, actionOnlyFields: [{name: %s, type: %s}]}",
+				"ActionOperation.EdgeGroup",
+				strconv.Quote("blah"),
+				strconv.Quote("String"),
+			),
+		),
+		o.String(),
+	)
+}

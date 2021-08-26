@@ -1,6 +1,9 @@
 package kv
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 type Import struct {
 	ImportPath, Import string
@@ -107,4 +110,12 @@ func NewList(o ...Object) List {
 	l := List{}
 	l.Append(o...)
 	return l
+}
+
+type ListItem struct {
+	Items []string
+}
+
+func (li *ListItem) String() string {
+	return fmt.Sprintf("[%s]", strings.Join(li.Items, ", "))
 }

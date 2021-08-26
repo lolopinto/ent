@@ -54,6 +54,37 @@
           "name": "inverseEdgeName2"
         }
       }
+    ],
+    "assocEdgeGroups": [
+      {
+        "name": "friendships",
+        "groupStatusName": "friendshipStatus",
+        "nullStates": ["canRequest", "cannotRequest"],
+        "nullStateFn": "friendshipStatus",
+        "assocEdges": [
+          {
+            "name": "outgoingRequest",
+            "schemaName": "User",
+            "inverseEdge": {
+              "name": "incomingRequest"
+            }
+          },
+          {
+            "name": "friends",
+            "schemaName": "User",
+            "symmetric": true
+          }
+        ],
+        "edgeAction":{
+          "operation": 64,
+          "actionOnlyFields": [
+            {
+              "name": "blah",
+              "type": "String"
+            }
+          ]
+        }
+      }
     ]
   },
   "RequestStatus": {
