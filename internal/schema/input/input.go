@@ -287,8 +287,8 @@ type EdgeAction struct {
 	ActionOnlyFields  []*ActionField      `json:"actionOnlyFields"`
 }
 
-func (e *EdgeAction) GetTSStringOperation() string {
-	switch e.Operation {
+func getTSStringOperation(op ent.ActionOperation) string {
+	switch op {
 	case ent.CreateAction:
 		return "ActionOperation.Create"
 	case ent.EditAction:
@@ -309,6 +309,10 @@ func (e *EdgeAction) GetTSStringOperation() string {
 	}
 }
 
+func (e *EdgeAction) GetTSStringOperation() string {
+	return getTSStringOperation(e.Operation)
+}
+
 type Action struct {
 	Operation         ent.ActionOperation `json:"operation"`
 	Fields            []string            `json:"fields"`
@@ -317,6 +321,10 @@ type Action struct {
 	CustomInputName   string              `json:"inputName"`
 	HideFromGraphQL   bool                `json:"hideFromGraphQL"`
 	ActionOnlyFields  []*ActionField      `json:"actionOnlyFields"`
+}
+
+func (a *Action) GetTSStringOperation() string {
+	return getTSStringOperation(a.Operation)
 }
 
 type NullableItem string

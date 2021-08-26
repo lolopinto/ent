@@ -454,22 +454,14 @@ func EdgeGroupObjectCall(eg *input.AssocEdgeGroup) *kv.Object {
 	}
 	if len(eg.StatusEnums) > 0 {
 		o.Append(kv.Pair{
-			Key: "statusEnums",
-			Value: (&kv.ListItem{
-				Items: eg.StatusEnums,
-			}).String(),
+			Key:   "statusEnums",
+			Value: kv.NewListItemWithQuotedItems(eg.StatusEnums).String(),
 		})
 	}
 	if len(eg.NullStates) > 0 {
-		nullStates := make([]string, len(eg.NullStates))
-		for i, ns := range eg.NullStates {
-			nullStates[i] = strconv.Quote(ns)
-		}
 		o.Append(kv.Pair{
-			Key: "nullStates",
-			Value: (&kv.ListItem{
-				Items: nullStates,
-			}).String(),
+			Key:   "nullStates",
+			Value: kv.NewListItemWithQuotedItems(eg.NullStates).String(),
 		})
 	}
 	if eg.NullStateFn != "" {
@@ -484,6 +476,55 @@ func EdgeGroupObjectCall(eg *input.AssocEdgeGroup) *kv.Object {
 	}
 
 	return &o
+}
+
+func ActionObjectCall(a *input.Action) *kv.Object {
+	o := &kv.Object{}
+	o.Append(kv.Pair{
+		Key:   "operation",
+		Value: a.GetTSStringOperation(),
+	})
+	if len(a.Fields) > 0 {
+		o.Append(kv.Pair{
+			Key:   "fields",
+			Value: kv.NewListItemWithQuotedItems(a.Fields).String(),
+		})
+	}
+	if a.CustomActionName != "" {
+		o.Append(kv.Pair{
+			Key:   "actionName",
+			Value: strconv.Quote(a.CustomActionName),
+		})
+	}
+	if a.CustomInputName != "" {
+		o.Append(kv.Pair{
+			Key:   "inputName",
+			Value: strconv.Quote(a.CustomInputName),
+		})
+	}
+	if a.CustomGraphQLName != "" {
+		o.Append(kv.Pair{
+			Key:   "graphQLName",
+			Value: strconv.Quote(a.CustomGraphQLName),
+		})
+	}
+	if a.HideFromGraphQL {
+		o.Append(kv.Pair{
+			Key:   "hideFromGraphQL",
+			Value: "true",
+		})
+	}
+
+	if len(a.ActionOnlyFields) > 0 {
+		l := kv.List{}
+		for _, a2 := range a.ActionOnlyFields {
+			l.Append(getActionOnlyField(a2))
+		}
+		o.AppendList("actionOnlyFields", l)
+	}
+
+	// TODO things like NoFields, requiredField, optionalField
+	return o
 }
 func validKey(key string) bool {
 	return booleanKeys[key]
@@ -507,6 +548,7 @@ type CodegenData struct {
 	TableName  string
 	Fields     []*input.Field
 	Edges      []*input.AssocEdge
+	Actions    []*input.Action
 	EdgeGroups []*input.AssocEdgeGroup
 	DBRows     kv.List
 	Extends    bool
@@ -555,6 +597,7 @@ func NewCodegenDataFromInputNode(codePathInfo *codegen.CodePath, node string, n 
 		Fields:     n.Fields,
 		Edges:      n.AssocEdges,
 		EdgeGroups: n.AssocEdgeGroups,
+		Actions:    n.Actions,
 	}
 	if n.EnumTable {
 		ret.EnumTable = true
@@ -649,6 +692,7 @@ func getFuncMap(imps *tsimport.Imports) template.FuncMap {
 	m["fieldObjectCall"] = FieldObjectCall
 	m["edgeObjectCall"] = EdgeObjectCall
 	m["edgeGroupObjectCall"] = EdgeGroupObjectCall
+	m["actionObjectCall"] = ActionObjectCall
 
 	return m
 }

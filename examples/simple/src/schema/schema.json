@@ -85,6 +85,31 @@
           ]
         }
       }
+    ],
+    "actions":[
+      {
+        "operation":1,
+        "fields":["name", "start_time"]
+      },
+      {
+        "operation":2,
+        "fields": ["name", "start_time"],
+        "actionName": "EditFooAction",
+        "graphqlName":"fooEdit",
+        "inputName": "editFooInput"
+      },
+      {
+        "operation":4,
+        "hideFromGraphQL":true,
+        "actionOnlyFields": [
+          {
+            "name": "foo",
+            "type":"String",
+            "nullable": "true"
+          }
+        ]
+      }
+
     ]
   },
   "RequestStatus": {

@@ -2,6 +2,7 @@ package kv
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -114,6 +115,14 @@ func NewList(o ...Object) List {
 
 type ListItem struct {
 	Items []string
+}
+
+func NewListItemWithQuotedItems(l []string) *ListItem {
+	ret := make([]string, len(l))
+	for i, item := range l {
+		ret[i] = strconv.Quote(item)
+	}
+	return &ListItem{Items: ret}
 }
 
 func (li *ListItem) String() string {

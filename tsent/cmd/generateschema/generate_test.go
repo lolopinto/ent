@@ -406,6 +406,7 @@ func TestEdgeGroupObjectCall(t *testing.T) {
 		GroupStatusName: "friendshipStatus",
 		NullStates:      []string{"canRequest", "cannotRequest"},
 		NullStateFn:     "friendshipStatus",
+		StatusEnums:     []string{"outgoingRequest"},
 		AssocEdges: []*input.AssocEdge{
 			{
 				Name:       "outgoingRequest",
@@ -435,7 +436,7 @@ func TestEdgeGroupObjectCall(t *testing.T) {
 	assert.Equal(
 		t,
 		fmt.Sprintf(
-			"{name: %s, groupStatusName: %s, assocEdges: %s, nullStates: %s, nullStateFn: %s, edgeAction: %s}",
+			"{name: %s, groupStatusName: %s, assocEdges: %s, statusEnums: %s, nullStates: %s, nullStateFn: %s, edgeAction: %s}",
 			strconv.Quote(g.Name),
 			strconv.Quote(g.GroupStatusName),
 			// assocEdges
@@ -447,6 +448,7 @@ func TestEdgeGroupObjectCall(t *testing.T) {
 				strconv.Quote("friends"),
 				strconv.Quote("User"),
 			),
+			fmt.Sprintf("[%s]", strconv.Quote(g.StatusEnums[0])),
 			fmt.Sprintf(
 				"[%s, %s]",
 				strconv.Quote(g.NullStates[0]),
@@ -457,6 +459,41 @@ func TestEdgeGroupObjectCall(t *testing.T) {
 			fmt.Sprintf(
 				"{operation: %s, actionOnlyFields: [{name: %s, type: %s}]}",
 				"ActionOperation.EdgeGroup",
+				strconv.Quote("blah"),
+				strconv.Quote("String"),
+			),
+		),
+		o.String(),
+	)
+}
+
+func TestActionCall(t *testing.T) {
+	a := &input.Action{
+		Operation:         ent.CreateAction,
+		Fields:            []string{"name", "start_time"},
+		CustomActionName:  "CreateFooAction",
+		CustomGraphQLName: "fooCreate",
+		CustomInputName:   "CreateFooInput",
+		ActionOnlyFields: []*input.ActionField{
+			{
+				Name: "blah",
+				Type: input.ActionTypeString,
+			},
+		},
+	}
+
+	o := ActionObjectCall(a)
+
+	assert.Equal(t,
+		fmt.Sprintf(
+			"{operation: %s, fields: %s, actionName: %s, inputName: %s, graphQLName: %s, actionOnlyFields: [%s]}",
+			"ActionOperation.Create",
+			kv.NewListItemWithQuotedItems([]string{"name", "start_time"}).String(),
+			strconv.Quote("CreateFooAction"),
+			strconv.Quote("CreateFooInput"),
+			strconv.Quote("fooCreate"),
+			fmt.Sprintf(
+				"{name: %s, type: %s}",
 				strconv.Quote("blah"),
 				strconv.Quote("String"),
 			),

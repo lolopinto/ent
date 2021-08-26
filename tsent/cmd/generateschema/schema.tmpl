@@ -1,4 +1,4 @@
-{{ reserveImport .Package.SchemaPackagePath "BaseEntSchema" "Field" "Schema" "Edge" "AssocEdgeGroup"}}
+{{ reserveImport .Package.SchemaPackagePath "BaseEntSchema" "Field" "Schema" "Edge" "AssocEdgeGroup" "Action"}}
 
 {{/* takes an Import with ImportPath Import DefaultImport fields */ -}}
 {{define "reserveImport"}}
@@ -63,6 +63,15 @@
     edgeGroups: {{useImport "AssocEdgeGroup"}} [] = [
     {{ range $group := .EdgeGroups -}}
       {{$obj := edgeGroupObjectCall $group -}}
+      {{- template "kvObjectLine" $obj -}}
+    {{- end -}}
+    ];
+  {{end -}}
+
+  {{ if gt (len .Actions) 0 }}
+    actions: {{useImport "Action"}} [] = [
+    {{ range $action := .Actions -}}
+      {{$obj := actionObjectCall $action -}}
       {{- template "kvObjectLine" $obj -}}
     {{- end -}}
     ];
