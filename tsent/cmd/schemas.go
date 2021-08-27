@@ -24,6 +24,14 @@ var schemasInfo schemasArg
 var generateSchemasCmd = &cobra.Command{
 	Use:   "schemas",
 	Short: "generate schemas",
+	Long: `generate multiple schemas by taking in a json file with the format that's generated in the codegen process. 
+Not very user-friendly since some of the keys are slightly different from the TypeScript schema.
+See https://github.com/lolopinto/ent/blob/main/internal/schema/input/input.go#L20-L29 and other places in that file for different keys
+
+The json file can be specified via --file or piped through e.g. cat schema.json | tsent generate schemas`,
+	Example: `tsent generate schemas --file schema.json
+cat schema.json | tsent generate schemas
+cat schema.json | tsent generate schemas --force`,
 	RunE: func(_ *cobra.Command, args []string) error {
 		r, err := getBuffer()
 		if err != nil {
