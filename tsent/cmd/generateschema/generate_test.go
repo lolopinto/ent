@@ -614,3 +614,24 @@ func TestCheckConstraintCall(t *testing.T) {
 		Import:     "ConstraintType",
 	})
 }
+
+func TestIndexCall(t *testing.T) {
+	i := &input.Index{
+		Name:    "unique_index",
+		Columns: []string{"user_id", "email_address"},
+		Unique:  true,
+	}
+
+	o := IndexObjectCall(i)
+
+	assert.Equal(
+		t,
+		fmt.Sprintf(
+			"{name: %s, columns: %s, unique: true}",
+			strconv.Quote(i.Name),
+			kv.NewListItemWithQuotedItems(i.Columns).String(),
+		),
+		o.String(),
+	)
+	assert.Len(t, o.GetImports(), 0)
+}

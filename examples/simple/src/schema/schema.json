@@ -133,6 +133,13 @@
         "columns": ["price"],
         "condition": "price > 0"
       }
+    ],
+    "indices":[
+      {
+        "name": "uniqueIndex",
+        "columns": ["emailAddress", "code"],
+        "unique":true
+      }
     ]
   },
   "RequestStatus": {

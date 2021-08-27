@@ -580,6 +580,26 @@ func ConstraintObjectCall(c *input.Constraint) *kv.Object {
 	return &o
 }
 
+func IndexObjectCall(i *input.Index) *kv.Object {
+	o := kv.NewObjectFromPairs(
+		kv.Pair{
+			Key:   "name",
+			Value: strconv.Quote(i.Name),
+		},
+		kv.Pair{
+			Key:   "columns",
+			Value: kv.NewListItemWithQuotedItems(i.Columns).String(),
+		},
+	)
+	if i.Unique {
+		o.Append(kv.Pair{
+			Key:   "unique",
+			Value: "true",
+		})
+	}
+	return &o
+}
+
 func validKey(key string) bool {
 	return booleanKeys[key]
 }
@@ -605,6 +625,7 @@ type CodegenData struct {
 	Actions     []*input.Action
 	EdgeGroups  []*input.AssocEdgeGroup
 	Constraints []*input.Constraint
+	Indices     []*input.Index
 	DBRows      kv.List
 	Extends     bool
 	Base        string
@@ -654,6 +675,7 @@ func NewCodegenDataFromInputNode(codePathInfo *codegen.CodePath, node string, n 
 		EdgeGroups:  n.AssocEdgeGroups,
 		Actions:     n.Actions,
 		Constraints: n.Constraints,
+		Indices:     n.Indices,
 	}
 	if n.EnumTable {
 		ret.EnumTable = true
@@ -750,6 +772,7 @@ func getFuncMap(imps *tsimport.Imports) template.FuncMap {
 	m["edgeGroupObjectCall"] = EdgeGroupObjectCall
 	m["actionObjectCall"] = ActionObjectCall
 	m["constraintObjectCall"] = ConstraintObjectCall
+	m["indexObjectCall"] = IndexObjectCall
 
 	return m
 }
