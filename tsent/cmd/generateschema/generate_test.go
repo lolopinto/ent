@@ -9,6 +9,7 @@ import (
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/kv"
 	"github.com/lolopinto/ent/internal/schema/input"
@@ -381,6 +382,14 @@ func TestEdgeObjectCall(t *testing.T) {
 	}
 	o := EdgeObjectCall(edge)
 
+	imps := o.GetImports()
+	assert.Len(t, imps, 2)
+	assert.Equal(t, imps[0], &kv.Import{
+		ImportPath: codepath.SchemaPackage,
+		Import:     "ActionOperation",
+	})
+	assert.Equal(t, imps[0], imps[1])
+
 	assert.Equal(t,
 		fmt.Sprintf(
 			"{name: %s, schemaName: %s, tableName: %s, inverseEdge: {name: %s}, edgeActions: [{operation: %s, actionName: %s, graphQLName: %s, inputName: %s}, {operation: %s, hideFromGraphQL: true, actionOnlyFields: [{name: %s, type: %s, nullable: true}]}]}",
@@ -432,6 +441,12 @@ func TestEdgeGroupObjectCall(t *testing.T) {
 		},
 	}
 	o := EdgeGroupObjectCall(g)
+	imps := o.GetImports()
+	assert.Len(t, imps, 1)
+	assert.Equal(t, imps[0], &kv.Import{
+		ImportPath: codepath.SchemaPackage,
+		Import:     "ActionOperation",
+	})
 
 	assert.Equal(
 		t,
@@ -484,6 +499,13 @@ func TestActionCall(t *testing.T) {
 
 	o := ActionObjectCall(a)
 
+	imps := o.GetImports()
+	assert.Len(t, imps, 1)
+	assert.Equal(t, imps[0], &kv.Import{
+		ImportPath: codepath.SchemaPackage,
+		Import:     "ActionOperation",
+	})
+
 	assert.Equal(t,
 		fmt.Sprintf(
 			"{operation: %s, fields: %s, actionName: %s, inputName: %s, graphQLName: %s, actionOnlyFields: [%s]}",
@@ -500,4 +522,95 @@ func TestActionCall(t *testing.T) {
 		),
 		o.String(),
 	)
+}
+
+func TestPkeyConstraintCall(t *testing.T) {
+	c := &input.Constraint{
+		Name:    "user_photos_pkey",
+		Type:    input.PrimaryKeyConstraint,
+		Columns: []string{"UserID", "PhotoID"},
+	}
+
+	o := ConstraintObjectCall(c)
+	assert.Equal(
+		t,
+		fmt.Sprintf(
+			"{name: %s, type: %s, columns: %s}",
+			strconv.Quote(c.Name),
+			"ConstraintType.PrimaryKey",
+			kv.NewListItemWithQuotedItems([]string{"UserID", "PhotoID"}).String(),
+		),
+		o.String(),
+	)
+	imps := o.GetImports()
+	assert.Len(t, imps, 1)
+	assert.Equal(t, imps[0], &kv.Import{
+		ImportPath: codepath.SchemaPackage,
+		Import:     "ConstraintType",
+	})
+}
+
+func TestFkeyConstraintCall(t *testing.T) {
+	c := &input.Constraint{
+		Name:    "photos_fkey",
+		Type:    input.ForeignKeyConstraint,
+		Columns: []string{"UserID"},
+		ForeignKey: &input.ForeignKeyInfo{
+			TableName: "users",
+			Columns:   []string{"UserID"},
+			OnDelete:  "RESTRICT",
+		},
+	}
+
+	o := ConstraintObjectCall(c)
+	assert.Equal(
+		t,
+		fmt.Sprintf(
+			"{name: %s, type: %s, columns: %s, fkey: %s}",
+			strconv.Quote(c.Name),
+			"ConstraintType.ForeignKey",
+			kv.NewListItemWithQuotedItems([]string{"UserID"}).String(),
+			fmt.Sprintf(
+				"{tableName: %s, columns: %s, ondelete: %s}",
+				strconv.Quote(c.ForeignKey.TableName),
+				kv.NewListItemWithQuotedItems(c.ForeignKey.Columns).String(),
+				strconv.Quote(string(c.ForeignKey.OnDelete)),
+			),
+		),
+		o.String(),
+	)
+	imps := o.GetImports()
+	assert.Len(t, imps, 1)
+	assert.Equal(t, imps[0], &kv.Import{
+		ImportPath: codepath.SchemaPackage,
+		Import:     "ConstraintType",
+	})
+}
+
+func TestCheckConstraintCall(t *testing.T) {
+	c := &input.Constraint{
+		Name:      "price_check",
+		Type:      input.CheckConstraint,
+		Columns:   []string{"price"},
+		Condition: "price > 10",
+	}
+
+	o := ConstraintObjectCall(c)
+	assert.Equal(
+		t,
+		fmt.Sprintf(
+			"{name: %s, type: %s, columns: %s, condition: %s}",
+			strconv.Quote(c.Name),
+			"ConstraintType.Check",
+			kv.NewListItemWithQuotedItems([]string{"price"}).String(),
+			strconv.Quote(c.Condition),
+		),
+		o.String(),
+	)
+	imps := o.GetImports()
+	assert.Len(t, imps, 1)
+	assert.Equal(t, imps[0], &kv.Import{
+		ImportPath: codepath.SchemaPackage,
+		Import:     "ConstraintType",
+	})
 }

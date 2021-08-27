@@ -483,6 +483,10 @@ func ActionObjectCall(a *input.Action) *kv.Object {
 	o.Append(kv.Pair{
 		Key:   "operation",
 		Value: a.GetTSStringOperation(),
+		Import: &kv.Import{
+			ImportPath: codepath.SchemaPackage,
+			Import:     "ActionOperation",
+		},
 	})
 	if len(a.Fields) > 0 {
 		o.Append(kv.Pair{
@@ -526,6 +530,56 @@ func ActionObjectCall(a *input.Action) *kv.Object {
 	// TODO things like NoFields, requiredField, optionalField
 	return o
 }
+
+func ConstraintObjectCall(c *input.Constraint) *kv.Object {
+	o := kv.NewObjectFromPairs(
+		kv.Pair{
+			Key:   "name",
+			Value: strconv.Quote(c.Name),
+		},
+		kv.Pair{
+			Key:   "type",
+			Value: c.GetConstraintTypeString(),
+			Import: &kv.Import{
+				ImportPath: codepath.SchemaPackage,
+				Import:     "ConstraintType",
+			},
+		},
+		kv.Pair{
+			Key:   "columns",
+			Value: kv.NewListItemWithQuotedItems(c.Columns).String(),
+		},
+	)
+
+	if c.ForeignKey != nil {
+		fkey := kv.NewObjectFromPairs(
+			kv.Pair{
+				Key:   "tableName",
+				Value: strconv.Quote(c.ForeignKey.TableName),
+			},
+			kv.Pair{
+				Key:   "columns",
+				Value: kv.NewListItemWithQuotedItems(c.ForeignKey.Columns).String(),
+			},
+		)
+		if c.ForeignKey.OnDelete != "" {
+			fkey.Append(kv.Pair{
+				Key:   "ondelete",
+				Value: strconv.Quote(string(c.ForeignKey.OnDelete)),
+			})
+		}
+		o.AppendObject("fkey", fkey)
+	}
+
+	if c.Condition != "" {
+		o.Append(kv.Pair{
+			Key:   "condition",
+			Value: strconv.Quote(c.Condition),
+		})
+	}
+	return &o
+}
+
 func validKey(key string) bool {
 	return booleanKeys[key]
 }
@@ -542,18 +596,19 @@ var booleanKeys = map[string]bool{
 }
 
 type CodegenData struct {
-	Package    *codegen.ImportPackage
-	Node       string
-	EnumTable  bool
-	TableName  string
-	Fields     []*input.Field
-	Edges      []*input.AssocEdge
-	Actions    []*input.Action
-	EdgeGroups []*input.AssocEdgeGroup
-	DBRows     kv.List
-	Extends    bool
-	Base       string
-	Implements bool
+	Package     *codegen.ImportPackage
+	Node        string
+	EnumTable   bool
+	TableName   string
+	Fields      []*input.Field
+	Edges       []*input.AssocEdge
+	Actions     []*input.Action
+	EdgeGroups  []*input.AssocEdgeGroup
+	Constraints []*input.Constraint
+	DBRows      kv.List
+	Extends     bool
+	Base        string
+	Implements  bool
 }
 
 func (c *CodegenData) DBRowsCall() string {
@@ -592,12 +647,13 @@ func NewEnumCodegenData(codePathInfo *codegen.CodePath, schema, col string, valu
 
 func NewCodegenDataFromInputNode(codePathInfo *codegen.CodePath, node string, n *input.Node) *CodegenData {
 	ret := &CodegenData{
-		Node:       node,
-		Package:    codePathInfo.GetImportPackage(),
-		Fields:     n.Fields,
-		Edges:      n.AssocEdges,
-		EdgeGroups: n.AssocEdgeGroups,
-		Actions:    n.Actions,
+		Node:        node,
+		Package:     codePathInfo.GetImportPackage(),
+		Fields:      n.Fields,
+		Edges:       n.AssocEdges,
+		EdgeGroups:  n.AssocEdgeGroups,
+		Actions:     n.Actions,
+		Constraints: n.Constraints,
 	}
 	if n.EnumTable {
 		ret.EnumTable = true
@@ -693,6 +749,7 @@ func getFuncMap(imps *tsimport.Imports) template.FuncMap {
 	m["edgeObjectCall"] = EdgeObjectCall
 	m["edgeGroupObjectCall"] = EdgeGroupObjectCall
 	m["actionObjectCall"] = ActionObjectCall
+	m["constraintObjectCall"] = ConstraintObjectCall
 
 	return m
 }

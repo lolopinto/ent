@@ -110,6 +110,29 @@
         ]
       }
 
+    ],
+    "constraints":[
+      {
+        "name": "uniqueCode",
+        "type": "unique",
+        "columns": ["emailAddress", "code"]
+      },
+      {
+        "name": "userIDkey",
+        "type": "foreign",
+        "columns": ["userID"],
+        "fkey": {
+          "tableName": "users",
+          "ondelete": "RESTRICT",
+          "columns": ["id"]
+        }
+      },
+      {
+        "name": "positive_price",
+        "type": "check",
+        "columns": ["price"],
+        "condition": "price > 0"
+      }
     ]
   },
   "RequestStatus": {

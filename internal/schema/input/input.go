@@ -472,6 +472,22 @@ type Constraint struct {
 	Condition  string          `json:"condition"`
 }
 
+func (c *Constraint) GetConstraintTypeString() string {
+	switch c.Type {
+	case PrimaryKeyConstraint:
+		return "ConstraintType.PrimaryKey"
+	case ForeignKeyConstraint:
+		return "ConstraintType.ForeignKey"
+	case UniqueConstraint:
+		return "ConstraintType.Unique"
+	case CheckConstraint:
+		return "ConstraintType.Check"
+	default:
+		// TODO throw?
+		return ""
+	}
+}
+
 type Index struct {
 	Name    string   `json:"name"`
 	Columns []string `json:"columns"`

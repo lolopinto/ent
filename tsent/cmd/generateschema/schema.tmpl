@@ -1,4 +1,4 @@
-{{ reserveImport .Package.SchemaPackagePath "BaseEntSchema" "Field" "Schema" "Edge" "AssocEdgeGroup" "Action"}}
+{{ reserveImport .Package.SchemaPackagePath "BaseEntSchema" "Field" "Schema" "Edge" "AssocEdgeGroup" "Action" "Constraint" }}
 
 {{/* takes an Import with ImportPath Import DefaultImport fields */ -}}
 {{define "reserveImport"}}
@@ -72,6 +72,15 @@
     actions: {{useImport "Action"}} [] = [
     {{ range $action := .Actions -}}
       {{$obj := actionObjectCall $action -}}
+      {{- template "kvObjectLine" $obj -}}
+    {{- end -}}
+    ];
+  {{end -}}
+
+  {{ if gt (len .Constraints) 0 }}
+    constraints: {{useImport "Constraint"}}[] = [
+    {{ range $constraint := .Constraints -}}
+      {{$obj := constraintObjectCall $constraint -}}
       {{- template "kvObjectLine" $obj -}}
     {{- end -}}
     ];
