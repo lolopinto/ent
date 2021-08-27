@@ -64,7 +64,6 @@ cat schema.json | tsent generate schemas --force`,
 		if err != nil {
 			return err
 		}
-		// TODO check that the files don't already exist in the schema
 		return generateschema.GenerateFromInputSchema(codePathInfo, s)
 	},
 }
