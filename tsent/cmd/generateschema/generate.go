@@ -193,99 +193,67 @@ func setValue(f *input.Field, key string, val string) error {
 	return nil
 }
 
+func appendBoolean(o *kv.Object, predicate bool, key string) {
+	if !predicate {
+		return
+	}
+	o.Append(kv.Pair{Key: key, Value: "true"})
+}
+
+func appendValue(o *kv.Object, key, value string) {
+	if value == "" {
+		return
+	}
+	o.Append(kv.Pair{Key: key, Value: value})
+}
+
+func appendQuotedValue(o *kv.Object, key, value string) {
+	if value == "" {
+		return
+	}
+	o.Append(kv.Pair{
+		Key:   key,
+		Value: strconv.Quote(value),
+	})
+}
+
+func appendQuotedList(o *kv.Object, key string, values []string) {
+	if len(values) == 0 {
+		return
+	}
+	o.Append(kv.Pair{
+		Key:   key,
+		Value: kv.NewListItemWithQuotedItems(values).String(),
+	})
+}
+
 // returns {name: "sss"...}
 func FieldObjectCall(f *input.Field) string {
-	o := kv.Object{}
-	o.Append(kv.Pair{
-		Key:   "name",
-		Value: strconv.Quote(f.Name),
-	},
-	)
-	if f.PrimaryKey {
-		o.Append(kv.Pair{
-			Key:   "primaryKey",
-			Value: "true",
-		})
-	}
-	if f.Unique {
-		o.Append(kv.Pair{
-			Key:   "unique",
-			Value: "true",
-		})
-	}
-	if f.Nullable {
-		o.Append(kv.Pair{
-			Key:   "nullable",
-			Value: "true",
-		})
-	}
-	if f.Index {
-		o.Append(kv.Pair{
-			Key:   "index",
-			Value: "true",
-		})
-	}
-	if f.Private {
-		o.Append(kv.Pair{
-			Key:   "private",
-			Value: "true",
-		})
-	}
-	if f.HideFromGraphQL {
-		o.Append(kv.Pair{
-			Key:   "hideFromGraphQL",
-			Value: "true",
-		})
-	}
-	if f.DefaultToViewerOnCreate {
-		o.Append(kv.Pair{
-			Key:   "defaultToViewerOnCreate",
-			Value: "true",
-		})
-	}
+	o := &kv.Object{}
+	appendQuotedValue(o, "name", f.Name)
+	appendBoolean(o, f.PrimaryKey, "primaryKey")
+	appendBoolean(o, f.Unique, "unique")
+	appendBoolean(o, f.Nullable, "nullable")
+	appendBoolean(o, f.Index, "index")
+	appendBoolean(o, f.Private, "private")
+	appendBoolean(o, f.HideFromGraphQL, "hideFromGraphQL")
+	appendBoolean(o, f.DefaultToViewerOnCreate, "defaultToViewerOnCreate")
+
 	if f.ServerDefault != "" && f.ServerDefault != nil {
 		o.Append(kv.Pair{
 			Key:   "serverDefault",
 			Value: strconv.Quote(fmt.Sprintf("%v", f.ServerDefault)),
 		})
 	}
-	if f.StorageKey != "" {
-		o.Append(kv.Pair{
-			Key:   "storageKey",
-			Value: strconv.Quote(f.StorageKey),
-		})
-	}
-	if f.GraphQLName != "" {
-		o.Append(kv.Pair{
-			Key:   "graphqlName",
-			Value: strconv.Quote(f.GraphQLName),
-		})
-	}
+	appendQuotedValue(o, "storageKey", f.StorageKey)
+	appendQuotedValue(o, "graphqlName", f.GraphQLName)
 
 	if f.ForeignKey != nil {
 		fkeyKv := kv.Object{}
-		fkeyKv.Append(
-			kv.Pair{
-				Key:   "schema",
-				Value: strconv.Quote(f.ForeignKey.Schema),
-			},
-			kv.Pair{
-				Key:   "column",
-				Value: strconv.Quote(f.ForeignKey.Column),
-			},
-		)
-		if f.ForeignKey.Name != "" {
-			fkeyKv.Append(kv.Pair{
-				Key:   "name",
-				Value: f.ForeignKey.Name,
-			})
-		}
-		if f.ForeignKey.DisableIndex {
-			fkeyKv.Append(kv.Pair{
-				Key:   "disableIndex",
-				Value: "true",
-			})
-		}
+		appendQuotedValue(&fkeyKv, "schema", f.ForeignKey.Schema)
+		appendQuotedValue(&fkeyKv, "column", f.ForeignKey.Column)
+		appendValue(&fkeyKv, "name", f.ForeignKey.Name)
+		appendBoolean(o, f.ForeignKey.DisableIndex, "disableIndex")
 		o.AppendObject(
 			"foreignKey",
 			fkeyKv,
@@ -300,47 +268,15 @@ func FieldObjectCall(f *input.Field) string {
 // this should be everything we need just need to test it
 func EdgeObjectCall(e *input.AssocEdge) *kv.Object {
 	o := &kv.Object{}
-	o.Append(
-		kv.Pair{
-			Key:   "name",
-			Value: strconv.Quote(e.Name),
-		},
-		kv.Pair{
-			Key:   "schemaName",
-			Value: strconv.Quote(e.SchemaName),
-		},
-	)
-	if e.TableName != "" {
-		o.Append(kv.Pair{
-			Key:   "tableName",
-			Value: strconv.Quote(e.TableName),
-		})
-	}
-	if e.Unique {
-		o.Append(kv.Pair{
-			Key:   "unique",
-			Value: "true",
-		})
-	}
-	if e.Symmetric {
-		o.Append(kv.Pair{
-			Key:   "symmetric",
-			Value: "true",
-		})
-	}
-	if e.HideFromGraphQL {
-		o.Append(kv.Pair{
-			Key:   "hideFromGraphQL",
-			Value: "true",
-		})
-	}
+	appendQuotedValue(o, "name", e.Name)
+	appendQuotedValue(o, "schemaName", e.SchemaName)
+	appendQuotedValue(o, "tableName", e.TableName)
+	appendBoolean(o, e.Unique, "unique")
+	appendBoolean(o, e.Symmetric, "symmetric")
+	appendBoolean(o, e.HideFromGraphQL, "hideFromGraphQL")
 	if e.InverseEdge != nil {
 		invEdge := kv.Object{}
-		invEdge.Append(
-			kv.Pair{
-				Key:   "name",
-				Value: strconv.Quote(e.InverseEdge.Name),
-			})
+		appendQuotedValue(&invEdge, "name", e.InverseEdge.Name)
 		o.AppendObject("inverseEdge", invEdge)
 	}
 	if len(e.EdgeActions) > 0 {
@@ -365,30 +301,10 @@ func getEdgeAction(action *input.EdgeAction) kv.Object {
 			},
 		},
 	)
-	if action.CustomActionName != "" {
-		actionKv.Append(kv.Pair{
-			Key:   "actionName",
-			Value: strconv.Quote(action.CustomActionName),
-		})
-	}
-	if action.CustomGraphQLName != "" {
-		actionKv.Append(kv.Pair{
-			Key:   "graphQLName",
-			Value: strconv.Quote(action.CustomGraphQLName),
-		})
-	}
-	if action.CustomInputName != "" {
-		actionKv.Append(kv.Pair{
-			Key:   "inputName",
-			Value: strconv.Quote(action.CustomInputName),
-		})
-	}
-	if action.HideFromGraphQL {
-		actionKv.Append(kv.Pair{
-			Key:   "hideFromGraphQL",
-			Value: "true",
-		})
-	}
+	appendQuotedValue(&actionKv, "actionName", action.CustomActionName)
+	appendQuotedValue(&actionKv, "graphQLName", action.CustomGraphQLName)
+	appendQuotedValue(&actionKv, "inputName", action.CustomInputName)
+	appendBoolean(&actionKv, action.HideFromGraphQL, "hideFromGraphQL")
 
 	if len(action.ActionOnlyFields) > 0 {
 		l := kv.List{}
@@ -401,49 +317,23 @@ func getEdgeAction(action *input.EdgeAction) kv.Object {
 }
 
 func getActionOnlyField(f *input.ActionField) kv.Object {
-	o := kv.NewObjectFromPairs(kv.Pair{
-		Key:   "name",
-		Value: strconv.Quote(f.Name),
-	}, kv.Pair{
-		Key:   "type",
-		Value: strconv.Quote(string(f.Type)),
-	})
+	o := &kv.Object{}
 
-	if f.Nullable {
-		o.Append(kv.Pair{
-			Key:   "nullable",
-			Value: "true",
-		})
-	}
-	if f.ActionName != "" {
-		o.Append(kv.Pair{
-			Key:   "actionName",
-			Value: f.ActionName,
-		})
-	}
+	appendQuotedValue(o, "name", f.Name)
+	appendQuotedValue(o, "type", string(f.Type))
+
+	appendBoolean(o, f.Nullable, "nullable")
+	appendValue(o, "actionName", f.ActionName)
 	// TODO list shenanigans
 
-	return o
+	return *o
 }
 
 func EdgeGroupObjectCall(eg *input.AssocEdgeGroup) *kv.Object {
-	o := kv.NewObjectFromPairs(
-		kv.Pair{
-			Key:   "name",
-			Value: strconv.Quote(eg.Name),
-		},
-		kv.Pair{
-			Key:   "groupStatusName",
-			Value: strconv.Quote(eg.GroupStatusName),
-		},
-	)
-
-	if eg.TableName != "" {
-		o.Append(kv.Pair{
-			Key:   "tableName",
-			Value: strconv.Quote(eg.TableName),
-		})
-	}
+	o := &kv.Object{}
+	appendQuotedValue(o, "name", eg.Name)
+	appendQuotedValue(o, "groupStatusName", eg.GroupStatusName)
+	appendQuotedValue(o, "tableName", eg.TableName)
 	if len(eg.AssocEdges) > 0 {
 		l := kv.List{}
 		for _, edge := range eg.AssocEdges {
@@ -452,30 +342,15 @@ func EdgeGroupObjectCall(eg *input.AssocEdgeGroup) *kv.Object {
 		}
 		o.AppendList("assocEdges", l)
 	}
-	if len(eg.StatusEnums) > 0 {
-		o.Append(kv.Pair{
-			Key:   "statusEnums",
-			Value: kv.NewListItemWithQuotedItems(eg.StatusEnums).String(),
-		})
-	}
-	if len(eg.NullStates) > 0 {
-		o.Append(kv.Pair{
-			Key:   "nullStates",
-			Value: kv.NewListItemWithQuotedItems(eg.NullStates).String(),
-		})
-	}
-	if eg.NullStateFn != "" {
-		o.Append(kv.Pair{
-			Key:   "nullStateFn",
-			Value: strconv.Quote(eg.NullStateFn),
-		})
-	}
+	appendQuotedList(o, "statusEnums", eg.StatusEnums)
+	appendQuotedList(o, "nullStates", eg.NullStates)
+	appendQuotedValue(o, "nullStateFn", eg.NullStateFn)
 	// TODO edgeActions is not a typescript thing but can be here. throw?
 	if eg.EdgeAction != nil {
 		o.AppendObject("edgeAction", getEdgeAction(eg.EdgeAction))
 	}
 
-	return &o
+	return o
 }
 
 func ActionObjectCall(a *input.Action) *kv.Object {
@@ -488,36 +363,11 @@ func ActionObjectCall(a *input.Action) *kv.Object {
 			Import:     "ActionOperation",
 		},
 	})
-	if len(a.Fields) > 0 {
-		o.Append(kv.Pair{
-			Key:   "fields",
-			Value: kv.NewListItemWithQuotedItems(a.Fields).String(),
-		})
-	}
-	if a.CustomActionName != "" {
-		o.Append(kv.Pair{
-			Key:   "actionName",
-			Value: strconv.Quote(a.CustomActionName),
-		})
-	}
-	if a.CustomInputName != "" {
-		o.Append(kv.Pair{
-			Key:   "inputName",
-			Value: strconv.Quote(a.CustomInputName),
-		})
-	}
-	if a.CustomGraphQLName != "" {
-		o.Append(kv.Pair{
-			Key:   "graphQLName",
-			Value: strconv.Quote(a.CustomGraphQLName),
-		})
-	}
-	if a.HideFromGraphQL {
-		o.Append(kv.Pair{
-			Key:   "hideFromGraphQL",
-			Value: "true",
-		})
-	}
+	appendQuotedList(o, "fields", a.Fields)
+	appendQuotedValue(o, "actionName", a.CustomActionName)
+	appendQuotedValue(o, "inputName", a.CustomInputName)
+	appendQuotedValue(o, "graphQLName", a.CustomGraphQLName)
+	appendBoolean(o, a.HideFromGraphQL, "hideFromGraphQL")
 
 	if len(a.ActionOnlyFields) > 0 {
 		l := kv.List{}
@@ -532,72 +382,36 @@ func ActionObjectCall(a *input.Action) *kv.Object {
 }
 
 func ConstraintObjectCall(c *input.Constraint) *kv.Object {
-	o := kv.NewObjectFromPairs(
-		kv.Pair{
-			Key:   "name",
-			Value: strconv.Quote(c.Name),
+	o := &kv.Object{}
+	appendQuotedValue(o, "name", c.Name)
+	o.Append(kv.Pair{
+		Key:   "type",
+		Value: c.GetConstraintTypeString(),
+		Import: &kv.Import{
+			ImportPath: codepath.SchemaPackage,
+			Import:     "ConstraintType",
 		},
-		kv.Pair{
-			Key:   "type",
-			Value: c.GetConstraintTypeString(),
-			Import: &kv.Import{
-				ImportPath: codepath.SchemaPackage,
-				Import:     "ConstraintType",
-			},
-		},
-		kv.Pair{
-			Key:   "columns",
-			Value: kv.NewListItemWithQuotedItems(c.Columns).String(),
-		},
-	)
+	})
+	appendQuotedList(o, "columns", c.Columns)
 
 	if c.ForeignKey != nil {
-		fkey := kv.NewObjectFromPairs(
-			kv.Pair{
-				Key:   "tableName",
-				Value: strconv.Quote(c.ForeignKey.TableName),
-			},
-			kv.Pair{
-				Key:   "columns",
-				Value: kv.NewListItemWithQuotedItems(c.ForeignKey.Columns).String(),
-			},
-		)
-		if c.ForeignKey.OnDelete != "" {
-			fkey.Append(kv.Pair{
-				Key:   "ondelete",
-				Value: strconv.Quote(string(c.ForeignKey.OnDelete)),
-			})
-		}
-		o.AppendObject("fkey", fkey)
+		fkey := &kv.Object{}
+		appendQuotedValue(fkey, "tableName", c.ForeignKey.TableName)
+		appendQuotedList(fkey, "columns", c.ForeignKey.Columns)
+		appendQuotedValue(fkey, "ondelete", string(c.ForeignKey.OnDelete))
+		o.AppendObject("fkey", *fkey)
 	}
 
-	if c.Condition != "" {
-		o.Append(kv.Pair{
-			Key:   "condition",
-			Value: strconv.Quote(c.Condition),
-		})
-	}
-	return &o
+	appendQuotedValue(o, "condition", c.Condition)
+	return o
 }
 
 func IndexObjectCall(i *input.Index) *kv.Object {
-	o := kv.NewObjectFromPairs(
-		kv.Pair{
-			Key:   "name",
-			Value: strconv.Quote(i.Name),
-		},
-		kv.Pair{
-			Key:   "columns",
-			Value: kv.NewListItemWithQuotedItems(i.Columns).String(),
-		},
-	)
-	if i.Unique {
-		o.Append(kv.Pair{
-			Key:   "unique",
-			Value: "true",
-		})
-	}
-	return &o
+	o := &kv.Object{}
+	appendQuotedValue(o, "name", i.Name)
+	appendQuotedList(o, "columns", i.Columns)
+	appendBoolean(o, i.Unique, "unique")
+	return o
 }
 
 func validKey(key string) bool {
@@ -656,12 +470,9 @@ func NewEnumCodegenData(codePathInfo *codegen.CodePath, schema, col string, valu
 	ret.DBRows = kv.List{}
 
 	for _, v := range values {
-		o := kv.Object{}
-		o.Append(kv.Pair{
-			Key:   col,
-			Value: strconv.Quote(v),
-		})
-		ret.DBRows.Append(o)
+		o := &kv.Object{}
+		appendQuotedValue(o, col, v)
+		ret.DBRows.Append(*o)
 	}
 
 	return ret
@@ -697,14 +508,11 @@ func NewCodegenDataFromInputNode(codePathInfo *codegen.CodePath, node string, n 
 	// convert db rows
 	ret.DBRows = kv.List{}
 	for _, dbrow := range n.DBRows {
-		var o kv.Object
+		o := &kv.Object{}
 		for k, v := range dbrow {
-			o.Append(kv.Pair{
-				Key:   k,
-				Value: strconv.Quote(fmt.Sprintf("%v", v)),
-			})
+			appendQuotedValue(o, k, fmt.Sprintf("%v", v))
 		}
-		ret.DBRows.Append(o)
+		ret.DBRows.Append(*o)
 	}
 
 	return ret

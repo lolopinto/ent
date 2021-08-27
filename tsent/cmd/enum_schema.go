@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// generate a schema
+// generate enum schema
 var generateEnumSchemaCmd = &cobra.Command{
 	Use:   "enum_schema",
 	Short: "generate enum schema",
@@ -33,7 +33,7 @@ e.g. tsent generate enum_schema RequestStatus status open,pending,closed`,
 		schemaName := base.GetCamelName(args[0])
 
 		if schema.NameExists(schemaName) {
-			return fmt.Errorf("cannot generate a schema for %s since schema with name %s already exists", args[0], schemaName)
+			return fmt.Errorf("cannot generate a schema for %s since schema with name already exists", schemaName)
 		}
 
 		codePathInfo, err := codegen.NewCodePath("src/schema", "")
