@@ -179,6 +179,42 @@ func (t *StringType) GetTSGraphQLImports() []FileImport {
 	}
 }
 
+type EmailType struct {
+	StringType
+}
+
+func (t *EmailType) GetImportType() Import {
+	return &EmailImport{}
+}
+
+func (t *EmailType) GetNullableType() TSGraphQLType {
+	return &NullableEmailType{}
+}
+
+type PhoneType struct {
+	StringType
+}
+
+func (t *PhoneType) GetImportType() Import {
+	return &PhoneImport{}
+}
+
+func (t *PhoneType) GetNullableType() TSGraphQLType {
+	return &NullablePhoneType{}
+}
+
+type PasswordType struct {
+	StringType
+}
+
+func (t *PasswordType) GetImportType() Import {
+	return &PasswordImport{}
+}
+
+func (t *PasswordType) GetNullableType() TSGraphQLType {
+	return &NullablePasswordType{}
+}
+
 type NullableStringType struct {
 	stringType
 }
@@ -203,6 +239,42 @@ func (t *NullableStringType) GetTSGraphQLImports() []FileImport {
 	return []FileImport{
 		NewGQLFileImport("GraphQLString"),
 	}
+}
+
+type NullableEmailType struct {
+	NullableStringType
+}
+
+func (t *NullableEmailType) GetImportType() Import {
+	return &EmailImport{}
+}
+
+func (t *NullableEmailType) GetNonNullableType() TSGraphQLType {
+	return &EmailType{}
+}
+
+type NullablePhoneType struct {
+	NullableStringType
+}
+
+func (t *NullablePhoneType) GetImportType() Import {
+	return &PhoneImport{}
+}
+
+func (t *NullablePhoneType) GetNonNullableType() TSGraphQLType {
+	return &PhoneType{}
+}
+
+type NullablePasswordType struct {
+	NullableStringType
+}
+
+func (t *NullablePasswordType) GetImportType() Import {
+	return &PasswordImport{}
+}
+
+func (t *NullablePasswordType) GetNonNullableType() TSGraphQLType {
+	return &PasswordType{}
 }
 
 type boolType struct{}

@@ -58,6 +58,14 @@ const (
 	List        DBType = "List"
 )
 
+type CustomType string
+
+const (
+	EmailType    CustomType = "email"
+	PhoneType    CustomType = "phone"
+	PasswordType CustomType = "password"
+)
+
 type FieldType struct {
 	DBType DBType `json:"dbType"`
 	// required when DBType == DBType.List
@@ -66,6 +74,8 @@ type FieldType struct {
 	Values      []string `json:"values"`
 	Type        string   `json:"type"`
 	GraphQLType string   `json:"graphQLType"`
+	// optional used by generator to specify different types e.g. email, phone, password
+	CustomType CustomType `json:"customType"`
 }
 
 type Field struct {
@@ -147,6 +157,23 @@ func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.
 		}
 		return &enttype.FloatType{}, nil
 	case String:
+		switch typ.CustomType {
+		case EmailType:
+			if nullable {
+				return &enttype.NullableEmailType{}, nil
+			}
+			return &enttype.EmailType{}, nil
+		case PasswordType:
+			if nullable {
+				return &enttype.NullablePasswordType{}, nil
+			}
+			return &enttype.PasswordType{}, nil
+		case PhoneType:
+			if nullable {
+				return &enttype.NullablePhoneType{}, nil
+			}
+			return &enttype.PhoneType{}, nil
+		}
 		if nullable {
 			return &enttype.NullableStringType{}, nil
 		}

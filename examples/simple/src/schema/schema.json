@@ -18,6 +18,31 @@
         "unique":true
       },
       {
+        "name": "email_address",
+        "type": {
+          "dbType": "String",
+          "customType": "email"
+        },
+        "unique":true
+      },
+      {
+        "name": "phone_number",
+        "type": {
+          "dbType": "String",
+          "customType": "phone"
+        },
+        "unique":true
+      },
+      {
+        "name": "password",
+        "type": {
+          "dbType": "String",
+          "customType": "password"
+        },
+        "unique":true,
+        "nullable": true
+      },
+      {
         "name": "accountId",
         "type": {
           "dbType": "UUID"

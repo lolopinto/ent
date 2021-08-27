@@ -57,6 +57,119 @@ func f() string {
 	}, ret)
 }
 
+func TestCustomTypes(t *testing.T) {
+	testTypeDirectly(
+		t,
+		map[string]*typeTestCase{
+			"email": {
+				&enttype.EmailType{},
+				expType{
+					db:      "sa.Text()",
+					graphql: "String!",
+					graphqlImports: []enttype.FileImport{
+						enttype.NewGQLFileImport("GraphQLNonNull"),
+						enttype.NewGQLFileImport("GraphQLString"),
+					},
+					zeroValue:    strconv.Quote(""),
+					castToMethod: "cast.ToString",
+					goType:       "string",
+					nullableType: &enttype.NullableEmailType{},
+					tsType:       "string",
+					importType:   &enttype.EmailImport{},
+				},
+				nil,
+			},
+			"nullable email": {
+				&enttype.NullableEmailType{},
+				expType{
+					db:      "sa.Text()",
+					graphql: "String",
+					graphqlImports: []enttype.FileImport{
+						enttype.NewGQLFileImport("GraphQLString"),
+					},
+					zeroValue:       strconv.Quote(""),
+					castToMethod:    "cast.ToNullableString",
+					goType:          "string",
+					nonNullableType: &enttype.EmailType{},
+					tsType:          "string | null",
+					importType:      &enttype.EmailImport{},
+				},
+				nil,
+			},
+			"password": {
+				&enttype.PasswordType{},
+				expType{
+					db:      "sa.Text()",
+					graphql: "String!",
+					graphqlImports: []enttype.FileImport{
+						enttype.NewGQLFileImport("GraphQLNonNull"),
+						enttype.NewGQLFileImport("GraphQLString"),
+					},
+					zeroValue:    strconv.Quote(""),
+					castToMethod: "cast.ToString",
+					goType:       "string",
+					nullableType: &enttype.NullablePasswordType{},
+					tsType:       "string",
+					importType:   &enttype.PasswordImport{},
+				},
+				nil,
+			},
+			"nullable password": {
+				&enttype.NullablePasswordType{},
+				expType{
+					db:      "sa.Text()",
+					graphql: "String",
+					graphqlImports: []enttype.FileImport{
+						enttype.NewGQLFileImport("GraphQLString"),
+					},
+					zeroValue:       strconv.Quote(""),
+					castToMethod:    "cast.ToNullableString",
+					goType:          "string",
+					nonNullableType: &enttype.PasswordType{},
+					tsType:          "string | null",
+					importType:      &enttype.PasswordImport{},
+				},
+				nil,
+			},
+			"phone": {
+				&enttype.PhoneType{},
+				expType{
+					db:      "sa.Text()",
+					graphql: "String!",
+					graphqlImports: []enttype.FileImport{
+						enttype.NewGQLFileImport("GraphQLNonNull"),
+						enttype.NewGQLFileImport("GraphQLString"),
+					},
+					zeroValue:    strconv.Quote(""),
+					castToMethod: "cast.ToString",
+					goType:       "string",
+					nullableType: &enttype.NullablePhoneType{},
+					tsType:       "string",
+					importType:   &enttype.PhoneImport{},
+				},
+				nil,
+			},
+			"nullable phone": {
+				&enttype.NullablePhoneType{},
+				expType{
+					db:      "sa.Text()",
+					graphql: "String",
+					graphqlImports: []enttype.FileImport{
+						enttype.NewGQLFileImport("GraphQLString"),
+					},
+					zeroValue:       strconv.Quote(""),
+					castToMethod:    "cast.ToNullableString",
+					goType:          "string",
+					nonNullableType: &enttype.PhoneType{},
+					tsType:          "string | null",
+					importType:      &enttype.PhoneImport{},
+				},
+				nil,
+			},
+		},
+	)
+}
+
 func TestEnumishType(t *testing.T) {
 	ret := getTestReturnType(t, `package main 
 
@@ -896,8 +1009,6 @@ func TestMapType(t *testing.T) {
 	)
 }
 
-// use testTypeDirectly for new time types?
-//or testhelper.GetCodeWithSchema
 func TestEnumType(t *testing.T) {
 	testTypeDirectly(t,
 		map[string]*typeTestCase{

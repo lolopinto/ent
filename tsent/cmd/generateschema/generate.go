@@ -693,7 +693,6 @@ func NewCodegenDataFromInputNode(codePathInfo *codegen.CodePath, node string, n 
 	}
 
 	// TODO throw for unsupported Fields?
-	// TODO email, password, phone not currently supported
 
 	// convert db rows
 	ret.DBRows = kv.List{}
