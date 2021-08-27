@@ -35,7 +35,7 @@ tsent generate schema User "account_status;string;serverDefault:DEACTIVATED emai
 		schemaName := base.GetCamelName(args[0])
 
 		if schema.NameExists(schemaName) {
-			return fmt.Errorf("cannot generate a schema for %s since schema with name %s already exists", args[0], schemaName)
+			return fmt.Errorf("cannot generate a schema for since schema with name %s already exists", schemaName)
 		}
 
 		codePathInfo, err := codegen.NewCodePath("src/schema", "")

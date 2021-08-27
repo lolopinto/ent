@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/tsent/cmd/generateschema"
 	"github.com/pkg/errors"
@@ -13,7 +14,8 @@ import (
 )
 
 type schemasArg struct {
-	file string
+	file  string
+	force bool
 }
 
 var schemasInfo schemasArg
@@ -35,6 +37,19 @@ var generateSchemasCmd = &cobra.Command{
 		s, err := input.ParseSchema(b)
 		if err != nil {
 			return err
+		}
+		if !schemasInfo.force {
+			schema, err := parseSchema()
+			if err != nil {
+				return err
+			}
+			for k := range s.Nodes {
+				schemaName := base.GetCamelName(k)
+
+				if schema.NameExists(schemaName) {
+					return fmt.Errorf("cannot generate a schema for %s since schema with name already exists", schemaName)
+				}
+			}
 		}
 
 		codePathInfo, err := codegen.NewCodePath("src/schema", "")

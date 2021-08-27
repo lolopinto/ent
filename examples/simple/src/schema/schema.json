@@ -11,14 +11,20 @@
         "serverDefault": "bar"
       },
       {
-        "name": "bar",
+        "name": "name",
         "type": {
           "dbType": "String"
         },
         "unique":true
       },
       {
-        "name": "email_address",
+        "name": "start_time",
+        "type": {
+          "dbType": "Timestamp"
+        }
+      },
+      {
+        "name": "emailAddress",
         "type": {
           "dbType": "String",
           "customType": "email"
@@ -32,6 +38,18 @@
           "customType": "phone"
         },
         "unique":true
+      },
+      {
+        "name": "code",
+        "type": {
+          "dbType": "Int"
+        }
+      },
+      {
+        "name": "price",
+        "type": {
+          "dbType": "Float"
+        }
       },
       {
         "name": "password",
@@ -49,7 +67,7 @@
         },
         "foreignKey": {
           "schema": "User",
-          "column": "id"
+          "column": "ID"
         },
         "storageKey": "user_id",
         "defaultToViewerOnCreate": true
@@ -146,7 +164,7 @@
       {
         "name": "userIDkey",
         "type": "foreign",
-        "columns": ["userID"],
+        "columns": ["accountId"],
         "fkey": {
           "tableName": "users",
           "ondelete": "RESTRICT",
