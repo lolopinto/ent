@@ -1,6 +1,7 @@
 {
   "Hello": {
     "tableName": "table",
+    "hideFromGraphQL": true,
     "fields":[
       {
         "name": "foo",

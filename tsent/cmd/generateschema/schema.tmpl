@@ -37,6 +37,11 @@
 
   {{end -}}
 
+  {{ if .HideFromGraphQL -}}
+    hideFromGraphQL = true;
+
+  {{end -}}
+
   fields: {{useImport "Field"}} [] = [
   {{ range $field := .Fields -}}
     {{$imp := $field.GetImport -}}

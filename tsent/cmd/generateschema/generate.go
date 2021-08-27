@@ -616,20 +616,21 @@ var booleanKeys = map[string]bool{
 }
 
 type CodegenData struct {
-	Package     *codegen.ImportPackage
-	Node        string
-	EnumTable   bool
-	TableName   string
-	Fields      []*input.Field
-	Edges       []*input.AssocEdge
-	Actions     []*input.Action
-	EdgeGroups  []*input.AssocEdgeGroup
-	Constraints []*input.Constraint
-	Indices     []*input.Index
-	DBRows      kv.List
-	Extends     bool
-	Base        string
-	Implements  bool
+	Package         *codegen.ImportPackage
+	Node            string
+	EnumTable       bool
+	TableName       string
+	HideFromGraphQL bool
+	Fields          []*input.Field
+	Edges           []*input.AssocEdge
+	Actions         []*input.Action
+	EdgeGroups      []*input.AssocEdgeGroup
+	Constraints     []*input.Constraint
+	Indices         []*input.Index
+	DBRows          kv.List
+	Extends         bool
+	Base            string
+	Implements      bool
 }
 
 func (c *CodegenData) DBRowsCall() string {
@@ -668,14 +669,15 @@ func NewEnumCodegenData(codePathInfo *codegen.CodePath, schema, col string, valu
 
 func NewCodegenDataFromInputNode(codePathInfo *codegen.CodePath, node string, n *input.Node) *CodegenData {
 	ret := &CodegenData{
-		Node:        node,
-		Package:     codePathInfo.GetImportPackage(),
-		Fields:      n.Fields,
-		Edges:       n.AssocEdges,
-		EdgeGroups:  n.AssocEdgeGroups,
-		Actions:     n.Actions,
-		Constraints: n.Constraints,
-		Indices:     n.Indices,
+		Node:            node,
+		Package:         codePathInfo.GetImportPackage(),
+		Fields:          n.Fields,
+		Edges:           n.AssocEdges,
+		EdgeGroups:      n.AssocEdgeGroups,
+		Actions:         n.Actions,
+		Constraints:     n.Constraints,
+		Indices:         n.Indices,
+		HideFromGraphQL: n.HideFromGraphQL,
 	}
 	if n.EnumTable {
 		ret.EnumTable = true
