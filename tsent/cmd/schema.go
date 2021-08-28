@@ -15,7 +15,7 @@ var generateSchemaCmd = &cobra.Command{
 	Use:   "schema",
 	Short: "generate schema",
 	Long: `generate the schema by taking the name of the object and a list of fields separated by a space.
-Format: modelName [fieldSpecfication] [fieldSpecification] ...
+Format: schemaName [fieldSpecfication] [fieldSpecification] ...
 Each field specification supports 3 formats: 
 * fieldName:type e.g. firstName:string
 * fieldName:type:booleanProperty e.g. email_address:email:unique
