@@ -1,14 +1,9 @@
 package cmd
 
 import (
-	"os"
-
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/db"
 	"github.com/lolopinto/ent/internal/graphql"
-	"github.com/lolopinto/ent/internal/schema"
-	"github.com/lolopinto/ent/internal/schema/base"
-	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/tscode"
 	"github.com/spf13/cobra"
 )
@@ -26,20 +21,7 @@ var codegenCmd = &cobra.Command{
 	Long:  `This runs the codegen steps. It generates the ent, db, and graphql code based on the arguments passed in`,
 	//	Args:  configRequired,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// assume we're running from base of directory
-		path, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		inputSchema, err := input.ParseSchemaFromTSDir(path, false)
-		if err != nil {
-			return err
-		}
-		// need a codepath here...
-		// instead of lang, we want Options
-		// lang, pathToRoot, allowUserInput
-		schema, err := schema.ParseFromInputSchema(inputSchema, base.TypeScript)
+		schema, err := parseSchema()
 		if err != nil {
 			return err
 		}

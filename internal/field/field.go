@@ -107,9 +107,12 @@ const (
 	PasswordPkgPath = "github.com/lolopinto/ent/ent/field/password"
 )
 
+func NormalizedField(s string) string {
+	return strings.ToLower(s)
+}
+
 func (fieldInfo *FieldInfo) addField(f *Field) error {
-	// normalized
-	name := strings.ToLower(f.FieldName)
+	name := NormalizedField(f.FieldName)
 	if fieldInfo.cols[f.dbName] != nil {
 		return fmt.Errorf("field with column %s already exists", f.dbName)
 	}

@@ -58,6 +58,14 @@ const (
 	List        DBType = "List"
 )
 
+type CustomType string
+
+const (
+	EmailType    CustomType = "email"
+	PhoneType    CustomType = "phone"
+	PasswordType CustomType = "password"
+)
+
 type FieldType struct {
 	DBType DBType `json:"dbType"`
 	// required when DBType == DBType.List
@@ -66,6 +74,8 @@ type FieldType struct {
 	Values      []string `json:"values"`
 	Type        string   `json:"type"`
 	GraphQLType string   `json:"graphQLType"`
+	// optional used by generator to specify different types e.g. email, phone, password
+	CustomType CustomType `json:"customType"`
 }
 
 type Field struct {
@@ -74,12 +84,13 @@ type Field struct {
 	Nullable   bool       `json:"nullable"`
 	StorageKey string     `json:"storageKey"`
 	// TODO need a way to indicate unique edge is Required also. this changes type generated in ent and graphql
-	Unique          bool   `json:"unique"`
-	HideFromGraphQL bool   `json:"hideFromGraphQL"`
-	Private         bool   `json:"private"`
-	GraphQLName     string `json:"graphqlName"`
-	Index           bool   `json:"index"`
-	PrimaryKey      bool   `json:"primaryKey"`
+	Unique                  bool   `json:"unique"`
+	HideFromGraphQL         bool   `json:"hideFromGraphQL"`
+	Private                 bool   `json:"private"`
+	GraphQLName             string `json:"graphqlName"`
+	Index                   bool   `json:"index"`
+	PrimaryKey              bool   `json:"primaryKey"`
+	DefaultToViewerOnCreate bool   `json:"defaultToViewerOnCreate"`
 
 	FieldEdge     *FieldEdge  `json:"fieldEdge"` // this only really makes sense on id fields...
 	ForeignKey    *ForeignKey `json:"foreignKey"`
@@ -98,6 +109,9 @@ type Field struct {
 	GoType          types.Type
 	PkgPath         string
 	DataTypePkgPath string
+
+	// set when parsed via tsent generate schema
+	Import enttype.Import
 }
 
 type ForeignKey struct {
@@ -143,6 +157,23 @@ func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.
 		}
 		return &enttype.FloatType{}, nil
 	case String:
+		switch typ.CustomType {
+		case EmailType:
+			if nullable {
+				return &enttype.NullableEmailType{}, nil
+			}
+			return &enttype.EmailType{}, nil
+		case PasswordType:
+			if nullable {
+				return &enttype.NullablePasswordType{}, nil
+			}
+			return &enttype.PasswordType{}, nil
+		case PhoneType:
+			if nullable {
+				return &enttype.NullablePhoneType{}, nil
+			}
+			return &enttype.PhoneType{}, nil
+		}
 		if nullable {
 			return &enttype.NullableStringType{}, nil
 		}
@@ -207,6 +238,21 @@ func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.
 	return nil, fmt.Errorf("unsupported type %s", typ.DBType)
 }
 
+func (f *Field) GetImport() (enttype.Import, error) {
+	if f.Import != nil {
+		return f.Import, nil
+	}
+	typ, err := f.GetEntType()
+	if err != nil {
+		return nil, err
+	}
+	ctype, ok := typ.(enttype.TSCodegenableType)
+	if !ok {
+		return nil, fmt.Errorf("%s doesn't have a valid codegenable type", f.Name)
+	}
+	return ctype.GetImportType(), nil
+}
+
 func (f *Field) GetEntType() (enttype.TSGraphQLType, error) {
 	if f.Type.DBType == List {
 		if f.Type.ListElemType == nil {
@@ -268,6 +314,32 @@ type EdgeAction struct {
 	ActionOnlyFields  []*ActionField      `json:"actionOnlyFields"`
 }
 
+func getTSStringOperation(op ent.ActionOperation) string {
+	switch op {
+	case ent.CreateAction:
+		return "ActionOperation.Create"
+	case ent.EditAction:
+		return "ActionOperation.Edit"
+	case ent.DeleteAction:
+		return "ActionOperation.Delete"
+	case ent.MutationsAction:
+		return "ActionOperation.Mutations"
+	case ent.AddEdgeAction:
+		return "ActionOperation.AddEdge"
+	case ent.RemoveEdgeAction:
+		return "ActionOperation.RemoveEdge"
+	case ent.EdgeGroupAction:
+		return "ActionOperation.EdgeGroup"
+	default:
+		// TODO throw?
+		return ""
+	}
+}
+
+func (e *EdgeAction) GetTSStringOperation() string {
+	return getTSStringOperation(e.Operation)
+}
+
 type Action struct {
 	Operation         ent.ActionOperation `json:"operation"`
 	Fields            []string            `json:"fields"`
@@ -276,6 +348,10 @@ type Action struct {
 	CustomInputName   string              `json:"inputName"`
 	HideFromGraphQL   bool                `json:"hideFromGraphQL"`
 	ActionOnlyFields  []*ActionField      `json:"actionOnlyFields"`
+}
+
+func (a *Action) GetTSStringOperation() string {
+	return getTSStringOperation(a.Operation)
 }
 
 type NullableItem string
@@ -421,6 +497,22 @@ type Constraint struct {
 	Columns    []string        `json:"columns"`
 	ForeignKey *ForeignKeyInfo `json:"fkey"`
 	Condition  string          `json:"condition"`
+}
+
+func (c *Constraint) GetConstraintTypeString() string {
+	switch c.Type {
+	case PrimaryKeyConstraint:
+		return "ConstraintType.PrimaryKey"
+	case ForeignKeyConstraint:
+		return "ConstraintType.ForeignKey"
+	case UniqueConstraint:
+		return "ConstraintType.Unique"
+	case CheckConstraint:
+		return "ConstraintType.Check"
+	default:
+		// TODO throw?
+		return ""
+	}
 }
 
 type Index struct {
