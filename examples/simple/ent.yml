@@ -1,0 +1,13 @@
+# log: 
+#   - query
+#   - error
+#   - warn
+#   - info
+# #  - debug
+# codegen:
+#   defaultEntPolicy:
+#     path: "@snowtop/ent"
+#     policyName: "AlwaysAllowPrivacyPolicy"
+#   defaultActionPolicy:
+#     path: '@snowtop/ent'
+#     policyName: 'AlwaysAllowPrivacyPolicy'

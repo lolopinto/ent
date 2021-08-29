@@ -1,18 +1,26 @@
 package codegen
 
 import (
+	"fmt"
+	"io"
+	"os"
 	"path/filepath"
 	"strconv"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/codepath"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
+// rename from CodePath to CodegenInfo
 type CodePath struct {
 	relativePathToConfigs string
 	importPathToConfigs   string
 	importPathToModels    string
 	importPathToRoot      string
 	absPathToConfigs      string
+	config                *config
 }
 
 func NewCodePath(configPath, modulePath string) (*CodePath, error) {
@@ -22,6 +30,12 @@ func NewCodePath(configPath, modulePath string) (*CodePath, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	c, err := parseConfig()
+	if err != nil {
+		return nil, err
+	}
+
 	// TODO we need to store absPathToRoot at some point
 	return &CodePath{
 		relativePathToConfigs: configPath,
@@ -29,6 +43,7 @@ func NewCodePath(configPath, modulePath string) (*CodePath, error) {
 		importPathToRoot:      modulePath,
 		importPathToConfigs:   filepath.Join(modulePath, configPath),
 		importPathToModels:    filepath.Join(modulePath, "models"),
+		config:                c,
 	}, nil
 }
 
@@ -99,6 +114,26 @@ func (cp *CodePath) GetImportPackage() *ImportPackage {
 	return impPkg
 }
 
+func (cp *CodePath) GetDefaultActionPolicy() *PrivacyConfig {
+	if cp.config == nil || cp.config.Codegen == nil || cp.config.Codegen.DefaultActionPolicy == nil {
+		return &PrivacyConfig{
+			Path:       codepath.Package,
+			PolicyName: "AllowIfViewerHasIdentityPrivacyPolicy",
+		}
+	}
+	return cp.config.Codegen.DefaultActionPolicy
+}
+
+func (cp *CodePath) GetDefaultEntPolicy() *PrivacyConfig {
+	if cp.config == nil || cp.config.Codegen == nil || cp.config.Codegen.DefaultEntPolicy == nil {
+		return &PrivacyConfig{
+			Path:       codepath.Package,
+			PolicyName: "AllowIfViewerPrivacyPolicy",
+		}
+	}
+	return cp.config.Codegen.DefaultEntPolicy
+}
+
 // ImportPackage refers to TypeScript paths of what needs to be generated for imports
 type ImportPackage struct {
 	PackagePath        string
@@ -108,4 +143,54 @@ type ImportPackage struct {
 	GraphQLPackagePath string
 	InternalImportPath string
 	ExternalImportPath string
+}
+
+func parseConfig() (*config, error) {
+	paths := []string{
+		"ent.yml",
+		"src/ent.yml",
+		"src/graphql/ent.yml",
+	}
+	for _, p := range paths {
+		fi, err := os.Stat(p)
+		if os.IsNotExist(err) {
+			spew.Dump("not exist", p)
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		if fi.IsDir() {
+			return nil, fmt.Errorf("%s is a directory", p)
+		}
+		f, err := os.Open(p)
+		if err != nil {
+			return nil, errors.Wrap(err, "error opening file")
+		}
+		b, err := io.ReadAll(f)
+		if err != nil {
+			return nil, err
+		}
+		var c config
+		if err := yaml.Unmarshal(b, &c); err != nil {
+			return nil, err
+		}
+		return &c, nil
+	}
+	return nil, nil
+}
+
+type config struct {
+	Codegen *CodegenConfig `yaml:"codegen"`
+}
+
+type CodegenConfig struct {
+	DefaultEntPolicy    *PrivacyConfig `yaml:"defaultEntPolicy"`
+	DefaultActionPolicy *PrivacyConfig `yaml:"defaultActionPolicy"`
+}
+
+type PrivacyConfig struct {
+	Path       string `yaml:"path"`
+	PolicyName string `yaml:"policyName"`
+	Class      bool   `yaml:"class"`
 }

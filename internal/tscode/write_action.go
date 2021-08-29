@@ -14,11 +14,12 @@ import (
 )
 
 type actionTemplate struct {
-	Action      action.Action
-	NodeData    *schema.NodeData
-	BuilderPath string
-	BasePath    string
-	Package     *codegen.ImportPackage
+	Action        action.Action
+	NodeData      *schema.NodeData
+	BuilderPath   string
+	BasePath      string
+	Package       *codegen.ImportPackage
+	PrivacyConfig *codegen.PrivacyConfig
 }
 
 func writeBaseActionFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath, action action.Action) error {
@@ -26,10 +27,11 @@ func writeBaseActionFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePa
 
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data: actionTemplate{
-			NodeData:    nodeData,
-			Action:      action,
-			BuilderPath: getImportPathForBuilderFile(nodeData),
-			Package:     codePathInfo.GetImportPackage(),
+			NodeData:      nodeData,
+			Action:        action,
+			BuilderPath:   getImportPathForBuilderFile(nodeData),
+			Package:       codePathInfo.GetImportPackage(),
+			PrivacyConfig: codePathInfo.GetDefaultActionPolicy(),
 		},
 		CreateDirIfNeeded:  true,
 		AbsPathToTemplate:  util.GetAbsolutePath("action_base.tmpl"),

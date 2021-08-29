@@ -2,6 +2,9 @@
 {{ reserveImport .Package.SchemaPackagePath "Field" "getFields"}}
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
 {{ reserveImport "src/ent/loadAny" "loadEntByType" "loadEntXByType"}}
+{{ reserveImport .PrivacyConfig.Path .PrivacyConfig.PolicyName }}
+
+{{ $privacyCfg := .PrivacyConfig -}}
 
 {{with .NodeData -}}
 
@@ -62,10 +65,11 @@ export class {{$baseClass}} {
     {{end}}
   }
 
-  // default privacyPolicy is Viewer can see themselves
-  {{/* TODO: make this configurable */ -}} 
-  // here
-  privacyPolicy: {{useImport "PrivacyPolicy"}} = {{useImport "AllowIfViewerPrivacyPolicy"}};
+  {{ if $privacyCfg.Class }}
+    privacyPolicy: {{useImport "PrivacyPolicy"}} = new {{useImport $privacyCfg.PolicyName}}();
+  {{ else }}
+    privacyPolicy: {{useImport "PrivacyPolicy"}} = {{useImport $privacyCfg.PolicyName}};
+  {{ end }}
 
   static async load<T extends {{$baseClass}}>(
     this: {{$thisType}},

@@ -118,7 +118,7 @@ func NewCodegenProcessor(schema *schema.Schema, configPath, modulePath string, d
 		return nil, err
 	}
 
-	data := &Processor{
+	processor := &Processor{
 		Schema:    schema,
 		CodePath:  codePathInfo,
 		debugMode: debugMode,
@@ -126,5 +126,5 @@ func NewCodegenProcessor(schema *schema.Schema, configPath, modulePath string, d
 
 	// if in debug mode can log things
 	file.SetGlobalLogStatus(debugMode)
-	return data, nil
+	return processor, nil
 }

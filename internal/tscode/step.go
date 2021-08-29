@@ -256,10 +256,11 @@ var _ codegen.Step = &Step{}
 
 // todo standardize this? same as in internal/code
 type nodeTemplateCodePath struct {
-	NodeData *schema.NodeData
-	CodePath *codegen.CodePath
-	Package  *codegen.ImportPackage
-	Imports  []schema.ImportPath
+	NodeData      *schema.NodeData
+	CodePath      *codegen.CodePath
+	Package       *codegen.ImportPackage
+	Imports       []schema.ImportPath
+	PrivacyConfig *codegen.PrivacyConfig
 }
 
 func getFilePathForBaseModelFile(nodeData *schema.NodeData) string {
@@ -362,9 +363,10 @@ func writeBaseModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePat
 
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data: nodeTemplateCodePath{
-			NodeData: nodeData,
-			CodePath: codePathInfo,
-			Package:  codePathInfo.GetImportPackage(),
+			NodeData:      nodeData,
+			CodePath:      codePathInfo,
+			Package:       codePathInfo.GetImportPackage(),
+			PrivacyConfig: codePathInfo.GetDefaultEntPolicy(),
 		},
 		CreateDirIfNeeded:  true,
 		AbsPathToTemplate:  util.GetAbsolutePath("base.tmpl"),
