@@ -266,10 +266,10 @@ func testFields(t *testing.T, exp []*expField, fields []*input.Field) {
 }
 
 func TestEnumCodegenData(t *testing.T) {
-	codepathInfo, err := codegen.NewCodePath("src/schema", "")
+	cfg, err := codegen.NewConfig("src/schema", "")
 	require.Nil(t, err)
 
-	c := NewEnumCodegenData(codepathInfo, "RequestStatus", "status", []string{"open", "pending", "closed"})
+	c := NewEnumCodegenData(cfg, "RequestStatus", "status", []string{"open", "pending", "closed"})
 
 	testCodegenData(
 		t,

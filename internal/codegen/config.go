@@ -7,23 +7,24 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
 
-// rename from CodePath to CodegenInfo
-type CodePath struct {
+// Config is codegen info/config which is used to pass things
+// down the line
+type Config struct {
 	relativePathToConfigs string
 	importPathToConfigs   string
 	importPathToModels    string
 	importPathToRoot      string
+	absPathToRoot         string
 	absPathToConfigs      string
 	config                *config
 }
 
-func NewCodePath(configPath, modulePath string) (*CodePath, error) {
+func NewConfig(configPath, modulePath string) (*Config, error) {
 	// TODO all this logic is dependent on passing "models/configs". TODO fix it
 	rootPath, err := filepath.Abs(configPath)
 
@@ -35,10 +36,11 @@ func NewCodePath(configPath, modulePath string) (*CodePath, error) {
 	if err != nil {
 		return nil, err
 	}
+	absPathToRoot := filepath.Join(rootPath, "..", "..")
 
-	// TODO we need to store absPathToRoot at some point
-	return &CodePath{
+	return &Config{
 		relativePathToConfigs: configPath,
+		absPathToRoot:         absPathToRoot,
 		absPathToConfigs:      rootPath, // this is part to configs root but not root of dir TODO...
 		importPathToRoot:      modulePath,
 		importPathToConfigs:   filepath.Join(modulePath, configPath),
@@ -47,53 +49,56 @@ func NewCodePath(configPath, modulePath string) (*CodePath, error) {
 	}, nil
 }
 
-func (cp *CodePath) OverrideImportPathToModels(importPath string) {
-	cp.importPathToModels = importPath
+func (cfg *Config) OverrideImportPathToModels(importPath string) {
+	cfg.importPathToModels = importPath
 }
 
-func (cp *CodePath) GetQuotedImportPathToConfigs() string {
-	return strconv.Quote(cp.importPathToConfigs)
+func (cfg *Config) GetQuotedImportPathToConfigs() string {
+	return strconv.Quote(cfg.importPathToConfigs)
 }
 
-func (cp *CodePath) GetImportPathToModels() string {
-	return cp.importPathToModels
+func (cfg *Config) GetImportPathToModels() string {
+	return cfg.importPathToModels
 }
 
-func (cp *CodePath) GetImportPathToGraphQL() string {
-	return filepath.Join(cp.importPathToRoot, "graphql")
+func (cfg *Config) GetImportPathToGraphQL() string {
+	return filepath.Join(cfg.importPathToRoot, "graphql")
 }
 
-func (cp *CodePath) GetQuotedImportPathToModels() string {
-	return strconv.Quote(cp.importPathToModels)
+func (cfg *Config) GetQuotedImportPathToModels() string {
+	return strconv.Quote(cfg.importPathToModels)
 }
 
-func (cp *CodePath) GetImportPathToRoot() string {
-	return cp.importPathToRoot
+func (cfg *Config) GetImportPathToRoot() string {
+	return cfg.importPathToRoot
 }
 
-func (cp *CodePath) GetRootPathToConfigs() string {
-	return cp.absPathToConfigs
+func (cfg *Config) GetRootPathToConfigs() string {
+	return cfg.absPathToConfigs
 }
 
-func (cp *CodePath) GetRelativePathToConfigs() string {
-	return cp.relativePathToConfigs
+func (cfg *Config) GetRelativePathToConfigs() string {
+	return cfg.relativePathToConfigs
 }
 
-func (cp *CodePath) AppendPathToModels(paths ...string) string {
-	allPaths := append([]string{cp.importPathToModels}, paths...)
+func (cfg *Config) GetAbsPathToRoot() string {
+	return cfg.absPathToRoot
+}
+
+// used by golang
+func (cfg *Config) AppendPathToModels(paths ...string) string {
+	allPaths := append([]string{cfg.importPathToModels}, paths...)
 	return filepath.Join(allPaths...)
 }
 
-func (cp *CodePath) GetAbsPathToModels() string {
-	return filepath.Join(cp.absPathToConfigs, "..")
+// used by golang
+func (cfg *Config) GetAbsPathToModels() string {
+	return filepath.Join(cfg.absPathToConfigs, "..")
 }
 
-func (cp *CodePath) GetAbsPathToRoot() string {
-	return filepath.Join(cp.absPathToConfigs, "../..")
-}
-
-func (cp *CodePath) GetAbsPathToGraphQL() string {
-	return filepath.Join(cp.absPathToConfigs, "../..", "graphql")
+// used by golang
+func (cfg *Config) GetAbsPathToGraphQL() string {
+	return filepath.Join(cfg.absPathToRoot, "graphql")
 }
 
 func init() {
@@ -110,28 +115,28 @@ func init() {
 
 var impPkg *ImportPackage
 
-func (cp *CodePath) GetImportPackage() *ImportPackage {
+func (cfg *Config) GetImportPackage() *ImportPackage {
 	return impPkg
 }
 
-func (cp *CodePath) GetDefaultActionPolicy() *PrivacyConfig {
-	if cp.config == nil || cp.config.Codegen == nil || cp.config.Codegen.DefaultActionPolicy == nil {
+func (cfg *Config) GetDefaultActionPolicy() *PrivacyConfig {
+	if cfg.config == nil || cfg.config.Codegen == nil || cfg.config.Codegen.DefaultActionPolicy == nil {
 		return &PrivacyConfig{
 			Path:       codepath.Package,
 			PolicyName: "AllowIfViewerHasIdentityPrivacyPolicy",
 		}
 	}
-	return cp.config.Codegen.DefaultActionPolicy
+	return cfg.config.Codegen.DefaultActionPolicy
 }
 
-func (cp *CodePath) GetDefaultEntPolicy() *PrivacyConfig {
-	if cp.config == nil || cp.config.Codegen == nil || cp.config.Codegen.DefaultEntPolicy == nil {
+func (cfg *Config) GetDefaultEntPolicy() *PrivacyConfig {
+	if cfg.config == nil || cfg.config.Codegen == nil || cfg.config.Codegen.DefaultEntPolicy == nil {
 		return &PrivacyConfig{
 			Path:       codepath.Package,
 			PolicyName: "AllowIfViewerPrivacyPolicy",
 		}
 	}
-	return cp.config.Codegen.DefaultEntPolicy
+	return cfg.config.Codegen.DefaultEntPolicy
 }
 
 // ImportPackage refers to TypeScript paths of what needs to be generated for imports
@@ -154,7 +159,6 @@ func parseConfig() (*config, error) {
 	for _, p := range paths {
 		fi, err := os.Stat(p)
 		if os.IsNotExist(err) {
-			spew.Dump("not exist", p)
 			continue
 		}
 		if err != nil {

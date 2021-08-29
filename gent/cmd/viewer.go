@@ -34,11 +34,11 @@ var initViewerCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		codePathInfo, err := getPathToCode(pathToConfig)
+		cfg, err := getPathToCode(pathToConfig)
 		if err != nil {
 			return err
 		}
 
-		return viewer.WriteViewerFiles(codePathInfo, viewerInfo.node, viewerInfo.app, viewerInfo.forceViewerOverwrite)
+		return viewer.WriteViewerFiles(cfg, viewerInfo.node, viewerInfo.app, viewerInfo.forceViewerOverwrite)
 	},
 }

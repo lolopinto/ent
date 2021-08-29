@@ -373,7 +373,7 @@ type writeInternalIndexStep struct {
 }
 
 func (st writeInternalIndexStep) process(processor *codegen.Processor, s *gqlSchema) error {
-	if err := writeInternalGQLResolversFile(s, processor.CodePath); err != nil {
+	if err := writeInternalGQLResolversFile(s, processor.Config); err != nil {
 		return err
 	}
 	return writeGQLResolversIndexFile()
@@ -569,15 +569,15 @@ func parseCustomData(processor *codegen.Processor, fromTest bool) chan *customDa
 				testingutils.DefaultCompilerOptions(),
 				scriptPath,
 				"--path",
-				filepath.Join(processor.CodePath.GetAbsPathToRoot(), "src"),
+				filepath.Join(processor.Config.GetAbsPathToRoot(), "src"),
 			}
 		} else {
 			cmdArgs = append(
-				cmd.GetArgsForScript(processor.CodePath.GetAbsPathToRoot()),
+				cmd.GetArgsForScript(processor.Config.GetAbsPathToRoot()),
 				scriptPath,
 				"--path",
 				// TODO this should be a configuration option to indicate where the code root is
-				filepath.Join(processor.CodePath.GetAbsPathToRoot(), "src"),
+				filepath.Join(processor.Config.GetAbsPathToRoot(), "src"),
 			)
 			cmdName = "ts-node-script"
 		}
@@ -815,7 +815,7 @@ func getGqlConnection(packageName string, edge edge.ConnectionEdge, processor *c
 				Type:       edge.TsEdgeQueryEdgeName(),
 			},
 		},
-		Package: processor.CodePath.GetImportPackage(),
+		Package: processor.Config.GetImportPackage(),
 	}
 }
 
@@ -867,7 +867,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 						Node:         nodeData.Node,
 						NodeInstance: nodeData.NodeInstance,
 						GQLNodes:     []*objectType{buildNodeForObject(nodeMap, nodeData)},
-						Package:      processor.CodePath.GetImportPackage(),
+						Package:      processor.Config.GetImportPackage(),
 					},
 					FilePath: getFilePathForNode(nodeData),
 				}
@@ -893,7 +893,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 								GQLNodes:     buildActionNodes(nodeData, action, actionPrefix),
 								Enums:        buildActionEnums(nodeData, action),
 								FieldConfig:  fieldCfg,
-								Package:      processor.CodePath.GetImportPackage(),
+								Package:      processor.Config.GetImportPackage(),
 							},
 							FilePath: getFilePathForAction(nodeData, action),
 						}
@@ -1121,7 +1121,7 @@ func getSortedLines(s *gqlSchema) []string {
 	return lines
 }
 
-func writeInternalGQLResolversFile(s *gqlSchema, codePathInfo *codegen.CodePath) error {
+func writeInternalGQLResolversFile(s *gqlSchema, cfg *codegen.Config) error {
 	imps := tsimport.NewImports()
 
 	return file.Write(&file.TemplatedBasedFileWriter{
@@ -1167,7 +1167,7 @@ func writeConnectionFile(processor *codegen.Processor, s *gqlSchema, conn *gqlCo
 			conn,
 			s.customEdges[conn.Edge.TsEdgeQueryEdgeName()],
 			&connectionBaseObj{},
-			processor.CodePath.GetImportPackage(),
+			processor.Config.GetImportPackage(),
 		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/connection.tmpl"),
@@ -2269,7 +2269,7 @@ func writeNodeQueryFile(processor *codegen.Processor, s *gqlSchema) error {
 		}{
 			buildNodeFieldConfig(processor, s),
 			&nodeBaseObj{},
-			processor.CodePath.GetImportPackage(),
+			processor.Config.GetImportPackage(),
 		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/node.tmpl"),

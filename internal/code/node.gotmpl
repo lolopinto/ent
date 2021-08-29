@@ -11,7 +11,7 @@
 {{reserveImport	"github.com/lolopinto/ent/ent/viewer" }}
 {{reserveImport "golang.org/x/crypto/bcrypt" }}
 
-{{reserveImport .CodePath.GetQuotedImportPathToConfigs}}
+{{reserveImport .Config.GetQuotedImportPathToConfigs}}
 
 {{with .NodeData -}}
 {{ $constGroup := .ConstantGroups -}}

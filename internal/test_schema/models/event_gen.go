@@ -232,22 +232,22 @@ func (event *Event) LoadUser() (*User, error) {
 	return LoadUser(event.viewer, event.UserID)
 }
 
-// LoadHostsEdges returns the Hosts edges associated with the Event instance
-func (event *Event) LoadHostsEdges() ([]*ent.AssocEdge, error) {
-	return ent.LoadEdgesByType(event.ID, EventToHostsEdge)
+// LoadAttendingEdges returns the Attending edges associated with the Event instance
+func (event *Event) LoadAttendingEdges() ([]*ent.AssocEdge, error) {
+	return ent.LoadEdgesByType(event.ID, EventToAttendingEdge)
 }
 
-// GenHostsEdges returns the User edges associated with the Event instance
-func (event *Event) GenHostsEdges() <-chan *ent.AssocEdgesResult {
-	return ent.GenLoadEdgesByType(event.ID, EventToHostsEdge)
+// GenAttendingEdges returns the User edges associated with the Event instance
+func (event *Event) GenAttendingEdges() <-chan *ent.AssocEdgesResult {
+	return ent.GenLoadEdgesByType(event.ID, EventToAttendingEdge)
 }
 
-// GenHosts returns the Users associated with the Event instance
-func (event *Event) GenHosts() <-chan *UsersResult {
+// GenAttending returns the Users associated with the Event instance
+func (event *Event) GenAttending() <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
 		loader := NewUserLoader(event.viewer)
-		err := ent.LoadNodesByType(event.viewer, event.ID, EventToHostsEdge, loader)
+		err := ent.LoadNodesByType(event.viewer, event.ID, EventToAttendingEdge, loader)
 		res <- &UsersResult{
 			Err:   err,
 			Users: loader.results,
@@ -256,21 +256,21 @@ func (event *Event) GenHosts() <-chan *UsersResult {
 	return res
 }
 
-// LoadHosts returns the Users associated with the Event instance
-func (event *Event) LoadHosts() ([]*User, error) {
+// LoadAttending returns the Users associated with the Event instance
+func (event *Event) LoadAttending() ([]*User, error) {
 	loader := NewUserLoader(event.viewer)
-	err := ent.LoadNodesByType(event.viewer, event.ID, EventToHostsEdge, loader)
+	err := ent.LoadNodesByType(event.viewer, event.ID, EventToAttendingEdge, loader)
 	return loader.results, err
 }
 
-// LoadHostEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the Hosts edge.
-func (event *Event) LoadHostEdgeFor(id2 string) (*ent.AssocEdge, error) {
-	return ent.LoadEdgeByType(event.ID, id2, EventToHostsEdge)
+// LoadAttendingEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the Attending edge.
+func (event *Event) LoadAttendingEdgeFor(id2 string) (*ent.AssocEdge, error) {
+	return ent.LoadEdgeByType(event.ID, id2, EventToAttendingEdge)
 }
 
-// GenHostEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the Hosts edge.
-func (event *Event) GenLoadHostEdgeFor(id2 string) <-chan *ent.AssocEdgeResult {
-	return ent.GenLoadEdgeByType(event.ID, id2, EventToHostsEdge)
+// GenAttendingEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the Attending edge.
+func (event *Event) GenLoadAttendingEdgeFor(id2 string) <-chan *ent.AssocEdgeResult {
+	return ent.GenLoadEdgeByType(event.ID, id2, EventToAttendingEdge)
 }
 
 // LoadCreatorEdge returns the Creator edge associated with the Event instance
@@ -314,88 +314,6 @@ func (event *Event) GenLoadCreatorEdgeFor(id2 string) <-chan *ent.AssocEdgeResul
 	return ent.GenLoadEdgeByType(event.ID, id2, EventToCreatorEdge)
 }
 
-// LoadInvitedEdges returns the Invited edges associated with the Event instance
-func (event *Event) LoadInvitedEdges() ([]*ent.AssocEdge, error) {
-	return ent.LoadEdgesByType(event.ID, EventToInvitedEdge)
-}
-
-// GenInvitedEdges returns the User edges associated with the Event instance
-func (event *Event) GenInvitedEdges() <-chan *ent.AssocEdgesResult {
-	return ent.GenLoadEdgesByType(event.ID, EventToInvitedEdge)
-}
-
-// GenInvited returns the Users associated with the Event instance
-func (event *Event) GenInvited() <-chan *UsersResult {
-	res := make(chan *UsersResult)
-	go func() {
-		loader := NewUserLoader(event.viewer)
-		err := ent.LoadNodesByType(event.viewer, event.ID, EventToInvitedEdge, loader)
-		res <- &UsersResult{
-			Err:   err,
-			Users: loader.results,
-		}
-	}()
-	return res
-}
-
-// LoadInvited returns the Users associated with the Event instance
-func (event *Event) LoadInvited() ([]*User, error) {
-	loader := NewUserLoader(event.viewer)
-	err := ent.LoadNodesByType(event.viewer, event.ID, EventToInvitedEdge, loader)
-	return loader.results, err
-}
-
-// LoadInvitedEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the Invited edge.
-func (event *Event) LoadInvitedEdgeFor(id2 string) (*ent.AssocEdge, error) {
-	return ent.LoadEdgeByType(event.ID, id2, EventToInvitedEdge)
-}
-
-// GenInvitedEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the Invited edge.
-func (event *Event) GenLoadInvitedEdgeFor(id2 string) <-chan *ent.AssocEdgeResult {
-	return ent.GenLoadEdgeByType(event.ID, id2, EventToInvitedEdge)
-}
-
-// LoadAttendingEdges returns the Attending edges associated with the Event instance
-func (event *Event) LoadAttendingEdges() ([]*ent.AssocEdge, error) {
-	return ent.LoadEdgesByType(event.ID, EventToAttendingEdge)
-}
-
-// GenAttendingEdges returns the User edges associated with the Event instance
-func (event *Event) GenAttendingEdges() <-chan *ent.AssocEdgesResult {
-	return ent.GenLoadEdgesByType(event.ID, EventToAttendingEdge)
-}
-
-// GenAttending returns the Users associated with the Event instance
-func (event *Event) GenAttending() <-chan *UsersResult {
-	res := make(chan *UsersResult)
-	go func() {
-		loader := NewUserLoader(event.viewer)
-		err := ent.LoadNodesByType(event.viewer, event.ID, EventToAttendingEdge, loader)
-		res <- &UsersResult{
-			Err:   err,
-			Users: loader.results,
-		}
-	}()
-	return res
-}
-
-// LoadAttending returns the Users associated with the Event instance
-func (event *Event) LoadAttending() ([]*User, error) {
-	loader := NewUserLoader(event.viewer)
-	err := ent.LoadNodesByType(event.viewer, event.ID, EventToAttendingEdge, loader)
-	return loader.results, err
-}
-
-// LoadAttendingEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the Attending edge.
-func (event *Event) LoadAttendingEdgeFor(id2 string) (*ent.AssocEdge, error) {
-	return ent.LoadEdgeByType(event.ID, id2, EventToAttendingEdge)
-}
-
-// GenAttendingEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the Attending edge.
-func (event *Event) GenLoadAttendingEdgeFor(id2 string) <-chan *ent.AssocEdgeResult {
-	return ent.GenLoadEdgeByType(event.ID, id2, EventToAttendingEdge)
-}
-
 // LoadDeclinedEdges returns the Declined edges associated with the Event instance
 func (event *Event) LoadDeclinedEdges() ([]*ent.AssocEdge, error) {
 	return ent.LoadEdgesByType(event.ID, EventToDeclinedEdge)
@@ -435,6 +353,88 @@ func (event *Event) LoadDeclinedEdgeFor(id2 string) (*ent.AssocEdge, error) {
 // GenDeclinedEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the Declined edge.
 func (event *Event) GenLoadDeclinedEdgeFor(id2 string) <-chan *ent.AssocEdgeResult {
 	return ent.GenLoadEdgeByType(event.ID, id2, EventToDeclinedEdge)
+}
+
+// LoadHostsEdges returns the Hosts edges associated with the Event instance
+func (event *Event) LoadHostsEdges() ([]*ent.AssocEdge, error) {
+	return ent.LoadEdgesByType(event.ID, EventToHostsEdge)
+}
+
+// GenHostsEdges returns the User edges associated with the Event instance
+func (event *Event) GenHostsEdges() <-chan *ent.AssocEdgesResult {
+	return ent.GenLoadEdgesByType(event.ID, EventToHostsEdge)
+}
+
+// GenHosts returns the Users associated with the Event instance
+func (event *Event) GenHosts() <-chan *UsersResult {
+	res := make(chan *UsersResult)
+	go func() {
+		loader := NewUserLoader(event.viewer)
+		err := ent.LoadNodesByType(event.viewer, event.ID, EventToHostsEdge, loader)
+		res <- &UsersResult{
+			Err:   err,
+			Users: loader.results,
+		}
+	}()
+	return res
+}
+
+// LoadHosts returns the Users associated with the Event instance
+func (event *Event) LoadHosts() ([]*User, error) {
+	loader := NewUserLoader(event.viewer)
+	err := ent.LoadNodesByType(event.viewer, event.ID, EventToHostsEdge, loader)
+	return loader.results, err
+}
+
+// LoadHostEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the Hosts edge.
+func (event *Event) LoadHostEdgeFor(id2 string) (*ent.AssocEdge, error) {
+	return ent.LoadEdgeByType(event.ID, id2, EventToHostsEdge)
+}
+
+// GenHostEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the Hosts edge.
+func (event *Event) GenLoadHostEdgeFor(id2 string) <-chan *ent.AssocEdgeResult {
+	return ent.GenLoadEdgeByType(event.ID, id2, EventToHostsEdge)
+}
+
+// LoadInvitedEdges returns the Invited edges associated with the Event instance
+func (event *Event) LoadInvitedEdges() ([]*ent.AssocEdge, error) {
+	return ent.LoadEdgesByType(event.ID, EventToInvitedEdge)
+}
+
+// GenInvitedEdges returns the User edges associated with the Event instance
+func (event *Event) GenInvitedEdges() <-chan *ent.AssocEdgesResult {
+	return ent.GenLoadEdgesByType(event.ID, EventToInvitedEdge)
+}
+
+// GenInvited returns the Users associated with the Event instance
+func (event *Event) GenInvited() <-chan *UsersResult {
+	res := make(chan *UsersResult)
+	go func() {
+		loader := NewUserLoader(event.viewer)
+		err := ent.LoadNodesByType(event.viewer, event.ID, EventToInvitedEdge, loader)
+		res <- &UsersResult{
+			Err:   err,
+			Users: loader.results,
+		}
+	}()
+	return res
+}
+
+// LoadInvited returns the Users associated with the Event instance
+func (event *Event) LoadInvited() ([]*User, error) {
+	loader := NewUserLoader(event.viewer)
+	err := ent.LoadNodesByType(event.viewer, event.ID, EventToInvitedEdge, loader)
+	return loader.results, err
+}
+
+// LoadInvitedEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the Invited edge.
+func (event *Event) LoadInvitedEdgeFor(id2 string) (*ent.AssocEdge, error) {
+	return ent.LoadEdgeByType(event.ID, id2, EventToInvitedEdge)
+}
+
+// GenInvitedEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the Invited edge.
+func (event *Event) GenLoadInvitedEdgeFor(id2 string) <-chan *ent.AssocEdgeResult {
+	return ent.GenLoadEdgeByType(event.ID, id2, EventToInvitedEdge)
 }
 
 func (event *Event) ViewerRsvpStatus() (*EventRsvpStatus, error) {

@@ -451,11 +451,11 @@ func (c *CodegenData) DBRowsCall() string {
 	return c.DBRows.String()
 }
 
-func NewEnumCodegenData(codePathInfo *codegen.CodePath, schema, col string, values []string) *CodegenData {
+func NewEnumCodegenData(cfg *codegen.Config, schema, col string, values []string) *CodegenData {
 	ret := &CodegenData{
 		Node:      schema,
 		EnumTable: true,
-		Package:   codePathInfo.GetImportPackage(),
+		Package:   cfg.GetImportPackage(),
 
 		Implements: true,
 		Base:       "Schema",
@@ -478,10 +478,10 @@ func NewEnumCodegenData(codePathInfo *codegen.CodePath, schema, col string, valu
 	return ret
 }
 
-func NewCodegenDataFromInputNode(codePathInfo *codegen.CodePath, node string, n *input.Node) *CodegenData {
+func NewCodegenDataFromInputNode(cfg *codegen.Config, node string, n *input.Node) *CodegenData {
 	ret := &CodegenData{
 		Node:            node,
-		Package:         codePathInfo.GetImportPackage(),
+		Package:         cfg.GetImportPackage(),
 		Fields:          n.Fields,
 		Edges:           n.AssocEdges,
 		EdgeGroups:      n.AssocEdgeGroups,
@@ -519,7 +519,7 @@ func NewCodegenDataFromInputNode(codePathInfo *codegen.CodePath, node string, n 
 }
 
 // TODO test ...
-func ParseAndGenerateSchema(codePathInfo *codegen.CodePath, node string, fields []string) error {
+func ParseAndGenerateSchema(cfg *codegen.Config, node string, fields []string) error {
 	parsed, err := parseFields(fields)
 	if err != nil {
 		return err
@@ -528,25 +528,25 @@ func ParseAndGenerateSchema(codePathInfo *codegen.CodePath, node string, fields 
 	data := &CodegenData{
 		Node:    node,
 		Fields:  parsed,
-		Package: codePathInfo.GetImportPackage(),
+		Package: cfg.GetImportPackage(),
 		Extends: true,
 		Base:    "BaseEntSchema",
 	}
 
-	return GenerateSchema(codePathInfo, data, node)
+	return GenerateSchema(cfg, data, node)
 }
 
-func GenerateFromInputSchema(codePathInfo *codegen.CodePath, s *input.Schema) error {
+func GenerateFromInputSchema(cfg *codegen.Config, s *input.Schema) error {
 	var wg sync.WaitGroup
 	var serr syncerr.Error
 	wg.Add(len(s.Nodes))
 	for k := range s.Nodes {
 		go func(k string) {
 			v := s.Nodes[k]
-			codegen := NewCodegenDataFromInputNode(codePathInfo, k, v)
+			codegen := NewCodegenDataFromInputNode(cfg, k, v)
 			defer wg.Done()
 
-			if err := GenerateSchema(codePathInfo, codegen, k); err != nil {
+			if err := GenerateSchema(cfg, codegen, k); err != nil {
 				serr.Append(err)
 			}
 		}(k)
@@ -556,10 +556,10 @@ func GenerateFromInputSchema(codePathInfo *codegen.CodePath, s *input.Schema) er
 	return serr.Err()
 }
 
-func GenerateSchema(codePathInfo *codegen.CodePath, data *CodegenData, node string) error {
+func GenerateSchema(cfg *codegen.Config, data *CodegenData, node string) error {
 	tsimps := tsimport.NewImports()
 
-	filePath := path.Join(codePathInfo.GetRootPathToConfigs(), base.GetSnakeCaseName(node)+".ts")
+	filePath := path.Join(cfg.GetRootPathToConfigs(), base.GetSnakeCaseName(node)+".ts")
 
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data:              data,

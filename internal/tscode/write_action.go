@@ -22,7 +22,7 @@ type actionTemplate struct {
 	PrivacyConfig *codegen.PrivacyConfig
 }
 
-func writeBaseActionFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath, action action.Action) error {
+func writeBaseActionFile(nodeData *schema.NodeData, cfg *codegen.Config, action action.Action) error {
 	imps := tsimport.NewImports()
 
 	return file.Write(&file.TemplatedBasedFileWriter{
@@ -30,8 +30,8 @@ func writeBaseActionFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePa
 			NodeData:      nodeData,
 			Action:        action,
 			BuilderPath:   getImportPathForBuilderFile(nodeData),
-			Package:       codePathInfo.GetImportPackage(),
-			PrivacyConfig: codePathInfo.GetDefaultActionPolicy(),
+			Package:       cfg.GetImportPackage(),
+			PrivacyConfig: cfg.GetDefaultActionPolicy(),
 		},
 		CreateDirIfNeeded:  true,
 		AbsPathToTemplate:  util.GetAbsolutePath("action_base.tmpl"),
@@ -44,7 +44,7 @@ func writeBaseActionFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePa
 	})
 }
 
-func writeActionFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath, action action.Action) error {
+func writeActionFile(nodeData *schema.NodeData, cfg *codegen.Config, action action.Action) error {
 	imps := tsimport.NewImports()
 
 	return file.Write(&file.TemplatedBasedFileWriter{
@@ -52,7 +52,7 @@ func writeActionFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath, 
 			NodeData: nodeData,
 			Action:   action,
 			BasePath: getImportPathForActionBaseFile(nodeData, action),
-			Package:  codePathInfo.GetImportPackage(),
+			Package:  cfg.GetImportPackage(),
 		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("action.tmpl"),

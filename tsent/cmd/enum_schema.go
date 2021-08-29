@@ -36,14 +36,14 @@ e.g. tsent generate enum_schema RequestStatus status open,pending,closed`,
 			return fmt.Errorf("cannot generate a schema for %s since schema with name already exists", schemaName)
 		}
 
-		codePathInfo, err := codegen.NewCodePath("src/schema", "")
+		cfg, err := codegen.NewConfig("src/schema", "")
 		if err != nil {
 			return err
 		}
 
 		return generateschema.GenerateSchema(
-			codePathInfo,
-			generateschema.NewEnumCodegenData(codePathInfo, schemaName, args[1], strings.Split(args[2], ",")),
+			cfg,
+			generateschema.NewEnumCodegenData(cfg, schemaName, args[1], strings.Split(args[2], ",")),
 			schemaName,
 		)
 	},
