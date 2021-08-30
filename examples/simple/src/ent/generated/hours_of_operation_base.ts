@@ -71,7 +71,6 @@ export class HoursOfOperationBase {
     this.close = data.close;
   }
 
-  // default privacyPolicy is Viewer can see themselves
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
 
   static async load<T extends HoursOfOperationBase>(

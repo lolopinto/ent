@@ -225,6 +225,27 @@ func LoadContactFromEmailAddress(v viewer.ViewerContext, emailAddress string) (*
 	return loader.getFirstInstance(), loader.getFirstErr()
 }
 
+func LoadContactIDFromUserID(userID string) (string, error) {
+	loader := NewContactLoader(viewer.LoggedOutViewer())
+	data, err := ent.LoadNodeRawDataViaQueryClause(
+		loader,
+		sql.Eq("user_id", userID),
+	)
+	if err != nil {
+		return "", err
+	}
+	return cast.ToUUIDString(data["id"])
+}
+
+func LoadContactFromUserID(v viewer.ViewerContext, userID string) (*Contact, error) {
+	loader := NewContactLoader(v)
+	err := ent.LoadNodeViaQueryClause(v, loader, sql.Eq("user_id", userID))
+	if err != nil {
+		return nil, err
+	}
+	return loader.getFirstInstance(), loader.getFirstErr()
+}
+
 // GenUser returns the User associated with the Contact instance
 func (contact *Contact) GenUser() <-chan *UserResult {
 	return GenLoadUser(contact.viewer, contact.UserID)

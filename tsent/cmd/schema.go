@@ -38,7 +38,7 @@ tsent generate schema User "account_status;string;serverDefault:DEACTIVATED emai
 			return fmt.Errorf("cannot generate a schema for since schema with name %s already exists", schemaName)
 		}
 
-		codePathInfo, err := codegen.NewCodePath("src/schema", "")
+		cfg, err := codegen.NewConfig("src/schema", "")
 		if err != nil {
 			return err
 		}
@@ -52,6 +52,6 @@ tsent generate schema User "account_status;string;serverDefault:DEACTIVATED emai
 				fields = strings.Split(args[1], " ")
 			}
 		}
-		return generateschema.ParseAndGenerateSchema(codePathInfo, schemaName, fields)
+		return generateschema.ParseAndGenerateSchema(cfg, schemaName, fields)
 	},
 }

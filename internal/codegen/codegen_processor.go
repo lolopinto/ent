@@ -24,11 +24,11 @@ func DisablePrompts() Option {
 // Processor stores the parsed data needed for codegen
 type Processor struct {
 	Schema    *schema.Schema
-	CodePath  *CodePath
+	Config    *Config
 	debugMode bool
 }
 
-func (cp *Processor) Run(steps []Step, step string, options ...Option) error {
+func (p *Processor) Run(steps []Step, step string, options ...Option) error {
 	opt := &option{}
 	for _, o := range options {
 		o(opt)
@@ -63,7 +63,7 @@ func (cp *Processor) Run(steps []Step, step string, options ...Option) error {
 			go func(i int) {
 				defer wg.Done()
 				ps := pre_steps[i]
-				serr.Append(ps.PreProcessData(cp))
+				serr.Append(ps.PreProcessData(p))
 			}(i)
 		}
 
@@ -75,7 +75,7 @@ func (cp *Processor) Run(steps []Step, step string, options ...Option) error {
 	}
 
 	if !opt.disablePrompts {
-		if err := checkAndHandlePrompts(cp.Schema, cp.CodePath); err != nil {
+		if err := checkAndHandlePrompts(p.Schema, p.Config); err != nil {
 			return err
 		}
 	}
@@ -90,7 +90,7 @@ func (cp *Processor) Run(steps []Step, step string, options ...Option) error {
 	// 4/ graphql should be able to run on its own
 
 	for _, s := range steps {
-		if err := s.ProcessData(cp); err != nil {
+		if err := s.ProcessData(p); err != nil {
 			return err
 		}
 	}
@@ -113,18 +113,18 @@ type StepWithPreProcess interface {
 }
 
 func NewCodegenProcessor(schema *schema.Schema, configPath, modulePath string, debugMode bool) (*Processor, error) {
-	codePathInfo, err := NewCodePath(configPath, modulePath)
+	cfg, err := NewConfig(configPath, modulePath)
 	if err != nil {
 		return nil, err
 	}
 
-	data := &Processor{
+	processor := &Processor{
 		Schema:    schema,
-		CodePath:  codePathInfo,
+		Config:    cfg,
 		debugMode: debugMode,
 	}
 
 	// if in debug mode can log things
 	file.SetGlobalLogStatus(debugMode)
-	return data, nil
+	return processor, nil
 }

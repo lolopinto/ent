@@ -17,6 +17,20 @@ export interface Config {
   // warn will be deprecared or weird things
   // info is tbd. graphql/performance/timing/request stuff
   // query includes cache hit. redis|memcache etc eventually
+
+  // config for codegen
+  codegen?: CodegenConfig;
+}
+
+interface CodegenConfig {
+  defaultEntPolicy?: PrivacyConfig;
+  defaultActionPolicy?: PrivacyConfig;
+}
+
+interface PrivacyConfig {
+  path: string; // e.g. "@snowtop/ent"
+  policyName: string; // e.g. "AllowIfViewerHasIdentityPrivacyPolicy";
+  class?: boolean;
 }
 
 function setConfig(cfg: Config) {

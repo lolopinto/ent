@@ -196,7 +196,7 @@ func processFields(processor *codegen.Processor, cd *customData, s *gqlSchema, c
 				NodeInstance: "obj",
 				GQLNodes:     objTypes,
 				FieldConfig:  fieldConfig,
-				Package:      processor.CodePath.GetImportPackage(),
+				Package:      processor.Config.GetImportPackage(),
 			},
 			FilePath:    filePath,
 			Field:       &field,
@@ -673,7 +673,7 @@ func buildObjectType(processor *codegen.Processor, cd *customData, s *gqlSchema,
 
 func getRelativeImportPath(processor *codegen.Processor, basepath, targetpath string) (string, error) {
 	// BONUS: instead of this, we should use the nice paths in tsconfig...
-	absPath := filepath.Join(processor.CodePath.GetAbsPathToRoot(), basepath)
+	absPath := filepath.Join(processor.Config.GetAbsPathToRoot(), basepath)
 
 	// need to do any relative imports from the directory not from the file itself
 	dir := filepath.Dir(absPath)

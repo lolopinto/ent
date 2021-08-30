@@ -610,21 +610,21 @@ func parse(t *testing.T, code, dirPath, packagePath string, nodes []string) {
 
 	basePath := filepath.Base(dirPath)
 
-	codepath, err := codegen.NewCodePath(
+	codepath, err := codegen.NewConfig(
 		"models/configs",
 		"github.com/lolopinto/ent/internal/graphql/"+basePath+"/graphql",
 	)
 	require.Nil(t, err)
 	s := newGraphQLSchema(&codegen.Processor{
-		CodePath: codepath,
-		Schema:   &schema.Schema{},
+		Config: codepath,
+		Schema: &schema.Schema{},
 	})
 	s.overrideGraphQLFolder(packagePath)
 
 	s.config.Schema.Nodes = make(schema.NodeMapInfo)
 
 	// need to override this because we're using test_schema/models in the examples
-	s.config.CodePath.OverrideImportPathToModels(
+	s.config.Config.OverrideImportPathToModels(
 		"github.com/lolopinto/ent/internal/test_schema/models",
 	)
 

@@ -9,6 +9,7 @@ import (
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/cast"
 	"github.com/lolopinto/ent/ent/privacy"
+	"github.com/lolopinto/ent/ent/sql"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 )
@@ -194,6 +195,27 @@ func GenLoadContactEmails(v viewer.ViewerContext, ids ...string) <-chan *Contact
 		}
 	}()
 	return res
+}
+
+func LoadContactEmailIDFromContactID(contactID string) (string, error) {
+	loader := NewContactEmailLoader(viewer.LoggedOutViewer())
+	data, err := ent.LoadNodeRawDataViaQueryClause(
+		loader,
+		sql.Eq("contact_id", contactID),
+	)
+	if err != nil {
+		return "", err
+	}
+	return cast.ToUUIDString(data["id"])
+}
+
+func LoadContactEmailFromContactID(v viewer.ViewerContext, contactID string) (*ContactEmail, error) {
+	loader := NewContactEmailLoader(v)
+	err := ent.LoadNodeViaQueryClause(v, loader, sql.Eq("contact_id", contactID))
+	if err != nil {
+		return nil, err
+	}
+	return loader.getFirstInstance(), loader.getFirstErr()
 }
 
 // GenContact returns the Contact associated with the ContactEmail instance

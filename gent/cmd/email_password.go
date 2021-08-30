@@ -40,12 +40,12 @@ var initEmailAuthCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		codePathInfo, err := getPathToCode(pathToConfig)
+		cfg, err := getPathToCode(pathToConfig)
 		if err != nil {
 			return err
 		}
 
-		return auth.WriteEmailAuthFile(codePathInfo, &auth.Options{
+		return auth.WriteEmailAuthFile(cfg, &auth.Options{
 			Node:           emailAuth.node,
 			Field:          emailAuth.field,
 			ViewerFunc:     emailAuth.viewerFunc,

@@ -1,6 +1,6 @@
 {{ reserveImport "context" }}
 {{ reserveImport "github.com/lolopinto/ent/ent/viewer" }}
-{{ reserveImport .CodePath.GetQuotedImportPathToModels }}
+{{ reserveImport .Config.GetQuotedImportPathToModels }}
 {{ reserveImport .AppViewerPackageName }}
 
 // ViewerResolver takes the context and returns the logged in viewer

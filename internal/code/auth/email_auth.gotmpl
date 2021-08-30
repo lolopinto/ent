@@ -2,7 +2,7 @@
 {{ reserveImport "database/sql" }}
 {{ reserveImport "time" }}
 
-{{ reserveImport .CodePath.GetQuotedImportPathToModels}}
+{{ reserveImport .Config.GetQuotedImportPathToModels}}
 
 {{ reserveImport "github.com/lolopinto/ent/ent/auth"}}
 {{ reserveImport "github.com/lolopinto/ent/ent/auth/email"}}

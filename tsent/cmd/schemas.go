@@ -60,11 +60,11 @@ cat schema.json | tsent generate schemas --force`,
 			}
 		}
 
-		codePathInfo, err := codegen.NewCodePath("src/schema", "")
+		cfg, err := codegen.NewConfig("src/schema", "")
 		if err != nil {
 			return err
 		}
-		return generateschema.GenerateFromInputSchema(codePathInfo, s)
+		return generateschema.GenerateFromInputSchema(cfg, s)
 	},
 }
 

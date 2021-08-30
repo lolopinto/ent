@@ -30,7 +30,7 @@ tsent alembic current
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// another hardcoded place
-		codePathInfo, err := codegen.NewCodePath("src/schema", "")
+		cfg, err := codegen.NewConfig("src/schema", "")
 		if err != nil {
 			return err
 		}
@@ -44,6 +44,6 @@ tsent alembic current
 			return fmt.Errorf("invalid number of args passed. expected %d", count+1)
 		}
 
-		return db.RunAlembicCommand(codePathInfo, args[0], args[1:]...)
+		return db.RunAlembicCommand(cfg, args[0], args[1:]...)
 	},
 }

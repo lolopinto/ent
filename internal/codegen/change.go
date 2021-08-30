@@ -39,8 +39,8 @@ type change struct {
 }
 
 // get db changes and store in Buffer (output of auto_schema --changes)
-func dbChanges(codePathInfo *CodePath) (*bytes.Buffer, error) {
+func dbChanges(cfg *Config) (*bytes.Buffer, error) {
 	var buf bytes.Buffer
-	err := auto_schema.RunPythonCommandWriter(codePathInfo.GetRootPathToConfigs(), &buf, "--changes")
+	err := auto_schema.RunPythonCommandWriter(cfg.GetRootPathToConfigs(), &buf, "--changes")
 	return &buf, err
 }

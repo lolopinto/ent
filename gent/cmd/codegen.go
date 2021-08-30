@@ -23,11 +23,11 @@ var codegenCmd = &cobra.Command{
 	Long:  `This runs the codegen steps. It generates the ent, db, and graphql code based on the arguments passed in`,
 	Args:  configRequired,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		codePathInfo, err := getPathToCode(pathToConfig)
+		cfg, err := getPathToCode(pathToConfig)
 		if err != nil {
 			return err
 		}
-		return parseSchemasAndGenerate(codePathInfo, codegenInfo.specificConfig, codegenInfo.step)
+		return parseSchemasAndGenerate(cfg, codegenInfo.specificConfig, codegenInfo.step)
 	},
 }
 
@@ -41,8 +41,8 @@ func parseAllSchemaFiles(rootPath string, specificConfigs ...string) (*schema.Sc
 
 // TODO break this up into something that takes steps and knows what to do with them
 // or shared code that's language specific?
-func parseSchemasAndGenerate(codePathInfo *codegen.CodePath, specificConfig, step string) error {
-	schema, err := parseAllSchemaFiles(codePathInfo.GetRootPathToConfigs(), specificConfig)
+func parseSchemasAndGenerate(cfg *codegen.Config, specificConfig, step string) error {
+	schema, err := parseAllSchemaFiles(cfg.GetRootPathToConfigs(), specificConfig)
 	if err != nil {
 		return err
 	}
@@ -52,8 +52,8 @@ func parseSchemasAndGenerate(codePathInfo *codegen.CodePath, specificConfig, ste
 	}
 
 	processor := &codegen.Processor{
-		Schema:   schema,
-		CodePath: codePathInfo,
+		Schema: schema,
+		Config: cfg,
 	}
 
 	steps := []codegen.Step{

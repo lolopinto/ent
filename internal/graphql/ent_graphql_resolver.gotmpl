@@ -7,7 +7,7 @@
 {{ reserveImport "github.com/lolopinto/ent/ent"}}
 {{ reserveImport "github.com/lolopinto/ent/ent/cast"}}
 {{ reserveImport "github.com/lolopinto/ent/ent/viewer"}}
-{{ reserveImport .CodePath.GetImportPathToModels}}
+{{ reserveImport .Config.GetImportPathToModels}}
 
 {{define "action" -}}
 	{{ $field := . -}}

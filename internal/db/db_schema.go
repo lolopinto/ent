@@ -33,7 +33,7 @@ func (s *Step) Name() string {
 
 func (s *Step) PreProcessData(processor *codegen.Processor) error {
 	// generate python schema file and then make changes to underlying db
-	db := newDBSchema(processor.Schema, processor.CodePath.GetRootPathToConfigs())
+	db := newDBSchema(processor.Schema, processor.Config.GetRootPathToConfigs())
 	s.db = db
 
 	return db.processSchema()
@@ -411,23 +411,23 @@ func (s *dbSchema) makeDBChanges() error {
 	return auto_schema.RunPythonCommand(s.pathToConfigs)
 }
 
-func UpgradeDB(codePathInfo *codegen.CodePath, revision string) error {
-	return auto_schema.RunPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("-u=%s", revision))
+func UpgradeDB(cfg *codegen.Config, revision string) error {
+	return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), fmt.Sprintf("-u=%s", revision))
 }
 
-func DowngradeDB(codePathInfo *codegen.CodePath, revision string) error {
-	return auto_schema.RunPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("-d=%s", revision))
+func DowngradeDB(cfg *codegen.Config, revision string) error {
+	return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), fmt.Sprintf("-d=%s", revision))
 }
 
-func FixEdges(codePathInfo *codegen.CodePath) error {
-	return auto_schema.RunPythonCommand(codePathInfo.GetRootPathToConfigs(), "-f=True")
+func FixEdges(cfg *codegen.Config) error {
+	return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), "-f=True")
 }
 
-func RunAlembicCommand(codePathInfo *codegen.CodePath, command string, args ...string) error {
+func RunAlembicCommand(cfg *codegen.Config, command string, args ...string) error {
 	if len(args) == 0 {
-		return auto_schema.RunPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("--%s", command))
+		return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), fmt.Sprintf("--%s", command))
 	} else {
-		return auto_schema.RunPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("--%s=%s", command, strings.Join(args, ",")))
+		return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), fmt.Sprintf("--%s=%s", command, strings.Join(args, ",")))
 	}
 }
 

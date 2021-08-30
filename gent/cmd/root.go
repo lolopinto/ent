@@ -74,7 +74,7 @@ func getPathToConfig() string {
 	return pathToConfig
 }
 
-func getPathToCode(pathToConfig string) (*codegen.CodePath, error) {
+func getPathToCode(pathToConfig string) (*codegen.Config, error) {
 	dir, err := filepath.Abs(".")
 	if err != nil {
 		util.GoSchemaKill(err)
@@ -94,7 +94,7 @@ func getPathToCode(pathToConfig string) (*codegen.CodePath, error) {
 			contents := string(b)
 
 			match := r.FindStringSubmatch(contents)
-			return codegen.NewCodePath(pathToConfig, match[1]+suffix)
+			return codegen.NewConfig(pathToConfig, match[1]+suffix)
 		}
 
 		suffix = "/" + filepath.Base(curDir) + suffix
@@ -134,5 +134,5 @@ func getPathToCode(pathToConfig string) (*codegen.CodePath, error) {
 		}
 	}
 	path := strings.Join(pathParts[idx:], string(filepath.Separator))
-	return codegen.NewCodePath(pathToConfig, path)
+	return codegen.NewConfig(pathToConfig, path)
 }

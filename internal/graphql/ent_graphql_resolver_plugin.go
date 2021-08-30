@@ -17,7 +17,7 @@ import (
 // inspired by resolvergen from gqlgen
 type entGraphQLResolverPlugin struct {
 	schema    *schema.Schema
-	codePath  *intcodegen.CodePath
+	config    *intcodegen.Config
 	gqlSchema *graphQLSchema
 	fileName  string
 }
@@ -133,7 +133,7 @@ func (p *entGraphQLResolverPlugin) getActionPath(a action.Action) string {
 	// generating the file
 	// need to make sure we support contact_date etc
 	// to be consistent with writeActionFile
-	return p.codePath.AppendPathToModels(strcase.ToSnake(a.GetNodeInfo().Node), "action")
+	return p.config.AppendPathToModels(strcase.ToSnake(a.GetNodeInfo().Node), "action")
 }
 
 func (p *entGraphQLResolverPlugin) customFn(field *codegen.Field) *customFunction {
@@ -151,14 +151,14 @@ type ResolverBuild struct {
 
 	PackageName  string
 	ResolverType string
-	CodePath     *intcodegen.CodePath
+	Config       *intcodegen.Config
 }
 
 func (p *entGraphQLResolverPlugin) GenerateCode(data *codegen.Data) error {
 	resolverBuild := &ResolverBuild{
 		Data:         data,
 		ResolverType: "Resolver",
-		CodePath:     p.codePath,
+		Config:       p.config,
 	}
 
 	return templates.Render(templates.Options{
@@ -189,7 +189,7 @@ func (p *entGraphQLResolverPlugin) GenerateCode(data *codegen.Data) error {
 func newGraphQLResolverPlugin(s *graphQLSchema, filename string) plugin.Plugin {
 	plugin := &entGraphQLResolverPlugin{
 		schema:    s.config.Schema,
-		codePath:  s.config.CodePath,
+		config:    s.config.Config,
 		gqlSchema: s,
 		fileName:  filename,
 	}

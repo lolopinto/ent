@@ -298,6 +298,47 @@ func (user *User) LoadContacts() ([]*Contact, error) {
 	return loader.results, err
 }
 
+// LoadDeclinedEventsEdges returns the DeclinedEvents edges associated with the User instance
+func (user *User) LoadDeclinedEventsEdges() ([]*ent.AssocEdge, error) {
+	return ent.LoadEdgesByType(user.ID, UserToDeclinedEventsEdge)
+}
+
+// GenDeclinedEventsEdges returns the Event edges associated with the User instance
+func (user *User) GenDeclinedEventsEdges() <-chan *ent.AssocEdgesResult {
+	return ent.GenLoadEdgesByType(user.ID, UserToDeclinedEventsEdge)
+}
+
+// GenDeclinedEvents returns the Events associated with the User instance
+func (user *User) GenDeclinedEvents() <-chan *EventsResult {
+	res := make(chan *EventsResult)
+	go func() {
+		loader := NewEventLoader(user.viewer)
+		err := ent.LoadNodesByType(user.viewer, user.ID, UserToDeclinedEventsEdge, loader)
+		res <- &EventsResult{
+			Err:    err,
+			Events: loader.results,
+		}
+	}()
+	return res
+}
+
+// LoadDeclinedEvents returns the Events associated with the User instance
+func (user *User) LoadDeclinedEvents() ([]*Event, error) {
+	loader := NewEventLoader(user.viewer)
+	err := ent.LoadNodesByType(user.viewer, user.ID, UserToDeclinedEventsEdge, loader)
+	return loader.results, err
+}
+
+// LoadDeclinedEventEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the DeclinedEvents edge.
+func (user *User) LoadDeclinedEventEdgeFor(id2 string) (*ent.AssocEdge, error) {
+	return ent.LoadEdgeByType(user.ID, id2, UserToDeclinedEventsEdge)
+}
+
+// GenDeclinedEventEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the DeclinedEvents edge.
+func (user *User) GenLoadDeclinedEventEdgeFor(id2 string) <-chan *ent.AssocEdgeResult {
+	return ent.GenLoadEdgeByType(user.ID, id2, UserToDeclinedEventsEdge)
+}
+
 // LoadEventsEdges returns the Events edges associated with the User instance
 func (user *User) LoadEventsEdges() ([]*ent.AssocEdge, error) {
 	return ent.LoadEdgesByType(user.ID, UserToEventsEdge)
@@ -337,6 +378,47 @@ func (user *User) LoadEventEdgeFor(id2 string) (*ent.AssocEdge, error) {
 // GenEventEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the Events edge.
 func (user *User) GenLoadEventEdgeFor(id2 string) <-chan *ent.AssocEdgeResult {
 	return ent.GenLoadEdgeByType(user.ID, id2, UserToEventsEdge)
+}
+
+// LoadEventsAttendingEdges returns the EventsAttending edges associated with the User instance
+func (user *User) LoadEventsAttendingEdges() ([]*ent.AssocEdge, error) {
+	return ent.LoadEdgesByType(user.ID, UserToEventsAttendingEdge)
+}
+
+// GenEventsAttendingEdges returns the Event edges associated with the User instance
+func (user *User) GenEventsAttendingEdges() <-chan *ent.AssocEdgesResult {
+	return ent.GenLoadEdgesByType(user.ID, UserToEventsAttendingEdge)
+}
+
+// GenEventsAttending returns the Events associated with the User instance
+func (user *User) GenEventsAttending() <-chan *EventsResult {
+	res := make(chan *EventsResult)
+	go func() {
+		loader := NewEventLoader(user.viewer)
+		err := ent.LoadNodesByType(user.viewer, user.ID, UserToEventsAttendingEdge, loader)
+		res <- &EventsResult{
+			Err:    err,
+			Events: loader.results,
+		}
+	}()
+	return res
+}
+
+// LoadEventsAttending returns the Events associated with the User instance
+func (user *User) LoadEventsAttending() ([]*Event, error) {
+	loader := NewEventLoader(user.viewer)
+	err := ent.LoadNodesByType(user.viewer, user.ID, UserToEventsAttendingEdge, loader)
+	return loader.results, err
+}
+
+// LoadEventsAttendingEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the EventsAttending edge.
+func (user *User) LoadEventsAttendingEdgeFor(id2 string) (*ent.AssocEdge, error) {
+	return ent.LoadEdgeByType(user.ID, id2, UserToEventsAttendingEdge)
+}
+
+// GenEventsAttendingEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the EventsAttending edge.
+func (user *User) GenLoadEventsAttendingEdgeFor(id2 string) <-chan *ent.AssocEdgeResult {
+	return ent.GenLoadEdgeByType(user.ID, id2, UserToEventsAttendingEdge)
 }
 
 // LoadFamilyMembersEdges returns the FamilyMembers edges associated with the User instance
@@ -460,88 +542,6 @@ func (user *User) LoadInvitedEventEdgeFor(id2 string) (*ent.AssocEdge, error) {
 // GenInvitedEventEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the InvitedEvents edge.
 func (user *User) GenLoadInvitedEventEdgeFor(id2 string) <-chan *ent.AssocEdgeResult {
 	return ent.GenLoadEdgeByType(user.ID, id2, UserToInvitedEventsEdge)
-}
-
-// LoadEventsAttendingEdges returns the EventsAttending edges associated with the User instance
-func (user *User) LoadEventsAttendingEdges() ([]*ent.AssocEdge, error) {
-	return ent.LoadEdgesByType(user.ID, UserToEventsAttendingEdge)
-}
-
-// GenEventsAttendingEdges returns the Event edges associated with the User instance
-func (user *User) GenEventsAttendingEdges() <-chan *ent.AssocEdgesResult {
-	return ent.GenLoadEdgesByType(user.ID, UserToEventsAttendingEdge)
-}
-
-// GenEventsAttending returns the Events associated with the User instance
-func (user *User) GenEventsAttending() <-chan *EventsResult {
-	res := make(chan *EventsResult)
-	go func() {
-		loader := NewEventLoader(user.viewer)
-		err := ent.LoadNodesByType(user.viewer, user.ID, UserToEventsAttendingEdge, loader)
-		res <- &EventsResult{
-			Err:    err,
-			Events: loader.results,
-		}
-	}()
-	return res
-}
-
-// LoadEventsAttending returns the Events associated with the User instance
-func (user *User) LoadEventsAttending() ([]*Event, error) {
-	loader := NewEventLoader(user.viewer)
-	err := ent.LoadNodesByType(user.viewer, user.ID, UserToEventsAttendingEdge, loader)
-	return loader.results, err
-}
-
-// LoadEventsAttendingEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the EventsAttending edge.
-func (user *User) LoadEventsAttendingEdgeFor(id2 string) (*ent.AssocEdge, error) {
-	return ent.LoadEdgeByType(user.ID, id2, UserToEventsAttendingEdge)
-}
-
-// GenEventsAttendingEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the EventsAttending edge.
-func (user *User) GenLoadEventsAttendingEdgeFor(id2 string) <-chan *ent.AssocEdgeResult {
-	return ent.GenLoadEdgeByType(user.ID, id2, UserToEventsAttendingEdge)
-}
-
-// LoadDeclinedEventsEdges returns the DeclinedEvents edges associated with the User instance
-func (user *User) LoadDeclinedEventsEdges() ([]*ent.AssocEdge, error) {
-	return ent.LoadEdgesByType(user.ID, UserToDeclinedEventsEdge)
-}
-
-// GenDeclinedEventsEdges returns the Event edges associated with the User instance
-func (user *User) GenDeclinedEventsEdges() <-chan *ent.AssocEdgesResult {
-	return ent.GenLoadEdgesByType(user.ID, UserToDeclinedEventsEdge)
-}
-
-// GenDeclinedEvents returns the Events associated with the User instance
-func (user *User) GenDeclinedEvents() <-chan *EventsResult {
-	res := make(chan *EventsResult)
-	go func() {
-		loader := NewEventLoader(user.viewer)
-		err := ent.LoadNodesByType(user.viewer, user.ID, UserToDeclinedEventsEdge, loader)
-		res <- &EventsResult{
-			Err:    err,
-			Events: loader.results,
-		}
-	}()
-	return res
-}
-
-// LoadDeclinedEvents returns the Events associated with the User instance
-func (user *User) LoadDeclinedEvents() ([]*Event, error) {
-	loader := NewEventLoader(user.viewer)
-	err := ent.LoadNodesByType(user.viewer, user.ID, UserToDeclinedEventsEdge, loader)
-	return loader.results, err
-}
-
-// LoadDeclinedEventEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the DeclinedEvents edge.
-func (user *User) LoadDeclinedEventEdgeFor(id2 string) (*ent.AssocEdge, error) {
-	return ent.LoadEdgeByType(user.ID, id2, UserToDeclinedEventsEdge)
-}
-
-// GenDeclinedEventEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the DeclinedEvents edge.
-func (user *User) GenLoadDeclinedEventEdgeFor(id2 string) <-chan *ent.AssocEdgeResult {
-	return ent.GenLoadEdgeByType(user.ID, id2, UserToDeclinedEventsEdge)
 }
 
 // DBFields is used by the ent framework to load the ent from the underlying database
