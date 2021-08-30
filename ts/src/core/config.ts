@@ -19,8 +19,6 @@ export interface Config {
   // query includes cache hit. redis|memcache etc eventually
 
   // config for codegen
-  // TODO more coming...
-  // TODO come back...
   codegen?: CodegenConfig;
 }
 
