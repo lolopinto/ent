@@ -1,0 +1,8 @@
+version: '2'
+syncs:
+  simple-sync:
+    src: './'
+    compose-file-path: docker-compose.dev.yml
+#    compose-dev-file-pat: docker-compose.dev.yml
+    # for arm64. why doesn't it detect this automatically?
+#    native_osx_image: eugenmayer/unison:2.51.3-4.12.0-ARM64
