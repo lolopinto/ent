@@ -19,8 +19,12 @@
 
 {{$prefix}}: {{useImport "GraphQLFieldConfig"}}<
   undefined,
-  {{useImport "RequestContext"}},
-  {{$fieldConfig.Arg}}
+  {{ if ne $fieldConfig.Arg "" -}}
+    {{useImport "RequestContext"}},
+    {{$fieldConfig.Arg}}
+  {{ else }}
+    {{useImport "RequestContext"}}
+  {{ end -}}
 > = {
   type: {{$fieldConfig.FieldType}},
   {{ template "render_args.tmpl" (dict "Base" $baseObj "Args" $fieldConfig.Args) -}}

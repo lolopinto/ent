@@ -34,140 +34,108 @@ func (s *Step) Name() string {
 
 var nodeType = regexp.MustCompile(`(\w+)Type`)
 
-func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataInfo, serr *syncerr.Error) {
+type writeFileFn func() error
+type writeFileFnList []writeFileFn
+
+func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataInfo, serr *syncerr.Error) writeFileFnList {
+	var ret writeFileFnList
 	nodeData := info.NodeData
 
 	if err := s.accumulateConsts(nodeData); err != nil {
 		serr.Append(err)
-		return
+		return ret
 	}
 
 	if !info.ShouldCodegen {
-		return
+		return ret
 	}
 
 	if nodeData.PackageName == "" {
 		serr.Append(fmt.Errorf("invalid node with no package"))
-		return
+		return ret
 	}
 
-	if err := writeBaseModelFile(nodeData, processor.Config); err != nil {
-		serr.Append(err)
-		return
-	}
-	if err := writeEntFile(nodeData, processor.Config); err != nil {
-		serr.Append(err)
-		return
-	}
+	ret = append(ret, func() error {
+		return writeBaseModelFile(nodeData, processor.Config)
+	})
+	ret = append(ret, func() error {
+		return writeEntFile(nodeData, processor.Config)
+	})
 
-	s.processActions(processor, nodeData, serr)
+	ret = append(ret, s.processActions(processor, nodeData)...)
+	ret = append(ret, s.processEdges(processor, nodeData)...)
+
+	return ret
 }
 
-func (s *Step) processActions(processor *codegen.Processor, nodeData *schema.NodeData, serr *syncerr.Error) {
+func (s *Step) processActions(processor *codegen.Processor, nodeData *schema.NodeData) writeFileFnList {
+	var ret writeFileFnList
+
 	if len(nodeData.ActionInfo.Actions) == 0 {
-		return
+		return ret
 	}
 
-	if err := writeBuilderFile(nodeData, processor.Config); err != nil {
-		serr.Append(err)
+	ret = append(ret, func() error {
+		return writeBuilderFile(nodeData, processor.Config)
+	})
+
+	for _, action := range nodeData.ActionInfo.Actions {
+		ret = append(ret, func() error {
+			return writeBaseActionFile(nodeData, processor.Config, action)
+		})
+
+		ret = append(ret, func() error {
+			return writeActionFile(nodeData, processor.Config, action)
+		})
 	}
-
-	// write all the actions concurrently
-	var actionsWg sync.WaitGroup
-	actionsWg.Add(len(nodeData.ActionInfo.Actions))
-	for idx := range nodeData.ActionInfo.Actions {
-		go func(idx int) {
-			defer actionsWg.Done()
-
-			action := nodeData.ActionInfo.Actions[idx]
-			if err := writeBaseActionFile(nodeData, processor.Config, action); err != nil {
-				serr.Append(err)
-			}
-
-			if err := writeActionFile(nodeData, processor.Config, action); err != nil {
-				serr.Append(err)
-			}
-
-		}(idx)
-	}
-	actionsWg.Wait()
+	return ret
 }
 
-func (s *Step) processEdges(processor *codegen.Processor, nodeData *schema.NodeData, serr *syncerr.Error) {
+func (s *Step) processEdges(processor *codegen.Processor, nodeData *schema.NodeData) writeFileFnList {
+	var ret writeFileFnList
 	if !nodeData.EdgeInfo.HasConnectionEdges() {
-		return
+		return ret
 	}
+	ret = append(ret, func() error {
+		return writeBaseQueryFile(processor.Schema, nodeData, processor.Config)
+	})
 
-	if err := writeBaseQueryFile(processor.Schema, nodeData, processor.Config); err != nil {
-		serr.Append(err)
-	}
-
-	var edgesWg sync.WaitGroup
-	edgesWg.Add(len(nodeData.EdgeInfo.Associations))
-
-	for idx := range nodeData.EdgeInfo.Associations {
-		go func(idx int) {
-			defer edgesWg.Done()
-
-			edge := nodeData.EdgeInfo.Associations[idx]
-
-			if err := writeAssocEdgeQueryFile(processor.Schema, nodeData, edge, processor.Config); err != nil {
-				serr.Append(err)
-			}
-		}(idx)
+	for _, edge := range nodeData.EdgeInfo.Associations {
+		ret = append(ret, func() error {
+			return writeAssocEdgeQueryFile(processor.Schema, nodeData, edge, processor.Config)
+		})
 	}
 
 	// edges with IndexLoaderFactory
 	edges := nodeData.EdgeInfo.GetEdgesForIndexLoader()
-	edgesWg.Add(len(edges))
-	for idx := range edges {
-		go func(idx int) {
-			defer edgesWg.Done()
-
-			edge := edges[idx]
-
-			if err := writeCustomEdgeQueryFile(processor.Schema, nodeData, edge, processor.Config); err != nil {
-				serr.Append(err)
-			}
-		}(idx)
+	for _, edge := range edges {
+		ret = append(ret, func() error {
+			return writeCustomEdgeQueryFile(processor.Schema, nodeData, edge, processor.Config)
+		})
 	}
-	edgesWg.Wait()
+	return ret
 }
 
 func (s *Step) ProcessData(processor *codegen.Processor) error {
 	fmt.Println("generating ent code...")
-	var wg sync.WaitGroup
-	wg.Add(len(processor.Schema.Nodes))
 	var serr syncerr.Error
 
-	for key := range processor.Schema.Nodes {
-		go func(key string) {
-			defer wg.Done()
-
-			info := processor.Schema.Nodes[key]
-			s.processNode(processor, info, &serr)
-		}(key)
+	var funcs writeFileFnList
+	for _, info := range processor.Schema.Nodes {
+		funcs = append(funcs, s.processNode(processor, info, &serr)...)
 	}
 
-	wg.Add(len(processor.Schema.Enums))
-	for key := range processor.Schema.Enums {
-		go func(key string) {
-			defer wg.Done()
-
-			info := processor.Schema.Enums[key]
-
-			// only lookup table enums get their own files
-			if !info.LookupTableEnum() {
-				return
-			}
-
-			serr.Append(writeEnumFile(info, processor.Config))
-		}(key)
+	//	wg.Add(len(processor.Schema.Enums))
+	for _, info := range processor.Schema.Enums {
+		// only lookup table enums get their own files
+		if !info.LookupTableEnum() {
+			continue
+		}
+		funcs = append(funcs, func() error {
+			return writeEnumFile(info, processor.Config)
+		})
 	}
-	wg.Wait()
-	if err := serr.Err(); err != nil {
-		return err
-	}
+
 	// sort data so that the enum is stable
 	sort.Slice(s.nodeTypes, func(i, j int) bool {
 		return s.nodeTypes[i].Name < s.nodeTypes[j].Name
@@ -175,7 +143,8 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 	sort.Slice(s.edgeTypes, func(i, j int) bool {
 		return s.edgeTypes[i].Name < s.edgeTypes[j].Name
 	})
-	funcs := []func() error{
+
+	funcs = append(funcs,
 		func() error {
 			return writeConstFile(s.nodeTypes, s.edgeTypes)
 		},
@@ -188,14 +157,21 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 		func() error {
 			return writeLoadAnyFile(s.nodeTypes, processor.Config)
 		},
-	}
+	)
 
-	for _, fn := range funcs {
-		if err := fn(); err != nil {
-			return err
-		}
+	// build up all the funcs and parallelize as much as possible
+
+	var wg sync.WaitGroup
+	wg.Add(len(funcs))
+	for i := range funcs {
+		go func(i int) {
+			defer wg.Done()
+			fn := funcs[i]
+			serr.Append(fn())
+		}(i)
 	}
-	return nil
+	wg.Wait()
+	return serr.Err()
 }
 
 func (s *Step) addNodeType(name, value, comment string, nodeData *schema.NodeData) {
@@ -373,7 +349,6 @@ func writeBaseModelFile(nodeData *schema.NodeData, cfg *codegen.Config) error {
 		TemplateName:       "base.tmpl",
 		OtherTemplateFiles: []string{util.GetAbsolutePath("../schema/enum/enum.tmpl")},
 		PathToFile:         getFilePathForBaseModelFile(nodeData),
-		FormatSource:       true,
 		TsImports:          imps,
 		FuncMap:            getBaseFuncs(imps),
 	})
@@ -391,7 +366,6 @@ func writeEntFile(nodeData *schema.NodeData, cfg *codegen.Config) error {
 		AbsPathToTemplate: util.GetAbsolutePath("ent.tmpl"),
 		TemplateName:      "ent.tmpl",
 		PathToFile:        getFilePathForModelFile(nodeData),
-		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 		EditableCode:      true,
@@ -409,7 +383,6 @@ func writeEnumFile(enumInfo *schema.EnumInfo, cfg *codegen.Config) error {
 		AbsPathToTemplate: util.GetAbsolutePath("../schema/enum/enum.tmpl"),
 		TemplateName:      "enum.tmpl",
 		PathToFile:        getFilePathForEnumFile(enumInfo),
-		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	})
@@ -432,7 +405,6 @@ func writeBaseQueryFile(s *schema.Schema, nodeData *schema.NodeData, cfg *codege
 		AbsPathToTemplate: util.GetAbsolutePath("ent_query_base.tmpl"),
 		TemplateName:      "ent_query_base.tmpl",
 		PathToFile:        getFilePathForBaseQueryFile(nodeData),
-		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	})
@@ -453,7 +425,6 @@ func writeAssocEdgeQueryFile(s *schema.Schema, nodeData *schema.NodeData, e *edg
 		AbsPathToTemplate: util.GetAbsolutePath("assoc_ent_query.tmpl"),
 		TemplateName:      "assoc_ent_query.tmpl",
 		PathToFile:        getFilePathForAssocEdgeQueryFile(nodeData, e),
-		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 		EditableCode:      true,
@@ -475,7 +446,6 @@ func writeCustomEdgeQueryFile(s *schema.Schema, nodeData *schema.NodeData, e edg
 		AbsPathToTemplate: util.GetAbsolutePath("custom_ent_query.tmpl"),
 		TemplateName:      "custom_ent_query.tmpl",
 		PathToFile:        getFilePathForCustomEdgeQueryFile(nodeData, e),
-		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 		EditableCode:      true,
@@ -512,10 +482,9 @@ func writeConstFile(nodeData []enum.Data, edgeData []enum.Data) error {
 		OtherTemplateFiles: []string{
 			util.GetAbsolutePath("../schema/enum/enum.tmpl"),
 		},
-		PathToFile:   getFilePathForConstFile(),
-		FormatSource: true,
-		TsImports:    imps,
-		FuncMap:      imps.FuncMap(),
+		PathToFile: getFilePathForConstFile(),
+		TsImports:  imps,
+		FuncMap:    imps.FuncMap(),
 	})
 }
 
@@ -533,7 +502,6 @@ func writeLoadAnyFile(nodeData []enum.Data, cfg *codegen.Config) error {
 		AbsPathToTemplate: util.GetAbsolutePath("loadAny.tmpl"),
 		TemplateName:      "loadAny.tmpl",
 		PathToFile:        getFilePathForLoadAnyFile(),
-		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	})
@@ -610,7 +578,6 @@ func writeInternalEntFile(s *schema.Schema, cfg *codegen.Config) error {
 		AbsPathToTemplate: util.GetAbsolutePath("internal.tmpl"),
 		TemplateName:      "internal.tmpl",
 		PathToFile:        codepath.GetFilePathForInternalFile(),
-		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	})
@@ -623,7 +590,6 @@ func writeEntIndexFile() error {
 		AbsPathToTemplate: util.GetAbsolutePath("index.tmpl"),
 		TemplateName:      "index.tmpl",
 		PathToFile:        codepath.GetFilePathForEntIndexFile(),
-		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	})
@@ -647,7 +613,6 @@ func writeBuilderFile(nodeData *schema.NodeData, cfg *codegen.Config) error {
 		AbsPathToTemplate: util.GetAbsolutePath("builder.tmpl"),
 		TemplateName:      "builder.tmpl",
 		PathToFile:        getFilePathForBuilderFile(nodeData),
-		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           getBuilderFuncs(imps),
 	})

@@ -38,7 +38,6 @@ func writeBaseActionFile(nodeData *schema.NodeData, cfg *codegen.Config, action 
 		OtherTemplateFiles: []string{util.GetAbsolutePath("../schema/enum/enum.tmpl")},
 		TemplateName:       "action_base.tmpl",
 		PathToFile:         getFilePathForActionBaseFile(nodeData, action),
-		FormatSource:       true,
 		TsImports:          imps,
 		FuncMap:            getFuncMapForActionBase(imps),
 	})
@@ -58,7 +57,6 @@ func writeActionFile(nodeData *schema.NodeData, cfg *codegen.Config, action acti
 		AbsPathToTemplate: util.GetAbsolutePath("action.tmpl"),
 		TemplateName:      "action.tmpl",
 		PathToFile:        getFilePathForActionFile(nodeData, action),
-		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           getCustomFuncMap(imps),
 		EditableCode:      true,

@@ -139,6 +139,34 @@ func (cfg *Config) GetDefaultEntPolicy() *PrivacyConfig {
 	return cfg.config.Codegen.DefaultEntPolicy
 }
 
+const DEFAULT_GLOB = "src/**/*.ts"
+
+// options: https://prettier.io/docs/en/options.html
+var defaultArgs = []string{
+	"--trailing-comma", "all",
+	"--quote-props", "consistent",
+	"--parser", "typescript",
+	"--end-of-line", "lf",
+}
+
+func (cfg *Config) GetPrettierArgs() []string {
+	if cfg.config == nil || cfg.config.Codegen == nil || cfg.config.Codegen.Prettier == nil {
+		// defaults
+		return append(defaultArgs, "--write", DEFAULT_GLOB)
+	}
+
+	prettier := cfg.config.Codegen.Prettier
+	glob := DEFAULT_GLOB
+	if prettier.Glob != "" {
+		glob = prettier.Glob
+	}
+	if prettier.Custom {
+		return []string{"--write", glob}
+	}
+
+	return append(defaultArgs, "--write", glob)
+}
+
 // ImportPackage refers to TypeScript paths of what needs to be generated for imports
 type ImportPackage struct {
 	PackagePath        string
@@ -189,12 +217,18 @@ type config struct {
 }
 
 type CodegenConfig struct {
-	DefaultEntPolicy    *PrivacyConfig `yaml:"defaultEntPolicy"`
-	DefaultActionPolicy *PrivacyConfig `yaml:"defaultActionPolicy"`
+	DefaultEntPolicy    *PrivacyConfig  `yaml:"defaultEntPolicy"`
+	DefaultActionPolicy *PrivacyConfig  `yaml:"defaultActionPolicy"`
+	Prettier            *PrettierConfig `yaml:"prettier"`
 }
 
 type PrivacyConfig struct {
 	Path       string `yaml:"path"`
 	PolicyName string `yaml:"policyName"`
 	Class      bool   `yaml:"class"`
+}
+
+type PrettierConfig struct {
+	Custom bool   `yaml:"custom"`
+	Glob   string `yaml:"glob"`
 }

@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/db"
 	"github.com/lolopinto/ent/internal/graphql"
@@ -21,6 +24,7 @@ var codegenCmd = &cobra.Command{
 	Long:  `This runs the codegen steps. It generates the ent, db, and graphql code based on the arguments passed in`,
 	//	Args:  configRequired,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		t1 := time.Now()
 		schema, err := parseSchema()
 		if err != nil {
 			return err
@@ -44,6 +48,13 @@ var codegenCmd = &cobra.Command{
 			new(graphql.TSStep),
 		}
 
-		return processor.Run(steps, codegenInfo.step)
+		err = processor.Run(steps, codegenInfo.step)
+		if err != nil {
+			return err
+		}
+		t2 := time.Now()
+		diff := t2.Sub(t1)
+		fmt.Println(diff)
+		return nil
 	},
 }

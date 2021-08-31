@@ -567,7 +567,6 @@ func GenerateSchema(cfg *codegen.Config, data *CodegenData, node string) error {
 		AbsPathToTemplate: util.GetAbsolutePath("schema.tmpl"),
 		TemplateName:      "schema.tmpl",
 		PathToFile:        filePath,
-		FormatSource:      true,
 		TsImports:         tsimps,
 		EditableCode:      true,
 		FuncMap:           getFuncMap(tsimps),

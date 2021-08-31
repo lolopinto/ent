@@ -1,16 +1,21 @@
 package codegen
 
 import (
+	"bytes"
 	"fmt"
+	"os/exec"
 	"sync"
+	"time"
 
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/syncerr"
+	"github.com/pkg/errors"
 )
 
 type option struct {
 	disablePrompts bool
+	disableFormat  bool
 }
 
 type Option func(*option)
@@ -18,6 +23,12 @@ type Option func(*option)
 func DisablePrompts() Option {
 	return func(opt *option) {
 		opt.disablePrompts = true
+	}
+}
+
+func DisableFormat() Option {
+	return func(opt *option) {
+		opt.disableFormat = true
 	}
 }
 
@@ -63,7 +74,10 @@ func (p *Processor) Run(steps []Step, step string, options ...Option) error {
 			go func(i int) {
 				defer wg.Done()
 				ps := pre_steps[i]
-				serr.Append(ps.PreProcessData(p))
+				err := logTime(p, ps.PreProcessData, func(d time.Duration) {
+					fmt.Printf("pre-process step %s took %v \n", ps.Name(), d)
+				})
+				serr.Append(err)
 			}(i)
 		}
 
@@ -90,12 +104,38 @@ func (p *Processor) Run(steps []Step, step string, options ...Option) error {
 	// 4/ graphql should be able to run on its own
 
 	for _, s := range steps {
-		if err := s.ProcessData(p); err != nil {
+		if err := logTime(p, s.ProcessData, func(d time.Duration) {
+			fmt.Printf("process step %s took %v \n", s.Name(), d)
+		}); err != nil {
 			return err
 		}
 	}
 
+	return logTime(p, postProcess, func(d time.Duration) {
+		fmt.Printf("post-process step took %v \n", d)
+	})
+}
+
+func postProcess(p *Processor) error {
+	cmd := exec.Command("prettier", p.Config.GetPrettierArgs()...)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		str := stderr.String()
+		err = errors.Wrap(err, str)
+		return err
+	}
 	return nil
+}
+
+func logTime(p *Processor, fn func(p *Processor) error, logDiff func(d time.Duration)) error {
+	// TODO put behind debug flag
+	t1 := time.Now()
+	err := fn(p)
+	t2 := time.Now()
+	diff := t2.Sub(t1)
+	logDiff(diff)
+	return err
 }
 
 // Step refers to a step in the codegen process
