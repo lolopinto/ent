@@ -55,7 +55,7 @@ func writeFile(w Writer, opts ...func(opt *Options)) error {
 		if os.IsNotExist(err) {
 			err = os.MkdirAll(directoryPath, os.ModePerm)
 			if err == nil {
-				debugLogInfo(option, "created directory ", directoryPath)
+				debugLogInfo(option, "created directory "+directoryPath)
 			} else {
 				return err
 			}
