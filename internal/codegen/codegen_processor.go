@@ -89,7 +89,9 @@ func (p *Processor) Run(steps []Step, step string, options ...Option) error {
 	}
 
 	if !opt.disablePrompts {
-		if err := checkAndHandlePrompts(p.Schema, p.Config); err != nil {
+		if err := runAndLog(p, checkAndHandlePrompts, func(d time.Duration) {
+			fmt.Printf("check and handle prompts step took %v \n", d)
+		}); err != nil {
 			return err
 		}
 	}
