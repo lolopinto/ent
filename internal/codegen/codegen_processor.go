@@ -74,7 +74,7 @@ func (p *Processor) Run(steps []Step, step string, options ...Option) error {
 			go func(i int) {
 				defer wg.Done()
 				ps := pre_steps[i]
-				err := logTime(p, ps.PreProcessData, func(d time.Duration) {
+				err := runAndLog(p, ps.PreProcessData, func(d time.Duration) {
 					fmt.Printf("pre-process step %s took %v \n", ps.Name(), d)
 				})
 				serr.Append(err)
@@ -94,29 +94,20 @@ func (p *Processor) Run(steps []Step, step string, options ...Option) error {
 		}
 	}
 
-	// TODO refactor these from being called sequentially to something that can be called in parallel
-	// Right now, they're being called sequentially
-	// I don't see any reason why some can't be done in parrallel
-	// 0/ generate consts. has to block everything (not a plugin could be?) however blocking
-	// 1/ db
-	// 2/ create new nodes (blocked by db) since assoc_edge_config table may not exist yet
-	// 3/ model files. should be able to run on its own
-	// 4/ graphql should be able to run on its own
-
 	for _, s := range steps {
-		if err := logTime(p, s.ProcessData, func(d time.Duration) {
+		if err := runAndLog(p, s.ProcessData, func(d time.Duration) {
 			fmt.Printf("process step %s took %v \n", s.Name(), d)
 		}); err != nil {
 			return err
 		}
 	}
 
-	return logTime(p, postProcess, func(d time.Duration) {
+	return runAndLog(p, postProcess, func(d time.Duration) {
 		fmt.Printf("post-process step took %v \n", d)
 	})
 }
 
-func postProcess(p *Processor) error {
+func (p *Processor) FormatTS() error {
 	cmd := exec.Command("prettier", p.Config.GetPrettierArgs()...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -128,8 +119,14 @@ func postProcess(p *Processor) error {
 	return nil
 }
 
-func logTime(p *Processor, fn func(p *Processor) error, logDiff func(d time.Duration)) error {
-	// TODO put behind debug flag
+func postProcess(p *Processor) error {
+	return p.FormatTS()
+}
+
+func runAndLog(p *Processor, fn func(p *Processor) error, logDiff func(d time.Duration)) error {
+	if !p.debugMode {
+		return fn(p)
+	}
 	t1 := time.Now()
 	err := fn(p)
 	t2 := time.Now()
@@ -167,4 +164,11 @@ func NewCodegenProcessor(schema *schema.Schema, configPath, modulePath string, d
 	// if in debug mode can log things
 	file.SetGlobalLogStatus(debugMode)
 	return processor, nil
+}
+
+func FormatTS(cfg *Config) error {
+	p := &Processor{
+		Config: cfg,
+	}
+	return p.FormatTS()
 }

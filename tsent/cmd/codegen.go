@@ -1,9 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-	"time"
-
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/db"
 	"github.com/lolopinto/ent/internal/graphql"
@@ -12,8 +9,7 @@ import (
 )
 
 type codegenArgs struct {
-	step  string
-	debug bool
+	step string
 }
 
 var codegenInfo codegenArgs
@@ -24,7 +20,6 @@ var codegenCmd = &cobra.Command{
 	Long:  `This runs the codegen steps. It generates the ent, db, and graphql code based on the arguments passed in`,
 	//	Args:  configRequired,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		t1 := time.Now()
 		schema, err := parseSchema()
 		if err != nil {
 			return err
@@ -37,7 +32,7 @@ var codegenCmd = &cobra.Command{
 
 		// module path empty because not go
 		// same as ParseSchemaFromTSDir. default to schema. we want a flag here eventually
-		processor, err := codegen.NewCodegenProcessor(schema, "src/schema", "", codegenInfo.debug)
+		processor, err := codegen.NewCodegenProcessor(schema, "src/schema", "", rootInfo.debug)
 		if err != nil {
 			return err
 		}
@@ -48,13 +43,6 @@ var codegenCmd = &cobra.Command{
 			new(graphql.TSStep),
 		}
 
-		err = processor.Run(steps, codegenInfo.step)
-		if err != nil {
-			return err
-		}
-		t2 := time.Now()
-		diff := t2.Sub(t1)
-		fmt.Println(diff)
-		return nil
+		return processor.Run(steps, codegenInfo.step)
 	},
 }

@@ -533,7 +533,7 @@ func ParseAndGenerateSchema(cfg *codegen.Config, node string, fields []string) e
 		Base:    "BaseEntSchema",
 	}
 
-	return GenerateSchema(cfg, data, node)
+	return GenerateSingleSchema(cfg, data, node)
 }
 
 func GenerateFromInputSchema(cfg *codegen.Config, s *input.Schema) error {
@@ -546,17 +546,30 @@ func GenerateFromInputSchema(cfg *codegen.Config, s *input.Schema) error {
 			codegen := NewCodegenDataFromInputNode(cfg, k, v)
 			defer wg.Done()
 
-			if err := GenerateSchema(cfg, codegen, k); err != nil {
+			if err := generateSchema(cfg, codegen, k); err != nil {
 				serr.Append(err)
 			}
 		}(k)
 	}
 	wg.Wait()
 
-	return serr.Err()
+	if err := serr.Err(); err != nil {
+		return err
+	}
+	return codegen.FormatTS(cfg)
 }
 
-func GenerateSchema(cfg *codegen.Config, data *CodegenData, node string) error {
+func GenerateSingleSchema(cfg *codegen.Config, data *CodegenData, node string) error {
+	if err := generateSchema(cfg, data, node); err != nil {
+		return err
+	}
+
+	return codegen.FormatTS(cfg)
+}
+
+// have to call codegen.FormatTS() after since we now do the formatting at once
+// as opposed to for each file
+func generateSchema(cfg *codegen.Config, data *CodegenData, node string) error {
 	tsimps := tsimport.NewImports()
 
 	filePath := path.Join(cfg.GetRootPathToConfigs(), base.GetSnakeCaseName(node)+".ts")

@@ -49,6 +49,7 @@ func writeFile(w Writer, opts ...func(opt *Options)) error {
 	if w.createDirIfNeeded() {
 		fullPath := pathToFile
 		if !filepath.IsAbs(fullPath) {
+			// TODO need to convert everything here to absolute paths
 			fullPath = filepath.Join(".", pathToFile)
 		}
 		directoryPath := path.Dir(fullPath)

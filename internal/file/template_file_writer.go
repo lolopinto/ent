@@ -3,13 +3,11 @@ package file
 import (
 	"bytes"
 	"fmt"
-	"os/exec"
 	"strings"
 	"text/template"
 
 	intimports "github.com/lolopinto/ent/internal/imports"
 	"github.com/lolopinto/ent/internal/tsimport"
-	"github.com/pkg/errors"
 	"golang.org/x/tools/imports"
 )
 
@@ -47,7 +45,7 @@ func (fw *TemplatedBasedFileWriter) generateBytes() ([]byte, error) {
 	if strings.HasSuffix(fw.getPathToFile(), ".go") {
 		return fw.formatGo(buf)
 	} else if strings.HasSuffix(fw.getPathToFile(), ".ts") {
-		return fw.formatTs(buf)
+		return fw.addImports(buf)
 	}
 	return buf.Bytes(), nil
 }
@@ -73,14 +71,13 @@ func (fw *TemplatedBasedFileWriter) formatGo(buf *bytes.Buffer) ([]byte, error) 
 		},
 	)
 	if err != nil {
-		fmt.Println(string(buf.Bytes()))
+		fmt.Println(buf.String())
 	}
 
 	return b, err
 }
 
-// TODO rename this
-func (fw *TemplatedBasedFileWriter) formatTs(buf *bytes.Buffer) ([]byte, error) {
+func (fw *TemplatedBasedFileWriter) addImports(buf *bytes.Buffer) ([]byte, error) {
 	if fw.TsImports != nil {
 		var err error
 		buf, err = fw.handleManualTsImports(buf)
@@ -89,29 +86,6 @@ func (fw *TemplatedBasedFileWriter) formatTs(buf *bytes.Buffer) ([]byte, error) 
 		}
 	}
 	return buf.Bytes(), nil
-
-	// TODO we may still want this for a few e.g. generate.go prettier
-
-	// options: https://prettier.io/docs/en/options.html
-	args := []string{
-		"--trailing-comma", "all",
-		"--quote-props", "consistent",
-		"--parser", "typescript",
-		"--end-of-line", "lf",
-	}
-	cmd := exec.Command("prettier", args...)
-	var out bytes.Buffer
-	var stderr bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &stderr
-	cmd.Stdin = buf
-
-	if err := cmd.Run(); err != nil {
-		str := stderr.String()
-		err = errors.Wrap(err, str)
-		return nil, err
-	}
-	return out.Bytes(), nil
 }
 
 func (fw *TemplatedBasedFileWriter) executeTemplate() (*bytes.Buffer, error) {
