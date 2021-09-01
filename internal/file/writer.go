@@ -46,8 +46,8 @@ func writeFile(w Writer, opts ...func(opt *Options)) error {
 	}
 	pathToFile := w.getPathToFile()
 
+	fullPath := pathToFile
 	if w.createDirIfNeeded() {
-		fullPath := pathToFile
 		if !filepath.IsAbs(fullPath) {
 			// TODO need to convert everything here to absolute paths
 			fullPath = filepath.Join(".", pathToFile)
@@ -81,7 +81,7 @@ func writeFile(w Writer, opts ...func(opt *Options)) error {
 		}
 	}
 
-	err = ioutil.WriteFile(pathToFile, b, 0666)
+	err = ioutil.WriteFile(fullPath, b, 0666)
 	if !option.disableLog {
 		if err == nil {
 			debugLogInfo(option, "wrote to file %s", pathToFile)

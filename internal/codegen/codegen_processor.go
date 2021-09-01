@@ -37,6 +37,7 @@ type Processor struct {
 	Schema    *schema.Schema
 	Config    *Config
 	debugMode bool
+	opt       *option
 }
 
 func (p *Processor) Run(steps []Step, step string, options ...Option) error {
@@ -44,6 +45,7 @@ func (p *Processor) Run(steps []Step, step string, options ...Option) error {
 	for _, o := range options {
 		o(opt)
 	}
+	p.opt = opt
 
 	if step != "" {
 		for _, s := range steps {
@@ -122,6 +124,9 @@ func (p *Processor) FormatTS() error {
 }
 
 func postProcess(p *Processor) error {
+	if p.opt.disableFormat {
+		return nil
+	}
 	return p.FormatTS()
 }
 

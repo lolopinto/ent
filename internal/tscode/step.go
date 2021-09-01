@@ -489,9 +489,10 @@ func writeConstFile(cfg *codegen.Config, nodeData []enum.Data, edgeData []enum.D
 		OtherTemplateFiles: []string{
 			util.GetAbsolutePath("../schema/enum/enum.tmpl"),
 		},
-		PathToFile: getFilePathForConstFile(cfg),
-		TsImports:  imps,
-		FuncMap:    imps.FuncMap(),
+		PathToFile:        getFilePathForConstFile(cfg),
+		TsImports:         imps,
+		CreateDirIfNeeded: true,
+		FuncMap:           imps.FuncMap(),
 	})
 }
 
@@ -506,6 +507,7 @@ func writeLoadAnyFile(nodeData []enum.Data, cfg *codegen.Config) error {
 			nodeData,
 			cfg.GetImportPackage(),
 		},
+		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("loadAny.tmpl"),
 		TemplateName:      "loadAny.tmpl",
 		PathToFile:        getFilePathForLoadAnyFile(cfg),
@@ -584,6 +586,7 @@ func writeInternalEntFile(s *schema.Schema, cfg *codegen.Config) error {
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data:              getSortedInternalEntFileLines(s),
 		AbsPathToTemplate: util.GetAbsolutePath("internal.tmpl"),
+		CreateDirIfNeeded: true,
 		TemplateName:      "internal.tmpl",
 		PathToFile:        path,
 		TsImports:         imps,
@@ -598,6 +601,7 @@ func writeEntIndexFile(cfg *codegen.Config) error {
 
 	return file.Write(&file.TemplatedBasedFileWriter{
 		AbsPathToTemplate: util.GetAbsolutePath("index.tmpl"),
+		CreateDirIfNeeded: true,
 		TemplateName:      "index.tmpl",
 		PathToFile:        path,
 		TsImports:         imps,

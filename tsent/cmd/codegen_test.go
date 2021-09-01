@@ -49,7 +49,7 @@ func TestSimpleCodegen(t *testing.T) {
 		//		new(graphql.TSStep),
 	}
 
-	err = processor.Run(steps, "", codegen.DisablePrompts())
+	err = processor.Run(steps, "", codegen.DisablePrompts(), codegen.DisableFormat())
 	require.Nil(t, err)
 
 	validateFileExists(t, rootDir, "src/ent/generated/user_base.ts")
@@ -117,7 +117,7 @@ func TestSchemaWithFkeyEdgeCodegen(t *testing.T) {
 		new(tscode.Step),
 	}
 
-	err = processor.Run(steps, "", codegen.DisablePrompts())
+	err = processor.Run(steps, "", codegen.DisablePrompts(), codegen.DisableFormat())
 	require.Nil(t, err)
 
 	validateFileExists(t, rootDir, "src/ent/generated/user_base.ts")
@@ -180,7 +180,7 @@ func TestSchemaWithAssocEdgeCodegen(t *testing.T) {
 		new(tscode.Step),
 	}
 
-	err = processor.Run(steps, "", codegen.DisablePrompts())
+	err = processor.Run(steps, "", codegen.DisablePrompts(), codegen.DisableFormat())
 	require.Nil(t, err)
 
 	validateFileExists(t, rootDir, "src/ent/generated/user_base.ts")
@@ -236,7 +236,7 @@ func TestSchemaWithActionsCodegen(t *testing.T) {
 		new(tscode.Step),
 	}
 
-	err = processor.Run(steps, "", codegen.DisablePrompts())
+	err = processor.Run(steps, "", codegen.DisablePrompts(), codegen.DisableFormat())
 	require.Nil(t, err)
 
 	validateFileExists(t, rootDir, "src/ent/generated/user_base.ts")
