@@ -2,6 +2,8 @@ package tscode
 
 import (
 	"fmt"
+	"path"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -61,6 +63,7 @@ func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataIn
 	}
 
 	s.processActions(processor, nodeData, serr)
+	s.processEdges(processor, nodeData, serr)
 }
 
 func (s *Step) processActions(processor *codegen.Processor, nodeData *schema.NodeData, serr *syncerr.Error) {
@@ -177,13 +180,13 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 	})
 	funcs := []func() error{
 		func() error {
-			return writeConstFile(s.nodeTypes, s.edgeTypes)
+			return writeConstFile(processor.Config, s.nodeTypes, s.edgeTypes)
 		},
 		func() error {
 			return writeInternalEntFile(processor.Schema, processor.Config)
 		},
 		func() error {
-			return writeEntIndexFile()
+			return writeEntIndexFile(processor.Config)
 		},
 		func() error {
 			return writeLoadAnyFile(s.nodeTypes, processor.Config)
@@ -263,35 +266,40 @@ type nodeTemplateCodePath struct {
 	PrivacyConfig *codegen.PrivacyConfig
 }
 
-func getFilePathForBaseModelFile(nodeData *schema.NodeData) string {
-	return fmt.Sprintf("src/ent/generated/%s_base.ts", nodeData.PackageName)
+func getFilePathForBaseModelFile(cfg *codegen.Config, nodeData *schema.NodeData) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/%s_base.ts", nodeData.PackageName))
 }
 
-func getFilePathForModelFile(nodeData *schema.NodeData) string {
-	return fmt.Sprintf("src/ent/%s.ts", nodeData.PackageName)
+func getFilePathForModelFile(cfg *codegen.Config, nodeData *schema.NodeData) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/%s.ts", nodeData.PackageName))
 }
 
-func getFilePathForEnumFile(info *schema.EnumInfo) string {
-	return fmt.Sprintf("src/ent/generated/%s.ts", strcase.ToSnake(info.Enum.Name))
+func getFilePathForEnumFile(cfg *codegen.Config, info *schema.EnumInfo) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/%s.ts", strcase.ToSnake(info.Enum.Name)))
 }
 
-func getFilePathForBaseQueryFile(nodeData *schema.NodeData) string {
-	return fmt.Sprintf("src/ent/generated/%s_query_base.ts", nodeData.PackageName)
+func getFilePathForBaseQueryFile(cfg *codegen.Config, nodeData *schema.NodeData) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/%s_query_base.ts", nodeData.PackageName))
 }
 
-func getFilePathForAssocEdgeQueryFile(nodeData *schema.NodeData, e *edge.AssociationEdge) string {
-	return fmt.Sprintf(
-		"src/ent/%s/query/%s.ts",
-		nodeData.PackageName,
-		strcase.ToSnake(e.TsEdgeQueryName()),
+func getFilePathForAssocEdgeQueryFile(cfg *codegen.Config, nodeData *schema.NodeData, e *edge.AssociationEdge) string {
+	return path.Join(cfg.GetAbsPathToRoot(),
+		fmt.Sprintf(
+			"src/ent/%s/query/%s.ts",
+			nodeData.PackageName,
+			strcase.ToSnake(e.TsEdgeQueryName()),
+		),
 	)
 }
 
-func getFilePathForCustomEdgeQueryFile(nodeData *schema.NodeData, e edge.ConnectionEdge) string {
-	return fmt.Sprintf(
-		"src/ent/%s/query/%s.ts",
-		nodeData.PackageName,
-		strcase.ToSnake(e.TsEdgeQueryName()),
+func getFilePathForCustomEdgeQueryFile(cfg *codegen.Config, nodeData *schema.NodeData, e edge.ConnectionEdge) string {
+	return path.Join(
+		cfg.GetAbsPathToRoot(),
+		fmt.Sprintf(
+			"src/ent/%s/query/%s.ts",
+			nodeData.PackageName,
+			strcase.ToSnake(e.TsEdgeQueryName()),
+		),
 	)
 }
 
@@ -327,25 +335,25 @@ func getImportPathForBaseQueryFile(packageName string) string {
 	return fmt.Sprintf("src/ent/generated/%s_query_base", packageName)
 }
 
-func getFilePathForConstFile() string {
-	return "src/ent/const.ts"
+func getFilePathForConstFile(cfg *codegen.Config) string {
+	return path.Join(cfg.GetAbsPathToRoot(), "src/ent/const.ts")
 }
 
-func getFilePathForLoadAnyFile() string {
-	return "src/ent/loadAny.ts"
+func getFilePathForLoadAnyFile(cfg *codegen.Config) string {
+	return path.Join(cfg.GetAbsPathToRoot(), "src/ent/loadAny.ts")
 }
 
-func getFilePathForBuilderFile(nodeData *schema.NodeData) string {
-	return fmt.Sprintf("src/ent/%s/actions/%s_builder.ts", nodeData.PackageName, nodeData.PackageName)
+func getFilePathForBuilderFile(cfg *codegen.Config, nodeData *schema.NodeData) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/%s/actions/%s_builder.ts", nodeData.PackageName, nodeData.PackageName))
 }
 
 func getImportPathForBuilderFile(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/ent/%s/actions/%s_builder", nodeData.PackageName, nodeData.PackageName)
 }
 
-func getFilePathForActionBaseFile(nodeData *schema.NodeData, a action.Action) string {
+func getFilePathForActionBaseFile(cfg *codegen.Config, nodeData *schema.NodeData, a action.Action) string {
 	fileName := strcase.ToSnake(a.GetActionName())
-	return fmt.Sprintf("src/ent/%s/actions/generated/%s_base.ts", nodeData.PackageName, fileName)
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/%s/actions/generated/%s_base.ts", nodeData.PackageName, fileName))
 }
 
 func getImportPathForActionBaseFile(nodeData *schema.NodeData, a action.Action) string {
@@ -353,9 +361,9 @@ func getImportPathForActionBaseFile(nodeData *schema.NodeData, a action.Action) 
 	return fmt.Sprintf("src/ent/%s/actions/generated/%s_base", nodeData.PackageName, fileName)
 }
 
-func getFilePathForActionFile(nodeData *schema.NodeData, a action.Action) string {
+func getFilePathForActionFile(cfg *codegen.Config, nodeData *schema.NodeData, a action.Action) string {
 	fileName := strcase.ToSnake(a.GetActionName())
-	return fmt.Sprintf("src/ent/%s/actions/%s.ts", nodeData.PackageName, fileName)
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/%s/actions/%s.ts", nodeData.PackageName, fileName))
 }
 
 func writeBaseModelFile(nodeData *schema.NodeData, cfg *codegen.Config) error {
@@ -372,7 +380,7 @@ func writeBaseModelFile(nodeData *schema.NodeData, cfg *codegen.Config) error {
 		AbsPathToTemplate:  util.GetAbsolutePath("base.tmpl"),
 		TemplateName:       "base.tmpl",
 		OtherTemplateFiles: []string{util.GetAbsolutePath("../schema/enum/enum.tmpl")},
-		PathToFile:         getFilePathForBaseModelFile(nodeData),
+		PathToFile:         getFilePathForBaseModelFile(cfg, nodeData),
 		FormatSource:       true,
 		TsImports:          imps,
 		FuncMap:            getBaseFuncs(imps),
@@ -390,7 +398,7 @@ func writeEntFile(nodeData *schema.NodeData, cfg *codegen.Config) error {
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ent.tmpl"),
 		TemplateName:      "ent.tmpl",
-		PathToFile:        getFilePathForModelFile(nodeData),
+		PathToFile:        getFilePathForModelFile(cfg, nodeData),
 		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
@@ -408,7 +416,7 @@ func writeEnumFile(enumInfo *schema.EnumInfo, cfg *codegen.Config) error {
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("../schema/enum/enum.tmpl"),
 		TemplateName:      "enum.tmpl",
-		PathToFile:        getFilePathForEnumFile(enumInfo),
+		PathToFile:        getFilePathForEnumFile(cfg, enumInfo),
 		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
@@ -431,7 +439,7 @@ func writeBaseQueryFile(s *schema.Schema, nodeData *schema.NodeData, cfg *codege
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ent_query_base.tmpl"),
 		TemplateName:      "ent_query_base.tmpl",
-		PathToFile:        getFilePathForBaseQueryFile(nodeData),
+		PathToFile:        getFilePathForBaseQueryFile(cfg, nodeData),
 		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
@@ -452,7 +460,7 @@ func writeAssocEdgeQueryFile(s *schema.Schema, nodeData *schema.NodeData, e *edg
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("assoc_ent_query.tmpl"),
 		TemplateName:      "assoc_ent_query.tmpl",
-		PathToFile:        getFilePathForAssocEdgeQueryFile(nodeData, e),
+		PathToFile:        getFilePathForAssocEdgeQueryFile(cfg, nodeData, e),
 		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
@@ -474,7 +482,7 @@ func writeCustomEdgeQueryFile(s *schema.Schema, nodeData *schema.NodeData, e edg
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("custom_ent_query.tmpl"),
 		TemplateName:      "custom_ent_query.tmpl",
-		PathToFile:        getFilePathForCustomEdgeQueryFile(nodeData, e),
+		PathToFile:        getFilePathForCustomEdgeQueryFile(cfg, nodeData, e),
 		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
@@ -482,7 +490,7 @@ func writeCustomEdgeQueryFile(s *schema.Schema, nodeData *schema.NodeData, e edg
 	}, file.WriteOnce())
 }
 
-func writeConstFile(nodeData []enum.Data, edgeData []enum.Data) error {
+func writeConstFile(cfg *codegen.Config, nodeData []enum.Data, edgeData []enum.Data) error {
 	// sort data so that the enum is stable
 	sort.Slice(nodeData, func(i, j int) bool {
 		return nodeData[i].Name < nodeData[j].Name
@@ -512,7 +520,7 @@ func writeConstFile(nodeData []enum.Data, edgeData []enum.Data) error {
 		OtherTemplateFiles: []string{
 			util.GetAbsolutePath("../schema/enum/enum.tmpl"),
 		},
-		PathToFile:   getFilePathForConstFile(),
+		PathToFile:   getFilePathForConstFile(cfg),
 		FormatSource: true,
 		TsImports:    imps,
 		FuncMap:      imps.FuncMap(),
@@ -532,7 +540,7 @@ func writeLoadAnyFile(nodeData []enum.Data, cfg *codegen.Config) error {
 		},
 		AbsPathToTemplate: util.GetAbsolutePath("loadAny.tmpl"),
 		TemplateName:      "loadAny.tmpl",
-		PathToFile:        getFilePathForLoadAnyFile(),
+		PathToFile:        getFilePathForLoadAnyFile(cfg),
 		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
@@ -603,26 +611,29 @@ func getSortedInternalEntFileLines(s *schema.Schema) []string {
 }
 
 func writeInternalEntFile(s *schema.Schema, cfg *codegen.Config) error {
+	path := filepath.Join(cfg.GetAbsPathToRoot(), codepath.GetFilePathForInternalFile())
 	imps := tsimport.NewImports()
 
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data:              getSortedInternalEntFileLines(s),
 		AbsPathToTemplate: util.GetAbsolutePath("internal.tmpl"),
 		TemplateName:      "internal.tmpl",
-		PathToFile:        codepath.GetFilePathForInternalFile(),
+		PathToFile:        path,
 		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	})
 }
 
-func writeEntIndexFile() error {
+func writeEntIndexFile(cfg *codegen.Config) error {
+	path := filepath.Join(cfg.GetAbsPathToRoot(), codepath.GetFilePathForEntIndexFile())
+
 	imps := tsimport.NewImports()
 
 	return file.Write(&file.TemplatedBasedFileWriter{
 		AbsPathToTemplate: util.GetAbsolutePath("index.tmpl"),
 		TemplateName:      "index.tmpl",
-		PathToFile:        codepath.GetFilePathForEntIndexFile(),
+		PathToFile:        path,
 		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
@@ -646,7 +657,7 @@ func writeBuilderFile(nodeData *schema.NodeData, cfg *codegen.Config) error {
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("builder.tmpl"),
 		TemplateName:      "builder.tmpl",
-		PathToFile:        getFilePathForBuilderFile(nodeData),
+		PathToFile:        getFilePathForBuilderFile(cfg, nodeData),
 		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           getBuilderFuncs(imps),

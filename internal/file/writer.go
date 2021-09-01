@@ -47,7 +47,10 @@ func writeFile(w Writer, opts ...func(opt *Options)) error {
 	pathToFile := w.getPathToFile()
 
 	if w.createDirIfNeeded() {
-		fullPath := filepath.Join(".", pathToFile)
+		fullPath := pathToFile
+		if !filepath.IsAbs(fullPath) {
+			fullPath = filepath.Join(".", pathToFile)
+		}
 		directoryPath := path.Dir(fullPath)
 
 		_, err := os.Stat(directoryPath)
@@ -55,7 +58,7 @@ func writeFile(w Writer, opts ...func(opt *Options)) error {
 		if os.IsNotExist(err) {
 			err = os.MkdirAll(directoryPath, os.ModePerm)
 			if err == nil {
-				debugLogInfo(option, "created directory ", directoryPath)
+				debugLogInfo(option, "created directory "+directoryPath)
 			} else {
 				return err
 			}
