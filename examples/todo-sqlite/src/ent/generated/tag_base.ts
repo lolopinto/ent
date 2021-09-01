@@ -50,7 +50,6 @@ export class TagBase {
     this.ownerID = data.owner_id;
   }
 
-  // default privacyPolicy is Viewer can see themselves
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
 
   static async load<T extends TagBase>(
