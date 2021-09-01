@@ -40,15 +40,16 @@ func writeFile(w Writer, opts ...func(opt *Options)) error {
 		}
 		opt(option)
 	}
-	bytes, err := w.generateBytes()
+	b, err := w.generateBytes()
 	if err != nil {
 		return err
 	}
 	pathToFile := w.getPathToFile()
 
+	fullPath := pathToFile
 	if w.createDirIfNeeded() {
-		fullPath := pathToFile
 		if !filepath.IsAbs(fullPath) {
+			// TODO need to convert everything here to absolute paths
 			fullPath = filepath.Join(".", pathToFile)
 		}
 		directoryPath := path.Dir(fullPath)
@@ -79,7 +80,8 @@ func writeFile(w Writer, opts ...func(opt *Options)) error {
 			return err
 		}
 	}
-	err = ioutil.WriteFile(pathToFile, bytes, 0666)
+
+	err = ioutil.WriteFile(fullPath, b, 0666)
 	if !option.disableLog {
 		if err == nil {
 			debugLogInfo(option, "wrote to file %s", pathToFile)

@@ -1,9 +1,5 @@
 import { GuestBase } from "src/ent/internal";
-import {
-  AllowIfViewerRule,
-  AlwaysDenyRule,
-  PrivacyPolicy,
-} from "@snowtop/ent";
+import { AllowIfViewerRule, AlwaysDenyRule, PrivacyPolicy } from "@snowtop/ent";
 import { AllowIfEventCreatorRule } from "src/ent/event/privacy/event_creator";
 import { AllowIfGuestInSameGuestGroupRule } from "src/ent/guest/privacy/guest_rule_privacy";
 

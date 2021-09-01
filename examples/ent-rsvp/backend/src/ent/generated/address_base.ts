@@ -65,7 +65,6 @@ export class AddressBase {
     this.ownerType = data.owner_type;
   }
 
-  // default privacyPolicy is Viewer can see themselves
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
 
   static async load<T extends AddressBase>(

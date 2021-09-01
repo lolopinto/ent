@@ -3,13 +3,11 @@ package file
 import (
 	"bytes"
 	"fmt"
-	"os/exec"
 	"strings"
 	"text/template"
 
 	intimports "github.com/lolopinto/ent/internal/imports"
 	"github.com/lolopinto/ent/internal/tsimport"
-	"github.com/pkg/errors"
 	"golang.org/x/tools/imports"
 )
 
@@ -20,7 +18,6 @@ type TemplatedBasedFileWriter struct {
 	TemplateName       string
 	PathToFile         string
 	CreateDirIfNeeded  bool
-	FormatSource       bool
 	FuncMap            template.FuncMap
 	PackageName        string
 	Imports            *intimports.Imports
@@ -43,19 +40,14 @@ func (fw *TemplatedBasedFileWriter) generateBytes() ([]byte, error) {
 		return nil, err
 	}
 
-	// better flag needed. but basically not go code and we can bounce
-	if !fw.FormatSource {
-		return buf.Bytes(), nil
-	}
-
 	// formatting typescript
 	// vs formatting go!
 	if strings.HasSuffix(fw.getPathToFile(), ".go") {
 		return fw.formatGo(buf)
 	} else if strings.HasSuffix(fw.getPathToFile(), ".ts") {
-		return fw.formatTs(buf)
+		return fw.addImports(buf)
 	}
-	return nil, fmt.Errorf("cannot format source for non-go or ts file")
+	return buf.Bytes(), nil
 }
 
 func (fw *TemplatedBasedFileWriter) formatGo(buf *bytes.Buffer) ([]byte, error) {
@@ -79,13 +71,13 @@ func (fw *TemplatedBasedFileWriter) formatGo(buf *bytes.Buffer) ([]byte, error) 
 		},
 	)
 	if err != nil {
-		fmt.Println(string(buf.Bytes()))
+		fmt.Println(buf.String())
 	}
 
 	return b, err
 }
 
-func (fw *TemplatedBasedFileWriter) formatTs(buf *bytes.Buffer) ([]byte, error) {
+func (fw *TemplatedBasedFileWriter) addImports(buf *bytes.Buffer) ([]byte, error) {
 	if fw.TsImports != nil {
 		var err error
 		buf, err = fw.handleManualTsImports(buf)
@@ -93,27 +85,7 @@ func (fw *TemplatedBasedFileWriter) formatTs(buf *bytes.Buffer) ([]byte, error) 
 			return nil, err
 		}
 	}
-	// options: https://prettier.io/docs/en/options.html
-	args := []string{
-		"--trailing-comma", "all",
-		"--quote-props", "consistent",
-		"--parser", "typescript",
-		"--end-of-line", "lf",
-	}
-	// also needs to be part of the docker container
-	cmd := exec.Command("prettier", args...)
-	var out bytes.Buffer
-	var stderr bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &stderr
-	cmd.Stdin = buf
-
-	if err := cmd.Run(); err != nil {
-		str := stderr.String()
-		err = errors.Wrap(err, str)
-		return nil, err
-	}
-	return out.Bytes(), nil
+	return buf.Bytes(), nil
 }
 
 func (fw *TemplatedBasedFileWriter) executeTemplate() (*bytes.Buffer, error) {

@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -16,20 +17,73 @@ var rootCmd = &cobra.Command{
 	Long:  "CLI for interacting with the ent framework for typescript",
 }
 
-func init() {
-	rootCmd.AddCommand(codegenCmd)
-	rootCmd.AddCommand(downgradeCmd)
-	rootCmd.AddCommand(upgradeCmd)
-	rootCmd.AddCommand(fixEdgesCmd)
-	rootCmd.AddCommand(alembicCmd)
-	rootCmd.AddCommand(generateCmd)
+type rootArgs struct {
+	debug bool
+}
 
-	generateCmd.AddCommand(generateSchemaCmd)
-	generateCmd.AddCommand(generateEnumSchemaCmd)
-	generateCmd.AddCommand(generateSchemasCmd)
+var rootInfo rootArgs
+
+func newRunE(fn func(cmd *cobra.Command, args []string) error) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		if !rootInfo.debug {
+			return fn(cmd, args)
+		}
+		t1 := time.Now()
+		err := fn(cmd, args)
+		t2 := time.Now()
+		diff := t2.Sub(t1)
+		fmt.Println("total time elapsed", diff)
+		return err
+	}
+}
+
+func newRun(fn func(cmd *cobra.Command, args []string)) func(cmd *cobra.Command, args []string) {
+	return func(cmd *cobra.Command, args []string) {
+		if !rootInfo.debug {
+			fn(cmd, args)
+			return
+		}
+		t1 := time.Now()
+		fn(cmd, args)
+		t2 := time.Now()
+		diff := t2.Sub(t1)
+		fmt.Println("total time elapsed", diff)
+	}
+}
+
+func addCommands(parent *cobra.Command, children []*cobra.Command) {
+	for _, command := range children {
+		if command.RunE != nil {
+			old := command.RunE
+			command.RunE = newRunE(old)
+		}
+		if command.Run != nil {
+			old := command.Run
+			command.Run = newRun(old)
+		}
+		parent.AddCommand(command)
+	}
+}
+
+func init() {
+	addCommands(rootCmd, []*cobra.Command{
+		codegenCmd,
+		downgradeCmd,
+		upgradeCmd,
+		fixEdgesCmd,
+		alembicCmd,
+		generateCmd,
+	})
+
+	addCommands(generateCmd, []*cobra.Command{
+		generateSchemaCmd,
+		generateEnumSchemaCmd,
+		generateSchemasCmd,
+	})
+
+	rootCmd.PersistentFlags().BoolVar(&rootInfo.debug, "debug", false, "debug mode. add debug information to codegen e.g. files written etc")
 
 	codegenCmd.Flags().StringVarP(&codegenInfo.step, "step", "s", "", "limit to only run a particular step e.g. db, graphql, codegen")
-	codegenCmd.Flags().BoolVar(&codegenInfo.debug, "debug", false, "debug mode. add debug information to codegen e.g. files written etc")
 
 	generateSchemasCmd.Flags().StringVar(&schemasInfo.file, "file", "", "file to get data from. also supports piping it through")
 	generateSchemasCmd.Flags().BoolVar(&schemasInfo.force, "force", false, "if force is true, it overwrites existing schema, otherwise throws error")

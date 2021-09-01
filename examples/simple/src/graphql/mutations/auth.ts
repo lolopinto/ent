@@ -7,10 +7,7 @@ import {
   gqlObjectType,
   encodeGQLID,
 } from "@snowtop/ent/graphql";
-import {
-  useAndVerifyAuth,
-  useAndVerifyAuthJWT,
-} from "@snowtop/ent-passport";
+import { useAndVerifyAuth, useAndVerifyAuthJWT } from "@snowtop/ent-passport";
 import { User } from "src/ent/";
 import { ID, RequestContext } from "@snowtop/ent";
 import { GraphQLID } from "graphql";

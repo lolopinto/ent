@@ -1,16 +1,21 @@
 package codegen
 
 import (
+	"bytes"
 	"fmt"
+	"os/exec"
 	"sync"
+	"time"
 
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/syncerr"
+	"github.com/pkg/errors"
 )
 
 type option struct {
 	disablePrompts bool
+	disableFormat  bool
 }
 
 type Option func(*option)
@@ -21,11 +26,18 @@ func DisablePrompts() Option {
 	}
 }
 
+func DisableFormat() Option {
+	return func(opt *option) {
+		opt.disableFormat = true
+	}
+}
+
 // Processor stores the parsed data needed for codegen
 type Processor struct {
 	Schema    *schema.Schema
 	Config    *Config
 	debugMode bool
+	opt       *option
 }
 
 func (p *Processor) Run(steps []Step, step string, options ...Option) error {
@@ -33,6 +45,7 @@ func (p *Processor) Run(steps []Step, step string, options ...Option) error {
 	for _, o := range options {
 		o(opt)
 	}
+	p.opt = opt
 
 	if step != "" {
 		for _, s := range steps {
@@ -63,7 +76,10 @@ func (p *Processor) Run(steps []Step, step string, options ...Option) error {
 			go func(i int) {
 				defer wg.Done()
 				ps := pre_steps[i]
-				serr.Append(ps.PreProcessData(p))
+				err := runAndLog(p, ps.PreProcessData, func(d time.Duration) {
+					fmt.Printf("pre-process step %s took %v \n", ps.Name(), d)
+				})
+				serr.Append(err)
 			}(i)
 		}
 
@@ -75,27 +91,55 @@ func (p *Processor) Run(steps []Step, step string, options ...Option) error {
 	}
 
 	if !opt.disablePrompts {
-		if err := checkAndHandlePrompts(p.Schema, p.Config); err != nil {
+		if err := runAndLog(p, checkAndHandlePrompts, func(d time.Duration) {
+			fmt.Printf("check and handle prompts step took %v \n", d)
+		}); err != nil {
 			return err
 		}
 	}
-
-	// TODO refactor these from being called sequentially to something that can be called in parallel
-	// Right now, they're being called sequentially
-	// I don't see any reason why some can't be done in parrallel
-	// 0/ generate consts. has to block everything (not a plugin could be?) however blocking
-	// 1/ db
-	// 2/ create new nodes (blocked by db) since assoc_edge_config table may not exist yet
-	// 3/ model files. should be able to run on its own
-	// 4/ graphql should be able to run on its own
 
 	for _, s := range steps {
-		if err := s.ProcessData(p); err != nil {
+		if err := runAndLog(p, s.ProcessData, func(d time.Duration) {
+			fmt.Printf("process step %s took %v \n", s.Name(), d)
+		}); err != nil {
 			return err
 		}
 	}
 
+	return runAndLog(p, postProcess, func(d time.Duration) {
+		fmt.Printf("post-process step took %v \n", d)
+	})
+}
+
+func (p *Processor) FormatTS() error {
+	cmd := exec.Command("prettier", p.Config.GetPrettierArgs()...)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		str := stderr.String()
+		err = errors.Wrap(err, str)
+		return err
+	}
 	return nil
+}
+
+func postProcess(p *Processor) error {
+	if p.opt.disableFormat {
+		return nil
+	}
+	return p.FormatTS()
+}
+
+func runAndLog(p *Processor, fn func(p *Processor) error, logDiff func(d time.Duration)) error {
+	if !p.debugMode {
+		return fn(p)
+	}
+	t1 := time.Now()
+	err := fn(p)
+	t2 := time.Now()
+	diff := t2.Sub(t1)
+	logDiff(diff)
+	return err
 }
 
 // Step refers to a step in the codegen process
@@ -127,4 +171,11 @@ func NewCodegenProcessor(schema *schema.Schema, configPath, modulePath string, d
 	// if in debug mode can log things
 	file.SetGlobalLogStatus(debugMode)
 	return processor, nil
+}
+
+func FormatTS(cfg *Config) error {
+	p := &Processor{
+		Config: cfg,
+	}
+	return p.FormatTS()
 }

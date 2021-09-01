@@ -51,7 +51,6 @@ export class EventBase {
     this.creatorID = data.creator_id;
   }
 
-  // default privacyPolicy is Viewer can see themselves
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
 
   static async load<T extends EventBase>(

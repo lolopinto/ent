@@ -88,7 +88,6 @@ export class EventActivityBase {
     this.inviteAllGuests = convertBool(data.invite_all_guests);
   }
 
-  // default privacyPolicy is Viewer can see themselves
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
 
   static async load<T extends EventActivityBase>(

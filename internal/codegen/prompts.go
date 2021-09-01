@@ -70,9 +70,9 @@ func (q *YesNoQuestion) HandleRune(r rune, size int) *promptResponse {
 
 // TODO: this should all be in schema but there's dependency issues
 // because codegen depends on schema and we need schema to depend on the path to schema which we need to fix
-func checkAndHandlePrompts(s *schema.Schema, cfg *Config) error {
+func checkAndHandlePrompts(p *Processor) error {
 	// get db changes and store in Buffer (output of auto_schema --changes)
-	buf, err := dbChanges(cfg)
+	buf, err := dbChanges(p.Config)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func checkAndHandlePrompts(s *schema.Schema, cfg *Config) error {
 		return err
 	}
 
-	prompts, err := getPrompts(s, m)
+	prompts, err := getPrompts(p.Schema, m)
 	if err != nil {
 		return err
 	}

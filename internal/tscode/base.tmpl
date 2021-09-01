@@ -99,7 +99,7 @@ export class {{$baseClass}} {
   static async loadMany<T extends {{$baseClass}}>(
     this: {{$thisType}},
     viewer: {{$viewerType}},
-    ...ids: {{$idType}}[],
+    ...ids: {{$idType}}[]
   ): Promise<T[]> {
     return {{useImport "loadEnts"}}(
       viewer, 
