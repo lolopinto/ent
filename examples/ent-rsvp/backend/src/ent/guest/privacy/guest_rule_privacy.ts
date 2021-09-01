@@ -1,12 +1,5 @@
 import { Guest } from "src/ent/";
-import {
-  ID,
-  PrivacyPolicyRule,
-  Viewer,
-  Ent,
-  Skip,
-  Allow,
-} from "@snowtop/ent";
+import { ID, PrivacyPolicyRule, Viewer, Ent, Skip, Allow } from "@snowtop/ent";
 
 export class AllowIfGuestInSameGuestGroupRule implements PrivacyPolicyRule {
   constructor(private id?: ID) {}
