@@ -10,11 +10,11 @@ services:
       - 4000:4000
       - 9229:9229 # for debugger 
     volumes: 
-      - .:/app:rw,delegated
-#      - simple-sync:/app/:nocopy #  nocopy is important
+      #- .:/app:rw,delegated
+      - simple-sync:/app/:nocopy #  nocopy is important
     environment:
       - DB_CONNECTION_STRING=postgres://ola:@host.docker.internal/tsent_test
 
-# volumes:
-#   simple-sync:
-#     external: true
+volumes:
+  simple-sync:
+    external: true
