@@ -1,0 +1,212 @@
+{
+  "Hello": {
+    "tableName": "table",
+    "hideFromGraphQL": true,
+    "fields":[
+      {
+        "name": "foo",
+        "type": {
+          "dbType": "String"
+        },
+        "serverDefault": "bar"
+      },
+      {
+        "name": "name",
+        "type": {
+          "dbType": "String"
+        },
+        "unique":true
+      },
+      {
+        "name": "start_time",
+        "type": {
+          "dbType": "Timestamp"
+        }
+      },
+      {
+        "name": "emailAddress",
+        "type": {
+          "dbType": "String",
+          "customType": "email"
+        },
+        "unique":true
+      },
+      {
+        "name": "phone_number",
+        "type": {
+          "dbType": "String",
+          "customType": "phone"
+        },
+        "unique":true
+      },
+      {
+        "name": "code",
+        "type": {
+          "dbType": "Int"
+        }
+      },
+      {
+        "name": "price",
+        "type": {
+          "dbType": "Float"
+        }
+      },
+      {
+        "name": "password",
+        "type": {
+          "dbType": "String",
+          "customType": "password"
+        },
+        "unique":true,
+        "nullable": true
+      },
+      {
+        "name": "accountId",
+        "type": {
+          "dbType": "UUID"
+        },
+        "foreignKey": {
+          "schema": "User",
+          "column": "ID"
+        },
+        "storageKey": "user_id",
+        "defaultToViewerOnCreate": true
+      }
+    ],
+    "assocEdges": [
+      {
+        "name": "edgeName",
+        "schemaName": "User",
+        "tableName": "edge_name_table"
+      },
+      {
+        "name": "edgeName2",
+        "schemaName": "User",
+        "symmetric":true,
+        "edgeActions":[
+          {
+            "operation": 16,
+            "hideFromGraphQL":true
+          }
+        ]
+      },
+      {
+        "name": "edgeName2",
+        "schemaName": "User",
+        "unique":true,
+        "inverseEdge": {
+          "name": "inverseEdgeName2"
+        }
+      }
+    ],
+    "assocEdgeGroups": [
+      {
+        "name": "friendships",
+        "groupStatusName": "friendshipStatus",
+        "nullStates": ["canRequest", "cannotRequest"],
+        "nullStateFn": "friendshipStatus",
+        "assocEdges": [
+          {
+            "name": "outgoingRequest",
+            "schemaName": "User",
+            "inverseEdge": {
+              "name": "incomingRequest"
+            }
+          },
+          {
+            "name": "friends",
+            "schemaName": "User",
+            "symmetric": true
+          }
+        ],
+        "edgeAction":{
+          "operation": 64,
+          "actionOnlyFields": [
+            {
+              "name": "blah",
+              "type": "String"
+            }
+          ]
+        }
+      }
+    ],
+    "actions":[
+      {
+        "operation":1,
+        "fields":["name", "start_time"]
+      },
+      {
+        "operation":2,
+        "fields": ["name", "start_time"],
+        "actionName": "EditFooAction",
+        "graphqlName":"fooEdit",
+        "inputName": "editFooInput"
+      },
+      {
+        "operation":4,
+        "hideFromGraphQL":true,
+        "actionOnlyFields": [
+          {
+            "name": "foo",
+            "type":"String",
+            "nullable": "true"
+          }
+        ]
+      }
+
+    ],
+    "constraints":[
+      {
+        "name": "uniqueCode",
+        "type": "unique",
+        "columns": ["emailAddress", "code"]
+      },
+      {
+        "name": "userIDkey",
+        "type": "foreign",
+        "columns": ["accountId"],
+        "fkey": {
+          "tableName": "users",
+          "ondelete": "RESTRICT",
+          "columns": ["id"]
+        }
+      },
+      {
+        "name": "positive_price",
+        "type": "check",
+        "columns": ["price"],
+        "condition": "price > 0"
+      }
+    ],
+    "indices":[
+      {
+        "name": "uniqueIndex",
+        "columns": ["emailAddress", "code"],
+        "unique":true
+      }
+    ]
+  },
+  "RequestStatus": {
+    "enumTable": true,
+    "fields":[
+      {
+        "name": "status",
+        "primaryKey": true,
+        "type": {
+          "dbType": "String"
+        }
+      }
+    ],
+    "dbRows": [
+      {
+        "status": "open"
+      },
+            {
+        "status": "pending"
+      },
+      {
+        "status": "closed"
+      }
+    ]
+  }
+}

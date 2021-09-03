@@ -1,0 +1,102 @@
+{{ reserveImport .Package.SchemaPackagePath "BaseEntSchema" "Field" "Schema" "Edge" "AssocEdgeGroup" "Action" "Constraint" "Index" }}
+
+{{/* takes an Import with ImportPath Import DefaultImport fields */ -}}
+{{define "reserveImport"}}
+  {{ $imp := . -}}
+  {{ if $imp.DefaultImport -}}
+    {{reserveDefaultImport $imp.ImportPath $imp.Import -}}
+  {{ else -}}
+    {{reserveImport $imp.ImportPath $imp.Import -}}
+  {{ end -}}
+{{- end -}}
+
+{{define "kvObjectLine" -}}
+  {{ $obj := . -}}
+  {{- range $imp := $obj.GetImports -}}
+    {{- template "reserveImport" $imp -}}
+    {{ $ignore := useImport $imp.Import -}}
+  {{- end -}}
+  {{ $obj.String }},
+{{- end -}}
+
+
+{{if .Extends -}}
+  export default class {{.Node}} extends {{useImport .Base}} {
+{{ end -}}
+{{if .Implements -}}
+  export default class {{.Node}} implements {{useImport .Base}} {
+{{end -}}
+
+  {{ if .TableName -}}
+    tableName = {{.TableName}};
+    
+  {{end -}}
+
+  {{ if .EnumTable -}}
+    enumTable = true;
+
+  {{end -}}
+
+  {{ if .HideFromGraphQL -}}
+    hideFromGraphQL = true;
+
+  {{end -}}
+
+  fields: {{useImport "Field"}} [] = [
+  {{ range $field := .Fields -}}
+    {{$imp := $field.GetImport -}}
+    {{- template "reserveImport" $imp -}}
+    {{useImport $imp.Import}}({{fieldObjectCall $field}}),
+  {{- end -}}
+  ];
+
+
+  {{ if gt .DBRows.Len 0 -}}
+    dbRows = {{.DBRowsCall}};
+  {{ end -}}
+
+  {{ if gt (len .Edges) 0 }}
+    edges: {{useImport "Edge"}} [] = [
+    {{ range $edge := .Edges -}}
+      {{$obj := edgeObjectCall $edge -}}
+      {{- template "kvObjectLine" $obj -}}
+    {{- end -}}
+    ];
+  {{end -}}
+
+  {{ if gt (len .EdgeGroups) 0 }}
+    edgeGroups: {{useImport "AssocEdgeGroup"}} [] = [
+    {{ range $group := .EdgeGroups -}}
+      {{$obj := edgeGroupObjectCall $group -}}
+      {{- template "kvObjectLine" $obj -}}
+    {{- end -}}
+    ];
+  {{end -}}
+
+  {{ if gt (len .Actions) 0 }}
+    actions: {{useImport "Action"}} [] = [
+    {{ range $action := .Actions -}}
+      {{$obj := actionObjectCall $action -}}
+      {{- template "kvObjectLine" $obj -}}
+    {{- end -}}
+    ];
+  {{end -}}
+
+  {{ if gt (len .Constraints) 0 }}
+    constraints: {{useImport "Constraint"}}[] = [
+    {{ range $constraint := .Constraints -}}
+      {{$obj := constraintObjectCall $constraint -}}
+      {{- template "kvObjectLine" $obj -}}
+    {{- end -}}
+    ];
+  {{end -}}
+
+  {{ if gt (len .Indices) 0 }}
+    indices: {{useImport "Index"}}[] = [
+    {{ range $index := .Indices -}}
+      {{$obj := indexObjectCall $index -}}
+      {{- template "kvObjectLine" $obj -}}
+    {{- end -}}
+    ];
+  {{end -}}
+}

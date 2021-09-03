@@ -13,7 +13,7 @@ import (
 
 // inspired by servergen from gqlgen
 type entGraphQLServerPlugin struct {
-	codePath *intcodegen.CodePath
+	codePath *intcodegen.Config
 }
 
 var _ plugin.CodeGenerator = &entGraphQLServerPlugin{}
@@ -57,6 +57,6 @@ type ServerBuild struct {
 
 func newGraphQLServerPlugin(data *intcodegen.Processor) plugin.Plugin {
 	return &entGraphQLServerPlugin{
-		codePath: data.CodePath,
+		codePath: data.Config,
 	}
 }

@@ -243,159 +243,8 @@ const NullableContents NullableItem = "contents"
 const NullableContentsAndList NullableItem = "contentsAndList"
 const NullableTrue NullableItem = "true"
 
-type step interface {
-	process(processor *codegen.Processor, s *gqlSchema) error
-}
-
-type writeGraphQLTypesStep struct{}
-
-func (st writeGraphQLTypesStep) process(processor *codegen.Processor, s *gqlSchema) error {
-	var wg sync.WaitGroup
-	var serr syncerr.Error
-
-	wg.Add(len(s.enums))
-	for key := range s.enums {
-		go func(key string) {
-			defer wg.Done()
-			node := s.enums[key]
-			if err := writeEnumFile(node); err != nil {
-				serr.Append(err)
-			}
-		}(key)
-	}
-
-	wg.Add(len(s.nodes))
-
-	for key := range s.nodes {
-		go func(key string) {
-			defer wg.Done()
-			node := s.nodes[key]
-
-			if err := writeFile(node); err != nil {
-				serr.Append(err)
-			}
-
-			var wg2 sync.WaitGroup
-			if len(node.Dependents) != 0 {
-				wg2.Add(len(node.Dependents))
-				for idx := range node.Dependents {
-					go func(idx int) {
-						defer wg2.Done()
-						dependentNode := node.Dependents[idx]
-
-						if err := writeFile(dependentNode); err != nil {
-							serr.Append(err)
-						}
-					}(idx)
-				}
-			}
-
-			if len(node.connections) != 0 {
-				wg2.Add(len(node.connections))
-				for idx := range node.connections {
-					go func(idx int) {
-						defer wg2.Done()
-						conn := node.connections[idx]
-						if err := writeConnectionFile(processor, s, conn); err != nil {
-							serr.Append((err))
-						}
-					}(idx)
-				}
-			}
-			wg2.Wait()
-		}(key)
-	}
-	wg.Add(len(s.customMutations))
-	for idx := range s.customMutations {
-		go func(idx int) {
-			defer wg.Done()
-			node := s.customMutations[idx]
-
-			if err := writeFile(node); err != nil {
-				serr.Append(err)
-			}
-		}(idx)
-	}
-	wg.Add(len(s.customQueries))
-	for idx := range s.customQueries {
-		go func(idx int) {
-			defer wg.Done()
-			node := s.customQueries[idx]
-
-			if err := writeFile(node); err != nil {
-				serr.Append(err)
-			}
-
-			var wg2 sync.WaitGroup
-			if len(node.connections) != 0 {
-				wg2.Add(len(node.connections))
-				for idx := range node.connections {
-					go func(idx int) {
-						defer wg2.Done()
-						conn := node.connections[idx]
-						if err := writeConnectionFile(processor, s, conn); err != nil {
-							serr.Append((err))
-						}
-					}(idx)
-				}
-			}
-			wg2.Wait()
-		}(idx)
-	}
-
-	wg.Wait()
-
-	return serr.Err()
-}
-
-type writeQueryStep struct{}
-
-func (st writeQueryStep) process(processor *codegen.Processor, s *gqlSchema) error {
-	return writeQueryFile(processor, s)
-}
-
-type writeMutationStep struct{}
-
-func (st writeMutationStep) process(processor *codegen.Processor, s *gqlSchema) error {
-	if s.hasMutations {
-		return writeMutationFile(processor, s)
-	}
-	return nil
-}
-
-type writeNodeQueryStep struct{}
-
-func (st writeNodeQueryStep) process(processor *codegen.Processor, s *gqlSchema) error {
-	return writeNodeQueryFile(processor, s)
-}
-
-type writeInternalIndexStep struct {
-}
-
-func (st writeInternalIndexStep) process(processor *codegen.Processor, s *gqlSchema) error {
-	if err := writeInternalGQLResolversFile(s, processor.CodePath); err != nil {
-		return err
-	}
-	return writeGQLResolversIndexFile()
-}
-
-type generateGQLSchemaStep struct{}
-
-func (st generateGQLSchemaStep) process(processor *codegen.Processor, s *gqlSchema) error {
-	return generateSchemaFile(s.hasMutations)
-}
-
-type writeSchemaStep struct{}
-
-func (st writeSchemaStep) process(processor *codegen.Processor, s *gqlSchema) error {
-	return writeTSSchemaFile(processor, s)
-}
-
-type writeIndexStep struct{}
-
-func (st writeIndexStep) process(processor *codegen.Processor, s *gqlSchema) error {
-	return writeTSIndexFile(processor, s)
-}
+type writeFileFn func() error
+type writeFileFnList []writeFileFn
 
 func buildSchema(processor *codegen.Processor, fromTest bool) (*gqlSchema, error) {
 	cd, s := <-parseCustomData(processor, fromTest), <-buildGQLSchema(processor)
@@ -423,37 +272,105 @@ func (p *TSStep) PreProcessData(processor *codegen.Processor) error {
 }
 
 func (p *TSStep) ProcessData(processor *codegen.Processor) error {
-	// these all need to be done after
-	// 1a/ build data (actions and nodes)
-	// 1b/ parse custom files
-	// 2/ inject any custom data in there
-	// 3/ write node files first then action files since there's a dependency...
-	// 4/ write query/mutation/schema file
-	// schema file depends on query/mutation so not quite worth the complication of breaking those 2 up
-
 	if p.s == nil {
 		return errors.New("weirdness. graphqlSchema is nil when it shouldn't be")
 	}
 
 	fmt.Println("generating graphql code...")
 
-	steps := []step{
-		writeGraphQLTypesStep{},
-		writeNodeQueryStep{},
-		writeQueryStep{},
-		writeMutationStep{},
-		writeInternalIndexStep{},
-		writeSchemaStep{},
-		generateGQLSchemaStep{},
-		writeIndexStep{},
+	if err := p.writeBaseFiles(processor, p.s); err != nil {
+		return err
 	}
+	// generate schema.gql
+	return generateSchemaFile(p.s.hasMutations)
+}
 
-	for _, st := range steps {
-		if err := st.process(processor, p.s); err != nil {
-			return err
+func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) error {
+	var funcs writeFileFnList
+	buildNode := func(node *gqlNode) {
+		funcs = append(funcs, func() error {
+			return writeFile(node)
+		})
+
+		for _, dependentNode := range node.Dependents {
+			funcs = append(funcs, func() error {
+				return writeFile(dependentNode)
+			})
+		}
+
+		for _, conn := range node.connections {
+			funcs = append(funcs, func() error {
+				return writeConnectionFile(processor, s, conn)
+			})
 		}
 	}
-	return nil
+
+	for _, enum := range s.enums {
+		funcs = append(funcs, func() error {
+			return writeEnumFile(enum)
+		})
+	}
+
+	for _, node := range s.nodes {
+		buildNode(node)
+	}
+
+	for _, node := range s.customMutations {
+		buildNode(node)
+	}
+
+	for _, node := range s.customQueries {
+		buildNode(node)
+	}
+
+	// other files
+	funcs = append(
+		funcs,
+		func() error {
+			// node_query_types.ts
+			return writeNodeQueryFile(processor, s)
+		},
+		func() error {
+			// query_type.ts
+			return writeQueryFile(processor, s)
+		},
+		func() error {
+			// mutation_type.ts
+			if s.hasMutations {
+				return writeMutationFile(processor, s)
+			}
+			return nil
+		},
+		func() error {
+			// graphql/resolvers/internal
+			return writeInternalGQLResolversFile(s, processor.Config)
+		},
+		// graphql/resolvers/index
+		writeGQLResolversIndexFile,
+		func() error {
+			// graphql/schema.ts
+			return writeTSSchemaFile(processor, s)
+		},
+		func() error {
+			// graphql/index.ts
+			return writeTSIndexFile(processor, s)
+		},
+	)
+
+	var wg sync.WaitGroup
+	var serr syncerr.Error
+
+	wg.Add(len(funcs))
+	for i := range funcs {
+		go func(i int) {
+			defer wg.Done()
+			fn := funcs[i]
+			serr.Append(fn())
+		}(i)
+	}
+	wg.Wait()
+
+	return serr.Err()
 }
 
 var _ codegen.Step = &TSStep{}
@@ -569,15 +486,15 @@ func parseCustomData(processor *codegen.Processor, fromTest bool) chan *customDa
 				testingutils.DefaultCompilerOptions(),
 				scriptPath,
 				"--path",
-				filepath.Join(processor.CodePath.GetAbsPathToRoot(), "src"),
+				filepath.Join(processor.Config.GetAbsPathToRoot(), "src"),
 			}
 		} else {
 			cmdArgs = append(
-				cmd.GetArgsForScript(processor.CodePath.GetAbsPathToRoot()),
+				cmd.GetArgsForScript(processor.Config.GetAbsPathToRoot()),
 				scriptPath,
 				"--path",
 				// TODO this should be a configuration option to indicate where the code root is
-				filepath.Join(processor.CodePath.GetAbsPathToRoot(), "src"),
+				filepath.Join(processor.Config.GetAbsPathToRoot(), "src"),
 			)
 			cmdName = "ts-node-script"
 		}
@@ -815,7 +732,7 @@ func getGqlConnection(packageName string, edge edge.ConnectionEdge, processor *c
 				Type:       edge.TsEdgeQueryEdgeName(),
 			},
 		},
-		Package: processor.CodePath.GetImportPackage(),
+		Package: processor.Config.GetImportPackage(),
 	}
 }
 
@@ -867,7 +784,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 						Node:         nodeData.Node,
 						NodeInstance: nodeData.NodeInstance,
 						GQLNodes:     []*objectType{buildNodeForObject(nodeMap, nodeData)},
-						Package:      processor.CodePath.GetImportPackage(),
+						Package:      processor.Config.GetImportPackage(),
 					},
 					FilePath: getFilePathForNode(nodeData),
 				}
@@ -893,7 +810,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 								GQLNodes:     buildActionNodes(nodeData, action, actionPrefix),
 								Enums:        buildActionEnums(nodeData, action),
 								FieldConfig:  fieldCfg,
-								Package:      processor.CodePath.GetImportPackage(),
+								Package:      processor.Config.GetImportPackage(),
 							},
 							FilePath: getFilePathForAction(nodeData, action),
 						}
@@ -947,10 +864,9 @@ func writeFile(node *gqlNode) error {
 			util.GetAbsolutePath("ts_templates/enum.tmpl"),
 			util.GetAbsolutePath("ts_templates/field.tmpl"),
 		},
-		PathToFile:   node.FilePath,
-		FormatSource: true,
-		TsImports:    imps,
-		FuncMap:      imps.FuncMap(),
+		PathToFile: node.FilePath,
+		TsImports:  imps,
+		FuncMap:    imps.FuncMap(),
 	}))
 }
 
@@ -962,7 +878,6 @@ func writeEnumFile(enum *gqlEnum) error {
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/enum.tmpl"),
 		TemplateName:      "enum.tmpl",
 		PathToFile:        enum.FilePath,
-		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	}))
@@ -1121,7 +1036,7 @@ func getSortedLines(s *gqlSchema) []string {
 	return lines
 }
 
-func writeInternalGQLResolversFile(s *gqlSchema, codePathInfo *codegen.CodePath) error {
+func writeInternalGQLResolversFile(s *gqlSchema, cfg *codegen.Config) error {
 	imps := tsimport.NewImports()
 
 	return file.Write(&file.TemplatedBasedFileWriter{
@@ -1129,7 +1044,6 @@ func writeInternalGQLResolversFile(s *gqlSchema, codePathInfo *codegen.CodePath)
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/resolver_internal.tmpl"),
 		TemplateName:      "resolver_internal.tmpl",
 		PathToFile:        codepath.GetFilePathForInternalGQLFile(),
-		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	})
@@ -1142,7 +1056,6 @@ func writeGQLResolversIndexFile() error {
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/resolver_index.tmpl"),
 		TemplateName:      "resolver_index.tmpl",
 		PathToFile:        codepath.GetFilePathForExternalGQLFile(),
-		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	})
@@ -1167,7 +1080,7 @@ func writeConnectionFile(processor *codegen.Processor, s *gqlSchema, conn *gqlCo
 			conn,
 			s.customEdges[conn.Edge.TsEdgeQueryEdgeName()],
 			&connectionBaseObj{},
-			processor.CodePath.GetImportPackage(),
+			processor.Config.GetImportPackage(),
 		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/connection.tmpl"),
@@ -1176,10 +1089,9 @@ func writeConnectionFile(processor *codegen.Processor, s *gqlSchema, conn *gqlCo
 			util.GetAbsolutePath("ts_templates/render_args.tmpl"),
 			util.GetAbsolutePath("ts_templates/field.tmpl"),
 		},
-		PathToFile:   conn.FilePath,
-		FormatSource: true,
-		TsImports:    imps,
-		FuncMap:      imps.FuncMap(),
+		PathToFile: conn.FilePath,
+		TsImports:  imps,
+		FuncMap:    imps.FuncMap(),
 	}))
 }
 
@@ -2200,7 +2112,6 @@ func writeQueryFile(processor *codegen.Processor, s *gqlSchema) error {
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/root.tmpl"),
 		TemplateName:      "root.tmpl",
 		PathToFile:        getQueryFilePath(),
-		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	}))
@@ -2218,7 +2129,6 @@ func writeMutationFile(processor *codegen.Processor, s *gqlSchema) error {
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/root.tmpl"),
 		TemplateName:      "root.tmpl",
 		PathToFile:        getMutationFilePath(),
-		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	}))
@@ -2269,7 +2179,7 @@ func writeNodeQueryFile(processor *codegen.Processor, s *gqlSchema) error {
 		}{
 			buildNodeFieldConfig(processor, s),
 			&nodeBaseObj{},
-			processor.CodePath.GetImportPackage(),
+			processor.Config.GetImportPackage(),
 		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/node.tmpl"),
@@ -2280,7 +2190,6 @@ func writeNodeQueryFile(processor *codegen.Processor, s *gqlSchema) error {
 			util.GetAbsolutePath("ts_templates/field.tmpl"),
 		},
 		PathToFile:   getNodeQueryTypeFilePath(),
-		FormatSource: true,
 		TsImports:    imps,
 		FuncMap:      imps.FuncMap(),
 		EditableCode: true,
@@ -2306,7 +2215,6 @@ func writeTSSchemaFile(processor *codegen.Processor, s *gqlSchema) error {
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/schema.tmpl"),
 		TemplateName:      "schema.tmpl",
 		PathToFile:        getTSSchemaFilePath(),
-		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	}))
@@ -2326,7 +2234,6 @@ func writeTSIndexFile(processor *codegen.Processor, s *gqlSchema) error {
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/index.tmpl"),
 		TemplateName:      "index.tmpl",
 		PathToFile:        getTSIndexFilePath(),
-		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 		EditableCode:      true,
@@ -2334,6 +2241,8 @@ func writeTSIndexFile(processor *codegen.Processor, s *gqlSchema) error {
 }
 
 func generateSchemaFile(hasMutations bool) error {
+	// this generates the schema.gql file
+	// needs to be done after all files have been generated
 	filePath := getTempSchemaFilePath()
 
 	err := writeSchemaFile(filePath, hasMutations)
@@ -2380,7 +2289,6 @@ func writeSchemaFile(fileToWrite string, hasMutations bool) error {
 			TemplateName:      "generate_schema.tmpl",
 			PathToFile:        fileToWrite,
 			TsImports:         imps,
-			FormatSource:      true,
 			CreateDirIfNeeded: true,
 			FuncMap:           imps.FuncMap(),
 		},

@@ -17,6 +17,29 @@ export interface Config {
   // warn will be deprecared or weird things
   // info is tbd. graphql/performance/timing/request stuff
   // query includes cache hit. redis|memcache etc eventually
+
+  // config for codegen
+  codegen?: CodegenConfig;
+}
+
+interface CodegenConfig {
+  defaultEntPolicy?: PrivacyConfig;
+  defaultActionPolicy?: PrivacyConfig;
+  prettier?: PrettierConfig;
+}
+
+interface PrettierConfig {
+  // indicates you have your own custom prettier configuration and should use that instead of the ent default
+  // https://prettier.io/docs/en/configuration.html
+  custom?: boolean;
+  // default glob is 'src/**/*.ts', can override this
+  glob?: string;
+}
+
+interface PrivacyConfig {
+  path: string; // e.g. "@snowtop/ent"
+  policyName: string; // e.g. "AllowIfViewerHasIdentityPrivacyPolicy";
+  class?: boolean;
 }
 
 function setConfig(cfg: Config) {

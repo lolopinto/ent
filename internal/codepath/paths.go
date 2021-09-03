@@ -3,6 +3,12 @@ package codepath
 // Package refers to the name of the package
 const Package = "@snowtop/ent"
 
+const EmailPackage = "@snowtop/ent-email"
+
+const PhonenumberPackage = "@snowtop/ent-phonenumber"
+
+const PasswordPackage = "@snowtop/ent-password"
+
 // ActionPackage refers to the name of the action package
 const ActionPackage = Package + "/action"
 

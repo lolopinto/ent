@@ -101,12 +101,12 @@ func newGraphQLSchema(processor *codegen.Processor) *graphQLSchema {
 
 		// parsing custom ent code
 		customEntParser: &schemaparser.ConfigSchemaParser{
-			AbsRootPath: processor.CodePath.GetAbsPathToModels(),
+			AbsRootPath: processor.Config.GetAbsPathToModels(),
 		},
 
 		// parsing top level functions
 		topLevelParser: &schemaparser.ConfigSchemaParser{
-			AbsRootPath: processor.CodePath.GetAbsPathToGraphQL() + "...",
+			AbsRootPath: processor.Config.GetAbsPathToGraphQL() + "...",
 			// for default generated files, don't parse them and treat them as basically empty files
 			// errors in there shouldn't affect this process since if everything succeeds now, we are fine
 			FilesToIgnore: defaultGraphQLFiles,
@@ -559,7 +559,7 @@ func (s *graphQLSchema) generateGraphQLSchemaData() {
 		s.addSchemaInfo(s.getConnectionInterfaceType())
 	}
 
-	pathToModels := s.config.CodePath.GetImportPathToModels()
+	pathToModels := s.config.Config.GetImportPathToModels()
 
 	nodeMap := schema.Nodes
 	for _, info := range nodeMap {

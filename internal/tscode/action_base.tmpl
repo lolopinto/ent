@@ -1,6 +1,7 @@
 {{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "Builder" "setEdgeTypeInGroup" }}
-{{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions" "AllowIfViewerHasIdentityPrivacyPolicy" "PrivacyPolicy"}}
+{{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions" "PrivacyPolicy"}}
 {{ reserveImport "src/ent" "NodeType"}}
+{{ reserveImport .PrivacyConfig.Path .PrivacyConfig.PolicyName }}
 
 {{ range .NodeData.GetImportPathsForDependencies -}}
   {{ if .DefaultImport -}}
@@ -133,9 +134,12 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
   }
 
   getPrivacyPolicy(): {{useImport "PrivacyPolicy"}} {
-    return {{useImport "AllowIfViewerHasIdentityPrivacyPolicy"}};
+    {{ if .PrivacyConfig.Class }}
+      return new {{useImport .PrivacyConfig.PolicyName}}();
+    {{ else -}}
+      return {{useImport .PrivacyConfig.PolicyName}};
+    {{ end -}}
   };
-  
 
   getInput(): {{useImport $builderInput}} {
     {{ if $hasInput -}}

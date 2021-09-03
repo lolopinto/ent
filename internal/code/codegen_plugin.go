@@ -19,18 +19,18 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 		nodeData := info.NodeData
 		//fmt.Println(specificConfig, structName)
 		if len(nodeData.PackageName) > 0 {
-			if err := writeModelFile(nodeData, processor.CodePath); err != nil {
+			if err := writeModelFile(nodeData, processor.Config); err != nil {
 				return err
 			}
 			if err := writePrivacyFile(nodeData); err != nil {
 				return err
 			}
-			if err := writeMutationBuilderFile(nodeData, processor.CodePath); err != nil {
+			if err := writeMutationBuilderFile(nodeData, processor.Config); err != nil {
 				return err
 			}
 
 			for _, action := range nodeData.ActionInfo.Actions {
-				if err := writeActionFile(nodeData, action, processor.CodePath); err != nil {
+				if err := writeActionFile(nodeData, action, processor.Config); err != nil {
 					return err
 				}
 			}

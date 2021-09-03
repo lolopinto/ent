@@ -15,25 +15,24 @@ import (
 
 type nodeTemplateCodePath struct {
 	NodeData *schema.NodeData
-	CodePath *codegen.CodePath
+	Config   *codegen.Config
 }
 
 func getFilePathForModelFile(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("models/%s_gen.go", nodeData.PackageName)
 }
 
-func writeModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {
+func writeModelFile(nodeData *schema.NodeData, cfg *codegen.Config) error {
 	imps := imports.Imports{}
 
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data: nodeTemplateCodePath{
 			NodeData: nodeData,
-			CodePath: codePathInfo,
+			Config:   cfg,
 		},
 		AbsPathToTemplate: util.GetAbsolutePath("node.gotmpl"),
 		TemplateName:      "node.gotmpl",
 		PathToFile:        getFilePathForModelFile(nodeData),
-		FormatSource:      true,
 		PackageName:       "models",
 		Imports:           &imps,
 		FuncMap: template.FuncMap{
@@ -55,6 +54,5 @@ func writePrivacyFile(nodeData *schema.NodeData) error {
 		AbsPathToTemplate: util.GetAbsolutePath("privacy.gotmpl"),
 		TemplateName:      "privacy.gotmpl",
 		PathToFile:        pathToFile,
-		FormatSource:      true,
 	})
 }

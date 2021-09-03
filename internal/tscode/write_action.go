@@ -14,35 +14,36 @@ import (
 )
 
 type actionTemplate struct {
-	Action      action.Action
-	NodeData    *schema.NodeData
-	BuilderPath string
-	BasePath    string
-	Package     *codegen.ImportPackage
+	Action        action.Action
+	NodeData      *schema.NodeData
+	BuilderPath   string
+	BasePath      string
+	Package       *codegen.ImportPackage
+	PrivacyConfig *codegen.PrivacyConfig
 }
 
-func writeBaseActionFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath, action action.Action) error {
+func writeBaseActionFile(nodeData *schema.NodeData, cfg *codegen.Config, action action.Action) error {
 	imps := tsimport.NewImports()
 
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data: actionTemplate{
-			NodeData:    nodeData,
-			Action:      action,
-			BuilderPath: getImportPathForBuilderFile(nodeData),
-			Package:     codePathInfo.GetImportPackage(),
+			NodeData:      nodeData,
+			Action:        action,
+			BuilderPath:   getImportPathForBuilderFile(nodeData),
+			Package:       cfg.GetImportPackage(),
+			PrivacyConfig: cfg.GetDefaultActionPolicy(),
 		},
 		CreateDirIfNeeded:  true,
 		AbsPathToTemplate:  util.GetAbsolutePath("action_base.tmpl"),
 		OtherTemplateFiles: []string{util.GetAbsolutePath("../schema/enum/enum.tmpl")},
 		TemplateName:       "action_base.tmpl",
-		PathToFile:         getFilePathForActionBaseFile(nodeData, action),
-		FormatSource:       true,
+		PathToFile:         getFilePathForActionBaseFile(cfg, nodeData, action),
 		TsImports:          imps,
 		FuncMap:            getFuncMapForActionBase(imps),
 	})
 }
 
-func writeActionFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath, action action.Action) error {
+func writeActionFile(nodeData *schema.NodeData, cfg *codegen.Config, action action.Action) error {
 	imps := tsimport.NewImports()
 
 	return file.Write(&file.TemplatedBasedFileWriter{
@@ -50,13 +51,12 @@ func writeActionFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath, 
 			NodeData: nodeData,
 			Action:   action,
 			BasePath: getImportPathForActionBaseFile(nodeData, action),
-			Package:  codePathInfo.GetImportPackage(),
+			Package:  cfg.GetImportPackage(),
 		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("action.tmpl"),
 		TemplateName:      "action.tmpl",
-		PathToFile:        getFilePathForActionFile(nodeData, action),
-		FormatSource:      true,
+		PathToFile:        getFilePathForActionFile(cfg, nodeData, action),
 		TsImports:         imps,
 		FuncMap:           getCustomFuncMap(imps),
 		EditableCode:      true,

@@ -18,25 +18,24 @@ import (
 )
 
 type actionTemplate struct {
-	Action   action.Action
-	CodePath *codegen.CodePath
+	Action action.Action
+	Config *codegen.Config
 }
 
-func writeActionFile(nodeData *schema.NodeData, a action.Action, codePathInfo *codegen.CodePath) error {
+func writeActionFile(nodeData *schema.NodeData, a action.Action, cfg *codegen.Config) error {
 	fileName := strcase.ToSnake(a.GetActionName())
 
 	imps := imports.Imports{}
 	return file.Write(
 		&file.TemplatedBasedFileWriter{
 			Data: actionTemplate{
-				Action:   a,
-				CodePath: codePathInfo,
+				Action: a,
+				Config: cfg,
 			},
 			AbsPathToTemplate: util.GetAbsolutePath("action.gotmpl"),
 			TemplateName:      "action.gotmpl",
 			PathToFile:        fmt.Sprintf("models/%s/action/%s_gen.go", nodeData.PackageName, fileName),
 			CreateDirIfNeeded: true,
-			FormatSource:      true,
 			PackageName:       "action",
 			Imports:           &imps,
 			FuncMap: template.FuncMap{

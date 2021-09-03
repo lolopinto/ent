@@ -132,6 +132,28 @@ func (b *UserMutationBuilder) GetPhoneNumber() *string {
 	return b.phoneNumber
 }
 
+// AddDeclinedEvents adds one or more instances of Event to the DeclinedEvents edge while editing the Event ent
+func (b *UserMutationBuilder) AddDeclinedEvents(events ...*models.Event) *UserMutationBuilder {
+	for _, event := range events {
+		b.AddDeclinedEventID(event.ID)
+	}
+	return b
+}
+
+// AddDeclinedEventIDs adds an instance of Event to the DeclinedEvents edge while editing the Event ent
+func (b *UserMutationBuilder) AddDeclinedEventIDs(eventIDs ...string) *UserMutationBuilder {
+	for _, eventID := range eventIDs {
+		b.AddDeclinedEventID(eventID)
+	}
+	return b
+}
+
+// AddDeclinedEventID adds an instance of Event to the DeclinedEvents edge while editing the Event ent
+func (b *UserMutationBuilder) AddDeclinedEventID(eventID string, options ...func(*ent.EdgeOperation)) *UserMutationBuilder {
+	b.builder.AddOutboundEdge(models.UserToDeclinedEventsEdge, eventID, models.EventType, options...)
+	return b
+}
+
 // AddEvents adds one or more instances of Event to the Events edge while editing the Event ent
 func (b *UserMutationBuilder) AddEvents(events ...*models.Event) *UserMutationBuilder {
 	for _, event := range events {
@@ -151,6 +173,28 @@ func (b *UserMutationBuilder) AddEventIDs(eventIDs ...string) *UserMutationBuild
 // AddEventID adds an instance of Event to the Events edge while editing the Event ent
 func (b *UserMutationBuilder) AddEventID(eventID string, options ...func(*ent.EdgeOperation)) *UserMutationBuilder {
 	b.builder.AddOutboundEdge(models.UserToEventsEdge, eventID, models.EventType, options...)
+	return b
+}
+
+// AddEventsAttending adds one or more instances of Event to the EventsAttending edge while editing the Event ent
+func (b *UserMutationBuilder) AddEventsAttending(events ...*models.Event) *UserMutationBuilder {
+	for _, event := range events {
+		b.AddEventsAttendingID(event.ID)
+	}
+	return b
+}
+
+// AddEventsAttendingIDs adds an instance of Event to the EventsAttending edge while editing the Event ent
+func (b *UserMutationBuilder) AddEventsAttendingIDs(eventIDs ...string) *UserMutationBuilder {
+	for _, eventID := range eventIDs {
+		b.AddEventsAttendingID(eventID)
+	}
+	return b
+}
+
+// AddEventsAttendingID adds an instance of Event to the EventsAttending edge while editing the Event ent
+func (b *UserMutationBuilder) AddEventsAttendingID(eventID string, options ...func(*ent.EdgeOperation)) *UserMutationBuilder {
+	b.builder.AddOutboundEdge(models.UserToEventsAttendingEdge, eventID, models.EventType, options...)
 	return b
 }
 
@@ -220,47 +264,25 @@ func (b *UserMutationBuilder) AddInvitedEventID(eventID string, options ...func(
 	return b
 }
 
-// AddEventsAttending adds one or more instances of Event to the EventsAttending edge while editing the Event ent
-func (b *UserMutationBuilder) AddEventsAttending(events ...*models.Event) *UserMutationBuilder {
+// RemoveDeclinedEvents removes an instance of Event from the DeclinedEvents edge while editing the Event ent
+func (b *UserMutationBuilder) RemoveDeclinedEvents(events ...*models.Event) *UserMutationBuilder {
 	for _, event := range events {
-		b.AddEventsAttendingID(event.ID)
+		b.RemoveDeclinedEventID(event.ID)
 	}
 	return b
 }
 
-// AddEventsAttendingIDs adds an instance of Event to the EventsAttending edge while editing the Event ent
-func (b *UserMutationBuilder) AddEventsAttendingIDs(eventIDs ...string) *UserMutationBuilder {
+// RemoveDeclinedEventIDs removes an instance of Event from the DeclinedEvents edge while editing the Event ent
+func (b *UserMutationBuilder) RemoveDeclinedEventIDs(eventIDs ...string) *UserMutationBuilder {
 	for _, eventID := range eventIDs {
-		b.AddEventsAttendingID(eventID)
+		b.RemoveDeclinedEventID(eventID)
 	}
 	return b
 }
 
-// AddEventsAttendingID adds an instance of Event to the EventsAttending edge while editing the Event ent
-func (b *UserMutationBuilder) AddEventsAttendingID(eventID string, options ...func(*ent.EdgeOperation)) *UserMutationBuilder {
-	b.builder.AddOutboundEdge(models.UserToEventsAttendingEdge, eventID, models.EventType, options...)
-	return b
-}
-
-// AddDeclinedEvents adds one or more instances of Event to the DeclinedEvents edge while editing the Event ent
-func (b *UserMutationBuilder) AddDeclinedEvents(events ...*models.Event) *UserMutationBuilder {
-	for _, event := range events {
-		b.AddDeclinedEventID(event.ID)
-	}
-	return b
-}
-
-// AddDeclinedEventIDs adds an instance of Event to the DeclinedEvents edge while editing the Event ent
-func (b *UserMutationBuilder) AddDeclinedEventIDs(eventIDs ...string) *UserMutationBuilder {
-	for _, eventID := range eventIDs {
-		b.AddDeclinedEventID(eventID)
-	}
-	return b
-}
-
-// AddDeclinedEventID adds an instance of Event to the DeclinedEvents edge while editing the Event ent
-func (b *UserMutationBuilder) AddDeclinedEventID(eventID string, options ...func(*ent.EdgeOperation)) *UserMutationBuilder {
-	b.builder.AddOutboundEdge(models.UserToDeclinedEventsEdge, eventID, models.EventType, options...)
+// RemoveDeclinedEventID removes an instance of Event from the DeclinedEvents edge while editing the Event ent
+func (b *UserMutationBuilder) RemoveDeclinedEventID(eventID string) *UserMutationBuilder {
+	b.builder.RemoveOutboundEdge(models.UserToDeclinedEventsEdge, eventID, models.EventType)
 	return b
 }
 
@@ -283,6 +305,28 @@ func (b *UserMutationBuilder) RemoveEventIDs(eventIDs ...string) *UserMutationBu
 // RemoveEventID removes an instance of Event from the Events edge while editing the Event ent
 func (b *UserMutationBuilder) RemoveEventID(eventID string) *UserMutationBuilder {
 	b.builder.RemoveOutboundEdge(models.UserToEventsEdge, eventID, models.EventType)
+	return b
+}
+
+// RemoveEventsAttending removes an instance of Event from the EventsAttending edge while editing the Event ent
+func (b *UserMutationBuilder) RemoveEventsAttending(events ...*models.Event) *UserMutationBuilder {
+	for _, event := range events {
+		b.RemoveEventsAttendingID(event.ID)
+	}
+	return b
+}
+
+// RemoveEventsAttendingIDs removes an instance of Event from the EventsAttending edge while editing the Event ent
+func (b *UserMutationBuilder) RemoveEventsAttendingIDs(eventIDs ...string) *UserMutationBuilder {
+	for _, eventID := range eventIDs {
+		b.RemoveEventsAttendingID(eventID)
+	}
+	return b
+}
+
+// RemoveEventsAttendingID removes an instance of Event from the EventsAttending edge while editing the Event ent
+func (b *UserMutationBuilder) RemoveEventsAttendingID(eventID string) *UserMutationBuilder {
+	b.builder.RemoveOutboundEdge(models.UserToEventsAttendingEdge, eventID, models.EventType)
 	return b
 }
 
@@ -349,50 +393,6 @@ func (b *UserMutationBuilder) RemoveInvitedEventIDs(eventIDs ...string) *UserMut
 // RemoveInvitedEventID removes an instance of Event from the InvitedEvents edge while editing the Event ent
 func (b *UserMutationBuilder) RemoveInvitedEventID(eventID string) *UserMutationBuilder {
 	b.builder.RemoveOutboundEdge(models.UserToInvitedEventsEdge, eventID, models.EventType)
-	return b
-}
-
-// RemoveEventsAttending removes an instance of Event from the EventsAttending edge while editing the Event ent
-func (b *UserMutationBuilder) RemoveEventsAttending(events ...*models.Event) *UserMutationBuilder {
-	for _, event := range events {
-		b.RemoveEventsAttendingID(event.ID)
-	}
-	return b
-}
-
-// RemoveEventsAttendingIDs removes an instance of Event from the EventsAttending edge while editing the Event ent
-func (b *UserMutationBuilder) RemoveEventsAttendingIDs(eventIDs ...string) *UserMutationBuilder {
-	for _, eventID := range eventIDs {
-		b.RemoveEventsAttendingID(eventID)
-	}
-	return b
-}
-
-// RemoveEventsAttendingID removes an instance of Event from the EventsAttending edge while editing the Event ent
-func (b *UserMutationBuilder) RemoveEventsAttendingID(eventID string) *UserMutationBuilder {
-	b.builder.RemoveOutboundEdge(models.UserToEventsAttendingEdge, eventID, models.EventType)
-	return b
-}
-
-// RemoveDeclinedEvents removes an instance of Event from the DeclinedEvents edge while editing the Event ent
-func (b *UserMutationBuilder) RemoveDeclinedEvents(events ...*models.Event) *UserMutationBuilder {
-	for _, event := range events {
-		b.RemoveDeclinedEventID(event.ID)
-	}
-	return b
-}
-
-// RemoveDeclinedEventIDs removes an instance of Event from the DeclinedEvents edge while editing the Event ent
-func (b *UserMutationBuilder) RemoveDeclinedEventIDs(eventIDs ...string) *UserMutationBuilder {
-	for _, eventID := range eventIDs {
-		b.RemoveDeclinedEventID(eventID)
-	}
-	return b
-}
-
-// RemoveDeclinedEventID removes an instance of Event from the DeclinedEvents edge while editing the Event ent
-func (b *UserMutationBuilder) RemoveDeclinedEventID(eventID string) *UserMutationBuilder {
-	b.builder.RemoveOutboundEdge(models.UserToDeclinedEventsEdge, eventID, models.EventType)
 	return b
 }
 

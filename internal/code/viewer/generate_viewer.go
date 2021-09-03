@@ -12,21 +12,21 @@ import (
 	"github.com/lolopinto/ent/internal/util"
 )
 
-func WriteViewerFiles(codePathInfo *codegen.CodePath, node, app string, forceOverwrite bool) error {
-	errChan := writeViewer(codePathInfo, node, app, forceOverwrite)
-	graphqlErrChan := writeGraphQLViewer(codePathInfo, node, app, forceOverwrite)
+func WriteViewerFiles(cfg *codegen.Config, node, app string, forceOverwrite bool) error {
+	errChan := writeViewer(cfg, node, app, forceOverwrite)
+	graphqlErrChan := writeGraphQLViewer(cfg, node, app, forceOverwrite)
 
 	return util.CoalesceErr(<-errChan, <-graphqlErrChan)
 }
 
 type viewerData struct {
-	CodePath     *codegen.CodePath
+	CodePath     *codegen.Config
 	VCName       string
 	NodeName     string
 	InstanceName string
 }
 
-func writeViewer(codePathInfo *codegen.CodePath, node, app string, forceOverwrite bool) chan error {
+func writeViewer(cfg *codegen.Config, node, app string, forceOverwrite bool) chan error {
 	ret := make(chan error)
 	go func() {
 		vcName := fmt.Sprintf("%sViewerContext", strcase.ToCamel(app))
@@ -34,7 +34,7 @@ func writeViewer(codePathInfo *codegen.CodePath, node, app string, forceOverwrit
 
 		writer := &file.TemplatedBasedFileWriter{
 			Data: viewerData{
-				CodePath:     codePathInfo,
+				CodePath:     cfg,
 				VCName:       vcName,
 				NodeName:     strcase.ToCamel(node),
 				InstanceName: strcase.ToLowerCamel(node),
@@ -42,7 +42,6 @@ func writeViewer(codePathInfo *codegen.CodePath, node, app string, forceOverwrit
 			AbsPathToTemplate: util.GetAbsolutePath("viewer_context.gotmpl"),
 			TemplateName:      "viewer_context.gotmpl",
 			PathToFile:        getFilePath(app),
-			FormatSource:      true,
 			PackageName:       packageName(app),
 			Imports:           &imps,
 			CreateDirIfNeeded: true,
@@ -64,7 +63,7 @@ type graphQLViewerData struct {
 	AppViewerPackageName string
 }
 
-func writeGraphQLViewer(codePathInfo *codegen.CodePath, node, app string, forceOverwrite bool) chan error {
+func writeGraphQLViewer(cfg *codegen.Config, node, app string, forceOverwrite bool) chan error {
 	ret := make(chan error)
 	go func() {
 		vcName := fmt.Sprintf("%sViewerContext", strcase.ToCamel(app))
@@ -73,7 +72,7 @@ func writeGraphQLViewer(codePathInfo *codegen.CodePath, node, app string, forceO
 		writer := &file.TemplatedBasedFileWriter{
 			Data: graphQLViewerData{
 				viewerData: viewerData{
-					CodePath:     codePathInfo,
+					CodePath:     cfg,
 					VCName:       vcName,
 					NodeName:     strcase.ToCamel(node),
 					InstanceName: strcase.ToLowerCamel(node),
@@ -84,14 +83,13 @@ func writeGraphQLViewer(codePathInfo *codegen.CodePath, node, app string, forceO
 					vcName,
 				),
 				AppViewerPackageName: filepath.Join(
-					codePathInfo.GetImportPathToRoot(),
+					cfg.GetImportPathToRoot(),
 					packageName(app),
 				),
 			},
 			AbsPathToTemplate: util.GetAbsolutePath("graphql_viewer.gotmpl"),
 			TemplateName:      "graphql_viewer.gotmpl",
 			PathToFile:        getGraphQLFilePath(),
-			FormatSource:      true,
 			PackageName:       "viewer",
 			Imports:           &imps,
 			CreateDirIfNeeded: true,

@@ -46,7 +46,6 @@ export class AccountBase {
     this.phoneNumber = data.phone_number;
   }
 
-  // default privacyPolicy is Viewer can see themselves
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
 
   static async load<T extends AccountBase>(

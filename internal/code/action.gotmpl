@@ -7,7 +7,7 @@
 {{$action := .Action -}}
 {{$nodeInfo := nodeInfo $action -}}
 
-{{with .CodePath -}}
+{{with .Config -}}
 
 	{{reserveImport .GetQuotedImportPathToModels}}
   {{reserveImport .GetQuotedImportPathToConfigs}}

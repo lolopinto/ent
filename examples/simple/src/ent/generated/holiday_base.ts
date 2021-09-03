@@ -40,7 +40,6 @@ export class HolidayBase {
     this.date = convertDate(data.date);
   }
 
-  // default privacyPolicy is Viewer can see themselves
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
 
   static async load<T extends HolidayBase>(

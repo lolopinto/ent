@@ -40,12 +40,12 @@ var initPhoneAuthCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		codePathInfo, err := getPathToCode(pathToConfig)
+		cfg, err := getPathToCode(pathToConfig)
 		if err != nil {
 			return err
 		}
 
-		return auth.WritePhoneAuthFile(codePathInfo, &auth.Options{
+		return auth.WritePhoneAuthFile(cfg, &auth.Options{
 			Node:           phoneAuth.node,
 			Field:          phoneAuth.field,
 			ViewerFunc:     phoneAuth.viewerFunc,
