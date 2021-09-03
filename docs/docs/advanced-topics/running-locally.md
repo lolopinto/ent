@@ -18,7 +18,7 @@ Here's the steps to install locally:
 * Get the latest version of the Ent CLI:
 
 ```shell
-go install github.com/lolopinto/ent/tsent@v0.0.21
+go install github.com/lolopinto/ent/tsent@v0.0.22
 ```
 
 * Install [Python](https://www.python.org/downloads/) >= 3.8
@@ -32,13 +32,13 @@ python3 -m pip install auto_schema==0.0.9
 * Install the following TypeScript packages globally:
 
 ```shell
-npm install -g ts-node prettier typescript
+npm install -g typescript@4.4.2 prettier@2.3.2 ts-node@10.2.1
 ```
 
 * Install `tsconfig-paths` locally:
 
 ```shell
-npm install --save-dev tsconfig-paths
+npm install --save-dev tsconfig-paths@3.11.0
 ```
 
 You should now have everything you need to run locally.
