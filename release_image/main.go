@@ -17,9 +17,9 @@ import (
 )
 
 // next tag
-const TAG = "0.0.22"
+const TAG = "0.0.23"
 
-// if current node gets latest tag...
+// current node gets latest tag...
 const CURRENT_NODE_VERSION = 16
 const REPO = "ghcr.io/lolopinto/ent"
 
@@ -32,7 +32,7 @@ var NODE_VERSIONS = []int{
 }
 
 const AUTO_SCHEMA_VERSION = "0.0.9"
-const TSENT_VERSION = "v0.0.21"
+const TSENT_VERSION = "v0.0.22"
 
 var SUFFIXES = []string{
 	"dev",
@@ -187,7 +187,7 @@ func run(d dockerfileData, wg *sync.WaitGroup) error {
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	if err != nil {
-		return errors.Wrap(err, "error running building docker image")
+		return errors.Wrapf(err, "error building docker image %d-%s", d.NodeVersion, d.Suffix)
 	}
 
 	return nil
