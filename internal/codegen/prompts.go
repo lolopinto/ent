@@ -83,6 +83,11 @@ func checkAndHandlePrompts(p *Processor) error {
 		return err
 	}
 
+	if len(m) == 0 {
+		// we know there's no db changes so we should flag this so that we don't call into python in the future to try and make changes
+		p.noDBChanges = true
+	}
+
 	prompts, err := getPrompts(p.Schema, m)
 	if err != nil {
 		return err
