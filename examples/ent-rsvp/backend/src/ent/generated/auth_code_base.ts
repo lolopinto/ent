@@ -55,7 +55,6 @@ export class AuthCodeBase {
     this.sentCode = convertBool(data.sent_code);
   }
 
-  // default privacyPolicy is Viewer can see themselves
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
 
   static async load<T extends AuthCodeBase>(

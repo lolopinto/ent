@@ -33,7 +33,6 @@ func writeModelFile(nodeData *schema.NodeData, cfg *codegen.Config) error {
 		AbsPathToTemplate: util.GetAbsolutePath("node.gotmpl"),
 		TemplateName:      "node.gotmpl",
 		PathToFile:        getFilePathForModelFile(nodeData),
-		FormatSource:      true,
 		PackageName:       "models",
 		Imports:           &imps,
 		FuncMap: template.FuncMap{
@@ -55,6 +54,5 @@ func writePrivacyFile(nodeData *schema.NodeData) error {
 		AbsPathToTemplate: util.GetAbsolutePath("privacy.gotmpl"),
 		TemplateName:      "privacy.gotmpl",
 		PathToFile:        pathToFile,
-		FormatSource:      true,
 	})
 }

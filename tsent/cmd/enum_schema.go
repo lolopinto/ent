@@ -41,7 +41,7 @@ e.g. tsent generate enum_schema RequestStatus status open,pending,closed`,
 			return err
 		}
 
-		return generateschema.GenerateSchema(
+		return generateschema.GenerateSingleSchema(
 			cfg,
 			generateschema.NewEnumCodegenData(cfg, schemaName, args[1], strings.Split(args[2], ",")),
 			schemaName,

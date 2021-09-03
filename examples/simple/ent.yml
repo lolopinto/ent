@@ -1,4 +1,4 @@
-# log: 
+# log:
 #   - query
 #   - error
 #   - warn
@@ -11,3 +11,6 @@
 #   defaultActionPolicy:
 #     path: '@snowtop/ent'
 #     policyName: 'AlwaysAllowPrivacyPolicy'
+codegen:
+  prettier:
+    custom: true

@@ -108,7 +108,6 @@ func writeFile(data interface{}, templateName, filePath string, options *Options
 		AbsPathToTemplate: util.GetAbsolutePath(templateName),
 		TemplateName:      templateName,
 		PathToFile:        filePath,
-		FormatSource:      true,
 		PackageName:       "graphql", // TODO auth?
 		Imports:           &imps,
 		EditableCode:      true,

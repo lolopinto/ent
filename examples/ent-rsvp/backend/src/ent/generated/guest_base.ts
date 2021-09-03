@@ -65,7 +65,6 @@ export class GuestBase {
     this.title = data.title;
   }
 
-  // default privacyPolicy is Viewer can see themselves
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
 
   static async load<T extends GuestBase>(
