@@ -51,10 +51,10 @@ RUN \
 RUN apt update && apt --assume-yes install zsh && \
   rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g typescript prettier ts-node
+RUN npm install -g typescript@4.4.2 prettier@2.3.2 ts-node@10.2.1
 
 WORKDIR /app
-RUN npm install --save-dev tsconfig-paths 
+RUN npm install --save-dev tsconfig-paths@3.11.0
 
 {{ end -}}
 
