@@ -187,7 +187,7 @@ func run(d dockerfileData, wg *sync.WaitGroup) error {
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	if err != nil {
-		return errors.Wrap(err, "error running building docker image")
+		return errors.Wrapf(err, "error building docker image %d-%s", d.NodeVersion, d.Suffix)
 	}
 
 	return nil
