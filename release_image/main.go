@@ -52,15 +52,14 @@ func main() {
 	for i := range NODE_VERSIONS {
 		for j := range SUFFIXES {
 			go func(i, j int) {
-				defer wg.Done()
 				v := NODE_VERSIONS[i]
 				suffix := SUFFIXES[j]
-				errs[i*len(SUFFIXES)+j] = <-run(dockerfileData{
+				errs[i*len(SUFFIXES)+j] = run(dockerfileData{
 					NodeVersion:       v,
 					Suffix:            suffix,
 					TsentVersion:      TSENT_VERSION,
 					AutoSchemaVersion: AUTO_SCHEMA_VERSION,
-				})
+				}, &wg)
 			}(i, j)
 		}
 	}
@@ -108,9 +107,7 @@ func getTags(d dockerfileData) []string {
 }
 
 func getCommandArgs(d dockerfileData, builder string) []string {
-	// cache image based on tsent and auto_schema
-	// is that enough?
-	cacheTag := fmt.Sprintf("%s:cache-%s-%s", REPO, TSENT_VERSION, AUTO_SCHEMA_VERSION)
+	cacheTag := fmt.Sprintf("%s:cache-nodejs%d", REPO, d.NodeVersion)
 	tags := getTags(d)
 	ret := []string{
 		"buildx",
@@ -135,69 +132,63 @@ func getCommandArgs(d dockerfileData, builder string) []string {
 	return ret
 }
 
-func run(d dockerfileData) <-chan error {
-	c := make(chan error)
-	go func() {
-		dir := fmt.Sprintf("node_%d_%s", d.NodeVersion, d.Suffix)
-		info, err := os.Stat(dir)
-		if err == nil {
-			if !info.IsDir() {
-				c <- errors.Wrapf(err, "path %s exists and is not a directory", dir)
-			}
-		} else if os.IsNotExist(err) {
-			// only create if directory exists
-			err := os.Mkdir(dir, os.ModePerm)
-			if err != nil {
-				c <- errors.Wrap(err, "error creating directory")
-				return
-			}
-		} else {
-			c <- errors.Wrap(err, "unexpected error")
+func run(d dockerfileData, wg *sync.WaitGroup) error {
+	defer wg.Done()
+	dir := fmt.Sprintf("node_%d_%s", d.NodeVersion, d.Suffix)
+	info, err := os.Stat(dir)
+	if err == nil {
+		if !info.IsDir() {
+			return errors.Wrapf(err, "path %s exists and is not a directory", dir)
 		}
-
-		defer os.RemoveAll(dir)
-		dockerfile := path.Join(dir, "Dockerfile")
-
-		err = createDockerfile(dockerfile, d)
-
+	} else if os.IsNotExist(err) {
+		// only create if directory doesn't exist
+		err := os.Mkdir(dir, os.ModePerm)
 		if err != nil {
-			c <- errors.Wrap(err, "error creating docker file")
-			return
+			return errors.Wrap(err, "error creating directory")
 		}
+	} else {
+		return errors.Wrap(err, "unexpected error")
+	}
 
-		// create new builder to user here
-		var out bytes.Buffer
-		buildCommand := exec.Command("docker", "buildx", "create", "--use")
-		buildCommand.Stderr = os.Stderr
-		buildCommand.Stdout = &out
-		if err := buildCommand.Run(); err != nil {
-			c <- errors.Wrap(err, "error creating builder")
-			log.Fatal(err)
-		}
-		builder := strings.TrimSpace(out.String())
+	defer os.RemoveAll(dir)
+	dockerfile := path.Join(dir, "Dockerfile")
 
-		// build image
-		cmd := exec.Command("docker", getCommandArgs(d, builder)...)
-		cmd.Dir = dir
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		err = cmd.Run()
-		if err != nil {
-			c <- errors.Wrap(err, "error running docker command")
-			return
-		}
+	err = createDockerfile(dockerfile, d)
 
+	if err != nil {
+		return errors.Wrap(err, "error creating docker file")
+	}
+
+	// create new builder to user here
+	var out bytes.Buffer
+	buildCommand := exec.Command("docker", "buildx", "create", "--use")
+	buildCommand.Stderr = os.Stderr
+	buildCommand.Stdout = &out
+	if err := buildCommand.Run(); err != nil {
+		return errors.Wrap(err, "error creating builder")
+	}
+	builder := strings.TrimSpace(out.String())
+
+	defer func() {
 		// remove builder
 		cleanupCmd := exec.Command("docker", "buildx", "rm", builder)
 		cleanupCmd.Stdout = os.Stdout
 		cleanupCmd.Stderr = os.Stderr
 		err = cleanupCmd.Run()
 		if err != nil {
-			c <- errors.Wrap(err, "error cleaning up docker builder instance")
-			return
+			log.Println(err, "error cleaning up docker builder instance")
 		}
-
-		c <- nil
 	}()
-	return c
+
+	// build image
+	cmd := exec.Command("docker", getCommandArgs(d, builder)...)
+	cmd.Dir = dir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		return errors.Wrap(err, "error running building docker image")
+	}
+
+	return nil
 }
