@@ -1,10 +1,10 @@
 ---
-sidebar_position: 1
+sidebar_position: 6
 ---
 
 # Running Locally
 
-You may notice that running via Docker is slow. It's something that we eventually need to fix. For now, the workaround is to run things locally.
+You may notice that running via Docker is slow. The preferred way to address this is to use [docker-sync](/docs/advanced-topics/docker-sync) to speed things up. Another approach is to get all the dependencies and run things locally.
 
 There's 3 major runtimes we use:
 
