@@ -34,10 +34,15 @@ func DisableFormat() Option {
 
 // Processor stores the parsed data needed for codegen
 type Processor struct {
-	Schema    *schema.Schema
-	Config    *Config
-	debugMode bool
-	opt       *option
+	Schema      *schema.Schema
+	Config      *Config
+	debugMode   bool
+	opt         *option
+	noDBChanges bool
+}
+
+func (p *Processor) NoDBChanges() bool {
+	return p.noDBChanges
 }
 
 func (p *Processor) Run(steps []Step, step string, options ...Option) error {
