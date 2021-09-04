@@ -12,20 +12,17 @@ There's both codegen and runtime configuration of the ent framework.
 codegen can be configured in a yml file in order of precedence (from the root of the project):
 
 * a `ent.yml` file
-* `src/ent.yml` file
-* `src/graphql/ent.yml` file
+* a `src/ent.yml` file
+* a `src/graphql/ent.yml` file
 
 The root of codegen configuration is the `codegen` key in the file.
 
 The following properties can be configured:
 
-* `defaultEntPolicy` 
-configures the [Privacy Policy](/docs/core-concepts/privacy-policy) in base class of generated Ents. Overrides the [default privacy policy](/docs/core-concepts/ent#privacy-policy). See [PrivacyConfig](#privacyConfig) for the expected format.
-* `defaultActionPolicy`
-configures the [Privacy Policy](/docs/core-concepts/privacy-policy) in base class of generated Actions. Overrides the [default privacy policy](/docs/actions/action#default-privacy-policy). See [PrivacyConfig](#privacyConfig) for the expected format.
-* `prettier` 
-configures [prettier](https://prettier.io/).
-We currently use prettier to format the entire codebase after codegen to ensure a consistent format. If you already have a prettier configuration or want to override the glob passed to prettier (default is `src/ent/**/*.ts`), use this option. See [PrettierConfig](#prettierConfig) for the expected format.
+* `defaultEntPolicy` configures the [Privacy Policy](/docs/core-concepts/privacy-policy) in base class of generated Ents. Overrides the [default privacy policy](/docs/core-concepts/ent#privacypolicy). See [PrivacyConfig](#privacyConfig) for the expected format.
+* `defaultActionPolicy` configures the [Privacy Policy](/docs/core-concepts/privacy-policy) in base class of generated Actions. Overrides the [default privacy policy](/docs/actions/action#default-privacy-policy). See [PrivacyConfig](#privacyConfig) for the expected format.
+* `prettier` configures [prettier](https://prettier.io/).
+We currently use prettier to format the entire codebase after codegen to ensure a consistent format in the generated files. If you already have a prettier configuration or want to override the glob passed to prettier (default is `src/ent/**/*.ts`), use this option. See [PrettierConfig](#prettierConfig) for the expected format.
 
 ### PrivacyConfig
 
@@ -42,7 +39,7 @@ Following fields supported:
 * `custom` (boolean. optional). indicates there's already a [custom prettier configuration](https://prettier.io/docs/en/configuration.html) that should be used. Depends on prettier finding the configuration
 * `glob` (string. optional). glob to pass to prettier instead of default `src/ent/**/*.ts`
 
-## Runtime
+## runtime
 
 Because there could be so many possible entrypoints into the framework e.g. GraphQL endpoint, REST API endpoint, tests, migration script, etc, there's no way to automatically configure runtime behavior so it has to be done manually via calling `loadConfig`.
 
