@@ -1,0 +1,6 @@
+version: '2'
+syncs:
+  simple-sync:
+    src: './'
+    compose-file-path: docker-compose.dev.yml
+#    compose-dev-file-pat: docker-compose.dev.yml

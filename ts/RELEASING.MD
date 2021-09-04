@@ -16,7 +16,7 @@ We use [buildx](https://docs.docker.com/buildx/working-with-buildx/#build-multi-
 * Update `Dockerfile`
 * `echo "{TOKEN}" | docker login ghcr.io -u USERNAME --password-stdin`
 * `docker buildx create --use` to create a new builder
-* `docker buildx build --platform linux/arm64,linux/amd64 --tag ghcr.io/lolopinto/ent:(tag) --tag ghcr.io/lolopinto/ent:latest --push .` to build and push new image
+* `docker buildx build --platform linux/arm64,linux/amd64 --tag ghcr.io/lolopinto/ent:v0.0.23-test --push .` to build and push new image
 
 If just testing, don't use `latest` tag above.
 
