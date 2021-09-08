@@ -3,7 +3,7 @@ ARG AUTO_SCHEMA_VERSION=0.0.9
 ARG NODE_VERSION=16
 
 # get and install tsent
-FROM golang:1.16.5-buster As golang-image
+FROM golang:1.17.0-buster As golang-image
 ARG GOLANG_VERSION
 ENV GOPATH=$HOME/go
 ENV GOBIN $GOPATH/bin
