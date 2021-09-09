@@ -21,14 +21,9 @@ const fkeyTables = () => {
 describe("postgres", () => {
   test("fkey", async () => {
     let tdb: TempDB;
-    try {
-      tdb = new TempDB(fkeyTables());
-      await tdb.beforeAll();
-    } catch (err) {
-      fail(err);
-    } finally {
-      await tdb!.afterAll();
-    }
+    tdb = new TempDB(fkeyTables());
+    await tdb.beforeAll();
+    await tdb.afterAll();
   });
 });
 
@@ -37,7 +32,7 @@ describe("sqlite", () => {
     process.env.DB_CONNECTION_STRING = "sqlite:///";
   });
 
-  test("basic", async () => {
+  test("basic fkey", async () => {
     let tdb = new TempDB(Dialect.SQLite, [
       table("users", uuid("id", { primaryKey: true }), text("first_name")),
       table(
@@ -58,9 +53,5 @@ describe("sqlite", () => {
 
     await tdb.beforeAll();
     await tdb.afterAll();
-  });
-
-  test("fkey", () => {
-    setupSqlite(`sqlite:///test_db.db`, fkeyTables);
   });
 });
