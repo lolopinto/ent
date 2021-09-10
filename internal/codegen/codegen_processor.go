@@ -79,11 +79,9 @@ func (p *Processor) DisableSchemaGQL() bool {
 }
 
 func (p *Processor) Run(steps []Step, step string, options ...Option) error {
-	opt := &option{}
 	for _, o := range options {
-		o(opt)
+		o(p.opt)
 	}
-	p.opt = opt
 
 	if step != "" {
 		for _, s := range steps {
@@ -128,7 +126,7 @@ func (p *Processor) Run(steps []Step, step string, options ...Option) error {
 		}
 	}
 
-	if !opt.disablePrompts {
+	if !p.opt.disablePrompts {
 		if err := runAndLog(p, checkAndHandlePrompts, func(d time.Duration) {
 			fmt.Printf("check and handle prompts step took %v \n", d)
 		}); err != nil {
@@ -204,6 +202,7 @@ func NewCodegenProcessor(schema *schema.Schema, configPath, modulePath string, d
 		Schema:    schema,
 		Config:    cfg,
 		debugMode: debugMode,
+		opt:       &option{},
 	}
 
 	// if in debug mode can log things
