@@ -46,6 +46,12 @@ func TestImportPath(t *testing.T) {
 			importPath: "src/ent/",
 			expResult:  "../..", // so bad. should we at least add trailing /?
 		},
+		"ent root from generated action": {
+			filePath:   "src/ent/user/actions/generated/confirm_edit_email_address_action_base.ts",
+			importPath: "src/ent/",
+			expResult:  "../../..",
+			only:       true,
+		},
 		"action base from action": {
 			filePath:   "src/ent/user/actions/create_user_action.ts",
 			importPath: "src/ent/user/actions/generated/create_user_action_base",

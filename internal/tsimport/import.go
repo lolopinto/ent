@@ -309,17 +309,17 @@ type exportInfo struct {
 }
 
 func (exp *exportInfo) String(cfg Config, filePath string) (string, error) {
-	if exp.as == "" && len(exp.exports) == 0 {
-		return fmt.Sprintf("export * from %s;", strconv.Quote(exp.path)), nil
-	}
-	if exp.as != "" {
-		return fmt.Sprintf("export * as %s from %s;", exp.as, strconv.Quote(exp.path)), nil
-	}
-	sort.Strings(exp.exports)
 	impPath, err := getImportPath(cfg, filePath, exp.path)
 	if err != nil {
 		return "", err
 	}
+	if exp.as == "" && len(exp.exports) == 0 {
+		return fmt.Sprintf("export * from %s;", strconv.Quote(impPath)), nil
+	}
+	if exp.as != "" {
+		return fmt.Sprintf("export * as %s from %s;", exp.as, strconv.Quote(impPath)), nil
+	}
+	sort.Strings(exp.exports)
 	return fmt.Sprintf(
 		"export {%s} from %s;",
 		strings.Join(exp.exports, ", "),
