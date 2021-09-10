@@ -292,23 +292,32 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 			return writeFile(node)
 		})
 
-		for _, dependentNode := range node.Dependents {
-			funcs = append(funcs, func() error {
-				return writeFile(dependentNode)
-			})
+		for idx := range node.Dependents {
+			func(idx int) {
+				dependentNode := node.Dependents[idx]
+				funcs = append(funcs, func() error {
+					return writeFile(dependentNode)
+				})
+			}(idx)
 		}
 
-		for _, conn := range node.connections {
-			funcs = append(funcs, func() error {
-				return writeConnectionFile(processor, s, conn)
-			})
+		for idx := range node.connections {
+			func(idx int) {
+				conn := node.connections[idx]
+				funcs = append(funcs, func() error {
+					return writeConnectionFile(processor, s, conn)
+				})
+			}(idx)
 		}
 	}
 
-	for _, enum := range s.enums {
-		funcs = append(funcs, func() error {
-			return writeEnumFile(enum)
-		})
+	for idx := range s.enums {
+		func(idx string) {
+			enum := s.enums[idx]
+			funcs = append(funcs, func() error {
+				return writeEnumFile(enum)
+			})
+		}(idx)
 	}
 
 	for _, node := range s.nodes {

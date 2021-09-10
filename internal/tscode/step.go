@@ -81,14 +81,17 @@ func (s *Step) processActions(processor *codegen.Processor, nodeData *schema.Nod
 		return writeBuilderFile(nodeData, processor.Config)
 	})
 
-	for _, action := range nodeData.ActionInfo.Actions {
-		ret = append(ret, func() error {
-			return writeBaseActionFile(nodeData, processor.Config, action)
-		})
+	for idx := range nodeData.ActionInfo.Actions {
+		func(idx int) {
+			action := nodeData.ActionInfo.Actions[idx]
+			ret = append(ret, func() error {
+				return writeBaseActionFile(nodeData, processor.Config, action)
+			})
 
-		ret = append(ret, func() error {
-			return writeActionFile(nodeData, processor.Config, action)
-		})
+			ret = append(ret, func() error {
+				return writeActionFile(nodeData, processor.Config, action)
+			})
+		}(idx)
 	}
 	return ret
 }
@@ -102,18 +105,25 @@ func (s *Step) processEdges(processor *codegen.Processor, nodeData *schema.NodeD
 		return writeBaseQueryFile(processor.Schema, nodeData, processor.Config)
 	})
 
-	for _, edge := range nodeData.EdgeInfo.Associations {
-		ret = append(ret, func() error {
-			return writeAssocEdgeQueryFile(processor.Schema, nodeData, edge, processor.Config)
-		})
+	for idx := range nodeData.EdgeInfo.Associations {
+		func(idx int) {
+			edge := nodeData.EdgeInfo.Associations[idx]
+			ret = append(ret, func() error {
+				return writeAssocEdgeQueryFile(processor.Schema, nodeData, edge, processor.Config)
+			})
+		}(idx)
 	}
 
 	// edges with IndexLoaderFactory
 	edges := nodeData.EdgeInfo.GetEdgesForIndexLoader()
-	for _, edge := range edges {
-		ret = append(ret, func() error {
-			return writeCustomEdgeQueryFile(processor.Schema, nodeData, edge, processor.Config)
-		})
+	for idx := range edges {
+		func(idx int) {
+			edge := edges[idx]
+			ret = append(ret, func() error {
+				return writeCustomEdgeQueryFile(processor.Schema, nodeData, edge, processor.Config)
+			})
+
+		}(idx)
 	}
 	return ret
 }
