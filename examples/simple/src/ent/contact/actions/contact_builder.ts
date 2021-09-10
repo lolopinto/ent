@@ -10,8 +10,8 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Contact, User } from "src/ent/";
-import schema from "src/schema/contact";
+import { Contact, User } from "../..";
+import schema from "../../../schema/contact";
 
 export interface ContactInput {
   emailAddress?: string;

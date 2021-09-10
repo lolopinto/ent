@@ -1,7 +1,7 @@
 import {
   EditUserActionBase,
   UserEditInput,
-} from "src/ent/user/actions/generated/edit_user_action_base";
+} from "./generated/edit_user_action_base";
 import { EditUserPrivacy } from "./edit_user_privacy";
 
 export { UserEditInput };

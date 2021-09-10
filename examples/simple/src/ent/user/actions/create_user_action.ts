@@ -1,15 +1,14 @@
-import {
-  CreateUserActionBase,
-  UserCreateInput,
-} from "src/ent/user/actions/generated/create_user_action_base";
-import { UserBuilder } from "./user_builder";
-import CreateContactAction from "src/ent/contact/actions/create_contact_action";
-import { Contact, User } from "src/ent/";
-
+import { AlwaysAllowPrivacyPolicy, Data, IDViewer } from "@snowtop/ent";
 import { Changeset } from "@snowtop/ent/action";
 import { EntCreationObserver } from "@snowtop/ent/testutils/fake_log";
 import { FakeComms, Mode } from "@snowtop/ent/testutils/fake_comms";
-import { AlwaysAllowPrivacyPolicy, Data, IDViewer } from "@snowtop/ent";
+import {
+  CreateUserActionBase,
+  UserCreateInput,
+} from "./generated/create_user_action_base";
+import { UserBuilder } from "./user_builder";
+import CreateContactAction from "../../contact/actions/create_contact_action";
+import { Contact, User } from "../../";
 
 export { UserCreateInput };
 

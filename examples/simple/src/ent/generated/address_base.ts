@@ -18,8 +18,8 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
-import { NodeType } from "src/ent/internal";
-import schema from "src/schema/address";
+import { NodeType } from "../internal";
+import schema from "../../schema/address";
 
 const tableName = "addresses";
 const fields = [

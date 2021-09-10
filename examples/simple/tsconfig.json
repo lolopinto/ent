@@ -12,10 +12,6 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     //    "noImplicitAny": true,
-    "paths": {
-      "src/*": ["./src/*"],
-      "*": ["*"]
-    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "tests/**/*"]

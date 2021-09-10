@@ -7,12 +7,12 @@ import {
 } from "@snowtop/ent/graphql";
 import { GraphQLID } from "graphql";
 import { FileUpload } from "graphql-upload";
-import { User } from "src/ent";
 import parse from "csv-parse";
 import { Action } from "@snowtop/ent/action";
 import { BaseAction } from "@snowtop/ent/action/experimental_action";
-import CreateContactAction from "src/ent/contact/actions/create_contact_action";
-import { UserBuilder } from "src/ent/user/actions/user_builder";
+import { User } from "../../ent";
+import CreateContactAction from "../../ent/contact/actions/create_contact_action";
+import { UserBuilder } from "../../ent/user/actions/user_builder";
 
 export class ImportContactResolver {
   @gqlMutation({ type: User })

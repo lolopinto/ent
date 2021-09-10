@@ -11,11 +11,11 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { HoursOfOperation } from "src/ent/";
+import { HoursOfOperation } from "../../../../ent";
 import CreateHoursOfOperationAction, {
   HoursOfOperationCreateInput,
-} from "src/ent/hours_of_operation/actions/create_hours_of_operation_action";
-import { HoursOfOperationType, dayOfWeekType } from "src/graphql/resolvers/";
+} from "../../../../ent/hours_of_operation/actions/create_hours_of_operation_action";
+import { HoursOfOperationType, dayOfWeekType } from "../../../resolvers";
 
 interface HoursOfOperationCreatePayload {
   hoursOfOperation: HoursOfOperation;

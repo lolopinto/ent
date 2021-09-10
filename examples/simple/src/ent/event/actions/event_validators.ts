@@ -1,6 +1,6 @@
-import { EventBuilder, EventInput } from "./event_builder";
 import { Validator } from "@snowtop/ent/action";
-import { Event } from "src/ent/";
+import { EventBuilder, EventInput } from "./event_builder";
+import { Event } from "../..";
 
 export class EventTimeValidator implements Validator<Event> {
   validate(builder: EventBuilder, input: EventInput): void {

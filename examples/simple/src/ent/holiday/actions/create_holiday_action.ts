@@ -2,7 +2,7 @@ import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
 import {
   CreateHolidayActionBase,
   HolidayCreateInput,
-} from "src/ent/holiday/actions/generated/create_holiday_action_base";
+} from "./generated/create_holiday_action_base";
 
 export { HolidayCreateInput };
 

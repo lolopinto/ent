@@ -7,8 +7,8 @@ import {
   Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
-import { Event } from "src/ent/";
-import { EventBuilder, EventInput } from "src/ent/event/actions/event_builder";
+import { Event } from "../../..";
+import { EventBuilder, EventInput } from "../event_builder";
 
 export class DeleteEventActionBase implements Action<Event> {
   public readonly builder: EventBuilder;

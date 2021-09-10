@@ -24,7 +24,7 @@ import {
   EventToInvitedQuery,
   EventToMaybeQuery,
   getEventRsvpStatusValues,
-} from "src/ent/";
+} from "../../../ent";
 import {
   EventRsvpStatusType,
   EventToAttendingConnectionType,
@@ -33,7 +33,7 @@ import {
   EventToInvitedConnectionType,
   EventToMaybeConnectionType,
   UserType,
-} from "src/graphql/resolvers/internal";
+} from "../internal";
 
 export const EventType = new GraphQLObjectType({
   name: "Event",

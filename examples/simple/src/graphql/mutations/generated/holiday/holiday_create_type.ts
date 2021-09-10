@@ -12,11 +12,11 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { GraphQLTime } from "@snowtop/ent/graphql";
-import { Holiday } from "src/ent/";
+import { Holiday } from "../../../../ent";
 import CreateHolidayAction, {
   HolidayCreateInput,
-} from "src/ent/holiday/actions/create_holiday_action";
-import { HolidayType } from "src/graphql/resolvers/";
+} from "../../../../ent/holiday/actions/create_holiday_action";
+import { HolidayType } from "../../../resolvers";
 
 interface HolidayCreatePayload {
   holiday: Holiday;
