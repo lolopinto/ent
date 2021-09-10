@@ -14,8 +14,11 @@ import (
 )
 
 type option struct {
-	disablePrompts bool
-	disableFormat  bool
+	disablePrompts       bool
+	disableFormat        bool
+	disableCustomGraphQL bool
+	fromTest             bool
+	disableSchemaGQL     bool
 }
 
 type Option func(*option)
@@ -32,6 +35,24 @@ func DisableFormat() Option {
 	}
 }
 
+func DisableCustomGraphQL() Option {
+	return func(opt *option) {
+		opt.disableCustomGraphQL = true
+	}
+}
+
+func FromTest() Option {
+	return func(opt *option) {
+		opt.fromTest = true
+	}
+}
+
+func DisableSchemaGQL() Option {
+	return func(opt *option) {
+		opt.disableSchemaGQL = true
+	}
+}
+
 // Processor stores the parsed data needed for codegen
 type Processor struct {
 	Schema      *schema.Schema
@@ -43,6 +64,18 @@ type Processor struct {
 
 func (p *Processor) NoDBChanges() bool {
 	return p.noDBChanges
+}
+
+func (p *Processor) DisableCustomGraphQL() bool {
+	return p.opt.disableCustomGraphQL
+}
+
+func (p *Processor) FromTest() bool {
+	return p.opt.fromTest
+}
+
+func (p *Processor) DisableSchemaGQL() bool {
+	return p.opt.disableSchemaGQL
 }
 
 func (p *Processor) Run(steps []Step, step string, options ...Option) error {

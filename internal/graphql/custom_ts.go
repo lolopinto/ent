@@ -17,7 +17,7 @@ import (
 
 type processCustomRoot interface {
 	process(processor *codegen.Processor, cd *customData, s *gqlSchema) error
-	getFilePath(string) string
+	getFilePath(*codegen.Processor, string) string
 	getArgObject(cd *customData, arg CustomItem) *CustomObject
 	getFields(cd *customData) []CustomField
 	buildFieldConfig(processor *codegen.Processor, cd *customData, s *gqlSchema, field CustomField) (*fieldConfig, error)
@@ -41,8 +41,8 @@ func (cm *customMutationsProcesser) process(processor *codegen.Processor, cd *cu
 	return nil
 }
 
-func (cm *customMutationsProcesser) getFilePath(gqlName string) string {
-	return getFilePathForCustomMutation(gqlName)
+func (cm *customMutationsProcesser) getFilePath(p *codegen.Processor, gqlName string) string {
+	return getFilePathForCustomMutation(p.Config, gqlName)
 }
 
 func (cm *customMutationsProcesser) getArgObject(cd *customData, arg CustomItem) *CustomObject {
@@ -56,7 +56,7 @@ func (cm *customMutationsProcesser) getFields(cd *customData) []CustomField {
 func (cm *customMutationsProcesser) buildFieldConfig(processor *codegen.Processor, cd *customData, s *gqlSchema, field CustomField) (*fieldConfig, error) {
 	b := &mutationFieldConfigBuilder{
 		field:    field,
-		filePath: cm.getFilePath(field.GraphQLName),
+		filePath: cm.getFilePath(processor, field.GraphQLName),
 		cd:       cd,
 	}
 
@@ -81,8 +81,8 @@ func (cq *customQueriesProcesser) process(processor *codegen.Processor, cd *cust
 	return err
 }
 
-func (cq *customQueriesProcesser) getFilePath(gqlName string) string {
-	return getFilePathForCustomQuery(gqlName)
+func (cq *customQueriesProcesser) getFilePath(processor *codegen.Processor, gqlName string) string {
+	return getFilePathForCustomQuery(processor.Config, gqlName)
 }
 
 func (cq *customQueriesProcesser) getArgObject(cd *customData, arg CustomItem) *CustomObject {
@@ -96,7 +96,7 @@ func (cq *customQueriesProcesser) getFields(cd *customData) []CustomField {
 func (cq *customQueriesProcesser) buildFieldConfig(processor *codegen.Processor, cd *customData, s *gqlSchema, field CustomField) (*fieldConfig, error) {
 	b := &queryFieldConfigBuilder{
 		field,
-		cq.getFilePath(field.GraphQLName),
+		cq.getFilePath(processor, field.GraphQLName),
 	}
 	return b.build(processor, cd, s, field)
 }
@@ -122,7 +122,7 @@ func processFields(processor *codegen.Processor, cd *customData, s *gqlSchema, c
 		var objTypes []*objectType
 
 		// TODO we want an option for namespace for folders but for now ignore
-		filePath := cr.getFilePath(field.GraphQLName)
+		filePath := cr.getFilePath(processor, field.GraphQLName)
 
 		// let's try and make this generic enough to work for input type and standard args...
 		// and have graphql complain if not valid types at the end here

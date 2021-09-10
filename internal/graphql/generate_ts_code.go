@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -247,6 +248,7 @@ type writeFileFn func() error
 type writeFileFnList []writeFileFn
 
 func buildSchema(processor *codegen.Processor, fromTest bool) (*gqlSchema, error) {
+	spew.Dump(fromTest)
 	cd, s := <-parseCustomData(processor, fromTest), <-buildGQLSchema(processor)
 	if cd.Error != nil {
 		return nil, cd.Error
@@ -262,7 +264,7 @@ func buildSchema(processor *codegen.Processor, fromTest bool) (*gqlSchema, error
 }
 
 func (p *TSStep) PreProcessData(processor *codegen.Processor) error {
-	s, err := buildSchema(processor, false)
+	s, err := buildSchema(processor, processor.FromTest())
 	if err != nil {
 		return err
 	}
@@ -281,8 +283,12 @@ func (p *TSStep) ProcessData(processor *codegen.Processor) error {
 	if err := p.writeBaseFiles(processor, p.s); err != nil {
 		return err
 	}
+
+	if processor.DisableSchemaGQL() {
+		return nil
+	}
 	// generate schema.gql
-	return generateSchemaFile(p.s.hasMutations)
+	return generateSchemaFile(processor, p.s.hasMutations)
 }
 
 func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) error {
@@ -355,7 +361,9 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 			return writeInternalGQLResolversFile(s, processor.Config)
 		},
 		// graphql/resolvers/index
-		writeGQLResolversIndexFile,
+		func() error {
+			return writeGQLResolversIndexFile(processor.Config)
+		},
 		func() error {
 			// graphql/schema.ts
 			return writeTSSchemaFile(processor, s)
@@ -384,28 +392,28 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 
 var _ codegen.Step = &TSStep{}
 
-func getFilePathForNode(nodeData *schema.NodeData) string {
-	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", nodeData.PackageName)
+func getFilePathForNode(cfg *codegen.Config, nodeData *schema.NodeData) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", nodeData.PackageName))
 }
 
-func getFilePathForEnum(e *enum.GQLEnum) string {
-	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", base.GetSnakeCaseName(e.Name))
+func getFilePathForEnum(cfg *codegen.Config, e *enum.GQLEnum) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", base.GetSnakeCaseName(e.Name)))
 }
 
-func getFilePathForConnection(packageName string, connectionName string) string {
-	return fmt.Sprintf("src/graphql/resolvers/generated/%s/%s_type.ts", packageName, base.GetSnakeCaseName(connectionName))
+func getFilePathForConnection(cfg *codegen.Config, packageName string, connectionName string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/resolvers/generated/%s/%s_type.ts", packageName, base.GetSnakeCaseName(connectionName)))
 }
 
-func getQueryFilePath() string {
-	return "src/graphql/resolvers/generated/query_type.ts"
+func getQueryFilePath(cfg *codegen.Config) string {
+	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/resolvers/generated/query_type.ts")
 }
 
-func getNodeQueryTypeFilePath() string {
-	return "src/graphql/resolvers/generated/node_query_type.ts"
+func getNodeQueryTypeFilePath(cfg *codegen.Config) string {
+	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/resolvers/generated/node_query_type.ts")
 }
 
-func getMutationFilePath() string {
-	return "src/graphql/mutations/generated/mutation_type.ts"
+func getMutationFilePath(cfg *codegen.Config) string {
+	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/mutations/generated/mutation_type.ts")
 }
 
 func getQueryImportPath() string {
@@ -416,25 +424,24 @@ func getMutationImportPath() string {
 	return "src/graphql/mutations/generated/mutation_type"
 }
 
-func getTSSchemaFilePath() string {
-	return "src/graphql/schema.ts"
+func getTSSchemaFilePath(cfg *codegen.Config) string {
+	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/schema.ts")
 }
 
-func getTSIndexFilePath() string {
-	return "src/graphql/index.ts"
+func getTSIndexFilePath(cfg *codegen.Config) string {
+	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/index.ts")
 }
 
-func getTempSchemaFilePath() string {
-	return "src/graphql/gen_schema.ts"
+func getTempSchemaFilePath(cfg *codegen.Config) string {
+	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/gen_schema.ts")
 }
 
-func getSchemaFilePath() string {
-	// just put it at root of src/graphql
-	return "src/graphql/schema.gql"
+func getSchemaFilePath(cfg *codegen.Config) string {
+	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/schema.gql")
 }
 
-func getFilePathForAction(nodeData *schema.NodeData, action action.Action) string {
-	return fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type.ts", nodeData.PackageName, strcase.ToSnake(action.GetGraphQLName()))
+func getFilePathForAction(cfg *codegen.Config, nodeData *schema.NodeData, action action.Action) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type.ts", nodeData.PackageName, strcase.ToSnake(action.GetGraphQLName())))
 }
 
 func getImportPathForAction(nodeData *schema.NodeData, action action.Action) string {
@@ -445,22 +452,26 @@ func getImportPathForActionFromPackage(packageName string, action action.Action)
 	return fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type", packageName, strcase.ToSnake(action.GetGraphQLName()))
 }
 
-func getFilePathForCustomMutation(name string) string {
-	return fmt.Sprintf("src/graphql/mutations/generated/%s_type.ts", strcase.ToSnake(name))
+func getFilePathForCustomMutation(cfg *codegen.Config, name string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/mutations/generated/%s_type.ts", strcase.ToSnake(name)))
 }
 
 func getImportPathForCustomMutation(name string) string {
 	return fmt.Sprintf("src/graphql/mutations/generated/%s_type", strcase.ToSnake(name))
 }
 
-func getFilePathForCustomQuery(name string) string {
-	return fmt.Sprintf("src/graphql/resolvers/generated/%s_query_type.ts", strcase.ToSnake(name))
+func getFilePathForCustomQuery(cfg *codegen.Config, name string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/resolvers/generated/%s_query_type.ts", strcase.ToSnake(name)))
 }
 
 func parseCustomData(processor *codegen.Processor, fromTest bool) chan *customData {
 	var res = make(chan *customData)
 	go func() {
 		var cd customData
+		if processor.DisableCustomGraphQL() {
+			res <- &cd
+			return
+		}
 		fmt.Println("checking for custom graphql definitions...")
 
 		var buf bytes.Buffer
@@ -729,7 +740,7 @@ func getGqlConnection(packageName string, edge edge.ConnectionEdge, processor *c
 	return &gqlConnection{
 		ConnType: fmt.Sprintf("%sType", edge.GetGraphQLConnectionName()),
 		Edge:     edge,
-		FilePath: getFilePathForConnection(packageName, edge.GetGraphQLConnectionName()),
+		FilePath: getFilePathForConnection(processor.Config, packageName, edge.GetGraphQLConnectionName()),
 		NodeType: nodeType,
 		Imports: []*fileImport{
 			{
@@ -770,7 +781,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 				enums[enumType.Name] = &gqlEnum{
 					Type:     fmt.Sprintf("%sType", enumType.Name),
 					Enum:     enumType,
-					FilePath: getFilePathForEnum(enumType),
+					FilePath: getFilePathForEnum(processor.Config, enumType),
 				}
 			}(key)
 		}
@@ -795,7 +806,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 						GQLNodes:     []*objectType{buildNodeForObject(nodeMap, nodeData)},
 						Package:      processor.Config.GetImportPackage(),
 					},
-					FilePath: getFilePathForNode(nodeData),
+					FilePath: getFilePathForNode(processor.Config, nodeData),
 				}
 
 				actionInfo := nodeData.ActionInfo
@@ -821,7 +832,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 								FieldConfig:  fieldCfg,
 								Package:      processor.Config.GetImportPackage(),
 							},
-							FilePath: getFilePathForAction(nodeData, action),
+							FilePath: getFilePathForAction(processor.Config, nodeData, action),
 						}
 						obj.Dependents = append(obj.Dependents, &actionObj)
 					}
@@ -993,7 +1004,7 @@ func trimPath(path string) string {
 	return strings.TrimSuffix(path, ".ts")
 }
 
-func getSortedLines(s *gqlSchema) []string {
+func getSortedLines(s *gqlSchema, cfg *codegen.Config) []string {
 	// this works based on what we're currently doing
 	// if we eventually add other things here, may not work?
 
@@ -1019,7 +1030,7 @@ func getSortedLines(s *gqlSchema) []string {
 	}
 
 	random := []string{
-		getNodeQueryTypeFilePath(),
+		getNodeQueryTypeFilePath(cfg),
 	}
 	var randomImports []string
 	for _, imp := range random {
@@ -1047,24 +1058,27 @@ func getSortedLines(s *gqlSchema) []string {
 
 func writeInternalGQLResolversFile(s *gqlSchema, cfg *codegen.Config) error {
 	imps := tsimport.NewImports()
-
+	filePath := path.Join(cfg.GetAbsPathToRoot(), codepath.GetFilePathForInternalGQLFile())
 	return file.Write(&file.TemplatedBasedFileWriter{
-		Data:              getSortedLines(s),
+		Data:              getSortedLines(s, cfg),
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/resolver_internal.tmpl"),
 		TemplateName:      "resolver_internal.tmpl",
-		PathToFile:        codepath.GetFilePathForInternalGQLFile(),
+		PathToFile:        filePath,
+		CreateDirIfNeeded: true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	})
 }
 
-func writeGQLResolversIndexFile() error {
+func writeGQLResolversIndexFile(cfg *codegen.Config) error {
 	imps := tsimport.NewImports()
+	filePath := path.Join(cfg.GetAbsPathToRoot(), codepath.GetFilePathForExternalGQLFile())
 
 	return file.Write(&file.TemplatedBasedFileWriter{
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/resolver_index.tmpl"),
 		TemplateName:      "resolver_index.tmpl",
-		PathToFile:        codepath.GetFilePathForExternalGQLFile(),
+		PathToFile:        filePath,
+		CreateDirIfNeeded: true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	})
@@ -2120,7 +2134,7 @@ func writeQueryFile(processor *codegen.Processor, s *gqlSchema) error {
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/root.tmpl"),
 		TemplateName:      "root.tmpl",
-		PathToFile:        getQueryFilePath(),
+		PathToFile:        getQueryFilePath(processor.Config),
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	}))
@@ -2137,7 +2151,7 @@ func writeMutationFile(processor *codegen.Processor, s *gqlSchema) error {
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/root.tmpl"),
 		TemplateName:      "root.tmpl",
-		PathToFile:        getMutationFilePath(),
+		PathToFile:        getMutationFilePath(processor.Config),
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	}))
@@ -2198,7 +2212,7 @@ func writeNodeQueryFile(processor *codegen.Processor, s *gqlSchema) error {
 			util.GetAbsolutePath("ts_templates/render_args.tmpl"),
 			util.GetAbsolutePath("ts_templates/field.tmpl"),
 		},
-		PathToFile:   getNodeQueryTypeFilePath(),
+		PathToFile:   getNodeQueryTypeFilePath(processor.Config),
 		TsImports:    imps,
 		FuncMap:      imps.FuncMap(),
 		EditableCode: true,
@@ -2223,7 +2237,7 @@ func writeTSSchemaFile(processor *codegen.Processor, s *gqlSchema) error {
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/schema.tmpl"),
 		TemplateName:      "schema.tmpl",
-		PathToFile:        getTSSchemaFilePath(),
+		PathToFile:        getTSSchemaFilePath(processor.Config),
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	}))
@@ -2242,19 +2256,19 @@ func writeTSIndexFile(processor *codegen.Processor, s *gqlSchema) error {
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/index.tmpl"),
 		TemplateName:      "index.tmpl",
-		PathToFile:        getTSIndexFilePath(),
+		PathToFile:        getTSIndexFilePath(processor.Config),
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 		EditableCode:      true,
 	}), file.WriteOnce())
 }
 
-func generateSchemaFile(hasMutations bool) error {
+func generateSchemaFile(processor *codegen.Processor, hasMutations bool) error {
 	// this generates the schema.gql file
 	// needs to be done after all files have been generated
-	filePath := getTempSchemaFilePath()
+	filePath := getTempSchemaFilePath(processor.Config)
 
-	err := writeSchemaFile(filePath, hasMutations)
+	err := writeSchemaFile(processor.Config, filePath, hasMutations)
 
 	defer os.Remove(filePath)
 	if err != nil {
@@ -2283,7 +2297,7 @@ type schemaData struct {
 	SchemaPath   string
 }
 
-func writeSchemaFile(fileToWrite string, hasMutations bool) error {
+func writeSchemaFile(cfg *codegen.Config, fileToWrite string, hasMutations bool) error {
 	imps := tsimport.NewImports()
 
 	return file.Write(
@@ -2292,7 +2306,7 @@ func writeSchemaFile(fileToWrite string, hasMutations bool) error {
 				QueryPath:    getQueryImportPath(),
 				MutationPath: getMutationImportPath(),
 				HasMutations: hasMutations,
-				SchemaPath:   getSchemaFilePath(),
+				SchemaPath:   getSchemaFilePath(cfg),
 			},
 			AbsPathToTemplate: util.GetAbsolutePath("generate_schema.tmpl"),
 			TemplateName:      "generate_schema.tmpl",
