@@ -26,6 +26,9 @@ interface CodegenConfig {
   defaultEntPolicy?: PrivacyConfig;
   defaultActionPolicy?: PrivacyConfig;
   prettier?: PrettierConfig;
+  // use relativeImports in generated files instead of "src/ent/user" etc
+  // needed for legacy scenarios or situations where the custom compiler has issues
+  relativeImports?: boolean;
 }
 
 interface PrettierConfig {
