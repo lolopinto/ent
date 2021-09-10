@@ -248,7 +248,6 @@ type writeFileFn func() error
 type writeFileFnList []writeFileFn
 
 func buildSchema(processor *codegen.Processor, fromTest bool) (*gqlSchema, error) {
-	spew.Dump(fromTest)
 	cd, s := <-parseCustomData(processor, fromTest), <-buildGQLSchema(processor)
 	if cd.Error != nil {
 		return nil, cd.Error
@@ -299,31 +298,25 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 		})
 
 		for idx := range node.Dependents {
-			func(idx int) {
-				dependentNode := node.Dependents[idx]
-				funcs = append(funcs, func() error {
-					return writeFile(dependentNode)
-				})
-			}(idx)
+			dependentNode := node.Dependents[idx]
+			funcs = append(funcs, func() error {
+				return writeFile(dependentNode)
+			})
 		}
 
 		for idx := range node.connections {
-			func(idx int) {
-				conn := node.connections[idx]
-				funcs = append(funcs, func() error {
-					return writeConnectionFile(processor, s, conn)
-				})
-			}(idx)
+			conn := node.connections[idx]
+			funcs = append(funcs, func() error {
+				return writeConnectionFile(processor, s, conn)
+			})
 		}
 	}
 
 	for idx := range s.enums {
-		func(idx string) {
-			enum := s.enums[idx]
-			funcs = append(funcs, func() error {
-				return writeEnumFile(enum)
-			})
-		}(idx)
+		enum := s.enums[idx]
+		funcs = append(funcs, func() error {
+			return writeEnumFile(enum)
+		})
 	}
 
 	for _, node := range s.nodes {
