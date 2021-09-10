@@ -45,8 +45,6 @@ func TestSimpleCodegen(t *testing.T) {
 
 	steps := []codegen.Step{
 		new(tscode.Step),
-		// TODO graphql
-		//		new(graphql.TSStep),
 	}
 
 	err = processor.Run(steps, "", codegen.DisablePrompts(), codegen.DisableFormat())
@@ -99,6 +97,17 @@ func TestSchemaWithFkeyEdgeCodegen(t *testing.T) {
 							Column: "ID",
 						},
 					},
+					{
+						Name: "DuplicateUserID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						ForeignKey: &input.ForeignKey{
+							Schema: "User",
+							Column: "ID",
+							Name:   "duplicate_contacts",
+						},
+					},
 				},
 			},
 		},
@@ -130,6 +139,7 @@ func TestSchemaWithFkeyEdgeCodegen(t *testing.T) {
 	validateFileExists(t, rootDir, "src/ent/loadAny.ts")
 	validateFileExists(t, rootDir, "src/ent/generated/user_query_base.ts")
 	validateFileExists(t, rootDir, "src/ent/user/query/user_to_contacts_query.ts")
+	validateFileExists(t, rootDir, "src/ent/user/query/user_to_duplicate_contacts_query.ts")
 }
 
 func TestSchemaWithAssocEdgeCodegen(t *testing.T) {
@@ -156,6 +166,18 @@ func TestSchemaWithAssocEdgeCodegen(t *testing.T) {
 						Name:       "Friends",
 						SchemaName: "User",
 						Symmetric:  true,
+						EdgeActions: []*input.EdgeAction{
+							{
+								Operation: ent.AddEdgeAction,
+							},
+						},
+					},
+					{
+						Name:       "Followers",
+						SchemaName: "User",
+						InverseEdge: &input.InverseAssocEdge{
+							Name: "Followees",
+						},
 						EdgeActions: []*input.EdgeAction{
 							{
 								Operation: ent.AddEdgeAction,
@@ -191,8 +213,13 @@ func TestSchemaWithAssocEdgeCodegen(t *testing.T) {
 	validateFileExists(t, rootDir, "src/ent/loadAny.ts")
 	validateFileExists(t, rootDir, "src/ent/generated/user_query_base.ts")
 	validateFileExists(t, rootDir, "src/ent/user/query/user_to_friends_query.ts")
+	validateFileExists(t, rootDir, "src/ent/user/query/user_to_followers_query.ts")
+	validateFileExists(t, rootDir, "src/ent/user/query/user_to_followees_query.ts")
 	validateFileExists(t, rootDir, "src/ent/user/actions/generated/user_add_friend_action_base.ts")
+	validateFileExists(t, rootDir, "src/ent/user/actions/generated/user_add_follower_action_base.ts")
 	validateFileExists(t, rootDir, "src/ent/user/actions/user_add_friend_action.ts")
+	validateFileExists(t, rootDir, "src/ent/user/actions/user_add_follower_action.ts")
+	validateFileExists(t, rootDir, "src/ent/user/actions/user_builder.ts")
 }
 
 func TestSchemaWithActionsCodegen(t *testing.T) {
@@ -217,6 +244,19 @@ func TestSchemaWithActionsCodegen(t *testing.T) {
 				Actions: []*input.Action{
 					{
 						Operation: ent.CreateAction,
+					},
+					{
+						Operation: ent.EditAction,
+					},
+					{
+						Operation: ent.DeleteAction,
+					},
+					{
+						Operation:         ent.EditAction,
+						Fields:            []string{"name"},
+						CustomActionName:  "EditUserNameAction",
+						CustomGraphQLName: "UserEditName",
+						CustomInputName:   "EditNameInput",
 					},
 				},
 			},
@@ -247,6 +287,12 @@ func TestSchemaWithActionsCodegen(t *testing.T) {
 	validateFileExists(t, rootDir, "src/ent/loadAny.ts")
 	validateFileExists(t, rootDir, "src/ent/user/actions/generated/create_user_action_base.ts")
 	validateFileExists(t, rootDir, "src/ent/user/actions/create_user_action.ts")
+	validateFileExists(t, rootDir, "src/ent/user/actions/generated/edit_user_action_base.ts")
+	validateFileExists(t, rootDir, "src/ent/user/actions/edit_user_action.ts")
+	validateFileExists(t, rootDir, "src/ent/user/actions/generated/edit_user_action_base.ts")
+	validateFileExists(t, rootDir, "src/ent/user/actions/edit_user_action.ts")
+	validateFileExists(t, rootDir, "src/ent/user/actions/generated/edit_user_name_action_base.ts")
+	validateFileExists(t, rootDir, "src/ent/user/actions/edit_user_name_action.ts")
 }
 
 func validateFileExists(t *testing.T, root, path string) {

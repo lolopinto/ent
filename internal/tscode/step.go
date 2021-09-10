@@ -137,7 +137,6 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 		funcs = append(funcs, s.processNode(processor, info, &serr)...)
 	}
 
-	//	wg.Add(len(processor.Schema.Enums))
 	for _, info := range processor.Schema.Enums {
 		// only lookup table enums get their own files
 		if !info.LookupTableEnum() {
