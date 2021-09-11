@@ -6,7 +6,7 @@
 {{ end -}}
 
 {{range $typ := .AllTypes -}}
-  {{reserveImport $typ.Path $typ.Type}}
+  {{reserveImport $typ.ImportPath $typ.Type}}
 {{ end -}} 
 
 export default new {{useImport "GraphQLSchema"}}({
