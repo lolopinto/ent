@@ -67,14 +67,23 @@ func (p *Processor) NoDBChanges() bool {
 }
 
 func (p *Processor) DisableCustomGraphQL() bool {
+	if p.opt == nil {
+		return false
+	}
 	return p.opt.disableCustomGraphQL
 }
 
 func (p *Processor) FromTest() bool {
+	if p.opt == nil {
+		return false
+	}
 	return p.opt.fromTest
 }
 
 func (p *Processor) DisableSchemaGQL() bool {
+	if p.opt == nil {
+		return false
+	}
 	return p.opt.disableSchemaGQL
 }
 
@@ -160,7 +169,7 @@ func (p *Processor) FormatTS() error {
 }
 
 func postProcess(p *Processor) error {
-	if p.opt.disableFormat {
+	if p.opt != nil && p.opt.disableFormat {
 		return nil
 	}
 	return p.FormatTS()
