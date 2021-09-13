@@ -78,7 +78,7 @@ jobs:
         registry-url: 'https://npm.pkg.github.com'
         scope: '@lolopinto'
         node-version: 14.x
-    - run: npm install -g ts-node prettier typescript 
+    - run: npm install -g ts-node prettier tslib typescript 
     - run: |
         cd ts 
         npm ci
