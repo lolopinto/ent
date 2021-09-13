@@ -1057,7 +1057,7 @@ func getSortedLines(s *gqlSchema, cfg *codegen.Config) []string {
 }
 
 func writeInternalGQLResolversFile(s *gqlSchema, processor *codegen.Processor) error {
-	filePath := codepath.GetFilePathForInternalGQLFile()
+	filePath := filepath.Join(processor.Config.GetAbsPathToRoot(), codepath.GetFilePathForInternalGQLFile())
 	imps := tsimport.NewImports(processor.Config, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
@@ -1072,7 +1072,7 @@ func writeInternalGQLResolversFile(s *gqlSchema, processor *codegen.Processor) e
 }
 
 func writeGQLResolversIndexFile(processor *codegen.Processor) error {
-	filePath := codepath.GetFilePathForExternalGQLFile()
+	filePath := filepath.Join(processor.Config.GetAbsPathToRoot(), codepath.GetFilePathForExternalGQLFile())
 	imps := tsimport.NewImports(processor.Config, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
