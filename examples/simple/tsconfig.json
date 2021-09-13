@@ -3,8 +3,9 @@
   "compilerOptions": {
     "lib": ["es2018", "esnext.asynciterable"],
     "outDir": "./dist",
-    "target": "es2018",
+    "target": "es2020",
     "strictNullChecks": true,
+    "module": "commonjs",
     "downlevelIteration": true,
     "baseUrl": ".",
     "moduleResolution": "node",
