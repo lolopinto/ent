@@ -13,16 +13,6 @@
     "esModuleInterop": true,
     "experimentalDecorators":true,
     "emitDecoratorMetadata": true,
-    //    "noImplicitAny": true,
-    "paths": {
-      // TODO to make importing of ent easier
-      // "ent/*": ["./"],
-      // "*": ["*"]
-//      "src/*": [
-        // TODO use this and change tsc to use compiler++
-//        "./src/*"
-//      ],
-    },
     "declaration": true,
   },
   "include": ["src/**/*"],
