@@ -81,7 +81,8 @@ func (s *Step) processActions(processor *codegen.Processor, nodeData *schema.Nod
 		return writeBuilderFile(nodeData, processor.Config)
 	})
 
-	for _, action := range nodeData.ActionInfo.Actions {
+	for idx := range nodeData.ActionInfo.Actions {
+		action := nodeData.ActionInfo.Actions[idx]
 		ret = append(ret, func() error {
 			return writeBaseActionFile(nodeData, processor.Config, action)
 		})
@@ -102,7 +103,8 @@ func (s *Step) processEdges(processor *codegen.Processor, nodeData *schema.NodeD
 		return writeBaseQueryFile(processor.Schema, nodeData, processor.Config)
 	})
 
-	for _, edge := range nodeData.EdgeInfo.Associations {
+	for idx := range nodeData.EdgeInfo.Associations {
+		edge := nodeData.EdgeInfo.Associations[idx]
 		ret = append(ret, func() error {
 			return writeAssocEdgeQueryFile(processor.Schema, nodeData, edge, processor.Config)
 		})
@@ -110,7 +112,8 @@ func (s *Step) processEdges(processor *codegen.Processor, nodeData *schema.NodeD
 
 	// edges with IndexLoaderFactory
 	edges := nodeData.EdgeInfo.GetEdgesForIndexLoader()
-	for _, edge := range edges {
+	for idx := range edges {
+		edge := edges[idx]
 		ret = append(ret, func() error {
 			return writeCustomEdgeQueryFile(processor.Schema, nodeData, edge, processor.Config)
 		})
@@ -127,7 +130,6 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 		funcs = append(funcs, s.processNode(processor, info, &serr)...)
 	}
 
-	//	wg.Add(len(processor.Schema.Enums))
 	for _, info := range processor.Schema.Enums {
 		// only lookup table enums get their own files
 		if !info.LookupTableEnum() {
