@@ -12,11 +12,11 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { User } from "src/ent/";
+import { User } from "../../../../ent";
 import CreateUserAction, {
   UserCreateInput,
-} from "src/ent/user/actions/create_user_action";
-import { UserType } from "src/graphql/resolvers/";
+} from "../../../../ent/user/actions/create_user_action";
+import { UserType } from "../../../resolvers";
 
 interface UserCreatePayload {
   user: User;

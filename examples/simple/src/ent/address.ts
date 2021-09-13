@@ -1,5 +1,5 @@
 import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
-import { AddressBase } from "src/ent/internal";
+import { AddressBase } from "./internal";
 
 // we're only writing this once except with --force and packageName provided
 export class Address extends AddressBase {

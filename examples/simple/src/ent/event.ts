@@ -1,4 +1,4 @@
-import { EventBase } from "src/ent/internal";
+import { EventBase } from "./internal";
 import { PrivacyPolicy, AlwaysAllowRule } from "@snowtop/ent";
 
 // we're only writing this once except with --force and packageName provided

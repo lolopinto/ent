@@ -1,5 +1,5 @@
-import { UserToFriendsQueryBase } from "src/ent/internal";
 import { AssocEdge } from "@snowtop/ent";
+import { UserToFriendsQueryBase } from "../../internal";
 
 export class UserToFriendsEdge extends AssocEdge {}
 

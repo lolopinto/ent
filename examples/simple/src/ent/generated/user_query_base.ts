@@ -40,7 +40,7 @@ import {
   UserToSelfContactQuery,
   authCodeLoader,
   contactLoader,
-} from "src/ent/internal";
+} from "../internal";
 
 export const userToCreatedEventsCountLoaderFactory =
   new AssocEdgeCountLoaderFactory(EdgeType.UserToCreatedEvents);

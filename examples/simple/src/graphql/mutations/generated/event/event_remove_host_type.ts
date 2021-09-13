@@ -12,9 +12,9 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import { Event } from "src/ent/";
-import EventRemoveHostAction from "src/ent/event/actions/event_remove_host_action";
-import { EventType } from "src/graphql/resolvers/";
+import { Event } from "../../../../ent";
+import EventRemoveHostAction from "../../../../ent/event/actions/event_remove_host_action";
+import { EventType } from "../../../resolvers";
 
 interface customEventRemoveHostInput {
   eventID: string;

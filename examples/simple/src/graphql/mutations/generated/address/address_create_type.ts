@@ -11,11 +11,11 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { Address } from "src/ent/";
+import { Address } from "../../../../ent";
 import CreateAddressAction, {
   AddressCreateInput,
-} from "src/ent/address/actions/create_address_action";
-import { AddressType } from "src/graphql/resolvers/";
+} from "../../../../ent/address/actions/create_address_action";
+import { AddressType } from "../../../resolvers";
 
 interface AddressCreatePayload {
   address: Address;

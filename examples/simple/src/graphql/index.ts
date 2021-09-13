@@ -12,7 +12,7 @@ import {
   PassportStrategyHandler,
 } from "@snowtop/ent-passport";
 import { graphqlUploadExpress } from "graphql-upload";
-import { User } from "src/ent";
+import { User } from "../ent";
 
 let app = express();
 app.use(

@@ -1,12 +1,12 @@
+import { Ent } from "@snowtop/ent";
+import { Trigger, Validator } from "@snowtop/ent/action";
 import {
   ConfirmEditPhoneNumberActionBase,
   ConfirmEditPhoneNumberInput,
-} from "src/ent/user/actions/generated/confirm_edit_phone_number_action_base";
-import { User } from "src/ent/";
+} from "./generated/confirm_edit_phone_number_action_base";
+import { User } from "../..";
 import { UserBuilder } from "./user_builder";
-import { Trigger, Validator } from "@snowtop/ent/action";
-import { Ent } from "@snowtop/ent";
-import DeleteAuthCodeAction from "src/ent/auth_code/actions/delete_auth_code_action";
+import DeleteAuthCodeAction from "../../auth_code/actions/delete_auth_code_action";
 
 export { ConfirmEditPhoneNumberInput };
 

@@ -38,8 +38,8 @@ import {
   UserToHostedEventsQuery,
   UserToInvitedEventsQuery,
   UserToMaybeEventsQuery,
-} from "src/ent/internal";
-import schema from "src/schema/user";
+} from "../internal";
+import schema from "../../schema/user";
 
 const tableName = "users";
 const fields = [

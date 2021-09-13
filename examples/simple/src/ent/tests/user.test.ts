@@ -1,5 +1,3 @@
-import { User, Contact, Event } from "src/ent/";
-
 import {
   Viewer,
   AssocEdge,
@@ -8,21 +6,22 @@ import {
   LoggedOutViewer,
   DB,
 } from "@snowtop/ent";
+import { User, Contact, Event } from "..";
 
 import { v4 as uuidv4 } from "uuid";
-import { NodeType, EdgeType } from "src/ent/const";
-import { randomEmail, randomPhoneNumber } from "src/util/random";
+import { NodeType, EdgeType } from "../const";
+import { randomEmail, randomPhoneNumber } from "../../util/random";
 
 import CreateUserAction, {
   UserCreateInput,
-} from "src/ent/user/actions/create_user_action";
-import EditUserAction from "src/ent/user/actions/edit_user_action";
-import DeleteUserAction from "src/ent/user/actions/delete_user_action";
-import CreateEventAction from "src/ent/event/actions/create_event_action";
-import CreateContactAction from "src/ent/contact/actions/create_contact_action";
+} from "../user/actions/create_user_action";
+import EditUserAction from "../user/actions/edit_user_action";
+import DeleteUserAction from "../user/actions/delete_user_action";
+import CreateEventAction from "../event/actions/create_event_action";
+import CreateContactAction from "../contact/actions/create_contact_action";
 import { FakeLogger } from "@snowtop/ent/testutils/fake_log";
 import { FakeComms, Mode } from "@snowtop/ent/testutils/fake_comms";
-import EditEmailAddressAction from "src/ent/user/actions/edit_email_address_action";
+import EditEmailAddressAction from "../user/actions/edit_email_address_action";
 import ConfirmEditEmailAddressAction from "../user/actions/confirm_edit_email_address_action";
 import EditPhoneNumberAction from "../user/actions/edit_phone_number_action";
 import ConfirmEditPhoneNumberAction from "../user/actions/confirm_edit_phone_number_action";

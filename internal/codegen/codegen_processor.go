@@ -219,6 +219,16 @@ func NewCodegenProcessor(schema *schema.Schema, configPath, modulePath string, d
 	return processor, nil
 }
 
+func NewTestCodegenProcessor(configPath string) (*Processor, error) {
+	cfg, err := NewConfig(configPath, "")
+	if err != nil {
+		return nil, err
+	}
+	return &Processor{
+		Config: cfg,
+	}, nil
+}
+
 func FormatTS(cfg *Config) error {
 	p := &Processor{
 		Config: cfg,

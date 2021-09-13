@@ -93,7 +93,10 @@ func (fw *TemplatedBasedFileWriter) executeTemplate() (*bytes.Buffer, error) {
 	if len(fw.OtherTemplateFiles) != 0 {
 		paths = append(paths, fw.OtherTemplateFiles...)
 	}
-	t := template.New(fw.TemplateName).Funcs(fw.FuncMap)
+	t := template.New(fw.TemplateName)
+	if fw.FuncMap != nil {
+		t = t.Funcs(fw.FuncMap)
+	}
 	t, err := t.ParseFiles(paths...)
 	if err != nil {
 		return nil, err

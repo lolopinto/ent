@@ -8,7 +8,7 @@ import {
 import { GraphQLID } from "graphql";
 import { Viewer, RequestContext } from "@snowtop/ent";
 
-import { User } from "src/ent/";
+import { User } from "../../ent";
 
 @gqlObjectType({ name: "Viewer" })
 // TODO when this wasn't exported, it didn't work...

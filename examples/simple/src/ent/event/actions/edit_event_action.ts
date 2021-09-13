@@ -1,10 +1,10 @@
 import {
   EditEventActionBase,
   EventEditInput,
-} from "src/ent/event/actions/generated/edit_event_action_base";
+} from "./generated/edit_event_action_base";
 import { Validator } from "@snowtop/ent/action";
 import { SharedValidators } from "./event_validators";
-import { Event } from "src/ent/";
+import { Event } from "../..";
 import {
   AllowIfViewerIsRule,
   AlwaysDenyRule,
