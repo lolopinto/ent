@@ -1061,7 +1061,7 @@ func writeInternalGQLResolversFile(s *gqlSchema, processor *codegen.Processor) e
 	imps := tsimport.NewImports(processor.Config, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
-		Data:              getSortedLines(s, cfg),
+		Data:              getSortedLines(s, processor.Config),
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/resolver_internal.tmpl"),
 		TemplateName:      "resolver_internal.tmpl",
 		PathToFile:        filePath,
@@ -2125,7 +2125,7 @@ func getMutationData(processor *codegen.Processor, s *gqlSchema) []rootField {
 }
 
 func writeQueryFile(processor *codegen.Processor, s *gqlSchema) error {
-	filePath := getQueryFilePath()
+	filePath := getQueryFilePath(processor.Config)
 	imps := tsimport.NewImports(processor.Config, filePath)
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Data: gqlRootData{
@@ -2143,7 +2143,7 @@ func writeQueryFile(processor *codegen.Processor, s *gqlSchema) error {
 }
 
 func writeMutationFile(processor *codegen.Processor, s *gqlSchema) error {
-	filePath := getMutationFilePath()
+	filePath := getMutationFilePath(processor.Config)
 	imps := tsimport.NewImports(processor.Config, filePath)
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Data: gqlRootData{
@@ -2196,7 +2196,7 @@ func (n *nodeBaseObj) ForeignImport(name string) bool {
 }
 
 func writeNodeQueryFile(processor *codegen.Processor, s *gqlSchema) error {
-	filePath := getNodeQueryTypeFilePath()
+	filePath := getNodeQueryTypeFilePath(processor.Config)
 	imps := tsimport.NewImports(processor.Config, filePath)
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data: struct {
@@ -2224,7 +2224,7 @@ func writeNodeQueryFile(processor *codegen.Processor, s *gqlSchema) error {
 }
 
 func writeTSSchemaFile(processor *codegen.Processor, s *gqlSchema) error {
-	filePath := getTSSchemaFilePath()
+	filePath := getTSSchemaFilePath(processor.Config)
 	imps := tsimport.NewImports(processor.Config, filePath)
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Data: struct {
@@ -2249,7 +2249,7 @@ func writeTSSchemaFile(processor *codegen.Processor, s *gqlSchema) error {
 }
 
 func writeTSIndexFile(processor *codegen.Processor, s *gqlSchema) error {
-	filePath := getTSIndexFilePath()
+	filePath := getTSIndexFilePath(processor.Config)
 	imps := tsimport.NewImports(processor.Config, filePath)
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Data: struct {
@@ -2304,8 +2304,6 @@ type schemaData struct {
 }
 
 func writeSchemaFile(cfg *codegen.Config, fileToWrite string, hasMutations bool) error {
-	imps := tsimport.NewImports()
-
 	return file.Write(
 		&file.TemplatedBasedFileWriter{
 			Data: schemaData{
