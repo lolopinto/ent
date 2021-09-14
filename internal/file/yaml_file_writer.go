@@ -1,10 +1,12 @@
 package file
 
 import (
+	"github.com/lolopinto/ent/internal/codegen"
 	yaml "gopkg.in/yaml.v3"
 )
 
 type YamlFileWriter struct {
+	Config            *codegen.Config
 	Data              interface{}
 	PathToFile        string
 	CreateDirIfNeeded bool
@@ -23,5 +25,5 @@ func (fw *YamlFileWriter) generateBytes() ([]byte, error) {
 }
 
 func (fw *YamlFileWriter) Write(opts ...func(opt *Options)) error {
-	return writeFile(fw, opts...)
+	return writeFile(fw, fw.Config, opts...)
 }

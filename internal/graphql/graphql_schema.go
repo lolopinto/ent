@@ -133,8 +133,10 @@ func (schema *graphQLSchema) getFuncMap(steps []gqlStep) ([]func() error, error)
 		},
 		"custom_functions": schema.parseCustomFunctions,
 		"schema.graphql":   schema.writeGraphQLSchema,
-		"yml_file":         schema.writeGQLGenYamlFile,
-		"generate_code":    schema.generateGraphQLCode,
+		"yml_file": func() error {
+			return schema.writeGQLGenYamlFile(schema.config.Config)
+		},
+		"generate_code": schema.generateGraphQLCode,
 	}
 
 	fns := make([]func() error, len(steps))
@@ -799,6 +801,7 @@ func getSortedTypes(t *graphqlSchemaTemplate) []*graphqlSchemaTypeInfo {
 }
 
 func (schema *graphQLSchema) writeGraphQLSchema() error {
+	// TODO
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data:              schema.getSchemaForTemplate(),
 		AbsPathToTemplate: util.GetAbsolutePath("graphql_schema.tmpl"),
@@ -890,8 +893,9 @@ func (s *graphQLSchema) getYmlConfig() *config.Config {
 	return s.gqlConfig
 }
 
-func (s *graphQLSchema) writeGQLGenYamlFile() error {
+func (s *graphQLSchema) writeGQLGenYamlFile(cfg *codegen.Config) error {
 	return file.Write(&file.YamlFileWriter{
+		Config:            cfg,
 		Data:              s.getYmlConfig(),
 		PathToFile:        s.getPath("gqlgen.yml"),
 		CreateDirIfNeeded: true,

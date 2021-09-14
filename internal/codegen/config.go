@@ -22,6 +22,7 @@ type Config struct {
 	absPathToRoot         string
 	absPathToConfigs      string
 	config                *config
+	debugMode             bool
 }
 
 func NewConfig(configPath, modulePath string) (*Config, error) {
@@ -47,6 +48,25 @@ func NewConfig(configPath, modulePath string) (*Config, error) {
 		importPathToModels:    filepath.Join(modulePath, "models"),
 		config:                c,
 	}, nil
+}
+
+func NewTestConfig(configPath, modulePath string, codegenCfg *CodegenConfig) (*Config, error) {
+	cfg, err := NewConfig(configPath, modulePath)
+	if err != nil {
+		return nil, err
+	}
+	cfg.config = &config{
+		Codegen: codegenCfg,
+	}
+	return cfg, nil
+}
+
+func (cfg *Config) SetDebugMode(debugMode bool) {
+	cfg.debugMode = true
+}
+
+func (cfg *Config) DebugMode() bool {
+	return cfg.debugMode
 }
 
 func (cfg *Config) OverrideImportPathToModels(importPath string) {
@@ -153,6 +173,21 @@ func (cfg *Config) GetDefaultEntPolicy() *PrivacyConfig {
 	}
 }
 
+func (cfg *Config) DisableGraphQLRoot() bool {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		return codegen.DisableGraphQLRoot
+	}
+
+	return false
+}
+
+func (cfg *Config) GeneratedHeader() string {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		return codegen.GeneratedHeader
+	}
+	return ""
+}
+
 const DEFAULT_GLOB = "src/**/*.ts"
 
 // options: https://prettier.io/docs/en/options.html
@@ -235,6 +270,8 @@ type CodegenConfig struct {
 	DefaultActionPolicy *PrivacyConfig  `yaml:"defaultActionPolicy"`
 	Prettier            *PrettierConfig `yaml:"prettier"`
 	RelativeImports     bool            `yaml:"relativeImports"`
+	DisableGraphQLRoot  bool            `yaml:"disableGraphQLRoot"`
+	GeneratedHeader     string          `yaml:"generatedHeader"`
 }
 
 type PrivacyConfig struct {

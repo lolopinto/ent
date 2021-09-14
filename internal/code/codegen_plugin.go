@@ -22,7 +22,7 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 			if err := writeModelFile(nodeData, processor.Config); err != nil {
 				return err
 			}
-			if err := writePrivacyFile(nodeData); err != nil {
+			if err := writePrivacyFile(nodeData, processor.Config); err != nil {
 				return err
 			}
 			if err := writeMutationBuilderFile(nodeData, processor.Config); err != nil {

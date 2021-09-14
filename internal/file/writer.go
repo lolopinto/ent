@@ -6,6 +6,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+
+	"github.com/lolopinto/ent/internal/codegen"
 )
 
 type Writer interface {
@@ -15,14 +17,8 @@ type Writer interface {
 	generateBytes() ([]byte, error)
 }
 
-var globalOpt Options
-
-func SetGlobalLogStatus(log bool) {
-	globalOpt.disableLog = !log
-}
-
 func debugLogInfo(opt *Options, str string, a ...interface{}) {
-	if opt.disableLog || globalOpt.disableLog {
+	if opt.disableLog {
 		return
 	}
 	if len(a) == 0 {
@@ -32,8 +28,11 @@ func debugLogInfo(opt *Options, str string, a ...interface{}) {
 	}
 }
 
-func writeFile(w Writer, opts ...func(opt *Options)) error {
+func writeFile(w Writer, cfg *codegen.Config, opts ...func(opt *Options)) error {
 	option := &Options{}
+	if cfg.DebugMode() {
+		opts = append(opts, DisableLog())
+	}
 	for _, opt := range opts {
 		if opt == nil {
 			continue

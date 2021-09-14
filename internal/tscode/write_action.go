@@ -28,6 +28,7 @@ func writeBaseActionFile(nodeData *schema.NodeData, processor *codegen.Processor
 	imps := tsimport.NewImports(processor.Config, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
+		Config: processor.Config,
 		Data: actionTemplate{
 			NodeData:      nodeData,
 			Action:        action,
@@ -51,6 +52,7 @@ func writeActionFile(nodeData *schema.NodeData, processor *codegen.Processor, ac
 	imps := tsimport.NewImports(processor.Config, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
+		Config: processor.Config,
 		Data: actionTemplate{
 			NodeData: nodeData,
 			Action:   action,

@@ -80,7 +80,7 @@ func WritePhoneAuthFile(cfg *codegen.Config, options *Options) error {
 	idFromPhoneNumber := fmt.Sprintf("models.Load%sIDFrom%s", options.Node, options.Field)
 	data.IDFromPhoneNumber = idFromPhoneNumber
 
-	return writeFile(data, "phone_auth.gotmpl", getPhoneAuthFilePath(), options)
+	return writeFile(cfg, data, "phone_auth.gotmpl", getPhoneAuthFilePath(), options)
 }
 
 func WriteEmailAuthFile(cfg *codegen.Config, options *Options) error {
@@ -97,13 +97,14 @@ func WriteEmailAuthFile(cfg *codegen.Config, options *Options) error {
 	data.ValidateEmailPassword = "models.ValidateEmailPassword"
 	data.IDFromEmailAddress = fmt.Sprintf("models.Load%sIDFrom%s", options.Node, options.Field)
 
-	return writeFile(data, "email_auth.gotmpl", getEmailAuthFilePath(), options)
+	return writeFile(cfg, data, "email_auth.gotmpl", getEmailAuthFilePath(), options)
 }
 
-func writeFile(data interface{}, templateName, filePath string, options *Options) error {
+func writeFile(cfg *codegen.Config, data interface{}, templateName, filePath string, options *Options) error {
 	imps := imports.Imports{}
 
 	writer := &file.TemplatedBasedFileWriter{
+		Config:            cfg,
 		Data:              data,
 		AbsPathToTemplate: util.GetAbsolutePath(templateName),
 		TemplateName:      templateName,

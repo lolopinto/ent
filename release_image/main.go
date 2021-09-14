@@ -10,13 +10,14 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
 )
 
 // next tag
-const TAG = "0.0.23"
+const TAG = "0.0.24"
 
 // current node gets latest tag...
 const CURRENT_NODE_VERSION = 16
@@ -31,7 +32,7 @@ var NODE_VERSIONS = []int{
 }
 
 const AUTO_SCHEMA_VERSION = "0.0.9"
-const TSENT_VERSION = "v0.0.22"
+const TSENT_VERSION = "v0.0.23"
 
 var SUFFIXES = []string{
 	"dev",
@@ -81,8 +82,12 @@ func (d *dockerfileData) Development() bool {
 }
 
 func createDockerfile(path string, d dockerfileData) error {
-
+	cfg, err := codegen.NewConfig("src/schema", "")
+	if err != nil {
+		return err
+	}
 	return file.Write((&file.TemplatedBasedFileWriter{
+		Config:            cfg,
 		Data:              &d,
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("../ts/Dockerfile.tmpl"),
