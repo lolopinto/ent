@@ -396,11 +396,9 @@ export class TempDB {
       if (this.dialect == Dialect.Postgres) {
         await this.dbClient.query(table.create());
       } else {
-        //        console.log(table.create());
         this.sqlite.exec(table.create());
       }
     }
-    //    await this.sqlite.exec("nonsense");
   }
 
   getSqliteClient(): SqliteDatabase {
