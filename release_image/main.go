@@ -11,7 +11,6 @@ import (
 	"sync"
 
 	"github.com/lolopinto/ent/internal/file"
-	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
 )
@@ -82,7 +81,6 @@ func (d *dockerfileData) Development() bool {
 }
 
 func createDockerfile(path string, d dockerfileData) error {
-	imps := tsimport.NewImports()
 
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Data:              &d,
@@ -90,8 +88,6 @@ func createDockerfile(path string, d dockerfileData) error {
 		AbsPathToTemplate: util.GetAbsolutePath("../ts/Dockerfile.tmpl"),
 		TemplateName:      "Dockerfile.tmpl",
 		PathToFile:        path,
-		TsImports:         imps,
-		FuncMap:           imps.FuncMap(),
 	}))
 }
 

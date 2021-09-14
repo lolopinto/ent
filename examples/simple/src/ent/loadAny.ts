@@ -16,7 +16,7 @@ import {
   Holiday,
   HoursOfOperation,
   User,
-} from "src/ent/";
+} from "./.";
 import { NodeType } from "./const";
 
 export async function loadEntByType(

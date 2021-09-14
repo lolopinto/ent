@@ -1,4 +1,4 @@
-import { ContactBase } from "src/ent/internal";
+import { ContactBase } from "./internal";
 import {
   PrivacyPolicy,
   AllowIfViewerIsRule,

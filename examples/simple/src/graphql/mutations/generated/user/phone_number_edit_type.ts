@@ -13,11 +13,11 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import { User } from "src/ent/";
+import { User } from "../../../../ent";
 import EditPhoneNumberAction, {
   EditPhoneNumberInput,
-} from "src/ent/user/actions/edit_phone_number_action";
-import { UserType } from "src/graphql/resolvers/";
+} from "../../../../ent/user/actions/edit_phone_number_action";
+import { UserType } from "../../../resolvers";
 
 interface customPhoneNumberEditInput extends EditPhoneNumberInput {
   userID: string;

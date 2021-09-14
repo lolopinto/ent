@@ -1,5 +1,5 @@
-import { UserToSelfContactQueryBase } from "src/ent/internal";
 import { AssocEdge } from "@snowtop/ent";
+import { UserToSelfContactQueryBase } from "../../internal";
 
 export class UserToSelfContactEdge extends AssocEdge {}
 

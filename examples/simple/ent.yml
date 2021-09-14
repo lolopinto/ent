@@ -12,5 +12,6 @@
 #     path: '@snowtop/ent'
 #     policyName: 'AlwaysAllowPrivacyPolicy'
 codegen:
+  relativeImports: true
   prettier:
     custom: true

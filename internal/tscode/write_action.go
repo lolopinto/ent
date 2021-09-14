@@ -22,8 +22,10 @@ type actionTemplate struct {
 	PrivacyConfig *codegen.PrivacyConfig
 }
 
-func writeBaseActionFile(nodeData *schema.NodeData, cfg *codegen.Config, action action.Action) error {
-	imps := tsimport.NewImports()
+func writeBaseActionFile(nodeData *schema.NodeData, processor *codegen.Processor, action action.Action) error {
+	cfg := processor.Config
+	filePath := getFilePathForActionBaseFile(cfg, nodeData, action)
+	imps := tsimport.NewImports(processor.Config, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data: actionTemplate{
@@ -37,14 +39,16 @@ func writeBaseActionFile(nodeData *schema.NodeData, cfg *codegen.Config, action 
 		AbsPathToTemplate:  util.GetAbsolutePath("action_base.tmpl"),
 		OtherTemplateFiles: []string{util.GetAbsolutePath("../schema/enum/enum.tmpl")},
 		TemplateName:       "action_base.tmpl",
-		PathToFile:         getFilePathForActionBaseFile(cfg, nodeData, action),
+		PathToFile:         filePath,
 		TsImports:          imps,
 		FuncMap:            getFuncMapForActionBase(imps),
 	})
 }
 
-func writeActionFile(nodeData *schema.NodeData, cfg *codegen.Config, action action.Action) error {
-	imps := tsimport.NewImports()
+func writeActionFile(nodeData *schema.NodeData, processor *codegen.Processor, action action.Action) error {
+	cfg := processor.Config
+	filePath := getFilePathForActionFile(cfg, nodeData, action)
+	imps := tsimport.NewImports(processor.Config, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data: actionTemplate{
@@ -56,7 +60,7 @@ func writeActionFile(nodeData *schema.NodeData, cfg *codegen.Config, action acti
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("action.tmpl"),
 		TemplateName:      "action.tmpl",
-		PathToFile:        getFilePathForActionFile(cfg, nodeData, action),
+		PathToFile:        filePath,
 		TsImports:         imps,
 		FuncMap:           getCustomFuncMap(imps),
 		EditableCode:      true,

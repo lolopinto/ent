@@ -18,8 +18,8 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
-import { NodeType } from "src/ent/internal";
-import schema from "src/schema/holiday";
+import { NodeType } from "../internal";
+import schema from "../../schema/holiday";
 
 const tableName = "holidays";
 const fields = ["id", "created_at", "updated_at", "label", "date"];

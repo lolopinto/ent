@@ -6,9 +6,6 @@ import { setLogLevels } from "./logger";
 
 type logType = "query" | "warn" | "info" | "error" | "debug";
 
-// ent.config.ts eventually. for now ent.yml
-// or ent.yml?
-
 export interface Config {
   dbConnectionString?: string;
   dbFile?: string; // config/database.yml is default
@@ -26,6 +23,9 @@ interface CodegenConfig {
   defaultEntPolicy?: PrivacyConfig;
   defaultActionPolicy?: PrivacyConfig;
   prettier?: PrettierConfig;
+  // use relativeImports in generated files instead of "src/ent/user" etc
+  // needed for legacy scenarios or situations where the custom compiler has issues
+  relativeImports?: boolean;
 }
 
 interface PrettierConfig {

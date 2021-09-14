@@ -1,5 +1,5 @@
 import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
-import { HolidayBase } from "src/ent/internal";
+import { HolidayBase } from "./internal";
 
 // we're only writing this once except with --force and packageName provided
 export class Holiday extends HolidayBase {

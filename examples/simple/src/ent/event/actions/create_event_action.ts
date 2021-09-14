@@ -1,10 +1,10 @@
 import {
   CreateEventActionBase,
   EventCreateInput,
-} from "src/ent/event/actions/generated/create_event_action_base";
+} from "./generated/create_event_action_base";
 import { Trigger, Validator } from "@snowtop/ent/action";
 import { SharedValidators } from "./event_validators";
-import { Event } from "src/ent/";
+import { Event } from "../../";
 import { EventBuilder } from "./event_builder";
 import { AlwaysAllowPrivacyPolicy, PrivacyPolicy } from "@snowtop/ent";
 

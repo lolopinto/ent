@@ -3,7 +3,6 @@ import * as fs from "fs";
 import { load } from "js-yaml";
 import { log } from "./logger";
 import { DateTime } from "luxon";
-import type { RunResult, Database as SqliteDatabase } from "better-sqlite3";
 
 export interface Database {
   database?: string;
@@ -283,6 +282,31 @@ export interface SyncClient extends Client, SyncQueryer {
   runInTransaction(cb: () => void): void;
 }
 
+// interfaces we provide to have strong typing here so as to not import
+// better-sqlite3. ideally, import type would be used but that seems
+// to have downstream issues when this library is used
+interface SqliteRunResult {
+  changes: number;
+  lastInsertRowid: number;
+}
+
+interface SqliteDatabase {
+  memory: boolean;
+  prepare(query: string): SqliteStatement;
+  close(): void;
+  transaction(fn: (...params: any[]) => any): SqliteTransaction;
+}
+
+interface SqliteStatement {
+  get(...params: any): SqliteRunResult;
+  all(...params: any): SqliteRunResult[];
+  run(...params: any): SqliteRunResult;
+}
+
+interface SqliteTransaction {
+  (...params: any): void;
+}
+
 export class Sqlite implements Connection, SyncClient {
   constructor(public db: SqliteDatabase) {}
 
@@ -316,7 +340,7 @@ export class Sqlite implements Connection, SyncClient {
     return values;
   }
   querySync(query: string, values?: any[]): QueryResult<QueryResultRow> {
-    let r: RunResult;
+    let r: SqliteRunResult;
 
     if (values) {
       r = this.db.prepare(query).get(this.convertValues(values));
@@ -356,7 +380,7 @@ export class Sqlite implements Connection, SyncClient {
   }
 
   execSync(query: string, values?: any[]): ExecResult {
-    let r: RunResult;
+    let r: SqliteRunResult;
     if (values) {
       r = this.db.prepare(query).run(this.convertValues(values));
     } else {

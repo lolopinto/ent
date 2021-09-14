@@ -9,8 +9,8 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
-import { Contact } from "src/ent/";
-import { UserType } from "src/graphql/resolvers/internal";
+import { Contact } from "../../../ent";
+import { UserType } from "../internal";
 
 export const ContactType = new GraphQLObjectType({
   name: "Contact",
