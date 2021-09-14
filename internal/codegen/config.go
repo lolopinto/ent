@@ -258,6 +258,7 @@ func parseConfig() (*config, error) {
 		if err := yaml.Unmarshal(b, &c); err != nil {
 			return nil, err
 		}
+		spew.Dump(string(b))
 		spew.Dump(c)
 		return &c, nil
 	}
