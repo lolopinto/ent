@@ -249,7 +249,7 @@ func parseConfig() (*config, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "error opening file")
 		}
-		fmt.Println("found file blargh", f)
+		fmt.Println("found file blargh", p)
 		b, err := io.ReadAll(f)
 		if err != nil {
 			return nil, err
