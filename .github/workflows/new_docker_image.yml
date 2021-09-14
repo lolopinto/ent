@@ -39,5 +39,8 @@ jobs:
       run: echo $DOCKER_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
 
     - name: build the image
+      env:
+        # hack to avoid hitting the db
+        DB_CONNECTION_STRING: sqlite:///
       run: cd release_image && go run .
 
