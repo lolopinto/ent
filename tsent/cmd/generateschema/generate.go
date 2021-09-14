@@ -574,6 +574,7 @@ func generateSchema(cfg *codegen.Config, data *CodegenData, node string) error {
 	tsimps := tsimport.NewImports(cfg, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
+		Config:            cfg,
 		Data:              data,
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("schema.tmpl"),

@@ -349,6 +349,7 @@ func writeBaseModelFile(nodeData *schema.NodeData, processor *codegen.Processor)
 	imps := tsimport.NewImports(processor.Config, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
+		Config: processor.Config,
 		Data: nodeTemplateCodePath{
 			NodeData:      nodeData,
 			CodePath:      cfg,
@@ -370,6 +371,7 @@ func writeEntFile(nodeData *schema.NodeData, processor *codegen.Processor) error
 	filePath := getFilePathForModelFile(cfg, nodeData)
 	imps := tsimport.NewImports(processor.Config, filePath)
 	return file.Write(&file.TemplatedBasedFileWriter{
+		Config: processor.Config,
 		Data: nodeTemplateCodePath{
 			NodeData: nodeData,
 			CodePath: cfg,
@@ -392,6 +394,7 @@ func writeEnumFile(enumInfo *schema.EnumInfo, processor *codegen.Processor) erro
 	imps := tsimport.NewImports(processor.Config, filePath)
 	return file.Write(&file.TemplatedBasedFileWriter{
 		// enum file can be rendered on its own so just render it
+		Config:            processor.Config,
 		Data:              enumInfo.Enum,
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("../schema/enum/enum.tmpl"),
@@ -409,6 +412,7 @@ func writeBaseQueryFile(processor *codegen.Processor, nodeData *schema.NodeData)
 	imps := tsimport.NewImports(processor.Config, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
+		Config: processor.Config,
 		Data: struct {
 			NodeData *schema.NodeData
 			Schema   *schema.Schema
@@ -433,6 +437,7 @@ func writeAssocEdgeQueryFile(processor *codegen.Processor, nodeData *schema.Node
 	imps := tsimport.NewImports(processor.Config, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
+		Config: processor.Config,
 		Data: struct {
 			Edge    *edge.AssociationEdge
 			Package *codegen.ImportPackage
@@ -456,6 +461,7 @@ func writeCustomEdgeQueryFile(processor *codegen.Processor, nodeData *schema.Nod
 	imps := tsimport.NewImports(processor.Config, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
+		Config: processor.Config,
 		Data: struct {
 			Package         *codegen.ImportPackage
 			TsEdgeQueryName string
@@ -487,6 +493,7 @@ func writeConstFile(processor *codegen.Processor, nodeData []enum.Data, edgeData
 	imps := tsimport.NewImports(processor.Config, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
+		Config: processor.Config,
 		Data: struct {
 			NodeType enum.Enum
 			EdgeType enum.Enum
@@ -518,6 +525,7 @@ func writeLoadAnyFile(nodeData []enum.Data, processor *codegen.Processor) error 
 	imps := tsimport.NewImports(processor.Config, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
+		Config: processor.Config,
 		Data: struct {
 			NodeData []enum.Data
 			Package  *codegen.ImportPackage
@@ -603,6 +611,7 @@ func writeInternalEntFile(s *schema.Schema, processor *codegen.Processor) error 
 	imps := tsimport.NewImports(processor.Config, path)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
+		Config:            processor.Config,
 		Data:              getSortedInternalEntFileLines(s),
 		AbsPathToTemplate: util.GetAbsolutePath("internal.tmpl"),
 		CreateDirIfNeeded: true,
@@ -620,6 +629,7 @@ func writeEntIndexFile(processor *codegen.Processor) error {
 	imps := tsimport.NewImports(processor.Config, path)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
+		Config:            processor.Config,
 		AbsPathToTemplate: util.GetAbsolutePath("index.tmpl"),
 		CreateDirIfNeeded: true,
 		TemplateName:      "index.tmpl",
@@ -639,6 +649,7 @@ func writeBuilderFile(nodeData *schema.NodeData, processor *codegen.Processor) e
 		return err
 	}
 	return file.Write(&file.TemplatedBasedFileWriter{
+		Config: processor.Config,
 		Data: nodeTemplateCodePath{
 			NodeData: nodeData,
 			CodePath: cfg,

@@ -20,6 +20,7 @@ func writeMutationBuilderFile(nodeData *schema.NodeData, cfg *codegen.Config) er
 	imps := imports.Imports{}
 	return file.Write(
 		&file.TemplatedBasedFileWriter{
+			Config: cfg,
 			Data: nodeTemplateCodePath{
 				NodeData: nodeData,
 				Config:   cfg,
