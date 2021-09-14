@@ -36,7 +36,7 @@ func (s *Step) PreProcessData(processor *codegen.Processor) error {
 	db := newDBSchema(processor.Schema, processor.Config.GetRootPathToConfigs())
 	s.db = db
 
-	return db.processSchema()
+	return db.processSchema(processor.Config)
 }
 
 func (s *Step) ProcessData(processor *codegen.Processor) error {
@@ -354,12 +354,12 @@ func (s *dbSchema) addTable(table *dbTable) {
 
 // this processes the schema and writes the schema.py file but doesn't
 // acutally make any changes to the db yet
-func (s *dbSchema) processSchema() error {
+func (s *dbSchema) processSchema(cfg *codegen.Config) error {
 	if err := s.generateShemaTables(); err != nil {
 		return err
 	}
 
-	return s.writeSchemaFile()
+	return s.writeSchemaFile(cfg)
 }
 
 func (s *dbSchema) generateShemaTables() error {
@@ -434,13 +434,14 @@ func RunAlembicCommand(cfg *codegen.Config, command string, args ...string) erro
 	}
 }
 
-func (s *dbSchema) writeSchemaFile() error {
+func (s *dbSchema) writeSchemaFile(cfg *codegen.Config) error {
 	data, err := s.getSchemaForTemplate()
 	if err != nil {
 		return err
 	}
 	return file.Write(
 		&file.TemplatedBasedFileWriter{
+			Config:            cfg,
 			Data:              data,
 			AbsPathToTemplate: util.GetAbsolutePath("db_schema.tmpl"),
 			TemplateName:      "db_schema.tmpl",

@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/syncerr"
 	"github.com/pkg/errors"
@@ -206,26 +205,25 @@ func NewCodegenProcessor(schema *schema.Schema, configPath, modulePath string, d
 	if err != nil {
 		return nil, err
 	}
+	cfg.SetDebugMode(debugMode)
 
-	processor := &Processor{
+	return &Processor{
 		Schema:    schema,
 		Config:    cfg,
 		debugMode: debugMode,
 		opt:       &option{},
-	}
-
-	// if in debug mode can log things
-	file.SetGlobalLogStatus(debugMode)
-	return processor, nil
+	}, nil
 }
 
-func NewTestCodegenProcessor(configPath string) (*Processor, error) {
-	cfg, err := NewConfig(configPath, "")
+func NewTestCodegenProcessor(configPath string, s *schema.Schema, codegenCfg *CodegenConfig) (*Processor, error) {
+	cfg, err := NewTestConfig(configPath, "", codegenCfg)
 	if err != nil {
 		return nil, err
 	}
 	return &Processor{
 		Config: cfg,
+		Schema: s,
+		opt:    &option{},
 	}, nil
 }
 

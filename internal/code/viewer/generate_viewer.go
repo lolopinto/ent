@@ -33,6 +33,7 @@ func writeViewer(cfg *codegen.Config, node, app string, forceOverwrite bool) cha
 		imps := imports.Imports{}
 
 		writer := &file.TemplatedBasedFileWriter{
+			Config: cfg,
 			Data: viewerData{
 				CodePath:     cfg,
 				VCName:       vcName,
@@ -70,6 +71,7 @@ func writeGraphQLViewer(cfg *codegen.Config, node, app string, forceOverwrite bo
 		imps := imports.Imports{}
 
 		writer := &file.TemplatedBasedFileWriter{
+			Config: cfg,
 			Data: graphQLViewerData{
 				viewerData: viewerData{
 					CodePath:     cfg,

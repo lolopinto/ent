@@ -13,5 +13,6 @@
 #     policyName: 'AlwaysAllowPrivacyPolicy'
 codegen:
   relativeImports: true
+  generatedHeader: "Copyright whaa whaa"
   prettier:
     custom: true

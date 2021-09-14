@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
@@ -81,8 +82,12 @@ func (d *dockerfileData) Development() bool {
 }
 
 func createDockerfile(path string, d dockerfileData) error {
-
+	cfg, err := codegen.NewConfig("src/schema", "")
+	if err != nil {
+		return err
+	}
 	return file.Write((&file.TemplatedBasedFileWriter{
+		Config:            cfg,
 		Data:              &d,
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("../ts/Dockerfile.tmpl"),

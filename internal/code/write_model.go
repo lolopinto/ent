@@ -26,6 +26,7 @@ func writeModelFile(nodeData *schema.NodeData, cfg *codegen.Config) error {
 	imps := imports.Imports{}
 
 	return file.Write(&file.TemplatedBasedFileWriter{
+		Config: cfg,
 		Data: nodeTemplateCodePath{
 			NodeData: nodeData,
 			Config:   cfg,
@@ -46,10 +47,11 @@ func writeModelFile(nodeData *schema.NodeData, cfg *codegen.Config) error {
 	})
 }
 
-func writePrivacyFile(nodeData *schema.NodeData) error {
+func writePrivacyFile(nodeData *schema.NodeData, cfg *codegen.Config) error {
 	pathToFile := fmt.Sprintf("models/%s_privacy_gen.go", nodeData.PackageName)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
+		Config:            cfg,
 		Data:              nodeData,
 		AbsPathToTemplate: util.GetAbsolutePath("privacy.gotmpl"),
 		TemplateName:      "privacy.gotmpl",

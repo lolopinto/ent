@@ -28,6 +28,7 @@ func writeActionFile(nodeData *schema.NodeData, a action.Action, cfg *codegen.Co
 	imps := imports.Imports{}
 	return file.Write(
 		&file.TemplatedBasedFileWriter{
+			Config: cfg,
 			Data: actionTemplate{
 				Action: a,
 				Config: cfg,
