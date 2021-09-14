@@ -13,7 +13,7 @@ import {
   GraphQLTime,
   nodeIDEncoder,
 } from "@snowtop/ent/graphql";
-import { Holiday } from "src/ent/";
+import { Holiday } from "../../../ent";
 
 export const HolidayType = new GraphQLObjectType({
   name: "Holiday",

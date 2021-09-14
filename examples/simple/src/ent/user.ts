@@ -1,4 +1,4 @@
-import { UserBase, UserToContactsQuery } from "src/ent/internal";
+import { UserBase, UserToContactsQuery, Contact, EdgeType } from "./internal";
 import {
   PrivacyPolicy,
   AllowIfViewerRule,
@@ -8,7 +8,6 @@ import {
 } from "@snowtop/ent";
 import { AllowIfOmniRule } from "./../privacy/omni";
 import { GraphQLString } from "graphql";
-import { Contact, EdgeType } from "src/ent/internal";
 import { gqlField } from "@snowtop/ent/graphql";
 import * as bcrypt from "bcryptjs";
 

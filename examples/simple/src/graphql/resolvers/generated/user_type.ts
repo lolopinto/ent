@@ -25,7 +25,7 @@ import {
   UserToHostedEventsQuery,
   UserToInvitedEventsQuery,
   UserToMaybeEventsQuery,
-} from "src/ent/";
+} from "../../../ent";
 import {
   ContactType,
   UserToContactsConnectionType,
@@ -36,7 +36,7 @@ import {
   UserToHostedEventsConnectionType,
   UserToInvitedEventsConnectionType,
   UserToMaybeEventsConnectionType,
-} from "src/graphql/resolvers/internal";
+} from "../internal";
 
 export const UserType = new GraphQLObjectType({
   name: "User",

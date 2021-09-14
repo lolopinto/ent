@@ -9,7 +9,7 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { UserType } from "src/graphql/resolvers/internal";
+import { UserType } from "../internal";
 import ViewerResolver, { GQLViewer } from "../viewer";
 
 export const GQLViewerType = new GraphQLObjectType({

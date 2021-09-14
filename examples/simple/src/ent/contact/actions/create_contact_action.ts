@@ -1,10 +1,10 @@
 import {
   CreateContactActionBase,
   ContactCreateInput,
-} from "src/ent/contact/actions/generated/create_contact_action_base";
+} from "./generated/create_contact_action_base";
 
 export { ContactCreateInput };
-import { Contact } from "src/ent/";
+import { Contact } from "../../";
 // TODO...
 import { EntCreationObserver } from "@snowtop/ent/testutils/fake_log";
 import {

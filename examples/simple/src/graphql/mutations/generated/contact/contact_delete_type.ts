@@ -12,8 +12,8 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import { Contact } from "src/ent/";
-import DeleteContactAction from "src/ent/contact/actions/delete_contact_action";
+import { Contact } from "../../../../ent";
+import DeleteContactAction from "../../../../ent/contact/actions/delete_contact_action";
 
 interface customContactDeleteInput {
   contactID: string;

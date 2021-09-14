@@ -85,6 +85,20 @@ func (cfg *Config) GetAbsPathToRoot() string {
 	return cfg.absPathToRoot
 }
 
+func (cfg *Config) getCodegenConfig() *CodegenConfig {
+	if cfg.config != nil && cfg.config.Codegen != nil {
+		return cfg.config.Codegen
+	}
+	return nil
+}
+
+func (cfg *Config) ShouldUseRelativePaths() bool {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		return codegen.RelativeImports
+	}
+	return false
+}
+
 // used by golang
 func (cfg *Config) AppendPathToModels(paths ...string) string {
 	allPaths := append([]string{cfg.importPathToModels}, paths...)
@@ -120,23 +134,23 @@ func (cfg *Config) GetImportPackage() *ImportPackage {
 }
 
 func (cfg *Config) GetDefaultActionPolicy() *PrivacyConfig {
-	if cfg.config == nil || cfg.config.Codegen == nil || cfg.config.Codegen.DefaultActionPolicy == nil {
-		return &PrivacyConfig{
-			Path:       codepath.Package,
-			PolicyName: "AllowIfViewerHasIdentityPrivacyPolicy",
-		}
+	if codegen := cfg.getCodegenConfig(); codegen != nil && codegen.DefaultActionPolicy != nil {
+		return codegen.DefaultActionPolicy
 	}
-	return cfg.config.Codegen.DefaultActionPolicy
+	return &PrivacyConfig{
+		Path:       codepath.Package,
+		PolicyName: "AllowIfViewerHasIdentityPrivacyPolicy",
+	}
 }
 
 func (cfg *Config) GetDefaultEntPolicy() *PrivacyConfig {
-	if cfg.config == nil || cfg.config.Codegen == nil || cfg.config.Codegen.DefaultEntPolicy == nil {
-		return &PrivacyConfig{
-			Path:       codepath.Package,
-			PolicyName: "AllowIfViewerPrivacyPolicy",
-		}
+	if codegen := cfg.getCodegenConfig(); codegen != nil && codegen.DefaultEntPolicy != nil {
+		return codegen.DefaultEntPolicy
 	}
-	return cfg.config.Codegen.DefaultEntPolicy
+	return &PrivacyConfig{
+		Path:       codepath.Package,
+		PolicyName: "AllowIfViewerPrivacyPolicy",
+	}
 }
 
 const DEFAULT_GLOB = "src/**/*.ts"
@@ -220,6 +234,7 @@ type CodegenConfig struct {
 	DefaultEntPolicy    *PrivacyConfig  `yaml:"defaultEntPolicy"`
 	DefaultActionPolicy *PrivacyConfig  `yaml:"defaultActionPolicy"`
 	Prettier            *PrettierConfig `yaml:"prettier"`
+	RelativeImports     bool            `yaml:"relativeImports"`
 }
 
 type PrivacyConfig struct {

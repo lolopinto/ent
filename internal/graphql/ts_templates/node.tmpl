@@ -2,7 +2,7 @@
 {{reserveImport .Package.PackagePath "ID" "RequestContext" }}
 {{reserveImport .Package.GraphQLPackagePath "GraphQLTime" "GraphQLNodeInterface" "GraphQLEdgeInterface" "GraphQLConnectionInterface" "registerResolver" "EntNodeResolver" "resolveID" "nodeIDEncoder"}}
 {{reserveImport "src/ent/loadAny" "loadEntByType"}}
-{{reserveImport "src/ent" "NodeType" }}
+{{reserveImport "src/ent/" "NodeType" }}
 
 interface NodeQueryArgs {
   id: string;

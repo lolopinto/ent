@@ -1,10 +1,10 @@
-import { Event } from "src/ent/";
 import { LoggedOutViewer, IDViewer, DB } from "@snowtop/ent";
-import { randomEmail, randomPhoneNumber } from "src/util/random";
-import CreateUserAction from "src/ent/user/actions/create_user_action";
-import CreateEventAction from "src/ent/event/actions/create_event_action";
-import EditEventAction from "src/ent/event/actions/edit_event_action";
-import DeleteEventAction from "src/ent/event/actions/delete_event_action";
+import { Event } from "../";
+import { randomEmail, randomPhoneNumber } from "../../util/random";
+import CreateUserAction from "../user/actions/create_user_action";
+import CreateEventAction from "../event/actions/create_event_action";
+import EditEventAction from "../event/actions/edit_event_action";
+import DeleteEventAction from "../event/actions/delete_event_action";
 
 const loggedOutViewer = new LoggedOutViewer();
 

@@ -1,11 +1,11 @@
 import { Ent } from "@snowtop/ent";
 import { Trigger, Validator } from "@snowtop/ent/action";
-import DeleteAuthCodeAction from "src/ent/auth_code/actions/delete_auth_code_action";
-import { User } from "src/ent/user";
+import DeleteAuthCodeAction from "../../auth_code/actions/delete_auth_code_action";
+import { User } from "../../";
 import {
   ConfirmEditEmailAddressActionBase,
   ConfirmEditEmailAddressInput,
-} from "src/ent/user/actions/generated/confirm_edit_email_address_action_base";
+} from "./generated/confirm_edit_email_address_action_base";
 import { UserBuilder } from "./user_builder";
 
 export { ConfirmEditEmailAddressInput };

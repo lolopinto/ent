@@ -1,21 +1,21 @@
-import schema from "src/graphql/schema";
+import supertest from "supertest";
+import jwt from "jsonwebtoken";
+import { Express } from "express";
 import {
   queryRootConfig,
   expectQueryFromRoot,
   expectMutation,
 } from "@snowtop/ent-graphql-tests";
 import { DB, LoggedOutViewer } from "@snowtop/ent";
+import { clearAuthHandlers } from "@snowtop/ent/auth";
+import { encodeGQLID } from "@snowtop/ent/graphql";
+import { PassportStrategyHandler } from "@snowtop/ent-passport";
+import schema from "../schema";
 import CreateUserAction, {
   UserCreateInput,
-} from "src/ent/user/actions/create_user_action";
-import { randomEmail, random, randomPhoneNumber } from "src/util/random";
-import { clearAuthHandlers } from "@snowtop/ent/auth";
-import { User } from "src/ent/";
-import { Express } from "express";
-import { PassportStrategyHandler } from "@snowtop/ent-passport";
-import supertest from "supertest";
-import jwt from "jsonwebtoken";
-import { encodeGQLID } from "@snowtop/ent/graphql";
+} from "../../ent/user/actions/create_user_action";
+import { randomEmail, random, randomPhoneNumber } from "../../util/random";
+import { User } from "../../ent";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {

@@ -1,12 +1,10 @@
-import { User, UserToFriendsQuery, UserToSelfContactQuery } from "src/ent/";
-
 import { IDViewer, LoggedOutViewer, DB, ID } from "@snowtop/ent";
-
+import { User, UserToFriendsQuery, UserToSelfContactQuery } from "..";
 import CreateUserAction, {
   UserCreateInput,
-} from "src/ent/user/actions/create_user_action";
-import CreateEventAction from "src/ent/event/actions/create_event_action";
-import { randomEmail, randomPhoneNumber } from "src/util/random";
+} from "../user/actions/create_user_action";
+import CreateEventAction from "../event/actions/create_event_action";
+import { randomEmail, randomPhoneNumber } from "../../util/random";
 
 const loggedOutViewer = new LoggedOutViewer();
 

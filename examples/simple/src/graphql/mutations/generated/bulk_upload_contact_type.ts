@@ -9,7 +9,7 @@ import {
 import { GraphQLUpload } from "graphql-upload";
 import { RequestContext } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import { UserType } from "src/graphql/resolvers/";
+import { UserType } from "../../resolvers";
 import { ImportContactResolver } from "../import_contact";
 
 export const BulkUploadContactType: GraphQLFieldConfig<

@@ -18,14 +18,24 @@ type Imports struct {
 	usedExports map[string]bool
 	imports     []*importInfo
 	exports     []*exportInfo
+	filePath    string
+	cfg         Config
+}
+
+type Config interface {
+	GetAbsPathToRoot() string
+	ShouldUseRelativePaths() bool
 }
 
 // NewImports is the constructor for Imports
-func NewImports() *Imports {
+// filePath is path that's currently being written
+func NewImports(cfg Config, filePath string) *Imports {
 	return &Imports{
 		exportMap:   make(map[string]*importInfo),
 		usedExports: make(map[string]bool),
 		pathMap:     make(map[string]*importInfo),
+		filePath:    filePath,
+		cfg:         cfg,
 	}
 }
 
@@ -169,12 +179,12 @@ func cmp(path1, path2 string) bool {
 	order2 := getSortBucket(path2)
 
 	if order1 == order2 {
-	// if equal, sort within the bucket
-	// currently, this depends on src/ent < src/graphql
+		// if equal, sort within the bucket
+		// currently, this depends on src/ent < src/graphql
 		return path1 < path2
 
 	} else if order1 < order2 {
-	return true
+		return true
 	}
 	return false
 }
@@ -184,15 +194,21 @@ func (imps *Imports) String() (string, error) {
 	var sb strings.Builder
 
 	for _, exp := range imps.exports {
-		str := exp.String()
-		if str == "" {
-			continue
-		}
-		_, err := sb.WriteString(str)
+		str, err := exp.String(imps.cfg, imps.filePath)
 		if err != nil {
 			return "", err
 		}
-		sb.WriteString("\n")
+		if str == "" {
+			continue
+		}
+		_, err = sb.WriteString(str)
+		if err != nil {
+			return "", err
+		}
+		_, err = sb.WriteString("\n")
+		if err != nil {
+			return "", err
+		}
 	}
 
 	sort.Slice(imps.imports, func(i, j int) bool {
@@ -201,7 +217,7 @@ func (imps *Imports) String() (string, error) {
 
 	for _, imp := range imps.imports {
 
-		str, err := imp.String(imps.usedExports)
+		str, err := imp.String(imps.cfg, imps.filePath, imps.usedExports)
 
 		if err != nil {
 			return "", err
@@ -226,7 +242,7 @@ type importInfo struct {
 	importAll     bool
 }
 
-func (imp *importInfo) String(usedExportsMap map[string]bool) (string, error) {
+func (imp *importInfo) String(cfg Config, filePath string, usedExportsMap map[string]bool) (string, error) {
 	var usedExports []string
 	var defaultExport string
 	seen := make(map[string]bool)
@@ -275,9 +291,14 @@ func (imp *importInfo) String(usedExportsMap map[string]bool) (string, error) {
 	}
 	sort.Strings(imports)
 
+	impPath, err := getImportPath(cfg, filePath, imp.path)
+	if err != nil {
+		return "", err
+	}
+
 	return fmt.Sprintf(
 		"import %s from %s;",
-		strings.Join(imports, ", "), strconv.Quote(imp.path),
+		strings.Join(imports, ", "), strconv.Quote(impPath),
 	), nil
 }
 
@@ -287,17 +308,21 @@ type exportInfo struct {
 	exports []string // empty means ecportAll
 }
 
-func (exp *exportInfo) String() string {
+func (exp *exportInfo) String(cfg Config, filePath string) (string, error) {
+	impPath, err := getImportPath(cfg, filePath, exp.path)
+	if err != nil {
+		return "", err
+	}
 	if exp.as == "" && len(exp.exports) == 0 {
-		return fmt.Sprintf("export * from %s;", strconv.Quote(exp.path))
+		return fmt.Sprintf("export * from %s;", strconv.Quote(impPath)), nil
 	}
 	if exp.as != "" {
-		return fmt.Sprintf("export * as %s from %s;", exp.as, strconv.Quote(exp.path))
+		return fmt.Sprintf("export * as %s from %s;", exp.as, strconv.Quote(impPath)), nil
 	}
 	sort.Strings(exp.exports)
 	return fmt.Sprintf(
 		"export {%s} from %s;",
 		strings.Join(exp.exports, ", "),
-		strconv.Quote(exp.path),
-	)
+		strconv.Quote(impPath),
+	), nil
 }

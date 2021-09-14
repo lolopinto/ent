@@ -12,11 +12,8 @@ import {
   Changeset,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { Contact, User } from "src/ent/";
-import {
-  ContactBuilder,
-  ContactInput,
-} from "src/ent/contact/actions/contact_builder";
+import { Contact, User } from "../../..";
+import { ContactBuilder, ContactInput } from "../contact_builder";
 
 export interface ContactEditInput {
   emailAddress?: string;

@@ -3,7 +3,7 @@
 import { GraphQLObjectType } from "graphql";
 import { Data } from "@snowtop/ent";
 import { GraphQLConnectionType } from "@snowtop/ent/graphql";
-import { ContactType } from "src/graphql/resolvers/internal";
+import { ContactType } from "../../internal";
 
 var connType: GraphQLConnectionType<GraphQLObjectType, Data>;
 

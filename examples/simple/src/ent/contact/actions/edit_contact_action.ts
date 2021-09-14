@@ -1,7 +1,7 @@
 import {
   EditContactActionBase,
   ContactEditInput,
-} from "src/ent/contact/actions/generated/edit_contact_action_base";
+} from "./generated/edit_contact_action_base";
 
 export { ContactEditInput };
 

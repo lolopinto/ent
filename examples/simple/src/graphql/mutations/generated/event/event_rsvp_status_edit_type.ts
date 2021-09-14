@@ -16,15 +16,15 @@ import {
   convertFromGQLEnum,
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { Event } from "src/ent/";
+import { Event } from "../../../../ent";
 import EditEventRsvpStatusAction, {
   EditEventRsvpStatusInput,
-} from "src/ent/event/actions/edit_event_rsvp_status_action";
+} from "../../../../ent/event/actions/edit_event_rsvp_status_action";
 import {
   EventRsvpStatusInput,
   getEventRsvpStatusInputValues,
-} from "src/ent/event/actions/generated/edit_event_rsvp_status_action_base";
-import { EventType } from "src/graphql/resolvers/";
+} from "../../../../ent/event/actions/generated/edit_event_rsvp_status_action_base";
+import { EventType } from "../../../resolvers";
 
 interface customEventRsvpStatusEditInput extends EditEventRsvpStatusInput {
   eventID: string;
