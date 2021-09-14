@@ -6,6 +6,9 @@ import { setLogLevels } from "./logger";
 
 type logType = "query" | "warn" | "info" | "error" | "debug";
 
+// ent.config.ts eventually. for now ent.yml
+// or ent.yml?
+
 export interface Config {
   dbConnectionString?: string;
   dbFile?: string; // config/database.yml is default
