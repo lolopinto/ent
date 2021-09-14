@@ -15,7 +15,7 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/khaiql/dbcleaner v2.3.0+incompatible
 	github.com/lib/pq v1.0.0
-	github.com/mattn/go-sqlite3 v1.14.7 // indirect
+	github.com/mattn/go-sqlite3 v1.14.7
 	github.com/nyaruka/phonenumbers v1.0.54
 	github.com/onsi/ginkgo v1.12.0 // indirect
 	github.com/onsi/gomega v1.9.0 // indirect
@@ -37,4 +37,12 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20190709130402-674ba3eaed22
 )
 
-go 1.16
+require (
+	github.com/agnivade/levenshtein v1.0.1 // indirect
+	github.com/golang/protobuf v1.3.2 // indirect
+	github.com/hashicorp/golang-lru v0.5.0 // indirect
+	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+)
+
+go 1.17
