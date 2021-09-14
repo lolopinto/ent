@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
@@ -248,6 +249,7 @@ func parseConfig() (*config, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "error opening file")
 		}
+		fmt.Println("found file blargh", f)
 		b, err := io.ReadAll(f)
 		if err != nil {
 			return nil, err
@@ -256,6 +258,7 @@ func parseConfig() (*config, error) {
 		if err := yaml.Unmarshal(b, &c); err != nil {
 			return nil, err
 		}
+		spew.Dump(c)
 		return &c, nil
 	}
 	return nil, nil
