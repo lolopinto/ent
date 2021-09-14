@@ -24,7 +24,7 @@ import {
   UserToInvitedEventsQuery,
   UserToMaybeEventsQuery,
   UserToSelfContactQuery,
-} from "src/ent/internal";
+} from "../internal";
 
 export const eventToAttendingCountLoaderFactory =
   new AssocEdgeCountLoaderFactory(EdgeType.EventToAttending);

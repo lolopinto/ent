@@ -13,8 +13,8 @@ import {
   convertToGQLEnum,
   nodeIDEncoder,
 } from "@snowtop/ent/graphql";
-import { HoursOfOperation, getDayOfWeekValues } from "src/ent/";
-import { dayOfWeekType } from "src/graphql/resolvers/internal";
+import { HoursOfOperation, getDayOfWeekValues } from "../../../ent";
+import { dayOfWeekType } from "../internal";
 
 export const HoursOfOperationType = new GraphQLObjectType({
   name: "HoursOfOperation",

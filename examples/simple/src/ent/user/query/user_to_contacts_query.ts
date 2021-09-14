@@ -1,2 +1,2 @@
-import { UserToContactsQueryBase } from "src/ent/internal";
+import { UserToContactsQueryBase } from "../../internal";
 export class UserToContactsQuery extends UserToContactsQueryBase {}

@@ -6,11 +6,11 @@ import {
   Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
-import { HoursOfOperation, dayOfWeek } from "src/ent/";
+import { HoursOfOperation, dayOfWeek } from "../../..";
 import {
   HoursOfOperationBuilder,
   HoursOfOperationInput,
-} from "src/ent/hours_of_operation/actions/hours_of_operation_builder";
+} from "../hours_of_operation_builder";
 
 export interface HoursOfOperationCreateInput {
   dayOfWeek: dayOfWeek;

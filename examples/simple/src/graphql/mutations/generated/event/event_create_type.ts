@@ -13,11 +13,11 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { GraphQLTime, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import { Event } from "src/ent/";
+import { Event } from "../../../../ent";
 import CreateEventAction, {
   EventCreateInput,
-} from "src/ent/event/actions/create_event_action";
-import { EventType } from "src/graphql/resolvers/";
+} from "../../../../ent/event/actions/create_event_action";
+import { EventType } from "../../../resolvers";
 
 interface customEventCreateInput extends EventCreateInput {
   creatorID: string;

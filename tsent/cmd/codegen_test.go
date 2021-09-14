@@ -9,6 +9,7 @@ import (
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/graphql"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
@@ -16,6 +17,29 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+var codegenOptions = []codegen.Option{
+	codegen.DisablePrompts(),
+	codegen.DisableFormat(),
+	codegen.DisableCustomGraphQL(),
+	codegen.FromTest(),
+	codegen.DisableSchemaGQL(),
+}
+
+func runSteps(t *testing.T, s *schema.Schema, rootDir string) {
+	schemaPath := path.Join(rootDir, "src/schema")
+
+	processor, err := codegen.NewCodegenProcessor(s, schemaPath, "", false)
+	require.Nil(t, err)
+
+	steps := []codegen.Step{
+		new(tscode.Step),
+		new(graphql.TSStep),
+	}
+
+	err = processor.Run(steps, "", codegenOptions...)
+	require.Nil(t, err)
+}
 
 func TestSimpleCodegen(t *testing.T) {
 	s, err := schema.ParseFromInputSchema(&input.Schema{
@@ -38,19 +62,7 @@ func TestSimpleCodegen(t *testing.T) {
 	rootDir, err := ioutil.TempDir(os.TempDir(), "root")
 	require.Nil(t, err)
 	defer os.RemoveAll(rootDir)
-	schemaPath := path.Join(rootDir, "src/schema")
-
-	processor, err := codegen.NewCodegenProcessor(s, schemaPath, "", false)
-	require.Nil(t, err)
-
-	steps := []codegen.Step{
-		new(tscode.Step),
-		// TODO graphql
-		//		new(graphql.TSStep),
-	}
-
-	err = processor.Run(steps, "", codegen.DisablePrompts(), codegen.DisableFormat())
-	require.Nil(t, err)
+	runSteps(t, s, rootDir)
 
 	validateFileExists(t, rootDir, "src/ent/generated/user_base.ts")
 	validateFileExists(t, rootDir, "src/ent/user.ts")
@@ -58,6 +70,12 @@ func TestSimpleCodegen(t *testing.T) {
 	validateFileExists(t, rootDir, "src/ent/internal.ts")
 	validateFileExists(t, rootDir, "src/ent/index.ts")
 	validateFileExists(t, rootDir, "src/ent/loadAny.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/generated/user_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/generated/node_query_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/generated/query_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/internal.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/index.ts")
+	validateFileExists(t, rootDir, "src/graphql/schema.ts")
 }
 
 func TestSchemaWithFkeyEdgeCodegen(t *testing.T) {
@@ -99,6 +117,17 @@ func TestSchemaWithFkeyEdgeCodegen(t *testing.T) {
 							Column: "ID",
 						},
 					},
+					{
+						Name: "DuplicateUserID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						ForeignKey: &input.ForeignKey{
+							Schema: "User",
+							Column: "ID",
+							Name:   "duplicate_contacts",
+						},
+					},
 				},
 			},
 		},
@@ -108,17 +137,7 @@ func TestSchemaWithFkeyEdgeCodegen(t *testing.T) {
 	rootDir, err := ioutil.TempDir(os.TempDir(), "root")
 	require.Nil(t, err)
 	defer os.RemoveAll(rootDir)
-	schemaPath := path.Join(rootDir, "src/schema")
-
-	processor, err := codegen.NewCodegenProcessor(s, schemaPath, "", false)
-	require.Nil(t, err)
-
-	steps := []codegen.Step{
-		new(tscode.Step),
-	}
-
-	err = processor.Run(steps, "", codegen.DisablePrompts(), codegen.DisableFormat())
-	require.Nil(t, err)
+	runSteps(t, s, rootDir)
 
 	validateFileExists(t, rootDir, "src/ent/generated/user_base.ts")
 	validateFileExists(t, rootDir, "src/ent/user.ts")
@@ -130,6 +149,16 @@ func TestSchemaWithFkeyEdgeCodegen(t *testing.T) {
 	validateFileExists(t, rootDir, "src/ent/loadAny.ts")
 	validateFileExists(t, rootDir, "src/ent/generated/user_query_base.ts")
 	validateFileExists(t, rootDir, "src/ent/user/query/user_to_contacts_query.ts")
+	validateFileExists(t, rootDir, "src/ent/user/query/user_to_duplicate_contacts_query.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/generated/user_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/generated/contact_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/generated/user/user_to_contacts_connection_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/generated/user/user_to_duplicate_contacts_connection_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/generated/node_query_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/generated/query_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/internal.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/index.ts")
+	validateFileExists(t, rootDir, "src/graphql/schema.ts")
 }
 
 func TestSchemaWithAssocEdgeCodegen(t *testing.T) {
@@ -162,6 +191,18 @@ func TestSchemaWithAssocEdgeCodegen(t *testing.T) {
 							},
 						},
 					},
+					{
+						Name:       "Followers",
+						SchemaName: "User",
+						InverseEdge: &input.InverseAssocEdge{
+							Name: "Followees",
+						},
+						EdgeActions: []*input.EdgeAction{
+							{
+								Operation: ent.AddEdgeAction,
+							},
+						},
+					},
 				},
 			},
 		},
@@ -171,17 +212,7 @@ func TestSchemaWithAssocEdgeCodegen(t *testing.T) {
 	rootDir, err := ioutil.TempDir(os.TempDir(), "root")
 	require.Nil(t, err)
 	defer os.RemoveAll(rootDir)
-	schemaPath := path.Join(rootDir, "src/schema")
-
-	processor, err := codegen.NewCodegenProcessor(s, schemaPath, "", false)
-	require.Nil(t, err)
-
-	steps := []codegen.Step{
-		new(tscode.Step),
-	}
-
-	err = processor.Run(steps, "", codegen.DisablePrompts(), codegen.DisableFormat())
-	require.Nil(t, err)
+	runSteps(t, s, rootDir)
 
 	validateFileExists(t, rootDir, "src/ent/generated/user_base.ts")
 	validateFileExists(t, rootDir, "src/ent/user.ts")
@@ -191,8 +222,24 @@ func TestSchemaWithAssocEdgeCodegen(t *testing.T) {
 	validateFileExists(t, rootDir, "src/ent/loadAny.ts")
 	validateFileExists(t, rootDir, "src/ent/generated/user_query_base.ts")
 	validateFileExists(t, rootDir, "src/ent/user/query/user_to_friends_query.ts")
+	validateFileExists(t, rootDir, "src/ent/user/query/user_to_followers_query.ts")
+	validateFileExists(t, rootDir, "src/ent/user/query/user_to_followees_query.ts")
 	validateFileExists(t, rootDir, "src/ent/user/actions/generated/user_add_friend_action_base.ts")
+	validateFileExists(t, rootDir, "src/ent/user/actions/generated/user_add_follower_action_base.ts")
 	validateFileExists(t, rootDir, "src/ent/user/actions/user_add_friend_action.ts")
+	validateFileExists(t, rootDir, "src/ent/user/actions/user_add_follower_action.ts")
+	validateFileExists(t, rootDir, "src/ent/user/actions/user_builder.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/generated/user_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/generated/node_query_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/generated/query_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/internal.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/index.ts")
+	validateFileExists(t, rootDir, "src/graphql/schema.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/generated/user/user_to_friends_connection_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/generated/user/user_to_followers_connection_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/generated/user/user_to_followees_connection_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/mutations/generated/user/user_add_friend_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/mutations/generated/user/user_add_follower_type.ts")
 }
 
 func TestSchemaWithActionsCodegen(t *testing.T) {
@@ -218,6 +265,19 @@ func TestSchemaWithActionsCodegen(t *testing.T) {
 					{
 						Operation: ent.CreateAction,
 					},
+					{
+						Operation: ent.EditAction,
+					},
+					{
+						Operation: ent.DeleteAction,
+					},
+					{
+						Operation:         ent.EditAction,
+						Fields:            []string{"name"},
+						CustomActionName:  "EditUserNameAction",
+						CustomGraphQLName: "UserEditName",
+						CustomInputName:   "EditNameInput",
+					},
 				},
 			},
 		},
@@ -227,17 +287,7 @@ func TestSchemaWithActionsCodegen(t *testing.T) {
 	rootDir, err := ioutil.TempDir(os.TempDir(), "root")
 	require.Nil(t, err)
 	defer os.RemoveAll(rootDir)
-	schemaPath := path.Join(rootDir, "src/schema")
-
-	processor, err := codegen.NewCodegenProcessor(s, schemaPath, "", false)
-	require.Nil(t, err)
-
-	steps := []codegen.Step{
-		new(tscode.Step),
-	}
-
-	err = processor.Run(steps, "", codegen.DisablePrompts(), codegen.DisableFormat())
-	require.Nil(t, err)
+	runSteps(t, s, rootDir)
 
 	validateFileExists(t, rootDir, "src/ent/generated/user_base.ts")
 	validateFileExists(t, rootDir, "src/ent/user.ts")
@@ -247,6 +297,22 @@ func TestSchemaWithActionsCodegen(t *testing.T) {
 	validateFileExists(t, rootDir, "src/ent/loadAny.ts")
 	validateFileExists(t, rootDir, "src/ent/user/actions/generated/create_user_action_base.ts")
 	validateFileExists(t, rootDir, "src/ent/user/actions/create_user_action.ts")
+	validateFileExists(t, rootDir, "src/ent/user/actions/generated/edit_user_action_base.ts")
+	validateFileExists(t, rootDir, "src/ent/user/actions/edit_user_action.ts")
+	validateFileExists(t, rootDir, "src/ent/user/actions/generated/edit_user_action_base.ts")
+	validateFileExists(t, rootDir, "src/ent/user/actions/edit_user_action.ts")
+	validateFileExists(t, rootDir, "src/ent/user/actions/generated/edit_user_name_action_base.ts")
+	validateFileExists(t, rootDir, "src/ent/user/actions/edit_user_name_action.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/generated/user_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/generated/node_query_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/generated/query_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/internal.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/index.ts")
+	validateFileExists(t, rootDir, "src/graphql/schema.ts")
+	validateFileExists(t, rootDir, "src/graphql/mutations/generated/user/user_create_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/mutations/generated/user/user_edit_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/mutations/generated/user/user_delete_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/mutations/generated/user/user_edit_name_type.ts")
 }
 
 func validateFileExists(t *testing.T, root, path string) {

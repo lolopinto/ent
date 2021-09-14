@@ -570,9 +570,8 @@ func GenerateSingleSchema(cfg *codegen.Config, data *CodegenData, node string) e
 // have to call codegen.FormatTS() after since we now do the formatting at once
 // as opposed to for each file
 func generateSchema(cfg *codegen.Config, data *CodegenData, node string) error {
-	tsimps := tsimport.NewImports()
-
 	filePath := path.Join(cfg.GetRootPathToConfigs(), base.GetSnakeCaseName(node)+".ts")
+	tsimps := tsimport.NewImports(cfg, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data:              data,

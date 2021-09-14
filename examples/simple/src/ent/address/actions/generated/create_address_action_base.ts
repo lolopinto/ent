@@ -6,11 +6,8 @@ import {
   Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
-import { Address } from "src/ent/";
-import {
-  AddressBuilder,
-  AddressInput,
-} from "src/ent/address/actions/address_builder";
+import { Address } from "../../..";
+import { AddressBuilder, AddressInput } from "../address_builder";
 
 export interface AddressCreateInput {
   streetName: string;

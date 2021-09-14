@@ -13,11 +13,11 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import { Contact } from "src/ent/";
+import { Contact } from "../../../../ent";
 import EditContactAction, {
   ContactEditInput,
-} from "src/ent/contact/actions/edit_contact_action";
-import { ContactType } from "src/graphql/resolvers/";
+} from "../../../../ent/contact/actions/edit_contact_action";
+import { ContactType } from "../../../resolvers";
 
 interface customContactEditInput extends ContactEditInput {
   contactID: string;

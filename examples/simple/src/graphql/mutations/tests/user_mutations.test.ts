@@ -1,13 +1,13 @@
-import schema from "src/graphql/schema";
 import { DB, ID, Viewer, LoggedOutViewer, IDViewer } from "@snowtop/ent";
-import { User } from "src/ent/";
-import { randomEmail, randomPhoneNumber } from "src/util/random";
-import CreateUserAction, {
-  UserCreateInput,
-} from "src/ent/user/actions/create_user_action";
 import { expectMutation, mutationRootConfig } from "@snowtop/ent-graphql-tests";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { mustDecodeIDFromGQLID, encodeGQLID } from "@snowtop/ent/graphql";
+import schema from "../../schema";
+import { User } from "../../../ent";
+import { randomEmail, randomPhoneNumber } from "../../../util/random";
+import CreateUserAction, {
+  UserCreateInput,
+} from "../../../ent/user/actions/create_user_action";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {

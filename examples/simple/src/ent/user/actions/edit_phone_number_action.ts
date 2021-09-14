@@ -1,11 +1,11 @@
-import CreateAuthCodeAction from "src/ent/auth_code/actions/create_auth_code_action";
+import { FakeComms, Mode } from "@snowtop/ent/testutils/fake_comms";
+import CreateAuthCodeAction from "../../auth_code/actions/create_auth_code_action";
 import {
   EditPhoneNumberActionBase,
   EditPhoneNumberInput,
-} from "src/ent/user/actions/generated/edit_phone_number_action_base";
+} from "./generated/edit_phone_number_action_base";
 import { UserBuilder } from "./user_builder";
-import { FakeComms, Mode } from "@snowtop/ent/testutils/fake_comms";
-import { User } from "src/ent/user";
+import { User } from "../..";
 import { EditUserPrivacy } from "./edit_user_privacy";
 
 export { EditPhoneNumberInput };

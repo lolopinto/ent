@@ -30,8 +30,8 @@ import {
   EventToMaybeQuery,
   NodeType,
   User,
-} from "src/ent/internal";
-import schema from "src/schema/event";
+} from "../internal";
+import schema from "../../schema/event";
 
 const tableName = "events";
 const fields = [

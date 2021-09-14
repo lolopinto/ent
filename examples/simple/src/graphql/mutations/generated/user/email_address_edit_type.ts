@@ -13,11 +13,11 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import { User } from "src/ent/";
+import { User } from "../../../../ent";
 import EditEmailAddressAction, {
   EditEmailAddressInput,
-} from "src/ent/user/actions/edit_email_address_action";
-import { UserType } from "src/graphql/resolvers/";
+} from "../../../../ent/user/actions/edit_email_address_action";
+import { UserType } from "../../../resolvers";
 
 interface customEmailAddressEditInput extends EditEmailAddressInput {
   userID: string;

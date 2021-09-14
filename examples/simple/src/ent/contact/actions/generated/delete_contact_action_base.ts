@@ -7,11 +7,8 @@ import {
   Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
-import { Contact } from "src/ent/";
-import {
-  ContactBuilder,
-  ContactInput,
-} from "src/ent/contact/actions/contact_builder";
+import { Contact } from "../../..";
+import { ContactBuilder, ContactInput } from "../contact_builder";
 
 export class DeleteContactActionBase implements Action<Contact> {
   public readonly builder: ContactBuilder;

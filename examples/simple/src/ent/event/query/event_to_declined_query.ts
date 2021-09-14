@@ -1,5 +1,5 @@
-import { EventToDeclinedQueryBase } from "src/ent/internal";
 import { AssocEdge } from "@snowtop/ent";
+import { EventToDeclinedQueryBase } from "../../internal";
 
 export class EventToDeclinedEdge extends AssocEdge {}
 

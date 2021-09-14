@@ -1,2 +1,2 @@
-import { UserToAuthCodesQueryBase } from "src/ent/internal";
+import { UserToAuthCodesQueryBase } from "../../internal";
 export class UserToAuthCodesQuery extends UserToAuthCodesQueryBase {}

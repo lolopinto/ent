@@ -7,11 +7,8 @@ import {
   Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
-import { AuthCode } from "src/ent/";
-import {
-  AuthCodeBuilder,
-  AuthCodeInput,
-} from "src/ent/auth_code/actions/auth_code_builder";
+import { AuthCode } from "../../..";
+import { AuthCodeBuilder, AuthCodeInput } from "../auth_code_builder";
 
 export class DeleteAuthCodeActionBase implements Action<AuthCode> {
   public readonly builder: AuthCodeBuilder;

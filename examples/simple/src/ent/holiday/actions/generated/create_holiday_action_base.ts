@@ -6,11 +6,8 @@ import {
   Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
-import { Holiday } from "src/ent/";
-import {
-  HolidayBuilder,
-  HolidayInput,
-} from "src/ent/holiday/actions/holiday_builder";
+import { Holiday } from "../../..";
+import { HolidayBuilder, HolidayInput } from "../holiday_builder";
 
 export interface HolidayCreateInput {
   label: string;
