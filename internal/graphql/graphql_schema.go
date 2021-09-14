@@ -800,6 +800,7 @@ func getSortedTypes(t *graphqlSchemaTemplate) []*graphqlSchemaTypeInfo {
 	return t.Types
 }
 
+// TODO
 func (schema *graphQLSchema) writeGraphQLSchema() error {
 	// TODO
 	return file.Write(&file.TemplatedBasedFileWriter{

@@ -311,7 +311,8 @@ func (p *TSStep) ProcessData(processor *codegen.Processor) error {
 		return nil
 	}
 	// generate schema.gql
-	return generateSchemaFile(processor, p.s.hasMutations)
+	return generateAlternateSchemaFile(processor, p.s)
+	//	return generateSchemaFile(p.s.hasMutations)
 }
 
 func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) error {
@@ -863,6 +864,21 @@ type gqlEnum struct {
 	FilePath string
 }
 
+// TODO make this better later
+func (e *gqlEnum) Render() string {
+	var sb strings.Builder
+	sb.WriteString("enum ")
+	sb.WriteString(e.Enum.Name)
+	sb.WriteString(" {\n")
+	for _, val := range e.Enum.Values {
+		sb.WriteString("  ")
+		sb.WriteString(val.Name)
+		sb.WriteString("\n")
+	}
+	sb.WriteString("}\n")
+	return sb.String()
+}
+
 type gqlConnection struct {
 	ConnType string
 	FilePath string
@@ -870,6 +886,13 @@ type gqlConnection struct {
 	Imports  []*fileImport
 	NodeType string
 	Package  *codegen.ImportPackage
+}
+
+// schema is passed and used for
+//			s.customEdges[conn.Edge.TsEdgeQueryEdgeName()],
+
+func (c *gqlConnection) Render() string {
+	return ""
 }
 
 func getGqlConnection(packageName string, edge edge.ConnectionEdge, processor *codegen.Processor) *gqlConnection {
@@ -1065,6 +1088,9 @@ type typeInfo struct {
 	Type       string
 	Function   bool
 	ImportPath string
+	Path       string
+	NodeType   string
+	Obj        interface{}
 }
 
 const resolverPath = "src/graphql/resolvers"
@@ -1079,6 +1105,8 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 			nodes = append(nodes, typeInfo{
 				Type:       n.Type,
 				ImportPath: resolverPath,
+				NodeType:   "Node",
+				Obj:        n,
 			})
 		}
 		for _, conn := range node.connections {
@@ -1086,6 +1114,8 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 				Type:       conn.ConnType,
 				ImportPath: resolverPath,
 				Function:   true,
+				NodeType:   "Connection",
+				Obj:        conn,
 			})
 		}
 
@@ -1095,6 +1125,8 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 				actionTypes = append(actionTypes, typeInfo{
 					Type:       depObj.Type,
 					ImportPath: trimPath(cfg, dep.FilePath),
+					NodeType:   "Mutation",
+					Obj:        depObj,
 				})
 			}
 		}
@@ -1104,6 +1136,8 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 		enums = append(enums, typeInfo{
 			Type:       enum.Type,
 			ImportPath: resolverPath,
+			NodeType:   "Enum",
+			Obj:        enum,
 		})
 	}
 
@@ -1113,6 +1147,8 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 			customQueries = append(customQueries, typeInfo{
 				Type:       n.Type,
 				ImportPath: resolverPath,
+				NodeType:   "CustomQuery",
+				Obj:        node,
 			})
 
 			for _, conn := range node.connections {
@@ -1120,6 +1156,8 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 					Type:       conn.ConnType,
 					ImportPath: resolverPath,
 					Function:   true,
+					NodeType:   "CustomConn",
+					Obj:        conn,
 				})
 			}
 		}
@@ -1131,6 +1169,8 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 			customMutations = append(customMutations, typeInfo{
 				Type:       n.Type,
 				ImportPath: trimPath(cfg, node.FilePath),
+				NodeType:   "CustomMutation",
+				Obj:        n,
 			})
 		}
 	}
@@ -1311,6 +1351,10 @@ type fieldConfigArg struct {
 	Name        string
 	Description string
 	Imports     []*fileImport
+}
+
+func (f *fieldConfigArg) Render() string {
+	return fmt.Sprintf("%s: %s", f.Name, getTypeForImports(f.Imports))
 }
 
 func (f fieldConfigArg) FieldType() string {
@@ -2086,6 +2130,33 @@ type objectType struct {
 	IsTypeOfMethod []string
 }
 
+func (obj *objectType) Render() string {
+	var sb strings.Builder
+
+	sb.WriteString("type ")
+	sb.WriteString(obj.Node)
+	// TODO implements
+
+	interfaces := make([]string, len(obj.GQLInterfaces))
+	for idx, inter := range obj.GQLInterfaces {
+		interfaces[idx] = strings.TrimSuffix(strings.TrimPrefix(inter, "GraphQL"), "Interface")
+	}
+
+	if len(interfaces) > 0 {
+		sb.WriteString(" implements ")
+		sb.WriteString(strings.Join(interfaces, " & "))
+
+	}
+	sb.WriteString(" {\n")
+	for _, field := range obj.Fields {
+		sb.WriteString("  ")
+		sb.WriteString(field.Render())
+	}
+	sb.WriteString("}\n")
+
+	return sb.String()
+}
+
 type fieldType struct {
 	Name               string
 	HasResolveFunction bool
@@ -2099,6 +2170,82 @@ type fieldType struct {
 	FunctionContents []string
 	ResolverMethod   string
 	// TODO more types we need to support
+}
+
+func getRawType(typ string) string {
+	if strings.HasPrefix(typ, "GraphQL") {
+		return strings.TrimPrefix(typ, "GraphQL")
+	}
+	return strings.TrimSuffix(typ, "Type")
+}
+
+func getTypeForImports(imps []*fileImport) string {
+	typ := ""
+	nonNullable := false
+	list := false
+	nonNullableContents := false
+	for _, imp := range imps {
+		if imp.Type == "GraphQLNonNull" {
+			if list {
+				nonNullableContents = true
+			} else {
+				nonNullable = true
+			}
+		} else if imp.Type == "GraphQLList" {
+			list = true
+		} else {
+			// TODO imp.Name
+			typ = getRawType(imp.Type)
+		}
+	}
+
+	ret := typ
+	if nonNullableContents || (!list && nonNullable) {
+		ret = ret + "!"
+	}
+	if list {
+		ret = "[" + ret + "]"
+	}
+	if list && nonNullable {
+		ret = ret + "!"
+	}
+	return ret
+}
+
+func (f *fieldType) getType() string {
+	return getTypeForImports(f.FieldImports)
+}
+
+func (f *fieldType) Render() string {
+	var sb strings.Builder
+	if f.Description != "" {
+		sb.WriteString("\"")
+		sb.WriteString("\"")
+		sb.WriteString("\"")
+		sb.WriteString(f.Description)
+		sb.WriteString("\"")
+		sb.WriteString("\"")
+		sb.WriteString("\"")
+		sb.WriteString("\n")
+	}
+	sb.WriteString(f.Name)
+
+	if len(f.Args) > 0 {
+		sb.WriteString("(")
+		args := make([]string, len(f.Args))
+		for idx, arg := range f.Args {
+			args[idx] = arg.Render()
+		}
+		sb.WriteString(strings.Join(args, ", "))
+
+		sb.WriteString(")")
+	}
+
+	// TODO args
+	sb.WriteString(": ")
+	sb.WriteString(f.getType())
+	sb.WriteString("\n")
+	return sb.String()
 }
 
 type interfaceType struct {
@@ -2509,6 +2656,37 @@ func writeTSIndexFile(processor *codegen.Processor, s *gqlSchema) error {
 		FuncMap:           imps.FuncMap(),
 		EditableCode:      true,
 	}), file.WriteOnce())
+}
+
+type renderable interface {
+	Render() string
+}
+
+func generateAlternateSchemaFile(processor *codegen.Processor, s *gqlSchema) error {
+
+	var sb strings.Builder
+
+	sb.WriteString("// Generated by github.com/lolopinto/ent/ent, DO NOT EDIT.\n\n")
+
+	// need to flag interfaces we see and add them here?
+	// or keep track of them separately
+	// Node, Connection, Edge
+	// what of other types e.g. PageInfo
+	// what of scalars? Time, Upload
+	allTypes := getAllTypes(s)
+	for _, typ := range allTypes {
+		if typ.NodeType == "Enum" || typ.NodeType == "Node" {
+			r, ok := typ.Obj.(renderable)
+			if ok {
+				sb.WriteString(r.Render())
+				sb.WriteString("\n")
+			} else {
+				fmt.Printf("invalid obj %v\n", typ)
+			}
+		}
+	}
+
+	return os.WriteFile("src/graphql/schema.graphql", []byte(sb.String()), 0666)
 }
 
 func generateSchemaFile(processor *codegen.Processor, hasMutations bool) error {
