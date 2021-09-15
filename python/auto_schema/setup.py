@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="auto_schema",  # auto_schema_test to test
-    version="0.0.9",  # 0.0.5 was last test version
+    version="0.0.10",  # 0.0.7 was last test version
     author="Ola Okelola",
     author_email="email@email.com",
     description="auto schema for a db",
@@ -19,8 +19,13 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
-    install_requires=["sqlalchemy>=1.3.20",
-                      "alembic>=1.4.3", "datetime>=4.3", "psycopg2>=2.8.6", "autopep8>=1.5.4"],
+    install_requires=["sqlalchemy==1.3.19",
+                      "alembic==1.4.2",
+                      "datetime==4.3",
+                      "psycopg2==2.8.6",
+                      "autopep8==1.5.4",
+                      "python-dateutil==2.8.2"
+                      ],
     entry_points={'console_scripts': ["auto_schema = auto_schema.cli:main"]},
     include_package_data=True
 )
