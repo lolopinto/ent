@@ -402,7 +402,7 @@ func getQueryFilePath(cfg *codegen.Config) string {
 }
 
 func getNodeQueryTypeFilePath(cfg *codegen.Config) string {
-	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/resolvers/generated/node_query_type.ts")
+	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/resolvers/node_query_type.ts")
 }
 
 func getMutationFilePath(cfg *codegen.Config) string {

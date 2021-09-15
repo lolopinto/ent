@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/lolopinto/ent/internal/codegen"
 )
@@ -39,11 +40,17 @@ func writeFile(w Writer, cfg *codegen.Config, opts ...func(opt *Options)) error 
 		}
 		opt(option)
 	}
+	pathToFile := w.getPathToFile()
+	if option.writeOnce {
+		idx := strings.Index(pathToFile, "generated")
+		if idx != -1 {
+			fmt.Printf("WARN: file %s which is being written once has generated in the name...\n", pathToFile)
+		}
+	}
 	b, err := w.generateBytes()
 	if err != nil {
 		return err
 	}
-	pathToFile := w.getPathToFile()
 
 	fullPath := pathToFile
 	if w.createDirIfNeeded() {

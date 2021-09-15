@@ -1,17 +1,17 @@
 import {
+  GraphQLFieldConfig,
   GraphQLID,
   GraphQLNonNull,
-  GraphQLFieldConfig,
   GraphQLResolveInfo,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import {
+  EntNodeResolver,
   GraphQLNodeInterface,
   registerResolver,
-  EntNodeResolver,
   resolveID,
 } from "@snowtop/ent/graphql";
-import { loadEntByType } from "../../../ent/loadAny";
+import { loadEntByType } from "../../ent/loadAny";
 
 interface NodeQueryArgs {
   id: string;

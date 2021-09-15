@@ -12,8 +12,7 @@ import {
   WriteOperation,
   setEdgeTypeInGroup,
 } from "@snowtop/ent/action";
-import { NodeType } from "src/ent";
-import { EventActivity } from "src/ent/";
+import { EventActivity, NodeType } from "src/ent/";
 import {
   EventActivityBuilder,
   EventActivityInput,
