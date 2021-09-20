@@ -26,6 +26,7 @@ let tsFields: Field[] = [
 
 // Timestamps is a Pattern that adds a createdAt and updatedAt timestamp fields to the ent
 export const Timestamps: Pattern = {
+  name: "timestamps",
   fields: tsFields,
 };
 
@@ -67,18 +68,29 @@ let nodeFieldsWithTZ: Field[] = [
 
 // Node is a Pattern that adds 3 fields to the ent: (id, createdAt, and updatedAt timestamps)
 export const Node: Pattern = {
+  name: "node",
   fields: nodeFields,
 };
 
 // Base ent schema. has Node Pattern by default.
 // exists just to have less typing and easier for clients to implement
 export abstract class BaseEntSchema {
+  addPatterns(...patterns: Pattern[]) {
+    this.patterns.push(...patterns);
+  }
+
   patterns: Pattern[] = [Node];
 }
 
 export abstract class BaseEntSchemaWithTZ {
+  addPatterns(...patterns: Pattern[]) {
+    this.patterns.push(...patterns);
+  }
+
   patterns: Pattern[] = [
     {
+      // default schema added
+      name: "node",
       fields: nodeFieldsWithTZ,
     },
   ];

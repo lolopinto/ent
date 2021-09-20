@@ -1,87 +1,9 @@
-import { Schema, Field, AssocEdge, AssocEdgeGroup } from "../schema";
 import glob from "glob";
 import * as path from "path";
 import { pascalCase } from "pascal-case";
 import minimist from "minimist";
-import { ActionField } from "../schema/schema";
 import { exit } from "process";
-
-function processFields(dst: {}[], src: Field[]) {
-  for (const field of src) {
-    let f = {};
-    f = field;
-    f["hasDefaultValueOnCreate"] = field.defaultValueOnCreate != undefined;
-    f["hasDefaultValueOnEdit"] = field.defaultValueOnEdit != undefined;
-    if (field.polymorphic) {
-      // convert boolean into object
-      // we keep boolean as an option to keep API simple
-      if (typeof field.polymorphic === "boolean") {
-        f["polymorphic"] = {};
-      } else {
-        f["polymorphic"] = field.polymorphic;
-      }
-    }
-    dst.push(f);
-  }
-}
-
-enum NullableResult {
-  CONTENTS = "contents",
-  CONTENTS_AND_LIST = "contentsAndList",
-  ITEM = "true", // nullable = true
-}
-
-type ProcessedActionField =
-  | Exclude<ActionField, "nullable">
-  | {
-      nullable?: NullableResult;
-    };
-
-type ProcessedAssocEdge =
-  | Exclude<AssocEdge, "actionOnlyFields" | "edgeActions">
-  | {
-      edgeActions?: OutputAction[];
-    };
-
-type ProcessedAssocEdgeGroup =
-  | Exclude<AssocEdgeGroup, "edgeAction">
-  | {
-      edgeAction?: OutputAction;
-    };
-
-interface InputAction {
-  actionOnlyFields?: ActionField[];
-}
-
-interface OutputAction {
-  actionOnlyFields?: ProcessedActionField[];
-}
-
-function processAction(action: InputAction): OutputAction {
-  if (!action.actionOnlyFields) {
-    return action;
-  }
-
-  let ret = action as OutputAction;
-  ret.actionOnlyFields = action.actionOnlyFields.map((f) => {
-    let f2 = f as ProcessedActionField;
-    if (!f.nullable) {
-      return f2;
-    }
-    if (typeof f.nullable === "boolean") {
-      f2.nullable = NullableResult.ITEM;
-    } else {
-      if (f.nullable === "contentsAndList") {
-        f2.nullable = NullableResult.CONTENTS_AND_LIST;
-      } else {
-        f2.nullable = NullableResult.CONTENTS;
-      }
-    }
-
-    return f2;
-  });
-  return ret;
-}
+import { parseSchema } from "../parse_schema/parse";
 
 function main() {
   const options = minimist(process.argv.slice(2));
@@ -105,63 +27,11 @@ function main() {
   }
   //  console.log(potentialSchemas);
 
-  let schemas = {};
-  for (const key in potentialSchemas) {
-    const value = potentialSchemas[key];
-    let schema: Schema;
-    if (value.constructor == Object) {
-      schema = value;
-    } else {
-      schema = new value();
-    }
-    // let's put patterns first just so we have id, created_at, updated_at first
-    // ¯\_(ツ)_/¯
-    let fields: Field[] = [];
-    if (schema.patterns) {
-      for (const pattern of schema.patterns) {
-        processFields(fields, pattern.fields);
-      }
-    }
-    processFields(fields, schema.fields);
-    let assocEdges: ProcessedAssocEdge[] = [];
-    let assocEdgeGroups: ProcessedAssocEdgeGroup[] = [];
-    if (schema.edges) {
-      for (const edge of schema.edges) {
-        let edge2: ProcessedAssocEdge = edge;
-        edge2.edgeActions = edge.edgeActions?.map((action) =>
-          processAction(action),
-        );
-        assocEdges.push(edge2);
-      }
-    }
-    if (schema.edgeGroups) {
-      // array-ify this
-      for (const group of schema.edgeGroups) {
-        if (group.nullStates && !Array.isArray(group.nullStates)) {
-          group.nullStates = [group.nullStates];
-        }
-        let group2: ProcessedAssocEdgeGroup = group;
-        if (group.edgeAction) {
-          group2.edgeAction = processAction(group.edgeAction);
-        }
-        assocEdgeGroups.push(group2);
-      }
-    }
+  const result = parseSchema(potentialSchemas);
 
-    schemas[key] = {
-      tableName: schema.tableName,
-      fields: fields,
-      assocEdges: assocEdges,
-      assocEdgeGroups: assocEdgeGroups,
-      actions: schema.actions?.map((action) => processAction(action)),
-      enumTable: schema.enumTable,
-      dbRows: schema.dbRows,
-      constraints: schema.constraints,
-      indices: schema.indices,
-      hideFromGraphQL: schema.hideFromGraphQL,
-    };
-  }
-  console.log(JSON.stringify(schemas));
+  // we need to tie this into @snowtop/ent version...
+  // or in golang try and parse both and see that we have data
+  console.log(JSON.stringify(result));
 }
 
 try {

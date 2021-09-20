@@ -65,6 +65,9 @@ export interface AssocEdge {
   tableName?: string;
   edgeActions?: EdgeAction[];
   hideFromGraphQL?: boolean;
+  // use this instead of the default generated const names
+  // TODO more works
+  edgeConstName?: string;
 }
 
 // type PickKey<T, K extends keyof T> = Extract<keyof T, K>;
@@ -91,6 +94,8 @@ export interface EdgeAction {
 export interface InverseAssocEdge {
   // name of the inverse edge
   name: string;
+  // same as in AssocEdge
+  edgeConstName?: string;
 }
 
 export interface EdgeGroupAction {
@@ -143,7 +148,33 @@ export type Edge = AssocEdge;
 // The most commonly used pattern in the ent framework is going to be the Node pattern
 // which automatically provides 3 fields to every ent: id, created_at, updated_at
 export interface Pattern {
+  // breaking change. we use it to identify patterns
+  name: string;
+  //  edgePrefix?: string; // specify an edge to use as prefix in edge consts
+  // changing this after the fact will break things and lead to issues so
   fields: Field[];
+  // pattern edges e.g. likes ObjectToLike
+  // imagine a feedback target with comments etc
+  // we need something that indicates that we know the edgeType and shouldn't generate a new
+  // one for each
+  // or EditHistory...
+  // groups?
+  // each generated assoc edge should extend the generated pattern's edge so we have base functionality
+  // and then we can customize too...
+  // we need Patterns as top level things in the schema
+  // and edges that map to them...
+  //
+  // edges?
+  // edges?: {
+  // specify a prefix to use when generating edge consts
+  // changing this after the fact will break things and lead to issues so recommend not doing that
+  // by default, we use object
+  // e.g. with an edge name 'likes' and inverse edge 'likers', we generate ObjectToLikes, and ObjectToLikers
+  // with prefix post, we generate 'PostToLikes',
+  //    prefix?: string;
+  edges?: Edge[];
+  //  };
+  //  edges?: Edge[];
 }
 
 // we want --strictNullChecks flag so nullable is used to type graphql, ts, db

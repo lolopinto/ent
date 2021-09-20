@@ -18,10 +18,17 @@ export type EdgeQuerySource<T extends Ent> =
   | ID[]
   | EdgeQuery<T, AssocEdge>;
 
+type loaderOptionsFunc = (type: string) => LoadEntOptions<Ent>;
+
+interface typeData {
+  ids: ID[];
+  options: LoadEntOptions<Ent>;
+}
+
 export class AssocEdgeQueryBase<
   TSource extends Ent,
   TDest extends Ent,
-  TEdge extends AssocEdge
+  TEdge extends AssocEdge,
 > extends BaseEdgeQuery<TDest, TEdge> {
   private idsResolved: boolean;
   private resolvedIDs: ID[] = [];
@@ -31,7 +38,9 @@ export class AssocEdgeQueryBase<
     public src: EdgeQuerySource<TSource>,
     private countLoaderFactory: AssocEdgeCountLoaderFactory,
     private dataLoaderFactory: AssocEdgeLoaderFactory<TEdge>,
-    private options: LoadEntOptions<TDest>,
+    // if function, it's a polymorphic edge and need to provide
+    // a function that goes from edgeType to LoadEntOptions
+    private options: LoadEntOptions<TDest> | loaderOptionsFunc,
   ) {
     super(viewer, "time");
   }
@@ -107,6 +116,37 @@ export class AssocEdgeQueryBase<
     id: ID,
     edges: AssocEdge[],
   ): Promise<TDest[]> {
+    if (typeof this.options === "function") {
+      const m = new Map<string, typeData>();
+      for (const edge of edges) {
+        const nodeType = edge.id2Type;
+        let data = m.get(nodeType);
+        if (data === undefined) {
+          const opts = this.options(nodeType);
+          if (opts === undefined) {
+            throw new Error(
+              `getLoaderOptions returned undefined for type ${nodeType}`,
+            );
+          }
+          data = {
+            ids: [],
+            options: opts,
+          };
+        }
+        data.ids.push(edge.id2);
+        m.set(nodeType, data);
+      }
+      let promises: Promise<Ent[]>[] = [];
+      for (const [_, value] of m) {
+        promises.push(loadEnts(this.viewer, value.options, ...value.ids));
+      }
+      const entss = await Promise.all(promises);
+      const r: Ent[] = [];
+      for (const ents of entss) {
+        r.push(...ents);
+      }
+      return r as TDest[];
+    }
     const ids = edges.map((edge) => edge.id2);
     return await loadEnts(this.viewer, this.options, ...ids);
   }

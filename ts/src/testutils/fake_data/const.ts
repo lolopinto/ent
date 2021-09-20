@@ -1,3 +1,6 @@
+import { Ent, LoadEntOptions } from "../../core/base";
+import { FakeContact, FakeEvent, FakeUser } from "./internal";
+
 export enum EdgeType {
   UserToContacts = "userToContacts",
   UserToFriends = "userToFriends",
@@ -16,6 +19,11 @@ export enum EdgeType {
 
   UserToFriendRequests = "userToFriendRequests",
   UserToIncomingFriendRequests = "userToIncomingFriendRequests",
+
+  // can follow users or events...
+  // so a polymorphic edge
+  UserToFollowing = "userToFollowing",
+  ObjectToFollowedUsers = "objectToFollowedUsers",
 }
 
 export enum NodeType {
@@ -36,4 +44,18 @@ export const InverseEdges = new Map<EdgeType, EdgeType>([
 
   [EdgeType.UserToFriendRequests, EdgeType.UserToIncomingFriendRequests],
   [EdgeType.UserToIncomingFriendRequests, EdgeType.UserToFriendRequests],
+
+  [EdgeType.UserToFollowing, EdgeType.ObjectToFollowedUsers],
+  [EdgeType.ObjectToFollowedUsers, EdgeType.UserToFollowing],
 ]);
+
+export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent> {
+  switch (type) {
+    case NodeType.FakeContact:
+      return FakeContact.loaderOptions();
+    case NodeType.FakeUser:
+      return FakeUser.loaderOptions();
+    case NodeType.FakeEvent:
+      return FakeEvent.loaderOptions();
+  }
+}
