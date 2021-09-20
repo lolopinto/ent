@@ -38,7 +38,7 @@ export interface gqlObjectOptions {
   description?: string;
 }
 
-type gqlTopLevelOptions = Omit<gqlFieldOptions, "nullable">;
+type gqlTopLevelOptions = Exclude<gqlFieldOptions, "nullable">;
 // export interface gqlTopLevelOptions
 //   name?: string;
 //   type?: Type | Array<Type>;
