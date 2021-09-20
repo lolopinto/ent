@@ -796,3 +796,322 @@ func TestParseInputWithPolymorphicFieldEdgeNotIndexed(t *testing.T) {
 	indexedEdge := userCfg.NodeData.EdgeInfo.GetIndexedEdgeByName("Addresses")
 	assert.Nil(t, indexedEdge)
 }
+
+func TestWithPatterns(t *testing.T) {
+	n := &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "id",
+				Type: &input.FieldType{
+					DBType: input.UUID,
+				},
+				PrimaryKey: true,
+			},
+		},
+		AssocEdges: []*input.AssocEdge{
+			{
+				Name:       "likers",
+				SchemaName: "User",
+				InverseEdge: &input.InverseAssocEdge{
+					Name: "likes",
+					// using non-default names
+					EdgeConstName: "UserToLikedObjects",
+				},
+				// using non-default names
+				// TODO should throw if we reuse names. this was originally PostToLikers and we have PostToLikers based on object using this
+				EdgeConstName: "LikedPostToLikers",
+				PatternName:   "Likes",
+			},
+		},
+	}
+
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+				},
+			},
+			"Post":  n,
+			"Group": n,
+		},
+		Patterns: map[string]*input.Pattern{
+			"node": {
+				Name: "node",
+			},
+			"likes": {
+				Name: "likes",
+				AssocEdges: []*input.AssocEdge{
+					{
+						Name:       "likers",
+						SchemaName: "User",
+						InverseEdge: &input.InverseAssocEdge{
+							Name:          "likes",
+							EdgeConstName: "UserToLikedObjects",
+						},
+						EdgeConstName: "LikedPostToLikers",
+					},
+				},
+			},
+		},
+	}
+	schema, err := schema.ParseFromInputSchema(inputSchema, base.TypeScript)
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 3)
+
+	assert.Len(t, schema.Patterns, 2)
+
+	newEdges := schema.GetNewEdges()
+	// 2 new edges. inverse and not inverse
+	// regardless of how many things use the pattern
+
+	assert.Len(t, newEdges, 2)
+
+	edge0 := newEdges[0]
+	assert.Equal(t, edge0.EdgeName, "LikedPostToLikersEdge")
+	assert.False(t, edge0.SymmetricEdge)
+	assert.NotNil(t, edge0.InverseEdgeType)
+	assert.Equal(t, edge0.EdgeTable, "object_likers_edges")
+
+	edge1 := newEdges[1]
+	assert.Equal(t, edge1.EdgeName, "UserToLikedObjectsEdge")
+	assert.False(t, edge1.SymmetricEdge)
+	assert.NotNil(t, edge1.InverseEdgeType)
+	assert.Equal(t, edge1.EdgeTable, "object_likers_edges")
+
+	assert.Equal(t, edge0.InverseEdgeType.String, string(edge1.EdgeType))
+	assert.Equal(t, edge1.InverseEdgeType.String, string(edge0.EdgeType))
+
+	userCfg := schema.Nodes["UserConfig"]
+	// user node and inverse edge
+	testConsts(t, userCfg.NodeData.ConstantGroups, 1, 1)
+
+	// likes edge added
+	likesEdge := userCfg.NodeData.EdgeInfo.GetAssociationEdgeByName("likes")
+	require.NotNil(t, likesEdge)
+	assert.Len(t, userCfg.NodeData.EdgeInfo.Associations, 1)
+	assert.Equal(t, "UserToLikedObjects", likesEdge.TsEdgeConst)
+	assert.Equal(t, "AssocEdge", likesEdge.AssocEdgeBase())
+	assert.Equal(t, "UserToLikedObjectsQueryBase", likesEdge.EdgeQueryBase())
+	assert.Equal(t, "UserToLikedObjectsEdge", likesEdge.TsEdgeQueryEdgeName())
+	assert.Equal(t, "UserToLikedObjectsQuery", likesEdge.TsEdgeQueryName())
+	assert.False(t, likesEdge.CreateEdge())
+	assert.True(t, likesEdge.PolymorphicEdge())
+
+	postCfg := schema.Nodes["PostConfig"]
+	//	post node and no edge
+	testConsts(t, postCfg.NodeData.ConstantGroups, 1, 0)
+	likersEdge := postCfg.NodeData.EdgeInfo.GetAssociationEdgeByName("likers")
+	require.NotNil(t, likersEdge)
+	assert.Len(t, postCfg.NodeData.EdgeInfo.Associations, 1)
+	assert.Equal(t, "LikedPostToLikers", likersEdge.TsEdgeConst)
+	assert.Equal(t, "LikedPostToLikersEdge", likersEdge.AssocEdgeBase())
+	assert.Equal(t, "LikedPostToLikersQuery", likersEdge.EdgeQueryBase())
+	assert.Equal(t, "PostToLikersEdge", likersEdge.TsEdgeQueryEdgeName())
+	assert.Equal(t, "PostToLikersQuery", likersEdge.TsEdgeQueryName())
+	assert.False(t, likersEdge.CreateEdge())
+	assert.False(t, likersEdge.PolymorphicEdge())
+
+	// group node and no edge
+	groupCfg := schema.Nodes["GroupConfig"]
+	testConsts(t, groupCfg.NodeData.ConstantGroups, 1, 0)
+	likersEdge2 := groupCfg.NodeData.EdgeInfo.GetAssociationEdgeByName("likers")
+	require.NotNil(t, likersEdge2)
+	assert.Len(t, groupCfg.NodeData.EdgeInfo.Associations, 1)
+	assert.Equal(t, "LikedPostToLikers", likersEdge2.TsEdgeConst)
+	assert.Equal(t, "LikedPostToLikersEdge", likersEdge2.AssocEdgeBase())
+	assert.Equal(t, "LikedPostToLikersQuery", likersEdge2.EdgeQueryBase())
+	assert.Equal(t, "GroupToLikersEdge", likersEdge2.TsEdgeQueryEdgeName())
+	assert.Equal(t, "GroupToLikersQuery", likersEdge2.TsEdgeQueryName())
+	assert.False(t, likersEdge2.CreateEdge())
+	assert.False(t, likersEdge2.PolymorphicEdge())
+
+	// nothing for node
+	testConsts(t, schema.Patterns["node"].ConstantGroups, 0, 0)
+
+	// no node and 1 edge
+	likersPattern := schema.Patterns["likes"]
+	testConsts(t, likersPattern.ConstantGroups, 0, 1)
+	patternLikersEdge := likersPattern.AssocEdges["likers"]
+	require.NotNil(t, patternLikersEdge)
+	assert.Equal(t, "LikedPostToLikers", patternLikersEdge.TsEdgeConst)
+	assert.Equal(t, "AssocEdge", patternLikersEdge.AssocEdgeBase())
+	assert.Equal(t, "LikedPostToLikersQueryBase", patternLikersEdge.EdgeQueryBase())
+	assert.Equal(t, "LikedPostToLikersEdge", patternLikersEdge.TsEdgeQueryEdgeName())
+	assert.Equal(t, "LikedPostToLikersQuery", patternLikersEdge.TsEdgeQueryName())
+	assert.True(t, patternLikersEdge.CreateEdge())
+	assert.False(t, patternLikersEdge.PolymorphicEdge())
+}
+
+func testConsts(t *testing.T, cg map[string]*schema.ConstGroupInfo, nodeCt, edgeCt int) {
+	if cg == nil {
+		assert.Equal(t, nodeCt, 0)
+		assert.Equal(t, edgeCt, 0)
+		return
+	}
+
+	node := cg["ent.NodeType"]
+	if nodeCt == 0 {
+		assert.Nil(t, node, 0)
+	} else {
+		require.NotNil(t, node)
+		assert.Len(t, node.Constants, nodeCt)
+	}
+	edge := cg["ent.EdgeType"]
+	if edgeCt == 0 {
+		assert.Nil(t, edge, 0)
+	} else {
+		require.NotNil(t, edge)
+		assert.Len(t, edge.Constants, edgeCt)
+	}
+}
+
+func TestWithPatternsNoEdgeConstName(t *testing.T) {
+	n := &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "id",
+				Type: &input.FieldType{
+					DBType: input.UUID,
+				},
+				PrimaryKey: true,
+			},
+		},
+		AssocEdges: []*input.AssocEdge{
+			{
+				Name:       "likers",
+				SchemaName: "User",
+				InverseEdge: &input.InverseAssocEdge{
+					Name: "likes",
+				},
+				PatternName: "Likes",
+			},
+		},
+	}
+
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+				},
+			},
+			"Post":  n,
+			"Group": n,
+		},
+		Patterns: map[string]*input.Pattern{
+			"node": {
+				Name: "node",
+			},
+			"likes": {
+				Name: "likes",
+				AssocEdges: []*input.AssocEdge{
+					{
+						Name:       "likers",
+						SchemaName: "User",
+						InverseEdge: &input.InverseAssocEdge{
+							Name: "likes",
+						},
+					},
+				},
+			},
+		},
+	}
+	schema, err := schema.ParseFromInputSchema(inputSchema, base.TypeScript)
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 3)
+
+	assert.Len(t, schema.Patterns, 2)
+	newEdges := schema.GetNewEdges()
+	// 2 new edges. inverse and not inverse
+	// regardless of how many things use the pattern
+
+	assert.Len(t, newEdges, 2)
+	edge0 := newEdges[0]
+	assert.Equal(t, edge0.EdgeName, "ObjectToLikersEdge")
+	assert.False(t, edge0.SymmetricEdge)
+	assert.NotNil(t, edge0.InverseEdgeType)
+	assert.Equal(t, edge0.EdgeTable, "object_likers_edges")
+
+	edge1 := newEdges[1]
+	assert.Equal(t, edge1.EdgeName, "UserToLikesEdge")
+	assert.False(t, edge1.SymmetricEdge)
+	assert.NotNil(t, edge1.InverseEdgeType)
+	assert.Equal(t, edge1.EdgeTable, "object_likers_edges")
+
+	assert.Equal(t, edge0.InverseEdgeType.String, string(edge1.EdgeType))
+	assert.Equal(t, edge1.InverseEdgeType.String, string(edge0.EdgeType))
+
+	userCfg := schema.Nodes["UserConfig"]
+	// user node and inverse edge
+	testConsts(t, userCfg.NodeData.ConstantGroups, 1, 1)
+
+	// likes edge added
+	likesEdge := userCfg.NodeData.EdgeInfo.GetAssociationEdgeByName("likes")
+	require.NotNil(t, likesEdge)
+	assert.Len(t, userCfg.NodeData.EdgeInfo.Associations, 1)
+	assert.Equal(t, "UserToLikes", likesEdge.TsEdgeConst)
+	assert.Equal(t, "AssocEdge", likesEdge.AssocEdgeBase())
+	assert.Equal(t, "UserToLikesQueryBase", likesEdge.EdgeQueryBase())
+	assert.Equal(t, "UserToLikesEdge", likesEdge.TsEdgeQueryEdgeName())
+	assert.Equal(t, "UserToLikesQuery", likesEdge.TsEdgeQueryName())
+	assert.False(t, likesEdge.CreateEdge())
+	assert.True(t, likesEdge.PolymorphicEdge())
+
+	postCfg := schema.Nodes["PostConfig"]
+	//	post node and no edge
+	testConsts(t, postCfg.NodeData.ConstantGroups, 1, 0)
+	likersEdge := postCfg.NodeData.EdgeInfo.GetAssociationEdgeByName("likers")
+	require.NotNil(t, likersEdge)
+	assert.Len(t, postCfg.NodeData.EdgeInfo.Associations, 1)
+	// these 3 are wrong and lead to codegen issues
+	assert.Equal(t, "ObjectToLikers", likersEdge.TsEdgeConst)
+	assert.Equal(t, "ObjectToLikersEdge", likersEdge.AssocEdgeBase())
+	assert.Equal(t, "ObjectToLikersQuery", likersEdge.EdgeQueryBase())
+	assert.Equal(t, "PostToLikersEdge", likersEdge.TsEdgeQueryEdgeName())
+	assert.Equal(t, "PostToLikersQuery", likersEdge.TsEdgeQueryName())
+	assert.False(t, likersEdge.CreateEdge())
+	assert.False(t, likersEdge.PolymorphicEdge())
+
+	// group node and no edge
+	groupCfg := schema.Nodes["GroupConfig"]
+	testConsts(t, groupCfg.NodeData.ConstantGroups, 1, 0)
+	likersEdge2 := groupCfg.NodeData.EdgeInfo.GetAssociationEdgeByName("likers")
+	require.NotNil(t, likersEdge2)
+	assert.Len(t, groupCfg.NodeData.EdgeInfo.Associations, 1)
+	assert.Equal(t, "ObjectToLikers", likersEdge2.TsEdgeConst)
+	assert.Equal(t, "ObjectToLikersEdge", likersEdge2.AssocEdgeBase())
+	assert.Equal(t, "ObjectToLikersQuery", likersEdge2.EdgeQueryBase())
+	assert.Equal(t, "GroupToLikersEdge", likersEdge2.TsEdgeQueryEdgeName())
+	assert.Equal(t, "GroupToLikersQuery", likersEdge2.TsEdgeQueryName())
+	assert.False(t, likersEdge2.CreateEdge())
+	assert.False(t, likersEdge2.PolymorphicEdge())
+
+	// nothing for node
+	testConsts(t, schema.Patterns["node"].ConstantGroups, 0, 0)
+
+	// no node and 1 edge
+	likersPattern := schema.Patterns["likes"]
+	testConsts(t, likersPattern.ConstantGroups, 0, 1)
+	patternLikersEdge := likersPattern.AssocEdges["likers"]
+	require.NotNil(t, patternLikersEdge)
+	assert.Equal(t, "ObjectToLikers", patternLikersEdge.TsEdgeConst)
+	assert.Equal(t, "AssocEdge", patternLikersEdge.AssocEdgeBase())
+	assert.Equal(t, "ObjectToLikersQueryBase", patternLikersEdge.EdgeQueryBase())
+	assert.Equal(t, "ObjectToLikersEdge", patternLikersEdge.TsEdgeQueryEdgeName())
+	assert.Equal(t, "ObjectToLikersQuery", patternLikersEdge.TsEdgeQueryName())
+	assert.True(t, patternLikersEdge.CreateEdge())
+	assert.False(t, patternLikersEdge.PolymorphicEdge())
+}

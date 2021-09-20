@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
@@ -59,10 +60,14 @@ func ParseInputSchemaForTest(t *testing.T, code map[string]string, opts ...func(
 
 	for fileName, contents := range code {
 		path := filepath.Join(schemaDir, fileName)
+		dir := filepath.Dir(path)
+		// e.g. patterns/foo.ts
+		require.NoError(t, os.MkdirAll(dir, os.ModePerm))
 		require.NoError(t, ioutil.WriteFile(path, []byte(contents), os.ModePerm))
 	}
 
 	inputSchema, err := input.ParseSchemaFromTSDir(dirPath, true)
+	spew.Dump(err)
 	require.NoError(t, err)
 	require.NotNil(t, inputSchema)
 

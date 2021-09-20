@@ -26,7 +26,7 @@ func TestParseFields(t *testing.T) {
 
 			export default User`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"User": {
 					fields: []field{
 						{
@@ -51,7 +51,7 @@ func TestParseFields(t *testing.T) {
 					]
 				}`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Address": {
 					tableName: "addresses",
 					fields: []field{
@@ -78,7 +78,7 @@ func TestParseFields(t *testing.T) {
 					]
 				}`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"User": {
 					fields: []field{
 						{
@@ -101,7 +101,7 @@ func TestParseFields(t *testing.T) {
 					]
 				}`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"User": {
 					fields: []field{
 						{
@@ -124,7 +124,7 @@ func TestParseFields(t *testing.T) {
 					]
 				}`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"User": {
 					fields: []field{
 						{
@@ -147,7 +147,7 @@ func TestParseFields(t *testing.T) {
 					]
 				}`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"User": {
 					fields: []field{
 						{
@@ -170,7 +170,7 @@ func TestParseFields(t *testing.T) {
 					]
 				}`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"User": {
 					fields: []field{
 						{
@@ -193,7 +193,7 @@ func TestParseFields(t *testing.T) {
 					]
 				}`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"User": {
 					fields: []field{
 						{
@@ -216,7 +216,7 @@ func TestParseFields(t *testing.T) {
 					]
 				}`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"User": {
 					fields: []field{
 						{
@@ -239,7 +239,7 @@ func TestParseFields(t *testing.T) {
 					]
 				}`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"User": {
 					fields: []field{
 						{
@@ -262,7 +262,7 @@ func TestParseFields(t *testing.T) {
 					];
 				}`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"User": {
 					fields: fieldsWithNodeFields(
 						field{
@@ -299,7 +299,7 @@ func TestParseFields(t *testing.T) {
 					]
 				}`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"User": {
 					fields: fieldsWithNodeFields(
 						field{
@@ -362,7 +362,7 @@ func TestParseFields(t *testing.T) {
 					]
 				}`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"User": {
 					fields: []field{
 						{
@@ -394,7 +394,7 @@ func TestParseFields(t *testing.T) {
 					]
 				}`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Request": {
 					fields: []field{
 						{
@@ -425,7 +425,7 @@ func TestParseFields(t *testing.T) {
 					]
 				}`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Request": {
 					fields: []field{
 						{
@@ -456,7 +456,7 @@ func TestParseFields(t *testing.T) {
 					]
 				}`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Request": {
 					fields: []field{
 						{
@@ -496,7 +496,7 @@ func TestParseFields(t *testing.T) {
 					}
 				`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Address": {
 					fields: []field{
 						{
@@ -565,7 +565,7 @@ func TestParseFields(t *testing.T) {
 					}
 				`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Address": {
 					fields: []field{
 						{
@@ -644,7 +644,7 @@ func TestParseFields(t *testing.T) {
 					]
 				}`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"User": {
 					fields: fieldsWithNodeFields(
 						field{

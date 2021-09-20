@@ -365,6 +365,11 @@ func (s *dbSchema) processSchema(cfg *codegen.Config) error {
 func (s *dbSchema) generateShemaTables() error {
 
 	addedAtLeastOneTable := false
+	for _, p := range s.schema.Patterns {
+		if s.addEdgeTablesFromPattern(p) {
+			addedAtLeastOneTable = true
+		}
+	}
 	for _, info := range s.schema.Nodes {
 		nodeData := info.NodeData
 		s.addTable(s.getTableForNode(nodeData))
@@ -647,24 +652,42 @@ func (s *dbSchema) addEdgeConfigTable() {
 }
 
 func (s *dbSchema) addEdgeTables(nodeData *schema.NodeData) bool {
+	hasTable := false
 	for _, assocEdge := range nodeData.EdgeInfo.Associations {
-		// TODO add test for this. if we have an inverse edge, no need to create
-		// a table for it since it's stored in the same table as original edge and that'll
-		// handle creating table
-		if assocEdge.IsInverseEdge {
-			continue
+		if s.addEdgeTable(assocEdge) {
+			hasTable = true
 		}
-		// edge with shared table. nothing to do here
-		if s.tableMap[assocEdge.TableName] != nil {
-			continue
-		}
-		table := s.createEdgeTable(nodeData, assocEdge)
-		s.addTable(table)
 	}
-	return nodeData.EdgeInfo.HasAssociationEdges()
+	return hasTable
 }
 
-func (s *dbSchema) createEdgeTable(nodeData *schema.NodeData, assocEdge *edge.AssociationEdge) *dbTable {
+func (s *dbSchema) addEdgeTablesFromPattern(p *schema.PatternInfo) bool {
+	hasTable := false
+	for _, assocEdge := range p.AssocEdges {
+		if s.addEdgeTable(assocEdge) {
+			hasTable = true
+		}
+	}
+	return hasTable
+}
+
+func (s *dbSchema) addEdgeTable(assocEdge *edge.AssociationEdge) bool {
+	// TODO add test for this. if we have an inverse edge, no need to create
+	// a table for it since it's stored in the same table as original edge and that'll
+	// handle creating table
+	if !assocEdge.CreateEdge() {
+		return false
+	}
+	// edge with shared table. nothing to do here
+	if s.tableMap[assocEdge.TableName] != nil {
+		return false
+	}
+	table := s.createEdgeTable(assocEdge)
+	s.addTable(table)
+	return true
+}
+
+func (s *dbSchema) createEdgeTable(assocEdge *edge.AssociationEdge) *dbTable {
 	tableName := assocEdge.TableName
 
 	var columns []*dbColumn

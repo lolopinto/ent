@@ -30,7 +30,7 @@ func TestParseEdges(t *testing.T) {
 					];
 				};`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Event": {
 					fields: []field{},
 					assocEdges: []assocEdge{
@@ -72,7 +72,7 @@ func TestParseEdges(t *testing.T) {
 					];
 				};`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Event": {
 					fields: []field{
 						{
@@ -110,7 +110,7 @@ func TestParseEdges(t *testing.T) {
 						];
 					};`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"User": {
 					fields: []field{},
 					assocEdges: []assocEdge{
@@ -140,7 +140,7 @@ func TestParseEdges(t *testing.T) {
 						];
 					};`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Post": {
 					fields: []field{},
 					assocEdges: []assocEdge{
@@ -184,7 +184,7 @@ func TestParseEdges(t *testing.T) {
 						];
 					};`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"User": {
 					fields: []field{},
 					assocEdgeGroups: []assocEdgeGroup{
@@ -237,7 +237,7 @@ func TestParseEdges(t *testing.T) {
 					];
 				};`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"User": {
 					assocEdges: []assocEdge{
 						{
@@ -276,7 +276,7 @@ func TestParseEdges(t *testing.T) {
 						];
 					};`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Post": {
 					fields: []field{},
 					assocEdges: []assocEdge{
@@ -324,7 +324,7 @@ func TestParseEdges(t *testing.T) {
 					];
 				};`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"User": {
 					assocEdgeGroups: []assocEdgeGroup{
 						{
@@ -395,7 +395,7 @@ func TestParseEdges(t *testing.T) {
 					];	
 				};`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"User": {
 					assocEdgeGroups: []assocEdgeGroup{
 						{

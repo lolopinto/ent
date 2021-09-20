@@ -42,7 +42,7 @@ func TestEnumTable(t *testing.T) {
 					];
 				};`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Role": {
 					fields: []field{
 						{
@@ -114,7 +114,7 @@ func TestEnumTable(t *testing.T) {
 					];
 				};`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Role": {
 					fields: []field{
 						{

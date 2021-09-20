@@ -576,9 +576,54 @@ type AssociationEdge struct {
 	TableName     string // TableName will be gotten from the GroupName if part of a group or derived from each edge
 	// will eventually be made configurable to the user
 	EdgeActions []*EdgeAction
+
+	givenEdgeConstName string
+	patternEdgeConst   string
+	overridenQueryName string
+	overridenEdgeName  string
+	PatternName        string
+}
+
+func (e *AssociationEdge) CreateEdge() bool {
+	if e.IsInverseEdge {
+		return false
+	}
+	if e.PatternName != "" {
+		return false
+	}
+
+	return true
+}
+
+func (e *AssociationEdge) GenerateBase() bool {
+	// only generate base when edge is not from a pattern
+	return e.PatternName == ""
+}
+
+func (e *AssociationEdge) EdgeQueryBase() string {
+	if e.patternEdgeConst != "" {
+		return fmt.Sprintf("%sQuery", e.patternEdgeConst)
+	}
+	return e.TsEdgeQueryName() + "Base"
+}
+
+func (e *AssociationEdge) AssocEdgeBase() string {
+	if e.patternEdgeConst != "" {
+		return fmt.Sprintf("%sEdge", e.patternEdgeConst)
+	}
+	return "AssocEdge"
+}
+
+func (e *AssociationEdge) PolymorphicEdge() bool {
+	// not fully supported but implicitly supoorted via Patterns
+	// TODO not ideal because it blocks Nodes called Object
+	return e.NodeInfo.Node == "Object" || e.NodeInfo.Node == "Ent"
 }
 
 func (e *AssociationEdge) TsEdgeQueryName() string {
+	if e.overridenQueryName != "" {
+		return e.overridenQueryName
+	}
 	return fmt.Sprintf("%sQuery", e.TsEdgeConst)
 }
 
@@ -587,6 +632,9 @@ func (e *AssociationEdge) GetGraphQLEdgePrefix() string {
 }
 
 func (e *AssociationEdge) TsEdgeQueryEdgeName() string {
+	if e.overridenEdgeName != "" {
+		return e.overridenEdgeName
+	}
 	return fmt.Sprintf("%sEdge", e.TsEdgeConst)
 }
 
@@ -839,7 +887,7 @@ func EdgeInfoFromInput(packageName string, node *input.Node) (*EdgeInfo, error) 
 	edgeInfo := NewEdgeInfo(packageName)
 
 	for _, edge := range node.AssocEdges {
-		e, err := assocEdgeFromInput(packageName, node, edge)
+		e, err := AssocEdgeFromInput(packageName, edge)
 		if err != nil {
 			return nil, err
 		}
@@ -877,11 +925,14 @@ func edgeActionsFromInput(actions []*input.EdgeAction) ([]*EdgeAction, error) {
 	return ret, nil
 }
 
-func assocEdgeFromInput(packageName string, node *input.Node, edge *input.AssocEdge) (*AssociationEdge, error) {
+// packageName == "object" for edges from patterns
+func AssocEdgeFromInput(packageName string, edge *input.AssocEdge) (*AssociationEdge, error) {
 	assocEdge := &AssociationEdge{
-		Symmetric: edge.Symmetric,
-		Unique:    edge.Unique,
-		TableName: edge.TableName,
+		Symmetric:          edge.Symmetric,
+		Unique:             edge.Unique,
+		TableName:          edge.TableName,
+		PatternName:        edge.PatternName,
+		givenEdgeConstName: edge.EdgeConstName,
 	}
 
 	// name wasn't specified? get default one
@@ -908,26 +959,69 @@ func assocEdgeFromInput(packageName string, node *input.Node, edge *input.AssocE
 		if inversePackageName == "" {
 			inversePackageName = edge.EntConfig.PackageName
 		}
-		inverseEdge.EdgeConst = getEdgeConstName(inversePackageName, edgeName)
+		if edge.InverseEdge.EdgeConstName != "" {
+			inverseEdge.EdgeConst = edge.InverseEdge.EdgeConstName + "Edge"
+		} else {
+			inverseEdge.EdgeConst = getEdgeConstName(inversePackageName, edgeName)
+		}
 
+		// use ent instead of object for this so that when we useImport Ent everywhere it works
+		configPkgName := packageName
+		if packageName == "object" {
+			configPkgName = "ent"
+		}
 		inverseEdge.commonEdgeInfo = getCommonEdgeInfo(
 			edgeName,
 			// need to create a new EntConfig for the inverse edge
 
 			// take something like folder and create Folder and FolderConfig
 			// TODO: probably want to pass this down instead of magically configuring this
-			schemaparser.GetEntConfigFromName(packageName),
+			schemaparser.GetEntConfigFromName(configPkgName),
 		)
 		assocEdge.InverseEdge = inverseEdge
 	}
 
-	assocEdge.EdgeConst = getEdgeConstName(packageName, edge.Name)
-	// It transforms UserToFriendsEdge to UserToFriends since that's in an enum
-	edgeConst, err := TsEdgeConst(assocEdge.EdgeConst)
-	if err != nil {
-		return nil, err
+	if edge.EdgeConstName == "" {
+		assocEdge.EdgeConst = getEdgeConstName(packageName, edge.Name)
+		// It transforms UserToFriendsEdge to UserToFriends since that's in an enum
+		edgeConst, err := TsEdgeConst(assocEdge.EdgeConst)
+		if err != nil {
+			return nil, err
+		}
+		assocEdge.TsEdgeConst = edgeConst
+
+		if edge.PatternName != "" {
+			oldEdgeConst := assocEdge.TsEdgeConst
+			assocEdge.patternEdgeConst = assocEdge.TsEdgeConst
+			assocEdge.EdgeConst = getEdgeConstName("object", edge.Name)
+			// It transforms UserToFriendsEdge to UserToFriends since that's in an enum
+			edgeConst, err := TsEdgeConst(assocEdge.EdgeConst)
+			if err != nil {
+				return nil, err
+			}
+			assocEdge.TsEdgeConst = edgeConst
+			assocEdge.patternEdgeConst = edgeConst
+			assocEdge.overridenQueryName = fmt.Sprintf("%sQuery", oldEdgeConst)
+			assocEdge.overridenEdgeName = fmt.Sprintf("%sEdge", oldEdgeConst)
+
+		}
+	} else {
+		assocEdge.EdgeConst = edge.EdgeConstName + "Edge"
+		assocEdge.TsEdgeConst = edge.EdgeConstName
+
+		// todo we need to test this when pattern doesn't provide this
+		if edge.PatternName != "" {
+			assocEdge.patternEdgeConst = assocEdge.TsEdgeConst
+			assocEdge.EdgeConst = getEdgeConstName(packageName, edge.Name)
+			// It transforms UserToFriendsEdge to UserToFriends since that's in an enum
+			edgeConst, err := TsEdgeConst(assocEdge.EdgeConst)
+			if err != nil {
+				return nil, err
+			}
+			assocEdge.overridenQueryName = fmt.Sprintf("%sQuery", edgeConst)
+			assocEdge.overridenEdgeName = fmt.Sprintf("%sEdge", edgeConst)
+		}
 	}
-	assocEdge.TsEdgeConst = edgeConst
 
 	// golang
 	if edge.EntConfig != nil {
@@ -985,7 +1079,7 @@ func assocEdgeGroupFromInput(packageName string, node *input.Node, edgeGroup *in
 		if edge.TableName == "" {
 			edge.TableName = tableName
 		}
-		assocEdge, err := assocEdgeFromInput(packageName, node, edge)
+		assocEdge, err := AssocEdgeFromInput(packageName, edge)
 		if err != nil {
 			return nil, err
 		}

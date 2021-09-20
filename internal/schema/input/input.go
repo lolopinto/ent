@@ -293,7 +293,11 @@ type AssocEdge struct {
 	EdgeActions []*EdgeAction     `json:"edgeActions"`
 	// Go specific
 	EntConfig       *schemaparser.EntConfigInfo
-	HideFromGraphQL bool `json:"hideFromGraphQL"`
+	HideFromGraphQL bool   `json:"hideFromGraphQL"`
+	EdgeConstName   string `json:"edgeConstName"`
+	PatternName     string `json:"patternName"`
+	// do we need a flag to know it's a pattern's edge?
+	// PatternEdge
 }
 
 type AssocEdgeGroup struct {
@@ -588,6 +592,5 @@ func ParseSchema(input []byte) (*Schema, error) {
 		}
 		return &Schema{Nodes: nodes}, nil
 	}
-
 	return s, nil
 }
