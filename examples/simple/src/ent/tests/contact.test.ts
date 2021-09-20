@@ -6,6 +6,7 @@ import CreateContactAction, {
   ContactCreateInput,
 } from "../contact/actions/create_contact_action";
 import { UserToContactsQuery } from "../user/query/user_to_contacts_query";
+import EditContactAction from "../contact/actions/edit_contact_action";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -124,4 +125,30 @@ test("create contacts", async () => {
   let jonFromYgritte = await User.loadX(new IDViewer(ygritte!.id), user.id);
   const contactsViaYgritte = await jonFromYgritte.queryContacts().queryEnts();
   expect(contactsViaYgritte.length).toBe(0);
+});
+
+test("likes", async () => {
+  const user = await createUser();
+  const contact = await create(user, "Tom", "Hardy");
+  const action = EditContactAction.create(user.viewer, contact, {});
+  action.builder.addLiker(user);
+  await action.saveX();
+
+  const likersQuery = contact.queryLikers();
+  const [count, ents] = await Promise.all([
+    likersQuery.queryCount(),
+    likersQuery.queryEnts(),
+  ]);
+  expect(count).toBe(1);
+  expect(ents.length).toBe(1);
+  expect(ents[0].id).toBe(user.id);
+
+  const likesQuery = user.queryLikes();
+  const [count2, ents2] = await Promise.all([
+    likesQuery.queryCount(),
+    likesQuery.queryEnts(),
+  ]);
+  expect(count2).toBe(1);
+  expect(ents2.length).toBe(1);
+  expect(ents2[0].id).toBe(contact.id);
 });

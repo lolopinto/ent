@@ -43,6 +43,10 @@ export enum EdgeType {
   EventToInvited = "a72f5f64-3580-44fd-9bd0-d1335b803a46",
   // EventToMaybe is the edgeType for the event to maybe edge.
   EventToMaybe = "b0f6311b-fdab-4c26-b6bf-b751e0997735",
+  // ObjectToComments is the edgeType for the object to comments edge.
+  ObjectToComments = "8caba9c4-8035-447f-9eb1-4dd09a2d250c",
+  // ObjectToLikers is the edgeType for the object to likers edge.
+  ObjectToLikers = "c9ccdad9-7aff-40e4-9a69-2c29cfa19763",
   // UserToCreatedEvents is the edgeType for the user to createdevents edge.
   UserToCreatedEvents = "daa3b2a3-8245-40ca-ae77-25bfb82578a7",
   // UserToDeclinedEvents is the edgeType for the user to declinedevents edge.
@@ -55,8 +59,12 @@ export enum EdgeType {
   UserToHostedEvents = "cf6542a4-8bae-427f-8a1f-01194047afb3",
   // UserToInvitedEvents is the edgeType for the user to invitedevents edge.
   UserToInvitedEvents = "e439f2b2-d93a-4d1a-83f0-865bda5c8337",
+  // UserToLikes is the edgeType for the user to likes edge.
+  UserToLikes = "745a20bf-4fdc-4862-b39f-569c4451db8f",
   // UserToMaybeEvents is the edgeType for the user to maybeevents edge.
   UserToMaybeEvents = "8d5b1dee-ce65-452e-9f8d-78eca1993800",
+  // UserToPost is the edgeType for the user to post edge.
+  UserToPost = "4b725578-e9f5-472c-8e57-e47481c9e1b8",
   // UserToSelfContact is the edgeType for the user to selfcontact edge.
   UserToSelfContact = "d504201d-cf3f-4eef-b6a0-0b46a7ae186b",
 }
@@ -68,13 +76,17 @@ export function getEdgeTypeValues() {
     EdgeType.EventToHosts,
     EdgeType.EventToInvited,
     EdgeType.EventToMaybe,
+    EdgeType.ObjectToComments,
+    EdgeType.ObjectToLikers,
     EdgeType.UserToCreatedEvents,
     EdgeType.UserToDeclinedEvents,
     EdgeType.UserToEventsAttending,
     EdgeType.UserToFriends,
     EdgeType.UserToHostedEvents,
     EdgeType.UserToInvitedEvents,
+    EdgeType.UserToLikes,
     EdgeType.UserToMaybeEvents,
+    EdgeType.UserToPost,
     EdgeType.UserToSelfContact,
   ];
 }

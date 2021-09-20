@@ -88,6 +88,52 @@ export class UserBuilder implements Builder<User> {
   clearInputEdges(edgeType: EdgeType, op: WriteOperation, id?: ID) {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
+
+  addComment(...ids: ID[]): UserBuilder;
+  addComment(...nodes: User[]): UserBuilder;
+  addComment(...nodes: Builder<User>[]): UserBuilder;
+  addComment(...nodes: ID[] | User[] | Builder<User>[]): UserBuilder {
+    for (const node of nodes) {
+      if (this.isBuilder(node)) {
+        this.addCommentID(node);
+      } else if (typeof node === "object") {
+        this.addCommentID(node.id);
+      } else {
+        this.addCommentID(node);
+      }
+    }
+    return this;
+  }
+
+  addCommentID(
+    id: ID | Builder<User>,
+    options?: AssocEdgeInputOptions,
+  ): UserBuilder {
+    this.orchestrator.addOutboundEdge(
+      id,
+      EdgeType.ObjectToComments,
+      NodeType.User,
+      options,
+    );
+    return this;
+  }
+
+  removeComment(...ids: ID[]): UserBuilder;
+  removeComment(...nodes: User[]): UserBuilder;
+  removeComment(...nodes: ID[] | User[]): UserBuilder {
+    for (const node of nodes) {
+      if (typeof node === "object") {
+        this.orchestrator.removeOutboundEdge(
+          node.id,
+          EdgeType.ObjectToComments,
+        );
+      } else {
+        this.orchestrator.removeOutboundEdge(node, EdgeType.ObjectToComments);
+      }
+    }
+    return this;
+  }
+
   addCreatedEvent(...ids: ID[]): UserBuilder;
   addCreatedEvent(...nodes: Event[]): UserBuilder;
   addCreatedEvent(...nodes: Builder<Event>[]): UserBuilder;
@@ -322,6 +368,97 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
+  addLiker(...ids: ID[]): UserBuilder;
+  addLiker(...nodes: User[]): UserBuilder;
+  addLiker(...nodes: Builder<User>[]): UserBuilder;
+  addLiker(...nodes: ID[] | User[] | Builder<User>[]): UserBuilder {
+    for (const node of nodes) {
+      if (this.isBuilder(node)) {
+        this.addLikerID(node);
+      } else if (typeof node === "object") {
+        this.addLikerID(node.id);
+      } else {
+        this.addLikerID(node);
+      }
+    }
+    return this;
+  }
+
+  addLikerID(
+    id: ID | Builder<User>,
+    options?: AssocEdgeInputOptions,
+  ): UserBuilder {
+    this.orchestrator.addOutboundEdge(
+      id,
+      EdgeType.ObjectToLikers,
+      NodeType.User,
+      options,
+    );
+    return this;
+  }
+
+  removeLiker(...ids: ID[]): UserBuilder;
+  removeLiker(...nodes: User[]): UserBuilder;
+  removeLiker(...nodes: ID[] | User[]): UserBuilder {
+    for (const node of nodes) {
+      if (typeof node === "object") {
+        this.orchestrator.removeOutboundEdge(node.id, EdgeType.ObjectToLikers);
+      } else {
+        this.orchestrator.removeOutboundEdge(node, EdgeType.ObjectToLikers);
+      }
+    }
+    return this;
+  }
+
+  addLike(...nodes: Ent[]): UserBuilder;
+  addLike(...nodes: Builder<Ent>[]): UserBuilder;
+  addLike(...nodes: Ent[] | Builder<Ent>[]): UserBuilder {
+    for (const node of nodes) {
+      if (this.isBuilder(node)) {
+        this.orchestrator.addOutboundEdge(
+          node,
+          EdgeType.UserToLikes,
+          // nodeType will be gotten from Executor later
+          "",
+        );
+      } else {
+        this.orchestrator.addOutboundEdge(
+          node.id,
+          EdgeType.UserToLikes,
+          node.nodeType,
+        );
+      }
+    }
+    return this;
+  }
+
+  addLikeID(
+    id: ID | Builder<Ent>,
+    nodeType: NodeType,
+    options?: AssocEdgeInputOptions,
+  ): UserBuilder {
+    this.orchestrator.addOutboundEdge(
+      id,
+      EdgeType.UserToLikes,
+      nodeType,
+      options,
+    );
+    return this;
+  }
+
+  removeLike(...ids: ID[]): UserBuilder;
+  removeLike(...nodes: Ent[]): UserBuilder;
+  removeLike(...nodes: ID[] | Ent[]): UserBuilder {
+    for (const node of nodes) {
+      if (typeof node === "object") {
+        this.orchestrator.removeOutboundEdge(node.id, EdgeType.UserToLikes);
+      } else {
+        this.orchestrator.removeOutboundEdge(node, EdgeType.UserToLikes);
+      }
+    }
+    return this;
+  }
+
   addMaybeEvent(...ids: ID[]): UserBuilder;
   addMaybeEvent(...nodes: Event[]): UserBuilder;
   addMaybeEvent(...nodes: Builder<Event>[]): UserBuilder;
@@ -362,6 +499,55 @@ export class UserBuilder implements Builder<User> {
         );
       } else {
         this.orchestrator.removeOutboundEdge(node, EdgeType.UserToMaybeEvents);
+      }
+    }
+    return this;
+  }
+
+  addPost(...nodes: Ent[]): UserBuilder;
+  addPost(...nodes: Builder<Ent>[]): UserBuilder;
+  addPost(...nodes: Ent[] | Builder<Ent>[]): UserBuilder {
+    for (const node of nodes) {
+      if (this.isBuilder(node)) {
+        this.orchestrator.addOutboundEdge(
+          node,
+          EdgeType.UserToPost,
+          // nodeType will be gotten from Executor later
+          "",
+        );
+      } else {
+        this.orchestrator.addOutboundEdge(
+          node.id,
+          EdgeType.UserToPost,
+          node.nodeType,
+        );
+      }
+    }
+    return this;
+  }
+
+  addPostID(
+    id: ID | Builder<Ent>,
+    nodeType: NodeType,
+    options?: AssocEdgeInputOptions,
+  ): UserBuilder {
+    this.orchestrator.addOutboundEdge(
+      id,
+      EdgeType.UserToPost,
+      nodeType,
+      options,
+    );
+    return this;
+  }
+
+  removePost(...ids: ID[]): UserBuilder;
+  removePost(...nodes: Ent[]): UserBuilder;
+  removePost(...nodes: ID[] | Ent[]): UserBuilder {
+    for (const node of nodes) {
+      if (typeof node === "object") {
+        this.orchestrator.removeOutboundEdge(node.id, EdgeType.UserToPost);
+      } else {
+        this.orchestrator.removeOutboundEdge(node, EdgeType.UserToPost);
       }
     }
     return this;

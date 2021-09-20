@@ -33,6 +33,7 @@ import {
   EdgeType,
   NodeType,
   UserToAuthCodesQuery,
+  UserToCommentsQuery,
   UserToContactsQuery,
   UserToCreatedEventsQuery,
   UserToDeclinedEventsQuery,
@@ -40,7 +41,10 @@ import {
   UserToFriendsQuery,
   UserToHostedEventsQuery,
   UserToInvitedEventsQuery,
+  UserToLikersQuery,
+  UserToLikesQuery,
   UserToMaybeEventsQuery,
+  UserToPostQuery,
 } from "../internal";
 import schema from "../../schema/user";
 
@@ -260,6 +264,10 @@ export class UserBase {
     return UserBase.getSchemaFields().get(key);
   }
 
+  queryComments(): UserToCommentsQuery {
+    return UserToCommentsQuery.query(this.viewer, this.id);
+  }
+
   queryCreatedEvents(): UserToCreatedEventsQuery {
     return UserToCreatedEventsQuery.query(this.viewer, this.id);
   }
@@ -280,8 +288,20 @@ export class UserBase {
     return UserToInvitedEventsQuery.query(this.viewer, this.id);
   }
 
+  queryLikers(): UserToLikersQuery {
+    return UserToLikersQuery.query(this.viewer, this.id);
+  }
+
+  queryLikes(): UserToLikesQuery {
+    return UserToLikesQuery.query(this.viewer, this.id);
+  }
+
   queryMaybeEvents(): UserToMaybeEventsQuery {
     return UserToMaybeEventsQuery.query(this.viewer, this.id);
+  }
+
+  queryPost(): UserToPostQuery {
+    return UserToPostQuery.query(this.viewer, this.id);
   }
 
   loadSelfContactEdge(): Promise<AssocEdge | null> {

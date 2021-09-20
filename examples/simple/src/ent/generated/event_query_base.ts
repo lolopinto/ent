@@ -19,13 +19,17 @@ import {
   EventToInvitedEdge,
   EventToMaybeEdge,
   User,
+  UserToCommentsQuery,
   UserToCreatedEventsQuery,
   UserToDeclinedEventsQuery,
   UserToEventsAttendingQuery,
   UserToFriendsQuery,
   UserToHostedEventsQuery,
   UserToInvitedEventsQuery,
+  UserToLikersQuery,
+  UserToLikesQuery,
   UserToMaybeEventsQuery,
+  UserToPostQuery,
   UserToSelfContactQuery,
 } from "../internal";
 
@@ -90,6 +94,10 @@ export class EventToAttendingQueryBase extends AssocEdgeQueryBase<
     return new this(viewer, src);
   }
 
+  queryComments(): UserToCommentsQuery {
+    return UserToCommentsQuery.query(this.viewer, this);
+  }
+
   queryCreatedEvents(): UserToCreatedEventsQuery {
     return UserToCreatedEventsQuery.query(this.viewer, this);
   }
@@ -110,8 +118,20 @@ export class EventToAttendingQueryBase extends AssocEdgeQueryBase<
     return UserToInvitedEventsQuery.query(this.viewer, this);
   }
 
+  queryLikers(): UserToLikersQuery {
+    return UserToLikersQuery.query(this.viewer, this);
+  }
+
+  queryLikes(): UserToLikesQuery {
+    return UserToLikesQuery.query(this.viewer, this);
+  }
+
   queryMaybeEvents(): UserToMaybeEventsQuery {
     return UserToMaybeEventsQuery.query(this.viewer, this);
+  }
+
+  queryPost(): UserToPostQuery {
+    return UserToPostQuery.query(this.viewer, this);
   }
 
   querySelfContact(): UserToSelfContactQuery {
@@ -146,6 +166,10 @@ export class EventToDeclinedQueryBase extends AssocEdgeQueryBase<
     return new this(viewer, src);
   }
 
+  queryComments(): UserToCommentsQuery {
+    return UserToCommentsQuery.query(this.viewer, this);
+  }
+
   queryCreatedEvents(): UserToCreatedEventsQuery {
     return UserToCreatedEventsQuery.query(this.viewer, this);
   }
@@ -166,8 +190,20 @@ export class EventToDeclinedQueryBase extends AssocEdgeQueryBase<
     return UserToInvitedEventsQuery.query(this.viewer, this);
   }
 
+  queryLikers(): UserToLikersQuery {
+    return UserToLikersQuery.query(this.viewer, this);
+  }
+
+  queryLikes(): UserToLikesQuery {
+    return UserToLikesQuery.query(this.viewer, this);
+  }
+
   queryMaybeEvents(): UserToMaybeEventsQuery {
     return UserToMaybeEventsQuery.query(this.viewer, this);
+  }
+
+  queryPost(): UserToPostQuery {
+    return UserToPostQuery.query(this.viewer, this);
   }
 
   querySelfContact(): UserToSelfContactQuery {
@@ -202,6 +238,10 @@ export class EventToHostsQueryBase extends AssocEdgeQueryBase<
     return new this(viewer, src);
   }
 
+  queryComments(): UserToCommentsQuery {
+    return UserToCommentsQuery.query(this.viewer, this);
+  }
+
   queryCreatedEvents(): UserToCreatedEventsQuery {
     return UserToCreatedEventsQuery.query(this.viewer, this);
   }
@@ -222,8 +262,20 @@ export class EventToHostsQueryBase extends AssocEdgeQueryBase<
     return UserToInvitedEventsQuery.query(this.viewer, this);
   }
 
+  queryLikers(): UserToLikersQuery {
+    return UserToLikersQuery.query(this.viewer, this);
+  }
+
+  queryLikes(): UserToLikesQuery {
+    return UserToLikesQuery.query(this.viewer, this);
+  }
+
   queryMaybeEvents(): UserToMaybeEventsQuery {
     return UserToMaybeEventsQuery.query(this.viewer, this);
+  }
+
+  queryPost(): UserToPostQuery {
+    return UserToPostQuery.query(this.viewer, this);
   }
 
   querySelfContact(): UserToSelfContactQuery {
@@ -258,6 +310,10 @@ export class EventToInvitedQueryBase extends AssocEdgeQueryBase<
     return new this(viewer, src);
   }
 
+  queryComments(): UserToCommentsQuery {
+    return UserToCommentsQuery.query(this.viewer, this);
+  }
+
   queryCreatedEvents(): UserToCreatedEventsQuery {
     return UserToCreatedEventsQuery.query(this.viewer, this);
   }
@@ -278,8 +334,20 @@ export class EventToInvitedQueryBase extends AssocEdgeQueryBase<
     return UserToInvitedEventsQuery.query(this.viewer, this);
   }
 
+  queryLikers(): UserToLikersQuery {
+    return UserToLikersQuery.query(this.viewer, this);
+  }
+
+  queryLikes(): UserToLikesQuery {
+    return UserToLikesQuery.query(this.viewer, this);
+  }
+
   queryMaybeEvents(): UserToMaybeEventsQuery {
     return UserToMaybeEventsQuery.query(this.viewer, this);
+  }
+
+  queryPost(): UserToPostQuery {
+    return UserToPostQuery.query(this.viewer, this);
   }
 
   querySelfContact(): UserToSelfContactQuery {
@@ -314,6 +382,10 @@ export class EventToMaybeQueryBase extends AssocEdgeQueryBase<
     return new this(viewer, src);
   }
 
+  queryComments(): UserToCommentsQuery {
+    return UserToCommentsQuery.query(this.viewer, this);
+  }
+
   queryCreatedEvents(): UserToCreatedEventsQuery {
     return UserToCreatedEventsQuery.query(this.viewer, this);
   }
@@ -334,8 +406,20 @@ export class EventToMaybeQueryBase extends AssocEdgeQueryBase<
     return UserToInvitedEventsQuery.query(this.viewer, this);
   }
 
+  queryLikers(): UserToLikersQuery {
+    return UserToLikersQuery.query(this.viewer, this);
+  }
+
+  queryLikes(): UserToLikesQuery {
+    return UserToLikesQuery.query(this.viewer, this);
+  }
+
   queryMaybeEvents(): UserToMaybeEventsQuery {
     return UserToMaybeEventsQuery.query(this.viewer, this);
+  }
+
+  queryPost(): UserToPostQuery {
+    return UserToPostQuery.query(this.viewer, this);
   }
 
   querySelfContact(): UserToSelfContactQuery {

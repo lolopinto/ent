@@ -787,3 +787,30 @@ test("nicknames", async () => {
 
   expect(user.nicknames).toEqual(n);
 });
+
+test("likes", async () => {
+  const [user1, user2] = await Promise.all([create({}), create({})]);
+  const action = EditUserAction.create(user1.viewer, user1, {});
+  action.builder.addLiker(user2);
+  // for privacy
+  action.builder.addFriend(user2);
+  await action.saveX();
+
+  const likersQuery = user1.queryLikers();
+  const [count, ents] = await Promise.all([
+    likersQuery.queryCount(),
+    likersQuery.queryEnts(),
+  ]);
+  expect(count).toBe(1);
+  expect(ents.length).toBe(1);
+  expect(ents[0].id).toBe(user2.id);
+
+  const likesQuery = user2.queryLikes();
+  const [count2, ents2] = await Promise.all([
+    likesQuery.queryCount(),
+    likesQuery.queryEnts(),
+  ]);
+  expect(count2).toBe(1);
+  expect(ents2.length).toBe(1);
+  expect(ents2[0].id).toBe(user1.id);
+});

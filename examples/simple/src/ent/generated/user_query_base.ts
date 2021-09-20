@@ -9,6 +9,7 @@ import {
   AssocEdgeQueryBase,
   CustomEdgeQueryBase,
   EdgeQuerySource,
+  Ent,
   ID,
   IndexLoaderFactory,
   RawCountLoaderFactory,
@@ -17,6 +18,8 @@ import {
 import {
   AuthCode,
   Contact,
+  ContactToCommentsQuery,
+  ContactToLikersQuery,
   EdgeType,
   Event,
   EventToAttendingQuery,
@@ -25,6 +28,7 @@ import {
   EventToInvitedQuery,
   EventToMaybeQuery,
   User,
+  UserToCommentsQuery,
   UserToCreatedEventsEdge,
   UserToCreatedEventsQuery,
   UserToDeclinedEventsEdge,
@@ -37,13 +41,19 @@ import {
   UserToHostedEventsQuery,
   UserToInvitedEventsEdge,
   UserToInvitedEventsQuery,
+  UserToLikersQuery,
+  UserToLikesEdge,
+  UserToLikesQuery,
   UserToMaybeEventsEdge,
   UserToMaybeEventsQuery,
+  UserToPostEdge,
+  UserToPostQuery,
   UserToSelfContactEdge,
   UserToSelfContactQuery,
   authCodeLoader,
   contactLoader,
 } from "../internal";
+import { getLoaderOptions } from "../loadAny";
 
 export const userToCreatedEventsCountLoaderFactory =
   new AssocEdgeCountLoaderFactory(EdgeType.UserToCreatedEvents);
@@ -82,11 +92,27 @@ export const userToInvitedEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
   () => UserToInvitedEventsEdge,
 );
 
+export const userToLikesCountLoaderFactory = new AssocEdgeCountLoaderFactory(
+  EdgeType.UserToLikes,
+);
+export const userToLikesDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.UserToLikes,
+  () => UserToLikesEdge,
+);
+
 export const userToMaybeEventsCountLoaderFactory =
   new AssocEdgeCountLoaderFactory(EdgeType.UserToMaybeEvents);
 export const userToMaybeEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
   EdgeType.UserToMaybeEvents,
   () => UserToMaybeEventsEdge,
+);
+
+export const userToPostCountLoaderFactory = new AssocEdgeCountLoaderFactory(
+  EdgeType.UserToPost,
+);
+export const userToPostDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.UserToPost,
+  () => UserToPostEdge,
 );
 
 export const userToSelfContactCountLoaderFactory =
@@ -281,6 +307,10 @@ export class UserToFriendsQueryBase extends AssocEdgeQueryBase<
     return new this(viewer, src);
   }
 
+  queryComments(): UserToCommentsQuery {
+    return UserToCommentsQuery.query(this.viewer, this);
+  }
+
   queryCreatedEvents(): UserToCreatedEventsQuery {
     return UserToCreatedEventsQuery.query(this.viewer, this);
   }
@@ -301,8 +331,20 @@ export class UserToFriendsQueryBase extends AssocEdgeQueryBase<
     return UserToInvitedEventsQuery.query(this.viewer, this);
   }
 
+  queryLikers(): UserToLikersQuery {
+    return UserToLikersQuery.query(this.viewer, this);
+  }
+
+  queryLikes(): UserToLikesQuery {
+    return UserToLikesQuery.query(this.viewer, this);
+  }
+
   queryMaybeEvents(): UserToMaybeEventsQuery {
     return UserToMaybeEventsQuery.query(this.viewer, this);
+  }
+
+  queryPost(): UserToPostQuery {
+    return UserToPostQuery.query(this.viewer, this);
   }
 
   querySelfContact(): UserToSelfContactQuery {
@@ -358,6 +400,30 @@ export class UserToInvitedEventsQueryBase extends AssocEdgeQueryBase<
   }
 }
 
+export class UserToLikesQueryBase extends AssocEdgeQueryBase<
+  User,
+  Ent,
+  UserToLikesEdge
+> {
+  constructor(viewer: Viewer, src: EdgeQuerySource<User>) {
+    super(
+      viewer,
+      src,
+      userToLikesCountLoaderFactory,
+      userToLikesDataLoaderFactory,
+      getLoaderOptions,
+    );
+  }
+
+  static query<T extends UserToLikesQueryBase>(
+    this: new (viewer: Viewer, src: EdgeQuerySource<User>) => T,
+    viewer: Viewer,
+    src: EdgeQuerySource<User>,
+  ): T {
+    return new this(viewer, src);
+  }
+}
+
 export class UserToMaybeEventsQueryBase extends AssocEdgeQueryBase<
   User,
   Event,
@@ -402,6 +468,30 @@ export class UserToMaybeEventsQueryBase extends AssocEdgeQueryBase<
   }
 }
 
+export class UserToPostQueryBase extends AssocEdgeQueryBase<
+  User,
+  Ent,
+  UserToPostEdge
+> {
+  constructor(viewer: Viewer, src: EdgeQuerySource<User>) {
+    super(
+      viewer,
+      src,
+      userToPostCountLoaderFactory,
+      userToPostDataLoaderFactory,
+      getLoaderOptions,
+    );
+  }
+
+  static query<T extends UserToPostQueryBase>(
+    this: new (viewer: Viewer, src: EdgeQuerySource<User>) => T,
+    viewer: Viewer,
+    src: EdgeQuerySource<User>,
+  ): T {
+    return new this(viewer, src);
+  }
+}
+
 export class UserToSelfContactQueryBase extends AssocEdgeQueryBase<
   User,
   Contact,
@@ -423,6 +513,14 @@ export class UserToSelfContactQueryBase extends AssocEdgeQueryBase<
     src: EdgeQuerySource<User>,
   ): T {
     return new this(viewer, src);
+  }
+
+  queryComments(): ContactToCommentsQuery {
+    return ContactToCommentsQuery.query(this.viewer, this);
+  }
+
+  queryLikers(): ContactToLikersQuery {
+    return ContactToLikersQuery.query(this.viewer, this);
   }
 }
 
