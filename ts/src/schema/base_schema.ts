@@ -90,7 +90,7 @@ export abstract class BaseEntSchemaWithTZ {
   patterns: Pattern[] = [
     {
       // default schema added
-      name: "node",
+      name: "nodeWithTZ",
       fields: nodeFieldsWithTZ,
     },
   ];

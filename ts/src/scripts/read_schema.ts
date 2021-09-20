@@ -29,8 +29,6 @@ function main() {
 
   const result = parseSchema(potentialSchemas);
 
-  // we need to tie this into @snowtop/ent version...
-  // or in golang try and parse both and see that we have data
   console.log(JSON.stringify(result));
 }
 

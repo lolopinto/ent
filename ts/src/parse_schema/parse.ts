@@ -65,33 +65,21 @@ function processPattern(
 ) {
   // TODO kill
   let name = pattern.name || "node";
-  //  console.debug(patterns[name]);
   if (patterns[name] === undefined) {
-    // const p: ProcessedSchema = {
-    //   fields: [],
-    // };
     const edges: ProcessedAssocEdge[] = [];
     if (pattern.edges) {
-      //      console.debug("pattern.edges");
       processEdges(edges, pattern.edges);
     }
     patterns[name] = {
       name: pattern.name,
       assocEdges: edges,
-      // we don't need fields so ignore this for now
-      //      fields: [],
     };
   } else {
+    // TODO ideally we want to make sure that different patterns don't have the same name
     // can't do a deepEqual check because function calls and therefore different instances in fields
-    //    if (!deepEqual(patterns[name], pattern)) {
-    //      if (patterns[name] !== pattern) {
-    // console.debug(pattern, patterns[name]);
-    // throw new Error(`pattern ${name} already exists and is a different type`);
-    //    }
   }
   processFields(processedSchema, pattern.fields);
   if (pattern.edges) {
-    //    console.debug("copy to processedSchema");
     processEdges(processedSchema.assocEdges, pattern.edges, pattern.name);
   }
 }
