@@ -579,7 +579,9 @@ func ParseSchema(input []byte) (*Schema, error) {
 	}
 	// in the old route, it doesn't throw an error but just unmarshalls nothing 😭
 	// TestCustomFields
-	if len(s.Nodes) == 0 {
+	// also need to verify TestCustomListQuery|TestCustomUploadType works
+	// so checking s.Nodes == nil instead of len() == 0
+	if s.Nodes == nil {
 		nodes := make(map[string]*Node)
 		if err := json.Unmarshal(input, &nodes); err != nil {
 			return nil, err
