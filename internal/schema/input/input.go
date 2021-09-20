@@ -570,6 +570,16 @@ type InverseAssocEdge struct {
 func ParseSchema(input []byte) (*Schema, error) {
 	s := &Schema{}
 	if err := json.Unmarshal(input, s); err != nil {
+		// don't think this applies but keeping it here just in case
+		nodes := make(map[string]*Node)
+		if err := json.Unmarshal(input, &nodes); err != nil {
+			return nil, err
+		}
+		return &Schema{Nodes: nodes}, nil
+	}
+	// in the old route, it doesn't throw an error but just unmarshalls nothing 😭
+	// TestCustomFields
+	if len(s.Nodes) == 0 {
 		nodes := make(map[string]*Node)
 		if err := json.Unmarshal(input, &nodes); err != nil {
 			return nil, err
