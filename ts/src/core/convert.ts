@@ -88,3 +88,10 @@ export function convertJSON(val: any): Object {
   }
   return val;
 }
+
+export function convertNullableJSON(val: any): Object | null {
+  if (val === null) {
+    return val;
+  }
+  return convertJSON(val);
+}

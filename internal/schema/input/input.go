@@ -83,7 +83,8 @@ type FieldType struct {
 	Type        string   `json:"type"`
 	GraphQLType string   `json:"graphQLType"`
 	// optional used by generator to specify different types e.g. email, phone, password
-	CustomType CustomType `json:"customType"`
+	CustomType CustomType          `json:"customType"`
+	ImportType *enttype.ImportType `json:"importType"`
 }
 
 type Field struct {
