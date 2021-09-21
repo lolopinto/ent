@@ -31,6 +31,7 @@ type expType struct {
 	tsTypePanics        bool
 	convertFn           string
 	importType          enttype.Import
+	tsTypeImports       []string
 }
 
 func TestStringType(t *testing.T) {
@@ -1516,5 +1517,10 @@ func testType(t *testing.T, exp expType, ret returnType) {
 	impType, ok := typ.(enttype.TSCodegenableType)
 	if ok {
 		assert.Equal(t, exp.importType, impType.GetImportType())
+	}
+
+	withImports, ok := typ.(enttype.TSTypeWithImports)
+	if ok {
+		assert.Equal(t, exp.tsTypeImports, withImports.GetTsTypeImports())
 	}
 }

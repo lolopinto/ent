@@ -1635,7 +1635,6 @@ type InputImportType struct {
 }
 
 type jSONType struct {
-	ImportType *InputImportType
 }
 
 func (t *jSONType) GetCastToMethod() string {
@@ -1660,21 +1659,21 @@ func (t *jSONType) GetGraphQLType() string {
 	return "JSON!"
 }
 
-func (t *jSONType) getTsType(nullable bool) string {
-	if t.ImportType == nil {
+func (t *jSONType) getTsType(nullable bool, impType *InputImportType) string {
+	if impType == nil {
 		return "any"
 	}
 	if nullable {
-		return t.ImportType.Type + " | null"
+		return impType.Type + " | null"
 	}
-	return t.ImportType.Type
+	return impType.Type
 }
 
-func (t *jSONType) GetTsTypeImports() []string {
-	if t.ImportType == nil {
-		return []string{}
+func (t *jSONType) getTsTypeImports(impType *InputImportType) []string {
+	if impType == nil {
+		return nil
 	}
-	return []string{t.ImportType.Path}
+	return []string{impType.Type}
 }
 
 // TODO https://github.com/taion/graphql-type-json
@@ -1692,6 +1691,7 @@ func (t *jSONType) GetTSGraphQLImports() []FileImport {
 }
 
 type JSONType struct {
+	ImportType *InputImportType
 	jSONType
 }
 
@@ -1700,7 +1700,7 @@ func (t *JSONType) GetDBType() string {
 }
 
 func (t *JSONType) GetTSType() string {
-	return t.getTsType(false)
+	return t.getTsType(false, t.ImportType)
 }
 
 func (t *JSONType) GetNullableType() TSGraphQLType {
@@ -1709,7 +1709,19 @@ func (t *JSONType) GetNullableType() TSGraphQLType {
 	return ret
 }
 
+func (t *JSONType) Convert() FileImport {
+	return FileImport{
+		Type:       "convertJSON",
+		ImportType: Package,
+	}
+}
+
+func (t *JSONType) GetTsTypeImports() []string {
+	return t.getTsTypeImports(t.ImportType)
+}
+
 type NullableJSONType struct {
+	ImportType *InputImportType
 	jSONType
 }
 
@@ -1718,7 +1730,7 @@ func (t *NullableJSONType) GetDBType() string {
 }
 
 func (t *NullableJSONType) GetTSType() string {
-	return t.getTsType(false)
+	return t.getTsType(true, t.ImportType)
 }
 
 func (t *NullableJSONType) GetGraphQLType() string {
@@ -1734,13 +1746,25 @@ func (t *NullableJSONType) GetTSGraphQLImports() []FileImport {
 	}
 }
 
+func (t *NullableJSONType) Convert() FileImport {
+	return FileImport{
+		Type:       "convertNullableJSON",
+		ImportType: Package,
+	}
+}
+
 func (t *NullableJSONType) GetNonNullableType() TSGraphQLType {
 	ret := &JSONType{}
 	ret.ImportType = t.ImportType
 	return ret
 }
 
+func (t *NullableJSONType) GetTsTypeImports() []string {
+	return t.getTsTypeImports(t.ImportType)
+}
+
 type JSONBType struct {
+	ImportType *InputImportType
 	jSONType
 }
 
@@ -1749,7 +1773,7 @@ func (t *JSONBType) GetDBType() string {
 }
 
 func (t *JSONBType) GetTSType() string {
-	return t.getTsType(false)
+	return t.getTsType(false, t.ImportType)
 }
 
 func (t *JSONBType) GetNullableType() TSGraphQLType {
@@ -1758,7 +1782,19 @@ func (t *JSONBType) GetNullableType() TSGraphQLType {
 	return ret
 }
 
+func (t *JSONBType) Convert() FileImport {
+	return FileImport{
+		Type:       "convertJSON",
+		ImportType: Package,
+	}
+}
+
+func (t *JSONBType) GetTsTypeImports() []string {
+	return t.getTsTypeImports(t.ImportType)
+}
+
 type NullableJSONBType struct {
+	ImportType *InputImportType
 	jSONType
 }
 
@@ -1767,7 +1803,7 @@ func (t *NullableJSONBType) GetDBType() string {
 }
 
 func (t *NullableJSONBType) GetTSType() string {
-	return t.getTsType(false)
+	return t.getTsType(true, t.ImportType)
 }
 
 func (t *NullableJSONBType) GetGraphQLType() string {
@@ -1787,6 +1823,17 @@ func (t *NullableJSONBType) GetNonNullableType() TSGraphQLType {
 	ret := &JSONBType{}
 	ret.ImportType = t.ImportType
 	return ret
+}
+
+func (t *NullableJSONBType) Convert() FileImport {
+	return FileImport{
+		Type:       "convertNullableJSON",
+		ImportType: Package,
+	}
+}
+
+func (t *NullableJSONBType) GetTsTypeImports() []string {
+	return t.getTsTypeImports(t.ImportType)
 }
 
 func getBasicType(typ types.Type) Type {
