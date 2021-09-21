@@ -46,8 +46,6 @@ import {
   UserToLikesQuery,
   UserToMaybeEventsEdge,
   UserToMaybeEventsQuery,
-  UserToPostEdge,
-  UserToPostQuery,
   UserToSelfContactEdge,
   UserToSelfContactQuery,
   authCodeLoader,
@@ -105,14 +103,6 @@ export const userToMaybeEventsCountLoaderFactory =
 export const userToMaybeEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
   EdgeType.UserToMaybeEvents,
   () => UserToMaybeEventsEdge,
-);
-
-export const userToPostCountLoaderFactory = new AssocEdgeCountLoaderFactory(
-  EdgeType.UserToPost,
-);
-export const userToPostDataLoaderFactory = new AssocEdgeLoaderFactory(
-  EdgeType.UserToPost,
-  () => UserToPostEdge,
 );
 
 export const userToSelfContactCountLoaderFactory =
@@ -343,10 +333,6 @@ export class UserToFriendsQueryBase extends AssocEdgeQueryBase<
     return UserToMaybeEventsQuery.query(this.viewer, this);
   }
 
-  queryPost(): UserToPostQuery {
-    return UserToPostQuery.query(this.viewer, this);
-  }
-
   querySelfContact(): UserToSelfContactQuery {
     return UserToSelfContactQuery.query(this.viewer, this);
   }
@@ -465,30 +451,6 @@ export class UserToMaybeEventsQueryBase extends AssocEdgeQueryBase<
 
   queryMaybe(): EventToMaybeQuery {
     return EventToMaybeQuery.query(this.viewer, this);
-  }
-}
-
-export class UserToPostQueryBase extends AssocEdgeQueryBase<
-  User,
-  Ent,
-  UserToPostEdge
-> {
-  constructor(viewer: Viewer, src: EdgeQuerySource<User>) {
-    super(
-      viewer,
-      src,
-      userToPostCountLoaderFactory,
-      userToPostDataLoaderFactory,
-      getLoaderOptions,
-    );
-  }
-
-  static query<T extends UserToPostQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<User>) => T,
-    viewer: Viewer,
-    src: EdgeQuerySource<User>,
-  ): T {
-    return new this(viewer, src);
   }
 }
 

@@ -25,6 +25,7 @@ import EditEmailAddressAction from "../user/actions/edit_email_address_action";
 import ConfirmEditEmailAddressAction from "../user/actions/confirm_edit_email_address_action";
 import EditPhoneNumberAction from "../user/actions/edit_phone_number_action";
 import ConfirmEditPhoneNumberAction from "../user/actions/confirm_edit_phone_number_action";
+import CreateCommentAction from "../comment/actions/create_comment_action";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -809,6 +810,39 @@ test("likes", async () => {
   const [count2, ents2] = await Promise.all([
     likesQuery.queryCount(),
     likesQuery.queryEnts(),
+  ]);
+  expect(count2).toBe(1);
+  expect(ents2.length).toBe(1);
+  expect(ents2[0].id).toBe(user1.id);
+});
+
+test("comments", async () => {
+  const [user1, user2] = await Promise.all([create({}), create({})]);
+
+  const comment = await CreateCommentAction.create(user2.viewer, {
+    authorID: user2.id,
+    body: "sup",
+  }).saveX();
+
+  const action = EditUserAction.create(user1.viewer, user1, {});
+  // privacy
+  action.builder.addFriend(user2);
+  action.builder.addComment(comment);
+  await action.saveX();
+
+  const commentsQuery = user1.queryComments();
+  const [count, ents] = await Promise.all([
+    commentsQuery.queryCount(),
+    commentsQuery.queryEnts(),
+  ]);
+  expect(count).toBe(1);
+  expect(ents.length).toBe(1);
+  expect(ents[0].id).toBe(comment.id);
+
+  const postQuery = comment.queryPost();
+  const [count2, ents2] = await Promise.all([
+    postQuery.queryCount(),
+    postQuery.queryEnts(),
   ]);
   expect(count2).toBe(1);
   expect(ents2.length).toBe(1);

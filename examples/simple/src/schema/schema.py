@@ -47,6 +47,15 @@ sa.Table("auth_codes", metadata,
     sa.UniqueConstraint("phone_number", "code", name="uniquePhoneCode"),
 )
    
+sa.Table("comments", metadata,
+    sa.Column("id", postgresql.UUID(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("author_id", postgresql.UUID(), nullable=False),
+    sa.Column("body", sa.Text(), nullable=False),
+    sa.PrimaryKeyConstraint("id", name="comments_id_pkey"),
+)
+   
 sa.Table("contacts", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -197,12 +206,13 @@ sa.Table("users", metadata,
 
 metadata.info["edges"] = {
   'public': {
+    'CommentToPostEdge': {"edge_name":"CommentToPostEdge", "edge_type":"f430af94-d38a-4aaa-a92f-cfc56b6f811b", "edge_table":"object_comments_edges", "symmetric_edge":False, "inverse_edge_type":"8caba9c4-8035-447f-9eb1-4dd09a2d250c"},
     'EventToAttendingEdge': {"edge_name":"EventToAttendingEdge", "edge_type":"6ebc0c47-ea29-4635-b991-95e44162174d", "edge_table":"event_rsvps_edges", "symmetric_edge":False, "inverse_edge_type":"2a98ba02-e342-4bb4-93f6-5d7ed02f5c48"},
     'EventToDeclinedEdge': {"edge_name":"EventToDeclinedEdge", "edge_type":"db8d2454-f7b2-4147-aae1-e666daf3f3c3", "edge_table":"event_rsvps_edges", "symmetric_edge":False, "inverse_edge_type":"1c7c173b-63ce-4002-b121-4a87f82047dd"},
     'EventToHostsEdge': {"edge_name":"EventToHostsEdge", "edge_type":"ebe3e709-845c-4723-ac9c-29f983f2b8ea", "edge_table":"event_hosts_edges", "symmetric_edge":False, "inverse_edge_type":"cf6542a4-8bae-427f-8a1f-01194047afb3"},
     'EventToInvitedEdge': {"edge_name":"EventToInvitedEdge", "edge_type":"a72f5f64-3580-44fd-9bd0-d1335b803a46", "edge_table":"event_rsvps_edges", "symmetric_edge":False, "inverse_edge_type":"e439f2b2-d93a-4d1a-83f0-865bda5c8337"},
     'EventToMaybeEdge': {"edge_name":"EventToMaybeEdge", "edge_type":"b0f6311b-fdab-4c26-b6bf-b751e0997735", "edge_table":"event_rsvps_edges", "symmetric_edge":False, "inverse_edge_type":"8d5b1dee-ce65-452e-9f8d-78eca1993800"},
-    'ObjectToCommentsEdge': {"edge_name":"ObjectToCommentsEdge", "edge_type":"8caba9c4-8035-447f-9eb1-4dd09a2d250c", "edge_table":"object_comments_edges", "symmetric_edge":False, "inverse_edge_type":"4b725578-e9f5-472c-8e57-e47481c9e1b8"},
+    'ObjectToCommentsEdge': {"edge_name":"ObjectToCommentsEdge", "edge_type":"8caba9c4-8035-447f-9eb1-4dd09a2d250c", "edge_table":"object_comments_edges", "symmetric_edge":False, "inverse_edge_type":"f430af94-d38a-4aaa-a92f-cfc56b6f811b"},
     'ObjectToLikersEdge': {"edge_name":"ObjectToLikersEdge", "edge_type":"c9ccdad9-7aff-40e4-9a69-2c29cfa19763", "edge_table":"object_likers_edges", "symmetric_edge":False, "inverse_edge_type":"745a20bf-4fdc-4862-b39f-569c4451db8f"},
     'UserToCreatedEventsEdge': {"edge_name":"UserToCreatedEventsEdge", "edge_type":"daa3b2a3-8245-40ca-ae77-25bfb82578a7", "edge_table":"user_created_events_edges", "symmetric_edge":False, "inverse_edge_type":None},
     'UserToDeclinedEventsEdge': {"edge_name":"UserToDeclinedEventsEdge", "edge_type":"1c7c173b-63ce-4002-b121-4a87f82047dd", "edge_table":"event_rsvps_edges", "symmetric_edge":False, "inverse_edge_type":"db8d2454-f7b2-4147-aae1-e666daf3f3c3"},

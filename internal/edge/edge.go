@@ -192,7 +192,8 @@ func (e *EdgeInfo) CreateEdgeBaseFile() bool {
 	}
 
 	for _, edge := range e.Associations {
-		if edge.CreateEdge() {
+		// CreateEdge is false because we want inverse edges here...
+		if edge.PatternName == "" {
 			return true
 		}
 	}

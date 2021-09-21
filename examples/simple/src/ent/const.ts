@@ -8,6 +8,8 @@ export enum NodeType {
   Address = "address",
   // AuthCode is the node type for the AuthCode object. Used to identify this node in edges and other places.
   AuthCode = "authCode",
+  // Comment is the node type for the Comment object. Used to identify this node in edges and other places.
+  Comment = "comment",
   // Contact is the node type for the Contact object. Used to identify this node in edges and other places.
   Contact = "contact",
   // Event is the node type for the Event object. Used to identify this node in edges and other places.
@@ -24,6 +26,7 @@ export function getNodeTypeValues() {
   return [
     NodeType.Address,
     NodeType.AuthCode,
+    NodeType.Comment,
     NodeType.Contact,
     NodeType.Event,
     NodeType.Holiday,
@@ -33,6 +36,8 @@ export function getNodeTypeValues() {
 }
 
 export enum EdgeType {
+  // CommentToPost is the edgeType for the comment to post edge.
+  CommentToPost = "f430af94-d38a-4aaa-a92f-cfc56b6f811b",
   // EventToAttending is the edgeType for the event to attending edge.
   EventToAttending = "6ebc0c47-ea29-4635-b991-95e44162174d",
   // EventToDeclined is the edgeType for the event to declined edge.
@@ -63,14 +68,13 @@ export enum EdgeType {
   UserToLikes = "745a20bf-4fdc-4862-b39f-569c4451db8f",
   // UserToMaybeEvents is the edgeType for the user to maybeevents edge.
   UserToMaybeEvents = "8d5b1dee-ce65-452e-9f8d-78eca1993800",
-  // UserToPost is the edgeType for the user to post edge.
-  UserToPost = "4b725578-e9f5-472c-8e57-e47481c9e1b8",
   // UserToSelfContact is the edgeType for the user to selfcontact edge.
   UserToSelfContact = "d504201d-cf3f-4eef-b6a0-0b46a7ae186b",
 }
 
 export function getEdgeTypeValues() {
   return [
+    EdgeType.CommentToPost,
     EdgeType.EventToAttending,
     EdgeType.EventToDeclined,
     EdgeType.EventToHosts,
@@ -86,7 +90,6 @@ export function getEdgeTypeValues() {
     EdgeType.UserToInvitedEvents,
     EdgeType.UserToLikes,
     EdgeType.UserToMaybeEvents,
-    EdgeType.UserToPost,
     EdgeType.UserToSelfContact,
   ];
 }

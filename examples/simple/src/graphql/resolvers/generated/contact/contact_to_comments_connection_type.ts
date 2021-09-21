@@ -6,13 +6,13 @@
 import { GraphQLObjectType } from "graphql";
 import { GraphQLConnectionType } from "@snowtop/ent/graphql";
 import { ContactToCommentsEdge } from "../../../../ent";
-import { UserType } from "../../internal";
+import { CommentType } from "../../internal";
 
 var connType: GraphQLConnectionType<GraphQLObjectType, ContactToCommentsEdge>;
 
 export const ContactToCommentsConnectionType = () => {
   if (connType === undefined) {
-    connType = new GraphQLConnectionType("ContactToCommentsQuery", UserType);
+    connType = new GraphQLConnectionType("ContactToCommentsQuery", CommentType);
   }
   return connType;
 };

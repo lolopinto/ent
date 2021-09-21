@@ -12,6 +12,8 @@ import {
   Viewer,
 } from "@snowtop/ent";
 import {
+  Comment,
+  CommentToPostQuery,
   EdgeType,
   ObjectToCommentsEdge,
   ObjectToLikersEdge,
@@ -26,7 +28,6 @@ import {
   UserToLikersQuery,
   UserToLikesQuery,
   UserToMaybeEventsQuery,
-  UserToPostQuery,
   UserToSelfContactQuery,
 } from "../../internal";
 
@@ -47,7 +48,7 @@ export const objectToLikersDataLoaderFactory = new AssocEdgeLoaderFactory(
 
 export class ObjectToCommentsQueryBase extends AssocEdgeQueryBase<
   Ent,
-  User,
+  Comment,
   ObjectToCommentsEdge
 > {
   constructor(viewer: Viewer, src: EdgeQuerySource<Ent>) {
@@ -56,7 +57,7 @@ export class ObjectToCommentsQueryBase extends AssocEdgeQueryBase<
       src,
       objectToCommentsCountLoaderFactory,
       objectToCommentsDataLoaderFactory,
-      User.loaderOptions(),
+      Comment.loaderOptions(),
     );
   }
 
@@ -68,52 +69,8 @@ export class ObjectToCommentsQueryBase extends AssocEdgeQueryBase<
     return new this(viewer, src);
   }
 
-  queryComments(): UserToCommentsQuery {
-    return UserToCommentsQuery.query(this.viewer, this);
-  }
-
-  queryCreatedEvents(): UserToCreatedEventsQuery {
-    return UserToCreatedEventsQuery.query(this.viewer, this);
-  }
-
-  queryDeclinedEvents(): UserToDeclinedEventsQuery {
-    return UserToDeclinedEventsQuery.query(this.viewer, this);
-  }
-
-  queryEventsAttending(): UserToEventsAttendingQuery {
-    return UserToEventsAttendingQuery.query(this.viewer, this);
-  }
-
-  queryFriends(): UserToFriendsQuery {
-    return UserToFriendsQuery.query(this.viewer, this);
-  }
-
-  queryInvitedEvents(): UserToInvitedEventsQuery {
-    return UserToInvitedEventsQuery.query(this.viewer, this);
-  }
-
-  queryLikers(): UserToLikersQuery {
-    return UserToLikersQuery.query(this.viewer, this);
-  }
-
-  queryLikes(): UserToLikesQuery {
-    return UserToLikesQuery.query(this.viewer, this);
-  }
-
-  queryMaybeEvents(): UserToMaybeEventsQuery {
-    return UserToMaybeEventsQuery.query(this.viewer, this);
-  }
-
-  queryPost(): UserToPostQuery {
-    return UserToPostQuery.query(this.viewer, this);
-  }
-
-  querySelfContact(): UserToSelfContactQuery {
-    return UserToSelfContactQuery.query(this.viewer, this);
-  }
-
-  queryUserToHostedEvents(): UserToHostedEventsQuery {
-    return UserToHostedEventsQuery.query(this.viewer, this);
+  queryPost(): CommentToPostQuery {
+    return CommentToPostQuery.query(this.viewer, this);
   }
 }
 
@@ -174,10 +131,6 @@ export class ObjectToLikersQueryBase extends AssocEdgeQueryBase<
 
   queryMaybeEvents(): UserToMaybeEventsQuery {
     return UserToMaybeEventsQuery.query(this.viewer, this);
-  }
-
-  queryPost(): UserToPostQuery {
-    return UserToPostQuery.query(this.viewer, this);
   }
 
   querySelfContact(): UserToSelfContactQuery {

@@ -13,7 +13,7 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Contact, Event, User } from "../..";
+import { Comment, Contact, Event, User } from "../..";
 import { EdgeType, NodeType } from "../../const";
 import schema from "../../../schema/user";
 
@@ -90,9 +90,9 @@ export class UserBuilder implements Builder<User> {
   }
 
   addComment(...ids: ID[]): UserBuilder;
-  addComment(...nodes: User[]): UserBuilder;
-  addComment(...nodes: Builder<User>[]): UserBuilder;
-  addComment(...nodes: ID[] | User[] | Builder<User>[]): UserBuilder {
+  addComment(...nodes: Comment[]): UserBuilder;
+  addComment(...nodes: Builder<Comment>[]): UserBuilder;
+  addComment(...nodes: ID[] | Comment[] | Builder<Comment>[]): UserBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addCommentID(node);
@@ -106,21 +106,21 @@ export class UserBuilder implements Builder<User> {
   }
 
   addCommentID(
-    id: ID | Builder<User>,
+    id: ID | Builder<Comment>,
     options?: AssocEdgeInputOptions,
   ): UserBuilder {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.ObjectToComments,
-      NodeType.User,
+      NodeType.Comment,
       options,
     );
     return this;
   }
 
   removeComment(...ids: ID[]): UserBuilder;
-  removeComment(...nodes: User[]): UserBuilder;
-  removeComment(...nodes: ID[] | User[]): UserBuilder {
+  removeComment(...nodes: Comment[]): UserBuilder;
+  removeComment(...nodes: ID[] | Comment[]): UserBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -499,55 +499,6 @@ export class UserBuilder implements Builder<User> {
         );
       } else {
         this.orchestrator.removeOutboundEdge(node, EdgeType.UserToMaybeEvents);
-      }
-    }
-    return this;
-  }
-
-  addPost(...nodes: Ent[]): UserBuilder;
-  addPost(...nodes: Builder<Ent>[]): UserBuilder;
-  addPost(...nodes: Ent[] | Builder<Ent>[]): UserBuilder {
-    for (const node of nodes) {
-      if (this.isBuilder(node)) {
-        this.orchestrator.addOutboundEdge(
-          node,
-          EdgeType.UserToPost,
-          // nodeType will be gotten from Executor later
-          "",
-        );
-      } else {
-        this.orchestrator.addOutboundEdge(
-          node.id,
-          EdgeType.UserToPost,
-          node.nodeType,
-        );
-      }
-    }
-    return this;
-  }
-
-  addPostID(
-    id: ID | Builder<Ent>,
-    nodeType: NodeType,
-    options?: AssocEdgeInputOptions,
-  ): UserBuilder {
-    this.orchestrator.addOutboundEdge(
-      id,
-      EdgeType.UserToPost,
-      nodeType,
-      options,
-    );
-    return this;
-  }
-
-  removePost(...ids: ID[]): UserBuilder;
-  removePost(...nodes: Ent[]): UserBuilder;
-  removePost(...nodes: ID[] | Ent[]): UserBuilder {
-    for (const node of nodes) {
-      if (typeof node === "object") {
-        this.orchestrator.removeOutboundEdge(node.id, EdgeType.UserToPost);
-      } else {
-        this.orchestrator.removeOutboundEdge(node, EdgeType.UserToPost);
       }
     }
     return this;

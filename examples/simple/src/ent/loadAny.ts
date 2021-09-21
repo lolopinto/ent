@@ -14,6 +14,7 @@ import {
 import {
   Address,
   AuthCode,
+  Comment,
   Contact,
   Event,
   Holiday,
@@ -44,6 +45,8 @@ export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent> {
       return Address.loaderOptions();
     case NodeType.AuthCode:
       return AuthCode.loaderOptions();
+    case NodeType.Comment:
+      return Comment.loaderOptions();
     case NodeType.Contact:
       return Contact.loaderOptions();
     case NodeType.Event:

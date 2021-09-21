@@ -31,7 +31,6 @@ import {
   UserToLikersQuery,
   UserToLikesQuery,
   UserToMaybeEventsQuery,
-  UserToPostQuery,
 } from "../../../ent";
 import {
   ContactType,
@@ -46,7 +45,6 @@ import {
   UserToLikersConnectionType,
   UserToLikesConnectionType,
   UserToMaybeEventsConnectionType,
-  UserToPostConnectionType,
 } from "../internal";
 
 export const UserType = new GraphQLObjectType({
@@ -340,35 +338,6 @@ export const UserType = new GraphQLObjectType({
           user.viewer,
           user,
           (v, user: User) => UserToMaybeEventsQuery.query(v, user),
-          args,
-        );
-      },
-    },
-    post: {
-      type: GraphQLNonNull(UserToPostConnectionType()),
-      args: {
-        first: {
-          description: "",
-          type: GraphQLInt,
-        },
-        after: {
-          description: "",
-          type: GraphQLString,
-        },
-        last: {
-          description: "",
-          type: GraphQLInt,
-        },
-        before: {
-          description: "",
-          type: GraphQLString,
-        },
-      },
-      resolve: (user: User, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection(
-          user.viewer,
-          user,
-          (v, user: User) => UserToPostQuery.query(v, user),
           args,
         );
       },

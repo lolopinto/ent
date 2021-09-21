@@ -44,7 +44,6 @@ import {
   UserToLikersQuery,
   UserToLikesQuery,
   UserToMaybeEventsQuery,
-  UserToPostQuery,
 } from "../internal";
 import schema from "../../schema/user";
 
@@ -298,10 +297,6 @@ export class UserBase {
 
   queryMaybeEvents(): UserToMaybeEventsQuery {
     return UserToMaybeEventsQuery.query(this.viewer, this.id);
-  }
-
-  queryPost(): UserToPostQuery {
-    return UserToPostQuery.query(this.viewer, this.id);
   }
 
   loadSelfContactEdge(): Promise<AssocEdge | null> {

@@ -22,8 +22,7 @@ export default class Feedback implements Pattern {
     {
       // object to comments
       name: "comments",
-      // there's no Comment schema here but we'd use it if it exists
-      schemaName: "User",
+      schemaName: "Comment",
       inverseEdge: {
         // this is an inverse edge. const will be UserToPost when it should be CommentToPost
         // there is actually only going to be one of this and it should be a field stored in the comment object

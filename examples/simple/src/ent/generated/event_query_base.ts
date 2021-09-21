@@ -29,7 +29,6 @@ import {
   UserToLikersQuery,
   UserToLikesQuery,
   UserToMaybeEventsQuery,
-  UserToPostQuery,
   UserToSelfContactQuery,
 } from "../internal";
 
@@ -130,10 +129,6 @@ export class EventToAttendingQueryBase extends AssocEdgeQueryBase<
     return UserToMaybeEventsQuery.query(this.viewer, this);
   }
 
-  queryPost(): UserToPostQuery {
-    return UserToPostQuery.query(this.viewer, this);
-  }
-
   querySelfContact(): UserToSelfContactQuery {
     return UserToSelfContactQuery.query(this.viewer, this);
   }
@@ -200,10 +195,6 @@ export class EventToDeclinedQueryBase extends AssocEdgeQueryBase<
 
   queryMaybeEvents(): UserToMaybeEventsQuery {
     return UserToMaybeEventsQuery.query(this.viewer, this);
-  }
-
-  queryPost(): UserToPostQuery {
-    return UserToPostQuery.query(this.viewer, this);
   }
 
   querySelfContact(): UserToSelfContactQuery {
@@ -274,10 +265,6 @@ export class EventToHostsQueryBase extends AssocEdgeQueryBase<
     return UserToMaybeEventsQuery.query(this.viewer, this);
   }
 
-  queryPost(): UserToPostQuery {
-    return UserToPostQuery.query(this.viewer, this);
-  }
-
   querySelfContact(): UserToSelfContactQuery {
     return UserToSelfContactQuery.query(this.viewer, this);
   }
@@ -346,10 +333,6 @@ export class EventToInvitedQueryBase extends AssocEdgeQueryBase<
     return UserToMaybeEventsQuery.query(this.viewer, this);
   }
 
-  queryPost(): UserToPostQuery {
-    return UserToPostQuery.query(this.viewer, this);
-  }
-
   querySelfContact(): UserToSelfContactQuery {
     return UserToSelfContactQuery.query(this.viewer, this);
   }
@@ -416,10 +399,6 @@ export class EventToMaybeQueryBase extends AssocEdgeQueryBase<
 
   queryMaybeEvents(): UserToMaybeEventsQuery {
     return UserToMaybeEventsQuery.query(this.viewer, this);
-  }
-
-  queryPost(): UserToPostQuery {
-    return UserToPostQuery.query(this.viewer, this);
   }
 
   querySelfContact(): UserToSelfContactQuery {

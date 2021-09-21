@@ -13,7 +13,7 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Contact, User } from "../..";
+import { Comment, Contact, User } from "../..";
 import { EdgeType, NodeType } from "../../const";
 import schema from "../../../schema/contact";
 
@@ -85,9 +85,9 @@ export class ContactBuilder implements Builder<Contact> {
   }
 
   addComment(...ids: ID[]): ContactBuilder;
-  addComment(...nodes: User[]): ContactBuilder;
-  addComment(...nodes: Builder<User>[]): ContactBuilder;
-  addComment(...nodes: ID[] | User[] | Builder<User>[]): ContactBuilder {
+  addComment(...nodes: Comment[]): ContactBuilder;
+  addComment(...nodes: Builder<Comment>[]): ContactBuilder;
+  addComment(...nodes: ID[] | Comment[] | Builder<Comment>[]): ContactBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addCommentID(node);
@@ -101,21 +101,21 @@ export class ContactBuilder implements Builder<Contact> {
   }
 
   addCommentID(
-    id: ID | Builder<User>,
+    id: ID | Builder<Comment>,
     options?: AssocEdgeInputOptions,
   ): ContactBuilder {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.ObjectToComments,
-      NodeType.User,
+      NodeType.Comment,
       options,
     );
     return this;
   }
 
   removeComment(...ids: ID[]): ContactBuilder;
-  removeComment(...nodes: User[]): ContactBuilder;
-  removeComment(...nodes: ID[] | User[]): ContactBuilder {
+  removeComment(...nodes: Comment[]): ContactBuilder;
+  removeComment(...nodes: ID[] | Comment[]): ContactBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(

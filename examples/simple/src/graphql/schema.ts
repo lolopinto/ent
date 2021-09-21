@@ -9,6 +9,10 @@ import {
   AddressCreatePayloadType,
 } from "./mutations/generated/address/address_create_type";
 import {
+  CommentCreateInputType,
+  CommentCreatePayloadType,
+} from "./mutations/generated/comment/comment_create_type";
+import {
   ContactCreateInputType,
   ContactCreatePayloadType,
 } from "./mutations/generated/contact/contact_create_type";
@@ -92,6 +96,8 @@ import {
 import { QueryType } from "./resolvers/generated/query_type";
 import {
   AddressType,
+  CommentToPostConnectionType,
+  CommentType,
   ContactToCommentsConnectionType,
   ContactToLikersConnectionType,
   ContactType,
@@ -116,7 +122,6 @@ import {
   UserToLikersConnectionType,
   UserToLikesConnectionType,
   UserToMaybeEventsConnectionType,
-  UserToPostConnectionType,
   UserType,
   dayOfWeekType,
 } from "./resolvers";
@@ -128,11 +133,13 @@ export default new GraphQLSchema({
     EventRsvpStatusType,
     dayOfWeekType,
     AddressType,
+    CommentType,
     ContactType,
     EventType,
     HolidayType,
     HoursOfOperationType,
     UserType,
+    CommentToPostConnectionType(),
     ContactToCommentsConnectionType(),
     ContactToLikersConnectionType(),
     EventToAttendingConnectionType(),
@@ -151,7 +158,6 @@ export default new GraphQLSchema({
     UserToLikersConnectionType(),
     UserToLikesConnectionType(),
     UserToMaybeEventsConnectionType(),
-    UserToPostConnectionType(),
     GQLViewerType,
     UserAuthInputType,
     UserAuthJWTInputType,
@@ -159,6 +165,8 @@ export default new GraphQLSchema({
     UserAuthPayloadType,
     AddressCreateInputType,
     AddressCreatePayloadType,
+    CommentCreateInputType,
+    CommentCreatePayloadType,
     ConfirmEmailAddressEditInputType,
     ConfirmEmailAddressEditPayloadType,
     ConfirmPhoneNumberEditInputType,
