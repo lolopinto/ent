@@ -30,6 +30,13 @@ import {
   UserToSelfContactQuery,
 } from "../../internal";
 
+export const objectToCommentsCountLoaderFactory =
+  new AssocEdgeCountLoaderFactory(EdgeType.ObjectToComments);
+export const objectToCommentsDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.ObjectToComments,
+  () => ObjectToCommentsEdge,
+);
+
 export const objectToLikersCountLoaderFactory = new AssocEdgeCountLoaderFactory(
   EdgeType.ObjectToLikers,
 );
@@ -38,29 +45,22 @@ export const objectToLikersDataLoaderFactory = new AssocEdgeLoaderFactory(
   () => ObjectToLikersEdge,
 );
 
-export const objectToCommentsCountLoaderFactory =
-  new AssocEdgeCountLoaderFactory(EdgeType.ObjectToComments);
-export const objectToCommentsDataLoaderFactory = new AssocEdgeLoaderFactory(
-  EdgeType.ObjectToComments,
-  () => ObjectToCommentsEdge,
-);
-
-export class ObjectToLikersQueryBase extends AssocEdgeQueryBase<
+export class ObjectToCommentsQueryBase extends AssocEdgeQueryBase<
   Ent,
   User,
-  ObjectToLikersEdge
+  ObjectToCommentsEdge
 > {
   constructor(viewer: Viewer, src: EdgeQuerySource<Ent>) {
     super(
       viewer,
       src,
-      objectToLikersCountLoaderFactory,
-      objectToLikersDataLoaderFactory,
+      objectToCommentsCountLoaderFactory,
+      objectToCommentsDataLoaderFactory,
       User.loaderOptions(),
     );
   }
 
-  static query<T extends ObjectToLikersQueryBase>(
+  static query<T extends ObjectToCommentsQueryBase>(
     this: new (viewer: Viewer, src: EdgeQuerySource<Ent>) => T,
     viewer: Viewer,
     src: EdgeQuerySource<Ent>,
@@ -117,22 +117,22 @@ export class ObjectToLikersQueryBase extends AssocEdgeQueryBase<
   }
 }
 
-export class ObjectToCommentsQueryBase extends AssocEdgeQueryBase<
+export class ObjectToLikersQueryBase extends AssocEdgeQueryBase<
   Ent,
   User,
-  ObjectToCommentsEdge
+  ObjectToLikersEdge
 > {
   constructor(viewer: Viewer, src: EdgeQuerySource<Ent>) {
     super(
       viewer,
       src,
-      objectToCommentsCountLoaderFactory,
-      objectToCommentsDataLoaderFactory,
+      objectToLikersCountLoaderFactory,
+      objectToLikersDataLoaderFactory,
       User.loaderOptions(),
     );
   }
 
-  static query<T extends ObjectToCommentsQueryBase>(
+  static query<T extends ObjectToLikersQueryBase>(
     this: new (viewer: Viewer, src: EdgeQuerySource<Ent>) => T,
     viewer: Viewer,
     src: EdgeQuerySource<Ent>,

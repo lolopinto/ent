@@ -582,3 +582,55 @@ test("load fkey connection", async () => {
     ],
   );
 });
+
+test("likes", async () => {
+  const [user1, user2, user3, user4] = await Promise.all([
+    create({}),
+    create({}),
+    create({}),
+    create({}),
+  ]);
+  const action = EditUserAction.create(user1.viewer, user1, {});
+  for (const user of [user2, user3, user4]) {
+    advanceBy(100);
+    action.builder.addLiker(user);
+  }
+  // for privacy
+  action.builder.addFriend(user2, user3, user4);
+  await action.saveX();
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user1.id), user1),
+    ["likers.rawCount", 3],
+    [
+      "likers.nodes",
+      [
+        {
+          id: encodeGQLID(user2),
+        },
+        {
+          id: encodeGQLID(user3),
+        },
+        {
+          id: encodeGQLID(user4),
+        },
+      ],
+    ],
+  );
+
+  // query likes also
+  for (const liker of [user2, user3, user4]) {
+    await expectQueryFromRoot(
+      getConfig(new IDViewer(liker.id), liker),
+      ["likes.rawCount", 1],
+      [
+        "likes.nodes",
+        [
+          {
+            id: encodeGQLID(user1),
+          },
+        ],
+      ],
+    );
+  }
+});

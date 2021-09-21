@@ -20,6 +20,7 @@ import {
 } from "@snowtop/ent/graphql";
 import {
   User,
+  UserToCommentsQuery,
   UserToContactsQuery,
   UserToCreatedEventsQuery,
   UserToDeclinedEventsQuery,
@@ -27,10 +28,14 @@ import {
   UserToFriendsQuery,
   UserToHostedEventsQuery,
   UserToInvitedEventsQuery,
+  UserToLikersQuery,
+  UserToLikesQuery,
   UserToMaybeEventsQuery,
+  UserToPostQuery,
 } from "../../../ent";
 import {
   ContactType,
+  UserToCommentsConnectionType,
   UserToContactsConnectionType,
   UserToCreatedEventsConnectionType,
   UserToDeclinedEventsConnectionType,
@@ -38,7 +43,10 @@ import {
   UserToFriendsConnectionType,
   UserToHostedEventsConnectionType,
   UserToInvitedEventsConnectionType,
+  UserToLikersConnectionType,
+  UserToLikesConnectionType,
   UserToMaybeEventsConnectionType,
+  UserToPostConnectionType,
 } from "../internal";
 
 export const UserType = new GraphQLObjectType({
@@ -73,6 +81,35 @@ export const UserType = new GraphQLObjectType({
       type: ContactType,
       resolve: (user: User, args: {}, context: RequestContext) => {
         return user.loadSelfContact();
+      },
+    },
+    comments: {
+      type: GraphQLNonNull(UserToCommentsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (user: User, args: {}, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          (v, user: User) => UserToCommentsQuery.query(v, user),
+          args,
+        );
       },
     },
     createdEvents: {
@@ -220,6 +257,64 @@ export const UserType = new GraphQLObjectType({
         );
       },
     },
+    likers: {
+      type: GraphQLNonNull(UserToLikersConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (user: User, args: {}, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          (v, user: User) => UserToLikersQuery.query(v, user),
+          args,
+        );
+      },
+    },
+    likes: {
+      type: GraphQLNonNull(UserToLikesConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (user: User, args: {}, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          (v, user: User) => UserToLikesQuery.query(v, user),
+          args,
+        );
+      },
+    },
     maybeEvents: {
       type: GraphQLNonNull(UserToMaybeEventsConnectionType()),
       args: {
@@ -245,6 +340,35 @@ export const UserType = new GraphQLObjectType({
           user.viewer,
           user,
           (v, user: User) => UserToMaybeEventsQuery.query(v, user),
+          args,
+        );
+      },
+    },
+    post: {
+      type: GraphQLNonNull(UserToPostConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (user: User, args: {}, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          (v, user: User) => UserToPostQuery.query(v, user),
           args,
         );
       },
