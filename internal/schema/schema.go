@@ -801,8 +801,6 @@ func (s *Schema) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdgeDat
 	// 7 write new files
 	// 8 write edge config to db (this should really be a separate step since this needs to run in production every time)
 
-	// TODO check Patterns too
-	// and call its version of addNewEdge
 	for _, assocEdge := range nodeData.EdgeInfo.Associations {
 		// handled by the "main edge".
 		if !assocEdge.CreateEdge() {

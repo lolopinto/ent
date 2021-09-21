@@ -23,11 +23,12 @@ func (m NodeMapInfo) HideFromGraphQL(edge edge.Edge) bool {
 	if edge.HideFromGraphQL() {
 		return true
 	}
-	node := edge.GetNodeInfo().Node
-	// TODO polymorphic edges...
-	if node == "Ent" {
+	// polymorphic edge may not have NodeData so we shouldn't use that
+	// just return false since edge itself not hidden
+	if edge.PolymorphicEdge() {
 		return false
 	}
+	node := edge.GetNodeInfo().Node
 	nodeData := m.getNodeDataFromGraphQLName(node)
 	if nodeData == nil {
 		return true

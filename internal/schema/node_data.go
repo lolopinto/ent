@@ -53,11 +53,10 @@ func (cg *ConstGroupInfo) CreateNewType() bool {
 type NodeData struct {
 	nodeinfo.NodeInfo
 	objWithConsts
-	PackageName string
-	FieldInfo   *field.FieldInfo
-	EdgeInfo    *edge.EdgeInfo
-	TableName   string
-	//	ConstantGroups  map[string]*ConstGroupInfo
+	PackageName     string
+	FieldInfo       *field.FieldInfo
+	EdgeInfo        *edge.EdgeInfo
+	TableName       string
 	ActionInfo      *action.ActionInfo
 	HideFromGraphQL bool
 	EnumTable       bool

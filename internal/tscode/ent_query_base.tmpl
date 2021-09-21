@@ -52,11 +52,7 @@
     {{$edgeName := useImport $edge.TsEdgeQueryEdgeName -}}
     {{$thisType := printf "new (viewer: Viewer, src: EdgeQuerySource<%s>) => T" $node }}
 
-{{ if .PolymorphicEdge -}}
-  export class {{$name}} extends {{useImport "AssocEdgeQueryBase"}}<{{$node}}, {{useImport "Ent"}}, {{$edgeName}}> {
-{{ else -}}
   export class {{$name}} extends {{useImport "AssocEdgeQueryBase"}}<{{$node}}, {{useImport .NodeInfo.Node}}, {{$edgeName}}> {
-{{ end -}}
     constructor(viewer: {{useImport "Viewer"}}, src: {{useImport "EdgeQuerySource"}}<{{$node}}>) {
       super(
         viewer, 

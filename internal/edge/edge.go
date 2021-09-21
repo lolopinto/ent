@@ -150,9 +150,6 @@ func (e *EdgeInfo) GetConnectionEdges() []ConnectionEdge {
 	var ret []ConnectionEdge
 
 	for _, edge := range e.Associations {
-		// if e.SourceNodeName == "User" && edge.EdgeName == "likes" && edge.IsInverseEdge {
-		// 	spew.Dump(edge.GraphQLEdgeName(), edge.GetGraphQLConnectionName())
-		// }
 		if edge.Unique {
 			continue
 		}
@@ -189,8 +186,17 @@ func (e *EdgeInfo) GetEdgesForIndexLoader() []IndexedConnectionEdge {
 	return e.IndexedEdgeQueries
 }
 
-func (e *EdgeInfo) HasConnectionEdges() bool {
-	return len(e.Associations) > 0 || len(e.indexedEdgeQueriesMap) > 0
+func (e *EdgeInfo) CreateEdgeBaseFile() bool {
+	if len(e.indexedEdgeQueriesMap) > 0 {
+		return true
+	}
+
+	for _, edge := range e.Associations {
+		if edge.CreateEdge() {
+			return true
+		}
+	}
+	return false
 }
 
 func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName string, polymorphic *base.PolymorphicOptions, nullable bool) error {
@@ -311,6 +317,7 @@ type Edge interface {
 	GraphQLEdgeName() string
 	CamelCaseEdgeName() string
 	HideFromGraphQL() bool
+	PolymorphicEdge() bool
 	GetTSGraphQLTypeImports() []enttype.FileImport
 }
 
@@ -378,6 +385,11 @@ type FieldEdge struct {
 	Polymorphic *base.PolymorphicOptions
 }
 
+func (edge *FieldEdge) PolymorphicEdge() bool {
+	// TODO should this be true when polymorphic != nil
+	return false
+}
+
 func (edge *FieldEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
 	// TODO required and nullable eventually (options for the edges that is)
 	if edge.Polymorphic != nil {
@@ -406,6 +418,10 @@ type ForeignKeyEdge struct {
 
 func (e *ForeignKeyEdge) PluralEdge() bool {
 	return true
+}
+
+func (e *ForeignKeyEdge) PolymorphicEdge() bool {
+	return false
 }
 
 func (e *ForeignKeyEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
@@ -493,6 +509,10 @@ func (e *IndexedEdge) PluralEdge() bool {
 	return !e.unique
 }
 
+func (e *IndexedEdge) PolymorphicEdge() bool {
+	return false
+}
+
 func (e *IndexedEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
 	return []enttype.FileImport{
 		enttype.NewGQLFileImport("GraphQLNonNull"),
@@ -554,6 +574,10 @@ type InverseAssocEdge struct {
 
 func (e *InverseAssocEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
 	panic("TODO. no GraphQLImports for InverseAssocEdge")
+}
+
+func (e *InverseAssocEdge) PolymorphicEdge() bool {
+	return false
 }
 
 var edgeRegexp = regexp.MustCompile(`(\w+)Edge`)

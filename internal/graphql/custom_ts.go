@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
@@ -885,6 +884,10 @@ func (e *CustomEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
 	}
 }
 
+func (e *CustomEdge) PolymorphicEdge() bool {
+	return false
+}
+
 func (e *CustomEdge) GetSourceNodeName() string {
 	return strcase.ToCamel(e.SourceNodeName)
 }
@@ -895,7 +898,6 @@ func (e *CustomEdge) GetGraphQLEdgePrefix() string {
 }
 
 func (e *CustomEdge) GetGraphQLConnectionName() string {
-	spew.Dump("customEdge")
 	return fmt.Sprintf("%sTo%sConnection", strcase.ToCamel(e.SourceNodeName), strcase.ToCamel(e.EdgeName))
 }
 

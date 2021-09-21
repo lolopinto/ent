@@ -307,10 +307,6 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 		for idx := range node.connections {
 			conn := node.connections[idx]
 			funcs = append(funcs, func() error {
-				spew.Dump(conn.Edge.GetGraphQLConnectionName())
-				// why...
-				if conn.Edge.GetGraphQLConnectionName() == "UserToLikesConnection" {
-				}
 				return writeConnectionFile(processor, s, conn)
 			})
 		}

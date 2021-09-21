@@ -124,12 +124,12 @@ func (s *Step) processActions(processor *codegen.Processor, nodeData *schema.Nod
 
 func (s *Step) processEdges(processor *codegen.Processor, nodeData *schema.NodeData) writeFileFnList {
 	var ret writeFileFnList
-	if !nodeData.EdgeInfo.HasConnectionEdges() {
-		return ret
+
+	if nodeData.EdgeInfo.CreateEdgeBaseFile() {
+		ret = append(ret, func() error {
+			return writeBaseQueryFile(processor, nodeData)
+		})
 	}
-	ret = append(ret, func() error {
-		return writeBaseQueryFile(processor, nodeData)
-	})
 
 	for idx := range nodeData.EdgeInfo.Associations {
 		edge := nodeData.EdgeInfo.Associations[idx]
@@ -694,20 +694,17 @@ func getSortedInternalEntFileLines(s *schema.Schema) []string {
 		}
 	}
 	for _, info := range s.Nodes {
-		hasBaseQueryFile := false
 		if len(info.NodeData.EdgeInfo.Associations) != 0 {
-			hasBaseQueryFile = true
 			for _, edge := range info.NodeData.EdgeInfo.Associations {
 				append2(&queryFiles, getImportPathForAssocEdgeQueryFile(info.NodeData, edge))
 			}
 		}
 
 		for _, edge := range info.NodeData.EdgeInfo.GetEdgesForIndexLoader() {
-			hasBaseQueryFile = true
 			append2(&queryFiles, getImportPathForCustomEdgeQueryFile(info.NodeData, edge))
 		}
 
-		if hasBaseQueryFile {
+		if info.NodeData.EdgeInfo.CreateEdgeBaseFile() {
 			append2(&baseQueryFiles, getImportPathForBaseQueryFile(info.NodeData.PackageName))
 		}
 	}
