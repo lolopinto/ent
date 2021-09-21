@@ -262,6 +262,11 @@ func TestParseFields(t *testing.T) {
 					];
 				}`),
 			},
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name: "node",
+				},
+			},
 			expectedNodes: map[string]node{
 				"User": {
 					fields: fieldsWithNodeFields(
@@ -298,6 +303,11 @@ func TestParseFields(t *testing.T) {
 						StringType({name: "location"}),
 					]
 				}`),
+			},
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name: "node",
+				},
 			},
 			expectedNodes: map[string]node{
 				"User": {
@@ -643,6 +653,11 @@ func TestParseFields(t *testing.T) {
 						UUIDType({name: "creator_id", foreignKey: {schema:"User", column:"ID", disableIndex: true}}),
 					]
 				}`),
+			},
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name: "node",
+				},
 			},
 			expectedNodes: map[string]node{
 				"User": {

@@ -121,11 +121,23 @@ type testCase struct {
 	code             map[string]string
 	expectedNodes    map[string]node
 	expectedPatterns map[string]pattern
+	only             bool
+	skip             bool
 }
 
 func runTestCases(t *testing.T, testCases map[string]testCase) {
 
+	hasOnly := false
+	for _, v := range testCases {
+		if v.only {
+			hasOnly = true
+			break
+		}
+	}
 	for key, tt := range testCases {
+		if tt.skip || (hasOnly && !tt.only) {
+			continue
+		}
 		t.Run(key, func(t *testing.T) {
 			schema := testhelper.ParseInputSchemaForTest(t, tt.code)
 

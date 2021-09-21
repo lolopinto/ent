@@ -142,6 +142,11 @@ func TestConstraints(t *testing.T) {
 					}
 				`),
 			},
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name: "node",
+				},
+			},
 			expectedNodes: map[string]node{
 				"User": {
 					fields: fieldsWithNodeFields(
@@ -225,6 +230,11 @@ func TestConstraints(t *testing.T) {
 					}
 				`),
 			},
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name: "node",
+				},
+			},
 			expectedNodes: map[string]node{
 				"User": {
 					fields: fieldsWithNodeFields(
@@ -306,6 +316,11 @@ func TestConstraints(t *testing.T) {
 					}
 				`),
 			},
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name: "node",
+				},
+			},
 			expectedNodes: map[string]node{
 				"User": {
 					fields: fieldsWithNodeFields(
@@ -361,6 +376,11 @@ func TestConstraints(t *testing.T) {
 							},
 						];
 					}`),
+			},
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name: "node",
+				},
 			},
 			expectedNodes: map[string]node{
 				"Item": {
@@ -419,6 +439,11 @@ func TestConstraints(t *testing.T) {
 							},
 						];
 					}`),
+			},
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name: "node",
+				},
 			},
 			expectedNodes: map[string]node{
 				"Item": {
@@ -489,6 +514,11 @@ func TestIndices(t *testing.T) {
 						];
 					}
 				`),
+			},
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name: "node",
+				},
 			},
 			expectedNodes: map[string]node{
 				"Contact": {
@@ -561,6 +591,11 @@ func TestIndices(t *testing.T) {
 						];
 					}
 				`),
+			},
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name: "node",
+				},
 			},
 			expectedNodes: map[string]node{
 				"User": {
