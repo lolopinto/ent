@@ -21,7 +21,6 @@ export * from "./event";
 export * from "./holiday";
 export * from "./hours_of_operation";
 export * from "./user";
-export * from "./generated/contact_query_base";
 export * from "./generated/event_query_base";
 export * from "./generated/user_query_base";
 export * from "./contact/query/contact_to_comments_query";

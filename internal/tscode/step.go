@@ -544,15 +544,10 @@ func writeBasePatternQueryFile(processor *codegen.Processor, pattern *schema.Pat
 	if err != nil {
 		return err
 	}
-	assocs := make([]*edge.AssociationEdge, len(pattern.AssocEdges))
-	i := 0
-	for _, edge := range pattern.AssocEdges {
-		assocs[i] = edge
-		i++
-	}
+
 	return writeBaseQueryFileImpl(processor, &BaseQueryEdgeInfo{
 		Imports:    imps,
-		AssocEdges: assocs,
+		AssocEdges: pattern.GetSortedEdges(),
 		Node:       "Ent",
 		FilePath:   getFilePathForPatternBaseQueryFile(processor.Config, pattern),
 	})
@@ -689,7 +684,7 @@ func getSortedInternalEntFileLines(s *schema.Schema) []string {
 			continue
 		}
 		append2(&baseFiles, getImportPathForPatternBaseQueryFile(pattern.Name))
-		for _, edge := range pattern.AssocEdges {
+		for _, edge := range pattern.GetSortedEdges() {
 			append2(&baseFiles, getImportPathForPatternAssocEdgeQueryFile(edge))
 		}
 	}
