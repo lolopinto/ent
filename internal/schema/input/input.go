@@ -13,7 +13,13 @@ import (
 )
 
 type Schema struct {
-	Nodes map[string]*Node
+	Nodes    map[string]*Node    `json:"schemas"`
+	Patterns map[string]*Pattern `json:"patterns"`
+}
+
+type Pattern struct {
+	Name       string       `json:"name"`
+	AssocEdges []*AssocEdge `json:"assocEdges"`
 }
 
 type Node struct {
@@ -27,6 +33,8 @@ type Node struct {
 	Constraints     []*Constraint            `json:"constraints"`
 	Indices         []*Index                 `json:"indices"`
 	HideFromGraphQL bool                     `json:"hideFromGraphQL"`
+	EdgeConstName   string                   `json:"edgeConstName"`
+	PatternName     string                   `json:"patternName"`
 }
 
 func (n *Node) AddAssocEdge(edge *AssocEdge) {
@@ -555,16 +563,31 @@ func (g *AssocEdgeGroup) AddAssocEdge(edge *AssocEdge) {
 type InverseAssocEdge struct {
 	// TODO need to be able to mark this as unique
 	// this is an easy way to get 1->many
-	Name string `json:"name"`
+	Name          string `json:"name"`
+	EdgeConstName string `json:"edgeConstName"`
 }
 
 func ParseSchema(input []byte) (*Schema, error) {
-	nodes := make(map[string]*Node)
-	if err := json.Unmarshal(input, &nodes); err != nil {
-		return nil, err
+	s := &Schema{}
+	if err := json.Unmarshal(input, s); err != nil {
+		// don't think this applies but keeping it here just in case
+		nodes := make(map[string]*Node)
+		if err := json.Unmarshal(input, &nodes); err != nil {
+			return nil, err
+		}
+		return &Schema{Nodes: nodes}, nil
+	}
+	// in the old route, it doesn't throw an error but just unmarshalls nothing 😭
+	// TestCustomFields
+	// also need to verify TestCustomListQuery|TestCustomUploadType works
+	// so checking s.Nodes == nil instead of len() == 0
+	if s.Nodes == nil {
+		nodes := make(map[string]*Node)
+		if err := json.Unmarshal(input, &nodes); err != nil {
+			return nil, err
+		}
+		return &Schema{Nodes: nodes}, nil
 	}
 
-	return &Schema{
-		Nodes: nodes,
-	}, nil
+	return s, nil
 }

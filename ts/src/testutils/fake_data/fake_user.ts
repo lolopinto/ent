@@ -54,6 +54,8 @@ export class FakeUser implements Ent {
       AllowIfViewerRule,
       //can view user if friends
       new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFriends),
+      //can view user if following
+      new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFollowing),
       new AllowIfConditionAppliesRule((viewer: Viewer, ent: Ent) => {
         if (!(viewer instanceof ViewerWithAccessToken)) {
           return false;

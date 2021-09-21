@@ -26,6 +26,7 @@ import { clear } from "jest-date-mock";
 import { Interval } from "luxon";
 import { QueryLoaderFactory } from "../../core/loaders/query_loader";
 import { MockDate } from "./../mock_date";
+import { getLoaderOptions } from ".";
 
 export class UserToContactsQuery extends AssocEdgeQueryBase<
   FakeUser,
@@ -387,5 +388,28 @@ export class UserToEventsInNextWeekQuery extends CustomEdgeQueryBase<FakeEvent> 
     src: FakeUser | ID,
   ): UserToEventsInNextWeekQuery {
     return new UserToEventsInNextWeekQuery(viewer, src);
+  }
+}
+
+export class UserToFollowingQuery extends AssocEdgeQueryBase<
+  FakeUser,
+  Ent,
+  AssocEdge
+> {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser>) {
+    super(
+      viewer,
+      src,
+      new AssocEdgeCountLoaderFactory(EdgeType.UserToFollowing),
+      new AssocEdgeLoaderFactory(EdgeType.UserToFollowing, AssocEdge),
+      getLoaderOptions,
+    );
+  }
+
+  static query(
+    viewer: Viewer,
+    src: EdgeQuerySource<FakeUser>,
+  ): UserToFollowingQuery {
+    return new UserToFollowingQuery(viewer, src);
   }
 }

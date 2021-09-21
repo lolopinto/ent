@@ -65,6 +65,8 @@ export interface AssocEdge {
   tableName?: string;
   edgeActions?: EdgeAction[];
   hideFromGraphQL?: boolean;
+  // use this instead of the default generated const names
+  edgeConstName?: string;
 }
 
 // type PickKey<T, K extends keyof T> = Extract<keyof T, K>;
@@ -91,6 +93,8 @@ export interface EdgeAction {
 export interface InverseAssocEdge {
   // name of the inverse edge
   name: string;
+  // same as in AssocEdge
+  edgeConstName?: string;
 }
 
 export interface EdgeGroupAction {
@@ -143,7 +147,10 @@ export type Edge = AssocEdge;
 // The most commonly used pattern in the ent framework is going to be the Node pattern
 // which automatically provides 3 fields to every ent: id, created_at, updated_at
 export interface Pattern {
+  // breaking change. we use it to identify patterns
+  name: string;
   fields: Field[];
+  edges?: Edge[];
 }
 
 // we want --strictNullChecks flag so nullable is used to type graphql, ts, db

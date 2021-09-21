@@ -4,6 +4,7 @@ import {
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
+  GraphQLInterfaceType,
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "../../core/context";
@@ -13,8 +14,9 @@ import { GraphQLEdgeInterface } from "../builtins/edge";
 import { GraphQLConnectionInterface } from "../builtins/connection";
 import { Data } from "../../core/base";
 
+type nodeType = GraphQLObjectType | GraphQLInterfaceType;
 export class GraphQLEdgeType<
-  TNode extends GraphQLObjectType,
+  TNode extends nodeType,
   TEdge extends Data,
 > extends GraphQLObjectType {
   constructor(
@@ -55,7 +57,7 @@ interface connectionOptions<T extends Data> {
 }
 
 export class GraphQLConnectionType<
-  TNode extends GraphQLObjectType,
+  TNode extends nodeType,
   TEdge extends Data,
 > extends GraphQLObjectType {
   edgeType: GraphQLEdgeType<TNode, TEdge>;
