@@ -1,6 +1,8 @@
 package schema
 
-import "github.com/lolopinto/ent/internal/edge"
+import (
+	"github.com/lolopinto/ent/internal/edge"
+)
 
 // NodeMapInfo holds all the information about the schema
 // It's a mapping of "packageName" to NodeDataInfo objects
@@ -22,6 +24,10 @@ func (m NodeMapInfo) HideFromGraphQL(edge edge.Edge) bool {
 		return true
 	}
 	node := edge.GetNodeInfo().Node
+	// TODO polymorphic edges...
+	if node == "Ent" {
+		return false
+	}
 	nodeData := m.getNodeDataFromGraphQLName(node)
 	if nodeData == nil {
 		return true

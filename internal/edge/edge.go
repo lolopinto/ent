@@ -150,6 +150,9 @@ func (e *EdgeInfo) GetConnectionEdges() []ConnectionEdge {
 	var ret []ConnectionEdge
 
 	for _, edge := range e.Associations {
+		// if e.SourceNodeName == "User" && edge.EdgeName == "likes" && edge.IsInverseEdge {
+		// 	spew.Dump(edge.GraphQLEdgeName(), edge.GetGraphQLConnectionName())
+		// }
 		if edge.Unique {
 			continue
 		}
@@ -577,11 +580,12 @@ type AssociationEdge struct {
 	// will eventually be made configurable to the user
 	EdgeActions []*EdgeAction
 
-	givenEdgeConstName string
-	patternEdgeConst   string
-	overridenQueryName string
-	overridenEdgeName  string
-	PatternName        string
+	givenEdgeConstName   string
+	patternEdgeConst     string
+	overridenQueryName   string
+	overridenEdgeName    string
+	overridenGraphQLName string
+	PatternName          string
 }
 
 func (e *AssociationEdge) CreateEdge() bool {
@@ -628,6 +632,10 @@ func (e *AssociationEdge) TsEdgeQueryName() string {
 }
 
 func (e *AssociationEdge) GetGraphQLEdgePrefix() string {
+	if e.overridenQueryName != "" {
+		// return this with connection removed
+		return strings.TrimSuffix(e.overridenQueryName, "Connection")
+	}
 	return e.TsEdgeConst
 }
 
@@ -639,6 +647,9 @@ func (e *AssociationEdge) TsEdgeQueryEdgeName() string {
 }
 
 func (e *AssociationEdge) GetGraphQLConnectionName() string {
+	if e.overridenGraphQLName != "" {
+		return e.overridenGraphQLName
+	}
 	// we need a unique graphql name
 	// there's nothing stopping multiple edges of different types having the same connection and then there'll be a conflict here
 	// so we use the UserToFoo names to have UserToFriendsConnection and UserToFriendsEdge names
@@ -1003,7 +1014,7 @@ func AssocEdgeFromInput(packageName string, edge *input.AssocEdge) (*Association
 			assocEdge.patternEdgeConst = edgeConst
 			assocEdge.overridenQueryName = fmt.Sprintf("%sQuery", oldEdgeConst)
 			assocEdge.overridenEdgeName = fmt.Sprintf("%sEdge", oldEdgeConst)
-
+			assocEdge.overridenGraphQLName = fmt.Sprintf("%sConnection", oldEdgeConst)
 		}
 	} else {
 		assocEdge.EdgeConst = edge.EdgeConstName + "Edge"
@@ -1020,6 +1031,7 @@ func AssocEdgeFromInput(packageName string, edge *input.AssocEdge) (*Association
 			}
 			assocEdge.overridenQueryName = fmt.Sprintf("%sQuery", edgeConst)
 			assocEdge.overridenEdgeName = fmt.Sprintf("%sEdge", edgeConst)
+			assocEdge.overridenGraphQLName = fmt.Sprintf("%sConnection", edgeConst)
 		}
 	}
 
