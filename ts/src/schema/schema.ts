@@ -167,7 +167,8 @@ export enum DBType {
   //
   Timestamp = "Timestamp",
   Timestamptz = "Timestamptz",
-  JSON = "JSON", // tuple, lists, everything else converges on this
+  JSON = "JSON", //JSON type in the database
+  JSONB = "JSONB", // JSONB type in the database Postgres
   Enum = "Enum", // enum type in the database
   StringEnum = "StringEnum", // string type in the database
 
@@ -176,6 +177,12 @@ export enum DBType {
   Timetz = "Timetz",
 
   List = "List",
+}
+
+export interface ImportType {
+  path: string; // path to import from. either absolute path e.g. from an npm package or relative path starting at root of code e.g. "src/foo/jsonType"
+  relative?: boolean; // boolean indicating if relative or absolute path, if relative path, will be adjusted when importing depending on file importing from
+  type: string; // type being imported
 }
 
 // represents the type of each field
@@ -189,6 +196,7 @@ export interface Type {
   type?: string; // typescript type
   graphQLType?: string; // graphql type
   values?: string[]; // values e.g. enum values
+  importType?: ImportType;
 }
 
 export interface ForeignKey {

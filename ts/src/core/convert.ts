@@ -81,3 +81,10 @@ export function convertBoolList(val: any): boolean[] {
 export function convertNullableBoolList(val: any): boolean[] | null {
   return convertNullableList(val, convertBool);
 }
+
+export function convertJSON(val: any): Object {
+  if (typeof val === "string") {
+    return JSON.parse(val);
+  }
+  return val;
+}
