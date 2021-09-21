@@ -6,14 +6,27 @@
 import {
   GraphQLFieldConfigMap,
   GraphQLID,
+  GraphQLInt,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
-import { Contact } from "../../../ent";
-import { UserType } from "../internal";
+import {
+  GraphQLEdgeConnection,
+  GraphQLNodeInterface,
+  nodeIDEncoder,
+} from "@snowtop/ent/graphql";
+import {
+  Contact,
+  ContactToCommentsQuery,
+  ContactToLikersQuery,
+} from "../../../ent";
+import {
+  ContactToCommentsConnectionType,
+  ContactToLikersConnectionType,
+  UserType,
+} from "../internal";
 
 export const ContactType = new GraphQLObjectType({
   name: "Contact",
@@ -36,6 +49,64 @@ export const ContactType = new GraphQLObjectType({
     },
     lastName: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    comments: {
+      type: GraphQLNonNull(ContactToCommentsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (contact: Contact, args: {}, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          contact.viewer,
+          contact,
+          (v, contact: Contact) => ContactToCommentsQuery.query(v, contact),
+          args,
+        );
+      },
+    },
+    likers: {
+      type: GraphQLNonNull(ContactToLikersConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (contact: Contact, args: {}, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          contact.viewer,
+          contact,
+          (v, contact: Contact) => ContactToLikersQuery.query(v, contact),
+          args,
+        );
+      },
     },
     fullName: {
       type: GraphQLNonNull(GraphQLString),

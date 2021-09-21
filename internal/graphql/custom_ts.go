@@ -884,6 +884,10 @@ func (e *CustomEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
 	}
 }
 
+func (e *CustomEdge) PolymorphicEdge() bool {
+	return false
+}
+
 func (e *CustomEdge) GetSourceNodeName() string {
 	return strcase.ToCamel(e.SourceNodeName)
 }
@@ -895,7 +899,6 @@ func (e *CustomEdge) GetGraphQLEdgePrefix() string {
 
 func (e *CustomEdge) GetGraphQLConnectionName() string {
 	return fmt.Sprintf("%sTo%sConnection", strcase.ToCamel(e.SourceNodeName), strcase.ToCamel(e.EdgeName))
-
 }
 
 func (e *CustomEdge) TsEdgeQueryEdgeName() string {

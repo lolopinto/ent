@@ -70,6 +70,34 @@ func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataIn
 	return ret
 }
 
+func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.PatternInfo, serr *syncerr.Error) writeFileFnList {
+	var ret writeFileFnList
+
+	if err := s.accumulateConsts(pattern); err != nil {
+		serr.Append(err)
+		return ret
+	}
+
+	if len(pattern.AssocEdges) == 0 {
+		return ret
+	}
+
+	ret = append(ret, func() error {
+		return writeBasePatternQueryFile(processor, pattern)
+	})
+	for idx := range pattern.AssocEdges {
+		edge := pattern.AssocEdges[idx]
+		ret = append(ret, func() error {
+			return writeAssocEdgeQueryFile(
+				processor,
+				edge,
+				getFilePathForPatternAssocEdgeQueryFile(processor.Config, pattern, edge),
+			)
+		})
+	}
+
+	return ret
+}
 func (s *Step) processActions(processor *codegen.Processor, nodeData *schema.NodeData) writeFileFnList {
 	var ret writeFileFnList
 
@@ -96,17 +124,21 @@ func (s *Step) processActions(processor *codegen.Processor, nodeData *schema.Nod
 
 func (s *Step) processEdges(processor *codegen.Processor, nodeData *schema.NodeData) writeFileFnList {
 	var ret writeFileFnList
-	if !nodeData.EdgeInfo.HasConnectionEdges() {
-		return ret
+
+	if nodeData.EdgeInfo.CreateEdgeBaseFile() {
+		ret = append(ret, func() error {
+			return writeBaseQueryFile(processor, nodeData)
+		})
 	}
-	ret = append(ret, func() error {
-		return writeBaseQueryFile(processor, nodeData)
-	})
 
 	for idx := range nodeData.EdgeInfo.Associations {
 		edge := nodeData.EdgeInfo.Associations[idx]
 		ret = append(ret, func() error {
-			return writeAssocEdgeQueryFile(processor, nodeData, edge)
+			return writeAssocEdgeQueryFile(
+				processor,
+				edge,
+				getFilePathForAssocEdgeQueryFile(processor.Config, nodeData, edge),
+			)
 		})
 	}
 
@@ -126,6 +158,9 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 	var serr syncerr.Error
 
 	var funcs writeFileFnList
+	for _, p := range processor.Schema.Patterns {
+		funcs = append(funcs, s.processPattern(processor, p, &serr)...)
+	}
 	for _, info := range processor.Schema.Nodes {
 		funcs = append(funcs, s.processNode(processor, info, &serr)...)
 	}
@@ -178,7 +213,7 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 	return serr.Err()
 }
 
-func (s *Step) addNodeType(name, value, comment string, nodeData *schema.NodeData) {
+func (s *Step) addNodeType(name, value, comment string) {
 	s.m.Lock()
 	defer s.m.Unlock()
 	s.nodeTypes = append(s.nodeTypes, enum.Data{
@@ -200,8 +235,8 @@ func (s *Step) addEdgeType(name, value, comment string) {
 
 // take what exists for go and convert it to typescript format
 // should probably fix this at some point upstream
-func (s *Step) accumulateConsts(nodeData *schema.NodeData) error {
-	for key, group := range nodeData.ConstantGroups {
+func (s *Step) accumulateConsts(wc schema.WithConst) error {
+	for key, group := range wc.GetConstantGroups() {
 		if key != "ent.NodeType" && key != "ent.EdgeType" {
 			continue
 		}
@@ -216,7 +251,7 @@ func (s *Step) accumulateConsts(nodeData *schema.NodeData) error {
 				}
 				comment := strings.ReplaceAll(constant.Comment, constant.ConstName, match[1])
 
-				s.addNodeType(match[1], constant.ConstValue, comment, nodeData)
+				s.addNodeType(match[1], constant.ConstValue, comment)
 
 			case "EdgeType":
 				constName, err := edge.TsEdgeConst(constant.ConstName)
@@ -269,6 +304,23 @@ func getFilePathForAssocEdgeQueryFile(cfg *codegen.Config, nodeData *schema.Node
 	)
 }
 
+func getFilePathForPatternBaseQueryFile(cfg *codegen.Config, pattern *schema.PatternInfo) string {
+	// just so it doesn't conflict with nodes of same nams
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/patterns/%s_query_base.ts", pattern.Name))
+}
+
+func getFilePathForPatternAssocEdgeQueryFile(cfg *codegen.Config, pattern *schema.PatternInfo, e *edge.AssociationEdge) string {
+	return path.Join(cfg.GetAbsPathToRoot(),
+		fmt.Sprintf(
+			"src/ent/%s/query/%s.ts",
+			// TODO there could be a conflict e.g. above...
+			"patterns",
+			//			pattern.Name,
+			strcase.ToSnake(e.TsEdgeQueryName()),
+		),
+	)
+}
+
 func getFilePathForCustomEdgeQueryFile(cfg *codegen.Config, nodeData *schema.NodeData, e edge.ConnectionEdge) string {
 	return path.Join(
 		cfg.GetAbsPathToRoot(),
@@ -284,6 +336,15 @@ func getImportPathForAssocEdgeQueryFile(nodeData *schema.NodeData, e *edge.Assoc
 	return fmt.Sprintf(
 		"src/ent/%s/query/%s",
 		nodeData.PackageName,
+		strcase.ToSnake(e.TsEdgeQueryName()),
+	)
+}
+
+func getImportPathForPatternAssocEdgeQueryFile(e *edge.AssociationEdge) string {
+	return fmt.Sprintf(
+		"src/ent/%s/query/%s",
+		// TODO...
+		"patterns",
 		strcase.ToSnake(e.TsEdgeQueryName()),
 	)
 }
@@ -310,6 +371,10 @@ func getImportPathForBaseModelFile(packageName string) string {
 
 func getImportPathForBaseQueryFile(packageName string) string {
 	return fmt.Sprintf("src/ent/generated/%s_query_base", packageName)
+}
+
+func getImportPathForPatternBaseQueryFile(name string) string {
+	return fmt.Sprintf("src/ent/generated/patterns/%s_query_base", name)
 }
 
 func getFilePathForConstFile(cfg *codegen.Config) string {
@@ -406,34 +471,21 @@ func writeEnumFile(enumInfo *schema.EnumInfo, processor *codegen.Processor) erro
 }
 
 func writeBaseQueryFile(processor *codegen.Processor, nodeData *schema.NodeData) error {
-	s := processor.Schema
-	cfg := processor.Config
-	filePath := getFilePathForBaseQueryFile(cfg, nodeData)
-	imps := tsimport.NewImports(processor.Config, filePath)
-
-	return file.Write(&file.TemplatedBasedFileWriter{
-		Config: processor.Config,
-		Data: struct {
-			NodeData *schema.NodeData
-			Schema   *schema.Schema
-			Package  *codegen.ImportPackage
-		}{
-			Schema:   s,
-			NodeData: nodeData,
-			Package:  cfg.GetImportPackage(),
-		},
-		CreateDirIfNeeded: true,
-		AbsPathToTemplate: util.GetAbsolutePath("ent_query_base.tmpl"),
-		TemplateName:      "ent_query_base.tmpl",
-		PathToFile:        filePath,
-		TsImports:         imps,
-		FuncMap:           imps.FuncMap(),
+	imps, err := nodeData.GetImportsForQueryBaseFile(processor.Schema)
+	if err != nil {
+		return err
+	}
+	return writeBaseQueryFileImpl(processor, &BaseQueryEdgeInfo{
+		Imports:      imps,
+		AssocEdges:   nodeData.EdgeInfo.Associations,
+		IndexedEdges: nodeData.EdgeInfo.GetEdgesForIndexLoader(),
+		Node:         nodeData.Node,
+		FilePath:     getFilePathForBaseQueryFile(processor.Config, nodeData),
 	})
 }
 
-func writeAssocEdgeQueryFile(processor *codegen.Processor, nodeData *schema.NodeData, e *edge.AssociationEdge) error {
+func writeAssocEdgeQueryFile(processor *codegen.Processor, e *edge.AssociationEdge, filePath string) error {
 	cfg := processor.Config
-	filePath := getFilePathForAssocEdgeQueryFile(cfg, nodeData, e)
 	imps := tsimport.NewImports(processor.Config, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
@@ -477,6 +529,61 @@ func writeCustomEdgeQueryFile(processor *codegen.Processor, nodeData *schema.Nod
 		FuncMap:           imps.FuncMap(),
 		EditableCode:      true,
 	}, file.WriteOnce())
+}
+
+type BaseQueryEdgeInfo struct {
+	Imports      []schema.ImportPath
+	AssocEdges   []*edge.AssociationEdge
+	IndexedEdges []edge.IndexedConnectionEdge
+	Node         string
+	FilePath     string
+}
+
+func writeBasePatternQueryFile(processor *codegen.Processor, pattern *schema.PatternInfo) error {
+	imps, err := pattern.GetImportsForQueryBaseFile(processor.Schema)
+	if err != nil {
+		return err
+	}
+
+	return writeBaseQueryFileImpl(processor, &BaseQueryEdgeInfo{
+		Imports:    imps,
+		AssocEdges: pattern.GetSortedEdges(),
+		Node:       "Ent",
+		FilePath:   getFilePathForPatternBaseQueryFile(processor.Config, pattern),
+	})
+}
+
+func writeBaseQueryFileImpl(processor *codegen.Processor, info *BaseQueryEdgeInfo) error {
+	s := processor.Schema
+	cfg := processor.Config
+	imps := tsimport.NewImports(processor.Config, info.FilePath)
+
+	var edges []*edge.AssociationEdge
+	for _, edge := range info.AssocEdges {
+		if edge.GenerateBase() {
+			edges = append(edges, edge)
+		}
+	}
+	info.AssocEdges = edges
+
+	return file.Write(&file.TemplatedBasedFileWriter{
+		Config: processor.Config,
+		Data: struct {
+			Info    *BaseQueryEdgeInfo
+			Schema  *schema.Schema
+			Package *codegen.ImportPackage
+		}{
+			Schema:  s,
+			Info:    info,
+			Package: cfg.GetImportPackage(),
+		},
+		CreateDirIfNeeded: true,
+		AbsPathToTemplate: util.GetAbsolutePath("ent_query_base.tmpl"),
+		TemplateName:      "ent_query_base.tmpl",
+		PathToFile:        info.FilePath,
+		TsImports:         imps,
+		FuncMap:           imps.FuncMap(),
+	})
 }
 
 func writeConstFile(processor *codegen.Processor, nodeData []enum.Data, edgeData []enum.Data) error {
@@ -570,21 +677,29 @@ func getSortedInternalEntFileLines(s *schema.Schema) []string {
 
 	var baseQueryFiles []string
 	var queryFiles []string
+	// add patterns first  after const
+	// this whole import stack getting sad
+	for _, pattern := range s.Patterns {
+		if len(pattern.AssocEdges) == 0 {
+			continue
+		}
+		append2(&baseFiles, getImportPathForPatternBaseQueryFile(pattern.Name))
+		for _, edge := range pattern.GetSortedEdges() {
+			append2(&baseFiles, getImportPathForPatternAssocEdgeQueryFile(edge))
+		}
+	}
 	for _, info := range s.Nodes {
-		hasBaseQueryFile := false
 		if len(info.NodeData.EdgeInfo.Associations) != 0 {
-			hasBaseQueryFile = true
 			for _, edge := range info.NodeData.EdgeInfo.Associations {
 				append2(&queryFiles, getImportPathForAssocEdgeQueryFile(info.NodeData, edge))
 			}
 		}
 
 		for _, edge := range info.NodeData.EdgeInfo.GetEdgesForIndexLoader() {
-			hasBaseQueryFile = true
 			append2(&queryFiles, getImportPathForCustomEdgeQueryFile(info.NodeData, edge))
 		}
 
-		if hasBaseQueryFile {
+		if info.NodeData.EdgeInfo.CreateEdgeBaseFile() {
 			append2(&baseQueryFiles, getImportPathForBaseQueryFile(info.NodeData.PackageName))
 		}
 	}

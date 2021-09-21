@@ -84,6 +84,7 @@ export class EventBuilder implements Builder<Event> {
   clearInputEdges(edgeType: EdgeType, op: WriteOperation, id?: ID) {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
+
   addAttending(...ids: ID[]): EventBuilder;
   addAttending(...nodes: User[]): EventBuilder;
   addAttending(...nodes: Builder<User>[]): EventBuilder;

@@ -24,6 +24,11 @@ type node struct {
 	hideFromGraphQL bool
 }
 
+type pattern struct {
+	name       string
+	assocEdges []assocEdge
+}
+
 type field struct {
 	name   string
 	dbType input.DBType
@@ -56,10 +61,13 @@ type assocEdge struct {
 	inverseEdge     *inverseAssocEdge
 	edgeActions     []action
 	hideFromGraphQL bool
+	patternName     string
+	edgeConstName   string
 }
 
 type inverseAssocEdge struct {
-	name string
+	name          string
+	edgeConstName string
 }
 
 type assocEdgeGroup struct {
@@ -110,19 +118,32 @@ type fkeyInfo struct {
 }
 
 type testCase struct {
-	code           map[string]string
-	expectedOutput map[string]node
+	code             map[string]string
+	expectedNodes    map[string]node
+	expectedPatterns map[string]pattern
+	only             bool
+	skip             bool
 }
 
 func runTestCases(t *testing.T, testCases map[string]testCase) {
 
+	hasOnly := false
+	for _, v := range testCases {
+		if v.only {
+			hasOnly = true
+			break
+		}
+	}
 	for key, tt := range testCases {
+		if tt.skip || (hasOnly && !tt.only) {
+			continue
+		}
 		t.Run(key, func(t *testing.T) {
 			schema := testhelper.ParseInputSchemaForTest(t, tt.code)
 
-			require.Len(t, schema.Nodes, len(tt.expectedOutput))
+			require.Len(t, schema.Nodes, len(tt.expectedNodes))
 
-			for nodeName, expectedNode := range tt.expectedOutput {
+			for nodeName, expectedNode := range tt.expectedNodes {
 				node := schema.Nodes[nodeName]
 
 				require.NotNil(t, node, "node with node name %s not found", nodeName)
@@ -146,6 +167,15 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 				verifyActions(t, expectedNode.actions, node.Actions)
 				verifyConstraints(t, expectedNode.constraints, node.Constraints)
 				verifyIndices(t, expectedNode.indices, node.Indices)
+			}
+
+			require.Len(t, schema.Patterns, len(tt.expectedPatterns))
+
+			for name, expPattern := range tt.expectedPatterns {
+				pattern := schema.Patterns[name]
+
+				assert.Equal(t, expPattern.name, pattern.Name)
+				verifyAssocEdges(t, expPattern.assocEdges, pattern.AssocEdges)
 			}
 		})
 	}
@@ -227,12 +257,15 @@ func verifyAssocEdges(t *testing.T, expAssocEdges []assocEdge, assocEdges []*inp
 		assert.Equal(t, expEdge.symmetric, edge.Symmetric)
 		assert.Equal(t, expEdge.unique, edge.Unique)
 		assert.Equal(t, expEdge.hideFromGraphQL, edge.HideFromGraphQL)
+		assert.Equal(t, expEdge.edgeConstName, edge.EdgeConstName)
+		assert.Equal(t, expEdge.patternName, edge.PatternName)
 
 		if expEdge.inverseEdge == nil {
 			assert.Nil(t, edge.InverseEdge)
 		} else {
 			require.NotNil(t, edge.InverseEdge)
 			assert.Equal(t, expEdge.inverseEdge.name, edge.InverseEdge.Name)
+			assert.Equal(t, expEdge.inverseEdge.edgeConstName, edge.InverseEdge.EdgeConstName)
 		}
 		verifyEdgeActions(t, expEdge.edgeActions, edge.EdgeActions)
 	}

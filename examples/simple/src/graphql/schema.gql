@@ -32,12 +32,22 @@ interface Node {
   id: ID!
 }
 
+type Comment implements Node {
+  article: Node
+  id: ID!
+  authorID: ID!
+  body: String!
+  post(first: Int, after: String, last: Int, before: String): CommentToPostConnection!
+}
+
 type Contact implements Node {
   user: User
   id: ID!
   emailAddress: String!
   firstName: String!
   lastName: String!
+  comments(first: Int, after: String, last: Int, before: String): ContactToCommentsQueryConnection!
+  likers(first: Int, after: String, last: Int, before: String): ContactToLikersQueryConnection!
   fullName: String!
 }
 
@@ -82,11 +92,14 @@ type User implements Node {
   bio: String
   nicknames: [String!]
   selfContact: Contact
+  comments(first: Int, after: String, last: Int, before: String): UserToCommentsQueryConnection!
   createdEvents(first: Int, after: String, last: Int, before: String): UserToCreatedEventsConnection!
   declinedEvents(first: Int, after: String, last: Int, before: String): UserToDeclinedEventsConnection!
   eventsAttending(first: Int, after: String, last: Int, before: String): UserToEventsAttendingConnection!
   friends(first: Int, after: String, last: Int, before: String): UserToFriendsConnection!
   invitedEvents(first: Int, after: String, last: Int, before: String): UserToInvitedEventsConnection!
+  likers(first: Int, after: String, last: Int, before: String): UserToLikersQueryConnection!
+  likes(first: Int, after: String, last: Int, before: String): UserToLikesConnection!
   maybeEvents(first: Int, after: String, last: Int, before: String): UserToMaybeEventsConnection!
   userToHostedEvents(first: Int, after: String, last: Int, before: String): UserToHostedEventsConnection!
   contacts(first: Int, after: String, last: Int, before: String): UserToContactsConnection!
@@ -99,9 +112,9 @@ type User implements Node {
   contactsSameDomainNullableContentsAndList: [Contact]
 }
 
-type EventToAttendingConnection implements Connection {
-  edges: [EventToAttendingEdge!]!
-  nodes: [User!]!
+type CommentToPostConnection implements Connection {
+  edges: [CommentToPostEdge!]!
+  nodes: [Node!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
@@ -124,6 +137,42 @@ type PageInfo {
   hasPreviousPage: Boolean!
   startCursor: String!
   endCursor: String!
+}
+
+type CommentToPostEdge implements Edge {
+  node: Node!
+  cursor: String!
+}
+
+type ContactToCommentsQueryConnection implements Connection {
+  edges: [ContactToCommentsQueryEdge!]!
+  nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type ContactToCommentsQueryEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type ContactToLikersQueryConnection implements Connection {
+  edges: [ContactToLikersQueryEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type ContactToLikersQueryEdge implements Edge {
+  node: User!
+  cursor: String!
+}
+
+type EventToAttendingConnection implements Connection {
+  edges: [EventToAttendingEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
 }
 
 type EventToAttendingEdge implements Edge {
@@ -176,6 +225,18 @@ type EventToMaybeConnection implements Connection {
 
 type EventToMaybeEdge implements Edge {
   node: User!
+  cursor: String!
+}
+
+type UserToCommentsQueryConnection implements Connection {
+  edges: [UserToCommentsQueryEdge!]!
+  nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToCommentsQueryEdge implements Edge {
+  node: Comment!
   cursor: String!
 }
 
@@ -263,6 +324,30 @@ type UserToInvitedEventsEdge implements Edge {
   cursor: String!
 }
 
+type UserToLikersQueryConnection implements Connection {
+  edges: [UserToLikersQueryEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToLikersQueryEdge implements Edge {
+  node: User!
+  cursor: String!
+}
+
+type UserToLikesConnection implements Connection {
+  edges: [UserToLikesEdge!]!
+  nodes: [Node!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToLikesEdge implements Edge {
+  node: Node!
+  cursor: String!
+}
+
 type UserToMaybeEventsConnection implements Connection {
   edges: [UserToMaybeEventsEdge!]!
   nodes: [Event!]!
@@ -310,6 +395,17 @@ input AddressCreateInput {
 
 type AddressCreatePayload {
   address: Address!
+}
+
+input CommentCreateInput {
+  authorID: ID!
+  body: String!
+  articleID: ID!
+  articleType: String!
+}
+
+type CommentCreatePayload {
+  comment: Comment!
 }
 
 input ConfirmEmailAddressEditInput {
@@ -506,6 +602,7 @@ type Query {
 type Mutation {
   addressCreate(input: AddressCreateInput!): AddressCreatePayload!
   bulkUploadContact(userID: ID!, file: Upload!): User!
+  commentCreate(input: CommentCreateInput!): CommentCreatePayload!
   confirmEmailAddressEdit(input: ConfirmEmailAddressEditInput!): ConfirmEmailAddressEditPayload!
   confirmPhoneNumberEdit(input: ConfirmPhoneNumberEditInput!): ConfirmPhoneNumberEditPayload!
   contactCreate(input: ContactCreateInput!): ContactCreatePayload!

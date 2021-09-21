@@ -1,9 +1,16 @@
 {{$edgeName := .Edge.TsEdgeQueryEdgeName -}}
 {{$name := .Edge.TsEdgeQueryName -}}
-{{$base := printf "%sBase" $name -}}
-{{ reserveImport .Package.InternalImportPath $base $edgeName -}}
-{{ reserveImport .Package.PackagePath "AssocEdge" }}
+{{$base := .Edge.EdgeQueryBase -}}
 
-export class {{$edgeName}} extends {{useImport "AssocEdge"}} {}
+{{ reserveImport .Package.InternalImportPath $base $edgeName -}}
+{{ $assocEdgeBase := .Edge.AssocEdgeBase -}} 
+{{/* TODO this should be generalized eventually but it's either a base class or AssocEdge so it's fine for now */ -}}
+{{ if eq $assocEdgeBase "AssocEdge" -}}
+  {{ reserveImport .Package.PackagePath "AssocEdge" -}}
+{{ else -}}
+  {{ reserveImport "src/ent/internal" $assocEdgeBase -}}
+{{ end -}}
+
+export class {{$edgeName}} extends {{useImport $assocEdgeBase}} {}
 
 export class {{$name}} extends {{useImport $base}} {}

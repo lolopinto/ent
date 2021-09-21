@@ -35,7 +35,7 @@ func TestParseEmbeddedActions(t *testing.T) {
 					];
 				};`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Address": getExpectedOutputAddress(),
 				"Event": {
 					fields: []field{
@@ -96,7 +96,7 @@ func TestParseEmbeddedActions(t *testing.T) {
 					];
 				};`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Address": getExpectedOutputAddress(),
 				"Event": {
 					fields: []field{
@@ -160,7 +160,7 @@ func TestParseEmbeddedActions(t *testing.T) {
 					];
 				};`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Address": getExpectedOutputAddress(),
 				"Event": {
 					fields: []field{
@@ -224,7 +224,7 @@ func TestParseEmbeddedActions(t *testing.T) {
 					];
 				};`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Address": getExpectedOutputAddress(),
 				"Event": {
 					fields: []field{
@@ -285,7 +285,7 @@ func TestParseEmbeddedActions(t *testing.T) {
 					];
 				};`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Address": getExpectedOutputAddress(),
 				"Event": {
 					fields: []field{
@@ -366,7 +366,7 @@ func TestParseEmbeddedActions(t *testing.T) {
 					];
 				};`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Address": getExpectedOutputAddress(),
 				"EventActivity": {
 					fields: []field{

@@ -6,6 +6,7 @@
 import { GraphQLObjectType } from "graphql";
 import { AddressCreateType } from "./address/address_create_type";
 import { BulkUploadContactType } from "./bulk_upload_contact_type";
+import { CommentCreateType } from "./comment/comment_create_type";
 import { ContactCreateType } from "./contact/contact_create_type";
 import { ContactDeleteType } from "./contact/contact_delete_type";
 import { ContactEditType } from "./contact/contact_edit_type";
@@ -32,6 +33,7 @@ export const MutationType = new GraphQLObjectType({
   fields: () => ({
     addressCreate: AddressCreateType,
     bulkUploadContact: BulkUploadContactType,
+    commentCreate: CommentCreateType,
     confirmEmailAddressEdit: ConfirmEmailAddressEditType,
     confirmPhoneNumberEdit: ConfirmPhoneNumberEditType,
     contactCreate: ContactCreateType,

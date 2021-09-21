@@ -1279,6 +1279,63 @@ func TestMultiColumnUniqueIndex(t *testing.T) {
 	)
 }
 
+func TestPatterns(t *testing.T) {
+	dbSchema := getSchemaFromCode(
+		t,
+		map[string]string{
+			"patterns/feedback.ts": testhelper.GetCodeWithSchema(`
+				import { Edge, Field, Pattern } from "{schema}";
+
+				export default class Feedback implements Pattern {
+					name = "feedback";
+					fields: Field[] = [];
+					edges: Edge[] = [
+						{
+							name: "likers",
+							schemaName: "User",
+							inverseEdge: {
+								name: "likes",
+								edgeConstName: "UserToLikes",
+							},
+							edgeConstName: "ObjectToLikers",
+						},
+					];
+				}`),
+			"user.ts": testhelper.GetCodeWithSchema(`
+				import {BaseEntSchema, Field} from "{schema}";
+
+				export default class User extends BaseEntSchema {
+					fields: Field[] = [];
+				}`),
+			"post.ts": testhelper.GetCodeWithSchema(`
+				import {BaseEntSchema, Field} from "{schema}";
+				import Feedback from "./patterns/feedback";
+
+				export default class Post extends BaseEntSchema {
+
+					constructor() {
+						super();
+						this.addPatterns(new Feedback());
+					}
+					fields: Field[] = [];
+				}`),
+		},
+	)
+
+	require.Len(t, dbSchema.tableMap, 4)
+
+	expTables := []string{
+		"assoc_edge_config",
+		"users",
+		"posts",
+		"object_likers_edges",
+	}
+	for _, tbl := range expTables {
+		table := dbSchema.tableMap[tbl]
+		require.NotNil(t, table)
+	}
+}
+
 func getSchemaFromCode(t *testing.T, code map[string]string) *dbSchema {
 	schema := testhelper.ParseSchemaForTest(
 		t,

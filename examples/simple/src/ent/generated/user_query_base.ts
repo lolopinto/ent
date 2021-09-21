@@ -9,6 +9,7 @@ import {
   AssocEdgeQueryBase,
   CustomEdgeQueryBase,
   EdgeQuerySource,
+  Ent,
   ID,
   IndexLoaderFactory,
   RawCountLoaderFactory,
@@ -17,6 +18,8 @@ import {
 import {
   AuthCode,
   Contact,
+  ContactToCommentsQuery,
+  ContactToLikersQuery,
   EdgeType,
   Event,
   EventToAttendingQuery,
@@ -25,6 +28,7 @@ import {
   EventToInvitedQuery,
   EventToMaybeQuery,
   User,
+  UserToCommentsQuery,
   UserToCreatedEventsEdge,
   UserToCreatedEventsQuery,
   UserToDeclinedEventsEdge,
@@ -37,6 +41,9 @@ import {
   UserToHostedEventsQuery,
   UserToInvitedEventsEdge,
   UserToInvitedEventsQuery,
+  UserToLikersQuery,
+  UserToLikesEdge,
+  UserToLikesQuery,
   UserToMaybeEventsEdge,
   UserToMaybeEventsQuery,
   UserToSelfContactEdge,
@@ -44,6 +51,7 @@ import {
   authCodeLoader,
   contactLoader,
 } from "../internal";
+import { getLoaderOptions } from "../loadAny";
 
 export const userToCreatedEventsCountLoaderFactory =
   new AssocEdgeCountLoaderFactory(EdgeType.UserToCreatedEvents);
@@ -80,6 +88,14 @@ export const userToInvitedEventsCountLoaderFactory =
 export const userToInvitedEventsDataLoaderFactory = new AssocEdgeLoaderFactory(
   EdgeType.UserToInvitedEvents,
   () => UserToInvitedEventsEdge,
+);
+
+export const userToLikesCountLoaderFactory = new AssocEdgeCountLoaderFactory(
+  EdgeType.UserToLikes,
+);
+export const userToLikesDataLoaderFactory = new AssocEdgeLoaderFactory(
+  EdgeType.UserToLikes,
+  () => UserToLikesEdge,
 );
 
 export const userToMaybeEventsCountLoaderFactory =
@@ -281,6 +297,10 @@ export class UserToFriendsQueryBase extends AssocEdgeQueryBase<
     return new this(viewer, src);
   }
 
+  queryComments(): UserToCommentsQuery {
+    return UserToCommentsQuery.query(this.viewer, this);
+  }
+
   queryCreatedEvents(): UserToCreatedEventsQuery {
     return UserToCreatedEventsQuery.query(this.viewer, this);
   }
@@ -299,6 +319,14 @@ export class UserToFriendsQueryBase extends AssocEdgeQueryBase<
 
   queryInvitedEvents(): UserToInvitedEventsQuery {
     return UserToInvitedEventsQuery.query(this.viewer, this);
+  }
+
+  queryLikers(): UserToLikersQuery {
+    return UserToLikersQuery.query(this.viewer, this);
+  }
+
+  queryLikes(): UserToLikesQuery {
+    return UserToLikesQuery.query(this.viewer, this);
   }
 
   queryMaybeEvents(): UserToMaybeEventsQuery {
@@ -355,6 +383,30 @@ export class UserToInvitedEventsQueryBase extends AssocEdgeQueryBase<
 
   queryMaybe(): EventToMaybeQuery {
     return EventToMaybeQuery.query(this.viewer, this);
+  }
+}
+
+export class UserToLikesQueryBase extends AssocEdgeQueryBase<
+  User,
+  Ent,
+  UserToLikesEdge
+> {
+  constructor(viewer: Viewer, src: EdgeQuerySource<User>) {
+    super(
+      viewer,
+      src,
+      userToLikesCountLoaderFactory,
+      userToLikesDataLoaderFactory,
+      getLoaderOptions,
+    );
+  }
+
+  static query<T extends UserToLikesQueryBase>(
+    this: new (viewer: Viewer, src: EdgeQuerySource<User>) => T,
+    viewer: Viewer,
+    src: EdgeQuerySource<User>,
+  ): T {
+    return new this(viewer, src);
   }
 }
 
@@ -423,6 +475,14 @@ export class UserToSelfContactQueryBase extends AssocEdgeQueryBase<
     src: EdgeQuerySource<User>,
   ): T {
     return new this(viewer, src);
+  }
+
+  queryComments(): ContactToCommentsQuery {
+    return ContactToCommentsQuery.query(this.viewer, this);
+  }
+
+  queryLikers(): ContactToLikersQuery {
+    return ContactToLikersQuery.query(this.viewer, this);
   }
 }
 
