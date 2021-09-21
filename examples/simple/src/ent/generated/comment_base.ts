@@ -9,6 +9,7 @@ import {
   Context,
   CustomQuery,
   Data,
+  Ent,
   ID,
   LoadEntOptions,
   ObjectLoaderFactory,
@@ -23,10 +24,19 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import { CommentToPostQuery, EdgeType, NodeType } from "../internal";
+import { loadEntByType, loadEntXByType } from "../loadAny";
 import schema from "../../schema/comment";
 
 const tableName = "comments";
-const fields = ["id", "created_at", "updated_at", "author_id", "body"];
+const fields = [
+  "id",
+  "created_at",
+  "updated_at",
+  "author_id",
+  "body",
+  "article_id",
+  "article_type",
+];
 
 export class CommentBase {
   readonly nodeType = NodeType.Comment;
@@ -35,6 +45,8 @@ export class CommentBase {
   readonly updatedAt: Date;
   readonly authorID: ID;
   readonly body: string;
+  readonly articleID: ID;
+  readonly articleType: string;
 
   constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
@@ -42,6 +54,8 @@ export class CommentBase {
     this.updatedAt = convertDate(data.updated_at);
     this.authorID = data.author_id;
     this.body = data.body;
+    this.articleID = data.article_id;
+    this.articleType = data.article_type;
   }
 
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
@@ -136,6 +150,22 @@ export class CommentBase {
 
   queryPost(): CommentToPostQuery {
     return CommentToPostQuery.query(this.viewer, this.id);
+  }
+
+  async loadArticle(): Promise<Ent | null> {
+    return loadEntByType(
+      this.viewer,
+      this.articleType as unknown as NodeType,
+      this.articleID,
+    );
+  }
+
+  loadArticleX(): Promise<Ent> {
+    return loadEntXByType(
+      this.viewer,
+      this.articleType as unknown as NodeType,
+      this.articleID,
+    );
   }
 }
 

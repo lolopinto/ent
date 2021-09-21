@@ -33,6 +33,7 @@ interface Node {
 }
 
 type Comment implements Node {
+  article: Node
   id: ID!
   authorID: ID!
   body: String!
@@ -399,6 +400,8 @@ type AddressCreatePayload {
 input CommentCreateInput {
   authorID: ID!
   body: String!
+  articleID: ID!
+  articleType: String!
 }
 
 type CommentCreatePayload {

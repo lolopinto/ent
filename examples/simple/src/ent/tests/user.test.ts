@@ -816,18 +816,19 @@ test("likes", async () => {
   expect(ents2[0].id).toBe(user1.id);
 });
 
-test("comments", async () => {
+test.only("comments", async () => {
   const [user1, user2] = await Promise.all([create({}), create({})]);
 
   const comment = await CreateCommentAction.create(user2.viewer, {
     authorID: user2.id,
     body: "sup",
+    articleID: user1.id,
+    articleType: user1.nodeType,
   }).saveX();
 
   const action = EditUserAction.create(user1.viewer, user1, {});
   // privacy
   action.builder.addFriend(user2);
-  action.builder.addComment(comment);
   await action.saveX();
 
   const commentsQuery = user1.queryComments();

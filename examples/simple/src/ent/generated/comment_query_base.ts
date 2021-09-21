@@ -7,11 +7,20 @@ import {
   AssocEdgeCountLoaderFactory,
   AssocEdgeLoaderFactory,
   AssocEdgeQueryBase,
+  CustomEdgeQueryBase,
   EdgeQuerySource,
   Ent,
+  ID,
+  IndexLoaderFactory,
+  RawCountLoaderFactory,
   Viewer,
 } from "@snowtop/ent";
-import { Comment, CommentToPostEdge, EdgeType } from "../internal";
+import {
+  Comment,
+  CommentToPostEdge,
+  EdgeType,
+  commentLoader,
+} from "../internal";
 import { getLoaderOptions } from "../loadAny";
 
 export const commentToPostCountLoaderFactory = new AssocEdgeCountLoaderFactory(
@@ -20,6 +29,18 @@ export const commentToPostCountLoaderFactory = new AssocEdgeCountLoaderFactory(
 export const commentToPostDataLoaderFactory = new AssocEdgeLoaderFactory(
   EdgeType.CommentToPost,
   () => CommentToPostEdge,
+);
+
+export const articleToCommentsCountLoaderFactory = new RawCountLoaderFactory({
+  ...Comment.loaderOptions(),
+  groupCol: "article_id",
+});
+export const articleToCommentsDataLoaderFactory = new IndexLoaderFactory(
+  Comment.loaderOptions(),
+  "article_id",
+  {
+    toPrime: [commentLoader],
+  },
 );
 
 export class CommentToPostQueryBase extends AssocEdgeQueryBase<
@@ -41,6 +62,25 @@ export class CommentToPostQueryBase extends AssocEdgeQueryBase<
     this: new (viewer: Viewer, src: EdgeQuerySource<Comment>) => T,
     viewer: Viewer,
     src: EdgeQuerySource<Comment>,
+  ): T {
+    return new this(viewer, src);
+  }
+}
+
+export class ArticleToCommentsQueryBase extends CustomEdgeQueryBase<Comment> {
+  constructor(viewer: Viewer, src: Ent | ID) {
+    super(viewer, {
+      src: src,
+      countLoaderFactory: articleToCommentsCountLoaderFactory,
+      dataLoaderFactory: articleToCommentsDataLoaderFactory,
+      options: Comment.loaderOptions(),
+    });
+  }
+
+  static query<T extends ArticleToCommentsQueryBase>(
+    this: new (viewer: Viewer, src: Ent | ID) => T,
+    viewer: Viewer,
+    src: Ent | ID,
   ): T {
     return new this(viewer, src);
   }

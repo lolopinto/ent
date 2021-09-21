@@ -2,7 +2,10 @@
  * Copyright whaa whaa
  */
 
-import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
+import { AlwaysAllowPrivacyPolicy, Ent } from "@snowtop/ent";
+import { Trigger } from "@snowtop/ent/action";
+import { NodeType } from "../../const";
+import { CommentBuilder } from "./comment_builder";
 import {
   CommentCreateInput,
   CreateCommentActionBase,
@@ -14,4 +17,13 @@ export default class CreateCommentAction extends CreateCommentActionBase {
   getPrivacyPolicy() {
     return AlwaysAllowPrivacyPolicy;
   }
+
+  triggers: Trigger<Ent>[] = [
+    {
+      changeset(builder: CommentBuilder, input: CommentCreateInput) {
+        // creating the comment automatically adds the needed edges
+        builder.addPostID(input.articleID, input.articleType as NodeType);
+      },
+    },
+  ];
 }

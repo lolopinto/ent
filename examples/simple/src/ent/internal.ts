@@ -26,6 +26,7 @@ export * from "./user";
 export * from "./generated/comment_query_base";
 export * from "./generated/event_query_base";
 export * from "./generated/user_query_base";
+export * from "./comment/query/article_to_comments_query";
 export * from "./comment/query/comment_to_post_query";
 export * from "./contact/query/contact_to_comments_query";
 export * from "./contact/query/contact_to_likers_query";

@@ -53,6 +53,8 @@ sa.Table("comments", metadata,
     sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
     sa.Column("author_id", postgresql.UUID(), nullable=False),
     sa.Column("body", sa.Text(), nullable=False),
+    sa.Column("article_id", postgresql.UUID(), nullable=False),
+    sa.Column("article_type", sa.Text(), nullable=False),
     sa.PrimaryKeyConstraint("id", name="comments_id_pkey"),
 )
    

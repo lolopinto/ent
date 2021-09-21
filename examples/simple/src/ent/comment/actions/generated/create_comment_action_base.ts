@@ -5,17 +5,25 @@
 
 import {
   AllowIfViewerHasIdentityPrivacyPolicy,
+  Ent,
   ID,
   PrivacyPolicy,
   Viewer,
 } from "@snowtop/ent";
-import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
+import {
+  Action,
+  Builder,
+  Changeset,
+  WriteOperation,
+} from "@snowtop/ent/action";
 import { Comment } from "../../..";
 import { CommentBuilder, CommentInput } from "../comment_builder";
 
 export interface CommentCreateInput {
   authorID: ID;
   body: string;
+  articleID: ID | Builder<Ent>;
+  articleType: string;
 }
 
 export class CreateCommentActionBase implements Action<Comment> {

@@ -24,6 +24,7 @@ import { CommentType } from "../../../resolvers";
 
 interface customCommentCreateInput extends CommentCreateInput {
   authorID: string;
+  articleID: string;
 }
 
 interface CommentCreatePayload {
@@ -37,6 +38,12 @@ export const CommentCreateInputType = new GraphQLInputObjectType({
       type: GraphQLNonNull(GraphQLID),
     },
     body: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    articleID: {
+      type: GraphQLNonNull(GraphQLID),
+    },
+    articleType: {
       type: GraphQLNonNull(GraphQLString),
     },
   }),
@@ -72,6 +79,8 @@ export const CommentCreateType: GraphQLFieldConfig<
     let comment = await CreateCommentAction.create(context.getViewer(), {
       authorID: mustDecodeIDFromGQLID(input.authorID),
       body: input.body,
+      articleID: mustDecodeIDFromGQLID(input.articleID),
+      articleType: input.articleType,
     }).saveX();
     return { comment: comment };
   },

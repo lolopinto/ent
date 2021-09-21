@@ -23,6 +23,12 @@ import { CommentToPostConnectionType } from "../internal";
 export const CommentType = new GraphQLObjectType({
   name: "Comment",
   fields: (): GraphQLFieldConfigMap<Comment, RequestContext> => ({
+    article: {
+      type: GraphQLNodeInterface,
+      resolve: (comment: Comment, args: {}, context: RequestContext) => {
+        return comment.loadArticle();
+      },
+    },
     id: {
       type: GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,

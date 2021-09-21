@@ -20,6 +20,8 @@ import schema from "../../../schema/comment";
 export interface CommentInput {
   authorID?: ID;
   body?: string;
+  articleID?: ID | Builder<Ent>;
+  articleType?: string;
 }
 
 export interface CommentAction extends Action<Comment> {
@@ -170,6 +172,8 @@ export class CommentBuilder implements Builder<Comment> {
     };
     addField("AuthorID", fields.authorID);
     addField("Body", fields.body);
+    addField("ArticleID", fields.articleID);
+    addField("ArticleType", fields.articleType);
     return result;
   }
 
@@ -185,5 +189,15 @@ export class CommentBuilder implements Builder<Comment> {
   // get value of Body. Retrieves it from the input if specified or takes it from existingEnt
   getNewBodyValue(): string | undefined {
     return this.input.body || this.existingEnt?.body;
+  }
+
+  // get value of ArticleID. Retrieves it from the input if specified or takes it from existingEnt
+  getNewArticleIDValue(): ID | Builder<Ent> | undefined {
+    return this.input.articleID || this.existingEnt?.articleID;
+  }
+
+  // get value of ArticleType. Retrieves it from the input if specified or takes it from existingEnt
+  getNewArticleTypeValue(): string | undefined {
+    return this.input.articleType || this.existingEnt?.articleType;
   }
 }
