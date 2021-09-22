@@ -9,7 +9,7 @@ export interface GraphQLEdge<T extends Data> {
 }
 
 interface edgeQueryCtr<T extends Ent, TEdge extends Data> {
-  (v: Viewer, src: Ent): EdgeQuery<T, TEdge>;
+  (v: Viewer, src: T): EdgeQuery<T, TEdge>;
 }
 
 interface edgeQueryCtr2<T extends Ent, TEdge extends Data> {

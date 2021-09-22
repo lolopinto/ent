@@ -180,7 +180,7 @@ class UserSchema extends BaseEntSchema {
 
 class Account implements Ent {
   id: ID;
-  accountID: string;
+  accountID: string = "";
   nodeType = "Account";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
@@ -250,7 +250,7 @@ class MessageAction extends SimpleAction<Message> {
 }
 
 class UserAction extends SimpleAction<User> {
-  contactAction: SimpleAction<Contact>;
+  contactAction: SimpleAction<Contact> | undefined;
 
   constructor(
     viewer: Viewer,
@@ -462,14 +462,14 @@ function commonTests() {
 
     let [user, contact] = await Promise.all([
       action.editedEnt(),
-      action.contactAction.editedEnt(),
+      action.contactAction!.editedEnt(),
     ]);
     expect(operations.length).toBe(3);
     expect(user).toBeInstanceOf(User);
     expect(contact).toBeInstanceOf(Contact);
 
     expect(
-      exec.resolveValue(action.contactAction.builder.placeholderID),
+      exec.resolveValue(action.contactAction!.builder.placeholderID),
     ).toStrictEqual(contact);
     expect(exec.resolveValue(action.builder.placeholderID)).toStrictEqual(user);
 
@@ -611,7 +611,7 @@ function commonTests() {
       action.editedEnt(),
       userAction!.editedEnt(),
       messageAction!.editedEnt(),
-      userAction!.contactAction.builder.editedEnt(),
+      userAction!.contactAction!.builder.editedEnt(),
     ]);
     // 4 nodes changed:
     // * Group updated(shouldn't actually be)
@@ -786,7 +786,9 @@ function commonTests() {
     const action = BaseAction.bulkAction(group, GroupBuilder, ...actions);
     await action.saveX();
 
-    const ents = await Promise.all(actions.map((action) => action.editedEnt()));
+    const ents = (await Promise.all(
+      actions.map((action) => action.editedEnt()),
+    )) as User[];
     const users = ents.slice(0, inputs.length);
     expect(users.length).toBe(inputs.length);
     const account = ents[inputs.length];
@@ -803,9 +805,9 @@ function commonTests() {
       }
       expect(user).toBeInstanceOf(User);
 
-      expect(input.firstName).toBe(user["data"].first_name);
-      expect(input.lastName).toBe(user["data"].last_name);
-      expect(user["data"].account_id).toBe(account?.id);
+      expect(input.firstName).toBe(user.data.first_name);
+      expect(input.lastName).toBe(user.data.last_name);
+      expect(user.data.account_id).toBe(account?.id);
     }
 
     if (!message) {

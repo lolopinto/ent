@@ -119,6 +119,6 @@ interface BuilderConstructor<T extends Ent> {
     viewer: Viewer,
     operation: WriteOperation,
     action: Action<T>,
-    existingEnt?: T | null,
+    existingEnt?: T | null | undefined,
   ): EntBuilder<T>;
 }
