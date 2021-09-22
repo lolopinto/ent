@@ -327,7 +327,7 @@ func TestImports(t *testing.T) {
 				require.Nil(t, export(imps, "src/ent/generated/const", "foo", "bar"))
 			},
 			expectedLines: []string{
-				getLine("export {bar, foo} from {path};", "../const"),
+				getLine("export {bar, foo} from {path};", "./const"),
 			},
 		},
 		"import + export": {
