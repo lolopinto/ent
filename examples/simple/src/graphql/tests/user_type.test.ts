@@ -656,7 +656,8 @@ test("create with prefs", async () => {
         id = mustDecodeIDFromGQLID(id);
         const user = await User.loadX(new IDViewer(id), id);
         // so graphql doesn't verify what's happening here because we depend on TS types. hmm
-        console.debug(user);
+        // TODO fix https://github.com/lolopinto/ent/issues/470
+        expect(user.prefs).toBe(12232);
       },
     ],
   );
@@ -684,7 +685,6 @@ test("create with prefs diff", async () => {
       async function (id) {
         id = mustDecodeIDFromGQLID(id);
         const user = await User.loadX(new IDViewer(id), id);
-        // so graphql doesn't verify what's happening here because types...
         expect(user.prefsDiff).toStrictEqual({
           type: "blah",
           foo: "foo",
@@ -719,7 +719,3 @@ test("create with prefs diff. fail", async () => {
     ],
   );
 });
-
-global.fail = function (msg): never {
-  throw new Error(msg);
-};
