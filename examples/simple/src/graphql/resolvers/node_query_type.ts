@@ -31,7 +31,7 @@ registerResolver("entNode", resolver);
 export const NodeQueryType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  NodeQueryArgs
+  { [args: string]: NodeQueryArgs }
 > = {
   type: GraphQLNodeInterface,
   args: {
@@ -42,7 +42,7 @@ export const NodeQueryType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    args: NodeQueryArgs,
+    { args },
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
