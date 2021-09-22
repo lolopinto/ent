@@ -279,11 +279,12 @@ func TestIDType(t *testing.T) {
 			enttype.NewGQLFileImport("GraphQLNonNull"),
 			enttype.NewGQLFileImport("GraphQLID"),
 		},
-		zeroValue:    "",
-		castToMethod: "cast.ToUUIDString",
-		nullableType: &enttype.NullableIDType{},
-		tsType:       "ID",
-		importType:   &enttype.UUIDImport{},
+		zeroValue:     "",
+		castToMethod:  "cast.ToUUIDString",
+		nullableType:  &enttype.NullableIDType{},
+		tsType:        "ID",
+		tsTypeImports: []string{"ID"},
+		importType:    &enttype.UUIDImport{},
 	}, returnType{
 		entType: &enttype.IDType{},
 	})
@@ -300,6 +301,7 @@ func TestNullableIDType(t *testing.T) {
 		castToMethod:    "cast.ToNullableUUIDString",
 		nonNullableType: &enttype.IDType{},
 		tsType:          "ID | null",
+		tsTypeImports:   []string{"ID"},
 		importType:      &enttype.UUIDImport{},
 	}, returnType{
 		entType: &enttype.NullableIDType{},
@@ -1033,8 +1035,9 @@ func TestEnumType(t *testing.T) {
 							ImportType: enttype.Enum,
 						},
 					},
-					tsType:       "AccountStatus | null",
-					goTypePanics: true,
+					tsType:        "AccountStatus | null",
+					tsTypeImports: []string{"AccountStatus"},
+					goTypePanics:  true,
 					nonNullableType: &enttype.EnumType{
 						Type:        "AccountStatus",
 						GraphQLType: "AccountStatus",
@@ -1069,8 +1072,9 @@ func TestEnumType(t *testing.T) {
 							ImportType: enttype.Enum,
 						},
 					},
-					tsType:       "AccountStatus",
-					goTypePanics: true,
+					tsType:        "AccountStatus",
+					tsTypeImports: []string{"AccountStatus"},
+					goTypePanics:  true,
 					nullableType: &enttype.NullableEnumType{
 						Type:        "AccountStatus",
 						GraphQLType: "AccountStatus",
@@ -1112,8 +1116,9 @@ func TestEnumType(t *testing.T) {
 							ImportType: enttype.Enum,
 						},
 					},
-					tsType:       "AccountStatus",
-					goTypePanics: true,
+					tsType:        "AccountStatus",
+					tsTypeImports: []string{"AccountStatus"},
+					goTypePanics:  true,
 					nullableType: &enttype.NullableEnumType{
 						Type:        "AccountStatus",
 						GraphQLType: "AccountStatus",
@@ -1154,8 +1159,9 @@ func TestEnumType(t *testing.T) {
 							ImportType: enttype.Enum,
 						},
 					},
-					tsType:       "AccountStatus | null",
-					goTypePanics: true,
+					tsType:        "AccountStatus | null",
+					tsTypeImports: []string{"AccountStatus"},
+					goTypePanics:  true,
 					nonNullableType: &enttype.EnumType{
 						Type:        "AccountStatus",
 						GraphQLType: "AccountStatus",
@@ -1521,6 +1527,10 @@ func testType(t *testing.T, exp expType, ret returnType) {
 
 	withImports, ok := typ.(enttype.TSTypeWithImports)
 	if ok {
-		assert.Equal(t, exp.tsTypeImports, withImports.GetTsTypeImports())
+		assert.Len(t, exp.tsTypeImports, len(withImports.GetTsTypeImports()))
+		// account for nil
+		if len(exp.tsTypeImports) != 0 {
+			assert.Equal(t, exp.tsTypeImports, withImports.GetTsTypeImports())
+		}
 	}
 }
