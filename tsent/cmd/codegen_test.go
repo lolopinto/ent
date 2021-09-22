@@ -366,7 +366,7 @@ func TestSchemaWithAssocEdgeCodegen(t *testing.T) {
 	validateFileExists(t, rootDir, "src/ent/user/actions/generated/user_add_follower_action_base.ts")
 	validateFileExists(t, rootDir, "src/ent/user/actions/user_add_friend_action.ts")
 	validateFileExists(t, rootDir, "src/ent/user/actions/user_add_follower_action.ts")
-	validateFileExists(t, rootDir, "src/ent/user/actions/user_builder.ts")
+	validateFileExists(t, rootDir, "src/ent/user/actions/generated/user_builder.ts")
 	validateFileExists(t, rootDir, "src/graphql/resolvers/generated/user_type.ts")
 	validateFileExists(t, rootDir, "src/graphql/resolvers/node_query_type.ts")
 	validateFileExists(t, rootDir, "src/graphql/resolvers/generated/query_type.ts")
