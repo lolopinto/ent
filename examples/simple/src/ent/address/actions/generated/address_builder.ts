@@ -13,8 +13,8 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Address } from "../..";
-import schema from "../../../schema/address";
+import { Address } from "../../..";
+import schema from "../../../../schema/address";
 
 export interface AddressInput {
   streetName?: string;

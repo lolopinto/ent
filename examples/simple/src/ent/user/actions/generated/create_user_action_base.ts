@@ -10,7 +10,7 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { User } from "../../..";
-import { UserBuilder, UserInput } from "../user_builder";
+import { UserBuilder, UserInput } from "./user_builder";
 import { UserPrefs } from "../../../user_prefs";
 
 export interface UserCreateInput {

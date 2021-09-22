@@ -13,9 +13,9 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Event, User } from "../..";
-import { EdgeType, NodeType } from "../../const";
-import schema from "../../../schema/event";
+import { Event, User } from "../../..";
+import { EdgeType, NodeType } from "../../../const";
+import schema from "../../../../schema/event";
 
 export interface EventInput {
   name?: string;

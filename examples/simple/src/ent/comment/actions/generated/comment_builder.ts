@@ -13,9 +13,9 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Comment } from "../..";
-import { EdgeType, NodeType } from "../../const";
-import schema from "../../../schema/comment";
+import { Comment } from "../../..";
+import { EdgeType, NodeType } from "../../../const";
+import schema from "../../../../schema/comment";
 
 export interface CommentInput {
   authorID?: ID;

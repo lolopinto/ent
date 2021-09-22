@@ -5,7 +5,7 @@ import {
   expectQueryFromRoot,
   queryRootConfig,
 } from "@snowtop/ent-graphql-tests";
-import schema from "../schema";
+import schema from "../generated/schema";
 import CreateUserAction from "../../ent/user/actions/create_user_action";
 import { Event } from "../../ent/";
 import { randomEmail, randomPhoneNumber } from "../../util/random";

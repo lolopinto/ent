@@ -15,6 +15,7 @@ import {
   RawCountLoaderFactory,
   Viewer,
 } from "@snowtop/ent";
+import { getLoaderOptions } from "./loadAny";
 import {
   AuthCode,
   Contact,
@@ -51,7 +52,6 @@ import {
   authCodeLoader,
   contactLoader,
 } from "../internal";
-import { getLoaderOptions } from "../loadAny";
 
 export const userToCreatedEventsCountLoaderFactory =
   new AssocEdgeCountLoaderFactory(EdgeType.UserToCreatedEvents);

@@ -23,8 +23,8 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
+import { loadEntByType, loadEntXByType } from "./loadAny";
 import { CommentToPostQuery, EdgeType, NodeType } from "../internal";
-import { loadEntByType, loadEntXByType } from "../loadAny";
 import schema from "../../schema/comment";
 
 const tableName = "comments";

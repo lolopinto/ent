@@ -2,7 +2,7 @@ import { Express } from "express";
 import supertest from "supertest";
 import { DB, LoggedOutViewer } from "@snowtop/ent";
 import { encodeGQLID } from "@snowtop/ent/graphql";
-import schema from "src/graphql/schema";
+import schema from "../generated/schema";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import {
   queryRootConfig,

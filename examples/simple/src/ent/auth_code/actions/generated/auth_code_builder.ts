@@ -13,8 +13,8 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { AuthCode, User } from "../..";
-import schema from "../../../schema/auth_code";
+import { AuthCode, User } from "../../..";
+import schema from "../../../../schema/auth_code";
 
 export interface AuthCodeInput {
   code?: string;
