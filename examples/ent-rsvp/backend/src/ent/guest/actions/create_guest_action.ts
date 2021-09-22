@@ -5,7 +5,7 @@ import {
 import { AllowIfEventCreatorPrivacyPolicy } from "src/ent/event/privacy/event_creator";
 import { Trigger } from "@snowtop/ent/action";
 import { Ent } from "@snowtop/ent";
-import { GuestBuilder } from "./guest_builder";
+import { GuestBuilder } from "./generated/guest_builder";
 import CreateAuthCodeAction from "src/ent/auth_code/actions/create_auth_code_action";
 
 export { GuestCreateInput };

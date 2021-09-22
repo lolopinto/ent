@@ -1,7 +1,7 @@
 import { expectMutation } from "@snowtop/ent-graphql-tests";
 import { User } from "src/ent";
 import { DB, IDViewer } from "@snowtop/ent";
-import schema from "src/graphql/schema";
+import schema from "src/graphql/generated/schema";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { randomEmail } from "src/util/random";
 

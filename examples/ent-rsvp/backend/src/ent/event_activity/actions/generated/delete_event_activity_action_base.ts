@@ -11,7 +11,7 @@ import { EventActivity } from "src/ent/";
 import {
   EventActivityBuilder,
   EventActivityInput,
-} from "src/ent/event_activity/actions/event_activity_builder";
+} from "src/ent/event_activity/actions/generated/event_activity_builder";
 
 export class DeleteEventActivityActionBase implements Action<EventActivity> {
   public readonly builder: EventActivityBuilder;

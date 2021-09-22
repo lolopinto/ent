@@ -19,7 +19,7 @@ let app = express();
 
 // this line fixes the issue by loading ent first but we need to do that consistently everywhere
 import { User } from "src/ent";
-import schema from "./schema";
+import schema from "./generated/schema";
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN || "",

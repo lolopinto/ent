@@ -8,7 +8,10 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { Guest } from "src/ent/";
-import { GuestBuilder, GuestInput } from "src/ent/guest/actions/guest_builder";
+import {
+  GuestBuilder,
+  GuestInput,
+} from "src/ent/guest/actions/generated/guest_builder";
 
 export interface GuestEditInput {
   name?: string;

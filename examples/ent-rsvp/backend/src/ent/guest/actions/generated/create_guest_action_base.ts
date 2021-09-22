@@ -13,7 +13,10 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { Event, Guest, GuestGroup } from "src/ent/";
-import { GuestBuilder, GuestInput } from "src/ent/guest/actions/guest_builder";
+import {
+  GuestBuilder,
+  GuestInput,
+} from "src/ent/guest/actions/generated/guest_builder";
 
 export interface GuestCreateInput {
   name: string;

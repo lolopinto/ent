@@ -81,7 +81,6 @@ import {
   UserCreateInputType,
   UserCreatePayloadType,
 } from "src/graphql/mutations/generated/user/user_create_type";
-import { QueryType } from "src/graphql/resolvers/generated/query_type";
 import {
   AddressType,
   EventActivityRsvpStatusType,
@@ -102,7 +101,8 @@ import {
   UserToEventsConnectionType,
   UserType,
   ViewerTypeType,
-} from "./resolvers";
+} from "src/graphql/resolvers";
+import { QueryType } from "src/graphql/resolvers/generated/query_type";
 
 export default new GraphQLSchema({
   query: QueryType,

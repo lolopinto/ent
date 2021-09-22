@@ -7,8 +7,8 @@ import { AllowIfEventCreatorPrivacyPolicy } from "src/ent/event/privacy/event_cr
 export { EventActivityCreateInput };
 import { Trigger } from "@snowtop/ent/action";
 import CreateAddressAction from "src/ent/address/actions/create_address_action";
-import { NodeType } from "src/ent/const";
-import { EventActivityBuilder } from "./event_activity_builder";
+import { NodeType } from "src/ent/generated/const";
+import { EventActivityBuilder } from "./generated/event_activity_builder";
 import { EventToGuestGroupsQuery } from "src/ent";
 
 // we're only writing this once except with --force and packageName provided

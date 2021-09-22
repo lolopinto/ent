@@ -3,7 +3,7 @@ import { IDViewer, DB } from "@snowtop/ent";
 import { encodeGQLID } from "@snowtop/ent/graphql";
 import { createEvent, createGuestPlus } from "src/testutils";
 // this needs to be the last line becasue of load order or at least after src/testutils
-import schema from "src/graphql/schema";
+import schema from "src/graphql/generated/schema";
 import { DateTime } from "luxon";
 
 afterAll(async () => {
