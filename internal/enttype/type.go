@@ -77,6 +77,11 @@ type TSTypeWithActionFields interface {
 	GetActionName() string
 }
 
+type ImportDepsType interface {
+	TSGraphQLType
+	GetImportDepsType() *InputImportType
+}
+
 type ImportType string
 
 const (
@@ -87,6 +92,9 @@ const (
 	// EntGraphQL refers to graphql scalars or things in the ent graphql space
 	EntGraphQL ImportType = "ent_graphql"
 	Package    ImportType = "package"
+	// TODO need to kill this for actual paths
+	//	https://github.com/taion/graphql-type-json
+	GraphQLJSON ImportType = "graphql-type-json"
 )
 
 // for imports that are not from "graphql"
@@ -1624,6 +1632,230 @@ func (t *NullableArrayListType) Convert() FileImport {
 	return elem.convertNullableListWithItem()
 }
 
+// to resolve circular dependency btw input and this
+type InputImportType struct {
+	Path string `json:"path"`
+	Type string `json:"type"`
+}
+
+type jSONType struct {
+}
+
+func (t *jSONType) GetCastToMethod() string {
+	panic("castToMethod. JSONTYPE not supported in go-lang yet")
+}
+
+func (t *jSONType) GetZeroValue() string {
+	panic("zeroValue. JSONTYPE not supported in go-lang yet")
+}
+
+func (t *jSONType) getDBType(jsonb bool) string {
+	if config.IsSQLiteDialect() {
+		return "sa.Text()"
+	}
+	if jsonb {
+		return "postgresql.JSONB"
+	}
+	return "postgresql.JSON"
+}
+
+func (t *jSONType) GetGraphQLType() string {
+	return "JSON!"
+}
+
+func (t *jSONType) getTsType(nullable bool, impType *InputImportType) string {
+	if impType == nil {
+		return "any"
+	}
+	if nullable {
+		return impType.Type + " | null"
+	}
+	return impType.Type
+}
+
+func (t *jSONType) getTsTypeImports(impType *InputImportType) []string {
+	if impType == nil {
+		return nil
+	}
+	return []string{impType.Type}
+}
+
+// TODO https://github.com/taion/graphql-type-json
+func (t *jSONType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{
+		{
+			Type:       "GraphQLNonNull",
+			ImportType: GraphQL,
+		},
+		{
+			Type:       "GraphQLJSON",
+			ImportType: GraphQLJSON,
+		},
+	}
+}
+
+type JSONType struct {
+	ImportType *InputImportType
+	jSONType
+}
+
+func (t *JSONType) GetDBType() string {
+	return t.getDBType(false)
+}
+
+func (t *JSONType) GetTSType() string {
+	return t.getTsType(false, t.ImportType)
+}
+
+func (t *JSONType) GetNullableType() TSGraphQLType {
+	ret := &NullableJSONType{}
+	ret.ImportType = t.ImportType
+	return ret
+}
+
+func (t *JSONType) Convert() FileImport {
+	return FileImport{
+		Type:       "convertJSON",
+		ImportType: Package,
+	}
+}
+
+func (t *JSONType) GetTsTypeImports() []string {
+	return t.getTsTypeImports(t.ImportType)
+}
+
+func (t *JSONType) GetImportDepsType() *InputImportType {
+	return t.ImportType
+}
+
+type NullableJSONType struct {
+	ImportType *InputImportType
+	jSONType
+}
+
+func (t *NullableJSONType) GetDBType() string {
+	return t.getDBType(false)
+}
+
+func (t *NullableJSONType) GetTSType() string {
+	return t.getTsType(true, t.ImportType)
+}
+
+func (t *NullableJSONType) GetGraphQLType() string {
+	return "JSON"
+}
+
+func (t *NullableJSONType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{
+		{
+			Type:       "GraphQLJSON",
+			ImportType: GraphQLJSON,
+		},
+	}
+}
+
+func (t *NullableJSONType) Convert() FileImport {
+	return FileImport{
+		Type:       "convertNullableJSON",
+		ImportType: Package,
+	}
+}
+
+func (t *NullableJSONType) GetNonNullableType() TSGraphQLType {
+	ret := &JSONType{}
+	ret.ImportType = t.ImportType
+	return ret
+}
+
+func (t *NullableJSONType) GetTsTypeImports() []string {
+	return t.getTsTypeImports(t.ImportType)
+}
+
+func (t *NullableJSONType) GetImportDepsType() *InputImportType {
+	return t.ImportType
+}
+
+type JSONBType struct {
+	ImportType *InputImportType
+	jSONType
+}
+
+func (t *JSONBType) GetDBType() string {
+	return t.getDBType(true)
+}
+
+func (t *JSONBType) GetTSType() string {
+	return t.getTsType(false, t.ImportType)
+}
+
+func (t *JSONBType) GetNullableType() TSGraphQLType {
+	ret := &NullableJSONBType{}
+	ret.ImportType = t.ImportType
+	return ret
+}
+
+func (t *JSONBType) Convert() FileImport {
+	return FileImport{
+		Type:       "convertJSON",
+		ImportType: Package,
+	}
+}
+
+func (t *JSONBType) GetTsTypeImports() []string {
+	return t.getTsTypeImports(t.ImportType)
+}
+
+func (t *JSONBType) GetImportDepsType() *InputImportType {
+	return t.ImportType
+}
+
+type NullableJSONBType struct {
+	ImportType *InputImportType
+	jSONType
+}
+
+func (t *NullableJSONBType) GetDBType() string {
+	return t.getDBType(true)
+}
+
+func (t *NullableJSONBType) GetTSType() string {
+	return t.getTsType(true, t.ImportType)
+}
+
+func (t *NullableJSONBType) GetGraphQLType() string {
+	return "JSON"
+}
+
+func (t *NullableJSONBType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{
+		{
+			Type:       "GraphQLJSON",
+			ImportType: GraphQLJSON,
+		},
+	}
+}
+
+func (t *NullableJSONBType) GetNonNullableType() TSGraphQLType {
+	ret := &JSONBType{}
+	ret.ImportType = t.ImportType
+	return ret
+}
+
+func (t *NullableJSONBType) Convert() FileImport {
+	return FileImport{
+		Type:       "convertNullableJSON",
+		ImportType: Package,
+	}
+}
+
+func (t *NullableJSONBType) GetTsTypeImports() []string {
+	return t.getTsTypeImports(t.ImportType)
+}
+
+func (t *NullableJSONBType) GetImportDepsType() *InputImportType {
+	return t.ImportType
+}
+
 func getBasicType(typ types.Type) Type {
 	typeStr := types.TypeString(typ, nil)
 	switch typeStr {
@@ -1781,6 +2013,11 @@ func GetGoType(typ types.Type) string {
 
 func IsConvertDataType(t EntType) bool {
 	_, ok := t.(ConvertDataType)
+	return ok
+}
+
+func IsImportDepsType(t EntType) bool {
+	_, ok := t.(ImportDepsType)
 	return ok
 }
 

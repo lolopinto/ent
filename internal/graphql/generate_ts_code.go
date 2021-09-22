@@ -1191,6 +1191,10 @@ func getGQLFileImports(imps []enttype.FileImport, mutation bool) []*fileImport {
 
 		case enttype.Package:
 			importPath = codepath.Package
+
+		case enttype.GraphQLJSON:
+			importPath = "graphql-type-json"
+
 		default:
 			// empty means nothing to import and that's ok...
 			if imp.ImportType != "" {

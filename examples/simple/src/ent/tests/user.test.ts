@@ -10,7 +10,7 @@ import { User, Contact, Event } from "..";
 
 import { v4 as uuidv4 } from "uuid";
 import { NodeType, EdgeType } from "../const";
-import { randomEmail, randomPhoneNumber } from "../../util/random";
+import { random, randomEmail, randomPhoneNumber } from "../../util/random";
 
 import CreateUserAction, {
   UserCreateInput,
@@ -26,6 +26,7 @@ import ConfirmEditEmailAddressAction from "../user/actions/confirm_edit_email_ad
 import EditPhoneNumberAction from "../user/actions/edit_phone_number_action";
 import ConfirmEditPhoneNumberAction from "../user/actions/confirm_edit_phone_number_action";
 import CreateCommentAction from "../comment/actions/create_comment_action";
+import { NotifType } from "../user_prefs";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -816,7 +817,7 @@ test("likes", async () => {
   expect(ents2[0].id).toBe(user1.id);
 });
 
-test.only("comments", async () => {
+test("comments", async () => {
   const [user1, user2] = await Promise.all([create({}), create({})]);
 
   const comment = await CreateCommentAction.create(user2.viewer, {
@@ -848,4 +849,58 @@ test.only("comments", async () => {
   expect(count2).toBe(1);
   expect(ents2.length).toBe(1);
   expect(ents2[0].id).toBe(user1.id);
+});
+
+test("jsonb type", async () => {
+  const user = await CreateUserAction.create(new LoggedOutViewer(), {
+    firstName: "Jane",
+    lastName: "Doe",
+    emailAddress: randomEmail(),
+    phoneNumber: randomPhoneNumber(),
+    password: random(),
+    prefs: {
+      finishedNux: true,
+      notifTypes: [NotifType.EMAIL],
+    },
+  }).saveX();
+  expect(user.prefs).toStrictEqual({
+    finishedNux: true,
+    notifTypes: [NotifType.EMAIL],
+  });
+});
+
+test("json type", async () => {
+  const user = await CreateUserAction.create(new LoggedOutViewer(), {
+    firstName: "Jane",
+    lastName: "Doe",
+    emailAddress: randomEmail(),
+    phoneNumber: randomPhoneNumber(),
+    password: random(),
+    prefsDiff: {
+      finishedNux: true,
+      type: "finished_nux",
+    },
+  }).saveX();
+  expect(user.prefsDiff).toStrictEqual({
+    finishedNux: true,
+    type: "finished_nux",
+  });
+});
+
+test("json type fail", async () => {
+  try {
+    await CreateUserAction.create(new LoggedOutViewer(), {
+      firstName: "Jane",
+      lastName: "Doe",
+      emailAddress: randomEmail(),
+      phoneNumber: randomPhoneNumber(),
+      password: random(),
+      prefsDiff: {
+        finishedNux: true,
+      },
+    }).saveX();
+    fail("should throw");
+  } catch (err) {
+    expect(err.message).toMatch(/invalid field prefs_diff with value/);
+  }
 });

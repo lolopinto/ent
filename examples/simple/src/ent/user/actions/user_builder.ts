@@ -15,6 +15,7 @@ import {
 } from "@snowtop/ent/action";
 import { Comment, Contact, Event, User } from "../..";
 import { EdgeType, NodeType } from "../../const";
+import { UserPrefs } from "../../user_prefs";
 import schema from "../../../schema/user";
 
 export interface UserInput {
@@ -27,6 +28,8 @@ export interface UserInput {
   emailVerified?: boolean;
   bio?: string | null;
   nicknames?: string[] | null;
+  prefs?: UserPrefs | null;
+  prefsDiff?: any;
 }
 
 export interface UserAction extends Action<User> {
@@ -643,6 +646,8 @@ export class UserBuilder implements Builder<User> {
     addField("emailVerified", fields.emailVerified);
     addField("Bio", fields.bio);
     addField("nicknames", fields.nicknames);
+    addField("prefs", fields.prefs);
+    addField("prefs_diff", fields.prefsDiff);
     return result;
   }
 
@@ -693,5 +698,15 @@ export class UserBuilder implements Builder<User> {
   // get value of nicknames. Retrieves it from the input if specified or takes it from existingEnt
   getNewNicknamesValue(): string[] | null | undefined {
     return this.input.nicknames || this.existingEnt?.nicknames;
+  }
+
+  // get value of prefs. Retrieves it from the input if specified or takes it from existingEnt
+  getNewPrefsValue(): UserPrefs | null | undefined {
+    return this.input.prefs || this.existingEnt?.prefs;
+  }
+
+  // get value of prefs_diff. Retrieves it from the input if specified or takes it from existingEnt
+  getNewPrefsDiffValue(): any | undefined {
+    return this.input.prefsDiff || this.existingEnt?.prefsDiff;
   }
 }

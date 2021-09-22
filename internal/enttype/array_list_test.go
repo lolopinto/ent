@@ -619,7 +619,8 @@ func TestArrayListType(t *testing.T) {
 						ImportType: enttype.Enum,
 					},
 				},
-				tsType: "AccountStatus[]",
+				tsType:        "AccountStatus[]",
+				tsTypeImports: []string{"AccountStatus"},
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.EnumType{
 						Type:        "AccountStatus",
@@ -667,7 +668,8 @@ func TestArrayListType(t *testing.T) {
 						ImportType: enttype.Enum,
 					},
 				},
-				tsType: "AccountStatus[] | null",
+				tsType:        "AccountStatus[] | null",
+				tsTypeImports: []string{"AccountStatus"},
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.EnumType{
 						Type:        "AccountStatus",

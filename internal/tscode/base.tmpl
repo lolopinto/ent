@@ -43,8 +43,8 @@ export class {{$baseClass}} {
 
   readonly nodeType = {{useImport "NodeType"}}.{{.Node}};
   {{range $field := .FieldInfo.Fields -}}
-    {{ if $typ := $field.ForeignImport -}}
-      {{$typ = useImport $typ -}}
+    {{ range $imp := $field.ForeignImports -}}
+      {{$typ := useImportMaybe $imp -}}
     {{end -}}
     {{ if $field.Private -}}
       protected readonly {{$field.TsFieldName}}: {{$field.TsType}};

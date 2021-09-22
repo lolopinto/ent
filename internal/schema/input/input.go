@@ -61,6 +61,7 @@ const (
 	Timetz      DBType = "Timetz"
 	Date        DBType = "Date"
 	JSON        DBType = "JSON"
+	JSONB       DBType = "JSONB"
 	Enum        DBType = "Enum"
 	StringEnum  DBType = "StringEnum"
 	List        DBType = "List"
@@ -83,7 +84,8 @@ type FieldType struct {
 	Type        string   `json:"type"`
 	GraphQLType string   `json:"graphQLType"`
 	// optional used by generator to specify different types e.g. email, phone, password
-	CustomType CustomType `json:"customType"`
+	CustomType CustomType               `json:"customType"`
+	ImportType *enttype.InputImportType `json:"importType"`
 }
 
 type Field struct {
@@ -212,8 +214,23 @@ func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.
 		}
 		return &enttype.DateType{}, nil
 	case JSON:
-		return nil, fmt.Errorf("JSON type unsupported for now")
-		//		return &enttype.RawJSONType{}, nil
+		if nullable {
+			return &enttype.NullableJSONType{
+				ImportType: typ.ImportType,
+			}, nil
+		}
+		return &enttype.JSONType{
+			ImportType: typ.ImportType,
+		}, nil
+	case JSONB:
+		if nullable {
+			return &enttype.NullableJSONBType{
+				ImportType: typ.ImportType,
+			}, nil
+		}
+		return &enttype.JSONBType{
+			ImportType: typ.ImportType,
+		}, nil
 
 	case StringEnum, Enum:
 		tsType := typ.Type

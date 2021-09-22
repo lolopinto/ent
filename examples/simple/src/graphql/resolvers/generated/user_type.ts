@@ -12,6 +12,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
+import { GraphQLJSON } from "graphql-type-json";
 import { RequestContext } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
@@ -74,6 +75,12 @@ export const UserType = new GraphQLObjectType({
     },
     nicknames: {
       type: GraphQLList(GraphQLNonNull(GraphQLString)),
+    },
+    prefs: {
+      type: GraphQLJSON,
+    },
+    prefsDiff: {
+      type: GraphQLJSON,
     },
     selfContact: {
       type: ContactType,

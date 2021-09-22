@@ -197,6 +197,26 @@ export function float(name: string, opts?: options): Column {
   };
 }
 
+export function json(name: string, opts?: options): Column {
+  return {
+    name,
+    datatype() {
+      return "JSON";
+    },
+    ...opts,
+  };
+}
+
+export function jsonb(name: string, opts?: options): Column {
+  return {
+    name,
+    datatype() {
+      return "JSONB";
+    },
+    ...opts,
+  };
+}
+
 function list(name: string, col: Column, opts?: options): Column {
   return {
     name,
@@ -572,6 +592,10 @@ function getColumnForDbType(
       return time;
     case DBType.Timetz:
       return timetz;
+    case DBType.JSONB:
+      return jsonb;
+    case DBType.JSON:
+      return json;
 
     default:
       return undefined;

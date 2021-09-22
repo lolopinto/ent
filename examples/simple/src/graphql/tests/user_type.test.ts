@@ -1,10 +1,11 @@
 import { advanceBy } from "jest-date-mock";
 import { DB, LoggedOutViewer, IDViewer, ID, Viewer } from "@snowtop/ent";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
-import { encodeGQLID } from "@snowtop/ent/graphql";
+import { encodeGQLID, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import {
   queryRootConfig,
   expectQueryFromRoot,
+  expectMutation,
 } from "@snowtop/ent-graphql-tests";
 import schema from "../schema";
 import CreateUserAction, {
@@ -633,4 +634,88 @@ test("likes", async () => {
       ],
     );
   }
+});
+
+test("create with prefs", async () => {
+  await expectMutation(
+    {
+      schema: schema,
+      mutation: "userCreate",
+      args: {
+        firstName: "Jon",
+        lastName: "Snow",
+        emailAddress: randomEmail(),
+        phoneNumber: randomPhoneNumber(),
+        password: "pa$$w0rd",
+        prefs: "12232",
+      },
+    },
+    [
+      "user.id",
+      async function (id) {
+        id = mustDecodeIDFromGQLID(id);
+        const user = await User.loadX(new IDViewer(id), id);
+        // so graphql doesn't verify what's happening here because we depend on TS types. hmm
+        // TODO fix https://github.com/lolopinto/ent/issues/470
+        expect(user.prefs).toBe(12232);
+      },
+    ],
+  );
+});
+
+test("create with prefs diff", async () => {
+  await expectMutation(
+    {
+      schema: schema,
+      mutation: "userCreate",
+      args: {
+        firstName: "Jon",
+        lastName: "Snow",
+        emailAddress: randomEmail(),
+        phoneNumber: randomPhoneNumber(),
+        password: "pa$$w0rd",
+        prefsDiff: {
+          type: "blah",
+          foo: "foo",
+        },
+      },
+    },
+    [
+      "user.id",
+      async function (id) {
+        id = mustDecodeIDFromGQLID(id);
+        const user = await User.loadX(new IDViewer(id), id);
+        expect(user.prefsDiff).toStrictEqual({
+          type: "blah",
+          foo: "foo",
+        });
+      },
+    ],
+  );
+});
+
+test("create with prefs diff. fail", async () => {
+  await expectMutation(
+    {
+      schema: schema,
+      mutation: "userCreate",
+      args: {
+        firstName: "Jon",
+        lastName: "Snow",
+        emailAddress: randomEmail(),
+        phoneNumber: randomPhoneNumber(),
+        password: "pa$$w0rd",
+        prefsDiff: {
+          foo: "foo",
+        },
+      },
+      expectedError: /invalid field prefs_diff with value/,
+    },
+    [
+      "user.id",
+      async function (id) {
+        throw new Error("not called");
+      },
+    ],
+  );
 });
