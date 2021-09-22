@@ -50,7 +50,11 @@ export class HolidayBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
-    return loadEnt(viewer, id, HolidayBase.loaderOptions.apply(this));
+    return (await loadEnt(
+      viewer,
+      id,
+      HolidayBase.loaderOptions.apply(this),
+    )) as T | null;
   }
 
   static async loadX<T extends HolidayBase>(
@@ -58,7 +62,11 @@ export class HolidayBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
-    return loadEntX(viewer, id, HolidayBase.loaderOptions.apply(this));
+    return (await loadEntX(
+      viewer,
+      id,
+      HolidayBase.loaderOptions.apply(this),
+    )) as T;
   }
 
   static async loadMany<T extends HolidayBase>(
@@ -66,7 +74,11 @@ export class HolidayBase {
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
-    return loadEnts(viewer, HolidayBase.loaderOptions.apply(this), ...ids);
+    return (await loadEnts(
+      viewer,
+      HolidayBase.loaderOptions.apply(this),
+      ...ids,
+    )) as T[];
   }
 
   static async loadCustom<T extends HolidayBase>(
@@ -74,7 +86,11 @@ export class HolidayBase {
     viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
-    return loadCustomEnts(viewer, HolidayBase.loaderOptions.apply(this), query);
+    return (await loadCustomEnts(
+      viewer,
+      HolidayBase.loaderOptions.apply(this),
+      query,
+    )) as T[];
   }
 
   static async loadCustomData<T extends HolidayBase>(

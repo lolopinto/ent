@@ -108,7 +108,11 @@ export class UserBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
-    return loadEnt(viewer, id, UserBase.loaderOptions.apply(this));
+    return (await loadEnt(
+      viewer,
+      id,
+      UserBase.loaderOptions.apply(this),
+    )) as T | null;
   }
 
   static async loadX<T extends UserBase>(
@@ -116,7 +120,11 @@ export class UserBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
-    return loadEntX(viewer, id, UserBase.loaderOptions.apply(this));
+    return (await loadEntX(
+      viewer,
+      id,
+      UserBase.loaderOptions.apply(this),
+    )) as T;
   }
 
   static async loadMany<T extends UserBase>(
@@ -124,7 +132,11 @@ export class UserBase {
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
-    return loadEnts(viewer, UserBase.loaderOptions.apply(this), ...ids);
+    return (await loadEnts(
+      viewer,
+      UserBase.loaderOptions.apply(this),
+      ...ids,
+    )) as T[];
   }
 
   static async loadCustom<T extends UserBase>(
@@ -132,7 +144,11 @@ export class UserBase {
     viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
-    return loadCustomEnts(viewer, UserBase.loaderOptions.apply(this), query);
+    return (await loadCustomEnts(
+      viewer,
+      UserBase.loaderOptions.apply(this),
+      query,
+    )) as T[];
   }
 
   static async loadCustomData<T extends UserBase>(
@@ -168,10 +184,10 @@ export class UserBase {
     viewer: Viewer,
     emailAddress: string,
   ): Promise<T | null> {
-    return loadEntViaKey(viewer, emailAddress, {
+    return (await loadEntViaKey(viewer, emailAddress, {
       ...UserBase.loaderOptions.apply(this),
       loaderFactory: userEmailAddressLoader,
-    });
+    })) as T | null;
   }
 
   static async loadFromEmailAddressX<T extends UserBase>(
@@ -179,10 +195,10 @@ export class UserBase {
     viewer: Viewer,
     emailAddress: string,
   ): Promise<T> {
-    return loadEntXViaKey(viewer, emailAddress, {
+    return (await loadEntXViaKey(viewer, emailAddress, {
       ...UserBase.loaderOptions.apply(this),
       loaderFactory: userEmailAddressLoader,
-    });
+    })) as T;
   }
 
   static async loadIDFromEmailAddress<T extends UserBase>(
@@ -211,10 +227,10 @@ export class UserBase {
     viewer: Viewer,
     phoneNumber: string,
   ): Promise<T | null> {
-    return loadEntViaKey(viewer, phoneNumber, {
+    return (await loadEntViaKey(viewer, phoneNumber, {
       ...UserBase.loaderOptions.apply(this),
       loaderFactory: userPhoneNumberLoader,
-    });
+    })) as T | null;
   }
 
   static async loadFromPhoneNumberX<T extends UserBase>(
@@ -222,10 +238,10 @@ export class UserBase {
     viewer: Viewer,
     phoneNumber: string,
   ): Promise<T> {
-    return loadEntXViaKey(viewer, phoneNumber, {
+    return (await loadEntXViaKey(viewer, phoneNumber, {
       ...UserBase.loaderOptions.apply(this),
       loaderFactory: userPhoneNumberLoader,
-    });
+    })) as T;
   }
 
   static async loadIDFromPhoneNumber<T extends UserBase>(
