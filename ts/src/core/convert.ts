@@ -82,14 +82,14 @@ export function convertNullableBoolList(val: any): boolean[] | null {
   return convertNullableList(val, convertBool);
 }
 
-export function convertJSON(val: any): Object {
+export function convertJSON(val: any): any {
   if (typeof val === "string") {
     return JSON.parse(val);
   }
   return val;
 }
 
-export function convertNullableJSON(val: any): Object | null {
+export function convertNullableJSON(val: any): any | null {
   if (val === null) {
     return val;
   }

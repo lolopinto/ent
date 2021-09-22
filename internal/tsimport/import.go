@@ -127,6 +127,7 @@ func (imps *Imports) FuncMap() template.FuncMap {
 		"reserveDefaultImport": imps.ReserveDefault,
 		"reserveAllImport":     imps.ReserveAll,
 		"useImport":            imps.Use,
+		"useImportMaybe":       imps.UseMaybe,
 		"exportAll":            imps.ExportAll,
 		"exportAllAs":          imps.ExportAllAs,
 		"export":               imps.Export,
@@ -155,6 +156,17 @@ func dict(values ...interface{}) (map[string]interface{}, error) {
 func (imps *Imports) Use(export string) (string, error) {
 	if imps.exportMap[export] == nil {
 		return "", fmt.Errorf("tried to use export %s even though it was never reserved", export)
+	}
+
+	imps.usedExports[export] = true
+	return export, nil
+}
+
+func (imps *Imports) UseMaybe(export string) (string, error) {
+	// nothing to do here
+	// for scenarios where there's a local import
+	if imps.exportMap[export] == nil {
+		return "", nil
 	}
 
 	imps.usedExports[export] = true

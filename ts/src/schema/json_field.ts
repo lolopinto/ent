@@ -18,6 +18,9 @@ export class JSONField extends BaseField implements Field {
     if (jsonb) {
       this.type.dbType = DBType.JSONB;
     }
+    if (options.importType) {
+      this.type.importType = options.importType;
+    }
   }
 
   format(val: any) {

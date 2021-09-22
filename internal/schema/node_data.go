@@ -199,8 +199,7 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]ImportPath, error) {
 		{
 			Import:        "schema",
 			DefaultImport: true,
-			// this is dependent on having the right tsconfig.json file but that's pretty standard at this point
-			PackagePath: fmt.Sprintf("src/schema/%s", nodeData.PackageName),
+			PackagePath:   fmt.Sprintf("src/schema/%s", nodeData.PackageName),
 		},
 	}
 	for _, nodeInfo := range nodeData.getUniqueNodes(false) {
@@ -239,16 +238,24 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]ImportPath, error) {
 		}
 
 		t := f.GetFieldType()
-		if !enttype.IsConvertDataType(t) {
-			continue
+		if enttype.IsConvertDataType(t) {
+			t2 := t.(enttype.ConvertDataType)
+			c := t2.Convert()
+			ret = append(ret, ImportPath{
+				Import: c.Type,
+				// TODO currently hardcoded
+				PackagePath: codepath.Package,
+			})
 		}
-		t2 := t.(enttype.ConvertDataType)
-		c := t2.Convert()
-		ret = append(ret, ImportPath{
-			Import: c.Type,
-			// TODO currently hardcoded
-			PackagePath: codepath.Package,
-		})
+		if enttype.IsImportDepsType(t) {
+			t2 := t.(enttype.ImportDepsType)
+			imp := t2.GetImportDepsType()
+			// TODO ignoring relative. do we need it?
+			ret = append(ret, ImportPath{
+				PackagePath: imp.Path,
+				Import:      imp.Type,
+			})
+		}
 	}
 	return ret, nil
 }
@@ -271,6 +278,19 @@ func (nodeData *NodeData) GetImportPathsForDependencies() []ImportPath {
 			Import:      unique.Node,
 			PackagePath: codepath.GetExternalImportPath(),
 		})
+	}
+
+	for _, f := range nodeData.FieldInfo.Fields {
+		t := f.GetFieldType()
+		if enttype.IsImportDepsType(t) {
+			t2 := t.(enttype.ImportDepsType)
+			imp := t2.GetImportDepsType()
+			// TODO ignoring relative. do we need it?
+			ret = append(ret, ImportPath{
+				PackagePath: imp.Path,
+				Import:      imp.Type,
+			})
+		}
 	}
 
 	return ret

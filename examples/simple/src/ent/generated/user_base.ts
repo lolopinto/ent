@@ -16,6 +16,7 @@ import {
   Viewer,
   convertBool,
   convertDate,
+  convertNullableJSON,
   convertNullableList,
   loadCustomData,
   loadCustomEnts,
@@ -45,6 +46,7 @@ import {
   UserToLikesQuery,
   UserToMaybeEventsQuery,
 } from "../internal";
+import { UserPrefs } from "../user_prefs";
 import schema from "../../schema/user";
 
 const tableName = "users";
@@ -61,6 +63,7 @@ const fields = [
   "email_verified",
   "bio",
   "nicknames",
+  "prefs",
 ];
 
 export class UserBase {
@@ -77,6 +80,7 @@ export class UserBase {
   readonly emailVerified: boolean;
   readonly bio: string | null;
   readonly nicknames: string[] | null;
+  readonly prefs: UserPrefs | null;
 
   constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
@@ -91,6 +95,7 @@ export class UserBase {
     this.emailVerified = convertBool(data.email_verified);
     this.bio = data.bio;
     this.nicknames = convertNullableList(data.nicknames);
+    this.prefs = convertNullableJSON(data.prefs);
   }
 
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;

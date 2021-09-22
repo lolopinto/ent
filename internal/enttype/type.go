@@ -77,6 +77,11 @@ type TSTypeWithActionFields interface {
 	GetActionName() string
 }
 
+type ImportDepsType interface {
+	TSGraphQLType
+	GetImportDepsType() *InputImportType
+}
+
 type ImportType string
 
 const (
@@ -1627,7 +1632,7 @@ func (t *NullableArrayListType) Convert() FileImport {
 	return elem.convertNullableListWithItem()
 }
 
-// to resolve circular dependency btw input and this, we're
+// to resolve circular dependency btw input and this
 type InputImportType struct {
 	Path     string `json:"path"`
 	Relative bool   `json:"relative"`
@@ -1720,6 +1725,10 @@ func (t *JSONType) GetTsTypeImports() []string {
 	return t.getTsTypeImports(t.ImportType)
 }
 
+func (t *JSONType) GetImportDepsType() *InputImportType {
+	return t.ImportType
+}
+
 type NullableJSONType struct {
 	ImportType *InputImportType
 	jSONType
@@ -1763,6 +1772,10 @@ func (t *NullableJSONType) GetTsTypeImports() []string {
 	return t.getTsTypeImports(t.ImportType)
 }
 
+func (t *NullableJSONType) GetImportDepsType() *InputImportType {
+	return t.ImportType
+}
+
 type JSONBType struct {
 	ImportType *InputImportType
 	jSONType
@@ -1791,6 +1804,10 @@ func (t *JSONBType) Convert() FileImport {
 
 func (t *JSONBType) GetTsTypeImports() []string {
 	return t.getTsTypeImports(t.ImportType)
+}
+
+func (t *JSONBType) GetImportDepsType() *InputImportType {
+	return t.ImportType
 }
 
 type NullableJSONBType struct {
@@ -1834,6 +1851,10 @@ func (t *NullableJSONBType) Convert() FileImport {
 
 func (t *NullableJSONBType) GetTsTypeImports() []string {
 	return t.getTsTypeImports(t.ImportType)
+}
+
+func (t *NullableJSONBType) GetImportDepsType() *InputImportType {
+	return t.ImportType
 }
 
 func getBasicType(typ types.Type) Type {
@@ -1993,6 +2014,11 @@ func GetGoType(typ types.Type) string {
 
 func IsConvertDataType(t EntType) bool {
 	_, ok := t.(ConvertDataType)
+	return ok
+}
+
+func IsImportDepsType(t EntType) bool {
+	_, ok := t.(ImportDepsType)
 	return ok
 }
 
