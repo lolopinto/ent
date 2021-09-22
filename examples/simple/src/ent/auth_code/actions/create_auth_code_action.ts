@@ -2,7 +2,7 @@ import {
   CreateAuthCodeActionBase,
   AuthCodeCreateInput,
 } from "./generated/create_auth_code_action_base";
-import { AuthCodeBuilder } from "./auth_code_builder";
+import { AuthCodeBuilder } from "./generated/auth_code_builder";
 
 export { AuthCodeCreateInput };
 

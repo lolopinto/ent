@@ -14,7 +14,7 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Comment, Contact, User } from "../../..";
-import { EdgeType, NodeType } from "../../../const";
+import { EdgeType, NodeType } from "../../../generated/const";
 import schema from "../../../../schema/contact";
 
 export interface ContactInput {

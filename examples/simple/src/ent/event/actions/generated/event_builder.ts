@@ -14,7 +14,7 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Event, User } from "../../..";
-import { EdgeType, NodeType } from "../../../const";
+import { EdgeType, NodeType } from "../../../generated/const";
 import schema from "../../../../schema/event";
 
 export interface EventInput {

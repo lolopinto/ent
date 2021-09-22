@@ -4,8 +4,8 @@
 
 import { AlwaysAllowPrivacyPolicy, Ent } from "@snowtop/ent";
 import { Trigger } from "@snowtop/ent/action";
-import { NodeType } from "../../const";
-import { CommentBuilder } from "./comment_builder";
+import { NodeType } from "../../generated/const";
+import { CommentBuilder } from "./generated/comment_builder";
 import {
   CommentCreateInput,
   CreateCommentActionBase,

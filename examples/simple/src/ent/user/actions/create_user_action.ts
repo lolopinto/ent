@@ -6,7 +6,7 @@ import {
   CreateUserActionBase,
   UserCreateInput,
 } from "./generated/create_user_action_base";
-import { UserBuilder } from "./user_builder";
+import { UserBuilder } from "./generated/user_builder";
 import CreateContactAction from "../../contact/actions/create_contact_action";
 import { Contact, User } from "../../";
 

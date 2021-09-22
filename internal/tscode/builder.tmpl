@@ -4,7 +4,7 @@
 {{with .NodeData -}}
 {{ $schemaPath := printf "src/schema/%s" .PackageName }}
 {{ reserveDefaultImport $schemaPath "schema"}}
-{{ reserveImport "src/ent/const" "EdgeType" "NodeType" }}
+{{ reserveImport "src/ent/generated/const" "EdgeType" "NodeType" }}
 
 
 {{ range .GetImportPathsForDependencies -}}
