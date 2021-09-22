@@ -6,7 +6,7 @@ import {
   ConfirmEditEmailAddressActionBase,
   ConfirmEditEmailAddressInput,
 } from "./generated/confirm_edit_email_address_action_base";
-import { UserBuilder } from "./user_builder";
+import { UserBuilder } from "./generated/user_builder";
 
 export { ConfirmEditEmailAddressInput };
 

@@ -3,7 +3,7 @@ import { graphqlHTTP } from "express-graphql";
 import { IncomingMessage, ServerResponse } from "http";
 import { DB } from "@snowtop/ent";
 import { buildContext } from "@snowtop/ent/auth";
-import schema from "./schema";
+import schema from "./generated/schema";
 
 let app = express();
 

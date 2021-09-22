@@ -13,7 +13,10 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { Account, Tag } from "src/ent/";
-import { TagBuilder, TagInput } from "src/ent/tag/actions/tag_builder";
+import {
+  TagBuilder,
+  TagInput,
+} from "src/ent/tag/actions/generated/tag_builder";
 
 export interface TagCreateInput {
   displayName: string;

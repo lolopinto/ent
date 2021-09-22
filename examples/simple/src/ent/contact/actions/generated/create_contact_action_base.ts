@@ -16,7 +16,7 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { Contact, User } from "../../..";
-import { ContactBuilder, ContactInput } from "../contact_builder";
+import { ContactBuilder, ContactInput } from "./contact_builder";
 
 export interface ContactCreateInput {
   emailAddress: string;

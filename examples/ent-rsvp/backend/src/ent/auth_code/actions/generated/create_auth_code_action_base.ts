@@ -16,7 +16,7 @@ import { AuthCode, Guest } from "src/ent/";
 import {
   AuthCodeBuilder,
   AuthCodeInput,
-} from "src/ent/auth_code/actions/auth_code_builder";
+} from "src/ent/auth_code/actions/generated/auth_code_builder";
 
 export interface AuthCodeCreateInput {
   code: string;

@@ -13,8 +13,8 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Holiday } from "../..";
-import schema from "../../../schema/holiday";
+import { Holiday } from "../../..";
+import schema from "../../../../schema/holiday";
 
 export interface HolidayInput {
   label?: string;

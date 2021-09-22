@@ -11,7 +11,7 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Event, EventActivity, GuestGroup } from "src/ent/";
-import { EdgeType, NodeType } from "src/ent/const";
+import { EdgeType, NodeType } from "src/ent/generated/const";
 import schema from "src/schema/guest_group";
 
 export interface GuestGroupInput {
@@ -78,6 +78,7 @@ export class GuestGroupBuilder implements Builder<GuestGroup> {
   clearInputEdges(edgeType: EdgeType, op: WriteOperation, id?: ID) {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
+
   addGuestGroupToInvitedEvent(...ids: ID[]): GuestGroupBuilder;
   addGuestGroupToInvitedEvent(...nodes: EventActivity[]): GuestGroupBuilder;
   addGuestGroupToInvitedEvent(

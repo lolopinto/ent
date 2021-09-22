@@ -6,7 +6,7 @@ import {
 } from "@snowtop/ent-graphql-tests";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { encodeGQLID } from "@snowtop/ent/graphql";
-import schema from "../schema";
+import schema from "../generated/schema";
 import CreateUserAction from "../../ent/user/actions/create_user_action";
 import { Contact, User } from "../../ent";
 import { randomEmail, randomPhoneNumber } from "../../util/random";

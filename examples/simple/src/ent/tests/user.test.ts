@@ -9,7 +9,7 @@ import {
 import { User, Contact, Event } from "..";
 
 import { v4 as uuidv4 } from "uuid";
-import { NodeType, EdgeType } from "../const";
+import { NodeType, EdgeType } from "../generated/const";
 import { random, randomEmail, randomPhoneNumber } from "../../util/random";
 
 import CreateUserAction, {

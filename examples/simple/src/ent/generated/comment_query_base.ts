@@ -15,13 +15,13 @@ import {
   RawCountLoaderFactory,
   Viewer,
 } from "@snowtop/ent";
+import { getLoaderOptions } from "./loadAny";
 import {
   Comment,
   CommentToPostEdge,
   EdgeType,
   commentLoader,
 } from "../internal";
-import { getLoaderOptions } from "../loadAny";
 
 export const commentToPostCountLoaderFactory = new AssocEdgeCountLoaderFactory(
   EdgeType.CommentToPost,

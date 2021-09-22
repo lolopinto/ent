@@ -1,7 +1,7 @@
 import { DB } from "@snowtop/ent";
 import { expectMutation } from "@snowtop/ent-graphql-tests";
-import schema from "src/graphql/schema";
-import luxon, { DateTime } from "luxon";
+import schema from "../generated/schema";
+import { DateTime } from "luxon";
 
 afterAll(async () => {
   await DB.getInstance().endPool();

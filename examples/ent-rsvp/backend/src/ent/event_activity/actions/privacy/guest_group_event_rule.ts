@@ -9,7 +9,7 @@ import {
 } from "@snowtop/ent";
 import { EdgeInputData } from "@snowtop/ent/action";
 import { GuestGroup } from "src/ent/";
-import { GuestGroupBuilder } from "src/ent/guest_group/actions/guest_group_builder";
+import { GuestGroupBuilder } from "src/ent/guest_group/actions/generated/guest_group_builder";
 
 export class AllowIfGuestGroupPartOfEventRule implements PrivacyPolicyRule {
   constructor(private eventID: ID, private inputData: EdgeInputData[]) {}

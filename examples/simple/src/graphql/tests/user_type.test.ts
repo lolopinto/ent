@@ -7,7 +7,7 @@ import {
   expectQueryFromRoot,
   expectMutation,
 } from "@snowtop/ent-graphql-tests";
-import schema from "../schema";
+import schema from "../generated/schema";
 import CreateUserAction, {
   UserCreateInput,
 } from "../../ent/user/actions/create_user_action";

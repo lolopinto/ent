@@ -4,7 +4,7 @@ import {
   CreateTagActionBase,
   TagCreateInput,
 } from "src/ent/tag/actions/generated/create_tag_action_base";
-import { TagBuilder } from "./tag_builder";
+import { TagBuilder } from "./generated/tag_builder";
 
 export { TagCreateInput };
 

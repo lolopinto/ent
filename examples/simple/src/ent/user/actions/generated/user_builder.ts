@@ -13,10 +13,10 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Comment, Contact, Event, User } from "../..";
-import { EdgeType, NodeType } from "../../const";
-import { UserPrefs } from "../../user_prefs";
-import schema from "../../../schema/user";
+import { Comment, Contact, Event, User } from "../../..";
+import { EdgeType, NodeType } from "../../../generated/const";
+import { UserPrefs } from "../../../user_prefs";
+import schema from "../../../../schema/user";
 
 export interface UserInput {
   firstName?: string;

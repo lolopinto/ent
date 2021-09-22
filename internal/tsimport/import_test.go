@@ -298,36 +298,36 @@ func TestImports(t *testing.T) {
 		},
 		"export all": {
 			fn: func(imps *Imports) {
-				require.Nil(t, exportAll(imps, "src/ent/const"))
+				require.Nil(t, exportAll(imps, "src/ent/generated/const"))
 			},
 			expectedLines: []string{
-				getLine("export * from {path};", "src/ent/const"),
+				getLine("export * from {path};", "src/ent/generated/const"),
 			},
 		},
 		"export all as ": {
 			fn: func(imps *Imports) {
-				require.Nil(t, exportAllAs(imps, "src/ent/const", "foo"))
+				require.Nil(t, exportAllAs(imps, "src/ent/generated/const", "foo"))
 			},
 			expectedLines: []string{
-				getLine("export * as foo from {path};", "src/ent/const"),
+				getLine("export * as foo from {path};", "src/ent/generated/const"),
 			},
 		},
 		"export": {
 			fn: func(imps *Imports) {
-				require.Nil(t, export(imps, "src/ent/const", "foo", "bar"))
+				require.Nil(t, export(imps, "src/ent/generated/const", "foo", "bar"))
 			},
 			expectedLines: []string{
-				getLine("export {bar, foo} from {path};", "src/ent/const"),
+				getLine("export {bar, foo} from {path};", "src/ent/generated/const"),
 			},
 		},
 		"export relPath": {
 			relPaths: true,
 			filePath: "src/ent/generated/user_base.ts",
 			fn: func(imps *Imports) {
-				require.Nil(t, export(imps, "src/ent/const", "foo", "bar"))
+				require.Nil(t, export(imps, "src/ent/generated/const", "foo", "bar"))
 			},
 			expectedLines: []string{
-				getLine("export {bar, foo} from {path};", "../const"),
+				getLine("export {bar, foo} from {path};", "./const"),
 			},
 		},
 		"import + export": {
@@ -336,11 +336,11 @@ func TestImports(t *testing.T) {
 
 				require.Nil(t, useImport(imps, "loadEntX"))
 				require.Nil(t, useImport(imps, "loadEnt"))
-				require.Nil(t, export(imps, "src/ent/const", "foo", "bar"))
+				require.Nil(t, export(imps, "src/ent/generated/const", "foo", "bar"))
 			},
 			expectedLines: []string{
 				// export first regardless of order
-				getLine("export {bar, foo} from {path};", "src/ent/const"),
+				getLine("export {bar, foo} from {path};", "src/ent/generated/const"),
 				getLine("import {loadEnt, loadEntX} from {path};", codepath.Package),
 			},
 		},

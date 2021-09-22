@@ -6,7 +6,7 @@ import {
   DenyIfLoggedOutRule,
 } from "@snowtop/ent/core/privacy";
 import { Guest, GuestData } from "src/ent";
-import { EdgeType } from "src/ent/const";
+import { EdgeType } from "src/ent/generated/const";
 import {
   EditEventActivityRsvpStatusActionBase,
   EditEventActivityRsvpStatusInput,
@@ -15,7 +15,7 @@ import {
 import { AllowIfGuestInSameGuestGroupRule } from "src/ent/guest/privacy/guest_rule_privacy";
 import DeleteGuestDataAction from "src/ent/guest_data/actions/delete_guest_data_action";
 import CreateGuestDataAction from "../../guest_data/actions/create_guest_data_action";
-import { EventActivityBuilder } from "./event_activity_builder";
+import { EventActivityBuilder } from "./generated/event_activity_builder";
 
 export { EditEventActivityRsvpStatusInput };
 export { EventActivityRsvpStatusInput };

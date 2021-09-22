@@ -5,7 +5,7 @@ import {
   PrivacyPolicyRule,
   AllowIfSubPolicyAllowsRule,
 } from "@snowtop/ent";
-import { AddressBuilder } from "../address_builder";
+import { AddressBuilder } from "../generated/address_builder";
 
 export class EditAddressPrivacy implements PrivacyPolicy {
   constructor(private builder: AddressBuilder) {}

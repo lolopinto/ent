@@ -1,7 +1,7 @@
 {{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData"}}
 {{ reserveImport .Package.SchemaPackagePath "Field" "getFields"}}
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
-{{ reserveImport "src/ent/loadAny" "loadEntByType" "loadEntXByType"}}
+{{ reserveImport "src/ent/generated/loadAny" "loadEntByType" "loadEntXByType"}}
 {{ reserveImport .PrivacyConfig.Path .PrivacyConfig.PolicyName }}
 
 {{ $privacyCfg := .PrivacyConfig -}}

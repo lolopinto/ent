@@ -7,93 +7,92 @@ import { GraphQLSchema } from "graphql";
 import {
   AddressCreateInputType,
   AddressCreatePayloadType,
-} from "./mutations/generated/address/address_create_type";
+} from "../mutations/generated/address/address_create_type";
 import {
   CommentCreateInputType,
   CommentCreatePayloadType,
-} from "./mutations/generated/comment/comment_create_type";
+} from "../mutations/generated/comment/comment_create_type";
 import {
   ContactCreateInputType,
   ContactCreatePayloadType,
-} from "./mutations/generated/contact/contact_create_type";
+} from "../mutations/generated/contact/contact_create_type";
 import {
   ContactDeleteInputType,
   ContactDeletePayloadType,
-} from "./mutations/generated/contact/contact_delete_type";
+} from "../mutations/generated/contact/contact_delete_type";
 import {
   ContactEditInputType,
   ContactEditPayloadType,
-} from "./mutations/generated/contact/contact_edit_type";
+} from "../mutations/generated/contact/contact_edit_type";
 import {
   EventAddHostInputType,
   EventAddHostPayloadType,
-} from "./mutations/generated/event/event_add_host_type";
+} from "../mutations/generated/event/event_add_host_type";
 import {
   EventCreateInputType,
   EventCreatePayloadType,
-} from "./mutations/generated/event/event_create_type";
+} from "../mutations/generated/event/event_create_type";
 import {
   EventDeleteInputType,
   EventDeletePayloadType,
-} from "./mutations/generated/event/event_delete_type";
+} from "../mutations/generated/event/event_delete_type";
 import {
   EventEditInputType,
   EventEditPayloadType,
-} from "./mutations/generated/event/event_edit_type";
+} from "../mutations/generated/event/event_edit_type";
 import {
   EventRemoveHostInputType,
   EventRemoveHostPayloadType,
-} from "./mutations/generated/event/event_remove_host_type";
+} from "../mutations/generated/event/event_remove_host_type";
 import {
   EventRsvpStatusEditInputType,
   EventRsvpStatusEditPayloadType,
-} from "./mutations/generated/event/event_rsvp_status_edit_type";
+} from "../mutations/generated/event/event_rsvp_status_edit_type";
 import {
   HolidayCreateInputType,
   HolidayCreatePayloadType,
-} from "./mutations/generated/holiday/holiday_create_type";
+} from "../mutations/generated/holiday/holiday_create_type";
 import {
   HoursOfOperationCreateInputType,
   HoursOfOperationCreatePayloadType,
-} from "./mutations/generated/hours_of_operation/hours_of_operation_create_type";
-import { MutationType } from "./mutations/generated/mutation_type";
+} from "../mutations/generated/hours_of_operation/hours_of_operation_create_type";
+import { MutationType } from "../mutations/generated/mutation_type";
 import {
   ConfirmEmailAddressEditInputType,
   ConfirmEmailAddressEditPayloadType,
-} from "./mutations/generated/user/confirm_email_address_edit_type";
+} from "../mutations/generated/user/confirm_email_address_edit_type";
 import {
   ConfirmPhoneNumberEditInputType,
   ConfirmPhoneNumberEditPayloadType,
-} from "./mutations/generated/user/confirm_phone_number_edit_type";
+} from "../mutations/generated/user/confirm_phone_number_edit_type";
 import {
   EmailAddressEditInputType,
   EmailAddressEditPayloadType,
-} from "./mutations/generated/user/email_address_edit_type";
+} from "../mutations/generated/user/email_address_edit_type";
 import {
   PhoneNumberEditInputType,
   PhoneNumberEditPayloadType,
-} from "./mutations/generated/user/phone_number_edit_type";
+} from "../mutations/generated/user/phone_number_edit_type";
 import {
   UserCreateInputType,
   UserCreatePayloadType,
-} from "./mutations/generated/user/user_create_type";
+} from "../mutations/generated/user/user_create_type";
 import {
   UserDeleteInputType,
   UserDeletePayloadType,
-} from "./mutations/generated/user/user_delete_type";
+} from "../mutations/generated/user/user_delete_type";
 import {
   UserEditInputType,
   UserEditPayloadType,
-} from "./mutations/generated/user/user_edit_type";
+} from "../mutations/generated/user/user_edit_type";
 import {
   UserAuthJWTInputType,
   UserAuthJWTPayloadType,
-} from "./mutations/generated/user_auth_jwt_type";
+} from "../mutations/generated/user_auth_jwt_type";
 import {
   UserAuthInputType,
   UserAuthPayloadType,
-} from "./mutations/generated/user_auth_type";
-import { QueryType } from "./resolvers/generated/query_type";
+} from "../mutations/generated/user_auth_type";
 import {
   AddressType,
   CommentToPostConnectionType,
@@ -124,7 +123,8 @@ import {
   UserToMaybeEventsConnectionType,
   UserType,
   dayOfWeekType,
-} from "./resolvers";
+} from "../resolvers";
+import { QueryType } from "../resolvers/generated/query_type";
 
 export default new GraphQLSchema({
   query: QueryType,
