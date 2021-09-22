@@ -92,10 +92,7 @@ export class UserBuilder implements Builder<User> {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
 
-  addComment(...ids: ID[]): UserBuilder;
-  addComment(...nodes: Comment[]): UserBuilder;
-  addComment(...nodes: Builder<Comment>[]): UserBuilder;
-  addComment(...nodes: ID[] | Comment[] | Builder<Comment>[]): UserBuilder {
+  addComment(...nodes: (ID | Comment | Builder<Comment>)[]): UserBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addCommentID(node);
@@ -121,9 +118,7 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  removeComment(...ids: ID[]): UserBuilder;
-  removeComment(...nodes: Comment[]): UserBuilder;
-  removeComment(...nodes: ID[] | Comment[]): UserBuilder {
+  removeComment(...nodes: (ID | Comment)[]): UserBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -137,10 +132,7 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  addCreatedEvent(...ids: ID[]): UserBuilder;
-  addCreatedEvent(...nodes: Event[]): UserBuilder;
-  addCreatedEvent(...nodes: Builder<Event>[]): UserBuilder;
-  addCreatedEvent(...nodes: ID[] | Event[] | Builder<Event>[]): UserBuilder {
+  addCreatedEvent(...nodes: (ID | Event | Builder<Event>)[]): UserBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addCreatedEventID(node);
@@ -166,9 +158,7 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  removeCreatedEvent(...ids: ID[]): UserBuilder;
-  removeCreatedEvent(...nodes: Event[]): UserBuilder;
-  removeCreatedEvent(...nodes: ID[] | Event[]): UserBuilder {
+  removeCreatedEvent(...nodes: (ID | Event)[]): UserBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -185,10 +175,7 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  addDeclinedEvent(...ids: ID[]): UserBuilder;
-  addDeclinedEvent(...nodes: Event[]): UserBuilder;
-  addDeclinedEvent(...nodes: Builder<Event>[]): UserBuilder;
-  addDeclinedEvent(...nodes: ID[] | Event[] | Builder<Event>[]): UserBuilder {
+  addDeclinedEvent(...nodes: (ID | Event | Builder<Event>)[]): UserBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addDeclinedEventID(node);
@@ -214,9 +201,7 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  removeDeclinedEvent(...ids: ID[]): UserBuilder;
-  removeDeclinedEvent(...nodes: Event[]): UserBuilder;
-  removeDeclinedEvent(...nodes: ID[] | Event[]): UserBuilder {
+  removeDeclinedEvent(...nodes: (ID | Event)[]): UserBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -233,10 +218,7 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  addEventsAttending(...ids: ID[]): UserBuilder;
-  addEventsAttending(...nodes: Event[]): UserBuilder;
-  addEventsAttending(...nodes: Builder<Event>[]): UserBuilder;
-  addEventsAttending(...nodes: ID[] | Event[] | Builder<Event>[]): UserBuilder {
+  addEventsAttending(...nodes: (ID | Event | Builder<Event>)[]): UserBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addEventsAttendingID(node);
@@ -262,9 +244,7 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  removeEventsAttending(...ids: ID[]): UserBuilder;
-  removeEventsAttending(...nodes: Event[]): UserBuilder;
-  removeEventsAttending(...nodes: ID[] | Event[]): UserBuilder {
+  removeEventsAttending(...nodes: (ID | Event)[]): UserBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -281,10 +261,7 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  addFriend(...ids: ID[]): UserBuilder;
-  addFriend(...nodes: User[]): UserBuilder;
-  addFriend(...nodes: Builder<User>[]): UserBuilder;
-  addFriend(...nodes: ID[] | User[] | Builder<User>[]): UserBuilder {
+  addFriend(...nodes: (ID | User | Builder<User>)[]): UserBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addFriendID(node);
@@ -310,9 +287,7 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  removeFriend(...ids: ID[]): UserBuilder;
-  removeFriend(...nodes: User[]): UserBuilder;
-  removeFriend(...nodes: ID[] | User[]): UserBuilder {
+  removeFriend(...nodes: (ID | User)[]): UserBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.UserToFriends);
@@ -323,10 +298,7 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  addInvitedEvent(...ids: ID[]): UserBuilder;
-  addInvitedEvent(...nodes: Event[]): UserBuilder;
-  addInvitedEvent(...nodes: Builder<Event>[]): UserBuilder;
-  addInvitedEvent(...nodes: ID[] | Event[] | Builder<Event>[]): UserBuilder {
+  addInvitedEvent(...nodes: (ID | Event | Builder<Event>)[]): UserBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addInvitedEventID(node);
@@ -352,9 +324,7 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  removeInvitedEvent(...ids: ID[]): UserBuilder;
-  removeInvitedEvent(...nodes: Event[]): UserBuilder;
-  removeInvitedEvent(...nodes: ID[] | Event[]): UserBuilder {
+  removeInvitedEvent(...nodes: (ID | Event)[]): UserBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -371,10 +341,7 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  addLiker(...ids: ID[]): UserBuilder;
-  addLiker(...nodes: User[]): UserBuilder;
-  addLiker(...nodes: Builder<User>[]): UserBuilder;
-  addLiker(...nodes: ID[] | User[] | Builder<User>[]): UserBuilder {
+  addLiker(...nodes: (ID | User | Builder<User>)[]): UserBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addLikerID(node);
@@ -400,9 +367,7 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  removeLiker(...ids: ID[]): UserBuilder;
-  removeLiker(...nodes: User[]): UserBuilder;
-  removeLiker(...nodes: ID[] | User[]): UserBuilder {
+  removeLiker(...nodes: (ID | User)[]): UserBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.ObjectToLikers);
@@ -413,9 +378,7 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  addLike(...nodes: Ent[]): UserBuilder;
-  addLike(...nodes: Builder<Ent>[]): UserBuilder;
-  addLike(...nodes: Ent[] | Builder<Ent>[]): UserBuilder {
+  addLike(...nodes: (Ent | Builder<Ent>)[]): UserBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.orchestrator.addOutboundEdge(
@@ -449,9 +412,7 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  removeLike(...ids: ID[]): UserBuilder;
-  removeLike(...nodes: Ent[]): UserBuilder;
-  removeLike(...nodes: ID[] | Ent[]): UserBuilder {
+  removeLike(...nodes: (ID | Ent)[]): UserBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.UserToLikes);
@@ -462,10 +423,7 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  addMaybeEvent(...ids: ID[]): UserBuilder;
-  addMaybeEvent(...nodes: Event[]): UserBuilder;
-  addMaybeEvent(...nodes: Builder<Event>[]): UserBuilder;
-  addMaybeEvent(...nodes: ID[] | Event[] | Builder<Event>[]): UserBuilder {
+  addMaybeEvent(...nodes: (ID | Event | Builder<Event>)[]): UserBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addMaybeEventID(node);
@@ -491,9 +449,7 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  removeMaybeEvent(...ids: ID[]): UserBuilder;
-  removeMaybeEvent(...nodes: Event[]): UserBuilder;
-  removeMaybeEvent(...nodes: ID[] | Event[]): UserBuilder {
+  removeMaybeEvent(...nodes: (ID | Event)[]): UserBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -507,10 +463,7 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  addSelfContact(...ids: ID[]): UserBuilder;
-  addSelfContact(...nodes: Contact[]): UserBuilder;
-  addSelfContact(...nodes: Builder<Contact>[]): UserBuilder;
-  addSelfContact(...nodes: ID[] | Contact[] | Builder<Contact>[]): UserBuilder {
+  addSelfContact(...nodes: (ID | Contact | Builder<Contact>)[]): UserBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addSelfContactID(node);
@@ -536,9 +489,7 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  removeSelfContact(...ids: ID[]): UserBuilder;
-  removeSelfContact(...nodes: Contact[]): UserBuilder;
-  removeSelfContact(...nodes: ID[] | Contact[]): UserBuilder {
+  removeSelfContact(...nodes: (ID | Contact)[]): UserBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -552,12 +503,7 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  addUserToHostedEvent(...ids: ID[]): UserBuilder;
-  addUserToHostedEvent(...nodes: Event[]): UserBuilder;
-  addUserToHostedEvent(...nodes: Builder<Event>[]): UserBuilder;
-  addUserToHostedEvent(
-    ...nodes: ID[] | Event[] | Builder<Event>[]
-  ): UserBuilder {
+  addUserToHostedEvent(...nodes: (ID | Event | Builder<Event>)[]): UserBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addUserToHostedEventID(node);
@@ -583,9 +529,7 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  removeUserToHostedEvent(...ids: ID[]): UserBuilder;
-  removeUserToHostedEvent(...nodes: Event[]): UserBuilder;
-  removeUserToHostedEvent(...nodes: ID[] | Event[]): UserBuilder {
+  removeUserToHostedEvent(...nodes: (ID | Event)[]): UserBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(

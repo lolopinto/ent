@@ -83,9 +83,7 @@ export class CommentBuilder implements Builder<Comment> {
   clearInputEdges(edgeType: EdgeType, op: WriteOperation, id?: ID) {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
-  addPost(...nodes: Ent[]): CommentBuilder;
-  addPost(...nodes: Builder<Ent>[]): CommentBuilder;
-  addPost(...nodes: Ent[] | Builder<Ent>[]): CommentBuilder {
+  addPost(...nodes: (Ent | Builder<Ent>)[]): CommentBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.orchestrator.addOutboundEdge(
@@ -119,9 +117,7 @@ export class CommentBuilder implements Builder<Comment> {
     return this;
   }
 
-  removePost(...ids: ID[]): CommentBuilder;
-  removePost(...nodes: Ent[]): CommentBuilder;
-  removePost(...nodes: ID[] | Ent[]): CommentBuilder {
+  removePost(...nodes: (ID | Ent)[]): CommentBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.CommentToPost);
