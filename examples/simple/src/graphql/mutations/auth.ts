@@ -17,23 +17,23 @@ import { User } from "../../ent";
 // and not exporting JWT versions
 export class UserAuthInput {
   @gqlField()
-  emailAddress: string;
+  emailAddress: string = "";
   @gqlField()
-  password: string;
+  password: string = "";
 }
 
 @gqlInputObjectType()
 class UserAuthJWTInput {
   @gqlField()
-  emailAddress: string;
+  emailAddress: string = "";
   @gqlField()
-  password: string;
+  password: string = "";
 }
 
 @gqlObjectType()
 export class UserAuthPayload {
   @gqlField({ type: GraphQLID })
-  viewerID: ID;
+  viewerID: ID = "";
 }
 
 // TODO abstract classes..
@@ -41,10 +41,10 @@ export class UserAuthPayload {
 @gqlObjectType()
 class UserAuthJWTPayload {
   @gqlField()
-  token: string;
+  token: string = "";
 
   @gqlField({ type: GraphQLID })
-  viewerID: ID;
+  viewerID: ID = "";
 }
 
 export class AuthResolver {

@@ -15,14 +15,14 @@ const Address = {
       type: {
         dbType: DBType.String,
       },
-      logValue: (val) => val,
+      logValue: (val: any) => val,
     },
     {
       name: "city",
       type: {
         dbType: DBType.String,
       },
-      logValue: (val) => val,
+      logValue: (val: any) => val,
     },
     StringType({ name: "state" }),
     StringType({ name: "zip" }),
