@@ -15,7 +15,7 @@ import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { UserType } from "../../resolvers";
 import { ImportContactResolver } from "../import_contact";
 
-interface bulkUploadArgs {
+interface bulkUploadContactArgs {
   userID: any;
   file: any;
 }
@@ -23,10 +23,7 @@ interface bulkUploadArgs {
 export const BulkUploadContactType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [args: string]: bulkUploadArgs }
-  //  { [argName: string]: any }
-  //  { userID: string, file: string]: any }
-  //  { [argName: string]: any }
+  { [args: string]: bulkUploadContactArgs }
 > = {
   type: GraphQLNonNull(UserType),
   args: {
