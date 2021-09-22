@@ -15,10 +15,18 @@ import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { UserType } from "../../resolvers";
 import { ImportContactResolver } from "../import_contact";
 
+interface bulkUploadArgs {
+  userID: any;
+  file: any;
+}
+
 export const BulkUploadContactType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { userID: any; file: any }
+  { [args: string]: bulkUploadArgs }
+  //  { [argName: string]: any }
+  //  { userID: string, file: string]: any }
+  //  { [argName: string]: any }
 > = {
   type: GraphQLNonNull(UserType),
   args: {
@@ -33,7 +41,7 @@ export const BulkUploadContactType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    args: { userID: any; file: any },
+    { args },
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
