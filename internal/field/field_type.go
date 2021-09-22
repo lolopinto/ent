@@ -453,16 +453,22 @@ func (f *Field) TsType() string {
 	return f.fieldType.GetTSType()
 }
 
-func (f *Field) ForeignImport() string {
-	if f.fkey == nil {
-		return ""
-	}
-	// foreign key with enum type requires an import
-	enumType, ok := f.fieldType.(enttype.EnumeratedType)
+func (f *Field) ForeignImports() []string {
+	ret := []string{}
+	// field type requires imports. assumes it has been reserved separately
+	typ, ok := f.fieldType.(enttype.TSTypeWithImports)
 	if ok {
-		return enumType.GetTSName()
+		ret = typ.GetTsTypeImports()
 	}
-	return ""
+
+	if f.fkey != nil {
+		// foreign key with enum type requires an import
+		enumType, ok := f.fieldType.(enttype.EnumeratedType)
+		if ok {
+			ret = append(ret, enumType.GetTSName())
+		}
+	}
+	return ret
 }
 
 func (f *Field) getIDFieldTypeName() string {

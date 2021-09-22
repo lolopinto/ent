@@ -1,6 +1,6 @@
 {{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" "GraphQLBoolean" }}
 {{reserveImport .Package.PackagePath "ID" "RequestContext" "AssocEdge"}}
-{{reserveImport .Package.GraphQLPackagePath "GraphQLTime" "GraphQLEdgeType" "GraphQLConnectionType" "GraphQLEdge"}}
+{{reserveImport .Package.GraphQLPackagePath "GraphQLTime" "GraphQLEdgeType" "GraphQLConnectionType" "GraphQLEdge" "GraphQLNodeInterface"}}
 {{$conn := .Connection}}
 {{$baseObj := .BaseObj}}
 {{/* import types that we may need e.g. UserType, ContactType, etc */}}
@@ -15,7 +15,11 @@ export const {{ $conn.ConnType}} = () => {
   if (connType === undefined) {
     connType = new {{useImport "GraphQLConnectionType"}}(
     "{{$conn.Edge.GetGraphQLEdgePrefix}}",
-    {{useImport $conn.NodeType -}},
+    {{ if eq $conn.NodeType "EntType" }}
+      {{useImport "GraphQLNodeInterface" -}}
+    {{ else -}}
+      {{useImport $conn.NodeType -}},
+    {{ end -}}
     {{ $obj := .CustomObject -}}
     {{ if $obj -}}
       {{ range $obj.Imports -}} 

@@ -33,7 +33,7 @@ func TestConstraints(t *testing.T) {
 					}
 				`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"UserPhoto": {
 					fields: []field{
 						{
@@ -77,7 +77,7 @@ func TestConstraints(t *testing.T) {
 					}
 				`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Username": {
 					fields: []field{
 						{
@@ -142,7 +142,12 @@ func TestConstraints(t *testing.T) {
 					}
 				`),
 			},
-			expectedOutput: map[string]node{
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name: "node",
+				},
+			},
+			expectedNodes: map[string]node{
 				"User": {
 					fields: fieldsWithNodeFields(
 						field{
@@ -225,7 +230,12 @@ func TestConstraints(t *testing.T) {
 					}
 				`),
 			},
-			expectedOutput: map[string]node{
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name: "node",
+				},
+			},
+			expectedNodes: map[string]node{
 				"User": {
 					fields: fieldsWithNodeFields(
 						field{
@@ -306,7 +316,12 @@ func TestConstraints(t *testing.T) {
 					}
 				`),
 			},
-			expectedOutput: map[string]node{
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name: "node",
+				},
+			},
+			expectedNodes: map[string]node{
 				"User": {
 					fields: fieldsWithNodeFields(
 						field{
@@ -362,7 +377,12 @@ func TestConstraints(t *testing.T) {
 						];
 					}`),
 			},
-			expectedOutput: map[string]node{
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name: "node",
+				},
+			},
+			expectedNodes: map[string]node{
 				"Item": {
 					fields: fieldsWithNodeFields(
 						field{
@@ -420,7 +440,12 @@ func TestConstraints(t *testing.T) {
 						];
 					}`),
 			},
-			expectedOutput: map[string]node{
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name: "node",
+				},
+			},
+			expectedNodes: map[string]node{
 				"Item": {
 					fields: fieldsWithNodeFields(
 						field{
@@ -490,7 +515,12 @@ func TestIndices(t *testing.T) {
 					}
 				`),
 			},
-			expectedOutput: map[string]node{
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name: "node",
+				},
+			},
+			expectedNodes: map[string]node{
 				"Contact": {
 					fields: fieldsWithNodeFields(
 						field{
@@ -562,7 +592,12 @@ func TestIndices(t *testing.T) {
 					}
 				`),
 			},
-			expectedOutput: map[string]node{
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name: "node",
+				},
+			},
+			expectedNodes: map[string]node{
 				"User": {
 					fields: fieldsWithNodeFields(
 						field{

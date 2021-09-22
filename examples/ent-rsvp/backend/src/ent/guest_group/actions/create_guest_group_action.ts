@@ -7,7 +7,7 @@ import { EventToEventActivitiesQuery } from "src/ent";
 import EventActivityAddInviteAction from "src/ent/event_activity/actions/event_activity_add_invite_action";
 import { Trigger } from "@snowtop/ent/action";
 import { Ent } from "@snowtop/ent";
-import { GuestGroupBuilder } from "./guest_group_builder";
+import { GuestGroupBuilder } from "./generated/guest_group_builder";
 import CreateGuestAction from "src/ent/guest/actions/create_guest_action";
 
 export { GuestGroupCreateInput };

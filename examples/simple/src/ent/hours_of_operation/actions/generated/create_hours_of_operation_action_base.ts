@@ -13,7 +13,7 @@ import { HoursOfOperation, dayOfWeek } from "../../..";
 import {
   HoursOfOperationBuilder,
   HoursOfOperationInput,
-} from "../hours_of_operation_builder";
+} from "./hours_of_operation_builder";
 
 export interface HoursOfOperationCreateInput {
   dayOfWeek: dayOfWeek;

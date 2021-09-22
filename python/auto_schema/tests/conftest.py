@@ -254,6 +254,18 @@ def metadata_with_arrays():
     return metadata
 
 
+@pytest.fixture
+def metadata_with_json():
+    metadata = sa.MetaData()
+    sa.Table("tbl", metadata,
+             sa.Column('jsonb', postgresql.JSONB, nullable=False),
+             sa.Column('jsonb_null', postgresql.JSONB, nullable=True),
+             sa.Column('json', postgresql.JSON, nullable=False),
+             sa.Column('json_null', postgresql.JSON, nullable=True)
+             )
+    return metadata
+
+
 def identity_metadata_func(metadata):
     return metadata
 

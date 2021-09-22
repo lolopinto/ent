@@ -11,7 +11,7 @@ import { GuestData } from "src/ent/";
 import {
   GuestDataBuilder,
   GuestDataInput,
-} from "src/ent/guest_data/actions/guest_data_builder";
+} from "src/ent/guest_data/actions/generated/guest_data_builder";
 
 export class DeleteGuestDataActionBase implements Action<GuestData> {
   public readonly builder: GuestDataBuilder;

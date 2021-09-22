@@ -5,7 +5,7 @@ import {
 import { Trigger, Validator } from "@snowtop/ent/action";
 import { SharedValidators } from "./event_validators";
 import { Event } from "../../";
-import { EventBuilder } from "./event_builder";
+import { EventBuilder } from "./generated/event_builder";
 import { AlwaysAllowPrivacyPolicy, PrivacyPolicy } from "@snowtop/ent";
 
 export { EventCreateInput };

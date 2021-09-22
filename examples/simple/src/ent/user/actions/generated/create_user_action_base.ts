@@ -10,7 +10,8 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { User } from "../../..";
-import { UserBuilder, UserInput } from "../user_builder";
+import { UserBuilder, UserInput } from "./user_builder";
+import { UserPrefs } from "../../../user_prefs";
 
 export interface UserCreateInput {
   firstName: string;
@@ -19,6 +20,8 @@ export interface UserCreateInput {
   phoneNumber: string;
   password: string;
   nicknames?: string[] | null;
+  prefs?: UserPrefs | null;
+  prefsDiff?: any;
 }
 
 export class CreateUserActionBase implements Action<User> {

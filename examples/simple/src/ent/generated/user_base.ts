@@ -16,6 +16,7 @@ import {
   Viewer,
   convertBool,
   convertDate,
+  convertNullableJSON,
   convertNullableList,
   loadCustomData,
   loadCustomEnts,
@@ -33,6 +34,7 @@ import {
   EdgeType,
   NodeType,
   UserToAuthCodesQuery,
+  UserToCommentsQuery,
   UserToContactsQuery,
   UserToCreatedEventsQuery,
   UserToDeclinedEventsQuery,
@@ -40,8 +42,11 @@ import {
   UserToFriendsQuery,
   UserToHostedEventsQuery,
   UserToInvitedEventsQuery,
+  UserToLikersQuery,
+  UserToLikesQuery,
   UserToMaybeEventsQuery,
 } from "../internal";
+import { UserPrefs } from "../user_prefs";
 import schema from "../../schema/user";
 
 const tableName = "users";
@@ -58,6 +63,8 @@ const fields = [
   "email_verified",
   "bio",
   "nicknames",
+  "prefs",
+  "prefs_diff",
 ];
 
 export class UserBase {
@@ -74,6 +81,8 @@ export class UserBase {
   readonly emailVerified: boolean;
   readonly bio: string | null;
   readonly nicknames: string[] | null;
+  readonly prefs: UserPrefs | null;
+  readonly prefsDiff: any;
 
   constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
@@ -88,6 +97,8 @@ export class UserBase {
     this.emailVerified = convertBool(data.email_verified);
     this.bio = data.bio;
     this.nicknames = convertNullableList(data.nicknames);
+    this.prefs = convertNullableJSON(data.prefs);
+    this.prefsDiff = convertNullableJSON(data.prefs_diff);
   }
 
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
@@ -260,6 +271,10 @@ export class UserBase {
     return UserBase.getSchemaFields().get(key);
   }
 
+  queryComments(): UserToCommentsQuery {
+    return UserToCommentsQuery.query(this.viewer, this.id);
+  }
+
   queryCreatedEvents(): UserToCreatedEventsQuery {
     return UserToCreatedEventsQuery.query(this.viewer, this.id);
   }
@@ -278,6 +293,14 @@ export class UserBase {
 
   queryInvitedEvents(): UserToInvitedEventsQuery {
     return UserToInvitedEventsQuery.query(this.viewer, this.id);
+  }
+
+  queryLikers(): UserToLikersQuery {
+    return UserToLikersQuery.query(this.viewer, this.id);
+  }
+
+  queryLikes(): UserToLikesQuery {
+    return UserToLikesQuery.query(this.viewer, this.id);
   }
 
   queryMaybeEvents(): UserToMaybeEventsQuery {

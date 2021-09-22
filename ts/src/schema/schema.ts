@@ -65,6 +65,8 @@ export interface AssocEdge {
   tableName?: string;
   edgeActions?: EdgeAction[];
   hideFromGraphQL?: boolean;
+  // use this instead of the default generated const names
+  edgeConstName?: string;
 }
 
 // type PickKey<T, K extends keyof T> = Extract<keyof T, K>;
@@ -91,6 +93,8 @@ export interface EdgeAction {
 export interface InverseAssocEdge {
   // name of the inverse edge
   name: string;
+  // same as in AssocEdge
+  edgeConstName?: string;
 }
 
 export interface EdgeGroupAction {
@@ -143,7 +147,10 @@ export type Edge = AssocEdge;
 // The most commonly used pattern in the ent framework is going to be the Node pattern
 // which automatically provides 3 fields to every ent: id, created_at, updated_at
 export interface Pattern {
+  // breaking change. we use it to identify patterns
+  name: string;
   fields: Field[];
+  edges?: Edge[];
 }
 
 // we want --strictNullChecks flag so nullable is used to type graphql, ts, db
@@ -160,7 +167,8 @@ export enum DBType {
   //
   Timestamp = "Timestamp",
   Timestamptz = "Timestamptz",
-  JSON = "JSON", // tuple, lists, everything else converges on this
+  JSON = "JSON", //JSON type in the database
+  JSONB = "JSONB", // JSONB type in the database Postgres
   Enum = "Enum", // enum type in the database
   StringEnum = "StringEnum", // string type in the database
 
@@ -169,6 +177,11 @@ export enum DBType {
   Timetz = "Timetz",
 
   List = "List",
+}
+
+export interface ImportType {
+  path: string; // path to import from. either absolute path e.g. from an npm package or relative path starting at root of code e.g. "src/foo/jsonType"
+  type: string; // type being imported
 }
 
 // represents the type of each field
@@ -182,6 +195,7 @@ export interface Type {
   type?: string; // typescript type
   graphQLType?: string; // graphql type
   values?: string[]; // values e.g. enum values
+  importType?: ImportType;
 }
 
 export interface ForeignKey {

@@ -4,7 +4,7 @@ import {
   EditPhoneNumberActionBase,
   EditPhoneNumberInput,
 } from "./generated/edit_phone_number_action_base";
-import { UserBuilder } from "./user_builder";
+import { UserBuilder } from "./generated/user_builder";
 import { User } from "../..";
 import { EditUserPrivacy } from "./edit_user_privacy";
 

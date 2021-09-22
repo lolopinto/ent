@@ -1,12 +1,13 @@
 import { advanceBy } from "jest-date-mock";
 import { DB, LoggedOutViewer, IDViewer, ID, Viewer } from "@snowtop/ent";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
-import { encodeGQLID } from "@snowtop/ent/graphql";
+import { encodeGQLID, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import {
   queryRootConfig,
   expectQueryFromRoot,
+  expectMutation,
 } from "@snowtop/ent-graphql-tests";
-import schema from "../schema";
+import schema from "../generated/schema";
 import CreateUserAction, {
   UserCreateInput,
 } from "../../ent/user/actions/create_user_action";
@@ -579,6 +580,142 @@ test("load fkey connection", async () => {
           id: encodeGQLID(selfContact!),
         },
       ],
+    ],
+  );
+});
+
+test("likes", async () => {
+  const [user1, user2, user3, user4] = await Promise.all([
+    create({}),
+    create({}),
+    create({}),
+    create({}),
+  ]);
+  const action = EditUserAction.create(user1.viewer, user1, {});
+  for (const user of [user2, user3, user4]) {
+    advanceBy(100);
+    action.builder.addLiker(user);
+  }
+  // for privacy
+  action.builder.addFriend(user2, user3, user4);
+  await action.saveX();
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user1.id), user1),
+    ["likers.rawCount", 3],
+    [
+      "likers.nodes",
+      [
+        {
+          id: encodeGQLID(user2),
+        },
+        {
+          id: encodeGQLID(user3),
+        },
+        {
+          id: encodeGQLID(user4),
+        },
+      ],
+    ],
+  );
+
+  // query likes also
+  for (const liker of [user2, user3, user4]) {
+    await expectQueryFromRoot(
+      getConfig(new IDViewer(liker.id), liker),
+      ["likes.rawCount", 1],
+      [
+        "likes.nodes",
+        [
+          {
+            id: encodeGQLID(user1),
+          },
+        ],
+      ],
+    );
+  }
+});
+
+test("create with prefs", async () => {
+  await expectMutation(
+    {
+      schema: schema,
+      mutation: "userCreate",
+      args: {
+        firstName: "Jon",
+        lastName: "Snow",
+        emailAddress: randomEmail(),
+        phoneNumber: randomPhoneNumber(),
+        password: "pa$$w0rd",
+        prefs: "12232",
+      },
+    },
+    [
+      "user.id",
+      async function (id) {
+        id = mustDecodeIDFromGQLID(id);
+        const user = await User.loadX(new IDViewer(id), id);
+        // so graphql doesn't verify what's happening here because we depend on TS types. hmm
+        // TODO fix https://github.com/lolopinto/ent/issues/470
+        expect(user.prefs).toBe(12232);
+      },
+    ],
+  );
+});
+
+test("create with prefs diff", async () => {
+  await expectMutation(
+    {
+      schema: schema,
+      mutation: "userCreate",
+      args: {
+        firstName: "Jon",
+        lastName: "Snow",
+        emailAddress: randomEmail(),
+        phoneNumber: randomPhoneNumber(),
+        password: "pa$$w0rd",
+        prefsDiff: {
+          type: "blah",
+          foo: "foo",
+        },
+      },
+    },
+    [
+      "user.id",
+      async function (id) {
+        id = mustDecodeIDFromGQLID(id);
+        const user = await User.loadX(new IDViewer(id), id);
+        expect(user.prefsDiff).toStrictEqual({
+          type: "blah",
+          foo: "foo",
+        });
+      },
+    ],
+  );
+});
+
+test("create with prefs diff. fail", async () => {
+  await expectMutation(
+    {
+      schema: schema,
+      mutation: "userCreate",
+      args: {
+        firstName: "Jon",
+        lastName: "Snow",
+        emailAddress: randomEmail(),
+        phoneNumber: randomPhoneNumber(),
+        password: "pa$$w0rd",
+        prefsDiff: {
+          foo: "foo",
+        },
+      },
+      expectedError: /invalid field prefs_diff with value/,
+    },
+    [
+      "user.id",
+      async function (id) {
+        throw new Error("not called");
+      },
     ],
   );
 });

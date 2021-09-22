@@ -14,6 +14,7 @@ import {
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
+import { GraphQLJSON } from "graphql-type-json";
 import { RequestContext } from "@snowtop/ent";
 import { User } from "../../../../ent";
 import CreateUserAction, {
@@ -45,6 +46,12 @@ export const UserCreateInputType = new GraphQLInputObjectType({
     },
     nicknames: {
       type: GraphQLList(GraphQLNonNull(GraphQLString)),
+    },
+    prefs: {
+      type: GraphQLJSON,
+    },
+    prefsDiff: {
+      type: GraphQLJSON,
     },
   }),
 });
@@ -83,6 +90,8 @@ export const UserCreateType: GraphQLFieldConfig<
       phoneNumber: input.phoneNumber,
       password: input.password,
       nicknames: input.nicknames,
+      prefs: input.prefs,
+      prefsDiff: input.prefsDiff,
     }).saveX();
     return { user: user };
   },

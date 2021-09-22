@@ -5,7 +5,7 @@ import {
   ConfirmEditPhoneNumberInput,
 } from "./generated/confirm_edit_phone_number_action_base";
 import { User } from "../..";
-import { UserBuilder } from "./user_builder";
+import { UserBuilder } from "./generated/user_builder";
 import DeleteAuthCodeAction from "../../auth_code/actions/delete_auth_code_action";
 
 export { ConfirmEditPhoneNumberInput };

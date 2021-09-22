@@ -1,5 +1,5 @@
-ARG GOLANG_VERSION=v0.0.23
-ARG AUTO_SCHEMA_VERSION=0.0.9
+ARG GOLANG_VERSION=v0.0.25
+ARG AUTO_SCHEMA_VERSION=0.0.10
 ARG NODE_VERSION=16
 
 # get and install tsent
@@ -18,6 +18,7 @@ RUN python -m venv /opt/venv
 ENV PATH /opt/venv/bin:$PATH
 
 RUN python3 -m pip install auto_schema==$AUTO_SCHEMA_VERSION
+#RUN python3 -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ auto_schema_test==$AUTO_SCHEMA_VERSION
 
 # final image needs to be python-based to have auto-schema work
 FROM python:3.8.11-slim AS final-image
@@ -57,6 +58,7 @@ RUN npm install --save-dev tsconfig-paths@3.11.0
 
 COPY --from=golang-image /go/bin/tsent /go/bin/tsent
 COPY --from=python-image /opt/venv /opt/venv
+# RUN alias auto_schema=auto_schema_test
 COPY --from=golang-image /go/pkg/mod/github.com/lolopinto/ent@$GOLANG_VERSION /go/pkg/mod/github.com/lolopinto/ent@$GOLANG_VERSION
 
 CMD ["node"]

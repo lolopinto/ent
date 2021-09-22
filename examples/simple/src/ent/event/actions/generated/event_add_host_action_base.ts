@@ -17,7 +17,7 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { Event, User } from "../../..";
-import { EventBuilder, EventInput } from "../event_builder";
+import { EventBuilder, EventInput } from "./event_builder";
 
 export class EventAddHostActionBase implements Action<Event> {
   public readonly builder: EventBuilder;

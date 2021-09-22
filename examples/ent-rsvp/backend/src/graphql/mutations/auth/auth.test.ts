@@ -4,7 +4,7 @@ import {
   expectQueryFromRoot,
 } from "@snowtop/ent-graphql-tests";
 import { createUser, createAndInvitePlusGuests } from "src/testutils";
-import schema from "src/graphql/schema";
+import schema from "src/graphql/generated/schema";
 import { AuthCode } from "src/ent/auth_code";
 import { encodeGQLID } from "@snowtop/ent/graphql";
 import { PassportStrategyHandler } from "@snowtop/ent-passport";

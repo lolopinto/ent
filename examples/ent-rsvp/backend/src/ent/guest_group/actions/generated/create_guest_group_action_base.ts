@@ -16,7 +16,7 @@ import { Event, GuestGroup } from "src/ent/";
 import {
   GuestGroupBuilder,
   GuestGroupInput,
-} from "src/ent/guest_group/actions/guest_group_builder";
+} from "src/ent/guest_group/actions/generated/guest_group_builder";
 
 interface customGuestInput {
   name: string;

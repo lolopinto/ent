@@ -7,7 +7,10 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { User } from "src/ent/";
-import { UserBuilder, UserInput } from "src/ent/user/actions/user_builder";
+import {
+  UserBuilder,
+  UserInput,
+} from "src/ent/user/actions/generated/user_builder";
 
 export interface UserCreateInput {
   firstName: string;

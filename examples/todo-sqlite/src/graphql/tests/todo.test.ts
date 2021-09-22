@@ -3,7 +3,7 @@ import {
   expectMutation,
   expectQueryFromRoot,
 } from "@snowtop/ent-graphql-tests";
-import schema from "src/graphql/schema";
+import schema from "src/graphql/generated/schema";
 import { encodeGQLID } from "@snowtop/ent/graphql";
 import ChangeTodoStatusAction from "src/ent/todo/actions/change_todo_status_action";
 import { createAccount, createTodo } from "src/ent/testutils/util";

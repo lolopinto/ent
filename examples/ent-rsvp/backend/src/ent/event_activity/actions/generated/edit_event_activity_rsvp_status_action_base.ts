@@ -12,12 +12,11 @@ import {
   WriteOperation,
   setEdgeTypeInGroup,
 } from "@snowtop/ent/action";
-import { NodeType } from "src/ent";
-import { EventActivity } from "src/ent/";
+import { EventActivity, NodeType } from "src/ent/";
 import {
   EventActivityBuilder,
   EventActivityInput,
-} from "src/ent/event_activity/actions/event_activity_builder";
+} from "src/ent/event_activity/actions/generated/event_activity_builder";
 
 export enum EventActivityRsvpStatusInput {
   Attending = "attending",

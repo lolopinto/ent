@@ -5,6 +5,7 @@
 
 import {
   AllowIfViewerPrivacyPolicy,
+  AssocEdge,
   Context,
   CustomQuery,
   Data,
@@ -21,7 +22,13 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
-import { NodeType, User } from "../internal";
+import {
+  ContactToCommentsQuery,
+  ContactToLikersQuery,
+  EdgeType,
+  NodeType,
+  User,
+} from "../internal";
 import schema from "../../schema/contact";
 
 const tableName = "contacts";
@@ -143,6 +150,14 @@ export class ContactBase {
 
   static getField(key: string): Field | undefined {
     return ContactBase.getSchemaFields().get(key);
+  }
+
+  queryComments(): ContactToCommentsQuery {
+    return ContactToCommentsQuery.query(this.viewer, this.id);
+  }
+
+  queryLikers(): ContactToLikersQuery {
+    return ContactToLikersQuery.query(this.viewer, this.id);
   }
 
   async loadUser(): Promise<User | null> {

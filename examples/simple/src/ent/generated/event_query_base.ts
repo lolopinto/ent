@@ -19,12 +19,15 @@ import {
   EventToInvitedEdge,
   EventToMaybeEdge,
   User,
+  UserToCommentsQuery,
   UserToCreatedEventsQuery,
   UserToDeclinedEventsQuery,
   UserToEventsAttendingQuery,
   UserToFriendsQuery,
   UserToHostedEventsQuery,
   UserToInvitedEventsQuery,
+  UserToLikersQuery,
+  UserToLikesQuery,
   UserToMaybeEventsQuery,
   UserToSelfContactQuery,
 } from "../internal";
@@ -90,6 +93,10 @@ export class EventToAttendingQueryBase extends AssocEdgeQueryBase<
     return new this(viewer, src);
   }
 
+  queryComments(): UserToCommentsQuery {
+    return UserToCommentsQuery.query(this.viewer, this);
+  }
+
   queryCreatedEvents(): UserToCreatedEventsQuery {
     return UserToCreatedEventsQuery.query(this.viewer, this);
   }
@@ -108,6 +115,14 @@ export class EventToAttendingQueryBase extends AssocEdgeQueryBase<
 
   queryInvitedEvents(): UserToInvitedEventsQuery {
     return UserToInvitedEventsQuery.query(this.viewer, this);
+  }
+
+  queryLikers(): UserToLikersQuery {
+    return UserToLikersQuery.query(this.viewer, this);
+  }
+
+  queryLikes(): UserToLikesQuery {
+    return UserToLikesQuery.query(this.viewer, this);
   }
 
   queryMaybeEvents(): UserToMaybeEventsQuery {
@@ -146,6 +161,10 @@ export class EventToDeclinedQueryBase extends AssocEdgeQueryBase<
     return new this(viewer, src);
   }
 
+  queryComments(): UserToCommentsQuery {
+    return UserToCommentsQuery.query(this.viewer, this);
+  }
+
   queryCreatedEvents(): UserToCreatedEventsQuery {
     return UserToCreatedEventsQuery.query(this.viewer, this);
   }
@@ -164,6 +183,14 @@ export class EventToDeclinedQueryBase extends AssocEdgeQueryBase<
 
   queryInvitedEvents(): UserToInvitedEventsQuery {
     return UserToInvitedEventsQuery.query(this.viewer, this);
+  }
+
+  queryLikers(): UserToLikersQuery {
+    return UserToLikersQuery.query(this.viewer, this);
+  }
+
+  queryLikes(): UserToLikesQuery {
+    return UserToLikesQuery.query(this.viewer, this);
   }
 
   queryMaybeEvents(): UserToMaybeEventsQuery {
@@ -202,6 +229,10 @@ export class EventToHostsQueryBase extends AssocEdgeQueryBase<
     return new this(viewer, src);
   }
 
+  queryComments(): UserToCommentsQuery {
+    return UserToCommentsQuery.query(this.viewer, this);
+  }
+
   queryCreatedEvents(): UserToCreatedEventsQuery {
     return UserToCreatedEventsQuery.query(this.viewer, this);
   }
@@ -220,6 +251,14 @@ export class EventToHostsQueryBase extends AssocEdgeQueryBase<
 
   queryInvitedEvents(): UserToInvitedEventsQuery {
     return UserToInvitedEventsQuery.query(this.viewer, this);
+  }
+
+  queryLikers(): UserToLikersQuery {
+    return UserToLikersQuery.query(this.viewer, this);
+  }
+
+  queryLikes(): UserToLikesQuery {
+    return UserToLikesQuery.query(this.viewer, this);
   }
 
   queryMaybeEvents(): UserToMaybeEventsQuery {
@@ -258,6 +297,10 @@ export class EventToInvitedQueryBase extends AssocEdgeQueryBase<
     return new this(viewer, src);
   }
 
+  queryComments(): UserToCommentsQuery {
+    return UserToCommentsQuery.query(this.viewer, this);
+  }
+
   queryCreatedEvents(): UserToCreatedEventsQuery {
     return UserToCreatedEventsQuery.query(this.viewer, this);
   }
@@ -276,6 +319,14 @@ export class EventToInvitedQueryBase extends AssocEdgeQueryBase<
 
   queryInvitedEvents(): UserToInvitedEventsQuery {
     return UserToInvitedEventsQuery.query(this.viewer, this);
+  }
+
+  queryLikers(): UserToLikersQuery {
+    return UserToLikersQuery.query(this.viewer, this);
+  }
+
+  queryLikes(): UserToLikesQuery {
+    return UserToLikesQuery.query(this.viewer, this);
   }
 
   queryMaybeEvents(): UserToMaybeEventsQuery {
@@ -314,6 +365,10 @@ export class EventToMaybeQueryBase extends AssocEdgeQueryBase<
     return new this(viewer, src);
   }
 
+  queryComments(): UserToCommentsQuery {
+    return UserToCommentsQuery.query(this.viewer, this);
+  }
+
   queryCreatedEvents(): UserToCreatedEventsQuery {
     return UserToCreatedEventsQuery.query(this.viewer, this);
   }
@@ -332,6 +387,14 @@ export class EventToMaybeQueryBase extends AssocEdgeQueryBase<
 
   queryInvitedEvents(): UserToInvitedEventsQuery {
     return UserToInvitedEventsQuery.query(this.viewer, this);
+  }
+
+  queryLikers(): UserToLikersQuery {
+    return UserToLikersQuery.query(this.viewer, this);
+  }
+
+  queryLikes(): UserToLikesQuery {
+    return UserToLikesQuery.query(this.viewer, this);
   }
 
   queryMaybeEvents(): UserToMaybeEventsQuery {

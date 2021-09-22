@@ -13,7 +13,13 @@ import (
 )
 
 type Schema struct {
-	Nodes map[string]*Node
+	Nodes    map[string]*Node    `json:"schemas"`
+	Patterns map[string]*Pattern `json:"patterns"`
+}
+
+type Pattern struct {
+	Name       string       `json:"name"`
+	AssocEdges []*AssocEdge `json:"assocEdges"`
 }
 
 type Node struct {
@@ -27,6 +33,8 @@ type Node struct {
 	Constraints     []*Constraint            `json:"constraints"`
 	Indices         []*Index                 `json:"indices"`
 	HideFromGraphQL bool                     `json:"hideFromGraphQL"`
+	EdgeConstName   string                   `json:"edgeConstName"`
+	PatternName     string                   `json:"patternName"`
 }
 
 func (n *Node) AddAssocEdge(edge *AssocEdge) {
@@ -53,6 +61,7 @@ const (
 	Timetz      DBType = "Timetz"
 	Date        DBType = "Date"
 	JSON        DBType = "JSON"
+	JSONB       DBType = "JSONB"
 	Enum        DBType = "Enum"
 	StringEnum  DBType = "StringEnum"
 	List        DBType = "List"
@@ -75,7 +84,8 @@ type FieldType struct {
 	Type        string   `json:"type"`
 	GraphQLType string   `json:"graphQLType"`
 	// optional used by generator to specify different types e.g. email, phone, password
-	CustomType CustomType `json:"customType"`
+	CustomType CustomType               `json:"customType"`
+	ImportType *enttype.InputImportType `json:"importType"`
 }
 
 type Field struct {
@@ -204,8 +214,23 @@ func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.
 		}
 		return &enttype.DateType{}, nil
 	case JSON:
-		return nil, fmt.Errorf("JSON type unsupported for now")
-		//		return &enttype.RawJSONType{}, nil
+		if nullable {
+			return &enttype.NullableJSONType{
+				ImportType: typ.ImportType,
+			}, nil
+		}
+		return &enttype.JSONType{
+			ImportType: typ.ImportType,
+		}, nil
+	case JSONB:
+		if nullable {
+			return &enttype.NullableJSONBType{
+				ImportType: typ.ImportType,
+			}, nil
+		}
+		return &enttype.JSONBType{
+			ImportType: typ.ImportType,
+		}, nil
 
 	case StringEnum, Enum:
 		tsType := typ.Type
@@ -285,7 +310,11 @@ type AssocEdge struct {
 	EdgeActions []*EdgeAction     `json:"edgeActions"`
 	// Go specific
 	EntConfig       *schemaparser.EntConfigInfo
-	HideFromGraphQL bool `json:"hideFromGraphQL"`
+	HideFromGraphQL bool   `json:"hideFromGraphQL"`
+	EdgeConstName   string `json:"edgeConstName"`
+	PatternName     string `json:"patternName"`
+	// do we need a flag to know it's a pattern's edge?
+	// PatternEdge
 }
 
 type AssocEdgeGroup struct {
@@ -555,16 +584,30 @@ func (g *AssocEdgeGroup) AddAssocEdge(edge *AssocEdge) {
 type InverseAssocEdge struct {
 	// TODO need to be able to mark this as unique
 	// this is an easy way to get 1->many
-	Name string `json:"name"`
+	Name          string `json:"name"`
+	EdgeConstName string `json:"edgeConstName"`
 }
 
 func ParseSchema(input []byte) (*Schema, error) {
-	nodes := make(map[string]*Node)
-	if err := json.Unmarshal(input, &nodes); err != nil {
-		return nil, err
+	s := &Schema{}
+	if err := json.Unmarshal(input, s); err != nil {
+		// don't think this applies but keeping it here just in case
+		nodes := make(map[string]*Node)
+		if err := json.Unmarshal(input, &nodes); err != nil {
+			return nil, err
+		}
+		return &Schema{Nodes: nodes}, nil
 	}
-
-	return &Schema{
-		Nodes: nodes,
-	}, nil
+	// in the old route, it doesn't throw an error but just unmarshalls nothing 😭
+	// TestCustomFields
+	// also need to verify TestCustomListQuery|TestCustomUploadType works
+	// so checking s.Nodes == nil instead of len() == 0
+	if s.Nodes == nil {
+		nodes := make(map[string]*Node)
+		if err := json.Unmarshal(input, &nodes); err != nil {
+			return nil, err
+		}
+		return &Schema{Nodes: nodes}, nil
+	}
+	return s, nil
 }

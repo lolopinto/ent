@@ -32,3 +32,4 @@ export {
 } from "./base_schema";
 
 export * from "./field";
+export * from "./json_field";

@@ -23,7 +23,7 @@ func TestHideFromGraphQL(t *testing.T) {
 					hideFromGraphQL = true;
 				}`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"AuthCode": {
 					tableName: "auth_codes",
 					fields: []field{

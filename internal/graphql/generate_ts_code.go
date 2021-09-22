@@ -402,7 +402,7 @@ func getQueryFilePath(cfg *codegen.Config) string {
 }
 
 func getNodeQueryTypeFilePath(cfg *codegen.Config) string {
-	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/resolvers/generated/node_query_type.ts")
+	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/resolvers/node_query_type.ts")
 }
 
 func getMutationFilePath(cfg *codegen.Config) string {
@@ -418,7 +418,7 @@ func getMutationImportPath() string {
 }
 
 func getTSSchemaFilePath(cfg *codegen.Config) string {
-	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/schema.ts")
+	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/generated/schema.ts")
 }
 
 func getTSIndexFilePath(cfg *codegen.Config) string {
@@ -430,7 +430,7 @@ func getTempSchemaFilePath(cfg *codegen.Config) string {
 }
 
 func getSchemaFilePath(cfg *codegen.Config) string {
-	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/schema.gql")
+	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/generated/schema.gql")
 }
 
 func getFilePathForAction(cfg *codegen.Config, nodeData *schema.NodeData, action action.Action) string {
@@ -907,7 +907,7 @@ type typeInfo struct {
 	ImportPath string
 }
 
-const resolverPath = "./resolvers"
+const resolverPath = "src/graphql/resolvers"
 
 // get all types to be passed to GraphQLschema
 func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
@@ -1191,6 +1191,10 @@ func getGQLFileImports(imps []enttype.FileImport, mutation bool) []*fileImport {
 
 		case enttype.Package:
 			importPath = codepath.Package
+
+		case enttype.GraphQLJSON:
+			importPath = "graphql-type-json"
+
 		default:
 			// empty means nothing to import and that's ok...
 			if imp.ImportType != "" {

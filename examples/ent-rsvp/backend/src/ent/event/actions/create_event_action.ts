@@ -10,7 +10,7 @@ import {
   EventCreateInput,
 } from "src/ent/event/actions/generated/create_event_action_base";
 import CreateEventActivityAction from "src/ent/event_activity/actions/create_event_activity_action";
-import { EventBuilder } from "./event_builder";
+import { EventBuilder } from "./generated/event_builder";
 
 export { EventCreateInput };
 

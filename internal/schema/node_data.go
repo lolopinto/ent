@@ -52,11 +52,11 @@ func (cg *ConstGroupInfo) CreateNewType() bool {
 
 type NodeData struct {
 	nodeinfo.NodeInfo
+	objWithConsts
 	PackageName     string
 	FieldInfo       *field.FieldInfo
 	EdgeInfo        *edge.EdgeInfo
 	TableName       string
-	ConstantGroups  map[string]*ConstGroupInfo
 	ActionInfo      *action.ActionInfo
 	HideFromGraphQL bool
 	EnumTable       bool
@@ -81,6 +81,10 @@ func newNodeData(packageName string) *NodeData {
 
 func (nodeData *NodeData) addEnum(info *EnumInfo) {
 	nodeData.tsEnums = append(nodeData.tsEnums, info.Enum)
+}
+
+func (nodeData *NodeData) GetNodeInstance() string {
+	return nodeData.NodeInstance
 }
 
 func (nodeData *NodeData) GetTableName() string {
@@ -159,47 +163,6 @@ func (nodeData *NodeData) HasAssociationEdges() bool {
 	return nodeData.EdgeInfo.HasAssociationEdges()
 }
 
-func (nodeData *NodeData) addConstInfo(constType string, constName string, constInfo *ConstInfo) {
-	constGroup := nodeData.ConstantGroups[constType]
-	if constGroup == nil {
-		constGroup = &ConstGroupInfo{
-			ConstType: constType,
-		}
-		nodeData.ConstantGroups[constType] = constGroup
-	}
-	if constGroup.Constants == nil {
-		constGroup.Constants = make(map[string]*ConstInfo)
-	}
-	constGroup.Constants[constName] = constInfo
-}
-
-func (nodeData *NodeData) GetSortedConstantGroups() []*ConstGroupInfo {
-	var sorted []*ConstGroupInfo
-
-	for _, group := range nodeData.ConstantGroups {
-		sorted = append(sorted, group)
-	}
-
-	// manual sorting to make sure ent.NodeType then ent.EdgeType then sorted by name
-	sort.Slice(sorted, func(i, j int) bool {
-		if sorted[j].ConstType == "ent.NodeType" {
-			return false
-		}
-		if sorted[i].ConstType == "ent.NodeType" {
-			return true
-		}
-		if sorted[j].ConstType == "ent.EdgeType" {
-			return false
-		}
-		if sorted[i].ConstType == "ent.EdgeType" {
-			return true
-		}
-		return sorted[i].ConstType < sorted[j].ConstType
-	})
-
-	return sorted
-}
-
 func (nodeData *NodeData) HasAssocGroups() bool {
 	length := len(nodeData.EdgeInfo.AssocGroups)
 	if length > 1 {
@@ -236,8 +199,7 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]ImportPath, error) {
 		{
 			Import:        "schema",
 			DefaultImport: true,
-			// this is dependent on having the right tsconfig.json file but that's pretty standard at this point
-			PackagePath: fmt.Sprintf("src/schema/%s", nodeData.PackageName),
+			PackagePath:   fmt.Sprintf("src/schema/%s", nodeData.PackageName),
 		},
 	}
 	for _, nodeInfo := range nodeData.getUniqueNodes(false) {
@@ -276,16 +238,26 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]ImportPath, error) {
 		}
 
 		t := f.GetFieldType()
-		if !enttype.IsConvertDataType(t) {
-			continue
+		if enttype.IsConvertDataType(t) {
+			t2 := t.(enttype.ConvertDataType)
+			c := t2.Convert()
+			ret = append(ret, ImportPath{
+				Import: c.Type,
+				// TODO currently hardcoded
+				PackagePath: codepath.Package,
+			})
 		}
-		t2 := t.(enttype.ConvertDataType)
-		c := t2.Convert()
-		ret = append(ret, ImportPath{
-			Import: c.Type,
-			// TODO currently hardcoded
-			PackagePath: codepath.Package,
-		})
+		if enttype.IsImportDepsType(t) {
+			t2 := t.(enttype.ImportDepsType)
+			imp := t2.GetImportDepsType()
+			if imp != nil {
+				// TODO ignoring relative. do we need it?
+				ret = append(ret, ImportPath{
+					PackagePath: imp.Path,
+					Import:      imp.Type,
+				})
+			}
+		}
 	}
 	return ret, nil
 }
@@ -310,6 +282,20 @@ func (nodeData *NodeData) GetImportPathsForDependencies() []ImportPath {
 		})
 	}
 
+	for _, f := range nodeData.FieldInfo.Fields {
+		t := f.GetFieldType()
+		if enttype.IsImportDepsType(t) {
+			t2 := t.(enttype.ImportDepsType)
+			imp := t2.GetImportDepsType()
+			if imp != nil {
+				ret = append(ret, ImportPath{
+					PackagePath: imp.Path,
+					Import:      imp.Type,
+				})
+			}
+		}
+	}
+
 	return ret
 }
 
@@ -325,6 +311,14 @@ func (nodeData *NodeData) GetImportsForQueryBaseFile(s *Schema) ([]ImportPath, e
 
 	// for each edge, find the node, and then find the downstream edges for those
 	for _, edge := range nodeData.EdgeInfo.Associations {
+		if edge.PolymorphicEdge() {
+			ret = append(ret, ImportPath{
+				Import:      "Ent",
+				PackagePath: codepath.Package,
+			})
+			continue
+		}
+
 		node, err := s.GetNodeDataForNode(edge.NodeInfo.Node)
 		if err != nil {
 			return nil, err
@@ -368,6 +362,9 @@ func (nodeData *NodeData) getUniqueNodes(forceSelf bool) []uniqueNodeInfo {
 	}
 
 	for _, edge := range nodeData.EdgeInfo.Associations {
+		if edge.PolymorphicEdge() {
+			continue
+		}
 		processNode(edge.NodeInfo)
 	}
 

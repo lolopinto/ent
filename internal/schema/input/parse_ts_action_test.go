@@ -28,7 +28,7 @@ func TestParseActions(t *testing.T) {
 					];
 				};`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Event": {
 					fields: []field{
 						{
@@ -67,7 +67,7 @@ func TestParseActions(t *testing.T) {
 					];
 				};`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Event": {
 					fields: []field{
 						{
@@ -113,7 +113,7 @@ func TestParseActions(t *testing.T) {
 					];
 				};`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Event": {
 					fields: []field{
 						{
@@ -163,7 +163,7 @@ func TestParseActions(t *testing.T) {
 					];
 				};`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Event": {
 					fields: []field{
 						{
@@ -211,7 +211,7 @@ func TestParseActions(t *testing.T) {
 					];
 				};`),
 			},
-			expectedOutput: map[string]node{
+			expectedNodes: map[string]node{
 				"Event": {
 					fields: []field{
 						{

@@ -1,3 +1,4 @@
+import { advanceBy } from "jest-date-mock";
 import { DB, LoggedOutViewer, IDViewer, ID, Viewer } from "@snowtop/ent";
 import {
   expectQueryFromRoot,
@@ -5,10 +6,12 @@ import {
 } from "@snowtop/ent-graphql-tests";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { encodeGQLID } from "@snowtop/ent/graphql";
-import schema from "../schema";
+import schema from "../generated/schema";
 import CreateUserAction from "../../ent/user/actions/create_user_action";
 import { Contact, User } from "../../ent";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
+import EditUserAction from "src/ent/user/actions/edit_user_action";
+import CreateContactAction from "src/ent/contact/actions/create_contact_action";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
@@ -37,21 +40,42 @@ function getConfig(
   };
 }
 
-async function createContact(): Promise<Contact> {
-  let user = await CreateUserAction.create(loggedOutViewer, {
+function getUserConfig(
+  viewer: Viewer,
+  contact: User,
+  partialConfig?: Partial<queryRootConfig>,
+): queryRootConfig {
+  return {
+    viewer: viewer,
+    schema: schema,
+    root: "node",
+    args: {
+      id: encodeGQLID(contact),
+    },
+    inlineFragmentRoot: "User",
+    ...partialConfig,
+  };
+}
+
+async function createUser(): Promise<User> {
+  return await CreateUserAction.create(loggedOutViewer, {
     firstName: "Jon",
     lastName: "Snow",
     emailAddress: randomEmail(),
     phoneNumber: randomPhoneNumber(),
     password: "pa$$w0rd",
   }).saveX();
-  let vc = new IDViewer(user.id);
-  user = await User.loadX(vc, user.id);
-  let contact = await user.loadSelfContact();
-  if (!contact) {
-    fail("couldn't load self contact");
+}
+async function createContact(user?: User): Promise<Contact> {
+  if (!user) {
+    user = await createUser();
   }
-  return contact;
+  return await CreateContactAction.create(new IDViewer(user.id), {
+    emailAddress: randomEmail(),
+    firstName: "Jon",
+    lastName: "Snow",
+    userID: user.id,
+  }).saveX();
 }
 
 test("query contact", async () => {
@@ -83,5 +107,53 @@ test("query contact with different viewer", async () => {
   await expectQueryFromRoot(
     getConfig(new IDViewer(user.id), contact, { rootQueryNull: true }),
     ["id", null],
+  );
+});
+
+test("likes", async () => {
+  const user = await createUser();
+  const [contact1, contact2, contact3] = await Promise.all([
+    createContact(user),
+    createContact(user),
+    createContact(user),
+  ]);
+  const action = EditUserAction.create(user.viewer, user, {});
+  for (const contact of [contact1, contact2, contact3]) {
+    advanceBy(100);
+    action.builder.addLike(contact);
+  }
+  // for privacy
+  await action.saveX();
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), contact1),
+    ["likers.rawCount", 1],
+    [
+      "likers.nodes",
+      [
+        {
+          id: encodeGQLID(user),
+        },
+      ],
+    ],
+  );
+
+  await expectQueryFromRoot(
+    getUserConfig(new IDViewer(user.id), user),
+    ["likes.rawCount", 3],
+    [
+      "likes.nodes",
+      [
+        {
+          id: encodeGQLID(contact1),
+        },
+        {
+          id: encodeGQLID(contact2),
+        },
+        {
+          id: encodeGQLID(contact3),
+        },
+      ],
+    ],
   );
 });

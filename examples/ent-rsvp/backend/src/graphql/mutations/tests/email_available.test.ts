@@ -7,7 +7,7 @@ import { IDViewer, DB } from "@snowtop/ent";
 // import { createGuestPlus } from "src/testutils";
 // this needs to be the last line becasue of load order or at least after src/testutils
 import { randomEmail } from "src/util/random";
-import schema from "src/graphql/schema";
+import schema from "src/graphql/generated/schema";
 import { createUser } from "src/testutils";
 
 afterAll(async () => {

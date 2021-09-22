@@ -3,7 +3,7 @@ import { expectMutation } from "@snowtop/ent-graphql-tests";
 import { encodeGQLID } from "@snowtop/ent/graphql";
 import { graphqlUploadExpress } from "graphql-upload";
 import CreateUserAction from "../../ent/user/actions/create_user_action";
-import schema from "../schema";
+import schema from "../generated/schema";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
 
 // TODO we need something that does this by default for all tests

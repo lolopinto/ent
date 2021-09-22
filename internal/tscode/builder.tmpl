@@ -4,7 +4,7 @@
 {{with .NodeData -}}
 {{ $schemaPath := printf "src/schema/%s" .PackageName }}
 {{ reserveDefaultImport $schemaPath "schema"}}
-{{ reserveImport "src/ent/const" "EdgeType" "NodeType" }}
+{{ reserveImport "src/ent/generated/const" "EdgeType" "NodeType" }}
 
 
 {{ range .GetImportPathsForDependencies -}}
@@ -96,28 +96,63 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
   {{ $edgeInfos := edgeInfos .EdgeInfo.Associations -}}
   {{ range $edge := $edgeInfos -}}  
     {{ $node := useImport .Node -}}
-  {{$edge.TSAddMethodName}}(...ids: {{useImport "ID"}}[]): {{$builder}};
+    {{ $polymorphicEdge := $edge.Edge.PolymorphicEdge -}}
+  {{ if not $polymorphicEdge -}}
+  {{/* for PolymorphicEdges, this API doesn't work since we don't know the type. callers should call addLikerID in a map */}}  
+    {{$edge.TSAddMethodName}}(...ids: {{useImport "ID"}}[]): {{$builder}};
+  {{ end -}}
   {{$edge.TSAddMethodName}}(...nodes: {{$node}}[]): {{$builder}};
   {{$edge.TSAddMethodName}}(...nodes: Builder<{{$node}}>[]): {{$builder}};
-  {{$edge.TSAddMethodName}}(...nodes: ID[] | {{$node}}[] | Builder<{{$node}}>[]): {{$builder}} {
+  {{ if $polymorphicEdge -}}
+    {{$edge.TSAddMethodName}}(...nodes: {{$node}}[] | Builder<{{$node}}>[]): {{$builder}} {
+  {{ else -}}
+    {{$edge.TSAddMethodName}}(...nodes: ID[] | {{$node}}[] | Builder<{{$node}}>[]): {{$builder}} {
+  {{ end -}}
     for (const node of nodes) {
-      if (this.isBuilder(node)) {
-        this.{{$edge.TSAddIDMethodName}}(node);
-      } else if (typeof node === "object") {
-        this.{{$edge.TSAddIDMethodName}}(node.id);
-      } else {
-        this.{{$edge.TSAddIDMethodName}}(node);
-      }
+      {{ if $polymorphicEdge -}}
+        if (this.isBuilder(node)) {
+          this.orchestrator.addOutboundEdge(
+            node, 
+            {{useImport "EdgeType"}}.{{$edge.TSEdgeConst}},
+            // nodeType will be gotten from Executor later
+            "",
+          );
+        } else {
+          this.orchestrator.addOutboundEdge(
+            node.id, 
+            {{useImport "EdgeType"}}.{{$edge.TSEdgeConst}},
+            node.nodeType,
+          );
+        }
+      {{ else -}}
+        if (this.isBuilder(node)) {
+          this.{{$edge.TSAddIDMethodName}}(node);
+        } else if (typeof node === "object") {
+          this.{{$edge.TSAddIDMethodName}}(node.id);
+        } else {
+          this.{{$edge.TSAddIDMethodName}}(node);
+        }
+      {{ end -}}
     }
     return this;
   }
 
-  {{$edge.TSAddIDMethodName}}(id: {{useImport "ID"}} | Builder<{{$node}}>, options?: {{useImport "AssocEdgeInputOptions"}}): {{$builder}} {
+  {{$edge.TSAddIDMethodName}}(
+    id: {{useImport "ID"}} | Builder<{{$node}}>, 
+    {{ if $polymorphicEdge -}}
+      nodeType: {{useImport "NodeType"}},
+    {{ end -}}
+    options?: {{useImport "AssocEdgeInputOptions"}}
+  ): {{$builder}} {
     {{/* TODO need inbound edges also */}}
     this.orchestrator.addOutboundEdge(
       id, 
       {{useImport "EdgeType"}}.{{$edge.TSEdgeConst}},
-      {{useImport "NodeType"}}.{{.Node}},
+      {{ if $polymorphicEdge -}}
+        nodeType,
+      {{ else -}}
+        {{useImport "NodeType"}}.{{.Node}},
+      {{end -}}
       options,
     );
     return this;

@@ -12,6 +12,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
+import { GraphQLJSON } from "graphql-type-json";
 import { RequestContext } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
@@ -20,6 +21,7 @@ import {
 } from "@snowtop/ent/graphql";
 import {
   User,
+  UserToCommentsQuery,
   UserToContactsQuery,
   UserToCreatedEventsQuery,
   UserToDeclinedEventsQuery,
@@ -27,10 +29,13 @@ import {
   UserToFriendsQuery,
   UserToHostedEventsQuery,
   UserToInvitedEventsQuery,
+  UserToLikersQuery,
+  UserToLikesQuery,
   UserToMaybeEventsQuery,
 } from "../../../ent";
 import {
   ContactType,
+  UserToCommentsConnectionType,
   UserToContactsConnectionType,
   UserToCreatedEventsConnectionType,
   UserToDeclinedEventsConnectionType,
@@ -38,6 +43,8 @@ import {
   UserToFriendsConnectionType,
   UserToHostedEventsConnectionType,
   UserToInvitedEventsConnectionType,
+  UserToLikersConnectionType,
+  UserToLikesConnectionType,
   UserToMaybeEventsConnectionType,
 } from "../internal";
 
@@ -69,10 +76,45 @@ export const UserType = new GraphQLObjectType({
     nicknames: {
       type: GraphQLList(GraphQLNonNull(GraphQLString)),
     },
+    prefs: {
+      type: GraphQLJSON,
+    },
+    prefsDiff: {
+      type: GraphQLJSON,
+    },
     selfContact: {
       type: ContactType,
       resolve: (user: User, args: {}, context: RequestContext) => {
         return user.loadSelfContact();
+      },
+    },
+    comments: {
+      type: GraphQLNonNull(UserToCommentsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (user: User, args: {}, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          (v, user: User) => UserToCommentsQuery.query(v, user),
+          args,
+        );
       },
     },
     createdEvents: {
@@ -216,6 +258,64 @@ export const UserType = new GraphQLObjectType({
           user.viewer,
           user,
           (v, user: User) => UserToInvitedEventsQuery.query(v, user),
+          args,
+        );
+      },
+    },
+    likers: {
+      type: GraphQLNonNull(UserToLikersConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (user: User, args: {}, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          (v, user: User) => UserToLikersQuery.query(v, user),
+          args,
+        );
+      },
+    },
+    likes: {
+      type: GraphQLNonNull(UserToLikesConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (user: User, args: {}, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          (v, user: User) => UserToLikesQuery.query(v, user),
           args,
         );
       },

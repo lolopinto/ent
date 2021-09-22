@@ -2,7 +2,7 @@ import { DB } from "@snowtop/ent";
 import { randomEmail } from "src/util/random";
 import { expectMutation } from "@snowtop/ent-graphql-tests";
 import { encodeGQLID } from "@snowtop/ent/graphql";
-import schema from "src/graphql/schema";
+import schema from "src/graphql/generated/schema";
 import { graphqlUploadExpress } from "graphql-upload";
 import { createEvent } from "src/testutils";
 

@@ -16,7 +16,7 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { AuthCode, User } from "../../..";
-import { AuthCodeBuilder, AuthCodeInput } from "../auth_code_builder";
+import { AuthCodeBuilder, AuthCodeInput } from "./auth_code_builder";
 
 export interface AuthCodeCreateInput {
   code: string;

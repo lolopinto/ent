@@ -1,13 +1,13 @@
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
 {{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery" "AssocEdge" "AssocEdgeQueryBase" "CustomEdgeQueryBase" "query" "RawCountLoaderFactory" "AssocEdgeCountLoaderFactory" "AssocEdgeLoaderFactory" "IndexLoaderFactory"}}
 {{$importPath := .Package.InternalImportPath -}}
+{{reserveImport "src/ent/generated/loadAny" "getLoaderOptions" -}}
 
 {{$schema := .Schema}}
-{{$nodeData := .NodeData -}}
 
-{{with .NodeData -}}
+{{with .Info -}}
 
-  {{ range .GetImportsForQueryBaseFile $schema }} 
+  {{ range .Imports }} 
     {{ if .DefaultImport -}}
       {{ reserveDefaultImport .PackagePath .Import}}
     {{ else -}}
@@ -17,7 +17,7 @@
 
   {{$node := useImport .Node}}
 
-  {{range $edge := .EdgeInfo.Associations}}
+  {{range $edge := .AssocEdges}}
     {{$edgeType := printf "%s.%s" (useImport "EdgeType") $edge.TsEdgeConst -}}
     {{ reserveImport $importPath $edge.TsEdgeQueryEdgeName -}}
     {{$edgeName := useImport $edge.TsEdgeQueryEdgeName -}}
@@ -31,7 +31,7 @@
 
   {{end -}}
 
-  {{range $edge := .EdgeInfo.GetEdgesForIndexLoader -}}
+  {{range $edge := .IndexedEdges -}}
     {{$node := useImport $edge.GetNodeInfo.Node -}}
       export const {{$edge.GetCountFactoryName}} = new {{useImport "RawCountLoaderFactory"}}({
         ...{{$node}}.loaderOptions(),
@@ -46,7 +46,7 @@
       );
   {{end -}}
 
-  {{range $edge := .EdgeInfo.Associations}}
+  {{range $edge := .AssocEdges}}
     {{$name := printf "%sBase" $edge.TsEdgeQueryName -}}
     {{ reserveImport $importPath $edge.TsEdgeQueryEdgeName -}}
     {{$edgeName := useImport $edge.TsEdgeQueryEdgeName -}}
@@ -59,7 +59,11 @@
         src, 
         {{$edge.GetCountFactoryName}},
         {{$edge.GetDataFactoryName}},
+        {{ if $edge.PolymorphicEdge -}}
+          {{useImport "getLoaderOptions"}}
+        {{ else -}}
         {{useImport .NodeInfo.Node}}.loaderOptions(),
+        {{ end -}}
       );
     }
 
@@ -71,18 +75,20 @@
       return new this(viewer, src);
     }
 
-    {{$fNodeData := $schema.GetNodeDataForNode .NodeInfo.Node}}
-    {{ range $fEdge := $fNodeData.EdgeInfo.Associations -}}
-      {{$queryName := useImport $fEdge.TsEdgeQueryName -}}
-      query{{$fEdge.CamelCaseEdgeName}}(): {{$queryName}} {
-        return {{$queryName}}.query(this.viewer, this);
-      }
-      
+    {{if not $edge.PolymorphicEdge -}}
+      {{$fNodeData := $schema.GetNodeDataForNode .NodeInfo.Node}}
+      {{ range $fEdge := $fNodeData.EdgeInfo.Associations -}}
+        {{$queryName := useImport $fEdge.TsEdgeQueryName -}}
+        query{{$fEdge.CamelCaseEdgeName}}(): {{$queryName}} {
+          return {{$queryName}}.query(this.viewer, this);
+        }
+
+    {{end -}}
     {{ end -}}
   }
   {{end}}
 
-  {{range $edge := .EdgeInfo.GetEdgesForIndexLoader -}}
+  {{range $edge := .IndexedEdges -}}
     {{$name := printf "%sBase" $edge.TsEdgeQueryName -}}
     {{$srcNode := useImport $edge.GetSourceNodeName -}}
     {{$node := useImport $edge.GetNodeInfo.Node -}}

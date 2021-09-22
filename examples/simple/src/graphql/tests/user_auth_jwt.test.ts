@@ -10,7 +10,7 @@ import { DB, LoggedOutViewer } from "@snowtop/ent";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { encodeGQLID } from "@snowtop/ent/graphql";
 import { PassportStrategyHandler } from "@snowtop/ent-passport";
-import schema from "../schema";
+import schema from "../generated/schema";
 import CreateUserAction, {
   UserCreateInput,
 } from "../../ent/user/actions/create_user_action";

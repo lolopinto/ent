@@ -8,6 +8,7 @@ import { advanceBy } from "jest-date-mock";
 import {
   FakeUser,
   UserToContactsQuery,
+  UserToFollowingQuery,
   FakeContact,
   EdgeType,
   getUserBuilder,
@@ -18,6 +19,7 @@ import {
   NodeType,
   UserToCustomEdgeQuery,
   CustomEdge,
+  getEventBuilder,
 } from "../../testutils/fake_data/index";
 import {
   inputs,
@@ -27,6 +29,7 @@ import {
   verifyUserToContactEdges,
   verifyUserToContacts,
   createTestEvent,
+  getEventInput,
 } from "../../testutils/fake_data/test_helpers";
 import DB, { Dialect } from "../db";
 
@@ -594,6 +597,196 @@ export function assocTests() {
 
     test("rawCount", async () => {
       await filter.testRawCount();
+    });
+
+    test("edges", async () => {
+      await filter.testEdges();
+    });
+
+    test("ents", async () => {
+      await filter.testEnts();
+    });
+  });
+
+  class PolymorphicID2sTestQueryFilter {
+    user: FakeUser;
+    users: FakeUser[] = [];
+    events: FakeEvent[] = [];
+    expCount: number;
+    constructor(
+      private filter: (q: UserToFollowingQuery) => UserToFollowingQuery,
+      private ents: (ent: Ent[]) => Ent[],
+      private limit?: number,
+    ) {}
+
+    async beforeEach() {
+      this.users = [];
+      this.events = [];
+      this.user = await createTestUser();
+      for (let i = 0; i < 5; i++) {
+        advanceBy(100);
+
+        const builder = getUserBuilder(this.user.viewer, getUserInput());
+        builder.orchestrator.addOutboundEdge(
+          this.user.id,
+          EdgeType.ObjectToFollowedUsers,
+          NodeType.FakeUser,
+        );
+        await builder.saveX();
+        const user2 = await builder.editedEntX();
+        this.users.push(user2);
+      }
+      for (let i = 0; i < 5; i++) {
+        advanceBy(100);
+
+        const builder = getEventBuilder(
+          this.user.viewer,
+          getEventInput(this.user),
+        );
+        builder.orchestrator.addOutboundEdge(
+          this.user.id,
+          EdgeType.ObjectToFollowedUsers,
+          NodeType.FakeUser,
+        );
+        await builder.saveX();
+        const event = await builder.editedEntX();
+        this.events.push(event);
+      }
+      //order is users, then events
+      this.expCount = this.ents([...this.users, ...this.events]).length;
+
+      QueryRecorder.clearQueries();
+    }
+
+    getQuery(viewer?: Viewer) {
+      return this.filter(
+        UserToFollowingQuery.query(
+          viewer || new IDViewer(this.user.id),
+          this.user,
+        ),
+      );
+    }
+
+    async testIDs() {
+      const ids = await this.getQuery().queryIDs();
+
+      expect(ids.length).toBe(this.expCount);
+
+      const expIDs = this.users
+        .map((user) => user.id)
+        .concat(this.events.map((event) => event.id))
+        .reverse();
+
+      expect(expIDs).toEqual(ids);
+      verifyQuery({
+        length: 1,
+        numQueries: 1,
+        limit: this.limit || DefaultLimit,
+      });
+    }
+
+    // rawCount isn't affected by filters...
+    async testRawCount() {
+      const count = await this.getQuery().queryRawCount();
+
+      expect(count).toBe(this.expCount);
+
+      verifyCountQuery({ numQueries: 1, length: 1 });
+    }
+
+    async testCount() {
+      const count = await this.getQuery().queryCount();
+
+      expect(count).toBe(this.expCount);
+
+      verifyQuery({
+        length: 1,
+        numQueries: 1,
+        limit: this.limit || DefaultLimit,
+      });
+    }
+
+    async testEdges() {
+      const edges = await this.getQuery().queryEdges();
+
+      expect(edges.length).toBe(this.expCount);
+
+      let userCount = 0;
+      let eventCount = 0;
+      edges.forEach((edge) => {
+        if (edge.id2Type === NodeType.FakeEvent) {
+          eventCount++;
+        }
+        if (edge.id2Type === NodeType.FakeUser) {
+          userCount++;
+        }
+      });
+      expect(userCount).toBe(this.expCount / 2);
+      expect(eventCount).toBe(this.expCount / 2);
+      verifyQuery({
+        length: 1,
+        numQueries: 1,
+        limit: this.limit || DefaultLimit,
+      });
+    }
+
+    async testEnts() {
+      // privacy...
+      const ents = await this.getQuery().queryEnts();
+      expect(ents.length).toBe(this.expCount);
+
+      let userCount = 0;
+      let eventCount = 0;
+      ents.forEach((ent) => {
+        if (ent instanceof FakeEvent) {
+          eventCount++;
+        }
+        if (ent instanceof FakeUser) {
+          userCount++;
+        }
+      });
+      expect(userCount).toBe(this.expCount / 2);
+      expect(eventCount).toBe(this.expCount / 2);
+
+      // when doing privacy checks, hard to say what will be fetched
+      // verifyQuery({
+      //   // 1 for edges, 1 for users, 1 for events
+      //   length: 3,
+      //   numQueries: 3,
+      //   limit: this.limit || DefaultLimit,
+      // });
+    }
+  }
+
+  describe("polymorphic id2s", () => {
+    const filter = new PolymorphicID2sTestQueryFilter(
+      (q: UserToFollowingQuery) => {
+        // no filters
+        return q;
+      },
+      (ents: Ent[]) => {
+        // nothing to do here
+        // reverse because edges are most recent first
+        return ents.reverse();
+      },
+    );
+
+    // TODO not working when it's a beforeAll
+    // working with beforeEach but we should only need to create this data once
+    beforeEach(async () => {
+      await filter.beforeEach();
+    });
+
+    test("ids", async () => {
+      await filter.testIDs();
+    });
+
+    test("rawCount", async () => {
+      await filter.testRawCount();
+    });
+
+    test("count", async () => {
+      await filter.testCount();
     });
 
     test("edges", async () => {

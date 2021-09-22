@@ -1358,6 +1358,12 @@ class TestPostgresRunner(BaseTestRunner):
         run_and_validate_with_standard_metadata_tables(
             r, metadata_with_arrays, new_table_names=['tbl'])
 
+    @pytest.mark.usefixtures("metadata_with_json")
+    def test_tables_with_json(self, new_test_runner, metadata_with_json):
+        r = new_test_runner(metadata_with_json)
+        run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_json, new_table_names=['tbl'])
+
 
 class TestSqliteRunner(BaseTestRunner):
     pass

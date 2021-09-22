@@ -1,3 +1,5 @@
+# CONTRIBUTING
+
 make changes to code and then run as following:
 
 * `pipenv shell` to get into virtual environment.

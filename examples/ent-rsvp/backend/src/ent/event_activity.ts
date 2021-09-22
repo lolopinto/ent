@@ -14,7 +14,7 @@ import {
   EventActivityRsvpStatus,
 } from "src/ent/internal";
 import { Address, Guest } from ".";
-import { EdgeType } from "./const";
+import { EdgeType } from "./generated/const";
 import { AllowIfEventCreatorRule } from "./event/privacy/event_creator";
 
 // we're only writing this once except with --force and packageName provided

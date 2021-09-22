@@ -9,8 +9,8 @@ import {
 import { User, Contact, Event } from "..";
 
 import { v4 as uuidv4 } from "uuid";
-import { NodeType, EdgeType } from "../const";
-import { randomEmail, randomPhoneNumber } from "../../util/random";
+import { NodeType, EdgeType } from "../generated/const";
+import { random, randomEmail, randomPhoneNumber } from "../../util/random";
 
 import CreateUserAction, {
   UserCreateInput,
@@ -25,6 +25,8 @@ import EditEmailAddressAction from "../user/actions/edit_email_address_action";
 import ConfirmEditEmailAddressAction from "../user/actions/confirm_edit_email_address_action";
 import EditPhoneNumberAction from "../user/actions/edit_phone_number_action";
 import ConfirmEditPhoneNumberAction from "../user/actions/confirm_edit_phone_number_action";
+import CreateCommentAction from "../comment/actions/create_comment_action";
+import { NotifType } from "../user_prefs";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -786,4 +788,119 @@ test("nicknames", async () => {
   });
 
   expect(user.nicknames).toEqual(n);
+});
+
+test("likes", async () => {
+  const [user1, user2] = await Promise.all([create({}), create({})]);
+  const action = EditUserAction.create(user1.viewer, user1, {});
+  action.builder.addLiker(user2);
+  // for privacy
+  action.builder.addFriend(user2);
+  await action.saveX();
+
+  const likersQuery = user1.queryLikers();
+  const [count, ents] = await Promise.all([
+    likersQuery.queryCount(),
+    likersQuery.queryEnts(),
+  ]);
+  expect(count).toBe(1);
+  expect(ents.length).toBe(1);
+  expect(ents[0].id).toBe(user2.id);
+
+  const likesQuery = user2.queryLikes();
+  const [count2, ents2] = await Promise.all([
+    likesQuery.queryCount(),
+    likesQuery.queryEnts(),
+  ]);
+  expect(count2).toBe(1);
+  expect(ents2.length).toBe(1);
+  expect(ents2[0].id).toBe(user1.id);
+});
+
+test("comments", async () => {
+  const [user1, user2] = await Promise.all([create({}), create({})]);
+
+  const comment = await CreateCommentAction.create(user2.viewer, {
+    authorID: user2.id,
+    body: "sup",
+    articleID: user1.id,
+    articleType: user1.nodeType,
+  }).saveX();
+
+  const action = EditUserAction.create(user1.viewer, user1, {});
+  // privacy
+  action.builder.addFriend(user2);
+  await action.saveX();
+
+  const commentsQuery = user1.queryComments();
+  const [count, ents] = await Promise.all([
+    commentsQuery.queryCount(),
+    commentsQuery.queryEnts(),
+  ]);
+  expect(count).toBe(1);
+  expect(ents.length).toBe(1);
+  expect(ents[0].id).toBe(comment.id);
+
+  const postQuery = comment.queryPost();
+  const [count2, ents2] = await Promise.all([
+    postQuery.queryCount(),
+    postQuery.queryEnts(),
+  ]);
+  expect(count2).toBe(1);
+  expect(ents2.length).toBe(1);
+  expect(ents2[0].id).toBe(user1.id);
+});
+
+test("jsonb type", async () => {
+  const user = await CreateUserAction.create(new LoggedOutViewer(), {
+    firstName: "Jane",
+    lastName: "Doe",
+    emailAddress: randomEmail(),
+    phoneNumber: randomPhoneNumber(),
+    password: random(),
+    prefs: {
+      finishedNux: true,
+      notifTypes: [NotifType.EMAIL],
+    },
+  }).saveX();
+  expect(user.prefs).toStrictEqual({
+    finishedNux: true,
+    notifTypes: [NotifType.EMAIL],
+  });
+});
+
+test("json type", async () => {
+  const user = await CreateUserAction.create(new LoggedOutViewer(), {
+    firstName: "Jane",
+    lastName: "Doe",
+    emailAddress: randomEmail(),
+    phoneNumber: randomPhoneNumber(),
+    password: random(),
+    prefsDiff: {
+      finishedNux: true,
+      type: "finished_nux",
+    },
+  }).saveX();
+  expect(user.prefsDiff).toStrictEqual({
+    finishedNux: true,
+    type: "finished_nux",
+  });
+});
+
+test("json type fail", async () => {
+  try {
+    await CreateUserAction.create(new LoggedOutViewer(), {
+      firstName: "Jane",
+      lastName: "Doe",
+      emailAddress: randomEmail(),
+      phoneNumber: randomPhoneNumber(),
+      password: random(),
+      prefsDiff: {
+        finishedNux: true,
+      },
+    }).saveX();
+    fail("should throw");
+  } catch (err) {
+    expect(err.message).toMatch(/invalid field prefs_diff with value/);
+  }
 });
