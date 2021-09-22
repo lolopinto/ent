@@ -17,7 +17,8 @@ import { ImportContactResolver } from "../import_contact";
 
 export const BulkUploadContactType: GraphQLFieldConfig<
   undefined,
-  RequestContext
+  RequestContext,
+  { userID: any; file: any }
 > = {
   type: GraphQLNonNull(UserType),
   args: {
@@ -32,7 +33,7 @@ export const BulkUploadContactType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    args: { userID; file },
+    args: { userID: any; file: any },
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
