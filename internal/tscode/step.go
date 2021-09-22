@@ -378,19 +378,19 @@ func getImportPathForPatternBaseQueryFile(name string) string {
 }
 
 func getFilePathForConstFile(cfg *codegen.Config) string {
-	return path.Join(cfg.GetAbsPathToRoot(), "src/ent/const.ts")
+	return path.Join(cfg.GetAbsPathToRoot(), "src/ent/generated/const.ts")
 }
 
 func getFilePathForLoadAnyFile(cfg *codegen.Config) string {
-	return path.Join(cfg.GetAbsPathToRoot(), "src/ent/loadAny.ts")
+	return path.Join(cfg.GetAbsPathToRoot(), "src/ent/generated/loadAny.ts")
 }
 
 func getFilePathForBuilderFile(cfg *codegen.Config, nodeData *schema.NodeData) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/%s/actions/%s_builder.ts", nodeData.PackageName, nodeData.PackageName))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/%s/actions/generated/%s_builder.ts", nodeData.PackageName, nodeData.PackageName))
 }
 
 func getImportPathForBuilderFile(nodeData *schema.NodeData) string {
-	return fmt.Sprintf("src/ent/%s/actions/%s_builder", nodeData.PackageName, nodeData.PackageName)
+	return fmt.Sprintf("src/ent/%s/actions/generated/%s_builder", nodeData.PackageName, nodeData.PackageName)
 }
 
 func getFilePathForActionBaseFile(cfg *codegen.Config, nodeData *schema.NodeData, a action.Action) string {
@@ -651,7 +651,7 @@ func writeLoadAnyFile(nodeData []enum.Data, processor *codegen.Processor) error 
 
 func getSortedInternalEntFileLines(s *schema.Schema) []string {
 	lines := []string{
-		"src/ent/const",
+		"src/ent/generated/const",
 	}
 
 	append2 := func(list *[]string, str string) {
