@@ -21,6 +21,7 @@ export interface UserCreateInput {
   password: string;
   nicknames?: string[] | null;
   prefs?: UserPrefs | null;
+  prefsDiff?: any;
 }
 
 export class CreateUserActionBase implements Action<User> {

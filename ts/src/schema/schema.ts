@@ -181,7 +181,6 @@ export enum DBType {
 
 export interface ImportType {
   path: string; // path to import from. either absolute path e.g. from an npm package or relative path starting at root of code e.g. "src/foo/jsonType"
-  relative?: boolean; // boolean indicating if relative or absolute path, if relative path, will be adjusted when importing depending on file importing from
   type: string; // type being imported
 }
 

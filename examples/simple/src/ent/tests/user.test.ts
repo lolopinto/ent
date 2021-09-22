@@ -851,7 +851,7 @@ test("comments", async () => {
   expect(ents2[0].id).toBe(user1.id);
 });
 
-test.only("jsonb type", async () => {
+test("jsonb type", async () => {
   const user = await CreateUserAction.create(new LoggedOutViewer(), {
     firstName: "Jane",
     lastName: "Doe",
@@ -867,5 +867,40 @@ test.only("jsonb type", async () => {
     finishedNux: true,
     notifTypes: [NotifType.EMAIL],
   });
-  console.debug(user.prefs);
+});
+
+test("json type", async () => {
+  const user = await CreateUserAction.create(new LoggedOutViewer(), {
+    firstName: "Jane",
+    lastName: "Doe",
+    emailAddress: randomEmail(),
+    phoneNumber: randomPhoneNumber(),
+    password: random(),
+    prefsDiff: {
+      finishedNux: true,
+      type: "finished_nux",
+    },
+  }).saveX();
+  expect(user.prefsDiff).toStrictEqual({
+    finishedNux: true,
+    type: "finished_nux",
+  });
+});
+
+test("json type fail", async () => {
+  try {
+    await CreateUserAction.create(new LoggedOutViewer(), {
+      firstName: "Jane",
+      lastName: "Doe",
+      emailAddress: randomEmail(),
+      phoneNumber: randomPhoneNumber(),
+      password: random(),
+      prefsDiff: {
+        finishedNux: true,
+      },
+    }).saveX();
+    fail("should throw");
+  } catch (err) {
+    expect(err.message).toMatch(/invalid field prefs_diff with value/);
+  }
 });

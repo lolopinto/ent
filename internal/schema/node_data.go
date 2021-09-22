@@ -250,11 +250,13 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]ImportPath, error) {
 		if enttype.IsImportDepsType(t) {
 			t2 := t.(enttype.ImportDepsType)
 			imp := t2.GetImportDepsType()
-			// TODO ignoring relative. do we need it?
-			ret = append(ret, ImportPath{
-				PackagePath: imp.Path,
-				Import:      imp.Type,
-			})
+			if imp != nil {
+				// TODO ignoring relative. do we need it?
+				ret = append(ret, ImportPath{
+					PackagePath: imp.Path,
+					Import:      imp.Type,
+				})
+			}
 		}
 	}
 	return ret, nil
@@ -285,11 +287,12 @@ func (nodeData *NodeData) GetImportPathsForDependencies() []ImportPath {
 		if enttype.IsImportDepsType(t) {
 			t2 := t.(enttype.ImportDepsType)
 			imp := t2.GetImportDepsType()
-			// TODO ignoring relative. do we need it?
-			ret = append(ret, ImportPath{
-				PackagePath: imp.Path,
-				Import:      imp.Type,
-			})
+			if imp != nil {
+				ret = append(ret, ImportPath{
+					PackagePath: imp.Path,
+					Import:      imp.Type,
+				})
+			}
 		}
 	}
 

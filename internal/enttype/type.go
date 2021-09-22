@@ -1634,9 +1634,8 @@ func (t *NullableArrayListType) Convert() FileImport {
 
 // to resolve circular dependency btw input and this
 type InputImportType struct {
-	Path     string `json:"path"`
-	Relative bool   `json:"relative"`
-	Type     string `json:"type"`
+	Path string `json:"path"`
+	Type string `json:"type"`
 }
 
 type jSONType struct {

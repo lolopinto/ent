@@ -10,6 +10,7 @@ import {
   requiredField,
   NoFields,
   JSONBType,
+  JSONType,
 } from "@snowtop/ent/schema";
 import { EmailType } from "@snowtop/ent-email";
 import { PasswordType } from "@snowtop/ent-password";
@@ -54,6 +55,24 @@ export default class User extends BaseEntSchema implements Schema {
         type: "UserPrefs",
       },
     }),
+    JSONType({
+      name: "prefs_diff",
+      nullable: true,
+      validator: (val: any) => {
+        if (typeof val != "object") {
+          return false;
+        }
+        const requiredKeys = {
+          type: true,
+        };
+        for (const k in requiredKeys) {
+          if (!val[k]) {
+            return false;
+          }
+        }
+        return true;
+      },
+    }),
   ];
 
   edges: Edge[] = [
@@ -85,6 +104,7 @@ export default class User extends BaseEntSchema implements Schema {
         requiredField("Password"),
         "nicknames",
         "prefs",
+        "prefs_diff",
       ],
     },
 
