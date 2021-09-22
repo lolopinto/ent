@@ -1,3 +1,7 @@
+/**
+ * Copyright whaa whaa
+ */
+
 import {
   GraphQLFieldConfig,
   GraphQLID,
@@ -11,13 +15,16 @@ import {
   registerResolver,
   resolveID,
 } from "@snowtop/ent/graphql";
+import { NodeType } from "../../ent";
 import { loadEntByType } from "../../ent/generated/loadAny";
 
 interface NodeQueryArgs {
   id: string;
 }
 
-const resolver = new EntNodeResolver(loadEntByType);
+const resolver = new EntNodeResolver((v, nodeType, id) =>
+  loadEntByType(v, nodeType as NodeType, id),
+);
 registerResolver("entNode", resolver);
 // add any custom Node Resolvers here
 
