@@ -4,7 +4,6 @@ import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
 import { Todo } from "src/ent/internal";
 import { createAccount, createTodo } from "../testutils/util";
 import { query } from "@snowtop/ent";
-import exp from "constants";
 
 beforeAll(() => {
   process.env.DB_CONNECTION_STRING = `sqlite:///todo.db`;

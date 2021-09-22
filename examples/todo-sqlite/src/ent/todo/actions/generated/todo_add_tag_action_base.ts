@@ -14,7 +14,10 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { Tag, Todo } from "src/ent/";
-import { TodoBuilder, TodoInput } from "src/ent/todo/actions/todo_builder";
+import {
+  TodoBuilder,
+  TodoInput,
+} from "src/ent/todo/actions/generated/todo_builder";
 
 export class TodoAddTagActionBase implements Action<Todo> {
   public readonly builder: TodoBuilder;

@@ -42,7 +42,6 @@ import {
   TodoRenameInputType,
   TodoRenamePayloadType,
 } from "src/graphql/mutations/generated/todo/todo_rename_type";
-import { QueryType } from "src/graphql/resolvers/generated/query_type";
 import {
   AccountToOpenTodosConnectionType,
   AccountToTagsConnectionType,
@@ -52,7 +51,8 @@ import {
   TagType,
   TodoToTagsConnectionType,
   TodoType,
-} from "./resolvers";
+} from "src/graphql/resolvers";
+import { QueryType } from "src/graphql/resolvers/generated/query_type";
 
 export default new GraphQLSchema({
   query: QueryType,

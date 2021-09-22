@@ -10,7 +10,7 @@ import { Account } from "src/ent/";
 import {
   AccountBuilder,
   AccountInput,
-} from "src/ent/account/actions/account_builder";
+} from "src/ent/account/actions/generated/account_builder";
 
 export interface AccountCreateInput {
   name: string;

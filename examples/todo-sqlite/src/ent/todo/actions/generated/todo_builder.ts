@@ -11,44 +11,44 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Account, Tag, Todo } from "src/ent/";
-import { EdgeType, NodeType } from "src/ent/const";
-import schema from "src/schema/tag";
+import { EdgeType, NodeType } from "src/ent/generated/const";
+import schema from "src/schema/todo";
 
-export interface TagInput {
-  displayName?: string;
-  canonicalName?: string;
-  ownerID?: ID | Builder<Account>;
+export interface TodoInput {
+  text?: string;
+  completed?: boolean;
+  creatorID?: ID | Builder<Account>;
 }
 
-export interface TagAction extends Action<Tag> {
-  getInput(): TagInput;
+export interface TodoAction extends Action<Todo> {
+  getInput(): TodoInput;
 }
 
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class TagBuilder implements Builder<Tag> {
-  orchestrator: Orchestrator<Tag>;
+export class TodoBuilder implements Builder<Todo> {
+  orchestrator: Orchestrator<Todo>;
   readonly placeholderID: ID;
-  readonly ent = Tag;
-  private input: TagInput;
+  readonly ent = Todo;
+  private input: TodoInput;
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: TagAction,
-    public readonly existingEnt?: Tag | undefined,
+    action: TodoAction,
+    public readonly existingEnt?: Todo | undefined,
   ) {
-    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Tag`;
+    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Todo`;
     this.input = action.getInput();
 
     this.orchestrator = new Orchestrator({
       viewer: viewer,
       operation: this.operation,
-      tableName: "tags",
+      tableName: "todos",
       key: "id",
-      loaderOptions: Tag.loaderOptions(),
+      loaderOptions: Todo.loaderOptions(),
       builder: this,
       action: action,
       schema: schema,
@@ -58,11 +58,11 @@ export class TagBuilder implements Builder<Tag> {
     });
   }
 
-  getInput(): TagInput {
+  getInput(): TodoInput {
     return this.input;
   }
 
-  updateInput(input: TagInput) {
+  updateInput(input: TodoInput) {
     // override input
     this.input = {
       ...this.input,
@@ -79,49 +79,50 @@ export class TagBuilder implements Builder<Tag> {
   clearInputEdges(edgeType: EdgeType, op: WriteOperation, id?: ID) {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
-  addTodo(...ids: ID[]): TagBuilder;
-  addTodo(...nodes: Todo[]): TagBuilder;
-  addTodo(...nodes: Builder<Todo>[]): TagBuilder;
-  addTodo(...nodes: ID[] | Todo[] | Builder<Todo>[]): TagBuilder {
+
+  addTag(...ids: ID[]): TodoBuilder;
+  addTag(...nodes: Tag[]): TodoBuilder;
+  addTag(...nodes: Builder<Tag>[]): TodoBuilder;
+  addTag(...nodes: ID[] | Tag[] | Builder<Tag>[]): TodoBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
-        this.addTodoID(node);
+        this.addTagID(node);
       } else if (typeof node === "object") {
-        this.addTodoID(node.id);
+        this.addTagID(node.id);
       } else {
-        this.addTodoID(node);
+        this.addTagID(node);
       }
     }
     return this;
   }
 
-  addTodoID(
-    id: ID | Builder<Todo>,
+  addTagID(
+    id: ID | Builder<Tag>,
     options?: AssocEdgeInputOptions,
-  ): TagBuilder {
+  ): TodoBuilder {
     this.orchestrator.addOutboundEdge(
       id,
-      EdgeType.TagToTodos,
-      NodeType.Todo,
+      EdgeType.TodoToTags,
+      NodeType.Tag,
       options,
     );
     return this;
   }
 
-  removeTodo(...ids: ID[]): TagBuilder;
-  removeTodo(...nodes: Todo[]): TagBuilder;
-  removeTodo(...nodes: ID[] | Todo[]): TagBuilder {
+  removeTag(...ids: ID[]): TodoBuilder;
+  removeTag(...nodes: Tag[]): TodoBuilder;
+  removeTag(...nodes: ID[] | Tag[]): TodoBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
-        this.orchestrator.removeOutboundEdge(node.id, EdgeType.TagToTodos);
+        this.orchestrator.removeOutboundEdge(node.id, EdgeType.TodoToTags);
       } else {
-        this.orchestrator.removeOutboundEdge(node, EdgeType.TagToTodos);
+        this.orchestrator.removeOutboundEdge(node, EdgeType.TodoToTags);
       }
     }
     return this;
   }
 
-  async build(): Promise<Changeset<Tag>> {
+  async build(): Promise<Changeset<Todo>> {
     return this.orchestrator.build();
   }
 
@@ -141,11 +142,11 @@ export class TagBuilder implements Builder<Tag> {
     await saveBuilderX(this);
   }
 
-  async editedEnt(): Promise<Tag | null> {
+  async editedEnt(): Promise<Todo | null> {
     return await this.orchestrator.editedEnt();
   }
 
-  async editedEntX(): Promise<Tag> {
+  async editedEntX(): Promise<Todo> {
     return await this.orchestrator.editedEntX();
   }
 
@@ -159,9 +160,9 @@ export class TagBuilder implements Builder<Tag> {
         result.set(key, value);
       }
     };
-    addField("DisplayName", fields.displayName);
-    addField("canonicalName", fields.canonicalName);
-    addField("ownerID", fields.ownerID);
+    addField("Text", fields.text);
+    addField("Completed", fields.completed);
+    addField("creatorID", fields.creatorID);
     return result;
   }
 
@@ -169,18 +170,18 @@ export class TagBuilder implements Builder<Tag> {
     return (node as Builder<Ent>).placeholderID !== undefined;
   }
 
-  // get value of DisplayName. Retrieves it from the input if specified or takes it from existingEnt
-  getNewDisplayNameValue(): string | undefined {
-    return this.input.displayName || this.existingEnt?.displayName;
+  // get value of Text. Retrieves it from the input if specified or takes it from existingEnt
+  getNewTextValue(): string | undefined {
+    return this.input.text || this.existingEnt?.text;
   }
 
-  // get value of canonicalName. Retrieves it from the input if specified or takes it from existingEnt
-  getNewCanonicalNameValue(): string | undefined {
-    return this.input.canonicalName || this.existingEnt?.canonicalName;
+  // get value of Completed. Retrieves it from the input if specified or takes it from existingEnt
+  getNewCompletedValue(): boolean | undefined {
+    return this.input.completed || this.existingEnt?.completed;
   }
 
-  // get value of ownerID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewOwnerIDValue(): ID | Builder<Account> | undefined {
-    return this.input.ownerID || this.existingEnt?.ownerID;
+  // get value of creatorID. Retrieves it from the input if specified or takes it from existingEnt
+  getNewCreatorIDValue(): ID | Builder<Account> | undefined {
+    return this.input.creatorID || this.existingEnt?.creatorID;
   }
 }
