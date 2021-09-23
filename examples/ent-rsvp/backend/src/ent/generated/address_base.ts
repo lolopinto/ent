@@ -72,7 +72,11 @@ export class AddressBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
-    return loadEnt(viewer, id, AddressBase.loaderOptions.apply(this));
+    return (await loadEnt(
+      viewer,
+      id,
+      AddressBase.loaderOptions.apply(this),
+    )) as T | null;
   }
 
   static async loadX<T extends AddressBase>(
@@ -80,7 +84,11 @@ export class AddressBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
-    return loadEntX(viewer, id, AddressBase.loaderOptions.apply(this));
+    return (await loadEntX(
+      viewer,
+      id,
+      AddressBase.loaderOptions.apply(this),
+    )) as T;
   }
 
   static async loadMany<T extends AddressBase>(
@@ -88,7 +96,11 @@ export class AddressBase {
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
-    return loadEnts(viewer, AddressBase.loaderOptions.apply(this), ...ids);
+    return (await loadEnts(
+      viewer,
+      AddressBase.loaderOptions.apply(this),
+      ...ids,
+    )) as T[];
   }
 
   static async loadCustom<T extends AddressBase>(
@@ -96,7 +108,11 @@ export class AddressBase {
     viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
-    return loadCustomEnts(viewer, AddressBase.loaderOptions.apply(this), query);
+    return (await loadCustomEnts(
+      viewer,
+      AddressBase.loaderOptions.apply(this),
+      query,
+    )) as T[];
   }
 
   static async loadCustomData<T extends AddressBase>(
@@ -136,10 +152,10 @@ export class AddressBase {
     viewer: Viewer,
     ownerID: ID,
   ): Promise<T | null> {
-    return loadEntViaKey(viewer, ownerID, {
+    return (await loadEntViaKey(viewer, ownerID, {
       ...AddressBase.loaderOptions.apply(this),
       loaderFactory: addressOwnerIDLoader,
-    });
+    })) as T | null;
   }
 
   static async loadFromOwnerIDX<T extends AddressBase>(
@@ -147,10 +163,10 @@ export class AddressBase {
     viewer: Viewer,
     ownerID: ID,
   ): Promise<T> {
-    return loadEntXViaKey(viewer, ownerID, {
+    return (await loadEntXViaKey(viewer, ownerID, {
       ...AddressBase.loaderOptions.apply(this),
       loaderFactory: addressOwnerIDLoader,
-    });
+    })) as T;
   }
 
   static async loadIDFromOwnerID<T extends AddressBase>(

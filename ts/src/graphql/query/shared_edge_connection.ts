@@ -18,15 +18,15 @@ class TestConnection<TEdge extends Data> {
   private allContacts: FakeContact[];
   private filteredContacts: FakeContact[] = [];
 
-  conn: GraphQLEdgeConnection<TEdge>;
+  conn: GraphQLEdgeConnection<Ent, TEdge>;
   constructor(
     private getQuery: (
       v: Viewer,
       user: FakeUser,
-    ) => EdgeQuery<FakeContact, TEdge>,
+    ) => EdgeQuery<FakeContact, Ent, TEdge>,
     private ents: (contacts: FakeContact[]) => FakeContact[],
     private filter?: (
-      conn: GraphQLEdgeConnection<TEdge>,
+      conn: GraphQLEdgeConnection<Ent, TEdge>,
       user: FakeUser,
       contacts: FakeContact[],
     ) => void,
@@ -35,7 +35,7 @@ class TestConnection<TEdge extends Data> {
   async beforeEach() {
     [this.user, this.allContacts] = await createAllContacts();
     this.allContacts = this.allContacts.reverse();
-    this.conn = new GraphQLEdgeConnection<TEdge>(
+    this.conn = new GraphQLEdgeConnection<Ent, TEdge>(
       new IDViewer(this.user.id),
       this.user,
       (v, user: FakeUser) => this.getQuery(v, user),
@@ -73,7 +73,7 @@ class TestConnection<TEdge extends Data> {
 }
 
 interface options<TEnt extends Ent, TEdge extends Data> {
-  getQuery: (v: Viewer, src: Ent) => EdgeQuery<TEnt, TEdge>;
+  getQuery: (v: Viewer, src: Ent) => EdgeQuery<TEnt, Ent, TEdge>;
   tableName: string;
   sortCol: string;
 }
@@ -135,7 +135,7 @@ export const commonTests = <TEdge extends Data>(
     const filter = new TestConnection(
       (v, user: FakeUser) => opts.getQuery(v, user),
       (contacts) => contacts.slice(0, 2),
-      (conn: GraphQLEdgeConnection<TEdge>) => {
+      (conn: GraphQLEdgeConnection<Ent, TEdge>) => {
         conn.first(2);
       },
     );
@@ -177,7 +177,7 @@ export const commonTests = <TEdge extends Data>(
       // get the next 2
       (contacts) => contacts.slice(idx + 1, idx + N),
       (
-        conn: GraphQLEdgeConnection<TEdge>,
+        conn: GraphQLEdgeConnection<Ent, TEdge>,
         user: FakeUser,
         contacts: FakeContact[],
       ) => {
@@ -220,7 +220,7 @@ export const commonTests = <TEdge extends Data>(
       (v, user: FakeUser) => opts.getQuery(v, user),
       (contacts) => contacts.slice(2, 4).reverse(),
       (
-        conn: GraphQLEdgeConnection<TEdge>,
+        conn: GraphQLEdgeConnection<Ent, TEdge>,
         user: FakeUser,
         contacts: FakeContact[],
       ) => {
@@ -264,7 +264,7 @@ export const commonTests = <TEdge extends Data>(
     test("no filter", async () => {
       const [user, allContacts] = await createAllContacts();
 
-      const conn = new GraphQLEdgeConnection<TEdge>(
+      const conn = new GraphQLEdgeConnection<FakeContact, TEdge>(
         new IDViewer(user.id),
         (v) => opts.getQuery(v, user),
       );
@@ -284,7 +284,7 @@ export const commonTests = <TEdge extends Data>(
     test("with filter", async () => {
       const [user, allContacts] = await createAllContacts();
 
-      const conn = new GraphQLEdgeConnection<TEdge>(
+      const conn = new GraphQLEdgeConnection<Ent, TEdge>(
         new IDViewer(user.id),
         (v) => opts.getQuery(v, user).first(2),
       );

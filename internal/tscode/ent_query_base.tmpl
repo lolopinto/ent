@@ -60,7 +60,7 @@
         {{$edge.GetCountFactoryName}},
         {{$edge.GetDataFactoryName}},
         {{ if $edge.PolymorphicEdge -}}
-          {{useImport "getLoaderOptions"}}
+          (str) => {{useImport "getLoaderOptions"}}(str as {{useImport "NodeType"}}),
         {{ else -}}
         {{useImport .NodeInfo.Node}}.loaderOptions(),
         {{ end -}}

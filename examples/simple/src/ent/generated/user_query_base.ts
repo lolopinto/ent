@@ -28,6 +28,7 @@ import {
   EventToHostsQuery,
   EventToInvitedQuery,
   EventToMaybeQuery,
+  NodeType,
   User,
   UserToCommentsQuery,
   UserToCreatedEventsEdge,
@@ -397,7 +398,7 @@ export class UserToLikesQueryBase extends AssocEdgeQueryBase<
       src,
       userToLikesCountLoaderFactory,
       userToLikesDataLoaderFactory,
-      getLoaderOptions,
+      (str) => getLoaderOptions(str as NodeType),
     );
   }
 

@@ -37,9 +37,7 @@ export class EventRemoveHostActionBase implements Action<Event> {
     return {};
   }
 
-  removeHost(...ids: ID[]): this;
-  removeHost(...nodes: User[]): this;
-  removeHost(...nodes: ID[] | User[]): this {
+  removeHost(...nodes: (ID | User)[]): this {
     nodes.forEach((node) => this.builder.removeHost(node));
     return this;
   }

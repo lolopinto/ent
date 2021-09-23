@@ -1,4 +1,4 @@
-import { RequestContext, loadRow, query } from "@snowtop/ent";
+import { RequestContext, loadRow, query, LoggedOutViewer } from "@snowtop/ent";
 import {
   gqlContextType,
   gqlArg,
@@ -15,35 +15,35 @@ import { ViewerType } from "../../resolvers/viewer";
 @gqlInputObjectType()
 class AuthGuestInput {
   @gqlField()
-  emailAddress: string;
+  emailAddress: string = "";
   @gqlField()
-  code: string;
+  code: string = "";
 }
 
 @gqlObjectType()
 export class AuthGuestPayload {
   @gqlField()
-  token: string;
+  token: string = "";
 
   @gqlField({ type: ViewerType })
-  viewer: ViewerType;
+  viewer: ViewerType = new ViewerType(new LoggedOutViewer());
 }
 
 @gqlInputObjectType()
 class AuthUserInput {
   @gqlField()
-  emailAddress: string;
+  emailAddress: string = "";
   @gqlField()
-  password: string;
+  password: string = "";
 }
 
 @gqlObjectType()
 export class AuthUserPayload {
   @gqlField()
-  token: string;
+  token: string = "";
 
   @gqlField({ type: ViewerType })
-  viewer: ViewerType;
+  viewer: ViewerType = new ViewerType(new LoggedOutViewer());
 }
 
 export class AuthResolver {

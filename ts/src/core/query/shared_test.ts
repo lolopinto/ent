@@ -1,5 +1,5 @@
 import { QueryRecorder } from "../../testutils/db_mock";
-import { Data, ID, Viewer } from "../base";
+import { Ent, Data, ID, Viewer } from "../base";
 import { DefaultLimit, AssocEdge, getCursor } from "../ent";
 import { IDViewer, LoggedOutViewer } from "../viewer";
 import {
@@ -28,14 +28,14 @@ class TestQueryFilter<TData extends Data> {
   private user: FakeUser;
   constructor(
     private filter: (
-      q: EdgeQuery<FakeContact, TData>,
+      q: EdgeQuery<FakeUser, FakeContact, TData>,
       user: FakeUser,
       contacts: FakeContact[],
-    ) => EdgeQuery<FakeContact, TData>,
+    ) => EdgeQuery<FakeUser, FakeContact, TData>,
     private newQuery: (
       v: Viewer,
       user: FakeUser,
-    ) => EdgeQuery<FakeContact, TData>,
+    ) => EdgeQuery<FakeUser, FakeContact, TData>,
     private ents: (contacts: FakeContact[]) => FakeContact[],
     private defaultViewer: Viewer,
   ) {}
@@ -134,7 +134,10 @@ class TestQueryFilter<TData extends Data> {
 const preparedVar = /(\$(\d))/g;
 
 interface options<TData extends Data> {
-  newQuery: (v: Viewer, user: FakeUser) => EdgeQuery<FakeContact, TData>;
+  newQuery: (
+    v: Viewer,
+    user: FakeUser,
+  ) => EdgeQuery<FakeUser, FakeContact, TData>;
   tableName: string;
 
   entsLength?: number;
@@ -277,7 +280,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
   describe("simple queries", () => {
     const filter = new TestQueryFilter(
-      (q: EdgeQuery<FakeContact, TData>) => {
+      (q: EdgeQuery<FakeUser, FakeContact, TData>) => {
         // no filterzs
         return q;
       },
@@ -327,7 +330,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   describe("first. no cursor", () => {
     const N = 2;
     const filter = new TestQueryFilter(
-      (q: EdgeQuery<FakeContact, TData>) => {
+      (q: EdgeQuery<FakeUser, FakeContact, TData>) => {
         // no filters
         return q.first(N);
       },
@@ -377,7 +380,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     const N = 2;
 
     const filter = new TestQueryFilter(
-      (q: EdgeQuery<FakeContact, TData>) => {
+      (q: EdgeQuery<FakeUser, FakeContact, TData>) => {
         // no filters
         return q.last(N);
       },
@@ -428,7 +431,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     const N = 3;
     const filter = new TestQueryFilter(
       (
-        q: EdgeQuery<FakeContact, TData>,
+        q: EdgeQuery<FakeUser, FakeContact, TData>,
         user: FakeUser,
         contacts: FakeContact[],
       ) => {
@@ -481,7 +484,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     contacts = contacts.reverse();
     const edges = await opts.newQuery(getViewer(), user).queryEdges();
 
-    let query: EdgeQuery<FakeContact, Data>;
+    let query: EdgeQuery<FakeUser, FakeContact, Data>;
 
     async function verify(
       i: number,
@@ -522,7 +525,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     const N = 3;
     const filter = new TestQueryFilter(
       (
-        q: EdgeQuery<FakeContact, TData>,
+        q: EdgeQuery<FakeUser, FakeContact, TData>,
         user: FakeUser,
         contacts: FakeContact[],
       ) => {
@@ -575,7 +578,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     contacts = contacts.reverse();
     const edges = await opts.newQuery(getViewer(), user).queryEdges();
 
-    let query: EdgeQuery<FakeContact, Data>;
+    let query: EdgeQuery<FakeUser, FakeContact, Data>;
     async function verify(
       i: number,
       hasEdge: boolean,

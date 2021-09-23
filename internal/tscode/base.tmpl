@@ -76,11 +76,11 @@ export class {{$baseClass}} {
     viewer: {{$viewerType}}, 
     id: {{$idType}},
   ): Promise<T | null>{
-    return {{useImport "loadEnt"}}(
+    return await {{useImport "loadEnt"}}(
       viewer, 
       id, 
       {{$baseClass}}.loaderOptions.apply(this),
-    );
+    ) as T | null;
   }
 
   static async loadX<T extends {{$baseClass}}>(
@@ -88,12 +88,12 @@ export class {{$baseClass}} {
     viewer: {{$viewerType}}, 
     id: {{$idType}},
   ): Promise<T> {
-    return {{useImport "loadEntX"}}(
+    return await {{useImport "loadEntX"}}(
       viewer, 
       id, 
       {{$baseClass}}.
       loaderOptions.apply(this),
-    );
+    ) as T;
   }
 
   static async loadMany<T extends {{$baseClass}}>(
@@ -101,11 +101,11 @@ export class {{$baseClass}} {
     viewer: {{$viewerType}},
     ...ids: {{$idType}}[]
   ): Promise<T[]> {
-    return {{useImport "loadEnts"}}(
+    return await {{useImport "loadEnts"}}(
       viewer, 
       {{$baseClass}}.loaderOptions.apply(this), 
       ...ids,
-    );
+    ) as T[];
   }
 
   static async loadCustom<T extends {{$baseClass}}>(
@@ -113,11 +113,11 @@ export class {{$baseClass}} {
     viewer: {{$viewerType}},
     query: {{useImport "CustomQuery"}},
   ): Promise<T[]> {
-    return {{useImport "loadCustomEnts"}}(
+    return await {{useImport "loadCustomEnts"}}(
       viewer,
       {{$baseClass}}.loaderOptions.apply(this),
       query,
-    );
+    ) as T[];
   }
 
   static async loadCustomData<T extends {{$baseClass}}>(
@@ -161,14 +161,14 @@ export class {{$baseClass}} {
         viewer: {{$viewerType}},
         {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
       ): Promise<T | null> {
-        return {{useImport "loadEntViaKey"}}(
+        return await {{useImport "loadEntViaKey"}}(
           viewer, 
           {{$field.TsFieldName}},
           {
             ...{{$baseClass}}.loaderOptions.apply(this), 
             loaderFactory: {{$fieldLoader}},
           },
-        );
+        ) as T | null;
       }
 
       static async loadFrom{{$field.CamelCaseName}}X<T extends {{$baseClass}}>(
@@ -176,14 +176,14 @@ export class {{$baseClass}} {
         viewer: Viewer,
         {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
       ): Promise<T> {
-        return {{useImport "loadEntXViaKey"}}(
+        return await {{useImport "loadEntXViaKey"}}(
           viewer, 
           {{$field.TsFieldName}},
           {
             ...{{$baseClass}}.loaderOptions.apply(this), 
             loaderFactory: {{$fieldLoader}},
           },
-        );
+        ) as T;
       }
 
       static async loadIDFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
@@ -277,8 +277,6 @@ export class {{$baseClass}} {
       return ret;
     }
   {{end -}}
-
-
 
   {{/* load edges and load objects */ -}}
   {{range $edge := .EdgeInfo.Associations -}}

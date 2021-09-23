@@ -84,10 +84,7 @@ export class ContactBuilder implements Builder<Contact> {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
 
-  addComment(...ids: ID[]): ContactBuilder;
-  addComment(...nodes: Comment[]): ContactBuilder;
-  addComment(...nodes: Builder<Comment>[]): ContactBuilder;
-  addComment(...nodes: ID[] | Comment[] | Builder<Comment>[]): ContactBuilder {
+  addComment(...nodes: (ID | Comment | Builder<Comment>)[]): ContactBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addCommentID(node);
@@ -113,9 +110,7 @@ export class ContactBuilder implements Builder<Contact> {
     return this;
   }
 
-  removeComment(...ids: ID[]): ContactBuilder;
-  removeComment(...nodes: Comment[]): ContactBuilder;
-  removeComment(...nodes: ID[] | Comment[]): ContactBuilder {
+  removeComment(...nodes: (ID | Comment)[]): ContactBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -129,10 +124,7 @@ export class ContactBuilder implements Builder<Contact> {
     return this;
   }
 
-  addLiker(...ids: ID[]): ContactBuilder;
-  addLiker(...nodes: User[]): ContactBuilder;
-  addLiker(...nodes: Builder<User>[]): ContactBuilder;
-  addLiker(...nodes: ID[] | User[] | Builder<User>[]): ContactBuilder {
+  addLiker(...nodes: (ID | User | Builder<User>)[]): ContactBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addLikerID(node);
@@ -158,9 +150,7 @@ export class ContactBuilder implements Builder<Contact> {
     return this;
   }
 
-  removeLiker(...ids: ID[]): ContactBuilder;
-  removeLiker(...nodes: User[]): ContactBuilder;
-  removeLiker(...nodes: ID[] | User[]): ContactBuilder {
+  removeLiker(...nodes: (ID | User)[]): ContactBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.ObjectToLikers);

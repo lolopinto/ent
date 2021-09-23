@@ -354,7 +354,7 @@ function commonTests() {
 
   describe("setEdgeTypeInGroup", () => {
     const edgeTypes = ["edge1", "edge2", "edge3"];
-    let user1, user2: User;
+    let user1: User, user2: User;
     let m = new Map<string, string>();
 
     beforeEach(async () => {

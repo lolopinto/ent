@@ -69,7 +69,11 @@ export class ContactBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
-    return loadEnt(viewer, id, ContactBase.loaderOptions.apply(this));
+    return (await loadEnt(
+      viewer,
+      id,
+      ContactBase.loaderOptions.apply(this),
+    )) as T | null;
   }
 
   static async loadX<T extends ContactBase>(
@@ -77,7 +81,11 @@ export class ContactBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
-    return loadEntX(viewer, id, ContactBase.loaderOptions.apply(this));
+    return (await loadEntX(
+      viewer,
+      id,
+      ContactBase.loaderOptions.apply(this),
+    )) as T;
   }
 
   static async loadMany<T extends ContactBase>(
@@ -85,7 +93,11 @@ export class ContactBase {
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
-    return loadEnts(viewer, ContactBase.loaderOptions.apply(this), ...ids);
+    return (await loadEnts(
+      viewer,
+      ContactBase.loaderOptions.apply(this),
+      ...ids,
+    )) as T[];
   }
 
   static async loadCustom<T extends ContactBase>(
@@ -93,7 +105,11 @@ export class ContactBase {
     viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
-    return loadCustomEnts(viewer, ContactBase.loaderOptions.apply(this), query);
+    return (await loadCustomEnts(
+      viewer,
+      ContactBase.loaderOptions.apply(this),
+      query,
+    )) as T[];
   }
 
   static async loadCustomData<T extends ContactBase>(

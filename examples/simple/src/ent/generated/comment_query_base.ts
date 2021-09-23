@@ -20,6 +20,7 @@ import {
   Comment,
   CommentToPostEdge,
   EdgeType,
+  NodeType,
   commentLoader,
 } from "../internal";
 
@@ -54,7 +55,7 @@ export class CommentToPostQueryBase extends AssocEdgeQueryBase<
       src,
       commentToPostCountLoaderFactory,
       commentToPostDataLoaderFactory,
-      getLoaderOptions,
+      (str) => getLoaderOptions(str as NodeType),
     );
   }
 

@@ -43,10 +43,7 @@ export class TodoAddTagActionBase implements Action<Todo> {
     return {};
   }
 
-  addTag(...ids: ID[]): this;
-  addTag(...nodes: Tag[]): this;
-  addTag(...nodes: Builder<Tag>[]): this;
-  addTag(...nodes: ID[] | Tag[] | Builder<Tag>[]): this {
+  addTag(...nodes: (ID | Tag | Builder<Tag>)[]): this {
     nodes.forEach((node) => this.builder.addTag(node));
     return this;
   }

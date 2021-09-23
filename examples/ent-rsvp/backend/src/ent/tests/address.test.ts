@@ -63,7 +63,7 @@ describe("edit address", () => {
         street: "2 main street",
       }).saveX();
     } catch (e) {
-      expect(e.message).toMatch(
+      expect((e as Error).message).toMatch(
         /Viewer with ID (.+) does not have permission to edit Address/,
       );
     }
@@ -83,7 +83,7 @@ describe("delete address", () => {
     try {
       await DeleteAddressAction.create(new IDViewer(user.id), address).saveX();
     } catch (e) {
-      expect(e.message).toMatch(
+      expect((e as Error).message).toMatch(
         /Viewer with ID (.+) does not have permission to delete Address/,
       );
     }

@@ -119,8 +119,10 @@ test("likes", async () => {
   ]);
   const action = EditUserAction.create(user.viewer, user, {});
   for (const contact of [contact1, contact2, contact3]) {
-    advanceBy(100);
-    action.builder.addLike(contact);
+    advanceBy(1000);
+    action.builder.addLikeID(contact.id, contact.nodeType, {
+      time: new Date(),
+    });
   }
   // for privacy
   await action.saveX();
@@ -141,17 +143,18 @@ test("likes", async () => {
   await expectQueryFromRoot(
     getUserConfig(new IDViewer(user.id), user),
     ["likes.rawCount", 3],
+    // most recent first
     [
       "likes.nodes",
       [
         {
-          id: encodeGQLID(contact1),
+          id: encodeGQLID(contact3),
         },
         {
           id: encodeGQLID(contact2),
         },
         {
-          id: encodeGQLID(contact3),
+          id: encodeGQLID(contact1),
         },
       ],
     ],

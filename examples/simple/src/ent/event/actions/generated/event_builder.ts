@@ -85,10 +85,7 @@ export class EventBuilder implements Builder<Event> {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
 
-  addAttending(...ids: ID[]): EventBuilder;
-  addAttending(...nodes: User[]): EventBuilder;
-  addAttending(...nodes: Builder<User>[]): EventBuilder;
-  addAttending(...nodes: ID[] | User[] | Builder<User>[]): EventBuilder {
+  addAttending(...nodes: (ID | User | Builder<User>)[]): EventBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addAttendingID(node);
@@ -114,9 +111,7 @@ export class EventBuilder implements Builder<Event> {
     return this;
   }
 
-  removeAttending(...ids: ID[]): EventBuilder;
-  removeAttending(...nodes: User[]): EventBuilder;
-  removeAttending(...nodes: ID[] | User[]): EventBuilder {
+  removeAttending(...nodes: (ID | User)[]): EventBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -130,10 +125,7 @@ export class EventBuilder implements Builder<Event> {
     return this;
   }
 
-  addDeclined(...ids: ID[]): EventBuilder;
-  addDeclined(...nodes: User[]): EventBuilder;
-  addDeclined(...nodes: Builder<User>[]): EventBuilder;
-  addDeclined(...nodes: ID[] | User[] | Builder<User>[]): EventBuilder {
+  addDeclined(...nodes: (ID | User | Builder<User>)[]): EventBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addDeclinedID(node);
@@ -159,9 +151,7 @@ export class EventBuilder implements Builder<Event> {
     return this;
   }
 
-  removeDeclined(...ids: ID[]): EventBuilder;
-  removeDeclined(...nodes: User[]): EventBuilder;
-  removeDeclined(...nodes: ID[] | User[]): EventBuilder {
+  removeDeclined(...nodes: (ID | User)[]): EventBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.EventToDeclined);
@@ -172,10 +162,7 @@ export class EventBuilder implements Builder<Event> {
     return this;
   }
 
-  addHost(...ids: ID[]): EventBuilder;
-  addHost(...nodes: User[]): EventBuilder;
-  addHost(...nodes: Builder<User>[]): EventBuilder;
-  addHost(...nodes: ID[] | User[] | Builder<User>[]): EventBuilder {
+  addHost(...nodes: (ID | User | Builder<User>)[]): EventBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addHostID(node);
@@ -201,9 +188,7 @@ export class EventBuilder implements Builder<Event> {
     return this;
   }
 
-  removeHost(...ids: ID[]): EventBuilder;
-  removeHost(...nodes: User[]): EventBuilder;
-  removeHost(...nodes: ID[] | User[]): EventBuilder {
+  removeHost(...nodes: (ID | User)[]): EventBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.EventToHosts);
@@ -214,10 +199,7 @@ export class EventBuilder implements Builder<Event> {
     return this;
   }
 
-  addInvited(...ids: ID[]): EventBuilder;
-  addInvited(...nodes: User[]): EventBuilder;
-  addInvited(...nodes: Builder<User>[]): EventBuilder;
-  addInvited(...nodes: ID[] | User[] | Builder<User>[]): EventBuilder {
+  addInvited(...nodes: (ID | User | Builder<User>)[]): EventBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addInvitedID(node);
@@ -243,9 +225,7 @@ export class EventBuilder implements Builder<Event> {
     return this;
   }
 
-  removeInvited(...ids: ID[]): EventBuilder;
-  removeInvited(...nodes: User[]): EventBuilder;
-  removeInvited(...nodes: ID[] | User[]): EventBuilder {
+  removeInvited(...nodes: (ID | User)[]): EventBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.EventToInvited);
@@ -256,10 +236,7 @@ export class EventBuilder implements Builder<Event> {
     return this;
   }
 
-  addMaybe(...ids: ID[]): EventBuilder;
-  addMaybe(...nodes: User[]): EventBuilder;
-  addMaybe(...nodes: Builder<User>[]): EventBuilder;
-  addMaybe(...nodes: ID[] | User[] | Builder<User>[]): EventBuilder {
+  addMaybe(...nodes: (ID | User | Builder<User>)[]): EventBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addMaybeID(node);
@@ -285,9 +262,7 @@ export class EventBuilder implements Builder<Event> {
     return this;
   }
 
-  removeMaybe(...ids: ID[]): EventBuilder;
-  removeMaybe(...nodes: User[]): EventBuilder;
-  removeMaybe(...nodes: ID[] | User[]): EventBuilder {
+  removeMaybe(...nodes: (ID | User)[]): EventBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.EventToMaybe);

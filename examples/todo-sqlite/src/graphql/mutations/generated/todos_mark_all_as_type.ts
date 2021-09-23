@@ -12,29 +12,37 @@ import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { AccountType } from "src/graphql/resolvers/";
 import { TodosResolver } from "../todo/todo_resolver";
 
-export const TodosMarkAllAsType: GraphQLFieldConfig<undefined, RequestContext> =
-  {
-    type: GraphQLNonNull(AccountType),
-    args: {
-      accountID: {
-        description: "",
-        type: GraphQLNonNull(GraphQLID),
-      },
-      completed: {
-        description: "",
-        type: GraphQLNonNull(GraphQLBoolean),
-      },
+interface todosMarkAllAsArgs {
+  accountID: any;
+  completed: any;
+}
+
+export const TodosMarkAllAsType: GraphQLFieldConfig<
+  undefined,
+  RequestContext,
+  todosMarkAllAsArgs
+> = {
+  type: GraphQLNonNull(AccountType),
+  args: {
+    accountID: {
+      description: "",
+      type: GraphQLNonNull(GraphQLID),
     },
-    resolve: async (
-      _source,
-      args: { accountID; completed },
-      context: RequestContext,
-      _info: GraphQLResolveInfo,
-    ) => {
-      const r = new TodosResolver();
-      return r.markAllTodos(
-        mustDecodeIDFromGQLID(args.accountID),
-        args.completed,
-      );
+    completed: {
+      description: "",
+      type: GraphQLNonNull(GraphQLBoolean),
     },
-  };
+  },
+  resolve: async (
+    _source,
+    args,
+    context: RequestContext,
+    _info: GraphQLResolveInfo,
+  ) => {
+    const r = new TodosResolver();
+    return r.markAllTodos(
+      mustDecodeIDFromGQLID(args.accountID),
+      args.completed,
+    );
+  },
+};

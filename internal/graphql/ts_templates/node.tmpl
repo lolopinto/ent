@@ -8,7 +8,8 @@ interface NodeQueryArgs {
   id: string;
 }
 
-const resolver = new {{useImport "EntNodeResolver"}}({{useImport "loadEntByType"}});
+const resolver = new {{useImport "EntNodeResolver"}}(
+(v, nodeType, id) => {{useImport "loadEntByType"}}(v, nodeType as {{useImport "NodeType"}}, id));
 {{useImport "registerResolver"}}("entNode", resolver);
 // add any custom Node Resolvers here
 {{/* lesigh done in golang */ -}}

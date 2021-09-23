@@ -43,10 +43,7 @@ export class EventActivityAddInviteActionBase implements Action<EventActivity> {
     return {};
   }
 
-  addInvite(...ids: ID[]): this;
-  addInvite(...nodes: GuestGroup[]): this;
-  addInvite(...nodes: Builder<GuestGroup>[]): this;
-  addInvite(...nodes: ID[] | GuestGroup[] | Builder<GuestGroup>[]): this {
+  addInvite(...nodes: (ID | GuestGroup | Builder<GuestGroup>)[]): this {
     nodes.forEach((node) => this.builder.addInvite(node));
     return this;
   }

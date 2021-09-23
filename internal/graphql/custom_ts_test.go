@@ -129,8 +129,8 @@ func TestCustomMutation(t *testing.T) {
 
 	assert.True(t, fcfg.Exported)
 	assert.Equal(t, fcfg.Name, "EmailAvailableType")
-	assert.Equal(t, fcfg.Arg, "")
-	assert.Equal(t, fcfg.ResolveMethodArg, "args: {email}")
+	assert.Equal(t, fcfg.Arg, "emailAvailableArgs")
+	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*fileImport{
 		{
@@ -276,8 +276,8 @@ func TestCustomQuery(t *testing.T) {
 
 	assert.True(t, fcfg.Exported)
 	assert.Equal(t, fcfg.Name, "EmailAvailableQueryType")
-	assert.Equal(t, fcfg.Arg, "")
-	assert.Equal(t, fcfg.ResolveMethodArg, "args: {email}")
+	assert.Equal(t, fcfg.Arg, "emailAvailableArgs")
+	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*fileImport{
 		{
@@ -409,8 +409,8 @@ func TestCustomListQuery(t *testing.T) {
 
 	assert.True(t, fcfg.Exported)
 	assert.Equal(t, fcfg.Name, "EmailsAvailableQueryType")
-	assert.Equal(t, fcfg.Arg, "")
-	assert.Equal(t, fcfg.ResolveMethodArg, "args: {emails}")
+	assert.Equal(t, fcfg.Arg, "emailsAvailableArgs")
+	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*fileImport{
 		{
@@ -590,8 +590,8 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 
 	assert.True(t, fcfg.Exported)
 	assert.Equal(t, fcfg.Name, "UsernameQueryType")
-	assert.Equal(t, fcfg.Arg, "")
-	assert.Equal(t, fcfg.ResolveMethodArg, "args: {username}")
+	assert.Equal(t, fcfg.Arg, "usernameArgs")
+	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*fileImport{
 		{
@@ -719,8 +719,8 @@ func TestCustomUploadType(t *testing.T) {
 
 	assert.True(t, fcfg.Exported)
 	assert.Equal(t, fcfg.Name, "ProfilePicUploadType")
-	assert.Equal(t, fcfg.Arg, "")
-	assert.Equal(t, fcfg.ResolveMethodArg, "args: {file}")
+	assert.Equal(t, fcfg.Arg, "profilePicUploadArgs")
+	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*fileImport{
 		{

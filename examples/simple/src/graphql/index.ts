@@ -64,7 +64,7 @@ app.get("/healthz", async (req, res, params) => {
   }
 });
 
-function handleShutdown(signal) {
+function handleShutdown(signal: string) {
   server.close(() => {
     console.log("signal", signal);
     DB.getInstance()

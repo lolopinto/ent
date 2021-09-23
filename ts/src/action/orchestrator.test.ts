@@ -211,7 +211,7 @@ class ContactSchema2 extends BaseEntSchema {
 
 class CustomUser implements Ent {
   id: ID;
-  accountID: string;
+  accountID: string = "";
   nodeType = "User";
   privacyPolicy: PrivacyPolicy = {
     rules: [AllowIfViewerRule, AlwaysDenyRule],
@@ -2438,7 +2438,7 @@ function getOperations<T extends Ent>(c: Changeset<T>): DataOperation[] {
 async function getFieldsFromBuilder<T extends Ent>(
   builder: Builder<T>,
   expLength: number = 1,
-): Promise<{}> {
+): Promise<Data> {
   const c = await builder.build();
   const ops = getOperations(c);
   expect(ops.length).toBe(expLength);

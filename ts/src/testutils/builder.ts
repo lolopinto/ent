@@ -21,7 +21,7 @@ import { convertDate } from "../core/convert";
 
 export class User implements Ent {
   id: ID;
-  accountID: string;
+  accountID: string = "";
   nodeType = "User";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
@@ -34,7 +34,7 @@ export class User implements Ent {
 
 export class Event implements Ent {
   id: ID;
-  accountID: string;
+  accountID: string = "";
   nodeType = "Event";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
@@ -45,7 +45,7 @@ export class Event implements Ent {
 
 export class Contact implements Ent {
   id: ID;
-  accountID: string;
+  accountID: string = "";
   nodeType = "Contact";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
@@ -58,7 +58,7 @@ export class Contact implements Ent {
 
 export class Group implements Ent {
   id: ID;
-  accountID: string;
+  accountID: string = "";
   nodeType = "Group";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
@@ -69,7 +69,7 @@ export class Group implements Ent {
 
 export class Message implements Ent {
   id: ID;
-  accountID: string;
+  accountID: string = "";
   nodeType = "Message";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
@@ -80,7 +80,7 @@ export class Message implements Ent {
 
 export class Address implements Ent {
   id: ID;
-  accountID: string;
+  accountID: string = "";
   nodeType = "Address";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 

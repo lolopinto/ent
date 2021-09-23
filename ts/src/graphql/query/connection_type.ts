@@ -12,7 +12,7 @@ import { GraphQLEdge, GraphQLEdgeConnection } from "./edge_connection";
 import { GraphQLPageInfo } from "./page_info";
 import { GraphQLEdgeInterface } from "../builtins/edge";
 import { GraphQLConnectionInterface } from "../builtins/connection";
-import { Data } from "../../core/base";
+import { Data, Ent } from "../../core/base";
 
 type nodeType = GraphQLObjectType | GraphQLInterfaceType;
 export class GraphQLEdgeType<
@@ -64,37 +64,37 @@ export class GraphQLConnectionType<
   constructor(
     name: string,
     nodeType: TNode,
-    options?: connectionOptions<Data>,
+    options?: connectionOptions<TEdge>,
   ) {
     const edgeType = new GraphQLEdgeType(name, nodeType, options?.fields);
 
     super({
       name: `${name}Connection`,
       fields: (): GraphQLFieldConfigMap<
-        GraphQLEdgeConnection<TEdge>,
+        GraphQLEdgeConnection<Ent, TEdge>,
         RequestContext
       > => ({
         edges: {
           type: GraphQLNonNull(GraphQLList(GraphQLNonNull(edgeType))),
-          resolve: (source: GraphQLEdgeConnection<TEdge>) => {
+          resolve: (source: GraphQLEdgeConnection<Ent, TEdge>) => {
             return source.queryEdges();
           },
         },
         nodes: {
           type: GraphQLNonNull(GraphQLList(GraphQLNonNull(nodeType))),
-          resolve: (source: GraphQLEdgeConnection<TEdge>) => {
+          resolve: (source: GraphQLEdgeConnection<Ent, TEdge>) => {
             return source.queryNodes();
           },
         },
         pageInfo: {
           type: GraphQLNonNull(GraphQLPageInfo),
-          resolve: (source: GraphQLEdgeConnection<TEdge>) => {
+          resolve: (source: GraphQLEdgeConnection<Ent, TEdge>) => {
             return source.queryPageInfo();
           },
         },
         rawCount: {
           type: GraphQLNonNull(GraphQLInt),
-          resolve: (source: GraphQLEdgeConnection<TEdge>) => {
+          resolve: (source: GraphQLEdgeConnection<Ent, TEdge>) => {
             return source.queryTotalCount();
           },
         },
