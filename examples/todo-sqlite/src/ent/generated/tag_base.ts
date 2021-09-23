@@ -57,7 +57,11 @@ export class TagBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
-    return loadEnt(viewer, id, TagBase.loaderOptions.apply(this));
+    return (await loadEnt(
+      viewer,
+      id,
+      TagBase.loaderOptions.apply(this),
+    )) as T | null;
   }
 
   static async loadX<T extends TagBase>(
@@ -65,7 +69,7 @@ export class TagBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
-    return loadEntX(viewer, id, TagBase.loaderOptions.apply(this));
+    return (await loadEntX(viewer, id, TagBase.loaderOptions.apply(this))) as T;
   }
 
   static async loadMany<T extends TagBase>(
@@ -73,7 +77,11 @@ export class TagBase {
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
-    return loadEnts(viewer, TagBase.loaderOptions.apply(this), ...ids);
+    return (await loadEnts(
+      viewer,
+      TagBase.loaderOptions.apply(this),
+      ...ids,
+    )) as T[];
   }
 
   static async loadCustom<T extends TagBase>(
@@ -81,7 +89,11 @@ export class TagBase {
     viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
-    return loadCustomEnts(viewer, TagBase.loaderOptions.apply(this), query);
+    return (await loadCustomEnts(
+      viewer,
+      TagBase.loaderOptions.apply(this),
+      query,
+    )) as T[];
   }
 
   static async loadCustomData<T extends TagBase>(

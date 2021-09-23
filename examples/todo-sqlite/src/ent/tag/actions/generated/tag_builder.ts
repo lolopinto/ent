@@ -80,10 +80,7 @@ export class TagBuilder implements Builder<Tag> {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
 
-  addTodo(...ids: ID[]): TagBuilder;
-  addTodo(...nodes: Todo[]): TagBuilder;
-  addTodo(...nodes: Builder<Todo>[]): TagBuilder;
-  addTodo(...nodes: ID[] | Todo[] | Builder<Todo>[]): TagBuilder {
+  addTodo(...nodes: (ID | Todo | Builder<Todo>)[]): TagBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addTodoID(node);
@@ -109,9 +106,7 @@ export class TagBuilder implements Builder<Tag> {
     return this;
   }
 
-  removeTodo(...ids: ID[]): TagBuilder;
-  removeTodo(...nodes: Todo[]): TagBuilder;
-  removeTodo(...nodes: ID[] | Todo[]): TagBuilder {
+  removeTodo(...nodes: (ID | Todo)[]): TagBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.TagToTodos);

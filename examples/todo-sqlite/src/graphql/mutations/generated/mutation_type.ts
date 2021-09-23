@@ -16,6 +16,7 @@ import { TodosRemoveCompletedType } from "src/graphql/mutations/generated/todos_
 
 export const MutationType = new GraphQLObjectType({
   name: "Mutation",
+  // @ts-ignore graphql-js TS #2152 2829
   fields: () => ({
     accountCreate: AccountCreateType,
     accountDelete: AccountDeleteType,

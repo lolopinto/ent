@@ -53,7 +53,11 @@ export class AccountBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
-    return loadEnt(viewer, id, AccountBase.loaderOptions.apply(this));
+    return (await loadEnt(
+      viewer,
+      id,
+      AccountBase.loaderOptions.apply(this),
+    )) as T | null;
   }
 
   static async loadX<T extends AccountBase>(
@@ -61,7 +65,11 @@ export class AccountBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
-    return loadEntX(viewer, id, AccountBase.loaderOptions.apply(this));
+    return (await loadEntX(
+      viewer,
+      id,
+      AccountBase.loaderOptions.apply(this),
+    )) as T;
   }
 
   static async loadMany<T extends AccountBase>(
@@ -69,7 +77,11 @@ export class AccountBase {
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
-    return loadEnts(viewer, AccountBase.loaderOptions.apply(this), ...ids);
+    return (await loadEnts(
+      viewer,
+      AccountBase.loaderOptions.apply(this),
+      ...ids,
+    )) as T[];
   }
 
   static async loadCustom<T extends AccountBase>(
@@ -77,7 +89,11 @@ export class AccountBase {
     viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
-    return loadCustomEnts(viewer, AccountBase.loaderOptions.apply(this), query);
+    return (await loadCustomEnts(
+      viewer,
+      AccountBase.loaderOptions.apply(this),
+      query,
+    )) as T[];
   }
 
   static async loadCustomData<T extends AccountBase>(
@@ -117,10 +133,10 @@ export class AccountBase {
     viewer: Viewer,
     phoneNumber: string,
   ): Promise<T | null> {
-    return loadEntViaKey(viewer, phoneNumber, {
+    return (await loadEntViaKey(viewer, phoneNumber, {
       ...AccountBase.loaderOptions.apply(this),
       loaderFactory: accountPhoneNumberLoader,
-    });
+    })) as T | null;
   }
 
   static async loadFromPhoneNumberX<T extends AccountBase>(
@@ -128,10 +144,10 @@ export class AccountBase {
     viewer: Viewer,
     phoneNumber: string,
   ): Promise<T> {
-    return loadEntXViaKey(viewer, phoneNumber, {
+    return (await loadEntXViaKey(viewer, phoneNumber, {
       ...AccountBase.loaderOptions.apply(this),
       loaderFactory: accountPhoneNumberLoader,
-    });
+    })) as T;
   }
 
   static async loadIDFromPhoneNumber<T extends AccountBase>(
