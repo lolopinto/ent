@@ -147,9 +147,13 @@ func (s *Schema) addEnumFromInputNode(nodeName string, node *input.Node, nodeDat
 func (s *Schema) addEnumFrom(tsName, gqlName, gqlType string, enumValues []string, nodeData *NodeData, inputNode *input.Node) error {
 	// first create EnumInfo...
 
-	if s.enumTables[nodeData.TableName] != nil {
+	if nodeData.EnumTable && s.enumTables[nodeData.TableName] != nil {
 		return fmt.Errorf("enum schema with table name %s already exists", nodeData.TableName)
 	}
+	if s.Enums[gqlName] != nil {
+		return fmt.Errorf("enum schema with gqlname %s already exists", gqlName)
+	}
+
 	tsEnum, gqlEnum := enum.GetEnums(tsName, gqlName, gqlType, enumValues)
 
 	info := &EnumInfo{
@@ -158,8 +162,11 @@ func (s *Schema) addEnumFrom(tsName, gqlName, gqlType string, enumValues []strin
 		NodeData:  nodeData,
 		InputNode: inputNode,
 	}
-	s.Enums[nodeData.Node] = info
-	s.enumTables[nodeData.TableName] = info
+	// key on gqlName since key isn't really being used atm and gqlName needs to be unique
+	s.Enums[gqlName] = info
+	if nodeData.EnumTable {
+		s.enumTables[nodeData.TableName] = info
+	}
 	nodeData.addEnum(info)
 	return nil
 }
@@ -306,7 +313,7 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 		} else {
 			for _, f := range nodeData.FieldInfo.Fields {
 				entType := f.GetFieldType()
-				enumType, ok := entType.(enttype.EnumeratedType)
+				enumType, ok := enttype.GetEnumType(entType)
 				if ok {
 					if err := s.addEnum(enumType, nodeData); err != nil {
 						errs = append(errs, err)

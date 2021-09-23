@@ -11,6 +11,7 @@ import {
   NoFields,
   JSONBType,
   JSONType,
+  EnumListType,
 } from "@snowtop/ent/schema";
 import { EmailType } from "@snowtop/ent-email";
 import { PasswordType } from "@snowtop/ent-password";
@@ -73,6 +74,24 @@ export default class User extends BaseEntSchema implements Schema {
         return true;
       },
     }),
+    EnumListType({
+      name: "daysOff",
+      nullable: true,
+      values: [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+      ],
+    }),
+    EnumListType({
+      name: "preferredShift",
+      nullable: true,
+      values: ["morning", "afternoon", "evening", "graveyard"],
+    }),
   ];
 
   edges: Edge[] = [
@@ -105,6 +124,8 @@ export default class User extends BaseEntSchema implements Schema {
         "nicknames",
         "prefs",
         "prefs_diff",
+        "daysOff",
+        "preferredShift",
       ],
     },
 

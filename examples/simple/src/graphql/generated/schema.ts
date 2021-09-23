@@ -123,6 +123,8 @@ import {
   UserToMaybeEventsConnectionType,
   UserType,
   dayOfWeekType,
+  daysOffType,
+  preferredShiftType,
 } from "../resolvers";
 import { QueryType } from "../resolvers/generated/query_type";
 
@@ -132,6 +134,8 @@ export default new GraphQLSchema({
   types: [
     EventRsvpStatusType,
     dayOfWeekType,
+    daysOffType,
+    preferredShiftType,
     AddressType,
     CommentType,
     ContactType,

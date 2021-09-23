@@ -65,7 +65,46 @@ const fields = [
   "nicknames",
   "prefs",
   "prefs_diff",
+  "days_off",
+  "preferred_shift",
 ];
+
+export enum daysOff {
+  Monday = "monday",
+  Tuesday = "tuesday",
+  Wednesday = "wednesday",
+  Thursday = "thursday",
+  Friday = "friday",
+  Saturday = "saturday",
+  Sunday = "sunday",
+}
+
+export function getDaysOffValues() {
+  return [
+    daysOff.Monday,
+    daysOff.Tuesday,
+    daysOff.Wednesday,
+    daysOff.Thursday,
+    daysOff.Friday,
+    daysOff.Saturday,
+    daysOff.Sunday,
+  ];
+}
+export enum preferredShift {
+  Morning = "morning",
+  Afternoon = "afternoon",
+  Evening = "evening",
+  Graveyard = "graveyard",
+}
+
+export function getPreferredShiftValues() {
+  return [
+    preferredShift.Morning,
+    preferredShift.Afternoon,
+    preferredShift.Evening,
+    preferredShift.Graveyard,
+  ];
+}
 
 export class UserBase {
   readonly nodeType = NodeType.User;
@@ -83,6 +122,8 @@ export class UserBase {
   readonly nicknames: string[] | null;
   readonly prefs: UserPrefs | null;
   readonly prefsDiff: any;
+  readonly daysOff: daysOff[] | null;
+  readonly preferredShift: preferredShift[] | null;
 
   constructor(public viewer: Viewer, data: Data) {
     this.id = data.id;
@@ -99,6 +140,8 @@ export class UserBase {
     this.nicknames = convertNullableList(data.nicknames);
     this.prefs = convertNullableJSON(data.prefs);
     this.prefsDiff = convertNullableJSON(data.prefs_diff);
+    this.daysOff = convertNullableList(data.days_off);
+    this.preferredShift = convertNullableList(data.preferred_shift);
   }
 
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
