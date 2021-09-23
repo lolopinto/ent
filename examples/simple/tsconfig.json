@@ -12,7 +12,9 @@
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    //    "noImplicitAny": true,
+    "strict": true,
+//    "skipLibCheck":true,
+//        "noImplicitAny": true,
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "tests/**/*"]

@@ -106,7 +106,7 @@ test("edit user", async () => {
     }).saveX();
     fail("should have thrown exception");
   } catch (err) {
-    expect(err.message).toMatch(
+    expect((err as Error).message).toMatch(
       /Logged out Viewer does not have permission to edit User/,
     );
   }
@@ -146,7 +146,7 @@ test("delete user", async () => {
     await DeleteUserAction.create(loggedOutViewer, user).saveX();
     fail("should have thrown exception");
   } catch (err) {
-    expect(err.message).toMatch(
+    expect((err as Error).message).toMatch(
       /Logged out Viewer does not have permission to delete User/,
     );
   }
@@ -526,7 +526,9 @@ test("uniqueEdge|Node", async () => {
 
     fail("should have throw an exception trying to write duplicate edge");
   } catch (e) {
-    expect(e.message).toMatch(/duplicate key value violates unique constraint/);
+    expect((e as Error).message).toMatch(
+      /duplicate key value violates unique constraint/,
+    );
   }
 
   const v = new IDViewer(jon.id);
@@ -592,7 +594,7 @@ describe("edit email", () => {
       }).saveX();
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toMatch(/^cannot change email/);
+      expect((e as Error).message).toMatch(/^cannot change email/);
     }
   });
 
@@ -653,7 +655,9 @@ describe("edit email", () => {
       }).saveX();
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toMatch(/code (\d+) not found associated with user/);
+      expect((e as Error).message).toMatch(
+        /code (\d+) not found associated with user/,
+      );
     }
   });
 
@@ -667,7 +671,9 @@ describe("edit email", () => {
       }).saveX();
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toMatch(/code (\d+) not found associated with user/);
+      expect((e as Error).message).toMatch(
+        /code (\d+) not found associated with user/,
+      );
     }
   });
 });
@@ -694,7 +700,7 @@ describe("edit phone number", () => {
       }).saveX();
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toMatch(/^cannot change phoneNumber/);
+      expect((e as Error).message).toMatch(/^cannot change phoneNumber/);
     }
   });
 
@@ -759,7 +765,9 @@ describe("edit phone number", () => {
       }).saveX();
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toMatch(/code (\d+) not found associated with user/);
+      expect((e as Error).message).toMatch(
+        /code (\d+) not found associated with user/,
+      );
     }
   });
 
@@ -773,7 +781,9 @@ describe("edit phone number", () => {
       }).saveX();
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toMatch(/code (\d+) not found associated with user/);
+      expect((e as Error).message).toMatch(
+        /code (\d+) not found associated with user/,
+      );
     }
   });
 });
@@ -901,6 +911,8 @@ test("json type fail", async () => {
     }).saveX();
     fail("should throw");
   } catch (err) {
-    expect(err.message).toMatch(/invalid field prefs_diff with value/);
+    expect((err as Error).message).toMatch(
+      /invalid field prefs_diff with value/,
+    );
   }
 });

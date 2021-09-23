@@ -592,9 +592,11 @@ test("likes", async () => {
     create({}),
   ]);
   const action = EditUserAction.create(user1.viewer, user1, {});
-  for (const user of [user2, user3, user4]) {
-    advanceBy(100);
-    action.builder.addLiker(user);
+  for (const liker of [user2.id, user3.id, user4.id]) {
+    advanceBy(1000);
+    action.builder.addLikerID(liker, {
+      time: new Date(),
+    });
   }
   // for privacy
   action.builder.addFriend(user2, user3, user4);
@@ -606,14 +608,15 @@ test("likes", async () => {
     [
       "likers.nodes",
       [
+        // most recent first
         {
-          id: encodeGQLID(user2),
+          id: encodeGQLID(user4),
         },
         {
           id: encodeGQLID(user3),
         },
         {
-          id: encodeGQLID(user4),
+          id: encodeGQLID(user2),
         },
       ],
     ],
@@ -652,9 +655,9 @@ test("create with prefs", async () => {
     },
     [
       "user.id",
-      async function (id) {
-        id = mustDecodeIDFromGQLID(id);
-        const user = await User.loadX(new IDViewer(id), id);
+      async function (id: string) {
+        const entID = mustDecodeIDFromGQLID(id);
+        const user = await User.loadX(new IDViewer(entID), entID);
         // so graphql doesn't verify what's happening here because we depend on TS types. hmm
         // TODO fix https://github.com/lolopinto/ent/issues/470
         expect(user.prefs).toBe(12232);
@@ -682,9 +685,9 @@ test("create with prefs diff", async () => {
     },
     [
       "user.id",
-      async function (id) {
-        id = mustDecodeIDFromGQLID(id);
-        const user = await User.loadX(new IDViewer(id), id);
+      async function (id: string) {
+        const entID = mustDecodeIDFromGQLID(id);
+        const user = await User.loadX(new IDViewer(entID), entID);
         expect(user.prefsDiff).toStrictEqual({
           type: "blah",
           foo: "foo",
@@ -713,7 +716,7 @@ test("create with prefs diff. fail", async () => {
     },
     [
       "user.id",
-      async function (id) {
+      async function (id: string) {
         throw new Error("not called");
       },
     ],

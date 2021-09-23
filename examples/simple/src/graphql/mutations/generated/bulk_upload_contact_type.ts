@@ -23,7 +23,7 @@ interface bulkUploadContactArgs {
 export const BulkUploadContactType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [args: string]: bulkUploadContactArgs }
+  bulkUploadContactArgs
 > = {
   type: GraphQLNonNull(UserType),
   args: {
@@ -38,7 +38,7 @@ export const BulkUploadContactType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    { args },
+    args,
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
