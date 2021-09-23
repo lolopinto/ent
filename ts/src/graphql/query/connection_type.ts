@@ -64,7 +64,7 @@ export class GraphQLConnectionType<
   constructor(
     name: string,
     nodeType: TNode,
-    options?: connectionOptions<Data>,
+    options?: connectionOptions<TEdge>,
   ) {
     const edgeType = new GraphQLEdgeType(name, nodeType, options?.fields);
 

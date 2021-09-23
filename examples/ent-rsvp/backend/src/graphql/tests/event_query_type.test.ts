@@ -50,9 +50,9 @@ test("create event with slug", async () => {
     ["event.slug", "fun-event"],
     [
       "event.id",
-      async function (id) {
-        id = mustDecodeIDFromGQLID(id);
-        const evt = await Event.loadX(user.viewer, id);
+      async function (id: string) {
+        const decoded = mustDecodeIDFromGQLID(id);
+        const evt = await Event.loadX(user.viewer, decoded);
         await DeleteEventAction.create(user.viewer, evt).saveX();
       },
     ],
@@ -90,7 +90,7 @@ test("event slug available", async () => {
       ["event.slug", "fun-event"],
       [
         "event.id",
-        async function (id) {
+        async function (id: string) {
           eventID = mustDecodeIDFromGQLID(id);
         },
       ],
@@ -141,7 +141,7 @@ test("query from slug", async () => {
     ["event.slug", "fun-event"],
     [
       "event.id",
-      async function (id) {
+      async function (id: string) {
         eventID = mustDecodeIDFromGQLID(id);
       },
     ],

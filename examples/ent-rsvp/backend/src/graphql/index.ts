@@ -10,16 +10,15 @@ import * as Sentry from "@sentry/node";
 import * as Tracing from "@sentry/tracing";
 import { config } from "dotenv";
 import { DB, loadConfig } from "@snowtop/ent";
+// this line fixes the issue by loading ent first but we need to do that consistently everywhere
+import { User } from "src/ent";
+import schema from "./generated/schema";
 
 // load env
 config();
 loadConfig("ent.yml");
 
 let app = express();
-
-// this line fixes the issue by loading ent first but we need to do that consistently everywhere
-import { User } from "src/ent";
-import schema from "./generated/schema";
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN || "",
@@ -116,7 +115,7 @@ app.get("/healthz", async (req, res, params) => {
   }
 });
 
-function handleShutdown(signal) {
+function handleShutdown(signal: string) {
   server.close(() => {
     console.log("signal", signal);
     DB.getInstance()

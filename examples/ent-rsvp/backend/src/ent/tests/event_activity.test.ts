@@ -44,7 +44,7 @@ describe("create event activity", () => {
       }).saveX();
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toMatch(
+      expect((e as Error).message).toMatch(
         /Viewer with ID (.+) does not have permission to create EventActivity/,
       );
     }
@@ -95,7 +95,7 @@ describe("load activity", () => {
       await EventActivity.loadX(new IDViewer(user.id), activity.id);
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toMatch(
+      expect((e as Error).message).toMatch(
         /^ent (.+) is not visible for privacy reasons$/,
       );
     }
@@ -125,7 +125,7 @@ describe("invites", () => {
       );
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toMatch(
+      expect((e as Error).message).toMatch(
         /^ent (.+) is not visible for privacy reasons$/,
       );
     }
@@ -150,7 +150,7 @@ describe("invites", () => {
       );
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toMatch(
+      expect((e as Error).message).toMatch(
         /Viewer with ID (.+) does not have permission to edit EventActivity/,
       );
     }
@@ -189,7 +189,7 @@ describe("invites", () => {
       );
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toMatch(
+      expect((e as Error).message).toMatch(
         /^ent (.+) is not visible for privacy reasons$/,
       );
     }
@@ -211,7 +211,7 @@ describe("invites", () => {
       );
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toMatch(
+      expect((e as Error).message).toMatch(
         /Viewer with ID (.+) does not have permission to edit EventActivity/,
       );
     }
@@ -512,7 +512,7 @@ describe("rsvps", () => {
       );
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toMatch(
+      expect((e as Error).message).toMatch(
         /^ent (.+) is not visible for privacy reasons$/,
       );
     }
@@ -542,7 +542,7 @@ describe("rsvps", () => {
       );
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toMatch(
+      expect((e as Error).message).toMatch(
         /^ent (.+) is not visible for privacy reasons$/,
       );
     }

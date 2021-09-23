@@ -1,4 +1,4 @@
-import { DB } from "@snowtop/ent";
+import { Data, DB } from "@snowtop/ent";
 import {
   expectMutation,
   expectQueryFromRoot,
@@ -65,13 +65,13 @@ test("log guest in", async () => {
     ["viewer.guest.id", encodeGQLID(guest)],
     [
       "token",
-      function (token) {
+      function (token: string) {
         jwtToken = token;
       },
     ],
   );
 
-  let headers = {};
+  let headers: Data = {};
   if (jwtToken) {
     headers["Authorization"] = `Bearer ${jwtToken}`;
   }
@@ -143,13 +143,13 @@ test("log user in", async () => {
     ["viewer.user.id", encodeGQLID(user)],
     [
       "token",
-      function (token) {
+      function (token: string) {
         jwtToken = token;
       },
     ],
   );
 
-  let headers = {};
+  let headers: Data = {};
   if (jwtToken) {
     headers["Authorization"] = `Bearer ${jwtToken}`;
   }

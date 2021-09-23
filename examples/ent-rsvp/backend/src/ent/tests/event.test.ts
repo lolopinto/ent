@@ -25,7 +25,7 @@ describe("create event", () => {
       }).saveX();
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toMatch(
+      expect((e as Error).message).toMatch(
         /Logged out Viewer does not have permission to create Event/,
       );
     }

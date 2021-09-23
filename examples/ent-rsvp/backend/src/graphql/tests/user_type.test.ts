@@ -27,7 +27,7 @@ test("create user", async () => {
     ["user.emailAddress", email],
     [
       "user.id",
-      async function (id) {
+      async function (id: string) {
         const decoded = mustDecodeIDFromGQLID(id);
         const vc = new IDViewer(decoded);
         await User.loadX(vc, decoded);
