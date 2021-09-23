@@ -159,12 +159,12 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
     {{ $node := useImport $edge.Node -}}
     {{ if removeEdgeAction $action -}}
       {{$edge.TSRemoveMethodName}}(...nodes: ({{useImport "ID"}} | {{$node}})[]): this{
-        nodes.forEach(node => this.builder.{{$edge.TSRemoveMethodName}}(node as any));
+        nodes.forEach(node => this.builder.{{$edge.TSRemoveMethodName}}(node));
         return this;
       }
     {{ else -}}
       {{$edge.TSAddMethodName}}(...nodes: ({{useImport "ID"}} | {{$node}} | {{useImport "Builder"}}<{{$node}}>)[]): this{
-        nodes.forEach(node => this.builder.{{$edge.TSAddMethodName}}(node as any));
+        nodes.forEach(node => this.builder.{{$edge.TSAddMethodName}}(node));
         return this;
       }
 
