@@ -3,7 +3,11 @@ import { DefaultLimit, getCursor } from "../ent";
 import * as clause from "../clause";
 import memoize from "memoizee";
 
-export interface EdgeQuery<T extends Ent, TEdge extends Data> {
+export interface EdgeQuery<
+  TSource extends Ent,
+  TDest extends Ent,
+  TEdge extends Data,
+> {
   // if more than one, the single-version methods should throw
   queryEdges(): Promise<TEdge[]>;
   queryAllEdges(): Promise<Map<ID, TEdge[]>>;
@@ -13,11 +17,11 @@ export interface EdgeQuery<T extends Ent, TEdge extends Data> {
   queryAllCount(): Promise<Map<ID, number>>;
   queryRawCount(): Promise<number>;
   queryAllRawCount(): Promise<Map<ID, number>>;
-  queryEnts(): Promise<T[]>;
-  queryAllEnts(): Promise<Map<ID, T[]>>;
+  queryEnts(): Promise<TDest[]>;
+  queryAllEnts(): Promise<Map<ID, TDest[]>>;
 
-  first(n: number, after?: string): EdgeQuery<T, TEdge>;
-  last(n: number, before?: string): EdgeQuery<T, TEdge>;
+  first(n: number, after?: string): EdgeQuery<TSource, TDest, TEdge>;
+  last(n: number, before?: string): EdgeQuery<TSource, TDest, TEdge>;
 
   paginationInfo(): Map<ID, PaginationInfo>;
   getCursor(row: TEdge): string;

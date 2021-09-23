@@ -54,7 +54,7 @@ export class BaseAction<T extends Ent> implements Action<T> {
       viewer,
       operation,
       this,
-      options?.existingEnt,
+      options?.existingEnt || undefined,
     );
   }
 
@@ -119,6 +119,6 @@ interface BuilderConstructor<T extends Ent> {
     viewer: Viewer,
     operation: WriteOperation,
     action: Action<T>,
-    existingEnt?: T | null | undefined,
+    existingEnt?: T | undefined,
   ): EntBuilder<T>;
 }
