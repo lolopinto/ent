@@ -53,7 +53,7 @@ export class {{$baseClass}} {
     {{end -}}
   {{end}}
 
-  constructor(public viewer: {{$viewerType}}, data:{{$dataType}}) {
+  constructor(public viewer: {{$viewerType}}, protected data:{{$dataType}}) {
     {{range $field := .FieldInfo.Fields -}}
       {{$val := printf "data.%s" $field.GetDbColName -}}
       {{$convertType := convertFunc $field.GetFieldType -}}
