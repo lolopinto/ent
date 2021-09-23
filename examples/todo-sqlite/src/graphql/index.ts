@@ -34,7 +34,7 @@ app.get("/healthz", async (req, res, params) => {
   }
 });
 
-function handleShutdown(signal) {
+function handleShutdown(signal: string) {
   server.close(() => {
     DB.getInstance()
       .endPool()
