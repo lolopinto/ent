@@ -126,6 +126,12 @@ func processFields(processor *codegen.Processor, cd *customData, s *gqlSchema, c
 
 		// let's try and make this generic enough to work for input type and standard args...
 		// and have graphql complain if not valid types at the end here
+
+		// buildInterface??
+		createInterface := false
+		intType := &interfaceType{
+			Name: field.GraphQLName + "Args",
+		}
 		for _, arg := range field.Args {
 			// nothing to do with context args yet
 			if arg.IsContextArg {
@@ -136,6 +142,17 @@ func processFields(processor *codegen.Processor, cd *customData, s *gqlSchema, c
 			// TODO for now we assume inputtype is 1:1, that's not going to remain the same forever...
 			argObj := cr.getArgObject(cd, arg)
 			if argObj == nil {
+				// we need to build an interface of these args...
+				//				spew.Dump(arg, argObj, field)
+				createInterface = true
+				intType.Fields = append(intType.Fields, &interfaceField{
+					Name: arg.Name,
+					// for now any, eventually we can use
+					// TODO change back to any?
+					Type: "any",
+					// arg.TSType + add to import so we can useImport
+					//					UseImport: true,
+				})
 				continue
 			}
 			// not always going to be GraphQLInputObjectType (for queries)
@@ -189,8 +206,18 @@ func processFields(processor *codegen.Processor, cd *customData, s *gqlSchema, c
 			connections = append(connections, fieldConfig.connection)
 		}
 
+		var interfaces []*interfaceType
+		if createInterface {
+			interfaces = append(interfaces, intType)
+		}
 		result = append(result, &gqlNode{
 			ObjData: &gqlobjectData{
+				interfaces: interfaces,
+				// Interfaces needed here
+				// there's none in base class
+				// we'll add some here...
+				// we want an interface for custom inputs
+
 				// TODO kill node and NodeInstance they don't make sense here...
 				Node:         field.Node,
 				NodeInstance: "obj",
@@ -240,11 +267,11 @@ func (mfcg *mutationFieldConfigBuilder) getFilePath() string {
 
 func (mfcg *mutationFieldConfigBuilder) getArg() string {
 	// for input object type, type it
-	// everything else, leave blank similar to what we do for queries. see queryFieldConfigBuilder.getArg
 	if mfcg.inputArg != nil {
 		return fmt.Sprintf("{ [input: string]: %s}", mfcg.inputArg.Type)
 	}
-	return ""
+
+	return mfcg.field.getArg()
 }
 
 func (mfcg *mutationFieldConfigBuilder) getResolveMethodArg() string {
@@ -252,18 +279,7 @@ func (mfcg *mutationFieldConfigBuilder) getResolveMethodArg() string {
 		return "{ input }"
 	}
 
-	// otherwise, custom and destructure it
-
-	var args []string
-	for _, arg := range mfcg.field.Args {
-		if arg.IsContextArg {
-			continue
-		}
-
-		args = append(args, arg.Name)
-	}
-
-	return fmt.Sprintf("args: {%s}", strings.Join(args, ", "))
+	return mfcg.field.getResolveMethodArg()
 }
 
 func (mfcg *mutationFieldConfigBuilder) getTypeImports(s *gqlSchema) []*fileImport {
@@ -345,24 +361,11 @@ func (qfcg *queryFieldConfigBuilder) getFilePath() string {
 }
 
 func (qfcg *queryFieldConfigBuilder) getArg() string {
-	// we don't type query args for now since it can be whatever. TODO make this work
-	return ""
+	return qfcg.field.getArg()
 }
 
 func (qfcg *queryFieldConfigBuilder) getResolveMethodArg() string {
-	var args []string
-	for _, arg := range qfcg.field.Args {
-		if arg.IsContextArg {
-			continue
-		}
-		args = append(args, arg.Name)
-	}
-	if isConnection(qfcg.field) {
-		for _, arg := range getConnectionArgs() {
-			args = append(args, arg.Name)
-		}
-	}
-	return fmt.Sprintf("args: {%s}", strings.Join(args, ", "))
+	return qfcg.field.getResolveMethodArg()
 }
 
 func (qfcg *queryFieldConfigBuilder) getTypeImports(s *gqlSchema) []*fileImport {

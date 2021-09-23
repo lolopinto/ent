@@ -65,6 +65,30 @@ type CustomField struct {
 	FieldType    CustomFieldType `json:"fieldType"`
 }
 
+func (cf CustomField) getArg() string {
+	if cf.hasCustomArgs() {
+		// interface has been generated for it
+		return cf.GraphQLName + "Args"
+	}
+	return "{}"
+}
+
+func (cf CustomField) hasCustomArgs() bool {
+	for _, arg := range cf.Args {
+		if !arg.IsContextArg {
+			return true
+		}
+	}
+	return false
+}
+
+func (cf CustomField) getResolveMethodArg() string {
+	if cf.hasCustomArgs() {
+		return "args"
+	}
+	return "{}"
+}
+
 // custom marshall...
 // type CustomField struct {
 // 	customField
@@ -562,6 +586,7 @@ func processCustomData(processor *codegen.Processor, s *gqlSchema) error {
 
 type gqlobjectData struct {
 	NodeData     *schema.NodeData
+	interfaces   []*interfaceType
 	Node         string
 	NodeInstance string
 	GQLNodes     []*objectType
@@ -600,7 +625,7 @@ func (obj *gqlobjectData) Imports() []*fileImport {
 }
 
 func (obj *gqlobjectData) TSInterfaces() []*interfaceType {
-	var result []*interfaceType
+	result := obj.interfaces[:]
 	for _, node := range obj.GQLNodes {
 		result = append(result, node.TSInterfaces...)
 	}
