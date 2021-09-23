@@ -84,11 +84,8 @@ export class EventActivityBuilder implements Builder<EventActivity> {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
 
-  addAttending(...ids: ID[]): EventActivityBuilder;
-  addAttending(...nodes: Guest[]): EventActivityBuilder;
-  addAttending(...nodes: Builder<Guest>[]): EventActivityBuilder;
   addAttending(
-    ...nodes: ID[] | Guest[] | Builder<Guest>[]
+    ...nodes: (ID | Guest | Builder<Guest>)[]
   ): EventActivityBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
@@ -115,9 +112,7 @@ export class EventActivityBuilder implements Builder<EventActivity> {
     return this;
   }
 
-  removeAttending(...ids: ID[]): EventActivityBuilder;
-  removeAttending(...nodes: Guest[]): EventActivityBuilder;
-  removeAttending(...nodes: ID[] | Guest[]): EventActivityBuilder {
+  removeAttending(...nodes: (ID | Guest)[]): EventActivityBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -134,12 +129,7 @@ export class EventActivityBuilder implements Builder<EventActivity> {
     return this;
   }
 
-  addDeclined(...ids: ID[]): EventActivityBuilder;
-  addDeclined(...nodes: Guest[]): EventActivityBuilder;
-  addDeclined(...nodes: Builder<Guest>[]): EventActivityBuilder;
-  addDeclined(
-    ...nodes: ID[] | Guest[] | Builder<Guest>[]
-  ): EventActivityBuilder {
+  addDeclined(...nodes: (ID | Guest | Builder<Guest>)[]): EventActivityBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addDeclinedID(node);
@@ -165,9 +155,7 @@ export class EventActivityBuilder implements Builder<EventActivity> {
     return this;
   }
 
-  removeDeclined(...ids: ID[]): EventActivityBuilder;
-  removeDeclined(...nodes: Guest[]): EventActivityBuilder;
-  removeDeclined(...nodes: ID[] | Guest[]): EventActivityBuilder {
+  removeDeclined(...nodes: (ID | Guest)[]): EventActivityBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -184,11 +172,8 @@ export class EventActivityBuilder implements Builder<EventActivity> {
     return this;
   }
 
-  addInvite(...ids: ID[]): EventActivityBuilder;
-  addInvite(...nodes: GuestGroup[]): EventActivityBuilder;
-  addInvite(...nodes: Builder<GuestGroup>[]): EventActivityBuilder;
   addInvite(
-    ...nodes: ID[] | GuestGroup[] | Builder<GuestGroup>[]
+    ...nodes: (ID | GuestGroup | Builder<GuestGroup>)[]
   ): EventActivityBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
@@ -215,9 +200,7 @@ export class EventActivityBuilder implements Builder<EventActivity> {
     return this;
   }
 
-  removeInvite(...ids: ID[]): EventActivityBuilder;
-  removeInvite(...nodes: GuestGroup[]): EventActivityBuilder;
-  removeInvite(...nodes: ID[] | GuestGroup[]): EventActivityBuilder {
+  removeInvite(...nodes: (ID | GuestGroup)[]): EventActivityBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(

@@ -28,11 +28,15 @@ export const ViewerTypeType = new GraphQLObjectType({
   }),
 });
 
-export const ViewerQueryType: GraphQLFieldConfig<undefined, RequestContext> = {
+export const ViewerQueryType: GraphQLFieldConfig<
+  undefined,
+  RequestContext,
+  {}
+> = {
   type: ViewerTypeType,
   resolve: async (
     _source,
-    args: {},
+    {},
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {

@@ -10,9 +10,14 @@ import {
 import { RequestContext } from "@snowtop/ent";
 import { AuthResolver } from "../../mutations/auth/auth";
 
+interface emailAvailableArgs {
+  email: any;
+}
+
 export const EmailAvailableQueryType: GraphQLFieldConfig<
   undefined,
-  RequestContext
+  RequestContext,
+  emailAvailableArgs
 > = {
   type: GraphQLNonNull(GraphQLBoolean),
   args: {
@@ -23,7 +28,7 @@ export const EmailAvailableQueryType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    args: { email },
+    args,
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {

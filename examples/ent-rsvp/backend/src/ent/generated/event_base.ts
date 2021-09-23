@@ -58,7 +58,11 @@ export class EventBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
-    return loadEnt(viewer, id, EventBase.loaderOptions.apply(this));
+    return (await loadEnt(
+      viewer,
+      id,
+      EventBase.loaderOptions.apply(this),
+    )) as T | null;
   }
 
   static async loadX<T extends EventBase>(
@@ -66,7 +70,11 @@ export class EventBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
-    return loadEntX(viewer, id, EventBase.loaderOptions.apply(this));
+    return (await loadEntX(
+      viewer,
+      id,
+      EventBase.loaderOptions.apply(this),
+    )) as T;
   }
 
   static async loadMany<T extends EventBase>(
@@ -74,7 +82,11 @@ export class EventBase {
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
-    return loadEnts(viewer, EventBase.loaderOptions.apply(this), ...ids);
+    return (await loadEnts(
+      viewer,
+      EventBase.loaderOptions.apply(this),
+      ...ids,
+    )) as T[];
   }
 
   static async loadCustom<T extends EventBase>(
@@ -82,7 +94,11 @@ export class EventBase {
     viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
-    return loadCustomEnts(viewer, EventBase.loaderOptions.apply(this), query);
+    return (await loadCustomEnts(
+      viewer,
+      EventBase.loaderOptions.apply(this),
+      query,
+    )) as T[];
   }
 
   static async loadCustomData<T extends EventBase>(
@@ -118,10 +134,10 @@ export class EventBase {
     viewer: Viewer,
     slug: string,
   ): Promise<T | null> {
-    return loadEntViaKey(viewer, slug, {
+    return (await loadEntViaKey(viewer, slug, {
       ...EventBase.loaderOptions.apply(this),
       loaderFactory: eventSlugLoader,
-    });
+    })) as T | null;
   }
 
   static async loadFromSlugX<T extends EventBase>(
@@ -129,10 +145,10 @@ export class EventBase {
     viewer: Viewer,
     slug: string,
   ): Promise<T> {
-    return loadEntXViaKey(viewer, slug, {
+    return (await loadEntXViaKey(viewer, slug, {
       ...EventBase.loaderOptions.apply(this),
       loaderFactory: eventSlugLoader,
-    });
+    })) as T;
   }
 
   static async loadIDFromSlug<T extends EventBase>(

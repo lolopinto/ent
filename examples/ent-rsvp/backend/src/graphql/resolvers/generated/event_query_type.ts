@@ -10,7 +10,15 @@ import { RequestContext } from "@snowtop/ent";
 import { EventType } from "src/graphql/resolvers/internal";
 import { EventResolver } from "../event";
 
-export const EventQueryType: GraphQLFieldConfig<undefined, RequestContext> = {
+interface eventArgs {
+  slug: any;
+}
+
+export const EventQueryType: GraphQLFieldConfig<
+  undefined,
+  RequestContext,
+  eventArgs
+> = {
   type: EventType,
   args: {
     slug: {
@@ -20,7 +28,7 @@ export const EventQueryType: GraphQLFieldConfig<undefined, RequestContext> = {
   },
   resolve: async (
     _source,
-    args: { slug },
+    args,
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {

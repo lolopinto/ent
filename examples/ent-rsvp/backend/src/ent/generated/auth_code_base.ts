@@ -62,7 +62,11 @@ export class AuthCodeBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
-    return loadEnt(viewer, id, AuthCodeBase.loaderOptions.apply(this));
+    return (await loadEnt(
+      viewer,
+      id,
+      AuthCodeBase.loaderOptions.apply(this),
+    )) as T | null;
   }
 
   static async loadX<T extends AuthCodeBase>(
@@ -70,7 +74,11 @@ export class AuthCodeBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
-    return loadEntX(viewer, id, AuthCodeBase.loaderOptions.apply(this));
+    return (await loadEntX(
+      viewer,
+      id,
+      AuthCodeBase.loaderOptions.apply(this),
+    )) as T;
   }
 
   static async loadMany<T extends AuthCodeBase>(
@@ -78,7 +86,11 @@ export class AuthCodeBase {
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
-    return loadEnts(viewer, AuthCodeBase.loaderOptions.apply(this), ...ids);
+    return (await loadEnts(
+      viewer,
+      AuthCodeBase.loaderOptions.apply(this),
+      ...ids,
+    )) as T[];
   }
 
   static async loadCustom<T extends AuthCodeBase>(
@@ -86,11 +98,11 @@ export class AuthCodeBase {
     viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
-    return loadCustomEnts(
+    return (await loadCustomEnts(
       viewer,
       AuthCodeBase.loaderOptions.apply(this),
       query,
-    );
+    )) as T[];
   }
 
   static async loadCustomData<T extends AuthCodeBase>(
@@ -130,10 +142,10 @@ export class AuthCodeBase {
     viewer: Viewer,
     guestID: ID,
   ): Promise<T | null> {
-    return loadEntViaKey(viewer, guestID, {
+    return (await loadEntViaKey(viewer, guestID, {
       ...AuthCodeBase.loaderOptions.apply(this),
       loaderFactory: authCodeGuestIDLoader,
-    });
+    })) as T | null;
   }
 
   static async loadFromGuestIDX<T extends AuthCodeBase>(
@@ -141,10 +153,10 @@ export class AuthCodeBase {
     viewer: Viewer,
     guestID: ID,
   ): Promise<T> {
-    return loadEntXViaKey(viewer, guestID, {
+    return (await loadEntXViaKey(viewer, guestID, {
       ...AuthCodeBase.loaderOptions.apply(this),
       loaderFactory: authCodeGuestIDLoader,
-    });
+    })) as T;
   }
 
   static async loadIDFromGuestID<T extends AuthCodeBase>(

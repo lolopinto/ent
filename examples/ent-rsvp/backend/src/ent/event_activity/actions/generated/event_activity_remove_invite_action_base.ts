@@ -39,9 +39,7 @@ export class EventActivityRemoveInviteActionBase
     return {};
   }
 
-  removeInvite(...ids: ID[]): this;
-  removeInvite(...nodes: GuestGroup[]): this;
-  removeInvite(...nodes: ID[] | GuestGroup[]): this {
+  removeInvite(...nodes: (ID | GuestGroup)[]): this {
     nodes.forEach((node) => this.builder.removeInvite(node));
     return this;
   }

@@ -10,9 +10,14 @@ import {
 import { RequestContext } from "@snowtop/ent";
 import { EventResolver } from "../event";
 
+interface eventSlugAvailableArgs {
+  slug: any;
+}
+
 export const EventSlugAvailableQueryType: GraphQLFieldConfig<
   undefined,
-  RequestContext
+  RequestContext,
+  eventSlugAvailableArgs
 > = {
   type: GraphQLNonNull(GraphQLBoolean),
   args: {
@@ -23,7 +28,7 @@ export const EventSlugAvailableQueryType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    args: { slug },
+    args,
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
