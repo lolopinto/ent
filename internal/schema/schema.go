@@ -147,7 +147,7 @@ func (s *Schema) addEnumFromInputNode(nodeName string, node *input.Node, nodeDat
 func (s *Schema) addEnumFrom(tsName, gqlName, gqlType string, enumValues []string, nodeData *NodeData, inputNode *input.Node) error {
 	// first create EnumInfo...
 
-	if s.enumTables[nodeData.TableName] != nil {
+	if nodeData.EnumTable && s.enumTables[nodeData.TableName] != nil {
 		return fmt.Errorf("enum schema with table name %s already exists", nodeData.TableName)
 	}
 	tsEnum, gqlEnum := enum.GetEnums(tsName, gqlName, gqlType, enumValues)
