@@ -79,13 +79,8 @@ export class GuestGroupBuilder implements Builder<GuestGroup> {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
 
-  addGuestGroupToInvitedEvent(...ids: ID[]): GuestGroupBuilder;
-  addGuestGroupToInvitedEvent(...nodes: EventActivity[]): GuestGroupBuilder;
   addGuestGroupToInvitedEvent(
-    ...nodes: Builder<EventActivity>[]
-  ): GuestGroupBuilder;
-  addGuestGroupToInvitedEvent(
-    ...nodes: ID[] | EventActivity[] | Builder<EventActivity>[]
+    ...nodes: (ID | EventActivity | Builder<EventActivity>)[]
   ): GuestGroupBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
@@ -112,10 +107,8 @@ export class GuestGroupBuilder implements Builder<GuestGroup> {
     return this;
   }
 
-  removeGuestGroupToInvitedEvent(...ids: ID[]): GuestGroupBuilder;
-  removeGuestGroupToInvitedEvent(...nodes: EventActivity[]): GuestGroupBuilder;
   removeGuestGroupToInvitedEvent(
-    ...nodes: ID[] | EventActivity[]
+    ...nodes: (ID | EventActivity)[]
   ): GuestGroupBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {

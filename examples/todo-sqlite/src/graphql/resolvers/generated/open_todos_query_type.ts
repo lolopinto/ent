@@ -16,42 +16,49 @@ import {
 import { RootToOpenTodosConnectionType } from "src/graphql/resolvers/internal";
 import { TodoResolver } from "../open_todos";
 
-export const OpenTodosQueryType: GraphQLFieldConfig<undefined, RequestContext> =
-  {
-    type: GraphQLNonNull(RootToOpenTodosConnectionType()),
-    args: {
-      id: {
-        description: "",
-        type: GraphQLNonNull(GraphQLID),
-      },
-      first: {
-        description: "",
-        type: GraphQLInt,
-      },
-      after: {
-        description: "",
-        type: GraphQLString,
-      },
-      last: {
-        description: "",
-        type: GraphQLInt,
-      },
-      before: {
-        description: "",
-        type: GraphQLString,
-      },
+interface openTodosArgs {
+  id: any;
+}
+
+export const OpenTodosQueryType: GraphQLFieldConfig<
+  undefined,
+  RequestContext,
+  openTodosArgs
+> = {
+  type: GraphQLNonNull(RootToOpenTodosConnectionType()),
+  args: {
+    id: {
+      description: "",
+      type: GraphQLNonNull(GraphQLID),
     },
-    resolve: async (
-      _source,
-      args: { id; first; after; last; before },
-      context: RequestContext,
-      _info: GraphQLResolveInfo,
-    ) => {
-      const r = new TodoResolver();
-      return new GraphQLEdgeConnection(
-        context.getViewer(),
-        (v) => r.openTodos(context, mustDecodeIDFromGQLID(args.id)),
-        args,
-      );
+    first: {
+      description: "",
+      type: GraphQLInt,
     },
-  };
+    after: {
+      description: "",
+      type: GraphQLString,
+    },
+    last: {
+      description: "",
+      type: GraphQLInt,
+    },
+    before: {
+      description: "",
+      type: GraphQLString,
+    },
+  },
+  resolve: async (
+    _source,
+    args,
+    context: RequestContext,
+    _info: GraphQLResolveInfo,
+  ) => {
+    const r = new TodoResolver();
+    return new GraphQLEdgeConnection(
+      context.getViewer(),
+      (v) => r.openTodos(context, mustDecodeIDFromGQLID(args.id)),
+      args,
+    );
+  },
+};

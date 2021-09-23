@@ -97,16 +97,11 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
   {{ range $edge := $edgeInfos -}}  
     {{ $node := useImport .Node -}}
     {{ $polymorphicEdge := $edge.Edge.PolymorphicEdge -}}
-  {{ if not $polymorphicEdge -}}
-  {{/* for PolymorphicEdges, this API doesn't work since we don't know the type. callers should call addLikerID in a map */}}  
-    {{$edge.TSAddMethodName}}(...ids: {{useImport "ID"}}[]): {{$builder}};
-  {{ end -}}
-  {{$edge.TSAddMethodName}}(...nodes: {{$node}}[]): {{$builder}};
-  {{$edge.TSAddMethodName}}(...nodes: Builder<{{$node}}>[]): {{$builder}};
   {{ if $polymorphicEdge -}}
-    {{$edge.TSAddMethodName}}(...nodes: {{$node}}[] | Builder<{{$node}}>[]): {{$builder}} {
+    {{$edge.TSAddMethodName}}(...nodes: ({{$node}} | Builder<{{$node}}>)[]): {{$builder}} {
   {{ else -}}
-    {{$edge.TSAddMethodName}}(...nodes: ID[] | {{$node}}[] | Builder<{{$node}}>[]): {{$builder}} {
+  {{/* for PolymorphicEdges, this API doesn't work since we don't know the type. callers should call addLikerID in a map */}}  
+    {{$edge.TSAddMethodName}}(...nodes: (ID | {{$node}} | Builder<{{$node}}>)[]): {{$builder}} {
   {{ end -}}
     for (const node of nodes) {
       {{ if $polymorphicEdge -}}
@@ -158,9 +153,7 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
     return this;
   }
 
-  {{$edge.TSRemoveMethodName}}(...ids: {{useImport "ID"}}[]): {{$builder}};
-  {{$edge.TSRemoveMethodName}}(...nodes: {{$node}}[]): {{$builder}};
-  {{$edge.TSRemoveMethodName}}(...nodes: ID[] | {{$node}}[]): {{$builder}} {
+  {{$edge.TSRemoveMethodName}}(...nodes: (ID | {{$node}})[]): {{$builder}} {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, {{useImport "EdgeType"}}.{{$edge.TSEdgeConst}});

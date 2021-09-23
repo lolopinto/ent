@@ -11,7 +11,8 @@
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    //    "noImplicitAny": true,
+    "strict": true,
+    "skipLibCheck": true,
     "paths": {
       "src/*": ["./src/*"],
       "*": ["*"]

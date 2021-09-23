@@ -16,7 +16,7 @@ export type EdgeQuerySource<T extends Ent> =
   | T[]
   | ID
   | ID[]
-  | EdgeQuery<T, AssocEdge>;
+  | EdgeQuery<T, Ent, AssocEdge>;
 
 type loaderOptionsFunc = (type: string) => LoadEntOptions<Ent>;
 
@@ -65,9 +65,9 @@ export class AssocEdgeQueryBase<
   }
 
   private isEdgeQuery(
-    obj: TSource | ID | EdgeQuery<TSource, AssocEdge>,
-  ): obj is EdgeQuery<TSource, AssocEdge> {
-    if ((obj as EdgeQuery<TSource, AssocEdge>).queryIDs !== undefined) {
+    obj: TSource | ID | EdgeQuery<TSource, Ent, AssocEdge>,
+  ): obj is EdgeQuery<TSource, Ent, AssocEdge> {
+    if ((obj as EdgeQuery<TSource, Ent, AssocEdge>).queryIDs !== undefined) {
       return true;
     }
     return false;
@@ -203,5 +203,5 @@ export class AssocEdgeQueryBase<
 }
 
 export interface EdgeQueryCtr<T extends Ent, TEdge extends AssocEdge> {
-  new (viewer: Viewer, src: EdgeQuerySource<T>): EdgeQuery<T, TEdge>;
+  new (viewer: Viewer, src: EdgeQuerySource<T>): EdgeQuery<T, Ent, TEdge>;
 }

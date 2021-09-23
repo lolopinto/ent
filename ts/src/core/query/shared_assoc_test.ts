@@ -368,11 +368,11 @@ export function assocTests() {
       private initialQuery: EdgeQueryCtr<Ent, AssocEdge>,
       private subsequentQueries: EdgeQueryCtr<Ent, AssocEdge>[],
       private filter: (
-        q: EdgeQuery<Ent, AssocEdge>,
-      ) => EdgeQuery<Ent, AssocEdge>,
+        q: EdgeQuery<FakeUser, Ent, AssocEdge>,
+      ) => EdgeQuery<FakeUser, Ent, AssocEdge>,
       private lastHopFilter?: (
-        q: EdgeQuery<Ent, AssocEdge>,
-      ) => EdgeQuery<Ent, AssocEdge>,
+        q: EdgeQuery<FakeUser, Ent, AssocEdge>,
+      ) => EdgeQuery<FakeUser, Ent, AssocEdge>,
     ) {}
 
     async beforeEach() {
@@ -437,7 +437,7 @@ export function assocTests() {
     }
 
     private async compare(
-      fn: (q: EdgeQuery<Ent, AssocEdge>) => any,
+      fn: (q: EdgeQuery<FakeUser, Ent, AssocEdge>) => any,
       comparer?: (oneHop: any, allHops: any) => any,
     ) {
       const vc = new IDViewer(this.user.id);

@@ -158,17 +158,12 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
   {{ range $edge := $edges -}}
     {{ $node := useImport $edge.Node -}}
     {{ if removeEdgeAction $action -}}
-      {{$edge.TSRemoveMethodName}}(...ids: {{useImport "ID"}}[]): this;
-      {{$edge.TSRemoveMethodName}}(...nodes: {{$node}}[]): this;
-      {{$edge.TSRemoveMethodName}}(...nodes: {{useImport "ID"}}[] | {{$node}}[]): this{
+      {{$edge.TSRemoveMethodName}}(...nodes: ({{useImport "ID"}} | {{$node}})[]): this{
         nodes.forEach(node => this.builder.{{$edge.TSRemoveMethodName}}(node));
         return this;
       }
     {{ else -}}
-      {{$edge.TSAddMethodName}}(...ids: {{useImport "ID"}}[]): this;
-      {{$edge.TSAddMethodName}}(...nodes: {{$node}}[]): this;
-      {{$edge.TSAddMethodName}}(...nodes: {{useImport "Builder"}}<{{$node}}>[]): this;
-      {{$edge.TSAddMethodName}}(...nodes: {{useImport "ID"}}[] | {{$node}}[] | {{useImport "Builder"}}<{{$node}}>[]): this{
+      {{$edge.TSAddMethodName}}(...nodes: ({{useImport "ID"}} | {{$node}} | {{useImport "Builder"}}<{{$node}}>)[]): this{
         nodes.forEach(node => this.builder.{{$edge.TSAddMethodName}}(node));
         return this;
       }

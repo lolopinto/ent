@@ -37,9 +37,7 @@ export class TodoRemoveTagActionBase implements Action<Todo> {
     return {};
   }
 
-  removeTag(...ids: ID[]): this;
-  removeTag(...nodes: Tag[]): this;
-  removeTag(...nodes: ID[] | Tag[]): this {
+  removeTag(...nodes: (ID | Tag)[]): this {
     nodes.forEach((node) => this.builder.removeTag(node));
     return this;
   }

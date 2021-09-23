@@ -1,12 +1,12 @@
 import supertest from "supertest";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import { Express } from "express";
 import {
   queryRootConfig,
   expectQueryFromRoot,
   expectMutation,
 } from "@snowtop/ent-graphql-tests";
-import { DB, LoggedOutViewer } from "@snowtop/ent";
+import { Data, DB, LoggedOutViewer } from "@snowtop/ent";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { encodeGQLID } from "@snowtop/ent/graphql";
 import { PassportStrategyHandler } from "@snowtop/ent-passport";
@@ -114,8 +114,8 @@ test("right credentials", async () => {
     },
     [
       "token",
-      (token) => {
-        const decoded = jwt.decode(token);
+      (token: string) => {
+        const decoded = jwt.decode(token) as JwtPayload;
         expect(decoded).not.toBe(null);
         expect(decoded!["viewerID"]).toBe(user.id);
 
@@ -125,7 +125,7 @@ test("right credentials", async () => {
     ["viewerID", encodeGQLID(user)],
   );
 
-  let headers = {};
+  let headers: Data = {};
   if (bearerToken) {
     headers["Authorization"] = `Bearer ${bearerToken}`;
   }

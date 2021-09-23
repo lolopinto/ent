@@ -12,9 +12,14 @@ import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { TodoType } from "src/graphql/resolvers/internal";
 import { TodoResolver } from "../open_todos";
 
+interface openTodosPluralArgs {
+  id: any;
+}
+
 export const OpenTodosPluralQueryType: GraphQLFieldConfig<
   undefined,
-  RequestContext
+  RequestContext,
+  openTodosPluralArgs
 > = {
   type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TodoType))),
   args: {
@@ -25,7 +30,7 @@ export const OpenTodosPluralQueryType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    args: { id },
+    args,
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {

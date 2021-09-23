@@ -58,7 +58,11 @@ export class TodoBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
-    return loadEnt(viewer, id, TodoBase.loaderOptions.apply(this));
+    return (await loadEnt(
+      viewer,
+      id,
+      TodoBase.loaderOptions.apply(this),
+    )) as T | null;
   }
 
   static async loadX<T extends TodoBase>(
@@ -66,7 +70,11 @@ export class TodoBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
-    return loadEntX(viewer, id, TodoBase.loaderOptions.apply(this));
+    return (await loadEntX(
+      viewer,
+      id,
+      TodoBase.loaderOptions.apply(this),
+    )) as T;
   }
 
   static async loadMany<T extends TodoBase>(
@@ -74,7 +82,11 @@ export class TodoBase {
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
-    return loadEnts(viewer, TodoBase.loaderOptions.apply(this), ...ids);
+    return (await loadEnts(
+      viewer,
+      TodoBase.loaderOptions.apply(this),
+      ...ids,
+    )) as T[];
   }
 
   static async loadCustom<T extends TodoBase>(
@@ -82,7 +94,11 @@ export class TodoBase {
     viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
-    return loadCustomEnts(viewer, TodoBase.loaderOptions.apply(this), query);
+    return (await loadCustomEnts(
+      viewer,
+      TodoBase.loaderOptions.apply(this),
+      query,
+    )) as T[];
   }
 
   static async loadCustomData<T extends TodoBase>(

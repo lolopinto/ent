@@ -82,11 +82,8 @@ export class GuestBuilder implements Builder<Guest> {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
 
-  addGuestToAttendingEvent(...ids: ID[]): GuestBuilder;
-  addGuestToAttendingEvent(...nodes: EventActivity[]): GuestBuilder;
-  addGuestToAttendingEvent(...nodes: Builder<EventActivity>[]): GuestBuilder;
   addGuestToAttendingEvent(
-    ...nodes: ID[] | EventActivity[] | Builder<EventActivity>[]
+    ...nodes: (ID | EventActivity | Builder<EventActivity>)[]
   ): GuestBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
@@ -113,9 +110,7 @@ export class GuestBuilder implements Builder<Guest> {
     return this;
   }
 
-  removeGuestToAttendingEvent(...ids: ID[]): GuestBuilder;
-  removeGuestToAttendingEvent(...nodes: EventActivity[]): GuestBuilder;
-  removeGuestToAttendingEvent(...nodes: ID[] | EventActivity[]): GuestBuilder {
+  removeGuestToAttendingEvent(...nodes: (ID | EventActivity)[]): GuestBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -132,11 +127,8 @@ export class GuestBuilder implements Builder<Guest> {
     return this;
   }
 
-  addGuestToDeclinedEvent(...ids: ID[]): GuestBuilder;
-  addGuestToDeclinedEvent(...nodes: EventActivity[]): GuestBuilder;
-  addGuestToDeclinedEvent(...nodes: Builder<EventActivity>[]): GuestBuilder;
   addGuestToDeclinedEvent(
-    ...nodes: ID[] | EventActivity[] | Builder<EventActivity>[]
+    ...nodes: (ID | EventActivity | Builder<EventActivity>)[]
   ): GuestBuilder {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
@@ -163,9 +155,7 @@ export class GuestBuilder implements Builder<Guest> {
     return this;
   }
 
-  removeGuestToDeclinedEvent(...ids: ID[]): GuestBuilder;
-  removeGuestToDeclinedEvent(...nodes: EventActivity[]): GuestBuilder;
-  removeGuestToDeclinedEvent(...nodes: ID[] | EventActivity[]): GuestBuilder {
+  removeGuestToDeclinedEvent(...nodes: (ID | EventActivity)[]): GuestBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(

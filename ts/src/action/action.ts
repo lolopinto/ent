@@ -151,8 +151,8 @@ interface Orchestrator {
     edgeType: string,
     nodeType: string,
     options?: AssocEdgeInputOptions,
-  );
-  removeOutboundEdge(id2: ID, edgeType: string);
+  ): void;
+  removeOutboundEdge(id2: ID, edgeType: string): void;
   viewer: Viewer;
 }
 

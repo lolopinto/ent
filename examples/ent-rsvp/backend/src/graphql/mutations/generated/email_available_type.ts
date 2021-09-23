@@ -10,22 +10,29 @@ import {
 import { RequestContext } from "@snowtop/ent";
 import { AuthResolver } from "../auth/auth";
 
-export const EmailAvailableType: GraphQLFieldConfig<undefined, RequestContext> =
-  {
-    type: GraphQLNonNull(GraphQLBoolean),
-    args: {
-      email: {
-        description: "",
-        type: GraphQLNonNull(GraphQLString),
-      },
+interface emailAvailableArgs {
+  email: any;
+}
+
+export const EmailAvailableType: GraphQLFieldConfig<
+  undefined,
+  RequestContext,
+  emailAvailableArgs
+> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    email: {
+      description: "",
+      type: GraphQLNonNull(GraphQLString),
     },
-    resolve: async (
-      _source,
-      args: { email },
-      context: RequestContext,
-      _info: GraphQLResolveInfo,
-    ) => {
-      const r = new AuthResolver();
-      return r.emailAvailableMutation(args.email);
-    },
-  };
+  },
+  resolve: async (
+    _source,
+    args,
+    context: RequestContext,
+    _info: GraphQLResolveInfo,
+  ) => {
+    const r = new AuthResolver();
+    return r.emailAvailableMutation(args.email);
+  },
+};

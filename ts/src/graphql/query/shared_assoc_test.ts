@@ -41,7 +41,7 @@ export function sharedAssocTests() {
     let user: FakeUser;
     let event: FakeEvent;
     let users: FakeUser[];
-    let conn: GraphQLEdgeConnection<AssocEdge>;
+    let conn: GraphQLEdgeConnection<FakeEvent, AssocEdge>;
     let friendCount: number;
     // let's make it big. 20 people
     let friendsInput = [...inputs, ...inputs, ...inputs, ...inputs];
@@ -101,7 +101,7 @@ export function sharedAssocTests() {
     });
 
     function resetConn() {
-      conn = new GraphQLEdgeConnection<AssocEdge>(
+      conn = new GraphQLEdgeConnection<FakeEvent, AssocEdge>(
         new IDViewer(user.id),
         event,
         (v, event: FakeEvent) => new EventToInvitedQuery(v, event),
@@ -247,7 +247,7 @@ export function sharedAssocTests() {
         conn: {
           type: conn2,
           async resolve(_source, { id }, context: RequestContext) {
-            return new GraphQLEdgeConnection<AssocEdge>(
+            return new GraphQLEdgeConnection<FakeUser, AssocEdge>(
               new IDViewer(user.id),
               user,
               (v, event: FakeUser) => new UserToHostedEventsQuery(v, event),

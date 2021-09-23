@@ -11,9 +11,14 @@ import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { AccountType } from "src/graphql/resolvers/";
 import { TodosResolver } from "../todo/todo_resolver";
 
+interface todosRemoveCompletedArgs {
+  accountID: any;
+}
+
 export const TodosRemoveCompletedType: GraphQLFieldConfig<
   undefined,
-  RequestContext
+  RequestContext,
+  todosRemoveCompletedArgs
 > = {
   type: GraphQLNonNull(AccountType),
   args: {
@@ -24,7 +29,7 @@ export const TodosRemoveCompletedType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    args: { accountID },
+    args,
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {

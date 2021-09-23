@@ -95,7 +95,11 @@ export class EventActivityBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
-    return loadEnt(viewer, id, EventActivityBase.loaderOptions.apply(this));
+    return (await loadEnt(
+      viewer,
+      id,
+      EventActivityBase.loaderOptions.apply(this),
+    )) as T | null;
   }
 
   static async loadX<T extends EventActivityBase>(
@@ -103,7 +107,11 @@ export class EventActivityBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
-    return loadEntX(viewer, id, EventActivityBase.loaderOptions.apply(this));
+    return (await loadEntX(
+      viewer,
+      id,
+      EventActivityBase.loaderOptions.apply(this),
+    )) as T;
   }
 
   static async loadMany<T extends EventActivityBase>(
@@ -111,11 +119,11 @@ export class EventActivityBase {
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
-    return loadEnts(
+    return (await loadEnts(
       viewer,
       EventActivityBase.loaderOptions.apply(this),
       ...ids,
-    );
+    )) as T[];
   }
 
   static async loadCustom<T extends EventActivityBase>(
@@ -123,11 +131,11 @@ export class EventActivityBase {
     viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
-    return loadCustomEnts(
+    return (await loadCustomEnts(
       viewer,
       EventActivityBase.loaderOptions.apply(this),
       query,
-    );
+    )) as T[];
   }
 
   static async loadCustomData<T extends EventActivityBase>(

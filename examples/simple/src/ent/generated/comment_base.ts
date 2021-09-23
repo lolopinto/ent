@@ -65,7 +65,11 @@ export class CommentBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
-    return loadEnt(viewer, id, CommentBase.loaderOptions.apply(this));
+    return (await loadEnt(
+      viewer,
+      id,
+      CommentBase.loaderOptions.apply(this),
+    )) as T | null;
   }
 
   static async loadX<T extends CommentBase>(
@@ -73,7 +77,11 @@ export class CommentBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
-    return loadEntX(viewer, id, CommentBase.loaderOptions.apply(this));
+    return (await loadEntX(
+      viewer,
+      id,
+      CommentBase.loaderOptions.apply(this),
+    )) as T;
   }
 
   static async loadMany<T extends CommentBase>(
@@ -81,7 +89,11 @@ export class CommentBase {
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
-    return loadEnts(viewer, CommentBase.loaderOptions.apply(this), ...ids);
+    return (await loadEnts(
+      viewer,
+      CommentBase.loaderOptions.apply(this),
+      ...ids,
+    )) as T[];
   }
 
   static async loadCustom<T extends CommentBase>(
@@ -89,7 +101,11 @@ export class CommentBase {
     viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
-    return loadCustomEnts(viewer, CommentBase.loaderOptions.apply(this), query);
+    return (await loadCustomEnts(
+      viewer,
+      CommentBase.loaderOptions.apply(this),
+      query,
+    )) as T[];
   }
 
   static async loadCustomData<T extends CommentBase>(
