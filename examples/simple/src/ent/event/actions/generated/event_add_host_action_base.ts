@@ -44,7 +44,7 @@ export class EventAddHostActionBase implements Action<Event> {
   }
 
   addHost(...nodes: (ID | User | Builder<User>)[]): this {
-    nodes.forEach((node) => this.builder.addHost(node as any));
+    nodes.forEach((node) => this.builder.addHost(node));
     return this;
   }
 

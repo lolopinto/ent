@@ -127,7 +127,7 @@ func processFields(processor *codegen.Processor, cd *customData, s *gqlSchema, c
 		// let's try and make this generic enough to work for input type and standard args...
 		// and have graphql complain if not valid types at the end here
 
-		// buildInterface??
+		// should we build an interface for this custom object?
 		createInterface := false
 		intType := &interfaceType{
 			Name: field.GraphQLName + "Args",
@@ -142,13 +142,9 @@ func processFields(processor *codegen.Processor, cd *customData, s *gqlSchema, c
 			// TODO for now we assume inputtype is 1:1, that's not going to remain the same forever...
 			argObj := cr.getArgObject(cd, arg)
 			if argObj == nil {
-				// we need to build an interface of these args...
-				//				spew.Dump(arg, argObj, field)
 				createInterface = true
 				intType.Fields = append(intType.Fields, &interfaceField{
 					Name: arg.Name,
-					// for now any, eventually we can use
-					// TODO change back to any?
 					Type: "any",
 					// arg.TSType + add to import so we can useImport
 					//					UseImport: true,
@@ -213,11 +209,6 @@ func processFields(processor *codegen.Processor, cd *customData, s *gqlSchema, c
 		result = append(result, &gqlNode{
 			ObjData: &gqlobjectData{
 				interfaces: interfaces,
-				// Interfaces needed here
-				// there's none in base class
-				// we'll add some here...
-				// we want an interface for custom inputs
-
 				// TODO kill node and NodeInstance they don't make sense here...
 				Node:         field.Node,
 				NodeInstance: "obj",

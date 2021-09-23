@@ -38,7 +38,7 @@ export class EventRemoveHostActionBase implements Action<Event> {
   }
 
   removeHost(...nodes: (ID | User)[]): this {
-    nodes.forEach((node) => this.builder.removeHost(node as any));
+    nodes.forEach((node) => this.builder.removeHost(node));
     return this;
   }
   async changeset(): Promise<Changeset<Event>> {
