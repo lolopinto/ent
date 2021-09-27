@@ -25,6 +25,8 @@ type expType struct {
 	defaultGQLFieldName string
 	elemGraphql         string
 	errorType           bool
+	enumType            bool
+	tsListType          bool
 	contextType         bool
 	goType              string
 	tsType              string
@@ -1035,6 +1037,7 @@ func TestEnumType(t *testing.T) {
 							ImportType: enttype.Enum,
 						},
 					},
+					enumType:      true,
 					tsType:        "AccountStatus | null",
 					tsTypeImports: []string{"AccountStatus"},
 					goTypePanics:  true,
@@ -1073,6 +1076,7 @@ func TestEnumType(t *testing.T) {
 						},
 					},
 					tsType:        "AccountStatus",
+					enumType:      true,
 					tsTypeImports: []string{"AccountStatus"},
 					goTypePanics:  true,
 					nullableType: &enttype.NullableEnumType{
@@ -1108,7 +1112,8 @@ func TestEnumType(t *testing.T) {
 						strconv.Quote("DISABLED"),
 						strconv.Quote("account_status"),
 					),
-					graphql: "AccountStatus!",
+					enumType: true,
+					graphql:  "AccountStatus!",
 					graphqlImports: []enttype.FileImport{
 						enttype.NewGQLFileImport("GraphQLNonNull"),
 						{
@@ -1152,7 +1157,8 @@ func TestEnumType(t *testing.T) {
 						strconv.Quote("DISABLED"),
 						strconv.Quote("account_status"),
 					),
-					graphql: "AccountStatus",
+					enumType: true,
+					graphql:  "AccountStatus",
 					graphqlImports: []enttype.FileImport{
 						{
 							Type:       "AccountStatus",
@@ -1514,6 +1520,9 @@ func testType(t *testing.T, exp expType, ret returnType) {
 
 	assert.Equal(t, exp.errorType, enttype.IsErrorType(typ))
 	assert.Equal(t, exp.contextType, enttype.IsContextType(typ))
+	_, enumType := enttype.GetEnumType(typ)
+	assert.Equal(t, exp.enumType, enumType)
+	assert.Equal(t, exp.tsListType, enttype.IsListType(typ))
 
 	convType, ok := typ.(enttype.ConvertDataType)
 	if ok {

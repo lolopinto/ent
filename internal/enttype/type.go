@@ -2030,7 +2030,7 @@ func ConvertFunc(t EntType) string {
 }
 
 // this exists because we need to account for lists...
-func GetEnumType(t EntType) (EnumeratedType, bool) {
+func GetEnumType(t Type) (EnumeratedType, bool) {
 	enumType, ok := t.(EnumeratedType)
 	if ok {
 		return enumType, ok
@@ -2053,7 +2053,7 @@ func GetEnumType(t EntType) (EnumeratedType, bool) {
 }
 
 // TODO need an interface for this
-func IsListType(t EntType) bool {
+func IsListType(t Type) bool {
 	_, ok := t.(*ArrayListType)
 	_, ok2 := t.(*NullableArrayListType)
 	return ok || ok2
