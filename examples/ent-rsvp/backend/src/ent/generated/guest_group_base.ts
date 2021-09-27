@@ -45,7 +45,7 @@ export class GuestGroupBase {
   readonly invitationName: string;
   readonly eventID: ID;
 
-  constructor(public viewer: Viewer, data: Data) {
+  constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
