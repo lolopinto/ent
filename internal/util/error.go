@@ -48,10 +48,10 @@ type ErrorList struct {
 func (e *ErrorList) Error() string {
 	var sb strings.Builder
 	for idx, e2 := range e.errs {
-		sb.WriteString(e2.Error())
 		if idx != 0 {
 			sb.WriteString("\n")
 		}
+		sb.WriteString(e2.Error())
 	}
 	return sb.String()
 }

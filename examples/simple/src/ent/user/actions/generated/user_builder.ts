@@ -13,7 +13,14 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Comment, Contact, Event, User } from "../../..";
+import {
+  Comment,
+  Contact,
+  Event,
+  User,
+  daysOff,
+  preferredShift,
+} from "../../..";
 import { EdgeType, NodeType } from "../../../generated/const";
 import { UserPrefs } from "../../../user_prefs";
 import schema from "../../../../schema/user";
@@ -30,6 +37,8 @@ export interface UserInput {
   nicknames?: string[] | null;
   prefs?: UserPrefs | null;
   prefsDiff?: any;
+  daysOff?: daysOff[] | null;
+  preferredShift?: preferredShift[] | null;
 }
 
 export interface UserAction extends Action<User> {
@@ -592,6 +601,8 @@ export class UserBuilder implements Builder<User> {
     addField("nicknames", fields.nicknames);
     addField("prefs", fields.prefs);
     addField("prefs_diff", fields.prefsDiff);
+    addField("daysOff", fields.daysOff);
+    addField("preferredShift", fields.preferredShift);
     return result;
   }
 
@@ -652,5 +663,15 @@ export class UserBuilder implements Builder<User> {
   // get value of prefs_diff. Retrieves it from the input if specified or takes it from existingEnt
   getNewPrefsDiffValue(): any | undefined {
     return this.input.prefsDiff || this.existingEnt?.prefsDiff;
+  }
+
+  // get value of daysOff. Retrieves it from the input if specified or takes it from existingEnt
+  getNewDaysOffValue(): daysOff[] | null | undefined {
+    return this.input.daysOff || this.existingEnt?.daysOff;
+  }
+
+  // get value of preferredShift. Retrieves it from the input if specified or takes it from existingEnt
+  getNewPreferredShiftValue(): preferredShift[] | null | undefined {
+    return this.input.preferredShift || this.existingEnt?.preferredShift;
   }
 }

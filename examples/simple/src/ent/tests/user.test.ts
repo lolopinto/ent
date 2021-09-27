@@ -6,7 +6,7 @@ import {
   LoggedOutViewer,
   DB,
 } from "@snowtop/ent";
-import { User, Contact, Event } from "..";
+import { User, Contact, Event, daysOff, preferredShift } from "..";
 
 import { v4 as uuidv4 } from "uuid";
 import { NodeType, EdgeType } from "../generated/const";
@@ -915,4 +915,18 @@ test("json type fail", async () => {
       /invalid field prefs_diff with value/,
     );
   }
+});
+
+test("enum list", async () => {
+  const user = await CreateUserAction.create(new LoggedOutViewer(), {
+    firstName: "Jane",
+    lastName: "Doe",
+    emailAddress: randomEmail(),
+    phoneNumber: randomPhoneNumber(),
+    password: random(),
+    daysOff: [daysOff.Saturday, daysOff.Sunday],
+    preferredShift: [preferredShift.Afternoon],
+  }).saveX();
+  expect(user.daysOff).toEqual([daysOff.Saturday, daysOff.Sunday]);
+  expect(user.preferredShift).toEqual([preferredShift.Afternoon]);
 });

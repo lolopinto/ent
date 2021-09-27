@@ -5,7 +5,9 @@
 
 export * from "./node_query_type";
 export * from "./generated/day_of_week_type";
+export * from "./generated/days_off_type";
 export * from "./generated/event_rsvp_status_type";
+export * from "./generated/preferred_shift_type";
 export * from "./generated/address_type";
 export * from "./generated/comment_type";
 export * from "./generated/contact_type";
