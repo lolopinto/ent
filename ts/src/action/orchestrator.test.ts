@@ -2002,6 +2002,43 @@ function commonTests() {
         body: "Hi Jon, thanks for joining fun app!",
       });
     });
+
+    test("email sent async observer", async () => {
+      advanceTo(now);
+      const viewer = new IDViewer("11");
+      const action = new SimpleAction(
+        viewer,
+        new UserSchemaExtended(),
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+          ["EmailAddress", "foo@email.com"],
+          ["account_status", "UNVERIFIED"],
+        ]),
+        WriteOperation.Insert,
+      );
+      action.observers = [sendEmailObserverAsync];
+
+      const user = await action.saveX();
+      if (!user) {
+        fail("couldn't save user");
+      }
+
+      expect(user.data).toEqual({
+        id: user.id,
+        created_at: now,
+        updated_at: now,
+        first_name: "Jon",
+        last_name: "Snow",
+        email_address: "foo@email.com",
+        account_status: "UNVERIFIED",
+      });
+
+      FakeComms.verifySent("foo@email.com", Mode.EMAIL, {
+        subject: "Welcome, Jon!",
+        body: "Hi Jon, thanks for joining fun app!",
+      });
+    });
   });
 
   describe("combo", () => {
@@ -2481,6 +2518,23 @@ let sendEmailObserver: Observer<User> = {
     }
     let firstName = builder.fields.get("FirstName");
     FakeComms.send({
+      from: "noreply@foo.com",
+      to: email,
+      subject: `Welcome, ${firstName}!`,
+      body: `Hi ${firstName}, thanks for joining fun app!`,
+      mode: Mode.EMAIL,
+    });
+  },
+};
+
+let sendEmailObserverAsync: Observer<User> = {
+  observe: async (builder: SimpleBuilder<User>) => {
+    let email = builder.fields.get("EmailAddress");
+    if (!email) {
+      return;
+    }
+    let firstName = builder.fields.get("FirstName");
+    await FakeComms.sendAsync({
       from: "noreply@foo.com",
       to: email,
       subject: `Welcome, ${firstName}!`,
