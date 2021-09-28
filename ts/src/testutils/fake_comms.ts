@@ -18,6 +18,11 @@ export class FakeComms {
     this.sent.push(option);
   }
 
+  static async sendAsync(option: commsInput) {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    this.sent.push(option);
+  }
+
   static verifySent(to: string, mode: Mode, opts?: { subject; body }) {
     let sent = this.sent.filter(
       (option) => option.to === to && option.mode === mode,

@@ -55,8 +55,8 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     }
     const builder = this.options.builder;
     await Promise.all(
-      action.observers.map((observer) => {
-        observer.observe(builder, action.getInput());
+      action.observers.map(async (observer) => {
+        await observer.observe(builder, action.getInput());
       }),
     );
   }
