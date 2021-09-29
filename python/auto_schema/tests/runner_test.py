@@ -1014,6 +1014,12 @@ class BaseTestRunner(object):
         run_edge_metadata_script(
             new_test_runner, metadata_with_one_edge, "", num_files=2, prev_runner=r, num_changes=0)
 
+    @pytest.mark.usefixtures("metadata_with_bigint")
+    def test_tables_with_biginit(self, new_test_runner, metadata_with_bigint):
+        r = new_test_runner(metadata_with_bigint)
+        run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_bigint, new_table_names=['tbl'])
+
 
 class TestPostgresRunner(BaseTestRunner):
 

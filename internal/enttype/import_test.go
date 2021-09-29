@@ -32,6 +32,11 @@ func TestTypes(t *testing.T) {
 			imp:        "IntegerType",
 			aliases:    []string{"int", "integer"},
 		},
+		"bigint": {
+			importPath: codepath.SchemaPackage,
+			imp:        "BigIntegerType",
+			aliases:    []string{"bigint", "int64"},
+		},
 		"float": {
 			importPath: codepath.SchemaPackage,
 			imp:        "FloatType",
@@ -81,6 +86,16 @@ func TestTypes(t *testing.T) {
 			importPath: codepath.PasswordPackage,
 			imp:        "PasswordType",
 			aliases:    []string{"password"},
+		},
+		"json": {
+			importPath: codepath.Package,
+			imp:        "JSONType",
+			aliases:    []string{"json"},
+		},
+		"jsonb": {
+			importPath: codepath.Package,
+			imp:        "JSONBType",
+			aliases:    []string{"jsonb"},
 		},
 	}
 

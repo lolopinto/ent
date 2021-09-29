@@ -53,6 +53,7 @@ const (
 	Int64ID     DBType = "Int64ID"
 	Boolean     DBType = "Boolean"
 	Int         DBType = "Int"
+	BigInt      DBType = "BigInt"
 	Float       DBType = "Float"
 	String      DBType = "String"
 	Timestamp   DBType = "Timestamp"
@@ -161,6 +162,11 @@ func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.
 			return &enttype.NullableIntegerType{}, nil
 		}
 		return &enttype.IntegerType{}, nil
+	case BigInt:
+		if nullable {
+			return &enttype.NullableBigIntegerType{}, nil
+		}
+		return &enttype.BigIntegerType{}, nil
 	case Float:
 		if nullable {
 			return &enttype.NullableFloatType{}, nil

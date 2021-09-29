@@ -162,6 +162,7 @@ export enum DBType {
   Int64ID = "Int64ID", // unsupported right now
   Boolean = "Boolean",
   Int = "Int",
+  BigInt = "BigInt",
   Float = "Float",
   String = "String",
   //

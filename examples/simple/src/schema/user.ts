@@ -12,12 +12,14 @@ import {
   JSONBType,
   JSONType,
   EnumListType,
+  BigIntegerType,
 } from "@snowtop/ent/schema";
 import { EmailType } from "@snowtop/ent-email";
 import { PasswordType } from "@snowtop/ent-password";
 import { PhoneNumberType } from "@snowtop/ent-phonenumber";
 import { StringListType } from "@snowtop/ent/schema/field";
 import Feedback from "./patterns/feedback";
+import { UUIDListType } from "../../../../ts/dist";
 
 export default class User extends BaseEntSchema implements Schema {
   constructor() {
@@ -92,6 +94,9 @@ export default class User extends BaseEntSchema implements Schema {
       nullable: true,
       values: ["morning", "afternoon", "evening", "graveyard"],
     }),
+    // Date.now() is too big to store in int so have to use bigint. because of how big bigint could get, have to use BigInt instead of number
+    BigIntegerType({ name: "timeInMs", nullable: true }),
+    UUIDListType({ name: "fun_uuids", nullable: true }),
   ];
 
   edges: Edge[] = [
@@ -126,6 +131,7 @@ export default class User extends BaseEntSchema implements Schema {
         "prefs_diff",
         "daysOff",
         "preferredShift",
+        "fun_uuids",
       ],
     },
 

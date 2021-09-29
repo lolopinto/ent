@@ -334,6 +334,31 @@ func f() int {
 	}, ret)
 }
 
+func TestBigIntegerType(t *testing.T) {
+	ret := getTestReturnType(t, `package main 
+
+func f() int64 {
+	return 1
+	}`)
+
+	assert.IsType(t, &enttype.BigIntegerType{}, ret.entType)
+	testType(t, expType{
+		db:      "sa.BigInteger()",
+		graphql: "String!",
+		graphqlImports: []enttype.FileImport{
+			enttype.NewGQLFileImport("GraphQLNonNull"),
+			enttype.NewGQLFileImport("GraphQLString"),
+		},
+		zeroValue:    "0",
+		castToMethod: "cast.ToInt64",
+		goType:       "int64",
+		nullableType: &enttype.NullableBigIntegerType{},
+		tsType:       "BigInt",
+		importType:   &enttype.BigIntImport{},
+		convertFn:    "BigInt",
+	}, ret)
+}
+
 func TestNullableIntegerType(t *testing.T) {
 	ret := getTestReturnType(t, `package main 
 
@@ -354,6 +379,30 @@ func f() *int {
 		goType:          "*int",
 		tsType:          "number | null",
 		importType:      &enttype.IntImport{},
+	}, ret)
+}
+
+func TestNullableBigIntegerType(t *testing.T) {
+	ret := getTestReturnType(t, `package main 
+
+func f() *int64 {
+	return nil
+	}`)
+
+	assert.IsType(t, &enttype.NullableBigIntegerType{}, ret.entType)
+	testType(t, expType{
+		db:      "sa.BigInteger()",
+		graphql: "String",
+		graphqlImports: []enttype.FileImport{
+			enttype.NewGQLFileImport("GraphQLString"),
+		},
+		zeroValue:       "0",
+		castToMethod:    "cast.ToNullableInt64",
+		nonNullableType: &enttype.BigIntegerType{},
+		goType:          "*int64",
+		tsType:          "BigInt | null",
+		importType:      &enttype.BigIntImport{},
+		convertFn:       "BigInt",
 	}, ret)
 }
 

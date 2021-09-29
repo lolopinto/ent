@@ -266,6 +266,16 @@ def metadata_with_json():
     return metadata
 
 
+@pytest.fixture
+def metadata_with_bigint():
+    metadata = sa.MetaData()
+    sa.Table("tbl", metadata,
+             sa.Column('bigint', sa.BigInteger, nullable=False),
+             sa.Column('bigint_null', sa.BigInteger, nullable=True),
+             )
+    return metadata
+
+
 def identity_metadata_func(metadata):
     return metadata
 

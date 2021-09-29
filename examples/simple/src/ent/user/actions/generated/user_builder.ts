@@ -39,6 +39,8 @@ export interface UserInput {
   prefsDiff?: any;
   daysOff?: daysOff[] | null;
   preferredShift?: preferredShift[] | null;
+  timeInMs?: BigInt | null;
+  funUuids?: ID[] | null;
 }
 
 export interface UserAction extends Action<User> {
@@ -603,6 +605,8 @@ export class UserBuilder implements Builder<User> {
     addField("prefs_diff", fields.prefsDiff);
     addField("daysOff", fields.daysOff);
     addField("preferredShift", fields.preferredShift);
+    addField("timeInMs", fields.timeInMs);
+    addField("fun_uuids", fields.funUuids);
     return result;
   }
 
@@ -673,5 +677,15 @@ export class UserBuilder implements Builder<User> {
   // get value of preferredShift. Retrieves it from the input if specified or takes it from existingEnt
   getNewPreferredShiftValue(): preferredShift[] | null | undefined {
     return this.input.preferredShift || this.existingEnt?.preferredShift;
+  }
+
+  // get value of timeInMs. Retrieves it from the input if specified or takes it from existingEnt
+  getNewTimeInMsValue(): BigInt | null | undefined {
+    return this.input.timeInMs || this.existingEnt?.timeInMs;
+  }
+
+  // get value of fun_uuids. Retrieves it from the input if specified or takes it from existingEnt
+  getNewFunUuidsValue(): ID[] | null | undefined {
+    return this.input.funUuids || this.existingEnt?.funUuids;
   }
 }

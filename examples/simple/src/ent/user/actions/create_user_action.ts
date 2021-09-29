@@ -29,6 +29,7 @@ export default class CreateUserAction extends CreateUserActionBase {
           accountStatus: "UNVERIFIED",
           // not needed because we have serverDefault but can also set it here.
           emailVerified: false,
+          timeInMs: BigInt(Date.now()),
         });
       },
     },

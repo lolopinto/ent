@@ -67,6 +67,8 @@ const fields = [
   "prefs_diff",
   "days_off",
   "preferred_shift",
+  "time_in_ms",
+  "fun_uuids",
 ];
 
 export enum daysOff {
@@ -124,6 +126,8 @@ export class UserBase {
   readonly prefsDiff: any;
   readonly daysOff: daysOff[] | null;
   readonly preferredShift: preferredShift[] | null;
+  readonly timeInMs: BigInt | null;
+  readonly funUuids: ID[] | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
@@ -142,6 +146,8 @@ export class UserBase {
     this.prefsDiff = convertNullableJSON(data.prefs_diff);
     this.daysOff = convertNullableList(data.days_off);
     this.preferredShift = convertNullableList(data.preferred_shift);
+    this.timeInMs = BigInt(data.time_in_ms);
+    this.funUuids = convertNullableList(data.fun_uuids);
   }
 
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;

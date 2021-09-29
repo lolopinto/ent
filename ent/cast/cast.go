@@ -117,11 +117,30 @@ func ToInt(v interface{}) (int, error) {
 	return 0, fmt.Errorf("could not convert int field %v to appropriate type", v)
 }
 
+func ToInt64(v interface{}) (int64, error) {
+	val, ok := v.(int64)
+	if ok {
+		return val, nil
+	}
+	return 0, fmt.Errorf("could not convert int64 field %v to appropriate type", v)
+}
+
 func ToNullableInt(v interface{}) (*int, error) {
 	if v == nil {
 		return nil, nil
 	}
 	i, err := ToInt(v)
+	if err != nil {
+		return nil, err
+	}
+	return &i, nil
+}
+
+func ToNullableInt64(v interface{}) (*int64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	i, err := ToInt64(v)
 	if err != nil {
 		return nil, err
 	}

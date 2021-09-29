@@ -61,6 +61,18 @@ func (imp *IntImport) Aliases() []string {
 	return []string{"int", "integer"}
 }
 
+type BigIntImport struct {
+	baseImport
+}
+
+func (imp *BigIntImport) Import() string {
+	return "BigIntegerType"
+}
+
+func (imp *BigIntImport) Aliases() []string {
+	return []string{"bigint", "int64"}
+}
+
 type FloatImport struct {
 	baseImport
 }
@@ -193,10 +205,45 @@ func (imp *PasswordImport) Aliases() []string {
 	return []string{"password"}
 }
 
+type JSONImport struct {
+	baseImport
+}
+
+func (imp *JSONImport) ImportPath() string {
+	return codepath.Package
+}
+
+func (imp *JSONImport) Import() string {
+	return "JSONType"
+}
+
+func (imp *JSONImport) Aliases() []string {
+	return []string{"json"}
+}
+
+type JSONBImport struct {
+	baseImport
+}
+
+func (imp *JSONBImport) ImportPath() string {
+	return codepath.Package
+}
+
+func (imp *JSONBImport) Import() string {
+	return "JSONBType"
+}
+
+func (imp *JSONBImport) Aliases() []string {
+	return []string{"jsonb"}
+}
+
 var allImports = []Import{
 	&StringImport{},
 	&UUIDImport{},
 	&IntImport{},
+	&BigIntImport{},
+	&JSONImport{},
+	&JSONBImport{},
 	&FloatImport{},
 	&BoolImport{},
 	&TimestampImport{},
