@@ -166,7 +166,7 @@ func (imps *Imports) UseMaybe(export string) (string, error) {
 	// nothing to do here
 	// for scenarios where there's a local import
 	if imps.exportMap[export] == nil {
-		return "", nil
+		return export, nil
 	}
 
 	imps.usedExports[export] = true

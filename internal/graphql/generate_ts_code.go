@@ -1309,7 +1309,7 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 			FieldImports:       getGQLFileImports(field.GetTSGraphQLTypeForFieldImports(false), false),
 		}
 		ftype := field.GetFieldType()
-		enumType, ok := ftype.(enttype.EnumeratedType)
+		enumType, ok := enttype.GetEnumType(ftype)
 		if ok {
 			tsValuesMethod := fmt.Sprintf("get%sValues", strcase.ToCamel(enumType.GetTSName()))
 			gqlField.HasResolveFunction = true
@@ -1324,11 +1324,19 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 					Type:       tsValuesMethod,
 				},
 			)
-			gqlField.FunctionContents = []string{fmt.Sprintf("const ret = %s.%s;", instance, field.TsFieldName()),
-				fmt.Sprintf("return convertToGQLEnum(ret, %s(), %s.getValues())",
-					tsValuesMethod,
-					enumType.GetGraphQLName()+"Type",
-				)}
+			if enttype.IsListType(ftype) {
+				gqlField.FunctionContents = []string{fmt.Sprintf("const ret = %s.%s;", instance, field.TsFieldName()),
+					fmt.Sprintf("return ret?.map(v=>convertToGQLEnum(v, %s(), %s.getValues()))",
+						tsValuesMethod,
+						enumType.GetGraphQLName()+"Type",
+					)}
+			} else {
+				gqlField.FunctionContents = []string{fmt.Sprintf("const ret = %s.%s;", instance, field.TsFieldName()),
+					fmt.Sprintf("return convertToGQLEnum(ret, %s(), %s.getValues())",
+						tsValuesMethod,
+						enumType.GetGraphQLName()+"Type",
+					)}
+			}
 		} else {
 			if gqlName == "id" {
 				// special case, we want to return the base64 encoded id instead of uuid or something
@@ -1898,7 +1906,7 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 			}
 			for _, f := range a.GetNonEntFields() {
 				_, ok := f.FieldType.(enttype.IDMarkerInterface)
-				enum, enumOk := f.FieldType.(enttype.EnumeratedType)
+				enum, enumOk := enttype.GetEnumType(f.FieldType)
 				if ok {
 					result.FunctionContents = append(
 						result.FunctionContents,
@@ -1908,6 +1916,8 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 					tsValuesMethod := "get" + strcase.ToCamel(enum.GetTSName()) + "Values"
 					actionPath := getActionBasePath(nodeData, a)
 
+					// don't support list types here yet so ignoring this
+					// TODO this goes under https://github.com/lolopinto/ent/issues/240
 					result.FunctionContents = append(
 						result.FunctionContents,
 						fmt.Sprintf(

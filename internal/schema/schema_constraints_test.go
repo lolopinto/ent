@@ -581,6 +581,45 @@ func TestEnumConstraints(t *testing.T) {
 				},
 			},
 		},
+		"enum with duplicate": {
+			only: true,
+			code: map[string]string{
+				"request_status.ts": testhelper.GetCodeWithSchema(`
+					import {Schema, Field, StringType} from "{schema}";
+
+					export default class RequestStatus implements Schema {
+						fields: Field[] = [
+							StringType({
+								name: 'status',
+								primaryKey: true,
+							}),
+						];
+
+						enumTable = true;
+
+						dbRows = [
+							{
+								status: 'open',
+							},
+							{
+								status: 'pending',
+							},
+							{
+								status: 'closed',
+							},
+						];
+					}`),
+				"request.ts": testhelper.GetCodeWithSchema(`
+					import {Schema, Field, StringType, EnumType, BaseEntSchema} from "{schema}";
+
+					export default class Request extends BaseEntSchema {
+						fields: Field[] = [
+							EnumType({name: "Status", values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus"}),
+						];
+					}`),
+			},
+			expectedErr: fmt.Errorf("enum schema with gqlname RequestStatus already exists"),
+		},
 	}
 
 	runTestCases(t, testCases)
@@ -747,12 +786,24 @@ func TestInvalidConstraints(t *testing.T) {
 
 type testCase struct {
 	code        map[string]string
+	only        bool
+	skip        bool
 	expectedMap map[string]*schema.NodeData
 	expectedErr error
 }
 
 func runTestCases(t *testing.T, testCases map[string]testCase) {
+	hasOnly := false
+	for _, tt := range testCases {
+		if tt.only {
+			hasOnly = true
+			break
+		}
+	}
 	for key, tt := range testCases {
+		if hasOnly && !tt.only || tt.skip {
+			continue
+		}
 		t.Run(key, func(t *testing.T) {
 
 			testConstraints(t, tt.code, tt.expectedMap, tt.expectedErr)
@@ -776,8 +827,8 @@ func testConstraints(
 		require.Error(t, err)
 		assert.Equal(t, err.Error(), expectedErr.Error())
 	} else {
-		require.NotNil(t, s)
 		require.Nil(t, err)
+		require.NotNil(t, s)
 	}
 
 	for k, expNodeData := range expectedMap {

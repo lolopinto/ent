@@ -11,7 +11,7 @@ import schema from "../generated/schema";
 import CreateUserAction, {
   UserCreateInput,
 } from "../../ent/user/actions/create_user_action";
-import { Contact, User } from "../../ent/";
+import { Contact, User, daysOff, preferredShift } from "../../ent/";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
 import EditUserAction from "../../ent/user/actions/edit_user_action";
 import CreateContactAction, {
@@ -718,6 +718,35 @@ test("create with prefs diff. fail", async () => {
       "user.id",
       async function (id: string) {
         throw new Error("not called");
+      },
+    ],
+  );
+});
+
+test("enum list", async () => {
+  await expectMutation(
+    {
+      schema: schema,
+      mutation: "userCreate",
+      args: {
+        firstName: "Jon",
+        lastName: "Snow",
+        emailAddress: randomEmail(),
+        phoneNumber: randomPhoneNumber(),
+        password: "pa$$w0rd",
+        daysOff: ["SATURDAY", "SUNDAY"],
+        preferredShift: ["GRAVEYARD"],
+      },
+    },
+    // TODO need to be able to query this correctly
+    //["user.daysOff", ["SATURDAY", "SUNDAY"]],
+    [
+      "user.id",
+      async function (id: string) {
+        const decoded = mustDecodeIDFromGQLID(id);
+        const user = await User.loadX(new IDViewer(decoded), decoded);
+        expect(user.daysOff).toEqual([daysOff.Saturday, daysOff.Sunday]);
+        expect(user.preferredShift).toEqual([preferredShift.Graveyard]);
       },
     ],
   );

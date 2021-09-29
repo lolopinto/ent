@@ -25,6 +25,8 @@ type expType struct {
 	defaultGQLFieldName string
 	elemGraphql         string
 	errorType           bool
+	enumType            bool
+	tsListType          bool
 	contextType         bool
 	goType              string
 	tsType              string
@@ -332,6 +334,31 @@ func f() int {
 	}, ret)
 }
 
+func TestBigIntegerType(t *testing.T) {
+	ret := getTestReturnType(t, `package main 
+
+func f() int64 {
+	return 1
+	}`)
+
+	assert.IsType(t, &enttype.BigIntegerType{}, ret.entType)
+	testType(t, expType{
+		db:      "sa.BigInteger()",
+		graphql: "String!",
+		graphqlImports: []enttype.FileImport{
+			enttype.NewGQLFileImport("GraphQLNonNull"),
+			enttype.NewGQLFileImport("GraphQLString"),
+		},
+		zeroValue:    "0",
+		castToMethod: "cast.ToInt64",
+		goType:       "int64",
+		nullableType: &enttype.NullableBigIntegerType{},
+		tsType:       "BigInt",
+		importType:   &enttype.BigIntImport{},
+		convertFn:    "BigInt",
+	}, ret)
+}
+
 func TestNullableIntegerType(t *testing.T) {
 	ret := getTestReturnType(t, `package main 
 
@@ -352,6 +379,30 @@ func f() *int {
 		goType:          "*int",
 		tsType:          "number | null",
 		importType:      &enttype.IntImport{},
+	}, ret)
+}
+
+func TestNullableBigIntegerType(t *testing.T) {
+	ret := getTestReturnType(t, `package main 
+
+func f() *int64 {
+	return nil
+	}`)
+
+	assert.IsType(t, &enttype.NullableBigIntegerType{}, ret.entType)
+	testType(t, expType{
+		db:      "sa.BigInteger()",
+		graphql: "String",
+		graphqlImports: []enttype.FileImport{
+			enttype.NewGQLFileImport("GraphQLString"),
+		},
+		zeroValue:       "0",
+		castToMethod:    "cast.ToNullableInt64",
+		nonNullableType: &enttype.BigIntegerType{},
+		goType:          "*int64",
+		tsType:          "BigInt | null",
+		importType:      &enttype.BigIntImport{},
+		convertFn:       "BigInt",
 	}, ret)
 }
 
@@ -1035,6 +1086,7 @@ func TestEnumType(t *testing.T) {
 							ImportType: enttype.Enum,
 						},
 					},
+					enumType:      true,
 					tsType:        "AccountStatus | null",
 					tsTypeImports: []string{"AccountStatus"},
 					goTypePanics:  true,
@@ -1073,6 +1125,7 @@ func TestEnumType(t *testing.T) {
 						},
 					},
 					tsType:        "AccountStatus",
+					enumType:      true,
 					tsTypeImports: []string{"AccountStatus"},
 					goTypePanics:  true,
 					nullableType: &enttype.NullableEnumType{
@@ -1108,7 +1161,8 @@ func TestEnumType(t *testing.T) {
 						strconv.Quote("DISABLED"),
 						strconv.Quote("account_status"),
 					),
-					graphql: "AccountStatus!",
+					enumType: true,
+					graphql:  "AccountStatus!",
 					graphqlImports: []enttype.FileImport{
 						enttype.NewGQLFileImport("GraphQLNonNull"),
 						{
@@ -1152,7 +1206,8 @@ func TestEnumType(t *testing.T) {
 						strconv.Quote("DISABLED"),
 						strconv.Quote("account_status"),
 					),
-					graphql: "AccountStatus",
+					enumType: true,
+					graphql:  "AccountStatus",
 					graphqlImports: []enttype.FileImport{
 						{
 							Type:       "AccountStatus",
@@ -1514,6 +1569,9 @@ func testType(t *testing.T, exp expType, ret returnType) {
 
 	assert.Equal(t, exp.errorType, enttype.IsErrorType(typ))
 	assert.Equal(t, exp.contextType, enttype.IsContextType(typ))
+	_, enumType := enttype.GetEnumType(typ)
+	assert.Equal(t, exp.enumType, enumType)
+	assert.Equal(t, exp.tsListType, enttype.IsListType(typ))
 
 	convType, ok := typ.(enttype.ConvertDataType)
 	if ok {

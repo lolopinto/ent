@@ -14,8 +14,9 @@ func TestArrayListType(t *testing.T) {
 			},
 			expType{
 				// TODO also do sqlite...
-				db:      "postgresql.ARRAY(sa.Text())",
-				graphql: "[String!]!",
+				tsListType: true,
+				db:         "postgresql.ARRAY(sa.Text())",
+				graphql:    "[String!]!",
 				graphqlImports: []enttype.FileImport{
 					{
 						Type:       "GraphQLNonNull",
@@ -48,8 +49,9 @@ func TestArrayListType(t *testing.T) {
 				ElemType: &enttype.StringType{},
 			},
 			expType{
-				db:      "postgresql.ARRAY(sa.Text())",
-				graphql: "[String!]",
+				tsListType: true,
+				db:         "postgresql.ARRAY(sa.Text())",
+				graphql:    "[String!]",
 				graphqlImports: []enttype.FileImport{
 					{
 						Type:       "GraphQLList",
@@ -78,8 +80,9 @@ func TestArrayListType(t *testing.T) {
 				ElemType: &enttype.IntegerType{},
 			},
 			expType{
-				db:      "postgresql.ARRAY(sa.Integer())",
-				graphql: "[Int!]!",
+				tsListType: true,
+				db:         "postgresql.ARRAY(sa.Integer())",
+				graphql:    "[Int!]!",
 				graphqlImports: []enttype.FileImport{
 					{
 						Type:       "GraphQLNonNull",
@@ -112,8 +115,9 @@ func TestArrayListType(t *testing.T) {
 				ElemType: &enttype.IntegerType{},
 			},
 			expType{
-				db:      "postgresql.ARRAY(sa.Integer())",
-				graphql: "[Int!]",
+				tsListType: true,
+				db:         "postgresql.ARRAY(sa.Integer())",
+				graphql:    "[Int!]",
 				graphqlImports: []enttype.FileImport{
 					{
 						Type:       "GraphQLList",
@@ -142,8 +146,9 @@ func TestArrayListType(t *testing.T) {
 				ElemType: &enttype.BoolType{},
 			},
 			expType{
-				db:      "postgresql.ARRAY(sa.Boolean())",
-				graphql: "[Boolean!]!",
+				tsListType: true,
+				db:         "postgresql.ARRAY(sa.Boolean())",
+				graphql:    "[Boolean!]!",
 				graphqlImports: []enttype.FileImport{
 					{
 						Type:       "GraphQLNonNull",
@@ -176,8 +181,9 @@ func TestArrayListType(t *testing.T) {
 				ElemType: &enttype.BoolType{},
 			},
 			expType{
-				db:      "postgresql.ARRAY(sa.Boolean())",
-				graphql: "[Boolean!]",
+				tsListType: true,
+				db:         "postgresql.ARRAY(sa.Boolean())",
+				graphql:    "[Boolean!]",
 				graphqlImports: []enttype.FileImport{
 					{
 						Type:       "GraphQLList",
@@ -206,8 +212,9 @@ func TestArrayListType(t *testing.T) {
 				ElemType: &enttype.FloatType{},
 			},
 			expType{
-				db:      "postgresql.ARRAY(sa.Float())",
-				graphql: "[Float!]!",
+				tsListType: true,
+				db:         "postgresql.ARRAY(sa.Float())",
+				graphql:    "[Float!]!",
 				graphqlImports: []enttype.FileImport{
 					{
 						Type:       "GraphQLNonNull",
@@ -240,8 +247,9 @@ func TestArrayListType(t *testing.T) {
 				ElemType: &enttype.FloatType{},
 			},
 			expType{
-				db:      "postgresql.ARRAY(sa.Float())",
-				graphql: "[Float!]",
+				tsListType: true,
+				db:         "postgresql.ARRAY(sa.Float())",
+				graphql:    "[Float!]",
 				graphqlImports: []enttype.FileImport{
 					{
 						Type:       "GraphQLList",
@@ -270,8 +278,9 @@ func TestArrayListType(t *testing.T) {
 				ElemType: &enttype.DateType{},
 			},
 			expType{
-				db:      "postgresql.ARRAY(sa.Date())",
-				graphql: "[Time!]!",
+				tsListType: true,
+				db:         "postgresql.ARRAY(sa.Date())",
+				graphql:    "[Time!]!",
 				graphqlImports: []enttype.FileImport{
 					{
 						Type:       "GraphQLNonNull",
@@ -304,8 +313,9 @@ func TestArrayListType(t *testing.T) {
 				ElemType: &enttype.DateType{},
 			},
 			expType{
-				db:      "postgresql.ARRAY(sa.Date())",
-				graphql: "[Time!]",
+				tsListType: true,
+				db:         "postgresql.ARRAY(sa.Date())",
+				graphql:    "[Time!]",
 				graphqlImports: []enttype.FileImport{
 					{
 						Type:       "GraphQLList",
@@ -334,8 +344,9 @@ func TestArrayListType(t *testing.T) {
 				ElemType: &enttype.TimeType{},
 			},
 			expType{
-				db:      "postgresql.ARRAY(sa.Time())",
-				graphql: "[String!]!",
+				tsListType: true,
+				db:         "postgresql.ARRAY(sa.Time())",
+				graphql:    "[String!]!",
 				graphqlImports: []enttype.FileImport{
 					{
 						Type:       "GraphQLNonNull",
@@ -368,8 +379,9 @@ func TestArrayListType(t *testing.T) {
 				ElemType: &enttype.TimeType{},
 			},
 			expType{
-				db:      "postgresql.ARRAY(sa.Time())",
-				graphql: "[String!]",
+				tsListType: true,
+				db:         "postgresql.ARRAY(sa.Time())",
+				graphql:    "[String!]",
 				graphqlImports: []enttype.FileImport{
 					{
 						Type:       "GraphQLList",
@@ -398,8 +410,9 @@ func TestArrayListType(t *testing.T) {
 				ElemType: &enttype.TimetzType{},
 			},
 			expType{
-				db:      "postgresql.ARRAY(sa.Time(timezone=True))",
-				graphql: "[String!]!",
+				tsListType: true,
+				db:         "postgresql.ARRAY(sa.Time(timezone=True))",
+				graphql:    "[String!]!",
 				graphqlImports: []enttype.FileImport{
 					{
 						Type:       "GraphQLNonNull",
@@ -432,8 +445,9 @@ func TestArrayListType(t *testing.T) {
 				ElemType: &enttype.TimetzType{},
 			},
 			expType{
-				db:      "postgresql.ARRAY(sa.Time(timezone=True))",
-				graphql: "[String!]",
+				tsListType: true,
+				db:         "postgresql.ARRAY(sa.Time(timezone=True))",
+				graphql:    "[String!]",
 				graphqlImports: []enttype.FileImport{
 					{
 						Type:       "GraphQLList",
@@ -462,8 +476,9 @@ func TestArrayListType(t *testing.T) {
 				ElemType: &enttype.TimestampType{},
 			},
 			expType{
-				db:      "postgresql.ARRAY(sa.TIMESTAMP())",
-				graphql: "[Time!]!",
+				tsListType: true,
+				db:         "postgresql.ARRAY(sa.TIMESTAMP())",
+				graphql:    "[Time!]!",
 				graphqlImports: []enttype.FileImport{
 					{
 						Type:       "GraphQLNonNull",
@@ -496,8 +511,9 @@ func TestArrayListType(t *testing.T) {
 				ElemType: &enttype.TimestampType{},
 			},
 			expType{
-				db:      "postgresql.ARRAY(sa.TIMESTAMP())",
-				graphql: "[Time!]",
+				tsListType: true,
+				db:         "postgresql.ARRAY(sa.TIMESTAMP())",
+				graphql:    "[Time!]",
 				graphqlImports: []enttype.FileImport{
 					{
 						Type:       "GraphQLList",
@@ -526,8 +542,9 @@ func TestArrayListType(t *testing.T) {
 				ElemType: &enttype.TimestamptzType{},
 			},
 			expType{
-				db:      "postgresql.ARRAY(sa.TIMESTAMP(timezone=True))",
-				graphql: "[Time!]!",
+				tsListType: true,
+				db:         "postgresql.ARRAY(sa.TIMESTAMP(timezone=True))",
+				graphql:    "[Time!]!",
 				graphqlImports: []enttype.FileImport{
 					{
 						Type:       "GraphQLNonNull",
@@ -560,8 +577,9 @@ func TestArrayListType(t *testing.T) {
 				ElemType: &enttype.TimestamptzType{},
 			},
 			expType{
-				db:      "postgresql.ARRAY(sa.TIMESTAMP(timezone=True))",
-				graphql: "[Time!]",
+				tsListType: true,
+				db:         "postgresql.ARRAY(sa.TIMESTAMP(timezone=True))",
+				graphql:    "[Time!]",
 				graphqlImports: []enttype.FileImport{
 					{
 						Type:       "GraphQLList",
@@ -599,8 +617,10 @@ func TestArrayListType(t *testing.T) {
 				},
 			},
 			expType{
-				db:      "postgresql.ARRAY(sa.Text())",
-				graphql: "[AccountStatus!]!",
+				db:         "postgresql.ARRAY(sa.Text())",
+				graphql:    "[AccountStatus!]!",
+				enumType:   true,
+				tsListType: true,
 				graphqlImports: []enttype.FileImport{
 					{
 						Type:       "GraphQLNonNull",
@@ -652,8 +672,10 @@ func TestArrayListType(t *testing.T) {
 				},
 			},
 			expType{
-				db:      "postgresql.ARRAY(sa.Text())",
-				graphql: "[AccountStatus!]",
+				tsListType: true,
+				enumType:   true,
+				db:         "postgresql.ARRAY(sa.Text())",
+				graphql:    "[AccountStatus!]",
 				graphqlImports: []enttype.FileImport{
 					{
 						Type:       "GraphQLList",

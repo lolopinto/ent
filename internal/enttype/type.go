@@ -497,6 +497,44 @@ func (t *IntegerType) GetTSGraphQLImports() []FileImport {
 	return []FileImport{NewGQLFileImport("GraphQLNonNull"), NewGQLFileImport("GraphQLInt")}
 }
 
+type BigIntegerType struct {
+	IntegerType
+}
+
+func (t *BigIntegerType) GetNullableType() TSGraphQLType {
+	return &NullableBigIntegerType{}
+}
+
+func (t *BigIntegerType) GetCastToMethod() string {
+	return "cast.ToInt64"
+}
+
+func (t *BigIntegerType) GetGraphQLType() string {
+	return "String!"
+}
+
+func (t *BigIntegerType) GetDBType() string {
+	return "sa.BigInteger()"
+}
+
+func (t *BigIntegerType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{NewGQLFileImport("GraphQLNonNull"), NewGQLFileImport("GraphQLString")}
+}
+
+func (t *BigIntegerType) Convert() FileImport {
+	return FileImport{
+		Type: "BigInt",
+	}
+}
+
+func (t *BigIntegerType) GetTSType() string {
+	return "BigInt"
+}
+
+func (t *BigIntegerType) GetImportType() Import {
+	return &BigIntImport{}
+}
+
 type NullableIntegerType struct {
 	intType
 }
@@ -519,6 +557,47 @@ func (t *NullableIntegerType) GetNonNullableType() TSGraphQLType {
 
 func (t *NullableIntegerType) GetTSGraphQLImports() []FileImport {
 	return []FileImport{NewGQLFileImport("GraphQLInt")}
+}
+
+// what's the best graphql representation?
+// for now we'll use strings but there's a few graphql representations
+// on the Internet
+type NullableBigIntegerType struct {
+	NullableIntegerType
+}
+
+func (t *NullableBigIntegerType) GetNonNullableType() TSGraphQLType {
+	return &BigIntegerType{}
+}
+
+func (t *NullableBigIntegerType) GetCastToMethod() string {
+	return "cast.ToNullableInt64"
+}
+
+func (t *NullableBigIntegerType) GetGraphQLType() string {
+	return "String"
+}
+
+func (t *NullableBigIntegerType) Convert() FileImport {
+	return FileImport{
+		Type: "BigInt",
+	}
+}
+
+func (t *NullableBigIntegerType) GetTSType() string {
+	return "BigInt | null"
+}
+
+func (t *NullableBigIntegerType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{NewGQLFileImport("GraphQLString")}
+}
+
+func (t *NullableBigIntegerType) GetImportType() Import {
+	return &BigIntImport{}
+}
+
+func (t *NullableBigIntegerType) GetDBType() string {
+	return "sa.BigInteger()"
 }
 
 type floatType struct{}
@@ -1694,6 +1773,10 @@ func (t *jSONType) GetTSGraphQLImports() []FileImport {
 	}
 }
 
+func (t *jSONType) GetImportType() Import {
+	return &JSONImport{}
+}
+
 type JSONType struct {
 	ImportType *InputImportType
 	jSONType
@@ -1809,6 +1892,10 @@ func (t *JSONBType) GetImportDepsType() *InputImportType {
 	return t.ImportType
 }
 
+func (t *JSONBType) GetImportType() Import {
+	return &JSONBImport{}
+}
+
 type NullableJSONBType struct {
 	ImportType *InputImportType
 	jSONType
@@ -1856,6 +1943,10 @@ func (t *NullableJSONBType) GetImportDepsType() *InputImportType {
 	return t.ImportType
 }
 
+func (t *NullableJSONBType) GetImportType() Import {
+	return &JSONBImport{}
+}
+
 func getBasicType(typ types.Type) Type {
 	typeStr := types.TypeString(typ, nil)
 	switch typeStr {
@@ -1867,10 +1958,14 @@ func getBasicType(typ types.Type) Type {
 		return &BoolType{}
 	case "*bool":
 		return &NullableBoolType{}
-	case "int", "int16", "int32", "int64":
+	case "int", "int16", "int32":
 		return &IntegerType{}
-	case "*int", "*int16", "*int32", "*int64":
+	case "int64":
+		return &BigIntegerType{}
+	case "*int", "*int16", "*int32":
 		return &NullableIntegerType{}
+	case "*int64":
+		return &NullableBigIntegerType{}
 	case "float32", "float64":
 		return &FloatType{}
 	case "*float32", "*float64":
@@ -2027,4 +2122,34 @@ func ConvertFunc(t EntType) string {
 		return ""
 	}
 	return tt.Convert().Type
+}
+
+// this exists because we need to account for lists...
+func GetEnumType(t Type) (EnumeratedType, bool) {
+	enumType, ok := t.(EnumeratedType)
+	if ok {
+		return enumType, ok
+	}
+	listType, ok := t.(*ArrayListType)
+	if ok {
+		enumType, ok := listType.ElemType.(EnumeratedType)
+		if ok {
+			return enumType, ok
+		}
+	}
+	nullListType, ok := t.(*NullableArrayListType)
+	if ok {
+		enumType, ok := nullListType.ElemType.(EnumeratedType)
+		if ok {
+			return enumType, ok
+		}
+	}
+	return nil, false
+}
+
+// TODO need an interface for this
+func IsListType(t Type) bool {
+	_, ok := t.(*ArrayListType)
+	_, ok2 := t.(*NullableArrayListType)
+	return ok || ok2
 }

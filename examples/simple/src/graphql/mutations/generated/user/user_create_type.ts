@@ -20,7 +20,7 @@ import { User } from "../../../../ent";
 import CreateUserAction, {
   UserCreateInput,
 } from "../../../../ent/user/actions/create_user_action";
-import { UserType } from "../../../resolvers";
+import { UserType, daysOffType, preferredShiftType } from "../../../resolvers";
 
 interface UserCreatePayload {
   user: User;
@@ -52,6 +52,12 @@ export const UserCreateInputType = new GraphQLInputObjectType({
     },
     prefsDiff: {
       type: GraphQLJSON,
+    },
+    daysOff: {
+      type: GraphQLList(GraphQLNonNull(daysOffType)),
+    },
+    preferredShift: {
+      type: GraphQLList(GraphQLNonNull(preferredShiftType)),
     },
   }),
 });
@@ -92,6 +98,8 @@ export const UserCreateType: GraphQLFieldConfig<
       nicknames: input.nicknames,
       prefs: input.prefs,
       prefsDiff: input.prefsDiff,
+      daysOff: input.daysOff,
+      preferredShift: input.preferredShift,
     }).saveX();
     return { user: user };
   },
