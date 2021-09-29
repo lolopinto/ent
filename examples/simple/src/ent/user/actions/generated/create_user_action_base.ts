@@ -5,6 +5,7 @@
 
 import {
   AllowIfViewerHasIdentityPrivacyPolicy,
+  ID,
   PrivacyPolicy,
   Viewer,
 } from "@snowtop/ent";
@@ -24,6 +25,7 @@ export interface UserCreateInput {
   prefsDiff?: any;
   daysOff?: daysOff[] | null;
   preferredShift?: preferredShift[] | null;
+  funUuids?: ID[] | null;
 }
 
 export class CreateUserActionBase implements Action<User> {

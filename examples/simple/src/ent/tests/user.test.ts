@@ -8,7 +8,7 @@ import {
 } from "@snowtop/ent";
 import { User, Contact, Event, daysOff, preferredShift } from "..";
 
-import { v4 as uuidv4 } from "uuid";
+import { v1 as uuidv1, v4 as uuidv4, validate } from "uuid";
 import { NodeType, EdgeType } from "../generated/const";
 import { random, randomEmail, randomPhoneNumber } from "../../util/random";
 
@@ -929,4 +929,18 @@ test("enum list", async () => {
   }).saveX();
   expect(user.daysOff).toEqual([daysOff.Saturday, daysOff.Sunday]);
   expect(user.preferredShift).toEqual([preferredShift.Afternoon]);
+});
+
+test("misc", async () => {
+  const user = await CreateUserAction.create(new LoggedOutViewer(), {
+    firstName: "Jane",
+    lastName: "Doe",
+    emailAddress: randomEmail(),
+    phoneNumber: randomPhoneNumber(),
+    password: random(),
+    funUuids: [uuidv4(), uuidv1()],
+  }).saveX();
+  expect(typeof user.timeInMs).toBe("bigint");
+  expect(user.funUuids?.length).toBe(2);
+  expect(user.funUuids?.every((v) => validate(v.toString()))).toBe(true);
 });

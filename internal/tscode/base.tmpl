@@ -58,7 +58,8 @@ export class {{$baseClass}} {
       {{$val := printf "data.%s" $field.GetDbColName -}}
       {{$convertType := convertFunc $field.GetFieldType -}}
       {{if $convertType -}} 
-        this.{{$field.TsFieldName}} = {{useImport $convertType}}({{$val}});
+        {{/* could be BigInt which isn't reserved */ -}}
+        this.{{$field.TsFieldName}} = {{useImportMaybe $convertType}}({{$val}});
       {{ else -}}
         this.{{$field.TsFieldName}} = {{$val}};
       {{end -}}

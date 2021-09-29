@@ -175,4 +175,7 @@ class Diff(object):
                 change
             ]
         else:
-            raise "there shouldn't already be an entry for table %s" % table_name
+            # TODO: this error needs to be better
+            # https://github.com/lolopinto/ent/issues/499
+            raise Exception(
+                "there shouldn't already be an entry for table %s" % table_name)

@@ -105,6 +105,15 @@ export function IntegerType(options: FieldOptions): IntegerField {
   return Object.assign(result, options);
 }
 
+export class BigIntegerField extends BaseField implements Field {
+  type: Type = { dbType: DBType.BigInt };
+}
+
+export function BigIntegerType(options: FieldOptions): BigIntegerField {
+  let result = new BigIntegerField();
+  return Object.assign(result, options);
+}
+
 export class FloatField extends BaseField implements Field {
   type: Type = { dbType: DBType.Float };
 }
@@ -614,4 +623,8 @@ export function EnumListType(options: EnumOptions) {
   // developer can try to work around it by calling below on their own.
   // unclear what the behavior is
   return new ListField(EnumType(options), options);
+}
+
+export function UUIDListType(options: FieldOptions) {
+  return new ListField(UUIDType(options), options);
 }
