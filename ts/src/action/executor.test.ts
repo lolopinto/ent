@@ -704,6 +704,47 @@ function commonTests() {
     ).toBe(true);
   });
 
+  test("conditional changesets", async () => {
+    const group = await createGroup();
+    ml.clear();
+
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      new GroupSchema(),
+      new Map(),
+      WriteOperation.Edit,
+      group,
+    );
+
+    const userAction = new UserAction(
+      new LoggedOutViewer(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+        ["EmailAddress", randomEmail()],
+      ]),
+      WriteOperation.Insert,
+    );
+
+    async function doNothing(): Promise<void> {}
+    action.triggers = [
+      {
+        changeset: async (builder: SimpleBuilder<Group>) => {
+          return await Promise.all([userAction.changeset(), doNothing()]);
+        },
+      },
+    ];
+
+    // this mostly confirms that things type and work
+    await action.saveX();
+    const [editedGroup, user] = await Promise.all([
+      action.editedEnt(),
+      userAction.editedEnt(),
+    ]);
+    expect(editedGroup).toBeInstanceOf(Group);
+    expect(user).toBeInstanceOf(User);
+  });
+
   test("nested siblings via bulk-action", async () => {
     const group = await createGroup();
     const inputs: { firstName: string; lastName: string }[] = [
