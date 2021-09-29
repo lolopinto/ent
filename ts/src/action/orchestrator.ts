@@ -435,7 +435,11 @@ export class Orchestrator<T extends Ent> {
     );
     changesets.forEach((c) => {
       if (Array.isArray(c)) {
-        this.changesets.push(...c);
+        for (const v of c) {
+          if (typeof v === "object") {
+            this.changesets.push(v);
+          }
+        }
       } else if (c) {
         this.changesets.push(c);
       }

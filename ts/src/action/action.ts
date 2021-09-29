@@ -57,7 +57,7 @@ export interface Changeset<T extends Ent> {
 
 export type TriggerReturn =
   | void
-  | Promise<Changeset<Ent> | void | Changeset<Ent>[] | Changeset<Ent>>
+  | Promise<Changeset<Ent> | void | (Changeset<Ent> | void)[]>
   | Promise<Changeset<Ent>>[];
 
 export interface Trigger<T extends Ent> {
