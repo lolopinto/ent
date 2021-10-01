@@ -7,15 +7,6 @@ from sqlalchemy.sql.sqltypes import String
 from . import conftest
 
 
-def get_new_metadata_for_runner(r: runner.Runner):
-    # metadata = r.get_metadata()
-    # don't reflect but in fact get a new object so that we can reflect corectly
-    new_metadata = sa.MetaData()
-    # fetch any new tables
-    new_metadata.reflect(bind=r.get_connection())
-    return new_metadata
-
-
 def assert_num_files(r: runner.Runner, expected_count):
     assert len(get_version_files(r)) == expected_count
 
@@ -31,7 +22,7 @@ def get_version_files(r: runner.Runner):
 
 
 def assert_num_tables(r: runner.Runner, expected_count, tables=None):
-    new_metadata = get_new_metadata_for_runner(r)
+    new_metadata = _get_new_metadata_for_runner(r)
 
     # sometimes, alembic_version is created in between revisions, we don't care about that case here
     # so just write it away
@@ -120,7 +111,7 @@ def validate_data_from_metadata(metadata: sa.MetaData, r: runner.Runner):
 
 
 def validate_metadata_after_change(r: runner.Runner, old_metadata: sa.MetaData):
-    new_metadata = get_new_metadata_for_runner(r)
+    new_metadata = _get_new_metadata_for_runner(r)
     assert new_metadata != old_metadata
 
     dialect = r.get_connection().dialect.name
@@ -132,7 +123,7 @@ def validate_metadata_after_change(r: runner.Runner, old_metadata: sa.MetaData):
             (t for t in old_metadata.sorted_tables if db_table.name == t.name), None)
 
         if schema_table is not None:
-            validate_table(schema_table, db_table, dialect, new_metadata)
+            _validate_table(schema_table, db_table, dialect, new_metadata)
         else:
             # no need to do too much testing on this since we'll just have to trust that alembic works.
             assert db_table.name == 'alembic_version'
@@ -159,36 +150,71 @@ def recreate_with_new_metadata(r: runner.Runner, new_test_runner, metadata_with_
     return r2
 
 
-def validate_table(schema_table: sa.Table, db_table: sa.Table, dialect, metadata: sa.MetaData):
+def recreate_metadata_fixture(new_test_runner, metadata: sa.MetaData, prev_runner: runner.Runner):
+    metadata.bind = prev_runner.get_connection()
+    metadata.reflect()
+
+    r = new_test_runner(metadata, prev_runner)
+    return r
+
+
+def run_edge_metadata_script(new_test_runner, metadata: sa.MetaData, message: String, num_files=2, prev_runner=None, num_changes=1):
+    # TODO combine with recreate_with_new_metadata?
+    if prev_runner is None:
+        prev_runner = _setup_assoc_edge_config(new_test_runner)
+
+    r = recreate_metadata_fixture(new_test_runner, metadata, prev_runner)
+    assert len(r.compute_changes()) == num_changes
+
+    assert r.revision_message() == message
+
+    r.run()
+    # new file added for edge
+    assert_num_files(r, num_files)
+    validate_edges_from_metadata(metadata, r)
+
+    return r
+
+
+def _get_new_metadata_for_runner(r: runner.Runner):
+    # metadata = r.get_metadata()
+    # don't reflect but in fact get a new object so that we can reflect corectly
+    new_metadata = sa.MetaData()
+    # fetch any new tables
+    new_metadata.reflect(bind=r.get_connection())
+    return new_metadata
+
+
+def _validate_table(schema_table: sa.Table, db_table: sa.Table, dialect, metadata: sa.MetaData):
     assert schema_table != db_table
     assert id(schema_table) != id(db_table)
 
     assert schema_table.name == db_table.name
 
-    validate_columns(schema_table, db_table, metadata, dialect)
-    validate_constraints(schema_table, db_table, dialect, metadata)
-    validate_indexes(schema_table, db_table, metadata)
+    _validate_columns(schema_table, db_table, metadata, dialect)
+    _validate_constraints(schema_table, db_table, dialect, metadata)
+    _validate_indexes(schema_table, db_table, metadata)
 
 
-def validate_columns(schema_table: sa.Table, db_table: sa.Table, metadata: sa.MetaData, dialect):
+def _validate_columns(schema_table: sa.Table, db_table: sa.Table, metadata: sa.MetaData, dialect):
     schema_columns = schema_table.columns
     db_columns = db_table.columns
     assert len(schema_columns) == len(db_columns)
     for schema_column, db_column in zip(schema_columns, db_columns):
-        validate_column(schema_column, db_column, metadata, dialect)
+        _validate_column(schema_column, db_column, metadata, dialect)
 
 
-def validate_column(schema_column: sa.Column, db_column: sa.Column, metadata: sa.MetaData, dialect):
+def _validate_column(schema_column: sa.Column, db_column: sa.Column, metadata: sa.MetaData, dialect):
     assert schema_column != db_column
     assert(id(schema_column)) != id(db_column)
 
     assert schema_column.name == db_column.name
-    validate_column_type(schema_column, db_column, metadata, dialect)
+    _validate_column_type(schema_column, db_column, metadata, dialect)
     assert schema_column.primary_key == db_column.primary_key
     assert schema_column.nullable == db_column.nullable
 
-    validate_foreign_key(schema_column, db_column)
-    validate_column_server_default(schema_column, db_column)
+    _validate_foreign_key(schema_column, db_column)
+    _validate_column_server_default(schema_column, db_column)
 
     # we don't actually support all these below yet but when we do, it should start failing and we should know that
     assert schema_column.default == db_column.default
@@ -202,7 +228,7 @@ def validate_column(schema_column: sa.Column, db_column: sa.Column, metadata: sa
     assert schema_column.comment == db_column.comment
 
 
-def validate_column_server_default(schema_column: sa.Column, db_column: sa.Column):
+def _validate_column_server_default(schema_column: sa.Column, db_column: sa.Column):
     schema_clause_text = get_clause_text(
         schema_column.server_default)
     db_clause_text = get_clause_text(db_column.server_default)
@@ -218,21 +244,21 @@ def validate_column_server_default(schema_column: sa.Column, db_column: sa.Colum
         assert schema_clause_text == db_clause_text
 
 
-def validate_column_type(schema_column: sa.Column, db_column: sa.Column, metadata: sa.MetaData, dialect):
+def _validate_column_type(schema_column: sa.Column, db_column: sa.Column, metadata: sa.MetaData, dialect):
     # array type. validate contents
     if isinstance(schema_column.type, postgresql.ARRAY):
         assert isinstance(db_column.type, postgresql.ARRAY)
 
-        validate_column_type_impl(
+        _validate_column_type_impl(
             schema_column.type.item_type, db_column.type.item_type, metadata, dialect, db_column, schema_column)
     else:
 
-        validate_column_type_impl(
+        _validate_column_type_impl(
             schema_column.type, db_column.type, metadata, dialect, db_column, schema_column)
     pass
 
 
-def validate_column_type_impl(schema_column_type, db_column_type, metadata: sa.MetaData, dialect, db_column: sa.Column, schema_column: sa.Column):
+def _validate_column_type_impl(schema_column_type, db_column_type, metadata: sa.MetaData, dialect, db_column: sa.Column, schema_column: sa.Column):
 
     if isinstance(schema_column_type, sa.TIMESTAMP):
         # timezone not supported in sqlite so this is just ignored there
@@ -253,7 +279,7 @@ def validate_column_type_impl(schema_column_type, db_column_type, metadata: sa.M
     elif isinstance(schema_column_type, postgresql.ENUM):
         # enum type if possible otherwise check constraint...
         assert isinstance(db_column_type, postgresql.ENUM)
-        validate_enum_column_type(metadata, db_column, schema_column)
+        _validate_enum_column_type(metadata, db_column, schema_column)
     else:
         # compare types by using the string version of the types.
         # seems to account for differences btw Integer and INTEGER, String(255) and VARCHAR(255) etc
@@ -261,7 +287,7 @@ def validate_column_type_impl(schema_column_type, db_column_type, metadata: sa.M
         assert str(schema_column_type) == str(db_column_type)
 
 
-def validate_enum_column_type(metadata: sa.MetaData, db_column: sa.Column, schema_column: sa.Column):
+def _validate_enum_column_type(metadata: sa.MetaData, db_column: sa.Column, schema_column: sa.Column):
     # has to be same length
     assert(len(schema_column.type.enums) == len(db_column.type.enums))
 
@@ -280,7 +306,7 @@ def validate_enum_column_type(metadata: sa.MetaData, db_column: sa.Column, schem
     assert schema_column.type.enums == db_sorted_enums
 
 
-def sort_fn(item):
+def _sort_fn(item):
     # if name is null, use type of object to sort
     if item.name is None:
         return type(item).__name__ + str(id(item))
@@ -288,10 +314,10 @@ def sort_fn(item):
     return type(item).__name__ + item.name
 
 
-def validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.MetaData):
+def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.MetaData):
     # sort indexes so that the order for both are the same
-    schema_indexes = sorted(schema_table.indexes, key=sort_fn)
-    db_indexes = sorted(db_table.indexes, key=sort_fn)
+    schema_indexes = sorted(schema_table.indexes, key=_sort_fn)
+    db_indexes = sorted(db_table.indexes, key=_sort_fn)
 
     assert len(schema_indexes) == len(db_indexes)
     for schema_index, db_index in zip(schema_indexes, db_indexes):
@@ -301,13 +327,13 @@ def validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.Me
         schema_index_columns = schema_index.columns
         db_index_columns = db_index.columns
         for schema_column, db_column in zip(schema_index_columns, db_index_columns):
-            validate_column(schema_column, db_column, metadata)
+            _validate_column(schema_column, db_column, metadata)
 
 
-def validate_constraints(schema_table: sa.Table, db_table: sa.Table, dialect, metadata: sa.MetaData):
+def _validate_constraints(schema_table: sa.Table, db_table: sa.Table, dialect, metadata: sa.MetaData):
     # sort constraints so that the order for both are the same
-    schema_constraints = sorted(schema_table.constraints, key=sort_fn)
-    db_constraints = sorted(db_table.constraints, key=sort_fn)
+    schema_constraints = sorted(schema_table.constraints, key=_sort_fn)
+    db_constraints = sorted(db_table.constraints, key=_sort_fn)
 
     bool_column_names_set = set()
     # sqlite doesn't support native boolean datatype so it adds another constraint.
@@ -350,10 +376,10 @@ def validate_constraints(schema_table: sa.Table, db_table: sa.Table, dialect, me
 
         assert len(schema_constraint_columns) == len(db_constraint_columns)
         for schema_column, db_column in zip(schema_constraint_columns, db_constraint_columns):
-            validate_column(schema_column, db_column, metadata, dialect)
+            _validate_column(schema_column, db_column, metadata, dialect)
 
 
-def validate_foreign_key(schema_column: sa.Column, db_column: sa.Column):
+def _validate_foreign_key(schema_column: sa.Column, db_column: sa.Column):
     assert len(schema_column.foreign_keys) == len(schema_column.foreign_keys)
 
     for db_fkey, schema_fkey in zip(db_column.foreign_keys, schema_column.foreign_keys):
@@ -373,7 +399,7 @@ def validate_foreign_key(schema_column: sa.Column, db_column: sa.Column):
         assert str(db_fkey.parent) == str(schema_fkey.parent)
 
 
-def setup_assoc_edge_config(new_test_runner):
+def _setup_assoc_edge_config(new_test_runner):
     # no revision, just do the changes to setup base case
     r = new_test_runner(conftest.metadata_assoc_edge_config())
     assert len(r.compute_changes()) == 1
@@ -381,31 +407,5 @@ def setup_assoc_edge_config(new_test_runner):
     assert_num_tables(r, 2, ['alembic_version', 'assoc_edge_config'])
     assert_num_files(r, 1)
     # r.get_metadata().reflect(bind=r.get_connection())
-
-    return r
-
-
-def recreate_metadata_fixture(new_test_runner, metadata: sa.MetaData, prev_runner: runner.Runner):
-    metadata.bind = prev_runner.get_connection()
-    metadata.reflect()
-
-    r = new_test_runner(metadata, prev_runner)
-    return r
-
-
-def run_edge_metadata_script(new_test_runner, metadata: sa.MetaData, message: String, num_files=2, prev_runner=None, num_changes=1):
-    # TODO combine with recreate_with_new_metadata?
-    if prev_runner is None:
-        prev_runner = setup_assoc_edge_config(new_test_runner)
-
-    r = recreate_metadata_fixture(new_test_runner, metadata, prev_runner)
-    assert len(r.compute_changes()) == num_changes
-
-    assert r.revision_message() == message
-
-    r.run()
-    # new file added for edge
-    assert_num_files(r, num_files)
-    validate_edges_from_metadata(metadata, r)
 
     return r
