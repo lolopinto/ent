@@ -26,6 +26,8 @@ parser.add_argument('-f', '--fix_edges', help='fix edges in schema into db')
 parser.add_argument('-u', '--upgrade', help='upgrade')
 # this is getting bad and needs to be changed soon to something that's more extensible and makes more sense
 parser.add_argument('-d', '--downgrade', help='downgrade')
+# only applies when downgrading, default is deleting file since it's auto created by schema
+parser.add_argument('--keep_schema_files', action='store_true')
 parser.add_argument('--history', help='alembic history', action='store_true')
 parser.add_argument('--current', help='alembic current', action='store_true')
 parser.add_argument('--show', help='show revision')
@@ -51,7 +53,7 @@ def main():
         if args.upgrade is not None:
             r.upgrade(args.upgrade)
         elif args.downgrade is not None:
-            r.downgrade(args.downgrade)
+            r.downgrade(args.downgrade, not args.keep_schema_files)
         elif args.history is True:
             r.history()
         elif args.current is True:

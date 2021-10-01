@@ -15,6 +15,6 @@ var downgradeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return db.DowngradeDB(cfg, args[0])
+		return db.DowngradeDB(cfg, args[0], false)
 	},
 }

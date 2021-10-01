@@ -423,8 +423,12 @@ func UpgradeDB(cfg *codegen.Config, revision string) error {
 	return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), fmt.Sprintf("-u=%s", revision))
 }
 
-func DowngradeDB(cfg *codegen.Config, revision string) error {
-	return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), fmt.Sprintf("-d=%s", revision))
+func DowngradeDB(cfg *codegen.Config, revision string, keepSchemaFiles bool) error {
+	extraArgs := []string{fmt.Sprintf("-d=%s", revision)}
+	if keepSchemaFiles {
+		extraArgs = append(extraArgs, "--keep_schema_files=True")
+	}
+	return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), extraArgs...)
 }
 
 func FixEdges(cfg *codegen.Config) error {
