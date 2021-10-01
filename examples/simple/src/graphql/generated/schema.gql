@@ -115,6 +115,7 @@ type User implements Node {
   timeInMs: String
   funUuids: [ID!]
   newCol: String
+  newCol2: String
   selfContact: Contact
   comments(first: Int, after: String, last: Int, before: String): UserToCommentsQueryConnection!
   createdEvents(first: Int, after: String, last: Int, before: String): UserToCreatedEventsConnection!

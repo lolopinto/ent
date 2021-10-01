@@ -98,6 +98,7 @@ export default class User extends BaseEntSchema implements Schema {
     BigIntegerType({ name: "timeInMs", nullable: true }),
     UUIDListType({ name: "fun_uuids", nullable: true }),
     StringType({ name: "new_col", nullable: true }),
+    StringType({ name: "new_col2", nullable: true }),
   ];
 
   edges: Edge[] = [

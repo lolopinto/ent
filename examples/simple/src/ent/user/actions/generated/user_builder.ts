@@ -42,6 +42,7 @@ export interface UserInput {
   timeInMs?: BigInt | null;
   funUuids?: ID[] | null;
   newCol?: string | null;
+  newCol2?: string | null;
 }
 
 export interface UserAction extends Action<User> {
@@ -609,6 +610,7 @@ export class UserBuilder implements Builder<User> {
     addField("timeInMs", fields.timeInMs);
     addField("fun_uuids", fields.funUuids);
     addField("new_col", fields.newCol);
+    addField("new_col2", fields.newCol2);
     return result;
   }
 
@@ -694,5 +696,9 @@ export class UserBuilder implements Builder<User> {
   // get value of new_col. Retrieves it from the input if specified or takes it from existingEnt
   getNewNewColValue(): string | null | undefined {
     return this.input.newCol || this.existingEnt?.newCol;
+  }
+  // get value of new_col2. Retrieves it from the input if specified or takes it from existingEnt
+  getNewNewCol2Value(): string | null | undefined {
+    return this.input.newCol2 || this.existingEnt?.newCol2;
   }
 }
