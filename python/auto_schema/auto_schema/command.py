@@ -81,10 +81,14 @@ class Command(object):
                     if rev.revision is not None:
                         if file.startswith(rev.revision):
                             result.append(file)
-                        if len(result) == len(revs):
-                            return result
-                        break
+                            if len(result) == len(revs):
+                                return result
+                            break
         return result
+
+    def get_history(self):
+        script = ScriptDirectory.from_config(self.alembic_cfg)
+        return list(script.walk_revisions())
 
     # Simulates running the `alembic history` command
     def history(self):
