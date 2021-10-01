@@ -79,6 +79,8 @@ class Command(object):
             for file in filenames:
                 for rev in revs:
                     if rev.revision is not None:
+                        # This depends on file_template remaining as it current is in __init__
+                        # if that changes, we need a regex for this too
                         if file.startswith(rev.revision):
                             result.append(file)
                             if len(result) == len(revs):
