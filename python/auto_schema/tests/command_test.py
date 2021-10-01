@@ -5,9 +5,8 @@ import pytest
 from . import conftest
 from . import testingutils
 
+
 # there doesn't seem to be an api for this
-
-
 def get_stamped_alembic_versions(r: runner.Runner):
     return [row['version_num'] for row in r.get_connection().execute('select * from alembic_version')]
 

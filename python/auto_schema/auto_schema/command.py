@@ -55,7 +55,7 @@ class Command(object):
         command.upgrade(self.alembic_cfg, revision)
 
     # Simulates running the `alembic downgrade` command
-    def downgrade(self, revision='', delete_files=False):
+    def downgrade(self, revision='', delete_files=True):
         paths = []
         if delete_files:
             paths = self._get_paths_to_delete(revision)
