@@ -97,6 +97,7 @@ export default class User extends BaseEntSchema implements Schema {
     // Date.now() is too big to store in int so have to use bigint. because of how big bigint could get, have to use BigInt instead of number
     BigIntegerType({ name: "timeInMs", nullable: true }),
     UUIDListType({ name: "fun_uuids", nullable: true }),
+    StringType({ name: "new_col", nullable: true }),
   ];
 
   edges: Edge[] = [

@@ -112,6 +112,9 @@ type User implements Node {
   prefsDiff: JSON
   daysOff: [daysOff!]
   preferredShift: [preferredShift!]
+  timeInMs: String
+  funUuids: [ID!]
+  newCol: String
   selfContact: Contact
   comments(first: Int, after: String, last: Int, before: String): UserToCommentsQueryConnection!
   createdEvents(first: Int, after: String, last: Int, before: String): UserToCreatedEventsConnection!
@@ -600,6 +603,7 @@ input UserCreateInput {
   prefsDiff: JSON
   daysOff: [daysOff!]
   preferredShift: [preferredShift!]
+  funUuids: [ID!]
 }
 
 type UserCreatePayload {

@@ -69,6 +69,7 @@ const fields = [
   "preferred_shift",
   "time_in_ms",
   "fun_uuids",
+  "new_col",
 ];
 
 export enum daysOff {
@@ -128,6 +129,7 @@ export class UserBase {
   readonly preferredShift: preferredShift[] | null;
   readonly timeInMs: BigInt | null;
   readonly funUuids: ID[] | null;
+  readonly newCol: string | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
@@ -148,6 +150,7 @@ export class UserBase {
     this.preferredShift = convertNullableList(data.preferred_shift);
     this.timeInMs = BigInt(data.time_in_ms);
     this.funUuids = convertNullableList(data.fun_uuids);
+    this.newCol = data.new_col;
   }
 
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;

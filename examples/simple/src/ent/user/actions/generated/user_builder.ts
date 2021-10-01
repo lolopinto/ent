@@ -41,6 +41,7 @@ export interface UserInput {
   preferredShift?: preferredShift[] | null;
   timeInMs?: BigInt | null;
   funUuids?: ID[] | null;
+  newCol?: string | null;
 }
 
 export interface UserAction extends Action<User> {
@@ -607,6 +608,7 @@ export class UserBuilder implements Builder<User> {
     addField("preferredShift", fields.preferredShift);
     addField("timeInMs", fields.timeInMs);
     addField("fun_uuids", fields.funUuids);
+    addField("new_col", fields.newCol);
     return result;
   }
 
@@ -687,5 +689,10 @@ export class UserBuilder implements Builder<User> {
   // get value of fun_uuids. Retrieves it from the input if specified or takes it from existingEnt
   getNewFunUuidsValue(): ID[] | null | undefined {
     return this.input.funUuids || this.existingEnt?.funUuids;
+  }
+
+  // get value of new_col. Retrieves it from the input if specified or takes it from existingEnt
+  getNewNewColValue(): string | null | undefined {
+    return this.input.newCol || this.existingEnt?.newCol;
   }
 }
