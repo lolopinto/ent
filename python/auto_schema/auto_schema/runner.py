@@ -230,8 +230,8 @@ class Runner(object):
     def upgrade(self, revision='head'):
         self.cmd.upgrade(revision)
 
-    def downgrade(self, revision):
-        self.cmd.downgrade(revision)
+    def downgrade(self, revision, delete_files):
+        self.cmd.downgrade(revision, delete_files=delete_files)
 
     def history(self):
         self.cmd.history()

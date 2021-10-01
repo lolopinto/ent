@@ -2,6 +2,7 @@ import os
 
 from alembic.config import Config
 from alembic import command
+from alembic.script import ScriptDirectory
 
 from . import runner
 
@@ -14,7 +15,7 @@ class Command(object):
         # script location is where we're running this from so keep that local
         alembic_cfg.set_main_option(
             "script_location", os.path.dirname(__file__))
-        #print("env.py location", os.path.dirname(__file__))
+        # print("env.py location", os.path.dirname(__file__))
 
         alembic_cfg.set_main_option(
             "version_locations", os.path.join(schema_path, "versions"))
@@ -54,8 +55,36 @@ class Command(object):
         command.upgrade(self.alembic_cfg, revision)
 
     # Simulates running the `alembic downgrade` command
-    def downgrade(self, revision=''):
+    def downgrade(self, revision='', delete_files=False):
+        paths = []
+        if delete_files:
+            paths = self._get_paths_to_delete(revision)
         command.downgrade(self.alembic_cfg, revision)
+
+        # if downgrade worked, delete files
+        location = self.alembic_cfg.get_main_option('version_locations')
+        for path in paths:
+            os.remove(os.path.join(location, path))
+
+    def _get_paths_to_delete(self, revision):
+        script = ScriptDirectory.from_config(self.alembic_cfg)
+        revs = list(script.revision_map.iterate_revisions(
+            'head', revision, select_for_downgrade=True
+        ))
+
+        location = self.alembic_cfg.get_main_option('version_locations')
+
+        result = []
+        for _, _, filenames in os.walk(location):
+            for file in filenames:
+                for rev in revs:
+                    if rev.revision is not None:
+                        if file.startswith(rev.revision):
+                            result.append(file)
+                        if len(result) == len(revs):
+                            return result
+                        break
+        return result
 
     # Simulates running the `alembic history` command
     def history(self):
