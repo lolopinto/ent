@@ -28,6 +28,7 @@ parser.add_argument('-u', '--upgrade', help='upgrade')
 parser.add_argument('-d', '--downgrade', help='downgrade')
 # only applies when downgrading, default is deleting file since it's auto created by schema
 parser.add_argument('--keep_schema_files', action='store_true')
+parser.add_argument('--merge_branches', action='store_true')
 parser.add_argument('--history', help='alembic history', action='store_true')
 parser.add_argument('--current', help='alembic current', action='store_true')
 parser.add_argument('--show', help='show revision')
@@ -51,7 +52,8 @@ def main():
     else:
         r = Runner.from_command_line(metadata, args)
         if args.upgrade is not None:
-            r.upgrade(args.upgrade)
+            r.upgrade(revision=args.upgrade,
+                      merge_branches=args.merge_branches)
         elif args.downgrade is not None:
             r.downgrade(args.downgrade, not args.keep_schema_files)
         elif args.history is True:
@@ -70,6 +72,9 @@ def main():
             r.edit(args.edit)
         elif args.changes:
             r.changes()
+        # elif args.merge is not None:
+        # we still want merge just in case...
+        #     r.merge(args.merge)
         else:
             r.run()
 

@@ -1,9 +1,15 @@
-from alembic.command import history
+from alembic import command
+import alembic
+from alembic.util.exc import CommandError
 from auto_schema import runner
+from sqlalchemy.sql.sqltypes import String
 import pytest
+import sqlalchemy as sa
 
 from . import conftest
 from . import testingutils
+from typing import List
+import os
 
 
 # there doesn't seem to be an api for this
@@ -11,7 +17,25 @@ def get_stamped_alembic_versions(r: runner.Runner):
     return [row['version_num'] for row in r.get_connection().execute('select * from alembic_version')]
 
 
-class TestCommand(object):
+def stash_new_files(r: runner.Runner, l: List[String], l2: List[String]):
+    ret = {}
+
+    for path in l2:
+        if path not in l:
+            file = os.path.join(r.get_schema_path(), 'versions', path)
+            with open(file) as f:
+                ret[file] = f.readlines()
+            os.remove(file)
+    return ret
+
+
+def write_stashed_files(stash):
+    for file in stash:
+        with open(file, 'w') as w:
+            w.writelines(stash[file])
+
+
+class CommandTest(object):
 
     @ pytest.mark.usefixtures("metadata_with_table")
     @ pytest.mark.parametrize(
@@ -82,3 +106,95 @@ class TestCommand(object):
         else:
             assert len(current_versions) == 1
             assert current_versions[0] == history[expected_current_head].revision
+
+    @ pytest.mark.usefixtures("metadata_with_table")
+    @ pytest.mark.parametrize(
+        'merge_branches',
+        [
+            # don't want to automatically merge branches because we could be upgrading in production
+            # and can't make any changes here
+            False,
+            # True
+        ]
+    )
+    def test_upgrade(self, new_test_runner, metadata_with_table, merge_branches):
+        r: runner.Runner = new_test_runner(metadata_with_table)
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_table)
+
+        assert len(r.cmd.get_heads()) == 1
+
+        files = testingutils.get_version_files(r)
+        r2 = testingutils.new_runner_from_old(
+            r,
+            new_test_runner,
+            _add_column_to_metadata(metadata_with_table, 'new_col1'),
+        )
+        r2.revision()
+        files2 = testingutils.get_version_files(r2)
+
+        assert len(r2.cmd.get_heads()) == 1
+
+        stashed = stash_new_files(r, files, files2)
+
+        r3 = testingutils.new_runner_from_old(
+            r,
+            new_test_runner,
+            _add_column_to_metadata(metadata_with_table, 'new_col2'),
+        )
+
+        r3.revision()
+#        files3 = testingutils.get_version_files(r3)
+        write_stashed_files(stashed)
+
+        assert len(r3.cmd.get_heads()) == 2
+
+        # multiple heads, trying to use alembic upgrade on its own causes leads to an error
+        with pytest.raises(CommandError):
+            command.upgrade(r3.cmd.alembic_cfg, 'head')
+
+        assert len(r3.compute_changes()) > 0
+
+        # sucessfully upgrade
+        info = r3.upgrade('head', merge_branches)
+        if merge_branches:
+            assert info.setdefault('unmerged_branches', None) == None
+            assert info.setdefault('merged_and_upgraded_head', None) == True
+            # new head
+            assert len(r3.cmd.get_heads()) == 1
+        else:
+            assert info.setdefault('unmerged_branches', None) == True
+            assert info.setdefault('merged_and_upgraded_head', None) == None
+            assert len(r3.cmd.get_heads()) == 2
+
+        # reflect to reload
+        r3.metadata.reflect()
+
+        r4 = testingutils.new_runner_from_old(
+            r3,
+            new_test_runner,
+            _add_column_to_metadata(r3.metadata, 'new_col3'),
+        )
+
+        r4.revision()
+        print(testingutils.get_version_files(r4))
+
+
+def _add_column_to_metadata(metadata: sa.MetaData, col_name: String):
+    if len(testingutils.get_sorted_tables(metadata)) != 1:
+        raise ValueError("only support one table at the moment")
+
+    return conftest.metadata_with_given_cols_added_to_table(
+        metadata,
+        [
+            sa.Column(col_name, sa.Integer, nullable=True),
+        ]
+    )
+
+
+class TestPostgresCommand(CommandTest):
+    pass
+
+
+# class TestSQLiteCommand(CommandTest):
+#     pass

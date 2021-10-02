@@ -1,4 +1,5 @@
 import os
+from typing import List
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 from auto_schema.clause_text import get_clause_text
@@ -21,6 +22,12 @@ def get_version_files(r: runner.Runner):
     return []
 
 
+# get sorted tabels not alembic_version
+def get_sorted_tables(metadata: sa.MetaData) -> List[sa.Table]:
+    return list(
+        filter(lambda t: t.name != 'alembic_version', metadata.sorted_tables))
+
+
 def assert_num_tables(r: runner.Runner, expected_count, tables=None):
     new_metadata = _get_new_metadata_for_runner(r)
 
@@ -28,8 +35,7 @@ def assert_num_tables(r: runner.Runner, expected_count, tables=None):
     # so just write it away
     sorted_tables = new_metadata.sorted_tables
     if expected_count == 0:
-        sorted_tables = list(
-            filter(lambda t: t.name != 'alembic_version', new_metadata.sorted_tables))
+        sorted_tables = get_sorted_tables(new_metadata)
 
     assert len(sorted_tables) == expected_count
 
@@ -142,7 +148,7 @@ def run_and_validate_with_standard_metadata_tables(r: runner.Runner, metadata_wi
     validate_metadata_after_change(r, metadata_with_table)
 
 
-def recreate_with_new_metadata(r: runner.Runner, new_test_runner, metadata_with_table: sa.MetaData, metadata_func):
+def recreate_with_new_metadata(r: runner.Runner, new_test_runner, metadata_with_table: sa.MetaData, metadata_func) -> runner.Runner:
     metadata_func(metadata_with_table)
     # recreate and run
     r2 = new_test_runner(metadata_with_table, r)
@@ -150,7 +156,14 @@ def recreate_with_new_metadata(r: runner.Runner, new_test_runner, metadata_with_
     return r2
 
 
-def recreate_metadata_fixture(new_test_runner, metadata: sa.MetaData, prev_runner: runner.Runner):
+# TODO too many of these functions and not clear what the difference is
+def new_runner_from_old(prev_runner: runner.Runner, new_test_runner, new_metadata):
+    new_metadata.bind = prev_runner.get_connection()
+    r2 = new_test_runner(new_metadata, prev_runner)
+    return r2
+
+
+def recreate_metadata_fixture(new_test_runner, metadata: sa.MetaData, prev_runner: runner.Runner) -> runner.Runner:
     metadata.bind = prev_runner.get_connection()
     metadata.reflect()
 
@@ -158,7 +171,7 @@ def recreate_metadata_fixture(new_test_runner, metadata: sa.MetaData, prev_runne
     return r
 
 
-def run_edge_metadata_script(new_test_runner, metadata: sa.MetaData, message: String, num_files=2, prev_runner=None, num_changes=1):
+def run_edge_metadata_script(new_test_runner, metadata: sa.MetaData, message: String, num_files=2, prev_runner=None, num_changes=1) -> runner.Runner:
     # TODO combine with recreate_with_new_metadata?
     if prev_runner is None:
         prev_runner = _setup_assoc_edge_config(new_test_runner)
@@ -176,7 +189,7 @@ def run_edge_metadata_script(new_test_runner, metadata: sa.MetaData, message: St
     return r
 
 
-def _get_new_metadata_for_runner(r: runner.Runner):
+def _get_new_metadata_for_runner(r: runner.Runner) -> sa.MetaData:
     # metadata = r.get_metadata()
     # don't reflect but in fact get a new object so that we can reflect corectly
     new_metadata = sa.MetaData()
@@ -185,7 +198,7 @@ def _get_new_metadata_for_runner(r: runner.Runner):
     return new_metadata
 
 
-def _validate_table(schema_table: sa.Table, db_table: sa.Table, dialect, metadata: sa.MetaData):
+def _validate_table(schema_table: sa.Table, db_table: sa.Table, dialect: String, metadata: sa.MetaData):
     assert schema_table != db_table
     assert id(schema_table) != id(db_table)
 
@@ -196,7 +209,7 @@ def _validate_table(schema_table: sa.Table, db_table: sa.Table, dialect, metadat
     _validate_indexes(schema_table, db_table, metadata)
 
 
-def _validate_columns(schema_table: sa.Table, db_table: sa.Table, metadata: sa.MetaData, dialect):
+def _validate_columns(schema_table: sa.Table, db_table: sa.Table, metadata: sa.MetaData, dialect: String):
     schema_columns = schema_table.columns
     db_columns = db_table.columns
     assert len(schema_columns) == len(db_columns)
@@ -204,7 +217,7 @@ def _validate_columns(schema_table: sa.Table, db_table: sa.Table, metadata: sa.M
         _validate_column(schema_column, db_column, metadata, dialect)
 
 
-def _validate_column(schema_column: sa.Column, db_column: sa.Column, metadata: sa.MetaData, dialect):
+def _validate_column(schema_column: sa.Column, db_column: sa.Column, metadata: sa.MetaData, dialect: String):
     assert schema_column != db_column
     assert(id(schema_column)) != id(db_column)
 
@@ -244,7 +257,7 @@ def _validate_column_server_default(schema_column: sa.Column, db_column: sa.Colu
         assert schema_clause_text == db_clause_text
 
 
-def _validate_column_type(schema_column: sa.Column, db_column: sa.Column, metadata: sa.MetaData, dialect):
+def _validate_column_type(schema_column: sa.Column, db_column: sa.Column, metadata: sa.MetaData, dialect: String):
     # array type. validate contents
     if isinstance(schema_column.type, postgresql.ARRAY):
         assert isinstance(db_column.type, postgresql.ARRAY)
@@ -330,7 +343,7 @@ def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.M
             _validate_column(schema_column, db_column, metadata)
 
 
-def _validate_constraints(schema_table: sa.Table, db_table: sa.Table, dialect, metadata: sa.MetaData):
+def _validate_constraints(schema_table: sa.Table, db_table: sa.Table, dialect: String, metadata: sa.MetaData):
     # sort constraints so that the order for both are the same
     schema_constraints = sorted(schema_table.constraints, key=_sort_fn)
     db_constraints = sorted(db_table.constraints, key=_sort_fn)

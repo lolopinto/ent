@@ -455,8 +455,8 @@ class BaseTestRunner(object):
 
         new_metadata = conftest.metadata_with_row_removed(
             metadata_with_request_data)
-        new_metadata.bind = r.get_connection()
-        r2 = new_test_runner(new_metadata, r)
+        r2 = testingutils.new_runner_from_old(
+            r, new_test_runner, new_metadata)
 
         diff = r2.compute_changes()
         assert len(diff) == 1
@@ -471,8 +471,8 @@ class BaseTestRunner(object):
 
         new_metadata = conftest.metadata_with_rows_added(
             metadata_with_request_data)
-        new_metadata.bind = r.get_connection()
-        r3 = new_test_runner(new_metadata, r)
+        r3 = testingutils.new_runner_from_old(
+            r, new_test_runner, new_metadata)
 
         diff = r3.compute_changes()
         assert len(diff) == 1
@@ -501,8 +501,8 @@ class BaseTestRunner(object):
         # update multiple objects so there's different values
         new_metadata = conftest.metadata_with_rainbows_enum_changed(
             metadata_with_multiple_data_tables)
-        new_metadata.bind = r.get_connection()
-        r2 = new_test_runner(new_metadata, r)
+        r2 = testingutils.new_runner_from_old(
+            r, new_test_runner, new_metadata)
 
         diff = r2.compute_changes()
         assert len(diff) == 1
@@ -528,8 +528,8 @@ class BaseTestRunner(object):
         # remove rows
         new_metadata = conftest.metadata_with_triple_pkey_with_rows_removed(
             metadata_with_triple_pkey)
-        new_metadata.bind = r.get_connection()
-        r2 = new_test_runner(new_metadata, r)
+        r2 = testingutils.new_runner_from_old(
+            r, new_test_runner, new_metadata)
 
         diff = r2.compute_changes()
         assert len(diff) == 1
@@ -544,8 +544,8 @@ class BaseTestRunner(object):
         # modify row
         new_metadata = conftest.metadata_with_triple_pkey_with_rows_changed(
             metadata_with_triple_pkey)
-        new_metadata.bind = r.get_connection()
-        r3 = new_test_runner(new_metadata, r)
+        r3 = testingutils.new_runner_from_old(
+            r, new_test_runner, new_metadata)
 
         diff = r3.compute_changes()
         assert len(diff) == 1
@@ -836,8 +836,8 @@ class TestPostgresRunner(BaseTestRunner):
             r, metadata_with_table)
 
         new_metadata = conftest.metadata_with_removed_column()
-        new_metadata.bind = r.get_connection()
-        r2 = new_test_runner(new_metadata, r)
+        r2 = testingutils.new_runner_from_old(
+            r, new_test_runner, new_metadata)
 
         diff = r2.compute_changes()
 
@@ -869,10 +869,8 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_table)
 
-        new_metadata = conftest.metadata_with_cols_added_to_table(
-            metadata_with_table)
-        new_metadata.bind = r.get_connection()
-        r2 = new_test_runner(new_metadata, r)
+        r2 = testingutils.new_runner_from_old(r, new_test_runner, conftest.metadata_with_cols_added_to_table(
+            metadata_with_table))
 
         diff = r2.compute_changes()
 
@@ -893,8 +891,11 @@ class TestPostgresRunner(BaseTestRunner):
 
         # add column with enum
         new_metadata = conftest.metadata_with_new_enum_column()
-        new_metadata.bind = r.get_connection()
-        r2 = new_test_runner(new_metadata, r)
+        r2 = testingutils.new_runner_from_old(
+            r,
+            new_test_runner,
+            new_metadata
+        )
 
         diff = r2.compute_changes()
 
@@ -953,8 +954,11 @@ class TestPostgresRunner(BaseTestRunner):
 
         # no tables
         new_metadata = sa.MetaData()
-        new_metadata.bind = r.get_connection()
-        r2 = new_test_runner(new_metadata, r)
+        r2 = testingutils.new_runner_from_old(
+            r,
+            new_test_runner,
+            new_metadata
+        )
 
         diff = r2.compute_changes()
 

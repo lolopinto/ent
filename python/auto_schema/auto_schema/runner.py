@@ -182,9 +182,10 @@ class Runner(object):
         diff = self.compute_changes()
 
         if len(diff) == 0:
-            print("schema is up to date")
+            # TODO move schema is up to date to Golang
+            return None
         else:
-            self._apply_changes(diff)
+            return self._apply_changes(diff)
 
     def _apply_changes(self, diff):
         # pprint.pprint(diff, indent=2, width=20)
@@ -201,7 +202,9 @@ class Runner(object):
             else:
                 raise err
 
-        self.upgrade()
+        # should be handled here
+        # instead of having to do it manually
+        return self.upgrade()
 
     def revision_message(self, diff=None):
         if diff is None:
@@ -227,8 +230,8 @@ class Runner(object):
         # understand diff and make changes as needed
         # pprint.pprint(migrations, indent=2, width=30)
 
-    def upgrade(self, revision='head'):
-        self.cmd.upgrade(revision)
+    def upgrade(self, revision='head', merge_branches=False):
+        return self.cmd.upgrade(revision, merge_branches)
 
     def downgrade(self, revision, delete_files):
         self.cmd.downgrade(revision, delete_files=delete_files)
@@ -258,3 +261,6 @@ class Runner(object):
         diff = self.compute_changes()
         d = Diff(diff, group_by_table=True)
         print(json.dumps(d.changes()))
+
+    def merge(self, revisions):
+        self.cmd.merge(revisions)
