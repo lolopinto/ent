@@ -57,14 +57,21 @@ class Command(object):
         heads = self.get_heads()
         if len(heads) > 1:
             # if multiple heads, now safe to do a merge first before the revision since we can't
-            # keep making changes in a branch
-            pass
+            # keep making (automatic) changes in a branch
+            merge_message = self._get_merge_message(heads)
+            # create a merge revision and upgrade to it
+            command.merge(self.alembic_cfg, 'heads', message=merge_message)
+            command.upgrade(self.alembic_cfg, 'head')
+
         command.revision(self.alembic_cfg, message, autogenerate=True)
 
     def get_heads(self):
         script = ScriptDirectory.from_config(self.alembic_cfg)
 
         return script.get_heads()
+
+    def _get_merge_message(self, heads) -> str:
+        return 'merge revisions %s ' % ", ".join(heads)
 
     # Simulates running the `alembic upgrade` command
     def upgrade(self, revision='head', merge_branches=False) -> UpgradeInfo:
@@ -79,7 +86,7 @@ class Command(object):
             if len(heads) > 1:
 
                 if merge_branches:
-                    merge_message = 'merge revisions %s ' % ", ".join(heads)
+                    merge_message = self._get_merge_message(heads)
                 else:
                     # need to indicate this so that this is fixed
                     ret['unmerged_branches'] = True
@@ -169,3 +176,6 @@ class Command(object):
     # this should probably not be exposed at the moment?
     def edit(self, revision):
         command.edit(self.alembic_cfg, revision)
+
+    def merge(self, revisions, message=None):
+        command.merge(self.alembic_cfg, revisions, message=message)

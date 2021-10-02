@@ -262,5 +262,5 @@ class Runner(object):
         d = Diff(diff, group_by_table=True)
         print(json.dumps(d.changes()))
 
-    def merge(self, revisions):
-        self.cmd.merge(revisions)
+    def merge(self, revisions, message=None):
+        self.cmd.merge(revisions, message=message)

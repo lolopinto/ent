@@ -36,6 +36,8 @@ parser.add_argument('--heads', help='alembic heads', action='store_true')
 parser.add_argument('--branches', help='alembic branches', action='store_true')
 parser.add_argument('--stamp', help='alembic stamp')
 parser.add_argument('--edit', help='alembic edit')
+parser.add_argument('--merge', help='alembic merge')
+parser.add_argument('--message', help='message if alembic merge is called')
 parser.add_argument(
     '--changes', help='get changes in schema', action='store_true')
 
@@ -72,9 +74,8 @@ def main():
             r.edit(args.edit)
         elif args.changes:
             r.changes()
-        # elif args.merge is not None:
-        # we still want merge just in case...
-        #     r.merge(args.merge)
+        elif args.merge is not None:
+            r.merge(args.merge, args.message)
         else:
             r.run()
 

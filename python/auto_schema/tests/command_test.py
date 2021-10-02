@@ -109,15 +109,15 @@ class CommandTest(object):
 
     @ pytest.mark.usefixtures("metadata_with_table")
     @ pytest.mark.parametrize(
-        'merge_branches',
+        'merge_branches_while_upgrading',
         [
             # don't want to automatically merge branches because we could be upgrading in production
             # and can't make any changes here
             False,
-            # True
+            True
         ]
     )
-    def test_upgrade(self, new_test_runner, metadata_with_table, merge_branches):
+    def test_upgrade(self, new_test_runner, metadata_with_table, merge_branches_while_upgrading):
         r: runner.Runner = new_test_runner(metadata_with_table)
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_table)
@@ -125,6 +125,7 @@ class CommandTest(object):
         assert len(r.cmd.get_heads()) == 1
 
         files = testingutils.get_version_files(r)
+        assert len(files) == 1
         r2 = testingutils.new_runner_from_old(
             r,
             new_test_runner,
@@ -132,6 +133,7 @@ class CommandTest(object):
         )
         r2.revision()
         files2 = testingutils.get_version_files(r2)
+        assert len(files2) == 2
 
         assert len(r2.cmd.get_heads()) == 1
 
@@ -144,8 +146,14 @@ class CommandTest(object):
         )
 
         r3.revision()
-#        files3 = testingutils.get_version_files(r3)
+
+        files3 = testingutils.get_version_files(r3)
+        assert len(files3) == 2
+
         write_stashed_files(stashed)
+
+        files3b = testingutils.get_version_files(r3)
+        assert len(files3b) == 3
 
         assert len(r3.cmd.get_heads()) == 2
 
@@ -156,16 +164,26 @@ class CommandTest(object):
         assert len(r3.compute_changes()) > 0
 
         # sucessfully upgrade
-        info = r3.upgrade('head', merge_branches)
-        if merge_branches:
+        info = r3.upgrade('head', merge_branches_while_upgrading)
+
+        files3c = testingutils.get_version_files(r3)
+
+        if merge_branches_while_upgrading:
             assert info.setdefault('unmerged_branches', None) == None
             assert info.setdefault('merged_and_upgraded_head', None) == True
             # new head
             assert len(r3.cmd.get_heads()) == 1
+
+            # new file created
+            assert len(files3c) == 4
+
         else:
             assert info.setdefault('unmerged_branches', None) == True
             assert info.setdefault('merged_and_upgraded_head', None) == None
             assert len(r3.cmd.get_heads()) == 2
+
+            # no new file created
+            assert len(files3c) == 3
 
         # reflect to reload
         r3.metadata.reflect()
@@ -176,8 +194,15 @@ class CommandTest(object):
             _add_column_to_metadata(r3.metadata, 'new_col3'),
         )
 
+        # TODO need to be able to make a change after.
+        # should only be making a change in source control
         r4.revision()
-        print(testingutils.get_version_files(r4))
+        files4 = testingutils.get_version_files(r4)
+
+        # merge revision was either created earlier during upgrade
+        # or now when the change is happening
+        assert len(files4) == 5
+        r4.run()
 
 
 def _add_column_to_metadata(metadata: sa.MetaData, col_name: String):
