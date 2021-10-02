@@ -182,7 +182,6 @@ class Runner(object):
         diff = self.compute_changes()
 
         if len(diff) == 0:
-            # TODO move schema is up to date to Golang
             return None
         else:
             return self._apply_changes(diff)
@@ -202,8 +201,6 @@ class Runner(object):
             else:
                 raise err
 
-        # should be handled here
-        # instead of having to do it manually
         return self.upgrade()
 
     def revision_message(self, diff=None):

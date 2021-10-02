@@ -194,8 +194,6 @@ class CommandTest(object):
             _add_column_to_metadata(r3.metadata, 'new_col3'),
         )
 
-        # TODO need to be able to make a change after.
-        # should only be making a change in source control
         r4.revision()
         files4 = testingutils.get_version_files(r4)
 

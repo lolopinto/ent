@@ -82,13 +82,11 @@ class Command(object):
             # if more than one, update to heads
             # and then also create merge script
             heads = self.get_heads()
-#            print(heads)
-            if len(heads) > 1:
 
+            if len(heads) > 1:
                 if merge_branches:
                     merge_message = self._get_merge_message(heads)
                 else:
-                    # need to indicate this so that this is fixed
                     ret['unmerged_branches'] = True
 
                 # need to change to upgrade to heads and then merge and upgrade that to head
@@ -107,10 +105,7 @@ class Command(object):
         ret['merged_and_upgraded_head'] = True
         return ret
 
-        # TODO need to test what happens with codegen when there are branches
-
     # Simulates running the `alembic downgrade` command
-
     def downgrade(self, revision='', delete_files=True):
         paths = []
         if delete_files:

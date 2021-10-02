@@ -156,7 +156,7 @@ def recreate_with_new_metadata(r: runner.Runner, new_test_runner, metadata_with_
     return r2
 
 
-# TODO too many of these functions and not clear what the difference is
+# TODO too many of these functions and not obvious what the difference is
 def new_runner_from_old(prev_runner: runner.Runner, new_test_runner, new_metadata):
     new_metadata.bind = prev_runner.get_connection()
     r2 = new_test_runner(new_metadata, prev_runner)
