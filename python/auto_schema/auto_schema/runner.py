@@ -261,3 +261,6 @@ class Runner(object):
 
     def merge(self, revisions, message=None):
         self.cmd.merge(revisions, message=message)
+
+    def squash(self, squash):
+        self.cmd.squash(self.revision, squash)
