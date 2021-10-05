@@ -697,6 +697,7 @@ export class UserBuilder implements Builder<User> {
   getNewNewColValue(): string | null | undefined {
     return this.input.newCol || this.existingEnt?.newCol;
   }
+
   // get value of new_col2. Retrieves it from the input if specified or takes it from existingEnt
   getNewNewCol2Value(): string | null | undefined {
     return this.input.newCol2 || this.existingEnt?.newCol2;

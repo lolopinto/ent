@@ -116,6 +116,8 @@ export const UserType = new GraphQLObjectType({
       type: GraphQLList(GraphQLNonNull(GraphQLID)),
     },
     newCol: {
+      type: GraphQLString,
+    },
     newCol2: {
       type: GraphQLString,
     },
