@@ -174,3 +174,14 @@ class Command(object):
 
     def merge(self, revisions, message=None):
         command.merge(self.alembic_cfg, revisions, message=message)
+
+    def squash(self, gen_revision, squash):
+        if not isinstance(squash, int) or squash < 2:
+            raise ValueError("squash needs to be an integer of at least 2")
+
+        # downgrade -2 and re-run upgrade
+        self.downgrade('-%d' % squash)
+
+        # generate a new revision
+        gen_revision()
+        self.upgrade()

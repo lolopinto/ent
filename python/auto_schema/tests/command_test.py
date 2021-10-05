@@ -35,6 +35,21 @@ def write_stashed_files(stash):
             w.writelines(stash[file])
 
 
+def _add_column_to_metadata(metadata: sa.MetaData, col_name: String):
+    return _add_columns_to_metadata(metadata, [col_name])
+
+
+def _add_columns_to_metadata(metadata: sa.MetaData, col_names: List[String]):
+    if len(testingutils.get_sorted_tables(metadata)) != 1:
+        raise ValueError("only support one table at the moment")
+
+    return conftest.metadata_with_given_cols_added_to_table(
+        metadata,
+        [sa.Column(col_name, sa.Integer, nullable=True)
+         for col_name in col_names],
+    )
+
+
 class CommandTest(object):
 
     @ pytest.mark.usefixtures("metadata_with_table")
@@ -202,17 +217,52 @@ class CommandTest(object):
         assert len(files4) == 5
         r4.run()
 
-
-def _add_column_to_metadata(metadata: sa.MetaData, col_name: String):
-    if len(testingutils.get_sorted_tables(metadata)) != 1:
-        raise ValueError("only support one table at the moment")
-
-    return conftest.metadata_with_given_cols_added_to_table(
-        metadata,
+    @ pytest.mark.usefixtures("metadata_with_table")
+    @pytest.mark.parametrize(
+        'squash_val, files_left, squash_raises',
         [
-            sa.Column(col_name, sa.Integer, nullable=True),
+            (2, 2, False),
+            (3, 1, False),
+            (1, 3, True),
         ]
     )
+    def test_squash(self, new_test_runner, metadata_with_table, squash_val, files_left, squash_raises):
+        r: runner.Runner = new_test_runner(metadata_with_table)
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_table)
+
+        new_metadata = _add_column_to_metadata(metadata_with_table, 'new_col1')
+        r2 = testingutils.new_runner_from_old(
+            r,
+            new_test_runner,
+            new_metadata
+        )
+        r2.run()
+        testingutils.assert_num_files(r2, 2)
+        testingutils.validate_metadata_after_change(r2, new_metadata)
+
+        new_metadata = _add_columns_to_metadata(
+            metadata_with_table, ['new_col1', 'new_col2'])
+        r3 = testingutils.new_runner_from_old(
+            r2,
+            new_test_runner,
+            new_metadata
+        )
+        r3.run()
+        testingutils.assert_num_files(r3, 3)
+        testingutils.validate_metadata_after_change(r3, new_metadata)
+
+        r3.metadata.reflect()
+        if squash_raises:
+            with pytest.raises(ValueError):
+                r3.squash(squash_val)
+        else:
+            r3.squash(squash_val)
+
+        # should be squashed down to X files after change
+        testingutils.assert_num_files(r3, files_left)
+        r3.metadata.reflect()
+        testingutils.validate_metadata_after_change(r3, new_metadata)
 
 
 class TestPostgresCommand(CommandTest):
