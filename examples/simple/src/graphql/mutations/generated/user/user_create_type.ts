@@ -6,6 +6,7 @@
 import {
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
+  GraphQLID,
   GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
   GraphQLList,
@@ -59,6 +60,9 @@ export const UserCreateInputType = new GraphQLInputObjectType({
     preferredShift: {
       type: GraphQLList(GraphQLNonNull(preferredShiftType)),
     },
+    funUuids: {
+      type: GraphQLList(GraphQLNonNull(GraphQLID)),
+    },
   }),
 });
 
@@ -100,6 +104,7 @@ export const UserCreateType: GraphQLFieldConfig<
       prefsDiff: input.prefsDiff,
       daysOff: input.daysOff,
       preferredShift: input.preferredShift,
+      funUuids: input.funUuids,
     }).saveX();
     return { user: user };
   },

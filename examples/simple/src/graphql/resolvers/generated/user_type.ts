@@ -109,6 +109,16 @@ export const UserType = new GraphQLObjectType({
         );
       },
     },
+    timeInMs: {
+      type: GraphQLString,
+    },
+    funUuids: {
+      type: GraphQLList(GraphQLNonNull(GraphQLID)),
+    },
+    newCol: {
+    newCol2: {
+      type: GraphQLString,
+    },
     selfContact: {
       type: ContactType,
       resolve: (user: User, args: {}, context: RequestContext) => {

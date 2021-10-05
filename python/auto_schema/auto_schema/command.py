@@ -5,6 +5,12 @@ from alembic import command
 from alembic.script import ScriptDirectory
 
 from . import runner
+from typing import TypedDict
+
+
+class UpgradeInfo(TypedDict):
+    unmerged_branches: bool
+    merged_and_upgraded_head: bool
 
 
 class Command(object):
@@ -48,11 +54,56 @@ class Command(object):
 
     # Simulates running the `alembic revision -m` command
     def revision(self, message):
+        heads = self.get_heads()
+        if len(heads) > 1:
+            # if multiple heads, now safe to do a merge first before the revision since we can't
+            # keep making (automatic) changes in a branch
+            merge_message = self._get_merge_message(heads)
+            # create a merge revision and upgrade to it
+            command.merge(self.alembic_cfg, 'heads', message=merge_message)
+            command.upgrade(self.alembic_cfg, 'head')
+
         command.revision(self.alembic_cfg, message, autogenerate=True)
 
+    def get_heads(self):
+        script = ScriptDirectory.from_config(self.alembic_cfg)
+
+        return script.get_heads()
+
+    def _get_merge_message(self, heads) -> str:
+        return 'merge revisions %s ' % ", ".join(heads)
+
     # Simulates running the `alembic upgrade` command
-    def upgrade(self, revision='head'):
+    def upgrade(self, revision='head', merge_branches=False) -> UpgradeInfo:
+        ret: UpgradeInfo = {}
+        merge_message = None
+        if revision == 'head':
+            # check for current heads
+            # if more than one, update to heads
+            # and then also create merge script
+            heads = self.get_heads()
+
+            if len(heads) > 1:
+                if merge_branches:
+                    merge_message = self._get_merge_message(heads)
+                else:
+                    ret['unmerged_branches'] = True
+
+                # need to change to upgrade to heads and then merge and upgrade that to head
+                revision = 'heads'
+
         command.upgrade(self.alembic_cfg, revision)
+
+        if merge_message is None:
+            return ret
+
+        # merge the heads
+        command.merge(self.alembic_cfg, 'heads', message=merge_message)
+        # upgrade to head
+        command.upgrade(self.alembic_cfg, 'head')
+        # we want to flag this back somehow so that developer knows what happened
+        ret['merged_and_upgraded_head'] = True
+        return ret
 
     # Simulates running the `alembic downgrade` command
     def downgrade(self, revision='', delete_files=True):
@@ -120,3 +171,6 @@ class Command(object):
     # this should probably not be exposed at the moment?
     def edit(self, revision):
         command.edit(self.alembic_cfg, revision)
+
+    def merge(self, revisions, message=None):
+        command.merge(self.alembic_cfg, revisions, message=message)
