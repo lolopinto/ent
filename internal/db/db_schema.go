@@ -419,15 +419,24 @@ func (s *dbSchema) makeDBChanges() error {
 	return auto_schema.RunPythonCommand(s.pathToConfigs)
 }
 
-func UpgradeDB(cfg *codegen.Config, revision string) error {
-	return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), fmt.Sprintf("-u=%s", revision))
+func UpgradeDB(cfg *codegen.Config, revision string, mergeBranches bool) error {
+	extraArgs := []string{fmt.Sprintf("-u=%s", revision)}
+	if mergeBranches {
+		extraArgs = append(extraArgs, "--merge_branches")
+	}
+	return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), extraArgs...)
 }
 
 func DowngradeDB(cfg *codegen.Config, revision string, keepSchemaFiles bool) error {
 	extraArgs := []string{fmt.Sprintf("-d=%s", revision)}
 	if keepSchemaFiles {
-		extraArgs = append(extraArgs, "--keep_schema_files=True")
+		extraArgs = append(extraArgs, "--keep_schema_files")
 	}
+	return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), extraArgs...)
+}
+
+func Squash(cfg *codegen.Config, squash int) error {
+	extraArgs := []string{fmt.Sprintf("--squash=%d", squash)}
 	return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), extraArgs...)
 }
 

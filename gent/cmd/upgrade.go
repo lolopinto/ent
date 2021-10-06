@@ -20,6 +20,6 @@ var upgradeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return db.UpgradeDB(cfg, revision)
+		return db.UpgradeDB(cfg, revision, false)
 	},
 }
