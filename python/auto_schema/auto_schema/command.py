@@ -165,6 +165,9 @@ class Command(object):
 
     # Simulates running the `alembic stamp` command
     def stamp(self, revision):
+        # TODO probably want purge=True here but need to play with stamp more to understand
+        # it's annoying to stamp a revision and run into:
+        # alembic.util.exc.CommandError: Can't locate revision identified by '35e0c71dcabc'
         command.stamp(self.alembic_cfg, revision)
 
     # Simulates running the `alembic edit` command
@@ -176,7 +179,8 @@ class Command(object):
         command.merge(self.alembic_cfg, revisions, message=message)
 
     def squash(self, gen_revision, squash):
-        if not isinstance(squash, int) or squash < 2:
+        squash = int(squash)
+        if squash < 2:
             raise ValueError("squash needs to be an integer of at least 2")
 
         # downgrade -2 and re-run upgrade

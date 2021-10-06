@@ -38,6 +38,7 @@ parser.add_argument('--stamp', help='alembic stamp')
 parser.add_argument('--edit', help='alembic edit')
 parser.add_argument('--merge', help='alembic merge')
 parser.add_argument('--message', help='message if alembic merge is called')
+parser.add_argument('--squash', help='squash the last N changes into one')
 parser.add_argument(
     '--changes', help='get changes in schema', action='store_true')
 
@@ -76,6 +77,8 @@ def main():
             r.changes()
         elif args.merge is not None:
             r.merge(args.merge, args.message)
+        elif args.squash is not None:
+            r.squash(args.squash)
         else:
             r.run()
 
