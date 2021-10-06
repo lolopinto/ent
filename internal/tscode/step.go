@@ -306,7 +306,7 @@ func getFilePathForAssocEdgeQueryFile(cfg *codegen.Config, nodeData *schema.Node
 
 func getFilePathForPatternBaseQueryFile(cfg *codegen.Config, pattern *schema.PatternInfo) string {
 	// just so it doesn't conflict with nodes of same nams
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/patterns/%s_query_base.ts", pattern.Name))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/patterns/%s_query_base.ts", strcase.ToSnake(pattern.Name)))
 }
 
 func getFilePathForPatternAssocEdgeQueryFile(cfg *codegen.Config, pattern *schema.PatternInfo, e *edge.AssociationEdge) string {
@@ -374,7 +374,7 @@ func getImportPathForBaseQueryFile(packageName string) string {
 }
 
 func getImportPathForPatternBaseQueryFile(name string) string {
-	return fmt.Sprintf("src/ent/generated/patterns/%s_query_base", name)
+	return fmt.Sprintf("src/ent/generated/patterns/%s_query_base", strcase.ToSnake(name))
 }
 
 func getFilePathForConstFile(cfg *codegen.Config) string {
