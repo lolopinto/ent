@@ -106,7 +106,7 @@ type Field struct {
 	FieldEdge     *FieldEdge  `json:"fieldEdge"` // this only really makes sense on id fields...
 	ForeignKey    *ForeignKey `json:"foreignKey"`
 	ServerDefault interface{} `json:"serverDefault"`
-	// DisableUserEditable true == DefaultValueOnCreate required
+	// DisableUserEditable true == DefaultValueOnCreate required OR set in trigger
 	DisableUserEditable     bool `json:"disableUserEditable"`
 	HasDefaultValueOnCreate bool `json:"hasDefaultValueOnCreate"`
 	HasDefaultValueOnEdit   bool `json:"hasDefaultValueOnEdit"`

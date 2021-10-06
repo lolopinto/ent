@@ -6,7 +6,7 @@ on:
     paths:
       - 'ent/**.go'
       - 'internal/**.go'
-      - ts/src/**
+      - 'ts/src/**'
       - .github/workflows/go_ci.yml
 
 
@@ -69,7 +69,7 @@ jobs:
         python-version: '>3.6' 
       
     - name: install auto_schema
-      run: python3 -m pip install wheel auto_schema==0.0.6
+      run: python3 -m pip install wheel auto_schema==0.0.11
 
     - name: Setup nodejs
       uses: actions/setup-node@v2

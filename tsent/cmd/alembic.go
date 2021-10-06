@@ -16,8 +16,9 @@ var validCmds = map[string]int{
 	"heads":     0,
 	"branches":  0,
 	"show":      1,
-	"stamp":     1,
+	"stamp":     1, // stamp --purge option may be needed. would need a child command or simple flag parsing here
 	"edit":      1,
+	"merge":     1,
 }
 
 var alembicCmd = &cobra.Command{

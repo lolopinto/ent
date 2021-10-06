@@ -9,6 +9,7 @@ from sqlalchemy.dialects import postgresql
 import sqlalchemy as sa
 
 from auto_schema import runner
+from typing import List
 
 
 class Postgres:
@@ -129,14 +130,19 @@ def metadata_with_table():
 
 
 def metadata_with_cols_added_to_table(metadata):
+    return metadata_with_given_cols_added_to_table(
+        metadata,
+        [
+            sa.Column('rainbow', sa.Text(), nullable=True),
+            sa.Column('new_column', sa.Integer(), nullable=True),
+        ]
+    )
+
+
+def metadata_with_given_cols_added_to_table(metadata: sa.MetaData, cols: List[sa.Column]):
     changes = default_children_of_table()
 
-    changes.append(
-        sa.Column('rainbow', sa.Text(), nullable=True),
-    )
-    changes.append(
-        sa.Column('new_column', sa.Integer(), nullable=True)
-    )
+    [changes.append(col) for col in cols]
     metadata = sa.MetaData()
     sa.Table('accounts', metadata,
              *changes,
