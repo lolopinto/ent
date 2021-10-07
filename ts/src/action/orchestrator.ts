@@ -383,6 +383,10 @@ export class Orchestrator<T extends Ent> {
     const action = this.options.action;
     const builder = this.options.builder;
 
+    // this runs in 3 phases:
+    // * privacy policy
+    // * triggers
+    // * validators
     let privacyPolicy = action?.getPrivacyPolicy();
     if (privacyPolicy) {
       await applyPrivacyPolicyX(
@@ -399,12 +403,6 @@ export class Orchestrator<T extends Ent> {
     if (triggers) {
       await this.triggers(action!, builder, triggers);
     }
-    // break this into 3 phases
-    // privacy policy runs first
-    // then triggers
-    // then validators
-    // add test for this case
-    // async () builder.updateInput
 
     let validators = action?.validators || [];
 
@@ -419,8 +417,6 @@ export class Orchestrator<T extends Ent> {
     builder: Builder<T>,
     triggers: Trigger<T>[],
   ): Promise<void> {
-    //    let triggerPromises: TriggerReturn[] = [];
-
     await Promise.all(
       triggers.map(async (trigger) => {
         let ret = await trigger.changeset(builder, action.getInput());
@@ -437,45 +433,8 @@ export class Orchestrator<T extends Ent> {
         } else if (ret) {
           this.changesets.push(ret);
         }
-        //        return ret;
-        //        let c: TriggerReturn;
-        // let ret: void | (void | EntChangeset<T>)[];
-        // if (Array.isArray(c)) {
-        //   const ret2 = await Promise.all(c);
-        // } else {
-        //   //          ret = await c;
-        // }
-
-        //        return await promise;
-        //      triggerPromises.push(c);
       }),
     );
-    //    await Promise.all(triggerPromises);
-
-    // TODO right now trying to parallelize this with validateFields below
-    // may need to run triggers first to be deterministic
-    // TODO: see https://github.com/lolopinto/ent/pull/50
-    //    promises.push(this.triggers(triggerPromises));
-    // keep changesets to use later
-    // let changesets = await Promise.all(
-    //   triggerPromises.map(async (promise) => {
-    //     if (Array.isArray(promise)) {
-    //       return await Promise.all(promise);
-    //     }
-    //     return await promise;
-    //   }),
-    // );
-    // changesets.forEach((c) => {
-    //   if (Array.isArray(c)) {
-    //     for (const v of c) {
-    //       if (typeof v === "object") {
-    //         this.changesets.push(v);
-    //       }
-    //     }
-    //   } else if (c) {
-    //     this.changesets.push(c);
-    //   }
-    // });
   }
 
   private async validators(
