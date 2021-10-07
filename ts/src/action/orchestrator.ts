@@ -25,6 +25,7 @@ import { snakeCase } from "snake-case";
 import { applyPrivacyPolicyX } from "../core/privacy";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import { log } from "../core/logger";
+import { Trigger } from "./action";
 
 export interface OrchestratorOptions<T extends Ent> {
   viewer: Viewer;
@@ -380,18 +381,15 @@ export class Orchestrator<T extends Ent> {
 
   private async validate(): Promise<void> {
     const action = this.options.action;
-    let privacyPolicy = action?.getPrivacyPolicy();
     const builder = this.options.builder;
 
-    let promises: Promise<any>[] = [];
+    let privacyPolicy = action?.getPrivacyPolicy();
     if (privacyPolicy) {
-      promises.push(
-        applyPrivacyPolicyX(
-          this.options.viewer,
-          privacyPolicy,
-          builder.existingEnt,
-          this.throwError.bind(this),
-        ),
+      await applyPrivacyPolicyX(
+        this.options.viewer,
+        privacyPolicy,
+        builder.existingEnt,
+        this.throwError.bind(this),
       );
     }
 
@@ -399,51 +397,85 @@ export class Orchestrator<T extends Ent> {
     // so running this first to build things up
     let triggers = action?.triggers;
     if (triggers) {
-      let triggerPromises: TriggerReturn[] = [];
-
-      triggers.forEach((trigger) => {
-        let c = trigger.changeset(builder, action!.getInput());
-        if (c) {
-          triggerPromises.push(c);
-        }
-      });
-      // TODO right now trying to parallelize this with validateFields below
-      // may need to run triggers first to be deterministic
-      // TODO: see https://github.com/lolopinto/ent/pull/50
-      promises.push(this.triggers(triggerPromises));
+      await this.triggers(action!, builder, triggers);
     }
-
-    promises.push(this.validateFields(builder, action));
+    // break this into 3 phases
+    // privacy policy runs first
+    // then triggers
+    // then validators
+    // add test for this case
+    // async () builder.updateInput
 
     let validators = action?.validators || [];
-    if (validators) {
-      promises.push(this.validators(validators, action!, builder));
-    }
 
-    await Promise.all(promises);
+    await Promise.all([
+      this.validateFields(builder, action),
+      this.validators(validators, action!, builder),
+    ]);
   }
 
-  private async triggers(triggerPromises: TriggerReturn[]): Promise<void> {
-    // keep changesets to use later
-    let changesets = await Promise.all(
-      triggerPromises.map(async (promise) => {
-        if (Array.isArray(promise)) {
-          return await Promise.all(promise);
+  private async triggers(
+    action: Action<T>,
+    builder: Builder<T>,
+    triggers: Trigger<T>[],
+  ): Promise<void> {
+    //    let triggerPromises: TriggerReturn[] = [];
+
+    await Promise.all(
+      triggers.map(async (trigger) => {
+        let ret = await trigger.changeset(builder, action.getInput());
+        if (Array.isArray(ret)) {
+          ret = await Promise.all(ret);
         }
-        return await promise;
+
+        if (Array.isArray(ret)) {
+          for (const v of ret) {
+            if (typeof v === "object") {
+              this.changesets.push(v);
+            }
+          }
+        } else if (ret) {
+          this.changesets.push(ret);
+        }
+        //        return ret;
+        //        let c: TriggerReturn;
+        // let ret: void | (void | EntChangeset<T>)[];
+        // if (Array.isArray(c)) {
+        //   const ret2 = await Promise.all(c);
+        // } else {
+        //   //          ret = await c;
+        // }
+
+        //        return await promise;
+        //      triggerPromises.push(c);
       }),
     );
-    changesets.forEach((c) => {
-      if (Array.isArray(c)) {
-        for (const v of c) {
-          if (typeof v === "object") {
-            this.changesets.push(v);
-          }
-        }
-      } else if (c) {
-        this.changesets.push(c);
-      }
-    });
+    //    await Promise.all(triggerPromises);
+
+    // TODO right now trying to parallelize this with validateFields below
+    // may need to run triggers first to be deterministic
+    // TODO: see https://github.com/lolopinto/ent/pull/50
+    //    promises.push(this.triggers(triggerPromises));
+    // keep changesets to use later
+    // let changesets = await Promise.all(
+    //   triggerPromises.map(async (promise) => {
+    //     if (Array.isArray(promise)) {
+    //       return await Promise.all(promise);
+    //     }
+    //     return await promise;
+    //   }),
+    // );
+    // changesets.forEach((c) => {
+    //   if (Array.isArray(c)) {
+    //     for (const v of c) {
+    //       if (typeof v === "object") {
+    //         this.changesets.push(v);
+    //       }
+    //     }
+    //   } else if (c) {
+    //     this.changesets.push(c);
+    //   }
+    // });
   }
 
   private async validators(
