@@ -204,7 +204,10 @@ class ContactSchema extends BaseEntSchema {
 }
 
 class GroupSchema extends BaseEntSchema {
-  fields: Field[] = [StringType({ name: "name" })];
+  fields: Field[] = [
+    StringType({ name: "name" }),
+    StringType({ name: "funField", nullable: true }),
+  ];
   ent = Group;
 }
 
@@ -743,6 +746,38 @@ function commonTests() {
     ]);
     expect(editedGroup).toBeInstanceOf(Group);
     expect(user).toBeInstanceOf(User);
+  });
+
+  test("async changeset that updates builder", async () => {
+    const group = await createGroup();
+    ml.clear();
+
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      new GroupSchema(),
+      new Map(),
+      WriteOperation.Edit,
+      group,
+    );
+
+    async function fetchFoo(): Promise<void> {
+      await new Promise((resolve, reject) => {
+        setTimeout(() => resolve(null), 5);
+      });
+    }
+    action.triggers = [
+      {
+        changeset: async (builder: SimpleBuilder<Group>) => {
+          await fetchFoo();
+          builder.fields.set("funField", "22");
+        },
+      },
+    ];
+
+    await action.saveX();
+    const editedGroup = await action.editedEnt();
+    expect(editedGroup).toBeInstanceOf(Group);
+    expect(editedGroup?.data["fun_field"]).toBe("22");
   });
 
   test("nested siblings via bulk-action", async () => {
