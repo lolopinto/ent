@@ -659,7 +659,7 @@ func (e *AssociationEdge) TsEdgeQueryName() string {
 func (e *AssociationEdge) GetGraphQLEdgePrefix() string {
 	if e.overridenQueryName != "" {
 		// return this with connection removed
-		return strings.TrimSuffix(e.overridenQueryName, "Connection")
+		return strings.TrimSuffix(e.overridenQueryName, "Query")
 	}
 	return e.TsEdgeConst
 }
