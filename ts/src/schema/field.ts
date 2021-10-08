@@ -527,6 +527,7 @@ export function EnumType(options: EnumOptions): EnumField {
 
 export class ListField extends BaseField {
   type: Type;
+  private validators: { (val: any[]): boolean }[] = [];
 
   constructor(private field: Field, options: FieldOptions) {
     super();
@@ -540,9 +541,19 @@ export class ListField extends BaseField {
     Object.assign(this, options);
   }
 
+  validate(validator: (val: any[]) => boolean): this {
+    this.validators.push(validator);
+    return this;
+  }
+
   valid(val: any): boolean {
     if (!Array.isArray(val)) {
       return false;
+    }
+    for (const validator of this.validators) {
+      if (!validator(val)) {
+        return false;
+      }
     }
     if (!this.field.valid) {
       return true;
@@ -574,6 +585,31 @@ export class ListField extends BaseField {
     // For SQLite, we store a JSON string
     return JSON.stringify(val);
   }
+
+  minLen(l: number): this {
+    return this.validate((val: any[]) => val.length >= l);
+  }
+
+  maxLen(l: number): this {
+    return this.validate((val: any[]) => val.length <= l);
+  }
+
+  length(l: number): this {
+    return this.validate((val: any[]) => val.length === l);
+  }
+
+  // like python's range() function
+  // start is where to start and stop is the number to stop (not inclusive in the range)
+  range(start: any, stop: any): this {
+    return this.validate((val: any[]) => {
+      for (const v of val) {
+        if (v < start || v >= stop) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }
 }
 
 export function StringListType(options: StringOptions) {
@@ -584,8 +620,16 @@ export function IntListType(options: FieldOptions) {
   return new ListField(IntegerType(options), options);
 }
 
+export function IntegerListType(options: FieldOptions) {
+  return new ListField(IntegerType(options), options);
+}
+
 export function FloatListType(options: FieldOptions) {
   return new ListField(FloatType(options), options);
+}
+
+export function BigIntegerListType(options: FieldOptions) {
+  return new ListField(BigIntegerType(options), options);
 }
 
 export function BooleanListType(options: FieldOptions) {
