@@ -34,7 +34,7 @@ const fields = [
   "close",
 ];
 
-export enum dayOfWeek {
+export enum DayOfWeek {
   Sunday = "Sunday",
   Monday = "Monday",
   Tuesday = "Tuesday",
@@ -46,13 +46,13 @@ export enum dayOfWeek {
 
 export function getDayOfWeekValues() {
   return [
-    dayOfWeek.Sunday,
-    dayOfWeek.Monday,
-    dayOfWeek.Tuesday,
-    dayOfWeek.Wednesday,
-    dayOfWeek.Thursday,
-    dayOfWeek.Friday,
-    dayOfWeek.Saturday,
+    DayOfWeek.Sunday,
+    DayOfWeek.Monday,
+    DayOfWeek.Tuesday,
+    DayOfWeek.Wednesday,
+    DayOfWeek.Thursday,
+    DayOfWeek.Friday,
+    DayOfWeek.Saturday,
   ];
 }
 
@@ -61,7 +61,7 @@ export class HoursOfOperationBase {
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
-  readonly dayOfWeek: dayOfWeek;
+  readonly dayOfWeek: DayOfWeek;
   readonly open: string;
   readonly close: string;
 

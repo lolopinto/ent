@@ -38,6 +38,8 @@ import {
 } from "../../../ent";
 import {
   ContactType,
+  DaysOffType,
+  PreferredShiftType,
   UserToCommentsConnectionType,
   UserToContactsConnectionType,
   UserToCreatedEventsConnectionType,
@@ -49,8 +51,6 @@ import {
   UserToLikersConnectionType,
   UserToLikesConnectionType,
   UserToMaybeEventsConnectionType,
-  daysOffType,
-  preferredShiftType,
 } from "../internal";
 
 export const UserType = new GraphQLObjectType({
@@ -88,23 +88,23 @@ export const UserType = new GraphQLObjectType({
       type: GraphQLJSON,
     },
     daysOff: {
-      type: GraphQLList(GraphQLNonNull(daysOffType)),
+      type: GraphQLList(GraphQLNonNull(DaysOffType)),
       resolve: (user: User, args: {}, context: RequestContext) => {
         const ret = user.daysOff;
         return ret?.map((v) =>
-          convertToGQLEnum(v, getDaysOffValues(), daysOffType.getValues()),
+          convertToGQLEnum(v, getDaysOffValues(), DaysOffType.getValues()),
         );
       },
     },
     preferredShift: {
-      type: GraphQLList(GraphQLNonNull(preferredShiftType)),
+      type: GraphQLList(GraphQLNonNull(PreferredShiftType)),
       resolve: (user: User, args: {}, context: RequestContext) => {
         const ret = user.preferredShift;
         return ret?.map((v) =>
           convertToGQLEnum(
             v,
             getPreferredShiftValues(),
-            preferredShiftType.getValues(),
+            PreferredShiftType.getValues(),
           ),
         );
       },

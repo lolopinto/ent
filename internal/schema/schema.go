@@ -40,6 +40,7 @@ type Schema struct {
 }
 
 func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData) error {
+	// TODO prefix...
 	return s.addEnumFrom(
 		enumType.GetTSName(),
 		enumType.GetGraphQLName(),

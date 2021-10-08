@@ -5,8 +5,8 @@
 
 import { GraphQLEnumType } from "graphql";
 
-export const preferredShiftType = new GraphQLEnumType({
-  name: "preferredShift",
+export const PreferredShiftType = new GraphQLEnumType({
+  name: "PreferredShift",
   values: {
     MORNING: {
       value: "MORNING",

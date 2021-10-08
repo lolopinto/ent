@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go/types"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/ent"
@@ -239,8 +240,8 @@ func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.
 		}, nil
 
 	case StringEnum, Enum:
-		tsType := typ.Type
-		graphqlType := typ.GraphQLType
+		tsType := strcase.ToCamel(typ.Type)
+		graphqlType := strcase.ToCamel(typ.GraphQLType)
 		if foreignKey != nil {
 			tsType = foreignKey.Schema
 			graphqlType = foreignKey.Schema
@@ -259,6 +260,7 @@ func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.
 				Values:      typ.Values,
 			}, nil
 		}
+		spew.Dump(typ)
 		return &enttype.EnumType{
 			EnumDBType:  typ.DBType == Enum,
 			Type:        tsType,

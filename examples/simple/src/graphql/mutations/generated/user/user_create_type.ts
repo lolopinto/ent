@@ -21,7 +21,7 @@ import { User } from "../../../../ent";
 import CreateUserAction, {
   UserCreateInput,
 } from "../../../../ent/user/actions/create_user_action";
-import { UserType, daysOffType, preferredShiftType } from "../../../resolvers";
+import { DaysOffType, PreferredShiftType, UserType } from "../../../resolvers";
 
 interface UserCreatePayload {
   user: User;
@@ -55,10 +55,10 @@ export const UserCreateInputType = new GraphQLInputObjectType({
       type: GraphQLJSON,
     },
     daysOff: {
-      type: GraphQLList(GraphQLNonNull(daysOffType)),
+      type: GraphQLList(GraphQLNonNull(DaysOffType)),
     },
     preferredShift: {
-      type: GraphQLList(GraphQLNonNull(preferredShiftType)),
+      type: GraphQLList(GraphQLNonNull(PreferredShiftType)),
     },
     funUuids: {
       type: GraphQLList(GraphQLNonNull(GraphQLID)),

@@ -11,7 +11,7 @@ import schema from "../generated/schema";
 import CreateUserAction, {
   UserCreateInput,
 } from "../../ent/user/actions/create_user_action";
-import { Contact, User, daysOff, preferredShift } from "../../ent/";
+import { Contact, User, DaysOff, PreferredShift } from "../../ent/";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
 import EditUserAction from "../../ent/user/actions/edit_user_action";
 import CreateContactAction, {
@@ -745,8 +745,8 @@ test("enum list", async () => {
       async function (id: string) {
         const decoded = mustDecodeIDFromGQLID(id);
         const user = await User.loadX(new IDViewer(decoded), decoded);
-        expect(user.daysOff).toEqual([daysOff.Saturday, daysOff.Sunday]);
-        expect(user.preferredShift).toEqual([preferredShift.Graveyard]);
+        expect(user.daysOff).toEqual([DaysOff.Saturday, DaysOff.Sunday]);
+        expect(user.preferredShift).toEqual([PreferredShift.Graveyard]);
       },
     ],
   );

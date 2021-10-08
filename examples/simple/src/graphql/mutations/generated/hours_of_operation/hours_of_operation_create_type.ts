@@ -18,7 +18,7 @@ import { HoursOfOperation } from "../../../../ent";
 import CreateHoursOfOperationAction, {
   HoursOfOperationCreateInput,
 } from "../../../../ent/hours_of_operation/actions/create_hours_of_operation_action";
-import { HoursOfOperationType, dayOfWeekType } from "../../../resolvers";
+import { DayOfWeekType, HoursOfOperationType } from "../../../resolvers";
 
 interface HoursOfOperationCreatePayload {
   hoursOfOperation: HoursOfOperation;
@@ -28,7 +28,7 @@ export const HoursOfOperationCreateInputType = new GraphQLInputObjectType({
   name: "HoursOfOperationCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     dayOfWeek: {
-      type: GraphQLNonNull(dayOfWeekType),
+      type: GraphQLNonNull(DayOfWeekType),
     },
     open: {
       type: GraphQLNonNull(GraphQLString),

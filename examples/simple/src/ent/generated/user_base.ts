@@ -73,7 +73,7 @@ const fields = [
   "new_col_2",
 ];
 
-export enum daysOff {
+export enum DaysOff {
   Monday = "monday",
   Tuesday = "tuesday",
   Wednesday = "wednesday",
@@ -85,16 +85,16 @@ export enum daysOff {
 
 export function getDaysOffValues() {
   return [
-    daysOff.Monday,
-    daysOff.Tuesday,
-    daysOff.Wednesday,
-    daysOff.Thursday,
-    daysOff.Friday,
-    daysOff.Saturday,
-    daysOff.Sunday,
+    DaysOff.Monday,
+    DaysOff.Tuesday,
+    DaysOff.Wednesday,
+    DaysOff.Thursday,
+    DaysOff.Friday,
+    DaysOff.Saturday,
+    DaysOff.Sunday,
   ];
 }
-export enum preferredShift {
+export enum PreferredShift {
   Morning = "morning",
   Afternoon = "afternoon",
   Evening = "evening",
@@ -103,10 +103,10 @@ export enum preferredShift {
 
 export function getPreferredShiftValues() {
   return [
-    preferredShift.Morning,
-    preferredShift.Afternoon,
-    preferredShift.Evening,
-    preferredShift.Graveyard,
+    PreferredShift.Morning,
+    PreferredShift.Afternoon,
+    PreferredShift.Evening,
+    PreferredShift.Graveyard,
   ];
 }
 
@@ -126,8 +126,8 @@ export class UserBase {
   readonly nicknames: string[] | null;
   readonly prefs: UserPrefs | null;
   readonly prefsDiff: any;
-  readonly daysOff: daysOff[] | null;
-  readonly preferredShift: preferredShift[] | null;
+  readonly daysOff: DaysOff[] | null;
+  readonly preferredShift: PreferredShift[] | null;
   readonly timeInMs: BigInt | null;
   readonly funUuids: ID[] | null;
   readonly newCol: string | null;

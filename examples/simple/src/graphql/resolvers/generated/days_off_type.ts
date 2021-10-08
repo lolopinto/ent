@@ -5,8 +5,8 @@
 
 import { GraphQLEnumType } from "graphql";
 
-export const daysOffType = new GraphQLEnumType({
-  name: "daysOff",
+export const DaysOffType = new GraphQLEnumType({
+  name: "DaysOff",
   values: {
     MONDAY: {
       value: "MONDAY",
