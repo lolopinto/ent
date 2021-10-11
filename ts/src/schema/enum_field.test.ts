@@ -4,6 +4,10 @@ function enumF(name: string, values: string[]): EnumField {
   return EnumType({ name, values });
 }
 
+function enumMapF(name: string, map: {}): EnumField {
+  return EnumType({ name, map });
+}
+
 interface testValue {
   value: string;
   valid: boolean;
@@ -19,6 +23,10 @@ function testEnum(e: EnumField, val: testValue) {
 
 describe("upper case enum", () => {
   let e = enumF("AccountStatus", ["VERIFIED", "UNVERIFIED"]);
+  let e2 = enumMapF("AccountStatus", {
+    VERIFIED: "verified",
+    UNVERIFIED: "unverified",
+  });
 
   test("valid", () => {
     ["VERIFIED", "UNVERIFIED"].forEach((status) => {
@@ -30,8 +38,33 @@ describe("upper case enum", () => {
     });
   });
 
+  test("valid with map", () => {
+    ["verified", "unverified"].forEach((status) => {
+      testEnum(e2, {
+        valid: true,
+        value: status,
+        formatted: status,
+      });
+    });
+
+    ["VERIFIED", "UNVERIFIED"].forEach((status) => {
+      testEnum(e2, {
+        valid: true,
+        value: status,
+        formatted: status.toLowerCase(),
+      });
+    });
+  });
+
   test("invalid", () => {
     testEnum(e, {
+      valid: false,
+      value: "HELLO",
+    });
+  });
+
+  test("invalid with map", () => {
+    testEnum(e2, {
       valid: false,
       value: "HELLO",
     });
@@ -55,11 +88,32 @@ describe("gql support", () => {
     "indigo",
     "violet",
   ]);
+  let e2 = enumMapF("rainbow", {
+    Red: "red",
+    Orange: "orange",
+    Yellow: "yellow",
+    Green: "green",
+    Blue: "blue",
+    Indigo: "indigo",
+    Violet: "violet",
+  });
 
   test("same case", () => {
     ["red", "orange", "yellow", "green", "blue", "indigo", "violet"].forEach(
       (color) => {
         testEnum(e, {
+          value: color,
+          valid: true,
+          formatted: color,
+        });
+      },
+    );
+  });
+
+  test("same case map", () => {
+    ["red", "orange", "yellow", "green", "blue", "indigo", "violet"].forEach(
+      (color) => {
+        testEnum(e2, {
           value: color,
           valid: true,
           formatted: color,
@@ -81,8 +135,25 @@ describe("gql support", () => {
     );
   });
 
+  test("all caps map", () => {
+    ["RED", "ORANGE", "YELLOW", "GREEN", "BLUE", "INDIGO", "VIOLET"].forEach(
+      (color) => {
+        testEnum(e2, {
+          value: color,
+          valid: true,
+          // the enum values are lowercase so we expect it to be formatted correctly as lowercase
+          formatted: color.toLowerCase(),
+        });
+      },
+    );
+  });
+
   test("mixed case", () => {
     expect(e.valid("Violet")).toBe(false);
+  });
+
+  test("mixed case map", () => {
+    expect(e2.valid("Violet")).toBe(false);
   });
 });
 
@@ -194,13 +265,73 @@ test("fkey enum", () => {
   });
 });
 
+describe("weird maps", () => {
+  let e = enumMapF("langs", {
+    Java: "java",
+    CPlusPlus: "c++",
+    CSharp: "c#",
+    JavaScript: "js", // need to be Javascript, Typescript, Golang if we don't want the _
+    TypeScript: "ts",
+    GoLang: "go",
+    Python: "python",
+  });
+
+  test("valid", () => {
+    ["java", "c++", "c#", "js", "ts", "go", "python"].forEach((lang) => {
+      testEnum(e, {
+        valid: true,
+        value: lang,
+        formatted: lang,
+      });
+    });
+  });
+
+  test("invalid different case", () => {
+    ["Java", "Ts", "Go"].forEach((lang) => {
+      testEnum(e, {
+        valid: false,
+        value: lang,
+      });
+    });
+  });
+
+  test("invalid", () => {
+    ["apple", "banana", "rainbow"].forEach((lang) => {
+      testEnum(e, {
+        valid: false,
+        value: lang,
+      });
+    });
+  });
+
+  test("gql support", () => {
+    [
+      ["JAVA", "java"],
+      ["C_PLUS_PLUS", "c++"],
+      ["C_SHARP", "c#"],
+      ["JAVA_SCRIPT", "js"],
+      ["TYPE_SCRIPT", "ts"],
+      ["GO_LANG", "go"],
+      ["PYTHON", "python"],
+    ].forEach((lang) => {
+      testEnum(e, {
+        valid: true,
+        value: lang[0],
+        formatted: lang[1],
+      });
+    });
+  });
+});
+
 describe("errors", () => {
-  test("no fkey, no values", () => {
+  test("no fkey, no values or maps", () => {
     try {
       EnumType({ name: "role" });
       fail("shouldn't get here");
     } catch (err) {
-      expect(err.message).toMatch(/^values required if not look up table enum/);
+      expect(err.message).toMatch(
+        /^values or map required if not look up table enum/,
+      );
     }
   });
 
@@ -210,6 +341,15 @@ describe("errors", () => {
       fail("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(/need at least one value in enum type/);
+    }
+  });
+
+  test("empty map", () => {
+    try {
+      EnumType({ name: "role", map: {} });
+      fail("shouldn't get here");
+    } catch (err) {
+      expect(err.message).toMatch(/need at least one entry in enum map/);
     }
   });
 
@@ -223,7 +363,22 @@ describe("errors", () => {
       fail("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(
-        /cannot specify values and foreign key for lookup table enum type/,
+        /cannot specify values or map and foreign key for lookup table enum type/,
+      );
+    }
+  });
+
+  test("fkey and map provided", () => {
+    try {
+      EnumType({
+        name: "role",
+        map: { sss: "sss" },
+        foreignKey: { schema: "Role", column: "role" },
+      });
+      fail("shouldn't get here");
+    } catch (err) {
+      expect(err.message).toMatch(
+        /cannot specify values or map and foreign key for lookup table enum type/,
       );
     }
   });
@@ -238,7 +393,22 @@ describe("errors", () => {
       fail("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(
-        /cannot specify values and foreign key for lookup table enum type/,
+        /cannot specify values or map and foreign key for lookup table enum type/,
+      );
+    }
+  });
+
+  test("fkey and empty map provided", () => {
+    try {
+      EnumType({
+        name: "role",
+        map: {},
+        foreignKey: { schema: "Role", column: "role" },
+      });
+      fail("shouldn't get here");
+    } catch (err) {
+      expect(err.message).toMatch(
+        /cannot specify values or map and foreign key for lookup table enum type/,
       );
     }
   });

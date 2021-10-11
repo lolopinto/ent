@@ -123,6 +123,7 @@ sa.Table("hours_of_operations", metadata,
     sa.Column("day_of_week", sa.Text(), nullable=False),
     sa.Column("open", sa.Time(), nullable=False),
     sa.Column("close", sa.Time(timezone=True), nullable=False),
+    sa.Column("day_of_week_alt", sa.Text(), nullable=True),
     sa.PrimaryKeyConstraint("id", name="hours_of_operations_id_pkey"),
 )
    

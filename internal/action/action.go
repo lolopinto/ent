@@ -393,7 +393,13 @@ func processEdgeGroupActions(nodeName string, assocGroup *edge.AssociationEdgeGr
 					FieldType: &enttype.IDType{},
 				},
 			}
-			tsEnum, gqlEnum := enum.GetEnums(typ, typ, typ, values)
+
+			tsEnum, gqlEnum := enum.GetEnums(&enum.Input{
+				TSName:  typ,
+				GQLName: typ,
+				GQLType: typ,
+				Values:  values,
+			})
 			tsEnums = append(tsEnums, tsEnum)
 			gqlEnums = append(gqlEnums, gqlEnum)
 		}

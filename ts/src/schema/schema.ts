@@ -185,6 +185,10 @@ export interface ImportType {
   type: string; // type being imported
 }
 
+declare type EnumMap = {
+  [key: string]: string;
+};
+
 // represents the type of each field
 export interface Type {
   dbType: DBType; // type in the db
@@ -196,6 +200,8 @@ export interface Type {
   type?: string; // typescript type
   graphQLType?: string; // graphql type
   values?: string[]; // values e.g. enum values
+  // TODO need to refactor this into type specific objects instead of killing the top level field like this.
+  enumMap?: EnumMap; // enumMap e.g. k->v pair for enums
   importType?: ImportType;
 }
 

@@ -142,6 +142,7 @@ type EnumeratedType interface {
 	GetTSName() string
 	GetGraphQLName() string
 	GetEnumValues() []string
+	GetEnumMap() map[string]string
 }
 
 type stringType struct {
@@ -1454,6 +1455,7 @@ type EnumType struct {
 	Type        string
 	GraphQLType string
 	Values      []string
+	EnumMap     map[string]string
 }
 
 func (t *EnumType) GetDBType() string {
@@ -1465,6 +1467,10 @@ func (t *EnumType) GetDBType() string {
 
 func (t *EnumType) GetEnumValues() []string {
 	return t.Values
+}
+
+func (t *EnumType) GetEnumMap() map[string]string {
+	return t.EnumMap
 }
 
 func (t *EnumType) GetGraphQLType() string {
@@ -1518,6 +1524,7 @@ type NullableEnumType struct {
 	Type        string
 	GraphQLType string
 	Values      []string
+	EnumMap     map[string]string
 }
 
 func (t *NullableEnumType) GetDBType() string {
@@ -1529,6 +1536,10 @@ func (t *NullableEnumType) GetDBType() string {
 
 func (t *NullableEnumType) GetEnumValues() []string {
 	return t.Values
+}
+
+func (t *NullableEnumType) GetEnumMap() map[string]string {
+	return t.EnumMap
 }
 
 func (t *NullableEnumType) GetGraphQLType() string {
