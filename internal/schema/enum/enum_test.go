@@ -99,31 +99,31 @@ func TestEnumMap(t *testing.T) {
 	assert.Equal(t, gqlEnum.Values, []Data{
 		{
 			Name:  "C_PLUS_PLUS",
-			Value: strconv.Quote("C_PLUS_PLUS"),
+			Value: strconv.Quote("c++"),
 		},
 		{
 			Name:  "C_SHARP",
-			Value: strconv.Quote("C_SHARP"),
+			Value: strconv.Quote("c#"),
 		},
 		{
 			Name:  "GO_LANG",
-			Value: strconv.Quote("GO_LANG"),
+			Value: strconv.Quote("go"),
 		},
 		{
 			Name:  "JAVA",
-			Value: strconv.Quote("JAVA"),
+			Value: strconv.Quote("java"),
 		},
 		{
 			Name:  "JAVA_SCRIPT",
-			Value: strconv.Quote("JAVA_SCRIPT"),
+			Value: strconv.Quote("js"),
 		},
 		{
 			Name:  "PYTHON",
-			Value: strconv.Quote("PYTHON"),
+			Value: strconv.Quote("python"),
 		},
 		{
 			Name:  "TYPE_SCRIPT",
-			Value: strconv.Quote("TYPE_SCRIPT"),
+			Value: strconv.Quote("ts"),
 		},
 	})
 }
