@@ -16,8 +16,7 @@ func TestEnum(t *testing.T) {
 		"canSendRequest",
 		"cannotRequest",
 	}
-	// this is converted to snake caps.
-	expectedVals := []string{
+	gqlKeys := []string{
 		"ARE_FRIENDS",
 		"OUTGOING_FRIEND_REQUEST",
 		"INCOMING_FRIEND_REQUEST",
@@ -40,7 +39,7 @@ func TestEnum(t *testing.T) {
 	require.NotNil(t, gqlEnum)
 	assert.Equal(t, gqlEnum.Name, typ)
 	assert.Equal(t, gqlEnum.Type, typ)
-	assert.Equal(t, gqlEnum.Values, getValues(expectedVals))
+	assert.Equal(t, gqlEnum.Values, getGQLValues(values, gqlKeys))
 }
 
 func TestEnumMap(t *testing.T) {
@@ -133,6 +132,17 @@ func getValues(values []string) []Data {
 	for k, v := range values {
 		ret[k] = Data{
 			Name:  GetTSEnumNameForVal(v),
+			Value: strconv.Quote(v),
+		}
+	}
+	return ret
+}
+
+func getGQLValues(values, keys []string) []Data {
+	ret := make([]Data, len(values))
+	for k, v := range values {
+		ret[k] = Data{
+			Name:  keys[k],
 			Value: strconv.Quote(v),
 		}
 	}
