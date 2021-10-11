@@ -7,13 +7,11 @@ import {
 } from "graphql";
 import { expectQueryFromRoot } from "../testutils/ent-graphql-tests/";
 
-// TODO come back here
-const FailedLangType = new GraphQLEnumType({
-  name: "failedLang",
+const LangDifferentKVType = new GraphQLEnumType({
+  name: "langDiffKV",
   values: {
     C_PLUS_PLUS: {
       value: "C++",
-      // not a valid value
     },
     C_SHARP: {
       value: "C#",
@@ -21,8 +19,8 @@ const FailedLangType = new GraphQLEnumType({
   },
 });
 
-const LangType = new GraphQLEnumType({
-  name: "lang",
+const LangSameKVType = new GraphQLEnumType({
+  name: "langSameKV",
   values: {
     C_PLUS_PLUS: {
       value: "C_PLUS_PLUS",
@@ -41,29 +39,26 @@ const schema = new GraphQLSchema({
         type: GraphQLString,
         args: {
           lang: {
-            type: GraphQLNonNull(FailedLangType),
+            type: GraphQLNonNull(LangDifferentKVType),
           },
         },
-        resolve: (lang) => {
-          // why undefined
-          return `${lang} world`;
+        resolve: (src, args) => {
+          return `${args.lang} world`;
         },
       },
       hello2: {
         type: GraphQLString,
         args: {
           lang: {
-            type: GraphQLNonNull(LangType),
+            type: GraphQLNonNull(LangSameKVType),
           },
         },
-        resolve: (lang) => {
-          console.debug(lang);
-          return `${lang} world`;
+        resolve: (src, args) => {
+          return `${args.lang} world`;
         },
       },
     },
   }),
-  //  types: [LangType],
 });
 
 test("failed value", async () => {
@@ -74,8 +69,7 @@ test("failed value", async () => {
         lang: "C#",
       },
       expectedError:
-        'Variable "$lang" got invalid value "C#"; Value "C#" does not exist in "failedLang" enum.',
-      debugMode: true,
+        'Variable "$lang" got invalid value "C#"; Value "C#" does not exist in "langDiffKV" enum.',
       root: "hello",
     },
     [
@@ -87,34 +81,31 @@ test("failed value", async () => {
   );
 });
 
-test("correct value failed lang", async () => {
+test("different key and value", async () => {
   await expectQueryFromRoot(
     {
       schema,
       args: {
         lang: "C_SHARP",
       },
-      debugMode: true,
       root: "hello",
     },
     [
       ".",
       function (r) {
-        console.debug(typeof r);
-        expect(r).toEqual("undefined world");
+        expect(r).toBe("C# world");
       },
     ],
   );
 });
 
-test.only("correct value correct lang", async () => {
+test("same key and value", async () => {
   await expectQueryFromRoot(
     {
       schema,
       args: {
         lang: "C_SHARP",
       },
-      debugMode: true,
       root: "hello2",
     },
     [
