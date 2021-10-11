@@ -45,17 +45,6 @@ export enum DayOfWeek {
   Saturday = "Saturday",
 }
 
-export function getDayOfWeekValues() {
-  return [
-    DayOfWeek.Sunday,
-    DayOfWeek.Monday,
-    DayOfWeek.Tuesday,
-    DayOfWeek.Wednesday,
-    DayOfWeek.Thursday,
-    DayOfWeek.Friday,
-    DayOfWeek.Saturday,
-  ];
-}
 export enum DayOfWeekAlt {
   Friday = "fri",
   Monday = "mon",
@@ -64,18 +53,6 @@ export enum DayOfWeekAlt {
   Thursday = "thu",
   Tuesday = "tue",
   Wednesday = "wed",
-}
-
-export function getDayOfWeekAltValues() {
-  return [
-    DayOfWeekAlt.Friday,
-    DayOfWeekAlt.Monday,
-    DayOfWeekAlt.Saturday,
-    DayOfWeekAlt.Sunday,
-    DayOfWeekAlt.Thursday,
-    DayOfWeekAlt.Tuesday,
-    DayOfWeekAlt.Wednesday,
-  ];
 }
 
 export class HoursOfOperationBase {

@@ -22,19 +22,6 @@ export enum NodeType {
   User = "user",
 }
 
-export function getNodeTypeValues() {
-  return [
-    NodeType.Address,
-    NodeType.AuthCode,
-    NodeType.Comment,
-    NodeType.Contact,
-    NodeType.Event,
-    NodeType.Holiday,
-    NodeType.HoursOfOperation,
-    NodeType.User,
-  ];
-}
-
 export enum EdgeType {
   // CommentToPost is the edgeType for the comment to post edge.
   CommentToPost = "f430af94-d38a-4aaa-a92f-cfc56b6f811b",
@@ -70,26 +57,4 @@ export enum EdgeType {
   UserToMaybeEvents = "8d5b1dee-ce65-452e-9f8d-78eca1993800",
   // UserToSelfContact is the edgeType for the user to selfcontact edge.
   UserToSelfContact = "d504201d-cf3f-4eef-b6a0-0b46a7ae186b",
-}
-
-export function getEdgeTypeValues() {
-  return [
-    EdgeType.CommentToPost,
-    EdgeType.EventToAttending,
-    EdgeType.EventToDeclined,
-    EdgeType.EventToHosts,
-    EdgeType.EventToInvited,
-    EdgeType.EventToMaybe,
-    EdgeType.ObjectToComments,
-    EdgeType.ObjectToLikers,
-    EdgeType.UserToCreatedEvents,
-    EdgeType.UserToDeclinedEvents,
-    EdgeType.UserToEventsAttending,
-    EdgeType.UserToFriends,
-    EdgeType.UserToHostedEvents,
-    EdgeType.UserToInvitedEvents,
-    EdgeType.UserToLikes,
-    EdgeType.UserToMaybeEvents,
-    EdgeType.UserToSelfContact,
-  ];
 }

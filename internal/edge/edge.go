@@ -853,10 +853,6 @@ func (edgeGroup *AssociationEdgeGroup) GetStatusMapMethod() string {
 	return fmt.Sprintf("get%sMap", strcase.ToCamel(edgeGroup.ConstType))
 }
 
-func (edgeGroup *AssociationEdgeGroup) GetEnumValuesMethod() string {
-	return fmt.Sprintf("get%sValues", strcase.ToCamel(edgeGroup.ConstType))
-}
-
 func (edgeGroup *AssociationEdgeGroup) EdgeIdentifier() string {
 	return edgeGroup.GroupStatusName
 }

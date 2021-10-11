@@ -13,18 +13,11 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import {
-  convertFromGQLEnum,
-  mustDecodeIDFromGQLID,
-} from "@snowtop/ent/graphql";
+import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { EventActivity } from "src/ent/";
 import EditEventActivityRsvpStatusAction, {
   EditEventActivityRsvpStatusInput,
 } from "src/ent/event_activity/actions/edit_event_activity_rsvp_status_action";
-import {
-  EventActivityRsvpStatusInput,
-  getEventActivityRsvpStatusInputValues,
-} from "src/ent/event_activity/actions/generated/edit_event_activity_rsvp_status_action_base";
 import { EventActivityType } from "src/graphql/resolvers/";
 
 interface customEventActivityRsvpStatusEditInput
@@ -41,10 +34,10 @@ export const EventActivityRsvpStatusInputType = new GraphQLEnumType({
   name: "EventActivityRsvpStatusInput",
   values: {
     ATTENDING: {
-      value: "ATTENDING",
+      value: "attending",
     },
     DECLINED: {
-      value: "DECLINED",
+      value: "declined",
     },
   },
 });
@@ -101,11 +94,7 @@ export const EventActivityRsvpStatusEditType: GraphQLFieldConfig<
       context.getViewer(),
       mustDecodeIDFromGQLID(input.eventActivityID),
       {
-        rsvpStatus: convertFromGQLEnum(
-          input.rsvpStatus,
-          getEventActivityRsvpStatusInputValues(),
-          EventActivityRsvpStatusInputType.getValues(),
-        ) as EventActivityRsvpStatusInput,
+        rsvpStatus: input.rsvpStatus,
         guestID: mustDecodeIDFromGQLID(input.guestID),
         dietaryRestrictions: input.dietaryRestrictions,
       },

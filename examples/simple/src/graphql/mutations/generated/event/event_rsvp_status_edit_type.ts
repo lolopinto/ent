@@ -15,18 +15,11 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import {
-  convertFromGQLEnum,
-  mustDecodeIDFromGQLID,
-} from "@snowtop/ent/graphql";
+import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { Event } from "../../../../ent";
 import EditEventRsvpStatusAction, {
   EditEventRsvpStatusInput,
 } from "../../../../ent/event/actions/edit_event_rsvp_status_action";
-import {
-  EventRsvpStatusInput,
-  getEventRsvpStatusInputValues,
-} from "../../../../ent/event/actions/generated/edit_event_rsvp_status_action_base";
 import { EventType } from "../../../resolvers";
 
 interface customEventRsvpStatusEditInput extends EditEventRsvpStatusInput {
@@ -42,13 +35,13 @@ export const EventRsvpStatusInputType = new GraphQLEnumType({
   name: "EventRsvpStatusInput",
   values: {
     ATTENDING: {
-      value: "ATTENDING",
+      value: "attending",
     },
     DECLINED: {
-      value: "DECLINED",
+      value: "declined",
     },
     MAYBE: {
-      value: "MAYBE",
+      value: "maybe",
     },
   },
 });
@@ -102,11 +95,7 @@ export const EventRsvpStatusEditType: GraphQLFieldConfig<
       context.getViewer(),
       mustDecodeIDFromGQLID(input.eventID),
       {
-        rsvpStatus: convertFromGQLEnum(
-          input.rsvpStatus,
-          getEventRsvpStatusInputValues(),
-          EventRsvpStatusInputType.getValues(),
-        ) as EventRsvpStatusInput,
+        rsvpStatus: input.rsvpStatus,
         userID: mustDecodeIDFromGQLID(input.userID),
       },
     );

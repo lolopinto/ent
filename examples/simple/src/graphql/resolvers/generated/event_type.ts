@@ -16,7 +16,6 @@ import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
   GraphQLTime,
-  convertToGQLEnum,
   nodeIDEncoder,
 } from "@snowtop/ent/graphql";
 import {
@@ -26,7 +25,6 @@ import {
   EventToHostsQuery,
   EventToInvitedQuery,
   EventToMaybeQuery,
-  getEventRsvpStatusValues,
 } from "../../../ent";
 import {
   EventRsvpStatusType,
@@ -213,14 +211,6 @@ export const EventType = new GraphQLObjectType({
     },
     viewerRsvpStatus: {
       type: EventRsvpStatusType,
-      resolve: async (event: Event, args: {}, context: RequestContext) => {
-        const ret = await event.viewerRsvpStatus();
-        return convertToGQLEnum(
-          ret,
-          getEventRsvpStatusValues(),
-          EventRsvpStatusType.getValues(),
-        );
-      },
     },
   }),
   interfaces: [GraphQLNodeInterface],
