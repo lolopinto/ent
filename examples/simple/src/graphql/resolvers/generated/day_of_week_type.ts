@@ -9,25 +9,25 @@ export const DayOfWeekType = new GraphQLEnumType({
   name: "DayOfWeek",
   values: {
     SUNDAY: {
-      value: "Sunday",
+      value: "SUNDAY",
     },
     MONDAY: {
-      value: "Monday",
+      value: "MONDAY",
     },
     TUESDAY: {
-      value: "Tuesday",
+      value: "TUESDAY",
     },
     WEDNESDAY: {
-      value: "Wednesday",
+      value: "WEDNESDAY",
     },
     THURSDAY: {
-      value: "Thursday",
+      value: "THURSDAY",
     },
     FRIDAY: {
-      value: "Friday",
+      value: "FRIDAY",
     },
     SATURDAY: {
-      value: "Saturday",
+      value: "SATURDAY",
     },
   },
 });

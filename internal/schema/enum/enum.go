@@ -64,10 +64,11 @@ func (i *Input) getValuesFromValues() ([]Data, []Data) {
 	for j, val := range i.Values {
 		tsName := GetTSEnumNameForVal(val)
 
+		gqlVal := strings.ToUpper(strcase.ToSnake(val))
 		gqlVals[j] = Data{
+			Name: gqlVal,
 			// norm for graphql enum names is all caps
-			Name:  strings.ToUpper(strcase.ToSnake(val)),
-			Value: strconv.Quote(val),
+			Value: strconv.Quote(gqlVal),
 		}
 		tsVals[j] = Data{
 			Name: tsName,
