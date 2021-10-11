@@ -6,7 +6,7 @@ import {
   LoggedOutViewer,
   DB,
 } from "@snowtop/ent";
-import { User, Contact, Event, daysOff, preferredShift } from "..";
+import { User, Contact, Event, DaysOff, PreferredShift } from "..";
 
 import { v1 as uuidv1, v4 as uuidv4, validate } from "uuid";
 import { NodeType, EdgeType } from "../generated/const";
@@ -924,11 +924,11 @@ test("enum list", async () => {
     emailAddress: randomEmail(),
     phoneNumber: randomPhoneNumber(),
     password: random(),
-    daysOff: [daysOff.Saturday, daysOff.Sunday],
-    preferredShift: [preferredShift.Afternoon],
+    daysOff: [DaysOff.Saturday, DaysOff.Sunday],
+    preferredShift: [PreferredShift.Afternoon],
   }).saveX();
-  expect(user.daysOff).toEqual([daysOff.Saturday, daysOff.Sunday]);
-  expect(user.preferredShift).toEqual([preferredShift.Afternoon]);
+  expect(user.daysOff).toEqual([DaysOff.Saturday, DaysOff.Sunday]);
+  expect(user.preferredShift).toEqual([PreferredShift.Afternoon]);
 });
 
 test("misc", async () => {

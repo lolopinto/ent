@@ -13,11 +13,11 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { HoursOfOperation, dayOfWeek } from "../../..";
+import { DayOfWeek, HoursOfOperation } from "../../..";
 import schema from "../../../../schema/hours_of_operation";
 
 export interface HoursOfOperationInput {
-  dayOfWeek?: dayOfWeek;
+  dayOfWeek?: DayOfWeek;
   open?: string;
   close?: string;
 }
@@ -121,7 +121,7 @@ export class HoursOfOperationBuilder implements Builder<HoursOfOperation> {
   }
 
   // get value of dayOfWeek. Retrieves it from the input if specified or takes it from existingEnt
-  getNewDayOfWeekValue(): dayOfWeek | undefined {
+  getNewDayOfWeekValue(): DayOfWeek | undefined {
     return this.input.dayOfWeek || this.existingEnt?.dayOfWeek;
   }
 

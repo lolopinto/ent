@@ -239,8 +239,8 @@ func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.
 		}, nil
 
 	case StringEnum, Enum:
-		tsType := typ.Type
-		graphqlType := typ.GraphQLType
+		tsType := strcase.ToCamel(typ.Type)
+		graphqlType := strcase.ToCamel(typ.GraphQLType)
 		if foreignKey != nil {
 			tsType = foreignKey.Schema
 			graphqlType = foreignKey.Schema

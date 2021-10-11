@@ -16,10 +16,10 @@ import {
 import {
   Comment,
   Contact,
+  DaysOff,
   Event,
+  PreferredShift,
   User,
-  daysOff,
-  preferredShift,
 } from "../../..";
 import { EdgeType, NodeType } from "../../../generated/const";
 import { UserPrefs } from "../../../user_prefs";
@@ -37,8 +37,8 @@ export interface UserInput {
   nicknames?: string[] | null;
   prefs?: UserPrefs | null;
   prefsDiff?: any;
-  daysOff?: daysOff[] | null;
-  preferredShift?: preferredShift[] | null;
+  daysOff?: DaysOff[] | null;
+  preferredShift?: PreferredShift[] | null;
   timeInMs?: BigInt | null;
   funUuids?: ID[] | null;
   newCol?: string | null;
@@ -674,12 +674,12 @@ export class UserBuilder implements Builder<User> {
   }
 
   // get value of daysOff. Retrieves it from the input if specified or takes it from existingEnt
-  getNewDaysOffValue(): daysOff[] | null | undefined {
+  getNewDaysOffValue(): DaysOff[] | null | undefined {
     return this.input.daysOff || this.existingEnt?.daysOff;
   }
 
   // get value of preferredShift. Retrieves it from the input if specified or takes it from existingEnt
-  getNewPreferredShiftValue(): preferredShift[] | null | undefined {
+  getNewPreferredShiftValue(): PreferredShift[] | null | undefined {
     return this.input.preferredShift || this.existingEnt?.preferredShift;
   }
 
