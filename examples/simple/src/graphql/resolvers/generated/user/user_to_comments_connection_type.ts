@@ -12,7 +12,7 @@ var connType: GraphQLConnectionType<GraphQLObjectType, UserToCommentsEdge>;
 
 export const UserToCommentsConnectionType = () => {
   if (connType === undefined) {
-    connType = new GraphQLConnectionType("UserToCommentsQuery", CommentType);
+    connType = new GraphQLConnectionType("UserToComments", CommentType);
   }
   return connType;
 };
