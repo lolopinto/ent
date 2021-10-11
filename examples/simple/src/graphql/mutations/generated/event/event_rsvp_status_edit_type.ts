@@ -42,13 +42,13 @@ export const EventRsvpStatusInputType = new GraphQLEnumType({
   name: "EventRsvpStatusInput",
   values: {
     ATTENDING: {
-      value: "ATTENDING",
+      value: "attending",
     },
     DECLINED: {
-      value: "DECLINED",
+      value: "declined",
     },
     MAYBE: {
-      value: "MAYBE",
+      value: "maybe",
     },
   },
 });

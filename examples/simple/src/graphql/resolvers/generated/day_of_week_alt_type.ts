@@ -9,25 +9,25 @@ export const DayOfWeekAltType = new GraphQLEnumType({
   name: "DayOfWeekAlt",
   values: {
     FRIDAY: {
-      value: "FRIDAY",
+      value: "fri",
     },
     MONDAY: {
-      value: "MONDAY",
+      value: "mon",
     },
     SATURDAY: {
-      value: "SATURDAY",
+      value: "sat",
     },
     SUNDAY: {
-      value: "SUNDAY",
+      value: "sun",
     },
     THURSDAY: {
-      value: "THURSDAY",
+      value: "thu",
     },
     TUESDAY: {
-      value: "TUESDAY",
+      value: "tue",
     },
     WEDNESDAY: {
-      value: "WEDNESDAY",
+      value: "wed",
     },
   },
 });

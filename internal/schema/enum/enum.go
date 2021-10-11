@@ -64,11 +64,10 @@ func (i *Input) getValuesFromValues() ([]Data, []Data) {
 	for j, val := range i.Values {
 		tsName := GetTSEnumNameForVal(val)
 
-		gqlVal := strings.ToUpper(strcase.ToSnake(val))
 		gqlVals[j] = Data{
-			Name: gqlVal,
-			// norm for graphql enums is all caps
-			Value: strconv.Quote(gqlVal),
+			// norm for graphql enum names is all caps
+			Name:  strings.ToUpper(strcase.ToSnake(val)),
+			Value: strconv.Quote(val),
 		}
 		tsVals[j] = Data{
 			Name: tsName,
@@ -88,12 +87,10 @@ func (i *Input) getValuesFromEnumMap() ([]Data, []Data) {
 	for k, val := range i.EnumMap {
 		tsName := GetTSEnumNameForVal(k)
 
-		// for these, we take it from the key
-		gqlVal := strings.ToUpper(strcase.ToSnake(k))
 		gqlVals[j] = Data{
-			Name: gqlVal,
 			// norm for graphql enums is all caps
-			Value: strconv.Quote(gqlVal),
+			Name:  strings.ToUpper(strcase.ToSnake(k)),
+			Value: strconv.Quote(val),
 		}
 
 		tsVals[j] = Data{
