@@ -13,13 +13,14 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { DayOfWeek, HoursOfOperation } from "../../..";
+import { DayOfWeek, DayOfWeekAlt, HoursOfOperation } from "../../..";
 import schema from "../../../../schema/hours_of_operation";
 
 export interface HoursOfOperationInput {
   dayOfWeek?: DayOfWeek;
   open?: string;
   close?: string;
+  dayOfWeekAlt?: DayOfWeekAlt | null;
 }
 
 export interface HoursOfOperationAction extends Action<HoursOfOperation> {
@@ -113,6 +114,7 @@ export class HoursOfOperationBuilder implements Builder<HoursOfOperation> {
     addField("dayOfWeek", fields.dayOfWeek);
     addField("open", fields.open);
     addField("close", fields.close);
+    addField("dayOfWeekAlt", fields.dayOfWeekAlt);
     return result;
   }
 
@@ -133,5 +135,10 @@ export class HoursOfOperationBuilder implements Builder<HoursOfOperation> {
   // get value of close. Retrieves it from the input if specified or takes it from existingEnt
   getNewCloseValue(): string | undefined {
     return this.input.close || this.existingEnt?.close;
+  }
+
+  // get value of dayOfWeekAlt. Retrieves it from the input if specified or takes it from existingEnt
+  getNewDayOfWeekAltValue(): DayOfWeekAlt | null | undefined {
+    return this.input.dayOfWeekAlt || this.existingEnt?.dayOfWeekAlt;
   }
 }

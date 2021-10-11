@@ -100,6 +100,7 @@ import {
   ContactToCommentsConnectionType,
   ContactToLikersConnectionType,
   ContactType,
+  DayOfWeekAltType,
   DayOfWeekType,
   DaysOffType,
   EventRsvpStatusType,
@@ -132,6 +133,7 @@ export default new GraphQLSchema({
   query: QueryType,
   mutation: MutationType,
   types: [
+    DayOfWeekAltType,
     DayOfWeekType,
     DaysOffType,
     EventRsvpStatusType,

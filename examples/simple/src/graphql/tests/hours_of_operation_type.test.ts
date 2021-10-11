@@ -30,8 +30,10 @@ test("create hours of operation", async () => {
         dayOfWeek: "SUNDAY",
         open: "08:00:00",
         close: "17:00:00",
+        dayOfWeekAlt: "SUNDAY",
       },
     },
+    ["hoursOfOperation.dayOfWeek", "SUNDAY"],
     ["hoursOfOperation.dayOfWeek", "SUNDAY"],
     ["hoursOfOperation.open", "08:00:00"],
     [
