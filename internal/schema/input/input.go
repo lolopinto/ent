@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"go/types"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/ent"
@@ -260,7 +259,6 @@ func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.
 				Values:      typ.Values,
 			}, nil
 		}
-		spew.Dump(typ)
 		return &enttype.EnumType{
 			EnumDBType:  typ.DBType == Enum,
 			Type:        tsType,
