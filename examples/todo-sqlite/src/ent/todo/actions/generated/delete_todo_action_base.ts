@@ -70,7 +70,7 @@ export class DeleteTodoActionBase implements Action<Todo> {
     viewer: Viewer,
     id: ID,
   ): Promise<void> {
-    let todo = await Todo.loadX(viewer, id);
+    const todo = await Todo.loadX(viewer, id);
     return await new this(viewer, todo).saveX();
   }
 }

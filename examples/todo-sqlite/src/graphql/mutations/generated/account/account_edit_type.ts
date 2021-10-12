@@ -69,7 +69,7 @@ export const AccountEditType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<AccountEditPayload> => {
-    let account = await EditAccountAction.saveXFromID(
+    const account = await EditAccountAction.saveXFromID(
       context.getViewer(),
       mustDecodeIDFromGQLID(input.accountID),
       {

@@ -142,7 +142,7 @@ export class HoursOfOperationBase {
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
-    return await hoursOfOperationLoader.createLoader(context).load(id);
+    return hoursOfOperationLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends HoursOfOperationBase>(
@@ -161,8 +161,8 @@ export class HoursOfOperationBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName: tableName,
-      fields: fields,
+      tableName,
+      fields,
       ent: this,
       loaderFactory: hoursOfOperationLoader,
     };

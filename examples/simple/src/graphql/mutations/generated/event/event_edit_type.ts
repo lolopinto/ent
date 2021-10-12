@@ -82,7 +82,7 @@ export const EventEditType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<EventEditPayload> => {
-    let event = await EditEventAction.saveXFromID(
+    const event = await EditEventAction.saveXFromID(
       context.getViewer(),
       mustDecodeIDFromGQLID(input.eventID),
       {

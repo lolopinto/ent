@@ -1774,7 +1774,7 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 		result.FunctionContents = append(
 			result.FunctionContents,
 			// we need fields like userID here which aren't exposed to graphql but editable...
-			fmt.Sprintf("let %s = await %s.create(context.getViewer(), {", nodeData.NodeInstance, a.GetActionName()),
+			fmt.Sprintf("const %s = await %s.create(context.getViewer(), {", nodeData.NodeInstance, a.GetActionName()),
 		)
 		for _, f := range a.GetFields() {
 			// we need fields like userID here which aren't exposed to graphql but editable...
@@ -1833,7 +1833,7 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 			// have fields and therefore input
 			result.FunctionContents = append(
 				result.FunctionContents,
-				fmt.Sprintf("let %s = await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%sID), {", nodeData.NodeInstance, a.GetActionName(), nodeData.NodeInstance),
+				fmt.Sprintf("const %s = await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%sID), {", nodeData.NodeInstance, a.GetActionName(), nodeData.NodeInstance),
 			)
 			for _, f := range a.GetFields() {
 				if f.ExposeToGraphQL() && f.EditableField() {
@@ -1875,13 +1875,13 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 			// have fields and therefore input
 			result.FunctionContents = append(
 				result.FunctionContents,
-				fmt.Sprintf("let %s = await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%sID), mustDecodeIDFromGQLID(input.%sID));", nodeData.NodeInstance, a.GetActionName(), nodeData.NodeInstance, strcase.ToLowerCamel(edge.Singular())),
+				fmt.Sprintf("const %s = await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%sID), mustDecodeIDFromGQLID(input.%sID));", nodeData.NodeInstance, a.GetActionName(), nodeData.NodeInstance, strcase.ToLowerCamel(edge.Singular())),
 			)
 		} else {
 			// no fields
 			result.FunctionContents = append(
 				result.FunctionContents,
-				fmt.Sprintf("let %s = await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%sID));", nodeData.NodeInstance, a.GetActionName(), nodeData.NodeInstance),
+				fmt.Sprintf("const %s = await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%sID));", nodeData.NodeInstance, a.GetActionName(), nodeData.NodeInstance),
 			)
 		}
 

@@ -52,12 +52,12 @@ export class CreateUserActionBase implements Action<User> {
 
   async save(): Promise<User | null> {
     await this.builder.save();
-    return await this.builder.editedEnt();
+    return this.builder.editedEnt();
   }
 
   async saveX(): Promise<User> {
     await this.builder.saveX();
-    return await this.builder.editedEntX();
+    return this.builder.editedEntX();
   }
 
   static create<T extends CreateUserActionBase>(

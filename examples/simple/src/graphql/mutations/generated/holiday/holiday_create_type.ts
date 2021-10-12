@@ -64,7 +64,7 @@ export const HolidayCreateType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<HolidayCreatePayload> => {
-    let holiday = await CreateHolidayAction.create(context.getViewer(), {
+    const holiday = await CreateHolidayAction.create(context.getViewer(), {
       label: input.label,
       date: input.date,
     }).saveX();

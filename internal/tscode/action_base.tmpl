@@ -216,7 +216,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
         await this.setEdgeType();
       {{ end -}}
       await this.builder.save();
-      return await this.builder.editedEnt();
+      return this.builder.editedEnt();
   {{ end -}}
   }
 
@@ -229,7 +229,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
         await this.setEdgeType();
       {{ end -}}
       await this.builder.saveX();
-      return await this.builder.editedEntX();
+      return this.builder.editedEntX();
   {{ end -}}
   }
 
@@ -258,7 +258,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
       {{else -}}
         ): Promise<{{$node}}> {
       {{end -}}
-      let {{$instance}} = await {{$node}}.loadX(viewer, id);
+      const {{$instance}} = await {{$node}}.loadX(viewer, id);
       {{if $hasInput -}}
         return await new this(viewer, {{$instance}}, input).saveX();
       {{else if edgeAction $action -}}

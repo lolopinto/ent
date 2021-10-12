@@ -69,7 +69,7 @@ export const TodoChangeStatusType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<TodoChangeStatusPayload> => {
-    let todo = await ChangeTodoStatusAction.saveXFromID(
+    const todo = await ChangeTodoStatusAction.saveXFromID(
       context.getViewer(),
       mustDecodeIDFromGQLID(input.todoID),
       {

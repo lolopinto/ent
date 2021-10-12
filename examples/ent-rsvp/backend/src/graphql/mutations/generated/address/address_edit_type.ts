@@ -85,7 +85,7 @@ export const AddressEditType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<AddressEditPayload> => {
-    let address = await EditAddressAction.saveXFromID(
+    const address = await EditAddressAction.saveXFromID(
       context.getViewer(),
       mustDecodeIDFromGQLID(input.addressID),
       {

@@ -70,7 +70,7 @@ export class DeleteGuestDataActionBase implements Action<GuestData> {
     viewer: Viewer,
     id: ID,
   ): Promise<void> {
-    let guestData = await GuestData.loadX(viewer, id);
+    const guestData = await GuestData.loadX(viewer, id);
     return await new this(viewer, guestData).saveX();
   }
 }

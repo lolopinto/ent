@@ -57,12 +57,12 @@ export class ChangeTodoStatusActionBase implements Action<Todo> {
 
   async save(): Promise<Todo | null> {
     await this.builder.save();
-    return await this.builder.editedEnt();
+    return this.builder.editedEnt();
   }
 
   async saveX(): Promise<Todo> {
     await this.builder.saveX();
-    return await this.builder.editedEntX();
+    return this.builder.editedEntX();
   }
 
   static create<T extends ChangeTodoStatusActionBase>(
@@ -80,7 +80,7 @@ export class ChangeTodoStatusActionBase implements Action<Todo> {
     id: ID,
     input: ChangeTodoStatusInput,
   ): Promise<Todo> {
-    let todo = await Todo.loadX(viewer, id);
+    const todo = await Todo.loadX(viewer, id);
     return await new this(viewer, todo, input).saveX();
   }
 }

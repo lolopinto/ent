@@ -69,7 +69,7 @@ export const GuestEditType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<GuestEditPayload> => {
-    let guest = await EditGuestAction.saveXFromID(
+    const guest = await EditGuestAction.saveXFromID(
       context.getViewer(),
       mustDecodeIDFromGQLID(input.guestID),
       {

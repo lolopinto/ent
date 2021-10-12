@@ -72,7 +72,7 @@ export const EmailAddressEditType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<EmailAddressEditPayload> => {
-    let user = await EditEmailAddressAction.saveXFromID(
+    const user = await EditEmailAddressAction.saveXFromID(
       context.getViewer(),
       mustDecodeIDFromGQLID(input.userID),
       {

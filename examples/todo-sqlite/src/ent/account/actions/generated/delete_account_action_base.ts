@@ -70,7 +70,7 @@ export class DeleteAccountActionBase implements Action<Account> {
     viewer: Viewer,
     id: ID,
   ): Promise<void> {
-    let account = await Account.loadX(viewer, id);
+    const account = await Account.loadX(viewer, id);
     return await new this(viewer, account).saveX();
   }
 }

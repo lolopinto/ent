@@ -66,7 +66,7 @@ export const TodoCreateType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<TodoCreatePayload> => {
-    let todo = await CreateTodoAction.create(context.getViewer(), {
+    const todo = await CreateTodoAction.create(context.getViewer(), {
       text: input.text,
       creatorID: mustDecodeIDFromGQLID(input.creatorID),
     }).saveX();

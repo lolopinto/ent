@@ -66,7 +66,7 @@ export const TodoRenameType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<TodoRenamePayload> => {
-    let todo = await RenameTodoStatusAction.saveXFromID(
+    const todo = await RenameTodoStatusAction.saveXFromID(
       context.getViewer(),
       mustDecodeIDFromGQLID(input.todoID),
       {

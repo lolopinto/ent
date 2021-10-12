@@ -49,17 +49,15 @@ export class EventBuilder implements Builder<Event> {
     this.input = action.getInput();
 
     this.orchestrator = new Orchestrator({
-      viewer: viewer,
+      viewer,
       operation: this.operation,
       tableName: "events",
       key: "id",
       loaderOptions: Event.loaderOptions(),
       builder: this,
-      action: action,
-      schema: schema,
-      editedFields: () => {
-        return this.getEditedFields.apply(this);
-      },
+      action,
+      schema,
+      editedFields: () => this.getEditedFields.apply(this),
     });
   }
 
@@ -294,17 +292,17 @@ export class EventBuilder implements Builder<Event> {
   }
 
   async editedEnt(): Promise<Event | null> {
-    return await this.orchestrator.editedEnt();
+    return this.orchestrator.editedEnt();
   }
 
   async editedEntX(): Promise<Event> {
-    return await this.orchestrator.editedEntX();
+    return this.orchestrator.editedEntX();
   }
 
   private getEditedFields(): Map<string, any> {
     const fields = this.input;
 
-    let result = new Map<string, any>();
+    const result = new Map<string, any>();
 
     const addField = function (key: string, value: any) {
       if (value !== undefined) {

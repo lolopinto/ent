@@ -60,7 +60,7 @@ export const AccountCreateType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<AccountCreatePayload> => {
-    let account = await CreateAccountAction.create(context.getViewer(), {
+    const account = await CreateAccountAction.create(context.getViewer(), {
       name: input.name,
       phoneNumber: input.phoneNumber,
     }).saveX();

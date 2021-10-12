@@ -61,12 +61,12 @@ export class EditGuestGroupActionBase implements Action<GuestGroup> {
 
   async save(): Promise<GuestGroup | null> {
     await this.builder.save();
-    return await this.builder.editedEnt();
+    return this.builder.editedEnt();
   }
 
   async saveX(): Promise<GuestGroup> {
     await this.builder.saveX();
-    return await this.builder.editedEntX();
+    return this.builder.editedEntX();
   }
 
   static create<T extends EditGuestGroupActionBase>(
@@ -92,7 +92,7 @@ export class EditGuestGroupActionBase implements Action<GuestGroup> {
     id: ID,
     input: GuestGroupEditInput,
   ): Promise<GuestGroup> {
-    let guestGroup = await GuestGroup.loadX(viewer, id);
+    const guestGroup = await GuestGroup.loadX(viewer, id);
     return await new this(viewer, guestGroup, input).saveX();
   }
 }

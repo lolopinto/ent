@@ -117,7 +117,7 @@ export class UserBase {
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
-    return await userLoader.createLoader(context).load(id);
+    return userLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends UserBase>(
@@ -179,8 +179,8 @@ export class UserBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName: tableName,
-      fields: fields,
+      tableName,
+      fields,
       ent: this,
       loaderFactory: userLoader,
     };

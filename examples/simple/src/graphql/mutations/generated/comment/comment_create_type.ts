@@ -76,7 +76,7 @@ export const CommentCreateType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<CommentCreatePayload> => {
-    let comment = await CreateCommentAction.create(context.getViewer(), {
+    const comment = await CreateCommentAction.create(context.getViewer(), {
       authorID: mustDecodeIDFromGQLID(input.authorID),
       body: input.body,
       articleID: mustDecodeIDFromGQLID(input.articleID),
