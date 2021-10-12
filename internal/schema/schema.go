@@ -41,10 +41,13 @@ type Schema struct {
 
 func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData) error {
 	return s.addEnumFrom(
-		enumType.GetTSName(),
-		enumType.GetGraphQLName(),
-		enumType.GetTSType(),
-		enumType.GetEnumValues(),
+		&enum.Input{
+			TSName:  enumType.GetTSName(),
+			GQLName: enumType.GetGraphQLName(),
+			GQLType: enumType.GetTSType(),
+			Values:  enumType.GetEnumValues(),
+			EnumMap: enumType.GetEnumMap(),
+		},
 		nodeData,
 		nil,
 	)
@@ -135,20 +138,21 @@ func (s *Schema) addEnumFromInputNode(nodeName string, node *input.Node, nodeDat
 	}
 
 	return s.addEnumFrom(
-		nodeName,
-		nodeName,
-		fmt.Sprintf("%s!", nodeName),
-		values,
+		&enum.Input{
+			TSName:  nodeName,
+			GQLName: nodeName,
+			GQLType: fmt.Sprintf("%s!", nodeName),
+			Values:  values,
+		},
 		nodeData,
 		node,
 	)
 }
 
-func (s *Schema) addEnumFrom(tsName, gqlName, gqlType string, enumValues []string, nodeData *NodeData, inputNode *input.Node) error {
+func (s *Schema) addEnumFrom(input *enum.Input, nodeData *NodeData, inputNode *input.Node) error {
+	tsEnum, gqlEnum := enum.GetEnums(input)
+
 	// first create EnumInfo...
-
-	tsEnum, gqlEnum := enum.GetEnums(tsName, gqlName, gqlType, enumValues)
-
 	info := &EnumInfo{
 		Enum:      tsEnum,
 		GQLEnum:   gqlEnum,
@@ -156,8 +160,10 @@ func (s *Schema) addEnumFrom(tsName, gqlName, gqlType string, enumValues []strin
 		InputNode: inputNode,
 	}
 
+	gqlName := input.GQLName
+
 	// new source enum
-	if len(enumValues) > 0 {
+	if input.HasValues() {
 		if s.Enums[gqlName] != nil {
 			return fmt.Errorf("enum schema with gqlname %s already exists", gqlName)
 		}
@@ -332,10 +338,12 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 		} else {
 			for _, group := range nodeData.EdgeInfo.AssocGroups {
 				if err := s.addEnumFrom(
-					group.ConstType,
-					group.ConstType,
-					fmt.Sprintf("%s!", group.ConstType),
-					group.GetEnumValues(),
+					&enum.Input{
+						TSName:  group.ConstType,
+						GQLName: group.ConstType,
+						GQLType: fmt.Sprintf("%s!", group.ConstType),
+						Values:  group.GetEnumValues(),
+					},
 					nodeData,
 					nil,
 				); err != nil {

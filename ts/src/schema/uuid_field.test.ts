@@ -27,6 +27,7 @@ test("polymorphic object", () => {
       values: ["User", "Post"],
       type: "fooType",
       graphQLType: "fooType",
+      enumMap: undefined,
     },
   );
 });
@@ -39,6 +40,7 @@ test("polymorphic object, nullable true", () => {
       values: ["User", "Post"],
       type: "fooType",
       graphQLType: "fooType",
+      enumMap: undefined,
     },
     {
       nullable: true,

@@ -455,6 +455,71 @@ func TestSchemaWithActionsCodegen(t *testing.T) {
 	validateFileExists(t, rootDir, "src/graphql/mutations/generated/user/user_edit_name_type.ts")
 }
 
+func TestSchemaWithPattern(t *testing.T) {
+	s, err := schema.ParseFromInputSchema(&input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "ID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "name",
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+					},
+				},
+				AssocEdges: []*input.AssocEdge{
+					{
+						Name:        "likes",
+						SchemaName:  "User",
+						PatternName: "feedbackTarget",
+					},
+				},
+			},
+		},
+		Patterns: map[string]*input.Pattern{
+			"feedbackTarget": {
+				Name: "feedbackTarget",
+				AssocEdges: []*input.AssocEdge{
+					{
+						Name:       "likes",
+						SchemaName: "User",
+					},
+				},
+			},
+		},
+	}, base.TypeScript)
+	require.Nil(t, err)
+
+	rootDir, err := ioutil.TempDir(os.TempDir(), "root")
+	require.Nil(t, err)
+	defer os.RemoveAll(rootDir)
+	runSteps(t, s, rootDir)
+
+	validateFileExists(t, rootDir, "src/ent/generated/user_base.ts")
+	validateFileExists(t, rootDir, "src/ent/user.ts")
+	validateFileExists(t, rootDir, "src/ent/generated/const.ts")
+	validateFileExists(t, rootDir, "src/ent/internal.ts")
+	validateFileExists(t, rootDir, "src/ent/index.ts")
+	validateFileExists(t, rootDir, "src/ent/generated/loadAny.ts")
+	validateFileExists(t, rootDir, "src/ent/generated/patterns/feedback_target_query_base.ts")
+	validateFileExists(t, rootDir, "src/ent/patterns/query/object_to_likes_query.ts")
+	validateFileExists(t, rootDir, "src/ent/user/query/user_to_likes_query.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/generated/user_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/node_query_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/generated/query_type.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/internal.ts")
+	validateFileExists(t, rootDir, "src/graphql/resolvers/index.ts")
+	validateFileExists(t, rootDir, "src/graphql/generated/schema.ts")
+	validateFileExists(t, rootDir, "src/graphql/index.ts")
+}
+
 func validateFileExists(t *testing.T, root, path string) {
 	path = filepath.Join(root, path)
 	fi, err := os.Stat(path)

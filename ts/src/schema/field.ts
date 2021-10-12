@@ -428,13 +428,21 @@ export function DateType(options: FieldOptions): DateField {
 //   type: Type = {dbType: DBType.JSON}
 // }
 
+declare type EnumMap = {
+  [key: string]: string;
+};
+
 export interface EnumOptions extends FieldOptions {
   // required when not a reference to a lookup table
   // when using a lookup table enum, we should use all caps because we don't have the values to translate back
   values?: string[];
-  //  by default the type is the name as the field
-  // it's recommended to scope the enum names in scenarios where it makes sense
+  // used when we're migrating from old -> new values and want to reuse the values but the values may not be the best keys so this is preferred
+  // instead of values.
+  // GRAPHQL will take the key and use it as the value here instead o
+  map?: EnumMap;
 
+  // by default the type is the name as the field
+  // it's recommended to scope the enum names in scenarios where it makes sense
   tsType?: string;
   graphQLType?: string;
 
@@ -444,6 +452,7 @@ export interface EnumOptions extends FieldOptions {
 export class EnumField extends BaseField implements Field {
   type: Type;
   private values?: string[];
+  private map?: EnumMap;
 
   constructor(options: EnumOptions) {
     super();
@@ -451,22 +460,35 @@ export class EnumField extends BaseField implements Field {
       // if createEnumType boolean, we create postgres enum otherwise we use a string for it
       dbType: options.createEnumType ? DBType.Enum : DBType.StringEnum,
       values: options.values,
+      enumMap: options.map,
       type: options.tsType || options.name,
       graphQLType: options.graphQLType || options.name,
     };
     if (!options.foreignKey) {
-      if (!options.values) {
+      if (!options.values && !options.map) {
         throw new Error(
-          "values required if not look up table enum. Look-up table enum indicated by foreignKey field",
+          "values or map required if not look up table enum. Look-up table enum indicated by foreignKey field",
         );
       }
-      if (!options.values.length) {
-        throw new Error("need at least one value in enum type");
+      if (options.values) {
+        if (!options.values.length) {
+          throw new Error("need at least one value in enum type");
+        }
+      }
+      if (options.map) {
+        let count = 0;
+        for (const k in options.map) {
+          count++;
+          break;
+        }
+        if (!count) {
+          throw new Error("need at least one entry in enum map");
+        }
       }
     } else {
-      if (options.values) {
+      if (options.values || options.map) {
         throw new Error(
-          "cannot specify values and foreign key for lookup table enum type",
+          "cannot specify values or map and foreign key for lookup table enum type",
         );
       }
       if (options.createEnumType) {
@@ -482,36 +504,62 @@ export class EnumField extends BaseField implements Field {
       }
     }
     this.values = options.values;
+    this.map = options.map;
   }
 
+  // TODO need to update this for map
   convertForGQL(value: string) {
     return snakeCase(value).toUpperCase();
   }
 
   valid(val: any): boolean {
     // lookup table enum and indicated via presence of foreignKey
-    if (!this.values) {
+    if (!this.values && !this.map) {
       return true;
     }
-    let str = String(val);
-    return this.values.some(
-      (value) => value === str || this.convertForGQL(value) === str,
-    );
+    if (this.values) {
+      let str = String(val);
+      return this.values.some(
+        (value) => value === str || this.convertForGQL(value) === str,
+      );
+    }
+
+    for (const k in this.map) {
+      const v = this.map[k];
+      if (v === val || this.convertForGQL(k) === val) {
+        // TODO decide on behavior for GQL since GQL only supports one type
+        return true;
+      }
+    }
+    return false;
   }
 
   format(val: any): any {
     // TODO need to format correctly for graphql purposes...
     // how to best get the values in the db...
-    if (!this.values) {
+    if (!this.values && !this.map) {
       return val;
     }
     let str = String(val);
 
-    for (let i = 0; i < this.values.length; i++) {
-      let value = this.values[i];
-      // store the format that maps to the given value in the db instead of saving the upper case value
-      if (str === value || str === this.convertForGQL(value)) {
-        return value;
+    if (this.values) {
+      for (let i = 0; i < this.values.length; i++) {
+        let value = this.values[i];
+        // store the format that maps to the given value in the db instead of saving the upper case value
+        if (str === value || str === this.convertForGQL(value)) {
+          return value;
+        }
+      }
+    }
+    if (this.map) {
+      for (const k in this.map) {
+        const v = this.map[k];
+        if (str === v) {
+          return v;
+        }
+        if (str === this.convertForGQL(k)) {
+          return v;
+        }
       }
     }
 
@@ -527,6 +575,7 @@ export function EnumType(options: EnumOptions): EnumField {
 
 export class ListField extends BaseField {
   type: Type;
+  private validators: { (val: any[]): boolean }[] = [];
 
   constructor(private field: Field, options: FieldOptions) {
     super();
@@ -540,9 +589,19 @@ export class ListField extends BaseField {
     Object.assign(this, options);
   }
 
+  validate(validator: (val: any[]) => boolean): this {
+    this.validators.push(validator);
+    return this;
+  }
+
   valid(val: any): boolean {
     if (!Array.isArray(val)) {
       return false;
+    }
+    for (const validator of this.validators) {
+      if (!validator(val)) {
+        return false;
+      }
     }
     if (!this.field.valid) {
       return true;
@@ -574,6 +633,31 @@ export class ListField extends BaseField {
     // For SQLite, we store a JSON string
     return JSON.stringify(val);
   }
+
+  minLen(l: number): this {
+    return this.validate((val: any[]) => val.length >= l);
+  }
+
+  maxLen(l: number): this {
+    return this.validate((val: any[]) => val.length <= l);
+  }
+
+  length(l: number): this {
+    return this.validate((val: any[]) => val.length === l);
+  }
+
+  // like python's range() function
+  // start is where to start and stop is the number to stop (not inclusive in the range)
+  range(start: any, stop: any): this {
+    return this.validate((val: any[]) => {
+      for (const v of val) {
+        if (v < start || v >= stop) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }
 }
 
 export function StringListType(options: StringOptions) {
@@ -584,8 +668,16 @@ export function IntListType(options: FieldOptions) {
   return new ListField(IntegerType(options), options);
 }
 
+export function IntegerListType(options: FieldOptions) {
+  return new ListField(IntegerType(options), options);
+}
+
 export function FloatListType(options: FieldOptions) {
   return new ListField(FloatType(options), options);
+}
+
+export function BigIntegerListType(options: FieldOptions) {
+  return new ListField(BigIntegerType(options), options);
 }
 
 export function BooleanListType(options: FieldOptions) {

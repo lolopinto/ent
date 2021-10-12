@@ -2,6 +2,7 @@ import { DB, LoggedOutViewer, IDViewer, ID, Viewer } from "@snowtop/ent";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { encodeGQLID } from "@snowtop/ent/graphql";
 import {
+  expectMutation,
   expectQueryFromRoot,
   queryRootConfig,
 } from "@snowtop/ent-graphql-tests";
@@ -109,5 +110,29 @@ test("query event with different viewer", async () => {
     ["endTime", null],
     ["name", event.name],
     ["eventLocation", event.location], // graphqlName is eventLocation
+  );
+});
+
+test("event rsvp status edit", async () => {
+  let event = await createEvent({});
+  let user = await event.loadCreatorX();
+
+  await expectQueryFromRoot(getConfig(new IDViewer(user.id), event, {}), [
+    "viewerRsvpStatus",
+    "CAN_RSVP",
+  ]);
+
+  await expectMutation(
+    {
+      mutation: "eventRsvpStatusEdit",
+      schema,
+      args: {
+        eventID: encodeGQLID(event),
+        userID: encodeGQLID(user),
+        rsvpStatus: "MAYBE",
+      },
+      viewer: user.viewer,
+    },
+    ["event.viewerRsvpStatus", "MAYBE"],
   );
 });

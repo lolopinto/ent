@@ -5,29 +5,29 @@
 
 import { GraphQLEnumType } from "graphql";
 
-export const daysOffType = new GraphQLEnumType({
-  name: "daysOff",
+export const DaysOffType = new GraphQLEnumType({
+  name: "DaysOff",
   values: {
     MONDAY: {
-      value: "MONDAY",
+      value: "monday",
     },
     TUESDAY: {
-      value: "TUESDAY",
+      value: "tuesday",
     },
     WEDNESDAY: {
-      value: "WEDNESDAY",
+      value: "wednesday",
     },
     THURSDAY: {
-      value: "THURSDAY",
+      value: "thursday",
     },
     FRIDAY: {
-      value: "FRIDAY",
+      value: "friday",
     },
     SATURDAY: {
-      value: "SATURDAY",
+      value: "saturday",
     },
     SUNDAY: {
-      value: "SUNDAY",
+      value: "sunday",
     },
   },
 });

@@ -1,6 +1,7 @@
 package enum
 
 import (
+	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -45,19 +46,30 @@ func GetTSEnumNameForVal(val string) string {
 	return strcase.ToCamel(val)
 }
 
-func GetEnums(tsName, gqlName, gqlType string, values []string) (*Enum, *GQLEnum) {
-	tsVals := make([]Data, len(values))
-	gqlVals := make([]Data, len(values))
-	for i, val := range values {
+type Input struct {
+	TSName  string
+	GQLName string
+	GQLType string
+	Values  []string
+	EnumMap map[string]string
+}
+
+func (i *Input) HasValues() bool {
+	return len(i.Values) > 0 || len(i.EnumMap) > 0
+}
+
+func (i *Input) getValuesFromValues() ([]Data, []Data) {
+	tsVals := make([]Data, len(i.Values))
+	gqlVals := make([]Data, len(i.Values))
+	for j, val := range i.Values {
 		tsName := GetTSEnumNameForVal(val)
 
-		gqlVal := strings.ToUpper(strcase.ToSnake(val))
-		gqlVals[i] = Data{
-			Name: gqlVal,
-			// norm for graphql enums is all caps
-			Value: strconv.Quote(gqlVal),
+		gqlVals[j] = Data{
+			// norm for graphql enum names is all caps
+			Name:  strings.ToUpper(strcase.ToSnake(val)),
+			Value: strconv.Quote(val),
 		}
-		tsVals[i] = Data{
+		tsVals[j] = Data{
 			Name: tsName,
 			// value is actually what's put there for now
 			// TODO we need to figure out if there's a standard here
@@ -65,15 +77,54 @@ func GetEnums(tsName, gqlName, gqlType string, values []string) (*Enum, *GQLEnum
 			Value: strconv.Quote(val),
 		}
 	}
+	return tsVals, gqlVals
+}
 
+func (i *Input) getValuesFromEnumMap() ([]Data, []Data) {
+	tsVals := make([]Data, len(i.EnumMap))
+	gqlVals := make([]Data, len(i.EnumMap))
+	j := 0
+	for k, val := range i.EnumMap {
+		tsName := GetTSEnumNameForVal(k)
+
+		gqlVals[j] = Data{
+			// norm for graphql enums is all caps
+			Name:  strings.ToUpper(strcase.ToSnake(k)),
+			Value: strconv.Quote(val),
+		}
+
+		tsVals[j] = Data{
+			Name:  tsName,
+			Value: strconv.Quote(val),
+		}
+		j++
+	}
+	// golang maps are not stabe so sort for stability
+	sort.Slice(tsVals, func(i, j int) bool {
+		return tsVals[i].Name < tsVals[j].Name
+	})
+	sort.Slice(gqlVals, func(i, j int) bool {
+		return gqlVals[i].Name < gqlVals[j].Name
+	})
+	return tsVals, gqlVals
+}
+
+func GetEnums(input *Input) (*Enum, *GQLEnum) {
+	var tsVals []Data
+	var gqlVals []Data
+	if len(input.EnumMap) > 0 {
+		tsVals, gqlVals = input.getValuesFromEnumMap()
+	} else {
+		tsVals, gqlVals = input.getValuesFromValues()
+	}
 	gqlEnum := &GQLEnum{
-		Name:   gqlName,
-		Type:   gqlType,
+		Name:   input.GQLName,
+		Type:   input.GQLType,
 		Values: gqlVals,
 	}
 
 	tsEnum := &Enum{
-		Name:   tsName,
+		Name:   input.TSName,
 		Values: tsVals,
 		// not the best way to determine this but works for now
 		Imported: len(tsVals) == 0,

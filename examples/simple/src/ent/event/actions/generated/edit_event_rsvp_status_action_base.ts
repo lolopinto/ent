@@ -24,14 +24,6 @@ export enum EventRsvpStatusInput {
   Maybe = "maybe",
 }
 
-export function getEventRsvpStatusInputValues() {
-  return [
-    EventRsvpStatusInput.Attending,
-    EventRsvpStatusInput.Declined,
-    EventRsvpStatusInput.Maybe,
-  ];
-}
-
 export interface EditEventRsvpStatusInput {
   rsvpStatus: EventRsvpStatusInput;
   userID: ID;

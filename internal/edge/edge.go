@@ -659,7 +659,7 @@ func (e *AssociationEdge) TsEdgeQueryName() string {
 func (e *AssociationEdge) GetGraphQLEdgePrefix() string {
 	if e.overridenQueryName != "" {
 		// return this with connection removed
-		return strings.TrimSuffix(e.overridenQueryName, "Connection")
+		return strings.TrimSuffix(e.overridenQueryName, "Query")
 	}
 	return e.TsEdgeConst
 }
@@ -851,10 +851,6 @@ func (edgeGroup *AssociationEdgeGroup) GetStatusMethod() string {
 
 func (edgeGroup *AssociationEdgeGroup) GetStatusMapMethod() string {
 	return fmt.Sprintf("get%sMap", strcase.ToCamel(edgeGroup.ConstType))
-}
-
-func (edgeGroup *AssociationEdgeGroup) GetEnumValuesMethod() string {
-	return fmt.Sprintf("get%sValues", strcase.ToCamel(edgeGroup.ConstType))
 }
 
 func (edgeGroup *AssociationEdgeGroup) EdgeIdentifier() string {

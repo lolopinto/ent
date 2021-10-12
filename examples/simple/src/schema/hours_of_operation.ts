@@ -24,6 +24,19 @@ export default class HoursOfOperation extends BaseEntSchemaWithTZ {
     // just to test we have different types
     TimeType({ name: "open" }),
     TimetzType({ name: "close" }),
+    EnumType({
+      name: "dayOfWeekAlt",
+      map: {
+        Sunday: "sun",
+        Monday: "mon",
+        Tuesday: "tue",
+        Wednesday: "wed",
+        Thursday: "thu",
+        Friday: "fri",
+        Saturday: "sat",
+      },
+      nullable: true,
+    }),
   ];
 
   actions = [

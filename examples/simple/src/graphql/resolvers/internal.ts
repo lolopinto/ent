@@ -4,6 +4,7 @@
  */
 
 export * from "./node_query_type";
+export * from "./generated/day_of_week_alt_type";
 export * from "./generated/day_of_week_type";
 export * from "./generated/days_off_type";
 export * from "./generated/event_rsvp_status_type";

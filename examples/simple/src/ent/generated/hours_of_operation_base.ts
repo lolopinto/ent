@@ -32,9 +32,10 @@ const fields = [
   "day_of_week",
   "open",
   "close",
+  "day_of_week_alt",
 ];
 
-export enum dayOfWeek {
+export enum DayOfWeek {
   Sunday = "Sunday",
   Monday = "Monday",
   Tuesday = "Tuesday",
@@ -44,16 +45,14 @@ export enum dayOfWeek {
   Saturday = "Saturday",
 }
 
-export function getDayOfWeekValues() {
-  return [
-    dayOfWeek.Sunday,
-    dayOfWeek.Monday,
-    dayOfWeek.Tuesday,
-    dayOfWeek.Wednesday,
-    dayOfWeek.Thursday,
-    dayOfWeek.Friday,
-    dayOfWeek.Saturday,
-  ];
+export enum DayOfWeekAlt {
+  Friday = "fri",
+  Monday = "mon",
+  Saturday = "sat",
+  Sunday = "sun",
+  Thursday = "thu",
+  Tuesday = "tue",
+  Wednesday = "wed",
 }
 
 export class HoursOfOperationBase {
@@ -61,9 +60,10 @@ export class HoursOfOperationBase {
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
-  readonly dayOfWeek: dayOfWeek;
+  readonly dayOfWeek: DayOfWeek;
   readonly open: string;
   readonly close: string;
+  readonly dayOfWeekAlt: DayOfWeekAlt | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
@@ -72,6 +72,7 @@ export class HoursOfOperationBase {
     this.dayOfWeek = data.day_of_week;
     this.open = data.open;
     this.close = data.close;
+    this.dayOfWeekAlt = data.day_of_week_alt;
   }
 
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;

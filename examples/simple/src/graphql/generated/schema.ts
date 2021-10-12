@@ -100,6 +100,9 @@ import {
   ContactToCommentsConnectionType,
   ContactToLikersConnectionType,
   ContactType,
+  DayOfWeekAltType,
+  DayOfWeekType,
+  DaysOffType,
   EventRsvpStatusType,
   EventToAttendingConnectionType,
   EventToDeclinedConnectionType,
@@ -110,6 +113,7 @@ import {
   GQLViewerType,
   HolidayType,
   HoursOfOperationType,
+  PreferredShiftType,
   UserToCommentsConnectionType,
   UserToContactsConnectionType,
   UserToCreatedEventsConnectionType,
@@ -122,9 +126,6 @@ import {
   UserToLikesConnectionType,
   UserToMaybeEventsConnectionType,
   UserType,
-  dayOfWeekType,
-  daysOffType,
-  preferredShiftType,
 } from "../resolvers";
 import { QueryType } from "../resolvers/generated/query_type";
 
@@ -132,10 +133,11 @@ export default new GraphQLSchema({
   query: QueryType,
   mutation: MutationType,
   types: [
+    DayOfWeekAltType,
+    DayOfWeekType,
+    DaysOffType,
     EventRsvpStatusType,
-    dayOfWeekType,
-    daysOffType,
-    preferredShiftType,
+    PreferredShiftType,
     AddressType,
     CommentType,
     ContactType,

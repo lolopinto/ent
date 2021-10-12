@@ -12,7 +12,7 @@ var connType: GraphQLConnectionType<GraphQLObjectType, UserToLikersEdge>;
 
 export const UserToLikersConnectionType = () => {
   if (connType === undefined) {
-    connType = new GraphQLConnectionType("UserToLikersQuery", UserType);
+    connType = new GraphQLConnectionType("UserToLikers", UserType);
   }
   return connType;
 };

@@ -81,9 +81,10 @@ type FieldType struct {
 	// required when DBType == DBType.List
 	ListElemType *FieldType `json:"listElemType"`
 	// required when DBType == DBType.Enum || DBType.StringEnum
-	Values      []string `json:"values"`
-	Type        string   `json:"type"`
-	GraphQLType string   `json:"graphQLType"`
+	Values      []string          `json:"values"`
+	EnumMap     map[string]string `json:"enumMap"`
+	Type        string            `json:"type"`
+	GraphQLType string            `json:"graphQLType"`
 	// optional used by generator to specify different types e.g. email, phone, password
 	CustomType CustomType               `json:"customType"`
 	ImportType *enttype.InputImportType `json:"importType"`
@@ -239,8 +240,8 @@ func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.
 		}, nil
 
 	case StringEnum, Enum:
-		tsType := typ.Type
-		graphqlType := typ.GraphQLType
+		tsType := strcase.ToCamel(typ.Type)
+		graphqlType := strcase.ToCamel(typ.GraphQLType)
 		if foreignKey != nil {
 			tsType = foreignKey.Schema
 			graphqlType = foreignKey.Schema
@@ -257,6 +258,7 @@ func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.
 				Type:        tsType,
 				GraphQLType: graphqlType,
 				Values:      typ.Values,
+				EnumMap:     typ.EnumMap,
 			}, nil
 		}
 		return &enttype.EnumType{
@@ -264,6 +266,7 @@ func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.
 			Type:        tsType,
 			GraphQLType: graphqlType,
 			Values:      typ.Values,
+			EnumMap:     typ.EnumMap,
 		}, nil
 	}
 	return nil, fmt.Errorf("unsupported type %s", typ.DBType)

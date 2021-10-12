@@ -11,13 +11,9 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import {
-  GraphQLNodeInterface,
-  convertToGQLEnum,
-  nodeIDEncoder,
-} from "@snowtop/ent/graphql";
-import { HoursOfOperation, getDayOfWeekValues } from "../../../ent";
-import { dayOfWeekType } from "../internal";
+import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
+import { HoursOfOperation } from "../../../ent";
+import { DayOfWeekAltType, DayOfWeekType } from "../internal";
 
 export const HoursOfOperationType = new GraphQLObjectType({
   name: "HoursOfOperation",
@@ -27,25 +23,16 @@ export const HoursOfOperationType = new GraphQLObjectType({
       resolve: nodeIDEncoder,
     },
     dayOfWeek: {
-      type: GraphQLNonNull(dayOfWeekType),
-      resolve: (
-        hoursOfOperation: HoursOfOperation,
-        args: {},
-        context: RequestContext,
-      ) => {
-        const ret = hoursOfOperation.dayOfWeek;
-        return convertToGQLEnum(
-          ret,
-          getDayOfWeekValues(),
-          dayOfWeekType.getValues(),
-        );
-      },
+      type: GraphQLNonNull(DayOfWeekType),
     },
     open: {
       type: GraphQLNonNull(GraphQLString),
     },
     close: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    dayOfWeekAlt: {
+      type: DayOfWeekAltType,
     },
   }),
   interfaces: [GraphQLNodeInterface],
