@@ -7,12 +7,3 @@ export enum {{.Name}} {
     {{.Name}} = {{.Value}},
   {{ end -}}
 }
-
-{{$enumName := .Name}}
-export function get{{toCamel .Name}}Values() {
-  return [
-  {{ range $data := .Values -}} 
-    {{$enumName}}.{{.Name}},
-  {{ end -}}
-  ];
-}

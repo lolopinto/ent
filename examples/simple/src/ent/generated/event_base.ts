@@ -55,15 +55,6 @@ export enum EventRsvpStatus {
   CanRsvp = "canRsvp",
 }
 
-export function getEventRsvpStatusValues() {
-  return [
-    EventRsvpStatus.Attending,
-    EventRsvpStatus.Declined,
-    EventRsvpStatus.Maybe,
-    EventRsvpStatus.CanRsvp,
-  ];
-}
-
 export class EventBase {
   readonly nodeType = NodeType.Event;
   readonly id: ID;

@@ -9,16 +9,16 @@ export const PreferredShiftType = new GraphQLEnumType({
   name: "PreferredShift",
   values: {
     MORNING: {
-      value: "MORNING",
+      value: "morning",
     },
     AFTERNOON: {
-      value: "AFTERNOON",
+      value: "afternoon",
     },
     EVENING: {
-      value: "EVENING",
+      value: "evening",
     },
     GRAVEYARD: {
-      value: "GRAVEYARD",
+      value: "graveyard",
     },
   },
 });

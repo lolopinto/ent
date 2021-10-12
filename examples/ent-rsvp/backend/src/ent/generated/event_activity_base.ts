@@ -53,15 +53,6 @@ export enum EventActivityRsvpStatus {
   CannotRsvp = "cannotRsvp",
 }
 
-export function getEventActivityRsvpStatusValues() {
-  return [
-    EventActivityRsvpStatus.Attending,
-    EventActivityRsvpStatus.Declined,
-    EventActivityRsvpStatus.CanRsvp,
-    EventActivityRsvpStatus.CannotRsvp,
-  ];
-}
-
 export class EventActivityBase {
   readonly nodeType = NodeType.EventActivity;
   readonly id: ID;

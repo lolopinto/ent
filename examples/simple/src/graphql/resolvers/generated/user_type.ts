@@ -17,7 +17,6 @@ import { RequestContext } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
-  convertToGQLEnum,
   nodeIDEncoder,
 } from "@snowtop/ent/graphql";
 import {
@@ -33,8 +32,6 @@ import {
   UserToLikersQuery,
   UserToLikesQuery,
   UserToMaybeEventsQuery,
-  getDaysOffValues,
-  getPreferredShiftValues,
 } from "../../../ent";
 import {
   ContactType,
@@ -89,25 +86,9 @@ export const UserType = new GraphQLObjectType({
     },
     daysOff: {
       type: GraphQLList(GraphQLNonNull(DaysOffType)),
-      resolve: (user: User, args: {}, context: RequestContext) => {
-        const ret = user.daysOff;
-        return ret?.map((v) =>
-          convertToGQLEnum(v, getDaysOffValues(), DaysOffType.getValues()),
-        );
-      },
     },
     preferredShift: {
       type: GraphQLList(GraphQLNonNull(PreferredShiftType)),
-      resolve: (user: User, args: {}, context: RequestContext) => {
-        const ret = user.preferredShift;
-        return ret?.map((v) =>
-          convertToGQLEnum(
-            v,
-            getPreferredShiftValues(),
-            PreferredShiftType.getValues(),
-          ),
-        );
-      },
     },
     timeInMs: {
       type: GraphQLString,

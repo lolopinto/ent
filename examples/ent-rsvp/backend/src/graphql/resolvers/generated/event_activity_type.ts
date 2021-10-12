@@ -14,7 +14,6 @@ import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
   GraphQLTime,
-  convertToGQLEnum,
   nodeIDEncoder,
 } from "@snowtop/ent/graphql";
 import {
@@ -22,7 +21,6 @@ import {
   EventActivityToAttendingQuery,
   EventActivityToDeclinedQuery,
   EventActivityToInvitesQuery,
-  getEventActivityRsvpStatusValues,
 } from "src/ent/";
 import {
   AddressType,
@@ -172,18 +170,6 @@ export const EventActivityType = new GraphQLObjectType({
     },
     viewerRsvpStatus: {
       type: EventActivityRsvpStatusType,
-      resolve: async (
-        eventActivity: EventActivity,
-        args: {},
-        context: RequestContext,
-      ) => {
-        const ret = await eventActivity.viewerRsvpStatus();
-        return convertToGQLEnum(
-          ret,
-          getEventActivityRsvpStatusValues(),
-          EventActivityRsvpStatusType.getValues(),
-        );
-      },
     },
     address: {
       type: AddressType,

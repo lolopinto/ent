@@ -83,31 +83,11 @@ export enum DaysOff {
   Sunday = "sunday",
 }
 
-export function getDaysOffValues() {
-  return [
-    DaysOff.Monday,
-    DaysOff.Tuesday,
-    DaysOff.Wednesday,
-    DaysOff.Thursday,
-    DaysOff.Friday,
-    DaysOff.Saturday,
-    DaysOff.Sunday,
-  ];
-}
 export enum PreferredShift {
   Morning = "morning",
   Afternoon = "afternoon",
   Evening = "evening",
   Graveyard = "graveyard",
-}
-
-export function getPreferredShiftValues() {
-  return [
-    PreferredShift.Morning,
-    PreferredShift.Afternoon,
-    PreferredShift.Evening,
-    PreferredShift.Graveyard,
-  ];
 }
 
 export class UserBase {

@@ -1308,44 +1308,14 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 			HasResolveFunction: gqlName != field.TsFieldName(),
 			FieldImports:       getGQLFileImports(field.GetTSGraphQLTypeForFieldImports(false), false),
 		}
-		ftype := field.GetFieldType()
-		enumType, ok := enttype.GetEnumType(ftype)
-		if ok {
-			tsValuesMethod := fmt.Sprintf("get%sValues", strcase.ToCamel(enumType.GetTSName()))
-			gqlField.HasResolveFunction = true
-			gqlField.ExtraImports = append(
-				gqlField.ExtraImports,
-				&fileImport{
-					ImportPath: codepath.GraphQLPackage,
-					Type:       "convertToGQLEnum",
-				},
-				&fileImport{
-					ImportPath: codepath.GetExternalImportPath(),
-					Type:       tsValuesMethod,
-				},
-			)
-			if enttype.IsListType(ftype) {
-				gqlField.FunctionContents = []string{fmt.Sprintf("const ret = %s.%s;", instance, field.TsFieldName()),
-					fmt.Sprintf("return ret?.map(v=>convertToGQLEnum(v, %s(), %s.getValues()))",
-						tsValuesMethod,
-						enumType.GetGraphQLName()+"Type",
-					)}
-			} else {
-				gqlField.FunctionContents = []string{fmt.Sprintf("const ret = %s.%s;", instance, field.TsFieldName()),
-					fmt.Sprintf("return convertToGQLEnum(ret, %s(), %s.getValues())",
-						tsValuesMethod,
-						enumType.GetGraphQLName()+"Type",
-					)}
-			}
-		} else {
-			if gqlName == "id" {
-				// special case, we want to return the base64 encoded id instead of uuid or something
-				gqlField.ResolverMethod = "nodeIDEncoder"
-			}
 
-			if gqlField.HasResolveFunction {
-				gqlField.FunctionContents = []string{fmt.Sprintf("return %s.%s;", instance, field.TsFieldName())}
-			}
+		if gqlName == "id" {
+			// special case, we want to return the base64 encoded id instead of uuid or something
+			gqlField.ResolverMethod = "nodeIDEncoder"
+		}
+
+		if gqlField.HasResolveFunction {
+			gqlField.FunctionContents = []string{fmt.Sprintf("return %s.%s;", instance, field.TsFieldName())}
 		}
 		fields = append(fields, gqlField)
 	}
@@ -1365,12 +1335,8 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 	}
 
 	for _, group := range nodeData.EdgeInfo.AssocGroups {
-		tsValuesMethod := group.GetEnumValuesMethod()
-
 		fields = append(fields, &fieldType{
-			Name:               group.GetStatusMethod(),
-			HasResolveFunction: true,
-			HasAsyncModifier:   true,
+			Name: group.GetStatusMethod(),
 			FieldImports: getGQLFileImports(
 				[]enttype.FileImport{
 					{
@@ -1380,26 +1346,6 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 				},
 				false,
 			),
-			ExtraImports: []*fileImport{
-				{
-					ImportPath: codepath.GraphQLPackage,
-					Type:       "convertToGQLEnum",
-				},
-				{
-					ImportPath: codepath.GetExternalImportPath(),
-					Type:       tsValuesMethod,
-				},
-			},
-			FunctionContents: []string{
-				// get the value
-				// convert to gql value
-				// TODO need to do this for more enums generically...
-				fmt.Sprintf("const ret = await %s.%s()", group.NodeInfo.NodeInstance, group.GetStatusMethod()),
-				fmt.Sprintf("return convertToGQLEnum(ret, %s(), %s.getValues())",
-					tsValuesMethod,
-					group.ConstType+"Type",
-				),
-			},
 		})
 	}
 
@@ -1906,42 +1852,11 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 			}
 			for _, f := range a.GetNonEntFields() {
 				_, ok := f.FieldType.(enttype.IDMarkerInterface)
-				enum, enumOk := enttype.GetEnumType(f.FieldType)
 				if ok {
 					result.FunctionContents = append(
 						result.FunctionContents,
 						fmt.Sprintf("%s: mustDecodeIDFromGQLID(input.%s),", f.TsFieldName(), f.TsFieldName()),
 					)
-				} else if enumOk {
-					tsValuesMethod := "get" + strcase.ToCamel(enum.GetTSName()) + "Values"
-					actionPath := getActionBasePath(nodeData, a)
-
-					// don't support list types here yet so ignoring this
-					// TODO this goes under https://github.com/lolopinto/ent/issues/240
-					result.FunctionContents = append(
-						result.FunctionContents,
-						fmt.Sprintf(
-							"%s: convertFromGQLEnum(input.%s, %s(), %s.getValues()) as %s,",
-							f.TsFieldName(),
-							f.TsFieldName(),
-							tsValuesMethod,
-							enum.GetGraphQLName()+"Type",
-							enum.GetTSName(),
-						),
-					)
-					argImports = append(argImports,
-						&fileImport{
-							Type:       "convertFromGQLEnum",
-							ImportPath: codepath.GraphQLPackage,
-						},
-						&fileImport{
-							Type:       tsValuesMethod,
-							ImportPath: actionPath,
-						},
-						&fileImport{
-							Type:       enum.GetTSName(),
-							ImportPath: actionPath,
-						})
 				} else {
 					result.FunctionContents = append(
 						result.FunctionContents,
