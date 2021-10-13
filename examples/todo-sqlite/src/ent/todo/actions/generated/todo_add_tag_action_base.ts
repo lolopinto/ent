@@ -89,6 +89,6 @@ export class TodoAddTagActionBase implements Action<Todo> {
     tagID: ID,
   ): Promise<Todo> {
     const todo = await Todo.loadX(viewer, id);
-    return await new this(viewer, todo).addTag(tagID).saveX();
+    return new this(viewer, todo).addTag(tagID).saveX();
   }
 }

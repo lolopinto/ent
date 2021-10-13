@@ -93,6 +93,6 @@ export class EditGuestGroupActionBase implements Action<GuestGroup> {
     input: GuestGroupEditInput,
   ): Promise<GuestGroup> {
     const guestGroup = await GuestGroup.loadX(viewer, id);
-    return await new this(viewer, guestGroup, input).saveX();
+    return new this(viewer, guestGroup, input).saveX();
   }
 }

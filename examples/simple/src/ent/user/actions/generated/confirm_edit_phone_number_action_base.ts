@@ -90,6 +90,6 @@ export class ConfirmEditPhoneNumberActionBase implements Action<User> {
     input: ConfirmEditPhoneNumberInput,
   ): Promise<User> {
     const user = await User.loadX(viewer, id);
-    return await new this(viewer, user, input).saveX();
+    return new this(viewer, user, input).saveX();
   }
 }

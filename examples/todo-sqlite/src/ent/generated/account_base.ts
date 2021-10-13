@@ -166,9 +166,7 @@ export class AccountBase {
     phoneNumber: string,
     context?: Context,
   ): Promise<Data | null> {
-    return await accountPhoneNumberLoader
-      .createLoader(context)
-      .load(phoneNumber);
+    return accountPhoneNumberLoader.createLoader(context).load(phoneNumber);
   }
 
   static loaderOptions<T extends AccountBase>(

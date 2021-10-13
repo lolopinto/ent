@@ -71,6 +71,6 @@ export class DeleteAddressActionBase implements Action<Address> {
     id: ID,
   ): Promise<void> {
     const address = await Address.loadX(viewer, id);
-    return await new this(viewer, address).saveX();
+    return new this(viewer, address).saveX();
   }
 }

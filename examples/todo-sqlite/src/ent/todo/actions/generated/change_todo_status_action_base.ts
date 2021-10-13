@@ -81,6 +81,6 @@ export class ChangeTodoStatusActionBase implements Action<Todo> {
     input: ChangeTodoStatusInput,
   ): Promise<Todo> {
     const todo = await Todo.loadX(viewer, id);
-    return await new this(viewer, todo, input).saveX();
+    return new this(viewer, todo, input).saveX();
   }
 }

@@ -183,7 +183,7 @@ export class AddressBase {
     ownerID: ID,
     context?: Context,
   ): Promise<Data | null> {
-    return await addressOwnerIDLoader.createLoader(context).load(ownerID);
+    return addressOwnerIDLoader.createLoader(context).load(ownerID);
   }
 
   static loaderOptions<T extends AddressBase>(

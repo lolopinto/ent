@@ -82,6 +82,6 @@ export class EditUserActionBase implements Action<User> {
     input: UserEditInput,
   ): Promise<User> {
     const user = await User.loadX(viewer, id);
-    return await new this(viewer, user, input).saveX();
+    return new this(viewer, user, input).saveX();
   }
 }

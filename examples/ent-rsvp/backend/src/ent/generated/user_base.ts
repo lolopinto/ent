@@ -170,9 +170,7 @@ export class UserBase {
     emailAddress: string,
     context?: Context,
   ): Promise<Data | null> {
-    return await userEmailAddressLoader
-      .createLoader(context)
-      .load(emailAddress);
+    return userEmailAddressLoader.createLoader(context).load(emailAddress);
   }
 
   static loaderOptions<T extends UserBase>(

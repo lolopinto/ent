@@ -71,6 +71,6 @@ export class DeleteAuthCodeActionBase implements Action<AuthCode> {
     id: ID,
   ): Promise<void> {
     const authCode = await AuthCode.loadX(viewer, id);
-    return await new this(viewer, authCode).saveX();
+    return new this(viewer, authCode).saveX();
   }
 }

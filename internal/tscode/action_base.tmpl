@@ -260,9 +260,9 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
       {{end -}}
       const {{$instance}} = await {{$node}}.loadX(viewer, id);
       {{if $hasInput -}}
-        return await new this(viewer, {{$instance}}, input).saveX();
+        return new this(viewer, {{$instance}}, input).saveX();
       {{else if edgeAction $action -}}
-        return await new this(viewer, {{$instance}})
+        return new this(viewer, {{$instance}})
         {{ range $edge := $edges -}}
           {{/* TODO this assumes there is only one edge */ -}}
           {{if removeEdgeAction $action -}}
@@ -273,7 +273,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
         {{end -}}
         .saveX();
       {{else -}}
-        return await new this(viewer, {{$instance}}).saveX();
+        return new this(viewer, {{$instance}}).saveX();
       {{end -}}
     } 
   {{end -}}

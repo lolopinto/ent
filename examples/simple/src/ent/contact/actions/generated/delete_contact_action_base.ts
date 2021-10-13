@@ -71,6 +71,6 @@ export class DeleteContactActionBase implements Action<Contact> {
     id: ID,
   ): Promise<void> {
     const contact = await Contact.loadX(viewer, id);
-    return await new this(viewer, contact).saveX();
+    return new this(viewer, contact).saveX();
   }
 }

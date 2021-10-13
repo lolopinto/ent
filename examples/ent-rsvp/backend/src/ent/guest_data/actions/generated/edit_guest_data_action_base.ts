@@ -96,6 +96,6 @@ export class EditGuestDataActionBase implements Action<GuestData> {
     input: GuestDataEditInput,
   ): Promise<GuestData> {
     const guestData = await GuestData.loadX(viewer, id);
-    return await new this(viewer, guestData, input).saveX();
+    return new this(viewer, guestData, input).saveX();
   }
 }

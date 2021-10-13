@@ -80,6 +80,6 @@ export class EventActivityRemoveInviteActionBase
     inviteID: ID,
   ): Promise<EventActivity> {
     const eventActivity = await EventActivity.loadX(viewer, id);
-    return await new this(viewer, eventActivity).removeInvite(inviteID).saveX();
+    return new this(viewer, eventActivity).removeInvite(inviteID).saveX();
   }
 }

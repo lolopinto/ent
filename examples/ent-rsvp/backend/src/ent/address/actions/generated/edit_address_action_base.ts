@@ -93,6 +93,6 @@ export class EditAddressActionBase implements Action<Address> {
     input: AddressEditInput,
   ): Promise<Address> {
     const address = await Address.loadX(viewer, id);
-    return await new this(viewer, address, input).saveX();
+    return new this(viewer, address, input).saveX();
   }
 }

@@ -71,6 +71,6 @@ export class DeleteGuestGroupActionBase implements Action<GuestGroup> {
     id: ID,
   ): Promise<void> {
     const guestGroup = await GuestGroup.loadX(viewer, id);
-    return await new this(viewer, guestGroup).saveX();
+    return new this(viewer, guestGroup).saveX();
   }
 }

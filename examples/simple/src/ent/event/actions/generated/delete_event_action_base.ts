@@ -71,6 +71,6 @@ export class DeleteEventActionBase implements Action<Event> {
     id: ID,
   ): Promise<void> {
     const event = await Event.loadX(viewer, id);
-    return await new this(viewer, event).saveX();
+    return new this(viewer, event).saveX();
   }
 }

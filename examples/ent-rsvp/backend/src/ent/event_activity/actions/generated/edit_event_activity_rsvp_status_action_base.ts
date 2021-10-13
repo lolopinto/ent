@@ -123,6 +123,6 @@ export class EditEventActivityRsvpStatusActionBase
     input: EditEventActivityRsvpStatusInput,
   ): Promise<EventActivity> {
     const eventActivity = await EventActivity.loadX(viewer, id);
-    return await new this(viewer, eventActivity, input).saveX();
+    return new this(viewer, eventActivity, input).saveX();
   }
 }

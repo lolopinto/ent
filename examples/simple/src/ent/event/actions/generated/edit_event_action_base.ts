@@ -90,6 +90,6 @@ export class EditEventActionBase implements Action<Event> {
     input: EventEditInput,
   ): Promise<Event> {
     const event = await Event.loadX(viewer, id);
-    return await new this(viewer, event, input).saveX();
+    return new this(viewer, event, input).saveX();
   }
 }

@@ -71,6 +71,6 @@ export class DeleteTodoActionBase implements Action<Todo> {
     id: ID,
   ): Promise<void> {
     const todo = await Todo.loadX(viewer, id);
-    return await new this(viewer, todo).saveX();
+    return new this(viewer, todo).saveX();
   }
 }

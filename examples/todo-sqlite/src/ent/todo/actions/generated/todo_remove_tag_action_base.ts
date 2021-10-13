@@ -78,6 +78,6 @@ export class TodoRemoveTagActionBase implements Action<Todo> {
     tagID: ID,
   ): Promise<Todo> {
     const todo = await Todo.loadX(viewer, id);
-    return await new this(viewer, todo).removeTag(tagID).saveX();
+    return new this(viewer, todo).removeTag(tagID).saveX();
   }
 }

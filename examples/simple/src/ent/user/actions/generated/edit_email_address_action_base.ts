@@ -82,6 +82,6 @@ export class EditEmailAddressActionBase implements Action<User> {
     input: EditEmailAddressInput,
   ): Promise<User> {
     const user = await User.loadX(viewer, id);
-    return await new this(viewer, user, input).saveX();
+    return new this(viewer, user, input).saveX();
   }
 }

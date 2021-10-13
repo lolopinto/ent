@@ -71,6 +71,6 @@ export class DeleteGuestDataActionBase implements Action<GuestData> {
     id: ID,
   ): Promise<void> {
     const guestData = await GuestData.loadX(viewer, id);
-    return await new this(viewer, guestData).saveX();
+    return new this(viewer, guestData).saveX();
   }
 }

@@ -82,6 +82,6 @@ export class EditAccountActionBase implements Action<Account> {
     input: AccountEditInput,
   ): Promise<Account> {
     const account = await Account.loadX(viewer, id);
-    return await new this(viewer, account, input).saveX();
+    return new this(viewer, account, input).saveX();
   }
 }

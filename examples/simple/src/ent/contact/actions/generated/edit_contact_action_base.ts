@@ -89,6 +89,6 @@ export class EditContactActionBase implements Action<Contact> {
     input: ContactEditInput,
   ): Promise<Contact> {
     const contact = await Contact.loadX(viewer, id);
-    return await new this(viewer, contact, input).saveX();
+    return new this(viewer, contact, input).saveX();
   }
 }

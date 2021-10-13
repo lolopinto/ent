@@ -165,7 +165,7 @@ export class EventBase {
     slug: string,
     context?: Context,
   ): Promise<Data | null> {
-    return await eventSlugLoader.createLoader(context).load(slug);
+    return eventSlugLoader.createLoader(context).load(slug);
   }
 
   static loaderOptions<T extends EventBase>(

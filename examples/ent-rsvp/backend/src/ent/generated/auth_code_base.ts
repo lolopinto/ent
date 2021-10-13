@@ -173,7 +173,7 @@ export class AuthCodeBase {
     guestID: ID,
     context?: Context,
   ): Promise<Data | null> {
-    return await authCodeGuestIDLoader.createLoader(context).load(guestID);
+    return authCodeGuestIDLoader.createLoader(context).load(guestID);
   }
 
   static loaderOptions<T extends AuthCodeBase>(

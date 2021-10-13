@@ -71,6 +71,6 @@ export class DeleteAccountActionBase implements Action<Account> {
     id: ID,
   ): Promise<void> {
     const account = await Account.loadX(viewer, id);
-    return await new this(viewer, account).saveX();
+    return new this(viewer, account).saveX();
   }
 }

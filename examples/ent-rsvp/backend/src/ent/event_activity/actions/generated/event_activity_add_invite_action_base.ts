@@ -92,6 +92,6 @@ export class EventActivityAddInviteActionBase implements Action<EventActivity> {
     inviteID: ID,
   ): Promise<EventActivity> {
     const eventActivity = await EventActivity.loadX(viewer, id);
-    return await new this(viewer, eventActivity).addInvite(inviteID).saveX();
+    return new this(viewer, eventActivity).addInvite(inviteID).saveX();
   }
 }

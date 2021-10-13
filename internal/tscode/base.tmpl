@@ -201,7 +201,7 @@ export class {{$baseClass}} {
         {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
         context?: {{useImport "Context"}},
       ): Promise<{{$dataType}} | null> {
-        return await {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName}});
+        return {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName}});
       }
     {{ else if $field.QueryFromID -}}
       {{$queryName := useImport ($this.GetFieldQueryName $field) -}}

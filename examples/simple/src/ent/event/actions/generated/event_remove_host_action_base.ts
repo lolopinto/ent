@@ -78,6 +78,6 @@ export class EventRemoveHostActionBase implements Action<Event> {
     hostID: ID,
   ): Promise<Event> {
     const event = await Event.loadX(viewer, id);
-    return await new this(viewer, event).removeHost(hostID).saveX();
+    return new this(viewer, event).removeHost(hostID).saveX();
   }
 }
