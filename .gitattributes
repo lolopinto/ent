@@ -2,4 +2,4 @@ models/configs/versions/* linguist-generated=true
 models/configs/schema.py linguist-generated=true
 src/schema/versions/* linguist-generated=true
 src/schema/schema.py linguist-generated=true
-generated/** linguist-generated=true
+**/generated/** linguist-generated=true
