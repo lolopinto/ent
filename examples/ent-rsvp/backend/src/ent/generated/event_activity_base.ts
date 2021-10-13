@@ -146,7 +146,7 @@ export class EventActivityBase {
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
-    return await eventActivityLoader.createLoader(context).load(id);
+    return eventActivityLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends EventActivityBase>(
@@ -165,8 +165,8 @@ export class EventActivityBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName: tableName,
-      fields: fields,
+      tableName,
+      fields,
       ent: this,
       loaderFactory: eventActivityLoader,
     };

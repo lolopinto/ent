@@ -81,7 +81,7 @@ export const AddressCreateType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<AddressCreatePayload> => {
-    let address = await CreateAddressAction.create(context.getViewer(), {
+    const address = await CreateAddressAction.create(context.getViewer(), {
       street: input.street,
       city: input.city,
       state: input.state,

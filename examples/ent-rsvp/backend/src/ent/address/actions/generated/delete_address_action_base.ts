@@ -70,7 +70,7 @@ export class DeleteAddressActionBase implements Action<Address> {
     viewer: Viewer,
     id: ID,
   ): Promise<void> {
-    let address = await Address.loadX(viewer, id);
-    return await new this(viewer, address).saveX();
+    const address = await Address.loadX(viewer, id);
+    return new this(viewer, address).saveX();
   }
 }

@@ -66,7 +66,7 @@ export const TagCreateType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<TagCreatePayload> => {
-    let tag = await CreateTagAction.create(context.getViewer(), {
+    const tag = await CreateTagAction.create(context.getViewer(), {
       displayName: input.displayName,
       ownerID: mustDecodeIDFromGQLID(input.ownerID),
     }).saveX();

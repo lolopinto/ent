@@ -79,7 +79,7 @@ export const ContactEditType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<ContactEditPayload> => {
-    let contact = await EditContactAction.saveXFromID(
+    const contact = await EditContactAction.saveXFromID(
       context.getViewer(),
       mustDecodeIDFromGQLID(input.contactID),
       {

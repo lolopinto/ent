@@ -76,7 +76,7 @@ export const HoursOfOperationCreateType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<HoursOfOperationCreatePayload> => {
-    let hoursOfOperation = await CreateHoursOfOperationAction.create(
+    const hoursOfOperation = await CreateHoursOfOperationAction.create(
       context.getViewer(),
       {
         dayOfWeek: input.dayOfWeek,

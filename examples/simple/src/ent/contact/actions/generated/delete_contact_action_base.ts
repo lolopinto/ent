@@ -70,7 +70,7 @@ export class DeleteContactActionBase implements Action<Contact> {
     viewer: Viewer,
     id: ID,
   ): Promise<void> {
-    let contact = await Contact.loadX(viewer, id);
-    return await new this(viewer, contact).saveX();
+    const contact = await Contact.loadX(viewer, id);
+    return new this(viewer, contact).saveX();
   }
 }

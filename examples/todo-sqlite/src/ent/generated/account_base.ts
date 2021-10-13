@@ -113,7 +113,7 @@ export class AccountBase {
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
-    return await accountLoader.createLoader(context).load(id);
+    return accountLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends AccountBase>(
@@ -166,17 +166,15 @@ export class AccountBase {
     phoneNumber: string,
     context?: Context,
   ): Promise<Data | null> {
-    return await accountPhoneNumberLoader
-      .createLoader(context)
-      .load(phoneNumber);
+    return accountPhoneNumberLoader.createLoader(context).load(phoneNumber);
   }
 
   static loaderOptions<T extends AccountBase>(
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName: tableName,
-      fields: fields,
+      tableName,
+      fields,
       ent: this,
       loaderFactory: accountLoader,
     };

@@ -59,12 +59,12 @@ export class CreateCommentActionBase implements Action<Comment> {
 
   async save(): Promise<Comment | null> {
     await this.builder.save();
-    return await this.builder.editedEnt();
+    return this.builder.editedEnt();
   }
 
   async saveX(): Promise<Comment> {
     await this.builder.saveX();
-    return await this.builder.editedEntX();
+    return this.builder.editedEntX();
   }
 
   static create<T extends CreateCommentActionBase>(

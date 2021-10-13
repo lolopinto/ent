@@ -94,7 +94,7 @@ export const EventCreateType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<EventCreatePayload> => {
-    let event = await CreateEventAction.create(context.getViewer(), {
+    const event = await CreateEventAction.create(context.getViewer(), {
       name: input.name,
       slug: input.slug,
       activities: input.activities,

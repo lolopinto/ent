@@ -64,12 +64,12 @@ export class EditGuestDataActionBase implements Action<GuestData> {
 
   async save(): Promise<GuestData | null> {
     await this.builder.save();
-    return await this.builder.editedEnt();
+    return this.builder.editedEnt();
   }
 
   async saveX(): Promise<GuestData> {
     await this.builder.saveX();
-    return await this.builder.editedEntX();
+    return this.builder.editedEntX();
   }
 
   static create<T extends EditGuestDataActionBase>(
@@ -95,7 +95,7 @@ export class EditGuestDataActionBase implements Action<GuestData> {
     id: ID,
     input: GuestDataEditInput,
   ): Promise<GuestData> {
-    let guestData = await GuestData.loadX(viewer, id);
-    return await new this(viewer, guestData, input).saveX();
+    const guestData = await GuestData.loadX(viewer, id);
+    return new this(viewer, guestData, input).saveX();
   }
 }

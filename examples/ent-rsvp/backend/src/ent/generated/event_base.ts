@@ -114,7 +114,7 @@ export class EventBase {
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
-    return await eventLoader.createLoader(context).load(id);
+    return eventLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends EventBase>(
@@ -165,15 +165,15 @@ export class EventBase {
     slug: string,
     context?: Context,
   ): Promise<Data | null> {
-    return await eventSlugLoader.createLoader(context).load(slug);
+    return eventSlugLoader.createLoader(context).load(slug);
   }
 
   static loaderOptions<T extends EventBase>(
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName: tableName,
-      fields: fields,
+      tableName,
+      fields,
       ent: this,
       loaderFactory: eventLoader,
     };

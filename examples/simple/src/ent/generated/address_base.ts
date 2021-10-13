@@ -128,7 +128,7 @@ export class AddressBase {
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
-    return await addressLoader.createLoader(context).load(id);
+    return addressLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends AddressBase>(
@@ -147,8 +147,8 @@ export class AddressBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName: tableName,
-      fields: fields,
+      tableName,
+      fields,
       ent: this,
       loaderFactory: addressLoader,
     };

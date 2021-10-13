@@ -90,7 +90,7 @@ export const EventActivityRsvpStatusEditType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<EventActivityRsvpStatusEditPayload> => {
-    let eventActivity = await EditEventActivityRsvpStatusAction.saveXFromID(
+    const eventActivity = await EditEventActivityRsvpStatusAction.saveXFromID(
       context.getViewer(),
       mustDecodeIDFromGQLID(input.eventActivityID),
       {

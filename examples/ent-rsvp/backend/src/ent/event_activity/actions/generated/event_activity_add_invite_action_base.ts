@@ -69,12 +69,12 @@ export class EventActivityAddInviteActionBase implements Action<EventActivity> {
 
   async save(): Promise<EventActivity | null> {
     await this.builder.save();
-    return await this.builder.editedEnt();
+    return this.builder.editedEnt();
   }
 
   async saveX(): Promise<EventActivity> {
     await this.builder.saveX();
-    return await this.builder.editedEntX();
+    return this.builder.editedEntX();
   }
 
   static create<T extends EventActivityAddInviteActionBase>(
@@ -91,7 +91,7 @@ export class EventActivityAddInviteActionBase implements Action<EventActivity> {
     id: ID,
     inviteID: ID,
   ): Promise<EventActivity> {
-    let eventActivity = await EventActivity.loadX(viewer, id);
-    return await new this(viewer, eventActivity).addInvite(inviteID).saveX();
+    const eventActivity = await EventActivity.loadX(viewer, id);
+    return new this(viewer, eventActivity).addInvite(inviteID).saveX();
   }
 }

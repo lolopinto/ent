@@ -64,7 +64,7 @@ export const TodoRemoveTagType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<TodoRemoveTagPayload> => {
-    let todo = await TodoRemoveTagAction.saveXFromID(
+    const todo = await TodoRemoveTagAction.saveXFromID(
       context.getViewer(),
       mustDecodeIDFromGQLID(input.todoID),
       mustDecodeIDFromGQLID(input.tagID),

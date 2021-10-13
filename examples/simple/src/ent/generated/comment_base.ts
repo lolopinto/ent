@@ -125,7 +125,7 @@ export class CommentBase {
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
-    return await commentLoader.createLoader(context).load(id);
+    return commentLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends CommentBase>(
@@ -144,8 +144,8 @@ export class CommentBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName: tableName,
-      fields: fields,
+      tableName,
+      fields,
       ent: this,
       loaderFactory: commentLoader,
     };

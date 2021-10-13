@@ -109,7 +109,7 @@ export const EventActivityCreateType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<EventActivityCreatePayload> => {
-    let eventActivity = await CreateEventActivityAction.create(
+    const eventActivity = await CreateEventActivityAction.create(
       context.getViewer(),
       {
         name: input.name,

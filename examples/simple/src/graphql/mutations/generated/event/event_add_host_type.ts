@@ -67,7 +67,7 @@ export const EventAddHostType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<EventAddHostPayload> => {
-    let event = await EventAddHostAction.saveXFromID(
+    const event = await EventAddHostAction.saveXFromID(
       context.getViewer(),
       mustDecodeIDFromGQLID(input.eventID),
       mustDecodeIDFromGQLID(input.hostID),

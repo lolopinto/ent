@@ -66,12 +66,12 @@ export class EditEventActionBase implements Action<Event> {
 
   async save(): Promise<Event | null> {
     await this.builder.save();
-    return await this.builder.editedEnt();
+    return this.builder.editedEnt();
   }
 
   async saveX(): Promise<Event> {
     await this.builder.saveX();
-    return await this.builder.editedEntX();
+    return this.builder.editedEntX();
   }
 
   static create<T extends EditEventActionBase>(
@@ -89,7 +89,7 @@ export class EditEventActionBase implements Action<Event> {
     id: ID,
     input: EventEditInput,
   ): Promise<Event> {
-    let event = await Event.loadX(viewer, id);
-    return await new this(viewer, event, input).saveX();
+    const event = await Event.loadX(viewer, id);
+    return new this(viewer, event, input).saveX();
   }
 }

@@ -70,7 +70,7 @@ export class DeleteGuestGroupActionBase implements Action<GuestGroup> {
     viewer: Viewer,
     id: ID,
   ): Promise<void> {
-    let guestGroup = await GuestGroup.loadX(viewer, id);
-    return await new this(viewer, guestGroup).saveX();
+    const guestGroup = await GuestGroup.loadX(viewer, id);
+    return new this(viewer, guestGroup).saveX();
   }
 }

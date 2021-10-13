@@ -88,11 +88,14 @@ export const GuestGroupCreateType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<GuestGroupCreatePayload> => {
-    let guestGroup = await CreateGuestGroupAction.create(context.getViewer(), {
-      invitationName: input.invitationName,
-      eventID: mustDecodeIDFromGQLID(input.eventID),
-      guests: input.guests,
-    }).saveX();
+    const guestGroup = await CreateGuestGroupAction.create(
+      context.getViewer(),
+      {
+        invitationName: input.invitationName,
+        eventID: mustDecodeIDFromGQLID(input.eventID),
+        guests: input.guests,
+      },
+    ).saveX();
     return { guestGroup: guestGroup };
   },
 };

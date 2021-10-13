@@ -67,7 +67,7 @@ export const EventActivityRemoveInviteType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<EventActivityRemoveInvitePayload> => {
-    let eventActivity = await EventActivityRemoveInviteAction.saveXFromID(
+    const eventActivity = await EventActivityRemoveInviteAction.saveXFromID(
       context.getViewer(),
       mustDecodeIDFromGQLID(input.eventActivityID),
       mustDecodeIDFromGQLID(input.inviteID),
