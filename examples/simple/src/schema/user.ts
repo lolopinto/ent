@@ -13,6 +13,7 @@ import {
   JSONType,
   EnumListType,
   BigIntegerType,
+  JSONBListType,
 } from "@snowtop/ent/schema";
 import { EmailType } from "@snowtop/ent-email";
 import { PasswordType } from "@snowtop/ent-password";
@@ -52,6 +53,14 @@ export default class User extends BaseEntSchema implements Schema {
     StringListType({ name: "nicknames", nullable: true }),
     JSONBType({
       name: "prefs",
+      nullable: true,
+      importType: {
+        path: "src/ent/user_prefs",
+        type: "UserPrefs",
+      },
+    }),
+    JSONBListType({
+      name: "prefsList",
       nullable: true,
       importType: {
         path: "src/ent/user_prefs",
@@ -134,6 +143,7 @@ export default class User extends BaseEntSchema implements Schema {
         "daysOff",
         "preferredShift",
         "fun_uuids",
+        "prefsList",
       ],
     },
 

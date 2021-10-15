@@ -26,6 +26,7 @@ export interface UserCreateInput {
   daysOff?: DaysOff[] | null;
   preferredShift?: PreferredShift[] | null;
   funUuids?: ID[] | null;
+  prefsList?: UserPrefs[] | null;
 }
 
 export class CreateUserActionBase implements Action<User> {

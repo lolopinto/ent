@@ -36,6 +36,7 @@ export interface UserInput {
   bio?: string | null;
   nicknames?: string[] | null;
   prefs?: UserPrefs | null;
+  prefsList?: UserPrefs[] | null;
   prefsDiff?: any;
   daysOff?: DaysOff[] | null;
   preferredShift?: PreferredShift[] | null;
@@ -602,6 +603,7 @@ export class UserBuilder implements Builder<User> {
     addField("Bio", fields.bio);
     addField("nicknames", fields.nicknames);
     addField("prefs", fields.prefs);
+    addField("prefsList", fields.prefsList);
     addField("prefs_diff", fields.prefsDiff);
     addField("daysOff", fields.daysOff);
     addField("preferredShift", fields.preferredShift);
@@ -664,6 +666,11 @@ export class UserBuilder implements Builder<User> {
   // get value of prefs. Retrieves it from the input if specified or takes it from existingEnt
   getNewPrefsValue(): UserPrefs | null | undefined {
     return this.input.prefs || this.existingEnt?.prefs;
+  }
+
+  // get value of prefsList. Retrieves it from the input if specified or takes it from existingEnt
+  getNewPrefsListValue(): UserPrefs[] | null | undefined {
+    return this.input.prefsList || this.existingEnt?.prefsList;
   }
 
   // get value of prefs_diff. Retrieves it from the input if specified or takes it from existingEnt
