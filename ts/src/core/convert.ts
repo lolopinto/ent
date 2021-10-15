@@ -95,3 +95,11 @@ export function convertNullableJSON(val: any): any | null {
   }
   return convertJSON(val);
 }
+
+export function convertJSONList(val: any): boolean[] {
+  return convertList(val, convertJSON);
+}
+
+export function convertNullableJSONList(val: any): any[] | null {
+  return convertNullableList(val, convertJSON);
+}
