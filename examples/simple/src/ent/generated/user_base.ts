@@ -17,6 +17,7 @@ import {
   convertBool,
   convertDate,
   convertNullableJSON,
+  convertNullableJSONList,
   convertNullableList,
   loadCustomData,
   loadCustomEnts,
@@ -64,6 +65,7 @@ const fields = [
   "bio",
   "nicknames",
   "prefs",
+  "prefs_list",
   "prefs_diff",
   "days_off",
   "preferred_shift",
@@ -105,6 +107,7 @@ export class UserBase {
   readonly bio: string | null;
   readonly nicknames: string[] | null;
   readonly prefs: UserPrefs | null;
+  readonly prefsList: UserPrefs[] | null;
   readonly prefsDiff: any;
   readonly daysOff: DaysOff[] | null;
   readonly preferredShift: PreferredShift[] | null;
@@ -127,6 +130,7 @@ export class UserBase {
     this.bio = data.bio;
     this.nicknames = convertNullableList(data.nicknames);
     this.prefs = convertNullableJSON(data.prefs);
+    this.prefsList = convertNullableJSONList(data.prefs_list);
     this.prefsDiff = convertNullableJSON(data.prefs_diff);
     this.daysOff = convertNullableList(data.days_off);
     this.preferredShift = convertNullableList(data.preferred_shift);

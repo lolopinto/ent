@@ -120,6 +120,7 @@ type User implements Node {
   bio: String
   nicknames: [String!]
   prefs: JSON
+  prefsList: [JSON!]
   prefsDiff: JSON
   daysOff: [DaysOff!]
   preferredShift: [PreferredShift!]
@@ -617,6 +618,7 @@ input UserCreateInput {
   daysOff: [DaysOff!]
   preferredShift: [PreferredShift!]
   funUuids: [ID!]
+  prefsList: [JSON!]
 }
 
 type UserCreatePayload {

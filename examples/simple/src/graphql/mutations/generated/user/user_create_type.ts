@@ -63,6 +63,9 @@ export const UserCreateInputType = new GraphQLInputObjectType({
     funUuids: {
       type: GraphQLList(GraphQLNonNull(GraphQLID)),
     },
+    prefsList: {
+      type: GraphQLList(GraphQLNonNull(GraphQLJSON)),
+    },
   }),
 });
 
@@ -105,6 +108,7 @@ export const UserCreateType: GraphQLFieldConfig<
       daysOff: input.daysOff,
       preferredShift: input.preferredShift,
       funUuids: input.funUuids,
+      prefsList: input.prefsList,
     }).saveX();
     return { user: user };
   },

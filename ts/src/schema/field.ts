@@ -614,24 +614,49 @@ export class ListField extends BaseField {
     return true;
   }
 
+  private postgresVal(val: any, jsonType?: boolean) {
+    if (!jsonType) {
+      return val;
+    }
+    return JSON.stringify(val);
+  }
+
   format(val: any): any {
     if (!Array.isArray(val)) {
       throw new Error(`need an array to format`);
     }
 
-    if (this.field.format) {
-      for (let i = 0; i < val.length; i++) {
-        val[i] = this.field.format(val[i]);
-      }
+    const elemDBType = this.type.listElemType!.dbType;
+    const jsonType = elemDBType === "JSON" || elemDBType === "JSONB";
+    const postgres = DB.getDialect() === Dialect.Postgres;
+
+    if (!postgres && !this.field.format) {
+      return JSON.stringify(val);
     }
 
-    // postgres supports arrays natively so we
-    // structure it in the expected format
-    if (DB.getDialect() === Dialect.Postgres) {
-      return `{${val.join(",")}}`;
+    let ret: any[] = [];
+    let postgresRet: string = "{";
+    for (let i = 0; i < val.length; i++) {
+      let formatted = val[i];
+      if (this.field.format) {
+        formatted = this.field.format(val[i]);
+      }
+
+      // postgres supports arrays natively so we
+      // structure it in the expected format
+      if (postgres) {
+        postgresRet += this.postgresVal(formatted, jsonType);
+        if (i !== val.length - 1) {
+          postgresRet += ",";
+        }
+      } else {
+        ret[i] = formatted;
+      }
     }
-    // For SQLite, we store a JSON string
-    return JSON.stringify(val);
+    if (postgres) {
+      return postgresRet + "}";
+    }
+    return JSON.stringify(ret);
   }
 
   minLen(l: number): this {

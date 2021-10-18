@@ -81,6 +81,9 @@ export const UserType = new GraphQLObjectType({
     prefs: {
       type: GraphQLJSON,
     },
+    prefsList: {
+      type: GraphQLList(GraphQLNonNull(GraphQLJSON)),
+    },
     prefsDiff: {
       type: GraphQLJSON,
     },

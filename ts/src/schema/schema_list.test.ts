@@ -8,9 +8,11 @@ import {
   StringListType,
   StringType,
   TimeListType,
+  TimeType,
   TimestamptzListType,
   UUIDType,
 } from "./field";
+import { JSONBListType, JSONListType } from "./json_field";
 import { Schema, Field } from ".";
 import { User, SimpleAction, BuilderSchema } from "../testutils/builder";
 import { TempDB, getSchemaTable } from "../testutils/db/test_db";
@@ -19,7 +21,12 @@ import DB, { Dialect } from "../core/db";
 import { Ent } from "../core/base";
 import * as fs from "fs";
 import { loadConfig } from "../core/config";
-import { convertBool, convertDate, convertList } from "../core/convert";
+import {
+  convertBool,
+  convertDate,
+  convertList,
+  convertJSON,
+} from "../core/convert";
 let tdb: TempDB;
 async function setupTempDB(dialect: Dialect, connString?: string) {
   beforeAll(async () => {
@@ -213,6 +220,9 @@ function commonTests() {
     };
 
     const times = [newDate(8), newDate(10), newDate(11, 30)];
+    const expected = times.map((time) =>
+      TimeType({ name: "foo" }).format(time),
+    );
 
     const action = new SimpleAction(
       new LoggedOutViewer(),
@@ -222,7 +232,7 @@ function commonTests() {
     await createTables(new AppointmentSchema());
 
     const appt = await action.saveX();
-    expect(convertList(appt.data.available_times)).toEqual(times);
+    expect(convertList(appt.data.available_times)).toEqual(expected);
   });
 
   test("boolean list", async () => {
@@ -362,5 +372,78 @@ function commonTests() {
     expect(t.valid(["a", "c", "d"])).toBe(true);
     expect(t.valid(["e", "f", "g", "h"])).toBe(true);
     expect(t.valid(["e", "f", "g", "h", "z"])).toBe(false);
+  });
+
+  class Preferences extends User {}
+  class PreferencesSchema implements Schema {
+    fields: Field[] = [
+      JSONBListType({
+        name: "prefsList",
+      }),
+    ];
+    ent = Preferences;
+  }
+
+  class PreferencesJSONSchema implements Schema {
+    fields: Field[] = [
+      JSONListType({
+        name: "prefsList",
+      }),
+    ];
+    ent = Preferences;
+  }
+
+  test("jsonb list", async () => {
+    const prefsList = [
+      {
+        key1: "1",
+        key2: 2,
+        key3: false,
+        key4: [1, 2, 3, 4],
+      },
+      {
+        bar: "ff",
+        bar2: "gg",
+        bar3: null,
+      },
+    ];
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      new PreferencesSchema(),
+      new Map<string, any>([["prefsList", prefsList]]),
+    );
+    await createTables(new PreferencesSchema());
+
+    const ent = await action.saveX();
+    expect(convertList(ent.data.prefs_list, convertJSON)).toStrictEqual(
+      prefsList,
+    );
+  });
+
+  test("json list", async () => {
+    const prefsList = [
+      {
+        key1: "1",
+        key2: 2,
+        key3: false,
+        key4: [1, 2, 3, 4],
+      },
+      {
+        bar: "ff",
+        bar2: "gg",
+        bar3: null,
+      },
+    ];
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      new PreferencesJSONSchema(),
+      new Map<string, any>([["prefsList", prefsList]]),
+    );
+    await createTables(new PreferencesJSONSchema());
+
+    const ent = await action.saveX();
+    expect(convertList(ent.data.prefs_list, convertJSON)).toStrictEqual(
+      prefsList,
+    );
   });
 }
