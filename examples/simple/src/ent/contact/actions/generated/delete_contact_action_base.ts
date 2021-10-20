@@ -61,7 +61,7 @@ export class DeleteContactActionBase implements Action<Contact> {
     this: new (viewer: Viewer, contact: Contact) => T,
     viewer: Viewer,
     contact: Contact,
-  ): DeleteContactActionBase {
+  ): T {
     return new this(viewer, contact);
   }
 

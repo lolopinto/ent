@@ -89,7 +89,7 @@ export class EditEventActivityActionBase implements Action<EventActivity> {
     viewer: Viewer,
     eventActivity: EventActivity,
     input: EventActivityEditInput,
-  ): EditEventActivityActionBase {
+  ): T {
     return new this(viewer, eventActivity, input);
   }
 

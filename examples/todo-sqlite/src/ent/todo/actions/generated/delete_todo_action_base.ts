@@ -61,7 +61,7 @@ export class DeleteTodoActionBase implements Action<Todo> {
     this: new (viewer: Viewer, todo: Todo) => T,
     viewer: Viewer,
     todo: Todo,
-  ): DeleteTodoActionBase {
+  ): T {
     return new this(viewer, todo);
   }
 

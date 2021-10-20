@@ -75,7 +75,7 @@ export class ConfirmEditEmailAddressActionBase implements Action<User> {
     viewer: Viewer,
     user: User,
     input: ConfirmEditEmailAddressInput,
-  ): ConfirmEditEmailAddressActionBase {
+  ): T {
     return new this(viewer, user, input);
   }
 

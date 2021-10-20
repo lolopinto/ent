@@ -74,7 +74,7 @@ export class CreateAuthCodeActionBase implements Action<AuthCode> {
     this: new (viewer: Viewer, input: AuthCodeCreateInput) => T,
     viewer: Viewer,
     input: AuthCodeCreateInput,
-  ): CreateAuthCodeActionBase {
+  ): T {
     return new this(viewer, input);
   }
 }

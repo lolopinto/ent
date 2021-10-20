@@ -61,7 +61,7 @@ export class DeleteAddressActionBase implements Action<Address> {
     this: new (viewer: Viewer, address: Address) => T,
     viewer: Viewer,
     address: Address,
-  ): DeleteAddressActionBase {
+  ): T {
     return new this(viewer, address);
   }
 

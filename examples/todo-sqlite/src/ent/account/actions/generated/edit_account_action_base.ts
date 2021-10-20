@@ -71,7 +71,7 @@ export class EditAccountActionBase implements Action<Account> {
     viewer: Viewer,
     account: Account,
     input: AccountEditInput,
-  ): EditAccountActionBase {
+  ): T {
     return new this(viewer, account, input);
   }
 

@@ -68,7 +68,7 @@ export class CreateTodoActionBase implements Action<Todo> {
     this: new (viewer: Viewer, input: TodoCreateInput) => T,
     viewer: Viewer,
     input: TodoCreateInput,
-  ): CreateTodoActionBase {
+  ): T {
     return new this(viewer, input);
   }
 }

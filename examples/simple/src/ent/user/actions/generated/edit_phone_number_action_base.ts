@@ -71,7 +71,7 @@ export class EditPhoneNumberActionBase implements Action<User> {
     viewer: Viewer,
     user: User,
     input: EditPhoneNumberInput,
-  ): EditPhoneNumberActionBase {
+  ): T {
     return new this(viewer, user, input);
   }
 

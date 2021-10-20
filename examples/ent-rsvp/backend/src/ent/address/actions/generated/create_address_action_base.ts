@@ -74,7 +74,7 @@ export class CreateAddressActionBase implements Action<Address> {
     this: new (viewer: Viewer, input: AddressCreateInput) => T,
     viewer: Viewer,
     input: AddressCreateInput,
-  ): CreateAddressActionBase {
+  ): T {
     return new this(viewer, input);
   }
 }

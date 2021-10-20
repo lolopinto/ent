@@ -67,7 +67,7 @@ export class EventRemoveHostActionBase implements Action<Event> {
     this: new (viewer: Viewer, event: Event) => T,
     viewer: Viewer,
     event: Event,
-  ): EventRemoveHostActionBase {
+  ): T {
     return new this(viewer, event);
   }
 

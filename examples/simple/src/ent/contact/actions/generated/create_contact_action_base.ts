@@ -70,7 +70,7 @@ export class CreateContactActionBase implements Action<Contact> {
     this: new (viewer: Viewer, input: ContactCreateInput) => T,
     viewer: Viewer,
     input: ContactCreateInput,
-  ): CreateContactActionBase {
+  ): T {
     return new this(viewer, input);
   }
 }

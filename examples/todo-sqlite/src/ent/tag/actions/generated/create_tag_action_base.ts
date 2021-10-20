@@ -68,7 +68,7 @@ export class CreateTagActionBase implements Action<Tag> {
     this: new (viewer: Viewer, input: TagCreateInput) => T,
     viewer: Viewer,
     input: TagCreateInput,
-  ): CreateTagActionBase {
+  ): T {
     return new this(viewer, input);
   }
 }

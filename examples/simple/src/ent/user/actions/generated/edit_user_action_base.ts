@@ -71,7 +71,7 @@ export class EditUserActionBase implements Action<User> {
     viewer: Viewer,
     user: User,
     input: UserEditInput,
-  ): EditUserActionBase {
+  ): T {
     return new this(viewer, user, input);
   }
 

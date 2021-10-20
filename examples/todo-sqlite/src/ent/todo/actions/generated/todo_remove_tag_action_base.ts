@@ -67,7 +67,7 @@ export class TodoRemoveTagActionBase implements Action<Todo> {
     this: new (viewer: Viewer, todo: Todo) => T,
     viewer: Viewer,
     todo: Todo,
-  ): TodoRemoveTagActionBase {
+  ): T {
     return new this(viewer, todo);
   }
 

@@ -86,7 +86,7 @@ export class CreateEventActivityActionBase implements Action<EventActivity> {
     this: new (viewer: Viewer, input: EventActivityCreateInput) => T,
     viewer: Viewer,
     input: EventActivityCreateInput,
-  ): CreateEventActivityActionBase {
+  ): T {
     return new this(viewer, input);
   }
 }

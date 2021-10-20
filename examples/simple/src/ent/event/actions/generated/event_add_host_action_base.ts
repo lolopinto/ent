@@ -78,7 +78,7 @@ export class EventAddHostActionBase implements Action<Event> {
     this: new (viewer: Viewer, event: Event) => T,
     viewer: Viewer,
     event: Event,
-  ): EventAddHostActionBase {
+  ): T {
     return new this(viewer, event);
   }
 

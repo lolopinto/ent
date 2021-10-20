@@ -78,7 +78,7 @@ export class EditGuestGroupActionBase implements Action<GuestGroup> {
     viewer: Viewer,
     guestGroup: GuestGroup,
     input: GuestGroupEditInput,
-  ): EditGuestGroupActionBase {
+  ): T {
     return new this(viewer, guestGroup, input);
   }
 

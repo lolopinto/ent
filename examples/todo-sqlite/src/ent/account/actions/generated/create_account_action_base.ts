@@ -62,7 +62,7 @@ export class CreateAccountActionBase implements Action<Account> {
     this: new (viewer: Viewer, input: AccountCreateInput) => T,
     viewer: Viewer,
     input: AccountCreateInput,
-  ): CreateAccountActionBase {
+  ): T {
     return new this(viewer, input);
   }
 }

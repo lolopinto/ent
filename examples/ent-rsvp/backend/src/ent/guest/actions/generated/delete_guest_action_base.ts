@@ -61,7 +61,7 @@ export class DeleteGuestActionBase implements Action<Guest> {
     this: new (viewer: Viewer, guest: Guest) => T,
     viewer: Viewer,
     guest: Guest,
-  ): DeleteGuestActionBase {
+  ): T {
     return new this(viewer, guest);
   }
 

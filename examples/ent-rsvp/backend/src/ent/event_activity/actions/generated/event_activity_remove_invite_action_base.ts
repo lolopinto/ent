@@ -69,7 +69,7 @@ export class EventActivityRemoveInviteActionBase
     this: new (viewer: Viewer, eventActivity: EventActivity) => T,
     viewer: Viewer,
     eventActivity: EventActivity,
-  ): EventActivityRemoveInviteActionBase {
+  ): T {
     return new this(viewer, eventActivity);
   }
 

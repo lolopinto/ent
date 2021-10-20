@@ -73,7 +73,7 @@ export class CreateHoursOfOperationActionBase
     this: new (viewer: Viewer, input: HoursOfOperationCreateInput) => T,
     viewer: Viewer,
     input: HoursOfOperationCreateInput,
-  ): CreateHoursOfOperationActionBase {
+  ): T {
     return new this(viewer, input);
   }
 }

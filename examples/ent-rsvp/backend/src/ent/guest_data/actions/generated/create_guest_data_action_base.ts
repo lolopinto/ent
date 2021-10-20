@@ -73,7 +73,7 @@ export class CreateGuestDataActionBase implements Action<GuestData> {
     this: new (viewer: Viewer, input: GuestDataCreateInput) => T,
     viewer: Viewer,
     input: GuestDataCreateInput,
-  ): CreateGuestDataActionBase {
+  ): T {
     return new this(viewer, input);
   }
 }

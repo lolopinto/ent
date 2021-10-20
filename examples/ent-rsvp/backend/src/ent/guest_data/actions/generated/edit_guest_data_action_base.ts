@@ -81,7 +81,7 @@ export class EditGuestDataActionBase implements Action<GuestData> {
     viewer: Viewer,
     guestData: GuestData,
     input: GuestDataEditInput,
-  ): EditGuestDataActionBase {
+  ): T {
     return new this(viewer, guestData, input);
   }
 

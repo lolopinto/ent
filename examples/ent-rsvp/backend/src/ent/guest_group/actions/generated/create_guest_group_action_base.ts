@@ -79,7 +79,7 @@ export class CreateGuestGroupActionBase implements Action<GuestGroup> {
     this: new (viewer: Viewer, input: GuestGroupCreateInput) => T,
     viewer: Viewer,
     input: GuestGroupCreateInput,
-  ): CreateGuestGroupActionBase {
+  ): T {
     return new this(viewer, input);
   }
 }
