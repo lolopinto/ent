@@ -75,7 +75,7 @@ export class ConfirmEditPhoneNumberActionBase implements Action<User> {
     viewer: Viewer,
     user: User,
     input: ConfirmEditPhoneNumberInput,
-  ): ConfirmEditPhoneNumberActionBase {
+  ): T {
     return new this(viewer, user, input);
   }
 

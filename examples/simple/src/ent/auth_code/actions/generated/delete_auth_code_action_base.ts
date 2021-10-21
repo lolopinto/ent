@@ -61,7 +61,7 @@ export class DeleteAuthCodeActionBase implements Action<AuthCode> {
     this: new (viewer: Viewer, authCode: AuthCode) => T,
     viewer: Viewer,
     authCode: AuthCode,
-  ): DeleteAuthCodeActionBase {
+  ): T {
     return new this(viewer, authCode);
   }
 

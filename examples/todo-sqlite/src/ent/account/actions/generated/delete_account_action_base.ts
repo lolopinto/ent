@@ -61,7 +61,7 @@ export class DeleteAccountActionBase implements Action<Account> {
     this: new (viewer: Viewer, account: Account) => T,
     viewer: Viewer,
     account: Account,
-  ): DeleteAccountActionBase {
+  ): T {
     return new this(viewer, account);
   }
 

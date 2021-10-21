@@ -74,7 +74,7 @@ export class CreateUserActionBase implements Action<User> {
     this: new (viewer: Viewer, input: UserCreateInput) => T,
     viewer: Viewer,
     input: UserCreateInput,
-  ): CreateUserActionBase {
+  ): T {
     return new this(viewer, input);
   }
 }

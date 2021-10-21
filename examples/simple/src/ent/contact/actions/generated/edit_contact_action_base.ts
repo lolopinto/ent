@@ -78,7 +78,7 @@ export class EditContactActionBase implements Action<Contact> {
     viewer: Viewer,
     contact: Contact,
     input: ContactEditInput,
-  ): EditContactActionBase {
+  ): T {
     return new this(viewer, contact, input);
   }
 

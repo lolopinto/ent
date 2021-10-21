@@ -82,7 +82,7 @@ export class EditAddressActionBase implements Action<Address> {
     viewer: Viewer,
     address: Address,
     input: AddressEditInput,
-  ): EditAddressActionBase {
+  ): T {
     return new this(viewer, address, input);
   }
 

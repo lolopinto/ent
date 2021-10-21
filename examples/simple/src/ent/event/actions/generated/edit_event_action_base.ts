@@ -79,7 +79,7 @@ export class EditEventActionBase implements Action<Event> {
     viewer: Viewer,
     event: Event,
     input: EventEditInput,
-  ): EditEventActionBase {
+  ): T {
     return new this(viewer, event, input);
   }
 

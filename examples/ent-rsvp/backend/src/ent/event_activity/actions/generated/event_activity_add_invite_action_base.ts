@@ -81,7 +81,7 @@ export class EventActivityAddInviteActionBase implements Action<EventActivity> {
     this: new (viewer: Viewer, eventActivity: EventActivity) => T,
     viewer: Viewer,
     eventActivity: EventActivity,
-  ): EventActivityAddInviteActionBase {
+  ): T {
     return new this(viewer, eventActivity);
   }
 

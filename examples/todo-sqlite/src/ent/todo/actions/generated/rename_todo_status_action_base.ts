@@ -70,7 +70,7 @@ export class RenameTodoStatusActionBase implements Action<Todo> {
     viewer: Viewer,
     todo: Todo,
     input: RenameTodoInput,
-  ): RenameTodoStatusActionBase {
+  ): T {
     return new this(viewer, todo, input);
   }
 

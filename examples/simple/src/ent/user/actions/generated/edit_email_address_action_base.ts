@@ -71,7 +71,7 @@ export class EditEmailAddressActionBase implements Action<User> {
     viewer: Viewer,
     user: User,
     input: EditEmailAddressInput,
-  ): EditEmailAddressActionBase {
+  ): T {
     return new this(viewer, user, input);
   }
 

@@ -108,7 +108,7 @@ export class EditEventActivityRsvpStatusActionBase
     viewer: Viewer,
     eventActivity: EventActivity,
     input: EditEventActivityRsvpStatusInput,
-  ): EditEventActivityRsvpStatusActionBase {
+  ): T {
     return new this(viewer, eventActivity, input);
   }
 

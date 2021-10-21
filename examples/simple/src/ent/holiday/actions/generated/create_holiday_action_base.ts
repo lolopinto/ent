@@ -62,7 +62,7 @@ export class CreateHolidayActionBase implements Action<Holiday> {
     this: new (viewer: Viewer, input: HolidayCreateInput) => T,
     viewer: Viewer,
     input: HolidayCreateInput,
-  ): CreateHolidayActionBase {
+  ): T {
     return new this(viewer, input);
   }
 }

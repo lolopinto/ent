@@ -61,7 +61,7 @@ export class DeleteEventActivityActionBase implements Action<EventActivity> {
     this: new (viewer: Viewer, eventActivity: EventActivity) => T,
     viewer: Viewer,
     eventActivity: EventActivity,
-  ): DeleteEventActivityActionBase {
+  ): T {
     return new this(viewer, eventActivity);
   }
 

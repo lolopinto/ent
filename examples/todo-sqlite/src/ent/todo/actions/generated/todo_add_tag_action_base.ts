@@ -78,7 +78,7 @@ export class TodoAddTagActionBase implements Action<Todo> {
     this: new (viewer: Viewer, todo: Todo) => T,
     viewer: Viewer,
     todo: Todo,
-  ): TodoAddTagActionBase {
+  ): T {
     return new this(viewer, todo);
   }
 

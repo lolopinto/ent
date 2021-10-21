@@ -102,7 +102,7 @@ export class EditEventRsvpStatusActionBase implements Action<Event> {
     viewer: Viewer,
     event: Event,
     input: EditEventRsvpStatusInput,
-  ): EditEventRsvpStatusActionBase {
+  ): T {
     return new this(viewer, event, input);
   }
 

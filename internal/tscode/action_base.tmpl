@@ -236,7 +236,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
   static create<T extends {{$actionName}}>(
     this: new ({{$constructor}}) => T,
     {{$constructor}},
-  ): {{$actionName}} {
+  ): T {
     return new this({{$newArgs}});
   }
 

@@ -71,7 +71,7 @@ export class CreateCommentActionBase implements Action<Comment> {
     this: new (viewer: Viewer, input: CommentCreateInput) => T,
     viewer: Viewer,
     input: CommentCreateInput,
-  ): CreateCommentActionBase {
+  ): T {
     return new this(viewer, input);
   }
 }
