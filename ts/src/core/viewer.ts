@@ -2,7 +2,7 @@ import { ID, Ent, Viewer, Context } from "./base";
 
 export class LoggedOutViewer implements Viewer {
   constructor(public context?: Context) {}
-  viewerID: null;
+  viewerID = null;
   async viewer() {
     return null;
   }
