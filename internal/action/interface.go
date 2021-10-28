@@ -544,7 +544,7 @@ func IsRequiredField(action Action, field *field.Field) bool {
 		return false
 	}
 	// for a nullable field or something with a default value, don't make it required...
-	if field.Nullable() || field.DefaultValue() != nil {
+	if field.Nullable() || field.DefaultValue() != nil || field.HasDefaultValueOnCreate() {
 		return false
 	}
 	return true
