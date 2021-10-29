@@ -1,6 +1,6 @@
 {
   "name": "@snowtop/ent",
-  "version": "0.0.22",
+  "version": "0.0.23",
   "description": "snowtop ent framework",
   "main": "index.js",
   "types": "index.d.ts",
@@ -30,7 +30,7 @@
   },
   "peerDependencies": {
     "better-sqlite3": "^7.4.1",
-    "graphql": ">= 15.3.0"
+    "graphql": "^15.5"
   },
   "peerDependenciesMeta": {
     "better-sqlite3": {
