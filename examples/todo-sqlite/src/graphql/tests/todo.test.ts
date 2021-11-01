@@ -4,7 +4,6 @@ import {
   expectQueryFromRoot,
 } from "@snowtop/ent-graphql-tests";
 import schema from "src/graphql/generated/schema";
-import { encodeGQLID } from "@snowtop/ent/graphql";
 import ChangeTodoStatusAction from "src/ent/todo/actions/change_todo_status_action";
 import { createAccount, createTodo } from "src/ent/testutils/util";
 import { advanceBy } from "jest-date-mock";
@@ -43,10 +42,10 @@ test("mark all as completed", async () => {
       viewer: account.viewer,
       schema: schema,
       mutation: "todosMarkAllAs",
-      args: { accountID: encodeGQLID(account), completed: true },
+      args: { accountID: account.id, completed: true },
       disableInputWrapping: true,
     },
-    ["id", encodeGQLID(account)],
+    ["id", account.id],
   );
 
   const loadedTodos2 = await AccountToTodosQuery.query(
@@ -61,10 +60,10 @@ test("mark all as completed", async () => {
       viewer: account.viewer,
       schema: schema,
       mutation: "todosMarkAllAs",
-      args: { accountID: encodeGQLID(account), completed: false },
+      args: { accountID: account.id, completed: false },
       disableInputWrapping: true,
     },
-    ["id", encodeGQLID(account)],
+    ["id", account.id],
   );
 
   const loadedTodos3 = await AccountToTodosQuery.query(
@@ -94,10 +93,10 @@ test("remove completed", async () => {
       viewer: account.viewer,
       schema: schema,
       mutation: "todosRemoveCompleted",
-      args: { accountID: encodeGQLID(account) },
+      args: { accountID: account.id },
       disableInputWrapping: true,
     },
-    ["id", encodeGQLID(account)],
+    ["id", account.id],
     // now 3 because deleted now
     ["todos.rawCount", 3],
   );
@@ -115,11 +114,10 @@ test("open todos plural from account", async () => {
     {
       viewer: account.viewer,
       schema: schema,
-      root: "node",
+      root: "account",
       args: {
-        id: encodeGQLID(account),
+        id: account.id,
       },
-      inlineFragmentRoot: "Account",
     },
     [
       "openTodosPlural",
@@ -144,11 +142,10 @@ test("open todos connection from account", async () => {
     {
       viewer: account.viewer,
       schema: schema,
-      root: "node",
+      root: "account",
       args: {
-        id: encodeGQLID(account),
+        id: account.id,
       },
-      inlineFragmentRoot: "Account",
     },
     ["openTodos.rawCount", todos.length - 1],
     [
@@ -176,7 +173,7 @@ test("open todos plural from root", async () => {
       schema: schema,
       root: "openTodosPlural",
       args: {
-        id: encodeGQLID(account),
+        id: account.id,
       },
     },
     [
@@ -204,7 +201,7 @@ test("open todos connection from root", async () => {
       schema: schema,
       root: "openTodos",
       args: {
-        id: encodeGQLID(account),
+        id: account.id,
       },
     },
     ["rawCount", todos.length - 1],

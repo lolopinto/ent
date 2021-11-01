@@ -12,7 +12,6 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { Tag } from "src/ent/";
 import CreateTagAction, {
   TagCreateInput,
@@ -68,7 +67,7 @@ export const TagCreateType: GraphQLFieldConfig<
   ): Promise<TagCreatePayload> => {
     const tag = await CreateTagAction.create(context.getViewer(), {
       displayName: input.displayName,
-      ownerID: mustDecodeIDFromGQLID(input.ownerID),
+      ownerID: input.ownerID,
     }).saveX();
     return { tag: tag };
   },

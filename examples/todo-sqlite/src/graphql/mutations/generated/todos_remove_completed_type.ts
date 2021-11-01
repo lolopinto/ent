@@ -7,7 +7,6 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { AccountType } from "src/graphql/resolvers/";
 import { TodosResolver } from "../todo/todo_resolver";
 
@@ -34,6 +33,6 @@ export const TodosRemoveCompletedType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ) => {
     const r = new TodosResolver();
-    return r.removeCompletedTodos(mustDecodeIDFromGQLID(args.accountID));
+    return r.removeCompletedTodos(args.accountID);
   },
 };

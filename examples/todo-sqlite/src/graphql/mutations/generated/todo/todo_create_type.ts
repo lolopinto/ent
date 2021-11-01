@@ -12,7 +12,6 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { Todo } from "src/ent/";
 import CreateTodoAction, {
   TodoCreateInput,
@@ -68,7 +67,7 @@ export const TodoCreateType: GraphQLFieldConfig<
   ): Promise<TodoCreatePayload> => {
     const todo = await CreateTodoAction.create(context.getViewer(), {
       text: input.text,
-      creatorID: mustDecodeIDFromGQLID(input.creatorID),
+      creatorID: input.creatorID,
     }).saveX();
     return { todo: todo };
   },

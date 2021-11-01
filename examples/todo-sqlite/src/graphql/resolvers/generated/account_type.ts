@@ -13,7 +13,6 @@ import { RequestContext } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
-  nodeIDEncoder,
 } from "@snowtop/ent/graphql";
 import { Account, AccountToTagsQuery, AccountToTodosQuery } from "src/ent/";
 import {
@@ -28,7 +27,6 @@ export const AccountType = new GraphQLObjectType({
   fields: (): GraphQLFieldConfigMap<Account, RequestContext> => ({
     id: {
       type: GraphQLNonNull(GraphQLID),
-      resolve: nodeIDEncoder,
     },
     name: {
       type: GraphQLNonNull(GraphQLString),

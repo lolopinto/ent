@@ -1,0 +1,20 @@
+{{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" "GraphQLBoolean" }}
+{{reserveImport .Package.PackagePath "ID" "RequestContext" }}
+
+{{ template "interfaces.tmpl" (dict "Base" .RootQuery "Interfaces" .RootQuery.Interfaces) -}}
+
+
+{{ range .RootQuery.Imports -}} 
+  {{if .ImportPath -}}
+    {{reserveImport .ImportPath .Type}}
+    {{ $ignore := useImport .Type }}
+  {{end -}}
+{{ end -}}
+
+{{ $customCode := .RootQuery.CustomCode -}}
+{{ if $customCode -}}
+  {{$customCode}}
+{{ end -}}
+
+{{ template "field_config.tmpl" (dict "Base" .RootQuery "FieldConfig" .RootQuery.FieldConfig) -}}
+
