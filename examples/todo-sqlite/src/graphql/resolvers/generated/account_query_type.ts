@@ -6,7 +6,7 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { Account } from "src/ent/";
-import { AccountType } from "src/graphql/resolvers/generated/account_type";
+import { AccountType } from "src/graphql/resolvers/internal";
 
 interface AccountQueryArgs {
   id: string;

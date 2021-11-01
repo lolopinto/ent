@@ -6,7 +6,7 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { Todo } from "src/ent/";
-import { TodoType } from "src/graphql/resolvers/generated/todo_type";
+import { TodoType } from "src/graphql/resolvers/internal";
 
 interface TodoQueryArgs {
   id: string;

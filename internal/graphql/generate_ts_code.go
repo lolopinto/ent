@@ -1103,11 +1103,11 @@ func getSortedLines(s *gqlSchema, cfg *codegen.Config) []string {
 	// get the connections
 	// get the custom queries
 	list := [][]string{
-		rootQueryImports,
 		enums,
 		nodes,
 		conns,
 		customQueries,
+		rootQueryImports,
 	}
 	for _, l := range list {
 		sort.Strings(l)
@@ -2254,12 +2254,8 @@ func buildRootQuery(processor *codegen.Processor, nodeData *schema.NodeData) *ro
 		FilePath: getRootQueryFilePath(processor.Config, nodeData),
 		Imports: []*fileImport{
 			{
-				Type: fmt.Sprintf("%sType", nodeData.Node),
-				// TODO this is using a direct import because circular dependencies showing up with :undefined in schema.gql
-				// this should change if/when schema.gql is generated not via printSchema
-				// TODO generateSchemaFile
-				ImportPath: trimPath(processor.Config, getFilePathForNode(processor.Config, nodeData)),
-				//				ImportPath: codepath.GetFilePathForInternalGQLFile(),
+				Type:       fmt.Sprintf("%sType", nodeData.Node),
+				ImportPath: codepath.GetImportPathForInternalGQLFile(),
 			},
 			{
 				ImportPath: codepath.GetExternalImportPath(),

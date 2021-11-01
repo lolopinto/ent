@@ -6,7 +6,7 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { Tag } from "src/ent/";
-import { TagType } from "src/graphql/resolvers/generated/tag_type";
+import { TagType } from "src/graphql/resolvers/internal";
 
 interface TagQueryArgs {
   id: string;
