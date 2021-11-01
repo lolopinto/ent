@@ -12,7 +12,6 @@ import { RequestContext } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
-  nodeIDEncoder,
 } from "@snowtop/ent/graphql";
 import { Tag, TagToTodosQuery } from "src/ent/";
 import {
@@ -31,7 +30,6 @@ export const TagType = new GraphQLObjectType({
     },
     id: {
       type: GraphQLNonNull(GraphQLID),
-      resolve: nodeIDEncoder,
     },
     displayName: {
       type: GraphQLNonNull(GraphQLString),

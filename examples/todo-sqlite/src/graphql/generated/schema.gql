@@ -201,9 +201,11 @@ type TodoRenamePayload {
 }
 
 type Query {
-  node(id: ID!): Node
+  account(id: ID!): Account
   openTodos(id: ID!, first: Int, after: String, last: Int, before: String): RootToOpenTodosConnection!
   openTodosPlural(id: ID!): [Todo!]!
+  tag(id: ID!): Tag
+  todo(id: ID!): Todo
 }
 
 type RootToOpenTodosConnection implements Connection {

@@ -488,7 +488,7 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 		}
 		argType := argMap[arg.Type]
 		if argType == nil {
-			if arg.TSType == "ID" {
+			if arg.TSType == "ID" && processor.Config.Base64EncodeIDs() {
 				argImports = append(argImports, &fileImport{
 					Type:       "mustDecodeIDFromGQLID",
 					ImportPath: codepath.GraphQLPackage,

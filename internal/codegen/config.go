@@ -119,6 +119,34 @@ func (cfg *Config) ShouldUseRelativePaths() bool {
 	return false
 }
 
+func (cfg *Config) DisableBase64Encoding() bool {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		return codegen.DisableBase64Encoding
+	}
+	return false
+}
+
+func (cfg *Config) Base64EncodeIDs() bool {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		return !codegen.DisableBase64Encoding
+	}
+	return true
+}
+
+func (cfg *Config) GenerateNodeQuery() bool {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		return !codegen.GenerateRootResolvers
+	}
+	return true
+}
+
+func (cfg *Config) GenerateRootResolvers() bool {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		return codegen.GenerateRootResolvers
+	}
+	return false
+}
+
 // used by golang
 func (cfg *Config) AppendPathToModels(paths ...string) string {
 	allPaths := append([]string{cfg.importPathToModels}, paths...)
@@ -266,12 +294,14 @@ type config struct {
 }
 
 type CodegenConfig struct {
-	DefaultEntPolicy    *PrivacyConfig  `yaml:"defaultEntPolicy"`
-	DefaultActionPolicy *PrivacyConfig  `yaml:"defaultActionPolicy"`
-	Prettier            *PrettierConfig `yaml:"prettier"`
-	RelativeImports     bool            `yaml:"relativeImports"`
-	DisableGraphQLRoot  bool            `yaml:"disableGraphQLRoot"`
-	GeneratedHeader     string          `yaml:"generatedHeader"`
+	DefaultEntPolicy      *PrivacyConfig  `yaml:"defaultEntPolicy"`
+	DefaultActionPolicy   *PrivacyConfig  `yaml:"defaultActionPolicy"`
+	Prettier              *PrettierConfig `yaml:"prettier"`
+	RelativeImports       bool            `yaml:"relativeImports"`
+	DisableGraphQLRoot    bool            `yaml:"disableGraphQLRoot"`
+	GeneratedHeader       string          `yaml:"generatedHeader"`
+	DisableBase64Encoding bool            `yaml:"disableBase64Encoding"`
+	GenerateRootResolvers bool            `yaml:"generateRootResolvers"`
 }
 
 type PrivacyConfig struct {

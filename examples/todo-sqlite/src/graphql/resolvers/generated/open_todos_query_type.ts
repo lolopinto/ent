@@ -9,10 +9,7 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import {
-  GraphQLEdgeConnection,
-  mustDecodeIDFromGQLID,
-} from "@snowtop/ent/graphql";
+import { GraphQLEdgeConnection } from "@snowtop/ent/graphql";
 import { RootToOpenTodosConnectionType } from "src/graphql/resolvers/internal";
 import { TodoResolver } from "../open_todos";
 
@@ -57,7 +54,7 @@ export const OpenTodosQueryType: GraphQLFieldConfig<
     const r = new TodoResolver();
     return new GraphQLEdgeConnection(
       context.getViewer(),
-      (v) => r.openTodos(context, mustDecodeIDFromGQLID(args.id)),
+      (v) => r.openTodos(context, args.id),
       args,
     );
   },

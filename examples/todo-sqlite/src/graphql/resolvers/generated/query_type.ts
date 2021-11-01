@@ -2,17 +2,21 @@
 
 import { GraphQLObjectType } from "graphql";
 import {
-  NodeQueryType,
+  AccountQueryType,
   OpenTodosPluralQueryType,
   OpenTodosQueryType,
+  TagQueryType,
+  TodoQueryType,
 } from "src/graphql/resolvers/internal";
 
 export const QueryType = new GraphQLObjectType({
   name: "Query",
   // @ts-ignore graphql-js TS #2152 2829
   fields: () => ({
-    node: NodeQueryType,
+    account: AccountQueryType,
     openTodos: OpenTodosQueryType,
     openTodosPlural: OpenTodosPluralQueryType,
+    tag: TagQueryType,
+    todo: TodoQueryType,
   }),
 });

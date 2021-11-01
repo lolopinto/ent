@@ -1,0 +1,20 @@
+{{$interfaces := .Interfaces -}}
+{{$baseObj := .Base -}}
+
+{{ range $interfaces -}}
+  {{ range .Extends}}
+    {{ if $baseObj.ForeignImport . -}}
+      {{$ignored := useImport . -}}
+    {{ end -}}
+  {{ end -}}
+  {{.InterfaceDecl }} {
+  {{ range .Fields -}}
+    {{$type := .Type -}}
+    {{if .UseImport -}}
+      {{$type = useImport $type -}}
+    {{end -}}
+    {{.Name}}: {{$type}};
+  {{ end -}}
+  }
+
+{{end}}

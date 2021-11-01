@@ -13,7 +13,6 @@ import { RequestContext } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
   GraphQLNodeInterface,
-  nodeIDEncoder,
 } from "@snowtop/ent/graphql";
 import { Todo, TodoToTagsQuery } from "src/ent/";
 import {
@@ -32,7 +31,6 @@ export const TodoType = new GraphQLObjectType({
     },
     id: {
       type: GraphQLNonNull(GraphQLID),
-      resolve: nodeIDEncoder,
     },
     text: {
       type: GraphQLNonNull(GraphQLString),

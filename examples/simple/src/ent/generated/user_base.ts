@@ -17,6 +17,7 @@ import {
   convertBool,
   convertDate,
   convertNullableJSON,
+  convertNullableJSONList,
   convertNullableList,
   loadCustomData,
   loadCustomEnts,
@@ -129,7 +130,7 @@ export class UserBase {
     this.bio = data.bio;
     this.nicknames = convertNullableList(data.nicknames);
     this.prefs = convertNullableJSON(data.prefs);
-    this.prefsList = convertNullableList(data.prefs_list);
+    this.prefsList = convertNullableJSONList(data.prefs_list);
     this.prefsDiff = convertNullableJSON(data.prefs_diff);
     this.daysOff = convertNullableList(data.days_off);
     this.preferredShift = convertNullableList(data.preferred_shift);

@@ -35,6 +35,7 @@ export const CommentType = new GraphQLObjectType({
     },
     authorID: {
       type: GraphQLNonNull(GraphQLID),
+      resolve: nodeIDEncoder,
     },
     body: {
       type: GraphQLNonNull(GraphQLString),

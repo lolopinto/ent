@@ -12,7 +12,6 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { Todo } from "src/ent/";
 import RenameTodoStatusAction, {
   RenameTodoInput,
@@ -68,7 +67,7 @@ export const TodoRenameType: GraphQLFieldConfig<
   ): Promise<TodoRenamePayload> => {
     const todo = await RenameTodoStatusAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.todoID),
+      input.todoID,
       {
         text: input.text,
       },

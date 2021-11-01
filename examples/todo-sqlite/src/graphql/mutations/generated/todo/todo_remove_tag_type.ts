@@ -11,7 +11,6 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { Todo } from "src/ent/";
 import TodoRemoveTagAction from "src/ent/todo/actions/todo_remove_tag_action";
 import { TodoType } from "src/graphql/resolvers/";
@@ -66,8 +65,8 @@ export const TodoRemoveTagType: GraphQLFieldConfig<
   ): Promise<TodoRemoveTagPayload> => {
     const todo = await TodoRemoveTagAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.todoID),
-      mustDecodeIDFromGQLID(input.tagID),
+      input.todoID,
+      input.tagID,
     );
     return { todo: todo };
   },

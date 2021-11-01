@@ -12,7 +12,6 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { Account } from "src/ent/";
 import EditAccountAction, {
   AccountEditInput,
@@ -71,7 +70,7 @@ export const AccountEditType: GraphQLFieldConfig<
   ): Promise<AccountEditPayload> => {
     const account = await EditAccountAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.accountID),
+      input.accountID,
       {
         name: input.name,
         phoneNumber: input.phoneNumber,
