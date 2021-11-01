@@ -151,6 +151,7 @@ export class StringField extends BaseField implements Field {
   type: Type = { dbType: DBType.String };
   private validators: { (str: string): boolean }[] = [];
   private formatters: { (str: string): string }[] = [];
+  private options: StringOptions = { name: "field" };
 
   constructor(options?: StringOptions) {
     super();
@@ -159,7 +160,7 @@ export class StringField extends BaseField implements Field {
   }
 
   getOptions(): StringOptions {
-    return this.getOptions;
+    return this.options;
   }
 
   private handleOptions(options: StringOptions) {
@@ -190,6 +191,7 @@ export class StringField extends BaseField implements Field {
         noParams[k].apply(this);
       }
     }
+    this.options = options;
   }
 
   minLen(l: number): StringField {
