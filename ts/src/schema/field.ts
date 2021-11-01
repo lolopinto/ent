@@ -1,14 +1,11 @@
+import { DateTime } from "luxon";
+import { snakeCase } from "snake-case";
+import DB, { Dialect } from "../core/db";
 import {
-  Type,
   DBType,
   Field,
-  FieldOptions,
-  PolymorphicOptions,
-  ForeignKey,
+  FieldOptions, ForeignKey, PolymorphicOptions, Type
 } from "./schema";
-import { snakeCase } from "snake-case";
-import { DateTime } from "luxon";
-import DB, { Dialect } from "../core/db";
 
 export abstract class BaseField {
   name: string;
@@ -98,11 +95,65 @@ export function UUIDType(options: FieldOptions): UUIDField {
   return Object.assign(result, options);
 }
 
-export class IntegerField extends BaseField implements Field {
-  type: Type = { dbType: DBType.Int };
+export interface IntegerOptions extends FieldOptions {
+  min?: number;
+  max?: number;
 }
 
-export function IntegerType(options: FieldOptions): IntegerField {
+export class IntegerField extends BaseField implements Field {
+  type: Type = { dbType: DBType.Int };
+  private validators: { (str: number): boolean }[] = [];
+
+  constructor(options?: IntegerOptions) {
+    super();
+    // for legacy callers
+    this.handleOptions(options || { name: "field" });
+  }
+
+  getOptions(): IntegerOptions {
+    return this.getOptions;
+  }
+
+  private handleOptions(options: IntegerOptions) {
+    const params = {
+      min: this.min,
+      max: this.max,
+    };
+
+    for (const k in params) {
+      const v = options[k];
+      if (v !== undefined) {
+        params[k].apply(this, [v]);
+      }
+    }
+  }
+
+  min(l: number): IntegerField {
+    return this.validate((val) => {
+      return val >= l;
+    });
+  }
+
+  max(l: number): IntegerField {
+    return this.validate((val) => val <= l);
+  }
+
+  valid(val: any): boolean {
+    for (const validator of this.validators) {
+      if (!validator(val)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  validate(validator: (str: number) => boolean): IntegerField {
+    this.validators.push(validator);
+    return this;
+  }
+}
+
+export function IntegerType(options: IntegerOptions): IntegerField {
   let result = new IntegerField();
   return Object.assign(result, options);
 }
