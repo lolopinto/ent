@@ -111,7 +111,7 @@ export class IntegerField extends BaseField implements Field {
   constructor(options?: IntegerOptions) {
     super();
     // for legacy callers
-    this.handleOptions(options || { name: "field" });
+    this.handleOptions(options || this.options);
   }
 
   getOptions(): IntegerOptions {
