@@ -27,6 +27,7 @@ import { Interval } from "luxon";
 import { QueryLoaderFactory } from "../../core/loaders/query_loader";
 import { MockDate } from "./../mock_date";
 import { getLoaderOptions } from ".";
+import { AllowIfViewerPrivacyPolicy } from "../../core/privacy";
 
 export class UserToContactsQuery extends AssocEdgeQueryBase<
   FakeUser,
@@ -63,7 +64,10 @@ export const userToContactsDataLoaderFactory = new IndexLoaderFactory(
   },
 );
 
-export class UserToContactsFkeyQuery extends CustomEdgeQueryBase<FakeContact> {
+export class UserToContactsFkeyQuery extends CustomEdgeQueryBase<
+  FakeUser,
+  FakeContact
+> {
   constructor(viewer: Viewer, src: ID | FakeUser) {
     super(viewer, {
       src,
@@ -229,6 +233,14 @@ export class UserToIncomingFriendRequestsQuery extends AssocEdgeQueryBase<
     );
   }
 
+  getPrivacyPolicy() {
+    return AllowIfViewerPrivacyPolicy;
+  }
+
+  entForPrivacy(id: ID) {
+    return FakeUser.load(this.viewer, id);
+  }
+
   static query(
     viewer: Viewer,
     src: EdgeQuerySource<FakeUser>,
@@ -370,7 +382,10 @@ export const userToEventsInNextWeekDataLoaderFactory = new QueryLoaderFactory({
   sortColumn: "start_time",
 });
 
-export class UserToEventsInNextWeekQuery extends CustomEdgeQueryBase<FakeEvent> {
+export class UserToEventsInNextWeekQuery extends CustomEdgeQueryBase<
+  FakeUser,
+  FakeEvent
+> {
   constructor(viewer: Viewer, src: ID | FakeUser) {
     super(viewer, {
       src,
@@ -388,6 +403,10 @@ export class UserToEventsInNextWeekQuery extends CustomEdgeQueryBase<FakeEvent> 
     src: FakeUser | ID,
   ): UserToEventsInNextWeekQuery {
     return new UserToEventsInNextWeekQuery(viewer, src);
+  }
+
+  getPrivacyPolicy() {
+    return AllowIfViewerPrivacyPolicy;
   }
 }
 

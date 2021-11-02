@@ -20,6 +20,9 @@ import {
   UserToCustomEdgeQuery,
   CustomEdge,
   getEventBuilder,
+  UserToFriendRequestsQuery,
+  UserToIncomingFriendRequestsQuery,
+  ViewerWithAccessToken,
 } from "../../testutils/fake_data/index";
 import {
   inputs,
@@ -30,6 +33,7 @@ import {
   verifyUserToContacts,
   createTestEvent,
   getEventInput,
+  createUserPlusFriendRequests,
 } from "../../testutils/fake_data/test_helpers";
 import DB, { Dialect } from "../db";
 
@@ -365,14 +369,14 @@ export function assocTests() {
     friends: FakeUser[];
 
     constructor(
-      private initialQuery: EdgeQueryCtr<Ent, AssocEdge>,
-      private subsequentQueries: EdgeQueryCtr<Ent, AssocEdge>[],
+      private initialQuery: EdgeQueryCtr<FakeUser, Ent, AssocEdge>,
+      private subsequentQueries: EdgeQueryCtr<Ent, Ent, AssocEdge>[],
       private filter: (
         q: EdgeQuery<FakeUser, Ent, AssocEdge>,
       ) => EdgeQuery<FakeUser, Ent, AssocEdge>,
       private lastHopFilter?: (
-        q: EdgeQuery<FakeUser, Ent, AssocEdge>,
-      ) => EdgeQuery<FakeUser, Ent, AssocEdge>,
+        q: EdgeQuery<Ent, Ent, AssocEdge>,
+      ) => EdgeQuery<Ent, Ent, AssocEdge>,
     ) {}
 
     async beforeEach() {
@@ -437,7 +441,7 @@ export function assocTests() {
     }
 
     private async compare(
-      fn: (q: EdgeQuery<FakeUser, Ent, AssocEdge>) => any,
+      fn: (q: EdgeQuery<Ent, Ent, AssocEdge>) => any,
       comparer?: (oneHop: any, allHops: any) => any,
     ) {
       const vc = new IDViewer(this.user.id);
@@ -795,6 +799,69 @@ export function assocTests() {
 
     test("ents", async () => {
       await filter.testEnts();
+    });
+  });
+
+  describe("privacy", () => {
+    let user: FakeUser;
+    let friendRequests: FakeUser[];
+    let user2: FakeUser;
+    beforeEach(async () => {
+      [user, friendRequests] = await createUserPlusFriendRequests();
+      user2 = await createTestUser();
+    });
+
+    function getQuery(viewer: Viewer) {
+      return UserToIncomingFriendRequestsQuery.query(viewer, user.id);
+    }
+
+    test("ids", async () => {
+      const ids = await getQuery(user2.viewer).queryIDs();
+      expect(ids.length).toBe(0);
+
+      const idsFromUser = await getQuery(user.viewer).queryIDs();
+      expect(idsFromUser.length).toBe(friendRequests.length);
+    });
+
+    test("count", async () => {
+      const count = await getQuery(user2.viewer).queryCount();
+      expect(count).toBe(0);
+
+      const countFromUser = await getQuery(user.viewer).queryCount();
+      expect(countFromUser).toBe(friendRequests.length);
+    });
+
+    test("rawCount", async () => {
+      const rawCount = await getQuery(user2.viewer).queryRawCount();
+      expect(rawCount).toBe(0);
+
+      const rawCountFromUser = await getQuery(user.viewer).queryRawCount();
+      expect(rawCountFromUser).toBe(friendRequests.length);
+    });
+
+    test("edges", async () => {
+      const edges = await getQuery(user2.viewer).queryEdges();
+      expect(edges.length).toBe(0);
+
+      const edgesFromUser = await getQuery(user.viewer).queryEdges();
+      expect(edgesFromUser.length).toBe(friendRequests.length);
+    });
+
+    test("ents", async () => {
+      const ents = await getQuery(user2.viewer).queryEnts();
+      expect(ents.length).toBe(0);
+
+      const entsFromUser = await getQuery(user.viewer).queryEnts();
+      expect(entsFromUser.length).toBe(0);
+
+      const entsFromUserVCToken = await getQuery(
+        new ViewerWithAccessToken(user.id, {
+          tokens: {
+            allow_incoming_friend_request: true,
+          },
+        }),
+      ).queryEnts();
+      expect(entsFromUserVCToken.length).toBe(friendRequests.length);
     });
   });
 }

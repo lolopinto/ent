@@ -21,10 +21,13 @@ import {
   EdgeType,
   SymmetricEdges,
   InverseEdges,
+  FakeUserSchema,
 } from ".";
 import { EventCreateInput, FakeEvent, getEventBuilder } from "./fake_event";
 import { NodeType } from "./const";
 import { MockDate } from "./../mock_date";
+import { SimpleAction } from "../builder";
+import { WriteOperation } from "../../action";
 
 export function getContactInput(
   user: FakeUser,
@@ -136,6 +139,46 @@ export async function createAllContacts(
   );
   expect(contacts.length).toBe(userInputs.length);
   return [user, contacts];
+}
+
+export async function createUserPlusFriendRequests(
+  input?: Partial<UserCreateInput>,
+  slice?: number,
+): Promise<[FakeUser, FakeUser[]]> {
+  const user = await createTestUser(input);
+
+  let userInputs = inputs.slice(0, slice || inputs.length);
+
+  const friendRequests = await Promise.all(
+    userInputs.map(async (input) => {
+      return createTestUser(input);
+    }),
+  );
+  expect(friendRequests.length).toBe(userInputs.length);
+
+  const action = new SimpleAction(
+    user.viewer,
+    new FakeUserSchema(),
+    new Map(),
+    WriteOperation.Edit,
+    user,
+  );
+
+  friendRequests.forEach(async (friendRequest) => {
+    // just to make times deterministic so that tests can consistently work
+    advanceBy(100);
+    // add edge
+    action.builder.orchestrator.addInboundEdge(
+      friendRequest.id,
+      EdgeType.UserToFriendRequests,
+      NodeType.FakeUser,
+      {
+        time: new Date(), // set time to advanceBy time
+      },
+    );
+  });
+  await action.saveX();
+  return [user, friendRequests];
 }
 
 export function verifyUserToContactEdges(
