@@ -1,16 +1,16 @@
 import {
-  Viewer,
-  ID,
+  Allow,
+  Context,
+  Deny,
   Ent,
+  ID,
   LoadEntOptions,
   PrivacyError,
   PrivacyPolicy,
   PrivacyPolicyRule,
-  Context,
   PrivacyResult,
-  Allow,
-  Deny,
   Skip,
+  Viewer,
 } from "./base";
 import { AssocEdge, loadEdgeForID2, loadEnt } from "./ent";
 import { log } from "./logger";
@@ -154,6 +154,9 @@ export class DenyIfFuncRule implements PrivacyPolicyRule {
   }
 }
 
+/**
+ * @deprecated use AllowIfViewerIsEntPropertyRule
+ */
 export class AllowIfViewerIsRule implements PrivacyPolicyRule {
   constructor(private property: string) {}
 
@@ -162,6 +165,20 @@ export class AllowIfViewerIsRule implements PrivacyPolicyRule {
     if (ent) {
       result = ent[this.property];
     }
+    if (result === v.viewerID) {
+      return Allow();
+    }
+    return Skip();
+  }
+}
+
+export class AllowIfViewerIsEntPropertyRule<T extends Ent>
+  implements PrivacyPolicyRule
+{
+  constructor(private property: keyof T) {}
+
+  async apply(v: Viewer, ent?: T): Promise<PrivacyResult> {
+    const result: any = ent && ent[this.property];
     if (result === v.viewerID) {
       return Allow();
     }
