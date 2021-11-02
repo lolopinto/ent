@@ -4,7 +4,10 @@ import DB, { Dialect } from "../core/db";
 import {
   DBType,
   Field,
-  FieldOptions, ForeignKey, PolymorphicOptions, Type
+  FieldOptions,
+  ForeignKey,
+  PolymorphicOptions,
+  Type,
 } from "./schema";
 
 export abstract class BaseField {
@@ -129,9 +132,7 @@ export class IntegerField extends BaseField implements Field {
   }
 
   min(l: number): IntegerField {
-    return this.validate((val) => {
-      return val >= l;
-    });
+    return this.validate((val) => val >= l);
   }
 
   max(l: number): IntegerField {
@@ -154,7 +155,7 @@ export class IntegerField extends BaseField implements Field {
 }
 
 export function IntegerType(options: IntegerOptions): IntegerField {
-  let result = new IntegerField();
+  let result = new IntegerField(options);
   return Object.assign(result, options);
 }
 

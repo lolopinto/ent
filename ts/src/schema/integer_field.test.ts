@@ -2,7 +2,6 @@ import { IntegerField, IntegerType, ListField } from "./field";
 
 interface testCase {
   fn: () => IntegerField;
-  format: number;
   valid: boolean;
   customInput?: number;
 }
@@ -13,7 +12,6 @@ const tests = new Map<string, testCase>([
     "min property valid",
     {
       fn: () => IntegerType({ name: "field", min: 5 }),
-      format: input,
       valid: true,
     },
   ],
@@ -21,7 +19,6 @@ const tests = new Map<string, testCase>([
     "min property equal valid",
     {
       fn: () => IntegerType({ name: "field", min: 10 }),
-      format: input,
       valid: true,
     },
   ],
@@ -29,7 +26,6 @@ const tests = new Map<string, testCase>([
     "min property invalid",
     {
       fn: () => IntegerType({ name: "field", min: 50 }),
-      format: input,
       valid: false,
     },
   ],
@@ -37,7 +33,6 @@ const tests = new Map<string, testCase>([
     "min method valid",
     {
       fn: () => IntegerType({ name: "field" }).min(5),
-      format: input,
       valid: true,
     },
   ],
@@ -45,7 +40,6 @@ const tests = new Map<string, testCase>([
     "min method invalid",
     {
       fn: () => IntegerType({ name: "field" }).min(50),
-      format: input,
       valid: false,
     },
   ],
@@ -53,7 +47,6 @@ const tests = new Map<string, testCase>([
     "max property valid",
     {
       fn: () => IntegerType({ name: "field", max: 50 }),
-      format: input,
       valid: true,
     },
   ],
@@ -61,7 +54,6 @@ const tests = new Map<string, testCase>([
     "max property equal valid",
     {
       fn: () => IntegerType({ name: "field", max: 10 }),
-      format: input,
       valid: true,
     },
   ],
@@ -69,7 +61,6 @@ const tests = new Map<string, testCase>([
     "max property invalid",
     {
       fn: () => IntegerType({ name: "field", max: 5 }),
-      format: input,
       valid: false,
     },
   ],
@@ -77,7 +68,6 @@ const tests = new Map<string, testCase>([
     "max method valid",
     {
       fn: () => IntegerType({ name: "field" }).max(50),
-      format: input,
       valid: true,
     },
   ],
@@ -85,7 +75,6 @@ const tests = new Map<string, testCase>([
     "max method invalid",
     {
       fn: () => IntegerType({ name: "field" }).max(5),
-      format: input,
       valid: false,
     },
   ],
@@ -95,7 +84,6 @@ for (const [k, v] of tests) {
   test(k, () => {
     const f = v.fn();
     let val = v.customInput || input;
-    expect(f.format(val)).toBe(v.format);
     expect(f.valid(val)).toBe(v.valid);
   });
 }
@@ -110,7 +98,7 @@ describe("list", () => {
       const list = new ListField(f, f.getOptions());
       let val = v.customInput || input;
       // list format for postgres list
-      expect(list.format([val])).toBe(`{${v.format}}`);
+      expect(list.format([val])).toBe(`{${val}}`);
       expect(list.valid([val])).toBe(v.valid);
     });
   }
