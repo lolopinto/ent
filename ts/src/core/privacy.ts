@@ -158,10 +158,7 @@ export class AllowIfViewerIsRule<T extends Ent> implements PrivacyPolicyRule {
   constructor(private property: keyof T) {}
 
   async apply(v: Viewer, ent?: T): Promise<PrivacyResult> {
-    let result: any;
-    if (ent) {
-      result = ent[this.property];
-    }
+    const result: any = ent && ent[this.property];
     if (result === v.viewerID) {
       return Allow();
     }
