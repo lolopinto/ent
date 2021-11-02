@@ -106,6 +106,7 @@ export interface IntegerOptions extends FieldOptions {
 export class IntegerField extends BaseField implements Field {
   type: Type = { dbType: DBType.Int };
   private validators: { (str: number): boolean }[] = [];
+  private options: IntegerOptions = { name: "field" };
 
   constructor(options?: IntegerOptions) {
     super();
@@ -114,7 +115,7 @@ export class IntegerField extends BaseField implements Field {
   }
 
   getOptions(): IntegerOptions {
-    return this.getOptions;
+    return this.options;
   }
 
   private handleOptions(options: IntegerOptions) {
@@ -129,6 +130,7 @@ export class IntegerField extends BaseField implements Field {
         params[k].apply(this, [v]);
       }
     }
+    this.options = options;
   }
 
   min(l: number): IntegerField {
