@@ -19,6 +19,7 @@ export interface EdgeQuery<
   // if more than one, the single-version methods should throw
 
   // TODO determine if these should return null if the edge isn't visible
+  // might be helpful to have the distinction in the API where null = privacy check failed and []|0 etc equals no data
   queryEdges(): Promise<TEdge[]>;
   queryAllEdges(): Promise<Map<ID, TEdge[]>>;
   queryIDs(): Promise<ID[]>;
@@ -251,12 +252,6 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
   }
 }
 
-// resolveIDs
-// load Ent if needed -> these two should be handled by base class
-// perform privacy check -> these two
-// load data
-interface loader {}
-
 export abstract class BaseEdgeQuery<
   TSource extends Ent,
   TDest extends Ent,
@@ -269,6 +264,8 @@ export abstract class BaseEdgeQuery<
   private pagination: Map<ID, PaginationInfo> = new Map();
   private memoizedloadEdges: () => Promise<Map<ID, TEdge[]>>;
   protected genIDInfosToFetch: () => Promise<IDInfo[]>;
+  private idMap: Map<ID, TSource> = new Map();
+  private idsToFetch: ID[] = [];
 
   constructor(public viewer: Viewer, private sortCol: string) {
     this.memoizedloadEdges = memoize(this.loadEdges.bind(this));
@@ -276,6 +273,7 @@ export abstract class BaseEdgeQuery<
   }
 
   getPrivacyPolicy() {
+    // default PrivacyPolicy is always allow. nothing to do here
     return AlwaysAllowPrivacyPolicy;
   }
 
@@ -422,8 +420,6 @@ export abstract class BaseEdgeQuery<
     options: EdgeQueryableDataOptions,
   ): Promise<void>;
 
-  private idMap: Map<ID, TSource> = new Map();
-  private idsToFetch: ID[] = [];
   private addID(id: ID | TSource) {
     if (typeof id === "object") {
       this.idMap.set(id.id, id);

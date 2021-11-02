@@ -408,6 +408,9 @@ export class UserToEventsInNextWeekQuery extends CustomEdgeQueryBase<
   getPrivacyPolicy() {
     return AllowIfViewerPrivacyPolicy;
   }
+  async entForPrivacy(id: ID) {
+    return FakeUser.load(this.viewer, id);
+  }
 }
 
 export class UserToFollowingQuery extends AssocEdgeQueryBase<

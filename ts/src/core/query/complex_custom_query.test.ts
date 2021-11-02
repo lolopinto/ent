@@ -3,8 +3,11 @@ import {
   FakeEvent,
   FakeUser,
   UserToEventsInNextWeekQuery,
+  EdgeType,
+  FakeUserSchema,
 } from "../../testutils/fake_data";
 import {
+  addEdge,
   createAllEvents,
   createTestUser,
   setupTempDB,
@@ -14,6 +17,7 @@ import { TempDB } from "../../testutils/db/test_db";
 import { buildQuery } from "../ent";
 import * as clause from "../clause";
 import { Viewer } from "../base";
+import { QueryRecorder } from "../../testutils/db_mock";
 
 const INTERVAL = 24 * 60 * 60 * 1000;
 
@@ -33,6 +37,8 @@ beforeAll(async () => {
     interval: INTERVAL,
   });
   user2 = await createTestUser();
+  await addEdge(user, new FakeUserSchema(), EdgeType.UserToFriends, false);
+  QueryRecorder.clearQueries();
 });
 
 beforeEach(() => {
@@ -45,7 +51,8 @@ afterAll(async () => {
 });
 
 const getQuery = (viewer?: Viewer) => {
-  return new UserToEventsInNextWeekQuery(viewer || user.viewer, user);
+  // when this is user.id instead of user,
+  return new UserToEventsInNextWeekQuery(viewer || user.viewer, user.id);
 };
 
 // test just to confirm that simple entquery things work
@@ -54,7 +61,6 @@ test("rawCount", async () => {
 
   const count = await q.queryRawCount();
   expect(count).toBe(7);
-  expect(ml.logs.length).toBe(1);
 });
 
 test("ents", async () => {
@@ -62,7 +68,6 @@ test("ents", async () => {
 
   const ents = await q.queryEnts();
   expect(ents.length).toBe(7);
-  expect(ml.logs.length).toBe(1);
 });
 
 test("first N", async () => {
@@ -70,7 +75,6 @@ test("first N", async () => {
 
   const ents = await q.first(2).queryEnts();
   expect(ents.length).toBe(2);
-  expect(ml.logs.length).toBe(1);
 });
 
 test("ids", async () => {
@@ -78,7 +82,6 @@ test("ids", async () => {
 
   const ids = await q.queryIDs();
   expect(ids.length).toBe(7);
-  expect(ml.logs.length).toBe(1);
 });
 
 test("count", async () => {
@@ -86,7 +89,6 @@ test("count", async () => {
 
   const count = await q.queryCount();
   expect(count).toBe(7);
-  expect(ml.logs.length).toBe(1);
 });
 
 test("edges", async () => {
@@ -94,7 +96,6 @@ test("edges", async () => {
 
   const edges = await q.queryEdges();
   expect(edges.length).toBe(7);
-  expect(ml.logs.length).toBe(1);
 });
 
 test("first N. after", async () => {
@@ -102,7 +103,6 @@ test("first N. after", async () => {
 
   const edges = await q.queryEdges();
   expect(edges.length).toBe(7);
-  expect(ml.logs.length).toBe(1);
 
   ml.clear();
 
@@ -111,7 +111,6 @@ test("first N. after", async () => {
   const ents = await q2.first(2, cursor).queryEnts();
   expect(ents.length).toBe(2);
   expect(ents[0].id).toBe(edges[3].id);
-  expect(ml.logs.length).toBe(1);
 
   const query = buildQuery({
     ...FakeEvent.loaderOptions(),
@@ -125,7 +124,7 @@ test("first N. after", async () => {
       clause.Less("start_time", 4),
     ),
   });
-  expect(query).toEqual(ml.logs[0].query);
+  expect(query).toEqual(ml.logs[ml.logs.length - 1].query);
 });
 
 // tests CustomEdgeQueryBase privacy implementation
@@ -136,7 +135,6 @@ describe("privacy. loaded by other user", () => {
 
     const count = await q.queryRawCount();
     expect(count).toBe(0);
-    expect(ml.logs.length).toBe(0);
   });
 
   test("ents", async () => {
@@ -144,7 +142,6 @@ describe("privacy. loaded by other user", () => {
 
     const ents = await q.queryEnts();
     expect(ents.length).toBe(0);
-    expect(ml.logs.length).toBe(0);
   });
 
   test("first N", async () => {
@@ -152,7 +149,6 @@ describe("privacy. loaded by other user", () => {
 
     const ents = await q.first(2).queryEnts();
     expect(ents.length).toBe(0);
-    expect(ml.logs.length).toBe(0);
   });
 
   test("first N. after", async () => {
@@ -160,7 +156,6 @@ describe("privacy. loaded by other user", () => {
 
     const edges = await q.queryEdges();
     expect(edges.length).toBe(0);
-    expect(ml.logs.length).toBe(0);
   });
 
   test("ids", async () => {
@@ -168,7 +163,6 @@ describe("privacy. loaded by other user", () => {
 
     const ids = await q.queryIDs();
     expect(ids.length).toBe(0);
-    expect(ml.logs.length).toBe(0);
   });
 
   test("count", async () => {
@@ -176,7 +170,6 @@ describe("privacy. loaded by other user", () => {
 
     const count = await q.queryCount();
     expect(count).toBe(0);
-    expect(ml.logs.length).toBe(0);
   });
 
   test("edges", async () => {
@@ -184,6 +177,5 @@ describe("privacy. loaded by other user", () => {
 
     const edges = await q.queryEdges();
     expect(edges.length).toBe(0);
-    expect(ml.logs.length).toBe(0);
   });
 });

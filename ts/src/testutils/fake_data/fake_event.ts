@@ -7,7 +7,7 @@ import {
   PrivacyPolicy,
 } from "../../core/base";
 import { loadEnt, loadEntX } from "../../core/ent";
-import { AlwaysAllowPrivacyPolicy, AlwaysAllowRule } from "../../core/privacy";
+import { AlwaysAllowPrivacyPolicy } from "../../core/privacy";
 import { BuilderSchema, SimpleBuilder } from "../builder";
 import {
   Field,

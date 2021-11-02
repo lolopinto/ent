@@ -1,7 +1,7 @@
 import { fail } from "assert";
-import { advanceBy, advanceTo, clear } from "jest-date-mock";
+import { advanceBy, advanceTo } from "jest-date-mock";
 import { IDViewer, LoggedOutViewer } from "../../core/viewer";
-import { Data } from "../../core/base";
+import { Data, Ent } from "../../core/base";
 import { AssocEdge, loadEdgeData } from "../../core/ent";
 import { snakeCase } from "snake-case";
 import { createRowForTest } from "../write";
@@ -26,7 +26,7 @@ import {
 import { EventCreateInput, FakeEvent, getEventBuilder } from "./fake_event";
 import { NodeType } from "./const";
 import { MockDate } from "./../mock_date";
-import { SimpleAction } from "../builder";
+import { BuilderSchema, SimpleAction } from "../builder";
 import { WriteOperation } from "../../action";
 
 export function getContactInput(
@@ -156,29 +156,57 @@ export async function createUserPlusFriendRequests(
   );
   expect(friendRequests.length).toBe(userInputs.length);
 
-  const action = new SimpleAction(
-    user.viewer,
-    new FakeUserSchema(),
-    new Map(),
-    WriteOperation.Edit,
+  await addEdge(
     user,
+    new FakeUserSchema(),
+    EdgeType.UserToFriendRequests,
+    true,
+    ...friendRequests,
   );
 
-  friendRequests.forEach(async (friendRequest) => {
+  return [user, friendRequests];
+}
+
+export async function addEdge<T extends Ent>(
+  source: T,
+  schema: BuilderSchema<T>,
+  edgeType: string,
+  inbound: boolean, // inbound or outbound
+  ...dest: Ent[]
+) {
+  const action = new SimpleAction(
+    source.viewer,
+    schema,
+    new Map(),
+    WriteOperation.Edit,
+    source,
+  );
+
+  dest.forEach(async (friendRequest) => {
     // just to make times deterministic so that tests can consistently work
     advanceBy(100);
     // add edge
-    action.builder.orchestrator.addInboundEdge(
-      friendRequest.id,
-      EdgeType.UserToFriendRequests,
-      NodeType.FakeUser,
-      {
-        time: new Date(), // set time to advanceBy time
-      },
-    );
+    if (inbound) {
+      action.builder.orchestrator.addInboundEdge(
+        friendRequest.id,
+        edgeType,
+        dest[0].nodeType,
+        {
+          time: new Date(), // set time to advanceBy time
+        },
+      );
+    } else {
+      action.builder.orchestrator.addOutboundEdge(
+        friendRequest.id,
+        edgeType,
+        dest[0].nodeType,
+        {
+          time: new Date(), // set time to advanceBy time
+        },
+      );
+    }
   });
   await action.saveX();
-  return [user, friendRequests];
 }
 
 export function verifyUserToContactEdges(

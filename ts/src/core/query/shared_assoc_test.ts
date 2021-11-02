@@ -131,6 +131,8 @@ export function assocTests() {
     }
   }
 
+  // TODO need to test multi-ids with id1s that aren't visible...
+  // so 2 user's friend requests at the same time
   class MultiIDsTestQueryFilter {
     dataz: [FakeUser, FakeContact[]][] = [];
     constructor(
@@ -862,6 +864,78 @@ export function assocTests() {
         }),
       ).queryEnts();
       expect(entsFromUserVCToken.length).toBe(friendRequests.length);
+    });
+  });
+
+  describe("multi-ids privacy", () => {
+    let user: FakeUser;
+    let friendRequests: FakeUser[];
+    let user2: FakeUser;
+    let friendRequests2: FakeUser[];
+    beforeEach(async () => {
+      [user, friendRequests] = await createUserPlusFriendRequests();
+      [user2, friendRequests2] = await createUserPlusFriendRequests();
+    });
+
+    function getQuery(viewer?: Viewer) {
+      return UserToIncomingFriendRequestsQuery.query(viewer || user.viewer, [
+        user.id,
+        user2.id,
+      ]);
+    }
+
+    test("ids", async () => {
+      const idsMap = await getQuery().queryAllIDs();
+      expect(idsMap.size).toBe(2);
+
+      expect(idsMap.get(user.id)?.length).toBe(friendRequests.length);
+      expect(idsMap.get(user2.id)?.length).toBe(0);
+    });
+
+    test("count", async () => {
+      const countMap = await getQuery().queryAllCount();
+      expect(countMap.size).toBe(2);
+
+      expect(countMap.get(user.id)).toBe(friendRequests.length);
+      expect(countMap.get(user2.id)).toBe(0);
+    });
+
+    test("count", async () => {
+      const countMap = await getQuery().queryAllRawCount();
+      expect(countMap.size).toBe(2);
+
+      expect(countMap.get(user.id)).toBe(friendRequests.length);
+      expect(countMap.get(user2.id)).toBe(0);
+    });
+
+    test("edges", async () => {
+      const edgesMap = await getQuery().queryAllEdges();
+      expect(edgesMap.size).toBe(2);
+
+      expect(edgesMap.get(user.id)?.length).toBe(friendRequests.length);
+      expect(edgesMap.get(user2.id)?.length).toBe(0);
+    });
+
+    test("ents", async () => {
+      const entsMap = await getQuery().queryAllEnts();
+      expect(entsMap.size).toBe(2);
+
+      expect(entsMap.get(user.id)?.length).toBe(0);
+      expect(entsMap.get(user2.id)?.length).toBe(0);
+
+      const entsMapFromUserVCToken = await getQuery(
+        new ViewerWithAccessToken(user.id, {
+          tokens: {
+            allow_incoming_friend_request: true,
+          },
+        }),
+      ).queryAllEnts();
+      expect(entsMapFromUserVCToken.size).toBe(2);
+
+      expect(entsMapFromUserVCToken.get(user.id)?.length).toBe(
+        friendRequests.length,
+      );
+      expect(entsMapFromUserVCToken.get(user2.id)?.length).toBe(0);
     });
   });
 }
