@@ -1,16 +1,16 @@
 import {
-  Viewer,
-  ID,
+  Allow,
+  Context,
+  Deny,
   Ent,
+  ID,
   LoadEntOptions,
   PrivacyError,
   PrivacyPolicy,
   PrivacyPolicyRule,
-  Context,
   PrivacyResult,
-  Allow,
-  Deny,
   Skip,
+  Viewer,
 } from "./base";
 import { AssocEdge, loadEdgeForID2, loadEnt } from "./ent";
 import { log } from "./logger";
@@ -154,11 +154,11 @@ export class DenyIfFuncRule implements PrivacyPolicyRule {
   }
 }
 
-export class AllowIfViewerIsRule implements PrivacyPolicyRule {
-  constructor(private property: string) {}
+export class AllowIfViewerIsRule<T extends Ent> implements PrivacyPolicyRule {
+  constructor(private property: keyof T) {}
 
-  async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
-    let result: undefined;
+  async apply(v: Viewer, ent?: T): Promise<PrivacyResult> {
+    let result: any;
     if (ent) {
       result = ent[this.property];
     }
