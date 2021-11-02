@@ -154,7 +154,27 @@ export class DenyIfFuncRule implements PrivacyPolicyRule {
   }
 }
 
-export class AllowIfViewerIsRule<T extends Ent> implements PrivacyPolicyRule {
+/**
+ * @deprecated use AllowIfViewerIsEntPropertyRule
+ */
+export class AllowIfViewerIsRule implements PrivacyPolicyRule {
+  constructor(private property: string) {}
+
+  async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
+    let result: undefined;
+    if (ent) {
+      result = ent[this.property];
+    }
+    if (result === v.viewerID) {
+      return Allow();
+    }
+    return Skip();
+  }
+}
+
+export class AllowIfViewerIsEntPropertyRule<T extends Ent>
+  implements PrivacyPolicyRule
+{
   constructor(private property: keyof T) {}
 
   async apply(v: Viewer, ent?: T): Promise<PrivacyResult> {
