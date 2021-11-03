@@ -193,22 +193,28 @@ export interface PrivacyError extends Error {
   ent?: Ent;
 }
 
+const allow: PrivacyResult = {
+  result: privacyResult.Allow,
+};
+
 export function Allow(): PrivacyResult {
-  return {
-    result: privacyResult.Allow,
-  };
+  return allow;
 }
+
+const skip: PrivacyResult = {
+  result: privacyResult.Skip,
+};
 
 export function Skip(): PrivacyResult {
-  return {
-    result: privacyResult.Skip,
-  };
+  return skip;
 }
 
+const deny: PrivacyResult = {
+  result: privacyResult.Deny,
+};
+
 export function Deny(): PrivacyResult {
-  return {
-    result: privacyResult.Deny,
-  };
+  return deny;
 }
 
 export function DenyWithReason(e: PrivacyError): PrivacyResult {
