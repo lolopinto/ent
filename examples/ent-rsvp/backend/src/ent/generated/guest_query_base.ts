@@ -137,7 +137,10 @@ export class GuestToDeclinedEventsQueryBase extends AssocEdgeQueryBase<
   }
 }
 
-export class GuestToAuthCodesQueryBase extends CustomEdgeQueryBase<AuthCode> {
+export class GuestToAuthCodesQueryBase extends CustomEdgeQueryBase<
+  Guest,
+  AuthCode
+> {
   constructor(viewer: Viewer, src: Guest | ID) {
     super(viewer, {
       src: src,
@@ -156,7 +159,10 @@ export class GuestToAuthCodesQueryBase extends CustomEdgeQueryBase<AuthCode> {
   }
 }
 
-export class GuestToGuestDataQueryBase extends CustomEdgeQueryBase<GuestData> {
+export class GuestToGuestDataQueryBase extends CustomEdgeQueryBase<
+  Guest,
+  GuestData
+> {
   constructor(viewer: Viewer, src: Guest | ID) {
     super(viewer, {
       src: src,

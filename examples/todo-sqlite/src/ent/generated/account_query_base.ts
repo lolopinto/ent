@@ -32,7 +32,7 @@ export const accountToTodosDataLoaderFactory = new IndexLoaderFactory(
   },
 );
 
-export class AccountToTagsQueryBase extends CustomEdgeQueryBase<Tag> {
+export class AccountToTagsQueryBase extends CustomEdgeQueryBase<Account, Tag> {
   constructor(viewer: Viewer, src: Account | ID) {
     super(viewer, {
       src: src,
@@ -51,7 +51,10 @@ export class AccountToTagsQueryBase extends CustomEdgeQueryBase<Tag> {
   }
 }
 
-export class AccountToTodosQueryBase extends CustomEdgeQueryBase<Todo> {
+export class AccountToTodosQueryBase extends CustomEdgeQueryBase<
+  Account,
+  Todo
+> {
   constructor(viewer: Viewer, src: Account | ID) {
     super(viewer, {
       src: src,
