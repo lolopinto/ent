@@ -1,7 +1,15 @@
-import { ID, Ent, Viewer, EdgeQueryableDataOptions, Data } from "../base";
+import {
+  ID,
+  Ent,
+  Viewer,
+  EdgeQueryableDataOptions,
+  Data,
+  PrivacyPolicy,
+} from "../base";
 import { DefaultLimit, getCursor } from "../ent";
 import * as clause from "../clause";
 import memoize from "memoizee";
+import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy";
 
 export interface EdgeQuery<
   TSource extends Ent,
@@ -9,6 +17,9 @@ export interface EdgeQuery<
   TEdge extends Data,
 > {
   // if more than one, the single-version methods should throw
+
+  // TODO determine if these should return null if the edge isn't visible
+  // might be helpful to have the distinction in the API where null = privacy check failed and []|0 etc equals no data
   queryEdges(): Promise<TEdge[]>;
   queryAllEdges(): Promise<Map<ID, TEdge[]>>;
   queryIDs(): Promise<ID[]>;
@@ -26,6 +37,15 @@ export interface EdgeQuery<
   paginationInfo(): Map<ID, PaginationInfo>;
   getCursor(row: TEdge): string;
   dataToID(edge: TEdge): ID;
+
+  getPrivacyPolicy(): PrivacyPolicy;
+  // there's no requirement that you have to be able to see
+  // an ent to see edges from that ent so the ent is optional
+  // however, this means that the ent passed to applyPrivacyPolicy() can be undefined
+  // if you want to encourage an ent passed down, implement this function
+  // to generate an ent that will be used.
+  // if there's a multi-id situation (EdgeQuerySource), we'll call this for each id/ent passed in
+  entForPrivacy?(id: ID): Promise<TSource | null>;
 }
 
 //maybe id2 shouldn't return EdgeQuery but a different object from which you can query edge. the ent you don't need to query since you can just query that on your own.
@@ -78,7 +98,7 @@ function assertValidCursor(cursor: string, col: string): number {
 
 interface FilterOptions {
   limit: number;
-  query: BaseEdgeQuery<Ent, Data>;
+  query: BaseEdgeQuery<Ent, Ent, Data>;
   before?: string;
   after?: string;
   sortCol?: string; // what column are we sorting by. defaults to `time`
@@ -89,7 +109,7 @@ interface FilterOptions {
 class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
   private offset: any | undefined;
   private sortCol: string;
-  private edgeQuery: BaseEdgeQuery<Ent, Data>;
+  private edgeQuery: BaseEdgeQuery<Ent, Ent, Data>;
   private pageMap: Map<ID, PaginationInfo> = new Map();
 
   constructor(private options: FilterOptions) {
@@ -163,7 +183,7 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
   private offset: any | undefined;
   private sortCol: string;
   private pageMap: Map<ID, PaginationInfo> = new Map();
-  private edgeQuery: BaseEdgeQuery<Ent, Data>;
+  private edgeQuery: BaseEdgeQuery<Ent, Ent, Data>;
 
   constructor(private options: FilterOptions) {
     assertPositive(options.limit);
@@ -232,15 +252,29 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
   }
 }
 
-export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
+export abstract class BaseEdgeQuery<
+  TSource extends Ent,
+  TDest extends Ent,
+  TEdge extends Data,
+> implements EdgeQuery<TSource, TDest, TEdge>
+{
   private filters: EdgeQueryFilter<TEdge>[] = [];
   private queryDispatched: boolean;
   protected edges: Map<ID, TEdge[]> = new Map();
   private pagination: Map<ID, PaginationInfo> = new Map();
   private memoizedloadEdges: () => Promise<Map<ID, TEdge[]>>;
+  protected genIDInfosToFetch: () => Promise<IDInfo[]>;
+  private idMap: Map<ID, TSource> = new Map();
+  private idsToFetch: ID[] = [];
 
   constructor(public viewer: Viewer, private sortCol: string) {
     this.memoizedloadEdges = memoize(this.loadEdges.bind(this));
+    this.genIDInfosToFetch = memoize(this.genIDInfosToFetchImpl.bind(this));
+  }
+
+  getPrivacyPolicy() {
+    // default PrivacyPolicy is always allow. nothing to do here
+    return AlwaysAllowPrivacyPolicy;
   }
 
   first(n: number, after?: string): this {
@@ -286,6 +320,10 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
   readonly queryEdges = async (): Promise<TEdge[]> => {
     return await this.querySingleEdge("queryEdges");
   };
+
+  abstract queryRawCount(): Promise<number>;
+
+  abstract queryAllRawCount(): Promise<Map<ID, number>>;
 
   readonly queryAllEdges = async (): Promise<Map<ID, TEdge[]>> => {
     return await this.memoizedloadEdges();
@@ -369,13 +407,44 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
     }
   }
 
+  // loadIDs, given an addID function which resolves ID or Ent dependening on what we have
+  // if Ent, that's passed to privacy function
+  // if ID and entForPrivacy() method, that's called with the id
+  // if still no Ent (default/lots of cases), no ent is passed to applyPrivacyPolicy
+  protected abstract loadRawIDs(
+    addID: (src: ID | TSource) => void,
+  ): Promise<void>;
+
   protected abstract loadRawData(
+    infos: IDInfo[],
     options: EdgeQueryableDataOptions,
   ): Promise<void>;
 
+  private addID(id: ID | TSource) {
+    if (typeof id === "object") {
+      this.idMap.set(id.id, id);
+      this.idsToFetch.push(id.id);
+    } else {
+      this.idsToFetch.push(id);
+    }
+  }
+
+  protected async genIDInfosToFetchImpl() {
+    await this.loadRawIDs(this.addID.bind(this));
+
+    return applyPrivacyPolicyForEdgeQ(
+      this.viewer,
+      this,
+      this.idsToFetch,
+      this.idMap,
+    );
+  }
+
   private async loadEdges(): Promise<Map<ID, TEdge[]>> {
-    // if no filter, we add the firstN filter to ensure we get pagination info
+    const idsInfo = await this.genIDInfosToFetch();
+
     if (!this.filters.length) {
+      // if no filter, we add the firstN filter to ensure we get pagination info
       this.first(DefaultLimit);
     }
 
@@ -389,7 +458,7 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
       }
     });
 
-    await this.loadRawData(options);
+    await this.loadRawData(idsInfo, options);
 
     // no filters. nothing to do here.
     if (!this.filters.length) {
@@ -433,4 +502,43 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
       },
     });
   }
+}
+
+export interface IDInfo {
+  id: ID;
+  // if invalidated (usually for privacy), don't fetch data for it, feel free to store the 0-value e.g. 0, [], for the result
+  // may eventually be null instead
+  invalidated?: boolean;
+}
+
+async function applyPrivacyPolicyForEdgeQ<
+  TSource extends Ent,
+  TDest extends Ent,
+  TEdge extends Data,
+>(
+  viewer: Viewer,
+  edgeQ: EdgeQuery<TSource, TDest, TEdge>,
+  ids: ID[],
+  map: Map<ID, TSource>,
+): Promise<IDInfo[]> {
+  const result: IDInfo[] = [];
+
+  await Promise.all(
+    ids.map(async (id) => {
+      let ent: TSource | null | undefined = map.get(id);
+      if (!ent && edgeQ.entForPrivacy) {
+        ent = await edgeQ.entForPrivacy(id);
+      }
+      const r = await applyPrivacyPolicy(
+        viewer,
+        edgeQ.getPrivacyPolicy(),
+        ent || undefined,
+      );
+      result.push({
+        id,
+        invalidated: !r,
+      });
+    }),
+  );
+  return result;
 }

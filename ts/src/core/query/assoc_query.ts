@@ -8,7 +8,7 @@ import {
 import { AssocEdge, loadEnts } from "../ent";
 import { AssocEdgeCountLoaderFactory } from "../loaders/assoc_count_loader";
 import { AssocEdgeLoaderFactory } from "../loaders/assoc_edge_loader";
-import { EdgeQuery, BaseEdgeQuery } from "./query";
+import { EdgeQuery, BaseEdgeQuery, IDInfo } from "./query";
 
 // TODO no more plurals for privacy reasons?
 export type EdgeQuerySource<T extends Ent> =
@@ -29,10 +29,7 @@ export class AssocEdgeQueryBase<
   TSource extends Ent,
   TDest extends Ent,
   TEdge extends AssocEdge,
-> extends BaseEdgeQuery<TDest, TEdge> {
-  private idsResolved: boolean;
-  private resolvedIDs: ID[] = [];
-
+> extends BaseEdgeQuery<TSource, TDest, TEdge> {
   constructor(
     public viewer: Viewer,
     public src: EdgeQuerySource<TSource>,
@@ -45,25 +42,6 @@ export class AssocEdgeQueryBase<
     super(viewer, "time");
   }
 
-  // TODO memoization...
-  private async resolveIDs(): Promise<ID[]> {
-    if (this.idsResolved) {
-      return this.resolvedIDs;
-    }
-    if (Array.isArray(this.src)) {
-      this.src.forEach((obj: TSource | ID) => this.addID(obj));
-    } else if (this.isEdgeQuery(this.src)) {
-      const idsMap = await this.src.queryAllIDs();
-      for (const [_, ids] of idsMap) {
-        ids.forEach((id) => this.resolvedIDs.push(id));
-      }
-    } else {
-      this.addID(this.src);
-    }
-    this.idsResolved = true;
-    return this.resolvedIDs;
-  }
-
   private isEdgeQuery(
     obj: TSource | ID | EdgeQuery<TSource, Ent, AssocEdge>,
   ): obj is EdgeQuery<TSource, Ent, AssocEdge> {
@@ -73,40 +51,41 @@ export class AssocEdgeQueryBase<
     return false;
   }
 
-  private addID(obj: TSource | ID) {
-    if (typeof obj === "object") {
-      this.resolvedIDs.push(obj.id);
-    } else {
-      this.resolvedIDs.push(obj);
-    }
-  }
-
   private async getSingleID() {
-    const ids = await this.resolveIDs();
-    if (ids.length !== 1) {
+    const infos = await this.genIDInfosToFetch();
+    if (infos.length !== 1) {
       throw new Error(
         "cannot call queryRawCount when more than one id is requested",
       );
     }
-    return ids[0];
+    return infos[0];
   }
 
   // doesn't work with filters...
   async queryRawCount(): Promise<number> {
-    const id = await this.getSingleID();
+    const info = await this.getSingleID();
+    if (info.invalidated) {
+      return 0;
+    }
 
-    return this.countLoaderFactory.createLoader(this.viewer.context).load(id);
+    return this.countLoaderFactory
+      .createLoader(this.viewer.context)
+      .load(info.id);
   }
 
   async queryAllRawCount(): Promise<Map<ID, number>> {
     let results: Map<ID, number> = new Map();
-    const ids = await this.resolveIDs();
+    const infos = await this.genIDInfosToFetch();
 
     const loader = this.countLoaderFactory.createLoader(this.viewer.context);
     await Promise.all(
-      ids.map(async (id) => {
-        const count = await loader.load(id);
-        results.set(id, count);
+      infos.map(async (info) => {
+        if (info.invalidated) {
+          results.set(info.id, 0);
+          return;
+        }
+        const count = await loader.load(info.id);
+        results.set(info.id, count);
       }),
     );
     return results;
@@ -155,15 +134,34 @@ export class AssocEdgeQueryBase<
     return edge.id2;
   }
 
-  protected async loadRawData(options: EdgeQueryableDataOptions) {
-    const ids = await this.resolveIDs();
+  protected async loadRawIDs(addID: (src: ID | TSource) => void) {
+    if (Array.isArray(this.src)) {
+      this.src.forEach((obj: TSource | ID) => addID(obj));
+    } else if (this.isEdgeQuery(this.src)) {
+      const idsMap = await this.src.queryAllIDs();
+      for (const [_, ids] of idsMap) {
+        ids.forEach((id) => addID(id));
+      }
+    } else {
+      addID(this.src);
+    }
+  }
 
+  protected async loadRawData(
+    infos: IDInfo[],
+    options: EdgeQueryableDataOptions,
+  ) {
     const loader = this.dataLoaderFactory.createConfigurableLoader(
       options,
       this.viewer.context,
     );
+
     await Promise.all(
-      ids.map(async (id) => {
+      infos.map(async (info) => {
+        if (info.invalidated) {
+          this.edges.set(info.id, []);
+          return;
+        }
         // there'll be filters for special edges here...
         // and then depending on that, we use this
         // what happens if you do first(10).id2(XX)
@@ -171,30 +169,36 @@ export class AssocEdgeQueryBase<
         // so only makes sense if one of these...
 
         // Id2 needs to be an option
-        const edges = await loader.load(id);
-        this.edges.set(id, edges);
+        const edges = await loader.load(info.id);
+        this.edges.set(info.id, edges);
       }),
     );
   }
 
   async queryID2(id2: ID): Promise<TEdge | undefined> {
-    const id = await this.getSingleID();
+    const info = await this.getSingleID();
+    if (info.invalidated) {
+      return;
+    }
 
     const loader = this.dataLoaderFactory.createLoader(this.viewer.context);
-    return loader.loadEdgeForID2(id, id2);
+    return loader.loadEdgeForID2(info.id, id2);
   }
 
   async queryAllID2(id2: ID): Promise<Map<ID, TEdge>> {
-    const ids = await this.resolveIDs();
+    const infos = await this.genIDInfosToFetch();
 
     const loader = this.dataLoaderFactory.createLoader(this.viewer.context);
 
     const m = new Map<ID, TEdge>();
     await Promise.all(
-      ids.map(async (id) => {
-        const edge = await loader.loadEdgeForID2(id, id2);
+      infos.map(async (info) => {
+        if (info.invalidated) {
+          return;
+        }
+        const edge = await loader.loadEdgeForID2(info.id, id2);
         if (edge) {
-          m.set(id, edge);
+          m.set(info.id, edge);
         }
       }),
     );
@@ -202,6 +206,14 @@ export class AssocEdgeQueryBase<
   }
 }
 
-export interface EdgeQueryCtr<T extends Ent, TEdge extends AssocEdge> {
-  new (viewer: Viewer, src: EdgeQuerySource<T>): EdgeQuery<T, Ent, TEdge>;
+export interface EdgeQueryCtr<
+  TSource extends Ent,
+  TDest extends Ent,
+  TEdge extends AssocEdge,
+> {
+  new (viewer: Viewer, src: EdgeQuerySource<TSource>): EdgeQuery<
+    TSource,
+    TDest,
+    TEdge
+  >;
 }

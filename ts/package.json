@@ -94,9 +94,6 @@
     "type": "git",
     "url": "git+ssh://git@github.com/lolopinto/ent.git"
   },
-  "resolutions": {
-    "graphql": "^15.3.0"
-  },
   "bugs": {
     "url": "https://github.com/lolopinto/ent/issues"
   },

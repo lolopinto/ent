@@ -1,7 +1,7 @@
 import { fail } from "assert";
-import { advanceBy, advanceTo, clear } from "jest-date-mock";
+import { advanceBy, advanceTo } from "jest-date-mock";
 import { IDViewer, LoggedOutViewer } from "../../core/viewer";
-import { Data } from "../../core/base";
+import { Data, Ent } from "../../core/base";
 import { AssocEdge, loadEdgeData } from "../../core/ent";
 import { snakeCase } from "snake-case";
 import { createRowForTest } from "../write";
@@ -21,10 +21,13 @@ import {
   EdgeType,
   SymmetricEdges,
   InverseEdges,
+  FakeUserSchema,
 } from ".";
 import { EventCreateInput, FakeEvent, getEventBuilder } from "./fake_event";
 import { NodeType } from "./const";
 import { MockDate } from "./../mock_date";
+import { BuilderSchema, SimpleAction } from "../builder";
+import { WriteOperation } from "../../action";
 
 export function getContactInput(
   user: FakeUser,
@@ -136,6 +139,74 @@ export async function createAllContacts(
   );
   expect(contacts.length).toBe(userInputs.length);
   return [user, contacts];
+}
+
+export async function createUserPlusFriendRequests(
+  input?: Partial<UserCreateInput>,
+  slice?: number,
+): Promise<[FakeUser, FakeUser[]]> {
+  const user = await createTestUser(input);
+
+  let userInputs = inputs.slice(0, slice || inputs.length);
+
+  const friendRequests = await Promise.all(
+    userInputs.map(async (input) => {
+      return createTestUser(input);
+    }),
+  );
+  expect(friendRequests.length).toBe(userInputs.length);
+
+  await addEdge(
+    user,
+    new FakeUserSchema(),
+    EdgeType.UserToFriendRequests,
+    true,
+    ...friendRequests,
+  );
+
+  return [user, friendRequests];
+}
+
+export async function addEdge<T extends Ent>(
+  source: T,
+  schema: BuilderSchema<T>,
+  edgeType: string,
+  inbound: boolean, // inbound or outbound
+  ...dest: Ent[]
+) {
+  const action = new SimpleAction(
+    source.viewer,
+    schema,
+    new Map(),
+    WriteOperation.Edit,
+    source,
+  );
+
+  dest.forEach(async (friendRequest) => {
+    // just to make times deterministic so that tests can consistently work
+    advanceBy(100);
+    // add edge
+    if (inbound) {
+      action.builder.orchestrator.addInboundEdge(
+        friendRequest.id,
+        edgeType,
+        dest[0].nodeType,
+        {
+          time: new Date(), // set time to advanceBy time
+        },
+      );
+    } else {
+      action.builder.orchestrator.addOutboundEdge(
+        friendRequest.id,
+        edgeType,
+        dest[0].nodeType,
+        {
+          time: new Date(), // set time to advanceBy time
+        },
+      );
+    }
+  });
+  await action.saveX();
 }
 
 export function verifyUserToContactEdges(
