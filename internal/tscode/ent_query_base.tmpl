@@ -94,7 +94,7 @@
     {{$node := useImport $edge.GetNodeInfo.Node -}}
     {{$thisType := printf "new (viewer: Viewer, src: %s | ID ) => T" $srcNode }}
 
-    export class {{$name}} extends {{useImport "CustomEdgeQueryBase"}}<{{$node}}> {
+    export class {{$name}} extends {{useImport "CustomEdgeQueryBase"}}<{{$srcNode}}, {{$node}}> {
       constructor(viewer: {{useImport "Viewer"}}, src: {{$srcNode}} | {{useImport "ID"}}) {
         super(viewer, {
           src: src, 

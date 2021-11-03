@@ -68,7 +68,10 @@ export class CommentToPostQueryBase extends AssocEdgeQueryBase<
   }
 }
 
-export class ArticleToCommentsQueryBase extends CustomEdgeQueryBase<Comment> {
+export class ArticleToCommentsQueryBase extends CustomEdgeQueryBase<
+  Ent,
+  Comment
+> {
   constructor(viewer: Viewer, src: Ent | ID) {
     super(viewer, {
       src: src,
