@@ -65,7 +65,10 @@ export const eventToGuestsDataLoaderFactory = new IndexLoaderFactory(
   },
 );
 
-export class EventToEventActivitiesQueryBase extends CustomEdgeQueryBase<EventActivity> {
+export class EventToEventActivitiesQueryBase extends CustomEdgeQueryBase<
+  Event,
+  EventActivity
+> {
   constructor(viewer: Viewer, src: Event | ID) {
     super(viewer, {
       src: src,
@@ -84,7 +87,10 @@ export class EventToEventActivitiesQueryBase extends CustomEdgeQueryBase<EventAc
   }
 }
 
-export class EventToGuestDataQueryBase extends CustomEdgeQueryBase<GuestData> {
+export class EventToGuestDataQueryBase extends CustomEdgeQueryBase<
+  Event,
+  GuestData
+> {
   constructor(viewer: Viewer, src: Event | ID) {
     super(viewer, {
       src: src,
@@ -103,7 +109,10 @@ export class EventToGuestDataQueryBase extends CustomEdgeQueryBase<GuestData> {
   }
 }
 
-export class EventToGuestGroupsQueryBase extends CustomEdgeQueryBase<GuestGroup> {
+export class EventToGuestGroupsQueryBase extends CustomEdgeQueryBase<
+  Event,
+  GuestGroup
+> {
   constructor(viewer: Viewer, src: Event | ID) {
     super(viewer, {
       src: src,
@@ -122,7 +131,7 @@ export class EventToGuestGroupsQueryBase extends CustomEdgeQueryBase<GuestGroup>
   }
 }
 
-export class EventToGuestsQueryBase extends CustomEdgeQueryBase<Guest> {
+export class EventToGuestsQueryBase extends CustomEdgeQueryBase<Event, Guest> {
   constructor(viewer: Viewer, src: Event | ID) {
     super(viewer, {
       src: src,

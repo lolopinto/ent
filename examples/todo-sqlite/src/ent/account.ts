@@ -27,7 +27,10 @@ const openTodosCountLoader = new RawCountLoaderFactory({
   clause: query.Eq("completed", false),
 });
 
-export class AccountToOpenTodosQuery extends CustomEdgeQueryBase<Todo> {
+export class AccountToOpenTodosQuery extends CustomEdgeQueryBase<
+  Account,
+  Todo
+> {
   constructor(viewer: Viewer, src: ID | Account) {
     super(viewer, {
       src,

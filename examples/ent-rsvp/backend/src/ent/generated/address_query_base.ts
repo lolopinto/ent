@@ -22,7 +22,10 @@ export const ownerToAddressesDataLoaderFactory = new IndexLoaderFactory(
   },
 );
 
-export class OwnerToAddressesQueryBase extends CustomEdgeQueryBase<Address> {
+export class OwnerToAddressesQueryBase extends CustomEdgeQueryBase<
+  Ent,
+  Address
+> {
   constructor(viewer: Viewer, src: Ent | ID) {
     super(viewer, {
       src: src,

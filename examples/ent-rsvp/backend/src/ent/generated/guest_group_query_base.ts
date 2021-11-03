@@ -79,7 +79,10 @@ export class GuestGroupToInvitedEventsQueryBase extends AssocEdgeQueryBase<
   }
 }
 
-export class GuestGroupToGuestsQueryBase extends CustomEdgeQueryBase<Guest> {
+export class GuestGroupToGuestsQueryBase extends CustomEdgeQueryBase<
+  GuestGroup,
+  Guest
+> {
   constructor(viewer: Viewer, src: GuestGroup | ID) {
     super(viewer, {
       src: src,

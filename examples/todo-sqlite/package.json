@@ -33,7 +33,7 @@
     "ts-jest": "^27.0.5"
   },
   "dependencies": {
-    "@snowtop/ent": "^0.0.20",
+    "@snowtop/ent": "^0.0.24",
     "@snowtop/ent-phonenumber": "^0.0.1",
     "@types/node": "^15.0.3",
     "@types/pg": "^8.6.1",
