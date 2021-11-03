@@ -133,11 +133,11 @@ export class IntegerField extends BaseField implements Field {
     this.options = options;
   }
 
-  min(l: number): IntegerField {
+  min(l: number): this {
     return this.validate((val) => val >= l);
   }
 
-  max(l: number): IntegerField {
+  max(l: number): this {
     return this.validate((val) => val <= l);
   }
 
@@ -150,7 +150,7 @@ export class IntegerField extends BaseField implements Field {
     return true;
   }
 
-  validate(validator: (str: number) => boolean): IntegerField {
+  validate(validator: (str: number) => boolean): this {
     this.validators.push(validator);
     return this;
   }
@@ -248,13 +248,13 @@ export class StringField extends BaseField implements Field {
     this.options = options;
   }
 
-  minLen(l: number): StringField {
+  minLen(l: number): this {
     return this.validate((val) => {
       return val.length >= l;
     });
   }
 
-  maxLen(l: number): StringField {
+  maxLen(l: number): this {
     return this.validate((val) => val.length <= l);
   }
 
@@ -281,47 +281,47 @@ export class StringField extends BaseField implements Field {
     return val;
   }
 
-  validate(validator: (str: string) => boolean): StringField {
+  validate(validator: (str: string) => boolean): this {
     this.validators.push(validator);
     return this;
   }
 
-  formatter(formatter: (str: string) => string): StringField {
+  formatter(formatter: (str: string) => string): this {
     this.formatters.push(formatter);
     return this;
   }
 
-  match(pattern: string | RegExp): StringField {
+  match(pattern: string | RegExp): this {
     return this.validate(function (str: string): boolean {
       let r = new RegExp(pattern);
       return r.test(str);
     });
   }
 
-  doesNotMatch(pattern: string | RegExp): StringField {
+  doesNotMatch(pattern: string | RegExp): this {
     return this.validate(function (str: string): boolean {
       let r = new RegExp(pattern);
       return !r.test(str);
     });
   }
 
-  toLowerCase(): StringField {
+  toLowerCase(): this {
     return this.formatter((str) => str.toLowerCase());
   }
 
-  toUpperCase(): StringField {
+  toUpperCase(): this {
     return this.formatter((str) => str.toUpperCase());
   }
 
-  trim(): StringField {
+  trim(): this {
     return this.formatter((str) => str.trim());
   }
 
-  trimLeft(): StringField {
+  trimLeft(): this {
     return this.formatter((str) => str.trimLeft());
   }
 
-  trimRight(): StringField {
+  trimRight(): this {
     return this.formatter((str) => str.trimRight());
   }
 }
