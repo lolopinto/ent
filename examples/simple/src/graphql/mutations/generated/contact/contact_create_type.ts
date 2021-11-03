@@ -75,7 +75,7 @@ export const ContactCreateType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<ContactCreatePayload> => {
-    let contact = await CreateContactAction.create(context.getViewer(), {
+    const contact = await CreateContactAction.create(context.getViewer(), {
       emailAddress: input.emailAddress,
       firstName: input.firstName,
       lastName: input.lastName,

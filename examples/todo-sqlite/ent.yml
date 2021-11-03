@@ -1,0 +1,3 @@
+codegen:
+  disableBase64Encoding: true
+  generateRootResolvers: true

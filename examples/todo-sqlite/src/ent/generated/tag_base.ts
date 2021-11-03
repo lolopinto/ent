@@ -109,7 +109,7 @@ export class TagBase {
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
-    return await tagLoader.createLoader(context).load(id);
+    return tagLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends TagBase>(
@@ -128,8 +128,8 @@ export class TagBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName: tableName,
-      fields: fields,
+      tableName,
+      fields,
       ent: this,
       loaderFactory: tagLoader,
     };

@@ -61,7 +61,7 @@ export class DeleteGuestActionBase implements Action<Guest> {
     this: new (viewer: Viewer, guest: Guest) => T,
     viewer: Viewer,
     guest: Guest,
-  ): DeleteGuestActionBase {
+  ): T {
     return new this(viewer, guest);
   }
 
@@ -70,7 +70,7 @@ export class DeleteGuestActionBase implements Action<Guest> {
     viewer: Viewer,
     id: ID,
   ): Promise<void> {
-    let guest = await Guest.loadX(viewer, id);
-    return await new this(viewer, guest).saveX();
+    const guest = await Guest.loadX(viewer, id);
+    return new this(viewer, guest).saveX();
   }
 }

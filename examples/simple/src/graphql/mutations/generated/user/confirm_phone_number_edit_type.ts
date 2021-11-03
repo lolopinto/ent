@@ -76,7 +76,7 @@ export const ConfirmPhoneNumberEditType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<ConfirmPhoneNumberEditPayload> => {
-    let user = await ConfirmEditPhoneNumberAction.saveXFromID(
+    const user = await ConfirmEditPhoneNumberAction.saveXFromID(
       context.getViewer(),
       mustDecodeIDFromGQLID(input.userID),
       {

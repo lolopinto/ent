@@ -74,19 +74,19 @@ export class CreateEventActivityActionBase implements Action<EventActivity> {
 
   async save(): Promise<EventActivity | null> {
     await this.builder.save();
-    return await this.builder.editedEnt();
+    return this.builder.editedEnt();
   }
 
   async saveX(): Promise<EventActivity> {
     await this.builder.saveX();
-    return await this.builder.editedEntX();
+    return this.builder.editedEntX();
   }
 
   static create<T extends CreateEventActivityActionBase>(
     this: new (viewer: Viewer, input: EventActivityCreateInput) => T,
     viewer: Viewer,
     input: EventActivityCreateInput,
-  ): CreateEventActivityActionBase {
+  ): T {
     return new this(viewer, input);
   }
 }

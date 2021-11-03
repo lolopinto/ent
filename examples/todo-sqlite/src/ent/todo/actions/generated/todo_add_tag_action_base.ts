@@ -66,19 +66,19 @@ export class TodoAddTagActionBase implements Action<Todo> {
 
   async save(): Promise<Todo | null> {
     await this.builder.save();
-    return await this.builder.editedEnt();
+    return this.builder.editedEnt();
   }
 
   async saveX(): Promise<Todo> {
     await this.builder.saveX();
-    return await this.builder.editedEntX();
+    return this.builder.editedEntX();
   }
 
   static create<T extends TodoAddTagActionBase>(
     this: new (viewer: Viewer, todo: Todo) => T,
     viewer: Viewer,
     todo: Todo,
-  ): TodoAddTagActionBase {
+  ): T {
     return new this(viewer, todo);
   }
 
@@ -88,7 +88,7 @@ export class TodoAddTagActionBase implements Action<Todo> {
     id: ID,
     tagID: ID,
   ): Promise<Todo> {
-    let todo = await Todo.loadX(viewer, id);
-    return await new this(viewer, todo).addTag(tagID).saveX();
+    const todo = await Todo.loadX(viewer, id);
+    return new this(viewer, todo).addTag(tagID).saveX();
   }
 }

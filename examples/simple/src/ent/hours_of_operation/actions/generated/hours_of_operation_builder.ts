@@ -47,17 +47,15 @@ export class HoursOfOperationBuilder implements Builder<HoursOfOperation> {
     this.input = action.getInput();
 
     this.orchestrator = new Orchestrator({
-      viewer: viewer,
+      viewer,
       operation: this.operation,
       tableName: "hours_of_operations",
       key: "id",
       loaderOptions: HoursOfOperation.loaderOptions(),
       builder: this,
-      action: action,
-      schema: schema,
-      editedFields: () => {
-        return this.getEditedFields.apply(this);
-      },
+      action,
+      schema,
+      editedFields: () => this.getEditedFields.apply(this),
     });
   }
 
@@ -94,17 +92,17 @@ export class HoursOfOperationBuilder implements Builder<HoursOfOperation> {
   }
 
   async editedEnt(): Promise<HoursOfOperation | null> {
-    return await this.orchestrator.editedEnt();
+    return this.orchestrator.editedEnt();
   }
 
   async editedEntX(): Promise<HoursOfOperation> {
-    return await this.orchestrator.editedEntX();
+    return this.orchestrator.editedEntX();
   }
 
   private getEditedFields(): Map<string, any> {
     const fields = this.input;
 
-    let result = new Map<string, any>();
+    const result = new Map<string, any>();
 
     const addField = function (key: string, value: any) {
       if (value !== undefined) {

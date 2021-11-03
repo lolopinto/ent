@@ -17,23 +17,7 @@
   {{end -}}
 {{ end -}}
 
-{{ range $baseObj.TSInterfaces -}}
-  {{ range .Extends}}
-    {{ if $baseObj.ForeignImport . -}}
-      {{$ignored := useImport . -}}
-    {{ end -}}
-  {{ end -}}
-  {{.InterfaceDecl }} {
-  {{ range .Fields -}}
-    {{$type := .Type -}}
-    {{if .UseImport -}}
-      {{$type = useImport $type -}}
-    {{end -}}
-    {{.Name}}: {{$type}};
-  {{ end -}}
-  }
-
-{{end}}
+{{ template "interfaces.tmpl" (dict "Base" $baseObj "Interfaces" $baseObj.TSInterfaces) -}}
 
 {{ range .Enums -}}
   {{ template "enum.tmpl" . -}}

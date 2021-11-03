@@ -58,12 +58,12 @@ export class EditUserActionBase implements Action<User> {
 
   async save(): Promise<User | null> {
     await this.builder.save();
-    return await this.builder.editedEnt();
+    return this.builder.editedEnt();
   }
 
   async saveX(): Promise<User> {
     await this.builder.saveX();
-    return await this.builder.editedEntX();
+    return this.builder.editedEntX();
   }
 
   static create<T extends EditUserActionBase>(
@@ -71,7 +71,7 @@ export class EditUserActionBase implements Action<User> {
     viewer: Viewer,
     user: User,
     input: UserEditInput,
-  ): EditUserActionBase {
+  ): T {
     return new this(viewer, user, input);
   }
 
@@ -81,7 +81,7 @@ export class EditUserActionBase implements Action<User> {
     id: ID,
     input: UserEditInput,
   ): Promise<User> {
-    let user = await User.loadX(viewer, id);
-    return await new this(viewer, user, input).saveX();
+    const user = await User.loadX(viewer, id);
+    return new this(viewer, user, input).saveX();
   }
 }

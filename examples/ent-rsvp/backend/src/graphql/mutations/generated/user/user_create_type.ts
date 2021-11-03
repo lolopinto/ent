@@ -66,7 +66,7 @@ export const UserCreateType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<UserCreatePayload> => {
-    let user = await CreateUserAction.create(context.getViewer(), {
+    const user = await CreateUserAction.create(context.getViewer(), {
       firstName: input.firstName,
       lastName: input.lastName,
       emailAddress: input.emailAddress,

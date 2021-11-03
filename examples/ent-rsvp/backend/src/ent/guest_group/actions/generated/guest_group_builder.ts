@@ -43,17 +43,15 @@ export class GuestGroupBuilder implements Builder<GuestGroup> {
     this.input = action.getInput();
 
     this.orchestrator = new Orchestrator({
-      viewer: viewer,
+      viewer,
       operation: this.operation,
       tableName: "guest_groups",
       key: "id",
       loaderOptions: GuestGroup.loaderOptions(),
       builder: this,
-      action: action,
-      schema: schema,
-      editedFields: () => {
-        return this.getEditedFields.apply(this);
-      },
+      action,
+      schema,
+      editedFields: () => this.getEditedFields.apply(this),
     });
   }
 
@@ -147,17 +145,17 @@ export class GuestGroupBuilder implements Builder<GuestGroup> {
   }
 
   async editedEnt(): Promise<GuestGroup | null> {
-    return await this.orchestrator.editedEnt();
+    return this.orchestrator.editedEnt();
   }
 
   async editedEntX(): Promise<GuestGroup> {
-    return await this.orchestrator.editedEntX();
+    return this.orchestrator.editedEntX();
   }
 
   private getEditedFields(): Map<string, any> {
     const fields = this.input;
 
-    let result = new Map<string, any>();
+    const result = new Map<string, any>();
 
     const addField = function (key: string, value: any) {
       if (value !== undefined) {

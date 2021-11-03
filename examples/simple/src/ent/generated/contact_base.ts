@@ -129,7 +129,7 @@ export class ContactBase {
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
-    return await contactLoader.createLoader(context).load(id);
+    return contactLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends ContactBase>(
@@ -148,8 +148,8 @@ export class ContactBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName: tableName,
-      fields: fields,
+      tableName,
+      fields,
       ent: this,
       loaderFactory: contactLoader,
     };

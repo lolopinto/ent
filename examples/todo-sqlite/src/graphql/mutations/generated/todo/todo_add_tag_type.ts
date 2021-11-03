@@ -11,7 +11,6 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { Todo } from "src/ent/";
 import TodoAddTagAction from "src/ent/todo/actions/todo_add_tag_action";
 import { TodoType } from "src/graphql/resolvers/";
@@ -64,10 +63,10 @@ export const TodoAddTagType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<TodoAddTagPayload> => {
-    let todo = await TodoAddTagAction.saveXFromID(
+    const todo = await TodoAddTagAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.todoID),
-      mustDecodeIDFromGQLID(input.tagID),
+      input.todoID,
+      input.tagID,
     );
     return { todo: todo };
   },

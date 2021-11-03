@@ -18,6 +18,7 @@ import {
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { Changeset } from "../action";
 import { StringType, TimestampType, UUIDType } from "../schema/field";
+import { JSONBType } from "../schema/json_field";
 import { BaseEntSchema, Field } from "../schema";
 import {
   User,
@@ -96,6 +97,9 @@ describe("sqlite", () => {
       new UserSchemaWithStatus(),
       new UserSchemaExtended(),
       new UserSchemaServerDefault(),
+      new UserSchemaDefaultValueOnCreate(),
+      new UserSchemaDefaultValueOnCreateJSON(),
+      new UserSchemaDefaultValueOnCreateInvalidJSON(),
       new SchemaWithProcessors(),
       new EventSchema(),
       new AddressSchemaDerivedFields(),
@@ -150,6 +154,44 @@ class UserSchemaServerDefault extends BaseEntSchema {
     StringType({ name: "account_status", serverDefault: "ACTIVE" }),
   ];
   ent = UserServerDefault;
+}
+
+class UserSchemaDefaultValueOnCreate extends BaseEntSchema {
+  fields: Field[] = [
+    StringType({ name: "FirstName" }),
+    StringType({ name: "LastName" }),
+    StringType({
+      name: "account_status",
+      defaultValueOnCreate: () => "ACTIVE",
+    }),
+  ];
+  ent = UserServerDefault;
+}
+
+class UserDefaultValueOnCreate extends User {}
+
+class UserSchemaDefaultValueOnCreateJSON extends BaseEntSchema {
+  fields: Field[] = [
+    StringType({ name: "FirstName" }),
+    StringType({ name: "LastName" }),
+    JSONBType({
+      name: "data",
+      defaultValueOnCreate: () => ({}),
+    }),
+  ];
+  ent = UserDefaultValueOnCreate;
+}
+
+class UserSchemaDefaultValueOnCreateInvalidJSON extends BaseEntSchema {
+  fields: Field[] = [
+    StringType({ name: "FirstName" }),
+    StringType({ name: "LastName" }),
+    JSONBType({
+      name: "data",
+      defaultValueOnCreate: () => {},
+    }),
+  ];
+  ent = UserDefaultValueOnCreate;
 }
 
 class UserWithProcessors extends User {}
@@ -305,6 +347,52 @@ function commonTests() {
     );
 
     await builder.build();
+  });
+
+  test("required field fine when default value on create exists", async () => {
+    const builder = new SimpleBuilder(
+      new LoggedOutViewer(),
+      new UserSchemaDefaultValueOnCreate(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+
+    await builder.build();
+  });
+
+  test("required field fine when default value on create json ", async () => {
+    const builder = new SimpleBuilder(
+      new LoggedOutViewer(),
+      new UserSchemaDefaultValueOnCreateJSON(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+
+    await builder.build();
+  });
+
+  test("required field when default value on create json wrong", async () => {
+    const builder = new SimpleBuilder(
+      new LoggedOutViewer(),
+      new UserSchemaDefaultValueOnCreateInvalidJSON(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+
+    try {
+      await builder.build();
+      fail("should have thrown");
+    } catch (e) {
+      expect((e as Error).message).toBe(
+        "defaultValueOnCreate() returned undefined for field data",
+      );
+    }
   });
 
   test("schema on edit", async () => {
@@ -2377,7 +2465,7 @@ function commonTests() {
       await builder3.saveX();
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toBe("required field UserID not set");
+      expect(e.message).toBe("field UserID set to null for non-nullable field");
     }
   });
 
@@ -2419,7 +2507,7 @@ function commonTests() {
       await builder3.saveX();
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toBe("required field UserID not set");
+      expect(e.message).toBe("field UserID set to null for non-nullable field");
     }
   });
 }

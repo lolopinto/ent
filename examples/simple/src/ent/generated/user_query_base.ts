@@ -531,7 +531,10 @@ export class UserToHostedEventsQueryBase extends AssocEdgeQueryBase<
   }
 }
 
-export class UserToAuthCodesQueryBase extends CustomEdgeQueryBase<AuthCode> {
+export class UserToAuthCodesQueryBase extends CustomEdgeQueryBase<
+  User,
+  AuthCode
+> {
   constructor(viewer: Viewer, src: User | ID) {
     super(viewer, {
       src: src,
@@ -550,7 +553,10 @@ export class UserToAuthCodesQueryBase extends CustomEdgeQueryBase<AuthCode> {
   }
 }
 
-export class UserToContactsQueryBase extends CustomEdgeQueryBase<Contact> {
+export class UserToContactsQueryBase extends CustomEdgeQueryBase<
+  User,
+  Contact
+> {
   constructor(viewer: Viewer, src: User | ID) {
     super(viewer, {
       src: src,

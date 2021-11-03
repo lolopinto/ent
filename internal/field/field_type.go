@@ -367,6 +367,10 @@ func (f *Field) IDField() bool {
 	return strings.HasSuffix(f.FieldName, "ID")
 }
 
+func (f *Field) IDType() bool {
+	return enttype.IsIDType(f.fieldType)
+}
+
 func (f *Field) EvolvedIDField() bool {
 	// hmm not all foreign keys are id types... since the primary key can really be anything
 	// we "special case" enums for now but need to handle this later
@@ -383,11 +387,13 @@ func (f *Field) EvolvedIDField() bool {
 }
 
 func (f *Field) QueryFromID() bool {
+	// TODO #476
 	return f.index && f.polymorphic != nil
 }
 
 // TODO probably gonna collapse into above
 func (f *Field) QueryFrom() bool {
+	// TODO #476
 	if !f.index || f.polymorphic != nil {
 		return false
 	}

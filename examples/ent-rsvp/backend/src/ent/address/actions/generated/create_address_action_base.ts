@@ -62,19 +62,19 @@ export class CreateAddressActionBase implements Action<Address> {
 
   async save(): Promise<Address | null> {
     await this.builder.save();
-    return await this.builder.editedEnt();
+    return this.builder.editedEnt();
   }
 
   async saveX(): Promise<Address> {
     await this.builder.saveX();
-    return await this.builder.editedEntX();
+    return this.builder.editedEntX();
   }
 
   static create<T extends CreateAddressActionBase>(
     this: new (viewer: Viewer, input: AddressCreateInput) => T,
     viewer: Viewer,
     input: AddressCreateInput,
-  ): CreateAddressActionBase {
+  ): T {
     return new this(viewer, input);
   }
 }

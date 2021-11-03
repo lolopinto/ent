@@ -861,7 +861,7 @@ test("comments", async () => {
   expect(ents2[0].id).toBe(user1.id);
 });
 
-test("jsonb type", async () => {
+test("jsonb types", async () => {
   const user = await CreateUserAction.create(new LoggedOutViewer(), {
     firstName: "Jane",
     lastName: "Doe",
@@ -872,11 +872,31 @@ test("jsonb type", async () => {
       finishedNux: true,
       notifTypes: [NotifType.EMAIL],
     },
+    prefsList: [
+      {
+        finishedNux: true,
+        notifTypes: [NotifType.EMAIL],
+      },
+      {
+        finishedNux: false,
+        notifTypes: [NotifType.MOBILE],
+      },
+    ],
   }).saveX();
   expect(user.prefs).toStrictEqual({
     finishedNux: true,
     notifTypes: [NotifType.EMAIL],
   });
+  expect(user.prefsList).toStrictEqual([
+    {
+      finishedNux: true,
+      notifTypes: [NotifType.EMAIL],
+    },
+    {
+      finishedNux: false,
+      notifTypes: [NotifType.MOBILE],
+    },
+  ]);
 });
 
 test("json type", async () => {

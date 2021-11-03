@@ -84,13 +84,13 @@ export class EditEventRsvpStatusActionBase implements Action<Event> {
   async save(): Promise<Event | null> {
     await this.setEdgeType();
     await this.builder.save();
-    return await this.builder.editedEnt();
+    return this.builder.editedEnt();
   }
 
   async saveX(): Promise<Event> {
     await this.setEdgeType();
     await this.builder.saveX();
-    return await this.builder.editedEntX();
+    return this.builder.editedEntX();
   }
 
   static create<T extends EditEventRsvpStatusActionBase>(
@@ -102,7 +102,7 @@ export class EditEventRsvpStatusActionBase implements Action<Event> {
     viewer: Viewer,
     event: Event,
     input: EditEventRsvpStatusInput,
-  ): EditEventRsvpStatusActionBase {
+  ): T {
     return new this(viewer, event, input);
   }
 
@@ -116,7 +116,7 @@ export class EditEventRsvpStatusActionBase implements Action<Event> {
     id: ID,
     input: EditEventRsvpStatusInput,
   ): Promise<Event> {
-    let event = await Event.loadX(viewer, id);
-    return await new this(viewer, event, input).saveX();
+    const event = await Event.loadX(viewer, id);
+    return new this(viewer, event, input).saveX();
   }
 }

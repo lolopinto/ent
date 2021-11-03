@@ -55,17 +55,15 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
     this.input = action.getInput();
 
     this.orchestrator = new {{useImport "Orchestrator"}}({
-      viewer: viewer,
+      viewer,
       operation: this.operation,
       tableName: "{{.TableName}}", 
       key: "id",
       loaderOptions: {{$node}}.loaderOptions(),
       builder: this,
-      action: action,
-      schema: {{useImport "schema"}},
-      editedFields: () => {
-        return this.getEditedFields.apply(this);
-      },
+      action,
+      {{useImport "schema"}},
+      editedFields: () => this.getEditedFields.apply(this),
     });
   }
 
@@ -189,18 +187,18 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
 
   async editedEnt(): Promise<{{$node}} | null> {
     {{/* TODO: throw if save() has not been called */ -}}
-    return await this.orchestrator.editedEnt();
+    return this.orchestrator.editedEnt();
   }
 
   async editedEntX(): Promise<{{$node}}> {
     {{/* TODO: throw if saveX() has not been called */ -}}
-    return await this.orchestrator.editedEntX();
+    return this.orchestrator.editedEntX();
   }
 
   private getEditedFields(): Map<string, any> {
     const fields = this.input;
 
-    let result = new Map<string, any>();
+    const result = new Map<string, any>();
 
     const addField = function(key: string, value: any) {
       if (value !== undefined) {

@@ -17,6 +17,7 @@ import {
   convertBool,
   convertDate,
   convertNullableJSON,
+  convertNullableJSONList,
   convertNullableList,
   loadCustomData,
   loadCustomEnts,
@@ -64,6 +65,7 @@ const fields = [
   "bio",
   "nicknames",
   "prefs",
+  "prefs_list",
   "prefs_diff",
   "days_off",
   "preferred_shift",
@@ -105,6 +107,7 @@ export class UserBase {
   readonly bio: string | null;
   readonly nicknames: string[] | null;
   readonly prefs: UserPrefs | null;
+  readonly prefsList: UserPrefs[] | null;
   readonly prefsDiff: any;
   readonly daysOff: DaysOff[] | null;
   readonly preferredShift: PreferredShift[] | null;
@@ -127,6 +130,7 @@ export class UserBase {
     this.bio = data.bio;
     this.nicknames = convertNullableList(data.nicknames);
     this.prefs = convertNullableJSON(data.prefs);
+    this.prefsList = convertNullableJSONList(data.prefs_list);
     this.prefsDiff = convertNullableJSON(data.prefs_diff);
     this.daysOff = convertNullableList(data.days_off);
     this.preferredShift = convertNullableList(data.preferred_shift);
@@ -199,7 +203,7 @@ export class UserBase {
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
-    return await userLoader.createLoader(context).load(id);
+    return userLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends UserBase>(
@@ -252,9 +256,7 @@ export class UserBase {
     emailAddress: string,
     context?: Context,
   ): Promise<Data | null> {
-    return await userEmailAddressLoader
-      .createLoader(context)
-      .load(emailAddress);
+    return userEmailAddressLoader.createLoader(context).load(emailAddress);
   }
 
   static async loadFromPhoneNumber<T extends UserBase>(
@@ -295,15 +297,15 @@ export class UserBase {
     phoneNumber: string,
     context?: Context,
   ): Promise<Data | null> {
-    return await userPhoneNumberLoader.createLoader(context).load(phoneNumber);
+    return userPhoneNumberLoader.createLoader(context).load(phoneNumber);
   }
 
   static loaderOptions<T extends UserBase>(
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName: tableName,
-      fields: fields,
+      tableName,
+      fields,
       ent: this,
       loaderFactory: userLoader,
     };

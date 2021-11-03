@@ -11,7 +11,7 @@ import {
   registerResolver,
   resolveID,
 } from "@snowtop/ent/graphql";
-import { NodeType } from "src/ent";
+import { NodeType } from "src/ent/";
 import { loadEntByType } from "src/ent/generated/loadAny";
 
 interface NodeQueryArgs {
@@ -21,7 +21,6 @@ interface NodeQueryArgs {
 const resolver = new EntNodeResolver((v, nodeType, id) =>
   loadEntByType(v, nodeType as NodeType, id),
 );
-
 registerResolver("entNode", resolver);
 // add any custom Node Resolvers here
 

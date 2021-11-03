@@ -69,12 +69,12 @@ export class EditAddressActionBase implements Action<Address> {
 
   async save(): Promise<Address | null> {
     await this.builder.save();
-    return await this.builder.editedEnt();
+    return this.builder.editedEnt();
   }
 
   async saveX(): Promise<Address> {
     await this.builder.saveX();
-    return await this.builder.editedEntX();
+    return this.builder.editedEntX();
   }
 
   static create<T extends EditAddressActionBase>(
@@ -82,7 +82,7 @@ export class EditAddressActionBase implements Action<Address> {
     viewer: Viewer,
     address: Address,
     input: AddressEditInput,
-  ): EditAddressActionBase {
+  ): T {
     return new this(viewer, address, input);
   }
 
@@ -92,7 +92,7 @@ export class EditAddressActionBase implements Action<Address> {
     id: ID,
     input: AddressEditInput,
   ): Promise<Address> {
-    let address = await Address.loadX(viewer, id);
-    return await new this(viewer, address, input).saveX();
+    const address = await Address.loadX(viewer, id);
+    return new this(viewer, address, input).saveX();
   }
 }

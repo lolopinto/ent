@@ -56,19 +56,19 @@ export class CreateTagActionBase implements Action<Tag> {
 
   async save(): Promise<Tag | null> {
     await this.builder.save();
-    return await this.builder.editedEnt();
+    return this.builder.editedEnt();
   }
 
   async saveX(): Promise<Tag> {
     await this.builder.saveX();
-    return await this.builder.editedEntX();
+    return this.builder.editedEntX();
   }
 
   static create<T extends CreateTagActionBase>(
     this: new (viewer: Viewer, input: TagCreateInput) => T,
     viewer: Viewer,
     input: TagCreateInput,
-  ): CreateTagActionBase {
+  ): T {
     return new this(viewer, input);
   }
 }

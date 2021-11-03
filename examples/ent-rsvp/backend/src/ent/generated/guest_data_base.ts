@@ -116,7 +116,7 @@ export class GuestDataBase {
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
-    return await guestDataLoader.createLoader(context).load(id);
+    return guestDataLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends GuestDataBase>(
@@ -135,8 +135,8 @@ export class GuestDataBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName: tableName,
-      fields: fields,
+      tableName,
+      fields,
       ent: this,
       loaderFactory: guestDataLoader,
     };

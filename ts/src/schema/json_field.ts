@@ -1,5 +1,5 @@
 import { FieldOptions, Type, Field, DBType, ImportType } from "./schema";
-import { BaseField } from "./field";
+import { BaseField, ListField } from "./field";
 
 export interface JSONOptions extends FieldOptions {
   validator?: (val: any) => boolean;
@@ -43,4 +43,12 @@ export function JSONType(options: JSONOptions): JSONField {
 export function JSONBType(options: JSONOptions): JSONField {
   let result = new JSONField(true, options);
   return Object.assign(result, options);
+}
+
+export function JSONBListType(options: JSONOptions) {
+  return new ListField(JSONBType(options), options);
+}
+
+export function JSONListType(options: JSONOptions) {
+  return new ListField(JSONType(options), options);
 }

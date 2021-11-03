@@ -57,19 +57,19 @@ export class EventActivityRemoveInviteActionBase
 
   async save(): Promise<EventActivity | null> {
     await this.builder.save();
-    return await this.builder.editedEnt();
+    return this.builder.editedEnt();
   }
 
   async saveX(): Promise<EventActivity> {
     await this.builder.saveX();
-    return await this.builder.editedEntX();
+    return this.builder.editedEntX();
   }
 
   static create<T extends EventActivityRemoveInviteActionBase>(
     this: new (viewer: Viewer, eventActivity: EventActivity) => T,
     viewer: Viewer,
     eventActivity: EventActivity,
-  ): EventActivityRemoveInviteActionBase {
+  ): T {
     return new this(viewer, eventActivity);
   }
 
@@ -79,7 +79,7 @@ export class EventActivityRemoveInviteActionBase
     id: ID,
     inviteID: ID,
   ): Promise<EventActivity> {
-    let eventActivity = await EventActivity.loadX(viewer, id);
-    return await new this(viewer, eventActivity).removeInvite(inviteID).saveX();
+    const eventActivity = await EventActivity.loadX(viewer, id);
+    return new this(viewer, eventActivity).removeInvite(inviteID).saveX();
   }
 }

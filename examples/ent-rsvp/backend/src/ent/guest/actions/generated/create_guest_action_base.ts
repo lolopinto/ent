@@ -59,19 +59,19 @@ export class CreateGuestActionBase implements Action<Guest> {
 
   async save(): Promise<Guest | null> {
     await this.builder.save();
-    return await this.builder.editedEnt();
+    return this.builder.editedEnt();
   }
 
   async saveX(): Promise<Guest> {
     await this.builder.saveX();
-    return await this.builder.editedEntX();
+    return this.builder.editedEntX();
   }
 
   static create<T extends CreateGuestActionBase>(
     this: new (viewer: Viewer, input: GuestCreateInput) => T,
     viewer: Viewer,
     input: GuestCreateInput,
-  ): CreateGuestActionBase {
+  ): T {
     return new this(viewer, input);
   }
 }

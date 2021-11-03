@@ -58,19 +58,19 @@ export class CreateContactActionBase implements Action<Contact> {
 
   async save(): Promise<Contact | null> {
     await this.builder.save();
-    return await this.builder.editedEnt();
+    return this.builder.editedEnt();
   }
 
   async saveX(): Promise<Contact> {
     await this.builder.saveX();
-    return await this.builder.editedEntX();
+    return this.builder.editedEntX();
   }
 
   static create<T extends CreateContactActionBase>(
     this: new (viewer: Viewer, input: ContactCreateInput) => T,
     viewer: Viewer,
     input: ContactCreateInput,
-  ): CreateContactActionBase {
+  ): T {
     return new this(viewer, input);
   }
 }

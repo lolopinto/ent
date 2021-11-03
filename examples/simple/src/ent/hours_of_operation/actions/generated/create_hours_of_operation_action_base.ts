@@ -61,19 +61,19 @@ export class CreateHoursOfOperationActionBase
 
   async save(): Promise<HoursOfOperation | null> {
     await this.builder.save();
-    return await this.builder.editedEnt();
+    return this.builder.editedEnt();
   }
 
   async saveX(): Promise<HoursOfOperation> {
     await this.builder.saveX();
-    return await this.builder.editedEntX();
+    return this.builder.editedEntX();
   }
 
   static create<T extends CreateHoursOfOperationActionBase>(
     this: new (viewer: Viewer, input: HoursOfOperationCreateInput) => T,
     viewer: Viewer,
     input: HoursOfOperationCreateInput,
-  ): CreateHoursOfOperationActionBase {
+  ): T {
     return new this(viewer, input);
   }
 }

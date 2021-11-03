@@ -1788,6 +1788,20 @@ func (t *jSONType) GetImportType() Import {
 	return &JSONImport{}
 }
 
+func (t *jSONType) convertListWithItem() FileImport {
+	return FileImport{
+		Type:       "convertJSONList",
+		ImportType: Package,
+	}
+}
+
+func (t *jSONType) convertNullableListWithItem() FileImport {
+	return FileImport{
+		Type:       "convertNullableJSONList",
+		ImportType: Package,
+	}
+}
+
 type JSONType struct {
 	ImportType *InputImportType
 	jSONType
@@ -2162,5 +2176,11 @@ func GetEnumType(t Type) (EnumeratedType, bool) {
 func IsListType(t Type) bool {
 	_, ok := t.(*ArrayListType)
 	_, ok2 := t.(*NullableArrayListType)
+	return ok || ok2
+}
+
+func IsIDType(t Type) bool {
+	_, ok := t.(*IDType)
+	_, ok2 := t.(*NullableIDType)
 	return ok || ok2
 }

@@ -61,7 +61,7 @@ export class DeleteUserActionBase implements Action<User> {
     this: new (viewer: Viewer, user: User) => T,
     viewer: Viewer,
     user: User,
-  ): DeleteUserActionBase {
+  ): T {
     return new this(viewer, user);
   }
 
@@ -70,7 +70,7 @@ export class DeleteUserActionBase implements Action<User> {
     viewer: Viewer,
     id: ID,
   ): Promise<void> {
-    let user = await User.loadX(viewer, id);
-    return await new this(viewer, user).saveX();
+    const user = await User.loadX(viewer, id);
+    return new this(viewer, user).saveX();
   }
 }

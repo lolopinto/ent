@@ -36,6 +36,7 @@ export interface UserInput {
   bio?: string | null;
   nicknames?: string[] | null;
   prefs?: UserPrefs | null;
+  prefsList?: UserPrefs[] | null;
   prefsDiff?: any;
   daysOff?: DaysOff[] | null;
   preferredShift?: PreferredShift[] | null;
@@ -69,17 +70,15 @@ export class UserBuilder implements Builder<User> {
     this.input = action.getInput();
 
     this.orchestrator = new Orchestrator({
-      viewer: viewer,
+      viewer,
       operation: this.operation,
       tableName: "users",
       key: "id",
       loaderOptions: User.loaderOptions(),
       builder: this,
-      action: action,
-      schema: schema,
-      editedFields: () => {
-        return this.getEditedFields.apply(this);
-      },
+      action,
+      schema,
+      editedFields: () => this.getEditedFields.apply(this),
     });
   }
 
@@ -577,17 +576,17 @@ export class UserBuilder implements Builder<User> {
   }
 
   async editedEnt(): Promise<User | null> {
-    return await this.orchestrator.editedEnt();
+    return this.orchestrator.editedEnt();
   }
 
   async editedEntX(): Promise<User> {
-    return await this.orchestrator.editedEntX();
+    return this.orchestrator.editedEntX();
   }
 
   private getEditedFields(): Map<string, any> {
     const fields = this.input;
 
-    let result = new Map<string, any>();
+    const result = new Map<string, any>();
 
     const addField = function (key: string, value: any) {
       if (value !== undefined) {
@@ -604,6 +603,7 @@ export class UserBuilder implements Builder<User> {
     addField("Bio", fields.bio);
     addField("nicknames", fields.nicknames);
     addField("prefs", fields.prefs);
+    addField("prefsList", fields.prefsList);
     addField("prefs_diff", fields.prefsDiff);
     addField("daysOff", fields.daysOff);
     addField("preferredShift", fields.preferredShift);
@@ -666,6 +666,11 @@ export class UserBuilder implements Builder<User> {
   // get value of prefs. Retrieves it from the input if specified or takes it from existingEnt
   getNewPrefsValue(): UserPrefs | null | undefined {
     return this.input.prefs || this.existingEnt?.prefs;
+  }
+
+  // get value of prefsList. Retrieves it from the input if specified or takes it from existingEnt
+  getNewPrefsListValue(): UserPrefs[] | null | undefined {
+    return this.input.prefsList || this.existingEnt?.prefsList;
   }
 
   // get value of prefs_diff. Retrieves it from the input if specified or takes it from existingEnt

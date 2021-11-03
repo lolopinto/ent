@@ -12,7 +12,6 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { Todo } from "src/ent/";
 import ChangeTodoStatusAction, {
   ChangeTodoStatusInput,
@@ -69,9 +68,9 @@ export const TodoChangeStatusType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<TodoChangeStatusPayload> => {
-    let todo = await ChangeTodoStatusAction.saveXFromID(
+    const todo = await ChangeTodoStatusAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.todoID),
+      input.todoID,
       {
         completed: input.completed,
       },

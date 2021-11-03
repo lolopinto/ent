@@ -709,6 +709,138 @@ func TestArrayListType(t *testing.T) {
 			},
 			nil,
 		},
+		"jsonb list": {
+			&enttype.ArrayListType{
+				ElemType: &enttype.JSONBType{},
+			},
+			expType{
+				db:         "postgresql.ARRAY(postgresql.JSONB)",
+				graphql:    "[JSON!]!",
+				tsListType: true,
+				graphqlImports: []enttype.FileImport{
+					{
+						Type:       "GraphQLNonNull",
+						ImportType: enttype.GraphQL,
+					},
+					{
+						Type:       "GraphQLList",
+						ImportType: enttype.GraphQL,
+					},
+					{
+						Type:       "GraphQLNonNull",
+						ImportType: enttype.GraphQL,
+					},
+					{
+						Type:       "GraphQLJSON",
+						ImportType: enttype.GraphQLJSON,
+					},
+				},
+				tsType: "any[]",
+				nullableType: &enttype.NullableArrayListType{
+					ElemType: &enttype.JSONBType{},
+				},
+				goTypePanics: true,
+				convertFn:    "convertJSONList",
+			},
+			nil,
+		},
+		"json list": {
+			&enttype.ArrayListType{
+				ElemType: &enttype.JSONType{},
+			},
+			expType{
+				db:         "postgresql.ARRAY(postgresql.JSON)",
+				graphql:    "[JSON!]!",
+				tsListType: true,
+				graphqlImports: []enttype.FileImport{
+					{
+						Type:       "GraphQLNonNull",
+						ImportType: enttype.GraphQL,
+					},
+					{
+						Type:       "GraphQLList",
+						ImportType: enttype.GraphQL,
+					},
+					{
+						Type:       "GraphQLNonNull",
+						ImportType: enttype.GraphQL,
+					},
+					{
+						Type:       "GraphQLJSON",
+						ImportType: enttype.GraphQLJSON,
+					},
+				},
+				tsType: "any[]",
+				nullableType: &enttype.NullableArrayListType{
+					ElemType: &enttype.JSONType{},
+				},
+				goTypePanics: true,
+				convertFn:    "convertJSONList",
+			},
+			nil,
+		},
+		"nullable jsonb list": {
+			&enttype.NullableArrayListType{
+				ElemType: &enttype.JSONBType{},
+			},
+			expType{
+				db:         "postgresql.ARRAY(postgresql.JSONB)",
+				graphql:    "[JSON!]",
+				tsListType: true,
+				graphqlImports: []enttype.FileImport{
+					{
+						Type:       "GraphQLList",
+						ImportType: enttype.GraphQL,
+					},
+					{
+						Type:       "GraphQLNonNull",
+						ImportType: enttype.GraphQL,
+					},
+					{
+						Type:       "GraphQLJSON",
+						ImportType: enttype.GraphQLJSON,
+					},
+				},
+				tsType: "any[] | null",
+				nonNullableType: &enttype.ArrayListType{
+					ElemType: &enttype.JSONBType{},
+				},
+				goTypePanics: true,
+				convertFn:    "convertNullableJSONList",
+			},
+			nil,
+		},
+		"nullable json list": {
+			&enttype.NullableArrayListType{
+				ElemType: &enttype.JSONType{},
+			},
+			expType{
+				db:         "postgresql.ARRAY(postgresql.JSON)",
+				graphql:    "[JSON!]",
+				tsListType: true,
+				graphqlImports: []enttype.FileImport{
+					{
+						Type:       "GraphQLList",
+						ImportType: enttype.GraphQL,
+					},
+					{
+						Type:       "GraphQLNonNull",
+						ImportType: enttype.GraphQL,
+					},
+					{
+						Type:       "GraphQLJSON",
+						ImportType: enttype.GraphQLJSON,
+					},
+				},
+				tsType: "any[] | null",
+				nonNullableType: &enttype.ArrayListType{
+					ElemType: &enttype.JSONType{},
+				},
+				goTypePanics: true,
+				convertFn:    "convertNullableJSONList",
+			},
+			nil,
+		},
 	})
 }
 

@@ -11,7 +11,6 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { Account } from "src/ent/";
 import DeleteAccountAction from "src/ent/account/actions/delete_account_action";
 
@@ -59,10 +58,7 @@ export const AccountDeleteType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<AccountDeletePayload> => {
-    await DeleteAccountAction.saveXFromID(
-      context.getViewer(),
-      mustDecodeIDFromGQLID(input.accountID),
-    );
+    await DeleteAccountAction.saveXFromID(context.getViewer(), input.accountID);
     return { deletedAccountID: input.accountID };
   },
 };

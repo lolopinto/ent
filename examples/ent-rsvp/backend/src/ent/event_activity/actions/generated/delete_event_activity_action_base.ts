@@ -61,7 +61,7 @@ export class DeleteEventActivityActionBase implements Action<EventActivity> {
     this: new (viewer: Viewer, eventActivity: EventActivity) => T,
     viewer: Viewer,
     eventActivity: EventActivity,
-  ): DeleteEventActivityActionBase {
+  ): T {
     return new this(viewer, eventActivity);
   }
 
@@ -70,7 +70,7 @@ export class DeleteEventActivityActionBase implements Action<EventActivity> {
     viewer: Viewer,
     id: ID,
   ): Promise<void> {
-    let eventActivity = await EventActivity.loadX(viewer, id);
-    return await new this(viewer, eventActivity).saveX();
+    const eventActivity = await EventActivity.loadX(viewer, id);
+    return new this(viewer, eventActivity).saveX();
   }
 }

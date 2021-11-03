@@ -58,12 +58,12 @@ export class EditAccountActionBase implements Action<Account> {
 
   async save(): Promise<Account | null> {
     await this.builder.save();
-    return await this.builder.editedEnt();
+    return this.builder.editedEnt();
   }
 
   async saveX(): Promise<Account> {
     await this.builder.saveX();
-    return await this.builder.editedEntX();
+    return this.builder.editedEntX();
   }
 
   static create<T extends EditAccountActionBase>(
@@ -71,7 +71,7 @@ export class EditAccountActionBase implements Action<Account> {
     viewer: Viewer,
     account: Account,
     input: AccountEditInput,
-  ): EditAccountActionBase {
+  ): T {
     return new this(viewer, account, input);
   }
 
@@ -81,7 +81,7 @@ export class EditAccountActionBase implements Action<Account> {
     id: ID,
     input: AccountEditInput,
   ): Promise<Account> {
-    let account = await Account.loadX(viewer, id);
-    return await new this(viewer, account, input).saveX();
+    const account = await Account.loadX(viewer, id);
+    return new this(viewer, account, input).saveX();
   }
 }

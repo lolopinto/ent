@@ -57,12 +57,12 @@ export class RenameTodoStatusActionBase implements Action<Todo> {
 
   async save(): Promise<Todo | null> {
     await this.builder.save();
-    return await this.builder.editedEnt();
+    return this.builder.editedEnt();
   }
 
   async saveX(): Promise<Todo> {
     await this.builder.saveX();
-    return await this.builder.editedEntX();
+    return this.builder.editedEntX();
   }
 
   static create<T extends RenameTodoStatusActionBase>(
@@ -70,7 +70,7 @@ export class RenameTodoStatusActionBase implements Action<Todo> {
     viewer: Viewer,
     todo: Todo,
     input: RenameTodoInput,
-  ): RenameTodoStatusActionBase {
+  ): T {
     return new this(viewer, todo, input);
   }
 
@@ -80,7 +80,7 @@ export class RenameTodoStatusActionBase implements Action<Todo> {
     id: ID,
     input: RenameTodoInput,
   ): Promise<Todo> {
-    let todo = await Todo.loadX(viewer, id);
-    return await new this(viewer, todo, input).saveX();
+    const todo = await Todo.loadX(viewer, id);
+    return new this(viewer, todo, input).saveX();
   }
 }

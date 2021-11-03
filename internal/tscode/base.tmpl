@@ -138,7 +138,7 @@ export class {{$baseClass}} {
     id: ID,
     context?: {{useImport "Context"}},
   ): Promise<{{$dataType}} | null> {
-    return await {{$loaderName}}.createLoader(context).load(id);
+    return {{$loaderName}}.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends {{$baseClass}}>(
@@ -201,7 +201,7 @@ export class {{$baseClass}} {
         {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
         context?: {{useImport "Context"}},
       ): Promise<{{$dataType}} | null> {
-        return await {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName}});
+        return {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName}});
       }
     {{ else if $field.QueryFromID -}}
       {{$queryName := useImport ($this.GetFieldQueryName $field) -}}
@@ -221,8 +221,8 @@ export class {{$baseClass}} {
     this: new (viewer: {{$viewerType}}, data: Data) => T,
   ): {{useImport "LoadEntOptions"}}<T> {
     return {
-      tableName: tableName,
-      fields: fields,
+      tableName,
+      fields,
       ent: this,
       loaderFactory: {{$loaderName}},
     };

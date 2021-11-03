@@ -117,7 +117,7 @@ export class UserBase {
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
-    return await userLoader.createLoader(context).load(id);
+    return userLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends UserBase>(
@@ -170,17 +170,15 @@ export class UserBase {
     emailAddress: string,
     context?: Context,
   ): Promise<Data | null> {
-    return await userEmailAddressLoader
-      .createLoader(context)
-      .load(emailAddress);
+    return userEmailAddressLoader.createLoader(context).load(emailAddress);
   }
 
   static loaderOptions<T extends UserBase>(
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName: tableName,
-      fields: fields,
+      tableName,
+      fields,
       ent: this,
       loaderFactory: userLoader,
     };

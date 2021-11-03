@@ -76,7 +76,7 @@ export const GuestCreateType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<GuestCreatePayload> => {
-    let guest = await CreateGuestAction.create(context.getViewer(), {
+    const guest = await CreateGuestAction.create(context.getViewer(), {
       name: input.name,
       eventID: mustDecodeIDFromGQLID(input.eventID),
       emailAddress: input.emailAddress,

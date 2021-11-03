@@ -63,6 +63,9 @@ export const UserCreateInputType = new GraphQLInputObjectType({
     funUuids: {
       type: GraphQLList(GraphQLNonNull(GraphQLID)),
     },
+    prefsList: {
+      type: GraphQLList(GraphQLNonNull(GraphQLJSON)),
+    },
   }),
 });
 
@@ -93,7 +96,7 @@ export const UserCreateType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<UserCreatePayload> => {
-    let user = await CreateUserAction.create(context.getViewer(), {
+    const user = await CreateUserAction.create(context.getViewer(), {
       firstName: input.firstName,
       lastName: input.lastName,
       emailAddress: input.emailAddress,
@@ -105,6 +108,7 @@ export const UserCreateType: GraphQLFieldConfig<
       daysOff: input.daysOff,
       preferredShift: input.preferredShift,
       funUuids: input.funUuids,
+      prefsList: input.prefsList,
     }).saveX();
     return { user: user };
   },

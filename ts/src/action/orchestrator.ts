@@ -498,6 +498,11 @@ export class Orchestrator<T extends Ent> {
           }
           if (field.defaultValueOnCreate) {
             value = field.defaultValueOnCreate(builder, input);
+            if (value === undefined) {
+              throw new Error(
+                `defaultValueOnCreate() returned undefined for field ${field.name}`,
+              );
+            }
           }
         }
 
@@ -597,7 +602,7 @@ export class Orchestrator<T extends Ent> {
     if (!action || !action.viewerForEntLoad) {
       return this.options.viewer;
     }
-    return await action.viewerForEntLoad(data);
+    return action.viewerForEntLoad(data);
   }
 
   async returnedRow(): Promise<Data | null> {
@@ -613,11 +618,7 @@ export class Orchestrator<T extends Ent> {
       return null;
     }
     const viewer = await this.viewerForEntLoad(row);
-    return await applyPrivacyPolicyForRow(
-      viewer,
-      this.options.loaderOptions,
-      row,
-    );
+    return applyPrivacyPolicyForRow(viewer, this.options.loaderOptions, row);
   }
 
   async editedEntX(): Promise<T> {

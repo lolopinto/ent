@@ -55,19 +55,19 @@ export class TodoRemoveTagActionBase implements Action<Todo> {
 
   async save(): Promise<Todo | null> {
     await this.builder.save();
-    return await this.builder.editedEnt();
+    return this.builder.editedEnt();
   }
 
   async saveX(): Promise<Todo> {
     await this.builder.saveX();
-    return await this.builder.editedEntX();
+    return this.builder.editedEntX();
   }
 
   static create<T extends TodoRemoveTagActionBase>(
     this: new (viewer: Viewer, todo: Todo) => T,
     viewer: Viewer,
     todo: Todo,
-  ): TodoRemoveTagActionBase {
+  ): T {
     return new this(viewer, todo);
   }
 
@@ -77,7 +77,7 @@ export class TodoRemoveTagActionBase implements Action<Todo> {
     id: ID,
     tagID: ID,
   ): Promise<Todo> {
-    let todo = await Todo.loadX(viewer, id);
-    return await new this(viewer, todo).removeTag(tagID).saveX();
+    const todo = await Todo.loadX(viewer, id);
+    return new this(viewer, todo).removeTag(tagID).saveX();
   }
 }

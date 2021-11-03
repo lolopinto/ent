@@ -66,7 +66,7 @@ export const GuestGroupEditType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<GuestGroupEditPayload> => {
-    let guestGroup = await EditGuestGroupAction.saveXFromID(
+    const guestGroup = await EditGuestGroupAction.saveXFromID(
       context.getViewer(),
       mustDecodeIDFromGQLID(input.guestGroupID),
       {

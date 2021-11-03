@@ -45,6 +45,14 @@ interface CodegenConfig {
   // For files that are generated only once e.g. (src/ent/user.ts), if they exist on disk before this is provided,
   // they are not changed
   generatedHeader?: string;
+
+  // disable base64encoding of id fields
+  // when set to true, id fields aren't resolved with nodeIDEncoder and the actual uuid or integer is sent to the client
+  disableBase64Encoding?: boolean;
+
+  // generateRootResolvers for each type exposed to GraphQL instead of node(). Should be used in combination with
+  // disableBase64Encoding
+  generateRootResolvers?: boolean;
 }
 
 interface PrettierConfig {

@@ -61,7 +61,7 @@ export class DeleteTodoActionBase implements Action<Todo> {
     this: new (viewer: Viewer, todo: Todo) => T,
     viewer: Viewer,
     todo: Todo,
-  ): DeleteTodoActionBase {
+  ): T {
     return new this(viewer, todo);
   }
 
@@ -70,7 +70,7 @@ export class DeleteTodoActionBase implements Action<Todo> {
     viewer: Viewer,
     id: ID,
   ): Promise<void> {
-    let todo = await Todo.loadX(viewer, id);
-    return await new this(viewer, todo).saveX();
+    const todo = await Todo.loadX(viewer, id);
+    return new this(viewer, todo).saveX();
   }
 }

@@ -122,7 +122,7 @@ export class AuthCodeBase {
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
-    return await authCodeLoader.createLoader(context).load(id);
+    return authCodeLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends AuthCodeBase>(
@@ -141,8 +141,8 @@ export class AuthCodeBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName: tableName,
-      fields: fields,
+      tableName,
+      fields,
       ent: this,
       loaderFactory: authCodeLoader,
     };
