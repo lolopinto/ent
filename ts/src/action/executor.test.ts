@@ -179,7 +179,7 @@ class UserSchema extends BaseEntSchema {
 }
 
 class Account implements Ent {
-  id: ID;
+  id: ID<Account>;
   accountID: string = "";
   nodeType = "Account";
   privacyPolicy = AlwaysAllowPrivacyPolicy;

@@ -61,7 +61,7 @@ describe("sqlite", () => {
 });
 
 class User implements Ent {
-  id: ID;
+  id: ID<User>;
   accountID: string;
   nodeType = "User";
   privacyPolicy: PrivacyPolicy = {

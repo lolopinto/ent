@@ -31,7 +31,7 @@ import {
 } from "./node_resolver";
 import { IDViewer } from "../core/viewer";
 import { RequestContext } from "../core/context";
-import { SimpleBuilder } from "../testutils/builder";
+import { SimpleBuilder, User } from "../testutils/builder";
 import { WriteOperation } from "../action";
 import {
   GraphQLObjectType,
@@ -163,7 +163,7 @@ class SearchResultResolver implements NodeResolver {
       },
     });
 
-    const user = await FakeUser.load(viewer, parts[2]);
+    const user = await FakeUser.load(viewer, parts[2] as ID<FakeUser>);
     if (!user) {
       return null;
     }
@@ -315,7 +315,7 @@ function commonTests() {
       fields: {
         user: {
           type: GraphQLNonNull(userType),
-          resolve: (_source, {}, context: RequestContext) => {
+          resolve: (_source, {}, context: RequestContext<Viewer<FakeUser>>) => {
             const v = context.getViewer();
             if (!v.viewerID) {
               // will throw. we claim non-null
@@ -356,7 +356,7 @@ function commonTests() {
 
     const user = await createTestUser();
 
-    let cfg: queryRootConfig = {
+    let cfg: queryRootConfig<Viewer<FakeUser>> = {
       schema: schema,
       root: "viewer",
       viewer: new IDViewer(user.id),
@@ -366,7 +366,7 @@ function commonTests() {
     const expectedID = resolver.encode(user);
     await expectQueryFromRoot(cfg, ["user.id", expectedID]);
 
-    let cfg2: queryRootConfig = {
+    let cfg2: queryRootConfig<Viewer<FakeUser>> = {
       schema: schema,
       root: "node",
       viewer: new IDViewer(user.id),

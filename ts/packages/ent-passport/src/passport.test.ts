@@ -10,6 +10,7 @@ import {
   loadRow,
   query,
   Ent,
+  Context,
 } from "@snowtop/ent";
 import {
   expectQueryFromRoot,
@@ -60,7 +61,7 @@ let userType = new GraphQLObjectType({
 });
 
 class UserClass implements Ent {
-  id: ID;
+  id: ID<UserClass>;
   nodeType = "User";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
   firstName: string;
@@ -96,8 +97,8 @@ let viewerType = new GraphQLObjectType({
   fields: {
     user: {
       type: userType,
-      async resolve(_source, args, context) {
-        const v = context.getViewer() as IDViewer;
+      async resolve(_source, args, context: Context<IDViewer>) {
+        const v = context.getViewer();
 
         return await v.viewer();
       },

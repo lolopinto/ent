@@ -23,7 +23,6 @@ import {
   SelectDataOptions,
   CreateRowOptions,
   QueryDataOptions,
-  EntConstructor,
 } from "./base";
 
 import { applyPrivacyPolicy, applyPrivacyPolicyX } from "./privacy";
@@ -99,7 +98,7 @@ function createDataLoader(options: SelectDataOptions) {
 // Ent accessors
 export async function loadEnt<T extends Ent>(
   viewer: Viewer,
-  id: ID,
+  id: T["id"],
   options: LoadEntOptions<T>,
 ): Promise<T | null> {
   const row = await options.loaderFactory.createLoader(viewer.context).load(id);
@@ -121,7 +120,7 @@ export async function loadEntViaKey<T extends Ent>(
 
 export async function loadEntX<T extends Ent>(
   viewer: Viewer,
-  id: ID,
+  id: T["id"],
   options: LoadEntOptions<T>,
 ): Promise<T> {
   const row = await options.loaderFactory.createLoader(viewer.context).load(id);
@@ -1001,7 +1000,7 @@ export class EdgeOperation implements DataOperation {
   static removeInboundEdge<T extends Ent>(
     builder: Builder<T>,
     edgeType: string,
-    id1: ID,
+    id1: T["id"],
   ): EdgeOperation {
     if (!builder.existingEnt) {
       throw new Error("cannot remove an edge from a non-existing ent");
@@ -1283,16 +1282,26 @@ export class DeleteNodeOperation implements DataOperation {
   }
 }
 
-export class AssocEdge {
-  id1: ID;
+export interface AssocData<T extends ID = ID, T2 extends ID = ID> {
+  id1: T;
+  id1_type: string;
+  edge_type: string;
+  id2: T2;
+  id2_type: string;
+  time: Date;
+  data?: string | null;
+}
+
+export class AssocEdge<T extends ID = ID, T2 extends ID = ID> {
+  id1: T;
   id1Type: string;
   edgeType: string;
-  id2: ID;
+  id2: T2;
   id2Type: string;
   time: Date;
   data?: string | null;
 
-  constructor(data: Data) {
+  constructor(data: AssocData<T, T2>) {
     this.id1 = data.id1;
     this.id1Type = data.id1_type;
     this.id2 = data.id2;
@@ -1315,6 +1324,9 @@ export class AssocEdge {
     });
   }
 }
+
+export type AssocDataOf<TAssocEdge extends AssocEdge> =
+  TAssocEdge extends AssocEdge<infer T, infer T2> ? AssocData<T, T2> : never;
 
 interface cursorOptions {
   row: Data;
@@ -1429,7 +1441,7 @@ const edgeFields = [
 ];
 
 export interface AssocEdgeConstructor<T extends AssocEdge> {
-  new (row: Data): T;
+  new (row: AssocDataOf<T>): T;
 }
 
 interface loadEdgesOptions {
@@ -1486,7 +1498,7 @@ export async function loadCustomEdges<T extends AssocEdge>(
     context,
   });
   return rows.map((row) => {
-    return new options.ctr(row);
+    return new options.ctr(row as AssocDataOf<T>);
   });
 }
 
@@ -1508,7 +1520,7 @@ export async function loadUniqueEdge(
   if (!row) {
     return null;
   }
-  return new AssocEdge(row);
+  return new AssocEdge(row as AssocData);
 }
 
 export async function loadUniqueNode<T extends Ent>(

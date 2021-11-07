@@ -268,9 +268,9 @@ function expectQueryResult(
 
 export type Option = [string, any];
 
-interface queryConfig {
+interface queryConfig<T extends Viewer = Viewer> {
   // if neither viewer nor init is passed, we end with a logged out viewer
-  viewer?: Viewer;
+  viewer?: T;
   // to init express e.g. session, passport initialize etc
   init?: (app: Express) => void;
   test?:
@@ -290,7 +290,8 @@ interface queryConfig {
   customHandlers?: RequestHandler[];
 }
 
-export interface queryRootConfig extends queryConfig {
+export interface queryRootConfig<T extends Viewer = Viewer>
+  extends queryConfig<T> {
   root: string;
   rootQueryNull?: boolean;
   nullQueryPaths?: string[];

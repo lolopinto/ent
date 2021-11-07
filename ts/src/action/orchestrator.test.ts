@@ -252,7 +252,7 @@ class ContactSchema2 extends BaseEntSchema {
 }
 
 class CustomUser implements Ent {
-  id: ID;
+  id: ID<CustomUser>;
   accountID: string = "";
   nodeType = "User";
   privacyPolicy: PrivacyPolicy = {
@@ -2277,7 +2277,7 @@ function commonTests() {
         ["City", "Washington DC"],
         ["State", "DC"],
         ["ZipCode", "20500"],
-        ["OwnerID", user.id],
+        ["OwnerID", user.id.toString()],
         ["OwnerType", user.nodeType],
       ]),
     );

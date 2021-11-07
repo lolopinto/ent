@@ -273,7 +273,7 @@ test("timestamptz", async () => {
 });
 
 class Hours implements Ent {
-  id: ID;
+  id: ID<Hours>;
   accountID: string;
   nodeType = "Hours";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
@@ -426,7 +426,7 @@ describe("timetz", () => {
 });
 
 class Holiday implements Ent {
-  id: ID;
+  id: ID<Holiday>;
   accountID: string;
   nodeType = "Holiday";
   privacyPolicy = AlwaysAllowPrivacyPolicy;

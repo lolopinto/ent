@@ -679,7 +679,7 @@ export function assocTests() {
       expect(ids.length).toBe(this.expCount);
 
       const expIDs = this.users
-        .map((user) => user.id)
+        .map((user): ID => user.id)
         .concat(this.events.map((event) => event.id))
         .reverse();
 

@@ -1,6 +1,6 @@
 import { ID, Ent, Viewer, Context } from "./base";
 
-export class LoggedOutViewer implements Viewer {
+export class LoggedOutViewer implements Viewer<never> {
   constructor(public context?: Context) {}
   viewerID = null;
   async viewer() {
@@ -11,20 +11,20 @@ export class LoggedOutViewer implements Viewer {
   }
 }
 
-export interface IDViewerOptions {
-  viewerID: ID;
+export interface IDViewerOptions<T extends Ent = Ent> {
+  viewerID: T["id"];
   context?: Context;
-  ent?: Ent | null;
+  ent?: T | null;
 }
 
-export class IDViewer implements Viewer {
-  public viewerID: ID;
-  private ent: Ent | null = null;
+export class IDViewer<T extends Ent = Ent> implements Viewer<T> {
+  public viewerID: T["id"];
+  private ent: T | null = null;
   public context?: Context;
 
-  constructor(viewerID: ID, opts?: Partial<IDViewerOptions>);
-  constructor(opts: IDViewerOptions);
-  constructor(args: IDViewerOptions | ID, opts?: IDViewerOptions) {
+  constructor(viewerID: T["id"], opts?: Partial<IDViewerOptions<T>>);
+  constructor(opts: IDViewerOptions<T>);
+  constructor(args: IDViewerOptions<T> | T["id"], opts?: IDViewerOptions<T>) {
     if (typeof args === "object") {
       this.viewerID = args.viewerID;
       opts = args;

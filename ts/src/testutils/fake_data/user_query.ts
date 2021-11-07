@@ -1,6 +1,6 @@
 import { Ent, ID, Viewer } from "../../core/base";
 import { CustomEdgeQueryBase } from "../../core/query/custom_query";
-import { AssocEdge } from "../../core/ent";
+import { AssocData, AssocEdge } from "../../core/ent";
 import * as clause from "../../core/clause";
 import {
   AssocEdgeQueryBase,
@@ -26,7 +26,7 @@ import { clear } from "jest-date-mock";
 import { Interval } from "luxon";
 import { QueryLoaderFactory } from "../../core/loaders/query_loader";
 import { MockDate } from "./../mock_date";
-import { getLoaderOptions } from ".";
+import { getLoaderOptions, NodeType } from ".";
 import { AllowIfViewerPrivacyPolicy } from "../../core/privacy";
 
 export class UserToContactsQuery extends AssocEdgeQueryBase<
@@ -127,7 +127,7 @@ export class UserToFriendsQuery extends AssocEdgeQueryBase<
 }
 
 // example with custom method
-export class CustomEdge extends AssocEdge {
+export class CustomEdge<T extends ID> extends AssocEdge<T, ID<FakeUser>> {
   async loadUser(viewer: Viewer) {
     return await FakeUser.load(viewer, this.id2);
   }
@@ -136,14 +136,14 @@ export class CustomEdge extends AssocEdge {
 export class UserToCustomEdgeQuery extends AssocEdgeQueryBase<
   FakeUser,
   FakeUser,
-  CustomEdge
+  CustomEdge<ID<FakeUser>>
 > {
   constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser>) {
     super(
       viewer,
       src,
       new AssocEdgeCountLoaderFactory(EdgeType.UserToCustomEdge),
-      new AssocEdgeLoaderFactory(EdgeType.UserToCustomEdge, CustomEdge),
+      new AssocEdgeLoaderFactory(EdgeType.UserToCustomEdge, () => CustomEdge),
       FakeUser.loaderOptions(),
     );
   }
@@ -237,7 +237,7 @@ export class UserToIncomingFriendRequestsQuery extends AssocEdgeQueryBase<
     return AllowIfViewerPrivacyPolicy;
   }
 
-  entForPrivacy(id: ID) {
+  entForPrivacy(id: ID<FakeUser>) {
     return FakeUser.load(this.viewer, id);
   }
 
@@ -408,14 +408,14 @@ export class UserToEventsInNextWeekQuery extends CustomEdgeQueryBase<
   getPrivacyPolicy() {
     return AllowIfViewerPrivacyPolicy;
   }
-  async entForPrivacy(id: ID) {
+  async entForPrivacy(id: ID<FakeUser>) {
     return FakeUser.load(this.viewer, id);
   }
 }
 
 export class UserToFollowingQuery extends AssocEdgeQueryBase<
   FakeUser,
-  Ent,
+  FakeUser,
   AssocEdge
 > {
   constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser>) {

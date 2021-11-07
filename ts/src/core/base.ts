@@ -63,8 +63,8 @@ interface queryOptions {
   orderby?: string;
 }
 
-export interface Context {
-  getViewer(): Viewer;
+export interface Context<T extends Viewer = Viewer> {
+  getViewer(): T;
   // optional per (request)contet
   // absence means we are not doing any caching
   // presence means we have loader, ent cache etc
@@ -73,9 +73,9 @@ export interface Context {
   cache?: cache;
 }
 
-export interface Viewer {
-  viewerID: ID | null;
-  viewer: () => Promise<Ent | null>;
+export interface Viewer<T extends Ent = Ent> {
+  viewerID: T["id"] | null;
+  viewer: () => Promise<T | null>;
   instanceKey: () => string;
   //  isOmniscient?(): boolean; // optional function to indicate a viewer that can see anything e.g. admin
   // TODO determine if we want this here.
@@ -104,7 +104,14 @@ export interface EntConstructor<T extends Ent> {
   new (viewer: Viewer, data: Data): T;
 }
 
-export type ID = string | number;
+type Brand<T, TBrand> = [TBrand] extends [never] // don't apply any brand if `never` is the brand type
+  ? T
+  : T & { __brand__: TBrand };
+
+export type ID<
+  TBrand = never,
+  TBase extends string | number = string | number,
+> = Brand<TBase, TBrand>;
 
 export interface DataOptions {
   // TODO pool or client later since we should get it from there

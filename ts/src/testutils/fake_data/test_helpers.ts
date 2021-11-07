@@ -1,7 +1,7 @@
 import { fail } from "assert";
 import { advanceBy, advanceTo } from "jest-date-mock";
 import { IDViewer, LoggedOutViewer } from "../../core/viewer";
-import { Data, Ent } from "../../core/base";
+import { Ent, Data } from "../../core/base";
 import { AssocEdge, loadEdgeData } from "../../core/ent";
 import { snakeCase } from "snake-case";
 import { createRowForTest } from "../write";

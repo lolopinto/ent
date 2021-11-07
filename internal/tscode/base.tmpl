@@ -75,7 +75,7 @@ export class {{$baseClass}} {
   static async load<T extends {{$baseClass}}>(
     this: {{$thisType}},
     viewer: {{$viewerType}}, 
-    id: {{$idType}},
+    id: T["id"],
   ): Promise<T | null>{
     return await {{useImport "loadEnt"}}(
       viewer, 
@@ -87,7 +87,7 @@ export class {{$baseClass}} {
   static async loadX<T extends {{$baseClass}}>(
     this: {{$thisType}},
     viewer: {{$viewerType}}, 
-    id: {{$idType}},
+    id: T["id"],
   ): Promise<T> {
     return await {{useImport "loadEntX"}}(
       viewer, 
@@ -100,7 +100,7 @@ export class {{$baseClass}} {
   static async loadMany<T extends {{$baseClass}}>(
     this: {{$thisType}},
     viewer: {{$viewerType}},
-    ...ids: {{$idType}}[]
+    ...ids: T["id"][]
   ): Promise<T[]> {
     return await {{useImport "loadEnts"}}(
       viewer, 
@@ -135,7 +135,7 @@ export class {{$baseClass}} {
 
   static async loadRawData<T extends {{$baseClass}}>(
     this: {{$thisType}},
-    id: ID,
+    id: T["id"],
     context?: {{useImport "Context"}},
   ): Promise<{{$dataType}} | null> {
     return {{$loaderName}}.createLoader(context).load(id);
@@ -143,7 +143,7 @@ export class {{$baseClass}} {
 
   static async loadRawDataX<T extends {{$baseClass}}>(
     this: {{$thisType}},
-    id: ID,
+    id: T["id"],
     context?: {{useImport "Context"}},
   ): Promise<{{$dataType}}> {
     const row = await {{$loaderName}}.createLoader(context).load(id);

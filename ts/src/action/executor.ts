@@ -20,7 +20,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
   private lastOp: DataOperation | undefined;
   private createdEnt: T | null = null;
 
-  resolveValue(val: ID): Ent | null {
+  resolveValue(val: T["id"]): T | null {
     if (val === this.placeholderID && val !== undefined) {
       return this.createdEnt;
     }

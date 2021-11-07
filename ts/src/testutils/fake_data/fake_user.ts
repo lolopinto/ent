@@ -38,7 +38,7 @@ export class ViewerWithAccessToken extends IDViewer {
 }
 
 export class FakeUser implements Ent {
-  readonly id: ID;
+  readonly id: ID<FakeUser>;
   readonly data: Data;
   readonly nodeType = NodeType.FakeUser;
   readonly createdAt: Date;
@@ -121,11 +121,11 @@ export class FakeUser implements Ent {
       loaderFactory: userLoader,
     };
   }
-  static async load(v: Viewer, id: ID): Promise<FakeUser | null> {
+  static async load(v: Viewer, id: ID<FakeUser>): Promise<FakeUser | null> {
     return loadEnt(v, id, FakeUser.loaderOptions());
   }
 
-  static async loadX(v: Viewer, id: ID): Promise<FakeUser> {
+  static async loadX(v: Viewer, id: ID<FakeUser>): Promise<FakeUser> {
     return loadEntX(v, id, FakeUser.loaderOptions());
   }
 }

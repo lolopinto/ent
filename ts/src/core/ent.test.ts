@@ -112,7 +112,7 @@ beforeEach(async () => {
 const loggedOutViewer = new LoggedOutViewer();
 
 class DerivedUser implements Ent {
-  id: ID;
+  id: ID<DerivedUser>;
   accountID: string;
   nodeType = "User";
   privacyPolicy: PrivacyPolicy = {
@@ -275,18 +275,18 @@ function commonTests() {
     const ctx = new TestContext();
 
     test("loadEnt. no data. no context", async () => {
-      const ent = await loadEnt(noCtxV, "1", options);
+      const ent = await loadEnt(noCtxV, "1" as ID<User>, options);
       expect(ent).toBeNull();
     });
 
     test("loadEnt. no data. with context", async () => {
-      const ent = await loadEnt(ctx.getViewer(), "1", options);
+      const ent = await loadEnt(ctx.getViewer(), "1" as ID<User>, options);
       expect(ent).toBeNull();
     });
 
     test("loadEntX. no data. no context", async () => {
       try {
-        await loadEntX(noCtxV, "1", options);
+        await loadEntX(noCtxV, "1" as ID<User>, options);
         fail("should have thrown");
       } catch (e) {
         expect(e.message).toMatch(/couldn't find row for value/);
@@ -295,7 +295,7 @@ function commonTests() {
 
     test("loadEntX. no data. with context", async () => {
       try {
-        await loadEntX(ctx.getViewer(), "1", options);
+        await loadEntX(ctx.getViewer(), "1" as ID<User>, options);
         fail("should have thrown");
       } catch (e) {
         expect(e.message).toMatch(/couldn't find row for value 1/);
@@ -329,7 +329,7 @@ function commonTests() {
     });
 
     class User2 implements Ent {
-      id: ID;
+      id: ID<User2>;
       accountID: string;
       nodeType = "User2";
       privacyPolicy = {

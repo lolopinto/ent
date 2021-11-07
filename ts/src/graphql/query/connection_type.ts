@@ -12,7 +12,7 @@ import { GraphQLEdge, GraphQLEdgeConnection } from "./edge_connection";
 import { GraphQLPageInfo } from "./page_info";
 import { GraphQLEdgeInterface } from "../builtins/edge";
 import { GraphQLConnectionInterface } from "../builtins/connection";
-import { Data, Ent } from "../../core/base";
+import { Ent, Data } from "../../core/base";
 
 type nodeType = GraphQLObjectType | GraphQLInterfaceType;
 export class GraphQLEdgeType<

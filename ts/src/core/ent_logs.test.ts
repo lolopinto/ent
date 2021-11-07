@@ -23,6 +23,7 @@ import { MockLogs } from "../testutils/mock_log";
 import { ObjectLoaderFactory } from "./loaders";
 import {
   EditRowOptions,
+  ID,
   LoadEntOptions,
   LoadRowOptions,
   LoadRowsOptions,
@@ -489,7 +490,7 @@ function commonTests() {
         ent: User,
         context: ctx,
       };
-      await loadEnt(ctx.getViewer(), 1, options);
+      await loadEnt(ctx.getViewer(), 1 as ID<User>, options);
 
       // regular row fetch. hit db
       expect(ml.logs.length).toEqual(1);
@@ -506,7 +507,7 @@ function commonTests() {
 
       ml.clear();
       // fetch again
-      await loadEnt(ctx.getViewer(), 1, options);
+      await loadEnt(ctx.getViewer(), 1 as ID<User>, options);
 
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
@@ -581,7 +582,7 @@ function commonTests() {
     // this was interfering with above batch so we're breaking it out
     test("log disabled", async () => {
       clearLogLevels();
-      await loadEnt(ctx.getViewer(), 1, {
+      await loadEnt(ctx.getViewer(), 1 as ID<User>, {
         fields,
         tableName,
         loaderFactory: new ObjectLoaderFactory({
@@ -616,7 +617,7 @@ function commonTests() {
 
     test("log disabled", async () => {
       clearLogLevels();
-      await loadEnt(v, 1, {
+      await loadEnt(v, 1 as ID<User>, {
         fields,
         tableName,
         loaderFactory: new ObjectLoaderFactory({
@@ -641,7 +642,7 @@ function commonTests() {
           key: "id",
         }),
       };
-      await loadEnt(v, 1, options);
+      await loadEnt(v, 1 as ID<User>, options);
 
       // regular row fetch. hit db
       expect(ml.logs.length).toEqual(1);
@@ -656,7 +657,7 @@ function commonTests() {
       });
 
       // fetch again
-      await loadEnt(v, 1, options);
+      await loadEnt(v, 1 as ID<User>, options);
 
       expect(ml.logs.length).toEqual(2);
       // no context. hit db

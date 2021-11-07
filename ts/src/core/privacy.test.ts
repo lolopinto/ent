@@ -35,7 +35,7 @@ afterEach(() => {
 const loggedOutViewer = new LoggedOutViewer();
 
 class User implements Ent {
-  id: ID;
+  id: ID<User>;
   accountID: string;
   privacyPolicy: PrivacyPolicy;
   nodeType = "User";
@@ -45,9 +45,9 @@ class User implements Ent {
   }
 }
 
-const getUser = function(
+const getUser = function (
   v: Viewer,
-  id: string,
+  id: ID<User>,
   privacyPolicy: PrivacyPolicy,
   accountID: string = "2",
 ): User {
@@ -63,13 +63,13 @@ describe("alwaysAllowRule", () => {
   };
 
   test("AlwaysAllowRule", async () => {
-    const user = getUser(loggedOutViewer, "1", policy);
+    const user = getUser(loggedOutViewer, "1" as ID<User>, policy);
     const bool = await applyPrivacyPolicy(user.viewer, policy, user);
     expect(bool).toBe(true);
   });
 
   test("id viewer", async () => {
-    const user = getUser(new IDViewer("1"), "1", policy);
+    const user = getUser(new IDViewer("1"), "1" as ID<User>, policy);
     const bool = await applyPrivacyPolicy(user.viewer, policy, user);
     expect(bool).toBe(true);
   });
@@ -81,13 +81,13 @@ describe("AlwaysDenyRule", () => {
   };
 
   test("loggedOutViewer", async () => {
-    const user = getUser(loggedOutViewer, "1", policy);
+    const user = getUser(loggedOutViewer, "1" as ID<User>, policy);
     const bool = await applyPrivacyPolicy(user.viewer, policy, user);
     expect(bool).toBe(false);
   });
 
   test("id viewer", async () => {
-    const user = getUser(new IDViewer("1"), "1", policy);
+    const user = getUser(new IDViewer("1"), "1" as ID<User>, policy);
     const bool = await applyPrivacyPolicy(user.viewer, policy, user);
     expect(bool).toBe(false);
   });
@@ -102,25 +102,25 @@ describe("DenyIfLoggedOutRule", () => {
   };
 
   test("loggedOutViewer invalid rule", async () => {
-    const user = getUser(loggedOutViewer, "1", policy);
+    const user = getUser(loggedOutViewer, "1" as ID<User>, policy);
     const bool = await applyPrivacyPolicy(user.viewer, policy, user);
     expect(bool).toBe(false);
   });
 
   test("loggedOutViewer", async () => {
-    const user = getUser(loggedOutViewer, "1", policy2);
+    const user = getUser(loggedOutViewer, "1" as ID<User>, policy2);
     const bool = await applyPrivacyPolicy(user.viewer, policy2, user);
     expect(bool).toBe(false);
   });
 
   test("id viewer invalid rule", async () => {
-    const user = getUser(new IDViewer("1"), "1", policy);
+    const user = getUser(new IDViewer("1"), "1" as ID<User>, policy);
     const bool = await applyPrivacyPolicy(user.viewer, policy, user);
     expect(bool).toBe(false);
   });
 
   test("id viewer", async () => {
-    const user = getUser(new IDViewer("1"), "1", policy2);
+    const user = getUser(new IDViewer("1"), "1" as ID<User>, policy2);
     const bool = await applyPrivacyPolicy(user.viewer, policy2, user);
     expect(bool).toBe(true);
   });
@@ -135,31 +135,31 @@ describe("AllowIfViewerRule", () => {
   };
 
   test("loggedOutViewer invalid rule", async () => {
-    const user = getUser(loggedOutViewer, "1", policy);
+    const user = getUser(loggedOutViewer, "1" as ID<User>, policy);
     const bool = await applyPrivacyPolicy(user.viewer, policy, user);
     expect(bool).toBe(false);
   });
 
   test("loggedOutViewer", async () => {
-    const user = getUser(loggedOutViewer, "1", policy2);
+    const user = getUser(loggedOutViewer, "1" as ID<User>, policy2);
     const bool = await applyPrivacyPolicy(user.viewer, policy2, user);
     expect(bool).toBe(false);
   });
 
   test("id viewer invalid rule", async () => {
-    const user = getUser(new IDViewer("1"), "1", policy);
+    const user = getUser(new IDViewer("1"), "1" as ID<User>, policy);
     const bool = await applyPrivacyPolicy(user.viewer, policy, user);
     expect(bool).toBe(true);
   });
 
   test("id viewer", async () => {
-    const user = getUser(new IDViewer("1"), "1", policy2);
+    const user = getUser(new IDViewer("1"), "1" as ID<User>, policy2);
     const bool = await applyPrivacyPolicy(user.viewer, policy2, user);
     expect(bool).toBe(true);
   });
 
   test("different viewer", async () => {
-    const user = getUser(new IDViewer("2"), "1", policy2);
+    const user = getUser(new IDViewer("2"), "1" as ID<User>, policy2);
     const bool = await applyPrivacyPolicy(user.viewer, policy2, user);
     expect(bool).toBe(false);
   });
@@ -177,31 +177,31 @@ describe("AllowIfFuncRule", () => {
   };
 
   test("loggedOutViewer invalid rule", async () => {
-    const user = getUser(loggedOutViewer, "1", policy);
+    const user = getUser(loggedOutViewer, "1" as ID<User>, policy);
     const bool = await applyPrivacyPolicy(user.viewer, policy, user);
     expect(bool).toBe(false);
   });
 
   test("loggedOutViewer", async () => {
-    const user = getUser(loggedOutViewer, "1", policy2);
+    const user = getUser(loggedOutViewer, "1" as ID<User>, policy2);
     const bool = await applyPrivacyPolicy(user.viewer, policy2, user);
     expect(bool).toBe(false);
   });
 
   test("id viewer invalid rule", async () => {
-    const user = getUser(new IDViewer("1"), "1", policy);
+    const user = getUser(new IDViewer("1"), "1" as ID<User>, policy);
     const bool = await applyPrivacyPolicy(user.viewer, policy, user);
     expect(bool).toBe(true);
   });
 
   test("id viewer", async () => {
-    const user = getUser(new IDViewer("1"), "1", policy2);
+    const user = getUser(new IDViewer("1"), "1" as ID<User>, policy2);
     const bool = await applyPrivacyPolicy(user.viewer, policy2, user);
     expect(bool).toBe(true);
   });
 
   test("different viewer", async () => {
-    const user = getUser(new IDViewer("2"), "1", policy2);
+    const user = getUser(new IDViewer("2"), "1" as ID<User>, policy2);
     const bool = await applyPrivacyPolicy(user.viewer, policy2, user);
     expect(bool).toBe(false);
   });
@@ -216,31 +216,31 @@ describe("AllowIfViewerIsRule", () => {
   };
 
   test("loggedOutViewer invalid rule", async () => {
-    const user = getUser(loggedOutViewer, "1", policy);
+    const user = getUser(loggedOutViewer, "1" as ID<User>, policy);
     const bool = await applyPrivacyPolicy(user.viewer, policy, user);
     expect(bool).toBe(false);
   });
 
   test("loggedOutViewer", async () => {
-    const user = getUser(loggedOutViewer, "1", policy2);
+    const user = getUser(loggedOutViewer, "1" as ID<User>, policy2);
     const bool = await applyPrivacyPolicy(user.viewer, policy2, user);
     expect(bool).toBe(false);
   });
 
   test("id viewer does not match account invalid rule", async () => {
-    const user = getUser(new IDViewer("1"), "1", policy);
+    const user = getUser(new IDViewer("1"), "1" as ID<User>, policy);
     const bool = await applyPrivacyPolicy(user.viewer, policy, user);
     expect(bool).toBe(false);
   });
 
   test("id viewer does not match account", async () => {
-    const user = getUser(new IDViewer("1"), "1", policy2);
+    const user = getUser(new IDViewer("1"), "1" as ID<User>, policy2);
     const bool = await applyPrivacyPolicy(user.viewer, policy2, user);
     expect(bool).toBe(false);
   });
 
   test("viewer matches account id", async () => {
-    const user = getUser(new IDViewer("2"), "1", policy2);
+    const user = getUser(new IDViewer("2"), "1" as ID<User>, policy2);
     const bool = await applyPrivacyPolicy(user.viewer, policy2, user);
     expect(bool).toBe(true);
   });
@@ -252,7 +252,7 @@ describe("applyPrivacyPolicyX", () => {
   };
 
   test("privacy not allowed", async () => {
-    const user = getUser(loggedOutViewer, "1", policy);
+    const user = getUser(loggedOutViewer, "1" as ID<User>, policy);
     try {
       await applyPrivacyPolicyX(user.viewer, policy, user);
       fail("should not get here");
@@ -264,7 +264,7 @@ describe("applyPrivacyPolicyX", () => {
   });
 
   test("privacy yay!", async () => {
-    const user = getUser(new IDViewer("1"), "1", policy);
+    const user = getUser(new IDViewer("1"), "1" as ID<User>, policy);
     try {
       const bool = await applyPrivacyPolicyX(user.viewer, policy, user);
       expect(bool).toBe(true);
@@ -278,7 +278,7 @@ async function createUser() {
   await createRowForTest({
     tableName: DefinedUser.loaderOptions().tableName,
     fields: {
-      id: "1",
+      id: "1" as ID<User>,
       name: "name",
     },
   });
@@ -307,7 +307,7 @@ describe("AllowIfEntIsVisibleRule", () => {
     await createUser();
   });
   const policy = new AllowIfEntIsVisiblePolicy(
-    "1",
+    "1" as ID<User>,
     DefinedUser.loaderOptions(),
   );
 
@@ -316,7 +316,7 @@ describe("AllowIfEntIsVisibleRule", () => {
     const bool = await applyPrivacyPolicy(
       vc,
       policy,
-      new DefinedUser(vc, { id: "1" }),
+      new DefinedUser(vc, { id: "1" as ID<User> }),
     );
     expect(bool).toBe(true);
   });
@@ -326,7 +326,7 @@ describe("AllowIfEntIsVisibleRule", () => {
     const bool = await applyPrivacyPolicy(
       vc,
       policy,
-      new DefinedUser(vc, { id: "1" }),
+      new DefinedUser(vc, { id: "1" as ID<User> }),
     );
     expect(bool).toBe(false);
   });
@@ -336,14 +336,17 @@ describe("DenyIfEntIsVisibleRule", () => {
   beforeEach(async () => {
     await createUser();
   });
-  const policy = new DenyIfEntIsVisiblePolicy("1", DefinedUser.loaderOptions());
+  const policy = new DenyIfEntIsVisiblePolicy(
+    "1" as ID<User>,
+    DefinedUser.loaderOptions(),
+  );
 
   test("passes", async () => {
     const vc = new IDViewer("1");
     const bool = await applyPrivacyPolicy(
       vc,
       policy,
-      new DefinedUser(vc, { id: "1" }),
+      new DefinedUser(vc, { id: "1" as ID<User> }),
     );
     expect(bool).toBe(false);
   });
@@ -353,7 +356,7 @@ describe("DenyIfEntIsVisibleRule", () => {
     const bool = await applyPrivacyPolicy(
       vc,
       policy,
-      new DefinedUser(vc, { id: "1" }),
+      new DefinedUser(vc, { id: "1" as ID<User> }),
     );
     expect(bool).toBe(true);
   });
@@ -381,7 +384,7 @@ describe("denywithReason", () => {
   };
 
   test("privacy not allowed", async () => {
-    const user = getUser(new IDViewer("1"), "1", policy);
+    const user = getUser(new IDViewer("1"), "1" as ID<User>, policy);
     try {
       await applyPrivacyPolicyX(user.viewer, policy, user);
       fail("should not get here");
@@ -391,7 +394,7 @@ describe("denywithReason", () => {
   });
 
   test("privacy allowed!", async () => {
-    const user = getUser(new IDViewer("2"), "1", policy);
+    const user = getUser(new IDViewer("2"), "1" as ID<User>, policy);
     try {
       const bool = await applyPrivacyPolicyX(user.viewer, policy, user);
       expect(bool).toBe(true);

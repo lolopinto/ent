@@ -20,7 +20,7 @@ import { ObjectLoaderFactory } from "../core/loaders";
 import { convertDate } from "../core/convert";
 
 export class User implements Ent {
-  id: ID;
+  id: ID<User>;
   accountID: string = "";
   nodeType = "User";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
@@ -33,7 +33,7 @@ export class User implements Ent {
 }
 
 export class Event implements Ent {
-  id: ID;
+  id: ID<Event>;
   accountID: string = "";
   nodeType = "Event";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
@@ -44,7 +44,7 @@ export class Event implements Ent {
 }
 
 export class Contact implements Ent {
-  id: ID;
+  id: ID<Contact>;
   accountID: string = "";
   nodeType = "Contact";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
@@ -57,9 +57,9 @@ export class Contact implements Ent {
 }
 
 export class Group implements Ent {
-  id: ID;
+  id: ID<Group>;
   accountID: string = "";
-  nodeType = "Group";
+  nodeType = "Group" as const;
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
   constructor(public viewer: Viewer, public data: Data) {
@@ -68,7 +68,7 @@ export class Group implements Ent {
 }
 
 export class Message implements Ent {
-  id: ID;
+  id: ID<Message>;
   accountID: string = "";
   nodeType = "Message";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
@@ -79,7 +79,7 @@ export class Message implements Ent {
 }
 
 export class Address implements Ent {
-  id: ID;
+  id: ID<Address>;
   accountID: string = "";
   nodeType = "Address";
   privacyPolicy = AlwaysAllowPrivacyPolicy;

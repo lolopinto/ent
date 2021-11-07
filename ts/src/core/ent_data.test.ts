@@ -37,7 +37,7 @@ const selectOptions: SelectDataOptions = {
 const loaderFactory = new ObjectLoaderFactory(selectOptions);
 
 class User implements Ent {
-  id: ID;
+  id: ID<User>;
   accountID: string;
   nodeType = "User";
   privacyPolicy: PrivacyPolicy = {
@@ -47,11 +47,11 @@ class User implements Ent {
     this.id = data["bar"];
   }
 
-  static async load(v: Viewer, id: ID): Promise<User | null> {
+  static async load(v: Viewer, id: ID<User>): Promise<User | null> {
     return ent.loadEnt(v, id, User.loaderOptions());
   }
 
-  static async loadX(v: Viewer, id: ID): Promise<User> {
+  static async loadX(v: Viewer, id: ID<User>): Promise<User> {
     return ent.loadEntX(v, id, User.loaderOptions());
   }
 
@@ -385,7 +385,7 @@ function commonTests() {
 
       const testEnt = async (vc: Viewer) => {
         return await loadTestEnt(
-          () => ent.loadEnt(vc, 1, User.loaderOptions()),
+          () => ent.loadEnt(vc, 1 as ID<User>, User.loaderOptions()),
           () => {
             const queryOption = {
               query: ent.buildQuery(options),
@@ -414,7 +414,7 @@ function commonTests() {
       const [ent1, ent2] = await testEnt(vc);
 
       // // same context, change viewer
-      const vc2 = getIDViewer(1, ctx);
+      const vc2 = getIDViewer(1 as ID<User>, ctx);
 
       // // we still reuse the same raw-data query since it's viewer agnostic
       // // context cache works as viewer is changed
@@ -442,7 +442,7 @@ function commonTests() {
       };
 
       await loadTestEnt(
-        () => ent.loadEnt(vc, 1, User.loaderOptions()),
+        () => ent.loadEnt(vc, 1 as ID<User>, User.loaderOptions()),
         () => {
           const queryOption = {
             query: ent.buildQuery(options),
@@ -472,13 +472,13 @@ function commonTests() {
     });
 
     test("parallel queries with context", async () => {
-      const vc = getIDViewer(1);
+      const vc = getIDViewer(1 as ID<User>);
 
       // 3 loadEnts at the same time
       const [ent1, ent2, ent3] = await Promise.all([
-        ent.loadEnt(vc, 1, User.loaderOptions()),
-        ent.loadEnt(vc, 2, User.loaderOptions()),
-        ent.loadEnt(vc, 3, User.loaderOptions()),
+        ent.loadEnt(vc, 1 as ID<User>, User.loaderOptions()),
+        ent.loadEnt(vc, 2 as ID<User>, User.loaderOptions()),
+        ent.loadEnt(vc, 3 as ID<User>, User.loaderOptions()),
       ]);
 
       // only 1 ent visible
@@ -503,9 +503,9 @@ function commonTests() {
       // load the data again
       // everything should still be in cache
       const [ent4, ent5, ent6] = await Promise.all([
-        ent.loadEnt(vc, 1, User.loaderOptions()),
-        ent.loadEnt(vc, 2, User.loaderOptions()),
-        ent.loadEnt(vc, 3, User.loaderOptions()),
+        ent.loadEnt(vc, 1 as ID<User>, User.loaderOptions()),
+        ent.loadEnt(vc, 2 as ID<User>, User.loaderOptions()),
+        ent.loadEnt(vc, 3 as ID<User>, User.loaderOptions()),
       ]);
 
       // only 1 ent visible (same as before)
@@ -536,13 +536,13 @@ function commonTests() {
     });
 
     test("parallel queries without context", async () => {
-      const vc = new IDViewer(1);
+      const vc = new IDViewer(1 as ID<User>);
 
       // 3 loadEnts at the same time
       const [ent1, ent2, ent3] = await Promise.all([
-        ent.loadEnt(vc, 1, User.loaderOptions()),
-        ent.loadEnt(vc, 2, User.loaderOptions()),
-        ent.loadEnt(vc, 3, User.loaderOptions()),
+        ent.loadEnt(vc, 1 as ID<User>, User.loaderOptions()),
+        ent.loadEnt(vc, 2 as ID<User>, User.loaderOptions()),
+        ent.loadEnt(vc, 3 as ID<User>, User.loaderOptions()),
       ]);
 
       // only 1 ent visible
@@ -566,9 +566,9 @@ function commonTests() {
 
       // load the data again
       const [ent4, ent5, ent6] = await Promise.all([
-        ent.loadEnt(vc, 1, User.loaderOptions()),
-        ent.loadEnt(vc, 2, User.loaderOptions()),
-        ent.loadEnt(vc, 3, User.loaderOptions()),
+        ent.loadEnt(vc, 1 as ID<User>, User.loaderOptions()),
+        ent.loadEnt(vc, 2 as ID<User>, User.loaderOptions()),
+        ent.loadEnt(vc, 3 as ID<User>, User.loaderOptions()),
       ]);
 
       // only 1 ent visible (same as before)
@@ -582,7 +582,7 @@ function commonTests() {
 
   describe("loadEntX", () => {
     test("with context", async () => {
-      const vc = getIDViewer(1);
+      const vc = getIDViewer(1 as ID<User>);
 
       const options = {
         ...User.loaderOptions(),
@@ -592,7 +592,7 @@ function commonTests() {
 
       const testEnt = async (vc: Viewer) => {
         return await loadTestEnt(
-          () => ent.loadEntX(vc, 1, User.loaderOptions()),
+          () => ent.loadEntX(vc, 1 as ID<User>, User.loaderOptions()),
           () => {
             const qOption = {
               query: ent.buildQuery(options),
@@ -622,7 +622,7 @@ function commonTests() {
     });
 
     test("without context", async () => {
-      const vc = new IDViewer(1);
+      const vc = new IDViewer(1 as ID<User>);
 
       const options = {
         ...User.loaderOptions(),
@@ -631,7 +631,7 @@ function commonTests() {
       };
 
       await loadTestEnt(
-        () => ent.loadEntX(vc, 1, User.loaderOptions()),
+        () => ent.loadEntX(vc, 1 as ID<User>, User.loaderOptions()),
         () => {
           const queryOption = {
             query: ent.buildQuery(options),
@@ -653,7 +653,7 @@ function commonTests() {
     };
 
     test("with context", async () => {
-      const vc = getIDViewer(1);
+      const vc = getIDViewer(1 as ID<User>);
 
       await loadTestEnt(
         () => ent.loadEntFromClause(vc, User.loaderOptions(), cls),
@@ -679,7 +679,7 @@ function commonTests() {
     });
 
     test("without context", async () => {
-      const vc = new IDViewer(1);
+      const vc = new IDViewer(1 as ID<User>);
 
       await loadTestEnt(
         () => ent.loadEntFromClause(vc, User.loaderOptions(), cls),
@@ -696,7 +696,7 @@ function commonTests() {
     });
 
     test("loadEntXFromClause with context", async () => {
-      const vc = getIDViewer(1);
+      const vc = getIDViewer(1 as ID<User>);
 
       await loadTestEnt(
         () => ent.loadEntXFromClause(vc, User.loaderOptions(), cls),
@@ -722,7 +722,7 @@ function commonTests() {
     });
 
     test("loadEntXFromClause without context", async () => {
-      const vc = new IDViewer(1);
+      const vc = new IDViewer(1 as ID<User>);
 
       await loadTestEnt(
         () => ent.loadEntXFromClause(vc, User.loaderOptions(), cls),
@@ -752,8 +752,14 @@ function commonTests() {
     });
 
     test("with context", async () => {
-      const vc = getIDViewer(1);
-      const ents = await ent.loadEnts(vc, User.loaderOptions(), 1, 2, 3);
+      const vc = getIDViewer(1 as ID<User>);
+      const ents = await ent.loadEnts(
+        vc,
+        User.loaderOptions(),
+        1 as ID<User>,
+        2 as ID<User>,
+        3 as ID<User>,
+      );
 
       // only loading self worked because of privacy
       expect(ents.length).toBe(1);
@@ -774,9 +780,9 @@ function commonTests() {
 
       // reload each of these in a different place
       await Promise.all([
-        ent.loadEnt(vc, 1, User.loaderOptions()),
-        ent.loadEnt(vc, 2, User.loaderOptions()),
-        ent.loadEnt(vc, 3, User.loaderOptions()),
+        ent.loadEnt(vc, 1 as ID<User>, User.loaderOptions()),
+        ent.loadEnt(vc, 2 as ID<User>, User.loaderOptions()),
+        ent.loadEnt(vc, 3 as ID<User>, User.loaderOptions()),
       ]);
 
       const cacheHits = [
@@ -797,15 +803,27 @@ function commonTests() {
       validateQueries(expQueries2);
 
       // reload all
-      await ent.loadEnts(vc, User.loaderOptions(), 1, 2, 3);
+      await ent.loadEnts(
+        vc,
+        User.loaderOptions(),
+        1 as ID<User>,
+        2 as ID<User>,
+        3 as ID<User>,
+      );
 
       // more cache hits
       validateQueries([...expQueries2, ...cacheHits]);
     });
 
     test("without context", async () => {
-      const vc = new IDViewer(1);
-      const ents = await ent.loadEnts(vc, User.loaderOptions(), 1, 2, 3);
+      const vc = new IDViewer(1 as ID<User>);
+      const ents = await ent.loadEnts(
+        vc,
+        User.loaderOptions(),
+        1 as ID<User>,
+        2 as ID<User>,
+        3 as ID<User>,
+      );
 
       // only loading self worked because of privacy
       expect(ents.length).toBe(1);
@@ -840,16 +858,22 @@ function commonTests() {
 
       // reload each of these in a different place
       await Promise.all([
-        ent.loadEnt(vc, 1, User.loaderOptions()),
-        ent.loadEnt(vc, 2, User.loaderOptions()),
-        ent.loadEnt(vc, 3, User.loaderOptions()),
+        ent.loadEnt(vc, 1 as ID<User>, User.loaderOptions()),
+        ent.loadEnt(vc, 2 as ID<User>, User.loaderOptions()),
+        ent.loadEnt(vc, 3 as ID<User>, User.loaderOptions()),
       ]);
 
       // should now have 3 more queries
       validateQueries(expQueries2);
 
       // reload all
-      await ent.loadEnts(vc, User.loaderOptions(), 1, 2, 3);
+      await ent.loadEnts(
+        vc,
+        User.loaderOptions(),
+        1 as ID<User>,
+        2 as ID<User>,
+        3 as ID<User>,
+      );
 
       const expQueries3 = expQueries2.concat(inQuery);
 
@@ -885,19 +909,19 @@ function commonTests() {
     });
 
     test("with context", async () => {
-      const vc = getIDViewer(1);
+      const vc = getIDViewer(1 as ID<User>);
 
       const ents = await ent.loadEntsFromClause(vc, cls, User.loaderOptions());
       // only loading self worked because of privacy
       expect(ents.size).toBe(1);
-      expect(ents.has(1)).toBe(true);
+      expect(ents.has(1 as ID<User>)).toBe(true);
 
       validateQueries([qOption]);
 
       const ents2 = await ent.loadEntsFromClause(vc, cls, User.loaderOptions());
       // only loading self worked because of privacy
       expect(ents2.size).toBe(1);
-      expect(ents2.has(1)).toBe(true);
+      expect(ents2.has(1 as ID<User>)).toBe(true);
 
       validateQueries([
         qOption,
@@ -909,12 +933,12 @@ function commonTests() {
     });
 
     test("without context", async () => {
-      const vc = new IDViewer(1);
+      const vc = new IDViewer(1 as ID<User>);
 
       const ents = await ent.loadEntsFromClause(vc, cls, User.loaderOptions());
       // only loading self worked because of privacy
       expect(ents.size).toBe(1);
-      expect(ents.has(1)).toBe(true);
+      expect(ents.has(1 as ID<User>)).toBe(true);
 
       const expQueries = [qOption];
 
@@ -923,7 +947,7 @@ function commonTests() {
       const ents2 = await ent.loadEntsFromClause(vc, cls, User.loaderOptions());
       // only loading self worked because of privacy
       expect(ents2.size).toBe(1);
-      expect(ents2.has(1)).toBe(true);
+      expect(ents2.has(1 as ID<User>)).toBe(true);
 
       validateQueries([qOption, qOption]);
     });
@@ -979,7 +1003,7 @@ function commonTests() {
           options2.fields = { ...options.fields, baz: "baz3" };
           options2.fieldsToLog = options2.fields;
           // we need a different row so that querying after still returns one row
-          return editRowForTest(options2, 1);
+          return editRowForTest(options2, 1 as ID<User>);
         },
         () => {
           const [query, _, logValues] = buildUpdateQuery(
@@ -989,7 +1013,7 @@ function commonTests() {
               tableName: selectOptions.tableName,
               key: "bar",
             },
-            1,
+            1 as ID<User>,
           );
           return { query, values: logValues };
         },

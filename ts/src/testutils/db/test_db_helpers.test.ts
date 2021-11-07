@@ -7,7 +7,7 @@ import { getSchemaTable } from "./test_db";
 import { Dialect } from "../../core/db";
 
 class Account implements Ent {
-  id: ID;
+  id: ID<Account>;
   accountID: string;
   nodeType = "Account";
   privacyPolicy = AlwaysAllowPrivacyPolicy;

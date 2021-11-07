@@ -16,6 +16,7 @@ import {
   loadEdgeForID2,
   buildGroupQuery,
   AssocEdgeData,
+  AssocDataOf,
 } from "../ent";
 import * as clause from "../clause";
 import { logEnabled } from "../logger";
@@ -90,7 +91,7 @@ function createLoader<T extends AssocEdge>(
           `malformed query. got ${srcID} back but didn't query for it`,
         );
       }
-      result[idx].push(new edgeCtr(row));
+      result[idx].push(new edgeCtr(row as AssocDataOf<T>));
     }
     return result;
   }, loaderOptions);

@@ -16,7 +16,7 @@ import { ObjectLoaderFactory } from "../../core/loaders";
 import { convertDate } from "../../core/convert";
 
 export class FakeContact implements Ent {
-  readonly id: ID;
+  readonly id: ID<FakeContact>;
   readonly data: Data;
   readonly nodeType = NodeType.FakeContact;
   readonly createdAt: Date;
@@ -78,11 +78,14 @@ export class FakeContact implements Ent {
       }),
     };
   }
-  static async load(v: Viewer, id: ID): Promise<FakeContact | null> {
+  static async load(
+    v: Viewer,
+    id: ID<FakeContact>,
+  ): Promise<FakeContact | null> {
     return loadEnt(v, id, FakeContact.loaderOptions());
   }
 
-  static async loadX(v: Viewer, id: ID): Promise<FakeContact> {
+  static async loadX(v: Viewer, id: ID<FakeContact>): Promise<FakeContact> {
     return loadEntX(v, id, FakeContact.loaderOptions());
   }
 }

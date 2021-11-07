@@ -22,7 +22,7 @@ import { ObjectLoaderFactory } from "../../core/loaders";
 import { convertDate, convertNullableDate } from "../../core/convert";
 
 export class FakeEvent implements Ent {
-  readonly id: ID;
+  readonly id: ID<FakeEvent>;
   readonly data: Data;
   readonly nodeType = NodeType.FakeEvent;
   readonly createdAt: Date;
@@ -91,11 +91,11 @@ export class FakeEvent implements Ent {
       }),
     };
   }
-  static async load(v: Viewer, id: ID): Promise<FakeEvent | null> {
+  static async load(v: Viewer, id: ID<FakeEvent>): Promise<FakeEvent | null> {
     return loadEnt(v, id, FakeEvent.loaderOptions());
   }
 
-  static async loadX(v: Viewer, id: ID): Promise<FakeEvent> {
+  static async loadX(v: Viewer, id: ID<FakeEvent>): Promise<FakeEvent> {
     return loadEntX(v, id, FakeEvent.loaderOptions());
   }
 }
