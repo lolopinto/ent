@@ -5,7 +5,6 @@
 
 import {
   AllowIfViewerPrivacyPolicy,
-  AssocEdge,
   Context,
   CustomQuery,
   Data,
@@ -25,7 +24,6 @@ import { Field, getFields } from "@snowtop/ent/schema";
 import {
   ContactToCommentsQuery,
   ContactToLikersQuery,
-  EdgeType,
   NodeType,
   User,
 } from "../internal";

@@ -5,7 +5,6 @@
 
 import {
   AllowIfViewerPrivacyPolicy,
-  AssocEdge,
   Context,
   CustomQuery,
   Data,
@@ -24,7 +23,7 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import { loadEntByType, loadEntXByType } from "./loadAny";
-import { CommentToPostQuery, EdgeType, NodeType } from "../internal";
+import { CommentToPostQuery, NodeType } from "../internal";
 import schema from "../../schema/comment";
 
 const tableName = "comments";
