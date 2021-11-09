@@ -1,5 +1,7 @@
+import uuid
 from alembic.autogenerate import renderers
 from alembic.autogenerate.api import AutogenContext
+from sqlalchemy.dialects import postgresql
 from . import ops
 from . import util
 import sqlalchemy as sa
@@ -38,6 +40,9 @@ def _render_edge(edge):
         if k in _IGNORED_KEYS:
             continue
 
+        # render as string so we don't deal with UUID missing
+        if isinstance(v, postgresql.UUID) or isinstance(v, uuid.UUID):
+            v = str(v)
         kv_pairs.append("'%s': %r" % (k, v))
 
     # get the rendering for an edge

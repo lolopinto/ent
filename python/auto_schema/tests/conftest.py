@@ -1,6 +1,7 @@
 import os
 import pytest
 import shutil
+import uuid
 import tempfile
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -46,6 +47,10 @@ class SQLite:
         return fn
 
 
+def postgres_dialect_from_request(request):
+    return "Postgres" in request.cls.__name__
+
+
 @pytest.fixture(scope="function")
 def new_test_runner(request):
 
@@ -60,7 +65,7 @@ def new_test_runner(request):
         # unclear if best way but use name of class to determine postgres vs sqlite and use that
         # to make sure everything works for both
         dialect = None
-        if "Postgres" in request.cls.__name__:
+        if postgres_dialect_from_request(request):
             dialect = Postgres()
         else:
             dialect = SQLite()
@@ -388,12 +393,16 @@ def metadata_with_multi_column_index(metadata_with_table):
 
 
 @ pytest.fixture
-def metadata_with_multi_column_pkey_constraint():
+def metadata_with_multi_column_pkey_constraint(request):
+    edge_type_col = sa.Integer()
+    if postgres_dialect_from_request(request):
+        edge_type_col = postgresql.UUID
+
     metadata = sa.MetaData()
     sa.Table('user_friends_edge', metadata,
              sa.Column('id1', sa.Integer(), nullable=False),
              sa.Column('id1_type', sa.Text(), nullable=False),
-             sa.Column('edge_type', sa.Integer(), nullable=False),
+             sa.Column('edge_type', edge_type_col, nullable=False),
              sa.Column('id2', sa.Integer(), nullable=False),
              sa.Column('id2_type', sa.Text(), nullable=False),
              sa.Column('time', sa.TIMESTAMP(), nullable=False),
@@ -554,8 +563,8 @@ def metadata_with_multi_column_check_constraint():
 
 
 @ pytest.fixture
-def metadata_with_foreign_key_to_same_table():
-    return metadata_assoc_edge_config()
+def metadata_with_foreign_key_to_same_table(request):
+    return _metadata_assoc_edge_config(request)
 
 
 @ pytest.fixture
@@ -572,26 +581,40 @@ def metadata_with_foreign_key(metadata_with_table):
     return metadata_with_table
 
 
-def metadata_assoc_edge_config():
+def _metadata_assoc_edge_config(request):
     metadata = sa.MetaData()
-    assoc_edge_config_table(metadata)
+    assoc_edge_config_table(metadata, request)
     return metadata
 
 
+@pytest.fixture
+def metadata_with_assoc_edge_config(request):
+    return _metadata_assoc_edge_config(request)
+
+
 @ pytest.fixture
-def metadata_with_no_edges():
-    metadata = metadata_assoc_edge_config()
+def metadata_with_no_edges(request):
+    metadata = _metadata_assoc_edge_config(request)
     metadata.info["edges"] = {}
     return metadata
 
 
+# hardcoded so that we don't create new values with each call
+# inverse edge is created each time tho because we don't need to hardcode it
+FOLLOWERS_EDGE = uuid.UUID('afff1bc5-aa09-406b-b146-687b6217239b')
+
+
 @ pytest.fixture
-def metadata_with_one_edge():
-    metadata = metadata_assoc_edge_config()
+def metadata_with_one_edge(request):
+    edge_type = 1
+    if postgres_dialect_from_request(request):
+        edge_type = FOLLOWERS_EDGE
+
+    metadata = _metadata_assoc_edge_config(request)
     # 1 edge, no inverse
     edges = {
         'public': {
-            'UserToFollowersEdge': user_to_followers_edge(),
+            'UserToFollowersEdge': user_to_followers_edge(edge_type),
         }
     }
 
@@ -600,14 +623,18 @@ def metadata_with_one_edge():
 
 
 @ pytest.fixture
-def metadata_with_symmetric_edge():
-    metadata = metadata_assoc_edge_config()
+def metadata_with_symmetric_edge(request):
+    edge_type = 10
+    if postgres_dialect_from_request(request):
+        edge_type = uuid.uuid4()
+
+    metadata = _metadata_assoc_edge_config(request)
     # 1 edge, no inverse
     edges = {
         'public': {
             'UserToFriendsEdge': {
                 'edge_name': 'UserToFriendsEdge',
-                'edge_type': 10,
+                'edge_type': edge_type,
                 'symmetric_edge': True,
                 'edge_table': 'user_friends_edge',
             }
@@ -619,13 +646,19 @@ def metadata_with_symmetric_edge():
 
 
 @ pytest.fixture
-def metadata_with_inverse_edge():
-    metadata = metadata_assoc_edge_config()
+def metadata_with_inverse_edge(request):
     # 2 edges, inverse of each other
+    followers_edge = 1
+    followees_edge = 2
+    if postgres_dialect_from_request(request):
+        followers_edge = FOLLOWERS_EDGE
+        followees_edge = uuid.uuid4()
+
+    metadata = _metadata_assoc_edge_config(request)
     edges = {
         'public': {
-            'UserToFollowersEdge': user_to_followers_edge(inverse_edge_type=2),
-            'UserToFolloweesEdge': users_to_followees_edge(inverse_edge_type=1),
+            'UserToFollowersEdge': user_to_followers_edge(followers_edge, inverse_edge_type=followees_edge),
+            'UserToFolloweesEdge': users_to_followees_edge(followees_edge, inverse_edge_type=followers_edge),
         }
     }
 
@@ -940,7 +973,7 @@ def metadata_with_new_enum_column():
     return metadata
 
 
-def user_to_followers_edge(edge_type=1, inverse_edge_type=None):
+def user_to_followers_edge(edge_type, inverse_edge_type=None):
     return {
         'edge_name': 'UserToFollowersEdge',
         'edge_type': edge_type,
@@ -950,7 +983,7 @@ def user_to_followers_edge(edge_type=1, inverse_edge_type=None):
     }
 
 
-def users_to_followees_edge(edge_type=2, inverse_edge_type=None):
+def users_to_followees_edge(edge_type, inverse_edge_type=None):
     return {
         'edge_name': 'UserToFolloweesEdge',
         'edge_type': edge_type,
@@ -985,15 +1018,19 @@ def contacts_table(metadata):
 # need an integration test of some sort
 # this doesn't quite match because i'm doing integer instead of uuid
 # todo: one postgres test with uuid
-def assoc_edge_config_table(metadata):
+def assoc_edge_config_table(metadata, request):
+    edge_type_col = sa.Integer()
+    if postgres_dialect_from_request(request):
+        edge_type_col = postgresql.UUID()
+
     sa.Table('assoc_edge_config', metadata,
-             sa.Column('edge_type', sa.Integer(), nullable=False,
+             sa.Column('edge_type', edge_type_col, nullable=False,
                        sqlite_on_conflict_primary_key='IGNORE'),
              sa.Column('edge_name', sa.Text(), nullable=False),
              # use false instead of FALSE to avoid the need for craziness here
              sa.Column('symmetric_edge', sa.Boolean(),
                        nullable=False, server_default='false'),
-             sa.Column('inverse_edge_type', sa.Integer(), nullable=True),
+             sa.Column('inverse_edge_type', edge_type_col, nullable=True),
              sa.Column('edge_table', sa.Text(), nullable=False),
              sa.Column('created_at', sa.TIMESTAMP(), nullable=False),
              sa.Column('updated_at', sa.TIMESTAMP(), nullable=False),

@@ -71,10 +71,11 @@ def validate_edges_from_metadata(metadata: sa.MetaData, r: runner.Runner):
         assert db_edge is not None
 
         assert db_edge['edge_name'] == edge['edge_name']
-        assert db_edge['edge_type'] == edge['edge_type']
+        # TO account for uuid
+        assert str(db_edge['edge_type']) == str(edge['edge_type'])
         assert db_edge['edge_table'] == edge['edge_table']
-        assert db_edge.get('inverse_edge_type') == edge.get(
-            'inverse_edge_type')
+        assert str(db_edge.get('inverse_edge_type')) == str(edge.get(
+            'inverse_edge_type'))
         # 0 == False??
         assert db_edge.get('symmetric_edge') == edge.get('symmetric_edge')
 
@@ -172,10 +173,11 @@ def recreate_metadata_fixture(new_test_runner, metadata: sa.MetaData, prev_runne
     return r
 
 
-def run_edge_metadata_script(new_test_runner, metadata: sa.MetaData, message: String, num_files=2, prev_runner=None, num_changes=1) -> runner.Runner:
+def run_edge_metadata_script(new_test_runner, metadata: sa.MetaData, message: String, metadata_with_assoc_edge_config, num_files=2, prev_runner=None, num_changes=1) -> runner.Runner:
     # TODO combine with recreate_with_new_metadata?
     if prev_runner is None:
-        prev_runner = _setup_assoc_edge_config(new_test_runner)
+        prev_runner = _setup_assoc_edge_config(
+            new_test_runner, metadata_with_assoc_edge_config)
 
     r = recreate_metadata_fixture(new_test_runner, metadata, prev_runner)
     assert len(r.compute_changes()) == num_changes
@@ -413,9 +415,9 @@ def _validate_foreign_key(schema_column: sa.Column, db_column: sa.Column):
         assert str(db_fkey.parent) == str(schema_fkey.parent)
 
 
-def _setup_assoc_edge_config(new_test_runner):
+def _setup_assoc_edge_config(new_test_runner, metadata_with_assoc_edge_config):
     # no revision, just do the changes to setup base case
-    r = new_test_runner(conftest.metadata_assoc_edge_config())
+    r = new_test_runner(metadata_with_assoc_edge_config)
     assert len(r.compute_changes()) == 1
     r.run()
     assert_num_tables(r, 2, ['alembic_version', 'assoc_edge_config'])
