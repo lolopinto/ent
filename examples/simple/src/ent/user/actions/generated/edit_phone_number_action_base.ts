@@ -17,8 +17,11 @@ export interface EditPhoneNumberInput {
   newPhoneNumber: string;
 }
 
-export class EditPhoneNumberActionBase implements Action<User> {
-  public readonly builder: UserBuilder;
+export class EditPhoneNumberActionBase
+  implements
+    Action<User, UserBuilder<EditPhoneNumberInput>, EditPhoneNumberInput>
+{
+  public readonly builder: UserBuilder<EditPhoneNumberInput>;
   public readonly viewer: Viewer;
   protected input: EditPhoneNumberInput;
   protected user: User;
@@ -39,9 +42,8 @@ export class EditPhoneNumberActionBase implements Action<User> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): UserInput {
-    // we use a type assertion to override the weak type detection here
-    return this.input as UserInput;
+  getInput(): EditPhoneNumberInput {
+    return this.input;
   }
 
   async changeset(): Promise<Changeset<User>> {

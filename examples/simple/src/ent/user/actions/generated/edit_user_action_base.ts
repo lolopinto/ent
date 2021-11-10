@@ -18,8 +18,10 @@ export interface UserEditInput {
   lastName?: string;
 }
 
-export class EditUserActionBase implements Action<User> {
-  public readonly builder: UserBuilder;
+export class EditUserActionBase
+  implements Action<User, UserBuilder<UserEditInput>, UserEditInput>
+{
+  public readonly builder: UserBuilder<UserEditInput>;
   public readonly viewer: Viewer;
   protected input: UserEditInput;
   protected user: User;
@@ -40,7 +42,7 @@ export class EditUserActionBase implements Action<User> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): UserInput {
+  getInput(): UserEditInput {
     return this.input;
   }
 

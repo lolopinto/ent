@@ -25,8 +25,11 @@ export interface ContactCreateInput {
   userID: ID | Builder<User>;
 }
 
-export class CreateContactActionBase implements Action<Contact> {
-  public readonly builder: ContactBuilder;
+export class CreateContactActionBase
+  implements
+    Action<Contact, ContactBuilder<ContactCreateInput>, ContactCreateInput>
+{
+  public readonly builder: ContactBuilder<ContactCreateInput>;
   public readonly viewer: Viewer;
   protected input: ContactCreateInput;
 
@@ -40,7 +43,7 @@ export class CreateContactActionBase implements Action<Contact> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): ContactInput {
+  getInput(): ContactCreateInput {
     return this.input;
   }
 

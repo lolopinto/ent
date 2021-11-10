@@ -18,9 +18,12 @@ export default class CreateCommentAction extends CreateCommentActionBase {
     return AlwaysAllowPrivacyPolicy;
   }
 
-  triggers: Trigger<Ent>[] = [
+  triggers: Trigger<Ent, CommentCreateInput>[] = [
     {
-      changeset(builder: CommentBuilder, input: CommentCreateInput) {
+      changeset(
+        builder: CommentBuilder<CommentCreateInput>,
+        input: CommentCreateInput,
+      ) {
         // creating the comment automatically adds the needed edges
         builder.addPostID(input.articleID, input.articleType as NodeType);
       },

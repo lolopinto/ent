@@ -26,8 +26,10 @@ export interface EventCreateInput {
   location: string;
 }
 
-export class CreateEventActionBase implements Action<Event> {
-  public readonly builder: EventBuilder;
+export class CreateEventActionBase
+  implements Action<Event, EventBuilder<EventCreateInput>, EventCreateInput>
+{
+  public readonly builder: EventBuilder<EventCreateInput>;
   public readonly viewer: Viewer;
   protected input: EventCreateInput;
 
@@ -41,7 +43,7 @@ export class CreateEventActionBase implements Action<Event> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): EventInput {
+  getInput(): EventCreateInput {
     return this.input;
   }
 

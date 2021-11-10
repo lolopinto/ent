@@ -24,7 +24,7 @@ async function findAuthCode(
 }
 
 export default class ConfirmEditEmailAddressAction extends ConfirmEditEmailAddressActionBase {
-  validators: Validator<User>[] = [
+  validators: Validator<User, ConfirmEditEmailAddressInput>[] = [
     {
       async validate(
         builder: UserBuilder,
@@ -42,7 +42,7 @@ export default class ConfirmEditEmailAddressAction extends ConfirmEditEmailAddre
     },
   ];
 
-  triggers: Trigger<Ent>[] = [
+  triggers: Trigger<Ent, ConfirmEditEmailAddressInput>[] = [
     {
       async changeset(
         builder: UserBuilder,

@@ -18,8 +18,15 @@ export interface ConfirmEditEmailAddressInput {
   code: string;
 }
 
-export class ConfirmEditEmailAddressActionBase implements Action<User> {
-  public readonly builder: UserBuilder;
+export class ConfirmEditEmailAddressActionBase
+  implements
+    Action<
+      User,
+      UserBuilder<ConfirmEditEmailAddressInput>,
+      ConfirmEditEmailAddressInput
+    >
+{
+  public readonly builder: UserBuilder<ConfirmEditEmailAddressInput>;
   public readonly viewer: Viewer;
   protected input: ConfirmEditEmailAddressInput;
   protected user: User;
@@ -40,7 +47,7 @@ export class ConfirmEditEmailAddressActionBase implements Action<User> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): UserInput {
+  getInput(): ConfirmEditEmailAddressInput {
     return this.input;
   }
 

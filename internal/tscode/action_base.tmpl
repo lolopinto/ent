@@ -105,8 +105,13 @@
   {{ $hasSaveFromID = true}}
 {{end -}}
 
-export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
-  public readonly builder: {{useImport $builderName}};
+{{ $inputData := useImport $builderInput -}}
+{{ if $hasInput -}}
+  {{ $inputData = $inputName -}}
+{{ end -}}
+
+export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useImport $builderName}}<{{$inputData}}>, {{$inputData}}> {
+  public readonly builder: {{useImport $builderName}}<{{$inputData}}>;
   public readonly viewer: {{$viewer}}
   {{ if $hasInput -}}
     protected input: {{$inputName}};
@@ -141,14 +146,9 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
     {{ end -}}
   };
 
-  getInput(): {{useImport $builderInput}} {
+  getInput(): {{$inputData}} {
     {{ if $hasInput -}}
-      {{ if hasOnlyActionOnlyFields $action}}
-        // we use a type assertion to override the weak type detection here
-        return this.input as {{useImport $builderInput}};
-      {{ else -}}
-        return this.input;
-      {{end -}}
+      return this.input;
     {{ else -}}
       return {};
     {{end -}}

@@ -29,8 +29,10 @@ export interface UserCreateInput {
   prefsList?: UserPrefs[] | null;
 }
 
-export class CreateUserActionBase implements Action<User> {
-  public readonly builder: UserBuilder;
+export class CreateUserActionBase
+  implements Action<User, UserBuilder<UserCreateInput>, UserCreateInput>
+{
+  public readonly builder: UserBuilder<UserCreateInput>;
   public readonly viewer: Viewer;
   protected input: UserCreateInput;
 
@@ -44,7 +46,7 @@ export class CreateUserActionBase implements Action<User> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): UserInput {
+  getInput(): UserCreateInput {
     return this.input;
   }
 

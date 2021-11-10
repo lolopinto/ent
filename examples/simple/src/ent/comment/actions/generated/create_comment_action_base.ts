@@ -26,8 +26,11 @@ export interface CommentCreateInput {
   articleType: string;
 }
 
-export class CreateCommentActionBase implements Action<Comment> {
-  public readonly builder: CommentBuilder;
+export class CreateCommentActionBase
+  implements
+    Action<Comment, CommentBuilder<CommentCreateInput>, CommentCreateInput>
+{
+  public readonly builder: CommentBuilder<CommentCreateInput>;
   public readonly viewer: Viewer;
   protected input: CommentCreateInput;
 
@@ -41,7 +44,7 @@ export class CreateCommentActionBase implements Action<Comment> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): CommentInput {
+  getInput(): CommentCreateInput {
     return this.input;
   }
 

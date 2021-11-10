@@ -22,26 +22,31 @@ export interface ContactInput {
   firstName?: string;
   lastName?: string;
   userID?: ID | Builder<User>;
+  // allow other properties. useful for action-only fields
+  [x: string]: any;
 }
 
-export interface ContactAction extends Action<Contact> {
-  getInput(): ContactInput;
+export interface ContactAction<TData extends ContactInput>
+  extends Action<Contact, ContactBuilder<TData>, TData> {
+  getInput(): TData;
 }
 
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class ContactBuilder implements Builder<Contact> {
-  orchestrator: Orchestrator<Contact>;
+export class ContactBuilder<TData extends ContactInput = ContactInput>
+  implements Builder<Contact>
+{
+  orchestrator: Orchestrator<Contact, TData>;
   readonly placeholderID: ID;
   readonly ent = Contact;
-  private input: ContactInput;
+  private input: TData;
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: ContactAction,
+    action: ContactAction<TData>,
     public readonly existingEnt?: Contact | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Contact`;
@@ -60,7 +65,7 @@ export class ContactBuilder implements Builder<Contact> {
     });
   }
 
-  getInput(): ContactInput {
+  getInput(): TData {
     return this.input;
   }
 
@@ -82,7 +87,9 @@ export class ContactBuilder implements Builder<Contact> {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
 
-  addComment(...nodes: (ID | Comment | Builder<Comment>)[]): ContactBuilder {
+  addComment(
+    ...nodes: (ID | Comment | Builder<Comment>)[]
+  ): ContactBuilder<TData> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addCommentID(node);
@@ -98,7 +105,7 @@ export class ContactBuilder implements Builder<Contact> {
   addCommentID(
     id: ID | Builder<Comment>,
     options?: AssocEdgeInputOptions,
-  ): ContactBuilder {
+  ): ContactBuilder<TData> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.ObjectToComments,
@@ -108,7 +115,7 @@ export class ContactBuilder implements Builder<Contact> {
     return this;
   }
 
-  removeComment(...nodes: (ID | Comment)[]): ContactBuilder {
+  removeComment(...nodes: (ID | Comment)[]): ContactBuilder<TData> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -122,7 +129,7 @@ export class ContactBuilder implements Builder<Contact> {
     return this;
   }
 
-  addLiker(...nodes: (ID | User | Builder<User>)[]): ContactBuilder {
+  addLiker(...nodes: (ID | User | Builder<User>)[]): ContactBuilder<TData> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addLikerID(node);
@@ -138,7 +145,7 @@ export class ContactBuilder implements Builder<Contact> {
   addLikerID(
     id: ID | Builder<User>,
     options?: AssocEdgeInputOptions,
-  ): ContactBuilder {
+  ): ContactBuilder<TData> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.ObjectToLikers,
@@ -148,7 +155,7 @@ export class ContactBuilder implements Builder<Contact> {
     return this;
   }
 
-  removeLiker(...nodes: (ID | User)[]): ContactBuilder {
+  removeLiker(...nodes: (ID | User)[]): ContactBuilder<TData> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.ObjectToLikers);

@@ -2,7 +2,7 @@ import { Validator } from "@snowtop/ent/action";
 import { EventBuilder, EventInput } from "./generated/event_builder";
 import { Event } from "../..";
 
-export class EventTimeValidator implements Validator<Event> {
+export class EventTimeValidator implements Validator<Event, EventInput> {
   validate(builder: EventBuilder, input: EventInput): void {
     const startTime = builder.getNewStartTimeValue();
     const endTime = builder.getNewEndTimeValue();
