@@ -60,30 +60,35 @@ export type TriggerReturn =
   | Promise<Changeset<Ent> | void | (Changeset<Ent> | void)[]>
   | Promise<Changeset<Ent>>[];
 
-export interface Trigger<T extends Ent> {
+export interface Trigger<TEnt extends Ent, TData extends Data> {
   // TODO: way in the future. detect any writes happening in changesets and optionally throw if configured to do so
   // can throw if it wants. not expected to throw tho.
-  changeset(builder: Builder<T>, input: Data): TriggerReturn;
+  changeset(builder: Builder<TEnt>, input: TData): TriggerReturn;
 }
 
-export interface Observer<T extends Ent> {
-  observe(builder: Builder<T>, input: Data): void | Promise<void>;
+export interface Observer<TEnt extends Ent, TData extends Data> {
+  observe(builder: Builder<TEnt>, input: TData): void | Promise<void>;
 }
 
-export interface Validator<T extends Ent> {
+export interface Validator<TEnt extends Ent, TData extends Data> {
   // can throw if it wants
-  validate(builder: Builder<T>, input: Data): Promise<void> | void;
+  validate(builder: Builder<TEnt>, input: TData): Promise<void> | void;
 }
 
-export interface Action<T extends Ent> {
+export interface Action<
+  TEnt extends Ent,
+  TBuilder extends Builder<TEnt>,
+  TData extends Data,
+> {
   readonly viewer: Viewer;
-  changeset(): Promise<Changeset<T>>;
-  builder: Builder<T>;
+  changeset(): Promise<Changeset<TEnt>>;
+  builder: TBuilder;
+  // TODO template ent
   getPrivacyPolicy(): PrivacyPolicy;
-  triggers?: Trigger<T>[];
-  observers?: Observer<T>[];
-  validators?: Validator<T>[];
-  getInput(): Data; // this input is passed to Triggers, Observers, Validators
+  triggers?: Trigger<TEnt, TData>[];
+  observers?: Observer<TEnt, TData>[];
+  validators?: Validator<TEnt, TData>[];
+  getInput(): TData; // this input is passed to Triggers, Observers, Validators
 
   valid(): Promise<boolean>;
   // throws if invalid

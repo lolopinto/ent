@@ -1701,7 +1701,7 @@ function commonTests() {
   });
 
   describe("validators", () => {
-    const validators: Validator<Event>[] = [
+    const validators: Validator<Event, Data>[] = [
       {
         validate: async (builder: SimpleBuilder<Event>): Promise<void> => {
           let startTime: Date = builder.fields.get("startTime");
@@ -1919,7 +1919,7 @@ function commonTests() {
         builder.fields.set("account_status", "VALID");
       },
     };
-    const triggers: Trigger<UserWithStatus>[] = [accountStatusTrigger];
+    const triggers: Trigger<UserWithStatus, Data>[] = [accountStatusTrigger];
 
     test("update builder", async () => {
       advanceTo(now);
@@ -2598,7 +2598,7 @@ async function getEdgeOpFromBuilder<T extends Ent>(
   fail(`could not find edge operation with edgeType ${edgeType}`);
 }
 
-let sendEmailObserver: Observer<User> = {
+let sendEmailObserver: Observer<User, Data> = {
   observe: (builder: SimpleBuilder<User>): void => {
     let email = builder.fields.get("EmailAddress");
     if (!email) {
@@ -2615,7 +2615,7 @@ let sendEmailObserver: Observer<User> = {
   },
 };
 
-let sendEmailObserverAsync: Observer<User> = {
+let sendEmailObserverAsync: Observer<User, Data> = {
   observe: async (builder: SimpleBuilder<User>) => {
     let email = builder.fields.get("EmailAddress");
     if (!email) {

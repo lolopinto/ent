@@ -1,4 +1,4 @@
-import { Viewer, Ent } from "../core/base";
+import { Viewer, Ent, Data } from "../core/base";
 import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
 import {
   Action,
@@ -10,9 +10,9 @@ import {
   Validator,
 } from "./action";
 
-export interface ActionOptions<T extends Ent> {
+export interface ActionOptions<T extends Ent, TData extends Data> {
   existingEnt?: T | null;
-  input?: {};
+  input?: TData;
   operation?: WriteOperation;
 }
 
@@ -25,12 +25,14 @@ interface EntBuilder<T extends Ent> extends Builder<T> {
   editedEntX(): Promise<T>;
 }
 
-export class BaseAction<T extends Ent> implements Action<T> {
-  builder: EntBuilder<T>;
-  private input: {};
-  triggers: Trigger<Ent>[] = [];
-  observers: Observer<Ent>[] = [];
-  validators: Validator<Ent>[] = [];
+export class BaseAction<TEnt extends Ent, TData extends Data>
+  implements Action<TEnt, EntBuilder<TEnt>, TData>
+{
+  builder: EntBuilder<TEnt>;
+  private input: TData;
+  triggers: Trigger<TEnt, TData>[] = [];
+  observers: Observer<TEnt, TData>[] = [];
+  validators: Validator<TEnt, TData>[] = [];
 
   getPrivacyPolicy() {
     return AlwaysAllowPrivacyPolicy;
@@ -38,8 +40,8 @@ export class BaseAction<T extends Ent> implements Action<T> {
 
   constructor(
     public viewer: Viewer,
-    public builderCtr: BuilderConstructor<T>,
-    options?: ActionOptions<T> | null,
+    public builderCtr: BuilderConstructor<TEnt>,
+    options?: ActionOptions<TEnt, TData> | null,
   ) {
     let operation = options?.operation;
     if (!operation) {
@@ -49,7 +51,7 @@ export class BaseAction<T extends Ent> implements Action<T> {
         operation = WriteOperation.Insert;
       }
     }
-    this.input = options?.input || {};
+    this.input = options?.input || ({} as TData);
     this.builder = new builderCtr(
       viewer,
       operation,
@@ -61,7 +63,7 @@ export class BaseAction<T extends Ent> implements Action<T> {
   static createBuilder<T extends Ent>(
     viewer: Viewer,
     builderCtr: BuilderConstructor<T>,
-    options?: ActionOptions<T> | null,
+    options?: ActionOptions<T, Data> | null,
   ): Builder<T> {
     let action = new BaseAction(viewer, builderCtr, options);
     return action.builder;
@@ -72,8 +74,8 @@ export class BaseAction<T extends Ent> implements Action<T> {
   static bulkAction<T extends Ent>(
     ent: T,
     builderCtr: BuilderConstructor<T>,
-    ...actions: Action<Ent>[]
-  ): BaseAction<T> {
+    ...actions: Action<T, Builder<T>, Data>[]
+  ): BaseAction<T, Data> {
     let action = new BaseAction(ent.viewer, builderCtr, {
       existingEnt: ent,
     });
@@ -99,12 +101,12 @@ export class BaseAction<T extends Ent> implements Action<T> {
     return this.builder.validX();
   }
 
-  async save(): Promise<T | null> {
+  async save(): Promise<TEnt | null> {
     await this.builder.save();
     return await this.builder.editedEnt();
   }
 
-  async saveX(): Promise<T> {
+  async saveX(): Promise<TEnt> {
     await this.builder.saveX();
     return await this.builder.editedEntX();
   }
@@ -118,7 +120,7 @@ interface BuilderConstructor<T extends Ent> {
   new (
     viewer: Viewer,
     operation: WriteOperation,
-    action: Action<T>,
+    action: Action<T, Builder<T>, Data>,
     existingEnt?: T | undefined,
   ): EntBuilder<T>;
 }

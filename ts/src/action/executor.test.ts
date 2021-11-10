@@ -46,6 +46,7 @@ import {
   setupSqlite,
   Table,
 } from "../testutils/db/test_db";
+import { Use } from "node-sql-parser";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -132,7 +133,7 @@ async function saveBuilder<T extends Ent>(builder: Builder<T>): Promise<void> {
 }
 
 async function executeAction<T extends Ent, E = any>(
-  action: Action<T>,
+  action: Action<T, Builder<T>, Data>,
   name?: E,
 ): Promise<Executor> {
   const exec = await executor(action.builder);
@@ -233,9 +234,9 @@ class MessageAction extends SimpleAction<Message> {
     super(viewer, new MessageSchema(), fields, operation, existingEnt);
   }
 
-  triggers: Trigger<Message>[] = [
+  triggers: Trigger<Ent, Data>[] = [
     {
-      changeset: (builder: SimpleBuilder<Message>, _input: Data): void => {
+      changeset: (builder: SimpleBuilder<Ent>, _input): void => {
         let sender = builder.fields.get("sender");
         let recipient = builder.fields.get("recipient");
 
@@ -249,7 +250,7 @@ class MessageAction extends SimpleAction<Message> {
     },
   ];
 
-  observers: Observer<Message>[] = [new EntCreationObserver<Message>()];
+  observers: Observer<Ent, Data>[] = [new EntCreationObserver<Message>()];
 }
 
 class UserAction extends SimpleAction<User> {
@@ -264,7 +265,7 @@ class UserAction extends SimpleAction<User> {
     super(viewer, new UserSchema(), fields, operation, existingEnt);
   }
 
-  triggers: Trigger<User>[] = [
+  triggers: Trigger<User, Data>[] = [
     {
       changeset: (
         builder: SimpleBuilder<User>,
@@ -294,7 +295,7 @@ class UserAction extends SimpleAction<User> {
     },
   ];
 
-  observers: Observer<User>[] = [new EntCreationObserver<User>()];
+  observers: Observer<User, Data>[] = [new EntCreationObserver<User>()];
 }
 
 function randomEmail(): string {
