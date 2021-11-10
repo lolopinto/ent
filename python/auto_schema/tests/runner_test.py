@@ -345,73 +345,83 @@ class BaseTestRunner(object):
         testingutils.validate_metadata_after_change(
             r, metadata_with_two_tables)
 
-    @pytest.mark.usefixtures("metadata_with_no_edges")
-    def test_no_new_edges(self, new_test_runner, metadata_with_no_edges):
+    @pytest.mark.usefixtures("metadata_with_no_edges", "metadata_with_assoc_edge_config")
+    def test_no_new_edges(self, new_test_runner, metadata_with_no_edges, metadata_with_assoc_edge_config):
         testingutils.run_edge_metadata_script(
             new_test_runner,
             metadata_with_no_edges,
-            message='',
+            '',
+            metadata_with_assoc_edge_config,
             num_files=1,  # just the first file
             num_changes=0
         )
 
-    @pytest.mark.usefixtures("metadata_with_one_edge")
-    def test_one_new_edge(self, new_test_runner, metadata_with_one_edge):
+    @pytest.mark.usefixtures("metadata_with_one_edge", "metadata_with_assoc_edge_config")
+    def test_one_new_edge(self, new_test_runner, metadata_with_one_edge, metadata_with_assoc_edge_config):
         testingutils.run_edge_metadata_script(
             new_test_runner,
             metadata_with_one_edge,
-            "add edge UserToFollowersEdge"
+            "add edge UserToFollowersEdge",
+            metadata_with_assoc_edge_config
         )
 
-    @pytest.mark.usefixtures("metadata_with_symmetric_edge")
-    def test_symmetric_edge(self, new_test_runner, metadata_with_symmetric_edge):
+    @pytest.mark.usefixtures("metadata_with_symmetric_edge", "metadata_with_assoc_edge_config")
+    def test_symmetric_edge(self, new_test_runner, metadata_with_symmetric_edge, metadata_with_assoc_edge_config):
         testingutils.run_edge_metadata_script(
             new_test_runner,
             metadata_with_symmetric_edge,
-            "add edge UserToFriendsEdge"
+            "add edge UserToFriendsEdge",
+            metadata_with_assoc_edge_config
         )
 
-    @pytest.mark.usefixtures("metadata_with_one_edge", "metadata_with_no_edges")
-    def test_new_edge_then_remove(self, new_test_runner, metadata_with_one_edge, metadata_with_no_edges):
+    @pytest.mark.usefixtures("metadata_with_one_edge", "metadata_with_no_edges", "metadata_with_assoc_edge_config")
+    def test_new_edge_then_remove(self, new_test_runner, metadata_with_one_edge, metadata_with_no_edges, metadata_with_assoc_edge_config):
         r = testingutils.run_edge_metadata_script(
             new_test_runner,
             metadata_with_one_edge,
-            "add edge UserToFollowersEdge"
+            "add edge UserToFollowersEdge",
+            metadata_with_assoc_edge_config
         )
 
         testingutils.run_edge_metadata_script(
             new_test_runner,
             metadata_with_no_edges,
             "remove edge UserToFollowersEdge",
+            metadata_with_assoc_edge_config,
             num_files=3,
             prev_runner=r
         )
 
-    @pytest.mark.usefixtures("metadata_with_inverse_edge")
-    def test_inverse_edge_added_same_time(self, new_test_runner, metadata_with_inverse_edge, metadata_with_no_edges):
+    @pytest.mark.usefixtures("metadata_with_inverse_edge", "metadata_with_assoc_edge_config")
+    def test_inverse_edge_added_same_time(self, new_test_runner, metadata_with_inverse_edge, metadata_with_no_edges, metadata_with_assoc_edge_config):
         r = testingutils.run_edge_metadata_script(
             new_test_runner,
             metadata_with_inverse_edge,
             "add edges UserToFolloweesEdge, UserToFollowersEdge",
+            metadata_with_assoc_edge_config
         )
 
         testingutils.run_edge_metadata_script(
             new_test_runner,
             metadata_with_no_edges,
             "remove edges UserToFolloweesEdge, UserToFollowersEdge",
+            metadata_with_assoc_edge_config,
             prev_runner=r,
             num_files=3,
         )
 
-    @pytest.mark.usefixtures("metadata_with_one_edge", "metadata_with_inverse_edge", "metadata_with_no_edges")
-    def test_inverse_edge_added_after(self, new_test_runner, metadata_with_one_edge, metadata_with_inverse_edge, metadata_with_no_edges):
+    @pytest.mark.usefixtures("metadata_with_one_edge", "metadata_with_inverse_edge", "metadata_with_no_edges", "metadata_with_assoc_edge_config")
+    def test_inverse_edge_added_after(self, new_test_runner, metadata_with_one_edge, metadata_with_inverse_edge, metadata_with_no_edges, metadata_with_assoc_edge_config):
         r = testingutils.run_edge_metadata_script(
             new_test_runner,
             metadata_with_one_edge,
-            "add edge UserToFollowersEdge"
+            "add edge UserToFollowersEdge",
+            metadata_with_assoc_edge_config
         )
+        # downgrade and upgrade once to confirm the downgrade path works
+        r.downgrade('-1', delete_files=False)
+        r.upgrade()
 
-        # TODO need to test up/down for edges
         # TODO need to change the rendered to only show the minimum
         # e.g. op.remove_edge(edge_type)
 
@@ -419,19 +429,25 @@ class BaseTestRunner(object):
             new_test_runner,
             metadata_with_inverse_edge,
             "add edge UserToFolloweesEdge\nmodify edge UserToFollowersEdge",
+            metadata_with_assoc_edge_config,
             prev_runner=r,
             num_files=3,
             num_changes=2,
         )
+        r2.downgrade('-1', delete_files=False)
+        r2.upgrade()
 
-        testingutils.run_edge_metadata_script(
+        r3 = testingutils.run_edge_metadata_script(
             new_test_runner,
             metadata_with_no_edges,
             "remove edges UserToFolloweesEdge, UserToFollowersEdge",
+            metadata_with_assoc_edge_config,
             prev_runner=r2,
             num_files=4,
             num_changes=1,
         )
+        r3.downgrade('-1', delete_files=False)
+        r3.upgrade()
 
     @pytest.mark.usefixtures("metadata_with_nullable_fields")
     def test_new_table_with_nullable_fields(self, new_test_runner, metadata_with_nullable_fields):
@@ -587,17 +603,25 @@ class BaseTestRunner(object):
         )
         testingutils.validate_data_from_metadata(metadata_table_with_timetz, r)
 
-    @pytest.mark.usefixtures("metadata_with_one_edge")
-    def test_fix_edges(self, new_test_runner, metadata_with_one_edge):
+    @pytest.mark.usefixtures("metadata_with_one_edge", "metadata_with_assoc_edge_config")
+    def test_fix_edges(self, new_test_runner, metadata_with_one_edge, metadata_with_assoc_edge_config):
         r = testingutils.run_edge_metadata_script(
             new_test_runner,
             metadata_with_one_edge,
-            "add edge UserToFollowersEdge"
+            "add edge UserToFollowersEdge",
+            metadata_with_assoc_edge_config
         )
 
         # no changes when re-run
         testingutils.run_edge_metadata_script(
-            new_test_runner, metadata_with_one_edge, "", num_files=2, prev_runner=r, num_changes=0)
+            new_test_runner,
+            metadata_with_one_edge,
+            "",
+            metadata_with_assoc_edge_config,
+            num_files=2,
+            prev_runner=r,
+            num_changes=0
+        )
 
         # can re-run with same edges and nothing happens
         runner.Runner.fix_edges(metadata_with_one_edge, {
@@ -617,7 +641,14 @@ class BaseTestRunner(object):
 
         # no changes
         testingutils.run_edge_metadata_script(
-            new_test_runner, metadata_with_one_edge, "", num_files=2, prev_runner=r, num_changes=0)
+            new_test_runner,
+            metadata_with_one_edge,
+            "",
+            metadata_with_assoc_edge_config,
+            num_files=2,
+            prev_runner=r,
+            num_changes=0
+        )
 
     @pytest.mark.usefixtures("metadata_with_bigint")
     def test_tables_with_biginit(self, new_test_runner, metadata_with_bigint):
