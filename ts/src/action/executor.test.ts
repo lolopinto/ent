@@ -234,9 +234,9 @@ class MessageAction extends SimpleAction<Message> {
     super(viewer, new MessageSchema(), fields, operation, existingEnt);
   }
 
-  triggers: Trigger<Ent, Data>[] = [
+  triggers: Trigger<SimpleBuilder<Message>, Data>[] = [
     {
-      changeset: (builder: SimpleBuilder<Ent>, _input): void => {
+      changeset: (builder, _input): void => {
         let sender = builder.fields.get("sender");
         let recipient = builder.fields.get("recipient");
 
@@ -250,7 +250,9 @@ class MessageAction extends SimpleAction<Message> {
     },
   ];
 
-  observers: Observer<Ent, Data>[] = [new EntCreationObserver<Message>()];
+  observers: Observer<SimpleBuilder<Message>, Data>[] = [
+    new EntCreationObserver<Message>(),
+  ];
 }
 
 class UserAction extends SimpleAction<User> {
@@ -265,11 +267,9 @@ class UserAction extends SimpleAction<User> {
     super(viewer, new UserSchema(), fields, operation, existingEnt);
   }
 
-  triggers: Trigger<User, Data>[] = [
+  triggers: Trigger<SimpleBuilder<User>, Data>[] = [
     {
-      changeset: (
-        builder: SimpleBuilder<User>,
-      ): Promise<Changeset<Contact>> => {
+      changeset: (builder): Promise<Changeset<Contact>> => {
         let firstName = builder.fields.get("FirstName");
         let lastName = builder.fields.get("LastName");
         this.contactAction = new SimpleAction(
@@ -295,7 +295,9 @@ class UserAction extends SimpleAction<User> {
     },
   ];
 
-  observers: Observer<User, Data>[] = [new EntCreationObserver<User>()];
+  observers: Observer<SimpleBuilder<User>, Data>[] = [
+    new EntCreationObserver<User>(),
+  ];
 }
 
 function randomEmail(): string {

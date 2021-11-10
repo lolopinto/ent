@@ -30,9 +30,9 @@ export class BaseAction<TEnt extends Ent, TData extends Data>
 {
   builder: EntBuilder<TEnt>;
   private input: TData;
-  triggers: Trigger<TEnt, TData>[] = [];
-  observers: Observer<TEnt, TData>[] = [];
-  validators: Validator<TEnt, TData>[] = [];
+  triggers: Trigger<EntBuilder<TEnt>, TData>[] = [];
+  observers: Observer<EntBuilder<TEnt>, TData>[] = [];
+  validators: Validator<EntBuilder<TEnt>, TData>[] = [];
 
   getPrivacyPolicy() {
     return AlwaysAllowPrivacyPolicy;

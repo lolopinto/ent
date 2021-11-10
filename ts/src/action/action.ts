@@ -60,19 +60,19 @@ export type TriggerReturn =
   | Promise<Changeset<Ent> | void | (Changeset<Ent> | void)[]>
   | Promise<Changeset<Ent>>[];
 
-export interface Trigger<TEnt extends Ent, TData extends Data> {
+export interface Trigger<TBuilder extends Builder<Ent>, TData extends Data> {
   // TODO: way in the future. detect any writes happening in changesets and optionally throw if configured to do so
   // can throw if it wants. not expected to throw tho.
-  changeset(builder: Builder<TEnt>, input: TData): TriggerReturn;
+  changeset(builder: TBuilder, input: TData): TriggerReturn;
 }
 
-export interface Observer<TEnt extends Ent, TData extends Data> {
-  observe(builder: Builder<TEnt>, input: TData): void | Promise<void>;
+export interface Observer<TBuilder extends Builder<Ent>, TData extends Data> {
+  observe(builder: TBuilder, input: TData): void | Promise<void>;
 }
 
-export interface Validator<TEnt extends Ent, TData extends Data> {
+export interface Validator<TBuilder extends Builder<Ent>, TData extends Data> {
   // can throw if it wants
-  validate(builder: Builder<TEnt>, input: TData): Promise<void> | void;
+  validate(builder: TBuilder, input: TData): Promise<void> | void;
 }
 
 export interface Action<
@@ -85,9 +85,13 @@ export interface Action<
   builder: TBuilder;
   // TODO template ent
   getPrivacyPolicy(): PrivacyPolicy;
-  triggers?: Trigger<TEnt, TData>[];
-  observers?: Observer<TEnt, TData>[];
-  validators?: Validator<TEnt, TData>[];
+
+  // TODO consider making these methods. maybe they'll be easier to use then?
+  // performance implications of methods being called multiple times and new instances?
+  // even when declared in base class, if overriden in subclasses, still need to type it...
+  triggers?: Trigger<TBuilder, TData>[];
+  observers?: Observer<TBuilder, TData>[];
+  validators?: Validator<TBuilder, TData>[];
   getInput(): TData; // this input is passed to Triggers, Observers, Validators
 
   valid(): Promise<boolean>;

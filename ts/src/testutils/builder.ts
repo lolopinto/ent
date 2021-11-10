@@ -211,9 +211,9 @@ export class SimpleAction<T extends Ent>
   implements Action<T, SimpleBuilder<T>, Data>
 {
   builder: SimpleBuilder<T>;
-  validators: Validator<T, Data>[] = [];
-  triggers: Trigger<T, Data>[] = [];
-  observers: Observer<T, Data>[] = [];
+  validators: Validator<SimpleBuilder<T>, Data>[] = [];
+  triggers: Trigger<SimpleBuilder<T>, Data>[] = [];
+  observers: Observer<SimpleBuilder<T>, Data>[] = [];
   viewerForEntLoad: viewerEntLoadFunc | undefined;
 
   constructor(
