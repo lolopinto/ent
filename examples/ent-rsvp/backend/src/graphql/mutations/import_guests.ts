@@ -5,7 +5,7 @@ import {
   gqlFileUpload,
   gqlMutation,
 } from "@snowtop/ent/graphql";
-import { Action } from "@snowtop/ent/action";
+import { Action, Builder } from "@snowtop/ent/action";
 import { GraphQLID } from "graphql";
 import { Event } from "src/ent";
 import { FileUpload } from "graphql-upload";
@@ -35,7 +35,7 @@ export class ImportGuestResolver {
 
     let requiredColumns = new Set(["invitationName", "name", "emailAddress"]);
 
-    let actions: Action<Ent>[] = [];
+    let actions: Action<Ent, Builder<Ent>, Data>[] = [];
 
     let parsedHeaders = false;
     let columns: string[] = [];
@@ -124,6 +124,7 @@ export class ImportGuestResolver {
       );
     }
 
+    // @ts-ignore TODO
     const action = BaseAction.bulkAction(event, EventBuilder, ...actions);
     return action.saveX();
   }

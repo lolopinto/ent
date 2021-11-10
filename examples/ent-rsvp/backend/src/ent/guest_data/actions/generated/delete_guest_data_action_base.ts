@@ -13,8 +13,11 @@ import {
   GuestDataInput,
 } from "src/ent/guest_data/actions/generated/guest_data_builder";
 
-export class DeleteGuestDataActionBase implements Action<GuestData> {
-  public readonly builder: GuestDataBuilder;
+export class DeleteGuestDataActionBase
+  implements
+    Action<GuestData, GuestDataBuilder<GuestDataInput>, GuestDataInput>
+{
+  public readonly builder: GuestDataBuilder<GuestDataInput>;
   public readonly viewer: Viewer;
   protected guestData: GuestData;
 
