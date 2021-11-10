@@ -12,7 +12,6 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import { GuestGroup } from "src/ent/";
 import DeleteGuestGroupAction from "src/ent/guest_group/actions/delete_guest_group_action";
 
 interface customGuestGroupDeleteInput {

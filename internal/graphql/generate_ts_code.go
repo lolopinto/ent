@@ -1287,10 +1287,16 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 		GQLType:  "GraphQLObjectType",
 		Exported: true,
 		// import NodeInterface because ents are always Nodes
-		Imports: []*fileImport{{
-			ImportPath: codepath.GraphQLPackage,
-			Type:       "GraphQLNodeInterface",
-		}},
+		Imports: []*fileImport{
+			{
+				ImportPath: codepath.GraphQLPackage,
+				Type:       "GraphQLNodeInterface",
+			},
+			{
+				ImportPath: codepath.GetExternalImportPath(),
+				Type:       nodeData.Node,
+			},
+		},
 		GQLInterfaces: []string{"GraphQLNodeInterface"},
 		IsTypeOfMethod: []string{
 			fmt.Sprintf("return obj instanceof %s", nodeData.Node),

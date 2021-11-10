@@ -2,7 +2,6 @@
 
 import {
   AllowIfViewerPrivacyPolicy,
-  AssocEdge,
   Context,
   CustomQuery,
   Data,
@@ -20,7 +19,6 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import {
-  EdgeType,
   Event,
   GuestGroup,
   GuestToAttendingEventsQuery,

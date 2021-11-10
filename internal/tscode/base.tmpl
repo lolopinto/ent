@@ -284,9 +284,9 @@ export class {{$baseClass}} {
     {{$edgeName := .CamelCaseEdgeName -}}
     {{$uniqueEdge := .Unique -}}
     {{with .NodeInfo -}}
-    {{$edgeType := useImport "EdgeType"}}
-    {{$assocEdgeType := useImport "AssocEdge"}}
      {{ if $uniqueEdge -}}
+      {{$assocEdgeType := useImport "AssocEdge"}}
+      {{$edgeType := useImport "EdgeType"}}
       load{{$edgeName}}Edge(): Promise<{{$assocEdgeType}} | null> {
         return {{useImport "loadUniqueEdge"}}({
           id1: this.id, 
@@ -305,7 +305,8 @@ export class {{$baseClass}} {
       }
 
      {{ else -}}
-      {{$queryName := useImport $edge.TsEdgeQueryName -}}
+
+      {{$queryName := useImport $edge.TsEdgeQueryName}}
       query{{$edgeName}}(): {{$queryName}} {
         {{/* TODO change entquery to NodeBase and use this instead of id here? */}}
         return {{$queryName}}.query(this.viewer, this.id);

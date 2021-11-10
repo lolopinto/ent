@@ -15,7 +15,6 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import { User } from "../../../../ent";
 import DeleteUserAction from "../../../../ent/user/actions/delete_user_action";
 
 interface customUserDeleteInput {
