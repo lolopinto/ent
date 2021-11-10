@@ -11,7 +11,7 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { AuthCode } from "../../..";
-import { AuthCodeBuilder } from "./auth_code_builder";
+import { AuthCodeBuilder, AuthCodeInput } from "./auth_code_builder";
 
 export class DeleteAuthCodeActionBase
   implements Action<AuthCode, AuthCodeBuilder<AuthCodeInput>, AuthCodeInput>

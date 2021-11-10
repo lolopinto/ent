@@ -11,7 +11,7 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { User } from "../../..";
-import { UserBuilder } from "./user_builder";
+import { UserBuilder, UserInput } from "./user_builder";
 
 export class DeleteUserActionBase
   implements Action<User, UserBuilder<UserInput>, UserInput>

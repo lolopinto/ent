@@ -1,4 +1,3 @@
-import { Ent } from "@snowtop/ent";
 import { Trigger, Validator } from "@snowtop/ent/action";
 import DeleteAuthCodeAction from "../../auth_code/actions/delete_auth_code_action";
 import { User } from "../../";
@@ -24,12 +23,9 @@ async function findAuthCode(
 }
 
 export default class ConfirmEditEmailAddressAction extends ConfirmEditEmailAddressActionBase {
-  validators: Validator<User, ConfirmEditEmailAddressInput>[] = [
+  validators: Validator<UserBuilder, ConfirmEditEmailAddressInput>[] = [
     {
-      async validate(
-        builder: UserBuilder,
-        input: ConfirmEditEmailAddressInput,
-      ) {
+      async validate(builder, input) {
         const authCode = await findAuthCode(
           builder,
           input.code,
@@ -42,12 +38,9 @@ export default class ConfirmEditEmailAddressAction extends ConfirmEditEmailAddre
     },
   ];
 
-  triggers: Trigger<Ent, ConfirmEditEmailAddressInput>[] = [
+  triggers: Trigger<UserBuilder, ConfirmEditEmailAddressInput>[] = [
     {
-      async changeset(
-        builder: UserBuilder,
-        input: ConfirmEditEmailAddressInput,
-      ) {
+      async changeset(builder, input) {
         const authCode = await findAuthCode(
           builder,
           input.code,

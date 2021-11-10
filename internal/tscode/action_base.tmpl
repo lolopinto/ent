@@ -108,6 +108,8 @@
 {{ $inputData := $builderInput -}}
 {{ if $hasInput -}}
   {{ $inputData = $inputName -}}
+{{ else -}}
+  {{ $inputData = useImport $inputData -}}
 {{ end -}}
 
 export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useImport $builderName}}<{{$inputData}}>, {{$inputData}}> {
