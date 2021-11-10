@@ -11,7 +11,7 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { Event, User } from "../../..";
-import { EventBuilder, EventInput } from "./event_builder";
+import { EventBuilder } from "./event_builder";
 
 export class EventRemoveHostActionBase
   implements Action<Event, EventBuilder<EventInput>, EventInput>

@@ -16,7 +16,7 @@ import {
   setEdgeTypeInGroup,
 } from "@snowtop/ent/action";
 import { Event, NodeType } from "../../..";
-import { EventBuilder, EventInput } from "./event_builder";
+import { EventBuilder } from "./event_builder";
 
 export enum EventRsvpStatusInput {
   Attending = "attending",

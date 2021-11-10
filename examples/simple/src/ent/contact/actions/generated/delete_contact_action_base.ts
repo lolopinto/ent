@@ -11,7 +11,7 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { Contact } from "../../..";
-import { ContactBuilder, ContactInput } from "./contact_builder";
+import { ContactBuilder } from "./contact_builder";
 
 export class DeleteContactActionBase
   implements Action<Contact, ContactBuilder<ContactInput>, ContactInput>

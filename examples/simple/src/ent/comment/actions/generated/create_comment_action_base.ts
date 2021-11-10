@@ -17,7 +17,7 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { Comment } from "../../..";
-import { CommentBuilder, CommentInput } from "./comment_builder";
+import { CommentBuilder } from "./comment_builder";
 
 export interface CommentCreateInput {
   authorID: ID;

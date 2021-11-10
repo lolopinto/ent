@@ -10,10 +10,7 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { DayOfWeek, DayOfWeekAlt, HoursOfOperation } from "../../..";
-import {
-  HoursOfOperationBuilder,
-  HoursOfOperationInput,
-} from "./hours_of_operation_builder";
+import { HoursOfOperationBuilder } from "./hours_of_operation_builder";
 
 export interface HoursOfOperationCreateInput {
   dayOfWeek: DayOfWeek;

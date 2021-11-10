@@ -10,7 +10,7 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { Holiday } from "../../..";
-import { HolidayBuilder, HolidayInput } from "./holiday_builder";
+import { HolidayBuilder } from "./holiday_builder";
 
 export interface HolidayCreateInput {
   label: string;
