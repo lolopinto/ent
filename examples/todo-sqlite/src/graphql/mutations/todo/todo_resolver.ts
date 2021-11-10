@@ -21,6 +21,7 @@ export class TodosResolver {
     const todos = await AccountToTodosQuery.query(vc, viewer).queryEnts();
     const bulk = BaseAction.bulkAction(
       account,
+      // @ts-ignore TODO
       AccountBuilder,
       ...todos.map((todo) =>
         ChangeTodoStatusAction.create(vc, todo, { completed: completed }),
@@ -43,6 +44,7 @@ export class TodosResolver {
 
     const bulk = BaseAction.bulkAction(
       account,
+      // @ts-ignore TODO
       AccountBuilder,
       ...completedTodos.map((todo) => DeleteTodoAction.create(vc, todo)),
     );

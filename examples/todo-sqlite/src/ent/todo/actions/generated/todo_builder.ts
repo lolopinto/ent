@@ -18,26 +18,31 @@ export interface TodoInput {
   text?: string;
   completed?: boolean;
   creatorID?: ID | Builder<Account>;
+  // allow other properties. useful for action-only fields
+  [x: string]: any;
 }
 
-export interface TodoAction extends Action<Todo> {
-  getInput(): TodoInput;
+export interface TodoAction<TData extends TodoInput>
+  extends Action<Todo, TodoBuilder<TData>, TData> {
+  getInput(): TData;
 }
 
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class TodoBuilder implements Builder<Todo> {
-  orchestrator: Orchestrator<Todo>;
+export class TodoBuilder<TData extends TodoInput = TodoInput>
+  implements Builder<Todo>
+{
+  orchestrator: Orchestrator<Todo, TData>;
   readonly placeholderID: ID;
   readonly ent = Todo;
-  private input: TodoInput;
+  private input: TData;
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: TodoAction,
+    action: TodoAction<TData>,
     public readonly existingEnt?: Todo | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Todo`;
@@ -56,7 +61,7 @@ export class TodoBuilder implements Builder<Todo> {
     });
   }
 
-  getInput(): TodoInput {
+  getInput(): TData {
     return this.input;
   }
 
@@ -78,7 +83,7 @@ export class TodoBuilder implements Builder<Todo> {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
 
-  addTag(...nodes: (ID | Tag | Builder<Tag>)[]): TodoBuilder {
+  addTag(...nodes: (ID | Tag | Builder<Tag>)[]): TodoBuilder<TData> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addTagID(node);
@@ -94,7 +99,7 @@ export class TodoBuilder implements Builder<Todo> {
   addTagID(
     id: ID | Builder<Tag>,
     options?: AssocEdgeInputOptions,
-  ): TodoBuilder {
+  ): TodoBuilder<TData> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.TodoToTags,
@@ -104,7 +109,7 @@ export class TodoBuilder implements Builder<Todo> {
     return this;
   }
 
-  removeTag(...nodes: (ID | Tag)[]): TodoBuilder {
+  removeTag(...nodes: (ID | Tag)[]): TodoBuilder<TData> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.TodoToTags);

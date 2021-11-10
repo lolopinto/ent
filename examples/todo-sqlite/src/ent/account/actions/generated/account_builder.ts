@@ -16,26 +16,31 @@ import schema from "src/schema/account";
 export interface AccountInput {
   name?: string;
   phoneNumber?: string;
+  // allow other properties. useful for action-only fields
+  [x: string]: any;
 }
 
-export interface AccountAction extends Action<Account> {
-  getInput(): AccountInput;
+export interface AccountAction<TData extends AccountInput>
+  extends Action<Account, AccountBuilder<TData>, TData> {
+  getInput(): TData;
 }
 
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class AccountBuilder implements Builder<Account> {
-  orchestrator: Orchestrator<Account>;
+export class AccountBuilder<TData extends AccountInput = AccountInput>
+  implements Builder<Account>
+{
+  orchestrator: Orchestrator<Account, TData>;
   readonly placeholderID: ID;
   readonly ent = Account;
-  private input: AccountInput;
+  private input: TData;
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: AccountAction,
+    action: AccountAction<TData>,
     public readonly existingEnt?: Account | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Account`;
@@ -54,7 +59,7 @@ export class AccountBuilder implements Builder<Account> {
     });
   }
 
-  getInput(): AccountInput {
+  getInput(): TData {
     return this.input;
   }
 
