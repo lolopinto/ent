@@ -100,12 +100,12 @@ export class {{$baseClass}} {
     this: {{$thisType}},
     viewer: {{$viewerType}},
     ...ids: {{$idType}}[]
-  ): Promise<T[]> {
+  ): Promise<Map<ID, T>> {
     return await {{useImport "loadEnts"}}(
       viewer, 
       {{$baseClass}}.loaderOptions.apply(this), 
       ...ids,
-    ) as T[];
+    ) as Map<ID, T>;
   }
 
   static async loadCustom<T extends {{$baseClass}}>(
