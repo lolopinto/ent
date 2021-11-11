@@ -76,7 +76,6 @@ export class ArticleToCommentsQueryBase extends CustomEdgeQueryBase<
   Ent,
   Comment
 > {
-  // TODO this is how polymorphic edges should work for now
   constructor(viewer: Viewer, private srcEnt: Ent) {
     super(viewer, {
       src: srcEnt,

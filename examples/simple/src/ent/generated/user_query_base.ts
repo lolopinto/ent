@@ -588,9 +588,7 @@ export class UserToAuthCodesQueryBase extends CustomEdgeQueryBase<
     return new this(viewer, src);
   }
 
-  // TODO change non polymorphic edges like this
-
-  sourceEnt(id: ID) {
+  async sourceEnt(id: ID) {
     return User.load(this.viewer, id);
   }
 }
@@ -614,5 +612,9 @@ export class UserToContactsQueryBase extends CustomEdgeQueryBase<
     src: User | ID,
   ): T {
     return new this(viewer, src);
+  }
+
+  async sourceEnt(id: ID) {
+    return User.load(this.viewer, id);
   }
 }

@@ -49,7 +49,6 @@ import {
 } from "../internal";
 import { UserPrefs } from "../user_prefs";
 import schema from "../../schema/user";
-import { User } from "..";
 
 const tableName = "users";
 const fields = [
