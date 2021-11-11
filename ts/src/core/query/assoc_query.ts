@@ -5,7 +5,7 @@ import {
   LoadEntOptions,
   EdgeQueryableDataOptions,
 } from "../base";
-import { AssocEdge, loadEnts } from "../ent";
+import { AssocEdge, loadEnts, loadEntsList } from "../ent";
 import { AssocEdgeCountLoaderFactory } from "../loaders/assoc_count_loader";
 import { AssocEdgeLoaderFactory } from "../loaders/assoc_edge_loader";
 import { EdgeQuery, BaseEdgeQuery, IDInfo } from "./query";
@@ -117,7 +117,7 @@ export class AssocEdgeQueryBase<
       }
       let promises: Promise<Ent[]>[] = [];
       for (const [_, value] of m) {
-        promises.push(loadEnts(this.viewer, value.options, ...value.ids));
+        promises.push(loadEntsList(this.viewer, value.options, ...value.ids));
       }
       const entss = await Promise.all(promises);
       const r: Ent[] = [];
@@ -127,7 +127,7 @@ export class AssocEdgeQueryBase<
       return r as TDest[];
     }
     const ids = edges.map((edge) => edge.id2);
-    return await loadEnts(this.viewer, this.options, ...ids);
+    return loadEntsList(this.viewer, this.options, ...ids);
   }
 
   dataToID(edge: AssocEdge): ID {
