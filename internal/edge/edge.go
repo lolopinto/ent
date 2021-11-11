@@ -624,6 +624,11 @@ func (e *AssociationEdge) CreateEdge() bool {
 	return true
 }
 
+func (e *AssociationEdge) GenerateSourceLoadEntOptions() bool {
+	// when there's a pattern edge, need to provide the getSourceLoadEntOptions method
+	return e.PatternName != ""
+}
+
 func (e *AssociationEdge) GenerateBase() bool {
 	// only generate base when edge is not from a pattern
 	return e.PatternName == ""

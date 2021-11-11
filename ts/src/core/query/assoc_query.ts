@@ -11,12 +11,12 @@ import { AssocEdgeLoaderFactory } from "../loaders/assoc_edge_loader";
 import { EdgeQuery, BaseEdgeQuery, IDInfo } from "./query";
 
 // TODO no more plurals for privacy reasons?
-export type EdgeQuerySource<T extends Ent> =
-  | T
-  | T[]
+export type EdgeQuerySource<TSource extends Ent, TDest extends Ent = Ent> =
+  | TSource
+  | TSource[]
   | ID
   | ID[]
-  | EdgeQuery<T, Ent, AssocEdge>;
+  | EdgeQuery<TDest, Ent, AssocEdge>;
 
 type loaderOptionsFunc = (type: string) => LoadEntOptions<Ent>;
 
@@ -25,14 +25,17 @@ interface typeData {
   options: LoadEntOptions<Ent>;
 }
 
-export class AssocEdgeQueryBase<
-  TSource extends Ent,
-  TDest extends Ent,
-  TEdge extends AssocEdge,
-> extends BaseEdgeQuery<TSource, TDest, TEdge> {
+export abstract class AssocEdgeQueryBase<
+    TSource extends Ent,
+    TDest extends Ent,
+    TEdge extends AssocEdge,
+  >
+  extends BaseEdgeQuery<TSource, TDest, TEdge>
+  implements EdgeQuery<TSource, TDest, TEdge>
+{
   constructor(
     public viewer: Viewer,
-    public src: EdgeQuerySource<TSource>,
+    public src: EdgeQuerySource<TSource, TDest>,
     private countLoaderFactory: AssocEdgeCountLoaderFactory,
     private dataLoaderFactory: AssocEdgeLoaderFactory<TEdge>,
     // if function, it's a polymorphic edge and need to provide
@@ -43,13 +46,15 @@ export class AssocEdgeQueryBase<
   }
 
   private isEdgeQuery(
-    obj: TSource | ID | EdgeQuery<TSource, Ent, AssocEdge>,
-  ): obj is EdgeQuery<TSource, Ent, AssocEdge> {
-    if ((obj as EdgeQuery<TSource, Ent, AssocEdge>).queryIDs !== undefined) {
+    obj: TSource | ID | EdgeQuery<TDest, Ent, AssocEdge>,
+  ): obj is EdgeQuery<TDest, Ent, AssocEdge> {
+    if ((obj as EdgeQuery<TDest, Ent, AssocEdge>).queryIDs !== undefined) {
       return true;
     }
     return false;
   }
+
+  abstract sourceEnt(id: ID): Promise<Ent | null>;
 
   private async getSingleID() {
     const infos = await this.genIDInfosToFetch();

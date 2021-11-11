@@ -9,7 +9,10 @@ import {
   AssocEdgeQueryBase,
   EdgeQuerySource,
   Ent,
+  ID,
+  LoadEntOptions,
   Viewer,
+  loadEnt,
 } from "@snowtop/ent";
 import {
   Comment,
@@ -46,12 +49,12 @@ export const objectToLikersDataLoaderFactory = new AssocEdgeLoaderFactory(
   () => ObjectToLikersEdge,
 );
 
-export class ObjectToCommentsQueryBase extends AssocEdgeQueryBase<
+export abstract class ObjectToCommentsQueryBase extends AssocEdgeQueryBase<
   Ent,
   Comment,
   ObjectToCommentsEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<Ent>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<Ent, Comment>) {
     super(
       viewer,
       src,
@@ -62,11 +65,17 @@ export class ObjectToCommentsQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends ObjectToCommentsQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Ent>) => T,
+    this: new (viewer: Viewer, src: EdgeQuerySource<Ent, Comment>) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<Ent>,
+    src: EdgeQuerySource<Ent, Comment>,
   ): T {
     return new this(viewer, src);
+  }
+
+  protected abstract getSourceLoadEntOptions(): LoadEntOptions<Ent>;
+
+  sourceEnt(id: ID) {
+    return loadEnt(this.viewer, id, this.getSourceLoadEntOptions());
   }
 
   queryPost(): CommentToPostQuery {
@@ -74,12 +83,12 @@ export class ObjectToCommentsQueryBase extends AssocEdgeQueryBase<
   }
 }
 
-export class ObjectToLikersQueryBase extends AssocEdgeQueryBase<
+export abstract class ObjectToLikersQueryBase extends AssocEdgeQueryBase<
   Ent,
   User,
   ObjectToLikersEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<Ent>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<Ent, User>) {
     super(
       viewer,
       src,
@@ -90,11 +99,17 @@ export class ObjectToLikersQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends ObjectToLikersQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Ent>) => T,
+    this: new (viewer: Viewer, src: EdgeQuerySource<Ent, User>) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<Ent>,
+    src: EdgeQuerySource<Ent, User>,
   ): T {
     return new this(viewer, src);
+  }
+
+  protected abstract getSourceLoadEntOptions(): LoadEntOptions<Ent>;
+
+  sourceEnt(id: ID) {
+    return loadEnt(this.viewer, id, this.getSourceLoadEntOptions());
   }
 
   queryComments(): UserToCommentsQuery {

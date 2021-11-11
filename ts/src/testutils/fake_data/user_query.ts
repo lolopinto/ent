@@ -50,6 +50,10 @@ export class UserToContactsQuery extends AssocEdgeQueryBase<
   ): UserToContactsQuery {
     return new UserToContactsQuery(viewer, src);
   }
+
+  sourceEnt(id: ID) {
+    return FakeUser.load(this.viewer, id);
+  }
 }
 
 export const userToContactsCountLoaderFactory = new RawCountLoaderFactory({
@@ -81,6 +85,10 @@ export class UserToContactsFkeyQuery extends CustomEdgeQueryBase<
   static query(viewer: Viewer, src: FakeUser | ID): UserToContactsFkeyQuery {
     return new UserToContactsFkeyQuery(viewer, src);
   }
+
+  sourceEnt(id: ID) {
+    return FakeUser.load(this.viewer, id);
+  }
 }
 
 export class UserToFriendsQuery extends AssocEdgeQueryBase<
@@ -103,6 +111,10 @@ export class UserToFriendsQuery extends AssocEdgeQueryBase<
     src: EdgeQuerySource<FakeUser>,
   ): UserToFriendsQuery {
     return new UserToFriendsQuery(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return FakeUser.load(this.viewer, id);
   }
 
   queryContacts(): UserToContactsQuery {
@@ -155,6 +167,10 @@ export class UserToCustomEdgeQuery extends AssocEdgeQueryBase<
     return new UserToCustomEdgeQuery(viewer, src);
   }
 
+  sourceEnt(id: ID) {
+    return FakeUser.load(this.viewer, id);
+  }
+
   queryContacts(): UserToContactsQuery {
     return UserToContactsQuery.query(this.viewer, this);
   }
@@ -194,6 +210,10 @@ export class UserToFriendRequestsQuery extends AssocEdgeQueryBase<
     return new UserToFriendRequestsQuery(viewer, src);
   }
 
+  sourceEnt(id: ID) {
+    return FakeUser.load(this.viewer, id);
+  }
+
   queryContacts(): UserToContactsQuery {
     return UserToContactsQuery.query(this.viewer, this);
   }
@@ -220,7 +240,7 @@ export class UserToIncomingFriendRequestsQuery extends AssocEdgeQueryBase<
   FakeUser,
   AssocEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser, FakeUser>) {
     super(
       viewer,
       src,
@@ -237,13 +257,13 @@ export class UserToIncomingFriendRequestsQuery extends AssocEdgeQueryBase<
     return AllowIfViewerPrivacyPolicy;
   }
 
-  entForPrivacy(id: ID) {
+  sourceEnt(id: ID) {
     return FakeUser.load(this.viewer, id);
   }
 
   static query(
     viewer: Viewer,
-    src: EdgeQuerySource<FakeUser>,
+    src: EdgeQuerySource<FakeUser, FakeUser>,
   ): UserToIncomingFriendRequestsQuery {
     return new UserToIncomingFriendRequestsQuery(viewer, src);
   }
@@ -274,7 +294,7 @@ export class UserToEventsAttendingQuery extends AssocEdgeQueryBase<
   FakeEvent,
   AssocEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser, FakeEvent>) {
     super(
       viewer,
       src,
@@ -286,9 +306,13 @@ export class UserToEventsAttendingQuery extends AssocEdgeQueryBase<
 
   static query(
     viewer: Viewer,
-    src: EdgeQuerySource<FakeUser>,
+    src: EdgeQuerySource<FakeUser, FakeEvent>,
   ): UserToEventsAttendingQuery {
     return new UserToEventsAttendingQuery(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return FakeUser.load(this.viewer, id);
   }
 
   queryHosts(): EventToHostsQuery {
@@ -313,7 +337,7 @@ export class UserToHostedEventsQuery extends AssocEdgeQueryBase<
   FakeEvent,
   AssocEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser, FakeEvent>) {
     super(
       viewer,
       src,
@@ -325,9 +349,13 @@ export class UserToHostedEventsQuery extends AssocEdgeQueryBase<
 
   static query(
     viewer: Viewer,
-    src: EdgeQuerySource<FakeUser>,
+    src: EdgeQuerySource<FakeUser, FakeEvent>,
   ): UserToHostedEventsQuery {
     return new UserToHostedEventsQuery(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return FakeUser.load(this.viewer, id);
   }
 
   queryHosts(): EventToHostsQuery {
@@ -405,11 +433,12 @@ export class UserToEventsInNextWeekQuery extends CustomEdgeQueryBase<
     return new UserToEventsInNextWeekQuery(viewer, src);
   }
 
+  sourceEnt(id: ID) {
+    return FakeUser.load(this.viewer, id);
+  }
+
   getPrivacyPolicy() {
     return AllowIfViewerPrivacyPolicy;
-  }
-  async entForPrivacy(id: ID) {
-    return FakeUser.load(this.viewer, id);
   }
 }
 
@@ -418,7 +447,7 @@ export class UserToFollowingQuery extends AssocEdgeQueryBase<
   Ent,
   AssocEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser, FakeUser>) {
     super(
       viewer,
       src,
@@ -430,8 +459,12 @@ export class UserToFollowingQuery extends AssocEdgeQueryBase<
 
   static query(
     viewer: Viewer,
-    src: EdgeQuerySource<FakeUser>,
+    src: EdgeQuerySource<FakeUser, FakeUser>,
   ): UserToFollowingQuery {
     return new UserToFollowingQuery(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return FakeUser.load(this.viewer, id);
   }
 }

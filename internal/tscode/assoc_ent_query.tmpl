@@ -13,4 +13,15 @@
 
 export class {{$edgeName}} extends {{useImport $assocEdgeBase}} {}
 
-export class {{$name}} extends {{useImport $base}} {}
+{{ if eq .SourceNode "Ent" -}}
+export abstract class {{$name}} extends {{useImport $base}} {
+{{ else -}}
+export class {{$name}} extends {{useImport $base}} {
+{{ end -}}
+  {{if .Edge.GenerateSourceLoadEntOptions -}}
+  {{reserveImport .Package.ExternalImportPath .SourceNode -}}
+    getSourceLoadEntOptions() {
+      return {{useImport .SourceNode}}.loaderOptions();
+    }
+  {{end -}}
+}
