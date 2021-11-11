@@ -27,17 +27,17 @@ import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import { log } from "../core/logger";
 import { Trigger } from "./action";
 
-export interface OrchestratorOptions<T extends Ent> {
+export interface OrchestratorOptions<TEnt extends Ent, TData extends Data> {
   viewer: Viewer;
   operation: WriteOperation;
   tableName: string;
   // should we make it nullable for delete?
-  loaderOptions: LoadEntOptions<T>;
+  loaderOptions: LoadEntOptions<TEnt>;
   // key, usually 'id' that's being updated
   key: string;
 
-  builder: Builder<T>;
-  action?: Action<T>;
+  builder: Builder<TEnt>;
+  action?: Action<TEnt, Builder<TEnt>, TData>;
   schema: SchemaInputType;
   editedFields(): Map<string, any>;
 }
@@ -92,7 +92,7 @@ type OperationMap = Map<WriteOperation, IDMap>;
 // }
 type EdgeMap = Map<string, OperationMap>;
 
-function getViewer(action: Action<Ent>) {
+function getViewer(action: Action<Ent, Builder<Ent>, Data>) {
   if (!action.viewer.viewerID) {
     return "Logged out Viewer";
   } else {
@@ -101,7 +101,10 @@ function getViewer(action: Action<Ent>) {
 }
 class EntCannotCreateEntError extends Error implements PrivacyError {
   privacyPolicy: PrivacyPolicy;
-  constructor(privacyPolicy: PrivacyPolicy, action: Action<Ent>) {
+  constructor(
+    privacyPolicy: PrivacyPolicy,
+    action: Action<Ent, Builder<Ent>, Data>,
+  ) {
     let msg = `${getViewer(action)} does not have permission to create ${
       action.builder.ent.name
     }`;
@@ -112,7 +115,11 @@ class EntCannotCreateEntError extends Error implements PrivacyError {
 
 class EntCannotEditEntError extends Error implements PrivacyError {
   privacyPolicy: PrivacyPolicy;
-  constructor(privacyPolicy: PrivacyPolicy, action: Action<Ent>, ent: Ent) {
+  constructor(
+    privacyPolicy: PrivacyPolicy,
+    action: Action<Ent, Builder<Ent>, Data>,
+    ent: Ent,
+  ) {
     let msg = `${getViewer(action)} does not have permission to edit ${
       ent.constructor.name
     }`;
@@ -123,7 +130,11 @@ class EntCannotEditEntError extends Error implements PrivacyError {
 
 class EntCannotDeleteEntError extends Error implements PrivacyError {
   privacyPolicy: PrivacyPolicy;
-  constructor(privacyPolicy: PrivacyPolicy, action: Action<Ent>, ent: Ent) {
+  constructor(
+    privacyPolicy: PrivacyPolicy,
+    action: Action<Ent, Builder<Ent>, Data>,
+    ent: Ent,
+  ) {
     let msg = `${getViewer(action)} does not have permission to delete ${
       ent.constructor.name
     }`;
@@ -132,18 +143,18 @@ class EntCannotDeleteEntError extends Error implements PrivacyError {
   }
 }
 
-export class Orchestrator<T extends Ent> {
+export class Orchestrator<TEnt extends Ent, TData extends Data> {
   private edgeSet: Set<string> = new Set<string>();
   private edges: EdgeMap = new Map();
   private validatedFields: Data | null;
   private logValues: Data | null;
   private changesets: Changeset<Ent>[] = [];
-  private dependencies: Map<ID, Builder<T>> = new Map();
+  private dependencies: Map<ID, Builder<TEnt>> = new Map();
   private fieldsToResolve: string[] = [];
   private mainOp: DataOperation | null;
   viewer: Viewer;
 
-  constructor(private options: OrchestratorOptions<T>) {
+  constructor(private options: OrchestratorOptions<TEnt, TData>) {
     this.viewer = options.viewer;
   }
 
@@ -413,9 +424,9 @@ export class Orchestrator<T extends Ent> {
   }
 
   private async triggers(
-    action: Action<T>,
-    builder: Builder<T>,
-    triggers: Trigger<T>[],
+    action: Action<TEnt, Builder<TEnt>, TData>,
+    builder: Builder<TEnt>,
+    triggers: Trigger<Builder<TEnt>, TData>[],
   ): Promise<void> {
     await Promise.all(
       triggers.map(async (trigger) => {
@@ -438,9 +449,9 @@ export class Orchestrator<T extends Ent> {
   }
 
   private async validators(
-    validators: Validator<T>[],
-    action: Action<T>,
-    builder: Builder<T>,
+    validators: Validator<Builder<TEnt>, TData>[],
+    action: Action<TEnt, Builder<TEnt>, TData>,
+    builder: Builder<TEnt>,
   ): Promise<void> {
     let promises: Promise<void>[] = [];
     validators.forEach((validator) => {
@@ -452,13 +463,13 @@ export class Orchestrator<T extends Ent> {
     await Promise.all(promises);
   }
 
-  private isBuilder(val: Builder<T> | any): val is Builder<T> {
-    return (val as Builder<T>).placeholderID !== undefined;
+  private isBuilder(val: Builder<TEnt> | any): val is Builder<TEnt> {
+    return (val as Builder<TEnt>).placeholderID !== undefined;
   }
 
   private async validateFields(
-    builder: Builder<T>,
-    action?: Action<T> | undefined,
+    builder: Builder<TEnt>,
+    action?: Action<TEnt, Builder<TEnt>, TData> | undefined,
   ): Promise<void> {
     // existing ent required for edit or delete operations
     switch (this.options.operation) {
@@ -578,7 +589,7 @@ export class Orchestrator<T extends Ent> {
     return this.validate();
   }
 
-  async build(): Promise<EntChangeset<T>> {
+  async build(): Promise<EntChangeset<TEnt>> {
     // validate everything first
     await this.validX();
 
@@ -612,7 +623,7 @@ export class Orchestrator<T extends Ent> {
     return null;
   }
 
-  async editedEnt(): Promise<T | null> {
+  async editedEnt(): Promise<TEnt | null> {
     const row = await this.returnedRow();
     if (!row) {
       return null;
@@ -621,7 +632,7 @@ export class Orchestrator<T extends Ent> {
     return applyPrivacyPolicyForRow(viewer, this.options.loaderOptions, row);
   }
 
-  async editedEntX(): Promise<T> {
+  async editedEntX(): Promise<TEnt> {
     const row = await this.returnedRow();
     if (!row) {
       throw new Error(`ent was not created`);
@@ -652,7 +663,7 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
     public operations: DataOperation[],
     public dependencies?: Map<ID, Builder<T>>,
     public changesets?: Changeset<Ent>[],
-    private options?: OrchestratorOptions<T>,
+    private options?: OrchestratorOptions<T, Data>,
   ) {}
 
   executor(): Executor {

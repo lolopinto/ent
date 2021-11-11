@@ -17,26 +17,26 @@ export interface EventInput {
   name?: string;
   slug?: string | null;
   creatorID?: ID | Builder<User>;
-}
-
-export interface EventAction extends Action<Event> {
-  getInput(): EventInput;
+  // allow other properties. useful for action-only fields
+  [x: string]: any;
 }
 
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class EventBuilder implements Builder<Event> {
-  orchestrator: Orchestrator<Event>;
+export class EventBuilder<TData extends EventInput = EventInput>
+  implements Builder<Event>
+{
+  orchestrator: Orchestrator<Event, TData>;
   readonly placeholderID: ID;
   readonly ent = Event;
-  private input: EventInput;
+  private input: TData;
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: EventAction,
+    action: Action<Event, Builder<Event>, TData>,
     public readonly existingEnt?: Event | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Event`;
@@ -55,7 +55,7 @@ export class EventBuilder implements Builder<Event> {
     });
   }
 
-  getInput(): EventInput {
+  getInput(): TData {
     return this.input;
   }
 

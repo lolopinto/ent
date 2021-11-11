@@ -60,30 +60,39 @@ export type TriggerReturn =
   | Promise<Changeset<Ent> | void | (Changeset<Ent> | void)[]>
   | Promise<Changeset<Ent>>[];
 
-export interface Trigger<T extends Ent> {
+export interface Trigger<TBuilder extends Builder<Ent>, TData extends Data> {
   // TODO: way in the future. detect any writes happening in changesets and optionally throw if configured to do so
   // can throw if it wants. not expected to throw tho.
-  changeset(builder: Builder<T>, input: Data): TriggerReturn;
+  changeset(builder: TBuilder, input: TData): TriggerReturn;
 }
 
-export interface Observer<T extends Ent> {
-  observe(builder: Builder<T>, input: Data): void | Promise<void>;
+export interface Observer<TBuilder extends Builder<Ent>, TData extends Data> {
+  observe(builder: TBuilder, input: TData): void | Promise<void>;
 }
 
-export interface Validator<T extends Ent> {
+export interface Validator<TBuilder extends Builder<Ent>, TData extends Data> {
   // can throw if it wants
-  validate(builder: Builder<T>, input: Data): Promise<void> | void;
+  validate(builder: TBuilder, input: TData): Promise<void> | void;
 }
 
-export interface Action<T extends Ent> {
+export interface Action<
+  TEnt extends Ent,
+  TBuilder extends Builder<TEnt>,
+  TData extends Data,
+> {
   readonly viewer: Viewer;
-  changeset(): Promise<Changeset<T>>;
-  builder: Builder<T>;
+  changeset(): Promise<Changeset<TEnt>>;
+  builder: TBuilder;
+  // TODO template ent
   getPrivacyPolicy(): PrivacyPolicy;
-  triggers?: Trigger<T>[];
-  observers?: Observer<T>[];
-  validators?: Validator<T>[];
-  getInput(): Data; // this input is passed to Triggers, Observers, Validators
+
+  // TODO consider making these methods. maybe they'll be easier to use then?
+  // performance implications of methods being called multiple times and new instances?
+  // even when declared in base class, if overriden in subclasses, still need to type it...
+  triggers?: Trigger<TBuilder, TData>[];
+  observers?: Observer<TBuilder, TData>[];
+  validators?: Validator<TBuilder, TData>[];
+  getInput(): TData; // this input is passed to Triggers, Observers, Validators
 
   valid(): Promise<boolean>;
   // throws if invalid

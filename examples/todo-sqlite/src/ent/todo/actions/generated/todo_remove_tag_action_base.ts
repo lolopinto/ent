@@ -13,8 +13,10 @@ import {
   TodoInput,
 } from "src/ent/todo/actions/generated/todo_builder";
 
-export class TodoRemoveTagActionBase implements Action<Todo> {
-  public readonly builder: TodoBuilder;
+export class TodoRemoveTagActionBase
+  implements Action<Todo, TodoBuilder<TodoInput>, TodoInput>
+{
+  public readonly builder: TodoBuilder<TodoInput>;
   public readonly viewer: Viewer;
   protected todo: Todo;
 

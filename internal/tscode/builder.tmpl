@@ -15,7 +15,10 @@
   {{ end -}}
 {{ end}}
 
-export interface {{.Node}}Input {
+{{$builder := printf "%sBuilder" .Node}}
+{{$input := printf "%sInput" .Node}}
+
+export interface {{$input}} {
   {{range $field := .FieldInfo.GetEditableFields -}}
     {{$type := $field.TsBuilderType -}}
       {{range $import := $field.TsBuilderImports -}}
@@ -23,10 +26,8 @@ export interface {{.Node}}Input {
       {{end -}}
     {{$field.TsFieldName}}?: {{$type}};
   {{end -}}
-}
-
-export interface {{.Node}}Action extends {{useImport "Action"}}<{{useImport .Node}}> {
-  getInput(): {{.Node}}Input;
+  // allow other properties. useful for action-only fields
+  [x: string]: any;
 }
 
 {{/* TODO better way of doing this? */}}
@@ -37,18 +38,17 @@ function randomNum(): string {
 }
 
 {{$node := useImport .Node}}
-{{$builder := printf "%sBuilder" .Node}}
 
-export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
-  orchestrator: {{useImport "Orchestrator"}}<{{$node}}>;
+export class {{$builder}}<TData extends {{$input}} = {{$input}}> implements {{useImport "Builder"}}<{{$node}}> {
+  orchestrator: {{useImport "Orchestrator"}}<{{$node}}, TData>;
   readonly placeholderID: {{useImport "ID"}};
   readonly ent = {{$node}};
-  private input: {{.Node}}Input;
+  private input: TData;
 
   public constructor(
     public readonly viewer: {{useImport "Viewer"}},
     public readonly operation: {{useImport "WriteOperation"}},
-    action: {{.Node}}Action,
+    action: {{useImport "Action"}}<{{$node}}, {{useImport "Builder"}}<{{$node}}>, TData>,
     public readonly existingEnt?: {{$node}} | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-{{$node}}`;
@@ -67,11 +67,11 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
     });
   }
 
-  getInput(): {{.Node}}Input {
+  getInput(): TData {
     return this.input;
   }
 
-  updateInput(input: {{.Node}}Input) {
+  updateInput(input: {{$input}}) {
     // override input
     this.input = {
       ...this.input,
@@ -96,10 +96,10 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
     {{ $node := useImport .Node -}}
     {{ $polymorphicEdge := $edge.Edge.PolymorphicEdge -}}
   {{ if $polymorphicEdge -}}
-    {{$edge.TSAddMethodName}}(...nodes: ({{$node}} | Builder<{{$node}}>)[]): {{$builder}} {
+    {{$edge.TSAddMethodName}}(...nodes: ({{$node}} | Builder<{{$node}}>)[]): {{$builder}}<TData> {
   {{ else -}}
   {{/* for PolymorphicEdges, this API doesn't work since we don't know the type. callers should call addLikerID in a map */}}  
-    {{$edge.TSAddMethodName}}(...nodes: (ID | {{$node}} | Builder<{{$node}}>)[]): {{$builder}} {
+    {{$edge.TSAddMethodName}}(...nodes: (ID | {{$node}} | Builder<{{$node}}>)[]): {{$builder}}<TData> {
   {{ end -}}
     for (const node of nodes) {
       {{ if $polymorphicEdge -}}
@@ -136,7 +136,7 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
       nodeType: {{useImport "NodeType"}},
     {{ end -}}
     options?: {{useImport "AssocEdgeInputOptions"}}
-  ): {{$builder}} {
+  ): {{$builder}}<TData> {
     {{/* TODO need inbound edges also */}}
     this.orchestrator.addOutboundEdge(
       id, 
@@ -151,7 +151,7 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
     return this;
   }
 
-  {{$edge.TSRemoveMethodName}}(...nodes: (ID | {{$node}})[]): {{$builder}} {
+  {{$edge.TSRemoveMethodName}}(...nodes: (ID | {{$node}})[]): {{$builder}}<TData> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, {{useImport "EdgeType"}}.{{$edge.TSEdgeConst}});

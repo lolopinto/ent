@@ -16,7 +16,7 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { AuthCode, User } from "../../..";
-import { AuthCodeBuilder, AuthCodeInput } from "./auth_code_builder";
+import { AuthCodeBuilder } from "./auth_code_builder";
 
 export interface AuthCodeCreateInput {
   code: string;
@@ -25,8 +25,11 @@ export interface AuthCodeCreateInput {
   phoneNumber?: string | null;
 }
 
-export class CreateAuthCodeActionBase implements Action<AuthCode> {
-  public readonly builder: AuthCodeBuilder;
+export class CreateAuthCodeActionBase
+  implements
+    Action<AuthCode, AuthCodeBuilder<AuthCodeCreateInput>, AuthCodeCreateInput>
+{
+  public readonly builder: AuthCodeBuilder<AuthCodeCreateInput>;
   public readonly viewer: Viewer;
   protected input: AuthCodeCreateInput;
 
@@ -44,7 +47,7 @@ export class CreateAuthCodeActionBase implements Action<AuthCode> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): AuthCodeInput {
+  getInput(): AuthCodeCreateInput {
     return this.input;
   }
 

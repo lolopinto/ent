@@ -16,7 +16,7 @@ import {
   setEdgeTypeInGroup,
 } from "@snowtop/ent/action";
 import { Event, NodeType } from "../../..";
-import { EventBuilder, EventInput } from "./event_builder";
+import { EventBuilder } from "./event_builder";
 
 export enum EventRsvpStatusInput {
   Attending = "attending",
@@ -29,8 +29,15 @@ export interface EditEventRsvpStatusInput {
   userID: ID;
 }
 
-export class EditEventRsvpStatusActionBase implements Action<Event> {
-  public readonly builder: EventBuilder;
+export class EditEventRsvpStatusActionBase
+  implements
+    Action<
+      Event,
+      EventBuilder<EditEventRsvpStatusInput>,
+      EditEventRsvpStatusInput
+    >
+{
+  public readonly builder: EventBuilder<EditEventRsvpStatusInput>;
   public readonly viewer: Viewer;
   protected input: EditEventRsvpStatusInput;
   protected event: Event;
@@ -51,9 +58,8 @@ export class EditEventRsvpStatusActionBase implements Action<Event> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): EventInput {
-    // we use a type assertion to override the weak type detection here
-    return this.input as EventInput;
+  getInput(): EditEventRsvpStatusInput {
+    return this.input;
   }
 
   async changeset(): Promise<Changeset<Event>> {

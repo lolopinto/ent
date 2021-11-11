@@ -8,18 +8,17 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { Guest } from "src/ent/";
-import {
-  GuestBuilder,
-  GuestInput,
-} from "src/ent/guest/actions/generated/guest_builder";
+import { GuestBuilder } from "src/ent/guest/actions/generated/guest_builder";
 
 export interface GuestEditInput {
   name?: string;
   emailAddress?: string | null;
 }
 
-export class EditGuestActionBase implements Action<Guest> {
-  public readonly builder: GuestBuilder;
+export class EditGuestActionBase
+  implements Action<Guest, GuestBuilder<GuestEditInput>, GuestEditInput>
+{
+  public readonly builder: GuestBuilder<GuestEditInput>;
   public readonly viewer: Viewer;
   protected input: GuestEditInput;
   protected guest: Guest;
@@ -40,7 +39,7 @@ export class EditGuestActionBase implements Action<Guest> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): GuestInput {
+  getInput(): GuestEditInput {
     return this.input;
   }
 

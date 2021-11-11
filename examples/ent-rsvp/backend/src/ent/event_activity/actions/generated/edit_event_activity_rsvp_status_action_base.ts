@@ -13,10 +13,7 @@ import {
   setEdgeTypeInGroup,
 } from "@snowtop/ent/action";
 import { EventActivity, NodeType } from "src/ent/";
-import {
-  EventActivityBuilder,
-  EventActivityInput,
-} from "src/ent/event_activity/actions/generated/event_activity_builder";
+import { EventActivityBuilder } from "src/ent/event_activity/actions/generated/event_activity_builder";
 
 export enum EventActivityRsvpStatusInput {
   Attending = "attending",
@@ -30,9 +27,14 @@ export interface EditEventActivityRsvpStatusInput {
 }
 
 export class EditEventActivityRsvpStatusActionBase
-  implements Action<EventActivity>
+  implements
+    Action<
+      EventActivity,
+      EventActivityBuilder<EditEventActivityRsvpStatusInput>,
+      EditEventActivityRsvpStatusInput
+    >
 {
-  public readonly builder: EventActivityBuilder;
+  public readonly builder: EventActivityBuilder<EditEventActivityRsvpStatusInput>;
   public readonly viewer: Viewer;
   protected input: EditEventActivityRsvpStatusInput;
   protected eventActivity: EventActivity;
@@ -57,9 +59,8 @@ export class EditEventActivityRsvpStatusActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): EventActivityInput {
-    // we use a type assertion to override the weak type detection here
-    return this.input as EventActivityInput;
+  getInput(): EditEventActivityRsvpStatusInput {
+    return this.input;
   }
 
   async changeset(): Promise<Changeset<EventActivity>> {

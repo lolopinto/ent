@@ -18,26 +18,26 @@ export interface AuthCodeInput {
   guestID?: ID | Builder<Guest>;
   emailAddress?: string;
   sentCode?: boolean;
-}
-
-export interface AuthCodeAction extends Action<AuthCode> {
-  getInput(): AuthCodeInput;
+  // allow other properties. useful for action-only fields
+  [x: string]: any;
 }
 
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class AuthCodeBuilder implements Builder<AuthCode> {
-  orchestrator: Orchestrator<AuthCode>;
+export class AuthCodeBuilder<TData extends AuthCodeInput = AuthCodeInput>
+  implements Builder<AuthCode>
+{
+  orchestrator: Orchestrator<AuthCode, TData>;
   readonly placeholderID: ID;
   readonly ent = AuthCode;
-  private input: AuthCodeInput;
+  private input: TData;
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: AuthCodeAction,
+    action: Action<AuthCode, Builder<AuthCode>, TData>,
     public readonly existingEnt?: AuthCode | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-AuthCode`;
@@ -56,7 +56,7 @@ export class AuthCodeBuilder implements Builder<AuthCode> {
     });
   }
 
-  getInput(): AuthCodeInput {
+  getInput(): TData {
     return this.input;
   }
 

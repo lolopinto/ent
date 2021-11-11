@@ -21,26 +21,27 @@ export interface HoursOfOperationInput {
   open?: string;
   close?: string;
   dayOfWeekAlt?: DayOfWeekAlt | null;
-}
-
-export interface HoursOfOperationAction extends Action<HoursOfOperation> {
-  getInput(): HoursOfOperationInput;
+  // allow other properties. useful for action-only fields
+  [x: string]: any;
 }
 
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class HoursOfOperationBuilder implements Builder<HoursOfOperation> {
-  orchestrator: Orchestrator<HoursOfOperation>;
+export class HoursOfOperationBuilder<
+  TData extends HoursOfOperationInput = HoursOfOperationInput,
+> implements Builder<HoursOfOperation>
+{
+  orchestrator: Orchestrator<HoursOfOperation, TData>;
   readonly placeholderID: ID;
   readonly ent = HoursOfOperation;
-  private input: HoursOfOperationInput;
+  private input: TData;
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: HoursOfOperationAction,
+    action: Action<HoursOfOperation, Builder<HoursOfOperation>, TData>,
     public readonly existingEnt?: HoursOfOperation | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-HoursOfOperation`;
@@ -59,7 +60,7 @@ export class HoursOfOperationBuilder implements Builder<HoursOfOperation> {
     });
   }
 
-  getInput(): HoursOfOperationInput {
+  getInput(): TData {
     return this.input;
   }
 

@@ -10,15 +10,18 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { Holiday } from "../../..";
-import { HolidayBuilder, HolidayInput } from "./holiday_builder";
+import { HolidayBuilder } from "./holiday_builder";
 
 export interface HolidayCreateInput {
   label: string;
   date: Date;
 }
 
-export class CreateHolidayActionBase implements Action<Holiday> {
-  public readonly builder: HolidayBuilder;
+export class CreateHolidayActionBase
+  implements
+    Action<Holiday, HolidayBuilder<HolidayCreateInput>, HolidayCreateInput>
+{
+  public readonly builder: HolidayBuilder<HolidayCreateInput>;
   public readonly viewer: Viewer;
   protected input: HolidayCreateInput;
 
@@ -32,7 +35,7 @@ export class CreateHolidayActionBase implements Action<Holiday> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): HolidayInput {
+  getInput(): HolidayCreateInput {
     return this.input;
   }
 

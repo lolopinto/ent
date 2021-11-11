@@ -1,4 +1,4 @@
-import { ID, Ent, Viewer, EntConstructor, Context } from "../core/base";
+import { ID, Ent, Viewer, EntConstructor, Context, Data } from "../core/base";
 import { DataOperation } from "../core/ent";
 import { Changeset, Executor } from "../action";
 import { Builder } from "../action";
@@ -15,7 +15,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     public placeholderID: ID,
     private ent: EntConstructor<T>,
     private operations: DataOperation[],
-    private options?: OrchestratorOptions<T>,
+    private options?: OrchestratorOptions<T, Data>,
   ) {}
   private lastOp: DataOperation | undefined;
   private createdEnt: T | null = null;
@@ -118,7 +118,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     operations: DataOperation[],
     dependencies: Map<ID, Builder<T>>,
     changesets: Changeset<T>[],
-    private options?: OrchestratorOptions<T>,
+    private options?: OrchestratorOptions<T, Data>,
   ) {
     let graph = Graph();
 

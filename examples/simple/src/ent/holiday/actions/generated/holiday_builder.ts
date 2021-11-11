@@ -19,26 +19,26 @@ import schema from "../../../../schema/holiday";
 export interface HolidayInput {
   label?: string;
   date?: Date;
-}
-
-export interface HolidayAction extends Action<Holiday> {
-  getInput(): HolidayInput;
+  // allow other properties. useful for action-only fields
+  [x: string]: any;
 }
 
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class HolidayBuilder implements Builder<Holiday> {
-  orchestrator: Orchestrator<Holiday>;
+export class HolidayBuilder<TData extends HolidayInput = HolidayInput>
+  implements Builder<Holiday>
+{
+  orchestrator: Orchestrator<Holiday, TData>;
   readonly placeholderID: ID;
   readonly ent = Holiday;
-  private input: HolidayInput;
+  private input: TData;
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: HolidayAction,
+    action: Action<Holiday, Builder<Holiday>, TData>,
     public readonly existingEnt?: Holiday | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Holiday`;
@@ -57,7 +57,7 @@ export class HolidayBuilder implements Builder<Holiday> {
     });
   }
 
-  getInput(): HolidayInput {
+  getInput(): TData {
     return this.input;
   }
 

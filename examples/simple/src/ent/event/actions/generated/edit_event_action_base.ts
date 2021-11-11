@@ -16,7 +16,7 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { Event, User } from "../../..";
-import { EventBuilder, EventInput } from "./event_builder";
+import { EventBuilder } from "./event_builder";
 
 export interface EventEditInput {
   name?: string;
@@ -26,8 +26,10 @@ export interface EventEditInput {
   location?: string;
 }
 
-export class EditEventActionBase implements Action<Event> {
-  public readonly builder: EventBuilder;
+export class EditEventActionBase
+  implements Action<Event, EventBuilder<EventEditInput>, EventEditInput>
+{
+  public readonly builder: EventBuilder<EventEditInput>;
   public readonly viewer: Viewer;
   protected input: EventEditInput;
   protected event: Event;
@@ -48,7 +50,7 @@ export class EditEventActionBase implements Action<Event> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): EventInput {
+  getInput(): EventEditInput {
     return this.input;
   }
 

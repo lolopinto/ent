@@ -23,26 +23,26 @@ export interface AddressInput {
   zip?: string;
   apartment?: string | null;
   country?: string;
-}
-
-export interface AddressAction extends Action<Address> {
-  getInput(): AddressInput;
+  // allow other properties. useful for action-only fields
+  [x: string]: any;
 }
 
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class AddressBuilder implements Builder<Address> {
-  orchestrator: Orchestrator<Address>;
+export class AddressBuilder<TData extends AddressInput = AddressInput>
+  implements Builder<Address>
+{
+  orchestrator: Orchestrator<Address, TData>;
   readonly placeholderID: ID;
   readonly ent = Address;
-  private input: AddressInput;
+  private input: TData;
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: AddressAction,
+    action: Action<Address, Builder<Address>, TData>,
     public readonly existingEnt?: Address | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Address`;
@@ -61,7 +61,7 @@ export class AddressBuilder implements Builder<Address> {
     });
   }
 
-  getInput(): AddressInput {
+  getInput(): TData {
     return this.input;
   }
 

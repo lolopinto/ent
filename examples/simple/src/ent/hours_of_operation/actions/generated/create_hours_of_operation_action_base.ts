@@ -10,10 +10,7 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { DayOfWeek, DayOfWeekAlt, HoursOfOperation } from "../../..";
-import {
-  HoursOfOperationBuilder,
-  HoursOfOperationInput,
-} from "./hours_of_operation_builder";
+import { HoursOfOperationBuilder } from "./hours_of_operation_builder";
 
 export interface HoursOfOperationCreateInput {
   dayOfWeek: DayOfWeek;
@@ -23,9 +20,14 @@ export interface HoursOfOperationCreateInput {
 }
 
 export class CreateHoursOfOperationActionBase
-  implements Action<HoursOfOperation>
+  implements
+    Action<
+      HoursOfOperation,
+      HoursOfOperationBuilder<HoursOfOperationCreateInput>,
+      HoursOfOperationCreateInput
+    >
 {
-  public readonly builder: HoursOfOperationBuilder;
+  public readonly builder: HoursOfOperationBuilder<HoursOfOperationCreateInput>;
   public readonly viewer: Viewer;
   protected input: HoursOfOperationCreateInput;
 
@@ -43,7 +45,7 @@ export class CreateHoursOfOperationActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): HoursOfOperationInput {
+  getInput(): HoursOfOperationCreateInput {
     return this.input;
   }
 
