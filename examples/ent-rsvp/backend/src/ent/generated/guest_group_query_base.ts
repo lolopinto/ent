@@ -43,12 +43,12 @@ export const guestGroupToGuestsDataLoaderFactory = new IndexLoaderFactory(
   },
 );
 
-export class GuestGroupToInvitedEventsQueryBase extends AssocEdgeQueryBase<
+export abstract class GuestGroupToInvitedEventsQueryBase extends AssocEdgeQueryBase<
   GuestGroup,
   EventActivity,
   GuestGroupToInvitedEventsEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<GuestGroup>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<GuestGroup, EventActivity>) {
     super(
       viewer,
       src,
@@ -59,11 +59,18 @@ export class GuestGroupToInvitedEventsQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends GuestGroupToInvitedEventsQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<GuestGroup>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<GuestGroup, EventActivity>,
+    ) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<GuestGroup>,
+    src: EdgeQuerySource<GuestGroup, EventActivity>,
   ): T {
     return new this(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return GuestGroup.load(this.viewer, id);
   }
 
   queryAttending(): EventActivityToAttendingQuery {
@@ -98,5 +105,9 @@ export class GuestGroupToGuestsQueryBase extends CustomEdgeQueryBase<
     src: GuestGroup | ID,
   ): T {
     return new this(viewer, src);
+  }
+
+  async sourceEnt(id: ID) {
+    return GuestGroup.load(this.viewer, id);
   }
 }

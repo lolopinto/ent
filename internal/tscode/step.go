@@ -508,7 +508,7 @@ func writeAssocEdgeQueryFile(processor *codegen.Processor, e *edge.AssociationEd
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 		EditableCode:      true,
-	})
+	}, file.WriteOnce())
 }
 
 func writeCustomEdgeQueryFile(processor *codegen.Processor, nodeData *schema.NodeData, e edge.ConnectionEdge) error {
