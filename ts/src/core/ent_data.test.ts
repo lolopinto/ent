@@ -753,7 +753,7 @@ function commonTests() {
 
     test("with context", async () => {
       const vc = getIDViewer(1);
-      const ents = await ent.loadEnts(vc, User.loaderOptions(), 1, 2, 3);
+      const ents = await ent.loadEntsList(vc, User.loaderOptions(), 1, 2, 3);
 
       // only loading self worked because of privacy
       expect(ents.length).toBe(1);
@@ -805,7 +805,7 @@ function commonTests() {
 
     test("without context", async () => {
       const vc = new IDViewer(1);
-      const ents = await ent.loadEnts(vc, User.loaderOptions(), 1, 2, 3);
+      const ents = await ent.loadEntsList(vc, User.loaderOptions(), 1, 2, 3);
 
       // only loading self worked because of privacy
       expect(ents.length).toBe(1);

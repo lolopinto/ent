@@ -431,9 +431,9 @@ test("loadMultiUsers", async () => {
     const expectedCount = testData[1];
     const users = await User.loadMany(v, jon.id, dany.id, sam.id);
 
-    expect(users.length, testData[2]).toBe(expectedCount);
+    expect(users.size, testData[2]).toBe(expectedCount);
 
-    for (const user of users) {
+    for (const [_id, user] of users) {
       // confirm they're the right type
       expect(user).toBeInstanceOf(User);
     }

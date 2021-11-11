@@ -187,9 +187,9 @@ export async function loadEnts<T extends Ent>(
   viewer: Viewer,
   options: LoadEntOptions<T>,
   ...ids: ID[]
-): Promise<T[]> {
+): Promise<Map<ID, T>> {
   if (!ids.length) {
-    return [];
+    return new Map();
   }
   let loaded = false;
   let rows: (Error | Data | null)[] = [];
@@ -223,14 +223,21 @@ export async function loadEnts<T extends Ent>(
       options,
     );
   }
+  return m;
 
   // TODO do we want to change this to be a map not a list so that it's easy to check for existence?
   // TODO eventually this should be doing a cache then db queyr and maybe depend on dataloader to get all the results at once
+}
 
-  // we need to get the result and re-sort... because the raw db access doesn't guarantee it in same order
-  // apparently
-  //  let m = await loadEntsFromClause(viewer, clause.In("id", ...ids), options);
-  let result: T[] = [];
+// calls loadEnts and returns the results sorted in the order they were passed in
+// useful for EntQuery and other paths where the order matters
+export async function loadEntsList<T extends Ent>(
+  viewer: Viewer,
+  options: LoadEntOptions<T>,
+  ...ids: ID[]
+): Promise<T[]> {
+  const m = await loadEnts(viewer, options, ...ids);
+  const result: T[] = [];
   ids.forEach((id) => {
     let ent = m.get(id);
     if (ent) {
@@ -1606,7 +1613,7 @@ export async function loadNodesByEdge<T extends Ent>(
   // extract id2s
   const ids = rows.map((row) => row.id2);
 
-  return loadEnts(viewer, options, ...ids);
+  return loadEntsList(viewer, options, ...ids);
 }
 
 export async function applyPrivacyPolicyForRow<T extends Ent>(
