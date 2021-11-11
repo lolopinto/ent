@@ -24,28 +24,28 @@ export interface AddressInput {
   zip?: string;
   apartment?: string | null;
   country?: string;
-}
-
-export interface AddressAction extends Action<Address> {
-  getInput(): AddressInput;
+  // allow other properties. useful for action-only fields
+  [x: string]: any;
 }
 
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class AddressBuilder implements Builder<Address> {
-  orchestrator: Orchestrator<Address>;
+export class AddressBuilder<TData extends AddressInput = AddressInput>
+  implements Builder<Address>
+{
+  orchestrator: Orchestrator<Address, TData>;
   readonly placeholderID: ID;
   readonly ent = Address;
   readonly nodeType = NodeType.Address;
-  private input: AddressInput;
+  private input: TData;
   private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: AddressAction,
+    action: Action<Address, Builder<Address>, TData>,
     public readonly existingEnt?: Address | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Address`;
@@ -66,7 +66,7 @@ export class AddressBuilder implements Builder<Address> {
     });
   }
 
-  getInput(): AddressInput {
+  getInput(): TData {
     return this.input;
   }
 
@@ -102,7 +102,9 @@ export class AddressBuilder implements Builder<Address> {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
 
-  addHostedEvent(...nodes: (ID | Event | Builder<Event>)[]): AddressBuilder {
+  addHostedEvent(
+    ...nodes: (ID | Event | Builder<Event>)[]
+  ): AddressBuilder<TData> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addHostedEventID(node);
@@ -118,7 +120,7 @@ export class AddressBuilder implements Builder<Address> {
   addHostedEventID(
     id: ID | Builder<Event>,
     options?: AssocEdgeInputOptions,
-  ): AddressBuilder {
+  ): AddressBuilder<TData> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.AddressToHostedEvents,
@@ -128,7 +130,7 @@ export class AddressBuilder implements Builder<Address> {
     return this;
   }
 
-  removeHostedEvent(...nodes: (ID | Event)[]): AddressBuilder {
+  removeHostedEvent(...nodes: (ID | Event)[]): AddressBuilder<TData> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(

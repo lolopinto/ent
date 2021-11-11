@@ -112,7 +112,7 @@ function randomNum(): string {
 export class SimpleBuilder<T extends Ent> implements Builder<T> {
   ent: EntConstructor<T>;
   placeholderID: ID;
-  public orchestrator: Orchestrator<T>;
+  public orchestrator: Orchestrator<T, Data>;
   public fields: Map<string, any>;
   nodeType: string;
 
@@ -122,7 +122,7 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
     fields: Map<string, any>,
     public operation: WriteOperation = WriteOperation.Insert,
     public existingEnt: T | undefined = undefined,
-    action?: Action<T> | undefined,
+    action?: Action<T, SimpleBuilder<T>, Data> | undefined,
   ) {
     // create dynamic placeholder
     // TODO: do we need to use this as the node when there's an existingEnt
@@ -155,7 +155,7 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
     this.ent = schema.ent;
     const tableName = getTableName(schema);
     this.nodeType = camelCase(schema.ent.name);
-    this.orchestrator = new Orchestrator<T>({
+    this.orchestrator = new Orchestrator<T, Data>({
       viewer: this.viewer,
       operation: operation,
       tableName: tableName,
@@ -233,11 +233,13 @@ interface viewerEntLoadFunc {
   (data: Data): Viewer | Promise<Viewer>;
 }
 
-export class SimpleAction<T extends Ent> implements Action<T> {
+export class SimpleAction<T extends Ent>
+  implements Action<T, SimpleBuilder<T>, Data>
+{
   builder: SimpleBuilder<T>;
-  validators: Validator<T>[] = [];
-  triggers: Trigger<T>[] = [];
-  observers: Observer<T>[] = [];
+  validators: Validator<SimpleBuilder<T>, Data>[] = [];
+  triggers: Trigger<SimpleBuilder<T>, Data>[] = [];
+  observers: Observer<SimpleBuilder<T>, Data>[] = [];
   viewerForEntLoad: viewerEntLoadFunc | undefined;
 
   constructor(

@@ -35,17 +35,17 @@ import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import { log } from "../core/logger";
 import { Trigger } from "./action";
 
-export interface OrchestratorOptions<T extends Ent, TData extends Data> {
+export interface OrchestratorOptions<TEnt extends Ent, TData extends Data> {
   viewer: Viewer;
   operation: WriteOperation;
   tableName: string;
   // should we make it nullable for delete?
-  loaderOptions: LoadEntOptions<T>;
+  loaderOptions: LoadEntOptions<TEnt>;
   // key, usually 'id' that's being updated
   key: string;
 
-  builder: Builder<T>;
-  action?: Action<T>;
+  builder: Builder<TEnt>;
+  action?: Action<TEnt, Builder<TEnt>, TData>;
   schema: SchemaInputType;
   editedFields(): Map<string, any> | Promise<Map<string, any>>;
   // this is called with fields with defaultValueOnCreate|Edit
@@ -102,7 +102,7 @@ type OperationMap = Map<WriteOperation, IDMap>;
 // }
 type EdgeMap = Map<string, OperationMap>;
 
-function getViewer(action: Action<Ent>) {
+function getViewer(action: Action<Ent, Builder<Ent>, Data>) {
   if (!action.viewer.viewerID) {
     return "Logged out Viewer";
   } else {
@@ -111,7 +111,10 @@ function getViewer(action: Action<Ent>) {
 }
 class EntCannotCreateEntError extends Error implements PrivacyError {
   privacyPolicy: PrivacyPolicy;
-  constructor(privacyPolicy: PrivacyPolicy, action: Action<Ent>) {
+  constructor(
+    privacyPolicy: PrivacyPolicy,
+    action: Action<Ent, Builder<Ent>, Data>,
+  ) {
     let msg = `${getViewer(action)} does not have permission to create ${
       action.builder.ent.name
     }`;
@@ -122,7 +125,11 @@ class EntCannotCreateEntError extends Error implements PrivacyError {
 
 class EntCannotEditEntError extends Error implements PrivacyError {
   privacyPolicy: PrivacyPolicy;
-  constructor(privacyPolicy: PrivacyPolicy, action: Action<Ent>, ent: Ent) {
+  constructor(
+    privacyPolicy: PrivacyPolicy,
+    action: Action<Ent, Builder<Ent>, Data>,
+    ent: Ent,
+  ) {
     let msg = `${getViewer(action)} does not have permission to edit ${
       ent.constructor.name
     }`;
@@ -133,7 +140,11 @@ class EntCannotEditEntError extends Error implements PrivacyError {
 
 class EntCannotDeleteEntError extends Error implements PrivacyError {
   privacyPolicy: PrivacyPolicy;
-  constructor(privacyPolicy: PrivacyPolicy, action: Action<Ent>, ent: Ent) {
+  constructor(
+    privacyPolicy: PrivacyPolicy,
+    action: Action<Ent, Builder<Ent>, Data>,
+    ent: Ent,
+  ) {
     let msg = `${getViewer(action)} does not have permission to delete ${
       ent.constructor.name
     }`;
@@ -142,15 +153,15 @@ class EntCannotDeleteEntError extends Error implements PrivacyError {
   }
 }
 
-export class Orchestrator<T extends Ent> {
+export class Orchestrator<TEnt extends Ent, TData extends Data> {
   private edgeSet: Set<string> = new Set<string>();
   private edges: EdgeMap = new Map();
   private validatedFields: Data | null;
   private logValues: Data | null;
   private changesets: Changeset<Ent>[] = [];
-  private dependencies: Map<ID, Builder<Ent>> = new Map();
+  private dependencies: Map<ID, Builder<TEnt>> = new Map();
   private fieldsToResolve: string[] = [];
-  private mainOp: DataOperation<T> | null;
+  private mainOp: DataOperation<TEnt> | null;
   viewer: Viewer;
   private defaultFieldsByFieldName: Data = {};
   private defaultFieldsByTSName: Data = {};
@@ -158,10 +169,10 @@ export class Orchestrator<T extends Ent> {
   // btw the beginning op and the transformed one we end up using
   private actualOperation: WriteOperation;
   // same with existingEnt. can transform so we wanna know what we started with and now where we are.
-  private existingEnt?: T;
+  private existingEnt?: TEnt;
   private disableTransformations: boolean;
 
-  constructor(private options: OrchestratorOptions<T, Data>) {
+  constructor(private options: OrchestratorOptions<TEnt, TData>) {
     this.viewer = options.viewer;
     this.actualOperation = this.options.operation;
     this.existingEnt = this.options.builder.existingEnt;
@@ -283,7 +294,7 @@ export class Orchestrator<T extends Ent> {
             `existing ent required with operation ${this.actualOperation}`,
           );
         }
-        const opts: EditNodeOptions<T> = {
+        const opts: EditNodeOptions<TEnt> = {
           fields: this.validatedFields!,
           tableName: this.options.tableName,
           fieldsToResolve: this.fieldsToResolve,
@@ -521,9 +532,9 @@ export class Orchestrator<T extends Ent> {
   }
 
   private async triggers(
-    action: Action<T>,
-    builder: Builder<T>,
-    triggers: Trigger<T>[],
+    action: Action<TEnt, Builder<TEnt>, TData>,
+    builder: Builder<TEnt>,
+    triggers: Trigger<Builder<TEnt>, TData>[],
   ): Promise<void> {
     await Promise.all(
       triggers.map(async (trigger) => {
@@ -546,9 +557,9 @@ export class Orchestrator<T extends Ent> {
   }
 
   private async validators(
-    validators: Validator<T>[],
-    action: Action<T>,
-    builder: Builder<T>,
+    validators: Validator<Builder<TEnt>, TData>[],
+    action: Action<TEnt, Builder<TEnt>, TData>,
+    builder: Builder<TEnt>,
   ): Promise<void> {
     let promises: Promise<void>[] = [];
     validators.forEach((validator) => {
@@ -560,15 +571,15 @@ export class Orchestrator<T extends Ent> {
     await Promise.all(promises);
   }
 
-  private isBuilder(val: Builder<Ent> | any): val is Builder<Ent> {
-    return (val as Builder<Ent>).placeholderID !== undefined;
+  private isBuilder(val: Builder<TEnt> | any): val is Builder<TEnt> {
+    return (val as Builder<TEnt>).placeholderID !== undefined;
   }
 
   private async getFieldsWithDefaultValues(
-    builder: Builder<T>,
+    builder: Builder<TEnt>,
     schemaFields: Map<string, Field>,
     editedFields: Map<string, any>,
-    action?: Action<T> | undefined,
+    action?: Action<TEnt, Builder<TEnt>, TData> | undefined,
   ): Promise<Data> {
     let data: Data = {};
     let defaultData: Data = {};
@@ -581,7 +592,7 @@ export class Orchestrator<T extends Ent> {
     // if action transformations. always do it
     // if disable transformations set, don't do schema transform and just do the right thing
     // else apply schema tranformation if it exists
-    let transformed: TransformedUpdateOperation<T> | undefined;
+    let transformed: TransformedUpdateOperation<TEnt> | undefined;
 
     if (action?.transformWrite) {
       transformed = await action.transformWrite({
@@ -680,7 +691,7 @@ export class Orchestrator<T extends Ent> {
       };
       if (updateInput && this.options.updateInput) {
         // this basically fixes #605. just needs to be exposed correctly
-        this.options.updateInput(this.defaultFieldsByTSName);
+        this.options.updateInput(this.defaultFieldsByTSName as TData);
       }
     }
 
@@ -716,7 +727,7 @@ export class Orchestrator<T extends Ent> {
       }
     } else if (this.isBuilder(value)) {
       if (field.valid) {
-        const valid = await Promise.resolve(field.valid(value));
+        const valid = await field.valid(value);
         if (!valid) {
           throw new Error(`invalid field ${field.name} with value ${value}`);
         }
@@ -728,7 +739,7 @@ export class Orchestrator<T extends Ent> {
     } else {
       if (field.valid) {
         // TODO this could be async. handle this better
-        const valid = await Promise.resolve(field.valid(value));
+        const valid = await field.valid(value);
         if (!valid) {
           throw new Error(`invalid field ${field.name} with value ${value}`);
         }
@@ -812,7 +823,7 @@ export class Orchestrator<T extends Ent> {
     return this.validate();
   }
 
-  async build(): Promise<EntChangeset<T>> {
+  async build(): Promise<EntChangeset<TEnt>> {
     // validate everything first
     await this.validX();
 
@@ -846,7 +857,7 @@ export class Orchestrator<T extends Ent> {
     return null;
   }
 
-  async editedEnt(): Promise<T | null> {
+  async editedEnt(): Promise<TEnt | null> {
     const row = await this.returnedRow();
     if (!row) {
       return null;
@@ -855,7 +866,7 @@ export class Orchestrator<T extends Ent> {
     return applyPrivacyPolicyForRow(viewer, this.options.loaderOptions, row);
   }
 
-  async editedEntX(): Promise<T> {
+  async editedEntX(): Promise<TEnt> {
     const row = await this.returnedRow();
     if (!row) {
       throw new Error(`ent was not created`);

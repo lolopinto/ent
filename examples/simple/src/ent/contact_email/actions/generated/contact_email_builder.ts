@@ -21,28 +21,29 @@ export interface ContactEmailInput {
   emailAddress?: string;
   label?: string;
   contactID?: ID | Builder<Contact>;
-}
-
-export interface ContactEmailAction extends Action<ContactEmail> {
-  getInput(): ContactEmailInput;
+  // allow other properties. useful for action-only fields
+  [x: string]: any;
 }
 
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class ContactEmailBuilder implements Builder<ContactEmail> {
-  orchestrator: Orchestrator<ContactEmail>;
+export class ContactEmailBuilder<
+  TData extends ContactEmailInput = ContactEmailInput,
+> implements Builder<ContactEmail>
+{
+  orchestrator: Orchestrator<ContactEmail, TData>;
   readonly placeholderID: ID;
   readonly ent = ContactEmail;
   readonly nodeType = NodeType.ContactEmail;
-  private input: ContactEmailInput;
+  private input: TData;
   private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: ContactEmailAction,
+    action: Action<ContactEmail, Builder<ContactEmail>, TData>,
     public readonly existingEnt?: ContactEmail | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-ContactEmail`;
@@ -64,7 +65,7 @@ export class ContactEmailBuilder implements Builder<ContactEmail> {
     });
   }
 
-  getInput(): ContactEmailInput {
+  getInput(): TData {
     return this.input;
   }
 

@@ -16,8 +16,15 @@ import {
   ContactEmailInput,
 } from "./contact_email_builder";
 
-export class DeleteContactEmailActionBase implements Action<ContactEmail> {
-  public readonly builder: ContactEmailBuilder;
+export class DeleteContactEmailActionBase
+  implements
+    Action<
+      ContactEmail,
+      ContactEmailBuilder<ContactEmailInput>,
+      ContactEmailInput
+    >
+{
+  public readonly builder: ContactEmailBuilder<ContactEmailInput>;
   public readonly viewer: Viewer;
   protected contactEmail: ContactEmail;
 

@@ -21,28 +21,29 @@ export interface ContactPhoneNumberInput {
   phoneNumber?: string;
   label?: string;
   contactID?: ID | Builder<Contact>;
-}
-
-export interface ContactPhoneNumberAction extends Action<ContactPhoneNumber> {
-  getInput(): ContactPhoneNumberInput;
+  // allow other properties. useful for action-only fields
+  [x: string]: any;
 }
 
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class ContactPhoneNumberBuilder implements Builder<ContactPhoneNumber> {
-  orchestrator: Orchestrator<ContactPhoneNumber>;
+export class ContactPhoneNumberBuilder<
+  TData extends ContactPhoneNumberInput = ContactPhoneNumberInput,
+> implements Builder<ContactPhoneNumber>
+{
+  orchestrator: Orchestrator<ContactPhoneNumber, TData>;
   readonly placeholderID: ID;
   readonly ent = ContactPhoneNumber;
   readonly nodeType = NodeType.ContactPhoneNumber;
-  private input: ContactPhoneNumberInput;
+  private input: TData;
   private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: ContactPhoneNumberAction,
+    action: Action<ContactPhoneNumber, Builder<ContactPhoneNumber>, TData>,
     public readonly existingEnt?: ContactPhoneNumber | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-ContactPhoneNumber`;
@@ -64,7 +65,7 @@ export class ContactPhoneNumberBuilder implements Builder<ContactPhoneNumber> {
     });
   }
 
-  getInput(): ContactPhoneNumberInput {
+  getInput(): TData {
     return this.input;
   }
 

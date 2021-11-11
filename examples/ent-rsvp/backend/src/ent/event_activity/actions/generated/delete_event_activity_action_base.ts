@@ -13,8 +13,15 @@ import {
   EventActivityInput,
 } from "src/ent/event_activity/actions/generated/event_activity_builder";
 
-export class DeleteEventActivityActionBase implements Action<EventActivity> {
-  public readonly builder: EventActivityBuilder;
+export class DeleteEventActivityActionBase
+  implements
+    Action<
+      EventActivity,
+      EventActivityBuilder<EventActivityInput>,
+      EventActivityInput
+    >
+{
+  public readonly builder: EventActivityBuilder<EventActivityInput>;
   public readonly viewer: Viewer;
   protected eventActivity: EventActivity;
 

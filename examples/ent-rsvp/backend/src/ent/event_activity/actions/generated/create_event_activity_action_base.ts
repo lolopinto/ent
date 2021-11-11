@@ -13,10 +13,7 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { Event, EventActivity } from "src/ent/";
-import {
-  EventActivityBuilder,
-  EventActivityInput,
-} from "src/ent/event_activity/actions/generated/event_activity_builder";
+import { EventActivityBuilder } from "src/ent/event_activity/actions/generated/event_activity_builder";
 
 interface customAddressInput {
   street: string;
@@ -37,8 +34,15 @@ export interface EventActivityCreateInput {
   address?: customAddressInput | null;
 }
 
-export class CreateEventActivityActionBase implements Action<EventActivity> {
-  public readonly builder: EventActivityBuilder;
+export class CreateEventActivityActionBase
+  implements
+    Action<
+      EventActivity,
+      EventActivityBuilder<EventActivityCreateInput>,
+      EventActivityCreateInput
+    >
+{
+  public readonly builder: EventActivityBuilder<EventActivityCreateInput>;
   public readonly viewer: Viewer;
   protected input: EventActivityCreateInput;
 
@@ -56,7 +60,7 @@ export class CreateEventActivityActionBase implements Action<EventActivity> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): EventActivityInput {
+  getInput(): EventActivityCreateInput {
     return this.input;
   }
 

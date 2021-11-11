@@ -24,28 +24,28 @@ export interface EventInput {
   endTime?: Date | null;
   location?: string;
   addressID?: ID | null | Builder<Address>;
-}
-
-export interface EventAction extends Action<Event> {
-  getInput(): EventInput;
+  // allow other properties. useful for action-only fields
+  [x: string]: any;
 }
 
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class EventBuilder implements Builder<Event> {
-  orchestrator: Orchestrator<Event>;
+export class EventBuilder<TData extends EventInput = EventInput>
+  implements Builder<Event>
+{
+  orchestrator: Orchestrator<Event, TData>;
   readonly placeholderID: ID;
   readonly ent = Event;
   readonly nodeType = NodeType.Event;
-  private input: EventInput;
+  private input: TData;
   private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: EventAction,
+    action: Action<Event, Builder<Event>, TData>,
     public readonly existingEnt?: Event | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Event`;
@@ -66,7 +66,7 @@ export class EventBuilder implements Builder<Event> {
     });
   }
 
-  getInput(): EventInput {
+  getInput(): TData {
     return this.input;
   }
 
@@ -102,7 +102,7 @@ export class EventBuilder implements Builder<Event> {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
 
-  addAttending(...nodes: (ID | User | Builder<User>)[]): EventBuilder {
+  addAttending(...nodes: (ID | User | Builder<User>)[]): EventBuilder<TData> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addAttendingID(node);
@@ -118,7 +118,7 @@ export class EventBuilder implements Builder<Event> {
   addAttendingID(
     id: ID | Builder<User>,
     options?: AssocEdgeInputOptions,
-  ): EventBuilder {
+  ): EventBuilder<TData> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.EventToAttending,
@@ -128,7 +128,7 @@ export class EventBuilder implements Builder<Event> {
     return this;
   }
 
-  removeAttending(...nodes: (ID | User)[]): EventBuilder {
+  removeAttending(...nodes: (ID | User)[]): EventBuilder<TData> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -142,7 +142,7 @@ export class EventBuilder implements Builder<Event> {
     return this;
   }
 
-  addDeclined(...nodes: (ID | User | Builder<User>)[]): EventBuilder {
+  addDeclined(...nodes: (ID | User | Builder<User>)[]): EventBuilder<TData> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addDeclinedID(node);
@@ -158,7 +158,7 @@ export class EventBuilder implements Builder<Event> {
   addDeclinedID(
     id: ID | Builder<User>,
     options?: AssocEdgeInputOptions,
-  ): EventBuilder {
+  ): EventBuilder<TData> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.EventToDeclined,
@@ -168,7 +168,7 @@ export class EventBuilder implements Builder<Event> {
     return this;
   }
 
-  removeDeclined(...nodes: (ID | User)[]): EventBuilder {
+  removeDeclined(...nodes: (ID | User)[]): EventBuilder<TData> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.EventToDeclined);
@@ -179,7 +179,7 @@ export class EventBuilder implements Builder<Event> {
     return this;
   }
 
-  addHost(...nodes: (ID | User | Builder<User>)[]): EventBuilder {
+  addHost(...nodes: (ID | User | Builder<User>)[]): EventBuilder<TData> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addHostID(node);
@@ -195,7 +195,7 @@ export class EventBuilder implements Builder<Event> {
   addHostID(
     id: ID | Builder<User>,
     options?: AssocEdgeInputOptions,
-  ): EventBuilder {
+  ): EventBuilder<TData> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.EventToHosts,
@@ -205,7 +205,7 @@ export class EventBuilder implements Builder<Event> {
     return this;
   }
 
-  removeHost(...nodes: (ID | User)[]): EventBuilder {
+  removeHost(...nodes: (ID | User)[]): EventBuilder<TData> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.EventToHosts);
@@ -216,7 +216,7 @@ export class EventBuilder implements Builder<Event> {
     return this;
   }
 
-  addInvited(...nodes: (ID | User | Builder<User>)[]): EventBuilder {
+  addInvited(...nodes: (ID | User | Builder<User>)[]): EventBuilder<TData> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addInvitedID(node);
@@ -232,7 +232,7 @@ export class EventBuilder implements Builder<Event> {
   addInvitedID(
     id: ID | Builder<User>,
     options?: AssocEdgeInputOptions,
-  ): EventBuilder {
+  ): EventBuilder<TData> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.EventToInvited,
@@ -242,7 +242,7 @@ export class EventBuilder implements Builder<Event> {
     return this;
   }
 
-  removeInvited(...nodes: (ID | User)[]): EventBuilder {
+  removeInvited(...nodes: (ID | User)[]): EventBuilder<TData> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.EventToInvited);
@@ -253,7 +253,7 @@ export class EventBuilder implements Builder<Event> {
     return this;
   }
 
-  addMaybe(...nodes: (ID | User | Builder<User>)[]): EventBuilder {
+  addMaybe(...nodes: (ID | User | Builder<User>)[]): EventBuilder<TData> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addMaybeID(node);
@@ -269,7 +269,7 @@ export class EventBuilder implements Builder<Event> {
   addMaybeID(
     id: ID | Builder<User>,
     options?: AssocEdgeInputOptions,
-  ): EventBuilder {
+  ): EventBuilder<TData> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.EventToMaybe,
@@ -279,7 +279,7 @@ export class EventBuilder implements Builder<Event> {
     return this;
   }
 
-  removeMaybe(...nodes: (ID | User)[]): EventBuilder {
+  removeMaybe(...nodes: (ID | User)[]): EventBuilder<TData> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.EventToMaybe);

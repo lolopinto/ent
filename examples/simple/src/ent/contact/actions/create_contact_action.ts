@@ -14,11 +14,10 @@ import {
   PrivacyPolicy,
   Data,
   IDViewer,
-  Ent,
 } from "@snowtop/ent";
 import { AllowIfBuilder, Trigger } from "@snowtop/ent/action";
 import CreateContactEmailAction from "src/ent/contact_email/actions/create_contact_email_action";
-import { ContactBuilder } from "./generated/contact_builder";
+import { ContactBuilder, ContactInput } from "./generated/contact_builder";
 import CreateContactPhoneNumberAction from "src/ent/contact_phone_number/actions/create_contact_phone_number_action";
 import EditContactAction from "./edit_contact_action";
 
@@ -35,7 +34,7 @@ export default class CreateContactAction extends CreateContactActionBase {
     };
   }
 
-  triggers: Trigger<Ent>[] = [
+  triggers: Trigger<ContactBuilder, ContactInput>[] = [
     {
       async changeset(builder: ContactBuilder, input: ContactCreateInput) {
         if (input.emails) {
