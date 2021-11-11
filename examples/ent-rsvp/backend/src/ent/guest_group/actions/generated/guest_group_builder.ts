@@ -17,27 +17,31 @@ import schema from "src/schema/guest_group";
 export interface GuestGroupInput {
   invitationName?: string;
   eventID?: ID | Builder<Event>;
-}
-
-export interface GuestGroupAction extends Action<GuestGroup> {
-  getInput(): GuestGroupInput;
+  // allow other properties. useful for action-only fields
+  [x: string]: any;
 }
 
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class GuestGroupBuilder implements Builder<GuestGroup> {
-  orchestrator: Orchestrator<GuestGroup>;
+export class GuestGroupBuilder<TData extends GuestGroupInput = GuestGroupInput>
+  implements Builder<GuestGroup>
+{
+  orchestrator: Orchestrator<GuestGroup, TData>;
   readonly placeholderID: ID;
   readonly ent = GuestGroup;
+<<<<<<< HEAD
   private input: GuestGroupInput;
   private m: Map<string, any> = new Map();
+=======
+  private input: TData;
+>>>>>>> d9313177... action builder, trigger, observer, validator changes (#622)
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: GuestGroupAction,
+    action: Action<GuestGroup, Builder<GuestGroup>, TData>,
     public readonly existingEnt?: GuestGroup | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-GuestGroup`;
@@ -59,7 +63,7 @@ export class GuestGroupBuilder implements Builder<GuestGroup> {
     });
   }
 
-  getInput(): GuestGroupInput {
+  getInput(): TData {
     return this.input;
   }
 
@@ -93,7 +97,7 @@ export class GuestGroupBuilder implements Builder<GuestGroup> {
 
   addGuestGroupToInvitedEvent(
     ...nodes: (ID | EventActivity | Builder<EventActivity>)[]
-  ): GuestGroupBuilder {
+  ): GuestGroupBuilder<TData> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addGuestGroupToInvitedEventID(node);
@@ -109,7 +113,7 @@ export class GuestGroupBuilder implements Builder<GuestGroup> {
   addGuestGroupToInvitedEventID(
     id: ID | Builder<EventActivity>,
     options?: AssocEdgeInputOptions,
-  ): GuestGroupBuilder {
+  ): GuestGroupBuilder<TData> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.GuestGroupToInvitedEvents,
@@ -121,7 +125,7 @@ export class GuestGroupBuilder implements Builder<GuestGroup> {
 
   removeGuestGroupToInvitedEvent(
     ...nodes: (ID | EventActivity)[]
-  ): GuestGroupBuilder {
+  ): GuestGroupBuilder<TData> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(

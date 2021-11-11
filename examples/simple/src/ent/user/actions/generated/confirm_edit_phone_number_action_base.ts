@@ -11,15 +11,22 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { User } from "../../..";
-import { UserBuilder, UserInput } from "./user_builder";
+import { UserBuilder } from "./user_builder";
 
 export interface ConfirmEditPhoneNumberInput {
   phoneNumber: string;
   code: string;
 }
 
-export class ConfirmEditPhoneNumberActionBase implements Action<User> {
-  public readonly builder: UserBuilder;
+export class ConfirmEditPhoneNumberActionBase
+  implements
+    Action<
+      User,
+      UserBuilder<ConfirmEditPhoneNumberInput>,
+      ConfirmEditPhoneNumberInput
+    >
+{
+  public readonly builder: UserBuilder<ConfirmEditPhoneNumberInput>;
   public readonly viewer: Viewer;
   protected input: ConfirmEditPhoneNumberInput;
   protected user: User;
@@ -40,7 +47,7 @@ export class ConfirmEditPhoneNumberActionBase implements Action<User> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): UserInput {
+  getInput(): ConfirmEditPhoneNumberInput {
     return this.input;
   }
 

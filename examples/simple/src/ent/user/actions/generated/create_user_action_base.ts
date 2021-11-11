@@ -11,7 +11,7 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { DaysOff, PreferredShift, User } from "../../..";
-import { UserBuilder, UserInput } from "./user_builder";
+import { UserBuilder } from "./user_builder";
 import { UserPrefs } from "../../../user_prefs";
 
 export interface UserCreateInput {
@@ -29,8 +29,10 @@ export interface UserCreateInput {
   prefsList?: UserPrefs[] | null;
 }
 
-export class CreateUserActionBase implements Action<User> {
-  public readonly builder: UserBuilder;
+export class CreateUserActionBase
+  implements Action<User, UserBuilder<UserCreateInput>, UserCreateInput>
+{
+  public readonly builder: UserBuilder<UserCreateInput>;
   public readonly viewer: Viewer;
   protected input: UserCreateInput;
 
@@ -44,7 +46,7 @@ export class CreateUserActionBase implements Action<User> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): UserInput {
+  getInput(): UserCreateInput {
     return this.input;
   }
 

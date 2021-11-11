@@ -1,4 +1,3 @@
-import { Ent } from "@snowtop/ent";
 import { Trigger, Validator } from "@snowtop/ent/action";
 import {
   ConfirmEditPhoneNumberActionBase,
@@ -23,9 +22,9 @@ async function findAuthCode(
 }
 // we're only writing this once except with --force and packageName provided
 export default class ConfirmEditPhoneNumberAction extends ConfirmEditPhoneNumberActionBase {
-  validators: Validator<User>[] = [
+  validators: Validator<UserBuilder, ConfirmEditPhoneNumberInput>[] = [
     {
-      async validate(builder: UserBuilder, input: ConfirmEditPhoneNumberInput) {
+      async validate(builder, input) {
         const authCode = await findAuthCode(
           builder,
           input.code,
@@ -38,12 +37,9 @@ export default class ConfirmEditPhoneNumberAction extends ConfirmEditPhoneNumber
     },
   ];
 
-  triggers: Trigger<Ent>[] = [
+  triggers: Trigger<UserBuilder, ConfirmEditPhoneNumberInput>[] = [
     {
-      async changeset(
-        builder: UserBuilder,
-        input: ConfirmEditPhoneNumberInput,
-      ) {
+      async changeset(builder, input) {
         const authCode = await findAuthCode(
           builder,
           input.code,

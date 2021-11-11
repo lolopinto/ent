@@ -13,10 +13,7 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { Event, EventActivity } from "src/ent/";
-import {
-  EventActivityBuilder,
-  EventActivityInput,
-} from "src/ent/event_activity/actions/generated/event_activity_builder";
+import { EventActivityBuilder } from "src/ent/event_activity/actions/generated/event_activity_builder";
 
 export interface EventActivityEditInput {
   name?: string;
@@ -28,8 +25,15 @@ export interface EventActivityEditInput {
   inviteAllGuests?: boolean;
 }
 
-export class EditEventActivityActionBase implements Action<EventActivity> {
-  public readonly builder: EventActivityBuilder;
+export class EditEventActivityActionBase
+  implements
+    Action<
+      EventActivity,
+      EventActivityBuilder<EventActivityEditInput>,
+      EventActivityEditInput
+    >
+{
+  public readonly builder: EventActivityBuilder<EventActivityEditInput>;
   public readonly viewer: Viewer;
   protected input: EventActivityEditInput;
   protected eventActivity: EventActivity;
@@ -54,7 +58,7 @@ export class EditEventActivityActionBase implements Action<EventActivity> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): EventActivityInput {
+  getInput(): EventActivityEditInput {
     return this.input;
   }
 
