@@ -5,6 +5,7 @@ import {
   AssocEdgeLoaderFactory,
   AssocEdgeQueryBase,
   EdgeQuerySource,
+  ID,
   Viewer,
 } from "@snowtop/ent";
 import {
@@ -23,12 +24,12 @@ export const tagToTodosDataLoaderFactory = new AssocEdgeLoaderFactory(
   () => TagToTodosEdge,
 );
 
-export class TagToTodosQueryBase extends AssocEdgeQueryBase<
+export abstract class TagToTodosQueryBase extends AssocEdgeQueryBase<
   Tag,
   Todo,
   TagToTodosEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<Tag>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<Tag, Todo>) {
     super(
       viewer,
       src,
@@ -39,11 +40,15 @@ export class TagToTodosQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends TagToTodosQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Tag>) => T,
+    this: new (viewer: Viewer, src: EdgeQuerySource<Tag, Todo>) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<Tag>,
+    src: EdgeQuerySource<Tag, Todo>,
   ): T {
     return new this(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return Tag.load(this.viewer, id);
   }
 
   queryTags(): TodoToTagsQuery {

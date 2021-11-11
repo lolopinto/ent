@@ -40,13 +40,12 @@ export interface EdgeQuery<
 
   getPrivacyPolicy(): PrivacyPolicy;
 
-  // TODO rename. load source ent
   // there's no requirement that you have to be able to see
   // an ent to see edges from that ent so the ent is optional
-  // however, this means that the ent passed to applyPrivacyPolicy() can be undefined
-  // if you want to encourage an ent passed down, implement this function
-  // to generate an ent that will be used.
-  // if there's a multi-id situation (EdgeQuerySource), we'll call this for each id/ent passed in
+  // however, a few privacy policies and rules are dependent on the Ent so we try and load
+  // the Ent if the ent isn't passed as the source to the query.
+  // If the Viewer can see the Ent, that's what's passed to the Privacy Policies
+  // to determine if the edge is visible
   sourceEnt(id: ID): Promise<Ent | null>;
 }
 
