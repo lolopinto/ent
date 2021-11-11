@@ -22,11 +22,6 @@ export interface TagInput {
   [x: string]: any;
 }
 
-export interface TagAction<TData extends TagInput>
-  extends Action<Tag, TagBuilder<TData>, TData> {
-  getInput(): TData;
-}
-
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
@@ -42,7 +37,7 @@ export class TagBuilder<TData extends TagInput = TagInput>
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: TagAction<TData>,
+    action: Action<Tag, Builder<Tag>, TData>,
     public readonly existingEnt?: Tag | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Tag`;

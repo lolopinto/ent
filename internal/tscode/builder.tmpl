@@ -30,10 +30,6 @@ export interface {{$input}} {
   [x: string]: any;
 }
 
-export interface {{.Node}}Action<TData extends {{$input}}> extends {{useImport "Action"}}<{{useImport .Node}}, {{$builder}}<TData>, TData> {
-  getInput(): TData;
-}
-
 {{/* TODO better way of doing this? */}}
 function randomNum(): string {
   return Math.random()
@@ -52,7 +48,7 @@ export class {{$builder}}<TData extends {{$input}} = {{$input}}> implements {{us
   public constructor(
     public readonly viewer: {{useImport "Viewer"}},
     public readonly operation: {{useImport "WriteOperation"}},
-    action: {{.Node}}Action<TData>,
+    action: {{useImport "Action"}}<{{$node}}, {{useImport "Builder"}}<{{$node}}>, TData>,
     public readonly existingEnt?: {{$node}} | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-{{$node}}`;

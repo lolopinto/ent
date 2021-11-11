@@ -25,11 +25,6 @@ export interface HoursOfOperationInput {
   [x: string]: any;
 }
 
-export interface HoursOfOperationAction<TData extends HoursOfOperationInput>
-  extends Action<HoursOfOperation, HoursOfOperationBuilder<TData>, TData> {
-  getInput(): TData;
-}
-
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
@@ -46,7 +41,7 @@ export class HoursOfOperationBuilder<
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: HoursOfOperationAction<TData>,
+    action: Action<HoursOfOperation, Builder<HoursOfOperation>, TData>,
     public readonly existingEnt?: HoursOfOperation | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-HoursOfOperation`;

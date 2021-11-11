@@ -48,11 +48,6 @@ export interface UserInput {
   [x: string]: any;
 }
 
-export interface UserAction<TData extends UserInput>
-  extends Action<User, UserBuilder<TData>, TData> {
-  getInput(): TData;
-}
-
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
@@ -68,7 +63,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: UserAction<TData>,
+    action: Action<User, Builder<User>, TData>,
     public readonly existingEnt?: User | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-User`;

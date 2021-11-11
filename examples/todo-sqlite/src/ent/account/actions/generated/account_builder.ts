@@ -20,11 +20,6 @@ export interface AccountInput {
   [x: string]: any;
 }
 
-export interface AccountAction<TData extends AccountInput>
-  extends Action<Account, AccountBuilder<TData>, TData> {
-  getInput(): TData;
-}
-
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
@@ -40,7 +35,7 @@ export class AccountBuilder<TData extends AccountInput = AccountInput>
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: AccountAction<TData>,
+    action: Action<Account, Builder<Account>, TData>,
     public readonly existingEnt?: Account | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Account`;

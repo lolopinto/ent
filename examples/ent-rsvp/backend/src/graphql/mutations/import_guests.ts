@@ -124,7 +124,6 @@ export class ImportGuestResolver {
       );
     }
 
-    // @ts-ignore TODO
     const action = BaseAction.bulkAction(event, EventBuilder, ...actions);
     return action.saveX();
   }

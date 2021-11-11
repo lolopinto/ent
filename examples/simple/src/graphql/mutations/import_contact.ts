@@ -47,7 +47,6 @@ export class ImportContactResolver {
       );
     }
 
-    // @ts-ignore. TODO come back
     const action = BaseAction.bulkAction(user, UserBuilder, ...actions);
     return await action.saveX();
   }

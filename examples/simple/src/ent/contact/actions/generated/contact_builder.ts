@@ -26,11 +26,6 @@ export interface ContactInput {
   [x: string]: any;
 }
 
-export interface ContactAction<TData extends ContactInput>
-  extends Action<Contact, ContactBuilder<TData>, TData> {
-  getInput(): TData;
-}
-
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
@@ -46,7 +41,7 @@ export class ContactBuilder<TData extends ContactInput = ContactInput>
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: ContactAction<TData>,
+    action: Action<Contact, Builder<Contact>, TData>,
     public readonly existingEnt?: Contact | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Contact`;

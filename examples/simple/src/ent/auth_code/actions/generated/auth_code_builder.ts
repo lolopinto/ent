@@ -25,11 +25,6 @@ export interface AuthCodeInput {
   [x: string]: any;
 }
 
-export interface AuthCodeAction<TData extends AuthCodeInput>
-  extends Action<AuthCode, AuthCodeBuilder<TData>, TData> {
-  getInput(): TData;
-}
-
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
@@ -45,7 +40,7 @@ export class AuthCodeBuilder<TData extends AuthCodeInput = AuthCodeInput>
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: AuthCodeAction<TData>,
+    action: Action<AuthCode, Builder<AuthCode>, TData>,
     public readonly existingEnt?: AuthCode | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-AuthCode`;

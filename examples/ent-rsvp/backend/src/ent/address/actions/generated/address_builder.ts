@@ -25,11 +25,6 @@ export interface AddressInput {
   [x: string]: any;
 }
 
-export interface AddressAction<TData extends AddressInput>
-  extends Action<Address, AddressBuilder<TData>, TData> {
-  getInput(): TData;
-}
-
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
@@ -45,7 +40,7 @@ export class AddressBuilder<TData extends AddressInput = AddressInput>
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: AddressAction<TData>,
+    action: Action<Address, Builder<Address>, TData>,
     public readonly existingEnt?: Address | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Address`;

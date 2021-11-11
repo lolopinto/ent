@@ -40,7 +40,7 @@ export class BaseAction<TEnt extends Ent, TData extends Data>
 
   constructor(
     public viewer: Viewer,
-    public builderCtr: BuilderConstructor<TEnt>,
+    public builderCtr: BuilderConstructor<TEnt, TData>,
     options?: ActionOptions<TEnt, TData> | null,
   ) {
     let operation = options?.operation;
@@ -60,28 +60,28 @@ export class BaseAction<TEnt extends Ent, TData extends Data>
     );
   }
 
-  static createBuilder<T extends Ent>(
+  static createBuilder<TEnt extends Ent, TData extends Data>(
     viewer: Viewer,
-    builderCtr: BuilderConstructor<T>,
-    options?: ActionOptions<T, Data> | null,
-  ): Builder<T> {
+    builderCtr: BuilderConstructor<TEnt, TData>,
+    options?: ActionOptions<TEnt, TData> | null,
+  ): Builder<TEnt> {
     let action = new BaseAction(viewer, builderCtr, options);
     return action.builder;
   }
 
   // perform a bulk action in a transaction rooted on ent T
   // it ends up creating triggers and having all the given actions performed in a transaction
-  static bulkAction<T extends Ent>(
-    ent: T,
-    builderCtr: BuilderConstructor<T>,
-    ...actions: Action<T, Builder<T>, Data>[]
-  ): BaseAction<T, Data> {
+  static bulkAction<TEnt extends Ent, TData extends Data>(
+    ent: TEnt,
+    builderCtr: BuilderConstructor<TEnt, TData>,
+    ...actions: Action<Ent, Builder<Ent>, Data>[]
+  ): BaseAction<TEnt, TData> {
     let action = new BaseAction(ent.viewer, builderCtr, {
       existingEnt: ent,
     });
     action.triggers = [
       {
-        changeset: (builder: Builder<T>, _input): Promise<Changeset<Ent>>[] => {
+        changeset: (): Promise<Changeset<Ent>>[] => {
           return actions.map((action) => action.changeset());
         },
       },
@@ -116,11 +116,11 @@ export class BaseAction<TEnt extends Ent, TData extends Data>
   }
 }
 
-interface BuilderConstructor<T extends Ent> {
+interface BuilderConstructor<TEnt extends Ent, TData extends Data> {
   new (
     viewer: Viewer,
     operation: WriteOperation,
-    action: Action<T, Builder<T>, Data>,
-    existingEnt?: T | undefined,
-  ): EntBuilder<T>;
+    action: Action<TEnt, EntBuilder<TEnt>, TData>,
+    existingEnt?: TEnt | undefined,
+  ): EntBuilder<TEnt>;
 }

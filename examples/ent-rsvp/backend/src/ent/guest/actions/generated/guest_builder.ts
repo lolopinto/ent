@@ -24,11 +24,6 @@ export interface GuestInput {
   [x: string]: any;
 }
 
-export interface GuestAction<TData extends GuestInput>
-  extends Action<Guest, GuestBuilder<TData>, TData> {
-  getInput(): TData;
-}
-
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
@@ -44,7 +39,7 @@ export class GuestBuilder<TData extends GuestInput = GuestInput>
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: GuestAction<TData>,
+    action: Action<Guest, Builder<Guest>, TData>,
     public readonly existingEnt?: Guest | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Guest`;

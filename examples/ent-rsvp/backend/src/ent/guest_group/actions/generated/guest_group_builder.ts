@@ -21,11 +21,6 @@ export interface GuestGroupInput {
   [x: string]: any;
 }
 
-export interface GuestGroupAction<TData extends GuestGroupInput>
-  extends Action<GuestGroup, GuestGroupBuilder<TData>, TData> {
-  getInput(): TData;
-}
-
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
@@ -41,7 +36,7 @@ export class GuestGroupBuilder<TData extends GuestGroupInput = GuestGroupInput>
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: GuestGroupAction<TData>,
+    action: Action<GuestGroup, Builder<GuestGroup>, TData>,
     public readonly existingEnt?: GuestGroup | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-GuestGroup`;

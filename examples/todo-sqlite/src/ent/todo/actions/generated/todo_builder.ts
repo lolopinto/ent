@@ -22,11 +22,6 @@ export interface TodoInput {
   [x: string]: any;
 }
 
-export interface TodoAction<TData extends TodoInput>
-  extends Action<Todo, TodoBuilder<TData>, TData> {
-  getInput(): TData;
-}
-
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
@@ -42,7 +37,7 @@ export class TodoBuilder<TData extends TodoInput = TodoInput>
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: TodoAction<TData>,
+    action: Action<Todo, Builder<Todo>, TData>,
     public readonly existingEnt?: Todo | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Todo`;

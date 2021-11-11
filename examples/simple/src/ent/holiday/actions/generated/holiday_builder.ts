@@ -23,11 +23,6 @@ export interface HolidayInput {
   [x: string]: any;
 }
 
-export interface HolidayAction<TData extends HolidayInput>
-  extends Action<Holiday, HolidayBuilder<TData>, TData> {
-  getInput(): TData;
-}
-
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
@@ -43,7 +38,7 @@ export class HolidayBuilder<TData extends HolidayInput = HolidayInput>
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: HolidayAction<TData>,
+    action: Action<Holiday, Builder<Holiday>, TData>,
     public readonly existingEnt?: Holiday | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Holiday`;

@@ -26,11 +26,6 @@ export interface CommentInput {
   [x: string]: any;
 }
 
-export interface CommentAction<TData extends CommentInput>
-  extends Action<Comment, CommentBuilder<TData>, TData> {
-  getInput(): TData;
-}
-
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
@@ -46,7 +41,7 @@ export class CommentBuilder<TData extends CommentInput = CommentInput>
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: CommentAction<TData>,
+    action: Action<Comment, Builder<Comment>, TData>,
     public readonly existingEnt?: Comment | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Comment`;
