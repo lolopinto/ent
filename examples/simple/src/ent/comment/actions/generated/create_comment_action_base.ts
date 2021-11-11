@@ -17,7 +17,7 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { Comment, User } from "../../..";
-import { CommentBuilder, CommentInput } from "./comment_builder";
+import { CommentBuilder } from "./comment_builder";
 
 export interface CommentCreateInput {
   authorID: ID | Builder<User>;
@@ -26,8 +26,11 @@ export interface CommentCreateInput {
   articleType: string;
 }
 
-export class CreateCommentActionBase implements Action<Comment> {
-  public readonly builder: CommentBuilder;
+export class CreateCommentActionBase
+  implements
+    Action<Comment, CommentBuilder<CommentCreateInput>, CommentCreateInput>
+{
+  public readonly builder: CommentBuilder<CommentCreateInput>;
   public readonly viewer: Viewer;
   protected input: CommentCreateInput;
 
@@ -41,7 +44,7 @@ export class CreateCommentActionBase implements Action<Comment> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): CommentInput {
+  getInput(): CommentCreateInput {
     return this.input;
   }
 

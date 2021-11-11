@@ -52,7 +52,11 @@ import {
   setupSqlite,
   Table,
 } from "../testutils/db/test_db";
+<<<<<<< HEAD
 import * as action from "../action";
+=======
+import { Use } from "node-sql-parser";
+>>>>>>> d9313177... action builder, trigger, observer, validator changes (#622)
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -148,7 +152,7 @@ async function saveBuilderX<T extends Ent>(builder: Builder<T>): Promise<void> {
 }
 
 async function executeAction<T extends Ent, E = any>(
-  action: Action<T>,
+  action: Action<T, Builder<T>, Data>,
   name?: E,
 ): Promise<Executor> {
   const exec = await executor(action.builder);
@@ -291,9 +295,9 @@ class MessageAction extends SimpleAction<Message> {
     super(viewer, new MessageSchema(), fields, operation, existingEnt);
   }
 
-  triggers: Trigger<Message>[] = [
+  triggers: Trigger<SimpleBuilder<Message>, Data>[] = [
     {
-      changeset: (builder: SimpleBuilder<Message>, _input: Data): void => {
+      changeset: (builder, _input): void => {
         let sender = builder.fields.get("sender");
         let recipient = builder.fields.get("recipient");
 
@@ -307,7 +311,9 @@ class MessageAction extends SimpleAction<Message> {
     },
   ];
 
-  observers: Observer<Message>[] = [new EntCreationObserver<Message>()];
+  observers: Observer<SimpleBuilder<Message>, Data>[] = [
+    new EntCreationObserver<Message>(),
+  ];
 }
 
 class UserAction extends SimpleAction<User> {
@@ -322,11 +328,9 @@ class UserAction extends SimpleAction<User> {
     super(viewer, new UserSchema(), fields, operation, existingEnt);
   }
 
-  triggers: Trigger<User>[] = [
+  triggers: Trigger<SimpleBuilder<User>, Data>[] = [
     {
-      changeset: (
-        builder: SimpleBuilder<User>,
-      ): Promise<Changeset<Contact>> => {
+      changeset: (builder): Promise<Changeset<Contact>> => {
         let firstName = builder.fields.get("FirstName");
         let lastName = builder.fields.get("LastName");
         this.contactAction = new SimpleAction(
@@ -352,7 +356,9 @@ class UserAction extends SimpleAction<User> {
     },
   ];
 
-  observers: Observer<User>[] = [new EntCreationObserver<User>()];
+  observers: Observer<SimpleBuilder<User>, Data>[] = [
+    new EntCreationObserver<User>(),
+  ];
 }
 
 type getMembershipFunction = (

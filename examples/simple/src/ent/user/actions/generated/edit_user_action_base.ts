@@ -11,15 +11,17 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { User } from "../../..";
-import { UserBuilder, UserInput } from "./user_builder";
+import { UserBuilder } from "./user_builder";
 
 export interface UserEditInput {
   firstName?: string;
   lastName?: string;
 }
 
-export class EditUserActionBase implements Action<User> {
-  public readonly builder: UserBuilder;
+export class EditUserActionBase
+  implements Action<User, UserBuilder<UserEditInput>, UserEditInput>
+{
+  public readonly builder: UserBuilder<UserEditInput>;
   public readonly viewer: Viewer;
   protected input: UserEditInput;
   protected user: User;
@@ -40,7 +42,7 @@ export class EditUserActionBase implements Action<User> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): UserInput {
+  getInput(): UserEditInput {
     return this.input;
   }
 

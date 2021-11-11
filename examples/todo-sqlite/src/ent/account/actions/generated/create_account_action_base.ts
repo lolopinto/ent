@@ -7,18 +7,18 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { Account } from "src/ent/";
-import {
-  AccountBuilder,
-  AccountInput,
-} from "src/ent/account/actions/generated/account_builder";
+import { AccountBuilder } from "src/ent/account/actions/generated/account_builder";
 
 export interface AccountCreateInput {
   name: string;
   phoneNumber: string;
 }
 
-export class CreateAccountActionBase implements Action<Account> {
-  public readonly builder: AccountBuilder;
+export class CreateAccountActionBase
+  implements
+    Action<Account, AccountBuilder<AccountCreateInput>, AccountCreateInput>
+{
+  public readonly builder: AccountBuilder<AccountCreateInput>;
   public readonly viewer: Viewer;
   protected input: AccountCreateInput;
 
@@ -32,7 +32,7 @@ export class CreateAccountActionBase implements Action<Account> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): AccountInput {
+  getInput(): AccountCreateInput {
     return this.input;
   }
 

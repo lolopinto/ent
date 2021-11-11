@@ -13,8 +13,10 @@ import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { Event } from "../../..";
 import { EventBuilder, EventInput } from "./event_builder";
 
-export class DeleteEventActionBase implements Action<Event> {
-  public readonly builder: EventBuilder;
+export class DeleteEventActionBase
+  implements Action<Event, EventBuilder<EventInput>, EventInput>
+{
+  public readonly builder: EventBuilder<EventInput>;
   public readonly viewer: Viewer;
   protected event: Event;
 

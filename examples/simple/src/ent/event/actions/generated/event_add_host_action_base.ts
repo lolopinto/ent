@@ -19,8 +19,10 @@ import {
 import { Event, User } from "../../..";
 import { EventBuilder, EventInput } from "./event_builder";
 
-export class EventAddHostActionBase implements Action<Event> {
-  public readonly builder: EventBuilder;
+export class EventAddHostActionBase
+  implements Action<Event, EventBuilder<EventInput>, EventInput>
+{
+  public readonly builder: EventBuilder<EventInput>;
   public readonly viewer: Viewer;
   protected event: Event;
 

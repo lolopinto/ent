@@ -13,9 +13,9 @@ export default class CreateTagAction extends CreateTagActionBase {
     return AlwaysAllowPrivacyPolicy;
   }
 
-  triggers: Trigger<Ent>[] = [
+  triggers: Trigger<TagBuilder, TagCreateInput>[] = [
     {
-      async changeset(builder: TagBuilder, input: TagCreateInput) {
+      async changeset(builder, input) {
         builder.updateInput({
           canonicalName: input.displayName,
         });

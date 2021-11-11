@@ -22,28 +22,28 @@ export interface CommentInput {
   body?: string;
   articleID?: ID | Builder<Ent>;
   articleType?: string;
-}
-
-export interface CommentAction extends Action<Comment> {
-  getInput(): CommentInput;
+  // allow other properties. useful for action-only fields
+  [x: string]: any;
 }
 
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class CommentBuilder implements Builder<Comment> {
-  orchestrator: Orchestrator<Comment>;
+export class CommentBuilder<TData extends CommentInput = CommentInput>
+  implements Builder<Comment>
+{
+  orchestrator: Orchestrator<Comment, TData>;
   readonly placeholderID: ID;
   readonly ent = Comment;
   readonly nodeType = NodeType.Comment;
-  private input: CommentInput;
+  private input: TData;
   private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: CommentAction,
+    action: Action<Comment, Builder<Comment>, TData>,
     public readonly existingEnt?: Comment | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Comment`;
@@ -64,7 +64,7 @@ export class CommentBuilder implements Builder<Comment> {
     });
   }
 
-  getInput(): CommentInput {
+  getInput(): TData {
     return this.input;
   }
 
@@ -95,7 +95,7 @@ export class CommentBuilder implements Builder<Comment> {
   clearInputEdges(edgeType: EdgeType, op: WriteOperation, id?: ID) {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
-  addPost(...nodes: (Ent | Builder<Ent>)[]): CommentBuilder {
+  addPost(...nodes: (Ent | Builder<Ent>)[]): CommentBuilder<TData> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.orchestrator.addOutboundEdge(
@@ -119,7 +119,7 @@ export class CommentBuilder implements Builder<Comment> {
     id: ID | Builder<Ent>,
     nodeType: NodeType,
     options?: AssocEdgeInputOptions,
-  ): CommentBuilder {
+  ): CommentBuilder<TData> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.CommentToPost,
@@ -129,7 +129,7 @@ export class CommentBuilder implements Builder<Comment> {
     return this;
   }
 
-  removePost(...nodes: (ID | Ent)[]): CommentBuilder {
+  removePost(...nodes: (ID | Ent)[]): CommentBuilder<TData> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.CommentToPost);
