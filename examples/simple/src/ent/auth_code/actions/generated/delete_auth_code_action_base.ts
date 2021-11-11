@@ -13,8 +13,10 @@ import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { AuthCode } from "../../..";
 import { AuthCodeBuilder, AuthCodeInput } from "./auth_code_builder";
 
-export class DeleteAuthCodeActionBase implements Action<AuthCode> {
-  public readonly builder: AuthCodeBuilder;
+export class DeleteAuthCodeActionBase
+  implements Action<AuthCode, AuthCodeBuilder<AuthCodeInput>, AuthCodeInput>
+{
+  public readonly builder: AuthCodeBuilder<AuthCodeInput>;
   public readonly viewer: Viewer;
   protected authCode: AuthCode;
 

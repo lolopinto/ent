@@ -13,8 +13,10 @@ import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { User } from "../../..";
 import { UserBuilder, UserInput } from "./user_builder";
 
-export class DeleteUserActionBase implements Action<User> {
-  public readonly builder: UserBuilder;
+export class DeleteUserActionBase
+  implements Action<User, UserBuilder<UserInput>, UserInput>
+{
+  public readonly builder: UserBuilder<UserInput>;
   public readonly viewer: Viewer;
   protected user: User;
 

@@ -16,10 +16,7 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { Contact, ContactEmail } from "../../..";
-import {
-  ContactEmailBuilder,
-  ContactEmailInput,
-} from "./contact_email_builder";
+import { ContactEmailBuilder } from "./contact_email_builder";
 
 export interface ContactEmailCreateInput {
   emailAddress: string;
@@ -27,8 +24,15 @@ export interface ContactEmailCreateInput {
   contactID: ID | Builder<Contact>;
 }
 
-export class CreateContactEmailActionBase implements Action<ContactEmail> {
-  public readonly builder: ContactEmailBuilder;
+export class CreateContactEmailActionBase
+  implements
+    Action<
+      ContactEmail,
+      ContactEmailBuilder<ContactEmailCreateInput>,
+      ContactEmailCreateInput
+    >
+{
+  public readonly builder: ContactEmailBuilder<ContactEmailCreateInput>;
   public readonly viewer: Viewer;
   protected input: ContactEmailCreateInput;
 
@@ -46,7 +50,7 @@ export class CreateContactEmailActionBase implements Action<ContactEmail> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): ContactEmailInput {
+  getInput(): ContactEmailCreateInput {
     return this.input;
   }
 

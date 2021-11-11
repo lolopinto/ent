@@ -11,14 +11,16 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { User } from "../../..";
-import { UserBuilder, UserInput } from "./user_builder";
+import { UserBuilder } from "./user_builder";
 
 export interface DeleteUserInput2 {
   log: boolean;
 }
 
-export class DeleteUserAction2Base implements Action<User> {
-  public readonly builder: UserBuilder;
+export class DeleteUserAction2Base
+  implements Action<User, UserBuilder<DeleteUserInput2>, DeleteUserInput2>
+{
+  public readonly builder: UserBuilder<DeleteUserInput2>;
   public readonly viewer: Viewer;
   protected input: DeleteUserInput2;
   protected user: User;
@@ -39,9 +41,8 @@ export class DeleteUserAction2Base implements Action<User> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): UserInput {
-    // we use a type assertion to override the weak type detection here
-    return this.input as UserInput;
+  getInput(): DeleteUserInput2 {
+    return this.input;
   }
 
   async changeset(): Promise<Changeset<User>> {

@@ -13,8 +13,10 @@ import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { Contact } from "../../..";
 import { ContactBuilder, ContactInput } from "./contact_builder";
 
-export class DeleteContactActionBase implements Action<Contact> {
-  public readonly builder: ContactBuilder;
+export class DeleteContactActionBase
+  implements Action<Contact, ContactBuilder<ContactInput>, ContactInput>
+{
+  public readonly builder: ContactBuilder<ContactInput>;
   public readonly viewer: Viewer;
   protected contact: Contact;
 

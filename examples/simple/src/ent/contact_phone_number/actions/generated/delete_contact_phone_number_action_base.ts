@@ -17,9 +17,14 @@ import {
 } from "./contact_phone_number_builder";
 
 export class DeleteContactPhoneNumberActionBase
-  implements Action<ContactPhoneNumber>
+  implements
+    Action<
+      ContactPhoneNumber,
+      ContactPhoneNumberBuilder<ContactPhoneNumberInput>,
+      ContactPhoneNumberInput
+    >
 {
-  public readonly builder: ContactPhoneNumberBuilder;
+  public readonly builder: ContactPhoneNumberBuilder<ContactPhoneNumberInput>;
   public readonly viewer: Viewer;
   protected contactPhoneNumber: ContactPhoneNumber;
 

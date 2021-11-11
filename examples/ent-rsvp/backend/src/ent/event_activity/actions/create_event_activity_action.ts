@@ -18,9 +18,9 @@ export default class CreateEventActivityAction extends CreateEventActivityAction
     return new AllowIfEventCreatorPrivacyPolicy(this.input.eventID, this.input);
   }
 
-  triggers: Trigger<Ent>[] = [
+  triggers: Trigger<EventActivityBuilder, EventActivityCreateInput>[] = [
     {
-      changeset: async (builder: EventActivityBuilder, _input: Data) => {
+      changeset: async (builder) => {
         if (!this.input.address) {
           return;
         }
@@ -32,10 +32,7 @@ export default class CreateEventActivityAction extends CreateEventActivityAction
       },
     },
     {
-      changeset: async (
-        builder: EventActivityBuilder,
-        input: EventActivityCreateInput,
-      ) => {
+      changeset: async (builder, input) => {
         if (!input.inviteAllGuests) {
           return;
         }

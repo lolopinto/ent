@@ -16,10 +16,7 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { Contact, ContactPhoneNumber } from "../../..";
-import {
-  ContactPhoneNumberBuilder,
-  ContactPhoneNumberInput,
-} from "./contact_phone_number_builder";
+import { ContactPhoneNumberBuilder } from "./contact_phone_number_builder";
 
 export interface ContactPhoneNumberCreateInput {
   phoneNumber: string;
@@ -28,9 +25,14 @@ export interface ContactPhoneNumberCreateInput {
 }
 
 export class CreateContactPhoneNumberActionBase
-  implements Action<ContactPhoneNumber>
+  implements
+    Action<
+      ContactPhoneNumber,
+      ContactPhoneNumberBuilder<ContactPhoneNumberCreateInput>,
+      ContactPhoneNumberCreateInput
+    >
 {
-  public readonly builder: ContactPhoneNumberBuilder;
+  public readonly builder: ContactPhoneNumberBuilder<ContactPhoneNumberCreateInput>;
   public readonly viewer: Viewer;
   protected input: ContactPhoneNumberCreateInput;
 
@@ -48,7 +50,7 @@ export class CreateContactPhoneNumberActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): ContactPhoneNumberInput {
+  getInput(): ContactPhoneNumberCreateInput {
     return this.input;
   }
 
