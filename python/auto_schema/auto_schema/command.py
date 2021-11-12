@@ -119,8 +119,12 @@ class Command(object):
 
     def _get_paths_to_delete(self, revision):
         script = ScriptDirectory.from_config(self.alembic_cfg)
+        heads = self.get_heads()
+        base = 'head'
+        if len(heads) >1:
+            base = 'heads'
         revs = list(script.revision_map.iterate_revisions(
-            'head', revision, select_for_downgrade=True
+            base, revision, select_for_downgrade=True
         ))
 
         location = self.alembic_cfg.get_main_option('version_locations')
