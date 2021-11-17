@@ -40,6 +40,7 @@ export class AccountBuilder implements Builder<Account> {
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Account`;
     this.input = action.getInput();
+    const updateInput = (d: AccountInput) => this.updateInput.apply(this, [d]);
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -51,6 +52,7 @@ export class AccountBuilder implements Builder<Account> {
       action,
       schema,
       editedFields: () => this.getEditedFields.apply(this),
+      updateInput,
     });
   }
 
