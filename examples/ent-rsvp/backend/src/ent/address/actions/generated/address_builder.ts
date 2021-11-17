@@ -45,6 +45,7 @@ export class AddressBuilder implements Builder<Address> {
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Address`;
     this.input = action.getInput();
+    const updateInput = (d: AddressInput) => this.updateInput.apply(this, [d]);
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -56,6 +57,7 @@ export class AddressBuilder implements Builder<Address> {
       action,
       schema,
       editedFields: () => this.getEditedFields.apply(this),
+      updateInput,
     });
   }
 
