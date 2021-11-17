@@ -651,7 +651,8 @@ function storageKey(f: Field): string {
     return f.storageKey;
   }
 
-  return snakeCase(f.name);
+  // TODO...
+  return snakeCase(f.name || "");
 }
 
 function isSyncClient(client: Client): client is SyncClient {

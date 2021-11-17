@@ -1,9 +1,9 @@
-import { Field, Pattern } from "./schema";
+import { Field, FieldMap, Pattern } from "./schema";
 import { v4 as uuidv4 } from "uuid";
 import { TimestampType, UUIDType } from "./field";
 
-let tsFields: Field[] = [
-  TimestampType({
+let tsFields: FieldMap = {
+  createdAt: TimestampType({
     name: "createdAt",
     hideFromGraphQL: true,
     disableUserEditable: true,
@@ -11,7 +11,7 @@ let tsFields: Field[] = [
       return new Date();
     },
   }),
-  TimestampType({
+  updatedAt: TimestampType({
     name: "updatedAt",
     hideFromGraphQL: true,
     disableUserEditable: true,
@@ -22,7 +22,7 @@ let tsFields: Field[] = [
       return new Date();
     },
   }),
-];
+};
 
 // Timestamps is a Pattern that adds a createdAt and updatedAt timestamp fields to the ent
 export const Timestamps: Pattern = {
@@ -39,11 +39,14 @@ let nodeField = UUIDType({
   },
 });
 
-let nodeFields: Field[] = [nodeField, ...tsFields];
+let nodeFields: FieldMap = {
+  id: nodeField,
+  ...tsFields,
+};
 
-let nodeFieldsWithTZ: Field[] = [
-  nodeField,
-  TimestampType({
+let nodeFieldsWithTZ: FieldMap = {
+  id: nodeField,
+  createdAt: TimestampType({
     name: "createdAt",
     hideFromGraphQL: true,
     disableUserEditable: true,
@@ -52,7 +55,7 @@ let nodeFieldsWithTZ: Field[] = [
     },
     withTimezone: true,
   }),
-  TimestampType({
+  updatedAt: TimestampType({
     name: "updatedAt",
     hideFromGraphQL: true,
     disableUserEditable: true,
@@ -64,7 +67,7 @@ let nodeFieldsWithTZ: Field[] = [
     },
     withTimezone: true,
   }),
-];
+};
 
 // Node is a Pattern that adds 3 fields to the ent: (id, createdAt, and updatedAt timestamps)
 export const Node: Pattern = {

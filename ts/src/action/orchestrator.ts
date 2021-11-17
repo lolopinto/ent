@@ -519,7 +519,7 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
     for (const [fieldName, field] of schemaFields) {
       let value = editedFields.get(fieldName);
       let defaultValue: any = undefined;
-      let dbKey = field.storageKey || snakeCase(field.name);
+      let dbKey = field.storageKey || snakeCase(field.name || "");
 
       if (value === undefined) {
         if (this.options.operation === WriteOperation.Insert) {

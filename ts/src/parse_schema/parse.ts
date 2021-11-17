@@ -6,11 +6,12 @@ import {
   AssocEdgeGroup,
   Action,
 } from "../schema";
-import { ActionField } from "../schema/schema";
+import { ActionField, FieldMap } from "../schema/schema";
 
-function processFields(src: Field[], patternName?: string): ProcessedField[] {
+function processFields(src: FieldMap, patternName?: string): ProcessedField[] {
   const ret: ProcessedField[] = [];
-  for (const field of src) {
+  for (const name in src) {
+    const field = src[name];
     let f: ProcessedField = { ...field };
     f.hasDefaultValueOnCreate = field.defaultValueOnCreate != undefined;
     f.hasDefaultValueOnEdit = field.defaultValueOnEdit != undefined;
@@ -129,6 +130,8 @@ type ProcessedSchema = Omit<
   actions: OutputAction[];
   assocEdges: ProcessedAssocEdge[];
   assocEdgeGroups: ProcessedAssocEdgeGroup[];
+  // converting to list for go because we want the order respected
+  // and go maps don't support order
   fields: ProcessedField[];
 };
 

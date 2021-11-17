@@ -11,9 +11,10 @@ import {
   TimeType,
   TimestamptzListType,
   UUIDType,
+  StringField,
 } from "./field";
 import { JSONBListType, JSONListType } from "./json_field";
-import { Schema, Field } from ".";
+import Schema from "./schema";
 import { User, SimpleAction, BuilderSchema } from "../testutils/builder";
 import { TempDB, getSchemaTable } from "../testutils/db/test_db";
 import { v4 } from "uuid";
@@ -73,7 +74,9 @@ function commonTests() {
   test("string list", async () => {
     class Account extends User {}
     class AccountSchema implements Schema {
-      fields: Field[] = [StringListType({ name: "Nicknames" })];
+      fields = {
+        Nicknames: new StringField(),
+      };
       ent = Account;
     }
 
@@ -93,7 +96,9 @@ function commonTests() {
   test("formatted string list", async () => {
     class CountryCode extends User {}
     class CountryCodeSchema implements Schema {
-      fields: Field[] = [StringListType({ name: "codes", toLowerCase: true })];
+      fields = {
+        codes: StringListType({ toLowerCase: true }),
+      };
       ent = CountryCode;
     }
 
@@ -114,7 +119,9 @@ function commonTests() {
   test("int list", async () => {
     class Lottery extends User {}
     class LotterySchema implements Schema {
-      fields: Field[] = [IntegerListType({ name: "numbers" })];
+      fields = {
+        numbers: IntegerListType(),
+      };
       ent = Lottery;
     }
 
@@ -134,7 +141,9 @@ function commonTests() {
   test("float list", async () => {
     class TempHistory extends User {}
     class TempHistorySchema implements Schema {
-      fields: Field[] = [FloatListType({ name: "temps" })];
+      fields = {
+        temps: FloatListType(),
+      };
       ent = TempHistory;
     }
 
@@ -154,11 +163,11 @@ function commonTests() {
   test("date list", async () => {
     class Holiday extends User {}
     class HolidaySchema implements Schema {
-      fields: Field[] = [
-        UUIDType({ name: "id" }),
-        StringType({ name: "country" }),
-        DateListType({ name: "holidays" }),
-      ];
+      fields = {
+        id: UUIDType(),
+        country: StringType(),
+        holidays: DateListType(),
+      };
       ent = Holiday;
     }
 
@@ -183,7 +192,9 @@ function commonTests() {
   test("time list", async () => {
     class Appointment extends User {}
     class AppointmentSchema implements Schema {
-      fields: Field[] = [TimeListType({ name: "availableTimes" })];
+      fields = {
+        availableTimes: TimeListType(),
+      };
       ent = Appointment;
     }
 
@@ -204,7 +215,9 @@ function commonTests() {
   test("time via date list", async () => {
     class Appointment extends User {}
     class AppointmentSchema implements Schema {
-      fields: Field[] = [TimeListType({ name: "availableTimes" })];
+      fields = {
+        availableTimes: TimeListType(),
+      };
       ent = Appointment;
     }
 
@@ -238,7 +251,9 @@ function commonTests() {
   test("boolean list", async () => {
     class Survey extends User {}
     class SurveySchema implements Schema {
-      fields: Field[] = [BooleanListType({ name: "satisfied" })];
+      fields = {
+        satisified: BooleanListType(),
+      };
       ent = Survey;
     }
 
@@ -260,7 +275,9 @@ function commonTests() {
   test("timestamptz list", async () => {
     class Visit extends User {}
     class VisitSchema implements Schema {
-      fields: Field[] = [TimestamptzListType({ name: "visits" })];
+      fields = {
+        visits: TimestamptzListType(),
+      };
       ent = Visit;
     }
 
@@ -284,9 +301,8 @@ function commonTests() {
 
   class Available extends User {}
   class AvailableSchema implements Schema {
-    fields: Field[] = [
-      EnumListType({
-        name: "days",
+    fields = {
+      days: EnumListType({
         values: [
           "Sunday",
           "Monday",
@@ -297,7 +313,7 @@ function commonTests() {
           "Saturday",
         ],
       }),
-    ];
+    };
     ent = Available;
   }
 
@@ -376,20 +392,16 @@ function commonTests() {
 
   class Preferences extends User {}
   class PreferencesSchema implements Schema {
-    fields: Field[] = [
-      JSONBListType({
-        name: "prefsList",
-      }),
-    ];
+    fields = {
+      prefsList: JSONBListType(),
+    };
     ent = Preferences;
   }
 
   class PreferencesJSONSchema implements Schema {
-    fields: Field[] = [
-      JSONListType({
-        name: "prefsList",
-      }),
-    ];
+    fields = {
+      prefsList: JSONListType(),
+    };
     ent = Preferences;
   }
 

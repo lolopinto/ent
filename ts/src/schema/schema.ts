@@ -1,10 +1,16 @@
 import { Data, Ent, LoaderInfo } from "../core/base";
 import { Builder } from "../action/action";
 
+// TODO s/Field2/Field and kill this
+export type Field2 = Exclude<Field, "name">;
+export declare type FieldMap = {
+  [key: string]: Field2;
+};
+
 // Schema is the base for every schema in typescript
 export default interface Schema {
   // schema has list of fields that are unique to each node
-  fields: Field[];
+  fields: FieldMap;
 
   // optional, can be overriden as needed
   tableName?: string;
@@ -148,7 +154,7 @@ export type Edge = AssocEdge;
 // which automatically provides 3 fields to every ent: id, created_at, updated_at
 export interface Pattern {
   name: string;
-  fields: Field[];
+  fields: FieldMap;
   edges?: Edge[];
 }
 
@@ -250,7 +256,7 @@ export interface FieldEdge {
 // FieldOptions are configurable options for fields.
 // Can be combined with options for specific field types as neededs
 export interface FieldOptions {
-  name: string;
+  name?: string;
   // optional modification of fields: nullable/storagekey etc.
   nullable?: boolean;
   storageKey?: string; // db?
@@ -280,7 +286,7 @@ export interface FieldOptions {
   derivedWhenEmbedded?: boolean;
 
   polymorphic?: boolean | PolymorphicOptions;
-  derivedFields?: Field[];
+  derivedFields?: FieldMap;
 }
 
 export interface PolymorphicOptions {
@@ -325,8 +331,9 @@ export function getFields(value: SchemaInputType): Map<string, Field> {
     schema = new value();
   }
 
-  function addFields(fields: Field[]) {
-    for (const field of fields) {
+  function addFields(fields: FieldMap) {
+    for (const name in fields) {
+      const field = fields[name];
       const derivedFields = field.derivedFields;
       if (derivedFields !== undefined) {
         addFields(derivedFields);
