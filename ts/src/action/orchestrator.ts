@@ -22,6 +22,7 @@ import { getFields, SchemaInputType, Field } from "../schema/schema";
 import { Changeset, Executor, Validator, TriggerReturn } from "../action";
 import { WriteOperation, Builder, Action } from "../action";
 import { snakeCase } from "snake-case";
+import { camelCase } from "camel-case";
 import { applyPrivacyPolicyX } from "../core/privacy";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import { log } from "../core/logger";
@@ -144,7 +145,8 @@ export class Orchestrator<T extends Ent> {
   private fieldsToResolve: string[] = [];
   private mainOp: DataOperation | null;
   viewer: Viewer;
-  private defaultFields: Data = {};
+  private defaultFieldsByFieldName: Data = {};
+  private defaultFieldsByTSName: Data = {};
 
   constructor(private options: OrchestratorOptions<T, Data>) {
     this.viewer = options.viewer;
@@ -503,6 +505,7 @@ export class Orchestrator<T extends Ent> {
     for (const [fieldName, field] of schemaFields) {
       let value = editedFields.get(fieldName);
       let defaultValue: any = undefined;
+      let dbKey = field.storageKey || snakeCase(field.name);
 
       // would be great to call updateInput with these values...
       // so that when triggers run, we have those values...
@@ -535,17 +538,20 @@ export class Orchestrator<T extends Ent> {
         }
       }
 
-      data[fieldName] = value;
+      data[dbKey] = value;
 
       if (defaultValue !== undefined) {
         updateInput = true;
-        data[fieldName] = defaultValue;
-        this.defaultFields[fieldName] = defaultValue;
+        data[dbKey] = defaultValue;
+        this.defaultFieldsByFieldName[fieldName] = defaultValue;
+        // TODO related to #510. we need this logic to be consistent so do this all in TypeScript or get it from go somehow
+        this.defaultFieldsByTSName[camelCase(fieldName)] = defaultValue;
       }
     }
 
     if (updateInput && this.options.updateInput) {
-      this.options.updateInput(this.defaultFields);
+      // this basically fixes #605. just needs to be exposed correctly
+      this.options.updateInput(this.defaultFieldsByTSName);
     }
     return data;
   }
@@ -566,7 +572,7 @@ export class Orchestrator<T extends Ent> {
       let value = editedFields.get(fieldName);
       if (value === undefined) {
         // null allowed
-        value = this.defaultFields[fieldName];
+        value = this.defaultFieldsByFieldName[fieldName];
       }
       let dbKey = field.storageKey || snakeCase(field.name);
 

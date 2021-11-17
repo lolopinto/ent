@@ -38,12 +38,13 @@ function randomNum(): string {
 
 {{$node := useImport .Node}}
 {{$builder := printf "%sBuilder" .Node}}
+{{$input := printf "%sInput" .Node }}
 
 export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
   orchestrator: {{useImport "Orchestrator"}}<{{$node}}>;
   readonly placeholderID: {{useImport "ID"}};
   readonly ent = {{$node}};
-  private input: {{.Node}}Input;
+  private input: {{$input}};
 
   public constructor(
     public readonly viewer: {{useImport "Viewer"}},
@@ -53,6 +54,7 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-{{$node}}`;
     this.input = action.getInput();
+    const updateInput = (d: {{$input}}) => this.updateInput.apply(this, [d]);
 
     this.orchestrator = new {{useImport "Orchestrator"}}({
       viewer,
@@ -64,6 +66,7 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
       action,
       {{useImport "schema"}},
       editedFields: () => this.getEditedFields.apply(this),
+      updateInput,
     });
   }
 
