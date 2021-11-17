@@ -41,7 +41,7 @@ export interface OrchestratorOptions<T extends Ent, TData extends Data> {
   action?: Action<T>;
   schema: SchemaInputType;
   editedFields(): Map<string, any>;
-  //
+  // this is called with fields with defaultValueOnCreate|Edit
   updateInput?: (data: TData) => void;
 }
 
@@ -507,8 +507,6 @@ export class Orchestrator<T extends Ent> {
       let defaultValue: any = undefined;
       let dbKey = field.storageKey || snakeCase(field.name);
 
-      // would be great to call updateInput with these values...
-      // so that when triggers run, we have those values...
       if (value === undefined) {
         if (this.options.operation === WriteOperation.Insert) {
           if (field.defaultToViewerOnCreate && field.defaultValueOnCreate) {
