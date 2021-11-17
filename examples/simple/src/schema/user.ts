@@ -43,11 +43,17 @@ export default class User extends BaseEntSchema implements Schema {
     PasswordType({ name: "Password", nullable: true }),
     // TODO support enums: UNVERIFIED, VERIFIED, DEACTIVATED, DISABLED etc.
     // TODO shouldn't really be nullable. same issue as #35
-    StringType({ name: "AccountStatus", nullable: true }),
+    StringType({
+      name: "AccountStatus",
+      nullable: true,
+      defaultValueOnCreate: () => "UNVERIFIED",
+    }),
     BooleanType({
       name: "emailVerified",
       hideFromGraphQL: true,
       serverDefault: "FALSE",
+      // not needed because we have serverDefault but can also set it here.
+      defaultValueOnCreate: () => false,
     }),
     StringType({ name: "Bio", nullable: true }),
     StringListType({ name: "nicknames", nullable: true }),
@@ -104,7 +110,11 @@ export default class User extends BaseEntSchema implements Schema {
       values: ["morning", "afternoon", "evening", "graveyard"],
     }),
     // Date.now() is too big to store in int so have to use bigint. because of how big bigint could get, have to use BigInt instead of number
-    BigIntegerType({ name: "timeInMs", nullable: true }),
+    BigIntegerType({
+      name: "timeInMs",
+      nullable: true,
+      defaultValueOnCreate: () => BigInt(Date.now()),
+    }),
     UUIDListType({ name: "fun_uuids", nullable: true }),
     StringType({ name: "new_col", nullable: true }),
     StringType({ name: "new_col2", nullable: true }),

@@ -46,6 +46,7 @@ export class CommentBuilder implements Builder<Comment> {
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Comment`;
     this.input = action.getInput();
+    const updateInput = (d: CommentInput) => this.updateInput.apply(this, [d]);
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -57,6 +58,7 @@ export class CommentBuilder implements Builder<Comment> {
       action,
       schema,
       editedFields: () => this.getEditedFields.apply(this),
+      updateInput,
     });
   }
 
