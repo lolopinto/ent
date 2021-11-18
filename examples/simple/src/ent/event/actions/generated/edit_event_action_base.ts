@@ -47,7 +47,7 @@ export class EditEventActionBase
     this.event = event;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<Event> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

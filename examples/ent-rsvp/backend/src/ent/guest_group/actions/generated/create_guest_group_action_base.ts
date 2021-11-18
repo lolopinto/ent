@@ -49,7 +49,7 @@ export class CreateGuestGroupActionBase
     );
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<GuestGroup> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

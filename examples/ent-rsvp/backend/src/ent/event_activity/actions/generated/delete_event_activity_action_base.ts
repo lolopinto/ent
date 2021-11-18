@@ -36,7 +36,7 @@ export class DeleteEventActivityActionBase
     this.eventActivity = eventActivity;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<EventActivity> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

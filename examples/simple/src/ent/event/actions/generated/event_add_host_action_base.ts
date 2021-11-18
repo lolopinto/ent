@@ -37,7 +37,7 @@ export class EventAddHostActionBase
     this.event = event;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<Event> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

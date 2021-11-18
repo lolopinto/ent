@@ -29,7 +29,7 @@ export class CreateAccountActionBase
     this.builder = new AccountBuilder(this.viewer, WriteOperation.Insert, this);
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<Account> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

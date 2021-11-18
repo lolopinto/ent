@@ -34,7 +34,7 @@ export class CreateTagActionBase
     this.builder = new TagBuilder(this.viewer, WriteOperation.Insert, this);
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<Tag> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
