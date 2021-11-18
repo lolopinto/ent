@@ -24,16 +24,6 @@ export default class CreateUserAction extends CreateUserActionBase {
 
   triggers = [
     {
-      changeset: (builder: UserBuilder, _input: UserCreateInput): void => {
-        builder.updateInput({
-          accountStatus: "UNVERIFIED",
-          // not needed because we have serverDefault but can also set it here.
-          emailVerified: false,
-          timeInMs: BigInt(Date.now()),
-        });
-      },
-    },
-    {
       // also create a contact for self when creating user
       changeset: (
         builder: UserBuilder,

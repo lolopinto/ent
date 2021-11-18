@@ -45,6 +45,8 @@ export class HoursOfOperationBuilder implements Builder<HoursOfOperation> {
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-HoursOfOperation`;
     this.input = action.getInput();
+    const updateInput = (d: HoursOfOperationInput) =>
+      this.updateInput.apply(this, [d]);
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -56,6 +58,7 @@ export class HoursOfOperationBuilder implements Builder<HoursOfOperation> {
       action,
       schema,
       editedFields: () => this.getEditedFields.apply(this),
+      updateInput,
     });
   }
 

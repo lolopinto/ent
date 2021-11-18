@@ -46,6 +46,7 @@ export class ContactBuilder implements Builder<Contact> {
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Contact`;
     this.input = action.getInput();
+    const updateInput = (d: ContactInput) => this.updateInput.apply(this, [d]);
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -57,6 +58,7 @@ export class ContactBuilder implements Builder<Contact> {
       action,
       schema,
       editedFields: () => this.getEditedFields.apply(this),
+      updateInput,
     });
   }
 

@@ -44,6 +44,7 @@ export class GuestBuilder implements Builder<Guest> {
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Guest`;
     this.input = action.getInput();
+    const updateInput = (d: GuestInput) => this.updateInput.apply(this, [d]);
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -55,6 +56,7 @@ export class GuestBuilder implements Builder<Guest> {
       action,
       schema,
       editedFields: () => this.getEditedFields.apply(this),
+      updateInput,
     });
   }
 

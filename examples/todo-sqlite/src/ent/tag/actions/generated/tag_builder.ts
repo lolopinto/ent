@@ -42,6 +42,7 @@ export class TagBuilder implements Builder<Tag> {
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Tag`;
     this.input = action.getInput();
+    const updateInput = (d: TagInput) => this.updateInput.apply(this, [d]);
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -53,6 +54,7 @@ export class TagBuilder implements Builder<Tag> {
       action,
       schema,
       editedFields: () => this.getEditedFields.apply(this),
+      updateInput,
     });
   }
 
