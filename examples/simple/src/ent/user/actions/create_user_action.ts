@@ -1,4 +1,9 @@
-import { AlwaysAllowPrivacyPolicy, Data, IDViewer } from "@snowtop/ent";
+import {
+  AlwaysAllowPrivacyPolicy,
+  Data,
+  IDViewer,
+  PrivacyPolicy,
+} from "@snowtop/ent";
 import { Changeset } from "@snowtop/ent/action";
 import { EntCreationObserver } from "@snowtop/ent/testutils/fake_log";
 import { FakeComms, Mode } from "@snowtop/ent/testutils/fake_comms";
@@ -14,7 +19,7 @@ export { UserCreateInput };
 
 // we're only writing this once except with --force and packageName provided
 export default class CreateUserAction extends CreateUserActionBase {
-  getPrivacyPolicy() {
+  getPrivacyPolicy(): PrivacyPolicy<User> {
     return AlwaysAllowPrivacyPolicy;
   }
 

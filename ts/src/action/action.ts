@@ -84,7 +84,7 @@ export interface Action<
   changeset(): Promise<Changeset<TEnt>>;
   builder: TBuilder;
   // TODO template ent
-  getPrivacyPolicy(): PrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<TEnt>;
 
   // TODO consider making these methods. maybe they'll be easier to use then?
   // performance implications of methods being called multiple times and new instances?

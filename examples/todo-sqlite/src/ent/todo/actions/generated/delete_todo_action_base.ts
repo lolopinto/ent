@@ -31,7 +31,7 @@ export class DeleteTodoActionBase
     this.todo = todo;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<Todo> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

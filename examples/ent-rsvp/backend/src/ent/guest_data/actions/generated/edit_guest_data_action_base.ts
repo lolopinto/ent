@@ -42,7 +42,7 @@ export class EditGuestDataActionBase
     this.guestData = guestData;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<GuestData> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

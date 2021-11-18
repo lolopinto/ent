@@ -92,7 +92,7 @@ export interface Viewer {
 export interface Ent {
   id: ID;
   viewer: Viewer;
-  privacyPolicy: PrivacyPolicy;
+  privacyPolicy: PrivacyPolicy<this>;
   nodeType: string;
 }
 
@@ -189,7 +189,7 @@ export interface PrivacyResult {
 }
 
 export interface PrivacyError extends Error {
-  privacyPolicy: PrivacyPolicy;
+  privacyPolicy: PrivacyPolicy<Ent>;
   ent?: Ent;
 }
 
@@ -224,15 +224,10 @@ export function DenyWithReason(e: PrivacyError): PrivacyResult {
   };
 }
 
-export interface PrivacyPolicyRule {
-  apply(v: Viewer, ent?: Ent): Promise<PrivacyResult>;
+export interface PrivacyPolicyRule<TEnt extends Ent = Ent> {
+  apply(v: Viewer, ent?: TEnt): Promise<PrivacyResult>;
 }
 
-// export interface PrivacyPolicyRuleSync {
-//   apply(v: Viewer, ent: Ent): PrivacyResult;
-// }
-
-export interface PrivacyPolicy {
-  //  rules: PrivacyPolicyRule | PrivacyPolicyRuleSync[];
-  rules: PrivacyPolicyRule[];
+export interface PrivacyPolicy<TEnt extends Ent = Ent> {
+  rules: PrivacyPolicyRule<TEnt>[];
 }

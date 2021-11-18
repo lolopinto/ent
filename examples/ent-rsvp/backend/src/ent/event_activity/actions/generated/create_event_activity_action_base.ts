@@ -56,7 +56,7 @@ export class CreateEventActivityActionBase
     );
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<EventActivity> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

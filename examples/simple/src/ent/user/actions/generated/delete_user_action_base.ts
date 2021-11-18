@@ -31,7 +31,7 @@ export class DeleteUserActionBase
     this.user = user;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<User> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

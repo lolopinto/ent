@@ -39,7 +39,7 @@ export class CreateContactActionBase
     this.builder = new ContactBuilder(this.viewer, WriteOperation.Insert, this);
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<Contact> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

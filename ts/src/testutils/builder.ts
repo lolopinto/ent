@@ -223,7 +223,7 @@ export class SimpleAction<T extends Ent>
     operation: WriteOperation = WriteOperation.Insert,
     existingEnt: T | undefined = undefined,
   ) {
-    this.builder = new SimpleBuilder(
+    this.builder = new SimpleBuilder<T>(
       this.viewer,
       schema,
       fields,

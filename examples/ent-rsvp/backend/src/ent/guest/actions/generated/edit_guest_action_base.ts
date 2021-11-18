@@ -35,7 +35,7 @@ export class EditGuestActionBase
     this.guest = guest;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<Guest> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

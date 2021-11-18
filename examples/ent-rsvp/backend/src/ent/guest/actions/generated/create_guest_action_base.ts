@@ -36,7 +36,7 @@ export class CreateGuestActionBase
     this.builder = new GuestBuilder(this.viewer, WriteOperation.Insert, this);
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<Guest> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

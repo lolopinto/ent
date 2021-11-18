@@ -43,7 +43,7 @@ export class CreateAuthCodeActionBase
     );
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<AuthCode> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
