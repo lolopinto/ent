@@ -40,7 +40,7 @@ export class CreateCommentActionBase
     this.builder = new CommentBuilder(this.viewer, WriteOperation.Insert, this);
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<Comment> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

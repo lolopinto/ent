@@ -54,7 +54,7 @@ export class EditEventActivityActionBase
     this.eventActivity = eventActivity;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<EventActivity> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

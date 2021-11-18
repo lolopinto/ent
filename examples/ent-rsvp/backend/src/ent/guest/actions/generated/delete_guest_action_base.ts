@@ -31,7 +31,7 @@ export class DeleteGuestActionBase
     this.guest = guest;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<Guest> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
