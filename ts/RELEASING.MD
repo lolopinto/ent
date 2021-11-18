@@ -8,6 +8,7 @@ To update the Docker image, following steps are needed:
 * Update `AUTO_SCHEMA_VERSION` in `release_image/main.go` const for new `auto_schema` version or `TSENT_VERSION` const for new golang `tsent` release version
 * Also update `GOLANG_VERSION`, or `AUTO_SCHEMA_VERSION` or `NODE_VERSION` args at the top of `Dockerfile` so that is up to date.
 * Update `auto_schema` and `tsent` versions in `docs/docs/advanced-topics/runnng-locally.md` so that the latest versions are being used there.
+* Run `go install github.com/lolopinto/ent/tsent@v{TAG}` locally from different folder to try and get the new version in [GOPROXY](https://proxy.golang.org/).
 
 To update locally, we're high level following [these steps](https://docs.github.com/en/free-pro-team@latest/packages/managing-container-images-with-github-container-registry/pushing-and-pulling-docker-images#authenticating-to-github-container-registry):
 
