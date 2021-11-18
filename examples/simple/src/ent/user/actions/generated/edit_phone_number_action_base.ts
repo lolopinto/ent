@@ -38,7 +38,7 @@ export class EditPhoneNumberActionBase
     this.user = user;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<User> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

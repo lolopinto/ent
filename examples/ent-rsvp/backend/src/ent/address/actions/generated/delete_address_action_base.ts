@@ -31,7 +31,7 @@ export class DeleteAddressActionBase
     this.address = address;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<Address> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

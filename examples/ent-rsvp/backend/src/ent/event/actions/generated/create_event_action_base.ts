@@ -46,7 +46,7 @@ export class CreateEventActionBase
     this.builder = new EventBuilder(this.viewer, WriteOperation.Insert, this);
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<Event> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

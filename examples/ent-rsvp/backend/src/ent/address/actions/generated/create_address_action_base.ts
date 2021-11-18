@@ -40,7 +40,7 @@ export class CreateAddressActionBase
     this.builder = new AddressBuilder(this.viewer, WriteOperation.Insert, this);
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<Address> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

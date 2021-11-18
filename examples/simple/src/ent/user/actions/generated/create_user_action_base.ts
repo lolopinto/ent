@@ -43,7 +43,7 @@ export class CreateUserActionBase
     this.builder = new UserBuilder(this.viewer, WriteOperation.Insert, this);
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<User> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

@@ -32,7 +32,7 @@ export class DeleteGuestDataActionBase
     this.guestData = guestData;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<GuestData> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
