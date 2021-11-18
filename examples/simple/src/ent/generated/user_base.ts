@@ -117,9 +117,6 @@ export class UserBase {
   readonly newCol2: string | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
-    //    console.debug(data);
-    // we need to pass storage keys here...
-
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
