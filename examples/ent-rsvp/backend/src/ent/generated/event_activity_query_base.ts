@@ -5,6 +5,7 @@ import {
   AssocEdgeLoaderFactory,
   AssocEdgeQueryBase,
   EdgeQuerySource,
+  ID,
   Viewer,
 } from "@snowtop/ent";
 import {
@@ -44,12 +45,12 @@ export const eventActivityToInvitesDataLoaderFactory =
     () => EventActivityToInvitesEdge,
   );
 
-export class EventActivityToAttendingQueryBase extends AssocEdgeQueryBase<
+export abstract class EventActivityToAttendingQueryBase extends AssocEdgeQueryBase<
   EventActivity,
   Guest,
   EventActivityToAttendingEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<EventActivity>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<EventActivity, Guest>) {
     super(
       viewer,
       src,
@@ -60,11 +61,15 @@ export class EventActivityToAttendingQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends EventActivityToAttendingQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<EventActivity>) => T,
+    this: new (viewer: Viewer, src: EdgeQuerySource<EventActivity, Guest>) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<EventActivity>,
+    src: EdgeQuerySource<EventActivity, Guest>,
   ): T {
     return new this(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return EventActivity.load(this.viewer, id);
   }
 
   queryGuestToAttendingEvents(): GuestToAttendingEventsQuery {
@@ -76,12 +81,12 @@ export class EventActivityToAttendingQueryBase extends AssocEdgeQueryBase<
   }
 }
 
-export class EventActivityToDeclinedQueryBase extends AssocEdgeQueryBase<
+export abstract class EventActivityToDeclinedQueryBase extends AssocEdgeQueryBase<
   EventActivity,
   Guest,
   EventActivityToDeclinedEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<EventActivity>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<EventActivity, Guest>) {
     super(
       viewer,
       src,
@@ -92,11 +97,15 @@ export class EventActivityToDeclinedQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends EventActivityToDeclinedQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<EventActivity>) => T,
+    this: new (viewer: Viewer, src: EdgeQuerySource<EventActivity, Guest>) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<EventActivity>,
+    src: EdgeQuerySource<EventActivity, Guest>,
   ): T {
     return new this(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return EventActivity.load(this.viewer, id);
   }
 
   queryGuestToAttendingEvents(): GuestToAttendingEventsQuery {
@@ -108,12 +117,12 @@ export class EventActivityToDeclinedQueryBase extends AssocEdgeQueryBase<
   }
 }
 
-export class EventActivityToInvitesQueryBase extends AssocEdgeQueryBase<
+export abstract class EventActivityToInvitesQueryBase extends AssocEdgeQueryBase<
   EventActivity,
   GuestGroup,
   EventActivityToInvitesEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<EventActivity>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<EventActivity, GuestGroup>) {
     super(
       viewer,
       src,
@@ -124,11 +133,18 @@ export class EventActivityToInvitesQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends EventActivityToInvitesQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<EventActivity>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<EventActivity, GuestGroup>,
+    ) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<EventActivity>,
+    src: EdgeQuerySource<EventActivity, GuestGroup>,
   ): T {
     return new this(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return EventActivity.load(this.viewer, id);
   }
 
   queryGuestGroupToInvitedEvents(): GuestGroupToInvitedEventsQuery {

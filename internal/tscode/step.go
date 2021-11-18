@@ -91,6 +91,7 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 			return writeAssocEdgeQueryFile(
 				processor,
 				edge,
+				"Ent",
 				getFilePathForPatternAssocEdgeQueryFile(processor.Config, pattern, edge),
 			)
 		})
@@ -137,6 +138,7 @@ func (s *Step) processEdges(processor *codegen.Processor, nodeData *schema.NodeD
 			return writeAssocEdgeQueryFile(
 				processor,
 				edge,
+				nodeData.Node,
 				getFilePathForAssocEdgeQueryFile(processor.Config, nodeData, edge),
 			)
 		})
@@ -484,18 +486,20 @@ func writeBaseQueryFile(processor *codegen.Processor, nodeData *schema.NodeData)
 	})
 }
 
-func writeAssocEdgeQueryFile(processor *codegen.Processor, e *edge.AssociationEdge, filePath string) error {
+func writeAssocEdgeQueryFile(processor *codegen.Processor, e *edge.AssociationEdge, sourceNode, filePath string) error {
 	cfg := processor.Config
 	imps := tsimport.NewImports(processor.Config, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Config: processor.Config,
 		Data: struct {
-			Edge    *edge.AssociationEdge
-			Package *codegen.ImportPackage
+			Edge       *edge.AssociationEdge
+			Package    *codegen.ImportPackage
+			SourceNode string
 		}{
-			Edge:    e,
-			Package: cfg.GetImportPackage(),
+			Edge:       e,
+			Package:    cfg.GetImportPackage(),
+			SourceNode: sourceNode,
 		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("assoc_ent_query.tmpl"),
@@ -537,6 +541,10 @@ type BaseQueryEdgeInfo struct {
 	IndexedEdges []edge.IndexedConnectionEdge
 	Node         string
 	FilePath     string
+}
+
+func (b *BaseQueryEdgeInfo) SourcePolymorphic() bool {
+	return b.Node == "Ent"
 }
 
 func writeBasePatternQueryFile(processor *codegen.Processor, pattern *schema.PatternInfo) error {

@@ -39,13 +39,14 @@ export interface EdgeQuery<
   dataToID(edge: TEdge): ID;
 
   getPrivacyPolicy(): PrivacyPolicy;
+
   // there's no requirement that you have to be able to see
   // an ent to see edges from that ent so the ent is optional
-  // however, this means that the ent passed to applyPrivacyPolicy() can be undefined
-  // if you want to encourage an ent passed down, implement this function
-  // to generate an ent that will be used.
-  // if there's a multi-id situation (EdgeQuerySource), we'll call this for each id/ent passed in
-  entForPrivacy?(id: ID): Promise<TSource | null>;
+  // however, a few privacy policies and rules are dependent on the Ent so we try and load
+  // the Ent if the ent isn't passed as the source to the query.
+  // If the Viewer can see the Ent, that's what's passed to the Privacy Policies
+  // to determine if the edge is visible
+  sourceEnt(id: ID): Promise<Ent | null>;
 }
 
 //maybe id2 shouldn't return EdgeQuery but a different object from which you can query edge. the ent you don't need to query since you can just query that on your own.
@@ -276,6 +277,8 @@ export abstract class BaseEdgeQuery<
     // default PrivacyPolicy is always allow. nothing to do here
     return AlwaysAllowPrivacyPolicy;
   }
+
+  abstract sourceEnt(id: ID): Promise<Ent | null>;
 
   first(n: number, after?: string): this {
     this.assertQueryNotDispatched("first");
@@ -525,9 +528,9 @@ async function applyPrivacyPolicyForEdgeQ<
 
   await Promise.all(
     ids.map(async (id) => {
-      let ent: TSource | null | undefined = map.get(id);
-      if (!ent && edgeQ.entForPrivacy) {
-        ent = await edgeQ.entForPrivacy(id);
+      let ent: Ent | null | undefined = map.get(id);
+      if (!ent) {
+        ent = await edgeQ.sourceEnt(id);
       }
       const r = await applyPrivacyPolicy(
         viewer,
