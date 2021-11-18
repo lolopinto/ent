@@ -33,7 +33,7 @@ export class CreateHolidayActionBase
     this.builder = new HolidayBuilder(this.viewer, WriteOperation.Insert, this);
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<Holiday> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

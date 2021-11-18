@@ -43,7 +43,7 @@ export class EditGuestGroupActionBase
     this.guestGroup = guestGroup;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<GuestGroup> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

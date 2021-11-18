@@ -54,7 +54,7 @@ export class EditEventRsvpStatusActionBase
     this.event = event;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<Event> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

@@ -43,7 +43,7 @@ export class ConfirmEditPhoneNumberActionBase
     this.user = user;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<User> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

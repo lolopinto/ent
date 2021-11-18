@@ -31,7 +31,7 @@ export class DeleteContactActionBase
     this.contact = contact;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<Contact> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

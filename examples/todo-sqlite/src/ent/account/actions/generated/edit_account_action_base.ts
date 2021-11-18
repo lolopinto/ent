@@ -36,7 +36,7 @@ export class EditAccountActionBase
     this.account = account;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<Account> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
