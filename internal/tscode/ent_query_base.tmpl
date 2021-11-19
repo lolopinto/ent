@@ -141,12 +141,13 @@
         return new this(viewer, src);
       }
 
-      async sourceEnt(id: ID) {
-        {{ if $srcPoly -}}
+      {{ if $srcPoly -}}
+        async sourceEnt(_id: ID) {
           return this.srcEnt;
-        {{ else -}}
+      {{ else -}}
+        async sourceEnt(id: ID) {
           return {{$srcNode}}.load(this.viewer, id);
-        {{ end -}}
+      {{ end -}}
       }
     }
 

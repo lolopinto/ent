@@ -43,7 +43,7 @@ export class OwnerToAddressesQueryBase extends CustomEdgeQueryBase<
     return new this(viewer, src);
   }
 
-  async sourceEnt(id: ID) {
+  async sourceEnt(_id: ID) {
     return this.srcEnt;
   }
 }
