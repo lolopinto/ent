@@ -386,9 +386,18 @@ func (f *Field) EvolvedIDField() bool {
 	return f.fieldEdge != nil || f.fkey != nil || f.inverseEdge != nil || f.polymorphic != nil
 }
 
-func (f *Field) QueryFromID() bool {
+func (f *Field) QueryFromEnt() bool {
 	// TODO #476
 	return f.index && f.polymorphic != nil
+}
+
+func (f *Field) QueryFromEntName() string {
+	if !f.QueryFromEnt() {
+		return ""
+	}
+	ret := strings.TrimSuffix(f.CamelCaseName(), "ID")
+	ret = strings.TrimSuffix(ret, "_id")
+	return ret
 }
 
 // TODO probably gonna collapse into above

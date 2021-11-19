@@ -6,7 +6,14 @@ import {
   LoggedOutViewer,
   DB,
 } from "@snowtop/ent";
-import { User, Contact, Event, DaysOff, PreferredShift } from "..";
+import {
+  User,
+  Contact,
+  Event,
+  DaysOff,
+  PreferredShift,
+  ArticleToCommentsQuery,
+} from "..";
 
 import { v1 as uuidv1, v4 as uuidv4, validate } from "uuid";
 import { NodeType, EdgeType } from "../generated/const";
@@ -843,13 +850,27 @@ test("comments", async () => {
   await action.saveX();
 
   const commentsQuery = user1.queryComments();
-  const [count, ents] = await Promise.all([
+  const articleToCommentsQuery = ArticleToCommentsQuery.query(
+    user1.viewer,
+    user1,
+  );
+
+  const [
+    userToCommentsCount,
+    userToCommentsEnt,
+    articleToCommentsCount,
+    articleToCommentsEnt,
+  ] = await Promise.all([
     commentsQuery.queryCount(),
     commentsQuery.queryEnts(),
+    articleToCommentsQuery.queryCount(),
+    articleToCommentsQuery.queryEnts(),
   ]);
-  expect(count).toBe(1);
-  expect(ents.length).toBe(1);
-  expect(ents[0].id).toBe(comment.id);
+  expect(userToCommentsCount).toBe(1);
+  expect(articleToCommentsCount).toBe(1);
+  expect(userToCommentsEnt.length).toBe(1);
+  expect(userToCommentsEnt[0].id).toBe(comment.id);
+  expect(userToCommentsEnt).toStrictEqual(articleToCommentsEnt);
 
   const postQuery = comment.queryPost();
   const [count2, ents2] = await Promise.all([

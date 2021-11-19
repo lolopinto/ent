@@ -24,11 +24,13 @@ export class User implements Ent {
   accountID: string = "";
   nodeType = "User";
   privacyPolicy = AlwaysAllowPrivacyPolicy;
+  firstName: string;
 
   constructor(public viewer: Viewer, public data: Data) {
     this.data.created_at = convertDate(data.created_at);
     this.data.updated_at = convertDate(data.updated_at);
     this.id = data.id;
+    this.firstName = data.first_name;
   }
 }
 

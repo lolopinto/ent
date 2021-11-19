@@ -52,6 +52,8 @@ export {
   AllowIfFuncRule,
   AllowIfViewerIsRule,
   AllowIfViewerIsEntPropertyRule,
+  AllowIfEntPropertyIsRule,
+  DenyIfEntPropertyIsRule,
   AllowIfViewerEqualsRule,
   DenyIfViewerEqualsRule,
   AllowIfEdgeExistsRule,

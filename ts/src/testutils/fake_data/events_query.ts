@@ -1,4 +1,4 @@
-import { Viewer } from "../../core/base";
+import { ID, Viewer } from "../../core/base";
 import { AssocEdge } from "../../core/ent";
 import {
   AssocEdgeQueryBase,
@@ -22,7 +22,7 @@ export class EventToAttendeesQuery extends AssocEdgeQueryBase<
   FakeUser,
   AssocEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent, FakeUser>) {
     super(
       viewer,
       src,
@@ -34,9 +34,13 @@ export class EventToAttendeesQuery extends AssocEdgeQueryBase<
 
   static query(
     viewer: Viewer,
-    src: EdgeQuerySource<FakeEvent>,
+    src: EdgeQuerySource<FakeEvent, FakeUser>,
   ): EventToAttendeesQuery {
     return new EventToAttendeesQuery(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return FakeEvent.load(this.viewer, id);
   }
 }
 
@@ -45,7 +49,7 @@ export class EventToInvitedQuery extends AssocEdgeQueryBase<
   FakeUser,
   AssocEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent, FakeUser>) {
     super(
       viewer,
       src,
@@ -57,9 +61,13 @@ export class EventToInvitedQuery extends AssocEdgeQueryBase<
 
   static query(
     viewer: Viewer,
-    src: EdgeQuerySource<FakeEvent>,
+    src: EdgeQuerySource<FakeEvent, FakeUser>,
   ): EventToInvitedQuery {
     return new EventToInvitedQuery(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return FakeEvent.load(this.viewer, id);
   }
 }
 
@@ -68,7 +76,7 @@ export class EventToDeclinedQuery extends AssocEdgeQueryBase<
   FakeUser,
   AssocEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent, FakeUser>) {
     super(
       viewer,
       src,
@@ -80,9 +88,13 @@ export class EventToDeclinedQuery extends AssocEdgeQueryBase<
 
   static query(
     viewer: Viewer,
-    src: EdgeQuerySource<FakeEvent>,
+    src: EdgeQuerySource<FakeEvent, FakeUser>,
   ): EventToDeclinedQuery {
     return new EventToDeclinedQuery(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return FakeEvent.load(this.viewer, id);
   }
 }
 
@@ -91,7 +103,7 @@ export class EventToMaybeQuery extends AssocEdgeQueryBase<
   FakeUser,
   AssocEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent, FakeUser>) {
     super(
       viewer,
       src,
@@ -103,9 +115,13 @@ export class EventToMaybeQuery extends AssocEdgeQueryBase<
 
   static query(
     viewer: Viewer,
-    src: EdgeQuerySource<FakeEvent>,
+    src: EdgeQuerySource<FakeEvent, FakeUser>,
   ): EventToMaybeQuery {
     return new EventToMaybeQuery(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return FakeEvent.load(this.viewer, id);
   }
 }
 
@@ -114,7 +130,7 @@ export class EventToHostsQuery extends AssocEdgeQueryBase<
   FakeUser,
   AssocEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent, FakeUser>) {
     super(
       viewer,
       src,
@@ -126,8 +142,12 @@ export class EventToHostsQuery extends AssocEdgeQueryBase<
 
   static query(
     viewer: Viewer,
-    src: EdgeQuerySource<FakeEvent>,
+    src: EdgeQuerySource<FakeEvent, FakeUser>,
   ): EventToHostsQuery {
     return new EventToHostsQuery(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return FakeEvent.load(this.viewer, id);
   }
 }

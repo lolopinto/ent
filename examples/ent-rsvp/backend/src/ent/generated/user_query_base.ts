@@ -38,4 +38,8 @@ export class UserToEventsQueryBase extends CustomEdgeQueryBase<User, Event> {
   ): T {
     return new this(viewer, src);
   }
+
+  async sourceEnt(id: ID) {
+    return User.load(this.viewer, id);
+  }
 }

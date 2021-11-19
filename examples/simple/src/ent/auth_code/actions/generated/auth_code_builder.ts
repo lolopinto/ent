@@ -45,6 +45,7 @@ export class AuthCodeBuilder implements Builder<AuthCode> {
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-AuthCode`;
     this.input = action.getInput();
+    const updateInput = (d: AuthCodeInput) => this.updateInput.apply(this, [d]);
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -56,6 +57,7 @@ export class AuthCodeBuilder implements Builder<AuthCode> {
       action,
       schema,
       editedFields: () => this.getEditedFields.apply(this),
+      updateInput,
     });
   }
 

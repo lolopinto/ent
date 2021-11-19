@@ -49,6 +49,10 @@ export class AccountToTagsQueryBase extends CustomEdgeQueryBase<Account, Tag> {
   ): T {
     return new this(viewer, src);
   }
+
+  async sourceEnt(id: ID) {
+    return Account.load(this.viewer, id);
+  }
 }
 
 export class AccountToTodosQueryBase extends CustomEdgeQueryBase<
@@ -70,5 +74,9 @@ export class AccountToTodosQueryBase extends CustomEdgeQueryBase<
     src: Account | ID,
   ): T {
     return new this(viewer, src);
+  }
+
+  async sourceEnt(id: ID) {
+    return Account.load(this.viewer, id);
   }
 }

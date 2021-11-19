@@ -37,6 +37,7 @@ import {
   DenyIfLoggedInRule,
   AlwaysDenyRule,
   DenyIfLoggedOutRule,
+  AllowIfEntPropertyIsRule,
 } from "../core/privacy";
 import { edgeDirection } from "./orchestrator";
 import { createRowForTest } from "../testutils/write";
@@ -1908,6 +1909,50 @@ function commonTests() {
           /Logged out Viewer does not have permission to delete User/,
         );
       }
+    });
+
+    test("unsafe ent in creation. valid", async () => {
+      let action = new SimpleAction(
+        new LoggedOutViewer(),
+        new UserSchema(),
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+        ]),
+        WriteOperation.Insert,
+      );
+      action.getPrivacyPolicy = () => {
+        return {
+          rules: [
+            new AllowIfEntPropertyIsRule<User>("firstName", "Jon"),
+            AlwaysDenyRule,
+          ],
+        };
+      };
+      let valid = await action.valid();
+      expect(valid).toBe(true);
+    });
+
+    test("unsafe ent in creation. invalid", async () => {
+      let action = new SimpleAction(
+        new LoggedOutViewer(),
+        new UserSchema(),
+        new Map([
+          ["FirstName", "Sansa"],
+          ["LastName", "Snow"],
+        ]),
+        WriteOperation.Insert,
+      );
+      action.getPrivacyPolicy = () => {
+        return {
+          rules: [
+            new AllowIfEntPropertyIsRule<User>("firstName", "Jon"),
+            AlwaysDenyRule,
+          ],
+        };
+      };
+      let valid = await action.valid();
+      expect(valid).toBe(false);
     });
   });
 

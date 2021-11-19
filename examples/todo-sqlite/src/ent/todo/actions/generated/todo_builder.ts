@@ -42,6 +42,7 @@ export class TodoBuilder implements Builder<Todo> {
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Todo`;
     this.input = action.getInput();
+    const updateInput = (d: TodoInput) => this.updateInput.apply(this, [d]);
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -53,6 +54,7 @@ export class TodoBuilder implements Builder<Todo> {
       action,
       schema,
       editedFields: () => this.getEditedFields.apply(this),
+      updateInput,
     });
   }
 

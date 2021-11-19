@@ -43,6 +43,7 @@ export class HolidayBuilder implements Builder<Holiday> {
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Holiday`;
     this.input = action.getInput();
+    const updateInput = (d: HolidayInput) => this.updateInput.apply(this, [d]);
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -54,6 +55,7 @@ export class HolidayBuilder implements Builder<Holiday> {
       action,
       schema,
       editedFields: () => this.getEditedFields.apply(this),
+      updateInput,
     });
   }
 

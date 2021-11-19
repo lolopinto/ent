@@ -41,6 +41,7 @@ export class EventBuilder implements Builder<Event> {
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Event`;
     this.input = action.getInput();
+    const updateInput = (d: EventInput) => this.updateInput.apply(this, [d]);
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -52,6 +53,7 @@ export class EventBuilder implements Builder<Event> {
       action,
       schema,
       editedFields: () => this.getEditedFields.apply(this),
+      updateInput,
     });
   }
 

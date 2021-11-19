@@ -18,16 +18,17 @@ import {
   applyPrivacyPolicyForRow,
   EditNodeOptions,
 } from "../core/ent";
-import { getFields, SchemaInputType } from "../schema/schema";
+import { getFields, SchemaInputType, Field } from "../schema/schema";
 import { Changeset, Executor, Validator, TriggerReturn } from "../action";
 import { WriteOperation, Builder, Action } from "../action";
 import { snakeCase } from "snake-case";
+import { camelCase } from "camel-case";
 import { applyPrivacyPolicyX } from "../core/privacy";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import { log } from "../core/logger";
 import { Trigger } from "./action";
 
-export interface OrchestratorOptions<T extends Ent> {
+export interface OrchestratorOptions<T extends Ent, TData extends Data> {
   viewer: Viewer;
   operation: WriteOperation;
   tableName: string;
@@ -40,6 +41,8 @@ export interface OrchestratorOptions<T extends Ent> {
   action?: Action<T>;
   schema: SchemaInputType;
   editedFields(): Map<string, any>;
+  // this is called with fields with defaultValueOnCreate|Edit
+  updateInput?: (data: TData) => void;
 }
 
 interface edgeInputDataOpts {
@@ -142,8 +145,10 @@ export class Orchestrator<T extends Ent> {
   private fieldsToResolve: string[] = [];
   private mainOp: DataOperation | null;
   viewer: Viewer;
+  private defaultFieldsByFieldName: Data = {};
+  private defaultFieldsByTSName: Data = {};
 
-  constructor(private options: OrchestratorOptions<T>) {
+  constructor(private options: OrchestratorOptions<T, Data>) {
     this.viewer = options.viewer;
   }
 
@@ -379,12 +384,42 @@ export class Orchestrator<T extends Ent> {
     );
   }
 
+  private getEntForPrivacyPolicy(editedData: Data) {
+    if (this.options.operation !== WriteOperation.Insert) {
+      return this.options.builder.existingEnt;
+    }
+    // we create an unsafe ent to be used for privacy policies
+    return new this.options.builder.ent(
+      this.options.builder.viewer,
+      editedData,
+    );
+  }
+
   private async validate(): Promise<void> {
+    // existing ent required for edit or delete operations
+    switch (this.options.operation) {
+      case WriteOperation.Delete:
+      case WriteOperation.Edit:
+        if (!this.options.builder.existingEnt) {
+          throw new Error("existing ent required with operation");
+        }
+    }
+
     const action = this.options.action;
     const builder = this.options.builder;
 
-    // this runs in 3 phases:
-    // * privacy policy
+    // future optimization: can get schemaFields to memoize based on different values
+    const schemaFields = getFields(this.options.schema);
+
+    let editedData = this.getFieldsWithDefaultValues(
+      builder,
+      schemaFields,
+      action,
+    );
+
+    // this runs in following phases:
+    // * set default fields and pass to builder so the value can be checked by triggers/observers/validators
+    // * privacy policy (use unsafe ent if we have it)
     // * triggers
     // * validators
     let privacyPolicy = action?.getPrivacyPolicy();
@@ -392,7 +427,7 @@ export class Orchestrator<T extends Ent> {
       await applyPrivacyPolicyX(
         this.options.viewer,
         privacyPolicy,
-        builder.existingEnt,
+        this.getEntForPrivacyPolicy(editedData),
         this.throwError.bind(this),
       );
     }
@@ -407,7 +442,7 @@ export class Orchestrator<T extends Ent> {
     let validators = action?.validators || [];
 
     await Promise.all([
-      this.validateFields(builder, action),
+      this.formatAndValidateFields(schemaFields),
       this.validators(validators, action!, builder),
     ]);
   }
@@ -456,34 +491,20 @@ export class Orchestrator<T extends Ent> {
     return (val as Builder<T>).placeholderID !== undefined;
   }
 
-  private async validateFields(
+  private getFieldsWithDefaultValues(
     builder: Builder<T>,
+    schemaFields: Map<string, Field>,
     action?: Action<T> | undefined,
-  ): Promise<void> {
-    // existing ent required for edit or delete operations
-    switch (this.options.operation) {
-      case WriteOperation.Delete:
-      case WriteOperation.Edit:
-        if (!this.options.builder.existingEnt) {
-          throw new Error("existing ent required with operation");
-        }
-    }
-
-    if (this.options.operation == WriteOperation.Delete) {
-      return;
-    }
-
+  ): Data {
     const editedFields = this.options.editedFields();
-    // build up data to be saved...
-    let data = {};
-    let logValues = {};
-    const schemaFields = getFields(this.options.schema);
-    let input: Data = {};
-    if (action !== undefined) {
-      input = action.getInput();
-    }
+    let data: Data = {};
+
+    let input: Data = action?.getInput() || {};
+
+    let updateInput = false;
     for (const [fieldName, field] of schemaFields) {
       let value = editedFields.get(fieldName);
+      let defaultValue: any = undefined;
       let dbKey = field.storageKey || snakeCase(field.name);
 
       if (value === undefined) {
@@ -494,11 +515,11 @@ export class Orchestrator<T extends Ent> {
             );
           }
           if (field.defaultToViewerOnCreate) {
-            value = builder.viewer.viewerID;
+            defaultValue = builder.viewer.viewerID;
           }
           if (field.defaultValueOnCreate) {
-            value = field.defaultValueOnCreate(builder, input);
-            if (value === undefined) {
+            defaultValue = field.defaultValueOnCreate(builder, input);
+            if (defaultValue === undefined) {
               throw new Error(
                 `defaultValueOnCreate() returned undefined for field ${field.name}`,
               );
@@ -510,11 +531,50 @@ export class Orchestrator<T extends Ent> {
           field.defaultValueOnEdit &&
           this.options.operation === WriteOperation.Edit
         ) {
-          value = field.defaultValueOnEdit(builder, input);
-          // TODO special case this if this is the onlything changing and don't do the write.
+          defaultValue = field.defaultValueOnEdit(builder, input);
+          // TODO special case this if this is the only thing changing and don't do the write.
         }
       }
 
+      data[dbKey] = value;
+
+      if (defaultValue !== undefined) {
+        updateInput = true;
+        data[dbKey] = defaultValue;
+        this.defaultFieldsByFieldName[fieldName] = defaultValue;
+        // TODO related to #510. we need this logic to be consistent so do this all in TypeScript or get it from go somehow
+        this.defaultFieldsByTSName[camelCase(fieldName)] = defaultValue;
+      }
+    }
+
+    if (updateInput && this.options.updateInput) {
+      // this basically fixes #605. just needs to be exposed correctly
+      this.options.updateInput(this.defaultFieldsByTSName);
+    }
+    return data;
+  }
+
+  private async formatAndValidateFields(
+    schemaFields: Map<string, Field>,
+  ): Promise<void> {
+    if (this.options.operation == WriteOperation.Delete) {
+      return;
+    }
+
+    const editedFields = this.options.editedFields();
+    // build up data to be saved...
+    let data = {};
+    let logValues = {};
+
+    for (const [fieldName, field] of schemaFields) {
+      let value = editedFields.get(fieldName);
+      if (value === undefined) {
+        // null allowed
+        value = this.defaultFieldsByFieldName[fieldName];
+      }
+      let dbKey = field.storageKey || snakeCase(field.name);
+
+      // now format and validate...
       if (value === null) {
         if (!field.nullable) {
           throw new Error(
@@ -561,7 +621,6 @@ export class Orchestrator<T extends Ent> {
 
     this.validatedFields = data;
     this.logValues = logValues;
-    //    console.log(this.validatedFields);
   }
 
   async valid(): Promise<boolean> {
@@ -652,7 +711,7 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
     public operations: DataOperation[],
     public dependencies?: Map<ID, Builder<T>>,
     public changesets?: Changeset<Ent>[],
-    private options?: OrchestratorOptions<T>,
+    private options?: OrchestratorOptions<T, Data>,
   ) {}
 
   executor(): Executor {

@@ -186,6 +186,34 @@ export class AllowIfViewerIsEntPropertyRule<T extends Ent>
   }
 }
 
+export class AllowIfEntPropertyIsRule<T extends Ent>
+  implements PrivacyPolicyRule
+{
+  constructor(private property: keyof T, private val: any) {}
+
+  async apply(v: Viewer, ent?: T): Promise<PrivacyResult> {
+    const result: any = ent && ent[this.property];
+    if (result === this.val) {
+      return Allow();
+    }
+    return Skip();
+  }
+}
+
+export class DenyIfEntPropertyIsRule<T extends Ent>
+  implements PrivacyPolicyRule
+{
+  constructor(private property: keyof T, private val: any) {}
+
+  async apply(v: Viewer, ent?: T): Promise<PrivacyResult> {
+    const result: any = ent && ent[this.property];
+    if (result === this.val) {
+      return Deny();
+    }
+    return Skip();
+  }
+}
+
 export class AllowIfEntIsVisibleRule<T extends Ent>
   implements PrivacyPolicyRule
 {

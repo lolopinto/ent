@@ -39,6 +39,9 @@ export class AccountToOpenTodosQuery extends CustomEdgeQueryBase<
       options: Todo.loaderOptions(),
     });
   }
+  sourceEnt(id: ID) {
+    return Account.load(this.viewer, id);
+  }
 }
 
 export class Account extends AccountBase {

@@ -9,7 +9,7 @@ import {
   ConfigurableLoaderFactory,
 } from "../base";
 import { applyPrivacyPolicyForRows, DefaultLimit } from "../ent";
-import { BaseEdgeQuery, IDInfo } from "./query";
+import { BaseEdgeQuery, IDInfo, EdgeQuery } from "./query";
 
 export interface CustomEdgeQueryOptions<
   TSource extends Ent,
@@ -23,10 +23,13 @@ export interface CustomEdgeQueryOptions<
   sortColumn?: string;
 }
 
-export class CustomEdgeQueryBase<
-  TSource extends Ent,
-  TDest extends Ent,
-> extends BaseEdgeQuery<TSource, TDest, Data> {
+export abstract class CustomEdgeQueryBase<
+    TSource extends Ent,
+    TDest extends Ent,
+  >
+  extends BaseEdgeQuery<TSource, TDest, Data>
+  implements EdgeQuery<TSource, TDest, Data>
+{
   private id: ID;
   constructor(
     public viewer: Viewer,
@@ -40,6 +43,8 @@ export class CustomEdgeQueryBase<
       this.id = options.src;
     }
   }
+
+  abstract sourceEnt(id: ID): Promise<Ent | null>;
 
   private async idVisible() {
     const ids = await this.genIDInfosToFetch();

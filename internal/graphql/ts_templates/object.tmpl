@@ -23,11 +23,7 @@
   {{ template "enum.tmpl" . -}}
 {{ end -}}
 
-{{/* these 2 probably need to change */}}
-{{/* TODO these definitely need to change now */}}
-{{/* node and nodeInstance do not make sense for non-ents e.g. custom types...*/}}
-{{$node := useImport .Node -}}
-{{$nodeInstance := .NodeInstance -}}
+{{$nodeInstance := .NodeInstance}}
 
 {{ range $gqlNode := .GQLNodes -}}
   {{ if $gqlNode.Exported -}}
@@ -39,7 +35,11 @@
     {{ if eq $gqlNode.GQLType "GraphQLInputObjectType" -}}
       fields: (): {{useImport "GraphQLInputFieldConfigMap"}} => ({
     {{ else -}}
-      fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$gqlNode.TSType}}, {{useImport "RequestContext"}}> => ({
+      {{ $tsType := $gqlNode.TSType -}}
+      {{ if $baseObj.ForeignImport $tsType -}}
+         {{$tsType = useImport $tsType -}}
+      {{ end -}}
+      fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$tsType}}, {{useImport "RequestContext"}}> => ({
     {{ end -}}
       {{ template "field.tmpl" (dict "Base" $baseObj "Node" $gqlNode "NodeInstance" $nodeInstance) -}}
       }),

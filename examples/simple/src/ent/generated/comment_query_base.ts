@@ -44,12 +44,12 @@ export const articleToCommentsDataLoaderFactory = new IndexLoaderFactory(
   },
 );
 
-export class CommentToPostQueryBase extends AssocEdgeQueryBase<
+export abstract class CommentToPostQueryBase extends AssocEdgeQueryBase<
   Comment,
   Ent,
   CommentToPostEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<Comment>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<Comment, Ent>) {
     super(
       viewer,
       src,
@@ -60,11 +60,15 @@ export class CommentToPostQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends CommentToPostQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Comment>) => T,
+    this: new (viewer: Viewer, src: EdgeQuerySource<Comment, Ent>) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<Comment>,
+    src: EdgeQuerySource<Comment, Ent>,
   ): T {
     return new this(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return Comment.load(this.viewer, id);
   }
 }
 
@@ -72,9 +76,9 @@ export class ArticleToCommentsQueryBase extends CustomEdgeQueryBase<
   Ent,
   Comment
 > {
-  constructor(viewer: Viewer, src: Ent | ID) {
+  constructor(viewer: Viewer, private srcEnt: Ent) {
     super(viewer, {
-      src: src,
+      src: srcEnt,
       countLoaderFactory: articleToCommentsCountLoaderFactory,
       dataLoaderFactory: articleToCommentsDataLoaderFactory,
       options: Comment.loaderOptions(),
@@ -82,10 +86,14 @@ export class ArticleToCommentsQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends ArticleToCommentsQueryBase>(
-    this: new (viewer: Viewer, src: Ent | ID) => T,
+    this: new (viewer: Viewer, src: Ent) => T,
     viewer: Viewer,
-    src: Ent | ID,
+    src: Ent,
   ): T {
     return new this(viewer, src);
+  }
+
+  async sourceEnt(_id: ID) {
+    return this.srcEnt;
   }
 }

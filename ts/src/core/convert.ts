@@ -60,7 +60,8 @@ export function convertNullableList<T>(
   val: any,
   conv?: (val: any) => T,
 ): T[] | null {
-  if (val === null) {
+  // undefined can happen with unsafe ents
+  if (val === null || val === undefined) {
     return null;
   }
   return convertList(val, conv);

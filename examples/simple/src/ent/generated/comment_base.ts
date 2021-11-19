@@ -5,7 +5,6 @@
 
 import {
   AllowIfViewerPrivacyPolicy,
-  AssocEdge,
   Context,
   CustomQuery,
   Data,
@@ -24,7 +23,11 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import { loadEntByType, loadEntXByType } from "./loadAny";
-import { CommentToPostQuery, EdgeType, NodeType } from "../internal";
+import {
+  ArticleToCommentsQuery,
+  CommentToPostQuery,
+  NodeType,
+} from "../internal";
 import schema from "../../schema/comment";
 
 const tableName = "comments";
@@ -138,6 +141,14 @@ export class CommentBase {
       throw new Error(`couldn't load row for ${id}`);
     }
     return row;
+  }
+
+  static queryFromArticle<T extends CommentBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
+    ent: Ent,
+  ): ArticleToCommentsQuery {
+    return ArticleToCommentsQuery.query(viewer, ent);
   }
 
   static loaderOptions<T extends CommentBase>(

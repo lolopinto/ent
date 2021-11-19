@@ -18,7 +18,7 @@ Here's the steps to install locally:
 * Get the latest version of the Ent CLI:
 
 ```shell
-go install github.com/lolopinto/ent/tsent@v0.0.30
+go install github.com/lolopinto/ent/tsent@v0.0.32
 ```
 
 * Install [Python](https://www.python.org/downloads/) >= 3.8
@@ -26,7 +26,7 @@ go install github.com/lolopinto/ent/tsent@v0.0.30
 * Install [autoschema](https://pypi.org/project/auto-schema/):
 
 ```shell
-python3 -m pip install auto_schema==0.0.9
+python3 -m pip install auto_schema==0.0.12
 ```
 
 * Install the following TypeScript packages globally:

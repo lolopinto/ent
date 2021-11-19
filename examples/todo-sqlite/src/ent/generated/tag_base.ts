@@ -2,7 +2,6 @@
 
 import {
   AllowIfViewerPrivacyPolicy,
-  AssocEdge,
   Context,
   CustomQuery,
   Data,
@@ -19,7 +18,7 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
-import { Account, EdgeType, NodeType, TagToTodosQuery } from "src/ent/internal";
+import { Account, NodeType, TagToTodosQuery } from "src/ent/internal";
 import schema from "src/schema/tag";
 
 const tableName = "tags";

@@ -1,4 +1,4 @@
-import { DB, ID, Viewer, LoggedOutViewer, IDViewer } from "@snowtop/ent";
+import { DB, Viewer, LoggedOutViewer, IDViewer } from "@snowtop/ent";
 import { expectMutation, mutationRootConfig } from "@snowtop/ent-graphql-tests";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { mustDecodeIDFromGQLID, encodeGQLID } from "@snowtop/ent/graphql";

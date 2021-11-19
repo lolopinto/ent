@@ -1,5 +1,5 @@
 import { advanceBy } from "jest-date-mock";
-import { DB, LoggedOutViewer, IDViewer, ID, Viewer } from "@snowtop/ent";
+import { DB, LoggedOutViewer, IDViewer, Viewer } from "@snowtop/ent";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { encodeGQLID, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import {

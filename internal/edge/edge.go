@@ -335,6 +335,7 @@ type ConnectionEdge interface {
 
 type IndexedConnectionEdge interface {
 	ConnectionEdge
+	SourceIsPolymorphic() bool
 	QuotedDBColName() string
 }
 
@@ -440,6 +441,10 @@ func (e *ForeignKeyEdge) GetSourceNodeName() string {
 	return e.SourceNodeName
 }
 
+func (e *ForeignKeyEdge) SourceIsPolymorphic() bool {
+	return false
+}
+
 func (e *ForeignKeyEdge) TsEdgeQueryName() string {
 	return fmt.Sprintf("%sTo%sQuery", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
 }
@@ -529,7 +534,12 @@ func (e *IndexedEdge) TsEdgeQueryName() string {
 }
 
 func (e *IndexedEdge) GetSourceNodeName() string {
+	// hmm. what generates this? why is it always ent?
 	return "Ent"
+}
+
+func (e *IndexedEdge) SourceIsPolymorphic() bool {
+	return true
 }
 
 func (e *IndexedEdge) GetGraphQLConnectionName() string {
@@ -622,6 +632,11 @@ func (e *AssociationEdge) CreateEdge() bool {
 	}
 
 	return true
+}
+
+func (e *AssociationEdge) GenerateSourceLoadEntOptions() bool {
+	// when there's a pattern edge, need to provide the getSourceLoadEntOptions method
+	return e.PatternName != ""
 }
 
 func (e *AssociationEdge) GenerateBase() bool {

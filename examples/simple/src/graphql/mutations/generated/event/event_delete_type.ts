@@ -15,7 +15,6 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import { Event } from "../../../../ent";
 import DeleteEventAction from "../../../../ent/event/actions/delete_event_action";
 
 interface customEventDeleteInput {

@@ -26,9 +26,9 @@ export class OwnerToAddressesQueryBase extends CustomEdgeQueryBase<
   Ent,
   Address
 > {
-  constructor(viewer: Viewer, src: Ent | ID) {
+  constructor(viewer: Viewer, private srcEnt: Ent) {
     super(viewer, {
-      src: src,
+      src: srcEnt,
       countLoaderFactory: ownerToAddressesCountLoaderFactory,
       dataLoaderFactory: ownerToAddressesDataLoaderFactory,
       options: Address.loaderOptions(),
@@ -36,10 +36,14 @@ export class OwnerToAddressesQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends OwnerToAddressesQueryBase>(
-    this: new (viewer: Viewer, src: Ent | ID) => T,
+    this: new (viewer: Viewer, src: Ent) => T,
     viewer: Viewer,
-    src: Ent | ID,
+    src: Ent,
   ): T {
     return new this(viewer, src);
+  }
+
+  async sourceEnt(_id: ID) {
+    return this.srcEnt;
   }
 }

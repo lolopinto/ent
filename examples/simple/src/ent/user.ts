@@ -1,4 +1,4 @@
-import { UserBase, UserToContactsQuery, Contact, EdgeType } from "./internal";
+import { UserBase, Contact, EdgeType } from "./internal";
 import {
   PrivacyPolicy,
   AllowIfViewerRule,

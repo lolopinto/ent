@@ -8,6 +8,7 @@ import {
   AssocEdgeLoaderFactory,
   AssocEdgeQueryBase,
   EdgeQuerySource,
+  ID,
   Viewer,
 } from "@snowtop/ent";
 import {
@@ -70,12 +71,12 @@ export const eventToMaybeDataLoaderFactory = new AssocEdgeLoaderFactory(
   () => EventToMaybeEdge,
 );
 
-export class EventToAttendingQueryBase extends AssocEdgeQueryBase<
+export abstract class EventToAttendingQueryBase extends AssocEdgeQueryBase<
   Event,
   User,
   EventToAttendingEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<Event>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<Event, User>) {
     super(
       viewer,
       src,
@@ -86,11 +87,15 @@ export class EventToAttendingQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends EventToAttendingQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Event>) => T,
+    this: new (viewer: Viewer, src: EdgeQuerySource<Event, User>) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<Event>,
+    src: EdgeQuerySource<Event, User>,
   ): T {
     return new this(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return Event.load(this.viewer, id);
   }
 
   queryComments(): UserToCommentsQuery {
@@ -138,12 +143,12 @@ export class EventToAttendingQueryBase extends AssocEdgeQueryBase<
   }
 }
 
-export class EventToDeclinedQueryBase extends AssocEdgeQueryBase<
+export abstract class EventToDeclinedQueryBase extends AssocEdgeQueryBase<
   Event,
   User,
   EventToDeclinedEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<Event>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<Event, User>) {
     super(
       viewer,
       src,
@@ -154,11 +159,15 @@ export class EventToDeclinedQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends EventToDeclinedQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Event>) => T,
+    this: new (viewer: Viewer, src: EdgeQuerySource<Event, User>) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<Event>,
+    src: EdgeQuerySource<Event, User>,
   ): T {
     return new this(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return Event.load(this.viewer, id);
   }
 
   queryComments(): UserToCommentsQuery {
@@ -206,12 +215,12 @@ export class EventToDeclinedQueryBase extends AssocEdgeQueryBase<
   }
 }
 
-export class EventToHostsQueryBase extends AssocEdgeQueryBase<
+export abstract class EventToHostsQueryBase extends AssocEdgeQueryBase<
   Event,
   User,
   EventToHostsEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<Event>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<Event, User>) {
     super(
       viewer,
       src,
@@ -222,11 +231,15 @@ export class EventToHostsQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends EventToHostsQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Event>) => T,
+    this: new (viewer: Viewer, src: EdgeQuerySource<Event, User>) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<Event>,
+    src: EdgeQuerySource<Event, User>,
   ): T {
     return new this(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return Event.load(this.viewer, id);
   }
 
   queryComments(): UserToCommentsQuery {
@@ -274,12 +287,12 @@ export class EventToHostsQueryBase extends AssocEdgeQueryBase<
   }
 }
 
-export class EventToInvitedQueryBase extends AssocEdgeQueryBase<
+export abstract class EventToInvitedQueryBase extends AssocEdgeQueryBase<
   Event,
   User,
   EventToInvitedEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<Event>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<Event, User>) {
     super(
       viewer,
       src,
@@ -290,11 +303,15 @@ export class EventToInvitedQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends EventToInvitedQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Event>) => T,
+    this: new (viewer: Viewer, src: EdgeQuerySource<Event, User>) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<Event>,
+    src: EdgeQuerySource<Event, User>,
   ): T {
     return new this(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return Event.load(this.viewer, id);
   }
 
   queryComments(): UserToCommentsQuery {
@@ -342,12 +359,12 @@ export class EventToInvitedQueryBase extends AssocEdgeQueryBase<
   }
 }
 
-export class EventToMaybeQueryBase extends AssocEdgeQueryBase<
+export abstract class EventToMaybeQueryBase extends AssocEdgeQueryBase<
   Event,
   User,
   EventToMaybeEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<Event>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<Event, User>) {
     super(
       viewer,
       src,
@@ -358,11 +375,15 @@ export class EventToMaybeQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends EventToMaybeQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Event>) => T,
+    this: new (viewer: Viewer, src: EdgeQuerySource<Event, User>) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<Event>,
+    src: EdgeQuerySource<Event, User>,
   ): T {
     return new this(viewer, src);
+  }
+
+  sourceEnt(id: ID) {
+    return Event.load(this.viewer, id);
   }
 
   queryComments(): UserToCommentsQuery {

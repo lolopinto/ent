@@ -85,6 +85,10 @@ export class EventToEventActivitiesQueryBase extends CustomEdgeQueryBase<
   ): T {
     return new this(viewer, src);
   }
+
+  async sourceEnt(id: ID) {
+    return Event.load(this.viewer, id);
+  }
 }
 
 export class EventToGuestDataQueryBase extends CustomEdgeQueryBase<
@@ -106,6 +110,10 @@ export class EventToGuestDataQueryBase extends CustomEdgeQueryBase<
     src: Event | ID,
   ): T {
     return new this(viewer, src);
+  }
+
+  async sourceEnt(id: ID) {
+    return Event.load(this.viewer, id);
   }
 }
 
@@ -129,6 +137,10 @@ export class EventToGuestGroupsQueryBase extends CustomEdgeQueryBase<
   ): T {
     return new this(viewer, src);
   }
+
+  async sourceEnt(id: ID) {
+    return Event.load(this.viewer, id);
+  }
 }
 
 export class EventToGuestsQueryBase extends CustomEdgeQueryBase<Event, Guest> {
@@ -147,5 +159,9 @@ export class EventToGuestsQueryBase extends CustomEdgeQueryBase<Event, Guest> {
     src: Event | ID,
   ): T {
     return new this(viewer, src);
+  }
+
+  async sourceEnt(id: ID) {
+    return Event.load(this.viewer, id);
   }
 }

@@ -1,3 +1,4 @@
+import uuid
 from alembic.operations import Operations, MigrateOperation
 import datetime
 import sqlalchemy as sa
@@ -16,6 +17,8 @@ def add_edges_from(connection: sa.engine.Connection, edges):
     for edge in edges:
         edge['created_at'] = t
         edge['updated_at'] = t
+        if isinstance(edge['edge_type'], postgresql.UUID) or isinstance(edge['edge_type'], uuid.UUID):
+            edge['edge_type'] = str(edge['edge_type'])
         edges_to_write.append(edge)
 
     dialect = connection.dialect.name

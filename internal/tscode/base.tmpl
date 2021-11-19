@@ -203,14 +203,14 @@ export class {{$baseClass}} {
       ): Promise<{{$dataType}} | null> {
         return {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName}});
       }
-    {{ else if $field.QueryFromID -}}
+    {{ else if $field.QueryFromEnt -}}
       {{$queryName := useImport ($this.GetFieldQueryName $field) -}}
-      static queryFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
+      static queryFrom{{$field.QueryFromEntName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         viewer: {{$viewerType}},
-        {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
+        ent: {{useImport "Ent"}},
       ): {{$queryName}} {
-        return {{$queryName}}.query(viewer, {{$field.TsFieldName}});
+        return {{$queryName}}.query(viewer, ent);
       }
     {{ else if $field.QueryFrom -}}
     // TODO index {{$field.FieldName}} not id... we want an indexQueryLoader...
@@ -284,9 +284,9 @@ export class {{$baseClass}} {
     {{$edgeName := .CamelCaseEdgeName -}}
     {{$uniqueEdge := .Unique -}}
     {{with .NodeInfo -}}
-    {{$edgeType := useImport "EdgeType"}}
-    {{$assocEdgeType := useImport "AssocEdge"}}
      {{ if $uniqueEdge -}}
+      {{$assocEdgeType := useImport "AssocEdge"}}
+      {{$edgeType := useImport "EdgeType"}}
       load{{$edgeName}}Edge(): Promise<{{$assocEdgeType}} | null> {
         return {{useImport "loadUniqueEdge"}}({
           id1: this.id, 
@@ -305,7 +305,8 @@ export class {{$baseClass}} {
       }
 
      {{ else -}}
-      {{$queryName := useImport $edge.TsEdgeQueryName -}}
+
+      {{$queryName := useImport $edge.TsEdgeQueryName}}
       query{{$edgeName}}(): {{$queryName}} {
         {{/* TODO change entquery to NodeBase and use this instead of id here? */}}
         return {{$queryName}}.query(this.viewer, this.id);

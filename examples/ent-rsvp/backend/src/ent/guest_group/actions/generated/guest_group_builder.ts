@@ -41,6 +41,8 @@ export class GuestGroupBuilder implements Builder<GuestGroup> {
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-GuestGroup`;
     this.input = action.getInput();
+    const updateInput = (d: GuestGroupInput) =>
+      this.updateInput.apply(this, [d]);
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -52,6 +54,7 @@ export class GuestGroupBuilder implements Builder<GuestGroup> {
       action,
       schema,
       editedFields: () => this.getEditedFields.apply(this),
+      updateInput,
     });
   }
 

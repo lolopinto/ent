@@ -68,6 +68,7 @@ export class UserBuilder implements Builder<User> {
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-User`;
     this.input = action.getInput();
+    const updateInput = (d: UserInput) => this.updateInput.apply(this, [d]);
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -79,6 +80,7 @@ export class UserBuilder implements Builder<User> {
       action,
       schema,
       editedFields: () => this.getEditedFields.apply(this),
+      updateInput,
     });
   }
 
