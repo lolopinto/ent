@@ -18,7 +18,7 @@ Here's the steps to install locally:
 * Get the latest version of the Ent CLI:
 
 ```shell
-go install github.com/lolopinto/ent/tsent@v0.0.31
+go install github.com/lolopinto/ent/tsent@v0.0.32
 ```
 
 * Install [Python](https://www.python.org/downloads/) >= 3.8
