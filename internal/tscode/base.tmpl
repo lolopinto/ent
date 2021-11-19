@@ -203,14 +203,14 @@ export class {{$baseClass}} {
       ): Promise<{{$dataType}} | null> {
         return {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName}});
       }
-    {{ else if $field.QueryFromID -}}
+    {{ else if $field.QueryFromEnt -}}
       {{$queryName := useImport ($this.GetFieldQueryName $field) -}}
-      static queryFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
+      static queryFrom{{$field.QueryFromEntName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         viewer: {{$viewerType}},
-        {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
+        ent: {{useImport "Ent"}},
       ): {{$queryName}} {
-        return {{$queryName}}.query(viewer, {{$field.TsFieldName}});
+        return {{$queryName}}.query(viewer, ent);
       }
     {{ else if $field.QueryFrom -}}
     // TODO index {{$field.FieldName}} not id... we want an indexQueryLoader...

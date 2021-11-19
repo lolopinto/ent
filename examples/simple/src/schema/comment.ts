@@ -13,7 +13,7 @@ export default class Comment extends BaseEntSchema implements Schema {
     UUIDType({ name: "AuthorID" }),
     StringType({ name: "Body" }),
     // should be postID but don't want to conflict with existing post edge
-    UUIDType({ name: "ArticleID", polymorphic: true }),
+    UUIDType({ name: "ArticleID", polymorphic: true, index: true }),
   ];
 
   actions: Action[] = [
