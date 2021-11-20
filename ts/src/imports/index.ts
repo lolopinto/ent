@@ -35,12 +35,13 @@ interface classResult {
   file: file;
 }
 
-export function parseCustomInput(filePath: string, opts?: Options): PathResult {
+export function parseCustomImports(
+  filePath: string,
+  opts?: Options,
+): PathResult {
   const files = getFiles(filePath, opts);
-  console.error("files", files);
   const options = readCompilerOptions(filePath);
 
-  // classMap
   let classMap = new Map<string, file[]>();
 
   files.forEach((file) => {

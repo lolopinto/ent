@@ -10,7 +10,7 @@ import {
 import * as readline from "readline";
 import * as path from "path";
 import * as fs from "fs";
-import { parseCustomInput, file } from "../imports";
+import { parseCustomImports, file } from "../imports";
 import { exit } from "process";
 import { Data } from "../core/base";
 
@@ -116,13 +116,9 @@ async function requireFiles(files: string[]) {
 
 async function parseImports(filePath: string) {
   // only do graphql files...
-  const res = parseCustomInput(path.join(filePath, "graphql"), {
+  return parseCustomImports(path.join(filePath, "graphql"), {
     ignore: ["**/generated/**", "**/tests/**"],
   });
-  // this isn't that expensive. 42ms in formation land
-  // may need different files eventually but not the reason we're doing anything bad
-  console.error(res);
-  return res;
 }
 
 function findGraphQLPath(filePath: string): string | undefined {
