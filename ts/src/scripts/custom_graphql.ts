@@ -49,26 +49,12 @@ async function captureCustom(filePath: string, filesCsv: string | undefined) {
       // TODO fix. we have "src" in the path we get here
       files[i] = path.join(filePath, "..", files[i]);
     }
-    if (files.length) {
-      // TODO how to load everything correctly?
-      // if there's at least one, load src/ent/index
-      // if there's a src/graphql/resolvers, that seems very unlikely?
-      files.unshift(path.join(filePath, "..", "src/ent/index.ts"));
-    }
-    // this *should* save some time in something like formation with no custom
-    // may still lead to lots of issues when there's lots of custom with things being slow
-    //
-    // 9.5s in formation land saved when no custom
-    // TODO: what happens when custom is somewhere else
-    // how to be smart about not loading the same thing multiple times?
-    // "/app/src/ent/index.ts",
-    // "/app/src/graphql/resolvers/index.ts",
-    // "/app/src/graphql/resolvers/node_query_type.ts";
-    console.error("required files", files);
 
     await requireFiles(files);
     return;
   }
+  // TODO delete all of this eventually
+
   // TODO configurable paths eventually
   // for now only files that are in the include path of the roots are allowed
 
@@ -111,32 +97,21 @@ async function captureCustom(filePath: string, filesCsv: string | undefined) {
 }
 
 async function requireFiles(files: string[]) {
-  //  let promises: any[] = [];
   await Promise.all(
     files.map(async (file) => {
       if (fs.existsSync(file)) {
         try {
           await require(file);
         } catch (e) {
-          throw new Error(`${e.message} + ${file}`);
+          throw new Error(`${e.message} loading ${file}`);
         }
       } else {
         throw new Error(`file ${file} doesn't exist`);
       }
-      console.error("successfully loaded", file);
     }),
   ).catch((err) => {
     throw new Error(err);
   });
-  // files.forEach((file) => {
-  //   if (fs.existsSync(file)) {
-  //     promises.push(require(file));
-  //   } else {
-  //     console.error("file doesn't exist", file);
-  //   }
-  // });
-
-  // await Promise.all(promises);
 }
 
 async function parseImports(filePath: string) {

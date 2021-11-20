@@ -501,7 +501,11 @@ var searchFor = []string{
 	"@qlFileUpload",
 }
 
-func searchForFiles() []string {
+func getImportPathForModelFile(nodeData *schema.NodeData) string {
+	return fmt.Sprintf("src/ent/%s.ts", nodeData.PackageName)
+}
+
+func searchForFiles(processor *codegen.Processor) []string {
 	var wg sync.WaitGroup
 	var serr syncerr.Error
 	wg.Add(len(searchFor))
@@ -522,11 +526,31 @@ func searchForFiles() []string {
 	}
 	wg.Wait()
 
-	result := []string{}
+	// no files, nothing to do here
+	if len(files) == 0 {
+		return []string{}
+	}
+
+	result := []string{
+		// we want to load all of ent first to make sure that any requires we do resolve correctly
+		// we don't need to load graphql by default since we use ent -> graphql objects
+		// any custom objects that are referenced should be in the load path
+		"src/ent/index.ts",
+	}
+
 	seen := make(map[string]bool)
+	entPaths := make(map[string]bool)
+
+	for _, info := range processor.Schema.Nodes {
+		nodeData := info.NodeData
+		entPath := getImportPathForModelFile(nodeData)
+		entPaths[entPath] = true
+	}
+
 	for _, list := range files {
 		for _, file := range list {
-			if file == "" || seen[file] {
+			// ignore entPaths since we're doing src/ent/index.ts to get all of ent
+			if file == "" || seen[file] || entPaths[file] {
 				continue
 			}
 			seen[file] = true
@@ -544,6 +568,14 @@ func parseCustomData(processor *codegen.Processor, fromTest bool) chan *customDa
 			res <- &cd
 			return
 		}
+
+		customFiles := searchForFiles(processor)
+		// no custom files, nothing to do here. we're done
+		if len(customFiles) == 0 {
+			res <- &cd
+			return
+		}
+
 		fmt.Println("checking for custom graphql definitions...")
 
 		var buf bytes.Buffer
@@ -556,8 +588,6 @@ func parseCustomData(processor *codegen.Processor, fromTest bool) chan *customDa
 			buf.WriteString("\n")
 		}
 
-		customFiles := searchForFiles()
-		spew.Dump(customFiles)
 		// similar to writeTsFile in parse_ts.go
 		// unfortunately that this is being done
 
@@ -589,8 +619,8 @@ func parseCustomData(processor *codegen.Processor, fromTest bool) chan *customDa
 				"--path",
 				// TODO this should be a configuration option to indicate where the code root is
 				filepath.Join(processor.Config.GetAbsPathToRoot(), "src"),
-				// "--files",
-				// strings.Join(customFiles, ","),
+				"--files",
+				strings.Join(customFiles, ","),
 			)
 
 			cmdName = "ts-node-script"
