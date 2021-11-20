@@ -103,7 +103,7 @@ async function requireFiles(files: string[]) {
         try {
           await require(file);
         } catch (e) {
-          throw new Error(`${e.message} loading ${file}`);
+          throw new Error(`${(e as Error).message} loading ${file}`);
         }
       } else {
         throw new Error(`file ${file} doesn't exist`);

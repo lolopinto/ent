@@ -3,6 +3,7 @@ import ts from "typescript";
 import JSON5 from "json5";
 import * as fs from "fs";
 import * as path from "path";
+import { Data } from "../core/base";
 
 function getFiles(filePath: string, opts?: Options): string[] {
   if (!path.isAbsolute(filePath)) {
@@ -104,7 +105,7 @@ function readCompilerOptions(filePath: string): ts.CompilerOptions {
   if (!configPath) {
     return {};
   }
-  let json = {};
+  let json: Data = {};
   try {
     json = JSON5.parse(
       fs.readFileSync(configPath, {
