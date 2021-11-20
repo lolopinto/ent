@@ -3,9 +3,13 @@ package file
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strings"
 	"text/template"
 
+	"github.com/davecgh/go-spew/spew"
+	"github.com/evanw/esbuild/pkg/api"
 	"github.com/lolopinto/ent/internal/codegen"
 	intimports "github.com/lolopinto/ent/internal/imports"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -86,6 +90,64 @@ func (fw *TemplatedBasedFileWriter) addImports(buf *bytes.Buffer) ([]byte, error
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	stat, err := os.Stat(fw.PathToFile)
+	// don't have file. bye
+	if stat == nil || os.IsNotExist(err) {
+		return buf.Bytes(), nil
+	}
+	// if !strings.HasSuffix(fw.PathToFile, "src/graphql/generated/schema.ts") {
+	// 	return buf.Bytes(), nil
+	// }
+
+	b, err := ioutil.ReadFile(fw.PathToFile)
+	if err != nil {
+		return buf.Bytes(), nil
+	}
+	// new code
+	result := api.Transform(buf.String(), api.TransformOptions{
+		// TODO check this from tsconfig.json
+		Target:           api.ES2020,
+		Loader:           api.LoaderTS,
+		MinifyWhitespace: true,
+		MinifySyntax:     true,
+	})
+
+	existingResult := api.Transform(string(b), api.TransformOptions{
+		// TODO check this from tsconfig.json
+		Target:           api.ES2020,
+		Loader:           api.LoaderTS,
+		MinifyWhitespace: true,
+		MinifySyntax:     true,
+	})
+
+	// there's an error, nothing to do here. bye
+	if len(result.Errors) != 0 || len(existingResult.Errors) != 0 {
+		return buf.Bytes(), nil
+	}
+
+	if len(result.Warnings) != 0 {
+		fmt.Printf("%s new code: %d errors and %d warnings\n",
+			fw.PathToFile,
+			len(result.Errors), len(result.Warnings))
+	}
+
+	if len(existingResult.Warnings) != 0 {
+		fmt.Printf("%s existing file: %d errors and %d warnings\n",
+			fw.PathToFile,
+			len(existingResult.Errors), len(existingResult.Warnings))
+	}
+
+	//	spew.Dump(string(result.Code), string(existingResult.Code))
+	if !bytes.Equal(result.Code, existingResult.Code) {
+		// yay!
+		// so, the following:
+		// 1. don't do anything for writeOnce files that already exist
+		// 2. don't stat multiple times. so rewrite to keep track of the stating at the beginning
+		// 3. keep track of what files have changed to pass to prettier so we only run prettier for changed TS files at the end
+		// 4. check if response of this is nil and don't write anything...
+		spew.Dump(fw.PathToFile)
 	}
 	return buf.Bytes(), nil
 }
