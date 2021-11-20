@@ -3,12 +3,10 @@ package file
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"text/template"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/lolopinto/ent/internal/codegen"
 	intimports "github.com/lolopinto/ent/internal/imports"
@@ -39,7 +37,7 @@ func (fw *TemplatedBasedFileWriter) getPathToFile() string {
 	return fw.PathToFile
 }
 
-func (fw *TemplatedBasedFileWriter) generateBytes() ([]byte, error) {
+func (fw *TemplatedBasedFileWriter) generateBytes(opt *Options, si *statInfo) ([]byte, error) {
 	// execute template
 	buf, err := fw.executeTemplate()
 	if err != nil {
@@ -51,7 +49,7 @@ func (fw *TemplatedBasedFileWriter) generateBytes() ([]byte, error) {
 	if strings.HasSuffix(fw.getPathToFile(), ".go") {
 		return fw.formatGo(buf)
 	} else if strings.HasSuffix(fw.getPathToFile(), ".ts") {
-		return fw.addImports(buf)
+		return fw.handleTSFile(opt, si, buf)
 	}
 	return buf.Bytes(), nil
 }
@@ -83,7 +81,7 @@ func (fw *TemplatedBasedFileWriter) formatGo(buf *bytes.Buffer) ([]byte, error) 
 	return b, err
 }
 
-func (fw *TemplatedBasedFileWriter) addImports(buf *bytes.Buffer) ([]byte, error) {
+func (fw *TemplatedBasedFileWriter) handleTSFile(opt *Options, si *statInfo, buf *bytes.Buffer) ([]byte, error) {
 	if fw.TsImports != nil {
 		var err error
 		buf, err = fw.handleManualTsImports(buf)
@@ -92,16 +90,12 @@ func (fw *TemplatedBasedFileWriter) addImports(buf *bytes.Buffer) ([]byte, error
 		}
 	}
 
-	stat, err := os.Stat(fw.PathToFile)
-	// don't have file. bye
-	if stat == nil || os.IsNotExist(err) {
+	// file doesn't exist, nothing to check
+	if si.fileInfo == nil || os.IsNotExist(si.err) {
 		return buf.Bytes(), nil
 	}
-	// if !strings.HasSuffix(fw.PathToFile, "src/graphql/generated/schema.ts") {
-	// 	return buf.Bytes(), nil
-	// }
 
-	b, err := ioutil.ReadFile(fw.PathToFile)
+	fileContents, err := os.ReadFile(fw.PathToFile)
 	if err != nil {
 		return buf.Bytes(), nil
 	}
@@ -114,7 +108,7 @@ func (fw *TemplatedBasedFileWriter) addImports(buf *bytes.Buffer) ([]byte, error
 		MinifySyntax:     true,
 	})
 
-	existingResult := api.Transform(string(b), api.TransformOptions{
+	existingResult := api.Transform(string(fileContents), api.TransformOptions{
 		// TODO check this from tsconfig.json
 		Target:           api.ES2020,
 		Loader:           api.LoaderTS,
@@ -128,27 +122,22 @@ func (fw *TemplatedBasedFileWriter) addImports(buf *bytes.Buffer) ([]byte, error
 	}
 
 	if len(result.Warnings) != 0 {
-		fmt.Printf("%s new code: %d errors and %d warnings\n",
+		debugLogInfo(opt, "%s new file contents: %d warnings\n",
 			fw.PathToFile,
-			len(result.Errors), len(result.Warnings))
+			len(result.Warnings))
 	}
 
 	if len(existingResult.Warnings) != 0 {
-		fmt.Printf("%s existing file: %d errors and %d warnings\n",
+		debugLogInfo(opt, "%s existing file: %d warnings\n",
 			fw.PathToFile,
-			len(existingResult.Errors), len(existingResult.Warnings))
+			len(existingResult.Warnings))
 	}
 
-	//	spew.Dump(string(result.Code), string(existingResult.Code))
-	if !bytes.Equal(result.Code, existingResult.Code) {
-		// yay!
-		// so, the following:
-		// 1. don't do anything for writeOnce files that already exist
-		// 2. don't stat multiple times. so rewrite to keep track of the stating at the beginning
-		// 3. keep track of what files have changed to pass to prettier so we only run prettier for changed TS files at the end
-		// 4. check if response of this is nil and don't write anything...
-		spew.Dump(fw.PathToFile)
+	if bytes.Equal(result.Code, existingResult.Code) {
+		// nothing changed, no bytes to write
+		return nil, nil
 	}
+
 	return buf.Bytes(), nil
 }
 

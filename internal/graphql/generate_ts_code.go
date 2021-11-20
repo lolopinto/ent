@@ -2551,5 +2551,6 @@ func writeSchemaFile(cfg *codegen.Config, fileToWrite string, hasMutations bool)
 			CreateDirIfNeeded: true,
 		},
 		file.DisableLog(),
+		file.TempFile(),
 	)
 }
