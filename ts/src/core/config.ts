@@ -59,8 +59,6 @@ interface PrettierConfig {
   // indicates you have your own custom prettier configuration and should use that instead of the ent default
   // https://prettier.io/docs/en/configuration.html
   custom?: boolean;
-  // default glob is 'src/**/*.ts', can override this
-  glob?: string;
 }
 
 interface PrivacyConfig {

@@ -216,8 +216,6 @@ func (cfg *Config) GeneratedHeader() string {
 	return ""
 }
 
-const DEFAULT_GLOB = "src/**/*.ts"
-
 // options: https://prettier.io/docs/en/options.html
 var defaultArgs = []string{
 	"--trailing-comma", "all",
@@ -226,22 +224,20 @@ var defaultArgs = []string{
 	"--end-of-line", "lf",
 }
 
-func (cfg *Config) GetPrettierArgs() []string {
+func (cfg *Config) GetPrettierArgs(changedFiles []string) []string {
 	if cfg.config == nil || cfg.config.Codegen == nil || cfg.config.Codegen.Prettier == nil {
 		// defaults
-		return append(defaultArgs, "--write", DEFAULT_GLOB)
+		res := append(defaultArgs, "--write")
+		res = append(res, changedFiles...)
+		return res
 	}
 
 	prettier := cfg.config.Codegen.Prettier
-	glob := DEFAULT_GLOB
-	if prettier.Glob != "" {
-		glob = prettier.Glob
-	}
 	if prettier.Custom {
-		return []string{"--write", glob}
+		return append([]string{"--write"}, changedFiles...)
 	}
 
-	return append(defaultArgs, "--write", glob)
+	return append(defaultArgs, "--write")
 }
 
 // ImportPackage refers to TypeScript paths of what needs to be generated for imports
@@ -311,6 +307,5 @@ type PrivacyConfig struct {
 }
 
 type PrettierConfig struct {
-	Custom bool   `yaml:"custom"`
-	Glob   string `yaml:"glob"`
+	Custom bool `yaml:"custom"`
 }
