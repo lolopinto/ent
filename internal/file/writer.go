@@ -48,6 +48,8 @@ func writeFile(w Writer, cfg *codegen.Config, opts ...func(opt *Options)) error 
 		}
 	}
 	b, err := w.generateBytes()
+	// check nil...
+	// if nil returned, nothing to do
 	if err != nil {
 		return err
 	}
