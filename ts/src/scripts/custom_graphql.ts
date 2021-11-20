@@ -12,6 +12,7 @@ import * as path from "path";
 import * as fs from "fs";
 import { parseCustomInput, file } from "../imports";
 import { exit } from "process";
+import { Data } from "../core/base";
 
 // need to use the GQLCapture from the package so that when we call GQLCapture.enable()
 // we're affecting the local paths as opposed to a different instance
@@ -41,7 +42,33 @@ async function readInputs(): Promise<{
   });
 }
 
-async function captureCustom(filePath: string) {
+async function captureCustom(filePath: string, filesCsv: string | undefined) {
+  if (filesCsv !== undefined) {
+    let files = filesCsv.split(",");
+    for (let i = 0; i < files.length; i++) {
+      // TODO fix. we have "src" in the path we get here
+      files[i] = path.join(filePath, "..", files[i]);
+    }
+    if (files.length) {
+      // TODO how to load everything correctly?
+      // if there's at least one, load src/ent/index
+      // if there's a src/graphql/resolvers, that seems very unlikely?
+      files.unshift(path.join(filePath, "..", "src/ent/index.ts"));
+    }
+    // this *should* save some time in something like formation with no custom
+    // may still lead to lots of issues when there's lots of custom with things being slow
+    //
+    // 9.5s in formation land saved when no custom
+    // TODO: what happens when custom is somewhere else
+    // how to be smart about not loading the same thing multiple times?
+    // "/app/src/ent/index.ts",
+    // "/app/src/graphql/resolvers/index.ts",
+    // "/app/src/graphql/resolvers/node_query_type.ts";
+    console.error("required files", files);
+
+    await requireFiles(files);
+    return;
+  }
   // TODO configurable paths eventually
   // for now only files that are in the include path of the roots are allowed
 
@@ -78,23 +105,49 @@ async function captureCustom(filePath: string) {
     },
   );
   const files = rootFiles.concat(customGQLResolvers, customGQLMutations);
-  //console.log(files);
+  console.error("required files", files);
 
-  let promises: any[] = [];
-  files.forEach((file) => {
-    if (fs.existsSync(file)) {
-      promises.push(require(file));
-    }
+  await requireFiles(files);
+}
+
+async function requireFiles(files: string[]) {
+  //  let promises: any[] = [];
+  await Promise.all(
+    files.map(async (file) => {
+      if (fs.existsSync(file)) {
+        try {
+          await require(file);
+        } catch (e) {
+          throw new Error(`${e.message} + ${file}`);
+        }
+      } else {
+        throw new Error(`file ${file} doesn't exist`);
+      }
+      console.error("successfully loaded", file);
+    }),
+  ).catch((err) => {
+    throw new Error(err);
   });
+  // files.forEach((file) => {
+  //   if (fs.existsSync(file)) {
+  //     promises.push(require(file));
+  //   } else {
+  //     console.error("file doesn't exist", file);
+  //   }
+  // });
 
-  await Promise.all(promises);
+  // await Promise.all(promises);
 }
 
 async function parseImports(filePath: string) {
   // only do graphql files...
-  return parseCustomInput(path.join(filePath, "graphql"), {
+  const res = parseCustomInput(path.join(filePath, "graphql"), {
     ignore: ["**/generated/**", "**/tests/**"],
   });
+  // this isn't that expensive. 42ms in formation land
+  // may need different files eventually but not the reason we're doing anything bad
+  console.error(res);
+  return res;
 }
 
 function findGraphQLPath(filePath: string): string | undefined {
@@ -131,13 +184,13 @@ async function main() {
 
   const [inputsRead, _, imports] = await Promise.all([
     readInputs(),
-    captureCustom(options.path),
+    captureCustom(options.path, options.files),
     parseImports(options.path),
   ]);
   const { nodes, nodesMap } = inputsRead;
 
   function fromMap<T extends any>(m: Map<string, T>) {
-    let result = {};
+    let result: Data = {};
     for (const [key, value] of m) {
       result[key] = value;
     }
@@ -153,8 +206,8 @@ async function main() {
   let objects = fromMap(GQLCapture.getCustomObjects());
   let customTypes = fromMap(GQLCapture.getCustomTypes());
 
-  let classes = {};
-  let allFiles = {};
+  let classes: Data = {};
+  let allFiles: Data = {};
 
   const buildClasses2 = (args: ProcessedField[]) => {
     args.forEach((arg) => {
@@ -179,7 +232,7 @@ async function main() {
     if (allFiles[f.path]) {
       return;
     }
-    let imps = {};
+    let imps: Data = {};
     for (const [key, value] of f.imports) {
       imps[key] = {
         path: value.importPath,

@@ -488,6 +488,54 @@ func getFilePathForCustomQuery(cfg *codegen.Config, name string) string {
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/resolvers/generated/%s_query_type.ts", strcase.ToSnake(name)))
 }
 
+var searchFor = []string{
+	"@gqlField",
+	"@gqlArg",
+	"@gqlArgType",
+	"@gqlInputObjectType",
+	"@gqlObjectType",
+	"@gqlQuery",
+	"@gqlMutation",
+	// gqlContextType intentionally skipped
+	"@gqlConnection",
+	"@qlFileUpload",
+}
+
+func searchForFiles() []string {
+	var wg sync.WaitGroup
+	var serr syncerr.Error
+	wg.Add(len(searchFor))
+	files := make([][]string, len(searchFor))
+
+	for i := range searchFor {
+		go func(i int) {
+			defer wg.Done()
+
+			var buf bytes.Buffer
+			cmd := exec.Command("ag", "--ts", "-l", "--nocolor", searchFor[i])
+			cmd.Stdout = &buf
+			if err := cmd.Run(); err != nil {
+				serr.Append(err)
+			}
+			files[i] = strings.Split(buf.String(), "\n")
+		}(i)
+	}
+	wg.Wait()
+
+	result := []string{}
+	seen := make(map[string]bool)
+	for _, list := range files {
+		for _, file := range list {
+			if file == "" || seen[file] {
+				continue
+			}
+			seen[file] = true
+			result = append(result, file)
+		}
+	}
+	return result
+}
+
 func parseCustomData(processor *codegen.Processor, fromTest bool) chan *customData {
 	var res = make(chan *customData)
 	go func() {
@@ -508,6 +556,8 @@ func parseCustomData(processor *codegen.Processor, fromTest bool) chan *customDa
 			buf.WriteString("\n")
 		}
 
+		customFiles := searchForFiles()
+		spew.Dump(customFiles)
 		// similar to writeTsFile in parse_ts.go
 		// unfortunately that this is being done
 
@@ -539,7 +589,10 @@ func parseCustomData(processor *codegen.Processor, fromTest bool) chan *customDa
 				"--path",
 				// TODO this should be a configuration option to indicate where the code root is
 				filepath.Join(processor.Config.GetAbsPathToRoot(), "src"),
+				// "--files",
+				// strings.Join(customFiles, ","),
 			)
+
 			cmdName = "ts-node-script"
 		}
 

@@ -37,6 +37,7 @@ interface classResult {
 
 export function parseCustomInput(filePath: string, opts?: Options): PathResult {
   const files = getFiles(filePath, opts);
+  console.error("files", files);
   const options = readCompilerOptions(filePath);
 
   // classMap
@@ -102,7 +103,6 @@ function readCompilerOptions(filePath: string): ts.CompilerOptions {
   if (!configPath) {
     return {};
   }
-  const root = path.join(filePath, "..");
   let json = {};
   try {
     json = JSON5.parse(

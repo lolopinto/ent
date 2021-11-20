@@ -25,6 +25,7 @@ export class GQLViewer {
     return encodeGQLID(user);
   }
 
+  // in this world, need type: "User"
   @gqlField({ type: User, nullable: true })
   async user(): Promise<User | null> {
     const v = this.viewer.viewerID;
