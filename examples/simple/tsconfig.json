@@ -1,5 +1,4 @@
 {
-  // TODO eventually generate this from an init step
   "compilerOptions": {
     "lib": ["es2018", "esnext.asynciterable"],
     "outDir": "./dist",

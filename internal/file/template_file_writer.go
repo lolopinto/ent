@@ -2,13 +2,16 @@ package file
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"text/template"
 
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/filehelper"
 	intimports "github.com/lolopinto/ent/internal/imports"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"golang.org/x/tools/imports"
@@ -27,6 +30,60 @@ type TemplatedBasedFileWriter struct {
 	TsImports          *tsimport.Imports
 	Config             *codegen.Config
 	EditableCode       bool
+}
+
+var target api.Target
+var targetErr error
+var once sync.Once
+
+type tsconfigStruct struct {
+	CompilerOptions struct {
+		Target string `json:"target"`
+	} `json:"compilerOptions"`
+}
+
+func findApiTarget(filePath string) (api.Target, error) {
+	once.Do(func() {
+		target = api.DefaultTarget
+		result := filehelper.FindAndRead(filePath, "tsconfig.json")
+		b := result.Bytes
+		err := result.Error
+		if err != nil {
+			targetErr = err
+			return
+		}
+		if b == nil {
+			targetErr = fmt.Errorf("no tsconfig.json found")
+			return
+		}
+		tsc := &tsconfigStruct{}
+		if err := json.Unmarshal(b, tsc); err != nil {
+			targetErr = err
+			return
+		}
+		switch strings.ToLower(tsc.CompilerOptions.Target) {
+		case "esnest":
+			target = api.ESNext
+		case "es5":
+			target = api.ES5
+		case "es2015":
+			target = api.ES2015
+		case "es2016":
+			target = api.ES2016
+		case "es2017":
+			target = api.ES2017
+		case "es2018":
+			target = api.ES2018
+		case "es2019":
+			target = api.ES2019
+		case "es2020":
+			target = api.ES2020
+		case "es2021":
+			target = api.ES2021
+		}
+	})
+
+	return target, targetErr
 }
 
 func (fw *TemplatedBasedFileWriter) createDirIfNeeded() bool {
@@ -99,18 +156,21 @@ func (fw *TemplatedBasedFileWriter) handleTSFile(opt *Options, si *statInfo, buf
 	if err != nil {
 		return buf.Bytes(), nil
 	}
+	target, err := findApiTarget(fw.PathToFile)
+	if err != nil {
+		target = api.DefaultTarget
+		debugLogInfo(opt, "error getting tsconfig.json target: %v", err)
+	}
 	// new code
 	result := api.Transform(buf.String(), api.TransformOptions{
-		// TODO check this from tsconfig.json
-		Target:           api.ES2020,
+		Target:           target,
 		Loader:           api.LoaderTS,
 		MinifyWhitespace: true,
 		MinifySyntax:     true,
 	})
 
 	existingResult := api.Transform(string(fileContents), api.TransformOptions{
-		// TODO check this from tsconfig.json
-		Target:           api.ES2020,
+		Target:           target,
 		Loader:           api.LoaderTS,
 		MinifyWhitespace: true,
 		MinifySyntax:     true,
