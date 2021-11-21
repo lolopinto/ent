@@ -69,7 +69,7 @@ jobs:
         python-version: '>3.6' 
       
     - name: install auto_schema
-      run: python3 -m pip install wheel auto_schema==0.0.11
+      run: python3 -m pip install wheel auto_schema==0.0.12
 
     - name: Setup nodejs
       uses: actions/setup-node@v2
@@ -84,6 +84,9 @@ jobs:
         npm ci
       env:
         NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+
+    - name: Setup ripgrep
+      run: curl -LO https://github.com/BurntSushi/ripgrep/releases/download/13.0.0/ripgrep_13.0.0_amd64.deb && sudo dpkg -i ripgrep_13.0.0_amd64.deb
 
     # - name: Build
     #   run: go build -v ./...

@@ -3,6 +3,7 @@ import ts from "typescript";
 import JSON5 from "json5";
 import * as fs from "fs";
 import * as path from "path";
+import { Data } from "../core/base";
 
 function getFiles(filePath: string, opts?: Options): string[] {
   if (!path.isAbsolute(filePath)) {
@@ -35,11 +36,13 @@ interface classResult {
   file: file;
 }
 
-export function parseCustomInput(filePath: string, opts?: Options): PathResult {
+export function parseCustomImports(
+  filePath: string,
+  opts?: Options,
+): PathResult {
   const files = getFiles(filePath, opts);
   const options = readCompilerOptions(filePath);
 
-  // classMap
   let classMap = new Map<string, file[]>();
 
   files.forEach((file) => {
@@ -102,8 +105,7 @@ function readCompilerOptions(filePath: string): ts.CompilerOptions {
   if (!configPath) {
     return {};
   }
-  const root = path.join(filePath, "..");
-  let json = {};
+  let json: Data = {};
   try {
     json = JSON5.parse(
       fs.readFileSync(configPath, {

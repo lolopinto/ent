@@ -1,10 +1,10 @@
-import { parseCustomInput, PathResult } from "./index";
+import { parseCustomImports, PathResult } from "./index";
 import * as path from "path";
 
 let r: PathResult | undefined;
 function parse() {
   if (r === undefined) {
-    r = parseCustomInput(path.join(__dirname, "./dataz/example1"));
+    r = parseCustomImports(path.join(__dirname, "./dataz/example1"));
   }
   return r;
 }
