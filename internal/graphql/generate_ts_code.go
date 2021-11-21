@@ -511,12 +511,15 @@ func searchForFiles(processor *codegen.Processor) []string {
 	wg.Add(len(searchFor))
 	files := make([][]string, len(searchFor))
 
+	rootPath := processor.Config.GetAbsPathToRoot()
 	for i := range searchFor {
 		go func(i int) {
 			defer wg.Done()
 
 			var buf bytes.Buffer
 			cmd := exec.Command("rg", "-tts", "-l", searchFor[i])
+			// run in root dir
+			cmd.Dir = rootPath
 			cmd.Stdout = &buf
 			if err := cmd.Run(); err != nil {
 				serr.Append(err)
@@ -526,11 +529,16 @@ func searchForFiles(processor *codegen.Processor) []string {
 	}
 	wg.Wait()
 
-	result := []string{
-		// we want to load all of ent first to make sure that any requires we do resolve correctly
-		// we don't need to load graphql by default since we use ent -> graphql objects
-		// any custom objects that are referenced should be in the load path
-		"src/ent/index.ts",
+	result := []string{}
+
+	// we want to load all of ent first to make sure that any requires we do resolve correctly
+	// we don't need to load graphql by default since we use ent -> graphql objects
+	// any custom objects that are referenced should be in the load path
+	indexFile := path.Join(rootPath, "src/ent/index.ts")
+	stat, _ := os.Stat(indexFile)
+	//	spew.Dump(stat, err)
+	if stat != nil {
+		result = append(result, "src/ent/index.ts")
 	}
 
 	seen := make(map[string]bool)
@@ -617,6 +625,8 @@ func parseCustomData(processor *codegen.Processor, fromTest bool) chan *customDa
 				scriptPath,
 				"--path",
 				filepath.Join(processor.Config.GetAbsPathToRoot(), "src"),
+				"--files",
+				strings.Join(customFiles, ","),
 			}
 		} else {
 			cmdArgs = append(
