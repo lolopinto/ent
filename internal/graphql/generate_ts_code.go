@@ -526,11 +526,6 @@ func searchForFiles(processor *codegen.Processor) []string {
 	}
 	wg.Wait()
 
-	// no files, nothing to do here
-	if len(files) == 0 {
-		return []string{}
-	}
-
 	result := []string{
 		// we want to load all of ent first to make sure that any requires we do resolve correctly
 		// we don't need to load graphql by default since we use ent -> graphql objects
@@ -547,6 +542,7 @@ func searchForFiles(processor *codegen.Processor) []string {
 		entPaths[entPath] = true
 	}
 
+	fileAdded := false
 	for _, list := range files {
 		for _, file := range list {
 			// ignore entPaths since we're doing src/ent/index.ts to get all of ent
@@ -554,9 +550,16 @@ func searchForFiles(processor *codegen.Processor) []string {
 				continue
 			}
 			seen[file] = true
+			fileAdded = true
 			result = append(result, file)
 		}
 	}
+
+	// no files, nothing to do here
+	if !fileAdded {
+		return []string{}
+	}
+
 	return result
 }
 
@@ -572,6 +575,9 @@ func parseCustomData(processor *codegen.Processor, fromTest bool) chan *customDa
 		customFiles := searchForFiles(processor)
 		// no custom files, nothing to do here. we're done
 		if len(customFiles) == 0 {
+			if processor.Config.DebugMode() {
+				fmt.Println("no custom graphql files")
+			}
 			res <- &cd
 			return
 		}
