@@ -91,7 +91,6 @@ async function captureCustom(filePath: string, filesCsv: string | undefined) {
     },
   );
   const files = rootFiles.concat(customGQLResolvers, customGQLMutations);
-  console.error("required files", files);
 
   await requireFiles(files);
 }
