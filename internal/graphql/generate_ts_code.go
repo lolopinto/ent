@@ -516,7 +516,7 @@ func searchForFiles(processor *codegen.Processor) []string {
 			defer wg.Done()
 
 			var buf bytes.Buffer
-			cmd := exec.Command("ag", "--ts", "-l", "--nocolor", searchFor[i])
+			cmd := exec.Command("rg", "-tts", "-l", searchFor[i])
 			cmd.Stdout = &buf
 			if err := cmd.Run(); err != nil {
 				serr.Append(err)
