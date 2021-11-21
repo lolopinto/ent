@@ -521,7 +521,7 @@ func searchForFiles(processor *codegen.Processor) []string {
 			if err := cmd.Run(); err != nil {
 				serr.Append(err)
 			}
-			files[i] = strings.Split(buf.String(), "\n")
+			files[i] = strings.Split(strings.TrimSpace(buf.String()), "\n")
 		}(i)
 	}
 	wg.Wait()
