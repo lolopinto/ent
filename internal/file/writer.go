@@ -93,8 +93,6 @@ func writeFile(w Writer, cfg *codegen.Config, opts ...func(opt *Options)) error 
 		fileInfo: &fileInfo,
 		err:      err,
 	})
-	// check nil...
-	// if nil returned, nothing to do
 	if err != nil {
 		return err
 	}
