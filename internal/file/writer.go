@@ -11,11 +11,16 @@ import (
 	"github.com/lolopinto/ent/internal/codegen"
 )
 
+type statInfo struct {
+	fileInfo *os.FileInfo
+	err      error
+}
+
 type Writer interface {
 	Write(opts ...func(opt *Options)) error
 	createDirIfNeeded() bool
 	getPathToFile() string
-	generateBytes() ([]byte, error)
+	generateBytes(opt *Options, si *statInfo) ([]byte, error)
 }
 
 func debugLogInfo(opt *Options, str string, a ...interface{}) {
@@ -47,10 +52,6 @@ func writeFile(w Writer, cfg *codegen.Config, opts ...func(opt *Options)) error 
 			fmt.Printf("WARN: file %s which is being written once has generated in the name...\n", pathToFile)
 		}
 	}
-	b, err := w.generateBytes()
-	if err != nil {
-		return err
-	}
 
 	fullPath := pathToFile
 	if w.createDirIfNeeded() {
@@ -75,8 +76,9 @@ func writeFile(w Writer, cfg *codegen.Config, opts ...func(opt *Options)) error 
 		}
 	}
 
+	fileInfo, err := os.Stat(pathToFile)
+	// if write once and file already exists, nothing to do here, we're done
 	if option.writeOnce {
-		_, err := os.Stat(pathToFile)
 		if err == nil {
 			debugLogInfo(option, "file %s already exists so not writing", pathToFile)
 			return nil
@@ -87,6 +89,23 @@ func writeFile(w Writer, cfg *codegen.Config, opts ...func(opt *Options)) error 
 		}
 	}
 
+	b, err := w.generateBytes(option, &statInfo{
+		fileInfo: &fileInfo,
+		err:      err,
+	})
+	if err != nil {
+		return err
+	}
+
+	if b == nil {
+		// nothing to do here
+		return nil
+	}
+
+	if !option.tempFile && strings.HasSuffix(fullPath, ".ts") {
+		codegen.AddChangedFile(fullPath)
+	}
+
 	err = ioutil.WriteFile(fullPath, b, 0666)
 	if !option.disableLog {
 		if err == nil {
@@ -94,37 +113,6 @@ func writeFile(w Writer, cfg *codegen.Config, opts ...func(opt *Options)) error 
 		}
 	}
 	return err
-}
-
-// Options provides a way to configure the file writing process as needed
-// TODO: maybe move things like createDirIfNeeded to here?
-type Options struct {
-	writeOnce  bool
-	disableLog bool
-}
-
-// WriteOnce specifes that writing to path provided should not occur if the file already exists
-// This is usually configured via code
-func WriteOnce() func(opt *Options) {
-	return func(opt *Options) {
-		opt.writeOnce = true
-	}
-}
-
-// WriteOnceMaybe takes a flag (usually provided via user action) and determines if we should add
-// the writeOnce flag to Options
-func WriteOnceMaybe(forceOverwrite bool) func(opt *Options) {
-	if forceOverwrite {
-		return nil
-	}
-	return WriteOnce()
-}
-
-// DisableLog disables the log that the file was written
-func DisableLog() func(opt *Options) {
-	return func(opt *Options) {
-		opt.disableLog = true
-	}
 }
 
 func Write(w Writer, opts ...func(opt *Options)) error {

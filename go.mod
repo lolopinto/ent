@@ -29,7 +29,7 @@ require (
 	github.com/vektah/gqlparser v1.1.2
 	golang.org/x/crypto v0.0.0-20200128174031-69ecbb4d6d5d
 	golang.org/x/net v0.0.0-20190522155817-f3200d17e092 // indirect
-	golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5 // indirect
+	golang.org/x/sys v0.0.0-20210908233432-aa78b53d3365 // indirect
 	golang.org/x/text v0.3.2 // indirect
 	golang.org/x/tools v0.0.0-20190515012406-7d7faa4812bd
 	google.golang.org/appengine v1.1.0 // indirect
@@ -39,6 +39,7 @@ require (
 
 require (
 	github.com/agnivade/levenshtein v1.0.1 // indirect
+	github.com/evanw/esbuild v0.13.15 // indirect
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/hashicorp/golang-lru v0.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
