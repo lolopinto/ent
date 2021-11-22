@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
 
@@ -155,8 +156,24 @@ func (p *Processor) Run(steps []Step, step string, options ...Option) error {
 	})
 }
 
+// keep track of changed ts files to pass to prettier
+var changedTSFiles []string
+
+func AddChangedFile(filePath string) {
+	if strings.HasSuffix(filePath, ".ts") {
+		changedTSFiles = append(changedTSFiles, filePath)
+	}
+}
+
 func (p *Processor) FormatTS() error {
-	cmd := exec.Command("prettier", p.Config.GetPrettierArgs()...)
+	// no changed ts files. nothing to format
+	if len(changedTSFiles) == 0 {
+		if p.debugMode {
+			fmt.Printf("no changed files\n")
+		}
+		return nil
+	}
+	cmd := exec.Command("prettier", p.Config.GetPrettierArgs(changedTSFiles)...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
