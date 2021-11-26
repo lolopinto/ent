@@ -2673,7 +2673,7 @@ func generateAlternateSchemaFile(processor *codegen.Processor, s *gqlSchema) err
 	// Node, Connection, Edge
 	// what of other types e.g. PageInfo
 	// what of scalars? Time, Upload
-	allTypes := getAllTypes(s)
+	allTypes := getAllTypes(s, processor.Config)
 	for _, typ := range allTypes {
 		if typ.NodeType == "Enum" || typ.NodeType == "Node" {
 			r, ok := typ.Obj.(renderable)
