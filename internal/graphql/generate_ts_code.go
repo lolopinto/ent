@@ -857,6 +857,14 @@ type gqlNode struct {
 	connections []*gqlConnection
 }
 
+func (g *gqlNode) getRenderer() renderer {
+	var ret listRenderer
+	for _, node := range g.ObjData.GQLNodes {
+		ret = append(ret, node.getRenderer())
+	}
+	return ret
+}
+
 type gqlEnum struct {
 	Enum *enum.GQLEnum
 	Type string // the generated Type
@@ -864,19 +872,11 @@ type gqlEnum struct {
 	FilePath string
 }
 
-// TODO make this better later
-func (e *gqlEnum) Render() string {
-	var sb strings.Builder
-	sb.WriteString("enum ")
-	sb.WriteString(e.Enum.Name)
-	sb.WriteString(" {\n")
-	for _, val := range e.Enum.Values {
-		sb.WriteString("  ")
-		sb.WriteString(val.Name)
-		sb.WriteString("\n")
+func (e *gqlEnum) getRenderer() renderer {
+	return &enumRenderer{
+		enum:   e.Enum.Name,
+		values: e.Enum.GetGraphQLNames(),
 	}
-	sb.WriteString("}\n")
-	return sb.String()
 }
 
 type gqlConnection struct {
@@ -905,7 +905,7 @@ func (c *gqlConnection) GraphQLNode() string {
 // schema is passed and used for
 //			s.customEdges[conn.Edge.TsEdgeQueryEdgeName()],
 
-func (c *gqlConnection) Render() string {
+func (c *gqlConnection) getRenderer() renderer {
 
 	edgeName := c.Edge.GetGraphQLEdgePrefix() + "Edge"
 
@@ -1009,7 +1009,7 @@ func (c *gqlConnection) Render() string {
 		fields:     edgeFields,
 	})
 
-	return (listRenderer{edgeRender, connRender}).Render()
+	return listRenderer{edgeRender, connRender}
 }
 
 type elemRenderer struct {
@@ -1018,7 +1018,7 @@ type elemRenderer struct {
 	fields     []*fieldType
 }
 
-func (r *elemRenderer) Render() string {
+func (r *elemRenderer) render() string {
 	var sb strings.Builder
 
 	sb.WriteString("type ")
@@ -1031,23 +1031,42 @@ func (r *elemRenderer) Render() string {
 	}
 	sb.WriteString(" {\n")
 	for _, field := range r.fields {
-		sb.WriteString(field.Render())
+		sb.WriteString(field.render())
 	}
 	sb.WriteString("}\n")
 
 	return sb.String()
 }
 
-type listRenderer []*elemRenderer
+type listRenderer []renderer
 
-func (l listRenderer) Render() string {
+func (l listRenderer) render() string {
 	var sb strings.Builder
 	for i, elem := range l {
 		if i != 0 {
 			sb.WriteString("\n")
 		}
-		sb.WriteString(elem.Render())
+		sb.WriteString(elem.render())
 	}
+	return sb.String()
+}
+
+type enumRenderer struct {
+	enum   string
+	values []string
+}
+
+func (e *enumRenderer) render() string {
+	var sb strings.Builder
+	sb.WriteString("enum ")
+	sb.WriteString(e.enum)
+	sb.WriteString(" {\n")
+	for _, val := range e.values {
+		sb.WriteString("  ")
+		sb.WriteString(val)
+		sb.WriteString("\n")
+	}
+	sb.WriteString("}\n")
 	return sb.String()
 }
 
@@ -1509,7 +1528,7 @@ type fieldConfigArg struct {
 	Imports     []*fileImport
 }
 
-func (f *fieldConfigArg) Render() string {
+func (f *fieldConfigArg) render() string {
 	return fmt.Sprintf("%s: %s", f.Name, getTypeForImports(f.Imports))
 }
 
@@ -2286,17 +2305,17 @@ type objectType struct {
 	IsTypeOfMethod []string
 }
 
-func (obj *objectType) Render() string {
+func (obj *objectType) getRenderer() renderer {
 	interfaces := make([]string, len(obj.GQLInterfaces))
 	for idx, inter := range obj.GQLInterfaces {
 		interfaces[idx] = strings.TrimSuffix(strings.TrimPrefix(inter, "GraphQL"), "Interface")
 	}
 
-	return (&elemRenderer{
+	return &elemRenderer{
 		name:       obj.Node,
 		interfaces: interfaces,
 		fields:     obj.Fields,
-	}).Render()
+	}
 }
 
 type fieldType struct {
@@ -2358,7 +2377,7 @@ func (f *fieldType) getType() string {
 	return getTypeForImports(f.FieldImports)
 }
 
-func (f *fieldType) Render() string {
+func (f *fieldType) render() string {
 	var sb strings.Builder
 	if f.Description != "" {
 		sb.WriteString("  ")
@@ -2379,7 +2398,7 @@ func (f *fieldType) Render() string {
 		sb.WriteString("(")
 		args := make([]string, len(f.Args))
 		for idx, arg := range f.Args {
-			args[idx] = arg.Render()
+			args[idx] = arg.render()
 		}
 		sb.WriteString(strings.Join(args, ", "))
 
@@ -2804,7 +2823,11 @@ func writeTSIndexFile(processor *codegen.Processor, s *gqlSchema) error {
 }
 
 type renderable interface {
-	Render() string
+	getRenderer() renderer
+}
+
+type renderer interface {
+	render() string
 }
 
 func generateAlternateSchemaFile(processor *codegen.Processor, s *gqlSchema) error {
@@ -2822,10 +2845,11 @@ func generateAlternateSchemaFile(processor *codegen.Processor, s *gqlSchema) err
 	for _, typ := range allTypes {
 		r, ok := typ.Obj.(renderable)
 		if ok {
-			sb.WriteString(r.Render())
+			sb.WriteString(r.getRenderer().render())
 			sb.WriteString("\n")
 		} else {
-			fmt.Printf("invalid obj %v\n", typ)
+			spew.Dump(typ)
+			fmt.Printf("invalid obj %v\n", typ.Obj)
 		}
 	}
 

@@ -369,6 +369,11 @@ type UserToMaybeEventsConnection implements Connection {
   rawCount: Int!
 }
 
+type Viewer {
+  viewerID: ID
+  user: User
+}
+
 type UserAuthInput {
   emailAddress: String!
   password: String!
