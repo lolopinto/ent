@@ -1304,6 +1304,16 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 					Obj:        depObj,
 				})
 			}
+
+			for _, depEnum := range dep.ObjData.Enums {
+				actionTypes = append(actionTypes, typeInfo{
+					Type: depEnum.Type,
+					// they're embedded in the action's file
+					ImportPath: trimPath(cfg, dep.FilePath),
+					NodeType:   "Enum",
+					Obj:        depEnum,
+				})
+			}
 		}
 	}
 	var enums []typeInfo

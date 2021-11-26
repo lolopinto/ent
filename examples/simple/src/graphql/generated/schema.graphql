@@ -548,6 +548,12 @@ type EventRsvpStatusEditPayload {
   event: Event!
 }
 
+enum EventRsvpStatusInput {
+  ATTENDING
+  DECLINED
+  MAYBE
+}
+
 type HolidayCreateInput {
   label: String!
   date: Time!
