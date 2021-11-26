@@ -369,3 +369,246 @@ type UserToMaybeEventsConnection implements Connection {
   rawCount: Int!
 }
 
+type UserAuthInput {
+  emailAddress: String!
+  password: String!
+}
+
+type UserAuthJWTInput {
+  emailAddress: String!
+  password: String!
+}
+
+type UserAuthJWTPayload {
+  token: String!
+  viewerID: ID!
+}
+
+type UserAuthPayload {
+  viewerID: ID!
+}
+
+type AddressCreateInput {
+  streetName: String!
+  city: String!
+  state: String!
+  zip: String!
+  apartment: String
+  country: String
+}
+
+type AddressCreatePayload {
+  address: Address!
+}
+
+type CommentCreateInput {
+  authorID: ID!
+  body: String!
+  articleID: ID!
+  articleType: String!
+}
+
+type CommentCreatePayload {
+  comment: Comment!
+}
+
+type ConfirmEmailAddressEditInput {
+  """id of User"""
+  userID: ID!
+  emailAddress: String!
+  code: String!
+}
+
+type ConfirmEmailAddressEditPayload {
+  user: User!
+}
+
+type ConfirmPhoneNumberEditInput {
+  """id of User"""
+  userID: ID!
+  phoneNumber: String!
+  code: String!
+}
+
+type ConfirmPhoneNumberEditPayload {
+  user: User!
+}
+
+type ContactCreateInput {
+  emailAddress: String!
+  firstName: String!
+  lastName: String!
+  userID: ID!
+}
+
+type ContactCreatePayload {
+  contact: Contact!
+}
+
+type ContactDeleteInput {
+  """id of Contact"""
+  contactID: ID!
+}
+
+type ContactDeletePayload {
+  deletedContactID: ID
+}
+
+type ContactEditInput {
+  """id of Contact"""
+  contactID: ID!
+  emailAddress: String
+  firstName: String
+  lastName: String
+  userID: ID
+}
+
+type ContactEditPayload {
+  contact: Contact!
+}
+
+type EmailAddressEditInput {
+  """id of User"""
+  userID: ID!
+  newEmail: String!
+}
+
+type EmailAddressEditPayload {
+  user: User!
+}
+
+type EventAddHostInput {
+  """id of Event"""
+  eventID: ID!
+  hostID: ID!
+}
+
+type EventAddHostPayload {
+  event: Event!
+}
+
+type EventCreateInput {
+  name: String!
+  creatorID: ID!
+  startTime: Time!
+  endTime: Time
+  eventLocation: String!
+}
+
+type EventCreatePayload {
+  event: Event!
+}
+
+type EventDeleteInput {
+  """id of Event"""
+  eventID: ID!
+}
+
+type EventDeletePayload {
+  deletedEventID: ID
+}
+
+type EventEditInput {
+  """id of Event"""
+  eventID: ID!
+  name: String
+  creatorID: ID
+  startTime: Time
+  endTime: Time
+  eventLocation: String
+}
+
+type EventEditPayload {
+  event: Event!
+}
+
+type EventRemoveHostInput {
+  """id of Event"""
+  eventID: ID!
+  hostID: ID!
+}
+
+type EventRemoveHostPayload {
+  event: Event!
+}
+
+type EventRsvpStatusEditInput {
+  """id of Event"""
+  eventID: ID!
+  rsvpStatus: EventRsvpStatusInput!
+  userID: ID!
+}
+
+type EventRsvpStatusEditPayload {
+  event: Event!
+}
+
+type HolidayCreateInput {
+  label: String!
+  date: Time!
+}
+
+type HolidayCreatePayload {
+  holiday: Holiday!
+}
+
+type HoursOfOperationCreateInput {
+  dayOfWeek: DayOfWeek!
+  open: String!
+  close: String!
+  dayOfWeekAlt: DayOfWeekAlt
+}
+
+type HoursOfOperationCreatePayload {
+  hoursOfOperation: HoursOfOperation!
+}
+
+type PhoneNumberEditInput {
+  """id of User"""
+  userID: ID!
+  newPhoneNumber: String!
+}
+
+type PhoneNumberEditPayload {
+  user: User!
+}
+
+type UserCreateInput {
+  firstName: String!
+  lastName: String!
+  emailAddress: String!
+  phoneNumber: String!
+  password: String!
+  nicknames: [String!]
+  prefs: JSON
+  prefsDiff: JSON
+  daysOff: [DaysOff!]
+  preferredShift: [PreferredShift!]
+  funUuids: [ID!]
+  prefsList: [JSON!]
+}
+
+type UserCreatePayload {
+  user: User!
+}
+
+type UserDeleteInput {
+  """id of User"""
+  userID: ID!
+}
+
+type UserDeletePayload {
+  deletedUserID: ID
+}
+
+type UserEditInput {
+  """id of User"""
+  userID: ID!
+  firstName: String
+  lastName: String
+}
+
+type UserEditPayload {
+  user: User!
+}
+

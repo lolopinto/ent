@@ -1031,7 +1031,6 @@ func (r *elemRenderer) Render() string {
 	}
 	sb.WriteString(" {\n")
 	for _, field := range r.fields {
-		sb.WriteString("  ")
 		sb.WriteString(field.Render())
 	}
 	sb.WriteString("}\n")
@@ -2362,6 +2361,7 @@ func (f *fieldType) getType() string {
 func (f *fieldType) Render() string {
 	var sb strings.Builder
 	if f.Description != "" {
+		sb.WriteString("  ")
 		sb.WriteString("\"")
 		sb.WriteString("\"")
 		sb.WriteString("\"")
@@ -2371,6 +2371,8 @@ func (f *fieldType) Render() string {
 		sb.WriteString("\"")
 		sb.WriteString("\n")
 	}
+
+	sb.WriteString("  ")
 	sb.WriteString(f.Name)
 
 	if len(f.Args) > 0 {
@@ -2818,14 +2820,12 @@ func generateAlternateSchemaFile(processor *codegen.Processor, s *gqlSchema) err
 	// what of scalars? Time, Upload
 	allTypes := getAllTypes(s, processor.Config)
 	for _, typ := range allTypes {
-		if typ.NodeType == "Enum" || typ.NodeType == "Node" || typ.NodeType == "Connection" {
-			r, ok := typ.Obj.(renderable)
-			if ok {
-				sb.WriteString(r.Render())
-				sb.WriteString("\n")
-			} else {
-				fmt.Printf("invalid obj %v\n", typ)
-			}
+		r, ok := typ.Obj.(renderable)
+		if ok {
+			sb.WriteString(r.Render())
+			sb.WriteString("\n")
+		} else {
+			fmt.Printf("invalid obj %v\n", typ)
 		}
 	}
 
