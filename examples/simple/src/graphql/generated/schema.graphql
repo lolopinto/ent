@@ -141,3 +141,231 @@ type User implements Node {
   contactsSameDomainNullableContentsAndList: [Contact]
 }
 
+type CommentToPostEdge implements Edge {
+  node: Node!
+  cursor: String!
+}
+
+type CommentToPostConnection implements Connection {
+  edges: [CommentToPostEdge!]!
+  nodes: [Node!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type ContactToCommentsEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type ContactToCommentsConnection implements Connection {
+  edges: [ContactToCommentsEdge!]!
+  nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type ContactToLikersEdge implements Edge {
+  node: User!
+  cursor: String!
+}
+
+type ContactToLikersConnection implements Connection {
+  edges: [ContactToLikersEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventToAttendingEdge implements Edge {
+  node: User!
+  cursor: String!
+}
+
+type EventToAttendingConnection implements Connection {
+  edges: [EventToAttendingEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventToDeclinedEdge implements Edge {
+  node: User!
+  cursor: String!
+}
+
+type EventToDeclinedConnection implements Connection {
+  edges: [EventToDeclinedEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventToHostsEdge implements Edge {
+  node: User!
+  cursor: String!
+}
+
+type EventToHostsConnection implements Connection {
+  edges: [EventToHostsEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventToInvitedEdge implements Edge {
+  node: User!
+  cursor: String!
+}
+
+type EventToInvitedConnection implements Connection {
+  edges: [EventToInvitedEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventToMaybeEdge implements Edge {
+  node: User!
+  cursor: String!
+}
+
+type EventToMaybeConnection implements Connection {
+  edges: [EventToMaybeEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToCommentsEdge implements Edge {
+  node: Comment!
+  cursor: String!
+}
+
+type UserToCommentsConnection implements Connection {
+  edges: [UserToCommentsEdge!]!
+  nodes: [Comment!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToContactsEdge implements Edge {
+  node: Contact!
+  cursor: String!
+}
+
+type UserToContactsConnection implements Connection {
+  edges: [UserToContactsEdge!]!
+  nodes: [Contact!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToCreatedEventsEdge implements Edge {
+  node: Event!
+  cursor: String!
+}
+
+type UserToCreatedEventsConnection implements Connection {
+  edges: [UserToCreatedEventsEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToDeclinedEventsEdge implements Edge {
+  node: Event!
+  cursor: String!
+}
+
+type UserToDeclinedEventsConnection implements Connection {
+  edges: [UserToDeclinedEventsEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToEventsAttendingEdge implements Edge {
+  node: Event!
+  cursor: String!
+}
+
+type UserToEventsAttendingConnection implements Connection {
+  edges: [UserToEventsAttendingEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToFriendsEdge implements Edge {
+  node: User!
+  cursor: String!
+}
+
+type UserToFriendsConnection implements Connection {
+  edges: [UserToFriendsEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToHostedEventsEdge implements Edge {
+  node: Event!
+  cursor: String!
+}
+
+type UserToHostedEventsConnection implements Connection {
+  edges: [UserToHostedEventsEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToInvitedEventsEdge implements Edge {
+  node: Event!
+  cursor: String!
+}
+
+type UserToInvitedEventsConnection implements Connection {
+  edges: [UserToInvitedEventsEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToLikersEdge implements Edge {
+  node: User!
+  cursor: String!
+}
+
+type UserToLikersConnection implements Connection {
+  edges: [UserToLikersEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToLikesEdge implements Edge {
+  node: Node!
+  cursor: String!
+}
+
+type UserToLikesConnection implements Connection {
+  edges: [UserToLikesEdge!]!
+  nodes: [Node!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToMaybeEventsEdge implements Edge {
+  node: Event!
+  cursor: String!
+}
+
+type UserToMaybeEventsConnection implements Connection {
+  edges: [UserToMaybeEventsEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+

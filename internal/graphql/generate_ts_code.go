@@ -888,11 +888,168 @@ type gqlConnection struct {
 	Package  *codegen.ImportPackage
 }
 
+func (c *gqlConnection) GraphQLNodeType() string {
+	if c.NodeType == "EntType" {
+		return "GraphQLNodeInterface"
+	}
+	return c.NodeType
+}
+
+func (c *gqlConnection) GraphQLNode() string {
+	if c.NodeType == "EntType" {
+		return "Node"
+	}
+	return c.NodeType
+}
+
 // schema is passed and used for
 //			s.customEdges[conn.Edge.TsEdgeQueryEdgeName()],
 
 func (c *gqlConnection) Render() string {
-	return ""
+
+	edgeName := c.Edge.GetGraphQLEdgePrefix() + "Edge"
+
+	// ImportPath not needed here so ignored
+
+	connFields := []*fieldType{
+		{
+			Name: "edges",
+			FieldImports: []*fileImport{
+				{
+					Type: "GraphQLNonNull",
+				},
+				{
+					Type: "GraphQLList",
+				},
+				{
+					Type: "GraphQLNonNull",
+				},
+				{
+					Type: c.Edge.GetGraphQLEdgePrefix() + "Edge",
+				},
+			},
+		},
+		{
+			Name: "nodes",
+			FieldImports: []*fileImport{
+				{
+					Type: "GraphQLNonNull",
+				},
+				{
+					Type: "GraphQLList",
+				},
+				{
+					Type: "GraphQLNonNull",
+				},
+				{
+					Type: c.GraphQLNode(),
+				},
+			},
+		},
+		{
+			Name: "pageInfo",
+			FieldImports: []*fileImport{
+				{
+					Type: "GraphQLNonNull",
+				},
+				{
+					Type: "PageInfo",
+				},
+			},
+		},
+		{
+			Name: "rawCount",
+			FieldImports: []*fileImport{
+				{
+					Type: "GraphQLNonNull",
+				},
+				{
+					Type: "GraphQLInt",
+				},
+			},
+		},
+	}
+
+	// TODO custom field types...
+	//				s.customEdges[conn.Edge.TsEdgeQueryEdgeName()],
+
+	edgeFields := []*fieldType{
+		{
+			Name: "node",
+			FieldImports: []*fileImport{
+				{
+					Type: "GraphQLNonNull",
+				},
+				{
+					Type: c.GraphQLNode(),
+				},
+			},
+		},
+		{
+			Name: "cursor",
+			FieldImports: []*fileImport{
+				{
+					Type: "GraphQLNonNull",
+				},
+				{
+					Type: "GraphQLString",
+				},
+			},
+		},
+	}
+	connRender := (&elemRenderer{
+		name:       strings.TrimSuffix(c.ConnType, "Type"),
+		interfaces: []string{"Connection"},
+		fields:     connFields,
+	})
+
+	edgeRender := (&elemRenderer{
+		name:       edgeName,
+		interfaces: []string{"Edge"},
+		fields:     edgeFields,
+	})
+
+	return (listRenderer{edgeRender, connRender}).Render()
+}
+
+type elemRenderer struct {
+	name       string
+	interfaces []string
+	fields     []*fieldType
+}
+
+func (r *elemRenderer) Render() string {
+	var sb strings.Builder
+
+	sb.WriteString("type ")
+	sb.WriteString(r.name)
+
+	if len(r.interfaces) > 0 {
+		sb.WriteString(" implements ")
+		sb.WriteString(strings.Join(r.interfaces, " & "))
+
+	}
+	sb.WriteString(" {\n")
+	for _, field := range r.fields {
+		sb.WriteString("  ")
+		sb.WriteString(field.Render())
+	}
+	sb.WriteString("}\n")
+
+	return sb.String()
+}
+
+type listRenderer []*elemRenderer
+
+func (l listRenderer) Render() string {
+	var sb strings.Builder
+	for i, elem := range l {
+		if i != 0 {
+			sb.WriteString("\n")
+		}
+		sb.WriteString(elem.Render())
+	}
+	return sb.String()
 }
 
 func getGqlConnection(packageName string, edge edge.ConnectionEdge, processor *codegen.Processor) *gqlConnection {
@@ -2131,30 +2288,16 @@ type objectType struct {
 }
 
 func (obj *objectType) Render() string {
-	var sb strings.Builder
-
-	sb.WriteString("type ")
-	sb.WriteString(obj.Node)
-	// TODO implements
-
 	interfaces := make([]string, len(obj.GQLInterfaces))
 	for idx, inter := range obj.GQLInterfaces {
 		interfaces[idx] = strings.TrimSuffix(strings.TrimPrefix(inter, "GraphQL"), "Interface")
 	}
 
-	if len(interfaces) > 0 {
-		sb.WriteString(" implements ")
-		sb.WriteString(strings.Join(interfaces, " & "))
-
-	}
-	sb.WriteString(" {\n")
-	for _, field := range obj.Fields {
-		sb.WriteString("  ")
-		sb.WriteString(field.Render())
-	}
-	sb.WriteString("}\n")
-
-	return sb.String()
+	return (&elemRenderer{
+		name:       obj.Node,
+		interfaces: interfaces,
+		fields:     obj.Fields,
+	}).Render()
 }
 
 type fieldType struct {
@@ -2675,7 +2818,7 @@ func generateAlternateSchemaFile(processor *codegen.Processor, s *gqlSchema) err
 	// what of scalars? Time, Upload
 	allTypes := getAllTypes(s, processor.Config)
 	for _, typ := range allTypes {
-		if typ.NodeType == "Enum" || typ.NodeType == "Node" {
+		if typ.NodeType == "Enum" || typ.NodeType == "Node" || typ.NodeType == "Connection" {
 			r, ok := typ.Obj.(renderable)
 			if ok {
 				sb.WriteString(r.Render())

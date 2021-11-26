@@ -15,11 +15,7 @@ export const {{ $conn.ConnType}} = () => {
   if (connType === undefined) {
     connType = new {{useImport "GraphQLConnectionType"}}(
     "{{$conn.Edge.GetGraphQLEdgePrefix}}",
-    {{ if eq $conn.NodeType "EntType" }}
-      {{useImport "GraphQLNodeInterface" -}}
-    {{ else -}}
-      {{useImport $conn.NodeType -}},
-    {{ end -}}
+    {{ useImport $conn.GraphQLNodeType }}
     {{ $obj := .CustomObject -}}
     {{ if $obj -}}
       {{ range $obj.Imports -}} 
