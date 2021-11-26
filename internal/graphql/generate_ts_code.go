@@ -2686,7 +2686,7 @@ func generateAlternateSchemaFile(processor *codegen.Processor, s *gqlSchema) err
 		}
 	}
 
-	return os.WriteFile("src/graphql/schema.graphql", []byte(sb.String()), 0666)
+	return os.WriteFile("src/graphql/generated/schema.graphql", []byte(sb.String()), 0666)
 }
 
 func generateSchemaFile(processor *codegen.Processor, hasMutations bool) error {
