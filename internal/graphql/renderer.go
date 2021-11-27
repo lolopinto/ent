@@ -3,7 +3,7 @@ package graphql
 import "strings"
 
 type renderable interface {
-	getRenderer() renderer
+	getRenderer(s *gqlSchema) renderer
 }
 
 type renderer interface {

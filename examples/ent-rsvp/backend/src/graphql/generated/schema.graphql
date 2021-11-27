@@ -73,6 +73,7 @@ type User implements Node {
 type EventActivityToAttendingEdge implements Edge {
   node: Guest!
   cursor: String!
+  dietaryRestrictions: String
 }
 
 type EventActivityToAttendingConnection implements Connection {
@@ -169,6 +170,7 @@ type GuestGroupToInvitedEventsConnection implements Connection {
 type GuestToAttendingEventsEdge implements Edge {
   node: EventActivity!
   cursor: String!
+  dietaryRestrictions: String
 }
 
 type GuestToAttendingEventsConnection implements Connection {
