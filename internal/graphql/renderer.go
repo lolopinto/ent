@@ -7,7 +7,7 @@ type renderable interface {
 }
 
 type renderer interface {
-	render() string
+	render(s *gqlSchema) string
 }
 
 type elemRenderer struct {
@@ -16,7 +16,7 @@ type elemRenderer struct {
 	fields     []*fieldType
 }
 
-func (r *elemRenderer) render() string {
+func (r *elemRenderer) render(s *gqlSchema) string {
 	var sb strings.Builder
 
 	sb.WriteString("type ")
@@ -29,7 +29,7 @@ func (r *elemRenderer) render() string {
 	}
 	sb.WriteString(" {\n")
 	for _, field := range r.fields {
-		sb.WriteString(field.render())
+		sb.WriteString(field.render(s))
 	}
 	sb.WriteString("}\n")
 
@@ -41,7 +41,7 @@ type enumRenderer struct {
 	values []string
 }
 
-func (e *enumRenderer) render() string {
+func (e *enumRenderer) render(s *gqlSchema) string {
 	var sb strings.Builder
 	sb.WriteString("enum ")
 	sb.WriteString(e.enum)
@@ -57,13 +57,13 @@ func (e *enumRenderer) render() string {
 
 type listRenderer []renderer
 
-func (l listRenderer) render() string {
+func (l listRenderer) render(s *gqlSchema) string {
 	var sb strings.Builder
 	for i, elem := range l {
 		if i != 0 {
 			sb.WriteString("\n")
 		}
-		sb.WriteString(elem.render())
+		sb.WriteString(elem.render(s))
 	}
 	return sb.String()
 }
@@ -72,7 +72,7 @@ type scalarRenderer struct {
 	description, name string
 }
 
-func (s scalarRenderer) render() string {
+func (s scalarRenderer) render(_ *gqlSchema) string {
 	var sb strings.Builder
 	if s.description != "" {
 		renderDescription(&sb, s.description)

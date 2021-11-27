@@ -112,7 +112,7 @@ func TestCustomMutation(t *testing.T) {
 
 	gqlNode := s.customMutations[0]
 	assert.Len(t, gqlNode.connections, 0)
-	assert.Len(t, gqlNode.Dependents, 0)
+	assert.Len(t, gqlNode.ActionDependents, 0)
 	assert.Equal(t, gqlNode.Field, &item)
 	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/mutations/generated/email_available_type.ts"))
 
@@ -259,7 +259,7 @@ func TestCustomQuery(t *testing.T) {
 
 	gqlNode := s.customQueries[0]
 	assert.Len(t, gqlNode.connections, 0)
-	assert.Len(t, gqlNode.Dependents, 0)
+	assert.Len(t, gqlNode.ActionDependents, 0)
 	assert.Equal(t, gqlNode.Field, &item)
 	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/resolvers/generated/email_available_query_type.ts"))
 
@@ -392,7 +392,7 @@ func TestCustomListQuery(t *testing.T) {
 
 	gqlNode := s.customQueries[0]
 	assert.Len(t, gqlNode.connections, 0)
-	assert.Len(t, gqlNode.Dependents, 0)
+	assert.Len(t, gqlNode.ActionDependents, 0)
 	assert.Equal(t, gqlNode.Field, &item)
 	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/resolvers/generated/emails_available_query_type.ts"))
 
@@ -573,7 +573,7 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 
 	gqlNode := s.customQueries[0]
 	assert.Len(t, gqlNode.connections, 0)
-	assert.Len(t, gqlNode.Dependents, 0)
+	assert.Len(t, gqlNode.ActionDependents, 0)
 	assert.Equal(t, gqlNode.Field, &item)
 	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/resolvers/generated/username_query_type.ts"))
 
@@ -702,7 +702,7 @@ func TestCustomUploadType(t *testing.T) {
 
 	gqlNode := s.customMutations[0]
 	assert.Len(t, gqlNode.connections, 0)
-	assert.Len(t, gqlNode.Dependents, 0)
+	assert.Len(t, gqlNode.ActionDependents, 0)
 	assert.Equal(t, gqlNode.Field, &item)
 	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/mutations/generated/profile_pic_upload_type.ts"))
 

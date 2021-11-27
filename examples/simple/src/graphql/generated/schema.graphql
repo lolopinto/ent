@@ -55,7 +55,7 @@ type Address implements Node {
 }
 
 type Comment implements Node {
-  article: NodeInterface
+  article: Node
   id: ID!
   authorID: ID!
   body: String!
@@ -621,6 +621,37 @@ type UserEditInput {
 
 type UserEditPayload {
   user: User!
+}
+
+type Query {
+  node(id: ID!): Node
+  viewer: Viewer!
+}
+
+type Mutation {
+  addressCreate(input: AddressCreateInput!): AddressCreatePayload!
+  bulkUploadContact(userID: ID!, file: Upload!): User!
+  commentCreate(input: CommentCreateInput!): CommentCreatePayload!
+  confirmEmailAddressEdit(input: ConfirmEmailAddressEditInput!): ConfirmEmailAddressEditPayload!
+  confirmPhoneNumberEdit(input: ConfirmPhoneNumberEditInput!): ConfirmPhoneNumberEditPayload!
+  contactCreate(input: ContactCreateInput!): ContactCreatePayload!
+  contactDelete(input: ContactDeleteInput!): ContactDeletePayload!
+  contactEdit(input: ContactEditInput!): ContactEditPayload!
+  emailAddressEdit(input: EmailAddressEditInput!): EmailAddressEditPayload!
+  eventAddHost(input: EventAddHostInput!): EventAddHostPayload!
+  eventCreate(input: EventCreateInput!): EventCreatePayload!
+  eventDelete(input: EventDeleteInput!): EventDeletePayload!
+  eventEdit(input: EventEditInput!): EventEditPayload!
+  eventRemoveHost(input: EventRemoveHostInput!): EventRemoveHostPayload!
+  eventRsvpStatusEdit(input: EventRsvpStatusEditInput!): EventRsvpStatusEditPayload!
+  holidayCreate(input: HolidayCreateInput!): HolidayCreatePayload!
+  hoursOfOperationCreate(input: HoursOfOperationCreateInput!): HoursOfOperationCreatePayload!
+  phoneNumberEdit(input: PhoneNumberEditInput!): PhoneNumberEditPayload!
+  userAuth(input: UserAuthInput!): UserAuthPayload!
+  userAuthJWT(input: UserAuthJWTInput!): UserAuthJWTPayload!
+  userCreate(input: UserCreateInput!): UserCreatePayload!
+  userDelete(input: UserDeleteInput!): UserDeletePayload!
+  userEdit(input: UserEditInput!): UserEditPayload!
 }
 
 """Time scalar type"""
