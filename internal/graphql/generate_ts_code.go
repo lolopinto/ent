@@ -2308,11 +2308,23 @@ type fieldType struct {
 	// TODO more types we need to support
 }
 
-func getRawType(typ string) string {
+func getRawType(typ string, s *gqlSchema) string {
+	rawType := typ
 	if strings.HasPrefix(typ, "GraphQL") {
-		return strings.TrimPrefix(typ, "GraphQL")
+		rawType = strings.TrimPrefix(typ, "GraphQL")
+	} else {
+		rawType = strings.TrimSuffix(typ, "Type")
 	}
-	return strings.TrimSuffix(typ, "Type")
+	cs, ok := s.customData.Objects[rawType]
+	if ok {
+		return cs.NodeName
+	}
+	for k, v := range knownTypes {
+		if v.Type == typ {
+			return k
+		}
+	}
+	return rawType
 }
 
 func getTypeForImports(imps []*fileImport, s *gqlSchema) string {
@@ -2332,23 +2344,7 @@ func getTypeForImports(imps []*fileImport, s *gqlSchema) string {
 		} else {
 			// TODO imp.Name
 			// Custom types
-			rawType := getRawType(imp.Type)
-			cs, ok := s.customData.Objects[rawType]
-			if ok {
-				typ = cs.NodeName
-			}
-			if typ == "" {
-				// convert to Node
-				for k, v := range knownTypes {
-					if v.Type == imp.Type {
-						typ = k
-						break
-					}
-				}
-			}
-			if typ == "" {
-				typ = rawType
-			}
+			typ = getRawType(imp.Type, s)
 		}
 	}
 
