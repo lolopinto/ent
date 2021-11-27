@@ -2287,6 +2287,7 @@ func (obj *objectType) getRenderer() renderer {
 	}
 
 	return &elemRenderer{
+		input:      obj.GQLType == "GraphQLInputObjectType",
 		name:       obj.Node,
 		interfaces: interfaces,
 		fields:     obj.Fields,

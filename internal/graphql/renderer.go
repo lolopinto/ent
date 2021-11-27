@@ -11,6 +11,7 @@ type renderer interface {
 }
 
 type elemRenderer struct {
+	input      bool
 	name       string
 	interfaces []string
 	fields     []*fieldType
@@ -19,7 +20,11 @@ type elemRenderer struct {
 func (r *elemRenderer) render(s *gqlSchema) string {
 	var sb strings.Builder
 
-	sb.WriteString("type ")
+	if r.input {
+		sb.WriteString("input ")
+	} else {
+		sb.WriteString("type ")
+	}
 	sb.WriteString(r.name)
 
 	if len(r.interfaces) > 0 {

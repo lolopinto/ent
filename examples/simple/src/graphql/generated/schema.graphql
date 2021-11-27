@@ -374,12 +374,12 @@ type Viewer {
   user: User
 }
 
-type UserAuthInput {
+input UserAuthInput {
   emailAddress: String!
   password: String!
 }
 
-type UserAuthJWTInput {
+input UserAuthJWTInput {
   emailAddress: String!
   password: String!
 }
@@ -393,7 +393,7 @@ type UserAuthPayload {
   viewerID: ID!
 }
 
-type AddressCreateInput {
+input AddressCreateInput {
   streetName: String!
   city: String!
   state: String!
@@ -406,7 +406,7 @@ type AddressCreatePayload {
   address: Address!
 }
 
-type CommentCreateInput {
+input CommentCreateInput {
   authorID: ID!
   body: String!
   articleID: ID!
@@ -417,7 +417,7 @@ type CommentCreatePayload {
   comment: Comment!
 }
 
-type ConfirmEmailAddressEditInput {
+input ConfirmEmailAddressEditInput {
   """id of User"""
   userID: ID!
   emailAddress: String!
@@ -428,7 +428,7 @@ type ConfirmEmailAddressEditPayload {
   user: User!
 }
 
-type ConfirmPhoneNumberEditInput {
+input ConfirmPhoneNumberEditInput {
   """id of User"""
   userID: ID!
   phoneNumber: String!
@@ -439,7 +439,7 @@ type ConfirmPhoneNumberEditPayload {
   user: User!
 }
 
-type ContactCreateInput {
+input ContactCreateInput {
   emailAddress: String!
   firstName: String!
   lastName: String!
@@ -450,7 +450,7 @@ type ContactCreatePayload {
   contact: Contact!
 }
 
-type ContactDeleteInput {
+input ContactDeleteInput {
   """id of Contact"""
   contactID: ID!
 }
@@ -459,7 +459,7 @@ type ContactDeletePayload {
   deletedContactID: ID
 }
 
-type ContactEditInput {
+input ContactEditInput {
   """id of Contact"""
   contactID: ID!
   emailAddress: String
@@ -472,7 +472,7 @@ type ContactEditPayload {
   contact: Contact!
 }
 
-type EmailAddressEditInput {
+input EmailAddressEditInput {
   """id of User"""
   userID: ID!
   newEmail: String!
@@ -482,7 +482,7 @@ type EmailAddressEditPayload {
   user: User!
 }
 
-type EventAddHostInput {
+input EventAddHostInput {
   """id of Event"""
   eventID: ID!
   hostID: ID!
@@ -492,7 +492,7 @@ type EventAddHostPayload {
   event: Event!
 }
 
-type EventCreateInput {
+input EventCreateInput {
   name: String!
   creatorID: ID!
   startTime: Time!
@@ -504,7 +504,7 @@ type EventCreatePayload {
   event: Event!
 }
 
-type EventDeleteInput {
+input EventDeleteInput {
   """id of Event"""
   eventID: ID!
 }
@@ -513,7 +513,7 @@ type EventDeletePayload {
   deletedEventID: ID
 }
 
-type EventEditInput {
+input EventEditInput {
   """id of Event"""
   eventID: ID!
   name: String
@@ -527,7 +527,7 @@ type EventEditPayload {
   event: Event!
 }
 
-type EventRemoveHostInput {
+input EventRemoveHostInput {
   """id of Event"""
   eventID: ID!
   hostID: ID!
@@ -537,7 +537,7 @@ type EventRemoveHostPayload {
   event: Event!
 }
 
-type EventRsvpStatusEditInput {
+input EventRsvpStatusEditInput {
   """id of Event"""
   eventID: ID!
   rsvpStatus: EventRsvpStatusInput!
@@ -554,7 +554,7 @@ enum EventRsvpStatusInput {
   MAYBE
 }
 
-type HolidayCreateInput {
+input HolidayCreateInput {
   label: String!
   date: Time!
 }
@@ -563,7 +563,7 @@ type HolidayCreatePayload {
   holiday: Holiday!
 }
 
-type HoursOfOperationCreateInput {
+input HoursOfOperationCreateInput {
   dayOfWeek: DayOfWeek!
   open: String!
   close: String!
@@ -574,7 +574,7 @@ type HoursOfOperationCreatePayload {
   hoursOfOperation: HoursOfOperation!
 }
 
-type PhoneNumberEditInput {
+input PhoneNumberEditInput {
   """id of User"""
   userID: ID!
   newPhoneNumber: String!
@@ -584,7 +584,7 @@ type PhoneNumberEditPayload {
   user: User!
 }
 
-type UserCreateInput {
+input UserCreateInput {
   firstName: String!
   lastName: String!
   emailAddress: String!
@@ -603,7 +603,7 @@ type UserCreatePayload {
   user: User!
 }
 
-type UserDeleteInput {
+input UserDeleteInput {
   """id of User"""
   userID: ID!
 }
@@ -612,7 +612,7 @@ type UserDeletePayload {
   deletedUserID: ID
 }
 
-type UserEditInput {
+input UserEditInput {
   """id of User"""
   userID: ID!
   firstName: String
