@@ -31,6 +31,7 @@ export const GuestEditInputType = new GraphQLInputObjectType({
   name: "GuestEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     guestID: {
+      description: "id of Guest",
       type: GraphQLNonNull(GraphQLID),
     },
     name: {

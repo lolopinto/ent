@@ -50,6 +50,7 @@ import {
 import {
   EventActivityRsvpStatusEditInputType,
   EventActivityRsvpStatusEditPayloadType,
+  EventActivityRsvpStatusInputType,
 } from "src/graphql/mutations/generated/event_activity/event_activity_rsvp_status_edit_type";
 import {
   GuestCreateInputType,
@@ -151,6 +152,7 @@ export default new GraphQLSchema({
     EventActivityRemoveInvitePayloadType,
     EventActivityRsvpStatusEditInputType,
     EventActivityRsvpStatusEditPayloadType,
+    EventActivityRsvpStatusInputType,
     EventCreateInputType,
     EventCreatePayloadType,
     GuestCreateInputType,

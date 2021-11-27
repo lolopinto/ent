@@ -26,6 +26,7 @@ export const EventActivityDeleteInputType = new GraphQLInputObjectType({
   name: "EventActivityDeleteInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     eventActivityID: {
+      description: "id of EventActivity",
       type: GraphQLNonNull(GraphQLID),
     },
   }),
