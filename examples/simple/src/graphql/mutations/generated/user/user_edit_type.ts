@@ -34,6 +34,7 @@ export const UserEditInputType = new GraphQLInputObjectType({
   name: "UserEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     userID: {
+      description: "id of User",
       type: GraphQLNonNull(GraphQLID),
     },
     firstName: {

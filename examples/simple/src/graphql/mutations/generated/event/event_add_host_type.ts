@@ -32,6 +32,7 @@ export const EventAddHostInputType = new GraphQLInputObjectType({
   name: "EventAddHostInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     eventID: {
+      description: "id of Event",
       type: GraphQLNonNull(GraphQLID),
     },
     hostID: {

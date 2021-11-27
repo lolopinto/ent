@@ -335,7 +335,7 @@ func (p *TSStep) ProcessData(processor *codegen.Processor) error {
 	}
 	// generate schema.gql
 	return generateAlternateSchemaFile(processor, p.s)
-	//	return generateSchemaFile(p.s.hasMutations)
+	//return generateSchemaFile(processor, p.s.hasMutations)
 }
 
 func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) error {

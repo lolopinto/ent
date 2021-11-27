@@ -9,6 +9,9 @@
         {{$ignore := useImport $import.Type -}}
       {{end -}}
     {{end -}}
+    {{ if $field.Description -}}
+      description: "{{$field.Description}}",
+    {{end -}}
     type: {{$field.FieldType}},
     {{ template "render_args.tmpl" (dict "Base" $baseObj "Args" $field.Args) -}}
     {{if $field.ResolverMethod -}}

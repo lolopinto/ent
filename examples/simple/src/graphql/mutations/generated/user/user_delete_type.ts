@@ -29,6 +29,7 @@ export const UserDeleteInputType = new GraphQLInputObjectType({
   name: "UserDeleteInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     userID: {
+      description: "id of User",
       type: GraphQLNonNull(GraphQLID),
     },
   }),

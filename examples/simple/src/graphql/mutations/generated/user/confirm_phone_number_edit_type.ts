@@ -35,6 +35,7 @@ export const ConfirmPhoneNumberEditInputType = new GraphQLInputObjectType({
   name: "ConfirmPhoneNumberEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     userID: {
+      description: "id of User",
       type: GraphQLNonNull(GraphQLID),
     },
     phoneNumber: {

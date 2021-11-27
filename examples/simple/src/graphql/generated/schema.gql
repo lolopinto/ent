@@ -451,6 +451,7 @@ type CommentCreatePayload {
 }
 
 input ConfirmEmailAddressEditInput {
+  """id of User"""
   userID: ID!
   emailAddress: String!
   code: String!
@@ -461,6 +462,7 @@ type ConfirmEmailAddressEditPayload {
 }
 
 input ConfirmPhoneNumberEditInput {
+  """id of User"""
   userID: ID!
   phoneNumber: String!
   code: String!
@@ -482,6 +484,7 @@ type ContactCreatePayload {
 }
 
 input ContactDeleteInput {
+  """id of Contact"""
   contactID: ID!
 }
 
@@ -490,6 +493,7 @@ type ContactDeletePayload {
 }
 
 input ContactEditInput {
+  """id of Contact"""
   contactID: ID!
   emailAddress: String
   firstName: String
@@ -502,6 +506,7 @@ type ContactEditPayload {
 }
 
 input EmailAddressEditInput {
+  """id of User"""
   userID: ID!
   newEmail: String!
 }
@@ -511,6 +516,7 @@ type EmailAddressEditPayload {
 }
 
 input EventAddHostInput {
+  """id of Event"""
   eventID: ID!
   hostID: ID!
 }
@@ -532,6 +538,7 @@ type EventCreatePayload {
 }
 
 input EventDeleteInput {
+  """id of Event"""
   eventID: ID!
 }
 
@@ -540,6 +547,7 @@ type EventDeletePayload {
 }
 
 input EventEditInput {
+  """id of Event"""
   eventID: ID!
   name: String
   creatorID: ID
@@ -553,6 +561,7 @@ type EventEditPayload {
 }
 
 input EventRemoveHostInput {
+  """id of Event"""
   eventID: ID!
   hostID: ID!
 }
@@ -562,19 +571,20 @@ type EventRemoveHostPayload {
 }
 
 input EventRsvpStatusEditInput {
+  """id of Event"""
   eventID: ID!
   rsvpStatus: EventRsvpStatusInput!
   userID: ID!
+}
+
+type EventRsvpStatusEditPayload {
+  event: Event!
 }
 
 enum EventRsvpStatusInput {
   ATTENDING
   DECLINED
   MAYBE
-}
-
-type EventRsvpStatusEditPayload {
-  event: Event!
 }
 
 input HolidayCreateInput {
@@ -598,6 +608,7 @@ type HoursOfOperationCreatePayload {
 }
 
 input PhoneNumberEditInput {
+  """id of User"""
   userID: ID!
   newPhoneNumber: String!
 }
@@ -626,6 +637,7 @@ type UserCreatePayload {
 }
 
 input UserDeleteInput {
+  """id of User"""
   userID: ID!
 }
 
@@ -634,6 +646,7 @@ type UserDeletePayload {
 }
 
 input UserEditInput {
+  """id of User"""
   userID: ID!
   firstName: String
   lastName: String
