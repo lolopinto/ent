@@ -10,6 +10,7 @@ export interface CustomType {
   importPath: string;
   tsType?: string;
   tsImportPath?: string;
+  [x: string]: any;
 }
 
 // scalars or classes
@@ -139,6 +140,100 @@ interface metadataIsh {
   paramName?: string;
   isContextArg?: boolean;
 }
+
+const isArray = (type: Type | Array<Type>): type is Array<Type> => {
+  if (typeof type === "function") {
+    return false;
+  }
+  return (type as Array<Type>).push !== undefined;
+};
+
+const isConnection = (
+  type: Type | Array<Type> | GraphQLConnection<Type>,
+): type is GraphQLConnection<Type> => {
+  if (typeof type !== "object") {
+    return false;
+  }
+  return (type as GraphQLConnection<Type>).node !== undefined;
+};
+
+const isString = (type: Type | Array<Type>): type is string => {
+  if ((type as string).lastIndexOf !== undefined) {
+    return true;
+  }
+  return false;
+};
+
+const isCustomType = (type: Type): type is CustomType => {
+  return (type as CustomType).importPath !== undefined;
+};
+
+const isGraphQLScalarType = (type: Type): type is GraphQLScalarType => {
+  return (type as GraphQLScalarType).serialize !== undefined;
+};
+
+export const addCustomType = (type: CustomType) => {
+  // TODO these should return ReadOnly objects...
+  const customType = GQLCapture.getCustomTypes().get(type.type);
+
+  if (customType && customType !== type) {
+    throw new Error(`cannot add multiple custom types of name ${type.type}`);
+  }
+  if (customType) {
+    return;
+  }
+  const r = require(type.importPath);
+  const ct = r[type.type];
+  // this gets us the information needed for scalars
+  if (ct && isGraphQLScalarType(ct)) {
+    type.scalarInfo = {
+      description: ct.description,
+      name: ct.name,
+    };
+  }
+  GQLCapture.getCustomTypes().set(type.type, type);
+};
+
+interface typeInfo {
+  list?: boolean | undefined;
+  scalarType?: boolean;
+  connection?: boolean | undefined;
+  type: string;
+}
+
+const getType = (
+  typ: Type | Array<Type> | GraphQLConnection<Type>,
+  result: typeInfo,
+) => {
+  if (isConnection(typ)) {
+    result.connection = true;
+    return getType(typ.node, result);
+  }
+
+  if (isArray(typ)) {
+    result.list = true;
+    return getType(typ[0], result);
+  }
+
+  if (isString(typ)) {
+    if (typ.lastIndexOf("]") !== -1) {
+      result.list = true;
+      result.type = typ.substr(1, typ.length - 2);
+    } else {
+      result.type = typ;
+    }
+    return;
+  }
+  if (isCustomType(typ)) {
+    result.type = typ.type;
+    addCustomType(typ);
+    return;
+  }
+  // GraphQLScalarType or ClassType
+  result.scalarType = isGraphQLScalarType(typ);
+  result.type = typ.name;
+  return;
+};
 
 export class GQLCapture {
   private static enabled = false;
@@ -273,90 +368,6 @@ export class GQLCapture {
         `type is required when accessor/function/property returns a ${type}`,
       );
     }
-
-    const isArray = (type: Type | Array<Type>): type is Array<Type> => {
-      if (typeof type === "function") {
-        return false;
-      }
-      return (type as Array<Type>).push !== undefined;
-    };
-
-    const isConnection = (
-      type: Type | Array<Type> | GraphQLConnection<Type>,
-    ): type is GraphQLConnection<Type> => {
-      if (typeof type !== "object") {
-        return false;
-      }
-      return (type as GraphQLConnection<Type>).node !== undefined;
-    };
-
-    const isString = (type: Type | Array<Type>): type is string => {
-      if ((type as string).lastIndexOf !== undefined) {
-        return true;
-      }
-      return false;
-    };
-
-    const isCustomType = (type: Type): type is CustomType => {
-      return (type as CustomType).importPath !== undefined;
-    };
-
-    const isGraphQLScalarType = (type: Type): type is GraphQLScalarType => {
-      return (type as GraphQLScalarType).serialize !== undefined;
-    };
-
-    const addCustomType = (type: CustomType) => {
-      const customType = this.customTypes.get(type.type);
-
-      if (customType && customType !== type) {
-        throw new Error(
-          `cannot add multiple custom types of name ${type.type}`,
-        );
-      }
-
-      this.customTypes.set(type.type, type);
-    };
-
-    interface typeInfo {
-      list?: boolean | undefined;
-      scalarType?: boolean;
-      connection?: boolean | undefined;
-      type: string;
-    }
-
-    const getType = (
-      typ: Type | Array<Type> | GraphQLConnection<Type>,
-      result: typeInfo,
-    ) => {
-      if (isConnection(typ)) {
-        result.connection = true;
-        return getType(typ.node, result);
-      }
-
-      if (isArray(typ)) {
-        result.list = true;
-        return getType(typ[0], result);
-      }
-
-      if (isString(typ)) {
-        if (typ.lastIndexOf("]") !== -1) {
-          result.list = true;
-          result.type = typ.substr(1, typ.length - 2);
-        } else {
-          result.type = typ;
-        }
-        return;
-      }
-      if (isCustomType(typ)) {
-        result.type = typ.type;
-        addCustomType(typ);
-        return;
-      }
-      // GraphQLScalarType or ClassType
-      result.scalarType = isGraphQLScalarType(typ);
-      result.type = typ.name;
-      return;
-    };
 
     let list: boolean | undefined;
     let scalarType = false;

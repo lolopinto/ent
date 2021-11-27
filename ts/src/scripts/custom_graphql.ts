@@ -6,6 +6,7 @@ import {
   // can use the local interfaces since it's just the API we're getting from here
   ProcessedField,
   ProcessedCustomField,
+  addCustomType,
 } from "../graphql/graphql";
 import * as readline from "readline";
 import * as path from "path";
@@ -135,6 +136,25 @@ function findGraphQLPath(filePath: string): string | undefined {
 }
 
 async function main() {
+  // known custom types that are not required
+  // scalar Time will successfully parse
+  // TODO add a mechanism for a type we should check for to
+  // add this to schema.gql
+  // e.g. scalar Time will be added to schemas which don't use it (yet)
+  // TODO foreign non-scalars??
+  addCustomType({
+    importPath: "../graphql/scalars/time",
+    type: "GraphQLTime",
+  });
+  // if not in the schema, will be ignored
+  // something like GraphQLUpload gotten via gqlArg({type: gqlFileUpload})
+  // these 2 need this because they're added by the schema
+  // if this list grows too long, need to build this into golang types and passed here
+  addCustomType({
+    importPath: "graphql-type-json",
+    type: "GraphQLJSON",
+  });
+
   const options = minimist(process.argv.slice(2));
 
   if (!options.path) {
