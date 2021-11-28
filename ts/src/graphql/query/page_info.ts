@@ -8,6 +8,7 @@ import {
 import { RequestContext } from "../../core/context";
 import { PaginationInfo } from "../../core/query/query";
 
+// NB: if this changes, need to update renderer.go also
 export const GraphQLPageInfo = new GraphQLObjectType({
   name: "PageInfo",
   fields: (): GraphQLFieldConfigMap<PaginationInfo, RequestContext> => ({
