@@ -142,14 +142,16 @@ type CustomItem struct {
 }
 
 type CustomScalarInfo struct {
-	Description string `json:"description"`
-	Name        string `json:"name"`
+	Description    string `json:"description"`
+	Name           string `json:"name"`
+	SpecifiedByURL string `json:"specifiedByUrl"`
 }
 
 func (cs *CustomScalarInfo) getRenderer(s *gqlSchema) renderer {
 	return &scalarRenderer{
-		name:        cs.Name,
-		description: cs.Description,
+		name:           cs.Name,
+		description:    cs.Description,
+		specifiedByUrl: cs.SpecifiedByURL,
 	}
 }
 

@@ -1,6 +1,9 @@
 package graphql
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 type renderable interface {
 	getRenderer(s *gqlSchema) renderer
@@ -81,7 +84,7 @@ func (l listRenderer) render(s *gqlSchema) string {
 }
 
 type scalarRenderer struct {
-	description, name string
+	description, name, specifiedByUrl string
 }
 
 func (s scalarRenderer) render(_ *gqlSchema) string {
@@ -91,6 +94,9 @@ func (s scalarRenderer) render(_ *gqlSchema) string {
 	}
 	sb.WriteString("scalar ")
 	sb.WriteString(s.name)
+	if s.specifiedByUrl != "" {
+		sb.WriteString(fmt.Sprintf(" @specifiedBy(url: \"%s\")", s.specifiedByUrl))
+	}
 	sb.WriteString("\n")
 	return sb.String()
 }

@@ -190,6 +190,9 @@ export const addCustomType = (type: CustomType) => {
       description: ct.description,
       name: ct.name,
     };
+    if (ct.specifiedByUrl) {
+      type.scalarInfo.specifiedByUrl = ct.specifiedByUrl;
+    }
   }
   GQLCapture.getCustomTypes().set(type.type, type);
 };
