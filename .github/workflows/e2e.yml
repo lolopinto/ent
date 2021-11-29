@@ -74,8 +74,6 @@ jobs:
       - run: |
           cd ts 
           npm ci
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
 
       - name: Setup ripgrep
         run: curl -LO https://github.com/BurntSushi/ripgrep/releases/download/13.0.0/ripgrep_13.0.0_amd64.deb && sudo dpkg -i ripgrep_13.0.0_amd64.deb
@@ -90,7 +88,7 @@ jobs:
           cd ent-starter
           npm install @snowtop/ent @snowtop/ent-email 
           mkdir -p src/schema
-          tsent generate schema User name:string email:email 
+          cat ../.github/testdata/schema1.json | tsent generate schemas 
           tsent codegen
         env:
           DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
@@ -104,7 +102,7 @@ jobs:
         run: |
           cd ent-starter
           npm install @snowtop/ent-phonenumber
-          tsent generate schema User name:string email:email phone:phone:nullable
+          cat ../.github/testdata/schema2.json | tsent generate schemas --force
           tsent codegen
         env:
           DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'

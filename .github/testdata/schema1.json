@@ -1,0 +1,25 @@
+{
+  "User": {
+    "fields":[
+      {
+        "name": "name",
+        "type": {
+          "dbType": "String"
+        }
+      },
+      {
+        "name": "email",
+        "type": {
+          "dbType": "String",
+          "customType": "email"
+        },
+        "unique":true
+      }
+    ],
+    "actions":[
+      {
+        "operation":8
+      }
+    ]
+  }
+}
