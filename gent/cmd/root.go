@@ -3,13 +3,13 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
 	"github.com/lolopinto/ent/internal/codegen"
-	"github.com/lolopinto/ent/internal/filehelper"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/spf13/cobra"
 )
@@ -85,18 +85,29 @@ func getPathToCode(pathToConfig string) (*codegen.Config, error) {
 
 	// walk up the tree until we find a go.mod file
 	// and build the suffix that needs to be added to the end of the module found in a go.mod file
-	result := filehelper.FindAndRead(dir, "go.mod")
-	b := result.Bytes
-	err = result.Error
-	suffix := result.Suffix
-	if err != nil {
-		return nil, err
-	}
-	if b != nil {
-		contents := string(b)
+	curDir := dir
+	suffix := ""
 
-		match := r.FindStringSubmatch(contents)
-		return codegen.NewConfig(pathToConfig, match[1]+suffix)
+	for {
+		b, err := ioutil.ReadFile(filepath.Join(curDir, "/", "go.mod"))
+		if err == nil {
+			contents := string(b)
+
+			match := r.FindStringSubmatch(contents)
+			return codegen.NewConfig(pathToConfig, match[1]+suffix)
+		}
+
+		suffix = "/" + filepath.Base(curDir) + suffix
+		// go up one directory
+		curDir, err = filepath.Abs(filepath.Join(curDir, ".."))
+		if err != nil {
+			return nil, err
+		}
+
+		// got all the way to the top. bye felicia
+		if curDir == "/" {
+			break
+		}
 	}
 
 	// no go.mod in the path
