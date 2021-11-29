@@ -107,3 +107,10 @@ jobs:
         env:
           DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
 
+      - name: compile && run
+        run: |
+          cd ent-starter
+          npm run compile
+          timeout 7 node dist/graphql/index.js
+        env:
+          DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
