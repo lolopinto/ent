@@ -2,7 +2,7 @@ name: New Docker image
 
 on: 
   pull_request:
-    branches: [main]
+    branches: [master]
     paths:
       - ts/Dockerfile.tmpl
       - release_image/**

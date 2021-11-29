@@ -2,7 +2,7 @@ name: Go CI
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
     paths:
       - 'ent/**.go'
       - 'internal/**.go'
@@ -61,7 +61,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
-        go-version: 1.16
+        go-version: 1.17
         
     - name: Set up python
       uses: actions/setup-python@v2
@@ -74,10 +74,7 @@ jobs:
     - name: Setup nodejs
       uses: actions/setup-node@v2
       with:
-        always-auth: true
-        registry-url: 'https://npm.pkg.github.com'
-        scope: '@lolopinto'
-        node-version: 14.x
+        node-version: 16.x
     - run: npm install -g ts-node prettier typescript 
     - run: |
         cd ts 
@@ -87,9 +84,6 @@ jobs:
 
     - name: Setup ripgrep
       run: curl -LO https://github.com/BurntSushi/ripgrep/releases/download/13.0.0/ripgrep_13.0.0_amd64.deb && sudo dpkg -i ripgrep_13.0.0_amd64.deb
-
-    # - name: Build
-    #   run: go build -v ./...
       
     - name: setup db
       run: cd test_setup && go run .
