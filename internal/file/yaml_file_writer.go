@@ -20,7 +20,7 @@ func (fw *YamlFileWriter) getPathToFile() string {
 	return fw.PathToFile
 }
 
-func (fw *YamlFileWriter) generateBytes(opt *Options, si *statInfo) ([]byte, error) {
+func (fw *YamlFileWriter) generateBytes() ([]byte, error) {
 	return yaml.Marshal(fw.Data)
 }
 
