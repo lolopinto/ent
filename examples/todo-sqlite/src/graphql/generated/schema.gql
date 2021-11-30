@@ -242,6 +242,3 @@ type Mutation {
   todosRemoveCompleted(accountID: ID!): Account!
 }
 
-"""Time scalar type"""
-scalar Time
-

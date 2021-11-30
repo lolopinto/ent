@@ -2312,6 +2312,8 @@ type fieldType struct {
 	// TODO more types we need to support
 }
 
+var flagTime = false
+
 func getRawType(typ string, s *gqlSchema) string {
 	rawType := typ
 	if strings.HasPrefix(typ, "GraphQL") {
@@ -2327,6 +2329,9 @@ func getRawType(typ string, s *gqlSchema) string {
 		if v.Type == typ {
 			return k
 		}
+	}
+	if rawType == "Time" {
+		flagTime = true
 	}
 	return rawType
 }
@@ -2875,6 +2880,11 @@ func generateAlternateSchemaFile(processor *codegen.Processor, s *gqlSchema) err
 	var scalars []*CustomScalarInfo
 	for _, ct := range s.customData.CustomTypes {
 		if ct.ScalarInfo != nil {
+			// TODO eventually make this generic instead of this ugliness
+			// this prevents scalar Time from showing up until we make this generic enough
+			if ct.Type == "GraphQLTime" && !flagTime {
+				continue
+			}
 			scalars = append(scalars, ct.ScalarInfo)
 		}
 	}

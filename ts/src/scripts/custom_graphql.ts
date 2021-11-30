@@ -142,8 +142,6 @@ async function main() {
   // these 2 need this because they're added by the schema
   // if this list grows too long, need to build this into golang types and passed here
 
-  // TODO add a mechanism to check that a type is being used before adding to schema.gql
-  // e.g. scalar Time will be added to schemas which don't use it (yet)
   // TODO foreign non-scalars eventually
   addCustomType({
     importPath: "../graphql/scalars/time",
