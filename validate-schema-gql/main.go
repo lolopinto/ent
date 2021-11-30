@@ -9,6 +9,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/graphql"
+	"github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/formatter"
@@ -26,9 +27,13 @@ func byeErr(err error) {
 	}
 }
 
+// compares hand-generated schema.gql with the one
+// from graphql-js and verifies they're equivalent
+//  DB_CONNECTION_STRING=sqlite:/// go run .
+// TODO run this once a week or so and generate a task if not equal
 func main() {
-	// compareSchemas("../examples/simple")
-	// compareSchemas("../examples/ent-rsvp/backend")
+	compareSchemas("../examples/simple")
+	compareSchemas("../examples/ent-rsvp/backend")
 	compareSchemas("../examples/todo-sqlite")
 }
 
@@ -46,8 +51,14 @@ func compareSchemas(rootPath string) {
 	f2 := formatter.NewFormatter(&buf2)
 	f2.FormatSchema(s2)
 
-	fmt.Println(rootPath, buf.String() == buf2.String())
-
+	if buf.String() == buf2.String() {
+		fmt.Println(rootPath, "equal")
+	} else {
+		fmt.Println(rootPath, "not equal")
+		dmp := diffmatchpatch.New()
+		diffs := dmp.DiffMain(buf.String(), buf2.String(), false)
+		fmt.Println(dmp.DiffPrettyText(diffs))
+	}
 }
 
 func parseExistingSchema(rootPath string) *ast.Schema {
