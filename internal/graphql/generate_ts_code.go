@@ -560,7 +560,6 @@ func searchForFiles(processor *codegen.Processor) []string {
 	// any custom objects that are referenced should be in the load path
 	indexFile := path.Join(rootPath, "src/ent/index.ts")
 	stat, _ := os.Stat(indexFile)
-	//	spew.Dump(stat, err)
 	if stat != nil {
 		result = append(result, "src/ent/index.ts")
 	}
@@ -1308,16 +1307,16 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 				NodeType:   "CustomQuery",
 				Obj:        node,
 			})
+		}
 
-			for _, conn := range node.connections {
-				conns = append(conns, typeInfo{
-					Type:       conn.ConnType,
-					ImportPath: resolverPath,
-					Function:   true,
-					NodeType:   "CustomConn",
-					Obj:        conn,
-				})
-			}
+		for _, conn := range node.connections {
+			conns = append(conns, typeInfo{
+				Type:       conn.ConnType,
+				ImportPath: resolverPath,
+				Function:   true,
+				NodeType:   "CustomConn",
+				Obj:        conn,
+			})
 		}
 	}
 

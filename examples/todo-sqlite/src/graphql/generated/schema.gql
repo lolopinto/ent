@@ -87,6 +87,18 @@ type AccountToTodosConnection implements Connection {
   rawCount: Int!
 }
 
+type RootToOpenTodosEdge implements Edge {
+  node: Todo!
+  cursor: String!
+}
+
+type RootToOpenTodosConnection implements Connection {
+  edges: [RootToOpenTodosEdge!]!
+  nodes: [Todo!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
 type TagToTodosEdge implements Edge {
   node: Todo!
   cursor: String!
