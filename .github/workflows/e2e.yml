@@ -65,7 +65,7 @@ jobs:
 
       - name: setup auto_schema
         run: |
-          alias auto_schema = 'python3\ python/auto_schema/auto_schema/cli/__init__.py'
+          alias auto_schema='python3 python/auto_schema/auto_schema/cli/__init__.py'
 
       - name: Setup nodejs
         uses: actions/setup-node@v2
