@@ -730,7 +730,7 @@ func (s *graphQLSchema) getEdgeInterfaceType() *graphQLSchemaInfo {
 			// 	fieldName: "cursor",
 			// 	fieldType: "ID",
 			// },
-			&graphQLNonEntField{
+			{
 				fieldName: "node",
 				fieldType: "Node!",
 			},
@@ -743,11 +743,11 @@ func (s *graphQLSchema) getConnectionInterfaceType() *graphQLSchemaInfo {
 		Type:     "interface",
 		TypeName: "Connection",
 		nonEntFields: []*graphQLNonEntField{
-			&graphQLNonEntField{
+			{
 				fieldName: "edges",
 				fieldType: "[Edge!]",
 			},
-			&graphQLNonEntField{
+			{
 				fieldName: "nodes",
 				fieldType: "[Node!]",
 			},
@@ -760,7 +760,7 @@ func (s *graphQLSchema) addEdgeAndConnection(assocEdge *edge.AssociationEdge) {
 		Type:     "type",
 		TypeName: assocEdge.NodeInfo.Nodes + "Edge",
 		nonEntFields: []*graphQLNonEntField{
-			&graphQLNonEntField{
+			{
 				fieldName: "node",
 				fieldType: fmt.Sprintf("%s!", assocEdge.NodeInfo.Node),
 			},
@@ -774,11 +774,11 @@ func (s *graphQLSchema) addEdgeAndConnection(assocEdge *edge.AssociationEdge) {
 		Type:     "type",
 		TypeName: assocEdge.NodeInfo.Nodes + "Connection",
 		nonEntFields: []*graphQLNonEntField{
-			&graphQLNonEntField{
+			{
 				fieldName: "edges",
 				fieldType: fmt.Sprintf("[%sEdge!]", assocEdge.NodeInfo.Nodes),
 			},
-			&graphQLNonEntField{
+			{
 				fieldName: "nodes",
 				fieldType: fmt.Sprintf("[%s!]", assocEdge.NodeInfo.Node),
 			},
@@ -800,9 +800,7 @@ func getSortedTypes(t *graphqlSchemaTemplate) []*graphqlSchemaTypeInfo {
 	return t.Types
 }
 
-// TODO
 func (schema *graphQLSchema) writeGraphQLSchema() error {
-	// TODO
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data:              schema.getSchemaForTemplate(),
 		AbsPathToTemplate: util.GetAbsolutePath("graphql_schema.tmpl"),

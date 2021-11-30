@@ -1025,17 +1025,16 @@ func (c *gqlConnection) getRenderer(s *gqlSchema) renderer {
 		edgeFields = append(edgeFields, cedge.Fields...)
 	}
 
-	connRender := (&elemRenderer{
+	connRender := &elemRenderer{
 		name:       strings.TrimSuffix(c.ConnType, "Type"),
 		interfaces: []string{"Connection"},
 		fields:     connFields,
-	})
-
-	edgeRender := (&elemRenderer{
+	}
+	edgeRender := &elemRenderer{
 		name:       edgeName,
 		interfaces: []string{"Edge"},
 		fields:     edgeFields,
-	})
+	}
 
 	return listRenderer{edgeRender, connRender}
 }
