@@ -63,10 +63,6 @@ jobs:
         with:
           python-version: '>3.6'
 
-      - name: setup auto_schema
-        run: |
-          alias auto_schema='python3 python/auto_schema/auto_schema/cli/__init__.py'
-
       - name: Setup nodejs
         uses: actions/setup-node@v2
         with:
@@ -93,11 +89,13 @@ jobs:
           tsent codegen
         env:
           DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
+          LOCAL_AUTO_SCHEMA: 'true'
 
       - name: rerun codegen no-change
         run: cd ent-starter && tsent codegen
         env:
           DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
+          LOCAL_AUTO_SCHEMA: 'true'
 
       - name: add new field
         run: |
@@ -107,6 +105,7 @@ jobs:
           tsent codegen
         env:
           DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
+          LOCAL_AUTO_SCHEMA: 'true'
 
       - name: compile && run
         run: |
