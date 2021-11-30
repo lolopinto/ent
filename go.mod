@@ -37,6 +37,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20190709130402-674ba3eaed22
 )
 
+require github.com/vektah/gqlparser/v2 v2.2.0
+
 require (
 	github.com/agnivade/levenshtein v1.0.1 // indirect
 	github.com/golang/protobuf v1.3.2 // indirect
@@ -46,3 +48,5 @@ require (
 )
 
 go 1.17
+
+replace github.com/vektah/gqlparser/v2 => github.com/wilhelmeek/gqlparser/v2 v2.2.1-0.20211111231808-ea323e329921
