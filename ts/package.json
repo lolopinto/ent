@@ -39,7 +39,7 @@
     }
   },
   "engines": {
-    "node": "^16.1.0"
+    "node": ">=14.0"
   },
   "devDependencies": {
     "@alex_neo/jest-expect-message": "^1.0.5",
