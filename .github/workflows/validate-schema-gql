@@ -1,0 +1,32 @@
+name: "Validate schema.gql"
+
+on:
+  schedule:
+    # https://docs.github.com/en/actions/learn-github-actions/events-that-trigger-workflows#schedule
+    - cron: '30 6 * * 3'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - uses: actions/cache@v2
+      with:
+      path: ~/go/pkg/mod
+      key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+      restore-keys: |
+        ${{ runner.os }}-go-
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+
+    - name: check and validate
+    - run: |
+        cd validate-schema-gql
+        DB_CONNECTION_STRING=sqlite:/// go run .
+
