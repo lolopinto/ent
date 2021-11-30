@@ -27,25 +27,31 @@ require (
 	github.com/stretchr/objx v0.1.1 // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/vektah/gqlparser v1.1.2
-	golang.org/x/crypto v0.0.0-20200128174031-69ecbb4d6d5d
-	golang.org/x/net v0.0.0-20190522155817-f3200d17e092 // indirect
-	golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5 // indirect
-	golang.org/x/text v0.3.2 // indirect
-	golang.org/x/tools v0.0.0-20190515012406-7d7faa4812bd
-	google.golang.org/appengine v1.1.0 // indirect
+	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
+	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
+	golang.org/x/tools v0.0.0-20200825202427-b303f430e36d
+	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/yaml.v2 v2.2.8
 	gopkg.in/yaml.v3 v3.0.0-20190709130402-674ba3eaed22
 )
 
-require github.com/vektah/gqlparser/v2 v2.2.0
+require (
+	github.com/google/go-github/v41 v41.0.0
+	github.com/sergi/go-diff v1.2.0
+	github.com/vektah/gqlparser/v2 v2.2.0
+	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
+)
 
 require (
 	github.com/agnivade/levenshtein v1.0.1 // indirect
-	github.com/golang/protobuf v1.3.2 // indirect
-	github.com/hashicorp/golang-lru v0.5.0 // indirect
+	github.com/golang/protobuf v1.4.2 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/sergi/go-diff v1.2.0 // indirect
+	golang.org/x/mod v0.3.0 // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	google.golang.org/protobuf v1.25.0 // indirect
 )
 
 go 1.17
