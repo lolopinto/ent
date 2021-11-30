@@ -20,6 +20,23 @@ func getCodePath(t *testing.T, dirPath string) *codegen.Config {
 	return codepath
 }
 
+func validateDefaultCustomTypes(t *testing.T, customData *customData) {
+	// GraphQLJSON and GraphQLTime
+	require.GreaterOrEqual(t, len(customData.CustomTypes), 2)
+
+	json := customData.CustomTypes["GraphQLJSON"]
+	require.NotNil(t, json)
+	assert.Equal(t, json.Type, "GraphQLJSON")
+	assert.Equal(t, json.ImportPath, "graphql-type-json")
+	assert.NotNil(t, json.ScalarInfo)
+
+	time := customData.CustomTypes["GraphQLTime"]
+	require.NotNil(t, time)
+	assert.Equal(t, time.Type, "GraphQLTime")
+	assert.Equal(t, time.ImportPath, "../graphql/scalars/time")
+	assert.NotNil(t, time.ScalarInfo)
+}
+
 func TestCustomMutation(t *testing.T) {
 	// simple test that just tests the entire flow.
 	// very complicated but simplest no-frills way to test things
@@ -81,7 +98,7 @@ func TestCustomMutation(t *testing.T) {
 	require.Len(t, s.customData.Mutations, 1)
 	require.Len(t, s.customData.Classes, 1)
 	require.Len(t, s.customData.Files, 1)
-	require.Len(t, s.customData.CustomTypes, 0)
+	validateDefaultCustomTypes(t, s.customData)
 
 	item := s.customData.Mutations[0]
 	assert.Equal(t, item.Node, "AuthResolver")
@@ -228,7 +245,7 @@ func TestCustomQuery(t *testing.T) {
 	require.Len(t, s.customData.Mutations, 0)
 	require.Len(t, s.customData.Classes, 1)
 	require.Len(t, s.customData.Files, 1)
-	require.Len(t, s.customData.CustomTypes, 0)
+	validateDefaultCustomTypes(t, s.customData)
 
 	item := s.customData.Queries[0]
 	assert.Equal(t, item.Node, "AuthResolver")
@@ -361,7 +378,7 @@ func TestCustomListQuery(t *testing.T) {
 	require.Len(t, s.customData.Mutations, 0)
 	require.Len(t, s.customData.Classes, 1)
 	require.Len(t, s.customData.Files, 1)
-	require.Len(t, s.customData.CustomTypes, 0)
+	validateDefaultCustomTypes(t, s.customData)
 
 	item := s.customData.Queries[0]
 	assert.Equal(t, item.Node, "AuthResolver")
@@ -542,7 +559,7 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	require.Len(t, s.customData.Mutations, 0)
 	require.Len(t, s.customData.Classes, 1)
 	require.Len(t, s.customData.Files, 1)
-	require.Len(t, s.customData.CustomTypes, 0)
+	validateDefaultCustomTypes(t, s.customData)
 
 	item := s.customData.Queries[0]
 	assert.Equal(t, item.Node, "UsernameResolver")
@@ -671,7 +688,6 @@ func TestCustomUploadType(t *testing.T) {
 	require.Len(t, s.customData.Mutations, 1)
 	require.Len(t, s.customData.Classes, 1)
 	require.Len(t, s.customData.Files, 1)
-	require.Len(t, s.customData.CustomTypes, 1)
 
 	item := s.customData.Mutations[0]
 	assert.Equal(t, item.Node, "ProfilePicResolver")
@@ -758,6 +774,7 @@ func TestCustomUploadType(t *testing.T) {
 		"return r.profilePicUpload(args.file);",
 	})
 
+	validateDefaultCustomTypes(t, s.customData)
 	typ := s.customData.CustomTypes["GraphQLUpload"]
 
 	assert.NotNil(t, typ)
