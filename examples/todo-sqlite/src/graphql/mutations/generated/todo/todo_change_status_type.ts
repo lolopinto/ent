@@ -30,6 +30,7 @@ export const TodoChangeStatusInputType = new GraphQLInputObjectType({
   name: "TodoChangeStatusInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     todoID: {
+      description: "id of Todo",
       type: GraphQLNonNull(GraphQLID),
     },
     completed: {

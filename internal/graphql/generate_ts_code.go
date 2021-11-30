@@ -930,11 +930,7 @@ func (c *gqlConnection) GraphQLNode() string {
 	return c.NodeType
 }
 
-// schema is passed and used for
-//			s.customEdges[conn.Edge.TsEdgeQueryEdgeName()],
-
 func (c *gqlConnection) getRenderer(s *gqlSchema) renderer {
-
 	edgeName := c.Edge.GetGraphQLEdgePrefix() + "Edge"
 
 	// ImportPath not needed here so ignored
@@ -2892,7 +2888,7 @@ func generateAlternateSchemaFile(processor *codegen.Processor, s *gqlSchema) err
 		writeRenderable(scalar)
 	}
 
-	return os.WriteFile("src/graphql/generated/schema.graphql", []byte(sb.String()), 0666)
+	return os.WriteFile("src/graphql/generated/schema.gql", []byte(sb.String()), 0666)
 }
 
 func generateSchemaFile(processor *codegen.Processor, hasMutations bool) error {
