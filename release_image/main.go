@@ -20,15 +20,15 @@ import (
 const TAG = "0.0.31"
 
 // current node gets latest tag...
-const CURRENT_NODE_VERSION = 16
+const CURRENT_NODE_VERSION = 17
 const REPO = "ghcr.io/lolopinto/ent"
 
 const UPDATE_LATEST = true
 
 var NODE_VERSIONS = []int{
 	14,
-	15,
 	16,
+	17,
 }
 
 const AUTO_SCHEMA_VERSION = "0.0.12"
