@@ -10,13 +10,14 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Event, Guest, GuestData } from "src/ent/";
+import { Event, Guest, GuestData, GuestDataSource } from "src/ent/";
 import schema from "src/schema/guest_data";
 
 export interface GuestDataInput {
   guestID?: ID | Builder<Guest>;
   eventID?: ID | Builder<Event>;
   dietaryRestrictions?: string;
+  source?: GuestDataSource | null;
 }
 
 export interface GuestDataAction extends Action<GuestData> {
@@ -111,6 +112,7 @@ export class GuestDataBuilder implements Builder<GuestData> {
     addField("guestID", fields.guestID);
     addField("eventID", fields.eventID);
     addField("dietaryRestrictions", fields.dietaryRestrictions);
+    addField("source", fields.source);
     return result;
   }
 
@@ -133,5 +135,10 @@ export class GuestDataBuilder implements Builder<GuestData> {
     return (
       this.input.dietaryRestrictions || this.existingEnt?.dietaryRestrictions
     );
+  }
+
+  // get value of source. Retrieves it from the input if specified or takes it from existingEnt
+  getNewSourceValue(): GuestDataSource | null | undefined {
+    return this.input.source || this.existingEnt?.source;
   }
 }

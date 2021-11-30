@@ -29,7 +29,13 @@ const fields = [
   "guest_id",
   "event_id",
   "dietary_restrictions",
+  "source",
 ];
+
+export enum GuestDataSource {
+  EventPage = "event_page",
+  HomePage = "home_page",
+}
 
 export class GuestDataBase {
   readonly nodeType = NodeType.GuestData;
@@ -39,6 +45,7 @@ export class GuestDataBase {
   readonly guestID: ID;
   readonly eventID: ID;
   readonly dietaryRestrictions: string;
+  readonly source: GuestDataSource | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
@@ -47,6 +54,7 @@ export class GuestDataBase {
     this.guestID = data.guest_id;
     this.eventID = data.event_id;
     this.dietaryRestrictions = data.dietary_restrictions;
+    this.source = data.source;
   }
 
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;

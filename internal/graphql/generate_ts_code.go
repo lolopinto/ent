@@ -1091,6 +1091,10 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 				defer wg.Done()
 
 				enumType := processor.Schema.Enums[key].GQLEnum
+				// hidden from graphql. nothing to do here
+				if enumType == nil {
+					return
+				}
 
 				m.Lock()
 				defer m.Unlock()

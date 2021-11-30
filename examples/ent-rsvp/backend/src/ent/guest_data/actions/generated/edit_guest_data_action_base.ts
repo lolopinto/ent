@@ -12,7 +12,7 @@ import {
   Changeset,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { Event, Guest, GuestData } from "src/ent/";
+import { Event, Guest, GuestData, GuestDataSource } from "src/ent/";
 import {
   GuestDataBuilder,
   GuestDataInput,
@@ -22,6 +22,7 @@ export interface GuestDataEditInput {
   guestID?: ID | Builder<Guest>;
   eventID?: ID | Builder<Event>;
   dietaryRestrictions?: string;
+  source?: GuestDataSource | null;
 }
 
 export class EditGuestDataActionBase implements Action<GuestData> {
