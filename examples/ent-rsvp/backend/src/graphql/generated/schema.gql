@@ -508,3 +508,9 @@ type Mutation {
   userCreate(input: UserCreateInput!): UserCreatePayload!
 }
 
+"""Time scalar type"""
+scalar Time
+
+"""The `Upload` scalar type represents a file upload."""
+scalar Upload
+

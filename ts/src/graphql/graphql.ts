@@ -182,17 +182,21 @@ export const addCustomType = (type: CustomType) => {
   if (customType) {
     return;
   }
-  const r = require(type.importPath);
-  const ct = r[type.type];
-  // this gets us the information needed for scalars
-  if (ct && isGraphQLScalarType(ct)) {
-    type.scalarInfo = {
-      description: ct.description,
-      name: ct.name,
-    };
-    if (ct.specifiedByUrl) {
-      type.scalarInfo.specifiedByUrl = ct.specifiedByUrl;
+  try {
+    const r = require(type.importPath);
+    const ct = r[type.type];
+    // this gets us the information needed for scalars
+    if (ct && isGraphQLScalarType(ct)) {
+      type.scalarInfo = {
+        description: ct.description,
+        name: ct.name,
+      };
+      if (ct.specifiedByUrl) {
+        type.scalarInfo.specifiedByUrl = ct.specifiedByUrl;
+      }
     }
+  } catch (e) {
+    return;
   }
   GQLCapture.getCustomTypes().set(type.type, type);
 };
