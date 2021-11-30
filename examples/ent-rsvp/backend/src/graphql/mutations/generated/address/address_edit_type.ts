@@ -32,6 +32,7 @@ export const AddressEditInputType = new GraphQLInputObjectType({
   name: "AddressEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     addressID: {
+      description: "id of Address",
       type: GraphQLNonNull(GraphQLID),
     },
     street: {

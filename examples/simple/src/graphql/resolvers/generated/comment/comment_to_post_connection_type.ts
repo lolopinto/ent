@@ -14,11 +14,7 @@ var connType: GraphQLConnectionType<GraphQLObjectType, CommentToPostEdge>;
 
 export const CommentToPostConnectionType = () => {
   if (connType === undefined) {
-    connType = new GraphQLConnectionType(
-      "CommentToPost",
-
-      GraphQLNodeInterface,
-    );
+    connType = new GraphQLConnectionType("CommentToPost", GraphQLNodeInterface);
   }
   return connType;
 };

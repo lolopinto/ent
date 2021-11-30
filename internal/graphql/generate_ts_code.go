@@ -141,9 +141,26 @@ type CustomItem struct {
 	imports      []*fileImport
 }
 
+type CustomScalarInfo struct {
+	Description    string `json:"description"`
+	Name           string `json:"name"`
+	SpecifiedByURL string `json:"specifiedByUrl"`
+}
+
+func (cs *CustomScalarInfo) getRenderer(s *gqlSchema) renderer {
+	return &scalarRenderer{
+		name:           cs.Name,
+		description:    cs.Description,
+		specifiedByUrl: cs.SpecifiedByURL,
+	}
+}
+
 type CustomType struct {
 	Type       string `json:"type"`
 	ImportPath string `json:"importPath"`
+
+	// custom scalar info. used for schema.gql
+	ScalarInfo *CustomScalarInfo `json:"scalarInfo"`
 
 	// both of these are optional
 	TSType       string `json:"tsType"`
@@ -283,6 +300,16 @@ func buildSchema(processor *codegen.Processor, fromTest bool) (*gqlSchema, error
 		return nil, err
 	}
 
+	// rootDatas
+	s.rootDatas = []*gqlRootData{
+		getQueryData(processor, s),
+	}
+	if s.hasMutations {
+		s.rootDatas = append(s.rootDatas, getMutationData(processor, s))
+	}
+
+	s.allTypes = getAllTypes(s, processor.Config)
+
 	return s, nil
 }
 
@@ -311,7 +338,8 @@ func (p *TSStep) ProcessData(processor *codegen.Processor) error {
 		return nil
 	}
 	// generate schema.gql
-	return generateSchemaFile(processor, p.s.hasMutations)
+	return generateAlternateSchemaFile(processor, p.s)
+	//return generateSchemaFile(processor, p.s.hasMutations)
 }
 
 func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) error {
@@ -321,8 +349,8 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 			return writeFile(processor, node)
 		})
 
-		for idx := range node.Dependents {
-			dependentNode := node.Dependents[idx]
+		for idx := range node.ActionDependents {
+			dependentNode := node.ActionDependents[idx]
 			funcs = append(funcs, func() error {
 				return writeFile(processor, dependentNode)
 			})
@@ -362,20 +390,16 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 		})
 	}
 
+	for idx := range s.rootDatas {
+		rootData := s.rootDatas[idx]
+		funcs = append(funcs, func() error {
+			return writeRootDataFile(processor, rootData)
+		})
+	}
+
 	// other files
 	funcs = append(
 		funcs,
-		func() error {
-			// query_type.ts
-			return writeQueryFile(processor, s)
-		},
-		func() error {
-			// mutation_type.ts
-			if s.hasMutations {
-				return writeMutationFile(processor, s)
-			}
-			return nil
-		},
 		func() error {
 			// graphql/resolvers/internal
 			return writeInternalGQLResolversFile(s, processor)
@@ -536,7 +560,6 @@ func searchForFiles(processor *codegen.Processor) []string {
 	// any custom objects that are referenced should be in the load path
 	indexFile := path.Join(rootPath, "src/ent/index.ts")
 	stat, _ := os.Stat(indexFile)
-	//	spew.Dump(stat, err)
 	if stat != nil {
 		result = append(result, "src/ent/index.ts")
 	}
@@ -779,6 +802,7 @@ func (obj *gqlobjectData) ForeignImport(name string) bool {
 }
 
 type gqlSchema struct {
+	hasConnections  bool
 	hasMutations    bool
 	nodes           map[string]*gqlNode
 	enums           map[string]*gqlEnum
@@ -788,6 +812,9 @@ type gqlSchema struct {
 	edgeNames       map[string]bool
 	customEdges     map[string]*objectType
 	rootQueries     []*rootQuery
+	allTypes        []typeInfo
+	// Query|Mutation|Subscription
+	rootDatas []*gqlRootData
 }
 
 func (s *gqlSchema) getImportFor(typ string, mutation bool) *fileImport {
@@ -850,10 +877,19 @@ type gqlNode struct {
 	// TODO instead of converting back and forth by joining the path here and then doing the relative
 	// path again in trimPath, we should have the relative path, pass the cfg to TemplateBasedFileWriter
 	// and then use that when writing the file.
-	FilePath    string
-	Dependents  []*gqlNode // actions are the dependents
-	Field       *CustomField
-	connections []*gqlConnection
+	FilePath         string
+	ActionDependents []*gqlNode // actions are the dependents
+	Field            *CustomField
+	connections      []*gqlConnection
+	Data             interface{}
+}
+
+func (g *gqlNode) getRenderer(s *gqlSchema) renderer {
+	var ret listRenderer
+	for _, node := range g.ObjData.GQLNodes {
+		ret = append(ret, node.getRenderer(s))
+	}
+	return ret
 }
 
 type gqlEnum struct {
@@ -863,6 +899,13 @@ type gqlEnum struct {
 	FilePath string
 }
 
+func (e *gqlEnum) getRenderer(s *gqlSchema) renderer {
+	return &enumRenderer{
+		enum:   e.Enum.Name,
+		values: e.Enum.GetGraphQLNames(),
+	}
+}
+
 type gqlConnection struct {
 	ConnType string
 	FilePath string
@@ -870,6 +913,129 @@ type gqlConnection struct {
 	Imports  []*fileImport
 	NodeType string
 	Package  *codegen.ImportPackage
+}
+
+func (c *gqlConnection) GraphQLNodeType() string {
+	if c.NodeType == "EntType" {
+		return "GraphQLNodeInterface"
+	}
+	return c.NodeType
+}
+
+func (c *gqlConnection) GraphQLNode() string {
+	if c.NodeType == "EntType" {
+		return "Node"
+	}
+	return c.NodeType
+}
+
+func (c *gqlConnection) getRenderer(s *gqlSchema) renderer {
+	edgeName := c.Edge.GetGraphQLEdgePrefix() + "Edge"
+
+	// ImportPath not needed here so ignored
+
+	connFields := []*fieldType{
+		{
+			Name: "edges",
+			FieldImports: []*fileImport{
+				{
+					Type: "GraphQLNonNull",
+				},
+				{
+					Type: "GraphQLList",
+				},
+				{
+					Type: "GraphQLNonNull",
+				},
+				{
+					Type: c.Edge.GetGraphQLEdgePrefix() + "Edge",
+				},
+			},
+		},
+		{
+			Name: "nodes",
+			FieldImports: []*fileImport{
+				{
+					Type: "GraphQLNonNull",
+				},
+				{
+					Type: "GraphQLList",
+				},
+				{
+					Type: "GraphQLNonNull",
+				},
+				{
+					Type: c.GraphQLNode(),
+				},
+			},
+		},
+		{
+			Name: "pageInfo",
+			FieldImports: []*fileImport{
+				{
+					Type: "GraphQLNonNull",
+				},
+				{
+					Type: "PageInfo",
+				},
+			},
+		},
+		{
+			Name: "rawCount",
+			FieldImports: []*fileImport{
+				{
+					Type: "GraphQLNonNull",
+				},
+				{
+					Type: "GraphQLInt",
+				},
+			},
+		},
+	}
+
+	edgeFields := []*fieldType{
+		{
+			Name: "node",
+			FieldImports: []*fileImport{
+				{
+					Type: "GraphQLNonNull",
+				},
+				{
+					Type: c.GraphQLNode(),
+				},
+			},
+		},
+		{
+			Name: "cursor",
+			FieldImports: []*fileImport{
+				{
+					Type: "GraphQLNonNull",
+				},
+				{
+					Type: "GraphQLString",
+				},
+			},
+		},
+	}
+
+	// add custom edge fields
+	cedge, ok := s.customEdges[c.Edge.TsEdgeQueryEdgeName()]
+	if ok {
+		edgeFields = append(edgeFields, cedge.Fields...)
+	}
+
+	connRender := &elemRenderer{
+		name:       strings.TrimSuffix(c.ConnType, "Type"),
+		interfaces: []string{"Connection"},
+		fields:     connFields,
+	}
+	edgeRender := &elemRenderer{
+		name:       edgeName,
+		interfaces: []string{"Edge"},
+		fields:     edgeFields,
+	}
+
+	return listRenderer{edgeRender, connRender}
 }
 
 func getGqlConnection(packageName string, edge edge.ConnectionEdge, processor *codegen.Processor) *gqlConnection {
@@ -904,6 +1070,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 	var result = make(chan *gqlSchema)
 	go func() {
 		var hasMutations bool
+		var hasConnections bool
 		nodes := make(map[string]*gqlNode)
 		enums := make(map[string]*gqlEnum)
 		var rootQueries []*rootQuery
@@ -984,8 +1151,9 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 								Package:      processor.Config.GetImportPackage(),
 							},
 							FilePath: getFilePathForAction(processor.Config, nodeData, action),
+							Data:     action,
 						}
-						obj.Dependents = append(obj.Dependents, &actionObj)
+						obj.ActionDependents = append(obj.ActionDependents, &actionObj)
 					}
 				}
 
@@ -995,6 +1163,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 						if nodeMap.HideFromGraphQL(edge) {
 							continue
 						}
+						hasConnections = true
 						conn := getGqlConnection(nodeData.PackageName, edge, processor)
 						obj.connections = append(obj.connections, conn)
 					}
@@ -1014,12 +1183,13 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 
 		wg.Wait()
 		result <- &gqlSchema{
-			nodes:        nodes,
-			rootQueries:  rootQueries,
-			enums:        enums,
-			edgeNames:    edgeNames,
-			hasMutations: hasMutations,
-			customEdges:  make(map[string]*objectType),
+			nodes:          nodes,
+			rootQueries:    rootQueries,
+			enums:          enums,
+			edgeNames:      edgeNames,
+			hasMutations:   hasMutations,
+			hasConnections: hasConnections,
+			customEdges:    make(map[string]*objectType),
 		}
 	}()
 	return result
@@ -1065,6 +1235,9 @@ type typeInfo struct {
 	Type       string
 	Function   bool
 	ImportPath string
+	Path       string
+	NodeType   string
+	Obj        interface{}
 }
 
 const resolverPath = "src/graphql/resolvers"
@@ -1079,6 +1252,8 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 			nodes = append(nodes, typeInfo{
 				Type:       n.Type,
 				ImportPath: resolverPath,
+				NodeType:   "Node",
+				Obj:        n,
 			})
 		}
 		for _, conn := range node.connections {
@@ -1086,15 +1261,29 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 				Type:       conn.ConnType,
 				ImportPath: resolverPath,
 				Function:   true,
+				NodeType:   "Connection",
+				Obj:        conn,
 			})
 		}
 
 		// right now, only actions are dependents
-		for _, dep := range node.Dependents {
+		for _, dep := range node.ActionDependents {
 			for _, depObj := range dep.ObjData.GQLNodes {
 				actionTypes = append(actionTypes, typeInfo{
 					Type:       depObj.Type,
 					ImportPath: trimPath(cfg, dep.FilePath),
+					NodeType:   "Mutation",
+					Obj:        depObj,
+				})
+			}
+
+			for _, depEnum := range dep.ObjData.Enums {
+				actionTypes = append(actionTypes, typeInfo{
+					Type: depEnum.Type,
+					// they're embedded in the action's file
+					ImportPath: trimPath(cfg, dep.FilePath),
+					NodeType:   "Enum",
+					Obj:        depEnum,
 				})
 			}
 		}
@@ -1104,6 +1293,8 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 		enums = append(enums, typeInfo{
 			Type:       enum.Type,
 			ImportPath: resolverPath,
+			NodeType:   "Enum",
+			Obj:        enum,
 		})
 	}
 
@@ -1113,15 +1304,19 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 			customQueries = append(customQueries, typeInfo{
 				Type:       n.Type,
 				ImportPath: resolverPath,
+				NodeType:   "CustomQuery",
+				Obj:        node,
 			})
+		}
 
-			for _, conn := range node.connections {
-				conns = append(conns, typeInfo{
-					Type:       conn.ConnType,
-					ImportPath: resolverPath,
-					Function:   true,
-				})
-			}
+		for _, conn := range node.connections {
+			conns = append(conns, typeInfo{
+				Type:       conn.ConnType,
+				ImportPath: resolverPath,
+				Function:   true,
+				NodeType:   "CustomConn",
+				Obj:        conn,
+			})
 		}
 	}
 
@@ -1131,6 +1326,8 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 			customMutations = append(customMutations, typeInfo{
 				Type:       n.Type,
 				ImportPath: trimPath(cfg, node.FilePath),
+				NodeType:   "CustomMutation",
+				Obj:        n,
 			})
 		}
 	}
@@ -1311,6 +1508,10 @@ type fieldConfigArg struct {
 	Name        string
 	Description string
 	Imports     []*fileImport
+}
+
+func (f *fieldConfigArg) render(s *gqlSchema) string {
+	return fmt.Sprintf("%s: %s", f.Name, getTypeForImports(f.Imports, s))
 }
 
 func (f fieldConfigArg) FieldType() string {
@@ -1854,10 +2055,6 @@ func getActionPath(nodeData *schema.NodeData, a action.Action) string {
 	return fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(a.GetActionName()))
 }
 
-func getActionBasePath(nodeData *schema.NodeData, a action.Action) string {
-	return fmt.Sprintf("src/ent/%s/actions/generated/%s", nodeData.PackageName, strcase.ToSnake(a.GetActionName()+"Base"))
-}
-
 func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action, actionPrefix string) (*fieldConfig, error) {
 	// TODO this is so not obvious at all
 	// these are things that are automatically useImported....
@@ -2086,6 +2283,20 @@ type objectType struct {
 	IsTypeOfMethod []string
 }
 
+func (obj *objectType) getRenderer(s *gqlSchema) renderer {
+	interfaces := make([]string, len(obj.GQLInterfaces))
+	for idx, inter := range obj.GQLInterfaces {
+		interfaces[idx] = strings.TrimSuffix(strings.TrimPrefix(inter, "GraphQL"), "Interface")
+	}
+
+	return &elemRenderer{
+		input:      obj.GQLType == "GraphQLInputObjectType",
+		name:       obj.Node,
+		interfaces: interfaces,
+		fields:     obj.Fields,
+	}
+}
+
 type fieldType struct {
 	Name               string
 	HasResolveFunction bool
@@ -2099,6 +2310,95 @@ type fieldType struct {
 	FunctionContents []string
 	ResolverMethod   string
 	// TODO more types we need to support
+}
+
+var flagTime = false
+
+func getRawType(typ string, s *gqlSchema) string {
+	rawType := typ
+	if strings.HasPrefix(typ, "GraphQL") {
+		rawType = strings.TrimPrefix(typ, "GraphQL")
+	} else {
+		rawType = strings.TrimSuffix(typ, "Type")
+	}
+	cs, ok := s.customData.Objects[rawType]
+	if ok {
+		return cs.NodeName
+	}
+	for k, v := range knownTypes {
+		if v.Type == typ {
+			return k
+		}
+	}
+	if rawType == "Time" {
+		flagTime = true
+	}
+	return rawType
+}
+
+func getTypeForImports(imps []*fileImport, s *gqlSchema) string {
+	typ := ""
+	nonNullable := false
+	list := false
+	nonNullableContents := false
+	for _, imp := range imps {
+		if imp.Type == "GraphQLNonNull" {
+			if list {
+				nonNullableContents = true
+			} else {
+				nonNullable = true
+			}
+		} else if imp.Type == "GraphQLList" {
+			list = true
+		} else {
+			// TODO imp.Name
+			// Custom types
+			typ = getRawType(imp.Type, s)
+		}
+	}
+
+	ret := typ
+	if nonNullableContents || (!list && nonNullable) {
+		ret = ret + "!"
+	}
+	if list {
+		ret = "[" + ret + "]"
+	}
+	if list && nonNullable {
+		ret = ret + "!"
+	}
+	return ret
+}
+
+func (f *fieldType) getType(s *gqlSchema) string {
+	return getTypeForImports(f.FieldImports, s)
+}
+
+func (f *fieldType) render(s *gqlSchema) string {
+	var sb strings.Builder
+	if f.Description != "" {
+		sb.WriteString("  ")
+		renderDescription(&sb, f.Description)
+	}
+
+	sb.WriteString("  ")
+	sb.WriteString(f.Name)
+
+	if len(f.Args) > 0 {
+		sb.WriteString("(")
+		args := make([]string, len(f.Args))
+		for idx, arg := range f.Args {
+			args[idx] = arg.render(s)
+		}
+		sb.WriteString(strings.Join(args, ", "))
+
+		sb.WriteString(")")
+	}
+
+	sb.WriteString(": ")
+	sb.WriteString(f.getType(s))
+	sb.WriteString("\n")
+	return sb.String()
 }
 
 type interfaceType struct {
@@ -2184,15 +2484,31 @@ type gqlRootData struct {
 	RootFields []rootField
 	Type       string
 	Node       string
+	FilePath   string
+	fieldTypes []*fieldType
 }
 
-func getQueryData(processor *codegen.Processor, s *gqlSchema) []rootField {
-	results := []rootField{}
+func (r *gqlRootData) getRenderer(s *gqlSchema) renderer {
+	return &elemRenderer{
+		name:   r.Node,
+		fields: r.fieldTypes,
+	}
+}
+
+func getQueryData(processor *codegen.Processor, s *gqlSchema) *gqlRootData {
+	rootFields := []rootField{}
+	fieldTypes := []*fieldType{}
 	for _, rootQuery := range s.rootQueries {
-		results = append(results, rootField{
+		rootFields = append(rootFields, rootField{
 			Name:       rootQuery.Name,
 			Type:       rootQuery.FieldConfig.Name,
 			ImportPath: codepath.GetImportPathForInternalGQLFile(),
+		})
+
+		fieldTypes = append(fieldTypes, &fieldType{
+			Name:         rootQuery.Name,
+			Args:         rootQuery.FieldConfig.Args,
+			FieldImports: rootQuery.FieldConfig.TypeImports,
 		})
 	}
 
@@ -2201,37 +2517,55 @@ func getQueryData(processor *codegen.Processor, s *gqlSchema) []rootField {
 			panic("TODO query with no custom field")
 		}
 		query := node.Field
-		results = append(results, rootField{
+		rootFields = append(rootFields, rootField{
 			ImportPath: codepath.GetImportPathForInternalGQLFile(),
 			Name:       query.GraphQLName,
 			Type:       fmt.Sprintf("%sQueryType", strcase.ToCamel(query.GraphQLName)),
 		})
+
+		fieldTypes = append(fieldTypes, &fieldType{
+			Name:         query.GraphQLName,
+			Args:         node.ObjData.FieldConfig.Args,
+			FieldImports: node.ObjData.FieldConfig.TypeImports,
+		})
 	}
 
 	// sort lexicographically so that we are not always changing this
-	sort.Slice(results, func(i, j int) bool {
-		return results[i].Name < results[j].Name
+	sort.Slice(rootFields, func(i, j int) bool {
+		return rootFields[i].Name < rootFields[j].Name
 	})
-	return results
+	// sort lexicographically so that we are not always changing this
+	sort.Slice(fieldTypes, func(i, j int) bool {
+		return fieldTypes[i].Name < fieldTypes[j].Name
+	})
+
+	return &gqlRootData{
+		Type:       "QueryType",
+		Node:       "Query",
+		RootFields: rootFields,
+		fieldTypes: fieldTypes,
+		FilePath:   getQueryFilePath(processor.Config),
+	}
 }
 
-func getMutationData(processor *codegen.Processor, s *gqlSchema) []rootField {
-	var results []rootField
-	for key := range processor.Schema.Nodes {
+func getMutationData(processor *codegen.Processor, s *gqlSchema) *gqlRootData {
+	rootFields := []rootField{}
+	fieldTypes := []*fieldType{}
 
-		nodeData := processor.Schema.Nodes[key].NodeData
-		if nodeData.HideFromGraphQL {
-			continue
-		}
+	for _, node := range s.nodes {
+		for _, dep := range node.ActionDependents {
+			action := dep.Data.(action.Action)
+			gqlName := action.GetGraphQLName()
+			rootFields = append(rootFields, rootField{
+				ImportPath: trimPath(processor.Config, dep.FilePath),
+				Type:       fmt.Sprintf("%sType", strcase.ToCamel(gqlName)),
+				Name:       gqlName,
+			})
 
-		for _, action := range nodeData.ActionInfo.Actions {
-			if !action.ExposedToGraphQL() {
-				continue
-			}
-			results = append(results, rootField{
-				ImportPath: getImportPathForAction(nodeData, action),
-				Type:       fmt.Sprintf("%sType", strcase.ToCamel(action.GetGraphQLName())),
-				Name:       action.GetGraphQLName(),
+			fieldTypes = append(fieldTypes, &fieldType{
+				Name:         gqlName,
+				Args:         dep.ObjData.FieldConfig.Args,
+				FieldImports: dep.ObjData.FieldConfig.TypeImports,
 			})
 		}
 	}
@@ -2241,53 +2575,46 @@ func getMutationData(processor *codegen.Processor, s *gqlSchema) []rootField {
 			panic("TODO mutation with no custom field")
 		}
 		mutation := node.Field
-		results = append(results, rootField{
+		rootFields = append(rootFields, rootField{
 			ImportPath: getImportPathForCustomMutation(mutation.GraphQLName),
 			Name:       mutation.GraphQLName,
 			Type:       fmt.Sprintf("%sType", strcase.ToCamel(mutation.GraphQLName)),
 		})
+
+		fieldTypes = append(fieldTypes, &fieldType{
+			Name:         mutation.GraphQLName,
+			Args:         node.ObjData.FieldConfig.Args,
+			FieldImports: node.ObjData.FieldConfig.TypeImports,
+		})
 	}
 
 	// sort lexicographically so that we are not always changing this
-	sort.Slice(results, func(i, j int) bool {
-		return results[i].Name < results[j].Name
+	sort.Slice(rootFields, func(i, j int) bool {
+		return rootFields[i].Name < rootFields[j].Name
 	})
-	return results
+
+	sort.Slice(fieldTypes, func(i, j int) bool {
+		return fieldTypes[i].Name < fieldTypes[j].Name
+	})
+
+	return &gqlRootData{
+		RootFields: rootFields,
+		Type:       "MutationType",
+		Node:       "Mutation",
+		fieldTypes: fieldTypes,
+		FilePath:   getMutationFilePath(processor.Config),
+	}
 }
 
-func writeQueryFile(processor *codegen.Processor, s *gqlSchema) error {
-	filePath := getQueryFilePath(processor.Config)
-	imps := tsimport.NewImports(processor.Config, filePath)
+func writeRootDataFile(processor *codegen.Processor, rootData *gqlRootData) error {
+	imps := tsimport.NewImports(processor.Config, rootData.FilePath)
 	return file.Write((&file.TemplatedBasedFileWriter{
-		Config: processor.Config,
-		Data: gqlRootData{
-			RootFields: getQueryData(processor, s),
-			Type:       "QueryType",
-			Node:       "Query",
-		},
+		Config:            processor.Config,
+		Data:              rootData,
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/root.tmpl"),
 		TemplateName:      "root.tmpl",
-		PathToFile:        filePath,
-		TsImports:         imps,
-		FuncMap:           imps.FuncMap(),
-	}))
-}
-
-func writeMutationFile(processor *codegen.Processor, s *gqlSchema) error {
-	filePath := getMutationFilePath(processor.Config)
-	imps := tsimport.NewImports(processor.Config, filePath)
-	return file.Write((&file.TemplatedBasedFileWriter{
-		Config: processor.Config,
-		Data: gqlRootData{
-			RootFields: getMutationData(processor, s),
-			Type:       "MutationType",
-			Node:       "Mutation",
-		},
-		CreateDirIfNeeded: true,
-		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/root.tmpl"),
-		TemplateName:      "root.tmpl",
-		PathToFile:        filePath,
+		PathToFile:        rootData.FilePath,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	}))
@@ -2473,7 +2800,7 @@ func writeTSSchemaFile(processor *codegen.Processor, s *gqlSchema) error {
 			s.hasMutations,
 			getQueryImportPath(),
 			getMutationImportPath(),
-			getAllTypes(s, processor.Config),
+			s.allTypes,
 		},
 
 		CreateDirIfNeeded: true,
@@ -2509,6 +2836,67 @@ func writeTSIndexFile(processor *codegen.Processor, s *gqlSchema) error {
 		FuncMap:           imps.FuncMap(),
 		EditableCode:      true,
 	}), file.WriteOnce())
+}
+
+func generateAlternateSchemaFile(processor *codegen.Processor, s *gqlSchema) error {
+	var sb strings.Builder
+
+	sb.WriteString("// Generated by github.com/lolopinto/ent/ent, DO NOT EDIT.\n\n")
+
+	writeRenderable := func(r renderable) {
+		sb.WriteString(r.getRenderer(s).render(s))
+		sb.WriteString("\n")
+	}
+
+	writeRenderer := func(r renderer) {
+		sb.WriteString(r.render(s))
+		sb.WriteString("\n")
+	}
+
+	// add node interface
+	if len(s.nodes) > 0 {
+		writeRenderer(getNodeInterfaceRenderer())
+	}
+	// add connection info
+	if s.hasConnections {
+		writeRenderer(getConnectionRenderer())
+	}
+
+	for _, typ := range s.allTypes {
+		r, ok := typ.Obj.(renderable)
+		if ok {
+			writeRenderable(r)
+		} else {
+			spew.Dump(typ.Obj)
+			fmt.Printf("invalid unrenderable obj %v\n", typ.Obj)
+		}
+	}
+
+	for _, rd := range s.rootDatas {
+		writeRenderable(rd)
+	}
+
+	// sort scalars so stable
+	var scalars []*CustomScalarInfo
+	for _, ct := range s.customData.CustomTypes {
+		if ct.ScalarInfo != nil {
+			// TODO eventually make this generic instead of this ugliness
+			// this prevents scalar Time from showing up until we make this generic enough
+			if ct.Type == "GraphQLTime" && !flagTime {
+				continue
+			}
+			scalars = append(scalars, ct.ScalarInfo)
+		}
+	}
+	sort.Slice(scalars, func(i, j int) bool {
+		return scalars[i].Name < scalars[j].Name
+	})
+
+	for _, scalar := range scalars {
+		writeRenderable(scalar)
+	}
+
+	return os.WriteFile("src/graphql/generated/schema.gql", []byte(sb.String()), 0666)
 }
 
 func generateSchemaFile(processor *codegen.Processor, hasMutations bool) error {

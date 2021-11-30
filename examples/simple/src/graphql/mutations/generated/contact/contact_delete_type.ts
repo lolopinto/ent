@@ -29,6 +29,7 @@ export const ContactDeleteInputType = new GraphQLInputObjectType({
   name: "ContactDeleteInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     contactID: {
+      description: "id of Contact",
       type: GraphQLNonNull(GraphQLID),
     },
   }),

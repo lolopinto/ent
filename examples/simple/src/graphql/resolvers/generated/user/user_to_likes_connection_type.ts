@@ -14,11 +14,7 @@ var connType: GraphQLConnectionType<GraphQLObjectType, UserToLikesEdge>;
 
 export const UserToLikesConnectionType = () => {
   if (connType === undefined) {
-    connType = new GraphQLConnectionType(
-      "UserToLikes",
-
-      GraphQLNodeInterface,
-    );
+    connType = new GraphQLConnectionType("UserToLikes", GraphQLNodeInterface);
   }
   return connType;
 };

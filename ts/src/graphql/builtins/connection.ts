@@ -3,6 +3,7 @@ import { GraphQLNodeInterface } from "./node";
 import { GraphQLEdgeInterface } from "./edge";
 import { GraphQLPageInfo } from "../query/page_info";
 
+// NB: if this changes, need to update renderer.go also
 export const GraphQLConnectionInterface = new GraphQLInterfaceType({
   name: "Connection",
   description: "connection interface",

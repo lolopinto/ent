@@ -28,6 +28,7 @@ export const TodoRemoveTagInputType = new GraphQLInputObjectType({
   name: "TodoRemoveTagInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     todoID: {
+      description: "id of Todo",
       type: GraphQLNonNull(GraphQLID),
     },
     tagID: {

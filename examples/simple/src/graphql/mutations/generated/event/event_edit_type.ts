@@ -35,6 +35,7 @@ export const EventEditInputType = new GraphQLInputObjectType({
   name: "EventEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     eventID: {
+      description: "id of Event",
       type: GraphQLNonNull(GraphQLID),
     },
     name: {

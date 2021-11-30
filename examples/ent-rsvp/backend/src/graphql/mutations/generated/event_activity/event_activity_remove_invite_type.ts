@@ -29,6 +29,7 @@ export const EventActivityRemoveInviteInputType = new GraphQLInputObjectType({
   name: "EventActivityRemoveInviteInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     eventActivityID: {
+      description: "id of EventActivity",
       type: GraphQLNonNull(GraphQLID),
     },
     inviteID: {
