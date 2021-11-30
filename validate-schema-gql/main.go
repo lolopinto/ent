@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/google/go-github/v41/github"
 	"github.com/lolopinto/ent/internal/graphql"
 	"github.com/sergi/go-diff/diffmatchpatch"
@@ -26,7 +25,6 @@ func bye(s string) {
 
 func byeErr(err error) {
 	if err != nil {
-		spew.Dump(err)
 		bye(err.Error())
 	}
 }
@@ -34,7 +32,6 @@ func byeErr(err error) {
 // compares hand-generated schema.gql with the one
 // from graphql-js and verifies they're equivalent
 //  DB_CONNECTION_STRING=sqlite:/// go run .
-// TODO run this once a week or so and generate a task if not equal
 
 var paths = []string{
 	"../examples/simple",
