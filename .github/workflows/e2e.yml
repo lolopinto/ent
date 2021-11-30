@@ -63,8 +63,9 @@ jobs:
         with:
           python-version: '>3.6'
 
-      - name: install auto_schema
-        run: python3 -m pip install wheel auto_schema==0.0.12
+      - name: setup auto_schema
+        run: |
+          alias auto_schema = 'python3\ python/auto_schema/auto_schema/cli/__init__.py'
 
       - name: Setup nodejs
         uses: actions/setup-node@v2
