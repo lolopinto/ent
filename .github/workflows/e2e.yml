@@ -63,6 +63,12 @@ jobs:
         with:
           python-version: '>3.6'
 
+      - name: setup auto_schema dependencies
+        run: |
+          pip3 install pipenv 
+          cd python
+          pipenv install --dev
+          
       - name: Setup nodejs
         uses: actions/setup-node@v2
         with:

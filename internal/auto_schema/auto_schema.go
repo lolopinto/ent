@@ -23,8 +23,15 @@ func RunPythonCommandWriter(pathToConfigs string, w io.Writer, extraArgs ...stri
 		fmt.Sprintf("-e=%s", data.GetSQLAlchemyDatabaseURIgo()),
 	}
 	if local {
-		executable = "python3"
-		args = append([]string{"auto_schema/cli/__init__.py"}, args...)
+		executable = "pipenv"
+		args = append(
+			[]string{
+				"run",
+				"python3",
+				"auto_schema/cli/__init__.py",
+			},
+			args...,
+		)
 	}
 
 	if len(extraArgs) > 0 {
