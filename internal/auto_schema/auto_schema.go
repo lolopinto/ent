@@ -27,7 +27,6 @@ func RunPythonCommandWriter(pathToConfigs string, w io.Writer, extraArgs ...stri
 	}
 	if local {
 		executable = "pipenv"
-		// running into weird issues with pipenv run python3 here
 		args = append(
 			[]string{
 				"run",
