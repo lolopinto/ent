@@ -26,12 +26,12 @@ func RunPythonCommandWriter(pathToConfigs string, w io.Writer, extraArgs ...stri
 		fmt.Sprintf("-e=%s", data.GetSQLAlchemyDatabaseURIgo()),
 	}
 	if local {
-		executable = "python3"
+		executable = "pipenv"
 		// running into weird issues with pipenv run python3 here
 		args = append(
 			[]string{
-				//				"run",
-				//				"python3",
+				"run",
+				"python3",
 				"auto_schema/cli/__init__.py",
 			},
 			args...,
