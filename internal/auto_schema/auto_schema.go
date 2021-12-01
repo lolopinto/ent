@@ -1,10 +1,13 @@
 package auto_schema
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/lolopinto/ent/ent/data"
 	"github.com/lolopinto/ent/internal/util"
@@ -43,6 +46,16 @@ func RunPythonCommandWriter(pathToConfigs string, w io.Writer, extraArgs ...stri
 		cmd.Dir = util.GetAbsolutePath("../../python/auto_schema")
 	}
 	cmd.Stdout = w
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	var berr bytes.Buffer
+	cmd.Stderr = &berr
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
+
+	errMsg := strings.TrimSpace(berr.String())
+	if len(errMsg) != 0 {
+		return errors.New(errMsg)
+	}
+	return nil
 }
