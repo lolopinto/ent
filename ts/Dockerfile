@@ -1,9 +1,9 @@
 ARG GOLANG_VERSION=v0.0.33
 ARG AUTO_SCHEMA_VERSION=0.0.13
-ARG NODE_VERSION=16
+ARG NODE_VERSION=17
 
 # get and install tsent
-FROM golang:1.17.1-buster As golang-image
+FROM golang:1.17.3-buster As golang-image
 ARG GOLANG_VERSION
 ENV GOPATH=$HOME/go
 ENV GOBIN $GOPATH/bin
@@ -37,6 +37,9 @@ RUN \
   # wget and gnupg are dependencies needed below
   # libpq-dev for libpq
   apt-get install -yqq wget gnupg libpq-dev curl && \
+  # add architecture needed for arm64 builds
+  dpkg --add-architecture amd64 && \
+  curl -LO https://github.com/BurntSushi/ripgrep/releases/download/13.0.0/ripgrep_13.0.0_amd64.deb && dpkg -i ripgrep_13.0.0_amd64.deb && \
   #  echo "deb https://deb.nodesource.com/node_$NODE_VERSION.x/ buster main" > /etc/apt/sources.list.d/nodesource.list && \
   #  wget -qO- https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - && \
   echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.list.d/yarn.list && \
