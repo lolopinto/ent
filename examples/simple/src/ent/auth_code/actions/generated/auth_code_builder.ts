@@ -124,21 +124,33 @@ export class AuthCodeBuilder implements Builder<AuthCode> {
 
   // get value of code. Retrieves it from the input if specified or takes it from existingEnt
   getNewCodeValue(): string | undefined {
-    return this.input.code || this.existingEnt?.code;
+    if (this.input.code !== undefined) {
+      return this.input.code;
+    }
+    return this.existingEnt?.code;
   }
 
   // get value of userID. Retrieves it from the input if specified or takes it from existingEnt
   getNewUserIDValue(): ID | Builder<User> | undefined {
-    return this.input.userID || this.existingEnt?.userID;
+    if (this.input.userID !== undefined) {
+      return this.input.userID;
+    }
+    return this.existingEnt?.userID;
   }
 
   // get value of emailAddress. Retrieves it from the input if specified or takes it from existingEnt
   getNewEmailAddressValue(): string | null | undefined {
-    return this.input.emailAddress || this.existingEnt?.emailAddress;
+    if (this.input.emailAddress !== undefined) {
+      return this.input.emailAddress;
+    }
+    return this.existingEnt?.emailAddress;
   }
 
   // get value of phoneNumber. Retrieves it from the input if specified or takes it from existingEnt
   getNewPhoneNumberValue(): string | null | undefined {
-    return this.input.phoneNumber || this.existingEnt?.phoneNumber;
+    if (this.input.phoneNumber !== undefined) {
+      return this.input.phoneNumber;
+    }
+    return this.existingEnt?.phoneNumber;
   }
 }

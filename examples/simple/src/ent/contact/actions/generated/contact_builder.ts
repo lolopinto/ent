@@ -212,21 +212,33 @@ export class ContactBuilder implements Builder<Contact> {
 
   // get value of emailAddress. Retrieves it from the input if specified or takes it from existingEnt
   getNewEmailAddressValue(): string | undefined {
-    return this.input.emailAddress || this.existingEnt?.emailAddress;
+    if (this.input.emailAddress !== undefined) {
+      return this.input.emailAddress;
+    }
+    return this.existingEnt?.emailAddress;
   }
 
   // get value of firstName. Retrieves it from the input if specified or takes it from existingEnt
   getNewFirstNameValue(): string | undefined {
-    return this.input.firstName || this.existingEnt?.firstName;
+    if (this.input.firstName !== undefined) {
+      return this.input.firstName;
+    }
+    return this.existingEnt?.firstName;
   }
 
   // get value of lastName. Retrieves it from the input if specified or takes it from existingEnt
   getNewLastNameValue(): string | undefined {
-    return this.input.lastName || this.existingEnt?.lastName;
+    if (this.input.lastName !== undefined) {
+      return this.input.lastName;
+    }
+    return this.existingEnt?.lastName;
   }
 
   // get value of userID. Retrieves it from the input if specified or takes it from existingEnt
   getNewUserIDValue(): ID | Builder<User> | undefined {
-    return this.input.userID || this.existingEnt?.userID;
+    if (this.input.userID !== undefined) {
+      return this.input.userID;
+    }
+    return this.existingEnt?.userID;
   }
 }

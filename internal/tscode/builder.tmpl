@@ -234,8 +234,11 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
     getNew{{$field.CamelCaseName}}Value(): {{$field.TsBuilderType}} | undefined {
       {{if $field.Private -}}
         return this.input.{{$field.TsFieldName}};
-      {{ else -}}
-        return this.input.{{$field.TsFieldName}} || this.existingEnt?.{{$field.TsFieldName}};
+      {{else -}}
+        if (this.input.{{$field.TsFieldName}} !== undefined) {
+          return this.input.{{$field.TsFieldName}}
+        }
+        return this.existingEnt?.{{$field.TsFieldName}};
       {{end -}}
     }
 
