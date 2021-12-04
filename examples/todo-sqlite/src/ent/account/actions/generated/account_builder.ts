@@ -117,11 +117,17 @@ export class AccountBuilder implements Builder<Account> {
 
   // get value of Name. Retrieves it from the input if specified or takes it from existingEnt
   getNewNameValue(): string | undefined {
-    return this.input.name || this.existingEnt?.name;
+    if (this.input.name !== undefined) {
+      return this.input.name;
+    }
+    return this.existingEnt?.name;
   }
 
   // get value of PhoneNumber. Retrieves it from the input if specified or takes it from existingEnt
   getNewPhoneNumberValue(): string | undefined {
-    return this.input.phoneNumber || this.existingEnt?.phoneNumber;
+    if (this.input.phoneNumber !== undefined) {
+      return this.input.phoneNumber;
+    }
+    return this.existingEnt?.phoneNumber;
   }
 }

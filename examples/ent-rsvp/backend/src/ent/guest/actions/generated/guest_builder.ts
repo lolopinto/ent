@@ -224,26 +224,41 @@ export class GuestBuilder implements Builder<Guest> {
 
   // get value of Name. Retrieves it from the input if specified or takes it from existingEnt
   getNewNameValue(): string | undefined {
-    return this.input.name || this.existingEnt?.name;
+    if (this.input.name !== undefined) {
+      return this.input.name;
+    }
+    return this.existingEnt?.name;
   }
 
   // get value of eventID. Retrieves it from the input if specified or takes it from existingEnt
   getNewEventIDValue(): ID | Builder<Event> | undefined {
-    return this.input.eventID || this.existingEnt?.eventID;
+    if (this.input.eventID !== undefined) {
+      return this.input.eventID;
+    }
+    return this.existingEnt?.eventID;
   }
 
   // get value of EmailAddress. Retrieves it from the input if specified or takes it from existingEnt
   getNewEmailAddressValue(): string | null | undefined {
-    return this.input.emailAddress || this.existingEnt?.emailAddress;
+    if (this.input.emailAddress !== undefined) {
+      return this.input.emailAddress;
+    }
+    return this.existingEnt?.emailAddress;
   }
 
   // get value of guestGroupID. Retrieves it from the input if specified or takes it from existingEnt
   getNewGuestGroupIDValue(): ID | Builder<GuestGroup> | undefined {
-    return this.input.guestGroupID || this.existingEnt?.guestGroupID;
+    if (this.input.guestGroupID !== undefined) {
+      return this.input.guestGroupID;
+    }
+    return this.existingEnt?.guestGroupID;
   }
 
   // get value of title. Retrieves it from the input if specified or takes it from existingEnt
   getNewTitleValue(): string | null | undefined {
-    return this.input.title || this.existingEnt?.title;
+    if (this.input.title !== undefined) {
+      return this.input.title;
+    }
+    return this.existingEnt?.title;
   }
 }

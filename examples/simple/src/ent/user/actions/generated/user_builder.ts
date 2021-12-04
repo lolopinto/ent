@@ -622,22 +622,34 @@ export class UserBuilder implements Builder<User> {
 
   // get value of FirstName. Retrieves it from the input if specified or takes it from existingEnt
   getNewFirstNameValue(): string | undefined {
-    return this.input.firstName || this.existingEnt?.firstName;
+    if (this.input.firstName !== undefined) {
+      return this.input.firstName;
+    }
+    return this.existingEnt?.firstName;
   }
 
   // get value of LastName. Retrieves it from the input if specified or takes it from existingEnt
   getNewLastNameValue(): string | undefined {
-    return this.input.lastName || this.existingEnt?.lastName;
+    if (this.input.lastName !== undefined) {
+      return this.input.lastName;
+    }
+    return this.existingEnt?.lastName;
   }
 
   // get value of EmailAddress. Retrieves it from the input if specified or takes it from existingEnt
   getNewEmailAddressValue(): string | undefined {
-    return this.input.emailAddress || this.existingEnt?.emailAddress;
+    if (this.input.emailAddress !== undefined) {
+      return this.input.emailAddress;
+    }
+    return this.existingEnt?.emailAddress;
   }
 
   // get value of PhoneNumber. Retrieves it from the input if specified or takes it from existingEnt
   getNewPhoneNumberValue(): string | null | undefined {
-    return this.input.phoneNumber || this.existingEnt?.phoneNumber;
+    if (this.input.phoneNumber !== undefined) {
+      return this.input.phoneNumber;
+    }
+    return this.existingEnt?.phoneNumber;
   }
 
   // get value of Password. Retrieves it from the input if specified or takes it from existingEnt
@@ -647,66 +659,105 @@ export class UserBuilder implements Builder<User> {
 
   // get value of AccountStatus. Retrieves it from the input if specified or takes it from existingEnt
   getNewAccountStatusValue(): string | null | undefined {
-    return this.input.accountStatus || this.existingEnt?.accountStatus;
+    if (this.input.accountStatus !== undefined) {
+      return this.input.accountStatus;
+    }
+    return this.existingEnt?.accountStatus;
   }
 
   // get value of emailVerified. Retrieves it from the input if specified or takes it from existingEnt
   getNewEmailVerifiedValue(): boolean | undefined {
-    return this.input.emailVerified || this.existingEnt?.emailVerified;
+    if (this.input.emailVerified !== undefined) {
+      return this.input.emailVerified;
+    }
+    return this.existingEnt?.emailVerified;
   }
 
   // get value of Bio. Retrieves it from the input if specified or takes it from existingEnt
   getNewBioValue(): string | null | undefined {
-    return this.input.bio || this.existingEnt?.bio;
+    if (this.input.bio !== undefined) {
+      return this.input.bio;
+    }
+    return this.existingEnt?.bio;
   }
 
   // get value of nicknames. Retrieves it from the input if specified or takes it from existingEnt
   getNewNicknamesValue(): string[] | null | undefined {
-    return this.input.nicknames || this.existingEnt?.nicknames;
+    if (this.input.nicknames !== undefined) {
+      return this.input.nicknames;
+    }
+    return this.existingEnt?.nicknames;
   }
 
   // get value of prefs. Retrieves it from the input if specified or takes it from existingEnt
   getNewPrefsValue(): UserPrefs | null | undefined {
-    return this.input.prefs || this.existingEnt?.prefs;
+    if (this.input.prefs !== undefined) {
+      return this.input.prefs;
+    }
+    return this.existingEnt?.prefs;
   }
 
   // get value of prefsList. Retrieves it from the input if specified or takes it from existingEnt
   getNewPrefsListValue(): UserPrefs[] | null | undefined {
-    return this.input.prefsList || this.existingEnt?.prefsList;
+    if (this.input.prefsList !== undefined) {
+      return this.input.prefsList;
+    }
+    return this.existingEnt?.prefsList;
   }
 
   // get value of prefs_diff. Retrieves it from the input if specified or takes it from existingEnt
   getNewPrefsDiffValue(): any | undefined {
-    return this.input.prefsDiff || this.existingEnt?.prefsDiff;
+    if (this.input.prefsDiff !== undefined) {
+      return this.input.prefsDiff;
+    }
+    return this.existingEnt?.prefsDiff;
   }
 
   // get value of daysOff. Retrieves it from the input if specified or takes it from existingEnt
   getNewDaysOffValue(): DaysOff[] | null | undefined {
-    return this.input.daysOff || this.existingEnt?.daysOff;
+    if (this.input.daysOff !== undefined) {
+      return this.input.daysOff;
+    }
+    return this.existingEnt?.daysOff;
   }
 
   // get value of preferredShift. Retrieves it from the input if specified or takes it from existingEnt
   getNewPreferredShiftValue(): PreferredShift[] | null | undefined {
-    return this.input.preferredShift || this.existingEnt?.preferredShift;
+    if (this.input.preferredShift !== undefined) {
+      return this.input.preferredShift;
+    }
+    return this.existingEnt?.preferredShift;
   }
 
   // get value of timeInMs. Retrieves it from the input if specified or takes it from existingEnt
   getNewTimeInMsValue(): BigInt | null | undefined {
-    return this.input.timeInMs || this.existingEnt?.timeInMs;
+    if (this.input.timeInMs !== undefined) {
+      return this.input.timeInMs;
+    }
+    return this.existingEnt?.timeInMs;
   }
 
   // get value of fun_uuids. Retrieves it from the input if specified or takes it from existingEnt
   getNewFunUuidsValue(): ID[] | null | undefined {
-    return this.input.funUuids || this.existingEnt?.funUuids;
+    if (this.input.funUuids !== undefined) {
+      return this.input.funUuids;
+    }
+    return this.existingEnt?.funUuids;
   }
 
   // get value of new_col. Retrieves it from the input if specified or takes it from existingEnt
   getNewNewColValue(): string | null | undefined {
-    return this.input.newCol || this.existingEnt?.newCol;
+    if (this.input.newCol !== undefined) {
+      return this.input.newCol;
+    }
+    return this.existingEnt?.newCol;
   }
 
   // get value of new_col2. Retrieves it from the input if specified or takes it from existingEnt
   getNewNewCol2Value(): string | null | undefined {
-    return this.input.newCol2 || this.existingEnt?.newCol2;
+    if (this.input.newCol2 !== undefined) {
+      return this.input.newCol2;
+    }
+    return this.existingEnt?.newCol2;
   }
 }

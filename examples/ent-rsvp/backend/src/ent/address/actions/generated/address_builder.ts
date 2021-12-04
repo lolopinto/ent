@@ -127,36 +127,57 @@ export class AddressBuilder implements Builder<Address> {
 
   // get value of Street. Retrieves it from the input if specified or takes it from existingEnt
   getNewStreetValue(): string | undefined {
-    return this.input.street || this.existingEnt?.street;
+    if (this.input.street !== undefined) {
+      return this.input.street;
+    }
+    return this.existingEnt?.street;
   }
 
   // get value of City. Retrieves it from the input if specified or takes it from existingEnt
   getNewCityValue(): string | undefined {
-    return this.input.city || this.existingEnt?.city;
+    if (this.input.city !== undefined) {
+      return this.input.city;
+    }
+    return this.existingEnt?.city;
   }
 
   // get value of State. Retrieves it from the input if specified or takes it from existingEnt
   getNewStateValue(): string | undefined {
-    return this.input.state || this.existingEnt?.state;
+    if (this.input.state !== undefined) {
+      return this.input.state;
+    }
+    return this.existingEnt?.state;
   }
 
   // get value of ZipCode. Retrieves it from the input if specified or takes it from existingEnt
   getNewZipCodeValue(): string | undefined {
-    return this.input.zipCode || this.existingEnt?.zipCode;
+    if (this.input.zipCode !== undefined) {
+      return this.input.zipCode;
+    }
+    return this.existingEnt?.zipCode;
   }
 
   // get value of Apartment. Retrieves it from the input if specified or takes it from existingEnt
   getNewApartmentValue(): string | null | undefined {
-    return this.input.apartment || this.existingEnt?.apartment;
+    if (this.input.apartment !== undefined) {
+      return this.input.apartment;
+    }
+    return this.existingEnt?.apartment;
   }
 
   // get value of OwnerID. Retrieves it from the input if specified or takes it from existingEnt
   getNewOwnerIDValue(): ID | Builder<Ent> | undefined {
-    return this.input.ownerID || this.existingEnt?.ownerID;
+    if (this.input.ownerID !== undefined) {
+      return this.input.ownerID;
+    }
+    return this.existingEnt?.ownerID;
   }
 
   // get value of OwnerType. Retrieves it from the input if specified or takes it from existingEnt
   getNewOwnerTypeValue(): string | undefined {
-    return this.input.ownerType || this.existingEnt?.ownerType;
+    if (this.input.ownerType !== undefined) {
+      return this.input.ownerType;
+    }
+    return this.existingEnt?.ownerType;
   }
 }

@@ -128,31 +128,49 @@ export class AddressBuilder implements Builder<Address> {
 
   // get value of street_name. Retrieves it from the input if specified or takes it from existingEnt
   getNewStreetNameValue(): string | undefined {
-    return this.input.streetName || this.existingEnt?.streetName;
+    if (this.input.streetName !== undefined) {
+      return this.input.streetName;
+    }
+    return this.existingEnt?.streetName;
   }
 
   // get value of city. Retrieves it from the input if specified or takes it from existingEnt
   getNewCityValue(): string | undefined {
-    return this.input.city || this.existingEnt?.city;
+    if (this.input.city !== undefined) {
+      return this.input.city;
+    }
+    return this.existingEnt?.city;
   }
 
   // get value of state. Retrieves it from the input if specified or takes it from existingEnt
   getNewStateValue(): string | undefined {
-    return this.input.state || this.existingEnt?.state;
+    if (this.input.state !== undefined) {
+      return this.input.state;
+    }
+    return this.existingEnt?.state;
   }
 
   // get value of zip. Retrieves it from the input if specified or takes it from existingEnt
   getNewZipValue(): string | undefined {
-    return this.input.zip || this.existingEnt?.zip;
+    if (this.input.zip !== undefined) {
+      return this.input.zip;
+    }
+    return this.existingEnt?.zip;
   }
 
   // get value of apartment. Retrieves it from the input if specified or takes it from existingEnt
   getNewApartmentValue(): string | null | undefined {
-    return this.input.apartment || this.existingEnt?.apartment;
+    if (this.input.apartment !== undefined) {
+      return this.input.apartment;
+    }
+    return this.existingEnt?.apartment;
   }
 
   // get value of country. Retrieves it from the input if specified or takes it from existingEnt
   getNewCountryValue(): string | undefined {
-    return this.input.country || this.existingEnt?.country;
+    if (this.input.country !== undefined) {
+      return this.input.country;
+    }
+    return this.existingEnt?.country;
   }
 }

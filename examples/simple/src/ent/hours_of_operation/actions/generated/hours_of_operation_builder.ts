@@ -125,21 +125,33 @@ export class HoursOfOperationBuilder implements Builder<HoursOfOperation> {
 
   // get value of dayOfWeek. Retrieves it from the input if specified or takes it from existingEnt
   getNewDayOfWeekValue(): DayOfWeek | undefined {
-    return this.input.dayOfWeek || this.existingEnt?.dayOfWeek;
+    if (this.input.dayOfWeek !== undefined) {
+      return this.input.dayOfWeek;
+    }
+    return this.existingEnt?.dayOfWeek;
   }
 
   // get value of open. Retrieves it from the input if specified or takes it from existingEnt
   getNewOpenValue(): string | undefined {
-    return this.input.open || this.existingEnt?.open;
+    if (this.input.open !== undefined) {
+      return this.input.open;
+    }
+    return this.existingEnt?.open;
   }
 
   // get value of close. Retrieves it from the input if specified or takes it from existingEnt
   getNewCloseValue(): string | undefined {
-    return this.input.close || this.existingEnt?.close;
+    if (this.input.close !== undefined) {
+      return this.input.close;
+    }
+    return this.existingEnt?.close;
   }
 
   // get value of dayOfWeekAlt. Retrieves it from the input if specified or takes it from existingEnt
   getNewDayOfWeekAltValue(): DayOfWeekAlt | null | undefined {
-    return this.input.dayOfWeekAlt || this.existingEnt?.dayOfWeekAlt;
+    if (this.input.dayOfWeekAlt !== undefined) {
+      return this.input.dayOfWeekAlt;
+    }
+    return this.existingEnt?.dayOfWeekAlt;
   }
 }
