@@ -83,7 +83,7 @@ def main():
             else:
                 r.run()
     except Exception as err:
-    sys.stderr.write("auto_schema error: "+str(err))
+        sys.stderr.write("auto_schema error: "+str(err))
 
 
 if __name__ == '__main__':
