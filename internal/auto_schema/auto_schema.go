@@ -51,11 +51,12 @@ func RunPythonCommandWriter(pathToConfigs string, w io.Writer, extraArgs ...stri
 	cmd.Stderr = &berr
 	err := cmd.Run()
 	if err != nil {
+		spew.Dump("error from run", err.Error(), berr.String())
 		return err
 	}
 
 	errMsg := strings.TrimSpace(berr.String())
-	spew.Dump(errMsg)
+	spew.Dump("stderr", errMsg)
 	if len(errMsg) != 0 {
 		return errors.New(errMsg)
 	}
