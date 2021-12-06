@@ -50,41 +50,41 @@ def main():
     schema = import_module('schema')
     metadata = schema.get_metadata()
 
-    if args.fix_edges:
-        Runner.fix_edges(metadata, args)
-    else:
-        r = Runner.from_command_line(metadata, args)
-        if args.upgrade is not None:
-            r.upgrade(revision=args.upgrade,
-                      merge_branches=args.merge_branches)
-        elif args.downgrade is not None:
-            r.downgrade(args.downgrade, not args.keep_schema_files)
-        elif args.history is True:
-            r.history()
-        elif args.current is True:
-            r.current()
-        elif args.heads is True:
-            r.heads()
-        elif args.branches is True:
-            r.branches()
-        elif args.show is not None:
-            r.show(args.show)
-        elif args.stamp is not None:
-            r.stamp(args.stamp)
-        elif args.edit is not None:
-            r.edit(args.edit)
-        elif args.changes:
-            r.changes()
-        elif args.merge is not None:
-            r.merge(args.merge, args.message)
-        elif args.squash is not None:
-            r.squash(args.squash)
+    try:
+        if args.fix_edges:
+            Runner.fix_edges(metadata, args)
         else:
-            r.run()
+            r = Runner.from_command_line(metadata, args)
+            if args.upgrade is not None:
+                r.upgrade(revision=args.upgrade,
+                          merge_branches=args.merge_branches)
+            elif args.downgrade is not None:
+                r.downgrade(args.downgrade, not args.keep_schema_files)
+            elif args.history is True:
+                r.history()
+            elif args.current is True:
+                r.current()
+            elif args.heads is True:
+                r.heads()
+            elif args.branches is True:
+                r.branches()
+            elif args.show is not None:
+                r.show(args.show)
+            elif args.stamp is not None:
+                r.stamp(args.stamp)
+            elif args.edit is not None:
+                r.edit(args.edit)
+            elif args.changes:
+                r.changes()
+            elif args.merge is not None:
+                r.merge(args.merge, args.message)
+            elif args.squash is not None:
+                r.squash(args.squash)
+            else:
+                r.run()
+    except Exception as err:
+        sys.stderr.write("auto_schema error: "+str(err))
 
 
 if __name__ == '__main__':
-    try:
-        main()
-    except Exception as err:
-        sys.stderr.write("auto_schema error: "+str(err))
+    main()
