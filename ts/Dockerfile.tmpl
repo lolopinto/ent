@@ -37,6 +37,8 @@ RUN \
   # wget and gnupg are dependencies needed below
   # libpq-dev for libpq
   apt-get install -yqq wget gnupg libpq-dev curl && \
+  dpkg --add-architecture amd64 && \
+  curl -LO https://github.com/BurntSushi/ripgrep/releases/download/13.0.0/ripgrep_13.0.0_amd64.deb && dpkg -i ripgrep_13.0.0_amd64.deb && \
   #  echo "deb https://deb.nodesource.com/node_$NODE_VERSION.x/ buster main" > /etc/apt/sources.list.d/nodesource.list && \
   #  wget -qO- https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - && \
   echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.list.d/yarn.list && \

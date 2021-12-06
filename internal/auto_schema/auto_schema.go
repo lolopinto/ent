@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent/data"
 	"github.com/lolopinto/ent/internal/util"
 )
@@ -54,6 +55,7 @@ func RunPythonCommandWriter(pathToConfigs string, w io.Writer, extraArgs ...stri
 	}
 
 	errMsg := strings.TrimSpace(berr.String())
+	spew.Dump(errMsg)
 	if len(errMsg) != 0 {
 		return errors.New(errMsg)
 	}
