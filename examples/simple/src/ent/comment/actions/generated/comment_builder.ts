@@ -179,21 +179,33 @@ export class CommentBuilder implements Builder<Comment> {
 
   // get value of AuthorID. Retrieves it from the input if specified or takes it from existingEnt
   getNewAuthorIDValue(): ID | undefined {
-    return this.input.authorID || this.existingEnt?.authorID;
+    if (this.input.authorID !== undefined) {
+      return this.input.authorID;
+    }
+    return this.existingEnt?.authorID;
   }
 
   // get value of Body. Retrieves it from the input if specified or takes it from existingEnt
   getNewBodyValue(): string | undefined {
-    return this.input.body || this.existingEnt?.body;
+    if (this.input.body !== undefined) {
+      return this.input.body;
+    }
+    return this.existingEnt?.body;
   }
 
   // get value of ArticleID. Retrieves it from the input if specified or takes it from existingEnt
   getNewArticleIDValue(): ID | Builder<Ent> | undefined {
-    return this.input.articleID || this.existingEnt?.articleID;
+    if (this.input.articleID !== undefined) {
+      return this.input.articleID;
+    }
+    return this.existingEnt?.articleID;
   }
 
   // get value of ArticleType. Retrieves it from the input if specified or takes it from existingEnt
   getNewArticleTypeValue(): string | undefined {
-    return this.input.articleType || this.existingEnt?.articleType;
+    if (this.input.articleType !== undefined) {
+      return this.input.articleType;
+    }
+    return this.existingEnt?.articleType;
   }
 }

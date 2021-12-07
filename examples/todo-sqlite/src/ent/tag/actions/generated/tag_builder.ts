@@ -167,16 +167,25 @@ export class TagBuilder implements Builder<Tag> {
 
   // get value of DisplayName. Retrieves it from the input if specified or takes it from existingEnt
   getNewDisplayNameValue(): string | undefined {
-    return this.input.displayName || this.existingEnt?.displayName;
+    if (this.input.displayName !== undefined) {
+      return this.input.displayName;
+    }
+    return this.existingEnt?.displayName;
   }
 
   // get value of canonicalName. Retrieves it from the input if specified or takes it from existingEnt
   getNewCanonicalNameValue(): string | undefined {
-    return this.input.canonicalName || this.existingEnt?.canonicalName;
+    if (this.input.canonicalName !== undefined) {
+      return this.input.canonicalName;
+    }
+    return this.existingEnt?.canonicalName;
   }
 
   // get value of ownerID. Retrieves it from the input if specified or takes it from existingEnt
   getNewOwnerIDValue(): ID | Builder<Account> | undefined {
-    return this.input.ownerID || this.existingEnt?.ownerID;
+    if (this.input.ownerID !== undefined) {
+      return this.input.ownerID;
+    }
+    return this.existingEnt?.ownerID;
   }
 }

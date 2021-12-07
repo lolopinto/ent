@@ -35,6 +35,7 @@ export const ConfirmEmailAddressEditInputType = new GraphQLInputObjectType({
   name: "ConfirmEmailAddressEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     userID: {
+      description: "id of User",
       type: GraphQLNonNull(GraphQLID),
     },
     emailAddress: {

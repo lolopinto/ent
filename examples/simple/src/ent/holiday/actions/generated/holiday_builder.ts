@@ -120,11 +120,17 @@ export class HolidayBuilder implements Builder<Holiday> {
 
   // get value of label. Retrieves it from the input if specified or takes it from existingEnt
   getNewLabelValue(): string | undefined {
-    return this.input.label || this.existingEnt?.label;
+    if (this.input.label !== undefined) {
+      return this.input.label;
+    }
+    return this.existingEnt?.label;
   }
 
   // get value of date. Retrieves it from the input if specified or takes it from existingEnt
   getNewDateValue(): Date | undefined {
-    return this.input.date || this.existingEnt?.date;
+    if (this.input.date !== undefined) {
+      return this.input.date;
+    }
+    return this.existingEnt?.date;
   }
 }

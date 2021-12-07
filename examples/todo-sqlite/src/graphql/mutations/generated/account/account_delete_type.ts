@@ -25,6 +25,7 @@ export const AccountDeleteInputType = new GraphQLInputObjectType({
   name: "AccountDeleteInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     accountID: {
+      description: "id of Account",
       type: GraphQLNonNull(GraphQLID),
     },
   }),

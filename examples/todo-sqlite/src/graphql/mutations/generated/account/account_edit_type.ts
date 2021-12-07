@@ -30,6 +30,7 @@ export const AccountEditInputType = new GraphQLInputObjectType({
   name: "AccountEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     accountID: {
+      description: "id of Account",
       type: GraphQLNonNull(GraphQLID),
     },
     name: {

@@ -363,6 +363,7 @@ func getImportPathForEnumFile(info *schema.EnumInfo) string {
 	return fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(info.Enum.Name))
 }
 
+// duplicated in generate_ts_code.go
 func getImportPathForModelFile(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/ent/%s", nodeData.PackageName)
 }

@@ -161,6 +161,10 @@ func (s *Schema) addEnumFrom(input *enum.Input, nodeData *NodeData, inputNode *i
 	}
 
 	gqlName := input.GQLName
+	if nodeData.HideFromGraphQL {
+		// hide from graphql. no graphql enum
+		info.GQLEnum = nil
+	}
 
 	// new source enum
 	if input.HasValues() {
@@ -313,6 +317,12 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 			nodeData.TableName = *node.TableName
 		}
 
+		nodeData.EnumTable = node.EnumTable
+		nodeData.DBRows = node.DBRows
+		nodeData.Constraints = node.Constraints
+		nodeData.Indices = node.Indices
+		nodeData.HideFromGraphQL = node.HideFromGraphQL
+
 		var err error
 		nodeData.FieldInfo, err = field.NewFieldInfoFromInputs(
 			node.Fields,
@@ -356,12 +366,6 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 		if err != nil {
 			errs = append(errs, err)
 		}
-
-		nodeData.EnumTable = node.EnumTable
-		nodeData.DBRows = node.DBRows
-		nodeData.Constraints = node.Constraints
-		nodeData.Indices = node.Indices
-		nodeData.HideFromGraphQL = node.HideFromGraphQL
 
 		// not in schema.Nodes...
 		if node.EnumTable {

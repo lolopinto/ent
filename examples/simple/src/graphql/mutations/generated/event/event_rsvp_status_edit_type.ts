@@ -50,6 +50,7 @@ export const EventRsvpStatusEditInputType = new GraphQLInputObjectType({
   name: "EventRsvpStatusEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     eventID: {
+      description: "id of Event",
       type: GraphQLNonNull(GraphQLID),
     },
     rsvpStatus: {

@@ -47,6 +47,7 @@ import {
 import {
   EventRsvpStatusEditInputType,
   EventRsvpStatusEditPayloadType,
+  EventRsvpStatusInputType,
 } from "../mutations/generated/event/event_rsvp_status_edit_type";
 import {
   HolidayCreateInputType,
@@ -197,6 +198,7 @@ export default new GraphQLSchema({
     EventRemoveHostPayloadType,
     EventRsvpStatusEditInputType,
     EventRsvpStatusEditPayloadType,
+    EventRsvpStatusInputType,
     HolidayCreateInputType,
     HolidayCreatePayloadType,
     HoursOfOperationCreateInputType,

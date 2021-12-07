@@ -35,6 +35,7 @@ export const ContactEditInputType = new GraphQLInputObjectType({
   name: "ContactEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     contactID: {
+      description: "id of Contact",
       type: GraphQLNonNull(GraphQLID),
     },
     emailAddress: {

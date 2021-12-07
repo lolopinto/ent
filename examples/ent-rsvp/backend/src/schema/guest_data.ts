@@ -4,6 +4,7 @@ import {
   BaseEntSchema,
   Field,
   StringType,
+  EnumType,
   UUIDType,
 } from "@snowtop/ent/schema";
 
@@ -21,6 +22,14 @@ export default class GuestData extends BaseEntSchema {
     }),
     StringType({
       name: "dietaryRestrictions",
+    }),
+    //really just exists for https://github.com/lolopinto/ent/issues/636
+    EnumType({
+      name: "source",
+      tsType: "GuestDataSource",
+      graphQLType: "GuestDataSource",
+      nullable: true,
+      values: ["event_page", "home_page"],
     }),
   ];
 

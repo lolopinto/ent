@@ -105,6 +105,7 @@ const (
 type FileImport struct {
 	Type       string
 	ImportType ImportType // so instead of the path being hardcoded, we indicate we're exposing an enum of a given type
+	Name       string     // TODO name of import e.g. foo
 }
 
 // helper to more easily create a GraphQL import since very common

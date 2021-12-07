@@ -25,6 +25,7 @@ export const TodoDeleteInputType = new GraphQLInputObjectType({
   name: "TodoDeleteInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     todoID: {
+      description: "id of Todo",
       type: GraphQLNonNull(GraphQLID),
     },
   }),

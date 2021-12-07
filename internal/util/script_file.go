@@ -10,6 +10,8 @@ import (
 // path should be scripts/...
 // e.g. scripts/custom_graphql.ts
 func GetPathToScript(path string, fromTest bool) string {
+	// TODO need something for local development
+	//	return "/Users/ola/code/ent/ts/src/" + path
 	if fromTest {
 		return GetAbsolutePath("../../ts/src/" + path)
 	}

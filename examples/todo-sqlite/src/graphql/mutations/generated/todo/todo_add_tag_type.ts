@@ -28,6 +28,7 @@ export const TodoAddTagInputType = new GraphQLInputObjectType({
   name: "TodoAddTagInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     todoID: {
+      description: "id of Todo",
       type: GraphQLNonNull(GraphQLID),
     },
     tagID: {

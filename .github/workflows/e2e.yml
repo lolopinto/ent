@@ -1,0 +1,122 @@
+name: End to end codegen
+
+on:
+  pull_request:
+    branches: [main]
+
+    
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+
+    # Service containers to run with `build`
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres:13.4
+        # Provide the password for postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # Maps tcp port 5432 on service container to the host
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('ts/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+
+      - name: Set up python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '>3.6'
+
+      - name: setup auto_schema dependencies
+        run: |
+          pip3 install pipenv 
+          cd python
+          pipenv install --dev
+          
+      - name: Setup nodejs
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16.x
+      - run: npm install -g ts-node prettier typescript
+      - run: |
+          cd ts 
+          npm ci
+
+      - name: Setup ripgrep
+        run: curl -LO https://github.com/BurntSushi/ripgrep/releases/download/13.0.0/ripgrep_13.0.0_amd64.deb && sudo dpkg -i ripgrep_13.0.0_amd64.deb
+
+      - name: setup tsent
+        run: cd tsent && go install .
+
+      - name: generate initial schema
+        run: |
+          # clone ent-starter
+          git clone https://github.com/lolopinto/ent-starter.git 
+          cd ent-starter
+          npm install @snowtop/ent @snowtop/ent-email 
+          mkdir -p src/schema
+          cat ../.github/testdata/schema1.json | tsent generate schemas 
+          tsent codegen
+        env:
+          DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
+          LOCAL_AUTO_SCHEMA: 'true'
+
+      - name: rerun codegen no-change
+        run: cd ent-starter && tsent codegen
+        env:
+          DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
+          LOCAL_AUTO_SCHEMA: 'true'
+
+      - name: add new field
+        run: |
+          cd ent-starter
+          npm install @snowtop/ent-phonenumber
+          cat ../.github/testdata/schema2.json | tsent generate schemas --force
+          tsent codegen
+        env:
+          DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
+          LOCAL_AUTO_SCHEMA: 'true'
+
+      - name: compile && run
+        run: |
+          cd ent-starter
+          npm run compile
+          timeout --preserve-status 7 node dist/graphql/index.js
+        env:
+          DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'

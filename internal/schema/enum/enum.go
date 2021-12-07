@@ -21,6 +21,14 @@ type GQLEnum struct {
 	Values []Data
 }
 
+func (g GQLEnum) GetGraphQLNames() []string {
+	ret := make([]string, len(g.Values))
+	for i := range g.Values {
+		ret[i] = g.Values[i].Name
+	}
+	return ret
+}
+
 type Data struct {
 	Name        string
 	Value       string

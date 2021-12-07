@@ -30,6 +30,7 @@ export const TodoRenameInputType = new GraphQLInputObjectType({
   name: "TodoRenameInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     todoID: {
+      description: "id of Todo",
       type: GraphQLNonNull(GraphQLID),
     },
     text: {

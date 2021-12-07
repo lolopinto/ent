@@ -34,6 +34,7 @@ export const PhoneNumberEditInputType = new GraphQLInputObjectType({
   name: "PhoneNumberEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     userID: {
+      description: "id of User",
       type: GraphQLNonNull(GraphQLID),
     },
     newPhoneNumber: {

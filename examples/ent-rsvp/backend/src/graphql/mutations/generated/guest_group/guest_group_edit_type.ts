@@ -31,6 +31,7 @@ export const GuestGroupEditInputType = new GraphQLInputObjectType({
   name: "GuestGroupEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     guestGroupID: {
+      description: "id of GuestGroup",
       type: GraphQLNonNull(GraphQLID),
     },
     invitationName: {

@@ -1,6 +1,6 @@
 {
   "name": "@snowtop/ent",
-  "version": "0.0.27",
+  "version": "0.0.28",
   "description": "snowtop ent framework",
   "main": "index.js",
   "types": "index.d.ts",
@@ -39,7 +39,7 @@
     }
   },
   "engines": {
-    "node": "^16.1.0"
+    "node": ">=14.0"
   },
   "devDependencies": {
     "@alex_neo/jest-expect-message": "^1.0.5",

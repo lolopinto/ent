@@ -6,12 +6,14 @@ import {
   // can use the local interfaces since it's just the API we're getting from here
   ProcessedField,
   ProcessedCustomField,
+  addCustomType,
 } from "../graphql/graphql";
 import * as readline from "readline";
 import * as path from "path";
 import * as fs from "fs";
-import { parseCustomInput, file } from "../imports";
+import { parseCustomImports, file } from "../imports";
 import { exit } from "process";
+import { Data } from "../core/base";
 
 // need to use the GQLCapture from the package so that when we call GQLCapture.enable()
 // we're affecting the local paths as opposed to a different instance
@@ -41,7 +43,19 @@ async function readInputs(): Promise<{
   });
 }
 
-async function captureCustom(filePath: string) {
+async function captureCustom(filePath: string, filesCsv: string | undefined) {
+  if (filesCsv !== undefined) {
+    let files = filesCsv.split(",");
+    for (let i = 0; i < files.length; i++) {
+      // TODO fix. we have "src" in the path we get here
+      files[i] = path.join(filePath, "..", files[i]);
+    }
+
+    await requireFiles(files);
+    return;
+  }
+  // TODO delete all of this eventually
+
   // TODO configurable paths eventually
   // for now only files that are in the include path of the roots are allowed
 
@@ -78,21 +92,31 @@ async function captureCustom(filePath: string) {
     },
   );
   const files = rootFiles.concat(customGQLResolvers, customGQLMutations);
-  //console.log(files);
 
-  let promises: any[] = [];
-  files.forEach((file) => {
-    if (fs.existsSync(file)) {
-      promises.push(require(file));
-    }
+  await requireFiles(files);
+}
+
+async function requireFiles(files: string[]) {
+  await Promise.all(
+    files.map(async (file) => {
+      if (fs.existsSync(file)) {
+        try {
+          await require(file);
+        } catch (e) {
+          throw new Error(`${(e as Error).message} loading ${file}`);
+        }
+      } else {
+        throw new Error(`file ${file} doesn't exist`);
+      }
+    }),
+  ).catch((err) => {
+    throw new Error(err);
   });
-
-  await Promise.all(promises);
 }
 
 async function parseImports(filePath: string) {
   // only do graphql files...
-  return parseCustomInput(path.join(filePath, "graphql"), {
+  return parseCustomImports(path.join(filePath, "graphql"), {
     ignore: ["**/generated/**", "**/tests/**"],
   });
 }
@@ -112,6 +136,22 @@ function findGraphQLPath(filePath: string): string | undefined {
 }
 
 async function main() {
+  // known custom types that are not required
+  // if not in the schema, will be ignored
+  // something like GraphQLUpload gotten via gqlArg({type: gqlFileUpload})
+  // these 2 need this because they're added by the schema
+  // if this list grows too long, need to build this into golang types and passed here
+
+  // TODO foreign non-scalars eventually
+  addCustomType({
+    importPath: "../graphql/scalars/time",
+    type: "GraphQLTime",
+  });
+  addCustomType({
+    importPath: "graphql-type-json",
+    type: "GraphQLJSON",
+  });
+
   const options = minimist(process.argv.slice(2));
 
   if (!options.path) {
@@ -131,13 +171,13 @@ async function main() {
 
   const [inputsRead, _, imports] = await Promise.all([
     readInputs(),
-    captureCustom(options.path),
+    captureCustom(options.path, options.files),
     parseImports(options.path),
   ]);
   const { nodes, nodesMap } = inputsRead;
 
   function fromMap<T extends any>(m: Map<string, T>) {
-    let result = {};
+    let result: Data = {};
     for (const [key, value] of m) {
       result[key] = value;
     }
@@ -153,8 +193,8 @@ async function main() {
   let objects = fromMap(GQLCapture.getCustomObjects());
   let customTypes = fromMap(GQLCapture.getCustomTypes());
 
-  let classes = {};
-  let allFiles = {};
+  let classes: Data = {};
+  let allFiles: Data = {};
 
   const buildClasses2 = (args: ProcessedField[]) => {
     args.forEach((arg) => {
@@ -179,7 +219,7 @@ async function main() {
     if (allFiles[f.path]) {
       return;
     }
-    let imps = {};
+    let imps: Data = {};
     for (const [key, value] of f.imports) {
       imps[key] = {
         path: value.importPath,

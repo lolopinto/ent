@@ -15,6 +15,9 @@ var rootCmd = &cobra.Command{
 	Use:   "tsent",
 	Short: "tsent CLI",
 	Long:  "CLI for interacting with the ent framework for typescript",
+	// handled ourselves
+	SilenceErrors: true,
+	SilenceUsage:  true,
 }
 
 type rootArgs struct {
@@ -95,7 +98,8 @@ func init() {
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		fmt.Printf("\033[31mError:\033[0m \n  %s\n", err.Error())
+		fmt.Println(rootCmd.UsageString())
 		os.Exit(1)
 	}
 }

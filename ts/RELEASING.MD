@@ -1,16 +1,31 @@
 # Releasing Docker
 
-We use a Github Action to release a new docker image anytime anything relevant changes e.g. auto_schema, golang release etc
+We use a Github Action to release a new docker image anytime anything relevant changes e.g. auto_schema, golang release etc.
 
 To update the Docker image, following steps are needed:
 
+Update `Dockerfile` and run `docker build -t ent .` locally to confirm simple Docker image builds locally.
+
+Use `docker container run -it ent /bin/zsh` if you want to run anything on the docker image e.g. to test different commands in isolation.
+
+**New docker image?**
+
 * Update `TAG` const in `release_image/main.go` by bumping e.g. from `0.0.17` to `0.0.18`
-* Update `AUTO_SCHEMA_VERSION` in `release_image/main.go` const for new `auto_schema` version or `TSENT_VERSION` const for new golang `tsent` release version
-* Also update `GOLANG_VERSION`, or `AUTO_SCHEMA_VERSION` or `NODE_VERSION` args at the top of `Dockerfile` so that is up to date.
-* Update `auto_schema` and `tsent` versions in `docs/docs/advanced-topics/runnng-locally.md` so that the latest versions are being used there.
+
+**Auto schema change?**
+
+* Update `AUTO_SCHEMA_VERSION` const in `release_image/main.go` for new `auto_schema` version.
+* Update `auto_schema` version in `docs/docs/advanced-topics/runnng-locally.md`.
+* Also update `AUTO_SCHEMA_VERSION` arg at the top of `Dockerfile`.
+
+**New Golang release/tag?**
+
+* Update `TSENT_VERSION` const in `release_image/main.go` for new golang release version
+* Update the version in the `go install...` line in `docs/docs/advanced-topics/runnng-locally.md`.
+* Also update `GOLANG_VERSION` arg at the top of `Dockerfile`.
 * Run `go install github.com/lolopinto/ent/tsent@v{TAG}` locally from different folder to try and get the new version in [GOPROXY](https://proxy.golang.org/).
 
-To update locally, we're high level following [these steps](https://docs.github.com/en/free-pro-team@latest/packages/managing-container-images-with-github-container-registry/pushing-and-pulling-docker-images#authenticating-to-github-container-registry):
+To manually reproduce locally, we're high level following [these steps](https://docs.github.com/en/free-pro-team@latest/packages/managing-container-images-with-github-container-registry/pushing-and-pulling-docker-images#authenticating-to-github-container-registry):
 
 We use [buildx](https://docs.docker.com/buildx/working-with-buildx/#build-multi-platform-images) to build a multi-arch image
 
