@@ -42,7 +42,7 @@ describe("create event activity", () => {
         name: "welcome dinner",
         eventID: event.id,
       }).saveX();
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (e) {
       expect((e as Error).message).toMatch(
         /Viewer with ID (.+) does not have permission to create EventActivity/,
@@ -93,7 +93,7 @@ describe("load activity", () => {
     ]);
     try {
       await EventActivity.loadX(new IDViewer(user.id), activity.id);
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (e) {
       expect((e as Error).message).toMatch(
         /^ent (.+) is not visible for privacy reasons$/,
@@ -123,7 +123,7 @@ describe("invites", () => {
         activity.id,
         group.id,
       );
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (e) {
       expect((e as Error).message).toMatch(
         /^ent (.+) is not visible for privacy reasons$/,
@@ -148,7 +148,7 @@ describe("invites", () => {
         activity2.id,
         group.id,
       );
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (e) {
       expect((e as Error).message).toMatch(
         /Viewer with ID (.+) does not have permission to edit EventActivity/,
@@ -187,7 +187,7 @@ describe("invites", () => {
         activity.id,
         group.id,
       );
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (e) {
       expect((e as Error).message).toMatch(
         /^ent (.+) is not visible for privacy reasons$/,
@@ -209,7 +209,7 @@ describe("invites", () => {
         activity.id,
         group2.id,
       );
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (e) {
       expect((e as Error).message).toMatch(
         /Viewer with ID (.+) does not have permission to edit EventActivity/,
@@ -510,7 +510,7 @@ describe("rsvps", () => {
           rsvpStatus: EventActivityRsvpStatusInput.Attending,
         },
       );
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (e) {
       expect((e as Error).message).toMatch(
         /^ent (.+) is not visible for privacy reasons$/,
@@ -540,7 +540,7 @@ describe("rsvps", () => {
           rsvpStatus: EventActivityRsvpStatusInput.Attending,
         },
       );
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (e) {
       expect((e as Error).message).toMatch(
         /^ent (.+) is not visible for privacy reasons$/,

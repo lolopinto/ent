@@ -1,4 +1,3 @@
-import { fail } from "assert";
 import { advanceBy, advanceTo } from "jest-date-mock";
 import { IDViewer, LoggedOutViewer } from "../../core/viewer";
 import { Data, Ent } from "../../core/base";
@@ -81,7 +80,7 @@ export async function createTestUser(
     ...input,
   });
   if (!user) {
-    fail("error creating user");
+    throw new Error("error creating user");
   }
   return user;
 }

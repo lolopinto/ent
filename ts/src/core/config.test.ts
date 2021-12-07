@@ -99,19 +99,19 @@ describe("postgres", () => {
     loadConfig(Buffer.from(`log: info`));
 
     logIf("error", () => {
-      fail("error logQuery not set. shouldn't be called");
+      throw new Error("error logQuery not set. shouldn't be called");
     });
 
     logIf("warn", () => {
-      fail("warn logQuery not set. shouldn't be called");
+      throw new Error("warn logQuery not set. shouldn't be called");
     });
 
     logIf("query", () => {
-      fail("query logQuery not set. shouldn't be called");
+      throw new Error("query logQuery not set. shouldn't be called");
     });
 
     logIf("debug", () => {
-      fail("debug logQuery not set. shouldn't be called");
+      throw new Error("debug logQuery not set. shouldn't be called");
     });
 
     const ml = new MockLogs();

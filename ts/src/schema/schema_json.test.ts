@@ -134,7 +134,7 @@ function commonTests() {
 
     try {
       await action.saveX();
-      fail("should throw");
+      throw new Error("should throw");
     } catch (err) {
       expect(err.message).toMatch(/invalid field col/);
     }
@@ -182,7 +182,7 @@ function commonTests() {
 
     try {
       await action.saveX();
-      fail("should throw");
+      throw new Error("should throw");
     } catch (err) {
       expect(err.message).toMatch(/invalid field col/);
     }

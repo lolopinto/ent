@@ -327,7 +327,7 @@ describe("errors", () => {
   test("no fkey, no values or maps", () => {
     try {
       EnumType({ name: "role" });
-      fail("shouldn't get here");
+      throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(
         /^values or map required if not look up table enum/,
@@ -338,7 +338,7 @@ describe("errors", () => {
   test("zero-length values", () => {
     try {
       EnumType({ name: "role", values: [] });
-      fail("shouldn't get here");
+      throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(/need at least one value in enum type/);
     }
@@ -347,7 +347,7 @@ describe("errors", () => {
   test("empty map", () => {
     try {
       EnumType({ name: "role", map: {} });
-      fail("shouldn't get here");
+      throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(/need at least one entry in enum map/);
     }
@@ -360,7 +360,7 @@ describe("errors", () => {
         values: ["sss"],
         foreignKey: { schema: "Role", column: "role" },
       });
-      fail("shouldn't get here");
+      throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(
         /cannot specify values or map and foreign key for lookup table enum type/,
@@ -375,7 +375,7 @@ describe("errors", () => {
         map: { sss: "sss" },
         foreignKey: { schema: "Role", column: "role" },
       });
-      fail("shouldn't get here");
+      throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(
         /cannot specify values or map and foreign key for lookup table enum type/,
@@ -390,7 +390,7 @@ describe("errors", () => {
         values: [],
         foreignKey: { schema: "Role", column: "role" },
       });
-      fail("shouldn't get here");
+      throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(
         /cannot specify values or map and foreign key for lookup table enum type/,
@@ -405,7 +405,7 @@ describe("errors", () => {
         map: {},
         foreignKey: { schema: "Role", column: "role" },
       });
-      fail("shouldn't get here");
+      throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(
         /cannot specify values or map and foreign key for lookup table enum type/,
@@ -420,7 +420,7 @@ describe("errors", () => {
         foreignKey: { schema: "Role", column: "role" },
         createEnumType: true,
       });
-      fail("shouldn't get here");
+      throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(
         /cannot specify createEnumType without specifying values/,
@@ -435,7 +435,7 @@ describe("errors", () => {
         foreignKey: { schema: "Role", column: "role" },
         tsType: "Role",
       });
-      fail("shouldn't get here");
+      throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(
         /cannot specify tsType without specifying values/,
@@ -450,7 +450,7 @@ describe("errors", () => {
         foreignKey: { schema: "Role", column: "role" },
         graphQLType: "Role",
       });
-      fail("shouldn't get here");
+      throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(
         /cannot specify graphQLType without specifying values/,

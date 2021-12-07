@@ -267,7 +267,7 @@ describe("select", () => {
         "SELECT count(1) FROM t WHERE name = $1 ORDER BY id desc",
         ["Jane"],
       );
-      fail("should have thrown error");
+      throw new Error("should have thrown error");
     } catch (err) {
       expect(err.message).toMatch(/cannot do count and order by/);
     }
@@ -280,7 +280,7 @@ describe("select", () => {
         "SELECT count(*) FROM t WHERE name = $1 ORDER BY id desc",
         ["Jane"],
       );
-      fail("should have thrown error");
+      throw new Error("should have thrown error");
     } catch (err) {
       expect(err.message).toMatch(/cannot do count and order by/);
     }

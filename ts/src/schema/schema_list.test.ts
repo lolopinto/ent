@@ -327,7 +327,7 @@ function commonTests() {
 
     try {
       await action.saveX();
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (err) {
       expect(err.message).toBe("invalid field days with value red,Tuesday");
     }
