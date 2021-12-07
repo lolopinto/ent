@@ -13,7 +13,7 @@ QueryRecorder.mockPool(Pool);
 
 beforeEach(async () => {
   QueryRecorder.clear();
-  // TODO figure out why this failed in the absence of this and have it throw new Error loudly...
+  // TODO figure out why this failed in the absence of this and have it fail loudly...
   await createEdges();
   QueryRecorder.clearQueries();
 });

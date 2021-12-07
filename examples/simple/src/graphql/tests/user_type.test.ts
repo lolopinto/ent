@@ -697,7 +697,7 @@ test("create with prefs diff", async () => {
   );
 });
 
-test("create with prefs diff. throw new Error", async () => {
+test("create with prefs diff. fail", async () => {
   await expectMutation(
     {
       schema: schema,
