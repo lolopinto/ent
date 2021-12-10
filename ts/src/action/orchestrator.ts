@@ -752,7 +752,6 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
       return (this._executor = new ListBasedExecutor(
         this.viewer,
         this.placeholderID,
-        this.ent,
         this.operations,
         this.options,
       ));
@@ -777,7 +776,6 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
     return (this._executor = new ComplexExecutor(
       this.viewer,
       this.placeholderID,
-      this.ent,
       this.operations,
       this.entDependencies || new Map(),
       this.edgeDependencies || new Map(),

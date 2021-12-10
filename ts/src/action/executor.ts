@@ -1,8 +1,7 @@
-import { ID, Data, Ent, Viewer, EntConstructor, Context } from "../core/base";
+import { ID, Data, Ent, Viewer, Context } from "../core/base";
 import { DataOperation } from "../core/ent";
 import { Changeset, Executor } from "../action/action";
 import { Builder } from "../action";
-import Graph from "graph-data-structure";
 import { OrchestratorOptions } from "./orchestrator";
 import DB, { Client, Queryer, SyncClient } from "../core/db";
 import { log } from "../core/logger";
@@ -13,7 +12,6 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
   constructor(
     private viewer: Viewer,
     public placeholderID: ID,
-    private ent: EntConstructor<T>,
     private operations: DataOperation<T>[],
     private options?: OrchestratorOptions<T, Data>,
   ) {}
@@ -105,8 +103,6 @@ export class ComplexExecutor<T extends Ent> implements Executor {
   private mapper: Map<ID, Ent> = new Map();
   private lastOp: DataOperation<Ent> | undefined;
   private allOperations: DataOperation<Ent>[] = [];
-  private changesetMap: Map<string, Changeset<Ent>> = new Map();
-  private nodeOpMap: Map<DataOperation, Changeset<Ent>> = new Map();
   private executors: Executor[] = [];
   private placeholders: ID[] = [];
   private nativeIdx: number = 0;
@@ -115,7 +111,6 @@ export class ComplexExecutor<T extends Ent> implements Executor {
   constructor(
     private viewer: Viewer,
     public placeholderID: ID,
-    private ent: EntConstructor<T>,
     operations: DataOperation[],
     // we need node deps vs edge deps...
     entDependencies: Map<ID, Builder<T>>,
@@ -132,7 +127,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     const addSelf = () => {
       this.nativeIdx = this.executors.length;
       this.executors.push(
-        new ListBasedExecutor(viewer, placeholderID, ent, operations, options),
+        new ListBasedExecutor(viewer, placeholderID, operations, options),
       );
       this.placeholders.push(this.placeholderID);
     };
@@ -205,122 +200,6 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     }
 
     this.allOperations = [...nodeOps, ...remainOps];
-    //    const changelistMap = new Map<ID, Changeset<T>>();
-
-    //    for (const exec of this.executors)
-    //    console.debug("deps", this.nativeIdx, this.executors, changesets);
-
-    // const impl = (c: Changeset<Ent>) => {
-    //   this.changesetMap.set(c.placeholderID.toString(), c);
-
-    //   nodeGraph.addNode(c.placeholderID.toString());
-    //   // so there's a cycle regardless
-    //   // now need to handle this...
-    //   if (c.entDependencies) {
-    //     for (let [key, builder] of c.entDependencies) {
-    //       // dependency should go first...
-    //       nodeGraph.addEdge(
-    //         builder.placeholderID.toString(),
-    //         c.placeholderID.toString(),
-    //         1,
-    //       );
-    //     }
-    //   }
-    //   if (c.edgeDependencies) {
-    //     for (let [key, builder] of c.edgeDependencies) {
-    //       // dependency should go first...
-    //       edgeGraph.addEdge(
-    //         builder.placeholderID.toString(),
-    //         c.placeholderID.toString(),
-    //         1,
-    //       );
-    //     }
-    //   }
-
-    //   if (c.changesets) {
-    //     c.changesets.forEach((c2) => {
-    //       impl(c2);
-    //     });
-    //   }
-    // };
-
-    // let localChangesets = new Map<ID, Changeset<Ent>>();
-    // changesets.forEach((c) => localChangesets.set(c.placeholderID, c));
-
-    // // create a new changeset representing the source changeset with the simple executor
-    // impl({
-    //   viewer: this.viewer,
-    //   placeholderID: this.placeholderID,
-    //   ent: this.ent,
-    //   changesets,
-    //   entDependencies,
-    //   edgeDependencies,
-    //   executor: () => {
-    //     return new ListBasedExecutor(
-    //       this.viewer,
-    //       this.placeholderID,
-    //       this.ent,
-    //       operations,
-    //       this.options,
-    //     );
-    //   },
-    // });
-
-    // // use a set to handle repeated ops because of how the executor logic currently works
-    // // TODO: this logic can be rewritten to be smarter and probably not need a set
-    // let nodeOps: Set<DataOperation> = new Set();
-    // let remainOps: Set<DataOperation> = new Set();
-
-    // let sorted = nodeGraph.topologicalSort(nodeGraph.nodes());
-    // //    let sorted2 = edgeGraph.topologicalSort(edgeGraph.nodes());
-
-    // // do we even need graph?? just get list and make sure it's added to same changeset?
-    // console.debug(edgeGraph.nodes(), sorted);
-    // //    console.debug(sorted);
-    // //    console.debug(sorted2);
-    // sorted.forEach((node) => {
-    //   let c = this.changesetMap.get(node);
-
-    //   if (!c) {
-    //     // phew. expect it to be handled somewhere else
-    //     // we can just skip it and expect the resolver to handle this correctly
-    //     // this means it's not a changeset that was created by this ent and can/will be handled elsewhere
-    //     if (entDependencies.has(node) || edgeDependencies.has(node)) {
-    //       return;
-    //     }
-    //     throw new Error(
-    //       `trying to do a write with incomplete mutation data ${node}. current node: ${placeholderID}`,
-    //     );
-    //   }
-
-    //   // get ordered list of ops
-    //   let executor = c.executor();
-    //   for (let op of executor) {
-    //     if (op.returnedEntRow) {
-    //       nodeOps.add(op);
-    //       // we're setting the changeset of Changelog to JobHuntReferral
-    //       // but that changeset doesn't know how to load Changelog
-    //       // just a JobHuntReferral?
-    //       // why does it work in the example here but not in formation code?
-    //       // this map of objects is whack...
-
-    //       this.nodeOpMap.set(op, c);
-    //     } else {
-    //       remainOps.add(op);
-    //     }
-    //   }
-
-    //   // only add executors that are part of the changeset to what should be tracked here
-    //   // or self.
-    //   if (
-    //     localChangesets.has(c.placeholderID) ||
-    //     c.placeholderID === placeholderID
-    //   ) {
-    //     this.executors.push(executor);
-    //   }
-    // });
-    // // get all the operations and put node operations first
-    // this.allOperations = [...nodeOps, ...remainOps];
   }
 
   [Symbol.iterator]() {
@@ -331,60 +210,22 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     if (!this.lastOp) {
       return;
     }
-    // when there's multiple levels of nesting, this gets complicated
-    // e.g. a depends on b which depends on c
-    // so a's index doesn't change while b is doing a whole lot of of stuff
-    // so we only care about this when handling things we understand (e.g. we own the placeholder)
-    // probably, don't need the mapper anymore?
-
-    //    this.executors[this.idx]
-    // let c = this.nodeOpMap.get(this.lastOp!);
-    // if (!c) {
-    //   // nothing to do here
-    //   return;
-    // }
-    // this is still going to be wrong because wrong ent?
     let createdEnt = getCreatedEnt(this.viewer, this.lastOp);
     console.debug(createdEnt, this.idx, this.nativeIdx);
     if (!createdEnt) {
       return;
     }
-    if (this.idx !== this.nativeIdx) {
-      //      return;
-    }
     const placeholderID = this.placeholderMap.get(this.lastOp);
     if (!placeholderID) {
+      console.error(`couldn't find placeholderID for op ${this.lastOp}`);
       return;
     }
-    // after every creation, store a mapping from placeholder -> created ent
-    // do we need this now that we have this.idx != this.nativeIdx check above?
-    //    const placeholderID = this.placeholders[this.idx];
 
-    //    let placeholderID = c.placeholderID;
     this.mapper.set(placeholderID, createdEnt);
   }
 
-  private getOp(): IteratorResult<DataOperation<Ent>> {
-    if (this.idx > this.executors.length) {
-      return {
-        done: true,
-        value: undefined,
-      };
-    }
-    let ret = this.executors[this.idx].next();
-    return {
-      done: false,
-      value: ret.value,
-    };
-  }
-
-  // TODO simple
   next(): IteratorResult<DataOperation<Ent>> {
     this.handleCreatedEnt();
-    // let createdEnt = getCreatedEnt(this.viewer, this.lastOp);
-    // if (createdEnt) {
-    //   this.createdEnt = createdEnt;
-    // }
 
     const done = this.idx === this.allOperations.length;
     const op = this.allOperations[this.idx];
@@ -394,65 +235,6 @@ export class ComplexExecutor<T extends Ent> implements Executor {
       value: op,
       done: done,
     };
-
-    // // true and null
-    // // current logic doesn't call handleCreatedEnt for last one so need to rewrite it
-    // if (this.lastOp) {
-    //   this.handleCreatedEnt();
-    // }
-
-    // let ret = this.getOp();
-    // // let ret = this.executors[this.idx].next();
-    // // let op = ret.value;
-    // // let done = false;
-
-    // if (ret.done) {
-    //   // if (op) {
-    //   //   throw new Error(`executor returned done and returned value ${op}`);
-    //   // }
-    //   this.idx++;
-    //   ret = this.getOp();
-    //   // if (this.idx === this.executors.length) {
-    //   //   done = true;
-    //   // } else {
-    //   //   ret = this.executors[this.idx].next();
-    //   //   op = ret.value;
-    //   //   if (ret.done && op) {
-    //   //     throw new Error(`executor returned done and returned value ${op}`);
-    //   //   }
-    //   // }
-    // }
-    // this.lastOp = ret.value;
-    // // le sigh. isssue is we have an edge node and the node node hasn't been resolved
-    // console.debug(ret);
-    // return ret;
-    // //   done,
-    // //   value: op,
-    // // };
-
-    // // let ret = this.executors[this.idx].next();
-    // // console.debug(ret, this.executors.length, this.idx);
-    // // // done with prev executor, let's move to next
-    // // if (ret.done) {
-    // //   this.idx++;
-    // //   //      if (this.idx >= this)
-    // //   ret = this.executors[this.idx]?.next();
-    // // }
-    // // if (!ret) {
-    // //   console.debug("set to done");
-    // //   ret = { done: true, value: null };
-    // // }
-    // // this.lastOp = ret.value;
-
-    // return ret;
-    // // const done = this.idx === this.allOperations.length;
-    // // const op = this.allOperations[this.idx];
-    // // this.idx++;
-    // // this.lastOp = op;
-    // // return {
-    // //   value: op,
-    // //   done: done,
-    // // };
   }
 
   resolveValue(val: ID): Ent | null {
