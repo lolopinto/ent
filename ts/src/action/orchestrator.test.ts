@@ -2613,7 +2613,7 @@ async function getFieldsFromBuilder<T extends Ent>(
   const ops = getOperations(c);
   expect(ops.length).toBe(expLength);
   for (const op of ops) {
-    const options = (op as EditNodeOperation).options;
+    const options = (op as EditNodeOperation<T>).options;
     if (options !== undefined) {
       return options.fields;
     }
