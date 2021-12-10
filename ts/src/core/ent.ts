@@ -547,6 +547,7 @@ export interface DataOperation<T extends Ent = Ent> {
   performWriteSync(queryer: SyncQueryer, context?: Context): void;
   performWrite(queryer: Queryer, context?: Context): Promise<void>;
 
+  placeholderID?: ID;
   returnedRow?(): Data | null; // optional to get the raw row
   createdEnt?(viewer: Viewer): T | null; // optional to indicate the ent that was created
   resolve?(executor: Executor): void; //throws?
@@ -555,18 +556,22 @@ export interface DataOperation<T extends Ent = Ent> {
   postFetch?(queryer: Queryer, context?: Context): Promise<void>;
 }
 
-export interface EditNodeOptions extends EditRowOptions {
+export interface EditNodeOptions<T extends Ent> extends EditRowOptions {
   fieldsToResolve: string[];
+  ent: EntConstructor<T>;
+  placeholderID?: ID;
 }
 
 export class EditNodeOperation<T extends Ent> implements DataOperation {
   row: Data | null;
+  placeholderID?: ID | undefined;
 
   constructor(
-    public options: EditNodeOptions,
-    private ent: EntConstructor<T>,
+    public options: EditNodeOptions<T>,
     private existingEnt: Ent | null = null,
-  ) {}
+  ) {
+    this.placeholderID = options.placeholderID;
+  }
 
   resolve<T extends Ent>(executor: Executor): void {
     if (!this.options.fieldsToResolve.length) {
@@ -609,7 +614,7 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
     }
   }
 
-  reloadRow(queryer: SyncQueryer, id: ID, options: EditNodeOptions) {
+  private reloadRow(queryer: SyncQueryer, id: ID, options: EditNodeOptions<T>) {
     const query = buildQuery({
       fields: ["*"],
       tableName: options.tableName,
@@ -649,7 +654,7 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
     if (!this.row) {
       return null;
     }
-    return new this.ent(viewer, this.row);
+    return new this.options.ent(viewer, this.row);
   }
 }
 

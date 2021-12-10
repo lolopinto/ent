@@ -1,4 +1,6 @@
 import { ID, Data, Ent, Viewer, Context } from "../core/base";
+import Graph from "graph-data-structure";
+
 import { DataOperation } from "../core/ent";
 import { Changeset, Executor } from "../action/action";
 import { Builder } from "../action";
@@ -42,6 +44,9 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     const op = this.operations[this.idx];
     this.idx++;
     this.lastOp = op;
+    if (done) {
+      this.idx = 0;
+    }
     return {
       value: op,
       done: done,
@@ -104,9 +109,6 @@ export class ComplexExecutor<T extends Ent> implements Executor {
   private lastOp: DataOperation<Ent> | undefined;
   private allOperations: DataOperation<Ent>[] = [];
   private executors: Executor[] = [];
-  private placeholders: ID[] = [];
-  private nativeIdx: number = 0;
-  private placeholderMap: Map<DataOperation<Ent>, ID> = new Map();
 
   constructor(
     private viewer: Viewer,
@@ -118,87 +120,91 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     changesets: Changeset<T>[],
     options?: OrchestratorOptions<T, Data>,
   ) {
-    const addChangesets = (cs: Changeset<Ent>[], native?: boolean) => {
-      for (const c of cs) {
-        this.executors.push(c.executor());
-        this.placeholders.push(c.placeholderID);
-      }
-    };
-    const addSelf = () => {
-      this.nativeIdx = this.executors.length;
-      this.executors.push(
-        new ListBasedExecutor(viewer, placeholderID, operations, options),
-      );
-      this.placeholders.push(this.placeholderID);
-    };
+    let graph = Graph();
 
-    // no dependency? just keep track of list of executors and we're done.
-    if (entDependencies.size === 0 && edgeDependencies.size === 0) {
-      //      console.debug("no dependencies");
-      addSelf();
-      addChangesets(changesets);
-      // console.debug(
-      //   "deps complex-simple",
-      //   this.nativeIdx,
-      //   this.executors,
-      //   changesets,
-      // );
+    const changesetMap: Map<string, Changeset<Ent>> = new Map();
 
-      //      return;
-    } else {
-      let earlyChangesets: Changeset<T>[] = [];
-      let lateChangesets: Changeset<T>[] = [];
-      for (const c of changesets) {
-        //      changelistMap.set(c.placeholderID, c);
-        // the default expectation is that we run current changeset, then dependent changesets
-        // if there are dependencies, we run the changesets that current one depends on before self and then subsequent
-        // again, this all assumes simple linear dependencies and no webs for now
+    const impl = (c: Changeset<Ent>) => {
+      changesetMap.set(c.placeholderID.toString(), c);
 
-        // TODO combine ent and edge dependencies
-
-        // if this changeset depends on that one, run that one first
-        // we don't have the info??
-        if (
-          entDependencies.has(c.placeholderID) ||
-          edgeDependencies.has(c.placeholderID)
-        ) {
-          earlyChangesets.push(c);
-          // } else if (
-          //   c.edgeDependencies?.has(this.placeholderID) ||
-          //   c.entDependencies?.has(this.placeholderID)
-          // ) {
-          //   earlyChangesets.push(c);
-        } else {
-          lateChangesets.push(c);
+      graph.addNode(c.placeholderID.toString());
+      if (c.entDependencies) {
+        for (let [key, builder] of c.entDependencies) {
+          // dependency should go first...
+          graph.addEdge(
+            builder.placeholderID.toString(),
+            c.placeholderID.toString(),
+            1,
+          );
         }
       }
 
-      addChangesets(earlyChangesets);
-      addSelf();
-      addChangesets(lateChangesets);
-    }
+      if (c.changesets) {
+        c.changesets.forEach((c2) => {
+          impl(c2);
+        });
+      }
+    };
+    let localChangesets = new Map<ID, Changeset<Ent>>();
+    changesets.forEach((c) => localChangesets.set(c.placeholderID, c));
 
-    // use a set to handle repeated ops because of how the executor logic currently works
-    // TODO: this logic can be rewritten to be smarter and probably not need a set
+    // create a new changeset representing the source changeset with the simple executor
+    impl({
+      viewer: this.viewer,
+      placeholderID: this.placeholderID,
+      changesets: changesets,
+      entDependencies: entDependencies,
+      executor: () => {
+        return new ListBasedExecutor(
+          this.viewer,
+          this.placeholderID,
+          //          this.ent,
+          operations,
+          options,
+        );
+      },
+    });
 
     let nodeOps: Set<DataOperation<Ent>> = new Set();
     let remainOps: Set<DataOperation<Ent>> = new Set();
-    //    let;
 
-    for (let i = 0; i < this.executors.length; i++) {
-      const exec = this.executors[i];
-      const placeholder = this.placeholders[i];
-      for (const op of exec) {
+    let sorted = graph.topologicalSort(graph.nodes());
+    console.debug(sorted);
+    sorted.forEach((node) => {
+      let c = changesetMap.get(node);
+
+      if (!c) {
+        // phew. expect it to be handled somewhere else
+        // we can just skip it and expect the resolver to handle this correctly
+        // this means it's not a changeset that was created by this ent and can/will be handled elsewhere
+        if (entDependencies.has(node)) {
+          return;
+        }
+        throw new Error(
+          `trying to do a write with incomplete mutation data ${node}. current node: ${placeholderID}`,
+        );
+      }
+
+      // get ordered list of ops
+      let executor = c.executor();
+      for (let op of executor) {
         if (op.createdEnt) {
           nodeOps.add(op);
-          // TODO
-          this.placeholderMap.set(op, placeholder);
         } else {
           remainOps.add(op);
         }
       }
-    }
 
+      // only add executors that are part of the changeset to what should be tracked here
+      // or self.
+      if (
+        localChangesets.has(c.placeholderID) ||
+        c.placeholderID === placeholderID
+      ) {
+        this.executors.push(executor);
+      }
+    });
+    // get all the operations and put node operations first
     this.allOperations = [...nodeOps, ...remainOps];
   }
 
@@ -211,13 +217,14 @@ export class ComplexExecutor<T extends Ent> implements Executor {
       return;
     }
     let createdEnt = getCreatedEnt(this.viewer, this.lastOp);
-    console.debug(createdEnt, this.idx, this.nativeIdx);
     if (!createdEnt) {
       return;
     }
-    const placeholderID = this.placeholderMap.get(this.lastOp);
+    const placeholderID = this.lastOp.placeholderID;
     if (!placeholderID) {
-      console.error(`couldn't find placeholderID for op ${this.lastOp}`);
+      console.error(
+        `op ${this.lastOp} which implements getCreatedEnt doesn't have a placeholderID`,
+      );
       return;
     }
 
@@ -231,6 +238,9 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     const op = this.allOperations[this.idx];
     this.idx++;
     this.lastOp = op;
+    if (done) {
+      this.idx = 0;
+    }
     return {
       value: op,
       done: done,

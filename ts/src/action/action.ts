@@ -56,7 +56,7 @@ export interface Changeset<T extends Ent> {
   executor(): Executor;
   viewer: Viewer;
   placeholderID: ID;
-  ent: EntConstructor<T>;
+  //  ent: EntConstructor<T>;
   changesets?: Changeset<Ent>[];
   entDependencies?: Map<ID, Builder<Ent>>;
   edgeDependencies?: Map<ID, Builder<Ent>>;

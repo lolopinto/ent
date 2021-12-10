@@ -265,18 +265,19 @@ export class Orchestrator<T extends Ent> {
           tableName: this.options.tableName,
         });
       default:
-        const opts: EditNodeOptions = {
+        const opts: EditNodeOptions<T> = {
           fields: this.validatedFields!,
           tableName: this.options.tableName,
           fieldsToResolve: this.fieldsToResolve,
           key: this.options.key,
+          ent: this.options.loaderOptions.ent,
+          placeholderID: this.options.builder.placeholderID,
         };
         if (this.logValues) {
           opts.fieldsToLog = this.logValues;
         }
         this.mainOp = new EditNodeOperation(
           opts,
-          this.options.loaderOptions.ent,
           this.options.builder.existingEnt,
         );
         return this.mainOp;
