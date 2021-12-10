@@ -19,12 +19,7 @@ import {
   EditNodeOptions,
 } from "../core/ent";
 import { getFields, SchemaInputType, Field } from "../schema/schema";
-import {
-  Changeset,
-  Executor,
-  Validator,
-  TriggerReturn,
-} from "../action/action";
+import { Changeset, Executor, Validator } from "../action/action";
 import { WriteOperation, Builder, Action } from "../action";
 import { snakeCase } from "snake-case";
 import { camelCase } from "camel-case";
@@ -146,8 +141,7 @@ export class Orchestrator<T extends Ent> {
   private validatedFields: Data | null;
   private logValues: Data | null;
   private changesets: Changeset<Ent>[] = [];
-  private entDependencies: Map<ID, Builder<Ent>> = new Map();
-  private edgeDependencies: Map<ID, Builder<Ent>> = new Map();
+  private dependencies: Map<ID, Builder<Ent>> = new Map();
   private fieldsToResolve: string[] = [];
   private mainOp: DataOperation<T> | null;
   viewer: Viewer;
@@ -612,7 +606,7 @@ export class Orchestrator<T extends Ent> {
         let builder = value;
         // keep track of dependencies to resolve
 
-        this.entDependencies.set(builder.placeholderID, builder);
+        this.dependencies.set(builder.placeholderID, builder);
         // keep track of fields to resolve
         this.fieldsToResolve.push(dbKey);
       } else {
@@ -666,8 +660,7 @@ export class Orchestrator<T extends Ent> {
       this.options.builder.placeholderID,
       this.options.loaderOptions.ent,
       ops,
-      this.entDependencies,
-      this.edgeDependencies,
+      this.dependencies,
       this.changesets,
       this.options,
     );
@@ -727,8 +720,7 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
     public readonly placeholderID: ID,
     public readonly ent: EntConstructor<T>,
     public operations: DataOperation[],
-    public entDependencies?: Map<ID, Builder<Ent>>,
-    public edgeDependencies?: Map<ID, Builder<Ent>>,
+    public dependencies?: Map<ID, Builder<Ent>>,
     public changesets?: Changeset<Ent>[],
     private options?: OrchestratorOptions<T, Data>,
   ) {}
@@ -737,17 +729,11 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
     if (this._executor) {
       return this._executor;
     }
-    //    console.debug("trace called");
 
-    if (
-      !this.changesets?.length
-      // !this.edgeDependencies?.size &&
-      // !this.entDependencies?.size
-    ) {
+    if (!this.changesets?.length) {
       console.debug(
         "simple",
-        // this.entDependencies,
-        // this.edgeDependencies,
+        // this.dependencies,
         this.changesets,
       );
       return (this._executor = new ListBasedExecutor(
@@ -762,24 +748,17 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
     // if we have dependencies but no changesets, we just need a simple
     // executor and depend on something else in the stack to handle this correctly
 
-    // nativeIdx
-    // executrors
-    // placeholders
-    // if dependencies but no changesets, what do we do...
     console.debug(
       "deciding to make it complex",
       this.placeholderID,
       this.changesets,
-      // TODO edgeDependency to self
-      this.edgeDependencies,
-      this.entDependencies,
+      this.dependencies,
     );
     return (this._executor = new ComplexExecutor(
       this.viewer,
       this.placeholderID,
       this.operations,
-      this.entDependencies || new Map(),
-      this.edgeDependencies || new Map(),
+      this.dependencies || new Map(),
       this.changesets || [],
       this.options,
     ));

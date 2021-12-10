@@ -764,7 +764,9 @@ function commonTests() {
     ).toBe(true);
   });
 
-  // there's a nested edge and we are losing the dependency train...
+  // TODO simple node +edge
+
+  // TODO with id1 and data
   test("nested edge id2. no field dependencies", async () => {
     class EditGroupAction extends SimpleAction<Group> {
       triggers = [

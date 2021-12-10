@@ -58,8 +58,7 @@ export interface Changeset<T extends Ent> {
   placeholderID: ID;
   //  ent: EntConstructor<T>;
   changesets?: Changeset<Ent>[];
-  entDependencies?: Map<ID, Builder<Ent>>;
-  edgeDependencies?: Map<ID, Builder<Ent>>;
+  dependencies?: Map<ID, Builder<Ent>>;
 }
 
 export type TriggerReturn =

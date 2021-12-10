@@ -114,9 +114,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     private viewer: Viewer,
     public placeholderID: ID,
     operations: DataOperation[],
-    // we need node deps vs edge deps...
-    entDependencies: Map<ID, Builder<T>>,
-    edgeDependencies: Map<ID, Builder<T>>,
+    dependencies: Map<ID, Builder<T>>,
     changesets: Changeset<T>[],
     options?: OrchestratorOptions<T, Data>,
   ) {
@@ -128,8 +126,8 @@ export class ComplexExecutor<T extends Ent> implements Executor {
       changesetMap.set(c.placeholderID.toString(), c);
 
       graph.addNode(c.placeholderID.toString());
-      if (c.entDependencies) {
-        for (let [key, builder] of c.entDependencies) {
+      if (c.dependencies) {
+        for (let [key, builder] of c.dependencies) {
           // dependency should go first...
           graph.addEdge(
             builder.placeholderID.toString(),
@@ -153,12 +151,11 @@ export class ComplexExecutor<T extends Ent> implements Executor {
       viewer: this.viewer,
       placeholderID: this.placeholderID,
       changesets: changesets,
-      entDependencies: entDependencies,
+      dependencies: dependencies,
       executor: () => {
         return new ListBasedExecutor(
           this.viewer,
           this.placeholderID,
-          //          this.ent,
           operations,
           options,
         );
@@ -177,7 +174,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
         // phew. expect it to be handled somewhere else
         // we can just skip it and expect the resolver to handle this correctly
         // this means it's not a changeset that was created by this ent and can/will be handled elsewhere
-        if (entDependencies.has(node)) {
+        if (dependencies.has(node)) {
           return;
         }
         throw new Error(
