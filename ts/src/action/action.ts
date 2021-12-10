@@ -32,6 +32,7 @@ export interface Builder<T extends Ent> {
   editedEnt?(): Promise<T | null>;
 }
 
+// NB: this is a private API subject to change
 export interface Executor
   extends Iterable<DataOperation>,
     Iterator<DataOperation> {
@@ -39,6 +40,14 @@ export interface Executor
   // this returns a non-privacy checked "ent"
   resolveValue(val: any): Ent | null;
   execute(): Promise<void>;
+
+  // TODO add this so we can differentiate btw when ops are being executed?
+  // vs gathered for other use
+  // or change how execute() works?
+  // right now have to reset at the end of next() if we call for (const op of executor) {}
+  // also want to throw if DataOperation.returnedRow or DataOperation.createdEnt
+  // called too early
+  //  getSortedOps(): DataOperation[];
 
   // these 3 are to help chained/contained executors
   preFetch?(queryer: Queryer, context?: Context): Promise<void>;
@@ -50,9 +59,9 @@ export interface Changeset<T extends Ent> {
   executor(): Executor;
   viewer: Viewer;
   placeholderID: ID;
-  ent: EntConstructor<T>;
+  //  ent: EntConstructor<T>;
   changesets?: Changeset<Ent>[];
-  dependencies?: Map<ID, Builder<T>>;
+  dependencies?: Map<ID, Builder<Ent>>;
 }
 
 export type TriggerReturn =
