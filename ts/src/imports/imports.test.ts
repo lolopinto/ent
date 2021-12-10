@@ -49,7 +49,7 @@ test("non-existent class", () => {
   const result = parse();
   try {
     result.getInfoForClass("Foo");
-    fail("should not have gotten here");
+    throw new Error("should not have gotten here");
   } catch (e) {
     expect(e.message).toMatch(/expected 1 class with name Foo/);
   }

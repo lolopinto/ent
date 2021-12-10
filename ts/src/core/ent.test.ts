@@ -149,7 +149,7 @@ function commonTests() {
     test("loggedout", async () => {
       try {
         await DerivedUser.loadX(loggedOutViewer, { id: "1" });
-        fail("should not have gotten here");
+        throw new Error("should not have gotten here");
       } catch (e) {}
     });
 
@@ -158,7 +158,7 @@ function commonTests() {
         const user = await DerivedUser.loadX(new IDViewer("1"), { id: "1" });
         expect(user.id).toBe("1");
       } catch (e) {
-        fail(e.message);
+        throw new Error(e.message);
       }
     });
   });
@@ -287,7 +287,7 @@ function commonTests() {
     test("loadEntX. no data. no context", async () => {
       try {
         await loadEntX(noCtxV, "1", options);
-        fail("should have thrown");
+        throw new Error("should have thrown");
       } catch (e) {
         expect(e.message).toMatch(/couldn't find row for value/);
       }
@@ -296,7 +296,7 @@ function commonTests() {
     test("loadEntX. no data. with context", async () => {
       try {
         await loadEntX(ctx.getViewer(), "1", options);
-        fail("should have thrown");
+        throw new Error("should have thrown");
       } catch (e) {
         expect(e.message).toMatch(/couldn't find row for value 1/);
       }
@@ -386,7 +386,7 @@ function commonTests() {
       try {
         await loadEntX(ctx.getViewer(), user.id, user2Options);
 
-        fail("should have thrown");
+        throw new Error("should have thrown");
       } catch (e) {
         expect(e.message).toMatch(
           /ent (.+) of type User2 is not visible for privacy reasons/,
@@ -400,7 +400,7 @@ function commonTests() {
       const user = await b.editedEntX();
       try {
         await loadEntX(noCtxV, user.id, user2Options);
-        fail("should have thrown");
+        throw new Error("should have thrown");
       } catch (e) {
         expect(e.message).toMatch(
           /ent (.+) of type User2 is not visible for privacy reasons/,
@@ -445,7 +445,7 @@ function commonTests() {
       const ent = await loadEntViaKey(ctx.getViewer(), "bar", opts2);
       expect(ent).not.toBeNull();
       if (!ent) {
-        fail("impossible");
+        throw new Error("impossible");
       }
       expect(ent.data.foo).toBe("bar");
 

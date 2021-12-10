@@ -235,7 +235,7 @@ describe("sqlite", () => {
 
     try {
       await createUsers([1, 2], { rollback: true });
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (err) {
       expect(err).toEqual(throwbackErr);
     }

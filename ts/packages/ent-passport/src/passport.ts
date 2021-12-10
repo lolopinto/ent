@@ -230,7 +230,7 @@ export class LocalStrategy extends Strategy {
       this.success(viewer);
       return viewer;
     } else {
-      this.fail(401); // TODO
+      this.throw new Error(401); // TODO
       return null;
     }
   }

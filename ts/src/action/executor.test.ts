@@ -442,7 +442,7 @@ function commonTests() {
       // list based executor because dependencies but no changesets
       // can't actually run this on its own but that's expected
       await executeAction(contactAction, ListBasedExecutor);
-      fail("should not have gotten here");
+      throw new Error("should not have gotten here");
     } catch (e) {
       expect(e.message).toBe(
         `couldn't resolve field \`user_id\` with value ${userBuilder.placeholderID}`,
@@ -877,7 +877,7 @@ function commonTests() {
       const user = users[i];
       expect(user).not.toBeNull();
       if (!user) {
-        fail("impossicant");
+        throw new Error("impossicant");
       }
       expect(user).toBeInstanceOf(User);
 
@@ -887,7 +887,7 @@ function commonTests() {
     }
 
     if (!message) {
-      fail("impossicant");
+      throw new Error("impossicant");
     }
 
     expect(message["data"].sender).toBe(users[0]?.id);
