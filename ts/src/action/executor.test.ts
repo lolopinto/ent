@@ -1,11 +1,5 @@
 import { Ent, ID, Viewer, Data } from "../core/base";
-import {
-  DataOperation,
-  loadEdges,
-  loadEnts,
-  loadRows,
-  loadRow,
-} from "../core/ent";
+import { DataOperation, loadEdges, loadEnts, loadRows } from "../core/ent";
 import * as clause from "../core/clause";
 import { ObjectLoaderFactory } from "../core/loaders/object_loader";
 import {
@@ -16,9 +10,10 @@ import {
   WriteOperation,
   Trigger,
   Observer,
+  TriggerReturn,
 } from "../action/action";
-import * as action from "../action";
 import { executeOperations } from "../action/executor";
+import { EdgeInputData } from "../action/orchestrator";
 
 import { Dialect } from "../core/db";
 
@@ -57,7 +52,7 @@ import {
   setupSqlite,
   Table,
 } from "../testutils/db/test_db";
-import { TriggerReturn } from "./action";
+import * as action from "../action";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -339,8 +334,6 @@ class UserAction extends SimpleAction<User> {
           ]),
           WriteOperation.Insert,
         );
-        // userAction -> simple
-        // contactAction depends on userAction
 
         this.contactAction.observers = [new EntCreationObserver<Contact>()];
 
@@ -359,12 +352,12 @@ class UserAction extends SimpleAction<User> {
 
 type getMembershipFunction = (
   viewer: Viewer,
-  edge: action.EdgeInputData,
+  edge: EdgeInputData,
 ) => SimpleAction<Ent>;
 
 class GroupMembershipTrigger implements Trigger<Group> {
   constructor(private getter: getMembershipFunction) {}
-  changeset(builder: SimpleBuilder<Group>, input: Data): action.TriggerReturn {
+  changeset(builder: SimpleBuilder<Group>, input: Data): TriggerReturn {
     const inputEdges = builder.orchestrator.getInputEdges(
       "workspaceMember",
       WriteOperation.Insert,

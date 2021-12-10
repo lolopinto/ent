@@ -1,5 +1,5 @@
-import { ID, Data, Ent, Viewer, Context } from "../core/base";
 import Graph from "graph-data-structure";
+import { ID, Data, Ent, Viewer, Context } from "../core/base";
 
 import { DataOperation } from "../core/ent";
 import { Changeset, Executor } from "../action/action";
@@ -43,6 +43,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     const op = this.operations[this.idx];
     this.idx++;
     this.lastOp = op;
+    // reset since this could be called multiple times. not needed if we have getSortedOps or something like that
     if (done) {
       this.idx = 0;
     }
@@ -161,6 +162,8 @@ export class ComplexExecutor<T extends Ent> implements Executor {
       },
     });
 
+    // use a set to handle repeated ops because of how the executor logic currently works
+    // TODO: can this logic be rewritten to not have a set yet avoid duplicates?
     let nodeOps: Set<DataOperation<Ent>> = new Set();
     let remainOps: Set<DataOperation<Ent>> = new Set();
 
@@ -233,6 +236,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     const op = this.allOperations[this.idx];
     this.idx++;
     this.lastOp = op;
+    // reset since this could be called multiple times. not needed if we have getSortedOps or something like that
     if (done) {
       this.idx = 0;
     }

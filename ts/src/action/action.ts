@@ -41,9 +41,12 @@ export interface Executor
   resolveValue(val: any): Ent | null;
   execute(): Promise<void>;
 
-  // TODO add this so we can differentiate btw when ops are being executed
-  // vs gathere for other use
+  // TODO add this so we can differentiate btw when ops are being executed?
+  // vs gathered for other use
   // or change how execute() works?
+  // right now have to reset at the end of next() if we call for (const op of executor) {}
+  // also want to throw if DataOperation.returnedRow or DataOperation.createdEnt
+  // called too early
   //  getSortedOps(): DataOperation[];
 
   // these 3 are to help chained/contained executors

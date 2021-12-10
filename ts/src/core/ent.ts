@@ -415,9 +415,7 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
   try {
     const pool = DB.getInstance().getPool();
 
-    //    console.debug(pool);
     const res = await pool.query(query, options.clause.values());
-    console.debug(res, query, options);
     if (res.rowCount != 1) {
       if (res.rowCount > 1) {
         log("error", "got more than one row for query " + query);
@@ -432,7 +430,6 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
 
     return res.rows[0];
   } catch (e) {
-    console.debug(e);
     log("error", e);
     return null;
   }
@@ -835,7 +832,6 @@ export class EdgeOperation implements DataOperation {
     if (ent.id === undefined) {
       throw new Error(`id of resolved ent is not defined`);
     }
-    //    console.debug("resolve", placeholder, ent.id, ent.nodeType, desc);
     return [ent.id, ent.nodeType];
   }
 

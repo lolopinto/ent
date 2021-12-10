@@ -598,7 +598,6 @@ export class Orchestrator<T extends Ent> {
       } else if (this.isBuilder(value)) {
         let builder = value;
         // keep track of dependencies to resolve
-
         this.dependencies.set(builder.placeholderID, builder);
         // keep track of fields to resolve
         this.fieldsToResolve.push(dbKey);
@@ -724,6 +723,10 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
     }
 
     if (!this.changesets?.length) {
+      // if we have dependencies but no changesets, we just need a simple
+      // executor and depend on something else in the stack to handle this correctly
+      // ComplexExecutor which could be a parent of this should make sure the dependency
+      // is resolved beforehand
       return (this._executor = new ListBasedExecutor(
         this.viewer,
         this.placeholderID,
