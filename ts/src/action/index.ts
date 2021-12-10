@@ -1,7 +1,7 @@
 export {
   WriteOperation,
   Builder,
-  Executor,
+  // make sure not to expose Executor...
   Changeset,
   Trigger,
   Observer,

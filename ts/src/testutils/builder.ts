@@ -238,7 +238,11 @@ export class SimpleAction<T extends Ent> implements Action<T> {
   }
 
   getInput() {
-    return this.fields;
+    const ret: Data = {};
+    for (const [k, v] of this.fields) {
+      ret[k] = v;
+    }
+    return ret;
   }
 
   changeset(): Promise<Changeset<T>> {

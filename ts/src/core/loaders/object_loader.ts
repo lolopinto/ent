@@ -44,6 +44,7 @@ function createDataLoader(options: SelectDataOptions) {
 
     // context not needed because we're creating a loader which has its own cache which is being used here
     const rows = await loadRows(rowOptions);
+    console.debug(rows);
     for (const row of rows) {
       const id = row[col];
       const idx = m.get(id);

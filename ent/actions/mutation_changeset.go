@@ -13,7 +13,6 @@ type EntMutationChangeset struct {
 	entity        ent.Entity
 	ops           []ent.DataOperation
 	executor      ent.Executor
-	fields        map[string]interface{}
 	placeholderID string
 	existingEnt   ent.Entity
 	entConfig     ent.Config
@@ -90,6 +89,8 @@ func (c *EntMutationChangeset) Validators() []Validator {
 	return c.validators
 }
 
+//this isn't being used so where's the logic??
+// TODO
 func MultiChangesets(changesetFn ...func() (ent.Changeset, error)) (ent.Changeset, error) {
 	changesets, err := runChangesets(changesetFn...)
 	if err != nil {
@@ -116,6 +117,8 @@ func MultiChangesets(changesetFn ...func() (ent.Changeset, error)) (ent.Changese
 			orderedChangesets = append(orderedChangesets, c)
 		}
 	}
+
+	// TODO here's where we need a graph...
 
 	// simple case. no dependencies.
 	// just return a new changeset that wraps everything...

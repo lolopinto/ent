@@ -32,6 +32,7 @@ export interface Builder<T extends Ent> {
   editedEnt?(): Promise<T | null>;
 }
 
+// NB: this is a private API subject to change
 export interface Executor
   extends Iterable<DataOperation>,
     Iterator<DataOperation> {
@@ -39,6 +40,11 @@ export interface Executor
   // this returns a non-privacy checked "ent"
   resolveValue(val: any): Ent | null;
   execute(): Promise<void>;
+
+  // TODO add this so we can differentiate btw when ops are being executed
+  // vs gathere for other use
+  // or change how execute() works?
+  //  getSortedOps(): DataOperation[];
 
   // these 3 are to help chained/contained executors
   preFetch?(queryer: Queryer, context?: Context): Promise<void>;
@@ -52,7 +58,8 @@ export interface Changeset<T extends Ent> {
   placeholderID: ID;
   ent: EntConstructor<T>;
   changesets?: Changeset<Ent>[];
-  dependencies?: Map<ID, Builder<T>>;
+  entDependencies?: Map<ID, Builder<Ent>>;
+  edgeDependencies?: Map<ID, Builder<Ent>>;
 }
 
 export type TriggerReturn =

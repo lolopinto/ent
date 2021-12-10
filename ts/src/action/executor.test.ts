@@ -1,5 +1,14 @@
 import { Ent, ID, Viewer, Data } from "../core/base";
-import { DataOperation } from "../core/ent";
+import { v1 } from "uuid";
+import * as clause from "../core/clause";
+import {
+  DataOperation,
+  loadEdges,
+  loadEnts,
+  loadRows,
+  loadRow,
+} from "../core/ent";
+import { ObjectLoaderFactory } from "../core/loaders/object_loader";
 import {
   Action,
   Builder,
@@ -8,7 +17,7 @@ import {
   WriteOperation,
   Trigger,
   Observer,
-} from "../action";
+} from "../action/action";
 import * as action from "../action";
 import { executeOperations } from "../action/executor";
 
@@ -23,6 +32,7 @@ import {
   Contact,
   SimpleBuilder,
   SimpleAction,
+  getTableName,
 } from "../testutils/builder";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { BaseEntSchema, Field } from "../schema";
@@ -32,6 +42,7 @@ import {
   BooleanType,
   UUIDType,
 } from "../schema/field";
+import { JSONBType } from "../schema/json_field";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import { FakeLogger, EntCreationObserver } from "../testutils/fake_log";
 import { createRowForTest } from "../testutils/write";
@@ -46,6 +57,7 @@ import {
   setupSqlite,
   Table,
 } from "../testutils/db/test_db";
+import { TriggerReturn } from "./action";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -60,6 +72,7 @@ const edges = [
   "senderToMessage",
   "workspaceMember",
   "recipientToMessage",
+  "objectToChangelog",
 ];
 
 beforeEach(async () => {
@@ -104,7 +117,7 @@ describe("postgres", () => {
   commonTests();
 });
 
-describe("sqlite", () => {
+describe.skip("sqlite", () => {
   const getTables = () => {
     const tables: Table[] = [assoc_edge_config_table()];
     edges.map((edge) => tables.push(assoc_edge_table(`${edge}_table`)));
@@ -168,6 +181,11 @@ async function createGroup() {
   return new Group(new LoggedOutViewer(), groupFields);
 }
 
+async function createUser(): Promise<User> {
+  const id = QueryRecorder.newID();
+  return new User(new IDViewer(id), { id });
+}
+
 class UserSchema extends BaseEntSchema {
   fields: Field[] = [
     StringType({ name: "FirstName" }),
@@ -209,6 +227,43 @@ class GroupSchema extends BaseEntSchema {
     StringType({ name: "funField", nullable: true }),
   ];
   ent = Group;
+}
+
+class GroupMembership implements Ent {
+  id: ID;
+  nodeType = "GroupMembership";
+  privacyPolicy = AlwaysAllowPrivacyPolicy;
+
+  constructor(public viewer: Viewer, public data: Data) {
+    this.id = data.id;
+  }
+}
+
+class GroupMembershipSchema extends BaseEntSchema {
+  fields: Field[] = [
+    UUIDType({ name: "ownerID" }),
+    UUIDType({ name: "addedBy" }),
+    BooleanType({ name: "notificationsEnabled" }),
+  ];
+  ent = GroupMembership;
+}
+
+class Changelog implements Ent {
+  id: ID;
+  nodeType = "Changelog";
+  privacyPolicy = AlwaysAllowPrivacyPolicy;
+
+  constructor(public viewer: Viewer, public data: Data) {
+    this.id = data.id;
+  }
+}
+
+class ChangelogSchema extends BaseEntSchema {
+  fields: Field[] = [
+    UUIDType({ name: "parentID", polymorphic: true }),
+    JSONBType({ name: "log" }),
+  ];
+  ent = Changelog;
 }
 
 class MessageSchema extends BaseEntSchema {
@@ -281,6 +336,8 @@ class UserAction extends SimpleAction<User> {
           ]),
           WriteOperation.Insert,
         );
+        // userAction -> simple
+        // contactAction depends on userAction
 
         this.contactAction.observers = [new EntCreationObserver<Contact>()];
 
@@ -705,6 +762,253 @@ function commonTests() {
     expect(
       FakeLogger.contains(`ent Contact created with id ${contact?.id}`),
     ).toBe(true);
+  });
+
+  // there's a nested edge and we are losing the dependency train...
+  test("nested edge id2. no field dependencies", async () => {
+    class EditGroupAction extends SimpleAction<Group> {
+      triggers = [
+        {
+          async changeset(builder: SimpleBuilder<Group>, input) {
+            const inputEdges = builder.orchestrator.getInputEdges(
+              "workspaceMember",
+              WriteOperation.Insert,
+            );
+            const changesets: TriggerReturn = [];
+            for (const edge of inputEdges) {
+              // we're going to simplify and assume it doesn't currently exist
+              const memberAction = new CreateMembershipAction(
+                builder.viewer,
+                new GroupMembershipSchema(),
+                new Map<string, any>([
+                  ["ownerID", edge.id],
+                  ["addedBy", builder.viewer.viewerID!],
+                  ["notificationsEnabled", true],
+                ]),
+                WriteOperation.Insert,
+              );
+              changesets.push(memberAction.changeset());
+            }
+            return Promise.all(changesets);
+          },
+        },
+      ];
+    }
+    class CreateChangelogAction extends SimpleAction<Changelog> {}
+
+    class CreateMembershipAction extends SimpleAction<GroupMembership> {
+      triggers = [
+        {
+          async changeset(builder: SimpleBuilder<GroupMembership>, input) {
+            const clAction = new CreateChangelogAction(
+              builder.viewer,
+              new ChangelogSchema(),
+              new Map([
+                // no id...
+                ["parentID", QueryRecorder.newID()],
+                ["parentType", "GroupMembership"],
+                ["log", input],
+              ]),
+              WriteOperation.Insert,
+            );
+            builder.orchestrator.addOutboundEdge(
+              clAction.builder,
+              "objectToChangelog",
+              "Changelog",
+            );
+            return clAction.changeset();
+          },
+        },
+      ];
+    }
+
+    const group = await createGroup();
+    const user = await createUser();
+    const members = await Promise.all([1, 2, 3].map(createUser));
+
+    const groupAction = new EditGroupAction(
+      new IDViewer(user.id),
+      new GroupSchema(),
+      new Map(),
+      WriteOperation.Edit,
+      group,
+    );
+    members.map((member) =>
+      groupAction.builder.orchestrator.addOutboundEdge(
+        member.id,
+        "workspaceMember",
+        "User",
+      ),
+    );
+    const editedGroup = await groupAction.saveX();
+
+    console.debug(editedGroup);
+    // TODO add tests
+  });
+
+  // TODO edge with no field dependencies
+  // TODO name this...
+  test("crazy nested ", async () => {
+    class EditGroupAction extends SimpleAction<Group> {
+      triggers = [
+        {
+          async changeset(builder: SimpleBuilder<Group>, input) {
+            //            console.debug("editgroup", builder.placeholderID, input);
+            const inputEdges = builder.orchestrator.getInputEdges(
+              "workspaceMember",
+              WriteOperation.Insert,
+            );
+            const changesets: TriggerReturn = [];
+            for (const edge of inputEdges) {
+              // we're going to simplify and assume it doesn't currently exist
+              const memberAction = new CreateMembershipAction(
+                builder.viewer,
+                new GroupMembershipSchema(),
+                new Map<string, any>([
+                  ["ownerID", edge.id],
+                  ["addedBy", builder.viewer.viewerID!],
+                  ["notificationsEnabled", true],
+                ]),
+                WriteOperation.Insert,
+              );
+              builder.orchestrator.addOutboundEdge(
+                edge.id,
+                "workspaceMember",
+                "User",
+                {
+                  data: memberAction.builder,
+                },
+              );
+              changesets.push(memberAction.changeset());
+            }
+            return Promise.all(changesets);
+          },
+        },
+      ];
+    }
+
+    class CreateMembershipAction extends SimpleAction<GroupMembership> {
+      triggers = [
+        {
+          async changeset(builder: SimpleBuilder<GroupMembership>, input) {
+            const clAction = new CreateChangelogAction(
+              builder.viewer,
+              new ChangelogSchema(),
+              new Map([
+                ["parentID", builder],
+                ["parentType", "GroupMembership"],
+                ["log", input],
+              ]),
+              WriteOperation.Insert,
+            );
+            builder.orchestrator.addOutboundEdge(
+              clAction.builder,
+              "objectToChangelog",
+              "Changelog",
+            );
+            return clAction.changeset();
+          },
+        },
+      ];
+    }
+
+    class CreateChangelogAction extends SimpleAction<Changelog> {}
+
+    const group = await createGroup();
+    const user = await createUser();
+    const members = await Promise.all([1, 2, 3].map(createUser));
+
+    const groupAction = new EditGroupAction(
+      new IDViewer(user.id),
+      new GroupSchema(),
+      new Map(),
+      WriteOperation.Edit,
+      group,
+    );
+    members.map((member) =>
+      groupAction.builder.orchestrator.addOutboundEdge(
+        member.id,
+        "workspaceMember",
+        "User",
+      ),
+    );
+
+    const editedGroup = await groupAction.saveX();
+    const memberEdges = await loadEdges({
+      edgeType: "workspaceMember",
+      id1: editedGroup.id,
+    });
+    //    const members = await
+    //    console.debug(editedGroup);
+    const memberIDs = members.map((ent) => ent.id);
+    // TODO sort these
+    expect(memberIDs.sort()).toStrictEqual(
+      memberEdges.map((edge) => edge.id2).sort(),
+    );
+    // @ts-ignore
+    const membershipids: string[] = memberEdges
+      .map((edge) => edge.data)
+      .filter((str) => str !== null && str !== undefined);
+    const tableName = getTableName(new GroupMembershipSchema());
+    //    console.debug(tableName);
+    const memberships = await loadEnts(
+      user.viewer,
+      {
+        tableName,
+        //      clause: clause.In("id", ...membershipids),
+        ent: GroupMembership,
+        fields: ["id", "owner_id", "added_by", "notifications_enabled"],
+        //    },
+        loaderFactory: new ObjectLoaderFactory({
+          tableName,
+          fields: ["id", "owner_id", "added_by", "notifications_enabled"],
+          key: "id",
+        }),
+      },
+      ...membershipids,
+    );
+    await Promise.all(
+      memberships.map(async (membership) => {
+        const edges = await loadEdges({
+          edgeType: "objectToChangelog",
+          id1: membership.id,
+        });
+        expect(edges.length).toBe(1);
+        //        console.debug(membership, edges);
+        const clIDs = edges.map((edge) => edge.id2);
+        const cls = await loadEnts(
+          user.viewer,
+          {
+            tableName: "changelogs",
+            ent: Changelog,
+            fields: ["id", "parent_id", "log"],
+            loaderFactory: new ObjectLoaderFactory({
+              tableName: "changelogs",
+              fields: ["id", "parent_id", "log"],
+              key: "id",
+            }),
+          },
+          ...clIDs,
+        );
+        expect(cls.length).toBe(1);
+        const cl: Changelog = cls[0];
+        expect(edges[0].id2).toBe(cl.id);
+        expect(cl.data.parent_id).toBe(membership.id);
+        expect(JSON.parse(cl.data.log)).toMatchObject({
+          // also has ownerID...
+          addedBy: user.id,
+          notificationsEnabled: true,
+        });
+      }),
+    );
+
+    expect(membershipids.length).toBe(memberships.length);
+    //    console.debug(membershipids, memberships);
+    //    console.debug(QueryRecorder.getData().get("group_memberships"));
+    // workspaceMember so multiple...
+
+    // Edit Group -> Edit List of Foo-> Create Blah and add edge to foo
+    // EditGroup -> Edit GroupMembershipPreferences -> Create Log and add edge from Membership -> Log
   });
 
   test("conditional changesets", async () => {

@@ -19,7 +19,12 @@ import {
   EditNodeOptions,
 } from "../core/ent";
 import { getFields, SchemaInputType, Field } from "../schema/schema";
-import { Changeset, Executor, Validator, TriggerReturn } from "../action";
+import {
+  Changeset,
+  Executor,
+  Validator,
+  TriggerReturn,
+} from "../action/action";
 import { WriteOperation, Builder, Action } from "../action";
 import { snakeCase } from "snake-case";
 import { camelCase } from "camel-case";
@@ -141,9 +146,10 @@ export class Orchestrator<T extends Ent> {
   private validatedFields: Data | null;
   private logValues: Data | null;
   private changesets: Changeset<Ent>[] = [];
-  private dependencies: Map<ID, Builder<T>> = new Map();
+  private entDependencies: Map<ID, Builder<Ent>> = new Map();
+  private edgeDependencies: Map<ID, Builder<Ent>> = new Map();
   private fieldsToResolve: string[] = [];
-  private mainOp: DataOperation | null;
+  private mainOp: DataOperation<T> | null;
   viewer: Viewer;
   private defaultFieldsByFieldName: Data = {};
   private defaultFieldsByTSName: Data = {};
@@ -270,6 +276,7 @@ export class Orchestrator<T extends Ent> {
         }
         this.mainOp = new EditNodeOperation(
           opts,
+          this.options.loaderOptions.ent,
           this.options.builder.existingEnt,
         );
         return this.mainOp;
@@ -343,6 +350,13 @@ export class Orchestrator<T extends Ent> {
       for (const [op, m2] of m) {
         for (const [_, edge] of m2) {
           let edgeOp = this.getEdgeOperation(edgeType, op, edge);
+          const edgeOps = edgeOp.__getOptions();
+          if (edgeOps.builderDeps) {
+            for (const b of edgeOps.builderDeps) {
+              // TODO come back. simplifying for now..
+              //              this.edgeDependencies.set(b.placeholderID, b);
+            }
+          }
           ops.push(edgeOp);
           const edgeData = edgeDatas.get(edgeType);
           if (!edgeData) {
@@ -487,8 +501,8 @@ export class Orchestrator<T extends Ent> {
     await Promise.all(promises);
   }
 
-  private isBuilder(val: Builder<T> | any): val is Builder<T> {
-    return (val as Builder<T>).placeholderID !== undefined;
+  private isBuilder(val: Builder<Ent> | any): val is Builder<Ent> {
+    return (val as Builder<Ent>).placeholderID !== undefined;
   }
 
   private getFieldsWithDefaultValues(
@@ -596,7 +610,8 @@ export class Orchestrator<T extends Ent> {
       } else if (this.isBuilder(value)) {
         let builder = value;
         // keep track of dependencies to resolve
-        this.dependencies.set(builder.placeholderID, builder);
+
+        this.entDependencies.set(builder.placeholderID, builder);
         // keep track of fields to resolve
         this.fieldsToResolve.push(dbKey);
       } else {
@@ -650,7 +665,8 @@ export class Orchestrator<T extends Ent> {
       this.options.builder.placeholderID,
       this.options.loaderOptions.ent,
       ops,
-      this.dependencies,
+      this.entDependencies,
+      this.edgeDependencies,
       this.changesets,
       this.options,
     );
@@ -664,9 +680,9 @@ export class Orchestrator<T extends Ent> {
     return action.viewerForEntLoad(data);
   }
 
-  async returnedRow(): Promise<Data | null> {
-    if (this.mainOp && this.mainOp.returnedEntRow) {
-      return this.mainOp.returnedEntRow();
+  private async returnedRow(): Promise<Data | null> {
+    if (this.mainOp && this.mainOp.returnedRow) {
+      return this.mainOp.returnedRow();
     }
     return null;
   }
@@ -704,37 +720,69 @@ export class Orchestrator<T extends Ent> {
 }
 
 export class EntChangeset<T extends Ent> implements Changeset<T> {
+  private _executor: Executor | null;
   constructor(
     public viewer: Viewer,
     public readonly placeholderID: ID,
     public readonly ent: EntConstructor<T>,
     public operations: DataOperation[],
-    public dependencies?: Map<ID, Builder<T>>,
+    public entDependencies?: Map<ID, Builder<Ent>>,
+    public edgeDependencies?: Map<ID, Builder<Ent>>,
     public changesets?: Changeset<Ent>[],
     private options?: OrchestratorOptions<T, Data>,
   ) {}
 
   executor(): Executor {
-    // TODO: write comment here similar to go
-    // if we have dependencies but no changesets, we just need a simple
-    // executor and depend on something else in the stack to handle this correctly
-    if (this.changesets?.length) {
-      return new ComplexExecutor(
+    if (this._executor) {
+      return this._executor;
+    }
+    //    console.debug("trace called");
+
+    if (
+      !this.changesets?.length
+      // !this.edgeDependencies?.size &&
+      // !this.entDependencies?.size
+    ) {
+      console.debug(
+        "simple",
+        // this.entDependencies,
+        // this.edgeDependencies,
+        this.changesets,
+      );
+      return (this._executor = new ListBasedExecutor(
         this.viewer,
         this.placeholderID,
         this.ent,
         this.operations,
-        this.dependencies!,
-        this.changesets!,
         this.options,
-      );
+      ));
     }
-    return new ListBasedExecutor(
+
+    // TODO: write comment here similar to go
+    // if we have dependencies but no changesets, we just need a simple
+    // executor and depend on something else in the stack to handle this correctly
+
+    // nativeIdx
+    // executrors
+    // placeholders
+    // if dependencies but no changesets, what do we do...
+    console.debug(
+      "deciding to make it complex",
+      this.placeholderID,
+      this.changesets,
+      // TODO edgeDependency to self
+      this.edgeDependencies,
+      this.entDependencies,
+    );
+    return (this._executor = new ComplexExecutor(
       this.viewer,
       this.placeholderID,
       this.ent,
       this.operations,
+      this.entDependencies || new Map(),
+      this.edgeDependencies || new Map(),
+      this.changesets || [],
       this.options,
-    );
+    ));
   }
 }

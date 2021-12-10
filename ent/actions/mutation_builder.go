@@ -78,6 +78,7 @@ func (b *EntMutationBuilder) flagWrite() {
 	b.validated = false
 }
 
+// dependencies changed here
 func (b *EntMutationBuilder) resolveFieldValue(fieldName string, val interface{}) interface{} {
 	// changing things up and seeing if putting this lock in here breaks things....
 	builder, ok := val.(ent.MutationBuilder)
@@ -281,6 +282,7 @@ func (b *EntMutationBuilder) runTriggers() error {
 				b.validators = append(b.validators, cWithValidators.Validators()...)
 			}
 		}
+		// changesets changed here
 		b.changesets = changesets
 	}
 	return nil
@@ -358,6 +360,7 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 	}
 
 	// let's figure out craziness here
+	// changeset created with ops [1 node + many edges], deps, changesets, observers [ignore]
 	return &EntMutationChangeset{
 		entity:        b.entity,
 		viewer:        b.Viewer,

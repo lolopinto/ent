@@ -27,7 +27,7 @@ import {
 } from "./base";
 
 import { applyPrivacyPolicy, applyPrivacyPolicyX } from "./privacy";
-import { Executor } from "../action";
+import { Executor } from "../action/action";
 
 import * as clause from "./clause";
 import { WriteOperation, Builder } from "../action";
@@ -415,7 +415,9 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
   try {
     const pool = DB.getInstance().getPool();
 
+    //    console.debug(pool);
     const res = await pool.query(query, options.clause.values());
+    console.debug(res, query, options);
     if (res.rowCount != 1) {
       if (res.rowCount > 1) {
         log("error", "got more than one row for query " + query);
@@ -430,6 +432,7 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
 
     return res.rows[0];
   } catch (e) {
+    console.debug(e);
     log("error", e);
     return null;
   }
@@ -534,7 +537,7 @@ export function buildGroupQuery(
   ];
 }
 
-export interface DataOperation {
+export interface DataOperation<T extends Ent = Ent> {
   // any data that needs to be fetched before the write should be fetched here
   // because of how SQLite works, we can't use asynchronous fetches during the write
   // so we batch up fetching to be done beforehand here
@@ -544,7 +547,8 @@ export interface DataOperation {
   performWriteSync(queryer: SyncQueryer, context?: Context): void;
   performWrite(queryer: Queryer, context?: Context): Promise<void>;
 
-  returnedEntRow?(): Data | null; // optional to indicate the row that was created
+  returnedRow?(): Data | null; // optional to get the raw row
+  createdEnt?(viewer: Viewer): T | null; // optional to indicate the ent that was created
   resolve?(executor: Executor): void; //throws?
 
   // any data that needs to be fetched asynchronously post write|post transaction
@@ -555,11 +559,12 @@ export interface EditNodeOptions extends EditRowOptions {
   fieldsToResolve: string[];
 }
 
-export class EditNodeOperation implements DataOperation {
+export class EditNodeOperation<T extends Ent> implements DataOperation {
   row: Data | null;
 
   constructor(
     public options: EditNodeOptions,
+    private ent: EntConstructor<T>,
     private existingEnt: Ent | null = null,
   ) {}
 
@@ -636,8 +641,15 @@ export class EditNodeOperation implements DataOperation {
     }
   }
 
-  returnedEntRow(): Data | null {
+  returnedRow(): Data | null {
     return this.row;
+  }
+
+  createdEnt(viewer: Viewer): T | null {
+    if (!this.row) {
+      return null;
+    }
+    return new this.ent(viewer, this.row);
   }
 }
 
@@ -646,6 +658,7 @@ interface EdgeOperationOptions {
   id1Placeholder?: boolean;
   id2Placeholder?: boolean;
   dataPlaceholder?: boolean;
+  builderDeps?: Builder<Ent>[];
 }
 
 export class EdgeOperation implements DataOperation {
@@ -654,6 +667,10 @@ export class EdgeOperation implements DataOperation {
     public edgeInput: AssocEdgeInput,
     private options: EdgeOperationOptions,
   ) {}
+
+  __getOptions() {
+    return this.options;
+  }
 
   async preFetch(queryer: Queryer, context?: Context): Promise<void> {
     let edgeData = await loadEdgeData(this.edgeInput.edgeType);
@@ -818,6 +835,7 @@ export class EdgeOperation implements DataOperation {
     if (ent.id === undefined) {
       throw new Error(`id of resolved ent is not defined`);
     }
+    //    console.debug("resolve", placeholder, ent.id, ent.nodeType, desc);
     return [ent.id, ent.nodeType];
   }
 
@@ -892,12 +910,14 @@ export class EdgeOperation implements DataOperation {
   private static resolveIDs<T extends Ent, T2 extends Ent>(
     srcBuilder: Builder<T>, // id1
     destID: Builder<T2> | ID, // id2 ( and then you flip it)
-  ): [ID, string, boolean, ID, boolean] {
+  ): [ID, string, boolean, ID, boolean, Builder<Ent>[]] {
     let destIDVal: ID;
     let destPlaceholder = false;
+    let builders: Builder<Ent>[] = [];
     if (this.isBuilder(destID)) {
       destIDVal = destID.placeholderID;
       destPlaceholder = true;
+      builders.push(destID);
     } else {
       destIDVal = destID;
     }
@@ -914,9 +934,17 @@ export class EdgeOperation implements DataOperation {
       srcIDVal = srcBuilder.placeholderID;
       // expected to be filled later
       srcType = "";
+      builders.push(srcBuilder);
     }
 
-    return [srcIDVal, srcType, srcPlaceholder, destIDVal, destPlaceholder];
+    return [
+      srcIDVal,
+      srcType,
+      srcPlaceholder,
+      destIDVal,
+      destPlaceholder,
+      builders,
+    ];
   }
 
   private static isBuilder(val: Builder<Ent> | any): val is Builder<Ent> {
@@ -925,16 +953,16 @@ export class EdgeOperation implements DataOperation {
 
   private static resolveData(
     data?: Builder<Ent> | string,
-  ): [string | undefined, boolean] {
+  ): [string | undefined, Builder<Ent> | null] {
     if (!data) {
-      return [undefined, false];
+      return [undefined, null];
     }
 
     if (this.isBuilder(data)) {
-      return [data.placeholderID.toString(), true];
+      return [data.placeholderID.toString(), data];
     }
 
-    return [data, false];
+    return [data, null];
   }
 
   static inboundEdge<T extends Ent, T2 extends Ent>(
@@ -944,9 +972,9 @@ export class EdgeOperation implements DataOperation {
     nodeType: string,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation {
-    let [id2Val, id2Type, id2Placeholder, id1Val, id1Placeholder] =
+    let [id2Val, id2Type, id2Placeholder, id1Val, id1Placeholder, idBuilders] =
       EdgeOperation.resolveIDs(builder, id1);
-    let [data, dataPlaceholder] = EdgeOperation.resolveData(options?.data);
+    let [data, dataBuilder] = EdgeOperation.resolveData(options?.data);
     const edge: AssocEdgeInput = {
       id1: id1Val,
       edgeType: edgeType,
@@ -958,12 +986,17 @@ export class EdgeOperation implements DataOperation {
     if (data) {
       edge.data = data;
     }
+    let builders: Builder<Ent>[] = [...idBuilders];
+    if (dataBuilder) {
+      builders.push(dataBuilder);
+    }
 
     return new EdgeOperation(edge, {
       operation: WriteOperation.Insert,
       id2Placeholder,
       id1Placeholder,
-      dataPlaceholder,
+      dataPlaceholder: dataBuilder !== null,
+      builderDeps: builders,
     });
   }
 
@@ -974,9 +1007,9 @@ export class EdgeOperation implements DataOperation {
     nodeType: string,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation {
-    let [id1Val, id1Type, id1Placeholder, id2Val, id2Placeholder] =
+    let [id1Val, id1Type, id1Placeholder, id2Val, id2Placeholder, idBuilders] =
       EdgeOperation.resolveIDs(builder, id2);
-    let [data, dataPlaceholder] = EdgeOperation.resolveData(options?.data);
+    let [data, dataBuilder] = EdgeOperation.resolveData(options?.data);
 
     const edge: AssocEdgeInput = {
       id1: id1Val,
@@ -989,12 +1022,17 @@ export class EdgeOperation implements DataOperation {
     if (data) {
       edge.data = data;
     }
+    let builders: Builder<Ent>[] = [...idBuilders];
+    if (dataBuilder) {
+      builders.push(dataBuilder);
+    }
 
     return new EdgeOperation(edge, {
       operation: WriteOperation.Insert,
       id1Placeholder,
       id2Placeholder,
-      dataPlaceholder,
+      dataPlaceholder: dataBuilder !== null,
+      builderDeps: builders,
     });
   }
 
