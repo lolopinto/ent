@@ -345,13 +345,6 @@ export class Orchestrator<T extends Ent> {
       for (const [op, m2] of m) {
         for (const [_, edge] of m2) {
           let edgeOp = this.getEdgeOperation(edgeType, op, edge);
-          const edgeOps = edgeOp.__getOptions();
-          if (edgeOps.builderDeps) {
-            for (const b of edgeOps.builderDeps) {
-              // TODO come back. simplifying for now..
-              //              this.edgeDependencies.set(b.placeholderID, b);
-            }
-          }
           ops.push(edgeOp);
           const edgeData = edgeDatas.get(edgeType);
           if (!edgeData) {

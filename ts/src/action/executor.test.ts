@@ -1,6 +1,4 @@
 import { Ent, ID, Viewer, Data } from "../core/base";
-import { v1 } from "uuid";
-import * as clause from "../core/clause";
 import {
   DataOperation,
   loadEdges,
@@ -764,7 +762,7 @@ function commonTests() {
     ).toBe(true);
   });
 
-  // TODO simple node +edge
+  // TODO simple node+edge
 
   // TODO with id1 and data
   test("nested edge id2. no field dependencies", async () => {

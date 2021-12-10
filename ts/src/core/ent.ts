@@ -663,7 +663,6 @@ interface EdgeOperationOptions {
   id1Placeholder?: boolean;
   id2Placeholder?: boolean;
   dataPlaceholder?: boolean;
-  builderDeps?: Builder<Ent>[];
 }
 
 export class EdgeOperation implements DataOperation {
@@ -672,10 +671,6 @@ export class EdgeOperation implements DataOperation {
     public edgeInput: AssocEdgeInput,
     private options: EdgeOperationOptions,
   ) {}
-
-  __getOptions() {
-    return this.options;
-  }
 
   async preFetch(queryer: Queryer, context?: Context): Promise<void> {
     let edgeData = await loadEdgeData(this.edgeInput.edgeType);
@@ -915,14 +910,12 @@ export class EdgeOperation implements DataOperation {
   private static resolveIDs<T extends Ent, T2 extends Ent>(
     srcBuilder: Builder<T>, // id1
     destID: Builder<T2> | ID, // id2 ( and then you flip it)
-  ): [ID, string, boolean, ID, boolean, Builder<Ent>[]] {
+  ): [ID, string, boolean, ID, boolean] {
     let destIDVal: ID;
     let destPlaceholder = false;
-    let builders: Builder<Ent>[] = [];
     if (this.isBuilder(destID)) {
       destIDVal = destID.placeholderID;
       destPlaceholder = true;
-      builders.push(destID);
     } else {
       destIDVal = destID;
     }
@@ -939,17 +932,9 @@ export class EdgeOperation implements DataOperation {
       srcIDVal = srcBuilder.placeholderID;
       // expected to be filled later
       srcType = "";
-      builders.push(srcBuilder);
     }
 
-    return [
-      srcIDVal,
-      srcType,
-      srcPlaceholder,
-      destIDVal,
-      destPlaceholder,
-      builders,
-    ];
+    return [srcIDVal, srcType, srcPlaceholder, destIDVal, destPlaceholder];
   }
 
   private static isBuilder(val: Builder<Ent> | any): val is Builder<Ent> {
@@ -958,16 +943,16 @@ export class EdgeOperation implements DataOperation {
 
   private static resolveData(
     data?: Builder<Ent> | string,
-  ): [string | undefined, Builder<Ent> | null] {
+  ): [string | undefined, boolean] {
     if (!data) {
-      return [undefined, null];
+      return [undefined, false];
     }
 
     if (this.isBuilder(data)) {
-      return [data.placeholderID.toString(), data];
+      return [data.placeholderID.toString(), true];
     }
 
-    return [data, null];
+    return [data, false];
   }
 
   static inboundEdge<T extends Ent, T2 extends Ent>(
@@ -977,9 +962,9 @@ export class EdgeOperation implements DataOperation {
     nodeType: string,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation {
-    let [id2Val, id2Type, id2Placeholder, id1Val, id1Placeholder, idBuilders] =
+    let [id2Val, id2Type, id2Placeholder, id1Val, id1Placeholder] =
       EdgeOperation.resolveIDs(builder, id1);
-    let [data, dataBuilder] = EdgeOperation.resolveData(options?.data);
+    let [data, dataPlaceholder] = EdgeOperation.resolveData(options?.data);
     const edge: AssocEdgeInput = {
       id1: id1Val,
       edgeType: edgeType,
@@ -991,17 +976,12 @@ export class EdgeOperation implements DataOperation {
     if (data) {
       edge.data = data;
     }
-    let builders: Builder<Ent>[] = [...idBuilders];
-    if (dataBuilder) {
-      builders.push(dataBuilder);
-    }
 
     return new EdgeOperation(edge, {
       operation: WriteOperation.Insert,
       id2Placeholder,
       id1Placeholder,
-      dataPlaceholder: dataBuilder !== null,
-      builderDeps: builders,
+      dataPlaceholder,
     });
   }
 
@@ -1012,9 +992,9 @@ export class EdgeOperation implements DataOperation {
     nodeType: string,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation {
-    let [id1Val, id1Type, id1Placeholder, id2Val, id2Placeholder, idBuilders] =
+    let [id1Val, id1Type, id1Placeholder, id2Val, id2Placeholder] =
       EdgeOperation.resolveIDs(builder, id2);
-    let [data, dataBuilder] = EdgeOperation.resolveData(options?.data);
+    let [data, dataPlaceholder] = EdgeOperation.resolveData(options?.data);
 
     const edge: AssocEdgeInput = {
       id1: id1Val,
@@ -1027,17 +1007,12 @@ export class EdgeOperation implements DataOperation {
     if (data) {
       edge.data = data;
     }
-    let builders: Builder<Ent>[] = [...idBuilders];
-    if (dataBuilder) {
-      builders.push(dataBuilder);
-    }
 
     return new EdgeOperation(edge, {
       operation: WriteOperation.Insert,
       id1Placeholder,
       id2Placeholder,
-      dataPlaceholder: dataBuilder !== null,
-      builderDeps: builders,
+      dataPlaceholder,
     });
   }
 
