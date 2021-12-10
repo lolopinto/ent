@@ -24,7 +24,6 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     if (val === this.placeholderID && val !== undefined) {
       return this.createdEnt;
     }
-    console.debug("list based", val, this.placeholderID);
 
     return null;
   }
@@ -166,7 +165,6 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     let remainOps: Set<DataOperation<Ent>> = new Set();
 
     let sorted = graph.topologicalSort(graph.nodes());
-    console.debug(sorted);
     sorted.forEach((node) => {
       let c = changesetMap.get(node);
 
@@ -246,13 +244,11 @@ export class ComplexExecutor<T extends Ent> implements Executor {
 
   resolveValue(val: ID): Ent | null {
     let ent = this.mapper.get(val);
-    console.debug(this.mapper, val);
     if (ent) {
       return ent;
     }
     for (const c of this.executors) {
       const ent = c.resolveValue(val);
-      console.debug(c, c.placeholderID, ent);
       if (ent) {
         return ent;
       }

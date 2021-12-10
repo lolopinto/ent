@@ -724,11 +724,6 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
     }
 
     if (!this.changesets?.length) {
-      console.debug(
-        "simple",
-        // this.dependencies,
-        this.changesets,
-      );
       return (this._executor = new ListBasedExecutor(
         this.viewer,
         this.placeholderID,
@@ -737,16 +732,6 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
       ));
     }
 
-    // TODO: write comment here similar to go
-    // if we have dependencies but no changesets, we just need a simple
-    // executor and depend on something else in the stack to handle this correctly
-
-    console.debug(
-      "deciding to make it complex",
-      this.placeholderID,
-      this.changesets,
-      this.dependencies,
-    );
     return (this._executor = new ComplexExecutor(
       this.viewer,
       this.placeholderID,
