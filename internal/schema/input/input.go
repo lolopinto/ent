@@ -381,6 +381,10 @@ func (e *EdgeAction) GetTSStringOperation() string {
 type Action struct {
 	Operation         ent.ActionOperation `json:"operation"`
 	Fields            []string            `json:"fields"`
+	ExcludedFields    []string            `json:"excludedFields"`
+	OptionalFields    []string            `json:"optionalFields"`
+	RequiredFields    []string            `json:"requiredFields"`
+	NoFields          bool                `json:"noFields"`
 	CustomActionName  string              `json:"actionName"`
 	CustomGraphQLName string              `json:"graphQLName"`
 	CustomInputName   string              `json:"inputName"`
