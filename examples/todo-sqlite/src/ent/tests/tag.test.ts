@@ -36,7 +36,7 @@ describe("duplicate", () => {
 
     try {
       await createTag("SPORTS", account);
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (err) {
       expect((err as Error).message).toMatch(/UNIQUE constraint failed/);
     }
@@ -49,7 +49,7 @@ describe("duplicate", () => {
 
     try {
       await createTag("sports", account);
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (err) {
       expect((err as Error).message).toMatch(/UNIQUE constraint failed/);
     }

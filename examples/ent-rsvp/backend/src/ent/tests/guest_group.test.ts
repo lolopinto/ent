@@ -37,7 +37,7 @@ describe("create guest group", () => {
         invitationName: "people",
         eventID: event.id,
       }).saveX();
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (e) {
       expect((e as Error).message).toMatch(
         /Viewer with ID (.+) does not have permission to create GuestGroup/,
@@ -112,7 +112,7 @@ test("load guest group", async () => {
 
   try {
     await GuestGroup.loadX(new IDViewer(user.id), guestGroup.id);
-    fail("should have thrown");
+    throw new Error("should have thrown");
   } catch (e) {
     expect((e as Error).message).toMatch(
       /^ent (.+) is not visible for privacy reasons$/,
@@ -135,7 +135,7 @@ describe("edit guest group", () => {
       await EditGuestGroupAction.create(new IDViewer(user.id), group, {
         invitationName: "foo",
       }).saveX();
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (e) {
       expect((e as Error).message).toMatch(
         /Viewer with ID (.+) does not have permission to edit GuestGroup/,
@@ -156,7 +156,7 @@ describe("delete guest group", () => {
     const [group, user] = await Promise.all([createGuestGroup(), createUser()]);
     try {
       await DeleteGuestGroupAction.create(new IDViewer(user.id), group).saveX();
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (e) {
       expect((e as Error).message).toMatch(
         /Viewer with ID (.+) does not have permission to delete GuestGroup/,

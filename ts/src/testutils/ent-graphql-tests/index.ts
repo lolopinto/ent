@@ -374,11 +374,13 @@ async function expectFromRoot(
   let fields = query?.getFields();
   if (!fields) {
     // TODO custom error?
-    fail("schema doesn't have query or fields");
+    throw new Error("schema doesn't have query or fields");
   }
   let field = fields[config.root];
   if (!field) {
-    fail(`could not find field ${config.root} in GraphQL query schema`);
+    throw new Error(
+      `could not find field ${config.root} in GraphQL query schema`,
+    );
   }
   let fieldArgs = field.args;
 
@@ -458,7 +460,7 @@ async function expectFromRoot(
       // todo multiple errors etc
       expect(errors[0].message).toMatch(config.expectedError);
     } else {
-      fail(`unhandled error ${JSON.stringify(errors)}`);
+      throw new Error(`unhandled error ${JSON.stringify(errors)}`);
     }
     return st;
   }
@@ -521,7 +523,9 @@ async function expectFromRoot(
         if (idx !== -1) {
           let endIdx = part.indexOf("]");
           if (endIdx === -1) {
-            fail("can't have a beginning index without an end index");
+            throw new Error(
+              "can't have a beginning index without an end index",
+            );
           }
           // get the idx we care about
           listIdx = parseInt(part.substr(idx + 1, endIdx - idx), 10);
@@ -535,7 +539,9 @@ async function expectFromRoot(
         if (idx !== -1) {
           let endIdx = part.indexOf(")");
           if (endIdx === -1) {
-            fail("can't have a beginning index without an end index");
+            throw new Error(
+              "can't have a beginning index without an end index",
+            );
           }
           // update part
           part = part.substr(0, idx);

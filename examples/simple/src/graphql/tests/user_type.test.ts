@@ -334,7 +334,7 @@ test("query user and nested object", async () => {
   user = await User.loadX(vc, user.id);
   let selfContact = await user.loadSelfContact();
   if (!selfContact) {
-    fail("expected self contact to be loaded");
+    throw new Error("expected self contact to be loaded");
   }
 
   await expectQueryFromRoot(

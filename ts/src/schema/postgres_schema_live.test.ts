@@ -540,7 +540,7 @@ test("timestamptz copy", async () => {
     const row = r.rows[0];
     expect(row.count).toBe("1");
   } catch (err) {
-    fail(err);
+    throw new Error(err);
   } finally {
     fs.rmSync(file, {
       force: true,

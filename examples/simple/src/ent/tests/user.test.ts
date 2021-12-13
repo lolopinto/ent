@@ -111,7 +111,7 @@ test("edit user", async () => {
     await EditUserAction.create(loggedOutViewer, user, {
       firstName: "First of his name",
     }).saveX();
-    fail("should have thrown exception");
+    throw new Error("should have thrown exception");
   } catch (err) {
     expect((err as Error).message).toMatch(
       /Logged out Viewer does not have permission to edit User/,
@@ -151,7 +151,7 @@ test("delete user", async () => {
 
   try {
     await DeleteUserAction.create(loggedOutViewer, user).saveX();
-    fail("should have thrown exception");
+    throw new Error("should have thrown exception");
   } catch (err) {
     expect((err as Error).message).toMatch(
       /Logged out Viewer does not have permission to delete User/,
@@ -226,7 +226,7 @@ describe("privacy", () => {
     try {
       // privacy indicates other user cannot load
       await User.loadX(new IDViewer(user2.id, { ent: user2 }), user.id);
-      fail("should have thrown exception");
+      throw new Error("should have thrown exception");
     } catch (e) {}
   });
 });
@@ -531,7 +531,9 @@ test("uniqueEdge|Node", async () => {
     editAction.builder.addSelfContact(contact2);
     await editAction.saveX();
 
-    fail("should have throw an exception trying to write duplicate edge");
+    throw new Error(
+      "should have throw an exception trying to write duplicate edge",
+    );
   } catch (e) {
     expect((e as Error).message).toMatch(
       /duplicate key value violates unique constraint/,
@@ -568,7 +570,7 @@ test("uniqueEdge|Node", async () => {
 test("loadX", async () => {
   try {
     await User.loadX(loggedOutViewer, uuidv4());
-    fail("should have thrown exception");
+    throw new Error("should have thrown exception");
   } catch (e) {}
 });
 
@@ -599,7 +601,7 @@ describe("edit email", () => {
       await EditEmailAddressAction.create(vc, user, {
         newEmail: user2.emailAddress,
       }).saveX();
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (e) {
       expect((e as Error).message).toMatch(/^cannot change email/);
     }
@@ -660,7 +662,7 @@ describe("edit email", () => {
         emailAddress: newEmail,
         code: code + "1",
       }).saveX();
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (e) {
       expect((e as Error).message).toMatch(
         /code (\d+) not found associated with user/,
@@ -676,7 +678,7 @@ describe("edit email", () => {
         emailAddress: randomEmail(),
         code: code!,
       }).saveX();
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (e) {
       expect((e as Error).message).toMatch(
         /code (\d+) not found associated with user/,
@@ -705,7 +707,7 @@ describe("edit phone number", () => {
       await EditPhoneNumberAction.create(vc, user, {
         newPhoneNumber: user2.phoneNumber!,
       }).saveX();
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (e) {
       expect((e as Error).message).toMatch(/^cannot change phoneNumber/);
     }
@@ -770,7 +772,7 @@ describe("edit phone number", () => {
         phoneNumber: newPhoneNumber,
         code: code + "1",
       }).saveX();
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (e) {
       expect((e as Error).message).toMatch(
         /code (\d+) not found associated with user/,
@@ -786,7 +788,7 @@ describe("edit phone number", () => {
         phoneNumber: randomPhoneNumber(),
         code: code!,
       }).saveX();
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (e) {
       expect((e as Error).message).toMatch(
         /code (\d+) not found associated with user/,
@@ -938,7 +940,7 @@ test("json type", async () => {
   });
 });
 
-test("json type fail", async () => {
+test("json type throw new Error", async () => {
   try {
     await CreateUserAction.create(new LoggedOutViewer(), {
       firstName: "Jane",
@@ -950,7 +952,7 @@ test("json type fail", async () => {
         finishedNux: true,
       },
     }).saveX();
-    fail("should throw");
+    throw new Error("should throw");
   } catch (err) {
     expect((err as Error).message).toMatch(
       /invalid field prefs_diff with value/,

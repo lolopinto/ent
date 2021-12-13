@@ -1,8 +1,9 @@
-import { ID, Data, Ent, Viewer, EntConstructor, Context } from "../core/base";
-import { DataOperation } from "../core/ent";
-import { Changeset, Executor } from "../action";
-import { Builder } from "../action";
 import Graph from "graph-data-structure";
+import { ID, Data, Ent, Viewer, Context } from "../core/base";
+
+import { DataOperation } from "../core/ent";
+import { Changeset, Executor } from "../action/action";
+import { Builder } from "../action";
 import { OrchestratorOptions } from "./orchestrator";
 import DB, { Client, Queryer, SyncClient } from "../core/db";
 import { log } from "../core/logger";
@@ -13,11 +14,10 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
   constructor(
     private viewer: Viewer,
     public placeholderID: ID,
-    private ent: EntConstructor<T>,
-    private operations: DataOperation[],
+    private operations: DataOperation<T>[],
     private options?: OrchestratorOptions<T, Data>,
   ) {}
-  private lastOp: DataOperation | undefined;
+  private lastOp: DataOperation<T> | undefined;
   private createdEnt: T | null = null;
 
   resolveValue(val: ID): Ent | null {
@@ -32,8 +32,9 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     return this;
   }
 
-  next(): IteratorResult<DataOperation> {
-    let createdEnt = getCreatedEnt(this.viewer, this.lastOp, this.ent);
+  // returns true and null|undefined when done
+  next(): IteratorResult<DataOperation<T>> {
+    let createdEnt = getCreatedEnt(this.viewer, this.lastOp);
     if (createdEnt) {
       this.createdEnt = createdEnt;
     }
@@ -42,6 +43,10 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     const op = this.operations[this.idx];
     this.idx++;
     this.lastOp = op;
+    // reset since this could be called multiple times. not needed if we have getSortedOps or something like that
+    if (done) {
+      this.idx = 0;
+    }
     return {
       value: op,
       done: done,
@@ -90,14 +95,10 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
 
 function getCreatedEnt<T extends Ent>(
   viewer: Viewer,
-  op: DataOperation | undefined,
-  ent: EntConstructor<T>,
+  op: DataOperation<T> | undefined,
 ): T | null {
-  if (op && op.returnedEntRow) {
-    let row = op.returnedEntRow();
-    if (row) {
-      return new ent(viewer, row);
-    }
+  if (op && op.createdEnt) {
+    return op.createdEnt(viewer);
   }
   return null;
 }
@@ -105,25 +106,24 @@ function getCreatedEnt<T extends Ent>(
 export class ComplexExecutor<T extends Ent> implements Executor {
   private idx: number = 0;
   private mapper: Map<ID, Ent> = new Map();
-  private lastOp: DataOperation | undefined;
-  private allOperations: DataOperation[] = [];
-  private changesetMap: Map<string, Changeset<Ent>> = new Map();
-  private nodeOpMap: Map<DataOperation, Changeset<Ent>> = new Map();
+  private lastOp: DataOperation<Ent> | undefined;
+  private allOperations: DataOperation<Ent>[] = [];
   private executors: Executor[] = [];
 
   constructor(
     private viewer: Viewer,
     public placeholderID: ID,
-    private ent: EntConstructor<T>,
     operations: DataOperation[],
     dependencies: Map<ID, Builder<T>>,
     changesets: Changeset<T>[],
-    private options?: OrchestratorOptions<T, Data>,
+    options?: OrchestratorOptions<T, Data>,
   ) {
     let graph = Graph();
 
+    const changesetMap: Map<string, Changeset<Ent>> = new Map();
+
     const impl = (c: Changeset<Ent>) => {
-      this.changesetMap.set(c.placeholderID.toString(), c);
+      changesetMap.set(c.placeholderID.toString(), c);
 
       graph.addNode(c.placeholderID.toString());
       if (c.dependencies) {
@@ -143,7 +143,6 @@ export class ComplexExecutor<T extends Ent> implements Executor {
         });
       }
     };
-
     let localChangesets = new Map<ID, Changeset<Ent>>();
     changesets.forEach((c) => localChangesets.set(c.placeholderID, c));
 
@@ -151,28 +150,26 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     impl({
       viewer: this.viewer,
       placeholderID: this.placeholderID,
-      ent: this.ent,
       changesets: changesets,
       dependencies: dependencies,
       executor: () => {
         return new ListBasedExecutor(
           this.viewer,
           this.placeholderID,
-          this.ent,
           operations,
-          this.options,
+          options,
         );
       },
     });
 
     // use a set to handle repeated ops because of how the executor logic currently works
-    // TODO: this logic can be rewritten to be smarter and probably not need a set
-    let nodeOps: Set<DataOperation> = new Set();
-    let remainOps: Set<DataOperation> = new Set();
+    // TODO: can this logic be rewritten to not have a set yet avoid duplicates?
+    let nodeOps: Set<DataOperation<Ent>> = new Set();
+    let remainOps: Set<DataOperation<Ent>> = new Set();
 
     let sorted = graph.topologicalSort(graph.nodes());
     sorted.forEach((node) => {
-      let c = this.changesetMap.get(node);
+      let c = changesetMap.get(node);
 
       if (!c) {
         // phew. expect it to be handled somewhere else
@@ -189,9 +186,8 @@ export class ComplexExecutor<T extends Ent> implements Executor {
       // get ordered list of ops
       let executor = c.executor();
       for (let op of executor) {
-        if (op.returnedEntRow) {
+        if (op.createdEnt) {
           nodeOps.add(op);
-          this.nodeOpMap.set(op, c);
         } else {
           remainOps.add(op);
         }
@@ -215,28 +211,35 @@ export class ComplexExecutor<T extends Ent> implements Executor {
   }
 
   private handleCreatedEnt() {
-    let c = this.nodeOpMap.get(this.lastOp!);
-    if (!c) {
-      // nothing to do here
+    if (!this.lastOp) {
       return;
     }
-    let createdEnt = getCreatedEnt(this.viewer, this.lastOp, c.ent);
+    let createdEnt = getCreatedEnt(this.viewer, this.lastOp);
     if (!createdEnt) {
       return;
     }
+    const placeholderID = this.lastOp.placeholderID;
+    if (!placeholderID) {
+      console.error(
+        `op ${this.lastOp} which implements getCreatedEnt doesn't have a placeholderID`,
+      );
+      return;
+    }
 
-    let placeholderID = c.placeholderID;
     this.mapper.set(placeholderID, createdEnt);
   }
 
-  next(): IteratorResult<DataOperation> {
-    if (this.lastOp) {
-      this.handleCreatedEnt();
-    }
+  next(): IteratorResult<DataOperation<Ent>> {
+    this.handleCreatedEnt();
+
     const done = this.idx === this.allOperations.length;
     const op = this.allOperations[this.idx];
     this.idx++;
     this.lastOp = op;
+    // reset since this could be called multiple times. not needed if we have getSortedOps or something like that
+    if (done) {
+      this.idx = 0;
+    }
     return {
       value: op,
       done: done,
@@ -247,6 +250,12 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     let ent = this.mapper.get(val);
     if (ent) {
       return ent;
+    }
+    for (const c of this.executors) {
+      const ent = c.resolveValue(val);
+      if (ent) {
+        return ent;
+      }
     }
     return null;
   }

@@ -19,7 +19,7 @@ import {
   EditNodeOptions,
 } from "../core/ent";
 import { getFields, SchemaInputType, Field } from "../schema/schema";
-import { Changeset, Executor, Validator, TriggerReturn } from "../action";
+import { Changeset, Executor, Validator } from "../action/action";
 import { WriteOperation, Builder, Action } from "../action";
 import { snakeCase } from "snake-case";
 import { camelCase } from "camel-case";
@@ -141,9 +141,9 @@ export class Orchestrator<T extends Ent> {
   private validatedFields: Data | null;
   private logValues: Data | null;
   private changesets: Changeset<Ent>[] = [];
-  private dependencies: Map<ID, Builder<T>> = new Map();
+  private dependencies: Map<ID, Builder<Ent>> = new Map();
   private fieldsToResolve: string[] = [];
-  private mainOp: DataOperation | null;
+  private mainOp: DataOperation<T> | null;
   viewer: Viewer;
   private defaultFieldsByFieldName: Data = {};
   private defaultFieldsByTSName: Data = {};
@@ -259,11 +259,13 @@ export class Orchestrator<T extends Ent> {
           tableName: this.options.tableName,
         });
       default:
-        const opts: EditNodeOptions = {
+        const opts: EditNodeOptions<T> = {
           fields: this.validatedFields!,
           tableName: this.options.tableName,
           fieldsToResolve: this.fieldsToResolve,
           key: this.options.key,
+          ent: this.options.loaderOptions.ent,
+          placeholderID: this.options.builder.placeholderID,
         };
         if (this.logValues) {
           opts.fieldsToLog = this.logValues;
@@ -487,8 +489,8 @@ export class Orchestrator<T extends Ent> {
     await Promise.all(promises);
   }
 
-  private isBuilder(val: Builder<T> | any): val is Builder<T> {
-    return (val as Builder<T>).placeholderID !== undefined;
+  private isBuilder(val: Builder<Ent> | any): val is Builder<Ent> {
+    return (val as Builder<Ent>).placeholderID !== undefined;
   }
 
   private getFieldsWithDefaultValues(
@@ -664,9 +666,9 @@ export class Orchestrator<T extends Ent> {
     return action.viewerForEntLoad(data);
   }
 
-  async returnedRow(): Promise<Data | null> {
-    if (this.mainOp && this.mainOp.returnedEntRow) {
-      return this.mainOp.returnedEntRow();
+  private async returnedRow(): Promise<Data | null> {
+    if (this.mainOp && this.mainOp.returnedRow) {
+      return this.mainOp.returnedRow();
     }
     return null;
   }
@@ -704,37 +706,42 @@ export class Orchestrator<T extends Ent> {
 }
 
 export class EntChangeset<T extends Ent> implements Changeset<T> {
+  private _executor: Executor | null;
   constructor(
     public viewer: Viewer,
     public readonly placeholderID: ID,
     public readonly ent: EntConstructor<T>,
     public operations: DataOperation[],
-    public dependencies?: Map<ID, Builder<T>>,
+    public dependencies?: Map<ID, Builder<Ent>>,
     public changesets?: Changeset<Ent>[],
     private options?: OrchestratorOptions<T, Data>,
   ) {}
 
   executor(): Executor {
-    // TODO: write comment here similar to go
-    // if we have dependencies but no changesets, we just need a simple
-    // executor and depend on something else in the stack to handle this correctly
-    if (this.changesets?.length) {
-      return new ComplexExecutor(
+    if (this._executor) {
+      return this._executor;
+    }
+
+    if (!this.changesets?.length) {
+      // if we have dependencies but no changesets, we just need a simple
+      // executor and depend on something else in the stack to handle this correctly
+      // ComplexExecutor which could be a parent of this should make sure the dependency
+      // is resolved beforehand
+      return (this._executor = new ListBasedExecutor(
         this.viewer,
         this.placeholderID,
-        this.ent,
         this.operations,
-        this.dependencies!,
-        this.changesets!,
         this.options,
-      );
+      ));
     }
-    return new ListBasedExecutor(
+
+    return (this._executor = new ComplexExecutor(
       this.viewer,
       this.placeholderID,
-      this.ent,
       this.operations,
+      this.dependencies || new Map(),
+      this.changesets || [],
       this.options,
-    );
+    ));
   }
 }

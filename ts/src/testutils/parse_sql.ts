@@ -106,7 +106,7 @@ function getColumns(cols: string[] | null | any[] | Column[] | "*"): ColsInfo {
         }
         count = true;
       } else {
-        fail("unsupported expr type");
+        throw new Error("unsupported expr type");
       }
     }
   }

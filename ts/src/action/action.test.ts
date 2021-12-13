@@ -333,7 +333,7 @@ function commonTests() {
 
     try {
       await builder.saveX();
-      fail("should have thrown exception");
+      throw new Error("should have thrown exception");
     } catch (error) {
       expect(error.message).toMatch(/could not resolve placeholder value/);
     }

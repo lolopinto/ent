@@ -13,7 +13,6 @@ type EntMutationChangeset struct {
 	entity        ent.Entity
 	ops           []ent.DataOperation
 	executor      ent.Executor
-	fields        map[string]interface{}
 	placeholderID string
 	existingEnt   ent.Entity
 	entConfig     ent.Config

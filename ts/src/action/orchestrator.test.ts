@@ -312,7 +312,7 @@ function commonTests() {
 
     try {
       await builder.build();
-      fail("should have thrown exception");
+      throw new Error("should have thrown exception");
     } catch (e) {
       expect(e.message).toBe(
         "field LastName set to null for non-nullable field",
@@ -331,7 +331,7 @@ function commonTests() {
 
     try {
       await builder.build();
-      fail("should have thrown exception");
+      throw new Error("should have thrown exception");
     } catch (e) {
       expect(e.message).toBe("required field LastName not set");
     }
@@ -388,7 +388,7 @@ function commonTests() {
 
     try {
       await builder.build();
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (e) {
       expect((e as Error).message).toBe(
         "defaultValueOnCreate() returned undefined for field data",
@@ -531,7 +531,7 @@ function commonTests() {
 
       try {
         await builder.build();
-        fail("should not have gotten here");
+        throw new Error("should not have gotten here");
       } catch (e) {
         expect(e.message).toBe("invalid field zip with value 941");
       }
@@ -898,7 +898,7 @@ function commonTests() {
       const newUser = await action.saveX();
       expect(newUser).toBeInstanceOf(User);
       if (!newUser) {
-        fail("impossible");
+        throw new Error("impossible");
       }
 
       const edges = await loadEdges({
@@ -989,7 +989,7 @@ function commonTests() {
       const newUser = await action.saveX();
       expect(newUser).toBeInstanceOf(User);
       if (!newUser) {
-        fail("impossible");
+        throw new Error("impossible");
       }
 
       const edges = await loadEdges({
@@ -1386,7 +1386,7 @@ function commonTests() {
       const newUser = await action.saveX();
       expect(newUser).toBeInstanceOf(User);
       if (!newUser) {
-        fail("impossible");
+        throw new Error("impossible");
       }
 
       const edges = await loadEdges({
@@ -1479,7 +1479,7 @@ function commonTests() {
     const newUser = await action.saveX();
     expect(newUser).toBeInstanceOf(User);
     if (!newUser) {
-      fail("impossible");
+      throw new Error("impossible");
     }
 
     const edges = await loadEdges({
@@ -1638,7 +1638,7 @@ function commonTests() {
       try {
         await builder.build();
 
-        fail("should not get here");
+        throw new Error("should not get here");
       } catch (e) {
         expect(e.message).toBe("existing ent required with operation");
       }
@@ -1694,7 +1694,7 @@ function commonTests() {
 
       try {
         await builder.build();
-        fail("should not get here");
+        throw new Error("should not get here");
       } catch (e) {
         expect(e.message).toBe("existing ent required with operation");
       }
@@ -1736,7 +1736,7 @@ function commonTests() {
 
       try {
         await action.validX();
-        fail("should have thrown exception");
+        throw new Error("should have thrown exception");
       } catch (e) {
         expect(e.message).toBe("start time cannot be after end time");
       }
@@ -1822,7 +1822,7 @@ function commonTests() {
       };
       try {
         await action.validX();
-        fail("should have thrown");
+        throw new Error("should have thrown");
       } catch (e) {
         expect(e.message).toMatch(
           /Viewer with ID 1 does not have permission to create User/,
@@ -1849,7 +1849,7 @@ function commonTests() {
       };
       try {
         await action.validX();
-        fail("should have thrown");
+        throw new Error("should have thrown");
       } catch (e) {
         expect(e.message).toMatch(
           /Viewer with ID 1 does not have permission to edit User/,
@@ -1876,7 +1876,7 @@ function commonTests() {
       };
       try {
         await action.validX();
-        fail("should have thrown");
+        throw new Error("should have thrown");
       } catch (e) {
         expect(e.message).toMatch(
           /Viewer with ID 1 does not have permission to delete User/,
@@ -1903,7 +1903,7 @@ function commonTests() {
       };
       try {
         await action.validX();
-        fail("should have thrown");
+        throw new Error("should have thrown");
       } catch (e) {
         expect(e.message).toMatch(
           /Logged out Viewer does not have permission to delete User/,
@@ -1982,7 +1982,7 @@ function commonTests() {
       action.triggers = triggers;
       const user = await action.saveX();
       if (!user) {
-        fail("couldn't save user");
+        throw new Error("couldn't save user");
       }
 
       expect(user.data).toEqual({
@@ -2037,7 +2037,7 @@ function commonTests() {
       // this didn't replace the builder
       const user = await action.saveX();
       if (!user) {
-        fail("couldn't save user");
+        throw new Error("couldn't save user");
       }
       expect(user.data).toEqual({
         id: user.id,
@@ -2052,7 +2052,7 @@ function commonTests() {
       expect(contactAction!).not.toBe(null);
       let contact = await contactAction!.builder.orchestrator.editedEnt();
       if (!contact) {
-        fail("couldn't save contact");
+        throw new Error("couldn't save contact");
       }
       expect(contact.data).toEqual({
         id: contact.id,
@@ -2085,7 +2085,7 @@ function commonTests() {
 
       const user = await action.saveX();
       if (!user) {
-        fail("couldn't save user");
+        throw new Error("couldn't save user");
       }
 
       expect(user.data).toMatchObject({
@@ -2117,7 +2117,7 @@ function commonTests() {
 
       const user = await action.saveX();
       if (!user) {
-        fail("couldn't save user");
+        throw new Error("couldn't save user");
       }
 
       expect(user.data).toEqual({
@@ -2154,7 +2154,7 @@ function commonTests() {
 
       const user = await action.saveX();
       if (!user) {
-        fail("couldn't save user");
+        throw new Error("couldn't save user");
       }
 
       expect(user.data).toEqual({
@@ -2226,7 +2226,7 @@ function commonTests() {
 
       const user = await action.saveX();
       if (!user) {
-        fail("couldn't save user");
+        throw new Error("couldn't save user");
       }
 
       expect(user.data).toMatchObject({
@@ -2254,7 +2254,7 @@ function commonTests() {
 
       const user = await action.saveX();
       if (!user) {
-        fail("couldn't save user");
+        throw new Error("couldn't save user");
       }
 
       expect(user.data).toEqual({
@@ -2284,7 +2284,7 @@ function commonTests() {
 
       try {
         await action.saveX();
-        fail("expected error");
+        throw new Error("expected error");
       } catch (err) {
         expect(err.message).toMatch(
           /Viewer with ID 1 does not have permission to create UserExtended$/,
@@ -2372,7 +2372,7 @@ function commonTests() {
       );
       try {
         await action.saveX();
-        fail("should have thrown exception");
+        throw new Error("should have thrown exception");
       } catch (e) {
         expect(e.message).toBe("was able to create ent but not load it");
       }
@@ -2389,7 +2389,7 @@ function commonTests() {
       );
       try {
         await action.saveX();
-        fail("should have thrown exception");
+        throw new Error("should have thrown exception");
       } catch (e) {
         expect(e.message).toBe("was able to edit ent but not load it");
       }
@@ -2508,7 +2508,7 @@ function commonTests() {
     // logged out viewer with null viewer throws since it's still required
     try {
       await builder3.saveX();
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (e) {
       expect(e.message).toBe("field UserID set to null for non-nullable field");
     }
@@ -2550,7 +2550,7 @@ function commonTests() {
     // logged out viewer with null viewer throws since it's still required
     try {
       await builder3.saveX();
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (e) {
       expect(e.message).toBe("field UserID set to null for non-nullable field");
     }
@@ -2613,12 +2613,14 @@ async function getFieldsFromBuilder<T extends Ent>(
   const ops = getOperations(c);
   expect(ops.length).toBe(expLength);
   for (const op of ops) {
-    const options = (op as EditNodeOperation).options;
+    const options = (op as EditNodeOperation<T>).options;
     if (options !== undefined) {
       return options.fields;
     }
   }
-  fail("couldn't find EditNodeOperation where fields are being edited");
+  throw new Error(
+    "couldn't find EditNodeOperation where fields are being edited",
+  );
 }
 
 async function getEdgeOpFromBuilder<T extends Ent>(
@@ -2640,7 +2642,7 @@ async function getEdgeOpFromBuilder<T extends Ent>(
       }
     }
   }
-  fail(`could not find edge operation with edgeType ${edgeType}`);
+  throw new Error(`could not find edge operation with edgeType ${edgeType}`);
 }
 
 let sendEmailObserver: Observer<User> = {

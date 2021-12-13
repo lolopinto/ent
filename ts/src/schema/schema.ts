@@ -372,6 +372,15 @@ export interface Action {
 
   // only allowed for actionOnlyField
   actionOnlyFields?: ActionField[];
+
+  // beta. may be removed in the future
+  // https://github.com/lolopinto/ent/issues/570
+  // allows changing default behavior e.g. making an optional field required
+  // or excluding a field so as to not put in fields
+  excludedFields?: string[];
+  optionalFields?: string[];
+  requiredFields?: string[];
+  noFields?: boolean;
 }
 
 // sentinel that indicates an action has no fields

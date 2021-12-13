@@ -91,14 +91,14 @@ test("create guests", async () => {
   expect(guest).toBeInstanceOf(Guest);
 
   if (!guest) {
-    fail("impossicant");
+    throw new Error("impossicant");
   }
 
   const code = await AuthCode.loadFromGuestID(guest.viewer, guest.id);
   expect(code).toBeInstanceOf(AuthCode);
 
   if (!code) {
-    fail("impossicant");
+    throw new Error("impossicant");
   }
   expect(code.emailAddress).toBe(guest.emailAddress);
   expect(code.guestID).toBe(guest.id);

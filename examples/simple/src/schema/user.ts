@@ -14,13 +14,13 @@ import {
   EnumListType,
   BigIntegerType,
   JSONBListType,
+  UUIDListType,
 } from "@snowtop/ent/schema";
 import { EmailType } from "@snowtop/ent-email";
 import { PasswordType } from "@snowtop/ent-password";
 import { PhoneNumberType } from "@snowtop/ent-phonenumber";
 import { StringListType } from "@snowtop/ent/schema/field";
 import Feedback from "./patterns/feedback";
-import { UUIDListType } from "../../../../ts/dist";
 
 export default class User extends BaseEntSchema implements Schema {
   constructor() {
@@ -141,12 +141,13 @@ export default class User extends BaseEntSchema implements Schema {
     // create user
     {
       operation: ActionOperation.Create,
+      requiredFields: ["PhoneNumber", "Password"],
       fields: [
         "FirstName",
         "LastName",
         "EmailAddress",
-        requiredField("PhoneNumber"),
-        requiredField("Password"),
+        "PhoneNumber",
+        "Password",
         "nicknames",
         "prefs",
         "prefs_diff",

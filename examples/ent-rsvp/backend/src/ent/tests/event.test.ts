@@ -23,7 +23,7 @@ describe("create event", () => {
       await CreateEventAction.create(new LoggedOutViewer(), {
         name: `${user.firstName}'s wedding`,
       }).saveX();
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (e) {
       expect((e as Error).message).toMatch(
         /Logged out Viewer does not have permission to create Event/,
@@ -69,7 +69,7 @@ describe("create event", () => {
     const activity = activities.find((a) => a.name == "closing brunch");
     expect(activity).toBeDefined();
     if (!activity) {
-      fail("impossicant");
+      throw new Error("impossicant");
     }
     const address = await Address.loadFromOwnerID(activity.viewer, activity.id);
     expect(address).not.toBe(null);

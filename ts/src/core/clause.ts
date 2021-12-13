@@ -178,7 +178,7 @@ export function Or(...args: Clause[]): compositeClause {
   return new compositeClause(args, " OR ");
 }
 
-// todo?
+// TODO this breaks if values.length ===1 and array. todo fix
 export function In(col: string, ...values: any): Clause {
   return new inClause(col, values);
 }

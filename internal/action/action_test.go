@@ -426,19 +426,18 @@ func TestDefaultNoFields(t *testing.T) {
 		[]expectedAction{
 			{
 				name: "EditUserAction",
-				// TODO action.GetFields() shouldn't include fields that are not editable by the action
-				fields: expectedFieldsPlusDefault(
-					expectedField{
+				fields: []expectedField{
+					{
 						name:    "FirstName",
 						tsType:  "string",
 						gqlType: "String!",
 					},
-					expectedField{
+					{
 						name:    "LastName",
 						tsType:  "string",
 						gqlType: "String!",
 					},
-				),
+				},
 			},
 		},
 	)
@@ -673,18 +672,18 @@ func TestActionOnlyFields(t *testing.T) {
 		[]expectedAction{
 			{
 				name: "CreateEventAction",
-				fields: expectedFieldsPlusDefault(
-					expectedField{
+				fields: []expectedField{
+					{
 						name:    "name",
 						tsType:  "string",
 						gqlType: "String!",
 					},
-					expectedField{
+					{
 						name:    "start_time",
 						tsType:  "Date",
 						gqlType: "Time!",
 					},
-				),
+				},
 				actionOnlyFields: []actionOnlyField{
 					{
 						name: "addCreatorAsAdmin",
@@ -789,7 +788,7 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 			gqlType: "ID!",
 		},
 	}
-	activityFields := expectedFieldsPlusDefault(activityCoreFields...)
+	activityFields := activityCoreFields
 
 	addressCoreFields := []expectedField{
 		{
@@ -849,18 +848,18 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 		[]expectedAction{
 			{
 				name: "CreateEventAction",
-				fields: expectedFieldsPlusDefault(
-					expectedField{
+				fields: []expectedField{
+					{
 						name:    "name",
 						tsType:  "string",
 						gqlType: "String!",
 					},
-					expectedField{
+					{
 						name:    "start_time",
 						tsType:  "Date",
 						gqlType: "Time!",
 					},
-				),
+				},
 				actionOnlyFields: []actionOnlyField{
 					{
 						name: "activities",
@@ -1064,27 +1063,4 @@ func getTestEdgeInfo(t *testing.T, configName string) *edge.EdgeInfo {
 func getTestFieldByName(t *testing.T, configName string, fieldName string) *field.Field {
 	fieldInfo := getTestFieldInfo(t, configName)
 	return fieldInfo.GetFieldByName(fieldName)
-}
-
-func expectedFieldsPlusDefault(fields ...expectedField) []expectedField {
-	// TODO action.GetFields() shouldn't include fields that are not editable by the action
-	ret := []expectedField{
-		{
-			name:    "ID",
-			tsType:  "ID",
-			gqlType: "ID!",
-		},
-		{
-			name:    "createdAt",
-			tsType:  "Date",
-			gqlType: "Time!",
-		},
-		{
-			name:    "updatedAt",
-			tsType:  "Date",
-			gqlType: "Time!",
-		},
-	}
-	ret = append(ret, fields...)
-	return ret
 }

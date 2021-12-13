@@ -197,7 +197,7 @@ describe("accessor", () => {
           return 3.2;
         }
       }
-      fail("should not get here");
+      throw new Error("should not get here");
     } catch (e) {
       expect(e.message).toMatch(/^type is required (.)+/);
     }
@@ -212,7 +212,7 @@ describe("accessor", () => {
           return 3.2;
         }
       }
-      fail("should not get here");
+      throw new Error("should not get here");
     } catch (e) {
       expect(e.message).toMatch(/^type is required (.)+/);
     }
@@ -446,7 +446,7 @@ describe("property", () => {
         // lol but why?
         age;
       }
-      fail("should not have gotten here");
+      throw new Error("should not have gotten here");
     } catch (e) {
       expect(e.message).toMatch(/^type is required (.)+/);
     }
@@ -495,7 +495,7 @@ describe("property", () => {
         @gqlField({ type: GraphQLPoint })
         point: Point;
       }
-      fail("should not get here");
+      throw new Error("should not get here");
     } catch (e) {
       expect(e.message).toMatch(
         /custom scalar type Point is not supported this way. use CustomType syntax/,
@@ -734,7 +734,7 @@ describe("function", () => {
           return `${cursor}:${pos}`;
         }
       }
-      fail("should not get here");
+      throw new Error("should not get here");
     } catch (e) {
       expect(e.message).toMatch(/^args were not captured correctly/);
     }
@@ -851,7 +851,7 @@ describe("function", () => {
         }
       }
       GQLCapture.resolve([]);
-      fail("should throw");
+      throw new Error("should throw");
     } catch (error) {
       // TODO need a better message here
       expect(error.message).toMatch(
@@ -892,7 +892,7 @@ describe("function", () => {
     validateNoCustom(CustomObjectTypes.Field);
     try {
       GQLCapture.resolve(["User"]);
-      fail("shouldn't get here");
+      throw new Error("shouldn't get here");
     } catch (error) {
       expect(error.message).toMatch(/^field selfContact references Contact/);
     }
@@ -906,7 +906,7 @@ describe("function", () => {
           return new User();
         }
       }
-      fail("shouldn't have gotten here");
+      throw new Error("shouldn't have gotten here");
     } catch (e) {
       expect(e.message).toMatch(/^Promise isn't a valid type/);
     }
@@ -1057,7 +1057,7 @@ describe("function", () => {
           return [new User()];
         }
       }
-      fail("should have thrown");
+      throw new Error("should have thrown");
     } catch (e) {
       expect(e.message).toBe(
         "async function not currently supported for GraphQLConnection",

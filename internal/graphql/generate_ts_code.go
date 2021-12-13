@@ -1863,9 +1863,6 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 	}
 
 	for _, f := range a.GetFields() {
-		if !f.EditableField() {
-			continue
-		}
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
 			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(!action.IsRequiredField(a, f)), true),
@@ -2128,7 +2125,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 					result.FunctionContents,
 					fmt.Sprintf("%s: mustDecodeIDFromGQLID(input.%s),", f.TsFieldName(), f.TsFieldName()),
 				)
-			} else if f.EditableField() {
+			} else {
 				result.FunctionContents = append(
 					result.FunctionContents,
 					fmt.Sprintf("%s: input.%s,", f.TsFieldName(), f.TsFieldName()),
@@ -2194,7 +2191,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 				)
 			}
 			for _, f := range a.GetFields() {
-				if f.ExposeToGraphQL() && f.EditableField() {
+				if f.ExposeToGraphQL() {
 					if base64EncodeIDs && f.IsEditableIDField() {
 						result.FunctionContents = append(
 							result.FunctionContents,
