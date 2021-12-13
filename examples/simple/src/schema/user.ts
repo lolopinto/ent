@@ -141,12 +141,13 @@ export default class User extends BaseEntSchema implements Schema {
     // create user
     {
       operation: ActionOperation.Create,
+      requiredFields: ["PhoneNumber", "Password"],
       fields: [
         "FirstName",
         "LastName",
         "EmailAddress",
-        requiredField("PhoneNumber"),
-        requiredField("Password"),
+        "PhoneNumber",
+        "Password",
         "nicknames",
         "prefs",
         "prefs_diff",
