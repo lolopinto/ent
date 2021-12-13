@@ -276,7 +276,7 @@ func getFieldsForAction(action *input.Action, fieldInfo *field.FieldInfo, typ co
 	// no override of fields so we should get default fields
 	if len(fieldNames) == 0 {
 		for _, f := range fieldInfo.Fields {
-			if f.ExposeToActionsByDefault() && !excludedFields[f.FieldName] {
+			if f.ExposeToActionsByDefault() && f.EditableField() && !excludedFields[f.FieldName] {
 				f2, err := getField(f, f.FieldName)
 				if err != nil {
 					return nil, err
@@ -287,13 +287,15 @@ func getFieldsForAction(action *input.Action, fieldInfo *field.FieldInfo, typ co
 	} else if fieldInfo != nil {
 		// if a field is explicitly referenced, we want to automatically add it
 		for _, fieldName := range fieldNames {
-			f2, err := getField(nil, fieldName)
+			f, err := getField(nil, fieldName)
 			if err != nil {
 				return nil, err
 			}
-			fields = append(fields, f2)
+			if !f.EditableField() {
+				return nil, fmt.Errorf("field %s is not editable and cannot be added to action", fieldName)
+			}
+			fields = append(fields, f)
 		}
-
 	}
 	return fields, nil
 }

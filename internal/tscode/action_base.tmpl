@@ -60,16 +60,14 @@
 
   export interface {{$inputName}} {
     {{ range $field := $action.GetFields -}}
-      {{ if $field.EditableField -}}
-        {{$type := $field.TsBuilderType -}}
-        {{range $import := $field.TsBuilderImports -}}
-          {{ $ignore := useImport $import -}}
-        {{end -}}
-        {{if isRequiredField $action $field -}}
-          {{$field.TsFieldName}}: {{$type}};
-        {{else -}}
-          {{$field.TsFieldName}}?: {{$type}};
-        {{end -}}
+      {{$type := $field.TsBuilderType -}}
+      {{range $import := $field.TsBuilderImports -}}
+        {{ $ignore := useImport $import -}}
+      {{end -}}
+      {{if isRequiredField $action $field -}}
+        {{$field.TsFieldName}}: {{$type}};
+      {{else -}}
+        {{$field.TsFieldName}}?: {{$type}};
       {{end -}}
     {{end -}}
 
