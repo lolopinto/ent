@@ -1,4 +1,4 @@
-import { Viewer, Ent } from "../core/base";
+import { Viewer, Ent, Data } from "../core/base";
 import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
 import {
   Action,
@@ -121,4 +121,39 @@ interface BuilderConstructor<T extends Ent> {
     action: Action<T>,
     existingEnt?: T | undefined,
   ): EntBuilder<T>;
+}
+
+// this provides a way to just update a row in the database.
+// skips privacy, triggers, observers, etc
+// does do field validation
+// note that only editable fields in the builder can be passed here
+export async function updateRawObject<TEnt extends Ent, TInput extends Data>(
+  viewer: Viewer,
+  builderCtr: BuilderConstructor<TEnt>,
+  existingEnt: TEnt,
+  input: TInput,
+) {
+  const action = new BaseAction(viewer, builderCtr, {
+    existingEnt: existingEnt,
+    operation: WriteOperation.Edit,
+    input,
+  });
+  return action.saveX();
+}
+
+// creates an action which has no privacy, triggers, observers etc
+// does do field validation
+// useful to batch a bunch of writes together with BaseAction.bulkAction
+// note that only editable fields in the builder can be passed here
+export function getSimpleEditAction<TEnt extends Ent, TInput extends Data>(
+  viewer: Viewer,
+  builderCtr: BuilderConstructor<TEnt>,
+  existingEnt: TEnt,
+  input: TInput,
+): Action<TEnt> {
+  return new BaseAction(viewer, builderCtr, {
+    existingEnt: existingEnt,
+    operation: WriteOperation.Edit,
+    input,
+  });
 }
