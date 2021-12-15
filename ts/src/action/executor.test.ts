@@ -593,7 +593,6 @@ function commonTests() {
 
     const exec = await executeAction(action, ListBasedExecutor);
     let ent = await action.editedEntX();
-    // so we need to resolve this when nothing changes...
     expect(exec.resolveValue(action.builder.placeholderID)).toStrictEqual(ent);
 
     // 2 operations. Edit NodeOperation still created because it's needed to resolve placeholder

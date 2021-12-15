@@ -259,10 +259,6 @@ export class Orchestrator<T extends Ent> {
           tableName: this.options.tableName,
         });
       default:
-        // // no data, nothing to update
-        // if (!this.hasData(this.validatedFields!)) {
-        //   return null;
-        // }
         const opts: EditNodeOptions<T> = {
           fields: this.validatedFields!,
           tableName: this.options.tableName,
@@ -422,7 +418,6 @@ export class Orchestrator<T extends Ent> {
       schemaFields,
       action,
     );
-    //    console.debug(editedData);
 
     // this runs in following phases:
     // * set default fields and pass to builder so the value can be checked by triggers/observers/validators
@@ -557,8 +552,6 @@ export class Orchestrator<T extends Ent> {
       }
     }
 
-    //    console.debug(data, defaultData);
-
     // if there's data changing, add data
     if (this.hasData(data)) {
       data = {
@@ -566,16 +559,11 @@ export class Orchestrator<T extends Ent> {
         ...defaultData,
       };
       if (updateInput && this.options.updateInput) {
-        console.debug("updateInput called");
         // this basically fixes #605. just needs to be exposed correctly
         this.options.updateInput(this.defaultFieldsByTSName);
       }
     }
 
-    // if (updateInput && this.options.updateInput) {
-    //   // this basically fixes #605. just needs to be exposed correctly
-    //   this.options.updateInput(this.defaultFieldsByTSName);
-    // }
     return data;
   }
 
@@ -633,7 +621,7 @@ export class Orchestrator<T extends Ent> {
     schemaFields: Map<string, Field>,
   ): Promise<void> {
     const op = this.options.operation;
-    if (op == WriteOperation.Delete) {
+    if (op === WriteOperation.Delete) {
       return;
     }
 
@@ -737,9 +725,6 @@ export class Orchestrator<T extends Ent> {
   async editedEnt(): Promise<T | null> {
     const row = await this.returnedRow();
     if (!row) {
-      // if (this.options.builder.existingEnt && this.validatedFields !== null) {
-      //   return this.options.builder.existingEnt;
-      // }
       return null;
     }
     const viewer = await this.viewerForEntLoad(row);
@@ -749,9 +734,6 @@ export class Orchestrator<T extends Ent> {
   async editedEntX(): Promise<T> {
     const row = await this.returnedRow();
     if (!row) {
-      // if (this.options.builder.existingEnt && this.validatedFields !== null) {
-      //   return this.options.builder.existingEnt;
-      // }
       throw new Error(`ent was not created`);
     }
     const viewer = await this.viewerForEntLoad(row);
