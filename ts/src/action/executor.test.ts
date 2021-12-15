@@ -135,11 +135,16 @@ describe("sqlite", () => {
 });
 
 jest.spyOn(action, "saveBuilder").mockImplementation(saveBuilder);
+jest.spyOn(action, "saveBuilderX").mockImplementation(saveBuilderX);
 
 async function saveBuilder<T extends Ent>(builder: Builder<T>): Promise<void> {
   const changeset = await builder.build();
   const executor = changeset.executor();
   operations = await executeOperations(executor, builder.viewer.context, true);
+}
+
+async function saveBuilderX<T extends Ent>(builder: Builder<T>): Promise<void> {
+  return saveBuilder(builder);
 }
 
 async function executeAction<T extends Ent, E = any>(
@@ -482,6 +487,20 @@ function commonTests() {
       WriteOperation.Insert,
     );
     const user = await action.saveX();
+    expect(operations.length).toBe(1);
+
+    // insert query
+    QueryRecorder.validateQueryStructuresFromLogs(
+      ml,
+      [
+        {
+          tableName: "users",
+          type: queryType.INSERT,
+        },
+      ],
+      // skipping assoc_edge_config load and potentially sqlite select *
+      true,
+    );
     ml.clear();
 
     const viewer = new LoggedOutViewer();
@@ -494,10 +513,17 @@ function commonTests() {
       user,
     );
 
-    let ent = await builder.save();
-    expect(ent).toBeUndefined();
-    // TODO for now it's the EditNodeOperation but we should skip it when no fields
+    await builder.saveX();
+    let ent = await builder.editedEntX();
+    expect(ent).toBeDefined();
     expect(operations.length).toBe(1);
+    // there's an operation but no query.
+    QueryRecorder.validateQueryStructuresFromLogs(
+      ml,
+      [],
+      // skipping assoc_edge_config load and potentially sqlite select *
+      true,
+    );
   });
 
   test("simple-one-op-created-ent", async () => {
@@ -513,12 +539,19 @@ function commonTests() {
 
     const exec = await executeAction(action, ListBasedExecutor);
 
-    let ent = await action.editedEnt();
-    expect(ent).not.toBe(null);
+    const ent = await action.editedEntX();
     expect(exec.resolveValue(action.builder.placeholderID)).toStrictEqual(ent);
-    expect(exec.resolveValue(ent?.id)).toBe(null);
+    expect(exec.resolveValue(ent.id)).toBe(null);
 
     expect(operations.length).toBe(1);
+
+    // data saved. confirm that default values on create set
+    const data = ent.data;
+    expect(data.id).toBe(ent.id);
+    expect(data.created_at).toBeDefined();
+    expect(data.updated_at).toBeDefined();
+    expect(data.first_name).toBe("Jon");
+    expect(data.last_name).toBe("Snow");
 
     QueryRecorder.validateQueryStructuresFromLogs(
       ml,
@@ -532,7 +565,7 @@ function commonTests() {
     );
   });
 
-  test("simple-one-op-no-created-ent", async () => {
+  test("simple-one-op-no-edited-ent", async () => {
     let id = QueryRecorder.newID();
     await createRowForTest({
       tableName: "users",
@@ -559,19 +592,16 @@ function commonTests() {
     action.builder.orchestrator.addOutboundEdge(id2, "fake_edge", "user");
 
     const exec = await executeAction(action, ListBasedExecutor);
-    let ent = await action.editedEnt();
-    expect(ent).not.toBe(null);
+    let ent = await action.editedEntX();
     expect(exec.resolveValue(action.builder.placeholderID)).toStrictEqual(ent);
+
+    // 2 operations. Edit NodeOperation still created because it's needed to resolve placeholder
+    // however, no writes done. see query below
 
     expect(operations.length).toBe(2);
     QueryRecorder.validateQueryStructuresFromLogs(
       ml,
       [
-        {
-          // TODO this shouldn't be here...
-          tableName: "users",
-          type: queryType.UPDATE,
-        },
         {
           tableName: "fake_edge_table",
           type: queryType.INSERT,
@@ -823,11 +853,6 @@ function commonTests() {
           tableName: "messages",
           type: queryType.INSERT,
         },
-        {
-          tableName: "groups",
-          type: queryType.UPDATE,
-        },
-
         {
           tableName: "channelMember_table",
           type: queryType.INSERT,

@@ -119,7 +119,7 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
     private schema: BuilderSchema<T>,
     fields: Map<string, any>,
     public operation: WriteOperation = WriteOperation.Insert,
-    public existingEnt: Ent | undefined = undefined,
+    public existingEnt: T | undefined = undefined,
     action?: Action<T> | undefined,
   ) {
     // create dynamic placeholder
@@ -260,17 +260,21 @@ export class SimpleAction<T extends Ent> implements Action<T> {
   async save(): Promise<T | null> {
     await saveBuilder(this.builder);
     if (this.builder.operation !== WriteOperation.Delete) {
-      return await this.builder.orchestrator.editedEnt();
+      return this.builder.orchestrator.editedEnt();
     }
     return null;
   }
 
   async saveX(): Promise<T> {
     await saveBuilderX(this.builder);
-    return await this.builder.orchestrator.editedEntX();
+    return this.builder.orchestrator.editedEntX();
   }
 
   async editedEnt(): Promise<T | null> {
-    return await this.builder.orchestrator.editedEnt();
+    return this.builder.orchestrator.editedEnt();
+  }
+
+  async editedEntX(): Promise<T> {
+    return this.builder.orchestrator.editedEntX();
   }
 }
