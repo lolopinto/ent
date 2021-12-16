@@ -19,6 +19,7 @@ type Imports struct {
 	imports     []*importInfo
 	exports     []*exportInfo
 	filePath    string
+	errorPath   string
 	cfg         Config
 }
 
@@ -35,6 +36,7 @@ func NewImports(cfg Config, filePath string) *Imports {
 		usedExports: make(map[string]bool),
 		pathMap:     make(map[string]*importInfo),
 		filePath:    filePath,
+		errorPath:   getErrorPath(cfg, filePath),
 		cfg:         cfg,
 	}
 }
@@ -155,7 +157,7 @@ func dict(values ...interface{}) (map[string]interface{}, error) {
 // Use makes use of an export and ensures that's imported
 func (imps *Imports) Use(export string) (string, error) {
 	if imps.exportMap[export] == nil {
-		return "", fmt.Errorf("tried to use export %s even though it was never reserved", export)
+		return "", fmt.Errorf("tried to use export %s at path %s even though it was never reserved", export, imps.errorPath)
 	}
 
 	imps.usedExports[export] = true

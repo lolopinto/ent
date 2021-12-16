@@ -201,12 +201,14 @@ func (e *EdgeInfo) CreateEdgeBaseFile() bool {
 }
 
 func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName string, polymorphic *base.PolymorphicOptions, nullable bool) error {
+	// well this is dumb
 	// not an id field, do nothing
 	// TODO we need a test for this
-	if !strings.HasSuffix(fieldName, "ID") {
+	if !strings.HasSuffix(fieldName, "ID") && !strings.HasSuffix(fieldName, "id") {
 		return nil
 	}
 	trim := strings.TrimSuffix(fieldName, "ID")
+	trim = strings.TrimSuffix(trim, "_id")
 	if trim == "" {
 		trim = fieldName
 	}
