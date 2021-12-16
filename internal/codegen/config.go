@@ -62,7 +62,7 @@ func NewTestConfig(configPath, modulePath string, codegenCfg *CodegenConfig) (*C
 }
 
 func (cfg *Config) SetDebugMode(debugMode bool) {
-	cfg.debugMode = true
+	cfg.debugMode = debugMode
 }
 
 func (cfg *Config) DebugMode() bool {
