@@ -45,3 +45,5 @@ yarn-error.log*
 .docker-sync
 
 *.db
+
+.vscode

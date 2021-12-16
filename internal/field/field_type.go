@@ -364,7 +364,7 @@ func (f *Field) IDField() bool {
 	}
 	// TOOD this needs a better name, way of figuring out etc
 	// TODO kill this and replace with EvolvedIDField
-	return strings.HasSuffix(f.FieldName, "ID")
+	return strings.HasSuffix(f.FieldName, "ID") || strings.HasSuffix(f.FieldName, "_id")
 }
 
 func (f *Field) IDType() bool {

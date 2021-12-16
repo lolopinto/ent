@@ -47,3 +47,17 @@ func getImportPath(cfg Config, filePath, importPath string) (string, error) {
 	}
 	return relPath, nil
 }
+
+func getErrorPath(cfg Config, filePath string) string {
+	wd := cfg.GetAbsPathToRoot()
+	if !path.IsAbs(filePath) {
+		return filePath
+	}
+	p, err := filepath.Rel(wd, filePath)
+	if err != nil {
+		// any error here isn't important, just return what we got
+		return filePath
+	}
+	return p
+
+}
