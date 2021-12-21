@@ -319,6 +319,16 @@ export class EventBuilder implements Builder<Event> {
         EdgeType.UserToCreatedEvents,
         NodeType.User,
       );
+      if (
+        this.existingEnt &&
+        this.existingEnt.creatorID &&
+        this.existingEnt.creatorID !== fields.creatorID
+      ) {
+        this.orchestrator.removeInboundEdge(
+          this.existingEnt.creatorID,
+          EdgeType.UserToCreatedEvents,
+        );
+      }
     }
     addField("start_time", fields.startTime);
     addField("end_time", fields.endTime);

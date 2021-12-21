@@ -121,6 +121,7 @@ export default class User extends BaseEntSchema implements Schema {
   ];
 
   edges: Edge[] = [
+    // should be able to kill this
     {
       name: "createdEvents",
       schemaName: "Event",
