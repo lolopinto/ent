@@ -219,6 +219,12 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
             {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
             {{useImport "NodeType"}}.{{$inverseEdge.NodeInfo.Node}},
           );
+          if (this.existingEnt && this.existingEnt.{{$tsFieldName}} && this.existingEnt.{{$tsFieldName}} !== fields.{{$tsFieldName}}) {
+            this.orchestrator.removeInboundEdge(
+              this.existingEnt.{{$tsFieldName}},
+              {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
+            );
+          }
         }
       {{end -}}
     {{end -}}

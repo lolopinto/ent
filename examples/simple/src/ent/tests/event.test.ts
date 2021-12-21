@@ -48,14 +48,82 @@ test("create event", async () => {
   // reload the event from the viewer's perspective
   const v = new IDViewer(event.creatorID);
   event = await Event.loadX(v, event.id);
-  const creator = await event.loadCreator();
-  expect(creator).not.toBe(null);
-  expect(creator!.id).toBe(event.creatorID);
+  const creator = await event.loadCreatorX();
+  expect(creator.id).toBe(event.creatorID);
 
   // creator is added as host too
   const hosts = await event.queryHosts().queryEnts();
   expect(hosts.length).toBe(1);
   expect(hosts[0].id).toBe(event.creatorID);
+
+  const [createdEvents, createdEventsEdges] = await Promise.all([
+    creator.queryCreatedEvents().queryEnts(),
+    creator.queryCreatedEvents().queryEdges(),
+  ]);
+
+  expect(createdEvents.length).toBe(1);
+  expect(createdEvents[0].id).toBe(event.id);
+  expect(createdEventsEdges.length).toBe(1);
+  expect(createdEventsEdges[0]).toMatchObject({
+    id1: creator.id,
+    id1Type: creator.nodeType,
+    id2: event.id,
+    id2Type: event.nodeType,
+  });
+});
+
+test("change creator for some reason", async () => {
+  let date = new Date();
+  let event = await create(date);
+
+  // reload the event from the viewer's perspective
+  const v = new IDViewer(event.creatorID);
+  event = await Event.loadX(v, event.id);
+  const creator = await event.loadCreatorX();
+  expect(creator.id).toBe(event.creatorID);
+
+  let [createdEvents, createdEventsEdges] = await Promise.all([
+    creator.queryCreatedEvents().queryEnts(),
+    creator.queryCreatedEvents().queryEdges(),
+  ]);
+
+  expect(createdEvents.length).toBe(1);
+  expect(createdEventsEdges.length).toBe(1);
+
+  let newCreator = await createUser();
+  let editedEvent = await EditEventAction.create(
+    new IDViewer(event.creatorID),
+    event,
+    {
+      creatorID: newCreator.id,
+    },
+  ).saveX();
+  expect(editedEvent.creatorID).toBe(newCreator.id);
+
+  const oldCreator = creator;
+  let [createdEvents2, createdEventsEdges2] = await Promise.all([
+    oldCreator.queryCreatedEvents().queryEnts(),
+    oldCreator.queryCreatedEvents().queryEdges(),
+  ]);
+  expect(createdEvents2.length).toBe(0);
+  expect(createdEventsEdges2.length).toBe(0);
+
+  let [createdEvents3, createdEventsEdges3] = await Promise.all([
+    newCreator.queryCreatedEvents().queryEnts(),
+    newCreator.queryCreatedEvents().queryEdges(),
+  ]);
+  expect(createdEvents3.length).toBe(1);
+  expect(createdEventsEdges3.length).toBe(1);
+
+  expect(createdEvents3.length).toBe(1);
+  expect(createdEvents3[0].id).toBe(event.id);
+  expect(createdEventsEdges3.length).toBe(1);
+  expect(createdEventsEdges3[0]).toMatchObject({
+    id1: newCreator.id,
+    id1Type: newCreator.nodeType,
+    id2: event.id,
+    id2Type: event.nodeType,
+  });
 });
 
 test("edit event", async () => {
