@@ -27,6 +27,7 @@ import {
   ArticleToCommentsQuery,
   CommentToPostQuery,
   NodeType,
+  User,
 } from "../internal";
 import schema from "../../schema/comment";
 
@@ -193,6 +194,14 @@ export class CommentBase {
       this.articleType as unknown as NodeType,
       this.articleID,
     );
+  }
+
+  async loadAuthor(): Promise<User | null> {
+    return loadEnt(this.viewer, this.authorID, User.loaderOptions());
+  }
+
+  loadAuthorX(): Promise<User> {
+    return loadEntX(this.viewer, this.authorID, User.loaderOptions());
   }
 }
 

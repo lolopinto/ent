@@ -13,12 +13,12 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Comment } from "../../..";
+import { Comment, User } from "../../..";
 import { EdgeType, NodeType } from "../../../generated/const";
 import schema from "../../../../schema/comment";
 
 export interface CommentInput {
-  authorID?: ID;
+  authorID?: ID | Builder<User>;
   body?: string;
   articleID?: ID | Builder<Ent>;
   articleType?: string;
@@ -178,7 +178,7 @@ export class CommentBuilder implements Builder<Comment> {
   }
 
   // get value of AuthorID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewAuthorIDValue(): ID | undefined {
+  getNewAuthorIDValue(): ID | Builder<User> | undefined {
     if (this.input.authorID !== undefined) {
       return this.input.authorID;
     }

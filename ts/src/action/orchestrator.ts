@@ -595,15 +595,20 @@ export class Orchestrator<T extends Ent> {
         throw new Error(`required field ${field.name} not set`);
       }
     } else if (this.isBuilder(value)) {
-      let builder = value;
+      if (field.valid) {
+        const valid = await Promise.resolve(field.valid(value));
+        if (!valid) {
+          throw new Error(`invalid field ${field.name} with value ${value}`);
+        }
+      }
       // keep track of dependencies to resolve
-      this.dependencies.set(builder.placeholderID, builder);
+      this.dependencies.set(value.placeholderID, value);
       // keep track of fields to resolve
       this.fieldsToResolve.push(dbKey);
     } else {
       if (field.valid) {
         // TODO this could be async. handle this better
-        let valid = await Promise.resolve(field.valid(value));
+        const valid = await Promise.resolve(field.valid(value));
         if (!valid) {
           throw new Error(`invalid field ${field.name} with value ${value}`);
         }
