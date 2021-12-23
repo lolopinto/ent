@@ -215,10 +215,23 @@ export interface ForeignKey {
 
 type loadRowFn = (type: string) => LoadEntOptions<Ent>;
 
+export interface InverseFieldEdge {
+  // 1-N if field exists so no need for inverse or symmetric edge. also can't be unique
+
+  // name of the inverse edge
+  name: string;
+  // following 3: same as in AssocEdge
+  edgeConstName?: string;
+  tableName?: string;
+  hideFromGraphQL?: boolean;
+}
+
 export interface FieldEdge {
   schema: string;
   // inverseEdge is optional. if present, indicates it maps to an edge in the other schema
-  inverseEdge?: string;
+  // it creates the edge in the other schema if not provided.
+  // this makes it so that we can define and write the edge from this schema
+  inverseEdge?: string | InverseFieldEdge;
 
   // if enforceSchema. implement the valid type.
   // we use loadRowByType to do it

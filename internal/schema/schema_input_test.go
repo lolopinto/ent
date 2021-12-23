@@ -487,6 +487,8 @@ func TestParseInputWithFieldEdge(t *testing.T) {
 						PrimaryKey: true,
 					},
 				},
+				// this is no longer needed. see test below.
+				// we still support this if it exists for backwards compatibility
 				AssocEdges: []*input.AssocEdge{
 					{
 						Name:       "CreatedEvents",
@@ -508,7 +510,7 @@ func TestParseInputWithFieldEdge(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
-						FieldEdge: &input.FieldEdge{Schema: "User", InverseEdge: "CreatedEvents"},
+						FieldEdge: &input.FieldEdge{Schema: "User", InverseEdge: &input.InverseFieldEdge{Name: "CreatedEvents"}},
 					},
 				},
 			},
@@ -526,6 +528,8 @@ func TestParseInputWithFieldEdge(t *testing.T) {
 
 	userEdge := eventConfig.NodeData.EdgeInfo.GetFieldEdgeByName("User")
 	assert.NotNil(t, userEdge)
+	assert.Equal(t, userEdge.NodeInfo.Node, "User")
+	assert.Equal(t, userEdge.InverseEdge.Name, "CreatedEvents")
 
 	// still config name because of artifact of go and old schema
 	userConfig := schema.Nodes["UserConfig"]
@@ -533,6 +537,73 @@ func TestParseInputWithFieldEdge(t *testing.T) {
 
 	eventsEdge := userConfig.NodeData.EdgeInfo.GetAssociationEdgeByName("CreatedEvents")
 	assert.NotNil(t, eventsEdge)
+	assert.Equal(t, eventsEdge.NodeInfo.Node, "Event")
+
+	// 2 nodes, 1 edge
+	testConsts(t, eventConfig.NodeData.ConstantGroups, 1, 0)
+	testConsts(t, userConfig.NodeData.ConstantGroups, 1, 1)
+}
+
+func TestParseInputWithFieldEdgeAndNoEdgeInSource(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+				},
+			},
+			"Event": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "UserID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						FieldEdge: &input.FieldEdge{Schema: "User", InverseEdge: &input.InverseFieldEdge{Name: "CreatedEvents"}},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	// still config name because of artifact of go and old schema
+	eventConfig := schema.Nodes["EventConfig"]
+	assert.NotNil(t, eventConfig)
+
+	userEdge := eventConfig.NodeData.EdgeInfo.GetFieldEdgeByName("User")
+	assert.NotNil(t, userEdge)
+	assert.Equal(t, userEdge.NodeInfo.Node, "User")
+	assert.Equal(t, userEdge.InverseEdge.Name, "CreatedEvents")
+
+	// still config name because of artifact of go and old schema
+	userConfig := schema.Nodes["UserConfig"]
+	assert.NotNil(t, userConfig)
+
+	eventsEdge := userConfig.NodeData.EdgeInfo.GetAssociationEdgeByName("CreatedEvents")
+	assert.NotNil(t, eventsEdge)
+	assert.Equal(t, eventsEdge.NodeInfo.Node, "Event")
+
+	// 2 nodes, 1 edge
+	testConsts(t, eventConfig.NodeData.ConstantGroups, 1, 0)
+	testConsts(t, userConfig.NodeData.ConstantGroups, 1, 1)
 }
 
 // has symmetric and inverse edge!
