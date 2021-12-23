@@ -127,15 +127,17 @@ type Field struct {
 }
 
 type ForeignKey struct {
-	Schema       string `json:"schema"`
-	Column       string `json:"column"`
-	Name         string `json:"name"`
-	DisableIndex bool   `json:"disableIndex"`
+	Schema             string `json:"schema"`
+	Column             string `json:"column"`
+	Name               string `json:"name"`
+	DisableIndex       bool   `json:"disableIndex"`
+	DisableBuilderType bool   `json:"disableBuilderType"`
 }
 
 type FieldEdge struct {
-	Schema      string            `json:"schema"`
-	InverseEdge *InverseFieldEdge `json:"inverseEdge"`
+	Schema             string            `json:"schema"`
+	InverseEdge        *InverseFieldEdge `json:"inverseEdge"`
+	DisableBuilderType bool              `json:"disableBuilderType"`
 }
 
 func (f *FieldEdge) InverseEdgeName() string {
@@ -155,6 +157,7 @@ type InverseFieldEdge struct {
 type PolymorphicOptions struct {
 	Types                  []string `json:"types"`
 	HideFromInverseGraphQL bool     `json:"hideFromInverseGraphQL"`
+	DisableBuilderType     bool     `json:"disableBuilderType"`
 }
 
 func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.TSGraphQLType, error) {
