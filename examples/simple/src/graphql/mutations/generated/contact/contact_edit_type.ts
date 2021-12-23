@@ -87,6 +87,7 @@ export const ContactEditType: GraphQLFieldConfig<
         emailAddress: input.emailAddress,
         firstName: input.firstName,
         lastName: input.lastName,
+        userID: mustDecodeIDFromGQLID(input.userID),
       },
     );
     return { contact: contact };

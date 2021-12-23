@@ -88,6 +88,7 @@ export const EventEditType: GraphQLFieldConfig<
       mustDecodeIDFromGQLID(input.eventID),
       {
         name: input.name,
+        creatorID: mustDecodeIDFromGQLID(input.creatorID),
         startTime: input.startTime,
         endTime: input.endTime,
         location: input.location,
