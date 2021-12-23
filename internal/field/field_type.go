@@ -28,10 +28,8 @@ type Field struct {
 	graphqlFieldType enttype.TSGraphQLType
 	dbColumn         bool
 	hideFromGraphQL  bool
-	// fields which are hidden from graphql because they're field edges should still be visible in graphql mutations...
-	hiddenFromGraphQLBecauseFieldEdge bool
-	private                           bool
-	polymorphic                       *input.PolymorphicOptions
+	private          bool
+	polymorphic      *input.PolymorphicOptions
 	// optional (in action)
 	// need to break this into optional (not required in typescript actions)
 	// ts nullable
