@@ -22,6 +22,14 @@ function processFields(processedSchema: ProcessedSchema, src: Field[]) {
         f["polymorphic"] = field.polymorphic;
       }
     }
+    // convert string to object to make API consumed by go simple
+    if (f.fieldEdge && f.fieldEdge.inverseEdge) {
+      if (typeof f.fieldEdge.inverseEdge === "string") {
+        f.fieldEdge.inverseEdge = {
+          name: f.fieldEdge.inverseEdge,
+        };
+      }
+    }
     processedSchema.fields.push(f);
   }
 }

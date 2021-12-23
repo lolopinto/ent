@@ -143,7 +143,25 @@ func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(fieldName, configName string, 
 }
 
 func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo *base.FieldEdgeInfo, nullable bool) error {
-	return e.addFieldEdgeFromInfo(fieldName, fieldEdgeInfo.Schema+"Config", fieldEdgeInfo.EdgeName, fieldEdgeInfo.Polymorphic, nullable)
+	return e.addFieldEdgeFromInfo(fieldName, fieldEdgeInfo.Schema+"Config", fieldEdgeInfo.EdgeName(), fieldEdgeInfo.Polymorphic, nullable)
+}
+
+func (e *EdgeInfo) AddEdgeFromInverseFieldEdge(sourceSchemaName, destinationPackageName string, edge *input.InverseFieldEdge) (*AssociationEdge, error) {
+	assocEge, err := AssocEdgeFromInput(destinationPackageName, &input.AssocEdge{
+		Name:            edge.Name,
+		TableName:       edge.TableName,
+		EdgeConstName:   edge.EdgeConstName,
+		HideFromGraphQL: edge.HideFromGraphQL,
+		SchemaName:      sourceSchemaName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	// TODO allow duplicates if already specified somewhere else
+	if err := e.addEdge(assocEge); err != nil {
+		return nil, err
+	}
+	return assocEge, err
 }
 
 func (e *EdgeInfo) GetConnectionEdges() []ConnectionEdge {
@@ -231,14 +249,20 @@ func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName s
 			EdgeName: trim,
 		}
 	}
+	var inverseEdge *input.InverseFieldEdge
+	if inverseEdgeName != "" {
+		inverseEdge = &input.InverseFieldEdge{
+			Name: inverseEdgeName,
+		}
+	}
 
 	edge := &FieldEdge{
-		FieldName:       fieldName,
-		TSFieldName:     strcase.ToLowerCamel(fieldName),
-		commonEdgeInfo:  edgeInfo,
-		InverseEdgeName: inverseEdgeName,
-		Nullable:        nullable,
-		Polymorphic:     polymorphic,
+		FieldName:      fieldName,
+		TSFieldName:    strcase.ToLowerCamel(fieldName),
+		commonEdgeInfo: edgeInfo,
+		InverseEdge:    inverseEdge,
+		Nullable:       nullable,
+		Polymorphic:    polymorphic,
 	}
 
 	return e.addEdge(edge)
@@ -382,11 +406,12 @@ func (e *commonEdgeInfo) HideFromGraphQL() bool {
 
 type FieldEdge struct {
 	commonEdgeInfo
-	FieldName       string
-	TSFieldName     string
-	InverseEdgeName string
-	Nullable        bool
+	FieldName   string
+	TSFieldName string
+	//	InverseEdgeName string
+	Nullable bool
 
+	InverseEdge *input.InverseFieldEdge
 	Polymorphic *base.PolymorphicOptions
 }
 

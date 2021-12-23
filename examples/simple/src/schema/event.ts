@@ -19,11 +19,6 @@ export default class Event extends BaseEntSchema implements Schema {
     // we should warn when we see an "ID/id/Id" field as non-id type and ask if they wanna change it
     UUIDType({
       name: "creatorID",
-      // 1-N if field exists so no need for edge here
-      // creates UserToCreatedEvents
-      // TODO edge properties edgeConstName, tableName, hideFromGraphQL
-      // cannot be symmetric or unique
-      //      inverseEdge: string | {name, edgeConstName, tableName, hideFromGraphQL}
       fieldEdge: { schema: "User", inverseEdge: "createdEvents" },
       storageKey: "user_id",
     }),
