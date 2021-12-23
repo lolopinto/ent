@@ -211,6 +211,10 @@ export interface ForeignKey {
   name?: string; // optional but if we have multiple foreign keys to the same schema, it becomes required for all but one
   // defaults to pluralize(schema) if not provided
   disableIndex?: boolean;
+  // disable generating Builder<Ent> in Builder and Action. helpful
+  // to simplify the code when it's known that the object here
+  // would always have been previously created. simplifies validation
+  disableBuilderType?: boolean;
 }
 
 type loadRowFn = (type: string) => LoadEntOptions<Ent>;
@@ -238,6 +242,10 @@ export interface FieldEdge {
   enforceSchema?: boolean;
   // we only need the loaderfactory but have the entire thing just because
   loadRowByType?: loadRowFn;
+  // disable generating Builder<Ent> in Builder and Action. helpful
+  // to simplify the code when it's known that the object here
+  // would always have been previously created. simplifies validation
+  disableBuilderType?: boolean;
 }
 
 // FieldOptions are configurable options for fields.
@@ -281,6 +289,10 @@ export interface PolymorphicOptions {
   types?: string[];
   // hide inverse type from graphql
   hideFromInverseGraphQL?: boolean;
+  // disable generating Builder<Ent> in Builder and Action. helpful
+  // to simplify the code when it's known that the object here
+  // would always have been previously created. simplifies validation
+  disableBuilderType?: boolean;
 }
 
 // Field interface that each Field needs to support

@@ -73,3 +73,39 @@ func TestDuplicateFields(t *testing.T) {
 	require.Equal(t, err.Error(), "field with column street already exists")
 	require.Nil(t, schema)
 }
+
+func TestDisableBuilderIDField(t *testing.T) {
+	schema := testhelper.ParseSchemaForTest(t,
+		map[string]string{
+			"address.ts": testhelper.GetCodeWithSchema(`
+		import {BaseEntSchema, Field, StringType, UUIDType} from "{schema}";
+
+		export default class Address extends BaseEntSchema {
+			fields: Field[] = [
+				StringType({ name: "Street" }),
+				StringType({ name: "City" }),
+				StringType({ name: "State" }),
+				StringType({ name: "ZipCode" }), 
+				UUIDType({
+					name: "OwnerID",
+					index: true, 
+					polymorphic: {
+						disableBuilderType: true,
+					},
+				}),
+			];
+		}`),
+		},
+		base.TypeScript,
+	)
+	info := schema.Nodes["AddressConfig"]
+	require.NotNil(t, info)
+
+	fieldInfo := info.NodeData.FieldInfo
+
+	f2 := fieldInfo.GetFieldByName("OwnerID")
+	require.NotNil(t, f2)
+
+	assert.Equal(t, f2.TsBuilderImports(), []string{"ID"})
+	assert.Equal(t, f2.TsBuilderType(), "ID")
+}

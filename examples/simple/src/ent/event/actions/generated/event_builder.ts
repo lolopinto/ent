@@ -19,7 +19,7 @@ import schema from "../../../../schema/event";
 
 export interface EventInput {
   name?: string;
-  creatorID?: ID | Builder<User>;
+  creatorID?: ID;
   startTime?: Date;
   endTime?: Date | null;
   location?: string;
@@ -349,7 +349,7 @@ export class EventBuilder implements Builder<Event> {
   }
 
   // get value of creatorID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewCreatorIDValue(): ID | Builder<User> | undefined {
+  getNewCreatorIDValue(): ID | undefined {
     if (this.input.creatorID !== undefined) {
       return this.input.creatorID;
     }

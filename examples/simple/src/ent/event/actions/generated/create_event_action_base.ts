@@ -9,18 +9,13 @@ import {
   PrivacyPolicy,
   Viewer,
 } from "@snowtop/ent";
-import {
-  Action,
-  Builder,
-  Changeset,
-  WriteOperation,
-} from "@snowtop/ent/action";
-import { Event, User } from "../../..";
+import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
+import { Event } from "../../..";
 import { EventBuilder, EventInput } from "./event_builder";
 
 export interface EventCreateInput {
   name: string;
-  creatorID: ID | Builder<User>;
+  creatorID: ID;
   startTime: Date;
   endTime?: Date | null;
   location: string;

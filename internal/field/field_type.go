@@ -45,6 +45,7 @@ type Field struct {
 	dbName                   string // storage key/column name for the field
 	graphQLName              string
 	exposeToActionsByDefault bool
+	disableBuilderType       bool
 	// right now, it's blanket across all actions. probably want a way to make creations simpler
 	// because often we may want to give the user a way to set a value for this field at creation and then not expose it
 	// in default edit
@@ -166,6 +167,7 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 			Name:         f.ForeignKey.Name,
 			DisableIndex: f.ForeignKey.DisableIndex,
 		}
+		ret.disableBuilderType = f.ForeignKey.DisableBuilderType
 	}
 
 	if f.FieldEdge != nil {
@@ -174,6 +176,7 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 			// everywhere that has EdgeName needs to change
 			InverseEdge: f.FieldEdge.InverseEdge,
 		}
+		ret.disableBuilderType = f.FieldEdge.DisableBuilderType
 	}
 
 	if ret.polymorphic != nil {
@@ -187,6 +190,7 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 			return nil, err
 		}
 		ret.fieldEdge = fieldEdge
+		ret.disableBuilderType = ret.polymorphic.DisableBuilderType
 	}
 
 	return ret, nil
@@ -519,7 +523,7 @@ func (f *Field) getIDFieldType() string {
 func (f *Field) TsBuilderType() string {
 	typ := f.TsType()
 	typeName := f.getIDFieldType()
-	if typeName == "" {
+	if typeName == "" || f.disableBuilderType {
 		return typ
 	}
 	return fmt.Sprintf("%s | Builder<%s>", typ, typeName)
@@ -532,7 +536,7 @@ func (f *Field) TsBuilderImports() []string {
 		ret = typ.GetTsTypeImports()
 	}
 	typeName := f.getIDFieldType()
-	if typeName == "" {
+	if typeName == "" || f.disableBuilderType {
 		return ret
 	}
 	ret = append(ret, typeName, "Builder")
