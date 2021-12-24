@@ -96,6 +96,7 @@ export const EventEditType: GraphQLFieldConfig<
         startTime: input.startTime,
         endTime: input.endTime,
         location: input.location,
+        addressID: mustDecodeIDFromGQLID(input.addressID),
       },
     );
     return { event: event };
