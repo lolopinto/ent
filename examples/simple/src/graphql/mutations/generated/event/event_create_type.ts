@@ -24,6 +24,7 @@ import { EventType } from "../../../resolvers";
 
 interface customEventCreateInput extends EventCreateInput {
   creatorID: string;
+  addressID: string;
 }
 
 interface EventCreatePayload {
@@ -47,6 +48,9 @@ export const EventCreateInputType = new GraphQLInputObjectType({
     },
     eventLocation: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    addressID: {
+      type: GraphQLID,
     },
   }),
 });
@@ -84,6 +88,7 @@ export const EventCreateType: GraphQLFieldConfig<
       startTime: input.startTime,
       endTime: input.endTime,
       location: input.location,
+      addressID: mustDecodeIDFromGQLID(input.addressID),
     }).saveX();
     return { event: event };
   },

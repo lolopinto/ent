@@ -95,6 +95,7 @@ import {
   UserAuthPayloadType,
 } from "../mutations/generated/user_auth_type";
 import {
+  AddressToHostedEventsConnectionType,
   AddressType,
   CommentToPostConnectionType,
   CommentType,
@@ -146,6 +147,7 @@ export default new GraphQLSchema({
     HolidayType,
     HoursOfOperationType,
     UserType,
+    AddressToHostedEventsConnectionType(),
     CommentToPostConnectionType(),
     ContactToCommentsConnectionType(),
     ContactToLikersConnectionType(),

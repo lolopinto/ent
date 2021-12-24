@@ -77,6 +77,7 @@ type Address implements Node {
   zip: String!
   apartment: String
   country: String!
+  hostedEvents(first: Int, after: String, last: Int, before: String): AddressToHostedEventsConnection!
 }
 
 type Comment implements Node {
@@ -99,6 +100,7 @@ type Contact implements Node {
 }
 
 type Event implements Node {
+  address: Address
   creator: User
   id: ID!
   name: String!
@@ -164,6 +166,18 @@ type User implements Node {
   contactsSameDomainNullable: [Contact!]
   contactsSameDomainNullableContents: [Contact]!
   contactsSameDomainNullableContentsAndList: [Contact]
+}
+
+type AddressToHostedEventsEdge implements Edge {
+  node: Event!
+  cursor: String!
+}
+
+type AddressToHostedEventsConnection implements Connection {
+  edges: [AddressToHostedEventsEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
 }
 
 type CommentToPostEdge implements Edge {
@@ -523,6 +537,7 @@ input EventCreateInput {
   startTime: Time!
   endTime: Time
   eventLocation: String!
+  addressID: ID
 }
 
 type EventCreatePayload {
@@ -546,6 +561,7 @@ input EventEditInput {
   startTime: Time
   endTime: Time
   eventLocation: String
+  addressID: ID
 }
 
 type EventEditPayload {

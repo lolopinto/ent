@@ -27,6 +27,7 @@ import {
   EventToMaybeQuery,
 } from "../../../ent";
 import {
+  AddressType,
   EventRsvpStatusType,
   EventToAttendingConnectionType,
   EventToDeclinedConnectionType,
@@ -39,6 +40,12 @@ import {
 export const EventType = new GraphQLObjectType({
   name: "Event",
   fields: (): GraphQLFieldConfigMap<Event, RequestContext> => ({
+    address: {
+      type: AddressType,
+      resolve: (event: Event, args: {}, context: RequestContext) => {
+        return event.loadAddress();
+      },
+    },
     creator: {
       type: UserType,
       resolve: (event: Event, args: {}, context: RequestContext) => {

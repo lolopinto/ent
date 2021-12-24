@@ -6,6 +6,18 @@ from sqlalchemy.dialects import postgresql
 metadata = sa.MetaData()
 
  
+sa.Table("address_hosted_events_edges", metadata,
+    sa.Column("id1", postgresql.UUID(), nullable=False),
+    sa.Column("id1_type", sa.Text(), nullable=False),
+    sa.Column("edge_type", postgresql.UUID(), nullable=False),
+    sa.Column("id2", postgresql.UUID(), nullable=False),
+    sa.Column("id2_type", sa.Text(), nullable=False),
+    sa.Column("time", sa.TIMESTAMP(), nullable=False),
+    sa.Column("data", sa.Text(), nullable=True),
+    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="address_hosted_events_edges_id1_edge_type_id2_pkey"),
+    sa.Index("address_hosted_events_edges_time_idx", "time"),
+)
+   
 sa.Table("addresses", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -105,6 +117,7 @@ sa.Table("events", metadata,
     sa.Column("start_time", sa.TIMESTAMP(), nullable=False),
     sa.Column("end_time", sa.TIMESTAMP(), nullable=True),
     sa.Column("location", sa.Text(), nullable=False),
+    sa.Column("address_id", postgresql.UUID(), nullable=True),
     sa.PrimaryKeyConstraint("id", name="events_id_pkey"),
 )
    
@@ -219,6 +232,7 @@ sa.Table("users", metadata,
 
 metadata.info["edges"] = {
   'public': {
+    'AddressToHostedEventsEdge': {"edge_name":"AddressToHostedEventsEdge", "edge_type":"d1979d4b-d033-4562-b078-cc528fec25bb", "edge_table":"address_hosted_events_edges", "symmetric_edge":False, "inverse_edge_type":None},
     'CommentToPostEdge': {"edge_name":"CommentToPostEdge", "edge_type":"f430af94-d38a-4aaa-a92f-cfc56b6f811b", "edge_table":"object_comments_edges", "symmetric_edge":False, "inverse_edge_type":"8caba9c4-8035-447f-9eb1-4dd09a2d250c"},
     'EventToAttendingEdge': {"edge_name":"EventToAttendingEdge", "edge_type":"6ebc0c47-ea29-4635-b991-95e44162174d", "edge_table":"event_rsvps_edges", "symmetric_edge":False, "inverse_edge_type":"2a98ba02-e342-4bb4-93f6-5d7ed02f5c48"},
     'EventToDeclinedEdge': {"edge_name":"EventToDeclinedEdge", "edge_type":"db8d2454-f7b2-4147-aae1-e666daf3f3c3", "edge_table":"event_rsvps_edges", "symmetric_edge":False, "inverse_edge_type":"1c7c173b-63ce-4002-b121-4a87f82047dd"},

@@ -24,6 +24,7 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import {
+  Address,
   EdgeType,
   EventToAttendingQuery,
   EventToDeclinedQuery,
@@ -45,6 +46,7 @@ const fields = [
   "start_time",
   "end_time",
   "location",
+  "address_id",
 ];
 
 export enum EventRsvpStatus {
@@ -64,6 +66,7 @@ export class EventBase {
   readonly startTime: Date;
   readonly endTime: Date | null;
   readonly location: string;
+  readonly addressID: ID | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
@@ -74,6 +77,7 @@ export class EventBase {
     this.startTime = convertDate(data.start_time);
     this.endTime = convertNullableDate(data.end_time);
     this.location = data.location;
+    this.addressID = data.address_id;
   }
 
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
@@ -221,6 +225,13 @@ export class EventBase {
 
   queryMaybe(): EventToMaybeQuery {
     return EventToMaybeQuery.query(this.viewer, this.id);
+  }
+
+  async loadAddress(): Promise<Address | null> {
+    if (!this.addressID) {
+      return null;
+    }
+    return loadEnt(this.viewer, this.addressID, Address.loaderOptions());
   }
 
   async loadCreator(): Promise<User | null> {

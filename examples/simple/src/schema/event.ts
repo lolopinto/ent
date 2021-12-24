@@ -28,6 +28,11 @@ export default class Event extends BaseEntSchema implements Schema {
       name: "location",
       graphqlName: "eventLocation",
     }),
+    UUIDType({
+      name: "addressID",
+      nullable: true,
+      fieldEdge: { schema: "Address", inverseEdge: "hostedEvents" },
+    }),
   ];
 
   edges: Edge[] = [

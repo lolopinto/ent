@@ -213,12 +213,14 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
       addField("{{$field.FieldName}}", fields.{{$tsFieldName}});
       {{ $inverseEdge := $field.GetInverseEdge -}}
       {{ if $inverseEdge -}}
-        if (fields.{{$tsFieldName}}) {
-          this.orchestrator.addInboundEdge(
-            fields.{{$tsFieldName}},
-            {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
-            {{useImport "NodeType"}}.{{$inverseEdge.NodeInfo.Node}},
-          );
+        if (fields.{{$tsFieldName}} !== undefined) {
+          if (fields.{{$tsFieldName}}) {
+            this.orchestrator.addInboundEdge(
+              fields.{{$tsFieldName}},
+              {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
+              {{useImport "NodeType"}}.{{$inverseEdge.NodeInfo.Node}},
+            );
+          }
           if (this.existingEnt && this.existingEnt.{{$tsFieldName}} && this.existingEnt.{{$tsFieldName}} !== fields.{{$tsFieldName}}) {
             this.orchestrator.removeInboundEdge(
               this.existingEnt.{{$tsFieldName}},

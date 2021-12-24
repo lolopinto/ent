@@ -15,6 +15,7 @@ export * from "./generated/event_type";
 export * from "./generated/holiday_type";
 export * from "./generated/hours_of_operation_type";
 export * from "./generated/user_type";
+export * from "./generated/address/address_to_hosted_events_connection_type";
 export * from "./generated/comment/comment_to_post_connection_type";
 export * from "./generated/contact/contact_to_comments_connection_type";
 export * from "./generated/contact/contact_to_likers_connection_type";

@@ -25,6 +25,7 @@ import { EventType } from "../../../resolvers";
 interface customEventEditInput extends EventEditInput {
   eventID: string;
   creatorID: string;
+  addressID: string;
 }
 
 interface EventEditPayload {
@@ -52,6 +53,9 @@ export const EventEditInputType = new GraphQLInputObjectType({
     },
     eventLocation: {
       type: GraphQLString,
+    },
+    addressID: {
+      type: GraphQLID,
     },
   }),
 });
