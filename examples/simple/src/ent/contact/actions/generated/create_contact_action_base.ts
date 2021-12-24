@@ -18,11 +18,22 @@ import {
 import { Contact, User } from "../../..";
 import { ContactBuilder, ContactInput } from "./contact_builder";
 
-export interface ContactCreateInput {
+interface customEmailInput {
   emailAddress: string;
+  label: string;
+}
+
+interface customPhoneNumberInput {
+  phoneNumber: string;
+  label: string;
+}
+
+export interface ContactCreateInput {
   firstName: string;
   lastName: string;
   userID: ID | Builder<User>;
+  emails?: customEmailInput[] | null;
+  phoneNumbers?: customPhoneNumberInput[] | null;
 }
 
 export class CreateContactActionBase implements Action<Contact> {

@@ -71,11 +71,32 @@ sa.Table("comments", metadata,
     sa.PrimaryKeyConstraint("id", name="comments_id_pkey"),
 )
    
-sa.Table("contacts", metadata,
+sa.Table("contact_emails", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
     sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
     sa.Column("email_address", sa.Text(), nullable=False),
+    sa.Column("label", sa.Text(), nullable=False),
+    sa.Column("contact_id", postgresql.UUID(), nullable=False),
+    sa.PrimaryKeyConstraint("id", name="contact_emails_id_pkey"),
+)
+   
+sa.Table("contact_phone_numbers", metadata,
+    sa.Column("id", postgresql.UUID(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("phone_number", sa.Text(), nullable=False),
+    sa.Column("label", sa.Text(), nullable=False),
+    sa.Column("contact_id", postgresql.UUID(), nullable=False),
+    sa.PrimaryKeyConstraint("id", name="contact_phone_numbers_id_pkey"),
+)
+   
+sa.Table("contacts", metadata,
+    sa.Column("id", postgresql.UUID(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("email_ids", postgresql.ARRAY(postgresql.UUID()), nullable=False),
+    sa.Column("phone_number_ids", postgresql.ARRAY(postgresql.UUID()), nullable=False),
     sa.Column("first_name", sa.Text(), nullable=False),
     sa.Column("last_name", sa.Text(), nullable=False),
     sa.Column("user_id", postgresql.UUID(), nullable=False),

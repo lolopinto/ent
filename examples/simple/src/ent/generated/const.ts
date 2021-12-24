@@ -12,6 +12,10 @@ export enum NodeType {
   Comment = "comment",
   // Contact is the node type for the Contact object. Used to identify this node in edges and other places.
   Contact = "contact",
+  // ContactEmail is the node type for the ContactEmail object. Used to identify this node in edges and other places.
+  ContactEmail = "contactEmail",
+  // ContactPhoneNumber is the node type for the ContactPhoneNumber object. Used to identify this node in edges and other places.
+  ContactPhoneNumber = "contactPhoneNumber",
   // Event is the node type for the Event object. Used to identify this node in edges and other places.
   Event = "event",
   // Holiday is the node type for the Holiday object. Used to identify this node in edges and other places.

@@ -9,6 +9,7 @@ import {
   GraphQLID,
   GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLResolveInfo,
@@ -30,12 +31,33 @@ interface ContactCreatePayload {
   contact: Contact;
 }
 
-export const ContactCreateInputType = new GraphQLInputObjectType({
-  name: "ContactCreateInput",
+export const EmailContactCreateInput = new GraphQLInputObjectType({
+  name: "EmailContactCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     emailAddress: {
       type: GraphQLNonNull(GraphQLString),
     },
+    label: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+  }),
+});
+
+export const PhoneNumberContactCreateInput = new GraphQLInputObjectType({
+  name: "PhoneNumberContactCreateInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
+    phoneNumber: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    label: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+  }),
+});
+
+export const ContactCreateInputType = new GraphQLInputObjectType({
+  name: "ContactCreateInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
     firstName: {
       type: GraphQLNonNull(GraphQLString),
     },
@@ -44,6 +66,12 @@ export const ContactCreateInputType = new GraphQLInputObjectType({
     },
     userID: {
       type: GraphQLNonNull(GraphQLID),
+    },
+    emails: {
+      type: GraphQLList(GraphQLNonNull(EmailContactCreateInput)),
+    },
+    phoneNumbers: {
+      type: GraphQLList(GraphQLNonNull(PhoneNumberContactCreateInput)),
     },
   }),
 });
@@ -76,10 +104,11 @@ export const ContactCreateType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ): Promise<ContactCreatePayload> => {
     const contact = await CreateContactAction.create(context.getViewer(), {
-      emailAddress: input.emailAddress,
       firstName: input.firstName,
       lastName: input.lastName,
       userID: mustDecodeIDFromGQLID(input.userID),
+      emails: input.emails,
+      phoneNumbers: input.phoneNumbers,
     }).saveX();
     return { contact: contact };
   },

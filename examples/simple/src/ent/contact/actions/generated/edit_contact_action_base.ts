@@ -19,7 +19,8 @@ import { Contact, User } from "../../..";
 import { ContactBuilder, ContactInput } from "./contact_builder";
 
 export interface ContactEditInput {
-  emailAddress?: string;
+  emailIds?: ID[];
+  phoneNumberIds?: ID[];
   firstName?: string;
   lastName?: string;
   userID?: ID | Builder<User>;

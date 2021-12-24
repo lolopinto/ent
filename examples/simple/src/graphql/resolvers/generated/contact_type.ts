@@ -7,6 +7,7 @@ import {
   GraphQLFieldConfigMap,
   GraphQLID,
   GraphQLInt,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
@@ -41,8 +42,11 @@ export const ContactType = new GraphQLObjectType({
       type: GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,
     },
-    emailAddress: {
-      type: GraphQLNonNull(GraphQLString),
+    emailIds: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLID))),
+    },
+    phoneNumberIds: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLID))),
     },
     firstName: {
       type: GraphQLNonNull(GraphQLString),

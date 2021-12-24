@@ -65,7 +65,8 @@ export class User extends UserBase {
       if (selfContactEdge?.id2 === contact.id) {
         return null;
       }
-      if (domain === this.getDomainFromEmail(contact.emailAddress)) {
+      if (domain === this.getDomainFromEmail("")) {
+        //contact.emailAddress)) {
         return contact;
       }
       return null;
@@ -81,7 +82,7 @@ export class User extends UserBase {
     }
     let contacts = await this.queryContacts().queryEnts();
     return contacts.filter((contact) => {
-      return domain === this.getDomainFromEmail(contact.emailAddress);
+      return domain === this.getDomainFromEmail(""); //contact.emailAddress);
     });
   }
 
@@ -99,8 +100,7 @@ export class User extends UserBase {
     let contacts = await this.queryContacts().queryEnts();
     contacts = contacts.filter((contact) => {
       return (
-        this.id !== contact.userID &&
-        domain === this.getDomainFromEmail(contact.emailAddress)
+        this.id !== contact.userID && domain === null //this.getDomainFromEmail(contact.emailAddress)
       );
     });
     // cheats and returns null if no contacts
@@ -124,10 +124,10 @@ export class User extends UserBase {
     }
     let contacts = await this.queryContacts().queryEnts();
     return contacts.map((contact) => {
-      let contactDomain = this.getDomainFromEmail(contact.emailAddress);
-      if (contactDomain === domain) {
-        return contact;
-      }
+      // let contactDomain = this.getDomainFromEmail(contact.emailAddress);
+      // if (contactDomain === domain) {
+      //   return contact;
+      // }
       return null;
     });
   }
@@ -147,10 +147,10 @@ export class User extends UserBase {
     }
     let contacts = await this.queryContacts().queryEnts();
     return contacts.map((contact) => {
-      let contactDomain = this.getDomainFromEmail(contact.emailAddress);
-      if (contactDomain === domain) {
-        return contact;
-      }
+      // let contactDomain = this.getDomainFromEmail(contact.emailAddress);
+      // if (contactDomain === domain) {
+      //   return contact;
+      // }
       return null;
     });
   }

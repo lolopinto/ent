@@ -15,6 +15,8 @@ import {
 import {
   ContactCreateInputType,
   ContactCreatePayloadType,
+  EmailContactCreateInput,
+  PhoneNumberContactCreateInput,
 } from "../mutations/generated/contact/contact_create_type";
 import {
   ContactDeleteInputType,
@@ -24,6 +26,30 @@ import {
   ContactEditInputType,
   ContactEditPayloadType,
 } from "../mutations/generated/contact/contact_edit_type";
+import {
+  ContactEmailCreateInputType,
+  ContactEmailCreatePayloadType,
+} from "../mutations/generated/contact_email/contact_email_create_type";
+import {
+  ContactEmailDeleteInputType,
+  ContactEmailDeletePayloadType,
+} from "../mutations/generated/contact_email/contact_email_delete_type";
+import {
+  ContactEmailEditInputType,
+  ContactEmailEditPayloadType,
+} from "../mutations/generated/contact_email/contact_email_edit_type";
+import {
+  ContactPhoneNumberCreateInputType,
+  ContactPhoneNumberCreatePayloadType,
+} from "../mutations/generated/contact_phone_number/contact_phone_number_create_type";
+import {
+  ContactPhoneNumberDeleteInputType,
+  ContactPhoneNumberDeletePayloadType,
+} from "../mutations/generated/contact_phone_number/contact_phone_number_delete_type";
+import {
+  ContactPhoneNumberEditInputType,
+  ContactPhoneNumberEditPayloadType,
+} from "../mutations/generated/contact_phone_number/contact_phone_number_edit_type";
 import {
   EventAddHostInputType,
   EventAddHostPayloadType,
@@ -99,6 +125,8 @@ import {
   AddressType,
   CommentToPostConnectionType,
   CommentType,
+  ContactEmailType,
+  ContactPhoneNumberType,
   ContactToCommentsConnectionType,
   ContactToLikersConnectionType,
   ContactType,
@@ -142,6 +170,8 @@ export default new GraphQLSchema({
     PreferredShiftType,
     AddressType,
     CommentType,
+    ContactEmailType,
+    ContactPhoneNumberType,
     ContactType,
     EventType,
     HolidayType,
@@ -186,8 +216,21 @@ export default new GraphQLSchema({
     ContactDeletePayloadType,
     ContactEditInputType,
     ContactEditPayloadType,
+    ContactEmailCreateInputType,
+    ContactEmailCreatePayloadType,
+    ContactEmailDeleteInputType,
+    ContactEmailDeletePayloadType,
+    ContactEmailEditInputType,
+    ContactEmailEditPayloadType,
+    ContactPhoneNumberCreateInputType,
+    ContactPhoneNumberCreatePayloadType,
+    ContactPhoneNumberDeleteInputType,
+    ContactPhoneNumberDeletePayloadType,
+    ContactPhoneNumberEditInputType,
+    ContactPhoneNumberEditPayloadType,
     EmailAddressEditInputType,
     EmailAddressEditPayloadType,
+    EmailContactCreateInput,
     EventAddHostInputType,
     EventAddHostPayloadType,
     EventCreateInputType,
@@ -205,6 +248,7 @@ export default new GraphQLSchema({
     HolidayCreatePayloadType,
     HoursOfOperationCreateInputType,
     HoursOfOperationCreatePayloadType,
+    PhoneNumberContactCreateInput,
     PhoneNumberEditInputType,
     PhoneNumberEditPayloadType,
     UserCreateInputType,

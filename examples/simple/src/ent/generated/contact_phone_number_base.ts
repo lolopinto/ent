@@ -14,7 +14,6 @@ import {
   PrivacyPolicy,
   Viewer,
   convertDate,
-  convertList,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -22,51 +21,40 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
-import {
-  ContactToCommentsQuery,
-  ContactToLikersQuery,
-  NodeType,
-  User,
-} from "../internal";
-import schema from "../../schema/contact";
+import { Contact, NodeType } from "../internal";
+import schema from "../../schema/contact_phone_number";
 
-const tableName = "contacts";
+const tableName = "contact_phone_numbers";
 const fields = [
   "id",
   "created_at",
   "updated_at",
-  "email_ids",
-  "phone_number_ids",
-  "first_name",
-  "last_name",
-  "user_id",
+  "phone_number",
+  "label",
+  "contact_id",
 ];
 
-export class ContactBase {
-  readonly nodeType = NodeType.Contact;
+export class ContactPhoneNumberBase {
+  readonly nodeType = NodeType.ContactPhoneNumber;
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
-  readonly emailIds: ID[];
-  readonly phoneNumberIds: ID[];
-  readonly firstName: string;
-  readonly lastName: string;
-  readonly userID: ID;
+  readonly phoneNumber: string;
+  readonly label: string;
+  readonly contactID: ID;
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
-    this.emailIds = convertList(data.email_ids);
-    this.phoneNumberIds = convertList(data.phone_number_ids);
-    this.firstName = data.first_name;
-    this.lastName = data.last_name;
-    this.userID = data.user_id;
+    this.phoneNumber = data.phone_number;
+    this.label = data.label;
+    this.contactID = data.contact_id;
   }
 
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
 
-  static async load<T extends ContactBase>(
+  static async load<T extends ContactPhoneNumberBase>(
     this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
@@ -74,11 +62,11 @@ export class ContactBase {
     return (await loadEnt(
       viewer,
       id,
-      ContactBase.loaderOptions.apply(this),
+      ContactPhoneNumberBase.loaderOptions.apply(this),
     )) as T | null;
   }
 
-  static async loadX<T extends ContactBase>(
+  static async loadX<T extends ContactPhoneNumberBase>(
     this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     id: ID,
@@ -86,108 +74,100 @@ export class ContactBase {
     return (await loadEntX(
       viewer,
       id,
-      ContactBase.loaderOptions.apply(this),
+      ContactPhoneNumberBase.loaderOptions.apply(this),
     )) as T;
   }
 
-  static async loadMany<T extends ContactBase>(
+  static async loadMany<T extends ContactPhoneNumberBase>(
     this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
     return (await loadEnts(
       viewer,
-      ContactBase.loaderOptions.apply(this),
+      ContactPhoneNumberBase.loaderOptions.apply(this),
       ...ids,
     )) as T[];
   }
 
-  static async loadCustom<T extends ContactBase>(
+  static async loadCustom<T extends ContactPhoneNumberBase>(
     this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
     return (await loadCustomEnts(
       viewer,
-      ContactBase.loaderOptions.apply(this),
+      ContactPhoneNumberBase.loaderOptions.apply(this),
       query,
     )) as T[];
   }
 
-  static async loadCustomData<T extends ContactBase>(
+  static async loadCustomData<T extends ContactPhoneNumberBase>(
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<Data[]> {
     return loadCustomData(
-      ContactBase.loaderOptions.apply(this),
+      ContactPhoneNumberBase.loaderOptions.apply(this),
       query,
       context,
     );
   }
 
-  static async loadRawData<T extends ContactBase>(
+  static async loadRawData<T extends ContactPhoneNumberBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data | null> {
-    return contactLoader.createLoader(context).load(id);
+    return contactPhoneNumberLoader.createLoader(context).load(id);
   }
 
-  static async loadRawDataX<T extends ContactBase>(
+  static async loadRawDataX<T extends ContactPhoneNumberBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<Data> {
-    const row = await contactLoader.createLoader(context).load(id);
+    const row = await contactPhoneNumberLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
     return row;
   }
 
-  static loaderOptions<T extends ContactBase>(
+  static loaderOptions<T extends ContactPhoneNumberBase>(
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
       tableName,
       fields,
       ent: this,
-      loaderFactory: contactLoader,
+      loaderFactory: contactPhoneNumberLoader,
     };
   }
 
   private static schemaFields: Map<string, Field>;
 
   private static getSchemaFields(): Map<string, Field> {
-    if (ContactBase.schemaFields != null) {
-      return ContactBase.schemaFields;
+    if (ContactPhoneNumberBase.schemaFields != null) {
+      return ContactPhoneNumberBase.schemaFields;
     }
-    return (ContactBase.schemaFields = getFields(schema));
+    return (ContactPhoneNumberBase.schemaFields = getFields(schema));
   }
 
   static getField(key: string): Field | undefined {
-    return ContactBase.getSchemaFields().get(key);
+    return ContactPhoneNumberBase.getSchemaFields().get(key);
   }
 
-  queryComments(): ContactToCommentsQuery {
-    return ContactToCommentsQuery.query(this.viewer, this.id);
+  async loadContact(): Promise<Contact | null> {
+    return loadEnt(this.viewer, this.contactID, Contact.loaderOptions());
   }
 
-  queryLikers(): ContactToLikersQuery {
-    return ContactToLikersQuery.query(this.viewer, this.id);
-  }
-
-  async loadUser(): Promise<User | null> {
-    return loadEnt(this.viewer, this.userID, User.loaderOptions());
-  }
-
-  loadUserX(): Promise<User> {
-    return loadEntX(this.viewer, this.userID, User.loaderOptions());
+  loadContactX(): Promise<Contact> {
+    return loadEntX(this.viewer, this.contactID, Contact.loaderOptions());
   }
 }
 
-export const contactLoader = new ObjectLoaderFactory({
+export const contactPhoneNumberLoader = new ObjectLoaderFactory({
   tableName,
   fields,
   key: "id",

@@ -18,7 +18,8 @@ import { EdgeType, NodeType } from "../../../generated/const";
 import schema from "../../../../schema/contact";
 
 export interface ContactInput {
-  emailAddress?: string;
+  emailIds?: ID[];
+  phoneNumberIds?: ID[];
   firstName?: string;
   lastName?: string;
   userID?: ID | Builder<User>;
@@ -199,7 +200,8 @@ export class ContactBuilder implements Builder<Contact> {
         result.set(key, value);
       }
     };
-    addField("emailAddress", fields.emailAddress);
+    addField("email_ids", fields.emailIds);
+    addField("phone_number_ids", fields.phoneNumberIds);
     addField("firstName", fields.firstName);
     addField("lastName", fields.lastName);
     addField("userID", fields.userID);
@@ -210,12 +212,20 @@ export class ContactBuilder implements Builder<Contact> {
     return (node as Builder<Ent>).placeholderID !== undefined;
   }
 
-  // get value of emailAddress. Retrieves it from the input if specified or takes it from existingEnt
-  getNewEmailAddressValue(): string | undefined {
-    if (this.input.emailAddress !== undefined) {
-      return this.input.emailAddress;
+  // get value of email_ids. Retrieves it from the input if specified or takes it from existingEnt
+  getNewEmailIdsValue(): ID[] | undefined {
+    if (this.input.emailIds !== undefined) {
+      return this.input.emailIds;
     }
-    return this.existingEnt?.emailAddress;
+    return this.existingEnt?.emailIds;
+  }
+
+  // get value of phone_number_ids. Retrieves it from the input if specified or takes it from existingEnt
+  getNewPhoneNumberIdsValue(): ID[] | undefined {
+    if (this.input.phoneNumberIds !== undefined) {
+      return this.input.phoneNumberIds;
+    }
+    return this.existingEnt?.phoneNumberIds;
   }
 
   // get value of firstName. Retrieves it from the input if specified or takes it from existingEnt

@@ -8,6 +8,7 @@ import {
   UUIDType,
 } from "@snowtop/ent/schema/";
 import { PhoneNumberType } from "@snowtop/ent-phonenumber";
+import { getLoaderOptions } from "../ent/generated/loadAny";
 
 export default class ContactPhoneNumber
   extends BaseEntSchema
@@ -18,7 +19,11 @@ export default class ContactPhoneNumber
     StringType({ name: "label" }),
     UUIDType({
       name: "contactID",
-      foreignKey: { schema: "Contact", column: "ID" },
+      fieldEdge: {
+        schema: "Contact",
+        enforceSchema: true,
+        loadRowByType: getLoaderOptions,
+      },
     }),
   ];
 
