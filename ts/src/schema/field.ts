@@ -710,7 +710,8 @@ export class ListField extends BaseField {
       return ret.every((v) => v);
     }
     const ret = val.map((v) => valid.apply(this.field, [v]));
-    return ret.every((v) => v);
+    const result = ret.every((v) => v);
+    return result;
   }
 
   private postgresVal(val: any, jsonType?: boolean) {

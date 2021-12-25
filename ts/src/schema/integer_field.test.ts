@@ -93,13 +93,13 @@ describe("list", () => {
     if (k.indexOf("property") === -1) {
       continue;
     }
-    test(k, () => {
+    test(k, async () => {
       const f = v.fn();
       const list = new ListField(f, f.getOptions());
       let val = v.customInput || input;
       // list format for postgres list
       expect(list.format([val])).toBe(`{${val}}`);
-      expect(list.valid([val])).toBe(v.valid);
+      expect(await list.valid([val])).toBe(v.valid);
     });
   }
 });

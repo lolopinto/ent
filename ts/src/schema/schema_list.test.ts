@@ -336,42 +336,42 @@ function commonTests() {
   test("list validation. minLen", async () => {
     const t = IntegerListType({ name: "foo" }).minLen(2);
 
-    expect(t.valid([1, 2, 3])).toBe(true);
-    expect(t.valid([1, 2])).toBe(true);
-    expect(t.valid([1])).toBe(false);
+    expect(await t.valid([1, 2, 3])).toBe(true);
+    expect(await t.valid([1, 2])).toBe(true);
+    expect(await t.valid([1])).toBe(false);
   });
 
   test("list validation. maxLen", async () => {
     const t = IntegerListType({ name: "foo" }).maxLen(2);
 
-    expect(t.valid([1, 2, 3])).toBe(false);
-    expect(t.valid([1, 2])).toBe(true);
-    expect(t.valid([1])).toBe(true);
+    expect(await t.valid([1, 2, 3])).toBe(false);
+    expect(await t.valid([1, 2])).toBe(true);
+    expect(await t.valid([1])).toBe(true);
   });
 
   test("list validation. length", async () => {
     const t = IntegerListType({ name: "foo" }).length(2);
 
-    expect(t.valid([1, 2, 3])).toBe(false);
-    expect(t.valid([1, 2])).toBe(true);
-    expect(t.valid([1])).toBe(false);
+    expect(await t.valid([1, 2, 3])).toBe(false);
+    expect(await t.valid([1, 2])).toBe(true);
+    expect(await t.valid([1])).toBe(false);
   });
 
   test("list validation. range", async () => {
     const t = IntegerListType({ name: "foo" }).range(2, 10);
 
-    expect(t.valid([1, 2, 3])).toBe(false);
-    expect(t.valid([3, 4, 5, 6])).toBe(true);
-    expect(t.valid([3, 4, 5, 10])).toBe(false);
-    expect(t.valid([3, 4, 5, 11])).toBe(false);
+    expect(await t.valid([1, 2, 3])).toBe(false);
+    expect(await t.valid([3, 4, 5, 6])).toBe(true);
+    expect(await t.valid([3, 4, 5, 10])).toBe(false);
+    expect(await t.valid([3, 4, 5, 11])).toBe(false);
   });
 
   test("string list validation. range", async () => {
     const t = StringListType({ name: "foo" }).range("a", "z");
 
-    expect(t.valid(["a", "c", "d"])).toBe(true);
-    expect(t.valid(["e", "f", "g", "h"])).toBe(true);
-    expect(t.valid(["e", "f", "g", "h", "z"])).toBe(false);
+    expect(await t.valid(["a", "c", "d"])).toBe(true);
+    expect(await t.valid(["e", "f", "g", "h"])).toBe(true);
+    expect(await t.valid(["e", "f", "g", "h", "z"])).toBe(false);
   });
 
   class Preferences extends User {}

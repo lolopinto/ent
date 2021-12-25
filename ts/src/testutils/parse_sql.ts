@@ -168,7 +168,12 @@ function processBeforeStoring(val: any) {
   }
   // convert postgres lists into lists before storing
   if (val[0] === "{" && val[val.length - 1] === "}") {
-    return val.substring(1, val.length - 1).split(",");
+    try {
+      // valid json, don't convert
+      JSON.parse(val);
+    } catch (e) {
+      return val.substring(1, val.length - 1).split(",");
+    }
   }
   return val;
 }
