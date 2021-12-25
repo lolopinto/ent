@@ -17,8 +17,16 @@ export default class Contact extends BaseEntSchema implements Schema {
   }
 
   fields: Field[] = [
-    UUIDListType({ name: "email_ids", defaultValueOnCreate: () => [] }),
-    UUIDListType({ name: "phone_number_ids", defaultValueOnCreate: () => [] }),
+    UUIDListType({
+      name: "email_ids",
+      defaultValueOnCreate: () => [],
+      fieldEdge: { schema: "ContactEmail" },
+    }),
+    UUIDListType({
+      name: "phone_number_ids",
+      defaultValueOnCreate: () => [],
+      fieldEdge: { schema: "ContactPhoneNumber" },
+    }),
     StringType({ name: "firstName" }),
     StringType({ name: "lastName" }),
     UUIDType({ name: "userID", foreignKey: { schema: "User", column: "ID" } }),

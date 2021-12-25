@@ -103,10 +103,10 @@ type ContactPhoneNumber implements Node {
 }
 
 type Contact implements Node {
+  emails: [ContactEmail!]!
+  phoneNumbers: [ContactPhoneNumber!]!
   user: User
   id: ID!
-  emailIds: [ID!]!
-  phoneNumberIds: [ID!]!
   firstName: String!
   lastName: String!
   comments(first: Int, after: String, last: Int, before: String): ContactToCommentsConnection!

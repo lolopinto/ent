@@ -23,6 +23,8 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import {
+  ContactEmail,
+  ContactPhoneNumber,
   ContactToCommentsQuery,
   ContactToLikersQuery,
   NodeType,
@@ -176,6 +178,22 @@ export class ContactBase {
 
   queryLikers(): ContactToLikersQuery {
     return ContactToLikersQuery.query(this.viewer, this.id);
+  }
+
+  async loadEmails(): Promise<ContactEmail[]> {
+    return loadEnts(
+      this.viewer,
+      ContactEmail.loaderOptions(),
+      ...this.emailIds,
+    );
+  }
+
+  async loadPhoneNumbers(): Promise<ContactPhoneNumber[]> {
+    return loadEnts(
+      this.viewer,
+      ContactPhoneNumber.loaderOptions(),
+      ...this.phoneNumberIds,
+    );
   }
 
   async loadUser(): Promise<User | null> {

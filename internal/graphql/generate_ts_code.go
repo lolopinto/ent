@@ -1641,7 +1641,11 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 				panic(err)
 			}
 		}
-		addSingularEdge(edge, &fields, instance)
+		if edge.IsList() {
+			addPluralEdge(edge, &fields, instance)
+		} else {
+			addSingularEdge(edge, &fields, instance)
+		}
 	}
 
 	for _, field := range fieldInfo.GraphQLFields() {

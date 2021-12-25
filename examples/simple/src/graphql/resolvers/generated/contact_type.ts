@@ -24,6 +24,8 @@ import {
   ContactToLikersQuery,
 } from "../../../ent";
 import {
+  ContactEmailType,
+  ContactPhoneNumberType,
   ContactToCommentsConnectionType,
   ContactToLikersConnectionType,
   UserType,
@@ -32,6 +34,18 @@ import {
 export const ContactType = new GraphQLObjectType({
   name: "Contact",
   fields: (): GraphQLFieldConfigMap<Contact, RequestContext> => ({
+    emails: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(ContactEmailType))),
+      resolve: (contact: Contact, args: {}, context: RequestContext) => {
+        return contact.loadEmails();
+      },
+    },
+    phoneNumbers: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(ContactPhoneNumberType))),
+      resolve: (contact: Contact, args: {}, context: RequestContext) => {
+        return contact.loadPhoneNumbers();
+      },
+    },
     user: {
       type: UserType,
       resolve: (contact: Contact, args: {}, context: RequestContext) => {
@@ -41,12 +55,6 @@ export const ContactType = new GraphQLObjectType({
     id: {
       type: GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,
-    },
-    emailIds: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLID))),
-    },
-    phoneNumberIds: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLID))),
     },
     firstName: {
       type: GraphQLNonNull(GraphQLString),
