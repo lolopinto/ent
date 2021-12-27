@@ -1,5 +1,6 @@
 import { DateTime } from "luxon";
 import { snakeCase } from "snake-case";
+import { camelCase } from "camel-case";
 import { Ent } from "../core/base";
 import { Builder } from "../action/action";
 import DB, { Dialect } from "../core/db";
@@ -112,8 +113,13 @@ export class UUIDField extends BaseField implements Field {
       return true;
     }
 
+    // TODO #510 consistency.
+    const f = camelCase(this.options.fieldEdge.schema);
     const getLoaderOptions = this.options.fieldEdge.getLoaderOptions!;
-    const loadRowOptions = getLoaderOptions(this.options.fieldEdge.schema!);
+    const loadRowOptions = getLoaderOptions(f);
+    if (!loadRowOptions) {
+      throw new Error(`couldn't get loaderOptions for ${f}`);
+    }
     if (this.isBuilder(val)) {
       // if builder, the ent type of the builder and the ent type returned by the load constructor should match
       return val.ent === loadRowOptions.ent;
