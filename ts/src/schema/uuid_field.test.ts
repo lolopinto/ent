@@ -122,7 +122,7 @@ describe("fieldEdge no inverseEdge", () => {
           fieldEdge: {
             schema: "User",
             enforceSchema: true,
-            loadRowByType: () => {
+            getLoaderOptions: () => {
               return {
                 tableName: "users",
                 fields: ["id"],
@@ -178,7 +178,7 @@ describe("fieldEdge no inverseEdge", () => {
           fieldEdge: {
             schema: "User",
             enforceSchema: true,
-            loadRowByType: () => {
+            getLoaderOptions: () => {
               return {
                 tableName: "users",
                 fields: ["id"],
@@ -242,7 +242,7 @@ describe("fieldEdge no inverseEdge", () => {
           fieldEdge: {
             schema: "User",
             enforceSchema: true,
-            loadRowByType: () => {
+            getLoaderOptions: () => {
               return {
                 tableName: "users",
                 fields: ["id"],

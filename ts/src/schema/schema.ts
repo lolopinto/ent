@@ -217,7 +217,7 @@ export interface ForeignKey {
   disableBuilderType?: boolean;
 }
 
-type loadRowFn = (type: string) => LoadEntOptions<Ent>;
+type getLoaderOptionsFn = (type: any) => LoadEntOptions<Ent>;
 
 export interface InverseFieldEdge {
   // 1-N if field exists so no need for inverse or symmetric edge. also can't be unique
@@ -238,10 +238,10 @@ export interface FieldEdge {
   inverseEdge?: string | InverseFieldEdge;
 
   // if enforceSchema. implement the valid type.
-  // we use loadRowByType to do it
+  // we use getLoaderOptions to do it
   enforceSchema?: boolean;
   // we only need the loaderfactory but have the entire thing just because
-  loadRowByType?: loadRowFn;
+  getLoaderOptions?: getLoaderOptionsFn;
   // disable generating Builder<Ent> in Builder and Action. helpful
   // to simplify the code when it's known that the object here
   // would always have been previously created. simplifies validation
