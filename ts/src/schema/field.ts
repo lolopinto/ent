@@ -93,8 +93,13 @@ export class UUIDField extends BaseField implements Field {
       }
     }
 
-    if (options.fieldEdge?.enforceSchema && !options.fieldEdge.loadRowByType) {
-      throw new Error(`cannot enforceSchema if loadRowByType wasn't passed in`);
+    if (
+      options.fieldEdge?.enforceSchema &&
+      !options.fieldEdge.getLoaderOptions
+    ) {
+      throw new Error(
+        `cannot enforceSchema if getLoaderOptions wasn't passed in`,
+      );
     }
   }
 
@@ -107,8 +112,8 @@ export class UUIDField extends BaseField implements Field {
       return true;
     }
 
-    const loadRowByType = this.options.fieldEdge.loadRowByType!;
-    const loadRowOptions = loadRowByType(this.options.fieldEdge.schema!);
+    const getLoaderOptions = this.options.fieldEdge.getLoaderOptions!;
+    const loadRowOptions = getLoaderOptions(this.options.fieldEdge.schema!);
     if (this.isBuilder(val)) {
       // if builder, the ent type of the builder and the ent type returned by the load constructor should match
       return val.ent === loadRowOptions.ent;
