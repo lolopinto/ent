@@ -37,6 +37,7 @@ export class CommentBuilder implements Builder<Comment> {
   readonly placeholderID: ID;
   readonly ent = Comment;
   private input: CommentInput;
+  private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: Viewer,
@@ -72,6 +73,16 @@ export class CommentBuilder implements Builder<Comment> {
       ...this.input,
       ...input,
     };
+  }
+
+  // store data in Builder that can be retrieved by another validator, trigger, observer later in the action
+  storeData(k: string, v: any) {
+    this.m.set(k, v);
+  }
+
+  // retrieve data stored in this Builder with key
+  getStoredData(k: string) {
+    return this.m.get(k);
   }
 
   // this gets the inputs that have been written for a given edgeType and operation

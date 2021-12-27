@@ -76,11 +76,13 @@ export class ContactBuilder implements Builder<Contact> {
     };
   }
 
+  // store data in Builder that can be retrieved by another validator, trigger, observer later in the action
   storeData(k: string, v: any) {
     this.m.set(k, v);
   }
 
-  getData(k: string) {
+  // retrieve data stored in this Builder with key
+  getStoredData(k: string) {
     return this.m.get(k);
   }
 

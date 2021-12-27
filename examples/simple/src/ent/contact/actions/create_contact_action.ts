@@ -85,7 +85,7 @@ export default class CreateContactAction extends CreateContactActionBase {
       // TODO https://github.com/lolopinto/ent/issues/605 simplifies all this
       async observe(builder: ContactBuilder) {
         const actions: CreateContactEmailAction[] =
-          builder.getData("emailActions") || [];
+          builder.getStoredData("emailActions") || [];
         if (!actions.length) {
           return;
         }
@@ -112,7 +112,7 @@ export default class CreateContactAction extends CreateContactActionBase {
     {
       async observe(builder: ContactBuilder) {
         const actions: CreateContactPhoneNumberAction[] =
-          builder.getData("phoneActions") || [];
+          builder.getStoredData("phoneActions") || [];
         if (!actions.length) {
           return;
         }
