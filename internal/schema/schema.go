@@ -485,11 +485,6 @@ func (s *Schema) buildPostRunDepgraph(edgeData *assocEdgeData) *depgraph.Depgrap
 			return s.addInverseAssocEdgesFromInfo(info)
 		}, "EdgesFromFields")
 
-	// add new consts and edges as a dependency of linked edges and inverse edges
-	g.AddItem("ConstsAndEdges", func(info *NodeDataInfo) error {
-		return s.addNewConstsAndEdges(info, edgeData)
-	}, "LinkedEdges", "InverseEdges")
-
 	g.AddItem("ActionFields", func(info *NodeDataInfo) error {
 		return s.addActionFields(info)
 	})
@@ -508,7 +503,7 @@ func (s *Schema) listEqual(cols []string, list []string) bool {
 	return true
 }
 
-func (s *Schema) postProcess(nodeData *NodeData) error {
+func (s *Schema) postProcess(nodeData *NodeData, edgeData *assocEdgeData) error {
 	// this is where validation that depends on all the data happens
 	primaryKeyCount := 0
 	for _, constraint := range nodeData.Constraints {
@@ -559,6 +554,10 @@ func (s *Schema) postProcess(nodeData *NodeData) error {
 				return fmt.Errorf("foreign key %s with columns which aren't unique in table %s", constraint.Name, fkey.TableName)
 			}
 		}
+	}
+
+	if err := s.addNewConstsAndEdges(nodeData, edgeData); err != nil {
+		return err
 	}
 
 	// should there be a way to disable this eventually
@@ -618,7 +617,7 @@ func (s *Schema) processDepgrah(edgeData *assocEdgeData) (*assocEdgeData, error)
 
 	// need to run this after running everything above
 	for _, info := range s.Nodes {
-		if err := s.postProcess(info.NodeData); err != nil {
+		if err := s.postProcess(info.NodeData, edgeData); err != nil {
 			return nil, err
 		}
 	}
@@ -674,10 +673,11 @@ func (s *Schema) addLinkedEdges(info *NodeDataInfo) error {
 			}
 			continue
 		}
-		// no inverse edge name, nothing to do here
-		if e.InverseEdgeName == "" {
+		// no inverse edge or name, nothing to do here
+		if e.InverseEdge == nil || e.InverseEdge.Name == "" {
 			continue
 		}
+		edgeName := e.InverseEdge.Name
 
 		config := e.GetEntConfig()
 		if config.ConfigName == "" {
@@ -689,9 +689,14 @@ func (s *Schema) addLinkedEdges(info *NodeDataInfo) error {
 			return fmt.Errorf("could not find the EntConfig codegen info for %s", config.ConfigName)
 		}
 		foreignEdgeInfo := foreignInfo.NodeData.EdgeInfo
-		fEdge := foreignEdgeInfo.GetAssociationEdgeByName(e.InverseEdgeName)
+		fEdge := foreignEdgeInfo.GetAssociationEdgeByName(edgeName)
 		if fEdge == nil {
-			return fmt.Errorf("couldn't find inverse edge with name %s", e.InverseEdgeName)
+			// add from inverseEdge...
+			var err error
+			fEdge, err = foreignEdgeInfo.AddEdgeFromInverseFieldEdge(info.NodeData.Node, e.NodeInfo.PackageName, e.InverseEdge)
+			if err != nil {
+				return err
+			}
 		}
 		if err := f.AddInverseEdge(fEdge); err != nil {
 			return err
@@ -795,8 +800,7 @@ func (s *Schema) maybeAddInverseAssocEdge(assocEdge *edge.AssociationEdge) error
 	return assocEdge.AddInverseEdge(inverseEdgeInfo)
 }
 
-func (s *Schema) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdgeData) error {
-	nodeData := info.NodeData
+func (s *Schema) addNewConstsAndEdges(nodeData *NodeData, edgeData *assocEdgeData) error {
 
 	// this seems like go only?
 	// we do use this value in ts tho

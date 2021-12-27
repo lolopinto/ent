@@ -209,7 +209,12 @@ var m = map[string]fn{
 			configName := args[0].Literal
 			edgeName := args[1].Literal
 
-			f.FieldEdge = &input.FieldEdge{Schema: configName, InverseEdge: edgeName}
+			f.FieldEdge = &input.FieldEdge{
+				Schema: configName,
+				InverseEdge: &input.InverseFieldEdge{
+					Name: edgeName,
+				},
+			}
 		})
 	},
 }

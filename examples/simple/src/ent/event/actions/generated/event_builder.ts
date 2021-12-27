@@ -13,7 +13,7 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Event, User } from "../../..";
+import { Address, Event, User } from "../../..";
 import { EdgeType, NodeType } from "../../../generated/const";
 import schema from "../../../../schema/event";
 
@@ -23,6 +23,7 @@ export interface EventInput {
   startTime?: Date;
   endTime?: Date | null;
   location?: string;
+  addressID?: ID | null | Builder<Address>;
 }
 
 export interface EventAction extends Action<Event> {
@@ -313,16 +314,48 @@ export class EventBuilder implements Builder<Event> {
     };
     addField("name", fields.name);
     addField("creatorID", fields.creatorID);
-    if (fields.creatorID) {
-      this.orchestrator.addInboundEdge(
-        fields.creatorID,
-        EdgeType.UserToCreatedEvents,
-        NodeType.User,
-      );
+    if (fields.creatorID !== undefined) {
+      if (fields.creatorID) {
+        this.orchestrator.addInboundEdge(
+          fields.creatorID,
+          EdgeType.UserToCreatedEvents,
+          NodeType.User,
+        );
+      }
+      if (
+        this.existingEnt &&
+        this.existingEnt.creatorID &&
+        this.existingEnt.creatorID !== fields.creatorID
+      ) {
+        this.orchestrator.removeInboundEdge(
+          this.existingEnt.creatorID,
+          EdgeType.UserToCreatedEvents,
+        );
+      }
     }
     addField("start_time", fields.startTime);
     addField("end_time", fields.endTime);
     addField("location", fields.location);
+    addField("addressID", fields.addressID);
+    if (fields.addressID !== undefined) {
+      if (fields.addressID) {
+        this.orchestrator.addInboundEdge(
+          fields.addressID,
+          EdgeType.AddressToHostedEvents,
+          NodeType.Address,
+        );
+      }
+      if (
+        this.existingEnt &&
+        this.existingEnt.addressID &&
+        this.existingEnt.addressID !== fields.addressID
+      ) {
+        this.orchestrator.removeInboundEdge(
+          this.existingEnt.addressID,
+          EdgeType.AddressToHostedEvents,
+        );
+      }
+    }
     return result;
   }
 
@@ -368,5 +401,13 @@ export class EventBuilder implements Builder<Event> {
       return this.input.location;
     }
     return this.existingEnt?.location;
+  }
+
+  // get value of addressID. Retrieves it from the input if specified or takes it from existingEnt
+  getNewAddressIDValue(): ID | null | Builder<Address> | undefined {
+    if (this.input.addressID !== undefined) {
+      return this.input.addressID;
+    }
+    return this.existingEnt?.addressID;
   }
 }

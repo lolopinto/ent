@@ -21,7 +21,7 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
-import { NodeType } from "../internal";
+import { AddressToHostedEventsQuery, NodeType } from "../internal";
 import schema from "../../schema/address";
 
 const tableName = "addresses";
@@ -165,6 +165,10 @@ export class AddressBase {
 
   static getField(key: string): Field | undefined {
     return AddressBase.getSchemaFields().get(key);
+  }
+
+  queryHostedEvents(): AddressToHostedEventsQuery {
+    return AddressToHostedEventsQuery.query(this.viewer, this.id);
   }
 }
 

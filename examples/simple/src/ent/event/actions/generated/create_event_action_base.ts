@@ -15,7 +15,7 @@ import {
   Changeset,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { Event, User } from "../../..";
+import { Address, Event, User } from "../../..";
 import { EventBuilder, EventInput } from "./event_builder";
 
 export interface EventCreateInput {
@@ -24,6 +24,7 @@ export interface EventCreateInput {
   startTime: Date;
   endTime?: Date | null;
   location: string;
+  addressID?: ID | null | Builder<Address>;
 }
 
 export class CreateEventActionBase implements Action<Event> {

@@ -170,8 +170,8 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 
 	if f.FieldEdge != nil {
 		ret.fieldEdge = &base.FieldEdgeInfo{
-			Schema:   getSchemaName(f.FieldEdge.Schema),
-			EdgeName: f.FieldEdge.InverseEdge,
+			Schema:      getSchemaName(f.FieldEdge.Schema),
+			InverseEdge: f.FieldEdge.InverseEdge,
 		}
 	}
 

@@ -12,9 +12,15 @@ import (
 // only allowed to import input
 type FieldEdgeInfo struct {
 	Schema      string
-	EdgeName    string
-	Name        string
+	InverseEdge *input.InverseFieldEdge
 	Polymorphic *PolymorphicOptions
+}
+
+func (f *FieldEdgeInfo) EdgeName() string {
+	if f.InverseEdge == nil {
+		return ""
+	}
+	return f.InverseEdge.Name
 }
 
 type PolymorphicOptions struct {
@@ -36,7 +42,9 @@ func NewFieldEdgeInfo(fieldName string, polymorphic *input.PolymorphicOptions, u
 	nodeTypeField := strcase.ToLowerCamel(edgeName + "Type")
 
 	return &FieldEdgeInfo{
-		EdgeName: edgeName,
+		InverseEdge: &input.InverseFieldEdge{
+			Name: edgeName,
+		},
 		Polymorphic: &PolymorphicOptions{
 			polymorphic,
 			nodeTypeField,

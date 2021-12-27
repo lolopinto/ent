@@ -6,13 +6,19 @@
 import {
   GraphQLFieldConfigMap,
   GraphQLID,
+  GraphQLInt,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
-import { Address } from "../../../ent";
+import {
+  GraphQLEdgeConnection,
+  GraphQLNodeInterface,
+  nodeIDEncoder,
+} from "@snowtop/ent/graphql";
+import { Address, AddressToHostedEventsQuery } from "../../../ent";
+import { AddressToHostedEventsConnectionType } from "../internal";
 
 export const AddressType = new GraphQLObjectType({
   name: "Address",
@@ -38,6 +44,35 @@ export const AddressType = new GraphQLObjectType({
     },
     country: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    hostedEvents: {
+      type: GraphQLNonNull(AddressToHostedEventsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (address: Address, args: {}, context: RequestContext) => {
+        return new GraphQLEdgeConnection(
+          address.viewer,
+          address,
+          (v, address: Address) => AddressToHostedEventsQuery.query(v, address),
+          args,
+        );
+      },
     },
   }),
   interfaces: [GraphQLNodeInterface],

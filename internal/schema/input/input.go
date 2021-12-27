@@ -134,8 +134,22 @@ type ForeignKey struct {
 }
 
 type FieldEdge struct {
-	Schema      string `json:"schema"`
-	InverseEdge string `json:"inverseEdge"`
+	Schema      string            `json:"schema"`
+	InverseEdge *InverseFieldEdge `json:"inverseEdge"`
+}
+
+func (f *FieldEdge) InverseEdgeName() string {
+	if f.InverseEdge == nil {
+		return ""
+	}
+	return f.InverseEdge.Name
+}
+
+type InverseFieldEdge struct {
+	Name            string `json:"name"`
+	TableName       string `json:"tableName"`
+	HideFromGraphQL bool   `json:"hideFromGraphQL"`
+	EdgeConstName   string `json:"edgeConstName"`
 }
 
 type PolymorphicOptions struct {

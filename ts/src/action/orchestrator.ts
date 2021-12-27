@@ -535,7 +535,6 @@ export class Orchestrator<T extends Ent> {
           this.options.operation === WriteOperation.Edit
         ) {
           defaultValue = field.defaultValueOnEdit(builder, input);
-          // TODO special case this if this is the only thing changing and don't do the write.
         }
       }
 
@@ -699,7 +698,6 @@ export class Orchestrator<T extends Ent> {
     let ops: DataOperation[] = [this.buildMainOp()];
 
     await this.buildEdgeOps(ops);
-    //    console.log("post build");
 
     return new EntChangeset(
       this.options.viewer,
