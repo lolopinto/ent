@@ -2191,18 +2191,16 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 				)
 			}
 			for _, f := range a.GetFields() {
-				if f.ExposeToGraphQL() {
-					if base64EncodeIDs && f.IsEditableIDField() {
-						result.FunctionContents = append(
-							result.FunctionContents,
-							fmt.Sprintf("%s: mustDecodeIDFromGQLID(input.%s),", f.TsFieldName(), f.TsFieldName()),
-						)
-					} else {
-						result.FunctionContents = append(
-							result.FunctionContents,
-							fmt.Sprintf("%s: input.%s,", f.TsFieldName(), f.TsFieldName()),
-						)
-					}
+				if base64EncodeIDs && f.IsEditableIDField() {
+					result.FunctionContents = append(
+						result.FunctionContents,
+						fmt.Sprintf("%s: mustDecodeIDFromGQLID(input.%s),", f.TsFieldName(), f.TsFieldName()),
+					)
+				} else {
+					result.FunctionContents = append(
+						result.FunctionContents,
+						fmt.Sprintf("%s: input.%s,", f.TsFieldName(), f.TsFieldName()),
+					)
 				}
 			}
 			for _, f := range a.GetNonEntFields() {

@@ -896,6 +896,74 @@ func TestEmbeddedActionOnlyFields(t *testing.T) {
 	)
 }
 
+func TestFieldEdgeFields(t *testing.T) {
+	schema := testhelper.ParseSchemaForTest(
+		t,
+		map[string]string{
+			"address.ts": testhelper.GetCodeWithSchema(
+				`import {BaseEntSchema, Action, Field, StringType, UUIDType, ActionOperation} from "{schema}";
+
+		export default class Address extends BaseEntSchema {
+		fields: Field[] = [
+			StringType({ name: "Street" }),
+			StringType({ name: "City" }),
+			StringType({ name: "State" }),
+			StringType({ name: "ZipCode" }), 
+		];
+	}`),
+			"profile.ts": testhelper.GetCodeWithSchema(`
+				import {BaseEntSchema, Action, Field, ActionOperation, StringType, TimestampType, UUIDType} from "{schema}";
+
+				export default class Profile extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({name: "name"}),
+						UUIDType({name: "addressID", fieldEdge: { schema: "Address", inverseEdge: "residents"}}),
+					];
+
+					actions: Action[] = [
+						{
+							operation: ActionOperation.Create,
+						},
+					];
+				};`),
+		},
+		base.TypeScript,
+	)
+
+	addressInfo := schema.Nodes["AddressConfig"].NodeData.ActionInfo
+	require.NotNil(t, addressInfo)
+
+	verifyExpectedActions(
+		t,
+		addressInfo,
+		[]expectedAction{},
+	)
+
+	profileInfo := schema.Nodes["ProfileConfig"].NodeData.ActionInfo
+	require.NotNil(t, profileInfo)
+	verifyExpectedActions(
+		t,
+		profileInfo,
+		[]expectedAction{
+			{
+				name: "CreateProfileAction",
+				fields: []expectedField{
+					{
+						name:    "name",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+					{
+						name:    "addressID",
+						tsType:  "ID | Builder<Address>",
+						gqlType: "ID!",
+					},
+				},
+			},
+		},
+	)
+}
+
 func verifyExpectedFields(t *testing.T, code, nodeName string, expActions []expectedAction) {
 	pkg, fnMap, err := schemaparser.FindFunctions(code, "configs", "GetFields", "GetActions")
 	require.Nil(t, err)
