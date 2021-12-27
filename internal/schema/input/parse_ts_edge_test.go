@@ -77,7 +77,7 @@ func TestParseEdges(t *testing.T) {
 					fields: []field{
 						{
 							name:      "creatorID",
-							fieldEdge: &input.FieldEdge{Schema: "User", InverseEdge: "createdEvents"},
+							fieldEdge: &input.FieldEdge{Schema: "User", InverseEdge: &input.InverseFieldEdge{Name: "createdEvents"}},
 							dbType:    input.String,
 						},
 					},
