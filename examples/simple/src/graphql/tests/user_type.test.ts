@@ -152,7 +152,12 @@ test("query custom async function", async () => {
   });
   let vc = new IDViewer(user.id);
   await CreateContactAction.create(vc, {
-    emailAddress: randomEmail("foo.com"),
+    emails: [
+      {
+        emailAddress: randomEmail("foo.com"),
+        label: "fun",
+      },
+    ],
     firstName: "Jon",
     lastName: "Snow",
     userID: user.id,
@@ -167,7 +172,12 @@ test("query custom async function", async () => {
   );
 
   let contact = await CreateContactAction.create(vc, {
-    emailAddress: randomEmail(),
+    emails: [
+      {
+        emailAddress: randomEmail(),
+        label: "fun",
+      },
+    ],
     firstName: "Jon",
     lastName: "Snow",
     userID: user.id,
@@ -190,7 +200,12 @@ test("query custom async function list", async () => {
   user = await User.loadX(vc, user.id);
   let selfContact = await user.loadSelfContact();
   let contact = await CreateContactAction.create(vc, {
-    emailAddress: randomEmail(),
+    emails: [
+      {
+        emailAddress: randomEmail(),
+        label: "fun",
+      },
+    ],
     firstName: "Jon",
     lastName: "Snow",
     userID: user.id,
@@ -226,7 +241,12 @@ test("query custom async function nullable contents", async () => {
   user = await User.loadX(vc, user.id);
   let selfContact = await user.loadSelfContact();
   await CreateContactAction.create(vc, {
-    emailAddress: randomEmail("foo.com"),
+    emails: [
+      {
+        emailAddress: randomEmail("foo.com"),
+        label: "fun",
+      },
+    ],
     firstName: "Jon",
     lastName: "Snow",
     userID: user.id,
@@ -255,7 +275,12 @@ test("query custom async function nullable list contents", async () => {
   user = await User.loadX(vc, user.id);
   let selfContact = await user.loadSelfContact();
   await CreateContactAction.create(vc, {
-    emailAddress: randomEmail("foo.com"),
+    emails: [
+      {
+        emailAddress: randomEmail("foo.com"),
+        label: "fun",
+      },
+    ],
     firstName: "Jon",
     lastName: "Snow",
     userID: user.id,
@@ -289,7 +314,12 @@ test("query custom async function nullable list and contents", async () => {
   user2 = await User.loadX(vc2, user2.id);
   let selfContact2 = await user2.loadSelfContact();
   await CreateContactAction.create(vc2, {
-    emailAddress: randomEmail("foo.com"),
+    emails: [
+      {
+        emailAddress: randomEmail("foo.com"),
+        label: "fun",
+      },
+    ],
     firstName: "Jon",
     lastName: "Snow",
     userID: user2.id,
@@ -337,6 +367,7 @@ test("query user and nested object", async () => {
     throw new Error("expected self contact to be loaded");
   }
 
+  const selfContactEmails = await selfContact.loadEmails();
   await expectQueryFromRoot(
     getConfig(new IDViewer(user.id), user),
     ["id", encodeGQLID(user)],
@@ -347,7 +378,7 @@ test("query user and nested object", async () => {
     ["selfContact.id", encodeGQLID(selfContact)],
     ["selfContact.firstName", selfContact.firstName],
     ["selfContact.lastName", selfContact.lastName],
-    ["selfContact.emailAddress", selfContact.emailAddress],
+    ["selfContact.emails[0].emailAddress", selfContactEmails[0].emailAddress],
     ["selfContact.user.id", encodeGQLID(user)],
   );
 });
@@ -526,7 +557,12 @@ async function createMany(
     advanceBy(86400);
     // TODO eventually a multi-create API
     let contact = await CreateContactAction.create(new IDViewer(user.id), {
-      emailAddress: randomEmail(),
+      emails: [
+        {
+          emailAddress: randomEmail(),
+          label: "fun",
+        },
+      ],
       firstName: name.firstName,
       lastName: name.lastName,
       userID: user.id,

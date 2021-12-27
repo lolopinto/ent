@@ -38,6 +38,7 @@ export class ContactBuilder implements Builder<Contact> {
   readonly placeholderID: ID;
   readonly ent = Contact;
   private input: ContactInput;
+  private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: Viewer,
@@ -73,6 +74,14 @@ export class ContactBuilder implements Builder<Contact> {
       ...this.input,
       ...input,
     };
+  }
+
+  storeData(k: string, v: any) {
+    this.m.set(k, v);
+  }
+
+  getData(k: string) {
+    return this.m.get(k);
   }
 
   // this gets the inputs that have been written for a given edgeType and operation

@@ -22,7 +22,7 @@ export default class ContactPhoneNumber
       fieldEdge: {
         schema: "Contact",
         enforceSchema: true,
-        loadRowByType: getLoaderOptions,
+        getLoaderOptions: getLoaderOptions,
       },
     }),
   ];

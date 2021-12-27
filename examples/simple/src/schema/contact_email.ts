@@ -19,7 +19,7 @@ export default class ContactEmail extends BaseEntSchema implements Schema {
       fieldEdge: {
         schema: "Contact",
         enforceSchema: true,
-        loadRowByType: getLoaderOptions,
+        getLoaderOptions: getLoaderOptions,
       },
     }),
   ];

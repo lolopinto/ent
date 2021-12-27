@@ -40,7 +40,12 @@ export class ImportContactResolver {
         CreateContactAction.create(user.viewer, {
           firstName: record.firstName,
           lastName: record.lastName,
-          emailAddress: record.emailAddress,
+          emails: [
+            {
+              emailAddress: record.emailAddress,
+              label: "default",
+            },
+          ],
           userID: user.id,
         }),
       );
