@@ -204,6 +204,7 @@ func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName s
 	// well this is dumb
 	// not an id field, do nothing
 	// TODO we need a test for this
+	// TODO #674
 	if !strings.HasSuffix(fieldName, "ID") && !strings.HasSuffix(fieldName, "id") {
 		return nil
 	}

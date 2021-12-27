@@ -1,5 +1,7 @@
 import { DateTime } from "luxon";
 import { snakeCase } from "snake-case";
+import { Ent } from "../core/base";
+import { Builder } from "../action/action";
 import DB, { Dialect } from "../core/db";
 import {
   DBType,
@@ -47,7 +49,7 @@ export abstract class BaseField {
 export class UUIDField extends BaseField implements Field {
   type: Type = { dbType: DBType.UUID };
 
-  constructor(options: FieldOptions) {
+  constructor(private options: FieldOptions) {
     super();
 
     const polymorphic = options.polymorphic;
@@ -90,6 +92,31 @@ export class UUIDField extends BaseField implements Field {
         ];
       }
     }
+
+    if (options.fieldEdge?.enforceSchema && !options.fieldEdge.loadRowByType) {
+      throw new Error(`cannot enforceSchema if loadRowByType wasn't passed in`);
+    }
+  }
+
+  private isBuilder(val: Builder<Ent> | any): val is Builder<Ent> {
+    return (val as Builder<Ent>).placeholderID !== undefined;
+  }
+
+  async valid(val: any) {
+    if (!this.options.fieldEdge?.enforceSchema) {
+      return true;
+    }
+
+    const loadRowByType = this.options.fieldEdge.loadRowByType!;
+    const loadRowOptions = loadRowByType(this.options.fieldEdge.schema!);
+    if (this.isBuilder(val)) {
+      // if builder, the ent type of the builder and the ent type returned by the load constructor should match
+      return val.ent === loadRowOptions.ent;
+    }
+    // TODO we need context here to make sure that we hit local cache
+
+    const row = await loadRowOptions.loaderFactory.createLoader().load(val);
+    return row !== null;
   }
 }
 

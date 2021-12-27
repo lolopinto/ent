@@ -387,7 +387,6 @@ func (f *Field) EvolvedIDField() bool {
 }
 
 func (f *Field) QueryFromEnt() bool {
-	// TODO #476
 	return f.index && f.polymorphic != nil
 }
 
@@ -402,7 +401,6 @@ func (f *Field) QueryFromEntName() string {
 
 // TODO probably gonna collapse into above
 func (f *Field) QueryFrom() bool {
-	// TODO #476
 	if !f.index || f.polymorphic != nil {
 		return false
 	}
@@ -616,6 +614,9 @@ func (f *Field) EmbeddableInParentAction() bool {
 		return false
 	}
 
+	// TODO this is false if it's not the primary field?
+	// this should be changed
+	// https://github.com/lolopinto/ent/issues/677
 	if f.EvolvedIDField() {
 		return false
 	}

@@ -30,6 +30,7 @@ export interface Builder<T extends Ent> {
   build(): Promise<Changeset<T>>;
   operation: WriteOperation;
   editedEnt?(): Promise<T | null>;
+  //  nodeType: string;
 }
 
 // NB: this is a private API subject to change

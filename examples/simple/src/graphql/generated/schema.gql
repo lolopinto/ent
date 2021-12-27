@@ -81,8 +81,8 @@ type Address implements Node {
 
 type Comment implements Node {
   article: Node
+  author: User
   id: ID!
-  authorID: ID!
   body: String!
   post(first: Int, after: String, last: Int, before: String): CommentToPostConnection!
 }

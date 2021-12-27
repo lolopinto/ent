@@ -1,4 +1,4 @@
-import { Data, Ent } from "../core/base";
+import { Data, Ent, LoadEntOptions } from "../core/base";
 import { Builder } from "../action/action";
 
 // Schema is the base for every schema in typescript
@@ -213,9 +213,18 @@ export interface ForeignKey {
   disableIndex?: boolean;
 }
 
+type loadRowFn = (type: string) => LoadEntOptions<Ent>;
+
 export interface FieldEdge {
   schema: string;
-  inverseEdge: string;
+  // inverseEdge is optional. if present, indicates it maps to an edge in the other schema
+  inverseEdge?: string;
+
+  // if enforceSchema. implement the valid type.
+  // we use loadRowByType to do it
+  enforceSchema?: boolean;
+  // we only need the loaderfactory but have the entire thing just because
+  loadRowByType?: loadRowFn;
 }
 
 // FieldOptions are configurable options for fields.
@@ -267,7 +276,7 @@ export interface Field extends FieldOptions {
   type: Type;
 
   // optional valid and format to validate and format before storing
-  valid?(val: any): boolean;
+  valid?(val: any): Promise<boolean> | boolean;
   //valid?(val: any): Promise<boolean>;
   format?(val: any): any;
 
