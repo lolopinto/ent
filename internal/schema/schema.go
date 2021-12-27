@@ -919,6 +919,7 @@ func (s *Schema) getNewEdge(edgeData *assocEdgeData, assocEdge *edge.Association
 }
 
 func (s *Schema) addActionFields(info *NodeDataInfo) error {
+	// TODO need to verify that names here are valid
 	for _, a := range info.NodeData.ActionInfo.Actions {
 		for _, f := range a.GetNonEntFields() {
 			typ := f.FieldType
@@ -964,7 +965,6 @@ func (s *Schema) addActionFields(info *NodeDataInfo) error {
 
 				break
 			}
-
 		}
 	}
 	return nil

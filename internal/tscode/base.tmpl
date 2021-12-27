@@ -361,7 +361,33 @@ export class {{$baseClass}} {
         );
       }
       {{end -}}
-    {{ else -}}
+    {{end -}}
+
+    {{if $edge.IsList -}}
+      {{$edgeNode := .NodeInfo.Node -}}
+      {{if $edge.Nullable -}} 
+        async load{{$edgeName}}(): Promise<{{useImport $edgeNode}}[]|null> {
+          if (!this.{{$edge.TSFieldName}}) {
+            return null;
+          } 
+          return {{useImport "loadEnts"}}(
+            this.viewer, 
+            {{useImport $edgeNode}}.loaderOptions(),
+            ...this.{{$edge.TSFieldName}},
+          );
+        }
+      {{ else -}}
+        async load{{$edgeName}}(): Promise<{{useImport $edgeNode}}[]> {
+          return {{useImport "loadEnts"}}(
+            this.viewer, 
+            {{useImport $edgeNode}}.loaderOptions(),
+            ...this.{{$edge.TSFieldName}},
+          );
+        }
+      {{ end -}}
+    {{ end -}}
+
+    {{ if $edge.NonPolymorphicList -}}
       {{with .NodeInfo -}}
         async load{{$edgeName}}(): Promise<{{useImport .Node}}|null> {
           {{ if $edge.Nullable -}}

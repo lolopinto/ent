@@ -32,7 +32,12 @@ export default class CreateUserAction extends CreateUserActionBase {
         let action = CreateContactAction.create(this.builder.viewer, {
           firstName: input.firstName,
           lastName: input.lastName,
-          emailAddress: input.emailAddress,
+          emails: [
+            {
+              emailAddress: input.emailAddress,
+              label: "self",
+            },
+          ],
           userID: builder,
         });
 

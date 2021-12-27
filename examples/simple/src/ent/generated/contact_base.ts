@@ -14,6 +14,7 @@ import {
   PrivacyPolicy,
   Viewer,
   convertDate,
+  convertList,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -22,6 +23,8 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import {
+  ContactEmail,
+  ContactPhoneNumber,
   ContactToCommentsQuery,
   ContactToLikersQuery,
   NodeType,
@@ -34,7 +37,8 @@ const fields = [
   "id",
   "created_at",
   "updated_at",
-  "email_address",
+  "email_ids",
+  "phone_number_ids",
   "first_name",
   "last_name",
   "user_id",
@@ -45,7 +49,8 @@ export class ContactBase {
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
-  readonly emailAddress: string;
+  readonly emailIds: ID[];
+  readonly phoneNumberIds: ID[];
   readonly firstName: string;
   readonly lastName: string;
   readonly userID: ID;
@@ -54,7 +59,8 @@ export class ContactBase {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
-    this.emailAddress = data.email_address;
+    this.emailIds = convertList(data.email_ids);
+    this.phoneNumberIds = convertList(data.phone_number_ids);
     this.firstName = data.first_name;
     this.lastName = data.last_name;
     this.userID = data.user_id;
@@ -172,6 +178,22 @@ export class ContactBase {
 
   queryLikers(): ContactToLikersQuery {
     return ContactToLikersQuery.query(this.viewer, this.id);
+  }
+
+  async loadEmails(): Promise<ContactEmail[]> {
+    return loadEnts(
+      this.viewer,
+      ContactEmail.loaderOptions(),
+      ...this.emailIds,
+    );
+  }
+
+  async loadPhoneNumbers(): Promise<ContactPhoneNumber[]> {
+    return loadEnts(
+      this.viewer,
+      ContactPhoneNumber.loaderOptions(),
+      ...this.phoneNumberIds,
+    );
   }
 
   async loadUser(): Promise<User | null> {

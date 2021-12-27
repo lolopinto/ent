@@ -237,7 +237,7 @@ func (f *Field) AddForeignKeyFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) error 
 		return fmt.Errorf("invalid field %s added", f.FieldName)
 	}
 
-	return edgeInfo.AddFieldEdgeFromForeignKeyInfo(f.FieldName, fkeyInfo.Schema+"Config", f.Nullable())
+	return edgeInfo.AddFieldEdgeFromForeignKeyInfo(f.FieldName, fkeyInfo.Schema+"Config", f.Nullable(), f.fieldType)
 }
 
 func (f *Field) AddFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) error {
@@ -250,6 +250,7 @@ func (f *Field) AddFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) error {
 		f.FieldName,
 		fieldEdgeInfo,
 		f.Nullable(),
+		f.fieldType,
 	)
 }
 
@@ -386,6 +387,9 @@ func (f *Field) EvolvedIDField() bool {
 	if ok {
 		return false
 	}
+	if enttype.IsListType(f.fieldType) {
+		return false
+	}
 
 	// TODO kill above and convert to this
 	// if there's a fieldEdge or a foreign key or an inverse edge to this, this is an ID field
@@ -503,6 +507,11 @@ func (f *Field) getIDFieldTypeName() string {
 	if f.polymorphic != nil {
 		return "Ent"
 	}
+
+	if enttype.IsListType(f.fieldType) {
+		return ""
+	}
+
 	var typeName string
 	if f.fkey != nil {
 		typeName = f.fkey.Schema

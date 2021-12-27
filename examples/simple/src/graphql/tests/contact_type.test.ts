@@ -70,17 +70,25 @@ async function createContact(user?: User): Promise<Contact> {
   if (!user) {
     user = await createUser();
   }
-  return await CreateContactAction.create(new IDViewer(user.id), {
-    emailAddress: randomEmail(),
+  const contact = await CreateContactAction.create(new IDViewer(user.id), {
+    emails: [
+      {
+        emailAddress: randomEmail(),
+        label: "default",
+      },
+    ],
     firstName: "Jon",
     lastName: "Snow",
     userID: user.id,
   }).saveX();
+  // reload
+  return await Contact.loadX(contact.viewer, contact.id);
 }
 
 test("query contact", async () => {
   let contact = await createContact();
   let user = await contact.loadUserX();
+  let emails = await contact.loadEmails();
 
   await expectQueryFromRoot(
     getConfig(new IDViewer(user.id), contact),
@@ -89,7 +97,7 @@ test("query contact", async () => {
     ["user.firstName", contact.firstName],
     ["firstName", contact.firstName],
     ["lastName", contact.lastName],
-    ["emailAddress", contact.emailAddress],
+    ["emails[0].emailAddress", emails[0].emailAddress],
   );
 });
 

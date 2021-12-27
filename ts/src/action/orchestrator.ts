@@ -718,7 +718,7 @@ export class Orchestrator<T extends Ent> {
     return action.viewerForEntLoad(data);
   }
 
-  private async returnedRow(): Promise<Data | null> {
+  async returnedRow(): Promise<Data | null> {
     if (this.mainOp && this.mainOp.returnedRow) {
       return this.mainOp.returnedRow();
     }

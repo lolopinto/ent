@@ -9,6 +9,7 @@ import {
   GraphQLID,
   GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLResolveInfo,
@@ -38,8 +39,11 @@ export const ContactEditInputType = new GraphQLInputObjectType({
       description: "id of Contact",
       type: GraphQLNonNull(GraphQLID),
     },
-    emailAddress: {
-      type: GraphQLString,
+    emailIds: {
+      type: GraphQLList(GraphQLNonNull(GraphQLID)),
+    },
+    phoneNumberIds: {
+      type: GraphQLList(GraphQLNonNull(GraphQLID)),
     },
     firstName: {
       type: GraphQLString,
@@ -84,7 +88,8 @@ export const ContactEditType: GraphQLFieldConfig<
       context.getViewer(),
       mustDecodeIDFromGQLID(input.contactID),
       {
-        emailAddress: input.emailAddress,
+        emailIds: input.emailIds,
+        phoneNumberIds: input.phoneNumberIds,
         firstName: input.firstName,
         lastName: input.lastName,
         userID: mustDecodeIDFromGQLID(input.userID),

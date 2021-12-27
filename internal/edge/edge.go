@@ -138,12 +138,12 @@ func (e *EdgeInfo) GetAssociationEdgeGroupByStatusName(groupStatusName string) *
 	return e.assocGroupsMap[groupStatusName]
 }
 
-func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(fieldName, configName string, nullable bool) error {
-	return e.addFieldEdgeFromInfo(fieldName, configName, "", nil, nullable)
+func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(fieldName, configName string, nullable bool, fieldType enttype.EntType) error {
+	return e.addFieldEdgeFromInfo(fieldName, configName, "", nil, nullable, fieldType)
 }
 
-func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo *base.FieldEdgeInfo, nullable bool) error {
-	return e.addFieldEdgeFromInfo(fieldName, fieldEdgeInfo.Schema+"Config", fieldEdgeInfo.EdgeName(), fieldEdgeInfo.Polymorphic, nullable)
+func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo *base.FieldEdgeInfo, nullable bool, fieldType enttype.EntType) error {
+	return e.addFieldEdgeFromInfo(fieldName, fieldEdgeInfo.Schema+"Config", fieldEdgeInfo.EdgeName(), fieldEdgeInfo.Polymorphic, nullable, fieldType)
 }
 
 func (e *EdgeInfo) AddEdgeFromInverseFieldEdge(sourceSchemaName, destinationPackageName string, edge *input.InverseFieldEdge) (*AssociationEdge, error) {
@@ -217,18 +217,39 @@ func (e *EdgeInfo) CreateEdgeBaseFile() bool {
 	return false
 }
 
-func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName string, polymorphic *base.PolymorphicOptions, nullable bool) error {
+// TODO pass fieldType so we can check list or not...
+func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName string, polymorphic *base.PolymorphicOptions, nullable bool, fieldType enttype.EntType) error {
+	validSuffixes := map[string]string{
+		"id":  "_id",
+		"ID":  "ID",
+		"IDs": "IDs",
+		"ids": "_ids",
+	}
 	// well this is dumb
 	// not an id field, do nothing
 	// TODO we need a test for this
 	// TODO #674
-	if !strings.HasSuffix(fieldName, "ID") && !strings.HasSuffix(fieldName, "id") {
+	foundSuffix := ""
+	for suffix := range validSuffixes {
+		if strings.HasSuffix(fieldName, suffix) {
+			foundSuffix = suffix
+			break
+		}
+	}
+	if foundSuffix == "" {
 		return nil
 	}
-	trim := strings.TrimSuffix(fieldName, "ID")
-	trim = strings.TrimSuffix(trim, "_id")
+	trim := strings.TrimSuffix(fieldName, validSuffixes[foundSuffix])
 	if trim == "" {
 		trim = fieldName
+	}
+
+	// pluralize if list
+	if enttype.IsListType(fieldType) {
+		trim = inflection.Plural(trim)
+		if polymorphic != nil {
+			return fmt.Errorf("field %s polymorphic list types not currently supported.", fieldName)
+		}
 	}
 
 	var edgeInfo commonEdgeInfo
@@ -262,6 +283,7 @@ func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName s
 		InverseEdge:    inverseEdge,
 		Nullable:       nullable,
 		Polymorphic:    polymorphic,
+		fieldType:      fieldType,
 	}
 
 	return e.addEdge(edge)
@@ -407,7 +429,9 @@ type FieldEdge struct {
 	commonEdgeInfo
 	FieldName   string
 	TSFieldName string
-	Nullable    bool
+	//	InverseEdgeName string
+	Nullable  bool
+	fieldType enttype.EntType
 
 	InverseEdge *input.InverseFieldEdge
 	Polymorphic *base.PolymorphicOptions
@@ -419,6 +443,17 @@ func (edge *FieldEdge) PolymorphicEdge() bool {
 }
 
 func (edge *FieldEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
+	if edge.IsList() {
+		return []enttype.FileImport{
+			enttype.NewGQLFileImport("GraphQLNonNull"),
+			enttype.NewGQLFileImport("GraphQLList"),
+			enttype.NewGQLFileImport("GraphQLNonNull"),
+			{
+				ImportType: enttype.Node,
+				Type:       edge.NodeInfo.Node,
+			},
+		}
+	}
 	// TODO required and nullable eventually (options for the edges that is)
 	if edge.Polymorphic != nil {
 		return []enttype.FileImport{
@@ -435,6 +470,14 @@ func (edge *FieldEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
 			Type:       edge.NodeInfo.Node,
 		},
 	}
+}
+
+func (edge *FieldEdge) IsList() bool {
+	return enttype.IsListType(edge.fieldType)
+}
+
+func (edge *FieldEdge) NonPolymorphicList() bool {
+	return edge.Polymorphic == nil && !edge.IsList()
 }
 
 var _ Edge = &FieldEdge{}

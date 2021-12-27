@@ -10,6 +10,8 @@ export * from "./generated/event_rsvp_status_type";
 export * from "./generated/preferred_shift_type";
 export * from "./generated/address_type";
 export * from "./generated/comment_type";
+export * from "./generated/contact_email_type";
+export * from "./generated/contact_phone_number_type";
 export * from "./generated/contact_type";
 export * from "./generated/event_type";
 export * from "./generated/holiday_type";
