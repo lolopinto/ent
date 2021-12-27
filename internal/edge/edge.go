@@ -157,7 +157,6 @@ func (e *EdgeInfo) AddEdgeFromInverseFieldEdge(sourceSchemaName, destinationPack
 	if err != nil {
 		return nil, err
 	}
-	// TODO allow duplicates if already specified somewhere else
 	if err := e.addEdge(assocEge); err != nil {
 		return nil, err
 	}
@@ -408,8 +407,7 @@ type FieldEdge struct {
 	commonEdgeInfo
 	FieldName   string
 	TSFieldName string
-	//	InverseEdgeName string
-	Nullable bool
+	Nullable    bool
 
 	InverseEdge *input.InverseFieldEdge
 	Polymorphic *base.PolymorphicOptions

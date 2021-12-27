@@ -13,7 +13,6 @@ import (
 type FieldEdgeInfo struct {
 	Schema      string
 	InverseEdge *input.InverseFieldEdge
-	//	Name        string
 	Polymorphic *PolymorphicOptions
 }
 

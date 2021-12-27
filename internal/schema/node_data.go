@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/internal/action"
@@ -326,7 +325,6 @@ func (nodeData *NodeData) GetImportsForQueryBaseFile(s *Schema) ([]ImportPath, e
 
 		node, err := s.GetNodeDataForNode(edge.NodeInfo.Node)
 		if err != nil {
-			spew.Dump(edge, edge.NodeInfo)
 			return nil, err
 		}
 		// need a flag of if imported or something

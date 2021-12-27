@@ -723,11 +723,6 @@ func (s *Schema) addEdgesFromFields(info *NodeDataInfo) error {
 			if err := s.addFieldEdge(edgeInfo, f); err != nil {
 				return err
 			}
-			if fieldEdgeInfo.InverseEdge != nil {
-				// TODO add edge in inverse schema so that we don't need to add it in the first
-				//				spew.Dump(nodeData.Node, fieldEdgeInfo)
-			}
-
 		}
 	}
 	return nil

@@ -170,8 +170,7 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 
 	if f.FieldEdge != nil {
 		ret.fieldEdge = &base.FieldEdgeInfo{
-			Schema: getSchemaName(f.FieldEdge.Schema),
-			// everywhere that has EdgeName needs to change
+			Schema:      getSchemaName(f.FieldEdge.Schema),
 			InverseEdge: f.FieldEdge.InverseEdge,
 		}
 	}
@@ -243,9 +242,6 @@ func (f *Field) AddFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) error {
 		return fmt.Errorf("invalid field %s added", f.FieldName)
 	}
 
-	if fieldEdgeInfo.Schema == "" {
-		//		return nil
-	}
 	return edgeInfo.AddFieldEdgeFromFieldEdgeInfo(
 		f.FieldName,
 		fieldEdgeInfo,
