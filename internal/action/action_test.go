@@ -706,6 +706,57 @@ func TestActionOnlyFields(t *testing.T) {
 	)
 }
 
+func TestActionOnlyFieldsInvalidAction(t *testing.T) {
+	schema, err := testhelper.ParseSchemaForTestFull(
+		t,
+		map[string]string{
+			"contact.ts": testhelper.GetCodeWithSchema(
+				`
+				import {BaseEntSchema, Action, Field, ActionOperation, StringType} from "{schema}";
+
+				export default class Contact extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({name: "name"}),
+					];
+
+					actions: Action[] = [
+						{
+							operation: ActionOperation.Create,
+							actionOnlyFields: [{
+								name: "emails",
+								type: "Object",
+								list: true,
+								actionName: "CreateEmailAction",
+							}],
+						},
+					];
+				};`),
+			"contact_email.ts": testhelper.GetCodeWithSchema(
+				`
+				import {BaseEntSchema, Action, Field, ActionOperation, StringType} from "{schema}";
+
+				export default class ContactEmail extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({name: "email"}),
+						StringType({name: "label"}),
+					];
+
+					actions: Action[] = [
+						{
+							operation: ActionOperation.Create,
+						},
+					];
+				};`,
+			),
+		},
+		base.TypeScript,
+	)
+
+	require.Nil(t, schema)
+	require.NotNil(t, err)
+	require.Equal(t, err.Error(), "invalid action only field emails. couldn't find action with name CreateEmailAction")
+}
+
 func TestEmbeddedActionOnlyFields(t *testing.T) {
 	schema := testhelper.ParseSchemaForTest(
 		t,

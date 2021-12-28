@@ -919,7 +919,6 @@ func (s *Schema) getNewEdge(edgeData *assocEdgeData, assocEdge *edge.Association
 }
 
 func (s *Schema) addActionFields(info *NodeDataInfo) error {
-	// TODO need to verify that names here are valid
 	for _, a := range info.NodeData.ActionInfo.Actions {
 		for _, f := range a.GetNonEntFields() {
 			typ := f.FieldType
@@ -932,6 +931,7 @@ func (s *Schema) addActionFields(info *NodeDataInfo) error {
 				continue
 			}
 
+			foundAction := false
 			config := info.NodeData.Node + "Config"
 			for k, v := range s.Nodes {
 				if k == config {
@@ -941,6 +941,7 @@ func (s *Schema) addActionFields(info *NodeDataInfo) error {
 				if a2 == nil {
 					continue
 				}
+				foundAction = true
 
 				for _, f2 := range a2.GetFields() {
 					if f2.EmbeddableInParentAction() {
@@ -964,6 +965,9 @@ func (s *Schema) addActionFields(info *NodeDataInfo) error {
 				a.AddCustomInterfaces(a2)
 
 				break
+			}
+			if !foundAction {
+				return fmt.Errorf("invalid action only field %s. couldn't find action with name %s", f.FieldName, actionName)
 			}
 		}
 	}
