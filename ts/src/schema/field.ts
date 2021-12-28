@@ -12,7 +12,7 @@ import {
   PolymorphicOptions,
   Type,
 } from "./schema";
-import { isPromise } from "util/types";
+import { types } from "util";
 
 export abstract class BaseField {
   name: string;
@@ -703,7 +703,7 @@ export class ListField extends BaseField {
       return true;
     }
     const res = valid.apply(this.field, [val[0]]);
-    if (isPromise(res)) {
+    if (types.isPromise(res)) {
       const ret = await Promise.all(
         val.map(async (v) => await valid.apply(this.field, [v])),
       );
