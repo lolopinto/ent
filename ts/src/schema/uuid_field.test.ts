@@ -1,12 +1,14 @@
-import { UUIDType, StringType } from "./field";
+import { Pool } from "pg";
+import { v1 } from "uuid";
+import { UUIDType, UUIDListType, StringType } from "./field";
 import { DBType, PolymorphicOptions, Type, FieldOptions } from "./schema";
-import Schema, { Field } from "./schema";
+import { Field } from "./schema";
 import { BaseEntSchema } from "./base_schema";
 import { User, SimpleAction } from "../testutils/builder";
 import { LoggedOutViewer } from "../core/viewer";
-import { Pool } from "pg";
 import { QueryRecorder } from "../testutils/db_mock";
 import { ObjectLoaderFactory } from "../core/loaders/object_loader";
+
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 
@@ -291,5 +293,130 @@ describe("fieldEdge no inverseEdge", () => {
         /invalid field userID with value (.+)/,
       );
     }
+  });
+});
+
+describe("fieldEdge list", () => {
+  test("enforce checks", async () => {
+    class ContactEmail extends User {}
+    class ContactEmailSchema extends BaseEntSchema {
+      fields: Field[] = [StringType({ name: "Email" })];
+      ent = ContactEmail;
+    }
+
+    class Contact extends User {}
+    class ContactShema extends BaseEntSchema {
+      fields: Field[] = [
+        UUIDListType({
+          name: "emailIDs",
+          fieldEdge: {
+            schema: "ContactEmail",
+            enforceSchema: true,
+            getLoaderOptions: () => {
+              return {
+                tableName: "contact_emails",
+                fields: ["id"],
+                ent: Contact,
+                loaderFactory: new ObjectLoaderFactory({
+                  tableName: "contact_emails",
+                  fields: ["id"],
+                  key: "id",
+                }),
+              };
+            },
+          },
+        }),
+      ];
+      ent = Contact;
+    }
+
+    const emailAction1 = new SimpleAction(
+      new LoggedOutViewer(),
+      new ContactEmailSchema(),
+      new Map<string, any>([["Email", "foo@bar.com"]]),
+    );
+    const email1 = await emailAction1.saveX();
+    expect(email1.data.email).toBe("foo@bar.com");
+    const emailAction2 = new SimpleAction(
+      new LoggedOutViewer(),
+      new ContactEmailSchema(),
+      new Map<string, any>([["Email", "foo2@bar.com"]]),
+    );
+    const email2 = await emailAction2.saveX();
+    expect(email2.data.email).toBe("foo2@bar.com");
+
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      new ContactShema(),
+      new Map<string, any>([["emailIDs", [email1.id, email2.id]]]),
+    );
+
+    const contact = await action.saveX();
+    expect(contact.data.email_i_ds).toStrictEqual([email1.id, email2.id]);
+
+    const action2 = new SimpleAction(
+      new LoggedOutViewer(),
+      new ContactShema(),
+      new Map<string, any>([["emailIDs", [email1.id, v1()]]]),
+    );
+
+    try {
+      await action2.saveX();
+      throw new Error(`should have thrown`);
+    } catch (err) {
+      expect((err as Error).message).toMatch(
+        /invalid field emailIDs with value (.+)/,
+      );
+    }
+  });
+
+  test("don't enforce checks", async () => {
+    class ContactEmail extends User {}
+    class ContactEmailSchema extends BaseEntSchema {
+      fields: Field[] = [StringType({ name: "Email" })];
+      ent = ContactEmail;
+    }
+
+    class Contact extends User {}
+    class ContactShema extends BaseEntSchema {
+      fields: Field[] = [
+        UUIDListType({
+          name: "emailIDs",
+          fieldEdge: {
+            schema: "ContactEmail",
+          },
+        }),
+      ];
+      ent = Contact;
+    }
+
+    const emailAction1 = new SimpleAction(
+      new LoggedOutViewer(),
+      new ContactEmailSchema(),
+      new Map<string, any>([["Email", "foo@bar.com"]]),
+    );
+    const email1 = await emailAction1.saveX();
+    expect(email1.data.email).toBe("foo@bar.com");
+    const emailAction2 = new SimpleAction(
+      new LoggedOutViewer(),
+      new ContactEmailSchema(),
+      new Map<string, any>([["Email", "foo2@bar.com"]]),
+    );
+    const email2 = await emailAction2.saveX();
+    expect(email2.data.email).toBe("foo2@bar.com");
+
+    const fakeID = v1();
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      new ContactShema(),
+      new Map<string, any>([["emailIDs", [email1.id, email2.id, fakeID]]]),
+    );
+
+    const contact = await action.saveX();
+    expect(contact.data.email_i_ds).toStrictEqual([
+      email1.id,
+      email2.id,
+      fakeID,
+    ]);
   });
 });

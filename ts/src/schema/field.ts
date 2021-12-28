@@ -12,6 +12,7 @@ import {
   PolymorphicOptions,
   Type,
 } from "./schema";
+import { types } from "util";
 
 export abstract class BaseField {
   name: string;
@@ -688,7 +689,7 @@ export class ListField extends BaseField {
     return this;
   }
 
-  valid(val: any): boolean {
+  async valid(val: any) {
     if (!Array.isArray(val)) {
       return false;
     }
@@ -697,15 +698,20 @@ export class ListField extends BaseField {
         return false;
       }
     }
-    if (!this.field.valid) {
+    const valid = this.field.valid;
+    if (!valid) {
       return true;
     }
-    for (const v of val) {
-      if (!this.field.valid(v)) {
-        return false;
-      }
+    const res = valid.apply(this.field, [val[0]]);
+    if (types.isPromise(res)) {
+      const ret = await Promise.all(
+        val.map(async (v) => await valid.apply(this.field, [v])),
+      );
+      return ret.every((v) => v);
     }
-    return true;
+    const ret = val.map((v) => valid.apply(this.field, [v]));
+    const result = ret.every((v) => v);
+    return result;
   }
 
   private postgresVal(val: any, jsonType?: boolean) {
