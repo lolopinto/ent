@@ -312,7 +312,7 @@ describe("fieldEdge list", () => {
           fieldEdge: {
             schema: "ContactEmail",
             enforceSchema: true,
-            loadRowByType: () => {
+            getLoaderOptions: () => {
               return {
                 tableName: "contact_emails",
                 fields: ["id"],
