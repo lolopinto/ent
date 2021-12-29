@@ -313,7 +313,7 @@ func getNonEntFieldsFromInput(nodeName string, action *input.Action, typ concret
 		fields = append(fields, &NonEntField{
 			FieldName: field.Name,
 			FieldType: typ,
-			Nullable:  field.Nullable,
+			nullable:  field.Nullable,
 		})
 	}
 	return fields, nil
@@ -337,7 +337,7 @@ func getNonEntFieldsFromAssocGroup(
 		fields = append(fields, &NonEntField{
 			FieldName: field.Name,
 			FieldType: typ,
-			Nullable:  field.Nullable,
+			nullable:  field.Nullable,
 		})
 	}
 	return fields, nil

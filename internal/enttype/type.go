@@ -13,6 +13,10 @@ import (
 	"github.com/lolopinto/ent/ent/config"
 )
 
+type Config interface {
+	Base64EncodeIDs() bool
+}
+
 // Type represents a Type that's expressed in the framework
 // The only initial requirement is GraphQL since that's exposed everywhere
 type Type interface {
@@ -56,9 +60,17 @@ type TSCodegenableType interface {
 // 	GetTSName() string
 // }
 
+// TODO kill
 type IDMarkerInterface interface {
 	TSGraphQLType
 	IsIDType() bool
+}
+
+type CustomGQLRenderer interface {
+	TSGraphQLType
+	CustomGQLRender(cfg Config, v string) string
+	// TODO
+	ArgImports() []FileImport
 }
 
 type ConvertDataType interface {
@@ -438,6 +450,24 @@ func (t *IDType) GetTSGraphQLImports() []FileImport {
 	}
 }
 
+// TODO does this only affect actions?
+func (t *IDType) CustomGQLRender(cfg Config, v string) string {
+	if !cfg.Base64EncodeIDs() {
+		return v
+	}
+
+	return fmt.Sprintf("mustDecodeIDFromGQLID(%s)", v)
+}
+
+func (t *IDType) ArgImports() []FileImport {
+	return []FileImport{
+		{
+			ImportType: EntGraphQL,
+			Type:       "mustDecodeIDFromGQLID",
+		},
+	}
+}
+
 type NullableIDType struct {
 	idType
 }
@@ -460,6 +490,23 @@ func (t *NullableIDType) GetNonNullableType() TSGraphQLType {
 
 func (t *NullableIDType) GetTSGraphQLImports() []FileImport {
 	return []FileImport{NewGQLFileImport("GraphQLID")}
+}
+
+func (t *NullableIDType) CustomGQLRender(cfg Config, v string) string {
+	if !cfg.Base64EncodeIDs() {
+		return v
+	}
+
+	return fmt.Sprintf("mustDecodeNullableIDFromGQLID(%s)", v)
+}
+
+func (t *NullableIDType) ArgImports() []FileImport {
+	return []FileImport{
+		{
+			ImportType: EntGraphQL,
+			Type:       "mustDecodeNullableIDFromGQLID",
+		},
+	}
 }
 
 type intType struct{}

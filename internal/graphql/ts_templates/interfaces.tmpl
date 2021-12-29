@@ -13,7 +13,11 @@
     {{if .UseImport -}}
       {{$type = useImport $type -}}
     {{end -}}
-    {{.Name}}: {{$type}};
+    {{if .Optional -}}
+      {{.Name}}?: {{$type}};
+    {{ else -}}
+      {{.Name}}: {{$type}};
+    {{end -}}
   {{ end -}}
   }
 
