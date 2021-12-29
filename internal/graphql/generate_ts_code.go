@@ -1150,7 +1150,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 							ObjData: &gqlobjectData{
 								Node:         nodeData.Node,
 								NodeInstance: nodeData.NodeInstance,
-								GQLNodes:     buildActionNodes(nodeData, action, actionPrefix),
+								GQLNodes:     buildActionNodes(processor, nodeData, action, actionPrefix),
 								Enums:        buildActionEnums(nodeData, action),
 								FieldConfig:  fieldCfg,
 								Package:      processor.Config.GetImportPackage(),
@@ -1785,7 +1785,7 @@ func addConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, fields *
 	*fields = append(*fields, gqlField)
 }
 
-func buildActionNodes(nodeData *schema.NodeData, action action.Action, actionPrefix string) []*objectType {
+func buildActionNodes(processor *codegen.Processor, nodeData *schema.NodeData, action action.Action, actionPrefix string) []*objectType {
 	var ret []*objectType
 	for _, c := range action.GetCustomInterfaces() {
 		if c.Action == nil {
@@ -1793,7 +1793,7 @@ func buildActionNodes(nodeData *schema.NodeData, action action.Action, actionPre
 		}
 	}
 	ret = append(ret,
-		buildActionInputNode(nodeData, action, actionPrefix),
+		buildActionInputNode(processor, nodeData, action, actionPrefix),
 		buildActionPayloadNode(nodeData, action, actionPrefix),
 	)
 	return ret
@@ -1835,7 +1835,7 @@ func buildCustomInputNode(c *action.CustomInterface) *objectType {
 	return result
 }
 
-func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPrefix string) *objectType {
+func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action, actionPrefix string) *objectType {
 	// TODO shared input types across create/edit for example
 	node := fmt.Sprintf("%sInput", actionPrefix)
 
@@ -1891,7 +1891,7 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 		})
 	}
 
-	if hasCustomInput(a) {
+	if hasCustomInput(a, processor) {
 		// custom interface for editing
 
 		var omittedFields []string
@@ -1920,9 +1920,8 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 			})
 		}
 
-		// TODO these twooo
 		for _, f := range a.GetFields() {
-			// TODO handle this better maybe
+			// these conditions duplicated in hasCustomInput
 			if f.IsEditableIDField() {
 				intType.Fields = append(intType.Fields, &interfaceField{
 					Name:     f.GetGraphQLName(),
@@ -1942,9 +1941,8 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 		}
 
 		for _, f := range a.GetNonEntFields() {
-			_, ok := f.FieldType.(enttype.IDMarkerInterface)
 			// same logic above for regular fields
-			if ok {
+			if enttype.IsIDType(f.FieldType) {
 				intType.Fields = append(intType.Fields, &interfaceField{
 					Name: f.GetGraphQLName(),
 					Type: "string",
@@ -2056,15 +2054,17 @@ func buildActionPayloadNode(nodeData *schema.NodeData, a action.Action, actionPr
 	return result
 }
 
-func hasCustomInput(a action.Action) bool {
+func hasCustomInput(a action.Action, processor *codegen.Processor) bool {
 	if a.MutatingExistingObject() {
 		return true
 	}
 
 	for _, f := range a.GetFields() {
+		// these conditions duplicated in hasInput in buildActionInputNode
+
 		// editable id field. needs custom input because we don't want to type as ID or Builder when we call base64encodeIDs
 		// mustDecodeIDFromGQLID
-		if f.IsEditableIDField() {
+		if f.IsEditableIDField() && processor.Config.Base64EncodeIDs() {
 			return true
 		}
 		// if graphql name is not equal to typescript name, we need to add the new field here
@@ -2089,7 +2089,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 		},
 	}
 	var argName string
-	if hasCustomInput(a) {
+	if hasCustomInput(a, processor) {
 		argName = fmt.Sprintf("custom%sInput", actionPrefix)
 	} else {
 		argName = a.GetInputName()
@@ -2132,32 +2132,28 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 
 	addField := func(f action.ActionField) {
 		typ := f.GetFieldType()
+		// get nullable version
 		if !action.IsRequiredField(a, f) {
 			nullable, ok := typ.(enttype.NullableType)
 			if ok {
 				typ = nullable.GetNullableType()
 			}
 		}
-		// TODO how to distinguish nullable vs optional here
+
+		inputField := fmt.Sprintf("input.%s", f.GetGraphQLName())
 
 		customRenderer, ok := typ.(enttype.CustomGQLRenderer)
-
 		if ok {
-			result.FunctionContents = append(
-				result.FunctionContents,
-				fmt.Sprintf(
-					"%s: %s,",
-					f.TsFieldName(),
-					customRenderer.CustomGQLRender(processor.Config, fmt.Sprintf("input.%s", f.GetGraphQLName())),
-				))
-
+			inputField = customRenderer.CustomGQLRender(processor.Config, inputField)
 			argImports = append(argImports, getGQLFileImports(customRenderer.ArgImports(), true)...)
-		} else {
-			result.FunctionContents = append(
-				result.FunctionContents,
-				fmt.Sprintf("%s: input.%s,", f.TsFieldName(), f.GetGraphQLName()),
-			)
 		}
+		result.FunctionContents = append(
+			result.FunctionContents,
+			fmt.Sprintf(
+				"%s: %s,",
+				f.TsFieldName(),
+				inputField,
+			))
 	}
 
 	if a.GetOperation() == ent.CreateAction {

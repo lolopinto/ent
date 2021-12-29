@@ -60,16 +60,13 @@ type TSCodegenableType interface {
 // 	GetTSName() string
 // }
 
-// TODO kill
-type IDMarkerInterface interface {
-	TSGraphQLType
-	IsIDType() bool
-}
-
+// rendering of fields in actions
+// e.g. converting a graphql id to ent id
+// or converting say an enum value from graphql to Node representation
+// if said conversion was not supported natively
 type CustomGQLRenderer interface {
 	TSGraphQLType
 	CustomGQLRender(cfg Config, v string) string
-	// TODO
 	ArgImports() []FileImport
 }
 
@@ -450,7 +447,6 @@ func (t *IDType) GetTSGraphQLImports() []FileImport {
 	}
 }
 
-// TODO does this only affect actions?
 func (t *IDType) CustomGQLRender(cfg Config, v string) string {
 	if !cfg.Base64EncodeIDs() {
 		return v

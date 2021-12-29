@@ -617,16 +617,13 @@ func (f *Field) GetTSGraphQLTypeForFieldImports(forceOptional bool) []enttype.Fi
 	return tsGQLType.GetTSGraphQLImports()
 }
 
-// break this into two.
-// primary key id field
-// id field that's editable
-// e.g. mustDecodeFromID or whatever
+// note that this is different from PrimaryKeyIDField
+// which indicates id field
 func (f *Field) IsEditableIDField() bool {
 	if !f.EditableField() {
 		return false
 	}
-	_, ok := f.GetFieldType().(enttype.IDMarkerInterface)
-	return ok
+	return enttype.IsIDType(f.fieldType)
 }
 
 func (f *Field) PrimaryKeyIDField() bool {
