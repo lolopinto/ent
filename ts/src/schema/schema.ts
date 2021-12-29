@@ -393,6 +393,11 @@ export interface ActionField {
   // list of something
   list?: boolean;
   actionName?: string; // take the fields of this action and add them as this. only works with type "Object"
+
+  // if actionName is provided, exclude the following fields from being embedded
+  // either because they can be derived or optional and don't need it
+  // no validation on what can be excluded is done. things will eventually fail if done incorrectly
+  excludedFields?: string[];
 }
 
 // provides a way to configure the actions generated for the ent

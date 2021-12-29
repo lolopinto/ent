@@ -13,7 +13,11 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { GraphQLTime, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
+import {
+  GraphQLTime,
+  mustDecodeIDFromGQLID,
+  mustDecodeNullableIDFromGQLID,
+} from "@snowtop/ent/graphql";
 import { EventActivity } from "src/ent/";
 import EditEventActivityAction, {
   EventActivityEditInput,
@@ -22,7 +26,7 @@ import { EventActivityType } from "src/graphql/resolvers/";
 
 interface customEventActivityEditInput extends EventActivityEditInput {
   eventActivityID: string;
-  eventID: string;
+  eventID?: string;
 }
 
 interface EventActivityEditPayload {
@@ -95,6 +99,7 @@ export const EventActivityEditType: GraphQLFieldConfig<
       mustDecodeIDFromGQLID(input.eventActivityID),
       {
         name: input.name,
+        eventID: mustDecodeNullableIDFromGQLID(input.eventID),
         startTime: input.startTime,
         endTime: input.endTime,
         location: input.location,

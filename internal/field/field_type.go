@@ -631,18 +631,12 @@ func (f *Field) PrimaryKeyIDField() bool {
 }
 
 func (f *Field) EmbeddableInParentAction() bool {
-	if !f.EditableField() {
-		return false
-	}
-
-	// TODO this is false if it's not the primary field?
-	// this should be changed
-	// https://github.com/lolopinto/ent/issues/677
-	if f.EvolvedIDField() {
-		return false
-	}
-
+	// hmm what happens if ownerID field is not excluded...
+	// but ownerType is by default...
 	return !f.derivedWhenEmbedded
+
+	// we could probably also auto-remove fields for which there's a foreignKey to primary key in source
+	// ent or fields which have a fieldEdge to source schema?
 }
 
 type Option func(*Field)
