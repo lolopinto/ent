@@ -315,6 +315,7 @@ export async function expectQueryFromRoot(
 export interface mutationRootConfig extends queryConfig {
   mutation: string;
   disableInputWrapping?: boolean;
+  nullQueryPaths?: string[];
   //  rootQueryNull?: boolean;
 }
 
