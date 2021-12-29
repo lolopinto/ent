@@ -18,6 +18,7 @@
     "emitDecoratorMetadata": true,
     //    "noImplicitAny": true,
     "declaration": true,
+    "skipLibCheck": true
   },
   "include": [
     "src/**/*"
