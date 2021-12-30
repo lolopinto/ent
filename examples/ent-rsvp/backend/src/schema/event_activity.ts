@@ -34,6 +34,7 @@ export default class EventActivity extends BaseEntSchema {
           type: "Object",
           nullable: true,
           actionName: "CreateAddressAction",
+          excludedFields: ["OwnerID"],
         },
       ],
     },

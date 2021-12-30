@@ -420,11 +420,12 @@ const NullableContentsAndList NullableItem = "contentsAndList"
 const NullableTrue NullableItem = "true"
 
 type actionField struct {
-	Name       string       `json:"name"`
-	Type       ActionType   `json:"type"`
-	Nullable   NullableItem `json:"nullable"`
-	List       bool         `json:"list"`
-	ActionName string       `json:"actionName"`
+	Name           string       `json:"name"`
+	Type           ActionType   `json:"type"`
+	Nullable       NullableItem `json:"nullable"`
+	List           bool         `json:"list"`
+	ActionName     string       `json:"actionName"`
+	ExcludedFields []string     `json:"excludedFields"`
 }
 
 type ActionField struct {
@@ -434,6 +435,7 @@ type ActionField struct {
 	list             bool
 	nullableContents bool
 	ActionName       string
+	ExcludedFields   []string
 }
 
 func (f *ActionField) UnmarshalJSON(data []byte) error {
@@ -447,6 +449,7 @@ func (f *ActionField) UnmarshalJSON(data []byte) error {
 	f.Name = af.Name
 	f.ActionName = af.ActionName
 	f.Type = af.Type
+	f.ExcludedFields = af.ExcludedFields
 
 	switch af.Nullable {
 	case NullableContentsAndList:
@@ -525,6 +528,7 @@ func (f *ActionField) getEntTypeHelper(inputName string, nullable bool) (enttype
 			typ.TSType = tsType
 			typ.ActionName = f.ActionName
 			typ.GraphQLType = gqlType
+			typ.ExcludedFields = f.ExcludedFields
 
 			return typ, nil
 		}
@@ -532,6 +536,7 @@ func (f *ActionField) getEntTypeHelper(inputName string, nullable bool) (enttype
 		typ.TSType = tsType
 		typ.GraphQLType = gqlType
 		typ.ActionName = f.ActionName
+		typ.ExcludedFields = f.ExcludedFields
 		return typ, nil
 	}
 	return nil, fmt.Errorf("unsupported type %s", f.Type)

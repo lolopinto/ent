@@ -26,6 +26,7 @@ export default class GuestGroup extends BaseEntSchema {
           nullable: true,
           type: "Object",
           actionName: "CreateGuestAction",
+          excludedFields: ["eventID", "guestGroupID"],
         },
       ],
     },

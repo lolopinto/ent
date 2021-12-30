@@ -926,9 +926,14 @@ func (s *Schema) addActionFields(info *NodeDataInfo) error {
 			if !ok {
 				continue
 			}
-			actionName := t.GetActionName()
-			if actionName == "" {
+			actionFieldsInfo := t.GetActionFieldsInfo()
+			if actionFieldsInfo == nil || actionFieldsInfo.ActionName == "" {
 				continue
+			}
+			actionName := actionFieldsInfo.ActionName
+			excludedFields := make(map[string]bool)
+			for _, v := range actionFieldsInfo.ExcludedFields {
+				excludedFields[v] = true
 			}
 
 			foundAction := false
@@ -944,7 +949,7 @@ func (s *Schema) addActionFields(info *NodeDataInfo) error {
 				foundAction = true
 
 				for _, f2 := range a2.GetFields() {
-					if f2.EmbeddableInParentAction() {
+					if f2.EmbeddableInParentAction() && !excludedFields[f2.FieldName] {
 
 						f3 := f2
 						if action.IsRequiredField(a2, f2) {

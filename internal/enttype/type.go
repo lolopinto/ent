@@ -81,9 +81,14 @@ type convertListElemType interface {
 	convertNullableListWithItem() FileImport
 }
 
+type ActionFieldsInfo struct {
+	ActionName     string
+	ExcludedFields []string
+}
+
 type TSTypeWithActionFields interface {
 	TSGraphQLType
-	GetActionName() string
+	GetActionFieldsInfo() *ActionFieldsInfo
 }
 
 type ImportDepsType interface {
@@ -994,9 +999,10 @@ func (t *NullableTimetzType) GetImportType() Import {
 
 // public for tests
 type CommonObjectType struct {
-	TSType      string
-	GraphQLType string
-	ActionName  string
+	TSType         string
+	GraphQLType    string
+	ActionName     string
+	ExcludedFields []string
 }
 
 func (t *CommonObjectType) GetDBType() string {
@@ -1011,8 +1017,11 @@ func (t *CommonObjectType) GetCastToMethod() string {
 	panic("GetCastToMethod doesn't apply for objectType")
 }
 
-func (t *CommonObjectType) GetActionName() string {
-	return t.ActionName
+func (t *CommonObjectType) GetActionFieldsInfo() *ActionFieldsInfo {
+	return &ActionFieldsInfo{
+		ActionName:     t.ActionName,
+		ExcludedFields: t.ExcludedFields,
+	}
 }
 
 type ObjectType struct {
@@ -1121,12 +1130,12 @@ func (t *ListWrapperType) GetTSGraphQLImports() []FileImport {
 	return ret
 }
 
-func (t *ListWrapperType) GetActionName() string {
+func (t *ListWrapperType) GetActionFieldsInfo() *ActionFieldsInfo {
 	t2, ok := t.Type.(TSTypeWithActionFields)
 	if !ok {
-		return ""
+		return nil
 	}
-	return t2.GetActionName()
+	return t2.GetActionFieldsInfo()
 }
 
 type typeConfig struct {

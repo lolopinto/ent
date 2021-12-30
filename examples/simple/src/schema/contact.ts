@@ -44,6 +44,7 @@ export default class Contact extends BaseEntSchema implements Schema {
           nullable: true,
           type: "Object",
           actionName: "CreateContactEmailAction",
+          excludedFields: ["contactID"],
         },
         {
           name: "phoneNumbers",
@@ -51,6 +52,7 @@ export default class Contact extends BaseEntSchema implements Schema {
           nullable: true,
           type: "Object",
           actionName: "CreateContactPhoneNumberAction",
+          excludedFields: ["contactID"],
         },
       ],
     },
