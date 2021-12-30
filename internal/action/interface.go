@@ -25,7 +25,7 @@ import (
 type NonEntField struct {
 	FieldName string
 	FieldType enttype.TSGraphQLType
-	Nullable  bool // required default = true
+	nullable  bool // required default = true
 	// TODO these are both go things. ignore
 	// Flag enum or ID
 	Flag string
@@ -34,7 +34,7 @@ type NonEntField struct {
 }
 
 func (f *NonEntField) Required() bool {
-	return !f.Nullable
+	return !f.nullable
 }
 
 func (f *NonEntField) GetGraphQLName() string {
@@ -46,8 +46,32 @@ func (f *NonEntField) GetTsType() string {
 	return f.FieldType.GetTSType()
 }
 
+func (f *NonEntField) GetFieldType() enttype.EntType {
+	return f.FieldType
+}
+
 func (f *NonEntField) TsFieldName() string {
 	return strcase.ToLowerCamel(f.FieldName)
+}
+
+func (f *NonEntField) ForceRequiredInAction() bool {
+	return !f.nullable
+}
+
+func (f *NonEntField) ForceOptionalInAction() bool {
+	return false
+}
+
+func (f *NonEntField) DefaultValue() interface{} {
+	return nil
+}
+
+func (f *NonEntField) Nullable() bool {
+	return f.nullable
+}
+
+func (f *NonEntField) HasDefaultValueOnCreate() bool {
+	return false
 }
 
 // no imports for now... since all local fields
@@ -73,6 +97,17 @@ type Action interface {
 	GetCustomInterfaces() []*CustomInterface
 	GetTSEnums() []*enum.Enum
 	GetGQLEnums() []*enum.GQLEnum
+}
+
+type ActionField interface {
+	GetFieldType() enttype.EntType
+	TsFieldName() string
+	GetGraphQLName() string
+	ForceRequiredInAction() bool
+	ForceOptionalInAction() bool
+	DefaultValue() interface{}
+	Nullable() bool
+	HasDefaultValueOnCreate() bool
 }
 
 type CustomInterface struct {
@@ -531,7 +566,7 @@ func GetEdgesFromEdges(edges []*edge.AssociationEdge) []EdgeActionTemplateInfo {
 	return result
 }
 
-func IsRequiredField(action Action, field *field.Field) bool {
+func IsRequiredField(action Action, field ActionField) bool {
 	if field.ForceRequiredInAction() {
 		return true
 	}

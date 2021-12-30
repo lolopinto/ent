@@ -34,6 +34,7 @@ export {
   resolveID,
   nodeIDEncoder,
   mustDecodeIDFromGQLID,
+  mustDecodeNullableIDFromGQLID,
   encodeGQLID,
 } from "./node_resolver";
 export { convertFromGQLEnum, convertToGQLEnum } from "./enums";

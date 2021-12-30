@@ -15,16 +15,21 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { GraphQLTime, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
+import {
+  GraphQLTime,
+  mustDecodeIDFromGQLID,
+  mustDecodeNullableIDFromGQLID,
+} from "@snowtop/ent/graphql";
 import { Event } from "../../../../ent";
 import CreateEventAction, {
   EventCreateInput,
 } from "../../../../ent/event/actions/create_event_action";
 import { EventType } from "../../../resolvers";
 
-interface customEventCreateInput extends EventCreateInput {
+interface customEventCreateInput extends Omit<EventCreateInput, "location"> {
   creatorID: string;
-  addressID: string;
+  eventLocation: string;
+  addressID?: string;
 }
 
 interface EventCreatePayload {
@@ -87,8 +92,8 @@ export const EventCreateType: GraphQLFieldConfig<
       creatorID: mustDecodeIDFromGQLID(input.creatorID),
       startTime: input.startTime,
       endTime: input.endTime,
-      location: input.location,
-      addressID: mustDecodeIDFromGQLID(input.addressID),
+      location: input.eventLocation,
+      addressID: mustDecodeNullableIDFromGQLID(input.addressID),
     }).saveX();
     return { event: event };
   },

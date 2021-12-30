@@ -13,6 +13,10 @@ import (
 	"github.com/lolopinto/ent/ent/config"
 )
 
+type Config interface {
+	Base64EncodeIDs() bool
+}
+
 // Type represents a Type that's expressed in the framework
 // The only initial requirement is GraphQL since that's exposed everywhere
 type Type interface {
@@ -56,9 +60,14 @@ type TSCodegenableType interface {
 // 	GetTSName() string
 // }
 
-type IDMarkerInterface interface {
+// rendering of fields in actions
+// e.g. converting a graphql id to ent id
+// or converting say an enum value from graphql to Node representation
+// if said conversion was not supported natively
+type CustomGQLRenderer interface {
 	TSGraphQLType
-	IsIDType() bool
+	CustomGQLRender(cfg Config, v string) string
+	ArgImports() []FileImport
 }
 
 type ConvertDataType interface {
@@ -438,6 +447,23 @@ func (t *IDType) GetTSGraphQLImports() []FileImport {
 	}
 }
 
+func (t *IDType) CustomGQLRender(cfg Config, v string) string {
+	if !cfg.Base64EncodeIDs() {
+		return v
+	}
+
+	return fmt.Sprintf("mustDecodeIDFromGQLID(%s)", v)
+}
+
+func (t *IDType) ArgImports() []FileImport {
+	return []FileImport{
+		{
+			ImportType: EntGraphQL,
+			Type:       "mustDecodeIDFromGQLID",
+		},
+	}
+}
+
 type NullableIDType struct {
 	idType
 }
@@ -460,6 +486,23 @@ func (t *NullableIDType) GetNonNullableType() TSGraphQLType {
 
 func (t *NullableIDType) GetTSGraphQLImports() []FileImport {
 	return []FileImport{NewGQLFileImport("GraphQLID")}
+}
+
+func (t *NullableIDType) CustomGQLRender(cfg Config, v string) string {
+	if !cfg.Base64EncodeIDs() {
+		return v
+	}
+
+	return fmt.Sprintf("mustDecodeNullableIDFromGQLID(%s)", v)
+}
+
+func (t *NullableIDType) ArgImports() []FileImport {
+	return []FileImport{
+		{
+			ImportType: EntGraphQL,
+			Type:       "mustDecodeNullableIDFromGQLID",
+		},
+	}
 }
 
 type intType struct{}

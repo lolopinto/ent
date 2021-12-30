@@ -100,6 +100,21 @@ export function mustDecodeIDFromGQLID(id: string): ID {
   return decoded;
 }
 
+// TODO get the right (non-any) return type here. may need to change codegen to do the right thing here
+export function mustDecodeNullableIDFromGQLID(
+  id: string | null | undefined,
+): any {
+  // support undefined because fields in action
+  if (id === null || id === undefined) {
+    return id;
+  }
+  const decoded = EntNodeResolver.decode(id);
+  if (!decoded) {
+    throw new Error(`wasn't able to decode invalid ${id}`);
+  }
+  return decoded;
+}
+
 // This takes an ent and returns the graphql id
 export function encodeGQLID(node: Ent): string {
   // let's do 3 parts. we take the "node" prefix
