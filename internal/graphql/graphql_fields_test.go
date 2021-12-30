@@ -72,10 +72,10 @@ func TestActionWithFieldEdgeFieldConfig(t *testing.T) {
 
 	verifyFieldsOverlap(t, createAction, editActionCfg)
 
-	createNode := buildActionInputNode(profileCfg.NodeData, createAction, "Profile")
+	createNode := buildActionInputNode(processor, profileCfg.NodeData, createAction, "Profile")
 	assert.Len(t, createNode.Fields, len(createAction.GetFields())+len(createAction.GetNonEntFields()))
 
-	editNode := buildActionInputNode(profileCfg.NodeData, editAction, "Profile")
+	editNode := buildActionInputNode(processor, profileCfg.NodeData, editAction, "Profile")
 	assert.Len(t, editNode.Fields, len(editAction.GetFields())+len(editAction.GetNonEntFields())+1)
 }
 
