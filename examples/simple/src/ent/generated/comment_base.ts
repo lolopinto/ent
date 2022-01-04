@@ -11,7 +11,6 @@ import {
   Ent,
   ID,
   LoadEntOptions,
-  ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
   convertDate,
@@ -23,6 +22,7 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import { loadEntByType, loadEntXByType } from "./loadAny";
+import { commentLoader, commentLoaderInfo } from "./loaders";
 import {
   ArticleToCommentsQuery,
   CommentToPostQuery,
@@ -30,17 +30,6 @@ import {
   User,
 } from "../internal";
 import schema from "../../schema/comment";
-
-const tableName = "comments";
-const fields = [
-  "id",
-  "created_at",
-  "updated_at",
-  "author_id",
-  "body",
-  "article_id",
-  "article_type",
-];
 
 export class CommentBase {
   readonly nodeType = NodeType.Comment;
@@ -156,8 +145,8 @@ export class CommentBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName,
-      fields,
+      tableName: commentLoaderInfo.tableName,
+      fields: commentLoaderInfo.fields,
       ent: this,
       loaderFactory: commentLoader,
     };
@@ -204,9 +193,3 @@ export class CommentBase {
     return loadEntX(this.viewer, this.authorID, User.loaderOptions());
   }
 }
-
-export const commentLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "id",
-});

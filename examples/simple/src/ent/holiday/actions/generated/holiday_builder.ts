@@ -14,6 +14,7 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Holiday } from "../../..";
+import { NodeType } from "../../../generated/const";
 import schema from "../../../../schema/holiday";
 
 export interface HolidayInput {
@@ -33,6 +34,7 @@ export class HolidayBuilder implements Builder<Holiday> {
   orchestrator: Orchestrator<Holiday>;
   readonly placeholderID: ID;
   readonly ent = Holiday;
+  readonly nodeType = NodeType.Holiday;
   private input: HolidayInput;
   private m: Map<string, any> = new Map();
 

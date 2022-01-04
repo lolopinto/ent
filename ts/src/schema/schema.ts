@@ -1,4 +1,4 @@
-import { Data, Ent, LoadEntOptions } from "../core/base";
+import { Data, Ent, LoaderInfo } from "../core/base";
 import { Builder } from "../action/action";
 
 // Schema is the base for every schema in typescript
@@ -217,7 +217,7 @@ export interface ForeignKey {
   disableBuilderType?: boolean;
 }
 
-type getLoaderOptionsFn = (type: any) => LoadEntOptions<Ent>;
+type getLoaderInfoFn = (type: string) => LoaderInfo;
 
 export interface InverseFieldEdge {
   // 1-N if field exists so no need for inverse or symmetric edge. also can't be unique
@@ -240,8 +240,8 @@ export interface FieldEdge {
   // if enforceSchema. implement the valid type.
   // we use getLoaderOptions to do it
   enforceSchema?: boolean;
-  // we only need the loaderfactory but have the entire thing just because
-  getLoaderOptions?: getLoaderOptionsFn;
+  // pass the generated getLoaderInfoFromSchema method in src/ent/generated/loaders.ts
+  getLoaderInfoFromSchema?: getLoaderInfoFn;
   // disable generating Builder<Ent> in Builder and Action. helpful
   // to simplify the code when it's known that the object here
   // would always have been previously created. simplifies validation

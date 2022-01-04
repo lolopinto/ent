@@ -10,7 +10,6 @@ import {
   Data,
   ID,
   LoadEntOptions,
-  ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
   convertDate,
@@ -23,6 +22,7 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
+import { eventLoader, eventLoaderInfo } from "./loaders";
 import {
   Address,
   EdgeType,
@@ -35,19 +35,6 @@ import {
   User,
 } from "../internal";
 import schema from "../../schema/event";
-
-const tableName = "events";
-const fields = [
-  "id",
-  "created_at",
-  "updated_at",
-  "name",
-  "user_id",
-  "start_time",
-  "end_time",
-  "location",
-  "address_id",
-];
 
 export enum EventRsvpStatus {
   Attending = "attending",
@@ -162,8 +149,8 @@ export class EventBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName,
-      fields,
+      tableName: eventLoaderInfo.tableName,
+      fields: eventLoaderInfo.fields,
       ent: this,
       loaderFactory: eventLoader,
     };
@@ -242,9 +229,3 @@ export class EventBase {
     return loadEntX(this.viewer, this.creatorID, User.loaderOptions());
   }
 }
-
-export const eventLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "id",
-});

@@ -10,7 +10,6 @@ import {
   Data,
   ID,
   LoadEntOptions,
-  ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
   convertDate,
@@ -21,18 +20,12 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
+import {
+  contactPhoneNumberLoader,
+  contactPhoneNumberLoaderInfo,
+} from "./loaders";
 import { Contact, NodeType } from "../internal";
 import schema from "../../schema/contact_phone_number";
-
-const tableName = "contact_phone_numbers";
-const fields = [
-  "id",
-  "created_at",
-  "updated_at",
-  "phone_number",
-  "label",
-  "contact_id",
-];
 
 export class ContactPhoneNumberBase {
   readonly nodeType = NodeType.ContactPhoneNumber;
@@ -138,8 +131,8 @@ export class ContactPhoneNumberBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName,
-      fields,
+      tableName: contactPhoneNumberLoaderInfo.tableName,
+      fields: contactPhoneNumberLoaderInfo.fields,
       ent: this,
       loaderFactory: contactPhoneNumberLoader,
     };
@@ -166,9 +159,3 @@ export class ContactPhoneNumberBase {
     return loadEntX(this.viewer, this.contactID, Contact.loaderOptions());
   }
 }
-
-export const contactPhoneNumberLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "id",
-});

@@ -8,7 +8,7 @@ import {
   UUIDType,
 } from "@snowtop/ent/schema/";
 import { EmailType } from "@snowtop/ent-email";
-import { getLoaderOptions } from "../ent/generated/loadAny";
+import { getLoaderInfoFromSchema } from "../ent/generated/loaders";
 
 export default class ContactEmail extends BaseEntSchema implements Schema {
   fields: Field[] = [
@@ -19,7 +19,7 @@ export default class ContactEmail extends BaseEntSchema implements Schema {
       fieldEdge: {
         schema: "Contact",
         enforceSchema: true,
-        getLoaderOptions: getLoaderOptions,
+        getLoaderInfoFromSchema: getLoaderInfoFromSchema,
       },
     }),
   ];

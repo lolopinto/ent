@@ -37,6 +37,7 @@ export class ContactBuilder implements Builder<Contact> {
   orchestrator: Orchestrator<Contact>;
   readonly placeholderID: ID;
   readonly ent = Contact;
+  readonly nodeType = NodeType.Contact;
   private input: ContactInput;
   private m: Map<string, any> = new Map();
 

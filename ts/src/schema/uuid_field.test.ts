@@ -124,11 +124,11 @@ describe("fieldEdge no inverseEdge", () => {
           fieldEdge: {
             schema: "User",
             enforceSchema: true,
-            getLoaderOptions: () => {
+            getLoaderInfoFromSchema: () => {
               return {
                 tableName: "users",
                 fields: ["id"],
-                ent: User,
+                nodeType: "user",
                 loaderFactory: new ObjectLoaderFactory({
                   tableName: "users",
                   fields: ["id"],
@@ -180,11 +180,11 @@ describe("fieldEdge no inverseEdge", () => {
           fieldEdge: {
             schema: "User",
             enforceSchema: true,
-            getLoaderOptions: () => {
+            getLoaderInfoFromSchema: () => {
               return {
                 tableName: "users",
                 fields: ["id"],
-                ent: User,
+                nodeType: "user",
                 loaderFactory: new ObjectLoaderFactory({
                   tableName: "users",
                   fields: ["id"],
@@ -217,7 +217,7 @@ describe("fieldEdge no inverseEdge", () => {
     const action3 = new SimpleAction(
       new LoggedOutViewer(),
       new AccountSchema(),
-      new Map<string, any>([["userID", action2]]),
+      new Map<string, any>([["userID", action2.builder]]),
     );
 
     try {
@@ -244,11 +244,11 @@ describe("fieldEdge no inverseEdge", () => {
           fieldEdge: {
             schema: "User",
             enforceSchema: true,
-            getLoaderOptions: () => {
+            getLoaderInfoFromSchema: () => {
               return {
                 tableName: "users",
                 fields: ["id"],
-                ent: User,
+                nodeType: "user",
                 loaderFactory: new ObjectLoaderFactory({
                   tableName: "users",
                   fields: ["id"],
@@ -312,11 +312,11 @@ describe("fieldEdge list", () => {
           fieldEdge: {
             schema: "ContactEmail",
             enforceSchema: true,
-            getLoaderOptions: () => {
+            getLoaderInfoFromSchema: () => {
               return {
                 tableName: "contact_emails",
                 fields: ["id"],
-                ent: Contact,
+                nodeType: "user",
                 loaderFactory: new ObjectLoaderFactory({
                   tableName: "contact_emails",
                   fields: ["id"],

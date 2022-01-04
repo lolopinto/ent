@@ -10,7 +10,6 @@ import {
   Data,
   ID,
   LoadEntOptions,
-  ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
   convertDate,
@@ -21,11 +20,9 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
+import { holidayLoader, holidayLoaderInfo } from "./loaders";
 import { NodeType } from "../internal";
 import schema from "../../schema/holiday";
-
-const tableName = "holidays";
-const fields = ["id", "created_at", "updated_at", "label", "date"];
 
 export class HolidayBase {
   readonly nodeType = NodeType.Holiday;
@@ -129,8 +126,8 @@ export class HolidayBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName,
-      fields,
+      tableName: holidayLoaderInfo.tableName,
+      fields: holidayLoaderInfo.fields,
       ent: this,
       loaderFactory: holidayLoader,
     };
@@ -149,9 +146,3 @@ export class HolidayBase {
     return HolidayBase.getSchemaFields().get(key);
   }
 }
-
-export const holidayLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "id",
-});

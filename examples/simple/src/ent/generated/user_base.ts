@@ -11,7 +11,6 @@ import {
   Data,
   ID,
   LoadEntOptions,
-  ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
   convertBool,
@@ -31,6 +30,12 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import {
+  userEmailAddressLoader,
+  userLoader,
+  userLoaderInfo,
+  userPhoneNumberLoader,
+} from "./loaders";
+import {
   Contact,
   EdgeType,
   NodeType,
@@ -49,31 +54,6 @@ import {
 } from "../internal";
 import { UserPrefs } from "../user_prefs";
 import schema from "../../schema/user";
-
-const tableName = "users";
-const fields = [
-  "id",
-  "created_at",
-  "updated_at",
-  "first_name",
-  "last_name",
-  "email_address",
-  "phone_number",
-  "password",
-  "account_status",
-  "email_verified",
-  "bio",
-  "nicknames",
-  "prefs",
-  "prefs_list",
-  "prefs_diff",
-  "days_off",
-  "preferred_shift",
-  "time_in_ms",
-  "fun_uuids",
-  "new_col",
-  "new_col_2",
-];
 
 export enum DaysOff {
   Monday = "monday",
@@ -304,8 +284,8 @@ export class UserBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName,
-      fields,
+      tableName: userLoaderInfo.tableName,
+      fields: userLoaderInfo.fields,
       ent: this,
       loaderFactory: userLoader,
     };
@@ -389,28 +369,3 @@ export class UserBase {
     return UserToContactsQuery.query(this.viewer, this.id);
   }
 }
-
-export const userLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "id",
-});
-
-export const userEmailAddressLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "email_address",
-});
-
-export const userPhoneNumberLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "phone_number",
-});
-
-userLoader.addToPrime(userEmailAddressLoader);
-userLoader.addToPrime(userPhoneNumberLoader);
-userEmailAddressLoader.addToPrime(userLoader);
-userEmailAddressLoader.addToPrime(userPhoneNumberLoader);
-userPhoneNumberLoader.addToPrime(userLoader);
-userPhoneNumberLoader.addToPrime(userEmailAddressLoader);

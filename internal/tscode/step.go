@@ -198,6 +198,9 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 		func() error {
 			return writeLoadAnyFile(s.nodeTypes, processor)
 		},
+		func() error {
+			return writeLoaderFile(processor)
+		},
 	)
 
 	// build up all the funcs and parallelize as much as possible
@@ -382,6 +385,10 @@ func getImportPathForPatternBaseQueryFile(name string) string {
 
 func getFilePathForConstFile(cfg *codegen.Config) string {
 	return path.Join(cfg.GetAbsPathToRoot(), "src/ent/generated/const.ts")
+}
+
+func getFilePathForLoaderFile(cfg *codegen.Config) string {
+	return path.Join(cfg.GetAbsPathToRoot(), "src/ent/generated/loaders.ts")
 }
 
 func getFilePathForLoadAnyFile(cfg *codegen.Config) string {
@@ -658,9 +665,33 @@ func writeLoadAnyFile(nodeData []enum.Data, processor *codegen.Processor) error 
 	})
 }
 
+func writeLoaderFile(processor *codegen.Processor) error {
+	cfg := processor.Config
+	filePath := getFilePathForLoaderFile(cfg)
+	imps := tsimport.NewImports(processor.Config, filePath)
+
+	return file.Write(&file.TemplatedBasedFileWriter{
+		Config: processor.Config,
+		Data: struct {
+			Schema  *schema.Schema
+			Package *codegen.ImportPackage
+		}{
+			processor.Schema,
+			cfg.GetImportPackage(),
+		},
+		CreateDirIfNeeded: true,
+		AbsPathToTemplate: util.GetAbsolutePath("loaders.tmpl"),
+		TemplateName:      "loaders.tmpl",
+		PathToFile:        filePath,
+		TsImports:         imps,
+		FuncMap:           imps.FuncMap(),
+	})
+}
+
 func getSortedInternalEntFileLines(s *schema.Schema) []string {
 	lines := []string{
 		"src/ent/generated/const",
+		"src/ent/generated/loaders",
 	}
 
 	append2 := func(list *[]string, str string) {

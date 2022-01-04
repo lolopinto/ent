@@ -18,6 +18,7 @@ import pluralize from "pluralize";
 import { snakeCase } from "snake-case";
 import { ObjectLoaderFactory } from "../core/loaders";
 import { convertDate } from "../core/convert";
+import { camelCase } from "camel-case";
 
 export class User implements Ent {
   id: ID;
@@ -113,6 +114,7 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
   placeholderID: ID;
   public orchestrator: Orchestrator<T>;
   public fields: Map<string, any>;
+  nodeType: string;
 
   constructor(
     public viewer: Viewer,
@@ -152,6 +154,7 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
     }
     this.ent = schema.ent;
     const tableName = getTableName(schema);
+    this.nodeType = camelCase(schema.ent.name);
     this.orchestrator = new Orchestrator<T>({
       viewer: this.viewer,
       operation: operation,

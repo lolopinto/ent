@@ -1,0 +1,66 @@
+{{reserveImport "./const" "NodeType" }}
+{{ reserveImport .Package.PackagePath "ObjectLoaderFactory" }}
+
+{{ range .Schema.Nodes -}}
+{{ with .NodeData}}
+  {{$instance := printf "%sLoaderInfo" .NodeInstance -}}
+  {{$table := printf "%sTable" .NodeInstance -}}
+  {{$fields := printf "%sFields" .NodeInstance -}}
+
+  const {{$table}} = '{{.TableName}}';
+  const {{$fields}} = [
+    {{range $field := .FieldInfo.Fields -}}
+      '{{$field.GetDbColName}}',
+    {{end}}
+  ];
+
+  {{range .GetNodeLoaders -}}
+    export const {{.Name}} = new {{useImport "ObjectLoaderFactory"}}({
+      tableName: {{$table}},
+      fields: {{$fields}},
+      key: {{.Pkey}},
+    });
+  {{end}}
+
+  export const {{$instance}} = {
+    tableName: {{$table}},
+    fields: {{$fields}},
+    nodeType: {{useImport "NodeType"}}.{{.Node}},
+    loaderFactory: {{printf "%sLoader" .NodeInstance }},
+  }
+
+  {{$loaders := .GetNodeLoaders -}}
+  {{ range $loader := $loaders -}}
+    {{ range $loader2 := $loaders -}}
+      {{if ne $loader.Name $loader2.Name -}}
+        {{$loader.Name}}.addToPrime({{$loader2.Name}});
+      {{end -}}
+    {{end -}}
+  {{end -}}
+{{ end -}}
+{{ end }}
+
+
+  export function getLoaderInfoFromSchema(schema: string) {
+    switch (schema) {
+      {{ range .Schema.Nodes -}}
+        case "{{.NodeData.Node }}":
+          {{$instance := printf "%sLoaderInfo" .NodeData.NodeInstance -}}
+          return {{$instance}};
+      {{ end -}}
+      default:
+        throw new Error(`invalid schema ${schema} passed to getLoaderInfoFromSchema`);
+    }
+  }
+
+  export function getLoaderInfoFromNodeType(nodeType: {{useImport "NodeType"}}) {
+    switch (nodeType) {
+      {{ range .Schema.Nodes -}}
+        case {{useImport "NodeType"}}.{{.NodeData.Node}}:
+          {{$instance := printf "%sLoaderInfo" .NodeData.NodeInstance -}}
+          return {{$instance}};
+      {{ end -}}
+      default:
+        throw new Error(`invalid nodeType ${nodeType} passed to getLoaderInfoFromNodeType`);
+    }
+  }

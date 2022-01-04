@@ -10,7 +10,6 @@ import {
   Data,
   ID,
   LoadEntOptions,
-  ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
   convertDate,
@@ -21,19 +20,9 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
+import { authCodeLoader, authCodeLoaderInfo } from "./loaders";
 import { NodeType, User } from "../internal";
 import schema from "../../schema/auth_code";
-
-const tableName = "auth_codes";
-const fields = [
-  "id",
-  "created_at",
-  "updated_at",
-  "code",
-  "user_id",
-  "email_address",
-  "phone_number",
-];
 
 export class AuthCodeBase {
   readonly nodeType = NodeType.AuthCode;
@@ -141,8 +130,8 @@ export class AuthCodeBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName,
-      fields,
+      tableName: authCodeLoaderInfo.tableName,
+      fields: authCodeLoaderInfo.fields,
       ent: this,
       loaderFactory: authCodeLoader,
     };
@@ -169,9 +158,3 @@ export class AuthCodeBase {
     return loadEntX(this.viewer, this.userID, User.loaderOptions());
   }
 }
-
-export const authCodeLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "id",
-});

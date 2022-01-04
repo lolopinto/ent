@@ -14,6 +14,7 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Contact, ContactEmail } from "../../..";
+import { NodeType } from "../../../generated/const";
 import schema from "../../../../schema/contact_email";
 
 export interface ContactEmailInput {
@@ -34,6 +35,7 @@ export class ContactEmailBuilder implements Builder<ContactEmail> {
   orchestrator: Orchestrator<ContactEmail>;
   readonly placeholderID: ID;
   readonly ent = ContactEmail;
+  readonly nodeType = NodeType.ContactEmail;
   private input: ContactEmailInput;
   private m: Map<string, any> = new Map();
 

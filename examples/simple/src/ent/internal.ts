@@ -4,6 +4,7 @@
  */
 
 export * from "./generated/const";
+export * from "./generated/loaders";
 export * from "./generated/address_base";
 export * from "./generated/auth_code_base";
 export * from "./generated/comment_base";
