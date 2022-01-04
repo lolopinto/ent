@@ -7,6 +7,13 @@
 {{ $privacyCfg := .PrivacyConfig -}}
 
 {{with .NodeData -}}
+{{$loaderInfo := printf "%sLoaderInfo" .NodeInstance -}}
+{{$loaderName := printf "%sLoader" .NodeInstance -}}
+{{ reserveImport "src/ent/generated/loaders" $loaderInfo -}}
+
+{{ range .GetNodeLoaders -}}
+  {{ reserveImport "src/ent/generated/loaders" .Name -}}
+{{ end -}}
 
 {{ range .GetImportsForBaseFile -}} 
   {{ if .DefaultImport -}}
@@ -19,15 +26,7 @@
 {{$viewerType := useImport "Viewer"}}
 {{$idType := useImport "ID" }}
 {{$dataType := useImport "Data" }}
-{{$loaderName := printf "%sLoader" .NodeInstance }}
 {{$this := .}}
-
-const tableName = "{{.TableName}}";
-const fields = [
-  {{range $field := .FieldInfo.Fields -}}
-    '{{$field.GetDbColName}}',
-  {{end}}
-];
 
 {{$baseClass := printf "%sBase" .Node -}}
 {{$constructor := "arg: new (viewer: Viewer, data: Data) => T"}}
@@ -138,7 +137,7 @@ export class {{$baseClass}} {
     id: ID,
     context?: {{useImport "Context"}},
   ): Promise<{{$dataType}} | null> {
-    return {{$loaderName}}.createLoader(context).load(id);
+    return {{useImport $loaderName}}.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends {{$baseClass}}>(
@@ -146,7 +145,7 @@ export class {{$baseClass}} {
     id: ID,
     context?: {{useImport "Context"}},
   ): Promise<{{$dataType}}> {
-    const row = await {{$loaderName}}.createLoader(context).load(id);
+    const row = await {{useImport $loaderName}}.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
@@ -156,7 +155,7 @@ export class {{$baseClass}} {
 
   {{ range $field := .FieldInfo.Fields -}}
     {{ if $field.Unique  -}}
-      {{$fieldLoader := $this.GetFieldLoaderName $field -}}
+      {{$fieldLoader := useImport ($this.GetFieldLoaderName $field) -}}
       static async loadFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         viewer: {{$viewerType}},
@@ -221,10 +220,10 @@ export class {{$baseClass}} {
     this: new (viewer: {{$viewerType}}, data: Data) => T,
   ): {{useImport "LoadEntOptions"}}<T> {
     return {
-      tableName,
-      fields,
+      tableName: {{useImport $loaderInfo}}.tableName,
+      fields: {{useImport $loaderInfo}}.fields,
       ent: this,
-      loaderFactory: {{$loaderName}},
+      loaderFactory: {{useImport $loaderName}},
     };
   }
 
@@ -415,24 +414,6 @@ export class {{$baseClass}} {
     {{end}}
   {{end}}
 }
-
-{{range .GetNodeLoaders -}}
-  export const {{.Name}} = new {{useImport "ObjectLoaderFactory"}}({
-    tableName,
-    fields,
-    key: {{.Pkey}},
-  });
-
-{{end}}
-
-{{$loaders := .GetNodeLoaders -}}
-{{ range $loader := $loaders -}}
-  {{ range $loader2 := $loaders -}}
-    {{if ne $loader.Name $loader2.Name -}}
-      {{$loader.Name}}.addToPrime({{$loader2.Name}});
-    {{end -}}
-  {{end -}}
-{{end -}}
 
 {{end -}}
 

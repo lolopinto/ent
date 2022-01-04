@@ -38,6 +38,7 @@ export class EventBuilder implements Builder<Event> {
   orchestrator: Orchestrator<Event>;
   readonly placeholderID: ID;
   readonly ent = Event;
+  readonly nodeType = NodeType.Event;
   private input: EventInput;
   private m: Map<string, any> = new Map();
 

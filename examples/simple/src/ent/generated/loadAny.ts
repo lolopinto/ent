@@ -63,5 +63,7 @@ export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent> {
       return HoursOfOperation.loaderOptions();
     case NodeType.User:
       return User.loaderOptions();
+    default:
+      throw new Error(`invalid nodeType ${type} passed to getLoaderOptions`);
   }
 }

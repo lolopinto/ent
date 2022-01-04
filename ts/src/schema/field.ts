@@ -97,10 +97,10 @@ export class UUIDField extends BaseField implements Field {
 
     if (
       options.fieldEdge?.enforceSchema &&
-      !options.fieldEdge.getLoaderOptions
+      !options.fieldEdge.getLoaderInfoFromSchema
     ) {
       throw new Error(
-        `cannot enforceSchema if getLoaderOptions wasn't passed in`,
+        `cannot enforceSchema if getLoaderInfoFromSchema wasn't passed in`,
       );
     }
   }
@@ -114,20 +114,20 @@ export class UUIDField extends BaseField implements Field {
       return true;
     }
 
-    // TODO #510 consistency.
-    const f = camelCase(this.options.fieldEdge.schema);
-    const getLoaderOptions = this.options.fieldEdge.getLoaderOptions!;
-    const loadRowOptions = getLoaderOptions(f);
-    if (!loadRowOptions) {
-      throw new Error(`couldn't get loaderOptions for ${f}`);
+    const getLoaderInfo = this.options.fieldEdge.getLoaderInfoFromSchema!;
+    const loaderInfo = getLoaderInfo(this.options.fieldEdge.schema);
+    if (!loaderInfo) {
+      throw new Error(
+        `couldn't get loaderInfo for ${this.options.fieldEdge.schema}`,
+      );
     }
     if (this.isBuilder(val)) {
-      // if builder, the ent type of the builder and the ent type returned by the load constructor should match
-      return val.ent === loadRowOptions.ent;
+      // if builder, the nodeType of the builder and the nodeType of the loaderInfo should match
+      return val.nodeType === loaderInfo.nodeType;
     }
     // TODO we need context here to make sure that we hit local cache
 
-    const row = await loadRowOptions.loaderFactory.createLoader().load(val);
+    const row = await loaderInfo.loaderFactory.createLoader().load(val);
     return row !== null;
   }
 }

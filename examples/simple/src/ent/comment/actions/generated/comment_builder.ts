@@ -36,6 +36,7 @@ export class CommentBuilder implements Builder<Comment> {
   orchestrator: Orchestrator<Comment>;
   readonly placeholderID: ID;
   readonly ent = Comment;
+  readonly nodeType = NodeType.Comment;
   private input: CommentInput;
   private m: Map<string, any> = new Map();
 

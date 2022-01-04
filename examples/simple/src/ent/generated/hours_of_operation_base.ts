@@ -10,7 +10,6 @@ import {
   Data,
   ID,
   LoadEntOptions,
-  ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
   convertDate,
@@ -21,19 +20,9 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
+import { hoursOfOperationLoader, hoursOfOperationLoaderInfo } from "./loaders";
 import { NodeType } from "../internal";
 import schema from "../../schema/hours_of_operation";
-
-const tableName = "hours_of_operations";
-const fields = [
-  "id",
-  "created_at",
-  "updated_at",
-  "day_of_week",
-  "open",
-  "close",
-  "day_of_week_alt",
-];
 
 export enum DayOfWeek {
   Sunday = "Sunday",
@@ -161,8 +150,8 @@ export class HoursOfOperationBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName,
-      fields,
+      tableName: hoursOfOperationLoaderInfo.tableName,
+      fields: hoursOfOperationLoaderInfo.fields,
       ent: this,
       loaderFactory: hoursOfOperationLoader,
     };
@@ -181,9 +170,3 @@ export class HoursOfOperationBase {
     return HoursOfOperationBase.getSchemaFields().get(key);
   }
 }
-
-export const hoursOfOperationLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "id",
-});

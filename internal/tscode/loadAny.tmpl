@@ -27,5 +27,7 @@ export function getLoaderOptions(type: {{useImport "NodeType"}}): {{useImport "L
     case {{useImport "NodeType"}}.{{.Name}}:
     return {{useImport .Name}}.loaderOptions();
   {{ end -}}
+  default:
+    throw new Error(`invalid nodeType ${type} passed to getLoaderOptions`);
   }
 }

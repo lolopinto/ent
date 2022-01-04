@@ -58,6 +58,7 @@ export class UserBuilder implements Builder<User> {
   orchestrator: Orchestrator<User>;
   readonly placeholderID: ID;
   readonly ent = User;
+  readonly nodeType = NodeType.User;
   private input: UserInput;
   private m: Map<string, any> = new Map();
 

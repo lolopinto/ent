@@ -10,7 +10,6 @@ import {
   Data,
   ID,
   LoadEntOptions,
-  ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
   convertDate,
@@ -21,18 +20,9 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
+import { contactEmailLoader, contactEmailLoaderInfo } from "./loaders";
 import { Contact, NodeType } from "../internal";
 import schema from "../../schema/contact_email";
-
-const tableName = "contact_emails";
-const fields = [
-  "id",
-  "created_at",
-  "updated_at",
-  "email_address",
-  "label",
-  "contact_id",
-];
 
 export class ContactEmailBase {
   readonly nodeType = NodeType.ContactEmail;
@@ -138,8 +128,8 @@ export class ContactEmailBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName,
-      fields,
+      tableName: contactEmailLoaderInfo.tableName,
+      fields: contactEmailLoaderInfo.fields,
       ent: this,
       loaderFactory: contactEmailLoader,
     };
@@ -166,9 +156,3 @@ export class ContactEmailBase {
     return loadEntX(this.viewer, this.contactID, Contact.loaderOptions());
   }
 }
-
-export const contactEmailLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "id",
-});

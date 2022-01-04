@@ -14,6 +14,7 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { DayOfWeek, DayOfWeekAlt, HoursOfOperation } from "../../..";
+import { NodeType } from "../../../generated/const";
 import schema from "../../../../schema/hours_of_operation";
 
 export interface HoursOfOperationInput {
@@ -35,6 +36,7 @@ export class HoursOfOperationBuilder implements Builder<HoursOfOperation> {
   orchestrator: Orchestrator<HoursOfOperation>;
   readonly placeholderID: ID;
   readonly ent = HoursOfOperation;
+  readonly nodeType = NodeType.HoursOfOperation;
   private input: HoursOfOperationInput;
   private m: Map<string, any> = new Map();
 

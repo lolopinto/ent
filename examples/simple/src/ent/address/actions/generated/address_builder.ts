@@ -38,6 +38,7 @@ export class AddressBuilder implements Builder<Address> {
   orchestrator: Orchestrator<Address>;
   readonly placeholderID: ID;
   readonly ent = Address;
+  readonly nodeType = NodeType.Address;
   private input: AddressInput;
   private m: Map<string, any> = new Map();
 

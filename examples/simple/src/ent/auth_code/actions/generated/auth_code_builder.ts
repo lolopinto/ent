@@ -14,6 +14,7 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { AuthCode, User } from "../../..";
+import { NodeType } from "../../../generated/const";
 import schema from "../../../../schema/auth_code";
 
 export interface AuthCodeInput {
@@ -35,6 +36,7 @@ export class AuthCodeBuilder implements Builder<AuthCode> {
   orchestrator: Orchestrator<AuthCode>;
   readonly placeholderID: ID;
   readonly ent = AuthCode;
+  readonly nodeType = NodeType.AuthCode;
   private input: AuthCodeInput;
   private m: Map<string, any> = new Map();
 

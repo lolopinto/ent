@@ -8,7 +8,7 @@ import {
   UUIDType,
 } from "@snowtop/ent/schema/";
 import { PhoneNumberType } from "@snowtop/ent-phonenumber";
-import { getLoaderOptions } from "../ent/generated/loadAny";
+import { getLoaderInfoFromSchema } from "../ent/generated/loaders";
 
 export default class ContactPhoneNumber
   extends BaseEntSchema
@@ -22,7 +22,7 @@ export default class ContactPhoneNumber
       fieldEdge: {
         schema: "Contact",
         enforceSchema: true,
-        getLoaderOptions: getLoaderOptions,
+        getLoaderInfoFromSchema: getLoaderInfoFromSchema,
       },
     }),
   ];
