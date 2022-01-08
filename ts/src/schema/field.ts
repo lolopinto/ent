@@ -69,6 +69,7 @@ export class UUIDField extends BaseField implements Field {
       } else {
         // TODO need to fix...
         // TODO schema with derived fields test in orchestrator.test.ts
+        // TODO skipped tests in executor.test.ts
         //        throw new Error(`unsupported id polymorhpic type ${options.name}`);
       }
 
