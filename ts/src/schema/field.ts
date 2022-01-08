@@ -97,7 +97,7 @@ export class UUIDField extends BaseField implements Field {
     }
 
     if (
-      options.fieldEdge?.enforceSchema &&
+      options?.fieldEdge?.enforceSchema &&
       !options.fieldEdge.getLoaderInfoFromSchema
     ) {
       throw new Error(
@@ -486,7 +486,7 @@ export function TimeType(options?: TimeOptions): TimeField {
   return Object.assign(result, options);
 }
 
-export function TimetzType(options: FieldOptions): TimeField {
+export function TimetzType(options?: FieldOptions): TimeField {
   let opts: TimestampOptions = {
     withTimezone: true,
     ...options,
@@ -557,6 +557,8 @@ export class EnumField extends BaseField implements Field {
       dbType: options.createEnumType ? DBType.Enum : DBType.StringEnum,
       values: options.values,
       enumMap: options.map,
+      // don't have name to use here for tsType and graphqlType
+      // so this needs to be done in go now...
       type: options.tsType || options.name,
       graphQLType: options.graphQLType || options.name,
     };

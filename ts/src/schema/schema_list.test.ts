@@ -75,7 +75,7 @@ function commonTests() {
     class Account extends User {}
     class AccountSchema implements Schema {
       fields = {
-        Nicknames: new StringField(),
+        Nicknames: StringListType(),
       };
       ent = Account;
     }
@@ -252,7 +252,7 @@ function commonTests() {
     class Survey extends User {}
     class SurveySchema implements Schema {
       fields = {
-        satisified: BooleanListType(),
+        satisfied: BooleanListType(),
       };
       ent = Survey;
     }

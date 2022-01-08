@@ -1,7 +1,13 @@
 import { Pool } from "pg";
 import { v1 } from "uuid";
 import { UUIDType, UUIDListType, StringType } from "./field";
-import { DBType, PolymorphicOptions, Type, FieldOptions } from "./schema";
+import {
+  DBType,
+  PolymorphicOptions,
+  Type,
+  FieldOptions,
+  FieldMap,
+} from "./schema";
 import { Field } from "./schema";
 import { BaseEntSchema } from "./base_schema";
 import { User, SimpleAction } from "../testutils/builder";
@@ -36,8 +42,11 @@ test("polymorphic object", () => {
     {
       dbType: DBType.StringEnum,
       values: ["User", "Post"],
-      type: "fooType",
-      graphQLType: "fooType",
+      // don't get default anymore. will be done in golang
+      // type: "fooType",
+      // graphQLType: "fooType",
+      type: undefined,
+      graphQLType: undefined,
       enumMap: undefined,
     },
   );
@@ -49,8 +58,11 @@ test("polymorphic object, nullable true", () => {
     {
       dbType: DBType.StringEnum,
       values: ["User", "Post"],
-      type: "fooType",
-      graphQLType: "fooType",
+      // don't get default anymore. will be done in golang
+      // type: "fooType",
+      // graphQLType: "fooType",
+      type: undefined,
+      graphQLType: undefined,
       enumMap: undefined,
     },
     {
@@ -65,8 +77,17 @@ function doTest(
   opts?: Partial<FieldOptions>,
 ) {
   const f = UUIDType({ name: "fooID", polymorphic: polymorphic, ...opts });
-  expect(f.derivedFields?.length).toBe(1);
-  const derived = f.derivedFields![0];
+  let lastKey = "";
+  const count = function () {
+    let ct = 0;
+    for (const k in f.derivedFields) {
+      ct++;
+      lastKey = k;
+    }
+    return ct;
+  };
+  expect(count()).toBe(1);
+  const derived = f.derivedFields![lastKey];
   expect(derived.type).toStrictEqual(expDerivedType);
   expect(derived.nullable).toBe(opts?.nullable);
 }
@@ -74,15 +95,15 @@ function doTest(
 describe("fieldEdge no inverseEdge", () => {
   test("no checks", async () => {
     class UserSchema extends BaseEntSchema {
-      fields: Field[] = [StringType({ name: "Name" })];
+      fields: FieldMap = { Name: StringType({ name: "Name" }) };
       ent = User;
     }
 
     class Account extends User {}
     class AccountSchema extends BaseEntSchema {
-      fields: Field[] = [
-        UUIDType({ name: "userID", fieldEdge: { schema: "User" } }),
-      ];
+      fields: FieldMap = {
+        userID: UUIDType({ name: "userID", fieldEdge: { schema: "User" } }),
+      };
       ent = Account;
     }
 
@@ -112,14 +133,14 @@ describe("fieldEdge no inverseEdge", () => {
 
   test("enforce checks with builder", async () => {
     class UserSchema extends BaseEntSchema {
-      fields: Field[] = [StringType({ name: "Name" })];
+      fields: FieldMap = { Name: StringType({ name: "Name" }) };
       ent = User;
     }
 
     class Account extends User {}
     class AccountSchema extends BaseEntSchema {
-      fields: Field[] = [
-        UUIDType({
+      fields: FieldMap = {
+        userID: UUIDType({
           name: "userID",
           fieldEdge: {
             schema: "User",
@@ -138,7 +159,7 @@ describe("fieldEdge no inverseEdge", () => {
             },
           },
         }),
-      ];
+      };
       ent = Account;
     }
 
@@ -168,15 +189,14 @@ describe("fieldEdge no inverseEdge", () => {
 
   test("enforce checks with builder. invalid builder", async () => {
     class UserSchema extends BaseEntSchema {
-      fields: Field[] = [StringType({ name: "Name" })];
+      fields: FieldMap = { Name: StringType() };
       ent = User;
     }
 
     class Account extends User {}
     class AccountSchema extends BaseEntSchema {
-      fields: Field[] = [
-        UUIDType({
-          name: "userID",
+      fields: FieldMap = {
+        userID: UUIDType({
           fieldEdge: {
             schema: "User",
             enforceSchema: true,
@@ -194,7 +214,7 @@ describe("fieldEdge no inverseEdge", () => {
             },
           },
         }),
-      ];
+      };
       ent = Account;
     }
 
@@ -232,15 +252,14 @@ describe("fieldEdge no inverseEdge", () => {
 
   test("enforce checks no builder", async () => {
     class UserSchema extends BaseEntSchema {
-      fields: Field[] = [StringType({ name: "Name" })];
+      fields: FieldMap = { Name: StringType() };
       ent = User;
     }
 
     class Account extends User {}
     class AccountSchema extends BaseEntSchema {
-      fields: Field[] = [
-        UUIDType({
-          name: "userID",
+      fields: FieldMap = {
+        userID: UUIDType({
           fieldEdge: {
             schema: "User",
             enforceSchema: true,
@@ -258,7 +277,7 @@ describe("fieldEdge no inverseEdge", () => {
             },
           },
         }),
-      ];
+      };
       ent = Account;
     }
 
@@ -300,14 +319,14 @@ describe("fieldEdge list", () => {
   test("enforce checks", async () => {
     class ContactEmail extends User {}
     class ContactEmailSchema extends BaseEntSchema {
-      fields: Field[] = [StringType({ name: "Email" })];
+      fields: FieldMap = { Email: StringType() };
       ent = ContactEmail;
     }
 
     class Contact extends User {}
     class ContactShema extends BaseEntSchema {
-      fields: Field[] = [
-        UUIDListType({
+      fields: FieldMap = {
+        emailIDs: UUIDListType({
           name: "emailIDs",
           fieldEdge: {
             schema: "ContactEmail",
@@ -326,7 +345,7 @@ describe("fieldEdge list", () => {
             },
           },
         }),
-      ];
+      };
       ent = Contact;
     }
 
@@ -373,20 +392,20 @@ describe("fieldEdge list", () => {
   test("don't enforce checks", async () => {
     class ContactEmail extends User {}
     class ContactEmailSchema extends BaseEntSchema {
-      fields: Field[] = [StringType({ name: "Email" })];
+      fields: FieldMap = { Email: StringType({ name: "Email" }) };
       ent = ContactEmail;
     }
 
     class Contact extends User {}
     class ContactShema extends BaseEntSchema {
-      fields: Field[] = [
-        UUIDListType({
+      fields: FieldMap = {
+        emailIDs: UUIDListType({
           name: "emailIDs",
           fieldEdge: {
             schema: "ContactEmail",
           },
         }),
-      ];
+      };
       ent = Contact;
     }
 

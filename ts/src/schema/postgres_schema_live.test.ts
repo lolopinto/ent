@@ -23,42 +23,40 @@ import { v4 as uuidv4 } from "uuid";
 import pg from "pg";
 import { defaultTimestampParser, Dialect } from "../core/db";
 import { BaseEntSchemaWithTZ } from "./base_schema";
-import { DBType } from "./schema";
+import { DBType, FieldMap } from "./schema";
 import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
 import { ID, Ent, Viewer, Data } from "../core/base";
 import * as fs from "fs";
 import * as path from "path";
 
 class UserSchema extends BaseEntSchema {
-  fields: Field[] = [
-    StringType({ name: "FirstName" }),
-    StringType({ name: "LastName" }),
-  ];
+  fields: FieldMap = {
+    FirstName: StringType(),
+    LastName: StringType(),
+  };
   ent = User;
 }
 
 class UserWithTimezoneSchema extends BaseEntSchemaWithTZ {
-  fields: Field[] = [
-    StringType({ name: "FirstName" }),
-    StringType({ name: "LastName" }),
-  ];
+  fields: FieldMap = {
+    FirstName: StringType(),
+    LastName: StringType(),
+  };
   ent = User;
 }
 
 class UserWithTimestampNoFormatSchema implements Schema {
-  fields: Field[] = [
-    UUIDType({
-      name: "ID",
+  fields: FieldMap = {
+    ID: UUIDType({
       primaryKey: true,
       defaultValueOnCreate: () => {
         return uuidv4();
       },
     }),
-    StringType({ name: "FirstName" }),
-    StringType({ name: "LastName" }),
+    FirstName: StringType(),
+    LastName: StringType(),
     // manual timestamps. no formatting that comes with TimestampType
-    {
-      name: "createdAt",
+    createdAt: {
       type: {
         dbType: DBType.Timestamp,
       },
@@ -67,8 +65,7 @@ class UserWithTimestampNoFormatSchema implements Schema {
       },
       logValue: (val) => val,
     },
-    {
-      name: "updatedAt",
+    updatedAt: {
       type: {
         dbType: DBType.Timestamp,
       },
@@ -77,7 +74,7 @@ class UserWithTimestampNoFormatSchema implements Schema {
       },
       logValue: (val) => val,
     },
-  ];
+  };
   ent = User;
 }
 
@@ -284,22 +281,22 @@ class Hours implements Ent {
 }
 
 class HoursSchema extends BaseEntSchema {
-  fields: Field[] = [
+  fields: FieldMap = {
     // should be an enum but let's ignore that
-    StringType({ name: "dayOfWeek" }),
-    TimeType({ name: "open" }),
-    TimeType({ name: "close" }),
-  ];
+    dayOfWeek: StringType(),
+    open: TimeType(),
+    close: TimeType(),
+  };
   ent = Hours;
 }
 
 class HoursTZSchema extends BaseEntSchema {
-  fields: Field[] = [
+  fields: FieldMap = {
     // should be an enum but let's ignore that
-    StringType({ name: "dayOfWeek" }),
-    TimetzType({ name: "open" }),
-    TimetzType({ name: "close" }),
-  ];
+    dayOfWeek: StringType(),
+    open: TimetzType(),
+    close: TimetzType(),
+  };
   ent = Hours;
 }
 
@@ -437,11 +434,11 @@ class Holiday implements Ent {
 }
 
 class HolidaySchema extends BaseEntSchema {
-  fields: Field[] = [
+  fields: FieldMap = {
     // should be an enum but let's ignore that
-    StringType({ name: "label" }),
-    DateType({ name: "date" }),
-  ];
+    label: StringType(),
+    date: DateType(),
+  };
   ent = Holiday;
 }
 

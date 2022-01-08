@@ -9,7 +9,10 @@ import * as fs from "fs";
 import { loadConfig } from "../core/config";
 import { convertJSON } from "../core/convert";
 import { JSONType, JSONBType } from "./json_field";
+import { FieldMap } from "./schema";
+
 let tdb: TempDB;
+
 async function setupTempDB(dialect: Dialect, connString?: string) {
   beforeAll(async () => {
     if (connString) {
@@ -73,22 +76,20 @@ function commonTests() {
   }
   class Notification extends User {}
   class NotificationSchema implements Schema {
-    fields: Field[] = [
-      JSONType({
-        name: "col",
+    fields: FieldMap = {
+      col: JSONType({
         validator,
       }),
-    ];
+    };
     ent = Notification;
   }
 
   class NotificationJSONBSchema implements Schema {
-    fields: Field[] = [
-      JSONBType({
-        name: "col",
+    fields: FieldMap = {
+      col: JSONBType({
         validator,
       }),
-    ];
+    };
     ent = Notification;
   }
 

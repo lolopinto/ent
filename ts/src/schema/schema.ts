@@ -338,7 +338,7 @@ export function getFields(value: SchemaInputType): Map<string, Field> {
       if (derivedFields !== undefined) {
         addFields(derivedFields);
       }
-      m.set(field.name, field);
+      m.set(name, field);
     }
   }
 
