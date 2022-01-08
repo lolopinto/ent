@@ -100,6 +100,7 @@ export function findTSConfigFile(filePath: string): string | null {
 }
 
 // inspiration taken from compiler.ts
+// TODO use the one in helpers...
 function readCompilerOptions(filePath: string): ts.CompilerOptions {
   let configPath = findTSConfigFile(filePath);
   if (!configPath) {

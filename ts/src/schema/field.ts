@@ -84,7 +84,7 @@ export class UUIDField extends BaseField implements Field {
             values: polymorphic.types,
             hideFromGraphQL: true,
             derivedWhenEmbedded: true,
-            nullable: options.nullable,
+            nullable: options?.nullable,
           }),
         };
       } else {
@@ -93,7 +93,7 @@ export class UUIDField extends BaseField implements Field {
           name: StringType({
             hideFromGraphQL: true,
             derivedWhenEmbedded: true,
-            nullable: options.nullable,
+            nullable: options?.nullable,
           }),
         };
       }
