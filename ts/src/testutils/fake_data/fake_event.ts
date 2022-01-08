@@ -15,6 +15,7 @@ import {
   BaseEntSchema,
   UUIDType,
   TimestampType,
+  FieldMap,
 } from "../../schema";
 import { NodeType } from "./const";
 import { table, uuid, text, timestamptz } from "../db/test_db";
@@ -105,30 +106,22 @@ export class FakeEventSchema
   implements BuilderSchema<FakeEvent>
 {
   ent = FakeEvent;
-  fields: Field[] = [
-    TimestampType({
-      name: "startTime",
+  fields: FieldMap = {
+    startTime: TimestampType({
       index: true,
     }),
-    TimestampType({
-      name: "endTime",
+    endTime: TimestampType({
       nullable: true,
     }),
-    StringType({
-      name: "title",
-    }),
-    StringType({
-      name: "location",
-    }),
-    StringType({
-      name: "description",
+    title: StringType(),
+    location: StringType(),
+    description: StringType({
       nullable: true,
     }),
-    UUIDType({
-      name: "userID",
+    userID: UUIDType({
       foreignKey: { schema: "User", column: "ID" },
     }),
-  ];
+  };
 }
 
 export interface EventCreateInput {
