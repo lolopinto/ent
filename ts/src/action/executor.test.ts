@@ -30,7 +30,7 @@ import {
   getTableName,
 } from "../testutils/builder";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
-import { BaseEntSchema, Field } from "../schema";
+import { BaseEntSchema, FieldMap } from "../schema";
 import {
   StringType,
   TimestampType,
@@ -53,7 +53,6 @@ import {
   Table,
 } from "../testutils/db/test_db";
 import * as action from "../action";
-import { FieldMap } from "src/schema/schema";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);

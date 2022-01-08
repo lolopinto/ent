@@ -17,6 +17,7 @@ export {
   Action,
   EdgeAction,
   NoFields,
+  FieldMap,
   Constraint,
   Index,
   ConstraintType,
