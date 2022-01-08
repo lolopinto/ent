@@ -535,7 +535,7 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
             defaultValue = field.defaultValueOnCreate(builder, input);
             if (defaultValue === undefined) {
               throw new Error(
-                `defaultValueOnCreate() returned undefined for field ${field.name}`,
+                `defaultValueOnCreate() returned undefined for field ${fieldName}`,
               );
             }
           }
