@@ -53,6 +53,13 @@ async function main() {
           printer.printNode(ts.EmitHint.Unspecified, node, sourceFile),
         );
       },
+      flagUpdateImport() {
+        for (const line of lines) {
+          if (!line.startsWith("import")) {
+            continue;
+          }
+        }
+      },
     };
     traverse(sourceFile, f);
 
@@ -62,6 +69,7 @@ async function main() {
 
 interface File {
   printNode(node: ts.Node): void;
+  flagUpdateImport(): void;
 }
 
 // TODO whitespace
@@ -76,7 +84,9 @@ function traverse(sourceFile: ts.SourceFile, f: File) {
         //        console.debug(sourceFile.fileName, node.kind);
 
         // TODO same for traverse class
-        traverseClass(sourceFile, node as ts.ClassDeclaration, f);
+        if (traverseClass(sourceFile, node as ts.ClassDeclaration, f)) {
+          f.flagUpdateImport();
+        }
         break;
       default:
         f.printNode(node);
@@ -89,16 +99,18 @@ function traverseClass(
   sourceFile: ts.SourceFile,
   node: ts.ClassDeclaration,
   f: File,
-) {
+): boolean {
   //  ts.factory.createClassDeclaration(node.decorators, node.modifiers, node.name, node.pa);
   // create new class Declaration
   // class Member literati
   const exportedMembers: ts.ClassElement[] = [];
+  let updated = false;
   for (const member of node.members) {
     if (!isFieldElement(member, sourceFile)) {
       exportedMembers.push(member);
       continue;
     }
+    updated = true;
     // need to change to fields: FieldMap = {code: StringType()};
     const property = member as ts.PropertyDeclaration;
     const initializer = property.initializer as ts.ArrayLiteralExpression;
@@ -200,6 +212,8 @@ function traverseClass(
     exportedMembers,
   );
   f.printNode(klass);
+
+  return updated;
 }
 
 function isFieldElement(
