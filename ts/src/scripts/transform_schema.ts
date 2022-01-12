@@ -93,7 +93,6 @@ interface NodeInfo {
 }
 
 // TODO whitespace
-// TODO "FieldMap"
 
 function traverse(sourceFile: ts.SourceFile, f: File) {
   ts.forEachChild(sourceFile, function (node: ts.Node) {
@@ -207,10 +206,7 @@ function traverseClass(
         [],
         "fields",
         undefined,
-        // TODO FieldMap here is in quotes. I don't want that...
-        ts.factory.createLiteralTypeNode(
-          ts.factory.createStringLiteral("FieldMap"),
-        ),
+        ts.factory.createTypeReferenceNode("FieldMap"),
         ts.factory.createObjectLiteralExpression(fieldsProperties),
         // arguments?
         //      undefined,
