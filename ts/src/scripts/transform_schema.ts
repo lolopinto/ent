@@ -39,42 +39,61 @@ async function main() {
       getTarget(options.target)
     : ts.ScriptTarget.ESNext;
 
-  [files[1]].forEach((file) => {
+  // contact instead of auth_code
+  [files[5]].forEach((file) => {
     const sourceFile = ts.createSourceFile(
       file,
       fs.readFileSync(file).toString(),
       target,
     );
     const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
-    const lines: string[] = [];
+    const nodes: NodeInfo[] = [];
+    let updateImport = false;
     const f = {
-      printNode: function (node: ts.Node) {
-        lines.push(
-          printer.printNode(ts.EmitHint.Unspecified, node, sourceFile),
-        );
+      trackNode: function (node: ts.Node, importNode: boolean) {
+        nodes.push({
+          node,
+          importNode,
+        });
       },
       flagUpdateImport() {
-        for (const line of lines) {
-          if (!line.startsWith("import")) {
-            continue;
-          }
-        }
+        updateImport = true;
       },
     };
     traverse(sourceFile, f);
+
+    const lines: string[] = [];
+    for (const node of nodes) {
+      if (updateImport && node.importNode) {
+        const importNode = node.node as ts.ImportDeclaration;
+        const transformedImport = transformImport(importNode, sourceFile);
+        if (transformedImport) {
+          lines.push(transformedImport);
+          continue;
+        }
+      }
+
+      lines.push(
+        printer.printNode(ts.EmitHint.Unspecified, node.node, sourceFile),
+      );
+    }
 
     fs.writeFileSync(file, lines.join("\n"));
   });
 }
 
 interface File {
-  printNode(node: ts.Node): void;
+  trackNode(node: ts.Node, importNode: boolean): void;
   flagUpdateImport(): void;
+}
+
+interface NodeInfo {
+  node: ts.Node;
+  importNode?: boolean;
 }
 
 // TODO whitespace
 // TODO "FieldMap"
-// TODO update import
 
 function traverse(sourceFile: ts.SourceFile, f: File) {
   ts.forEachChild(sourceFile, function (node: ts.Node) {
@@ -88,8 +107,12 @@ function traverse(sourceFile: ts.SourceFile, f: File) {
           f.flagUpdateImport();
         }
         break;
+
+      case ts.SyntaxKind.ImportDeclaration:
+        f.trackNode(node, true);
+        break;
       default:
-        f.printNode(node);
+        f.trackNode(node, false);
     }
   });
 }
@@ -211,7 +234,7 @@ function traverseClass(
     node.heritageClauses,
     exportedMembers,
   );
-  f.printNode(klass);
+  f.trackNode(klass, false);
 
   return updated;
 }
@@ -241,6 +264,48 @@ function isFieldElement(
   }
 
   return true;
+}
+
+function transformImport(
+  importNode: ts.ImportDeclaration,
+  sourceFile: ts.SourceFile,
+): string | undefined {
+  // remove quotes too
+  const text = importNode.moduleSpecifier.getText(sourceFile).slice(1, -1);
+  if (
+    text !== "@snowtop/ent" &&
+    text !== "@snowtop/ent/schema" &&
+    text !== "@snowtop/ent/schema/"
+  ) {
+    return;
+  }
+  const importText = importNode.importClause?.getText(sourceFile) || "";
+  const start = importText.indexOf("{");
+  const end = importText.lastIndexOf("}");
+  if (start === -1 || end === -1) {
+    return;
+  }
+  const imports = importText
+    .substring(start + 1, end)
+    //    .trim()
+    .split(",");
+  for (let i = 0; i < imports.length; i++) {
+    const imp = imports[i].trim();
+    if (imp === "Field") {
+      imports[i] = "FieldMap";
+    }
+  }
+  // TODO better to update node instead of doing this but this works for now
+
+  return (
+    "import " +
+    importText.substring(0, start + 1) +
+    imports.join(", ") +
+    importText.substring(end) +
+    ' from "' +
+    text +
+    '"'
+  );
 }
 
 Promise.resolve(main());
