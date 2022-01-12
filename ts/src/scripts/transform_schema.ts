@@ -50,10 +50,10 @@ async function main() {
     const nodes: NodeInfo[] = [];
     let updateImport = false;
     const f = {
-      trackNode: function (node: ts.Node, importNode: boolean) {
+      trackNode: function (node: ts.Node) {
         nodes.push({
           node,
-          importNode,
+          importNode: ts.isImportDeclaration(node),
         });
       },
       flagUpdateImport() {
@@ -78,12 +78,12 @@ async function main() {
       );
     }
 
-    fs.writeFileSync(file, lines.join("\n"));
+    //    fs.writeFileSync(file, lines.join("\n"));
   });
 }
 
 interface File {
-  trackNode(node: ts.Node, importNode: boolean): void;
+  trackNode(node: ts.Node): void;
   flagUpdateImport(): void;
 }
 
@@ -97,23 +97,15 @@ interface NodeInfo {
 
 function traverse(sourceFile: ts.SourceFile, f: File) {
   ts.forEachChild(sourceFile, function (node: ts.Node) {
-    switch (node.kind) {
-      case ts.SyntaxKind.ClassDeclaration:
-        // TODO address implicit schema doesn't work here...
-        //        console.debug(sourceFile.fileName, node.kind);
-
-        // TODO same for traverse class
-        if (traverseClass(sourceFile, node as ts.ClassDeclaration, f)) {
-          f.flagUpdateImport();
-        }
-        break;
-
-      case ts.SyntaxKind.ImportDeclaration:
-        f.trackNode(node, true);
-        break;
-      default:
-        f.trackNode(node, false);
+    if (ts.isClassDeclaration(node)) {
+      // TODO address implicit schema doesn't work here...
+      //        console.debug(sourceFile.fileName, node.kind);
+      if (traverseClass(sourceFile, node, f)) {
+        f.flagUpdateImport();
+        return;
+      }
     }
+    f.trackNode(node);
   });
 }
 
@@ -234,7 +226,7 @@ function traverseClass(
     node.heritageClauses,
     exportedMembers,
   );
-  f.trackNode(klass, false);
+  f.trackNode(klass);
 
   return updated;
 }
