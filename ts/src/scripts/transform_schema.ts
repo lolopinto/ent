@@ -41,70 +41,96 @@ async function main() {
 
   // contact instead of auth_code
   [files[5]].forEach((file) => {
-    const sourceFile = ts.createSourceFile(
-      file,
-      fs.readFileSync(file).toString(),
-      target,
-    );
+    let contents = fs.readFileSync(file).toString();
+
+    // go through the file and print everything back if not starting immediately after other position
+    const sourceFile = ts.createSourceFile(file, contents, target);
     const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
     const nodes: NodeInfo[] = [];
     let updateImport = false;
     const f = {
-      trackNode: function (node: ts.Node) {
+      trackNode: function (tni: TrackNodeInfo) {
         nodes.push({
-          node,
-          importNode: ts.isImportDeclaration(node),
+          node: tni.node,
+          importNode: ts.isImportDeclaration(tni.node),
+          newNode: tni.newNode,
+          preNode: tni.preNode,
         });
       },
       flagUpdateImport() {
         updateImport = true;
       },
     };
-    traverse(sourceFile, f);
+    traverse(contents, sourceFile, f);
 
-    const lines: string[] = [];
+    let newContents = "";
     for (const node of nodes) {
       if (updateImport && node.importNode) {
         const importNode = node.node as ts.ImportDeclaration;
         const transformedImport = transformImport(importNode, sourceFile);
         if (transformedImport) {
-          lines.push(transformedImport);
+          newContents += transformedImport + "\n";
           continue;
         }
       }
+      if (node.preNode) {
+        newContents += node.preNode;
+      }
 
-      lines.push(
-        printer.printNode(ts.EmitHint.Unspecified, node.node, sourceFile),
-      );
+      let printFile = sourceFile;
+      if (node.newNode) {
+        // TODO handle in file...
+        // new source file for new node for printing...
+        // next step is to maybe send strings here instead of this so that we do the whitespace in there?
+        printFile = ts.createSourceFile(
+          "someFileName.ts",
+          "",
+          ts.ScriptTarget.Latest,
+          /*setParentNodes*/ false,
+          ts.ScriptKind.TS,
+        );
+      }
+      newContents +=
+        printer.printNode(ts.EmitHint.Unspecified, node.node, printFile) + "\n";
     }
 
-    //    fs.writeFileSync(file, lines.join("\n"));
+    //    fs.writeFileSync(file, newContents);
   });
 }
 
 interface File {
-  trackNode(node: ts.Node): void;
+  trackNode(tn: TrackNodeInfo): void;
   flagUpdateImport(): void;
+}
+
+interface TrackNodeInfo {
+  node: ts.Node;
+  preNode?: string;
+  newNode?: boolean;
 }
 
 interface NodeInfo {
   node: ts.Node;
   importNode?: boolean;
+  newNode?: boolean;
+  preNode?: string;
 }
 
-// TODO whitespace
-
-function traverse(sourceFile: ts.SourceFile, f: File) {
+function traverse(fileContents: string, sourceFile: ts.SourceFile, f: File) {
+  let lastEnd = 0;
   ts.forEachChild(sourceFile, function (node: ts.Node) {
+    const start = node.getStart(sourceFile);
+    const preNode = fileContents.substring(lastEnd + 1, start);
+    lastEnd = node.end;
     if (ts.isClassDeclaration(node)) {
       // TODO address implicit schema doesn't work here...
       //        console.debug(sourceFile.fileName, node.kind);
-      if (traverseClass(sourceFile, node, f)) {
+      if (traverseClass(sourceFile, node, preNode, f)) {
         f.flagUpdateImport();
         return;
       }
     }
-    f.trackNode(node);
+    f.trackNode({ node, preNode });
   });
 }
 
@@ -112,6 +138,7 @@ function traverse(sourceFile: ts.SourceFile, f: File) {
 function traverseClass(
   sourceFile: ts.SourceFile,
   node: ts.ClassDeclaration,
+  preNode: string,
   f: File,
 ): boolean {
   //  ts.factory.createClassDeclaration(node.decorators, node.modifiers, node.name, node.pa);
@@ -170,7 +197,6 @@ function traverseClass(
       name = name.slice(1, -1);
 
       if (newProperties.length) {
-        console.debug(name, " still has properties");
         // update in terms of what's being called here...
         // if empty, we want to kill this...
         expr = ts.factory.updateObjectLiteralExpression(expr, newProperties);
@@ -183,7 +209,6 @@ function traverseClass(
           [expr],
         );
       } else {
-        console.debug(name, " no more properties");
         callEx = ts.factory.updateCallExpression(
           callEx,
           callEx.expression,
@@ -214,7 +239,8 @@ function traverseClass(
     );
   }
 
-  const klass = ts.factory.createClassDeclaration(
+  const klass = ts.factory.updateClassDeclaration(
+    node,
     node.decorators,
     node.modifiers,
     node.name,
@@ -222,7 +248,7 @@ function traverseClass(
     node.heritageClauses,
     exportedMembers,
   );
-  f.trackNode(klass);
+  f.trackNode({ node: klass, newNode: true, preNode });
 
   return updated;
 }
@@ -244,7 +270,6 @@ function isFieldElement(
   if (propertytype !== "Field[]") {
     return false;
   }
-  //console.debug(token.escapedText);
 
   if (property.initializer?.kind !== ts.SyntaxKind.ArrayLiteralExpression) {
     console.error("invalid array type");
