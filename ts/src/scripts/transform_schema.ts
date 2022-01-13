@@ -2,6 +2,7 @@ import { glob } from "glob";
 import ts from "typescript";
 import * as fs from "fs";
 import { readCompilerOptions } from "./helpers";
+import { execSync } from "child_process";
 
 function getTarget(target: string) {
   switch (target.toLowerCase()) {
@@ -94,8 +95,10 @@ async function main() {
         printer.printNode(ts.EmitHint.Unspecified, node.node, printFile) + "\n";
     }
 
-    //    fs.writeFileSync(file, newContents);
+    fs.writeFileSync(file, newContents);
   });
+
+  execSync("prettier src/schema/*.ts --write");
 }
 
 interface File {
