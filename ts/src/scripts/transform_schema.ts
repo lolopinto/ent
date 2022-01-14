@@ -33,15 +33,17 @@ function getTarget(target: string) {
 
 async function main() {
   const options = readCompilerOptions();
-  const files = glob.sync("src/schema/*.ts");
+  let files = glob.sync("src/schema/*.ts");
 
   const target = options.target
     ? // @ts-ignore
       getTarget(options.target)
     : ts.ScriptTarget.ESNext;
 
-  // contact instead of auth_code
-  [files[5]].forEach((file) => {
+  // filter to only event.ts e.g. for comments and whitespace...
+  files = files.filter((f) => f.endsWith("event.ts"));
+
+  files.forEach((file) => {
     let contents = fs.readFileSync(file).toString();
 
     // go through the file and print everything back if not starting immediately after other position
@@ -62,7 +64,9 @@ async function main() {
         updateImport = true;
       },
     };
-    traverse(contents, sourceFile, f);
+    if (!traverse(contents, sourceFile, f)) {
+      return;
+    }
 
     let newContents = "";
     for (const node of nodes) {
@@ -119,13 +123,19 @@ interface NodeInfo {
   preNode?: string;
 }
 
-function traverse(fileContents: string, sourceFile: ts.SourceFile, f: File) {
-  let lastEnd = 0;
+function traverse(
+  fileContents: string,
+  sourceFile: ts.SourceFile,
+  f: File,
+): boolean {
+  let lastEnd = -1;
+  let traversed = false;
   ts.forEachChild(sourceFile, function (node: ts.Node) {
     const start = node.getStart(sourceFile);
     const preNode = fileContents.substring(lastEnd + 1, start);
     lastEnd = node.end;
     if (ts.isClassDeclaration(node)) {
+      traversed = true;
       // TODO address implicit schema doesn't work here...
       //        console.debug(sourceFile.fileName, node.kind);
       if (traverseClass(sourceFile, node, preNode, f)) {
@@ -135,6 +145,7 @@ function traverse(fileContents: string, sourceFile: ts.SourceFile, f: File) {
     }
     f.trackNode({ node, preNode });
   });
+  return traversed;
 }
 
 // TODO need to replace class field member, print that and see what happens
@@ -242,6 +253,13 @@ function traverseClass(
     );
   }
 
+  if (!updated) {
+    return updated;
+  }
+
+  // TODO need to change this to get whitespace btw members
+  // same logic as we do btw top-level-statements
+  // TODO need to change to postNode instead of preNode?
   const klass = ts.factory.updateClassDeclaration(
     node,
     node.decorators,
