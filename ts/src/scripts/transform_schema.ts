@@ -47,7 +47,13 @@ async function main() {
     let contents = fs.readFileSync(file).toString();
 
     // go through the file and print everything back if not starting immediately after other position
-    const sourceFile = ts.createSourceFile(file, contents, target);
+    const sourceFile = ts.createSourceFile(
+      file,
+      contents,
+      target,
+      false, // when this is true, it breaks string literals for some reason...
+      ts.ScriptKind.TS,
+    );
     const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
     const nodes: NodeInfo[] = [];
     let updateImport = false;
@@ -55,9 +61,13 @@ async function main() {
       trackNode: function (tni: TrackNodeInfo) {
         nodes.push({
           node: tni.node,
-          importNode: ts.isImportDeclaration(tni.node),
+          importNode: tni.node && ts.isImportDeclaration(tni.node),
           newNode: tni.newNode,
+          // removing preNode and using comment "works"
+          // but loses space
+          // so the comment route just doesn't work...
           preNode: tni.preNode,
+          rawString: tni.rawString,
         });
       },
       flagUpdateImport() {
@@ -91,15 +101,24 @@ async function main() {
           "someFileName.ts",
           "",
           ts.ScriptTarget.Latest,
-          /*setParentNodes*/ false,
+          false,
           ts.ScriptKind.TS,
         );
       }
-      newContents +=
-        printer.printNode(ts.EmitHint.Unspecified, node.node, printFile) + "\n";
+      if (node.node) {
+        newContents +=
+          printer.printNode(ts.EmitHint.Unspecified, node.node, printFile) +
+          "\n";
+      } else if (node.rawString) {
+        newContents += node.rawString;
+      } else {
+        console.error("invalid node");
+      }
     }
+    //    console.debug(newContents);
 
-    fs.writeFileSync(file, newContents);
+    // TODO
+    fs.writeFileSync("src/schema/event2.ts", newContents);
   });
 
   execSync("prettier src/schema/*.ts --write");
@@ -111,16 +130,18 @@ interface File {
 }
 
 interface TrackNodeInfo {
-  node: ts.Node;
+  node?: ts.Node;
   preNode?: string;
   newNode?: boolean;
+  rawString?: string;
 }
 
 interface NodeInfo {
-  node: ts.Node;
+  node?: ts.Node;
   importNode?: boolean;
   newNode?: boolean;
   preNode?: string;
+  rawString?: string;
 }
 
 function traverse(
@@ -131,6 +152,8 @@ function traverse(
   let lastEnd = -1;
   let traversed = false;
   ts.forEachChild(sourceFile, function (node: ts.Node) {
+    visitEachChild(sourceFile, node);
+
     const start = node.getStart(sourceFile);
     const preNode = fileContents.substring(lastEnd + 1, start);
     lastEnd = node.end;
@@ -138,7 +161,7 @@ function traverse(
       traversed = true;
       // TODO address implicit schema doesn't work here...
       //        console.debug(sourceFile.fileName, node.kind);
-      if (traverseClass(sourceFile, node, preNode, f)) {
+      if (traverseClass(fileContents, sourceFile, node, f)) {
         f.flagUpdateImport();
         return;
       }
@@ -148,11 +171,36 @@ function traverse(
   return traversed;
 }
 
+function print(node: ts.Node, sourceFile: ts.SourceFile) {
+  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
+  const printFile = ts.createSourceFile(
+    "someFileName.ts",
+    "",
+    ts.ScriptTarget.Latest,
+    false,
+    ts.ScriptKind.TS,
+  );
+  // console.debug(
+  //   printer.printNode(ts.EmitHint.Unspecified, node, printFile) + "\n",
+  // );
+
+  // instead of nodes, just grab entire strings and parse...
+  // now the only thing is to print the export default class line correctly...
+
+  // node.forEachChild((c) => {
+  //   console.debug(
+  //     c.getStart(sourceFile),
+  //     c.getFullStart(),
+  //     c.getText(sourceFile),
+  //   );
+  // });
+}
+
 // TODO need to replace class field member, print that and see what happens
 function traverseClass(
+  fileContents: string,
   sourceFile: ts.SourceFile,
   node: ts.ClassDeclaration,
-  preNode: string,
   f: File,
 ): boolean {
   //  ts.factory.createClassDeclaration(node.decorators, node.modifiers, node.name, node.pa);
@@ -160,11 +208,26 @@ function traverseClass(
   // class Member literati
   const exportedMembers: ts.ClassElement[] = [];
   let updated = false;
-  for (const member of node.members) {
+
+  // beginning of class...
+  // including comment
+  let klassContents = fileContents.substring(
+    node.getFullStart(),
+    node.members[0].getFullStart(),
+  );
+
+  for (let member of node.members) {
     if (!isFieldElement(member, sourceFile)) {
-      exportedMembers.push(member);
+      klassContents += member.getFullText(sourceFile);
       continue;
     }
+
+    // fieldMapComment...
+    const comment = getPreText(fileContents, member, sourceFile);
+    // just need to take this comment and add to pritned node later...
+    // TODO comment
+    //    console.debug(comment);
+
     updated = true;
     // need to change to fields: FieldMap = {code: StringType()};
     const property = member as ts.PropertyDeclaration;
@@ -174,7 +237,10 @@ function traverseClass(
 
     const fieldsProperties: ts.ObjectLiteralElementLike[] = [];
 
+    let fieldMap = "\nfields: FieldMap = {";
     for (const element of initializer.elements) {
+      let properties: string[] = [];
+
       if (element.kind !== ts.SyntaxKind.CallExpression) {
         console.error("skipped non-call expression");
         continue;
@@ -199,9 +265,18 @@ function traverseClass(
         if ((p2.name as ts.Identifier).escapedText === "name") {
           name = p2.initializer.getText(sourceFile);
         } else {
-          newProperties.push(p);
+          // get property definition
+          properties.push(p.getFullText(sourceFile));
+          // newProperties.push(p);
+          // console.debug(p.getFullText(sourceFile));
+          //          properties.
           //          p2.initializer.
         }
+        // const propertyComment = getPreText(fileContents, p, sourceFile).trim();
+        // // TODO doesn't grab the even more nested so work on strings instead....
+        // if (propertyComment) {
+        //   //          console.debug("propertyComment", propertyComment);
+        // }
       }
       if (!name) {
         console.error(`couldn't find name property`);
@@ -209,6 +284,30 @@ function traverseClass(
       }
       // remove quotes
       name = name.slice(1, -1);
+      //      console.debug(element.getStart(sourceFile), element.getFullStart());
+      // TODO comments and extra stuff. add comment
+
+      const fieldComment = getPreText(fileContents, element, sourceFile).trim();
+      if (fieldComment) {
+        console.debug("fieldComment", fieldComment);
+      }
+
+      let call = callEx.expression.getText(sourceFile);
+      //      console.debug(name, call);
+      //      console.debug(callEx.expression.getText(sourceFile));
+      let fnCall = "";
+      if (properties.length) {
+        fnCall = `{${properties.join(",")}}`;
+      }
+      //      console.debug(name, call, fnCall);
+      let property = `${name}:${call}(${fnCall}),`;
+      if (fieldComment) {
+        //        console.debug(fieldComment);
+        //        property = fieldComment + property;
+      }
+      //      console.debug(property, "\n");
+      fieldMap += property;
+      //      console.debug(property);
 
       if (newProperties.length) {
         // update in terms of what's being called here...
@@ -236,22 +335,40 @@ function traverseClass(
       fieldsProperties.push(ts.factory.createPropertyAssignment(name, callEx));
       //ts.factory.createObjectLiteralExpression());
     }
+    fieldMap += "}";
+    klassContents += fieldMap;
 
-    // TODO get existing decorators and modifiers
-    // create new fields
-    exportedMembers.push(
-      ts.factory.createPropertyDeclaration(
-        [],
-        [],
-        "fields",
-        undefined,
-        ts.factory.createTypeReferenceNode("FieldMap"),
-        ts.factory.createObjectLiteralExpression(fieldsProperties),
-        // arguments?
-        //      undefined,
-      ),
+    // create new fields of type FieldMap
+    const newFieldMap = ts.factory.createPropertyDeclaration(
+      member.decorators,
+      member.modifiers,
+      "fields",
+      undefined,
+      ts.factory.createTypeReferenceNode("FieldMap"),
+      ts.factory.createObjectLiteralExpression(fieldsProperties),
+      // arguments?
+      //      undefined,
     );
+    // const printFile = ts.createSourceFile(
+    //   "someFileName.ts",
+    //   "",
+    //   ts.ScriptTarget.Latest,
+    //   false,
+    //   ts.ScriptKind.TS,
+    // );
+    // const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
+    // console.debug(
+    //   printer.printNode(ts.EmitHint.Unspecified, newFieldMap, printFile),
+    // );
+
+    // need to grab other comments and use them here
+    //    visitEachChild(sourceFile, newFieldMap);
+    exportedMembers.push(newFieldMap);
   }
+
+  klassContents += "\n}";
+
+  //  console.debug(klassContents);
 
   if (!updated) {
     return updated;
@@ -260,16 +377,16 @@ function traverseClass(
   // TODO need to change this to get whitespace btw members
   // same logic as we do btw top-level-statements
   // TODO need to change to postNode instead of preNode?
-  const klass = ts.factory.updateClassDeclaration(
-    node,
-    node.decorators,
-    node.modifiers,
-    node.name,
-    node.typeParameters,
-    node.heritageClauses,
-    exportedMembers,
-  );
-  f.trackNode({ node: klass, newNode: true, preNode });
+  // const klass = ts.factory.updateClassDeclaration(
+  //   node,
+  //   node.decorators,
+  //   node.modifiers,
+  //   node.name,
+  //   node.typeParameters,
+  //   node.heritageClauses,
+  //   exportedMembers,
+  // );
+  f.trackNode({ newNode: true, rawString: klassContents });
 
   return updated;
 }
@@ -340,6 +457,52 @@ function transformImport(
     text +
     '"'
   );
+}
+
+// to keep track of ranges since comments show up multiple times
+let visited: any = {};
+
+function visitEachChild(sourceFile: ts.SourceFile, node: ts.Node) {
+  return;
+  //console.debug(ts.getLeadingCommentRanges(sourceFile.getFullText(), 0));
+
+  function visit(n: ts.Node) {
+    if (ts.isStringLiteral(n)) {
+      //      console.debug("litera");
+      //      return;
+    }
+    const start = node.getFullStart();
+    if (visited[start]) {
+      return;
+    }
+    const commentRanges = ts.getLeadingCommentRanges(
+      sourceFile.getFullText(),
+      start,
+    );
+    visited[start] = true;
+
+    if (commentRanges) {
+      commentRanges.map((r) => {
+        const text = sourceFile.getFullText().slice(r.pos, r.end);
+        console.debug(node.getFullStart(), text);
+        //        console.debug(n.getFullText(sourceFile), text);
+        // TODO need to strip // or /*
+        ts.addSyntheticLeadingComment(n, r.kind, text, r.hasTrailingNewLine);
+      });
+    }
+    visitEachChild(sourceFile, n);
+    //    ts.forEachChild(n, visit);
+    //    ts.forEachChild;
+  }
+  visit(node);
+}
+
+function getPreText(
+  fileContents: string,
+  node: ts.Node,
+  sourceFile: ts.SourceFile,
+): string {
+  return fileContents.substring(node.getFullStart(), node.getStart(sourceFile));
 }
 
 Promise.resolve(main());
