@@ -152,8 +152,6 @@ function traverse(
   let lastEnd = -1;
   let traversed = false;
   ts.forEachChild(sourceFile, function (node: ts.Node) {
-    visitEachChild(sourceFile, node);
-
     const start = node.getStart(sourceFile);
     const preNode = fileContents.substring(lastEnd + 1, start);
     lastEnd = node.end;
@@ -171,31 +169,6 @@ function traverse(
   return traversed;
 }
 
-function print(node: ts.Node, sourceFile: ts.SourceFile) {
-  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
-  const printFile = ts.createSourceFile(
-    "someFileName.ts",
-    "",
-    ts.ScriptTarget.Latest,
-    false,
-    ts.ScriptKind.TS,
-  );
-  // console.debug(
-  //   printer.printNode(ts.EmitHint.Unspecified, node, printFile) + "\n",
-  // );
-
-  // instead of nodes, just grab entire strings and parse...
-  // now the only thing is to print the export default class line correctly...
-
-  // node.forEachChild((c) => {
-  //   console.debug(
-  //     c.getStart(sourceFile),
-  //     c.getFullStart(),
-  //     c.getText(sourceFile),
-  //   );
-  // });
-}
-
 // TODO need to replace class field member, print that and see what happens
 function traverseClass(
   fileContents: string,
@@ -203,10 +176,6 @@ function traverseClass(
   node: ts.ClassDeclaration,
   f: File,
 ): boolean {
-  //  ts.factory.createClassDeclaration(node.decorators, node.modifiers, node.name, node.pa);
-  // create new class Declaration
-  // class Member literati
-  const exportedMembers: ts.ClassElement[] = [];
   let updated = false;
 
   // beginning of class...
@@ -257,7 +226,6 @@ function traverseClass(
       }
       let expr = arg as ts.ObjectLiteralExpression;
       let name = "";
-      let newProperties: ts.ObjectLiteralElementLike[] = [];
       for (const p of expr.properties) {
         const p2 = p as ts.PropertyAssignment;
         //        console.debug(p2.kind);
@@ -265,12 +233,7 @@ function traverseClass(
         if ((p2.name as ts.Identifier).escapedText === "name") {
           name = p2.initializer.getText(sourceFile);
         } else {
-          // get property definition
           properties.push(p.getFullText(sourceFile));
-          // newProperties.push(p);
-          // console.debug(p.getFullText(sourceFile));
-          //          properties.
-          //          p2.initializer.
         }
         // const propertyComment = getPreText(fileContents, p, sourceFile).trim();
         // // TODO doesn't grab the even more nested so work on strings instead....
@@ -308,62 +271,9 @@ function traverseClass(
       //      console.debug(property, "\n");
       fieldMap += property;
       //      console.debug(property);
-
-      if (newProperties.length) {
-        // update in terms of what's being called here...
-        // if empty, we want to kill this...
-        expr = ts.factory.updateObjectLiteralExpression(expr, newProperties);
-        //        arg = ts.factory.updateArg
-        callEx = ts.factory.updateCallExpression(
-          callEx,
-          callEx.expression,
-          undefined,
-          //
-          [expr],
-        );
-      } else {
-        callEx = ts.factory.updateCallExpression(
-          callEx,
-          callEx.expression,
-          undefined,
-          //
-          [],
-        );
-      }
-
-      //      ts.factory.createPropertyAssignment(name, callEx);
-      fieldsProperties.push(ts.factory.createPropertyAssignment(name, callEx));
-      //ts.factory.createObjectLiteralExpression());
     }
     fieldMap += "}";
     klassContents += fieldMap;
-
-    // create new fields of type FieldMap
-    const newFieldMap = ts.factory.createPropertyDeclaration(
-      member.decorators,
-      member.modifiers,
-      "fields",
-      undefined,
-      ts.factory.createTypeReferenceNode("FieldMap"),
-      ts.factory.createObjectLiteralExpression(fieldsProperties),
-      // arguments?
-      //      undefined,
-    );
-    // const printFile = ts.createSourceFile(
-    //   "someFileName.ts",
-    //   "",
-    //   ts.ScriptTarget.Latest,
-    //   false,
-    //   ts.ScriptKind.TS,
-    // );
-    // const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
-    // console.debug(
-    //   printer.printNode(ts.EmitHint.Unspecified, newFieldMap, printFile),
-    // );
-
-    // need to grab other comments and use them here
-    //    visitEachChild(sourceFile, newFieldMap);
-    exportedMembers.push(newFieldMap);
   }
 
   klassContents += "\n}";
@@ -374,18 +284,6 @@ function traverseClass(
     return updated;
   }
 
-  // TODO need to change this to get whitespace btw members
-  // same logic as we do btw top-level-statements
-  // TODO need to change to postNode instead of preNode?
-  // const klass = ts.factory.updateClassDeclaration(
-  //   node,
-  //   node.decorators,
-  //   node.modifiers,
-  //   node.name,
-  //   node.typeParameters,
-  //   node.heritageClauses,
-  //   exportedMembers,
-  // );
   f.trackNode({ newNode: true, rawString: klassContents });
 
   return updated;
@@ -457,44 +355,6 @@ function transformImport(
     text +
     '"'
   );
-}
-
-// to keep track of ranges since comments show up multiple times
-let visited: any = {};
-
-function visitEachChild(sourceFile: ts.SourceFile, node: ts.Node) {
-  return;
-  //console.debug(ts.getLeadingCommentRanges(sourceFile.getFullText(), 0));
-
-  function visit(n: ts.Node) {
-    if (ts.isStringLiteral(n)) {
-      //      console.debug("litera");
-      //      return;
-    }
-    const start = node.getFullStart();
-    if (visited[start]) {
-      return;
-    }
-    const commentRanges = ts.getLeadingCommentRanges(
-      sourceFile.getFullText(),
-      start,
-    );
-    visited[start] = true;
-
-    if (commentRanges) {
-      commentRanges.map((r) => {
-        const text = sourceFile.getFullText().slice(r.pos, r.end);
-        console.debug(node.getFullStart(), text);
-        //        console.debug(n.getFullText(sourceFile), text);
-        // TODO need to strip // or /*
-        ts.addSyntheticLeadingComment(n, r.kind, text, r.hasTrailingNewLine);
-      });
-    }
-    visitEachChild(sourceFile, n);
-    //    ts.forEachChild(n, visit);
-    //    ts.forEachChild;
-  }
-  visit(node);
 }
 
 function getPreText(
