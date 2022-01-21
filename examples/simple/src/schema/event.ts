@@ -1,3 +1,4 @@
+import { gqlField } from "@snowtop/ent/graphql";
 import {
   Schema,
   Action,
@@ -13,17 +14,23 @@ import {
 
 /// explicit schema
 export default class Event extends BaseEntSchema implements Schema {
+  // this doesn't parse decorators...
+  @gqlField()
   fields: Field[] = [
     StringType({ name: "name" }),
     // TODO this should be an id type...
     // we should warn when we see an "ID/id/Id" field as non-id type and ask if they wanna change it
     UUIDType({
+      // name comment
       name: "creatorID",
       fieldEdge: {
         schema: "User",
         inverseEdge: "createdEvents",
+        // even more nested comment...
         disableBuilderType: true,
       },
+      // storage_key chosen blah blah blah
+      // TODO grab this
       storageKey: "user_id",
     }),
     TimestampType({ name: "start_time" }),
