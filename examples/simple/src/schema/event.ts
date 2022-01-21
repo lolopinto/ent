@@ -1,4 +1,3 @@
-import { gqlField } from "@snowtop/ent/graphql";
 import {
   Schema,
   Action,
@@ -14,8 +13,7 @@ import {
 
 /// explicit schema
 export default class Event extends BaseEntSchema implements Schema {
-  // this doesn't parse decorators...
-  @gqlField()
+  // pre-fields comment. intentionally doesn't parse decorators since we don't need it
   fields: Field[] = [
     StringType({ name: "name" }),
     // TODO this should be an id type...

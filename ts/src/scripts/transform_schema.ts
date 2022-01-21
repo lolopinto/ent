@@ -63,9 +63,6 @@ async function main() {
           node: tni.node,
           importNode: tni.node && ts.isImportDeclaration(tni.node),
           newNode: tni.newNode,
-          // removing preNode and using comment "works"
-          // but loses space
-          // so the comment route just doesn't work...
           preNode: tni.preNode,
           rawString: tni.rawString,
         });
@@ -190,6 +187,7 @@ function traverseClass(
       klassContents += member.getFullText(sourceFile);
       continue;
     }
+    // intentionally doesn't parse decorators since we don't need it
 
     let fieldMap = "";
     // fieldMapComment...
@@ -203,7 +201,7 @@ function traverseClass(
     const property = member as ts.PropertyDeclaration;
     const initializer = property.initializer as ts.ArrayLiteralExpression;
 
-    fieldMap += "\nfields: FieldMap = {";
+    fieldMap += "fields: FieldMap = {";
     for (const element of initializer.elements) {
       const parsed = parseFieldElement(element, sourceFile, fileContents);
       if (parsed === null) {
