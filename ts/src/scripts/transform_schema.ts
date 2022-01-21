@@ -191,86 +191,44 @@ function traverseClass(
       continue;
     }
 
+    let fieldMap = "";
     // fieldMapComment...
     const comment = getPreText(fileContents, member, sourceFile);
-    // just need to take this comment and add to pritned node later...
-    // TODO comment
-    //    console.debug(comment);
+    if (comment) {
+      fieldMap += comment;
+    }
 
     updated = true;
     // need to change to fields: FieldMap = {code: StringType()};
     const property = member as ts.PropertyDeclaration;
     const initializer = property.initializer as ts.ArrayLiteralExpression;
-    // if not all changed, modify it also...
-    // TODO...
 
-    const fieldsProperties: ts.ObjectLiteralElementLike[] = [];
-
-    let fieldMap = "\nfields: FieldMap = {";
+    fieldMap += "\nfields: FieldMap = {";
     for (const element of initializer.elements) {
-      let properties: string[] = [];
+      const parsed = parseFieldElement(element, sourceFile, fileContents);
+      if (parsed === null) {
+        return false;
+      }
+      const { callEx, name, nameComment, properties } = parsed;
 
-      if (element.kind !== ts.SyntaxKind.CallExpression) {
-        console.error("skipped non-call expression");
-        continue;
-      }
-      let callEx = element as ts.CallExpression;
-      if (callEx.arguments.length !== 1) {
-        console.error("callExpression with arguments not of length 1");
-        continue;
-      }
-      let arg = callEx.arguments[0];
-      if (arg.kind !== ts.SyntaxKind.ObjectLiteralExpression) {
-        console.error("not objectLiteralExpression");
-        continue;
-      }
-      let expr = arg as ts.ObjectLiteralExpression;
-      let name = "";
-      for (const p of expr.properties) {
-        const p2 = p as ts.PropertyAssignment;
-        //        console.debug(p2.kind);
-        // found name property
-        if ((p2.name as ts.Identifier).escapedText === "name") {
-          name = p2.initializer.getText(sourceFile);
-        } else {
-          properties.push(p.getFullText(sourceFile));
-        }
-        // const propertyComment = getPreText(fileContents, p, sourceFile).trim();
-        // // TODO doesn't grab the even more nested so work on strings instead....
-        // if (propertyComment) {
-        //   //          console.debug("propertyComment", propertyComment);
-        // }
-      }
-      if (!name) {
-        console.error(`couldn't find name property`);
-        continue;
-      }
-      // remove quotes
-      name = name.slice(1, -1);
-      //      console.debug(element.getStart(sourceFile), element.getFullStart());
-      // TODO comments and extra stuff. add comment
-
+      let property = "";
       const fieldComment = getPreText(fileContents, element, sourceFile).trim();
       if (fieldComment) {
-        console.debug("fieldComment", fieldComment);
+        property += "\n" + fieldComment + "\n";
+      }
+      if (nameComment) {
+        property += nameComment + "\n";
       }
 
+      // e.g. UUIDType, StringType etc
       let call = callEx.expression.getText(sourceFile);
-      //      console.debug(name, call);
-      //      console.debug(callEx.expression.getText(sourceFile));
       let fnCall = "";
       if (properties.length) {
         fnCall = `{${properties.join(",")}}`;
       }
-      //      console.debug(name, call, fnCall);
-      let property = `${name}:${call}(${fnCall}),`;
-      if (fieldComment) {
-        //        console.debug(fieldComment);
-        //        property = fieldComment + property;
-      }
-      //      console.debug(property, "\n");
+      property += `${name}:${call}(${fnCall}),`;
+
       fieldMap += property;
-      //      console.debug(property);
     }
     fieldMap += "}";
     klassContents += fieldMap;
@@ -313,6 +271,70 @@ function isFieldElement(
   }
 
   return true;
+}
+
+interface ParsedFieldElement {
+  // parsedCallExpression
+  callEx: ts.CallExpression;
+  // name of field
+  name: string;
+  // any comment associated with just the name
+  nameComment?: string;
+  // other properties (and their comments) e.g. nullable: true
+  properties: string[];
+}
+
+function parseFieldElement(
+  element: ts.Expression,
+  sourceFile: ts.SourceFile,
+  fileContents: string,
+): ParsedFieldElement | null {
+  if (element.kind !== ts.SyntaxKind.CallExpression) {
+    console.error("skipped non-call expression");
+    return null;
+  }
+  let callEx = element as ts.CallExpression;
+  if (callEx.arguments.length !== 1) {
+    console.error("callExpression with arguments not of length 1");
+    return null;
+  }
+  let arg = callEx.arguments[0];
+  if (arg.kind !== ts.SyntaxKind.ObjectLiteralExpression) {
+    console.error("not objectLiteralExpression");
+    return null;
+  }
+
+  let expr = arg as ts.ObjectLiteralExpression;
+  let name = "";
+  let propertyComment: string | undefined;
+  let properties: string[] = [];
+
+  for (const p of expr.properties) {
+    const p2 = p as ts.PropertyAssignment;
+
+    // found name property
+    if ((p2.name as ts.Identifier).escapedText === "name") {
+      name = p2.initializer.getText(sourceFile);
+      // check for any comment associated with name: "fooo"
+      propertyComment = getPreText(fileContents, p, sourceFile).trim();
+    } else {
+      properties.push(p.getFullText(sourceFile));
+    }
+  }
+
+  if (!name) {
+    console.error(`couldn't find name property`);
+    return null;
+  }
+  // remove quotes
+  name = name.slice(1, -1);
+
+  return {
+    callEx,
+    name,
+    properties,
+    nameComment: propertyComment,
+  };
 }
 
 function transformImport(
