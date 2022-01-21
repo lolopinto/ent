@@ -51,10 +51,9 @@ async function main() {
       file,
       contents,
       target,
-      false, // when this is true, it breaks string literals for some reason...
+      false,
       ts.ScriptKind.TS,
     );
-    const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
     const nodes: NodeInfo[] = [];
     let updateImport = false;
     const f = {
@@ -62,8 +61,6 @@ async function main() {
         nodes.push({
           node: tni.node,
           importNode: tni.node && ts.isImportDeclaration(tni.node),
-          newNode: tni.newNode,
-          preNode: tni.preNode,
           rawString: tni.rawString,
         });
       },
@@ -85,27 +82,9 @@ async function main() {
           continue;
         }
       }
-      if (node.preNode) {
-        newContents += node.preNode;
-      }
 
-      let printFile = sourceFile;
-      if (node.newNode) {
-        // TODO handle in file...
-        // new source file for new node for printing...
-        // next step is to maybe send strings here instead of this so that we do the whitespace in there?
-        printFile = ts.createSourceFile(
-          "someFileName.ts",
-          "",
-          ts.ScriptTarget.Latest,
-          false,
-          ts.ScriptKind.TS,
-        );
-      }
       if (node.node) {
-        newContents +=
-          printer.printNode(ts.EmitHint.Unspecified, node.node, printFile) +
-          "\n";
+        newContents += node.node.getFullText(sourceFile);
       } else if (node.rawString) {
         newContents += node.rawString;
       } else {
@@ -128,16 +107,12 @@ interface File {
 
 interface TrackNodeInfo {
   node?: ts.Node;
-  preNode?: string;
-  newNode?: boolean;
   rawString?: string;
 }
 
 interface NodeInfo {
   node?: ts.Node;
   importNode?: boolean;
-  newNode?: boolean;
-  preNode?: string;
   rawString?: string;
 }
 
@@ -146,12 +121,8 @@ function traverse(
   sourceFile: ts.SourceFile,
   f: File,
 ): boolean {
-  let lastEnd = -1;
   let traversed = false;
   ts.forEachChild(sourceFile, function (node: ts.Node) {
-    const start = node.getStart(sourceFile);
-    const preNode = fileContents.substring(lastEnd + 1, start);
-    lastEnd = node.end;
     if (ts.isClassDeclaration(node)) {
       traversed = true;
       // TODO address implicit schema doesn't work here...
@@ -161,7 +132,7 @@ function traverse(
         return;
       }
     }
-    f.trackNode({ node, preNode });
+    f.trackNode({ node });
   });
   return traversed;
 }
@@ -240,7 +211,7 @@ function traverseClass(
     return updated;
   }
 
-  f.trackNode({ newNode: true, rawString: klassContents });
+  f.trackNode({ rawString: klassContents });
 
   return updated;
 }
