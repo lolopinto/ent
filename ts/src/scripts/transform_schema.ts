@@ -41,9 +41,13 @@ async function main() {
     : ts.ScriptTarget.ESNext;
 
   // filter to only event.ts e.g. for comments and whitespace...
-  files = files.filter((f) => f.endsWith("event.ts"));
+  //  files = files.filter((f) => f.endsWith("event.ts"));
 
   files.forEach((file) => {
+    // assume valid file since we do glob above
+    const idx = file.lastIndexOf(".ts");
+    const writeFile = file.substring(0, idx) + "2" + ".ts";
+
     let contents = fs.readFileSync(file).toString();
 
     // go through the file and print everything back if not starting immediately after other position
@@ -78,7 +82,7 @@ async function main() {
         const importNode = node.node as ts.ImportDeclaration;
         const transformedImport = transformImport(importNode, sourceFile);
         if (transformedImport) {
-          newContents += transformedImport + "\n";
+          newContents += transformedImport;
           continue;
         }
       }
@@ -93,8 +97,8 @@ async function main() {
     }
     //    console.debug(newContents);
 
-    // TODO
-    fs.writeFileSync("src/schema/event2.ts", newContents);
+    // ideally there's a flag that indicates if we write
+    fs.writeFileSync(writeFile, newContents);
   });
 
   execSync("prettier src/schema/*.ts --write");
