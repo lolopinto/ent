@@ -77,6 +77,7 @@ func init() {
 		alembicCmd,
 		generateCmd,
 		squashCmd,
+		printSchemaCmd,
 	})
 
 	addCommands(generateCmd, []*cobra.Command{
