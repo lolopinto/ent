@@ -168,8 +168,7 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 	}
 
 	for _, info := range processor.Schema.Enums {
-		// only lookup table enums get their own files
-		if !info.LookupTableEnum() {
+		if !info.OwnEnumFile() {
 			continue
 		}
 		funcs = append(funcs, func() error {
@@ -710,7 +709,7 @@ func getSortedInternalEntFileLines(s *schema.Schema) []string {
 
 	var enums []string
 	for _, enum := range s.Enums {
-		if enum.LookupTableEnum() {
+		if enum.OwnEnumFile() {
 			append2(&enums, getImportPathForEnumFile(enum))
 		}
 	}

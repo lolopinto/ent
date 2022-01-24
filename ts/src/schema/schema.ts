@@ -147,7 +147,6 @@ export type Edge = AssocEdge;
 // The most commonly used pattern in the ent framework is going to be the Node pattern
 // which automatically provides 3 fields to every ent: id, created_at, updated_at
 export interface Pattern {
-  // breaking change. we use it to identify patterns
   name: string;
   fields: Field[];
   edges?: Edge[];

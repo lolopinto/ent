@@ -262,6 +262,16 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]ImportPath, error) {
 				})
 			}
 		}
+		// TODO this should probably be in tsEnums instead of this being here
+		if f.PatternField() {
+			enumType, ok := enttype.GetEnumType(f.GetFieldType())
+			if ok {
+				ret = append(ret, ImportPath{
+					Import:      enumType.GetTSName(),
+					PackagePath: codepath.GetInternalImportPath(),
+				})
+			}
+		}
 	}
 	return ret, nil
 }
@@ -295,6 +305,16 @@ func (nodeData *NodeData) GetImportPathsForDependencies() []ImportPath {
 				ret = append(ret, ImportPath{
 					PackagePath: imp.Path,
 					Import:      imp.Type,
+				})
+			}
+		}
+		// TODO this should probably be in tsEnums instead of this being here
+		if f.PatternField() {
+			enumType, ok := enttype.GetEnumType(f.GetFieldType())
+			if ok {
+				ret = append(ret, ImportPath{
+					Import:      enumType.GetTSName(),
+					PackagePath: codepath.GetInternalImportPath(),
 				})
 			}
 		}

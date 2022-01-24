@@ -9,17 +9,18 @@ import {
   Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
-import { DayOfWeek, DayOfWeekAlt, HoursOfOperation } from "../../..";
+import { HoursOfOperation } from "../../..";
 import {
   HoursOfOperationBuilder,
   HoursOfOperationInput,
 } from "./hours_of_operation_builder";
+import { DayOfWeek, DayOfWeekAlt } from "../../../internal";
 
 export interface HoursOfOperationCreateInput {
   dayOfWeek: DayOfWeek;
+  dayOfWeekAlt?: DayOfWeekAlt | null;
   open: string;
   close: string;
-  dayOfWeekAlt?: DayOfWeekAlt | null;
 }
 
 export class CreateHoursOfOperationActionBase

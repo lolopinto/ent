@@ -199,9 +199,9 @@ const hoursOfOperationFields = [
   "created_at",
   "updated_at",
   "day_of_week",
+  "day_of_week_alt",
   "open",
   "close",
-  "day_of_week_alt",
 ];
 
 export const hoursOfOperationLoader = new ObjectLoaderFactory({

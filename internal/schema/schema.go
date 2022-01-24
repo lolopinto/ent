@@ -185,6 +185,37 @@ func (s *Schema) addEnumFrom(input *enum.Input, nodeData *NodeData, inputNode *i
 	return nil
 }
 
+func (s *Schema) addEnumFromPattern(enumType enttype.EnumeratedType, pattern *input.Pattern) error {
+	input := &enum.Input{
+		TSName:  enumType.GetTSName(),
+		GQLName: enumType.GetGraphQLName(),
+		GQLType: enumType.GetTSType(),
+		Values:  enumType.GetEnumValues(),
+		EnumMap: enumType.GetEnumMap(),
+	}
+
+	tsEnum, gqlEnum := enum.GetEnums(input)
+
+	// first create EnumInfo...
+	info := &EnumInfo{
+		Enum:    tsEnum,
+		GQLEnum: gqlEnum,
+		Pattern: pattern,
+	}
+
+	gqlName := input.GQLName
+
+	// new source enum
+	if input.HasValues() {
+		if s.Enums[gqlName] != nil {
+			return fmt.Errorf("enum schema with gqlname %s already exists", gqlName)
+		}
+		// key on gqlName since key isn't really being used atm and gqlName needs to be unique
+		s.Enums[gqlName] = info
+	}
+	return nil
+}
+
 // Given a schema file parser, Parse parses the schema to return the completely
 // parsed schema
 func Parse(p schemaparser.Parser, specificConfigs ...string) (*Schema, error) {
@@ -334,7 +365,8 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 			for _, f := range nodeData.FieldInfo.Fields {
 				entType := f.GetFieldType()
 				enumType, ok := enttype.GetEnumType(entType)
-				if ok {
+				// don't add enums which are defined in patterns
+				if ok && !f.PatternField() {
 					if err := s.addEnum(enumType, nodeData); err != nil {
 						errs = append(errs, err)
 					}
@@ -410,6 +442,28 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 				errs = append(errs, err)
 			}
 		}
+
+		// add enums from patterns
+		fieldInfo, err := field.NewFieldInfoFromInputs(
+			pattern.Fields,
+			&field.Options{},
+		)
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+
+			for _, f := range fieldInfo.Fields {
+				entType := f.GetFieldType()
+
+				enumType, ok := enttype.GetEnumType(entType)
+				if ok {
+					if err := s.addEnumFromPattern(enumType, pattern); err != nil {
+						errs = append(errs, err)
+					}
+				}
+			}
+		}
+
 		if err := s.addPattern(name, p); err != nil {
 			errs = append(errs, err)
 		}
