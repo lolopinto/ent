@@ -13,9 +13,8 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { HoursOfOperation } from "../../..";
+import { DayOfWeek, DayOfWeekAlt, HoursOfOperation } from "../../..";
 import { NodeType } from "../../../generated/const";
-import { DayOfWeek, DayOfWeekAlt } from "../../../internal";
 import schema from "../../../../schema/hours_of_operation";
 
 export interface HoursOfOperationInput {

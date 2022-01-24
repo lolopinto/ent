@@ -9,9 +9,8 @@ import {
   Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
-import { Holiday } from "../../..";
+import { DayOfWeek, DayOfWeekAlt, Holiday } from "../../..";
 import { HolidayBuilder, HolidayInput } from "./holiday_builder";
-import { DayOfWeek, DayOfWeekAlt } from "../../../internal";
 
 export interface HolidayCreateInput {
   dayOfWeek: DayOfWeek;

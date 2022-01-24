@@ -13,9 +13,8 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Holiday } from "../../..";
+import { DayOfWeek, DayOfWeekAlt, Holiday } from "../../..";
 import { NodeType } from "../../../generated/const";
-import { DayOfWeek, DayOfWeekAlt } from "../../../internal";
 import schema from "../../../../schema/holiday";
 
 export interface HolidayInput {

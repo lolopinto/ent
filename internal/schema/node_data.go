@@ -79,8 +79,9 @@ func newNodeData(packageName string) *NodeData {
 	return nodeData
 }
 
-func (nodeData *NodeData) addEnum(info *EnumInfo) {
-	nodeData.tsEnums = append(nodeData.tsEnums, info.Enum)
+func (nodeData *NodeData) addEnum(e *enum.Enum) {
+	// this includes enums referenced in schema and enums referenced in patterns
+	nodeData.tsEnums = append(nodeData.tsEnums, e)
 }
 
 func (nodeData *NodeData) GetNodeInstance() string {
@@ -262,16 +263,6 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]ImportPath, error) {
 				})
 			}
 		}
-		// TODO this should probably be in tsEnums instead of this being here
-		if f.PatternField() {
-			enumType, ok := enttype.GetEnumType(f.GetFieldType())
-			if ok {
-				ret = append(ret, ImportPath{
-					Import:      enumType.GetTSName(),
-					PackagePath: codepath.GetInternalImportPath(),
-				})
-			}
-		}
 	}
 	return ret, nil
 }
@@ -305,16 +296,6 @@ func (nodeData *NodeData) GetImportPathsForDependencies() []ImportPath {
 				ret = append(ret, ImportPath{
 					PackagePath: imp.Path,
 					Import:      imp.Type,
-				})
-			}
-		}
-		// TODO this should probably be in tsEnums instead of this being here
-		if f.PatternField() {
-			enumType, ok := enttype.GetEnumType(f.GetFieldType())
-			if ok {
-				ret = append(ret, ImportPath{
-					Import:      enumType.GetTSName(),
-					PackagePath: codepath.GetInternalImportPath(),
 				})
 			}
 		}

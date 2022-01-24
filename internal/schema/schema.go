@@ -181,11 +181,11 @@ func (s *Schema) addEnumFrom(input *enum.Input, nodeData *NodeData, inputNode *i
 		}
 		s.enumTables[nodeData.TableName] = info
 	}
-	nodeData.addEnum(info)
+	nodeData.addEnum(info.Enum)
 	return nil
 }
 
-func (s *Schema) addEnumFromPattern(enumType enttype.EnumeratedType, pattern *input.Pattern) error {
+func (s *Schema) addEnumFromPattern(enumType enttype.EnumeratedType, pattern *input.Pattern) (*EnumInfo, error) {
 	input := &enum.Input{
 		TSName:  enumType.GetTSName(),
 		GQLName: enumType.GetGraphQLName(),
@@ -208,12 +208,12 @@ func (s *Schema) addEnumFromPattern(enumType enttype.EnumeratedType, pattern *in
 	// new source enum
 	if input.HasValues() {
 		if s.Enums[gqlName] != nil {
-			return fmt.Errorf("enum schema with gqlname %s already exists", gqlName)
+			return nil, fmt.Errorf("enum schema with gqlname %s already exists", gqlName)
 		}
 		// key on gqlName since key isn't really being used atm and gqlName needs to be unique
 		s.Enums[gqlName] = info
 	}
-	return nil
+	return info, nil
 }
 
 // Given a schema file parser, Parse parses the schema to return the completely
@@ -336,6 +336,8 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 
 	var errs []error
 
+	patternMap := make(map[string][]*NodeData)
+
 	for nodeName, node := range schema.Nodes {
 		packageName := base.GetSnakeCaseName(nodeName)
 		// user.ts, address.ts etc
@@ -366,9 +368,20 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 				entType := f.GetFieldType()
 				enumType, ok := enttype.GetEnumType(entType)
 				// don't add enums which are defined in patterns
-				if ok && !f.PatternField() {
-					if err := s.addEnum(enumType, nodeData); err != nil {
-						errs = append(errs, err)
+				if ok {
+					if !f.PatternField() {
+						if err := s.addEnum(enumType, nodeData); err != nil {
+							errs = append(errs, err)
+						}
+					} else {
+						// keep track of NodeDatas that map to this enum...
+						patternName := f.GetPatternName()
+						list := patternMap[patternName]
+						if list == nil {
+							list = []*NodeData{}
+						}
+						list = append(list, nodeData)
+						patternMap[patternName] = list
 					}
 				}
 			}
@@ -457,8 +470,17 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 
 				enumType, ok := enttype.GetEnumType(entType)
 				if ok {
-					if err := s.addEnumFromPattern(enumType, pattern); err != nil {
+					info, err := s.addEnumFromPattern(enumType, pattern)
+					if err != nil {
 						errs = append(errs, err)
+					}
+
+					// add cloned enum to nodeData and mark as imported
+					list := patternMap[name]
+					clone := info.Enum.Clone()
+					clone.Imported = true
+					for _, nodeData := range list {
+						nodeData.addEnum(clone)
 					}
 				}
 			}

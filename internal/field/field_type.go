@@ -642,6 +642,10 @@ func (f *Field) PatternField() bool {
 	return f.patternName != ""
 }
 
+func (f *Field) GetPatternName() string {
+	return f.patternName
+}
+
 type Option func(*Field)
 
 func Optional() Option {
