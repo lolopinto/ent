@@ -132,6 +132,8 @@ type Event implements Node {
 
 type Holiday implements Node {
   id: ID!
+  dayOfWeek: DayOfWeek!
+  dayOfWeekAlt: DayOfWeekAlt
   label: String!
   date: Time!
 }
@@ -139,9 +141,9 @@ type Holiday implements Node {
 type HoursOfOperation implements Node {
   id: ID!
   dayOfWeek: DayOfWeek!
+  dayOfWeekAlt: DayOfWeekAlt
   open: String!
   close: String!
-  dayOfWeekAlt: DayOfWeekAlt
 }
 
 type User implements Node {
@@ -680,6 +682,8 @@ enum EventRsvpStatusInput {
 }
 
 input HolidayCreateInput {
+  dayOfWeek: DayOfWeek!
+  dayOfWeekAlt: DayOfWeekAlt
   label: String!
   date: Time!
 }
@@ -690,9 +694,9 @@ type HolidayCreatePayload {
 
 input HoursOfOperationCreateInput {
   dayOfWeek: DayOfWeek!
+  dayOfWeekAlt: DayOfWeekAlt
   open: String!
   close: String!
-  dayOfWeekAlt: DayOfWeekAlt
 }
 
 type HoursOfOperationCreatePayload {

@@ -15,9 +15,12 @@ import {
 } from "@snowtop/ent/action";
 import { Holiday } from "../../..";
 import { NodeType } from "../../../generated/const";
+import { DayOfWeek, DayOfWeekAlt } from "../../../internal";
 import schema from "../../../../schema/holiday";
 
 export interface HolidayInput {
+  dayOfWeek?: DayOfWeek;
+  dayOfWeekAlt?: DayOfWeekAlt | null;
   label?: string;
   date?: Date;
 }
@@ -122,6 +125,8 @@ export class HolidayBuilder implements Builder<Holiday> {
         result.set(key, value);
       }
     };
+    addField("dayOfWeek", fields.dayOfWeek);
+    addField("dayOfWeekAlt", fields.dayOfWeekAlt);
     addField("label", fields.label);
     addField("date", fields.date);
     return result;
@@ -129,6 +134,22 @@ export class HolidayBuilder implements Builder<Holiday> {
 
   isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
     return (node as Builder<Ent>).placeholderID !== undefined;
+  }
+
+  // get value of dayOfWeek. Retrieves it from the input if specified or takes it from existingEnt
+  getNewDayOfWeekValue(): DayOfWeek | undefined {
+    if (this.input.dayOfWeek !== undefined) {
+      return this.input.dayOfWeek;
+    }
+    return this.existingEnt?.dayOfWeek;
+  }
+
+  // get value of dayOfWeekAlt. Retrieves it from the input if specified or takes it from existingEnt
+  getNewDayOfWeekAltValue(): DayOfWeekAlt | null | undefined {
+    if (this.input.dayOfWeekAlt !== undefined) {
+      return this.input.dayOfWeekAlt;
+    }
+    return this.existingEnt?.dayOfWeekAlt;
   }
 
   // get value of label. Retrieves it from the input if specified or takes it from existingEnt

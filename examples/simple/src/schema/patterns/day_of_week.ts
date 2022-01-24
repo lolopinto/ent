@@ -1,5 +1,7 @@
 import { EnumType, Field, Pattern } from "@snowtop/ent";
 
+// extract into pattern so enum can be shared across multiple schemas
+// and confirm that we only create one enum
 export default class DayOfWeek implements Pattern {
   name = "enums";
   fields: Field[] = [

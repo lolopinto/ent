@@ -17,6 +17,7 @@ import {
   nodeIDEncoder,
 } from "@snowtop/ent/graphql";
 import { Holiday } from "../../../ent";
+import { DayOfWeekAltType, DayOfWeekType } from "../internal";
 
 export const HolidayType = new GraphQLObjectType({
   name: "Holiday",
@@ -24,6 +25,12 @@ export const HolidayType = new GraphQLObjectType({
     id: {
       type: GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,
+    },
+    dayOfWeek: {
+      type: GraphQLNonNull(DayOfWeekType),
+    },
+    dayOfWeekAlt: {
+      type: DayOfWeekAltType,
     },
     label: {
       type: GraphQLNonNull(GraphQLString),

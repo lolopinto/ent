@@ -21,7 +21,7 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import { holidayLoader, holidayLoaderInfo } from "./loaders";
-import { NodeType } from "../internal";
+import { DayOfWeek, DayOfWeekAlt, NodeType } from "../internal";
 import schema from "../../schema/holiday";
 
 export class HolidayBase {
@@ -29,6 +29,8 @@ export class HolidayBase {
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+  readonly dayOfWeek: DayOfWeek;
+  readonly dayOfWeekAlt: DayOfWeekAlt | null;
   readonly label: string;
   readonly date: Date;
 
@@ -36,6 +38,8 @@ export class HolidayBase {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
+    this.dayOfWeek = data.day_of_week;
+    this.dayOfWeekAlt = data.day_of_week_alt;
     this.label = data.label;
     this.date = convertDate(data.date);
   }
