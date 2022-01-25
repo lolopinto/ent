@@ -71,6 +71,8 @@ type Field struct {
 
 	forceRequiredInAction bool
 	forceOptionalInAction bool
+
+	patternName string
 }
 
 func newFieldFromInput(f *input.Field) (*Field, error) {
@@ -93,6 +95,7 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 		hasDefaultValueOnCreate:  f.HasDefaultValueOnCreate,
 		hasDefaultValueOnEdit:    f.HasDefaultValueOnEdit,
 		derivedWhenEmbedded:      f.DerivedWhenEmbedded,
+		patternName:              f.PatternName,
 
 		// go specific things
 		entType:         f.GoType,
@@ -485,13 +488,13 @@ func (f *Field) ForeignImports() []string {
 		ret = typ.GetTsTypeImports()
 	}
 
-	if f.fkey != nil {
+	enumType, ok := f.fieldType.(enttype.EnumeratedType)
+	if ok && (f.fkey != nil || f.patternName != "") {
 		// foreign key with enum type requires an import
-		enumType, ok := f.fieldType.(enttype.EnumeratedType)
-		if ok {
-			ret = append(ret, enumType.GetTSName())
-		}
+		// if pattern enum, this is defined in its own file
+		ret = append(ret, enumType.GetTSName())
 	}
+
 	return ret
 }
 
@@ -535,11 +538,7 @@ func (f *Field) TsBuilderType() string {
 }
 
 func (f *Field) TsBuilderImports() []string {
-	ret := []string{}
-	typ, ok := f.fieldType.(enttype.TSTypeWithImports)
-	if ok {
-		ret = typ.GetTsTypeImports()
-	}
+	ret := f.ForeignImports()
 	typeName := f.getIDFieldType()
 	if typeName == "" || f.disableBuilderType {
 		return ret
@@ -639,6 +638,14 @@ func (f *Field) EmbeddableInParentAction() bool {
 	// ent or fields which have a fieldEdge to source schema?
 }
 
+func (f *Field) PatternField() bool {
+	return f.patternName != ""
+}
+
+func (f *Field) GetPatternName() string {
+	return f.patternName
+}
+
 type Option func(*Field)
 
 func Optional() Option {
@@ -679,6 +686,7 @@ func (f *Field) Clone(opts ...Option) (*Field, error) {
 		forceRequiredInAction:    f.forceRequiredInAction,
 		forceOptionalInAction:    f.forceOptionalInAction,
 		derivedWhenEmbedded:      f.derivedWhenEmbedded,
+		patternName:              f.patternName,
 
 		// go specific things
 		entType: f.entType,

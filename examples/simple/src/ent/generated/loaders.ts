@@ -178,7 +178,15 @@ export const eventLoaderInfo = {
 };
 
 const holidayTable = "holidays";
-const holidayFields = ["id", "created_at", "updated_at", "label", "date"];
+const holidayFields = [
+  "id",
+  "created_at",
+  "updated_at",
+  "day_of_week",
+  "day_of_week_alt",
+  "label",
+  "date",
+];
 
 export const holidayLoader = new ObjectLoaderFactory({
   tableName: holidayTable,
@@ -199,9 +207,9 @@ const hoursOfOperationFields = [
   "created_at",
   "updated_at",
   "day_of_week",
+  "day_of_week_alt",
   "open",
   "close",
-  "day_of_week_alt",
 ];
 
 export const hoursOfOperationLoader = new ObjectLoaderFactory({

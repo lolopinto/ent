@@ -28,6 +28,8 @@ export * from "./event";
 export * from "./holiday";
 export * from "./hours_of_operation";
 export * from "./user";
+export * from "./generated/day_of_week";
+export * from "./generated/day_of_week_alt";
 export * from "./generated/address_query_base";
 export * from "./generated/comment_query_base";
 export * from "./generated/event_query_base";

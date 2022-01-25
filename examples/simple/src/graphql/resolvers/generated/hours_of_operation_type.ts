@@ -25,14 +25,14 @@ export const HoursOfOperationType = new GraphQLObjectType({
     dayOfWeek: {
       type: GraphQLNonNull(DayOfWeekType),
     },
+    dayOfWeekAlt: {
+      type: DayOfWeekAltType,
+    },
     open: {
       type: GraphQLNonNull(GraphQLString),
     },
     close: {
       type: GraphQLNonNull(GraphQLString),
-    },
-    dayOfWeekAlt: {
-      type: DayOfWeekAltType,
     },
   }),
   interfaces: [GraphQLNodeInterface],

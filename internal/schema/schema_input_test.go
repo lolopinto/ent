@@ -1020,6 +1020,87 @@ func TestWithPatterns(t *testing.T) {
 	assert.False(t, patternLikersEdge.PolymorphicEdge())
 }
 
+func TestWithMultipleEnumsInPattern(t *testing.T) {
+	n := &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "id",
+				Type: &input.FieldType{
+					DBType: input.UUID,
+				},
+				PrimaryKey: true,
+			},
+			{
+				Name: "DayOfWeek",
+				Type: &input.FieldType{
+					Values:      []string{"sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"},
+					DBType:      input.StringEnum,
+					Type:        "DayOfWeek",
+					GraphQLType: "DayOfWeek",
+				},
+				PatternName: "days",
+			},
+			{
+				Name: "DayOfWeekAlt",
+				Type: &input.FieldType{
+					Values:      []string{"sun", "mon", "tue", "wed", "thu", "fri", "sat"},
+					DBType:      input.StringEnum,
+					Type:        "DayOfWeekAlt",
+					GraphQLType: "DayOfWeekAlt",
+				},
+				PatternName: "days",
+				Nullable:    true,
+			},
+		},
+	}
+
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"Event": n,
+			"Group": n,
+		},
+		Patterns: map[string]*input.Pattern{
+			"days": {
+				Name: "days",
+				Fields: []*input.Field{
+					{
+						Name: "DayOfWeek",
+						Type: &input.FieldType{
+							Values:      []string{"sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"},
+							DBType:      input.StringEnum,
+							Type:        "DayOfWeek",
+							GraphQLType: "DayOfWeek",
+						},
+						PatternName: "days",
+					},
+					{
+						Name: "DayOfWeekAlt",
+						Type: &input.FieldType{
+							Values:      []string{"sun", "mon", "tue", "wed", "thu", "fri", "sat"},
+							DBType:      input.StringEnum,
+							Type:        "DayOfWeekAlt",
+							GraphQLType: "DayOfWeekAlt",
+						},
+						PatternName: "days",
+						Nullable:    true,
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := schema.ParseFromInputSchema(inputSchema, base.TypeScript)
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	assert.Len(t, schema.Patterns, 1)
+
+	assert.Len(t, schema.Enums, 2)
+	for _, info := range schema.Enums {
+		assert.True(t, info.OwnEnumFile(), true)
+	}
+}
+
 func testConsts(t *testing.T, cg map[string]*schema.ConstGroupInfo, nodeCt, edgeCt int) {
 	if cg == nil {
 		assert.Equal(t, nodeCt, 0)

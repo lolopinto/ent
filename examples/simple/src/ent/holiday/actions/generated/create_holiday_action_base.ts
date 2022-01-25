@@ -9,10 +9,12 @@ import {
   Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
-import { Holiday } from "../../..";
+import { DayOfWeek, DayOfWeekAlt, Holiday } from "../../..";
 import { HolidayBuilder, HolidayInput } from "./holiday_builder";
 
 export interface HolidayCreateInput {
+  dayOfWeek: DayOfWeek;
+  dayOfWeekAlt?: DayOfWeekAlt | null;
   label: string;
   date: Date;
 }

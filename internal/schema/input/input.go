@@ -18,7 +18,9 @@ type Schema struct {
 }
 
 type Pattern struct {
-	Name       string       `json:"name"`
+	Name string `json:"name"`
+	// at this point, should we support everything in Node
+	Fields     []*Field     `json:"fields"`
 	AssocEdges []*AssocEdge `json:"assocEdges"`
 }
 
@@ -124,6 +126,8 @@ type Field struct {
 
 	// set when parsed via tsent generate schema
 	Import enttype.Import
+
+	PatternName string `json:"patternName"`
 }
 
 type ForeignKey struct {

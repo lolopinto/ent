@@ -17,9 +17,9 @@ import {
 
 export interface HoursOfOperationCreateInput {
   dayOfWeek: DayOfWeek;
+  dayOfWeekAlt?: DayOfWeekAlt | null;
   open: string;
   close: string;
-  dayOfWeekAlt?: DayOfWeekAlt | null;
 }
 
 export class CreateHoursOfOperationActionBase
