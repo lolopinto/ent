@@ -46,7 +46,7 @@ export class CreateContactEmailActionBase
     );
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<ContactEmail> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

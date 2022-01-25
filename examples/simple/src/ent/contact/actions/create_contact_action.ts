@@ -15,9 +15,9 @@ import {
   Data,
   IDViewer,
 } from "@snowtop/ent";
-import { AllowIfBuilder, Trigger } from "@snowtop/ent/action";
+import { AllowIfBuilder, Observer, Trigger } from "@snowtop/ent/action";
 import CreateContactEmailAction from "src/ent/contact_email/actions/create_contact_email_action";
-import { ContactBuilder, ContactInput } from "./generated/contact_builder";
+import { ContactBuilder } from "./generated/contact_builder";
 import CreateContactPhoneNumberAction from "src/ent/contact_phone_number/actions/create_contact_phone_number_action";
 import EditContactAction from "./edit_contact_action";
 
@@ -34,9 +34,9 @@ export default class CreateContactAction extends CreateContactActionBase {
     };
   }
 
-  triggers: Trigger<ContactBuilder, ContactInput>[] = [
+  triggers: Trigger<ContactBuilder, ContactCreateInput>[] = [
     {
-      async changeset(builder: ContactBuilder, input: ContactCreateInput) {
+      async changeset(builder, input) {
         if (input.emails) {
           const emailActions: CreateContactEmailAction[] = [];
           const changesets = input.emails.map(async (email) => {
@@ -55,7 +55,7 @@ export default class CreateContactAction extends CreateContactActionBase {
       },
     },
     {
-      async changeset(builder: ContactBuilder, input: ContactCreateInput) {
+      async changeset(builder, input) {
         if (input.phoneNumbers) {
           const phoneActions: CreateContactPhoneNumberAction[] = [];
           const changesets = input.phoneNumbers.map(async (phone) => {
@@ -78,7 +78,7 @@ export default class CreateContactAction extends CreateContactActionBase {
     },
   ];
 
-  observers = [
+  observers: Observer<ContactBuilder, ContactCreateInput>[] = [
     new EntCreationObserver<Contact>(),
     {
       // TODO https://github.com/lolopinto/ent/issues/605 simplifies all this

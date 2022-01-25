@@ -39,7 +39,7 @@ export class DeleteContactEmailActionBase
     this.contactEmail = contactEmail;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<ContactEmail> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

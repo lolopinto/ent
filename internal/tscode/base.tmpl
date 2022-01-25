@@ -435,19 +435,21 @@ export class {{$baseClass}} {
           if (!this.{{$edge.TSFieldName}}) {
             return null;
           } 
-          return {{useImport "loadEnts"}}(
+          const ents = await {{useImport "loadEnts"}}(
             this.viewer, 
             {{useImport $edgeNode}}.loaderOptions(),
             ...this.{{$edge.TSFieldName}},
           );
+          return Array.from(ents.values());
         }
       {{ else -}}
         async load{{$edgeName}}(): Promise<{{useImport $edgeNode}}[]> {
-          return {{useImport "loadEnts"}}(
+          const ents = await {{useImport "loadEnts"}}(
             this.viewer, 
             {{useImport $edgeNode}}.loaderOptions(),
             ...this.{{$edge.TSFieldName}},
           );
+          return Array.from(ents.values());
         }
       {{ end -}}
     {{ end -}}
