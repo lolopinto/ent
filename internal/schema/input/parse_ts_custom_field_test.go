@@ -12,55 +12,57 @@ import (
 func TestCustomFields(t *testing.T) {
 	data := `
  {
-	 "User": {
-		 "fields": [
-				{
-					"name": "email",
-					"type": {
-						"dbType": "String",
-						"customType": "email"
-					}
-				},
-				{
-					"name": "nullable_email",
-					"type": {
-						"dbType": "String",
-						"customType": "email"
+	 "schemas": {
+		 "User": {
+			"fields": [
+					{
+						"name": "email",
+						"type": {
+							"dbType": "String",
+							"customType": "email"
+						}
 					},
-					"nullable": true
-				},
-				{
-					"name": "password",
-					"type": {
-						"dbType": "String",
-						"customType": "password"
-					}
-				},
-				{
-					"name": "nullable_password",
-					"type": {
-						"dbType": "String",
-						"customType": "password"
+					{
+						"name": "nullable_email",
+						"type": {
+							"dbType": "String",
+							"customType": "email"
+						},
+						"nullable": true
 					},
-					"nullable": true
-				},
-				{
-					"name": "phone",
-					"type": {
-						"dbType": "String",
-						"customType": "phone"
-					}
-				},
-				{
-					"name": "nullable_phone",
-					"type": {
-						"dbType": "String",
-						"customType": "phone"
+					{
+						"name": "password",
+						"type": {
+							"dbType": "String",
+							"customType": "password"
+						}
 					},
-					"nullable": true
-				}
-		 ]
-	 }
+					{
+						"name": "nullable_password",
+						"type": {
+							"dbType": "String",
+							"customType": "password"
+						},
+						"nullable": true
+					},
+					{
+						"name": "phone",
+						"type": {
+							"dbType": "String",
+							"customType": "phone"
+						}
+					},
+					{
+						"name": "nullable_phone",
+						"type": {
+							"dbType": "String",
+							"customType": "phone"
+						},
+						"nullable": true
+					}
+				]
+			}
+		}
 	}`
 
 	s, err := input.ParseSchema([]byte(data))
