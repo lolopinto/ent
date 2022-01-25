@@ -2,7 +2,7 @@ name: End to end codegen
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, v0.1]
 
     
 jobs:
