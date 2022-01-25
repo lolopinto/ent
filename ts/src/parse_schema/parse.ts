@@ -22,6 +22,8 @@ function processFields(src: Field[], patternName?: string): ProcessedField[] {
       } else {
         f.polymorphic = field.polymorphic;
       }
+    } else {
+      delete f.polymorphic;
     }
     // convert string to object to make API consumed by go simple
     if (f.fieldEdge && f.fieldEdge.inverseEdge) {
@@ -152,6 +154,7 @@ function processAction(action: Action): OutputAction {
     (f) => {
       let f2 = f as ProcessedActionField;
       if (!f.nullable) {
+        delete f2.nullable;
         return f2;
       }
       if (typeof f.nullable === "boolean") {

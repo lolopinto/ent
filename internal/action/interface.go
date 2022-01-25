@@ -117,6 +117,15 @@ type CustomInterface struct {
 	NonEntFields []*NonEntField
 	Action       Action
 	// if present, means that this interface should be imported in GraphQL instead...
+
+	enumImports []string
+}
+
+func (ci *CustomInterface) GetEnumImports() []string {
+	// TODO https://github.com/lolopinto/ent/issues/703
+	// if we had the correct imports in TsBuilderImports, we don't need this.
+	// can just reserverImports and skip this.
+	return ci.enumImports
 }
 
 type ActionInfo struct {
@@ -263,6 +272,11 @@ func (action *commonActionInfo) getCustomInterface(typ enttype.TSGraphQLType) *C
 func (action *commonActionInfo) AddCustomField(typ enttype.TSGraphQLType, cf *field.Field) {
 	ci := action.getCustomInterface(typ)
 	ci.Fields = append(ci.Fields, cf)
+	enumType, ok := enttype.GetEnumType(cf.GetFieldType())
+	if !ok {
+		return
+	}
+	ci.enumImports = append(ci.enumImports, enumType.GetTSName())
 }
 
 func (action *commonActionInfo) AddCustomNonEntField(typ enttype.TSGraphQLType, cf *NonEntField) {
