@@ -1032,8 +1032,9 @@ function commonTests() {
       const ents = await ent.loadEnts(vc, Contact.loaderOptions(), 1, 2, 3);
 
       // only loading self worked because of privacy
-      expect(ents.length).toBe(1);
-      const contact = ents[0];
+      expect(ents.size).toBe(1);
+      expect(ents.has(1)).toBe(true);
+      const contact = ents.get(1)!;
 
       expect(contact.id).toBe(1);
       expect(contact.data).toEqual({
@@ -1093,8 +1094,8 @@ function commonTests() {
       const ents = await ent.loadEnts(vc, Contact.loaderOptions(), 1, 2, 3);
 
       // only loading self worked because of privacy
-      expect(ents.length).toBe(1);
-      expect(ents[0].id).toBe(1);
+      expect(ents.size).toBe(1);
+      expect(ents.has(1)).toBe(true);
 
       const options = {
         ...Contact.loaderOptions(),
