@@ -1,34 +1,36 @@
 {
-  "User": {
-    "fields":[
-      {
-        "name": "name",
-        "type": {
-          "dbType": "String"
+  "schemas": {
+    "User": {
+      "fields":[
+        {
+          "name": "name",
+          "type": {
+            "dbType": "String"
+          }
+        },
+        {
+          "name": "email",
+          "type": {
+            "dbType": "String",
+            "customType": "email"
+          },
+          "unique":true
+        },
+        {
+          "name": "phone",
+          "type": {
+            "dbType": "String",
+            "customType": "phone"
+          },
+          "nullable":true,
+          "unique":true
         }
-      },
-      {
-        "name": "email",
-        "type": {
-          "dbType": "String",
-          "customType": "email"
-        },
-        "unique":true
-      },
-      {
-        "name": "phone",
-        "type": {
-          "dbType": "String",
-          "customType": "phone"
-        },
-        "nullable":true,
-        "unique":true
-      }
-    ],
-    "actions":[
-      {
-        "operation":8
-      }
-    ]
+      ],
+      "actions":[
+        {
+          "operation":8
+        }
+      ]
+    }
   }
 }
