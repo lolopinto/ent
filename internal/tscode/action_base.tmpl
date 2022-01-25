@@ -25,7 +25,11 @@
   {{end -}}
 {{ end}}
 
+{{$extImpPath := .Package.ExternalImportPath -}}
 {{ range $int := $action.GetCustomInterfaces -}}
+  {{ range $imp := $int.GetEnumImports -}}
+    {{ reserveImport $extImpPath $imp -}}
+  {{ end -}}
   interface {{$int.TSType}} {
     {{ range $field := $int.Fields -}}
       {{$type := $field.TsBuilderType -}}

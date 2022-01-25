@@ -1,25 +1,27 @@
 {
-  "User": {
-    "fields":[
-      {
-        "name": "name",
-        "type": {
-          "dbType": "String"
-        }
-      },
-      {
-        "name": "email",
-        "type": {
-          "dbType": "String",
-          "customType": "email"
+  "schemas": {
+    "User": {
+      "fields":[
+        {
+          "name": "name",
+          "type": {
+            "dbType": "String"
+          }
         },
-        "unique":true
-      }
-    ],
-    "actions":[
-      {
-        "operation":8
-      }
-    ]
+        {
+          "name": "email",
+          "type": {
+            "dbType": "String",
+            "customType": "email"
+          },
+          "unique":true
+        }
+      ],
+      "actions":[
+        {
+          "operation":8
+        }
+      ]
+    }
   }
 }
