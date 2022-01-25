@@ -53,7 +53,7 @@ export class EditContactPhoneNumberActionBase
     this.contactPhoneNumber = contactPhoneNumber;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<ContactPhoneNumber> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

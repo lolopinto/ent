@@ -169,19 +169,21 @@ export class ContactBase {
   }
 
   async loadEmails(): Promise<ContactEmail[]> {
-    return loadEnts(
+    const ents = await loadEnts(
       this.viewer,
       ContactEmail.loaderOptions(),
       ...this.emailIds,
     );
+    return Array.from(ents.values());
   }
 
   async loadPhoneNumbers(): Promise<ContactPhoneNumber[]> {
-    return loadEnts(
+    const ents = await loadEnts(
       this.viewer,
       ContactPhoneNumber.loaderOptions(),
       ...this.phoneNumberIds,
     );
+    return Array.from(ents.values());
   }
 
   async loadUser(): Promise<User | null> {

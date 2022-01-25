@@ -152,13 +152,9 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
   private validatedFields: Data | null;
   private logValues: Data | null;
   private changesets: Changeset<Ent>[] = [];
-<<<<<<< HEAD
-  private dependencies: Map<ID, Builder<Ent>> = new Map();
-=======
   private dependencies: Map<ID, Builder<TEnt>> = new Map();
->>>>>>> d9313177... action builder, trigger, observer, validator changes (#622)
   private fieldsToResolve: string[] = [];
-  private mainOp: DataOperation<T> | null;
+  private mainOp: DataOperation<TEnt> | null;
   viewer: Viewer;
   private defaultFieldsByFieldName: Data = {};
   private defaultFieldsByTSName: Data = {};
@@ -274,7 +270,7 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
           tableName: this.options.tableName,
         });
       default:
-        const opts: EditNodeOptions<T> = {
+        const opts: EditNodeOptions<TEnt> = {
           fields: this.validatedFields!,
           tableName: this.options.tableName,
           fieldsToResolve: this.fieldsToResolve,
@@ -504,13 +500,8 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
     await Promise.all(promises);
   }
 
-<<<<<<< HEAD
-  private isBuilder(val: Builder<Ent> | any): val is Builder<Ent> {
-    return (val as Builder<Ent>).placeholderID !== undefined;
-=======
   private isBuilder(val: Builder<TEnt> | any): val is Builder<TEnt> {
     return (val as Builder<TEnt>).placeholderID !== undefined;
->>>>>>> d9313177... action builder, trigger, observer, validator changes (#622)
   }
 
   private getFieldsWithDefaultValues(
@@ -571,7 +562,6 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
       }
     }
 
-<<<<<<< HEAD
     // if there's data changing, add data
     if (this.hasData(data)) {
       data = {
@@ -580,13 +570,8 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
       };
       if (updateInput && this.options.updateInput) {
         // this basically fixes #605. just needs to be exposed correctly
-        this.options.updateInput(this.defaultFieldsByTSName);
+        this.options.updateInput(this.defaultFieldsByTSName as TData);
       }
-=======
-    if (updateInput && this.options.updateInput) {
-      // this basically fixes #605. just needs to be exposed correctly
-      this.options.updateInput(this.defaultFieldsByTSName as TData);
->>>>>>> d9313177... action builder, trigger, observer, validator changes (#622)
     }
 
     return data;

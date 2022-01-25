@@ -39,7 +39,7 @@ export class DeleteContactPhoneNumberActionBase
     this.contactPhoneNumber = contactPhoneNumber;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<ContactPhoneNumber> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

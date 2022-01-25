@@ -53,7 +53,7 @@ export class EditContactEmailActionBase
     this.contactEmail = contactEmail;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<ContactEmail> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
