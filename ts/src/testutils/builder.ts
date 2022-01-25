@@ -121,13 +121,8 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
     private schema: BuilderSchema<T>,
     fields: Map<string, any>,
     public operation: WriteOperation = WriteOperation.Insert,
-<<<<<<< HEAD
     public existingEnt: T | undefined = undefined,
-    action?: Action<T> | undefined,
-=======
-    public existingEnt: Ent | undefined = undefined,
     action?: Action<T, SimpleBuilder<T>, Data> | undefined,
->>>>>>> d9313177... action builder, trigger, observer, validator changes (#622)
   ) {
     // create dynamic placeholder
     // TODO: do we need to use this as the node when there's an existingEnt
@@ -159,12 +154,8 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
     }
     this.ent = schema.ent;
     const tableName = getTableName(schema);
-<<<<<<< HEAD
     this.nodeType = camelCase(schema.ent.name);
-    this.orchestrator = new Orchestrator<T>({
-=======
     this.orchestrator = new Orchestrator<T, Data>({
->>>>>>> d9313177... action builder, trigger, observer, validator changes (#622)
       viewer: this.viewer,
       operation: operation,
       tableName: tableName,

@@ -52,11 +52,7 @@ import {
   setupSqlite,
   Table,
 } from "../testutils/db/test_db";
-<<<<<<< HEAD
 import * as action from "../action";
-=======
-import { Use } from "node-sql-parser";
->>>>>>> d9313177... action builder, trigger, observer, validator changes (#622)
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -366,7 +362,7 @@ type getMembershipFunction = (
   edge: EdgeInputData,
 ) => SimpleAction<Ent>;
 
-class GroupMembershipTrigger implements Trigger<Group> {
+class GroupMembershipTrigger implements Trigger<SimpleBuilder<Group>, Data> {
   constructor(private getter: getMembershipFunction) {}
   changeset(builder: SimpleBuilder<Group>, input: Data): TriggerReturn {
     const inputEdges = builder.orchestrator.getInputEdges(
@@ -423,7 +419,7 @@ async function verifyGroupMembers(group: Group, members: User[]) {
 
 async function loadMemberships(viewer: Viewer, membershipids: ID[]) {
   const tableName = getTableName(new GroupMembershipSchema());
-  return loadEnts(
+  const ents = await loadEnts(
     viewer,
     {
       tableName,
@@ -437,10 +433,11 @@ async function loadMemberships(viewer: Viewer, membershipids: ID[]) {
     },
     ...membershipids,
   );
+  return Array.from(ents.values());
 }
 
 async function loadChangelogs(viewer: Viewer, clids: ID[]) {
-  return loadEnts(
+  const ents = await loadEnts(
     viewer,
     {
       tableName: "changelogs",
@@ -454,6 +451,7 @@ async function loadChangelogs(viewer: Viewer, clids: ID[]) {
     },
     ...clids,
   );
+  return Array.from(ents.values());
 }
 
 async function verifyChangelogFromMeberships(
@@ -1040,7 +1038,7 @@ function commonTests() {
 
     // weird data model for test so we have to load it via a table scan. good old query
     await Promise.all(
-      memberships.map(async (membership) => {
+      Array.from(memberships.values()).map(async (membership) => {
         const edges = await loadRows({
           clause: clause.And(
             clause.Eq("edge_type", "changelogToParent"),

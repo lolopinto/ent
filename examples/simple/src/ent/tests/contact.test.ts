@@ -187,14 +187,22 @@ test("multiple emails", async () => {
   // reload contact
   contact = await Contact.loadX(contact.viewer, contact.id);
 
+  interface emailInfo {
+    emailAddress: string;
+    label: string;
+  }
   const emails = await contact.loadEmails();
-  expect(input.emails).toStrictEqual(
-    emails.map((email) => {
-      return {
-        emailAddress: email.emailAddress,
-        label: email.label,
-      };
-    }),
+  const sortFn = (a: emailInfo, b: emailInfo) =>
+    a.emailAddress < b.emailAddress ? -1 : 1;
+  expect(input.emails.sort(sortFn)).toStrictEqual(
+    emails
+      .map((email) => {
+        return {
+          emailAddress: email.emailAddress,
+          label: email.label,
+        };
+      })
+      .sort(sortFn),
   );
 });
 
@@ -221,14 +229,22 @@ test("multiple phonenumbers", async () => {
   ).saveX();
   // reload contact
   contact = await Contact.loadX(contact.viewer, contact.id);
+  interface phoneNmberInfo {
+    phoneNumber: string;
+    label: string;
+  }
+  const sortFn = (a: phoneNmberInfo, b: phoneNmberInfo) =>
+    a.phoneNumber < b.phoneNumber ? -1 : 1;
 
   const phoneNumbers = await contact.loadPhoneNumbers();
-  expect(input.phoneNumbers).toStrictEqual(
-    phoneNumbers.map((phoneNumber) => {
-      return {
-        phoneNumber: phoneNumber.phoneNumber,
-        label: phoneNumber.label,
-      };
-    }),
+  expect(input.phoneNumbers.sort(sortFn)).toStrictEqual(
+    phoneNumbers
+      .map((phoneNumber) => {
+        return {
+          phoneNumber: phoneNumber.phoneNumber,
+          label: phoneNumber.label,
+        };
+      })
+      .sort(sortFn),
   );
 });

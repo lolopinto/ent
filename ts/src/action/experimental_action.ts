@@ -131,7 +131,7 @@ interface BuilderConstructor<TEnt extends Ent, TData extends Data> {
 // note that only editable fields in the builder can be passed here
 export async function updateRawObject<TEnt extends Ent, TInput extends Data>(
   viewer: Viewer,
-  builderCtr: BuilderConstructor<TEnt>,
+  builderCtr: BuilderConstructor<TEnt, TInput>,
   existingEnt: TEnt,
   input: TInput,
 ) {
@@ -149,10 +149,10 @@ export async function updateRawObject<TEnt extends Ent, TInput extends Data>(
 // note that only editable fields in the builder can be passed here
 export function getSimpleEditAction<TEnt extends Ent, TInput extends Data>(
   viewer: Viewer,
-  builderCtr: BuilderConstructor<TEnt>,
+  builderCtr: BuilderConstructor<TEnt, TInput>,
   existingEnt: TEnt,
   input: TInput,
-): Action<TEnt> {
+): Action<TEnt, Builder<TEnt>, TInput> {
   return new BaseAction(viewer, builderCtr, {
     existingEnt: existingEnt,
     operation: WriteOperation.Edit,

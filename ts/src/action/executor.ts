@@ -1,10 +1,5 @@
-<<<<<<< HEAD
 import Graph from "graph-data-structure";
 import { ID, Data, Ent, Viewer, Context } from "../core/base";
-
-=======
-import { ID, Ent, Viewer, EntConstructor, Context, Data } from "../core/base";
->>>>>>> d9313177... action builder, trigger, observer, validator changes (#622)
 import { DataOperation } from "../core/ent";
 import { Changeset, Executor } from "../action/action";
 import { Builder } from "../action";
