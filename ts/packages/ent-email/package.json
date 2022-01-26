@@ -1,6 +1,6 @@
 {
   "name": "@snowtop/ent-email",
-  "version": "0.0.2",
+  "version": "0.1.0-alpha",
   "description": "snowtop ent email datatype",
   "main": "dist/email.js",
   "types": "dist/email.d.ts",
@@ -32,7 +32,7 @@
     "email-addresses": "^4.0.0"
   },
   "devDependencies": {
-    "@snowtop/ent": "^0.0.1",
+    "@snowtop/ent": "^0.1.0-alpha1",
     "@types/jest": "^27.0.1",
     "jest": "^27.1.1",
     "tar": "^6.1.6",
@@ -40,6 +40,6 @@
     "typescript": "^4.2.4"
   },
   "peerDependencies": {
-    "@snowtop/ent": ">= 0.0.1"
+    "@snowtop/ent": ">= 0.1.0"
   }
 }
