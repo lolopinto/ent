@@ -12,7 +12,7 @@ function processFields(src: FieldMap, patternName?: string): ProcessedField[] {
   const ret: ProcessedField[] = [];
   for (const name in src) {
     const field = src[name];
-    let f: ProcessedField = { ...field };
+    let f: ProcessedField = { name, ...field };
     f.hasDefaultValueOnCreate = field.defaultValueOnCreate != undefined;
     f.hasDefaultValueOnEdit = field.defaultValueOnEdit != undefined;
     if (field.polymorphic) {
@@ -34,10 +34,11 @@ function processFields(src: FieldMap, patternName?: string): ProcessedField[] {
         };
       }
     }
-    // need f.name here for golang
-    // TODO derivedFields...
     if (patternName) {
       f.patternName = patternName;
+    }
+    if (field.getDerivedFields) {
+      f.derivedFields = field.getDerivedFields(name);
     }
     ret.push(f);
   }
@@ -193,9 +194,11 @@ type ProcessedField = Omit<
   Field,
   "defaultValueOnEdit" | "defaultValueOnCreate"
 > & {
+  name: string;
   hasDefaultValueOnCreate?: boolean;
   hasDefaultValueOnEdit?: boolean;
   patternName?: string;
+  derivedFields?: FieldMap;
 };
 
 interface patternsDict {

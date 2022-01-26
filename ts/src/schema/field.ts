@@ -65,7 +65,7 @@ export class UUIDField extends BaseField implements Field {
     }
   }
 
-  derivedFields(fieldName: string): FieldMap {
+  getDerivedFields(fieldName: string): FieldMap {
     const polymorphic = this.options?.polymorphic;
     if (polymorphic) {
       let name = "";

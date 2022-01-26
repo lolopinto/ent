@@ -71,7 +71,7 @@ function doTest(
 ) {
   const f = UUIDType({ name: "fooID", polymorphic: polymorphic, ...opts });
   let lastKey = "";
-  const derivedFields = f.derivedFields("fooID");
+  const derivedFields = f.getDerivedFields("fooID");
   const count = function () {
     let ct = 0;
     for (const k in derivedFields) {

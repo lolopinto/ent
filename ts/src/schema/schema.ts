@@ -288,7 +288,7 @@ export interface FieldOptions {
   polymorphic?: boolean | PolymorphicOptions;
 
   // takes the name of the field and returns any fields which are derived from current field
-  derivedFields?(name: string): FieldMap;
+  getDerivedFields?(name: string): FieldMap;
 }
 
 export interface PolymorphicOptions {
@@ -336,8 +336,8 @@ export function getFields(value: SchemaInputType): Map<string, Field> {
   function addFields(fields: FieldMap) {
     for (const name in fields) {
       const field = fields[name];
-      if (field.derivedFields !== undefined) {
-        addFields(field.derivedFields(name));
+      if (field.getDerivedFields !== undefined) {
+        addFields(field.getDerivedFields(name));
       }
       m.set(name, field);
     }
