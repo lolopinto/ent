@@ -58,35 +58,35 @@ func TestParse(t *testing.T) {
 						Name:   "foo",
 						Import: &enttype.StringImport{},
 					},
-					"{name: \"foo\"}",
+					"",
 				),
 				getExpField(
 					&input.Field{
 						Name:   "bar",
 						Import: &enttype.EmailImport{},
 					},
-					"{name: \"bar\"}",
+					"",
 				),
 				getExpField(
 					&input.Field{
 						Name:   "baz",
 						Import: &enttype.PasswordImport{},
 					},
-					"{name: \"baz\"}",
+					"",
 				),
 				getExpField(
 					&input.Field{
 						Name:   "foo2",
 						Import: &enttype.IntImport{},
 					},
-					"{name: \"foo2\"}",
+					"",
 				),
 				getExpField(
 					&input.Field{
 						Name:   "hello",
 						Import: &enttype.BoolImport{},
 					},
-					"{name: \"hello\"}",
+					"",
 				),
 			},
 		},
@@ -98,35 +98,35 @@ func TestParse(t *testing.T) {
 						Name:   "foo",
 						Import: &enttype.StringImport{},
 					},
-					"{name: \"foo\"}",
+					"",
 				),
 				getExpField(
 					&input.Field{
 						Name:   "bar",
 						Import: &enttype.EmailImport{},
 					},
-					"{name: \"bar\"}",
+					"",
 				),
 				getExpField(
 					&input.Field{
 						Name:   "baz",
 						Import: &enttype.PasswordImport{},
 					},
-					"{name: \"baz\"}",
+					"",
 				),
 				getExpField(
 					&input.Field{
 						Name:   "foo2",
 						Import: &enttype.IntImport{},
 					},
-					"{name: \"foo2\"}",
+					"",
 				),
 				getExpField(
 					&input.Field{
 						Name:   "hello",
 						Import: &enttype.BoolImport{},
 					},
-					"{name: \"hello\"}",
+					"",
 				),
 			},
 		},
@@ -151,7 +151,7 @@ func TestParse(t *testing.T) {
 						Import: &enttype.StringImport{},
 						Index:  true,
 					},
-					"{name: \"foo\", index: true}",
+					"{index: true}",
 				),
 				getExpField(
 					&input.Field{
@@ -159,7 +159,7 @@ func TestParse(t *testing.T) {
 						Import: &enttype.EmailImport{},
 						Unique: true,
 					},
-					"{name: \"bar\", unique: true}",
+					"{unique: true}",
 				),
 				getExpField(
 					&input.Field{
@@ -168,7 +168,7 @@ func TestParse(t *testing.T) {
 						Private:         true,
 						HideFromGraphQL: true,
 					},
-					"{name: \"baz\", private: true, hideFromGraphQL: true}",
+					"{private: true, hideFromGraphQL: true}",
 				),
 				getExpField(
 					&input.Field{
@@ -176,14 +176,14 @@ func TestParse(t *testing.T) {
 						Import:   &enttype.IntImport{},
 						Nullable: true,
 					},
-					"{name: \"foo2\", nullable: true}",
+					"{nullable: true}",
 				),
 				getExpField(
 					&input.Field{
 						Name:   "hello",
 						Import: &enttype.BoolImport{},
 					},
-					"{name: \"hello\"}",
+					"",
 				),
 			},
 		},
@@ -200,7 +200,7 @@ func TestParse(t *testing.T) {
 						Import:        &enttype.StringImport{},
 						ServerDefault: "bar",
 					},
-					"{name: \"foo\", serverDefault: \"bar\"}",
+					"{serverDefault: \"bar\"}",
 				),
 				getExpField(
 					&input.Field{
@@ -208,7 +208,7 @@ func TestParse(t *testing.T) {
 						Import: &enttype.EmailImport{},
 						Unique: true,
 					},
-					"{name: \"bar\", unique: true}",
+					"{unique: true}",
 				),
 				getExpField(
 					&input.Field{
@@ -221,7 +221,7 @@ func TestParse(t *testing.T) {
 						DefaultToViewerOnCreate: true,
 						StorageKey:              "user_id",
 					},
-					"{name: \"accountId\", defaultToViewerOnCreate: true, storageKey: \"user_id\", foreignKey: {schema: \"User\", column: \"id\"}}",
+					"{defaultToViewerOnCreate: true, storageKey: \"user_id\", foreignKey: {schema: \"User\", column: \"id\"}}",
 				),
 			},
 		},
@@ -309,7 +309,7 @@ func TestEnumCodegenData(t *testing.T) {
 					Import:     &enttype.StringImport{},
 					PrimaryKey: true,
 				},
-				"{name: \"status\", primaryKey: true}",
+				"{primaryKey: true}",
 			),
 		},
 	)
@@ -342,8 +342,7 @@ func TestFieldObjectCall(t *testing.T) {
 	assert.Equal(
 		t,
 		fmt.Sprintf(
-			"{name: %s, storageKey: %s, foreignKey: {schema: %s, column: %s}}",
-			strconv.Quote("accountID"),
+			"{storageKey: %s, foreignKey: {schema: %s, column: %s}}",
 			strconv.Quote("user_id"),
 			strconv.Quote("User"),
 			strconv.Quote("id"),
