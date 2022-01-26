@@ -13,10 +13,10 @@ func TestParseEdges(t *testing.T) {
 			code: map[string]string{
 				"event.ts": getCodeWithSchema(
 					`
-				import {Schema, Field, Edge} from "{schema}";
+				import {Schema, FieldMap, Edge} from "{schema}";
 
 				export default class Event implements Schema {
-					fields: Field[] = [];
+					fields: FieldMap = {};
 
 					edges: Edge[] = [
 						{
@@ -51,19 +51,19 @@ func TestParseEdges(t *testing.T) {
 			code: map[string]string{
 				"event.ts": getCodeWithSchema(
 					`
-				import {Schema, Field, Edge, StringType} from "{schema}";
+				import {Schema, FieldMap, Edge, StringType} from "{schema}";
 
 				export default class Event implements Schema {
-					fields: Field[] = [
-						StringType({name: "creatorID", fieldEdge:{schema:"User", inverseEdge:"createdEvents"}}),
-					];
+					fields: FieldMap = {
+						creatorID: StringType({fieldEdge:{schema:"User", inverseEdge:"createdEvents"}}),
+					};
 				};`),
 				"user.ts": getCodeWithSchema(
 					`
-				import {Schema, Field, Edge} from "{schema}";
+				import {Schema, FieldMap, Edge} from "{schema}";
 
 				export default class User implements Schema {
-					fields: Field[] = [];
+					fields: FieldMap = {};
 					edges: Edge[] = [
 						{
 							name: "createdEvents",
@@ -96,10 +96,10 @@ func TestParseEdges(t *testing.T) {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(
 					`
-					import {Schema, Field, Edge} from "{schema}";
+					import {Schema, FieldMap, Edge} from "{schema}";
 
 					export default class User implements Schema {
-						fields: Field[] = [];
+						fields: FieldMap = {};
 
 						edges: Edge[] = [
 							{
@@ -127,10 +127,10 @@ func TestParseEdges(t *testing.T) {
 			code: map[string]string{
 				"post.ts": getCodeWithSchema(
 					`
-					import {Schema, Field, Edge} from "{schema}";
+					import {Schema, FieldMap, Edge} from "{schema}";
 
 					export default class Post implements Schema {
-						fields: Field[] = [];
+						fields: FieldMap = {};
 
 						edges: Edge[] = [
 							{
@@ -156,10 +156,10 @@ func TestParseEdges(t *testing.T) {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(
 					`
-					import {Schema, Field, AssocEdgeGroup} from "{schema}";
+					import {Schema, FieldMap, AssocEdgeGroup} from "{schema}";
 
 					export default class User implements Schema {
-						fields: Field[] = [];
+						fields: FieldMap = {};
 
 						edgeGroups: AssocEdgeGroup[] = [
 							{
@@ -215,10 +215,10 @@ func TestParseEdges(t *testing.T) {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(
 					`
-				import {Schema, Field, Edge, ActionOperation} from "{schema}";
+				import {Schema, FieldMap, Edge, ActionOperation} from "{schema}";
 
 				export default class User implements Schema {
-					fields: Field[] = [];
+					fields: FieldMap = {};
 					edges: Edge[] = [
 						{
 							name: "friends",
@@ -262,10 +262,10 @@ func TestParseEdges(t *testing.T) {
 			code: map[string]string{
 				"post.ts": getCodeWithSchema(
 					`
-					import {Schema, Field, Edge} from "{schema}";
+					import {Schema, FieldMap, Edge} from "{schema}";
 
 					export default class Post implements Schema {
-						fields: Field[] = [];
+						fields: FieldMap = {};
 
 						edges: Edge[] = [
 							{
@@ -293,10 +293,10 @@ func TestParseEdges(t *testing.T) {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(
 					`
-				import {Schema, Field, AssocEdgeGroup, ActionOperation} from "{schema}";
+				import {Schema, FieldMap, AssocEdgeGroup, ActionOperation} from "{schema}";
 
 				export default class User implements Schema {
-					fields: Field[] = [];
+					fields: FieldMap = {};
 					edgeGroups: AssocEdgeGroup[] = [
 						{
 							name: "friendships",
@@ -360,10 +360,10 @@ func TestParseEdges(t *testing.T) {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(
 					`
-				import {Schema, Field, AssocEdgeGroup, ActionOperation} from "{schema}";
+				import {Schema, FieldMap, AssocEdgeGroup, ActionOperation} from "{schema}";
 
 				export default class User implements Schema {
-					fields: Field[] = [];
+					fields: FieldMap = {};
 					edgeGroups: AssocEdgeGroup[] = [
 						{
 							name: "friendships",
