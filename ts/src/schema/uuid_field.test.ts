@@ -69,7 +69,7 @@ function doTest(
   expDerivedType: Type,
   opts?: Partial<FieldOptions>,
 ) {
-  const f = UUIDType({ name: "fooID", polymorphic: polymorphic, ...opts });
+  const f = UUIDType({ polymorphic: polymorphic, ...opts });
   let lastKey = "";
   const derivedFields = f.getDerivedFields("fooID");
   const count = function () {
@@ -89,14 +89,14 @@ function doTest(
 describe("fieldEdge no inverseEdge", () => {
   test("no checks", async () => {
     class UserSchema extends BaseEntSchema {
-      fields: FieldMap = { Name: StringType({ name: "Name" }) };
+      fields: FieldMap = { Name: StringType() };
       ent = User;
     }
 
     class Account extends User {}
     class AccountSchema extends BaseEntSchema {
       fields: FieldMap = {
-        userID: UUIDType({ name: "userID", fieldEdge: { schema: "User" } }),
+        userID: UUIDType({ fieldEdge: { schema: "User" } }),
       };
       ent = Account;
     }
@@ -127,7 +127,7 @@ describe("fieldEdge no inverseEdge", () => {
 
   test("enforce checks with builder", async () => {
     class UserSchema extends BaseEntSchema {
-      fields: FieldMap = { Name: StringType({ name: "Name" }) };
+      fields: FieldMap = { Name: StringType() };
       ent = User;
     }
 
@@ -135,7 +135,6 @@ describe("fieldEdge no inverseEdge", () => {
     class AccountSchema extends BaseEntSchema {
       fields: FieldMap = {
         userID: UUIDType({
-          name: "userID",
           fieldEdge: {
             schema: "User",
             enforceSchema: true,
@@ -321,7 +320,6 @@ describe("fieldEdge list", () => {
     class ContactShema extends BaseEntSchema {
       fields: FieldMap = {
         emailIDs: UUIDListType({
-          name: "emailIDs",
           fieldEdge: {
             schema: "ContactEmail",
             enforceSchema: true,
@@ -386,7 +384,7 @@ describe("fieldEdge list", () => {
   test("don't enforce checks", async () => {
     class ContactEmail extends User {}
     class ContactEmailSchema extends BaseEntSchema {
-      fields: FieldMap = { Email: StringType({ name: "Email" }) };
+      fields: FieldMap = { Email: StringType() };
       ent = ContactEmail;
     }
 
@@ -394,7 +392,6 @@ describe("fieldEdge list", () => {
     class ContactShema extends BaseEntSchema {
       fields: FieldMap = {
         emailIDs: UUIDListType({
-          name: "emailIDs",
           fieldEdge: {
             schema: "ContactEmail",
           },

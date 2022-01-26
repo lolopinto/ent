@@ -233,9 +233,7 @@ function commonTests() {
     };
 
     const times = [newDate(8), newDate(10), newDate(11, 30)];
-    const expected = times.map((time) =>
-      TimeType({ name: "foo" }).format(time),
-    );
+    const expected = times.map((time) => TimeType().format(time));
 
     const action = new SimpleAction(
       new LoggedOutViewer(),
@@ -350,7 +348,7 @@ function commonTests() {
   });
 
   test("list validation. minLen", async () => {
-    const t = IntegerListType({ name: "foo" }).minLen(2);
+    const t = IntegerListType().minLen(2);
 
     expect(await t.valid([1, 2, 3])).toBe(true);
     expect(await t.valid([1, 2])).toBe(true);
@@ -358,7 +356,7 @@ function commonTests() {
   });
 
   test("list validation. maxLen", async () => {
-    const t = IntegerListType({ name: "foo" }).maxLen(2);
+    const t = IntegerListType().maxLen(2);
 
     expect(await t.valid([1, 2, 3])).toBe(false);
     expect(await t.valid([1, 2])).toBe(true);
@@ -366,7 +364,7 @@ function commonTests() {
   });
 
   test("list validation. length", async () => {
-    const t = IntegerListType({ name: "foo" }).length(2);
+    const t = IntegerListType().length(2);
 
     expect(await t.valid([1, 2, 3])).toBe(false);
     expect(await t.valid([1, 2])).toBe(true);
@@ -374,7 +372,7 @@ function commonTests() {
   });
 
   test("list validation. range", async () => {
-    const t = IntegerListType({ name: "foo" }).range(2, 10);
+    const t = IntegerListType().range(2, 10);
 
     expect(await t.valid([1, 2, 3])).toBe(false);
     expect(await t.valid([3, 4, 5, 6])).toBe(true);
@@ -383,7 +381,7 @@ function commonTests() {
   });
 
   test("string list validation. range", async () => {
-    const t = StringListType({ name: "foo" }).range("a", "z");
+    const t = StringListType().range("a", "z");
 
     expect(await t.valid(["a", "c", "d"])).toBe(true);
     expect(await t.valid(["e", "f", "g", "h"])).toBe(true);

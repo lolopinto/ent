@@ -4,7 +4,6 @@ import { TimestampType, UUIDType } from "./field";
 
 let tsFields: FieldMap = {
   createdAt: TimestampType({
-    name: "createdAt",
     hideFromGraphQL: true,
     disableUserEditable: true,
     defaultValueOnCreate: () => {
@@ -12,7 +11,6 @@ let tsFields: FieldMap = {
     },
   }),
   updatedAt: TimestampType({
-    name: "updatedAt",
     hideFromGraphQL: true,
     disableUserEditable: true,
     defaultValueOnCreate: () => {
@@ -31,7 +29,6 @@ export const Timestamps: Pattern = {
 };
 
 let nodeField = UUIDType({
-  name: "ID",
   primaryKey: true,
   disableUserEditable: true,
   defaultValueOnCreate: () => {
@@ -47,7 +44,6 @@ let nodeFields: FieldMap = {
 let nodeFieldsWithTZ: FieldMap = {
   id: nodeField,
   createdAt: TimestampType({
-    name: "createdAt",
     hideFromGraphQL: true,
     disableUserEditable: true,
     defaultValueOnCreate: () => {
@@ -56,7 +52,6 @@ let nodeFieldsWithTZ: FieldMap = {
     withTimezone: true,
   }),
   updatedAt: TimestampType({
-    name: "updatedAt",
     hideFromGraphQL: true,
     disableUserEditable: true,
     defaultValueOnCreate: () => {

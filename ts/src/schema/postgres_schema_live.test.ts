@@ -8,8 +8,9 @@ import {
   DateType,
   TimestamptzType,
 } from "./field";
-import { BaseEntSchema, Schema, Field } from ".";
-import { User, SimpleAction, BuilderSchema } from "../testutils/builder";
+import { BaseEntSchema } from "./base_schema";
+import Schema from "./schema";
+import { User, SimpleAction } from "../testutils/builder";
 import {
   table,
   TempDB,
@@ -509,9 +510,7 @@ test("timestamptz copy", async () => {
     Math.random().toString(16).substring(2),
   );
 
-  const tzType = TimestamptzType({
-    name: "field",
-  });
+  const tzType = TimestamptzType();
   const date = new Date();
   const rows = [
     ["id", "first_name", "last_name", "created_at", "updated_at"],

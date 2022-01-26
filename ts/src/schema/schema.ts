@@ -1,10 +1,8 @@
 import { Data, Ent, LoaderInfo } from "../core/base";
 import { Builder } from "../action/action";
 
-// TODO s/Field2/Field and kill this
-export type Field2 = Exclude<Field, "name">;
 export declare type FieldMap = {
-  [key: string]: Field2;
+  [key: string]: Field;
 };
 
 // Schema is the base for every schema in typescript
@@ -256,7 +254,6 @@ export interface FieldEdge {
 // FieldOptions are configurable options for fields.
 // Can be combined with options for specific field types as neededs
 export interface FieldOptions {
-  name?: string;
   // optional modification of fields: nullable/storagekey etc.
   nullable?: boolean;
   storageKey?: string; // db?

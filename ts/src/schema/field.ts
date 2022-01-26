@@ -1,6 +1,5 @@
 import { DateTime } from "luxon";
 import { snakeCase } from "snake-case";
-import { camelCase } from "camel-case";
 import { Ent } from "../core/base";
 import { Builder } from "../action/action";
 import DB, { Dialect } from "../core/db";
@@ -147,7 +146,7 @@ export interface IntegerOptions extends FieldOptions {
 export class IntegerField extends BaseField implements Field {
   type: Type = { dbType: DBType.Int };
   private validators: { (str: number): boolean }[] = [];
-  private options: IntegerOptions = { name: "field" };
+  private options: IntegerOptions = {};
 
   constructor(options?: IntegerOptions) {
     super();
@@ -246,12 +245,12 @@ export class StringField extends BaseField implements Field {
   type: Type = { dbType: DBType.String };
   private validators: { (str: string): boolean }[] = [];
   private formatters: { (str: string): string }[] = [];
-  private options: StringOptions = { name: "field" };
+  private options: StringOptions = {};
 
   constructor(options?: StringOptions) {
     super();
     // for legacy callers
-    this.handleOptions(options || { name: "field" });
+    this.handleOptions(options || {});
   }
 
   getOptions(): StringOptions {
