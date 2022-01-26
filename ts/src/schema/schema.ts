@@ -309,8 +309,9 @@ export interface Field extends FieldOptions {
 
   // optional valid and format to validate and format before storing
   valid?(val: any): Promise<boolean> | boolean;
-  //valid?(val: any): Promise<boolean>;
-  format?(val: any): any;
+  // optional second param which if passed and true indicates that this is a nested object
+  // and should only format children and not format lists or objects
+  format?(val: any, nested?: boolean): any;
 
   logValue(val: any): any;
 }

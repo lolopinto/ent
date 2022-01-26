@@ -520,10 +520,6 @@ export function DateType(options?: FieldOptions): DateField {
   return Object.assign(result, options);
 }
 
-// export class JSON extends BaseField implements Field {
-//   type: Type = {dbType: DBType.JSON}
-// }
-
 declare type EnumMap = {
   [key: string]: string;
 };
@@ -722,14 +718,19 @@ export class ListField extends BaseField {
     return JSON.stringify(val);
   }
 
-  format(val: any): any {
+  format(val: any, nested?: boolean): any {
     if (!Array.isArray(val)) {
       throw new Error(`need an array to format`);
     }
 
     const elemDBType = this.type.listElemType!.dbType;
     const jsonType = elemDBType === "JSON" || elemDBType === "JSONB";
-    const postgres = DB.getDialect() === Dialect.Postgres;
+    // postgres ish doesn't apply when nested
+    const postgres = !nested && DB.getDialect() === Dialect.Postgres;
+
+    if (nested && !this.field.format) {
+      return val;
+    }
 
     if (!postgres && !this.field.format) {
       return JSON.stringify(val);
@@ -756,6 +757,10 @@ export class ListField extends BaseField {
     }
     if (postgres) {
       return postgresRet + "}";
+    }
+    // don't JSON.stringify if nested
+    if (nested) {
+      return ret;
     }
     return JSON.stringify(ret);
   }
