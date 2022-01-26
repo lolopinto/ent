@@ -3,7 +3,7 @@
 import ts from "typescript";
 import * as path from "path";
 import glob from "glob";
-import { readCompilerOptions } from "./helpers";
+import { readCompilerOptions } from "../tsc/compilerOptions";
 
 // TODO this should probably be its own package but for now it's here
 
@@ -21,7 +21,7 @@ class Compiler {
     private sourceFiles: string[],
     private moduleSearchLocations: string[],
   ) {
-    this.options = readCompilerOptions();
+    this.options = readCompilerOptions(".");
     if (this.options.paths) {
       for (let key in this.options.paths) {
         if (key === "*") {

@@ -1,7 +1,7 @@
 import { glob } from "glob";
 import ts from "typescript";
 import * as fs from "fs";
-import { readCompilerOptions } from "./helpers";
+import { readCompilerOptions } from "../tsc/compilerOptions";
 import { execSync } from "child_process";
 
 function getTarget(target: string) {
@@ -32,7 +32,8 @@ function getTarget(target: string) {
 }
 
 async function main() {
-  const options = readCompilerOptions();
+  // this assumes this is being run from root of directory
+  const options = readCompilerOptions(".");
   let files = glob.sync("src/schema/*.ts");
 
   const target = options.target
