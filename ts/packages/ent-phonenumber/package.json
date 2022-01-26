@@ -1,6 +1,6 @@
 {
   "name": "@snowtop/ent-phonenumber",
-  "version": "0.1.0-alpha",
+  "version": "0.1.0-alpha1",
   "description": "snowtop ent phone number datatype",
   "main": "dist/phonenumber.js",
   "types": "dist/phonenumber.d.ts",
@@ -38,6 +38,6 @@
     "libphonenumber-js": "^1.9.17"
   },
   "peerDependencies": {
-    "@snowtop/ent": ">= 0.1.0"
+    "@snowtop/ent": ">= 0.1.0-alpha"
   }
 }
