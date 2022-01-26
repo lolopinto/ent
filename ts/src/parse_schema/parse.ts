@@ -34,6 +34,8 @@ function processFields(src: FieldMap, patternName?: string): ProcessedField[] {
         };
       }
     }
+    // need f.name here for golang
+    // TODO derivedFields...
     if (patternName) {
       f.patternName = patternName;
     }

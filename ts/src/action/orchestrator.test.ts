@@ -2308,7 +2308,7 @@ function commonTests() {
 
   // TODO serverDefault change...
 
-  test.skip("schema with derived fields", async () => {
+  test("schema with derived fields", async () => {
     const user = new User(new LoggedOutViewer(), { id: "1" });
 
     const builder = new SimpleBuilder(

@@ -10,7 +10,6 @@ import {
 } from "@snowtop/ent/schema/";
 import Feedback from "./patterns/feedback";
 
-// TODO comments
 export default class Contact extends BaseEntSchema implements Schema {
   constructor() {
     super();

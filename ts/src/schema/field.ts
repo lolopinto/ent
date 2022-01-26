@@ -37,7 +37,7 @@ export abstract class BaseField {
   // fields derived from this one. e.g. polymorphic id fields
   // add a _type field
   // e.g. a polymorphic user_id field adds a user_type field
-  derivedFields?: FieldMap;
+  //  derivedFields?(name: string): FieldMap;
   derivedWhenEmbedded?: boolean;
 
   logValue(val: any): any {
@@ -55,9 +55,18 @@ export class UUIDField extends BaseField implements Field {
   constructor(private options?: FieldOptions) {
     super();
 
-    // TODO we need the name and we're not going to have it here. need it for polymorphic?
-    const fieldName = options?.name || "todo_name";
-    const polymorphic = options?.polymorphic;
+    if (
+      options?.fieldEdge?.enforceSchema &&
+      !options.fieldEdge.getLoaderInfoFromSchema
+    ) {
+      throw new Error(
+        `cannot enforceSchema if getLoaderInfoFromSchema wasn't passed in`,
+      );
+    }
+  }
+
+  derivedFields(fieldName: string): FieldMap {
+    const polymorphic = this.options?.polymorphic;
     if (polymorphic) {
       let name = "";
       if (fieldName.endsWith("_id")) {
@@ -67,10 +76,7 @@ export class UUIDField extends BaseField implements Field {
         let idx = fieldName.indexOf("ID");
         name = fieldName.substring(0, idx) + "Type";
       } else {
-        // TODO need to fix...
-        // TODO schema with derived fields test in orchestrator.test.ts
-        // TODO skipped tests in executor.test.ts
-        //        throw new Error(`unsupported id polymorhpic type ${options.name}`);
+        throw new Error(`unsupported id polymorhpic type ${fieldName}`);
       }
 
       // polymorphic field automatically hidden from GraphQL
@@ -79,34 +85,26 @@ export class UUIDField extends BaseField implements Field {
       // intentionally not made private as it doesn't seem like it needs to be hidden
       if (typeof polymorphic === "object" && polymorphic.types) {
         // an enum with types validated here
-        this.derivedFields = {
-          name: EnumType({
+        return {
+          [name]: EnumType({
             values: polymorphic.types,
             hideFromGraphQL: true,
             derivedWhenEmbedded: true,
-            nullable: options?.nullable,
+            nullable: this.options?.nullable,
           }),
         };
       } else {
         // just a string field...
-        this.derivedFields = {
-          name: StringType({
+        return {
+          [name]: StringType({
             hideFromGraphQL: true,
             derivedWhenEmbedded: true,
-            nullable: options?.nullable,
+            nullable: this.options?.nullable,
           }),
         };
       }
     }
-
-    if (
-      options?.fieldEdge?.enforceSchema &&
-      !options.fieldEdge.getLoaderInfoFromSchema
-    ) {
-      throw new Error(
-        `cannot enforceSchema if getLoaderInfoFromSchema wasn't passed in`,
-      );
-    }
+    return {};
   }
 
   private isBuilder(val: Builder<Ent> | any): val is Builder<Ent> {
@@ -560,10 +558,8 @@ export class EnumField extends BaseField implements Field {
       dbType: options.createEnumType ? DBType.Enum : DBType.StringEnum,
       values: options.values,
       enumMap: options.map,
-      // don't have name to use here for tsType and graphqlType
-      // so this needs to be done in go now...
-      type: options.tsType || options.name,
-      graphQLType: options.graphQLType || options.name,
+      type: options.tsType,
+      graphQLType: options.graphQLType,
     };
     if (!options.foreignKey) {
       if (!options.values && !options.map) {

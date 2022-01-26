@@ -903,7 +903,7 @@ function commonTests() {
     ).toBe(true);
   });
 
-  test.skip("nested edge id2. no field dependencies", async () => {
+  test("nested edge id2. no field dependencies", async () => {
     class CreateChangelogAction extends SimpleAction<Changelog> {}
 
     class CreateMembershipAction extends SimpleAction<GroupMembership> {
@@ -971,7 +971,7 @@ function commonTests() {
     await verifyChangelogFromMeberships(user, memberships);
   });
 
-  test.skip("nested edge id1. no field dependencies", async () => {
+  test("nested edge id1. no field dependencies", async () => {
     class CreateChangelogAction extends SimpleAction<Changelog> {}
 
     class CreateMembershipAction extends SimpleAction<GroupMembership> {
@@ -1061,7 +1061,7 @@ function commonTests() {
     );
   });
 
-  test.skip("nested with list + node + edge deps", async () => {
+  test("nested with list + node + edge deps", async () => {
     class CreateMembershipAction extends SimpleAction<GroupMembership> {
       triggers = [
         {

@@ -8,7 +8,6 @@ import {
   FieldOptions,
   FieldMap,
 } from "./schema";
-import { Field } from "./schema";
 import { BaseEntSchema } from "./base_schema";
 import { User, SimpleAction } from "../testutils/builder";
 import { LoggedOutViewer } from "../core/viewer";
@@ -42,9 +41,6 @@ test("polymorphic object", () => {
     {
       dbType: DBType.StringEnum,
       values: ["User", "Post"],
-      // don't get default anymore. will be done in golang
-      // type: "fooType",
-      // graphQLType: "fooType",
       type: undefined,
       graphQLType: undefined,
       enumMap: undefined,
@@ -58,9 +54,6 @@ test("polymorphic object, nullable true", () => {
     {
       dbType: DBType.StringEnum,
       values: ["User", "Post"],
-      // don't get default anymore. will be done in golang
-      // type: "fooType",
-      // graphQLType: "fooType",
       type: undefined,
       graphQLType: undefined,
       enumMap: undefined,
@@ -78,16 +71,17 @@ function doTest(
 ) {
   const f = UUIDType({ name: "fooID", polymorphic: polymorphic, ...opts });
   let lastKey = "";
+  const derivedFields = f.derivedFields("fooID");
   const count = function () {
     let ct = 0;
-    for (const k in f.derivedFields) {
+    for (const k in derivedFields) {
       ct++;
       lastKey = k;
     }
     return ct;
   };
   expect(count()).toBe(1);
-  const derived = f.derivedFields![lastKey];
+  const derived = derivedFields![lastKey];
   expect(derived.type).toStrictEqual(expDerivedType);
   expect(derived.nullable).toBe(opts?.nullable);
 }
