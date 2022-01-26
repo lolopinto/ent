@@ -38,7 +38,7 @@ function processFields(src: FieldMap, patternName?: string): ProcessedField[] {
       f.patternName = patternName;
     }
     if (field.getDerivedFields) {
-      f.derivedFields = field.getDerivedFields(name);
+      f.derivedFields = processFields(field.getDerivedFields(name));
     }
     ret.push(f);
   }
@@ -198,7 +198,7 @@ type ProcessedField = Omit<
   hasDefaultValueOnCreate?: boolean;
   hasDefaultValueOnEdit?: boolean;
   patternName?: string;
-  derivedFields?: FieldMap;
+  derivedFields?: ProcessedField[];
 };
 
 interface patternsDict {
