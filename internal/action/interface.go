@@ -15,6 +15,7 @@ import (
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/base"
+	"github.com/lolopinto/ent/internal/schema/custominterface"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 
@@ -42,7 +43,7 @@ type Action interface {
 	AddCustomField(enttype.TSGraphQLType, *field.Field)
 	AddCustomNonEntField(enttype.TSGraphQLType, *field.NonEntField)
 	AddCustomInterfaces(a Action)
-	GetCustomInterfaces() []*CustomInterface
+	GetCustomInterfaces() []*custominterface.CustomInterface
 	GetTSEnums() []*enum.Enum
 	GetGQLEnums() []*enum.GQLEnum
 }
@@ -56,24 +57,6 @@ type ActionField interface {
 	DefaultValue() interface{}
 	Nullable() bool
 	HasDefaultValueOnCreate() bool
-}
-
-type CustomInterface struct {
-	TSType       string
-	GQLType      string
-	Fields       []*field.Field
-	NonEntFields []*field.NonEntField
-	Action       Action
-	// if present, means that this interface should be imported in GraphQL instead...
-
-	enumImports []string
-}
-
-func (ci *CustomInterface) GetEnumImports() []string {
-	// TODO https://github.com/lolopinto/ent/issues/703
-	// if we had the correct imports in TsBuilderImports, we don't need this.
-	// can just reserverImports and skip this.
-	return ci.enumImports
 }
 
 type ActionInfo struct {
@@ -135,7 +118,7 @@ type commonActionInfo struct {
 	Edges            []*edge.AssociationEdge // for edge actions for now but eventually other actions
 	EdgeGroup        *edge.AssociationEdgeGroup
 	Operation        ent.ActionOperation
-	customInterfaces map[string]*CustomInterface
+	customInterfaces map[string]*custominterface.CustomInterface
 	tsEnums          []*enum.Enum
 	gqlEnums         []*enum.GQLEnum
 	nodeinfo.NodeInfo
@@ -199,16 +182,16 @@ func getTypes(typ enttype.TSGraphQLType) (string, string) {
 	return tsTyp, gqlType
 }
 
-func (action *commonActionInfo) getCustomInterface(typ enttype.TSGraphQLType) *CustomInterface {
+func (action *commonActionInfo) getCustomInterface(typ enttype.TSGraphQLType) *custominterface.CustomInterface {
 	if action.customInterfaces == nil {
-		action.customInterfaces = make(map[string]*CustomInterface)
+		action.customInterfaces = make(map[string]*custominterface.CustomInterface)
 	}
 
 	tsTyp, gqlType := getTypes(typ)
 
 	ci, ok := action.customInterfaces[tsTyp]
 	if !ok {
-		ci = &CustomInterface{
+		ci = &custominterface.CustomInterface{
 			TSType:  tsTyp,
 			GQLType: gqlType,
 		}
@@ -224,7 +207,7 @@ func (action *commonActionInfo) AddCustomField(typ enttype.TSGraphQLType, cf *fi
 	if !ok {
 		return
 	}
-	ci.enumImports = append(ci.enumImports, enumType.GetTSName())
+	ci.AddEnumImport(enumType.GetTSName())
 }
 
 func (action *commonActionInfo) AddCustomNonEntField(typ enttype.TSGraphQLType, cf *field.NonEntField) {
@@ -241,11 +224,11 @@ func (action *commonActionInfo) AddCustomNonEntField(typ enttype.TSGraphQLType, 
 // This choice isn't consistent but is the easiest path so doing that
 func (action *commonActionInfo) AddCustomInterfaces(a2 Action) {
 	if action.customInterfaces == nil {
-		action.customInterfaces = make(map[string]*CustomInterface)
+		action.customInterfaces = make(map[string]*custominterface.CustomInterface)
 	}
 	for _, inter := range a2.GetCustomInterfaces() {
 		// don't add to graphql
-		action.customInterfaces[inter.TSType] = &CustomInterface{
+		action.customInterfaces[inter.TSType] = &custominterface.CustomInterface{
 			TSType:  inter.TSType,
 			GQLType: inter.GQLType,
 			// this flag indicates that we're going to import this input in graphql
@@ -257,8 +240,8 @@ func (action *commonActionInfo) AddCustomInterfaces(a2 Action) {
 	}
 }
 
-func (action *commonActionInfo) GetCustomInterfaces() []*CustomInterface {
-	var ret []*CustomInterface
+func (action *commonActionInfo) GetCustomInterfaces() []*custominterface.CustomInterface {
+	var ret []*custominterface.CustomInterface
 
 	for _, v := range action.customInterfaces {
 		ret = append(ret, v)

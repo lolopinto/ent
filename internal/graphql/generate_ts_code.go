@@ -25,6 +25,7 @@ import (
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
+	"github.com/lolopinto/ent/internal/schema/custominterface"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/syncerr"
@@ -1810,7 +1811,7 @@ func buildActionEnums(nodeData *schema.NodeData, action action.Action) []*gqlEnu
 	return ret
 }
 
-func buildCustomInputNode(c *action.CustomInterface) *objectType {
+func buildCustomInputNode(c *custominterface.CustomInterface) *objectType {
 	result := &objectType{
 		Type:     c.GQLType,
 		Node:     c.GQLType,
@@ -1851,9 +1852,10 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	// as dependencies...
 	for _, c := range a.GetCustomInterfaces() {
 		if c.Action != nil {
+			action := c.Action.(action.Action)
 			result.Imports = append(result.Imports, &fileImport{
 				Type:       c.GQLType,
-				ImportPath: getImportPathForActionFromPackage(c.Action.GetNodeInfo().PackageName, c.Action),
+				ImportPath: getImportPathForActionFromPackage(action.GetNodeInfo().PackageName, action),
 			})
 		}
 	}
