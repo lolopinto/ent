@@ -145,7 +145,7 @@ func getActionsForMutationsType(nodeName string, fieldInfo *field.FieldInfo, exp
 			"",
 			exposeToGraphQL,
 			fields,
-			[]*NonEntField{},
+			[]*field.NonEntField{},
 		),
 	))
 
@@ -163,7 +163,7 @@ func getActionsForMutationsType(nodeName string, fieldInfo *field.FieldInfo, exp
 			"",
 			exposeToGraphQL,
 			fields,
-			[]*NonEntField{},
+			[]*field.NonEntField{},
 		),
 	))
 
@@ -181,7 +181,7 @@ func getActionsForMutationsType(nodeName string, fieldInfo *field.FieldInfo, exp
 			"",
 			exposeToGraphQL,
 			fields,
-			[]*NonEntField{},
+			[]*field.NonEntField{},
 		),
 	))
 	return actions, nil
@@ -300,21 +300,18 @@ func getFieldsForAction(action *input.Action, fieldInfo *field.FieldInfo, typ co
 	return fields, nil
 }
 
-func getNonEntFieldsFromInput(nodeName string, action *input.Action, typ concreteNodeActionType) ([]*NonEntField, error) {
-	var fields []*NonEntField
+func getNonEntFieldsFromInput(nodeName string, action *input.Action, typ concreteNodeActionType) ([]*field.NonEntField, error) {
+	var fields []*field.NonEntField
 
 	inputName := getInputNameForNodeActionType(typ, nodeName, action.CustomInputName)
 
-	for _, field := range action.ActionOnlyFields {
-		typ, err := field.GetEntType(inputName)
+	for _, f := range action.ActionOnlyFields {
+		typ, err := f.GetEntType(inputName)
 		if err != nil {
 			return nil, err
 		}
-		fields = append(fields, &NonEntField{
-			FieldName: field.Name,
-			FieldType: typ,
-			nullable:  field.Nullable,
-		})
+
+		fields = append(fields, field.NewNonEntField(f.Name, typ, f.Nullable))
 	}
 	return fields, nil
 }
@@ -324,21 +321,17 @@ func getNonEntFieldsFromAssocGroup(
 	assocGroup *edge.AssociationEdgeGroup,
 	action *edge.EdgeAction,
 	typ concreteEdgeActionType,
-) ([]*NonEntField, error) {
-	var fields []*NonEntField
+) ([]*field.NonEntField, error) {
+	var fields []*field.NonEntField
 
 	inputName := getInputNameForEdgeActionType(typ, assocGroup, nodeName, "")
 
-	for _, field := range action.ActionOnlyFields {
-		typ, err := field.GetEntType(inputName)
+	for _, f := range action.ActionOnlyFields {
+		typ, err := f.GetEntType(inputName)
 		if err != nil {
 			return nil, err
 		}
-		fields = append(fields, &NonEntField{
-			FieldName: field.Name,
-			FieldType: typ,
-			nullable:  field.Nullable,
-		})
+		fields = append(fields, field.NewNonEntField(f.Name, typ, f.Nullable))
 	}
 	return fields, nil
 }
@@ -402,9 +395,9 @@ func processEdgeGroupActions(nodeName string, assocGroup *edge.AssociationEdgeGr
 
 		var tsEnums []*enum.Enum
 		var gqlEnums []*enum.GQLEnum
-		var fields []*NonEntField
+		var fields []*field.NonEntField
 		if lang == base.GoLang {
-			fields = []*NonEntField{
+			fields = []*field.NonEntField{
 				{
 					FieldName: assocGroup.GroupStatusName,
 					FieldType: &enttype.StringType{},
@@ -421,7 +414,7 @@ func processEdgeGroupActions(nodeName string, assocGroup *edge.AssociationEdgeGr
 			values := assocGroup.GetStatusValues()
 			typ := fmt.Sprintf("%sInput", assocGroup.ConstType)
 
-			fields = []*NonEntField{
+			fields = []*field.NonEntField{
 				{
 					FieldName: assocGroup.TSGroupStatusName,
 					FieldType: &enttype.EnumType{
@@ -510,7 +503,7 @@ func getCommonInfo(
 	customActionName, customGraphQLName, customInputName string,
 	exposeToGraphQL bool,
 	fields []*field.Field,
-	nonEntFields []*NonEntField) commonActionInfo {
+	nonEntFields []*field.NonEntField) commonActionInfo {
 	var graphqlName string
 	if exposeToGraphQL {
 		graphqlName = getGraphQLNameForNodeActionType(typ, nodeName, customGraphQLName)
@@ -556,7 +549,7 @@ func getCommonInfoForGroupEdgeAction(
 	typ concreteEdgeActionType,
 	edgeAction *edge.EdgeAction,
 	lang base.Language,
-	fields []*NonEntField) commonActionInfo {
+	fields []*field.NonEntField) commonActionInfo {
 	var graphqlName, actionName string
 	if edgeAction.ExposeToGraphQL {
 		if edgeAction.CustomGraphQLName == "" {

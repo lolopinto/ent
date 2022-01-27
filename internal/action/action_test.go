@@ -1081,7 +1081,7 @@ func verifyFields(t *testing.T, fields []*field.Field, expFields []expectedField
 	}
 }
 
-func verifyNonEntFields(t *testing.T, nonEntFields []*action.NonEntField, expFields []actionOnlyField) {
+func verifyNonEntFields(t *testing.T, nonEntFields []*field.NonEntField, expFields []actionOnlyField) {
 	require.Equal(t, len(expFields), len(nonEntFields), "length of fields")
 
 	for idx, nonEntField := range nonEntFields {
