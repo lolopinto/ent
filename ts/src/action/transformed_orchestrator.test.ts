@@ -30,6 +30,7 @@ import {
 } from "../testutils/db/test_db";
 import { convertDate } from "../core/convert";
 import { loadConfig } from "../core/config";
+import { FieldMap } from "../schema";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -84,16 +85,15 @@ describe("sqlite", () => {
 
 class DeletedAtPattern implements Pattern {
   name = "deleted_at";
-  fields: Field[] = [
-    TimestampType({
-      // need this to be lowerCamelCase because we do this based on field name
-      // #510
-      name: "deletedAt",
+  fields: FieldMap = {
+    // need this to be lowerCamelCase because we do this based on field name
+    // #510
+    deletedAt: TimestampType({
       nullable: true,
       index: true,
       defaultValueOnCreate: () => null,
     }),
-  ];
+  };
 
   transformRead(): clause.Clause {
     // this is based on sql. other is based on field
@@ -118,14 +118,13 @@ class DeletedAtPattern implements Pattern {
 
 class DeletedAtSnakeCasePattern implements Pattern {
   name = "deleted_at";
-  fields: Field[] = [
-    TimestampType({
-      name: "deleted_at",
+  fields: FieldMap = {
+    deleted_at: TimestampType({
       nullable: true,
       index: true,
       defaultValueOnCreate: () => null,
     }),
-  ];
+  };
 
   transformRead(): clause.Clause {
     // this is based on sql. other is based on field
@@ -153,10 +152,10 @@ class UserSchema extends BaseEntSchema {
     super();
     this.addPatterns(new DeletedAtPattern());
   }
-  fields: Field[] = [
-    StringType({ name: "FirstName" }),
-    StringType({ name: "LastName" }),
-  ];
+  fields: FieldMap = {
+    FirstName: StringType(),
+    LastName: StringType(),
+  };
   ent = User;
 }
 
@@ -165,10 +164,10 @@ class ContactSchema extends BaseEntSchema {
     super();
     this.addPatterns(new DeletedAtSnakeCasePattern());
   }
-  fields: Field[] = [
-    StringType({ name: "first_name" }),
-    StringType({ name: "last_name" }),
-  ];
+  fields: FieldMap = {
+    first_name: StringType(),
+    last_name: StringType(),
+  };
   ent = Contact;
 }
 

@@ -1,11 +1,11 @@
 import { EnumField, EnumType } from "./field";
 
-function enumF(name: string, values: string[]): EnumField {
-  return EnumType({ name, values });
+function enumF(values: string[]): EnumField {
+  return EnumType({ values });
 }
 
-function enumMapF(name: string, map: {}): EnumField {
-  return EnumType({ name, map });
+function enumMapF(map: {}): EnumField {
+  return EnumType({ map });
 }
 
 interface testValue {
@@ -22,8 +22,8 @@ function testEnum(e: EnumField, val: testValue) {
 }
 
 describe("upper case enum", () => {
-  let e = enumF("AccountStatus", ["VERIFIED", "UNVERIFIED"]);
-  let e2 = enumMapF("AccountStatus", {
+  let e = enumF(["VERIFIED", "UNVERIFIED"]);
+  let e2 = enumMapF({
     VERIFIED: "verified",
     UNVERIFIED: "unverified",
   });
@@ -79,7 +79,7 @@ describe("upper case enum", () => {
 });
 
 describe("gql support", () => {
-  let e = enumF("rainbow", [
+  let rainbow = enumF([
     "red",
     "orange",
     "yellow",
@@ -88,7 +88,7 @@ describe("gql support", () => {
     "indigo",
     "violet",
   ]);
-  let e2 = enumMapF("rainbow", {
+  let rainbow2 = enumMapF({
     Red: "red",
     Orange: "orange",
     Yellow: "yellow",
@@ -101,7 +101,7 @@ describe("gql support", () => {
   test("same case", () => {
     ["red", "orange", "yellow", "green", "blue", "indigo", "violet"].forEach(
       (color) => {
-        testEnum(e, {
+        testEnum(rainbow, {
           value: color,
           valid: true,
           formatted: color,
@@ -113,7 +113,7 @@ describe("gql support", () => {
   test("same case map", () => {
     ["red", "orange", "yellow", "green", "blue", "indigo", "violet"].forEach(
       (color) => {
-        testEnum(e2, {
+        testEnum(rainbow2, {
           value: color,
           valid: true,
           formatted: color,
@@ -125,7 +125,7 @@ describe("gql support", () => {
   test("all caps", () => {
     ["RED", "ORANGE", "YELLOW", "GREEN", "BLUE", "INDIGO", "VIOLET"].forEach(
       (color) => {
-        testEnum(e, {
+        testEnum(rainbow, {
           value: color,
           valid: true,
           // the enum values are lowercase so we expect it to be formatted correctly as lowercase
@@ -138,7 +138,7 @@ describe("gql support", () => {
   test("all caps map", () => {
     ["RED", "ORANGE", "YELLOW", "GREEN", "BLUE", "INDIGO", "VIOLET"].forEach(
       (color) => {
-        testEnum(e2, {
+        testEnum(rainbow2, {
           value: color,
           valid: true,
           // the enum values are lowercase so we expect it to be formatted correctly as lowercase
@@ -149,11 +149,11 @@ describe("gql support", () => {
   });
 
   test("mixed case", () => {
-    expect(e.valid("Violet")).toBe(false);
+    expect(rainbow.valid("Violet")).toBe(false);
   });
 
   test("mixed case map", () => {
-    expect(e2.valid("Violet")).toBe(false);
+    expect(rainbow2.valid("Violet")).toBe(false);
   });
 });
 
@@ -172,11 +172,11 @@ describe("gql support camel case", () => {
     "CAN_SEND_REQUEST",
     "CANNOT_REQUEST",
   ];
-  let e = enumF("friendship status", values);
+  let friendshipStatus = enumF(values);
 
   test("same case", () => {
     values.forEach((enumValue) => {
-      testEnum(e, {
+      testEnum(friendshipStatus, {
         value: enumValue,
         valid: true,
         formatted: enumValue,
@@ -186,13 +186,15 @@ describe("gql support camel case", () => {
 
   test("converted", () => {
     values.forEach((enumValue, idx) => {
-      expect(e.convertForGQL(enumValue)).toEqual(expectedVals[idx]);
+      expect(friendshipStatus.convertForGQL(enumValue)).toEqual(
+        expectedVals[idx],
+      );
     });
   });
 
   test("validate expected", () => {
     expectedVals.forEach((val, idx) => {
-      testEnum(e, {
+      testEnum(friendshipStatus, {
         value: val,
         valid: true,
         // the enum values are lowercase so we expect it to be formatted correctly as lowercase
@@ -203,7 +205,7 @@ describe("gql support camel case", () => {
 });
 
 describe("mixed case enum", () => {
-  let e = enumF("rainbow", [
+  let rainbow = enumF([
     "Red",
     "Orange",
     "Yellow",
@@ -216,7 +218,7 @@ describe("mixed case enum", () => {
   test("same case", () => {
     ["Red", "Orange", "Yellow", "Green", "Blue", "Indigo", "Violet"].forEach(
       (color) => {
-        testEnum(e, {
+        testEnum(rainbow, {
           value: color,
           valid: true,
           formatted: color,
@@ -228,7 +230,7 @@ describe("mixed case enum", () => {
   test("all caps", () => {
     ["Red", "Orange", "Yellow", "Green", "Blue", "Indigo", "Violet"].forEach(
       (color) => {
-        testEnum(e, {
+        testEnum(rainbow, {
           // value passed is uppercase
           value: color.toUpperCase(),
           valid: true,
@@ -242,7 +244,7 @@ describe("mixed case enum", () => {
   test("lower case", () => {
     ["red", "orange", "yellow", "green", "blue", "indigo", "violet"].forEach(
       (color) => {
-        testEnum(e, {
+        testEnum(rainbow, {
           value: color,
           valid: false,
         });
@@ -253,7 +255,6 @@ describe("mixed case enum", () => {
 
 test("fkey enum", () => {
   let e = EnumType({
-    name: "role",
     foreignKey: { schema: "Role", column: "role" },
   });
   ["1", "2", "3", "HAPPY", "sad"].forEach((id) => {
@@ -266,7 +267,7 @@ test("fkey enum", () => {
 });
 
 describe("weird maps", () => {
-  let e = enumMapF("langs", {
+  let langs = enumMapF({
     Java: "java",
     CPlusPlus: "c++",
     CSharp: "c#",
@@ -278,7 +279,7 @@ describe("weird maps", () => {
 
   test("valid", () => {
     ["java", "c++", "c#", "js", "ts", "go", "python"].forEach((lang) => {
-      testEnum(e, {
+      testEnum(langs, {
         valid: true,
         value: lang,
         formatted: lang,
@@ -288,7 +289,7 @@ describe("weird maps", () => {
 
   test("invalid different case", () => {
     ["Java", "Ts", "Go"].forEach((lang) => {
-      testEnum(e, {
+      testEnum(langs, {
         valid: false,
         value: lang,
       });
@@ -297,7 +298,7 @@ describe("weird maps", () => {
 
   test("invalid", () => {
     ["apple", "banana", "rainbow"].forEach((lang) => {
-      testEnum(e, {
+      testEnum(langs, {
         valid: false,
         value: lang,
       });
@@ -314,7 +315,7 @@ describe("weird maps", () => {
       ["GO_LANG", "go"],
       ["PYTHON", "python"],
     ].forEach((lang) => {
-      testEnum(e, {
+      testEnum(langs, {
         valid: true,
         value: lang[0],
         formatted: lang[1],
@@ -326,7 +327,7 @@ describe("weird maps", () => {
 describe("errors", () => {
   test("no fkey, no values or maps", () => {
     try {
-      EnumType({ name: "role" });
+      EnumType({});
       throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(
@@ -337,7 +338,7 @@ describe("errors", () => {
 
   test("zero-length values", () => {
     try {
-      EnumType({ name: "role", values: [] });
+      EnumType({ values: [] });
       throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(/need at least one value in enum type/);
@@ -346,7 +347,7 @@ describe("errors", () => {
 
   test("empty map", () => {
     try {
-      EnumType({ name: "role", map: {} });
+      EnumType({ map: {} });
       throw new Error("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(/need at least one entry in enum map/);
@@ -356,7 +357,6 @@ describe("errors", () => {
   test("fkey and values provided", () => {
     try {
       EnumType({
-        name: "role",
         values: ["sss"],
         foreignKey: { schema: "Role", column: "role" },
       });
@@ -371,7 +371,6 @@ describe("errors", () => {
   test("fkey and map provided", () => {
     try {
       EnumType({
-        name: "role",
         map: { sss: "sss" },
         foreignKey: { schema: "Role", column: "role" },
       });
@@ -386,7 +385,6 @@ describe("errors", () => {
   test("fkey and empty values provided", () => {
     try {
       EnumType({
-        name: "role",
         values: [],
         foreignKey: { schema: "Role", column: "role" },
       });
@@ -401,7 +399,6 @@ describe("errors", () => {
   test("fkey and empty map provided", () => {
     try {
       EnumType({
-        name: "role",
         map: {},
         foreignKey: { schema: "Role", column: "role" },
       });
@@ -416,7 +413,6 @@ describe("errors", () => {
   test("createEnumType invalid", () => {
     try {
       EnumType({
-        name: "role",
         foreignKey: { schema: "Role", column: "role" },
         createEnumType: true,
       });
@@ -431,7 +427,6 @@ describe("errors", () => {
   test("tsType invalid", () => {
     try {
       EnumType({
-        name: "role",
         foreignKey: { schema: "Role", column: "role" },
         tsType: "Role",
       });
@@ -446,7 +441,6 @@ describe("errors", () => {
   test("graphqlType invalid", () => {
     try {
       EnumType({
-        name: "role",
         foreignKey: { schema: "Role", column: "role" },
         graphQLType: "Role",
       });

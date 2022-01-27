@@ -6,12 +6,13 @@ import {
   AssocEdgeGroup,
   Action,
 } from "../schema";
-import { ActionField, Type } from "../schema/schema";
+import { ActionField, Type, FieldMap } from "../schema/schema";
 
-function processFields(src: Field[], patternName?: string): ProcessedField[] {
+function processFields(src: FieldMap, patternName?: string): ProcessedField[] {
   const ret: ProcessedField[] = [];
-  for (const field of src) {
-    let f: ProcessedField = { ...field };
+  for (const name in src) {
+    const field = src[name];
+    let f: ProcessedField = { name, ...field };
     f.hasDefaultValueOnCreate = field.defaultValueOnCreate != undefined;
     f.hasDefaultValueOnEdit = field.defaultValueOnEdit != undefined;
     f.hasFieldPrivacy = field.privacyPolicy !== undefined;
@@ -40,6 +41,9 @@ function processFields(src: Field[], patternName?: string): ProcessedField[] {
 
     transformType(field.type);
 
+    if (field.getDerivedFields) {
+      f.derivedFields = processFields(field.getDerivedFields(name));
+    }
     ret.push(f);
   }
   return ret;
@@ -176,6 +180,9 @@ type ProcessedSchema = Omit<
     actions: OutputAction[];
     assocEdges: ProcessedAssocEdge[];
     assocEdgeGroups: ProcessedAssocEdgeGroup[];
+    // converting to list for go because we want the order respected
+    // and go maps don't support order
+
     fields: ProcessedField[];
   };
 
@@ -235,10 +242,12 @@ type ProcessedField = Omit<
   Field,
   "defaultValueOnEdit" | "defaultValueOnCreate" | "privacyPolicy"
 > & {
+  name: string;
   hasDefaultValueOnCreate?: boolean;
   hasDefaultValueOnEdit?: boolean;
   patternName?: string;
   hasFieldPrivacy?: boolean;
+  derivedFields?: ProcessedField[];
 };
 
 interface patternsDict {

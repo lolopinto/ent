@@ -14,7 +14,7 @@ import {
   AllowIfConditionAppliesRule,
 } from "../../core/privacy";
 import { BuilderSchema, SimpleAction } from "../builder";
-import { Field, StringType, BaseEntSchema } from "../../schema";
+import { Field, StringType, BaseEntSchema, FieldMap } from "../../schema";
 import { EdgeType } from "./internal";
 import { NodeType } from "./const";
 import { IDViewer, IDViewerOptions } from "../../core/viewer";
@@ -135,24 +135,15 @@ export class FakeUserSchema
   implements BuilderSchema<FakeUser>
 {
   ent = FakeUser;
-  fields: Field[] = [
-    StringType({
-      name: "firstName",
-    }),
-    StringType({
-      name: "lastName",
-    }),
-    StringType({
-      name: "emailAddress",
-    }),
-    StringType({
-      name: "phoneNumber",
-    }),
-    StringType({
-      name: "password",
+  fields: FieldMap = {
+    firstName: StringType(),
+    lastName: StringType(),
+    emailAddress: StringType(),
+    phoneNumber: StringType(),
+    password: StringType({
       nullable: true,
     }),
-  ];
+  };
 }
 
 export interface UserCreateInput {

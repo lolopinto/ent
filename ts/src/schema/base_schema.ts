@@ -1,18 +1,16 @@
-import { Field, Pattern } from "./schema";
+import { Field, FieldMap, Pattern } from "./schema";
 import { v4 as uuidv4 } from "uuid";
 import { TimestampType, UUIDType } from "./field";
 
-let tsFields: Field[] = [
-  TimestampType({
-    name: "createdAt",
+let tsFields: FieldMap = {
+  createdAt: TimestampType({
     hideFromGraphQL: true,
     disableUserEditable: true,
     defaultValueOnCreate: () => {
       return new Date();
     },
   }),
-  TimestampType({
-    name: "updatedAt",
+  updatedAt: TimestampType({
     hideFromGraphQL: true,
     disableUserEditable: true,
     defaultValueOnCreate: () => {
@@ -22,7 +20,7 @@ let tsFields: Field[] = [
       return new Date();
     },
   }),
-];
+};
 
 // Timestamps is a Pattern that adds a createdAt and updatedAt timestamp fields to the ent
 export const Timestamps: Pattern = {
@@ -31,7 +29,6 @@ export const Timestamps: Pattern = {
 };
 
 let nodeField = UUIDType({
-  name: "ID",
   primaryKey: true,
   disableUserEditable: true,
   defaultValueOnCreate: () => {
@@ -39,12 +36,16 @@ let nodeField = UUIDType({
   },
 });
 
-let nodeFields: Field[] = [nodeField, ...tsFields];
+let nodeFields: FieldMap = {
+  // inconsistent naming :(
+  ID: nodeField,
+  ...tsFields,
+};
 
-let nodeFieldsWithTZ: Field[] = [
-  nodeField,
-  TimestampType({
-    name: "createdAt",
+let nodeFieldsWithTZ: FieldMap = {
+  // inconsistent naming :(
+  ID: nodeField,
+  createdAt: TimestampType({
     hideFromGraphQL: true,
     disableUserEditable: true,
     defaultValueOnCreate: () => {
@@ -52,8 +53,7 @@ let nodeFieldsWithTZ: Field[] = [
     },
     withTimezone: true,
   }),
-  TimestampType({
-    name: "updatedAt",
+  updatedAt: TimestampType({
     hideFromGraphQL: true,
     disableUserEditable: true,
     defaultValueOnCreate: () => {
@@ -64,7 +64,7 @@ let nodeFieldsWithTZ: Field[] = [
     },
     withTimezone: true,
   }),
-];
+};
 
 // Node is a Pattern that adds 3 fields to the ent: (id, createdAt, and updatedAt timestamps)
 export const Node: Pattern = {

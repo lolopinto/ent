@@ -14,20 +14,19 @@ func TestDerivedFields(t *testing.T) {
 	schema := testhelper.ParseSchemaForTest(t,
 		map[string]string{
 			"address.ts": testhelper.GetCodeWithSchema(`
-		import {BaseEntSchema, Field, StringType, UUIDType} from "{schema}";
+		import {BaseEntSchema, FieldMap, StringType, UUIDType} from "{schema}";
 
 		export default class Address extends BaseEntSchema {
-			fields: Field[] = [
-				StringType({ name: "Street" }),
-				StringType({ name: "City" }),
-				StringType({ name: "State" }),
-				StringType({ name: "ZipCode" }), 
-				UUIDType({
-					name: "OwnerID",
+			fields: FieldMap = {
+				Street: StringType(),
+				City: StringType(),
+				State: StringType(),
+				ZipCode: StringType(), 
+				OwnerID: UUIDType({
 					index: true, 
 					polymorphic: true,
 				}),
-			];
+			};
 		}`),
 		},
 		base.TypeScript,
@@ -62,13 +61,13 @@ func TestDuplicateFields(t *testing.T) {
 	schema, err := testhelper.ParseSchemaForTestFull(t,
 		map[string]string{
 			"address.ts": testhelper.GetCodeWithSchema(`
-		import {Schema, Field, StringType, UUIDType} from "{schema}";
+		import {Schema, FieldMap, StringType, UUIDType} from "{schema}";
 
 		export default class Address implements Schema {
-			fields: Field[] = [
-				StringType({ name: "Street" }),
-				StringType({ name: "street" }),
-			];
+			fields: FieldMap = {
+				Street: StringType(),
+				street: StringType(),
+			};
 		}`),
 		},
 		base.TypeScript,
@@ -83,22 +82,21 @@ func TestDisableBuilderIDField(t *testing.T) {
 	schema := testhelper.ParseSchemaForTest(t,
 		map[string]string{
 			"address.ts": testhelper.GetCodeWithSchema(`
-		import {BaseEntSchema, Field, StringType, UUIDType} from "{schema}";
+		import {BaseEntSchema, FieldMap, StringType, UUIDType} from "{schema}";
 
 		export default class Address extends BaseEntSchema {
-			fields: Field[] = [
-				StringType({ name: "Street" }),
-				StringType({ name: "City" }),
-				StringType({ name: "State" }),
-				StringType({ name: "ZipCode" }), 
-				UUIDType({
-					name: "OwnerID",
+			fields: FieldMap = {
+				Street: StringType(),
+				City: StringType(),
+				State: StringType(),
+				ZipCode: StringType(), 
+				OwnerID: UUIDType({
 					index: true, 
 					polymorphic: {
 						disableBuilderType: true,
 					},
 				}),
-			];
+			};
 		}`),
 		},
 		base.TypeScript,
@@ -121,31 +119,29 @@ func TestUUIDFieldList(t *testing.T) {
 	schema := testhelper.ParseSchemaForTest(t,
 		map[string]string{
 			"contact.ts": testhelper.GetCodeWithSchema(`
-		import {BaseEntSchema, Field, StringType, UUIDListType} from "{schema}";
+		import {BaseEntSchema, FieldMap, StringType, UUIDListType} from "{schema}";
 
 		export default class Contact extends BaseEntSchema {
-			fields: Field[] = [
-				StringType({ name: "FirstName" }),
-				StringType({ name: "LastName" }),
-				UUIDListType({
-					name: "contactEmailIDs",
+			fields: FieldMap = {
+				FirstName: StringType(),
+				LastName: StringType(),
+				contactEmailIDs: UUIDListType({
 					fieldEdge:{
 						schema: "ContactEmail",
 					},
 				}),
-			];
+			};
 		}`),
 			"contact_email.ts": testhelper.GetCodeWithSchema(`
-		import {BaseEntSchema, Field, StringType, UUIDType} from "{schema}";
+		import {BaseEntSchema, FieldMap, StringType, UUIDType} from "{schema}";
 
 		export default class ContactEmail extends BaseEntSchema {
-			fields: Field[] = [
-				StringType({ name: "EmailAddress" }),
-				UUIDType({
-					name: "OwnerID",
+			fields: FieldMap = {
+				EmailAddress: StringType(),
+				OwnerID: UUIDType({
 					fieldEdge: {schema: "Contact"},
 				}),
-			];
+			};
 		}`),
 		},
 		base.TypeScript,

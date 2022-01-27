@@ -1,4 +1,4 @@
-import { Field } from "../../schema";
+import { FieldMap } from "../../schema";
 import { BaseEntSchema } from "../../schema/base_schema";
 import { ID, Ent, Data, Viewer } from "../../core/base";
 import { AlwaysAllowPrivacyPolicy } from "../../core/privacy";
@@ -19,7 +19,7 @@ class Account implements Ent {
 
 class AccountSchema extends BaseEntSchema {
   ent = Account;
-  fields: Field[] = [];
+  fields: FieldMap = {};
 }
 
 test("schema name", () => {
