@@ -205,7 +205,12 @@ export interface Type {
   values?: string[]; // values e.g. enum values
   // TODO need to refactor this into type specific objects instead of killing the top level field like this.
   enumMap?: EnumMap; // enumMap e.g. k->v pair for enums
+
+  // @deprecated eventually kill this
   importType?: ImportType;
+
+  // StructType fields
+  subFields?: FieldMap;
 }
 
 export interface ForeignKey {

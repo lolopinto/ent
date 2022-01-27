@@ -205,6 +205,7 @@ interface ProcessedPattern {
   fields: ProcessedField[];
 }
 
+// TODO handle subFields and converting list -> map
 type ProcessedField = Omit<
   Field,
   "defaultValueOnEdit" | "defaultValueOnCreate"

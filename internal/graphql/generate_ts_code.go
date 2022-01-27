@@ -1851,6 +1851,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	// maybe not the best place for this probably but it makes sense
 	// as dependencies...
 	for _, c := range a.GetCustomInterfaces() {
+		// flag. Action used here
 		if c.Action != nil {
 			action := c.Action.(action.Action)
 			result.Imports = append(result.Imports, &fileImport{

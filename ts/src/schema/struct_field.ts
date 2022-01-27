@@ -13,6 +13,7 @@ export class StructField extends BaseField implements Field {
 
   constructor(private fields: FieldMap) {
     super();
+    this.type.subFields = fields;
   }
 
   format(obj: any, nested?: boolean) {

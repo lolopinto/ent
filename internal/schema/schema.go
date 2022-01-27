@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/google/uuid"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
@@ -1049,6 +1050,32 @@ func (s *Schema) addActionFields(info *NodeDataInfo) error {
 			}
 			if !foundAction {
 				return fmt.Errorf("invalid action only field %s. couldn't find action with name %s", f.FieldName, actionName)
+			}
+		}
+
+		for _, f := range a.GetFields() {
+			fieldType := f.GetFieldType()
+			t, ok := fieldType.(enttype.TSWithSubFields)
+			if !ok {
+				continue
+			}
+			subFields := t.GetSubFields()
+			if subFields == nil {
+				continue
+			}
+			// TODO...
+			spew.Dump(t.GetCustomTSInterface())
+			spew.Dump(t.GetCustomGraphQLInterface())
+			actualSubFields := subFields.([]*input.Field)
+			spew.Dump(len(actualSubFields))
+
+			fi, err := field.NewFieldInfoFromInputs(actualSubFields, &field.Options{})
+			if err != nil {
+				return err
+			}
+			for _, f2 := range fi.Fields {
+				// TODO check if type is object and had new custom interface
+				a.AddCustomField(t, f2)
 			}
 		}
 	}

@@ -90,6 +90,9 @@ type FieldType struct {
 	// optional used by generator to specify different types e.g. email, phone, password
 	CustomType CustomType               `json:"customType"`
 	ImportType *enttype.InputImportType `json:"importType"`
+
+	// list because go-lang map not stable and don't want generated fields to change ofte
+	Fields []*Field `json:"subFields"`
 }
 
 type Field struct {
@@ -241,24 +244,49 @@ func getTypeFor(fieldName string, typ *FieldType, nullable bool, foreignKey *For
 			return &enttype.NullableDateType{}, nil
 		}
 		return &enttype.DateType{}, nil
-	case JSON:
-		if nullable {
-			return &enttype.NullableJSONType{
-				ImportType: typ.ImportType,
-			}, nil
+	case JSON, JSONB:
+		// customUserPrefsInput can be duplicated in actions
+		// or should have its own file...
+		// ideally, this is a top level generated thing that's shared everywhere actually...
+		tsType := fmt.Sprintf("custom%sInput", strcase.ToCamel(fieldName))
+
+		// UserPrefsInput
+		// this input needs to be in its own file because it can be shared across creates and edits
+		// TODO: can you have nonInput passed to graphql?
+		gqlType := fmt.Sprintf("%sInput", strcase.ToCamel(fieldName))
+
+		if typ.DBType == JSON {
+			if nullable {
+				ret := &enttype.NullableJSONType{}
+				ret.ImportType = typ.ImportType
+				ret.CustomTsInterface = tsType
+				ret.CustomGraphQLInterface = gqlType
+				ret.Fields = typ.Fields
+				return ret, nil
+			}
+			ret := &enttype.JSONType{}
+			ret.ImportType = typ.ImportType
+			ret.CustomTsInterface = tsType
+			ret.CustomGraphQLInterface = gqlType
+			ret.Fields = typ.Fields
+			return ret, nil
 		}
-		return &enttype.JSONType{
-			ImportType: typ.ImportType,
-		}, nil
-	case JSONB:
+
+		//	case JSONB:
 		if nullable {
-			return &enttype.NullableJSONBType{
-				ImportType: typ.ImportType,
-			}, nil
+			ret := &enttype.NullableJSONBType{}
+			ret.ImportType = typ.ImportType
+			ret.CustomTsInterface = tsType
+			ret.CustomGraphQLInterface = gqlType
+			ret.Fields = typ.Fields
+			return ret, nil
 		}
-		return &enttype.JSONBType{
-			ImportType: typ.ImportType,
-		}, nil
+		ret := &enttype.JSONBType{}
+		ret.ImportType = typ.ImportType
+		ret.CustomTsInterface = tsType
+		ret.CustomGraphQLInterface = gqlType
+		ret.Fields = typ.Fields
+		return ret, nil
 
 	case StringEnum, Enum:
 		tsType := strcase.ToCamel(typ.Type)

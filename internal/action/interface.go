@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
-	"strings"
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
@@ -40,8 +39,8 @@ type Action interface {
 	GetNodeInfo() nodeinfo.NodeInfo
 	GetOperation() ent.ActionOperation
 	IsDeletingNode() bool
-	AddCustomField(enttype.TSGraphQLType, *field.Field)
-	AddCustomNonEntField(enttype.TSGraphQLType, *field.NonEntField)
+	AddCustomField(enttype.TSTypeWithCustomInterfaces, *field.Field)
+	AddCustomNonEntField(enttype.TSTypeWithCustomInterfaces, *field.NonEntField)
 	AddCustomInterfaces(a Action)
 	GetCustomInterfaces() []*custominterface.CustomInterface
 	GetTSEnums() []*enum.Enum
@@ -168,21 +167,12 @@ func (action *commonActionInfo) IsDeletingNode() bool {
 	return action.Operation == ent.DeleteAction
 }
 
-func getTypes(typ enttype.TSGraphQLType) (string, string) {
-	// TODO these 2 need to be refactored to be TSObjectType or something
-	// tsInterfaceName...
-	// because we can't be trimming
-	tsTyp := strings.TrimSuffix(typ.GetTSType(), " | null")
-	tsTyp = strings.TrimSuffix(tsTyp, "[]")
-	gqlType := strings.TrimSuffix(typ.GetGraphQLType(), "!")
-	gqlType = strings.TrimPrefix(gqlType, "[")
-	gqlType = strings.TrimSuffix(gqlType, "]")
-	gqlType = strings.TrimSuffix(gqlType, "!")
-
-	return tsTyp, gqlType
+// for custom fields, the ty
+func getTypes(typ enttype.TSTypeWithCustomInterfaces) (string, string) {
+	return typ.GetCustomTSInterface(), typ.GetCustomGraphQLInterface()
 }
 
-func (action *commonActionInfo) getCustomInterface(typ enttype.TSGraphQLType) *custominterface.CustomInterface {
+func (action *commonActionInfo) getCustomInterface(typ enttype.TSTypeWithCustomInterfaces) *custominterface.CustomInterface {
 	if action.customInterfaces == nil {
 		action.customInterfaces = make(map[string]*custominterface.CustomInterface)
 	}
@@ -200,7 +190,7 @@ func (action *commonActionInfo) getCustomInterface(typ enttype.TSGraphQLType) *c
 	return ci
 }
 
-func (action *commonActionInfo) AddCustomField(typ enttype.TSGraphQLType, cf *field.Field) {
+func (action *commonActionInfo) AddCustomField(typ enttype.TSTypeWithCustomInterfaces, cf *field.Field) {
 	ci := action.getCustomInterface(typ)
 	ci.Fields = append(ci.Fields, cf)
 	enumType, ok := enttype.GetEnumType(cf.GetFieldType())
@@ -210,7 +200,7 @@ func (action *commonActionInfo) AddCustomField(typ enttype.TSGraphQLType, cf *fi
 	ci.AddEnumImport(enumType.GetTSName())
 }
 
-func (action *commonActionInfo) AddCustomNonEntField(typ enttype.TSGraphQLType, cf *field.NonEntField) {
+func (action *commonActionInfo) AddCustomNonEntField(typ enttype.TSTypeWithCustomInterfaces, cf *field.NonEntField) {
 	ci := action.getCustomInterface(typ)
 	ci.NonEntFields = append(ci.NonEntFields, cf)
 }
