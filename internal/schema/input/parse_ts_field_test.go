@@ -41,15 +41,15 @@ func TestParseFields(t *testing.T) {
 		"node with explicit schema": {
 			code: map[string]string{
 				"address.ts": getCodeWithSchema(`
-				import {Schema, Field, StringType} from "{schema}";
+				import {Schema, FieldMap, StringType} from "{schema}";
 
 				export default class Address implements Schema {
 					tableName: string = "addresses";
 
-					fields: Field[] = [
-						StringType({name: "street_name"}),
-						StringType({name: "city"}),
-					]
+					fields: FieldMap = {
+						street_name: StringType(),
+						city: StringType(),
+					}
 				}`),
 			},
 			expectedNodes: map[string]node{
@@ -71,12 +71,12 @@ func TestParseFields(t *testing.T) {
 		"nullable field": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, Field, StringType} from "{schema}";
+				import {Schema, FieldMap, StringType} from "{schema}";
 
 				export default class User implements Schema {
-					fields: Field[] = [
-						StringType({name: "bio", nullable: true}),
-					]
+					fields: FieldMap = {
+						bio: StringType({nullable: true}),
+					};
 				}`),
 			},
 			expectedNodes: map[string]node{
@@ -94,12 +94,12 @@ func TestParseFields(t *testing.T) {
 		"renamed storageKey": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, Field, StringType} from "{schema}";
+				import {Schema, FieldMap, StringType} from "{schema}";
 
 				export default class User implements Schema {
-					fields: Field[] = [
-						StringType({name: "bio", storageKey: "about_me"}),
-					]
+					fields: FieldMap = {
+						bio: StringType({storageKey: "about_me"}),
+					}
 				}`),
 			},
 			expectedNodes: map[string]node{
@@ -117,12 +117,12 @@ func TestParseFields(t *testing.T) {
 		"renamed graphqlName": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, Field, StringType} from "{schema}";
+				import {Schema, FieldMap, StringType} from "{schema}";
 
 				export default class User implements Schema {
-					fields: Field[] = [
-						StringType({name: "bio", graphqlName: "aboutMe"}),
-					]
+					fields: FieldMap = {
+						bio: StringType({graphqlName: "aboutMe"}),
+					}
 				}`),
 			},
 			expectedNodes: map[string]node{
@@ -140,12 +140,12 @@ func TestParseFields(t *testing.T) {
 		"unique": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, Field, StringType} from "{schema}";
+				import {Schema, FieldMap, StringType} from "{schema}";
 
 				export default class User implements Schema {
-					fields: Field[] = [
-						StringType({name: "email", unique: true}),
-					]
+					fields: FieldMap = {
+						email: StringType({unique: true}),
+					};
 				}`),
 			},
 			expectedNodes: map[string]node{
@@ -163,12 +163,12 @@ func TestParseFields(t *testing.T) {
 		"hideFromGraphQL": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, Field, StringType} from "{schema}";
+				import {Schema, FieldMap, StringType} from "{schema}";
 
 				export default class User implements Schema {
-					fields: Field[] = [
-						StringType({name: "password", hideFromGraphQL: true}),
-					]
+					fields: FieldMap = {
+						password: StringType({hideFromGraphQL: true}),
+					};
 				}`),
 			},
 			expectedNodes: map[string]node{
@@ -186,12 +186,12 @@ func TestParseFields(t *testing.T) {
 		"private field": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, Field, StringType} from "{schema}";
+				import {Schema, FieldMap, StringType} from "{schema}";
 
 				export default class User implements Schema {
-					fields: Field[] = [
-						StringType({name: "password", private: true}),
-					]
+					fields: FieldMap = {
+						password: StringType({private: true}),
+					};
 				}`),
 			},
 			expectedNodes: map[string]node{
@@ -209,12 +209,12 @@ func TestParseFields(t *testing.T) {
 		"index": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, Field, StringType} from "{schema}";
+				import {Schema, FieldMap, StringType} from "{schema}";
 
 				export default class User implements Schema {
-					fields: Field[] = [
-						StringType({name: "last_name", index: true}),
-					]
+					fields: FieldMap = {
+						last_name: StringType({index: true}),
+					}
 				}`),
 			},
 			expectedNodes: map[string]node{
@@ -232,12 +232,12 @@ func TestParseFields(t *testing.T) {
 		"server default": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, Field, TimestampType} from "{schema}";
+				import {Schema, FieldMap, TimestampType} from "{schema}";
 
 				export default class User implements Schema {
-					fields: Field[] = [
-						TimestampType({name: "updated_at", serverDefault: 'now()'}),
-					]
+					fields: FieldMap = {
+						updated_at: TimestampType({serverDefault: 'now()'}),
+					}
 				}`),
 			},
 			expectedNodes: map[string]node{
@@ -255,12 +255,12 @@ func TestParseFields(t *testing.T) {
 		"with base schema": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, Field, BaseEntSchema, StringType} from "{schema}";
+				import {Schema, FieldMap, BaseEntSchema, StringType} from "{schema}";
 
 				export default class User extends BaseEntSchema implements Schema {
-					fields: Field[] = [
-						StringType({name: "firstName"}),
-					];
+					fields: FieldMap = {
+						firstName: StringType(),
+					};
 				}`),
 			},
 			expectedPatterns: map[string]pattern{
@@ -283,27 +283,27 @@ func TestParseFields(t *testing.T) {
 		"multiple files/complicated": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, Field, BaseEntSchema, UUIDType, StringType } from "{schema}"
+				import {Schema, FieldMap, BaseEntSchema, UUIDType, StringType } from "{schema}"
 
 				export default class User extends BaseEntSchema implements Schema {
-					fields: Field[] = [
-						StringType({name: "first_name"}),
-						StringType({name: "last_name"}),
-						StringType({name: "email", unique: true}),
-						StringType({name: "password", private: true, hideFromGraphQL: true}),
-					]
+					fields: FieldMap = {
+						first_name: StringType(),
+						last_name: StringType(),
+						email: StringType({unique: true}),
+						password: StringType({private: true, hideFromGraphQL: true}),
+					};
 				}`),
 				"event.ts": getCodeWithSchema(`
-				import {Schema, BaseEntSchema, Field, TimestampType, StringType, UUIDType} from "{schema}"
+				import {Schema, BaseEntSchema, FieldMap, TimestampType, StringType, UUIDType} from "{schema}"
 
 				export default class Event extends BaseEntSchema implements Schema {
-					fields: Field[] = [
-						StringType({name: "name"}),
-						UUIDType({name: "creator_id", foreignKey: {schema:"User", column:"ID"}}),
-						TimestampType({name: "start_time"}),
-						TimestampType({name: "end_time", nullable: true}),
-						StringType({name: "location"}),
-					]
+					fields: FieldMap = {
+						name: StringType(),
+						creator_id: UUIDType({foreignKey: {schema:"User", column:"ID"}}),
+						start_time: TimestampType(),
+						end_time: TimestampType({ nullable: true}),
+						location: StringType(),
+					};
 				}`),
 			},
 			expectedPatterns: map[string]pattern{
@@ -367,12 +367,12 @@ func TestParseFields(t *testing.T) {
 		"enum": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, Field, EnumType} from "{schema}";
+				import {Schema, FieldMap, EnumType} from "{schema}";
 
 				export default class User implements Schema {
-					fields: Field[] = [
-						EnumType({name: "AccountStatus", values: ["UNVERIFIED", "VERIFIED", "DEACTIVATED", "DISABLED"]}),
-					]
+					fields: FieldMap = {
+						AccountStatus: EnumType({values: ["UNVERIFIED", "VERIFIED", "DEACTIVATED", "DISABLED"]}),
+					};
 				}`),
 			},
 			expectedNodes: map[string]node{
@@ -388,8 +388,6 @@ func TestParseFields(t *testing.T) {
 									"DEACTIVATED",
 									"DISABLED",
 								},
-								Type:        "AccountStatus",
-								GraphQLType: "AccountStatus",
 							},
 						},
 					},
@@ -399,12 +397,12 @@ func TestParseFields(t *testing.T) {
 		"enum with custom type": {
 			code: map[string]string{
 				"request.ts": getCodeWithSchema(`
-				import {Schema, Field, EnumType} from "{schema}";
+				import {Schema, FieldMap, EnumType} from "{schema}";
 
 				export default class Request implements Schema {
-					fields: Field[] = [
-						EnumType({name: "Status", values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus"}),
-					]
+					fields: FieldMap = {
+						Status: EnumType({values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus"}),
+					};
 				}`),
 			},
 			expectedNodes: map[string]node{
@@ -430,12 +428,12 @@ func TestParseFields(t *testing.T) {
 		"db enum with custom type": {
 			code: map[string]string{
 				"request.ts": getCodeWithSchema(`
-				import {Schema, Field, EnumType} from "{schema}";
+				import {Schema, FieldMap, EnumType} from "{schema}";
 
 				export default class Request implements Schema {
-					fields: Field[] = [
-						EnumType({name: "Status", values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus", createEnumType: true}),
-					]
+					fields: FieldMap = {
+						Status: EnumType({values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus", createEnumType: true}),
+					}
 				}`),
 			},
 			expectedNodes: map[string]node{
@@ -461,12 +459,12 @@ func TestParseFields(t *testing.T) {
 		"db enum ": {
 			code: map[string]string{
 				"request.ts": getCodeWithSchema(`
-				import {Schema, Field, EnumType} from "{schema}";
+				import {Schema, FieldMap, EnumType} from "{schema}";
 
 				export default class Request implements Schema {
-					fields: Field[] = [
-						EnumType({name: "Status", values: ["OPEN", "PENDING", "CLOSED"], createEnumType: true}),
-					]
+					fields: FieldMap = {
+						Status: EnumType({values: ["OPEN", "PENDING", "CLOSED"], createEnumType: true}),
+					}
 				}`),
 			},
 			expectedNodes: map[string]node{
@@ -481,8 +479,6 @@ func TestParseFields(t *testing.T) {
 									"PENDING",
 									"CLOSED",
 								},
-								Type:        "Status",
-								GraphQLType: "Status",
 							},
 						},
 					},
@@ -492,20 +488,19 @@ func TestParseFields(t *testing.T) {
 		"polymorphic field": {
 			code: map[string]string{
 				"address.ts": getCodeWithSchema(`
-					import {Schema, Field, StringType, UUIDType} from "{schema}";
+					import {Schema, FieldMap, StringType, UUIDType} from "{schema}";
 
 					export default class Address implements Schema {
-						fields: Field[] = [
-							StringType({ name: "Street" }),
-					    StringType({ name: "City" }),
-							StringType({ name: "State" }),
-							StringType({ name: "ZipCode" }), 
-							UUIDType({
-								name: "OwnerID",
+						fields: FieldMap = {
+							Street: StringType(),
+					    City: StringType(),
+							State: StringType(),
+							ZipCode: StringType(), 
+							OwnerID: UUIDType({
 								index: true, 
 								polymorphic: true,
 							}),
-						];
+						};
 					}
 				`),
 			},
@@ -558,23 +553,22 @@ func TestParseFields(t *testing.T) {
 		"polymorphic field with restricted types": {
 			code: map[string]string{
 				"address.ts": getCodeWithSchema(`
-					import {Schema, Field, StringType, UUIDType} from "{schema}";
+					import {Schema, FieldMap, StringType, UUIDType} from "{schema}";
 
 					export default class Address implements Schema {
-						fields: Field[] = [
-							StringType({ name: "street" }),
-					    StringType({ name: "city" }),
-							StringType({ name: "state" }),
-							StringType({ name: "zip_code" }), 
-							UUIDType({
-								name: "owner_id",
+						fields: FieldMap = {
+							street: StringType(),
+					    city: StringType(),
+							state: StringType(),
+							zip_code: StringType(), 
+							owner_id: UUIDType({
 								index: true, 
 								polymorphic: {
 									types: ["User", "Location"],
 									hideFromInverseGraphQL:true,
 								},
 							}),
-						];
+						};
 					}
 				`),
 			},
@@ -624,8 +618,6 @@ func TestParseFields(t *testing.T) {
 											"User",
 											"Location",
 										},
-										Type:        "owner_type",
-										GraphQLType: "owner_type",
 									},
 									hideFromGraphQL: true,
 								},
@@ -638,23 +630,23 @@ func TestParseFields(t *testing.T) {
 		"disable index in foreign key": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, Field, BaseEntSchema, UUIDType, StringType } from "{schema}"
+				import {Schema, FieldMap, BaseEntSchema, UUIDType, StringType } from "{schema}"
 
 				export default class User extends BaseEntSchema implements Schema {
-					fields: Field[] = [
-						StringType({name: "first_name"}),
-						StringType({name: "last_name"}),
-						StringType({name: "email", unique: true}),
-					]
+					fields: FieldMap = {
+						first_name: StringType(),
+						last_name: StringType(),
+						email: StringType({ unique: true}),
+					};
 				}`),
 				"event.ts": getCodeWithSchema(`
-				import {Schema, BaseEntSchema, Field, TimestampType, StringType, UUIDType} from "{schema}"
+				import {Schema, BaseEntSchema, FieldMap, TimestampType, StringType, UUIDType} from "{schema}"
 
 				export default class Event extends BaseEntSchema implements Schema {
-					fields: Field[] = [
-						StringType({name: "name"}),
-						UUIDType({name: "creator_id", foreignKey: {schema:"User", column:"ID", disableIndex: true}}),
-					]
+					fields: FieldMap = {
+						name: StringType(),
+						creator_id: UUIDType({foreignKey: {schema:"User", column:"ID", disableIndex: true}}),
+					}
 				}`),
 			},
 			expectedPatterns: map[string]pattern{

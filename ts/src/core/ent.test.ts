@@ -8,7 +8,7 @@ import {
 import { IDViewer, LoggedOutViewer } from "./viewer";
 import { Pool } from "pg";
 import { QueryRecorder } from "../testutils/db_mock";
-import { Field, StringType, UUIDType } from "../schema";
+import { Field, FieldMap, StringType, UUIDType } from "../schema";
 import { createRowForTest } from "../testutils/write";
 import { ID, Ent, Data, PrivacyPolicy, Viewer, LoadEntOptions } from "./base";
 import {
@@ -43,14 +43,10 @@ afterEach(() => {
 
 class UserSchema implements BuilderSchema<User> {
   ent = User;
-  fields: Field[] = [
-    UUIDType({
-      name: "id",
-    }),
-    StringType({
-      name: "foo",
-    }),
-  ];
+  fields: FieldMap = {
+    id: UUIDType(),
+    foo: StringType(),
+  };
 }
 const viewer = new LoggedOutViewer();
 const schema = new UserSchema();
@@ -343,14 +339,10 @@ function commonTests() {
 
     class User2Schema implements BuilderSchema<User2> {
       ent = User2;
-      fields: Field[] = [
-        UUIDType({
-          name: "id",
-        }),
-        StringType({
-          name: "foo",
-        }),
-      ];
+      fields: FieldMap = {
+        id: UUIDType(),
+        foo: StringType(),
+      };
     }
 
     function getBuilder() {

@@ -9,7 +9,13 @@ import {
 import { loadEnt, loadEntX } from "../../core/ent";
 import { AllowIfViewerIsRule, AlwaysDenyRule } from "../../core/privacy";
 import { BuilderSchema, SimpleBuilder } from "../builder";
-import { Field, StringType, BaseEntSchema, UUIDType } from "../../schema";
+import {
+  Field,
+  StringType,
+  BaseEntSchema,
+  UUIDType,
+  FieldMap,
+} from "../../schema";
 import { NodeType } from "./const";
 import { table, uuid, text, timestamptz } from "../db/test_db";
 import { ObjectLoaderFactory } from "../../core/loaders";
@@ -92,21 +98,14 @@ export class FakeContactSchema
   implements BuilderSchema<FakeContact>
 {
   ent = FakeContact;
-  fields: Field[] = [
-    StringType({
-      name: "firstName",
-    }),
-    StringType({
-      name: "lastName",
-    }),
-    StringType({
-      name: "emailAddress",
-    }),
-    UUIDType({
-      name: "userID",
+  fields: FieldMap = {
+    firstName: StringType(),
+    lastName: StringType(),
+    emailAddress: StringType(),
+    userID: UUIDType({
       foreignKey: { schema: "User", column: "ID" },
     }),
-  ];
+  };
 }
 
 export interface ContactCreateInput {

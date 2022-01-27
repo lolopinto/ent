@@ -11,15 +11,14 @@ func TestEnumTable(t *testing.T) {
 		"enum table": {
 			code: map[string]string{
 				"role.ts": getCodeWithSchema(`
-				import {Schema, Field, StringType} from "{schema}";
+				import {Schema, FieldMap, StringType} from "{schema}";
 
 				export default class Role implements Schema {
-					fields: Field[] = [
-						StringType({
-							name: 'role',
+					fields: FieldMap = {
+						role: StringType({
 							primaryKey: true,
 						}),
-					];
+					};
 
 					enumTable = true;
 
@@ -75,18 +74,15 @@ func TestEnumTable(t *testing.T) {
 		"enum table with other fields": {
 			code: map[string]string{
 				"role.ts": getCodeWithSchema(`
-				import {Schema, Field, StringType} from "{schema}";
+				import {Schema, FieldMap, StringType} from "{schema}";
 
 				export default class Role implements Schema {
-					fields: Field[] = [
-						StringType({
-							name: 'role',
+					fields: FieldMap = {
+						role: StringType({
 							primaryKey: true,
 						}),
-						StringType({
-							name: 'description',
-						}),
-					];
+						description: StringType(),
+					};
 
 					enumTable = true;
 

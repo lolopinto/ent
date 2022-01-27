@@ -280,15 +280,15 @@ func getTypeFor(fieldName string, typ *FieldType, nullable bool, foreignKey *For
 	case StringEnum, Enum:
 		tsType := strcase.ToCamel(typ.Type)
 		graphqlType := strcase.ToCamel(typ.GraphQLType)
+		if tsType == "" {
+			tsType = strcase.ToCamel(fieldName)
+		}
+		if graphqlType == "" {
+			graphqlType = strcase.ToCamel(fieldName)
+		}
 		if foreignKey != nil {
 			tsType = foreignKey.Schema
 			graphqlType = foreignKey.Schema
-		}
-		if typ.Type == "" {
-			return nil, fmt.Errorf("enum type name is required for field %s", fieldName)
-		}
-		if typ.GraphQLType == "" {
-			return nil, fmt.Errorf("enum graphql name is required for field %s", fieldName)
 		}
 		if nullable {
 			return &enttype.NullableEnumType{

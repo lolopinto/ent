@@ -3,10 +3,14 @@ import { Data, Ent, LoaderInfo, PrivacyPolicy, Viewer } from "../core/base";
 import { Builder } from "../action/action";
 import { Clause } from "../core/clause";
 
+export declare type FieldMap = {
+  [key: string]: Field;
+};
+
 // Schema is the base for every schema in typescript
 export default interface Schema {
   // schema has list of fields that are unique to each node
-  fields: Field[];
+  fields: FieldMap;
 
   // optional, can be overriden as needed
   tableName?: string;
@@ -151,7 +155,7 @@ export type Edge = AssocEdge;
 // which automatically provides 3 fields to every ent: id, created_at, updated_at
 export interface Pattern {
   name: string;
-  fields: Field[];
+  fields: FieldMap;
   edges?: Edge[];
 
   // can only have one thing transforming a select
@@ -306,7 +310,6 @@ export interface FieldEdge {
 // FieldOptions are configurable options for fields.
 // Can be combined with options for specific field types as neededs
 export interface FieldOptions {
-  name: string;
   // optional modification of fields: nullable/storagekey etc.
   nullable?: boolean;
   storageKey?: string; // db?
@@ -340,7 +343,6 @@ export interface FieldOptions {
   derivedWhenEmbedded?: boolean;
 
   polymorphic?: boolean | PolymorphicOptions;
-  derivedFields?: Field[];
 
   // FYI. copied in config.ts
   // field can have privacy policy
@@ -351,6 +353,9 @@ export interface FieldOptions {
   // 2: generate accessors for the field and all callsites which reference that field will use that.
   // the privacy will be evaluated on demand when needed
   privacyPolicy?: PrivacyPolicy | (() => PrivacyPolicy);
+
+  // takes the name of the field and returns any fields which are derived from current field
+  getDerivedFields?(name: string): FieldMap;
 }
 
 export interface PolymorphicOptions {
@@ -397,13 +402,13 @@ export function getSchema(value: SchemaInputType): Schema {
 
 export function getFields(value: SchemaInputType): Map<string, Field> {
   const schema = getSchema(value);
-  function addFields(fields: Field[]) {
-    for (const field of fields) {
-      const derivedFields = field.derivedFields;
-      if (derivedFields !== undefined) {
-        addFields(derivedFields);
+  function addFields(fields: FieldMap) {
+    for (const name in fields) {
+      const field = fields[name];
+      if (field.getDerivedFields !== undefined) {
+        addFields(field.getDerivedFields(name));
       }
-      m.set(field.name, field);
+      m.set(name, field);
     }
   }
 
@@ -418,8 +423,8 @@ export function getFields(value: SchemaInputType): Map<string, Field> {
   return m;
 }
 
-export function getStorageKey(field: Field): string {
-  return field.storageKey || snakeCase(field.name);
+export function getStorageKey(field: Field, fieldName: string): string {
+  return field.storageKey || snakeCase(fieldName);
 }
 
 // returns a mapping of storage key to field privacy
@@ -427,11 +432,11 @@ export function getFieldsWithPrivacy(
   value: SchemaInputType,
 ): Map<string, PrivacyPolicy> {
   const schema = getSchema(value);
-  function addFields(fields: Field[]) {
-    for (const field of fields) {
-      const derivedFields = field.derivedFields;
-      if (derivedFields !== undefined) {
-        addFields(derivedFields);
+  function addFields(fields: FieldMap) {
+    for (const name in fields) {
+      const field = fields[name];
+      if (field.getDerivedFields !== undefined) {
+        addFields(field.getDerivedFields(name));
       }
       if (field.privacyPolicy) {
         let privacyPolicy: PrivacyPolicy;
@@ -440,7 +445,7 @@ export function getFieldsWithPrivacy(
         } else {
           privacyPolicy = field.privacyPolicy;
         }
-        m.set(getStorageKey(field), privacyPolicy);
+        m.set(getStorageKey(field, name), privacyPolicy);
       }
     }
   }

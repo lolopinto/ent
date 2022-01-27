@@ -3,13 +3,14 @@ import {
   BaseEntSchema,
   BooleanType,
   EnumType,
-  Field,
   JSONBType,
   StringType,
   UUIDType,
   getFields,
   getFieldsWithPrivacy,
   getStorageKey,
+  FieldMap,
+  Schema,
 } from "../schema";
 import {
   AllowIfViewerInboundEdgeExistsRule,
@@ -142,150 +143,131 @@ const sharedPolicyLoadEnt: PrivacyPolicy = {
 class UserSchema extends BaseEntSchema {
   ent = User;
 
-  fields: Field[] = [
-    StringType({
-      name: "firstName",
+  fields: FieldMap = {
+    firstName: StringType({
       privacyPolicy: sharedPolicy,
     }),
-    StringType({
-      name: "lastName",
+    lastName: StringType({
       privacyPolicy: sharedPolicy,
     }),
-    StringType({
-      name: "emailAddress",
+    emailAddress: StringType({
       privacyPolicy: sharedPolicy,
     }),
-    StringType({
-      name: "phoneNumber",
+    phoneNumber: StringType({
       privacyPolicy: sharedPolicy,
     }),
-    StringType({
-      name: "bio",
+    bio: StringType({
       privacyPolicy: sharedPolicy,
     }),
-    StringType({
-      name: "password",
+    password: StringType({
       private: true,
       hideFromGraphQL: true,
       privacyPolicy: AlwaysDenyPrivacyPolicy,
     }),
-    EnumType({
-      name: "accountStatus",
+    accountStatus: EnumType({
       nullable: true,
       values: ["UNVERIFIED", "VERIFIED", "DEACTIVATED", "DISABLED"],
       defaultValueOnCreate: () => "UNVERIFIED",
       privacyPolicy: sharedPolicy,
     }),
-    BooleanType({
-      name: "emailVerified",
+    emailVerified: BooleanType({
       hideFromGraphQL: true,
       serverDefault: "FALSE",
       defaultValueOnCreate: () => false,
       privacyPolicy: sharedPolicy,
     }),
-    StringType({
-      name: "birthday",
+    birthday: StringType({
       privacyPolicy: sharedPolicy,
     }),
-    JSONBType({
-      name: "prefs",
+    prefs: JSONBType({
       nullable: true,
       privacyPolicy: sharedPolicy,
     }),
-    UUIDType({
-      name: "foo_id",
+    foo_id: UUIDType({
       nullable: true,
       privacyPolicy: sharedPolicy,
     }),
-    UUIDType({
-      name: "bar_id",
+    bar_id: UUIDType({
       nullable: true,
       privacyPolicy: sharedPolicy,
     }),
-    UUIDType({
-      name: "baz_id",
+    baz_id: UUIDType({
       nullable: true,
       privacyPolicy: sharedPolicy,
     }),
-  ];
+  };
 }
 
 // basically same as UserSchema but more complicated privacy policy
 class AccountSchema extends BaseEntSchema {
   ent = User;
 
-  fields: Field[] = [
-    StringType({
-      name: "firstName",
+  fields: FieldMap = {
+    firstName: StringType({
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-    StringType({
-      name: "lastName",
+    lastName: StringType({
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-    StringType({
-      name: "emailAddress",
+    emailAddress: StringType({
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-    StringType({
-      name: "phoneNumber",
+    phoneNumber: StringType({
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-    StringType({
-      name: "bio",
+    bio: StringType({
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-    StringType({
-      name: "password",
+    password: StringType({
       private: true,
       hideFromGraphQL: true,
       privacyPolicy: AlwaysDenyPrivacyPolicy,
     }),
-    EnumType({
-      name: "accountStatus",
+    accountStatus: EnumType({
       nullable: true,
       values: ["UNVERIFIED", "VERIFIED", "DEACTIVATED", "DISABLED"],
       defaultValueOnCreate: () => "UNVERIFIED",
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-    BooleanType({
-      name: "emailVerified",
+    emailVerified: BooleanType({
       hideFromGraphQL: true,
       serverDefault: "FALSE",
       defaultValueOnCreate: () => false,
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-    StringType({
-      name: "birthday",
+    birthday: StringType({
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-    JSONBType({
-      name: "prefs",
+    prefs: JSONBType({
       nullable: true,
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-    UUIDType({
-      name: "foo_id",
+    foo_id: UUIDType({
       nullable: true,
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-    UUIDType({
-      name: "bar_id",
+    bar_id: UUIDType({
       nullable: true,
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-    UUIDType({
-      name: "baz_id",
+    baz_id: UUIDType({
       nullable: true,
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-  ];
+  };
+}
+
+function getCols(schema: Schema) {
+  const fields = getFields(schema);
+  let cols: string[] = [];
+  for (const [k, f] of fields) {
+    cols.push(getStorageKey(f, k));
+  }
+  return cols;
 }
 
 const userSchema = new UserSchema();
-const userFields = Array.from(getFields(userSchema).values()).map(
-  getStorageKey,
-);
+const userFields = getCols(userSchema);
 const userTableName = getTableName(userSchema);
 const userLoaderFactory = new ObjectLoaderFactory({
   tableName: userTableName,
@@ -301,9 +283,7 @@ const userLoaderOptions = {
 };
 
 const accountSchema = new AccountSchema();
-const accountFields = Array.from(getFields(userSchema).values()).map(
-  getStorageKey,
-);
+const accountFields = getCols(accountSchema);
 const accountTableName = getTableName(accountSchema);
 const accountLoaderFactory = new ObjectLoaderFactory({
   tableName: accountTableName,
@@ -348,7 +328,7 @@ afterAll(async () => {
 });
 
 loadConfig({
-  //  log: "query",
+  // log: "query",
 });
 
 async function createUser(email: string) {

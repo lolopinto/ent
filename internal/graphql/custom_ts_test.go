@@ -44,17 +44,13 @@ func TestCustomMutation(t *testing.T) {
 	// very complicated but simplest no-frills way to test things
 	m := map[string]string{
 		"contact.ts": testhelper.GetCodeWithSchema(`
-			import {BaseEntSchema, Field, StringType} from "{schema}";
+			import {BaseEntSchema, FieldMap, StringType} from "{schema}";
 
 			export default class Contact extends BaseEntSchema {
-				fields: Field[] = [
-					StringType({
-						name: "firstName",
-					}),
-					StringType({
-						name: "lastName",
-					}),
-				];
+				fields: FieldMap = {
+					firstName: StringType(),
+					lastName: StringType(),
+				};
 			}
 		`),
 	}
@@ -179,17 +175,13 @@ func TestCustomMutation(t *testing.T) {
 func TestCustomQuery(t *testing.T) {
 	m := map[string]string{
 		"contact.ts": testhelper.GetCodeWithSchema(`
-			import {BaseEntSchema, Field, StringType} from "{schema}";
+			import {BaseEntSchema, FieldMap, StringType} from "{schema}";
 
 			export default class Contact extends BaseEntSchema {
-				fields: Field[] = [
-					StringType({
-						name: "firstName",
-					}),
-					StringType({
-						name: "lastName",
-					}),
-				];
+				fields: FieldMap = {
+					firstName: StringType(),
+					lastName: StringType(),
+				};
 			}
 		`),
 	}
@@ -439,33 +431,27 @@ func TestCustomListQuery(t *testing.T) {
 func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	m := map[string]string{
 		"user.ts": testhelper.GetCodeWithSchema(`
-			import {BaseEntSchema, Field, StringType} from "{schema}";
+			import {BaseEntSchema, FieldMap, StringType} from "{schema}";
 
 			export default class User extends BaseEntSchema {
-				fields: Field[] = [
-					StringType({
-						name: "firstName",
-					}),
-					StringType({
-						name: "lastName",
-					}),
-				];
+				fields: FieldMap = {
+					firstName: StringType(),
+					lastName: StringType(),
+				};
 			}
 		`),
 		"username.ts": testhelper.GetCodeWithSchema(`
-			import {BaseEntSchema, Field, StringType, UUIDType} from "{schema}";
+			import {BaseEntSchema, FieldMap, StringType, UUIDType} from "{schema}";
 
 			export default class Username extends BaseEntSchema {
-				fields: Field[] = [
-					StringType({
-						name: "username",
+				fields: FieldMap = {
+					username: StringType({
 						unique:true,
 					}),
-					UUIDType({
-						name: "userID",
+					userID: UUIDType({
 						foreignKey: {schema: "User", column: "ID"},
 					}),
-				];
+				};
 			}
 		`),
 	}

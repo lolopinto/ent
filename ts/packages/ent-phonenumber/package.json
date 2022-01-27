@@ -1,6 +1,6 @@
 {
   "name": "@snowtop/ent-phonenumber",
-  "version": "0.0.1",
+  "version": "0.1.0-alpha1",
   "description": "snowtop ent phone number datatype",
   "main": "dist/phonenumber.js",
   "types": "dist/phonenumber.d.ts",
@@ -29,7 +29,7 @@
   },
   "homepage": "https://github.com/lolopinto/ent#readme",
   "devDependencies": {
-    "@snowtop/ent": "^0.0.38",
+    "@snowtop/ent": "^0.1.0-alpha1",
     "@types/jest": "^26.0.23",
     "jest": "^26.6.3",
     "ts-jest": "^26.5.6"
@@ -38,6 +38,6 @@
     "libphonenumber-js": "^1.9.17"
   },
   "peerDependencies": {
-    "@snowtop/ent": ">= 0.0.1"
+    "@snowtop/ent": ">= 0.1.0-alpha"
   }
 }

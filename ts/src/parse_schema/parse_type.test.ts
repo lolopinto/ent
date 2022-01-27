@@ -1,19 +1,18 @@
-import { Field, DBType } from "../schema/schema";
+import { Field, DBType, FieldMap } from "../schema/schema";
 import { BaseEntSchema } from "../schema/base_schema";
 import { parseSchema } from "./parse";
 import { JSONBType, JSONBListType } from "../schema/json_field";
 
 test("importType", async () => {
   class Bar extends BaseEntSchema {
-    fields: Field[] = [
-      JSONBType({
-        name: "foo",
+    fields: FieldMap = {
+      foo: JSONBType({
         importType: {
           path: "path",
           type: "Foo",
         },
       }),
-    ];
+    };
   }
   const r = parseSchema({ bar: Bar });
   const fields = r.schemas.bar.fields;
@@ -32,15 +31,14 @@ test("importType", async () => {
 
 test("importType list", async () => {
   class Bar extends BaseEntSchema {
-    fields: Field[] = [
-      JSONBListType({
-        name: "foo",
+    fields: FieldMap = {
+      foo: JSONBListType({
         importType: {
           path: "path",
           type: "Foo",
         },
       }),
-    ];
+    };
   }
   const r = parseSchema({ bar: Bar });
   const fields = r.schemas.bar.fields;
