@@ -1,5 +1,6 @@
 package graphql
 
+// TODO delete all of this since golang mode isn't supported
 import (
 	"bytes"
 	"go/format"
@@ -636,7 +637,7 @@ func parse(t *testing.T, code, dirPath, packagePath string, nodes []string) {
 				PackageName: nodeSnake,
 				FieldInfo: &field.FieldInfo{
 					NonEntFields: []*field.NonEntField{
-						&field.NonEntField{
+						{
 							FieldName: "id",
 							FieldType: &enttype.IDType{},
 						},

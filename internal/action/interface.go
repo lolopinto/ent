@@ -22,65 +22,13 @@ import (
 	"github.com/lolopinto/ent/internal/field"
 )
 
-type NonEntField struct {
-	FieldName string
-	FieldType enttype.TSGraphQLType
-	nullable  bool // required default = true
-	// TODO these are both go things. ignore
-	// Flag enum or ID
-	Flag string
-	// this is a go-thing. ignore for TypeScript
-	NodeType string
-}
-
-func (f *NonEntField) Required() bool {
-	return !f.nullable
-}
-
-func (f *NonEntField) GetGraphQLName() string {
-	return strcase.ToLowerCamel(f.FieldName)
-}
-
-// don't have to deal with all the id field stuff field.Field has to deal with
-func (f *NonEntField) GetTsType() string {
-	return f.FieldType.GetTSType()
-}
-
-func (f *NonEntField) GetFieldType() enttype.EntType {
-	return f.FieldType
-}
-
-func (f *NonEntField) TsFieldName() string {
-	return strcase.ToLowerCamel(f.FieldName)
-}
-
-func (f *NonEntField) ForceRequiredInAction() bool {
-	return !f.nullable
-}
-
-func (f *NonEntField) ForceOptionalInAction() bool {
-	return false
-}
-
-func (f *NonEntField) DefaultValue() interface{} {
-	return nil
-}
-
-func (f *NonEntField) Nullable() bool {
-	return f.nullable
-}
-
-func (f *NonEntField) HasDefaultValueOnCreate() bool {
-	return false
-}
-
 // no imports for now... since all local fields
 // eventually may need it for e.g. file or something
 // TsBuilderImports
 
 type Action interface {
 	GetFields() []*field.Field
-	GetNonEntFields() []*NonEntField
+	GetNonEntFields() []*field.NonEntField
 	GetEdges() []*edge.AssociationEdge
 	GetEdgeGroup() *edge.AssociationEdgeGroup
 	GetActionName() string
@@ -92,7 +40,7 @@ type Action interface {
 	GetOperation() ent.ActionOperation
 	IsDeletingNode() bool
 	AddCustomField(enttype.TSGraphQLType, *field.Field)
-	AddCustomNonEntField(enttype.TSGraphQLType, *NonEntField)
+	AddCustomNonEntField(enttype.TSGraphQLType, *field.NonEntField)
 	AddCustomInterfaces(a Action)
 	GetCustomInterfaces() []*CustomInterface
 	GetTSEnums() []*enum.Enum
@@ -114,7 +62,7 @@ type CustomInterface struct {
 	TSType       string
 	GQLType      string
 	Fields       []*field.Field
-	NonEntFields []*NonEntField
+	NonEntFields []*field.NonEntField
 	Action       Action
 	// if present, means that this interface should be imported in GraphQL instead...
 
@@ -183,7 +131,7 @@ type commonActionInfo struct {
 	InputName        string
 	GraphQLName      string
 	Fields           []*field.Field
-	NonEntFields     []*NonEntField
+	NonEntFields     []*field.NonEntField
 	Edges            []*edge.AssociationEdge // for edge actions for now but eventually other actions
 	EdgeGroup        *edge.AssociationEdgeGroup
 	Operation        ent.ActionOperation
@@ -221,7 +169,7 @@ func (action *commonActionInfo) GetEdgeGroup() *edge.AssociationEdgeGroup {
 	return action.EdgeGroup
 }
 
-func (action *commonActionInfo) GetNonEntFields() []*NonEntField {
+func (action *commonActionInfo) GetNonEntFields() []*field.NonEntField {
 	return action.NonEntFields
 }
 
@@ -279,7 +227,7 @@ func (action *commonActionInfo) AddCustomField(typ enttype.TSGraphQLType, cf *fi
 	ci.enumImports = append(ci.enumImports, enumType.GetTSName())
 }
 
-func (action *commonActionInfo) AddCustomNonEntField(typ enttype.TSGraphQLType, cf *NonEntField) {
+func (action *commonActionInfo) AddCustomNonEntField(typ enttype.TSGraphQLType, cf *field.NonEntField) {
 	ci := action.getCustomInterface(typ)
 	ci.NonEntFields = append(ci.NonEntFields, cf)
 }

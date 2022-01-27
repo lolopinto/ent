@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/util"
@@ -389,13 +388,4 @@ func parseFieldTag(fieldName string, tag *ast.BasicLit) map[string]string {
 	}
 
 	return tagsMap
-}
-
-type NonEntField struct {
-	FieldName string
-	FieldType enttype.Type
-}
-
-func (f *NonEntField) GetGraphQLName() string {
-	return strcase.ToLowerCamel(f.FieldName)
 }
