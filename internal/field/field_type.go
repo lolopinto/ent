@@ -45,6 +45,7 @@ type Field struct {
 	dbName                   string // storage key/column name for the field
 	graphQLName              string
 	exposeToActionsByDefault bool
+	disableBuilderType       bool
 	// right now, it's blanket across all actions. probably want a way to make creations simpler
 	// because often we may want to give the user a way to set a value for this field at creation and then not expose it
 	// in default edit
@@ -70,6 +71,8 @@ type Field struct {
 
 	forceRequiredInAction bool
 	forceOptionalInAction bool
+
+	patternName string
 }
 
 func newFieldFromInput(f *input.Field) (*Field, error) {
@@ -92,6 +95,7 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 		hasDefaultValueOnCreate:  f.HasDefaultValueOnCreate,
 		hasDefaultValueOnEdit:    f.HasDefaultValueOnEdit,
 		derivedWhenEmbedded:      f.DerivedWhenEmbedded,
+		patternName:              f.PatternName,
 
 		// go specific things
 		entType:         f.GoType,
@@ -166,13 +170,15 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 			Name:         f.ForeignKey.Name,
 			DisableIndex: f.ForeignKey.DisableIndex,
 		}
+		ret.disableBuilderType = f.ForeignKey.DisableBuilderType
 	}
 
 	if f.FieldEdge != nil {
 		ret.fieldEdge = &base.FieldEdgeInfo{
-			Schema:   getSchemaName(f.FieldEdge.Schema),
-			EdgeName: f.FieldEdge.InverseEdge,
+			Schema:      getSchemaName(f.FieldEdge.Schema),
+			InverseEdge: f.FieldEdge.InverseEdge,
 		}
+		ret.disableBuilderType = f.FieldEdge.DisableBuilderType
 	}
 
 	if ret.polymorphic != nil {
@@ -186,6 +192,7 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 			return nil, err
 		}
 		ret.fieldEdge = fieldEdge
+		ret.disableBuilderType = ret.polymorphic.DisableBuilderType
 	}
 
 	return ret, nil
@@ -233,7 +240,7 @@ func (f *Field) AddForeignKeyFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) error 
 		return fmt.Errorf("invalid field %s added", f.FieldName)
 	}
 
-	return edgeInfo.AddFieldEdgeFromForeignKeyInfo(f.FieldName, fkeyInfo.Schema+"Config", f.Nullable())
+	return edgeInfo.AddFieldEdgeFromForeignKeyInfo(f.FieldName, fkeyInfo.Schema+"Config", f.Nullable(), f.fieldType)
 }
 
 func (f *Field) AddFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) error {
@@ -246,6 +253,7 @@ func (f *Field) AddFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) error {
 		f.FieldName,
 		fieldEdgeInfo,
 		f.Nullable(),
+		f.fieldType,
 	)
 }
 
@@ -289,6 +297,9 @@ func (f *Field) GetZeroValue() string {
 }
 
 func (f *Field) ExposeToGraphQL() bool {
+	// note this only applies to if the field should be exposed as readable
+	// if the field is part of an action, it's exposed since either it's a create action or
+	// has been explicitly specified by user
 	return !f.hideFromGraphQL
 }
 
@@ -364,7 +375,7 @@ func (f *Field) IDField() bool {
 	}
 	// TOOD this needs a better name, way of figuring out etc
 	// TODO kill this and replace with EvolvedIDField
-	return strings.HasSuffix(f.FieldName, "ID")
+	return strings.HasSuffix(f.FieldName, "ID") || strings.HasSuffix(f.FieldName, "_id")
 }
 
 func (f *Field) IDType() bool {
@@ -379,6 +390,9 @@ func (f *Field) EvolvedIDField() bool {
 	if ok {
 		return false
 	}
+	if enttype.IsListType(f.fieldType) {
+		return false
+	}
 
 	// TODO kill above and convert to this
 	// if there's a fieldEdge or a foreign key or an inverse edge to this, this is an ID field
@@ -387,7 +401,6 @@ func (f *Field) EvolvedIDField() bool {
 }
 
 func (f *Field) QueryFromEnt() bool {
-	// TODO #476
 	return f.index && f.polymorphic != nil
 }
 
@@ -402,7 +415,6 @@ func (f *Field) QueryFromEntName() string {
 
 // TODO probably gonna collapse into above
 func (f *Field) QueryFrom() bool {
-	// TODO #476
 	if !f.index || f.polymorphic != nil {
 		return false
 	}
@@ -476,13 +488,13 @@ func (f *Field) ForeignImports() []string {
 		ret = typ.GetTsTypeImports()
 	}
 
-	if f.fkey != nil {
+	enumType, ok := f.fieldType.(enttype.EnumeratedType)
+	if ok && (f.fkey != nil || f.patternName != "") {
 		// foreign key with enum type requires an import
-		enumType, ok := f.fieldType.(enttype.EnumeratedType)
-		if ok {
-			ret = append(ret, enumType.GetTSName())
-		}
+		// if pattern enum, this is defined in its own file
+		ret = append(ret, enumType.GetTSName())
 	}
+
 	return ret
 }
 
@@ -498,6 +510,11 @@ func (f *Field) getIDFieldTypeName() string {
 	if f.polymorphic != nil {
 		return "Ent"
 	}
+
+	if enttype.IsListType(f.fieldType) {
+		return ""
+	}
+
 	var typeName string
 	if f.fkey != nil {
 		typeName = f.fkey.Schema
@@ -514,20 +531,16 @@ func (f *Field) getIDFieldType() string {
 func (f *Field) TsBuilderType() string {
 	typ := f.TsType()
 	typeName := f.getIDFieldType()
-	if typeName == "" {
+	if typeName == "" || f.disableBuilderType {
 		return typ
 	}
 	return fmt.Sprintf("%s | Builder<%s>", typ, typeName)
 }
 
 func (f *Field) TsBuilderImports() []string {
-	ret := []string{}
-	typ, ok := f.fieldType.(enttype.TSTypeWithImports)
-	if ok {
-		ret = typ.GetTsTypeImports()
-	}
+	ret := f.ForeignImports()
 	typeName := f.getIDFieldType()
-	if typeName == "" {
+	if typeName == "" || f.disableBuilderType {
 		return ret
 	}
 	ret = append(ret, typeName, "Builder")
@@ -603,24 +616,34 @@ func (f *Field) GetTSGraphQLTypeForFieldImports(forceOptional bool) []enttype.Fi
 	return tsGQLType.GetTSGraphQLImports()
 }
 
+// note that this is different from PrimaryKeyIDField
+// which indicates id field
 func (f *Field) IsEditableIDField() bool {
 	if !f.EditableField() {
 		return false
 	}
-	_, ok := f.GetFieldType().(enttype.IDMarkerInterface)
-	return ok
+	return enttype.IsIDType(f.fieldType)
+}
+
+func (f *Field) PrimaryKeyIDField() bool {
+	return f.IsEditableIDField() && f.singleFieldPrimaryKey
 }
 
 func (f *Field) EmbeddableInParentAction() bool {
-	if !f.EditableField() {
-		return false
-	}
-
-	if f.EvolvedIDField() {
-		return false
-	}
-
+	// hmm what happens if ownerID field is not excluded...
+	// but ownerType is by default...
 	return !f.derivedWhenEmbedded
+
+	// we could probably also auto-remove fields for which there's a foreignKey to primary key in source
+	// ent or fields which have a fieldEdge to source schema?
+}
+
+func (f *Field) PatternField() bool {
+	return f.patternName != ""
+}
+
+func (f *Field) GetPatternName() string {
+	return f.patternName
 }
 
 type Option func(*Field)
@@ -663,6 +686,7 @@ func (f *Field) Clone(opts ...Option) (*Field, error) {
 		forceRequiredInAction:    f.forceRequiredInAction,
 		forceOptionalInAction:    f.forceOptionalInAction,
 		derivedWhenEmbedded:      f.derivedWhenEmbedded,
+		patternName:              f.patternName,
 
 		// go specific things
 		entType: f.entType,

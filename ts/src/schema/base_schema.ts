@@ -39,7 +39,7 @@ let nodeField = UUIDType({
   },
 });
 
-let nodeFields: Field[] = [nodeField].concat(tsFields);
+let nodeFields: Field[] = [nodeField, ...tsFields];
 
 let nodeFieldsWithTZ: Field[] = [
   nodeField,

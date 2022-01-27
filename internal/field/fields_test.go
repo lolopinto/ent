@@ -73,3 +73,99 @@ func TestDuplicateFields(t *testing.T) {
 	require.Equal(t, err.Error(), "field with column street already exists")
 	require.Nil(t, schema)
 }
+
+func TestDisableBuilderIDField(t *testing.T) {
+	schema := testhelper.ParseSchemaForTest(t,
+		map[string]string{
+			"address.ts": testhelper.GetCodeWithSchema(`
+		import {BaseEntSchema, Field, StringType, UUIDType} from "{schema}";
+
+		export default class Address extends BaseEntSchema {
+			fields: Field[] = [
+				StringType({ name: "Street" }),
+				StringType({ name: "City" }),
+				StringType({ name: "State" }),
+				StringType({ name: "ZipCode" }), 
+				UUIDType({
+					name: "OwnerID",
+					index: true, 
+					polymorphic: {
+						disableBuilderType: true,
+					},
+				}),
+			];
+		}`),
+		},
+		base.TypeScript,
+	)
+	info := schema.Nodes["AddressConfig"]
+	require.NotNil(t, info)
+
+	fieldInfo := info.NodeData.FieldInfo
+
+	f2 := fieldInfo.GetFieldByName("OwnerID")
+	require.NotNil(t, f2)
+
+	assert.Equal(t, f2.TsBuilderImports(), []string{"ID"})
+	assert.Equal(t, f2.TsBuilderType(), "ID")
+}
+
+func TestUUIDFieldList(t *testing.T) {
+	schema := testhelper.ParseSchemaForTest(t,
+		map[string]string{
+			"contact.ts": testhelper.GetCodeWithSchema(`
+		import {BaseEntSchema, Field, StringType, UUIDListType} from "{schema}";
+
+		export default class Contact extends BaseEntSchema {
+			fields: Field[] = [
+				StringType({ name: "FirstName" }),
+				StringType({ name: "LastName" }),
+				UUIDListType({
+					name: "contactEmailIDs",
+					fieldEdge:{
+						schema: "ContactEmail",
+					},
+				}),
+			];
+		}`),
+			"contact_email.ts": testhelper.GetCodeWithSchema(`
+		import {BaseEntSchema, Field, StringType, UUIDType} from "{schema}";
+
+		export default class ContactEmail extends BaseEntSchema {
+			fields: Field[] = [
+				StringType({ name: "EmailAddress" }),
+				UUIDType({
+					name: "OwnerID",
+					fieldEdge: {schema: "Contact"},
+				}),
+			];
+		}`),
+		},
+		base.TypeScript,
+	)
+	info := schema.Nodes["ContactConfig"]
+	require.NotNil(t, info)
+
+	fieldInfo := info.NodeData.FieldInfo
+
+	f := fieldInfo.GetFieldByName("contactEmailIDs")
+	require.NotNil(t, f)
+
+	assert.Equal(t, f.TsBuilderImports(), []string{"ID"})
+	assert.Equal(t, f.TsBuilderType(), "ID[]")
+	assert.Len(t, info.NodeData.EdgeInfo.FieldEdges, 1)
+	assert.True(t, info.NodeData.EdgeInfo.FieldEdges[0].IsList())
+
+	info2 := schema.Nodes["ContactEmailConfig"]
+	require.NotNil(t, info2)
+
+	fieldInfo2 := info2.NodeData.FieldInfo
+
+	f2 := fieldInfo2.GetFieldByName("OwnerID")
+	require.NotNil(t, f2)
+
+	assert.Equal(t, f2.TsBuilderImports(), []string{"ID", "Contact", "Builder"})
+	assert.Equal(t, f2.TsBuilderType(), "ID | Builder<Contact>")
+	assert.Len(t, info2.NodeData.EdgeInfo.FieldEdges, 1)
+	assert.False(t, info2.NodeData.EdgeInfo.FieldEdges[0].IsList())
+}

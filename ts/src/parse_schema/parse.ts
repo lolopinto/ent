@@ -8,37 +8,53 @@ import {
 } from "../schema";
 import { ActionField } from "../schema/schema";
 
-function processFields(processedSchema: ProcessedSchema, src: Field[]) {
+function processFields(src: Field[], patternName?: string): ProcessedField[] {
+  const ret: ProcessedField[] = [];
   for (const field of src) {
-    let f: Field = { ...field };
-    f["hasDefaultValueOnCreate"] = field.defaultValueOnCreate != undefined;
-    f["hasDefaultValueOnEdit"] = field.defaultValueOnEdit != undefined;
+    let f: ProcessedField = { ...field };
+    f.hasDefaultValueOnCreate = field.defaultValueOnCreate != undefined;
+    f.hasDefaultValueOnEdit = field.defaultValueOnEdit != undefined;
     if (field.polymorphic) {
       // convert boolean into object
       // we keep boolean as an option to keep API simple
       if (typeof field.polymorphic === "boolean") {
-        f["polymorphic"] = {};
+        f.polymorphic = {};
       } else {
-        f["polymorphic"] = field.polymorphic;
+        f.polymorphic = field.polymorphic;
+      }
+    } else {
+      delete f.polymorphic;
+    }
+    // convert string to object to make API consumed by go simple
+    if (f.fieldEdge && f.fieldEdge.inverseEdge) {
+      if (typeof f.fieldEdge.inverseEdge === "string") {
+        f.fieldEdge.inverseEdge = {
+          name: f.fieldEdge.inverseEdge,
+        };
       }
     }
-    processedSchema.fields.push(f);
+    if (patternName) {
+      f.patternName = patternName;
+    }
+    ret.push(f);
   }
+  return ret;
 }
 
 function processEdges(
-  dst: ProcessedAssocEdge[],
   src: AssocEdge[],
   patternName?: string,
-) {
+): ProcessedAssocEdge[] {
+  const ret: ProcessedAssocEdge[] = [];
   for (const edge of src) {
     let edge2 = { ...edge } as ProcessedAssocEdge;
     edge2.edgeActions = edge.edgeActions?.map((action) =>
       processAction(action),
     );
     edge2.patternName = patternName;
-    dst.push(edge2);
+    ret.push(edge2);
   }
+  return ret;
 }
 
 function processEdgeGroups(
@@ -63,24 +79,25 @@ function processPattern(
   pattern: Pattern,
   processedSchema: ProcessedSchema,
 ) {
-  // TODO kill
-  let name = pattern.name || "node";
+  const name = pattern.name;
+  const fields = processFields(pattern.fields, pattern.name);
+  processedSchema.fields.push(...fields);
+  if (pattern.edges) {
+    const edges = processEdges(pattern.edges, pattern.name);
+    processedSchema.assocEdges.push(...edges);
+  }
+
   if (patterns[name] === undefined) {
-    const edges: ProcessedAssocEdge[] = [];
-    if (pattern.edges) {
-      processEdges(edges, pattern.edges);
-    }
+    // intentionally processing separately and not passing pattern.name
+    const edges = processEdges(pattern.edges || []);
     patterns[name] = {
       name: pattern.name,
       assocEdges: edges,
+      fields: fields,
     };
   } else {
     // TODO ideally we want to make sure that different patterns don't have the same name
     // can't do a deepEqual check because function calls and therefore different instances in fields
-  }
-  processFields(processedSchema, pattern.fields);
-  if (pattern.edges) {
-    processEdges(processedSchema.assocEdges, pattern.edges, pattern.name);
   }
 }
 
@@ -105,10 +122,14 @@ type ProcessedAssocEdge = Omit<
   edgeActions?: OutputAction[];
 };
 
-type ProcessedSchema = Omit<Schema, "edges" | "actions" | "edgeGroups"> & {
+type ProcessedSchema = Omit<
+  Schema,
+  "edges" | "actions" | "edgeGroups" | "fields"
+> & {
   actions: OutputAction[];
   assocEdges: ProcessedAssocEdge[];
   assocEdgeGroups: ProcessedAssocEdgeGroup[];
+  fields: ProcessedField[];
 };
 
 type ProcessedAssocEdgeGroup = Omit<AssocEdgeGroup, "edgeAction"> & {
@@ -133,6 +154,7 @@ function processAction(action: Action): OutputAction {
     (f) => {
       let f2 = f as ProcessedActionField;
       if (!f.nullable) {
+        delete f2.nullable;
         return f2;
       }
       if (typeof f.nullable === "boolean") {
@@ -159,7 +181,17 @@ interface schemasDict {
 interface ProcessedPattern {
   name: string;
   assocEdges: ProcessedAssocEdge[];
+  fields: ProcessedField[];
 }
+
+type ProcessedField = Omit<
+  Field,
+  "defaultValueOnEdit" | "defaultValueOnCreate"
+> & {
+  hasDefaultValueOnCreate?: boolean;
+  hasDefaultValueOnEdit?: boolean;
+  patternName?: string;
+};
 
 interface patternsDict {
   [key: string]: ProcessedPattern;
@@ -201,9 +233,11 @@ export function parseSchema(potentialSchemas: {}): Result {
         processPattern(patterns, pattern, processedSchema);
       }
     }
-    processFields(processedSchema, schema.fields);
+    const fields = processFields(schema.fields);
+    processedSchema.fields.push(...fields);
     if (schema.edges) {
-      processEdges(processedSchema.assocEdges, schema.edges);
+      const edges = processEdges(schema.edges);
+      processedSchema.assocEdges.push(...edges);
     }
     if (schema.edgeGroups) {
       processEdgeGroups(processedSchema, schema.edgeGroups);

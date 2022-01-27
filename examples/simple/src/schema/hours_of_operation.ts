@@ -2,41 +2,21 @@ import {
   BaseEntSchemaWithTZ,
   Field,
   ActionOperation,
-  EnumType,
   TimeType,
   TimetzType,
 } from "@snowtop/ent";
+import DayOfWeek from "./patterns/day_of_week";
 
 export default class HoursOfOperation extends BaseEntSchemaWithTZ {
+  constructor() {
+    super();
+    this.addPatterns(new DayOfWeek());
+  }
+
   fields: Field[] = [
-    EnumType({
-      name: "dayOfWeek",
-      values: [
-        "Sunday",
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-      ],
-    }),
     // just to test we have different types
     TimeType({ name: "open" }),
     TimetzType({ name: "close" }),
-    EnumType({
-      name: "dayOfWeekAlt",
-      map: {
-        Sunday: "sun",
-        Monday: "mon",
-        Tuesday: "tue",
-        Wednesday: "wed",
-        Thursday: "thu",
-        Friday: "fri",
-        Saturday: "sat",
-      },
-      nullable: true,
-    }),
   ];
 
   actions = [

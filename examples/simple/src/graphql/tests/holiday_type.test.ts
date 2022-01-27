@@ -1,24 +1,41 @@
-import { DB } from "@snowtop/ent";
+import { DB, ID, LoggedOutViewer } from "@snowtop/ent";
 import { expectMutation } from "@snowtop/ent-graphql-tests";
 import schema from "../generated/schema";
 import { DateTime } from "luxon";
+import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
+import { DayOfWeek, DayOfWeekAlt, Holiday } from "src/ent";
 
 afterAll(async () => {
   await DB.getInstance().endPool();
 });
 
 test("create holiday", async () => {
+  let id: ID;
+
   const dt = DateTime.fromISO("2021-01-20");
   await expectMutation(
     {
       mutation: "holidayCreate",
       schema,
       args: {
-        label: "Inauguaration",
+        label: "Inauguration",
         date: dt.toMillis(),
+        dayOfWeek: "WEDNESDAY",
+        dayOfWeekAlt: "WEDNESDAY",
       },
     },
-    ["holiday.label", "Inauguaration"],
+    ["holiday.label", "Inauguration"],
     ["holiday.date", dt.toUTC().toISO()],
+    ["holiday.dayOfWeek", "WEDNESDAY"],
+    ["holiday.dayOfWeekAlt", "WEDNESDAY"],
+    [
+      "holiday.id",
+      function (val: string) {
+        id = mustDecodeIDFromGQLID(val);
+      },
+    ],
   );
+  const ent = await Holiday.loadX(new LoggedOutViewer(), id!);
+  expect(ent.dayOfWeek).toBe(DayOfWeek.Wednesday);
+  expect(ent.dayOfWeekAlt).toBe(DayOfWeekAlt.Wednesday);
 });

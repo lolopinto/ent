@@ -1,4 +1,4 @@
-import { Data, Ent } from "../core/base";
+import { Data, Ent, LoaderInfo } from "../core/base";
 import { Builder } from "../action/action";
 
 // Schema is the base for every schema in typescript
@@ -147,7 +147,6 @@ export type Edge = AssocEdge;
 // The most commonly used pattern in the ent framework is going to be the Node pattern
 // which automatically provides 3 fields to every ent: id, created_at, updated_at
 export interface Pattern {
-  // breaking change. we use it to identify patterns
   name: string;
   fields: Field[];
   edges?: Edge[];
@@ -211,11 +210,41 @@ export interface ForeignKey {
   name?: string; // optional but if we have multiple foreign keys to the same schema, it becomes required for all but one
   // defaults to pluralize(schema) if not provided
   disableIndex?: boolean;
+  // disable generating Builder<Ent> in Builder and Action. helpful
+  // to simplify the code when it's known that the object here
+  // would always have been previously created. simplifies validation
+  disableBuilderType?: boolean;
+}
+
+type getLoaderInfoFn = (type: string) => LoaderInfo;
+
+export interface InverseFieldEdge {
+  // 1-N if field exists so no need for inverse or symmetric edge. also can't be unique
+
+  // name of the inverse edge
+  name: string;
+  // following 3: same as in AssocEdge
+  edgeConstName?: string;
+  tableName?: string;
+  hideFromGraphQL?: boolean;
 }
 
 export interface FieldEdge {
   schema: string;
-  inverseEdge: string;
+  // inverseEdge is optional. if present, indicates it maps to an edge in the other schema
+  // it creates the edge in the other schema if not provided.
+  // this makes it so that we can define and write the edge from this schema
+  inverseEdge?: string | InverseFieldEdge;
+
+  // if enforceSchema. implement the valid type.
+  // we use getLoaderOptions to do it
+  enforceSchema?: boolean;
+  // pass the generated getLoaderInfoFromSchema method in src/ent/generated/loaders.ts
+  getLoaderInfoFromSchema?: getLoaderInfoFn;
+  // disable generating Builder<Ent> in Builder and Action. helpful
+  // to simplify the code when it's known that the object here
+  // would always have been previously created. simplifies validation
+  disableBuilderType?: boolean;
 }
 
 // FieldOptions are configurable options for fields.
@@ -259,6 +288,10 @@ export interface PolymorphicOptions {
   types?: string[];
   // hide inverse type from graphql
   hideFromInverseGraphQL?: boolean;
+  // disable generating Builder<Ent> in Builder and Action. helpful
+  // to simplify the code when it's known that the object here
+  // would always have been previously created. simplifies validation
+  disableBuilderType?: boolean;
 }
 
 // Field interface that each Field needs to support
@@ -267,7 +300,7 @@ export interface Field extends FieldOptions {
   type: Type;
 
   // optional valid and format to validate and format before storing
-  valid?(val: any): boolean;
+  valid?(val: any): Promise<boolean> | boolean;
   //valid?(val: any): Promise<boolean>;
   format?(val: any): any;
 
@@ -359,6 +392,11 @@ export interface ActionField {
   // list of something
   list?: boolean;
   actionName?: string; // take the fields of this action and add them as this. only works with type "Object"
+
+  // if actionName is provided, exclude the following fields from being embedded
+  // either because they can be derived or optional and don't need it
+  // no validation on what can be excluded is done. things will eventually fail if done incorrectly
+  excludedFields?: string[];
 }
 
 // provides a way to configure the actions generated for the ent

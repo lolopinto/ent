@@ -500,6 +500,7 @@ export class Orchestrator<T extends Ent> {
   ): Data {
     const editedFields = this.options.editedFields();
     let data: Data = {};
+    let defaultData: Data = {};
 
     let input: Data = action?.getInput() || {};
 
@@ -534,32 +535,97 @@ export class Orchestrator<T extends Ent> {
           this.options.operation === WriteOperation.Edit
         ) {
           defaultValue = field.defaultValueOnEdit(builder, input);
-          // TODO special case this if this is the only thing changing and don't do the write.
         }
       }
 
-      data[dbKey] = value;
+      if (value !== undefined) {
+        data[dbKey] = value;
+      }
 
       if (defaultValue !== undefined) {
         updateInput = true;
-        data[dbKey] = defaultValue;
+        defaultData[dbKey] = defaultValue;
         this.defaultFieldsByFieldName[fieldName] = defaultValue;
         // TODO related to #510. we need this logic to be consistent so do this all in TypeScript or get it from go somehow
         this.defaultFieldsByTSName[camelCase(fieldName)] = defaultValue;
       }
     }
 
-    if (updateInput && this.options.updateInput) {
-      // this basically fixes #605. just needs to be exposed correctly
-      this.options.updateInput(this.defaultFieldsByTSName);
+    // if there's data changing, add data
+    if (this.hasData(data)) {
+      data = {
+        ...data,
+        ...defaultData,
+      };
+      if (updateInput && this.options.updateInput) {
+        // this basically fixes #605. just needs to be exposed correctly
+        this.options.updateInput(this.defaultFieldsByTSName);
+      }
     }
+
     return data;
+  }
+
+  private hasData(data: Data) {
+    for (const _k in data) {
+      return true;
+    }
+    return false;
+  }
+
+  private async transformFieldValue(field: Field, dbKey: string, value: any) {
+    // now format and validate...
+    if (value === null) {
+      if (!field.nullable) {
+        throw new Error(
+          `field ${field.name} set to null for non-nullable field`,
+        );
+      }
+    } else if (value === undefined) {
+      if (
+        !field.nullable &&
+        // required field can be skipped if server default set
+        // not checking defaultValueOnCreate() or defaultValueOnEdit() as that's set above
+        // not setting server default as we're depending on the database handling that.
+        // server default allowed
+        field.serverDefault === undefined &&
+        this.options.operation === WriteOperation.Insert
+      ) {
+        throw new Error(`required field ${field.name} not set`);
+      }
+    } else if (this.isBuilder(value)) {
+      if (field.valid) {
+        const valid = await Promise.resolve(field.valid(value));
+        if (!valid) {
+          throw new Error(`invalid field ${field.name} with value ${value}`);
+        }
+      }
+      // keep track of dependencies to resolve
+      this.dependencies.set(value.placeholderID, value);
+      // keep track of fields to resolve
+      this.fieldsToResolve.push(dbKey);
+    } else {
+      if (field.valid) {
+        // TODO this could be async. handle this better
+        const valid = await Promise.resolve(field.valid(value));
+        if (!valid) {
+          throw new Error(`invalid field ${field.name} with value ${value}`);
+        }
+      }
+
+      if (field.format) {
+        // TODO this could be async e.g. password. handle this better
+        value = await Promise.resolve(field.format(value));
+      }
+    }
+    return value;
   }
 
   private async formatAndValidateFields(
     schemaFields: Map<string, Field>,
   ): Promise<void> {
-    if (this.options.operation == WriteOperation.Delete) {
+    const op = this.options.operation;
+    if (op === WriteOperation.Delete) {
       return;
     }
 
@@ -570,54 +636,40 @@ export class Orchestrator<T extends Ent> {
 
     for (const [fieldName, field] of schemaFields) {
       let value = editedFields.get(fieldName);
-      if (value === undefined) {
+
+      if (value === undefined && op === WriteOperation.Insert) {
         // null allowed
         value = this.defaultFieldsByFieldName[fieldName];
       }
       let dbKey = field.storageKey || snakeCase(field.name);
 
-      // now format and validate...
-      if (value === null) {
-        if (!field.nullable) {
-          throw new Error(
-            `field ${field.name} set to null for non-nullable field`,
-          );
-        }
-      } else if (value === undefined) {
-        if (
-          !field.nullable &&
-          // required field can be skipped if server default set
-          // not checking defaultValueOnCreate() or defaultValueOnEdit() as that's set above
-          // not setting server default as we're depending on the database handling that.
-          // server default allowed
-          field.serverDefault === undefined &&
-          this.options.operation === WriteOperation.Insert
-        ) {
-          throw new Error(`required field ${field.name} not set`);
-        }
-      } else if (this.isBuilder(value)) {
-        let builder = value;
-        // keep track of dependencies to resolve
-        this.dependencies.set(builder.placeholderID, builder);
-        // keep track of fields to resolve
-        this.fieldsToResolve.push(dbKey);
-      } else {
-        if (field.valid) {
-          // TODO this could be async. handle this better
-          let valid = await Promise.resolve(field.valid(value));
-          if (!valid) {
-            throw new Error(`invalid field ${field.name} with value ${value}`);
-          }
-        }
+      value = await this.transformFieldValue(field, dbKey, value);
 
-        if (field.format) {
-          // TODO this could be async e.g. password. handle this better
-          value = await Promise.resolve(field.format(value));
-        }
-      }
       if (value !== undefined) {
         data[dbKey] = value;
         logValues[dbKey] = field.logValue(value);
+      }
+    }
+
+    //  we ignored default values while editing.
+    // if we're editing and there's data, add default values
+    if (op === WriteOperation.Edit && this.hasData(data)) {
+      for (const fieldName in this.defaultFieldsByFieldName) {
+        const defaultValue = this.defaultFieldsByFieldName[fieldName];
+        let field = schemaFields.get(fieldName)!;
+
+        let dbKey = field.storageKey || snakeCase(field.name);
+
+        // no value, let's just default
+        if (data[dbKey] === undefined) {
+          const value = await this.transformFieldValue(
+            field,
+            dbKey,
+            defaultValue,
+          );
+          data[dbKey] = value;
+          logValues[dbKey] = field.logValue(value);
+        }
       }
     }
 
@@ -644,8 +696,8 @@ export class Orchestrator<T extends Ent> {
     await this.validX();
 
     let ops: DataOperation[] = [this.buildMainOp()];
+
     await this.buildEdgeOps(ops);
-    //    console.log("post build");
 
     return new EntChangeset(
       this.options.viewer,
@@ -666,7 +718,7 @@ export class Orchestrator<T extends Ent> {
     return action.viewerForEntLoad(data);
   }
 
-  private async returnedRow(): Promise<Data | null> {
+  async returnedRow(): Promise<Data | null> {
     if (this.mainOp && this.mainOp.returnedRow) {
       return this.mainOp.returnedRow();
     }

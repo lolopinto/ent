@@ -44,7 +44,9 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
   orchestrator: {{useImport "Orchestrator"}}<{{$node}}>;
   readonly placeholderID: {{useImport "ID"}};
   readonly ent = {{$node}};
+  readonly nodeType = {{useImport "NodeType"}}.{{$node}};
   private input: {{$input}};
+  private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: {{useImport "Viewer"}},
@@ -80,6 +82,16 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
       ...this.input,
       ...input,
     };
+  }
+
+  // store data in Builder that can be retrieved by another validator, trigger, observer later in the action
+  storeData(k: string, v: any) {
+    this.m.set(k, v);
+  }
+
+  // retrieve data stored in this Builder with key
+  getStoredData(k: string) {
+    return this.m.get(k);
   }
 
   {{if .HasAssociationEdges -}}
@@ -213,12 +225,20 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
       addField("{{$field.FieldName}}", fields.{{$tsFieldName}});
       {{ $inverseEdge := $field.GetInverseEdge -}}
       {{ if $inverseEdge -}}
-        if (fields.{{$tsFieldName}}) {
-          this.orchestrator.addInboundEdge(
-            fields.{{$tsFieldName}},
-            {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
-            {{useImport "NodeType"}}.{{$inverseEdge.NodeInfo.Node}},
-          );
+        if (fields.{{$tsFieldName}} !== undefined) {
+          if (fields.{{$tsFieldName}}) {
+            this.orchestrator.addInboundEdge(
+              fields.{{$tsFieldName}},
+              {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
+              {{useImport "NodeType"}}.{{$inverseEdge.NodeInfo.Node}},
+            );
+          }
+          if (this.existingEnt && this.existingEnt.{{$tsFieldName}} && this.existingEnt.{{$tsFieldName}} !== fields.{{$tsFieldName}}) {
+            this.orchestrator.removeInboundEdge(
+              this.existingEnt.{{$tsFieldName}},
+              {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
+            );
+          }
         }
       {{end -}}
     {{end -}}

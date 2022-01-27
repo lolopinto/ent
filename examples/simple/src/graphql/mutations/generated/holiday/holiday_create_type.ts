@@ -19,7 +19,11 @@ import { Holiday } from "../../../../ent";
 import CreateHolidayAction, {
   HolidayCreateInput,
 } from "../../../../ent/holiday/actions/create_holiday_action";
-import { HolidayType } from "../../../resolvers";
+import {
+  DayOfWeekAltType,
+  DayOfWeekType,
+  HolidayType,
+} from "../../../resolvers";
 
 interface HolidayCreatePayload {
   holiday: Holiday;
@@ -28,6 +32,12 @@ interface HolidayCreatePayload {
 export const HolidayCreateInputType = new GraphQLInputObjectType({
   name: "HolidayCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
+    dayOfWeek: {
+      type: GraphQLNonNull(DayOfWeekType),
+    },
+    dayOfWeekAlt: {
+      type: DayOfWeekAltType,
+    },
     label: {
       type: GraphQLNonNull(GraphQLString),
     },
@@ -65,6 +75,8 @@ export const HolidayCreateType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ): Promise<HolidayCreatePayload> => {
     const holiday = await CreateHolidayAction.create(context.getViewer(), {
+      dayOfWeek: input.dayOfWeek,
+      dayOfWeekAlt: input.dayOfWeekAlt,
       label: input.label,
       date: input.date,
     }).saveX();

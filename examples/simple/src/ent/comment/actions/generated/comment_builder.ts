@@ -13,12 +13,12 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Comment } from "../../..";
+import { Comment, User } from "../../..";
 import { EdgeType, NodeType } from "../../../generated/const";
 import schema from "../../../../schema/comment";
 
 export interface CommentInput {
-  authorID?: ID;
+  authorID?: ID | Builder<User>;
   body?: string;
   articleID?: ID | Builder<Ent>;
   articleType?: string;
@@ -36,7 +36,9 @@ export class CommentBuilder implements Builder<Comment> {
   orchestrator: Orchestrator<Comment>;
   readonly placeholderID: ID;
   readonly ent = Comment;
+  readonly nodeType = NodeType.Comment;
   private input: CommentInput;
+  private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: Viewer,
@@ -72,6 +74,16 @@ export class CommentBuilder implements Builder<Comment> {
       ...this.input,
       ...input,
     };
+  }
+
+  // store data in Builder that can be retrieved by another validator, trigger, observer later in the action
+  storeData(k: string, v: any) {
+    this.m.set(k, v);
+  }
+
+  // retrieve data stored in this Builder with key
+  getStoredData(k: string) {
+    return this.m.get(k);
   }
 
   // this gets the inputs that have been written for a given edgeType and operation
@@ -178,7 +190,7 @@ export class CommentBuilder implements Builder<Comment> {
   }
 
   // get value of AuthorID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewAuthorIDValue(): ID | undefined {
+  getNewAuthorIDValue(): ID | Builder<User> | undefined {
     if (this.input.authorID !== undefined) {
       return this.input.authorID;
     }

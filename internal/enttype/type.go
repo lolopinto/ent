@@ -13,6 +13,10 @@ import (
 	"github.com/lolopinto/ent/ent/config"
 )
 
+type Config interface {
+	Base64EncodeIDs() bool
+}
+
 // Type represents a Type that's expressed in the framework
 // The only initial requirement is GraphQL since that's exposed everywhere
 type Type interface {
@@ -56,9 +60,14 @@ type TSCodegenableType interface {
 // 	GetTSName() string
 // }
 
-type IDMarkerInterface interface {
+// rendering of fields in actions
+// e.g. converting a graphql id to ent id
+// or converting say an enum value from graphql to Node representation
+// if said conversion was not supported natively
+type CustomGQLRenderer interface {
 	TSGraphQLType
-	IsIDType() bool
+	CustomGQLRender(cfg Config, v string) string
+	ArgImports() []FileImport
 }
 
 type ConvertDataType interface {
@@ -72,9 +81,14 @@ type convertListElemType interface {
 	convertNullableListWithItem() FileImport
 }
 
+type ActionFieldsInfo struct {
+	ActionName     string
+	ExcludedFields []string
+}
+
 type TSTypeWithActionFields interface {
 	TSGraphQLType
-	GetActionName() string
+	GetActionFieldsInfo() *ActionFieldsInfo
 }
 
 type ImportDepsType interface {
@@ -438,6 +452,23 @@ func (t *IDType) GetTSGraphQLImports() []FileImport {
 	}
 }
 
+func (t *IDType) CustomGQLRender(cfg Config, v string) string {
+	if !cfg.Base64EncodeIDs() {
+		return v
+	}
+
+	return fmt.Sprintf("mustDecodeIDFromGQLID(%s)", v)
+}
+
+func (t *IDType) ArgImports() []FileImport {
+	return []FileImport{
+		{
+			ImportType: EntGraphQL,
+			Type:       "mustDecodeIDFromGQLID",
+		},
+	}
+}
+
 type NullableIDType struct {
 	idType
 }
@@ -460,6 +491,23 @@ func (t *NullableIDType) GetNonNullableType() TSGraphQLType {
 
 func (t *NullableIDType) GetTSGraphQLImports() []FileImport {
 	return []FileImport{NewGQLFileImport("GraphQLID")}
+}
+
+func (t *NullableIDType) CustomGQLRender(cfg Config, v string) string {
+	if !cfg.Base64EncodeIDs() {
+		return v
+	}
+
+	return fmt.Sprintf("mustDecodeNullableIDFromGQLID(%s)", v)
+}
+
+func (t *NullableIDType) ArgImports() []FileImport {
+	return []FileImport{
+		{
+			ImportType: EntGraphQL,
+			Type:       "mustDecodeNullableIDFromGQLID",
+		},
+	}
 }
 
 type intType struct{}
@@ -951,9 +999,10 @@ func (t *NullableTimetzType) GetImportType() Import {
 
 // public for tests
 type CommonObjectType struct {
-	TSType      string
-	GraphQLType string
-	ActionName  string
+	TSType         string
+	GraphQLType    string
+	ActionName     string
+	ExcludedFields []string
 }
 
 func (t *CommonObjectType) GetDBType() string {
@@ -968,8 +1017,11 @@ func (t *CommonObjectType) GetCastToMethod() string {
 	panic("GetCastToMethod doesn't apply for objectType")
 }
 
-func (t *CommonObjectType) GetActionName() string {
-	return t.ActionName
+func (t *CommonObjectType) GetActionFieldsInfo() *ActionFieldsInfo {
+	return &ActionFieldsInfo{
+		ActionName:     t.ActionName,
+		ExcludedFields: t.ExcludedFields,
+	}
 }
 
 type ObjectType struct {
@@ -1078,12 +1130,12 @@ func (t *ListWrapperType) GetTSGraphQLImports() []FileImport {
 	return ret
 }
 
-func (t *ListWrapperType) GetActionName() string {
+func (t *ListWrapperType) GetActionFieldsInfo() *ActionFieldsInfo {
 	t2, ok := t.Type.(TSTypeWithActionFields)
 	if !ok {
-		return ""
+		return nil
 	}
-	return t2.GetActionName()
+	return t2.GetActionFieldsInfo()
 }
 
 type typeConfig struct {

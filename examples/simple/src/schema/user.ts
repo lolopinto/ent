@@ -122,10 +122,6 @@ export default class User extends BaseEntSchema implements Schema {
 
   edges: Edge[] = [
     {
-      name: "createdEvents",
-      schemaName: "Event",
-    },
-    {
       name: "friends",
       schemaName: "User",
       symmetric: true,

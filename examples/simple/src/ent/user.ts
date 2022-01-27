@@ -47,29 +47,35 @@ export class User extends UserBase {
     return null;
   }
 
+  private async queryContactInfos() {
+    const contacts = await this.queryContacts().queryEnts();
+    return Promise.all(contacts.map((contact) => contact.queryPlusEmails()));
+  }
+
   @gqlField({
     type: "Contact",
     nullable: true,
     name: "contactSameDomain",
   })
-  async getFirstContactSameDomain(): Promise<Contact | undefined> {
+  async getFirstContactSameDomain(): Promise<Contact | null> {
     let domain = this.getDomainFromEmail(this.emailAddress);
     if (!domain) {
-      return;
+      return null;
     }
-    let [selfContactEdge, contacts] = await Promise.all([
+    let [selfContactEdge, contactInfos] = await Promise.all([
       this.loadSelfContactEdge(),
-      this.queryContacts().queryEnts(),
+      this.queryContactInfos(),
     ]);
-    return contacts!.find((contact) => {
-      if (selfContactEdge?.id2 === contact.id) {
+
+    const ret = contactInfos.find((contactInfo) => {
+      if (selfContactEdge?.id2 === contactInfo.contact.id) {
         return null;
       }
-      if (domain === this.getDomainFromEmail(contact.emailAddress)) {
-        return contact;
+      if (domain === this.getDomainFromEmail(contactInfo.firstEmail)) {
+        return contactInfo;
       }
-      return null;
     });
+    return ret?.contact || null;
   }
 
   @gqlField({ type: "[Contact]", name: "contactsSameDomain" })
@@ -79,10 +85,12 @@ export class User extends UserBase {
     if (!domain) {
       return [];
     }
-    let contacts = await this.queryContacts().queryEnts();
-    return contacts.filter((contact) => {
-      return domain === this.getDomainFromEmail(contact.emailAddress);
-    });
+    const contactInfos = await this.queryContactInfos();
+    return contactInfos
+      .filter((contactInfo) => {
+        return domain === this.getDomainFromEmail(contactInfo.firstEmail);
+      })
+      .map((info) => info.contact);
   }
 
   @gqlField({
@@ -96,19 +104,20 @@ export class User extends UserBase {
     if (!domain) {
       return null;
     }
-    let contacts = await this.queryContacts().queryEnts();
-    contacts = contacts.filter((contact) => {
-      return (
-        this.id !== contact.userID &&
-        domain === this.getDomainFromEmail(contact.emailAddress)
-      );
-    });
+    const contactInfos = await this.queryContactInfos();
+    const res = contactInfos
+      .filter((contactInfo) => {
+        return (
+          this.id !== contactInfo.contact.userID &&
+          domain === this.getDomainFromEmail(contactInfo.firstEmail)
+        );
+      })
+      .map((info) => info.contact);
     // cheats and returns null if no contacts
-    // doesn't return self contact
-    if (!contacts.length) {
+    if (!res.length) {
       return null;
     }
-    return contacts;
+    return res;
   }
 
   @gqlField({
@@ -122,11 +131,11 @@ export class User extends UserBase {
     if (!domain) {
       return [];
     }
-    let contacts = await this.queryContacts().queryEnts();
-    return contacts.map((contact) => {
-      let contactDomain = this.getDomainFromEmail(contact.emailAddress);
+    let contactInfos = await this.queryContactInfos();
+    return contactInfos.map((contactInfo) => {
+      let contactDomain = this.getDomainFromEmail(contactInfo.firstEmail);
       if (contactDomain === domain) {
-        return contact;
+        return contactInfo.contact;
       }
       return null;
     });
@@ -145,11 +154,11 @@ export class User extends UserBase {
     if (!domain) {
       return null;
     }
-    let contacts = await this.queryContacts().queryEnts();
-    return contacts.map((contact) => {
-      let contactDomain = this.getDomainFromEmail(contact.emailAddress);
+    const contactInfos = await this.queryContactInfos();
+    return contactInfos.map((contactInfo) => {
+      let contactDomain = this.getDomainFromEmail(contactInfo.firstEmail);
       if (contactDomain === domain) {
-        return contact;
+        return contactInfo.contact;
       }
       return null;
     });

@@ -16,11 +16,11 @@ import {
   Changeset,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { Comment } from "../../..";
+import { Comment, User } from "../../..";
 import { CommentBuilder, CommentInput } from "./comment_builder";
 
 export interface CommentCreateInput {
-  authorID: ID;
+  authorID: ID | Builder<User>;
   body: string;
   articleID: ID | Builder<Ent>;
   articleType: string;

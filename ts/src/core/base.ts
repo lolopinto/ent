@@ -170,6 +170,13 @@ export interface LoadCustomEntOptions<T extends Ent>
   ent: EntConstructor<T>;
 }
 
+export interface LoaderInfo {
+  tableName: string;
+  fields: string[];
+  nodeType: string;
+  loaderFactory: LoaderFactory<any, Data | null>;
+}
+
 // information needed to edit an ent
 export interface EditEntOptions<T extends Ent>
   extends LoadableEntOptions<T>,

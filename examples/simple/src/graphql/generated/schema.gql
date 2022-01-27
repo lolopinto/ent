@@ -77,20 +77,36 @@ type Address implements Node {
   zip: String!
   apartment: String
   country: String!
+  hostedEvents(first: Int, after: String, last: Int, before: String): AddressToHostedEventsConnection!
 }
 
 type Comment implements Node {
   article: Node
+  author: User
   id: ID!
-  authorID: ID!
   body: String!
   post(first: Int, after: String, last: Int, before: String): CommentToPostConnection!
 }
 
-type Contact implements Node {
-  user: User
+type ContactEmail implements Node {
+  contact: Contact
   id: ID!
   emailAddress: String!
+  label: String!
+}
+
+type ContactPhoneNumber implements Node {
+  contact: Contact
+  id: ID!
+  phoneNumber: String!
+  label: String!
+}
+
+type Contact implements Node {
+  emails: [ContactEmail!]!
+  phoneNumbers: [ContactPhoneNumber!]!
+  user: User
+  id: ID!
   firstName: String!
   lastName: String!
   comments(first: Int, after: String, last: Int, before: String): ContactToCommentsConnection!
@@ -99,6 +115,7 @@ type Contact implements Node {
 }
 
 type Event implements Node {
+  address: Address
   creator: User
   id: ID!
   name: String!
@@ -115,6 +132,8 @@ type Event implements Node {
 
 type Holiday implements Node {
   id: ID!
+  dayOfWeek: DayOfWeek!
+  dayOfWeekAlt: DayOfWeekAlt
   label: String!
   date: Time!
 }
@@ -122,9 +141,9 @@ type Holiday implements Node {
 type HoursOfOperation implements Node {
   id: ID!
   dayOfWeek: DayOfWeek!
+  dayOfWeekAlt: DayOfWeekAlt
   open: String!
   close: String!
-  dayOfWeekAlt: DayOfWeekAlt
 }
 
 type User implements Node {
@@ -164,6 +183,18 @@ type User implements Node {
   contactsSameDomainNullable: [Contact!]
   contactsSameDomainNullableContents: [Contact]!
   contactsSameDomainNullableContentsAndList: [Contact]
+}
+
+type AddressToHostedEventsEdge implements Edge {
+  node: Event!
+  cursor: String!
+}
+
+type AddressToHostedEventsConnection implements Connection {
+  edges: [AddressToHostedEventsEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
 }
 
 type CommentToPostEdge implements Edge {
@@ -465,10 +496,11 @@ type ConfirmPhoneNumberEditPayload {
 }
 
 input ContactCreateInput {
-  emailAddress: String!
   firstName: String!
   lastName: String!
   userID: ID!
+  emails: [EmailContactCreateInput!]
+  phoneNumbers: [PhoneNumberContactCreateInput!]
 }
 
 type ContactCreatePayload {
@@ -487,7 +519,8 @@ type ContactDeletePayload {
 input ContactEditInput {
   """id of Contact"""
   contactID: ID!
-  emailAddress: String
+  emailIds: [ID!]
+  phoneNumberIds: [ID!]
   firstName: String
   lastName: String
   userID: ID
@@ -495,6 +528,68 @@ input ContactEditInput {
 
 type ContactEditPayload {
   contact: Contact!
+}
+
+input ContactEmailCreateInput {
+  emailAddress: String!
+  label: String!
+  contactID: ID!
+}
+
+type ContactEmailCreatePayload {
+  contactEmail: ContactEmail!
+}
+
+input ContactEmailDeleteInput {
+  """id of ContactEmail"""
+  contactEmailID: ID!
+}
+
+type ContactEmailDeletePayload {
+  deletedContactEmailID: ID
+}
+
+input ContactEmailEditInput {
+  """id of ContactEmail"""
+  contactEmailID: ID!
+  emailAddress: String
+  label: String
+  contactID: ID
+}
+
+type ContactEmailEditPayload {
+  contactEmail: ContactEmail!
+}
+
+input ContactPhoneNumberCreateInput {
+  phoneNumber: String!
+  label: String!
+  contactID: ID!
+}
+
+type ContactPhoneNumberCreatePayload {
+  contactPhoneNumber: ContactPhoneNumber!
+}
+
+input ContactPhoneNumberDeleteInput {
+  """id of ContactPhoneNumber"""
+  contactPhoneNumberID: ID!
+}
+
+type ContactPhoneNumberDeletePayload {
+  deletedContactPhoneNumberID: ID
+}
+
+input ContactPhoneNumberEditInput {
+  """id of ContactPhoneNumber"""
+  contactPhoneNumberID: ID!
+  phoneNumber: String
+  label: String
+  contactID: ID
+}
+
+type ContactPhoneNumberEditPayload {
+  contactPhoneNumber: ContactPhoneNumber!
 }
 
 input EmailAddressEditInput {
@@ -505,6 +600,11 @@ input EmailAddressEditInput {
 
 type EmailAddressEditPayload {
   user: User!
+}
+
+input EmailContactCreateInput {
+  emailAddress: String!
+  label: String!
 }
 
 input EventAddHostInput {
@@ -523,6 +623,7 @@ input EventCreateInput {
   startTime: Time!
   endTime: Time
   eventLocation: String!
+  addressID: ID
 }
 
 type EventCreatePayload {
@@ -546,6 +647,7 @@ input EventEditInput {
   startTime: Time
   endTime: Time
   eventLocation: String
+  addressID: ID
 }
 
 type EventEditPayload {
@@ -580,6 +682,8 @@ enum EventRsvpStatusInput {
 }
 
 input HolidayCreateInput {
+  dayOfWeek: DayOfWeek!
+  dayOfWeekAlt: DayOfWeekAlt
   label: String!
   date: Time!
 }
@@ -590,13 +694,18 @@ type HolidayCreatePayload {
 
 input HoursOfOperationCreateInput {
   dayOfWeek: DayOfWeek!
+  dayOfWeekAlt: DayOfWeekAlt
   open: String!
   close: String!
-  dayOfWeekAlt: DayOfWeekAlt
 }
 
 type HoursOfOperationCreatePayload {
   hoursOfOperation: HoursOfOperation!
+}
+
+input PhoneNumberContactCreateInput {
+  phoneNumber: String!
+  label: String!
 }
 
 input PhoneNumberEditInput {
@@ -662,6 +771,12 @@ type Mutation {
   contactCreate(input: ContactCreateInput!): ContactCreatePayload!
   contactDelete(input: ContactDeleteInput!): ContactDeletePayload!
   contactEdit(input: ContactEditInput!): ContactEditPayload!
+  contactEmailCreate(input: ContactEmailCreateInput!): ContactEmailCreatePayload!
+  contactEmailDelete(input: ContactEmailDeleteInput!): ContactEmailDeletePayload!
+  contactEmailEdit(input: ContactEmailEditInput!): ContactEmailEditPayload!
+  contactPhoneNumberCreate(input: ContactPhoneNumberCreateInput!): ContactPhoneNumberCreatePayload!
+  contactPhoneNumberDelete(input: ContactPhoneNumberDeleteInput!): ContactPhoneNumberDeletePayload!
+  contactPhoneNumberEdit(input: ContactPhoneNumberEditInput!): ContactPhoneNumberEditPayload!
   emailAddressEdit(input: EmailAddressEditInput!): EmailAddressEditPayload!
   eventAddHost(input: EventAddHostInput!): EventAddHostPayload!
   eventCreate(input: EventCreateInput!): EventCreatePayload!

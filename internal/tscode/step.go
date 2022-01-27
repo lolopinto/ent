@@ -168,8 +168,7 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 	}
 
 	for _, info := range processor.Schema.Enums {
-		// only lookup table enums get their own files
-		if !info.LookupTableEnum() {
+		if !info.OwnEnumFile() {
 			continue
 		}
 		funcs = append(funcs, func() error {
@@ -197,6 +196,9 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 		},
 		func() error {
 			return writeLoadAnyFile(s.nodeTypes, processor)
+		},
+		func() error {
+			return writeLoaderFile(processor)
 		},
 	)
 
@@ -382,6 +384,10 @@ func getImportPathForPatternBaseQueryFile(name string) string {
 
 func getFilePathForConstFile(cfg *codegen.Config) string {
 	return path.Join(cfg.GetAbsPathToRoot(), "src/ent/generated/const.ts")
+}
+
+func getFilePathForLoaderFile(cfg *codegen.Config) string {
+	return path.Join(cfg.GetAbsPathToRoot(), "src/ent/generated/loaders.ts")
 }
 
 func getFilePathForLoadAnyFile(cfg *codegen.Config) string {
@@ -658,9 +664,33 @@ func writeLoadAnyFile(nodeData []enum.Data, processor *codegen.Processor) error 
 	})
 }
 
+func writeLoaderFile(processor *codegen.Processor) error {
+	cfg := processor.Config
+	filePath := getFilePathForLoaderFile(cfg)
+	imps := tsimport.NewImports(processor.Config, filePath)
+
+	return file.Write(&file.TemplatedBasedFileWriter{
+		Config: processor.Config,
+		Data: struct {
+			Schema  *schema.Schema
+			Package *codegen.ImportPackage
+		}{
+			processor.Schema,
+			cfg.GetImportPackage(),
+		},
+		CreateDirIfNeeded: true,
+		AbsPathToTemplate: util.GetAbsolutePath("loaders.tmpl"),
+		TemplateName:      "loaders.tmpl",
+		PathToFile:        filePath,
+		TsImports:         imps,
+		FuncMap:           imps.FuncMap(),
+	})
+}
+
 func getSortedInternalEntFileLines(s *schema.Schema) []string {
 	lines := []string{
 		"src/ent/generated/const",
+		"src/ent/generated/loaders",
 	}
 
 	append2 := func(list *[]string, str string) {
@@ -679,7 +709,7 @@ func getSortedInternalEntFileLines(s *schema.Schema) []string {
 
 	var enums []string
 	for _, enum := range s.Enums {
-		if enum.LookupTableEnum() {
+		if enum.OwnEnumFile() {
 			append2(&enums, getImportPathForEnumFile(enum))
 		}
 	}

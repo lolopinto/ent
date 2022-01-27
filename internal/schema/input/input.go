@@ -18,7 +18,9 @@ type Schema struct {
 }
 
 type Pattern struct {
-	Name       string       `json:"name"`
+	Name string `json:"name"`
+	// at this point, should we support everything in Node
+	Fields     []*Field     `json:"fields"`
 	AssocEdges []*AssocEdge `json:"assocEdges"`
 }
 
@@ -124,23 +126,42 @@ type Field struct {
 
 	// set when parsed via tsent generate schema
 	Import enttype.Import
+
+	PatternName string `json:"patternName"`
 }
 
 type ForeignKey struct {
-	Schema       string `json:"schema"`
-	Column       string `json:"column"`
-	Name         string `json:"name"`
-	DisableIndex bool   `json:"disableIndex"`
+	Schema             string `json:"schema"`
+	Column             string `json:"column"`
+	Name               string `json:"name"`
+	DisableIndex       bool   `json:"disableIndex"`
+	DisableBuilderType bool   `json:"disableBuilderType"`
 }
 
 type FieldEdge struct {
-	Schema      string `json:"schema"`
-	InverseEdge string `json:"inverseEdge"`
+	Schema             string            `json:"schema"`
+	InverseEdge        *InverseFieldEdge `json:"inverseEdge"`
+	DisableBuilderType bool              `json:"disableBuilderType"`
+}
+
+func (f *FieldEdge) InverseEdgeName() string {
+	if f.InverseEdge == nil {
+		return ""
+	}
+	return f.InverseEdge.Name
+}
+
+type InverseFieldEdge struct {
+	Name            string `json:"name"`
+	TableName       string `json:"tableName"`
+	HideFromGraphQL bool   `json:"hideFromGraphQL"`
+	EdgeConstName   string `json:"edgeConstName"`
 }
 
 type PolymorphicOptions struct {
 	Types                  []string `json:"types"`
 	HideFromInverseGraphQL bool     `json:"hideFromInverseGraphQL"`
+	DisableBuilderType     bool     `json:"disableBuilderType"`
 }
 
 func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.TSGraphQLType, error) {
@@ -403,11 +424,12 @@ const NullableContentsAndList NullableItem = "contentsAndList"
 const NullableTrue NullableItem = "true"
 
 type actionField struct {
-	Name       string       `json:"name"`
-	Type       ActionType   `json:"type"`
-	Nullable   NullableItem `json:"nullable"`
-	List       bool         `json:"list"`
-	ActionName string       `json:"actionName"`
+	Name           string       `json:"name"`
+	Type           ActionType   `json:"type"`
+	Nullable       NullableItem `json:"nullable"`
+	List           bool         `json:"list"`
+	ActionName     string       `json:"actionName"`
+	ExcludedFields []string     `json:"excludedFields"`
 }
 
 type ActionField struct {
@@ -417,6 +439,7 @@ type ActionField struct {
 	list             bool
 	nullableContents bool
 	ActionName       string
+	ExcludedFields   []string
 }
 
 func (f *ActionField) UnmarshalJSON(data []byte) error {
@@ -430,6 +453,7 @@ func (f *ActionField) UnmarshalJSON(data []byte) error {
 	f.Name = af.Name
 	f.ActionName = af.ActionName
 	f.Type = af.Type
+	f.ExcludedFields = af.ExcludedFields
 
 	switch af.Nullable {
 	case NullableContentsAndList:
@@ -508,6 +532,7 @@ func (f *ActionField) getEntTypeHelper(inputName string, nullable bool) (enttype
 			typ.TSType = tsType
 			typ.ActionName = f.ActionName
 			typ.GraphQLType = gqlType
+			typ.ExcludedFields = f.ExcludedFields
 
 			return typ, nil
 		}
@@ -515,6 +540,7 @@ func (f *ActionField) getEntTypeHelper(inputName string, nullable bool) (enttype
 		typ.TSType = tsType
 		typ.GraphQLType = gqlType
 		typ.ActionName = f.ActionName
+		typ.ExcludedFields = f.ExcludedFields
 		return typ, nil
 	}
 	return nil, fmt.Errorf("unsupported type %s", f.Type)
@@ -604,23 +630,7 @@ type InverseAssocEdge struct {
 func ParseSchema(input []byte) (*Schema, error) {
 	s := &Schema{}
 	if err := json.Unmarshal(input, s); err != nil {
-		// don't think this applies but keeping it here just in case
-		nodes := make(map[string]*Node)
-		if err := json.Unmarshal(input, &nodes); err != nil {
-			return nil, err
-		}
-		return &Schema{Nodes: nodes}, nil
-	}
-	// in the old route, it doesn't throw an error but just unmarshalls nothing 😭
-	// TestCustomFields
-	// also need to verify TestCustomListQuery|TestCustomUploadType works
-	// so checking s.Nodes == nil instead of len() == 0
-	if s.Nodes == nil {
-		nodes := make(map[string]*Node)
-		if err := json.Unmarshal(input, &nodes); err != nil {
-			return nil, err
-		}
-		return &Schema{Nodes: nodes}, nil
+		return nil, err
 	}
 	return s, nil
 }

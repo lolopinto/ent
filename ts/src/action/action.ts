@@ -23,13 +23,14 @@ export enum WriteOperation {
 }
 
 export interface Builder<T extends Ent> {
-  existingEnt?: Ent;
+  existingEnt?: T;
   ent: EntConstructor<T>;
   placeholderID: ID;
   readonly viewer: Viewer;
   build(): Promise<Changeset<T>>;
   operation: WriteOperation;
   editedEnt?(): Promise<T | null>;
+  nodeType: string;
 }
 
 // NB: this is a private API subject to change

@@ -79,8 +79,9 @@ func newNodeData(packageName string) *NodeData {
 	return nodeData
 }
 
-func (nodeData *NodeData) addEnum(info *EnumInfo) {
-	nodeData.tsEnums = append(nodeData.tsEnums, info.Enum)
+func (nodeData *NodeData) addEnum(e *enum.Enum) {
+	// this includes enums referenced in schema and enums referenced in patterns
+	nodeData.tsEnums = append(nodeData.tsEnums, e)
 }
 
 func (nodeData *NodeData) GetNodeInstance() string {

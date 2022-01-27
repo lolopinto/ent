@@ -162,6 +162,22 @@ export function getDataToReturn(
   return ret;
 }
 
+function processBeforeStoring(val: any) {
+  if (typeof val !== "string") {
+    return val;
+  }
+  // convert postgres lists into lists before storing
+  if (val[0] === "{" && val[val.length - 1] === "}") {
+    try {
+      // valid json, don't convert
+      JSON.parse(val);
+    } catch (e) {
+      return val.substring(1, val.length - 1).split(",");
+    }
+  }
+  return val;
+}
+
 function parseInsertStatement(
   ast: InsertReplace,
   values: any[], // values passed to query
@@ -184,7 +200,7 @@ function parseInsertStatement(
   // INSERT INTO tableName (cols) VALUES (pos args)
   for (let i = 0; i < columns.length; i++) {
     let col = columns[i];
-    data[col] = values[i];
+    data[col] = processBeforeStoring(values[i]);
   }
 
   let returningData: Data | null = null;
@@ -486,7 +502,7 @@ function parseUpdateStatement(
   for (const set of ast.set) {
     let col = set.column;
     let value = getValueFromRegex(set.value, values);
-    overwrite[col] = value;
+    overwrite[col] = processBeforeStoring(value);
   }
 
   let columns = new Set<string>();

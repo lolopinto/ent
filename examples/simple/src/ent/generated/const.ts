@@ -12,6 +12,10 @@ export enum NodeType {
   Comment = "comment",
   // Contact is the node type for the Contact object. Used to identify this node in edges and other places.
   Contact = "contact",
+  // ContactEmail is the node type for the ContactEmail object. Used to identify this node in edges and other places.
+  ContactEmail = "contactEmail",
+  // ContactPhoneNumber is the node type for the ContactPhoneNumber object. Used to identify this node in edges and other places.
+  ContactPhoneNumber = "contactPhoneNumber",
   // Event is the node type for the Event object. Used to identify this node in edges and other places.
   Event = "event",
   // Holiday is the node type for the Holiday object. Used to identify this node in edges and other places.
@@ -23,6 +27,8 @@ export enum NodeType {
 }
 
 export enum EdgeType {
+  // AddressToHostedEvents is the edgeType for the address to hostedevents edge.
+  AddressToHostedEvents = "d1979d4b-d033-4562-b078-cc528fec25bb",
   // CommentToPost is the edgeType for the comment to post edge.
   CommentToPost = "f430af94-d38a-4aaa-a92f-cfc56b6f811b",
   // EventToAttending is the edgeType for the event to attending edge.

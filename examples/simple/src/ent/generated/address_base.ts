@@ -10,7 +10,6 @@ import {
   Data,
   ID,
   LoadEntOptions,
-  ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
   convertDate,
@@ -21,21 +20,9 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
-import { NodeType } from "../internal";
+import { addressLoader, addressLoaderInfo } from "./loaders";
+import { AddressToHostedEventsQuery, NodeType } from "../internal";
 import schema from "../../schema/address";
-
-const tableName = "addresses";
-const fields = [
-  "id",
-  "created_at",
-  "updated_at",
-  "street_name",
-  "city",
-  "state",
-  "zip",
-  "apartment",
-  "country",
-];
 
 export class AddressBase {
   readonly nodeType = NodeType.Address;
@@ -147,8 +134,8 @@ export class AddressBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName,
-      fields,
+      tableName: addressLoaderInfo.tableName,
+      fields: addressLoaderInfo.fields,
       ent: this,
       loaderFactory: addressLoader,
     };
@@ -166,10 +153,8 @@ export class AddressBase {
   static getField(key: string): Field | undefined {
     return AddressBase.getSchemaFields().get(key);
   }
-}
 
-export const addressLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "id",
-});
+  queryHostedEvents(): AddressToHostedEventsQuery {
+    return AddressToHostedEventsQuery.query(this.viewer, this.id);
+  }
+}

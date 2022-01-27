@@ -31,7 +31,12 @@ async function create(
   lastName: string,
 ): Promise<Contact> {
   return await CreateContactAction.create(new IDViewer(user.id), {
-    emailAddress: randomEmail(),
+    emails: [
+      {
+        emailAddress: randomEmail(),
+        label: "default",
+      },
+    ],
     firstName: firstName,
     lastName: lastName,
     userID: user.id,
@@ -46,7 +51,12 @@ async function createMany(
   for (const name of names) {
     // TODO eventually a multi-create API
     let contact = await CreateContactAction.create(new IDViewer(user.id), {
-      emailAddress: randomEmail(),
+      emails: [
+        {
+          emailAddress: randomEmail(),
+          label: "default",
+        },
+      ],
       firstName: name.firstName,
       lastName: name.lastName,
       userID: user.id,
@@ -151,4 +161,74 @@ test("likes", async () => {
   expect(count2).toBe(1);
   expect(ents2.length).toBe(1);
   expect(ents2[0].id).toBe(contact.id);
+});
+
+test("multiple emails", async () => {
+  const user = await createUser();
+  const input = {
+    emails: [
+      {
+        emailAddress: randomEmail(),
+        label: "default",
+      },
+      {
+        emailAddress: randomEmail(),
+        label: "work",
+      },
+    ],
+    firstName: "Jon",
+    lastName: "Snow",
+    userID: user.id,
+  };
+  let contact = await CreateContactAction.create(
+    new IDViewer(user.id),
+    input,
+  ).saveX();
+  // reload contact
+  contact = await Contact.loadX(contact.viewer, contact.id);
+
+  const emails = await contact.loadEmails();
+  expect(input.emails).toStrictEqual(
+    emails.map((email) => {
+      return {
+        emailAddress: email.emailAddress,
+        label: email.label,
+      };
+    }),
+  );
+});
+
+test("multiple phonenumbers", async () => {
+  const user = await createUser();
+  const input = {
+    phoneNumbers: [
+      {
+        phoneNumber: randomPhoneNumber(),
+        label: "default",
+      },
+      {
+        phoneNumber: randomPhoneNumber(),
+        label: "work",
+      },
+    ],
+    firstName: "Jon",
+    lastName: "Snow",
+    userID: user.id,
+  };
+  let contact = await CreateContactAction.create(
+    new IDViewer(user.id),
+    input,
+  ).saveX();
+  // reload contact
+  contact = await Contact.loadX(contact.viewer, contact.id);
+
+  const phoneNumbers = await contact.loadPhoneNumbers();
+  expect(input.phoneNumbers).toStrictEqual(
+    phoneNumbers.map((phoneNumber) => {
+      return {
+        phoneNumber: phoneNumber.phoneNumber,
+        label: phoneNumber.label,
+      };
+    }),
+  );
 });

@@ -16,6 +16,8 @@ import {
   AuthCode,
   Comment,
   Contact,
+  ContactEmail,
+  ContactPhoneNumber,
   Event,
   Holiday,
   HoursOfOperation,
@@ -49,6 +51,10 @@ export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent> {
       return Comment.loaderOptions();
     case NodeType.Contact:
       return Contact.loaderOptions();
+    case NodeType.ContactEmail:
+      return ContactEmail.loaderOptions();
+    case NodeType.ContactPhoneNumber:
+      return ContactPhoneNumber.loaderOptions();
     case NodeType.Event:
       return Event.loaderOptions();
     case NodeType.Holiday:
@@ -57,5 +63,7 @@ export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent> {
       return HoursOfOperation.loaderOptions();
     case NodeType.User:
       return User.loaderOptions();
+    default:
+      throw new Error(`invalid nodeType ${type} passed to getLoaderOptions`);
   }
 }

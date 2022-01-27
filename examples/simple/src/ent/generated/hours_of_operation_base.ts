@@ -10,7 +10,6 @@ import {
   Data,
   ID,
   LoadEntOptions,
-  ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
   convertDate,
@@ -21,39 +20,9 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
-import { NodeType } from "../internal";
+import { hoursOfOperationLoader, hoursOfOperationLoaderInfo } from "./loaders";
+import { DayOfWeek, DayOfWeekAlt, NodeType } from "../internal";
 import schema from "../../schema/hours_of_operation";
-
-const tableName = "hours_of_operations";
-const fields = [
-  "id",
-  "created_at",
-  "updated_at",
-  "day_of_week",
-  "open",
-  "close",
-  "day_of_week_alt",
-];
-
-export enum DayOfWeek {
-  Sunday = "Sunday",
-  Monday = "Monday",
-  Tuesday = "Tuesday",
-  Wednesday = "Wednesday",
-  Thursday = "Thursday",
-  Friday = "Friday",
-  Saturday = "Saturday",
-}
-
-export enum DayOfWeekAlt {
-  Friday = "fri",
-  Monday = "mon",
-  Saturday = "sat",
-  Sunday = "sun",
-  Thursday = "thu",
-  Tuesday = "tue",
-  Wednesday = "wed",
-}
 
 export class HoursOfOperationBase {
   readonly nodeType = NodeType.HoursOfOperation;
@@ -61,18 +30,18 @@ export class HoursOfOperationBase {
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly dayOfWeek: DayOfWeek;
+  readonly dayOfWeekAlt: DayOfWeekAlt | null;
   readonly open: string;
   readonly close: string;
-  readonly dayOfWeekAlt: DayOfWeekAlt | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
     this.dayOfWeek = data.day_of_week;
+    this.dayOfWeekAlt = data.day_of_week_alt;
     this.open = data.open;
     this.close = data.close;
-    this.dayOfWeekAlt = data.day_of_week_alt;
   }
 
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
@@ -161,8 +130,8 @@ export class HoursOfOperationBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName,
-      fields,
+      tableName: hoursOfOperationLoaderInfo.tableName,
+      fields: hoursOfOperationLoaderInfo.fields,
       ent: this,
       loaderFactory: hoursOfOperationLoader,
     };
@@ -181,9 +150,3 @@ export class HoursOfOperationBase {
     return HoursOfOperationBase.getSchemaFields().get(key);
   }
 }
-
-export const hoursOfOperationLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "id",
-});

@@ -12,7 +12,10 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
+import {
+  mustDecodeIDFromGQLID,
+  mustDecodeNullableIDFromGQLID,
+} from "@snowtop/ent/graphql";
 import { Address } from "src/ent/";
 import EditAddressAction, {
   AddressEditInput,
@@ -21,7 +24,7 @@ import { AddressType } from "src/graphql/resolvers/";
 
 interface customAddressEditInput extends AddressEditInput {
   addressID: string;
-  ownerID: string;
+  ownerID?: string;
 }
 
 interface AddressEditPayload {
@@ -95,6 +98,8 @@ export const AddressEditType: GraphQLFieldConfig<
         state: input.state,
         zipCode: input.zipCode,
         apartment: input.apartment,
+        ownerID: mustDecodeNullableIDFromGQLID(input.ownerID),
+        ownerType: input.ownerType,
       },
     );
     return { address: address };

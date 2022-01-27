@@ -181,8 +181,39 @@ func (s *Schema) addEnumFrom(input *enum.Input, nodeData *NodeData, inputNode *i
 		}
 		s.enumTables[nodeData.TableName] = info
 	}
-	nodeData.addEnum(info)
+	nodeData.addEnum(info.Enum)
 	return nil
+}
+
+func (s *Schema) addEnumFromPattern(enumType enttype.EnumeratedType, pattern *input.Pattern) (*EnumInfo, error) {
+	input := &enum.Input{
+		TSName:  enumType.GetTSName(),
+		GQLName: enumType.GetGraphQLName(),
+		GQLType: enumType.GetTSType(),
+		Values:  enumType.GetEnumValues(),
+		EnumMap: enumType.GetEnumMap(),
+	}
+
+	tsEnum, gqlEnum := enum.GetEnums(input)
+
+	// first create EnumInfo...
+	info := &EnumInfo{
+		Enum:    tsEnum,
+		GQLEnum: gqlEnum,
+		Pattern: pattern,
+	}
+
+	gqlName := input.GQLName
+
+	// new source enum
+	if input.HasValues() {
+		if s.Enums[gqlName] != nil {
+			return nil, fmt.Errorf("enum schema with gqlname %s already exists", gqlName)
+		}
+		// key on gqlName since key isn't really being used atm and gqlName needs to be unique
+		s.Enums[gqlName] = info
+	}
+	return info, nil
 }
 
 // Given a schema file parser, Parse parses the schema to return the completely
@@ -305,6 +336,8 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 
 	var errs []error
 
+	patternMap := make(map[string][]*NodeData)
+
 	for nodeName, node := range schema.Nodes {
 		packageName := base.GetSnakeCaseName(nodeName)
 		// user.ts, address.ts etc
@@ -334,9 +367,21 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 			for _, f := range nodeData.FieldInfo.Fields {
 				entType := f.GetFieldType()
 				enumType, ok := enttype.GetEnumType(entType)
+				// don't add enums which are defined in patterns
 				if ok {
-					if err := s.addEnum(enumType, nodeData); err != nil {
-						errs = append(errs, err)
+					if !f.PatternField() {
+						if err := s.addEnum(enumType, nodeData); err != nil {
+							errs = append(errs, err)
+						}
+					} else {
+						// keep track of NodeDatas that map to this enum...
+						patternName := f.GetPatternName()
+						list := patternMap[patternName]
+						if list == nil {
+							list = []*NodeData{}
+						}
+						list = append(list, nodeData)
+						patternMap[patternName] = list
 					}
 				}
 			}
@@ -410,6 +455,37 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 				errs = append(errs, err)
 			}
 		}
+
+		// add enums from patterns
+		fieldInfo, err := field.NewFieldInfoFromInputs(
+			pattern.Fields,
+			&field.Options{},
+		)
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+
+			for _, f := range fieldInfo.Fields {
+				entType := f.GetFieldType()
+
+				enumType, ok := enttype.GetEnumType(entType)
+				if ok {
+					info, err := s.addEnumFromPattern(enumType, pattern)
+					if err != nil {
+						errs = append(errs, err)
+					}
+
+					// add cloned enum to nodeData and mark as imported
+					list := patternMap[name]
+					clone := info.Enum.Clone()
+					clone.Imported = true
+					for _, nodeData := range list {
+						nodeData.addEnum(clone)
+					}
+				}
+			}
+		}
+
 		if err := s.addPattern(name, p); err != nil {
 			errs = append(errs, err)
 		}
@@ -485,11 +561,6 @@ func (s *Schema) buildPostRunDepgraph(edgeData *assocEdgeData) *depgraph.Depgrap
 			return s.addInverseAssocEdgesFromInfo(info)
 		}, "EdgesFromFields")
 
-	// add new consts and edges as a dependency of linked edges and inverse edges
-	g.AddItem("ConstsAndEdges", func(info *NodeDataInfo) error {
-		return s.addNewConstsAndEdges(info, edgeData)
-	}, "LinkedEdges", "InverseEdges")
-
 	g.AddItem("ActionFields", func(info *NodeDataInfo) error {
 		return s.addActionFields(info)
 	})
@@ -508,7 +579,7 @@ func (s *Schema) listEqual(cols []string, list []string) bool {
 	return true
 }
 
-func (s *Schema) postProcess(nodeData *NodeData) error {
+func (s *Schema) postProcess(nodeData *NodeData, edgeData *assocEdgeData) error {
 	// this is where validation that depends on all the data happens
 	primaryKeyCount := 0
 	for _, constraint := range nodeData.Constraints {
@@ -559,6 +630,10 @@ func (s *Schema) postProcess(nodeData *NodeData) error {
 				return fmt.Errorf("foreign key %s with columns which aren't unique in table %s", constraint.Name, fkey.TableName)
 			}
 		}
+	}
+
+	if err := s.addNewConstsAndEdges(nodeData, edgeData); err != nil {
+		return err
 	}
 
 	// should there be a way to disable this eventually
@@ -618,7 +693,7 @@ func (s *Schema) processDepgrah(edgeData *assocEdgeData) (*assocEdgeData, error)
 
 	// need to run this after running everything above
 	for _, info := range s.Nodes {
-		if err := s.postProcess(info.NodeData); err != nil {
+		if err := s.postProcess(info.NodeData, edgeData); err != nil {
 			return nil, err
 		}
 	}
@@ -674,10 +749,11 @@ func (s *Schema) addLinkedEdges(info *NodeDataInfo) error {
 			}
 			continue
 		}
-		// no inverse edge name, nothing to do here
-		if e.InverseEdgeName == "" {
+		// no inverse edge or name, nothing to do here
+		if e.InverseEdge == nil || e.InverseEdge.Name == "" {
 			continue
 		}
+		edgeName := e.InverseEdge.Name
 
 		config := e.GetEntConfig()
 		if config.ConfigName == "" {
@@ -689,9 +765,14 @@ func (s *Schema) addLinkedEdges(info *NodeDataInfo) error {
 			return fmt.Errorf("could not find the EntConfig codegen info for %s", config.ConfigName)
 		}
 		foreignEdgeInfo := foreignInfo.NodeData.EdgeInfo
-		fEdge := foreignEdgeInfo.GetAssociationEdgeByName(e.InverseEdgeName)
+		fEdge := foreignEdgeInfo.GetAssociationEdgeByName(edgeName)
 		if fEdge == nil {
-			return fmt.Errorf("couldn't find inverse edge with name %s", e.InverseEdgeName)
+			// add from inverseEdge...
+			var err error
+			fEdge, err = foreignEdgeInfo.AddEdgeFromInverseFieldEdge(info.NodeData.Node, e.NodeInfo.PackageName, e.InverseEdge)
+			if err != nil {
+				return err
+			}
 		}
 		if err := f.AddInverseEdge(fEdge); err != nil {
 			return err
@@ -795,8 +876,7 @@ func (s *Schema) maybeAddInverseAssocEdge(assocEdge *edge.AssociationEdge) error
 	return assocEdge.AddInverseEdge(inverseEdgeInfo)
 }
 
-func (s *Schema) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdgeData) error {
-	nodeData := info.NodeData
+func (s *Schema) addNewConstsAndEdges(nodeData *NodeData, edgeData *assocEdgeData) error {
 
 	// this seems like go only?
 	// we do use this value in ts tho
@@ -922,11 +1002,17 @@ func (s *Schema) addActionFields(info *NodeDataInfo) error {
 			if !ok {
 				continue
 			}
-			actionName := t.GetActionName()
-			if actionName == "" {
+			actionFieldsInfo := t.GetActionFieldsInfo()
+			if actionFieldsInfo == nil || actionFieldsInfo.ActionName == "" {
 				continue
 			}
+			actionName := actionFieldsInfo.ActionName
+			excludedFields := make(map[string]bool)
+			for _, v := range actionFieldsInfo.ExcludedFields {
+				excludedFields[v] = true
+			}
 
+			foundAction := false
 			config := info.NodeData.Node + "Config"
 			for k, v := range s.Nodes {
 				if k == config {
@@ -936,9 +1022,10 @@ func (s *Schema) addActionFields(info *NodeDataInfo) error {
 				if a2 == nil {
 					continue
 				}
+				foundAction = true
 
 				for _, f2 := range a2.GetFields() {
-					if f2.EmbeddableInParentAction() {
+					if f2.EmbeddableInParentAction() && !excludedFields[f2.FieldName] {
 
 						f3 := f2
 						if action.IsRequiredField(a2, f2) {
@@ -960,7 +1047,9 @@ func (s *Schema) addActionFields(info *NodeDataInfo) error {
 
 				break
 			}
-
+			if !foundAction {
+				return fmt.Errorf("invalid action only field %s. couldn't find action with name %s", f.FieldName, actionName)
+			}
 		}
 	}
 	return nil

@@ -31,7 +31,7 @@ func debugLogInfo(opt *Options, str string, a ...interface{}) {
 
 func writeFile(w Writer, cfg *codegen.Config, opts ...func(opt *Options)) error {
 	option := &Options{}
-	if cfg.DebugMode() {
+	if !cfg.DebugMode() {
 		opts = append(opts, DisableLog())
 	}
 	for _, opt := range opts {

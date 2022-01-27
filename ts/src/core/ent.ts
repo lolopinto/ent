@@ -594,18 +594,29 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
     this.options.fields = fields;
   }
 
+  private hasData(data: Data) {
+    for (const _k in data) {
+      return true;
+    }
+    return false;
+  }
+
   async performWrite(queryer: Queryer, context?: Context): Promise<void> {
     let options = {
       ...this.options,
       context,
     };
     if (this.existingEnt) {
-      this.row = await editRow(
-        queryer,
-        options,
-        this.existingEnt.id,
-        "RETURNING *",
-      );
+      if (this.hasData(options.fields)) {
+        this.row = await editRow(
+          queryer,
+          options,
+          this.existingEnt.id,
+          "RETURNING *",
+        );
+      } else {
+        this.row = this.existingEnt["data"];
+      }
     } else {
       this.row = await createRow(queryer, options, "RETURNING *");
     }
@@ -634,8 +645,12 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
       context,
     };
     if (this.existingEnt) {
-      editRowSync(queryer, options, this.existingEnt.id, "RETURNING *");
-      this.reloadRow(queryer, this.existingEnt.id, options);
+      if (this.hasData(this.options.fields)) {
+        editRowSync(queryer, options, this.existingEnt.id, "RETURNING *");
+        this.reloadRow(queryer, this.existingEnt.id, options);
+      } else {
+        this.row = this.existingEnt["data"];
+      }
     } else {
       createRowSync(queryer, options, "RETURNING *");
       const id = options.fields[options.key];

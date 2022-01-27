@@ -17,6 +17,15 @@ import (
 // TODO: environment variable flag for fromTest instead of passing it in
 // TODO: environment variable or flag for src/schema path instead of hardcoding it here
 func ParseSchemaFromTSDir(dirPath string, fromTest bool) (*Schema, error) {
+	b, err := GetRawSchema(dirPath, fromTest)
+	if err != nil {
+		return nil, err
+	}
+
+	return ParseSchema(b)
+}
+
+func GetRawSchema(dirPath string, fromTest bool) ([]byte, error) {
 	schemaPath := filepath.Join(dirPath, "src", "schema")
 	info, err := os.Stat(schemaPath)
 	if err != nil {
@@ -56,7 +65,7 @@ func ParseSchemaFromTSDir(dirPath string, fromTest bool) (*Schema, error) {
 		return nil, err
 	}
 
-	return ParseSchema(out.Bytes())
+	return out.Bytes(), nil
 }
 
 func GetAbsoluteRootPathForTest() string {

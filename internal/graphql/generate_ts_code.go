@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -1149,7 +1150,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 							ObjData: &gqlobjectData{
 								Node:         nodeData.Node,
 								NodeInstance: nodeData.NodeInstance,
-								GQLNodes:     buildActionNodes(nodeData, action, actionPrefix),
+								GQLNodes:     buildActionNodes(processor, nodeData, action, actionPrefix),
 								Enums:        buildActionEnums(nodeData, action),
 								FieldConfig:  fieldCfg,
 								Package:      processor.Config.GetImportPackage(),
@@ -1641,7 +1642,11 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 				panic(err)
 			}
 		}
-		addSingularEdge(edge, &fields, instance)
+		if edge.IsList() {
+			addPluralEdge(edge, &fields, instance)
+		} else {
+			addSingularEdge(edge, &fields, instance)
+		}
 	}
 
 	for _, field := range fieldInfo.GraphQLFields() {
@@ -1780,7 +1785,7 @@ func addConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, fields *
 	*fields = append(*fields, gqlField)
 }
 
-func buildActionNodes(nodeData *schema.NodeData, action action.Action, actionPrefix string) []*objectType {
+func buildActionNodes(processor *codegen.Processor, nodeData *schema.NodeData, action action.Action, actionPrefix string) []*objectType {
 	var ret []*objectType
 	for _, c := range action.GetCustomInterfaces() {
 		if c.Action == nil {
@@ -1788,7 +1793,7 @@ func buildActionNodes(nodeData *schema.NodeData, action action.Action, actionPre
 		}
 	}
 	ret = append(ret,
-		buildActionInputNode(nodeData, action, actionPrefix),
+		buildActionInputNode(processor, nodeData, action, actionPrefix),
 		buildActionPayloadNode(nodeData, action, actionPrefix),
 	)
 	return ret
@@ -1830,7 +1835,7 @@ func buildCustomInputNode(c *action.CustomInterface) *objectType {
 	return result
 }
 
-func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPrefix string) *objectType {
+func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action, actionPrefix string) *objectType {
 	// TODO shared input types across create/edit for example
 	node := fmt.Sprintf("%sInput", actionPrefix)
 
@@ -1886,9 +1891,10 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 		})
 	}
 
-	if hasCustomInput(a) {
+	if hasCustomInput(a, processor) {
 		// custom interface for editing
 
+		var omittedFields []string
 		// add adminID to interface assuming it's not already there
 		intType := &interfaceType{
 			Exported: false,
@@ -1915,20 +1921,28 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 		}
 
 		for _, f := range a.GetFields() {
-			if !f.IsEditableIDField() {
-				continue
+			// these conditions duplicated in hasCustomInput
+			if f.IsEditableIDField() {
+				intType.Fields = append(intType.Fields, &interfaceField{
+					Name:     f.GetGraphQLName(),
+					Optional: !action.IsRequiredField(a, f),
+					// we're doing these as strings instead of ids because we're going to convert from gql id to ent id
+					Type: "string",
+				})
 			}
-			intType.Fields = append(intType.Fields, &interfaceField{
-				Name: f.GetGraphQLName(),
-				// we're doing these as strings instead of ids because we're going to convert from gql id to ent id
-				Type: "string",
-			})
+			if f.TsFieldName() != f.GetGraphQLName() {
+				omittedFields = append(omittedFields, f.TsFieldName())
+				intType.Fields = append(intType.Fields, &interfaceField{
+					Name:     f.GetGraphQLName(),
+					Optional: !action.IsRequiredField(a, f),
+					Type:     f.TsType(),
+				})
+			}
 		}
 
 		for _, f := range a.GetNonEntFields() {
-			_, ok := f.FieldType.(enttype.IDMarkerInterface)
 			// same logic above for regular fields
-			if ok {
+			if enttype.IsIDType(f.FieldType) {
 				intType.Fields = append(intType.Fields, &interfaceField{
 					Name: f.GetGraphQLName(),
 					Type: "string",
@@ -1941,6 +1955,7 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 			intType.Extends = []string{
 				a.GetInputName(),
 			}
+			intType.Omitted = omittedFields
 		}
 
 		result.TSInterfaces = []*interfaceType{intType}
@@ -2039,13 +2054,21 @@ func buildActionPayloadNode(nodeData *schema.NodeData, a action.Action, actionPr
 	return result
 }
 
-func hasCustomInput(a action.Action) bool {
+func hasCustomInput(a action.Action, processor *codegen.Processor) bool {
 	if a.MutatingExistingObject() {
 		return true
 	}
 
 	for _, f := range a.GetFields() {
-		if f.IsEditableIDField() {
+		// these conditions duplicated in hasInput in buildActionInputNode
+
+		// editable id field. needs custom input because we don't want to type as ID or Builder when we call base64encodeIDs
+		// mustDecodeIDFromGQLID
+		if f.IsEditableIDField() && processor.Config.Base64EncodeIDs() {
+			return true
+		}
+		// if graphql name is not equal to typescript name, we need to add the new field here
+		if f.GetGraphQLName() != f.TsFieldName() {
 			return true
 		}
 	}
@@ -2066,7 +2089,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 		},
 	}
 	var argName string
-	if hasCustomInput(a) {
+	if hasCustomInput(a, processor) {
 		argName = fmt.Sprintf("custom%sInput", actionPrefix)
 	} else {
 		argName = a.GetInputName()
@@ -2107,6 +2130,32 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 
 	base64EncodeIDs := processor.Config.Base64EncodeIDs()
 
+	addField := func(f action.ActionField) {
+		typ := f.GetFieldType()
+		// get nullable version
+		if !action.IsRequiredField(a, f) {
+			nullable, ok := typ.(enttype.NullableType)
+			if ok {
+				typ = nullable.GetNullableType()
+			}
+		}
+
+		inputField := fmt.Sprintf("input.%s", f.GetGraphQLName())
+
+		customRenderer, ok := typ.(enttype.CustomGQLRenderer)
+		if ok {
+			inputField = customRenderer.CustomGQLRender(processor.Config, inputField)
+			argImports = append(argImports, getGQLFileImports(customRenderer.ArgImports(), true)...)
+		}
+		result.FunctionContents = append(
+			result.FunctionContents,
+			fmt.Sprintf(
+				"%s: %s,",
+				f.TsFieldName(),
+				inputField,
+			))
+	}
+
 	if a.GetOperation() == ent.CreateAction {
 		result.FunctionContents = append(
 			result.FunctionContents,
@@ -2115,28 +2164,11 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 		)
 		for _, f := range a.GetFields() {
 			// we need fields like userID here which aren't exposed to graphql but editable...
-
-			if f.IsEditableIDField() && base64EncodeIDs {
-				argImports = append(argImports, &fileImport{
-					Type:       "mustDecodeIDFromGQLID",
-					ImportPath: codepath.GraphQLPackage,
-				})
-				result.FunctionContents = append(
-					result.FunctionContents,
-					fmt.Sprintf("%s: mustDecodeIDFromGQLID(input.%s),", f.TsFieldName(), f.TsFieldName()),
-				)
-			} else {
-				result.FunctionContents = append(
-					result.FunctionContents,
-					fmt.Sprintf("%s: input.%s,", f.TsFieldName(), f.TsFieldName()),
-				)
-			}
+			addField(f)
 		}
+
 		for _, f := range a.GetNonEntFields() {
-			result.FunctionContents = append(
-				result.FunctionContents,
-				fmt.Sprintf("%s: input.%s,", f.TsFieldName(), f.TsFieldName()),
-			)
+			addField(f)
 		}
 		result.FunctionContents = append(result.FunctionContents, "}).saveX();")
 
@@ -2191,33 +2223,10 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 				)
 			}
 			for _, f := range a.GetFields() {
-				if f.ExposeToGraphQL() {
-					if base64EncodeIDs && f.IsEditableIDField() {
-						result.FunctionContents = append(
-							result.FunctionContents,
-							fmt.Sprintf("%s: mustDecodeIDFromGQLID(input.%s),", f.TsFieldName(), f.TsFieldName()),
-						)
-					} else {
-						result.FunctionContents = append(
-							result.FunctionContents,
-							fmt.Sprintf("%s: input.%s,", f.TsFieldName(), f.TsFieldName()),
-						)
-					}
-				}
+				addField(f)
 			}
 			for _, f := range a.GetNonEntFields() {
-				_, ok := f.FieldType.(enttype.IDMarkerInterface)
-				if ok && base64EncodeIDs {
-					result.FunctionContents = append(
-						result.FunctionContents,
-						fmt.Sprintf("%s: mustDecodeIDFromGQLID(input.%s),", f.TsFieldName(), f.TsFieldName()),
-					)
-				} else {
-					result.FunctionContents = append(
-						result.FunctionContents,
-						fmt.Sprintf("%s: input.%s,", f.TsFieldName(), f.TsFieldName()),
-					)
-				}
+				addField(f)
 			}
 			result.FunctionContents = append(result.FunctionContents, "});")
 
@@ -2408,9 +2417,14 @@ type interfaceType struct {
 	Fields   []*interfaceField
 	// interfaces to extend
 	Extends []string
+
+	//	list of omitted fields
+	// interface ends up being
+	// interface customFooInput extends Omit<FooInput, 'f1' | 'f2'> { ... fields}
+	Omitted []string
 }
 
-func (it interfaceType) InterfaceDecl() string {
+func (it interfaceType) InterfaceDecl() (string, error) {
 	var sb strings.Builder
 	if it.Exported {
 		sb.WriteString("export ")
@@ -2418,16 +2432,32 @@ func (it interfaceType) InterfaceDecl() string {
 	sb.WriteString("interface ")
 	sb.WriteString(it.Name)
 
-	if len(it.Extends) > 0 {
-		sb.WriteString(" extends ")
-		sb.WriteString(strings.Join(it.Extends, ", "))
+	if len(it.Omitted) != 0 {
+		if len(it.Extends) != 1 {
+			return "", fmt.Errorf("if omitted fields exists, need only 1 class being extended")
+		}
+		sb.WriteString(" extends Omit<")
+		sb.WriteString(it.Extends[0])
+		sb.WriteString(",")
+		omitted := make([]string, len(it.Omitted))
+		for i := range it.Omitted {
+			omitted[i] = strconv.Quote(it.Omitted[i])
+		}
+		sb.WriteString(strings.Join(omitted, "| "))
+		sb.WriteString(">")
+	} else {
+		if len(it.Extends) > 0 {
+			sb.WriteString(" extends ")
+			sb.WriteString(strings.Join(it.Extends, ", "))
+		}
 	}
 
-	return sb.String()
+	return sb.String(), nil
 }
 
 type interfaceField struct {
 	Name      string
+	Optional  bool
 	Type      string
 	UseImport bool
 }

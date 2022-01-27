@@ -1,5 +1,8 @@
 import { DateTime } from "luxon";
 import { snakeCase } from "snake-case";
+import { camelCase } from "camel-case";
+import { Ent } from "../core/base";
+import { Builder } from "../action/action";
 import DB, { Dialect } from "../core/db";
 import {
   DBType,
@@ -9,6 +12,7 @@ import {
   PolymorphicOptions,
   Type,
 } from "./schema";
+import { types } from "util";
 
 export abstract class BaseField {
   name: string;
@@ -47,7 +51,7 @@ export abstract class BaseField {
 export class UUIDField extends BaseField implements Field {
   type: Type = { dbType: DBType.UUID };
 
-  constructor(options: FieldOptions) {
+  constructor(private options: FieldOptions) {
     super();
 
     const polymorphic = options.polymorphic;
@@ -90,6 +94,41 @@ export class UUIDField extends BaseField implements Field {
         ];
       }
     }
+
+    if (
+      options.fieldEdge?.enforceSchema &&
+      !options.fieldEdge.getLoaderInfoFromSchema
+    ) {
+      throw new Error(
+        `cannot enforceSchema if getLoaderInfoFromSchema wasn't passed in`,
+      );
+    }
+  }
+
+  private isBuilder(val: Builder<Ent> | any): val is Builder<Ent> {
+    return (val as Builder<Ent>).placeholderID !== undefined;
+  }
+
+  async valid(val: any) {
+    if (!this.options.fieldEdge?.enforceSchema) {
+      return true;
+    }
+
+    const getLoaderInfo = this.options.fieldEdge.getLoaderInfoFromSchema!;
+    const loaderInfo = getLoaderInfo(this.options.fieldEdge.schema);
+    if (!loaderInfo) {
+      throw new Error(
+        `couldn't get loaderInfo for ${this.options.fieldEdge.schema}`,
+      );
+    }
+    if (this.isBuilder(val)) {
+      // if builder, the nodeType of the builder and the nodeType of the loaderInfo should match
+      return val.nodeType === loaderInfo.nodeType;
+    }
+    // TODO we need context here to make sure that we hit local cache
+
+    const row = await loaderInfo.loaderFactory.createLoader().load(val);
+    return row !== null;
   }
 }
 
@@ -650,7 +689,7 @@ export class ListField extends BaseField {
     return this;
   }
 
-  valid(val: any): boolean {
+  async valid(val: any) {
     if (!Array.isArray(val)) {
       return false;
     }
@@ -659,15 +698,20 @@ export class ListField extends BaseField {
         return false;
       }
     }
-    if (!this.field.valid) {
+    const valid = this.field.valid;
+    if (!valid) {
       return true;
     }
-    for (const v of val) {
-      if (!this.field.valid(v)) {
-        return false;
-      }
+    const res = valid.apply(this.field, [val[0]]);
+    if (types.isPromise(res)) {
+      const ret = await Promise.all(
+        val.map(async (v) => await valid.apply(this.field, [v])),
+      );
+      return ret.every((v) => v);
     }
-    return true;
+    const ret = val.map((v) => valid.apply(this.field, [v]));
+    const result = ret.every((v) => v);
+    return result;
   }
 
   private postgresVal(val: any, jsonType?: boolean) {

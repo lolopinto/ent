@@ -15,6 +15,15 @@ type Enum struct {
 	Imported bool // Imported enum that's not in this file
 }
 
+func (c *Enum) Clone() *Enum {
+	ret := &Enum{
+		Name:     c.Name,
+		Values:   c.Values,
+		Imported: c.Imported,
+	}
+	return ret
+}
+
 type GQLEnum struct {
 	Name   string // Name is the name of the enum
 	Type   string // type of the enum e.g. nullable or not
