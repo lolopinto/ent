@@ -6,12 +6,13 @@ import {
   AssocEdgeGroup,
   Action,
 } from "../schema";
-import { ActionField } from "../schema/schema";
+import { ActionField, FieldMap } from "../schema/schema";
 
-function processFields(src: Field[], patternName?: string): ProcessedField[] {
+function processFields(src: FieldMap, patternName?: string): ProcessedField[] {
   const ret: ProcessedField[] = [];
-  for (const field of src) {
-    let f: ProcessedField = { ...field };
+  for (const name in src) {
+    const field = src[name];
+    let f: ProcessedField = { name, ...field };
     f.hasDefaultValueOnCreate = field.defaultValueOnCreate != undefined;
     f.hasDefaultValueOnEdit = field.defaultValueOnEdit != undefined;
     if (field.polymorphic) {
@@ -35,6 +36,9 @@ function processFields(src: Field[], patternName?: string): ProcessedField[] {
     }
     if (patternName) {
       f.patternName = patternName;
+    }
+    if (field.getDerivedFields) {
+      f.derivedFields = processFields(field.getDerivedFields(name));
     }
     ret.push(f);
   }
@@ -129,6 +133,8 @@ type ProcessedSchema = Omit<
   actions: OutputAction[];
   assocEdges: ProcessedAssocEdge[];
   assocEdgeGroups: ProcessedAssocEdgeGroup[];
+  // converting to list for go because we want the order respected
+  // and go maps don't support order
   fields: ProcessedField[];
 };
 
@@ -188,9 +194,11 @@ type ProcessedField = Omit<
   Field,
   "defaultValueOnEdit" | "defaultValueOnCreate"
 > & {
+  name: string;
   hasDefaultValueOnCreate?: boolean;
   hasDefaultValueOnEdit?: boolean;
   patternName?: string;
+  derivedFields?: ProcessedField[];
 };
 
 interface patternsDict {

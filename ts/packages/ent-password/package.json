@@ -1,6 +1,6 @@
 {
   "name": "@snowtop/ent-password",
-  "version": "0.0.2",
+  "version": "0.1.0-alpha1",
   "description": "password datatype for ents",
   "main": "dist/password.js",
   "types": "dist/password.d.ts",
@@ -32,7 +32,7 @@
     "bcryptjs": "^2.4.3"
   },
   "devDependencies": {
-    "@snowtop/ent": "^0.0.1",
+    "@snowtop/ent": "^0.1.0-alpha1",
     "@types/jest": "^27.0.1",
     "jest": "^27.1.1",
     "password-validator": "^5.1.0",
@@ -40,6 +40,6 @@
     "ts-jest": "^27.0.5"
   },
   "peerDependencies": {
-    "@snowtop/ent": ">= 0.0.1"
+    "@snowtop/ent": ">=0.1.0-alpha"
   }
 }

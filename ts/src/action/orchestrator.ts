@@ -519,7 +519,7 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
     for (const [fieldName, field] of schemaFields) {
       let value = editedFields.get(fieldName);
       let defaultValue: any = undefined;
-      let dbKey = field.storageKey || snakeCase(field.name);
+      let dbKey = field.storageKey || snakeCase(fieldName);
 
       if (value === undefined) {
         if (this.options.operation === WriteOperation.Insert) {
@@ -535,7 +535,7 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
             defaultValue = field.defaultValueOnCreate(builder, input);
             if (defaultValue === undefined) {
               throw new Error(
-                `defaultValueOnCreate() returned undefined for field ${field.name}`,
+                `defaultValueOnCreate() returned undefined for field ${fieldName}`,
               );
             }
           }
@@ -584,12 +584,17 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
     return false;
   }
 
-  private async transformFieldValue(field: Field, dbKey: string, value: any) {
+  private async transformFieldValue(
+    fieldName: string,
+    field: Field,
+    dbKey: string,
+    value: any,
+  ) {
     // now format and validate...
     if (value === null) {
       if (!field.nullable) {
         throw new Error(
-          `field ${field.name} set to null for non-nullable field`,
+          `field ${fieldName} set to null for non-nullable field`,
         );
       }
     } else if (value === undefined) {
@@ -602,13 +607,13 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
         field.serverDefault === undefined &&
         this.options.operation === WriteOperation.Insert
       ) {
-        throw new Error(`required field ${field.name} not set`);
+        throw new Error(`required field ${fieldName} not set`);
       }
     } else if (this.isBuilder(value)) {
       if (field.valid) {
         const valid = await Promise.resolve(field.valid(value));
         if (!valid) {
-          throw new Error(`invalid field ${field.name} with value ${value}`);
+          throw new Error(`invalid field ${fieldName} with value ${value}`);
         }
       }
       // keep track of dependencies to resolve
@@ -620,7 +625,7 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
         // TODO this could be async. handle this better
         const valid = await Promise.resolve(field.valid(value));
         if (!valid) {
-          throw new Error(`invalid field ${field.name} with value ${value}`);
+          throw new Error(`invalid field ${fieldName} with value ${value}`);
         }
       }
 
@@ -652,9 +657,9 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
         // null allowed
         value = this.defaultFieldsByFieldName[fieldName];
       }
-      let dbKey = field.storageKey || snakeCase(field.name);
+      let dbKey = field.storageKey || snakeCase(fieldName);
 
-      value = await this.transformFieldValue(field, dbKey, value);
+      value = await this.transformFieldValue(fieldName, field, dbKey, value);
 
       if (value !== undefined) {
         data[dbKey] = value;
@@ -669,11 +674,12 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
         const defaultValue = this.defaultFieldsByFieldName[fieldName];
         let field = schemaFields.get(fieldName)!;
 
-        let dbKey = field.storageKey || snakeCase(field.name);
+        let dbKey = field.storageKey || snakeCase(fieldName);
 
         // no value, let's just default
         if (data[dbKey] === undefined) {
           const value = await this.transformFieldValue(
+            fieldName,
             field,
             dbKey,
             defaultValue,

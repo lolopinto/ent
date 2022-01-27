@@ -30,7 +30,7 @@ import {
   getTableName,
 } from "../testutils/builder";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
-import { BaseEntSchema, Field } from "../schema";
+import { BaseEntSchema, FieldMap } from "../schema";
 import {
   StringType,
   TimestampType,
@@ -190,12 +190,12 @@ async function createUser(): Promise<User> {
 }
 
 class UserSchema extends BaseEntSchema {
-  fields: Field[] = [
-    StringType({ name: "FirstName" }),
-    StringType({ name: "LastName" }),
-    StringType({ name: "EmailAddress", nullable: true }),
-    UUIDType({ name: "AccountID", nullable: true }),
-  ];
+  fields: FieldMap = {
+    FirstName: StringType(),
+    LastName: StringType(),
+    EmailAddress: StringType({ nullable: true }),
+    AccountID: UUIDType({ nullable: true }),
+  };
   ent = User;
 }
 
@@ -212,23 +212,23 @@ class Account implements Ent {
 
 class AccountSchema extends BaseEntSchema {
   ent = Account;
-  fields: Field[] = [];
+  fields: FieldMap = {};
 }
 
 class ContactSchema extends BaseEntSchema {
-  fields: Field[] = [
-    StringType({ name: "FirstName" }),
-    StringType({ name: "LastName" }),
-    StringType({ name: "UserID" }),
-  ];
+  fields: FieldMap = {
+    FirstName: StringType(),
+    LastName: StringType(),
+    UserID: StringType(),
+  };
   ent = Contact;
 }
 
 class GroupSchema extends BaseEntSchema {
-  fields: Field[] = [
-    StringType({ name: "name" }),
-    StringType({ name: "funField", nullable: true }),
-  ];
+  fields: FieldMap = {
+    name: StringType(),
+    funField: StringType({ nullable: true }),
+  };
   ent = Group;
 }
 
@@ -243,11 +243,11 @@ class GroupMembership implements Ent {
 }
 
 class GroupMembershipSchema extends BaseEntSchema {
-  fields: Field[] = [
-    UUIDType({ name: "ownerID" }),
-    UUIDType({ name: "addedBy" }),
-    BooleanType({ name: "notificationsEnabled" }),
-  ];
+  fields: FieldMap = {
+    ownerID: UUIDType(),
+    addedBy: UUIDType(),
+    notificationsEnabled: BooleanType(),
+  };
   ent = GroupMembership;
 }
 
@@ -262,22 +262,22 @@ class Changelog implements Ent {
 }
 
 class ChangelogSchema extends BaseEntSchema {
-  fields: Field[] = [
-    UUIDType({ name: "parentID", polymorphic: true }),
-    JSONBType({ name: "log" }),
-  ];
+  fields: FieldMap = {
+    parentID: UUIDType({ polymorphic: true }),
+    log: JSONBType(),
+  };
   ent = Changelog;
 }
 
 class MessageSchema extends BaseEntSchema {
-  fields: Field[] = [
+  fields: FieldMap = {
     // TODO both id fields
-    StringType({ name: "sender" }), // can't use from
-    StringType({ name: "recipient" }), // can't use to in sqlite
-    StringType({ name: "message" }),
-    BooleanType({ name: "transient", nullable: true }),
-    TimestampType({ name: "expiresAt", nullable: true }),
-  ];
+    sender: StringType(), // can't use from
+    recipient: StringType(), // can't use to in sqlite
+    message: StringType(),
+    transient: BooleanType({ nullable: true }),
+    expiresAt: TimestampType({ nullable: true }),
+  };
   ent = Message;
 }
 

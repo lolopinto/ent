@@ -17,17 +17,13 @@ func TestPrimaryKeyFieldConstraint(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
-				`import {Field, StringType, BaseEntSchema} from "{schema}";
+				`import {FieldMap, StringType, BaseEntSchema} from "{schema}";
 
 				export default class User extends BaseEntSchema {
-					fields: Field[] = [
-						StringType({
-							name: 'firstName',
-						}),
-						StringType({
-							name: 'lastName',
-						}),
-					];
+					fields: FieldMap = {
+						firstName: StringType(),
+						lastName: StringType(),
+					};
 				}
 			`,
 			),
@@ -46,36 +42,27 @@ func TestForeignKeyFieldConstraint(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
-				`import {Field, StringType, BaseEntSchema} from "{schema}";
+				`import {FieldMap, StringType, BaseEntSchema} from "{schema}";
 
 				export default class User extends BaseEntSchema {
-					fields: Field[] = [
-						StringType({
-							name: 'firstName',
-						}),
-						StringType({
-							name: 'lastName',
-						}),
-					];
+					fields: FieldMap = {
+						firstName: StringType(),
+						lastName: StringType(),
+					};
 				}
 			`,
 			),
 			"contact.ts": testhelper.GetCodeWithSchema(
-				`import {Field, StringType, BaseEntSchema, UUIDType} from "{schema}";
+				`import {FieldMap, StringType, BaseEntSchema, UUIDType} from "{schema}";
 
 				export default class Contact extends BaseEntSchema {
-					fields: Field[] = [
-						StringType({
-							name: 'firstName',
-						}),
-						StringType({
-							name: 'lastName',
-						}),
-						UUIDType({
-							name: "ownerID",
+					fields: FieldMap = {
+						firstName: StringType(),
+						lastName: StringType(),
+						ownerID: UUIDType({
 							foreignKey: {schema:"User", column:"ID"},
 						}),
-					];
+					};
 				}
 			`,
 			),
@@ -108,21 +95,16 @@ func TestUniqueFieldConstraint(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
-				`import {Field, StringType, BaseEntSchema} from "{schema}";
+				`import {FieldMap, StringType, BaseEntSchema} from "{schema}";
 
 				export default class User extends BaseEntSchema {
-					fields: Field[] = [
-						StringType({
-							name: 'firstName',
-						}),
-						StringType({
-							name: 'lastName',
-						}),
-						StringType({
-							name: "emailAddress",
+					fields: FieldMap = {
+						firstName: StringType(),
+						lastName: StringType(),
+						emailAddress: StringType({
 							unique: true,
 						})
-					];
+					};
 				}
 			`,
 			),
@@ -147,17 +129,13 @@ func TestConstraints(t *testing.T) {
 		"multi-column-primary key": {
 			code: map[string]string{
 				"user_photo.ts": testhelper.GetCodeWithSchema(`
-					import {Schema, Field, UUIDType, Constraint, ConstraintType} from "{schema}";
+					import {Schema, FieldMap, UUIDType, Constraint, ConstraintType} from "{schema}";
 
 					export default class UserPhoto implements Schema {
-						fields: Field[] = [
-							UUIDType({
-								name: 'UserID',
-							}),
-							UUIDType({
-								name: 'PhotoID',
-							}),
-						];
+						fields: FieldMap = {
+							UserID: UUIDType(),
+							PhotoID: UUIDType(),
+						};
 
 						constraints: Constraint[] = [
 							{
@@ -184,32 +162,25 @@ func TestConstraints(t *testing.T) {
 		"multi-column-unique key": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(`
-					import {Field, StringType, BaseEntSchema} from "{schema}";
+					import {FieldMap, StringType, BaseEntSchema} from "{schema}";
 
 					export default class User extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: 'firstName',
-							}),
-							StringType({
-								name: 'lastName',
-							}),
-						];
+						fields: FieldMap = {
+							firstName: StringType(),
+							lastName: StringType(),
+						};
 					}
 				`),
 				"contact.ts": testhelper.GetCodeWithSchema(`
-					import {BaseEntSchema, Field, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
+					import {BaseEntSchema, FieldMap, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
 
 					export default class Contact extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: "emailAddress",
-							}),
-							UUIDType({
-								name: "userID",
+						fields: FieldMap = {
+							emailAddress: StringType(),
+							userID: UUIDType({
 								foreignKey: {schema:"User", column:"ID"},
 							}),
-						];
+						};
 
 						constraints: Constraint[] = [
 							{
@@ -248,20 +219,14 @@ func TestConstraints(t *testing.T) {
 		"multi-column-foreign key": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(`
-					import {Field, StringType, BaseEntSchema, Constraint, ConstraintType} from "{schema}";
+					import {FieldMap, StringType, BaseEntSchema, Constraint, ConstraintType} from "{schema}";
 
 					export default class User extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: 'firstName',
-							}),
-							StringType({
-								name: 'lastName',
-							}),
-							StringType({
-								name: 'emailAddress',
-							}),
-						];
+						fields: FieldMap = {
+							firstName: StringType(),
+							lastName: StringType(),
+							emailAddress: StringType(),
+						};
 
 						constraints: Constraint[] = [
 							{
@@ -273,17 +238,13 @@ func TestConstraints(t *testing.T) {
 					}
 				`),
 				"contact.ts": testhelper.GetCodeWithSchema(`
-					import {BaseEntSchema, Field, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
+					import {BaseEntSchema, FieldMap, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
 
 					export default class Contact extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: "emailAddress",
-							}),
-							UUIDType({
-								name: "userID",
-							}),
-						];
+						fields: FieldMap = {
+							emailAddress: StringType(),
+							userID: UUIDType(),
+						};
 
 						constraints: Constraint[] = [
 							{
@@ -328,14 +289,12 @@ func TestConstraints(t *testing.T) {
 		"check constraint no columns": {
 			code: map[string]string{
 				"item.ts": testhelper.GetCodeWithSchema(`
-					import {Field, FloatType, BaseEntSchema, Constraint, ConstraintType} from "{schema}";
+					import {FieldMap, FloatType, BaseEntSchema, Constraint, ConstraintType} from "{schema}";
 
 					export default class Item extends BaseEntSchema {
-						fields: Field[] = [
-							FloatType({
-								name: 'price',
-							}),
-						];
+						fields: FieldMap = {
+							price: FloatType(),
+						};
 
 						constraints: Constraint[] = [
 							{
@@ -361,17 +320,13 @@ func TestConstraints(t *testing.T) {
 		"check constraint multiple columns": {
 			code: map[string]string{
 				"item.ts": testhelper.GetCodeWithSchema(`
-					import {Field, FloatType, BaseEntSchema, Constraint, ConstraintType} from "{schema}";
+					import {FieldMap, FloatType, BaseEntSchema, Constraint, ConstraintType} from "{schema}";
 
 					export default class Item extends BaseEntSchema {
-						fields: Field[] = [
-							FloatType({
-								name: 'price',
-							}),
-							FloatType({
-								name: 'discount_price',
-							}),
-						];
+						fields: FieldMap = {
+							price: FloatType(),
+							discount_price: FloatType(),
+						};
 
 						constraints: Constraint[] = [
 							{
@@ -433,15 +388,14 @@ func TestEnumConstraints(t *testing.T) {
 		"enum table constraint": {
 			code: map[string]string{
 				"role.ts": testhelper.GetCodeWithSchema(`
-					import {Schema, Field, StringType} from "{schema}";
+					import {Schema, FieldMap, StringType} from "{schema}";
 
 					export default class Role implements Schema {
-						fields: Field[] = [
-							StringType({
-								name: 'role',
+						fields: FieldMap = {
+							role: StringType({
 								primaryKey: true,
 							}),
-						];
+						};
 
 						enumTable = true;
 
@@ -480,13 +434,13 @@ func TestEnumConstraints(t *testing.T) {
 		"enum-type constraint": {
 			code: map[string]string{
 				"request.ts": testhelper.GetCodeWithSchema(
-					`import {Schema, Field, EnumType, StringType, BaseEntSchema} from "{schema}";
+					`import {Schema, FieldMap, EnumType, StringType, BaseEntSchema} from "{schema}";
 
 				export default class Request extends BaseEntSchema {
-					fields: Field[] = [
-						StringType({name: "info"}),
-						EnumType({name: "Status", values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus", createEnumType: true}),
-					]
+					fields: FieldMap = {
+						info: StringType(),
+						Status: EnumType({values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus", createEnumType: true}),
+					}
 				}
 				`,
 				),
@@ -501,13 +455,13 @@ func TestEnumConstraints(t *testing.T) {
 		"enum values constraint": {
 			code: map[string]string{
 				"request.ts": testhelper.GetCodeWithSchema(
-					`import {Schema, Field, EnumType, StringType, BaseEntSchema} from "{schema}";
+					`import {Schema, FieldMap, EnumType, StringType, BaseEntSchema} from "{schema}";
 
 				export default class Request extends BaseEntSchema {
-					fields: Field[] = [
-						StringType({name: "info"}),
-						EnumType({name: "Status", values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus"}),
-					]
+					fields: FieldMap = {
+						info: StringType(),
+						Status: EnumType({values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus"}),
+					}
 				}
 				`,
 				),
@@ -521,15 +475,14 @@ func TestEnumConstraints(t *testing.T) {
 		"enum table with fkey constraint": {
 			code: map[string]string{
 				"request_status.ts": testhelper.GetCodeWithSchema(`
-					import {Schema, Field, StringType} from "{schema}";
+					import {Schema, FieldMap, StringType} from "{schema}";
 
 					export default class RequestStatus implements Schema {
-						fields: Field[] = [
-							StringType({
-								name: 'status',
+						fields: FieldMap = {
+							status: StringType({
 								primaryKey: true,
 							}),
-						];
+						};
 
 						enumTable = true;
 
@@ -546,15 +499,14 @@ func TestEnumConstraints(t *testing.T) {
 						];
 					}`),
 				"request.ts": testhelper.GetCodeWithSchema(`
-					import {Schema, Field, StringType, EnumType, BaseEntSchema} from "{schema}";
+					import {Schema, FieldMap, StringType, EnumType, BaseEntSchema} from "{schema}";
 
 					export default class Request extends BaseEntSchema {
-						fields: Field[] = [
-							EnumType({
-								name: 'status',
+						fields: FieldMap = {
+							status: EnumType({
 								foreignKey: {schema:"RequestStatus", column:"status"},
 							}),
-						];
+						};
 					}`),
 			},
 			expectedMap: map[string]*schema.NodeData{
@@ -582,18 +534,16 @@ func TestEnumConstraints(t *testing.T) {
 			},
 		},
 		"enum with duplicate": {
-			only: true,
 			code: map[string]string{
 				"request_status.ts": testhelper.GetCodeWithSchema(`
-					import {Schema, Field, StringType} from "{schema}";
+					import {Schema, FieldMap, StringType} from "{schema}";
 
 					export default class RequestStatus implements Schema {
-						fields: Field[] = [
-							StringType({
-								name: 'status',
+						fields: FieldMap = {
+							status: StringType({
 								primaryKey: true,
 							}),
-						];
+						};
 
 						enumTable = true;
 
@@ -610,12 +560,12 @@ func TestEnumConstraints(t *testing.T) {
 						];
 					}`),
 				"request.ts": testhelper.GetCodeWithSchema(`
-					import {Schema, Field, StringType, EnumType, BaseEntSchema} from "{schema}";
+					import {Schema, FieldMap, StringType, EnumType, BaseEntSchema} from "{schema}";
 
 					export default class Request extends BaseEntSchema {
-						fields: Field[] = [
-							EnumType({name: "Status", values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus"}),
-						];
+						fields: FieldMap = {
+							Status: EnumType({values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus"}),
+						};
 					}`),
 			},
 			expectedErr: fmt.Errorf("enum schema with gqlname RequestStatus already exists"),
@@ -630,35 +580,26 @@ func TestInvalidConstraints(t *testing.T) {
 		"missing fkey field": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(`
-					import {Field, StringType, BaseEntSchema} from "{schema}";
+					import {FieldMap, StringType, BaseEntSchema} from "{schema}";
 
 					export default class User extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: 'firstName',
-							}),
-							StringType({
-								name: 'lastName',
-							}),
-							StringType({
-								name: 'emailAddress',
+						fields: FieldMap = {
+							firstName: StringType(),
+							lastName: StringType(),
+							emailAddress: StringType({
 								unique: true,
 							}),
-						];
+						};
 					}
 				`),
 				"contact.ts": testhelper.GetCodeWithSchema(`
-					import {BaseEntSchema, Field, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
+					import {BaseEntSchema, FieldMap, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
 
 					export default class Contact extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: "emailAddress",
-							}),
-							UUIDType({
-								name: "userID",
-							}),
-						];
+						fields: FieldMap = {
+							emailAddress: StringType(),
+							userID: UUIDType(),
+						};
 
 						constraints: Constraint[] = [
 							{
@@ -675,14 +616,12 @@ func TestInvalidConstraints(t *testing.T) {
 		"missing condition check constraint": {
 			code: map[string]string{
 				"item.ts": testhelper.GetCodeWithSchema(`
-					import {Field, FloatType, BaseEntSchema, Constraint, ConstraintType} from "{schema}";
+					import {FieldMap, FloatType, BaseEntSchema, Constraint, ConstraintType} from "{schema}";
 
 					export default class Item extends BaseEntSchema {
-						fields: Field[] = [
-							FloatType({
-								name: 'price',
-							}),
-						];
+						fields: FieldMap = {
+							price: FloatType(),
+						};
 
 						constraints: Constraint[] = [
 							{
@@ -698,33 +637,26 @@ func TestInvalidConstraints(t *testing.T) {
 		"fkey on non-unique field": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(
-					`import {Field, StringType, BaseEntSchema} from "{schema}";
+					`import {FieldMap, StringType, BaseEntSchema} from "{schema}";
 
 				export default class User extends BaseEntSchema {
-					fields: Field[] = [
-						StringType({
-							name: 'firstName',
-						}),
-						StringType({
-							name: 'lastName',
-						}),
-					];
+					fields: FieldMap = {
+						firstName: StringType(),
+						lastName: StringType(),
+					};
 				}
 			`,
 				),
 				"contact.ts": testhelper.GetCodeWithSchema(
-					`import {Field, StringType, BaseEntSchema, UUIDType} from "{schema}";
+					`import {FieldMap, StringType, BaseEntSchema, UUIDType} from "{schema}";
 
 				export default class Contact extends BaseEntSchema {
-					fields: Field[] = [
-						StringType({
-							name: 'firstName',
+					fields: FieldMap = {
+						firstName: StringType({
 							foreignKey: {schema:"User", column:"firstName"},
 						}),
-						StringType({
-							name: 'lastName',
-						}),
-					];
+						lastName: StringType(),
+					};
 				}
 			`,
 				),
@@ -734,34 +666,24 @@ func TestInvalidConstraints(t *testing.T) {
 		"multi-column-foreign on non unique keys": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(`
-					import {Field, StringType, BaseEntSchema, Constraint, ConstraintType} from "{schema}";
+					import {FieldMap, StringType, BaseEntSchema, Constraint, ConstraintType} from "{schema}";
 
 					export default class User extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: 'firstName',
-							}),
-							StringType({
-								name: 'lastName',
-							}),
-							StringType({
-								name: 'emailAddress',
-							}),
-						];
+						fields: FieldMap = {
+							firstName: StringType(),
+							lastName: StringType(),
+							emailAddress: StringType(),
+						};
 					}
 				`),
 				"contact.ts": testhelper.GetCodeWithSchema(`
-					import {BaseEntSchema, Field, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
+					import {BaseEntSchema, FieldMap, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
 
 					export default class Contact extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: "emailAddress",
-							}),
-							UUIDType({
-								name: "userID",
-							}),
-						];
+						fields: FieldMap = {
+							emailAddress: StringType(),
+							userID: UUIDType(),
+						};
 
 						constraints: Constraint[] = [
 							{

@@ -7,11 +7,11 @@ func TestPatternsWithEdge(t *testing.T) {
 		"likes": {
 			code: map[string]string{
 				"patterns/feedback.ts": getCodeWithSchema(`
-				import { Edge, Field, Pattern } from "{schema}";
+				import { Edge, FieldMap, Pattern } from "{schema}";
 
 				export default class Feedback implements Pattern {
 					name = "feedback";
-					fields: Field[] = [];
+					fields: FieldMap = {};
 					edges: Edge[] = [
 						{
 							name: "likers",
@@ -26,7 +26,7 @@ func TestPatternsWithEdge(t *testing.T) {
 				}
 				`),
 				"post.ts": getCodeWithSchema(`
-				import {BaseEntSchema, Field} from "{schema}";
+				import {BaseEntSchema, FieldMap} from "{schema}";
 				import Feedback from "./patterns/feedback";
 
 				export default class Post extends BaseEntSchema {
@@ -35,11 +35,11 @@ func TestPatternsWithEdge(t *testing.T) {
 						super();
 						this.addPatterns(new Feedback());
 					}
-					fields: Field[] = [];
+					fields: FieldMap = {};
 				}
 				`),
 				"group.ts": getCodeWithSchema(`
-				import {BaseEntSchema, Field} from "{schema}";
+				import {BaseEntSchema, FieldMap} from "{schema}";
 				import Feedback from "./patterns/feedback";
 
 				export default class Group extends BaseEntSchema {
@@ -48,7 +48,7 @@ func TestPatternsWithEdge(t *testing.T) {
 						super();
 						this.addPatterns(new Feedback());
 					}
-					fields: Field[] = [];
+					fields: FieldMap = {};
 				}
 				`),
 			},
