@@ -55,11 +55,6 @@ type TSCodegenableType interface {
 	GetImportType() Import
 }
 
-// type TSObjectType interface {
-// 	TSGraphQLType
-// 	GetTSName() string
-// }
-
 // rendering of fields in actions
 // e.g. converting a graphql id to ent id
 // or converting say an enum value from graphql to Node representation
@@ -1156,6 +1151,22 @@ func (t *ListWrapperType) GetActionFieldsInfo() *ActionFieldsInfo {
 		return nil
 	}
 	return t2.GetActionFieldsInfo()
+}
+
+func (t *ListWrapperType) GetCustomTSInterface() string {
+	t2, ok := t.Type.(TSTypeWithCustomInterfaces)
+	if !ok {
+		return ""
+	}
+	return t2.GetCustomTSInterface()
+}
+
+func (t *ListWrapperType) GetCustomGraphQLInterface() string {
+	t2, ok := t.Type.(TSTypeWithCustomInterfaces)
+	if !ok {
+		return ""
+	}
+	return t2.GetCustomGraphQLInterface()
 }
 
 type typeConfig struct {
