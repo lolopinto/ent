@@ -1169,6 +1169,14 @@ func (t *ListWrapperType) GetCustomGraphQLInterface() string {
 	return t2.GetCustomGraphQLInterface()
 }
 
+func (t *ListWrapperType) GetImportDepsType() *InputImportType {
+	t2, ok := t.Type.(ImportDepsType)
+	if !ok {
+		return nil
+	}
+	return t2.GetImportDepsType()
+}
+
 type typeConfig struct {
 	forceNullable    bool
 	forceNonNullable bool
@@ -1753,6 +1761,14 @@ func (t *ArrayListType) Convert() FileImport {
 	return elem.convertListWithItem()
 }
 
+func (t *ArrayListType) GetImportDepsType() *InputImportType {
+	t2, ok := t.ElemType.(ImportDepsType)
+	if !ok {
+		return nil
+	}
+	return t2.GetImportDepsType()
+}
+
 type NullableArrayListType struct {
 	arrayListType
 	ElemType TSType
@@ -1795,6 +1811,9 @@ func (t *NullableArrayListType) GetTSGraphQLImports() []FileImport {
 	return ret
 }
 
+// TODO why is there ListWrapperType (for ActionFields)
+// and NullableArrayListType /ArrayListType for regular lists?
+// TODO GetCustomTSInterface and GetCustomGraphQLInterface?
 func (t *NullableArrayListType) Convert() FileImport {
 	elem, ok := t.ElemType.(convertListElemType)
 	if !ok {
@@ -1804,6 +1823,14 @@ func (t *NullableArrayListType) Convert() FileImport {
 		}
 	}
 	return elem.convertNullableListWithItem()
+}
+
+func (t *NullableArrayListType) GetImportDepsType() *InputImportType {
+	t2, ok := t.ElemType.(ImportDepsType)
+	if !ok {
+		return nil
+	}
+	return t2.GetImportDepsType()
 }
 
 // to resolve circular dependency btw input and this
