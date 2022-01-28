@@ -1,8 +1,12 @@
 package custominterface
 
-// TODO need to figure out the right package here
+// TODO need to figure out the correct name of the package here
 
-import "github.com/lolopinto/ent/internal/field"
+import (
+	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/schema/enum"
+)
 
 type CustomInterface struct {
 	TSType       string
@@ -15,6 +19,9 @@ type CustomInterface struct {
 	Action interface{}
 
 	enumImports []string
+
+	// sub interfaces that this uses
+	SubInterfaces []*CustomInterface
 }
 
 func (ci *CustomInterface) GetEnumImports() []string {
@@ -26,5 +33,21 @@ func (ci *CustomInterface) GetEnumImports() []string {
 
 func (ci *CustomInterface) AddEnumImport(enumImport string) {
 	ci.enumImports = append(ci.enumImports, enumImport)
+}
 
+// local enums
+func (ci *CustomInterface) GetTSEnums() []*enum.Enum {
+	var ret []*enum.Enum
+
+	for _, f := range ci.Fields {
+		typ := f.GetFieldType()
+		enumTyp, ok := enttype.GetEnumType(typ)
+		if !ok {
+			continue
+		}
+		input := enum.NewInputFromEnumType(enumTyp)
+		tsEnum, _ := enum.GetEnums(input)
+		ret = append(ret, tsEnum)
+	}
+	return ret
 }

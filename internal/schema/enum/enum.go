@@ -7,6 +7,7 @@ import (
 	"unicode"
 
 	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/internal/enttype"
 )
 
 type Enum struct {
@@ -124,6 +125,16 @@ func (i *Input) getValuesFromEnumMap() ([]Data, []Data) {
 		return gqlVals[i].Name < gqlVals[j].Name
 	})
 	return tsVals, gqlVals
+}
+
+func NewInputFromEnumType(enumType enttype.EnumeratedType) *Input {
+	return &Input{
+		TSName:  enumType.GetTSName(),
+		GQLName: enumType.GetGraphQLName(),
+		GQLType: enumType.GetTSType(),
+		Values:  enumType.GetEnumValues(),
+		EnumMap: enumType.GetEnumMap(),
+	}
 }
 
 func GetEnums(input *Input) (*Enum, *GQLEnum) {

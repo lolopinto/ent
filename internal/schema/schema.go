@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/google/uuid"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
@@ -18,6 +17,7 @@ import (
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/base"
+	"github.com/lolopinto/ent/internal/schema/custominterface"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schemaparser"
@@ -36,19 +36,14 @@ type Schema struct {
 	edgesToUpdate []*ent.AssocEdgeData
 	// unlike Nodes, the key is "EnumName" instead of "EnumNameConfig"
 	// confusing but gets us closer to what we want
-	Enums      map[string]*EnumInfo
-	enumTables map[string]*EnumInfo
+	Enums            map[string]*EnumInfo
+	enumTables       map[string]*EnumInfo
+	CustomInterfaces map[string]*custominterface.CustomInterface
 }
 
 func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData) error {
 	return s.addEnumFrom(
-		&enum.Input{
-			TSName:  enumType.GetTSName(),
-			GQLName: enumType.GetGraphQLName(),
-			GQLType: enumType.GetTSType(),
-			Values:  enumType.GetEnumValues(),
-			EnumMap: enumType.GetEnumMap(),
-		},
+		enum.NewInputFromEnumType(enumType),
 		nodeData,
 		nil,
 	)
@@ -187,13 +182,7 @@ func (s *Schema) addEnumFrom(input *enum.Input, nodeData *NodeData, inputNode *i
 }
 
 func (s *Schema) addEnumFromPattern(enumType enttype.EnumeratedType, pattern *input.Pattern) (*EnumInfo, error) {
-	input := &enum.Input{
-		TSName:  enumType.GetTSName(),
-		GQLName: enumType.GetGraphQLName(),
-		GQLType: enumType.GetTSType(),
-		Values:  enumType.GetEnumValues(),
-		EnumMap: enumType.GetEnumMap(),
-	}
+	input := enum.NewInputFromEnumType(enumType)
 
 	tsEnum, gqlEnum := enum.GetEnums(input)
 
@@ -258,6 +247,7 @@ func (s *Schema) init() {
 	s.tables = make(map[string]*NodeDataInfo)
 	s.enumTables = make(map[string]*EnumInfo)
 	s.Patterns = map[string]*PatternInfo{}
+	s.CustomInterfaces = map[string]*custominterface.CustomInterface{}
 }
 
 func (s *Schema) GetNodeDataFromTableName(tableName string) *NodeData {
@@ -385,6 +375,10 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 						patternMap[patternName] = list
 					}
 				}
+
+				if err := s.checkCustomInterface(f, nil); err != nil {
+					errs = append(errs, err)
+				}
 			}
 		}
 
@@ -499,6 +493,45 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 	}
 
 	return s.processDepgrah(edgeData)
+}
+
+func (s *Schema) checkCustomInterface(f *field.Field, root *custominterface.CustomInterface) error {
+	entType := f.GetFieldType()
+	subFieldsType, ok := entType.(enttype.TSWithSubFields)
+	if !ok {
+		return nil
+	}
+	subFields := subFieldsType.GetSubFields()
+	if subFields == nil {
+		return nil
+	}
+
+	ci := &custominterface.CustomInterface{
+		TSType:  subFieldsType.GetCustomTSInterface(),
+		GQLType: subFieldsType.GetCustomGraphQLInterface(),
+	}
+	if root == nil {
+		root = ci
+		if s.CustomInterfaces[ci.TSType] != nil {
+			return fmt.Errorf("custom interface with name %s already exists", ci.TSType)
+		}
+		s.CustomInterfaces[ci.TSType] = ci
+	} else {
+		root.SubInterfaces = append(ci.SubInterfaces, ci)
+	}
+	actualSubFields := subFields.([]*input.Field)
+	fi, err := field.NewFieldInfoFromInputs(actualSubFields, &field.Options{})
+	if err != nil {
+		return err
+	}
+	for _, f2 := range fi.Fields {
+		ci.Fields = append(ci.Fields, f2)
+		// add custom interface maybe
+		if err := s.checkCustomInterface(f2, root); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *Schema) loadExistingEdges() (*assocEdgeData, error) {
@@ -1050,32 +1083,6 @@ func (s *Schema) addActionFields(info *NodeDataInfo) error {
 			}
 			if !foundAction {
 				return fmt.Errorf("invalid action only field %s. couldn't find action with name %s", f.FieldName, actionName)
-			}
-		}
-
-		for _, f := range a.GetFields() {
-			fieldType := f.GetFieldType()
-			t, ok := fieldType.(enttype.TSWithSubFields)
-			if !ok {
-				continue
-			}
-			subFields := t.GetSubFields()
-			if subFields == nil {
-				continue
-			}
-			// TODO...
-			spew.Dump(t.GetCustomTSInterface())
-			spew.Dump(t.GetCustomGraphQLInterface())
-			actualSubFields := subFields.([]*input.Field)
-			spew.Dump(len(actualSubFields))
-
-			fi, err := field.NewFieldInfoFromInputs(actualSubFields, &field.Options{})
-			if err != nil {
-				return err
-			}
-			for _, f2 := range fi.Fields {
-				// TODO check if type is object and had new custom interface
-				a.AddCustomField(t, f2)
 			}
 		}
 	}

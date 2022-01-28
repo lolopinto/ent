@@ -3,7 +3,6 @@ package schema_test
 import (
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
@@ -1270,6 +1269,7 @@ func TestWithPatternsNoEdgeConstName(t *testing.T) {
 	assert.False(t, patternLikersEdge.PolymorphicEdge())
 }
 
+// TODO move all of this into its own file
 func TestWithSubFields(t *testing.T) {
 	inputSchema := &input.Schema{
 		Nodes: map[string]*input.Node{
@@ -1335,10 +1335,23 @@ func TestWithSubFields(t *testing.T) {
 	userNode := schema.Nodes["UserConfig"]
 	require.NotNil(t, userNode)
 
-	require.Len(t, userNode.NodeData.ActionInfo.Actions, 1)
+	require.Len(t, schema.CustomInterfaces, 1)
+	// require.Len(t, userNode.NodeData.ActionInfo.Actions, 1)
 
-	action := userNode.NodeData.ActionInfo.Actions[0]
-	// TODO need local enum generated
-	spew.Dump(action.GetCustomInterfaces())
-	t.Fail()
+	// action := userNode.NodeData.ActionInfo.Actions[0]
+	// // TODO need local enum generated
+	// spew.Dump(action.GetCustomInterfaces())
+
+	ci := schema.CustomInterfaces["CustomUserPrefs"]
+	require.NotNil(t, ci)
+	require.Len(t, ci.Fields, 3)
+	require.Len(t, ci.NonEntFields, 0)
+	require.Len(t, ci.SubInterfaces, 0)
+
+	// TODO importType on Field
+	// now generate the type
+
+	// TODO super nested next
+
+	// TODO need to make sure enum is correctly generated
 }

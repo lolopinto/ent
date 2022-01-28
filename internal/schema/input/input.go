@@ -245,10 +245,9 @@ func getTypeFor(fieldName string, typ *FieldType, nullable bool, foreignKey *For
 		}
 		return &enttype.DateType{}, nil
 	case JSON, JSONB:
-		// customUserPrefsInput can be duplicated in actions
-		// or should have its own file...
+		// TODO need a uniqueEnum name
 		// ideally, this is a top level generated thing that's shared everywhere actually...
-		tsType := fmt.Sprintf("custom%sInput", strcase.ToCamel(fieldName))
+		tsType := fmt.Sprintf("Custom%s", strcase.ToCamel(fieldName))
 
 		// UserPrefsInput
 		// this input needs to be in its own file because it can be shared across creates and edits

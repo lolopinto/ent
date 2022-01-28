@@ -1786,16 +1786,17 @@ func addConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, fields *
 	*fields = append(*fields, gqlField)
 }
 
-func buildActionNodes(processor *codegen.Processor, nodeData *schema.NodeData, action action.Action, actionPrefix string) []*objectType {
+func buildActionNodes(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action, actionPrefix string) []*objectType {
 	var ret []*objectType
-	for _, c := range action.GetCustomInterfaces() {
-		if c.Action == nil {
+	for _, c := range a.GetCustomInterfaces() {
+		_, ok := c.Action.(action.Action)
+		if !ok {
 			ret = append(ret, buildCustomInputNode(c))
 		}
 	}
 	ret = append(ret,
-		buildActionInputNode(processor, nodeData, action, actionPrefix),
-		buildActionPayloadNode(nodeData, action, actionPrefix),
+		buildActionInputNode(processor, nodeData, a, actionPrefix),
+		buildActionPayloadNode(nodeData, a, actionPrefix),
 	)
 	return ret
 }
@@ -1852,8 +1853,9 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	// as dependencies...
 	for _, c := range a.GetCustomInterfaces() {
 		// flag. Action used here
-		if c.Action != nil {
-			action := c.Action.(action.Action)
+		action, ok := c.Action.(action.Action)
+		if ok {
+			spew.Dump("action")
 			result.Imports = append(result.Imports, &fileImport{
 				Type:       c.GQLType,
 				ImportPath: getImportPathForActionFromPackage(action.GetNodeInfo().PackageName, action),
