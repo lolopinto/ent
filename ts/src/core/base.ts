@@ -193,6 +193,11 @@ enum privacyResult {
 export interface PrivacyResult {
   result: privacyResult;
   error?: PrivacyError;
+  getError?(
+    policy: PrivacyPolicy,
+    rule: PrivacyPolicyRule,
+    ent?: Ent,
+  ): PrivacyError;
 }
 
 export interface PrivacyError extends Error {
@@ -224,7 +229,33 @@ export function Deny(): PrivacyResult {
   return deny;
 }
 
-export function DenyWithReason(e: PrivacyError): PrivacyResult {
+class DenyWithReasonError extends Error implements PrivacyError {
+  privacyPolicy: PrivacyPolicy;
+  privacyRule: PrivacyPolicyRule;
+  ent?: Ent;
+
+  constructor(
+    privacyPolicy: PrivacyPolicy,
+    rule: PrivacyPolicyRule,
+    msg: string,
+    ent?: Ent,
+  ) {
+    super(msg);
+    this.privacyPolicy = privacyPolicy;
+    this.privacyRule = rule;
+    this.ent = ent;
+  }
+}
+
+export function DenyWithReason(e: PrivacyError | string): PrivacyResult {
+  if (typeof e === "string") {
+    return {
+      result: privacyResult.Deny,
+      getError(policy: PrivacyPolicy, rule: PrivacyPolicyRule, ent?: Ent) {
+        return new DenyWithReasonError(policy, rule, e, ent);
+      },
+    };
+  }
   return {
     result: privacyResult.Deny,
     error: e,

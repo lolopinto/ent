@@ -525,6 +525,9 @@ export async function applyPrivacyPolicyX(
       if (res.error) {
         throw res.error;
       }
+      if (res.getError) {
+        throw res.getError(policy, rule, ent);
+      }
       if (throwErr) {
         throw throwErr();
       }
