@@ -16,14 +16,17 @@ For example, to specify who can [create an event](/docs/actions/create-action), 
 
 export default class CreateEventAction extends CreateEventActionBase {
   getPrivacyPolicy(): PrivacyPolicy {
+
     return {
       rules: [
         new AllowIfViewerEqualsRule(this.input.creatorID),
         AlwaysDenyRule,
       ],
     };
+
   }
 }
+
 ```
 
 This specifies that the viewer is allowed to create the event assuming the `viewerID` is equal to the `creatorID` in the [input](/docs/actions/input).
@@ -55,11 +58,14 @@ For example, to specify who can [delete an event](/docs/actions/delete-action), 
 
 export default class DeleteEventAction extends DeleteEventActionBase {
   getPrivacyPolicy(): PrivacyPolicy {
+
     return {
       rules: [new AllowIfViewerIsRule("creatorID"), AlwaysDenyRule],
     };
+
   }
 }
+
 ```
 
 This specifies that the viewer is allowed to delete the event assuming the `viewerID` is equal to the `creatorID` in the ent.
@@ -76,4 +82,6 @@ interface PrivacyPolicyRule {
 }
 ```
 
-Note that the 2nd parameter here is optional. For create actions, nothing is passed for the `ent` parameter. However, for edit and delete actions, the existing ent is passed a second parameter.
+For create actions, a non-privacy checked (unsafe) Ent is passed in as the `ent` parameter. This helps to simplify privacy policies that depend on properties of the ent.
+
+For edit and delete actions, the existing ent is passed as the second parameter.
