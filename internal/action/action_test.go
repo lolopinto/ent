@@ -1062,7 +1062,8 @@ func verifyExpectedActions(t *testing.T, actionInfo *action.ActionInfo, expActio
 				if expCustomInt.actionName == "" {
 					assert.Nil(t, customInt.Action)
 				} else {
-					assert.Equal(t, expCustomInt.actionName, customInt.Action.GetActionName())
+					action := customInt.Action.(action.Action)
+					assert.Equal(t, expCustomInt.actionName, action.GetActionName())
 				}
 			}
 		}
