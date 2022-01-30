@@ -5,6 +5,7 @@ import {
   AssocEdge,
   AssocEdgeGroup,
   Action,
+  Type,
 } from "../schema";
 import { ActionField, FieldMap } from "../schema/schema";
 
@@ -27,6 +28,7 @@ function processFields(
   }
   for (const name in m) {
     const field = m[name];
+    //@ts-ignore type and other changed fields with different type in ProcessedField vs Field
     let f: ProcessedField = { name, ...field };
     f.hasDefaultValueOnCreate = field.defaultValueOnCreate != undefined;
     f.hasDefaultValueOnEdit = field.defaultValueOnEdit != undefined;
@@ -54,6 +56,9 @@ function processFields(
     }
     if (field.getDerivedFields) {
       f.derivedFields = processFields(field.getDerivedFields(name));
+    }
+    if (field.type.subFields) {
+      f.type.subFields = processFields(field.type.subFields);
     }
     ret.push(f);
   }
@@ -205,16 +210,20 @@ interface ProcessedPattern {
   fields: ProcessedField[];
 }
 
-// TODO handle subFields and converting list -> map
+type ProcessedType = Omit<Type, "subFields"> & {
+  subFields: ProcessedField[];
+};
+
 type ProcessedField = Omit<
   Field,
-  "defaultValueOnEdit" | "defaultValueOnCreate"
+  "defaultValueOnEdit" | "defaultValueOnCreate" | "type"
 > & {
   name: string;
   hasDefaultValueOnCreate?: boolean;
   hasDefaultValueOnEdit?: boolean;
   patternName?: string;
   derivedFields?: ProcessedField[];
+  type: ProcessedType;
 };
 
 interface patternsDict {

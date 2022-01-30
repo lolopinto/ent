@@ -1,5 +1,11 @@
 import { v1 } from "uuid";
-import { EnumType, FloatType, IntegerListType, StringListType } from ".";
+import {
+  EnumType,
+  FieldMap,
+  FloatType,
+  IntegerListType,
+  StringListType,
+} from ".";
 import {
   UUIDType,
   IntegerType,
@@ -9,8 +15,15 @@ import {
 } from "./field";
 import { StructType } from "./struct_field";
 
+function structTypeF(fields: FieldMap) {
+  return StructType({
+    tsType: "Foo",
+    fields,
+  });
+}
+
 test("scalars", async () => {
-  const f = StructType({
+  const f = structTypeF({
     uuid: UUIDType(),
     int: IntegerType(),
     string: StringType(),
@@ -39,7 +52,7 @@ test("scalars", async () => {
 });
 
 test("missing field", async () => {
-  const f = StructType({
+  const f = structTypeF({
     uuid: UUIDType(),
     int: IntegerType(),
     string: StringType(),
@@ -62,7 +75,7 @@ test("missing field", async () => {
 });
 
 test("null when non-nullable", async () => {
-  const f = StructType({
+  const f = structTypeF({
     uuid: UUIDType(),
     int: IntegerType(),
     string: StringType(),
@@ -86,7 +99,7 @@ test("null when non-nullable", async () => {
 });
 
 test("nullable field set to null", async () => {
-  const f = StructType({
+  const f = structTypeF({
     uuid: UUIDType(),
     int: IntegerType(),
     string: StringType(),
@@ -116,7 +129,7 @@ test("nullable field set to null", async () => {
 
 // TODO should we support this or only allow null?
 test("nullable field left out", async () => {
-  const f = StructType({
+  const f = structTypeF({
     uuid: UUIDType(),
     int: IntegerType(),
     string: StringType(),
@@ -144,7 +157,7 @@ test("nullable field left out", async () => {
 });
 
 test("list fields", async () => {
-  const f = StructType({
+  const f = structTypeF({
     string_list: StringListType(),
     int_list: IntegerListType(),
   });
@@ -158,7 +171,7 @@ test("list fields", async () => {
 });
 
 test("formatted list fields", async () => {
-  const f = StructType({
+  const f = structTypeF({
     string_list: StringListType({ toUpperCase: true }),
     int_list: IntegerListType(),
   });
@@ -176,8 +189,8 @@ test("formatted list fields", async () => {
 });
 
 test("struct", async () => {
-  const f = StructType({
-    obj: StructType({
+  const f = structTypeF({
+    obj: structTypeF({
       uuid: UUIDType(),
       int: IntegerType(),
       string: StringType(),
@@ -205,7 +218,7 @@ test("struct", async () => {
 });
 
 test("super nested", async () => {
-  const f = StructType({
+  const f = structTypeF({
     uuid: UUIDType(),
     int: IntegerType(),
     string: StringType(),
@@ -214,7 +227,7 @@ test("super nested", async () => {
     enum: EnumType({ values: ["yes", "no", "maybe"] }),
     string_list: StringListType(),
     int_list: IntegerListType(),
-    obj: StructType({
+    obj: structTypeF({
       nested_uuid: UUIDType(),
       nested_int: IntegerType(),
       nested_string: StringType(),
@@ -223,7 +236,7 @@ test("super nested", async () => {
       nested_enum: EnumType({ values: ["yes", "no", "maybe"] }),
       nested_string_list: StringListType(),
       nested_int_list: IntegerListType(),
-      nested_obj: StructType({
+      nested_obj: structTypeF({
         nested_nested_uuid: UUIDType(),
         nested_nested_int: IntegerType(),
         nested_nested_string: StringType(),

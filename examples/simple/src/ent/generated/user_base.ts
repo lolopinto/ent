@@ -86,7 +86,7 @@ export class UserBase {
   readonly emailVerified: boolean;
   readonly bio: string | null;
   readonly nicknames: string[] | null;
-  readonly prefs: UserPrefs | null;
+  readonly prefs: any;
   readonly prefsList: UserPrefs[] | null;
   readonly prefsDiff: any;
   readonly daysOff: DaysOff[] | null;

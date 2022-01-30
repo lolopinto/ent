@@ -245,29 +245,33 @@ func getTypeFor(fieldName string, typ *FieldType, nullable bool, foreignKey *For
 		}
 		return &enttype.DateType{}, nil
 	case JSON, JSONB:
-		// TODO need a uniqueEnum name
-		// ideally, this is a top level generated thing that's shared everywhere actually...
-		tsType := fmt.Sprintf("Custom%s", strcase.ToCamel(fieldName))
 
-		// UserPrefsInput
-		// this input needs to be in its own file because it can be shared across creates and edits
-		// TODO: can you have nonInput passed to graphql?
-		gqlType := fmt.Sprintf("%sInput", strcase.ToCamel(fieldName))
-
+		importType := typ.ImportType
+		var fields interface{}
+		if len(typ.Fields) != 0 {
+			// only set this if we actually have fields. otherwise, we want this to be nil
+			fields = typ.Fields
+			if importType == nil && typ.Type != "" {
+				importType = &enttype.InputImportType{
+					Path: getFilePathForCustomInterfaceFile(typ.Type),
+					Type: typ.Type,
+				}
+			}
+		}
 		if typ.DBType == JSON {
 			if nullable {
 				ret := &enttype.NullableJSONType{}
-				ret.ImportType = typ.ImportType
-				ret.CustomTsInterface = tsType
-				ret.CustomGraphQLInterface = gqlType
-				ret.Fields = typ.Fields
+				ret.ImportType = importType
+				ret.CustomTsInterface = typ.Type
+				ret.CustomGraphQLInterface = typ.GraphQLType
+				ret.Fields = fields
 				return ret, nil
 			}
 			ret := &enttype.JSONType{}
-			ret.ImportType = typ.ImportType
-			ret.CustomTsInterface = tsType
-			ret.CustomGraphQLInterface = gqlType
-			ret.Fields = typ.Fields
+			ret.ImportType = importType
+			ret.CustomTsInterface = typ.Type
+			ret.CustomGraphQLInterface = typ.GraphQLType
+			ret.Fields = fields
 			return ret, nil
 		}
 
@@ -275,15 +279,15 @@ func getTypeFor(fieldName string, typ *FieldType, nullable bool, foreignKey *For
 		if nullable {
 			ret := &enttype.NullableJSONBType{}
 			ret.ImportType = typ.ImportType
-			ret.CustomTsInterface = tsType
-			ret.CustomGraphQLInterface = gqlType
+			ret.CustomTsInterface = typ.Type
+			ret.CustomGraphQLInterface = typ.GraphQLType
 			ret.Fields = typ.Fields
 			return ret, nil
 		}
 		ret := &enttype.JSONBType{}
 		ret.ImportType = typ.ImportType
-		ret.CustomTsInterface = tsType
-		ret.CustomGraphQLInterface = gqlType
+		ret.CustomTsInterface = typ.Type
+		ret.CustomGraphQLInterface = typ.GraphQLType
 		ret.Fields = typ.Fields
 		return ret, nil
 
@@ -660,4 +664,9 @@ func ParseSchema(input []byte) (*Schema, error) {
 		return nil, err
 	}
 	return s, nil
+}
+
+// copied from step.go
+func getFilePathForCustomInterfaceFile(tsType string) string {
+	return fmt.Sprintf("src/ent/generated/%s.ts", strcase.ToSnake(tsType))
 }

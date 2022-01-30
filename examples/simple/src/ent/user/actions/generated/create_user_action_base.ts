@@ -21,7 +21,7 @@ export interface UserCreateInput {
   phoneNumber: string;
   password: string;
   nicknames?: string[] | null;
-  prefs?: UserPrefs | null;
+  prefs?: any;
   prefsDiff?: any;
   daysOff?: DaysOff[] | null;
   preferredShift?: PreferredShift[] | null;

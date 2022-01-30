@@ -1,0 +1,14 @@
+{{ $ci := .Interface}}
+{{ $pkg := .Package }}
+{{ range $ci.GetTSEnums -}}
+  {{/* TODO when imported here? */}}
+  {{if not .Imported -}}
+    {{ template "enum.tmpl" .}}
+  {{end -}}
+{{ end}}
+
+{{ range $ci.SubInterfaces -}}
+  {{ template "interface.tmpl" (dict "Interface" . "Package" $pkg)}}
+{{ end -}}
+
+{{ template "interface.tmpl" (dict "Interface" $ci "Package" $pkg)}}

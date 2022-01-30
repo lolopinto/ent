@@ -15,6 +15,8 @@ import {
   BigIntegerType,
   JSONBListType,
   UUIDListType,
+  StructType,
+  EnumType,
 } from "@snowtop/ent/schema";
 import { EmailType } from "@snowtop/ent-email";
 import { PasswordType } from "@snowtop/ent-password";
@@ -57,14 +59,26 @@ export default class User extends BaseEntSchema implements Schema {
     }),
     StringType({ name: "Bio", nullable: true }),
     StringListType({ name: "nicknames", nullable: true }),
-    JSONBType({
+    // JSONBType({
+    //   name: "prefs",
+    //   nullable: true,
+    //   importType: {
+    //     path: "src/ent/user_prefs",
+    //     type: "UserPrefs",
+    //   },
+    // }),
+    StructType({
       name: "prefs",
+      tsType: "UserPrefsStruct",
       nullable: true,
-      importType: {
-        path: "src/ent/user_prefs",
-        type: "UserPrefs",
+      fields: {
+        // importType instead of enum needed
+        finishedNux: BooleanType({ nullable: true }),
+        enableNotifs: BooleanType({ nullable: true }),
+        notifTypes: EnumType({ values: ["MOBILE", "WEB", "EMAIL"] }),
       },
     }),
+    // TODO StructListType
     JSONBListType({
       name: "prefsList",
       nullable: true,
@@ -73,6 +87,7 @@ export default class User extends BaseEntSchema implements Schema {
         type: "UserPrefs",
       },
     }),
+    // TODO StructJSONType
     JSONType({
       name: "prefs_diff",
       nullable: true,

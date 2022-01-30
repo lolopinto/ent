@@ -25,33 +25,9 @@
   {{end -}}
 {{ end}}
 
-{{$extImpPath := .Package.ExternalImportPath -}}
-{{ range $int := $action.GetCustomInterfaces -}}
-  {{ range $imp := $int.GetEnumImports -}}
-    {{ reserveImport $extImpPath $imp -}}
-  {{ end -}}
-  interface {{$int.TSType}} {
-    {{ range $field := $int.Fields -}}
-      {{$type := $field.TsBuilderType -}}
-      {{range $import := $field.TsBuilderImports -}}
-        {{ $ignore := useImport $import -}}
-      {{end -}}
-      {{if $field.ForceRequiredInAction -}}
-        {{$field.TsFieldName}}: {{$type}};
-      {{else -}}
-        {{$field.TsFieldName}}?: {{$type}};
-      {{end -}}
-    {{end -}}
-    {{ range $field := $int.NonEntFields -}}
-      {{$type := $field.GetTsType -}}
-      {{if $field.Required -}}
-        {{$field.TsFieldName}}: {{$type}};
-      {{else -}}
-        {{$field.TsFieldName}}?: {{$type}};
-      {{end -}}
-    {{end -}}
-  }
-  
+{{$pkg := .Package -}}
+{{ range $action.GetCustomInterfaces -}}
+  {{template "interface.tmpl" (dict "Interface" . "Package" $pkg) }}  
 {{end -}}
 
 {{ $node := useImport .NodeData.Node -}}

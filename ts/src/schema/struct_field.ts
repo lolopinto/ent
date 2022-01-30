@@ -1,19 +1,29 @@
-import { ListField } from ".";
-import { BaseField } from "./field";
+import { BaseField, ListField } from "./field";
 import { FieldOptions, Field, Type, DBType, FieldMap } from "./schema";
 
-export interface StructOptions extends FieldOptions {}
+export interface StructOptions extends FieldOptions {
+  // required.
+  // how does that jive with https://github.com/lolopinto/ent/issues/609 though??
+  tsType: string;
+  fields: FieldMap;
+  // if not provided, defaults to tsType
+  graphQLType?: string;
+  jsonNotJSONB?: boolean;
+}
 
 export class StructField extends BaseField implements Field {
-  // TODO JSON option...
   type: Type = {
     dbType: DBType.JSONB,
-    // TODO fields that need to be created in go-land
   };
 
-  constructor(private fields: FieldMap) {
+  constructor(private options: StructOptions) {
     super();
-    this.type.subFields = fields;
+    this.type.subFields = options.fields;
+    this.type.type = options.tsType;
+    this.type.graphQLType = options.graphQLType || options.tsType;
+    if (options.jsonNotJSONB) {
+      this.type.dbType = DBType.JSON;
+    }
   }
 
   format(obj: any, nested?: boolean) {
@@ -21,12 +31,12 @@ export class StructField extends BaseField implements Field {
       throw new Error("valid was not called");
     }
     let ret: Object = {};
-    for (const k in this.fields) {
+    for (const k in this.options.fields) {
       const val = obj[k];
       if (val === undefined) {
         continue;
       }
-      const field = this.fields[k];
+      const field = this.options.fields[k];
       if (field.format) {
         // indicate nested so this isn't JSON stringified
         ret[k] = field.format(val, true);
@@ -49,8 +59,8 @@ export class StructField extends BaseField implements Field {
     let promises: (boolean | Promise<boolean>)[] = [];
     // TODO probably need to support optional fields...
     let valid = true;
-    for (const k in this.fields) {
-      const field = this.fields[k];
+    for (const k in this.options.fields) {
+      const field = this.options.fields[k];
       const val = obj[k];
 
       if (val === undefined || val === null) {
@@ -74,7 +84,11 @@ export class StructField extends BaseField implements Field {
   }
 }
 
-export function StructType(fields: FieldMap, options?: FieldOptions) {
-  let result = new StructField(fields);
+export function StructType(options: StructOptions) {
+  let result = new StructField(options);
   return Object.assign(result, options);
+}
+
+export function StructListType(options: StructOptions) {
+  return new ListField(StructType(options), options);
 }

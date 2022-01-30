@@ -22,6 +22,7 @@ type CustomInterface struct {
 
 	// sub interfaces that this uses
 	SubInterfaces []*CustomInterface
+	// TODO exported
 }
 
 func (ci *CustomInterface) GetEnumImports() []string {
@@ -50,4 +51,21 @@ func (ci *CustomInterface) GetTSEnums() []*enum.Enum {
 		ret = append(ret, tsEnum)
 	}
 	return ret
+}
+
+func (ci *CustomInterface) ForeignImport(typ string) bool {
+	// PS: this needs to be sped up
+	for _, v := range ci.GetTSEnums() {
+		if v.Name == typ {
+			return false
+		}
+	}
+
+	for _, v := range ci.SubInterfaces {
+		if v.TSType == typ {
+			return false
+		}
+	}
+
+	return true
 }

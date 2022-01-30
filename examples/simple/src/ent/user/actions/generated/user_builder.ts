@@ -35,7 +35,7 @@ export interface UserInput {
   emailVerified?: boolean;
   bio?: string | null;
   nicknames?: string[] | null;
-  prefs?: UserPrefs | null;
+  prefs?: any;
   prefsList?: UserPrefs[] | null;
   prefsDiff?: any;
   daysOff?: DaysOff[] | null;
@@ -716,7 +716,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
   }
 
   // get value of prefs. Retrieves it from the input if specified or takes it from existingEnt
-  getNewPrefsValue(): UserPrefs | null | undefined {
+  getNewPrefsValue(): any | undefined {
     if (this.input.prefs !== undefined) {
       return this.input.prefs;
     }

@@ -1,0 +1,28 @@
+{{$int := .Interface}}
+{{$extImpPath := .Package.ExternalImportPath -}}
+{{ range $imp := $int.GetEnumImports -}}
+  {{ reserveImport $extImpPath $imp -}}
+{{ end -}}
+interface {{$int.TSType}} {
+  {{ range $field := $int.Fields -}}
+    {{$type := $field.TsBuilderType -}}
+    {{range $import := $field.TsBuilderImports -}}
+      {{ if $int.ForeignImport $import -}}
+        {{ $ignore := useImport $import -}}
+      {{ end -}}
+    {{end -}}
+    {{if $field.ForceRequiredInAction -}}
+      {{$field.TsFieldName}}: {{$type}};
+    {{else -}}
+      {{$field.TsFieldName}}?: {{$type}};
+    {{end -}}
+  {{end -}}
+  {{ range $field := $int.NonEntFields -}}
+    {{$type := $field.GetTsType -}}
+    {{if $field.Required -}}
+      {{$field.TsFieldName}}: {{$type}};
+    {{else -}}
+      {{$field.TsFieldName}}?: {{$type}};
+    {{end -}}
+  {{end -}}
+}
