@@ -167,7 +167,8 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 		funcs = append(funcs, s.processNode(processor, info, &serr)...)
 	}
 
-	for _, info := range processor.Schema.Enums {
+	for k := range processor.Schema.Enums {
+		info := processor.Schema.Enums[k]
 		if !info.OwnEnumFile() {
 			continue
 		}
