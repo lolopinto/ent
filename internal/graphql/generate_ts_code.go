@@ -1263,15 +1263,6 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 				defer m.Unlock()
 				otherNodes = append(otherNodes, obj)
 				otherNodes = append(otherNodes, inputObj)
-				for _, enum := range ci.GetGraphQLEnums() {
-					// needs a quoted name
-					// Type has GQLType
-					enums[enum.Name] = &gqlEnum{
-						Type:     fmt.Sprintf("%sType", enum.Name),
-						Enum:     enum,
-						FilePath: getFilePathForEnum(processor.Config, enum),
-					}
-				}
 
 			}(key)
 		}

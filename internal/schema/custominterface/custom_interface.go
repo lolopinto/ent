@@ -3,7 +3,6 @@ package custominterface
 // TODO need to figure out the correct name of the package here
 
 import (
-	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/enum"
 )
@@ -23,6 +22,9 @@ type CustomInterface struct {
 	// sub interfaces that this uses
 	SubInterfaces []*CustomInterface
 	Exported      bool
+
+	tsEnums  []*enum.Enum
+	gqlEnums []*enum.GQLEnum
 }
 
 func (ci *CustomInterface) GetEnumImports() []string {
@@ -36,40 +38,18 @@ func (ci *CustomInterface) AddEnumImport(enumImport string) {
 	ci.enumImports = append(ci.enumImports, enumImport)
 }
 
-// local enums
-func (ci *CustomInterface) GetTSEnums() []*enum.Enum {
-	var ret []*enum.Enum
-
-	for _, f := range ci.Fields {
-		typ := f.GetFieldType()
-		enumTyp, ok := enttype.GetEnumType(typ)
-		if !ok {
-			continue
-		}
-		input := enum.NewInputFromEnumType(enumTyp)
-		tsEnum, _ := enum.GetEnums(input)
-		ret = append(ret, tsEnum)
-	}
-	return ret
+func (ci *CustomInterface) AddEnum(tsEnum *enum.Enum, gqlEnum *enum.GQLEnum) {
+	ci.tsEnums = append(ci.tsEnums, tsEnum)
+	ci.gqlEnums = append(ci.gqlEnums, gqlEnum)
 }
 
-// this is used to generate enums in GraphQL
-// It's not stored in schema.enums for now which means there can be duplicates...
-// which will fail eventually but not with a good error message
-func (ci *CustomInterface) GetGraphQLEnums() []*enum.GQLEnum {
-	var ret []*enum.GQLEnum
+// local enums
+func (ci *CustomInterface) GetTSEnums() []*enum.Enum {
+	return ci.tsEnums
+}
 
-	for _, f := range ci.Fields {
-		typ := f.GetFieldType()
-		enumTyp, ok := enttype.GetEnumType(typ)
-		if !ok {
-			continue
-		}
-		input := enum.NewInputFromEnumType(enumTyp)
-		_, gqlEnum := enum.GetEnums(input)
-		ret = append(ret, gqlEnum)
-	}
-	return ret
+func (ci *CustomInterface) GetGraphQLEnums() []*enum.GQLEnum {
+	return ci.gqlEnums
 }
 
 func (ci *CustomInterface) ForeignImport(typ string) bool {

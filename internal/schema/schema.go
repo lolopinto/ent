@@ -183,7 +183,10 @@ func (s *Schema) addEnumFrom(input *enum.Input, nodeData *NodeData, inputNode *i
 
 func (s *Schema) addEnumFromPattern(enumType enttype.EnumeratedType, pattern *input.Pattern) (*EnumInfo, error) {
 	input := enum.NewInputFromEnumType(enumType)
+	return s.addEnumFromInput(input, pattern)
+}
 
+func (s *Schema) addEnumFromInput(input *enum.Input, pattern *input.Pattern) (*EnumInfo, error) {
 	tsEnum, gqlEnum := enum.GetEnums(input)
 
 	// first create EnumInfo...
@@ -483,6 +486,24 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 
 		if err := s.addPattern(name, p); err != nil {
 			errs = append(errs, err)
+		}
+	}
+
+	for _, ci := range s.CustomInterfaces {
+		for _, f := range ci.Fields {
+			typ := f.GetFieldType()
+			// TODO nested enums..
+			enumTyp, ok := enttype.GetEnumType(typ)
+			if !ok {
+				continue
+			}
+			input := enum.NewInputFromEnumType(enumTyp)
+			info, err := s.addEnumFromInput(input, nil)
+			if err != nil {
+				errs = append(errs, err)
+			} else {
+				ci.AddEnum(info.Enum, info.GQLEnum)
+			}
 		}
 	}
 
