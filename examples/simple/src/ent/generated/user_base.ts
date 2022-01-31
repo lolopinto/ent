@@ -35,6 +35,7 @@ import {
   userLoaderInfo,
   userPhoneNumberLoader,
 } from "./loaders";
+import { UserPrefsStruct } from "./user_prefs_struct";
 import {
   Contact,
   EdgeType,
@@ -86,7 +87,7 @@ export class UserBase {
   readonly emailVerified: boolean;
   readonly bio: string | null;
   readonly nicknames: string[] | null;
-  readonly prefs: any;
+  readonly prefs: UserPrefsStruct | null;
   readonly prefsList: UserPrefs[] | null;
   readonly prefsDiff: any;
   readonly daysOff: DaysOff[] | null;

@@ -253,7 +253,7 @@ func getTypeFor(fieldName string, typ *FieldType, nullable bool, foreignKey *For
 			fields = typ.Fields
 			if importType == nil && typ.Type != "" {
 				importType = &enttype.InputImportType{
-					Path: getFilePathForCustomInterfaceFile(typ.Type),
+					Path: getImportPathForCustomInterfaceFile(typ.Type),
 					Type: typ.Type,
 				}
 			}
@@ -278,14 +278,14 @@ func getTypeFor(fieldName string, typ *FieldType, nullable bool, foreignKey *For
 		//	case JSONB:
 		if nullable {
 			ret := &enttype.NullableJSONBType{}
-			ret.ImportType = typ.ImportType
+			ret.ImportType = importType
 			ret.CustomTsInterface = typ.Type
 			ret.CustomGraphQLInterface = typ.GraphQLType
 			ret.Fields = typ.Fields
 			return ret, nil
 		}
 		ret := &enttype.JSONBType{}
-		ret.ImportType = typ.ImportType
+		ret.ImportType = importType
 		ret.CustomTsInterface = typ.Type
 		ret.CustomGraphQLInterface = typ.GraphQLType
 		ret.Fields = typ.Fields
@@ -667,6 +667,6 @@ func ParseSchema(input []byte) (*Schema, error) {
 }
 
 // copied from step.go
-func getFilePathForCustomInterfaceFile(tsType string) string {
-	return fmt.Sprintf("src/ent/generated/%s.ts", strcase.ToSnake(tsType))
+func getImportPathForCustomInterfaceFile(tsType string) string {
+	return fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(tsType))
 }

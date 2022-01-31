@@ -507,8 +507,9 @@ func (s *Schema) checkCustomInterface(f *field.Field, root *custominterface.Cust
 	}
 
 	ci := &custominterface.CustomInterface{
-		TSType:  subFieldsType.GetCustomTSInterface(),
-		GQLType: subFieldsType.GetCustomGraphQLInterface(),
+		TSType:   subFieldsType.GetCustomTSInterface(),
+		GQLType:  subFieldsType.GetCustomGraphQLInterface(),
+		Exported: true,
 	}
 	if root == nil {
 		root = ci

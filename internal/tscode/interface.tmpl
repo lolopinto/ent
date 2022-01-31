@@ -3,7 +3,11 @@
 {{ range $imp := $int.GetEnumImports -}}
   {{ reserveImport $extImpPath $imp -}}
 {{ end -}}
-interface {{$int.TSType}} {
+ {{ if $int.Exported -}}
+  export interface {{$int.TSType}} {
+{{ else -}}
+  interface {{$int.TSType}} {
+{{ end -}}
   {{ range $field := $int.Fields -}}
     {{$type := $field.TsBuilderType -}}
     {{range $import := $field.TsBuilderImports -}}

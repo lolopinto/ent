@@ -22,6 +22,7 @@ import {
   User,
 } from "../../..";
 import { EdgeType, NodeType } from "../../../generated/const";
+import { UserPrefsStruct } from "../../../generated/user_prefs_struct";
 import { UserPrefs } from "../../../user_prefs";
 import schema from "../../../../schema/user";
 
@@ -35,7 +36,7 @@ export interface UserInput {
   emailVerified?: boolean;
   bio?: string | null;
   nicknames?: string[] | null;
-  prefs?: any;
+  prefs?: UserPrefsStruct | null;
   prefsList?: UserPrefs[] | null;
   prefsDiff?: any;
   daysOff?: DaysOff[] | null;
@@ -716,7 +717,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
   }
 
   // get value of prefs. Retrieves it from the input if specified or takes it from existingEnt
-  getNewPrefsValue(): any | undefined {
+  getNewPrefsValue(): UserPrefsStruct | null | undefined {
     if (this.input.prefs !== undefined) {
       return this.input.prefs;
     }

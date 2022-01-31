@@ -75,7 +75,11 @@ export default class User extends BaseEntSchema implements Schema {
         // importType instead of enum needed
         finishedNux: BooleanType({ nullable: true }),
         enableNotifs: BooleanType({ nullable: true }),
-        notifTypes: EnumType({ values: ["MOBILE", "WEB", "EMAIL"] }),
+        notifTypes: EnumListType({
+          values: ["MOBILE", "WEB", "EMAIL"],
+          tsType: "NotifType",
+          graphQLType: "NotifType",
+        }),
       },
     }),
     // TODO StructListType

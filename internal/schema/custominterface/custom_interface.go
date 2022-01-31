@@ -22,7 +22,7 @@ type CustomInterface struct {
 
 	// sub interfaces that this uses
 	SubInterfaces []*CustomInterface
-	// TODO exported
+	Exported      bool
 }
 
 func (ci *CustomInterface) GetEnumImports() []string {

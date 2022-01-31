@@ -2,14 +2,14 @@
  * Copyright whaa whaa
  */
 
-export enum NotifTypes {
+export enum NotifType {
   MOBILE = "MOBILE",
   WEB = "WEB",
   EMAIL = "EMAIL",
 }
 
-interface UserPrefsStruct {
+export interface UserPrefsStruct {
   finishedNux?: boolean | null;
   enableNotifs?: boolean | null;
-  notifTypes?: NotifTypes;
+  notifTypes?: NotifType[];
 }

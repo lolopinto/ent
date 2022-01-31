@@ -33,7 +33,7 @@ import ConfirmEditEmailAddressAction from "../user/actions/confirm_edit_email_ad
 import EditPhoneNumberAction from "../user/actions/edit_phone_number_action";
 import ConfirmEditPhoneNumberAction from "../user/actions/confirm_edit_phone_number_action";
 import CreateCommentAction from "../comment/actions/create_comment_action";
-import { NotifType } from "../user_prefs";
+import { NotifType } from "../generated/user_prefs_struct";
 
 const loggedOutViewer = new LoggedOutViewer();
 
