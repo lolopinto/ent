@@ -9,14 +9,12 @@ import {
   BooleanType,
   requiredField,
   NoFields,
-  JSONBType,
   JSONType,
   EnumListType,
   BigIntegerType,
-  JSONBListType,
   UUIDListType,
   StructType,
-  EnumType,
+  StructListType,
 } from "@snowtop/ent/schema";
 import { EmailType } from "@snowtop/ent-email";
 import { PasswordType } from "@snowtop/ent-password";
@@ -59,20 +57,11 @@ export default class User extends BaseEntSchema implements Schema {
     }),
     StringType({ name: "Bio", nullable: true }),
     StringListType({ name: "nicknames", nullable: true }),
-    // JSONBType({
-    //   name: "prefs",
-    //   nullable: true,
-    //   importType: {
-    //     path: "src/ent/user_prefs",
-    //     type: "UserPrefs",
-    //   },
-    // }),
     StructType({
       name: "prefs",
       tsType: "UserPrefsStruct",
       nullable: true,
       fields: {
-        // importType instead of enum needed
         finishedNux: BooleanType({ nullable: true }),
         enableNotifs: BooleanType({ nullable: true }),
         notifTypes: EnumListType({
@@ -82,13 +71,21 @@ export default class User extends BaseEntSchema implements Schema {
         }),
       },
     }),
-    // TODO StructListType
-    JSONBListType({
+    // TODO there should be a way to share structs across types
+    // this is the same type across multiple fields
+    // more likely to be shared across types
+    StructListType({
       name: "prefsList",
+      tsType: "UserPrefsStruct2",
       nullable: true,
-      importType: {
-        path: "src/ent/user_prefs",
-        type: "UserPrefs",
+      fields: {
+        finishedNux: BooleanType({ nullable: true }),
+        enableNotifs: BooleanType({ nullable: true }),
+        notifTypes: EnumListType({
+          values: ["MOBILE", "WEB", "EMAIL"],
+          tsType: "NotifType",
+          graphQLType: "NotifType",
+        }),
       },
     }),
     // TODO StructJSONType

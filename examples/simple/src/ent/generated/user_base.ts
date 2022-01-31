@@ -36,6 +36,7 @@ import {
   userPhoneNumberLoader,
 } from "./loaders";
 import { UserPrefsStruct } from "./user_prefs_struct";
+import { UserPrefsStruct2 } from "./user_prefs_struct_2";
 import {
   Contact,
   EdgeType,
@@ -53,7 +54,6 @@ import {
   UserToLikesQuery,
   UserToMaybeEventsQuery,
 } from "../internal";
-import { UserPrefs } from "../user_prefs";
 import schema from "../../schema/user";
 
 export enum DaysOff {
@@ -88,7 +88,7 @@ export class UserBase {
   readonly bio: string | null;
   readonly nicknames: string[] | null;
   readonly prefs: UserPrefsStruct | null;
-  readonly prefsList: UserPrefs[] | null;
+  readonly prefsList: UserPrefsStruct2[] | null;
   readonly prefsDiff: any;
   readonly daysOff: DaysOff[] | null;
   readonly preferredShift: PreferredShift[] | null;

@@ -10,6 +10,7 @@ import (
 	"sync"
 	"text/template"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
@@ -172,6 +173,7 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 
 	var funcs writeFileFnList
 	for _, ci := range processor.Schema.CustomInterfaces {
+		spew.Dump(ci.TSType)
 		funcs = append(funcs, s.processCustomInterface(processor, ci, &serr)...)
 	}
 	for _, p := range processor.Schema.Patterns {

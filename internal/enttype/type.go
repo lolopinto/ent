@@ -1769,6 +1769,30 @@ func (t *ArrayListType) GetImportDepsType() *InputImportType {
 	return t2.GetImportDepsType()
 }
 
+func (t *ArrayListType) GetSubFields() interface{} {
+	t2, ok := t.ElemType.(TSWithSubFields)
+	if !ok {
+		return nil
+	}
+	return t2.GetSubFields()
+}
+
+func (t *ArrayListType) GetCustomTSInterface() string {
+	t2, ok := t.ElemType.(TSTypeWithCustomInterfaces)
+	if !ok {
+		return ""
+	}
+	return t2.GetCustomTSInterface()
+}
+
+func (t *ArrayListType) GetCustomGraphQLInterface() string {
+	t2, ok := t.ElemType.(TSTypeWithCustomInterfaces)
+	if !ok {
+		return ""
+	}
+	return t2.GetCustomGraphQLInterface()
+}
+
 type NullableArrayListType struct {
 	arrayListType
 	ElemType TSType
@@ -1831,6 +1855,30 @@ func (t *NullableArrayListType) GetImportDepsType() *InputImportType {
 		return nil
 	}
 	return t2.GetImportDepsType()
+}
+
+func (t *NullableArrayListType) GetSubFields() interface{} {
+	t2, ok := t.ElemType.(TSWithSubFields)
+	if !ok {
+		return nil
+	}
+	return t2.GetSubFields()
+}
+
+func (t *NullableArrayListType) GetCustomTSInterface() string {
+	t2, ok := t.ElemType.(TSTypeWithCustomInterfaces)
+	if !ok {
+		return ""
+	}
+	return t2.GetCustomTSInterface()
+}
+
+func (t *NullableArrayListType) GetCustomGraphQLInterface() string {
+	t2, ok := t.ElemType.(TSTypeWithCustomInterfaces)
+	if !ok {
+		return ""
+	}
+	return t2.GetCustomGraphQLInterface()
 }
 
 // to resolve circular dependency btw input and this

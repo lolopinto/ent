@@ -60,6 +60,16 @@ function processFields(
     if (field.type.subFields) {
       f.type.subFields = processFields(field.type.subFields);
     }
+    if (
+      field.type.listElemType &&
+      field.type.listElemType.subFields &&
+      // check to avoid ts-ignore below. exists just for tsc
+      f.type.listElemType
+    ) {
+      f.type.listElemType.subFields = processFields(
+        field.type.listElemType.subFields,
+      );
+    }
     ret.push(f);
   }
   return ret;
@@ -210,8 +220,9 @@ interface ProcessedPattern {
   fields: ProcessedField[];
 }
 
-type ProcessedType = Omit<Type, "subFields"> & {
+type ProcessedType = Omit<Type, "subFields" | "listElemType"> & {
   subFields: ProcessedField[];
+  listElemType?: ProcessedType;
 };
 
 type ProcessedField = Omit<
