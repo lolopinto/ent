@@ -385,6 +385,10 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 		buildNode(node)
 	}
 
+	for _, node := range s.otherObjects {
+		buildNode(node)
+	}
+
 	for idx := range s.rootQueries {
 		rootQuery := s.rootQueries[idx]
 		funcs = append(funcs, func() error {
@@ -440,6 +444,14 @@ var _ codegen.Step = &TSStep{}
 
 func getFilePathForNode(cfg *codegen.Config, nodeData *schema.NodeData) string {
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", nodeData.PackageName))
+}
+
+func getFilePathForCustomInterfaceFile(cfg *codegen.Config, gqlType string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", strcase.ToSnake(gqlType)))
+}
+
+func getFilePathForCustomInterfaceInputFile(cfg *codegen.Config, gqlType string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/mutations/generated/input/%s_type.ts", strcase.ToSnake(gqlType)))
 }
 
 func getFilePathForEnum(cfg *codegen.Config, e *enum.GQLEnum) string {
@@ -815,6 +827,7 @@ type gqlSchema struct {
 	customEdges     map[string]*objectType
 	rootQueries     []*rootQuery
 	allTypes        []typeInfo
+	otherObjects    []*gqlNode
 	// Query|Mutation|Subscription
 	rootDatas []*gqlRootData
 }
@@ -1079,8 +1092,10 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 		edgeNames := make(map[string]bool)
 		var wg sync.WaitGroup
 		var m sync.Mutex
+		var otherNodes []*gqlNode
 		wg.Add(len(processor.Schema.Nodes))
 		wg.Add(len(processor.Schema.Enums))
+		wg.Add(len(processor.Schema.CustomInterfaces))
 
 		if processor.Config.GenerateNodeQuery() {
 			rootQueries = []*rootQuery{
@@ -1187,6 +1202,80 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 			}(key)
 		}
 
+		for key := range processor.Schema.CustomInterfaces {
+			go func(key string) {
+				defer wg.Done()
+
+				// need both input and non-input type...
+				ci := processor.Schema.CustomInterfaces[key]
+
+				gqlType := ci.GQLType
+				inputType := gqlType + "Input"
+
+				objs := []*objectType{
+					buildCustomInterfaceNode(processor, ci, &customInterfaceInfo{
+						exported: true,
+						name:     gqlType,
+					}),
+				}
+				for _, ci2 := range ci.SubInterfaces {
+					objs = append(objs, buildCustomInterfaceNode(processor, ci2, &customInterfaceInfo{
+						exported: false,
+						name:     gqlType,
+					}))
+				}
+
+				obj := &gqlNode{
+					ObjData: &gqlobjectData{
+						Node:         gqlType,
+						NodeInstance: strcase.ToLowerCamel(gqlType),
+						GQLNodes:     objs,
+						Package:      processor.Config.GetImportPackage(),
+					},
+					FilePath: getFilePathForCustomInterfaceFile(processor.Config, gqlType),
+				}
+
+				inputObjs := []*objectType{
+					buildCustomInterfaceNode(processor, ci, &customInterfaceInfo{
+						exported: true,
+						name:     inputType,
+						input:    true,
+					}),
+				}
+				for _, ci2 := range ci.SubInterfaces {
+					inputObjs = append(inputObjs, buildCustomInterfaceNode(processor, ci2, &customInterfaceInfo{
+						exported: false,
+						name:     inputType,
+						input:    true,
+					}))
+				}
+				inputObj := &gqlNode{
+					ObjData: &gqlobjectData{
+						Node:         inputType,
+						NodeInstance: strcase.ToLowerCamel(inputType),
+						GQLNodes:     inputObjs,
+						Package:      processor.Config.GetImportPackage(),
+					},
+					FilePath: getFilePathForCustomInterfaceInputFile(processor.Config, inputType),
+				}
+
+				m.Lock()
+				defer m.Unlock()
+				otherNodes = append(otherNodes, obj)
+				otherNodes = append(otherNodes, inputObj)
+				for _, enum := range ci.GetGraphQLEnums() {
+					// needs a quoted name
+					// Type has GQLType
+					enums[enum.Name] = &gqlEnum{
+						Type:     fmt.Sprintf("%sType", enum.Name),
+						Enum:     enum,
+						FilePath: getFilePathForEnum(processor.Config, enum),
+					}
+				}
+
+			}(key)
+		}
+
 		wg.Wait()
 		result <- &gqlSchema{
 			nodes:          nodes,
@@ -1196,6 +1285,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 			hasMutations:   hasMutations,
 			hasConnections: hasConnections,
 			customEdges:    make(map[string]*objectType),
+			otherObjects:   otherNodes,
 		}
 	}()
 	return result
@@ -1375,6 +1465,15 @@ func getSortedLines(s *gqlSchema, cfg *codegen.Config) []string {
 
 	var nodes []string
 	var conns []string
+	var otherObjs []string
+	for _, node := range s.otherObjects {
+		// not the best check in the world...
+		if len(node.ObjData.GQLNodes) == 1 && node.ObjData.GQLNodes[0].GQLType == "GraphQLInputObjectType" {
+			// input file
+			continue
+		}
+		otherObjs = append(otherObjs, trimPath(cfg, node.FilePath))
+	}
 	for _, node := range s.nodes {
 		nodes = append(nodes, trimPath(cfg, node.FilePath))
 		for _, conn := range node.connections {
@@ -1406,6 +1505,7 @@ func getSortedLines(s *gqlSchema, cfg *codegen.Config) []string {
 	// get the custom queries
 	list := [][]string{
 		enums,
+		otherObjs,
 		nodes,
 		conns,
 		customQueries,
@@ -2279,6 +2379,56 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 	result.ArgImports = argImports
 
 	return result, nil
+}
+
+type customInterfaceInfo struct {
+	exported bool
+	name     string
+	input    bool
+}
+
+// similar to buildCustomInputNode but different...
+// buildCustomInputNode is used for action inputs
+// while this is used for StructType. can probably eventually be used together
+func buildCustomInterfaceNode(processor *codegen.Processor, ci *custominterface.CustomInterface, ciInfo *customInterfaceInfo) *objectType {
+	node := ciInfo.name
+	gqlType := "GraphQLObjectType"
+	if ciInfo.input {
+		gqlType = "GraphQLInputObjectType"
+	}
+
+	result := &objectType{
+		Type:     fmt.Sprintf("%sType", node),
+		Node:     node,
+		TSType:   node,
+		Exported: ciInfo.exported,
+		GQLType:  gqlType,
+	}
+	// top level
+	if ciInfo.exported {
+		result.Imports = []*fileImport{
+			{
+				ImportPath: codepath.GetExternalImportPath(),
+				Type:       ci.TSType,
+			},
+		}
+	}
+
+	for _, f := range ci.Fields {
+		result.Fields = append(result.Fields, &fieldType{
+			Name:         f.GetGraphQLName(),
+			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(false), true),
+		})
+	}
+
+	for _, f := range ci.NonEntFields {
+		result.Fields = append(result.Fields, &fieldType{
+			Name:         f.GetGraphQLName(),
+			FieldImports: getGQLFileImports(f.FieldType.GetTSGraphQLImports(), true),
+		})
+	}
+
+	return result
 }
 
 type objectType struct {

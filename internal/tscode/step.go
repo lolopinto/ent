@@ -10,7 +10,6 @@ import (
 	"sync"
 	"text/template"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
@@ -173,7 +172,6 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 
 	var funcs writeFileFnList
 	for _, ci := range processor.Schema.CustomInterfaces {
-		spew.Dump(ci.TSType)
 		funcs = append(funcs, s.processCustomInterface(processor, ci, &serr)...)
 	}
 	for _, p := range processor.Schema.Patterns {
@@ -313,6 +311,10 @@ func getFilePathForEnumFile(cfg *codegen.Config, info *schema.EnumInfo) string {
 // copied to input.go
 func getFilePathForCustomInterfaceFile(cfg *codegen.Config, ci *custominterface.CustomInterface) string {
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/%s.ts", strcase.ToSnake(ci.TSType)))
+}
+
+func getImportPathForCustomInterfaceFile(ci *custominterface.CustomInterface) string {
+	return fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(ci.TSType))
 }
 
 func getFilePathForBaseQueryFile(cfg *codegen.Config, nodeData *schema.NodeData) string {
@@ -747,6 +749,9 @@ func getSortedInternalEntFileLines(s *schema.Schema) []string {
 	}
 
 	var baseFiles []string
+	for _, ci := range s.CustomInterfaces {
+		append2(&baseFiles, getImportPathForCustomInterfaceFile(ci))
+	}
 	for _, info := range s.Nodes {
 		append2(&baseFiles, getImportPathForBaseModelFile(info.NodeData.PackageName))
 	}

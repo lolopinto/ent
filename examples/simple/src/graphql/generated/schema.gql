@@ -62,6 +62,18 @@ enum EventRsvpStatus {
   CAN_RSVP
 }
 
+enum NotifType2 {
+  MOBILE
+  WEB
+  EMAIL
+}
+
+enum NotifType {
+  MOBILE
+  WEB
+  EMAIL
+}
+
 enum PreferredShift {
   MORNING
   AFTERNOON

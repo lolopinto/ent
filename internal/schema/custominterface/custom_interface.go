@@ -53,6 +53,25 @@ func (ci *CustomInterface) GetTSEnums() []*enum.Enum {
 	return ret
 }
 
+// this is used to generate enums in GraphQL
+// It's not stored in schema.enums for now which means there can be duplicates...
+// which will fail eventually but not with a good error message
+func (ci *CustomInterface) GetGraphQLEnums() []*enum.GQLEnum {
+	var ret []*enum.GQLEnum
+
+	for _, f := range ci.Fields {
+		typ := f.GetFieldType()
+		enumTyp, ok := enttype.GetEnumType(typ)
+		if !ok {
+			continue
+		}
+		input := enum.NewInputFromEnumType(enumTyp)
+		_, gqlEnum := enum.GetEnums(input)
+		ret = append(ret, gqlEnum)
+	}
+	return ret
+}
+
 func (ci *CustomInterface) ForeignImport(typ string) bool {
 	// PS: this needs to be sped up
 	for _, v := range ci.GetTSEnums() {

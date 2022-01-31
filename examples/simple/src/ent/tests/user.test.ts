@@ -34,6 +34,7 @@ import EditPhoneNumberAction from "../user/actions/edit_phone_number_action";
 import ConfirmEditPhoneNumberAction from "../user/actions/confirm_edit_phone_number_action";
 import CreateCommentAction from "../comment/actions/create_comment_action";
 import { NotifType } from "../generated/user_prefs_struct";
+import { NotifType2 } from "../generated/user_prefs_struct_2";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -908,11 +909,11 @@ test("jsonb types", async () => {
     prefsList: [
       {
         finishedNux: true,
-        notifTypes: [NotifType.EMAIL],
+        notifTypes: [NotifType2.EMAIL],
       },
       {
         finishedNux: false,
-        notifTypes: [NotifType.MOBILE],
+        notifTypes: [NotifType2.MOBILE],
       },
     ],
   }).saveX();
