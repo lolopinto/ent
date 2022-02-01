@@ -11,5 +11,5 @@ export enum NotifType2 {
 export interface UserPrefsStruct2 {
   finishedNux?: boolean | null;
   enableNotifs?: boolean | null;
-  notifTypes?: NotifType2[];
+  notifTypes: NotifType2[];
 }

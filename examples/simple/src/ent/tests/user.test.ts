@@ -13,6 +13,10 @@ import {
   DaysOff,
   PreferredShift,
   ArticleToCommentsQuery,
+  NestedNestedEnum,
+  UserSuperNestedObject,
+  Enum,
+  NestedEnum,
 } from "..";
 
 import { v1 as uuidv1, v4 as uuidv4, validate } from "uuid";
@@ -947,6 +951,45 @@ test("json type", async () => {
   expect(user.prefsDiff).toStrictEqual({
     type: "finished_nux",
   });
+});
+
+test.only("super nested json", async () => {
+  const obj: UserSuperNestedObject = {
+    uuid: uuidv1(),
+    int: 34,
+    string: "whaa",
+    float: 2.3,
+    bool: false,
+    enum: Enum.Maybe,
+    intList: [7, 8, 9],
+    obj: {
+      nestedBool: false,
+      nestedIntList: [1, 2, 3],
+      nestedUuid: uuidv1(),
+      nestedEnum: NestedEnum.No,
+      nestedString: "stri",
+      nestedInt: 24,
+      nestedStringList: ["hello", "goodbye"],
+      nestedObj: {
+        nestedNestedUuid: uuidv1(),
+        nestedNestedFloat: 4.2,
+        nestedNestedEnum: NestedNestedEnum.Maybe,
+        nestedNestedInt: 32,
+        nestedNestedString: "whaa",
+        nestedNestedIntList: [4, 5, 6],
+        nestedNestedStringList: ["sss"],
+      },
+    },
+  };
+  const user = await CreateUserAction.create(new LoggedOutViewer(), {
+    firstName: "Jane",
+    lastName: "Doe",
+    emailAddress: randomEmail(),
+    phoneNumber: randomPhoneNumber(),
+    password: random(),
+    superNestedObject: obj,
+  }).saveX();
+  expect(user.superNestedObject).toStrictEqual(obj);
 });
 
 test("enum list", async () => {

@@ -23,36 +23,36 @@ export enum NestedNestedEnum {
 }
 
 export interface UserNestedObject {
-  nestedUuid?: ID;
-  nestedInt?: number;
-  nestedString?: string;
-  nestedBool?: boolean;
-  nestedFloat?: number;
-  nestedEnum?: NestedEnum;
-  nestedStringList?: string[];
-  nestedIntList?: number[];
+  nestedUuid: ID;
+  nestedInt: number;
+  nestedString: string;
+  nestedBool: boolean;
+  nestedFloat?: number | null;
+  nestedEnum: NestedEnum;
+  nestedStringList: string[];
+  nestedIntList: number[];
   nestedObj?: UserNestedNestedObject | null;
 }
 
 export interface UserNestedNestedObject {
-  nestedNestedUuid?: ID;
-  nestedNestedInt?: number;
-  nestedNestedString?: string;
-  nestedNestedBool?: boolean;
-  nestedNestedFloat?: number;
-  nestedNestedEnum?: NestedNestedEnum;
-  nestedNestedStringList?: string[];
-  nestedNestedIntList?: number[];
+  nestedNestedUuid: ID;
+  nestedNestedInt: number;
+  nestedNestedString: string;
+  nestedNestedBool?: boolean | null;
+  nestedNestedFloat: number;
+  nestedNestedEnum: NestedNestedEnum;
+  nestedNestedStringList: string[];
+  nestedNestedIntList: number[];
 }
 
 export interface UserSuperNestedObject {
-  uuid?: ID;
-  int?: number;
-  string?: string;
-  bool?: boolean;
-  float?: number;
-  enum?: Enum;
-  stringList?: string[];
-  intList?: number[];
+  uuid: ID;
+  int: number;
+  string: string;
+  bool: boolean;
+  float: number;
+  enum: Enum;
+  stringList?: string[] | null;
+  intList: number[];
   obj?: UserNestedObject | null;
 }

@@ -16,10 +16,10 @@
         {{ $ignore := useImport $import -}}
       {{ end -}}
     {{end -}}
-    {{if $field.ForceRequiredInAction -}}
-      {{$field.TsFieldName}}: {{$type}};
-    {{else -}}
+    {{if $field.Nullable -}}
       {{$field.TsFieldName}}?: {{$type}};
+    {{else -}}
+      {{$field.TsFieldName}}: {{$type}};
     {{end -}}
   {{end -}}
   {{ range $field := $int.NonEntFields -}}

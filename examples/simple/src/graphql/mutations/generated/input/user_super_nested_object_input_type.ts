@@ -36,7 +36,7 @@ const UserNestedObjectInputType = new GraphQLInputObjectType({
       type: GraphQLNonNull(GraphQLBoolean),
     },
     nestedFloat: {
-      type: GraphQLNonNull(GraphQLFloat),
+      type: GraphQLFloat,
     },
     nestedEnum: {
       type: GraphQLNonNull(NestedEnumType),
@@ -66,7 +66,7 @@ const UserNestedNestedObjectInputType = new GraphQLInputObjectType({
       type: GraphQLNonNull(GraphQLString),
     },
     nestedNestedBool: {
-      type: GraphQLNonNull(GraphQLBoolean),
+      type: GraphQLBoolean,
     },
     nestedNestedFloat: {
       type: GraphQLNonNull(GraphQLFloat),
@@ -105,7 +105,7 @@ export const UserSuperNestedObjectInputType = new GraphQLInputObjectType({
       type: GraphQLNonNull(EnumType),
     },
     stringList: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))),
+      type: GraphQLList(GraphQLNonNull(GraphQLString)),
     },
     intList: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLInt))),

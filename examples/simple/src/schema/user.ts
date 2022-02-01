@@ -140,7 +140,7 @@ export default class User extends BaseEntSchema implements Schema {
         bool: BooleanType(),
         float: FloatType(),
         enum: EnumType({ values: ["yes", "no", "maybe"] }),
-        string_list: StringListType(),
+        string_list: StringListType({ nullable: true }),
         int_list: IntegerListType(),
         obj: StructType({
           nullable: true,
@@ -150,7 +150,7 @@ export default class User extends BaseEntSchema implements Schema {
             nested_int: IntegerType(),
             nested_string: StringType(),
             nested_bool: BooleanType(),
-            nested_float: FloatType(),
+            nested_float: FloatType({ nullable: true }),
             nested_enum: EnumType({ values: ["yes", "no", "maybe"] }),
             nested_string_list: StringListType(),
             nested_int_list: IntegerListType(),
@@ -161,7 +161,7 @@ export default class User extends BaseEntSchema implements Schema {
                 nested_nested_uuid: UUIDType(),
                 nested_nested_int: IntegerType(),
                 nested_nested_string: StringType(),
-                nested_nested_bool: BooleanType(),
+                nested_nested_bool: BooleanType({ nullable: true }),
                 nested_nested_float: FloatType(),
                 nested_nested_enum: EnumType({
                   values: ["yes", "no", "maybe"],

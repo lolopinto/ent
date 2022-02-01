@@ -25,6 +25,8 @@ export class StructField extends BaseField implements Field {
       this.type.dbType = DBType.JSON;
     }
   }
+  // TODO discrepancy here btw given key and js key
+  // e.g. intList vs int_list
 
   format(obj: any, nested?: boolean) {
     if (!(obj instanceof Object)) {

@@ -3,5 +3,5 @@
  */
 
 export interface UserPrefsDiff {
-  type?: string;
+  type: string;
 }
