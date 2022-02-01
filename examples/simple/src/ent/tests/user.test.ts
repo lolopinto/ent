@@ -953,7 +953,7 @@ test("json type", async () => {
   });
 });
 
-test.only("super nested json", async () => {
+test("super nested json", async () => {
   const obj: UserSuperNestedObject = {
     uuid: uuidv1(),
     int: 34,

@@ -1,5 +1,6 @@
 import { BaseField, ListField } from "./field";
 import { FieldOptions, Field, Type, DBType, FieldMap } from "./schema";
+import { camelCase } from "camel-case";
 
 export interface StructOptions extends FieldOptions {
   // required.
@@ -25,8 +26,10 @@ export class StructField extends BaseField implements Field {
       this.type.dbType = DBType.JSON;
     }
   }
-  // TODO discrepancy here btw given key and js key
-  // e.g. intList vs int_list
+
+  // right now, we store things in the db in lowerCase format
+  // this will lead to issues if field changes.
+  // TODO: use storageKey and convert back...
 
   format(obj: any, nested?: boolean) {
     if (!(obj instanceof Object)) {
@@ -34,16 +37,24 @@ export class StructField extends BaseField implements Field {
     }
     let ret: Object = {};
     for (const k in this.options.fields) {
-      const val = obj[k];
+      // TODO more #510
+      let dbKey = camelCase(k);
+      let val = obj[dbKey];
+      // for tests with snake_case
+      if (val === undefined && obj[k] !== undefined) {
+        val = obj[k];
+        dbKey = k;
+      }
+
       if (val === undefined) {
         continue;
       }
       const field = this.options.fields[k];
       if (field.format) {
         // indicate nested so this isn't JSON stringified
-        ret[k] = field.format(val, true);
+        ret[dbKey] = field.format(val, true);
       } else {
-        ret[k] = val;
+        ret[dbKey] = val;
       }
     }
     // don't json.stringify if nested
@@ -63,7 +74,14 @@ export class StructField extends BaseField implements Field {
     let valid = true;
     for (const k in this.options.fields) {
       const field = this.options.fields[k];
-      const val = obj[k];
+      // TODO more #510
+      let dbKey = camelCase(k);
+      let val = obj[dbKey];
+      // for tests with snake_case
+      if (val === undefined && obj[k] !== undefined) {
+        val = obj[k];
+        dbKey = k;
+      }
 
       if (val === undefined || val === null) {
         // nullable, nothing to do here
