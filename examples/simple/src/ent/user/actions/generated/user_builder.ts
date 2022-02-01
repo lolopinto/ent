@@ -22,6 +22,7 @@ import {
   User,
 } from "../../..";
 import { EdgeType, NodeType } from "../../../generated/const";
+import { UserPrefsDiff } from "../../../generated/user_prefs_diff";
 import { UserPrefsStruct } from "../../../generated/user_prefs_struct";
 import { UserPrefsStruct2 } from "../../../generated/user_prefs_struct_2";
 import schema from "../../../../schema/user";
@@ -38,7 +39,7 @@ export interface UserInput {
   nicknames?: string[] | null;
   prefs?: UserPrefsStruct | null;
   prefsList?: UserPrefsStruct2[] | null;
-  prefsDiff?: any;
+  prefsDiff?: UserPrefsDiff | null;
   daysOff?: DaysOff[] | null;
   preferredShift?: PreferredShift[] | null;
   timeInMs?: BigInt | null;
@@ -733,7 +734,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
   }
 
   // get value of prefs_diff. Retrieves it from the input if specified or takes it from existingEnt
-  getNewPrefsDiffValue(): any | undefined {
+  getNewPrefsDiffValue(): UserPrefsDiff | null | undefined {
     if (this.input.prefsDiff !== undefined) {
       return this.input.prefsDiff;
     }

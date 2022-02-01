@@ -11,6 +11,7 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { DaysOff, PreferredShift, User } from "../../..";
+import { UserPrefsDiff } from "../../../generated/user_prefs_diff";
 import { UserPrefsStruct } from "../../../generated/user_prefs_struct";
 import { UserPrefsStruct2 } from "../../../generated/user_prefs_struct_2";
 import { UserBuilder } from "./user_builder";
@@ -23,7 +24,7 @@ export interface UserCreateInput {
   password: string;
   nicknames?: string[] | null;
   prefs?: UserPrefsStruct | null;
-  prefsDiff?: any;
+  prefsDiff?: UserPrefsDiff | null;
   daysOff?: DaysOff[] | null;
   preferredShift?: PreferredShift[] | null;
   funUuids?: ID[] | null;

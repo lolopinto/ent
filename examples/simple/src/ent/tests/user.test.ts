@@ -941,34 +941,12 @@ test("json type", async () => {
     phoneNumber: randomPhoneNumber(),
     password: random(),
     prefsDiff: {
-      finishedNux: true,
       type: "finished_nux",
     },
   }).saveX();
   expect(user.prefsDiff).toStrictEqual({
-    finishedNux: true,
     type: "finished_nux",
   });
-});
-
-test("json type throw new Error", async () => {
-  try {
-    await CreateUserAction.create(new LoggedOutViewer(), {
-      firstName: "Jane",
-      lastName: "Doe",
-      emailAddress: randomEmail(),
-      phoneNumber: randomPhoneNumber(),
-      password: random(),
-      prefsDiff: {
-        finishedNux: true,
-      },
-    }).saveX();
-    throw new Error("should throw");
-  } catch (err) {
-    expect((err as Error).message).toMatch(
-      /invalid field prefs_diff with value/,
-    );
-  }
 });
 
 test("enum list", async () => {

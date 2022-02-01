@@ -35,6 +35,7 @@ import {
   userLoaderInfo,
   userPhoneNumberLoader,
 } from "./loaders";
+import { UserPrefsDiff } from "./user_prefs_diff";
 import { UserPrefsStruct } from "./user_prefs_struct";
 import { UserPrefsStruct2 } from "./user_prefs_struct_2";
 import {
@@ -89,7 +90,7 @@ export class UserBase {
   readonly nicknames: string[] | null;
   readonly prefs: UserPrefsStruct | null;
   readonly prefsList: UserPrefsStruct2[] | null;
-  readonly prefsDiff: any;
+  readonly prefsDiff: UserPrefsDiff | null;
   readonly daysOff: DaysOff[] | null;
   readonly preferredShift: PreferredShift[] | null;
   readonly timeInMs: BigInt | null;

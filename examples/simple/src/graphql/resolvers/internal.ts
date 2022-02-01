@@ -10,6 +10,7 @@ export * from "./generated/event_rsvp_status_type";
 export * from "./generated/notif_type_2_type";
 export * from "./generated/notif_type_type";
 export * from "./generated/preferred_shift_type";
+export * from "./generated/user_prefs_diff_type";
 export * from "./generated/user_prefs_struct_2_type";
 export * from "./generated/user_prefs_struct_type";
 export * from "./generated/address_type";

@@ -89,23 +89,13 @@ export default class User extends BaseEntSchema implements Schema {
         }),
       },
     }),
-    // TODO StructJSONType
-    JSONType({
+    StructType({
       name: "prefs_diff",
+      tsType: "UserPrefsDiff",
       nullable: true,
-      validator: (val: any) => {
-        if (typeof val != "object") {
-          return false;
-        }
-        const requiredKeys = {
-          type: true,
-        };
-        for (const k in requiredKeys) {
-          if (!val[k]) {
-            return false;
-          }
-        }
-        return true;
+      jsonNotJSONB: true,
+      fields: {
+        type: StringType(),
       },
     }),
     EnumListType({
