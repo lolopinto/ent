@@ -9,12 +9,16 @@ import {
   BooleanType,
   requiredField,
   NoFields,
-  JSONType,
   EnumListType,
   BigIntegerType,
   UUIDListType,
   StructType,
+  UUIDType,
   StructListType,
+  IntegerType,
+  FloatType,
+  EnumType,
+  IntegerListType,
 } from "@snowtop/ent/schema";
 import { EmailType } from "@snowtop/ent-email";
 import { PasswordType } from "@snowtop/ent-password";
@@ -125,6 +129,51 @@ export default class User extends BaseEntSchema implements Schema {
     UUIDListType({ name: "fun_uuids", nullable: true }),
     StringType({ name: "new_col", nullable: true }),
     StringType({ name: "new_col2", nullable: true }),
+    StructType({
+      name: "superNestedObject",
+      nullable: true,
+      tsType: "UserSuperNestedObject",
+      fields: {
+        uuid: UUIDType(),
+        int: IntegerType(),
+        string: StringType(),
+        bool: BooleanType(),
+        float: FloatType(),
+        enum: EnumType({ values: ["yes", "no", "maybe"] }),
+        string_list: StringListType(),
+        int_list: IntegerListType(),
+        obj: StructType({
+          nullable: true,
+          tsType: "UserNestedObject",
+          fields: {
+            nested_uuid: UUIDType(),
+            nested_int: IntegerType(),
+            nested_string: StringType(),
+            nested_bool: BooleanType(),
+            nested_float: FloatType(),
+            nested_enum: EnumType({ values: ["yes", "no", "maybe"] }),
+            nested_string_list: StringListType(),
+            nested_int_list: IntegerListType(),
+            nested_obj: StructType({
+              nullable: true,
+              tsType: "UserNestedNestedObject",
+              fields: {
+                nested_nested_uuid: UUIDType(),
+                nested_nested_int: IntegerType(),
+                nested_nested_string: StringType(),
+                nested_nested_bool: BooleanType(),
+                nested_nested_float: FloatType(),
+                nested_nested_enum: EnumType({
+                  values: ["yes", "no", "maybe"],
+                }),
+                nested_nested_string_list: StringListType(),
+                nested_nested_int_list: IntegerListType(),
+              },
+            }),
+          },
+        }),
+      },
+    }),
   ];
 
   edges: Edge[] = [
@@ -158,6 +207,7 @@ export default class User extends BaseEntSchema implements Schema {
         "preferredShift",
         "fun_uuids",
         "prefsList",
+        "superNestedObject",
       ],
     },
 
