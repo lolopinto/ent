@@ -25,6 +25,7 @@ import { EdgeType, NodeType } from "../../../generated/const";
 import { UserPrefsDiff } from "../../../generated/user_prefs_diff";
 import { UserPrefsStruct } from "../../../generated/user_prefs_struct";
 import { UserPrefsStruct2 } from "../../../generated/user_prefs_struct_2";
+import { UserSuperNestedObject } from "../../../generated/user_super_nested_object";
 import schema from "../../../../schema/user";
 
 export interface UserInput {
@@ -46,6 +47,7 @@ export interface UserInput {
   funUuids?: ID[] | null;
   newCol?: string | null;
   newCol2?: string | null;
+  superNestedObject?: UserSuperNestedObject | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -641,6 +643,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
     addField("fun_uuids", fields.funUuids);
     addField("new_col", fields.newCol);
     addField("new_col2", fields.newCol2);
+    addField("superNestedObject", fields.superNestedObject);
     return result;
   }
 
@@ -787,5 +790,13 @@ export class UserBuilder<TData extends UserInput = UserInput>
       return this.input.newCol2;
     }
     return this.existingEnt?.newCol2;
+  }
+
+  // get value of superNestedObject. Retrieves it from the input if specified or takes it from existingEnt
+  getNewSuperNestedObjectValue(): UserSuperNestedObject | null | undefined {
+    if (this.input.superNestedObject !== undefined) {
+      return this.input.superNestedObject;
+    }
+    return this.existingEnt?.superNestedObject;
   }
 }

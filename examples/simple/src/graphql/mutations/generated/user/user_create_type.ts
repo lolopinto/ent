@@ -23,6 +23,7 @@ import CreateUserAction, {
 import { UserPrefsDiffInputType } from "../input/user_prefs_diff_input_type";
 import { UserPrefsStruct2InputType } from "../input/user_prefs_struct_2_input_type";
 import { UserPrefsStructInputType } from "../input/user_prefs_struct_input_type";
+import { UserSuperNestedObjectInputType } from "../input/user_super_nested_object_input_type";
 import { DaysOffType, PreferredShiftType, UserType } from "../../../resolvers";
 
 interface UserCreatePayload {
@@ -68,6 +69,9 @@ export const UserCreateInputType = new GraphQLInputObjectType({
     prefsList: {
       type: GraphQLList(GraphQLNonNull(UserPrefsStruct2InputType)),
     },
+    superNestedObject: {
+      type: UserSuperNestedObjectInputType,
+    },
   }),
 });
 
@@ -111,6 +115,7 @@ export const UserCreateType: GraphQLFieldConfig<
       preferredShift: input.preferredShift,
       funUuids: input.funUuids,
       prefsList: input.prefsList,
+      superNestedObject: input.superNestedObject,
     }).saveX();
     return { user: user };
   },

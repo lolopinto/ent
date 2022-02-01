@@ -14,6 +14,7 @@ import { DaysOff, PreferredShift, User } from "../../..";
 import { UserPrefsDiff } from "../../../generated/user_prefs_diff";
 import { UserPrefsStruct } from "../../../generated/user_prefs_struct";
 import { UserPrefsStruct2 } from "../../../generated/user_prefs_struct_2";
+import { UserSuperNestedObject } from "../../../generated/user_super_nested_object";
 import { UserBuilder } from "./user_builder";
 
 export interface UserCreateInput {
@@ -29,6 +30,7 @@ export interface UserCreateInput {
   preferredShift?: PreferredShift[] | null;
   funUuids?: ID[] | null;
   prefsList?: UserPrefsStruct2[] | null;
+  superNestedObject?: UserSuperNestedObject | null;
 }
 
 export class CreateUserActionBase

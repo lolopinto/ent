@@ -19,6 +19,7 @@ export * from "./generated/user_base";
 export * from "./generated/user_prefs_diff";
 export * from "./generated/user_prefs_struct";
 export * from "./generated/user_prefs_struct_2";
+export * from "./generated/user_super_nested_object";
 export * from "./patterns/query/object_to_comments_query";
 export * from "./patterns/query/object_to_likers_query";
 export * from "./address";

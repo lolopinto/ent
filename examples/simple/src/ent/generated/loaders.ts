@@ -248,6 +248,7 @@ const userFields = [
   "fun_uuids",
   "new_col",
   "new_col_2",
+  "super_nested_object",
 ];
 
 export const userLoader = new ObjectLoaderFactory({

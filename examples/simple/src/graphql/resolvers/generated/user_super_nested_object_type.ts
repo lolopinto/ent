@@ -15,42 +15,12 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { UserNestedNestedObjectInputType } from "../../mutations/generated/input/user_nested_nested_object_input_type";
-import { UserNestedObjectInputType } from "../../mutations/generated/input/user_nested_object_input_type";
-import { EnumType, NestedEnumType, NestedNestedEnumType } from "..";
-
-export const UserSuperNestedObjectType = new GraphQLObjectType({
-  name: "UserSuperNestedObject",
-  fields: (): GraphQLFieldConfigMap<UserSuperNestedObject, RequestContext> => ({
-    uuid: {
-      type: GraphQLNonNull(GraphQLID),
-    },
-    int: {
-      type: GraphQLNonNull(GraphQLInt),
-    },
-    string: {
-      type: GraphQLNonNull(GraphQLString),
-    },
-    bool: {
-      type: GraphQLNonNull(GraphQLBoolean),
-    },
-    float: {
-      type: GraphQLNonNull(GraphQLFloat),
-    },
-    enum: {
-      type: GraphQLNonNull(EnumType),
-    },
-    stringList: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))),
-    },
-    intList: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLInt))),
-    },
-    obj: {
-      type: UserNestedObjectInputType,
-    },
-  }),
-});
+import {
+  UserNestedNestedObject,
+  UserNestedObject,
+  UserSuperNestedObject,
+} from "../../../ent";
+import { EnumType, NestedEnumType, NestedNestedEnumType } from "../internal";
 
 const UserNestedObjectType = new GraphQLObjectType({
   name: "UserNestedObject",
@@ -80,7 +50,7 @@ const UserNestedObjectType = new GraphQLObjectType({
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLInt))),
     },
     nestedObj: {
-      type: UserNestedNestedObjectInputType,
+      type: UserNestedNestedObjectType,
     },
   }),
 });
@@ -114,6 +84,39 @@ const UserNestedNestedObjectType = new GraphQLObjectType({
     },
     nestedNestedIntList: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLInt))),
+    },
+  }),
+});
+
+export const UserSuperNestedObjectType = new GraphQLObjectType({
+  name: "UserSuperNestedObject",
+  fields: (): GraphQLFieldConfigMap<UserSuperNestedObject, RequestContext> => ({
+    uuid: {
+      type: GraphQLNonNull(GraphQLID),
+    },
+    int: {
+      type: GraphQLNonNull(GraphQLInt),
+    },
+    string: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    bool: {
+      type: GraphQLNonNull(GraphQLBoolean),
+    },
+    float: {
+      type: GraphQLNonNull(GraphQLFloat),
+    },
+    enum: {
+      type: GraphQLNonNull(EnumType),
+    },
+    stringList: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))),
+    },
+    intList: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLInt))),
+    },
+    obj: {
+      type: UserNestedObjectType,
     },
   }),
 });

@@ -20,39 +20,6 @@ import {
   NestedNestedEnumType,
 } from "../../../resolvers";
 
-export const UserSuperNestedObjectInputType = new GraphQLInputObjectType({
-  name: "UserSuperNestedObjectInput",
-  fields: (): GraphQLInputFieldConfigMap => ({
-    uuid: {
-      type: GraphQLNonNull(GraphQLID),
-    },
-    int: {
-      type: GraphQLNonNull(GraphQLInt),
-    },
-    string: {
-      type: GraphQLNonNull(GraphQLString),
-    },
-    bool: {
-      type: GraphQLNonNull(GraphQLBoolean),
-    },
-    float: {
-      type: GraphQLNonNull(GraphQLFloat),
-    },
-    enum: {
-      type: GraphQLNonNull(EnumType),
-    },
-    stringList: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))),
-    },
-    intList: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLInt))),
-    },
-    obj: {
-      type: UserNestedObjectInputType,
-    },
-  }),
-});
-
 const UserNestedObjectInputType = new GraphQLInputObjectType({
   name: "UserNestedObjectInput",
   fields: (): GraphQLInputFieldConfigMap => ({
@@ -112,6 +79,39 @@ const UserNestedNestedObjectInputType = new GraphQLInputObjectType({
     },
     nestedNestedIntList: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLInt))),
+    },
+  }),
+});
+
+export const UserSuperNestedObjectInputType = new GraphQLInputObjectType({
+  name: "UserSuperNestedObjectInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
+    uuid: {
+      type: GraphQLNonNull(GraphQLID),
+    },
+    int: {
+      type: GraphQLNonNull(GraphQLInt),
+    },
+    string: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    bool: {
+      type: GraphQLNonNull(GraphQLBoolean),
+    },
+    float: {
+      type: GraphQLNonNull(GraphQLFloat),
+    },
+    enum: {
+      type: GraphQLNonNull(EnumType),
+    },
+    stringList: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))),
+    },
+    intList: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLInt))),
+    },
+    obj: {
+      type: UserNestedObjectInputType,
     },
   }),
 });

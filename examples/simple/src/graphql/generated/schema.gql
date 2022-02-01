@@ -55,11 +55,29 @@ enum DaysOff {
   SUNDAY
 }
 
+enum Enum {
+  YES
+  NO
+  MAYBE
+}
+
 enum EventRsvpStatus {
   ATTENDING
   DECLINED
   MAYBE
   CAN_RSVP
+}
+
+enum NestedEnum {
+  YES
+  NO
+  MAYBE
+}
+
+enum NestedNestedEnum {
+  YES
+  NO
+  MAYBE
 }
 
 enum NotifType2 {
@@ -176,6 +194,7 @@ type User implements Node {
   funUuids: [ID!]
   newCol: String
   newCol2: String
+  superNestedObject: UserSuperNestedObject
   selfContact: Contact
   comments(first: Int, after: String, last: Int, before: String): UserToCommentsConnection!
   createdEvents(first: Int, after: String, last: Int, before: String): UserToCreatedEventsConnection!
@@ -743,6 +762,7 @@ input UserCreateInput {
   preferredShift: [PreferredShift!]
   funUuids: [ID!]
   prefsList: [UserPrefsStruct2Input!]
+  superNestedObject: UserSuperNestedObjectInput
 }
 
 type UserCreatePayload {

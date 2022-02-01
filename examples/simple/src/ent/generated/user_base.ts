@@ -38,6 +38,7 @@ import {
 import { UserPrefsDiff } from "./user_prefs_diff";
 import { UserPrefsStruct } from "./user_prefs_struct";
 import { UserPrefsStruct2 } from "./user_prefs_struct_2";
+import { UserSuperNestedObject } from "./user_super_nested_object";
 import {
   Contact,
   EdgeType,
@@ -97,6 +98,7 @@ export class UserBase {
   readonly funUuids: ID[] | null;
   readonly newCol: string | null;
   readonly newCol2: string | null;
+  readonly superNestedObject: UserSuperNestedObject | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
@@ -120,6 +122,7 @@ export class UserBase {
     this.funUuids = convertNullableList(data.fun_uuids);
     this.newCol = data.new_col;
     this.newCol2 = data.new_col_2;
+    this.superNestedObject = convertNullableJSON(data.super_nested_object);
   }
 
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;

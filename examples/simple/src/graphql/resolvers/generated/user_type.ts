@@ -39,6 +39,7 @@ import {
   UserPrefsDiffType,
   UserPrefsStruct2Type,
   UserPrefsStructType,
+  UserSuperNestedObjectType,
   UserToCommentsConnectionType,
   UserToContactsConnectionType,
   UserToCreatedEventsConnectionType,
@@ -106,6 +107,9 @@ export const UserType = new GraphQLObjectType({
     },
     newCol2: {
       type: GraphQLString,
+    },
+    superNestedObject: {
+      type: UserSuperNestedObjectType,
     },
     selfContact: {
       type: ContactType,
