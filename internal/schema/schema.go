@@ -491,18 +491,8 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 
 	for _, ci := range s.CustomInterfaces {
 		for _, f := range ci.Fields {
-			typ := f.GetFieldType()
-			// TODO nested enums..
-			enumTyp, ok := enttype.GetEnumType(typ)
-			if !ok {
-				continue
-			}
-			input := enum.NewInputFromEnumType(enumTyp)
-			info, err := s.addEnumFromInput(input, nil)
-			if err != nil {
+			if err := s.checkForEnum(f, ci); err != nil {
 				errs = append(errs, err)
-			} else {
-				ci.AddEnum(info.Enum, info.GQLEnum)
 			}
 		}
 	}
@@ -514,6 +504,41 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 	}
 
 	return s.processDepgrah(edgeData)
+}
+
+// TODO combine with checkCustomInterface...
+func (s *Schema) checkForEnum(f *field.Field, ci *custominterface.CustomInterface) error {
+	typ := f.GetFieldType()
+	enumTyp, ok := enttype.GetEnumType(typ)
+	if ok {
+		input := enum.NewInputFromEnumType(enumTyp)
+		info, err := s.addEnumFromInput(input, nil)
+		if err != nil {
+			return err
+		} else {
+			ci.AddEnum(info.Enum, info.GQLEnum)
+		}
+		return nil
+	}
+	subFieldsType, ok := typ.(enttype.TSWithSubFields)
+	if !ok {
+		return nil
+	}
+	subFields := subFieldsType.GetSubFields()
+	if subFields == nil {
+		return nil
+	}
+	actualSubFields := subFields.([]*input.Field)
+	fi, err := field.NewFieldInfoFromInputs(actualSubFields, &field.Options{})
+	if err != nil {
+		return err
+	}
+	for _, f2 := range fi.Fields {
+		if err := s.checkForEnum(f2, ci); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *Schema) checkCustomInterface(f *field.Field, root *custominterface.CustomInterface) error {
@@ -539,7 +564,7 @@ func (s *Schema) checkCustomInterface(f *field.Field, root *custominterface.Cust
 		}
 		s.CustomInterfaces[ci.TSType] = ci
 	} else {
-		root.SubInterfaces = append(ci.SubInterfaces, ci)
+		root.SubInterfaces = append(root.SubInterfaces, ci)
 	}
 	actualSubFields := subFields.([]*input.Field)
 	fi, err := field.NewFieldInfoFromInputs(actualSubFields, &field.Options{})

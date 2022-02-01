@@ -3,6 +3,7 @@ package custominterface
 // TODO need to figure out the correct name of the package here
 
 import (
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/enum"
 )
@@ -61,10 +62,11 @@ func (ci *CustomInterface) ForeignImport(typ string) bool {
 	}
 
 	for _, v := range ci.SubInterfaces {
-		if v.TSType == typ {
+		if v.TSType == typ || v.TSType == typ+"Type" {
 			return false
 		}
 	}
+	spew.Dump(typ)
 
 	return true
 }

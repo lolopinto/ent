@@ -786,6 +786,8 @@ func (obj *gqlobjectData) ForeignImport(name string) bool {
 		// any node Type defined here is local
 		for _, node := range obj.GQLNodes {
 			obj.m[node.Type] = true
+			// TODO does this work for everything?
+			//			obj.m[node.Node] = true
 
 			// same for interfaces
 			for _, in := range node.TSInterfaces {
@@ -1213,32 +1215,30 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 				// need both input and non-input type...
 				ci := processor.Schema.CustomInterfaces[key]
 
-				gqlType := ci.GQLType
-				inputType := gqlType + "Input"
-
 				objs := []*objectType{
 					buildCustomInterfaceNode(processor, ci, &customInterfaceInfo{
 						exported: true,
-						name:     gqlType,
+						name:     ci.GQLType,
 					}),
 				}
 				for _, ci2 := range ci.SubInterfaces {
 					objs = append(objs, buildCustomInterfaceNode(processor, ci2, &customInterfaceInfo{
 						exported: false,
-						name:     gqlType,
+						name:     ci2.GQLType,
 					}))
 				}
 
 				obj := &gqlNode{
 					ObjData: &gqlobjectData{
-						Node:         gqlType,
-						NodeInstance: strcase.ToLowerCamel(gqlType),
+						Node:         ci.GQLType,
+						NodeInstance: strcase.ToLowerCamel(ci.GQLType),
 						GQLNodes:     objs,
 						Package:      processor.Config.GetImportPackage(),
 					},
-					FilePath: getFilePathForCustomInterfaceFile(processor.Config, gqlType),
+					FilePath: getFilePathForCustomInterfaceFile(processor.Config, ci.GQLType),
 				}
 
+				inputType := ci.GQLType + "Input"
 				inputObjs := []*objectType{
 					buildCustomInterfaceNode(processor, ci, &customInterfaceInfo{
 						exported: true,
@@ -1249,7 +1249,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 				for _, ci2 := range ci.SubInterfaces {
 					inputObjs = append(inputObjs, buildCustomInterfaceNode(processor, ci2, &customInterfaceInfo{
 						exported: false,
-						name:     inputType,
+						name:     ci2.GQLType + "Input",
 						input:    true,
 					}))
 				}

@@ -1,3 +1,4 @@
+{{$root := .RootInterface}}
 {{$int := .Interface}}
 {{$extImpPath := .Package.ExternalImportPath -}}
 {{ range $imp := $int.GetEnumImports -}}
@@ -11,7 +12,7 @@
   {{ range $field := $int.Fields -}}
     {{$type := $field.TsBuilderType -}}
     {{range $import := $field.TsBuilderImports -}}
-      {{ if $int.ForeignImport $import -}}
+      {{ if $root.ForeignImport $import -}}
         {{ $ignore := useImport $import -}}
       {{ end -}}
     {{end -}}

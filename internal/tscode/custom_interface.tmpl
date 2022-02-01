@@ -1,3 +1,5 @@
+{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData"}}
+
 {{ $ci := .Interface}}
 {{ $pkg := .Package }}
 {{ range $ci.GetTSEnums -}}
@@ -8,7 +10,7 @@
 {{ end}}
 
 {{ range $ci.SubInterfaces -}}
-  {{ template "interface.tmpl" (dict "Interface" . "Package" $pkg)}}
+  {{ template "interface.tmpl" (dict "RootInterface" $ci "Interface" . "Package" $pkg)}}
 {{ end -}}
 
-{{ template "interface.tmpl" (dict "Interface" $ci "Package" $pkg)}}
+{{ template "interface.tmpl" (dict "RootInterface" $ci "Interface" $ci "Package" $pkg)}}
