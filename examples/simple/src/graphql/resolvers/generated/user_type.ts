@@ -12,7 +12,6 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { GraphQLJSON } from "graphql-type-json";
 import { RequestContext } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
@@ -37,6 +36,9 @@ import {
   ContactType,
   DaysOffType,
   PreferredShiftType,
+  UserPrefsDiffType,
+  UserPrefsStruct2Type,
+  UserPrefsStructType,
   UserToCommentsConnectionType,
   UserToContactsConnectionType,
   UserToCreatedEventsConnectionType,
@@ -79,13 +81,13 @@ export const UserType = new GraphQLObjectType({
       type: GraphQLList(GraphQLNonNull(GraphQLString)),
     },
     prefs: {
-      type: GraphQLJSON,
+      type: UserPrefsStructType,
     },
     prefsList: {
-      type: GraphQLList(GraphQLNonNull(GraphQLJSON)),
+      type: GraphQLList(GraphQLNonNull(UserPrefsStruct2Type)),
     },
     prefsDiff: {
-      type: GraphQLJSON,
+      type: UserPrefsDiffType,
     },
     daysOff: {
       type: GraphQLList(GraphQLNonNull(DaysOffType)),

@@ -15,12 +15,14 @@ import {
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
-import { GraphQLJSON } from "graphql-type-json";
 import { RequestContext } from "@snowtop/ent";
 import { User } from "../../../../ent";
 import CreateUserAction, {
   UserCreateInput,
 } from "../../../../ent/user/actions/create_user_action";
+import { UserPrefsDiffInputType } from "../input/user_prefs_diff_input_type";
+import { UserPrefsStruct2InputType } from "../input/user_prefs_struct_2_input_type";
+import { UserPrefsStructInputType } from "../input/user_prefs_struct_input_type";
 import { DaysOffType, PreferredShiftType, UserType } from "../../../resolvers";
 
 interface UserCreatePayload {
@@ -49,10 +51,10 @@ export const UserCreateInputType = new GraphQLInputObjectType({
       type: GraphQLList(GraphQLNonNull(GraphQLString)),
     },
     prefs: {
-      type: GraphQLJSON,
+      type: UserPrefsStructInputType,
     },
     prefsDiff: {
-      type: GraphQLJSON,
+      type: UserPrefsDiffInputType,
     },
     daysOff: {
       type: GraphQLList(GraphQLNonNull(DaysOffType)),
@@ -64,7 +66,7 @@ export const UserCreateInputType = new GraphQLInputObjectType({
       type: GraphQLList(GraphQLNonNull(GraphQLID)),
     },
     prefsList: {
-      type: GraphQLList(GraphQLNonNull(GraphQLJSON)),
+      type: GraphQLList(GraphQLNonNull(UserPrefsStruct2InputType)),
     },
   }),
 });

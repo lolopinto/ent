@@ -454,6 +454,10 @@ func getFilePathForCustomInterfaceInputFile(cfg *codegen.Config, gqlType string)
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/mutations/generated/input/%s_type.ts", strcase.ToSnake(gqlType)))
 }
 
+func getImportPathForCustomInterfaceInputFile(gqlType string) string {
+	return fmt.Sprintf("src/graphql/mutations/generated/input/%s_type", strcase.ToSnake(gqlType))
+}
+
 func getFilePathForEnum(cfg *codegen.Config, e *enum.GQLEnum) string {
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", base.GetSnakeCaseName(e.Name)))
 }
@@ -1630,7 +1634,7 @@ func getGQLFileImports(imps []enttype.FileImport, mutation bool) []*fileImport {
 			importPath = "graphql"
 			typ = imp.Type
 
-		case enttype.Enum, enttype.Connection, enttype.Node:
+		case enttype.Enum, enttype.Connection, enttype.Node, enttype.CustomObject:
 			if imp.ImportType == enttype.Connection {
 				fn = true
 			}
@@ -1649,6 +1653,10 @@ func getGQLFileImports(imps []enttype.FileImport, mutation bool) []*fileImport {
 
 		case enttype.GraphQLJSON:
 			importPath = "graphql-type-json"
+
+		case enttype.CustomInput:
+			importPath = getImportPathForCustomInterfaceInputFile(imp.Type)
+			typ = fmt.Sprintf("%sType", typ)
 
 		default:
 			// empty means nothing to import and that's ok...
@@ -1746,7 +1754,7 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 		gqlField := &fieldType{
 			Name:               gqlName,
 			HasResolveFunction: gqlName != field.TsFieldName(),
-			FieldImports:       getGQLFileImports(field.GetTSGraphQLTypeForFieldImports(false), false),
+			FieldImports:       getGQLFileImports(field.GetTSGraphQLTypeForFieldImports(false, false), false),
 		}
 
 		if processor.Config.Base64EncodeIDs() && field.IDType() {
@@ -1915,14 +1923,14 @@ func buildCustomInputNode(c *custominterface.CustomInterface) *objectType {
 	for _, f := range c.Fields {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(false), true),
+			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(false, true), true),
 		})
 	}
 
 	for _, f := range c.NonEntFields {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.FieldType.GetTSGraphQLImports(), true),
+			FieldImports: getGQLFileImports(f.FieldType.GetTSGraphQLImports(true), true),
 		})
 	}
 	return result
@@ -1966,7 +1974,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	for _, f := range a.GetFields() {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(!action.IsRequiredField(a, f)), true),
+			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(!action.IsRequiredField(a, f), true), true),
 		})
 	}
 
@@ -1974,7 +1982,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	for _, f := range a.GetNonEntFields() {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.FieldType.GetTSGraphQLImports(), true),
+			FieldImports: getGQLFileImports(f.FieldType.GetTSGraphQLImports(true), true),
 		})
 	}
 
@@ -2408,14 +2416,14 @@ func buildCustomInterfaceNode(processor *codegen.Processor, ci *custominterface.
 	for _, f := range ci.Fields {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(false), true),
+			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(false, true), true),
 		})
 	}
 
 	for _, f := range ci.NonEntFields {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.FieldType.GetTSGraphQLImports(), true),
+			FieldImports: getGQLFileImports(f.FieldType.GetTSGraphQLImports(true), true),
 		})
 	}
 

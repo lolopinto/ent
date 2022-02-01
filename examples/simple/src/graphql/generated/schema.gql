@@ -167,9 +167,9 @@ type User implements Node {
   accountStatus: String
   bio: String
   nicknames: [String!]
-  prefs: JSON
-  prefsList: [JSON!]
-  prefsDiff: JSON
+  prefs: UserPrefsStruct
+  prefsList: [UserPrefsStruct2!]
+  prefsDiff: UserPrefsDiff
   daysOff: [DaysOff!]
   preferredShift: [PreferredShift!]
   timeInMs: String
@@ -737,12 +737,12 @@ input UserCreateInput {
   phoneNumber: String!
   password: String!
   nicknames: [String!]
-  prefs: JSON
-  prefsDiff: JSON
+  prefs: UserPrefsStructInput
+  prefsDiff: UserPrefsDiffInput
   daysOff: [DaysOff!]
   preferredShift: [PreferredShift!]
   funUuids: [ID!]
-  prefsList: [JSON!]
+  prefsList: [UserPrefsStruct2Input!]
 }
 
 type UserCreatePayload {

@@ -1477,9 +1477,9 @@ func testType(t *testing.T, exp expType, ret returnType) {
 		gqlType, ok := typ.(enttype.TSGraphQLType)
 		if ok {
 			if exp.graphqlImports == nil {
-				assert.Len(t, gqlType.GetTSGraphQLImports(), 0)
+				assert.Len(t, gqlType.GetTSGraphQLImports(false), 0)
 			} else {
-				assert.Equal(t, exp.graphqlImports, gqlType.GetTSGraphQLImports())
+				assert.Equal(t, exp.graphqlImports, gqlType.GetTSGraphQLImports(false))
 			}
 		} else {
 			// not a gqlType. this should be 0
