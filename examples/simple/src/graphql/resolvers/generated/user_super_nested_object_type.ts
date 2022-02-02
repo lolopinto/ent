@@ -13,14 +13,27 @@ import {
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
+  GraphQLUnionType,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
+import { GraphQLTime } from "@snowtop/ent/graphql";
 import {
+  CatType,
+  DogType,
+  RabbitType,
   UserNestedNestedObject,
   UserNestedObject,
   UserSuperNestedObject,
 } from "../../../ent";
-import { EnumType, NestedEnumType, NestedNestedEnumType } from "../internal";
+import {
+  CatBreedType,
+  DogBreedGroupType,
+  DogBreedType,
+  EnumType,
+  NestedEnumType,
+  NestedNestedEnumType,
+  RabbitBreedType,
+} from "../internal";
 
 const UserNestedObjectType = new GraphQLObjectType({
   name: "UserNestedObject",
@@ -88,6 +101,65 @@ const UserNestedNestedObjectType = new GraphQLObjectType({
   }),
 });
 
+const CatTypeType = new GraphQLObjectType({
+  name: "CatType",
+  fields: (): GraphQLFieldConfigMap<CatType, RequestContext> => ({
+    name: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    birthday: {
+      type: GraphQLNonNull(GraphQLTime),
+    },
+    breed: {
+      type: GraphQLNonNull(CatBreedType),
+    },
+    kitten: {
+      type: GraphQLNonNull(GraphQLBoolean),
+    },
+  }),
+});
+
+const DogTypeType = new GraphQLObjectType({
+  name: "DogType",
+  fields: (): GraphQLFieldConfigMap<DogType, RequestContext> => ({
+    name: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    birthday: {
+      type: GraphQLNonNull(GraphQLTime),
+    },
+    breed: {
+      type: GraphQLNonNull(DogBreedType),
+    },
+    breedGroup: {
+      type: GraphQLNonNull(DogBreedGroupType),
+    },
+    puppy: {
+      type: GraphQLNonNull(GraphQLBoolean),
+    },
+  }),
+});
+
+const RabbitTypeType = new GraphQLObjectType({
+  name: "RabbitType",
+  fields: (): GraphQLFieldConfigMap<RabbitType, RequestContext> => ({
+    name: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    birthday: {
+      type: GraphQLNonNull(GraphQLTime),
+    },
+    breed: {
+      type: GraphQLNonNull(RabbitBreedType),
+    },
+  }),
+});
+
+const PetUnionTypeType = new GraphQLUnionType({
+  name: "PetUnionType",
+  types: [CatTypeType, DogTypeType, RabbitTypeType],
+});
+
 export const UserSuperNestedObjectType = new GraphQLObjectType({
   name: "UserSuperNestedObject",
   fields: (): GraphQLFieldConfigMap<UserSuperNestedObject, RequestContext> => ({
@@ -117,6 +189,9 @@ export const UserSuperNestedObjectType = new GraphQLObjectType({
     },
     obj: {
       type: UserNestedObjectType,
+    },
+    union: {
+      type: PetUnionTypeType,
     },
   }),
 });

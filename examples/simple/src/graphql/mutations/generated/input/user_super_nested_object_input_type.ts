@@ -14,10 +14,15 @@ import {
   GraphQLNonNull,
   GraphQLString,
 } from "graphql";
+import { GraphQLTime } from "@snowtop/ent/graphql";
 import {
+  CatBreedType,
+  DogBreedGroupType,
+  DogBreedType,
   EnumType,
   NestedEnumType,
   NestedNestedEnumType,
+  RabbitBreedType,
 } from "../../../resolvers";
 
 const UserNestedObjectInputType = new GraphQLInputObjectType({
@@ -83,6 +88,75 @@ const UserNestedNestedObjectInputType = new GraphQLInputObjectType({
   }),
 });
 
+const CatTypeInputType = new GraphQLInputObjectType({
+  name: "CatTypeInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
+    name: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    birthday: {
+      type: GraphQLNonNull(GraphQLTime),
+    },
+    breed: {
+      type: GraphQLNonNull(CatBreedType),
+    },
+    kitten: {
+      type: GraphQLNonNull(GraphQLBoolean),
+    },
+  }),
+});
+
+const DogTypeInputType = new GraphQLInputObjectType({
+  name: "DogTypeInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
+    name: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    birthday: {
+      type: GraphQLNonNull(GraphQLTime),
+    },
+    breed: {
+      type: GraphQLNonNull(DogBreedType),
+    },
+    breedGroup: {
+      type: GraphQLNonNull(DogBreedGroupType),
+    },
+    puppy: {
+      type: GraphQLNonNull(GraphQLBoolean),
+    },
+  }),
+});
+
+const RabbitTypeInputType = new GraphQLInputObjectType({
+  name: "RabbitTypeInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
+    name: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    birthday: {
+      type: GraphQLNonNull(GraphQLTime),
+    },
+    breed: {
+      type: GraphQLNonNull(RabbitBreedType),
+    },
+  }),
+});
+
+const PetUnionTypeInputType = new GraphQLInputObjectType({
+  name: "PetUnionType",
+  fields: (): GraphQLInputFieldConfigMap => ({
+    cat: {
+      type: CatTypeInputType,
+    },
+    dog: {
+      type: DogTypeInputType,
+    },
+    rabbit: {
+      type: RabbitTypeInputType,
+    },
+  }),
+});
+
 export const UserSuperNestedObjectInputType = new GraphQLInputObjectType({
   name: "UserSuperNestedObjectInput",
   fields: (): GraphQLInputFieldConfigMap => ({
@@ -112,6 +186,9 @@ export const UserSuperNestedObjectInputType = new GraphQLInputObjectType({
     },
     obj: {
       type: UserNestedObjectInputType,
+    },
+    union: {
+      type: PetUnionTypeInputType,
     },
   }),
 });

@@ -13,7 +13,7 @@
     {{$type := $field.TsBuilderType -}}
     {{range $import := $field.TsBuilderImports -}}
       {{ if $root.ForeignImport $import -}}
-        {{ $ignore := useImport $import -}}
+        {{ $ignore := useImportMaybe $import -}}
       {{ end -}}
     {{end -}}
     {{if $field.Nullable -}}

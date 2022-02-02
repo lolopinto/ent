@@ -1215,20 +1215,22 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 
 				var objs []*objectType
 				var imports []string
-				for _, ci2 := range ci.SubInterfaces {
-					objs = append(objs, buildCustomInterfaceNode(processor, ci2, &customInterfaceInfo{
-						exported: false,
-						name:     ci2.GQLType,
-					}))
-					imports = append(imports, ci2.TSType)
+				for _, typ := range ci.GetAllCustomTypes() {
+					imports = append(imports, typ.GetTSType())
+
+					if typ.IsCustomUnion() {
+						cu := typ.(*customtype.CustomUnion)
+						objs = append(objs, buildCustomUnionNode(processor, cu))
+					} else {
+						ci2 := typ.(*customtype.CustomInterface)
+						objs = append(objs, buildCustomInterfaceNode(processor, ci2, &customInterfaceInfo{
+							// only export root object
+							exported: typ == ci,
+							name:     ci2.GQLType,
+							imports:  imports,
+						}))
+					}
 				}
-				objs = append(objs,
-					buildCustomInterfaceNode(processor, ci, &customInterfaceInfo{
-						exported: true,
-						name:     ci.GQLType,
-						imports:  imports,
-					}),
-				)
 
 				obj := &gqlNode{
 					ObjData: &gqlobjectData{
@@ -1245,22 +1247,29 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 
 				inputType := ci.GQLType + "Input"
 				var inputObjs []*objectType
-				for _, ci2 := range ci.SubInterfaces {
-					inputObjs = append(inputObjs, buildCustomInterfaceNode(processor, ci2, &customInterfaceInfo{
-						exported: false,
-						name:     ci2.GQLType + "Input",
-						input:    true,
-					}))
-					imports = append(imports, ci2.TSType)
+				for _, typ := range ci.GetAllCustomTypes() {
+					imports = append(imports, typ.GetTSType())
+
+					if typ.IsCustomUnion() {
+						cu := typ.(*customtype.CustomUnion)
+						obj, err := buildCustomUnionInputNode(processor, cu)
+						if err != nil {
+							// TODO
+							panic(err)
+						}
+						inputObjs = append(inputObjs, obj)
+					} else {
+
+						ci2 := typ.(*customtype.CustomInterface)
+
+						inputObjs = append(inputObjs, buildCustomInterfaceNode(processor, ci2, &customInterfaceInfo{
+							exported: typ == ci,
+							name:     ci2.GQLType + "Input",
+							input:    true,
+							imports:  imports,
+						}))
+					}
 				}
-				inputObjs = append(inputObjs,
-					buildCustomInterfaceNode(processor, ci, &customInterfaceInfo{
-						exported: true,
-						name:     inputType,
-						input:    true,
-						imports:  imports,
-					}),
-				)
 
 				inputObj := &gqlNode{
 					ObjData: &gqlobjectData{
@@ -2446,6 +2455,48 @@ func buildCustomInterfaceNode(processor *codegen.Processor, ci *customtype.Custo
 	return result
 }
 
+func buildCustomUnionNode(processor *codegen.Processor, cu *customtype.CustomUnion) *objectType {
+	result := &objectType{
+		Type:    fmt.Sprintf("%sType", cu.GQLType),
+		Node:    cu.GQLType,
+		TSType:  cu.TSType,
+		GQLType: "GraphQLUnionType",
+	}
+
+	unionTypes := make([]string, len(cu.Interfaces))
+	for i, ci := range cu.Interfaces {
+		unionTypes[i] = fmt.Sprintf("%sType", ci.GQLType)
+	}
+	result.UnionTypes = unionTypes
+
+	return result
+}
+
+func buildCustomUnionInputNode(processor *codegen.Processor, cu *customtype.CustomUnion) (*objectType, error) {
+	result := &objectType{
+		Type:    fmt.Sprintf("%sInputType", cu.GQLType),
+		Node:    cu.GQLType,
+		TSType:  cu.TSType,
+		GQLType: "GraphQLInputObjectType",
+	}
+
+	for _, ci := range cu.Interfaces {
+		if ci.GraphQLFieldName == "" {
+			return nil, fmt.Errorf("invalid field name for interface %s", ci.GQLType)
+		}
+		result.Fields = append(result.Fields, &fieldType{
+			Name: ci.GraphQLFieldName,
+			FieldImports: []*fileImport{
+				{
+					Type: ci.GQLType + "InputType",
+				},
+			},
+		})
+	}
+
+	return result, nil
+}
+
 type objectType struct {
 	Type     string // GQLType we're creating
 	Node     string // GraphQL Node AND also ent node. Need to decouple this...
@@ -2461,6 +2512,8 @@ type objectType struct {
 	// make this a string for now since we're only doing built-in interfaces
 	GQLInterfaces  []string
 	IsTypeOfMethod []string
+
+	UnionTypes []string
 }
 
 func (obj *objectType) getRenderer(s *gqlSchema) renderer {

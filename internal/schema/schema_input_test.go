@@ -1346,7 +1346,7 @@ func TestWithSubFields(t *testing.T) {
 	require.NotNil(t, ci)
 	require.Len(t, ci.Fields, 3)
 	require.Len(t, ci.NonEntFields, 0)
-	require.Len(t, ci.SubInterfaces, 0)
+	require.Len(t, ci.Children, 0)
 
 	// TODO importType on Field
 	// now generate the type

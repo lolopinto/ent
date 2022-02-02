@@ -17,6 +17,10 @@ import {
   UserSuperNestedObject,
   Enum,
   NestedEnum,
+  CatBreed,
+  DogBreed,
+  DogBreedGroup,
+  RabbitBreed,
 } from "..";
 
 import { v1 as uuidv1, v4 as uuidv4, validate } from "uuid";
@@ -953,43 +957,149 @@ test("json type", async () => {
   });
 });
 
-test("super nested json", async () => {
-  const obj: UserSuperNestedObject = {
-    uuid: uuidv1(),
-    int: 34,
-    string: "whaa",
-    float: 2.3,
-    bool: false,
-    enum: Enum.Maybe,
-    intList: [7, 8, 9],
-    obj: {
-      nestedBool: false,
-      nestedIntList: [1, 2, 3],
-      nestedUuid: uuidv1(),
-      nestedEnum: NestedEnum.No,
-      nestedString: "stri",
-      nestedInt: 24,
-      nestedStringList: ["hello", "goodbye"],
-      nestedObj: {
-        nestedNestedUuid: uuidv1(),
-        nestedNestedFloat: 4.2,
-        nestedNestedEnum: NestedNestedEnum.Maybe,
-        nestedNestedInt: 32,
-        nestedNestedString: "whaa",
-        nestedNestedIntList: [4, 5, 6],
-        nestedNestedStringList: ["sss"],
+describe("super nested complex", () => {
+  test("super nested", async () => {
+    const obj: UserSuperNestedObject = {
+      uuid: uuidv1(),
+      int: 34,
+      string: "whaa",
+      float: 2.3,
+      bool: false,
+      enum: Enum.Maybe,
+      intList: [7, 8, 9],
+      obj: {
+        nestedBool: false,
+        nestedIntList: [1, 2, 3],
+        nestedUuid: uuidv1(),
+        nestedEnum: NestedEnum.No,
+        nestedString: "stri",
+        nestedInt: 24,
+        nestedStringList: ["hello", "goodbye"],
+        nestedObj: {
+          nestedNestedUuid: uuidv1(),
+          nestedNestedFloat: 4.2,
+          nestedNestedEnum: NestedNestedEnum.Maybe,
+          nestedNestedInt: 32,
+          nestedNestedString: "whaa",
+          nestedNestedIntList: [4, 5, 6],
+          nestedNestedStringList: ["sss"],
+        },
       },
-    },
-  };
-  const user = await CreateUserAction.create(new LoggedOutViewer(), {
-    firstName: "Jane",
-    lastName: "Doe",
-    emailAddress: randomEmail(),
-    phoneNumber: randomPhoneNumber(),
-    password: random(),
-    superNestedObject: obj,
-  }).saveX();
-  expect(user.superNestedObject).toStrictEqual(obj);
+    };
+    const user = await CreateUserAction.create(new LoggedOutViewer(), {
+      firstName: "Jane",
+      lastName: "Doe",
+      emailAddress: randomEmail(),
+      phoneNumber: randomPhoneNumber(),
+      password: random(),
+      superNestedObject: obj,
+    }).saveX();
+    expect(user.superNestedObject).toStrictEqual(obj);
+  });
+
+  test("union. cat", async () => {
+    const obj: UserSuperNestedObject = {
+      uuid: uuidv1(),
+      int: 34,
+      string: "whaa",
+      float: 2.3,
+      bool: false,
+      enum: Enum.Maybe,
+      intList: [7, 8, 9],
+      union: {
+        name: "tabby",
+        birthday: new Date(),
+        breed: CatBreed.Bengal,
+        kitten: true,
+      },
+    };
+    const user = await CreateUserAction.create(new LoggedOutViewer(), {
+      firstName: "Jane",
+      lastName: "Doe",
+      emailAddress: randomEmail(),
+      phoneNumber: randomPhoneNumber(),
+      password: random(),
+      superNestedObject: obj,
+    }).saveX();
+    const formattedObj = {
+      ...obj,
+      union: {
+        ...obj.union,
+        birthday: obj.union?.birthday.toISOString(),
+      },
+    };
+    expect(user.superNestedObject).toStrictEqual(formattedObj);
+  });
+
+  test.skip("union. dog", async () => {
+    // the formatted value doesn't work because there's overlap
+    // need to fix UnionField.format
+    const obj: UserSuperNestedObject = {
+      uuid: uuidv1(),
+      int: 34,
+      string: "whaa",
+      float: 2.3,
+      bool: false,
+      enum: Enum.Maybe,
+      intList: [7, 8, 9],
+      union: {
+        name: "scout",
+        birthday: new Date(),
+        breed: DogBreed.GermanShepherd,
+        breedGroup: DogBreedGroup.Herding,
+        puppy: false,
+      },
+    };
+    const user = await CreateUserAction.create(new LoggedOutViewer(), {
+      firstName: "Jane",
+      lastName: "Doe",
+      emailAddress: randomEmail(),
+      phoneNumber: randomPhoneNumber(),
+      password: random(),
+      superNestedObject: obj,
+    }).saveX();
+    const formattedObj = {
+      ...obj,
+      union: {
+        ...obj.union,
+        birthday: obj.union?.birthday.toISOString(),
+      },
+    };
+    expect(user.superNestedObject).toStrictEqual(formattedObj);
+  });
+
+  test("union. rabbit", async () => {
+    const obj: UserSuperNestedObject = {
+      uuid: uuidv1(),
+      int: 34,
+      string: "whaa",
+      float: 2.3,
+      bool: false,
+      enum: Enum.Maybe,
+      intList: [7, 8, 9],
+      union: {
+        name: "hallo",
+        birthday: new Date(),
+        breed: RabbitBreed.AmericanChincilla,
+      },
+    };
+    const user = await CreateUserAction.create(new LoggedOutViewer(), {
+      firstName: "Jane",
+      lastName: "Doe",
+      emailAddress: randomEmail(),
+      phoneNumber: randomPhoneNumber(),
+      password: random(),
+      superNestedObject: obj,
+    }).saveX();
+    const formattedObj = {
+      ...obj,
+      union: {
+        ...obj.union,
+        birthday: obj.union?.birthday.toISOString(),
+      },
+    };
+    expect(user.superNestedObject).toStrictEqual(formattedObj);
+  });
 });
 
 test("enum list", async () => {

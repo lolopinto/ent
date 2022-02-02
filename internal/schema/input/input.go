@@ -264,11 +264,10 @@ func getTypeFor(fieldName string, typ *FieldType, nullable bool, foreignKey *For
 			// only set this if we actually have fields. otherwise, we want this to be nil
 			unionFields = typ.UnionFields
 			if importType == nil && typ.Type != "" {
-				// TODO customType...
-				// importType = &enttype.InputImportType{
-				// 	Path: getImportPathForCustomInterfaceFile(typ.Type),
-				// 	Type: typ.Type,
-				// }
+				importType = &enttype.InputImportType{
+					// intentionally no path since we don't support top level unions and this should lead to some kind of error
+					Type: typ.Type,
+				}
 			}
 		}
 

@@ -25,6 +25,17 @@ type PageInfo {
   endCursor: String!
 }
 
+enum CatBreed {
+  BENGAL
+  BURMESE
+  HIMALAYAN
+  SOMALI
+  PERSIAN
+  SIAMESE
+  TABBY
+  OTHER
+}
+
 enum DayOfWeekAlt {
   FRIDAY
   MONDAY
@@ -53,6 +64,26 @@ enum DaysOff {
   FRIDAY
   SATURDAY
   SUNDAY
+}
+
+enum DogBreedGroup {
+  SPORTING
+  HOUND
+  WORKING
+  TERRIER
+  TOY
+  NON_SPORTING
+  HERDING
+}
+
+enum DogBreed {
+  GERMAN_SHEPHERD
+  LABRADOR
+  POMERIAN
+  SIBERIAN_HUSKY
+  POODLE
+  GOLDEN_RETRIEVER
+  OTHER
 }
 
 enum Enum {
@@ -97,6 +128,17 @@ enum PreferredShift {
   AFTERNOON
   EVENING
   GRAVEYARD
+}
+
+enum RabbitBreed {
+  AMERICAN_RABBIT
+  AMERICAN_CHINCILLA
+  AMERICAN_FUZZY_LOP
+  AMERICAN_SABLE
+  ARGENTE_BRUN
+  BELGIAN_HARE
+  BEVEREN
+  OTHER
 }
 
 type Address implements Node {

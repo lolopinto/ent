@@ -39,7 +39,7 @@ type Schema struct {
 	Enums            map[string]*EnumInfo
 	enumTables       map[string]*EnumInfo
 	CustomInterfaces map[string]*customtype.CustomInterface
-	CustomUnions     map[string]*customtype.CustomUnion
+	//	CustomUnions     map[string]*customtype.CustomUnion
 }
 
 func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData) error {
@@ -383,10 +383,6 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 				if err := s.checkCustomInterface(f, nil); err != nil {
 					errs = append(errs, err)
 				}
-
-				if err := s.checkCustomUnion(f); err != nil {
-					errs = append(errs, err)
-				}
 			}
 		}
 
@@ -581,7 +577,7 @@ func (s *Schema) checkCustomInterface(f *field.Field, root *customtype.CustomInt
 		}
 		s.CustomInterfaces[ci.TSType] = ci
 	} else {
-		root.SubInterfaces = append(root.SubInterfaces, ci)
+		root.Children = append(root.Children, ci)
 	}
 	fi, err := field.NewFieldInfoFromInputs(subFields, &field.Options{})
 	if err != nil {
@@ -593,23 +589,31 @@ func (s *Schema) checkCustomInterface(f *field.Field, root *customtype.CustomInt
 		if err := s.checkCustomInterface(f2, root); err != nil {
 			return err
 		}
+
+		cu, err := s.getCustomUnion(f2)
+		if err != nil {
+			return err
+		}
+		if cu != nil {
+			root.Children = append(root.Children, cu)
+		}
 	}
 	return nil
 }
 
-func (s *Schema) checkCustomUnion(f *field.Field) error {
+func (s *Schema) getCustomUnion(f *field.Field) (*customtype.CustomUnion, error) {
 	entType := f.GetFieldType()
 	unionFieldsType, ok := entType.(enttype.TSWithUnionFields)
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	unionFields := unionFieldsType.GetUnionFields()
 	if unionFields == nil {
-		return nil
+		return nil, nil
 	}
 	cti := unionFieldsType.GetCustomTypeInfo()
 	if cti.Type != enttype.CustomUnion {
-		return fmt.Errorf("invalid custom union %s passed", cti.TSInterface)
+		return nil, fmt.Errorf("invalid custom union %s passed", cti.TSInterface)
 	}
 
 	cu := &customtype.CustomUnion{
@@ -620,29 +624,35 @@ func (s *Schema) checkCustomUnion(f *field.Field) error {
 	actualSubFields := unionFields.([]*input.Field)
 	fi, err := field.NewFieldInfoFromInputs(actualSubFields, &field.Options{})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	for _, f2 := range fi.Fields {
+		// TODO need fieldName
+		////
 		ci, subFields := s.getCustomInterfaceFromField(f2)
 		if ci == nil || subFields == nil {
-			return fmt.Errorf("couldn't get custom interface from field %s", f.FieldName)
+			return nil, fmt.Errorf("couldn't get custom interface from field %s", f.FieldName)
 		}
+		ci.GraphQLFieldName = f2.GetGraphQLName()
 
 		// get the fields and add to custom interface
 		fi2, err := field.NewFieldInfoFromInputs(subFields, &field.Options{})
 		if err != nil {
-			return err
+			return nil, err
 		}
 		ci.Fields = fi2.Fields
+		// TODO getCustomInterfaceFromField needs to handle this all
+		// instead of this mess
+		for _, f3 := range ci.Fields {
+			if err := s.checkForEnum(f3, ci); err != nil {
+				return nil, err
+			}
+		}
+
 		cu.Interfaces = append(cu.Interfaces, ci)
 	}
 
-	if s.CustomUnions[cu.TSType] != nil {
-		return fmt.Errorf("custom union with name %s already exists", cu.TSType)
-	}
-	s.CustomUnions[cu.TSType] = cu
-
-	return nil
+	return cu, nil
 }
 
 func (s *Schema) loadExistingEdges() (*assocEdgeData, error) {
