@@ -18,7 +18,7 @@ import (
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
-	"github.com/lolopinto/ent/internal/schema/custominterface"
+	"github.com/lolopinto/ent/internal/schema/customtype"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/syncerr"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -40,7 +40,7 @@ var nodeType = regexp.MustCompile(`(\w+)Type`)
 type writeFileFn func() error
 type writeFileFnList []writeFileFn
 
-func (s *Step) processCustomInterface(processor *codegen.Processor, ci *custominterface.CustomInterface, serr *syncerr.Error) writeFileFnList {
+func (s *Step) processCustomInterface(processor *codegen.Processor, ci *customtype.CustomInterface, serr *syncerr.Error) writeFileFnList {
 	var ret writeFileFnList
 
 	ret = append(ret, func() error {
@@ -310,11 +310,11 @@ func getFilePathForEnumFile(cfg *codegen.Config, info *schema.EnumInfo) string {
 }
 
 // copied to input.go
-func getFilePathForCustomInterfaceFile(cfg *codegen.Config, ci *custominterface.CustomInterface) string {
+func getFilePathForCustomInterfaceFile(cfg *codegen.Config, ci *customtype.CustomInterface) string {
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/%s.ts", strcase.ToSnake(ci.TSType)))
 }
 
-func getImportPathForCustomInterfaceFile(ci *custominterface.CustomInterface) string {
+func getImportPathForCustomInterfaceFile(ci *customtype.CustomInterface) string {
 	return fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(ci.TSType))
 }
 
@@ -503,7 +503,7 @@ func writeEnumFile(enumInfo *schema.EnumInfo, processor *codegen.Processor) erro
 	})
 }
 
-func writeCustomInterfaceFile(processor *codegen.Processor, ci *custominterface.CustomInterface) error {
+func writeCustomInterfaceFile(processor *codegen.Processor, ci *customtype.CustomInterface) error {
 	// TODO we should store the file path here instead of this...
 	filePath := getFilePathForCustomInterfaceFile(processor.Config, ci)
 	imps := tsimport.NewImports(processor.Config, filePath)
@@ -511,7 +511,7 @@ func writeCustomInterfaceFile(processor *codegen.Processor, ci *custominterface.
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Config: processor.Config,
 		Data: struct {
-			Interface *custominterface.CustomInterface
+			Interface *customtype.CustomInterface
 			Package   *codegen.ImportPackage
 		}{
 			Interface: ci,

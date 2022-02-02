@@ -81,14 +81,27 @@ type ActionFieldsInfo struct {
 	ExcludedFields []string
 }
 
-type TSTypeWithCustomInterfaces interface {
+type CustomType string
+
+const (
+	CustomInterface CustomType = "custom_interface"
+	CustomUnion     CustomType = "custom_union"
+)
+
+type CustomTypeInfo struct {
+	TSInterface      string
+	GraphQLInterface string
+	Type             CustomType
+}
+
+type TSTypeWithCustomType interface {
 	TSGraphQLType
-	GetCustomTSInterface() string
-	GetCustomGraphQLInterface() string
+	GetCustomTypeInfo() *CustomTypeInfo
+	// TODO collapse TSTypeWithActionFields, TSWithSubFields, TSWithSubFields all into CustomTypeInfo
 }
 
 type TSTypeWithActionFields interface {
-	TSTypeWithCustomInterfaces
+	TSTypeWithCustomType
 	GetActionFieldsInfo() *ActionFieldsInfo
 }
 
@@ -98,9 +111,15 @@ type ImportDepsType interface {
 }
 
 type TSWithSubFields interface {
-	TSTypeWithCustomInterfaces
+	TSTypeWithCustomType
 	// this is interface{} so as to avoid circular-dependencies with input.Fields
 	GetSubFields() interface{}
+}
+
+type TSWithUnionFields interface {
+	TSTypeWithCustomType
+	// this is interface{} so as to avoid circular-dependencies with input.Fields
+	GetUnionFields() interface{}
 }
 
 type ImportType string
@@ -1033,12 +1052,12 @@ func (t *CommonObjectType) GetActionFieldsInfo() *ActionFieldsInfo {
 	}
 }
 
-func (t *CommonObjectType) GetCustomTSInterface() string {
-	return t.TSType
-}
-
-func (t *CommonObjectType) GetCustomGraphQLInterface() string {
-	return t.GraphQLType
+func (t *CommonObjectType) GetCustomTypeInfo() *CustomTypeInfo {
+	return &CustomTypeInfo{
+		TSInterface:      t.TSType,
+		GraphQLInterface: t.GraphQLType,
+		Type:             CustomInterface,
+	}
 }
 
 type ObjectType struct {
@@ -1155,20 +1174,12 @@ func (t *ListWrapperType) GetActionFieldsInfo() *ActionFieldsInfo {
 	return t2.GetActionFieldsInfo()
 }
 
-func (t *ListWrapperType) GetCustomTSInterface() string {
-	t2, ok := t.Type.(TSTypeWithCustomInterfaces)
+func (t *ListWrapperType) GetCustomTypeInfo() *CustomTypeInfo {
+	t2, ok := t.Type.(TSTypeWithCustomType)
 	if !ok {
-		return ""
+		return nil
 	}
-	return t2.GetCustomTSInterface()
-}
-
-func (t *ListWrapperType) GetCustomGraphQLInterface() string {
-	t2, ok := t.Type.(TSTypeWithCustomInterfaces)
-	if !ok {
-		return ""
-	}
-	return t2.GetCustomGraphQLInterface()
+	return t2.GetCustomTypeInfo()
 }
 
 func (t *ListWrapperType) GetImportDepsType() *InputImportType {
@@ -1779,20 +1790,12 @@ func (t *ArrayListType) GetSubFields() interface{} {
 	return t2.GetSubFields()
 }
 
-func (t *ArrayListType) GetCustomTSInterface() string {
-	t2, ok := t.ElemType.(TSTypeWithCustomInterfaces)
+func (t *ArrayListType) GetCustomTypeInfo() *CustomTypeInfo {
+	t2, ok := t.ElemType.(TSTypeWithCustomType)
 	if !ok {
-		return ""
+		return nil
 	}
-	return t2.GetCustomTSInterface()
-}
-
-func (t *ArrayListType) GetCustomGraphQLInterface() string {
-	t2, ok := t.ElemType.(TSTypeWithCustomInterfaces)
-	if !ok {
-		return ""
-	}
-	return t2.GetCustomGraphQLInterface()
+	return t2.GetCustomTypeInfo()
 }
 
 type NullableArrayListType struct {
@@ -1839,7 +1842,7 @@ func (t *NullableArrayListType) GetTSGraphQLImports(input bool) []FileImport {
 
 // TODO why is there ListWrapperType (for ActionFields)
 // and NullableArrayListType /ArrayListType for regular lists?
-// TODO GetCustomTSInterface and GetCustomGraphQLInterface?
+// TODO GetCustomTypeInfo
 func (t *NullableArrayListType) Convert() FileImport {
 	elem, ok := t.ElemType.(convertListElemType)
 	if !ok {
@@ -1867,20 +1870,12 @@ func (t *NullableArrayListType) GetSubFields() interface{} {
 	return t2.GetSubFields()
 }
 
-func (t *NullableArrayListType) GetCustomTSInterface() string {
-	t2, ok := t.ElemType.(TSTypeWithCustomInterfaces)
+func (t *NullableArrayListType) GetCustomTypeInfo() *CustomTypeInfo {
+	t2, ok := t.ElemType.(TSTypeWithCustomType)
 	if !ok {
-		return ""
+		return nil
 	}
-	return t2.GetCustomTSInterface()
-}
-
-func (t *NullableArrayListType) GetCustomGraphQLInterface() string {
-	t2, ok := t.ElemType.(TSTypeWithCustomInterfaces)
-	if !ok {
-		return ""
-	}
-	return t2.GetCustomGraphQLInterface()
+	return t2.GetCustomTypeInfo()
 }
 
 // to resolve circular dependency btw input and this
@@ -1891,8 +1886,9 @@ type InputImportType struct {
 
 type CommonJSONType struct {
 	ImportType *InputImportType
-	// input Fields. not typed because of circular dependencies
-	Fields                 interface{}
+	// input SubFields. not typed because of circular dependencies
+	SubFields              interface{}
+	UnionFields            interface{}
 	CustomTsInterface      string
 	CustomGraphQLInterface string
 }
@@ -1937,7 +1933,7 @@ func (t *CommonJSONType) getTsTypeImports(impType *InputImportType) []string {
 }
 
 func (t *CommonJSONType) getJSONGraphQLType(gqlType string, input bool) FileImport {
-	if t.Fields == nil {
+	if t.SubFields == nil {
 		// TODO https://github.com/taion/graphql-type-json
 		return FileImport{
 			Type:       "GraphQLJSON",
@@ -1979,11 +1975,23 @@ func (t *CommonJSONType) GetImportDepsType() *InputImportType {
 }
 
 func (t *CommonJSONType) GetSubFields() interface{} {
-	return t.Fields
+	return t.SubFields
 }
 
-func (t *CommonJSONType) GetCustomTSInterface() string {
-	return t.CustomTsInterface
+func (t *CommonJSONType) GetUnionFields() interface{} {
+	return t.UnionFields
+}
+
+func (t *CommonJSONType) GetCustomTypeInfo() *CustomTypeInfo {
+	typ := CustomInterface
+	if t.UnionFields != nil {
+		typ = CustomUnion
+	}
+	return &CustomTypeInfo{
+		TSInterface:      t.CustomTsInterface,
+		GraphQLInterface: t.CustomGraphQLInterface,
+		Type:             typ,
+	}
 }
 
 func (t *CommonJSONType) GetCustomGraphQLInterface() string {
@@ -2005,7 +2013,7 @@ func (t *JSONType) GetTSType() string {
 func (t *JSONType) GetNullableType() TSGraphQLType {
 	ret := &NullableJSONType{}
 	ret.ImportType = t.ImportType
-	ret.Fields = t.Fields
+	ret.SubFields = t.SubFields
 	ret.CustomGraphQLInterface = t.CustomGraphQLInterface
 	ret.CustomTsInterface = t.CustomTsInterface
 	return ret
@@ -2064,7 +2072,7 @@ func (t *NullableJSONType) Convert() FileImport {
 func (t *NullableJSONType) GetNonNullableType() TSGraphQLType {
 	ret := &JSONType{}
 	ret.ImportType = t.ImportType
-	ret.Fields = t.Fields
+	ret.SubFields = t.SubFields
 	ret.CustomGraphQLInterface = t.CustomGraphQLInterface
 	ret.CustomTsInterface = t.CustomTsInterface
 	return ret
@@ -2089,7 +2097,7 @@ func (t *JSONBType) GetTSType() string {
 func (t *JSONBType) GetNullableType() TSGraphQLType {
 	ret := &NullableJSONBType{}
 	ret.ImportType = t.ImportType
-	ret.Fields = t.Fields
+	ret.SubFields = t.SubFields
 	ret.CustomGraphQLInterface = t.CustomGraphQLInterface
 	ret.CustomTsInterface = t.CustomTsInterface
 	return ret
@@ -2145,7 +2153,7 @@ func (t *NullableJSONBType) GetTSGraphQLImports(input bool) []FileImport {
 func (t *NullableJSONBType) GetNonNullableType() TSGraphQLType {
 	ret := &JSONBType{}
 	ret.ImportType = t.ImportType
-	ret.Fields = t.Fields
+	ret.SubFields = t.SubFields
 	ret.CustomGraphQLInterface = t.CustomGraphQLInterface
 	ret.CustomTsInterface = t.CustomTsInterface
 	return ret

@@ -1286,7 +1286,7 @@ func TestWithSubFields(t *testing.T) {
 						Name: "userPrefs",
 						Type: &input.FieldType{
 							DBType: input.JSONB,
-							Fields: []*input.Field{
+							SubFields: []*input.Field{
 								{
 									Name: "finishedNux",
 									Type: &input.FieldType{

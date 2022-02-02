@@ -60,6 +60,9 @@ function processFields(
     if (field.type.subFields) {
       f.type.subFields = processFields(field.type.subFields);
     }
+    if (field.type.unionFields) {
+      f.type.unionFields = processFields(field.type.unionFields);
+    }
     if (
       field.type.listElemType &&
       field.type.listElemType.subFields &&
@@ -220,9 +223,13 @@ interface ProcessedPattern {
   fields: ProcessedField[];
 }
 
-type ProcessedType = Omit<Type, "subFields" | "listElemType"> & {
-  subFields: ProcessedField[];
+type ProcessedType = Omit<
+  Type,
+  "subFields" | "listElemType" | "unionFields"
+> & {
+  subFields?: ProcessedField[];
   listElemType?: ProcessedType;
+  unionFields?: ProcessedField[];
 };
 
 type ProcessedField = Omit<

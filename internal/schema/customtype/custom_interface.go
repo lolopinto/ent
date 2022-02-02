@@ -1,6 +1,4 @@
-package custominterface
-
-// TODO need to figure out the correct name of the package here
+package customtype
 
 import (
 	"github.com/lolopinto/ent/internal/field"

@@ -17,7 +17,7 @@ import (
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/base"
-	"github.com/lolopinto/ent/internal/schema/custominterface"
+	"github.com/lolopinto/ent/internal/schema/customtype"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schemaparser"
@@ -38,7 +38,8 @@ type Schema struct {
 	// confusing but gets us closer to what we want
 	Enums            map[string]*EnumInfo
 	enumTables       map[string]*EnumInfo
-	CustomInterfaces map[string]*custominterface.CustomInterface
+	CustomInterfaces map[string]*customtype.CustomInterface
+	CustomUnions     map[string]*customtype.CustomUnion
 }
 
 func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData) error {
@@ -250,7 +251,7 @@ func (s *Schema) init() {
 	s.tables = make(map[string]*NodeDataInfo)
 	s.enumTables = make(map[string]*EnumInfo)
 	s.Patterns = map[string]*PatternInfo{}
-	s.CustomInterfaces = map[string]*custominterface.CustomInterface{}
+	s.CustomInterfaces = map[string]*customtype.CustomInterface{}
 }
 
 func (s *Schema) GetNodeDataFromTableName(tableName string) *NodeData {
@@ -382,6 +383,10 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 				if err := s.checkCustomInterface(f, nil); err != nil {
 					errs = append(errs, err)
 				}
+
+				if err := s.checkCustomUnion(f); err != nil {
+					errs = append(errs, err)
+				}
 			}
 		}
 
@@ -507,7 +512,7 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 }
 
 // TODO combine with checkCustomInterface...
-func (s *Schema) checkForEnum(f *field.Field, ci *custominterface.CustomInterface) error {
+func (s *Schema) checkForEnum(f *field.Field, ci *customtype.CustomInterface) error {
 	typ := f.GetFieldType()
 	enumTyp, ok := enttype.GetEnumType(typ)
 	if ok {
@@ -541,22 +546,34 @@ func (s *Schema) checkForEnum(f *field.Field, ci *custominterface.CustomInterfac
 	return nil
 }
 
-func (s *Schema) checkCustomInterface(f *field.Field, root *custominterface.CustomInterface) error {
+func (s *Schema) getCustomInterfaceFromField(f *field.Field) (*customtype.CustomInterface, []*input.Field) {
 	entType := f.GetFieldType()
 	subFieldsType, ok := entType.(enttype.TSWithSubFields)
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	subFields := subFieldsType.GetSubFields()
 	if subFields == nil {
+		return nil, nil
+	}
+	cti := subFieldsType.GetCustomTypeInfo()
+
+	ci := &customtype.CustomInterface{
+		TSType:   cti.TSInterface,
+		GQLType:  cti.GraphQLInterface,
+		Exported: true,
+	}
+	actualSubFields := subFields.([]*input.Field)
+
+	return ci, actualSubFields
+}
+
+func (s *Schema) checkCustomInterface(f *field.Field, root *customtype.CustomInterface) error {
+	ci, subFields := s.getCustomInterfaceFromField(f)
+	if ci == nil || subFields == nil {
 		return nil
 	}
 
-	ci := &custominterface.CustomInterface{
-		TSType:   subFieldsType.GetCustomTSInterface(),
-		GQLType:  subFieldsType.GetCustomGraphQLInterface(),
-		Exported: true,
-	}
 	if root == nil {
 		root = ci
 		if s.CustomInterfaces[ci.TSType] != nil {
@@ -566,8 +583,7 @@ func (s *Schema) checkCustomInterface(f *field.Field, root *custominterface.Cust
 	} else {
 		root.SubInterfaces = append(root.SubInterfaces, ci)
 	}
-	actualSubFields := subFields.([]*input.Field)
-	fi, err := field.NewFieldInfoFromInputs(actualSubFields, &field.Options{})
+	fi, err := field.NewFieldInfoFromInputs(subFields, &field.Options{})
 	if err != nil {
 		return err
 	}
@@ -578,6 +594,54 @@ func (s *Schema) checkCustomInterface(f *field.Field, root *custominterface.Cust
 			return err
 		}
 	}
+	return nil
+}
+
+func (s *Schema) checkCustomUnion(f *field.Field) error {
+	entType := f.GetFieldType()
+	unionFieldsType, ok := entType.(enttype.TSWithUnionFields)
+	if !ok {
+		return nil
+	}
+	unionFields := unionFieldsType.GetUnionFields()
+	if unionFields == nil {
+		return nil
+	}
+	cti := unionFieldsType.GetCustomTypeInfo()
+	if cti.Type != enttype.CustomUnion {
+		return fmt.Errorf("invalid custom union %s passed", cti.TSInterface)
+	}
+
+	cu := &customtype.CustomUnion{
+		TSType:  cti.TSInterface,
+		GQLType: cti.GraphQLInterface,
+	}
+
+	actualSubFields := unionFields.([]*input.Field)
+	fi, err := field.NewFieldInfoFromInputs(actualSubFields, &field.Options{})
+	if err != nil {
+		return err
+	}
+	for _, f2 := range fi.Fields {
+		ci, subFields := s.getCustomInterfaceFromField(f2)
+		if ci == nil || subFields == nil {
+			return fmt.Errorf("couldn't get custom interface from field %s", f.FieldName)
+		}
+
+		// get the fields and add to custom interface
+		fi2, err := field.NewFieldInfoFromInputs(subFields, &field.Options{})
+		if err != nil {
+			return err
+		}
+		ci.Fields = fi2.Fields
+		cu.Interfaces = append(cu.Interfaces, ci)
+	}
+
+	if s.CustomUnions[cu.TSType] != nil {
+		return fmt.Errorf("custom union with name %s already exists", cu.TSType)
+	}
+	s.CustomUnions[cu.TSType] = cu
+
 	return nil
 }
 

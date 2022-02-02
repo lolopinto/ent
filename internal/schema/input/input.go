@@ -92,7 +92,8 @@ type FieldType struct {
 	ImportType *enttype.InputImportType `json:"importType"`
 
 	// list because go-lang map not stable and don't want generated fields to change ofte
-	Fields []*Field `json:"subFields"`
+	SubFields   []*Field `json:"subFields"`
+	UnionFields []*Field `json:"unionFields"`
 }
 
 type Field struct {
@@ -247,10 +248,11 @@ func getTypeFor(fieldName string, typ *FieldType, nullable bool, foreignKey *For
 	case JSON, JSONB:
 
 		importType := typ.ImportType
-		var fields interface{}
-		if len(typ.Fields) != 0 {
+		var subFields interface{}
+		var unionFields interface{}
+		if len(typ.SubFields) != 0 {
 			// only set this if we actually have fields. otherwise, we want this to be nil
-			fields = typ.Fields
+			subFields = typ.SubFields
 			if importType == nil && typ.Type != "" {
 				importType = &enttype.InputImportType{
 					Path: getImportPathForCustomInterfaceFile(typ.Type),
@@ -258,20 +260,34 @@ func getTypeFor(fieldName string, typ *FieldType, nullable bool, foreignKey *For
 				}
 			}
 		}
+		if len(typ.UnionFields) != 0 {
+			// only set this if we actually have fields. otherwise, we want this to be nil
+			unionFields = typ.UnionFields
+			if importType == nil && typ.Type != "" {
+				// TODO customType...
+				// importType = &enttype.InputImportType{
+				// 	Path: getImportPathForCustomInterfaceFile(typ.Type),
+				// 	Type: typ.Type,
+				// }
+			}
+		}
+
 		if typ.DBType == JSON {
 			if nullable {
 				ret := &enttype.NullableJSONType{}
 				ret.ImportType = importType
 				ret.CustomTsInterface = typ.Type
 				ret.CustomGraphQLInterface = typ.GraphQLType
-				ret.Fields = fields
+				ret.SubFields = subFields
+				ret.UnionFields = unionFields
 				return ret, nil
 			}
 			ret := &enttype.JSONType{}
 			ret.ImportType = importType
 			ret.CustomTsInterface = typ.Type
 			ret.CustomGraphQLInterface = typ.GraphQLType
-			ret.Fields = fields
+			ret.SubFields = subFields
+			ret.UnionFields = unionFields
 			return ret, nil
 		}
 
@@ -281,14 +297,16 @@ func getTypeFor(fieldName string, typ *FieldType, nullable bool, foreignKey *For
 			ret.ImportType = importType
 			ret.CustomTsInterface = typ.Type
 			ret.CustomGraphQLInterface = typ.GraphQLType
-			ret.Fields = typ.Fields
+			ret.SubFields = typ.SubFields
+			ret.UnionFields = unionFields
 			return ret, nil
 		}
 		ret := &enttype.JSONBType{}
 		ret.ImportType = importType
 		ret.CustomTsInterface = typ.Type
 		ret.CustomGraphQLInterface = typ.GraphQLType
-		ret.Fields = typ.Fields
+		ret.SubFields = typ.SubFields
+		ret.UnionFields = unionFields
 		return ret, nil
 
 	case StringEnum, Enum:

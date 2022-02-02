@@ -211,6 +211,9 @@ export interface Type {
 
   // StructType fields
   subFields?: FieldMap;
+
+  // UnionType fields. really StructMap but don't want circular dependency...
+  unionFields?: FieldMap;
 }
 
 export interface ForeignKey {

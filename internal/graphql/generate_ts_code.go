@@ -25,7 +25,7 @@ import (
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
-	"github.com/lolopinto/ent/internal/schema/custominterface"
+	"github.com/lolopinto/ent/internal/schema/customtype"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/syncerr"
@@ -1920,7 +1920,7 @@ func buildActionEnums(nodeData *schema.NodeData, action action.Action) []*gqlEnu
 	return ret
 }
 
-func buildCustomInputNode(c *custominterface.CustomInterface) *objectType {
+func buildCustomInputNode(c *customtype.CustomInterface) *objectType {
 	result := &objectType{
 		Type:     c.GQLType,
 		Node:     c.GQLType,
@@ -2399,7 +2399,7 @@ type customInterfaceInfo struct {
 // similar to buildCustomInputNode but different...
 // buildCustomInputNode is used for action inputs
 // while this is used for StructType. can probably eventually be used together
-func buildCustomInterfaceNode(processor *codegen.Processor, ci *custominterface.CustomInterface, ciInfo *customInterfaceInfo) *objectType {
+func buildCustomInterfaceNode(processor *codegen.Processor, ci *customtype.CustomInterface, ciInfo *customInterfaceInfo) *objectType {
 	node := ciInfo.name
 	gqlType := "GraphQLObjectType"
 	if ciInfo.input {
