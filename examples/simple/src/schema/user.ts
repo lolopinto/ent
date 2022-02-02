@@ -19,6 +19,8 @@ import {
   FloatType,
   EnumType,
   IntegerListType,
+  UnionType,
+  TimestampType,
 } from "@snowtop/ent/schema";
 import { EmailType } from "@snowtop/ent-email";
 import { PasswordType } from "@snowtop/ent-password";
@@ -168,6 +170,92 @@ export default class User extends BaseEntSchema implements Schema {
                 }),
                 nested_nested_string_list: StringListType(),
                 nested_nested_int_list: IntegerListType(),
+              },
+            }),
+          },
+        }),
+        // TODO we need list types...
+        // e.g. multiple pets
+        union: UnionType({
+          nullable: true,
+          tsType: "PetUnionType",
+          fields: {
+            cat: StructType({
+              tsType: "CatType",
+              fields: {
+                name: StringType(),
+                birthday: TimestampType(),
+                breed: EnumType({
+                  tsType: "CatBreed",
+                  graphQLType: "CatBreed",
+                  values: [
+                    "bengal",
+                    "burmese",
+                    "himalayan",
+                    "somali",
+                    "persian",
+                    "siamese",
+                    "tabby",
+                    "other",
+                  ],
+                }),
+                kitten: BooleanType(),
+              },
+            }),
+            dog: StructType({
+              tsType: "DogType",
+              fields: {
+                name: StringType(),
+                birthday: TimestampType(),
+                breed: EnumType({
+                  tsType: "DogBreed",
+                  graphQLType: "DogBreed",
+                  values: [
+                    "german_shepherd",
+                    "labrador",
+                    "pomerian",
+                    "siberian_husky",
+                    "poodle",
+                    "golden_retriever",
+                    "other",
+                  ],
+                }),
+                // https://www.akc.org/expert-advice/lifestyle/7-akc-dog-breed-groups-explained/
+                breedGroup: EnumType({
+                  tsType: "DogBreedGroup",
+                  graphQLType: "DogBreedGroup",
+                  values: [
+                    "sporting",
+                    "hound",
+                    "working",
+                    "terrier",
+                    "toy",
+                    "non_sporting",
+                    "herding",
+                  ],
+                }),
+                puppy: BooleanType(),
+              },
+            }),
+            rabbit: StructType({
+              tsType: "RabbitType",
+              fields: {
+                name: StringType(),
+                birthday: TimestampType(),
+                breed: EnumType({
+                  tsType: "RabbitBreed",
+                  graphQLType: "RabbitBreed",
+                  values: [
+                    "american_rabbit",
+                    "american_chincilla",
+                    "american_fuzzy_lop",
+                    "american_sable",
+                    "argente_brun",
+                    "belgian_hare",
+                    "beveren",
+                    "other",
+                  ],
+                }),
               },
             }),
           },
