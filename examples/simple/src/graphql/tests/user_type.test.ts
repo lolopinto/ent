@@ -948,10 +948,7 @@ describe("super nested complex", () => {
     );
   });
 
-  test.skip("union dog", async () => {
-    // the formatted value doesn't work because there's overlap
-    // need to fix UnionField.format
-
+  test("union dog", async () => {
     const obj = {
       uuid: v1(),
       int: 34,

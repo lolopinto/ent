@@ -52,6 +52,8 @@ export class UnionField extends BaseField implements FieldOptions {
     if (k === undefined) {
       throw new Error(`need to call valid first`);
     }
+    // now delete it since we don't need it anymore
+    delete obj[KEY];
 
     const field = this.options.fields[k];
     // always nested for now so pass through

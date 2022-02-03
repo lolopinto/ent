@@ -16,6 +16,7 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
+import { transformUnionTypes } from "@snowtop/ent/graphql";
 import { User } from "../../../../ent";
 import CreateUserAction, {
   UserCreateInput,
@@ -25,7 +26,6 @@ import { UserPrefsStruct2InputType } from "../input/user_prefs_struct_2_input_ty
 import { UserPrefsStructInputType } from "../input/user_prefs_struct_input_type";
 import { UserSuperNestedObjectInputType } from "../input/user_super_nested_object_input_type";
 import { DaysOffType, PreferredShiftType, UserType } from "../../../resolvers";
-import { transformUnionTypes } from "./foo";
 
 interface UserCreatePayload {
   user: User;

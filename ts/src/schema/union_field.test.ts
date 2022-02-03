@@ -216,9 +216,6 @@ describe("overlap", () => {
     }),
   });
 
-  // used to note which obj is valid
-  const KEY = "___valid___key___";
-
   test("cat valid", async () => {
     const obj = {
       name: "tabby",
@@ -227,12 +224,11 @@ describe("overlap", () => {
       birthday: new Date(),
     };
     expect(await f.valid(obj)).toBe(true);
+    const formatted = f.format(obj);
     const expFormatted = {
       ...obj,
       birthday: obj.birthday.toISOString(),
     };
-    const formatted = f.format(obj);
-    delete expFormatted[KEY];
     expect(formatted).toStrictEqual(expFormatted);
   });
 
@@ -245,12 +241,11 @@ describe("overlap", () => {
       puppy: false,
     };
     expect(await f.valid(obj)).toBe(true);
+    const formatted = f.format(obj);
     const expFormatted = {
       ...obj,
       birthday: obj.birthday.toISOString(),
     };
-    const formatted = f.format(obj);
-    delete expFormatted[KEY];
     expect(formatted).toStrictEqual(expFormatted);
   });
 
@@ -261,12 +256,11 @@ describe("overlap", () => {
       breed: "american_chincilla",
     };
     expect(await f.valid(obj)).toBe(true);
+    const formatted = f.format(obj);
     const expFormatted = {
       ...obj,
       birthday: obj.birthday.toISOString(),
     };
-    const formatted = f.format(obj);
-    delete expFormatted[KEY];
     expect(formatted).toStrictEqual(expFormatted);
   });
 

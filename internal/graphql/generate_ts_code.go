@@ -2353,7 +2353,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 		)
 		argImports = append(argImports, &fileImport{
 			Type:       "transformUnionTypes",
-			ImportPath: "./foo",
+			ImportPath: codepath.GraphQLPackage,
 		})
 	}
 

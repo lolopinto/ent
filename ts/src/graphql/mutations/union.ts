@@ -1,6 +1,5 @@
-import { Data } from "@snowtop/ent";
+import { Data } from "../../core/base";
 
-// TODO move this to @snowtop/ent
 // this transforms an input for union types from graphql format to TS format
 // in graphql, we represent it as UnionType =  {foo: FooType, bar: BarType, baz: BazType}
 // in TS, we repseent it as UnionType = FooType | BarType | BazType

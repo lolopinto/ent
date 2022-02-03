@@ -1031,9 +1031,7 @@ describe("super nested complex", () => {
     expect(user.superNestedObject).toStrictEqual(formattedObj);
   });
 
-  test.skip("union. dog", async () => {
-    // the formatted value doesn't work because there's overlap
-    // need to fix UnionField.format
+  test("union. dog", async () => {
     const obj: UserSuperNestedObject = {
       uuid: uuidv1(),
       int: 34,
