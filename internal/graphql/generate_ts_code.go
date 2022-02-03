@@ -2475,7 +2475,7 @@ func buildCustomUnionNode(processor *codegen.Processor, cu *customtype.CustomUni
 func buildCustomUnionInputNode(processor *codegen.Processor, cu *customtype.CustomUnion) (*objectType, error) {
 	result := &objectType{
 		Type:    fmt.Sprintf("%sInputType", cu.GQLType),
-		Node:    cu.GQLType,
+		Node:    cu.GQLType + "Input",
 		TSType:  cu.TSType,
 		GQLType: "GraphQLInputObjectType",
 	}

@@ -143,7 +143,7 @@ const RabbitTypeInputType = new GraphQLInputObjectType({
 });
 
 const PetUnionTypeInputType = new GraphQLInputObjectType({
-  name: "PetUnionType",
+  name: "PetUnionTypeInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     cat: {
       type: CatTypeInputType,

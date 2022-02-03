@@ -102,6 +102,43 @@ export const UserCreateType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<UserCreatePayload> => {
+    const paths = ["superNestedObject", "union"];
+    const lastPath = paths[paths.length - 1];
+    let last = input;
+    for (const path of paths) {
+      // @ts-ignore
+      let curr = last[path];
+
+      if (curr === undefined) {
+        break;
+        // can be nullable. we're only changing if something worth changing
+        // TODO what of nullable?
+      }
+      if (path === lastPath) {
+        let count = 0;
+        let lastKey = undefined;
+        for (const k in curr) {
+          count++;
+          lastKey = k;
+        }
+        if (count != 1) {
+          throw new Error(
+            `oneOf invalidated. can only only pass one key of union. passed ${count}`,
+          );
+        }
+        //        curr = curr[lastKey];
+        // @ts-ignore
+        last[path] = curr[lastKey];
+      }
+      last = curr;
+    }
+    //    for ()
+    //    console.debug(input);
+    // console.debug(last);
+    // console.debug(input);
+    // input format is wrong...
+    //    input.superNestedObject?.union.
+    // if object type and has union do Y
     const user = await CreateUserAction.create(context.getViewer(), {
       firstName: input.firstName,
       lastName: input.lastName,
