@@ -6,6 +6,10 @@ export declare type StructMap = {
   [key: string]: StructField;
 };
 
+// used to know which key in the union is valid.
+// maybe there's a better way of doing this eventually
+const KEY = "___valid___key___";
+
 export interface UnionOptions extends FieldOptions {
   // required.
   // how does that jive with https://github.com/lolopinto/ent/issues/609 though??
@@ -16,6 +20,11 @@ export interface UnionOptions extends FieldOptions {
   // if not provided, defaults to tsType
   graphQLType?: string;
   jsonNotJSONB?: boolean;
+}
+
+interface validResult {
+  valid: boolean;
+  key: string;
 }
 
 export class UnionField extends BaseField implements FieldOptions {
@@ -35,36 +44,52 @@ export class UnionField extends BaseField implements FieldOptions {
     }
   }
 
-  format(obj: any, nested?: boolean) {
+  format(obj: any) {
     if (!(obj instanceof Object)) {
       throw new Error("valid was not called");
     }
-    for (const k in this.options.fields) {
-      const field = this.options.fields[k];
-      const fmt = field.format(obj, nested);
-      if (fmt !== "{}") {
-        return fmt;
-      }
+    const k = obj[KEY];
+    if (k === undefined) {
+      throw new Error(`need to call valid first`);
     }
-    // TODO need better logic here
-    // maybe add something ignored to the objec that indicates which key?
-    // or store in map
-    throw new Error(`couldn't format union`);
+
+    const field = this.options.fields[k];
+    // always nested for now so pass through
+    return field.format(obj, true);
+  }
+
+  private async validField(k: string, f: StructField, obj: Object) {
+    const valid = await f.valid(obj);
+    return {
+      valid,
+      key: k,
+    };
   }
 
   async valid(obj: any): Promise<boolean> {
     if (!(obj instanceof Object)) {
       return false;
     }
-    let promises: Promise<boolean>[] = [];
+    let promises: Promise<validResult>[] = [];
 
     for (const k in this.options.fields) {
       const field = this.options.fields[k];
-      promises.push(field.valid(obj));
+      promises.push(this.validField(k, field, obj));
     }
+    let lastKey: string | undefined;
+    let validCt = 0;
     const ret = await Promise.all(promises);
-    // only 1 should be valid
-    return ret.filter((v) => v).length === 1;
+    for (const v of ret) {
+      if (v.valid) {
+        validCt++;
+        lastKey = v.key;
+      }
+    }
+    if (lastKey !== undefined) {
+      obj[KEY] = lastKey;
+    }
+
+    return validCt == 1;
   }
 }
 

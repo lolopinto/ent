@@ -72,7 +72,7 @@ describe("simple", () => {
       foo_ts: d.toISOString(),
     };
     expect(await f.valid(val)).toBe(true);
-    expect(f.format(val)).toBe(JSON.stringify(formatted));
+    expect(f.format(val)).toStrictEqual(formatted);
   });
 
   test("bar valid", async () => {
@@ -89,7 +89,7 @@ describe("simple", () => {
       bar_ts: d.toISOString(),
     };
     expect(await f.valid(val)).toBe(true);
-    expect(f.format(val)).toBe(JSON.stringify(formatted));
+    expect(f.format(val)).toStrictEqual(formatted);
 
     const val2 = {
       bar_uuid: v1(),
@@ -105,7 +105,7 @@ describe("simple", () => {
       bar_ts: d.toISOString(),
     };
     expect(await f.valid(val2)).toBe(true);
-    expect(f.format(val2)).toBe(JSON.stringify(formatted2));
+    expect(f.format(val2)).toStrictEqual(formatted2);
   });
 
   test("baz valid", async () => {
@@ -121,7 +121,7 @@ describe("simple", () => {
       baz_ts: d.toISOString(),
     };
     expect(await f.valid(val)).toBe(true);
-    expect(f.format(val)).toBe(JSON.stringify(formatted));
+    expect(f.format(val)).toStrictEqual(formatted);
   });
 
   test("invalid", async () => {
@@ -132,5 +132,149 @@ describe("simple", () => {
       baz_bool: false,
     };
     expect(await f.valid(val)).toBe(false);
+  });
+});
+
+describe("overlap", () => {
+  const f = unionTypeF({
+    cat: StructType({
+      tsType: "CatType",
+      fields: {
+        name: StringType(),
+        birthday: TimestampType(),
+        breed: EnumType({
+          tsType: "CatBreed",
+          graphQLType: "CatBreed",
+          values: [
+            "bengal",
+            "burmese",
+            "himalayan",
+            "somali",
+            "persian",
+            "siamese",
+            "tabby",
+            "other",
+          ],
+        }),
+        kitten: BooleanType(),
+      },
+    }),
+    dog: StructType({
+      tsType: "DogType",
+      fields: {
+        name: StringType(),
+        birthday: TimestampType(),
+        breed: EnumType({
+          tsType: "DogBreed",
+          graphQLType: "DogBreed",
+          values: [
+            "german_shepherd",
+            "labrador",
+            "pomerian",
+            "siberian_husky",
+            "poodle",
+            "golden_retriever",
+            "other",
+          ],
+        }),
+        breedGroup: EnumType({
+          tsType: "DogBreedGroup",
+          graphQLType: "DogBreedGroup",
+          values: [
+            "sporting",
+            "hound",
+            "working",
+            "terrier",
+            "toy",
+            "non_sporting",
+            "herding",
+          ],
+        }),
+        puppy: BooleanType(),
+      },
+    }),
+    rabbit: StructType({
+      tsType: "RabbitType",
+      fields: {
+        name: StringType(),
+        birthday: TimestampType(),
+        breed: EnumType({
+          tsType: "RabbitBreed",
+          graphQLType: "RabbitBreed",
+          values: [
+            "american_rabbit",
+            "american_chincilla",
+            "american_fuzzy_lop",
+            "american_sable",
+            "argente_brun",
+            "belgian_hare",
+            "beveren",
+            "other",
+          ],
+        }),
+      },
+    }),
+  });
+
+  // used to note which obj is valid
+  const KEY = "___valid___key___";
+
+  test("cat valid", async () => {
+    const obj = {
+      name: "tabby",
+      breed: "bengal",
+      kitten: true,
+      birthday: new Date(),
+    };
+    expect(await f.valid(obj)).toBe(true);
+    const expFormatted = {
+      ...obj,
+      birthday: obj.birthday.toISOString(),
+    };
+    const formatted = f.format(obj);
+    delete expFormatted[KEY];
+    expect(formatted).toStrictEqual(expFormatted);
+  });
+
+  test("dog valid", async () => {
+    const obj = {
+      name: "scout",
+      birthday: new Date(),
+      breed: "german_shepherd",
+      breedGroup: "herding",
+      puppy: false,
+    };
+    expect(await f.valid(obj)).toBe(true);
+    const expFormatted = {
+      ...obj,
+      birthday: obj.birthday.toISOString(),
+    };
+    const formatted = f.format(obj);
+    delete expFormatted[KEY];
+    expect(formatted).toStrictEqual(expFormatted);
+  });
+
+  test("rabbit valid", async () => {
+    const obj = {
+      name: "hallo",
+      birthday: new Date(),
+      breed: "american_chincilla",
+    };
+    expect(await f.valid(obj)).toBe(true);
+    const expFormatted = {
+      ...obj,
+      birthday: obj.birthday.toISOString(),
+    };
+    const formatted = f.format(obj);
+    delete expFormatted[KEY];
+    expect(formatted).toStrictEqual(expFormatted);
+  });
+
+  test("invalid", async () => {
+    const obj = {
+      name: "hallo",
+      birthday: new Date(),
+    };
+    expect(await f.valid(obj)).toBe(false);
   });
 });
