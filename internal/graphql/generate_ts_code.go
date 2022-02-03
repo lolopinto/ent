@@ -22,6 +22,7 @@ import (
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
@@ -2201,6 +2202,45 @@ func getActionPath(nodeData *schema.NodeData, a action.Action) string {
 	return fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(a.GetActionName()))
 }
 
+func checkUnionType(f *field.Field, curr []string) ([]string, bool, error) {
+	t := f.GetFieldType()
+
+	t2, ok := t.(enttype.TSWithSubFields)
+	if ok {
+		subFields := t2.GetSubFields()
+		if subFields == nil {
+			return nil, false, nil
+		}
+		newCurr := append(curr, f.GetGraphQLName())
+		actualSubFields := subFields.([]*input.Field)
+
+		fi, err := field.NewFieldInfoFromInputs(actualSubFields, &field.Options{})
+		if err != nil {
+			return nil, false, err
+		}
+		for _, v := range fi.Fields {
+			ret, done, err := checkUnionType(v, newCurr)
+			if err != nil {
+				return nil, false, err
+			}
+			if done {
+				return ret, done, nil
+			}
+		}
+	}
+	t3, ok2 := t.(enttype.TSWithUnionFields)
+	if ok2 {
+		unionFields := t3.GetUnionFields()
+		if unionFields == nil {
+			return nil, false, nil
+		}
+		newCurr := append(curr, f.GetGraphQLName())
+		return newCurr, true, nil
+	}
+
+	return nil, false, nil
+}
+
 func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action, actionPrefix string) (*fieldConfig, error) {
 	// TODO this is so not obvious at all
 	// these are things that are automatically useImported....
@@ -2276,6 +2316,45 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 				f.TsFieldName(),
 				inputField,
 			))
+	}
+
+	lists := [][]string{}
+	for _, f := range a.GetFields() {
+		list, union, err := checkUnionType(f, []string{})
+
+		if err != nil {
+			return nil, err
+		}
+		if union {
+			lists = append(lists, list)
+		}
+	}
+
+	if len(lists) > 0 {
+		var sb strings.Builder
+		// outer list
+		sb.WriteString("[")
+		for _, list := range lists {
+			// inner list
+			sb.WriteString("[")
+			for _, str := range list {
+				sb.WriteString(strconv.Quote(str))
+				sb.WriteString(",")
+			}
+			// inner list
+			sb.WriteString("]")
+		}
+		// outer list
+		sb.WriteString("]")
+
+		result.FunctionContents = append(
+			result.FunctionContents,
+			fmt.Sprintf("input = transformUnionTypes(input, %s);", sb.String()),
+		)
+		argImports = append(argImports, &fileImport{
+			Type:       "transformUnionTypes",
+			ImportPath: "./foo",
+		})
 	}
 
 	if a.GetOperation() == ent.CreateAction {

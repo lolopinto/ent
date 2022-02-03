@@ -25,6 +25,7 @@ import { UserPrefsStruct2InputType } from "../input/user_prefs_struct_2_input_ty
 import { UserPrefsStructInputType } from "../input/user_prefs_struct_input_type";
 import { UserSuperNestedObjectInputType } from "../input/user_super_nested_object_input_type";
 import { DaysOffType, PreferredShiftType, UserType } from "../../../resolvers";
+import { transformUnionTypes } from "./foo";
 
 interface UserCreatePayload {
   user: User;
@@ -102,43 +103,7 @@ export const UserCreateType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<UserCreatePayload> => {
-    const paths = ["superNestedObject", "union"];
-    const lastPath = paths[paths.length - 1];
-    let last = input;
-    for (const path of paths) {
-      // @ts-ignore
-      let curr = last[path];
-
-      if (curr === undefined) {
-        break;
-        // can be nullable. we're only changing if something worth changing
-        // TODO what of nullable?
-      }
-      if (path === lastPath) {
-        let count = 0;
-        let lastKey = undefined;
-        for (const k in curr) {
-          count++;
-          lastKey = k;
-        }
-        if (count != 1) {
-          throw new Error(
-            `oneOf invalidated. can only only pass one key of union. passed ${count}`,
-          );
-        }
-        //        curr = curr[lastKey];
-        // @ts-ignore
-        last[path] = curr[lastKey];
-      }
-      last = curr;
-    }
-    //    for ()
-    //    console.debug(input);
-    // console.debug(last);
-    // console.debug(input);
-    // input format is wrong...
-    //    input.superNestedObject?.union.
-    // if object type and has union do Y
+    input = transformUnionTypes(input, [["superNestedObject", "union"]]);
     const user = await CreateUserAction.create(context.getViewer(), {
       firstName: input.firstName,
       lastName: input.lastName,
