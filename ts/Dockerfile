@@ -60,6 +60,8 @@ WORKDIR /app
 RUN npm install --save-dev tsconfig-paths@3.11.0
 
 COPY --from=golang-image /go/bin/tsent /go/bin/tsent
+# NOTE: if ever debugging in docker image, code is at 
+# /opt/venv/lib/python3.8/site-packages/auto_schema/
 COPY --from=python-image /opt/venv /opt/venv
 # RUN alias auto_schema=auto_schema_test
 COPY --from=golang-image /go/pkg/mod/github.com/lolopinto/ent@$GOLANG_VERSION /go/pkg/mod/github.com/lolopinto/ent@$GOLANG_VERSION
