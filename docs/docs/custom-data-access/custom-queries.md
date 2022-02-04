@@ -17,6 +17,7 @@ We'll be using the following schema in all the examples below:
 ```ts title="src/schema/todo.ts"
 export default class Todo extends BaseEntSchema {
   fields: Field[] = [
+
     StringType({ name: "Text" }),
     BooleanType({
       name: "Completed",
@@ -29,8 +30,10 @@ export default class Todo extends BaseEntSchema {
       name: "creatorID",
       foreignKey: { schema: "Account", column: "ID" },
     }),
-  ];
+
+  ]; 
 }
+
 ```
 
 ## CustomQuery
@@ -134,11 +137,14 @@ export class Account extends AccountBase {
 
 @gqlField({ name: "openTodosPlural", type: "[Todo]" })
   async openTodosPlural() {
+
     return await Todo.loadCustom(
       this.viewer,
       query.And(query.Eq("creator_id", this.id), query.Eq("completed", false)),
     );
+
   }
+
 ```
 
 ## Custom EntQuery
@@ -212,14 +218,16 @@ CustomEdgeQueryOptions has the following properties:
 
 ### expose query to graphql
 
-To expose the custom ent query above to GraphQL as a connection, use [`gqlConnection`](/docs/custom-graphql/gql-connection).
+To expose the custom ent query above to GraphQL as a connection, use [ `gqlConnection` ](/docs/custom-graphql/gql-connection).
 
 ```ts title="src/account.ts"
 export class Account extends AccountBase {
 
 @gqlField({ name: "openTodos", type: gqlConnection("Todo") })
   openTodos() {
+
     return new AccountToOpenTodosQuery(this.viewer, this);
+
   }
 }
 ```
