@@ -26,8 +26,8 @@ const REPO = "ghcr.io/lolopinto/ent"
 const UPDATE_LATEST = true
 
 var NODE_VERSIONS = []int{
-	// 14,
-	// 16,
+	14,
+	16,
 	17,
 }
 
@@ -36,13 +36,13 @@ const TSENT_VERSION = "v0.0.37"
 
 var SUFFIXES = []string{
 	"dev",
-	// "slim",
+	"slim",
 }
 
 // can change platforms here to test locally
 var PLATFORMS = []string{
 	"linux/amd64",
-	// "linux/arm64",
+	"linux/arm64",
 }
 
 func main() {
