@@ -656,6 +656,65 @@ class BaseTestRunner(object):
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_bigint, new_table_names=['tbl'])
 
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_drop_table_with_index(self, new_test_runner, metadata_with_table):
+        r = new_test_runner(metadata_with_table)
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_table)
+
+        r2 = testingutils.recreate_with_new_metadata(
+            r, new_test_runner, metadata_with_table, conftest.metadata_with_table_with_index)
+
+        message = r2.revision_message()
+        assert message == "add index accounts_first_name_idx to accounts"
+
+        r2.run()
+        testingutils.assert_num_files(r2, 2)
+        testingutils.assert_num_tables(r2, 2)
+
+        # no tables
+        new_metadata = sa.MetaData()
+        r2 = testingutils.new_runner_from_old(
+            r,
+            new_test_runner,
+            new_metadata
+        )
+
+        diff = r2.compute_changes()
+
+        assert len(diff) == 2
+
+        modify_table = [op for op in diff if isinstance(
+            op, alembicops.ModifyTableOps)]
+        drop_table = [op for op in diff if isinstance(
+            op, alembicops.DropTableOp)]
+        assert len(modify_table) == 1
+        assert len(drop_table) == 1
+
+        d = Diff(diff, group_by_table=False)
+        assert d.list_changes() == [{
+            'change': ChangeType.DROP_INDEX,
+            'desc': 'drop index accounts_first_name_idx from accounts',
+        }, {
+            'change': ChangeType.DROP_TABLE,
+            'desc': 'drop accounts table',
+        }]
+
+        d2 = Diff(diff, group_by_table=True)
+        assert d2.changes() == {
+            'accounts': [{
+                'change': ChangeType.DROP_INDEX,
+                'desc': 'drop index accounts_first_name_idx from accounts',
+            }, {
+                'change': ChangeType.DROP_TABLE,
+                'desc': 'drop accounts table',
+            }]
+        }
+
+        r2.run()
+        testingutils.assert_num_files(r2, 3)
+        testingutils.validate_metadata_after_change(r2, new_metadata)
+
 
 class TestPostgresRunner(BaseTestRunner):
 
