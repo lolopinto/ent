@@ -7,7 +7,7 @@ sidebar_label: "Loader"
 
 Loader is the core primitive of data fetching used by the framework. It's used by the generated code to fetch data and retrieve from the [context cache](/docs/core-concepts/context-caching) as needed.
 
-This section is only relevant when writing [custom queries](/docs/custom-queries/custom-queries) or to peek under the hood to figure out how things work.
+This section is only relevant when writing [custom queries](/docs/custom-data-access/custom-queries) or to peek under the hood to figure out how things work.
 
 The Loader API looks like this:
 

@@ -1,9 +1,9 @@
-ARG GOLANG_VERSION=v0.0.35
-ARG AUTO_SCHEMA_VERSION=0.0.15
+ARG GOLANG_VERSION=v0.0.37
+ARG AUTO_SCHEMA_VERSION=0.0.16
 ARG NODE_VERSION=17
 
 # get and install tsent
-FROM golang:1.17.5-buster As golang-image
+FROM golang:1.17.6-buster As golang-image
 ARG GOLANG_VERSION
 ENV GOPATH=$HOME/go
 ENV GOBIN $GOPATH/bin
@@ -60,6 +60,8 @@ WORKDIR /app
 RUN npm install --save-dev tsconfig-paths@3.11.0
 
 COPY --from=golang-image /go/bin/tsent /go/bin/tsent
+# NOTE: if ever debugging in docker image, code is at 
+# /opt/venv/lib/python3.8/site-packages/auto_schema/
 COPY --from=python-image /opt/venv /opt/venv
 # RUN alias auto_schema=auto_schema_test
 COPY --from=golang-image /go/pkg/mod/github.com/lolopinto/ent@$GOLANG_VERSION /go/pkg/mod/github.com/lolopinto/ent@$GOLANG_VERSION

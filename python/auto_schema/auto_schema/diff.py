@@ -61,13 +61,13 @@ class Diff(object):
         })
 
     def _create_table(self: Diff, op: alembicops.CreateTableOp):
-        self._set_change(op.table_name,                 {
+        self._append_change(op.table_name,                 {
             "change": ChangeType.ADD_TABLE,
             "desc": 'add %s table' % op.table_name,
         })
 
     def _drop_table(self: Diff, op: alembicops.DropTableOp):
-        self._set_change(op.table_name,                 {
+        self._append_change(op.table_name,                 {
             "change": ChangeType.DROP_TABLE,
             "desc": 'drop %s table' % op.table_name,
         })
@@ -163,19 +163,3 @@ class Diff(object):
             changes = self._changes[table_name]
         changes.append(change)
         self._changes[table_name] = changes
-
-    # throws if there's changes already set for a table
-    def _set_change(self: Diff, table_name: String, change: Change):
-        if not self._group_by_table:
-            self._changes_list.append(change)
-            return
-
-        if table_name not in self._changes:
-            self._changes[table_name] = [
-                change
-            ]
-        else:
-            # TODO: this error needs to be better
-            # https://github.com/lolopinto/ent/issues/499
-            raise Exception(
-                "there shouldn't already be an entry for table %s" % table_name)
