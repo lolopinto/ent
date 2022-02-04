@@ -31,7 +31,7 @@ var NODE_VERSIONS = []int{
 	17,
 }
 
-const AUTO_SCHEMA_VERSION = "0.0.15"
+const AUTO_SCHEMA_VERSION = "0.0.16"
 const TSENT_VERSION = "v0.0.37"
 
 var SUFFIXES = []string{
