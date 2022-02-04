@@ -22,7 +22,6 @@ func checkAndHandlePrompts(p *Processor) error {
 	if err := json.Unmarshal(buf.Bytes(), &changes); err != nil {
 		return err
 	}
-	p.changes = changes
 
 	if len(changes) == 0 {
 		// we know there's no db changes so we should flag this so that we don't call into python in the future to try and make changes
