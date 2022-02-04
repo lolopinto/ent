@@ -9,7 +9,7 @@ import (
 )
 
 var printSchemaCmd = &cobra.Command{
-	Use:   "print-schema",
+	Use:   "print_schema",
 	Short: "prints the parsed schema. only exists for debugging purposes and not guaranteed to exist forever",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		path, err := os.Getwd()

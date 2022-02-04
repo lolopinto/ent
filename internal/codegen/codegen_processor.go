@@ -59,6 +59,7 @@ type Processor struct {
 	debugMode   bool
 	opt         *option
 	noDBChanges bool
+	changes     map[string][]change
 }
 
 func (p *Processor) NoDBChanges() bool {
@@ -168,10 +169,14 @@ func (p *Processor) FormatTS() error {
 }
 
 func postProcess(p *Processor) error {
+	format := true
 	if p.opt != nil && p.opt.disableFormat {
-		return nil
+		format = false
 	}
-	return p.FormatTS()
+	if format {
+		return p.FormatTS()
+	}
+	return nil
 }
 
 func runAndLog(p *Processor, fn func(p *Processor) error, logDiff func(d time.Duration)) error {
