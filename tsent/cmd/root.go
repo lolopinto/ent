@@ -78,6 +78,7 @@ func init() {
 		generateCmd,
 		squashCmd,
 		printSchemaCmd,
+		deleteSchemaCmd,
 	})
 
 	addCommands(generateCmd, []*cobra.Command{
