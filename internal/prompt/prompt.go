@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 type Prompt interface {
@@ -57,8 +55,7 @@ func (q *YesNoQuestion) HandleRune(r rune, size int) *PromptResponse {
 		return nil
 	}
 
-	// hmm i remember this issue in the past...
-	fmt.Println("TODO yes/no PR")
+	// this is being done twice. TODO handle it...
 	// follow-up prompt
 	return &PromptResponse{
 		Prompt: &YesNoQuestion{
@@ -85,7 +82,6 @@ func handlePrompt(p Prompt, reader *bufio.Reader) error {
 	if ok {
 		fmt.Print(p.GetQuestion())
 		r, size, err := reader.ReadRune()
-		spew.Dump(r, size)
 		if err != nil {
 			return nil
 		}

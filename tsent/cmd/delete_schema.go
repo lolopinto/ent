@@ -4,8 +4,12 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/db"
+	"github.com/lolopinto/ent/internal/graphql"
 	"github.com/lolopinto/ent/internal/prompt"
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/tscode"
 	"github.com/spf13/cobra"
 )
 
@@ -41,8 +45,34 @@ var deleteSchemaCmd = &cobra.Command{
 			return err
 		}
 
-		// TODO db and then re-run codegen
-		return nil
+		s2, err := parseSchema()
+		if err != nil {
+			return err
+		}
+		processor, err := codegen.NewCodegenProcessor(s2, "src/schema", "", rootInfo.debug)
+		if err != nil {
+			return err
+		}
+
+		steps := []codegen.Step{
+			new(db.Step),
+			new(tscode.Step),
+		}
+
+		// db change and then run codegen again for just ent
+		// do graphql later separately so that custom graphql isn't run yet
+		// since it's done in the pre-process step and we want that only
+		// to be run after the ent code is good
+		if err := processor.Run(steps, ""); err != nil {
+			return err
+		}
+
+		// run codegen for graphql now that ent code has been changed
+		// can do custom graphql now
+		steps2 := []codegen.Step{
+			new(graphql.TSStep),
+		}
+		return processor.Run(steps2, "")
 	},
 }
 
