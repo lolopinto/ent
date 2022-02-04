@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"unicode"
 )
 
 type Prompt interface {
@@ -12,7 +13,7 @@ type Prompt interface {
 
 type RunePrompt interface {
 	Prompt
-	HandleRune(r rune, size int) *PromptResponse
+	HandleRune(r rune) *PromptResponse
 }
 
 type PromptResponse struct {
@@ -42,7 +43,7 @@ func (q *YesNoQuestion) GetQuestion() string {
 	return q.Question
 }
 
-func (q *YesNoQuestion) HandleRune(r rune, size int) *PromptResponse {
+func (q *YesNoQuestion) HandleRune(r rune) *PromptResponse {
 	if r == 'y' || r == 'Y' {
 		if q.YesHandler != nil {
 			q.YesHandler()
@@ -81,11 +82,15 @@ func handlePrompt(p Prompt, reader *bufio.Reader) error {
 	rp, ok := p.(RunePrompt)
 	if ok {
 		fmt.Print(p.GetQuestion())
-		r, size, err := reader.ReadRune()
+		str, err := reader.ReadString('\n')
 		if err != nil {
-			return nil
+			return err
 		}
-		res := rp.HandleRune(r, size)
+		r, err := readRune(str)
+		if err != nil {
+			return err
+		}
+		res := rp.HandleRune(r)
 		if res != nil {
 			if res.Error != nil {
 				return res.Error
@@ -102,4 +107,18 @@ func handlePrompt(p Prompt, reader *bufio.Reader) error {
 	// eventually as we need different prompt types, we'll handle here too
 
 	return fmt.Errorf("invalid prompt type")
+}
+
+func readRune(s string) (rune, error) {
+	var chars []rune
+	for _, c := range s {
+		if !unicode.IsSpace(c) {
+			chars = append(chars, c)
+		}
+	}
+	var ret rune
+	if len(chars) != 1 {
+		return ret, fmt.Errorf("error getting one non-whitespace rune")
+	}
+	return chars[0], nil
 }
