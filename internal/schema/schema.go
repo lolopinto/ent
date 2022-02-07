@@ -39,7 +39,6 @@ type Schema struct {
 	Enums            map[string]*EnumInfo
 	enumTables       map[string]*EnumInfo
 	CustomInterfaces map[string]*customtype.CustomInterface
-	//	CustomUnions     map[string]*customtype.CustomUnion
 }
 
 func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData) error {
@@ -627,8 +626,6 @@ func (s *Schema) getCustomUnion(f *field.Field) (*customtype.CustomUnion, error)
 		return nil, err
 	}
 	for _, f2 := range fi.Fields {
-		// TODO need fieldName
-		////
 		ci, subFields := s.getCustomInterfaceFromField(f2)
 		if ci == nil || subFields == nil {
 			return nil, fmt.Errorf("couldn't get custom interface from field %s", f.FieldName)

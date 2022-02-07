@@ -167,7 +167,6 @@ func (action *commonActionInfo) IsDeletingNode() bool {
 	return action.Operation == ent.DeleteAction
 }
 
-// for custom fields, the ty
 func getTypes(typ enttype.TSTypeWithCustomType) (string, string) {
 	cti := typ.GetCustomTypeInfo()
 	return cti.TSInterface, cti.GraphQLInterface

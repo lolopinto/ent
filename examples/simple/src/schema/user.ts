@@ -87,7 +87,6 @@ export default class User extends BaseEntSchema implements Schema {
       fields: {
         finishedNux: BooleanType({ nullable: true }),
         enableNotifs: BooleanType({ nullable: true }),
-        // TODO need to make sure embedded enums are generated in graphql
         notifTypes: EnumListType({
           values: ["MOBILE", "WEB", "EMAIL"],
           tsType: "NotifType2",

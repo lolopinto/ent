@@ -2372,7 +2372,6 @@ func GetEnumType(t Type) (EnumeratedType, bool) {
 		}
 	}
 
-	// TODO structType and generate enumType...
 	return nil, false
 }
 

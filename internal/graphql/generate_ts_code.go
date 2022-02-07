@@ -292,10 +292,14 @@ type writeFileFn func() error
 type writeFileFnList []writeFileFn
 
 func buildSchema(processor *codegen.Processor, fromTest bool) (*gqlSchema, error) {
-	cd, s := <-parseCustomData(processor, fromTest), <-buildGQLSchema(processor)
+	cd, schemaResult := <-parseCustomData(processor, fromTest), <-buildGQLSchema(processor)
 	if cd.Error != nil {
 		return nil, cd.Error
 	}
+	if schemaResult.error != nil {
+		return nil, schemaResult.error
+	}
+	s := schemaResult.schema
 	// put this here after the fact
 	s.customData = cd
 
@@ -1086,8 +1090,13 @@ func getGqlConnection(packageName string, edge edge.ConnectionEdge, processor *c
 	}
 }
 
-func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
-	var result = make(chan *gqlSchema)
+type buildGQLSchemaResult struct {
+	schema *gqlSchema
+	error  error
+}
+
+func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
+	var result = make(chan *buildGQLSchemaResult)
 	go func() {
 		var hasMutations bool
 		var hasConnections bool
@@ -1098,6 +1107,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 		var wg sync.WaitGroup
 		var m sync.Mutex
 		var otherNodes []*gqlNode
+		var serr syncerr.Error
 		wg.Add(len(processor.Schema.Nodes))
 		wg.Add(len(processor.Schema.Enums))
 		wg.Add(len(processor.Schema.CustomInterfaces))
@@ -1164,8 +1174,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 
 						fieldCfg, err := buildActionFieldConfig(processor, nodeData, action, actionPrefix)
 						if err != nil {
-							// TODO
-							panic(err)
+							serr.Append(err)
 						}
 						actionObj := gqlNode{
 							ObjData: &gqlobjectData{
@@ -1291,7 +1300,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 		}
 
 		wg.Wait()
-		result <- &gqlSchema{
+		schema := &gqlSchema{
 			nodes:          nodes,
 			rootQueries:    rootQueries,
 			enums:          enums,
@@ -1300,6 +1309,10 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 			hasConnections: hasConnections,
 			customEdges:    make(map[string]*objectType),
 			otherObjects:   otherNodes,
+		}
+		result <- &buildGQLSchemaResult{
+			schema: schema,
+			error:  serr.Err(),
 		}
 	}()
 	return result
@@ -1970,10 +1983,8 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	// maybe not the best place for this probably but it makes sense
 	// as dependencies...
 	for _, c := range a.GetCustomInterfaces() {
-		// flag. Action used here
-		action, ok := c.Action.(action.Action)
-		if ok {
-			spew.Dump("action")
+		if c.Action != nil {
+			action := c.Action.(action.Action)
 			result.Imports = append(result.Imports, &fileImport{
 				Type:       c.GQLType,
 				ImportPath: getImportPathForActionFromPackage(action.GetNodeInfo().PackageName, action),
