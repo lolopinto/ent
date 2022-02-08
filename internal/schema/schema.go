@@ -39,6 +39,7 @@ type Schema struct {
 	Enums            map[string]*EnumInfo
 	enumTables       map[string]*EnumInfo
 	CustomInterfaces map[string]*customtype.CustomInterface
+	gqlNameMap       map[string]bool
 }
 
 func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData) error {
@@ -156,19 +157,14 @@ func (s *Schema) addEnumFrom(input *enum.Input, nodeData *NodeData, inputNode *i
 		InputNode: inputNode,
 	}
 
-	gqlName := input.GQLName
 	if nodeData.HideFromGraphQL {
 		// hide from graphql. no graphql enum
 		info.GQLEnum = nil
 	}
 
 	// new source enum
-	if input.HasValues() {
-		if s.Enums[gqlName] != nil {
-			return fmt.Errorf("enum schema with gqlname %s already exists", gqlName)
-		}
-		// key on gqlName since key isn't really being used atm and gqlName needs to be unique
-		s.Enums[gqlName] = info
+	if err := s.addEnumShared(input, info); err != nil {
+		return err
 	}
 
 	if nodeData.EnumTable {
@@ -196,17 +192,28 @@ func (s *Schema) addEnumFromInput(input *enum.Input, pattern *input.Pattern) (*E
 		Pattern: pattern,
 	}
 
-	gqlName := input.GQLName
-
 	// new source enum
+	if err := s.addEnumShared(input, info); err != nil {
+		return nil, err
+	}
+	return info, nil
+}
+
+func (s *Schema) addEnumShared(input *enum.Input, info *EnumInfo) error {
+	gqlName := input.GQLName
 	if input.HasValues() {
 		if s.Enums[gqlName] != nil {
-			return nil, fmt.Errorf("enum schema with gqlname %s already exists", gqlName)
+			return fmt.Errorf("enum schema with gqlname %s already exists", gqlName)
+		}
+
+		// TODO we're storing the same info twice. simplify this.
+		if err := s.addGQLName(gqlName); err != nil {
+			return err
 		}
 		// key on gqlName since key isn't really being used atm and gqlName needs to be unique
 		s.Enums[gqlName] = info
 	}
-	return info, nil
+	return nil
 }
 
 // Given a schema file parser, Parse parses the schema to return the completely
@@ -251,6 +258,7 @@ func (s *Schema) init() {
 	s.enumTables = make(map[string]*EnumInfo)
 	s.Patterns = map[string]*PatternInfo{}
 	s.CustomInterfaces = map[string]*customtype.CustomInterface{}
+	s.gqlNameMap = make(map[string]bool)
 }
 
 func (s *Schema) GetNodeDataFromTableName(tableName string) *NodeData {
@@ -569,11 +577,12 @@ func (s *Schema) checkCustomInterface(f *field.Field, root *customtype.CustomInt
 		return nil
 	}
 
+	if err := s.addGQLName(ci.GQLType); err != nil {
+		return err
+	}
+
 	if root == nil {
 		root = ci
-		if s.CustomInterfaces[ci.TSType] != nil {
-			return fmt.Errorf("custom interface with name %s already exists", ci.TSType)
-		}
 		s.CustomInterfaces[ci.TSType] = ci
 	} else {
 		root.Children = append(root.Children, ci)
@@ -618,6 +627,10 @@ func (s *Schema) getCustomUnion(f *field.Field) (*customtype.CustomUnion, error)
 	cu := &customtype.CustomUnion{
 		TSType:  cti.TSInterface,
 		GQLType: cti.GraphQLInterface,
+	}
+
+	if err := s.addGQLName(cu.GQLType); err != nil {
+		return nil, err
 	}
 
 	actualSubFields := unionFields.([]*input.Field)
@@ -668,6 +681,14 @@ func (s *Schema) loadExistingEdges() (*assocEdgeData, error) {
 	}, nil
 }
 
+func (s *Schema) addGQLName(name string) error {
+	if s.gqlNameMap[name] {
+		return fmt.Errorf("there's already an entity with GraphQL name %s", name)
+	}
+	s.gqlNameMap[name] = true
+	return nil
+}
+
 func (s *Schema) addConfig(info *NodeDataInfo) error {
 	// validate schema and table name
 	if s.Nodes[info.NodeData.EntConfigName] != nil {
@@ -675,6 +696,10 @@ func (s *Schema) addConfig(info *NodeDataInfo) error {
 	}
 	if s.tables[info.NodeData.TableName] != nil {
 		return fmt.Errorf("schema with table name %s already exists", info.NodeData.TableName)
+	}
+
+	if err := s.addGQLName(info.NodeData.Node); err != nil {
+		return err
 	}
 
 	// it's confusing that this is stored in 2 places :(
