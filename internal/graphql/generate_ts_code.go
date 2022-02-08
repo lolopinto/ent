@@ -2218,35 +2218,34 @@ func checkUnionType(f *field.Field, curr []string) ([]string, bool, error) {
 
 	t2, ok := t.(enttype.TSWithSubFields)
 	if ok {
+		// can have subFields nil and unionFields
 		subFields := t2.GetSubFields()
-		if subFields == nil {
-			return nil, false, nil
-		}
-		newCurr := append(curr, f.GetGraphQLName())
-		actualSubFields := subFields.([]*input.Field)
+		if subFields != nil {
+			newCurr := append(curr, f.GetGraphQLName())
+			actualSubFields := subFields.([]*input.Field)
 
-		fi, err := field.NewFieldInfoFromInputs(actualSubFields, &field.Options{})
-		if err != nil {
-			return nil, false, err
-		}
-		for _, v := range fi.Fields {
-			ret, done, err := checkUnionType(v, newCurr)
+			fi, err := field.NewFieldInfoFromInputs(actualSubFields, &field.Options{})
 			if err != nil {
 				return nil, false, err
 			}
-			if done {
-				return ret, done, nil
+			for _, v := range fi.Fields {
+				ret, done, err := checkUnionType(v, newCurr)
+				if err != nil {
+					return nil, false, err
+				}
+				if done {
+					return ret, done, nil
+				}
 			}
 		}
 	}
 	t3, ok2 := t.(enttype.TSWithUnionFields)
 	if ok2 {
 		unionFields := t3.GetUnionFields()
-		if unionFields == nil {
-			return nil, false, nil
+		if unionFields != nil {
+			newCurr := append(curr, f.GetGraphQLName())
+			return newCurr, true, nil
 		}
-		newCurr := append(curr, f.GetGraphQLName())
-		return newCurr, true, nil
 	}
 
 	return nil, false, nil
