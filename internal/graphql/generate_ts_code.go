@@ -1495,7 +1495,7 @@ func getSortedLines(s *gqlSchema, cfg *codegen.Config) []string {
 	var otherObjs []string
 	for _, node := range s.otherObjects {
 		// not the best check in the world...
-		if len(node.ObjData.GQLNodes) == 1 && node.ObjData.GQLNodes[0].GQLType == "GraphQLInputObjectType" {
+		if len(node.ObjData.GQLNodes) >= 1 && node.ObjData.GQLNodes[0].GQLType == "GraphQLInputObjectType" {
 			// input file
 			continue
 		}

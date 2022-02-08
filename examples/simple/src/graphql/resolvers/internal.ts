@@ -17,7 +17,6 @@ export * from "./generated/notif_type_2_type";
 export * from "./generated/notif_type_type";
 export * from "./generated/preferred_shift_type";
 export * from "./generated/rabbit_breed_type";
-export * from "../mutations/generated/input/user_super_nested_object_input_type";
 export * from "./generated/user_prefs_diff_type";
 export * from "./generated/user_prefs_struct_2_type";
 export * from "./generated/user_prefs_struct_type";
