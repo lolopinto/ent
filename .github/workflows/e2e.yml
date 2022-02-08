@@ -107,7 +107,7 @@ jobs:
       - name: add new field
         run: |
           cd ent-starter
-          npm install @snowtop/ent-phonenumber@0.0.x
+          npm install @snowtop/ent-phonenumber@0.1.0-alpha1
           cat ../.github/testdata/schema2.json | tsent generate schemas --force
           tsent codegen
         env:
