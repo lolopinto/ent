@@ -1912,28 +1912,43 @@ func (t *CommonJSONType) getDBType(jsonb bool) string {
 }
 
 func (t *CommonJSONType) GetGraphQLType() string {
+	if t.CustomGraphQLInterface != "" {
+		return t.CustomGraphQLInterface + "!"
+	}
 	return "JSON!"
 }
 
+func (t *CommonJSONType) getTSTypeFromInfo(impType *InputImportType) string {
+	var typ string
+	if impType != nil {
+		typ = impType.Type
+	} else if t.CustomTsInterface != "" {
+		typ = t.CustomTsInterface
+	}
+	return typ
+}
+
 func (t *CommonJSONType) getTsType(nullable bool, impType *InputImportType) string {
-	if impType == nil {
+	typ := t.getTSTypeFromInfo(impType)
+	if typ == "" {
 		return "any"
 	}
 	if nullable {
-		return impType.Type + " | null"
+		return typ + " | null"
 	}
-	return impType.Type
+	return typ
 }
 
 func (t *CommonJSONType) getTsTypeImports(impType *InputImportType) []string {
-	if impType == nil {
+	typ := t.getTSTypeFromInfo(impType)
+	if typ == "" {
 		return nil
 	}
-	return []string{impType.Type}
+	return []string{typ}
 }
 
 func (t *CommonJSONType) getJSONGraphQLType(gqlType string, input bool) FileImport {
-	if t.SubFields == nil {
+	if t.SubFields == nil && t.UnionFields == nil {
 		// TODO https://github.com/taion/graphql-type-json
 		return FileImport{
 			Type:       "GraphQLJSON",
@@ -2014,6 +2029,7 @@ func (t *JSONType) GetNullableType() TSGraphQLType {
 	ret := &NullableJSONType{}
 	ret.ImportType = t.ImportType
 	ret.SubFields = t.SubFields
+	ret.UnionFields = t.UnionFields
 	ret.CustomGraphQLInterface = t.CustomGraphQLInterface
 	ret.CustomTsInterface = t.CustomTsInterface
 	return ret
@@ -2053,6 +2069,9 @@ func (t *NullableJSONType) GetTSType() string {
 }
 
 func (t *NullableJSONType) GetGraphQLType() string {
+	if t.CustomGraphQLInterface != "" {
+		return t.CustomGraphQLInterface
+	}
 	return "JSON"
 }
 
@@ -2073,6 +2092,7 @@ func (t *NullableJSONType) GetNonNullableType() TSGraphQLType {
 	ret := &JSONType{}
 	ret.ImportType = t.ImportType
 	ret.SubFields = t.SubFields
+	ret.UnionFields = t.UnionFields
 	ret.CustomGraphQLInterface = t.CustomGraphQLInterface
 	ret.CustomTsInterface = t.CustomTsInterface
 	return ret
@@ -2098,6 +2118,7 @@ func (t *JSONBType) GetNullableType() TSGraphQLType {
 	ret := &NullableJSONBType{}
 	ret.ImportType = t.ImportType
 	ret.SubFields = t.SubFields
+	ret.UnionFields = t.UnionFields
 	ret.CustomGraphQLInterface = t.CustomGraphQLInterface
 	ret.CustomTsInterface = t.CustomTsInterface
 	return ret
@@ -2141,6 +2162,9 @@ func (t *NullableJSONBType) GetTSType() string {
 }
 
 func (t *NullableJSONBType) GetGraphQLType() string {
+	if t.CustomGraphQLInterface != "" {
+		return t.CustomGraphQLInterface
+	}
 	return "JSON"
 }
 
@@ -2154,6 +2178,7 @@ func (t *NullableJSONBType) GetNonNullableType() TSGraphQLType {
 	ret := &JSONBType{}
 	ret.ImportType = t.ImportType
 	ret.SubFields = t.SubFields
+	ret.UnionFields = t.UnionFields
 	ret.CustomGraphQLInterface = t.CustomGraphQLInterface
 	ret.CustomTsInterface = t.CustomTsInterface
 	return ret

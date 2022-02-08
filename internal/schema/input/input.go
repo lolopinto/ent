@@ -296,7 +296,7 @@ func getTypeFor(fieldName string, typ *FieldType, nullable bool, foreignKey *For
 			ret.ImportType = importType
 			ret.CustomTsInterface = typ.Type
 			ret.CustomGraphQLInterface = typ.GraphQLType
-			ret.SubFields = typ.SubFields
+			ret.SubFields = subFields
 			ret.UnionFields = unionFields
 			return ret, nil
 		}
@@ -304,7 +304,7 @@ func getTypeFor(fieldName string, typ *FieldType, nullable bool, foreignKey *For
 		ret.ImportType = importType
 		ret.CustomTsInterface = typ.Type
 		ret.CustomGraphQLInterface = typ.GraphQLType
-		ret.SubFields = typ.SubFields
+		ret.SubFields = subFields
 		ret.UnionFields = unionFields
 		return ret, nil
 
