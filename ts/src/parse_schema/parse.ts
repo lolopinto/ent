@@ -8,10 +8,25 @@ import {
 } from "../schema";
 import { ActionField, Type, FieldMap } from "../schema/schema";
 
-function processFields(src: FieldMap, patternName?: string): ProcessedField[] {
+function processFields(
+  src: FieldMap | Field[],
+  patternName?: string,
+): ProcessedField[] {
   const ret: ProcessedField[] = [];
-  for (const name in src) {
-    const field = src[name];
+  let m: FieldMap = {};
+  if (Array.isArray(src)) {
+    for (const field of src) {
+      const name = field.name;
+      if (!name) {
+        throw new Error(`name is required`);
+      }
+      m[name] = field;
+    }
+  } else {
+    m = src;
+  }
+  for (const name in m) {
+    const field = m[name];
     let f: ProcessedField = { name, ...field };
     f.hasDefaultValueOnCreate = field.defaultValueOnCreate != undefined;
     f.hasDefaultValueOnEdit = field.defaultValueOnEdit != undefined;
