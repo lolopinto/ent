@@ -11,6 +11,7 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { DaysOff, PreferredShift, User } from "../../..";
+import { UserNestedObjectList } from "../../../generated/user_nested_object_list";
 import { UserPrefsDiff } from "../../../generated/user_prefs_diff";
 import { UserPrefsStruct } from "../../../generated/user_prefs_struct";
 import { UserPrefsStruct2 } from "../../../generated/user_prefs_struct_2";
@@ -31,6 +32,7 @@ export interface UserCreateInput {
   funUuids?: ID[] | null;
   prefsList?: UserPrefsStruct2[] | null;
   superNestedObject?: UserSuperNestedObject | null;
+  nestedList?: UserNestedObjectList[] | null;
 }
 
 export class CreateUserActionBase

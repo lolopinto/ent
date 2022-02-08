@@ -741,7 +741,7 @@ export class ListField extends BaseField {
     for (let i = 0; i < val.length; i++) {
       let formatted = val[i];
       if (this.field.format) {
-        formatted = this.field.format(val[i]);
+        formatted = this.field.format(val[i], nested);
       }
 
       // postgres supports arrays natively so we

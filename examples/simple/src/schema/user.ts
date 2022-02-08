@@ -261,6 +261,25 @@ export default class User extends BaseEntSchema implements Schema {
         }),
       },
     }),
+    StructListType({
+      name: "nestedList",
+      nullable: true,
+      tsType: "UserNestedObjectList",
+      fields: {
+        type: StringType(),
+        enum: EnumType({
+          values: ["yes", "no", "maybe"],
+          tsType: "EnumUsedInList",
+          graphQLType: "EnumUsedInList",
+        }),
+        objects: StructListType({
+          tsType: "UserNestedNestedObjectList",
+          fields: {
+            int: IntegerType(),
+          },
+        }),
+      },
+    }),
   ];
 
   edges: Edge[] = [
@@ -295,6 +314,7 @@ export default class User extends BaseEntSchema implements Schema {
         "fun_uuids",
         "prefsList",
         "superNestedObject",
+        "nestedList",
       ],
     },
 

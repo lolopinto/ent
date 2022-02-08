@@ -36,6 +36,7 @@ import {
   ContactType,
   DaysOffType,
   PreferredShiftType,
+  UserNestedObjectListType,
   UserPrefsDiffType,
   UserPrefsStruct2Type,
   UserPrefsStructType,
@@ -110,6 +111,9 @@ export const UserType = new GraphQLObjectType({
     },
     superNestedObject: {
       type: UserSuperNestedObjectType,
+    },
+    nestedList: {
+      type: GraphQLList(GraphQLNonNull(UserNestedObjectListType)),
     },
     selfContact: {
       type: ContactType,

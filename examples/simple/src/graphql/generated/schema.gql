@@ -92,6 +92,12 @@ enum Enum {
   MAYBE
 }
 
+enum EnumUsedInList {
+  YES
+  NO
+  MAYBE
+}
+
 enum EventRsvpStatus {
   ATTENDING
   DECLINED
@@ -237,6 +243,7 @@ type User implements Node {
   newCol: String
   newCol2: String
   superNestedObject: UserSuperNestedObject
+  nestedList: [UserNestedObjectList!]
   selfContact: Contact
   comments(first: Int, after: String, last: Int, before: String): UserToCommentsConnection!
   createdEvents(first: Int, after: String, last: Int, before: String): UserToCreatedEventsConnection!
@@ -805,6 +812,7 @@ input UserCreateInput {
   funUuids: [ID!]
   prefsList: [UserPrefsStruct2Input!]
   superNestedObject: UserSuperNestedObjectInput
+  nestedList: [UserNestedObjectListInput!]
 }
 
 type UserCreatePayload {

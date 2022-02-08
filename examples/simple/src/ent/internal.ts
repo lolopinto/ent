@@ -16,6 +16,7 @@ export * from "./generated/holiday_base";
 export * from "./generated/hours_of_operation_base";
 export * from "./generated/patterns/feedback_query_base";
 export * from "./generated/user_base";
+export * from "./generated/user_nested_object_list";
 export * from "./generated/user_prefs_diff";
 export * from "./generated/user_prefs_struct";
 export * from "./generated/user_prefs_struct_2";

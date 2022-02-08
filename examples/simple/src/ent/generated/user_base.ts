@@ -35,6 +35,7 @@ import {
   userLoaderInfo,
   userPhoneNumberLoader,
 } from "./loaders";
+import { UserNestedObjectList } from "./user_nested_object_list";
 import { UserPrefsDiff } from "./user_prefs_diff";
 import { UserPrefsStruct } from "./user_prefs_struct";
 import { UserPrefsStruct2 } from "./user_prefs_struct_2";
@@ -99,6 +100,7 @@ export class UserBase {
   readonly newCol: string | null;
   readonly newCol2: string | null;
   readonly superNestedObject: UserSuperNestedObject | null;
+  readonly nestedList: UserNestedObjectList[] | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
@@ -123,6 +125,7 @@ export class UserBase {
     this.newCol = data.new_col;
     this.newCol2 = data.new_col_2;
     this.superNestedObject = convertNullableJSON(data.super_nested_object);
+    this.nestedList = convertNullableJSONList(data.nested_list);
   }
 
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;

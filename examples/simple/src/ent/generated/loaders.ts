@@ -249,6 +249,7 @@ const userFields = [
   "new_col",
   "new_col_2",
   "super_nested_object",
+  "nested_list",
 ];
 
 export const userLoader = new ObjectLoaderFactory({

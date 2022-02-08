@@ -43,6 +43,11 @@ import ConfirmEditPhoneNumberAction from "../user/actions/confirm_edit_phone_num
 import CreateCommentAction from "../comment/actions/create_comment_action";
 import { NotifType } from "../generated/user_prefs_struct";
 import { NotifType2 } from "../generated/user_prefs_struct_2";
+import {
+  EnumUsedInList,
+  UserNestedNestedObjectList,
+  UserNestedObjectList,
+} from "../generated/user_nested_object_list";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -1097,6 +1102,37 @@ describe("super nested complex", () => {
       },
     };
     expect(user.superNestedObject).toStrictEqual(formattedObj);
+  });
+
+  test("nested list", async () => {
+    const objs: UserNestedObjectList[] = [
+      {
+        type: "foo",
+        enum: EnumUsedInList.Maybe,
+        objects: [
+          {
+            int: 2,
+          },
+          {
+            int: 3,
+          },
+        ],
+      },
+      {
+        type: "bar",
+        enum: EnumUsedInList.No,
+        objects: [],
+      },
+    ];
+    const user = await CreateUserAction.create(new LoggedOutViewer(), {
+      firstName: "Jane",
+      lastName: "Doe",
+      emailAddress: randomEmail(),
+      phoneNumber: randomPhoneNumber(),
+      password: random(),
+      nestedList: objs,
+    }).saveX();
+    expect(user.nestedList).toStrictEqual(objs);
   });
 });
 

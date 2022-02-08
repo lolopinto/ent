@@ -22,6 +22,7 @@ import {
   User,
 } from "../../..";
 import { EdgeType, NodeType } from "../../../generated/const";
+import { UserNestedObjectList } from "../../../generated/user_nested_object_list";
 import { UserPrefsDiff } from "../../../generated/user_prefs_diff";
 import { UserPrefsStruct } from "../../../generated/user_prefs_struct";
 import { UserPrefsStruct2 } from "../../../generated/user_prefs_struct_2";
@@ -48,6 +49,7 @@ export interface UserInput {
   newCol?: string | null;
   newCol2?: string | null;
   superNestedObject?: UserSuperNestedObject | null;
+  nestedList?: UserNestedObjectList[] | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -644,6 +646,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
     addField("new_col", fields.newCol);
     addField("new_col2", fields.newCol2);
     addField("superNestedObject", fields.superNestedObject);
+    addField("nestedList", fields.nestedList);
     return result;
   }
 
@@ -798,5 +801,13 @@ export class UserBuilder<TData extends UserInput = UserInput>
       return this.input.superNestedObject;
     }
     return this.existingEnt?.superNestedObject;
+  }
+
+  // get value of nestedList. Retrieves it from the input if specified or takes it from existingEnt
+  getNewNestedListValue(): UserNestedObjectList[] | null | undefined {
+    if (this.input.nestedList !== undefined) {
+      return this.input.nestedList;
+    }
+    return this.existingEnt?.nestedList;
   }
 }
