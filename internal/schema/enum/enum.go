@@ -25,6 +25,14 @@ func (c *Enum) Clone() *Enum {
 	return ret
 }
 
+func (c *Enum) GetEnumValues() []string {
+	ret := make([]string, len(c.Values))
+	for i, v := range c.Values {
+		ret[i] = v.Value
+	}
+	return ret
+}
+
 type GQLEnum struct {
 	Name   string // Name is the name of the enum
 	Type   string // type of the enum e.g. nullable or not

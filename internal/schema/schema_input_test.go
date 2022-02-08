@@ -3,7 +3,6 @@ package schema_test
 import (
 	"testing"
 
-	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
@@ -1267,91 +1266,4 @@ func TestWithPatternsNoEdgeConstName(t *testing.T) {
 	assert.Equal(t, "ObjectToLikersQuery", patternLikersEdge.TsEdgeQueryName())
 	assert.True(t, patternLikersEdge.CreateEdge())
 	assert.False(t, patternLikersEdge.PolymorphicEdge())
-}
-
-// TODO move all of this into its own file
-func TestWithSubFields(t *testing.T) {
-	inputSchema := &input.Schema{
-		Nodes: map[string]*input.Node{
-			"User": {
-				Fields: []*input.Field{
-					{
-						Name: "id",
-						Type: &input.FieldType{
-							DBType: input.UUID,
-						},
-						PrimaryKey: true,
-					},
-					{
-						Name: "userPrefs",
-						Type: &input.FieldType{
-							DBType: input.JSONB,
-							SubFields: []*input.Field{
-								{
-									Name: "finishedNux",
-									Type: &input.FieldType{
-										DBType: input.Boolean,
-									},
-									Nullable: true,
-								},
-								{
-									Name: "enableNotifs",
-									Type: &input.FieldType{
-										DBType: input.Boolean,
-									},
-									Nullable: true,
-								},
-								{
-									Name: "notifTypes",
-									Type: &input.FieldType{
-										DBType: input.List,
-										ListElemType: &input.FieldType{
-											DBType: input.StringEnum,
-										},
-									},
-									Nullable: true,
-								},
-							},
-						},
-					},
-				},
-				Actions: []*input.Action{
-					{
-						Operation: ent.CreateAction,
-					},
-				},
-			},
-		},
-	}
-
-	// TODO custom interfaces in base class...
-	// also going to need custom interfaces in patterns...
-	// for now, we're only doing input
-	// will be any or JSON in ents and graphql
-	schema, err := schema.ParseFromInputSchema(inputSchema, base.TypeScript)
-	require.Nil(t, err)
-	assert.Len(t, schema.Nodes, 1)
-
-	userNode := schema.Nodes["UserConfig"]
-	require.NotNil(t, userNode)
-
-	require.Len(t, schema.CustomInterfaces, 1)
-	// require.Len(t, userNode.NodeData.ActionInfo.Actions, 1)
-
-	// action := userNode.NodeData.ActionInfo.Actions[0]
-	// // TODO need local enum generated
-	// spew.Dump(action.GetCustomInterfaces())
-
-	ci := schema.CustomInterfaces["CustomUserPrefs"]
-	require.NotNil(t, ci)
-	require.Len(t, ci.Fields, 3)
-	require.Len(t, ci.NonEntFields, 0)
-	require.Len(t, ci.Children, 0)
-
-	// TODO importType on Field
-	// now generate the type
-
-	// TODO super nested next
-
-	// TODO need to make sure enum is correctly generated
 }
