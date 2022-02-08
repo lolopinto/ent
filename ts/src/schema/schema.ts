@@ -8,7 +8,7 @@ export declare type FieldMap = {
 // Schema is the base for every schema in typescript
 export default interface Schema {
   // schema has list of fields that are unique to each node
-  fields: FieldMap;
+  fields: FieldMap | Field[];
 
   // optional, can be overriden as needed
   tableName?: string;
@@ -152,7 +152,7 @@ export type Edge = AssocEdge;
 // which automatically provides 3 fields to every ent: id, created_at, updated_at
 export interface Pattern {
   name: string;
-  fields: FieldMap;
+  fields: FieldMap | Field[];
   edges?: Edge[];
 }
 
@@ -286,6 +286,9 @@ export interface FieldOptions {
 
   // takes the name of the field and returns any fields which are derived from current field
   getDerivedFields?(name: string): FieldMap;
+
+  // allow name for now
+  [x: string]: any;
 }
 
 export interface PolymorphicOptions {
@@ -330,7 +333,20 @@ export function getFields(value: SchemaInputType): Map<string, Field> {
     schema = new value();
   }
 
-  function addFields(fields: FieldMap) {
+  function addFields(fields: FieldMap | Field[]) {
+    if (Array.isArray(fields)) {
+      for (const field of fields) {
+        const name = field.name;
+        if (!name) {
+          throw new Error(`name required`);
+        }
+        if (field.getDerivedFields !== undefined) {
+          addFields(field.getDerivedFields(name));
+        }
+        m.set(name, field);
+      }
+      return;
+    }
     for (const name in fields) {
       const field = fields[name];
       if (field.getDerivedFields !== undefined) {
@@ -346,6 +362,7 @@ export function getFields(value: SchemaInputType): Map<string, Field> {
       addFields(pattern.fields);
     }
   }
+
   addFields(schema.fields);
 
   return m;
