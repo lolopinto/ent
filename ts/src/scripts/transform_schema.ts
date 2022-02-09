@@ -3,6 +3,7 @@ import ts from "typescript";
 import * as fs from "fs";
 import { readCompilerOptions } from "../tsc/compilerOptions";
 import { execSync } from "child_process";
+import { Data } from "../core/base";
 
 function getTarget(target: string) {
   switch (target.toLowerCase()) {
@@ -42,7 +43,7 @@ async function main() {
     : ts.ScriptTarget.ESNext;
 
   // filter to only event.ts e.g. for comments and whitespace...
-  //  files = files.filter((f) => f.endsWith("user.ts"));
+  // files = files.filter((f) => f.endsWith("user.ts"));
 
   files.forEach((file) => {
     // assume valid file since we do glob above
@@ -62,6 +63,7 @@ async function main() {
     );
     const nodes: NodeInfo[] = [];
     let updateImport = false;
+    let removeImports: string[] = [];
     const f = {
       trackNode: function (tni: TrackNodeInfo) {
         nodes.push({
@@ -69,6 +71,9 @@ async function main() {
           importNode: tni.node && ts.isImportDeclaration(tni.node),
           rawString: tni.rawString,
         });
+        if (tni.removeImports) {
+          removeImports.push(...tni.removeImports);
+        }
       },
       flagUpdateImport() {
         updateImport = true;
@@ -82,7 +87,11 @@ async function main() {
     for (const node of nodes) {
       if (updateImport && node.importNode) {
         const importNode = node.node as ts.ImportDeclaration;
-        const transformedImport = transformImport(importNode, sourceFile);
+        const transformedImport = transformImport(
+          importNode,
+          sourceFile,
+          removeImports,
+        );
         if (transformedImport) {
           newContents += transformedImport;
           continue;
@@ -114,6 +123,7 @@ interface File {
 interface TrackNodeInfo {
   node?: ts.Node;
   rawString?: string;
+  removeImports?: string[];
 }
 
 interface NodeInfo {
@@ -155,6 +165,10 @@ function traverseClass(
   }
 
   let klassContents = `${ci.comment}const ${ci.name} = new ${ci.extends}({\n`;
+  let removeImports: string[] = [];
+  if (ci.implementsSchema) {
+    removeImports.push("Schema");
+  }
 
   for (let member of node.members) {
     const fInfo = getClassElementInfo(fileContents, member, sourceFile);
@@ -162,6 +176,9 @@ function traverseClass(
       return false;
     }
     klassContents += `${fInfo.comment}${fInfo.key}:${fInfo.value},\n`;
+    if (fInfo.type) {
+      removeImports.push(fInfo.type);
+    }
   }
 
   klassContents += "\n})";
@@ -172,7 +189,7 @@ function traverseClass(
   }
   //  console.debug(klassContents);
 
-  f.trackNode({ rawString: klassContents });
+  f.trackNode({ rawString: klassContents, removeImports: removeImports });
 
   return true;
 }
@@ -183,6 +200,7 @@ interface classInfo {
   name: string;
   export?: boolean;
   default?: boolean;
+  implementsSchema?: boolean;
 }
 
 function getClassInfo(
@@ -193,11 +211,19 @@ function getClassInfo(
   const className = node.name?.text;
 
   let classExtends: string | undefined;
+  let implementsSchema = false;
   if (node.heritageClauses) {
     for (const hc of node.heritageClauses) {
-      if (hc.token !== ts.SyntaxKind.ExtendsKeyword) {
+      if (hc.token === ts.SyntaxKind.ImplementsKeyword) {
+        for (const type of hc.types) {
+          if (type.expression.getText(sourceFile) === "Schema") {
+            implementsSchema = true;
+          }
+        }
         continue;
       }
+
+      // ts.SyntaxKind.ExtendsKeyword
       // can only extend one class
       for (const type of hc.types) {
         classExtends = type.expression.getText(sourceFile);
@@ -221,6 +247,7 @@ function getClassInfo(
     name: className,
     extends: classExtends,
     comment: getPreText(fileContents, node, sourceFile),
+    implementsSchema,
   };
 
   if (node.modifiers) {
@@ -240,6 +267,7 @@ interface propertyInfo {
   key: string;
   value: string;
   comment: string;
+  type?: string;
 }
 
 // intentionally doesn't parse decorators since we don't need it
@@ -268,7 +296,22 @@ function getClassElementInfo(
     key: token.escapedText.toString(),
     value: property.initializer?.getFullText(sourceFile),
     comment: getPreText(fileContents, member, sourceFile),
+    type: getType(property, sourceFile),
   };
+}
+
+function getType(
+  property: ts.PropertyDeclaration,
+  sourceFile: ts.SourceFile,
+): string {
+  let propertytype = property.type?.getText(sourceFile) || "";
+  let ends = ["| null", "[]"];
+  for (const end of ends) {
+    if (propertytype.endsWith(end)) {
+      propertytype = propertytype.slice(0, -1 * end.length);
+    }
+  }
+  return propertytype;
 }
 
 function getFieldElementInfo(
@@ -315,6 +358,7 @@ function getFieldElementInfo(
     key: "fields",
     value: fieldMap,
     comment: getPreText(fileContents, member, sourceFile),
+    type: getType(property, sourceFile),
   };
 }
 
@@ -459,6 +503,7 @@ function parseFieldElement(
 function transformImport(
   importNode: ts.ImportDeclaration,
   sourceFile: ts.SourceFile,
+  removeImports: string[],
 ): string | undefined {
   // remove quotes too
   const text = importNode.moduleSpecifier.getText(sourceFile).slice(1, -1);
@@ -479,17 +524,22 @@ function transformImport(
     .substring(start + 1, end)
     //    .trim()
     .split(",");
+
+  let removeImportsMap: Data = {};
+  removeImports.forEach((imp) => (removeImportsMap[imp] = true));
+  let newImports: string[] = [];
   for (let i = 0; i < imports.length; i++) {
     const imp = imports[i].trim();
-    if (imp === "Field") {
-      imports[i] = "FieldMap";
+    if (removeImportsMap[imp]) {
+      continue;
     }
+    newImports.push(imp);
   }
 
   return (
     "import " +
     importText.substring(0, start + 1) +
-    imports.join(", ") +
+    newImports.join(", ") +
     importText.substring(end) +
     ' from "' +
     text +
