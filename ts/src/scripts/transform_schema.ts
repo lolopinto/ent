@@ -42,12 +42,13 @@ async function main() {
     : ts.ScriptTarget.ESNext;
 
   // filter to only event.ts e.g. for comments and whitespace...
-  files = files.filter((f) => f.endsWith("user.ts"));
+  //  files = files.filter((f) => f.endsWith("user.ts"));
 
   files.forEach((file) => {
     // assume valid file since we do glob above
-    const idx = file.lastIndexOf(".ts");
-    const writeFile = file.substring(0, idx) + "2" + ".ts";
+    //    const idx = file.lastIndexOf(".ts");
+    //    const writeFile = file.substring(0, idx) + "2" + ".ts";
+    const writeFile = file;
 
     let contents = fs.readFileSync(file).toString();
 
