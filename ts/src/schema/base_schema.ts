@@ -1,6 +1,7 @@
 import { Field, FieldMap, Pattern } from "./schema";
 import { v4 as uuidv4 } from "uuid";
 import { TimestampType, UUIDType } from "./field";
+import { Action, AssocEdgeGroup, Constraint, Edge, Index, Schema } from ".";
 
 let tsFields: FieldMap = {
   createdAt: TimestampType({
@@ -72,20 +73,65 @@ export const Node: Pattern = {
   fields: nodeFields,
 };
 
+export interface SchemaConfig extends Schema {}
+
 // Base ent schema. has Node Pattern by default.
 // exists just to have less typing and easier for clients to implement
-export abstract class BaseEntSchema {
-  addPatterns(...patterns: Pattern[]) {
-    this.patterns.push(...patterns);
-  }
+export class BaseEntSchema implements Schema {
+  // Field[] compatibility reasons
+  fields: FieldMap | Field[];
+
+  tableName: string | undefined;
 
   patterns: Pattern[] = [Node];
-}
 
-export abstract class BaseEntSchemaWithTZ {
+  edges: Edge[] | undefined;
+
+  edgeGroups: AssocEdgeGroup[] | undefined;
+
+  actions: Action[] | undefined;
+
+  enumTable: boolean | undefined;
+
+  dbRows: { [key: string]: any }[] | undefined;
+
+  constraints: Constraint[] | undefined;
+
+  indices: Index[] | undefined;
+
+  hideFromGraphQL?: boolean;
+
+  // intentionally optional for compatibility reasons
+  constructor(cfg?: SchemaConfig) {
+    if (!cfg) {
+      return;
+    }
+    this.fields = cfg.fields;
+    this.tableName = cfg.tableName;
+    if (cfg.patterns) {
+      this.patterns.push(...cfg.patterns);
+    }
+    this.edges = cfg.edges;
+    this.edgeGroups = cfg.edgeGroups;
+    this.actions = cfg.actions;
+    this.enumTable = cfg.enumTable;
+    this.dbRows = cfg.dbRows;
+    this.constraints = cfg.constraints;
+    this.indices = cfg.indices;
+    this.hideFromGraphQL = cfg.hideFromGraphQL;
+  }
+
+  // TODO kill
   addPatterns(...patterns: Pattern[]) {
     this.patterns.push(...patterns);
   }
+}
+
+export class BaseEntSchemaWithTZ {
+  // Field[] compatibility reasons
+  fields: FieldMap | Field[];
+
+  tableName: string | undefined;
 
   patterns: Pattern[] = [
     {
@@ -94,4 +140,45 @@ export abstract class BaseEntSchemaWithTZ {
       fields: nodeFieldsWithTZ,
     },
   ];
+
+  edges: Edge[] | undefined;
+
+  edgeGroups: AssocEdgeGroup[] | undefined;
+
+  actions: Action[] | undefined;
+
+  enumTable: boolean | undefined;
+
+  dbRows: { [key: string]: any }[] | undefined;
+
+  constraints: Constraint[] | undefined;
+
+  indices: Index[] | undefined;
+
+  hideFromGraphQL?: boolean;
+
+  // intentionally optional for compatibility reasons
+  constructor(cfg?: SchemaConfig) {
+    if (!cfg) {
+      return;
+    }
+    this.fields = cfg.fields;
+    this.tableName = cfg.tableName;
+    if (cfg.patterns) {
+      this.patterns.push(...cfg.patterns);
+    }
+    this.edges = cfg.edges;
+    this.edgeGroups = cfg.edgeGroups;
+    this.actions = cfg.actions;
+    this.enumTable = cfg.enumTable;
+    this.dbRows = cfg.dbRows;
+    this.constraints = cfg.constraints;
+    this.indices = cfg.indices;
+    this.hideFromGraphQL = cfg.hideFromGraphQL;
+  }
+
+  // TODO kill
+  addPatterns(...patterns: Pattern[]) {
+    this.patterns.push(...patterns);
+  }
 }
