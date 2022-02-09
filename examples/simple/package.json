@@ -35,10 +35,10 @@
   },
   "dependencies": {
     "@snowtop/ent": "^0.1.0-alpha7",
-    "@snowtop/ent-email": "^0.0.1",
+    "@snowtop/ent-email": "^0.1.0-alpha1",
     "@snowtop/ent-passport": "^0.0.1",
     "@snowtop/ent-password": "^0.0.1",
-    "@snowtop/ent-phonenumber": "^0.0.1",
+    "@snowtop/ent-phonenumber": "^0.1.0-alpha1",
     "@types/express-session": "^1.17.3",
     "@types/graphql-upload": "^8.0.4",
     "@types/luxon": "^1.26.5",
