@@ -204,7 +204,7 @@ function commonTests() {
     const vc = new IDViewer(user.id);
     const builder = new SimpleBuilder(
       vc,
-      new FakeUserSchema(),
+      FakeUserSchema,
       new Map(),
       WriteOperation.Edit,
       user,

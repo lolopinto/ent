@@ -8,15 +8,8 @@ import {
 } from "../../core/base";
 import { loadEnt, loadEntX } from "../../core/ent";
 import { AlwaysAllowPrivacyPolicy } from "../../core/privacy";
-import { BuilderSchema, SimpleBuilder } from "../builder";
-import {
-  Field,
-  StringType,
-  BaseEntSchema,
-  UUIDType,
-  TimestampType,
-  FieldMap,
-} from "../../schema";
+import { getBuilderSchemaFromFields, SimpleBuilder } from "../builder";
+import { StringType, UUIDType, TimestampType } from "../../schema";
 import { NodeType } from "./const";
 import { table, uuid, text, timestamptz } from "../db/test_db";
 import { ObjectLoaderFactory } from "../../core/loaders";
@@ -101,12 +94,8 @@ export class FakeEvent implements Ent {
   }
 }
 
-export class FakeEventSchema
-  extends BaseEntSchema
-  implements BuilderSchema<FakeEvent>
-{
-  ent = FakeEvent;
-  fields: FieldMap = {
+export const FakeEventSchema = getBuilderSchemaFromFields(
+  {
     startTime: TimestampType({
       index: true,
     }),
@@ -121,8 +110,9 @@ export class FakeEventSchema
     userID: UUIDType({
       foreignKey: { schema: "User", column: "ID" },
     }),
-  };
-}
+  },
+  FakeEvent,
+);
 
 export interface EventCreateInput {
   startTime: Date;
@@ -138,7 +128,7 @@ export function getEventBuilder(viewer: Viewer, input: EventCreateInput) {
   for (const key in input) {
     m.set(key, input[key]);
   }
-  return new SimpleBuilder(viewer, new FakeEventSchema(), m);
+  return new SimpleBuilder(viewer, FakeEventSchema, m);
 }
 
 export async function createEvent(viewer: Viewer, input: EventCreateInput) {

@@ -19,7 +19,6 @@ import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { Changeset } from "../action";
 import { StringType, TimestampType, UUIDType } from "../schema/field";
 import { JSONBType } from "../schema/json_field";
-import { BaseEntSchema, Field } from "../schema";
 import {
   User,
   Event,
@@ -27,6 +26,7 @@ import {
   Address,
   SimpleBuilder,
   SimpleAction,
+  getBuilderSchemaFromFields,
 } from "../testutils/builder";
 import { FakeComms, Mode } from "../testutils/fake_comms";
 import { Pool } from "pg";
@@ -54,7 +54,6 @@ import {
   Table,
 } from "../testutils/db/test_db";
 import { Dialect } from "../core/db";
-import { FieldMap } from "../schema/schema";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -95,19 +94,19 @@ describe("sqlite", () => {
     );
 
     [
-      new UserSchema(),
-      new UserSchemaWithStatus(),
-      new UserSchemaExtended(),
-      new UserSchemaServerDefault(),
-      new UserSchemaDefaultValueOnCreate(),
-      new UserSchemaDefaultValueOnCreateJSON(),
-      new UserSchemaDefaultValueOnCreateInvalidJSON(),
-      new SchemaWithProcessors(),
-      new EventSchema(),
-      new AddressSchemaDerivedFields(),
-      new ContactSchema(),
-      new CustomUserSchema(),
-      new SensitiveValuesSchema(),
+      UserSchema,
+      UserSchemaWithStatus,
+      UserSchemaExtended,
+      UserSchemaServerDefault,
+      UserSchemaDefaultValueOnCreate,
+      UserSchemaDefaultValueOnCreateJSON,
+      UserSchemaDefaultValueOnCreateInvalidJSON,
+      SchemaWithProcessors,
+      EventSchema,
+      AddressSchemaDerivedFields,
+      ContactSchema,
+      CustomUserSchema,
+      SensitiveValuesSchema,
     ].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));
     return tables;
   };
@@ -116,96 +115,96 @@ describe("sqlite", () => {
   commonTests();
 });
 
-class UserSchema extends BaseEntSchema {
-  fields: FieldMap = {
+const UserSchema = getBuilderSchemaFromFields(
+  {
     FirstName: StringType(),
     LastName: StringType(),
-  };
-  ent = User;
-}
+  },
+  User,
+);
 
 class UserWithStatus extends User {}
-class UserSchemaWithStatus extends BaseEntSchema {
-  fields: FieldMap = {
+const UserSchemaWithStatus = getBuilderSchemaFromFields(
+  {
     FirstName: StringType(),
     LastName: StringType(),
     // let's assume this was hidden from the generated action and has to be set by the builder...
     account_status: StringType(),
-  };
-  ent = UserWithStatus;
-}
+  },
+  UserWithStatus,
+);
 
 class UserExtended extends User {}
 
-class UserSchemaExtended extends BaseEntSchema {
-  fields: FieldMap = {
+const UserSchemaExtended = getBuilderSchemaFromFields(
+  {
     FirstName: StringType(),
     LastName: StringType(),
     account_status: StringType(),
     EmailAddress: StringType({ nullable: true }),
-  };
-  ent = UserExtended;
-}
+  },
+  UserExtended,
+);
 
 class UserServerDefault extends User {}
 
-class UserSchemaServerDefault extends BaseEntSchema {
-  fields: FieldMap = {
+const UserSchemaServerDefault = getBuilderSchemaFromFields(
+  {
     FirstName: StringType(),
     LastName: StringType(),
     account_status: StringType({
       serverDefault: "ACTIVE",
     }),
-  };
-  ent = UserServerDefault;
-}
+  },
+  UserServerDefault,
+);
 
-class UserSchemaDefaultValueOnCreate extends BaseEntSchema {
-  fields: FieldMap = {
+const UserSchemaDefaultValueOnCreate = getBuilderSchemaFromFields(
+  {
     FirstName: StringType(),
     LastName: StringType(),
     account_status: StringType({
       defaultValueOnCreate: () => "ACTIVE",
     }),
-  };
-  ent = UserServerDefault;
-}
+  },
+  UserServerDefault,
+);
 
 class UserDefaultValueOnCreate extends User {}
 
-class UserSchemaDefaultValueOnCreateJSON extends BaseEntSchema {
-  fields: FieldMap = {
+const UserSchemaDefaultValueOnCreateJSON = getBuilderSchemaFromFields(
+  {
     FirstName: StringType(),
     LastName: StringType(),
     data: JSONBType({
       defaultValueOnCreate: () => ({}),
     }),
-  };
-  ent = UserDefaultValueOnCreate;
-}
+  },
+  UserDefaultValueOnCreate,
+);
 
-class UserSchemaDefaultValueOnCreateInvalidJSON extends BaseEntSchema {
-  fields: FieldMap = {
+const UserSchemaDefaultValueOnCreateInvalidJSON = getBuilderSchemaFromFields(
+  {
     FirstName: StringType(),
     LastName: StringType(),
     data: JSONBType({
       defaultValueOnCreate: () => {},
     }),
-  };
-  ent = UserDefaultValueOnCreate;
-}
+  },
+  UserDefaultValueOnCreate,
+);
 
 class UserWithProcessors extends User {}
-class SchemaWithProcessors extends BaseEntSchema {
-  fields: FieldMap = {
+const SchemaWithProcessors = getBuilderSchemaFromFields(
+  {
     zip: StringType().match(/^\d{5}(-\d{4})?$/),
     username: StringType().toLowerCase(),
-  };
-  ent = UserWithProcessors;
-}
+  },
+  UserWithProcessors,
+);
 
-class AddressSchemaDerivedFields extends BaseEntSchema {
-  fields: FieldMap = {
+const AddressSchemaDerivedFields = getBuilderSchemaFromFields(
+  {
     Street: StringType(),
     City: StringType(),
     State: StringType(),
@@ -215,39 +214,39 @@ class AddressSchemaDerivedFields extends BaseEntSchema {
       index: true,
       polymorphic: true,
     }),
-  };
-  ent = Address;
-}
+  },
+  Address,
+);
 
-class EventSchema extends BaseEntSchema {
-  fields: FieldMap = {
+const EventSchema = getBuilderSchemaFromFields(
+  {
     startTime: TimestampType(),
     endTime: TimestampType(),
-  };
-  ent = Event;
-}
+  },
+  Event,
+);
 
-class ContactSchema extends BaseEntSchema {
-  fields: FieldMap = {
+const ContactSchema = getBuilderSchemaFromFields(
+  {
     FirstName: StringType(),
     LastName: StringType(),
     UserID: StringType({
       defaultValueOnCreate: (builder) => builder.viewer.viewerID,
     }),
-  };
-  ent = Contact;
-}
+  },
+  Contact,
+);
 
-class ContactSchema2 extends BaseEntSchema {
-  fields: FieldMap = {
+const ContactSchema2 = getBuilderSchemaFromFields(
+  {
     FirstName: StringType(),
     LastName: StringType(),
     UserID: StringType({
       defaultToViewerOnCreate: true,
     }),
-  };
-  ent = Contact;
-}
+  },
+  Contact,
+);
 
 class CustomUser implements Ent {
   id: ID;
@@ -261,28 +260,28 @@ class CustomUser implements Ent {
   }
 }
 
-class CustomUserSchema extends BaseEntSchema {
-  fields: FieldMap = {
+const CustomUserSchema = getBuilderSchemaFromFields(
+  {
     FirstName: StringType(),
     LastName: StringType(),
-  };
-  ent = CustomUser;
-}
+  },
+  CustomUser,
+);
 
 class SensitiveUser extends User {}
-class SensitiveValuesSchema extends BaseEntSchema {
-  fields: FieldMap = {
+const SensitiveValuesSchema = getBuilderSchemaFromFields(
+  {
     FirstName: StringType(),
     LastName: StringType({ sensitive: true }),
-  };
-  ent = SensitiveUser;
-}
+  },
+  SensitiveUser,
+);
 
 function commonTests() {
   test("schema on create", async () => {
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
-      new UserSchema(),
+      UserSchema,
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
@@ -298,7 +297,7 @@ function commonTests() {
   test("missing required field", async () => {
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
-      new UserSchema(),
+      UserSchema,
       new Map([
         ["FirstName", "Jon"],
         // non-nullable field set to null
@@ -322,7 +321,7 @@ function commonTests() {
   test("required field not set", async () => {
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
-      new UserSchema(),
+      UserSchema,
       new Map([["FirstName", "Jon"]]),
     );
 
@@ -337,7 +336,7 @@ function commonTests() {
   test("required field fine when server default exists", async () => {
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
-      new UserSchemaServerDefault(),
+      UserSchemaServerDefault,
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
@@ -350,7 +349,7 @@ function commonTests() {
   test("required field fine when default value on create exists", async () => {
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
-      new UserSchemaDefaultValueOnCreate(),
+      UserSchemaDefaultValueOnCreate,
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
@@ -363,7 +362,7 @@ function commonTests() {
   test("required field fine when default value on create json ", async () => {
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
-      new UserSchemaDefaultValueOnCreateJSON(),
+      UserSchemaDefaultValueOnCreateJSON,
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
@@ -376,7 +375,7 @@ function commonTests() {
   test("required field when default value on create json wrong", async () => {
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
-      new UserSchemaDefaultValueOnCreateInvalidJSON(),
+      UserSchemaDefaultValueOnCreateInvalidJSON,
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
@@ -397,7 +396,7 @@ function commonTests() {
     const user = new User(new LoggedOutViewer(), { id: "1" });
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
-      new UserSchema(),
+      UserSchema,
       // field that's not changed isn't set...
       // simulating what the generated builder will do
       new Map([["LastName", "Targaryen"]]),
@@ -415,7 +414,7 @@ function commonTests() {
     const user = new User(new LoggedOutViewer(), { id: "1" });
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
-      new UserSchema(),
+      UserSchema,
       new Map(),
       WriteOperation.Delete,
       user,
@@ -428,18 +427,18 @@ function commonTests() {
   });
 
   test("schema with null fields", async () => {
-    class SchemaWithNullFields extends BaseEntSchema {
-      fields: FieldMap = {
+    const SchemaWithNullFields = getBuilderSchemaFromFields(
+      {
         startTime: TimestampType(),
         endTime: TimestampType({ nullable: true }),
-      };
-      ent = User;
-    }
+      },
+      User,
+    );
 
     const d = new Date();
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
-      new SchemaWithNullFields(),
+      SchemaWithNullFields,
       new Map([["startTime", d]]),
     );
 
@@ -451,7 +450,7 @@ function commonTests() {
 
     const builder2 = new SimpleBuilder(
       new LoggedOutViewer(),
-      new SchemaWithNullFields(),
+      SchemaWithNullFields,
       new Map([
         ["startTime", d],
         ["endTime", null],
@@ -465,16 +464,16 @@ function commonTests() {
   });
 
   test("schema_with_overriden_storage_key", async () => {
-    class SchemaWithOverridenDBKey extends BaseEntSchema {
-      fields: FieldMap = {
+    const SchemaWithOverridenDBKey = getBuilderSchemaFromFields(
+      {
         emailAddress: StringType({ storageKey: "email" }),
-      };
-      ent = User;
-    }
+      },
+      User,
+    );
 
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
-      new SchemaWithOverridenDBKey(),
+      SchemaWithOverridenDBKey,
       new Map([["emailAddress", "test@email.com"]]),
     );
 
@@ -487,7 +486,7 @@ function commonTests() {
     test("simple case", async () => {
       const builder = new SimpleBuilder(
         new LoggedOutViewer(),
-        new SchemaWithProcessors(),
+        SchemaWithProcessors,
         new Map([
           ["username", "lolopinto"],
           ["zip", "94114"],
@@ -503,7 +502,7 @@ function commonTests() {
     test("username lowered", async () => {
       const builder = new SimpleBuilder(
         new LoggedOutViewer(),
-        new SchemaWithProcessors(),
+        SchemaWithProcessors,
         new Map([
           ["username", "LOLOPINTO"],
           ["zip", "94114"],
@@ -519,7 +518,7 @@ function commonTests() {
     test("invalid zip", async () => {
       const builder = new SimpleBuilder(
         new LoggedOutViewer(),
-        new SchemaWithProcessors(),
+        SchemaWithProcessors,
         new Map([
           ["username", "LOLOPINTO"],
           ["zip", "941"],
@@ -850,7 +849,7 @@ function commonTests() {
 
       const action = new SimpleAction(
         new LoggedOutViewer(),
-        new UserSchema(),
+        UserSchema,
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
@@ -863,7 +862,7 @@ function commonTests() {
           changeset: (builder: SimpleBuilder<User>) => {
             const derivedAction = new SimpleAction(
               new LoggedOutViewer(),
-              new UserSchema(),
+              UserSchema,
               new Map([
                 ["FirstName", "Sansa"],
                 ["LastName", "Stark"],
@@ -937,7 +936,7 @@ function commonTests() {
 
       const action = new SimpleAction(
         new LoggedOutViewer(),
-        new UserSchema(),
+        UserSchema,
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
@@ -954,7 +953,7 @@ function commonTests() {
           changeset: (builder: SimpleBuilder<User>) => {
             const derivedAction = new SimpleAction(
               new LoggedOutViewer(),
-              new UserSchema(),
+              UserSchema,
               new Map([
                 ["FirstName", "Sansa"],
                 ["LastName", "Stark"],
@@ -1338,7 +1337,7 @@ function commonTests() {
 
       const action = new SimpleAction(
         new LoggedOutViewer(),
-        new UserSchema(),
+        UserSchema,
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
@@ -1351,7 +1350,7 @@ function commonTests() {
           changeset: (builder: SimpleBuilder<User>) => {
             const derivedAction = new SimpleAction(
               new LoggedOutViewer(),
-              new UserSchema(),
+              UserSchema,
               new Map([
                 ["FirstName", "Sansa"],
                 ["LastName", "Stark"],
@@ -1427,7 +1426,7 @@ function commonTests() {
 
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new UserSchema(),
+      UserSchema,
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
@@ -1444,7 +1443,7 @@ function commonTests() {
         changeset: (builder: SimpleBuilder<User>) => {
           const derivedAction = new SimpleAction(
             new LoggedOutViewer(),
-            new UserSchema(),
+            UserSchema,
             new Map([
               ["FirstName", "Sansa"],
               ["LastName", "Stark"],
@@ -1591,7 +1590,7 @@ function commonTests() {
       const user = new User(viewer, { id: "1" });
       const builder = new SimpleBuilder(
         viewer,
-        new UserSchema(),
+        UserSchema,
         new Map(),
         WriteOperation.Edit,
         user, // TODO enforce existing ent if not create
@@ -1626,7 +1625,7 @@ function commonTests() {
     test("no ent", async () => {
       const builder = new SimpleBuilder(
         new LoggedOutViewer(),
-        new UserSchema(),
+        UserSchema,
         new Map(),
         WriteOperation.Edit,
       );
@@ -1648,7 +1647,7 @@ function commonTests() {
       const user = new User(viewer, { id: "1" });
       const builder = new SimpleBuilder(
         viewer,
-        new UserSchema(),
+        UserSchema,
         new Map(),
         WriteOperation.Edit,
         user, // TODO enforce existing ent if not create
@@ -1683,7 +1682,7 @@ function commonTests() {
     test("no ent", async () => {
       const builder = new SimpleBuilder(
         new LoggedOutViewer(),
-        new UserSchema(),
+        UserSchema,
         new Map(),
         WriteOperation.Edit,
       );
@@ -1722,7 +1721,7 @@ function commonTests() {
 
       let action = new SimpleAction(
         new LoggedOutViewer(),
-        new EventSchema(),
+        EventSchema,
         new Map([
           ["startTime", now],
           ["endTime", yesterday],
@@ -1745,7 +1744,7 @@ function commonTests() {
 
       let action = new SimpleAction(
         new LoggedOutViewer(),
-        new EventSchema(),
+        EventSchema,
         new Map([
           ["startTime", yesterday],
           ["endTime", now],
@@ -1765,7 +1764,7 @@ function commonTests() {
     test("valid", async () => {
       let action = new SimpleAction(
         new LoggedOutViewer(),
-        new UserSchema(),
+        UserSchema,
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
@@ -1785,7 +1784,7 @@ function commonTests() {
       const viewer = new IDViewer("1");
       const action = new SimpleAction(
         viewer,
-        new UserSchema(),
+        UserSchema,
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
@@ -1805,7 +1804,7 @@ function commonTests() {
       const viewer = new IDViewer("1");
       const action = new SimpleAction(
         viewer,
-        new UserSchema(),
+        UserSchema,
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
@@ -1831,7 +1830,7 @@ function commonTests() {
       const viewer = new IDViewer("1");
       const action = new SimpleAction(
         viewer,
-        new UserSchema(),
+        UserSchema,
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
@@ -1858,7 +1857,7 @@ function commonTests() {
       const viewer = new IDViewer("1");
       const action = new SimpleAction(
         viewer,
-        new UserSchema(),
+        UserSchema,
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
@@ -1885,7 +1884,7 @@ function commonTests() {
       const viewer = new LoggedOutViewer();
       const action = new SimpleAction(
         viewer,
-        new UserSchema(),
+        UserSchema,
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
@@ -1911,7 +1910,7 @@ function commonTests() {
     test("unsafe ent in creation. valid", async () => {
       let action = new SimpleAction(
         new LoggedOutViewer(),
-        new UserSchema(),
+        UserSchema,
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
@@ -1933,7 +1932,7 @@ function commonTests() {
     test("unsafe ent in creation. invalid", async () => {
       let action = new SimpleAction(
         new LoggedOutViewer(),
-        new UserSchema(),
+        UserSchema,
         new Map([
           ["FirstName", "Sansa"],
           ["LastName", "Snow"],
@@ -1968,7 +1967,7 @@ function commonTests() {
       const viewer = new IDViewer("11");
       const action = new SimpleAction(
         viewer,
-        new UserSchemaWithStatus(),
+        UserSchemaWithStatus,
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
@@ -1999,7 +1998,7 @@ function commonTests() {
       let contactAction: SimpleAction<Contact>;
       const action = new SimpleAction(
         viewer,
-        new UserSchemaWithStatus(),
+        UserSchemaWithStatus,
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
@@ -2017,7 +2016,7 @@ function commonTests() {
             let lastName = builder.fields.get("LastName");
             contactAction = new SimpleAction(
               viewer,
-              new ContactSchema(),
+              ContactSchema,
               new Map([
                 ["FirstName", firstName],
                 ["LastName", lastName],
@@ -2070,7 +2069,7 @@ function commonTests() {
       const viewer = new IDViewer("11");
       const action = new SimpleAction(
         viewer,
-        new UserSchemaExtended(),
+        UserSchemaExtended,
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
@@ -2101,7 +2100,7 @@ function commonTests() {
       const viewer = new IDViewer("11");
       const action = new SimpleAction(
         viewer,
-        new UserSchemaExtended(),
+        UserSchemaExtended,
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
@@ -2138,7 +2137,7 @@ function commonTests() {
       const viewer = new IDViewer("11");
       const action = new SimpleAction(
         viewer,
-        new UserSchemaExtended(),
+        UserSchemaExtended,
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
@@ -2178,7 +2177,7 @@ function commonTests() {
     ): SimpleAction<UserExtended> => {
       const action = new SimpleAction(
         viewer,
-        new UserSchemaExtended(),
+        UserSchemaExtended,
         fields,
         WriteOperation.Insert,
       );
@@ -2313,7 +2312,7 @@ function commonTests() {
 
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
-      new AddressSchemaDerivedFields(),
+      AddressSchemaDerivedFields,
       new Map([
         ["Street", "1600 Pennsylvania Avenue NW"],
         ["City", "Washington DC"],
@@ -2333,7 +2332,7 @@ function commonTests() {
     async function createUser(): Promise<CustomUser> {
       let action = new SimpleAction(
         new LoggedOutViewer(),
-        new CustomUserSchema(),
+        CustomUserSchema,
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
@@ -2360,7 +2359,7 @@ function commonTests() {
     test("can create but can't load user", async () => {
       let action = new SimpleAction(
         new LoggedOutViewer(),
-        new CustomUserSchema(),
+        CustomUserSchema,
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
@@ -2379,7 +2378,7 @@ function commonTests() {
       const user = await createUser();
       let action = new SimpleAction(
         new LoggedOutViewer(),
-        new CustomUserSchema(),
+        CustomUserSchema,
         new Map([["LastName", "Snow2"]]),
         WriteOperation.Edit,
         user,
@@ -2398,7 +2397,7 @@ function commonTests() {
         // should probably not used a LoggedOutViewer here but for testing purposes...
         // and SimpleAction defaults to AlwaysAllowPrivacyPolicy
         new LoggedOutViewer(),
-        new CustomUserSchema(),
+        CustomUserSchema,
         new Map([["LastName", "Snow2"]]),
         WriteOperation.Edit,
         user,
@@ -2433,7 +2432,7 @@ function commonTests() {
     test("regular", async () => {
       let action = new SimpleAction(
         new LoggedOutViewer(),
-        new UserSchema(),
+        UserSchema,
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
@@ -2452,7 +2451,7 @@ function commonTests() {
     test("sensitive", async () => {
       let action = new SimpleAction(
         new LoggedOutViewer(),
-        new SensitiveValuesSchema(),
+        SensitiveValuesSchema,
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
@@ -2472,7 +2471,7 @@ function commonTests() {
   test("defaultValueOnCreate", async () => {
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
-      new UserSchema(),
+      UserSchema,
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
@@ -2483,7 +2482,7 @@ function commonTests() {
 
     const builder2 = new SimpleBuilder(
       new IDViewer(user.id),
-      new ContactSchema(),
+      ContactSchema,
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
@@ -2496,7 +2495,7 @@ function commonTests() {
 
     const builder3 = new SimpleBuilder(
       new LoggedOutViewer(),
-      new ContactSchema(),
+      ContactSchema,
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
@@ -2514,7 +2513,7 @@ function commonTests() {
   test("defaultToViewerOnCreate", async () => {
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
-      new UserSchema(),
+      UserSchema,
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
@@ -2525,7 +2524,7 @@ function commonTests() {
 
     const builder2 = new SimpleBuilder(
       new IDViewer(user.id),
-      new ContactSchema2(),
+      ContactSchema2,
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
@@ -2538,7 +2537,7 @@ function commonTests() {
 
     const builder3 = new SimpleBuilder(
       new LoggedOutViewer(),
-      new ContactSchema2(),
+      ContactSchema2,
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
@@ -2558,7 +2557,7 @@ const getLoggedInBuilder = () => {
   const user = new User(viewer, { id: "1" });
   return new SimpleBuilder(
     viewer,
-    new UserSchema(),
+    UserSchema,
     new Map(),
     WriteOperation.Edit,
     user, // TODO enforce existing ent if not create
@@ -2568,7 +2567,7 @@ const getLoggedInBuilder = () => {
 const getCreateBuilder = (map: Map<string, any>) => {
   return new SimpleBuilder(
     new LoggedOutViewer(),
-    new UserSchema(),
+    UserSchema,
     map,
     WriteOperation.Insert,
   );

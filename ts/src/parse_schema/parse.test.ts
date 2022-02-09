@@ -1,4 +1,4 @@
-import { FieldMap, Schema, Field } from "src/schema";
+import { FieldMap, Schema } from "src/schema";
 import { StringType } from "../schema/field";
 import { BaseEntSchema } from "../schema/base_schema";
 import { parseSchema } from "./parse";
