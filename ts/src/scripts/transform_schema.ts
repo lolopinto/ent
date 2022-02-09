@@ -42,7 +42,7 @@ async function main() {
     : ts.ScriptTarget.ESNext;
 
   // filter to only event.ts e.g. for comments and whitespace...
-  files = files.filter((f) => f.endsWith("event.ts"));
+  files = files.filter((f) => f.endsWith("user.ts"));
 
   files.forEach((file) => {
     // assume valid file since we do glob above
@@ -235,7 +235,7 @@ function getClassInfo(
   return ci;
 }
 
-interface fieldInfo {
+interface propertyInfo {
   key: string;
   value: string;
   comment: string;
@@ -246,18 +246,12 @@ function getClassElementInfo(
   fileContents: string,
   member: ts.ClassElement,
   sourceFile: ts.SourceFile,
-): fieldInfo | undefined {
+): propertyInfo | undefined {
   if (isFieldElement(member, sourceFile)) {
     return getFieldElementInfo(fileContents, member, sourceFile);
   }
   if (member.kind === ts.SyntaxKind.Constructor) {
-    console.debug("constructor. patterns. todo");
-    // TODO
-    return {
-      key: "patterns",
-      value: "[]",
-      comment: "",
-    };
+    return getConstructorElementInfo(fileContents, member, sourceFile);
   }
   if (member.kind !== ts.SyntaxKind.PropertyDeclaration) {
     return;
@@ -280,7 +274,7 @@ function getFieldElementInfo(
   fileContents: string,
   member: ts.ClassElement,
   sourceFile: ts.SourceFile,
-): fieldInfo | undefined {
+): propertyInfo | undefined {
   let fieldMap = "";
 
   // need to change to fields: {code: StringType()};
@@ -320,6 +314,54 @@ function getFieldElementInfo(
     key: "fields",
     value: fieldMap,
     comment: getPreText(fileContents, member, sourceFile),
+  };
+}
+
+function getConstructorElementInfo(
+  fileContents: string,
+  member: ts.ClassElement,
+  sourceFile: ts.SourceFile,
+): propertyInfo | undefined {
+  const c = member as ts.ConstructorDeclaration;
+  //remove {}
+  let fullText = c.body?.getFullText(sourceFile) || "";
+  fullText = fullText.trim().slice(1, -1).trim();
+
+  // convert something like
+  /*
+  constructor() {
+    super();
+    this.addPatterns(
+      new Feedback(),
+      new DayOfWeek(),
+      new Feedback(),
+      new DayOfWeek(),
+    );
+  }
+    */
+  // into this.addPatterns(new Feedback(),new DayOfWeek(),new Feedback(),new DayOfWeek(),)
+  const lines = fullText
+    .split("\n")
+    .map((line) => line.trim())
+    .join("")
+    .split(";")
+    .filter((f) => f != "super()" && f != "");
+  // at this point there should be only line for what we handle
+  if (lines.length != 1) {
+    return;
+  }
+  const line = lines[0];
+  const addPatterns = "this.addPatterns(";
+  if (!line.startsWith(addPatterns)) {
+    return;
+  }
+
+  return {
+    key: "patterns",
+    // remove this.addPatterns at the front, remove trailing ) at the end
+    // if there's a trailing comma, it'll be handled by prettier
+    value: `[${line.slice(addPatterns.length, -1)}]`,
+    comment: "",
   };
 }
 
