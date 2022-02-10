@@ -8,9 +8,11 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type expType struct {
@@ -35,6 +37,8 @@ type expType struct {
 	convertFn           string
 	importType          enttype.Import
 	tsTypeImports       []*tsimport.ImportPath
+	subFields           []*input.Field
+	unionFields         []*input.Field
 }
 
 func TestStringType(t *testing.T) {
@@ -1460,9 +1464,9 @@ func testType(t *testing.T, exp expType, ret returnType) {
 		gqlType, ok := typ.(enttype.TSGraphQLType)
 		if ok {
 			if exp.graphqlImports == nil {
-				assert.Len(t, gqlType.GetTSGraphQLImports(), 0)
+				assert.Len(t, gqlType.GetTSGraphQLImports(false), 0)
 			} else {
-				assert.Equal(t, exp.graphqlImports, gqlType.GetTSGraphQLImports())
+				assert.Equal(t, exp.graphqlImports, gqlType.GetTSGraphQLImports(false))
 			}
 		} else {
 			// not a gqlType. this should be 0
@@ -1572,6 +1576,27 @@ func testType(t *testing.T, exp expType, ret returnType) {
 		// account for nil
 		if len(exp.tsTypeImports) != 0 {
 			assert.Equal(t, exp.tsTypeImports, withImports.GetTsTypeImports())
+		}
+	}
+	// TODO test the fields in any ways?
+
+	withSubFields, ok := typ.(enttype.TSWithSubFields)
+	if ok {
+		subFields, ok := withSubFields.GetSubFields().([]*input.Field)
+		if !ok {
+			require.Nil(t, exp.subFields)
+		} else {
+			assert.Len(t, exp.subFields, len(subFields))
+		}
+	}
+
+	withUnionFields, ok := typ.(enttype.TSWithUnionFields)
+	if ok {
+		unionFields, ok := withUnionFields.GetUnionFields().([]*input.Field)
+		if !ok {
+			require.Nil(t, exp.unionFields)
+		} else {
+			assert.Len(t, exp.unionFields, len(unionFields))
 		}
 	}
 }

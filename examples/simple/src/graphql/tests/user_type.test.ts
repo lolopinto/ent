@@ -11,13 +11,33 @@ import schema from "../generated/schema";
 import CreateUserAction, {
   UserCreateInput,
 } from "../../ent/user/actions/create_user_action";
-import { Contact, User, DaysOff, PreferredShift } from "../../ent/";
+import {
+  Contact,
+  User,
+  DaysOff,
+  PreferredShift,
+  NotifType,
+  NotifType2,
+  Enum,
+  NestedEnum,
+  NestedNestedEnum,
+  CatBreed,
+  DogBreed,
+  DogBreedGroup,
+  RabbitBreed,
+} from "../../ent/";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
 import EditUserAction from "../../ent/user/actions/edit_user_action";
 import CreateContactAction, {
   ContactCreateInput,
 } from "../../ent/contact/actions/create_contact_action";
 import { GraphQLObjectType } from "graphql";
+import { v1 } from "uuid";
+
+// TODO we need something that does this by default for all tests
+afterAll(async () => {
+  await DB.getInstance().endPool();
+});
 
 afterEach(() => {
   clearAuthHandlers();
@@ -704,7 +724,7 @@ test("likes", async () => {
   }
 });
 
-test("create with prefs", async () => {
+test("create with prefs+prefsList", async () => {
   await expectMutation(
     {
       schema: schema,
@@ -715,7 +735,20 @@ test("create with prefs", async () => {
         emailAddress: randomEmail(),
         phoneNumber: randomPhoneNumber(),
         password: "pa$$w0rd",
-        prefs: "12232",
+        prefs: {
+          finishedNux: true,
+          notifTypes: [NotifType.EMAIL],
+        },
+        prefsList: [
+          {
+            finishedNux: true,
+            notifTypes: [NotifType2.EMAIL],
+          },
+          {
+            finishedNux: false,
+            notifTypes: [NotifType2.MOBILE],
+          },
+        ],
       },
     },
     [
@@ -723,9 +756,20 @@ test("create with prefs", async () => {
       async function (id: string) {
         const entID = mustDecodeIDFromGQLID(id);
         const user = await User.loadX(new IDViewer(entID), entID);
-        // so graphql doesn't verify what's happening here because we depend on TS types. hmm
-        // TODO fix https://github.com/lolopinto/ent/issues/470
-        expect(await user.prefs()).toBe(12232);
+        expect(await user.prefs()).toStrictEqual({
+          finishedNux: true,
+          notifTypes: [NotifType.EMAIL],
+        });
+        expect(await user.prefsList()).toStrictEqual([
+          {
+            finishedNux: true,
+            notifTypes: [NotifType.EMAIL],
+          },
+          {
+            finishedNux: false,
+            notifTypes: [NotifType.MOBILE],
+          },
+        ]);
       },
     ],
   );
@@ -744,7 +788,6 @@ test("create with prefs diff", async () => {
         password: "pa$$w0rd",
         prefsDiff: {
           type: "blah",
-          foo: "foo",
         },
       },
     },
@@ -755,7 +798,6 @@ test("create with prefs diff", async () => {
         const user = await User.loadX(new IDViewer(entID), entID);
         expect(await user.prefsDiff()).toStrictEqual({
           type: "blah",
-          foo: "foo",
         });
       },
     ],
@@ -777,7 +819,8 @@ test("create with prefs diff. fail", async () => {
           foo: "foo",
         },
       },
-      expectedError: /invalid field prefs_diff with value/,
+      expectedError:
+        /Field \"type\" of required type \"String!\" was not provided./,
     },
     [
       "user.id",
@@ -827,4 +870,238 @@ test("expected graphql schema", async () => {
   expect(fields["firstName"]).toBeDefined();
   // accountStatus shouldn't even tho it's in CreateAction because it's not graphql editable
   expect(fields["accountStatus"]).toBeUndefined();
+});
+
+describe("super nested complex", () => {
+  test("super nested", async () => {
+    const obj = {
+      uuid: v1(),
+      int: 34,
+      string: "whaa",
+      float: 2.3,
+      bool: false,
+      enum: "MAYBE",
+      intList: [7, 8, 9],
+      obj: {
+        nestedBool: false,
+        nestedIntList: [1, 2, 3],
+        nestedUuid: v1(),
+        nestedEnum: "NO",
+        nestedString: "stri",
+        nestedInt: 24,
+        nestedStringList: ["hello", "goodbye"],
+        nestedObj: {
+          nestedNestedUuid: v1(),
+          nestedNestedFloat: 4.2,
+          nestedNestedEnum: "YES",
+          nestedNestedInt: 32,
+          nestedNestedString: "whaa",
+          nestedNestedIntList: [4, 5, 6],
+          nestedNestedStringList: ["sss"],
+        },
+      },
+    };
+    // graphql vs typescript
+    const transformedObj = {
+      ...obj,
+      enum: Enum.Maybe,
+      obj: {
+        ...obj.obj,
+        nestedEnum: NestedEnum.No,
+        nestedObj: {
+          ...obj.obj.nestedObj,
+          nestedNestedEnum: NestedNestedEnum.Yes,
+        },
+      },
+    };
+
+    await expectMutation(
+      {
+        schema: schema,
+        mutation: "userCreate",
+        args: {
+          firstName: "Jon",
+          lastName: "Snow",
+          emailAddress: randomEmail(),
+          phoneNumber: randomPhoneNumber(),
+          password: "pa$$w0rd",
+          superNestedObject: obj,
+        },
+      },
+      [
+        "user.id",
+        async function (id: string) {
+          const entID = mustDecodeIDFromGQLID(id);
+          const user = await User.loadX(new IDViewer(entID), entID);
+          expect(user.superNestedObject).toStrictEqual(transformedObj);
+        },
+      ],
+    );
+  });
+
+  test("union cat", async () => {
+    const obj = {
+      uuid: v1(),
+      int: 34,
+      string: "whaa",
+      float: 2.3,
+      bool: false,
+      enum: "MAYBE",
+      intList: [7, 8, 9],
+      union: {
+        // input has cat specified
+        cat: {
+          name: "tabby",
+          birthday: new Date(),
+          breed: "BENGAL",
+          kitten: true,
+        },
+      },
+    };
+    // graphql vs typescript
+    // union type is separate
+    const transformedObj = {
+      ...obj,
+      enum: Enum.Maybe,
+      union: {
+        ...obj.union.cat,
+        breed: CatBreed.Bengal,
+        birthday: obj.union.cat.birthday.toISOString(),
+      },
+    };
+
+    await expectMutation(
+      {
+        schema: schema,
+        mutation: "userCreate",
+        args: {
+          firstName: "Jon",
+          lastName: "Snow",
+          emailAddress: randomEmail(),
+          phoneNumber: randomPhoneNumber(),
+          password: "pa$$w0rd",
+          superNestedObject: obj,
+        },
+      },
+      [
+        "user.id",
+        async function (id: string) {
+          const entID = mustDecodeIDFromGQLID(id);
+          const user = await User.loadX(new IDViewer(entID), entID);
+          expect(user.superNestedObject).toStrictEqual(transformedObj);
+        },
+      ],
+    );
+  });
+
+  test("union dog", async () => {
+    const obj = {
+      uuid: v1(),
+      int: 34,
+      string: "whaa",
+      float: 2.3,
+      bool: false,
+      enum: "MAYBE",
+      intList: [7, 8, 9],
+      union: {
+        // input has dog specified
+        dog: {
+          name: "scout",
+          birthday: new Date(),
+          breed: "GERMAN_SHEPHERD",
+          breedGroup: "HERDING",
+          puppy: false,
+        },
+      },
+    };
+    // graphql vs typescript
+    // union type is separate
+    const transformedObj = {
+      ...obj,
+      enum: Enum.Maybe,
+      union: {
+        ...obj.union.dog,
+        breed: DogBreed.GermanShepherd,
+        breedGroup: DogBreedGroup.Herding,
+        birthday: obj.union.dog.birthday.toISOString(),
+      },
+    };
+
+    await expectMutation(
+      {
+        schema: schema,
+        mutation: "userCreate",
+        args: {
+          firstName: "Jon",
+          lastName: "Snow",
+          emailAddress: randomEmail(),
+          phoneNumber: randomPhoneNumber(),
+          password: "pa$$w0rd",
+          superNestedObject: obj,
+        },
+      },
+      [
+        "user.id",
+        async function (id: string) {
+          const entID = mustDecodeIDFromGQLID(id);
+          const user = await User.loadX(new IDViewer(entID), entID);
+          expect(user.superNestedObject).toStrictEqual(transformedObj);
+        },
+      ],
+    );
+  });
+
+  test("union rabbit", async () => {
+    const obj = {
+      uuid: v1(),
+      int: 34,
+      string: "whaa",
+      float: 2.3,
+      bool: false,
+      enum: "MAYBE",
+      intList: [7, 8, 9],
+      union: {
+        // input has rabbit specified
+        rabbit: {
+          name: "hallo",
+          birthday: new Date(),
+          breed: "AMERICAN_CHINCILLA",
+        },
+      },
+    };
+    // graphql vs typescript
+    // union type is separate
+    const transformedObj = {
+      ...obj,
+      enum: Enum.Maybe,
+      union: {
+        ...obj.union.rabbit,
+        breed: RabbitBreed.AmericanChincilla,
+        birthday: obj.union.rabbit.birthday.toISOString(),
+      },
+    };
+
+    await expectMutation(
+      {
+        schema: schema,
+        mutation: "userCreate",
+        args: {
+          firstName: "Jon",
+          lastName: "Snow",
+          emailAddress: randomEmail(),
+          phoneNumber: randomPhoneNumber(),
+          password: "pa$$w0rd",
+          superNestedObject: obj,
+        },
+      },
+      [
+        "user.id",
+        async function (id: string) {
+          const entID = mustDecodeIDFromGQLID(id);
+          const user = await User.loadX(new IDViewer(entID), entID);
+          expect(user.superNestedObject).toStrictEqual(transformedObj);
+        },
+      ],
+    );
+  });
 });

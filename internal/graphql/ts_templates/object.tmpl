@@ -1,4 +1,4 @@
-{{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" "GraphQLBoolean" }}
+{{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" "GraphQLBoolean" "GraphQLUnionType" }}
 {{reserveImport .Package.PackagePath "ID" "RequestContext" }}
 {{reserveImport .Package.GraphQLPackagePath "GraphQLTime" "GraphQLNodeInterface" "GraphQLEdgeInterface" "GraphQLConnectionInterface" "nodeIDEncoder" "resolveID" "mustDecodeIDFromGQLID" "encodeGQLID" }}
 
@@ -26,39 +26,50 @@
 {{$nodeInstance := .NodeInstance}}
 
 {{ range $gqlNode := .GQLNodes -}}
-  {{ if $gqlNode.Exported -}}
-    export const {{$gqlNode.Type}} = new {{useImport $gqlNode.GQLType}}({
-  {{ else -}}
-    const {{$gqlNode.Type}} = new {{useImport $gqlNode.GQLType}}({
-  {{ end -}}
-    name: "{{$gqlNode.Node}}",
-    {{ if eq $gqlNode.GQLType "GraphQLInputObjectType" -}}
-      fields: (): {{useImport "GraphQLInputFieldConfigMap"}} => ({
-    {{ else -}}
-      {{ $tsType := $gqlNode.TSType -}}
-      {{ if $baseObj.ForeignImport $tsType -}}
-         {{$tsType = useImport $tsType -}}
-      {{ end -}}
-      fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$tsType}}, {{useImport "RequestContext"}}> => ({
-    {{ end -}}
-      {{ template "field.tmpl" (dict "Base" $baseObj "Node" $gqlNode "NodeInstance" $nodeInstance) -}}
-      }),
-    {{if .GQLInterfaces -}}
-    interfaces: [
-      {{range $interface := .GQLInterfaces -}}
-        {{useImport $interface}},
-      {{end -}}
-    ],
-    {{end -}}
-    {{if .IsTypeOfMethod -}}
-      isTypeOf(obj) {
-        {{ range $line := .IsTypeOfMethod -}}
-          {{$line}}
+  {{if eq $gqlNode.GQLType "GraphQLUnionType" -}}
+    const {{$gqlNode.Type}} = new {{useImport "GraphQLUnionType"}}({
+      name: "{{$gqlNode.Node}}",
+      types: [
+        {{ range .UnionTypes}}
+          {{.}},
         {{ end -}}
-      },
-    {{end -}}
-  });
-  
+      ],
+    });
+
+  {{ else -}}
+    {{ if $gqlNode.Exported -}}
+      export const {{$gqlNode.Type}} = new {{useImport $gqlNode.GQLType}}({
+    {{ else -}}
+      const {{$gqlNode.Type}} = new {{useImport $gqlNode.GQLType}}({
+    {{ end -}}
+      name: "{{$gqlNode.Node}}",
+      {{ if eq $gqlNode.GQLType "GraphQLInputObjectType" -}}
+        fields: (): {{useImport "GraphQLInputFieldConfigMap"}} => ({
+      {{ else -}}
+        {{ $tsType := $gqlNode.TSType -}}
+        {{ if $baseObj.ForeignImport $tsType -}}
+          {{$tsType = useImport $tsType -}}
+        {{ end -}}
+        fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$tsType}}, {{useImport "RequestContext"}}> => ({
+      {{ end -}}
+        {{ template "field.tmpl" (dict "Base" $baseObj "Node" $gqlNode "NodeInstance" $nodeInstance) -}}
+        }),
+      {{if .GQLInterfaces -}}
+      interfaces: [
+        {{range $interface := .GQLInterfaces -}}
+          {{useImport $interface}},
+        {{end -}}
+      ],
+      {{end -}}
+      {{if .IsTypeOfMethod -}}
+        isTypeOf(obj) {
+          {{ range $line := .IsTypeOfMethod -}}
+            {{$line}}
+          {{ end -}}
+        },
+      {{end -}}
+    });
+  {{end}}
 {{end}}
 
 {{ if .FieldConfig}}

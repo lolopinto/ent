@@ -12,7 +12,6 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { GraphQLJSON } from "graphql-type-json";
 import { RequestContext } from "@snowtop/ent";
 import {
   GraphQLEdgeConnection,
@@ -37,6 +36,11 @@ import {
   ContactType,
   DaysOffType,
   PreferredShiftType,
+  UserNestedObjectListType,
+  UserPrefsDiffType,
+  UserPrefsStruct2Type,
+  UserPrefsStructType,
+  UserSuperNestedObjectType,
   UserToCommentsConnectionType,
   UserToContactsConnectionType,
   UserToCreatedEventsConnectionType,
@@ -82,19 +86,19 @@ export const UserType = new GraphQLObjectType({
       type: GraphQLList(GraphQLNonNull(GraphQLString)),
     },
     prefs: {
-      type: GraphQLJSON,
+      type: UserPrefsStructType,
       resolve: async (user: User, args: {}, context: RequestContext) => {
         return user.prefs();
       },
     },
     prefsList: {
-      type: GraphQLList(GraphQLNonNull(GraphQLJSON)),
+      type: GraphQLList(GraphQLNonNull(UserPrefsStruct2Type)),
       resolve: async (user: User, args: {}, context: RequestContext) => {
         return user.prefsList();
       },
     },
     prefsDiff: {
-      type: GraphQLJSON,
+      type: UserPrefsDiffType,
       resolve: async (user: User, args: {}, context: RequestContext) => {
         return user.prefsDiff();
       },
@@ -116,6 +120,12 @@ export const UserType = new GraphQLObjectType({
     },
     newCol2: {
       type: GraphQLString,
+    },
+    superNestedObject: {
+      type: UserSuperNestedObjectType,
+    },
+    nestedList: {
+      type: GraphQLList(GraphQLNonNull(UserNestedObjectListType)),
     },
     selfContact: {
       type: ContactType,

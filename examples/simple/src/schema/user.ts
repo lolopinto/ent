@@ -9,13 +9,19 @@ import {
   BooleanType,
   requiredField,
   NoFields,
-  JSONBType,
-  JSONType,
   EnumListType,
   BigIntegerType,
-  JSONBListType,
   UUIDListType,
   Index,
+  StructType,
+  UUIDType,
+  StructListType,
+  IntegerType,
+  FloatType,
+  EnumType,
+  IntegerListType,
+  UnionType,
+  TimestampType,
 } from "@snowtop/ent/schema";
 import { EmailType } from "@snowtop/ent-email";
 import { PasswordType } from "@snowtop/ent-password";
@@ -63,41 +69,47 @@ export default class User extends BaseEntSchema implements Schema {
     }),
     StringType({ name: "Bio", nullable: true }),
     StringListType({ name: "nicknames", nullable: true }),
-    JSONBType({
+    StructType({
       name: "prefs",
+      tsType: "UserPrefsStruct",
       nullable: true,
-      importType: {
-        path: "src/ent/user_prefs",
-        type: "UserPrefs",
+      fields: {
+        finishedNux: BooleanType({ nullable: true }),
+        enableNotifs: BooleanType({ nullable: true }),
+        notifTypes: EnumListType({
+          values: ["MOBILE", "WEB", "EMAIL"],
+          tsType: "NotifType",
+          graphQLType: "NotifType",
+        }),
       },
       privacyPolicy: AllowIfViewerPrivacyPolicy,
     }),
-    JSONBListType({
+    // TODO there should be a way to share structs across types
+    // this is the same type across multiple fields
+    // more likely to be shared across types
+    StructListType({
       name: "prefsList",
+      tsType: "UserPrefsStruct2",
       nullable: true,
-      importType: {
-        path: "src/ent/user_prefs",
-        type: "UserPrefs",
+      fields: {
+        finishedNux: BooleanType({ nullable: true }),
+        enableNotifs: BooleanType({ nullable: true }),
+        notifTypes: EnumListType({
+          values: ["MOBILE", "WEB", "EMAIL"],
+          tsType: "NotifType2",
+          graphQLType: "NotifType2",
+        }),
       },
       privacyPolicy: AllowIfViewerPrivacyPolicy,
     }),
-    JSONType({
+    StructType({
       name: "prefs_diff",
+      tsType: "UserPrefsDiff",
       nullable: true,
       privacyPolicy: AllowIfViewerPrivacyPolicy,
-      validator: (val: any) => {
-        if (typeof val != "object") {
-          return false;
-        }
-        const requiredKeys = {
-          type: true,
-        };
-        for (const k in requiredKeys) {
-          if (!val[k]) {
-            return false;
-          }
-        }
-        return true;
+      jsonNotJSONB: true,
+      fields: {
+        type: StringType(),
       },
     }),
     EnumListType({
@@ -127,6 +139,156 @@ export default class User extends BaseEntSchema implements Schema {
     UUIDListType({ name: "fun_uuids", nullable: true }),
     StringType({ name: "new_col", nullable: true }),
     StringType({ name: "new_col2", nullable: true }),
+    StructType({
+      name: "superNestedObject",
+      nullable: true,
+      tsType: "UserSuperNestedObject",
+      fields: {
+        uuid: UUIDType(),
+        int: IntegerType(),
+        string: StringType(),
+        bool: BooleanType(),
+        float: FloatType(),
+        enum: EnumType({ values: ["yes", "no", "maybe"] }),
+        string_list: StringListType({ nullable: true }),
+        int_list: IntegerListType(),
+        obj: StructType({
+          nullable: true,
+          tsType: "UserNestedObject",
+          fields: {
+            nested_uuid: UUIDType(),
+            nested_int: IntegerType(),
+            nested_string: StringType(),
+            nested_bool: BooleanType(),
+            nested_float: FloatType({ nullable: true }),
+            nested_enum: EnumType({ values: ["yes", "no", "maybe"] }),
+            nested_string_list: StringListType(),
+            nested_int_list: IntegerListType(),
+            nested_obj: StructType({
+              nullable: true,
+              tsType: "UserNestedNestedObject",
+              fields: {
+                nested_nested_uuid: UUIDType(),
+                nested_nested_int: IntegerType(),
+                nested_nested_string: StringType(),
+                nested_nested_bool: BooleanType({ nullable: true }),
+                nested_nested_float: FloatType(),
+                nested_nested_enum: EnumType({
+                  values: ["yes", "no", "maybe"],
+                }),
+                nested_nested_string_list: StringListType(),
+                nested_nested_int_list: IntegerListType(),
+              },
+            }),
+          },
+        }),
+        // TODO we need list types...
+        // e.g. multiple pets
+        union: UnionType({
+          nullable: true,
+          tsType: "PetUnionType",
+          fields: {
+            cat: StructType({
+              tsType: "CatType",
+              fields: {
+                name: StringType(),
+                birthday: TimestampType(),
+                breed: EnumType({
+                  tsType: "CatBreed",
+                  graphQLType: "CatBreed",
+                  values: [
+                    "bengal",
+                    "burmese",
+                    "himalayan",
+                    "somali",
+                    "persian",
+                    "siamese",
+                    "tabby",
+                    "other",
+                  ],
+                }),
+                kitten: BooleanType(),
+              },
+            }),
+            dog: StructType({
+              tsType: "DogType",
+              fields: {
+                name: StringType(),
+                birthday: TimestampType(),
+                breed: EnumType({
+                  tsType: "DogBreed",
+                  graphQLType: "DogBreed",
+                  values: [
+                    "german_shepherd",
+                    "labrador",
+                    "pomerian",
+                    "siberian_husky",
+                    "poodle",
+                    "golden_retriever",
+                    "other",
+                  ],
+                }),
+                // https://www.akc.org/expert-advice/lifestyle/7-akc-dog-breed-groups-explained/
+                breedGroup: EnumType({
+                  tsType: "DogBreedGroup",
+                  graphQLType: "DogBreedGroup",
+                  values: [
+                    "sporting",
+                    "hound",
+                    "working",
+                    "terrier",
+                    "toy",
+                    "non_sporting",
+                    "herding",
+                  ],
+                }),
+                puppy: BooleanType(),
+              },
+            }),
+            rabbit: StructType({
+              tsType: "RabbitType",
+              fields: {
+                name: StringType(),
+                birthday: TimestampType(),
+                breed: EnumType({
+                  tsType: "RabbitBreed",
+                  graphQLType: "RabbitBreed",
+                  values: [
+                    "american_rabbit",
+                    "american_chincilla",
+                    "american_fuzzy_lop",
+                    "american_sable",
+                    "argente_brun",
+                    "belgian_hare",
+                    "beveren",
+                    "other",
+                  ],
+                }),
+              },
+            }),
+          },
+        }),
+      },
+    }),
+    StructListType({
+      name: "nestedList",
+      nullable: true,
+      tsType: "UserNestedObjectList",
+      fields: {
+        type: StringType(),
+        enum: EnumType({
+          values: ["yes", "no", "maybe"],
+          tsType: "EnumUsedInList",
+          graphQLType: "EnumUsedInList",
+        }),
+        objects: StructListType({
+          tsType: "UserNestedNestedObjectList",
+          fields: {
+            int: IntegerType(),
+          },
+        }),
+      },
+    }),
   ];
 
   edges: Edge[] = [
@@ -173,6 +335,8 @@ export default class User extends BaseEntSchema implements Schema {
         "preferredShift",
         "fun_uuids",
         "prefsList",
+        "superNestedObject",
+        "nestedList",
       ],
     },
 
