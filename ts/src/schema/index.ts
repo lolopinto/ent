@@ -30,6 +30,8 @@ export {
   Node,
   BaseEntSchema,
   BaseEntSchemaWithTZ,
+  EntSchema,
+  EntSchemaWithTZ,
 } from "./base_schema";
 
 export * from "./field";

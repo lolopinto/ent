@@ -21,8 +21,8 @@ import { convertDate } from "../core/convert";
 import { camelCase } from "camel-case";
 import {
   SchemaConfig,
-  BaseEntSchema,
-  BaseEntSchemaWithTZ,
+  EntSchema,
+  EntSchemaWithTZ,
 } from "../schema/base_schema";
 
 export class User implements Ent {
@@ -106,7 +106,7 @@ export function getBuilderSchema<T extends Ent>(
   ent: EntConstructor<T>,
 ): BuilderSchema<T> {
   return {
-    ...new BaseEntSchema(cfg),
+    ...new EntSchema(cfg),
     ent,
   };
 }
@@ -116,7 +116,7 @@ export function getBuilderSchemaFromFields<T extends Ent>(
   ent: EntConstructor<T>,
 ): BuilderSchema<T> {
   return {
-    ...new BaseEntSchema({ fields }),
+    ...new EntSchema({ fields }),
     ent,
   };
 }
@@ -126,7 +126,7 @@ export function getBuilderSchemaTZFromFields<T extends Ent>(
   ent: EntConstructor<T>,
 ): BuilderSchema<T> {
   return {
-    ...new BaseEntSchemaWithTZ({ fields }),
+    ...new EntSchemaWithTZ({ fields }),
     ent,
   };
 }

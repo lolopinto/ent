@@ -75,9 +75,9 @@ export const Node: Pattern = {
 
 export interface SchemaConfig extends Schema {}
 
-// Base ent schema. has Node Pattern by default.
+// Ent schema. has Node Pattern by default.
 // exists just to have less typing and easier for clients to implement
-export class BaseEntSchema implements Schema {
+export class EntSchema implements Schema {
   // Field[] compatibility reasons
   fields: FieldMap | Field[];
 
@@ -101,11 +101,7 @@ export class BaseEntSchema implements Schema {
 
   hideFromGraphQL?: boolean;
 
-  // intentionally optional for compatibility reasons
-  constructor(cfg?: SchemaConfig) {
-    if (!cfg) {
-      return;
-    }
+  constructor(cfg: SchemaConfig) {
     this.fields = cfg.fields;
     this.tableName = cfg.tableName;
     if (cfg.patterns) {
@@ -120,14 +116,9 @@ export class BaseEntSchema implements Schema {
     this.indices = cfg.indices;
     this.hideFromGraphQL = cfg.hideFromGraphQL;
   }
-
-  // TODO kill
-  addPatterns(...patterns: Pattern[]) {
-    this.patterns.push(...patterns);
-  }
 }
 
-export class BaseEntSchemaWithTZ {
+export class EntSchemaWithTZ {
   // Field[] compatibility reasons
   fields: FieldMap | Field[];
 
@@ -157,11 +148,7 @@ export class BaseEntSchemaWithTZ {
 
   hideFromGraphQL?: boolean;
 
-  // intentionally optional for compatibility reasons
-  constructor(cfg?: SchemaConfig) {
-    if (!cfg) {
-      return;
-    }
+  constructor(cfg: SchemaConfig) {
     this.fields = cfg.fields;
     this.tableName = cfg.tableName;
     if (cfg.patterns) {
@@ -176,9 +163,28 @@ export class BaseEntSchemaWithTZ {
     this.indices = cfg.indices;
     this.hideFromGraphQL = cfg.hideFromGraphQL;
   }
+}
 
-  // TODO kill
+// @deprecated use EntSchema
+export abstract class BaseEntSchema {
   addPatterns(...patterns: Pattern[]) {
     this.patterns.push(...patterns);
   }
+
+  patterns: Pattern[] = [Node];
+}
+
+// @deprecated use EntSchemaWithTZ
+export abstract class BaseEntSchemaWithTZ {
+  addPatterns(...patterns: Pattern[]) {
+    this.patterns.push(...patterns);
+  }
+
+  patterns: Pattern[] = [
+    {
+      // default schema added
+      name: "nodeWithTZ",
+      fields: nodeFieldsWithTZ,
+    },
+  ];
 }

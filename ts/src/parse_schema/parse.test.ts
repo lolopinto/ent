@@ -1,6 +1,6 @@
 import { FieldMap, Schema } from "src/schema";
 import { StringType } from "../schema/field";
-import { BaseEntSchema } from "../schema/base_schema";
+import { BaseEntSchema, EntSchema } from "../schema/base_schema";
 import { parseSchema } from "./parse";
 
 test("legacy class", async () => {
@@ -24,7 +24,7 @@ test("implicit schema", async () => {
 });
 
 test("new API with constructor config", async () => {
-  const Foo = new BaseEntSchema({
+  const Foo = new EntSchema({
     fields: {
       name: StringType(),
     },

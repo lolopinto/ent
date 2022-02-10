@@ -164,7 +164,7 @@ function traverseClass(
     return false;
   }
 
-  let klassContents = `${ci.comment}const ${ci.name} = new ${ci.extends}({\n`;
+  let klassContents = `${ci.comment}const ${ci.name} = new ${ci.class}({\n`;
   let removeImports: string[] = [];
   if (ci.implementsSchema) {
     removeImports.push("Schema");
@@ -195,12 +195,20 @@ function traverseClass(
 }
 
 interface classInfo {
-  extends: string;
+  class: string;
   comment: string;
   name: string;
   export?: boolean;
   default?: boolean;
   implementsSchema?: boolean;
+}
+
+function transformSchema(str: string): string {
+  // only do known class names
+  if (str === "BaseEntSchema" || str === "BaseEntSchemaWithTZ") {
+    return str.substring(4);
+  }
+  return str;
 }
 
 function getClassInfo(
@@ -226,15 +234,12 @@ function getClassInfo(
       // ts.SyntaxKind.ExtendsKeyword
       // can only extend one class
       for (const type of hc.types) {
-        classExtends = type.expression.getText(sourceFile);
-        switch (classExtends) {
-          // only do known class names
-          case "BaseEntSchema":
-          case "BaseEntSchemaWithTZ":
-            break;
-          default:
-            return undefined;
+        const text = type.expression.getText(sourceFile);
+        const transformed = transformSchema(text);
+        if (transformed === text) {
+          return undefined;
         }
+        classExtends = transformed;
       }
     }
   }
@@ -245,7 +250,7 @@ function getClassInfo(
 
   let ci: classInfo = {
     name: className,
-    extends: classExtends,
+    class: classExtends,
     comment: getPreText(fileContents, node, sourceFile),
     implementsSchema,
   };
@@ -529,7 +534,7 @@ function transformImport(
   removeImports.forEach((imp) => (removeImportsMap[imp] = true));
   let newImports: string[] = [];
   for (let i = 0; i < imports.length; i++) {
-    const imp = imports[i].trim();
+    let imp = transformSchema(imports[i].trim());
     if (removeImportsMap[imp]) {
       continue;
     }
