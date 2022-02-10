@@ -25,6 +25,17 @@ type PageInfo {
   endCursor: String!
 }
 
+enum CatBreed {
+  BENGAL
+  BURMESE
+  HIMALAYAN
+  SOMALI
+  PERSIAN
+  SIAMESE
+  TABBY
+  OTHER
+}
+
 enum DayOfWeekAlt {
   FRIDAY
   MONDAY
@@ -55,6 +66,38 @@ enum DaysOff {
   SUNDAY
 }
 
+enum DogBreedGroup {
+  SPORTING
+  HOUND
+  WORKING
+  TERRIER
+  TOY
+  NON_SPORTING
+  HERDING
+}
+
+enum DogBreed {
+  GERMAN_SHEPHERD
+  LABRADOR
+  POMERIAN
+  SIBERIAN_HUSKY
+  POODLE
+  GOLDEN_RETRIEVER
+  OTHER
+}
+
+enum Enum {
+  YES
+  NO
+  MAYBE
+}
+
+enum EnumUsedInList {
+  YES
+  NO
+  MAYBE
+}
+
 enum EventRsvpStatus {
   ATTENDING
   DECLINED
@@ -62,11 +105,46 @@ enum EventRsvpStatus {
   CAN_RSVP
 }
 
+enum NestedEnum {
+  YES
+  NO
+  MAYBE
+}
+
+enum NestedNestedEnum {
+  YES
+  NO
+  MAYBE
+}
+
+enum NotifType2 {
+  MOBILE
+  WEB
+  EMAIL
+}
+
+enum NotifType {
+  MOBILE
+  WEB
+  EMAIL
+}
+
 enum PreferredShift {
   MORNING
   AFTERNOON
   EVENING
   GRAVEYARD
+}
+
+enum RabbitBreed {
+  AMERICAN_RABBIT
+  AMERICAN_CHINCILLA
+  AMERICAN_FUZZY_LOP
+  AMERICAN_SABLE
+  ARGENTE_BRUN
+  BELGIAN_HARE
+  BEVEREN
+  OTHER
 }
 
 type Address implements Node {
@@ -155,15 +233,17 @@ type User implements Node {
   accountStatus: String
   bio: String
   nicknames: [String!]
-  prefs: JSON
-  prefsList: [JSON!]
-  prefsDiff: JSON
+  prefs: UserPrefsStruct
+  prefsList: [UserPrefsStruct2!]
+  prefsDiff: UserPrefsDiff
   daysOff: [DaysOff!]
   preferredShift: [PreferredShift!]
   timeInMs: String
   funUuids: [ID!]
   newCol: String
   newCol2: String
+  superNestedObject: UserSuperNestedObject
+  nestedList: [UserNestedObjectList!]
   selfContact: Contact
   comments(first: Int, after: String, last: Int, before: String): UserToCommentsConnection!
   createdEvents(first: Int, after: String, last: Int, before: String): UserToCreatedEventsConnection!
@@ -735,12 +815,14 @@ input UserCreateInput {
   phoneNumber: String!
   password: String!
   nicknames: [String!]
-  prefs: JSON
-  prefsDiff: JSON
+  prefs: UserPrefsStructInput
+  prefsDiff: UserPrefsDiffInput
   daysOff: [DaysOff!]
   preferredShift: [PreferredShift!]
   funUuids: [ID!]
-  prefsList: [JSON!]
+  prefsList: [UserPrefsStruct2Input!]
+  superNestedObject: UserSuperNestedObjectInput
+  nestedList: [UserNestedObjectListInput!]
 }
 
 type UserCreatePayload {

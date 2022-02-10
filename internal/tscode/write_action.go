@@ -36,12 +36,15 @@ func writeBaseActionFile(nodeData *schema.NodeData, processor *codegen.Processor
 			Package:       cfg.GetImportPackage(),
 			PrivacyConfig: cfg.GetDefaultActionPolicy(),
 		},
-		AbsPathToTemplate:  util.GetAbsolutePath("action_base.tmpl"),
-		OtherTemplateFiles: []string{util.GetAbsolutePath("../schema/enum/enum.tmpl")},
-		TemplateName:       "action_base.tmpl",
-		PathToFile:         filePath,
-		TsImports:          imps,
-		FuncMap:            getFuncMapForActionBase(imps),
+		AbsPathToTemplate: util.GetAbsolutePath("action_base.tmpl"),
+		OtherTemplateFiles: []string{
+			util.GetAbsolutePath("../schema/enum/enum.tmpl"),
+			util.GetAbsolutePath("interface.tmpl"),
+		},
+		TemplateName: "action_base.tmpl",
+		PathToFile:   filePath,
+		TsImports:    imps,
+		FuncMap:      getFuncMapForActionBase(imps),
 	})
 }
 

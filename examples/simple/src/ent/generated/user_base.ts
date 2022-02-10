@@ -36,6 +36,11 @@ import {
   userLoaderInfo,
   userPhoneNumberLoader,
 } from "./loaders";
+import { UserNestedObjectList } from "./user_nested_object_list";
+import { UserPrefsDiff } from "./user_prefs_diff";
+import { UserPrefsStruct } from "./user_prefs_struct";
+import { UserPrefsStruct2 } from "./user_prefs_struct_2";
+import { UserSuperNestedObject } from "./user_super_nested_object";
 import {
   Contact,
   EdgeType,
@@ -53,7 +58,6 @@ import {
   UserToLikesQuery,
   UserToMaybeEventsQuery,
 } from "../internal";
-import { UserPrefs } from "../user_prefs";
 import schema from "../../schema/user";
 
 export enum DaysOff {
@@ -87,15 +91,17 @@ export class UserBase {
   protected readonly _emailVerified: boolean;
   readonly bio: string | null;
   readonly nicknames: string[] | null;
-  protected readonly _prefs: UserPrefs | null;
-  protected readonly _prefsList: UserPrefs[] | null;
-  protected readonly _prefsDiff: any;
+  protected readonly _prefs: UserPrefsStruct | null;
+  protected readonly _prefsList: UserPrefsStruct2[] | null;
+  protected readonly _prefsDiff: UserPrefsDiff | null;
   readonly daysOff: DaysOff[] | null;
   readonly preferredShift: PreferredShift[] | null;
   readonly timeInMs: BigInt | null;
   readonly funUuids: ID[] | null;
   readonly newCol: string | null;
   readonly newCol2: string | null;
+  readonly superNestedObject: UserSuperNestedObject | null;
+  readonly nestedList: UserNestedObjectList[] | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
@@ -119,6 +125,8 @@ export class UserBase {
     this.funUuids = convertNullableList(data.fun_uuids);
     this.newCol = data.new_col;
     this.newCol2 = data.new_col_2;
+    this.superNestedObject = convertNullableJSON(data.super_nested_object);
+    this.nestedList = convertNullableJSONList(data.nested_list);
   }
 
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;

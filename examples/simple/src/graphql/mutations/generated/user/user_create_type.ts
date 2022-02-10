@@ -15,12 +15,17 @@ import {
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
-import { GraphQLJSON } from "graphql-type-json";
 import { RequestContext } from "@snowtop/ent";
+import { transformUnionTypes } from "@snowtop/ent/graphql";
 import { User } from "../../../../ent";
 import CreateUserAction, {
   UserCreateInput,
 } from "../../../../ent/user/actions/create_user_action";
+import { UserNestedObjectListInputType } from "../input/user_nested_object_list_input_type";
+import { UserPrefsDiffInputType } from "../input/user_prefs_diff_input_type";
+import { UserPrefsStruct2InputType } from "../input/user_prefs_struct_2_input_type";
+import { UserPrefsStructInputType } from "../input/user_prefs_struct_input_type";
+import { UserSuperNestedObjectInputType } from "../input/user_super_nested_object_input_type";
 import { DaysOffType, PreferredShiftType, UserType } from "../../../resolvers";
 
 interface UserCreatePayload {
@@ -49,10 +54,10 @@ export const UserCreateInputType = new GraphQLInputObjectType({
       type: GraphQLList(GraphQLNonNull(GraphQLString)),
     },
     prefs: {
-      type: GraphQLJSON,
+      type: UserPrefsStructInputType,
     },
     prefsDiff: {
-      type: GraphQLJSON,
+      type: UserPrefsDiffInputType,
     },
     daysOff: {
       type: GraphQLList(GraphQLNonNull(DaysOffType)),
@@ -64,7 +69,13 @@ export const UserCreateInputType = new GraphQLInputObjectType({
       type: GraphQLList(GraphQLNonNull(GraphQLID)),
     },
     prefsList: {
-      type: GraphQLList(GraphQLNonNull(GraphQLJSON)),
+      type: GraphQLList(GraphQLNonNull(UserPrefsStruct2InputType)),
+    },
+    superNestedObject: {
+      type: UserSuperNestedObjectInputType,
+    },
+    nestedList: {
+      type: GraphQLList(GraphQLNonNull(UserNestedObjectListInputType)),
     },
   }),
 });
@@ -96,6 +107,7 @@ export const UserCreateType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<UserCreatePayload> => {
+    input = transformUnionTypes(input, [["superNestedObject", "union"]]);
     const user = await CreateUserAction.create(context.getViewer(), {
       firstName: input.firstName,
       lastName: input.lastName,
@@ -109,6 +121,8 @@ export const UserCreateType: GraphQLFieldConfig<
       preferredShift: input.preferredShift,
       funUuids: input.funUuids,
       prefsList: input.prefsList,
+      superNestedObject: input.superNestedObject,
+      nestedList: input.nestedList,
     }).saveX();
     return { user: user };
   },

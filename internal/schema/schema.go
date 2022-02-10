@@ -18,6 +18,7 @@ import (
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/base"
+	"github.com/lolopinto/ent/internal/schema/customtype"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schemaparser"
@@ -36,8 +37,10 @@ type Schema struct {
 	edgesToUpdate []*ent.AssocEdgeData
 	// unlike Nodes, the key is "EnumName" instead of "EnumNameConfig"
 	// confusing but gets us closer to what we want
-	Enums      map[string]*EnumInfo
-	enumTables map[string]*EnumInfo
+	Enums            map[string]*EnumInfo
+	enumTables       map[string]*EnumInfo
+	CustomInterfaces map[string]*customtype.CustomInterface
+	gqlNameMap       map[string]bool
 
 	// used to keep track of schema-state
 	inputSchema *input.Schema
@@ -49,13 +52,7 @@ func (s *Schema) GetInputSchema() *input.Schema {
 
 func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData) error {
 	return s.addEnumFrom(
-		&enum.Input{
-			TSName:  enumType.GetTSName(),
-			GQLName: enumType.GetGraphQLName(),
-			GQLType: enumType.GetTSType(),
-			Values:  enumType.GetEnumValues(),
-			EnumMap: enumType.GetEnumMap(),
-		},
+		enum.NewInputFromEnumType(enumType),
 		nodeData,
 		nil,
 	)
@@ -168,19 +165,14 @@ func (s *Schema) addEnumFrom(input *enum.Input, nodeData *NodeData, inputNode *i
 		InputNode: inputNode,
 	}
 
-	gqlName := input.GQLName
 	if nodeData.HideFromGraphQL {
 		// hide from graphql. no graphql enum
 		info.GQLEnum = nil
 	}
 
 	// new source enum
-	if input.HasValues() {
-		if s.Enums[gqlName] != nil {
-			return fmt.Errorf("enum schema with gqlname %s already exists", gqlName)
-		}
-		// key on gqlName since key isn't really being used atm and gqlName needs to be unique
-		s.Enums[gqlName] = info
+	if err := s.addEnumShared(input, info); err != nil {
+		return err
 	}
 
 	if nodeData.EnumTable {
@@ -194,14 +186,11 @@ func (s *Schema) addEnumFrom(input *enum.Input, nodeData *NodeData, inputNode *i
 }
 
 func (s *Schema) addEnumFromPattern(enumType enttype.EnumeratedType, pattern *input.Pattern) (*EnumInfo, error) {
-	input := &enum.Input{
-		TSName:  enumType.GetTSName(),
-		GQLName: enumType.GetGraphQLName(),
-		GQLType: enumType.GetTSType(),
-		Values:  enumType.GetEnumValues(),
-		EnumMap: enumType.GetEnumMap(),
-	}
+	input := enum.NewInputFromEnumType(enumType)
+	return s.addEnumFromInput(input, pattern)
+}
 
+func (s *Schema) addEnumFromInput(input *enum.Input, pattern *input.Pattern) (*EnumInfo, error) {
 	tsEnum, gqlEnum := enum.GetEnums(input)
 
 	// first create EnumInfo...
@@ -211,17 +200,28 @@ func (s *Schema) addEnumFromPattern(enumType enttype.EnumeratedType, pattern *in
 		Pattern: pattern,
 	}
 
-	gqlName := input.GQLName
-
 	// new source enum
+	if err := s.addEnumShared(input, info); err != nil {
+		return nil, err
+	}
+	return info, nil
+}
+
+func (s *Schema) addEnumShared(input *enum.Input, info *EnumInfo) error {
+	gqlName := input.GQLName
 	if input.HasValues() {
 		if s.Enums[gqlName] != nil {
-			return nil, fmt.Errorf("enum schema with gqlname %s already exists", gqlName)
+			return fmt.Errorf("enum schema with gqlname %s already exists", gqlName)
+		}
+
+		// TODO we're storing the same info twice. simplify this.
+		if err := s.addGQLName(gqlName); err != nil {
+			return err
 		}
 		// key on gqlName since key isn't really being used atm and gqlName needs to be unique
 		s.Enums[gqlName] = info
 	}
-	return info, nil
+	return nil
 }
 
 // Given a schema file parser, Parse parses the schema to return the completely
@@ -265,6 +265,8 @@ func (s *Schema) init() {
 	s.tables = make(map[string]*NodeDataInfo)
 	s.enumTables = make(map[string]*EnumInfo)
 	s.Patterns = map[string]*PatternInfo{}
+	s.CustomInterfaces = map[string]*customtype.CustomInterface{}
+	s.gqlNameMap = make(map[string]bool)
 }
 
 func (s *Schema) GetNodeDataFromTableName(tableName string) *NodeData {
@@ -398,6 +400,10 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 					patternMap[patternName] = list
 				}
 			}
+
+			if err := s.checkCustomInterface(f, nil); err != nil {
+				errs = append(errs, err)
+			}
 		}
 
 		nodeData.EdgeInfo, err = edge.EdgeInfoFromInput(cfg, packageName, node)
@@ -513,6 +519,14 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 		}
 	}
 
+	for _, ci := range s.CustomInterfaces {
+		for _, f := range ci.Fields {
+			if err := s.checkForEnum(f, ci); err != nil {
+				errs = append(errs, err)
+			}
+		}
+	}
+
 	// TODO convert more things to do something like this?
 	if len(errs) > 0 {
 		// we're getting list of errors and coalescing
@@ -588,6 +602,157 @@ func (s *Schema) validateIndices(nodeData *NodeData) error {
 	return nil
 }
 
+// TODO combine with checkCustomInterface...
+func (s *Schema) checkForEnum(f *field.Field, ci *customtype.CustomInterface) error {
+	typ := f.GetFieldType()
+	enumTyp, ok := enttype.GetEnumType(typ)
+	if ok {
+		input := enum.NewInputFromEnumType(enumTyp)
+		info, err := s.addEnumFromInput(input, nil)
+		if err != nil {
+			return err
+		} else {
+			ci.AddEnum(info.Enum, info.GQLEnum)
+		}
+		return nil
+	}
+	subFieldsType, ok := typ.(enttype.TSWithSubFields)
+	if !ok {
+		return nil
+	}
+	subFields := subFieldsType.GetSubFields()
+	if subFields == nil {
+		return nil
+	}
+	actualSubFields := subFields.([]*input.Field)
+	fi, err := field.NewFieldInfoFromInputs(actualSubFields, &field.Options{})
+	if err != nil {
+		return err
+	}
+	for _, f2 := range fi.Fields {
+		if err := s.checkForEnum(f2, ci); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Schema) getCustomInterfaceFromField(f *field.Field) (*customtype.CustomInterface, []*input.Field) {
+	entType := f.GetFieldType()
+	subFieldsType, ok := entType.(enttype.TSWithSubFields)
+	if !ok {
+		return nil, nil
+	}
+	subFields := subFieldsType.GetSubFields()
+	if subFields == nil {
+		return nil, nil
+	}
+	cti := subFieldsType.GetCustomTypeInfo()
+
+	ci := &customtype.CustomInterface{
+		TSType:   cti.TSInterface,
+		GQLType:  cti.GraphQLInterface,
+		Exported: true,
+	}
+	actualSubFields := subFields.([]*input.Field)
+
+	return ci, actualSubFields
+}
+
+func (s *Schema) checkCustomInterface(cfg codegenapi.Config, f *field.Field, root *customtype.CustomInterface) error {
+	ci, subFields := s.getCustomInterfaceFromField(f)
+	if ci == nil || subFields == nil {
+		return nil
+	}
+
+	if err := s.addGQLName(ci.GQLType); err != nil {
+		return err
+	}
+
+	if root == nil {
+		root = ci
+		s.CustomInterfaces[ci.TSType] = ci
+	} else {
+		root.Children = append(root.Children, ci)
+	}
+	fi, err := field.NewFieldInfoFromInputs(cfg, subFields, &field.Options{})
+	if err != nil {
+		return err
+	}
+	for _, f2 := range fi.Fields {
+		ci.Fields = append(ci.Fields, f2)
+		// add custom interface maybe
+		if err := s.checkCustomInterface(cfg, f2, root); err != nil {
+			return err
+		}
+
+		cu, err := s.getCustomUnion(cfg, f2)
+		if err != nil {
+			return err
+		}
+		if cu != nil {
+			root.Children = append(root.Children, cu)
+		}
+	}
+	return nil
+}
+
+func (s *Schema) getCustomUnion(cfg codegenapi.Config, f *field.Field) (*customtype.CustomUnion, error) {
+	entType := f.GetFieldType()
+	unionFieldsType, ok := entType.(enttype.TSWithUnionFields)
+	if !ok {
+		return nil, nil
+	}
+	unionFields := unionFieldsType.GetUnionFields()
+	if unionFields == nil {
+		return nil, nil
+	}
+	cti := unionFieldsType.GetCustomTypeInfo()
+	if cti.Type != enttype.CustomUnion {
+		return nil, fmt.Errorf("invalid custom union %s passed", cti.TSInterface)
+	}
+
+	cu := &customtype.CustomUnion{
+		TSType:  cti.TSInterface,
+		GQLType: cti.GraphQLInterface,
+	}
+
+	if err := s.addGQLName(cu.GQLType); err != nil {
+		return nil, err
+	}
+
+	actualSubFields := unionFields.([]*input.Field)
+	fi, err := field.NewFieldInfoFromInputs(cfg, actualSubFields, &field.Options{})
+	if err != nil {
+		return nil, err
+	}
+	for _, f2 := range fi.Fields {
+		ci, subFields := s.getCustomInterfaceFromField(f2)
+		if ci == nil || subFields == nil {
+			return nil, fmt.Errorf("couldn't get custom interface from field %s", f.FieldName)
+		}
+		ci.GraphQLFieldName = f2.GetGraphQLName()
+
+		// get the fields and add to custom interface
+		fi2, err := field.NewFieldInfoFromInputs(cfg, subFields, &field.Options{})
+		if err != nil {
+			return nil, err
+		}
+		ci.Fields = fi2.Fields
+		// TODO getCustomInterfaceFromField needs to handle this all
+		// instead of this mess
+		for _, f3 := range ci.Fields {
+			if err := s.checkForEnum(f3, ci); err != nil {
+				return nil, err
+			}
+		}
+
+		cu.Interfaces = append(cu.Interfaces, ci)
+	}
+
+	return cu, nil
+}
+
 func (s *Schema) loadExistingEdges() (*assocEdgeData, error) {
 	// load all edges in db
 	result := <-ent.GenLoadAssocEdges()
@@ -604,6 +769,14 @@ func (s *Schema) loadExistingEdges() (*assocEdgeData, error) {
 	}, nil
 }
 
+func (s *Schema) addGQLName(name string) error {
+	if s.gqlNameMap[name] {
+		return fmt.Errorf("there's already an entity with GraphQL name %s", name)
+	}
+	s.gqlNameMap[name] = true
+	return nil
+}
+
 func (s *Schema) addConfig(info *NodeDataInfo) error {
 	// validate schema and table name
 	if s.Nodes[info.NodeData.EntConfigName] != nil {
@@ -611,6 +784,10 @@ func (s *Schema) addConfig(info *NodeDataInfo) error {
 	}
 	if s.tables[info.NodeData.TableName] != nil {
 		return fmt.Errorf("schema with table name %s already exists", info.NodeData.TableName)
+	}
+
+	if err := s.addGQLName(info.NodeData.Node); err != nil {
+		return err
 	}
 
 	// it's confusing that this is stored in 2 places :(

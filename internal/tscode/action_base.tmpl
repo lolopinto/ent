@@ -48,7 +48,11 @@
       {{end -}}
     {{end -}}
   }
+{{end -}}
   
+{{$pkg := .Package -}}
+{{ range $action.GetCustomInterfaces -}}
+  {{template "interface.tmpl" (dict "RootInterface" . "Interface" . "Package" $pkg) }}  
 {{end -}}
 
 {{ $node := useImport .NodeData.Node -}}
