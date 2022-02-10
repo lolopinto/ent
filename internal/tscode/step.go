@@ -18,6 +18,7 @@ import (
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/schema/customtype"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/syncerr"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -38,6 +39,15 @@ var nodeType = regexp.MustCompile(`(\w+)Type`)
 
 type writeFileFn func() error
 type writeFileFnList []writeFileFn
+
+func (s *Step) processCustomInterface(processor *codegen.Processor, ci *customtype.CustomInterface, serr *syncerr.Error) writeFileFnList {
+	var ret writeFileFnList
+
+	ret = append(ret, func() error {
+		return writeCustomInterfaceFile(processor, ci)
+	})
+	return ret
+}
 
 func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataInfo, serr *syncerr.Error) writeFileFnList {
 	var ret writeFileFnList
@@ -99,6 +109,7 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 
 	return ret
 }
+
 func (s *Step) processActions(processor *codegen.Processor, nodeData *schema.NodeData) writeFileFnList {
 	var ret writeFileFnList
 
@@ -160,6 +171,9 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 	var serr syncerr.Error
 
 	var funcs writeFileFnList
+	for _, ci := range processor.Schema.CustomInterfaces {
+		funcs = append(funcs, s.processCustomInterface(processor, ci, &serr)...)
+	}
 	for _, p := range processor.Schema.Patterns {
 		funcs = append(funcs, s.processPattern(processor, p, &serr)...)
 	}
@@ -167,7 +181,8 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 		funcs = append(funcs, s.processNode(processor, info, &serr)...)
 	}
 
-	for _, info := range processor.Schema.Enums {
+	for k := range processor.Schema.Enums {
+		info := processor.Schema.Enums[k]
 		if !info.OwnEnumFile() {
 			continue
 		}
@@ -292,6 +307,15 @@ func getFilePathForModelFile(cfg *codegen.Config, nodeData *schema.NodeData) str
 
 func getFilePathForEnumFile(cfg *codegen.Config, info *schema.EnumInfo) string {
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/%s.ts", strcase.ToSnake(info.Enum.Name)))
+}
+
+// copied to input.go
+func getFilePathForCustomInterfaceFile(cfg *codegen.Config, ci *customtype.CustomInterface) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/%s.ts", strcase.ToSnake(ci.TSType)))
+}
+
+func getImportPathForCustomInterfaceFile(ci *customtype.CustomInterface) string {
+	return fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(ci.TSType))
 }
 
 func getFilePathForBaseQueryFile(cfg *codegen.Config, nodeData *schema.NodeData) string {
@@ -476,6 +500,34 @@ func writeEnumFile(enumInfo *schema.EnumInfo, processor *codegen.Processor) erro
 		PathToFile:        filePath,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
+	})
+}
+
+func writeCustomInterfaceFile(processor *codegen.Processor, ci *customtype.CustomInterface) error {
+	// TODO we should store the file path here instead of this...
+	filePath := getFilePathForCustomInterfaceFile(processor.Config, ci)
+	imps := tsimport.NewImports(processor.Config, filePath)
+
+	return file.Write(&file.TemplatedBasedFileWriter{
+		Config: processor.Config,
+		Data: struct {
+			Interface *customtype.CustomInterface
+			Package   *codegen.ImportPackage
+		}{
+			Interface: ci,
+			Package:   processor.Config.GetImportPackage(),
+		},
+		CreateDirIfNeeded: true,
+		AbsPathToTemplate: util.GetAbsolutePath("custom_interface.tmpl"),
+		OtherTemplateFiles: []string{
+			util.GetAbsolutePath("../schema/enum/enum.tmpl"),
+			util.GetAbsolutePath("interface.tmpl"),
+		},
+		TemplateName: "custom_interface.tmpl",
+		PathToFile:   filePath,
+		TsImports:    imps,
+		FuncMap:      imps.FuncMap(),
+		EditableCode: true,
 	})
 }
 
@@ -698,6 +750,9 @@ func getSortedInternalEntFileLines(s *schema.Schema) []string {
 	}
 
 	var baseFiles []string
+	for _, ci := range s.CustomInterfaces {
+		append2(&baseFiles, getImportPathForCustomInterfaceFile(ci))
+	}
 	for _, info := range s.Nodes {
 		append2(&baseFiles, getImportPathForBaseModelFile(info.NodeData.PackageName))
 	}

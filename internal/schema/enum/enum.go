@@ -7,6 +7,7 @@ import (
 	"unicode"
 
 	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/internal/enttype"
 )
 
 type Enum struct {
@@ -20,6 +21,14 @@ func (c *Enum) Clone() *Enum {
 		Name:     c.Name,
 		Values:   c.Values,
 		Imported: c.Imported,
+	}
+	return ret
+}
+
+func (c *Enum) GetEnumValues() []string {
+	ret := make([]string, len(c.Values))
+	for i, v := range c.Values {
+		ret[i] = v.Value
 	}
 	return ret
 }
@@ -124,6 +133,16 @@ func (i *Input) getValuesFromEnumMap() ([]Data, []Data) {
 		return gqlVals[i].Name < gqlVals[j].Name
 	})
 	return tsVals, gqlVals
+}
+
+func NewInputFromEnumType(enumType enttype.EnumeratedType) *Input {
+	return &Input{
+		TSName:  enumType.GetTSName(),
+		GQLName: enumType.GetGraphQLName(),
+		GQLType: enumType.GetTSType(),
+		Values:  enumType.GetEnumValues(),
+		EnumMap: enumType.GetEnumMap(),
+	}
 }
 
 func GetEnums(input *Input) (*Enum, *GQLEnum) {

@@ -603,7 +603,8 @@ func (f *Field) GetInverseEdge() *edge.AssociationEdge {
 
 // for non-required fields in actions, we want to make it optional if it's not a required field
 // in the action
-func (f *Field) GetTSGraphQLTypeForFieldImports(forceOptional bool) []enttype.FileImport {
+// TODO multiple booleans is a horrible code-smell. fix with options or something
+func (f *Field) GetTSGraphQLTypeForFieldImports(forceOptional, input bool) []enttype.FileImport {
 	var tsGQLType enttype.TSGraphQLType
 	nullableType, ok := f.fieldType.(enttype.NullableType)
 
@@ -613,7 +614,7 @@ func (f *Field) GetTSGraphQLTypeForFieldImports(forceOptional bool) []enttype.Fi
 		// already null and/or not forceOptional
 		tsGQLType = f.fieldType
 	}
-	return tsGQLType.GetTSGraphQLImports()
+	return tsGQLType.GetTSGraphQLImports(input)
 }
 
 // note that this is different from PrimaryKeyIDField

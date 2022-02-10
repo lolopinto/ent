@@ -5,6 +5,7 @@ import {
   AssocEdge,
   AssocEdgeGroup,
   Action,
+  Type,
 } from "../schema";
 import { ActionField, FieldMap } from "../schema/schema";
 
@@ -27,6 +28,7 @@ function processFields(
   }
   for (const name in m) {
     const field = m[name];
+    //@ts-ignore type and other changed fields with different type in ProcessedField vs Field
     let f: ProcessedField = { name, ...field };
     f.hasDefaultValueOnCreate = field.defaultValueOnCreate != undefined;
     f.hasDefaultValueOnEdit = field.defaultValueOnEdit != undefined;
@@ -54,6 +56,22 @@ function processFields(
     }
     if (field.getDerivedFields) {
       f.derivedFields = processFields(field.getDerivedFields(name));
+    }
+    if (field.type.subFields) {
+      f.type.subFields = processFields(field.type.subFields);
+    }
+    if (field.type.unionFields) {
+      f.type.unionFields = processFields(field.type.unionFields);
+    }
+    if (
+      field.type.listElemType &&
+      field.type.listElemType.subFields &&
+      // check to avoid ts-ignore below. exists just for tsc
+      f.type.listElemType
+    ) {
+      f.type.listElemType.subFields = processFields(
+        field.type.listElemType.subFields,
+      );
     }
     ret.push(f);
   }
@@ -205,15 +223,25 @@ interface ProcessedPattern {
   fields: ProcessedField[];
 }
 
+type ProcessedType = Omit<
+  Type,
+  "subFields" | "listElemType" | "unionFields"
+> & {
+  subFields?: ProcessedField[];
+  listElemType?: ProcessedType;
+  unionFields?: ProcessedField[];
+};
+
 type ProcessedField = Omit<
   Field,
-  "defaultValueOnEdit" | "defaultValueOnCreate"
+  "defaultValueOnEdit" | "defaultValueOnCreate" | "type"
 > & {
   name: string;
   hasDefaultValueOnCreate?: boolean;
   hasDefaultValueOnEdit?: boolean;
   patternName?: string;
   derivedFields?: ProcessedField[];
+  type: ProcessedType;
 };
 
 interface patternsDict {

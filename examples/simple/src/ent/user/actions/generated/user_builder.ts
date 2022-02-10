@@ -22,7 +22,11 @@ import {
   User,
 } from "../../..";
 import { EdgeType, NodeType } from "../../../generated/const";
-import { UserPrefs } from "../../../user_prefs";
+import { UserNestedObjectList } from "../../../generated/user_nested_object_list";
+import { UserPrefsDiff } from "../../../generated/user_prefs_diff";
+import { UserPrefsStruct } from "../../../generated/user_prefs_struct";
+import { UserPrefsStruct2 } from "../../../generated/user_prefs_struct_2";
+import { UserSuperNestedObject } from "../../../generated/user_super_nested_object";
 import schema from "../../../../schema/user";
 
 export interface UserInput {
@@ -35,15 +39,17 @@ export interface UserInput {
   emailVerified?: boolean;
   bio?: string | null;
   nicknames?: string[] | null;
-  prefs?: UserPrefs | null;
-  prefsList?: UserPrefs[] | null;
-  prefsDiff?: any;
+  prefs?: UserPrefsStruct | null;
+  prefsList?: UserPrefsStruct2[] | null;
+  prefsDiff?: UserPrefsDiff | null;
   daysOff?: DaysOff[] | null;
   preferredShift?: PreferredShift[] | null;
   timeInMs?: BigInt | null;
   funUuids?: ID[] | null;
   newCol?: string | null;
   newCol2?: string | null;
+  superNestedObject?: UserSuperNestedObject | null;
+  nestedList?: UserNestedObjectList[] | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -639,6 +645,8 @@ export class UserBuilder<TData extends UserInput = UserInput>
     addField("fun_uuids", fields.funUuids);
     addField("new_col", fields.newCol);
     addField("new_col2", fields.newCol2);
+    addField("superNestedObject", fields.superNestedObject);
+    addField("nestedList", fields.nestedList);
     return result;
   }
 
@@ -716,7 +724,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
   }
 
   // get value of prefs. Retrieves it from the input if specified or takes it from existingEnt
-  getNewPrefsValue(): UserPrefs | null | undefined {
+  getNewPrefsValue(): UserPrefsStruct | null | undefined {
     if (this.input.prefs !== undefined) {
       return this.input.prefs;
     }
@@ -724,7 +732,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
   }
 
   // get value of prefsList. Retrieves it from the input if specified or takes it from existingEnt
-  getNewPrefsListValue(): UserPrefs[] | null | undefined {
+  getNewPrefsListValue(): UserPrefsStruct2[] | null | undefined {
     if (this.input.prefsList !== undefined) {
       return this.input.prefsList;
     }
@@ -732,7 +740,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
   }
 
   // get value of prefs_diff. Retrieves it from the input if specified or takes it from existingEnt
-  getNewPrefsDiffValue(): any | undefined {
+  getNewPrefsDiffValue(): UserPrefsDiff | null | undefined {
     if (this.input.prefsDiff !== undefined) {
       return this.input.prefsDiff;
     }
@@ -785,5 +793,21 @@ export class UserBuilder<TData extends UserInput = UserInput>
       return this.input.newCol2;
     }
     return this.existingEnt?.newCol2;
+  }
+
+  // get value of superNestedObject. Retrieves it from the input if specified or takes it from existingEnt
+  getNewSuperNestedObjectValue(): UserSuperNestedObject | null | undefined {
+    if (this.input.superNestedObject !== undefined) {
+      return this.input.superNestedObject;
+    }
+    return this.existingEnt?.superNestedObject;
+  }
+
+  // get value of nestedList. Retrieves it from the input if specified or takes it from existingEnt
+  getNewNestedListValue(): UserNestedObjectList[] | null | undefined {
+    if (this.input.nestedList !== undefined) {
+      return this.input.nestedList;
+    }
+    return this.existingEnt?.nestedList;
   }
 }

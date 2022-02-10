@@ -90,6 +90,10 @@ type FieldType struct {
 	// optional used by generator to specify different types e.g. email, phone, password
 	CustomType CustomType               `json:"customType"`
 	ImportType *enttype.InputImportType `json:"importType"`
+
+	// list because go-lang map not stable and don't want generated fields to change ofte
+	SubFields   []*Field `json:"subFields"`
+	UnionFields []*Field `json:"unionFields"`
 }
 
 type Field struct {
@@ -241,24 +245,68 @@ func getTypeFor(fieldName string, typ *FieldType, nullable bool, foreignKey *For
 			return &enttype.NullableDateType{}, nil
 		}
 		return &enttype.DateType{}, nil
-	case JSON:
-		if nullable {
-			return &enttype.NullableJSONType{
-				ImportType: typ.ImportType,
-			}, nil
+	case JSON, JSONB:
+
+		importType := typ.ImportType
+		var subFields interface{}
+		var unionFields interface{}
+		if len(typ.SubFields) != 0 {
+			// only set this if we actually have fields. otherwise, we want this to be nil
+			subFields = typ.SubFields
+			if importType == nil && typ.Type != "" {
+				importType = &enttype.InputImportType{
+					Path: getImportPathForCustomInterfaceFile(typ.Type),
+					Type: typ.Type,
+				}
+			}
 		}
-		return &enttype.JSONType{
-			ImportType: typ.ImportType,
-		}, nil
-	case JSONB:
-		if nullable {
-			return &enttype.NullableJSONBType{
-				ImportType: typ.ImportType,
-			}, nil
+		if len(typ.UnionFields) != 0 {
+			// only set this if we actually have fields. otherwise, we want this to be nil
+			unionFields = typ.UnionFields
+			if importType == nil && typ.Type != "" {
+				importType = &enttype.InputImportType{
+					// intentionally no path since we don't support top level unions and this should lead to some kind of error
+					Type: typ.Type,
+				}
+			}
 		}
-		return &enttype.JSONBType{
-			ImportType: typ.ImportType,
-		}, nil
+
+		if typ.DBType == JSON {
+			if nullable {
+				ret := &enttype.NullableJSONType{}
+				ret.ImportType = importType
+				ret.CustomTsInterface = typ.Type
+				ret.CustomGraphQLInterface = typ.GraphQLType
+				ret.SubFields = subFields
+				ret.UnionFields = unionFields
+				return ret, nil
+			}
+			ret := &enttype.JSONType{}
+			ret.ImportType = importType
+			ret.CustomTsInterface = typ.Type
+			ret.CustomGraphQLInterface = typ.GraphQLType
+			ret.SubFields = subFields
+			ret.UnionFields = unionFields
+			return ret, nil
+		}
+
+		//	case JSONB:
+		if nullable {
+			ret := &enttype.NullableJSONBType{}
+			ret.ImportType = importType
+			ret.CustomTsInterface = typ.Type
+			ret.CustomGraphQLInterface = typ.GraphQLType
+			ret.SubFields = subFields
+			ret.UnionFields = unionFields
+			return ret, nil
+		}
+		ret := &enttype.JSONBType{}
+		ret.ImportType = importType
+		ret.CustomTsInterface = typ.Type
+		ret.CustomGraphQLInterface = typ.GraphQLType
+		ret.SubFields = subFields
+		ret.UnionFields = unionFields
+		return ret, nil
 
 	case StringEnum, Enum:
 		tsType := strcase.ToCamel(typ.Type)
@@ -633,4 +681,9 @@ func ParseSchema(input []byte) (*Schema, error) {
 		return nil, err
 	}
 	return s, nil
+}
+
+// copied from step.go
+func getImportPathForCustomInterfaceFile(tsType string) string {
+	return fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(tsType))
 }

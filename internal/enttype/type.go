@@ -47,18 +47,13 @@ type TSGraphQLType interface {
 	TSType
 	// returns imports from outside in
 	// e.g. required string => []fileImport{newGQLFileImport("GraphQLNonNull"), newGQLFileImport("GraphQLString")}
-	GetTSGraphQLImports() []FileImport
+	GetTSGraphQLImports(input bool) []FileImport
 }
 
 type TSCodegenableType interface {
 	TSGraphQLType
 	GetImportType() Import
 }
-
-// type TSObjectType interface {
-// 	TSGraphQLType
-// 	GetTSName() string
-// }
 
 // rendering of fields in actions
 // e.g. converting a graphql id to ent id
@@ -86,8 +81,27 @@ type ActionFieldsInfo struct {
 	ExcludedFields []string
 }
 
-type TSTypeWithActionFields interface {
+type CustomType string
+
+const (
+	CustomInterface CustomType = "custom_interface"
+	CustomUnion     CustomType = "custom_union"
+)
+
+type CustomTypeInfo struct {
+	TSInterface      string
+	GraphQLInterface string
+	Type             CustomType
+}
+
+type TSTypeWithCustomType interface {
 	TSGraphQLType
+	GetCustomTypeInfo() *CustomTypeInfo
+	// TODO collapse TSTypeWithActionFields, TSWithSubFields, TSWithSubFields all into CustomTypeInfo
+}
+
+type TSTypeWithActionFields interface {
+	TSTypeWithCustomType
 	GetActionFieldsInfo() *ActionFieldsInfo
 }
 
@@ -96,13 +110,27 @@ type ImportDepsType interface {
 	GetImportDepsType() *InputImportType
 }
 
+type TSWithSubFields interface {
+	TSTypeWithCustomType
+	// this is interface{} so as to avoid circular-dependencies with input.Fields
+	GetSubFields() interface{}
+}
+
+type TSWithUnionFields interface {
+	TSTypeWithCustomType
+	// this is interface{} so as to avoid circular-dependencies with input.Fields
+	GetUnionFields() interface{}
+}
+
 type ImportType string
 
 const (
-	GraphQL    ImportType = "graphql"
-	Node       ImportType = "node"
-	Enum       ImportType = "enum"
-	Connection ImportType = "connection"
+	GraphQL      ImportType = "graphql"
+	Node         ImportType = "node"
+	Enum         ImportType = "enum"
+	Connection   ImportType = "connection"
+	CustomInput  ImportType = "custom_input"
+	CustomObject ImportType = "custom_object"
 	// EntGraphQL refers to graphql scalars or things in the ent graphql space
 	EntGraphQL ImportType = "ent_graphql"
 	Package    ImportType = "package"
@@ -197,7 +225,7 @@ func (t *StringType) GetNullableType() TSGraphQLType {
 	return &NullableStringType{}
 }
 
-func (t *StringType) GetTSGraphQLImports() []FileImport {
+func (t *StringType) GetTSGraphQLImports(input bool) []FileImport {
 	return []FileImport{
 		NewGQLFileImport("GraphQLNonNull"), NewGQLFileImport("GraphQLString"),
 	}
@@ -259,7 +287,7 @@ func (t *NullableStringType) GetNonNullableType() TSGraphQLType {
 	return &StringType{}
 }
 
-func (t *NullableStringType) GetTSGraphQLImports() []FileImport {
+func (t *NullableStringType) GetTSGraphQLImports(input bool) []FileImport {
 	return []FileImport{
 		NewGQLFileImport("GraphQLString"),
 	}
@@ -356,7 +384,7 @@ func (t *BoolType) GetNullableType() TSGraphQLType {
 	return &NullableBoolType{}
 }
 
-func (t *BoolType) GetTSGraphQLImports() []FileImport {
+func (t *BoolType) GetTSGraphQLImports(input bool) []FileImport {
 	return []FileImport{
 		NewGQLFileImport("GraphQLNonNull"), NewGQLFileImport("GraphQLBoolean"),
 	}
@@ -382,7 +410,7 @@ func (t *NullableBoolType) GetNonNullableType() TSGraphQLType {
 	return &BoolType{}
 }
 
-func (t *NullableBoolType) GetTSGraphQLImports() []FileImport {
+func (t *NullableBoolType) GetTSGraphQLImports(input bool) []FileImport {
 	return []FileImport{
 		NewGQLFileImport("GraphQLBoolean"),
 	}
@@ -445,7 +473,7 @@ func (t *IDType) GetNullableType() TSGraphQLType {
 	return &NullableIDType{}
 }
 
-func (t *IDType) GetTSGraphQLImports() []FileImport {
+func (t *IDType) GetTSGraphQLImports(input bool) []FileImport {
 	return []FileImport{
 		NewGQLFileImport("GraphQLNonNull"),
 		NewGQLFileImport("GraphQLID"),
@@ -489,7 +517,7 @@ func (t *NullableIDType) GetNonNullableType() TSGraphQLType {
 	return &IDType{}
 }
 
-func (t *NullableIDType) GetTSGraphQLImports() []FileImport {
+func (t *NullableIDType) GetTSGraphQLImports(input bool) []FileImport {
 	return []FileImport{NewGQLFileImport("GraphQLID")}
 }
 
@@ -543,7 +571,7 @@ func (t *IntegerType) GetNullableType() TSGraphQLType {
 	return &NullableIntegerType{}
 }
 
-func (t *IntegerType) GetTSGraphQLImports() []FileImport {
+func (t *IntegerType) GetTSGraphQLImports(input bool) []FileImport {
 	return []FileImport{NewGQLFileImport("GraphQLNonNull"), NewGQLFileImport("GraphQLInt")}
 }
 
@@ -567,7 +595,7 @@ func (t *BigIntegerType) GetDBType() string {
 	return "sa.BigInteger()"
 }
 
-func (t *BigIntegerType) GetTSGraphQLImports() []FileImport {
+func (t *BigIntegerType) GetTSGraphQLImports(input bool) []FileImport {
 	return []FileImport{NewGQLFileImport("GraphQLNonNull"), NewGQLFileImport("GraphQLString")}
 }
 
@@ -605,7 +633,7 @@ func (t *NullableIntegerType) GetNonNullableType() TSGraphQLType {
 	return &IntegerType{}
 }
 
-func (t *NullableIntegerType) GetTSGraphQLImports() []FileImport {
+func (t *NullableIntegerType) GetTSGraphQLImports(input bool) []FileImport {
 	return []FileImport{NewGQLFileImport("GraphQLInt")}
 }
 
@@ -638,7 +666,7 @@ func (t *NullableBigIntegerType) GetTSType() string {
 	return "BigInt | null"
 }
 
-func (t *NullableBigIntegerType) GetTSGraphQLImports() []FileImport {
+func (t *NullableBigIntegerType) GetTSGraphQLImports(input bool) []FileImport {
 	return []FileImport{NewGQLFileImport("GraphQLString")}
 }
 
@@ -684,7 +712,7 @@ func (t *FloatType) GetNullableType() TSGraphQLType {
 	return &NullableFloatType{}
 }
 
-func (t *FloatType) GetTSGraphQLImports() []FileImport {
+func (t *FloatType) GetTSGraphQLImports(input bool) []FileImport {
 	return []FileImport{NewGQLFileImport("GraphQLNonNull"), NewGQLFileImport("GraphQLFloat")}
 }
 
@@ -708,7 +736,7 @@ func (t *NullableFloatType) GetNonNullableType() TSGraphQLType {
 	return &FloatType{}
 }
 
-func (t *NullableFloatType) GetTSGraphQLImports() []FileImport {
+func (t *NullableFloatType) GetTSGraphQLImports(input bool) []FileImport {
 	return []FileImport{NewGQLFileImport("GraphQLFloat")}
 }
 
@@ -784,7 +812,7 @@ func (t *TimestampType) GetNullableType() TSGraphQLType {
 	return &NullableTimestampType{}
 }
 
-func (t *TimestampType) GetTSGraphQLImports() []FileImport {
+func (t *TimestampType) GetTSGraphQLImports(input bool) []FileImport {
 	return []FileImport{
 		NewGQLFileImport("GraphQLNonNull"),
 		{
@@ -850,7 +878,7 @@ func (t *NullableTimestampType) GetNonNullableType() TSGraphQLType {
 	return &TimestampType{}
 }
 
-func (t *NullableTimestampType) GetTSGraphQLImports() []FileImport {
+func (t *NullableTimestampType) GetTSGraphQLImports(input bool) []FileImport {
 	return []FileImport{
 		{
 			Type:       "GraphQLTime",
@@ -914,7 +942,7 @@ func (t *TimeType) GetNullableType() TSGraphQLType {
 	return &NullableTimeType{}
 }
 
-func (t *TimeType) GetTSGraphQLImports() []FileImport {
+func (t *TimeType) GetTSGraphQLImports(input bool) []FileImport {
 	return []FileImport{
 		NewGQLFileImport("GraphQLNonNull"),
 		// string format for time. or do we want a new scalar time?
@@ -966,7 +994,7 @@ func (t *NullableTimeType) GetNonNullableType() TSGraphQLType {
 	return &TimeType{}
 }
 
-func (t *NullableTimeType) GetTSGraphQLImports() []FileImport {
+func (t *NullableTimeType) GetTSGraphQLImports(input bool) []FileImport {
 	return []FileImport{
 		// string format for time. or do we want a new scalar time?
 		NewGQLFileImport("GraphQLString"),
@@ -1024,6 +1052,14 @@ func (t *CommonObjectType) GetActionFieldsInfo() *ActionFieldsInfo {
 	}
 }
 
+func (t *CommonObjectType) GetCustomTypeInfo() *CustomTypeInfo {
+	return &CustomTypeInfo{
+		TSInterface:      t.TSType,
+		GraphQLInterface: t.GraphQLType,
+		Type:             CustomInterface,
+	}
+}
+
 type ObjectType struct {
 	CommonObjectType
 }
@@ -1040,7 +1076,7 @@ func (t *ObjectType) GetNullableType() TSGraphQLType {
 	return &NullableObjectType{}
 }
 
-func (t *ObjectType) GetTSGraphQLImports() []FileImport {
+func (t *ObjectType) GetTSGraphQLImports(input bool) []FileImport {
 	return []FileImport{
 		NewGQLFileImport("GraphQLNonNull"),
 		{
@@ -1065,7 +1101,7 @@ func (t *NullableObjectType) GetNullableType() TSGraphQLType {
 	return &ObjectType{}
 }
 
-func (t *NullableObjectType) GetTSGraphQLImports() []FileImport {
+func (t *NullableObjectType) GetTSGraphQLImports(input bool) []FileImport {
 	return []FileImport{
 		{
 			Type: t.GraphQLType,
@@ -1119,14 +1155,14 @@ func (t *ListWrapperType) GetNonNullableType() TSGraphQLType {
 	}
 }
 
-func (t *ListWrapperType) GetTSGraphQLImports() []FileImport {
+func (t *ListWrapperType) GetTSGraphQLImports(input bool) []FileImport {
 	var ret = []FileImport{}
 
 	if !t.Nullable {
 		ret = append(ret, NewGQLFileImport("GraphQLNonNull"))
 	}
 	ret = append(ret, NewGQLFileImport("GraphQLList"))
-	ret = append(ret, t.Type.GetTSGraphQLImports()...)
+	ret = append(ret, t.Type.GetTSGraphQLImports(input)...)
 	return ret
 }
 
@@ -1136,6 +1172,22 @@ func (t *ListWrapperType) GetActionFieldsInfo() *ActionFieldsInfo {
 		return nil
 	}
 	return t2.GetActionFieldsInfo()
+}
+
+func (t *ListWrapperType) GetCustomTypeInfo() *CustomTypeInfo {
+	t2, ok := t.Type.(TSTypeWithCustomType)
+	if !ok {
+		return nil
+	}
+	return t2.GetCustomTypeInfo()
+}
+
+func (t *ListWrapperType) GetImportDepsType() *InputImportType {
+	t2, ok := t.Type.(ImportDepsType)
+	if !ok {
+		return nil
+	}
+	return t2.GetImportDepsType()
 }
 
 type typeConfig struct {
@@ -1383,7 +1435,7 @@ func (t *jsonTypeImpl) GetCastToMethod() string {
 	return "cast.UnmarshallJSON"
 }
 
-func (t *jsonTypeImpl) GetTSGraphQLImports() []FileImport {
+func (t *jsonTypeImpl) GetTSGraphQLImports(input bool) []FileImport {
 	// intentionally empty since TSType not implemented
 	return []FileImport{}
 }
@@ -1413,7 +1465,7 @@ func (t *SliceType) GetTSType() string {
 	return getTsType(t.typ.Elem()) + "[]"
 }
 
-func (t *SliceType) GetTSGraphQLImports() []FileImport {
+func (t *SliceType) GetTSGraphQLImports(input bool) []FileImport {
 	// intentionally empty since TSType not implemented
 	return []FileImport{}
 }
@@ -1558,7 +1610,7 @@ func (t *EnumType) GetNullableType() TSGraphQLType {
 	}
 }
 
-func (t *EnumType) GetTSGraphQLImports() []FileImport {
+func (t *EnumType) GetTSGraphQLImports(input bool) []FileImport {
 	return []FileImport{
 		{
 			ImportType: GraphQL,
@@ -1627,7 +1679,7 @@ func (t *NullableEnumType) GetNonNullableType() TSGraphQLType {
 	}
 }
 
-func (t *NullableEnumType) GetTSGraphQLImports() []FileImport {
+func (t *NullableEnumType) GetTSGraphQLImports(input bool) []FileImport {
 	return []FileImport{
 		{
 			ImportType: Enum,
@@ -1692,7 +1744,7 @@ func (t *ArrayListType) GetNullableType() TSGraphQLType {
 	}
 }
 
-func (t *ArrayListType) GetTSGraphQLImports() []FileImport {
+func (t *ArrayListType) GetTSGraphQLImports(input bool) []FileImport {
 	gqlType, ok := t.ElemType.(TSGraphQLType)
 	if !ok {
 		panic(fmt.Sprintf("got TSType %v which is not a GraphQL type", t.ElemType))
@@ -1707,7 +1759,7 @@ func (t *ArrayListType) GetTSGraphQLImports() []FileImport {
 			Type:       "GraphQLList",
 		},
 	}
-	ret = append(ret, gqlType.GetTSGraphQLImports()...)
+	ret = append(ret, gqlType.GetTSGraphQLImports(input)...)
 	return ret
 }
 
@@ -1720,6 +1772,30 @@ func (t *ArrayListType) Convert() FileImport {
 		}
 	}
 	return elem.convertListWithItem()
+}
+
+func (t *ArrayListType) GetImportDepsType() *InputImportType {
+	t2, ok := t.ElemType.(ImportDepsType)
+	if !ok {
+		return nil
+	}
+	return t2.GetImportDepsType()
+}
+
+func (t *ArrayListType) GetSubFields() interface{} {
+	t2, ok := t.ElemType.(TSWithSubFields)
+	if !ok {
+		return nil
+	}
+	return t2.GetSubFields()
+}
+
+func (t *ArrayListType) GetCustomTypeInfo() *CustomTypeInfo {
+	t2, ok := t.ElemType.(TSTypeWithCustomType)
+	if !ok {
+		return nil
+	}
+	return t2.GetCustomTypeInfo()
 }
 
 type NullableArrayListType struct {
@@ -1749,7 +1825,7 @@ func (t *NullableArrayListType) GetTSType() string {
 	return fmt.Sprintf("%s[] | null", t.ElemType.GetTSType())
 }
 
-func (t *NullableArrayListType) GetTSGraphQLImports() []FileImport {
+func (t *NullableArrayListType) GetTSGraphQLImports(input bool) []FileImport {
 	gqlType, ok := t.ElemType.(TSGraphQLType)
 	if !ok {
 		panic(fmt.Sprintf("got TSType %v which is not a GraphQL type", t.ElemType))
@@ -1760,10 +1836,13 @@ func (t *NullableArrayListType) GetTSGraphQLImports() []FileImport {
 			Type:       "GraphQLList",
 		},
 	}
-	ret = append(ret, gqlType.GetTSGraphQLImports()...)
+	ret = append(ret, gqlType.GetTSGraphQLImports(input)...)
 	return ret
 }
 
+// TODO why is there ListWrapperType (for ActionFields)
+// and NullableArrayListType /ArrayListType for regular lists?
+// TODO GetCustomTypeInfo
 func (t *NullableArrayListType) Convert() FileImport {
 	elem, ok := t.ElemType.(convertListElemType)
 	if !ok {
@@ -1775,24 +1854,54 @@ func (t *NullableArrayListType) Convert() FileImport {
 	return elem.convertNullableListWithItem()
 }
 
+func (t *NullableArrayListType) GetImportDepsType() *InputImportType {
+	t2, ok := t.ElemType.(ImportDepsType)
+	if !ok {
+		return nil
+	}
+	return t2.GetImportDepsType()
+}
+
+func (t *NullableArrayListType) GetSubFields() interface{} {
+	t2, ok := t.ElemType.(TSWithSubFields)
+	if !ok {
+		return nil
+	}
+	return t2.GetSubFields()
+}
+
+func (t *NullableArrayListType) GetCustomTypeInfo() *CustomTypeInfo {
+	t2, ok := t.ElemType.(TSTypeWithCustomType)
+	if !ok {
+		return nil
+	}
+	return t2.GetCustomTypeInfo()
+}
+
 // to resolve circular dependency btw input and this
 type InputImportType struct {
 	Path string `json:"path"`
 	Type string `json:"type"`
 }
 
-type jSONType struct {
+type CommonJSONType struct {
+	ImportType *InputImportType
+	// input SubFields. not typed because of circular dependencies
+	SubFields              interface{}
+	UnionFields            interface{}
+	CustomTsInterface      string
+	CustomGraphQLInterface string
 }
 
-func (t *jSONType) GetCastToMethod() string {
+func (t *CommonJSONType) GetCastToMethod() string {
 	panic("castToMethod. JSONTYPE not supported in go-lang yet")
 }
 
-func (t *jSONType) GetZeroValue() string {
+func (t *CommonJSONType) GetZeroValue() string {
 	panic("zeroValue. JSONTYPE not supported in go-lang yet")
 }
 
-func (t *jSONType) getDBType(jsonb bool) string {
+func (t *CommonJSONType) getDBType(jsonb bool) string {
 	if config.IsSQLiteDialect() {
 		return "sa.Text()"
 	}
@@ -1802,62 +1911,110 @@ func (t *jSONType) getDBType(jsonb bool) string {
 	return "postgresql.JSON"
 }
 
-func (t *jSONType) GetGraphQLType() string {
+func (t *CommonJSONType) GetGraphQLType() string {
+	if t.CustomGraphQLInterface != "" {
+		return t.CustomGraphQLInterface + "!"
+	}
 	return "JSON!"
 }
 
-func (t *jSONType) getTsType(nullable bool, impType *InputImportType) string {
-	if impType == nil {
+func (t *CommonJSONType) getTSTypeFromInfo(impType *InputImportType) string {
+	var typ string
+	if impType != nil {
+		typ = impType.Type
+	} else if t.CustomTsInterface != "" {
+		typ = t.CustomTsInterface
+	}
+	return typ
+}
+
+func (t *CommonJSONType) getTsType(nullable bool, impType *InputImportType) string {
+	typ := t.getTSTypeFromInfo(impType)
+	if typ == "" {
 		return "any"
 	}
 	if nullable {
-		return impType.Type + " | null"
+		return typ + " | null"
 	}
-	return impType.Type
+	return typ
 }
 
-func (t *jSONType) getTsTypeImports(impType *InputImportType) []string {
-	if impType == nil {
+func (t *CommonJSONType) getTsTypeImports(impType *InputImportType) []string {
+	typ := t.getTSTypeFromInfo(impType)
+	if typ == "" {
 		return nil
 	}
-	return []string{impType.Type}
+	return []string{typ}
 }
 
-// TODO https://github.com/taion/graphql-type-json
-func (t *jSONType) GetTSGraphQLImports() []FileImport {
-	return []FileImport{
-		{
-			Type:       "GraphQLNonNull",
-			ImportType: GraphQL,
-		},
-		{
+func (t *CommonJSONType) getJSONGraphQLType(gqlType string, input bool) FileImport {
+	if t.SubFields == nil && t.UnionFields == nil {
+		// TODO https://github.com/taion/graphql-type-json
+		return FileImport{
 			Type:       "GraphQLJSON",
 			ImportType: GraphQLJSON,
-		},
+		}
+	}
+	if input {
+		return FileImport{
+			Type:       gqlType + "Input",
+			ImportType: CustomInput,
+		}
+	}
+	return FileImport{
+		Type:       gqlType,
+		ImportType: CustomObject,
 	}
 }
 
-func (t *jSONType) GetImportType() Import {
+func (t *CommonJSONType) GetImportType() Import {
 	return &JSONImport{}
 }
 
-func (t *jSONType) convertListWithItem() FileImport {
+func (t *CommonJSONType) convertListWithItem() FileImport {
 	return FileImport{
 		Type:       "convertJSONList",
 		ImportType: Package,
 	}
 }
 
-func (t *jSONType) convertNullableListWithItem() FileImport {
+func (t *CommonJSONType) convertNullableListWithItem() FileImport {
 	return FileImport{
 		Type:       "convertNullableJSONList",
 		ImportType: Package,
 	}
 }
 
+func (t *CommonJSONType) GetImportDepsType() *InputImportType {
+	return t.ImportType
+}
+
+func (t *CommonJSONType) GetSubFields() interface{} {
+	return t.SubFields
+}
+
+func (t *CommonJSONType) GetUnionFields() interface{} {
+	return t.UnionFields
+}
+
+func (t *CommonJSONType) GetCustomTypeInfo() *CustomTypeInfo {
+	typ := CustomInterface
+	if t.UnionFields != nil {
+		typ = CustomUnion
+	}
+	return &CustomTypeInfo{
+		TSInterface:      t.CustomTsInterface,
+		GraphQLInterface: t.CustomGraphQLInterface,
+		Type:             typ,
+	}
+}
+
+func (t *CommonJSONType) GetCustomGraphQLInterface() string {
+	return t.CustomGraphQLInterface
+}
+
 type JSONType struct {
-	ImportType *InputImportType
-	jSONType
+	CommonJSONType
 }
 
 func (t *JSONType) GetDBType() string {
@@ -1871,6 +2028,10 @@ func (t *JSONType) GetTSType() string {
 func (t *JSONType) GetNullableType() TSGraphQLType {
 	ret := &NullableJSONType{}
 	ret.ImportType = t.ImportType
+	ret.SubFields = t.SubFields
+	ret.UnionFields = t.UnionFields
+	ret.CustomGraphQLInterface = t.CustomGraphQLInterface
+	ret.CustomTsInterface = t.CustomTsInterface
 	return ret
 }
 
@@ -1881,17 +2042,22 @@ func (t *JSONType) Convert() FileImport {
 	}
 }
 
+func (t *JSONType) GetTSGraphQLImports(input bool) []FileImport {
+	return []FileImport{
+		{
+			Type:       "GraphQLNonNull",
+			ImportType: GraphQL,
+		},
+		t.getJSONGraphQLType(t.CustomGraphQLInterface, input),
+	}
+}
+
 func (t *JSONType) GetTsTypeImports() []string {
 	return t.getTsTypeImports(t.ImportType)
 }
 
-func (t *JSONType) GetImportDepsType() *InputImportType {
-	return t.ImportType
-}
-
 type NullableJSONType struct {
-	ImportType *InputImportType
-	jSONType
+	CommonJSONType
 }
 
 func (t *NullableJSONType) GetDBType() string {
@@ -1903,15 +2069,15 @@ func (t *NullableJSONType) GetTSType() string {
 }
 
 func (t *NullableJSONType) GetGraphQLType() string {
+	if t.CustomGraphQLInterface != "" {
+		return t.CustomGraphQLInterface
+	}
 	return "JSON"
 }
 
-func (t *NullableJSONType) GetTSGraphQLImports() []FileImport {
+func (t *NullableJSONType) GetTSGraphQLImports(input bool) []FileImport {
 	return []FileImport{
-		{
-			Type:       "GraphQLJSON",
-			ImportType: GraphQLJSON,
-		},
+		t.getJSONGraphQLType(t.CustomGraphQLInterface, input),
 	}
 }
 
@@ -1925,6 +2091,10 @@ func (t *NullableJSONType) Convert() FileImport {
 func (t *NullableJSONType) GetNonNullableType() TSGraphQLType {
 	ret := &JSONType{}
 	ret.ImportType = t.ImportType
+	ret.SubFields = t.SubFields
+	ret.UnionFields = t.UnionFields
+	ret.CustomGraphQLInterface = t.CustomGraphQLInterface
+	ret.CustomTsInterface = t.CustomTsInterface
 	return ret
 }
 
@@ -1932,13 +2102,8 @@ func (t *NullableJSONType) GetTsTypeImports() []string {
 	return t.getTsTypeImports(t.ImportType)
 }
 
-func (t *NullableJSONType) GetImportDepsType() *InputImportType {
-	return t.ImportType
-}
-
 type JSONBType struct {
-	ImportType *InputImportType
-	jSONType
+	CommonJSONType
 }
 
 func (t *JSONBType) GetDBType() string {
@@ -1952,6 +2117,10 @@ func (t *JSONBType) GetTSType() string {
 func (t *JSONBType) GetNullableType() TSGraphQLType {
 	ret := &NullableJSONBType{}
 	ret.ImportType = t.ImportType
+	ret.SubFields = t.SubFields
+	ret.UnionFields = t.UnionFields
+	ret.CustomGraphQLInterface = t.CustomGraphQLInterface
+	ret.CustomTsInterface = t.CustomTsInterface
 	return ret
 }
 
@@ -1966,17 +2135,22 @@ func (t *JSONBType) GetTsTypeImports() []string {
 	return t.getTsTypeImports(t.ImportType)
 }
 
-func (t *JSONBType) GetImportDepsType() *InputImportType {
-	return t.ImportType
-}
-
 func (t *JSONBType) GetImportType() Import {
 	return &JSONBImport{}
 }
 
+func (t *JSONBType) GetTSGraphQLImports(input bool) []FileImport {
+	return []FileImport{
+		{
+			Type:       "GraphQLNonNull",
+			ImportType: GraphQL,
+		},
+		t.getJSONGraphQLType(t.CustomGraphQLInterface, input),
+	}
+}
+
 type NullableJSONBType struct {
-	ImportType *InputImportType
-	jSONType
+	CommonJSONType
 }
 
 func (t *NullableJSONBType) GetDBType() string {
@@ -1988,21 +2162,25 @@ func (t *NullableJSONBType) GetTSType() string {
 }
 
 func (t *NullableJSONBType) GetGraphQLType() string {
+	if t.CustomGraphQLInterface != "" {
+		return t.CustomGraphQLInterface
+	}
 	return "JSON"
 }
 
-func (t *NullableJSONBType) GetTSGraphQLImports() []FileImport {
+func (t *NullableJSONBType) GetTSGraphQLImports(input bool) []FileImport {
 	return []FileImport{
-		{
-			Type:       "GraphQLJSON",
-			ImportType: GraphQLJSON,
-		},
+		t.getJSONGraphQLType(t.CustomGraphQLInterface, input),
 	}
 }
 
 func (t *NullableJSONBType) GetNonNullableType() TSGraphQLType {
 	ret := &JSONBType{}
 	ret.ImportType = t.ImportType
+	ret.SubFields = t.SubFields
+	ret.UnionFields = t.UnionFields
+	ret.CustomGraphQLInterface = t.CustomGraphQLInterface
+	ret.CustomTsInterface = t.CustomTsInterface
 	return ret
 }
 
@@ -2015,10 +2193,6 @@ func (t *NullableJSONBType) Convert() FileImport {
 
 func (t *NullableJSONBType) GetTsTypeImports() []string {
 	return t.getTsTypeImports(t.ImportType)
-}
-
-func (t *NullableJSONBType) GetImportDepsType() *InputImportType {
-	return t.ImportType
 }
 
 func (t *NullableJSONBType) GetImportType() Import {
@@ -2222,6 +2396,7 @@ func GetEnumType(t Type) (EnumeratedType, bool) {
 			return enumType, ok
 		}
 	}
+
 	return nil, false
 }
 

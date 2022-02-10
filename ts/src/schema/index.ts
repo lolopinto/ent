@@ -34,3 +34,5 @@ export {
 
 export * from "./field";
 export * from "./json_field";
+export * from "./struct_field";
+export * from "./union_field";
