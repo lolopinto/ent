@@ -196,11 +196,14 @@ export class AssocEdgeLoaderFactory<T extends AssocEdge>
     return this.createConfigurableLoader({}, context);
   }
 
-  private isFunction(
+  private isConstructor(
     edgeCtr: AssocEdgeConstructor<T> | (() => AssocEdgeConstructor<T>),
-  ): edgeCtr is () => AssocEdgeConstructor<T> {
-    // not constructor
-    return !(edgeCtr.prototype && edgeCtr.prototype.constructor === edgeCtr);
+  ): edgeCtr is AssocEdgeConstructor<T> {
+    return (
+      edgeCtr.prototype &&
+      edgeCtr.prototype.constructor &&
+      edgeCtr.prototype.constructor.name.length > 0
+    );
   }
 
   createConfigurableLoader(
@@ -211,7 +214,7 @@ export class AssocEdgeLoaderFactory<T extends AssocEdge>
     // in generated code, the edge is not necessarily defined at the time of loading
     // so we call this as follows:
     // const loader = new AssocEdgeLoaderFactory(EdgeType.Foo, ()=>DerivedEdgeClass);
-    if (this.isFunction(edgeCtr)) {
+    if (!this.isConstructor(edgeCtr)) {
       edgeCtr = edgeCtr();
     }
     // rename to make TS happy
