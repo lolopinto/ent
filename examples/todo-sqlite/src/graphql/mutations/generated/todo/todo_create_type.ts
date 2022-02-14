@@ -12,7 +12,6 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { Todo } from "src/ent/";
 import CreateTodoAction, {
   TodoCreateInput,
