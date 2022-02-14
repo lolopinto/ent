@@ -138,14 +138,6 @@ func (e *EdgeInfo) GetAssociationEdgeGroupByStatusName(groupStatusName string) *
 	return e.assocGroupsMap[groupStatusName]
 }
 
-func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(fieldName, configName string, nullable bool, fieldType enttype.EntType) error {
-	return e.addFieldEdgeFromInfo(fieldName, configName, "", nil, nullable, fieldType)
-}
-
-func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo *base.FieldEdgeInfo, nullable bool, fieldType enttype.EntType) error {
-	return e.addFieldEdgeFromInfo(fieldName, fieldEdgeInfo.Schema+"Config", fieldEdgeInfo.EdgeName(), fieldEdgeInfo.Polymorphic, nullable, fieldType)
-}
-
 func (e *EdgeInfo) AddEdgeFromInverseFieldEdge(sourceSchemaName, destinationPackageName string, edge *input.InverseFieldEdge) (*AssociationEdge, error) {
 	assocEge, err := AssocEdgeFromInput(destinationPackageName, &input.AssocEdge{
 		Name:            edge.Name,
@@ -217,8 +209,18 @@ func (e *EdgeInfo) CreateEdgeBaseFile() bool {
 	return false
 }
 
-// TODO pass fieldType so we can check list or not...
-func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName string, polymorphic *base.PolymorphicOptions, nullable bool, fieldType enttype.EntType) error {
+func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(fieldName, configName string, nullable bool, fieldType enttype.EntType) error {
+	node, err := schemaparser.GetNodeNameFromEntConfig(configName)
+	if err != nil {
+		return err
+	}
+	return e.AddFieldEdgeFromFieldEdgeInfo(fieldName, &base.FieldEdgeInfo{
+		Schema: node,
+	}, nullable, fieldType)
+}
+
+func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo *base.FieldEdgeInfo, nullable bool, fieldType enttype.EntType) error {
+	// TODO pass fieldType so we can check list or not...
 	validSuffixes := map[string]string{
 		"id":  "_id",
 		"ID":  "ID",
@@ -247,17 +249,14 @@ func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName s
 	// pluralize if list
 	if enttype.IsListType(fieldType) {
 		trim = inflection.Plural(trim)
-		if polymorphic != nil {
-			return fmt.Errorf("field %s polymorphic list types not currently supported.", fieldName)
+		if fieldEdgeInfo.Polymorphic != nil {
+			return fmt.Errorf("field %s polymorphic list types not currently supported", fieldName)
 		}
 	}
 
 	var edgeInfo commonEdgeInfo
-	if polymorphic == nil {
-		config, err := schemaparser.GetEntConfigFromEntConfig(configName)
-		if err != nil {
-			return err
-		}
+	if fieldEdgeInfo.Polymorphic == nil {
+		config := schemaparser.GetEntConfigFromName(fieldEdgeInfo.Schema)
 
 		// Edge name: User from UserID field
 		edgeInfo = getCommonEdgeInfo(
@@ -269,20 +268,14 @@ func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName s
 			EdgeName: trim,
 		}
 	}
-	var inverseEdge *input.InverseFieldEdge
-	if inverseEdgeName != "" {
-		inverseEdge = &input.InverseFieldEdge{
-			Name: inverseEdgeName,
-		}
-	}
 
 	edge := &FieldEdge{
 		FieldName:      fieldName,
 		TSFieldName:    strcase.ToLowerCamel(fieldName),
 		commonEdgeInfo: edgeInfo,
-		InverseEdge:    inverseEdge,
+		InverseEdge:    fieldEdgeInfo.InverseEdge,
 		Nullable:       nullable,
-		Polymorphic:    polymorphic,
+		Polymorphic:    fieldEdgeInfo.Polymorphic,
 		fieldType:      fieldType,
 	}
 

@@ -600,6 +600,73 @@ func TestParseInputWithFieldEdgeAndNoEdgeInSource(t *testing.T) {
 	eventsEdge := userConfig.NodeData.EdgeInfo.GetAssociationEdgeByName("CreatedEvents")
 	assert.NotNil(t, eventsEdge)
 	assert.Equal(t, eventsEdge.NodeInfo.Node, "Event")
+	assert.Equal(t, eventsEdge.HideFromGraphQL(), false)
+	assert.Equal(t, eventsEdge.EdgeConst, "UserToCreatedEventsEdge")
+
+	// 2 nodes, 1 edge
+	testConsts(t, eventConfig.NodeData.ConstantGroups, 1, 0)
+	testConsts(t, userConfig.NodeData.ConstantGroups, 1, 1)
+}
+
+func TestParseInputWithFieldEdgeAndNoEdgeInSourceMoreOptions(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+				},
+			},
+			"Event": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "UserID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						FieldEdge: &input.FieldEdge{Schema: "User", InverseEdge: &input.InverseFieldEdge{Name: "CreatedEvents", HideFromGraphQL: true, EdgeConstName: "ProfileToCreatedEvents"}},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	// still config name because of artifact of go and old schema
+	eventConfig := schema.Nodes["EventConfig"]
+	assert.NotNil(t, eventConfig)
+
+	userEdge := eventConfig.NodeData.EdgeInfo.GetFieldEdgeByName("User")
+	assert.NotNil(t, userEdge)
+	assert.Equal(t, userEdge.NodeInfo.Node, "User")
+	assert.Equal(t, userEdge.InverseEdge.Name, "CreatedEvents")
+
+	// still config name because of artifact of go and old schema
+	userConfig := schema.Nodes["UserConfig"]
+	assert.NotNil(t, userConfig)
+
+	eventsEdge := userConfig.NodeData.EdgeInfo.GetAssociationEdgeByName("CreatedEvents")
+	assert.NotNil(t, eventsEdge)
+	assert.Equal(t, eventsEdge.NodeInfo.Node, "Event")
+	// these 2 are different from above test
+	assert.Equal(t, eventsEdge.HideFromGraphQL(), true)
+	assert.Equal(t, eventsEdge.EdgeConst, "ProfileToCreatedEventsEdge")
 
 	// 2 nodes, 1 edge
 	testConsts(t, eventConfig.NodeData.ConstantGroups, 1, 0)
