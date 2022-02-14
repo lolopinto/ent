@@ -1,14 +1,16 @@
-ARG GOLANG_VERSION=v0.0.37
-ARG AUTO_SCHEMA_VERSION=0.0.16
+ARG GOLANG_VERSION=v0.0.38
+ARG AUTO_SCHEMA_VERSION=0.0.17
 ARG NODE_VERSION=17
+ARG DOCKER_TAG=0.0.37
 
 # get and install tsent
 FROM golang:1.17.6-buster As golang-image
 ARG GOLANG_VERSION
+ARG DOCKER_TAG
 ENV GOPATH=$HOME/go
 ENV GOBIN $GOPATH/bin
 ENV PATH $PATH:$GOPATH/bin
-RUN go install github.com/lolopinto/ent/tsent@$GOLANG_VERSION
+RUN go install -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=$DOCKER_TAG' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'" github.com/lolopinto/ent/tsent@$GOLANG_VERSION
 
 # get and install auto_schema
 FROM python:3.8.11-buster AS python-image
@@ -54,7 +56,7 @@ RUN \
 
 RUN apt update && apt --assume-yes install zsh && \
   rm -rf /var/lib/apt/lists/*
-RUN npm install -g typescript@4.4.2 prettier@2.3.2 ts-node@10.2.1
+RUN npm install -g typescript@4.4.2 prettier@2.3.2 ts-node@10.7 @swc/core@1.2.155 @swc/cli@0.1.55
 
 WORKDIR /app
 RUN npm install --save-dev tsconfig-paths@3.11.0
