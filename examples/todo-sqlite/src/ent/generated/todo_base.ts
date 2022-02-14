@@ -7,7 +7,6 @@ import {
   Data,
   ID,
   LoadEntOptions,
-  ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
   convertBool,
@@ -19,18 +18,9 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
+import { todoLoader, todoLoaderInfo } from "src/ent/generated/loaders";
 import { Account, NodeType, TodoToTagsQuery } from "src/ent/internal";
 import schema from "src/schema/todo";
-
-const tableName = "todos";
-const fields = [
-  "id",
-  "created_at",
-  "updated_at",
-  "text",
-  "completed",
-  "creator_id",
-];
 
 export class TodoBase {
   readonly nodeType = NodeType.Todo;
@@ -134,8 +124,8 @@ export class TodoBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName,
-      fields,
+      tableName: todoLoaderInfo.tableName,
+      fields: todoLoaderInfo.fields,
       ent: this,
       loaderFactory: todoLoader,
     };
@@ -166,9 +156,3 @@ export class TodoBase {
     return loadEntX(this.viewer, this.creatorID, Account.loaderOptions());
   }
 }
-
-export const todoLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "id",
-});

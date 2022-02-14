@@ -7,7 +7,6 @@ import {
   Data,
   ID,
   LoadEntOptions,
-  ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
   convertDate,
@@ -18,18 +17,9 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
+import { tagLoader, tagLoaderInfo } from "src/ent/generated/loaders";
 import { Account, NodeType, TagToTodosQuery } from "src/ent/internal";
 import schema from "src/schema/tag";
-
-const tableName = "tags";
-const fields = [
-  "id",
-  "created_at",
-  "updated_at",
-  "display_name",
-  "canonical_name",
-  "owner_id",
-];
 
 export class TagBase {
   readonly nodeType = NodeType.Tag;
@@ -127,8 +117,8 @@ export class TagBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName,
-      fields,
+      tableName: tagLoaderInfo.tableName,
+      fields: tagLoaderInfo.fields,
       ent: this,
       loaderFactory: tagLoader,
     };
@@ -159,9 +149,3 @@ export class TagBase {
     return loadEntX(this.viewer, this.ownerID, Account.loaderOptions());
   }
 }
-
-export const tagLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "id",
-});
