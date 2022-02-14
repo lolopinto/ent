@@ -7,7 +7,6 @@ import {
   Data,
   ID,
   LoadEntOptions,
-  ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
   convertDate,
@@ -19,21 +18,16 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import {
+  guestGroupLoader,
+  guestGroupLoaderInfo,
+} from "src/ent/generated/loaders";
+import {
   Event,
   GuestGroupToGuestsQuery,
   GuestGroupToInvitedEventsQuery,
   NodeType,
 } from "src/ent/internal";
 import schema from "src/schema/guest_group";
-
-const tableName = "guest_groups";
-const fields = [
-  "id",
-  "created_at",
-  "updated_at",
-  "invitation_name",
-  "event_id",
-];
 
 export class GuestGroupBase {
   readonly nodeType = NodeType.GuestGroup;
@@ -137,8 +131,8 @@ export class GuestGroupBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName,
-      fields,
+      tableName: guestGroupLoaderInfo.tableName,
+      fields: guestGroupLoaderInfo.fields,
       ent: this,
       loaderFactory: guestGroupLoader,
     };
@@ -173,9 +167,3 @@ export class GuestGroupBase {
     return loadEntX(this.viewer, this.eventID, Event.loaderOptions());
   }
 }
-
-export const guestGroupLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "id",
-});

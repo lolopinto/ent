@@ -7,7 +7,6 @@ import {
   Data,
   ID,
   LoadEntOptions,
-  ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
   convertDate,
@@ -21,14 +20,16 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import {
+  accountLoader,
+  accountLoaderInfo,
+  accountPhoneNumberLoader,
+} from "src/ent/generated/loaders";
+import {
   AccountToTagsQuery,
   AccountToTodosQuery,
   NodeType,
 } from "src/ent/internal";
 import schema from "src/schema/account";
-
-const tableName = "accounts";
-const fields = ["id", "created_at", "updated_at", "name", "phone_number"];
 
 export class AccountBase {
   readonly nodeType = NodeType.Account;
@@ -173,8 +174,8 @@ export class AccountBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName,
-      fields,
+      tableName: accountLoaderInfo.tableName,
+      fields: accountLoaderInfo.fields,
       ent: this,
       loaderFactory: accountLoader,
     };
@@ -201,18 +202,3 @@ export class AccountBase {
     return AccountToTodosQuery.query(this.viewer, this.id);
   }
 }
-
-export const accountLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "id",
-});
-
-export const accountPhoneNumberLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "phone_number",
-});
-
-accountLoader.addToPrime(accountPhoneNumberLoader);
-accountPhoneNumberLoader.addToPrime(accountLoader);

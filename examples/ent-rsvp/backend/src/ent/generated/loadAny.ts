@@ -54,5 +54,7 @@ export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent> {
       return GuestGroup.loaderOptions();
     case NodeType.User:
       return User.loaderOptions();
+    default:
+      throw new Error(`invalid nodeType ${type} passed to getLoaderOptions`);
   }
 }

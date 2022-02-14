@@ -11,6 +11,7 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { User } from "src/ent/";
+import { NodeType } from "src/ent/generated/const";
 import schema from "src/schema/user";
 
 export interface UserInput {
@@ -32,6 +33,7 @@ export class UserBuilder implements Builder<User> {
   orchestrator: Orchestrator<User>;
   readonly placeholderID: ID;
   readonly ent = User;
+  readonly nodeType = NodeType.User;
   private input: UserInput;
   private m: Map<string, any> = new Map();
 

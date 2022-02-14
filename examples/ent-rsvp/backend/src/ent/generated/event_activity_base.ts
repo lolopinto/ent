@@ -7,7 +7,6 @@ import {
   Data,
   ID,
   LoadEntOptions,
-  ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
   convertBool,
@@ -22,6 +21,10 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import {
+  eventActivityLoader,
+  eventActivityLoaderInfo,
+} from "src/ent/generated/loaders";
+import {
   EdgeType,
   Event,
   EventActivityToAttendingQuery,
@@ -30,20 +33,6 @@ import {
   NodeType,
 } from "src/ent/internal";
 import schema from "src/schema/event_activity";
-
-const tableName = "event_activities";
-const fields = [
-  "id",
-  "created_at",
-  "updated_at",
-  "name",
-  "event_id",
-  "start_time",
-  "end_time",
-  "location",
-  "description",
-  "invite_all_guests",
-];
 
 export enum EventActivityRsvpStatus {
   Attending = "attending",
@@ -164,8 +153,8 @@ export class EventActivityBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName,
-      fields,
+      tableName: eventActivityLoaderInfo.tableName,
+      fields: eventActivityLoaderInfo.fields,
       ent: this,
       loaderFactory: eventActivityLoader,
     };
@@ -233,9 +222,3 @@ export class EventActivityBase {
     return loadEntX(this.viewer, this.eventID, Event.loaderOptions());
   }
 }
-
-export const eventActivityLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "id",
-});

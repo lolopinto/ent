@@ -12,15 +12,12 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
+import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { Todo } from "src/ent/";
 import CreateTodoAction, {
   TodoCreateInput,
 } from "src/ent/todo/actions/create_todo_action";
 import { TodoType } from "src/graphql/resolvers/";
-
-interface customTodoCreateInput extends TodoCreateInput {
-  creatorID: string;
-}
 
 interface TodoCreatePayload {
   todo: Todo;
@@ -50,7 +47,7 @@ export const TodoCreatePayloadType = new GraphQLObjectType({
 export const TodoCreateType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: customTodoCreateInput }
+  { [input: string]: TodoCreateInput }
 > = {
   type: GraphQLNonNull(TodoCreatePayloadType),
   args: {
