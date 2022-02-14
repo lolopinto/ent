@@ -7,7 +7,6 @@ import {
   Data,
   ID,
   LoadEntOptions,
-  ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
   convertBool,
@@ -21,19 +20,13 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
+import {
+  authCodeGuestIDLoader,
+  authCodeLoader,
+  authCodeLoaderInfo,
+} from "src/ent/generated/loaders";
 import { Guest, NodeType } from "src/ent/internal";
 import schema from "src/schema/auth_code";
-
-const tableName = "auth_codes";
-const fields = [
-  "id",
-  "created_at",
-  "updated_at",
-  "code",
-  "guest_id",
-  "email_address",
-  "sent_code",
-];
 
 export class AuthCodeBase {
   readonly nodeType = NodeType.AuthCode;
@@ -180,8 +173,8 @@ export class AuthCodeBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName,
-      fields,
+      tableName: authCodeLoaderInfo.tableName,
+      fields: authCodeLoaderInfo.fields,
       ent: this,
       loaderFactory: authCodeLoader,
     };
@@ -208,18 +201,3 @@ export class AuthCodeBase {
     return loadEntX(this.viewer, this.guestID, Guest.loaderOptions());
   }
 }
-
-export const authCodeLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "id",
-});
-
-export const authCodeGuestIDLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "guest_id",
-});
-
-authCodeLoader.addToPrime(authCodeGuestIDLoader);
-authCodeGuestIDLoader.addToPrime(authCodeLoader);

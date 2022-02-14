@@ -7,7 +7,6 @@ import {
   Data,
   ID,
   LoadEntOptions,
-  ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
   convertDate,
@@ -18,19 +17,12 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
+import {
+  guestDataLoader,
+  guestDataLoaderInfo,
+} from "src/ent/generated/loaders";
 import { Event, Guest, NodeType } from "src/ent/internal";
 import schema from "src/schema/guest_data";
-
-const tableName = "guest_data";
-const fields = [
-  "id",
-  "created_at",
-  "updated_at",
-  "guest_id",
-  "event_id",
-  "dietary_restrictions",
-  "source",
-];
 
 export enum GuestDataSource {
   EventPage = "event_page",
@@ -143,8 +135,8 @@ export class GuestDataBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName,
-      fields,
+      tableName: guestDataLoaderInfo.tableName,
+      fields: guestDataLoaderInfo.fields,
       ent: this,
       loaderFactory: guestDataLoader,
     };
@@ -179,9 +171,3 @@ export class GuestDataBase {
     return loadEntX(this.viewer, this.guestID, Guest.loaderOptions());
   }
 }
-
-export const guestDataLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "id",
-});

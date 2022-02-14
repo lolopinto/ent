@@ -8,7 +8,6 @@ import {
   Ent,
   ID,
   LoadEntOptions,
-  ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
   convertDate,
@@ -22,22 +21,13 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import { loadEntByType, loadEntXByType } from "src/ent/generated/loadAny";
+import {
+  addressLoader,
+  addressLoaderInfo,
+  addressOwnerIDLoader,
+} from "src/ent/generated/loaders";
 import { NodeType } from "src/ent/internal";
 import schema from "src/schema/address";
-
-const tableName = "addresses";
-const fields = [
-  "id",
-  "created_at",
-  "updated_at",
-  "street",
-  "city",
-  "state",
-  "zip_code",
-  "apartment",
-  "owner_id",
-  "owner_type",
-];
 
 export class AddressBase {
   readonly nodeType = NodeType.Address;
@@ -190,8 +180,8 @@ export class AddressBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName,
-      fields,
+      tableName: addressLoaderInfo.tableName,
+      fields: addressLoaderInfo.fields,
       ent: this,
       loaderFactory: addressLoader,
     };
@@ -226,18 +216,3 @@ export class AddressBase {
     );
   }
 }
-
-export const addressLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "id",
-});
-
-export const addressOwnerIDLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "owner_id",
-});
-
-addressLoader.addToPrime(addressOwnerIDLoader);
-addressOwnerIDLoader.addToPrime(addressLoader);

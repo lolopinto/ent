@@ -36,6 +36,7 @@ export class EventActivityBuilder implements Builder<EventActivity> {
   orchestrator: Orchestrator<EventActivity>;
   readonly placeholderID: ID;
   readonly ent = EventActivity;
+  readonly nodeType = NodeType.EventActivity;
   private input: EventActivityInput;
   private m: Map<string, any> = new Map();
 

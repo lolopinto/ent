@@ -31,6 +31,7 @@ export class GuestGroupBuilder implements Builder<GuestGroup> {
   orchestrator: Orchestrator<GuestGroup>;
   readonly placeholderID: ID;
   readonly ent = GuestGroup;
+  readonly nodeType = NodeType.GuestGroup;
   private input: GuestGroupInput;
   private m: Map<string, any> = new Map();
 

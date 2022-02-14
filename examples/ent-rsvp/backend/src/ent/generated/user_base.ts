@@ -7,7 +7,6 @@ import {
   Data,
   ID,
   LoadEntOptions,
-  ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
   convertDate,
@@ -20,19 +19,13 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
+import {
+  userEmailAddressLoader,
+  userLoader,
+  userLoaderInfo,
+} from "src/ent/generated/loaders";
 import { NodeType, UserToEventsQuery } from "src/ent/internal";
 import schema from "src/schema/user";
-
-const tableName = "users";
-const fields = [
-  "id",
-  "created_at",
-  "updated_at",
-  "first_name",
-  "last_name",
-  "email_address",
-  "password",
-];
 
 export class UserBase {
   readonly nodeType = NodeType.User;
@@ -177,8 +170,8 @@ export class UserBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName,
-      fields,
+      tableName: userLoaderInfo.tableName,
+      fields: userLoaderInfo.fields,
       ent: this,
       loaderFactory: userLoader,
     };
@@ -201,18 +194,3 @@ export class UserBase {
     return UserToEventsQuery.query(this.viewer, this.id);
   }
 }
-
-export const userLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "id",
-});
-
-export const userEmailAddressLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "email_address",
-});
-
-userLoader.addToPrime(userEmailAddressLoader);
-userEmailAddressLoader.addToPrime(userLoader);
