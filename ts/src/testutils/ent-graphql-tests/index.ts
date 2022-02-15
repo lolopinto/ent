@@ -2,7 +2,7 @@
 // the circular dependencies btw this package and ent-graphql-tests seems to imply something needs to change
 import express, { Express, RequestHandler } from "express";
 import { graphqlHTTP } from "express-graphql";
-import { Viewer } from "@snowtop/ent";
+import { Viewer } from "../../core/base";
 import {
   GraphQLSchema,
   GraphQLObjectType,
@@ -14,13 +14,10 @@ import {
   GraphQLType,
   GraphQLFieldMap,
 } from "graphql";
-import { buildContext, registerAuthHandler } from "@snowtop/ent/auth";
+import { buildContext, registerAuthHandler } from "../../auth";
 import { IncomingMessage, ServerResponse } from "http";
 import supertest from "supertest";
 import * as fs from "fs";
-
-// TODO need to make it obvious that jest-expect-message is a peer?dependency and setupFilesAfterEnv is a requirement to use this
-// or change the usage here.
 
 function server(config: queryConfig): Express {
   const viewer = config.viewer;
