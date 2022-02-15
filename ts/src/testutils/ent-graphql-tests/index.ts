@@ -2,7 +2,7 @@
 // the circular dependencies btw this package and ent-graphql-tests seems to imply something needs to change
 import express, { Express, RequestHandler } from "express";
 import { graphqlHTTP } from "express-graphql";
-import { Viewer } from "../../core/base";
+import { Viewer } from "@snowtop/ent";
 import {
   GraphQLSchema,
   GraphQLObjectType,
@@ -14,10 +14,13 @@ import {
   GraphQLType,
   GraphQLFieldMap,
 } from "graphql";
-import { buildContext, registerAuthHandler } from "../../auth";
+import { buildContext, registerAuthHandler } from "@snowtop/ent/auth";
 import { IncomingMessage, ServerResponse } from "http";
 import supertest from "supertest";
 import * as fs from "fs";
+
+// TODO need to make it obvious that jest-expect-message is a peer?dependency and setupFilesAfterEnv is a requirement to use this
+// or change the usage here.
 
 function server(config: queryConfig): Express {
   const viewer = config.viewer;
@@ -46,7 +49,7 @@ function server(config: queryConfig): Express {
       return doWork();
     }),
   );
-  app.use("/graphql", ...handlers);
+  app.use(config.graphQLPath || "/graphql", ...handlers);
 
   return app;
 }
@@ -70,12 +73,12 @@ function makeGraphQLRequest(
 
   if (config.test) {
     if (typeof config.test === "function") {
-      test = config.test(server(config));
+      test = config.test(config.server ? config.server : server(config));
     } else {
       test = config.test;
     }
   } else {
-    test = supertest(server(config));
+    test = supertest(config.server ? config.server : server(config));
   }
 
   let files = new Map();
@@ -104,7 +107,9 @@ function makeGraphQLRequest(
   });
 
   if (files.size) {
-    let ret = test.post("/graphql").set(config.headers || {});
+    let ret = test
+      .post(config.graphQLPath || "/graphql")
+      .set(config.headers || {});
 
     ret.field(
       "operations",
@@ -137,7 +142,7 @@ function makeGraphQLRequest(
     return [
       test,
       test
-        .post("/graphql")
+        .post(config.graphQLPath || "/graphql")
         .set(config.headers || {})
         .send({
           query: query,
@@ -288,6 +293,8 @@ interface queryConfig {
   callback?: (res: supertest.Response) => void;
   inlineFragmentRoot?: string;
   customHandlers?: RequestHandler[];
+  server?: any;
+  graphQLPath?: string;
 }
 
 export interface queryRootConfig extends queryConfig {

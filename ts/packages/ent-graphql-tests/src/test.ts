@@ -1,3 +1,4 @@
+import express from "express";
 import {
   GraphQLSchema,
   GraphQLObjectType,
@@ -10,6 +11,9 @@ import {
 } from "graphql";
 import { GraphQLUpload, graphqlUploadExpress } from "graphql-upload";
 import * as fs from "fs";
+import { graphqlHTTP } from "express-graphql";
+import { IncomingMessage, ServerResponse } from "http";
+import supertest from "supertest";
 
 import {
   queryRootConfig,
@@ -19,6 +23,7 @@ import {
 } from "./index";
 
 import { GraphQLNodeInterface } from "@snowtop/ent/graphql";
+import { buildContext } from "@snowtop/ent/auth";
 
 test("simplest query", async () => {
   let schema = new GraphQLSchema({
@@ -1049,4 +1054,66 @@ test("false boolean", async () => {
     ["firstName", "Aegon"],
     ["lastName", "Targaryen"],
   );
+});
+
+test("custom server", async () => {
+  const schema = new GraphQLSchema({
+    query: new GraphQLObjectType({
+      name: "RootQueryType",
+      fields: {
+        hello: {
+          type: GraphQLString,
+          resolve() {
+            return "world";
+          },
+        },
+      },
+    }),
+  });
+
+  const app = express();
+  app.use(
+    "/custom_graphql",
+    graphqlHTTP((request: IncomingMessage, response: ServerResponse) => {
+      let doWork = async () => {
+        let context = await buildContext(request, response);
+        return {
+          schema: schema,
+          context,
+        };
+      };
+      return doWork();
+    }),
+  );
+
+  app.use("/hello", async (req, res) => res.json({ world: true }));
+
+  const r = await supertest(app).get("/hello").send();
+
+  expect(r.error).toBe(false);
+  expect(r.body).toStrictEqual({ world: true });
+
+  await expectQueryFromRoot(
+    {
+      schema,
+      server: app,
+      graphQLPath: "/custom_graphql",
+      args: {},
+      root: "hello",
+    },
+    ["", "world"],
+  );
+
+  // content type error because we tried to hit /graphql even though doesn't exist
+  expect(
+    expectQueryFromRoot(
+      {
+        schema,
+        server: app,
+        args: {},
+        root: "hello",
+      },
+      ["", "world"],
+    ),
+  ).rejects.toThrow('"Content-Type" matching /json/');
 });

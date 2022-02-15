@@ -47,7 +47,7 @@ function server(config: queryConfig): Express {
       return doWork();
     }),
   );
-  app.use("/graphql", ...handlers);
+  app.use(config.graphQLPath || "/graphql", ...handlers);
 
   return app;
 }
@@ -71,12 +71,12 @@ function makeGraphQLRequest(
 
   if (config.test) {
     if (typeof config.test === "function") {
-      test = config.test(server(config));
+      test = config.test(config.server ? config.server : server(config));
     } else {
       test = config.test;
     }
   } else {
-    test = supertest(server(config));
+    test = supertest(config.server ? config.server : server(config));
   }
 
   let files = new Map();
@@ -105,7 +105,9 @@ function makeGraphQLRequest(
   });
 
   if (files.size) {
-    let ret = test.post("/graphql").set(config.headers || {});
+    let ret = test
+      .post(config.graphQLPath || "/graphql")
+      .set(config.headers || {});
 
     ret.field(
       "operations",
@@ -138,7 +140,7 @@ function makeGraphQLRequest(
     return [
       test,
       test
-        .post("/graphql")
+        .post(config.graphQLPath || "/graphql")
         .set(config.headers || {})
         .send({
           query: query,
@@ -289,6 +291,8 @@ interface queryConfig {
   callback?: (res: supertest.Response) => void;
   inlineFragmentRoot?: string;
   customHandlers?: RequestHandler[];
+  server?: any;
+  graphQLPath?: string;
 }
 
 export interface queryRootConfig extends queryConfig {
