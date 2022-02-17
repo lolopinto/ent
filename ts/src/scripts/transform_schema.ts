@@ -3,6 +3,7 @@ import ts from "typescript";
 import * as fs from "fs";
 import { readCompilerOptions } from "../tsc/compilerOptions";
 import { execSync } from "child_process";
+import { Data } from "../core/base";
 
 function getTarget(target: string) {
   switch (target.toLowerCase()) {
@@ -42,12 +43,13 @@ async function main() {
     : ts.ScriptTarget.ESNext;
 
   // filter to only event.ts e.g. for comments and whitespace...
-  //  files = files.filter((f) => f.endsWith("event.ts"));
+  // files = files.filter((f) => f.endsWith("user.ts"));
 
   files.forEach((file) => {
     // assume valid file since we do glob above
-    const idx = file.lastIndexOf(".ts");
-    const writeFile = file.substring(0, idx) + "2" + ".ts";
+    //    const idx = file.lastIndexOf(".ts");
+    //    const writeFile = file.substring(0, idx) + "2" + ".ts";
+    const writeFile = file;
 
     let contents = fs.readFileSync(file).toString();
 
@@ -61,6 +63,7 @@ async function main() {
     );
     const nodes: NodeInfo[] = [];
     let updateImport = false;
+    let removeImports: string[] = [];
     const f = {
       trackNode: function (tni: TrackNodeInfo) {
         nodes.push({
@@ -68,6 +71,9 @@ async function main() {
           importNode: tni.node && ts.isImportDeclaration(tni.node),
           rawString: tni.rawString,
         });
+        if (tni.removeImports) {
+          removeImports.push(...tni.removeImports);
+        }
       },
       flagUpdateImport() {
         updateImport = true;
@@ -81,7 +87,11 @@ async function main() {
     for (const node of nodes) {
       if (updateImport && node.importNode) {
         const importNode = node.node as ts.ImportDeclaration;
-        const transformedImport = transformImport(importNode, sourceFile);
+        const transformedImport = transformImport(
+          importNode,
+          sourceFile,
+          removeImports,
+        );
         if (transformedImport) {
           newContents += transformedImport;
           continue;
@@ -113,6 +123,7 @@ interface File {
 interface TrackNodeInfo {
   node?: ts.Node;
   rawString?: string;
+  removeImports?: string[];
 }
 
 interface NodeInfo {
@@ -142,83 +153,266 @@ function traverse(
   return traversed;
 }
 
-// TODO need to replace class field member, print that and see what happens
 function traverseClass(
   fileContents: string,
   sourceFile: ts.SourceFile,
   node: ts.ClassDeclaration,
   f: File,
 ): boolean {
-  let updated = false;
+  const ci = getClassInfo(fileContents, sourceFile, node);
+  if (!ci) {
+    return false;
+  }
 
-  // beginning of class...
-  // including comment
-  let klassContents = fileContents.substring(
-    node.getFullStart(),
-    node.members[0].getFullStart(),
-  );
+  let klassContents = `${ci.comment}const ${ci.name} = new ${ci.class}({\n`;
+  let removeImports: string[] = [];
+  if (ci.implementsSchema) {
+    removeImports.push("Schema");
+  }
 
   for (let member of node.members) {
-    if (!isFieldElement(member, sourceFile)) {
-      klassContents += member.getFullText(sourceFile);
-      continue;
+    const fInfo = getClassElementInfo(fileContents, member, sourceFile);
+    if (!fInfo) {
+      return false;
     }
-    // intentionally doesn't parse decorators since we don't need it
-
-    let fieldMap = "";
-    // fieldMapComment...
-    const comment = getPreText(fileContents, member, sourceFile);
-    if (comment) {
-      fieldMap += comment;
+    klassContents += `${fInfo.comment}${fInfo.key}:${fInfo.value},\n`;
+    if (fInfo.type) {
+      removeImports.push(fInfo.type);
     }
-
-    updated = true;
-    // need to change to fields: FieldMap = {code: StringType()};
-    const property = member as ts.PropertyDeclaration;
-    const initializer = property.initializer as ts.ArrayLiteralExpression;
-
-    fieldMap += "fields: FieldMap = {";
-    for (const element of initializer.elements) {
-      const parsed = parseFieldElement(element, sourceFile, fileContents);
-      if (parsed === null) {
-        return false;
-      }
-      const { callEx, name, nameComment, properties } = parsed;
-
-      let property = "";
-      const fieldComment = getPreText(fileContents, element, sourceFile).trim();
-      if (fieldComment) {
-        property += "\n" + fieldComment + "\n";
-      }
-      if (nameComment) {
-        property += nameComment + "\n";
-      }
-
-      // e.g. UUIDType, StringType etc
-      let call = callEx.expression.getText(sourceFile);
-      let fnCall = "";
-      if (properties.length) {
-        fnCall = `{${properties.join(",")}}`;
-      }
-      property += `${name}:${call}(${fnCall}),`;
-
-      fieldMap += property;
-    }
-    fieldMap += "}";
-    klassContents += fieldMap;
   }
 
-  klassContents += "\n}";
-
+  klassContents += "\n})";
+  if (ci.export && ci.default) {
+    klassContents += `\n export default ${ci.name};`;
+  } else if (ci.export) {
+    klassContents = "export " + klassContents;
+  }
   //  console.debug(klassContents);
 
-  if (!updated) {
-    return updated;
+  f.trackNode({ rawString: klassContents, removeImports: removeImports });
+
+  return true;
+}
+
+interface classInfo {
+  class: string;
+  comment: string;
+  name: string;
+  export?: boolean;
+  default?: boolean;
+  implementsSchema?: boolean;
+}
+
+function transformSchema(str: string): string {
+  // only do known class names
+  if (str === "BaseEntSchema" || str === "BaseEntSchemaWithTZ") {
+    return str.substring(4);
+  }
+  return str;
+}
+
+function getClassInfo(
+  fileContents: string,
+  sourceFile: ts.SourceFile,
+  node: ts.ClassDeclaration,
+): classInfo | undefined {
+  const className = node.name?.text;
+
+  let classExtends: string | undefined;
+  let implementsSchema = false;
+  if (node.heritageClauses) {
+    for (const hc of node.heritageClauses) {
+      if (hc.token === ts.SyntaxKind.ImplementsKeyword) {
+        for (const type of hc.types) {
+          if (type.expression.getText(sourceFile) === "Schema") {
+            implementsSchema = true;
+          }
+        }
+        continue;
+      }
+
+      // ts.SyntaxKind.ExtendsKeyword
+      // can only extend one class
+      for (const type of hc.types) {
+        const text = type.expression.getText(sourceFile);
+        const transformed = transformSchema(text);
+        if (transformed === text) {
+          return undefined;
+        }
+        classExtends = transformed;
+      }
+    }
   }
 
-  f.trackNode({ rawString: klassContents });
+  if (!className || !node.heritageClauses || !classExtends) {
+    return undefined;
+  }
 
-  return updated;
+  let ci: classInfo = {
+    name: className,
+    class: classExtends,
+    comment: getPreText(fileContents, node, sourceFile),
+    implementsSchema,
+  };
+
+  if (node.modifiers) {
+    for (const mod of node.modifiers) {
+      const text = mod.getText(sourceFile);
+      if (text === "export") {
+        ci.export = true;
+      } else if (text === "default") {
+        ci.default = true;
+      }
+    }
+  }
+  return ci;
+}
+
+interface propertyInfo {
+  key: string;
+  value: string;
+  comment: string;
+  type?: string;
+}
+
+// intentionally doesn't parse decorators since we don't need it
+function getClassElementInfo(
+  fileContents: string,
+  member: ts.ClassElement,
+  sourceFile: ts.SourceFile,
+): propertyInfo | undefined {
+  if (isFieldElement(member, sourceFile)) {
+    return getFieldElementInfo(fileContents, member, sourceFile);
+  }
+  if (member.kind === ts.SyntaxKind.Constructor) {
+    return getConstructorElementInfo(fileContents, member, sourceFile);
+  }
+  if (member.kind !== ts.SyntaxKind.PropertyDeclaration) {
+    return;
+  }
+  // other properties
+  const property = member as ts.PropertyDeclaration;
+  if (!property.initializer) {
+    return;
+  }
+  const token = property.name as ts.Identifier;
+
+  return {
+    key: token.escapedText.toString(),
+    value: property.initializer?.getFullText(sourceFile),
+    comment: getPreText(fileContents, member, sourceFile),
+    type: getType(property, sourceFile),
+  };
+}
+
+function getType(
+  property: ts.PropertyDeclaration,
+  sourceFile: ts.SourceFile,
+): string {
+  let propertytype = property.type?.getText(sourceFile) || "";
+  let ends = ["| null", "[]"];
+  for (const end of ends) {
+    if (propertytype.endsWith(end)) {
+      propertytype = propertytype.slice(0, -1 * end.length);
+    }
+  }
+  return propertytype;
+}
+
+function getFieldElementInfo(
+  fileContents: string,
+  member: ts.ClassElement,
+  sourceFile: ts.SourceFile,
+): propertyInfo | undefined {
+  let fieldMap = "";
+
+  // need to change to fields: {code: StringType()};
+  const property = member as ts.PropertyDeclaration;
+  const initializer = property.initializer as ts.ArrayLiteralExpression;
+
+  fieldMap += "{";
+  for (const element of initializer.elements) {
+    const parsed = parseFieldElement(element, sourceFile, fileContents);
+    if (parsed === null) {
+      return;
+    }
+    const { callEx, name, nameComment, properties } = parsed;
+
+    let property = "";
+    const fieldComment = getPreText(fileContents, element, sourceFile).trim();
+    if (fieldComment) {
+      property += "\n" + fieldComment + "\n";
+    }
+    if (nameComment) {
+      property += nameComment + "\n";
+    }
+
+    // e.g. UUIDType, StringType etc
+    let call = callEx.expression.getText(sourceFile);
+    let fnCall = "";
+    if (properties.length) {
+      fnCall = `{${properties.join(",")}}`;
+    }
+    property += `${name}:${call}(${fnCall}),`;
+
+    fieldMap += property;
+  }
+  fieldMap += "}";
+
+  return {
+    key: "fields",
+    value: fieldMap,
+    comment: getPreText(fileContents, member, sourceFile),
+    type: getType(property, sourceFile),
+  };
+}
+
+function getConstructorElementInfo(
+  fileContents: string,
+  member: ts.ClassElement,
+  sourceFile: ts.SourceFile,
+): propertyInfo | undefined {
+  const c = member as ts.ConstructorDeclaration;
+  //remove {}
+  let fullText = c.body?.getFullText(sourceFile) || "";
+  fullText = fullText.trim().slice(1, -1).trim();
+
+  // convert something like
+  /*
+  constructor() {
+    super();
+    this.addPatterns(
+      new Feedback(),
+      new DayOfWeek(),
+      new Feedback(),
+      new DayOfWeek(),
+    );
+  }
+    */
+  // into this.addPatterns(new Feedback(),new DayOfWeek(),new Feedback(),new DayOfWeek(),)
+  const lines = fullText
+    .split("\n")
+    .map((line) => line.trim())
+    .join("")
+    .split(";")
+    .filter((f) => f != "super()" && f != "");
+  // at this point there should be only line for what we handle
+  if (lines.length != 1) {
+    return;
+  }
+  const line = lines[0];
+  const addPatterns = "this.addPatterns(";
+  if (!line.startsWith(addPatterns)) {
+    return;
+  }
+
+  return {
+    key: "patterns",
+    // remove this.addPatterns at the front, remove trailing ) at the end
+    // if there's a trailing comma, it'll be handled by prettier
+    value: `[${line.slice(addPatterns.length, -1)}]`,
+    comment: "",
+  };
 }
 
 function isFieldElement(
@@ -314,6 +508,7 @@ function parseFieldElement(
 function transformImport(
   importNode: ts.ImportDeclaration,
   sourceFile: ts.SourceFile,
+  removeImports: string[],
 ): string | undefined {
   // remove quotes too
   const text = importNode.moduleSpecifier.getText(sourceFile).slice(1, -1);
@@ -334,18 +529,22 @@ function transformImport(
     .substring(start + 1, end)
     //    .trim()
     .split(",");
+
+  let removeImportsMap: Data = {};
+  removeImports.forEach((imp) => (removeImportsMap[imp] = true));
+  let newImports: string[] = [];
   for (let i = 0; i < imports.length; i++) {
-    const imp = imports[i].trim();
-    if (imp === "Field") {
-      imports[i] = "FieldMap";
+    let imp = transformSchema(imports[i].trim());
+    if (removeImportsMap[imp]) {
+      continue;
     }
+    newImports.push(imp);
   }
-  // TODO better to update node instead of doing this but this works for now
 
   return (
     "import " +
     importText.substring(0, start + 1) +
-    imports.join(", ") +
+    newImports.join(", ") +
     importText.substring(end) +
     ' from "' +
     text +
