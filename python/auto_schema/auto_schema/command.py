@@ -5,7 +5,6 @@ from alembic import command
 from alembic.script import ScriptDirectory
 
 from . import runner
-from typing import TypedDict
 
 
 class Command(object):
