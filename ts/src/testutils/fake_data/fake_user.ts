@@ -13,8 +13,8 @@ import {
   AllowIfViewerInboundEdgeExistsRule,
   AllowIfConditionAppliesRule,
 } from "../../core/privacy";
-import { BuilderSchema, SimpleAction } from "../builder";
-import { Field, StringType, BaseEntSchema, FieldMap } from "../../schema";
+import { getBuilderSchemaFromFields, SimpleAction } from "../builder";
+import { StringType } from "../../schema";
 import { EdgeType } from "./internal";
 import { NodeType } from "./const";
 import { IDViewer, IDViewerOptions } from "../../core/viewer";
@@ -130,12 +130,8 @@ export class FakeUser implements Ent {
   }
 }
 
-export class FakeUserSchema
-  extends BaseEntSchema
-  implements BuilderSchema<FakeUser>
-{
-  ent = FakeUser;
-  fields: FieldMap = {
+export const FakeUserSchema = getBuilderSchemaFromFields(
+  {
     firstName: StringType(),
     lastName: StringType(),
     emailAddress: StringType(),
@@ -143,8 +139,9 @@ export class FakeUserSchema
     password: StringType({
       nullable: true,
     }),
-  };
-}
+  },
+  FakeUser,
+);
 
 export interface UserCreateInput {
   firstName: string;
@@ -166,7 +163,7 @@ export function getUserAction(viewer: Viewer, input: UserCreateInput) {
   for (const key in input) {
     m.set(key, input[key]);
   }
-  const action = new SimpleAction(viewer, new FakeUserSchema(), m);
+  const action = new SimpleAction(viewer, FakeUserSchema, m);
   action.viewerForEntLoad = (data: Data) => {
     // load the created ent using a VC of the newly created user.
     return new IDViewer(data.id);

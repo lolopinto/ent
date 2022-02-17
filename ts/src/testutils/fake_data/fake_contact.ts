@@ -8,14 +8,8 @@ import {
 } from "../../core/base";
 import { loadEnt, loadEntX } from "../../core/ent";
 import { AllowIfViewerIsRule, AlwaysDenyRule } from "../../core/privacy";
-import { BuilderSchema, SimpleBuilder } from "../builder";
-import {
-  Field,
-  StringType,
-  BaseEntSchema,
-  UUIDType,
-  FieldMap,
-} from "../../schema";
+import { getBuilderSchemaFromFields, SimpleBuilder } from "../builder";
+import { StringType, UUIDType } from "../../schema";
 import { NodeType } from "./const";
 import { table, uuid, text, timestamptz } from "../db/test_db";
 import { ObjectLoaderFactory } from "../../core/loaders";
@@ -93,20 +87,17 @@ export class FakeContact implements Ent {
   }
 }
 
-export class FakeContactSchema
-  extends BaseEntSchema
-  implements BuilderSchema<FakeContact>
-{
-  ent = FakeContact;
-  fields: FieldMap = {
+export const FakeContactSchema = getBuilderSchemaFromFields(
+  {
     firstName: StringType(),
     lastName: StringType(),
     emailAddress: StringType(),
     userID: UUIDType({
       foreignKey: { schema: "User", column: "ID" },
     }),
-  };
-}
+  },
+  FakeContact,
+);
 
 export interface ContactCreateInput {
   firstName: string;
@@ -124,7 +115,7 @@ export function getContactBuilder(viewer: Viewer, input: ContactCreateInput) {
   m.set("createdAt", new Date());
   m.set("updatedAt", new Date());
 
-  return new SimpleBuilder(viewer, new FakeContactSchema(), m);
+  return new SimpleBuilder(viewer, FakeContactSchema, m);
 }
 
 export async function createContact(viewer: Viewer, input: ContactCreateInput) {

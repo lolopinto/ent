@@ -28,9 +28,9 @@ import {
   BuilderSchema,
   SimpleAction,
   getTableName,
+  getBuilderSchemaFromFields,
 } from "../testutils/builder";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
-import { BaseEntSchema, FieldMap } from "../schema";
 import {
   StringType,
   TimestampType,
@@ -119,13 +119,13 @@ describe("sqlite", () => {
     edges.map((edge) => tables.push(assoc_edge_table(`${edge}_table`)));
 
     [
-      new AccountSchema(),
-      new ContactSchema(),
-      new GroupSchema(),
-      new UserSchema(),
-      new MessageSchema(),
-      new GroupMembershipSchema(),
-      new ChangelogSchema(),
+      AccountSchema,
+      ContactSchema,
+      GroupSchema,
+      UserSchema,
+      MessageSchema,
+      GroupMembershipSchema,
+      ChangelogSchema,
     ].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));
     return tables;
   };
@@ -189,15 +189,15 @@ async function createUser(): Promise<User> {
   return new User(new IDViewer(id), { id });
 }
 
-class UserSchema extends BaseEntSchema {
-  fields: FieldMap = {
+const UserSchema = getBuilderSchemaFromFields(
+  {
     FirstName: StringType(),
     LastName: StringType(),
     EmailAddress: StringType({ nullable: true }),
     AccountID: UUIDType({ nullable: true }),
-  };
-  ent = User;
-}
+  },
+  User,
+);
 
 class Account implements Ent {
   id: ID;
@@ -210,27 +210,24 @@ class Account implements Ent {
   }
 }
 
-class AccountSchema extends BaseEntSchema {
-  ent = Account;
-  fields: FieldMap = {};
-}
+const AccountSchema = getBuilderSchemaFromFields({}, Account);
 
-class ContactSchema extends BaseEntSchema {
-  fields: FieldMap = {
+const ContactSchema = getBuilderSchemaFromFields(
+  {
     FirstName: StringType(),
     LastName: StringType(),
     UserID: StringType(),
-  };
-  ent = Contact;
-}
+  },
+  Contact,
+);
 
-class GroupSchema extends BaseEntSchema {
-  fields: FieldMap = {
+const GroupSchema = getBuilderSchemaFromFields(
+  {
     name: StringType(),
     funField: StringType({ nullable: true }),
-  };
-  ent = Group;
-}
+  },
+  Group,
+);
 
 class GroupMembership implements Ent {
   id: ID;
@@ -242,14 +239,14 @@ class GroupMembership implements Ent {
   }
 }
 
-class GroupMembershipSchema extends BaseEntSchema {
-  fields: FieldMap = {
+const GroupMembershipSchema = getBuilderSchemaFromFields(
+  {
     ownerID: UUIDType(),
     addedBy: UUIDType(),
     notificationsEnabled: BooleanType(),
-  };
-  ent = GroupMembership;
-}
+  },
+  GroupMembership,
+);
 
 class Changelog implements Ent {
   id: ID;
@@ -261,25 +258,25 @@ class Changelog implements Ent {
   }
 }
 
-class ChangelogSchema extends BaseEntSchema {
-  fields: FieldMap = {
+const ChangelogSchema = getBuilderSchemaFromFields(
+  {
     parentID: UUIDType({ polymorphic: true }),
     log: JSONBType(),
-  };
-  ent = Changelog;
-}
+  },
+  Changelog,
+);
 
-class MessageSchema extends BaseEntSchema {
-  fields: FieldMap = {
+const MessageSchema = getBuilderSchemaFromFields(
+  {
     // TODO both id fields
     sender: StringType(), // can't use from
     recipient: StringType(), // can't use to in sqlite
     message: StringType(),
     transient: BooleanType({ nullable: true }),
     expiresAt: TimestampType({ nullable: true }),
-  };
-  ent = Message;
-}
+  },
+  Message,
+);
 
 class MessageAction extends SimpleAction<Message> {
   constructor(
@@ -288,7 +285,7 @@ class MessageAction extends SimpleAction<Message> {
     operation: WriteOperation,
     existingEnt?: Message,
   ) {
-    super(viewer, new MessageSchema(), fields, operation, existingEnt);
+    super(viewer, MessageSchema, fields, operation, existingEnt);
   }
 
   triggers: Trigger<SimpleBuilder<Message>, Data>[] = [
@@ -321,7 +318,7 @@ class UserAction extends SimpleAction<User> {
     operation: WriteOperation,
     existingEnt?: User,
   ) {
-    super(viewer, new UserSchema(), fields, operation, existingEnt);
+    super(viewer, UserSchema, fields, operation, existingEnt);
   }
 
   triggers: Trigger<SimpleBuilder<User>, Data>[] = [
@@ -331,7 +328,7 @@ class UserAction extends SimpleAction<User> {
         let lastName = builder.fields.get("LastName");
         this.contactAction = new SimpleAction(
           builder.viewer,
-          new ContactSchema(),
+          ContactSchema,
           new Map([
             ["FirstName", firstName],
             ["LastName", lastName],
@@ -418,7 +415,7 @@ async function verifyGroupMembers(group: Group, members: User[]) {
 }
 
 async function loadMemberships(viewer: Viewer, membershipids: ID[]) {
-  const tableName = getTableName(new GroupMembershipSchema());
+  const tableName = getTableName(GroupMembershipSchema);
   const ents = await loadEnts(
     viewer,
     {
@@ -483,7 +480,7 @@ function commonTests() {
   test("empty", async () => {
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new UserSchema(),
+      UserSchema,
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
@@ -511,7 +508,7 @@ function commonTests() {
 
     const builder = new SimpleBuilder(
       viewer,
-      new UserSchema(),
+      UserSchema,
       new Map(),
       WriteOperation.Edit,
       user,
@@ -533,7 +530,7 @@ function commonTests() {
   test("simple-one-op-created-ent", async () => {
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new UserSchema(),
+      UserSchema,
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
@@ -586,7 +583,7 @@ function commonTests() {
     const user = new User(viewer, { id });
     const action = new SimpleAction(
       viewer,
-      new UserSchema(),
+      UserSchema,
       new Map(),
       WriteOperation.Edit,
       user,
@@ -619,7 +616,7 @@ function commonTests() {
   test("list-based-with-dependency", async () => {
     let userBuilder = new SimpleBuilder(
       new LoggedOutViewer(),
-      new UserSchema(),
+      UserSchema,
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
@@ -630,7 +627,7 @@ function commonTests() {
     let lastName = userBuilder.fields.get("LastName");
     let contactAction = new SimpleAction(
       userBuilder.viewer,
-      new ContactSchema(),
+      ContactSchema,
       new Map([
         ["FirstName", firstName],
         ["LastName", lastName],
@@ -743,7 +740,7 @@ function commonTests() {
 
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new GroupSchema(),
+      GroupSchema,
       new Map(),
       WriteOperation.Edit,
       group,
@@ -912,7 +909,7 @@ function commonTests() {
           async changeset(builder: SimpleBuilder<GroupMembership>, input) {
             const clAction = new CreateChangelogAction(
               builder.viewer,
-              new ChangelogSchema(),
+              ChangelogSchema,
               new Map([
                 // no dependency on fields. all new
                 ["parentID", QueryRecorder.newID()],
@@ -938,14 +935,14 @@ function commonTests() {
 
     const groupAction = new EditGroupAction(
       new IDViewer(user.id),
-      new GroupSchema(),
+      GroupSchema,
       new Map(),
       WriteOperation.Edit,
       group,
       (viewer, edge) => {
         return new CreateMembershipAction(
           viewer,
-          new GroupMembershipSchema(),
+          GroupMembershipSchema,
           new Map<string, any>([
             ["ownerID", edge.id],
             ["addedBy", viewer.viewerID!],
@@ -980,7 +977,7 @@ function commonTests() {
           async changeset(builder: SimpleBuilder<GroupMembership>, input) {
             const clAction = new CreateChangelogAction(
               builder.viewer,
-              new ChangelogSchema(),
+              ChangelogSchema,
               new Map([
                 // no builder field
                 ["parentID", QueryRecorder.newID()],
@@ -1006,14 +1003,14 @@ function commonTests() {
 
     const groupAction = new EditGroupAction(
       new IDViewer(user.id),
-      new GroupSchema(),
+      GroupSchema,
       new Map(),
       WriteOperation.Edit,
       group,
       (viewer, edge) => {
         return new CreateMembershipAction(
           viewer,
-          new GroupMembershipSchema(),
+          GroupMembershipSchema,
           new Map<string, any>([
             ["ownerID", edge.id],
             ["addedBy", viewer.viewerID!],
@@ -1068,7 +1065,7 @@ function commonTests() {
           async changeset(builder: SimpleBuilder<GroupMembership>, input) {
             const clAction = new CreateChangelogAction(
               builder.viewer,
-              new ChangelogSchema(),
+              ChangelogSchema,
               new Map([
                 ["parentID", builder],
                 ["parentType", "GroupMembership"],
@@ -1095,14 +1092,14 @@ function commonTests() {
 
     const groupAction = new EditGroupAction(
       new IDViewer(user.id),
-      new GroupSchema(),
+      GroupSchema,
       new Map(),
       WriteOperation.Edit,
       group,
       (viewer, edge) => {
         return new CreateMembershipAction(
           viewer,
-          new GroupMembershipSchema(),
+          GroupMembershipSchema,
           new Map<string, any>([
             ["ownerID", edge.id],
             ["addedBy", viewer.viewerID!],
@@ -1135,7 +1132,7 @@ function commonTests() {
 
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new GroupSchema(),
+      GroupSchema,
       new Map(),
       WriteOperation.Edit,
       group,
@@ -1176,7 +1173,7 @@ function commonTests() {
 
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new GroupSchema(),
+      GroupSchema,
       new Map(),
       WriteOperation.Edit,
       group,
@@ -1228,7 +1225,7 @@ function commonTests() {
     ];
     const accountAction = new SimpleAction(
       new LoggedOutViewer(),
-      new AccountSchema(),
+      AccountSchema,
       new Map([]),
       WriteOperation.Insert,
     );
@@ -1254,14 +1251,7 @@ function commonTests() {
         action: SimpleAction<Group>,
         existingEnt?: Group,
       ) {
-        super(
-          viewer,
-          new GroupSchema(),
-          new Map(),
-          operation,
-          existingEnt,
-          action,
-        );
+        super(viewer, GroupSchema, new Map(), operation, existingEnt, action);
       }
     }
 

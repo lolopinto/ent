@@ -37,7 +37,7 @@ beforeAll(async () => {
     interval: INTERVAL,
   });
   user2 = await createTestUser();
-  await addEdge(user, new FakeUserSchema(), EdgeType.UserToFriends, false);
+  await addEdge(user, FakeUserSchema, EdgeType.UserToFriends, false);
   QueryRecorder.clearQueries();
 });
 

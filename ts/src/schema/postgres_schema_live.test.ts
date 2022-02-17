@@ -8,9 +8,13 @@ import {
   DateType,
   TimestamptzType,
 } from "./field";
-import { BaseEntSchema } from "./base_schema";
 import Schema from "./schema";
-import { User, SimpleAction } from "../testutils/builder";
+import {
+  User,
+  SimpleAction,
+  getBuilderSchemaFromFields,
+  getBuilderSchemaTZFromFields,
+} from "../testutils/builder";
 import {
   table,
   TempDB,
@@ -23,28 +27,27 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import pg from "pg";
 import { defaultTimestampParser, Dialect } from "../core/db";
-import { BaseEntSchemaWithTZ } from "./base_schema";
 import { DBType, FieldMap } from "./schema";
 import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
 import { ID, Ent, Viewer, Data } from "../core/base";
 import * as fs from "fs";
 import * as path from "path";
 
-class UserSchema extends BaseEntSchema {
-  fields: FieldMap = {
+const UserSchema = getBuilderSchemaFromFields(
+  {
     FirstName: StringType(),
     LastName: StringType(),
-  };
-  ent = User;
-}
+  },
+  User,
+);
 
-class UserWithTimezoneSchema extends BaseEntSchemaWithTZ {
-  fields: FieldMap = {
+const UserWithTimezoneSchema = getBuilderSchemaTZFromFields(
+  {
     FirstName: StringType(),
     LastName: StringType(),
-  };
-  ent = User;
-}
+  },
+  User,
+);
 
 class UserWithTimestampNoFormatSchema implements Schema {
   fields: FieldMap = {
@@ -129,7 +132,7 @@ describe("timestamp", () => {
     const date = new Date();
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new UserSchema(),
+      UserSchema,
       new Map<string, any>([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
@@ -152,7 +155,7 @@ describe("timestamp", () => {
     const date = new Date();
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new UserSchema(),
+      UserSchema,
       new Map<string, any>([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
@@ -248,7 +251,7 @@ test("timestamptz", async () => {
   const date = new Date();
   const action = new SimpleAction(
     new LoggedOutViewer(),
-    new UserWithTimezoneSchema(),
+    UserWithTimezoneSchema,
     new Map<string, any>([
       ["FirstName", "Jon"],
       ["LastName", "Snow"],
@@ -281,25 +284,25 @@ class Hours implements Ent {
   }
 }
 
-class HoursSchema extends BaseEntSchema {
-  fields: FieldMap = {
+const HoursSchema = getBuilderSchemaFromFields(
+  {
     // should be an enum but let's ignore that
     dayOfWeek: StringType(),
     open: TimeType(),
     close: TimeType(),
-  };
-  ent = Hours;
-}
+  },
+  Hours,
+);
 
-class HoursTZSchema extends BaseEntSchema {
-  fields: FieldMap = {
+const HoursTZSchema = getBuilderSchemaTZFromFields(
+  {
     // should be an enum but let's ignore that
     dayOfWeek: StringType(),
     open: TimetzType(),
     close: TimetzType(),
-  };
-  ent = Hours;
-}
+  },
+  Hours,
+);
 
 describe("time", () => {
   beforeAll(async () => {
@@ -311,7 +314,7 @@ describe("time", () => {
   });
 
   async function createTimeTable() {
-    await tdb.create(getSchemaTable(new HoursSchema(), Dialect.Postgres));
+    await tdb.create(getSchemaTable(HoursSchema, Dialect.Postgres));
   }
 
   test("date object", async () => {
@@ -322,7 +325,7 @@ describe("time", () => {
     close.setHours(17, 0, 0, 0);
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new HoursSchema(),
+      HoursSchema,
       new Map<string, any>([
         ["dayOfWeek", "sunday"],
         ["open", open],
@@ -338,7 +341,7 @@ describe("time", () => {
   test("time format", async () => {
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new HoursSchema(),
+      HoursSchema,
       new Map<string, any>([
         ["dayOfWeek", "sunday"],
         ["open", "8:00 AM"],
@@ -371,7 +374,7 @@ describe("timetz", () => {
   });
 
   async function createTimeTable() {
-    await tdb.create(getSchemaTable(new HoursTZSchema(), Dialect.Postgres));
+    await tdb.create(getSchemaTable(HoursTZSchema, Dialect.Postgres));
   }
 
   test("date object", async () => {
@@ -388,7 +391,7 @@ describe("timetz", () => {
     close.setMilliseconds(0);
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new HoursTZSchema(),
+      HoursTZSchema,
       new Map<string, any>([
         ["dayOfWeek", "sunday"],
         ["open", open],
@@ -406,7 +409,7 @@ describe("timetz", () => {
   test("time format", async () => {
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new HoursSchema(),
+      HoursSchema,
       new Map<string, any>([
         ["dayOfWeek", "sunday"],
         ["open", "8:00 AM"],
@@ -434,14 +437,14 @@ class Holiday implements Ent {
   }
 }
 
-class HolidaySchema extends BaseEntSchema {
-  fields: FieldMap = {
+const HolidaySchema = getBuilderSchemaFromFields(
+  {
     // should be an enum but let's ignore that
     label: StringType(),
     date: DateType(),
-  };
-  ent = Holiday;
-}
+  },
+  Holiday,
+);
 
 describe("date", () => {
   beforeAll(async () => {
@@ -453,7 +456,7 @@ describe("date", () => {
   });
 
   async function createHolidaysTable() {
-    await tdb.create(getSchemaTable(new HolidaySchema(), Dialect.Postgres));
+    await tdb.create(getSchemaTable(HolidaySchema, Dialect.Postgres));
   }
 
   // for some reason, a Date object is returned here and it accounts for timezone
@@ -470,7 +473,7 @@ describe("date", () => {
   test("date object", async () => {
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new HolidaySchema(),
+      HolidaySchema,
       new Map<string, any>([
         ["label", "inaugaration"],
         ["date", getInaugauration()],
@@ -485,7 +488,7 @@ describe("date", () => {
   test("date format", async () => {
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new HolidaySchema(),
+      HolidaySchema,
       new Map<string, any>([
         ["label", "inaugaration"],
         ["date", "2021-01-20"],

@@ -12,13 +12,18 @@ import {
   saveBuilderX,
   Observer,
 } from "../action";
-import { getFields, getFieldsWithPrivacy, Schema } from "../schema";
+import { getFields, getFieldsWithPrivacy, FieldMap, Schema } from "../schema";
 import { QueryRecorder } from "./db_mock";
 import pluralize from "pluralize";
 import { snakeCase } from "snake-case";
 import { ObjectLoaderFactory } from "../core/loaders";
 import { convertDate } from "../core/convert";
 import { camelCase } from "camel-case";
+import {
+  SchemaConfig,
+  EntSchema,
+  EntSchemaWithTZ,
+} from "../schema/base_schema";
 
 export class User implements Ent {
   id: ID;
@@ -94,6 +99,36 @@ export class Address implements Ent {
 
 export interface BuilderSchema<T extends Ent> extends Schema {
   ent: EntConstructor<T>;
+}
+
+export function getBuilderSchema<T extends Ent>(
+  cfg: SchemaConfig,
+  ent: EntConstructor<T>,
+): BuilderSchema<T> {
+  return {
+    ...new EntSchema(cfg),
+    ent,
+  };
+}
+
+export function getBuilderSchemaFromFields<T extends Ent>(
+  fields: FieldMap,
+  ent: EntConstructor<T>,
+): BuilderSchema<T> {
+  return {
+    ...new EntSchema({ fields }),
+    ent,
+  };
+}
+
+export function getBuilderSchemaTZFromFields<T extends Ent>(
+  fields: FieldMap,
+  ent: EntConstructor<T>,
+): BuilderSchema<T> {
+  return {
+    ...new EntSchemaWithTZ({ fields }),
+    ent,
+  };
 }
 
 export function getSchemaName(value: BuilderSchema<Ent>) {

@@ -308,10 +308,15 @@ export function parseSchema(potentialSchemas: {}): Result {
   for (const key in potentialSchemas) {
     const value = potentialSchemas[key];
     let schema: Schema;
-    if (value.constructor == Object) {
-      schema = value;
-    } else {
-      schema = new value();
+    const name = value.constructor.name;
+    // named class e.g. new BaseEntSchema
+    switch (name) {
+      case "Function":
+        schema = new value();
+        break;
+      default:
+        // implicit schema or named class
+        schema = value;
     }
     let processedSchema: ProcessedSchema = {
       fields: [],

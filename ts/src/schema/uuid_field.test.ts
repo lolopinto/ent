@@ -1,15 +1,12 @@
 import { Pool } from "pg";
 import { v1 } from "uuid";
 import { UUIDType, UUIDListType, StringType } from "./field";
+import { DBType, PolymorphicOptions, Type, FieldOptions } from "./schema";
 import {
-  DBType,
-  PolymorphicOptions,
-  Type,
-  FieldOptions,
-  FieldMap,
-} from "./schema";
-import { BaseEntSchema } from "./base_schema";
-import { User, SimpleAction } from "../testutils/builder";
+  User,
+  SimpleAction,
+  getBuilderSchemaFromFields,
+} from "../testutils/builder";
 import { LoggedOutViewer } from "../core/viewer";
 import { QueryRecorder } from "../testutils/db_mock";
 import { ObjectLoaderFactory } from "../core/loaders/object_loader";
@@ -88,27 +85,29 @@ function doTest(
 
 describe("fieldEdge no inverseEdge", () => {
   test("no checks", async () => {
-    class UserSchema extends BaseEntSchema {
-      fields: FieldMap = { Name: StringType() };
-      ent = User;
-    }
+    const UserSchema = getBuilderSchemaFromFields(
+      {
+        Name: StringType(),
+      },
+      User,
+    );
 
     class Account extends User {}
-    class AccountSchema extends BaseEntSchema {
-      fields: FieldMap = {
+    const AccountSchema = getBuilderSchemaFromFields(
+      {
         userID: UUIDType({ fieldEdge: { schema: "User" } }),
-      };
-      ent = Account;
-    }
+      },
+      Account,
+    );
 
     const userAction = new SimpleAction(
       new LoggedOutViewer(),
-      new UserSchema(),
+      UserSchema,
       new Map<string, any>([["Name", "Jon Snow"]]),
     );
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new AccountSchema(),
+      AccountSchema,
       new Map<string, any>([["userID", userAction.builder]]),
     );
     action.triggers = [
@@ -126,14 +125,16 @@ describe("fieldEdge no inverseEdge", () => {
   });
 
   test("enforce checks with builder", async () => {
-    class UserSchema extends BaseEntSchema {
-      fields: FieldMap = { Name: StringType() };
-      ent = User;
-    }
+    const UserSchema = getBuilderSchemaFromFields(
+      {
+        Name: StringType(),
+      },
+      User,
+    );
 
     class Account extends User {}
-    class AccountSchema extends BaseEntSchema {
-      fields: FieldMap = {
+    const AccountSchema = getBuilderSchemaFromFields(
+      {
         userID: UUIDType({
           fieldEdge: {
             schema: "User",
@@ -152,18 +153,18 @@ describe("fieldEdge no inverseEdge", () => {
             },
           },
         }),
-      };
-      ent = Account;
-    }
+      },
+      Account,
+    );
 
     const userAction = new SimpleAction(
       new LoggedOutViewer(),
-      new UserSchema(),
+      UserSchema,
       new Map<string, any>([["Name", "Jon Snow"]]),
     );
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new AccountSchema(),
+      AccountSchema,
       new Map<string, any>([["userID", userAction.builder]]),
     );
     action.triggers = [
@@ -181,14 +182,16 @@ describe("fieldEdge no inverseEdge", () => {
   });
 
   test("enforce checks with builder. invalid builder", async () => {
-    class UserSchema extends BaseEntSchema {
-      fields: FieldMap = { Name: StringType() };
-      ent = User;
-    }
+    const UserSchema = getBuilderSchemaFromFields(
+      {
+        Name: StringType(),
+      },
+      User,
+    );
 
     class Account extends User {}
-    class AccountSchema extends BaseEntSchema {
-      fields: FieldMap = {
+    const AccountSchema = getBuilderSchemaFromFields(
+      {
         userID: UUIDType({
           fieldEdge: {
             schema: "User",
@@ -207,13 +210,13 @@ describe("fieldEdge no inverseEdge", () => {
             },
           },
         }),
-      };
-      ent = Account;
-    }
+      },
+      Account,
+    );
 
     const userAction = new SimpleAction(
       new LoggedOutViewer(),
-      new UserSchema(),
+      UserSchema,
       new Map<string, any>([["Name", "Jon Snow"]]),
     );
     const user = await userAction.saveX();
@@ -222,14 +225,14 @@ describe("fieldEdge no inverseEdge", () => {
     // action2 valid
     const action2 = new SimpleAction(
       new LoggedOutViewer(),
-      new AccountSchema(),
+      AccountSchema,
       new Map<string, any>([["userID", user.id]]),
     );
 
     // action3 invalid
     const action3 = new SimpleAction(
       new LoggedOutViewer(),
-      new AccountSchema(),
+      AccountSchema,
       new Map<string, any>([["userID", action2.builder]]),
     );
 
@@ -244,14 +247,16 @@ describe("fieldEdge no inverseEdge", () => {
   });
 
   test("enforce checks no builder", async () => {
-    class UserSchema extends BaseEntSchema {
-      fields: FieldMap = { Name: StringType() };
-      ent = User;
-    }
+    const UserSchema = getBuilderSchemaFromFields(
+      {
+        Name: StringType(),
+      },
+      User,
+    );
 
     class Account extends User {}
-    class AccountSchema extends BaseEntSchema {
-      fields: FieldMap = {
+    const AccountSchema = getBuilderSchemaFromFields(
+      {
         userID: UUIDType({
           fieldEdge: {
             schema: "User",
@@ -270,13 +275,13 @@ describe("fieldEdge no inverseEdge", () => {
             },
           },
         }),
-      };
-      ent = Account;
-    }
+      },
+      Account,
+    );
 
     const userAction = new SimpleAction(
       new LoggedOutViewer(),
-      new UserSchema(),
+      UserSchema,
       new Map<string, any>([["Name", "Jon Snow"]]),
     );
     const user = await userAction.saveX();
@@ -284,7 +289,7 @@ describe("fieldEdge no inverseEdge", () => {
 
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new AccountSchema(),
+      AccountSchema,
       new Map<string, any>([["userID", user.id]]),
     );
 
@@ -293,7 +298,7 @@ describe("fieldEdge no inverseEdge", () => {
 
     const action2 = new SimpleAction(
       new LoggedOutViewer(),
-      new AccountSchema(),
+      AccountSchema,
       new Map<string, any>([["userID", account.id]]),
     );
 
@@ -311,14 +316,16 @@ describe("fieldEdge no inverseEdge", () => {
 describe("fieldEdge list", () => {
   test("enforce checks", async () => {
     class ContactEmail extends User {}
-    class ContactEmailSchema extends BaseEntSchema {
-      fields: FieldMap = { Email: StringType() };
-      ent = ContactEmail;
-    }
+    const ContactEmailSchema = getBuilderSchemaFromFields(
+      {
+        Email: StringType(),
+      },
+      ContactEmail,
+    );
 
     class Contact extends User {}
-    class ContactShema extends BaseEntSchema {
-      fields: FieldMap = {
+    const ContactShema = getBuilderSchemaFromFields(
+      {
         emailIDs: UUIDListType({
           fieldEdge: {
             schema: "ContactEmail",
@@ -337,20 +344,20 @@ describe("fieldEdge list", () => {
             },
           },
         }),
-      };
-      ent = Contact;
-    }
+      },
+      Contact,
+    );
 
     const emailAction1 = new SimpleAction(
       new LoggedOutViewer(),
-      new ContactEmailSchema(),
+      ContactEmailSchema,
       new Map<string, any>([["Email", "foo@bar.com"]]),
     );
     const email1 = await emailAction1.saveX();
     expect(email1.data.email).toBe("foo@bar.com");
     const emailAction2 = new SimpleAction(
       new LoggedOutViewer(),
-      new ContactEmailSchema(),
+      ContactEmailSchema,
       new Map<string, any>([["Email", "foo2@bar.com"]]),
     );
     const email2 = await emailAction2.saveX();
@@ -358,7 +365,7 @@ describe("fieldEdge list", () => {
 
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new ContactShema(),
+      ContactShema,
       new Map<string, any>([["emailIDs", [email1.id, email2.id]]]),
     );
 
@@ -367,7 +374,7 @@ describe("fieldEdge list", () => {
 
     const action2 = new SimpleAction(
       new LoggedOutViewer(),
-      new ContactShema(),
+      ContactShema,
       new Map<string, any>([["emailIDs", [email1.id, v1()]]]),
     );
 
@@ -383,33 +390,35 @@ describe("fieldEdge list", () => {
 
   test("don't enforce checks", async () => {
     class ContactEmail extends User {}
-    class ContactEmailSchema extends BaseEntSchema {
-      fields: FieldMap = { Email: StringType() };
-      ent = ContactEmail;
-    }
+    const ContactEmailSchema = getBuilderSchemaFromFields(
+      {
+        Email: StringType(),
+      },
+      ContactEmail,
+    );
 
     class Contact extends User {}
-    class ContactShema extends BaseEntSchema {
-      fields: FieldMap = {
+    const ContactShema = getBuilderSchemaFromFields(
+      {
         emailIDs: UUIDListType({
           fieldEdge: {
             schema: "ContactEmail",
           },
         }),
-      };
-      ent = Contact;
-    }
+      },
+      Contact,
+    );
 
     const emailAction1 = new SimpleAction(
       new LoggedOutViewer(),
-      new ContactEmailSchema(),
+      ContactEmailSchema,
       new Map<string, any>([["Email", "foo@bar.com"]]),
     );
     const email1 = await emailAction1.saveX();
     expect(email1.data.email).toBe("foo@bar.com");
     const emailAction2 = new SimpleAction(
       new LoggedOutViewer(),
-      new ContactEmailSchema(),
+      ContactEmailSchema,
       new Map<string, any>([["Email", "foo2@bar.com"]]),
     );
     const email2 = await emailAction2.saveX();
@@ -418,7 +427,7 @@ describe("fieldEdge list", () => {
     const fakeID = v1();
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new ContactShema(),
+      ContactShema,
       new Map<string, any>([["emailIDs", [email1.id, email2.id, fakeID]]]),
     );
 
