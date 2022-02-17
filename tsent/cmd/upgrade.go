@@ -6,22 +6,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type upgradeArgs struct {
-	mergeBranches bool
-}
-
-var upgradeInfo upgradeArgs
-
 var upgradeCmd = &cobra.Command{
 	Use:   "upgrade",
 	Short: "upgrade db",
 	Long:  `This upgrades the database to the latest version`,
 	Example: `tsent upgrade 
-tsent upgrade --merge_branches 
-tsent upgrade --merge_branches head
-tsent upgrade --merge_branches revision
 tsent upgrade revision`,
-	Args: cobra.RangeArgs(0, 2),
+	Args: cobra.RangeArgs(0, 1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// default to head if not passed in
 		revision := "head"
@@ -34,6 +25,6 @@ tsent upgrade revision`,
 			return err
 		}
 
-		return db.UpgradeDB(cfg, revision, upgradeInfo.mergeBranches)
+		return db.UpgradeDB(cfg, revision)
 	},
 }

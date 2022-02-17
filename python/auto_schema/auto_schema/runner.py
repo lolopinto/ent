@@ -227,8 +227,8 @@ class Runner(object):
         # understand diff and make changes as needed
         # pprint.pprint(migrations, indent=2, width=30)
 
-    def upgrade(self, revision='head', merge_branches=False):
-        return self.cmd.upgrade(revision, merge_branches)
+    def upgrade(self, revision='head'):
+        return self.cmd.upgrade(revision)
 
     def downgrade(self, revision, delete_files):
         self.cmd.downgrade(revision, delete_files=delete_files)
