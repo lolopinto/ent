@@ -1,6 +1,7 @@
 from alembic import command
 import alembic
 from alembic.util.exc import CommandError
+import alembic.operations.ops as alembicops
 from auto_schema import runner
 from sqlalchemy.sql.sqltypes import String
 import pytest
@@ -48,6 +49,19 @@ def _add_columns_to_metadata(metadata: sa.MetaData, col_names: List[String]):
         [sa.Column(col_name, sa.Integer, nullable=True)
          for col_name in col_names],
     )
+
+
+def _validate_column_added(r: runner.Runner, col_name: String):
+    diff = r.compute_changes()
+    assert len(diff) == 1
+    modify_table_ops = [op for op in diff if isinstance(
+        op, alembicops.ModifyTableOps)]
+    assert len(modify_table_ops) == 1
+    modify_table = modify_table_ops[0]
+    assert len(modify_table.ops) == 1
+    op = modify_table.ops[0]
+    assert isinstance(op, alembicops.AddColumnOp)
+    assert op.column.name == col_name
 
 
 class CommandTest(object):
@@ -152,6 +166,8 @@ class CommandTest(object):
 
         assert len(r2.cmd.get_heads()) == 1
 
+        _validate_column_added(r, 'new_col1')
+
         stashed = stash_new_files(r, files, files2)
 
         r3 = testingutils.new_runner_from_old(
@@ -171,6 +187,8 @@ class CommandTest(object):
         assert len(files3b) == 3
 
         assert len(r3.cmd.get_heads()) == 2
+
+        _validate_column_added(r, 'new_col2')
 
         # multiple heads, trying to use alembic upgrade on its own causes leads to an error
         with pytest.raises(CommandError):
@@ -206,11 +224,15 @@ class CommandTest(object):
         r4 = testingutils.new_runner_from_old(
             r3,
             new_test_runner,
-            _add_column_to_metadata(r3.metadata, 'new_col3'),
+            # 1 and 2 already there, really only adding 3
+            _add_columns_to_metadata(
+                r3.metadata, ['new_col1', 'new_col2', 'new_col3']),
         )
 
         r4.revision()
         files4 = testingutils.get_version_files(r4)
+
+        _validate_column_added(r, 'new_col3')
 
         # merge revision was either created earlier during upgrade
         # or now when the change is happening
