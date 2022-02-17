@@ -32,7 +32,9 @@ export class TagBuilder implements Builder<Tag> {
   orchestrator: Orchestrator<Tag>;
   readonly placeholderID: ID;
   readonly ent = Tag;
+  readonly nodeType = NodeType.Tag;
   private input: TagInput;
+  private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: Viewer,
@@ -68,6 +70,16 @@ export class TagBuilder implements Builder<Tag> {
       ...this.input,
       ...input,
     };
+  }
+
+  // store data in Builder that can be retrieved by another validator, trigger, observer later in the action
+  storeData(k: string, v: any) {
+    this.m.set(k, v);
+  }
+
+  // retrieve data stored in this Builder with key
+  getStoredData(k: string) {
+    return this.m.get(k);
   }
 
   // this gets the inputs that have been written for a given edgeType and operation

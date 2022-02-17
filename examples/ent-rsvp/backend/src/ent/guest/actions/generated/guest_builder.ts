@@ -34,6 +34,7 @@ export class GuestBuilder implements Builder<Guest> {
   orchestrator: Orchestrator<Guest>;
   readonly placeholderID: ID;
   readonly ent = Guest;
+  readonly nodeType = NodeType.Guest;
   private input: GuestInput;
   private m: Map<string, any> = new Map();
 

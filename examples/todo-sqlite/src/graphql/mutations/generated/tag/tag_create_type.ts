@@ -18,10 +18,6 @@ import CreateTagAction, {
 } from "src/ent/tag/actions/create_tag_action";
 import { TagType } from "src/graphql/resolvers/";
 
-interface customTagCreateInput extends TagCreateInput {
-  ownerID: string;
-}
-
 interface TagCreatePayload {
   tag: Tag;
 }
@@ -50,7 +46,7 @@ export const TagCreatePayloadType = new GraphQLObjectType({
 export const TagCreateType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: customTagCreateInput }
+  { [input: string]: TagCreateInput }
 > = {
   type: GraphQLNonNull(TagCreatePayloadType),
   args: {

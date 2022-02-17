@@ -2147,7 +2147,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 		customRenderer, ok := typ.(enttype.CustomGQLRenderer)
 		if ok {
 			inputField = customRenderer.CustomGQLRender(processor.Config, inputField)
-			argImports = append(argImports, getGQLFileImports(customRenderer.ArgImports(), true)...)
+			argImports = append(argImports, getGQLFileImports(customRenderer.ArgImports(processor.Config), true)...)
 		}
 		result.FunctionContents = append(
 			result.FunctionContents,

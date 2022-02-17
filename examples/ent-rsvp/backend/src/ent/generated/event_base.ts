@@ -7,7 +7,6 @@ import {
   Data,
   ID,
   LoadEntOptions,
-  ObjectLoaderFactory,
   PrivacyPolicy,
   Viewer,
   convertDate,
@@ -21,6 +20,11 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import {
+  eventLoader,
+  eventLoaderInfo,
+  eventSlugLoader,
+} from "src/ent/generated/loaders";
+import {
   EventToEventActivitiesQuery,
   EventToGuestDataQuery,
   EventToGuestGroupsQuery,
@@ -29,9 +33,6 @@ import {
   User,
 } from "src/ent/internal";
 import schema from "src/schema/event";
-
-const tableName = "events";
-const fields = ["id", "created_at", "updated_at", "name", "slug", "creator_id"];
 
 export class EventBase {
   readonly nodeType = NodeType.Event;
@@ -172,8 +173,8 @@ export class EventBase {
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
-      tableName,
-      fields,
+      tableName: eventLoaderInfo.tableName,
+      fields: eventLoaderInfo.fields,
       ent: this,
       loaderFactory: eventLoader,
     };
@@ -216,18 +217,3 @@ export class EventBase {
     return loadEntX(this.viewer, this.creatorID, User.loaderOptions());
   }
 }
-
-export const eventLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "id",
-});
-
-export const eventSlugLoader = new ObjectLoaderFactory({
-  tableName,
-  fields,
-  key: "slug",
-});
-
-eventLoader.addToPrime(eventSlugLoader);
-eventSlugLoader.addToPrime(eventLoader);

@@ -11,6 +11,7 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Event, User } from "src/ent/";
+import { NodeType } from "src/ent/generated/const";
 import schema from "src/schema/event";
 
 export interface EventInput {
@@ -31,6 +32,7 @@ export class EventBuilder implements Builder<Event> {
   orchestrator: Orchestrator<Event>;
   readonly placeholderID: ID;
   readonly ent = Event;
+  readonly nodeType = NodeType.Event;
   private input: EventInput;
   private m: Map<string, any> = new Map();
 

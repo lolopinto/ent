@@ -11,6 +11,7 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Event, Guest, GuestData, GuestDataSource } from "src/ent/";
+import { NodeType } from "src/ent/generated/const";
 import schema from "src/schema/guest_data";
 
 export interface GuestDataInput {
@@ -32,6 +33,7 @@ export class GuestDataBuilder implements Builder<GuestData> {
   orchestrator: Orchestrator<GuestData>;
   readonly placeholderID: ID;
   readonly ent = GuestData;
+  readonly nodeType = NodeType.GuestData;
   private input: GuestDataInput;
   private m: Map<string, any> = new Map();
 

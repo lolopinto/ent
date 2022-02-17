@@ -67,7 +67,7 @@ type TSCodegenableType interface {
 type CustomGQLRenderer interface {
 	TSGraphQLType
 	CustomGQLRender(cfg Config, v string) string
-	ArgImports() []FileImport
+	ArgImports(cfg Config) []FileImport
 }
 
 type ConvertDataType interface {
@@ -460,7 +460,10 @@ func (t *IDType) CustomGQLRender(cfg Config, v string) string {
 	return fmt.Sprintf("mustDecodeIDFromGQLID(%s)", v)
 }
 
-func (t *IDType) ArgImports() []FileImport {
+func (t *IDType) ArgImports(cfg Config) []FileImport {
+	if !cfg.Base64EncodeIDs() {
+		return []FileImport{}
+	}
 	return []FileImport{
 		{
 			ImportType: EntGraphQL,
@@ -501,7 +504,11 @@ func (t *NullableIDType) CustomGQLRender(cfg Config, v string) string {
 	return fmt.Sprintf("mustDecodeNullableIDFromGQLID(%s)", v)
 }
 
-func (t *NullableIDType) ArgImports() []FileImport {
+func (t *NullableIDType) ArgImports(cfg Config) []FileImport {
+	if !cfg.Base64EncodeIDs() {
+		return []FileImport{}
+	}
+
 	return []FileImport{
 		{
 			ImportType: EntGraphQL,

@@ -12,7 +12,7 @@ type EntConfigInfo struct {
 	ConfigName  string
 }
 
-func getNodeNameFromEntConfig(configName string) (string, error) {
+func GetNodeNameFromEntConfig(configName string) (string, error) {
 	r := regexp.MustCompile("([A-Za-z]+)Config")
 	match := r.FindStringSubmatch(configName)
 	if len(match) == 2 {
@@ -31,7 +31,7 @@ func GetEntConfigFromName(packageName string) *EntConfigInfo {
 }
 
 func GetEntConfigFromEntConfig(configName string) (*EntConfigInfo, error) {
-	nodeName, err := getNodeNameFromEntConfig(configName)
+	nodeName, err := GetNodeNameFromEntConfig(configName)
 	if err != nil {
 		return nil, err
 	}

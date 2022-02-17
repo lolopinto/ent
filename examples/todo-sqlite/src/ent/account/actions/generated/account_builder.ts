@@ -11,6 +11,7 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Account } from "src/ent/";
+import { NodeType } from "src/ent/generated/const";
 import schema from "src/schema/account";
 
 export interface AccountInput {
@@ -30,7 +31,9 @@ export class AccountBuilder implements Builder<Account> {
   orchestrator: Orchestrator<Account>;
   readonly placeholderID: ID;
   readonly ent = Account;
+  readonly nodeType = NodeType.Account;
   private input: AccountInput;
+  private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: Viewer,
@@ -66,6 +69,16 @@ export class AccountBuilder implements Builder<Account> {
       ...this.input,
       ...input,
     };
+  }
+
+  // store data in Builder that can be retrieved by another validator, trigger, observer later in the action
+  storeData(k: string, v: any) {
+    this.m.set(k, v);
+  }
+
+  // retrieve data stored in this Builder with key
+  getStoredData(k: string) {
+    return this.m.get(k);
   }
 
   async build(): Promise<Changeset<Account>> {

@@ -11,6 +11,7 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Address } from "src/ent/";
+import { NodeType } from "src/ent/generated/const";
 import schema from "src/schema/address";
 
 export interface AddressInput {
@@ -35,6 +36,7 @@ export class AddressBuilder implements Builder<Address> {
   orchestrator: Orchestrator<Address>;
   readonly placeholderID: ID;
   readonly ent = Address;
+  readonly nodeType = NodeType.Address;
   private input: AddressInput;
   private m: Map<string, any> = new Map();
 

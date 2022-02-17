@@ -35,5 +35,7 @@ export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent> {
       return Tag.loaderOptions();
     case NodeType.Todo:
       return Todo.loaderOptions();
+    default:
+      throw new Error(`invalid nodeType ${type} passed to getLoaderOptions`);
   }
 }

@@ -18,10 +18,6 @@ import CreateTodoAction, {
 } from "src/ent/todo/actions/create_todo_action";
 import { TodoType } from "src/graphql/resolvers/";
 
-interface customTodoCreateInput extends TodoCreateInput {
-  creatorID: string;
-}
-
 interface TodoCreatePayload {
   todo: Todo;
 }
@@ -50,7 +46,7 @@ export const TodoCreatePayloadType = new GraphQLObjectType({
 export const TodoCreateType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: customTodoCreateInput }
+  { [input: string]: TodoCreateInput }
 > = {
   type: GraphQLNonNull(TodoCreatePayloadType),
   args: {
