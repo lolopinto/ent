@@ -340,12 +340,14 @@ class OurCreateCheckConstraintOp(MigrateOpInterface, alembicops.CreateCheckConst
 class OurDropConstraintOp(MigrateOpInterface, alembicops.DropConstraintOp):
 
     def reverse(self):
-        if self._orig_constraint is None:
+        try:
+            constraint = self.to_constraint()
+        except ValueError:
             raise ValueError(
                 "operation is not reversible; "
                 "original constraint is not present"
             )
-        return OurCreateCheckConstraintOp.from_constraint(self._orig_constraint)
+        return OurCreateCheckConstraintOp.from_constraint(constraint)
 
     def get_revision_message(self) -> String:
         return 'drop constraint %s from %s' % (self.constraint_name, self.table_name)
