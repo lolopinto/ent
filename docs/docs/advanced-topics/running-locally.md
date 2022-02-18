@@ -26,7 +26,7 @@ go install github.com/lolopinto/ent/tsent@v0.0.34
 * Install [autoschema](https://pypi.org/project/auto-schema/):
 
 ```shell
-python3 -m pip install auto_schema==0.0.15
+python3 -m pip install auto_schema==0.0.17
 ```
 
 * Install the following TypeScript packages globally:
