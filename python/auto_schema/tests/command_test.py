@@ -1,6 +1,7 @@
 from alembic import command
 import alembic
 from alembic.util.exc import CommandError
+import alembic.operations.ops as alembicops
 from auto_schema import runner
 from sqlalchemy.sql.sqltypes import String
 import pytest
@@ -48,6 +49,19 @@ def _add_columns_to_metadata(metadata: sa.MetaData, col_names: List[String]):
         [sa.Column(col_name, sa.Integer, nullable=True)
          for col_name in col_names],
     )
+
+
+def _validate_column_added(r: runner.Runner, col_name: String):
+    diff = r.compute_changes()
+    assert len(diff) == 1
+    modify_table_ops = [op for op in diff if isinstance(
+        op, alembicops.ModifyTableOps)]
+    assert len(modify_table_ops) == 1
+    modify_table = modify_table_ops[0]
+    assert len(modify_table.ops) == 1
+    op = modify_table.ops[0]
+    assert isinstance(op, alembicops.AddColumnOp)
+    assert op.column.name == col_name
 
 
 class CommandTest(object):
@@ -123,16 +137,7 @@ class CommandTest(object):
             assert current_versions[0] == history[expected_current_head].revision
 
     @ pytest.mark.usefixtures("metadata_with_table")
-    @ pytest.mark.parametrize(
-        'merge_branches_while_upgrading',
-        [
-            # don't want to automatically merge branches because we could be upgrading in production
-            # and can't make any changes here
-            False,
-            True
-        ]
-    )
-    def test_upgrade(self, new_test_runner, metadata_with_table, merge_branches_while_upgrading):
+    def test_upgrade(self, new_test_runner, metadata_with_table):
         r: runner.Runner = new_test_runner(metadata_with_table)
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_table)
@@ -141,6 +146,11 @@ class CommandTest(object):
 
         files = testingutils.get_version_files(r)
         assert len(files) == 1
+        revs = r.cmd.get_revisions('heads')
+        assert len(revs) == 1
+        rev1 = revs[0]
+        assert rev1.down_revision == None
+
         r2 = testingutils.new_runner_from_old(
             r,
             new_test_runner,
@@ -151,6 +161,12 @@ class CommandTest(object):
         assert len(files2) == 2
 
         assert len(r2.cmd.get_heads()) == 1
+
+        _validate_column_added(r, 'new_col1')
+        revs = r.cmd.get_revisions('heads')
+        assert len(revs) == 1
+        rev2 = revs[0]
+        assert rev2.down_revision == rev1.revision
 
         stashed = stash_new_files(r, files, files2)
 
@@ -172,6 +188,15 @@ class CommandTest(object):
 
         assert len(r3.cmd.get_heads()) == 2
 
+        _validate_column_added(r, 'new_col2')
+        revs = r.cmd.get_revisions('heads')
+        rev2_revs = [rev for rev in revs if rev.revision == rev2.revision]
+        assert len(rev2_revs) == 1
+        rev3_revs = [rev for rev in revs if rev.revision != rev2.revision]
+        assert len(rev3_revs) == 1
+        rev3 = rev3_revs[0]
+        assert rev3.down_revision == rev1.revision
+
         # multiple heads, trying to use alembic upgrade on its own causes leads to an error
         with pytest.raises(CommandError):
             command.upgrade(r3.cmd.alembic_cfg, 'head')
@@ -179,26 +204,14 @@ class CommandTest(object):
         assert len(r3.compute_changes()) > 0
 
         # sucessfully upgrade
-        info = r3.upgrade('head', merge_branches_while_upgrading)
+        r3.upgrade('head')
 
         files3c = testingutils.get_version_files(r3)
 
-        if merge_branches_while_upgrading:
-            assert info.setdefault('unmerged_branches', None) == None
-            assert info.setdefault('merged_and_upgraded_head', None) == True
-            # new head
-            assert len(r3.cmd.get_heads()) == 1
+        assert len(r3.cmd.get_heads()) == 2
 
-            # new file created
-            assert len(files3c) == 4
-
-        else:
-            assert info.setdefault('unmerged_branches', None) == True
-            assert info.setdefault('merged_and_upgraded_head', None) == None
-            assert len(r3.cmd.get_heads()) == 2
-
-            # no new file created
-            assert len(files3c) == 3
+        # no new file created
+        assert len(files3c) == 3
 
         # reflect to reload
         r3.metadata.reflect()
@@ -206,15 +219,24 @@ class CommandTest(object):
         r4 = testingutils.new_runner_from_old(
             r3,
             new_test_runner,
-            _add_column_to_metadata(r3.metadata, 'new_col3'),
+            # 1 and 2 already there, really only adding 3
+            _add_columns_to_metadata(
+                r3.metadata, ['new_col1', 'new_col2', 'new_col3']),
         )
 
         r4.revision()
         files4 = testingutils.get_version_files(r4)
+        assert len(files4) == 4
 
-        # merge revision was either created earlier during upgrade
-        # or now when the change is happening
-        assert len(files4) == 5
+        _validate_column_added(r, 'new_col3')
+        revs = r.cmd.get_revisions('heads')
+        assert len(revs) == 1
+        rev4 = revs[0]
+        assert len(rev4.down_revision) == 2
+        down_revs = rev4.down_revision
+        # rev 2 and 3 revs are the down_revision
+        assert len([rev for rev in down_revs if rev == rev2.revision]) == 1
+        assert len([rev for rev in down_revs if rev == rev3.revision]) == 1
         r4.run()
 
     @ pytest.mark.usefixtures("metadata_with_table")
