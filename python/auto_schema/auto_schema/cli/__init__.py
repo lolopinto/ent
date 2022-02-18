@@ -52,7 +52,6 @@ def main():
     try:
         args = parser.parse_args()
 
-        print(args)
         sys.path.append(os.path.relpath(args.schema))
 
         schema = import_module('schema')
@@ -67,7 +66,6 @@ def main():
             elif args.downgrade is not None:
                 r.downgrade(args.downgrade, not args.keep_schema_files)
             elif args.history is True:
-                print(args.verbose, args.last, args.rev_range)
                 r.history(verbose=args.verbose, last=args.last,
                           rev_range=args.rev_range)
             elif args.current is True:
