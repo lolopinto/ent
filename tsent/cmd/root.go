@@ -95,6 +95,8 @@ func init() {
 	generateSchemasCmd.Flags().BoolVar(&schemasInfo.force, "force", false, "if force is true, it overwrites existing schema, otherwise throws error")
 
 	downgradeCmd.Flags().BoolVar(&downgradeInfo.keepSchemaFiles, "keep_schema_files", false, "keep schema files instead of deleting")
+
+	alembicCmd.DisableFlagParsing = true
 }
 
 func Execute() {

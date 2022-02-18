@@ -132,7 +132,7 @@ def _create_parallel_changes(new_test_runner, metadata_with_table):
     assert len(r3.compute_changes()) > 0
 
     # sucessfully upgrade
-    r3.upgrade('head')
+    r3.upgrade('heads')
 
     files3c = testingutils.get_version_files(r3)
 
