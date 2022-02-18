@@ -64,6 +64,98 @@ def _validate_column_added(r: runner.Runner, col_name: String):
     assert op.column.name == col_name
 
 
+# adds a table then adds 2 new columns in separate source control "branches"
+def _create_parallel_changes(new_test_runner, metadata_with_table):
+    r: runner.Runner = new_test_runner(metadata_with_table)
+    testingutils.run_and_validate_with_standard_metadata_tables(
+        r, metadata_with_table)
+
+    assert len(r.cmd.get_heads()) == 1
+
+    files = testingutils.get_version_files(r)
+    assert len(files) == 1
+    revs = r.cmd.get_revisions('heads')
+    assert len(revs) == 1
+    rev1 = revs[0]
+    assert rev1.down_revision == None
+
+    r2 = testingutils.new_runner_from_old(
+        r,
+        new_test_runner,
+        _add_column_to_metadata(metadata_with_table, 'new_col1'),
+    )
+    r2.revision()
+    files2 = testingutils.get_version_files(r2)
+    assert len(files2) == 2
+
+    assert len(r2.cmd.get_heads()) == 1
+
+    _validate_column_added(r, 'new_col1')
+    revs = r.cmd.get_revisions('heads')
+    assert len(revs) == 1
+    rev2 = revs[0]
+    assert rev2.down_revision == rev1.revision
+
+    stashed = stash_new_files(r, files, files2)
+
+    r3 = testingutils.new_runner_from_old(
+        r,
+        new_test_runner,
+        _add_column_to_metadata(metadata_with_table, 'new_col2'),
+    )
+
+    r3.revision()
+
+    files3 = testingutils.get_version_files(r3)
+    assert len(files3) == 2
+
+    write_stashed_files(stashed)
+
+    files3b = testingutils.get_version_files(r3)
+    assert len(files3b) == 3
+
+    assert len(r3.cmd.get_heads()) == 2
+
+    _validate_column_added(r, 'new_col2')
+    revs = r.cmd.get_revisions('heads')
+    rev2_revs = [rev for rev in revs if rev.revision == rev2.revision]
+    assert len(rev2_revs) == 1
+    rev3_revs = [rev for rev in revs if rev.revision != rev2.revision]
+    assert len(rev3_revs) == 1
+    rev3 = rev3_revs[0]
+    assert rev3.down_revision == rev1.revision
+
+    # multiple heads, trying to use alembic upgrade on its own causes leads to an error
+    with pytest.raises(CommandError):
+        command.upgrade(r3.cmd.alembic_cfg, 'head')
+
+    assert len(r3.compute_changes()) > 0
+
+    # sucessfully upgrade
+    r3.upgrade('head')
+
+    files3c = testingutils.get_version_files(r3)
+
+    assert len(r3.cmd.get_heads()) == 2
+
+    # no new file created
+    assert len(files3c) == 3
+
+    # reflect to reload
+    r3.metadata.reflect()
+
+    return {
+        # most-recent runner
+        'runner': r3,
+        # revision after adding table
+        'rev1': rev1,
+        # revision after adding one column on base
+        'rev2': rev2,
+        # revision after adding 2nd column on base
+        'rev3': rev3,
+    }
+
+
 class CommandTest(object):
 
     @ pytest.mark.usefixtures("metadata_with_table")
@@ -88,7 +180,7 @@ class CommandTest(object):
             (1, False, 3, 2),
         ]
     )
-    def test_downgrade(self, new_test_runner, metadata_with_table, migrate_rev, delete_files, new_file_count, expected_current_head):
+    def test_linear_downgrade(self, new_test_runner, metadata_with_table, migrate_rev, delete_files, new_file_count, expected_current_head):
         r: runner.Runner = new_test_runner(metadata_with_table)
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_table)
@@ -137,84 +229,56 @@ class CommandTest(object):
             assert current_versions[0] == history[expected_current_head].revision
 
     @ pytest.mark.usefixtures("metadata_with_table")
+    @ pytest.mark.parametrize(
+        'migrate_col1_path, delete_files',
+        [
+            # migrate down 1st one, delete_files
+            (True, True),
+            # migrate down 1st, don't delete_files
+            (True, False),
+            # # migrate down 2nd one, delete_files
+            (False, True),
+            # # migrate down 2nd one, don't delete_files
+            (False, False),
+        ]
+    )
+    def test_downgrade_partial(self, new_test_runner, metadata_with_table, migrate_col1_path, delete_files):
+        ret = _create_parallel_changes(new_test_runner, metadata_with_table)
+        r = ret.setdefault('runner', None)
+        rev1 = ret.setdefault('rev1', None)
+        rev2 = ret.setdefault('rev2', None)
+        rev3 = ret.setdefault('rev3', None)
+
+        exp_file_count = 3
+        assert len(testingutils.get_version_files(r)) == exp_file_count
+
+        # https://gerrit.sqlalchemy.org/c/sqlalchemy/alembic/+/2530
+        down_rev = ''
+        stamped_version = ''
+        if migrate_col1_path:
+            down_rev = '%s@%s' % (rev2.revision, rev1.revision)
+            stamped_version = rev3.revision
+        else:
+            down_rev = '%s@%s' % (rev3.revision, rev1.revision)
+            stamped_version = rev2.revision
+
+        r.downgrade(down_rev, delete_files)
+
+        if delete_files:
+            exp_file_count = 2
+
+        assert len(testingutils.get_version_files(r)) == exp_file_count
+
+        current_versions = get_stamped_alembic_versions(r)
+        assert len(current_versions) == 1
+        assert current_versions[0] == stamped_version
+
+    @ pytest.mark.usefixtures("metadata_with_table")
     def test_upgrade(self, new_test_runner, metadata_with_table):
-        r: runner.Runner = new_test_runner(metadata_with_table)
-        testingutils.run_and_validate_with_standard_metadata_tables(
-            r, metadata_with_table)
-
-        assert len(r.cmd.get_heads()) == 1
-
-        files = testingutils.get_version_files(r)
-        assert len(files) == 1
-        revs = r.cmd.get_revisions('heads')
-        assert len(revs) == 1
-        rev1 = revs[0]
-        assert rev1.down_revision == None
-
-        r2 = testingutils.new_runner_from_old(
-            r,
-            new_test_runner,
-            _add_column_to_metadata(metadata_with_table, 'new_col1'),
-        )
-        r2.revision()
-        files2 = testingutils.get_version_files(r2)
-        assert len(files2) == 2
-
-        assert len(r2.cmd.get_heads()) == 1
-
-        _validate_column_added(r, 'new_col1')
-        revs = r.cmd.get_revisions('heads')
-        assert len(revs) == 1
-        rev2 = revs[0]
-        assert rev2.down_revision == rev1.revision
-
-        stashed = stash_new_files(r, files, files2)
-
-        r3 = testingutils.new_runner_from_old(
-            r,
-            new_test_runner,
-            _add_column_to_metadata(metadata_with_table, 'new_col2'),
-        )
-
-        r3.revision()
-
-        files3 = testingutils.get_version_files(r3)
-        assert len(files3) == 2
-
-        write_stashed_files(stashed)
-
-        files3b = testingutils.get_version_files(r3)
-        assert len(files3b) == 3
-
-        assert len(r3.cmd.get_heads()) == 2
-
-        _validate_column_added(r, 'new_col2')
-        revs = r.cmd.get_revisions('heads')
-        rev2_revs = [rev for rev in revs if rev.revision == rev2.revision]
-        assert len(rev2_revs) == 1
-        rev3_revs = [rev for rev in revs if rev.revision != rev2.revision]
-        assert len(rev3_revs) == 1
-        rev3 = rev3_revs[0]
-        assert rev3.down_revision == rev1.revision
-
-        # multiple heads, trying to use alembic upgrade on its own causes leads to an error
-        with pytest.raises(CommandError):
-            command.upgrade(r3.cmd.alembic_cfg, 'head')
-
-        assert len(r3.compute_changes()) > 0
-
-        # sucessfully upgrade
-        r3.upgrade('head')
-
-        files3c = testingutils.get_version_files(r3)
-
-        assert len(r3.cmd.get_heads()) == 2
-
-        # no new file created
-        assert len(files3c) == 3
-
-        # reflect to reload
-        r3.metadata.reflect()
+        ret = _create_parallel_changes(new_test_runner, metadata_with_table)
+        r3 = ret.setdefault('runner', None)
+        rev2 = ret.setdefault('rev2', None)
+        rev3 = ret.setdefault('rev3', None)
 
         r4 = testingutils.new_runner_from_old(
             r3,
@@ -228,8 +292,8 @@ class CommandTest(object):
         files4 = testingutils.get_version_files(r4)
         assert len(files4) == 4
 
-        _validate_column_added(r, 'new_col3')
-        revs = r.cmd.get_revisions('heads')
+        _validate_column_added(r4, 'new_col3')
+        revs = r4.cmd.get_revisions('heads')
         assert len(revs) == 1
         rev4 = revs[0]
         assert len(rev4.down_revision) == 2
@@ -240,7 +304,7 @@ class CommandTest(object):
         r4.run()
 
     @ pytest.mark.usefixtures("metadata_with_table")
-    @pytest.mark.parametrize(
+    @ pytest.mark.parametrize(
         'squash_val, files_left, squash_raises',
         [
             (2, 2, False),
