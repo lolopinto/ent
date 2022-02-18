@@ -120,8 +120,19 @@ class Command(object):
         return list(script.walk_revisions())
 
     # Simulates running the `alembic history` command
-    def history(self):
-        command.history(self.alembic_cfg, indicate_current=True)
+    def history(self, verbose=False, last=None, rev_range=None):
+        if rev_range is not None and last is not None:
+            raise ValueError(
+                "cannot pass both last and rev_range. please pick one")
+        if last is not None:
+            script = ScriptDirectory.from_config(self.alembic_cfg)
+            revs = list(script.revision_map.iterate_revisions(
+                self.get_heads(), '-%d' % int(last), select_for_downgrade=True
+            ))
+            rev_range = '%s:current' % revs[-1].revision
+
+        command.history(self.alembic_cfg,
+                        indicate_current=True, verbose=verbose, rev_range=rev_range)
 
     # Simulates running the `alembic current` command
     def current(self):
