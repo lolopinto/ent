@@ -1,4 +1,6 @@
 import os
+import random
+import string
 import pytest
 import shutil
 import uuid
@@ -14,35 +16,63 @@ from typing import List
 
 
 class Postgres:
-    def get_url(self, _schema_path):
-        return os.getenv("DB_CONNECTION_STRING", "postgresql://localhost/autoschema_test")
+    def __init__(self) -> None:
+        self._randomDB = self.randomDB()
+        self._globalConnection = None
+        self._globalEngine = None
 
-    def get_finalizer(self, metadata, session, connection, transaction, engine):
+        self._conn = None
+        self._engine = None
+
+    def randomDB(self):
+        return random.choice(string.ascii_lowercase) + ''.join(random.SystemRandom().choice(
+            string.ascii_lowercase + string.digits) for _ in range(20))
+
+    def _get_url(self, _schema_path):
+        return os.getenv("DB_CONNECTION_STRING", "postgresql://localhost")
+
+    def create_connection(self, schema_path):
+        engine = create_engine(self._get_url(schema_path),
+                               isolation_level='AUTOCOMMIT')
+        self._globalEngine = engine
+        self._globalConnection = engine.connect()
+        self._globalConnection.execute('CREATE DATABASE %s' % self._randomDB)
+        engine = create_engine("%s/%s" %
+                               (self._get_url(schema_path), self._randomDB))
+        self._engine = engine
+        self._conn = engine.connect()
+
+        return self._conn
+
+    def get_finalizer(self):
         def fn():
-            session.close()
-            metadata.reflect()
-            metadata.drop_all(bind=connection)
-            # need to commit because we sometimes commit separately because of alter type ddls
-            transaction.commit()
+            self._conn.close()
+            self._engine.dispose()
 
-            # get any newly added enum types and drop it
-            # \dT not working :(
-            for row in connection.execute("select distinct pg_type.typname as enumtype from pg_type join pg_enum on pg_enum.enumtypid = pg_type.oid;"):
-                connection.execute('drop type %s' % row['enumtype'])
+            self._globalConnection.execute('DROP DATABASE %s' % self._randomDB)
+            self._globalConnection.close()
+            self._globalEngine.dispose()
 
         return fn
 
 
 class SQLite:
-    def get_url(self, schema_path):
+
+    def __init__(self) -> None:
+        self._conn = None
+
+    def _get_url(self, schema_path):
         return "sqlite:///%s/%s" % (schema_path, "foo.db")
         # return "sqlite:///bar.db"  # if you want a local file to inspect for whatever reason
 
-    def get_finalizer(self, metadata, session, connection, transaction, engine):
+    def create_connection(self, schema_path):
+        engine = create_engine(self._get_url(schema_path))
+        self._conn = engine.connect()
+        return self._conn
+
+    def get_finalizer(self):
         def fn():
-            session.close()
-            transaction.rollback()
-            connection.close()
+            self._conn.close()
 
         return fn
 
@@ -72,14 +102,10 @@ def new_test_runner(request):
 
         # reuse connection if not None. same logic as schema_path above
         if prev_runner is None:
-            engine = create_engine(dialect.get_url(schema_path))
-            connection = engine.connect()
+            connection = dialect.create_connection(schema_path)
             metadata.bind = connection
-            transaction = connection.begin()
-            session = Session(bind=connection)
 
-            request.addfinalizer(dialect.get_finalizer(
-                metadata, session, connection, transaction, engine))
+            request.addfinalizer(dialect.get_finalizer())
         else:
             connection = prev_runner.get_connection()
 

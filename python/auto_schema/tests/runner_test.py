@@ -885,11 +885,6 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_enum_type)
 
-        # TODO this isn't ideal
-        # need a good way to commit in between for separate steps in transaction to work
-        conn = r.get_connection()
-        conn.execute('COMMIT')
-
         new_metadata_func(metadata_with_enum_type)
         r2 = new_test_runner(metadata_with_enum_type, r)
 
@@ -907,11 +902,6 @@ class TestPostgresRunner(BaseTestRunner):
         r = new_test_runner(metadata_with_enum_type)
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_enum_type)
-
-        # TODO this isn't ideal
-        # need a good way to commit in between for separate steps in transaction to work
-        conn = r.get_connection()
-        conn.execute('COMMIT')
 
         conftest.metadata_with_removed_enum_value(metadata_with_enum_type)
         r2 = new_test_runner(metadata_with_enum_type, r)
