@@ -28,14 +28,17 @@ class Postgres:
         return random.choice(string.ascii_lowercase) + ''.join(random.SystemRandom().choice(
             string.ascii_lowercase + string.digits) for _ in range(20))
 
+    def _get_url(self, _schema_path):
+        return os.getenv("DB_CONNECTION_STRING", "postgresql://localhost")
+
     def create_connection(self, schema_path):
-        engine = create_engine("postgresql://localhost",
+        engine = create_engine(self._get_url(schema_path),
                                isolation_level='AUTOCOMMIT')
         self._globalEngine = engine
         self._globalConnection = engine.connect()
         self._globalConnection.execute('CREATE DATABASE %s' % self._randomDB)
-        engine = create_engine("postgresql://localhost/%s" %
-                               self._randomDB)
+        engine = create_engine("%s/%s" %
+                               (self._get_url(schema_path), self._randomDB))
         self._engine = engine
         self._conn = engine.connect()
 
