@@ -7,9 +7,10 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
+// TODO kill this
 type EntConfigInfo struct {
-	PackageName string
-	ConfigName  string
+	PackageName string `json:"packageName"`
+	ConfigName  string `json:"configName"`
 }
 
 func GetNodeNameFromEntConfig(configName string) (string, error) {

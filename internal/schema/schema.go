@@ -27,16 +27,24 @@ import (
 
 // Schema is the representation of the parsed schema. Has everything needed to
 type Schema struct {
-	Nodes         NodeMapInfo
-	Patterns      map[string]*PatternInfo
+	Nodes         NodeMapInfo             `json:"nodes"`
+	Patterns      map[string]*PatternInfo `json:"patterns"`
 	tables        NodeMapInfo
-	edges         map[string]*ent.AssocEdgeData
+	edges         map[string]*ent.AssocEdgeData `json:"edges"`
 	newEdges      []*ent.AssocEdgeData
 	edgesToUpdate []*ent.AssocEdgeData
 	// unlike Nodes, the key is "EnumName" instead of "EnumNameConfig"
 	// confusing but gets us closer to what we want
-	Enums      map[string]*EnumInfo
+	Enums      map[string]*EnumInfo `json:"enums"`
 	enumTables map[string]*EnumInfo
+
+	// keeping this because it already has json representation and using that to indicate what needs to be changed
+	// we'll see if that makes sense forever
+	inputSchema *input.Schema
+}
+
+func (s *Schema) GetInputSchema() *input.Schema {
+	return s.inputSchema
 }
 
 func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData) error {
@@ -327,6 +335,8 @@ func (s *Schema) GetEdgesToUpdate() []*ent.AssocEdgeData {
 }
 
 func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*assocEdgeData, error) {
+	s.inputSchema = schema
+
 	// TODO right now this is also depending on config/database.yml
 	// figure out if best place for this
 	edgeData, err := s.loadExistingEdges()

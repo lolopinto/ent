@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 
@@ -145,6 +146,10 @@ func (cfg *Config) GenerateRootResolvers() bool {
 		return codegen.GenerateRootResolvers
 	}
 	return false
+}
+
+func (cfg *Config) GetPathToSchemaFile() string {
+	return path.Join(cfg.GetAbsPathToRoot(), "./ent/schema.json")
 }
 
 // used by golang

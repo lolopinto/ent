@@ -80,6 +80,7 @@ const (
 )
 
 type FieldType struct {
+	// Note that anytime anything changes here, have to update fieldTypeEqual in internal/schema/input/compare.go
 	DBType DBType `json:"dbType"`
 	// required when DBType == DBType.List
 	ListElemType *FieldType `json:"listElemType"`
@@ -119,6 +120,7 @@ func (ft *FieldType) UnmarshalJSON(data []byte) error {
 }
 
 type Field struct {
+	// Note that anytime anything changes here, have to update compareFields in internal/schema/input/compare.go
 	Name       string     `json:"name"`
 	Type       *FieldType `json:"type"`
 	Nullable   bool       `json:"nullable"`
@@ -165,6 +167,7 @@ type ForeignKey struct {
 }
 
 type FieldEdge struct {
+	// Note that anytime anything changes here, have to update fieldEdgeEqual in internal/schema/input/compare.go
 	Schema             string            `json:"schema"`
 	InverseEdge        *InverseFieldEdge `json:"inverseEdge"`
 	DisableBuilderType bool              `json:"disableBuilderType"`
@@ -178,6 +181,7 @@ func (f *FieldEdge) InverseEdgeName() string {
 }
 
 type InverseFieldEdge struct {
+	// Note that anytime anything changes here, have to update inverseFieldEdgeEqual in internal/schema/input/compare.go
 	Name            string `json:"name"`
 	TableName       string `json:"tableName"`
 	HideFromGraphQL bool   `json:"hideFromGraphQL"`

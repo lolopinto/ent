@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/syncerr"
 	"github.com/pkg/errors"
@@ -167,9 +168,28 @@ func (p *Processor) FormatTS() error {
 	return nil
 }
 
+func (p *Processor) WriteSchema() error {
+	inputSchema := p.Schema.GetInputSchema()
+	if inputSchema == nil {
+		return nil
+	}
+
+	return file.Write(&file.JSONFileWriter{
+		Config:            p.Config,
+		Data:              inputSchema,
+		PathToFile:        p.Config.GetPathToSchemaFile(),
+		CreateDirIfNeeded: true,
+	})
+}
+
 func postProcess(p *Processor) error {
 	if p.opt != nil && p.opt.disableFormat {
 		return nil
+	}
+
+	// TODO can write schema and format at the same time...
+	if err := p.WriteSchema(); err != nil {
+		return err
 	}
 	return p.FormatTS()
 }

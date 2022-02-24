@@ -6,7 +6,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/lolopinto/ent/internal/codegen"
 	intimports "github.com/lolopinto/ent/internal/imports"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"golang.org/x/tools/imports"
@@ -23,7 +22,7 @@ type TemplatedBasedFileWriter struct {
 	PackageName        string
 	Imports            *intimports.Imports
 	TsImports          *tsimport.Imports
-	Config             *codegen.Config
+	Config             Config
 	EditableCode       bool
 }
 
