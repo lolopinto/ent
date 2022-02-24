@@ -6,6 +6,8 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/build"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/spf13/cobra"
 )
@@ -54,9 +56,9 @@ var codegenCmd = &cobra.Command{
 			return err
 		}
 
-		existingSchema := parseExistingSchema(processor.Config)
-		// TODO changes...
-		input.CompareSchemas(existingSchema, schema.GetInputSchema())
+		//existingSchema := parseExistingSchema(processor.Config)
+		// TODO changes. compare with existing schema instead of input
+		//		input.CompareSchemas(existingSchema, schema.GetInputSchema())
 
 		steps := []codegen.Step{
 			// new(db.Step),
@@ -68,7 +70,7 @@ var codegenCmd = &cobra.Command{
 	},
 }
 
-func parseExistingSchema(cfg *codegen.Config) *input.Schema {
+func parseExistingSchema(cfg *codegen.Config) *schema.Schema {
 	filepath := cfg.GetPathToSchemaFile()
 	fi, _ := os.Stat(filepath)
 	if fi == nil {
@@ -79,6 +81,10 @@ func parseExistingSchema(cfg *codegen.Config) *input.Schema {
 		return nil
 	}
 
-	existingSchema, _ := input.ParseSchema(b)
-	return existingSchema
+	existingSchema, err := input.ParseSchema(b)
+	if err != nil {
+		return nil
+	}
+	s, _ := schema.ParseFromInputSchema(existingSchema, base.TypeScript)
+	return s
 }

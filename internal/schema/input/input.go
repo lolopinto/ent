@@ -14,30 +14,30 @@ import (
 )
 
 type Schema struct {
-	Nodes    map[string]*Node    `json:"schemas"`
-	Patterns map[string]*Pattern `json:"patterns"`
+	Nodes    map[string]*Node    `json:"schemas,omitempty"`
+	Patterns map[string]*Pattern `json:"patterns,omitempty"`
 }
 
 type Pattern struct {
-	Name string `json:"name"`
+	Name string `json:"name,omitempty"`
 	// at this point, should we support everything in Node
-	Fields     []*Field     `json:"fields"`
-	AssocEdges []*AssocEdge `json:"assocEdges"`
+	Fields     []*Field     `json:"fields,omitempty"`
+	AssocEdges []*AssocEdge `json:"assocEdges,omitempty"`
 }
 
 type Node struct {
-	TableName       *string                  `json:"tableName"`
-	Fields          []*Field                 `json:"fields"`
-	AssocEdges      []*AssocEdge             `json:"assocEdges"`
-	AssocEdgeGroups []*AssocEdgeGroup        `json:"assocEdgeGroups"`
-	Actions         []*Action                `json:"actions"`
-	EnumTable       bool                     `json:"enumTable"`
-	DBRows          []map[string]interface{} `json:"dbRows"`
-	Constraints     []*Constraint            `json:"constraints"`
-	Indices         []*Index                 `json:"indices"`
-	HideFromGraphQL bool                     `json:"hideFromGraphQL"`
-	EdgeConstName   string                   `json:"edgeConstName"`
-	PatternName     string                   `json:"patternName"`
+	TableName       *string                  `json:"tableName,omitempty"`
+	Fields          []*Field                 `json:"fields,omitempty"`
+	AssocEdges      []*AssocEdge             `json:"assocEdges,omitempty"`
+	AssocEdgeGroups []*AssocEdgeGroup        `json:"assocEdgeGroups,omitempty"`
+	Actions         []*Action                `json:"actions,omitempty"`
+	EnumTable       bool                     `json:"enumTable,omitempty"`
+	DBRows          []map[string]interface{} `json:"dbRows,omitempty"`
+	Constraints     []*Constraint            `json:"constraints,omitempty"`
+	Indices         []*Index                 `json:"indices,omitempty"`
+	HideFromGraphQL bool                     `json:"hideFromGraphQL,omitempty"`
+	EdgeConstName   string                   `json:"edgeConstName,omitempty"`
+	PatternName     string                   `json:"patternName,omitempty"`
 }
 
 func (n *Node) AddAssocEdge(edge *AssocEdge) {
@@ -81,19 +81,19 @@ const (
 
 type FieldType struct {
 	// Note that anytime anything changes here, have to update fieldTypeEqual in internal/schema/input/compare.go
-	DBType DBType `json:"dbType"`
+	DBType DBType `json:"dbType,omitempty"`
 	// required when DBType == DBType.List
-	ListElemType *FieldType `json:"listElemType"`
+	ListElemType *FieldType `json:"listElemType,omitempty"`
 	// required when DBType == DBType.Enum || DBType.StringEnum
-	Values      []string          `json:"values"`
-	EnumMap     map[string]string `json:"enumMap"`
-	Type        string            `json:"type"`
-	GraphQLType string            `json:"graphQLType"`
+	Values      []string          `json:"values,omitempty"`
+	EnumMap     map[string]string `json:"enumMap,omitempty"`
+	Type        string            `json:"type,omitempty"`
+	GraphQLType string            `json:"graphQLType,omitempty"`
 	// optional used by generator to specify different types e.g. email, phone, password
-	CustomType CustomType `json:"customType"`
+	CustomType CustomType `json:"customType,omitempty"`
 
 	ImportType       *tsimport.ImportPath
-	ImportTypeIgnore *importType `json:"importType"`
+	ImportTypeIgnore *importType `json:"importType,omitempty"`
 }
 
 // needed to get the data from json and then discarded
@@ -121,30 +121,30 @@ func (ft *FieldType) UnmarshalJSON(data []byte) error {
 
 type Field struct {
 	// Note that anytime anything changes here, have to update compareFields in internal/schema/input/compare.go
-	Name       string     `json:"name"`
-	Type       *FieldType `json:"type"`
-	Nullable   bool       `json:"nullable"`
-	StorageKey string     `json:"storageKey"`
+	Name       string     `json:"name,omitempty"`
+	Type       *FieldType `json:"type,omitempty"`
+	Nullable   bool       `json:"nullable,omitempty"`
+	StorageKey string     `json:"storageKey,omitempty"`
 	// TODO need a way to indicate unique edge is Required also. this changes type generated in ent and graphql
-	Unique                  bool   `json:"unique"`
-	HideFromGraphQL         bool   `json:"hideFromGraphQL"`
-	Private                 bool   `json:"private"`
-	GraphQLName             string `json:"graphqlName"`
-	Index                   bool   `json:"index"`
-	PrimaryKey              bool   `json:"primaryKey"`
-	DefaultToViewerOnCreate bool   `json:"defaultToViewerOnCreate"`
+	Unique                  bool   `json:"unique,omitempty"`
+	HideFromGraphQL         bool   `json:"hideFromGraphQL,omitempty"`
+	Private                 bool   `json:"private,omitempty"`
+	GraphQLName             string `json:"graphqlName,omitempty"`
+	Index                   bool   `json:"index,omitempty"`
+	PrimaryKey              bool   `json:"primaryKey,omitempty"`
+	DefaultToViewerOnCreate bool   `json:"defaultToViewerOnCreate,omitempty"`
 
-	FieldEdge     *FieldEdge  `json:"fieldEdge"` // this only really makes sense on id fields...
-	ForeignKey    *ForeignKey `json:"foreignKey"`
-	ServerDefault interface{} `json:"serverDefault"`
+	FieldEdge     *FieldEdge  `json:"fieldEdge,omitempty"` // this only really makes sense on id fields...
+	ForeignKey    *ForeignKey `json:"foreignKey,omitempty"`
+	ServerDefault interface{} `json:"serverDefault,omitempty"`
 	// DisableUserEditable true == DefaultValueOnCreate required OR set in trigger
-	DisableUserEditable     bool `json:"disableUserEditable"`
-	HasDefaultValueOnCreate bool `json:"hasDefaultValueOnCreate"`
-	HasDefaultValueOnEdit   bool `json:"hasDefaultValueOnEdit"`
+	DisableUserEditable     bool `json:"disableUserEditable,omitempty"`
+	HasDefaultValueOnCreate bool `json:"hasDefaultValueOnCreate,omitempty"`
+	HasDefaultValueOnEdit   bool `json:"hasDefaultValueOnEdit,omitempty"`
 
-	Polymorphic         *PolymorphicOptions `json:"polymorphic"`
-	DerivedWhenEmbedded bool                `json:"derivedWhenEmbedded"`
-	DerivedFields       []*Field            `json:"derivedFields"`
+	Polymorphic         *PolymorphicOptions `json:"polymorphic,omitempty"`
+	DerivedWhenEmbedded bool                `json:"derivedWhenEmbedded,omitempty"`
+	DerivedFields       []*Field            `json:"derivedFields,omitempty"`
 
 	// Go specific information here
 	TagMap          map[string]string
@@ -155,22 +155,22 @@ type Field struct {
 	// set when parsed via tsent generate schema
 	Import enttype.Import
 
-	PatternName string `json:"patternName"`
+	PatternName string `json:"patternName,omitempty"`
 }
 
 type ForeignKey struct {
-	Schema             string `json:"schema"`
-	Column             string `json:"column"`
-	Name               string `json:"name"`
-	DisableIndex       bool   `json:"disableIndex"`
-	DisableBuilderType bool   `json:"disableBuilderType"`
+	Schema             string `json:"schema,omitempty"`
+	Column             string `json:"column,omitempty"`
+	Name               string `json:"name,omitempty"`
+	DisableIndex       bool   `json:"disableIndex,omitempty"`
+	DisableBuilderType bool   `json:"disableBuilderType,omitempty"`
 }
 
 type FieldEdge struct {
 	// Note that anytime anything changes here, have to update fieldEdgeEqual in internal/schema/input/compare.go
-	Schema             string            `json:"schema"`
-	InverseEdge        *InverseFieldEdge `json:"inverseEdge"`
-	DisableBuilderType bool              `json:"disableBuilderType"`
+	Schema             string            `json:"schema,omitempty"`
+	InverseEdge        *InverseFieldEdge `json:"inverseEdge,omitempty"`
+	DisableBuilderType bool              `json:"disableBuilderType,omitempty"`
 }
 
 func (f *FieldEdge) InverseEdgeName() string {
@@ -182,17 +182,17 @@ func (f *FieldEdge) InverseEdgeName() string {
 
 type InverseFieldEdge struct {
 	// Note that anytime anything changes here, have to update InverseFieldEdgeEqual in internal/schema/input/compare.go
-	Name            string `json:"name"`
-	TableName       string `json:"tableName"`
-	HideFromGraphQL bool   `json:"hideFromGraphQL"`
-	EdgeConstName   string `json:"edgeConstName"`
+	Name            string `json:"name,omitempty"`
+	TableName       string `json:"tableName,omitempty"`
+	HideFromGraphQL bool   `json:"hideFromGraphQL,omitempty"`
+	EdgeConstName   string `json:"edgeConstName,omitempty"`
 }
 
 type PolymorphicOptions struct {
 	// Note that anytime anything changes here, have to update PolymorphicOptionsEqual in compare.go
-	Types                  []string `json:"types"`
-	HideFromInverseGraphQL bool     `json:"hideFromInverseGraphQL"`
-	DisableBuilderType     bool     `json:"disableBuilderType"`
+	Types                  []string `json:"types,omitempty"`
+	HideFromInverseGraphQL bool     `json:"hideFromInverseGraphQL,omitempty"`
+	DisableBuilderType     bool     `json:"disableBuilderType,omitempty"`
 }
 
 func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.TSGraphQLType, error) {
@@ -362,46 +362,48 @@ func (f *Field) GetEntType() (enttype.TSGraphQLType, error) {
 }
 
 type AssocEdge struct {
-	Name        string            `json:"name"`
-	SchemaName  string            `json:"schemaName"`
-	Symmetric   bool              `json:"symmetric"`
-	Unique      bool              `json:"unique"`
-	TableName   string            `json:"tableName"`
-	InverseEdge *InverseAssocEdge `json:"inverseEdge"`
-	EdgeActions []*EdgeAction     `json:"edgeActions"`
+	// Note that anytime anything changes here, have to update assocEdgeEqual in compare.go
+	Name        string            `json:"name,omitempty"`
+	SchemaName  string            `json:"schemaName,omitempty"`
+	Symmetric   bool              `json:"symmetric,omitempty"`
+	Unique      bool              `json:"unique,omitempty"`
+	TableName   string            `json:"tableName,omitempty"`
+	InverseEdge *InverseAssocEdge `json:"inverseEdge,omitempty"`
+	EdgeActions []*EdgeAction     `json:"edgeActions,omitempty"`
 	// Go specific
 	EntConfig       *schemaparser.EntConfigInfo
-	HideFromGraphQL bool   `json:"hideFromGraphQL"`
-	EdgeConstName   string `json:"edgeConstName"`
-	PatternName     string `json:"patternName"`
+	HideFromGraphQL bool   `json:"hideFromGraphQL,omitempty"`
+	EdgeConstName   string `json:"edgeConstName,omitempty"`
+	PatternName     string `json:"patternName,omitempty"`
 	// do we need a flag to know it's a pattern's edge?
 	// PatternEdge
 }
 
 type AssocEdgeGroup struct {
-	Name            string        `json:"name"`
-	GroupStatusName string        `json:"groupStatusName"`
-	TableName       string        `json:"tableName"`
-	AssocEdges      []*AssocEdge  `json:"assocEdges"`
-	EdgeActions     []*EdgeAction `json:"edgeActions"`
-	StatusEnums     []string      `json:"statusEnums"`
-	NullStateFn     string        `json:"nullStateFn"`
-	NullStates      []string      `json:"nullStates"`
+	Name            string        `json:"name,omitempty"`
+	GroupStatusName string        `json:"groupStatusName,omitempty"`
+	TableName       string        `json:"tableName,omitempty"`
+	AssocEdges      []*AssocEdge  `json:"assocEdges,omitempty"`
+	EdgeActions     []*EdgeAction `json:"edgeActions,omitempty"`
+	StatusEnums     []string      `json:"statusEnums,omitempty"`
+	NullStateFn     string        `json:"nullStateFn,omitempty"`
+	NullStates      []string      `json:"nullStates,omitempty"`
 
 	// TS specific
-	EdgeAction *EdgeAction `json:"edgeAction"`
+	EdgeAction *EdgeAction `json:"edgeAction,omitempty"`
 
 	// Go specific
 	ActionEdges []string
 }
 
 type EdgeAction struct {
-	Operation         ent.ActionOperation `json:"operation"`
-	CustomActionName  string              `json:"actionName"`
-	CustomGraphQLName string              `json:"graphQLName"`
-	CustomInputName   string              `json:"inputName"`
-	HideFromGraphQL   bool                `json:"hideFromGraphQL"`
-	ActionOnlyFields  []*ActionField      `json:"actionOnlyFields"`
+	// Note that anytime anything changes here, have to update edgeActionEqual in compare.go
+	Operation         ent.ActionOperation `json:"operation,omitempty"`
+	CustomActionName  string              `json:"actionName,omitempty"`
+	CustomGraphQLName string              `json:"graphQLName,omitempty"`
+	CustomInputName   string              `json:"inputName,omitempty"`
+	HideFromGraphQL   bool                `json:"hideFromGraphQL,omitempty"`
+	ActionOnlyFields  []*ActionField      `json:"actionOnlyFields,omitempty"`
 }
 
 func getTSStringOperation(op ent.ActionOperation) string {
@@ -431,17 +433,17 @@ func (e *EdgeAction) GetTSStringOperation() string {
 }
 
 type Action struct {
-	Operation         ent.ActionOperation `json:"operation"`
-	Fields            []string            `json:"fields"`
-	ExcludedFields    []string            `json:"excludedFields"`
-	OptionalFields    []string            `json:"optionalFields"`
-	RequiredFields    []string            `json:"requiredFields"`
-	NoFields          bool                `json:"noFields"`
-	CustomActionName  string              `json:"actionName"`
-	CustomGraphQLName string              `json:"graphQLName"`
-	CustomInputName   string              `json:"inputName"`
-	HideFromGraphQL   bool                `json:"hideFromGraphQL"`
-	ActionOnlyFields  []*ActionField      `json:"actionOnlyFields"`
+	Operation         ent.ActionOperation `json:"operation,omitempty"`
+	Fields            []string            `json:"fields,omitempty"`
+	ExcludedFields    []string            `json:"excludedFields,omitempty"`
+	OptionalFields    []string            `json:"optionalFields,omitempty"`
+	RequiredFields    []string            `json:"requiredFields,omitempty"`
+	NoFields          bool                `json:"noFields,omitempty"`
+	CustomActionName  string              `json:"actionName,omitempty"`
+	CustomGraphQLName string              `json:"graphQLName,omitempty"`
+	CustomInputName   string              `json:"inputName,omitempty"`
+	HideFromGraphQL   bool                `json:"hideFromGraphQL,omitempty"`
+	ActionOnlyFields  []*ActionField      `json:"actionOnlyFields,omitempty"`
 }
 
 func (a *Action) GetTSStringOperation() string {
@@ -464,6 +466,7 @@ type actionField struct {
 }
 
 type ActionField struct {
+	// Note that anytime anything changes here, have to update actionOnlyFieldEqual in compare.go
 	Name             string
 	Type             ActionType
 	Nullable         bool
@@ -506,6 +509,24 @@ func (f *ActionField) UnmarshalJSON(data []byte) error {
 	}
 
 	return nil
+}
+
+func (f *ActionField) MarshalJSON() ([]byte, error) {
+	var af actionField
+	af.List = f.list
+	af.Name = f.Name
+	af.ActionName = f.ActionName
+	af.Type = f.Type
+	af.ExcludedFields = f.ExcludedFields
+
+	if f.Nullable && f.nullableContents {
+		af.Nullable = NullableContentsAndList
+	} else if f.nullableContents {
+		af.Nullable = NullableContents
+	} else if f.Nullable {
+		af.Nullable = NullableTrue
+	}
+	return json.Marshal(af)
 }
 
 func (f *ActionField) GetEntType(inputName string) (enttype.TSGraphQLType, error) {
@@ -591,11 +612,11 @@ const (
 )
 
 type Constraint struct {
-	Name       string          `json:"name"`
-	Type       ConstraintType  `json:"type"`
-	Columns    []string        `json:"columns"`
-	ForeignKey *ForeignKeyInfo `json:"fkey"`
-	Condition  string          `json:"condition"`
+	Name       string          `json:"name,omitempty"`
+	Type       ConstraintType  `json:"type,omitempty"`
+	Columns    []string        `json:"columns,omitempty"`
+	ForeignKey *ForeignKeyInfo `json:"fkey,omitempty"`
+	Condition  string          `json:"condition,omitempty"`
 }
 
 func (c *Constraint) GetConstraintTypeString() string {
@@ -615,9 +636,9 @@ func (c *Constraint) GetConstraintTypeString() string {
 }
 
 type Index struct {
-	Name    string   `json:"name"`
-	Columns []string `json:"columns"`
-	Unique  bool     `json:"unique"`
+	Name    string   `json:"name,omitempty"`
+	Columns []string `json:"columns,omitempty"`
+	Unique  bool     `json:"unique,omitempty"`
 }
 
 type ConstraintType string
@@ -631,9 +652,9 @@ const (
 )
 
 type ForeignKeyInfo struct {
-	TableName string       `json:"tableName"`
-	Columns   []string     `json:"columns"`
-	OnDelete  OnDeleteFkey `json:"ondelete"`
+	TableName string       `json:"tableName,omitempty"`
+	Columns   []string     `json:"columns,omitempty"`
+	OnDelete  OnDeleteFkey `json:"ondelete,omitempty"`
 }
 
 type OnDeleteFkey string
@@ -654,8 +675,8 @@ func (g *AssocEdgeGroup) AddAssocEdge(edge *AssocEdge) {
 type InverseAssocEdge struct {
 	// TODO need to be able to mark this as unique
 	// this is an easy way to get 1->many
-	Name          string `json:"name"`
-	EdgeConstName string `json:"edgeConstName"`
+	Name          string `json:"name,omitempty"`
+	EdgeConstName string `json:"edgeConstName,omitempty"`
 }
 
 func ParseSchema(input []byte) (*Schema, error) {

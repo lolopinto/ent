@@ -44,6 +44,8 @@ type Change struct {
 
 type ChangeMap map[string][]Change
 
+// TODO kill
+// we're going to store in input schema format but compre in
 func CompareSchemas(existing, schema *Schema) ChangeMap {
 	m := make(ChangeMap)
 	if existing == nil {
@@ -310,4 +312,82 @@ func PolymorphicOptionsEqual(existing, p *PolymorphicOptions) bool {
 	return stringListEqual(existing.Types, p.Types) &&
 		existing.HideFromInverseGraphQL == p.HideFromInverseGraphQL &&
 		existing.DisableBuilderType == p.DisableBuilderType
+}
+
+func assocEdgeEqual(existing, edge *AssocEdge) bool {
+	return existing.Name == edge.Name &&
+		existing.SchemaName == edge.SchemaName &&
+		existing.Symmetric == edge.Symmetric &&
+		existing.Unique == edge.Unique &&
+		existing.TableName == edge.TableName &&
+		inverseAssocEdgeEqual(existing.InverseEdge, edge.InverseEdge) &&
+		edgeActionsEqual(existing.EdgeActions, edge.EdgeActions) &&
+		existing.HideFromGraphQL == edge.HideFromGraphQL &&
+		existing.EdgeConstName == edge.EdgeConstName &&
+		existing.PatternName == edge.PatternName
+}
+
+func inverseAssocEdgeEqual(existing, edge *InverseAssocEdge) bool {
+	ret := compareNilVals(existing == nil, edge == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return existing.Name == edge.Name &&
+		existing.EdgeConstName == edge.EdgeConstName
+}
+
+func edgeActionsEqual(existing, actions []*EdgeAction) bool {
+	if len(existing) != len(actions) {
+		return false
+	}
+
+	for i := range existing {
+		if !edgeActionEqual(existing[i], actions[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func edgeActionEqual(existing, action *EdgeAction) bool {
+	ret := compareNilVals(existing == nil, action == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return existing.Operation == action.Operation &&
+		existing.CustomActionName == action.CustomActionName &&
+		existing.CustomGraphQLName == action.CustomGraphQLName &&
+		existing.CustomInputName == action.CustomInputName &&
+		existing.HideFromGraphQL == action.HideFromGraphQL &&
+		actionOnlyFieldsEqual(existing.ActionOnlyFields, action.ActionOnlyFields)
+}
+
+func actionOnlyFieldsEqual(existing, actions []*ActionField) bool {
+	if len(existing) != len(actions) {
+		return false
+	}
+
+	for i := range existing {
+		if !actionOnlyFieldEqual(existing[i], actions[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func actionOnlyFieldEqual(existing, af *ActionField) bool {
+	ret := compareNilVals(existing == nil, af == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return existing.Name == af.Name &&
+		existing.Type == af.Type &&
+		existing.Nullable == af.Nullable &&
+		existing.list == af.list &&
+		existing.nullableContents == af.nullableContents &&
+		existing.ActionName == af.ActionName &&
+		stringListEqual(existing.ExcludedFields, af.ExcludedFields)
 }
