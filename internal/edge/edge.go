@@ -305,7 +305,7 @@ func (e *EdgeInfo) AddEdgeFromForeignKeyIndex(dbColName, edgeName, nodeName stri
 func (e *EdgeInfo) AddIndexedEdgeFromSource(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions) error {
 	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
 	edge := &IndexedEdge{
-		tsEdgeName: tsEdgeName,
+		TsEdgeName: tsEdgeName,
 		destinationEdge: destinationEdge{
 			CommonEdgeInfo: getCommonEdgeInfo(
 				inflection.Plural(nodeName),
@@ -327,7 +327,7 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(tsFieldName, quotedDBColName, nodeNa
 func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) error {
 	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
 	edge := &IndexedEdge{
-		tsEdgeName: tsEdgeName,
+		TsEdgeName: tsEdgeName,
 		destinationEdge: destinationEdge{
 			CommonEdgeInfo: getCommonEdgeInfo(
 				inflection.Plural(nodeName),
@@ -336,7 +336,7 @@ func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(tsFieldName, quotedD
 			QuotedDbColNameField: quotedDBColName,
 			UniqueField:          polymorphic.Unique,
 		},
-		foreignNode: foreignNode,
+		ForeignNode: foreignNode,
 	}
 	if polymorphic.HideFromInverseGraphQL {
 		edge.HideFromGraphQLField = true
@@ -553,6 +553,7 @@ var _ ConnectionEdge = &ForeignKeyEdge{}
 var _ IndexedConnectionEdge = &ForeignKeyEdge{}
 
 type destinationEdge struct {
+	// note that if anything is changed here, need to update destinationEdgeEqual() in compare_edge.go
 	CommonEdgeInfo
 	QuotedDbColNameField string `json:"quotedDbColName,omitempty"`
 	UniqueField          bool   `json:"unique,omitempty"`
@@ -578,10 +579,21 @@ func (e *destinationEdge) QuotedDBColName() string {
 // refers to a field that's indexed but doesn't want to reference it as a foreign key
 // currently best use case is as a polymorphic field but nothing stopping this from being non-polymorphic
 type IndexedEdge struct {
-	SourceNodeName string
-	tsEdgeName     string
-	foreignNode    string
+	// note that if anything is changed here, need to update indexedEdgeEqual() in compare_edge.go
+	SourceNodeName string `json:"sourceNodeName,omitempty"`
+	TsEdgeName     string `json:"tsEdgeName,omitempty"`
+	ForeignNode    string `json:"foreignNode,omitempty"`
 	destinationEdge
+}
+
+func (e *IndexedEdge) UnmarshalJSON(data []byte) error {
+	type Alias IndexedEdge
+	err := json.Unmarshal(data, (*Alias)(e))
+	if err != nil {
+		return err
+	}
+	e.unmarshallJSONHelper()
+	return nil
 }
 
 func (e *IndexedEdge) PluralEdge() bool {
@@ -600,7 +612,7 @@ func (e *IndexedEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 }
 
 func (e *IndexedEdge) TsEdgeQueryName() string {
-	return fmt.Sprintf("%sTo%sQuery", e.tsEdgeName, strcase.ToCamel(e.EdgeName))
+	return fmt.Sprintf("%sTo%sQuery", e.TsEdgeName, strcase.ToCamel(e.EdgeName))
 }
 
 func (e *IndexedEdge) GetSourceNodeName() string {
@@ -613,10 +625,10 @@ func (e *IndexedEdge) SourceIsPolymorphic() bool {
 }
 
 func (e *IndexedEdge) GetGraphQLConnectionName() string {
-	if e.foreignNode == "" {
+	if e.ForeignNode == "" {
 		panic("cannot call GetGraphQLConnectionName when foreignNode is empty")
 	}
-	return fmt.Sprintf("%sTo%sConnection", e.foreignNode, strcase.ToCamel(e.EdgeName))
+	return fmt.Sprintf("%sTo%sConnection", e.ForeignNode, strcase.ToCamel(e.EdgeName))
 }
 
 func (e *IndexedEdge) TsEdgeQueryEdgeName() string {
@@ -625,14 +637,14 @@ func (e *IndexedEdge) TsEdgeQueryEdgeName() string {
 }
 
 func (e *IndexedEdge) GetGraphQLEdgePrefix() string {
-	if e.foreignNode == "" {
+	if e.ForeignNode == "" {
 		panic("cannot call GetGraphQLEdgePrefix when foreignNode is empty")
 	}
-	return fmt.Sprintf("%sTo%s", e.foreignNode, strcase.ToCamel(e.EdgeName))
+	return fmt.Sprintf("%sTo%s", e.ForeignNode, strcase.ToCamel(e.EdgeName))
 }
 
 func (e *IndexedEdge) tsEdgeConst() string {
-	return fmt.Sprintf("%sTo%s", e.tsEdgeName, strcase.ToCamel(e.EdgeName))
+	return fmt.Sprintf("%sTo%s", e.TsEdgeName, strcase.ToCamel(e.EdgeName))
 }
 
 func (e *IndexedEdge) GetCountFactoryName() string {

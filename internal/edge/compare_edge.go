@@ -65,7 +65,29 @@ func CompareForeignKeyEdge(existingEdge, edge *ForeignKeyEdge) []change.Change {
 
 func foreignKeyEdgeEqual(existingEdge, edge *ForeignKeyEdge) bool {
 	return existingEdge.SourceNodeName == edge.SourceNodeName &&
-		commonEdgeInfoEqual(existingEdge.CommonEdgeInfo, edge.CommonEdgeInfo) &&
+		destinationEdgeEqual(existingEdge.destinationEdge, edge.destinationEdge)
+}
+
+func destinationEdgeEqual(existingEdge, edge destinationEdge) bool {
+	return commonEdgeInfoEqual(existingEdge.CommonEdgeInfo, edge.CommonEdgeInfo) &&
 		existingEdge.QuotedDbColNameField == edge.QuotedDbColNameField &&
 		existingEdge.UniqueField == edge.UniqueField
+
+}
+
+func CompareIndexedEdge(existingEdge, edge *IndexedEdge) []change.Change {
+	var ret []change.Change
+	if !indexedEdgeEqual(existingEdge, edge) {
+		ret = append(ret, change.Change{
+			Change: change.ModifyEdge,
+		})
+	}
+	return ret
+}
+
+func indexedEdgeEqual(existingEdge, edge *IndexedEdge) bool {
+	return existingEdge.SourceNodeName == edge.SourceNodeName &&
+		existingEdge.TsEdgeName == edge.TsEdgeName &&
+		existingEdge.ForeignNode == edge.ForeignNode &&
+		destinationEdgeEqual(existingEdge.destinationEdge, edge.destinationEdge)
 }

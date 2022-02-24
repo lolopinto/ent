@@ -179,3 +179,28 @@ func TestUniqueForeignKeyEdge(t *testing.T) {
 	l := CompareForeignKeyEdge(edge, edge2)
 	require.Len(t, l, 0)
 }
+
+func TestIndexedEdge(t *testing.T) {
+	edge := &IndexedEdge{
+		TsEdgeName: "Owners",
+		destinationEdge: destinationEdge{
+			CommonEdgeInfo: getCommonEdgeInfo(
+				"users",
+				schemaparser.GetEntConfigFromName("User"),
+			),
+			QuotedDbColNameField: "owner_id",
+			UniqueField:          true,
+		},
+	}
+
+	b, err := json.Marshal(edge)
+	require.Nil(t, err)
+	edge2 := &IndexedEdge{}
+	err = json.Unmarshal(b, edge2)
+	require.Nil(t, err)
+
+	testIndexedEdge(t, edge, edge2)
+
+	l := CompareIndexedEdge(edge, edge2)
+	require.Len(t, l, 0)
+}

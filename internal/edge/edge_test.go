@@ -627,6 +627,18 @@ func testAssocEdgeGroup(t *testing.T, edgeGroup, expectedAssocEdgeGroup *Associa
 func testForeignKeyEdge(t *testing.T, edge, expectedEdge *ForeignKeyEdge) {
 	assert.Equal(t, expectedEdge.SourceNodeName, edge.SourceNodeName)
 
+	testDestinationEdge(t, expectedEdge.destinationEdge, edge.destinationEdge)
+}
+
+func testIndexedEdge(t *testing.T, edge, expectedEdge *IndexedEdge) {
+	assert.Equal(t, expectedEdge.SourceNodeName, edge.SourceNodeName)
+	assert.Equal(t, expectedEdge.TsEdgeName, edge.TsEdgeName)
+	assert.Equal(t, expectedEdge.ForeignNode, edge.ForeignNode)
+
+	testDestinationEdge(t, expectedEdge.destinationEdge, edge.destinationEdge)
+}
+
+func testDestinationEdge(t *testing.T, edge, expectedEdge destinationEdge) {
 	assert.Equal(t, expectedEdge.QuotedDbColNameField, edge.QuotedDbColNameField)
 
 	assert.Equal(t, expectedEdge.UniqueField, edge.UniqueField)
@@ -634,6 +646,7 @@ func testForeignKeyEdge(t *testing.T, edge, expectedEdge *ForeignKeyEdge) {
 	testEntConfig(t, edge.entConfig, expectedEdge.entConfig)
 
 	testNodeInfo(t, edge.NodeInfo, expectedEdge.NodeInfo.Node)
+
 }
 
 var r *testsync.RunOnce
