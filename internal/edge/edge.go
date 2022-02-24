@@ -433,14 +433,27 @@ func (e *CommonEdgeInfo) HideFromGraphQL() bool {
 
 type FieldEdge struct {
 	CommonEdgeInfo
-	FieldName   string
-	TSFieldName string
+	FieldName   string `json:"fieldName,omitempty"`
+	TSFieldName string `json:"tsFieldName,omitempty"`
 	//	InverseEdgeName string
-	Nullable  bool
+	Nullable bool `json:"nullable,omitempty"`
+
+	// not json dealing with json here since this isn't supposed to be perfect
+	// and just used for comparison
 	fieldType enttype.EntType
 
-	InverseEdge *input.InverseFieldEdge
-	Polymorphic *base.PolymorphicOptions
+	InverseEdge *input.InverseFieldEdge  `json:"inverseEdge,omitempty"`
+	Polymorphic *base.PolymorphicOptions `json:"polymorphic,omitempty"`
+}
+
+func (e *FieldEdge) UnmarshalJSON(data []byte) error {
+	type Alias FieldEdge
+	err := json.Unmarshal(data, (*Alias)(e))
+	if err != nil {
+		return err
+	}
+	e.unmarshallJSONHelper()
+	return nil
 }
 
 func (edge *FieldEdge) PolymorphicEdge() bool {

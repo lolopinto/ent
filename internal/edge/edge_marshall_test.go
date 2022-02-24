@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/stretchr/testify/require"
@@ -202,5 +203,74 @@ func TestIndexedEdge(t *testing.T) {
 	testIndexedEdge(t, edge, edge2)
 
 	l := CompareIndexedEdge(edge, edge2)
+	require.Len(t, l, 0)
+}
+
+func TestFieldEdge(t *testing.T) {
+	edge := &FieldEdge{
+		FieldName:      "user_id",
+		TSFieldName:    "userID",
+		CommonEdgeInfo: getCommonEdgeInfo("user_ids", schemaparser.GetEntConfigFromName("Contact")),
+		Nullable:       true,
+	}
+
+	b, err := json.Marshal(edge)
+	require.Nil(t, err)
+	edge2 := &FieldEdge{}
+	err = json.Unmarshal(b, edge2)
+	require.Nil(t, err)
+
+	testFieldEdge(t, edge, edge2)
+
+	l := CompareFieldEdge(edge, edge2)
+	require.Len(t, l, 0)
+}
+
+func TestFieldEdgeWithInverse(t *testing.T) {
+	edge := &FieldEdge{
+		FieldName:      "user_id",
+		TSFieldName:    "userID",
+		CommonEdgeInfo: getCommonEdgeInfo("user_ids", schemaparser.GetEntConfigFromName("User")),
+		Nullable:       true,
+		InverseEdge: &input.InverseFieldEdge{
+			EdgeConstName: "Contacts",
+		},
+	}
+
+	b, err := json.Marshal(edge)
+	require.Nil(t, err)
+	edge2 := &FieldEdge{}
+	err = json.Unmarshal(b, edge2)
+	require.Nil(t, err)
+
+	testFieldEdge(t, edge, edge2)
+
+	l := CompareFieldEdge(edge, edge2)
+	require.Len(t, l, 0)
+}
+
+func TestPolymorphicFieldEdge(t *testing.T) {
+	edge := &FieldEdge{
+		FieldName:      "user_id",
+		TSFieldName:    "userID",
+		CommonEdgeInfo: getCommonEdgeInfo("user_ids", schemaparser.GetEntConfigFromName("User")),
+		Nullable:       true,
+		Polymorphic: &base.PolymorphicOptions{
+			NodeTypeField: "Node",
+			PolymorphicOptions: &input.PolymorphicOptions{
+				Types: []string{"User", "Account"},
+			},
+		},
+	}
+
+	b, err := json.Marshal(edge)
+	require.Nil(t, err)
+	edge2 := &FieldEdge{}
+	err = json.Unmarshal(b, edge2)
+	require.Nil(t, err)
+
+	testFieldEdge(t, edge, edge2)
+
+	l := CompareFieldEdge(edge, edge2)
 	require.Len(t, l, 0)
 }

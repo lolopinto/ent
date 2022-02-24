@@ -646,6 +646,37 @@ func testDestinationEdge(t *testing.T, edge, expectedEdge destinationEdge) {
 	testEntConfig(t, edge.entConfig, expectedEdge.entConfig)
 
 	testNodeInfo(t, edge.NodeInfo, expectedEdge.NodeInfo.Node)
+}
+
+func testFieldEdge(t *testing.T, edge, expectedEdge *FieldEdge) {
+	assert.Equal(t, expectedEdge.FieldName, edge.FieldName)
+
+	assert.Equal(t, expectedEdge.TSFieldName, edge.TSFieldName)
+
+	assert.Equal(t, expectedEdge.Nullable, edge.Nullable)
+
+	if expectedEdge.InverseEdge == nil {
+		require.Nil(t, edge.InverseEdge)
+	} else {
+		assert.Equal(t, expectedEdge.InverseEdge.EdgeConstName, edge.InverseEdge.EdgeConstName)
+		assert.Equal(t, expectedEdge.InverseEdge.HideFromGraphQL, edge.InverseEdge.HideFromGraphQL)
+		assert.Equal(t, expectedEdge.InverseEdge.Name, edge.InverseEdge.Name)
+		assert.Equal(t, expectedEdge.InverseEdge.TableName, edge.InverseEdge.TableName)
+	}
+
+	if expectedEdge.Polymorphic == nil {
+		require.Nil(t, edge.Polymorphic)
+	} else {
+		assert.Equal(t, expectedEdge.Polymorphic.DisableBuilderType, edge.Polymorphic.DisableBuilderType)
+		assert.Equal(t, expectedEdge.Polymorphic.HideFromInverseGraphQL, edge.Polymorphic.HideFromInverseGraphQL)
+		assert.Equal(t, expectedEdge.Polymorphic.NodeTypeField, edge.Polymorphic.NodeTypeField)
+		assert.Equal(t, expectedEdge.Polymorphic.Types, edge.Polymorphic.Types)
+		assert.Equal(t, expectedEdge.Polymorphic.Unique, edge.Polymorphic.Unique)
+	}
+
+	testEntConfig(t, edge.entConfig, expectedEdge.entConfig)
+
+	testNodeInfo(t, edge.NodeInfo, expectedEdge.NodeInfo.Node)
 
 }
 

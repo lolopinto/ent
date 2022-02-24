@@ -2,6 +2,7 @@ package input
 
 import (
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/schema/change"
 )
 
 // TODO kill this file
@@ -174,14 +175,31 @@ func compareFields(existing, fields []*Field) []Change {
 
 // return boolean if one is nil and the other is not nil or both nil
 // if both not nil, returns nil, indicating more work to be done
+// TODO kill
 func compareEqual(existing, val interface{}) *bool {
 	var ret *bool
 
 	if xor(existing, val) {
-		*ret = false
+		temp := false
+		ret = &temp
 	}
 	if existing == nil && val == nil {
-		*ret = true
+		temp := true
+		ret = &temp
+	}
+	return ret
+}
+
+func compareNilVals(existingNil, valNil bool) *bool {
+	var ret *bool
+
+	if existingNil != valNil {
+		temp := false
+		ret = &temp
+	}
+	if existingNil && valNil {
+		temp := true
+		ret = &temp
 	}
 	return ret
 }
@@ -257,11 +275,12 @@ func fieldEdgeEqual(existing, fieldEdge *FieldEdge) bool {
 
 	return existing.Schema == fieldEdge.Schema &&
 		existing.DisableBuilderType == fieldEdge.DisableBuilderType &&
-		inverseFieldEdgeEqual(existing.InverseEdge, fieldEdge.InverseEdge)
+		InverseFieldEdgeEqual(existing.InverseEdge, fieldEdge.InverseEdge)
 }
 
-func inverseFieldEdgeEqual(existing, inverseFieldEdge *InverseFieldEdge) bool {
-	ret := compareEqual(existing, inverseFieldEdge)
+func InverseFieldEdgeEqual(existing, inverseFieldEdge *InverseFieldEdge) bool {
+	ret := compareNilVals(existing == nil, inverseFieldEdge == nil)
+
 	if ret != nil {
 		return *ret
 	}
@@ -280,4 +299,15 @@ func foreignKeyEqual(existing, fkey *ForeignKey) bool {
 		existing.Name == fkey.Name &&
 		existing.DisableIndex == fkey.DisableIndex &&
 		existing.DisableBuilderType && fkey.DisableBuilderType
+}
+
+func PolymorphicOptionsEqual(existing, p *PolymorphicOptions) bool {
+	ret := change.CompareNilVals(existing == nil, p == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return stringListEqual(existing.Types, p.Types) &&
+		existing.HideFromInverseGraphQL == p.HideFromInverseGraphQL &&
+		existing.DisableBuilderType == p.DisableBuilderType
 }

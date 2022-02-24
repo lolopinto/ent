@@ -37,8 +37,24 @@ type Change struct {
 
 type ChangeMap map[string][]Change
 
+// have to pass if nil because of go nil issues and inability to compare nils without type info
+func CompareNilVals(existingNil, valNil bool) *bool {
+	var ret *bool
+
+	if existingNil != valNil {
+		temp := false
+		ret = &temp
+	}
+	if existingNil && valNil {
+		temp := true
+		ret = &temp
+	}
+	return ret
+}
+
 // return boolean if one is nil and the other is not nil or both nil
 // if both not nil, returns nil, indicating more work to be done
+// TODO kill, doesn't work because of go nil crap
 func CompareEqual(existing, val interface{}) *bool {
 	var ret *bool
 

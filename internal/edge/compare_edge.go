@@ -1,6 +1,10 @@
 package edge
 
-import "github.com/lolopinto/ent/internal/schema/change"
+import (
+	"github.com/lolopinto/ent/internal/schema/base"
+	"github.com/lolopinto/ent/internal/schema/change"
+	"github.com/lolopinto/ent/internal/schema/input"
+)
 
 // TODO we need a test that shows not equal....
 func CompareAssociationEdge(existingEdge, edge *AssociationEdge) []change.Change {
@@ -90,4 +94,23 @@ func indexedEdgeEqual(existingEdge, edge *IndexedEdge) bool {
 		existingEdge.TsEdgeName == edge.TsEdgeName &&
 		existingEdge.ForeignNode == edge.ForeignNode &&
 		destinationEdgeEqual(existingEdge.destinationEdge, edge.destinationEdge)
+}
+
+func CompareFieldEdge(existingEdge, edge *FieldEdge) []change.Change {
+	var ret []change.Change
+	if !fieldEdgeEqual(existingEdge, edge) {
+		ret = append(ret, change.Change{
+			Change: change.ModifyEdge,
+		})
+	}
+	return ret
+}
+
+func fieldEdgeEqual(existingEdge, edge *FieldEdge) bool {
+	return commonEdgeInfoEqual(existingEdge.CommonEdgeInfo, edge.CommonEdgeInfo) &&
+		existingEdge.FieldName == edge.FieldName &&
+		existingEdge.TSFieldName == edge.TSFieldName &&
+		existingEdge.Nullable == edge.Nullable &&
+		input.InverseFieldEdgeEqual(existingEdge.InverseEdge, edge.InverseEdge) &&
+		base.PolymorphicOptionsEqual(existingEdge.Polymorphic, edge.Polymorphic)
 }

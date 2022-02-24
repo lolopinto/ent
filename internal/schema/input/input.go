@@ -181,7 +181,7 @@ func (f *FieldEdge) InverseEdgeName() string {
 }
 
 type InverseFieldEdge struct {
-	// Note that anytime anything changes here, have to update inverseFieldEdgeEqual in internal/schema/input/compare.go
+	// Note that anytime anything changes here, have to update InverseFieldEdgeEqual in internal/schema/input/compare.go
 	Name            string `json:"name"`
 	TableName       string `json:"tableName"`
 	HideFromGraphQL bool   `json:"hideFromGraphQL"`
@@ -189,6 +189,7 @@ type InverseFieldEdge struct {
 }
 
 type PolymorphicOptions struct {
+	// Note that anytime anything changes here, have to update PolymorphicOptionsEqual in compare.go
 	Types                  []string `json:"types"`
 	HideFromInverseGraphQL bool     `json:"hideFromInverseGraphQL"`
 	DisableBuilderType     bool     `json:"disableBuilderType"`
