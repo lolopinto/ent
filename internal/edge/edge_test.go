@@ -385,9 +385,7 @@ func testAssocEdge(t *testing.T, edge, expectedAssocEdge *AssociationEdge) {
 
 	testEdgeActions(t, edgeName, edge.EdgeActions, expectedAssocEdge.EdgeActions)
 
-	expectedPackageName := expectedAssocEdge.entConfig.PackageName
-	expectedConfigName := expectedAssocEdge.entConfig.ConfigName
-	testEntConfig(t, edge.entConfig, expectedPackageName, expectedConfigName)
+	testEntConfig(t, edge.entConfig, expectedAssocEdge.entConfig)
 
 	testNodeInfo(t, edge.NodeInfo, expectedAssocEdge.NodeInfo.Node)
 }
@@ -434,9 +432,7 @@ func testInverseAssociationEdge(t *testing.T, edgeName string, edge, expectedAss
 		expectedInverseEdge.EdgeConst,
 	)
 
-	expectedPackageName := inverseEdge.entConfig.PackageName
-	expectedConfigName := inverseEdge.entConfig.ConfigName
-	testEntConfig(t, inverseEdge.entConfig, expectedPackageName, expectedConfigName)
+	testEntConfig(t, inverseEdge.entConfig, inverseEdge.entConfig)
 
 	testNodeInfo(t, inverseEdge.NodeInfo, expectedInverseEdge.NodeInfo.Node)
 }
@@ -536,7 +532,10 @@ func testEdgeInfo(t *testing.T, edgeInfo *EdgeInfo, expAssocs int) {
 	)
 }
 
-func testEntConfig(t *testing.T, entConfig *schemaparser.EntConfigInfo, expectedPackageName, expectedConfigName string) {
+func testEntConfig(t *testing.T, entConfig, expectedEntConfig *schemaparser.EntConfigInfo) {
+	expectedPackageName := expectedEntConfig.PackageName
+	expectedConfigName := expectedEntConfig.ConfigName
+
 	// TODO PackageName is useless and we should fix it/remove it in this instance
 	assert.Equal(
 		t,
@@ -623,6 +622,18 @@ func testAssocEdgeGroup(t *testing.T, edgeGroup, expectedAssocEdgeGroup *Associa
 	}
 
 	testEdgeActions(t, edgeGroup.GroupName, edgeGroup.EdgeActions, expectedAssocEdgeGroup.EdgeActions)
+}
+
+func testForeignKeyEdge(t *testing.T, edge, expectedEdge *ForeignKeyEdge) {
+	assert.Equal(t, expectedEdge.SourceNodeName, edge.SourceNodeName)
+
+	assert.Equal(t, expectedEdge.QuotedDbColNameField, edge.QuotedDbColNameField)
+
+	assert.Equal(t, expectedEdge.UniqueField, edge.UniqueField)
+
+	testEntConfig(t, edge.entConfig, expectedEdge.entConfig)
+
+	testNodeInfo(t, edge.NodeInfo, expectedEdge.NodeInfo.Node)
 }
 
 var r *testsync.RunOnce

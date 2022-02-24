@@ -2,6 +2,7 @@ package edge
 
 import "github.com/lolopinto/ent/internal/schema/change"
 
+// TODO we need a test that shows not equal....
 func CompareAssociationEdge(existingEdge, edge *AssociationEdge) []change.Change {
 	var ret []change.Change
 	if !assocEdgeEqual(existingEdge, edge) {
@@ -49,4 +50,22 @@ func inverseAssocEdgeEqual(existing, inverseEdge *InverseAssocEdge) bool {
 
 	return commonEdgeInfoEqual(existing.CommonEdgeInfo, inverseEdge.CommonEdgeInfo) &&
 		existing.EdgeConst == inverseEdge.EdgeConst
+}
+
+// TODO we need a test that shows not equal....
+func CompareForeignKeyEdge(existingEdge, edge *ForeignKeyEdge) []change.Change {
+	var ret []change.Change
+	if !foreignKeyEdgeEqual(existingEdge, edge) {
+		ret = append(ret, change.Change{
+			Change: change.ModifyEdge,
+		})
+	}
+	return ret
+}
+
+func foreignKeyEdgeEqual(existingEdge, edge *ForeignKeyEdge) bool {
+	return existingEdge.SourceNodeName == edge.SourceNodeName &&
+		commonEdgeInfoEqual(existingEdge.CommonEdgeInfo, edge.CommonEdgeInfo) &&
+		existingEdge.QuotedDbColNameField == edge.QuotedDbColNameField &&
+		existingEdge.UniqueField == edge.UniqueField
 }

@@ -292,7 +292,7 @@ func (e *EdgeInfo) AddEdgeFromForeignKeyIndex(dbColName, edgeName, nodeName stri
 				edgeName,
 				schemaparser.GetEntConfigFromName(nodeName),
 			),
-			quotedDbColName: dbColName,
+			QuotedDbColNameField: dbColName,
 		},
 	}
 	e.indexedEdgeQueriesMap[edgeName] = edge
@@ -311,8 +311,8 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(tsFieldName, quotedDBColName, nodeNa
 				inflection.Plural(nodeName),
 				schemaparser.GetEntConfigFromName(nodeName),
 			),
-			quotedDbColName: quotedDBColName,
-			unique:          polymorphic.Unique,
+			QuotedDbColNameField: quotedDBColName,
+			UniqueField:          polymorphic.Unique,
 		},
 	}
 	if polymorphic.HideFromInverseGraphQL {
@@ -333,8 +333,8 @@ func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(tsFieldName, quotedD
 				inflection.Plural(nodeName),
 				schemaparser.GetEntConfigFromName(nodeName),
 			),
-			quotedDbColName: quotedDBColName,
-			unique:          polymorphic.Unique,
+			QuotedDbColNameField: quotedDBColName,
+			UniqueField:          polymorphic.Unique,
 		},
 		foreignNode: foreignNode,
 	}
@@ -479,8 +479,19 @@ func (edge *FieldEdge) NonPolymorphicList() bool {
 var _ Edge = &FieldEdge{}
 
 type ForeignKeyEdge struct {
-	SourceNodeName string
+	// note that if anything is changed here, need to update foreignKeyEdgeEqual() in compare_edge.go
+	SourceNodeName string `json:"sourceNodeName,omitempty"`
 	destinationEdge
+}
+
+func (e *ForeignKeyEdge) UnmarshalJSON(data []byte) error {
+	type Alias ForeignKeyEdge
+	err := json.Unmarshal(data, (*Alias)(e))
+	if err != nil {
+		return err
+	}
+	e.unmarshallJSONHelper()
+	return nil
 }
 
 func (e *ForeignKeyEdge) PluralEdge() bool {
@@ -543,8 +554,8 @@ var _ IndexedConnectionEdge = &ForeignKeyEdge{}
 
 type destinationEdge struct {
 	CommonEdgeInfo
-	quotedDbColName string
-	unique          bool
+	QuotedDbColNameField string `json:"quotedDbColName,omitempty"`
+	UniqueField          bool   `json:"unique,omitempty"`
 }
 
 func (e destinationEdge) Singular() string {
@@ -556,11 +567,11 @@ func (e destinationEdge) EdgeIdentifier() string {
 }
 
 func (e *destinationEdge) UniqueEdge() bool {
-	return e.unique
+	return e.UniqueField
 }
 
 func (e *destinationEdge) QuotedDBColName() string {
-	return e.quotedDbColName
+	return e.QuotedDbColNameField
 }
 
 // this is like a foreign key edge except different
@@ -574,7 +585,7 @@ type IndexedEdge struct {
 }
 
 func (e *IndexedEdge) PluralEdge() bool {
-	return !e.unique
+	return !e.UniqueField
 }
 
 func (e *IndexedEdge) PolymorphicEdge() bool {

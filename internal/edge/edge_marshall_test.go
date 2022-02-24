@@ -9,14 +9,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSimpleEdge(t *testing.T) {
+func TestSimpleAssocEdge(t *testing.T) {
 	edge, err := AssocEdgeFromInput("user", &input.AssocEdge{
 		Name:       "CreatedEvents",
 		SchemaName: "Event",
 	})
 	require.Nil(t, err)
 
-	edge2 := marshallAndUnmarshall(t, edge)
+	edge2 := marshallAndUnmarshallAssocEdge(t, edge)
 
 	testAssocEdge(t, edge, &AssociationEdge{
 		CommonEdgeInfo: getCommonEdgeInfo("CreatedEvents", schemaparser.GetEntConfigFromName("Event")),
@@ -31,7 +31,7 @@ func TestSimpleEdge(t *testing.T) {
 	require.Len(t, l, 0)
 }
 
-func TestSymmetricEdge(t *testing.T) {
+func TestSymmetricAssocEdge(t *testing.T) {
 	edge, err := AssocEdgeFromInput("user", &input.AssocEdge{
 		Name:       "Friends",
 		SchemaName: "User",
@@ -39,7 +39,7 @@ func TestSymmetricEdge(t *testing.T) {
 	})
 	require.Nil(t, err)
 
-	edge2 := marshallAndUnmarshall(t, edge)
+	edge2 := marshallAndUnmarshallAssocEdge(t, edge)
 
 	testAssocEdge(t, edge, &AssociationEdge{
 		CommonEdgeInfo: getCommonEdgeInfo("Friends", schemaparser.GetEntConfigFromName("User")),
@@ -55,7 +55,7 @@ func TestSymmetricEdge(t *testing.T) {
 	require.Len(t, l, 0)
 }
 
-func TestInverseEdge(t *testing.T) {
+func TestInverseAssocEdge(t *testing.T) {
 	edge, err := AssocEdgeFromInput("user", &input.AssocEdge{
 		Name:       "FriendRequestsSent",
 		SchemaName: "User",
@@ -65,7 +65,7 @@ func TestInverseEdge(t *testing.T) {
 	})
 	require.Nil(t, err)
 
-	edge2 := marshallAndUnmarshall(t, edge)
+	edge2 := marshallAndUnmarshallAssocEdge(t, edge)
 
 	testAssocEdge(t, edge, &AssociationEdge{
 		CommonEdgeInfo: getCommonEdgeInfo("FriendRequestsSent", schemaparser.GetEntConfigFromName("User")),
@@ -84,7 +84,7 @@ func TestInverseEdge(t *testing.T) {
 	require.Len(t, l, 0)
 }
 
-func TestWithPattern(t *testing.T) {
+func TestAssocEdgeWithPattern(t *testing.T) {
 	edge, err := AssocEdgeFromInput("user", &input.AssocEdge{
 		Name:       "likers",
 		SchemaName: "User",
@@ -97,7 +97,7 @@ func TestWithPattern(t *testing.T) {
 	})
 	require.Nil(t, err)
 
-	edge2 := marshallAndUnmarshall(t, edge)
+	edge2 := marshallAndUnmarshallAssocEdge(t, edge)
 
 	testAssocEdge(t, edge, &AssociationEdge{
 		CommonEdgeInfo: getCommonEdgeInfo("likers", schemaparser.GetEntConfigFromName("User")),
@@ -121,7 +121,7 @@ func TestWithPattern(t *testing.T) {
 	require.Len(t, l, 0)
 }
 
-func marshallAndUnmarshall(t *testing.T, edge *AssociationEdge) *AssociationEdge {
+func marshallAndUnmarshallAssocEdge(t *testing.T, edge *AssociationEdge) *AssociationEdge {
 	b, err := json.Marshal(edge)
 	require.Nil(t, err)
 
@@ -129,4 +129,53 @@ func marshallAndUnmarshall(t *testing.T, edge *AssociationEdge) *AssociationEdge
 	err = json.Unmarshal(b, edge2)
 	require.Nil(t, err)
 	return edge2
+}
+
+func TestForeignKeyEdge(t *testing.T) {
+	edge := &ForeignKeyEdge{
+		SourceNodeName: "Contact",
+		destinationEdge: destinationEdge{
+			CommonEdgeInfo: getCommonEdgeInfo(
+				"users",
+				schemaparser.GetEntConfigFromName("User"),
+			),
+			QuotedDbColNameField: "user_id",
+		},
+	}
+
+	b, err := json.Marshal(edge)
+	require.Nil(t, err)
+	edge2 := &ForeignKeyEdge{}
+	err = json.Unmarshal(b, edge2)
+	require.Nil(t, err)
+
+	testForeignKeyEdge(t, edge, edge2)
+
+	l := CompareForeignKeyEdge(edge, edge2)
+	require.Len(t, l, 0)
+}
+
+func TestUniqueForeignKeyEdge(t *testing.T) {
+	edge := &ForeignKeyEdge{
+		SourceNodeName: "Contact",
+		destinationEdge: destinationEdge{
+			CommonEdgeInfo: getCommonEdgeInfo(
+				"users",
+				schemaparser.GetEntConfigFromName("User"),
+			),
+			QuotedDbColNameField: "user_id",
+			UniqueField:          true,
+		},
+	}
+
+	b, err := json.Marshal(edge)
+	require.Nil(t, err)
+	edge2 := &ForeignKeyEdge{}
+	err = json.Unmarshal(b, edge2)
+	require.Nil(t, err)
+
+	testForeignKeyEdge(t, edge, edge2)
+
+	l := CompareForeignKeyEdge(edge, edge2)
+	require.Len(t, l, 0)
 }
