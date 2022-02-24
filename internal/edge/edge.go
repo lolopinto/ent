@@ -1,6 +1,7 @@
 package edge
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"go/ast"
@@ -255,7 +256,7 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo
 		}
 	}
 
-	var edgeInfo commonEdgeInfo
+	var edgeInfo CommonEdgeInfo
 	if fieldEdgeInfo.Polymorphic == nil {
 		config := schemaparser.GetEntConfigFromName(fieldEdgeInfo.Schema)
 
@@ -265,7 +266,7 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo
 			config,
 		)
 	} else {
-		edgeInfo = commonEdgeInfo{
+		edgeInfo = CommonEdgeInfo{
 			EdgeName: trim,
 		}
 	}
@@ -273,7 +274,7 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo
 	edge := &FieldEdge{
 		FieldName:      fieldName,
 		TSFieldName:    strcase.ToLowerCamel(fieldName),
-		commonEdgeInfo: edgeInfo,
+		CommonEdgeInfo: edgeInfo,
 		InverseEdge:    fieldEdgeInfo.InverseEdge,
 		Nullable:       nullable,
 		Polymorphic:    fieldEdgeInfo.Polymorphic,
@@ -287,7 +288,7 @@ func (e *EdgeInfo) AddEdgeFromForeignKeyIndex(dbColName, edgeName, nodeName stri
 	edge := &ForeignKeyEdge{
 		SourceNodeName: e.SourceNodeName,
 		destinationEdge: destinationEdge{
-			commonEdgeInfo: getCommonEdgeInfo(
+			CommonEdgeInfo: getCommonEdgeInfo(
 				edgeName,
 				schemaparser.GetEntConfigFromName(nodeName),
 			),
@@ -306,7 +307,7 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(tsFieldName, quotedDBColName, nodeNa
 	edge := &IndexedEdge{
 		tsEdgeName: tsEdgeName,
 		destinationEdge: destinationEdge{
-			commonEdgeInfo: getCommonEdgeInfo(
+			CommonEdgeInfo: getCommonEdgeInfo(
 				inflection.Plural(nodeName),
 				schemaparser.GetEntConfigFromName(nodeName),
 			),
@@ -315,7 +316,7 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(tsFieldName, quotedDBColName, nodeNa
 		},
 	}
 	if polymorphic.HideFromInverseGraphQL {
-		edge._HideFromGraphQL = true
+		edge.HideFromGraphQLField = true
 	}
 	edgeName := edge.GetEdgeName()
 	e.indexedEdgeQueriesMap[edgeName] = edge
@@ -328,7 +329,7 @@ func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(tsFieldName, quotedD
 	edge := &IndexedEdge{
 		tsEdgeName: tsEdgeName,
 		destinationEdge: destinationEdge{
-			commonEdgeInfo: getCommonEdgeInfo(
+			CommonEdgeInfo: getCommonEdgeInfo(
 				inflection.Plural(nodeName),
 				schemaparser.GetEntConfigFromName(nodeName),
 			),
@@ -338,7 +339,7 @@ func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(tsFieldName, quotedD
 		foreignNode: foreignNode,
 	}
 	if polymorphic.HideFromInverseGraphQL {
-		edge._HideFromGraphQL = true
+		edge.HideFromGraphQLField = true
 	}
 	edgeName := edge.GetEdgeName()
 	e.destinationEdgesMap[edgeName] = edge
@@ -388,39 +389,50 @@ type PluralEdge interface {
 	Singular() string
 }
 
-type commonEdgeInfo struct {
-	EdgeName         string
-	entConfig        *schemaparser.EntConfigInfo
-	NodeInfo         nodeinfo.NodeInfo
-	_HideFromGraphQL bool
+// TODO check to see if we can rename back to commonEdgeInfo
+type CommonEdgeInfo struct {
+	// note that if anything is changed here, need to update commonEdgeInfoEqual() in compare_edge.go
+	EdgeName string `json:"edgeName"`
+	// used to load entConfig and NodeInfo
+	// since this extra crap shouldn't be marshalled
+	PackageNameField     string `json:"packageName"`
+	entConfig            *schemaparser.EntConfigInfo
+	NodeInfo             nodeinfo.NodeInfo `json:"-"`
+	HideFromGraphQLField bool              `json:"hideFromGraphQL,omitempty"`
 }
 
-func (e *commonEdgeInfo) GetEdgeName() string {
+// to be called by UnmarshallJSON() in other classes
+func (e *CommonEdgeInfo) unmarshallJSONHelper() {
+	e.NodeInfo = nodeinfo.GetNodeInfo(e.PackageNameField)
+	e.entConfig = schemaparser.GetEntConfigFromName(e.PackageNameField)
+}
+
+func (e *CommonEdgeInfo) GetEdgeName() string {
 	return e.EdgeName
 }
 
-func (e *commonEdgeInfo) GetNodeInfo() nodeinfo.NodeInfo {
+func (e *CommonEdgeInfo) GetNodeInfo() nodeinfo.NodeInfo {
 	return e.NodeInfo
 }
 
-func (e *commonEdgeInfo) GetEntConfig() *schemaparser.EntConfigInfo {
+func (e *CommonEdgeInfo) GetEntConfig() *schemaparser.EntConfigInfo {
 	return e.entConfig
 }
 
-func (e *commonEdgeInfo) CamelCaseEdgeName() string {
+func (e *CommonEdgeInfo) CamelCaseEdgeName() string {
 	return strcase.ToCamel(e.EdgeName)
 }
 
-func (e *commonEdgeInfo) GraphQLEdgeName() string {
+func (e *CommonEdgeInfo) GraphQLEdgeName() string {
 	return strcase.ToLowerCamel(e.EdgeName)
 }
 
-func (e *commonEdgeInfo) HideFromGraphQL() bool {
-	return e._HideFromGraphQL
+func (e *CommonEdgeInfo) HideFromGraphQL() bool {
+	return e.HideFromGraphQLField
 }
 
 type FieldEdge struct {
-	commonEdgeInfo
+	CommonEdgeInfo
 	FieldName   string
 	TSFieldName string
 	//	InverseEdgeName string
@@ -530,7 +542,7 @@ var _ ConnectionEdge = &ForeignKeyEdge{}
 var _ IndexedConnectionEdge = &ForeignKeyEdge{}
 
 type destinationEdge struct {
-	commonEdgeInfo
+	CommonEdgeInfo
 	quotedDbColName string
 	unique          bool
 }
@@ -626,8 +638,19 @@ var _ ConnectionEdge = &IndexedEdge{}
 var _ IndexedConnectionEdge = &IndexedEdge{}
 
 type InverseAssocEdge struct {
-	commonEdgeInfo
-	EdgeConst string
+	// note that if anything is changed here, need to update inverseAssocEdgeEqual() in compare_edge.go
+	CommonEdgeInfo
+	EdgeConst string `json:"edgeConst"`
+}
+
+func (e *InverseAssocEdge) UnmarshalJSON(data []byte) error {
+	type Alias InverseAssocEdge
+	err := json.Unmarshal(data, (*Alias)(e))
+	if err != nil {
+		return err
+	}
+	e.unmarshallJSONHelper()
+	return nil
 }
 
 func (e *InverseAssocEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
@@ -651,23 +674,35 @@ func TsEdgeConst(constName string) (string, error) {
 }
 
 type AssociationEdge struct {
-	commonEdgeInfo
-	EdgeConst     string
-	TsEdgeConst   string
-	Symmetric     bool
-	Unique        bool
-	InverseEdge   *InverseAssocEdge
-	IsInverseEdge bool
-	TableName     string // TableName will be gotten from the GroupName if part of a group or derived from each edge
+	// note that if anything is changed here, need to update assocEdgeEqual() in compare_edge.go
+	CommonEdgeInfo
+	EdgeConst     string            `json:"edgeConst"`
+	TsEdgeConst   string            `json:"tsEdgeConst"`
+	Symmetric     bool              `json:"symmetric,omitempty"`
+	Unique        bool              `json:"unique,omitempty"`
+	InverseEdge   *InverseAssocEdge `json:"inverseEdge,omitempty"`
+	IsInverseEdge bool              `json:"isInverseEdge,omitempty"`
+	TableName     string            `json:"tableName,omitempty"`
+	// TableName will be gotten from the GroupName if part of a group or derived from each edge
 	// will eventually be made configurable to the user
-	EdgeActions []*EdgeAction
+	EdgeActions []*EdgeAction `json:"edgeActions,omitempty"`
 
-	givenEdgeConstName   string
-	patternEdgeConst     string
-	overridenQueryName   string
-	overridenEdgeName    string
-	overridenGraphQLName string
-	PatternName          string
+	GivenEdgeConstName   string `json:"givenEdgeConstName,omitempty"`
+	PatternEdgeConst     string `json:"patternEdgeConst,omitempty"`
+	OverridenQueryName   string `json:"overridenQueryName,omitempty"`
+	OverridenEdgeName    string `json:"overridenEdgeName,omitempty"`
+	OverridenGraphQLName string `json:"overridenGraphQLName,omitempty"`
+	PatternName          string `json:"patternName,omitempty"`
+}
+
+func (e *AssociationEdge) UnmarshalJSON(data []byte) error {
+	type Alias AssociationEdge
+	err := json.Unmarshal(data, (*Alias)(e))
+	if err != nil {
+		return err
+	}
+	e.unmarshallJSONHelper()
+	return nil
 }
 
 func (e *AssociationEdge) CreateEdge() bool {
@@ -692,15 +727,15 @@ func (e *AssociationEdge) GenerateBase() bool {
 }
 
 func (e *AssociationEdge) EdgeQueryBase() string {
-	if e.patternEdgeConst != "" {
-		return fmt.Sprintf("%sQuery", e.patternEdgeConst)
+	if e.PatternEdgeConst != "" {
+		return fmt.Sprintf("%sQuery", e.PatternEdgeConst)
 	}
 	return e.TsEdgeQueryName() + "Base"
 }
 
 func (e *AssociationEdge) AssocEdgeBase() string {
-	if e.patternEdgeConst != "" {
-		return fmt.Sprintf("%sEdge", e.patternEdgeConst)
+	if e.PatternEdgeConst != "" {
+		return fmt.Sprintf("%sEdge", e.PatternEdgeConst)
 	}
 	return "AssocEdge"
 }
@@ -712,30 +747,30 @@ func (e *AssociationEdge) PolymorphicEdge() bool {
 }
 
 func (e *AssociationEdge) TsEdgeQueryName() string {
-	if e.overridenQueryName != "" {
-		return e.overridenQueryName
+	if e.OverridenQueryName != "" {
+		return e.OverridenQueryName
 	}
 	return fmt.Sprintf("%sQuery", e.TsEdgeConst)
 }
 
 func (e *AssociationEdge) GetGraphQLEdgePrefix() string {
-	if e.overridenQueryName != "" {
+	if e.OverridenQueryName != "" {
 		// return this with connection removed
-		return strings.TrimSuffix(e.overridenQueryName, "Query")
+		return strings.TrimSuffix(e.OverridenQueryName, "Query")
 	}
 	return e.TsEdgeConst
 }
 
 func (e *AssociationEdge) TsEdgeQueryEdgeName() string {
-	if e.overridenEdgeName != "" {
-		return e.overridenEdgeName
+	if e.OverridenEdgeName != "" {
+		return e.OverridenEdgeName
 	}
 	return fmt.Sprintf("%sEdge", e.TsEdgeConst)
 }
 
 func (e *AssociationEdge) GetGraphQLConnectionName() string {
-	if e.overridenGraphQLName != "" {
-		return e.overridenGraphQLName
+	if e.OverridenGraphQLName != "" {
+		return e.OverridenGraphQLName
 	}
 	// we need a unique graphql name
 	// there's nothing stopping multiple edges of different types having the same connection and then there'll be a conflict here
@@ -794,8 +829,9 @@ func (e *AssociationEdge) AddInverseEdge(inverseEdgeInfo *EdgeInfo) error {
 	return inverseEdgeInfo.addEdge(&AssociationEdge{
 		EdgeConst:      inverseEdge.EdgeConst,
 		TsEdgeConst:    tsConst,
-		commonEdgeInfo: inverseEdge.commonEdgeInfo,
+		CommonEdgeInfo: inverseEdge.CommonEdgeInfo,
 		IsInverseEdge:  true,
+		TableName:      e.TableName,
 	})
 }
 
@@ -813,7 +849,7 @@ func (e *AssociationEdge) CloneWithCommonInfo(configName string) (*AssociationEd
 		InverseEdge: e.InverseEdge,
 		TableName:   e.TableName,
 		EdgeActions: e.EdgeActions,
-		commonEdgeInfo: getCommonEdgeInfo(
+		CommonEdgeInfo: getCommonEdgeInfo(
 			e.EdgeName,
 			config,
 		),
@@ -840,11 +876,11 @@ var _ ConnectionEdge = &AssociationEdge{}
 // and depends on action to take that information, process it and generate the
 // action specific metadata
 type EdgeAction struct {
-	Action            string
-	CustomActionName  string
-	CustomGraphQLName string
-	ExposeToGraphQL   bool
-	ActionOnlyFields  []*input.ActionField
+	Action            string               `json:"action"`
+	CustomActionName  string               `json:"customActionName,omitempty"`
+	CustomGraphQLName string               `json:"customGraphQLName,omitempty"`
+	ExposeToGraphQL   bool                 `json:"exposeToGraphQL,omitempty"`
+	ActionOnlyFields  []*input.ActionField `json:"actionOnlyFields,omitempty"`
 }
 
 type AssociationEdgeGroup struct {
@@ -1018,7 +1054,7 @@ func AssocEdgeFromInput(packageName string, edge *input.AssocEdge) (*Association
 		Unique:             edge.Unique,
 		TableName:          edge.TableName,
 		PatternName:        edge.PatternName,
-		givenEdgeConstName: edge.EdgeConstName,
+		GivenEdgeConstName: edge.EdgeConstName,
 	}
 
 	// name wasn't specified? get default one
@@ -1056,7 +1092,7 @@ func AssocEdgeFromInput(packageName string, edge *input.AssocEdge) (*Association
 		if packageName == "object" {
 			configPkgName = "ent"
 		}
-		inverseEdge.commonEdgeInfo = getCommonEdgeInfo(
+		inverseEdge.CommonEdgeInfo = getCommonEdgeInfo(
 			edgeName,
 			// need to create a new EntConfig for the inverse edge
 
@@ -1078,7 +1114,7 @@ func AssocEdgeFromInput(packageName string, edge *input.AssocEdge) (*Association
 
 		if edge.PatternName != "" {
 			oldEdgeConst := assocEdge.TsEdgeConst
-			assocEdge.patternEdgeConst = assocEdge.TsEdgeConst
+			assocEdge.PatternEdgeConst = assocEdge.TsEdgeConst
 			assocEdge.EdgeConst = getEdgeConstName("object", edge.Name)
 			// It transforms UserToFriendsEdge to UserToFriends since that's in an enum
 			edgeConst, err := TsEdgeConst(assocEdge.EdgeConst)
@@ -1086,10 +1122,10 @@ func AssocEdgeFromInput(packageName string, edge *input.AssocEdge) (*Association
 				return nil, err
 			}
 			assocEdge.TsEdgeConst = edgeConst
-			assocEdge.patternEdgeConst = edgeConst
-			assocEdge.overridenQueryName = fmt.Sprintf("%sQuery", oldEdgeConst)
-			assocEdge.overridenEdgeName = fmt.Sprintf("%sEdge", oldEdgeConst)
-			assocEdge.overridenGraphQLName = fmt.Sprintf("%sConnection", oldEdgeConst)
+			assocEdge.PatternEdgeConst = edgeConst
+			assocEdge.OverridenQueryName = fmt.Sprintf("%sQuery", oldEdgeConst)
+			assocEdge.OverridenEdgeName = fmt.Sprintf("%sEdge", oldEdgeConst)
+			assocEdge.OverridenGraphQLName = fmt.Sprintf("%sConnection", oldEdgeConst)
 		}
 	} else {
 		assocEdge.EdgeConst = edge.EdgeConstName + "Edge"
@@ -1097,29 +1133,29 @@ func AssocEdgeFromInput(packageName string, edge *input.AssocEdge) (*Association
 
 		// todo we need to test this when pattern doesn't provide this
 		if edge.PatternName != "" {
-			assocEdge.patternEdgeConst = assocEdge.TsEdgeConst
+			assocEdge.PatternEdgeConst = assocEdge.TsEdgeConst
 			assocEdge.EdgeConst = getEdgeConstName(packageName, edge.Name)
 			// It transforms UserToFriendsEdge to UserToFriends since that's in an enum
 			edgeConst, err := TsEdgeConst(assocEdge.EdgeConst)
 			if err != nil {
 				return nil, err
 			}
-			assocEdge.overridenQueryName = fmt.Sprintf("%sQuery", edgeConst)
-			assocEdge.overridenEdgeName = fmt.Sprintf("%sEdge", edgeConst)
-			assocEdge.overridenGraphQLName = fmt.Sprintf("%sConnection", edgeConst)
+			assocEdge.OverridenQueryName = fmt.Sprintf("%sQuery", edgeConst)
+			assocEdge.OverridenEdgeName = fmt.Sprintf("%sEdge", edgeConst)
+			assocEdge.OverridenGraphQLName = fmt.Sprintf("%sConnection", edgeConst)
 		}
 	}
 
 	// golang
 	if edge.EntConfig != nil {
-		assocEdge.commonEdgeInfo = getCommonEdgeInfo(edge.Name, edge.EntConfig)
+		assocEdge.CommonEdgeInfo = getCommonEdgeInfo(edge.Name, edge.EntConfig)
 	} else { // typescript
-		assocEdge.commonEdgeInfo = getCommonEdgeInfo(
+		assocEdge.CommonEdgeInfo = getCommonEdgeInfo(
 			edge.Name,
 			schemaparser.GetEntConfigFromName(edge.SchemaName),
 		)
 	}
-	assocEdge._HideFromGraphQL = edge.HideFromGraphQL
+	assocEdge.HideFromGraphQLField = edge.HideFromGraphQL
 
 	return assocEdge, nil
 }
@@ -1285,11 +1321,12 @@ func (g *parseEdgeGraph) RunLoop() error {
 	return g.RunQueuedUpItems()
 }
 
-func getCommonEdgeInfo(edgeName string, entConfig *schemaparser.EntConfigInfo) commonEdgeInfo {
-	return commonEdgeInfo{
-		EdgeName:  edgeName,
-		entConfig: entConfig,
-		NodeInfo:  nodeinfo.GetNodeInfo(entConfig.PackageName),
+func getCommonEdgeInfo(edgeName string, entConfig *schemaparser.EntConfigInfo) CommonEdgeInfo {
+	return CommonEdgeInfo{
+		EdgeName:         edgeName,
+		entConfig:        entConfig,
+		NodeInfo:         nodeinfo.GetNodeInfo(entConfig.PackageName),
+		PackageNameField: entConfig.PackageName,
 	}
 }
 
