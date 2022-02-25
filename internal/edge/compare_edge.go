@@ -4,9 +4,9 @@ import (
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/input"
+	"github.com/lolopinto/ent/internal/schemaparser"
 )
 
-// TODO we need a test that shows not equal....
 func CompareAssociationEdge(existingEdge, edge *AssociationEdge) []change.Change {
 	var ret []change.Change
 	if !assocEdgeEqual(existingEdge, edge) {
@@ -23,7 +23,7 @@ func assocEdgeEqual(existingEdge, edge *AssociationEdge) bool {
 		existingEdge.TsEdgeConst == edge.TsEdgeConst &&
 		existingEdge.Symmetric == edge.Symmetric &&
 		existingEdge.Unique == edge.Unique &&
-		//		inverseAssocEdgeEqual(existingEdge.InverseEdge, edge.InverseEdge) &&
+		inverseAssocEdgeEqual(existingEdge.InverseEdge, edge.InverseEdge) &&
 		existingEdge.IsInverseEdge == edge.IsInverseEdge &&
 		existingEdge.TableName == edge.TableName &&
 		// EdgeActions intentionally skipped since we don't need it in file generation
@@ -42,12 +42,21 @@ func commonEdgeInfoEqual(existing, common commonEdgeInfo) bool {
 		existing.PackageNameField == common.PackageNameField &&
 		// assuming if this is correct, everything else is
 		existing.NodeInfo.Node == common.NodeInfo.Node &&
-		existing.entConfig.ConfigName == common.entConfig.ConfigName &&
-		existing.entConfig.PackageName == common.entConfig.PackageName
+		entConfigEqual(existing.entConfig, common.entConfig)
+}
+
+func entConfigEqual(existing, entConfig *schemaparser.EntConfigInfo) bool {
+	ret := change.CompareNilVals(existing == nil, entConfig == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return existing.ConfigName == entConfig.ConfigName &&
+		existing.PackageName == entConfig.PackageName
 }
 
 func inverseAssocEdgeEqual(existing, inverseEdge *InverseAssocEdge) bool {
-	ret := change.CompareEqual(existing, inverseEdge)
+	ret := change.CompareNilVals(existing == nil, inverseEdge == nil)
 	if ret != nil {
 		return *ret
 	}
@@ -56,7 +65,6 @@ func inverseAssocEdgeEqual(existing, inverseEdge *InverseAssocEdge) bool {
 		existing.EdgeConst == inverseEdge.EdgeConst
 }
 
-// TODO we need a test that shows not equal....
 func CompareForeignKeyEdge(existingEdge, edge *ForeignKeyEdge) []change.Change {
 	var ret []change.Change
 	if !foreignKeyEdgeEqual(existingEdge, edge) {

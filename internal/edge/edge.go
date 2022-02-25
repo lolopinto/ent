@@ -221,7 +221,7 @@ func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(fieldName, configName string, 
 	}, nullable, fieldType)
 }
 
-func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo *base.FieldEdgeInfo, nullable bool, fieldType enttype.EntType) error {
+func getFieldEdge(fieldName string, fieldEdgeInfo *base.FieldEdgeInfo, nullable bool, fieldType enttype.EntType) (*FieldEdge, error) {
 	// TODO pass fieldType so we can check list or not...
 	validSuffixes := map[string]string{
 		"id":  "_id",
@@ -241,7 +241,7 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo
 		}
 	}
 	if foundSuffix == "" {
-		return nil
+		return nil, nil
 	}
 	trim := strings.TrimSuffix(fieldName, validSuffixes[foundSuffix])
 	if trim == "" {
@@ -252,7 +252,7 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo
 	if enttype.IsListType(fieldType) {
 		trim = inflection.Plural(trim)
 		if fieldEdgeInfo.Polymorphic != nil {
-			return fmt.Errorf("field %s polymorphic list types not currently supported", fieldName)
+			return nil, fmt.Errorf("field %s polymorphic list types not currently supported", fieldName)
 		}
 	}
 
@@ -271,7 +271,7 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo
 		}
 	}
 
-	edge := &FieldEdge{
+	return &FieldEdge{
 		FieldName:      fieldName,
 		TSFieldName:    strcase.ToLowerCamel(fieldName),
 		commonEdgeInfo: edgeInfo,
@@ -279,14 +279,23 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo
 		Nullable:       nullable,
 		Polymorphic:    fieldEdgeInfo.Polymorphic,
 		fieldType:      fieldType,
-	}
+	}, nil
+}
 
+func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo *base.FieldEdgeInfo, nullable bool, fieldType enttype.EntType) error {
+	edge, err := getFieldEdge(fieldName, fieldEdgeInfo, nullable, fieldType)
+	if err != nil {
+		return err
+	}
+	if edge == nil {
+		return nil
+	}
 	return e.addEdge(edge)
 }
 
-func (e *EdgeInfo) AddEdgeFromForeignKeyIndex(dbColName, edgeName, nodeName string) error {
-	edge := &ForeignKeyEdge{
-		SourceNodeName: e.SourceNodeName,
+func getForeignKeyEdge(dbColName, edgeName, nodeName, sourceNodeName string) *ForeignKeyEdge {
+	return &ForeignKeyEdge{
+		SourceNodeName: sourceNodeName,
 		destinationEdge: destinationEdge{
 			commonEdgeInfo: getCommonEdgeInfo(
 				edgeName,
@@ -295,6 +304,10 @@ func (e *EdgeInfo) AddEdgeFromForeignKeyIndex(dbColName, edgeName, nodeName stri
 			QuotedDbColNameField: dbColName,
 		},
 	}
+}
+
+func (e *EdgeInfo) AddEdgeFromForeignKeyIndex(dbColName, edgeName, nodeName string) error {
+	edge := getForeignKeyEdge(dbColName, edgeName, nodeName, e.SourceNodeName)
 	e.indexedEdgeQueriesMap[edgeName] = edge
 	e.destinationEdgesMap[edgeName] = edge
 	e.IndexedEdgeQueries = append(e.IndexedEdgeQueries, edge)
@@ -324,7 +337,7 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(tsFieldName, quotedDBColName, nodeNa
 	return e.addEdge(edge)
 }
 
-func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) error {
+func getIndexedEdge(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) *IndexedEdge {
 	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
 	edge := &IndexedEdge{
 		TsEdgeName: tsEdgeName,
@@ -334,13 +347,18 @@ func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(tsFieldName, quotedD
 				schemaparser.GetEntConfigFromName(nodeName),
 			),
 			QuotedDbColNameField: quotedDBColName,
-			UniqueField:          polymorphic.Unique,
 		},
 		ForeignNode: foreignNode,
 	}
-	if polymorphic.HideFromInverseGraphQL {
-		edge.HideFromGraphQLField = true
+	if polymorphic != nil {
+		edge.HideFromGraphQLField = polymorphic.HideFromInverseGraphQL
+		edge.UniqueField = polymorphic.Unique
 	}
+	return edge
+}
+
+func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) error {
+	edge := getIndexedEdge(tsFieldName, quotedDBColName, nodeName, polymorphic, foreignNode)
 	edgeName := edge.GetEdgeName()
 	e.destinationEdgesMap[edgeName] = edge
 	e.DestinationEdges = append(e.DestinationEdges, edge)

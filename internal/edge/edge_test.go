@@ -533,6 +533,11 @@ func testEdgeInfo(t *testing.T, edgeInfo *EdgeInfo, expAssocs int) {
 }
 
 func testEntConfig(t *testing.T, entConfig, expectedEntConfig *schemaparser.EntConfigInfo) {
+	// apparently, this is how it should work?
+	if entConfig == nil {
+		require.Nil(t, expectedEntConfig)
+		return
+	}
 	expectedPackageName := expectedEntConfig.PackageName
 	expectedConfigName := expectedEntConfig.ConfigName
 
