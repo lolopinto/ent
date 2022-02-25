@@ -429,3 +429,14 @@ func actionEqual(existing, action *Action) bool {
 		existing.HideFromGraphQL == action.HideFromGraphQL &&
 		actionOnlyFieldsEqual(existing.ActionOnlyFields, action.ActionOnlyFields)
 }
+
+func foreignKeyInfoEqual(existing, fkey *ForeignKeyInfo) bool {
+	ret := compareNilVals(existing == nil, fkey == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return existing.TableName == fkey.TableName &&
+		stringListEqual(existing.Columns, fkey.Columns) &&
+		existing.OnDelete == fkey.OnDelete
+}

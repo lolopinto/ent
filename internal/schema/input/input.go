@@ -654,6 +654,7 @@ const (
 )
 
 type ForeignKeyInfo struct {
+	// Note that anytime anything changes here, have to update foreignKeyInfoEqual in compare.go
 	TableName string       `json:"tableName,omitempty"`
 	Columns   []string     `json:"columns,omitempty"`
 	OnDelete  OnDeleteFkey `json:"ondelete,omitempty"`
