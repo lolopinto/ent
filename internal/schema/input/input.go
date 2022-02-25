@@ -19,6 +19,7 @@ type Schema struct {
 }
 
 type Pattern struct {
+	// Note that anytime anything changes here, have to update patternEqual in compare.go
 	Name string `json:"name,omitempty"`
 	// at this point, should we support everything in Node
 	Fields     []*Field     `json:"fields,omitempty"`

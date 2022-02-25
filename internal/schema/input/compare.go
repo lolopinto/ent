@@ -140,6 +140,12 @@ func compareFields(existing, fields []*Field) []Change {
 	return ret
 }
 
+func patternEqual(existing, pattern *Pattern) bool {
+	return existing.Name == pattern.Name &&
+		fieldsEqual(existing.Fields, pattern.Fields) &&
+		assocEdgesEqual(existing.AssocEdges, pattern.AssocEdges)
+}
+
 func fieldsEqual(existing, fields []*Field) bool {
 	if len(existing) != len(fields) {
 		return false

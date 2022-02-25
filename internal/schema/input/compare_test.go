@@ -28,6 +28,16 @@ func marshallAndUnmarshallField(t *testing.T, field *Field) *Field {
 	return f2
 }
 
+func marshallAndUnmarshallPattern(t *testing.T, p *Pattern) *Pattern {
+	b, err := json.Marshal(p)
+	require.Nil(t, err)
+
+	p2 := &Pattern{}
+	err = json.Unmarshal(b, p2)
+	require.Nil(t, err)
+	return p2
+}
+
 func TestSimpleAssocEdge(t *testing.T) {
 	edge := &AssocEdge{
 		Name:       "CreatedEvents",
@@ -361,4 +371,50 @@ func TestPolymorphicDerivedField(t *testing.T) {
 
 	f2 := marshallAndUnmarshallField(t, f)
 	require.True(t, fieldEqual(f, f2))
+}
+
+func TestPattern(t *testing.T) {
+	p := &Pattern{
+		Name: "node",
+		Fields: []*Field{
+			{
+				Name: "id",
+				Type: &FieldType{
+					DBType: UUID,
+				},
+			},
+		},
+	}
+
+	p2 := marshallAndUnmarshallPattern(t, p)
+	require.True(t, patternEqual(p, p2))
+}
+
+func TestPatternWithEdges(t *testing.T) {
+	p := &Pattern{
+		Name: "node+feedback",
+		Fields: []*Field{
+			{
+				Name: "id",
+				Type: &FieldType{
+					DBType: UUID,
+				},
+			},
+		},
+		AssocEdges: []*AssocEdge{
+			{
+				Name:       "likers",
+				SchemaName: "User",
+				InverseEdge: &InverseAssocEdge{
+					Name:          "likes",
+					EdgeConstName: "UserToLikes",
+				},
+				EdgeConstName: "ObjectToLikers",
+				PatternName:   "feedback",
+			},
+		},
+	}
+
+	p2 := marshallAndUnmarshallPattern(t, p)
+	require.True(t, patternEqual(p, p2))
 }
