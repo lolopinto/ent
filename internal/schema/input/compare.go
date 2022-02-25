@@ -175,23 +175,6 @@ func compareFields(existing, fields []*Field) []Change {
 	return ret
 }
 
-// return boolean if one is nil and the other is not nil or both nil
-// if both not nil, returns nil, indicating more work to be done
-// TODO kill
-func compareEqual(existing, val interface{}) *bool {
-	var ret *bool
-
-	if xor(existing, val) {
-		temp := false
-		ret = &temp
-	}
-	if existing == nil && val == nil {
-		temp := true
-		ret = &temp
-	}
-	return ret
-}
-
 func compareNilVals(existingNil, valNil bool) *bool {
 	var ret *bool
 
@@ -204,10 +187,6 @@ func compareNilVals(existingNil, valNil bool) *bool {
 		ret = &temp
 	}
 	return ret
-}
-
-func xor(existing, val interface{}) bool {
-	return (existing == nil && val != nil) || (existing != nil && val == nil)
 }
 
 func stringListEqual(l1, l2 []string) bool {
@@ -245,7 +224,7 @@ func stringMapEqual(m1, m2 map[string]string) bool {
 }
 
 func fieldTypeEqual(existing, fieldType *FieldType) bool {
-	ret := compareEqual(existing, fieldType)
+	ret := compareNilVals(existing == nil, fieldType == nil)
 	if ret != nil {
 		return *ret
 	}
@@ -261,7 +240,7 @@ func fieldTypeEqual(existing, fieldType *FieldType) bool {
 }
 
 func importTypeEqual(existing, importType *enttype.InputImportType) bool {
-	ret := compareEqual(existing, importType)
+	ret := compareNilVals(existing == nil, importType == nil)
 	if ret != nil {
 		return *ret
 	}
@@ -270,7 +249,7 @@ func importTypeEqual(existing, importType *enttype.InputImportType) bool {
 }
 
 func fieldEdgeEqual(existing, fieldEdge *FieldEdge) bool {
-	ret := compareEqual(existing, fieldEdge)
+	ret := compareNilVals(existing == nil, fieldEdge == nil)
 	if ret != nil {
 		return *ret
 	}

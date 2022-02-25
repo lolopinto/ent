@@ -227,3 +227,51 @@ func TestIndex(t *testing.T) {
 	require.Nil(t, err)
 	require.True(t, indexEqual(i, i2))
 }
+
+func TestForeignKey(t *testing.T) {
+	fkey := &ForeignKey{
+		Schema: "User",
+		Column: "id",
+		Name:   "users",
+	}
+
+	b, err := json.Marshal(fkey)
+	require.Nil(t, err)
+
+	fkey2 := &ForeignKey{}
+	err = json.Unmarshal(b, fkey2)
+	require.Nil(t, err)
+	require.True(t, foreignKeyEqual(fkey, fkey2))
+}
+
+func TestFieldEdge(t *testing.T) {
+	edge := &FieldEdge{
+		Schema: "User",
+	}
+
+	b, err := json.Marshal(edge)
+	require.Nil(t, err)
+
+	edge2 := &FieldEdge{}
+	err = json.Unmarshal(b, edge2)
+	require.Nil(t, err)
+	require.True(t, fieldEdgeEqual(edge, edge2))
+}
+
+func TestInverseFieldEdge(t *testing.T) {
+	edge := &FieldEdge{
+		Schema: "User",
+		InverseEdge: &InverseFieldEdge{
+			EdgeConstName:   "Contacts",
+			HideFromGraphQL: true,
+		},
+	}
+
+	b, err := json.Marshal(edge)
+	require.Nil(t, err)
+
+	edge2 := &FieldEdge{}
+	err = json.Unmarshal(b, edge2)
+	require.Nil(t, err)
+	require.True(t, fieldEdgeEqual(edge, edge2))
+}

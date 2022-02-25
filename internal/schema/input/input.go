@@ -80,7 +80,7 @@ const (
 )
 
 type FieldType struct {
-	// Note that anytime anything changes here, have to update fieldTypeEqual in internal/schema/input/compare.go
+	// Note that anytime anything changes here, have to update fieldTypeEqual in compare.go
 	DBType DBType `json:"dbType,omitempty"`
 	// required when DBType == DBType.List
 	ListElemType *FieldType `json:"listElemType,omitempty"`
@@ -120,7 +120,7 @@ func (ft *FieldType) UnmarshalJSON(data []byte) error {
 }
 
 type Field struct {
-	// Note that anytime anything changes here, have to update compareFields in internal/schema/input/compare.go
+	// Note that anytime anything changes here, have to update compareFields in compare.go
 	Name       string     `json:"name,omitempty"`
 	Type       *FieldType `json:"type,omitempty"`
 	Nullable   bool       `json:"nullable,omitempty"`
@@ -159,6 +159,7 @@ type Field struct {
 }
 
 type ForeignKey struct {
+	// Note that anytime anything changes here, have to update foreignKeyEqual in compare.go
 	Schema             string `json:"schema,omitempty"`
 	Column             string `json:"column,omitempty"`
 	Name               string `json:"name,omitempty"`
@@ -167,7 +168,7 @@ type ForeignKey struct {
 }
 
 type FieldEdge struct {
-	// Note that anytime anything changes here, have to update fieldEdgeEqual in internal/schema/input/compare.go
+	// Note that anytime anything changes here, have to update fieldEdgeEqual in compare.go
 	Schema             string            `json:"schema,omitempty"`
 	InverseEdge        *InverseFieldEdge `json:"inverseEdge,omitempty"`
 	DisableBuilderType bool              `json:"disableBuilderType,omitempty"`
@@ -181,7 +182,7 @@ func (f *FieldEdge) InverseEdgeName() string {
 }
 
 type InverseFieldEdge struct {
-	// Note that anytime anything changes here, have to update InverseFieldEdgeEqual in internal/schema/input/compare.go
+	// Note that anytime anything changes here, have to update InverseFieldEdgeEqual in compare.go
 	Name            string `json:"name,omitempty"`
 	TableName       string `json:"tableName,omitempty"`
 	HideFromGraphQL bool   `json:"hideFromGraphQL,omitempty"`
