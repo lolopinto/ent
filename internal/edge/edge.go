@@ -1,7 +1,6 @@
 package edge
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"go/ast"
@@ -301,7 +300,7 @@ func getForeignKeyEdge(dbColName, edgeName, nodeName, sourceNodeName string) *Fo
 				edgeName,
 				schemaparser.GetEntConfigFromName(nodeName),
 			),
-			QuotedDbColNameField: dbColName,
+			quotedDbColNameField: dbColName,
 		},
 	}
 }
@@ -318,14 +317,14 @@ func (e *EdgeInfo) AddEdgeFromForeignKeyIndex(dbColName, edgeName, nodeName stri
 func (e *EdgeInfo) AddIndexedEdgeFromSource(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions) error {
 	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
 	edge := &IndexedEdge{
-		TsEdgeName: tsEdgeName,
+		tsEdgeName: tsEdgeName,
 		destinationEdge: destinationEdge{
 			commonEdgeInfo: getCommonEdgeInfo(
 				inflection.Plural(nodeName),
 				schemaparser.GetEntConfigFromName(nodeName),
 			),
-			QuotedDbColNameField: quotedDBColName,
-			UniqueField:          polymorphic.Unique,
+			quotedDbColNameField: quotedDBColName,
+			unique:               polymorphic.Unique,
 		},
 	}
 	if polymorphic.HideFromInverseGraphQL {
@@ -340,19 +339,19 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(tsFieldName, quotedDBColName, nodeNa
 func getIndexedEdge(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) *IndexedEdge {
 	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
 	edge := &IndexedEdge{
-		TsEdgeName: tsEdgeName,
+		tsEdgeName: tsEdgeName,
 		destinationEdge: destinationEdge{
 			commonEdgeInfo: getCommonEdgeInfo(
 				inflection.Plural(nodeName),
 				schemaparser.GetEntConfigFromName(nodeName),
 			),
-			QuotedDbColNameField: quotedDBColName,
+			quotedDbColNameField: quotedDBColName,
 		},
-		ForeignNode: foreignNode,
+		foreignNode: foreignNode,
 	}
 	if polymorphic != nil {
 		edge.HideFromGraphQLField = polymorphic.HideFromInverseGraphQL
-		edge.UniqueField = polymorphic.Unique
+		edge.unique = polymorphic.Unique
 	}
 	return edge
 }
@@ -409,19 +408,10 @@ type PluralEdge interface {
 
 type commonEdgeInfo struct {
 	// note that if anything is changed here, need to update commonEdgeInfoEqual() in compare_edge.go
-	EdgeName string `json:"edgeName"`
-	// used to load entConfig and NodeInfo
-	// since this extra crap shouldn't be marshalled
-	PackageNameField     string `json:"packageName"`
+	EdgeName             string
 	entConfig            *schemaparser.EntConfigInfo
-	NodeInfo             nodeinfo.NodeInfo `json:"-"`
-	HideFromGraphQLField bool              `json:"hideFromGraphQL,omitempty"`
-}
-
-// to be called by UnmarshallJSON() in other classes
-func (e *commonEdgeInfo) unmarshallJSONHelper() {
-	e.NodeInfo = nodeinfo.GetNodeInfo(e.PackageNameField)
-	e.entConfig = schemaparser.GetEntConfigFromName(e.PackageNameField)
+	NodeInfo             nodeinfo.NodeInfo
+	HideFromGraphQLField bool
 }
 
 func (e *commonEdgeInfo) GetEdgeName() string {
@@ -450,27 +440,15 @@ func (e *commonEdgeInfo) HideFromGraphQL() bool {
 
 type FieldEdge struct {
 	commonEdgeInfo
-	FieldName   string `json:"fieldName,omitempty"`
-	TSFieldName string `json:"tsFieldName,omitempty"`
+	FieldName   string
+	TSFieldName string
 	//	InverseEdgeName string
-	Nullable bool `json:"nullable,omitempty"`
+	Nullable bool
 
-	// not json dealing with json here since this isn't supposed to be perfect
-	// and just used for comparison
 	fieldType enttype.EntType
 
-	InverseEdge *input.InverseFieldEdge  `json:"inverseEdge,omitempty"`
-	Polymorphic *base.PolymorphicOptions `json:"polymorphic,omitempty"`
-}
-
-func (e *FieldEdge) UnmarshalJSON(data []byte) error {
-	type Alias FieldEdge
-	err := json.Unmarshal(data, (*Alias)(e))
-	if err != nil {
-		return err
-	}
-	e.unmarshallJSONHelper()
-	return nil
+	InverseEdge *input.InverseFieldEdge
+	Polymorphic *base.PolymorphicOptions
 }
 
 func (edge *FieldEdge) PolymorphicEdge() bool {
@@ -510,18 +488,8 @@ var _ Edge = &FieldEdge{}
 
 type ForeignKeyEdge struct {
 	// note that if anything is changed here, need to update foreignKeyEdgeEqual() in compare_edge.go
-	SourceNodeName string `json:"sourceNodeName,omitempty"`
+	SourceNodeName string
 	destinationEdge
-}
-
-func (e *ForeignKeyEdge) UnmarshalJSON(data []byte) error {
-	type Alias ForeignKeyEdge
-	err := json.Unmarshal(data, (*Alias)(e))
-	if err != nil {
-		return err
-	}
-	e.unmarshallJSONHelper()
-	return nil
 }
 
 func (e *ForeignKeyEdge) PluralEdge() bool {
@@ -585,8 +553,8 @@ var _ IndexedConnectionEdge = &ForeignKeyEdge{}
 type destinationEdge struct {
 	// note that if anything is changed here, need to update destinationEdgeEqual() in compare_edge.go
 	commonEdgeInfo
-	QuotedDbColNameField string `json:"quotedDbColName,omitempty"`
-	UniqueField          bool   `json:"unique,omitempty"`
+	quotedDbColNameField string
+	unique               bool
 }
 
 func (e destinationEdge) Singular() string {
@@ -598,11 +566,11 @@ func (e destinationEdge) EdgeIdentifier() string {
 }
 
 func (e *destinationEdge) UniqueEdge() bool {
-	return e.UniqueField
+	return e.unique
 }
 
 func (e *destinationEdge) QuotedDBColName() string {
-	return e.QuotedDbColNameField
+	return e.quotedDbColNameField
 }
 
 // this is like a foreign key edge except different
@@ -610,24 +578,14 @@ func (e *destinationEdge) QuotedDBColName() string {
 // currently best use case is as a polymorphic field but nothing stopping this from being non-polymorphic
 type IndexedEdge struct {
 	// note that if anything is changed here, need to update indexedEdgeEqual() in compare_edge.go
-	SourceNodeName string `json:"sourceNodeName,omitempty"`
-	TsEdgeName     string `json:"tsEdgeName,omitempty"`
-	ForeignNode    string `json:"foreignNode,omitempty"`
+	SourceNodeName string
+	tsEdgeName     string
+	foreignNode    string
 	destinationEdge
 }
 
-func (e *IndexedEdge) UnmarshalJSON(data []byte) error {
-	type Alias IndexedEdge
-	err := json.Unmarshal(data, (*Alias)(e))
-	if err != nil {
-		return err
-	}
-	e.unmarshallJSONHelper()
-	return nil
-}
-
 func (e *IndexedEdge) PluralEdge() bool {
-	return !e.UniqueField
+	return !e.unique
 }
 
 func (e *IndexedEdge) PolymorphicEdge() bool {
@@ -642,7 +600,7 @@ func (e *IndexedEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 }
 
 func (e *IndexedEdge) TsEdgeQueryName() string {
-	return fmt.Sprintf("%sTo%sQuery", e.TsEdgeName, strcase.ToCamel(e.EdgeName))
+	return fmt.Sprintf("%sTo%sQuery", e.tsEdgeName, strcase.ToCamel(e.EdgeName))
 }
 
 func (e *IndexedEdge) GetSourceNodeName() string {
@@ -655,10 +613,10 @@ func (e *IndexedEdge) SourceIsPolymorphic() bool {
 }
 
 func (e *IndexedEdge) GetGraphQLConnectionName() string {
-	if e.ForeignNode == "" {
+	if e.foreignNode == "" {
 		panic("cannot call GetGraphQLConnectionName when foreignNode is empty")
 	}
-	return fmt.Sprintf("%sTo%sConnection", e.ForeignNode, strcase.ToCamel(e.EdgeName))
+	return fmt.Sprintf("%sTo%sConnection", e.foreignNode, strcase.ToCamel(e.EdgeName))
 }
 
 func (e *IndexedEdge) TsEdgeQueryEdgeName() string {
@@ -667,14 +625,14 @@ func (e *IndexedEdge) TsEdgeQueryEdgeName() string {
 }
 
 func (e *IndexedEdge) GetGraphQLEdgePrefix() string {
-	if e.ForeignNode == "" {
+	if e.foreignNode == "" {
 		panic("cannot call GetGraphQLEdgePrefix when foreignNode is empty")
 	}
-	return fmt.Sprintf("%sTo%s", e.ForeignNode, strcase.ToCamel(e.EdgeName))
+	return fmt.Sprintf("%sTo%s", e.foreignNode, strcase.ToCamel(e.EdgeName))
 }
 
 func (e *IndexedEdge) tsEdgeConst() string {
-	return fmt.Sprintf("%sTo%s", e.TsEdgeName, strcase.ToCamel(e.EdgeName))
+	return fmt.Sprintf("%sTo%s", e.tsEdgeName, strcase.ToCamel(e.EdgeName))
 }
 
 func (e *IndexedEdge) GetCountFactoryName() string {
@@ -693,17 +651,7 @@ var _ IndexedConnectionEdge = &IndexedEdge{}
 type InverseAssocEdge struct {
 	// note that if anything is changed here, need to update inverseAssocEdgeEqual() in compare_edge.go
 	commonEdgeInfo
-	EdgeConst string `json:"edgeConst"`
-}
-
-func (e *InverseAssocEdge) UnmarshalJSON(data []byte) error {
-	type Alias InverseAssocEdge
-	err := json.Unmarshal(data, (*Alias)(e))
-	if err != nil {
-		return err
-	}
-	e.unmarshallJSONHelper()
-	return nil
+	EdgeConst string
 }
 
 func (e *InverseAssocEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
@@ -729,33 +677,22 @@ func TsEdgeConst(constName string) (string, error) {
 type AssociationEdge struct {
 	// note that if anything is changed here, need to update assocEdgeEqual() in compare_edge.go
 	commonEdgeInfo
-	EdgeConst     string            `json:"edgeConst"`
-	TsEdgeConst   string            `json:"tsEdgeConst"`
-	Symmetric     bool              `json:"symmetric,omitempty"`
-	Unique        bool              `json:"unique,omitempty"`
-	InverseEdge   *InverseAssocEdge `json:"inverseEdge,omitempty"`
-	IsInverseEdge bool              `json:"isInverseEdge,omitempty"`
-	TableName     string            `json:"tableName,omitempty"`
-	// TableName will be gotten from the GroupName if part of a group or derived from each edge
+	EdgeConst     string
+	TsEdgeConst   string
+	Symmetric     bool
+	Unique        bool
+	InverseEdge   *InverseAssocEdge
+	IsInverseEdge bool
+	TableName     string // TableName will be gotten from the GroupName if part of a group or derived from each edge
 	// will eventually be made configurable to the user
-	EdgeActions []*EdgeAction `json:"edgeActions,omitempty"`
+	EdgeActions []*EdgeAction
 
-	GivenEdgeConstName   string `json:"givenEdgeConstName,omitempty"`
-	PatternEdgeConst     string `json:"patternEdgeConst,omitempty"`
-	OverridenQueryName   string `json:"overridenQueryName,omitempty"`
-	OverridenEdgeName    string `json:"overridenEdgeName,omitempty"`
-	OverridenGraphQLName string `json:"overridenGraphQLName,omitempty"`
-	PatternName          string `json:"patternName,omitempty"`
-}
-
-func (e *AssociationEdge) UnmarshalJSON(data []byte) error {
-	type Alias AssociationEdge
-	err := json.Unmarshal(data, (*Alias)(e))
-	if err != nil {
-		return err
-	}
-	e.unmarshallJSONHelper()
-	return nil
+	givenEdgeConstName   string
+	patternEdgeConst     string
+	overridenQueryName   string
+	overridenEdgeName    string
+	overridenGraphQLName string
+	PatternName          string
 }
 
 func (e *AssociationEdge) CreateEdge() bool {
@@ -780,15 +717,15 @@ func (e *AssociationEdge) GenerateBase() bool {
 }
 
 func (e *AssociationEdge) EdgeQueryBase() string {
-	if e.PatternEdgeConst != "" {
-		return fmt.Sprintf("%sQuery", e.PatternEdgeConst)
+	if e.patternEdgeConst != "" {
+		return fmt.Sprintf("%sQuery", e.patternEdgeConst)
 	}
 	return e.TsEdgeQueryName() + "Base"
 }
 
 func (e *AssociationEdge) AssocEdgeBase() string {
-	if e.PatternEdgeConst != "" {
-		return fmt.Sprintf("%sEdge", e.PatternEdgeConst)
+	if e.patternEdgeConst != "" {
+		return fmt.Sprintf("%sEdge", e.patternEdgeConst)
 	}
 	return "AssocEdge"
 }
@@ -800,30 +737,30 @@ func (e *AssociationEdge) PolymorphicEdge() bool {
 }
 
 func (e *AssociationEdge) TsEdgeQueryName() string {
-	if e.OverridenQueryName != "" {
-		return e.OverridenQueryName
+	if e.overridenQueryName != "" {
+		return e.overridenQueryName
 	}
 	return fmt.Sprintf("%sQuery", e.TsEdgeConst)
 }
 
 func (e *AssociationEdge) GetGraphQLEdgePrefix() string {
-	if e.OverridenQueryName != "" {
+	if e.overridenQueryName != "" {
 		// return this with connection removed
-		return strings.TrimSuffix(e.OverridenQueryName, "Query")
+		return strings.TrimSuffix(e.overridenQueryName, "Query")
 	}
 	return e.TsEdgeConst
 }
 
 func (e *AssociationEdge) TsEdgeQueryEdgeName() string {
-	if e.OverridenEdgeName != "" {
-		return e.OverridenEdgeName
+	if e.overridenEdgeName != "" {
+		return e.overridenEdgeName
 	}
 	return fmt.Sprintf("%sEdge", e.TsEdgeConst)
 }
 
 func (e *AssociationEdge) GetGraphQLConnectionName() string {
-	if e.OverridenGraphQLName != "" {
-		return e.OverridenGraphQLName
+	if e.overridenGraphQLName != "" {
+		return e.overridenGraphQLName
 	}
 	// we need a unique graphql name
 	// there's nothing stopping multiple edges of different types having the same connection and then there'll be a conflict here
@@ -929,11 +866,11 @@ var _ ConnectionEdge = &AssociationEdge{}
 // and depends on action to take that information, process it and generate the
 // action specific metadata
 type EdgeAction struct {
-	Action            string               `json:"action"`
-	CustomActionName  string               `json:"customActionName,omitempty"`
-	CustomGraphQLName string               `json:"customGraphQLName,omitempty"`
-	ExposeToGraphQL   bool                 `json:"exposeToGraphQL,omitempty"`
-	ActionOnlyFields  []*input.ActionField `json:"actionOnlyFields,omitempty"`
+	Action            string
+	CustomActionName  string
+	CustomGraphQLName string
+	ExposeToGraphQL   bool
+	ActionOnlyFields  []*input.ActionField
 }
 
 type AssociationEdgeGroup struct {
@@ -1107,7 +1044,7 @@ func AssocEdgeFromInput(packageName string, edge *input.AssocEdge) (*Association
 		Unique:             edge.Unique,
 		TableName:          edge.TableName,
 		PatternName:        edge.PatternName,
-		GivenEdgeConstName: edge.EdgeConstName,
+		givenEdgeConstName: edge.EdgeConstName,
 	}
 
 	// name wasn't specified? get default one
@@ -1167,7 +1104,7 @@ func AssocEdgeFromInput(packageName string, edge *input.AssocEdge) (*Association
 
 		if edge.PatternName != "" {
 			oldEdgeConst := assocEdge.TsEdgeConst
-			assocEdge.PatternEdgeConst = assocEdge.TsEdgeConst
+			assocEdge.patternEdgeConst = assocEdge.TsEdgeConst
 			assocEdge.EdgeConst = getEdgeConstName("object", edge.Name)
 			// It transforms UserToFriendsEdge to UserToFriends since that's in an enum
 			edgeConst, err := TsEdgeConst(assocEdge.EdgeConst)
@@ -1175,10 +1112,10 @@ func AssocEdgeFromInput(packageName string, edge *input.AssocEdge) (*Association
 				return nil, err
 			}
 			assocEdge.TsEdgeConst = edgeConst
-			assocEdge.PatternEdgeConst = edgeConst
-			assocEdge.OverridenQueryName = fmt.Sprintf("%sQuery", oldEdgeConst)
-			assocEdge.OverridenEdgeName = fmt.Sprintf("%sEdge", oldEdgeConst)
-			assocEdge.OverridenGraphQLName = fmt.Sprintf("%sConnection", oldEdgeConst)
+			assocEdge.patternEdgeConst = edgeConst
+			assocEdge.overridenQueryName = fmt.Sprintf("%sQuery", oldEdgeConst)
+			assocEdge.overridenEdgeName = fmt.Sprintf("%sEdge", oldEdgeConst)
+			assocEdge.overridenGraphQLName = fmt.Sprintf("%sConnection", oldEdgeConst)
 		}
 	} else {
 		assocEdge.EdgeConst = edge.EdgeConstName + "Edge"
@@ -1186,16 +1123,16 @@ func AssocEdgeFromInput(packageName string, edge *input.AssocEdge) (*Association
 
 		// todo we need to test this when pattern doesn't provide this
 		if edge.PatternName != "" {
-			assocEdge.PatternEdgeConst = assocEdge.TsEdgeConst
+			assocEdge.patternEdgeConst = assocEdge.TsEdgeConst
 			assocEdge.EdgeConst = getEdgeConstName(packageName, edge.Name)
 			// It transforms UserToFriendsEdge to UserToFriends since that's in an enum
 			edgeConst, err := TsEdgeConst(assocEdge.EdgeConst)
 			if err != nil {
 				return nil, err
 			}
-			assocEdge.OverridenQueryName = fmt.Sprintf("%sQuery", edgeConst)
-			assocEdge.OverridenEdgeName = fmt.Sprintf("%sEdge", edgeConst)
-			assocEdge.OverridenGraphQLName = fmt.Sprintf("%sConnection", edgeConst)
+			assocEdge.overridenQueryName = fmt.Sprintf("%sQuery", edgeConst)
+			assocEdge.overridenEdgeName = fmt.Sprintf("%sEdge", edgeConst)
+			assocEdge.overridenGraphQLName = fmt.Sprintf("%sConnection", edgeConst)
 		}
 	}
 
@@ -1376,10 +1313,9 @@ func (g *parseEdgeGraph) RunLoop() error {
 
 func getCommonEdgeInfo(edgeName string, entConfig *schemaparser.EntConfigInfo) commonEdgeInfo {
 	return commonEdgeInfo{
-		EdgeName:         edgeName,
-		entConfig:        entConfig,
-		NodeInfo:         nodeinfo.GetNodeInfo(entConfig.PackageName),
-		PackageNameField: entConfig.PackageName,
+		EdgeName:  edgeName,
+		entConfig: entConfig,
+		NodeInfo:  nodeinfo.GetNodeInfo(entConfig.PackageName),
 	}
 }
 

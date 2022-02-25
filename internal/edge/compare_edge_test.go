@@ -144,9 +144,9 @@ func TestAssocEdgeWithPattern(t *testing.T) {
 			commonEdgeInfo: getCommonEdgeInfo("likes", schemaparser.GetEntConfigFromName("User")),
 			EdgeConst:      "UserToLikedObjectsEdge",
 		},
-		OverridenQueryName:   "UserToLikersQuery",
-		OverridenEdgeName:    "UserToLikersEdge",
-		OverridenGraphQLName: "UserToLikersConnection",
+		overridenQueryName:   "UserToLikersQuery",
+		overridenEdgeName:    "UserToLikersEdge",
+		overridenGraphQLName: "UserToLikersConnection",
 	})
 
 	testAssocEdge(t, edge, edge2)

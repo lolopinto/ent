@@ -317,42 +317,32 @@ func testAssocEdge(t *testing.T, edge, expectedAssocEdge *AssociationEdge) {
 
 	assert.Equal(
 		t,
-		expectedAssocEdge.PackageNameField,
-		edge.PackageNameField,
-		"package name field of edge %s was not as expected, expected %s, got %s instead",
-		edgeName,
-		expectedAssocEdge.PackageNameField,
-		edge.PackageNameField,
-	)
-
-	assert.Equal(
-		t,
-		expectedAssocEdge.OverridenQueryName,
-		edge.OverridenQueryName,
+		expectedAssocEdge.overridenQueryName,
+		edge.overridenQueryName,
 		"overriden query name field of edge %s was not as expected, expected %s, got %s instead",
 		edgeName,
-		expectedAssocEdge.OverridenQueryName,
-		edge.OverridenQueryName,
+		expectedAssocEdge.overridenQueryName,
+		edge.overridenQueryName,
 	)
 
 	assert.Equal(
 		t,
-		expectedAssocEdge.OverridenEdgeName,
-		edge.OverridenEdgeName,
+		expectedAssocEdge.overridenEdgeName,
+		edge.overridenEdgeName,
 		"override edge name field of edge %s was not as expected, expected %s, got %s instead",
 		edgeName,
-		expectedAssocEdge.OverridenEdgeName,
-		edge.OverridenEdgeName,
+		expectedAssocEdge.overridenEdgeName,
+		edge.overridenEdgeName,
 	)
 
 	assert.Equal(
 		t,
-		expectedAssocEdge.OverridenGraphQLName,
-		edge.OverridenGraphQLName,
+		expectedAssocEdge.overridenGraphQLName,
+		edge.overridenGraphQLName,
 		"overriden graphql name field of edge %s was not as expected, expected %s, got %s instead",
 		edgeName,
-		expectedAssocEdge.OverridenGraphQLName,
-		edge.OverridenGraphQLName,
+		expectedAssocEdge.overridenGraphQLName,
+		edge.overridenGraphQLName,
 	)
 
 	assert.Equal(
@@ -637,16 +627,16 @@ func testForeignKeyEdge(t *testing.T, edge, expectedEdge *ForeignKeyEdge) {
 
 func testIndexedEdge(t *testing.T, edge, expectedEdge *IndexedEdge) {
 	assert.Equal(t, expectedEdge.SourceNodeName, edge.SourceNodeName)
-	assert.Equal(t, expectedEdge.TsEdgeName, edge.TsEdgeName)
-	assert.Equal(t, expectedEdge.ForeignNode, edge.ForeignNode)
+	assert.Equal(t, expectedEdge.tsEdgeName, edge.tsEdgeName)
+	assert.Equal(t, expectedEdge.foreignNode, edge.foreignNode)
 
 	testDestinationEdge(t, expectedEdge.destinationEdge, edge.destinationEdge)
 }
 
 func testDestinationEdge(t *testing.T, edge, expectedEdge destinationEdge) {
-	assert.Equal(t, expectedEdge.QuotedDbColNameField, edge.QuotedDbColNameField)
+	assert.Equal(t, expectedEdge.quotedDbColNameField, edge.quotedDbColNameField)
 
-	assert.Equal(t, expectedEdge.UniqueField, edge.UniqueField)
+	assert.Equal(t, expectedEdge.unique, edge.unique)
 
 	testEntConfig(t, edge.entConfig, expectedEdge.entConfig)
 

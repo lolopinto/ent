@@ -7,6 +7,8 @@ import (
 	"github.com/lolopinto/ent/internal/schemaparser"
 )
 
+// CompareAssociationEdge compares 2 actions to see what changes
+// intentionally skips EdgeActions since actions are high level objects of their own
 func CompareAssociationEdge(existingEdge, edge *AssociationEdge) []change.Change {
 	var ret []change.Change
 	if !assocEdgeEqual(existingEdge, edge) {
@@ -28,18 +30,17 @@ func assocEdgeEqual(existingEdge, edge *AssociationEdge) bool {
 		existingEdge.TableName == edge.TableName &&
 		// EdgeActions intentionally skipped since we don't need it in file generation
 		// actions will be used in actions later...
-		existingEdge.GivenEdgeConstName == edge.GivenEdgeConstName &&
-		existingEdge.PatternEdgeConst == edge.PatternEdgeConst &&
-		existingEdge.OverridenQueryName == edge.OverridenQueryName &&
-		existingEdge.OverridenEdgeName == edge.OverridenEdgeName &&
-		existingEdge.OverridenGraphQLName == edge.OverridenGraphQLName &&
+		existingEdge.givenEdgeConstName == edge.givenEdgeConstName &&
+		existingEdge.patternEdgeConst == edge.patternEdgeConst &&
+		existingEdge.overridenQueryName == edge.overridenQueryName &&
+		existingEdge.overridenEdgeName == edge.overridenEdgeName &&
+		existingEdge.overridenGraphQLName == edge.overridenGraphQLName &&
 		existingEdge.PatternName == edge.PatternName
 }
 
 func commonEdgeInfoEqual(existing, common commonEdgeInfo) bool {
 	return existing.EdgeName == common.EdgeName &&
 		existing.HideFromGraphQLField == common.HideFromGraphQLField &&
-		existing.PackageNameField == common.PackageNameField &&
 		// assuming if this is correct, everything else is
 		existing.NodeInfo.Node == common.NodeInfo.Node &&
 		entConfigEqual(existing.entConfig, common.entConfig)
@@ -82,8 +83,8 @@ func foreignKeyEdgeEqual(existingEdge, edge *ForeignKeyEdge) bool {
 
 func destinationEdgeEqual(existingEdge, edge destinationEdge) bool {
 	return commonEdgeInfoEqual(existingEdge.commonEdgeInfo, edge.commonEdgeInfo) &&
-		existingEdge.QuotedDbColNameField == edge.QuotedDbColNameField &&
-		existingEdge.UniqueField == edge.UniqueField
+		existingEdge.quotedDbColNameField == edge.quotedDbColNameField &&
+		existingEdge.unique == edge.unique
 
 }
 
@@ -99,8 +100,8 @@ func CompareIndexedEdge(existingEdge, edge *IndexedEdge) []change.Change {
 
 func indexedEdgeEqual(existingEdge, edge *IndexedEdge) bool {
 	return existingEdge.SourceNodeName == edge.SourceNodeName &&
-		existingEdge.TsEdgeName == edge.TsEdgeName &&
-		existingEdge.ForeignNode == edge.ForeignNode &&
+		existingEdge.tsEdgeName == edge.tsEdgeName &&
+		existingEdge.foreignNode == edge.foreignNode &&
 		destinationEdgeEqual(existingEdge.destinationEdge, edge.destinationEdge)
 }
 
