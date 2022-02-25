@@ -79,7 +79,18 @@ func FieldEqual(existing, field *Field) bool {
 		existing.forceRequiredInAction == field.forceRequiredInAction &&
 		existing.forceOptionalInAction == field.forceOptionalInAction &&
 		existing.patternName == field.patternName
+}
 
+func FieldsEqual(fields1, fields2 []*Field) bool {
+	if len(fields1) != len(fields2) {
+		return false
+	}
+	for i := range fields1 {
+		if !FieldEqual(fields1[i], fields2[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 func foreignKeyInfoEqual(existing, fkey *ForeignKeyInfo) bool {

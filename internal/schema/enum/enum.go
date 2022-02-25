@@ -24,6 +24,12 @@ func (c *Enum) Clone() *Enum {
 	return ret
 }
 
+func EnumEqual(e1, e2 *Enum) bool {
+	return e1.Name == e2.Name &&
+		datasEqual(e1.Values, e2.Values) &&
+		e1.Imported == e2.Imported
+}
+
 type GQLEnum struct {
 	Name   string // Name is the name of the enum
 	Type   string // type of the enum e.g. nullable or not
@@ -38,11 +44,37 @@ func (g GQLEnum) GetGraphQLNames() []string {
 	return ret
 }
 
+func GQLEnumEqual(e1, e2 *GQLEnum) bool {
+	return e1.Name == e2.Name &&
+		e1.Type == e2.Type &&
+		datasEqual(e1.Values, e2.Values)
+}
+
 type Data struct {
 	Name        string
 	Value       string
 	Comment     string
 	PackagePath string
+}
+
+func datasEqual(l1, l2 []Data) bool {
+	if len(l1) != len(l2) {
+		return false
+	}
+
+	for i := range l1 {
+		if !dataEqual(l1[i], l2[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func dataEqual(d1, d2 Data) bool {
+	return d1.Name == d2.Name &&
+		d1.Value == d2.Value &&
+		d1.Comment == d2.Comment &&
+		d1.PackagePath == d2.PackagePath
 }
 
 func GetTSEnumNameForVal(val string) string {
