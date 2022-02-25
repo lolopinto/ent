@@ -149,8 +149,9 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 				node := schema.Nodes[nodeName]
 
 				require.NotNil(t, node, "node with node name %s not found", nodeName)
+				// great place for marshall and unmarshall for nodes...
 
-				assertStrEqual(t, "tableName", expectedNode.tableName, node.TableName)
+				assert.Equal(t, expectedNode.tableName, node.TableName)
 
 				require.Equal(t, expectedNode.enumTable, node.EnumTable)
 				require.Equal(t, expectedNode.dbRows, node.DBRows)
@@ -175,6 +176,7 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 
 			for name, expPattern := range tt.expectedPatterns {
 				pattern := schema.Patterns[name]
+				// great place for marshall and unmarshall for patterns...
 
 				assert.Equal(t, expPattern.name, pattern.Name)
 				verifyAssocEdges(t, expPattern.assocEdges, pattern.AssocEdges)
@@ -352,15 +354,6 @@ func verifyIndices(t *testing.T, expIndices []index, indices []*input.Index) {
 		assert.Equal(t, expIndex.name, index.Name)
 		assert.Equal(t, expIndex.columns, index.Columns)
 		assert.Equal(t, expIndex.unique, index.Unique)
-	}
-}
-
-func assertStrEqual(t *testing.T, key, expectedValue string, value *string) {
-	if expectedValue != "" {
-		require.NotNil(t, value, key)
-		assert.Equal(t, expectedValue, *value, key)
-	} else {
-		require.Nil(t, value, key)
 	}
 }
 

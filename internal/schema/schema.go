@@ -354,10 +354,10 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 		nodeData := newNodeData(packageName)
 
 		// default tableName goes from address -> addresses, user -> users etc
-		if node.TableName == nil {
+		if node.TableName == "" {
 			nodeData.TableName = inflection.Plural(packageName)
 		} else {
-			nodeData.TableName = *node.TableName
+			nodeData.TableName = node.TableName
 		}
 
 		nodeData.EnumTable = node.EnumTable

@@ -27,7 +27,8 @@ type Pattern struct {
 }
 
 type Node struct {
-	TableName       *string                  `json:"tableName,omitempty"`
+	// Note that anytime anything changes here, have to update nodeEqual in compare.go
+	TableName       string                   `json:"tableName,omitempty"`
 	Fields          []*Field                 `json:"fields,omitempty"`
 	AssocEdges      []*AssocEdge             `json:"assocEdges,omitempty"`
 	AssocEdgeGroups []*AssocEdgeGroup        `json:"assocEdgeGroups,omitempty"`

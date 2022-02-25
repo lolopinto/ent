@@ -86,6 +86,20 @@ func CompareSchemas(existing, schema *Schema) ChangeMap {
 	return m
 }
 
+func nodeEqual(existing, node *Node) bool {
+	return existing.TableName == node.TableName &&
+		fieldsEqual(existing.Fields, node.Fields) &&
+		assocEdgesEqual(existing.AssocEdges, node.AssocEdges) &&
+		actionsEqual(existing.Actions, node.Actions) &&
+		existing.EnumTable == node.EnumTable &&
+		mapListEqual(existing.DBRows, node.DBRows) &&
+		constraintsEqual(existing.Constraints, node.Constraints) &&
+		indicesEqual(existing.Indices, node.Indices) &&
+		existing.HideFromGraphQL == node.HideFromGraphQL &&
+		existing.EdgeConstName == node.EdgeConstName &&
+		existing.PatternName == node.PatternName
+}
+
 func compareFields(existing, fields []*Field) []Change {
 	var ret []Change
 	existingFieldMap := make(map[string]*Field)
@@ -214,6 +228,40 @@ func stringListEqual(l1, l2 []string) bool {
 }
 
 func stringMapEqual(m1, m2 map[string]string) bool {
+	if len(m1) != len(m2) {
+		return false
+	}
+
+	for k := range m1 {
+		_, ok := m2[k]
+		if !ok {
+			return false
+		}
+	}
+
+	for k := range m2 {
+		_, ok := m1[k]
+		if !ok {
+			return false
+		}
+	}
+	return true
+}
+
+func mapListEqual(l1, l2 []map[string]interface{}) bool {
+	if len(l1) != len(l2) {
+		return false
+	}
+
+	for k := range l1 {
+		if !mapEqual(l1[k], l2[k]) {
+			return false
+		}
+	}
+	return true
+}
+
+func mapEqual(m1, m2 map[string]interface{}) bool {
 	if len(m1) != len(m2) {
 		return false
 	}
@@ -412,6 +460,19 @@ func assocEdgeGroupEqual(existing, group *AssocEdgeGroup) bool {
 		edgeActionEqual(existing.EdgeAction, group.EdgeAction)
 }
 
+func actionsEqual(existing, actions []*Action) bool {
+	if len(existing) != len(actions) {
+		return false
+	}
+
+	for i := range existing {
+		if !actionEqual(existing[i], actions[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 func actionEqual(existing, action *Action) bool {
 	return existing.Operation == action.Operation &&
 		stringListEqual(existing.Fields, action.Fields) &&
@@ -436,6 +497,19 @@ func foreignKeyInfoEqual(existing, fkey *ForeignKeyInfo) bool {
 		existing.OnDelete == fkey.OnDelete
 }
 
+func constraintsEqual(existing, constraints []*Constraint) bool {
+	if len(existing) != len(constraints) {
+		return false
+	}
+
+	for i := range existing {
+		if !constraintEqual(existing[i], constraints[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 func constraintEqual(existing, constraint *Constraint) bool {
 	ret := compareNilVals(existing == nil, constraint == nil)
 	if ret != nil {
@@ -447,6 +521,19 @@ func constraintEqual(existing, constraint *Constraint) bool {
 		stringListEqual(existing.Columns, constraint.Columns) &&
 		foreignKeyInfoEqual(existing.ForeignKey, constraint.ForeignKey) &&
 		existing.Condition == constraint.Condition
+}
+
+func indicesEqual(existing, indices []*Index) bool {
+	if len(existing) != len(indices) {
+		return false
+	}
+
+	for i := range existing {
+		if !indexEqual(existing[i], indices[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 func indexEqual(existing, index *Index) bool {

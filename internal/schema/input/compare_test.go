@@ -38,6 +38,16 @@ func marshallAndUnmarshallPattern(t *testing.T, p *Pattern) *Pattern {
 	return p2
 }
 
+func marshallAndUnmarshallNode(t *testing.T, n *Node) *Node {
+	b, err := json.Marshal(n)
+	require.Nil(t, err)
+
+	n2 := &Node{}
+	err = json.Unmarshal(b, n2)
+	require.Nil(t, err)
+	return n2
+}
+
 func TestSimpleAssocEdge(t *testing.T) {
 	edge := &AssocEdge{
 		Name:       "CreatedEvents",
@@ -417,4 +427,21 @@ func TestPatternWithEdges(t *testing.T) {
 
 	p2 := marshallAndUnmarshallPattern(t, p)
 	require.True(t, patternEqual(p, p2))
+}
+
+func TestNode(t *testing.T) {
+	node := &Node{
+		TableName: "auth_codes",
+		Fields: []*Field{
+			{
+				Name: "code",
+				Type: &FieldType{
+					DBType: String,
+				},
+				HideFromGraphQL: true,
+			},
+		},
+	}
+	node2 := marshallAndUnmarshallNode(t, node)
+	require.True(t, nodeEqual(node, node2))
 }
