@@ -434,6 +434,7 @@ func (e *EdgeAction) GetTSStringOperation() string {
 }
 
 type Action struct {
+	// Note that anytime anything changes here, have to update actionEqual in compare.go
 	Operation         ent.ActionOperation `json:"operation,omitempty"`
 	Fields            []string            `json:"fields,omitempty"`
 	ExcludedFields    []string            `json:"excludedFields,omitempty"`
@@ -674,6 +675,7 @@ func (g *AssocEdgeGroup) AddAssocEdge(edge *AssocEdge) {
 }
 
 type InverseAssocEdge struct {
+	// Note that anytime anything changes here, have to update inverseAssocEdgeEqual in compare.go
 	// TODO need to be able to mark this as unique
 	// this is an easy way to get 1->many
 	Name          string `json:"name,omitempty"`

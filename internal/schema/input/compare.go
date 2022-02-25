@@ -416,3 +416,16 @@ func assocEdgeGroupEqual(existing, group *AssocEdgeGroup) bool {
 		stringListEqual(existing.NullStates, group.NullStates) &&
 		edgeActionEqual(existing.EdgeAction, group.EdgeAction)
 }
+
+func actionEqual(existing, action *Action) bool {
+	return existing.Operation == action.Operation &&
+		stringListEqual(existing.Fields, action.Fields) &&
+		stringListEqual(existing.ExcludedFields, action.ExcludedFields) &&
+		stringListEqual(existing.OptionalFields, action.OptionalFields) &&
+		stringListEqual(existing.RequiredFields, action.RequiredFields) &&
+		existing.NoFields == action.NoFields &&
+		existing.CustomActionName == action.CustomActionName &&
+		existing.CustomInputName == action.CustomInputName &&
+		existing.HideFromGraphQL == action.HideFromGraphQL &&
+		actionOnlyFieldsEqual(existing.ActionOnlyFields, action.ActionOnlyFields)
+}
