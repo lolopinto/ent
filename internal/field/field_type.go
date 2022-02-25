@@ -18,6 +18,7 @@ import (
 )
 
 type Field struct {
+	// note that if this changes, need to update FieldEqual
 	// todo: abstract out these 2 also...
 	FieldName           string
 	tagMap              map[string]string

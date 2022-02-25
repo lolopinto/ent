@@ -6,6 +6,7 @@ import (
 )
 
 type NonEntField struct {
+	// note that if this changes, need to update NonEntFieldEqual
 	FieldName string
 	FieldType enttype.TSGraphQLType
 	nullable  bool // required default = true

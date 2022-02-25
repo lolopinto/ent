@@ -24,6 +24,17 @@ func (f *FieldEdgeInfo) EdgeName() string {
 	return f.InverseEdge.Name
 }
 
+func FieldEdgeInfoEqual(existing, edge *FieldEdgeInfo) bool {
+	ret := change.CompareNilVals(existing == nil, edge == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return existing.Schema == edge.Schema &&
+		input.InverseFieldEdgeEqual(existing.InverseEdge, edge.InverseEdge) &&
+		PolymorphicOptionsEqual(existing.Polymorphic, edge.Polymorphic)
+}
+
 type PolymorphicOptions struct {
 	*input.PolymorphicOptions
 	NodeTypeField string `json:"nodeTypeField,omitempty"`

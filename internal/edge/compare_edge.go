@@ -11,7 +11,7 @@ import (
 // intentionally skips EdgeActions since actions are high level objects of their own
 func CompareAssociationEdge(existingEdge, edge *AssociationEdge) []change.Change {
 	var ret []change.Change
-	if !assocEdgeEqual(existingEdge, edge) {
+	if !AssocEdgeEqual(existingEdge, edge) {
 		ret = append(ret, change.Change{
 			Change: change.ModifyEdge,
 		})
@@ -19,7 +19,11 @@ func CompareAssociationEdge(existingEdge, edge *AssociationEdge) []change.Change
 	return ret
 }
 
-func assocEdgeEqual(existingEdge, edge *AssociationEdge) bool {
+func AssocEdgeEqual(existingEdge, edge *AssociationEdge) bool {
+	ret := change.CompareNilVals(existingEdge == nil, edge == nil)
+	if ret != nil {
+		return *ret
+	}
 	return commonEdgeInfoEqual(existingEdge.commonEdgeInfo, edge.commonEdgeInfo) &&
 		existingEdge.EdgeConst == edge.EdgeConst &&
 		existingEdge.TsEdgeConst == edge.TsEdgeConst &&

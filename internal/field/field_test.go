@@ -8,6 +8,7 @@ import (
 	"github.com/lolopinto/ent/internal/parsehelper"
 	testsync "github.com/lolopinto/ent/internal/testingutils/sync"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFieldInfo(t *testing.T) {
@@ -359,6 +360,11 @@ func testField(t *testing.T, f, expFieldProps *Field) {
 		expFieldProps.pkgPath,
 		f.pkgPath,
 	)
+
+	// clone and confirm that the clone is equal
+	f2, err := f.Clone()
+	require.Nil(t, err)
+	assert.True(t, FieldEqual(f, f2))
 }
 
 func testDBType(t *testing.T, f *Field, expectedType string) {

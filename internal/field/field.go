@@ -219,6 +219,7 @@ func (fieldInfo *FieldInfo) GetEditableFields() []*Field {
 
 // ForeignKeyInfo stores config and field name of the foreign key object
 type ForeignKeyInfo struct {
+	// Note that changing this should update foreignKeyInfoEqual
 	Schema       string
 	Field        string
 	Name         string
