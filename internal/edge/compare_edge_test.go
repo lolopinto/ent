@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schemaparser"
@@ -325,4 +326,48 @@ func TestPolymorphicFieldEdge(t *testing.T) {
 
 	l := CompareFieldEdge(edge, edge2)
 	require.Len(t, l, 0)
+}
+
+func TestAssociationEdgeGroup(t *testing.T) {
+
+	edge1, err := AssocEdgeFromInput("Event", &input.AssocEdge{
+		Name:       "Attending",
+		SchemaName: "User",
+	})
+	require.Nil(t, err)
+	edge2, err := AssocEdgeFromInput("Event", &input.AssocEdge{
+		Name:       "Declined",
+		SchemaName: "User",
+	})
+	require.Nil(t, err)
+
+	g := &AssociationEdgeGroup{
+		GroupName:         "rsvps",
+		GroupStatusName:   "RsvpStatus",
+		TSGroupStatusName: "rsvpStatus",
+		NodeInfo:          nodeinfo.GetNodeInfo("Event"),
+		DestNodeInfo:      nodeinfo.GetNodeInfo("User"),
+		statusEdges:       []*AssociationEdge{edge1, edge2},
+		Edges: map[string]*AssociationEdge{
+			"Attending": edge1,
+			"Declined":  edge2,
+		},
+		StatusEnums: []string{"Attending", "Declined"},
+	}
+
+	g2 := &AssociationEdgeGroup{
+		GroupName:         "rsvps",
+		GroupStatusName:   "RsvpStatus",
+		TSGroupStatusName: "rsvpStatus",
+		NodeInfo:          nodeinfo.GetNodeInfo("Event"),
+		DestNodeInfo:      nodeinfo.GetNodeInfo("User"),
+		statusEdges:       []*AssociationEdge{edge1, edge2},
+		Edges: map[string]*AssociationEdge{
+			"Attending": edge1,
+			"Declined":  edge2,
+		},
+		StatusEnums: []string{"Attending", "Declined"},
+	}
+
+	require.True(t, AssocEdgeGroupEqual(g, g2))
 }
