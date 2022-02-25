@@ -212,3 +212,18 @@ func TestForeignkeyConstraint(t *testing.T) {
 	require.Nil(t, err)
 	require.True(t, constraintEqual(c, c2))
 }
+
+func TestIndex(t *testing.T) {
+	i := &Index{
+		Name:    "contacts_name_index",
+		Columns: []string{"first_name", "last_name"},
+	}
+
+	b, err := json.Marshal(i)
+	require.Nil(t, err)
+
+	i2 := &Index{}
+	err = json.Unmarshal(b, i2)
+	require.Nil(t, err)
+	require.True(t, indexEqual(i, i2))
+}

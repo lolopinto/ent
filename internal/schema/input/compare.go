@@ -453,3 +453,9 @@ func constraintEqual(existing, constraint *Constraint) bool {
 		foreignKeyInfoEqual(existing.ForeignKey, constraint.ForeignKey) &&
 		existing.Condition == constraint.Condition
 }
+
+func indexEqual(existing, index *Index) bool {
+	return existing.Name == index.Name &&
+		stringListEqual(existing.Columns, index.Columns) &&
+		existing.Unique == index.Unique
+}

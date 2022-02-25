@@ -614,6 +614,7 @@ const (
 )
 
 type Constraint struct {
+	// Note that anytime anything changes here, have to update constraintEqual in compare.go
 	Name       string          `json:"name,omitempty"`
 	Type       ConstraintType  `json:"type,omitempty"`
 	Columns    []string        `json:"columns,omitempty"`
@@ -638,6 +639,7 @@ func (c *Constraint) GetConstraintTypeString() string {
 }
 
 type Index struct {
+	// Note that anytime anything changes here, have to update indexEqual in compare.go
 	Name    string   `json:"name,omitempty"`
 	Columns []string `json:"columns,omitempty"`
 	Unique  bool     `json:"unique,omitempty"`
