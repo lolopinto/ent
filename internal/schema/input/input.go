@@ -380,6 +380,7 @@ type AssocEdge struct {
 }
 
 type AssocEdgeGroup struct {
+	// Note that anytime anything changes here, have to update assocEdgeGroupEqual in compare.go
 	Name            string        `json:"name,omitempty"`
 	GroupStatusName string        `json:"groupStatusName,omitempty"`
 	TableName       string        `json:"tableName,omitempty"`

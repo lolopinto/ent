@@ -127,6 +127,8 @@ type testCase struct {
 
 func runTestCases(t *testing.T, testCases map[string]testCase) {
 
+	// TODO go through runTestCases and test that everything is equal when marshalled back and forth...
+
 	hasOnly := false
 	for _, v := range testCases {
 		if v.only {

@@ -314,6 +314,19 @@ func PolymorphicOptionsEqual(existing, p *PolymorphicOptions) bool {
 		existing.DisableBuilderType == p.DisableBuilderType
 }
 
+func assocEdgesEqual(existing, edges []*AssocEdge) bool {
+	if len(existing) != len(edges) {
+		return false
+	}
+
+	for i := range existing {
+		if !assocEdgeEqual(existing[i], edges[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 func assocEdgeEqual(existing, edge *AssocEdge) bool {
 	return existing.Name == edge.Name &&
 		existing.SchemaName == edge.SchemaName &&
@@ -390,4 +403,16 @@ func actionOnlyFieldEqual(existing, af *ActionField) bool {
 		existing.nullableContents == af.nullableContents &&
 		existing.ActionName == af.ActionName &&
 		stringListEqual(existing.ExcludedFields, af.ExcludedFields)
+}
+
+func assocEdgeGroupEqual(existing, group *AssocEdgeGroup) bool {
+	return existing.Name == group.Name &&
+		existing.GroupStatusName == group.GroupStatusName &&
+		existing.TableName == group.TableName &&
+		assocEdgesEqual(existing.AssocEdges, group.AssocEdges) &&
+		edgeActionsEqual(existing.EdgeActions, group.EdgeActions) &&
+		stringListEqual(existing.StatusEnums, group.StatusEnums) &&
+		existing.NullStateFn == group.NullStateFn &&
+		stringListEqual(existing.NullStates, group.NullStates) &&
+		edgeActionEqual(existing.EdgeAction, group.EdgeAction)
 }
