@@ -35,7 +35,7 @@ func TestAssociationEdge(t *testing.T) {
 	expectedAssocEdge := &AssociationEdge{
 		EdgeConst:   "AccountToFoldersEdge",
 		TsEdgeConst: "AccountToFolders",
-		CommonEdgeInfo: getCommonEdgeInfo(
+		commonEdgeInfo: getCommonEdgeInfo(
 			"Folders",
 			schemaparser.GetEntConfigFromName("folder"),
 		),
@@ -67,7 +67,7 @@ func TestSymmetricAssociationEdge(t *testing.T) {
 	expectedAssocEdge := &AssociationEdge{
 		EdgeConst:   "AccountToFriendsEdge",
 		TsEdgeConst: "AccountToFriends",
-		CommonEdgeInfo: getCommonEdgeInfo(
+		commonEdgeInfo: getCommonEdgeInfo(
 			"Friends",
 			schemaparser.GetEntConfigFromName("account"),
 		),
@@ -88,7 +88,7 @@ func TestUniqueAssociationEdge(t *testing.T) {
 	expectedAssocEdge := &AssociationEdge{
 		EdgeConst:   "EventToCreatorEdge",
 		TsEdgeConst: "EventToCreator",
-		CommonEdgeInfo: getCommonEdgeInfo(
+		commonEdgeInfo: getCommonEdgeInfo(
 			"Creator",
 			schemaparser.GetEntConfigFromName("account"),
 		),
@@ -109,13 +109,13 @@ func TestInverseAssociationEdge(t *testing.T) {
 	expectedAssocEdge := &AssociationEdge{
 		EdgeConst:   "FolderToTodosEdge",
 		TsEdgeConst: "FolderToTodos",
-		CommonEdgeInfo: getCommonEdgeInfo(
+		commonEdgeInfo: getCommonEdgeInfo(
 			"Todos",
 			schemaparser.GetEntConfigFromName("todo"),
 		),
 		InverseEdge: &InverseAssocEdge{
 			EdgeConst: "TodoToFoldersEdge",
-			CommonEdgeInfo: getCommonEdgeInfo(
+			commonEdgeInfo: getCommonEdgeInfo(
 				"Folders",
 				schemaparser.GetEntConfigFromName("folder"),
 			),
@@ -142,7 +142,7 @@ func TestAddingInverseEdge(t *testing.T) {
 	expectedAssocEdge := &AssociationEdge{
 		EdgeConst:   "TodoToFoldersEdge",
 		TsEdgeConst: "TodoToFolders",
-		CommonEdgeInfo: getCommonEdgeInfo(
+		commonEdgeInfo: getCommonEdgeInfo(
 			"Folders",
 			schemaparser.GetEntConfigFromName("folder"),
 		),
@@ -163,13 +163,13 @@ func TestEdgeGroup(t *testing.T) {
 	expectedFriendRequestsEdge := &AssociationEdge{
 		EdgeConst:   "AccountToFriendRequestsEdge",
 		TsEdgeConst: "AccountToFriendRequests",
-		CommonEdgeInfo: getCommonEdgeInfo(
+		commonEdgeInfo: getCommonEdgeInfo(
 			"FriendRequests",
 			schemaparser.GetEntConfigFromName("account"),
 		),
 		InverseEdge: &InverseAssocEdge{
 			EdgeConst: "AccountToFriendRequestsReceivedEdge",
-			CommonEdgeInfo: getCommonEdgeInfo(
+			commonEdgeInfo: getCommonEdgeInfo(
 				"FriendRequestsReceived",
 				schemaparser.GetEntConfigFromName("account"),
 			),
@@ -216,13 +216,13 @@ func TestEdgeGroupWithCustomActionEdges(t *testing.T) {
 	expectedInvitedEdge := &AssociationEdge{
 		EdgeConst:   "EventToInvitedEdge",
 		TsEdgeConst: "EventToInvited",
-		CommonEdgeInfo: getCommonEdgeInfo(
+		commonEdgeInfo: getCommonEdgeInfo(
 			"Invited",
 			schemaparser.GetEntConfigFromName("account"),
 		),
 		InverseEdge: &InverseAssocEdge{
 			EdgeConst: "AccountToInvitedEventsEdge",
-			CommonEdgeInfo: getCommonEdgeInfo(
+			commonEdgeInfo: getCommonEdgeInfo(
 				"InvitedEvents",
 				schemaparser.GetEntConfigFromName("event"),
 			),

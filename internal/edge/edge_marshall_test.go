@@ -20,7 +20,7 @@ func TestSimpleAssocEdge(t *testing.T) {
 	edge2 := marshallAndUnmarshallAssocEdge(t, edge)
 
 	testAssocEdge(t, edge, &AssociationEdge{
-		CommonEdgeInfo: getCommonEdgeInfo("CreatedEvents", schemaparser.GetEntConfigFromName("Event")),
+		commonEdgeInfo: getCommonEdgeInfo("CreatedEvents", schemaparser.GetEntConfigFromName("Event")),
 		EdgeConst:      "UserToCreatedEventsEdge",
 		TsEdgeConst:    "UserToCreatedEvents",
 		TableName:      "user_created_events_edges",
@@ -43,7 +43,7 @@ func TestSymmetricAssocEdge(t *testing.T) {
 	edge2 := marshallAndUnmarshallAssocEdge(t, edge)
 
 	testAssocEdge(t, edge, &AssociationEdge{
-		CommonEdgeInfo: getCommonEdgeInfo("Friends", schemaparser.GetEntConfigFromName("User")),
+		commonEdgeInfo: getCommonEdgeInfo("Friends", schemaparser.GetEntConfigFromName("User")),
 		EdgeConst:      "UserToFriendsEdge",
 		TsEdgeConst:    "UserToFriends",
 		TableName:      "user_friends_edges",
@@ -69,12 +69,12 @@ func TestInverseAssocEdge(t *testing.T) {
 	edge2 := marshallAndUnmarshallAssocEdge(t, edge)
 
 	testAssocEdge(t, edge, &AssociationEdge{
-		CommonEdgeInfo: getCommonEdgeInfo("FriendRequestsSent", schemaparser.GetEntConfigFromName("User")),
+		commonEdgeInfo: getCommonEdgeInfo("FriendRequestsSent", schemaparser.GetEntConfigFromName("User")),
 		EdgeConst:      "UserToFriendRequestsSentEdge",
 		TsEdgeConst:    "UserToFriendRequestsSent",
 		TableName:      "user_friend_requests_sent_edges",
 		InverseEdge: &InverseAssocEdge{
-			CommonEdgeInfo: getCommonEdgeInfo("FriendRequestsReceived", schemaparser.GetEntConfigFromName("User")),
+			commonEdgeInfo: getCommonEdgeInfo("FriendRequestsReceived", schemaparser.GetEntConfigFromName("User")),
 			EdgeConst:      "UserToFriendRequestsReceivedEdge",
 		},
 	})
@@ -101,14 +101,14 @@ func TestAssocEdgeWithPattern(t *testing.T) {
 	edge2 := marshallAndUnmarshallAssocEdge(t, edge)
 
 	testAssocEdge(t, edge, &AssociationEdge{
-		CommonEdgeInfo: getCommonEdgeInfo("likers", schemaparser.GetEntConfigFromName("User")),
+		commonEdgeInfo: getCommonEdgeInfo("likers", schemaparser.GetEntConfigFromName("User")),
 		// legacy hence confusing
 		EdgeConst:   "UserToLikersEdge",
 		TsEdgeConst: "LikedPostToLikers",
 		TableName:   "user_likers_edges",
 		PatternName: "Likes",
 		InverseEdge: &InverseAssocEdge{
-			CommonEdgeInfo: getCommonEdgeInfo("likes", schemaparser.GetEntConfigFromName("User")),
+			commonEdgeInfo: getCommonEdgeInfo("likes", schemaparser.GetEntConfigFromName("User")),
 			EdgeConst:      "UserToLikedObjectsEdge",
 		},
 		OverridenQueryName:   "UserToLikersQuery",
@@ -136,7 +136,7 @@ func TestForeignKeyEdge(t *testing.T) {
 	edge := &ForeignKeyEdge{
 		SourceNodeName: "Contact",
 		destinationEdge: destinationEdge{
-			CommonEdgeInfo: getCommonEdgeInfo(
+			commonEdgeInfo: getCommonEdgeInfo(
 				"users",
 				schemaparser.GetEntConfigFromName("User"),
 			),
@@ -160,7 +160,7 @@ func TestUniqueForeignKeyEdge(t *testing.T) {
 	edge := &ForeignKeyEdge{
 		SourceNodeName: "Contact",
 		destinationEdge: destinationEdge{
-			CommonEdgeInfo: getCommonEdgeInfo(
+			commonEdgeInfo: getCommonEdgeInfo(
 				"users",
 				schemaparser.GetEntConfigFromName("User"),
 			),
@@ -185,7 +185,7 @@ func TestIndexedEdge(t *testing.T) {
 	edge := &IndexedEdge{
 		TsEdgeName: "Owners",
 		destinationEdge: destinationEdge{
-			CommonEdgeInfo: getCommonEdgeInfo(
+			commonEdgeInfo: getCommonEdgeInfo(
 				"users",
 				schemaparser.GetEntConfigFromName("User"),
 			),
@@ -210,7 +210,7 @@ func TestFieldEdge(t *testing.T) {
 	edge := &FieldEdge{
 		FieldName:      "user_id",
 		TSFieldName:    "userID",
-		CommonEdgeInfo: getCommonEdgeInfo("user_ids", schemaparser.GetEntConfigFromName("Contact")),
+		commonEdgeInfo: getCommonEdgeInfo("user_ids", schemaparser.GetEntConfigFromName("Contact")),
 		Nullable:       true,
 	}
 
@@ -230,7 +230,7 @@ func TestFieldEdgeWithInverse(t *testing.T) {
 	edge := &FieldEdge{
 		FieldName:      "user_id",
 		TSFieldName:    "userID",
-		CommonEdgeInfo: getCommonEdgeInfo("user_ids", schemaparser.GetEntConfigFromName("User")),
+		commonEdgeInfo: getCommonEdgeInfo("user_ids", schemaparser.GetEntConfigFromName("User")),
 		Nullable:       true,
 		InverseEdge: &input.InverseFieldEdge{
 			EdgeConstName: "Contacts",
@@ -253,7 +253,7 @@ func TestPolymorphicFieldEdge(t *testing.T) {
 	edge := &FieldEdge{
 		FieldName:      "user_id",
 		TSFieldName:    "userID",
-		CommonEdgeInfo: getCommonEdgeInfo("user_ids", schemaparser.GetEntConfigFromName("User")),
+		commonEdgeInfo: getCommonEdgeInfo("user_ids", schemaparser.GetEntConfigFromName("User")),
 		Nullable:       true,
 		Polymorphic: &base.PolymorphicOptions{
 			NodeTypeField: "Node",

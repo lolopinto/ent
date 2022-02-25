@@ -18,7 +18,7 @@ func CompareAssociationEdge(existingEdge, edge *AssociationEdge) []change.Change
 }
 
 func assocEdgeEqual(existingEdge, edge *AssociationEdge) bool {
-	return commonEdgeInfoEqual(existingEdge.CommonEdgeInfo, edge.CommonEdgeInfo) &&
+	return commonEdgeInfoEqual(existingEdge.commonEdgeInfo, edge.commonEdgeInfo) &&
 		existingEdge.EdgeConst == edge.EdgeConst &&
 		existingEdge.TsEdgeConst == edge.TsEdgeConst &&
 		existingEdge.Symmetric == edge.Symmetric &&
@@ -36,7 +36,7 @@ func assocEdgeEqual(existingEdge, edge *AssociationEdge) bool {
 		existingEdge.PatternName == edge.PatternName
 }
 
-func commonEdgeInfoEqual(existing, common CommonEdgeInfo) bool {
+func commonEdgeInfoEqual(existing, common commonEdgeInfo) bool {
 	return existing.EdgeName == common.EdgeName &&
 		existing.HideFromGraphQLField == common.HideFromGraphQLField &&
 		existing.PackageNameField == common.PackageNameField &&
@@ -52,7 +52,7 @@ func inverseAssocEdgeEqual(existing, inverseEdge *InverseAssocEdge) bool {
 		return *ret
 	}
 
-	return commonEdgeInfoEqual(existing.CommonEdgeInfo, inverseEdge.CommonEdgeInfo) &&
+	return commonEdgeInfoEqual(existing.commonEdgeInfo, inverseEdge.commonEdgeInfo) &&
 		existing.EdgeConst == inverseEdge.EdgeConst
 }
 
@@ -73,7 +73,7 @@ func foreignKeyEdgeEqual(existingEdge, edge *ForeignKeyEdge) bool {
 }
 
 func destinationEdgeEqual(existingEdge, edge destinationEdge) bool {
-	return commonEdgeInfoEqual(existingEdge.CommonEdgeInfo, edge.CommonEdgeInfo) &&
+	return commonEdgeInfoEqual(existingEdge.commonEdgeInfo, edge.commonEdgeInfo) &&
 		existingEdge.QuotedDbColNameField == edge.QuotedDbColNameField &&
 		existingEdge.UniqueField == edge.UniqueField
 
@@ -107,7 +107,7 @@ func CompareFieldEdge(existingEdge, edge *FieldEdge) []change.Change {
 }
 
 func fieldEdgeEqual(existingEdge, edge *FieldEdge) bool {
-	return commonEdgeInfoEqual(existingEdge.CommonEdgeInfo, edge.CommonEdgeInfo) &&
+	return commonEdgeInfoEqual(existingEdge.commonEdgeInfo, edge.commonEdgeInfo) &&
 		existingEdge.FieldName == edge.FieldName &&
 		existingEdge.TSFieldName == edge.TSFieldName &&
 		existingEdge.Nullable == edge.Nullable &&
