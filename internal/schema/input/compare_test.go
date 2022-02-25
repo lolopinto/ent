@@ -275,3 +275,18 @@ func TestInverseFieldEdge(t *testing.T) {
 	require.Nil(t, err)
 	require.True(t, fieldEdgeEqual(edge, edge2))
 }
+
+func TestPolymorphicOptions(t *testing.T) {
+	p := &PolymorphicOptions{
+		Types:                  []string{"User", "Account"},
+		HideFromInverseGraphQL: true,
+	}
+
+	b, err := json.Marshal(p)
+	require.Nil(t, err)
+
+	p2 := &PolymorphicOptions{}
+	err = json.Unmarshal(b, p2)
+	require.Nil(t, err)
+	require.True(t, PolymorphicOptionsEqual(p, p2))
+}
