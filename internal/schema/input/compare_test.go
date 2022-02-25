@@ -397,7 +397,7 @@ func TestPattern(t *testing.T) {
 	}
 
 	p2 := marshallAndUnmarshallPattern(t, p)
-	require.True(t, patternEqual(p, p2))
+	require.True(t, PatternEqual(p, p2))
 }
 
 func TestPatternWithEdges(t *testing.T) {
@@ -426,7 +426,7 @@ func TestPatternWithEdges(t *testing.T) {
 	}
 
 	p2 := marshallAndUnmarshallPattern(t, p)
-	require.True(t, patternEqual(p, p2))
+	require.True(t, PatternEqual(p, p2))
 }
 
 func TestNode(t *testing.T) {
@@ -443,5 +443,5 @@ func TestNode(t *testing.T) {
 		},
 	}
 	node2 := marshallAndUnmarshallNode(t, node)
-	require.True(t, nodeEqual(node, node2))
+	require.True(t, NodeEqual(node, node2))
 }

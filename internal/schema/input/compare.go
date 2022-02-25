@@ -86,7 +86,7 @@ func CompareSchemas(existing, schema *Schema) ChangeMap {
 	return m
 }
 
-func nodeEqual(existing, node *Node) bool {
+func NodeEqual(existing, node *Node) bool {
 	return existing.TableName == node.TableName &&
 		fieldsEqual(existing.Fields, node.Fields) &&
 		assocEdgesEqual(existing.AssocEdges, node.AssocEdges) &&
@@ -154,7 +154,7 @@ func compareFields(existing, fields []*Field) []Change {
 	return ret
 }
 
-func patternEqual(existing, pattern *Pattern) bool {
+func PatternEqual(existing, pattern *Pattern) bool {
 	return existing.Name == pattern.Name &&
 		fieldsEqual(existing.Fields, pattern.Fields) &&
 		assocEdgesEqual(existing.AssocEdges, pattern.AssocEdges)
