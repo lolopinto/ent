@@ -176,3 +176,39 @@ func TestForiegnKeyInfo(t *testing.T) {
 	require.Nil(t, err)
 	require.True(t, foreignKeyInfoEqual(fkey, fkey2))
 }
+
+func TestPKeyConstraint(t *testing.T) {
+	c := &Constraint{
+		Name:    "user_photos_pkey",
+		Type:    PrimaryKeyConstraint,
+		Columns: []string{"UserID", "PhotoID"},
+	}
+
+	b, err := json.Marshal(c)
+	require.Nil(t, err)
+
+	c2 := &Constraint{}
+	err = json.Unmarshal(b, c2)
+	require.Nil(t, err)
+	require.True(t, constraintEqual(c, c2))
+}
+
+func TestForeignkeyConstraint(t *testing.T) {
+	c := &Constraint{
+		Name:    "contacts_user_fkey",
+		Type:    ForeignKeyConstraint,
+		Columns: []string{"UserID"},
+		ForeignKey: &ForeignKeyInfo{
+			TableName: "users",
+			Columns:   []string{"id"},
+		},
+	}
+
+	b, err := json.Marshal(c)
+	require.Nil(t, err)
+
+	c2 := &Constraint{}
+	err = json.Unmarshal(b, c2)
+	require.Nil(t, err)
+	require.True(t, constraintEqual(c, c2))
+}

@@ -440,3 +440,16 @@ func foreignKeyInfoEqual(existing, fkey *ForeignKeyInfo) bool {
 		stringListEqual(existing.Columns, fkey.Columns) &&
 		existing.OnDelete == fkey.OnDelete
 }
+
+func constraintEqual(existing, constraint *Constraint) bool {
+	ret := compareNilVals(existing == nil, constraint == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return existing.Name == constraint.Name &&
+		existing.Type == constraint.Type &&
+		stringListEqual(existing.Columns, constraint.Columns) &&
+		foreignKeyInfoEqual(existing.ForeignKey, constraint.ForeignKey) &&
+		existing.Condition == constraint.Condition
+}
