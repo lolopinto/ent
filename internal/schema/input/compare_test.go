@@ -18,6 +18,16 @@ func marshallAndUnmarshallAssocEdge(t *testing.T, edge *AssocEdge) *AssocEdge {
 	return edge2
 }
 
+func marshallAndUnmarshallField(t *testing.T, field *Field) *Field {
+	b, err := json.Marshal(field)
+	require.Nil(t, err)
+
+	f2 := &Field{}
+	err = json.Unmarshal(b, f2)
+	require.Nil(t, err)
+	return f2
+}
+
 func TestSimpleAssocEdge(t *testing.T) {
 	edge := &AssocEdge{
 		Name:       "CreatedEvents",
@@ -289,4 +299,66 @@ func TestPolymorphicOptions(t *testing.T) {
 	err = json.Unmarshal(b, p2)
 	require.Nil(t, err)
 	require.True(t, PolymorphicOptionsEqual(p, p2))
+}
+
+func TestField(t *testing.T) {
+	f := &Field{
+		Name: "city",
+		Type: &FieldType{
+			DBType: String,
+		},
+		Nullable:   true,
+		StorageKey: "location",
+	}
+
+	f2 := marshallAndUnmarshallField(t, f)
+	require.True(t, fieldEqual(f, f2))
+}
+
+func TestEnumField(t *testing.T) {
+	f := &Field{
+		Name: "AccountStatus",
+		Type: &FieldType{
+			DBType: StringEnum,
+			Values: []string{
+				"UNVERIFIED",
+				"VERIFIED",
+				"DEACTIVATED",
+				"DISABLED",
+			},
+			Type:        "AccountStatus",
+			GraphQLType: "AccountStatus",
+		},
+		Nullable: true,
+	}
+
+	f2 := marshallAndUnmarshallField(t, f)
+	require.True(t, fieldEqual(f, f2))
+}
+
+func TestPolymorphicDerivedField(t *testing.T) {
+	f := &Field{
+		Name: "AccountStatus",
+		Type: &FieldType{
+			DBType: UUID,
+		},
+		Index: true,
+		Polymorphic: &PolymorphicOptions{
+			Types:                  []string{"User", "Location"},
+			HideFromInverseGraphQL: true,
+		},
+		DerivedFields: []*Field{
+			{
+				Name: "OwnerType",
+				Type: &FieldType{
+					DBType: String,
+				},
+				HideFromGraphQL: true,
+			},
+		},
+		Nullable: true,
+	}
+
+	f2 := marshallAndUnmarshallField(t, f)
+	require.True(t, fieldEqual(f, f2))
 }

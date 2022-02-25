@@ -107,27 +107,11 @@ func compareFields(existing, fields []*Field) []Change {
 			})
 			continue
 		}
-		alterField := false
 
-		// ignoring PrimaryKey
-		if existingField.Nullable != field.Nullable ||
-			existingField.StorageKey != field.StorageKey ||
-			existingField.Unique != field.Unique ||
-			existingField.Private != field.Private ||
-			existingField.Index != field.Index ||
-			existingField.DefaultToViewerOnCreate != field.DefaultToViewerOnCreate ||
-			existingField.ServerDefault != field.ServerDefault ||
-			existingField.DisableUserEditable != field.DisableUserEditable ||
-			existingField.HasDefaultValueOnCreate != field.HasDefaultValueOnCreate ||
-			existingField.HasDefaultValueOnEdit != field.HasDefaultValueOnEdit ||
-			existingField.DerivedWhenEmbedded != field.DerivedWhenEmbedded ||
-			existingField.PatternName != field.PatternName {
-			alterField = true
-			ret = append(ret, Change{
-				Change: AlterField,
-				Field:  existingField.Name,
-			})
+		if fieldEqual(existingField, field) {
+			continue
 		}
+
 		if existingField.HideFromGraphQL != field.HideFromGraphQL ||
 			existingField.GraphQLName != field.GraphQLName {
 			ret = append(ret, Change{
@@ -135,30 +119,11 @@ func compareFields(existing, fields []*Field) []Change {
 				Field:       existingField.Name,
 				GraphQLOnly: true,
 			})
-		}
-
-		// check for complicated things
-		// Polymorphic, DerivedFields
-		funcs := []func() bool{
-			func() bool {
-				return fieldTypeEqual(existingField.Type, field.Type)
-			},
-			func() bool {
-				return fieldEdgeEqual(existingField.FieldEdge, field.FieldEdge)
-			},
-			func() bool {
-				return foreignKeyEqual(existingField.ForeignKey, field.ForeignKey)
-			},
-		}
-
-		if !alterField {
-			for _, fn := range funcs {
-				ret := fn()
-				if !ret {
-					alterField = true
-					break
-				}
-			}
+		} else {
+			ret = append(ret, Change{
+				Change: AlterField,
+				Field:  existingField.Name,
+			})
 		}
 	}
 
@@ -173,6 +138,46 @@ func compareFields(existing, fields []*Field) []Change {
 	}
 
 	return ret
+}
+
+func fieldsEqual(existing, fields []*Field) bool {
+	if len(existing) != len(fields) {
+		return false
+	}
+	for i := range existing {
+		if !fieldEqual(existing[i], fields[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func fieldEqual(existingField, field *Field) bool {
+	return existingField.Name == field.Name &&
+		fieldTypeEqual(existingField.Type, field.Type) &&
+
+		existingField.Nullable == field.Nullable &&
+		existingField.StorageKey == field.StorageKey &&
+		existingField.Unique == field.Unique &&
+		existingField.HideFromGraphQL == field.HideFromGraphQL &&
+		existingField.Private == field.Private &&
+		existingField.GraphQLName == field.GraphQLName &&
+		existingField.Index == field.Index &&
+		existingField.PrimaryKey == field.PrimaryKey &&
+
+		existingField.DefaultToViewerOnCreate == field.DefaultToViewerOnCreate &&
+		fieldEdgeEqual(existingField.FieldEdge, field.FieldEdge) &&
+		foreignKeyEqual(existingField.ForeignKey, field.ForeignKey) &&
+		existingField.ServerDefault == field.ServerDefault &&
+
+		existingField.DisableUserEditable == field.DisableUserEditable &&
+		existingField.HasDefaultValueOnCreate == field.HasDefaultValueOnCreate &&
+		existingField.HasDefaultValueOnEdit == field.HasDefaultValueOnEdit &&
+
+		PolymorphicOptionsEqual(existingField.Polymorphic, field.Polymorphic) &&
+		existingField.DerivedWhenEmbedded == field.DerivedWhenEmbedded &&
+		fieldsEqual(existingField.DerivedFields, field.DerivedFields) &&
+		existingField.PatternName == field.PatternName
 }
 
 func compareNilVals(existingNil, valNil bool) *bool {
@@ -275,11 +280,16 @@ func InverseFieldEdgeEqual(existing, inverseFieldEdge *InverseFieldEdge) bool {
 }
 
 func foreignKeyEqual(existing, fkey *ForeignKey) bool {
+	ret := compareNilVals(existing == nil, fkey == nil)
+	if ret != nil {
+		return *ret
+	}
+
 	return existing.Schema == fkey.Schema &&
 		existing.Column == fkey.Column &&
 		existing.Name == fkey.Name &&
 		existing.DisableIndex == fkey.DisableIndex &&
-		existing.DisableBuilderType && fkey.DisableBuilderType
+		existing.DisableBuilderType == fkey.DisableBuilderType
 }
 
 func PolymorphicOptionsEqual(existing, p *PolymorphicOptions) bool {

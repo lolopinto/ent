@@ -120,7 +120,7 @@ func (ft *FieldType) UnmarshalJSON(data []byte) error {
 }
 
 type Field struct {
-	// Note that anytime anything changes here, have to update compareFields in compare.go
+	// Note that anytime anything changes here, have to update fieldEqual in compare.go
 	Name       string     `json:"name,omitempty"`
 	Type       *FieldType `json:"type,omitempty"`
 	Nullable   bool       `json:"nullable,omitempty"`
