@@ -77,6 +77,14 @@ type Field struct {
 	patternName string
 }
 
+// mostly used by tests
+func NewFieldFromNameAndType(name string, typ enttype.TSGraphQLType) *Field {
+	return &Field{
+		FieldName: name,
+		fieldType: typ,
+	}
+}
+
 func newFieldFromInput(f *input.Field) (*Field, error) {
 	ret := &Field{
 		FieldName:                f.Name,

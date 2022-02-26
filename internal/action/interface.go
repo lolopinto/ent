@@ -46,6 +46,7 @@ type Action interface {
 	GetCustomInterfaces() []*custominterface.CustomInterface
 	GetTSEnums() []*enum.Enum
 	GetGQLEnums() []*enum.GQLEnum
+	getCommonInfo() commonActionInfo
 }
 
 type ActionField interface {
@@ -166,6 +167,10 @@ func (action *commonActionInfo) GetOperation() ent.ActionOperation {
 
 func (action *commonActionInfo) IsDeletingNode() bool {
 	return action.Operation == ent.DeleteAction
+}
+
+func (action *commonActionInfo) getCommonInfo() commonActionInfo {
+	return *action
 }
 
 func getTypes(typ enttype.TSGraphQLType) (string, string) {

@@ -30,6 +30,19 @@ func EnumEqual(e1, e2 *Enum) bool {
 		e1.Imported == e2.Imported
 }
 
+func EnumsEqual(l1, l2 []*Enum) bool {
+	if len(l1) != len(l2) {
+		return false
+	}
+
+	for i := range l1 {
+		if !EnumEqual(l1[i], l2[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 type GQLEnum struct {
 	Name   string // Name is the name of the enum
 	Type   string // type of the enum e.g. nullable or not
@@ -48,6 +61,19 @@ func GQLEnumEqual(e1, e2 *GQLEnum) bool {
 	return e1.Name == e2.Name &&
 		e1.Type == e2.Type &&
 		datasEqual(e1.Values, e2.Values)
+}
+
+func GQLEnumsEqual(l1, l2 []*GQLEnum) bool {
+	if len(l1) != len(l2) {
+		return false
+	}
+
+	for i := range l1 {
+		if !GQLEnumEqual(l1[i], l2[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 type Data struct {

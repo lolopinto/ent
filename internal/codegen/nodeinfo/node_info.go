@@ -44,3 +44,8 @@ func GetNodeInfo(packageName string) NodeInfo {
 		PackageName:   strcase.ToSnake(packageName),
 	}
 }
+
+func NodeInfoEqual(n1, n2 NodeInfo) bool {
+	// assuming if this is correct, everything else is
+	return n1.Node == n2.Node
+}

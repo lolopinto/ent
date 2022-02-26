@@ -59,13 +59,8 @@ func AssocEdgesEqual(l1, l2 []*AssociationEdge) bool {
 func commonEdgeInfoEqual(existing, common commonEdgeInfo) bool {
 	return existing.EdgeName == common.EdgeName &&
 		existing.HideFromGraphQLField == common.HideFromGraphQLField &&
-		nodeInfoEqual(existing.NodeInfo, common.NodeInfo) &&
+		nodeinfo.NodeInfoEqual(existing.NodeInfo, common.NodeInfo) &&
 		entConfigEqual(existing.entConfig, common.entConfig)
-}
-
-func nodeInfoEqual(n1, n2 nodeinfo.NodeInfo) bool {
-	// assuming if this is correct, everything else is
-	return n1.Node == n2.Node
 }
 
 func entConfigEqual(existing, entConfig *schemaparser.EntConfigInfo) bool {
@@ -149,10 +144,14 @@ func fieldEdgeEqual(existingEdge, edge *FieldEdge) bool {
 // intentionally skips EdgeActions since actions are high level objects of their own
 // which will do their own comparison
 func AssocEdgeGroupEqual(g1, g2 *AssociationEdgeGroup) bool {
+	ret := change.CompareNilVals(g1 == nil, g2 == nil)
+	if ret != nil {
+		return *ret
+	}
 	return g1.GroupName == g2.GroupName &&
 		g1.GroupStatusName == g2.GroupStatusName &&
 		g1.TSGroupStatusName == g2.TSGroupStatusName &&
-		nodeInfoEqual(g1.DestNodeInfo, g2.DestNodeInfo) &&
+		nodeinfo.NodeInfoEqual(g1.DestNodeInfo, g2.DestNodeInfo) &&
 		g1.ConstType == g2.ConstType &&
 		assocEdgesMapEqual(g1.Edges, g2.Edges) &&
 		change.StringListEqual(g1.StatusEnums, g2.StatusEnums) &&
@@ -160,7 +159,7 @@ func AssocEdgeGroupEqual(g1, g2 *AssociationEdgeGroup) bool {
 		change.StringListEqual(g1.NullStates, g2.NullStates) &&
 		actionEdgesEqual(g1.actionEdges, g2.actionEdges) &&
 		AssocEdgesEqual(g1.statusEdges, g2.statusEdges) &&
-		nodeInfoEqual(g1.NodeInfo, g2.NodeInfo)
+		nodeinfo.NodeInfoEqual(g1.NodeInfo, g2.NodeInfo)
 }
 
 func actionEdgesEqual(m1, m2 map[string]bool) bool {
