@@ -7,6 +7,7 @@ import (
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/base"
+	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/stretchr/testify/require"
 )
@@ -228,12 +229,480 @@ func TestCompareRemoveEdgeAction(t *testing.T) {
 	require.True(t, ActionEqual(a1, a2))
 }
 
+func TestCompareActionName(t *testing.T) {
+	a1 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			customActionName: "CreateFooAction",
+		},
+	)
+
+	a2 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			customActionName: "CreateFooAction",
+		},
+	)
+
+	require.True(t, ActionEqual(a1, a2))
+}
+
+func TestCompareUnequalActionName(t *testing.T) {
+	a1 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			customActionName: "CreateFooAction",
+		},
+	)
+
+	a2 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			customActionName: "CreateFooAction2",
+		},
+	)
+
+	require.False(t, ActionEqual(a1, a2))
+}
+
+func TestCompareGraphQLName(t *testing.T) {
+	a1 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			customGraphQLName: "fooCreate",
+		},
+	)
+
+	a2 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			customGraphQLName: "fooCreate",
+		},
+	)
+
+	require.True(t, ActionEqual(a1, a2))
+}
+
+func TestCompareUnequalGraphQLName(t *testing.T) {
+	a1 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			customGraphQLName: "fooCreate",
+		},
+	)
+
+	a2 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			customGraphQLName: "fooCreate2",
+		},
+	)
+
+	require.False(t, ActionEqual(a1, a2))
+}
+
+func TestCompareInputName(t *testing.T) {
+	a1 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			customInputName: "CreateFooInput",
+		},
+	)
+
+	a2 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			customInputName: "CreateFooInput",
+		},
+	)
+
+	require.True(t, ActionEqual(a1, a2))
+}
+
+func TestCompareUnequalInputName(t *testing.T) {
+	a1 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			customInputName: "CreateFooInput",
+		},
+	)
+
+	a2 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			customInputName: "CreateFooInput2",
+		},
+	)
+
+	require.False(t, ActionEqual(a1, a2))
+}
+
+func TestCompareExposeToGraphQL(t *testing.T) {
+	a1 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			hideFromGraphQL: true,
+		},
+	)
+
+	a2 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			hideFromGraphQL: true,
+		},
+	)
+
+	require.True(t, ActionEqual(a1, a2))
+}
+
+func TestCompareUnequalExposeToGraphQL(t *testing.T) {
+	a1 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+		},
+	)
+
+	a2 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			hideFromGraphQL: true,
+		},
+	)
+
+	require.False(t, ActionEqual(a1, a2))
+}
+
+func TestCompareTsEnums(t *testing.T) {
+	a1 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			tsEnums: []*enum.Enum{
+				{
+					Name: "AccountStatus",
+					Values: []enum.Data{
+						{
+							Name:  "Deactivated",
+							Value: "deactivated",
+						},
+						{
+							Name:  "Disabled",
+							Value: "disabled",
+						},
+						{
+							Name:  "Confirmed",
+							Value: "confirmed",
+						},
+					},
+					Imported: true,
+				},
+			},
+		},
+	)
+
+	a2 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			tsEnums: []*enum.Enum{
+				{
+					Name: "AccountStatus",
+					Values: []enum.Data{
+						{
+							Name:  "Deactivated",
+							Value: "deactivated",
+						},
+						{
+							Name:  "Disabled",
+							Value: "disabled",
+						},
+						{
+							Name:  "Confirmed",
+							Value: "confirmed",
+						},
+					},
+					Imported: true,
+				},
+			},
+		},
+	)
+
+	require.True(t, ActionEqual(a1, a2))
+}
+
+func TestCompareUnequalTsEnums(t *testing.T) {
+	a1 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			tsEnums: []*enum.Enum{
+				{
+					Name: "AccountStatus",
+					Values: []enum.Data{
+						{
+							Name:  "Deactivated",
+							Value: "deactivated",
+						},
+						{
+							Name:  "Disabled",
+							Value: "disabled",
+						},
+						{
+							Name:  "Confirmed",
+							Value: "confirmed",
+						},
+					},
+					Imported: true,
+				},
+			},
+		},
+	)
+
+	a2 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			tsEnums: []*enum.Enum{
+				{
+					Name: "AccountStatus",
+					Values: []enum.Data{
+						{
+							Name:  "Deactivated",
+							Value: "deactivated",
+						},
+						{
+							Name:  "Disabled",
+							Value: "disabled",
+						},
+						{
+							Name:  "Verified",
+							Value: "verified",
+						},
+						{
+							Name:  "Unverified",
+							Value: "unverified",
+						},
+					},
+					Imported: true,
+				},
+			},
+		},
+	)
+
+	require.False(t, ActionEqual(a1, a2))
+}
+
+func TestCompareGQLEnums(t *testing.T) {
+	a1 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			gqlEnums: []*enum.GQLEnum{
+				{
+					Name: "AccountStatus",
+					Type: "AccountStatus",
+					Values: []enum.Data{
+						{
+							Name:  "DEACTIVATED",
+							Value: "deactivated",
+						},
+						{
+							Name:  "DISABLED",
+							Value: "disabled",
+						},
+						{
+							Name:  "CONFIRMED",
+							Value: "confirmed",
+						},
+					},
+				},
+			},
+		},
+	)
+
+	a2 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			gqlEnums: []*enum.GQLEnum{
+				{
+					Name: "AccountStatus",
+					Type: "AccountStatus",
+					Values: []enum.Data{
+						{
+							Name:  "DEACTIVATED",
+							Value: "deactivated",
+						},
+						{
+							Name:  "DISABLED",
+							Value: "disabled",
+						},
+						{
+							Name:  "CONFIRMED",
+							Value: "confirmed",
+						},
+					},
+				},
+			},
+		},
+	)
+
+	require.True(t, ActionEqual(a1, a2))
+}
+
+func TestCompareUnequalGQLEnums(t *testing.T) {
+	a1 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			gqlEnums: []*enum.GQLEnum{
+				{
+					Name: "AccountStatus",
+					Type: "AccountStatus",
+					Values: []enum.Data{
+						{
+							Name:  "DEACTIVATED",
+							Value: "deactivated",
+						},
+						{
+							Name:  "DISABLED",
+							Value: "disabled",
+						},
+						{
+							Name:  "CONFIRMED",
+							Value: "confirmed",
+						},
+					},
+				},
+			},
+		},
+	)
+
+	a2 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			gqlEnums: []*enum.GQLEnum{
+				{
+					Name: "AccountStatus",
+					Type: "AccountStatus",
+					Values: []enum.Data{
+						{
+							Name:  "DEACTIVATED",
+							Value: "deactivated",
+						},
+						{
+							Name:  "DISABLED",
+							Value: "disabled",
+						},
+						{
+							Name:  "UNVERIFIED",
+							Value: "unverified",
+						},
+						{
+							Name:  "VERIFIED",
+							Value: "verified",
+						},
+					},
+				},
+			},
+		},
+	)
+
+	require.False(t, ActionEqual(a1, a2))
+}
+
 // TODO custom interface
-// custom names e.g. actionName, inputName, gqlName
-// exposeToGraphQL change...
 
 // TODO
-// also tests tsEnums,gqlEnums
 // func TestCompareEdgeGroupAction(t *testing.T) {
 // 	edge1, err := edge.AssocEdgeFromInput("user", &input.AssocEdge{
 // 		SchemaName: "User",
@@ -278,6 +747,8 @@ type actionOptions struct {
 	fields                                               []*field.Field
 	nonEntFields                                         []*field.NonEntField
 	edgeAction                                           *edge.EdgeAction
+	tsEnums                                              []*enum.Enum
+	gqlEnums                                             []*enum.GQLEnum
 }
 
 func createNodeActionWithOptions(
@@ -294,6 +765,8 @@ func createNodeActionWithOptions(
 		opt.fields,
 		opt.nonEntFields,
 	)
+	ci.tsEnums = opt.tsEnums
+	ci.gqlEnums = opt.gqlEnums
 	return typ.getAction(ci)
 }
 
