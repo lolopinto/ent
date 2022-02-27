@@ -268,7 +268,7 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]ImportPath, error) {
 }
 
 // GetImportPathsForDependencies returns imports needed in dependencies e.g. actions and builders
-func (nodeData *NodeData) GetImportPathsForDependencies() []ImportPath {
+func (nodeData *NodeData) GetImportPathsForDependencies(s *Schema) []ImportPath {
 	var ret []ImportPath
 
 	for _, enum := range nodeData.GetTSEnums() {
@@ -283,6 +283,12 @@ func (nodeData *NodeData) GetImportPathsForDependencies() []ImportPath {
 	for _, unique := range uniqueNodes {
 		ret = append(ret, ImportPath{
 			Import:      unique.Node,
+			PackagePath: codepath.GetExternalImportPath(),
+		})
+	}
+	for _, v := range s.Nodes {
+		ret = append(ret, ImportPath{
+			Import:      v.NodeData.Node,
 			PackagePath: codepath.GetExternalImportPath(),
 		})
 	}

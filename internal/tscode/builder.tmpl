@@ -1,13 +1,14 @@
 {{reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions"}}
 {{reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "saveBuilder" "saveBuilderX" "Orchestrator"}}
 
+{{ $schema := .Schema}}
 {{with .NodeData -}}
 {{ $schemaPath := printf "src/schema/%s" .PackageName }}
 {{ reserveDefaultImport $schemaPath "schema"}}
 {{ reserveImport "src/ent/generated/const" "EdgeType" "NodeType" }}
 
 
-{{ range .GetImportPathsForDependencies -}}
+{{ range .GetImportPathsForDependencies $schema -}}
   {{ if .DefaultImport -}}
     {{ reserveDefaultImport .PackagePath .Import}}
   {{ else -}}
