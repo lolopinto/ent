@@ -9,9 +9,9 @@
 
   {{ range .Imports }} 
     {{ if .DefaultImport -}}
-      {{ reserveDefaultImport .PackagePath .Import}}
+      {{ reserveDefaultImport .ImportPath .Import}}
     {{ else -}}
-      {{ reserveImport .PackagePath .Import}}
+      {{ reserveImport .ImportPath .Import}}
     {{end -}}
   {{ end}}
 

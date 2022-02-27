@@ -3,6 +3,8 @@ package graphql
 import (
 	"fmt"
 	"strings"
+
+	"github.com/lolopinto/ent/internal/tsimport"
 )
 
 type renderable interface {
@@ -120,7 +122,7 @@ func getNodeInterfaceRenderer() renderer {
 		fields: []*fieldType{
 			{
 				Name: "id",
-				FieldImports: []*fileImport{
+				FieldImports: []*tsimport.ImportPath{
 					getNativeGQLImportFor("GraphQLNonNull"),
 					getNativeGQLImportFor("GraphQLID"),
 				},
@@ -137,16 +139,16 @@ func getConnectionRenderer() renderer {
 		fields: []*fieldType{
 			{
 				Name: "node",
-				FieldImports: []*fileImport{
+				FieldImports: []*tsimport.ImportPath{
 					getNativeGQLImportFor("GraphQLNonNull"),
 					{
-						Type: "Node",
+						Import: "Node",
 					},
 				},
 			},
 			{
 				Name: "cursor",
-				FieldImports: []*fileImport{
+				FieldImports: []*tsimport.ImportPath{
 					getNativeGQLImportFor("GraphQLNonNull"),
 					getNativeGQLImportFor("GraphQLString"),
 				},
@@ -161,32 +163,32 @@ func getConnectionRenderer() renderer {
 		fields: []*fieldType{
 			{
 				Name: "edges",
-				FieldImports: []*fileImport{
+				FieldImports: []*tsimport.ImportPath{
 					getNativeGQLImportFor("GraphQLNonNull"),
 					getNativeGQLImportFor("GraphQLList"),
 					getNativeGQLImportFor("GraphQLNonNull"),
 					{
-						Type: "Edge",
+						Import: "Edge",
 					},
 				},
 			},
 			{
 				Name: "nodes",
-				FieldImports: []*fileImport{
+				FieldImports: []*tsimport.ImportPath{
 					getNativeGQLImportFor("GraphQLNonNull"),
 					getNativeGQLImportFor("GraphQLList"),
 					getNativeGQLImportFor("GraphQLNonNull"),
 					{
-						Type: "Node",
+						Import: "Node",
 					},
 				},
 			},
 			{
 				Name: "pageInfo",
-				FieldImports: []*fileImport{
+				FieldImports: []*tsimport.ImportPath{
 					getNativeGQLImportFor("GraphQLNonNull"),
 					{
-						Type: "PageInfo",
+						Import: "PageInfo",
 					},
 				},
 			},
@@ -198,28 +200,28 @@ func getConnectionRenderer() renderer {
 		fields: []*fieldType{
 			{
 				Name: "hasNextPage",
-				FieldImports: []*fileImport{
+				FieldImports: []*tsimport.ImportPath{
 					getNativeGQLImportFor("GraphQLNonNull"),
 					getNativeGQLImportFor("GraphQLBoolean"),
 				},
 			},
 			{
 				Name: "hasPreviousPage",
-				FieldImports: []*fileImport{
+				FieldImports: []*tsimport.ImportPath{
 					getNativeGQLImportFor("GraphQLNonNull"),
 					getNativeGQLImportFor("GraphQLBoolean"),
 				},
 			},
 			{
 				Name: "startCursor",
-				FieldImports: []*fileImport{
+				FieldImports: []*tsimport.ImportPath{
 					getNativeGQLImportFor("GraphQLNonNull"),
 					getNativeGQLImportFor("GraphQLString"),
 				},
 			},
 			{
 				Name: "endCursor",
-				FieldImports: []*fileImport{
+				FieldImports: []*tsimport.ImportPath{
 					getNativeGQLImportFor("GraphQLNonNull"),
 					getNativeGQLImportFor("GraphQLString"),
 				},
