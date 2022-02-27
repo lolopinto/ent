@@ -16,6 +16,7 @@ import (
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
+	"github.com/lolopinto/ent/internal/tsimport"
 )
 
 type ConstInfo struct {
@@ -188,15 +189,9 @@ func (nodeData *NodeData) GetTSEnums() []*enum.Enum {
 	return nodeData.tsEnums
 }
 
-type ImportPath struct {
-	PackagePath   string
-	Import        string
-	DefaultImport bool
-}
-
 // GetImportsForBaseFile returns list of imports needed in the base generated file
-func (nodeData *NodeData) GetImportsForBaseFile() ([]ImportPath, error) {
-	ret := []ImportPath{
+func (nodeData *NodeData) GetImportsForBaseFile() ([]*tsimport.ImportPath, error) {
+	ret := []*tsimport.ImportPath{
 		{
 			Import:        "schema",
 			DefaultImport: true,
@@ -204,7 +199,7 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]ImportPath, error) {
 		},
 	}
 	for _, nodeInfo := range nodeData.getUniqueNodes(false) {
-		ret = append(ret, ImportPath{
+		ret = append(ret, &tsimport.ImportPath{
 			Import:      nodeInfo.Node,
 			PackagePath: codepath.GetInternalImportPath(),
 		})
@@ -212,7 +207,7 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]ImportPath, error) {
 
 	for _, enum := range nodeData.tsEnums {
 		if enum.Imported {
-			ret = append(ret, ImportPath{
+			ret = append(ret, &tsimport.ImportPath{
 				Import:      enum.Name,
 				PackagePath: codepath.GetInternalImportPath(),
 			})
@@ -220,7 +215,7 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]ImportPath, error) {
 	}
 
 	for _, edge := range nodeData.EdgeInfo.GetConnectionEdges() {
-		ret = append(ret, ImportPath{
+		ret = append(ret, &tsimport.ImportPath{
 			Import:      edge.TsEdgeQueryName(),
 			PackagePath: codepath.GetInternalImportPath(),
 		})
@@ -232,7 +227,7 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]ImportPath, error) {
 			if err != nil {
 				return nil, err
 			}
-			ret = append(ret, ImportPath{
+			ret = append(ret, &tsimport.ImportPath{
 				Import:      imp,
 				PackagePath: codepath.GetInternalImportPath(),
 			})
@@ -243,7 +238,7 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]ImportPath, error) {
 			t2 := t.(enttype.ConvertDataType)
 			c := t2.Convert()
 			if string(c.ImportType) != "" {
-				ret = append(ret, ImportPath{
+				ret = append(ret, &tsimport.ImportPath{
 					Import: c.Type,
 					// TODO currently hardcoded
 					// TODO need to kill this ImportType nonsense
@@ -257,7 +252,7 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]ImportPath, error) {
 			imp := t2.GetImportDepsType()
 			if imp != nil {
 				// TODO ignoring relative. do we need it?
-				ret = append(ret, ImportPath{
+				ret = append(ret, &tsimport.ImportPath{
 					PackagePath: imp.Path,
 					Import:      imp.Type,
 				})
@@ -268,11 +263,11 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]ImportPath, error) {
 }
 
 // GetImportPathsForDependencies returns imports needed in dependencies e.g. actions and builders
-func (nodeData *NodeData) GetImportPathsForDependencies(s *Schema) []ImportPath {
-	var ret []ImportPath
+func (nodeData *NodeData) GetImportPathsForDependencies(s *Schema) []*tsimport.ImportPath {
+	var ret []*tsimport.ImportPath
 
 	for _, enum := range nodeData.GetTSEnums() {
-		ret = append(ret, ImportPath{
+		ret = append(ret, &tsimport.ImportPath{
 			Import:      enum.Name,
 			PackagePath: codepath.GetExternalImportPath(),
 		})
@@ -281,13 +276,13 @@ func (nodeData *NodeData) GetImportPathsForDependencies(s *Schema) []ImportPath 
 	// unique nodes referenced in builder
 	uniqueNodes := nodeData.getUniqueNodes(true)
 	for _, unique := range uniqueNodes {
-		ret = append(ret, ImportPath{
+		ret = append(ret, &tsimport.ImportPath{
 			Import:      unique.Node,
 			PackagePath: codepath.GetExternalImportPath(),
 		})
 	}
 	for _, v := range s.Nodes {
-		ret = append(ret, ImportPath{
+		ret = append(ret, &tsimport.ImportPath{
 			Import:      v.NodeData.Node,
 			PackagePath: codepath.GetExternalImportPath(),
 		})
@@ -299,7 +294,7 @@ func (nodeData *NodeData) GetImportPathsForDependencies(s *Schema) []ImportPath 
 			t2 := t.(enttype.ImportDepsType)
 			imp := t2.GetImportDepsType()
 			if imp != nil {
-				ret = append(ret, ImportPath{
+				ret = append(ret, &tsimport.ImportPath{
 					PackagePath: imp.Path,
 					Import:      imp.Type,
 				})
@@ -310,11 +305,11 @@ func (nodeData *NodeData) GetImportPathsForDependencies(s *Schema) []ImportPath 
 	return ret
 }
 
-func (nodeData *NodeData) GetImportsForQueryBaseFile(s *Schema) ([]ImportPath, error) {
-	var ret []ImportPath
+func (nodeData *NodeData) GetImportsForQueryBaseFile(s *Schema) ([]*tsimport.ImportPath, error) {
+	var ret []*tsimport.ImportPath
 
 	for _, unique := range nodeData.getUniqueNodes(true) {
-		ret = append(ret, ImportPath{
+		ret = append(ret, &tsimport.ImportPath{
 			Import:      unique.Node,
 			PackagePath: codepath.GetInternalImportPath(),
 		})
@@ -323,7 +318,7 @@ func (nodeData *NodeData) GetImportsForQueryBaseFile(s *Schema) ([]ImportPath, e
 	// for each edge, find the node, and then find the downstream edges for those
 	for _, edge := range nodeData.EdgeInfo.Associations {
 		if edge.PolymorphicEdge() {
-			ret = append(ret, ImportPath{
+			ret = append(ret, &tsimport.ImportPath{
 				Import:      "Ent",
 				PackagePath: codepath.Package,
 			})
@@ -336,7 +331,7 @@ func (nodeData *NodeData) GetImportsForQueryBaseFile(s *Schema) ([]ImportPath, e
 		}
 		// need a flag of if imported or something
 		for _, edge2 := range node.EdgeInfo.Associations {
-			ret = append(ret, ImportPath{
+			ret = append(ret, &tsimport.ImportPath{
 				Import:      edge2.TsEdgeQueryName(),
 				PackagePath: codepath.GetInternalImportPath(),
 			})
@@ -344,7 +339,7 @@ func (nodeData *NodeData) GetImportsForQueryBaseFile(s *Schema) ([]ImportPath, e
 	}
 
 	for _, edge := range nodeData.EdgeInfo.GetEdgesForIndexLoader() {
-		ret = append(ret, ImportPath{
+		ret = append(ret, &tsimport.ImportPath{
 			Import:      fmt.Sprintf("%sLoader", edge.GetNodeInfo().NodeInstance),
 			PackagePath: codepath.GetInternalImportPath(),
 		})
