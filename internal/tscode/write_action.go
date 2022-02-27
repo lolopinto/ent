@@ -20,9 +20,10 @@ type actionTemplate struct {
 	BasePath      string
 	Package       *codegen.ImportPackage
 	PrivacyConfig *codegen.PrivacyConfig
+	Schema        *schema.Schema
 }
 
-func writeBaseActionFile(nodeData *schema.NodeData, processor *codegen.Processor, action action.Action) error {
+func writeBaseActionFile(schema *schema.Schema, nodeData *schema.NodeData, processor *codegen.Processor, action action.Action) error {
 	cfg := processor.Config
 	filePath := getFilePathForActionBaseFile(cfg, nodeData, action)
 	imps := tsimport.NewImports(processor.Config, filePath)
@@ -32,6 +33,7 @@ func writeBaseActionFile(nodeData *schema.NodeData, processor *codegen.Processor
 		Data: actionTemplate{
 			NodeData:      nodeData,
 			Action:        action,
+			Schema:        schema,
 			BuilderPath:   getImportPathForBuilderFile(nodeData),
 			Package:       cfg.GetImportPackage(),
 			PrivacyConfig: cfg.GetDefaultActionPolicy(),
