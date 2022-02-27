@@ -1,7 +1,7 @@
 package tsimport
 
 type ImportPath struct {
-	PackagePath   string
+	ImportPath    string
 	Import        string
 	DefaultImport bool
 }

@@ -195,29 +195,29 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]*tsimport.ImportPath, error
 		{
 			Import:        "schema",
 			DefaultImport: true,
-			PackagePath:   fmt.Sprintf("src/schema/%s", nodeData.PackageName),
+			ImportPath:    fmt.Sprintf("src/schema/%s", nodeData.PackageName),
 		},
 	}
 	for _, nodeInfo := range nodeData.getUniqueNodes(false) {
 		ret = append(ret, &tsimport.ImportPath{
-			Import:      nodeInfo.Node,
-			PackagePath: codepath.GetInternalImportPath(),
+			Import:     nodeInfo.Node,
+			ImportPath: codepath.GetInternalImportPath(),
 		})
 	}
 
 	for _, enum := range nodeData.tsEnums {
 		if enum.Imported {
 			ret = append(ret, &tsimport.ImportPath{
-				Import:      enum.Name,
-				PackagePath: codepath.GetInternalImportPath(),
+				Import:     enum.Name,
+				ImportPath: codepath.GetInternalImportPath(),
 			})
 		}
 	}
 
 	for _, edge := range nodeData.EdgeInfo.GetConnectionEdges() {
 		ret = append(ret, &tsimport.ImportPath{
-			Import:      edge.TsEdgeQueryName(),
-			PackagePath: codepath.GetInternalImportPath(),
+			Import:     edge.TsEdgeQueryName(),
+			ImportPath: codepath.GetInternalImportPath(),
 		})
 	}
 
@@ -228,8 +228,8 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]*tsimport.ImportPath, error
 				return nil, err
 			}
 			ret = append(ret, &tsimport.ImportPath{
-				Import:      imp,
-				PackagePath: codepath.GetInternalImportPath(),
+				Import:     imp,
+				ImportPath: codepath.GetInternalImportPath(),
 			})
 		}
 
@@ -243,7 +243,7 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]*tsimport.ImportPath, error
 					// TODO currently hardcoded
 					// TODO need to kill this ImportType nonsense
 					// getGQLFileImports checks the different values
-					PackagePath: codepath.Package,
+					ImportPath: codepath.Package,
 				})
 			}
 		}
@@ -253,8 +253,8 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]*tsimport.ImportPath, error
 			if imp != nil {
 				// TODO ignoring relative. do we need it?
 				ret = append(ret, &tsimport.ImportPath{
-					PackagePath: imp.Path,
-					Import:      imp.Type,
+					ImportPath: imp.Path,
+					Import:     imp.Type,
 				})
 			}
 		}
@@ -268,8 +268,8 @@ func (nodeData *NodeData) GetImportPathsForDependencies(s *Schema) []*tsimport.I
 
 	for _, enum := range nodeData.GetTSEnums() {
 		ret = append(ret, &tsimport.ImportPath{
-			Import:      enum.Name,
-			PackagePath: codepath.GetExternalImportPath(),
+			Import:     enum.Name,
+			ImportPath: codepath.GetExternalImportPath(),
 		})
 	}
 
@@ -277,8 +277,8 @@ func (nodeData *NodeData) GetImportPathsForDependencies(s *Schema) []*tsimport.I
 	uniqueNodes := nodeData.getUniqueNodes(true)
 	for _, unique := range uniqueNodes {
 		ret = append(ret, &tsimport.ImportPath{
-			Import:      unique.Node,
-			PackagePath: codepath.GetExternalImportPath(),
+			Import:     unique.Node,
+			ImportPath: codepath.GetExternalImportPath(),
 		})
 	}
 	for _, v := range s.Nodes {
@@ -295,8 +295,8 @@ func (nodeData *NodeData) GetImportPathsForDependencies(s *Schema) []*tsimport.I
 			imp := t2.GetImportDepsType()
 			if imp != nil {
 				ret = append(ret, &tsimport.ImportPath{
-					PackagePath: imp.Path,
-					Import:      imp.Type,
+					ImportPath: imp.Path,
+					Import:     imp.Type,
 				})
 			}
 		}
@@ -310,8 +310,8 @@ func (nodeData *NodeData) GetImportsForQueryBaseFile(s *Schema) ([]*tsimport.Imp
 
 	for _, unique := range nodeData.getUniqueNodes(true) {
 		ret = append(ret, &tsimport.ImportPath{
-			Import:      unique.Node,
-			PackagePath: codepath.GetInternalImportPath(),
+			Import:     unique.Node,
+			ImportPath: codepath.GetInternalImportPath(),
 		})
 	}
 
@@ -319,8 +319,8 @@ func (nodeData *NodeData) GetImportsForQueryBaseFile(s *Schema) ([]*tsimport.Imp
 	for _, edge := range nodeData.EdgeInfo.Associations {
 		if edge.PolymorphicEdge() {
 			ret = append(ret, &tsimport.ImportPath{
-				Import:      "Ent",
-				PackagePath: codepath.Package,
+				Import:     "Ent",
+				ImportPath: codepath.Package,
 			})
 			continue
 		}
@@ -332,16 +332,16 @@ func (nodeData *NodeData) GetImportsForQueryBaseFile(s *Schema) ([]*tsimport.Imp
 		// need a flag of if imported or something
 		for _, edge2 := range node.EdgeInfo.Associations {
 			ret = append(ret, &tsimport.ImportPath{
-				Import:      edge2.TsEdgeQueryName(),
-				PackagePath: codepath.GetInternalImportPath(),
+				Import:     edge2.TsEdgeQueryName(),
+				ImportPath: codepath.GetInternalImportPath(),
 			})
 		}
 	}
 
 	for _, edge := range nodeData.EdgeInfo.GetEdgesForIndexLoader() {
 		ret = append(ret, &tsimport.ImportPath{
-			Import:      fmt.Sprintf("%sLoader", edge.GetNodeInfo().NodeInstance),
-			PackagePath: codepath.GetInternalImportPath(),
+			Import:     fmt.Sprintf("%sLoader", edge.GetNodeInfo().NodeInstance),
+			ImportPath: codepath.GetInternalImportPath(),
 		})
 	}
 

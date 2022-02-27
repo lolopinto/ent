@@ -39,8 +39,8 @@ func (p *PatternInfo) GetImportsForQueryBaseFile(s *Schema) ([]*tsimport.ImportP
 	for _, edge := range p.AssocEdges {
 		if edge.PolymorphicEdge() {
 			ret = append(ret, &tsimport.ImportPath{
-				Import:      "Ent",
-				PackagePath: codepath.Package,
+				Import:     "Ent",
+				ImportPath: codepath.Package,
 			})
 			continue
 		}
@@ -50,14 +50,14 @@ func (p *PatternInfo) GetImportsForQueryBaseFile(s *Schema) ([]*tsimport.ImportP
 			return nil, err
 		}
 		ret = append(ret, &tsimport.ImportPath{
-			Import:      node.Node,
-			PackagePath: codepath.GetInternalImportPath(),
+			Import:     node.Node,
+			ImportPath: codepath.GetInternalImportPath(),
 		})
 		// need a flag of if imported or something
 		for _, edge2 := range node.EdgeInfo.Associations {
 			ret = append(ret, &tsimport.ImportPath{
-				Import:      edge2.TsEdgeQueryName(),
-				PackagePath: codepath.GetInternalImportPath(),
+				Import:     edge2.TsEdgeQueryName(),
+				ImportPath: codepath.GetInternalImportPath(),
 			})
 		}
 	}
