@@ -419,11 +419,8 @@ func (s *dbSchema) makeDBChanges() error {
 	return auto_schema.RunPythonCommand(s.pathToConfigs)
 }
 
-func UpgradeDB(cfg *codegen.Config, revision string, mergeBranches bool) error {
+func UpgradeDB(cfg *codegen.Config, revision string) error {
 	extraArgs := []string{fmt.Sprintf("-u=%s", revision)}
-	if mergeBranches {
-		extraArgs = append(extraArgs, "--merge_branches")
-	}
 	return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), extraArgs...)
 }
 

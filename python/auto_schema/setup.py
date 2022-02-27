@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 # https://test.pypi.org/project/auto-schema-test/#history
 setuptools.setup(
     name="auto_schema",  # auto_schema_test to test
-    version="0.0.16",  # 0.0.11 was last test version
+    version="0.0.17",  # 0.0.12 was last test version
     author="Ola Okelola",
     author_email="email@email.com",
     description="auto schema for a db",
@@ -21,8 +21,8 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
-    install_requires=["sqlalchemy==1.3.19",
-                      "alembic==1.4.2",
+    install_requires=["sqlalchemy==1.4.31",
+                      "alembic==1.7.6",
                       "datetime==4.3",
                       "psycopg2==2.8.6",
                       "autopep8==1.5.4",
