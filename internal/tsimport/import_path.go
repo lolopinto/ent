@@ -36,6 +36,13 @@ func NewEntImportPath(typ string) *ImportPath {
 	}
 }
 
+func NewEntActionImportPath(typ string) *ImportPath {
+	return &ImportPath{
+		Import:     typ,
+		ImportPath: codepath.ActionPackage,
+	}
+}
+
 func NewEntGraphQLImportPath(typ string) *ImportPath {
 	return &ImportPath{
 		Import:     typ,

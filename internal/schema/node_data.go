@@ -189,6 +189,7 @@ func (nodeData *NodeData) GetTSEnums() []*enum.Enum {
 	return nodeData.tsEnums
 }
 
+// TODO kill this
 // GetImportsForBaseFile returns list of imports needed in the base generated file
 func (nodeData *NodeData) GetImportsForBaseFile() ([]*tsimport.ImportPath, error) {
 	ret := []*tsimport.ImportPath{
@@ -253,6 +254,7 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]*tsimport.ImportPath, error
 	return ret, nil
 }
 
+// TODO kill this
 // GetImportPathsForDependencies returns imports needed in dependencies e.g. actions and builders
 func (nodeData *NodeData) GetImportPathsForDependencies(s *Schema) []*tsimport.ImportPath {
 	var ret []*tsimport.ImportPath
@@ -293,6 +295,7 @@ func (nodeData *NodeData) GetImportPathsForDependencies(s *Schema) []*tsimport.I
 	return ret
 }
 
+// TODO kill this
 func (nodeData *NodeData) GetImportsForQueryBaseFile(s *Schema) ([]*tsimport.ImportPath, error) {
 	var ret []*tsimport.ImportPath
 

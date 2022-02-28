@@ -544,10 +544,17 @@ func (f *Field) TsBuilderImports() []*tsimport.ImportPath {
 	if typeName == "" || f.disableBuilderType {
 		return ret
 	}
+	var entImportPath *tsimport.ImportPath
+	// for polymorphic fields...
+	if typeName == "Ent" {
+		entImportPath = tsimport.NewEntImportPath("Ent")
+	} else {
+		entImportPath = tsimport.NewLocalEntImportPath(typeName)
+	}
 	ret = append(
 		ret,
-		tsimport.NewLocalEntImportPath(typeName),
-		tsimport.NewEntImportPath("Builder"),
+		entImportPath,
+		tsimport.NewEntActionImportPath("Builder"),
 	)
 	return ret
 }

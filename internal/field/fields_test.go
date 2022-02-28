@@ -53,7 +53,7 @@ func TestDerivedFields(t *testing.T) {
 	assert.Equal(t, f2.TsBuilderImports(), []*tsimport.ImportPath{
 		tsimport.NewEntImportPath("ID"),
 		tsimport.NewEntImportPath("Ent"),
-		tsimport.NewEntImportPath("Builder"),
+		tsimport.NewEntActionImportPath("Builder"),
 	})
 	assert.Equal(t, f2.TsBuilderType(), "ID | Builder<Ent>")
 }
@@ -176,7 +176,7 @@ func TestUUIDFieldList(t *testing.T) {
 	assert.Equal(t, f2.TsBuilderImports(), []*tsimport.ImportPath{
 		tsimport.NewEntImportPath("ID"),
 		tsimport.NewLocalEntImportPath("Contact"),
-		tsimport.NewEntImportPath("Builder"),
+		tsimport.NewEntActionImportPath("Builder"),
 	})
 	assert.Equal(t, f2.TsBuilderType(), "ID | Builder<Contact>")
 	assert.Len(t, info2.NodeData.EdgeInfo.FieldEdges, 1)

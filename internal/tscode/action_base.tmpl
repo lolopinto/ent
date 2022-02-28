@@ -62,8 +62,9 @@
   export interface {{$inputName}} {
     {{ range $field := $action.GetFields -}}
       {{$type := $field.TsBuilderType -}}
-      {{range $import := $field.TsBuilderImports -}}
-        {{ $ignore := useImport $import -}}
+      {{range $field.TsBuilderImports -}}
+        {{ reserveImportPath .}}
+        {{ $ignore := useImport .Import -}}
       {{end -}}
       {{if isRequiredField $action $field -}}
         {{$field.TsFieldName}}: {{$type}};
