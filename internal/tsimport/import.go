@@ -58,15 +58,20 @@ func (imps *Imports) ReserveAll(path, as string) (string, error) {
 
 // ReserveImportPath takes an instance of importPath and reserves importing from it
 // should be default eventually
-func (imps *Imports) ReserveImportPath(imp *ImportPath) (string, error) {
+func (imps *Imports) ReserveImportPath(imp *ImportPath, external bool) (string, error) {
 	var defaultExport string
 	var exports []string
+
 	if imp.DefaultImport {
 		defaultExport = imp.Import
 	} else {
 		exports = append(exports, imp.Import)
 	}
-	return imps.reserve(imp.ImportPath, defaultExport, false, exports)
+	importPath := imp.ImportPath
+	if external {
+		importPath = codepath.GetExternalImportPath()
+	}
+	return imps.reserve(importPath, defaultExport, false, exports)
 }
 
 func (imps *Imports) reserve(path string, defaultExport string, importAll bool, exports []string) (string, error) {

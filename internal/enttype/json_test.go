@@ -102,7 +102,7 @@ func TestJSONType(t *testing.T) {
 				goTypePanics: true,
 				convertFn:    "convertJSON",
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath("Foo"),
+					tsimport.NewLocalGraphQLEntImportPath("Foo"),
 				},
 				importType: &enttype.JSONImport{},
 			},
@@ -131,7 +131,7 @@ func TestJSONType(t *testing.T) {
 				goTypePanics: true,
 				convertFn:    "convertNullableJSON",
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath("Foo"),
+					tsimport.NewLocalGraphQLEntImportPath("Foo"),
 				},
 				importType: &enttype.JSONImport{},
 			},
@@ -161,7 +161,7 @@ func TestJSONType(t *testing.T) {
 				goTypePanics: true,
 				convertFn:    "convertJSON",
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath("Foo"),
+					tsimport.NewLocalGraphQLEntImportPath("Foo"),
 				},
 				importType: &enttype.JSONBImport{},
 			},
@@ -190,7 +190,7 @@ func TestJSONType(t *testing.T) {
 				goTypePanics: true,
 				convertFn:    "convertNullableJSON",
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath("Foo"),
+					tsimport.NewLocalGraphQLEntImportPath("Foo"),
 				},
 				importType: &enttype.JSONBImport{},
 			},

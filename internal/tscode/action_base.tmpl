@@ -4,7 +4,7 @@
 {{ reserveImport .PrivacyConfig.Path .PrivacyConfig.PolicyName }}
 
 {{ range .NodeData.GetImportPathsForDependencies .Schema -}}
-  {{ reserveImportPath .}}
+  {{ reserveImportPath . true}}
 {{ end -}}
 
 {{ $builderName := printf "%sBuilder" .NodeData.Node -}}
@@ -30,7 +30,7 @@
     {{ range $field := $int.Fields -}}
       {{$type := $field.TsBuilderType -}}
       {{range $field.TsBuilderImports -}}
-        {{ reserveImportPath .}}
+        {{ reserveImportPath . true}}
         {{$ignore := useImport .Import -}}
       {{end -}}
       {{if $field.ForceRequiredInAction -}}
@@ -63,7 +63,7 @@
     {{ range $field := $action.GetFields -}}
       {{$type := $field.TsBuilderType -}}
       {{range $field.TsBuilderImports -}}
-        {{ reserveImportPath .}}
+        {{ reserveImportPath . true}}
         {{ $ignore := useImport .Import -}}
       {{end -}}
       {{if isRequiredField $action $field -}}

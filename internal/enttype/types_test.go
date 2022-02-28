@@ -1080,12 +1080,12 @@ func TestEnumType(t *testing.T) {
 					db:      "sa.Text()",
 					graphql: "AccountStatus",
 					graphqlImports: []*tsimport.ImportPath{
-						tsimport.NewLocalEntImportPath("AccountStatus"),
+						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
 					},
 					enumType: true,
 					tsType:   "AccountStatus | null",
 					tsTypeImports: []*tsimport.ImportPath{
-						tsimport.NewLocalEntImportPath("AccountStatus"),
+						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
 					},
 					goTypePanics: true,
 					nonNullableType: &enttype.EnumType{
@@ -1117,12 +1117,12 @@ func TestEnumType(t *testing.T) {
 					graphql: "AccountStatus!",
 					graphqlImports: []*tsimport.ImportPath{
 						tsimport.NewGQLImportPath("GraphQLNonNull"),
-						tsimport.NewLocalEntImportPath("AccountStatus"),
+						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
 					},
 					tsType:   "AccountStatus",
 					enumType: true,
 					tsTypeImports: []*tsimport.ImportPath{
-						tsimport.NewLocalEntImportPath("AccountStatus"),
+						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
 					},
 					goTypePanics: true,
 					nullableType: &enttype.NullableEnumType{
@@ -1162,11 +1162,11 @@ func TestEnumType(t *testing.T) {
 					graphql:  "AccountStatus!",
 					graphqlImports: []*tsimport.ImportPath{
 						tsimport.NewGQLImportPath("GraphQLNonNull"),
-						tsimport.NewLocalEntImportPath("AccountStatus"),
+						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
 					},
 					tsType: "AccountStatus",
 					tsTypeImports: []*tsimport.ImportPath{
-						tsimport.NewLocalEntImportPath("AccountStatus"),
+						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
 					},
 					goTypePanics: true,
 					nullableType: &enttype.NullableEnumType{
@@ -1205,11 +1205,11 @@ func TestEnumType(t *testing.T) {
 					enumType: true,
 					graphql:  "AccountStatus",
 					graphqlImports: []*tsimport.ImportPath{
-						tsimport.NewLocalEntImportPath("AccountStatus"),
+						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
 					},
 					tsType: "AccountStatus | null",
 					tsTypeImports: []*tsimport.ImportPath{
-						tsimport.NewLocalEntImportPath("AccountStatus"),
+						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
 					},
 					goTypePanics: true,
 					nonNullableType: &enttype.EnumType{

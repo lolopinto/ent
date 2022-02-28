@@ -8,7 +8,7 @@
 {{with .Info -}}
 
   {{ range .Imports }} 
-    {{reserveImportPath .}}
+    {{reserveImportPath . false}}
   {{ end}}
 
   {{$node := useImport .Node}}

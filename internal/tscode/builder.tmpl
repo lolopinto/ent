@@ -16,7 +16,7 @@ export interface {{.Node}}Input {
   {{range $field := .FieldInfo.GetEditableFields -}}
     {{$type := $field.TsBuilderType -}}
       {{range $field.TsBuilderImports -}}
-        {{ reserveImportPath .}}
+        {{ reserveImportPath . true true}}
         {{ $ignore := useImport .Import -}}
       {{end -}}
     {{$field.TsFieldName}}?: {{$type}};

@@ -1503,7 +1503,7 @@ func (t *EnumType) GetTSType() string {
 
 func (t *EnumType) GetTsTypeImports() []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewLocalEntImportPath(t.Type),
+		tsimport.NewLocalGraphQLEntImportPath(t.Type),
 	}
 }
 
@@ -1522,7 +1522,7 @@ func (t *EnumType) GetNullableType() TSGraphQLType {
 func (t *EnumType) GetTSGraphQLImports() []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
 		tsimport.NewGQLImportPath("GraphQLNonNull"),
-		tsimport.NewLocalEntImportPath(t.GraphQLType),
+		tsimport.NewLocalGraphQLEntImportPath(t.GraphQLType),
 	}
 }
 
@@ -1568,7 +1568,7 @@ func (t *NullableEnumType) GetTSType() string {
 
 func (t *NullableEnumType) GetTsTypeImports() []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewLocalEntImportPath(t.Type),
+		tsimport.NewLocalGraphQLEntImportPath(t.Type),
 	}
 }
 
@@ -1586,7 +1586,7 @@ func (t *NullableEnumType) GetNonNullableType() TSGraphQLType {
 
 func (t *NullableEnumType) GetTSGraphQLImports() []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewLocalEntImportPath(t.GraphQLType),
+		tsimport.NewLocalGraphQLEntImportPath(t.GraphQLType),
 	}
 }
 
