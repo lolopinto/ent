@@ -277,8 +277,8 @@ func (nodeData *NodeData) GetImportPathsForDependencies(s *Schema) []*tsimport.I
 	}
 	for _, v := range s.Nodes {
 		ret = append(ret, &tsimport.ImportPath{
-			Import:      v.NodeData.Node,
-			PackagePath: codepath.GetExternalImportPath(),
+			Import:     v.NodeData.Node,
+			ImportPath: codepath.GetExternalImportPath(),
 		})
 	}
 
