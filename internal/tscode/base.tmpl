@@ -33,14 +33,17 @@
     {{ template "enum.tmpl" . -}}
   {{end -}}
 {{ end}}
+{{$nodeData := .}}
 
 export class {{$baseClass}} {
 
   readonly nodeType = {{useImport "NodeType"}}.{{.Node}};
   {{range $field := .FieldInfo.Fields -}}
     {{ range $field.GetTsTypeImports -}}
-      {{ reserveImportPath . false -}}
-      {{$typ := useImport .Import -}}
+      {{ if ($nodeData.ForeignImport .Import) -}}
+        {{ reserveImportPath . false -}}
+      {{end -}}
+      {{$typ := useImportMaybe .Import -}}
     {{end -}}
     {{ if $field.Private -}}
       protected readonly {{$field.TsFieldName}}: {{$field.TsType}};
