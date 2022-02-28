@@ -270,7 +270,7 @@ func (nodeData *NodeData) ForeignImport(imp string) bool {
 
 // TODO kill this
 // GetImportPathsForDependencies returns imports needed in dependencies e.g. actions and builders
-func (nodeData *NodeData) GetImportPathsForDependencies(s *Schema) []*tsimport.ImportPath {
+func (nodeData *NodeData) GetImportPathsForDependencies() []*tsimport.ImportPath {
 	var ret []*tsimport.ImportPath
 
 	for _, enum := range nodeData.GetTSEnums() {
@@ -285,12 +285,6 @@ func (nodeData *NodeData) GetImportPathsForDependencies(s *Schema) []*tsimport.I
 	for _, unique := range uniqueNodes {
 		ret = append(ret, &tsimport.ImportPath{
 			Import:     unique.Node,
-			ImportPath: codepath.GetExternalImportPath(),
-		})
-	}
-	for _, v := range s.Nodes {
-		ret = append(ret, &tsimport.ImportPath{
-			Import:     v.NodeData.Node,
 			ImportPath: codepath.GetExternalImportPath(),
 		})
 	}
