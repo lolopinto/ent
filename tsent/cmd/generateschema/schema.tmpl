@@ -35,7 +35,7 @@
   fields: {{useImport "Field"}} [] = [
   {{ range $field := .Fields -}}
     {{$imp := $field.GetImport -}}
-    {{- template "reserveImport" $imp -}}
+    {{ reserveImport $imp }}
     {{useImport $imp.Import}}({{fieldObjectCall $field}}),
   {{- end -}}
   ];
