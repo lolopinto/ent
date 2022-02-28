@@ -5,6 +5,7 @@ import (
 
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
+	"github.com/lolopinto/ent/internal/tsimport"
 )
 
 type PatternInfo struct {
@@ -31,15 +32,15 @@ func (p *PatternInfo) GetSortedEdges() []*edge.AssociationEdge {
 	return ret
 }
 
-func (p *PatternInfo) GetImportsForQueryBaseFile(s *Schema) ([]ImportPath, error) {
-	var ret []ImportPath
+func (p *PatternInfo) GetImportsForQueryBaseFile(s *Schema) ([]*tsimport.ImportPath, error) {
+	var ret []*tsimport.ImportPath
 
 	// for each edge, find the node, and then find the downstream edges for those
 	for _, edge := range p.AssocEdges {
 		if edge.PolymorphicEdge() {
-			ret = append(ret, ImportPath{
-				Import:      "Ent",
-				PackagePath: codepath.Package,
+			ret = append(ret, &tsimport.ImportPath{
+				Import:     "Ent",
+				ImportPath: codepath.Package,
 			})
 			continue
 		}
@@ -48,15 +49,15 @@ func (p *PatternInfo) GetImportsForQueryBaseFile(s *Schema) ([]ImportPath, error
 		if err != nil {
 			return nil, err
 		}
-		ret = append(ret, ImportPath{
-			Import:      node.Node,
-			PackagePath: codepath.GetInternalImportPath(),
+		ret = append(ret, &tsimport.ImportPath{
+			Import:     node.Node,
+			ImportPath: codepath.GetInternalImportPath(),
 		})
 		// need a flag of if imported or something
 		for _, edge2 := range node.EdgeInfo.Associations {
-			ret = append(ret, ImportPath{
-				Import:      edge2.TsEdgeQueryName(),
-				PackagePath: codepath.GetInternalImportPath(),
+			ret = append(ret, &tsimport.ImportPath{
+				Import:     edge2.TsEdgeQueryName(),
+				ImportPath: codepath.GetInternalImportPath(),
 			})
 		}
 	}

@@ -14,6 +14,7 @@ import (
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
+	"github.com/lolopinto/ent/internal/tsimport"
 )
 
 type Field struct {
@@ -603,7 +604,7 @@ func (f *Field) GetInverseEdge() *edge.AssociationEdge {
 
 // for non-required fields in actions, we want to make it optional if it's not a required field
 // in the action
-func (f *Field) GetTSGraphQLTypeForFieldImports(forceOptional bool) []enttype.FileImport {
+func (f *Field) GetTSGraphQLTypeForFieldImports(forceOptional bool) []*tsimport.ImportPath {
 	var tsGQLType enttype.TSGraphQLType
 	nullableType, ok := f.fieldType.(enttype.NullableType)
 

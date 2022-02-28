@@ -19,6 +19,7 @@ import (
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schemaparser"
+	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/lolopinto/ent/internal/util"
 )
 
@@ -360,7 +361,7 @@ type Edge interface {
 	CamelCaseEdgeName() string
 	HideFromGraphQL() bool
 	PolymorphicEdge() bool
-	GetTSGraphQLTypeImports() []enttype.FileImport
+	GetTSGraphQLTypeImports() []*tsimport.ImportPath
 }
 
 type ConnectionEdge interface {
@@ -435,33 +436,23 @@ func (edge *FieldEdge) PolymorphicEdge() bool {
 	return false
 }
 
-func (edge *FieldEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
+func (edge *FieldEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 	if edge.IsList() {
-		return []enttype.FileImport{
-			enttype.NewGQLFileImport("GraphQLNonNull"),
-			enttype.NewGQLFileImport("GraphQLList"),
-			enttype.NewGQLFileImport("GraphQLNonNull"),
-			{
-				ImportType: enttype.Node,
-				Type:       edge.NodeInfo.Node,
-			},
+		return []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLList"),
+			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewLocalEntImportPath(edge.NodeInfo.Node),
 		}
 	}
 	// TODO required and nullable eventually (options for the edges that is)
 	if edge.Polymorphic != nil {
-		return []enttype.FileImport{
-			{
-				// node type
-				ImportType: enttype.EntGraphQL,
-				Type:       "GraphQLNodeInterface",
-			},
+		return []*tsimport.ImportPath{
+			tsimport.NewEntGraphQLImportPath("GraphQLNodeInterface"),
 		}
 	}
-	return []enttype.FileImport{
-		{
-			ImportType: enttype.Node,
-			Type:       edge.NodeInfo.Node,
-		},
+	return []*tsimport.ImportPath{
+		tsimport.NewLocalEntImportPath(edge.NodeInfo.Node),
 	}
 }
 
@@ -488,14 +479,11 @@ func (e *ForeignKeyEdge) PolymorphicEdge() bool {
 	return false
 }
 
-func (e *ForeignKeyEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
+func (e *ForeignKeyEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 	// return a connection
-	return []enttype.FileImport{
-		enttype.NewGQLFileImport("GraphQLNonNull"),
-		{
-			ImportType: enttype.Connection,
-			Type:       e.GetGraphQLConnectionName(),
-		},
+	return []*tsimport.ImportPath{
+		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewLocalEntConnectionImportPath(e.GetGraphQLConnectionName()),
 	}
 }
 
@@ -581,13 +569,10 @@ func (e *IndexedEdge) PolymorphicEdge() bool {
 	return false
 }
 
-func (e *IndexedEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
-	return []enttype.FileImport{
-		enttype.NewGQLFileImport("GraphQLNonNull"),
-		{
-			ImportType: enttype.Connection,
-			Type:       e.GetGraphQLConnectionName(),
-		},
+func (e *IndexedEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
+	return []*tsimport.ImportPath{
+		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewLocalEntConnectionImportPath(e.GetGraphQLConnectionName()),
 	}
 }
 
@@ -645,7 +630,7 @@ type InverseAssocEdge struct {
 	EdgeConst string
 }
 
-func (e *InverseAssocEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
+func (e *InverseAssocEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 	panic("TODO. no GraphQLImports for InverseAssocEdge")
 }
 
@@ -775,22 +760,16 @@ func (e *AssociationEdge) EdgeIdentifier() string {
 	return e.Singular()
 }
 
-func (edge *AssociationEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
+func (edge *AssociationEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 	if edge.Unique {
-		return []enttype.FileImport{
-			{
-				ImportType: enttype.Node,
-				Type:       edge.NodeInfo.Node,
-			},
+		return []*tsimport.ImportPath{
+			tsimport.NewLocalEntImportPath(edge.NodeInfo.Node),
 		}
 	}
 	// return a connection
-	return []enttype.FileImport{
-		enttype.NewGQLFileImport("GraphQLNonNull"),
-		{
-			ImportType: enttype.Connection,
-			Type:       edge.GetGraphQLConnectionName(),
-		},
+	return []*tsimport.ImportPath{
+		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewLocalEntConnectionImportPath(edge.GetGraphQLConnectionName()),
 	}
 }
 
@@ -904,9 +883,7 @@ func (edgeGroup *AssociationEdgeGroup) GetEnumValues() []string {
 	// enum status values
 	values := edgeGroup.GetStatusValues()
 	// and then null state for deterministic order
-	for _, v := range edgeGroup.NullStates {
-		values = append(values, v)
-	}
+	values = append(values, edgeGroup.NullStates...)
 	return values
 }
 

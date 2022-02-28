@@ -7,13 +7,13 @@
 {{end -}}
 
 {{ range $import := $fieldConfig.TypeImports -}}
-  {{ if $baseObj.ForeignImport $import.Type -}}
-    {{ $ignored := useImport $import.Type -}}
+  {{ if $baseObj.ForeignImport $import.Import -}}
+    {{ $ignored := useImport $import.Import -}}
   {{ end -}}
 {{ end -}}
 {{ range $import := $fieldConfig.ArgImports -}}
-  {{ if $baseObj.ForeignImport $import.Type -}}
-    {{ $ignored := useImport $import.Type -}}
+  {{ if $baseObj.ForeignImport $import.Import -}}
+    {{ $ignored := useImport $import.Import -}}
   {{ end -}}
 {{ end -}}
 

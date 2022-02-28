@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/tsimport"
 )
 
 func TestArrayListType(t *testing.T) {
@@ -17,23 +18,11 @@ func TestArrayListType(t *testing.T) {
 				tsListType: true,
 				db:         "postgresql.ARRAY(sa.Text())",
 				graphql:    "[String!]!",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLString",
-						ImportType: enttype.GraphQL,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLString"),
 				},
 				tsType: "string[]",
 				nullableType: &enttype.NullableArrayListType{
@@ -52,19 +41,10 @@ func TestArrayListType(t *testing.T) {
 				tsListType: true,
 				db:         "postgresql.ARRAY(sa.Text())",
 				graphql:    "[String!]",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLString",
-						ImportType: enttype.GraphQL,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLString"),
 				},
 				tsType: "string[] | null",
 				nonNullableType: &enttype.ArrayListType{
@@ -83,23 +63,11 @@ func TestArrayListType(t *testing.T) {
 				tsListType: true,
 				db:         "postgresql.ARRAY(sa.Integer())",
 				graphql:    "[Int!]!",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLInt",
-						ImportType: enttype.GraphQL,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLInt"),
 				},
 				tsType: "number[]",
 				nullableType: &enttype.NullableArrayListType{
@@ -118,19 +86,10 @@ func TestArrayListType(t *testing.T) {
 				tsListType: true,
 				db:         "postgresql.ARRAY(sa.Integer())",
 				graphql:    "[Int!]",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLInt",
-						ImportType: enttype.GraphQL,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLInt"),
 				},
 				tsType: "number[] | null",
 				nonNullableType: &enttype.ArrayListType{
@@ -149,23 +108,11 @@ func TestArrayListType(t *testing.T) {
 				tsListType: true,
 				db:         "postgresql.ARRAY(sa.Boolean())",
 				graphql:    "[Boolean!]!",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLBoolean",
-						ImportType: enttype.GraphQL,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLBoolean"),
 				},
 				tsType: "boolean[]",
 				nullableType: &enttype.NullableArrayListType{
@@ -184,19 +131,10 @@ func TestArrayListType(t *testing.T) {
 				tsListType: true,
 				db:         "postgresql.ARRAY(sa.Boolean())",
 				graphql:    "[Boolean!]",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLBoolean",
-						ImportType: enttype.GraphQL,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLBoolean"),
 				},
 				tsType: "boolean[] | null",
 				nonNullableType: &enttype.ArrayListType{
@@ -215,23 +153,11 @@ func TestArrayListType(t *testing.T) {
 				tsListType: true,
 				db:         "postgresql.ARRAY(sa.Float())",
 				graphql:    "[Float!]!",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLFloat",
-						ImportType: enttype.GraphQL,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLFloat"),
 				},
 				tsType: "number[]",
 				nullableType: &enttype.NullableArrayListType{
@@ -250,19 +176,10 @@ func TestArrayListType(t *testing.T) {
 				tsListType: true,
 				db:         "postgresql.ARRAY(sa.Float())",
 				graphql:    "[Float!]",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLFloat",
-						ImportType: enttype.GraphQL,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLFloat"),
 				},
 				tsType: "number[] | null",
 				nonNullableType: &enttype.ArrayListType{
@@ -281,23 +198,11 @@ func TestArrayListType(t *testing.T) {
 				tsListType: true,
 				db:         "postgresql.ARRAY(sa.Date())",
 				graphql:    "[Time!]!",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLTime",
-						ImportType: enttype.EntGraphQL,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 				},
 				tsType: "Date[]",
 				nullableType: &enttype.NullableArrayListType{
@@ -316,19 +221,10 @@ func TestArrayListType(t *testing.T) {
 				tsListType: true,
 				db:         "postgresql.ARRAY(sa.Date())",
 				graphql:    "[Time!]",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLTime",
-						ImportType: enttype.EntGraphQL,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 				},
 				tsType: "Date[] | null",
 				nonNullableType: &enttype.ArrayListType{
@@ -347,23 +243,11 @@ func TestArrayListType(t *testing.T) {
 				tsListType: true,
 				db:         "postgresql.ARRAY(sa.Time())",
 				graphql:    "[String!]!",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLString",
-						ImportType: enttype.GraphQL,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLString"),
 				},
 				tsType: "string[]",
 				nullableType: &enttype.NullableArrayListType{
@@ -382,19 +266,10 @@ func TestArrayListType(t *testing.T) {
 				tsListType: true,
 				db:         "postgresql.ARRAY(sa.Time())",
 				graphql:    "[String!]",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLString",
-						ImportType: enttype.GraphQL,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLString"),
 				},
 				tsType: "string[] | null",
 				nonNullableType: &enttype.ArrayListType{
@@ -413,23 +288,11 @@ func TestArrayListType(t *testing.T) {
 				tsListType: true,
 				db:         "postgresql.ARRAY(sa.Time(timezone=True))",
 				graphql:    "[String!]!",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLString",
-						ImportType: enttype.GraphQL,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLString"),
 				},
 				tsType: "string[]",
 				nullableType: &enttype.NullableArrayListType{
@@ -448,19 +311,10 @@ func TestArrayListType(t *testing.T) {
 				tsListType: true,
 				db:         "postgresql.ARRAY(sa.Time(timezone=True))",
 				graphql:    "[String!]",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLString",
-						ImportType: enttype.GraphQL,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLString"),
 				},
 				tsType: "string[] | null",
 				nonNullableType: &enttype.ArrayListType{
@@ -479,23 +333,11 @@ func TestArrayListType(t *testing.T) {
 				tsListType: true,
 				db:         "postgresql.ARRAY(sa.TIMESTAMP())",
 				graphql:    "[Time!]!",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLTime",
-						ImportType: enttype.EntGraphQL,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 				},
 				tsType: "Date[]",
 				nullableType: &enttype.NullableArrayListType{
@@ -514,19 +356,10 @@ func TestArrayListType(t *testing.T) {
 				tsListType: true,
 				db:         "postgresql.ARRAY(sa.TIMESTAMP())",
 				graphql:    "[Time!]",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLTime",
-						ImportType: enttype.EntGraphQL,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 				},
 				tsType: "Date[] | null",
 				nonNullableType: &enttype.ArrayListType{
@@ -545,23 +378,11 @@ func TestArrayListType(t *testing.T) {
 				tsListType: true,
 				db:         "postgresql.ARRAY(sa.TIMESTAMP(timezone=True))",
 				graphql:    "[Time!]!",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLTime",
-						ImportType: enttype.EntGraphQL,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 				},
 				tsType: "Date[]",
 				nullableType: &enttype.NullableArrayListType{
@@ -580,19 +401,10 @@ func TestArrayListType(t *testing.T) {
 				tsListType: true,
 				db:         "postgresql.ARRAY(sa.TIMESTAMP(timezone=True))",
 				graphql:    "[Time!]",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLTime",
-						ImportType: enttype.EntGraphQL,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 				},
 				tsType: "Date[] | null",
 				nonNullableType: &enttype.ArrayListType{
@@ -621,23 +433,11 @@ func TestArrayListType(t *testing.T) {
 				graphql:    "[AccountStatus!]!",
 				enumType:   true,
 				tsListType: true,
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "AccountStatus",
-						ImportType: enttype.Enum,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewLocalEntImportPath("AccountStatus"),
 				},
 				tsType:        "AccountStatus[]",
 				tsTypeImports: []string{"AccountStatus"},
@@ -676,19 +476,10 @@ func TestArrayListType(t *testing.T) {
 				enumType:   true,
 				db:         "postgresql.ARRAY(sa.Text())",
 				graphql:    "[AccountStatus!]",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "AccountStatus",
-						ImportType: enttype.Enum,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewLocalEntImportPath("AccountStatus"),
 				},
 				tsType:        "AccountStatus[] | null",
 				tsTypeImports: []string{"AccountStatus"},
@@ -717,23 +508,11 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(postgresql.JSONB)",
 				graphql:    "[JSON!]!",
 				tsListType: true,
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLJSON",
-						ImportType: enttype.GraphQLJSON,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
 				tsType: "any[]",
 				nullableType: &enttype.NullableArrayListType{
@@ -752,23 +531,11 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(postgresql.JSON)",
 				graphql:    "[JSON!]!",
 				tsListType: true,
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLJSON",
-						ImportType: enttype.GraphQLJSON,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
 				tsType: "any[]",
 				nullableType: &enttype.NullableArrayListType{
@@ -787,19 +554,10 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(postgresql.JSONB)",
 				graphql:    "[JSON!]",
 				tsListType: true,
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLJSON",
-						ImportType: enttype.GraphQLJSON,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
 				tsType: "any[] | null",
 				nonNullableType: &enttype.ArrayListType{
@@ -818,19 +576,10 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(postgresql.JSON)",
 				graphql:    "[JSON!]",
 				tsListType: true,
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLJSON",
-						ImportType: enttype.GraphQLJSON,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
 				tsType: "any[] | null",
 				nonNullableType: &enttype.ArrayListType{

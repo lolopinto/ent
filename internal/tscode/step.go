@@ -280,7 +280,7 @@ type nodeTemplateCodePath struct {
 	CodePath      *codegen.Config
 	Package       *codegen.ImportPackage
 	Schema        *schema.Schema
-	Imports       []schema.ImportPath
+	Imports       []*tsimport.ImportPath
 	PrivacyConfig *codegen.PrivacyConfig
 }
 
@@ -545,7 +545,7 @@ func writeCustomEdgeQueryFile(processor *codegen.Processor, nodeData *schema.Nod
 }
 
 type BaseQueryEdgeInfo struct {
-	Imports      []schema.ImportPath
+	Imports      []*tsimport.ImportPath
 	AssocEdges   []*edge.AssociationEdge
 	IndexedEdges []edge.IndexedConnectionEdge
 	Node         string

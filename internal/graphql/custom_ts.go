@@ -10,9 +10,9 @@ import (
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
-	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schemaparser"
+	"github.com/lolopinto/ent/internal/tsimport"
 )
 
 type processCustomRoot interface {
@@ -178,14 +178,14 @@ func processFields(processor *codegen.Processor, cd *customData, s *gqlSchema, c
 					return nil, err
 				}
 				if cls.DefaultExport {
-					payloadType.DefaultImports = append(payloadType.DefaultImports, &fileImport{
+					payloadType.DefaultImports = append(payloadType.DefaultImports, &tsimport.ImportPath{
 						ImportPath: importPath,
-						Type:       field.Node,
+						Import:     field.Node,
 					})
 				} else {
-					payloadType.Imports = append(payloadType.Imports, &fileImport{
+					payloadType.Imports = append(payloadType.Imports, &tsimport.ImportPath{
 						ImportPath: importPath,
-						Type:       field.Node,
+						Import:     field.Node,
 					})
 				}
 			}
@@ -230,7 +230,7 @@ type fieldConfigBuilder interface {
 	getArg() string
 	getName() string
 	getResolveMethodArg() string
-	getTypeImports(s *gqlSchema) []*fileImport
+	getTypeImports(s *gqlSchema) []*tsimport.ImportPath
 	getArgs(s *gqlSchema) []*fieldConfigArg
 	getReturnTypeHint() string
 	getArgMap(cd *customData) map[string]*CustomObject
@@ -273,7 +273,7 @@ func (mfcg *mutationFieldConfigBuilder) getResolveMethodArg() string {
 	return mfcg.field.getResolveMethodArg()
 }
 
-func (mfcg *mutationFieldConfigBuilder) getTypeImports(s *gqlSchema) []*fileImport {
+func (mfcg *mutationFieldConfigBuilder) getTypeImports(s *gqlSchema) []*tsimport.ImportPath {
 	if len(mfcg.field.Results) != 1 {
 		panic("invalid number of results for custom field")
 	}
@@ -293,9 +293,9 @@ func (mfcg *mutationFieldConfigBuilder) getTypeImports(s *gqlSchema) []*fileImpo
 
 		prefix := strcase.ToCamel(mfcg.field.GraphQLName)
 
-		ret = append(ret, &fileImport{
+		ret = append(ret, &tsimport.ImportPath{
 			// TODO we should pass this in instead of automatically doing this
-			Type:       fmt.Sprintf("%sPayloadType", prefix),
+			Import:     fmt.Sprintf("%sPayloadType", prefix),
 			ImportPath: "",
 		})
 	}
@@ -309,11 +309,11 @@ func (mfcg *mutationFieldConfigBuilder) getArgs(s *gqlSchema) []*fieldConfigArg 
 		return []*fieldConfigArg{
 			{
 				Name: "input",
-				Imports: []*fileImport{
+				Imports: []*tsimport.ImportPath{
 					getNativeGQLImportFor("GraphQLNonNull"),
 					// same for this about passing it in
 					{
-						Type: fmt.Sprintf("%sInputType", prefix),
+						Import: fmt.Sprintf("%sInputType", prefix),
 					},
 				},
 			},
@@ -359,7 +359,7 @@ func (qfcg *queryFieldConfigBuilder) getResolveMethodArg() string {
 	return qfcg.field.getResolveMethodArg()
 }
 
-func (qfcg *queryFieldConfigBuilder) getTypeImports(s *gqlSchema) []*fileImport {
+func (qfcg *queryFieldConfigBuilder) getTypeImports(s *gqlSchema) []*tsimport.ImportPath {
 	if len(qfcg.field.Results) != 1 {
 		panic("invalid number of results for custom field")
 	}
@@ -382,8 +382,8 @@ func (qfcg *queryFieldConfigBuilder) getTypeImports(s *gqlSchema) []*fileImport 
 		ret = append(ret, imp)
 	} else {
 		// new type
-		ret = append(ret, &fileImport{
-			Type: fmt.Sprintf("%sType", r.Type),
+		ret = append(ret, &tsimport.ImportPath{
+			Import: fmt.Sprintf("%sType", r.Type),
 			//		ImportPath is local here
 		})
 	}
@@ -408,8 +408,8 @@ func getFieldConfigArgs(field CustomField, s *gqlSchema, mutation bool) []*field
 		imp := s.getImportFor(arg.Type, mutation)
 		if imp == nil {
 			// local
-			imp = &fileImport{
-				Type: arg.Type,
+			imp = &tsimport.ImportPath{
+				Import: arg.Type,
 			}
 		}
 		var imports = arg.imports[:]
@@ -441,7 +441,7 @@ func (qfcg *queryFieldConfigBuilder) getArgMap(cd *customData) map[string]*Custo
 }
 
 func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Processor, s *gqlSchema, cd *customData, field CustomField) (*fieldConfig, error) {
-	var argImports []*fileImport
+	var argImports []*tsimport.ImportPath
 
 	// args that "useImport" should be called on
 	// assumes they're reserved somewhere else...
@@ -453,8 +453,8 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 			if err != nil {
 				return err
 			}
-			argImports = append(argImports, &fileImport{
-				Type:       typ,
+			argImports = append(argImports, &tsimport.ImportPath{
+				Import:     typ,
 				ImportPath: path,
 			})
 		}
@@ -489,8 +489,8 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 		argType := argMap[arg.Type]
 		if argType == nil {
 			if arg.TSType == "ID" && processor.Config.Base64EncodeIDs() {
-				argImports = append(argImports, &fileImport{
-					Type:       "mustDecodeIDFromGQLID",
+				argImports = append(argImports, &tsimport.ImportPath{
+					Import:     "mustDecodeIDFromGQLID",
 					ImportPath: codepath.GraphQLPackage,
 				})
 				argContents[idx] = fmt.Sprintf("mustDecodeIDFromGQLID(args.%s)", arg.Name)
@@ -593,15 +593,15 @@ func buildObjectType(processor *codegen.Processor, cd *customData, s *gqlSchema,
 		if cls.DefaultExport {
 
 			// exported, we need to import it
-			typ.DefaultImports = append(typ.DefaultImports, &fileImport{
+			typ.DefaultImports = append(typ.DefaultImports, &tsimport.ImportPath{
 				ImportPath: importPath,
-				Type:       item.Type,
+				Import:     item.Type,
 			})
 			createInterface = false
 		} else if cls.Exported {
-			typ.Imports = append(typ.Imports, &fileImport{
+			typ.Imports = append(typ.Imports, &tsimport.ImportPath{
 				ImportPath: importPath,
-				Type:       item.Type,
+				Import:     item.Type,
 			})
 			createInterface = false
 		}
@@ -640,8 +640,8 @@ func buildObjectType(processor *codegen.Processor, cd *customData, s *gqlSchema,
 						if file != nil {
 							imp := file.Imports[newInt.Type]
 							if imp != nil {
-								fImp := &fileImport{
-									Type: newInt.Type,
+								fImp := &tsimport.ImportPath{
+									Import: newInt.Type,
 									// TODO this needs to be resolved to be relative...
 									// for now assuming tsconfig.json paths being used
 									ImportPath: imp.Path,
@@ -735,7 +735,7 @@ func processCustomFields(processor *codegen.Processor, cd *customData, s *gqlSch
 				// TODO change this to allow multiple imports and the reserveImport system handles this
 				// this is just a temporary fix...
 				for _, obImp := range obj.Imports {
-					if imp.Type == obImp.Type {
+					if imp.Import == obImp.Import {
 						imported = true
 						break
 					}
@@ -823,8 +823,8 @@ func processCustomQueries(processor *codegen.Processor, cd *customData, s *gqlSc
 	return cq.process(processor, cd, s)
 }
 
-func getGraphQLImportsForField(cd *customData, f CustomField, s *gqlSchema) ([]*fileImport, error) {
-	var imports []*fileImport
+func getGraphQLImportsForField(cd *customData, f CustomField, s *gqlSchema) ([]*tsimport.ImportPath, error) {
+	var imports []*tsimport.ImportPath
 
 	for _, result := range f.Results {
 
@@ -868,13 +868,10 @@ func (e *CustomEdge) HideFromGraphQL() bool {
 	return false
 }
 
-func (e *CustomEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
-	return []enttype.FileImport{
-		enttype.NewGQLFileImport("GraphQLNonNull"),
-		{
-			ImportType: enttype.Connection,
-			Type:       e.GetGraphQLConnectionName(),
-		},
+func (e *CustomEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
+	return []*tsimport.ImportPath{
+		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewLocalEntConnectionImportPath(e.GetGraphQLConnectionName()),
 	}
 }
 

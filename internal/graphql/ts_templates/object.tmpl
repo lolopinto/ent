@@ -7,13 +7,13 @@
 {{/* import types that we may need e.g. UserType, ContactType, etc */}}
 {{ range $baseObj.Imports -}} 
   {{if .ImportPath -}}
-    {{reserveImport .ImportPath .Type}}
+    {{reserveImport .ImportPath .Import}}
   {{end -}}
 {{ end -}}
 
 {{ range $baseObj.DefaultImports -}} 
   {{if .ImportPath -}}
-    {{reserveDefaultImport .ImportPath .Type}}
+    {{reserveDefaultImport .ImportPath .Import}}
   {{end -}}
 {{ end -}}
 
