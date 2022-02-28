@@ -871,7 +871,7 @@ func (e *CustomEdge) HideFromGraphQL() bool {
 func (e *CustomEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
 		tsimport.NewGQLImportPath("GraphQLNonNull"),
-		tsimport.NewLocalEntImportPath(e.GetGraphQLConnectionName()),
+		tsimport.NewLocalEntConnectionImportPath(e.GetGraphQLConnectionName()),
 	}
 }
 

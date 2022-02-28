@@ -1540,7 +1540,7 @@ func getGQLFileImports(imps []*tsimport.ImportPath, mutation bool) []*tsimport.I
 			continue
 		}
 		ret[idx] = &tsimport.ImportPath{
-			ImportPath:    codepath.GetFilePathForExternalGQLFile(),
+			ImportPath:    codepath.GetImportPathForExternalGQLFile(),
 			Import:        v.Import,
 			DefaultImport: v.DefaultImport,
 			Function:      v.Function,

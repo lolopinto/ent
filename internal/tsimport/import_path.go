@@ -45,7 +45,19 @@ func NewEntGraphQLImportPath(typ string) *ImportPath {
 
 func NewLocalEntImportPath(typ string) *ImportPath {
 	return &ImportPath{
-		Import: typ,
+		// TODO always adding type for now. may need to different paths
+		Import: typ + "Type",
+		// transformed to codepath.GetImportPathForExternalGQLFile for mutations
+		ImportPath:             codepath.GetImportPathForInternalGQLFile(),
+		TransformedForMutation: true,
+	}
+}
+
+func NewLocalEntConnectionImportPath(typ string) *ImportPath {
+	return &ImportPath{
+		// TODO always adding type for now. may need to different paths
+		Import:   typ + "Type",
+		Function: true,
 		// transformed to codepath.GetImportPathForExternalGQLFile for mutations
 		ImportPath:             codepath.GetImportPathForInternalGQLFile(),
 		TransformedForMutation: true,

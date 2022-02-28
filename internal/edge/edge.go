@@ -483,7 +483,7 @@ func (e *ForeignKeyEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 	// return a connection
 	return []*tsimport.ImportPath{
 		tsimport.NewGQLImportPath("GraphQLNonNull"),
-		tsimport.NewLocalEntImportPath(e.GetGraphQLConnectionName()),
+		tsimport.NewLocalEntConnectionImportPath(e.GetGraphQLConnectionName()),
 	}
 }
 
@@ -572,7 +572,7 @@ func (e *IndexedEdge) PolymorphicEdge() bool {
 func (e *IndexedEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
 		tsimport.NewGQLImportPath("GraphQLNonNull"),
-		tsimport.NewLocalEntImportPath(e.GetGraphQLConnectionName()),
+		tsimport.NewLocalEntConnectionImportPath(e.GetGraphQLConnectionName()),
 	}
 }
 
@@ -769,7 +769,7 @@ func (edge *AssociationEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 	// return a connection
 	return []*tsimport.ImportPath{
 		tsimport.NewGQLImportPath("GraphQLNonNull"),
-		tsimport.NewLocalEntImportPath(edge.GetGraphQLConnectionName()),
+		tsimport.NewLocalEntConnectionImportPath(edge.GetGraphQLConnectionName()),
 	}
 }
 
