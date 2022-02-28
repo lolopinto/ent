@@ -113,7 +113,7 @@ func (s *Step) processActions(processor *codegen.Processor, nodeData *schema.Nod
 	for idx := range nodeData.ActionInfo.Actions {
 		action := nodeData.ActionInfo.Actions[idx]
 		ret = append(ret, func() error {
-			return writeBaseActionFile(processor.Schema, nodeData, processor, action)
+			return writeBaseActionFile(nodeData, processor, action)
 		})
 
 		ret = append(ret, func() error {
@@ -279,7 +279,6 @@ type nodeTemplateCodePath struct {
 	NodeData      *schema.NodeData
 	CodePath      *codegen.Config
 	Package       *codegen.ImportPackage
-	Schema        *schema.Schema
 	Imports       []*tsimport.ImportPath
 	PrivacyConfig *codegen.PrivacyConfig
 }
@@ -809,7 +808,6 @@ func writeBuilderFile(nodeData *schema.NodeData, processor *codegen.Processor) e
 		Data: nodeTemplateCodePath{
 			NodeData: nodeData,
 			CodePath: cfg,
-			Schema:   processor.Schema,
 			Package:  cfg.GetImportPackage(),
 			Imports:  imports,
 		},
