@@ -1,6 +1,8 @@
 package tsimport
 
-import "github.com/lolopinto/ent/internal/codepath"
+import (
+	"github.com/lolopinto/ent/internal/codepath"
+)
 
 type ImportPath struct {
 	ImportPath    string
@@ -51,8 +53,6 @@ func NewEntGraphQLImportPath(typ string) *ImportPath {
 	}
 }
 
-// this had always been graphql and i didn't notice lol
-// replace
 func NewLocalGraphQLEntImportPath(typ string) *ImportPath {
 	return &ImportPath{
 		// TODO always adding type for now. may need to different paths

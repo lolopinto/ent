@@ -546,8 +546,8 @@ func (f *Field) TsBuilderImports() []*tsimport.ImportPath {
 	}
 	var entImportPath *tsimport.ImportPath
 	// for polymorphic fields...
-	if typeName == "Ent" {
-		entImportPath = tsimport.NewEntImportPath("Ent")
+	if typeName == "Ent" || typeName == "ID" {
+		entImportPath = tsimport.NewEntImportPath(typeName)
 	} else {
 		entImportPath = tsimport.NewLocalEntImportPath(typeName)
 	}

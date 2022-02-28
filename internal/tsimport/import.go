@@ -68,7 +68,7 @@ func (imps *Imports) ReserveImportPath(imp *ImportPath, external bool) (string, 
 		exports = append(exports, imp.Import)
 	}
 	importPath := imp.ImportPath
-	if external {
+	if external && imp.TransformedForExternalEnt {
 		importPath = codepath.GetExternalImportPath()
 	}
 	return imps.reserve(importPath, defaultExport, false, exports)

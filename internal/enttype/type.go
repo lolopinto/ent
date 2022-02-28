@@ -1503,7 +1503,7 @@ func (t *EnumType) GetTSType() string {
 
 func (t *EnumType) GetTsTypeImports() []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewLocalGraphQLEntImportPath(t.Type),
+		tsimport.NewLocalEntImportPath(t.Type),
 	}
 }
 
@@ -1568,7 +1568,7 @@ func (t *NullableEnumType) GetTSType() string {
 
 func (t *NullableEnumType) GetTsTypeImports() []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewLocalGraphQLEntImportPath(t.Type),
+		tsimport.NewLocalEntImportPath(t.Type),
 	}
 }
 
