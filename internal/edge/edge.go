@@ -442,7 +442,7 @@ func (edge *FieldEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 			tsimport.NewGQLImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLList"),
 			tsimport.NewGQLImportPath("GraphQLNonNull"),
-			tsimport.NewLocalEntImportPath(edge.NodeInfo.Node),
+			tsimport.NewLocalGraphQLEntImportPath(edge.NodeInfo.Node),
 		}
 	}
 	// TODO required and nullable eventually (options for the edges that is)
@@ -452,7 +452,7 @@ func (edge *FieldEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 		}
 	}
 	return []*tsimport.ImportPath{
-		tsimport.NewLocalEntImportPath(edge.NodeInfo.Node),
+		tsimport.NewLocalGraphQLEntImportPath(edge.NodeInfo.Node),
 	}
 }
 
@@ -763,7 +763,7 @@ func (e *AssociationEdge) EdgeIdentifier() string {
 func (edge *AssociationEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 	if edge.Unique {
 		return []*tsimport.ImportPath{
-			tsimport.NewLocalEntImportPath(edge.NodeInfo.Node),
+			tsimport.NewLocalGraphQLEntImportPath(edge.NodeInfo.Node),
 		}
 	}
 	// return a connection

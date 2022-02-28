@@ -9,18 +9,15 @@
 
 
 {{ range .GetImportPathsForDependencies $schema -}}
-  {{ if .DefaultImport -}}
-    {{ reserveDefaultImport .ImportPath .Import}}
-  {{ else -}}
-    {{ reserveImport .ImportPath .Import}}
-  {{ end -}}
+  {{ reserveImportPath . true}}
 {{ end}}
 
 export interface {{.Node}}Input {
   {{range $field := .FieldInfo.GetEditableFields -}}
     {{$type := $field.TsBuilderType -}}
-      {{range $import := $field.TsBuilderImports -}}
-        {{ $ignore := useImport $import -}}
+      {{range $field.TsBuilderImports -}}
+        {{ reserveImportPath . true -}}
+        {{ $ignore := useImport .Import -}}
       {{end -}}
     {{$field.TsFieldName}}?: {{$type}};
   {{end -}}

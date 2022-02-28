@@ -1,6 +1,8 @@
 package tsimport
 
-import "github.com/lolopinto/ent/internal/codepath"
+import (
+	"github.com/lolopinto/ent/internal/codepath"
+)
 
 type ImportPath struct {
 	ImportPath    string
@@ -11,7 +13,8 @@ type ImportPath struct {
 	// defaults to no. if function, call it instead of just referencing the import when used?
 	Function bool
 
-	TransformedForMutation bool
+	TransformedForGraphQLMutation bool
+	TransformedForExternalEnt     bool
 }
 
 // NewGQLImportPath creates a new import from "graphql"
@@ -36,6 +39,13 @@ func NewEntImportPath(typ string) *ImportPath {
 	}
 }
 
+func NewEntActionImportPath(typ string) *ImportPath {
+	return &ImportPath{
+		Import:     typ,
+		ImportPath: codepath.ActionPackage,
+	}
+}
+
 func NewEntGraphQLImportPath(typ string) *ImportPath {
 	return &ImportPath{
 		Import:     typ,
@@ -43,13 +53,22 @@ func NewEntGraphQLImportPath(typ string) *ImportPath {
 	}
 }
 
-func NewLocalEntImportPath(typ string) *ImportPath {
+func NewLocalGraphQLEntImportPath(typ string) *ImportPath {
 	return &ImportPath{
 		// TODO always adding type for now. may need to different paths
 		Import: typ + "Type",
 		// transformed to codepath.GetImportPathForExternalGQLFile for mutations
-		ImportPath:             codepath.GetImportPathForInternalGQLFile(),
-		TransformedForMutation: true,
+		ImportPath:                    codepath.GetImportPathForInternalGQLFile(),
+		TransformedForGraphQLMutation: true,
+	}
+}
+
+func NewLocalEntImportPath(typ string) *ImportPath {
+	return &ImportPath{
+		Import: typ,
+		// transformed to codepath.GetExternalImportPath for action/builder/other non-ent locales
+		ImportPath:                codepath.GetInternalImportPath(),
+		TransformedForExternalEnt: true,
 	}
 }
 
@@ -59,7 +78,7 @@ func NewLocalEntConnectionImportPath(typ string) *ImportPath {
 		Import:   typ + "Type",
 		Function: true,
 		// transformed to codepath.GetImportPathForExternalGQLFile for mutations
-		ImportPath:             codepath.GetImportPathForInternalGQLFile(),
-		TransformedForMutation: true,
+		ImportPath:                    codepath.GetImportPathForInternalGQLFile(),
+		TransformedForGraphQLMutation: true,
 	}
 }

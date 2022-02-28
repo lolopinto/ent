@@ -41,7 +41,7 @@ type TSType interface {
 
 type TSTypeWithImports interface {
 	TSType
-	GetTsTypeImports() []string
+	GetTsTypeImports() []*tsimport.ImportPath
 }
 
 type TSGraphQLType interface {
@@ -373,9 +373,11 @@ func (t *idType) GetZeroValue() string {
 	return ""
 }
 
-func (t *idType) GetTsTypeImports() []string {
+func (t *idType) GetTsTypeImports() []*tsimport.ImportPath {
 	// so that we "useImport ID" in the generation
-	return []string{"ID"}
+	return []*tsimport.ImportPath{
+		tsimport.NewEntImportPath("ID"),
+	}
 }
 
 func (t *idType) GetImportType() Import {
@@ -1499,8 +1501,10 @@ func (t *EnumType) GetTSType() string {
 	return t.Type
 }
 
-func (t *EnumType) GetTsTypeImports() []string {
-	return []string{t.Type}
+func (t *EnumType) GetTsTypeImports() []*tsimport.ImportPath {
+	return []*tsimport.ImportPath{
+		tsimport.NewLocalEntImportPath(t.Type),
+	}
 }
 
 func (t *EnumType) GetCastToMethod() string {
@@ -1518,7 +1522,7 @@ func (t *EnumType) GetNullableType() TSGraphQLType {
 func (t *EnumType) GetTSGraphQLImports() []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
 		tsimport.NewGQLImportPath("GraphQLNonNull"),
-		tsimport.NewLocalEntImportPath(t.GraphQLType),
+		tsimport.NewLocalGraphQLEntImportPath(t.GraphQLType),
 	}
 }
 
@@ -1562,8 +1566,10 @@ func (t *NullableEnumType) GetTSType() string {
 	return fmt.Sprintf("%s | null", t.Type)
 }
 
-func (t *NullableEnumType) GetTsTypeImports() []string {
-	return []string{t.Type}
+func (t *NullableEnumType) GetTsTypeImports() []*tsimport.ImportPath {
+	return []*tsimport.ImportPath{
+		tsimport.NewLocalEntImportPath(t.Type),
+	}
 }
 
 func (t *NullableEnumType) GetCastToMethod() string {
@@ -1580,7 +1586,7 @@ func (t *NullableEnumType) GetNonNullableType() TSGraphQLType {
 
 func (t *NullableEnumType) GetTSGraphQLImports() []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewLocalEntImportPath(t.GraphQLType),
+		tsimport.NewLocalGraphQLEntImportPath(t.GraphQLType),
 	}
 }
 
@@ -1603,10 +1609,10 @@ func (t *arrayListType) getDBType(elemType TSType) string {
 	return fmt.Sprintf("postgresql.ARRAY(%s)", elemType.GetDBType())
 }
 
-func (t *arrayListType) getTsTypeImports(elemType TSType) []string {
+func (t *arrayListType) getTsTypeImports(elemType TSType) []*tsimport.ImportPath {
 	t2, ok := elemType.(TSTypeWithImports)
 	if !ok {
-		return []string{}
+		return []*tsimport.ImportPath{}
 	}
 	return t2.GetTsTypeImports()
 }
@@ -1630,7 +1636,7 @@ func (t *ArrayListType) GetTSType() string {
 	return fmt.Sprintf("%s[]", t.ElemType.GetTSType())
 }
 
-func (t *ArrayListType) GetTsTypeImports() []string {
+func (t *ArrayListType) GetTsTypeImports() []*tsimport.ImportPath {
 	return t.getTsTypeImports(t.ElemType)
 }
 
@@ -1670,7 +1676,7 @@ func (t *NullableArrayListType) GetDBType() string {
 	return t.getDBType(t.ElemType)
 }
 
-func (t *NullableArrayListType) GetTsTypeImports() []string {
+func (t *NullableArrayListType) GetTsTypeImports() []*tsimport.ImportPath {
 	return t.getTsTypeImports(t.ElemType)
 }
 
@@ -1743,11 +1749,11 @@ func (t *jSONType) getTsType(nullable bool, impType *tsimport.ImportPath) string
 	return impType.Import
 }
 
-func (t *jSONType) getTsTypeImports(impType *tsimport.ImportPath) []string {
+func (t *jSONType) getTsTypeImports(impType *tsimport.ImportPath) []*tsimport.ImportPath {
 	if impType == nil {
 		return nil
 	}
-	return []string{impType.Import}
+	return []*tsimport.ImportPath{impType}
 }
 
 // TODO https://github.com/taion/graphql-type-json
@@ -1793,7 +1799,7 @@ func (t *JSONType) Convert() *tsimport.ImportPath {
 	return tsimport.NewEntImportPath("convertJSON")
 }
 
-func (t *JSONType) GetTsTypeImports() []string {
+func (t *JSONType) GetTsTypeImports() []*tsimport.ImportPath {
 	return t.getTsTypeImports(t.ImportType)
 }
 
@@ -1834,7 +1840,7 @@ func (t *NullableJSONType) GetNonNullableType() TSGraphQLType {
 	return ret
 }
 
-func (t *NullableJSONType) GetTsTypeImports() []string {
+func (t *NullableJSONType) GetTsTypeImports() []*tsimport.ImportPath {
 	return t.getTsTypeImports(t.ImportType)
 }
 
@@ -1865,7 +1871,7 @@ func (t *JSONBType) Convert() *tsimport.ImportPath {
 	return tsimport.NewEntImportPath("convertJSON")
 }
 
-func (t *JSONBType) GetTsTypeImports() []string {
+func (t *JSONBType) GetTsTypeImports() []*tsimport.ImportPath {
 	return t.getTsTypeImports(t.ImportType)
 }
 
@@ -1910,7 +1916,7 @@ func (t *NullableJSONBType) Convert() *tsimport.ImportPath {
 	return tsimport.NewEntImportPath("convertNullableJSON")
 }
 
-func (t *NullableJSONBType) GetTsTypeImports() []string {
+func (t *NullableJSONBType) GetTsTypeImports() []*tsimport.ImportPath {
 	return t.getTsTypeImports(t.ImportType)
 }
 

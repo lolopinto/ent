@@ -481,8 +481,8 @@ func (f *Field) TsType() string {
 	return f.fieldType.GetTSType()
 }
 
-func (f *Field) ForeignImports() []string {
-	ret := []string{}
+func (f *Field) GetTsTypeImports() []*tsimport.ImportPath {
+	ret := []*tsimport.ImportPath{}
 	// field type requires imports. assumes it has been reserved separately
 	typ, ok := f.fieldType.(enttype.TSTypeWithImports)
 	if ok {
@@ -493,7 +493,7 @@ func (f *Field) ForeignImports() []string {
 	if ok && (f.fkey != nil || f.patternName != "") {
 		// foreign key with enum type requires an import
 		// if pattern enum, this is defined in its own file
-		ret = append(ret, enumType.GetTSName())
+		ret = append(ret, tsimport.NewLocalEntImportPath(enumType.GetTSName()))
 	}
 
 	return ret
@@ -538,13 +538,24 @@ func (f *Field) TsBuilderType() string {
 	return fmt.Sprintf("%s | Builder<%s>", typ, typeName)
 }
 
-func (f *Field) TsBuilderImports() []string {
-	ret := f.ForeignImports()
+func (f *Field) TsBuilderImports() []*tsimport.ImportPath {
+	ret := f.GetTsTypeImports()
 	typeName := f.getIDFieldType()
 	if typeName == "" || f.disableBuilderType {
 		return ret
 	}
-	ret = append(ret, typeName, "Builder")
+	var entImportPath *tsimport.ImportPath
+	// for polymorphic fields...
+	if typeName == "Ent" || typeName == "ID" {
+		entImportPath = tsimport.NewEntImportPath(typeName)
+	} else {
+		entImportPath = tsimport.NewLocalEntImportPath(typeName)
+	}
+	ret = append(
+		ret,
+		entImportPath,
+		tsimport.NewEntActionImportPath("Builder"),
+	)
 	return ret
 }
 

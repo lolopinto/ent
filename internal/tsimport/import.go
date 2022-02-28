@@ -56,6 +56,24 @@ func (imps *Imports) ReserveAll(path, as string) (string, error) {
 	return imps.reserve(path, "", true, []string{as})
 }
 
+// ReserveImportPath takes an instance of importPath and reserves importing from it
+// should be default eventually
+func (imps *Imports) ReserveImportPath(imp *ImportPath, external bool) (string, error) {
+	var defaultExport string
+	var exports []string
+
+	if imp.DefaultImport {
+		defaultExport = imp.Import
+	} else {
+		exports = append(exports, imp.Import)
+	}
+	importPath := imp.ImportPath
+	if external && imp.TransformedForExternalEnt {
+		importPath = codepath.GetExternalImportPath()
+	}
+	return imps.reserve(importPath, defaultExport, false, exports)
+}
+
 func (imps *Imports) reserve(path string, defaultExport string, importAll bool, exports []string) (string, error) {
 	var imp *importInfo
 	imp = imps.pathMap[path]
@@ -128,6 +146,7 @@ func (imps *Imports) FuncMap() template.FuncMap {
 		"reserveImport":        imps.Reserve,
 		"reserveDefaultImport": imps.ReserveDefault,
 		"reserveAllImport":     imps.ReserveAll,
+		"reserveImportPath":    imps.ReserveImportPath,
 		"useImport":            imps.Use,
 		"useImportMaybe":       imps.UseMaybe,
 		"exportAll":            imps.ExportAll,

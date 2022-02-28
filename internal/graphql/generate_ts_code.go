@@ -1536,7 +1536,7 @@ func getGQLFileImports(imps []*tsimport.ImportPath, mutation bool) []*tsimport.I
 
 	for idx, v := range imps {
 		ret[idx] = v
-		if !v.TransformedForMutation {
+		if !v.TransformedForGraphQLMutation {
 			continue
 		}
 		ret[idx] = &tsimport.ImportPath{
@@ -1662,7 +1662,7 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 			Name: group.GetStatusMethod(),
 			FieldImports: getGQLFileImports(
 				[]*tsimport.ImportPath{
-					tsimport.NewLocalEntImportPath(group.ConstType),
+					tsimport.NewLocalGraphQLEntImportPath(group.ConstType),
 				},
 				false,
 			),

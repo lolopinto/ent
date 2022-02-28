@@ -14,7 +14,7 @@
   {{ $obj := . -}}
   {{- range $imp := $obj.GetImports -}}
     {{- template "reserveImport" $imp -}}
-    {{ $ignore := useImport $imp.Import -}}
+      {{ $ignore := useImport $imp.Import -}}
   {{- end -}}
   {{ $obj.String }},
 {{- end -}}

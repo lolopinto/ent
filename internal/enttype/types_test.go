@@ -34,7 +34,7 @@ type expType struct {
 	tsTypePanics        bool
 	convertFn           string
 	importType          enttype.Import
-	tsTypeImports       []string
+	tsTypeImports       []*tsimport.ImportPath
 }
 
 func TestStringType(t *testing.T) {
@@ -282,12 +282,14 @@ func TestIDType(t *testing.T) {
 			tsimport.NewGQLImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLID"),
 		},
-		zeroValue:     "",
-		castToMethod:  "cast.ToUUIDString",
-		nullableType:  &enttype.NullableIDType{},
-		tsType:        "ID",
-		tsTypeImports: []string{"ID"},
-		importType:    &enttype.UUIDImport{},
+		zeroValue:    "",
+		castToMethod: "cast.ToUUIDString",
+		nullableType: &enttype.NullableIDType{},
+		tsType:       "ID",
+		tsTypeImports: []*tsimport.ImportPath{
+			tsimport.NewEntImportPath("ID"),
+		},
+		importType: &enttype.UUIDImport{},
 	}, returnType{
 		entType: &enttype.IDType{},
 	})
@@ -304,8 +306,10 @@ func TestNullableIDType(t *testing.T) {
 		castToMethod:    "cast.ToNullableUUIDString",
 		nonNullableType: &enttype.IDType{},
 		tsType:          "ID | null",
-		tsTypeImports:   []string{"ID"},
-		importType:      &enttype.UUIDImport{},
+		tsTypeImports: []*tsimport.ImportPath{
+			tsimport.NewEntImportPath("ID"),
+		},
+		importType: &enttype.UUIDImport{},
 	}, returnType{
 		entType: &enttype.NullableIDType{},
 	})
@@ -1076,12 +1080,14 @@ func TestEnumType(t *testing.T) {
 					db:      "sa.Text()",
 					graphql: "AccountStatus",
 					graphqlImports: []*tsimport.ImportPath{
+						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
+					},
+					enumType: true,
+					tsType:   "AccountStatus | null",
+					tsTypeImports: []*tsimport.ImportPath{
 						tsimport.NewLocalEntImportPath("AccountStatus"),
 					},
-					enumType:      true,
-					tsType:        "AccountStatus | null",
-					tsTypeImports: []string{"AccountStatus"},
-					goTypePanics:  true,
+					goTypePanics: true,
 					nonNullableType: &enttype.EnumType{
 						Type:        "AccountStatus",
 						GraphQLType: "AccountStatus",
@@ -1111,12 +1117,14 @@ func TestEnumType(t *testing.T) {
 					graphql: "AccountStatus!",
 					graphqlImports: []*tsimport.ImportPath{
 						tsimport.NewGQLImportPath("GraphQLNonNull"),
+						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
+					},
+					tsType:   "AccountStatus",
+					enumType: true,
+					tsTypeImports: []*tsimport.ImportPath{
 						tsimport.NewLocalEntImportPath("AccountStatus"),
 					},
-					tsType:        "AccountStatus",
-					enumType:      true,
-					tsTypeImports: []string{"AccountStatus"},
-					goTypePanics:  true,
+					goTypePanics: true,
 					nullableType: &enttype.NullableEnumType{
 						Type:        "AccountStatus",
 						GraphQLType: "AccountStatus",
@@ -1154,11 +1162,13 @@ func TestEnumType(t *testing.T) {
 					graphql:  "AccountStatus!",
 					graphqlImports: []*tsimport.ImportPath{
 						tsimport.NewGQLImportPath("GraphQLNonNull"),
+						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
+					},
+					tsType: "AccountStatus",
+					tsTypeImports: []*tsimport.ImportPath{
 						tsimport.NewLocalEntImportPath("AccountStatus"),
 					},
-					tsType:        "AccountStatus",
-					tsTypeImports: []string{"AccountStatus"},
-					goTypePanics:  true,
+					goTypePanics: true,
 					nullableType: &enttype.NullableEnumType{
 						Type:        "AccountStatus",
 						GraphQLType: "AccountStatus",
@@ -1195,11 +1205,13 @@ func TestEnumType(t *testing.T) {
 					enumType: true,
 					graphql:  "AccountStatus",
 					graphqlImports: []*tsimport.ImportPath{
+						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
+					},
+					tsType: "AccountStatus | null",
+					tsTypeImports: []*tsimport.ImportPath{
 						tsimport.NewLocalEntImportPath("AccountStatus"),
 					},
-					tsType:        "AccountStatus | null",
-					tsTypeImports: []string{"AccountStatus"},
-					goTypePanics:  true,
+					goTypePanics: true,
 					nonNullableType: &enttype.EnumType{
 						Type:        "AccountStatus",
 						GraphQLType: "AccountStatus",

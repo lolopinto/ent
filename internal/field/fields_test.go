@@ -5,6 +5,7 @@ import (
 
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/testhelper"
+	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -49,7 +50,11 @@ func TestDerivedFields(t *testing.T) {
 	f2 := fieldInfo.GetFieldByName("OwnerID")
 	require.NotNil(t, f2)
 
-	assert.Equal(t, f2.TsBuilderImports(), []string{"ID", "Ent", "Builder"})
+	assert.Equal(t, f2.TsBuilderImports(), []*tsimport.ImportPath{
+		tsimport.NewEntImportPath("ID"),
+		tsimport.NewEntImportPath("Ent"),
+		tsimport.NewEntActionImportPath("Builder"),
+	})
 	assert.Equal(t, f2.TsBuilderType(), "ID | Builder<Ent>")
 }
 
@@ -106,7 +111,9 @@ func TestDisableBuilderIDField(t *testing.T) {
 	f2 := fieldInfo.GetFieldByName("OwnerID")
 	require.NotNil(t, f2)
 
-	assert.Equal(t, f2.TsBuilderImports(), []string{"ID"})
+	assert.Equal(t, f2.TsBuilderImports(), []*tsimport.ImportPath{
+		tsimport.NewEntImportPath("ID"),
+	})
 	assert.Equal(t, f2.TsBuilderType(), "ID")
 }
 
@@ -151,7 +158,9 @@ func TestUUIDFieldList(t *testing.T) {
 	f := fieldInfo.GetFieldByName("contactEmailIDs")
 	require.NotNil(t, f)
 
-	assert.Equal(t, f.TsBuilderImports(), []string{"ID"})
+	assert.Equal(t, f.TsBuilderImports(), []*tsimport.ImportPath{
+		tsimport.NewEntImportPath("ID"),
+	})
 	assert.Equal(t, f.TsBuilderType(), "ID[]")
 	assert.Len(t, info.NodeData.EdgeInfo.FieldEdges, 1)
 	assert.True(t, info.NodeData.EdgeInfo.FieldEdges[0].IsList())
@@ -164,7 +173,11 @@ func TestUUIDFieldList(t *testing.T) {
 	f2 := fieldInfo2.GetFieldByName("OwnerID")
 	require.NotNil(t, f2)
 
-	assert.Equal(t, f2.TsBuilderImports(), []string{"ID", "Contact", "Builder"})
+	assert.Equal(t, f2.TsBuilderImports(), []*tsimport.ImportPath{
+		tsimport.NewEntImportPath("ID"),
+		tsimport.NewLocalEntImportPath("Contact"),
+		tsimport.NewEntActionImportPath("Builder"),
+	})
 	assert.Equal(t, f2.TsBuilderType(), "ID | Builder<Contact>")
 	assert.Len(t, info2.NodeData.EdgeInfo.FieldEdges, 1)
 	assert.False(t, info2.NodeData.EdgeInfo.FieldEdges[0].IsList())

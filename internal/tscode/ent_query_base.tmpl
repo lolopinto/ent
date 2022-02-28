@@ -8,11 +8,7 @@
 {{with .Info -}}
 
   {{ range .Imports }} 
-    {{ if .DefaultImport -}}
-      {{ reserveDefaultImport .ImportPath .Import}}
-    {{ else -}}
-      {{ reserveImport .ImportPath .Import}}
-    {{end -}}
+    {{reserveImportPath . false}}
   {{ end}}
 
   {{$node := useImport .Node}}
