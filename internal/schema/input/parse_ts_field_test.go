@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/internal/schema/input"
+	"github.com/lolopinto/ent/internal/tsimport"
 )
 
 func TestParseFields(t *testing.T) {
@@ -687,6 +688,43 @@ func TestParseFields(t *testing.T) {
 							name:       "creator_id",
 							dbType:     input.UUID,
 							foreignKey: &input.ForeignKey{Schema: "User", Column: "ID", DisableIndex: true},
+						},
+					),
+				},
+			},
+		},
+		"jsonb import ype": {
+			code: map[string]string{
+				"user.ts": getCodeWithSchema(`
+				import {Schema, Field, BaseEntSchema, JSONBType } from "{schema}"
+
+				export default class User extends BaseEntSchema implements Schema {
+					fields: Field[] = [
+						JSONBType({name: "foo", importType: {
+							type: "Foo",
+							path: "path/to_foo.ts",
+						} }),
+					]
+				}`),
+			},
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name: "node",
+				},
+			},
+			expectedNodes: map[string]node{
+				"User": {
+					fields: fieldsWithNodeFields(
+						field{
+							name:   "foo",
+							dbType: input.JSONB,
+							typ: &input.FieldType{
+								DBType: input.JSONB,
+								ImportType: &tsimport.ImportPath{
+									ImportPath: "path/to_foo.ts",
+									Import:     "Foo",
+								},
+							},
 						},
 					),
 				},

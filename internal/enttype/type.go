@@ -94,7 +94,7 @@ type TSTypeWithActionFields interface {
 
 type ImportDepsType interface {
 	TSGraphQLType
-	GetImportDepsType() *InputImportType
+	GetImportDepsType() *tsimport.ImportPath
 }
 
 type ListType interface {
@@ -1708,12 +1708,6 @@ func (t *NullableArrayListType) Convert() *tsimport.ImportPath {
 	return elem.convertNullableListWithItem()
 }
 
-// to resolve circular dependency btw input and this
-type InputImportType struct {
-	Path string `json:"path"`
-	Type string `json:"type"`
-}
-
 type jSONType struct {
 }
 
@@ -1739,21 +1733,21 @@ func (t *jSONType) GetGraphQLType() string {
 	return "JSON!"
 }
 
-func (t *jSONType) getTsType(nullable bool, impType *InputImportType) string {
+func (t *jSONType) getTsType(nullable bool, impType *tsimport.ImportPath) string {
 	if impType == nil {
 		return "any"
 	}
 	if nullable {
-		return impType.Type + " | null"
+		return impType.Import + " | null"
 	}
-	return impType.Type
+	return impType.Import
 }
 
-func (t *jSONType) getTsTypeImports(impType *InputImportType) []string {
+func (t *jSONType) getTsTypeImports(impType *tsimport.ImportPath) []string {
 	if impType == nil {
 		return nil
 	}
-	return []string{impType.Type}
+	return []string{impType.Import}
 }
 
 // TODO https://github.com/taion/graphql-type-json
@@ -1777,7 +1771,7 @@ func (t *jSONType) convertNullableListWithItem() *tsimport.ImportPath {
 }
 
 type JSONType struct {
-	ImportType *InputImportType
+	ImportType *tsimport.ImportPath
 	jSONType
 }
 
@@ -1803,12 +1797,12 @@ func (t *JSONType) GetTsTypeImports() []string {
 	return t.getTsTypeImports(t.ImportType)
 }
 
-func (t *JSONType) GetImportDepsType() *InputImportType {
+func (t *JSONType) GetImportDepsType() *tsimport.ImportPath {
 	return t.ImportType
 }
 
 type NullableJSONType struct {
-	ImportType *InputImportType
+	ImportType *tsimport.ImportPath
 	jSONType
 }
 
@@ -1844,12 +1838,12 @@ func (t *NullableJSONType) GetTsTypeImports() []string {
 	return t.getTsTypeImports(t.ImportType)
 }
 
-func (t *NullableJSONType) GetImportDepsType() *InputImportType {
+func (t *NullableJSONType) GetImportDepsType() *tsimport.ImportPath {
 	return t.ImportType
 }
 
 type JSONBType struct {
-	ImportType *InputImportType
+	ImportType *tsimport.ImportPath
 	jSONType
 }
 
@@ -1875,7 +1869,7 @@ func (t *JSONBType) GetTsTypeImports() []string {
 	return t.getTsTypeImports(t.ImportType)
 }
 
-func (t *JSONBType) GetImportDepsType() *InputImportType {
+func (t *JSONBType) GetImportDepsType() *tsimport.ImportPath {
 	return t.ImportType
 }
 
@@ -1884,7 +1878,7 @@ func (t *JSONBType) GetImportType() Import {
 }
 
 type NullableJSONBType struct {
-	ImportType *InputImportType
+	ImportType *tsimport.ImportPath
 	jSONType
 }
 
@@ -1920,7 +1914,7 @@ func (t *NullableJSONBType) GetTsTypeImports() []string {
 	return t.getTsTypeImports(t.ImportType)
 }
 
-func (t *NullableJSONBType) GetImportDepsType() *InputImportType {
+func (t *NullableJSONBType) GetImportDepsType() *tsimport.ImportPath {
 	return t.ImportType
 }
 
