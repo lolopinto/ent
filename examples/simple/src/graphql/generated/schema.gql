@@ -737,6 +737,16 @@ type UserCreatePayload {
   user: User!
 }
 
+input UserDelete2Input {
+  """id of User"""
+  userID: ID!
+  log: Boolean!
+}
+
+type UserDelete2Payload {
+  deletedUserID: ID
+}
+
 input UserDeleteInput {
   """id of User"""
   userID: ID!
@@ -791,6 +801,7 @@ type Mutation {
   userAuthJWT(input: UserAuthJWTInput!): UserAuthJWTPayload!
   userCreate(input: UserCreateInput!): UserCreatePayload!
   userDelete(input: UserDeleteInput!): UserDeletePayload!
+  userDelete2(input: UserDelete2Input!): UserDelete2Payload!
   userEdit(input: UserEditInput!): UserEditPayload!
 }
 

@@ -228,5 +228,18 @@ export default class User extends BaseEntSchema implements Schema {
     {
       operation: ActionOperation.Delete,
     },
+    {
+      // contrived action that takes actionOnlyFields to add to input
+      operation: ActionOperation.Delete,
+      actionOnlyFields: [
+        {
+          type: "Boolean",
+          name: "log",
+        },
+      ],
+      actionName: "DeleteUserAction2",
+      inputName: "DeleteUserInput2",
+      graphQLName: "userDelete2",
+    },
   ];
 }

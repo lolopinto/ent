@@ -2150,32 +2150,10 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			result.FunctionContents,
 			fmt.Sprintf("return {%s: %s};", nodeData.NodeInstance, nodeData.NodeInstance),
 		)
-	} else if a.GetOperation() == ent.DeleteAction {
-		if base64EncodeIDs {
-			argImports = append(argImports, &tsimport.ImportPath{
-				Import:     "mustDecodeIDFromGQLID",
-				ImportPath: codepath.GraphQLPackage,
-			})
-		}
-
-		if base64EncodeIDs {
-			result.FunctionContents = append(
-				result.FunctionContents,
-				fmt.Sprintf("await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%sID));", a.GetActionName(), nodeData.NodeInstance),
-			)
-		} else {
-			result.FunctionContents = append(
-				result.FunctionContents,
-				fmt.Sprintf("await %s.saveXFromID(context.getViewer(), input.%sID);", a.GetActionName(), nodeData.NodeInstance),
-			)
-		}
-
-		result.FunctionContents = append(
-			result.FunctionContents,
-			fmt.Sprintf("return {deleted%sID: input.%sID};", nodeData.Node, nodeData.NodeInstance),
-		)
 	} else {
-		// some kind of editing
+		deleteAction := a.GetOperation() == ent.DeleteAction
+
+		// edit or delete
 		if base64EncodeIDs {
 			argImports = append(argImports, &tsimport.ImportPath{
 				Import:     "mustDecodeIDFromGQLID",
@@ -2185,15 +2163,22 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 
 		if action.HasInput(a) {
 			// have fields and therefore input
+			if !deleteAction {
+				result.FunctionContents = append(
+					result.FunctionContents,
+					fmt.Sprintf("const %s =", nodeData.NodeInstance),
+				)
+			}
+
 			if base64EncodeIDs {
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("const %s = await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%sID), {", nodeData.NodeInstance, a.GetActionName(), nodeData.NodeInstance),
+					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%sID), {", a.GetActionName(), nodeData.NodeInstance),
 				)
 			} else {
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("const %s = await %s.saveXFromID(context.getViewer(), input.%sID, {", nodeData.NodeInstance, a.GetActionName(), nodeData.NodeInstance),
+					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), input.%sID, {", a.GetActionName(), nodeData.NodeInstance),
 				)
 			}
 			for _, f := range a.GetFields() {
@@ -2223,25 +2208,39 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 				)
 			}
 		} else {
+			if !deleteAction {
+				result.FunctionContents = append(
+					result.FunctionContents,
+					fmt.Sprintf("const %s =", nodeData.NodeInstance),
+				)
+			}
 			if base64EncodeIDs {
 				// no fields
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("const %s = await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%sID));", nodeData.NodeInstance, a.GetActionName(), nodeData.NodeInstance),
+					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%sID));", a.GetActionName(), nodeData.NodeInstance),
 				)
 			} else {
 				// no fields
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("const %s = await %s.saveXFromID(context.getViewer(), input.%sID);", nodeData.NodeInstance, a.GetActionName(), nodeData.NodeInstance),
+					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), input.%sID);", a.GetActionName(), nodeData.NodeInstance),
 				)
 			}
 		}
 
-		result.FunctionContents = append(
-			result.FunctionContents,
-			fmt.Sprintf("return {%s: %s};", nodeData.NodeInstance, nodeData.NodeInstance),
-		)
+		if deleteAction {
+			result.FunctionContents = append(
+				result.FunctionContents,
+				fmt.Sprintf("return {deleted%sID: input.%sID};", nodeData.Node, nodeData.NodeInstance),
+			)
+		} else {
+
+			result.FunctionContents = append(
+				result.FunctionContents,
+				fmt.Sprintf("return {%s: %s};", nodeData.NodeInstance, nodeData.NodeInstance),
+			)
+		}
 	}
 
 	// TODO these are just all imports, we don't care where from
