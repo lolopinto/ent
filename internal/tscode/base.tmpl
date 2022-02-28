@@ -16,11 +16,7 @@
 {{ end -}}
 
 {{ range .GetImportsForBaseFile -}} 
-  {{ if .DefaultImport -}}
-    {{ reserveDefaultImport .ImportPath .Import}}
-  {{ else -}}
-    {{ reserveImport .ImportPath .Import}}
-  {{end -}}
+  {{ reserveImportPath .}}
 {{ end}}
 
 {{$viewerType := useImport "Viewer"}}
@@ -42,8 +38,9 @@ export class {{$baseClass}} {
 
   readonly nodeType = {{useImport "NodeType"}}.{{.Node}};
   {{range $field := .FieldInfo.Fields -}}
-    {{ range $imp := $field.ForeignImports -}}
-      {{$typ := useImportMaybe $imp -}}
+    {{ range $field.GetTsTypeImports -}}
+      {{ reserveImportPath .}}
+      {{$typ := useImport .Import -}}
     {{end -}}
     {{ if $field.Private -}}
       protected readonly {{$field.TsFieldName}}: {{$field.TsType}};

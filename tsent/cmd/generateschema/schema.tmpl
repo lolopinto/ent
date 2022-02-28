@@ -1,19 +1,9 @@
 {{ reserveImport .Package.SchemaPackagePath "BaseEntSchema" "Field" "Schema" "Edge" "AssocEdgeGroup" "Action" "Constraint" "Index" }}
 
-{{/* takes an Import with ImportPath Import DefaultImport fields */ -}}
-{{define "reserveImport"}}
-  {{ $imp := . -}}
-  {{ if $imp.DefaultImport -}}
-    {{reserveDefaultImport $imp.ImportPath $imp.Import -}}
-  {{ else -}}
-    {{reserveImport $imp.ImportPath $imp.Import -}}
-  {{ end -}}
-{{- end -}}
-
 {{define "kvObjectLine" -}}
   {{ $obj := . -}}
   {{- range $imp := $obj.GetImports -}}
-    {{- template "reserveImport" $imp -}}
+    {{ reserveImport $imp -}}
     {{ $ignore := useImport $imp.Import -}}
   {{- end -}}
   {{ $obj.String }},

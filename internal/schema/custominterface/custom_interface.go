@@ -17,6 +17,7 @@ type CustomInterface struct {
 	enumImports []string
 }
 
+// TODO kill...
 func (ci *CustomInterface) GetEnumImports() []string {
 	// TODO https://github.com/lolopinto/ent/issues/703
 	// if we had the correct imports in TsBuilderImports, we don't need this.

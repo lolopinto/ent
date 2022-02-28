@@ -9,11 +9,7 @@
 
 
 {{ range .GetImportPathsForDependencies $schema -}}
-  {{ if .DefaultImport -}}
-    {{ reserveDefaultImport .ImportPath .Import}}
-  {{ else -}}
-    {{ reserveImport .ImportPath .Import}}
-  {{ end -}}
+  {{ reserveImportPath .}}
 {{ end}}
 
 export interface {{.Node}}Input {
