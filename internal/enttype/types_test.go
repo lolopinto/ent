@@ -1085,7 +1085,7 @@ func TestEnumType(t *testing.T) {
 					enumType: true,
 					tsType:   "AccountStatus | null",
 					tsTypeImports: []*tsimport.ImportPath{
-						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
+						tsimport.NewLocalEntImportPath("AccountStatus"),
 					},
 					goTypePanics: true,
 					nonNullableType: &enttype.EnumType{
@@ -1122,7 +1122,7 @@ func TestEnumType(t *testing.T) {
 					tsType:   "AccountStatus",
 					enumType: true,
 					tsTypeImports: []*tsimport.ImportPath{
-						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
+						tsimport.NewLocalEntImportPath("AccountStatus"),
 					},
 					goTypePanics: true,
 					nullableType: &enttype.NullableEnumType{
@@ -1166,7 +1166,7 @@ func TestEnumType(t *testing.T) {
 					},
 					tsType: "AccountStatus",
 					tsTypeImports: []*tsimport.ImportPath{
-						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
+						tsimport.NewLocalEntImportPath("AccountStatus"),
 					},
 					goTypePanics: true,
 					nullableType: &enttype.NullableEnumType{
@@ -1209,7 +1209,7 @@ func TestEnumType(t *testing.T) {
 					},
 					tsType: "AccountStatus | null",
 					tsTypeImports: []*tsimport.ImportPath{
-						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
+						tsimport.NewLocalEntImportPath("AccountStatus"),
 					},
 					goTypePanics: true,
 					nonNullableType: &enttype.EnumType{

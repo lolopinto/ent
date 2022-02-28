@@ -441,7 +441,7 @@ func TestArrayListType(t *testing.T) {
 				},
 				tsType: "AccountStatus[]",
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
+					tsimport.NewLocalEntImportPath("AccountStatus"),
 				},
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.EnumType{
@@ -485,7 +485,7 @@ func TestArrayListType(t *testing.T) {
 				},
 				tsType: "AccountStatus[] | null",
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
+					tsimport.NewLocalEntImportPath("AccountStatus"),
 				},
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.EnumType{
