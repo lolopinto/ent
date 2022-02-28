@@ -246,10 +246,7 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]*tsimport.ImportPath, error
 			imp := t2.GetImportDepsType()
 			if imp != nil {
 				// TODO ignoring relative. do we need it?
-				ret = append(ret, &tsimport.ImportPath{
-					ImportPath: imp.Path,
-					Import:     imp.Type,
-				})
+				ret = append(ret, imp)
 			}
 		}
 	}
@@ -288,10 +285,7 @@ func (nodeData *NodeData) GetImportPathsForDependencies(s *Schema) []*tsimport.I
 			t2 := t.(enttype.ImportDepsType)
 			imp := t2.GetImportDepsType()
 			if imp != nil {
-				ret = append(ret, &tsimport.ImportPath{
-					ImportPath: imp.Path,
-					Import:     imp.Type,
-				})
+				ret = append(ret, imp)
 			}
 		}
 	}

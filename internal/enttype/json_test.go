@@ -80,9 +80,9 @@ func TestJSONType(t *testing.T) {
 		},
 		"json with import type": {
 			&enttype.JSONType{
-				ImportType: &enttype.InputImportType{
-					Type: "Foo",
-					Path: "path",
+				ImportType: &tsimport.ImportPath{
+					Import:     "Foo",
+					ImportPath: "path",
 				},
 			},
 			expType{
@@ -94,9 +94,9 @@ func TestJSONType(t *testing.T) {
 				},
 				tsType: "Foo",
 				nullableType: &enttype.NullableJSONType{
-					ImportType: &enttype.InputImportType{
-						Type: "Foo",
-						Path: "path",
+					ImportType: &tsimport.ImportPath{
+						Import:     "Foo",
+						ImportPath: "path",
 					},
 				},
 				goTypePanics:  true,
@@ -108,9 +108,9 @@ func TestJSONType(t *testing.T) {
 		},
 		"nullable json with import type": {
 			&enttype.NullableJSONType{
-				ImportType: &enttype.InputImportType{
-					Type: "Foo",
-					Path: "path",
+				ImportType: &tsimport.ImportPath{
+					Import:     "Foo",
+					ImportPath: "path",
 				},
 			},
 			expType{
@@ -121,9 +121,9 @@ func TestJSONType(t *testing.T) {
 				},
 				tsType: "Foo | null",
 				nonNullableType: &enttype.JSONType{
-					ImportType: &enttype.InputImportType{
-						Type: "Foo",
-						Path: "path",
+					ImportType: &tsimport.ImportPath{
+						Import:     "Foo",
+						ImportPath: "path",
 					},
 				},
 				goTypePanics:  true,
@@ -135,9 +135,9 @@ func TestJSONType(t *testing.T) {
 		},
 		"jsonb with import type": {
 			&enttype.JSONBType{
-				ImportType: &enttype.InputImportType{
-					Type: "Foo",
-					Path: "path",
+				ImportType: &tsimport.ImportPath{
+					Import:     "Foo",
+					ImportPath: "path",
 				},
 			},
 			expType{
@@ -149,9 +149,9 @@ func TestJSONType(t *testing.T) {
 				},
 				tsType: "Foo",
 				nullableType: &enttype.NullableJSONBType{
-					ImportType: &enttype.InputImportType{
-						Type: "Foo",
-						Path: "path",
+					ImportType: &tsimport.ImportPath{
+						Import:     "Foo",
+						ImportPath: "path",
 					},
 				},
 				goTypePanics:  true,
@@ -163,9 +163,9 @@ func TestJSONType(t *testing.T) {
 		},
 		"nullable jsonb with import type": {
 			&enttype.NullableJSONBType{
-				ImportType: &enttype.InputImportType{
-					Type: "Foo",
-					Path: "path",
+				ImportType: &tsimport.ImportPath{
+					Import:     "Foo",
+					ImportPath: "path",
 				},
 			},
 			expType{
@@ -176,9 +176,9 @@ func TestJSONType(t *testing.T) {
 				},
 				tsType: "Foo | null",
 				nonNullableType: &enttype.JSONBType{
-					ImportType: &enttype.InputImportType{
-						Type: "Foo",
-						Path: "path",
+					ImportType: &tsimport.ImportPath{
+						Import:     "Foo",
+						ImportPath: "path",
 					},
 				},
 				goTypePanics:  true,
