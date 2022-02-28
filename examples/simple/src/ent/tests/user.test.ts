@@ -34,6 +34,7 @@ import EditPhoneNumberAction from "../user/actions/edit_phone_number_action";
 import ConfirmEditPhoneNumberAction from "../user/actions/confirm_edit_phone_number_action";
 import CreateCommentAction from "../comment/actions/create_comment_action";
 import { NotifType } from "../user_prefs";
+import DeleteUserAction2 from "../user/actions/delete_user_action_2";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -166,6 +167,29 @@ test("delete user", async () => {
   expect(loadedUser).toBe(null);
 });
 
+test("delete user 2", async () => {
+  let user = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+  });
+
+  try {
+    await DeleteUserAction2.create(loggedOutViewer, user, {
+      log: true,
+    }).saveX();
+    throw new Error("should have thrown exception");
+  } catch (err) {
+    expect((err as Error).message).toMatch(
+      /Logged out Viewer does not have permission to delete User/,
+    );
+  }
+  let vc = new IDViewer(user.id, { ent: user });
+  await DeleteUserAction2.create(vc, user, { log: true }).saveX();
+
+  let loadedUser = await User.load(vc, user.id);
+  expect(loadedUser).toBe(null);
+});
+
 test("delete user. saveXFromID", async () => {
   let user = await create({
     firstName: "Jon",
@@ -174,6 +198,19 @@ test("delete user. saveXFromID", async () => {
 
   let vc = new IDViewer(user.id, { ent: user });
   await DeleteUserAction.saveXFromID(vc, user.id);
+
+  let loadedUser = await User.load(vc, user.id);
+  expect(loadedUser).toBe(null);
+});
+
+test("delete user 2. saveXFromID", async () => {
+  let user = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+  });
+
+  let vc = new IDViewer(user.id, { ent: user });
+  await DeleteUserAction2.saveXFromID(vc, user.id, { log: true });
 
   let loadedUser = await User.load(vc, user.id);
   expect(loadedUser).toBe(null);

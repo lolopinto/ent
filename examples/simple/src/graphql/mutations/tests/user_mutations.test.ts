@@ -188,6 +188,37 @@ test("delete", async () => {
   );
 });
 
+test("delete 2", async () => {
+  const email = randomEmail();
+
+  let user = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: email,
+    password: "pa$$w0rd",
+    phoneNumber: randomPhoneNumber(),
+  });
+
+  await expectMutation(
+    getConfig(
+      "userDelete2",
+      {
+        userID: encodeGQLID(user),
+        log: true,
+      },
+      new IDViewer(user.id),
+    ),
+    [
+      "deletedUserID",
+      async (id: string) => {
+        expect(mustDecodeIDFromGQLID(id)).toBe(user.id);
+        let deletedUser = await User.load(new IDViewer(user.id), user.id);
+        expect(deletedUser).toBe(null);
+      },
+    ],
+  );
+});
+
 test("delete. other user no permissions", async () => {
   const email = randomEmail();
 
