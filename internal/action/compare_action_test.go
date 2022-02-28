@@ -3,10 +3,13 @@ package action
 import (
 	"testing"
 
+	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/base"
+	"github.com/lolopinto/ent/internal/schema/custominterface"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/stretchr/testify/require"
@@ -700,46 +703,200 @@ func TestCompareUnequalGQLEnums(t *testing.T) {
 	require.False(t, ActionEqual(a1, a2))
 }
 
-// TODO custom interface
+func TestCompareCustomInterfaces(t *testing.T) {
+	a1 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			customInterfaces: map[string]*custominterface.CustomInterface{
+				"Foo": {
+					TSType:  "Foo",
+					GQLType: "Foo",
+					Fields: []*field.Field{
+						{
+							FieldName: "Foo",
+						},
+					},
+				},
+			},
+		},
+	)
 
-// TODO
-// func TestCompareEdgeGroupAction(t *testing.T) {
-// 	edge1, err := edge.AssocEdgeFromInput("user", &input.AssocEdge{
-// 		SchemaName: "User",
-// 		Name:       "createdEvents",
-// 	})
-// 	require.Nil(t, err)
-// 	edge2, err := edge.AssocEdgeFromInput("user", &input.AssocEdge{
-// 		SchemaName: "User",
-// 		Name:       "createdEvents",
-// 	})
-// 	require.Nil(t, err)
+	a2 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			customInterfaces: map[string]*custominterface.CustomInterface{
+				"Foo": {
+					TSType:  "Foo",
+					GQLType: "Foo",
+					Fields: []*field.Field{
+						{
+							FieldName: "Foo",
+						},
+					},
+				},
+			},
+		},
+	)
 
-// 	a1 := createEdgeActionWithOptions(
-// 		"User",
-// 		edge1,
-// 		&removeEdgeActionType{},
-// 		&actionOptions{
-// 			edgeAction: &edge.EdgeAction{
-// 				Action: "ent.EdgeGroupAction",
-// 			},
-// 		},
-// 	)
+	require.True(t, ActionEqual(a1, a2))
+}
 
-// 	a2 := createEdgeActionWithOptions(
-// 		"User",
-// 		edge2,
-// 		&removeEdgeActionType{},
-// 		&actionOptions{
-// 			edgeAction: &edge.EdgeAction{
-// 				Action: "ent.EdgeGroupAction",
-// 			},
-// 		},
-// 	)
+func TestCompareUnequalCustomInterfaces(t *testing.T) {
+	a1 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			customInterfaces: map[string]*custominterface.CustomInterface{
+				"Foo": {
+					TSType:  "Foo",
+					GQLType: "GQLFoo",
+					Fields: []*field.Field{
+						{
+							FieldName: "Foo",
+						},
+					},
+				},
+			},
+		},
+	)
 
-// 	require.True(t, ActionEqual(a1, a2))
+	a2 := createNodeActionWithOptions(
+		"User",
+		&createActionType{},
+		&actionOptions{
+			fields: []*field.Field{
+				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
+			},
+			customInterfaces: map[string]*custominterface.CustomInterface{
+				"Foo": {
+					TSType:  "Foo",
+					GQLType: "Foo",
+					Fields: []*field.Field{
+						{
+							FieldName: "Foo",
+						},
+					},
+				},
+			},
+		},
+	)
 
-// }
+	require.False(t, ActionEqual(a1, a2))
+}
+
+func TestCompareEdgeGroupAction(t *testing.T) {
+	edge1, err := edge.AssocEdgeFromInput("user", &input.AssocEdge{
+		SchemaName: "User",
+		Name:       "Declined",
+	})
+	require.Nil(t, err)
+	edge2, err := edge.AssocEdgeFromInput("user", &input.AssocEdge{
+		SchemaName: "User",
+		Name:       "Attending",
+	})
+	require.Nil(t, err)
+	assocEdgeGroup := &edge.AssociationEdgeGroup{
+		GroupName:         "rsvps",
+		GroupStatusName:   "rsvpStatus",
+		TSGroupStatusName: strcase.ToLowerCamel("rsvpStatus"),
+		ConstType:         "EventRsvpStatus",
+		NodeInfo:          nodeinfo.GetNodeInfo("event"),
+		DestNodeInfo:      nodeinfo.GetNodeInfo("user"),
+		Edges: map[string]*edge.AssociationEdge{
+			"attending": edge2,
+			"declined":  edge1,
+		},
+		StatusEnums: []string{"attending", "declined"},
+	}
+
+	a1 := createEdgeGroupActionWithOptions(
+		"User",
+		assocEdgeGroup,
+		&actionOptions{
+			edgeAction: &edge.EdgeAction{
+				Action: "ent.EdgeGroupAction",
+			},
+		},
+	)
+
+	a2 := createEdgeGroupActionWithOptions(
+		"User",
+		assocEdgeGroup,
+		&actionOptions{
+			edgeAction: &edge.EdgeAction{
+				Action: "ent.EdgeGroupAction",
+			},
+		},
+	)
+
+	require.True(t, ActionEqual(a1, a2))
+}
+
+func TestCompareUnequalEdgeGroupAction(t *testing.T) {
+	edge1, err := edge.AssocEdgeFromInput("user", &input.AssocEdge{
+		SchemaName: "User",
+		Name:       "Declined",
+	})
+	require.Nil(t, err)
+	edge2, err := edge.AssocEdgeFromInput("user", &input.AssocEdge{
+		SchemaName: "User",
+		Name:       "Attending",
+	})
+	require.Nil(t, err)
+	edge3, err := edge.AssocEdgeFromInput("user", &input.AssocEdge{
+		SchemaName: "User",
+		Name:       "Maybe",
+	})
+
+	require.Nil(t, err)
+	assocEdgeGroup := &edge.AssociationEdgeGroup{
+		GroupName:         "rsvps",
+		GroupStatusName:   "rsvpStatus",
+		TSGroupStatusName: strcase.ToLowerCamel("rsvpStatus"),
+		ConstType:         "EventRsvpStatus",
+		NodeInfo:          nodeinfo.GetNodeInfo("event"),
+		DestNodeInfo:      nodeinfo.GetNodeInfo("user"),
+		Edges: map[string]*edge.AssociationEdge{
+			"maybe":     edge3,
+			"attending": edge2,
+			"declined":  edge1,
+		},
+		StatusEnums: []string{"attending", "declined", "maybe"},
+	}
+
+	a1 := createEdgeGroupActionWithOptions(
+		"User",
+		assocEdgeGroup,
+		&actionOptions{
+			edgeAction: &edge.EdgeAction{
+				Action: "ent.EdgeGroupAction",
+			},
+		},
+	)
+
+	a2 := createEdgeGroupActionWithOptions(
+		"User",
+		assocEdgeGroup,
+		&actionOptions{
+			edgeAction: &edge.EdgeAction{
+				Action: "ent.EdgeGroupAction",
+			},
+		},
+	)
+
+	require.True(t, ActionEqual(a1, a2))
+}
 
 type actionOptions struct {
 	customActionName, customGraphQLName, customInputName string
@@ -749,6 +906,7 @@ type actionOptions struct {
 	edgeAction                                           *edge.EdgeAction
 	tsEnums                                              []*enum.Enum
 	gqlEnums                                             []*enum.GQLEnum
+	customInterfaces                                     map[string]*custominterface.CustomInterface
 }
 
 func createNodeActionWithOptions(
@@ -767,6 +925,7 @@ func createNodeActionWithOptions(
 	)
 	ci.tsEnums = opt.tsEnums
 	ci.gqlEnums = opt.gqlEnums
+	ci.customInterfaces = opt.customInterfaces
 	return typ.getAction(ci)
 }
 
@@ -778,5 +937,24 @@ func createEdgeActionWithOptions(nodeName string, assocEdge *edge.AssociationEdg
 		opt.edgeAction,
 		base.TypeScript,
 	)
+	ci.tsEnums = opt.tsEnums
+	ci.gqlEnums = opt.gqlEnums
+	ci.customInterfaces = opt.customInterfaces
+	return typ.getAction(ci)
+}
+
+func createEdgeGroupActionWithOptions(nodeName string, edgeGroup *edge.AssociationEdgeGroup, opt *actionOptions) Action {
+	typ := groupEdgeActionType{}
+	ci := getCommonInfoForGroupEdgeAction(
+		nodeName,
+		edgeGroup,
+		&typ,
+		opt.edgeAction,
+		base.TypeScript,
+		opt.nonEntFields,
+	)
+	ci.tsEnums = opt.tsEnums
+	ci.gqlEnums = opt.gqlEnums
+	ci.customInterfaces = opt.customInterfaces
 	return typ.getAction(ci)
 }
