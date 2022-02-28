@@ -10,7 +10,6 @@ import (
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
-	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -869,13 +868,10 @@ func (e *CustomEdge) HideFromGraphQL() bool {
 	return false
 }
 
-func (e *CustomEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
-	return []enttype.FileImport{
-		enttype.NewGQLFileImport("GraphQLNonNull"),
-		{
-			ImportType: enttype.Connection,
-			Type:       e.GetGraphQLConnectionName(),
-		},
+func (e *CustomEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
+	return []*tsimport.ImportPath{
+		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewLocalEntImportPath(e.GetGraphQLConnectionName()),
 	}
 }
 

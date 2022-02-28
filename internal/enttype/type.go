@@ -97,21 +97,6 @@ type ImportDepsType interface {
 	GetImportDepsType() *InputImportType
 }
 
-type ImportType string
-
-const (
-	GraphQL    ImportType = "graphql"
-	Node       ImportType = "node"
-	Enum       ImportType = "enum"
-	Connection ImportType = "connection"
-	// EntGraphQL refers to graphql scalars or things in the ent graphql space
-	EntGraphQL ImportType = "ent_graphql"
-	Package    ImportType = "package"
-	// TODO need to kill this for actual paths
-	//	https://github.com/taion/graphql-type-json
-	GraphQLJSON ImportType = "graphql-type-json"
-)
-
 type ListType interface {
 	Type
 	GetElemGraphQLType() string

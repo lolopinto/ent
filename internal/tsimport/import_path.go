@@ -10,6 +10,8 @@ type ImportPath struct {
 	// only used in graphql (at least for now)
 	// defaults to no. if function, call it instead of just referencing the import when used?
 	Function bool
+
+	TransformedForMutation bool
 }
 
 // NewGQLImportPath creates a new import from "graphql"
@@ -44,9 +46,8 @@ func NewEntGraphQLImportPath(typ string) *ImportPath {
 func NewLocalEntImportPath(typ string) *ImportPath {
 	return &ImportPath{
 		Import: typ,
-		// TODO this needs to account for context
-		// e.g. in a mutation it's this
-		// otherwise, codepath.GetImportPathForInternalGQLFile()
-		ImportPath: codepath.GetImportPathForExternalGQLFile(),
+		// transformed to codepath.GetImportPathForExternalGQLFile for mutations
+		ImportPath:             codepath.GetImportPathForInternalGQLFile(),
+		TransformedForMutation: true,
 	}
 }

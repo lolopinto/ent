@@ -237,14 +237,8 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]*tsimport.ImportPath, error
 		if enttype.IsConvertDataType(t) {
 			t2 := t.(enttype.ConvertDataType)
 			c := t2.Convert()
-			if string(c.ImportType) != "" {
-				ret = append(ret, &tsimport.ImportPath{
-					Import: c.Type,
-					// TODO currently hardcoded
-					// TODO need to kill this ImportType nonsense
-					// getGQLFileImports checks the different values
-					ImportPath: codepath.Package,
-				})
+			if c.ImportPath != "" {
+				ret = append(ret, c)
 			}
 		}
 		if enttype.IsImportDepsType(t) {

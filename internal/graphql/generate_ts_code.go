@@ -1528,50 +1528,25 @@ func (f fieldConfigArg) FieldType() string {
 	return typeFromImports(typs)
 }
 
-func getGQLFileImports(imps []enttype.FileImport, mutation bool) []*tsimport.ImportPath {
-	imports := make([]*tsimport.ImportPath, len(imps))
-	fn := false
-	for idx, imp := range imps {
-		var importPath string
-		typ := imp.Type
-		switch imp.ImportType {
-		case enttype.GraphQL:
-			importPath = "graphql"
-			typ = imp.Type
+func getGQLFileImports(imps []*tsimport.ImportPath, mutation bool) []*tsimport.ImportPath {
+	if !mutation {
+		return imps
+	}
+	ret := make([]*tsimport.ImportPath, len(imps))
 
-		case enttype.Enum, enttype.Connection, enttype.Node:
-			if imp.ImportType == enttype.Connection {
-				fn = true
-			}
-			if mutation {
-				importPath = codepath.GetImportPathForExternalGQLFile()
-			} else {
-				importPath = codepath.GetImportPathForInternalGQLFile()
-			}
-			typ = fmt.Sprintf("%sType", typ)
-
-		case enttype.EntGraphQL:
-			importPath = codepath.GraphQLPackage
-
-		case enttype.Package:
-			importPath = codepath.Package
-
-		case enttype.GraphQLJSON:
-			importPath = "graphql-type-json"
-
-		default:
-			// empty means nothing to import and that's ok...
-			if imp.ImportType != "" {
-				panic(fmt.Sprintf("unsupported Import Type %v", imp.ImportType))
-			}
+	for idx, v := range imps {
+		ret[idx] = v
+		if !v.TransformedForMutation {
+			continue
 		}
-		imports[idx] = &tsimport.ImportPath{
-			Import:     typ,
-			ImportPath: importPath,
-			Function:   fn,
+		ret[idx] = &tsimport.ImportPath{
+			ImportPath:    codepath.GetFilePathForExternalGQLFile(),
+			Import:        v.Import,
+			DefaultImport: v.DefaultImport,
+			Function:      v.Function,
 		}
 	}
-	return imports
+	return ret
 }
 
 func getGQLFileImportsFromStrings(imps []string) []*tsimport.ImportPath {
@@ -1686,11 +1661,8 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 		fields = append(fields, &fieldType{
 			Name: group.GetStatusMethod(),
 			FieldImports: getGQLFileImports(
-				[]enttype.FileImport{
-					{
-						Type:       group.ConstType,
-						ImportType: enttype.Enum,
-					},
+				[]*tsimport.ImportPath{
+					tsimport.NewLocalEntImportPath(group.ConstType),
 				},
 				false,
 			),
