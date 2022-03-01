@@ -7,84 +7,84 @@ import (
 
 // TODO kill this file
 
-type ChangeType string
+// type ChangeType string
 
-const (
-	AddPattern       ChangeType = "add_pattern"
-	DropPattern      ChangeType = "drop_pattern"
-	AddNode          ChangeType = "add_table"
-	DropNode         ChangeType = "drop_table"
-	AddField         ChangeType = "add_column"
-	DropField        ChangeType = "drop_column"
-	CreateIndex      ChangeType = "create_index"
-	DropIndex        ChangeType = "drop_index"
-	CreateForeignKey ChangeType = "create_foreign_key"
-	// TODO...
-	AlterField             ChangeType = "alter_field"
-	CreateUniqueConstraint ChangeType = "create_unique_constraint"
-	AddEdges               ChangeType = "add_edges"
-	RemoveEdges            ChangeType = "remove_edges"
-	ModifyEdge             ChangeType = "modify_edge"
-	AddRows                ChangeType = "add_rows"
-	RemoveRows             ChangeType = "remove_rows"
-	ModifyRows             ChangeType = "modify_rows"
-	AlterEnum              ChangeType = "alter_enum"
-	AddEnum                ChangeType = "add_enum"
-	DropEnum               ChangeType = "drop_enum"
-	CreateCheckConstraint  ChangeType = "create_check_constraint"
-	DropCheckConstraint    ChangeType = "drop_check_constraint"
-)
+// const (
+// 	AddPattern       ChangeType = "add_pattern"
+// 	DropPattern      ChangeType = "drop_pattern"
+// 	AddNode          ChangeType = "add_table"
+// 	DropNode         ChangeType = "drop_table"
+// 	AddField         ChangeType = "add_column"
+// 	DropField        ChangeType = "drop_column"
+// 	CreateIndex      ChangeType = "create_index"
+// 	DropIndex        ChangeType = "drop_index"
+// 	CreateForeignKey ChangeType = "create_foreign_key"
+// 	// TODO...
+// 	AlterField             ChangeType = "alter_field"
+// 	CreateUniqueConstraint ChangeType = "create_unique_constraint"
+// 	AddEdges               ChangeType = "add_edges"
+// 	RemoveEdges            ChangeType = "remove_edges"
+// 	ModifyEdge             ChangeType = "modify_edge"
+// 	AddRows                ChangeType = "add_rows"
+// 	RemoveRows             ChangeType = "remove_rows"
+// 	ModifyRows             ChangeType = "modify_rows"
+// 	AlterEnum              ChangeType = "alter_enum"
+// 	AddEnum                ChangeType = "add_enum"
+// 	DropEnum               ChangeType = "drop_enum"
+// 	CreateCheckConstraint  ChangeType = "create_check_constraint"
+// 	DropCheckConstraint    ChangeType = "drop_check_constraint"
+// )
 
-type Change struct {
-	Change      ChangeType
-	Field       string
-	GraphQLOnly bool
-	TSOnly      bool
-}
+// type Change struct {
+// 	Change      ChangeType
+// 	Field       string
+// 	GraphQLOnly bool
+// 	TSOnly      bool
+// }
 
-type ChangeMap map[string][]Change
+// type ChangeMap map[string][]Change
 
 // TODO kill
 // we're going to store in input schema format but compre in
-func CompareSchemas(existing, schema *Schema) ChangeMap {
-	m := make(ChangeMap)
-	if existing == nil {
-		// act like everything is new...
-		for k := range schema.Patterns {
-			m[k] = []Change{
-				{
-					Change: AddPattern,
-				},
-			}
-		}
-		for k := range schema.Nodes {
-			m[k] = []Change{
-				{
-					Change: AddNode,
-				},
-			}
-		}
-		return m
-	}
+// func CompareSchemas(existing, schema *Schema) ChangeMap {
+// 	m := make(ChangeMap)
+// 	if existing == nil {
+// 		// act like everything is new...
+// 		for k := range schema.Patterns {
+// 			m[k] = []Change{
+// 				{
+// 					Change: AddPattern,
+// 				},
+// 			}
+// 		}
+// 		for k := range schema.Nodes {
+// 			m[k] = []Change{
+// 				{
+// 					Change: AddNode,
+// 				},
+// 			}
+// 		}
+// 		return m
+// 	}
 
-	for k := range existing.Patterns {
-		existingPattern := existing.Patterns[k]
-		p, ok := schema.Patterns[k]
-		if !ok {
-			m[k] = []Change{
-				{
-					Change: AddPattern,
-				},
-			}
-		} else {
-			changes := compareFields(existingPattern.Fields, p.Fields)
+// 	for k := range existing.Patterns {
+// 		existingPattern := existing.Patterns[k]
+// 		p, ok := schema.Patterns[k]
+// 		if !ok {
+// 			m[k] = []Change{
+// 				{
+// 					Change: AddPattern,
+// 				},
+// 			}
+// 		} else {
+// 			changes := compareFields(existingPattern.Fields, p.Fields)
 
-			// TODO compare edges and append
-			m[k] = changes
-		}
-	}
-	return m
-}
+// 			// TODO compare edges and append
+// 			m[k] = changes
+// 		}
+// 	}
+// 	return m
+// }
 
 func NodeEqual(existing, node *Node) bool {
 	return existing.TableName == node.TableName &&
@@ -100,59 +100,59 @@ func NodeEqual(existing, node *Node) bool {
 		existing.PatternName == node.PatternName
 }
 
-func compareFields(existing, fields []*Field) []Change {
-	var ret []Change
-	existingFieldMap := make(map[string]*Field)
-	fieldMap := make(map[string]*Field)
-	for _, f := range existing {
-		existingFieldMap[f.Name] = f
-	}
+// func compareFields(existing, fields []*Field) []Change {
+// 	var ret []Change
+// 	existingFieldMap := make(map[string]*Field)
+// 	fieldMap := make(map[string]*Field)
+// 	for _, f := range existing {
+// 		existingFieldMap[f.Name] = f
+// 	}
 
-	for _, f := range fields {
-		fieldMap[f.Name] = f
-	}
+// 	for _, f := range fields {
+// 		fieldMap[f.Name] = f
+// 	}
 
-	for k, existingField := range existingFieldMap {
-		field, ok := fieldMap[k]
-		if !ok {
-			ret = append(ret, Change{
-				Change: DropField,
-				Field:  existingField.Name,
-			})
-			continue
-		}
+// 	for k, existingField := range existingFieldMap {
+// 		field, ok := fieldMap[k]
+// 		if !ok {
+// 			ret = append(ret, Change{
+// 				Change: DropField,
+// 				Field:  existingField.Name,
+// 			})
+// 			continue
+// 		}
 
-		if fieldEqual(existingField, field) {
-			continue
-		}
+// 		if fieldEqual(existingField, field) {
+// 			continue
+// 		}
 
-		if existingField.HideFromGraphQL != field.HideFromGraphQL ||
-			existingField.GraphQLName != field.GraphQLName {
-			ret = append(ret, Change{
-				Change:      AlterField,
-				Field:       existingField.Name,
-				GraphQLOnly: true,
-			})
-		} else {
-			ret = append(ret, Change{
-				Change: AlterField,
-				Field:  existingField.Name,
-			})
-		}
-	}
+// 		if existingField.HideFromGraphQL != field.HideFromGraphQL ||
+// 			existingField.GraphQLName != field.GraphQLName {
+// 			ret = append(ret, Change{
+// 				Change:      AlterField,
+// 				Field:       existingField.Name,
+// 				GraphQLOnly: true,
+// 			})
+// 		} else {
+// 			ret = append(ret, Change{
+// 				Change: AlterField,
+// 				Field:  existingField.Name,
+// 			})
+// 		}
+// 	}
 
-	for k, field := range fieldMap {
-		_, ok := existingFieldMap[k]
-		if !ok {
-			ret = append(ret, Change{
-				Change: AddField,
-				Field:  field.Name,
-			})
-		}
-	}
+// 	for k, field := range fieldMap {
+// 		_, ok := existingFieldMap[k]
+// 		if !ok {
+// 			ret = append(ret, Change{
+// 				Change: AddField,
+// 				Field:  field.Name,
+// 			})
+// 		}
+// 	}
 
-	return ret
-}
+// 	return ret
+// }
 
 func PatternEqual(existing, pattern *Pattern) bool {
 	return existing.Name == pattern.Name &&

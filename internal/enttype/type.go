@@ -965,7 +965,10 @@ type CommonObjectType struct {
 }
 
 func (t *CommonObjectType) GetDBType() string {
-	panic("objectType not a DB type yet")
+	if config.IsSQLiteDialect() {
+		return "sa.Text()"
+	}
+	return "postgresql.JSONB"
 }
 
 func (t *CommonObjectType) GetZeroValue() string {
@@ -1039,7 +1042,11 @@ type ListWrapperType struct {
 }
 
 func (t *ListWrapperType) GetDBType() string {
-	panic("ListWrapperType not a DB type yet")
+	if config.IsSQLiteDialect() {
+		return "sa.Text()"
+	}
+
+	return fmt.Sprintf("postgresql.ARRAY(%s)", t.Type.GetDBType())
 }
 
 func (t *ListWrapperType) GetZeroValue() string {

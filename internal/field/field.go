@@ -87,10 +87,11 @@ func NewFieldInfoFromInputs(fields []*input.Field, options *Options) (*FieldInfo
 type FieldInfo struct {
 	Fields   []*Field
 	fieldMap map[string]*Field
-	// really only used in tests
+	// really only used in tests and old go schema
 	NonEntFields []*NonEntField
 	getFieldsFn  bool
 
+	// go only
 	emailFields    map[string]bool
 	passwordFields map[string]bool
 

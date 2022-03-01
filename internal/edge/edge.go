@@ -24,6 +24,8 @@ import (
 )
 
 type EdgeInfo struct {
+	// Note: look at CompareEdgeInfo in compare_edge as this changes
+
 	// TODO hide FieldEdges etc
 	// make them accessors since we want to control mutations
 	FieldEdges   []*FieldEdge
@@ -37,6 +39,7 @@ type EdgeInfo struct {
 
 	// DestinationEdges. edges that can be gotten from this node
 	// foreign key edges + polymorphic indexed fields...
+	// this doesn't include Assoc edges which are also connection edges...
 	DestinationEdges    []ConnectionEdge
 	destinationEdgesMap map[string]ConnectionEdge
 
@@ -372,6 +375,7 @@ type ActionableEdge interface {
 }
 
 type Edge interface {
+	// NOTE: update compareEdge if anything changes here
 	GetEdgeName() string
 	GetNodeInfo() nodeinfo.NodeInfo
 	GetEntConfig() *schemaparser.EntConfigInfo
@@ -383,6 +387,7 @@ type Edge interface {
 }
 
 type ConnectionEdge interface {
+	// NOTE: update compareConnectionEdge if anything changes here
 	Edge
 	// For custom edges...
 	GetSourceNodeName() string
@@ -394,6 +399,7 @@ type ConnectionEdge interface {
 }
 
 type IndexedConnectionEdge interface {
+	// NOTE: update compareIndexedConnectionEdge if anything changes here
 	ConnectionEdge
 	SourceIsPolymorphic() bool
 	QuotedDBColName() string
@@ -614,7 +620,8 @@ func (e *IndexedEdge) SourceIsPolymorphic() bool {
 
 func (e *IndexedEdge) GetGraphQLConnectionName() string {
 	if e.foreignNode == "" {
-		panic("cannot call GetGraphQLConnectionName when foreignNode is empty")
+		return ""
+		//		panic("cannot call GetGraphQLConnectionName when foreignNode is empty")
 	}
 	return fmt.Sprintf("%sTo%sConnection", e.foreignNode, strcase.ToCamel(e.EdgeName))
 }
@@ -626,7 +633,8 @@ func (e *IndexedEdge) TsEdgeQueryEdgeName() string {
 
 func (e *IndexedEdge) GetGraphQLEdgePrefix() string {
 	if e.foreignNode == "" {
-		panic("cannot call GetGraphQLEdgePrefix when foreignNode is empty")
+		return ""
+		//		panic("cannot call GetGraphQLEdgePrefix when foreignNode is empty")
 	}
 	return fmt.Sprintf("%sTo%s", e.foreignNode, strcase.ToCamel(e.EdgeName))
 }

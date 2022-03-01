@@ -4,6 +4,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/custominterface"
 	"github.com/lolopinto/ent/internal/schema/enum"
 )
@@ -27,4 +28,42 @@ func compareCommonActionInfo(action1, action2 commonActionInfo) bool {
 func ActionEqual(a, a2 Action) bool {
 	// everything is implemented by commonActionInfo
 	return compareCommonActionInfo(a.getCommonInfo(), a2.getCommonInfo())
+}
+
+func compareActionMap(m1, m2 map[string]Action) []change.Change {
+	var ret []change.Change
+	for k, action1 := range m1 {
+		action2, ok := m2[k]
+		// in 1st but not 2nd, dropped
+		if !ok {
+			ret = append(ret, change.Change{
+				Change: change.RemoveAction,
+				Action: k,
+			})
+		} else {
+			if !ActionEqual(action1, action2) {
+				ret = append(ret, change.Change{
+					Change: change.ModifyAction,
+					Action: k,
+				})
+			}
+		}
+	}
+
+	for k := range m2 {
+		_, ok := m1[k]
+		// in 2nd but not first, added
+		if !ok {
+			ret = append(ret, change.Change{
+				Change: change.AddAction,
+				Action: k,
+			})
+		}
+	}
+	return ret
+}
+
+func CompareActionInfo(a1, a2 *ActionInfo) []change.Change {
+
+	return compareActionMap(a1.actionMap, a2.actionMap)
 }

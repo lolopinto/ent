@@ -27,15 +27,15 @@ import (
 
 // Schema is the representation of the parsed schema. Has everything needed to
 type Schema struct {
-	Nodes         NodeMapInfo             `json:"nodes"`
-	Patterns      map[string]*PatternInfo `json:"patterns"`
+	Nodes         NodeMapInfo
+	Patterns      map[string]*PatternInfo
 	tables        NodeMapInfo
-	edges         map[string]*ent.AssocEdgeData `json:"edges"`
+	edges         map[string]*ent.AssocEdgeData
 	newEdges      []*ent.AssocEdgeData
 	edgesToUpdate []*ent.AssocEdgeData
 	// unlike Nodes, the key is "EnumName" instead of "EnumNameConfig"
 	// confusing but gets us closer to what we want
-	Enums      map[string]*EnumInfo `json:"enums"`
+	Enums      map[string]*EnumInfo
 	enumTables map[string]*EnumInfo
 
 	// keeping this because it already has json representation and using that to indicate what needs to be changed

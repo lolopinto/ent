@@ -149,7 +149,7 @@ func (cfg *Config) GenerateRootResolvers() bool {
 }
 
 func (cfg *Config) GetPathToSchemaFile() string {
-	return path.Join(cfg.GetAbsPathToRoot(), "./ent/schema.json")
+	return path.Join(cfg.GetAbsPathToRoot(), ".ent/schema.json")
 }
 
 // used by golang

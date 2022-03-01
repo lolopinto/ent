@@ -3,27 +3,42 @@ package change
 type ChangeType string
 
 const (
-	AddPattern       ChangeType = "add_pattern"
-	DropPattern      ChangeType = "drop_pattern"
-	AddNode          ChangeType = "add_table"
-	DropNode         ChangeType = "drop_table"
-	AddField         ChangeType = "add_column"
-	DropField        ChangeType = "drop_column"
+	AddPattern    ChangeType = "add_pattern"
+	ModifyPattern ChangeType = "modify_pattern"
+	RemovePattern ChangeType = "remove_pattern"
+
+	AddNode    ChangeType = "add_node"
+	RemoveNode ChangeType = "remove_node"
+	ModifyNode ChangeType = "modify_node"
+
+	AddField    ChangeType = "add_field"
+	RemoveField ChangeType = "remove_field"
+	ModifyField ChangeType = "modify_field"
+
+	AddEdge    ChangeType = "add_edge"
+	RemoveEdge ChangeType = "remove_edge"
+	ModifyEdge ChangeType = "modify_edge"
+
+	AddEdgeGroup    ChangeType = "add_edge_group"
+	RemoveEdgeGroup ChangeType = "remove_edge_group"
+	ModifyEdgeGroup ChangeType = "modify_edge_group"
+
+	AddAction    ChangeType = "add_action"
+	RemoveAction ChangeType = "remove_action"
+	ModifyAction ChangeType = "modify_action"
+
+	AddEnum    ChangeType = "add_enum"
+	RemoveEnum ChangeType = "remove_enum"
+	ModifyEnum ChangeType = "modify_enum"
+
 	CreateIndex      ChangeType = "create_index"
 	DropIndex        ChangeType = "drop_index"
 	CreateForeignKey ChangeType = "create_foreign_key"
-	// TODO...
-	AlterField             ChangeType = "alter_field"
+
 	CreateUniqueConstraint ChangeType = "create_unique_constraint"
-	AddEdge                ChangeType = "add_edge"
-	RemoveEdge             ChangeType = "remove_edge"
-	ModifyEdge             ChangeType = "modify_edge"
 	AddRows                ChangeType = "add_rows"
 	RemoveRows             ChangeType = "remove_rows"
 	ModifyRows             ChangeType = "modify_rows"
-	AlterEnum              ChangeType = "alter_enum"
-	AddEnum                ChangeType = "add_enum"
-	DropEnum               ChangeType = "drop_enum"
 	CreateCheckConstraint  ChangeType = "create_check_constraint"
 	DropCheckConstraint    ChangeType = "drop_check_constraint"
 )
@@ -31,6 +46,12 @@ const (
 type Change struct {
 	Change      ChangeType
 	Field       string
+	Edge        string // For AddEdge|RemoveEdge etc
+	EdgeGroup   string
+	Pattern     string
+	Node        string
+	Action      string
+	Enum        string
 	GraphQLOnly bool
 	TSOnly      bool
 }

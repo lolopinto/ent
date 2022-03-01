@@ -63,7 +63,8 @@ type ActionField interface {
 type ActionInfo struct {
 	Actions          []Action
 	graphQLActionMap map[string]Action
-	actionMap        map[string]Action
+	// here
+	actionMap map[string]Action
 	// CreateAction     *Action
 	// EditAction       *Action
 	// DeleteAction     *Action

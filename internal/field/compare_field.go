@@ -12,7 +12,7 @@ func CompareNonEntField(existing, field *NonEntField) []change.Change {
 	var ret []change.Change
 	if !NonEntFieldEqual(existing, field) {
 		ret = append(ret, change.Change{
-			Change: change.AlterField,
+			Change: change.ModifyField,
 		})
 	}
 	return ret
@@ -43,6 +43,7 @@ func compareType(t1, t2 enttype.TSGraphQLType) bool {
 	if ret != nil {
 		return *ret
 	}
+	// not a DB type yet
 	// does the minimum to compare types
 	return t1.GetDBType() == t2.GetDBType() &&
 		t1.GetGraphQLType() == t2.GetGraphQLType() &&
@@ -102,4 +103,41 @@ func foreignKeyInfoEqual(existing, fkey *ForeignKeyInfo) bool {
 		existing.Field == fkey.Field &&
 		existing.Name == fkey.Name &&
 		existing.DisableIndex == fkey.DisableIndex
+}
+
+func compareFieldMap(m1, m2 map[string]*Field) []change.Change {
+	var ret []change.Change
+	for k, f1 := range m1 {
+		f2, ok := m2[k]
+		// in 1st but not 2nd, dropped
+		if !ok {
+			ret = append(ret, change.Change{
+				Change: change.RemoveField,
+				Field:  k,
+			})
+		} else {
+			if !FieldEqual(f1, f2) {
+				ret = append(ret, change.Change{
+					Change: change.ModifyField,
+					Field:  k,
+				})
+			}
+		}
+	}
+
+	for k := range m2 {
+		_, ok := m1[k]
+		// in 2nd but not first, added
+		if !ok {
+			ret = append(ret, change.Change{
+				Change: change.AddField,
+				Field:  k,
+			})
+		}
+	}
+	return ret
+}
+
+func CompareFieldInfo(f1, f2 *FieldInfo) []change.Change {
+	return compareFieldMap(f1.fieldMap, f2.fieldMap)
 }

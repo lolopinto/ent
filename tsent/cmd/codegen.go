@@ -33,7 +33,7 @@ var codegenCmd = &cobra.Command{
 	Long:  `This runs the codegen steps. It generates the ent, db, and graphql code based on the arguments passed in`,
 	//	Args:  configRequired,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		schema, err := parseSchema()
+		currentSchema, err := parseSchema()
 		if err != nil {
 			return err
 		}
@@ -45,18 +45,20 @@ var codegenCmd = &cobra.Command{
 		}))
 
 		// nothing to do here
-		if len(schema.Nodes) == 0 {
+		if len(currentSchema.Nodes) == 0 {
 			return nil
 		}
 
 		// module path empty because not go
 		// same as ParseSchemaFromTSDir. default to schema. we want a flag here eventually
-		processor, err := codegen.NewCodegenProcessor(schema, "src/schema", "", rootInfo.debug)
+		processor, err := codegen.NewCodegenProcessor(currentSchema, "src/schema", "", rootInfo.debug)
 		if err != nil {
 			return err
 		}
 
-		//existingSchema := parseExistingSchema(processor.Config)
+		existingSchema := parseExistingSchema(processor.Config)
+		spew.Dump(schema.CompareSchemas(existingSchema, currentSchema))
+
 		// TODO changes. compare with existing schema instead of input
 		//		input.CompareSchemas(existingSchema, schema.GetInputSchema())
 
