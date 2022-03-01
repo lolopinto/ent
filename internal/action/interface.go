@@ -372,6 +372,18 @@ func ParseFromInput(nodeName string, actions []*input.Action, fieldInfo *field.F
 	return actionInfo, nil
 }
 
+func ParseFromInputNode(nodeName string, node *input.Node, lang base.Language) (*ActionInfo, error) {
+	fi, err := field.NewFieldInfoFromInputs(node.Fields, &field.Options{})
+	if err != nil {
+		return nil, err
+	}
+	ei, err := edge.EdgeInfoFromInput(nodeName, node)
+	if err != nil {
+		return nil, err
+	}
+	return ParseFromInput(nodeName, node.Actions, fi, ei, lang)
+}
+
 // FieldActionTemplateInfo is passed to codegeneration template (both action and graphql) to generate
 // the code needed for actions
 type FieldActionTemplateInfo struct {

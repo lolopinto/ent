@@ -139,5 +139,11 @@ func compareFieldMap(m1, m2 map[string]*Field) []change.Change {
 }
 
 func CompareFieldInfo(f1, f2 *FieldInfo) []change.Change {
+	if f1 == nil {
+		f1 = &FieldInfo{}
+	}
+	if f2 == nil {
+		f2 = &FieldInfo{}
+	}
 	return compareFieldMap(f1.fieldMap, f2.fieldMap)
 }

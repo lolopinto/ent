@@ -64,6 +64,11 @@ func compareActionMap(m1, m2 map[string]Action) []change.Change {
 }
 
 func CompareActionInfo(a1, a2 *ActionInfo) []change.Change {
-
+	if a1 == nil {
+		a1 = &ActionInfo{}
+	}
+	if a2 == nil {
+		a2 = &ActionInfo{}
+	}
 	return compareActionMap(a1.actionMap, a2.actionMap)
 }

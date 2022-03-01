@@ -98,7 +98,7 @@ func TestParseInputWithOverridenTable(t *testing.T) {
 	inputSchema := &input.Schema{
 		Nodes: map[string]*input.Node{
 			"User": {
-				TableName: &tableName,
+				TableName: tableName,
 				Fields: []*input.Field{
 					{
 						Name: "id",

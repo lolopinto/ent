@@ -408,6 +408,12 @@ func compareIndexedConnectionEdge(e1, e2 IndexedConnectionEdge) bool {
 
 // Compares edges, assoc edge groups, field edge, connection edge
 func CompareEdgeInfo(e1, e2 *EdgeInfo) []change.Change {
+	if e1 == nil {
+		e1 = &EdgeInfo{}
+	}
+	if e2 == nil {
+		e2 = &EdgeInfo{}
+	}
 	var ret []change.Change
 
 	ret = append(ret, CompareAssocEdgesMap(e1.assocMap, e2.assocMap)...)
@@ -416,8 +422,7 @@ func CompareEdgeInfo(e1, e2 *EdgeInfo) []change.Change {
 
 	ret = append(ret, compareFieldEdgeMap(e1.fieldEdgeMap, e2.fieldEdgeMap)...)
 
-	ret = append(ret, compareConnectionEdgeMap(e1.destinationEdgesMap, e2.destinationEdgesMap)...)
-
+	// Note: see comment in EdgeInfo about comparing this and not compareConnectionEdgeMap
 	ret = append(ret, compareIndexedConnectionEdgeMap(e1.indexedEdgeQueriesMap, e2.indexedEdgeQueriesMap)...)
 
 	return ret

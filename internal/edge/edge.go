@@ -34,6 +34,10 @@ type EdgeInfo struct {
 	// new concepts: IndexedEdgeQueries
 	// EdgeQueries that will be in _query_base.tmpl file
 
+	// note: look at CompareEdgeInfo in compare_edge.go as this changes
+	// indexedEdgeQueriesMap has both foreign key and index edges so only comparing
+	// that. not comparing destinationEdgesMap as that only includes foreignKey edges
+	// if this changes, logic there should change
 	IndexedEdgeQueries    []IndexedConnectionEdge
 	indexedEdgeQueriesMap map[string]IndexedConnectionEdge
 

@@ -46,6 +46,7 @@ func comparePattern(p1, p2 *PatternInfo) ([]change.Change, error) {
 
 	// TODO is this even possible?
 	// this is basically just a delete and add no?
+	// name change is possible because name in schema can be different from pattern file?
 	if p1.Name != p2.Name {
 		ret = append(ret, change.Change{
 			Change:  change.ModifyPattern,
@@ -157,6 +158,7 @@ func compareNode(n1, n2 *NodeData) ([]change.Change, error) {
 
 	// if anything changes, just add ModifyNode
 	// eventually, we can make this smarter but want to slightly err on the side of caution here
+	// maybe move action changes after. can't think of a reason to have actions affect node file
 	if len(ret) != 0 {
 		ret = append(ret, change.Change{
 			Change: change.ModifyNode,

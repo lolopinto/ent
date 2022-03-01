@@ -56,6 +56,7 @@ var codegenCmd = &cobra.Command{
 			return err
 		}
 
+		// move this to processor so we have map to look at and pass along
 		existingSchema := parseExistingSchema(processor.Config)
 		spew.Dump(schema.CompareSchemas(existingSchema, currentSchema))
 
