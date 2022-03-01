@@ -73,25 +73,6 @@ func CompareNilVals(existingNil, valNil bool) *bool {
 	return ret
 }
 
-// return boolean if one is nil and the other is not nil or both nil
-// if both not nil, returns nil, indicating more work to be done
-// TODO kill, doesn't work because of go nil crap
-func CompareEqual(existing, val interface{}) *bool {
-	var ret *bool
-
-	if XOR(existing, val) {
-		*ret = false
-	}
-	if existing == nil && val == nil {
-		*ret = true
-	}
-	return ret
-}
-
-func XOR(existing, val interface{}) bool {
-	return (existing == nil && val != nil) || (existing != nil && val == nil)
-}
-
 func StringListEqual(l1, l2 []string) bool {
 	if len(l1) != len(l2) {
 		return false
@@ -106,6 +87,40 @@ func StringListEqual(l1, l2 []string) bool {
 }
 
 func StringMapEqual(m1, m2 map[string]string) bool {
+	if len(m1) != len(m2) {
+		return false
+	}
+
+	for k := range m1 {
+		_, ok := m2[k]
+		if !ok {
+			return false
+		}
+	}
+
+	for k := range m2 {
+		_, ok := m1[k]
+		if !ok {
+			return false
+		}
+	}
+	return true
+}
+
+func MapListEqual(l1, l2 []map[string]interface{}) bool {
+	if len(l1) != len(l2) {
+		return false
+	}
+
+	for k := range l1 {
+		if !MapEqual(l1[k], l2[k]) {
+			return false
+		}
+	}
+	return true
+}
+
+func MapEqual(m1, m2 map[string]interface{}) bool {
 	if len(m1) != len(m2) {
 		return false
 	}
