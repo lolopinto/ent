@@ -1,25 +1,12 @@
 package cmd
 
 import (
-	"os"
-
-	"github.com/davecgh/go-spew/spew"
-	"github.com/lolopinto/ent/internal/build"
 	"github.com/lolopinto/ent/internal/codegen"
-	"github.com/lolopinto/ent/internal/schema"
-	"github.com/lolopinto/ent/internal/schema/base"
-	"github.com/lolopinto/ent/internal/schema/input"
+	"github.com/lolopinto/ent/internal/db"
+	"github.com/lolopinto/ent/internal/graphql"
+	"github.com/lolopinto/ent/internal/tscode"
 	"github.com/spf13/cobra"
 )
-
-// DockerVersion encompasses go or auto_schema
-var DockerVersion string
-
-// whose computer e.g. local or root
-var User string
-
-// if build time is same time...
-var Time string
 
 type codegenArgs struct {
 	step string
@@ -38,12 +25,6 @@ var codegenCmd = &cobra.Command{
 			return err
 		}
 
-		spew.Dump(build.NewBuildInfo(&build.Option{
-			Time:          Time,
-			DockerVersion: DockerVersion,
-			User:          User,
-		}))
-
 		// nothing to do here
 		if len(currentSchema.Nodes) == 0 {
 			return nil
@@ -56,38 +37,12 @@ var codegenCmd = &cobra.Command{
 			return err
 		}
 
-		// move this to processor so we have map to look at and pass along
-		existingSchema := parseExistingSchema(processor.Config)
-		spew.Dump(schema.CompareSchemas(existingSchema, currentSchema))
-
-		// TODO changes. compare with existing schema instead of input
-		//		input.CompareSchemas(existingSchema, schema.GetInputSchema())
-
 		steps := []codegen.Step{
-			// new(db.Step),
-			// new(tscode.Step),
-			// new(graphql.TSStep),
+			new(db.Step),
+			new(tscode.Step),
+			new(graphql.TSStep),
 		}
 
 		return processor.Run(steps, codegenInfo.step)
 	},
-}
-
-func parseExistingSchema(cfg *codegen.Config) *schema.Schema {
-	filepath := cfg.GetPathToSchemaFile()
-	fi, _ := os.Stat(filepath)
-	if fi == nil {
-		return nil
-	}
-	b, err := os.ReadFile(filepath)
-	if err != nil {
-		return nil
-	}
-
-	existingSchema, err := input.ParseSchema(b)
-	if err != nil {
-		return nil
-	}
-	s, _ := schema.ParseFromInputSchema(existingSchema, base.TypeScript)
-	return s
 }
