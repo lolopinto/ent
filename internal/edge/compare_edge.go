@@ -6,6 +6,7 @@ import (
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schemaparser"
+	"github.com/lolopinto/ent/internal/tsimport"
 )
 
 // CompareAssociationEdge compares 2 actions to see what changes
@@ -328,9 +329,8 @@ func compareEdge(e1, e2 Edge) bool {
 		e1.GraphQLEdgeName() == e2.GraphQLEdgeName() &&
 		e1.CamelCaseEdgeName() == e2.CamelCaseEdgeName() &&
 		e1.HideFromGraphQL() == e2.HideFromGraphQL() &&
-		e1.PolymorphicEdge() == e2.PolymorphicEdge()
-	// TODO compare edge...
-	//	e1.GetTSGraphQLTypeImports() == e1.GetTSGraphQLTypeImports()
+		e1.PolymorphicEdge() == e2.PolymorphicEdge() &&
+		tsimport.ImportPathsEqual(e1.GetTSGraphQLTypeImports(), e2.GetTSGraphQLTypeImports())
 }
 
 func compareConnectionEdge(e1, e2 ConnectionEdge) bool {

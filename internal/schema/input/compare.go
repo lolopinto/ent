@@ -1,8 +1,8 @@
 package input
 
 import (
-	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/change"
+	"github.com/lolopinto/ent/internal/tsimport"
 )
 
 func NodeEqual(existing, node *Node) bool {
@@ -78,16 +78,7 @@ func fieldTypeEqual(existing, fieldType *FieldType) bool {
 		existing.Type == fieldType.Type &&
 		existing.GraphQLType == fieldType.GraphQLType &&
 		existing.CustomType == fieldType.CustomType &&
-		importTypeEqual(existing.ImportType, fieldType.ImportType)
-}
-
-func importTypeEqual(existing, importType *enttype.InputImportType) bool {
-	ret := change.CompareNilVals(existing == nil, importType == nil)
-	if ret != nil {
-		return *ret
-	}
-
-	return existing.Path == importType.Path && existing.Type == importType.Path
+		tsimport.ImportPathEqual(existing.ImportType, fieldType.ImportType)
 }
 
 func fieldEdgeEqual(existing, fieldEdge *FieldEdge) bool {

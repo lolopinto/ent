@@ -2,6 +2,7 @@ package tsimport
 
 import (
 	"github.com/lolopinto/ent/internal/codepath"
+	"github.com/lolopinto/ent/internal/schema/change"
 )
 
 type ImportPath struct {
@@ -81,4 +82,31 @@ func NewLocalEntConnectionImportPath(typ string) *ImportPath {
 		ImportPath:                    codepath.GetImportPathForInternalGQLFile(),
 		TransformedForGraphQLMutation: true,
 	}
+}
+
+func ImportPathEqual(ip1, ip2 *ImportPath) bool {
+	ret := change.CompareNilVals(ip1 == nil, ip2 == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return ip1.ImportPath == ip2.ImportPath &&
+		ip1.Import == ip2.Import &&
+		ip1.DefaultImport == ip2.DefaultImport &&
+		ip1.Function == ip2.Function &&
+		ip1.TransformedForGraphQLMutation == ip2.TransformedForGraphQLMutation &&
+		ip1.TransformedForExternalEnt == ip2.TransformedForExternalEnt
+}
+
+func ImportPathsEqual(l1, l2 []*ImportPath) bool {
+	if len(l1) != len(l2) {
+		return false
+	}
+
+	for i := range l1 {
+		if !ImportPathEqual(l1[i], l2[i]) {
+			return false
+		}
+	}
+	return true
 }
