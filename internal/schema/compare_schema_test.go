@@ -356,15 +356,24 @@ func TestCompareNodesAddField(t *testing.T) {
 
 	user := m["User"]
 	require.Len(t, user, 3)
-	// TODO map order means this isn't consistent...
+	// map order means this isn't consistent...
+	var firstIdx, lastIdx int
+	if user[0].Field == "first_name" {
+		firstIdx = 0
+		lastIdx = 1
+	} else {
+		firstIdx = 1
+		lastIdx = 0
+	}
 	verifyChange(t, change.Change{
 		Change: change.AddField,
 		Field:  "first_name",
-	}, user[0])
+	}, user[firstIdx])
 	verifyChange(t, change.Change{
 		Change: change.AddField,
 		Field:  "last_name",
-	}, user[1])
+	}, user[lastIdx])
+
 	verifyChange(t, change.Change{
 		Change: change.ModifyNode,
 		Node:   "User",
