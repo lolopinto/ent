@@ -5,6 +5,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/parsehelper"
 	testsync "github.com/lolopinto/ent/internal/testingutils/sync"
 	"github.com/stretchr/testify/assert"
@@ -361,6 +362,12 @@ func testField(t *testing.T, f, expFieldProps *Field) {
 		f.pkgPath,
 	)
 
+	// some old go types are uncloneable and we just ignore
+	// them here. will be killed once we clean this up
+	_, ok := f.fieldType.(enttype.UncloneableType)
+	if ok {
+		return
+	}
 	// clone and confirm that the clone is equal
 	f2, err := f.Clone()
 	require.Nil(t, err)

@@ -32,6 +32,12 @@ type EntType interface {
 	GetZeroValue() string
 }
 
+type UncloneableType interface {
+	// some old go types are uncloneable and we just ignore
+	// them here. will be killed once we clean this up
+	Uncloneable() bool
+}
+
 // types that also support Typescript
 // TODO need to eventually add this for all things but starting with primitives for now
 type TSType interface {
@@ -1334,6 +1340,10 @@ func (t *PointerType) DefaultGraphQLFieldName() string {
 }
 
 type jsonTypeImpl struct {
+}
+
+func (t *jsonTypeImpl) Uncloneable() bool {
+	return true
 }
 
 // json fields are stored as strings in the db
