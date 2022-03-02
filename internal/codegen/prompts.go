@@ -17,7 +17,7 @@ func checkAndHandlePrompts(p *Processor) error {
 		return err
 	}
 
-	changes := make(map[string][]change)
+	changes := make(map[string][]deprecatedChange)
 
 	if err := json.Unmarshal(buf.Bytes(), &changes); err != nil {
 		return err
@@ -42,7 +42,7 @@ func checkAndHandlePrompts(p *Processor) error {
 	return nil
 }
 
-func getPrompts(s *schema.Schema, changes map[string][]change) ([]prompt.Prompt, error) {
+func getPrompts(s *schema.Schema, changes map[string][]deprecatedChange) ([]prompt.Prompt, error) {
 	var prompts []prompt.Prompt
 	for tableName, changes := range changes {
 		for _, change := range changes {
