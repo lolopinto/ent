@@ -35,23 +35,24 @@ type field struct {
 	name   string
 	dbType input.DBType
 	// provided in lieu of dbType if we wanna provide everything
-	typ                     *input.FieldType
-	nullable                bool
-	storageKey              string
-	unique                  bool
-	hideFromGraphQL         bool
-	private                 bool
-	graphqlName             string
-	index                   bool
-	primaryKey              bool
-	foreignKey              *input.ForeignKey
-	fieldEdge               *input.FieldEdge
-	serverDefault           string
-	disableUserEditable     bool
-	hasDefaultValueOnCreate bool
-	hasDefaultValueOnEdit   bool
-	polymorphic             *input.PolymorphicOptions
-	derivedFields           []field
+	typ                        *input.FieldType
+	nullable                   bool
+	storageKey                 string
+	unique                     bool
+	hideFromGraphQL            bool
+	private                    bool
+	graphqlName                string
+	index                      bool
+	primaryKey                 bool
+	foreignKey                 *input.ForeignKey
+	fieldEdge                  *input.FieldEdge
+	serverDefault              string
+	disableUserEditable        bool
+	disableUserGraphQLEditable bool
+	hasDefaultValueOnCreate    bool
+	hasDefaultValueOnEdit      bool
+	polymorphic                *input.PolymorphicOptions
+	derivedFields              []field
 }
 
 type assocEdge struct {
@@ -213,6 +214,7 @@ func verifyField(t *testing.T, expField field, field *input.Field) {
 	assert.Equal(t, expField.index, field.Index)
 	assert.Equal(t, expField.primaryKey, field.PrimaryKey)
 	assert.Equal(t, expField.disableUserEditable, field.DisableUserEditable)
+	assert.Equal(t, expField.disableUserGraphQLEditable, field.DisableUserGraphQLEditable)
 	assert.Equal(t, expField.hasDefaultValueOnCreate, field.HasDefaultValueOnCreate)
 	assert.Equal(t, expField.hasDefaultValueOnEdit, field.HasDefaultValueOnEdit)
 

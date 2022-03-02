@@ -1841,7 +1841,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 		})
 	}
 
-	for _, f := range a.GetFields() {
+	for _, f := range a.GetGraphQLFields() {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
 			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(!action.IsRequiredField(a, f)), true),
@@ -1894,7 +1894,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 			})
 		}
 
-		for _, f := range a.GetFields() {
+		for _, f := range a.GetGraphQLFields() {
 			// these conditions duplicated in hasCustomInput
 			if f.IsEditableIDField() {
 				intType.Fields = append(intType.Fields, &interfaceField{
@@ -2033,7 +2033,7 @@ func hasCustomInput(a action.Action, processor *codegen.Processor) bool {
 		return true
 	}
 
-	for _, f := range a.GetFields() {
+	for _, f := range a.GetGraphQLFields() {
 		// these conditions duplicated in hasInput in buildActionInputNode
 
 		// editable id field. needs custom input because we don't want to type as ID or Builder when we call base64encodeIDs
@@ -2136,7 +2136,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			// we need fields like userID here which aren't exposed to graphql but editable...
 			fmt.Sprintf("const %s = await %s.create(context.getViewer(), {", nodeData.NodeInstance, a.GetActionName()),
 		)
-		for _, f := range a.GetFields() {
+		for _, f := range a.GetGraphQLFields() {
 			// we need fields like userID here which aren't exposed to graphql but editable...
 			addField(f)
 		}
@@ -2181,7 +2181,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), input.%sID, {", a.GetActionName(), nodeData.NodeInstance),
 				)
 			}
-			for _, f := range a.GetFields() {
+			for _, f := range a.GetGraphQLFields() {
 				addField(f)
 			}
 			for _, f := range a.GetNonEntFields() {

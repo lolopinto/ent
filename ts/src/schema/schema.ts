@@ -270,6 +270,10 @@ export interface FieldOptions {
   // indicates that this can't be edited by the user
   // must have a defaultValueOnCreate() field if set
   disableUserEditable?: boolean;
+  // indicates that this can't be edited by the user in graphql
+  // must have a defaultValueOnCreate() field if set
+  // helpful for migrations or fields that we wanna edit in code but not expose to the world
+  disableUserGraphQLEditable?: boolean;
   defaultValueOnCreate?(builder: Builder<Ent>, input: Data): any;
   // shorthand for defaultValueOnCreate: (builder)=>builder.viewer.viewerID;
   // exists for common scenario to set a field to the logged in viewerID.

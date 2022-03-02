@@ -46,6 +46,8 @@ export default class User extends BaseEntSchema implements Schema {
     StringType({
       name: "AccountStatus",
       nullable: true,
+      // allows scripts, internal tools etc to set this but not graphql
+      disableUserGraphQLEditable: true,
       defaultValueOnCreate: () => "UNVERIFIED",
     }),
     BooleanType({
@@ -141,6 +143,7 @@ export default class User extends BaseEntSchema implements Schema {
       fields: [
         "FirstName",
         "LastName",
+        "AccountStatus",
         "EmailAddress",
         "PhoneNumber",
         "Password",

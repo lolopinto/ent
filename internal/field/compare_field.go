@@ -74,6 +74,7 @@ func FieldEqual(existing, field *Field) bool {
 		existing.singleFieldPrimaryKey == field.singleFieldPrimaryKey &&
 		edge.AssocEdgeEqual(existing.inverseEdge, field.inverseEdge) &&
 		existing.disableUserEditable == field.disableUserEditable &&
+		existing.disableUserGraphQLEditable == field.disableUserGraphQLEditable &&
 		existing.hasDefaultValueOnCreate == field.hasDefaultValueOnCreate &&
 		existing.hasDefaultValueOnEdit == field.hasDefaultValueOnEdit &&
 		existing.forceRequiredInAction == field.forceRequiredInAction &&

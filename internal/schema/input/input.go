@@ -116,9 +116,10 @@ type Field struct {
 	ForeignKey    *ForeignKey `json:"foreignKey,omitempty"`
 	ServerDefault interface{} `json:"serverDefault,omitempty"`
 	// DisableUserEditable true == DefaultValueOnCreate required OR set in trigger
-	DisableUserEditable     bool `json:"disableUserEditable,omitempty"`
-	HasDefaultValueOnCreate bool `json:"hasDefaultValueOnCreate,omitempty"`
-	HasDefaultValueOnEdit   bool `json:"hasDefaultValueOnEdit,omitempty"`
+	DisableUserEditable        bool `json:"disableUserEditable,omitempty"`
+	DisableUserGraphQLEditable bool `json:"disableUserGraphQLEditable,omitempty"`
+	HasDefaultValueOnCreate    bool `json:"hasDefaultValueOnCreate,omitempty"`
+	HasDefaultValueOnEdit      bool `json:"hasDefaultValueOnEdit,omitempty"`
 
 	Polymorphic         *PolymorphicOptions `json:"polymorphic,omitempty"`
 	DerivedWhenEmbedded bool                `json:"derivedWhenEmbedded,omitempty"`

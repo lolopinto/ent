@@ -29,6 +29,7 @@ import (
 
 type Action interface {
 	GetFields() []*field.Field
+	GetGraphQLFields() []*field.Field
 	GetNonEntFields() []*field.NonEntField
 	GetEdges() []*edge.AssociationEdge
 	GetEdgeGroup() *edge.AssociationEdgeGroup
@@ -143,6 +144,16 @@ func (action *commonActionInfo) GetInputName() string {
 
 func (action *commonActionInfo) GetFields() []*field.Field {
 	return action.Fields
+}
+
+func (action *commonActionInfo) GetGraphQLFields() []*field.Field {
+	var ret []*field.Field
+	for _, f := range action.Fields {
+		if f.EditableGraphQLField() {
+			ret = append(ret, f)
+		}
+	}
+	return ret
 }
 
 func (action *commonActionInfo) GetEdges() []*edge.AssociationEdge {
