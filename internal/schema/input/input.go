@@ -94,31 +94,7 @@ type FieldType struct {
 	// optional used by generator to specify different types e.g. email, phone, password
 	CustomType CustomType `json:"customType,omitempty"`
 
-	ImportType       *tsimport.ImportPath
-	ImportTypeIgnore *importType `json:"importType,omitempty"`
-}
-
-// needed to get the data from json and then discarded
-type importType struct {
-	Path string `json:"path"`
-	Type string `json:"type"`
-}
-
-func (ft *FieldType) UnmarshalJSON(data []byte) error {
-	type Alias FieldType
-	err := json.Unmarshal(data, (*Alias)(ft))
-	if err != nil {
-		return err
-	}
-	if ft.ImportTypeIgnore == nil {
-		return nil
-	}
-	ft.ImportType = &tsimport.ImportPath{
-		ImportPath: ft.ImportTypeIgnore.Path,
-		Import:     ft.ImportTypeIgnore.Type,
-	}
-	ft.ImportTypeIgnore = nil
-	return nil
+	ImportType *tsimport.ImportPath `json:"importType,omitempty"`
 }
 
 type Field struct {

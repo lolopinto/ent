@@ -6,16 +6,16 @@ import (
 )
 
 type ImportPath struct {
-	ImportPath    string
-	Import        string
-	DefaultImport bool
+	ImportPath    string `json:"importPath"`
+	Import        string `json:"import"`
+	DefaultImport bool   `json:"defaultImport,omitempty"`
 
 	// only used in graphql (at least for now)
 	// defaults to no. if function, call it instead of just referencing the import when used?
-	Function bool
+	Function bool `json:"function,omitempty"`
 
-	TransformedForGraphQLMutation bool
-	TransformedForExternalEnt     bool
+	TransformedForGraphQLMutation bool `json:"transformedForGraphQLMutation,omitempty"`
+	TransformedForExternalEnt     bool `json:"transformedForExternalEnt,omitempty"`
 }
 
 // NewGQLImportPath creates a new import from "graphql"

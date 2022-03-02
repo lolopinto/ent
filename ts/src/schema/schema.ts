@@ -182,6 +182,8 @@ export enum DBType {
 export interface ImportType {
   path: string; // path to import from. either absolute path e.g. from an npm package or relative path starting at root of code e.g. "src/foo/jsonType"
   type: string; // type being imported
+  // for importPath, import conversion to go
+  [x: string]: any;
 }
 
 declare type EnumMap = {

@@ -6,7 +6,7 @@ import {
   AssocEdgeGroup,
   Action,
 } from "../schema";
-import { ActionField } from "../schema/schema";
+import { ActionField, Type } from "../schema/schema";
 
 function processFields(src: Field[], patternName?: string): ProcessedField[] {
   const ret: ProcessedField[] = [];
@@ -36,9 +36,32 @@ function processFields(src: Field[], patternName?: string): ProcessedField[] {
     if (patternName) {
       f.patternName = patternName;
     }
+
+    transformType(field.type);
+
     ret.push(f);
   }
   return ret;
+}
+
+function transformImportType(typ: Type) {
+  if (!typ.importType) {
+    return;
+  }
+  typ.importType = {
+    ...typ.importType,
+    // these 2 needed for forwards compatibility with new go schema
+    importPath: typ.importType.path,
+    import: typ.importType.type,
+  };
+}
+
+function transformType(typ: Type | undefined) {
+  if (!typ) {
+    return;
+  }
+  transformImportType(typ);
+  transformType(typ.listElemType);
 }
 
 function processEdges(
