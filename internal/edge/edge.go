@@ -24,6 +24,8 @@ import (
 )
 
 type EdgeInfo struct {
+	// Note: look at CompareEdgeInfo in compare_edge as this changes
+
 	// TODO hide FieldEdges etc
 	// make them accessors since we want to control mutations
 	FieldEdges   []*FieldEdge
@@ -32,11 +34,16 @@ type EdgeInfo struct {
 	// new concepts: IndexedEdgeQueries
 	// EdgeQueries that will be in _query_base.tmpl file
 
+	// note: look at CompareEdgeInfo in compare_edge.go as this changes
+	// indexedEdgeQueriesMap has both foreign key and index edges so only comparing
+	// that. not comparing destinationEdgesMap as that only includes foreignKey edges
+	// if this changes, logic there should change
 	IndexedEdgeQueries    []IndexedConnectionEdge
 	indexedEdgeQueriesMap map[string]IndexedConnectionEdge
 
 	// DestinationEdges. edges that can be gotten from this node
 	// foreign key edges + polymorphic indexed fields...
+	// this doesn't include Assoc edges which are also connection edges...
 	DestinationEdges    []ConnectionEdge
 	destinationEdgesMap map[string]ConnectionEdge
 
@@ -220,7 +227,7 @@ func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(fieldName, configName string, 
 	}, nullable, fieldType)
 }
 
-func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo *base.FieldEdgeInfo, nullable bool, fieldType enttype.EntType) error {
+func getFieldEdge(fieldName string, fieldEdgeInfo *base.FieldEdgeInfo, nullable bool, fieldType enttype.EntType) (*FieldEdge, error) {
 	// TODO pass fieldType so we can check list or not...
 	validSuffixes := map[string]string{
 		"id":  "_id",
@@ -240,7 +247,7 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo
 		}
 	}
 	if foundSuffix == "" {
-		return nil
+		return nil, nil
 	}
 	trim := strings.TrimSuffix(fieldName, validSuffixes[foundSuffix])
 	if trim == "" {
@@ -251,7 +258,7 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo
 	if enttype.IsListType(fieldType) {
 		trim = inflection.Plural(trim)
 		if fieldEdgeInfo.Polymorphic != nil {
-			return fmt.Errorf("field %s polymorphic list types not currently supported", fieldName)
+			return nil, fmt.Errorf("field %s polymorphic list types not currently supported", fieldName)
 		}
 	}
 
@@ -270,7 +277,7 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo
 		}
 	}
 
-	edge := &FieldEdge{
+	return &FieldEdge{
 		FieldName:      fieldName,
 		TSFieldName:    strcase.ToLowerCamel(fieldName),
 		commonEdgeInfo: edgeInfo,
@@ -278,14 +285,20 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo
 		Nullable:       nullable,
 		Polymorphic:    fieldEdgeInfo.Polymorphic,
 		fieldType:      fieldType,
-	}
+	}, nil
+}
 
+func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo *base.FieldEdgeInfo, nullable bool, fieldType enttype.EntType) error {
+	edge, err := getFieldEdge(fieldName, fieldEdgeInfo, nullable, fieldType)
+	if err != nil || edge == nil {
+		return err
+	}
 	return e.addEdge(edge)
 }
 
-func (e *EdgeInfo) AddEdgeFromForeignKeyIndex(dbColName, edgeName, nodeName string) error {
-	edge := &ForeignKeyEdge{
-		SourceNodeName: e.SourceNodeName,
+func getForeignKeyEdge(dbColName, edgeName, nodeName, sourceNodeName string) *ForeignKeyEdge {
+	return &ForeignKeyEdge{
+		SourceNodeName: sourceNodeName,
 		destinationEdge: destinationEdge{
 			commonEdgeInfo: getCommonEdgeInfo(
 				edgeName,
@@ -294,6 +307,10 @@ func (e *EdgeInfo) AddEdgeFromForeignKeyIndex(dbColName, edgeName, nodeName stri
 			quotedDbColName: dbColName,
 		},
 	}
+}
+
+func (e *EdgeInfo) AddEdgeFromForeignKeyIndex(dbColName, edgeName, nodeName string) error {
+	edge := getForeignKeyEdge(dbColName, edgeName, nodeName, e.SourceNodeName)
 	e.indexedEdgeQueriesMap[edgeName] = edge
 	e.destinationEdgesMap[edgeName] = edge
 	e.IndexedEdgeQueries = append(e.IndexedEdgeQueries, edge)
@@ -323,7 +340,7 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(tsFieldName, quotedDBColName, nodeNa
 	return e.addEdge(edge)
 }
 
-func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) error {
+func getIndexedEdge(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) *IndexedEdge {
 	tsEdgeName := strcase.ToCamel(strings.TrimSuffix(tsFieldName, "ID"))
 	edge := &IndexedEdge{
 		tsEdgeName: tsEdgeName,
@@ -333,13 +350,18 @@ func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(tsFieldName, quotedD
 				schemaparser.GetEntConfigFromName(nodeName),
 			),
 			quotedDbColName: quotedDBColName,
-			unique:          polymorphic.Unique,
 		},
 		foreignNode: foreignNode,
 	}
-	if polymorphic.HideFromInverseGraphQL {
-		edge._HideFromGraphQL = true
+	if polymorphic != nil {
+		edge._HideFromGraphQL = polymorphic.HideFromInverseGraphQL
+		edge.unique = polymorphic.Unique
 	}
+	return edge
+}
+
+func (e *EdgeInfo) AddDestinationEdgeFromPolymorphicOptions(tsFieldName, quotedDBColName, nodeName string, polymorphic *base.PolymorphicOptions, foreignNode string) error {
+	edge := getIndexedEdge(tsFieldName, quotedDBColName, nodeName, polymorphic, foreignNode)
 	edgeName := edge.GetEdgeName()
 	e.destinationEdgesMap[edgeName] = edge
 	e.DestinationEdges = append(e.DestinationEdges, edge)
@@ -354,6 +376,7 @@ type ActionableEdge interface {
 }
 
 type Edge interface {
+	// NOTE: update compareEdge if anything changes here
 	GetEdgeName() string
 	GetNodeInfo() nodeinfo.NodeInfo
 	GetEntConfig() *schemaparser.EntConfigInfo
@@ -365,6 +388,7 @@ type Edge interface {
 }
 
 type ConnectionEdge interface {
+	// NOTE: update compareConnectionEdge if anything changes here
 	Edge
 	// For custom edges...
 	GetSourceNodeName() string
@@ -376,6 +400,7 @@ type ConnectionEdge interface {
 }
 
 type IndexedConnectionEdge interface {
+	// NOTE: update compareIndexedConnectionEdge if anything changes here
 	ConnectionEdge
 	SourceIsPolymorphic() bool
 	QuotedDBColName() string
@@ -389,6 +414,7 @@ type PluralEdge interface {
 }
 
 type commonEdgeInfo struct {
+	// note that if anything is changed here, need to update commonEdgeInfoEqual() in compare_edge.go
 	EdgeName         string
 	entConfig        *schemaparser.EntConfigInfo
 	NodeInfo         nodeinfo.NodeInfo
@@ -424,7 +450,8 @@ type FieldEdge struct {
 	FieldName   string
 	TSFieldName string
 	//	InverseEdgeName string
-	Nullable  bool
+	Nullable bool
+
 	fieldType enttype.EntType
 
 	InverseEdge *input.InverseFieldEdge
@@ -467,6 +494,7 @@ func (edge *FieldEdge) NonPolymorphicList() bool {
 var _ Edge = &FieldEdge{}
 
 type ForeignKeyEdge struct {
+	// note that if anything is changed here, need to update foreignKeyEdgeEqual() in compare_edge.go
 	SourceNodeName string
 	destinationEdge
 }
@@ -530,6 +558,7 @@ var _ ConnectionEdge = &ForeignKeyEdge{}
 var _ IndexedConnectionEdge = &ForeignKeyEdge{}
 
 type destinationEdge struct {
+	// note that if anything is changed here, need to update destinationEdgeEqual() in compare_edge.go
 	commonEdgeInfo
 	quotedDbColName string
 	unique          bool
@@ -555,6 +584,7 @@ func (e *destinationEdge) QuotedDBColName() string {
 // refers to a field that's indexed but doesn't want to reference it as a foreign key
 // currently best use case is as a polymorphic field but nothing stopping this from being non-polymorphic
 type IndexedEdge struct {
+	// note that if anything is changed here, need to update indexedEdgeEqual() in compare_edge.go
 	SourceNodeName string
 	tsEdgeName     string
 	foreignNode    string
@@ -591,7 +621,8 @@ func (e *IndexedEdge) SourceIsPolymorphic() bool {
 
 func (e *IndexedEdge) GetGraphQLConnectionName() string {
 	if e.foreignNode == "" {
-		panic("cannot call GetGraphQLConnectionName when foreignNode is empty")
+		return ""
+		//		panic("cannot call GetGraphQLConnectionName when foreignNode is empty")
 	}
 	return fmt.Sprintf("%sTo%sConnection", e.foreignNode, strcase.ToCamel(e.EdgeName))
 }
@@ -603,7 +634,8 @@ func (e *IndexedEdge) TsEdgeQueryEdgeName() string {
 
 func (e *IndexedEdge) GetGraphQLEdgePrefix() string {
 	if e.foreignNode == "" {
-		panic("cannot call GetGraphQLEdgePrefix when foreignNode is empty")
+		return ""
+		//		panic("cannot call GetGraphQLEdgePrefix when foreignNode is empty")
 	}
 	return fmt.Sprintf("%sTo%s", e.foreignNode, strcase.ToCamel(e.EdgeName))
 }
@@ -626,6 +658,7 @@ var _ ConnectionEdge = &IndexedEdge{}
 var _ IndexedConnectionEdge = &IndexedEdge{}
 
 type InverseAssocEdge struct {
+	// note that if anything is changed here, need to update inverseAssocEdgeEqual() in compare_edge.go
 	commonEdgeInfo
 	EdgeConst string
 }
@@ -651,6 +684,7 @@ func TsEdgeConst(constName string) (string, error) {
 }
 
 type AssociationEdge struct {
+	// note that if anything is changed here, need to update assocEdgeEqual() in compare_edge.go
 	commonEdgeInfo
 	EdgeConst     string
 	TsEdgeConst   string
@@ -796,6 +830,7 @@ func (e *AssociationEdge) AddInverseEdge(inverseEdgeInfo *EdgeInfo) error {
 		TsEdgeConst:    tsConst,
 		commonEdgeInfo: inverseEdge.commonEdgeInfo,
 		IsInverseEdge:  true,
+		TableName:      e.TableName,
 	})
 }
 

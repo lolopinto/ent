@@ -18,6 +18,7 @@ import (
 )
 
 type Field struct {
+	// note that if this changes, need to update FieldEqual
 	// todo: abstract out these 2 also...
 	FieldName           string
 	tagMap              map[string]string
@@ -74,6 +75,14 @@ type Field struct {
 	forceOptionalInAction bool
 
 	patternName string
+}
+
+// mostly used by tests
+func NewFieldFromNameAndType(name string, typ enttype.TSGraphQLType) *Field {
+	return &Field{
+		FieldName: name,
+		fieldType: typ,
+	}
 }
 
 func newFieldFromInput(f *input.Field) (*Field, error) {

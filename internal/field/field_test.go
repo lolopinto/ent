@@ -5,9 +5,11 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/parsehelper"
 	testsync "github.com/lolopinto/ent/internal/testingutils/sync"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFieldInfo(t *testing.T) {
@@ -359,6 +361,17 @@ func testField(t *testing.T, f, expFieldProps *Field) {
 		expFieldProps.pkgPath,
 		f.pkgPath,
 	)
+
+	// some old go types are uncloneable and we just ignore
+	// them here. will be killed once we clean this up
+	_, ok := f.fieldType.(enttype.UncloneableType)
+	if ok {
+		return
+	}
+	// clone and confirm that the clone is equal
+	f2, err := f.Clone()
+	require.Nil(t, err)
+	assert.True(t, FieldEqual(f, f2))
 }
 
 func testDBType(t *testing.T, f *Field, expectedType string) {

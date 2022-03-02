@@ -21,7 +21,7 @@ type NodeInfo struct {
 	NodeType      string
 	EntConfig     string
 	EntConfigName string
-	PackageName string
+	PackageName   string
 }
 
 // GetNodeInfo returns information about a Node for template generation
@@ -41,6 +41,11 @@ func GetNodeInfo(packageName string) NodeInfo {
 		NodeType:      fmt.Sprintf("%sType", nodeName),                           // ContactType
 		EntConfig:     fmt.Sprintf("&configs.%sConfig{}", nodeName),              // &configs.ContactConfig{}
 		EntConfigName: fmt.Sprintf("%sConfig", nodeName),                         // ContactConfig
-		PackageName:  strcase.ToSnake(packageName),
+		PackageName:   strcase.ToSnake(packageName),
 	}
+}
+
+func NodeInfoEqual(n1, n2 NodeInfo) bool {
+	// assuming if this is correct, everything else is
+	return n1.Node == n2.Node
 }

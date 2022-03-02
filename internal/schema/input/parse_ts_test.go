@@ -1,6 +1,7 @@
 package input_test
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/lolopinto/ent/ent"
@@ -26,6 +27,7 @@ type node struct {
 
 type pattern struct {
 	name       string
+	fields     []field
 	assocEdges []assocEdge
 }
 
@@ -126,7 +128,6 @@ type testCase struct {
 }
 
 func runTestCases(t *testing.T, testCases map[string]testCase) {
-
 	hasOnly := false
 	for _, v := range testCases {
 		if v.only {
@@ -147,19 +148,16 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 				node := schema.Nodes[nodeName]
 
 				require.NotNil(t, node, "node with node name %s not found", nodeName)
+				// great place for marshall and unmarshall for nodes...
 
-				assertStrEqual(t, "tableName", expectedNode.tableName, node.TableName)
+				assert.Equal(t, expectedNode.tableName, node.TableName)
 
 				require.Equal(t, expectedNode.enumTable, node.EnumTable)
 				require.Equal(t, expectedNode.dbRows, node.DBRows)
 
 				require.Equal(t, expectedNode.hideFromGraphQL, node.HideFromGraphQL)
 
-				for j, expField := range expectedNode.fields {
-					field := node.Fields[j]
-
-					verifyField(t, expField, field)
-				}
+				verifyFields(t, expectedNode.fields, node.Fields)
 
 				verifyAssocEdges(t, expectedNode.assocEdges, node.AssocEdges)
 
@@ -167,6 +165,9 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 				verifyActions(t, expectedNode.actions, node.Actions)
 				verifyConstraints(t, expectedNode.constraints, node.Constraints)
 				verifyIndices(t, expectedNode.indices, node.Indices)
+
+				node2 := marshallAndUnmarshallNode(t, node)
+				assert.True(t, input.NodeEqual(node, node2))
 			}
 
 			require.Len(t, schema.Patterns, len(tt.expectedPatterns))
@@ -175,9 +176,21 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 				pattern := schema.Patterns[name]
 
 				assert.Equal(t, expPattern.name, pattern.Name)
+				verifyFields(t, expPattern.fields, pattern.Fields)
 				verifyAssocEdges(t, expPattern.assocEdges, pattern.AssocEdges)
+
+				pattern2 := marshallAndUnmarshallPattern(t, pattern)
+				assert.True(t, input.PatternEqual(pattern, pattern2))
 			}
 		})
+	}
+}
+
+func verifyFields(t *testing.T, expFields []field, fields []*input.Field) {
+	require.Len(t, expFields, len(fields))
+
+	for i := range fields {
+		verifyField(t, expFields[i], fields[i])
 	}
 }
 
@@ -259,6 +272,7 @@ func verifyAssocEdges(t *testing.T, expAssocEdges []assocEdge, assocEdges []*inp
 		assert.Equal(t, expEdge.hideFromGraphQL, edge.HideFromGraphQL)
 		assert.Equal(t, expEdge.edgeConstName, edge.EdgeConstName)
 		assert.Equal(t, expEdge.patternName, edge.PatternName)
+		assert.Equal(t, expEdge.tableName, edge.TableName)
 
 		if expEdge.inverseEdge == nil {
 			assert.Nil(t, edge.InverseEdge)
@@ -353,15 +367,6 @@ func verifyIndices(t *testing.T, expIndices []index, indices []*input.Index) {
 	}
 }
 
-func assertStrEqual(t *testing.T, key, expectedValue string, value *string) {
-	if expectedValue != "" {
-		require.NotNil(t, value, key)
-		assert.Equal(t, expectedValue, *value, key)
-	} else {
-		require.Nil(t, value, key)
-	}
-}
-
 func getCodeWithSchema(code string) string {
 	return testhelper.GetCodeWithSchema(code)
 }
@@ -395,4 +400,24 @@ func nodeFields() []field {
 
 func fieldsWithNodeFields(fields ...field) []field {
 	return append(nodeFields(), fields...)
+}
+
+func marshallAndUnmarshallPattern(t *testing.T, p *input.Pattern) *input.Pattern {
+	b, err := json.Marshal(p)
+	require.Nil(t, err)
+
+	p2 := &input.Pattern{}
+	err = json.Unmarshal(b, p2)
+	require.Nil(t, err)
+	return p2
+}
+
+func marshallAndUnmarshallNode(t *testing.T, n *input.Node) *input.Node {
+	b, err := json.Marshal(n)
+	require.Nil(t, err)
+
+	n2 := &input.Node{}
+	err = json.Unmarshal(b, n2)
+	require.Nil(t, err)
+	return n2
 }

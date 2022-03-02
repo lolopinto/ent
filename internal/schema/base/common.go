@@ -5,15 +5,16 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/input"
 )
 
 // common things needed across edges/fields etc
 // only allowed to import input
 type FieldEdgeInfo struct {
-	Schema      string
-	InverseEdge *input.InverseFieldEdge
-	Polymorphic *PolymorphicOptions
+	Schema      string                  `json:"schema,omitempty"`
+	InverseEdge *input.InverseFieldEdge `json:"inverseEdge,omitempty"`
+	Polymorphic *PolymorphicOptions     `json:"polymorphic,omitempty"`
 }
 
 func (f *FieldEdgeInfo) EdgeName() string {
@@ -23,10 +24,32 @@ func (f *FieldEdgeInfo) EdgeName() string {
 	return f.InverseEdge.Name
 }
 
+func FieldEdgeInfoEqual(existing, edge *FieldEdgeInfo) bool {
+	ret := change.CompareNilVals(existing == nil, edge == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return existing.Schema == edge.Schema &&
+		input.InverseFieldEdgeEqual(existing.InverseEdge, edge.InverseEdge) &&
+		PolymorphicOptionsEqual(existing.Polymorphic, edge.Polymorphic)
+}
+
 type PolymorphicOptions struct {
 	*input.PolymorphicOptions
-	NodeTypeField string
-	Unique        bool // is this a unique field vs say an indexed field
+	NodeTypeField string `json:"nodeTypeField,omitempty"`
+	// is this a unique field vs say an indexed field
+	Unique bool `json:"unique,omitempty"`
+}
+
+func PolymorphicOptionsEqual(existing, p *PolymorphicOptions) bool {
+	ret := change.CompareNilVals(existing == nil, p == nil)
+	if ret != nil {
+		return *ret
+	}
+	return input.PolymorphicOptionsEqual(existing.PolymorphicOptions, p.PolymorphicOptions) &&
+		existing.NodeTypeField == p.NodeTypeField &&
+		existing.Unique == p.Unique
 }
 
 func NewFieldEdgeInfo(fieldName string, polymorphic *input.PolymorphicOptions, unique bool) (*FieldEdgeInfo, error) {

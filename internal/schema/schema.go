@@ -37,6 +37,13 @@ type Schema struct {
 	// confusing but gets us closer to what we want
 	Enums      map[string]*EnumInfo
 	enumTables map[string]*EnumInfo
+
+	// used to keep track of schema-state
+	inputSchema *input.Schema
+}
+
+func (s *Schema) GetInputSchema() *input.Schema {
+	return s.inputSchema
 }
 
 func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData) error {
@@ -327,6 +334,8 @@ func (s *Schema) GetEdgesToUpdate() []*ent.AssocEdgeData {
 }
 
 func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*assocEdgeData, error) {
+	s.inputSchema = schema
+
 	// TODO right now this is also depending on config/database.yml
 	// figure out if best place for this
 	edgeData, err := s.loadExistingEdges()
@@ -344,10 +353,10 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 		nodeData := newNodeData(packageName)
 
 		// default tableName goes from address -> addresses, user -> users etc
-		if node.TableName == nil {
+		if node.TableName == "" {
 			nodeData.TableName = inflection.Plural(packageName)
 		} else {
-			nodeData.TableName = *node.TableName
+			nodeData.TableName = node.TableName
 		}
 
 		nodeData.EnumTable = node.EnumTable

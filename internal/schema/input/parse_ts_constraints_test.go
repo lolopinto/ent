@@ -144,7 +144,8 @@ func TestConstraints(t *testing.T) {
 			},
 			expectedPatterns: map[string]pattern{
 				"node": {
-					name: "node",
+					name:   "node",
+					fields: nodeFields(),
 				},
 			},
 			expectedNodes: map[string]node{
@@ -232,7 +233,8 @@ func TestConstraints(t *testing.T) {
 			},
 			expectedPatterns: map[string]pattern{
 				"node": {
-					name: "node",
+					name:   "node",
+					fields: nodeFields(),
 				},
 			},
 			expectedNodes: map[string]node{
@@ -318,7 +320,8 @@ func TestConstraints(t *testing.T) {
 			},
 			expectedPatterns: map[string]pattern{
 				"node": {
-					name: "node",
+					name:   "node",
+					fields: nodeFields(),
 				},
 			},
 			expectedNodes: map[string]node{
@@ -332,6 +335,11 @@ func TestConstraints(t *testing.T) {
 							name:   "lastName",
 							dbType: input.String,
 						},
+						field{
+							name:   "emailAddress",
+							dbType: input.String,
+							unique: true,
+						},
 					),
 				},
 				"Contact": {
@@ -339,6 +347,10 @@ func TestConstraints(t *testing.T) {
 						field{
 							name:   "userID",
 							dbType: input.UUID,
+						},
+						field{
+							name:   "emailAddress",
+							dbType: input.String,
 						}),
 					constraints: []constraint{
 						{
@@ -379,7 +391,8 @@ func TestConstraints(t *testing.T) {
 			},
 			expectedPatterns: map[string]pattern{
 				"node": {
-					name: "node",
+					name:   "node",
+					fields: nodeFields(),
 				},
 			},
 			expectedNodes: map[string]node{
@@ -442,7 +455,8 @@ func TestConstraints(t *testing.T) {
 			},
 			expectedPatterns: map[string]pattern{
 				"node": {
-					name: "node",
+					name:   "node",
+					fields: nodeFields(),
 				},
 			},
 			expectedNodes: map[string]node{
@@ -517,7 +531,8 @@ func TestIndices(t *testing.T) {
 			},
 			expectedPatterns: map[string]pattern{
 				"node": {
-					name: "node",
+					name:   "node",
+					fields: nodeFields(),
 				},
 			},
 			expectedNodes: map[string]node{
@@ -594,7 +609,8 @@ func TestIndices(t *testing.T) {
 			},
 			expectedPatterns: map[string]pattern{
 				"node": {
-					name: "node",
+					name:   "node",
+					fields: nodeFields(),
 				},
 			},
 			expectedNodes: map[string]node{

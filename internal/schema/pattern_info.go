@@ -10,8 +10,8 @@ import (
 
 type PatternInfo struct {
 	objWithConsts
-	Name       string
-	AssocEdges map[string]*edge.AssociationEdge
+	Name       string                           `json:"name"`
+	AssocEdges map[string]*edge.AssociationEdge `json:"assocEdges"`
 }
 
 func (p *PatternInfo) GetNodeInstance() string {

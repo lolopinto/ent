@@ -13,7 +13,6 @@ import (
 	"github.com/lolopinto/ent/internal/schema/testhelper"
 	"github.com/lolopinto/ent/internal/schemaparser"
 	testsync "github.com/lolopinto/ent/internal/testingutils/sync"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

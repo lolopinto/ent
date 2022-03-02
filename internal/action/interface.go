@@ -46,6 +46,7 @@ type Action interface {
 	GetCustomInterfaces() []*custominterface.CustomInterface
 	GetTSEnums() []*enum.Enum
 	GetGQLEnums() []*enum.GQLEnum
+	getCommonInfo() commonActionInfo
 }
 
 type ActionField interface {
@@ -166,6 +167,10 @@ func (action *commonActionInfo) GetOperation() ent.ActionOperation {
 
 func (action *commonActionInfo) IsDeletingNode() bool {
 	return action.Operation == ent.DeleteAction
+}
+
+func (action *commonActionInfo) getCommonInfo() commonActionInfo {
+	return *action
 }
 
 func getTypes(typ enttype.TSGraphQLType) (string, string) {
@@ -364,6 +369,18 @@ func ParseFromInput(nodeName string, actions []*input.Action, fieldInfo *field.F
 	}
 
 	return actionInfo, nil
+}
+
+func ParseFromInputNode(nodeName string, node *input.Node, lang base.Language) (*ActionInfo, error) {
+	fi, err := field.NewFieldInfoFromInputs(node.Fields, &field.Options{})
+	if err != nil {
+		return nil, err
+	}
+	ei, err := edge.EdgeInfoFromInput(nodeName, node)
+	if err != nil {
+		return nil, err
+	}
+	return ParseFromInput(nodeName, node.Actions, fi, ei, lang)
 }
 
 // FieldActionTemplateInfo is passed to codegeneration template (both action and graphql) to generate

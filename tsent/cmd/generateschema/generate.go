@@ -499,8 +499,8 @@ func NewCodegenDataFromInputNode(cfg *codegen.Config, node string, n *input.Node
 		ret.Extends = true
 		ret.Base = "BaseEntSchema"
 	}
-	if n.TableName != nil {
-		ret.TableName = strconv.Quote(*n.TableName)
+	if n.TableName != "" {
+		ret.TableName = strconv.Quote(n.TableName)
 	}
 
 	// TODO throw for unsupported Fields?

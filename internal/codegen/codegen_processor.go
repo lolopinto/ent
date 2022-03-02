@@ -171,6 +171,7 @@ func postProcess(p *Processor) error {
 	if p.opt != nil && p.opt.disableFormat {
 		return nil
 	}
+
 	return p.FormatTS()
 }
 

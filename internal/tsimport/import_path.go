@@ -2,19 +2,20 @@ package tsimport
 
 import (
 	"github.com/lolopinto/ent/internal/codepath"
+	"github.com/lolopinto/ent/internal/schema/change"
 )
 
 type ImportPath struct {
-	ImportPath    string
-	Import        string
-	DefaultImport bool
+	ImportPath    string `json:"importPath"`
+	Import        string `json:"import"`
+	DefaultImport bool   `json:"defaultImport,omitempty"`
 
 	// only used in graphql (at least for now)
 	// defaults to no. if function, call it instead of just referencing the import when used?
-	Function bool
+	Function bool `json:"function,omitempty"`
 
-	TransformedForGraphQLMutation bool
-	TransformedForExternalEnt     bool
+	TransformedForGraphQLMutation bool `json:"transformedForGraphQLMutation,omitempty"`
+	TransformedForExternalEnt     bool `json:"transformedForExternalEnt,omitempty"`
 }
 
 // NewGQLImportPath creates a new import from "graphql"
@@ -81,4 +82,31 @@ func NewLocalEntConnectionImportPath(typ string) *ImportPath {
 		ImportPath:                    codepath.GetImportPathForInternalGQLFile(),
 		TransformedForGraphQLMutation: true,
 	}
+}
+
+func ImportPathEqual(ip1, ip2 *ImportPath) bool {
+	ret := change.CompareNilVals(ip1 == nil, ip2 == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return ip1.ImportPath == ip2.ImportPath &&
+		ip1.Import == ip2.Import &&
+		ip1.DefaultImport == ip2.DefaultImport &&
+		ip1.Function == ip2.Function &&
+		ip1.TransformedForGraphQLMutation == ip2.TransformedForGraphQLMutation &&
+		ip1.TransformedForExternalEnt == ip2.TransformedForExternalEnt
+}
+
+func ImportPathsEqual(l1, l2 []*ImportPath) bool {
+	if len(l1) != len(l2) {
+		return false
+	}
+
+	for i := range l1 {
+		if !ImportPathEqual(l1[i], l2[i]) {
+			return false
+		}
+	}
+	return true
 }
