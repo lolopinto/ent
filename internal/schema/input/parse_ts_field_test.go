@@ -712,7 +712,8 @@ func TestParseFields(t *testing.T) {
 			},
 			expectedPatterns: map[string]pattern{
 				"node": {
-					name: "node",
+					name:   "node",
+					fields: nodeFields(),
 				},
 			},
 			expectedNodes: map[string]node{

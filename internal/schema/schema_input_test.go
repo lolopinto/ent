@@ -851,9 +851,8 @@ func TestParseInputWithPolymorphicFieldEdgeInverseTypes(t *testing.T) {
 	addressesEdge := addressCfg.NodeData.EdgeInfo.GetEdgeQueryIndexedEdgeByName("Addresses")
 	assert.NotNil(t, addressesEdge)
 	assert.Equal(t, addressesEdge.TsEdgeQueryName(), "OwnerToAddressesQuery")
-	assert.Panics(t, func() {
-		addressesEdge.GetGraphQLConnectionName()
-	})
+	// TODO tied to IndexedEdge.GetGraphQLConnectionName
+	assert.Equal(t, "", addressesEdge.GetGraphQLConnectionName())
 
 	userCfg := schema.Nodes["UserConfig"]
 	assert.NotNil(t, userCfg)
