@@ -104,6 +104,18 @@ test("create user", async () => {
   });
 });
 
+test("create user with accountstatus", async () => {
+  let user = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+    accountStatus: "VERIFIED",
+  });
+
+  expect(user.firstName).toBe("Jon");
+  expect(user.lastName).toBe("Snow");
+  expect(user.accountStatus).toBe("VERIFIED");
+});
+
 test("edit user", async () => {
   let user = await create({
     firstName: "Jon",

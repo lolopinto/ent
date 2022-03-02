@@ -67,9 +67,10 @@ type Field struct {
 	dataTypePkgPath string
 
 	// these 3 should override exposeToActionsByDefault and topLevelStructField at some point since they're built to be reusable and work across types
-	disableUserEditable     bool
-	hasDefaultValueOnCreate bool
-	hasDefaultValueOnEdit   bool
+	disableUserEditable        bool
+	disableUserGraphQLEditable bool
+	hasDefaultValueOnCreate    bool
+	hasDefaultValueOnEdit      bool
 
 	forceRequiredInAction bool
 	forceOptionalInAction bool
@@ -87,25 +88,26 @@ func NewFieldFromNameAndType(name string, typ enttype.TSGraphQLType) *Field {
 
 func newFieldFromInput(f *input.Field) (*Field, error) {
 	ret := &Field{
-		FieldName:                f.Name,
-		nullable:                 f.Nullable,
-		dbName:                   f.StorageKey,
-		hideFromGraphQL:          f.HideFromGraphQL,
-		private:                  f.Private,
-		polymorphic:              f.Polymorphic,
-		index:                    f.Index,
-		graphQLName:              f.GraphQLName,
-		defaultValue:             f.ServerDefault,
-		unique:                   f.Unique,
-		topLevelStructField:      true,
-		dbColumn:                 true,
-		exposeToActionsByDefault: true,
-		singleFieldPrimaryKey:    f.PrimaryKey,
-		disableUserEditable:      f.DisableUserEditable,
-		hasDefaultValueOnCreate:  f.HasDefaultValueOnCreate,
-		hasDefaultValueOnEdit:    f.HasDefaultValueOnEdit,
-		derivedWhenEmbedded:      f.DerivedWhenEmbedded,
-		patternName:              f.PatternName,
+		FieldName:                  f.Name,
+		nullable:                   f.Nullable,
+		dbName:                     f.StorageKey,
+		hideFromGraphQL:            f.HideFromGraphQL,
+		private:                    f.Private,
+		polymorphic:                f.Polymorphic,
+		index:                      f.Index,
+		graphQLName:                f.GraphQLName,
+		defaultValue:               f.ServerDefault,
+		unique:                     f.Unique,
+		topLevelStructField:        true,
+		dbColumn:                   true,
+		exposeToActionsByDefault:   true,
+		singleFieldPrimaryKey:      f.PrimaryKey,
+		disableUserEditable:        f.DisableUserEditable,
+		disableUserGraphQLEditable: f.DisableUserGraphQLEditable,
+		hasDefaultValueOnCreate:    f.HasDefaultValueOnCreate,
+		hasDefaultValueOnEdit:      f.HasDefaultValueOnEdit,
+		derivedWhenEmbedded:        f.DerivedWhenEmbedded,
+		patternName:                f.PatternName,
 
 		// go specific things
 		entType:         f.GoType,
@@ -369,6 +371,10 @@ func (f *Field) SingleFieldPrimaryKey() bool {
 
 func (f *Field) EditableField() bool {
 	return !f.disableUserEditable
+}
+
+func (f *Field) EditableGraphQLField() bool {
+	return !f.disableUserEditable && !f.disableUserGraphQLEditable
 }
 
 func (f *Field) HasDefaultValueOnCreate() bool {
@@ -686,28 +692,29 @@ func Required() Option {
 
 func (f *Field) Clone(opts ...Option) (*Field, error) {
 	ret := &Field{
-		FieldName:                f.FieldName,
-		nullable:                 f.nullable,
-		graphqlNullable:          f.graphqlNullable,
-		dbName:                   f.dbName,
-		hideFromGraphQL:          f.hideFromGraphQL,
-		private:                  f.private,
-		polymorphic:              f.polymorphic,
-		index:                    f.index,
-		graphQLName:              f.graphQLName,
-		defaultValue:             f.defaultValue,
-		unique:                   f.unique,
-		topLevelStructField:      f.topLevelStructField,
-		dbColumn:                 f.dbColumn,
-		exposeToActionsByDefault: f.exposeToActionsByDefault,
-		singleFieldPrimaryKey:    f.singleFieldPrimaryKey,
-		disableUserEditable:      f.disableUserEditable,
-		hasDefaultValueOnCreate:  f.hasDefaultValueOnCreate,
-		hasDefaultValueOnEdit:    f.hasDefaultValueOnEdit,
-		forceRequiredInAction:    f.forceRequiredInAction,
-		forceOptionalInAction:    f.forceOptionalInAction,
-		derivedWhenEmbedded:      f.derivedWhenEmbedded,
-		patternName:              f.patternName,
+		FieldName:                  f.FieldName,
+		nullable:                   f.nullable,
+		graphqlNullable:            f.graphqlNullable,
+		dbName:                     f.dbName,
+		hideFromGraphQL:            f.hideFromGraphQL,
+		private:                    f.private,
+		polymorphic:                f.polymorphic,
+		index:                      f.index,
+		graphQLName:                f.graphQLName,
+		defaultValue:               f.defaultValue,
+		unique:                     f.unique,
+		topLevelStructField:        f.topLevelStructField,
+		dbColumn:                   f.dbColumn,
+		exposeToActionsByDefault:   f.exposeToActionsByDefault,
+		singleFieldPrimaryKey:      f.singleFieldPrimaryKey,
+		disableUserEditable:        f.disableUserEditable,
+		disableUserGraphQLEditable: f.disableUserGraphQLEditable,
+		hasDefaultValueOnCreate:    f.hasDefaultValueOnCreate,
+		hasDefaultValueOnEdit:      f.hasDefaultValueOnEdit,
+		forceRequiredInAction:      f.forceRequiredInAction,
+		forceOptionalInAction:      f.forceOptionalInAction,
+		derivedWhenEmbedded:        f.derivedWhenEmbedded,
+		patternName:                f.patternName,
 
 		// go specific things
 		entType: f.entType,
