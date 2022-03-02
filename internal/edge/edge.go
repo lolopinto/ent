@@ -290,11 +290,8 @@ func getFieldEdge(fieldName string, fieldEdgeInfo *base.FieldEdgeInfo, nullable 
 
 func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo *base.FieldEdgeInfo, nullable bool, fieldType enttype.EntType) error {
 	edge, err := getFieldEdge(fieldName, fieldEdgeInfo, nullable, fieldType)
-	if err != nil {
+	if err != nil || edge == nil {
 		return err
-	}
-	if edge == nil {
-		return nil
 	}
 	return e.addEdge(edge)
 }
@@ -307,7 +304,7 @@ func getForeignKeyEdge(dbColName, edgeName, nodeName, sourceNodeName string) *Fo
 				edgeName,
 				schemaparser.GetEntConfigFromName(nodeName),
 			),
-			quotedDbColNameField: dbColName,
+			quotedDbColName: dbColName,
 		},
 	}
 }
@@ -330,12 +327,12 @@ func (e *EdgeInfo) AddIndexedEdgeFromSource(tsFieldName, quotedDBColName, nodeNa
 				inflection.Plural(nodeName),
 				schemaparser.GetEntConfigFromName(nodeName),
 			),
-			quotedDbColNameField: quotedDBColName,
-			unique:               polymorphic.Unique,
+			quotedDbColName: quotedDBColName,
+			unique:          polymorphic.Unique,
 		},
 	}
 	if polymorphic.HideFromInverseGraphQL {
-		edge.HideFromGraphQLField = true
+		edge._HideFromGraphQL = true
 	}
 	edgeName := edge.GetEdgeName()
 	e.indexedEdgeQueriesMap[edgeName] = edge
@@ -352,12 +349,12 @@ func getIndexedEdge(tsFieldName, quotedDBColName, nodeName string, polymorphic *
 				inflection.Plural(nodeName),
 				schemaparser.GetEntConfigFromName(nodeName),
 			),
-			quotedDbColNameField: quotedDBColName,
+			quotedDbColName: quotedDBColName,
 		},
 		foreignNode: foreignNode,
 	}
 	if polymorphic != nil {
-		edge.HideFromGraphQLField = polymorphic.HideFromInverseGraphQL
+		edge._HideFromGraphQL = polymorphic.HideFromInverseGraphQL
 		edge.unique = polymorphic.Unique
 	}
 	return edge
@@ -418,10 +415,10 @@ type PluralEdge interface {
 
 type commonEdgeInfo struct {
 	// note that if anything is changed here, need to update commonEdgeInfoEqual() in compare_edge.go
-	EdgeName             string
-	entConfig            *schemaparser.EntConfigInfo
-	NodeInfo             nodeinfo.NodeInfo
-	HideFromGraphQLField bool
+	EdgeName         string
+	entConfig        *schemaparser.EntConfigInfo
+	NodeInfo         nodeinfo.NodeInfo
+	_HideFromGraphQL bool
 }
 
 func (e *commonEdgeInfo) GetEdgeName() string {
@@ -445,7 +442,7 @@ func (e *commonEdgeInfo) GraphQLEdgeName() string {
 }
 
 func (e *commonEdgeInfo) HideFromGraphQL() bool {
-	return e.HideFromGraphQLField
+	return e._HideFromGraphQL
 }
 
 type FieldEdge struct {
@@ -563,8 +560,8 @@ var _ IndexedConnectionEdge = &ForeignKeyEdge{}
 type destinationEdge struct {
 	// note that if anything is changed here, need to update destinationEdgeEqual() in compare_edge.go
 	commonEdgeInfo
-	quotedDbColNameField string
-	unique               bool
+	quotedDbColName string
+	unique          bool
 }
 
 func (e destinationEdge) Singular() string {
@@ -580,7 +577,7 @@ func (e *destinationEdge) UniqueEdge() bool {
 }
 
 func (e *destinationEdge) QuotedDBColName() string {
-	return e.quotedDbColNameField
+	return e.quotedDbColName
 }
 
 // this is like a foreign key edge except different
@@ -1157,7 +1154,7 @@ func AssocEdgeFromInput(packageName string, edge *input.AssocEdge) (*Association
 			schemaparser.GetEntConfigFromName(edge.SchemaName),
 		)
 	}
-	assocEdge.HideFromGraphQLField = edge.HideFromGraphQL
+	assocEdge._HideFromGraphQL = edge.HideFromGraphQL
 
 	return assocEdge, nil
 }

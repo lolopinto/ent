@@ -56,18 +56,6 @@ func AssocEdgesEqual(l1, l2 []*AssociationEdge) bool {
 	return true
 }
 
-func AssocEdgesMapEqual(m1, m2 map[string]*AssociationEdge) bool {
-	if len(m1) != len(m2) {
-		return false
-	}
-	for k := range m1 {
-		if !AssocEdgeEqual(m1[k], m2[k]) {
-			return false
-		}
-	}
-	return true
-}
-
 func CompareAssocEdgesMap(m1, m2 map[string]*AssociationEdge) []change.Change {
 	var ret []change.Change
 	for k, edge1 := range m1 {
@@ -101,7 +89,7 @@ func CompareAssocEdgesMap(m1, m2 map[string]*AssociationEdge) []change.Change {
 	return ret
 }
 
-func CompareAssocEdgeGroupMap(m1, m2 map[string]*AssociationEdgeGroup) []change.Change {
+func compareAssocEdgeGroupMap(m1, m2 map[string]*AssociationEdgeGroup) []change.Change {
 	var ret []change.Change
 	for k, group1 := range m1 {
 		group2, ok := m2[k]
@@ -167,39 +155,6 @@ func compareFieldEdgeMap(m1, m2 map[string]*FieldEdge) []change.Change {
 	return ret
 }
 
-func compareConnectionEdgeMap(m1, m2 map[string]ConnectionEdge) []change.Change {
-	var ret []change.Change
-	for k, edge1 := range m1 {
-		edge2, ok := m2[k]
-		// in 1st but not 2nd, dropped
-		if !ok {
-			ret = append(ret, change.Change{
-				Change: change.RemoveEdge,
-				Edge:   k,
-			})
-		} else {
-			if !compareConnectionEdge(edge1, edge2) {
-				ret = append(ret, change.Change{
-					Change: change.ModifyEdge,
-					Edge:   k,
-				})
-			}
-		}
-	}
-
-	for k := range m2 {
-		_, ok := m1[k]
-		// in 2nd but not first, added
-		if !ok {
-			ret = append(ret, change.Change{
-				Change: change.AddEdge,
-				Edge:   k,
-			})
-		}
-	}
-	return ret
-}
-
 func compareIndexedConnectionEdgeMap(m1, m2 map[string]IndexedConnectionEdge) []change.Change {
 	var ret []change.Change
 	for k, edge1 := range m1 {
@@ -235,7 +190,7 @@ func compareIndexedConnectionEdgeMap(m1, m2 map[string]IndexedConnectionEdge) []
 
 func commonEdgeInfoEqual(existing, common commonEdgeInfo) bool {
 	return existing.EdgeName == common.EdgeName &&
-		existing.HideFromGraphQLField == common.HideFromGraphQLField &&
+		existing._HideFromGraphQL == common._HideFromGraphQL &&
 		nodeinfo.NodeInfoEqual(existing.NodeInfo, common.NodeInfo) &&
 		entConfigEqual(existing.entConfig, common.entConfig)
 }
@@ -260,7 +215,7 @@ func inverseAssocEdgeEqual(existing, inverseEdge *InverseAssocEdge) bool {
 		existing.EdgeConst == inverseEdge.EdgeConst
 }
 
-func CompareForeignKeyEdge(existingEdge, edge *ForeignKeyEdge) []change.Change {
+func compareForeignKeyEdge(existingEdge, edge *ForeignKeyEdge) []change.Change {
 	var ret []change.Change
 	if !foreignKeyEdgeEqual(existingEdge, edge) {
 		ret = append(ret, change.Change{
@@ -277,12 +232,12 @@ func foreignKeyEdgeEqual(existingEdge, edge *ForeignKeyEdge) bool {
 
 func destinationEdgeEqual(existingEdge, edge destinationEdge) bool {
 	return commonEdgeInfoEqual(existingEdge.commonEdgeInfo, edge.commonEdgeInfo) &&
-		existingEdge.quotedDbColNameField == edge.quotedDbColNameField &&
+		existingEdge.quotedDbColName == edge.quotedDbColName &&
 		existingEdge.unique == edge.unique
 
 }
 
-func CompareIndexedEdge(existingEdge, edge *IndexedEdge) []change.Change {
+func compareIndexedEdge(existingEdge, edge *IndexedEdge) []change.Change {
 	var ret []change.Change
 	if !indexedEdgeEqual(existingEdge, edge) {
 		ret = append(ret, change.Change{
@@ -299,7 +254,7 @@ func indexedEdgeEqual(existingEdge, edge *IndexedEdge) bool {
 		destinationEdgeEqual(existingEdge.destinationEdge, edge.destinationEdge)
 }
 
-func CompareFieldEdge(existingEdge, edge *FieldEdge) []change.Change {
+func compareFieldEdge(existingEdge, edge *FieldEdge) []change.Change {
 	var ret []change.Change
 	if !fieldEdgeEqual(existingEdge, edge) {
 		ret = append(ret, change.Change{
@@ -349,12 +304,6 @@ func actionEdgesEqual(m1, m2 map[string]bool) bool {
 			return false
 		}
 	}
-	for k := range m2 {
-		_, ok := m2[k]
-		if !ok {
-			return false
-		}
-	}
 	return true
 }
 
@@ -365,12 +314,6 @@ func assocEdgesMapEqual(m1, m2 map[string]*AssociationEdge) bool {
 	for k, v := range m1 {
 		v2, ok := m2[k]
 		if !ok || !AssocEdgeEqual(v, v2) {
-			return false
-		}
-	}
-	for k := range m2 {
-		_, ok := m2[k]
-		if !ok {
 			return false
 		}
 	}
@@ -418,7 +361,7 @@ func CompareEdgeInfo(e1, e2 *EdgeInfo) []change.Change {
 
 	ret = append(ret, CompareAssocEdgesMap(e1.assocMap, e2.assocMap)...)
 
-	ret = append(ret, CompareAssocEdgeGroupMap(e1.assocGroupsMap, e2.assocGroupsMap)...)
+	ret = append(ret, compareAssocEdgeGroupMap(e1.assocGroupsMap, e2.assocGroupsMap)...)
 
 	ret = append(ret, compareFieldEdgeMap(e1.fieldEdgeMap, e2.fieldEdgeMap)...)
 

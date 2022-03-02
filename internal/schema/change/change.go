@@ -30,15 +30,18 @@ const (
 	AddEnum    ChangeType = "add_enum"
 	RemoveEnum ChangeType = "remove_enum"
 	ModifyEnum ChangeType = "modify_enum"
+	// ^ everything above this is used/validated
+	// below is still TBD
 
 	CreateIndex      ChangeType = "create_index"
 	DropIndex        ChangeType = "drop_index"
 	CreateForeignKey ChangeType = "create_foreign_key"
 
+	AddRows    ChangeType = "add_rows"
+	RemoveRows ChangeType = "remove_rows"
+	ModifyRows ChangeType = "modify_rows"
+
 	CreateUniqueConstraint ChangeType = "create_unique_constraint"
-	AddRows                ChangeType = "add_rows"
-	RemoveRows             ChangeType = "remove_rows"
-	ModifyRows             ChangeType = "modify_rows"
 	CreateCheckConstraint  ChangeType = "create_check_constraint"
 	DropCheckConstraint    ChangeType = "drop_check_constraint"
 )
@@ -91,19 +94,13 @@ func StringMapEqual(m1, m2 map[string]string) bool {
 		return false
 	}
 
-	for k := range m1 {
-		_, ok := m2[k]
-		if !ok {
+	for k, v := range m1 {
+		v2, ok := m2[k]
+		if !ok || v != v2 {
 			return false
 		}
 	}
 
-	for k := range m2 {
-		_, ok := m1[k]
-		if !ok {
-			return false
-		}
-	}
 	return true
 }
 
@@ -125,18 +122,12 @@ func MapEqual(m1, m2 map[string]interface{}) bool {
 		return false
 	}
 
-	for k := range m1 {
-		_, ok := m2[k]
-		if !ok {
+	for k, v := range m1 {
+		v2, ok := m2[k]
+		if !ok || v != v2 {
 			return false
 		}
 	}
 
-	for k := range m2 {
-		_, ok := m1[k]
-		if !ok {
-			return false
-		}
-	}
 	return true
 }

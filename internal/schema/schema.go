@@ -38,8 +38,7 @@ type Schema struct {
 	Enums      map[string]*EnumInfo
 	enumTables map[string]*EnumInfo
 
-	// keeping this because it already has json representation and using that to indicate what needs to be changed
-	// we'll see if that makes sense forever
+	// used to keep track of schema-state
 	inputSchema *input.Schema
 }
 

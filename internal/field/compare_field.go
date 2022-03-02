@@ -43,7 +43,7 @@ func compareType(t1, t2 enttype.TSGraphQLType) bool {
 	if ret != nil {
 		return *ret
 	}
-	// not a DB type yet
+	// TODO some DB types panic...
 	// does the minimum to compare types
 	return t1.GetDBType() == t2.GetDBType() &&
 		t1.GetGraphQLType() == t2.GetGraphQLType() &&

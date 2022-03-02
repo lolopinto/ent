@@ -634,7 +634,7 @@ func testIndexedEdge(t *testing.T, edge, expectedEdge *IndexedEdge) {
 }
 
 func testDestinationEdge(t *testing.T, edge, expectedEdge destinationEdge) {
-	assert.Equal(t, expectedEdge.quotedDbColNameField, edge.quotedDbColNameField)
+	assert.Equal(t, expectedEdge.quotedDbColName, edge.quotedDbColName)
 
 	assert.Equal(t, expectedEdge.unique, edge.unique)
 

@@ -181,7 +181,7 @@ func TestForeignKeyEdge(t *testing.T) {
 
 	testForeignKeyEdge(t, edge, edge2)
 
-	l := CompareForeignKeyEdge(edge, edge2)
+	l := compareForeignKeyEdge(edge, edge2)
 	require.Len(t, l, 0)
 }
 
@@ -189,7 +189,7 @@ func TestUnequalForeignKeyEdge(t *testing.T) {
 	edge := getForeignKeyEdge("user_id", "users", "User", "Contact")
 	edge2 := getForeignKeyEdge("user_id", "users", "User2", "Contact")
 
-	l := CompareForeignKeyEdge(edge, edge2)
+	l := compareForeignKeyEdge(edge, edge2)
 	require.Len(t, l, 1)
 }
 
@@ -199,7 +199,7 @@ func TestIndexedEdge(t *testing.T) {
 
 	testIndexedEdge(t, edge, edge2)
 
-	l := CompareIndexedEdge(edge, edge2)
+	l := compareIndexedEdge(edge, edge2)
 	require.Len(t, l, 0)
 }
 
@@ -217,7 +217,7 @@ func TestPolymorphicIndexedEdge(t *testing.T) {
 
 	testIndexedEdge(t, edge, edge2)
 
-	l := CompareIndexedEdge(edge, edge2)
+	l := compareIndexedEdge(edge, edge2)
 	require.Len(t, l, 0)
 }
 
@@ -236,7 +236,7 @@ func TestUnEqualPolymorphicIndexedEdge(t *testing.T) {
 		Unique:        true,
 	}, "Contact")
 
-	l := CompareIndexedEdge(edge, edge2)
+	l := compareIndexedEdge(edge, edge2)
 	require.Len(t, l, 1)
 }
 
@@ -254,7 +254,7 @@ func TestFieldEdge(t *testing.T) {
 
 	testFieldEdge(t, edge, edge2)
 
-	l := CompareFieldEdge(edge, edge2)
+	l := compareFieldEdge(edge, edge2)
 	require.Len(t, l, 0)
 }
 
@@ -270,7 +270,7 @@ func TestUnequalFieldEdge(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, edge2)
 
-	l := CompareFieldEdge(edge, edge2)
+	l := compareFieldEdge(edge, edge2)
 	require.Len(t, l, 1)
 }
 
@@ -294,7 +294,7 @@ func TestFieldEdgeWithInverse(t *testing.T) {
 
 	testFieldEdge(t, edge, edge2)
 
-	l := CompareFieldEdge(edge, edge2)
+	l := compareFieldEdge(edge, edge2)
 	require.Len(t, l, 0)
 }
 
@@ -324,7 +324,7 @@ func TestPolymorphicFieldEdge(t *testing.T) {
 
 	testFieldEdge(t, edge, edge2)
 
-	l := CompareFieldEdge(edge, edge2)
+	l := compareFieldEdge(edge, edge2)
 	require.Len(t, l, 0)
 }
 

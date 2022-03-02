@@ -51,12 +51,10 @@ func mapifyList(l []*Enum) (map[string]*Enum, error) {
 	for _, v := range l {
 		dup, ok := ret[v.Name]
 		if ok {
-			//			spew.Dump(l)
 			// ignore for now but we need to fix this eventually
 			if !EnumEqual(v, dup) {
 				return nil, fmt.Errorf("%s duplicated in the list", v.Name)
 			}
-			//			continue
 		}
 		ret[v.Name] = v
 	}
