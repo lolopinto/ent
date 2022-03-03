@@ -12,6 +12,7 @@ import (
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/change"
+	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -1691,6 +1692,124 @@ func TestIndexedEdgeModified(t *testing.T) {
 		Node:   "User",
 	}, user[1])
 }
+
+func TestEnumNoChange(t *testing.T) {
+	s1 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfo(nil),
+		},
+	}
+	s2 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfo(nil),
+		},
+	}
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 0)
+}
+
+func TestEnumAdded(t *testing.T) {
+	s1 := &schema.Schema{}
+	s2 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfo(nil),
+		},
+	}
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+
+	lang := m["Language"]
+	require.Len(t, lang, 1)
+	verifyChange(t, change.Change{
+		Change: change.AddEnum,
+		Enum:   "Language",
+	}, lang[0])
+}
+
+func TestEnumRemoved(t *testing.T) {
+	s1 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfo(nil),
+		},
+	}
+	s2 := &schema.Schema{}
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+
+	lang := m["Language"]
+	require.Len(t, lang, 1)
+	verifyChange(t, change.Change{
+		Change: change.RemoveEnum,
+		Enum:   "Language",
+	}, lang[0])
+}
+
+func TestEnumModified(t *testing.T) {
+	s1 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfo(nil),
+		},
+	}
+
+	s2 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfo(
+				map[string]string{
+					"Java":       "java",
+					"CPlusPlus":  "c++",
+					"CSharp":     "c#",
+					"JavaScript": "js",
+					"TypeScript": "ts",
+					"GoLang":     "go",
+					"Python":     "python",
+					"Rust":       "rust",
+				}),
+		},
+	}
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+
+	lang := m["Language"]
+	require.Len(t, lang, 1)
+	verifyChange(t, change.Change{
+		Change: change.ModifyEnum,
+		Enum:   "Language",
+	}, lang[0])
+}
+
+func getEnumInfo(m map[string]string) *schema.EnumInfo {
+	if m == nil {
+		m = map[string]string{
+			"Java":       "java",
+			"CPlusPlus":  "c++",
+			"CSharp":     "c#",
+			"JavaScript": "js",
+			"TypeScript": "ts",
+			"GoLang":     "go",
+			"Python":     "python",
+		}
+	}
+	typ := "Language"
+
+	tsEnum, gqlEnum := enum.GetEnums(&enum.Input{
+		TSName:  typ,
+		GQLName: typ,
+		GQLType: typ,
+		EnumMap: m,
+	})
+	return &schema.EnumInfo{
+		Enum:    tsEnum,
+		GQLEnum: gqlEnum,
+	}
+}
+
+// change.RemoveEnum
+// change.AddEnum
+// change.ModifyEnum
 
 func createDuplicateAssocEdgeFromInput(t *testing.T, packageName string, inputEdge *input.AssocEdge) (*edge.AssociationEdge, *edge.AssociationEdge) {
 	edge1, err := edge.AssocEdgeFromInput(packageName, inputEdge)
