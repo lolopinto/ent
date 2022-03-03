@@ -3,7 +3,6 @@ package cmd
 import (
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/db"
-	"github.com/lolopinto/ent/internal/graphql"
 	"github.com/lolopinto/ent/internal/tscode"
 	"github.com/spf13/cobra"
 )
@@ -40,7 +39,7 @@ var codegenCmd = &cobra.Command{
 		steps := []codegen.Step{
 			new(db.Step),
 			new(tscode.Step),
-			new(graphql.TSStep),
+			//			new(graphql.TSStep),
 		}
 
 		return processor.Run(steps, codegenInfo.step)

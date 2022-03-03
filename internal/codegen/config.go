@@ -7,6 +7,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/schema/change"
@@ -27,6 +28,8 @@ type Config struct {
 	debugMode             bool
 	useChanges            bool
 	changes               change.ChangeMap
+	// keep track of changed ts files to pass to prettier
+	changedTSFiles []string
 }
 
 func NewConfig(configPath, modulePath string) (*Config, error) {
@@ -79,6 +82,10 @@ func (cfg *Config) SetChangeMap(changes change.ChangeMap) {
 
 func (cfg *Config) UseChanges() bool {
 	return cfg.useChanges
+}
+
+func (cfg *Config) WriteAllFiles() bool {
+	return !cfg.useChanges
 }
 
 func (cfg *Config) ChangeMap() change.ChangeMap {
@@ -187,6 +194,12 @@ func (cfg *Config) GetAbsPathToGraphQL() string {
 	return filepath.Join(cfg.absPathToRoot, "graphql")
 }
 
+func (cfg *Config) AddChangedFile(filePath string) {
+	if strings.HasSuffix(filePath, ".ts") {
+		cfg.changedTSFiles = append(cfg.changedTSFiles, filePath)
+	}
+}
+
 func init() {
 	impPkg = &ImportPackage{
 		PackagePath:        codepath.Package,
@@ -250,9 +263,9 @@ var defaultArgs = []string{
 	"--end-of-line", "lf",
 }
 
-func (cfg *Config) GetPrettierArgs(changedFiles []string) []string {
+func (cfg *Config) GetPrettierArgs() []string {
 	// nothing to do here
-	if cfg.useChanges && len(changedFiles) == 0 {
+	if cfg.useChanges && len(cfg.changedTSFiles) == 0 {
 		return nil
 	}
 	glob := DEFAULT_GLOB
@@ -270,7 +283,7 @@ func (cfg *Config) GetPrettierArgs(changedFiles []string) []string {
 	}
 	if cfg.useChanges {
 		args = append(args, "--write")
-		return append(args, changedFiles...)
+		return append(args, cfg.changedTSFiles...)
 	} else {
 		return append(args, "--write", glob)
 	}

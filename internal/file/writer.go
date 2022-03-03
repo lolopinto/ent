@@ -12,6 +12,7 @@ import (
 type Config interface {
 	DebugMode() bool
 	GeneratedHeader() string
+	AddChangedFile(file string)
 }
 
 type Writer interface {
@@ -96,38 +97,11 @@ func writeFile(w Writer, cfg Config, opts ...func(opt *Options)) error {
 			debugLogInfo(option, "wrote to file %s", pathToFile)
 		}
 	}
+
+	if err == nil && !option.tempFile && strings.HasSuffix(fullPath, ".ts") {
+		cfg.AddChangedFile(fullPath)
+	}
 	return err
-}
-
-// Options provides a way to configure the file writing process as needed
-// TODO: maybe move things like createDirIfNeeded to here?
-type Options struct {
-	writeOnce  bool
-	disableLog bool
-}
-
-// WriteOnce specifes that writing to path provided should not occur if the file already exists
-// This is usually configured via code
-func WriteOnce() func(opt *Options) {
-	return func(opt *Options) {
-		opt.writeOnce = true
-	}
-}
-
-// WriteOnceMaybe takes a flag (usually provided via user action) and determines if we should add
-// the writeOnce flag to Options
-func WriteOnceMaybe(forceOverwrite bool) func(opt *Options) {
-	if forceOverwrite {
-		return nil
-	}
-	return WriteOnce()
-}
-
-// DisableLog disables the log that the file was written
-func DisableLog() func(opt *Options) {
-	return func(opt *Options) {
-		opt.disableLog = true
-	}
 }
 
 func Write(w Writer, opts ...func(opt *Options)) error {

@@ -18,6 +18,7 @@ import (
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/syncerr"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -39,94 +40,215 @@ var nodeType = regexp.MustCompile(`(\w+)Type`)
 type writeFileFn func() error
 type writeFileFnList []writeFileFn
 
-func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataInfo, serr *syncerr.Error) writeFileFnList {
+type writeOptions struct {
+	// anytime any boolean is added here, need to update the
+	// else case in processNode
+	writeEnt        bool
+	writeBase       bool
+	writeAllActions bool
+	writeAllEdges   bool
+	writeBuilder    bool
+	actionBaseFiles map[string]bool
+	actionFiles     map[string]bool
+	edgeBaseFile    bool
+	edgeFiles       map[string]bool
+	entAdded        bool
+	entRemoved      bool
+	edgeAdded       bool
+	edgeRemoved     bool
+}
+
+func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataInfo, serr *syncerr.Error) (writeFileFnList, *writeOptions) {
 	var ret writeFileFnList
 	nodeData := info.NodeData
 
+	opts := &writeOptions{
+		actionBaseFiles: map[string]bool{},
+		actionFiles:     map[string]bool{},
+		edgeFiles:       map[string]bool{},
+	}
+
+	if processor.Config.UseChanges() {
+
+		changes := processor.ChangeMap
+		nodeChanges := changes[info.NodeData.Node]
+
+		for _, c := range nodeChanges {
+			switch c.Change {
+			case change.AddNode:
+				opts.writeEnt = true
+				opts.writeBase = true
+				opts.writeBuilder = true
+				opts.entAdded = true
+
+			case change.ModifyNode:
+				opts.writeBase = true
+				opts.writeBuilder = true
+
+			case change.RemoveNode:
+				opts.entRemoved = true
+
+			case change.AddAction:
+				opts.actionBaseFiles[c.Action] = true
+				opts.actionFiles[c.Action] = true
+
+			case change.ModifyAction:
+				opts.actionBaseFiles[c.Action] = true
+
+			case change.AddEdge:
+				opts.edgeBaseFile = true
+				opts.edgeFiles[c.Edge] = true
+				opts.edgeAdded = true
+
+			case change.ModifyEdge:
+				opts.edgeFiles[c.Edge] = true
+				opts.edgeBaseFile = true
+
+			case change.RemoveEdge:
+				opts.edgeRemoved = true
+			}
+		}
+	} else {
+		opts.writeAllActions = true
+		opts.writeAllEdges = true
+		opts.writeEnt = true
+		opts.writeBase = true
+		opts.writeBuilder = true
+		opts.edgeBaseFile = true
+	}
+
 	if err := s.accumulateConsts(nodeData); err != nil {
 		serr.Append(err)
-		return ret
+		return ret, opts
 	}
 
 	if !info.ShouldCodegen {
-		return ret
+		return ret, opts
 	}
 
 	if nodeData.PackageName == "" {
 		serr.Append(fmt.Errorf("invalid node with no package"))
-		return ret
+		return ret, opts
 	}
 
-	ret = append(ret, func() error {
-		return writeBaseModelFile(nodeData, processor)
-	})
-	ret = append(ret, func() error {
-		return writeEntFile(nodeData, processor)
-	})
-
-	ret = append(ret, s.processActions(processor, nodeData)...)
-	ret = append(ret, s.processEdges(processor, nodeData)...)
-
-	return ret
-}
-
-func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.PatternInfo, serr *syncerr.Error) writeFileFnList {
-	var ret writeFileFnList
-
-	if err := s.accumulateConsts(pattern); err != nil {
-		serr.Append(err)
-		return ret
-	}
-
-	if len(pattern.AssocEdges) == 0 {
-		return ret
-	}
-
-	ret = append(ret, func() error {
-		return writeBasePatternQueryFile(processor, pattern)
-	})
-	for idx := range pattern.AssocEdges {
-		edge := pattern.AssocEdges[idx]
+	if opts.writeBase {
 		ret = append(ret, func() error {
-			return writeAssocEdgeQueryFile(
-				processor,
-				edge,
-				"Ent",
-				getFilePathForPatternAssocEdgeQueryFile(processor.Config, pattern, edge),
-			)
+			return writeBaseModelFile(nodeData, processor)
 		})
 	}
 
-	return ret
+	if opts.writeEnt {
+		ret = append(ret, func() error {
+			return writeEntFile(nodeData, processor)
+		})
+	}
+
+	ret = append(ret, s.processActions(processor, nodeData, opts)...)
+	ret = append(ret, s.processEdges(processor, nodeData, opts)...)
+
+	return ret, opts
 }
-func (s *Step) processActions(processor *codegen.Processor, nodeData *schema.NodeData) writeFileFnList {
+
+func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.PatternInfo, serr *syncerr.Error) (writeFileFnList, *writeOptions) {
+	var ret writeFileFnList
+
+	opts := &writeOptions{
+		actionBaseFiles: map[string]bool{},
+		actionFiles:     map[string]bool{},
+		edgeFiles:       map[string]bool{},
+	}
+
+	if err := s.accumulateConsts(pattern); err != nil {
+		serr.Append(err)
+		return ret, opts
+	}
+
+	if processor.Config.UseChanges() {
+
+		changes := processor.ChangeMap
+		nodeChanges := changes[pattern.Name]
+
+		for _, c := range nodeChanges {
+			switch c.Change {
+			case change.AddEdge:
+				opts.edgeBaseFile = true
+				opts.edgeFiles[c.Edge] = true
+				opts.edgeAdded = true
+
+			case change.ModifyEdge:
+				opts.edgeFiles[c.Edge] = true
+				opts.edgeBaseFile = true
+
+			case change.RemoveEdge:
+				opts.edgeRemoved = true
+			}
+		}
+	} else {
+		opts.writeAllEdges = true
+		opts.edgeBaseFile = true
+	}
+
+	if len(pattern.AssocEdges) == 0 {
+		return ret, opts
+	}
+
+	if opts.edgeBaseFile {
+		ret = append(ret, func() error {
+			return writeBasePatternQueryFile(processor, pattern)
+		})
+	}
+	for idx := range pattern.AssocEdges {
+		edge := pattern.AssocEdges[idx]
+		name := edge.EdgeName
+		if opts.writeAllEdges || opts.edgeFiles[name] {
+			ret = append(ret, func() error {
+				return writeAssocEdgeQueryFile(
+					processor,
+					edge,
+					"Ent",
+					getFilePathForPatternAssocEdgeQueryFile(processor.Config, pattern, edge),
+				)
+			})
+		}
+	}
+
+	return ret, opts
+}
+
+func (s *Step) processActions(processor *codegen.Processor, nodeData *schema.NodeData, opts *writeOptions) writeFileFnList {
 	var ret writeFileFnList
 
 	if len(nodeData.ActionInfo.Actions) == 0 {
 		return ret
 	}
 
-	ret = append(ret, func() error {
-		return writeBuilderFile(nodeData, processor)
-	})
+	if opts.writeBuilder {
+		ret = append(ret, func() error {
+			return writeBuilderFile(nodeData, processor)
+		})
+	}
 
 	for idx := range nodeData.ActionInfo.Actions {
 		action := nodeData.ActionInfo.Actions[idx]
-		ret = append(ret, func() error {
-			return writeBaseActionFile(nodeData, processor, action)
-		})
-
-		ret = append(ret, func() error {
-			return writeActionFile(nodeData, processor, action)
-		})
+		name := action.GetActionName()
+		if opts.writeAllActions || opts.actionBaseFiles[name] {
+			ret = append(ret, func() error {
+				return writeBaseActionFile(nodeData, processor, action)
+			})
+		}
+		if opts.writeAllActions || opts.actionFiles[name] {
+			ret = append(ret, func() error {
+				return writeActionFile(nodeData, processor, action)
+			})
+		}
 	}
 	return ret
 }
 
-func (s *Step) processEdges(processor *codegen.Processor, nodeData *schema.NodeData) writeFileFnList {
+func (s *Step) processEdges(processor *codegen.Processor, nodeData *schema.NodeData, opts *writeOptions) writeFileFnList {
 	var ret writeFileFnList
 
-	if nodeData.EdgeInfo.CreateEdgeBaseFile() {
+	if nodeData.EdgeInfo.CreateEdgeBaseFile() && opts.edgeBaseFile {
 		ret = append(ret, func() error {
 			return writeBaseQueryFile(processor, nodeData)
 		})
@@ -134,23 +256,61 @@ func (s *Step) processEdges(processor *codegen.Processor, nodeData *schema.NodeD
 
 	for idx := range nodeData.EdgeInfo.Associations {
 		edge := nodeData.EdgeInfo.Associations[idx]
-		ret = append(ret, func() error {
-			return writeAssocEdgeQueryFile(
-				processor,
-				edge,
-				nodeData.Node,
-				getFilePathForAssocEdgeQueryFile(processor.Config, nodeData, edge),
-			)
-		})
+		name := edge.EdgeName
+		if opts.writeAllEdges || opts.edgeFiles[name] {
+			ret = append(ret, func() error {
+				return writeAssocEdgeQueryFile(
+					processor,
+					edge,
+					nodeData.Node,
+					getFilePathForAssocEdgeQueryFile(processor.Config, nodeData, edge),
+				)
+			})
+		}
 	}
 
 	// edges with IndexLoaderFactory
 	edges := nodeData.EdgeInfo.GetEdgesForIndexLoader()
 	for idx := range edges {
 		edge := edges[idx]
-		ret = append(ret, func() error {
-			return writeCustomEdgeQueryFile(processor, nodeData, edge)
-		})
+		name := edge.GetEdgeName()
+		if opts.writeAllEdges || opts.edgeFiles[name] {
+			ret = append(ret, func() error {
+				return writeCustomEdgeQueryFile(processor, nodeData, edge)
+			})
+		}
+	}
+	return ret
+}
+
+func (s *Step) processEnums(processor *codegen.Processor) writeFileFnList {
+	var ret writeFileFnList
+
+	writeAll := processor.Config.WriteAllFiles()
+
+	for k := range processor.Schema.Enums {
+		info := processor.Schema.Enums[k]
+		if !info.OwnEnumFile() {
+			continue
+		}
+
+		write := writeAll
+		if !writeAll {
+			name := info.Enum.Name
+			changes := processor.ChangeMap[name]
+			for _, c := range changes {
+				if c.Change == change.AddEnum {
+					write = true
+					break
+				}
+			}
+		}
+
+		if write {
+			ret = append(ret, func() error {
+				return writeEnumFile(info, processor)
+			})
+		}
 	}
 	return ret
 }
@@ -159,23 +319,31 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 	fmt.Println("generating ent code...")
 	var serr syncerr.Error
 
+	var entAddedOrRemoved bool
+	var edgeAddedOrRemoved bool
 	var funcs writeFileFnList
 	for _, p := range processor.Schema.Patterns {
-		funcs = append(funcs, s.processPattern(processor, p, &serr)...)
+		fns, opts := s.processPattern(processor, p, &serr)
+		funcs = append(funcs, fns...)
+		if opts.edgeAdded || opts.edgeRemoved {
+			edgeAddedOrRemoved = true
+		}
 	}
 	for _, info := range processor.Schema.Nodes {
-		funcs = append(funcs, s.processNode(processor, info, &serr)...)
+		fns, opts := s.processNode(processor, info, &serr)
+		funcs = append(funcs, fns...)
+		if opts.entAdded || opts.entRemoved {
+			entAddedOrRemoved = true
+		}
+		if opts.edgeAdded || opts.edgeRemoved {
+			edgeAddedOrRemoved = true
+		}
 	}
 
-	for k := range processor.Schema.Enums {
-		info := processor.Schema.Enums[k]
-		if !info.OwnEnumFile() {
-			continue
-		}
-		funcs = append(funcs, func() error {
-			return writeEnumFile(info, processor)
-		})
-	}
+	writeAll := processor.Config.WriteAllFiles()
+	changes := processor.ChangeMap
+	updateBecauseChanges := writeAll || len(changes) > 0
+	funcs = append(funcs, s.processEnums(processor)...)
 
 	// sort data so that the enum is stable
 	sort.Slice(s.nodeTypes, func(i, j int) bool {
@@ -187,19 +355,37 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 
 	funcs = append(funcs,
 		func() error {
-			return writeConstFile(processor, s.nodeTypes, s.edgeTypes)
+			// ent or edge added or removed
+			if entAddedOrRemoved || edgeAddedOrRemoved {
+				return writeConstFile(processor, s.nodeTypes, s.edgeTypes)
+			}
+			return nil
 		},
 		func() error {
-			return writeInternalEntFile(processor.Schema, processor)
+			// if any changes, update this
+			// eventually only wanna do this if add|remove something
+			if updateBecauseChanges {
+				return writeInternalEntFile(processor.Schema, processor)
+			}
+			return nil
 		},
 		func() error {
+			// have writeOnce handle this.
 			return writeEntIndexFile(processor)
 		},
 		func() error {
-			return writeLoadAnyFile(s.nodeTypes, processor)
+			if writeAll || entAddedOrRemoved {
+				// if node added or removed
+				return writeLoadAnyFile(s.nodeTypes, processor)
+			}
+			return nil
 		},
 		func() error {
-			return writeLoaderFile(processor)
+			// if any changes, just do this.
+			if updateBecauseChanges {
+				return writeLoaderFile(processor)
+			}
+			return nil
 		},
 	)
 
@@ -783,6 +969,8 @@ func writeEntIndexFile(processor *codegen.Processor) error {
 
 	imps := tsimport.NewImports(processor.Config, path)
 
+	// written only once since it just exposes ./internal
+	// hmm. writeOnce() removes the generated header...
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Config:            processor.Config,
 		AbsPathToTemplate: util.GetAbsolutePath("index.tmpl"),
@@ -791,7 +979,7 @@ func writeEntIndexFile(processor *codegen.Processor) error {
 		PathToFile:        path,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
-	})
+	}, file.WriteOnce())
 }
 
 func writeBuilderFile(nodeData *schema.NodeData, processor *codegen.Processor) error {

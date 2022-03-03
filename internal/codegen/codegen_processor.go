@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 	"sync"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
@@ -196,14 +194,14 @@ func (p *Processor) Run(steps []Step, step string, options ...Option) error {
 
 func (p *Processor) FormatTS() error {
 	// nothing to do here
-	args := p.Config.GetPrettierArgs(changedTSFiles)
+	args := p.Config.GetPrettierArgs()
 	if args == nil {
 		if p.debugMode {
 			fmt.Printf("no files for prettier to format\n")
 		}
 		return nil
 	}
-	cmd := exec.Command("prettier", p.Config.GetPrettierArgs(changedTSFiles)...)
+	cmd := exec.Command("prettier", p.Config.GetPrettierArgs()...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
@@ -289,7 +287,6 @@ func NewCodegenProcessor(currentSchema *schema.Schema, configPath, modulePath st
 	useChanges := changes != nil
 	cfg.SetUseChanges(useChanges)
 	cfg.SetChangeMap(changes)
-	spew.Dump(changes)
 
 	return &Processor{
 		Schema:     currentSchema,
@@ -311,15 +308,6 @@ func NewTestCodegenProcessor(configPath string, s *schema.Schema, codegenCfg *Co
 		Schema: s,
 		opt:    &option{},
 	}, nil
-}
-
-// keep track of changed ts files to pass to prettier
-var changedTSFiles []string
-
-func AddChangedFile(filePath string) {
-	if strings.HasSuffix(filePath, ".ts") {
-		changedTSFiles = append(changedTSFiles, filePath)
-	}
 }
 
 func FormatTS(cfg *Config) error {
