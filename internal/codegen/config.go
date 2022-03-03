@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/lolopinto/ent/internal/codepath"
+	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
@@ -24,6 +25,8 @@ type Config struct {
 	absPathToConfigs      string
 	config                *config
 	debugMode             bool
+	useChanges            bool
+	changes               change.ChangeMap
 }
 
 func NewConfig(configPath, modulePath string) (*Config, error) {
@@ -64,6 +67,22 @@ func NewTestConfig(configPath, modulePath string, codegenCfg *CodegenConfig) (*C
 
 func (cfg *Config) SetDebugMode(debugMode bool) {
 	cfg.debugMode = debugMode
+}
+
+func (cfg *Config) SetUseChanges(useChanges bool) {
+	cfg.useChanges = useChanges
+}
+
+func (cfg *Config) SetChangeMap(changes change.ChangeMap) {
+	cfg.changes = changes
+}
+
+func (cfg *Config) UseChanges() bool {
+	return cfg.useChanges
+}
+
+func (cfg *Config) ChangeMap() change.ChangeMap {
+	return cfg.changes
 }
 
 func (cfg *Config) DebugMode() bool {
@@ -231,22 +250,30 @@ var defaultArgs = []string{
 	"--end-of-line", "lf",
 }
 
-func (cfg *Config) GetPrettierArgs() []string {
-	if cfg.config == nil || cfg.config.Codegen == nil || cfg.config.Codegen.Prettier == nil {
-		// defaults
-		return append(defaultArgs, "--write", DEFAULT_GLOB)
+func (cfg *Config) GetPrettierArgs(changedFiles []string) []string {
+	// nothing to do here
+	if cfg.useChanges && len(changedFiles) == 0 {
+		return nil
 	}
-
-	prettier := cfg.config.Codegen.Prettier
 	glob := DEFAULT_GLOB
-	if prettier.Glob != "" {
-		glob = prettier.Glob
-	}
-	if prettier.Custom {
-		return []string{"--write", glob}
-	}
+	args := defaultArgs
 
-	return append(defaultArgs, "--write", glob)
+	if cfg.config != nil && cfg.config.Codegen != nil && cfg.config.Codegen.Prettier != nil {
+		prettier := cfg.config.Codegen.Prettier
+
+		if prettier.Glob != "" {
+			glob = prettier.Glob
+		}
+		if prettier.Custom {
+			args = []string{}
+		}
+	}
+	if cfg.useChanges {
+		args = append(args, "--write")
+		return append(args, changedFiles...)
+	} else {
+		return append(args, "--write", glob)
+	}
 }
 
 // ImportPackage refers to TypeScript paths of what needs to be generated for imports

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
 
@@ -62,6 +63,7 @@ func DisableSchemaGQL() Option {
 type Processor struct {
 	Schema      *schema.Schema
 	ChangeMap   change.ChangeMap
+	useChanges  bool
 	Config      *Config
 	debugMode   bool
 	opt         *option
@@ -193,7 +195,15 @@ func (p *Processor) Run(steps []Step, step string, options ...Option) error {
 }
 
 func (p *Processor) FormatTS() error {
-	cmd := exec.Command("prettier", p.Config.GetPrettierArgs()...)
+	// nothing to do here
+	args := p.Config.GetPrettierArgs(changedTSFiles)
+	if args == nil {
+		if p.debugMode {
+			fmt.Printf("no files for prettier to format\n")
+		}
+		return nil
+	}
+	cmd := exec.Command("prettier", p.Config.GetPrettierArgs(changedTSFiles)...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
@@ -271,15 +281,23 @@ func NewCodegenProcessor(currentSchema *schema.Schema, configPath, modulePath st
 	cfg.SetDebugMode(debugMode)
 
 	existingSchema := parseExistingSchema(cfg)
-	changes, _ := schema.CompareSchemas(existingSchema, currentSchema)
+	changes, err := schema.CompareSchemas(existingSchema, currentSchema)
+	if err != nil && debugMode {
+		fmt.Printf("error %v comparing schemas \n", err)
+	}
+	// if changes == nil, don't use changes
+	useChanges := changes != nil
+	cfg.SetUseChanges(useChanges)
+	cfg.SetChangeMap(changes)
 	spew.Dump(changes)
 
 	return &Processor{
-		Schema:    currentSchema,
-		Config:    cfg,
-		ChangeMap: changes,
-		debugMode: debugMode,
-		opt:       &option{},
+		Schema:     currentSchema,
+		Config:     cfg,
+		ChangeMap:  changes,
+		useChanges: useChanges,
+		debugMode:  debugMode,
+		opt:        &option{},
 	}, nil
 }
 
@@ -293,6 +311,15 @@ func NewTestCodegenProcessor(configPath string, s *schema.Schema, codegenCfg *Co
 		Schema: s,
 		opt:    &option{},
 	}, nil
+}
+
+// keep track of changed ts files to pass to prettier
+var changedTSFiles []string
+
+func AddChangedFile(filePath string) {
+	if strings.HasSuffix(filePath, ".ts") {
+		changedTSFiles = append(changedTSFiles, filePath)
+	}
 }
 
 func FormatTS(cfg *Config) error {
