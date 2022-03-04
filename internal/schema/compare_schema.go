@@ -104,12 +104,14 @@ func compareNodes(m1, m2 NodeMapInfo, m *change.ChangeMap) error {
 	}
 	for k, nm1 := range m1 {
 		nm2, ok := m2[k]
+		name := getSchemaName(k)
 		if !ok {
 			// in 1st but not 2nd, dropped
 			ret[k] = []change.Change{
 				{
-					Change: change.RemoveNode,
-					Name:   getSchemaName(k),
+					Change:      change.RemoveNode,
+					Name:        name,
+					GraphQLName: name,
 				},
 			}
 		} else {
@@ -118,7 +120,7 @@ func compareNodes(m1, m2 NodeMapInfo, m *change.ChangeMap) error {
 				return err
 			}
 			if len(changes) != 0 {
-				ret[getSchemaName(k)] = changes
+				ret[name] = changes
 			}
 		}
 	}
@@ -127,10 +129,13 @@ func compareNodes(m1, m2 NodeMapInfo, m *change.ChangeMap) error {
 	for k := range m2 {
 		_, ok := m1[k]
 		if !ok {
+			name := getSchemaName(k)
+
 			ret[k] = []change.Change{
 				{
-					Change: change.AddNode,
-					Name:   getSchemaName(k),
+					Change:      change.AddNode,
+					Name:        name,
+					GraphQLName: name,
 				},
 			}
 		}
@@ -161,8 +166,9 @@ func compareNode(n1, n2 *NodeData) ([]change.Change, error) {
 	// maybe move action changes after. can't think of a reason to have actions affect node file
 	if len(ret) != 0 {
 		ret = append(ret, change.Change{
-			Change: change.ModifyNode,
-			Name:   n2.Node,
+			Change:      change.ModifyNode,
+			Name:        n2.Node,
+			GraphQLName: n2.Node,
 		})
 	}
 	return ret, nil

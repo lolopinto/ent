@@ -257,8 +257,9 @@ func TestCompareAddNode(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 1)
 	verifyChange(t, change.Change{
-		Change: change.AddNode,
-		Name:   "User",
+		Change:      change.AddNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[0])
 }
 
@@ -281,8 +282,9 @@ func TestCompareRemoveNode(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 1)
 	verifyChange(t, change.Change{
-		Change: change.RemoveNode,
-		Name:   "User",
+		Change:      change.RemoveNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[0])
 }
 
@@ -375,8 +377,9 @@ func TestCompareNodesAddField(t *testing.T) {
 		Name:   "last_name",
 	}, user[lastIdx])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Name:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[2])
 }
 
@@ -440,8 +443,9 @@ func TestCompareNodesRemoveField(t *testing.T) {
 		Name:   "last_name",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Name:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -500,8 +504,9 @@ func TestCompareNodesModifyField(t *testing.T) {
 		Name:   "first_name",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Name:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -594,8 +599,9 @@ func TestCompareNodesWithEdgesAdded(t *testing.T) {
 		Name:   "Likes",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Name:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -641,8 +647,9 @@ func TestCompareNodesWithRemovedEdge(t *testing.T) {
 		Name:   "Likes",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Name:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -701,8 +708,9 @@ func TestCompareNodesWithModifiedEdge(t *testing.T) {
 		Name:   "Likes",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Name:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -837,8 +845,9 @@ func TestCompareNodesWithEdgeGroupAdded(t *testing.T) {
 		Name:   "FriendshipStatus",
 	}, user[2])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Name:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[3])
 }
 
@@ -899,8 +908,9 @@ func TestCompareNodesWithEdgeGroupRemoved(t *testing.T) {
 		Name:   "FriendshipStatus",
 	}, user[2])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Name:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[3])
 }
 
@@ -988,8 +998,9 @@ func TestCompareNodesWithEdgeGroupModified(t *testing.T) {
 		Name:   "FriendshipStatus",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Name:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -1097,8 +1108,9 @@ func TestCompareNodesWithEdgeGroupRenamed(t *testing.T) {
 		Name:   "ConnectionStatus",
 	}, user[4])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Name:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[5])
 }
 
@@ -1210,8 +1222,9 @@ func TestCompareActionsAdded(t *testing.T) {
 		Name:   "CreateUserAction",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Name:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -1264,8 +1277,9 @@ func TestCompareActionsRemoved(t *testing.T) {
 		Name:   "CreateUserAction",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Name:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -1349,8 +1363,9 @@ func TestCompareActionsModified(t *testing.T) {
 		Name:   "CreateUserAction",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Name:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -1424,8 +1439,9 @@ func TestForeignKeyEdgeAdded(t *testing.T) {
 		Name:   "contacts",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Name:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -1465,8 +1481,9 @@ func TestForeignKeyEdgeRemoved(t *testing.T) {
 		Name:   "contacts",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Name:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -1514,8 +1531,9 @@ func TestForeignKeyEdgeModified(t *testing.T) {
 		Name:   "user_contacts",
 	}, user[1])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Name:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[2])
 }
 
@@ -1595,8 +1613,9 @@ func TestIndexedEdgeAdded(t *testing.T) {
 		Name:   "Users",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Name:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -1638,8 +1657,9 @@ func TestIndexedEdgeRemoved(t *testing.T) {
 		Name:   "Users",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Name:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -1687,8 +1707,9 @@ func TestIndexedEdgeModified(t *testing.T) {
 		Name:   "Users",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Name:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
