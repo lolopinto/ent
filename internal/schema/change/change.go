@@ -19,6 +19,11 @@ const (
 	RemoveEdge ChangeType = "remove_edge"
 	ModifyEdge ChangeType = "modify_edge"
 
+	// brought to differentiate from edges since no connection in graphql land
+	AddFieldEdge    ChangeType = "add_field_edge"
+	RemoveFieldEdge ChangeType = "remove_field-edge"
+	ModifyFieldEdge ChangeType = "modify_field_edge"
+
 	AddEdgeGroup    ChangeType = "add_edge_group"
 	RemoveEdgeGroup ChangeType = "remove_edge_group"
 	ModifyEdgeGroup ChangeType = "modify_edge_group"

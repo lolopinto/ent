@@ -16,7 +16,9 @@ func CompareAssociationEdge(existingEdge, edge *AssociationEdge) []change.Change
 	var ret []change.Change
 	if !AssocEdgeEqual(existingEdge, edge) {
 		ret = append(ret, change.Change{
-			Change: change.ModifyEdge,
+			Change:      change.ModifyEdge,
+			Edge:        existingEdge.EdgeName,
+			GraphQLName: existingEdge.GetGraphQLConnectionName(),
 		})
 	}
 	return ret
@@ -64,26 +66,29 @@ func CompareAssocEdgesMap(m1, m2 map[string]*AssociationEdge) []change.Change {
 		// in 1st but not 2nd, dropped
 		if !ok {
 			ret = append(ret, change.Change{
-				Change: change.RemoveEdge,
-				Name:   k,
+				Change:      change.RemoveEdge,
+				Name:        k,
+				GraphQLName: edge1.GetGraphQLConnectionName(),
 			})
 		} else {
 			if !AssocEdgeEqual(edge1, edge2) {
 				ret = append(ret, change.Change{
-					Change: change.ModifyEdge,
-					Name:   k,
+					Change:      change.ModifyEdge,
+					Name:        k,
+					GraphQLName: edge1.GetGraphQLConnectionName(),
 				})
 			}
 		}
 	}
 
-	for k := range m2 {
+	for k, edge2 := range m2 {
 		_, ok := m1[k]
 		// in 2nd but not first, added
 		if !ok {
 			ret = append(ret, change.Change{
-				Change: change.AddEdge,
-				Name:   k,
+				Change:      change.AddEdge,
+				Name:        k,
+				GraphQLName: edge2.GetGraphQLConnectionName(),
 			})
 		}
 	}
@@ -136,20 +141,22 @@ func compareFieldEdgeMap(m1, m2 map[string]*FieldEdge) []change.Change {
 		} else {
 			if !fieldEdgeEqual(edge1, edge2) {
 				ret = append(ret, change.Change{
-					Change: change.ModifyEdge,
-					Name:   k,
+					Change:      change.ModifyFieldEdge,
+					Name:        k,
+					GraphQLName: edge1.GraphQLEdgeName(),
 				})
 			}
 		}
 	}
 
-	for k := range m2 {
+	for k, edge2 := range m2 {
 		_, ok := m1[k]
 		// in 2nd but not first, added
 		if !ok {
 			ret = append(ret, change.Change{
-				Change: change.AddEdge,
-				Name:   k,
+				Change:      change.AddFieldEdge,
+				Name:        k,
+				GraphQLName: edge2.GraphQLEdgeName(),
 			})
 		}
 	}
@@ -163,26 +170,29 @@ func compareIndexedConnectionEdgeMap(m1, m2 map[string]IndexedConnectionEdge) []
 		// in 1st but not 2nd, dropped
 		if !ok {
 			ret = append(ret, change.Change{
-				Change: change.RemoveEdge,
-				Name:   k,
+				Change:      change.RemoveEdge,
+				Name:        k,
+				GraphQLName: edge1.GetGraphQLConnectionName(),
 			})
 		} else {
 			if !compareIndexedConnectionEdge(edge1, edge2) {
 				ret = append(ret, change.Change{
-					Change: change.ModifyEdge,
-					Name:   k,
+					Change:      change.ModifyEdge,
+					Name:        k,
+					GraphQLName: edge1.GetGraphQLConnectionName(),
 				})
 			}
 		}
 	}
 
-	for k := range m2 {
+	for k, edge2 := range m2 {
 		_, ok := m1[k]
 		// in 2nd but not first, added
 		if !ok {
 			ret = append(ret, change.Change{
-				Change: change.AddEdge,
-				Name:   k,
+				Change:      change.AddEdge,
+				Name:        k,
+				GraphQLName: edge2.GetGraphQLConnectionName(),
 			})
 		}
 	}
@@ -220,7 +230,9 @@ func compareForeignKeyEdge(existingEdge, edge *ForeignKeyEdge) []change.Change {
 	var ret []change.Change
 	if !foreignKeyEdgeEqual(existingEdge, edge) {
 		ret = append(ret, change.Change{
-			Change: change.ModifyEdge,
+			Change:      change.ModifyEdge,
+			Name:        existingEdge.EdgeName,
+			GraphQLName: existingEdge.GetGraphQLConnectionName(),
 		})
 	}
 	return ret
@@ -242,8 +254,9 @@ func compareIndexedEdge(existingEdge, edge *IndexedEdge) []change.Change {
 	var ret []change.Change
 	if !indexedEdgeEqual(existingEdge, edge) {
 		ret = append(ret, change.Change{
-			Change: change.ModifyEdge,
-			Name:   edge.EdgeName,
+			Change:      change.ModifyEdge,
+			Name:        edge.EdgeName,
+			GraphQLName: edge.GetGraphQLConnectionName(),
 		})
 	}
 	return ret
@@ -260,8 +273,9 @@ func compareFieldEdge(existingEdge, edge *FieldEdge) []change.Change {
 	var ret []change.Change
 	if !fieldEdgeEqual(existingEdge, edge) {
 		ret = append(ret, change.Change{
-			Change: change.ModifyEdge,
-			Name:   edge.EdgeName,
+			Change:      change.ModifyFieldEdge,
+			Name:        edge.EdgeName,
+			GraphQLName: edge.GraphQLEdgeName(),
 		})
 	}
 	return ret
