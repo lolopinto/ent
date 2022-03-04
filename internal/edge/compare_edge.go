@@ -17,7 +17,7 @@ func CompareAssociationEdge(existingEdge, edge *AssociationEdge) []change.Change
 	if !AssocEdgeEqual(existingEdge, edge) {
 		ret = append(ret, change.Change{
 			Change:      change.ModifyEdge,
-			Edge:        existingEdge.EdgeName,
+			Name:        existingEdge.EdgeName,
 			GraphQLName: existingEdge.GetGraphQLConnectionName(),
 		})
 	}

@@ -1885,13 +1885,4 @@ func verifyChange(t *testing.T, expChange, change change.Change) {
 	assert.Equal(t, expChange.GraphQLName, change.GraphQLName)
 	assert.Equal(t, expChange.GraphQLOnly, change.GraphQLOnly)
 	assert.Equal(t, expChange.TSOnly, change.TSOnly)
-
-	// TODO kill  everything below this line
-	assert.Equal(t, expChange.Field, change.Field)
-	assert.Equal(t, expChange.Edge, change.Edge)
-	assert.Equal(t, expChange.EdgeGroup, change.EdgeGroup)
-	assert.Equal(t, expChange.Pattern, change.Pattern)
-	assert.Equal(t, expChange.Node, change.Node)
-	assert.Equal(t, expChange.Action, change.Action)
-	assert.Equal(t, expChange.Enum, change.Enum)
 }

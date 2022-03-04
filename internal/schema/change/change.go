@@ -53,13 +53,6 @@ const (
 
 type Change struct {
 	Change      ChangeType
-	Field       string
-	Edge        string // For AddEdge|RemoveEdge etc
-	EdgeGroup   string
-	Pattern     string
-	Node        string
-	Action      string
-	Enum        string
 	Name        string
 	GraphQLName string
 	GraphQLOnly bool
