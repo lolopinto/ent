@@ -299,7 +299,7 @@ func (s *Step) processEnums(processor *codegen.Processor) writeFileFnList {
 			name := info.Enum.Name
 			changes := processor.ChangeMap[name]
 			for _, c := range changes {
-				if c.Change == change.AddEnum {
+				if c.Change == change.AddEnum || c.Change == change.ModifyEnum {
 					write = true
 					break
 				}
