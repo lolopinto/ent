@@ -1227,8 +1227,9 @@ func TestCompareActionsAdded(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
-		Change: change.AddAction,
-		Name:   "CreateUserAction",
+		Change:      change.AddAction,
+		Name:        "CreateUserAction",
+		GraphQLName: "userCreate",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change:      change.ModifyNode,
@@ -1282,8 +1283,9 @@ func TestCompareActionsRemoved(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
-		Change: change.RemoveAction,
-		Name:   "CreateUserAction",
+		Change:      change.RemoveAction,
+		Name:        "CreateUserAction",
+		GraphQLName: "userCreate",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change:      change.ModifyNode,
@@ -1368,8 +1370,9 @@ func TestCompareActionsModified(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
-		Change: change.ModifyAction,
-		Name:   "CreateUserAction",
+		Change:      change.ModifyAction,
+		Name:        "CreateUserAction",
+		GraphQLName: "userCreate",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change:      change.ModifyNode,
