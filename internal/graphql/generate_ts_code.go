@@ -261,6 +261,8 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 	var funcs writeFileFnList
 
 	writeAll := processor.Config.WriteAllFiles()
+	changes := processor.ChangeMap
+	updateBecauseChanges := writeAll || len(changes) > 0
 	funcs = append(funcs, p.processEnums(processor, s, writeAll)...)
 
 	for _, node := range s.nodes {
@@ -275,18 +277,27 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 		funcs = append(funcs, p.buildNode(processor, s, node)...)
 	}
 
-	for idx := range s.rootQueries {
-		rootQuery := s.rootQueries[idx]
-		funcs = append(funcs, func() error {
-			return writeRootQueryFile(processor, rootQuery)
-		})
+	if updateBecauseChanges {
+		// node(), account(), etc
+		// TODO this mostly doesn't change so ideally we'd want this to be done
+		// only when node is being added or when config is changing
+		for idx := range s.rootQueries {
+			rootQuery := s.rootQueries[idx]
+			funcs = append(funcs, func() error {
+				return writeRootQueryFile(processor, rootQuery)
+			})
+		}
 	}
 
-	for idx := range s.rootDatas {
-		rootData := s.rootDatas[idx]
-		funcs = append(funcs, func() error {
-			return writeRootDataFile(processor, rootData)
-		})
+	// simplfiy and only do this if there's changes, we can be smarter about this over time
+	if updateBecauseChanges {
+		// Query|Mutation|Subscription
+		for idx := range s.rootDatas {
+			rootData := s.rootDatas[idx]
+			funcs = append(funcs, func() error {
+				return writeRootDataFile(processor, rootData)
+			})
+		}
 	}
 
 	// other files
@@ -294,18 +305,29 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 		funcs,
 		func() error {
 			// graphql/resolvers/internal
-			return writeInternalGQLResolversFile(s, processor)
+			// if any changes, update this
+			// eventually only wanna do this if add|remove something
+			if updateBecauseChanges {
+				return writeInternalGQLResolversFile(s, processor)
+			}
+			return nil
 		},
 		// graphql/resolvers/index
 		func() error {
+			// have writeOnce handle this
 			return writeGQLResolversIndexFile(processor)
 		},
 		func() error {
 			// graphql/schema.ts
-			return writeTSSchemaFile(processor, s)
+			// if any changes, just do this
+			if updateBecauseChanges {
+				return writeTSSchemaFile(processor, s)
+			}
+			return nil
 		},
 		func() error {
 			// graphql/index.ts
+			// writeOnce handles this
 			return writeTSIndexFile(processor, s)
 		},
 	)
@@ -1360,7 +1382,7 @@ func writeGQLResolversIndexFile(processor *codegen.Processor) error {
 		CreateDirIfNeeded: true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
-	})
+	}, file.WriteOnce())
 }
 
 type connectionBaseObj struct{}
