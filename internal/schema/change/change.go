@@ -55,6 +55,8 @@ type Change struct {
 	Node        string
 	Action      string
 	Enum        string
+	Name        string
+	GraphQLName string
 	GraphQLOnly bool
 	TSOnly      bool
 }

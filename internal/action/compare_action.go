@@ -38,13 +38,15 @@ func compareActionMap(m1, m2 map[string]Action) []change.Change {
 		if !ok {
 			ret = append(ret, change.Change{
 				Change: change.RemoveAction,
-				Action: k,
+				Name:   k,
+				//				GraphQLName: action1.GetGraphQLName(),
 			})
 		} else {
 			if !ActionEqual(action1, action2) {
 				ret = append(ret, change.Change{
 					Change: change.ModifyAction,
-					Action: k,
+					Name:   k,
+					//					GraphQLName: action1.GetGraphQLName(),
 				})
 			}
 		}
@@ -56,7 +58,8 @@ func compareActionMap(m1, m2 map[string]Action) []change.Change {
 		if !ok {
 			ret = append(ret, change.Change{
 				Change: change.AddAction,
-				Action: k,
+				Name:   k,
+				//				GraphQLName: action2.GetGraphQLName(),
 			})
 		}
 	}

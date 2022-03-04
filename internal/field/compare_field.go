@@ -113,13 +113,13 @@ func compareFieldMap(m1, m2 map[string]*Field) []change.Change {
 		if !ok {
 			ret = append(ret, change.Change{
 				Change: change.RemoveField,
-				Field:  k,
+				Name:   k,
 			})
 		} else {
 			if !FieldEqual(f1, f2) {
 				ret = append(ret, change.Change{
 					Change: change.ModifyField,
-					Field:  k,
+					Name:   k,
 				})
 			}
 		}
@@ -131,7 +131,7 @@ func compareFieldMap(m1, m2 map[string]*Field) []change.Change {
 		if !ok {
 			ret = append(ret, change.Change{
 				Change: change.AddField,
-				Field:  k,
+				Name:   k,
 			})
 		}
 	}

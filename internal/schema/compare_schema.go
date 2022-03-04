@@ -49,8 +49,8 @@ func comparePattern(p1, p2 *PatternInfo) ([]change.Change, error) {
 	// name change is possible because name in schema can be different from pattern file?
 	if p1.Name != p2.Name {
 		ret = append(ret, change.Change{
-			Change:  change.ModifyPattern,
-			Pattern: p1.Name,
+			Change: change.ModifyPattern,
+			Name:   p1.Name,
 		})
 	}
 
@@ -67,8 +67,8 @@ func comparePatterns(m1, m2 map[string]*PatternInfo, m *change.ChangeMap) error 
 		if !ok {
 			ret[k] = []change.Change{
 				{
-					Change:  change.RemovePattern,
-					Pattern: k,
+					Change: change.RemovePattern,
+					Name:   k,
 				},
 			}
 		} else {
@@ -88,8 +88,8 @@ func comparePatterns(m1, m2 map[string]*PatternInfo, m *change.ChangeMap) error 
 		if !ok {
 			ret[k] = []change.Change{
 				{
-					Change:  change.AddPattern,
-					Pattern: k,
+					Change: change.AddPattern,
+					Name:   k,
 				},
 			}
 		}
@@ -109,7 +109,7 @@ func compareNodes(m1, m2 NodeMapInfo, m *change.ChangeMap) error {
 			ret[k] = []change.Change{
 				{
 					Change: change.RemoveNode,
-					Node:   getSchemaName(k),
+					Name:   getSchemaName(k),
 				},
 			}
 		} else {
@@ -130,7 +130,7 @@ func compareNodes(m1, m2 NodeMapInfo, m *change.ChangeMap) error {
 			ret[k] = []change.Change{
 				{
 					Change: change.AddNode,
-					Node:   getSchemaName(k),
+					Name:   getSchemaName(k),
 				},
 			}
 		}
@@ -162,7 +162,7 @@ func compareNode(n1, n2 *NodeData) ([]change.Change, error) {
 	if len(ret) != 0 {
 		ret = append(ret, change.Change{
 			Change: change.ModifyNode,
-			Node:   n2.Node,
+			Name:   n2.Node,
 		})
 	}
 	return ret, nil
@@ -196,7 +196,7 @@ func compareEnums(m1, m2 map[string]*EnumInfo, m *change.ChangeMap) error {
 			ret[k] = []change.Change{
 				{
 					Change: change.RemoveEnum,
-					Enum:   k,
+					Name:   k,
 				},
 			}
 		} else {
@@ -204,7 +204,7 @@ func compareEnums(m1, m2 map[string]*EnumInfo, m *change.ChangeMap) error {
 				ret[k] = []change.Change{
 					{
 						Change: change.ModifyEnum,
-						Enum:   k,
+						Name:   k,
 					},
 				}
 			}
@@ -218,7 +218,7 @@ func compareEnums(m1, m2 map[string]*EnumInfo, m *change.ChangeMap) error {
 			ret[k] = []change.Change{
 				{
 					Change: change.AddEnum,
-					Enum:   k,
+					Name:   k,
 				},
 			}
 		}

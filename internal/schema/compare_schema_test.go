@@ -68,8 +68,8 @@ func TestCompareAddedPattern(t *testing.T) {
 	node := m["node"]
 	require.Len(t, node, 1)
 	verifyChange(t, change.Change{
-		Change:  change.AddPattern,
-		Pattern: "node",
+		Change: change.AddPattern,
+		Name:   "node",
 	}, node[0])
 }
 
@@ -89,8 +89,8 @@ func TestCompareRemovedPattern(t *testing.T) {
 	node := m["node"]
 	require.Len(t, node, 1)
 	verifyChange(t, change.Change{
-		Change:  change.RemovePattern,
-		Pattern: "node",
+		Change: change.RemovePattern,
+		Name:   "node",
 	}, node[0])
 }
 
@@ -154,7 +154,7 @@ func TestComparePatternsWithAddedEdge(t *testing.T) {
 	require.Len(t, feedback, 1)
 	verifyChange(t, change.Change{
 		Change: change.AddEdge,
-		Edge:   "likes",
+		Name:   "likes",
 	}, feedback[0])
 }
 
@@ -188,7 +188,7 @@ func TestComparePatternsWithRemovedEdge(t *testing.T) {
 	require.Len(t, feedback, 1)
 	verifyChange(t, change.Change{
 		Change: change.RemoveEdge,
-		Edge:   "likes",
+		Name:   "likes",
 	}, feedback[0])
 }
 
@@ -234,7 +234,7 @@ func TestComparePatternsWithModifiedEdge(t *testing.T) {
 	require.Len(t, feedback, 1)
 	verifyChange(t, change.Change{
 		Change: change.ModifyEdge,
-		Edge:   "likes",
+		Name:   "likes",
 	}, feedback[0])
 }
 
@@ -258,7 +258,7 @@ func TestCompareAddNode(t *testing.T) {
 	require.Len(t, user, 1)
 	verifyChange(t, change.Change{
 		Change: change.AddNode,
-		Node:   "User",
+		Name:   "User",
 	}, user[0])
 }
 
@@ -282,7 +282,7 @@ func TestCompareRemoveNode(t *testing.T) {
 	require.Len(t, user, 1)
 	verifyChange(t, change.Change{
 		Change: change.RemoveNode,
-		Node:   "User",
+		Name:   "User",
 	}, user[0])
 }
 
@@ -359,7 +359,7 @@ func TestCompareNodesAddField(t *testing.T) {
 	require.Len(t, user, 3)
 	// map order means this isn't consistent...
 	var firstIdx, lastIdx int
-	if user[0].Field == "first_name" {
+	if user[0].Name == "first_name" {
 		firstIdx = 0
 		lastIdx = 1
 	} else {
@@ -368,16 +368,15 @@ func TestCompareNodesAddField(t *testing.T) {
 	}
 	verifyChange(t, change.Change{
 		Change: change.AddField,
-		Field:  "first_name",
+		Name:   "first_name",
 	}, user[firstIdx])
 	verifyChange(t, change.Change{
 		Change: change.AddField,
-		Field:  "last_name",
+		Name:   "last_name",
 	}, user[lastIdx])
-
 	verifyChange(t, change.Change{
 		Change: change.ModifyNode,
-		Node:   "User",
+		Name:   "User",
 	}, user[2])
 }
 
@@ -438,11 +437,11 @@ func TestCompareNodesRemoveField(t *testing.T) {
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
 		Change: change.RemoveField,
-		Field:  "last_name",
+		Name:   "last_name",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change: change.ModifyNode,
-		Node:   "User",
+		Name:   "User",
 	}, user[1])
 }
 
@@ -498,11 +497,11 @@ func TestCompareNodesModifyField(t *testing.T) {
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
 		Change: change.ModifyField,
-		Field:  "first_name",
+		Name:   "first_name",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change: change.ModifyNode,
-		Node:   "User",
+		Name:   "User",
 	}, user[1])
 }
 
@@ -592,11 +591,11 @@ func TestCompareNodesWithEdgesAdded(t *testing.T) {
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
 		Change: change.AddEdge,
-		Edge:   "Likes",
+		Name:   "Likes",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change: change.ModifyNode,
-		Node:   "User",
+		Name:   "User",
 	}, user[1])
 }
 
@@ -639,11 +638,11 @@ func TestCompareNodesWithRemovedEdge(t *testing.T) {
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
 		Change: change.RemoveEdge,
-		Edge:   "Likes",
+		Name:   "Likes",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change: change.ModifyNode,
-		Node:   "User",
+		Name:   "User",
 	}, user[1])
 }
 
@@ -699,11 +698,11 @@ func TestCompareNodesWithModifiedEdge(t *testing.T) {
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
 		Change: change.ModifyEdge,
-		Edge:   "Likes",
+		Name:   "Likes",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change: change.ModifyNode,
-		Node:   "User",
+		Name:   "User",
 	}, user[1])
 }
 
@@ -834,12 +833,12 @@ func TestCompareNodesWithEdgeGroupAdded(t *testing.T) {
 	require.Len(t, user, 4)
 	// also has 2 edges added
 	verifyChange(t, change.Change{
-		Change:    change.AddEdgeGroup,
-		EdgeGroup: "FriendshipStatus",
+		Change: change.AddEdgeGroup,
+		Name:   "FriendshipStatus",
 	}, user[2])
 	verifyChange(t, change.Change{
 		Change: change.ModifyNode,
-		Node:   "User",
+		Name:   "User",
 	}, user[3])
 }
 
@@ -896,12 +895,12 @@ func TestCompareNodesWithEdgeGroupRemoved(t *testing.T) {
 	require.Len(t, user, 4)
 	// also has 2 edges removed
 	verifyChange(t, change.Change{
-		Change:    change.RemoveEdgeGroup,
-		EdgeGroup: "FriendshipStatus",
+		Change: change.RemoveEdgeGroup,
+		Name:   "FriendshipStatus",
 	}, user[2])
 	verifyChange(t, change.Change{
 		Change: change.ModifyNode,
-		Node:   "User",
+		Name:   "User",
 	}, user[3])
 }
 
@@ -985,12 +984,12 @@ func TestCompareNodesWithEdgeGroupModified(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
-		Change:    change.ModifyEdgeGroup,
-		EdgeGroup: "FriendshipStatus",
+		Change: change.ModifyEdgeGroup,
+		Name:   "FriendshipStatus",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change: change.ModifyNode,
-		Node:   "User",
+		Name:   "User",
 	}, user[1])
 }
 
@@ -1079,27 +1078,27 @@ func TestCompareNodesWithEdgeGroupRenamed(t *testing.T) {
 	// table name changed since part of new group and table name not overriden
 	verifyChange(t, change.Change{
 		Change: change.ModifyEdge,
-		Edge:   "Friends",
+		Name:   "Friends",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change: change.ModifyEdge,
-		Edge:   "FriendRequestsSent",
+		Name:   "FriendRequestsSent",
 	}, user[1])
 	verifyChange(t, change.Change{
 		Change: change.AddEdge,
-		Edge:   "Following",
+		Name:   "Following",
 	}, user[2])
 	verifyChange(t, change.Change{
-		Change:    change.RemoveEdgeGroup,
-		EdgeGroup: "FriendshipStatus",
+		Change: change.RemoveEdgeGroup,
+		Name:   "FriendshipStatus",
 	}, user[3])
 	verifyChange(t, change.Change{
-		Change:    change.AddEdgeGroup,
-		EdgeGroup: "ConnectionStatus",
+		Change: change.AddEdgeGroup,
+		Name:   "ConnectionStatus",
 	}, user[4])
 	verifyChange(t, change.Change{
 		Change: change.ModifyNode,
-		Node:   "User",
+		Name:   "User",
 	}, user[5])
 }
 
@@ -1208,11 +1207,11 @@ func TestCompareActionsAdded(t *testing.T) {
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
 		Change: change.AddAction,
-		Action: "CreateUserAction",
+		Name:   "CreateUserAction",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change: change.ModifyNode,
-		Node:   "User",
+		Name:   "User",
 	}, user[1])
 }
 
@@ -1262,11 +1261,11 @@ func TestCompareActionsRemoved(t *testing.T) {
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
 		Change: change.RemoveAction,
-		Action: "CreateUserAction",
+		Name:   "CreateUserAction",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change: change.ModifyNode,
-		Node:   "User",
+		Name:   "User",
 	}, user[1])
 }
 
@@ -1347,11 +1346,11 @@ func TestCompareActionsModified(t *testing.T) {
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
 		Change: change.ModifyAction,
-		Action: "CreateUserAction",
+		Name:   "CreateUserAction",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change: change.ModifyNode,
-		Node:   "User",
+		Name:   "User",
 	}, user[1])
 }
 
@@ -1422,11 +1421,11 @@ func TestForeignKeyEdgeAdded(t *testing.T) {
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
 		Change: change.AddEdge,
-		Edge:   "contacts",
+		Name:   "contacts",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change: change.ModifyNode,
-		Node:   "User",
+		Name:   "User",
 	}, user[1])
 }
 
@@ -1463,11 +1462,11 @@ func TestForeignKeyEdgeRemoved(t *testing.T) {
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
 		Change: change.RemoveEdge,
-		Edge:   "contacts",
+		Name:   "contacts",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change: change.ModifyNode,
-		Node:   "User",
+		Name:   "User",
 	}, user[1])
 }
 
@@ -1508,15 +1507,15 @@ func TestForeignKeyEdgeModified(t *testing.T) {
 	require.Len(t, user, 3)
 	verifyChange(t, change.Change{
 		Change: change.RemoveEdge,
-		Edge:   "contacts",
+		Name:   "contacts",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change: change.AddEdge,
-		Edge:   "user_contacts",
+		Name:   "user_contacts",
 	}, user[1])
 	verifyChange(t, change.Change{
 		Change: change.ModifyNode,
-		Node:   "User",
+		Name:   "User",
 	}, user[2])
 }
 
@@ -1593,11 +1592,11 @@ func TestIndexedEdgeAdded(t *testing.T) {
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
 		Change: change.AddEdge,
-		Edge:   "Users",
+		Name:   "Users",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change: change.ModifyNode,
-		Node:   "User",
+		Name:   "User",
 	}, user[1])
 }
 
@@ -1636,11 +1635,11 @@ func TestIndexedEdgeRemoved(t *testing.T) {
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
 		Change: change.RemoveEdge,
-		Edge:   "Users",
+		Name:   "Users",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change: change.ModifyNode,
-		Node:   "User",
+		Name:   "User",
 	}, user[1])
 }
 
@@ -1685,11 +1684,11 @@ func TestIndexedEdgeModified(t *testing.T) {
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
 		Change: change.ModifyEdge,
-		Edge:   "Users",
+		Name:   "Users",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change: change.ModifyNode,
-		Node:   "User",
+		Name:   "User",
 	}, user[1])
 }
 
@@ -1724,7 +1723,7 @@ func TestEnumAdded(t *testing.T) {
 	require.Len(t, lang, 1)
 	verifyChange(t, change.Change{
 		Change: change.AddEnum,
-		Enum:   "Language",
+		Name:   "Language",
 	}, lang[0])
 }
 
@@ -1743,7 +1742,7 @@ func TestEnumRemoved(t *testing.T) {
 	require.Len(t, lang, 1)
 	verifyChange(t, change.Change{
 		Change: change.RemoveEnum,
-		Enum:   "Language",
+		Name:   "Language",
 	}, lang[0])
 }
 
@@ -1777,7 +1776,7 @@ func TestEnumModified(t *testing.T) {
 	require.Len(t, lang, 1)
 	verifyChange(t, change.Change{
 		Change: change.ModifyEnum,
-		Enum:   "Language",
+		Name:   "Language",
 	}, lang[0])
 }
 
@@ -1838,6 +1837,12 @@ func createActionInfoFromInput(t *testing.T, nodeName string, node *input.Node) 
 
 func verifyChange(t *testing.T, expChange, change change.Change) {
 	assert.Equal(t, expChange.Change, change.Change)
+	assert.Equal(t, expChange.Name, change.Name)
+	assert.Equal(t, expChange.GraphQLName, change.GraphQLName)
+	assert.Equal(t, expChange.GraphQLOnly, change.GraphQLOnly)
+	assert.Equal(t, expChange.TSOnly, change.TSOnly)
+
+	// TODO kill  everything below this line
 	assert.Equal(t, expChange.Field, change.Field)
 	assert.Equal(t, expChange.Edge, change.Edge)
 	assert.Equal(t, expChange.EdgeGroup, change.EdgeGroup)
@@ -1845,6 +1850,4 @@ func verifyChange(t *testing.T, expChange, change change.Change) {
 	assert.Equal(t, expChange.Node, change.Node)
 	assert.Equal(t, expChange.Action, change.Action)
 	assert.Equal(t, expChange.Enum, change.Enum)
-	assert.Equal(t, expChange.GraphQLOnly, change.GraphQLOnly)
-	assert.Equal(t, expChange.TSOnly, change.TSOnly)
 }

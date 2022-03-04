@@ -65,13 +65,13 @@ func CompareAssocEdgesMap(m1, m2 map[string]*AssociationEdge) []change.Change {
 		if !ok {
 			ret = append(ret, change.Change{
 				Change: change.RemoveEdge,
-				Edge:   k,
+				Name:   k,
 			})
 		} else {
 			if !AssocEdgeEqual(edge1, edge2) {
 				ret = append(ret, change.Change{
 					Change: change.ModifyEdge,
-					Edge:   k,
+					Name:   k,
 				})
 			}
 		}
@@ -83,7 +83,7 @@ func CompareAssocEdgesMap(m1, m2 map[string]*AssociationEdge) []change.Change {
 		if !ok {
 			ret = append(ret, change.Change{
 				Change: change.AddEdge,
-				Edge:   k,
+				Name:   k,
 			})
 		}
 	}
@@ -97,14 +97,14 @@ func compareAssocEdgeGroupMap(m1, m2 map[string]*AssociationEdgeGroup) []change.
 		// in 1st but not 2nd, dropped
 		if !ok {
 			ret = append(ret, change.Change{
-				Change:    change.RemoveEdgeGroup,
-				EdgeGroup: k,
+				Change: change.RemoveEdgeGroup,
+				Name:   k,
 			})
 		} else {
 			if !AssocEdgeGroupEqual(group1, group2) {
 				ret = append(ret, change.Change{
-					Change:    change.ModifyEdgeGroup,
-					EdgeGroup: k,
+					Change: change.ModifyEdgeGroup,
+					Name:   k,
 				})
 			}
 		}
@@ -115,8 +115,8 @@ func compareAssocEdgeGroupMap(m1, m2 map[string]*AssociationEdgeGroup) []change.
 		// in 2nd but not first, added
 		if !ok {
 			ret = append(ret, change.Change{
-				Change:    change.AddEdgeGroup,
-				EdgeGroup: k,
+				Change: change.AddEdgeGroup,
+				Name:   k,
 			})
 		}
 	}
@@ -131,13 +131,13 @@ func compareFieldEdgeMap(m1, m2 map[string]*FieldEdge) []change.Change {
 		if !ok {
 			ret = append(ret, change.Change{
 				Change: change.RemoveEdge,
-				Edge:   k,
+				Name:   k,
 			})
 		} else {
 			if !fieldEdgeEqual(edge1, edge2) {
 				ret = append(ret, change.Change{
 					Change: change.ModifyEdge,
-					Edge:   k,
+					Name:   k,
 				})
 			}
 		}
@@ -149,7 +149,7 @@ func compareFieldEdgeMap(m1, m2 map[string]*FieldEdge) []change.Change {
 		if !ok {
 			ret = append(ret, change.Change{
 				Change: change.AddEdge,
-				Edge:   k,
+				Name:   k,
 			})
 		}
 	}
@@ -164,13 +164,13 @@ func compareIndexedConnectionEdgeMap(m1, m2 map[string]IndexedConnectionEdge) []
 		if !ok {
 			ret = append(ret, change.Change{
 				Change: change.RemoveEdge,
-				Edge:   k,
+				Name:   k,
 			})
 		} else {
 			if !compareIndexedConnectionEdge(edge1, edge2) {
 				ret = append(ret, change.Change{
 					Change: change.ModifyEdge,
-					Edge:   k,
+					Name:   k,
 				})
 			}
 		}
@@ -182,7 +182,7 @@ func compareIndexedConnectionEdgeMap(m1, m2 map[string]IndexedConnectionEdge) []
 		if !ok {
 			ret = append(ret, change.Change{
 				Change: change.AddEdge,
-				Edge:   k,
+				Name:   k,
 			})
 		}
 	}
@@ -243,6 +243,7 @@ func compareIndexedEdge(existingEdge, edge *IndexedEdge) []change.Change {
 	if !indexedEdgeEqual(existingEdge, edge) {
 		ret = append(ret, change.Change{
 			Change: change.ModifyEdge,
+			Name:   edge.EdgeName,
 		})
 	}
 	return ret
@@ -260,6 +261,7 @@ func compareFieldEdge(existingEdge, edge *FieldEdge) []change.Change {
 	if !fieldEdgeEqual(existingEdge, edge) {
 		ret = append(ret, change.Change{
 			Change: change.ModifyEdge,
+			Name:   edge.EdgeName,
 		})
 	}
 	return ret
