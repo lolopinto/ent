@@ -195,16 +195,18 @@ func compareEnums(m1, m2 map[string]*EnumInfo, m *change.ChangeMap) error {
 			// in 1st but not 2nd, dropped
 			ret[k] = []change.Change{
 				{
-					Change: change.RemoveEnum,
-					Name:   k,
+					Change:      change.RemoveEnum,
+					Name:        enum1.Enum.Name,
+					GraphQLName: enum1.GQLEnum.Name,
 				},
 			}
 		} else {
 			if !enumInfoEqual(enum1, enum2) {
 				ret[k] = []change.Change{
 					{
-						Change: change.ModifyEnum,
-						Name:   k,
+						Change:      change.ModifyEnum,
+						Name:        enum1.Enum.Name,
+						GraphQLName: enum1.GQLEnum.Name,
 					},
 				}
 			}
@@ -212,13 +214,14 @@ func compareEnums(m1, m2 map[string]*EnumInfo, m *change.ChangeMap) error {
 	}
 
 	// in 2nd but not first, added
-	for k := range m2 {
+	for k, enum2 := range m2 {
 		_, ok := m1[k]
 		if !ok {
 			ret[k] = []change.Change{
 				{
-					Change: change.AddEnum,
-					Name:   k,
+					Change:      change.AddEnum,
+					Name:        enum2.Enum.Name,
+					GraphQLName: enum2.GQLEnum.Name,
 				},
 			}
 		}

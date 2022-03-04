@@ -1722,8 +1722,9 @@ func TestEnumAdded(t *testing.T) {
 	lang := m["Language"]
 	require.Len(t, lang, 1)
 	verifyChange(t, change.Change{
-		Change: change.AddEnum,
-		Name:   "Language",
+		Change:      change.AddEnum,
+		Name:        "Language",
+		GraphQLName: "Language",
 	}, lang[0])
 }
 
@@ -1741,8 +1742,9 @@ func TestEnumRemoved(t *testing.T) {
 	lang := m["Language"]
 	require.Len(t, lang, 1)
 	verifyChange(t, change.Change{
-		Change: change.RemoveEnum,
-		Name:   "Language",
+		Change:      change.RemoveEnum,
+		Name:        "Language",
+		GraphQLName: "Language",
 	}, lang[0])
 }
 
@@ -1775,8 +1777,9 @@ func TestEnumModified(t *testing.T) {
 	lang := m["Language"]
 	require.Len(t, lang, 1)
 	verifyChange(t, change.Change{
-		Change: change.ModifyEnum,
-		Name:   "Language",
+		Change:      change.ModifyEnum,
+		Name:        "Language",
+		GraphQLName: "Language",
 	}, lang[0])
 }
 
