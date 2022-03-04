@@ -294,19 +294,8 @@ func (s *Step) processEnums(processor *codegen.Processor) writeFileFnList {
 			continue
 		}
 
-		write := writeAll
-		if !writeAll {
-			name := info.Enum.Name
-			changes := processor.ChangeMap[name]
-			for _, c := range changes {
-				if c.Change == change.AddEnum || c.Change == change.ModifyEnum {
-					write = true
-					break
-				}
-			}
-		}
-
-		if write {
+		if writeAll ||
+			processor.ChangeMap.ChangesExist(info.Enum.Name, change.AddEnum, change.ModifyEnum) {
 			ret = append(ret, func() error {
 				return writeEnumFile(info, processor)
 			})

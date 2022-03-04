@@ -171,11 +171,16 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 		}
 	}
 
+	writeAll := processor.Config.WriteAllFiles()
+
 	for idx := range s.enums {
 		enum := s.enums[idx]
-		funcs = append(funcs, func() error {
-			return writeEnumFile(processor, enum)
-		})
+		if writeAll ||
+			processor.ChangeMap.ChangesExist(enum.Enum.Name, change.AddEnum, change.ModifyEnum) {
+			funcs = append(funcs, func() error {
+				return writeEnumFile(processor, enum)
+			})
+		}
 	}
 
 	for _, node := range s.nodes {
