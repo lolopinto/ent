@@ -859,12 +859,13 @@ func (s *gqlSchema) getImportFor(typ string, mutation bool) *tsimport.ImportPath
 }
 
 type rootQuery struct {
-	Name        string
-	FieldConfig *fieldConfig
-	FilePath    string
-	Interfaces  []*interfaceType
-	WriteOnce   bool
-	Imports     []*tsimport.ImportPath
+	Name         string
+	FieldConfig  *fieldConfig
+	FilePath     string
+	Interfaces   []*interfaceType
+	WriteOnce    bool
+	EditableCode bool
+	Imports      []*tsimport.ImportPath
 	// custom code after interface before field_config
 	CustomCode string
 }
@@ -2697,10 +2698,11 @@ func buildRootQuery(processor *codegen.Processor, nodeData *schema.NodeData) *ro
 
 func buildNodeRootQuery(processor *codegen.Processor) *rootQuery {
 	return &rootQuery{
-		FieldConfig: buildNodeFieldConfig(processor),
-		Name:        "node",
-		FilePath:    getNodeQueryTypeFilePath(processor.Config),
-		WriteOnce:   true,
+		FieldConfig:  buildNodeFieldConfig(processor),
+		Name:         "node",
+		FilePath:     getNodeQueryTypeFilePath(processor.Config),
+		WriteOnce:    true,
+		EditableCode: true,
 		Interfaces: []*interfaceType{
 			{
 				Name: "NodeQueryArgs",
@@ -2780,7 +2782,7 @@ func writeRootQueryFile(processor *codegen.Processor, rq *rootQuery) error {
 		PathToFile:   rq.FilePath,
 		TsImports:    imps,
 		FuncMap:      imps.FuncMap(),
-		EditableCode: true,
+		EditableCode: rq.EditableCode,
 	}, opts...)
 }
 
