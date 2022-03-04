@@ -149,50 +149,130 @@ func (p *TSStep) PostProcessData(processor *codegen.Processor) error {
 	// return os.WriteFile(".ent/custom_schema.json", b, 0666)
 }
 
-func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) error {
-	var funcs writeFileFnList
-	buildNode := func(node *gqlNode) {
-		funcs = append(funcs, func() error {
-			return writeFile(processor, node)
-		})
-
-		for idx := range node.ActionDependents {
-			dependentNode := node.ActionDependents[idx]
-			funcs = append(funcs, func() error {
-				return writeFile(processor, dependentNode)
-			})
-		}
-
-		for idx := range node.connections {
-			conn := node.connections[idx]
-			funcs = append(funcs, func() error {
-				return writeConnectionFile(processor, s, conn)
-			})
-		}
-	}
-
-	writeAll := processor.Config.WriteAllFiles()
+func (p *TSStep) processEnums(processor *codegen.Processor, s *gqlSchema, writeAll bool) writeFileFnList {
+	var ret writeFileFnList
 
 	for idx := range s.enums {
 		enum := s.enums[idx]
 		if writeAll ||
 			processor.ChangeMap.ChangesExist(enum.Enum.Name, change.AddEnum, change.ModifyEnum) {
-			funcs = append(funcs, func() error {
+			ret = append(ret, func() error {
 				return writeEnumFile(processor, enum)
 			})
 		}
 	}
+	return ret
+}
+
+type writeOptions struct {
+	// anytime any boolean is added here, need to update the
+	// else case in processNode
+	writeNode           bool
+	writeAllMutations   bool
+	writeAllConnections bool
+	mutationFiles       map[string]bool
+	connectionFiles     map[string]bool
+
+	// nodeAdded, nodeRemoved, connectionAdded, rootQuery etc...
+}
+
+func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *gqlNode, writeAll bool) writeFileFnList {
+	opts := &writeOptions{
+		mutationFiles:   map[string]bool{},
+		connectionFiles: map[string]bool{},
+	}
+	if writeAll {
+		opts.writeAllConnections = true
+		opts.writeAllMutations = true
+		opts.writeNode = true
+	} else {
+		changemap := processor.ChangeMap
+		changes := changemap[node.ObjData.Node]
+		for _, c := range changes {
+			switch c.Change {
+			case change.AddNode, change.ModifyNode:
+				opts.writeNode = true
+
+			case change.AddEdge, change.ModifyEdge:
+				opts.connectionFiles[c.GraphQLName] = true
+
+			case change.AddAction, change.ModifyAction:
+				opts.mutationFiles[c.GraphQLName] = true
+			}
+		}
+	}
+
+	return p.buildNodeWithOpts(processor, s, node, opts)
+}
+
+func (p TSStep) buildNodeWithOpts(processor *codegen.Processor, s *gqlSchema, node *gqlNode, opts *writeOptions) writeFileFnList {
+	var ret writeFileFnList
+	if opts.writeNode {
+		ret = append(ret, func() error {
+			return writeFile(processor, node)
+		})
+	}
+
+	for idx := range node.connections {
+		conn := node.connections[idx]
+		if opts.writeAllConnections || opts.connectionFiles[conn.ConnType] {
+			ret = append(ret, func() error {
+				return writeConnectionFile(processor, s, conn)
+			})
+		}
+	}
+
+	for idx := range node.ActionDependents {
+		dependentNode := node.ActionDependents[idx]
+		action := dependentNode.Data.(action.Action)
+		if opts.writeAllMutations || opts.mutationFiles[action.GetGraphQLName()] {
+			ret = append(ret, func() error {
+				return writeFile(processor, dependentNode)
+			})
+		}
+	}
+	return ret
+}
+
+// TODO kill
+func (p TSStep) buildNode(processor *codegen.Processor, s *gqlSchema, node *gqlNode) writeFileFnList {
+	var ret writeFileFnList
+	ret = append(ret, func() error {
+		return writeFile(processor, node)
+	})
+
+	for idx := range node.ActionDependents {
+		dependentNode := node.ActionDependents[idx]
+		ret = append(ret, func() error {
+			return writeFile(processor, dependentNode)
+		})
+	}
+
+	for idx := range node.connections {
+		conn := node.connections[idx]
+		ret = append(ret, func() error {
+			return writeConnectionFile(processor, s, conn)
+		})
+	}
+	return ret
+}
+
+func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) error {
+	var funcs writeFileFnList
+
+	writeAll := processor.Config.WriteAllFiles()
+	funcs = append(funcs, p.processEnums(processor, s, writeAll)...)
 
 	for _, node := range s.nodes {
-		buildNode(node)
+		funcs = append(funcs, p.processNode(processor, s, node, writeAll)...)
 	}
 
 	for _, node := range s.customMutations {
-		buildNode(node)
+		funcs = append(funcs, p.buildNode(processor, s, node)...)
 	}
 
 	for _, node := range s.customQueries {
-		buildNode(node)
+		funcs = append(funcs, p.buildNode(processor, s, node)...)
 	}
 
 	for idx := range s.rootQueries {
