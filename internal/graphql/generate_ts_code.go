@@ -118,101 +118,6 @@ type CustomClassInfo struct {
 	Path          string `json:"path"`
 }
 
-type customData struct {
-	Args    map[string]*CustomObject `json:"args"`
-	Inputs  map[string]*CustomObject `json:"inputs"`
-	Objects map[string]*CustomObject `json:"objects"`
-	// map of class to fields in that class
-	Fields      map[string][]CustomField    `json:"fields"`
-	Queries     []CustomField               `json:"queries"`
-	Mutations   []CustomField               `json:"mutations"`
-	Classes     map[string]*CustomClassInfo `json:"classes"`
-	Files       map[string]*CustomFile      `json:"files"`
-	CustomTypes map[string]*CustomType      `json:"customTypes"`
-	Error       error
-}
-
-type CustomItem struct {
-	Name         string       `json:"name"`
-	Type         string       `json:"type"`
-	Nullable     NullableItem `json:"nullable"`
-	List         bool         `json:"list"`
-	Connection   bool         `json:"connection"`
-	IsContextArg bool         `json:"isContextArg"`
-	TSType       string       `json:"tsType"`
-	imports      []*tsimport.ImportPath
-}
-
-type CustomScalarInfo struct {
-	Description    string `json:"description"`
-	Name           string `json:"name"`
-	SpecifiedByURL string `json:"specifiedByUrl"`
-}
-
-func (cs *CustomScalarInfo) getRenderer(s *gqlSchema) renderer {
-	return &scalarRenderer{
-		name:           cs.Name,
-		description:    cs.Description,
-		specifiedByUrl: cs.SpecifiedByURL,
-	}
-}
-
-type CustomType struct {
-	Type       string `json:"type"`
-	ImportPath string `json:"importPath"`
-
-	// custom scalar info. used for schema.gql
-	ScalarInfo *CustomScalarInfo `json:"scalarInfo"`
-
-	// both of these are optional
-	TSType       string `json:"tsType"`
-	TSImportPath string `json:"tsImportPath"`
-}
-
-func (item *CustomItem) addImportImpl(imps ...string) {
-	for _, imp := range imps {
-		// TODO this doesn't work for the new custom types?
-		item.imports = append(item.imports, &tsimport.ImportPath{
-			ImportPath: "graphql",
-			Import:     imp,
-		})
-	}
-}
-
-func (item *CustomItem) initialize() error {
-	switch item.Nullable {
-	case NullableTrue:
-		if item.List {
-			item.addImportImpl("GraphQLList", "GraphQLNonNull")
-		}
-
-	case NullableContents:
-		if !item.List {
-			return fmt.Errorf("list required to use this option")
-		}
-		item.addImportImpl("GraphQLNonNull", "GraphQLList")
-
-	case NullableContentsAndList:
-		if !item.List {
-			return fmt.Errorf("list required to use this option")
-		}
-		item.addImportImpl("GraphQLList")
-
-	default:
-		if item.List {
-			item.addImportImpl("GraphQLNonNull", "GraphQLList", "GraphQLNonNull")
-		} else {
-			item.addImportImpl("GraphQLNonNull")
-		}
-	}
-
-	return nil
-}
-
-func (item *CustomItem) addImport(imp *tsimport.ImportPath) {
-	item.imports = append(item.imports, imp)
-}
-
 func getNativeGQLImportFor(typ string) *tsimport.ImportPath {
 	return &tsimport.ImportPath{
 		Import:     typ,
@@ -237,48 +142,6 @@ var knownTypes = map[string]*tsimport.ImportPath{
 	"Node":       getEntGQLImportFor("GraphQLNodeInterface"),
 	"Edge":       getEntGQLImportFor("GraphQLEdgeInterface"),
 	"Connection": getEntGQLImportFor("GraphQLConnectionInterface"),
-}
-
-func (item *CustomItem) getImports(s *gqlSchema, cd *customData) ([]*tsimport.ImportPath, error) {
-	if err := item.initialize(); err != nil {
-		return nil, err
-	}
-
-	// TODO need to know if mutation or query...
-	imp := s.getImportFor(item.Type, false)
-	if imp != nil {
-		item.addImport(imp)
-	} else {
-		_, ok := s.customData.Objects[item.Type]
-		if !ok {
-			return nil, fmt.Errorf("found a type %s which was not part of the schema", item.Type)
-		}
-		item.addImport(
-			&tsimport.ImportPath{
-				Import: fmt.Sprintf("%sType", item.Type),
-				// TODO same here. need to know if mutation or query
-				ImportPath: codepath.GetImportPathForInternalGQLFile(),
-			})
-		//				s.nodes[resultre]
-		// now we need to figure out where this is from e.g.
-		// result.Type a native thing e.g. User so getUserType
-		// TODO need to add it to DefaultImport for the entire file...
-		// e.g. getImportPathForNode
-		// or in cd.Classes and figure that out for what the path should be...
-		//				imports = append(imports, fmt.Sprintf("%sType", result.Type))
-		//				spew.Dump(result.Type + " needs to be added to import for file...")
-	}
-
-	return item.imports, nil
-}
-
-type CustomFile struct {
-	Imports map[string]*CustomImportInfo `json:"imports"`
-}
-
-type CustomImportInfo struct {
-	Path          string `json:"path"`
-	DefaultImport bool   `json:"defaultImport"`
 }
 
 type NullableItem string
@@ -342,6 +205,21 @@ func (p *TSStep) ProcessData(processor *codegen.Processor) error {
 	// generate schema.gql
 	return generateAlternateSchemaFile(processor, p.s)
 	//return generateSchemaFile(processor, p.s.hasMutations)
+}
+
+func (p *TSStep) PostProcessData(processor *codegen.Processor) error {
+	if p.s.customData == nil {
+		return nil
+	}
+
+	// TODO JSONFileWriter...
+	cd := p.s.customData
+	b, err := json.Marshal(cd)
+	if err != nil {
+		// TODO log ignore
+
+	}
+	return os.WriteFile(".ent/custom_schema.json", b, 0666)
 }
 
 func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) error {
@@ -596,10 +474,10 @@ func searchForFiles(processor *codegen.Processor) []string {
 	return result
 }
 
-func parseCustomData(processor *codegen.Processor, fromTest bool) chan *customData {
-	var res = make(chan *customData)
+func parseCustomData(processor *codegen.Processor, fromTest bool) chan *CustomData {
+	var res = make(chan *CustomData)
 	go func() {
-		var cd customData
+		var cd CustomData
 		if processor.DisableCustomGraphQL() {
 			res <- &cd
 			return
@@ -810,7 +688,7 @@ type gqlSchema struct {
 	enums           map[string]*gqlEnum
 	customQueries   []*gqlNode
 	customMutations []*gqlNode
-	customData      *customData
+	customData      *CustomData
 	edgeNames       map[string]bool
 	customEdges     map[string]*objectType
 	rootQueries     []*rootQuery

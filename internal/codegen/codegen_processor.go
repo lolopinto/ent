@@ -110,6 +110,13 @@ func (p *Processor) Run(steps []Step, step string, options ...Option) error {
 			pre_steps = append(pre_steps, ps)
 		}
 	}
+	var post_steps []StepWithPostProcess
+	for _, s := range steps {
+		ps, ok := s.(StepWithPostProcess)
+		if ok {
+			post_steps = append(post_steps, ps)
+		}
+	}
 
 	if len(pre_steps) > 0 {
 		var wg sync.WaitGroup
@@ -146,6 +153,29 @@ func (p *Processor) Run(steps []Step, step string, options ...Option) error {
 		if err := runAndLog(p, s.ProcessData, func(d time.Duration) {
 			fmt.Printf("process step %s took %v \n", s.Name(), d)
 		}); err != nil {
+			return err
+		}
+	}
+
+	if len(post_steps) > 0 {
+		var wg sync.WaitGroup
+		wg.Add(len(post_steps))
+		var serr syncerr.Error
+
+		for i := range post_steps {
+			go func(i int) {
+				defer wg.Done()
+				ps := post_steps[i]
+				err := runAndLog(p, ps.PostProcessData, func(d time.Duration) {
+					fmt.Printf("post-process step %s took %v \n", ps.Name(), d)
+				})
+				serr.Append(err)
+			}(i)
+		}
+
+		wg.Wait()
+
+		if err := serr.Err(); err != nil {
 			return err
 		}
 	}
@@ -199,6 +229,12 @@ type StepWithPreProcess interface {
 	// any pre-process steps can be done here
 	// this is where things like user input and other
 	PreProcessData(data *Processor) error
+}
+
+// TODO figure out long term thing here
+type StepWithPostProcess interface {
+	Step
+	PostProcessData(data *Processor) error
 }
 
 func NewCodegenProcessor(schema *schema.Schema, configPath, modulePath string, debugMode bool) (*Processor, error) {
