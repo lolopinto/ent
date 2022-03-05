@@ -1092,17 +1092,25 @@ func TestCompareNodesWithEdgeGroupRenamed(t *testing.T) {
 
 	user := m["User"]
 	require.Len(t, user, 6)
+	var friendsIdx, friendsRequestSentIdx int
+	if user[0].Name == "Friends" {
+		friendsIdx = 0
+		friendsRequestSentIdx = 1
+	} else {
+		friendsIdx = 1
+		friendsRequestSentIdx = 0
+	}
 	// table name changed since part of new group and table name not overriden
 	verifyChange(t, change.Change{
 		Change:      change.ModifyEdge,
 		Name:        "Friends",
 		GraphQLName: "UserToFriendsConnection",
-	}, user[0])
+	}, user[friendsIdx])
 	verifyChange(t, change.Change{
 		Change:      change.ModifyEdge,
 		Name:        "FriendRequestsSent",
 		GraphQLName: "UserToFriendRequestsSentConnection",
-	}, user[1])
+	}, user[friendsRequestSentIdx])
 	verifyChange(t, change.Change{
 		Change:      change.AddEdge,
 		Name:        "Following",
