@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/lolopinto/ent/internal/codepath"
+	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
 
@@ -142,4 +143,169 @@ type CustomFile struct {
 type CustomImportInfo struct {
 	Path          string `json:"path,omitempty"`
 	DefaultImport bool   `json:"defaultImport,omitempty"`
+}
+
+type CustomObject struct {
+	// TODOO
+	NodeName  string `json:"nodeName"`
+	ClassName string `json:"className"`
+}
+
+// CustomFieldType for a TypeScript class
+type CustomFieldType string
+
+// these values map to CustomFieldType enum in JS
+const Accessor CustomFieldType = "ACCESSOR"
+const Field CustomFieldType = "FIELD"
+const Function CustomFieldType = "FUNCTION"
+const AsyncFunction CustomFieldType = "ASYNC_FUNCTION"
+
+type CustomField struct {
+	Node         string          `json:"nodeName"`
+	GraphQLName  string          `json:"gqlName"`
+	FunctionName string          `json:"functionName"`
+	Args         []CustomItem    `json:"args"`
+	Results      []CustomItem    `json:"results"`
+	FieldType    CustomFieldType `json:"fieldType"`
+}
+
+func (cf CustomField) getArg() string {
+	if cf.hasCustomArgs() {
+		// interface has been generated for it
+		return cf.GraphQLName + "Args"
+	}
+	return "{}"
+}
+
+func (cf CustomField) hasCustomArgs() bool {
+	for _, arg := range cf.Args {
+		if !arg.IsContextArg {
+			return true
+		}
+	}
+	return false
+}
+
+func (cf CustomField) getResolveMethodArg() string {
+	if cf.hasCustomArgs() {
+		return "args"
+	}
+	return "{}"
+}
+
+type CustomClassInfo struct {
+	Name          string `json:"name"`
+	Exported      bool   `json:"exported"`
+	DefaultExport bool   `json:"defaultExport"`
+	Path          string `json:"path"`
+}
+
+func CompareCustomData(cd1, cd2 *CustomData) change.ChangeMap {
+	var ret change.ChangeMap
+	return ret
+}
+
+func customObjectEqual(c1, c2 *CustomObject) bool {
+	return c1.NodeName == c2.NodeName &&
+		c1.ClassName == c2.ClassName
+}
+
+func customObjectMapEqual(m1, m2 map[string]*CustomObject) bool {
+	if len(m1) != len(m2) {
+		return false
+	}
+
+	for k, v1 := range m1 {
+		v2, ok := m2[k]
+		if !ok || !customObjectEqual(v1, v2) {
+			return false
+		}
+	}
+	return true
+}
+
+func customFieldEqual(cf1, cf2 CustomField) bool {
+	return cf1.Node == cf2.Node &&
+		cf1.GraphQLName == cf2.GraphQLName &&
+		cf1.FunctionName == cf2.FunctionName &&
+		customItemsListEqual(cf1.Args, cf2.Args) &&
+		customItemsListEqual(cf1.Results, cf2.Results) &&
+		cf1.FieldType == cf2.FieldType
+}
+
+func customItemEqual(item1, item2 CustomItem) bool {
+	return item1.Name == item2.Name &&
+		item1.Type == item2.Type &&
+		item1.Nullable == item2.Nullable &&
+		item1.List == item2.List &&
+		item1.Connection == item2.Connection &&
+		item1.IsContextArg == item2.IsContextArg &&
+		item1.TSType == item2.TSType
+}
+
+func customItemsListEqual(l1, l2 []CustomItem) bool {
+	if len(l1) != len(l2) {
+		return false
+	}
+	for i := range l1 {
+		if !customItemEqual(l1[i], l2[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func customScalarInfoEqual(cs1, cs2 *CustomScalarInfo) bool {
+	ret := change.CompareNilVals(cs1 == nil, cs2 == nil)
+	if ret != nil {
+		return *ret
+	}
+	return cs1.Description == cs2.Description &&
+		cs1.Name == cs2.Name &&
+		cs1.SpecifiedByURL == cs2.SpecifiedByURL
+}
+
+func customClassInfoEqual(cc1, cc2 *CustomClassInfo) bool {
+	return cc1.Name == cc2.Name &&
+		cc1.Exported == cc2.Exported &&
+		cc1.DefaultExport == cc2.DefaultExport &&
+		cc1.Path == cc2.Path
+}
+
+func customImportInfoEqual(ci1, ci2 *CustomImportInfo) bool {
+	ret := change.CompareNilVals(ci1 == nil, ci2 == nil)
+	if ret != nil {
+		return *ret
+	}
+	return ci1.Path == ci2.Path &&
+		ci1.DefaultImport == ci2.DefaultImport
+}
+
+func customFileEqual(cf1, cf2 *CustomFile) bool {
+	return customImportInfoMapEqual(cf1.Imports, cf2.Imports)
+}
+
+func customImportInfoMapEqual(m1, m2 map[string]*CustomImportInfo) bool {
+	if len(m1) != len(m2) {
+		return false
+	}
+	for k := range m1 {
+		if !customImportInfoEqual(m1[k], m2[k]) {
+			return false
+		}
+	}
+	return true
+}
+
+func customTypeEqual(ct1, ct2 *CustomType) bool {
+	ret := change.CompareNilVals(ct1 == nil, ct2 == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return ct1.Type == ct2.Type &&
+		ct1.ImportPath == ct2.ImportPath &&
+		customScalarInfoEqual(ct1.ScalarInfo, ct2.ScalarInfo) &&
+		ct1.TSType == ct2.TSType &&
+		ct1.TSImportPath == ct2.TSImportPath
 }
