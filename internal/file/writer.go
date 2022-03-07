@@ -7,8 +7,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-
-	"github.com/lolopinto/ent/internal/codegen"
 )
 
 type Writer interface {
@@ -29,7 +27,12 @@ func debugLogInfo(opt *Options, str string, a ...interface{}) {
 	}
 }
 
-func writeFile(w Writer, cfg *codegen.Config, opts ...func(opt *Options)) error {
+type Config interface {
+	GeneratedHeader() string
+	DebugMode() bool
+}
+
+func writeFile(w Writer, cfg Config, opts ...func(opt *Options)) error {
 	option := &Options{}
 	if !cfg.DebugMode() {
 		opts = append(opts, DisableLog())
