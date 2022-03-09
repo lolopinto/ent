@@ -137,15 +137,16 @@ func (p *TSStep) PostProcessData(processor *codegen.Processor) error {
 	if p.s.customData == nil {
 		return nil
 	}
+	return nil
 
 	// TODO JSONFileWriter...
-	cd := p.s.customData
-	b, err := json.Marshal(cd)
-	if err != nil {
-		// TODO log ignore
+	// cd := p.s.customData
+	// b, err := json.Marshal(cd)
+	// if err != nil {
+	// 	// TODO log ignore
 
-	}
-	return os.WriteFile(".ent/custom_schema.json", b, 0666)
+	// }
+	// return os.WriteFile(".ent/custom_schema.json", b, 0666)
 }
 
 func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) error {
@@ -502,10 +503,11 @@ func parseCustomData(processor *codegen.Processor, fromTest bool) chan *CustomDa
 	}()
 	return res
 }
+
 func loadOldCustomData() *CustomData {
 	file := ".ent/custom_schema.json"
-	fi, _ := os.Stat(file)
-	if fi == nil {
+	fi, err := os.Stat(file)
+	if fi == nil || os.IsNotExist(err) {
 		return nil
 	}
 	b, err := os.ReadFile(file)
