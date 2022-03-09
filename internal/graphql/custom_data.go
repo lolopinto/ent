@@ -201,7 +201,6 @@ type CustomClassInfo struct {
 	Path          string `json:"path"`
 }
 
-// compareQueries | compareMutations
 type compareCustomData struct {
 	customQueriesChanged   map[string]bool
 	customMutationsChanged map[string]bool
@@ -319,25 +318,6 @@ func compareCustomList(l1, l2 []CustomField, opts *compareListOptions, reference
 	}
 }
 
-func customObjectEqual(c1, c2 *CustomObject) bool {
-	return c1.NodeName == c2.NodeName &&
-		c1.ClassName == c2.ClassName
-}
-
-func customObjectMapEqual(m1, m2 map[string]*CustomObject) bool {
-	if len(m1) != len(m2) {
-		return false
-	}
-
-	for k, v1 := range m1 {
-		v2, ok := m2[k]
-		if !ok || !customObjectEqual(v1, v2) {
-			return false
-		}
-	}
-	return true
-}
-
 func mapifyFieldList(l []CustomField, references map[string]map[string]bool) map[string]*CustomField {
 	m := make(map[string]*CustomField)
 	addToMap := func(typ, gqlName string) {
@@ -351,7 +331,6 @@ func mapifyFieldList(l []CustomField, references map[string]map[string]bool) map
 		subM[gqlName] = true
 		references[typ] = subM
 	}
-	// TODO?: only need this for old or new, not both
 	for _, cf := range l {
 		m[cf.GraphQLName] = &cf
 		for _, arg := range cf.Args {
@@ -407,57 +386,9 @@ func customItemsListEqual(l1, l2 []CustomItem) bool {
 	return true
 }
 
-func customScalarInfoEqual(cs1, cs2 *CustomScalarInfo) bool {
-	ret := change.CompareNilVals(cs1 == nil, cs2 == nil)
-	if ret != nil {
-		return *ret
-	}
-	return cs1.Description == cs2.Description &&
-		cs1.Name == cs2.Name &&
-		cs1.SpecifiedByURL == cs2.SpecifiedByURL
-}
-
 func customClassInfoEqual(cc1, cc2 *CustomClassInfo) bool {
 	return cc1.Name == cc2.Name &&
 		cc1.Exported == cc2.Exported &&
 		cc1.DefaultExport == cc2.DefaultExport &&
 		cc1.Path == cc2.Path
-}
-
-func customImportInfoEqual(ci1, ci2 *CustomImportInfo) bool {
-	ret := change.CompareNilVals(ci1 == nil, ci2 == nil)
-	if ret != nil {
-		return *ret
-	}
-	return ci1.Path == ci2.Path &&
-		ci1.DefaultImport == ci2.DefaultImport
-}
-
-func customFileEqual(cf1, cf2 *CustomFile) bool {
-	return customImportInfoMapEqual(cf1.Imports, cf2.Imports)
-}
-
-func customImportInfoMapEqual(m1, m2 map[string]*CustomImportInfo) bool {
-	if len(m1) != len(m2) {
-		return false
-	}
-	for k := range m1 {
-		if !customImportInfoEqual(m1[k], m2[k]) {
-			return false
-		}
-	}
-	return true
-}
-
-func customTypeEqual(ct1, ct2 *CustomType) bool {
-	ret := change.CompareNilVals(ct1 == nil, ct2 == nil)
-	if ret != nil {
-		return *ret
-	}
-
-	return ct1.Type == ct2.Type &&
-		ct1.ImportPath == ct2.ImportPath &&
-		customScalarInfoEqual(ct1.ScalarInfo, ct2.ScalarInfo) &&
-		ct1.TSType == ct2.TSType &&
-		ct1.TSImportPath == ct2.TSImportPath
 }
