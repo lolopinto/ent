@@ -74,6 +74,9 @@ func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataIn
 		nodeChanges := changes[info.NodeData.Node]
 
 		for _, c := range nodeChanges {
+			if c.GraphQLOnly {
+				continue
+			}
 			switch c.Change {
 			case change.AddNode:
 				opts.writeEnt = true
@@ -89,19 +92,19 @@ func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataIn
 				opts.entRemoved = true
 
 			case change.AddAction:
-				opts.actionBaseFiles[c.Action] = true
-				opts.actionFiles[c.Action] = true
+				opts.actionBaseFiles[c.Name] = true
+				opts.actionFiles[c.Name] = true
 
 			case change.ModifyAction:
-				opts.actionBaseFiles[c.Action] = true
+				opts.actionBaseFiles[c.Name] = true
 
 			case change.AddEdge:
 				opts.edgeBaseFile = true
-				opts.edgeFiles[c.Edge] = true
+				opts.edgeFiles[c.Name] = true
 				opts.edgeAdded = true
 
 			case change.ModifyEdge:
-				opts.edgeFiles[c.Edge] = true
+				opts.edgeFiles[c.Name] = true
 				opts.edgeBaseFile = true
 
 			case change.RemoveEdge:
@@ -169,14 +172,17 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 		nodeChanges := changes[pattern.Name]
 
 		for _, c := range nodeChanges {
+			if c.GraphQLOnly {
+				continue
+			}
 			switch c.Change {
 			case change.AddEdge:
 				opts.edgeBaseFile = true
-				opts.edgeFiles[c.Edge] = true
+				opts.edgeFiles[c.Name] = true
 				opts.edgeAdded = true
 
 			case change.ModifyEdge:
-				opts.edgeFiles[c.Edge] = true
+				opts.edgeFiles[c.Name] = true
 				opts.edgeBaseFile = true
 
 			case change.RemoveEdge:
