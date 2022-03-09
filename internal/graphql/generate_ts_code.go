@@ -25,6 +25,7 @@ import (
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
+	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/custominterface"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
@@ -491,9 +492,31 @@ func parseCustomData(processor *codegen.Processor, fromTest bool) chan *CustomDa
 			err = errors.Wrap(err, "error unmarshalling custom processor")
 			cd.Error = err
 		}
+		if cd.Error == nil {
+			existing := loadOldCustomData()
+			if existing != nil {
+				CompareCustomData(processor, existing, &cd, make(change.ChangeMap))
+			}
+		}
 		res <- &cd
 	}()
 	return res
+}
+func loadOldCustomData() *CustomData {
+	file := ".ent/custom_schema.json"
+	fi, _ := os.Stat(file)
+	if fi == nil {
+		return nil
+	}
+	b, err := os.ReadFile(file)
+	if err != nil {
+		return nil
+	}
+	var cd CustomData
+	if err := json.Unmarshal(b, &cd); err != nil {
+		return nil
+	}
+	return &cd
 }
 
 func processCustomData(processor *codegen.Processor, s *gqlSchema) error {

@@ -3,6 +3,8 @@ package graphql
 import (
 	"fmt"
 
+	"github.com/davecgh/go-spew/spew"
+	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -200,9 +202,118 @@ type CustomClassInfo struct {
 	Path          string `json:"path"`
 }
 
-func CompareCustomData(cd1, cd2 *CustomData) change.ChangeMap {
-	var ret change.ChangeMap
+// compareQueries | compareMutations
+type compareCustomData struct {
+	customQueriesChanged   map[string]bool
+	customMutationsChanged map[string]bool
+	customQueriesRemoved   map[string]bool
+	customMutationsRemoved map[string]bool
+}
+
+func CompareCustomData(processor *codegen.Processor, cd1, cd2 *CustomData, existingChangeMap change.ChangeMap) compareCustomData {
+	ret := compareCustomData{}
+
+	queryReferences := map[string]map[string]bool{}
+	mutationReferences := map[string]map[string]bool{}
+	// compare queries and mutations
+	q := compareCustomQueries(cd1.Queries, cd2.Queries, queryReferences)
+	ret.customQueriesChanged = q.changed
+	ret.customQueriesRemoved = q.removed
+
+	m := compareCustomMutations(cd1.Mutations, cd2.Mutations, mutationReferences)
+	ret.customMutationsChanged = m.changed
+	ret.customMutationsRemoved = m.removed
+
+	spew.Dump(queryReferences)
+	spew.Dump(mutationReferences)
+	spew.Dump(ret)
+
+	for k, c2 := range cd2.Classes {
+		c1, ok := cd1.Classes[k]
+		if !ok {
+			continue
+		}
+		if !customClassInfoEqual(c1, c2) {
+			// flag each of this as needing to change...
+			for k := range queryReferences[k] {
+				ret.customQueriesChanged[k] = true
+			}
+			for k := range mutationReferences[k] {
+				ret.customMutationsChanged[k] = true
+			}
+		}
+	}
+	for k, l1 := range cd1.Fields {
+		l2 := cd2.Fields[k]
+		if customFieldListEqual(l1, l2) {
+			continue
+		}
+		if processor.Schema.NodeNameExists(k) {
+			// need to flag User|Contact as changed
+			// NodeData
+			// flag this needs to change e.g. User Config
+		} else {
+			// changed field in custom object
+			// flag custom queries and mutations where this is referenced as needing to change
+			for k := range queryReferences[k] {
+				ret.customQueriesChanged[k] = true
+			}
+			for k := range mutationReferences[k] {
+				ret.customMutationsChanged[k] = true
+			}
+		}
+	}
+
 	return ret
+}
+
+func compareCustomQueries(l1, l2 []CustomField, references map[string]map[string]bool) *compareListOptions {
+	opts := &compareListOptions{
+		changed: map[string]bool{},
+		removed: map[string]bool{},
+	}
+	compareCustomList(l1, l2, opts, references)
+	return opts
+}
+
+func compareCustomMutations(l1, l2 []CustomField, references map[string]map[string]bool) *compareListOptions {
+	opts := &compareListOptions{
+		changed: map[string]bool{},
+		removed: map[string]bool{},
+	}
+	compareCustomList(l1, l2, opts, references)
+	return opts
+}
+
+type compareListOptions struct {
+	changed map[string]bool
+	removed map[string]bool
+}
+
+func compareCustomList(l1, l2 []CustomField, opts *compareListOptions, references map[string]map[string]bool) {
+	//	ret := make(change.SingleChangeMap)
+	m1 := mapifyFieldList(l1, references)
+	m2 := mapifyFieldList(l1, references)
+
+	for k, cf1 := range m1 {
+		cf2, ok := m2[k]
+		// in 1 but not 2 removed
+		if !ok {
+			opts.removed[cf1.GraphQLName] = true
+		} else {
+			if !customFieldEqual(cf1, cf2) {
+				opts.changed[cf1.GraphQLName] = true
+			}
+		}
+	}
+
+	for k, cf2 := range m2 {
+		_, ok := m2[k]
+		// in 2 but not 1. addeded
+		if !ok {
+			opts.changed[cf2.GraphQLName] = true
+		}
+	}
 }
 
 func customObjectEqual(c1, c2 *CustomObject) bool {
@@ -224,13 +335,48 @@ func customObjectMapEqual(m1, m2 map[string]*CustomObject) bool {
 	return true
 }
 
-func customFieldEqual(cf1, cf2 CustomField) bool {
+func mapifyFieldList(l []CustomField, references map[string]map[string]bool) map[string]*CustomField {
+	m := make(map[string]*CustomField)
+	addToMap := func(typ, gqlName string) {
+		subM, ok := references[typ]
+		if !ok {
+			subM = map[string]bool{}
+		}
+		subM[gqlName] = true
+		references[typ] = subM
+	}
+	// TODO?: only need this for old or new, not both
+	for _, cf := range l {
+		m[cf.GraphQLName] = &cf
+		for _, arg := range cf.Args {
+			addToMap(arg.Type, cf.GraphQLName)
+		}
+		for _, result := range cf.Results {
+			addToMap(result.Type, cf.GraphQLName)
+		}
+	}
+	return m
+}
+
+func customFieldEqual(cf1, cf2 *CustomField) bool {
 	return cf1.Node == cf2.Node &&
 		cf1.GraphQLName == cf2.GraphQLName &&
 		cf1.FunctionName == cf2.FunctionName &&
 		customItemsListEqual(cf1.Args, cf2.Args) &&
 		customItemsListEqual(cf1.Results, cf2.Results) &&
 		cf1.FieldType == cf2.FieldType
+}
+
+func customFieldListEqual(l1, l2 []CustomField) bool {
+	if len(l1) != len(l2) {
+		return false
+	}
+	for i := range l1 {
+		if !customFieldEqual(&l1[i], &l2[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 func customItemEqual(item1, item2 CustomItem) bool {
