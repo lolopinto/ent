@@ -22,7 +22,7 @@ func getCodePath(t *testing.T, dirPath string) *codegen.Config {
 	return codepath
 }
 
-func validateDefaultCustomTypes(t *testing.T, customData *customData) {
+func validateDefaultCustomTypes(t *testing.T, customData *CustomData) {
 	// GraphQLJSON and GraphQLTime
 	require.GreaterOrEqual(t, len(customData.CustomTypes), 2)
 
