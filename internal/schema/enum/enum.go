@@ -76,25 +76,25 @@ func CompareEnums(l1, l2 []*Enum) ([]change.Change, error) {
 		if !ok {
 			ret = append(ret, change.Change{
 				Change: change.RemoveEnum,
-				Enum:   k,
+				Name:   enum1.Name,
 			})
 		} else {
 			if !EnumEqual(enum1, enum2) {
 				ret = append(ret, change.Change{
 					Change: change.ModifyEnum,
-					Enum:   k,
+					Name:   enum1.Name,
 				})
 			}
 		}
 	}
 
-	for k := range m2 {
+	for k, enum2 := range m2 {
 		_, ok := m1[k]
 		// in 2nd but not first, added
 		if !ok {
 			ret = append(ret, change.Change{
 				Change: change.AddEnum,
-				Enum:   k,
+				Name:   enum2.Name,
 			})
 		}
 	}

@@ -37,26 +37,29 @@ func compareActionMap(m1, m2 map[string]Action) []change.Change {
 		// in 1st but not 2nd, dropped
 		if !ok {
 			ret = append(ret, change.Change{
-				Change: change.RemoveAction,
-				Action: k,
+				Change:      change.RemoveAction,
+				Name:        k,
+				GraphQLName: action1.GetGraphQLName(),
 			})
 		} else {
 			if !ActionEqual(action1, action2) {
 				ret = append(ret, change.Change{
-					Change: change.ModifyAction,
-					Action: k,
+					Change:      change.ModifyAction,
+					Name:        k,
+					GraphQLName: action1.GetGraphQLName(),
 				})
 			}
 		}
 	}
 
-	for k := range m2 {
+	for k, action2 := range m2 {
 		_, ok := m1[k]
 		// in 2nd but not first, added
 		if !ok {
 			ret = append(ret, change.Change{
-				Change: change.AddAction,
-				Action: k,
+				Change:      change.AddAction,
+				Name:        k,
+				GraphQLName: action2.GetGraphQLName(),
 			})
 		}
 	}

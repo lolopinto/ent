@@ -12,6 +12,7 @@ import (
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/change"
+	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -67,8 +68,8 @@ func TestCompareAddedPattern(t *testing.T) {
 	node := m["node"]
 	require.Len(t, node, 1)
 	verifyChange(t, change.Change{
-		Change:  change.AddPattern,
-		Pattern: "node",
+		Change: change.AddPattern,
+		Name:   "node",
 	}, node[0])
 }
 
@@ -88,8 +89,8 @@ func TestCompareRemovedPattern(t *testing.T) {
 	node := m["node"]
 	require.Len(t, node, 1)
 	verifyChange(t, change.Change{
-		Change:  change.RemovePattern,
-		Pattern: "node",
+		Change: change.RemovePattern,
+		Name:   "node",
 	}, node[0])
 }
 
@@ -152,8 +153,9 @@ func TestComparePatternsWithAddedEdge(t *testing.T) {
 	feedback := m["feedback"]
 	require.Len(t, feedback, 1)
 	verifyChange(t, change.Change{
-		Change: change.AddEdge,
-		Edge:   "likes",
+		Change:      change.AddEdge,
+		Name:        "likes",
+		GraphQLName: "UserToLikesConnection",
 	}, feedback[0])
 }
 
@@ -186,8 +188,9 @@ func TestComparePatternsWithRemovedEdge(t *testing.T) {
 	feedback := m["feedback"]
 	require.Len(t, feedback, 1)
 	verifyChange(t, change.Change{
-		Change: change.RemoveEdge,
-		Edge:   "likes",
+		Change:      change.RemoveEdge,
+		Name:        "likes",
+		GraphQLName: "UserToLikesConnection",
 	}, feedback[0])
 }
 
@@ -232,8 +235,9 @@ func TestComparePatternsWithModifiedEdge(t *testing.T) {
 	feedback := m["feedback"]
 	require.Len(t, feedback, 1)
 	verifyChange(t, change.Change{
-		Change: change.ModifyEdge,
-		Edge:   "likes",
+		Change:      change.ModifyEdge,
+		Name:        "likes",
+		GraphQLName: "UserToLikesConnection",
 	}, feedback[0])
 }
 
@@ -256,8 +260,9 @@ func TestCompareAddNode(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 1)
 	verifyChange(t, change.Change{
-		Change: change.AddNode,
-		Node:   "User",
+		Change:      change.AddNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[0])
 }
 
@@ -280,8 +285,9 @@ func TestCompareRemoveNode(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 1)
 	verifyChange(t, change.Change{
-		Change: change.RemoveNode,
-		Node:   "User",
+		Change:      change.RemoveNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[0])
 }
 
@@ -358,7 +364,7 @@ func TestCompareNodesAddField(t *testing.T) {
 	require.Len(t, user, 3)
 	// map order means this isn't consistent...
 	var firstIdx, lastIdx int
-	if user[0].Field == "first_name" {
+	if user[0].Name == "first_name" {
 		firstIdx = 0
 		lastIdx = 1
 	} else {
@@ -367,16 +373,16 @@ func TestCompareNodesAddField(t *testing.T) {
 	}
 	verifyChange(t, change.Change{
 		Change: change.AddField,
-		Field:  "first_name",
+		Name:   "first_name",
 	}, user[firstIdx])
 	verifyChange(t, change.Change{
 		Change: change.AddField,
-		Field:  "last_name",
+		Name:   "last_name",
 	}, user[lastIdx])
-
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Node:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[2])
 }
 
@@ -437,11 +443,12 @@ func TestCompareNodesRemoveField(t *testing.T) {
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
 		Change: change.RemoveField,
-		Field:  "last_name",
+		Name:   "last_name",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Node:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -497,11 +504,12 @@ func TestCompareNodesModifyField(t *testing.T) {
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
 		Change: change.ModifyField,
-		Field:  "first_name",
+		Name:   "first_name",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Node:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -590,12 +598,14 @@ func TestCompareNodesWithEdgesAdded(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
-		Change: change.AddEdge,
-		Edge:   "Likes",
+		Change:      change.AddEdge,
+		Name:        "Likes",
+		GraphQLName: "UserToLikesConnection",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Node:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -637,12 +647,14 @@ func TestCompareNodesWithRemovedEdge(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
-		Change: change.RemoveEdge,
-		Edge:   "Likes",
+		Change:      change.RemoveEdge,
+		Name:        "Likes",
+		GraphQLName: "UserToLikesConnection",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Node:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -697,12 +709,14 @@ func TestCompareNodesWithModifiedEdge(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
-		Change: change.ModifyEdge,
-		Edge:   "Likes",
+		Change:      change.ModifyEdge,
+		Name:        "Likes",
+		GraphQLName: "UserToLikesConnection",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Node:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -833,12 +847,13 @@ func TestCompareNodesWithEdgeGroupAdded(t *testing.T) {
 	require.Len(t, user, 4)
 	// also has 2 edges added
 	verifyChange(t, change.Change{
-		Change:    change.AddEdgeGroup,
-		EdgeGroup: "FriendshipStatus",
+		Change: change.AddEdgeGroup,
+		Name:   "FriendshipStatus",
 	}, user[2])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Node:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[3])
 }
 
@@ -895,12 +910,13 @@ func TestCompareNodesWithEdgeGroupRemoved(t *testing.T) {
 	require.Len(t, user, 4)
 	// also has 2 edges removed
 	verifyChange(t, change.Change{
-		Change:    change.RemoveEdgeGroup,
-		EdgeGroup: "FriendshipStatus",
+		Change: change.RemoveEdgeGroup,
+		Name:   "FriendshipStatus",
 	}, user[2])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Node:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[3])
 }
 
@@ -984,12 +1000,13 @@ func TestCompareNodesWithEdgeGroupModified(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
-		Change:    change.ModifyEdgeGroup,
-		EdgeGroup: "FriendshipStatus",
+		Change: change.ModifyEdgeGroup,
+		Name:   "FriendshipStatus",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Node:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -1075,30 +1092,42 @@ func TestCompareNodesWithEdgeGroupRenamed(t *testing.T) {
 
 	user := m["User"]
 	require.Len(t, user, 6)
+	var friendsIdx, friendsRequestSentIdx int
+	if user[0].Name == "Friends" {
+		friendsIdx = 0
+		friendsRequestSentIdx = 1
+	} else {
+		friendsIdx = 1
+		friendsRequestSentIdx = 0
+	}
 	// table name changed since part of new group and table name not overriden
 	verifyChange(t, change.Change{
-		Change: change.ModifyEdge,
-		Edge:   "Friends",
-	}, user[0])
+		Change:      change.ModifyEdge,
+		Name:        "Friends",
+		GraphQLName: "UserToFriendsConnection",
+	}, user[friendsIdx])
 	verifyChange(t, change.Change{
-		Change: change.ModifyEdge,
-		Edge:   "FriendRequestsSent",
-	}, user[1])
+		Change:      change.ModifyEdge,
+		Name:        "FriendRequestsSent",
+		GraphQLName: "UserToFriendRequestsSentConnection",
+	}, user[friendsRequestSentIdx])
 	verifyChange(t, change.Change{
-		Change: change.AddEdge,
-		Edge:   "Following",
+		Change:      change.AddEdge,
+		Name:        "Following",
+		GraphQLName: "UserToFollowingConnection",
 	}, user[2])
 	verifyChange(t, change.Change{
-		Change:    change.RemoveEdgeGroup,
-		EdgeGroup: "FriendshipStatus",
+		Change: change.RemoveEdgeGroup,
+		Name:   "FriendshipStatus",
 	}, user[3])
 	verifyChange(t, change.Change{
-		Change:    change.AddEdgeGroup,
-		EdgeGroup: "ConnectionStatus",
+		Change: change.AddEdgeGroup,
+		Name:   "ConnectionStatus",
 	}, user[4])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Node:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[5])
 }
 
@@ -1206,12 +1235,14 @@ func TestCompareActionsAdded(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
-		Change: change.AddAction,
-		Action: "CreateUserAction",
+		Change:      change.AddAction,
+		Name:        "CreateUserAction",
+		GraphQLName: "userCreate",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Node:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -1260,12 +1291,14 @@ func TestCompareActionsRemoved(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
-		Change: change.RemoveAction,
-		Action: "CreateUserAction",
+		Change:      change.RemoveAction,
+		Name:        "CreateUserAction",
+		GraphQLName: "userCreate",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Node:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -1345,12 +1378,14 @@ func TestCompareActionsModified(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
-		Change: change.ModifyAction,
-		Action: "CreateUserAction",
+		Change:      change.ModifyAction,
+		Name:        "CreateUserAction",
+		GraphQLName: "userCreate",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Node:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -1420,12 +1455,14 @@ func TestForeignKeyEdgeAdded(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
-		Change: change.AddEdge,
-		Edge:   "contacts",
+		Change:      change.AddEdge,
+		Name:        "contacts",
+		GraphQLName: "UserToContactsConnection",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Node:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -1461,12 +1498,14 @@ func TestForeignKeyEdgeRemoved(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
-		Change: change.RemoveEdge,
-		Edge:   "contacts",
+		Change:      change.RemoveEdge,
+		Name:        "contacts",
+		GraphQLName: "UserToContactsConnection",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Node:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -1506,16 +1545,19 @@ func TestForeignKeyEdgeModified(t *testing.T) {
 	user := m["User"]
 	require.Len(t, user, 3)
 	verifyChange(t, change.Change{
-		Change: change.RemoveEdge,
-		Edge:   "contacts",
+		Change:      change.RemoveEdge,
+		Name:        "contacts",
+		GraphQLName: "UserToContactsConnection",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.AddEdge,
-		Edge:   "user_contacts",
+		Change:      change.AddEdge,
+		Name:        "user_contacts",
+		GraphQLName: "UserToUserContactsConnection",
 	}, user[1])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Node:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[2])
 }
 
@@ -1557,6 +1599,7 @@ func TestIndexedEdgeNochange(t *testing.T) {
 	require.Len(t, m, 0)
 }
 
+// TODO testindexeEdge which is not polymorphic...
 func TestIndexedEdgeAdded(t *testing.T) {
 	e2 := edge.NewEdgeInfo("user")
 	require.Nil(t, e2.AddIndexedEdgeFromSource("ownerID", "owner_id", "User", &base.PolymorphicOptions{
@@ -1592,11 +1635,14 @@ func TestIndexedEdgeAdded(t *testing.T) {
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
 		Change: change.AddEdge,
-		Edge:   "Users",
+		Name:   "Users",
+		// no connection...
+		GraphQLName: "",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Node:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -1635,11 +1681,14 @@ func TestIndexedEdgeRemoved(t *testing.T) {
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
 		Change: change.RemoveEdge,
-		Edge:   "Users",
+		Name:   "Users",
+		// no connection...
+		GraphQLName: "",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Node:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
 
@@ -1684,13 +1733,137 @@ func TestIndexedEdgeModified(t *testing.T) {
 	require.Len(t, user, 2)
 	verifyChange(t, change.Change{
 		Change: change.ModifyEdge,
-		Edge:   "Users",
+		Name:   "Users",
+		// no connection
+		GraphQLName: "",
 	}, user[0])
 	verifyChange(t, change.Change{
-		Change: change.ModifyNode,
-		Node:   "User",
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
 	}, user[1])
 }
+
+func TestEnumNoChange(t *testing.T) {
+	s1 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfo(nil),
+		},
+	}
+	s2 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfo(nil),
+		},
+	}
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 0)
+}
+
+func TestEnumAdded(t *testing.T) {
+	s1 := &schema.Schema{}
+	s2 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfo(nil),
+		},
+	}
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+
+	lang := m["Language"]
+	require.Len(t, lang, 1)
+	verifyChange(t, change.Change{
+		Change:      change.AddEnum,
+		Name:        "Language",
+		GraphQLName: "Language",
+	}, lang[0])
+}
+
+func TestEnumRemoved(t *testing.T) {
+	s1 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfo(nil),
+		},
+	}
+	s2 := &schema.Schema{}
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+
+	lang := m["Language"]
+	require.Len(t, lang, 1)
+	verifyChange(t, change.Change{
+		Change:      change.RemoveEnum,
+		Name:        "Language",
+		GraphQLName: "Language",
+	}, lang[0])
+}
+
+func TestEnumModified(t *testing.T) {
+	s1 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfo(nil),
+		},
+	}
+
+	s2 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfo(
+				map[string]string{
+					"Java":       "java",
+					"CPlusPlus":  "c++",
+					"CSharp":     "c#",
+					"JavaScript": "js",
+					"TypeScript": "ts",
+					"GoLang":     "go",
+					"Python":     "python",
+					"Rust":       "rust",
+				}),
+		},
+	}
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+
+	lang := m["Language"]
+	require.Len(t, lang, 1)
+	verifyChange(t, change.Change{
+		Change:      change.ModifyEnum,
+		Name:        "Language",
+		GraphQLName: "Language",
+	}, lang[0])
+}
+
+func getEnumInfo(m map[string]string) *schema.EnumInfo {
+	if m == nil {
+		m = map[string]string{
+			"Java":       "java",
+			"CPlusPlus":  "c++",
+			"CSharp":     "c#",
+			"JavaScript": "js",
+			"TypeScript": "ts",
+			"GoLang":     "go",
+			"Python":     "python",
+		}
+	}
+	typ := "Language"
+
+	tsEnum, gqlEnum := enum.GetEnums(&enum.Input{
+		TSName:  typ,
+		GQLName: typ,
+		GQLType: typ,
+		EnumMap: m,
+	})
+	return &schema.EnumInfo{
+		Enum:    tsEnum,
+		GQLEnum: gqlEnum,
+	}
+}
+
+// change.RemoveEnum
+// change.AddEnum
+// change.ModifyEnum
 
 func createDuplicateAssocEdgeFromInput(t *testing.T, packageName string, inputEdge *input.AssocEdge) (*edge.AssociationEdge, *edge.AssociationEdge) {
 	edge1, err := edge.AssocEdgeFromInput(packageName, inputEdge)
@@ -1719,13 +1892,8 @@ func createActionInfoFromInput(t *testing.T, nodeName string, node *input.Node) 
 
 func verifyChange(t *testing.T, expChange, change change.Change) {
 	assert.Equal(t, expChange.Change, change.Change)
-	assert.Equal(t, expChange.Field, change.Field)
-	assert.Equal(t, expChange.Edge, change.Edge)
-	assert.Equal(t, expChange.EdgeGroup, change.EdgeGroup)
-	assert.Equal(t, expChange.Pattern, change.Pattern)
-	assert.Equal(t, expChange.Node, change.Node)
-	assert.Equal(t, expChange.Action, change.Action)
-	assert.Equal(t, expChange.Enum, change.Enum)
+	assert.Equal(t, expChange.Name, change.Name)
+	assert.Equal(t, expChange.GraphQLName, change.GraphQLName)
 	assert.Equal(t, expChange.GraphQLOnly, change.GraphQLOnly)
 	assert.Equal(t, expChange.TSOnly, change.TSOnly)
 }

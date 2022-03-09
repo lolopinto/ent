@@ -49,8 +49,8 @@ func comparePattern(p1, p2 *PatternInfo) ([]change.Change, error) {
 	// name change is possible because name in schema can be different from pattern file?
 	if p1.Name != p2.Name {
 		ret = append(ret, change.Change{
-			Change:  change.ModifyPattern,
-			Pattern: p1.Name,
+			Change: change.ModifyPattern,
+			Name:   p1.Name,
 		})
 	}
 
@@ -67,8 +67,8 @@ func comparePatterns(m1, m2 map[string]*PatternInfo, m *change.ChangeMap) error 
 		if !ok {
 			ret[k] = []change.Change{
 				{
-					Change:  change.RemovePattern,
-					Pattern: k,
+					Change: change.RemovePattern,
+					Name:   k,
 				},
 			}
 		} else {
@@ -88,8 +88,8 @@ func comparePatterns(m1, m2 map[string]*PatternInfo, m *change.ChangeMap) error 
 		if !ok {
 			ret[k] = []change.Change{
 				{
-					Change:  change.AddPattern,
-					Pattern: k,
+					Change: change.AddPattern,
+					Name:   k,
 				},
 			}
 		}
@@ -104,12 +104,14 @@ func compareNodes(m1, m2 NodeMapInfo, m *change.ChangeMap) error {
 	}
 	for k, nm1 := range m1 {
 		nm2, ok := m2[k]
+		name := getSchemaName(k)
 		if !ok {
 			// in 1st but not 2nd, dropped
 			ret[k] = []change.Change{
 				{
-					Change: change.RemoveNode,
-					Node:   getSchemaName(k),
+					Change:      change.RemoveNode,
+					Name:        name,
+					GraphQLName: name,
 				},
 			}
 		} else {
@@ -118,7 +120,7 @@ func compareNodes(m1, m2 NodeMapInfo, m *change.ChangeMap) error {
 				return err
 			}
 			if len(changes) != 0 {
-				ret[getSchemaName(k)] = changes
+				ret[name] = changes
 			}
 		}
 	}
@@ -127,10 +129,13 @@ func compareNodes(m1, m2 NodeMapInfo, m *change.ChangeMap) error {
 	for k := range m2 {
 		_, ok := m1[k]
 		if !ok {
+			name := getSchemaName(k)
+
 			ret[k] = []change.Change{
 				{
-					Change: change.AddNode,
-					Node:   getSchemaName(k),
+					Change:      change.AddNode,
+					Name:        name,
+					GraphQLName: name,
 				},
 			}
 		}
@@ -161,8 +166,9 @@ func compareNode(n1, n2 *NodeData) ([]change.Change, error) {
 	// maybe move action changes after. can't think of a reason to have actions affect node file
 	if len(ret) != 0 {
 		ret = append(ret, change.Change{
-			Change: change.ModifyNode,
-			Node:   n2.Node,
+			Change:      change.ModifyNode,
+			Name:        n2.Node,
+			GraphQLName: n2.Node,
 		})
 	}
 	return ret, nil
@@ -195,16 +201,18 @@ func compareEnums(m1, m2 map[string]*EnumInfo, m *change.ChangeMap) error {
 			// in 1st but not 2nd, dropped
 			ret[k] = []change.Change{
 				{
-					Change: change.RemoveEnum,
-					Enum:   k,
+					Change:      change.RemoveEnum,
+					Name:        enum1.Enum.Name,
+					GraphQLName: enum1.GQLEnum.Name,
 				},
 			}
 		} else {
 			if !enumInfoEqual(enum1, enum2) {
 				ret[k] = []change.Change{
 					{
-						Change: change.ModifyEnum,
-						Enum:   k,
+						Change:      change.ModifyEnum,
+						Name:        enum1.Enum.Name,
+						GraphQLName: enum1.GQLEnum.Name,
 					},
 				}
 			}
@@ -212,13 +220,14 @@ func compareEnums(m1, m2 map[string]*EnumInfo, m *change.ChangeMap) error {
 	}
 
 	// in 2nd but not first, added
-	for k := range m2 {
+	for k, enum2 := range m2 {
 		_, ok := m1[k]
 		if !ok {
 			ret[k] = []change.Change{
 				{
-					Change: change.AddEnum,
-					Enum:   k,
+					Change:      change.AddEnum,
+					Name:        enum2.Enum.Name,
+					GraphQLName: enum2.GQLEnum.Name,
 				},
 			}
 		}
