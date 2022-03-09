@@ -3,7 +3,6 @@ package graphql
 import (
 	"fmt"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/schema/change"
@@ -224,10 +223,6 @@ func CompareCustomData(processor *codegen.Processor, cd1, cd2 *CustomData, exist
 	ret.customMutationsChanged = m.changed
 	ret.customMutationsRemoved = m.removed
 
-	spew.Dump(queryReferences)
-	spew.Dump(mutationReferences)
-	spew.Dump(ret)
-
 	for k, c2 := range cd2.Classes {
 		c1, ok := cd1.Classes[k]
 		if !ok {
@@ -249,9 +244,17 @@ func CompareCustomData(processor *codegen.Processor, cd1, cd2 *CustomData, exist
 			continue
 		}
 		if processor.Schema.NodeNameExists(k) {
-			// need to flag User|Contact as changed
-			// NodeData
-			// flag this needs to change e.g. User Config
+			l, ok := existingChangeMap[k]
+			if !ok {
+				l = []change.Change{}
+			}
+			// flag GraphQL file as changed so we update that...
+			l = append(l, change.Change{
+				Change:      change.ModifyNode,
+				GraphQLName: k,
+				GraphQLOnly: true,
+			})
+			existingChangeMap[k] = l
 		} else {
 			// changed field in custom object
 			// flag custom queries and mutations where this is referenced as needing to change
@@ -291,8 +294,8 @@ type compareListOptions struct {
 }
 
 func compareCustomList(l1, l2 []CustomField, opts *compareListOptions, references map[string]map[string]bool) {
-	//	ret := make(change.SingleChangeMap)
-	m1 := mapifyFieldList(l1, references)
+	// intentionally only building references from current code instead of previous code
+	m1 := mapifyFieldList(l1, nil)
 	m2 := mapifyFieldList(l1, references)
 
 	for k, cf1 := range m1 {
@@ -338,6 +341,9 @@ func customObjectMapEqual(m1, m2 map[string]*CustomObject) bool {
 func mapifyFieldList(l []CustomField, references map[string]map[string]bool) map[string]*CustomField {
 	m := make(map[string]*CustomField)
 	addToMap := func(typ, gqlName string) {
+		if references == nil {
+			return
+		}
 		subM, ok := references[typ]
 		if !ok {
 			subM = map[string]bool{}
