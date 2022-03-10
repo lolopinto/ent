@@ -9,30 +9,6 @@ import (
 	"github.com/lolopinto/ent/internal/schema/change"
 )
 
-func getPromptsFromDB(p *Processor) ([]prompt.Prompt, error) {
-	// get db changes and store in Buffer (output of auto_schema --changes)
-	if p.debugMode {
-		fmt.Println("deciphering prompts from db")
-	}
-	buf, err := dbChanges(p.Config)
-	if err != nil {
-		return nil, err
-	}
-
-	changes := make(map[string][]deprecatedChange)
-
-	if err := json.Unmarshal(buf.Bytes(), &changes); err != nil {
-		return nil, err
-	}
-
-	if len(changes) == 0 {
-		// we know there's no db changes so we should flag this so that we don't call into python in the future to try and make changes
-		p.noDBChanges = true
-	}
-
-	return getPromptsFromDBChanges(p.Schema, changes)
-}
-
 // TODO: this should all be in schema but there's dependency issues
 // because codegen depends on schema and we need schema to depend on the path to schema which we need to fix
 func checkAndHandlePrompts(p *Processor) error {
@@ -56,6 +32,30 @@ func checkAndHandlePrompts(p *Processor) error {
 	}
 
 	return nil
+}
+
+func getPromptsFromDB(p *Processor) ([]prompt.Prompt, error) {
+	// get db changes and store in Buffer (output of auto_schema --changes)
+	if p.debugMode {
+		fmt.Println("deciphering prompts from db")
+	}
+	buf, err := dbChanges(p.Config)
+	if err != nil {
+		return nil, err
+	}
+
+	changes := make(map[string][]deprecatedChange)
+
+	if err := json.Unmarshal(buf.Bytes(), &changes); err != nil {
+		return nil, err
+	}
+
+	if len(changes) == 0 {
+		// we know there's no db changes so we should flag this so that we don't call into python in the future to try and make changes
+		p.noDBChanges = true
+	}
+
+	return getPromptsFromDBChanges(p.Schema, changes)
 }
 
 // TODO eventually deprecate this. for now, we keep this to have both paths just in case
