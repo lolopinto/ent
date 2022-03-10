@@ -45,7 +45,6 @@ func writeViewer(cfg *codegen.Config, node, app string, forceOverwrite bool) cha
 			PathToFile:        getFilePath(app),
 			PackageName:       packageName(app),
 			Imports:           &imps,
-			CreateDirIfNeeded: true,
 			EditableCode:      true,
 			FuncMap: template.FuncMap{
 				// our own version of reserveImport similar to what gqlgen provides. TOOD rename
@@ -94,7 +93,6 @@ func writeGraphQLViewer(cfg *codegen.Config, node, app string, forceOverwrite bo
 			PathToFile:        getGraphQLFilePath(),
 			PackageName:       "viewer",
 			Imports:           &imps,
-			CreateDirIfNeeded: true,
 			EditableCode:      true,
 			FuncMap: template.FuncMap{
 				// our own version of reserveImport similar to what gqlgen provides. TOOD rename

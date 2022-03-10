@@ -136,10 +136,9 @@ func (p *TSStep) PostProcessData(processor *codegen.Processor) error {
 		return nil
 	}
 	return file.Write(&file.JSONFileWriter{
-		Config:            processor.Config,
-		Data:              p.s.customData,
-		PathToFile:        processor.Config.GetPathToCustomSchemaFile(),
-		CreateDirIfNeeded: true,
+		Config:     processor.Config,
+		Data:       p.s.customData,
+		PathToFile: processor.Config.GetPathToCustomSchemaFile(),
 	})
 }
 
@@ -1150,7 +1149,6 @@ func writeFile(processor *codegen.Processor, node *gqlNode) error {
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Config:            processor.Config,
 		Data:              node.ObjData,
-		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/object.tmpl"),
 		TemplateName:      "object.tmpl",
 		OtherTemplateFiles: []string{
@@ -1171,7 +1169,6 @@ func writeEnumFile(processor *codegen.Processor, enum *gqlEnum) error {
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Config:            processor.Config,
 		Data:              enum,
-		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/enum.tmpl"),
 		TemplateName:      "enum.tmpl",
 		PathToFile:        enum.FilePath,
@@ -1371,7 +1368,6 @@ func writeInternalGQLResolversFile(s *gqlSchema, processor *codegen.Processor) e
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/resolver_internal.tmpl"),
 		TemplateName:      "resolver_internal.tmpl",
 		PathToFile:        filePath,
-		CreateDirIfNeeded: true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	})
@@ -1386,7 +1382,6 @@ func writeGQLResolversIndexFile(processor *codegen.Processor) error {
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/resolver_index.tmpl"),
 		TemplateName:      "resolver_index.tmpl",
 		PathToFile:        filePath,
-		CreateDirIfNeeded: true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	}, file.WriteOnce())
@@ -1414,7 +1409,6 @@ func writeConnectionFile(processor *codegen.Processor, s *gqlSchema, conn *gqlCo
 			&connectionBaseObj{},
 			processor.Config.GetImportPackage(),
 		},
-		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/connection.tmpl"),
 		TemplateName:      "connection.tmpl",
 		OtherTemplateFiles: []string{
@@ -2552,7 +2546,6 @@ func writeRootDataFile(processor *codegen.Processor, rootData *gqlRootData) erro
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Config:            processor.Config,
 		Data:              rootData,
-		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/root.tmpl"),
 		TemplateName:      "root.tmpl",
 		PathToFile:        rootData.FilePath,
@@ -2712,7 +2705,6 @@ func writeRootQueryFile(processor *codegen.Processor, rq *rootQuery) error {
 			rq,
 			processor.Config.GetImportPackage(),
 		},
-		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/root_query.tmpl"),
 		TemplateName:      "root_query.tmpl",
 		OtherTemplateFiles: []string{
@@ -2744,8 +2736,6 @@ func writeTSSchemaFile(processor *codegen.Processor, s *gqlSchema) error {
 			getMutationImportPath(),
 			s.allTypes,
 		},
-
-		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/schema.tmpl"),
 		TemplateName:      "schema.tmpl",
 		PathToFile:        filePath,
@@ -2770,7 +2760,6 @@ func writeTSIndexFile(processor *codegen.Processor, s *gqlSchema) error {
 			codepath.Package,
 			codepath.AuthPackage,
 		},
-		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/index.tmpl"),
 		TemplateName:      "index.tmpl",
 		PathToFile:        filePath,
@@ -2888,7 +2877,6 @@ func writeSchemaFile(cfg *codegen.Config, fileToWrite string, hasMutations bool)
 			AbsPathToTemplate: util.GetAbsolutePath("generate_schema.tmpl"),
 			TemplateName:      "generate_schema.tmpl",
 			PathToFile:        fileToWrite,
-			CreateDirIfNeeded: true,
 		},
 		file.DisableLog(),
 		file.TempFile(),

@@ -219,10 +219,9 @@ func (p *Processor) WriteSchema() error {
 	}
 
 	return file.Write(&file.JSONFileWriter{
-		Config:            p.Config,
-		Data:              inputSchema,
-		PathToFile:        p.Config.GetPathToSchemaFile(),
-		CreateDirIfNeeded: true,
+		Config:     p.Config,
+		Data:       inputSchema,
+		PathToFile: p.Config.GetPathToSchemaFile(),
 	})
 }
 

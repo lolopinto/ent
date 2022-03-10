@@ -5,14 +5,9 @@ import (
 )
 
 type JSONFileWriter struct {
-	Config            Config
-	Data              interface{}
-	PathToFile        string
-	CreateDirIfNeeded bool
-}
-
-func (fw *JSONFileWriter) createDirIfNeeded() bool {
-	return fw.CreateDirIfNeeded
+	Config     Config
+	Data       interface{}
+	PathToFile string
 }
 
 func (fw *JSONFileWriter) getPathToFile() string {

@@ -89,7 +89,6 @@ func createDockerfile(path string, d dockerfileData) error {
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Config:            cfg,
 		Data:              &d,
-		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("../ts/Dockerfile.tmpl"),
 		TemplateName:      "Dockerfile.tmpl",
 		PathToFile:        path,

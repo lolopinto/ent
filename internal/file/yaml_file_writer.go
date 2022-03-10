@@ -5,14 +5,9 @@ import (
 )
 
 type YamlFileWriter struct {
-	Config            Config
-	Data              interface{}
-	PathToFile        string
-	CreateDirIfNeeded bool
-}
-
-func (fw *YamlFileWriter) createDirIfNeeded() bool {
-	return fw.CreateDirIfNeeded
+	Config     Config
+	Data       interface{}
+	PathToFile string
 }
 
 func (fw *YamlFileWriter) getPathToFile() string {

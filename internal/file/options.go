@@ -1,7 +1,6 @@
 package file
 
 // Options provides a way to configure the file writing process as needed
-// TODO: maybe move things like createDirIfNeeded to here?
 type Options struct {
 	writeOnce  bool
 	disableLog bool
