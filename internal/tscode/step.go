@@ -349,7 +349,7 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 	funcs = append(funcs,
 		func() error {
 			// ent or edge added or removed
-			if entAddedOrRemoved || edgeAddedOrRemoved {
+			if writeAll || entAddedOrRemoved || edgeAddedOrRemoved {
 				return writeConstFile(processor, s.nodeTypes, s.edgeTypes)
 			}
 			return nil
