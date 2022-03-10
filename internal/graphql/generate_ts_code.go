@@ -199,11 +199,18 @@ func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *g
 	}
 
 	// get custom files...
-	// TODO if compare result is nil, we need to store this in useChanges
 	cmp := s.customData.compareResult
 	if cmp != nil {
 		for k, v := range cmp.customConnectionsChanged {
 			opts.connectionFiles[k] = v
+		}
+	} else {
+		// if cmp is nil for some reason, flag custom connection edges
+		for _, c := range node.connections {
+			ce, ok := c.Edge.(customGraphQLEdge)
+			if ok && ce.isCustomEdge() {
+				opts.connectionFiles[c.ConnType] = true
+			}
 		}
 	}
 
