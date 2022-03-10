@@ -28,7 +28,6 @@ func writeMutationBuilderFile(nodeData *schema.NodeData, cfg *codegen.Config) er
 			AbsPathToTemplate: util.GetAbsolutePath("mutation_builder.gotmpl"),
 			TemplateName:      "mutation_builder.gotmpl",
 			PathToFile:        fmt.Sprintf("models/%s/%s", nodeData.PackageName, fileName),
-			CreateDirIfNeeded: true,
 			PackageName:       nodeData.PackageName, // TODO
 			Imports:           &imps,
 			FuncMap: template.FuncMap{

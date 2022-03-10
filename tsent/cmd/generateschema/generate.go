@@ -576,7 +576,6 @@ func generateSchema(cfg *codegen.Config, data *CodegenData, node string) error {
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Config:            cfg,
 		Data:              data,
-		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("schema.tmpl"),
 		TemplateName:      "schema.tmpl",
 		PathToFile:        filePath,

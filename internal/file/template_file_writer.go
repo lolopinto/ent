@@ -17,17 +17,12 @@ type TemplatedBasedFileWriter struct {
 	OtherTemplateFiles []string // should also be an absolute path
 	TemplateName       string
 	PathToFile         string
-	CreateDirIfNeeded  bool
 	FuncMap            template.FuncMap
 	PackageName        string
 	Imports            *intimports.Imports
 	TsImports          *tsimport.Imports
 	Config             Config
 	EditableCode       bool
-}
-
-func (fw *TemplatedBasedFileWriter) createDirIfNeeded() bool {
-	return fw.CreateDirIfNeeded
 }
 
 func (fw *TemplatedBasedFileWriter) getPathToFile() string {

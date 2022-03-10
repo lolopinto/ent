@@ -17,7 +17,6 @@ type Config interface {
 
 type Writer interface {
 	Write(opts ...func(opt *Options)) error
-	createDirIfNeeded() bool
 	getPathToFile() string
 	generateBytes() ([]byte, error)
 }
@@ -57,26 +56,24 @@ func writeFile(w Writer, cfg Config, opts ...func(opt *Options)) error {
 	}
 
 	fullPath := pathToFile
-	if w.createDirIfNeeded() {
-		if !filepath.IsAbs(fullPath) {
-			// TODO need to convert everything here to absolute paths
-			fullPath = filepath.Join(".", pathToFile)
-		}
-		directoryPath := path.Dir(fullPath)
+	if !filepath.IsAbs(fullPath) {
+		// TODO need to convert everything here to absolute paths
+		fullPath = filepath.Join(".", pathToFile)
+	}
+	directoryPath := path.Dir(fullPath)
 
-		_, err := os.Stat(directoryPath)
+	_, err = os.Stat(directoryPath)
 
-		if os.IsNotExist(err) {
-			err = os.MkdirAll(directoryPath, os.ModePerm)
-			if err == nil {
-				debugLogInfo(option, "created directory "+directoryPath)
-			} else {
-				return err
-			}
-		}
-		if os.IsNotExist(err) {
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(directoryPath, os.ModePerm)
+		if err == nil {
+			debugLogInfo(option, "created directory "+directoryPath)
+		} else {
 			return err
 		}
+	}
+	if os.IsNotExist(err) {
+		return err
 	}
 
 	if option.writeOnce {
