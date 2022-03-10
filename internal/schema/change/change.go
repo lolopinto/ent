@@ -62,10 +62,7 @@ type Change struct {
 type ChangeMap map[string][]Change
 
 func (cm ChangeMap) ChangesExist(key string, l ...ChangeType) bool {
-	if cm == nil {
-		return false
-	}
-	if len(l) == 0 {
+	if cm == nil || len(l) == 0 {
 		return false
 	}
 	changes := cm[key]

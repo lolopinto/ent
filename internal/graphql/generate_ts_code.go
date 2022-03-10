@@ -305,7 +305,7 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 		}
 	}
 
-	// simplfiy and only do this if there's changes, we can be smarter about this over time
+	// simplify and only do this if there's changes, we can be smarter about this over time
 	if updateBecauseChanges {
 		// Query|Mutation|Subscription
 		for idx := range s.rootDatas {
