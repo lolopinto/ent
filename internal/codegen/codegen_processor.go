@@ -111,17 +111,16 @@ func (p *Processor) Run(steps []Step, step string, options ...Option) error {
 	}
 
 	var pre_steps []StepWithPreProcess
+	var post_steps []StepWithPostProcess
+
 	for _, s := range steps {
 		ps, ok := s.(StepWithPreProcess)
 		if ok {
 			pre_steps = append(pre_steps, ps)
 		}
-	}
-	var post_steps []StepWithPostProcess
-	for _, s := range steps {
-		ps, ok := s.(StepWithPostProcess)
+		ps2, ok := s.(StepWithPostProcess)
 		if ok {
-			post_steps = append(post_steps, ps)
+			post_steps = append(post_steps, ps2)
 		}
 	}
 

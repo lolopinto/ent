@@ -137,16 +137,12 @@ func (p *TSStep) PostProcessData(processor *codegen.Processor) error {
 	if p.s.customData == nil {
 		return nil
 	}
-	return nil
-
-	// TODO JSONFileWriter...
-	// cd := p.s.customData
-	// b, err := json.Marshal(cd)
-	// if err != nil {
-	// 	// TODO log ignore
-
-	// }
-	// return os.WriteFile(".ent/custom_schema.json", b, 0666)
+	return file.Write(&file.JSONFileWriter{
+		Config:            processor.Config,
+		Data:              p.s.customData,
+		PathToFile:        processor.Config.GetPathToCustomSchemaFile(),
+		CreateDirIfNeeded: true,
+	})
 }
 
 func (p *TSStep) processEnums(processor *codegen.Processor, s *gqlSchema, writeAll bool) writeFileFnList {
@@ -598,9 +594,9 @@ func parseCustomData(processor *codegen.Processor, fromTest bool) chan *CustomDa
 			cd.Error = err
 		}
 		if cd.Error == nil {
-			existing := loadOldCustomData()
+			existing := loadOldCustomData(processor)
 			if existing != nil {
-				cd.compareResult = CompareCustomData(processor, existing, &cd, make(change.ChangeMap))
+				cd.compareResult = CompareCustomData(processor, existing, &cd, processor.ChangeMap)
 			}
 		}
 		res <- &cd
@@ -608,8 +604,8 @@ func parseCustomData(processor *codegen.Processor, fromTest bool) chan *CustomDa
 	return res
 }
 
-func loadOldCustomData() *CustomData {
-	file := ".ent/custom_schema.json"
+func loadOldCustomData(processor *codegen.Processor) *CustomData {
+	file := processor.Config.GetPathToCustomSchemaFile()
 	fi, err := os.Stat(file)
 	if fi == nil || os.IsNotExist(err) {
 		return nil
