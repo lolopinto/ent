@@ -11,6 +11,9 @@ import (
 
 func getPromptsFromDB(p *Processor) ([]prompt.Prompt, error) {
 	// get db changes and store in Buffer (output of auto_schema --changes)
+	if p.debugMode {
+		fmt.Println("deciphering prompts from db")
+	}
 	buf, err := dbChanges(p.Config)
 	if err != nil {
 		return nil, err
@@ -38,12 +41,7 @@ func checkAndHandlePrompts(p *Processor) error {
 	var err error
 
 	if useChanges {
-		if len(p.ChangeMap) == 0 {
-			// we know there's no db changes so we should flag this so that we don't call into python in the future to try and make changes
-			p.noDBChanges = true
-		}
-		prompts, err = getPromptsFromChanges(p.Schema, p.ChangeMap)
-
+		prompts, err = getPromptsFromChanges(p)
 	} else {
 		prompts, err = getPromptsFromDB(p)
 	}
@@ -96,10 +94,18 @@ func getPromptsFromDBChanges(s *schema.Schema, changes map[string][]deprecatedCh
 	return prompts, nil
 }
 
-func getPromptsFromChanges(s *schema.Schema, changes change.ChangeMap) ([]prompt.Prompt, error) {
+func getPromptsFromChanges(p *Processor) ([]prompt.Prompt, error) {
+	if p.debugMode {
+		fmt.Println("deciphering prompts from changeMap")
+	}
+	if len(p.ChangeMap) == 0 {
+		// we know there's no db changes so we should flag this so that we don't call into python in the future to try and make changes
+		p.noDBChanges = true
+	}
+
 	var prompts []prompt.Prompt
-	for _, info := range s.Nodes {
-		for _, c := range changes[info.NodeData.Node] {
+	for _, info := range p.Schema.Nodes {
+		for _, c := range p.ChangeMap[info.NodeData.Node] {
 			if c.Change != change.AddField {
 				continue
 			}
