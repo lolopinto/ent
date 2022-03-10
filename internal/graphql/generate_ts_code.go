@@ -239,33 +239,33 @@ func (p *TSStep) buildNodeWithOpts(processor *codegen.Processor, s *gqlSchema, n
 	return ret
 }
 
-func (p *TSStep) buildCustomNode(processor *codegen.Processor, s *gqlSchema, node *gqlNode, writeAll bool, mutation bool) writeFileFnList {
-	// rename this to processCustomNode
-	// TODO change this to use buildNodeWithOpts
-	var ret writeFileFnList
-
+func (p *TSStep) processCustomNode(processor *codegen.Processor, s *gqlSchema, node *gqlNode, writeAll bool, mutation bool) writeFileFnList {
 	cmp := s.customData.compareResult
 	all := writeAll || cmp == nil
-	gqlName := node.Field.GraphQLName
-
-	if all ||
-		(mutation && cmp.customMutationsChanged[gqlName]) ||
-		(!mutation && cmp.customQueriesChanged[gqlName]) {
-		ret = append(ret, func() error {
-			return writeFile(processor, node)
-		})
+	opts := &writeOptions{
+		mutationFiles:   map[string]bool{},
+		connectionFiles: map[string]bool{},
 	}
 
-	for idx := range node.connections {
-		conn := node.connections[idx]
-		if all || cmp.customConnectionsChanged[conn.ConnType] {
-			ret = append(ret, func() error {
-				return writeConnectionFile(processor, s, conn)
-			})
+	if all {
+		opts.writeAllConnections = true
+		opts.writeNode = true
+	} else {
+		gqlName := node.Field.GraphQLName
+
+		if (mutation && cmp.customMutationsChanged[gqlName]) ||
+			(!mutation && cmp.customQueriesChanged[gqlName]) {
+			opts.writeNode = true
+		}
+
+		for idx := range node.connections {
+			conn := node.connections[idx]
+			if cmp.customConnectionsChanged[conn.ConnType] {
+				opts.connectionFiles[conn.ConnType] = true
+			}
 		}
 	}
-
-	return ret
+	return p.buildNodeWithOpts(processor, s, node, opts)
 }
 
 func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) error {
@@ -281,11 +281,11 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 	}
 
 	for _, node := range s.customMutations {
-		funcs = append(funcs, p.buildCustomNode(processor, s, node, writeAll, true)...)
+		funcs = append(funcs, p.processCustomNode(processor, s, node, writeAll, true)...)
 	}
 
 	for _, node := range s.customQueries {
-		funcs = append(funcs, p.buildCustomNode(processor, s, node, writeAll, false)...)
+		funcs = append(funcs, p.processCustomNode(processor, s, node, writeAll, false)...)
 	}
 
 	if updateBecauseChanges {
