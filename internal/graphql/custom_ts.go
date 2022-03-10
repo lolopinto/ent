@@ -837,10 +837,18 @@ func getGraphQLImportsForField(cd *CustomData, f CustomField, s *gqlSchema) ([]*
 	return imports, nil
 }
 
+type customGraphQLEdge interface {
+	isCustomEdge() bool
+}
+
 type CustomEdge struct {
 	SourceNodeName string
 	EdgeName       string
 	Type           string
+}
+
+func (e *CustomEdge) isCustomEdge() bool {
+	return true
 }
 
 func (e *CustomEdge) GetEdgeName() string {

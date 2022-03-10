@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/lolopinto/ent/internal/codepath"
+	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
@@ -23,6 +26,10 @@ type Config struct {
 	absPathToConfigs      string
 	config                *config
 	debugMode             bool
+	useChanges            bool
+	changes               change.ChangeMap
+	// keep track of changed ts files to pass to prettier
+	changedTSFiles []string
 }
 
 func NewConfig(configPath, modulePath string) (*Config, error) {
@@ -63,6 +70,26 @@ func NewTestConfig(configPath, modulePath string, codegenCfg *CodegenConfig) (*C
 
 func (cfg *Config) SetDebugMode(debugMode bool) {
 	cfg.debugMode = debugMode
+}
+
+func (cfg *Config) SetUseChanges(useChanges bool) {
+	cfg.useChanges = useChanges
+}
+
+func (cfg *Config) SetChangeMap(changes change.ChangeMap) {
+	cfg.changes = changes
+}
+
+func (cfg *Config) UseChanges() bool {
+	return cfg.useChanges
+}
+
+func (cfg *Config) WriteAllFiles() bool {
+	return !cfg.useChanges
+}
+
+func (cfg *Config) ChangeMap() change.ChangeMap {
+	return cfg.changes
 }
 
 func (cfg *Config) DebugMode() bool {
@@ -147,6 +174,14 @@ func (cfg *Config) GenerateRootResolvers() bool {
 	return false
 }
 
+func (cfg *Config) GetPathToSchemaFile() string {
+	return path.Join(cfg.GetAbsPathToRoot(), ".ent/schema.json")
+}
+
+func (cfg *Config) GetPathToCustomSchemaFile() string {
+	return path.Join(cfg.GetAbsPathToRoot(), ".ent/custom_schema.json")
+}
+
 // used by golang
 func (cfg *Config) AppendPathToModels(paths ...string) string {
 	allPaths := append([]string{cfg.importPathToModels}, paths...)
@@ -161,6 +196,12 @@ func (cfg *Config) GetAbsPathToModels() string {
 // used by golang
 func (cfg *Config) GetAbsPathToGraphQL() string {
 	return filepath.Join(cfg.absPathToRoot, "graphql")
+}
+
+func (cfg *Config) AddChangedFile(filePath string) {
+	if strings.HasSuffix(filePath, ".ts") {
+		cfg.changedTSFiles = append(cfg.changedTSFiles, filePath)
+	}
 }
 
 func init() {
@@ -227,21 +268,29 @@ var defaultArgs = []string{
 }
 
 func (cfg *Config) GetPrettierArgs() []string {
-	if cfg.config == nil || cfg.config.Codegen == nil || cfg.config.Codegen.Prettier == nil {
-		// defaults
-		return append(defaultArgs, "--write", DEFAULT_GLOB)
+	// nothing to do here
+	if cfg.useChanges && len(cfg.changedTSFiles) == 0 {
+		return nil
 	}
-
-	prettier := cfg.config.Codegen.Prettier
 	glob := DEFAULT_GLOB
-	if prettier.Glob != "" {
-		glob = prettier.Glob
-	}
-	if prettier.Custom {
-		return []string{"--write", glob}
-	}
+	args := defaultArgs
 
-	return append(defaultArgs, "--write", glob)
+	if cfg.config != nil && cfg.config.Codegen != nil && cfg.config.Codegen.Prettier != nil {
+		prettier := cfg.config.Codegen.Prettier
+
+		if prettier.Glob != "" {
+			glob = prettier.Glob
+		}
+		if prettier.Custom {
+			args = []string{}
+		}
+	}
+	if cfg.useChanges {
+		args = append(args, "--write")
+		return append(args, cfg.changedTSFiles...)
+	} else {
+		return append(args, "--write", glob)
+	}
 }
 
 // ImportPackage refers to TypeScript paths of what needs to be generated for imports

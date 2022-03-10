@@ -3,11 +3,17 @@ package codegen
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"sync"
 	"time"
 
+	"github.com/lolopinto/ent/internal/file"
+	"github.com/lolopinto/ent/internal/fns"
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/schema/base"
+	"github.com/lolopinto/ent/internal/schema/change"
+	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/syncerr"
 	"github.com/pkg/errors"
 )
@@ -55,6 +61,8 @@ func DisableSchemaGQL() Option {
 // Processor stores the parsed data needed for codegen
 type Processor struct {
 	Schema      *schema.Schema
+	ChangeMap   change.ChangeMap
+	useChanges  bool
 	Config      *Config
 	debugMode   bool
 	opt         *option
@@ -104,17 +112,16 @@ func (p *Processor) Run(steps []Step, step string, options ...Option) error {
 	}
 
 	var pre_steps []StepWithPreProcess
+	var post_steps []StepWithPostProcess
+
 	for _, s := range steps {
 		ps, ok := s.(StepWithPreProcess)
 		if ok {
 			pre_steps = append(pre_steps, ps)
 		}
-	}
-	var post_steps []StepWithPostProcess
-	for _, s := range steps {
-		ps, ok := s.(StepWithPostProcess)
+		ps2, ok := s.(StepWithPostProcess)
 		if ok {
-			post_steps = append(post_steps, ps)
+			post_steps = append(post_steps, ps2)
 		}
 	}
 
@@ -186,6 +193,14 @@ func (p *Processor) Run(steps []Step, step string, options ...Option) error {
 }
 
 func (p *Processor) FormatTS() error {
+	// nothing to do here
+	args := p.Config.GetPrettierArgs()
+	if args == nil {
+		if p.debugMode {
+			fmt.Printf("no files for prettier to format\n")
+		}
+		return nil
+	}
 	cmd := exec.Command("prettier", p.Config.GetPrettierArgs()...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -197,12 +212,33 @@ func (p *Processor) FormatTS() error {
 	return nil
 }
 
+func (p *Processor) WriteSchema() error {
+	inputSchema := p.Schema.GetInputSchema()
+	if inputSchema == nil {
+		return nil
+	}
+
+	return file.Write(&file.JSONFileWriter{
+		Config:            p.Config,
+		Data:              inputSchema,
+		PathToFile:        p.Config.GetPathToSchemaFile(),
+		CreateDirIfNeeded: true,
+	})
+}
+
 func postProcess(p *Processor) error {
 	if p.opt != nil && p.opt.disableFormat {
 		return nil
 	}
 
-	return p.FormatTS()
+	return fns.RunVarargs(
+		func() error {
+			return p.WriteSchema()
+		},
+		func() error {
+			return p.FormatTS()
+		},
+	)
 }
 
 func runAndLog(p *Processor, fn func(p *Processor) error, logDiff func(d time.Duration)) error {
@@ -237,18 +273,30 @@ type StepWithPostProcess interface {
 	PostProcessData(data *Processor) error
 }
 
-func NewCodegenProcessor(schema *schema.Schema, configPath, modulePath string, debugMode bool) (*Processor, error) {
+func NewCodegenProcessor(currentSchema *schema.Schema, configPath, modulePath string, debugMode bool) (*Processor, error) {
 	cfg, err := NewConfig(configPath, modulePath)
 	if err != nil {
 		return nil, err
 	}
 	cfg.SetDebugMode(debugMode)
 
+	existingSchema := parseExistingSchema(cfg)
+	changes, err := schema.CompareSchemas(existingSchema, currentSchema)
+	if err != nil && debugMode {
+		fmt.Printf("error %v comparing schemas \n", err)
+	}
+	// if changes == nil, don't use changes
+	useChanges := changes != nil
+	cfg.SetUseChanges(useChanges)
+	cfg.SetChangeMap(changes)
+
 	return &Processor{
-		Schema:    schema,
-		Config:    cfg,
-		debugMode: debugMode,
-		opt:       &option{},
+		Schema:     currentSchema,
+		Config:     cfg,
+		ChangeMap:  changes,
+		useChanges: useChanges,
+		debugMode:  debugMode,
+		opt:        &option{},
 	}, nil
 }
 
@@ -269,4 +317,23 @@ func FormatTS(cfg *Config) error {
 		Config: cfg,
 	}
 	return p.FormatTS()
+}
+
+func parseExistingSchema(cfg *Config) *schema.Schema {
+	filepath := cfg.GetPathToSchemaFile()
+	fi, _ := os.Stat(filepath)
+	if fi == nil {
+		return nil
+	}
+	b, err := os.ReadFile(filepath)
+	if err != nil {
+		return nil
+	}
+
+	existingSchema, err := input.ParseSchema(b)
+	if err != nil {
+		return nil
+	}
+	s, _ := schema.ParseFromInputSchema(existingSchema, base.TypeScript)
+	return s
 }

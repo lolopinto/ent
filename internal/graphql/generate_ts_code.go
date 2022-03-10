@@ -23,6 +23,7 @@ import (
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/file"
+	"github.com/lolopinto/ent/internal/fns"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/change"
@@ -75,9 +76,6 @@ type NullableItem string
 const NullableContents NullableItem = "contents"
 const NullableContentsAndList NullableItem = "contentsAndList"
 const NullableTrue NullableItem = "true"
-
-type writeFileFn func() error
-type writeFileFnList []writeFileFn
 
 func buildSchema(processor *codegen.Processor, fromTest bool) (*gqlSchema, error) {
 	cd, s := <-parseCustomData(processor, fromTest), <-buildGQLSchema(processor)
@@ -137,71 +135,185 @@ func (p *TSStep) PostProcessData(processor *codegen.Processor) error {
 	if p.s.customData == nil {
 		return nil
 	}
-	return nil
-
-	// TODO JSONFileWriter...
-	// cd := p.s.customData
-	// b, err := json.Marshal(cd)
-	// if err != nil {
-	// 	// TODO log ignore
-
-	// }
-	// return os.WriteFile(".ent/custom_schema.json", b, 0666)
+	return file.Write(&file.JSONFileWriter{
+		Config:            processor.Config,
+		Data:              p.s.customData,
+		PathToFile:        processor.Config.GetPathToCustomSchemaFile(),
+		CreateDirIfNeeded: true,
+	})
 }
 
-func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) error {
-	var funcs writeFileFnList
-	buildNode := func(node *gqlNode) {
-		funcs = append(funcs, func() error {
-			return writeFile(processor, node)
-		})
+func (p *TSStep) processEnums(processor *codegen.Processor, s *gqlSchema, writeAll bool) fns.FunctionList {
+	var ret fns.FunctionList
 
-		for idx := range node.ActionDependents {
-			dependentNode := node.ActionDependents[idx]
-			funcs = append(funcs, func() error {
-				return writeFile(processor, dependentNode)
+	for idx := range s.enums {
+		enum := s.enums[idx]
+		if writeAll ||
+			processor.ChangeMap.ChangesExist(enum.Enum.Name, change.AddEnum, change.ModifyEnum) {
+			ret = append(ret, func() error {
+				return writeEnumFile(processor, enum)
 			})
 		}
+	}
+	return ret
+}
 
-		for idx := range node.connections {
-			conn := node.connections[idx]
-			funcs = append(funcs, func() error {
+type writeOptions struct {
+	// anytime any boolean is added here, need to update the
+	// else case in processNode
+	writeNode           bool
+	writeAllMutations   bool
+	writeAllConnections bool
+	mutationFiles       map[string]bool
+	connectionFiles     map[string]bool
+
+	// nodeAdded, nodeRemoved, connectionAdded, rootQuery etc...
+}
+
+func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *gqlNode, writeAll bool) fns.FunctionList {
+	opts := &writeOptions{
+		mutationFiles:   map[string]bool{},
+		connectionFiles: map[string]bool{},
+	}
+	if writeAll {
+		opts.writeAllConnections = true
+		opts.writeAllMutations = true
+		opts.writeNode = true
+	} else {
+		changemap := processor.ChangeMap
+		changes := changemap[node.ObjData.Node]
+		for _, c := range changes {
+			switch c.Change {
+			case change.AddNode, change.ModifyNode:
+				opts.writeNode = true
+
+			case change.AddEdge, change.ModifyEdge:
+				opts.connectionFiles[c.GraphQLName] = true
+
+			case change.AddAction, change.ModifyAction:
+				opts.mutationFiles[c.GraphQLName] = true
+			}
+		}
+	}
+
+	// get custom files...
+	cmp := s.customData.compareResult
+	if cmp != nil {
+		for k, v := range cmp.customConnectionsChanged {
+			opts.connectionFiles[k] = v
+		}
+	} else {
+		// if cmp is nil for some reason, flag custom connection edges
+		for _, c := range node.connections {
+			ce, ok := c.Edge.(customGraphQLEdge)
+			if ok && ce.isCustomEdge() {
+				opts.connectionFiles[c.ConnType] = true
+			}
+		}
+	}
+
+	return p.buildNodeWithOpts(processor, s, node, opts)
+}
+
+func (p *TSStep) buildNodeWithOpts(processor *codegen.Processor, s *gqlSchema, node *gqlNode, opts *writeOptions) fns.FunctionList {
+	var ret fns.FunctionList
+	if opts.writeNode {
+		ret = append(ret, func() error {
+			return writeFile(processor, node)
+		})
+	}
+
+	for idx := range node.connections {
+		conn := node.connections[idx]
+		if opts.writeAllConnections || opts.connectionFiles[conn.ConnType] {
+			ret = append(ret, func() error {
 				return writeConnectionFile(processor, s, conn)
 			})
 		}
 	}
 
-	for idx := range s.enums {
-		enum := s.enums[idx]
-		funcs = append(funcs, func() error {
-			return writeEnumFile(processor, enum)
-		})
+	for idx := range node.ActionDependents {
+		dependentNode := node.ActionDependents[idx]
+		action := dependentNode.Data.(action.Action)
+		if opts.writeAllMutations || opts.mutationFiles[action.GetGraphQLName()] {
+			ret = append(ret, func() error {
+				return writeFile(processor, dependentNode)
+			})
+		}
+	}
+	return ret
+}
+
+func (p *TSStep) processCustomNode(processor *codegen.Processor, s *gqlSchema, node *gqlNode, writeAll bool, mutation bool) fns.FunctionList {
+	cmp := s.customData.compareResult
+	all := writeAll || cmp == nil
+	opts := &writeOptions{
+		mutationFiles:   map[string]bool{},
+		connectionFiles: map[string]bool{},
 	}
 
+	if all {
+		opts.writeAllConnections = true
+		opts.writeNode = true
+	} else {
+		gqlName := node.Field.GraphQLName
+
+		if (mutation && cmp.customMutationsChanged[gqlName]) ||
+			(!mutation && cmp.customQueriesChanged[gqlName]) {
+			opts.writeNode = true
+		}
+
+		for idx := range node.connections {
+			conn := node.connections[idx]
+			if cmp.customConnectionsChanged[conn.ConnType] {
+				opts.connectionFiles[conn.ConnType] = true
+			}
+		}
+	}
+	return p.buildNodeWithOpts(processor, s, node, opts)
+}
+
+func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) error {
+	var funcs fns.FunctionList
+
+	writeAll := processor.Config.WriteAllFiles()
+	changes := processor.ChangeMap
+	updateBecauseChanges := writeAll || len(changes) > 0
+	funcs = append(funcs, p.processEnums(processor, s, writeAll)...)
+
 	for _, node := range s.nodes {
-		buildNode(node)
+		funcs = append(funcs, p.processNode(processor, s, node, writeAll)...)
 	}
 
 	for _, node := range s.customMutations {
-		buildNode(node)
+		funcs = append(funcs, p.processCustomNode(processor, s, node, writeAll, true)...)
 	}
 
 	for _, node := range s.customQueries {
-		buildNode(node)
+		funcs = append(funcs, p.processCustomNode(processor, s, node, writeAll, false)...)
 	}
 
-	for idx := range s.rootQueries {
-		rootQuery := s.rootQueries[idx]
-		funcs = append(funcs, func() error {
-			return writeRootQueryFile(processor, rootQuery)
-		})
+	if updateBecauseChanges {
+		// node(), account(), etc
+		// TODO this mostly doesn't change so ideally we'd want this to be done
+		// only when node is being added or when config is changing
+		for idx := range s.rootQueries {
+			rootQuery := s.rootQueries[idx]
+			funcs = append(funcs, func() error {
+				return writeRootQueryFile(processor, rootQuery)
+			})
+		}
 	}
 
-	for idx := range s.rootDatas {
-		rootData := s.rootDatas[idx]
-		funcs = append(funcs, func() error {
-			return writeRootDataFile(processor, rootData)
-		})
+	// simplify and only do this if there's changes, we can be smarter about this over time
+	if updateBecauseChanges {
+		// Query|Mutation|Subscription
+		for idx := range s.rootDatas {
+			rootData := s.rootDatas[idx]
+			funcs = append(funcs, func() error {
+				return writeRootDataFile(processor, rootData)
+			})
+		}
 	}
 
 	// other files
@@ -209,36 +321,34 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 		funcs,
 		func() error {
 			// graphql/resolvers/internal
-			return writeInternalGQLResolversFile(s, processor)
+			// if any changes, update this
+			// eventually only wanna do this if add|remove something
+			if updateBecauseChanges {
+				return writeInternalGQLResolversFile(s, processor)
+			}
+			return nil
 		},
 		// graphql/resolvers/index
 		func() error {
+			// have writeOnce handle this
 			return writeGQLResolversIndexFile(processor)
 		},
 		func() error {
 			// graphql/schema.ts
-			return writeTSSchemaFile(processor, s)
+			// if any changes, just do this
+			if updateBecauseChanges {
+				return writeTSSchemaFile(processor, s)
+			}
+			return nil
 		},
 		func() error {
 			// graphql/index.ts
+			// writeOnce handles this
 			return writeTSIndexFile(processor, s)
 		},
 	)
 
-	var wg sync.WaitGroup
-	var serr syncerr.Error
-
-	wg.Add(len(funcs))
-	for i := range funcs {
-		go func(i int) {
-			defer wg.Done()
-			fn := funcs[i]
-			serr.Append(fn())
-		}(i)
-	}
-	wg.Wait()
-
-	return serr.Err()
+	return fns.Run(funcs)
 }
 
 var _ codegen.Step = &TSStep{}
@@ -494,9 +604,9 @@ func parseCustomData(processor *codegen.Processor, fromTest bool) chan *CustomDa
 			cd.Error = err
 		}
 		if cd.Error == nil {
-			existing := loadOldCustomData()
+			existing := loadOldCustomData(processor)
 			if existing != nil {
-				CompareCustomData(processor, existing, &cd, make(change.ChangeMap))
+				cd.compareResult = CompareCustomData(processor, existing, &cd, processor.ChangeMap)
 			}
 		}
 		res <- &cd
@@ -504,8 +614,8 @@ func parseCustomData(processor *codegen.Processor, fromTest bool) chan *CustomDa
 	return res
 }
 
-func loadOldCustomData() *CustomData {
-	file := ".ent/custom_schema.json"
+func loadOldCustomData(processor *codegen.Processor) *CustomData {
+	file := processor.Config.GetPathToCustomSchemaFile()
 	fi, err := os.Stat(file)
 	if fi == nil || os.IsNotExist(err) {
 		return nil
@@ -869,6 +979,10 @@ func (c *gqlConnection) getRenderer(s *gqlSchema) renderer {
 	return listRenderer{edgeRender, connRender}
 }
 
+func getGqlConnectionType(edge edge.ConnectionEdge) string {
+	return fmt.Sprintf("%sType", edge.GetGraphQLConnectionName())
+}
+
 func getGqlConnection(packageName string, edge edge.ConnectionEdge, processor *codegen.Processor) *gqlConnection {
 	nodeType := fmt.Sprintf("%sType", edge.GetNodeInfo().Node)
 
@@ -879,7 +993,7 @@ func getGqlConnection(packageName string, edge edge.ConnectionEdge, processor *c
 		edgeImpPath = codepath.GetExternalImportPath()
 	}
 	return &gqlConnection{
-		ConnType: fmt.Sprintf("%sType", edge.GetGraphQLConnectionName()),
+		ConnType: getGqlConnectionType(edge),
 		Edge:     edge,
 		FilePath: getFilePathForConnection(processor.Config, packageName, edge.GetGraphQLConnectionName()),
 		NodeType: nodeType,
@@ -1275,7 +1389,7 @@ func writeGQLResolversIndexFile(processor *codegen.Processor) error {
 		CreateDirIfNeeded: true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
-	})
+	}, file.WriteOnce())
 }
 
 type connectionBaseObj struct{}
@@ -2777,5 +2891,6 @@ func writeSchemaFile(cfg *codegen.Config, fileToWrite string, hasMutations bool)
 			CreateDirIfNeeded: true,
 		},
 		file.DisableLog(),
+		file.TempFile(),
 	)
 }

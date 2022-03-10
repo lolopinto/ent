@@ -61,6 +61,24 @@ type Change struct {
 
 type ChangeMap map[string][]Change
 
+func (cm ChangeMap) ChangesExist(key string, l ...ChangeType) bool {
+	if cm == nil || len(l) == 0 {
+		return false
+	}
+	changes := cm[key]
+	m := make(map[ChangeType]bool)
+	for _, v := range l {
+		m[v] = true
+	}
+
+	for _, c := range changes {
+		if m[c.Change] {
+			return true
+		}
+	}
+	return false
+}
+
 // have to pass if nil because of go nil issues and inability to compare nils without type info
 func CompareNilVals(existingNil, valNil bool) *bool {
 	var ret *bool

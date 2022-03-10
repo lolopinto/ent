@@ -126,13 +126,13 @@ type Field struct {
 	DerivedFields       []*Field            `json:"derivedFields,omitempty"`
 
 	// Go specific information here
-	TagMap          map[string]string
-	GoType          types.Type
-	PkgPath         string
-	DataTypePkgPath string
+	TagMap          map[string]string `json:"-"`
+	GoType          types.Type        `json:"-"`
+	PkgPath         string            `json:"-"`
+	DataTypePkgPath string            `json:"-"`
 
 	// set when parsed via tsent generate schema
-	Import enttype.Import
+	Import enttype.Import `json:"-"`
 
 	PatternName string `json:"patternName,omitempty"`
 }
@@ -351,10 +351,10 @@ type AssocEdge struct {
 	InverseEdge *InverseAssocEdge `json:"inverseEdge,omitempty"`
 	EdgeActions []*EdgeAction     `json:"edgeActions,omitempty"`
 	// Go specific
-	EntConfig       *schemaparser.EntConfigInfo
-	HideFromGraphQL bool   `json:"hideFromGraphQL,omitempty"`
-	EdgeConstName   string `json:"edgeConstName,omitempty"`
-	PatternName     string `json:"patternName,omitempty"`
+	EntConfig       *schemaparser.EntConfigInfo `json:"-"`
+	HideFromGraphQL bool                        `json:"hideFromGraphQL,omitempty"`
+	EdgeConstName   string                      `json:"edgeConstName,omitempty"`
+	PatternName     string                      `json:"patternName,omitempty"`
 	// do we need a flag to know it's a pattern's edge?
 	// PatternEdge
 }
@@ -374,7 +374,7 @@ type AssocEdgeGroup struct {
 	EdgeAction *EdgeAction `json:"edgeAction,omitempty"`
 
 	// Go specific
-	ActionEdges []string
+	ActionEdges []string `json:"-"`
 }
 
 type EdgeAction struct {

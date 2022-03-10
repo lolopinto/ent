@@ -32,7 +32,7 @@ const (
 	DropCheckConstraint    ChangeType = "drop_check_constraint"
 )
 
-type change struct {
+type deprecatedChange struct {
 	Change ChangeType
 	Desc   string
 	Col    string
