@@ -198,6 +198,15 @@ func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *g
 		}
 	}
 
+	// get custom files...
+	// TODO if compare result is nil, we need to store this in useChanges
+	cmp := s.customData.compareResult
+	if cmp != nil {
+		for k, v := range cmp.customConnectionsChanged {
+			opts.connectionFiles[k] = v
+		}
+	}
+
 	return p.buildNodeWithOpts(processor, s, node, opts)
 }
 
@@ -231,6 +240,8 @@ func (p *TSStep) buildNodeWithOpts(processor *codegen.Processor, s *gqlSchema, n
 }
 
 func (p *TSStep) buildCustomNode(processor *codegen.Processor, s *gqlSchema, node *gqlNode, writeAll bool, mutation bool) writeFileFnList {
+	// rename this to processCustomNode
+	// TODO change this to use buildNodeWithOpts
 	var ret writeFileFnList
 
 	cmp := s.customData.compareResult
@@ -245,7 +256,14 @@ func (p *TSStep) buildCustomNode(processor *codegen.Processor, s *gqlSchema, nod
 		})
 	}
 
-	// TODO connections and if that's changed...
+	for idx := range node.connections {
+		conn := node.connections[idx]
+		if all || cmp.customConnectionsChanged[conn.ConnType] {
+			ret = append(ret, func() error {
+				return writeConnectionFile(processor, s, conn)
+			})
+		}
+	}
 
 	return ret
 }
@@ -969,6 +987,10 @@ func (c *gqlConnection) getRenderer(s *gqlSchema) renderer {
 	return listRenderer{edgeRender, connRender}
 }
 
+func getGqlConnectionType(edge edge.ConnectionEdge) string {
+	return fmt.Sprintf("%sType", edge.GetGraphQLConnectionName())
+}
+
 func getGqlConnection(packageName string, edge edge.ConnectionEdge, processor *codegen.Processor) *gqlConnection {
 	nodeType := fmt.Sprintf("%sType", edge.GetNodeInfo().Node)
 
@@ -979,7 +1001,7 @@ func getGqlConnection(packageName string, edge edge.ConnectionEdge, processor *c
 		edgeImpPath = codepath.GetExternalImportPath()
 	}
 	return &gqlConnection{
-		ConnType: fmt.Sprintf("%sType", edge.GetGraphQLConnectionName()),
+		ConnType: getGqlConnectionType(edge),
 		Edge:     edge,
 		FilePath: getFilePathForConnection(processor.Config, packageName, edge.GetGraphQLConnectionName()),
 		NodeType: nodeType,

@@ -203,14 +203,21 @@ type CustomClassInfo struct {
 }
 
 type compareCustomData struct {
-	customQueriesChanged   map[string]bool
-	customMutationsChanged map[string]bool
-	customQueriesRemoved   map[string]bool
-	customMutationsRemoved map[string]bool
+	customQueriesChanged     map[string]bool
+	customMutationsChanged   map[string]bool
+	customQueriesRemoved     map[string]bool
+	customMutationsRemoved   map[string]bool
+	customConnectionsChanged map[string]bool
 }
 
 func CompareCustomData(processor *codegen.Processor, cd1, cd2 *CustomData, existingChangeMap change.ChangeMap) *compareCustomData {
-	ret := &compareCustomData{}
+	ret := &compareCustomData{
+		customConnectionsChanged: map[string]bool{},
+		customMutationsChanged:   map[string]bool{},
+		customMutationsRemoved:   map[string]bool{},
+		customQueriesRemoved:     map[string]bool{},
+		customQueriesChanged:     map[string]bool{},
+	}
 
 	queryReferences := map[string]map[string]bool{}
 	mutationReferences := map[string]map[string]bool{}
@@ -240,9 +247,16 @@ func CompareCustomData(processor *codegen.Processor, cd1, cd2 *CustomData, exist
 	}
 	for k, l1 := range cd1.Fields {
 		l2 := cd2.Fields[k]
-		if customFieldListEqual(l1, l2) {
+		eq, conns := customFieldListComparison(l1, l2)
+		for k, v := range conns {
+			if v {
+				ret.customConnectionsChanged[k] = true
+			}
+		}
+		if eq {
 			continue
 		}
+
 		if processor.Schema.NodeNameExists(k) {
 			l, ok := existingChangeMap[k]
 			if !ok {
@@ -345,6 +359,10 @@ func mapifyFieldList(l []CustomField, references map[string]map[string]bool) map
 }
 
 func customFieldEqual(cf1, cf2 *CustomField) bool {
+	ret := change.CompareNilVals(cf1 == nil, cf2 == nil)
+	if ret != nil {
+		return *ret
+	}
 	return cf1.Node == cf2.Node &&
 		cf1.GraphQLName == cf2.GraphQLName &&
 		cf1.FunctionName == cf2.FunctionName &&
@@ -353,16 +371,29 @@ func customFieldEqual(cf1, cf2 *CustomField) bool {
 		cf1.FieldType == cf2.FieldType
 }
 
-func customFieldListEqual(l1, l2 []CustomField) bool {
-	if len(l1) != len(l2) {
-		return false
-	}
-	for i := range l1 {
-		if !customFieldEqual(&l1[i], &l2[i]) {
-			return false
+func customFieldListComparison(l1, l2 []CustomField) (bool, map[string]bool) {
+	listEqual := len(l1) == len(l2)
+	conns := make(map[string]bool)
+
+	m1 := mapifyFieldList(l1, nil)
+	m2 := mapifyFieldList(l2, nil)
+	for k, cf2 := range m2 {
+		cf1, ok := m1[k]
+
+		if !customFieldEqual(cf1, cf2) {
+			listEqual = false
+		}
+		if !isConnection(*cf2) {
+			continue
+		}
+
+		if !ok || !isConnection(*cf1) {
+			edge := getGQLEdge(*cf2, cf2.Node)
+			conns[getGqlConnectionType(edge)] = true
 		}
 	}
-	return true
+
+	return listEqual, conns
 }
 
 func customItemEqual(item1, item2 CustomItem) bool {

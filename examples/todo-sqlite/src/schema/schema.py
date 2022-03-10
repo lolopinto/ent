@@ -70,8 +70,8 @@ sa.Table("todos", metadata,
 
 metadata.info["edges"] = {
   'public': {
-    'TagToTodosEdge': {"edge_name":"TagToTodosEdge", "edge_type":"7a4d17eb-291f-479a-8e66-1c2f25487ffa", "edge_table":"todo_tags_edges", "symmetric_edge":False, "inverse_edge_type":"39a8b2fe-845b-41e9-87f3-8c3310c40f07"},
-    'TodoToTagsEdge': {"edge_name":"TodoToTagsEdge", "edge_type":"39a8b2fe-845b-41e9-87f3-8c3310c40f07", "edge_table":"todo_tags_edges", "symmetric_edge":False, "inverse_edge_type":"7a4d17eb-291f-479a-8e66-1c2f25487ffa"},
+    'TagToTodosEdge': {"edge_name":"TagToTodosEdge", "edge_type":"33dd169d-a290-4d3f-8b09-b74628bec247", "edge_table":"todo_tags_edges", "symmetric_edge":False, "inverse_edge_type":"546160e1-224a-42ef-92c7-46089ab5e06e"},
+    'TodoToTagsEdge': {"edge_name":"TodoToTagsEdge", "edge_type":"546160e1-224a-42ef-92c7-46089ab5e06e", "edge_table":"todo_tags_edges", "symmetric_edge":False, "inverse_edge_type":"33dd169d-a290-4d3f-8b09-b74628bec247"},
   }
 }
 
