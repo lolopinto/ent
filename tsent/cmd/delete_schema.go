@@ -49,7 +49,11 @@ var deleteSchemaCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		processor, err := codegen.NewCodegenProcessor(s2, "src/schema", "", rootInfo.debug)
+		var opts []codegen.ConstructOption
+		if rootInfo.debug {
+			opts = append(opts, codegen.DebugMode())
+		}
+		processor, err := codegen.NewCodegenProcessor(s2, "src/schema", opts...)
 		if err != nil {
 			return err
 		}

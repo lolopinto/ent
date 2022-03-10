@@ -26,8 +26,11 @@ type Config struct {
 	absPathToConfigs      string
 	config                *config
 	debugMode             bool
-	useChanges            bool
-	changes               change.ChangeMap
+	// writeAll, even if changes are valid, still write all the files
+	writeAll bool
+	// changes are valid
+	useChanges bool
+	changes    change.ChangeMap
 	// keep track of changed ts files to pass to prettier
 	changedTSFiles []string
 }
@@ -72,6 +75,10 @@ func (cfg *Config) SetDebugMode(debugMode bool) {
 	cfg.debugMode = debugMode
 }
 
+func (cfg *Config) SetWriteAll(writeAll bool) {
+	cfg.writeAll = writeAll
+}
+
 func (cfg *Config) SetUseChanges(useChanges bool) {
 	cfg.useChanges = useChanges
 }
@@ -81,11 +88,11 @@ func (cfg *Config) SetChangeMap(changes change.ChangeMap) {
 }
 
 func (cfg *Config) UseChanges() bool {
-	return cfg.useChanges
+	return cfg.writeAll
 }
 
 func (cfg *Config) WriteAllFiles() bool {
-	return !cfg.useChanges
+	return cfg.writeAll
 }
 
 func (cfg *Config) ChangeMap() change.ChangeMap {

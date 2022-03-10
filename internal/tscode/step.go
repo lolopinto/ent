@@ -66,8 +66,14 @@ func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataIn
 		edgeFiles:       map[string]bool{},
 	}
 
-	if processor.Config.UseChanges() {
-
+	if processor.Config.WriteAllFiles() {
+		opts.writeAllActions = true
+		opts.writeAllEdges = true
+		opts.writeEnt = true
+		opts.writeBase = true
+		opts.writeBuilder = true
+		opts.edgeBaseFile = true
+	} else {
 		changes := processor.ChangeMap
 		nodeChanges := changes[info.NodeData.Node]
 
@@ -109,13 +115,6 @@ func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataIn
 				opts.edgeRemoved = true
 			}
 		}
-	} else {
-		opts.writeAllActions = true
-		opts.writeAllEdges = true
-		opts.writeEnt = true
-		opts.writeBase = true
-		opts.writeBuilder = true
-		opts.edgeBaseFile = true
 	}
 
 	if err := s.accumulateConsts(nodeData); err != nil {
@@ -164,8 +163,10 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 		return ret, opts
 	}
 
-	if processor.Config.UseChanges() {
-
+	if processor.Config.WriteAllFiles() {
+		opts.writeAllEdges = true
+		opts.edgeBaseFile = true
+	} else {
 		changes := processor.ChangeMap
 		nodeChanges := changes[pattern.Name]
 
@@ -187,9 +188,6 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 				opts.edgeRemoved = true
 			}
 		}
-	} else {
-		opts.writeAllEdges = true
-		opts.edgeBaseFile = true
 	}
 
 	if len(pattern.AssocEdges) == 0 {
