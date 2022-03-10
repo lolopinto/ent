@@ -205,7 +205,7 @@ func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *g
 	return p.buildNodeWithOpts(processor, s, node, opts)
 }
 
-func (p TSStep) buildNodeWithOpts(processor *codegen.Processor, s *gqlSchema, node *gqlNode, opts *writeOptions) writeFileFnList {
+func (p *TSStep) buildNodeWithOpts(processor *codegen.Processor, s *gqlSchema, node *gqlNode, opts *writeOptions) writeFileFnList {
 	var ret writeFileFnList
 	if opts.writeNode {
 		ret = append(ret, func() error {
@@ -234,26 +234,23 @@ func (p TSStep) buildNodeWithOpts(processor *codegen.Processor, s *gqlSchema, no
 	return ret
 }
 
-// TODO kill
-func (p TSStep) buildNode(processor *codegen.Processor, s *gqlSchema, node *gqlNode) writeFileFnList {
+func (p *TSStep) buildCustomNode(processor *codegen.Processor, s *gqlSchema, node *gqlNode, writeAll bool, mutation bool) writeFileFnList {
 	var ret writeFileFnList
-	ret = append(ret, func() error {
-		return writeFile(processor, node)
-	})
 
-	for idx := range node.ActionDependents {
-		dependentNode := node.ActionDependents[idx]
+	cmp := s.customData.compareResult
+	all := writeAll || cmp == nil
+	gqlName := node.Field.GraphQLName
+
+	if all ||
+		(mutation && cmp.customMutationsChanged[gqlName]) ||
+		(!mutation && cmp.customQueriesChanged[gqlName]) {
 		ret = append(ret, func() error {
-			return writeFile(processor, dependentNode)
+			return writeFile(processor, node)
 		})
 	}
 
-	for idx := range node.connections {
-		conn := node.connections[idx]
-		ret = append(ret, func() error {
-			return writeConnectionFile(processor, s, conn)
-		})
-	}
+	// TODO connections and if that's changed...
+
 	return ret
 }
 
@@ -270,11 +267,11 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 	}
 
 	for _, node := range s.customMutations {
-		funcs = append(funcs, p.buildNode(processor, s, node)...)
+		funcs = append(funcs, p.buildCustomNode(processor, s, node, writeAll, true)...)
 	}
 
 	for _, node := range s.customQueries {
-		funcs = append(funcs, p.buildNode(processor, s, node)...)
+		funcs = append(funcs, p.buildCustomNode(processor, s, node, writeAll, false)...)
 	}
 
 	if updateBecauseChanges {
@@ -603,7 +600,7 @@ func parseCustomData(processor *codegen.Processor, fromTest bool) chan *CustomDa
 		if cd.Error == nil {
 			existing := loadOldCustomData()
 			if existing != nil {
-				CompareCustomData(processor, existing, &cd, make(change.ChangeMap))
+				cd.compareResult = CompareCustomData(processor, existing, &cd, make(change.ChangeMap))
 			}
 		}
 		res <- &cd

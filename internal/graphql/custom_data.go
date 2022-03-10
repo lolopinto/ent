@@ -14,13 +14,14 @@ type CustomData struct {
 	Inputs  map[string]*CustomObject `json:"inputs,omitempty"`
 	Objects map[string]*CustomObject `json:"objects,omitempty"`
 	// map of class to fields in that class
-	Fields      map[string][]CustomField    `json:"fields,omitempty"`
-	Queries     []CustomField               `json:"queries,omitempty"`
-	Mutations   []CustomField               `json:"mutations,omitempty"`
-	Classes     map[string]*CustomClassInfo `json:"classes,omitempty"`
-	Files       map[string]*CustomFile      `json:"files,omitempty"`
-	CustomTypes map[string]*CustomType      `json:"customTypes,omitempty"`
-	Error       error                       `json:"-"`
+	Fields        map[string][]CustomField    `json:"fields,omitempty"`
+	Queries       []CustomField               `json:"queries,omitempty"`
+	Mutations     []CustomField               `json:"mutations,omitempty"`
+	Classes       map[string]*CustomClassInfo `json:"classes,omitempty"`
+	Files         map[string]*CustomFile      `json:"files,omitempty"`
+	CustomTypes   map[string]*CustomType      `json:"customTypes,omitempty"`
+	Error         error                       `json:"-"`
+	compareResult *compareCustomData          `json:"-"`
 }
 
 type CustomItem struct {
@@ -208,8 +209,8 @@ type compareCustomData struct {
 	customMutationsRemoved map[string]bool
 }
 
-func CompareCustomData(processor *codegen.Processor, cd1, cd2 *CustomData, existingChangeMap change.ChangeMap) compareCustomData {
-	ret := compareCustomData{}
+func CompareCustomData(processor *codegen.Processor, cd1, cd2 *CustomData, existingChangeMap change.ChangeMap) *compareCustomData {
+	ret := &compareCustomData{}
 
 	queryReferences := map[string]map[string]bool{}
 	mutationReferences := map[string]map[string]bool{}
