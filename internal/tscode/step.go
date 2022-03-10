@@ -17,6 +17,7 @@ import (
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/file"
+	"github.com/lolopinto/ent/internal/fns"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/enum"
@@ -37,9 +38,6 @@ func (s *Step) Name() string {
 
 var nodeType = regexp.MustCompile(`(\w+)Type`)
 
-type writeFileFn func() error
-type writeFileFnList []writeFileFn
-
 type writeOptions struct {
 	// anytime any boolean is added here, need to update the
 	// else case in processNode
@@ -58,8 +56,8 @@ type writeOptions struct {
 	edgeRemoved     bool
 }
 
-func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataInfo, serr *syncerr.Error) (writeFileFnList, *writeOptions) {
-	var ret writeFileFnList
+func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataInfo, serr *syncerr.Error) (fns.FunctionList, *writeOptions) {
+	var ret fns.FunctionList
 	nodeData := info.NodeData
 
 	opts := &writeOptions{
@@ -152,8 +150,8 @@ func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataIn
 	return ret, opts
 }
 
-func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.PatternInfo, serr *syncerr.Error) (writeFileFnList, *writeOptions) {
-	var ret writeFileFnList
+func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.PatternInfo, serr *syncerr.Error) (fns.FunctionList, *writeOptions) {
+	var ret fns.FunctionList
 
 	opts := &writeOptions{
 		actionBaseFiles: map[string]bool{},
@@ -221,8 +219,8 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 	return ret, opts
 }
 
-func (s *Step) processActions(processor *codegen.Processor, nodeData *schema.NodeData, opts *writeOptions) writeFileFnList {
-	var ret writeFileFnList
+func (s *Step) processActions(processor *codegen.Processor, nodeData *schema.NodeData, opts *writeOptions) fns.FunctionList {
+	var ret fns.FunctionList
 
 	if len(nodeData.ActionInfo.Actions) == 0 {
 		return ret
@@ -251,8 +249,8 @@ func (s *Step) processActions(processor *codegen.Processor, nodeData *schema.Nod
 	return ret
 }
 
-func (s *Step) processEdges(processor *codegen.Processor, nodeData *schema.NodeData, opts *writeOptions) writeFileFnList {
-	var ret writeFileFnList
+func (s *Step) processEdges(processor *codegen.Processor, nodeData *schema.NodeData, opts *writeOptions) fns.FunctionList {
+	var ret fns.FunctionList
 
 	if nodeData.EdgeInfo.CreateEdgeBaseFile() && opts.edgeBaseFile {
 		ret = append(ret, func() error {
@@ -289,8 +287,8 @@ func (s *Step) processEdges(processor *codegen.Processor, nodeData *schema.NodeD
 	return ret
 }
 
-func (s *Step) processEnums(processor *codegen.Processor) writeFileFnList {
-	var ret writeFileFnList
+func (s *Step) processEnums(processor *codegen.Processor) fns.FunctionList {
+	var ret fns.FunctionList
 
 	writeAll := processor.Config.WriteAllFiles()
 
@@ -316,7 +314,7 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 
 	var entAddedOrRemoved bool
 	var edgeAddedOrRemoved bool
-	var funcs writeFileFnList
+	var funcs fns.FunctionList
 	for _, p := range processor.Schema.Patterns {
 		fns, opts := s.processPattern(processor, p, &serr)
 		funcs = append(funcs, fns...)
@@ -384,19 +382,12 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 		},
 	)
 
-	// build up all the funcs and parallelize as much as possible
-
-	var wg sync.WaitGroup
-	wg.Add(len(funcs))
-	for i := range funcs {
-		go func(i int) {
-			defer wg.Done()
-			fn := funcs[i]
-			serr.Append(fn())
-		}(i)
+	if err := serr.Err(); err != nil {
+		return err
 	}
-	wg.Wait()
-	return serr.Err()
+
+	// build up all the funcs and parallelize as much as possible
+	return fns.Run(funcs)
 }
 
 func (s *Step) addNodeType(name, value, comment string) {

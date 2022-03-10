@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/lolopinto/ent/internal/file"
+	"github.com/lolopinto/ent/internal/fns"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/change"
@@ -230,12 +231,14 @@ func postProcess(p *Processor) error {
 		return nil
 	}
 
-	// TODO can write schema and format at the same time...
-	if err := p.WriteSchema(); err != nil {
-		return err
-	}
-
-	return p.FormatTS()
+	return fns.RunVarargs(
+		func() error {
+			return p.WriteSchema()
+		},
+		func() error {
+			return p.FormatTS()
+		},
+	)
 }
 
 func runAndLog(p *Processor, fn func(p *Processor) error, logDiff func(d time.Duration)) error {

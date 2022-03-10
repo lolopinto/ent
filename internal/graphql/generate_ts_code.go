@@ -23,6 +23,7 @@ import (
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/file"
+	"github.com/lolopinto/ent/internal/fns"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/change"
@@ -75,9 +76,6 @@ type NullableItem string
 const NullableContents NullableItem = "contents"
 const NullableContentsAndList NullableItem = "contentsAndList"
 const NullableTrue NullableItem = "true"
-
-type writeFileFn func() error
-type writeFileFnList []writeFileFn
 
 func buildSchema(processor *codegen.Processor, fromTest bool) (*gqlSchema, error) {
 	cd, s := <-parseCustomData(processor, fromTest), <-buildGQLSchema(processor)
@@ -145,8 +143,8 @@ func (p *TSStep) PostProcessData(processor *codegen.Processor) error {
 	})
 }
 
-func (p *TSStep) processEnums(processor *codegen.Processor, s *gqlSchema, writeAll bool) writeFileFnList {
-	var ret writeFileFnList
+func (p *TSStep) processEnums(processor *codegen.Processor, s *gqlSchema, writeAll bool) fns.FunctionList {
+	var ret fns.FunctionList
 
 	for idx := range s.enums {
 		enum := s.enums[idx]
@@ -172,7 +170,7 @@ type writeOptions struct {
 	// nodeAdded, nodeRemoved, connectionAdded, rootQuery etc...
 }
 
-func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *gqlNode, writeAll bool) writeFileFnList {
+func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *gqlNode, writeAll bool) fns.FunctionList {
 	opts := &writeOptions{
 		mutationFiles:   map[string]bool{},
 		connectionFiles: map[string]bool{},
@@ -217,8 +215,8 @@ func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *g
 	return p.buildNodeWithOpts(processor, s, node, opts)
 }
 
-func (p *TSStep) buildNodeWithOpts(processor *codegen.Processor, s *gqlSchema, node *gqlNode, opts *writeOptions) writeFileFnList {
-	var ret writeFileFnList
+func (p *TSStep) buildNodeWithOpts(processor *codegen.Processor, s *gqlSchema, node *gqlNode, opts *writeOptions) fns.FunctionList {
+	var ret fns.FunctionList
 	if opts.writeNode {
 		ret = append(ret, func() error {
 			return writeFile(processor, node)
@@ -246,7 +244,7 @@ func (p *TSStep) buildNodeWithOpts(processor *codegen.Processor, s *gqlSchema, n
 	return ret
 }
 
-func (p *TSStep) processCustomNode(processor *codegen.Processor, s *gqlSchema, node *gqlNode, writeAll bool, mutation bool) writeFileFnList {
+func (p *TSStep) processCustomNode(processor *codegen.Processor, s *gqlSchema, node *gqlNode, writeAll bool, mutation bool) fns.FunctionList {
 	cmp := s.customData.compareResult
 	all := writeAll || cmp == nil
 	opts := &writeOptions{
@@ -276,7 +274,7 @@ func (p *TSStep) processCustomNode(processor *codegen.Processor, s *gqlSchema, n
 }
 
 func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) error {
-	var funcs writeFileFnList
+	var funcs fns.FunctionList
 
 	writeAll := processor.Config.WriteAllFiles()
 	changes := processor.ChangeMap
@@ -350,20 +348,7 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 		},
 	)
 
-	var wg sync.WaitGroup
-	var serr syncerr.Error
-
-	wg.Add(len(funcs))
-	for i := range funcs {
-		go func(i int) {
-			defer wg.Done()
-			fn := funcs[i]
-			serr.Append(fn())
-		}(i)
-	}
-	wg.Wait()
-
-	return serr.Err()
+	return fns.Run(funcs)
 }
 
 var _ codegen.Step = &TSStep{}
