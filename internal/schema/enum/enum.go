@@ -27,6 +27,10 @@ func (c *Enum) Clone() *Enum {
 }
 
 func EnumEqual(e1, e2 *Enum) bool {
+	ret := change.CompareNilVals(e1 == nil, e2 == nil)
+	if ret != nil {
+		return *ret
+	}
 	return e1.Name == e2.Name &&
 		datasEqual(e1.Values, e2.Values) &&
 		e1.Imported == e2.Imported
@@ -117,6 +121,10 @@ func (g GQLEnum) GetGraphQLNames() []string {
 }
 
 func GQLEnumEqual(e1, e2 *GQLEnum) bool {
+	ret := change.CompareNilVals(e1 == nil, e2 == nil)
+	if ret != nil {
+		return *ret
+	}
 	return e1.Name == e2.Name &&
 		e1.Type == e2.Type &&
 		datasEqual(e1.Values, e2.Values)
