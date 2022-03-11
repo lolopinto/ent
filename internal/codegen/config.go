@@ -62,6 +62,7 @@ func NewConfig(configPath, modulePath string) (*Config, error) {
 
 func NewTestConfig(configPath, modulePath string, codegenCfg *CodegenConfig) (*Config, error) {
 	cfg, err := NewConfig(configPath, modulePath)
+	cfg.writeAll = true
 	if err != nil {
 		return nil, err
 	}
