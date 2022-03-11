@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lolopinto/ent/internal/build"
+	"github.com/lolopinto/ent/internal/build_info"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/fns"
 	"github.com/lolopinto/ent/internal/schema"
@@ -67,7 +67,7 @@ type Processor struct {
 	Config      *Config
 	debugMode   bool
 	opt         *option
-	buildInfo   *build.BuildInfo
+	buildInfo   *build_info.BuildInfo
 	noDBChanges bool
 }
 
@@ -283,7 +283,7 @@ type StepWithPostProcess interface {
 type constructOption struct {
 	debugMode bool
 	writeAll  bool
-	buildInfo *build.BuildInfo
+	buildInfo *build_info.BuildInfo
 	cfg       *Config
 }
 
@@ -295,7 +295,7 @@ func DebugMode() ConstructOption {
 	}
 }
 
-func BuildInfo(bi *build.BuildInfo) ConstructOption {
+func BuildInfo(bi *build_info.BuildInfo) ConstructOption {
 	return func(opt *constructOption) {
 		opt.buildInfo = bi
 	}
@@ -339,6 +339,9 @@ func NewCodegenProcessor(currentSchema *schema.Schema, configPath string, option
 	useChanges := changes != nil
 	cfg.SetUseChanges(useChanges)
 	writeAll := !useChanges || opt.writeAll
+	if !writeAll && opt.buildInfo != nil && opt.buildInfo.Changed() {
+		writeAll = true
+	}
 	cfg.SetWriteAll(writeAll)
 	cfg.SetChangeMap(changes)
 

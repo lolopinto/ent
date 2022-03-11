@@ -1,8 +1,7 @@
 package cmd
 
 import (
-	"github.com/davecgh/go-spew/spew"
-	"github.com/lolopinto/ent/internal/build"
+	"github.com/lolopinto/ent/internal/build_info"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/db"
 	"github.com/lolopinto/ent/internal/graphql"
@@ -38,8 +37,7 @@ var codegenCmd = &cobra.Command{
 			return err
 		}
 
-		bi := build.NewBuildInfo(cfg)
-		spew.Dump(bi)
+		bi := build_info.NewBuildInfo(cfg)
 
 		opts := []codegen.ConstructOption{
 			codegen.BuildInfo(bi),
