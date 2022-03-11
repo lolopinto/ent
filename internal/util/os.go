@@ -9,3 +9,11 @@ func GetEnv(key, defaultValue string) string {
 	}
 	return defaultValue
 }
+
+func EnvIsTrue(key string) bool {
+	val, ok := os.LookupEnv(key)
+	if !ok {
+		return false
+	}
+	return val == "true"
+}

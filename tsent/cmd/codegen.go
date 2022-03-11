@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/lolopinto/ent/internal/build_info"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/db"
 	"github.com/lolopinto/ent/internal/graphql"
@@ -31,7 +32,17 @@ var codegenCmd = &cobra.Command{
 			return nil
 		}
 
-		var opts []codegen.ConstructOption
+		cfg, err := codegen.NewConfig("src/schema", "")
+		if err != nil {
+			return err
+		}
+
+		bi := build_info.NewBuildInfo(cfg)
+
+		opts := []codegen.ConstructOption{
+			codegen.BuildInfo(bi),
+			codegen.ProcessorConfig(cfg),
+		}
 		if rootInfo.debug {
 			opts = append(opts, codegen.DebugMode())
 		}

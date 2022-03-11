@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lolopinto/ent/internal/build_info"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/fns"
 	"github.com/lolopinto/ent/internal/schema"
@@ -66,6 +67,7 @@ type Processor struct {
 	Config      *Config
 	debugMode   bool
 	opt         *option
+	buildInfo   *build_info.BuildInfo
 	noDBChanges bool
 }
 
@@ -237,6 +239,12 @@ func postProcess(p *Processor) error {
 		func() error {
 			return p.FormatTS()
 		},
+		func() error {
+			if p.buildInfo != nil {
+				return p.buildInfo.PostProcess()
+			}
+			return nil
+		},
 	)
 }
 
@@ -275,6 +283,8 @@ type StepWithPostProcess interface {
 type constructOption struct {
 	debugMode bool
 	writeAll  bool
+	buildInfo *build_info.BuildInfo
+	cfg       *Config
 }
 
 type ConstructOption func(*constructOption)
@@ -282,6 +292,18 @@ type ConstructOption func(*constructOption)
 func DebugMode() ConstructOption {
 	return func(opt *constructOption) {
 		opt.debugMode = true
+	}
+}
+
+func BuildInfo(bi *build_info.BuildInfo) ConstructOption {
+	return func(opt *constructOption) {
+		opt.buildInfo = bi
+	}
+}
+
+func ProcessorConfig(cfg *Config) ConstructOption {
+	return func(opt *constructOption) {
+		opt.cfg = cfg
 	}
 }
 
@@ -296,9 +318,15 @@ func NewCodegenProcessor(currentSchema *schema.Schema, configPath string, option
 	for _, o := range options {
 		o(opt)
 	}
-	cfg, err := NewConfig(configPath, "")
-	if err != nil {
-		return nil, err
+	var cfg *Config
+	if opt.cfg != nil {
+		cfg = opt.cfg
+	} else {
+		var err error
+		cfg, err = NewConfig(configPath, "")
+		if err != nil {
+			return nil, err
+		}
 	}
 	cfg.SetDebugMode(opt.debugMode)
 
@@ -311,6 +339,9 @@ func NewCodegenProcessor(currentSchema *schema.Schema, configPath string, option
 	useChanges := changes != nil
 	cfg.SetUseChanges(useChanges)
 	writeAll := !useChanges || opt.writeAll
+	if !writeAll && opt.buildInfo != nil && opt.buildInfo.Changed() {
+		writeAll = true
+	}
 	cfg.SetWriteAll(writeAll)
 	cfg.SetChangeMap(changes)
 
@@ -321,6 +352,7 @@ func NewCodegenProcessor(currentSchema *schema.Schema, configPath string, option
 		useChanges: useChanges,
 		debugMode:  opt.debugMode,
 		opt:        &option{},
+		buildInfo:  opt.buildInfo,
 	}, nil
 }
 
