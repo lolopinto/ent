@@ -190,6 +190,10 @@ func (cfg *Config) GetPathToCustomSchemaFile() string {
 	return path.Join(cfg.GetAbsPathToRoot(), ".ent/custom_schema.json")
 }
 
+func (cfg *Config) GetPathToBuildFile() string {
+	return path.Join(cfg.GetAbsPathToRoot(), ".ent/build_info.yaml")
+}
+
 // used by golang
 func (cfg *Config) AppendPathToModels(paths ...string) string {
 	allPaths := append([]string{cfg.importPathToModels}, paths...)
