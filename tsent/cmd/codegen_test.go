@@ -31,7 +31,7 @@ var codegenOptions = []codegen.Option{
 func runSteps(t *testing.T, s *schema.Schema, rootDir string) {
 	schemaPath := path.Join(rootDir, "src/schema")
 
-	processor, err := codegen.NewCodegenProcessor(s, schemaPath, "", false)
+	processor, err := codegen.NewCodegenProcessor(s, schemaPath)
 	require.Nil(t, err)
 
 	runStepsWithProcessor(t, s, rootDir, processor)

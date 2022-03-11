@@ -272,21 +272,46 @@ type StepWithPostProcess interface {
 	PostProcessData(data *Processor) error
 }
 
-func NewCodegenProcessor(currentSchema *schema.Schema, configPath, modulePath string, debugMode bool) (*Processor, error) {
-	cfg, err := NewConfig(configPath, modulePath)
+type constructOption struct {
+	debugMode bool
+	writeAll  bool
+}
+
+type ConstructOption func(*constructOption)
+
+func DebugMode() ConstructOption {
+	return func(opt *constructOption) {
+		opt.debugMode = true
+	}
+}
+
+func WriteAll() ConstructOption {
+	return func(opt *constructOption) {
+		opt.writeAll = true
+	}
+}
+
+func NewCodegenProcessor(currentSchema *schema.Schema, configPath string, options ...ConstructOption) (*Processor, error) {
+	opt := &constructOption{}
+	for _, o := range options {
+		o(opt)
+	}
+	cfg, err := NewConfig(configPath, "")
 	if err != nil {
 		return nil, err
 	}
-	cfg.SetDebugMode(debugMode)
+	cfg.SetDebugMode(opt.debugMode)
 
 	existingSchema := parseExistingSchema(cfg)
 	changes, err := schema.CompareSchemas(existingSchema, currentSchema)
-	if err != nil && debugMode {
+	if err != nil && opt.debugMode {
 		fmt.Printf("error %v comparing schemas \n", err)
 	}
 	// if changes == nil, don't use changes
 	useChanges := changes != nil
 	cfg.SetUseChanges(useChanges)
+	writeAll := !useChanges || opt.writeAll
+	cfg.SetWriteAll(writeAll)
 	cfg.SetChangeMap(changes)
 
 	return &Processor{
@@ -294,7 +319,7 @@ func NewCodegenProcessor(currentSchema *schema.Schema, configPath, modulePath st
 		Config:     cfg,
 		ChangeMap:  changes,
 		useChanges: useChanges,
-		debugMode:  debugMode,
+		debugMode:  opt.debugMode,
 		opt:        &option{},
 	}, nil
 }
