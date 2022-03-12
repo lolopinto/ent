@@ -9,7 +9,7 @@ import (
 type Function func() error
 type FunctionList []Function
 
-func Run(funcs FunctionList) error {
+func RunParallel(funcs FunctionList) error {
 	var wg sync.WaitGroup
 	wg.Add(len(funcs))
 	var serr syncerr.Error
@@ -26,5 +26,5 @@ func Run(funcs FunctionList) error {
 }
 
 func RunVarargs(funcs ...Function) error {
-	return Run(funcs)
+	return RunParallel(funcs)
 }

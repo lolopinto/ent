@@ -1,26 +1,18 @@
 package build_info
 
 import (
-	"bytes"
-	"fmt"
 	"os"
-	"os/exec"
-	"strings"
 
-	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/util"
 	"gopkg.in/yaml.v3"
 )
 
-// TODO need to compare this and use this to flag to codegen about writeAll
 type BuildInfo struct {
 	Time          string `yaml:"time"`
 	DockerVersion string `yaml:"dockerVersion"`
 	dev           bool   `yaml:"-"`
-	NpmVersion    string `yaml:"npmVersion"`
-	gitBranch     string `yaml:"-"`
 	cfg           Config `yaml:"-"`
 	prevEqual     bool   `yaml:"-"`
 }
@@ -56,9 +48,6 @@ func NewBuildInfo(cfg Config) *BuildInfo {
 		cfg:           cfg,
 	}
 
-	bi.NpmVersion = findNPMVersion()
-
-	parts := strings.Split(bi.NpmVersion, " -> ")
 	simulProd := util.EnvIsTrue("CODEGEN_SIMULATE_PROD")
 	simulDev := util.EnvIsTrue("CODEGEN_SIMULATE_DEV")
 	if simulProd {
@@ -67,14 +56,10 @@ func NewBuildInfo(cfg Config) *BuildInfo {
 	} else if simulDev {
 		bi.dev = true
 	} else {
-		// when we use npm link, the version is something like
-		// 0.0.37 -> ./../../ts/dist
-		if len(parts) > 1 ||
-			(bi.Time == "" && bi.DockerVersion == "") {
+		if bi.Time == "" || bi.DockerVersion == "" {
 			bi.dev = true
 		}
 	}
-	bi.gitBranch = gitBranch()
 
 	prev := loadPreviousBI(cfg)
 	bi.prevEqual = buildInfoEqual(prev, bi)
@@ -107,58 +92,11 @@ func (bi *BuildInfo) PostProcess() error {
 	})
 }
 
-func runCommand(name string, args ...string) (*bytes.Buffer, error) {
-	var buf bytes.Buffer
-	var berr bytes.Buffer
-
-	cmd := exec.Command(name, args...)
-	cmd.Stdout = &buf
-	cmd.Stderr = &berr
-	if err := cmd.Run(); err != nil {
-		return nil, err
-	}
-	if len(berr.String()) > 0 {
-		return nil, fmt.Errorf("stderror %s", berr.String())
-	}
-	return &buf, nil
-}
-
-func findNPMVersion() string {
-	buf, err := runCommand("npm", "list", codepath.Package, "--depth=0")
-	if err != nil {
-		// TODO log
-		return ""
-	}
-
-	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
-	if len(lines) != 2 {
-		// TODO log. not as expected
-		return ""
-	}
-	line := lines[1]
-	idx := strings.LastIndex(line, "@")
-	if idx == -1 || idx+1 >= len(line) {
-		return ""
-	}
-	return line[idx+1:]
-}
-
-func gitBranch() string {
-	// git rev-parse --abbrev-ref HEAD
-	buf, err := runCommand("git", "rev-parse", "--abbrev-ref", "HEAD")
-	if err != nil {
-		// TODO log
-		return ""
-	}
-	return strings.TrimSpace(buf.String())
-}
-
 func buildInfoEqual(bi1, bi2 *BuildInfo) bool {
 	ret := change.CompareNilVals(bi1 == nil, bi2 == nil)
 	if ret != nil {
 		return *ret
 	}
 	return bi1.Time == bi2.Time &&
-		bi1.DockerVersion == bi2.DockerVersion &&
-		bi1.NpmVersion == bi2.NpmVersion
+		bi1.DockerVersion == bi2.DockerVersion
 }
