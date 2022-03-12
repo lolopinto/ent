@@ -56,7 +56,7 @@ func NewBuildInfo(cfg Config) *BuildInfo {
 	} else if simulDev {
 		bi.dev = true
 	} else {
-		if bi.Time == "" && bi.DockerVersion == "" {
+		if bi.Time == "" || bi.DockerVersion == "" {
 			bi.dev = true
 		}
 	}
