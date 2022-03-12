@@ -28,21 +28,3 @@ func RunParallel(funcs FunctionList) error {
 func RunVarargs(funcs ...Function) error {
 	return RunParallel(funcs)
 }
-
-// info is passed from one function to other
-type TimedFunction func(info interface{}) error
-
-// Runs a series of func
-func RunAndTime(funcs []TimedFunction, info interface{}, log bool) error {
-	if !log {
-		for _, fn := range funcs {
-			if err := fn(info); err != nil {
-				return err
-			}
-		}
-	}
-
-	// need callback about what happened with duration
-
-	return nil
-}
