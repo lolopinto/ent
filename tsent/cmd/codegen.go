@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/lolopinto/ent/internal/build_info"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/db"
@@ -37,7 +40,11 @@ var codegenCmd = &cobra.Command{
 			return err
 		}
 
+		t1 := time.Now()
 		bi := build_info.NewBuildInfo(cfg)
+		t2 := time.Now()
+		diff := t2.Sub(t1)
+		fmt.Println("build info took", diff)
 
 		opts := []codegen.ConstructOption{
 			codegen.BuildInfo(bi),

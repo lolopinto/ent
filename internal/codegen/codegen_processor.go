@@ -314,6 +314,7 @@ func WriteAll() ConstructOption {
 }
 
 func NewCodegenProcessor(currentSchema *schema.Schema, configPath string, options ...ConstructOption) (*Processor, error) {
+	t1 := time.Now()
 	opt := &constructOption{}
 	for _, o := range options {
 		o(opt)
@@ -344,6 +345,12 @@ func NewCodegenProcessor(currentSchema *schema.Schema, configPath string, option
 	}
 	cfg.SetWriteAll(writeAll)
 	cfg.SetChangeMap(changes)
+
+	t2 := time.Now()
+	diff := t2.Sub(t1)
+	if opt.debugMode {
+		fmt.Println("new codegen processor + parse existing schema took", diff)
+	}
 
 	return &Processor{
 		Schema:     currentSchema,

@@ -385,7 +385,7 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 	}
 
 	// build up all the funcs and parallelize as much as possible
-	return fns.Run(funcs)
+	return fns.RunParallel(funcs)
 }
 
 func (s *Step) addNodeType(name, value, comment string) {

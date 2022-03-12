@@ -347,7 +347,7 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 		},
 	)
 
-	return fns.Run(funcs)
+	return fns.RunParallel(funcs)
 }
 
 var _ codegen.Step = &TSStep{}
