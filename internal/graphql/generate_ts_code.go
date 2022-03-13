@@ -510,6 +510,85 @@ func searchForFiles(processor *codegen.Processor) []string {
 	return result
 }
 
+func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, error) {
+	customFiles := searchForFiles(processor)
+	// no custom files, nothing to do here. we're done
+	if len(customFiles) == 0 {
+		if processor.Config.DebugMode() {
+			fmt.Println("no custom graphql files")
+		}
+		return nil, nil
+	}
+
+	fmt.Println("checking for custom graphql definitions...")
+
+	var buf bytes.Buffer
+	var out bytes.Buffer
+	for key := range processor.Schema.Nodes {
+		info := processor.Schema.Nodes[key]
+		nodeData := info.NodeData
+
+		buf.WriteString(nodeData.Node)
+		buf.WriteString("\n")
+	}
+
+	// similar to writeTsFile in parse_ts.go
+	// unfortunately that this is being done
+
+	var cmdName string
+	var cmdArgs []string
+	var env []string
+
+	scriptPath := util.GetPathToScript("scripts/custom_graphql.ts", fromTest)
+	if fromTest {
+		env = []string{
+			fmt.Sprintf(
+				"GRAPHQL_PATH=%s",
+				filepath.Join(input.GetAbsoluteRootPathForTest(), "graphql"),
+			),
+		}
+		cmdName = "ts-node"
+
+		cmdArgs = []string{
+			"--compiler-options",
+			testingutils.DefaultCompilerOptions(),
+			scriptPath,
+			"--path",
+			filepath.Join(processor.Config.GetAbsPathToRoot(), "src"),
+			"--files",
+			strings.Join(customFiles, ","),
+		}
+	} else {
+		cmdArgs = append(
+			cmd.GetArgsForScript(processor.Config.GetAbsPathToRoot()),
+			scriptPath,
+			"--path",
+			// TODO this should be a configuration option to indicate where the code root is
+			filepath.Join(processor.Config.GetAbsPathToRoot(), "src"),
+			"--files",
+			strings.Join(customFiles, ","),
+		)
+
+		cmdName = "ts-node-script"
+	}
+
+	cmd := exec.Command(cmdName, cmdArgs...)
+	cmd.Stdin = &buf
+	cmd.Stdout = &out
+	cmd.Stderr = os.Stderr
+	if len(env) != 0 {
+		env2 := append(os.Environ(), env...)
+		cmd.Env = env2
+	}
+
+	if err := cmd.Run(); err != nil {
+		err = errors.Wrap(err, "error generating custom graphql")
+		return nil, err
+	}
+
+	return out.Bytes(), nil
+}
+
 func parseCustomData(processor *codegen.Processor, fromTest bool) chan *CustomData {
 	var res = make(chan *CustomData)
 	go func() {
@@ -519,86 +598,15 @@ func parseCustomData(processor *codegen.Processor, fromTest bool) chan *CustomDa
 			return
 		}
 
-		customFiles := searchForFiles(processor)
-		// no custom files, nothing to do here. we're done
-		if len(customFiles) == 0 {
-			if processor.Config.DebugMode() {
-				fmt.Println("no custom graphql files")
-			}
-			res <- &cd
-			return
-		}
-
-		fmt.Println("checking for custom graphql definitions...")
-
-		var buf bytes.Buffer
-		var out bytes.Buffer
-		for key := range processor.Schema.Nodes {
-			info := processor.Schema.Nodes[key]
-			nodeData := info.NodeData
-
-			buf.WriteString(nodeData.Node)
-			buf.WriteString("\n")
-		}
-
-		// similar to writeTsFile in parse_ts.go
-		// unfortunately that this is being done
-
-		var cmdName string
-		var cmdArgs []string
-		var env []string
-
-		scriptPath := util.GetPathToScript("scripts/custom_graphql.ts", fromTest)
-		if fromTest {
-			env = []string{
-				fmt.Sprintf(
-					"GRAPHQL_PATH=%s",
-					filepath.Join(input.GetAbsoluteRootPathForTest(), "graphql"),
-				),
-			}
-			cmdName = "ts-node"
-
-			cmdArgs = []string{
-				"--compiler-options",
-				testingutils.DefaultCompilerOptions(),
-				scriptPath,
-				"--path",
-				filepath.Join(processor.Config.GetAbsPathToRoot(), "src"),
-				"--files",
-				strings.Join(customFiles, ","),
-			}
-		} else {
-			cmdArgs = append(
-				cmd.GetArgsForScript(processor.Config.GetAbsPathToRoot()),
-				scriptPath,
-				"--path",
-				// TODO this should be a configuration option to indicate where the code root is
-				filepath.Join(processor.Config.GetAbsPathToRoot(), "src"),
-				"--files",
-				strings.Join(customFiles, ","),
-			)
-
-			cmdName = "ts-node-script"
-		}
-
-		cmd := exec.Command(cmdName, cmdArgs...)
-		cmd.Stdin = &buf
-		cmd.Stdout = &out
-		cmd.Stderr = os.Stderr
-		if len(env) != 0 {
-			env2 := append(os.Environ(), env...)
-			cmd.Env = env2
-		}
-
-		if err := cmd.Run(); err != nil {
-			err = errors.Wrap(err, "error generating custom graphql")
+		b, err := ParseRawCustomData(processor, fromTest)
+		if err != nil {
 			cd.Error = err
 			res <- &cd
 			return
 		}
 
-		if err := json.Unmarshal(out.Bytes(), &cd); err != nil {
-			spew.Dump((out.Bytes()))
+		if err := json.Unmarshal(b, &cd); err != nil {
+			spew.Dump(b)
 			err = errors.Wrap(err, "error unmarshalling custom processor")
 			cd.Error = err
 		}
