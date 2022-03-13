@@ -78,6 +78,7 @@ func init() {
 		generateCmd,
 		squashCmd,
 		printSchemaCmd,
+		printCustomSchemaCmd,
 		deleteSchemaCmd,
 	})
 
