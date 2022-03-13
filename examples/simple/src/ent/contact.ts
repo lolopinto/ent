@@ -1,3 +1,4 @@
+import { GraphQLString } from "graphql";
 import { ContactBase } from "./internal";
 import {
   PrivacyPolicy,
@@ -19,7 +20,10 @@ export class Contact extends ContactBase {
     rules: [new AllowIfViewerIsRule("userID"), AlwaysDenyRule],
   };
 
-  @gqlField()
+  @gqlField({
+    type: GraphQLString,
+    name: "fullName",
+  })
   get fullName(): string {
     return this.firstName + " " + this.lastName;
   }
