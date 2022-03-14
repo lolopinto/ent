@@ -30,7 +30,6 @@ import (
 	"github.com/lolopinto/ent/internal/schema/custominterface"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
-	"github.com/lolopinto/ent/internal/syncerr"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/lolopinto/ent/internal/util"
@@ -446,28 +445,20 @@ func getImportPathForModelFile(nodeData *schema.NodeData) string {
 }
 
 func searchForFiles(processor *codegen.Processor) []string {
-	var wg sync.WaitGroup
-	var serr syncerr.Error
-	wg.Add(len(searchFor))
-	files := make([][]string, len(searchFor))
-
 	rootPath := processor.Config.GetAbsPathToRoot()
-	for i := range searchFor {
-		go func(i int) {
-			defer wg.Done()
 
-			var buf bytes.Buffer
-			cmd := exec.Command("rg", "-tts", "-l", searchFor[i])
-			// run in root dir
-			cmd.Dir = rootPath
-			cmd.Stdout = &buf
-			if err := cmd.Run(); err != nil {
-				serr.Append(err)
-			}
-			files[i] = strings.Split(strings.TrimSpace(buf.String()), "\n")
-		}(i)
+	var buf bytes.Buffer
+	cmd := exec.Command("rg", "-tts", "-l", strings.Join(searchFor, "|"))
+	// run in root dir
+	cmd.Dir = rootPath
+	cmd.Stdout = &buf
+	if err := cmd.Run(); err != nil {
+		if processor.Config.DebugMode() {
+			fmt.Printf("error %v searching for custom files", err)
+		}
+		return nil
 	}
-	wg.Wait()
+	files := strings.Split(strings.TrimSpace(buf.String()), "\n")
 
 	result := []string{}
 
@@ -490,16 +481,14 @@ func searchForFiles(processor *codegen.Processor) []string {
 	}
 
 	fileAdded := false
-	for _, list := range files {
-		for _, file := range list {
-			// ignore entPaths since we're doing src/ent/index.ts to get all of ent
-			if file == "" || seen[file] || entPaths[file] {
-				continue
-			}
-			seen[file] = true
-			fileAdded = true
-			result = append(result, file)
+	for _, file := range files {
+		// ignore entPaths since we're doing src/ent/index.ts to get all of ent
+		if file == "" || seen[file] || entPaths[file] {
+			continue
 		}
+		seen[file] = true
+		fileAdded = true
+		result = append(result, file)
 	}
 
 	// no files, nothing to do here
