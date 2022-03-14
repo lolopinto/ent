@@ -448,7 +448,7 @@ func searchForFiles(processor *codegen.Processor) []string {
 	rootPath := processor.Config.GetAbsPathToRoot()
 
 	var buf bytes.Buffer
-	cmd := exec.Command("rg", "-tts", "-l", strings.Join(searchFor, "|"))
+	cmd := exec.Command("rg", "-tts", "-l", strconv.Quote(strings.Join(searchFor, "|")))
 	// run in root dir
 	cmd.Dir = rootPath
 	cmd.Stdout = &buf
