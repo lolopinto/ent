@@ -196,22 +196,30 @@ func (p *Processor) Run(steps []Step, step string, options ...Option) error {
 
 func (p *Processor) FormatTS() error {
 	// nothing to do here
-	args := p.Config.GetPrettierArgs()
+	args := p.Config.getPrettierArgs()
 	if args == nil {
 		if p.debugMode {
 			fmt.Printf("no files for prettier to format\n")
 		}
 		return nil
 	}
-	cmd := exec.Command("prettier", p.Config.GetPrettierArgs()...)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		str := stderr.String()
-		err = errors.Wrap(err, str)
-		return err
+
+	var funcs fns.FunctionList
+	for i := range args {
+		v := args[i]
+		funcs = append(funcs, func() error {
+			cmd := exec.Command("prettier", v...)
+			var stderr bytes.Buffer
+			cmd.Stderr = &stderr
+			if err := cmd.Run(); err != nil {
+				str := stderr.String()
+				err = errors.Wrap(err, str)
+				return err
+			}
+			return nil
+		})
 	}
-	return nil
+	return fns.RunParallel(funcs)
 }
 
 func (p *Processor) WriteSchema() error {

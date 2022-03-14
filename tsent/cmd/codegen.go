@@ -44,7 +44,9 @@ var codegenCmd = &cobra.Command{
 		bi := build_info.NewBuildInfo(cfg)
 		t2 := time.Now()
 		diff := t2.Sub(t1)
-		fmt.Println("build info took", diff)
+		if rootInfo.debug {
+			fmt.Println("build info took", diff)
+		}
 
 		opts := []codegen.ConstructOption{
 			codegen.BuildInfo(bi),

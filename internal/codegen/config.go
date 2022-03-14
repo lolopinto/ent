@@ -270,6 +270,7 @@ func (cfg *Config) GeneratedHeader() string {
 }
 
 const DEFAULT_GLOB = "src/**/*.ts"
+const PRETTIER_FILE_CHUNKS = 20
 
 // options: https://prettier.io/docs/en/options.html
 var defaultArgs = []string{
@@ -279,11 +280,12 @@ var defaultArgs = []string{
 	"--end-of-line", "lf",
 }
 
-func (cfg *Config) GetPrettierArgs() []string {
+func (cfg *Config) getPrettierArgs() [][]string {
 	// nothing to do here
 	if cfg.useChanges && len(cfg.changedTSFiles) == 0 {
 		return nil
 	}
+
 	glob := DEFAULT_GLOB
 	args := defaultArgs
 
@@ -297,12 +299,43 @@ func (cfg *Config) GetPrettierArgs() []string {
 			args = []string{}
 		}
 	}
-	if cfg.useChanges {
-		args = append(args, "--write")
-		return append(args, cfg.changedTSFiles...)
-	} else {
-		return append(args, "--write", glob)
+	// if writeAll, break into src/ent/**/*.ts and src/graphql/**/*.ts
+
+	if cfg.writeAll {
+		return [][]string{
+			append(args, "--write", "src/ent/**/*.ts"),
+			append(args, "--write", "src/graphql/**/*.ts"),
+		}
 	}
+	if !cfg.useChanges {
+		return [][]string{
+			append(args, "--write", "src/ent/**/*.ts"),
+			append(args, "--write", glob),
+		}
+	}
+
+	// else break up into chunks and run each on its own
+
+	var ret [][]string
+	l := len(cfg.changedTSFiles)
+	iters := l / PRETTIER_FILE_CHUNKS
+	if l%PRETTIER_FILE_CHUNKS > 0 {
+		iters++
+	}
+	for i := 0; i < iters; i++ {
+		start := i * PRETTIER_FILE_CHUNKS
+		var files []string
+		end := start + PRETTIER_FILE_CHUNKS
+		if end > l {
+			files = cfg.changedTSFiles[start:]
+		} else {
+			files = cfg.changedTSFiles[start:end]
+		}
+		curr := append(args, "--write")
+		curr = append(curr, files...)
+		ret = append(ret, curr)
+	}
+	return ret
 }
 
 // ImportPackage refers to TypeScript paths of what needs to be generated for imports
