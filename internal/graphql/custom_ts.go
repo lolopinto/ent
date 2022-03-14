@@ -275,7 +275,7 @@ func (mfcg *mutationFieldConfigBuilder) getResolveMethodArg() string {
 
 func (mfcg *mutationFieldConfigBuilder) getTypeImports(s *gqlSchema) []*tsimport.ImportPath {
 	if len(mfcg.field.Results) != 1 {
-		panic("invalid number of results for custom field")
+		panic(fmt.Errorf("invalid number of results for custom field %s", mfcg.field.FunctionName))
 	}
 	r := mfcg.field.Results[0]
 	// use the initialized imports to seed this
