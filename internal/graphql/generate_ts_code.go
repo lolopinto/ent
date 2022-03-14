@@ -590,7 +590,7 @@ func parseCustomData(processor *codegen.Processor, fromTest bool) chan *CustomDa
 		}
 
 		b, err := ParseRawCustomData(processor, fromTest)
-		if err != nil {
+		if err != nil || b == nil {
 			cd.Error = err
 			res <- &cd
 			return
