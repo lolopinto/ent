@@ -550,6 +550,8 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 	} else {
 		cmdArgs = append(
 			cmd.GetArgsForScript(processor.Config.GetAbsPathToRoot()),
+			// TODO https://github.com/lolopinto/ent/issues/792
+			//			"--swc",
 			scriptPath,
 			"--path",
 			// TODO this should be a configuration option to indicate where the code root is
