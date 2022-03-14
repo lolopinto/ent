@@ -10,9 +10,10 @@ import (
 // path should be scripts/...
 // e.g. scripts/custom_graphql.ts
 func GetPathToScript(path string, fromTest bool) string {
-	// TODO need something for local development
-	//	return "/Users/ola/code/ent/ts/src/" + path
-	if fromTest {
+	// NOTE: be careful with this for custom_graphql since the instances of
+	// GQLCapture vary...
+	local := EnvIsTrue("LOCAL_SCRIPT_PATH")
+	if fromTest || local {
 		return GetAbsolutePath("../../ts/src/" + path)
 	}
 	path = strings.Replace(path, ".ts", ".js", 1)
