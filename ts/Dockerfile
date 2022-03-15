@@ -6,6 +6,7 @@ ARG DOCKER_TAG=0.0.37
 # get and install tsent
 FROM golang:1.17.6-buster As golang-image
 ARG GOLANG_VERSION
+ARG DOCKER_TAG
 ENV GOPATH=$HOME/go
 ENV GOBIN $GOPATH/bin
 ENV PATH $PATH:$GOPATH/bin
