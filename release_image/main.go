@@ -17,7 +17,7 @@ import (
 )
 
 // next tag
-const TAG = "0.0.37.alpha16"
+const TAG = "0.0.37.alpha17"
 
 // current node gets latest tag...
 const CURRENT_NODE_VERSION = 17
@@ -56,6 +56,7 @@ func main() {
 				suffix := SUFFIXES[j]
 				errs[i*len(SUFFIXES)+j] = run(dockerfileData{
 					NodeVersion:       v,
+					DockerTag:         TAG,
 					Suffix:            suffix,
 					TsentVersion:      TSENT_VERSION,
 					AutoSchemaVersion: AUTO_SCHEMA_VERSION,
@@ -72,6 +73,7 @@ func main() {
 
 type dockerfileData struct {
 	NodeVersion       int
+	DockerTag         string
 	Suffix            string
 	TsentVersion      string
 	AutoSchemaVersion string

@@ -1,6 +1,7 @@
 ARG GOLANG_VERSION=v0.0.38-alpha6
 ARG AUTO_SCHEMA_VERSION=0.0.17
 ARG NODE_VERSION=17
+ARG DOCKER_TAG=0.0.37
 
 # get and install tsent
 FROM golang:1.17.6-buster As golang-image
@@ -8,7 +9,7 @@ ARG GOLANG_VERSION
 ENV GOPATH=$HOME/go
 ENV GOBIN $GOPATH/bin
 ENV PATH $PATH:$GOPATH/bin
-RUN go install -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=$GOLANG_VERSION' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'" github.com/lolopinto/ent/tsent@$GOLANG_VERSION
+RUN go install -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=$DOCKER_TAG' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'" github.com/lolopinto/ent/tsent@$GOLANG_VERSION
 
 # get and install auto_schema
 FROM python:3.8.11-buster AS python-image
