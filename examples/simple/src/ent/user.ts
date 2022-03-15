@@ -22,7 +22,10 @@ export class User extends UserBase {
     ],
   };
 
-  @gqlField()
+  @gqlField({
+    type: GraphQLString,
+    name: "fullName",
+  })
   get fullName(): string {
     return this.firstName + " " + this.lastName;
   }
