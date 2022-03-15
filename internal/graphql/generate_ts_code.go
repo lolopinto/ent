@@ -452,6 +452,11 @@ func searchForFiles(processor *codegen.Processor) []string {
 	cmd.Dir = rootPath
 	b, err := cmd.CombinedOutput()
 	if err != nil {
+		exit, ok := err.(*exec.ExitError)
+		// exit code 1 is expected when there's no results. nothing to do here
+		if ok && exit.ExitCode() == 1 {
+			return nil
+		}
 		if processor.Config.DebugMode() {
 			fmt.Printf("error searching for custom files: %v, output: %s\n", err, string(b))
 			return nil
