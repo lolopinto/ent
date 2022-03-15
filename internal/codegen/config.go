@@ -300,8 +300,15 @@ func (cfg *Config) getPrettierArgs() [][]string {
 		}
 	}
 
-	// if writeAll, use glob
-	if cfg.writeAll || !cfg.useChanges {
+	// if writeAll, break into src/ent/**/*.ts and src/graphql/**/*.ts
+	if cfg.writeAll {
+		return [][]string{
+			append(args, "--write", "src/ent/**/*.ts"),
+			append(args, "--write", "src/graphql/**/*.ts"),
+		}
+	}
+
+	if !cfg.useChanges {
 		return [][]string{
 			append(args, "--write", glob),
 		}
