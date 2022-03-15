@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
 
@@ -208,6 +209,18 @@ func (p *Processor) FormatTS() error {
 	for i := range args {
 		v := args[i]
 		funcs = append(funcs, func() error {
+			// check if glob, and if glob check if path exists before calling into prettier
+			last := v[len(v)-1]
+			idx := strings.LastIndex(last, "**/*.ts")
+
+			if idx != -1 {
+				p := last[:idx-1]
+				_, err := os.Stat(p)
+				// path doesn't exist. nothing to do here
+				if os.IsNotExist(err) {
+					return nil
+				}
+			}
 			cmd := exec.Command("prettier", v...)
 			var stderr bytes.Buffer
 			cmd.Stderr = &stderr
