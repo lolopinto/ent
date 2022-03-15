@@ -452,9 +452,12 @@ func searchForFiles(processor *codegen.Processor) []string {
 	// run in root dir
 	cmd.Dir = rootPath
 	cmd.Stdout = &buf
+	cmd.Stderr = os.Stderr
+	// for debugging...
+	spew.Dump(strconv.Quote(strings.Join(searchFor, "|")))
 	if err := cmd.Run(); err != nil {
 		if processor.Config.DebugMode() {
-			fmt.Printf("error %v searching for custom files", err)
+			fmt.Printf("error searching for custom files: %v\n", err)
 		}
 		return nil
 	}
