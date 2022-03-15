@@ -447,21 +447,17 @@ func getImportPathForModelFile(nodeData *schema.NodeData) string {
 func searchForFiles(processor *codegen.Processor) []string {
 	rootPath := processor.Config.GetAbsPathToRoot()
 
-	var buf bytes.Buffer
 	cmd := exec.Command("rg", "-tts", "-l", strconv.Quote(strings.Join(searchFor, "|")))
 	// run in root dir
 	cmd.Dir = rootPath
-	cmd.Stdout = &buf
-	cmd.Stderr = os.Stderr
-	// for debugging...
-	spew.Dump(strconv.Quote(strings.Join(searchFor, "|")))
-	if err := cmd.Run(); err != nil {
+	b, err := cmd.CombinedOutput()
+	if err != nil {
 		if processor.Config.DebugMode() {
-			fmt.Printf("error searching for custom files: %v\n", err)
+			fmt.Printf("error searching for custom files: %v, output: %s\n", err, string(b))
+			return nil
 		}
-		return nil
 	}
-	files := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	files := strings.Split(strings.TrimSpace(string(b)), "\n")
 
 	result := []string{}
 
