@@ -113,6 +113,7 @@ func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataIn
 
 			case change.RemoveEdge:
 				opts.edgeRemoved = true
+				opts.edgeBaseFile = true
 			}
 		}
 	}
