@@ -205,7 +205,7 @@ func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *g
 		for _, c := range node.connections {
 			ce, ok := c.Edge.(customGraphQLEdge)
 			if ok && ce.isCustomEdge() {
-				opts.connectionFiles[c.ConnType] = true
+				opts.connectionFiles[c.Connection] = true
 			}
 		}
 	}
@@ -223,7 +223,7 @@ func (p *TSStep) buildNodeWithOpts(processor *codegen.Processor, s *gqlSchema, n
 
 	for idx := range node.connections {
 		conn := node.connections[idx]
-		if opts.writeAllConnections || opts.connectionFiles[conn.ConnType] {
+		if opts.writeAllConnections || opts.connectionFiles[conn.Connection] {
 			ret = append(ret, func() error {
 				return writeConnectionFile(processor, s, conn)
 			})
@@ -263,8 +263,8 @@ func (p *TSStep) processCustomNode(processor *codegen.Processor, s *gqlSchema, n
 
 		for idx := range node.connections {
 			conn := node.connections[idx]
-			if cmp.customConnectionsChanged[conn.ConnType] {
-				opts.connectionFiles[conn.ConnType] = true
+			if cmp.customConnectionsChanged[conn.Connection] {
+				opts.connectionFiles[conn.Connection] = true
 			}
 		}
 	}
@@ -850,12 +850,13 @@ func (e *gqlEnum) getRenderer(s *gqlSchema) renderer {
 }
 
 type gqlConnection struct {
-	ConnType string
-	FilePath string
-	Edge     edge.ConnectionEdge
-	Imports  []*tsimport.ImportPath
-	NodeType string
-	Package  *codegen.ImportPackage
+	Connection string
+	ConnType   string
+	FilePath   string
+	Edge       edge.ConnectionEdge
+	Imports    []*tsimport.ImportPath
+	NodeType   string
+	Package    *codegen.ImportPackage
 }
 
 func (c *gqlConnection) GraphQLNodeType() string {
@@ -968,7 +969,7 @@ func (c *gqlConnection) getRenderer(s *gqlSchema) renderer {
 	}
 
 	connRender := &elemRenderer{
-		name:       strings.TrimSuffix(c.ConnType, "Type"),
+		name:       c.Connection,
 		interfaces: []string{"Connection"},
 		fields:     connFields,
 	}
@@ -995,10 +996,11 @@ func getGqlConnection(packageName string, edge edge.ConnectionEdge, processor *c
 		edgeImpPath = codepath.GetExternalImportPath()
 	}
 	return &gqlConnection{
-		ConnType: getGqlConnectionType(edge),
-		Edge:     edge,
-		FilePath: getFilePathForConnection(processor.Config, packageName, edge.GetGraphQLConnectionName()),
-		NodeType: nodeType,
+		Connection: edge.GetGraphQLConnectionName(),
+		ConnType:   getGqlConnectionType(edge),
+		Edge:       edge,
+		FilePath:   getFilePathForConnection(processor.Config, packageName, edge.GetGraphQLConnectionName()),
+		NodeType:   nodeType,
 		Imports: []*tsimport.ImportPath{
 			{
 				ImportPath: codepath.GetImportPathForInternalGQLFile(),

@@ -389,7 +389,7 @@ func customFieldListComparison(l1, l2 []CustomField) (bool, map[string]bool) {
 
 		if !ok || !isConnection(*cf1) {
 			edge := getGQLEdge(*cf2, cf2.Node)
-			conns[getGqlConnectionType(edge)] = true
+			conns[edge.GetGraphQLConnectionName()] = true
 		}
 	}
 
