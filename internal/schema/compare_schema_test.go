@@ -1835,6 +1835,164 @@ func TestEnumModified(t *testing.T) {
 	}, lang[0])
 }
 
+func TestCompareSchemaNewNodePlusActionsAndFields(t *testing.T) {
+	fi, err := field.NewFieldInfoFromInputs([]*input.Field{
+		{
+			Name: "first_name",
+			Type: &input.FieldType{
+				DBType: input.String,
+			},
+		},
+		{
+			Name: "last_name",
+			Type: &input.FieldType{
+				DBType: input.String,
+			},
+		},
+	}, &field.Options{})
+	require.Nil(t, err)
+
+	e2, err := edge.EdgeInfoFromInput("user", &input.Node{
+		AssocEdges: []*input.AssocEdge{
+			{
+				Name:       "Likes",
+				SchemaName: "User",
+			},
+		},
+	})
+	require.Nil(t, err)
+	a2 := createActionInfoFromInput(t, "user", &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+			},
+		},
+		Actions: []*input.Action{
+			{
+				Operation: ent.CreateAction,
+			},
+		},
+	})
+
+	s1 := &schema.Schema{}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"UserConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					FieldInfo:   fi,
+					EdgeInfo:    e2,
+					ActionInfo:  a2,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 3)
+	verifyChange(t, change.Change{
+		Change:      change.AddNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[0])
+	verifyChange(t, change.Change{
+		Change:      change.AddEdge,
+		Name:        "Likes",
+		GraphQLName: "UserToLikesConnection",
+	}, user[1])
+	verifyChange(t, change.Change{
+		Change:      change.AddAction,
+		Name:        "CreateUserAction",
+		GraphQLName: "userCreate",
+	}, user[2])
+}
+
+func TestCompareSchemaRemoveNodePlusActionsAndFields(t *testing.T) {
+	fi, err := field.NewFieldInfoFromInputs([]*input.Field{
+		{
+			Name: "first_name",
+			Type: &input.FieldType{
+				DBType: input.String,
+			},
+		},
+		{
+			Name: "last_name",
+			Type: &input.FieldType{
+				DBType: input.String,
+			},
+		},
+	}, &field.Options{})
+	require.Nil(t, err)
+
+	e1, err := edge.EdgeInfoFromInput("user", &input.Node{
+		AssocEdges: []*input.AssocEdge{
+			{
+				Name:       "Likes",
+				SchemaName: "User",
+			},
+		},
+	})
+	require.Nil(t, err)
+	a1 := createActionInfoFromInput(t, "user", &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+			},
+		},
+		Actions: []*input.Action{
+			{
+				Operation: ent.CreateAction,
+			},
+		},
+	})
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"UserConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					FieldInfo:   fi,
+					EdgeInfo:    e1,
+					ActionInfo:  a1,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 3)
+	verifyChange(t, change.Change{
+		Change:      change.RemoveNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[0])
+	verifyChange(t, change.Change{
+		Change:      change.RemoveEdge,
+		Name:        "Likes",
+		GraphQLName: "UserToLikesConnection",
+	}, user[1])
+	verifyChange(t, change.Change{
+		Change:      change.RemoveAction,
+		Name:        "CreateUserAction",
+		GraphQLName: "userCreate",
+	}, user[2])
+}
+
 func getEnumInfo(m map[string]string) *schema.EnumInfo {
 	if m == nil {
 		m = map[string]string{
@@ -1860,10 +2018,6 @@ func getEnumInfo(m map[string]string) *schema.EnumInfo {
 		GQLEnum: gqlEnum,
 	}
 }
-
-// change.RemoveEnum
-// change.AddEnum
-// change.ModifyEnum
 
 func createDuplicateAssocEdgeFromInput(t *testing.T, packageName string, inputEdge *input.AssocEdge) (*edge.AssociationEdge, *edge.AssociationEdge) {
 	edge1, err := edge.AssocEdgeFromInput(packageName, inputEdge)
