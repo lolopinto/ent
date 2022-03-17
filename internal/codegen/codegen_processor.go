@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/build_info"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/fns"
@@ -357,6 +358,7 @@ func NewCodegenProcessor(currentSchema *schema.Schema, configPath string, option
 	if err != nil && opt.debugMode {
 		fmt.Printf("error %v comparing schemas \n", err)
 	}
+	spew.Dump(changes)
 	// if changes == nil, don't use changes
 	useChanges := changes != nil
 	cfg.SetUseChanges(useChanges)
