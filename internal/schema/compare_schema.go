@@ -103,7 +103,6 @@ func blankNodeDataInfo() *NodeDataInfo {
 	}
 }
 
-// TODO broken tests for these...
 func compareNodes(m1, m2 NodeMapInfo, m *change.ChangeMap) error {
 	ret := *m
 	getSchemaName := func(config string) string {
