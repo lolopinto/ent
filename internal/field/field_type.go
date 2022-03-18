@@ -14,9 +14,11 @@ import (
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
+	"github.com/lolopinto/ent/internal/tsimport"
 )
 
 type Field struct {
+	// note that if this changes, need to update FieldEqual
 	// todo: abstract out these 2 also...
 	FieldName           string
 	tagMap              map[string]string
@@ -65,9 +67,10 @@ type Field struct {
 	dataTypePkgPath string
 
 	// these 3 should override exposeToActionsByDefault and topLevelStructField at some point since they're built to be reusable and work across types
-	disableUserEditable     bool
-	hasDefaultValueOnCreate bool
-	hasDefaultValueOnEdit   bool
+	disableUserEditable        bool
+	disableUserGraphQLEditable bool
+	hasDefaultValueOnCreate    bool
+	hasDefaultValueOnEdit      bool
 
 	forceRequiredInAction bool
 	forceOptionalInAction bool
@@ -75,27 +78,36 @@ type Field struct {
 	patternName string
 }
 
+// mostly used by tests
+func NewFieldFromNameAndType(name string, typ enttype.TSGraphQLType) *Field {
+	return &Field{
+		FieldName: name,
+		fieldType: typ,
+	}
+}
+
 func newFieldFromInput(f *input.Field) (*Field, error) {
 	ret := &Field{
-		FieldName:                f.Name,
-		nullable:                 f.Nullable,
-		dbName:                   f.StorageKey,
-		hideFromGraphQL:          f.HideFromGraphQL,
-		private:                  f.Private,
-		polymorphic:              f.Polymorphic,
-		index:                    f.Index,
-		graphQLName:              f.GraphQLName,
-		defaultValue:             f.ServerDefault,
-		unique:                   f.Unique,
-		topLevelStructField:      true,
-		dbColumn:                 true,
-		exposeToActionsByDefault: true,
-		singleFieldPrimaryKey:    f.PrimaryKey,
-		disableUserEditable:      f.DisableUserEditable,
-		hasDefaultValueOnCreate:  f.HasDefaultValueOnCreate,
-		hasDefaultValueOnEdit:    f.HasDefaultValueOnEdit,
-		derivedWhenEmbedded:      f.DerivedWhenEmbedded,
-		patternName:              f.PatternName,
+		FieldName:                  f.Name,
+		nullable:                   f.Nullable,
+		dbName:                     f.StorageKey,
+		hideFromGraphQL:            f.HideFromGraphQL,
+		private:                    f.Private,
+		polymorphic:                f.Polymorphic,
+		index:                      f.Index,
+		graphQLName:                f.GraphQLName,
+		defaultValue:               f.ServerDefault,
+		unique:                     f.Unique,
+		topLevelStructField:        true,
+		dbColumn:                   true,
+		exposeToActionsByDefault:   true,
+		singleFieldPrimaryKey:      f.PrimaryKey,
+		disableUserEditable:        f.DisableUserEditable,
+		disableUserGraphQLEditable: f.DisableUserGraphQLEditable,
+		hasDefaultValueOnCreate:    f.HasDefaultValueOnCreate,
+		hasDefaultValueOnEdit:      f.HasDefaultValueOnEdit,
+		derivedWhenEmbedded:        f.DerivedWhenEmbedded,
+		patternName:                f.PatternName,
 
 		// go specific things
 		entType:         f.GoType,
@@ -361,6 +373,10 @@ func (f *Field) EditableField() bool {
 	return !f.disableUserEditable
 }
 
+func (f *Field) EditableGraphQLField() bool {
+	return !f.disableUserEditable && !f.disableUserGraphQLEditable
+}
+
 func (f *Field) HasDefaultValueOnCreate() bool {
 	return f.hasDefaultValueOnCreate
 }
@@ -480,8 +496,8 @@ func (f *Field) TsType() string {
 	return f.fieldType.GetTSType()
 }
 
-func (f *Field) ForeignImports() []string {
-	ret := []string{}
+func (f *Field) GetTsTypeImports() []*tsimport.ImportPath {
+	ret := []*tsimport.ImportPath{}
 	// field type requires imports. assumes it has been reserved separately
 	typ, ok := f.fieldType.(enttype.TSTypeWithImports)
 	if ok {
@@ -492,7 +508,7 @@ func (f *Field) ForeignImports() []string {
 	if ok && (f.fkey != nil || f.patternName != "") {
 		// foreign key with enum type requires an import
 		// if pattern enum, this is defined in its own file
-		ret = append(ret, enumType.GetTSName())
+		ret = append(ret, tsimport.NewLocalEntImportPath(enumType.GetTSName()))
 	}
 
 	return ret
@@ -537,13 +553,24 @@ func (f *Field) TsBuilderType() string {
 	return fmt.Sprintf("%s | Builder<%s>", typ, typeName)
 }
 
-func (f *Field) TsBuilderImports() []string {
-	ret := f.ForeignImports()
+func (f *Field) TsBuilderImports() []*tsimport.ImportPath {
+	ret := f.GetTsTypeImports()
 	typeName := f.getIDFieldType()
 	if typeName == "" || f.disableBuilderType {
 		return ret
 	}
-	ret = append(ret, typeName, "Builder")
+	var entImportPath *tsimport.ImportPath
+	// for polymorphic fields...
+	if typeName == "Ent" || typeName == "ID" {
+		entImportPath = tsimport.NewEntImportPath(typeName)
+	} else {
+		entImportPath = tsimport.NewLocalEntImportPath(typeName)
+	}
+	ret = append(
+		ret,
+		entImportPath,
+		tsimport.NewEntActionImportPath("Builder"),
+	)
 	return ret
 }
 
@@ -603,7 +630,7 @@ func (f *Field) GetInverseEdge() *edge.AssociationEdge {
 
 // for non-required fields in actions, we want to make it optional if it's not a required field
 // in the action
-func (f *Field) GetTSGraphQLTypeForFieldImports(forceOptional bool) []enttype.FileImport {
+func (f *Field) GetTSGraphQLTypeForFieldImports(forceOptional bool) []*tsimport.ImportPath {
 	var tsGQLType enttype.TSGraphQLType
 	nullableType, ok := f.fieldType.(enttype.NullableType)
 
@@ -665,28 +692,29 @@ func Required() Option {
 
 func (f *Field) Clone(opts ...Option) (*Field, error) {
 	ret := &Field{
-		FieldName:                f.FieldName,
-		nullable:                 f.nullable,
-		graphqlNullable:          f.graphqlNullable,
-		dbName:                   f.dbName,
-		hideFromGraphQL:          f.hideFromGraphQL,
-		private:                  f.private,
-		polymorphic:              f.polymorphic,
-		index:                    f.index,
-		graphQLName:              f.graphQLName,
-		defaultValue:             f.defaultValue,
-		unique:                   f.unique,
-		topLevelStructField:      f.topLevelStructField,
-		dbColumn:                 f.dbColumn,
-		exposeToActionsByDefault: f.exposeToActionsByDefault,
-		singleFieldPrimaryKey:    f.singleFieldPrimaryKey,
-		disableUserEditable:      f.disableUserEditable,
-		hasDefaultValueOnCreate:  f.hasDefaultValueOnCreate,
-		hasDefaultValueOnEdit:    f.hasDefaultValueOnEdit,
-		forceRequiredInAction:    f.forceRequiredInAction,
-		forceOptionalInAction:    f.forceOptionalInAction,
-		derivedWhenEmbedded:      f.derivedWhenEmbedded,
-		patternName:              f.patternName,
+		FieldName:                  f.FieldName,
+		nullable:                   f.nullable,
+		graphqlNullable:            f.graphqlNullable,
+		dbName:                     f.dbName,
+		hideFromGraphQL:            f.hideFromGraphQL,
+		private:                    f.private,
+		polymorphic:                f.polymorphic,
+		index:                      f.index,
+		graphQLName:                f.graphQLName,
+		defaultValue:               f.defaultValue,
+		unique:                     f.unique,
+		topLevelStructField:        f.topLevelStructField,
+		dbColumn:                   f.dbColumn,
+		exposeToActionsByDefault:   f.exposeToActionsByDefault,
+		singleFieldPrimaryKey:      f.singleFieldPrimaryKey,
+		disableUserEditable:        f.disableUserEditable,
+		disableUserGraphQLEditable: f.disableUserGraphQLEditable,
+		hasDefaultValueOnCreate:    f.hasDefaultValueOnCreate,
+		hasDefaultValueOnEdit:      f.hasDefaultValueOnEdit,
+		forceRequiredInAction:      f.forceRequiredInAction,
+		forceOptionalInAction:      f.forceOptionalInAction,
+		derivedWhenEmbedded:        f.derivedWhenEmbedded,
+		patternName:                f.patternName,
 
 		// go specific things
 		entType: f.entType,

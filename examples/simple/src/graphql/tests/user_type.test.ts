@@ -17,6 +17,7 @@ import EditUserAction from "../../ent/user/actions/edit_user_action";
 import CreateContactAction, {
   ContactCreateInput,
 } from "../../ent/contact/actions/create_contact_action";
+import { GraphQLObjectType } from "graphql";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
@@ -786,4 +787,16 @@ test("enum list", async () => {
       },
     ],
   );
+});
+
+test("expected graphql schema", async () => {
+  const typ = schema.getType("UserCreateInput") as GraphQLObjectType;
+  if (!typ) {
+    throw new Error(`can't find type for UserCreateInput`);
+  }
+  const fields = typ.getFields();
+  // firstName should show up
+  expect(fields["firstName"]).toBeDefined();
+  // accountStatus shouldn't even tho it's in CreateAction because it's not graphql editable
+  expect(fields["accountStatus"]).toBeUndefined();
 });

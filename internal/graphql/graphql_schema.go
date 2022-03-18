@@ -806,7 +806,6 @@ func (schema *graphQLSchema) writeGraphQLSchema() error {
 		AbsPathToTemplate: util.GetAbsolutePath("graphql_schema.tmpl"),
 		TemplateName:      "graphql_schema.tmpl",
 		PathToFile:        schema.getPath("schema.graphql"),
-		CreateDirIfNeeded: true,
 		FuncMap: template.FuncMap{
 			"sortedTypes": getSortedTypes,
 		},
@@ -894,10 +893,9 @@ func (s *graphQLSchema) getYmlConfig() *config.Config {
 
 func (s *graphQLSchema) writeGQLGenYamlFile(cfg *codegen.Config) error {
 	return file.Write(&file.YamlFileWriter{
-		Config:            cfg,
-		Data:              s.getYmlConfig(),
-		PathToFile:        s.getPath("gqlgen.yml"),
-		CreateDirIfNeeded: true,
+		Config:     cfg,
+		Data:       s.getYmlConfig(),
+		PathToFile: s.getPath("gqlgen.yml"),
 	})
 }
 

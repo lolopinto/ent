@@ -7,13 +7,16 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-
-	"github.com/lolopinto/ent/internal/codegen"
 )
+
+type Config interface {
+	DebugMode() bool
+	GeneratedHeader() string
+	AddChangedFile(file string)
+}
 
 type Writer interface {
 	Write(opts ...func(opt *Options)) error
-	createDirIfNeeded() bool
 	getPathToFile() string
 	generateBytes() ([]byte, error)
 }
@@ -29,7 +32,7 @@ func debugLogInfo(opt *Options, str string, a ...interface{}) {
 	}
 }
 
-func writeFile(w Writer, cfg *codegen.Config, opts ...func(opt *Options)) error {
+func writeFile(w Writer, cfg Config, opts ...func(opt *Options)) error {
 	option := &Options{}
 	if !cfg.DebugMode() {
 		opts = append(opts, DisableLog())
@@ -53,26 +56,24 @@ func writeFile(w Writer, cfg *codegen.Config, opts ...func(opt *Options)) error 
 	}
 
 	fullPath := pathToFile
-	if w.createDirIfNeeded() {
-		if !filepath.IsAbs(fullPath) {
-			// TODO need to convert everything here to absolute paths
-			fullPath = filepath.Join(".", pathToFile)
-		}
-		directoryPath := path.Dir(fullPath)
+	if !filepath.IsAbs(fullPath) {
+		// TODO need to convert everything here to absolute paths
+		fullPath = filepath.Join(".", pathToFile)
+	}
+	directoryPath := path.Dir(fullPath)
 
-		_, err := os.Stat(directoryPath)
+	_, err = os.Stat(directoryPath)
 
-		if os.IsNotExist(err) {
-			err = os.MkdirAll(directoryPath, os.ModePerm)
-			if err == nil {
-				debugLogInfo(option, "created directory "+directoryPath)
-			} else {
-				return err
-			}
-		}
-		if os.IsNotExist(err) {
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(directoryPath, os.ModePerm)
+		if err == nil {
+			debugLogInfo(option, "created directory "+directoryPath)
+		} else {
 			return err
 		}
+	}
+	if os.IsNotExist(err) {
+		return err
 	}
 
 	if option.writeOnce {
@@ -93,38 +94,11 @@ func writeFile(w Writer, cfg *codegen.Config, opts ...func(opt *Options)) error 
 			debugLogInfo(option, "wrote to file %s", pathToFile)
 		}
 	}
+
+	if err == nil && !option.tempFile && strings.HasSuffix(fullPath, ".ts") {
+		cfg.AddChangedFile(fullPath)
+	}
 	return err
-}
-
-// Options provides a way to configure the file writing process as needed
-// TODO: maybe move things like createDirIfNeeded to here?
-type Options struct {
-	writeOnce  bool
-	disableLog bool
-}
-
-// WriteOnce specifes that writing to path provided should not occur if the file already exists
-// This is usually configured via code
-func WriteOnce() func(opt *Options) {
-	return func(opt *Options) {
-		opt.writeOnce = true
-	}
-}
-
-// WriteOnceMaybe takes a flag (usually provided via user action) and determines if we should add
-// the writeOnce flag to Options
-func WriteOnceMaybe(forceOverwrite bool) func(opt *Options) {
-	if forceOverwrite {
-		return nil
-	}
-	return WriteOnce()
-}
-
-// DisableLog disables the log that the file was written
-func DisableLog() func(opt *Options) {
-	return func(opt *Options) {
-		opt.disableLog = true
-	}
 }
 
 func Write(w Writer, opts ...func(opt *Options)) error {

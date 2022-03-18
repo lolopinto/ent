@@ -6,8 +6,8 @@
       {{$arg.Name}}: {
         description: "{{$arg.Description}}",
         {{ range $import := .Imports -}}
-          {{ if $base.ForeignImport $import.Type -}}
-            {{$ignored := useImport $import.Type -}}
+          {{ if $base.ForeignImport $import.Import -}}
+            {{$ignored := useImport $import.Import -}}
           {{end -}}
         {{ end -}}
         type: {{$arg.FieldType -}},

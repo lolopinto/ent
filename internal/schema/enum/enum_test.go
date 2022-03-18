@@ -31,15 +31,26 @@ func TestEnum(t *testing.T) {
 		GQLType: typ,
 		Values:  values,
 	})
+	tsEnum2, gqlEnum2 := GetEnums(&Input{
+		TSName:  typ,
+		GQLName: typ,
+		GQLType: typ,
+		Values:  values,
+	})
 	require.NotNil(t, tsEnum)
+	require.NotNil(t, tsEnum2)
 	assert.Equal(t, tsEnum.Name, typ)
 	assert.Equal(t, tsEnum.Values, getValues(values))
 	assert.Equal(t, tsEnum.Imported, false)
 
 	require.NotNil(t, gqlEnum)
+	require.NotNil(t, gqlEnum2)
 	assert.Equal(t, gqlEnum.Name, typ)
 	assert.Equal(t, gqlEnum.Type, typ)
 	assert.Equal(t, gqlEnum.Values, getGQLValues(values, gqlKeys))
+
+	assert.True(t, EnumEqual(tsEnum, tsEnum2))
+	assert.True(t, GQLEnumEqual(gqlEnum, gqlEnum2))
 }
 
 func TestEnumMap(t *testing.T) {
@@ -58,7 +69,22 @@ func TestEnumMap(t *testing.T) {
 			"Python":     "python",
 		},
 	})
+	tsEnum2, gqlEnum2 := GetEnums(&Input{
+		TSName:  typ,
+		GQLName: typ,
+		GQLType: typ,
+		EnumMap: map[string]string{
+			"Java":       "java",
+			"CPlusPlus":  "c++",
+			"CSharp":     "c#",
+			"JavaScript": "js",
+			"TypeScript": "ts",
+			"GoLang":     "go",
+			"Python":     "python",
+		},
+	})
 	require.NotNil(t, tsEnum)
+	require.NotNil(t, tsEnum2)
 	assert.Equal(t, tsEnum.Name, typ)
 	assert.Equal(t, tsEnum.Values, []Data{
 		{
@@ -93,6 +119,7 @@ func TestEnumMap(t *testing.T) {
 	assert.Equal(t, tsEnum.Imported, false)
 
 	require.NotNil(t, gqlEnum)
+	require.NotNil(t, gqlEnum2)
 	assert.Equal(t, gqlEnum.Name, typ)
 	assert.Equal(t, gqlEnum.Type, typ)
 	assert.Equal(t, gqlEnum.Values, []Data{
@@ -125,6 +152,49 @@ func TestEnumMap(t *testing.T) {
 			Value: strconv.Quote("ts"),
 		},
 	})
+
+	assert.True(t, EnumEqual(tsEnum, tsEnum2))
+	assert.True(t, GQLEnumEqual(gqlEnum, gqlEnum2))
+}
+
+func TestUnequalEnums(t *testing.T) {
+	typ := "Language"
+	tsEnum, gqlEnum := GetEnums(&Input{
+		TSName:  typ,
+		GQLName: typ,
+		GQLType: typ,
+		EnumMap: map[string]string{
+			"Java":       "java",
+			"CPlusPlus":  "c++",
+			"CSharp":     "c#",
+			"JavaScript": "js",
+			"TypeScript": "ts",
+			"GoLang":     "go",
+			"Python":     "python",
+		},
+	})
+	tsEnum2, gqlEnum2 := GetEnums(&Input{
+		TSName:  typ,
+		GQLName: typ,
+		GQLType: typ,
+		EnumMap: map[string]string{
+			"Java":       "java",
+			"CPlusPlus":  "c++",
+			"CSharp":     "c#",
+			"JavaScript": "js",
+			"TypeScript": "ts",
+			"GoLang":     "golang",
+			"Python":     "python",
+		},
+	})
+	require.NotNil(t, tsEnum)
+	require.NotNil(t, tsEnum2)
+
+	require.NotNil(t, gqlEnum)
+	require.NotNil(t, gqlEnum2)
+
+	assert.False(t, EnumEqual(tsEnum, tsEnum2))
+	assert.False(t, GQLEnumEqual(gqlEnum, gqlEnum2))
 }
 
 func getValues(values []string) []Data {

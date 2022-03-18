@@ -8,18 +8,15 @@
 
 
 {{ range .GetImportPathsForDependencies -}}
-  {{ if .DefaultImport -}}
-    {{ reserveDefaultImport .PackagePath .Import}}
-  {{ else -}}
-    {{ reserveImport .PackagePath .Import}}
-  {{ end -}}
+  {{ reserveImportPath . true}}
 {{ end}}
 
 export interface {{.Node}}Input {
   {{range $field := .FieldInfo.GetEditableFields -}}
     {{$type := $field.TsBuilderType -}}
-      {{range $import := $field.TsBuilderImports -}}
-        {{ $ignore := useImport $import -}}
+      {{range $field.TsBuilderImports -}}
+        {{ reserveImportPath . true -}}
+        {{ $ignore := useImport .Import -}}
       {{end -}}
     {{$field.TsFieldName}}?: {{$type}};
   {{end -}}

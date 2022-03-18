@@ -17,7 +17,7 @@ import (
 )
 
 // next tag
-const TAG = "0.0.36"
+const TAG = "0.0.37"
 
 // current node gets latest tag...
 const CURRENT_NODE_VERSION = 17
@@ -31,8 +31,8 @@ var NODE_VERSIONS = []int{
 	17,
 }
 
-const AUTO_SCHEMA_VERSION = "0.0.16"
-const TSENT_VERSION = "v0.0.37"
+const AUTO_SCHEMA_VERSION = "0.0.17"
+const TSENT_VERSION = "v0.0.38"
 
 var SUFFIXES = []string{
 	"dev",
@@ -56,6 +56,7 @@ func main() {
 				suffix := SUFFIXES[j]
 				errs[i*len(SUFFIXES)+j] = run(dockerfileData{
 					NodeVersion:       v,
+					DockerTag:         TAG,
 					Suffix:            suffix,
 					TsentVersion:      TSENT_VERSION,
 					AutoSchemaVersion: AUTO_SCHEMA_VERSION,
@@ -72,6 +73,7 @@ func main() {
 
 type dockerfileData struct {
 	NodeVersion       int
+	DockerTag         string
 	Suffix            string
 	TsentVersion      string
 	AutoSchemaVersion string
@@ -89,7 +91,6 @@ func createDockerfile(path string, d dockerfileData) error {
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Config:            cfg,
 		Data:              &d,
-		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("../ts/Dockerfile.tmpl"),
 		TemplateName:      "Dockerfile.tmpl",
 		PathToFile:        path,

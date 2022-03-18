@@ -8,8 +8,10 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/testhelper"
+	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,7 +22,7 @@ func getCodePath(t *testing.T, dirPath string) *codegen.Config {
 	return codepath
 }
 
-func validateDefaultCustomTypes(t *testing.T, customData *customData) {
+func validateDefaultCustomTypes(t *testing.T, customData *CustomData) {
 	// GraphQLJSON and GraphQLTime
 	require.GreaterOrEqual(t, len(customData.CustomTypes), 2)
 
@@ -149,34 +151,22 @@ func TestCustomMutation(t *testing.T) {
 	assert.Equal(t, fcfg.Arg, "emailAvailableArgs")
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
-	assert.Equal(t, fcfg.TypeImports, []*fileImport{
-		{
-			Type:       "GraphQLNonNull",
-			ImportPath: "graphql",
-		},
-		{
-			Type:       "GraphQLBoolean",
-			ImportPath: "graphql",
-		},
+	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
+		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLImportPath("GraphQLBoolean"),
 	})
-	assert.Equal(t, fcfg.ArgImports, []*fileImport{
+	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
 		{
-			Type:       "AuthResolver",
+			Import:     "AuthResolver",
 			ImportPath: "../auth/auth",
 		},
 	})
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
 		{
 			Name: "email",
-			Imports: []*fileImport{
-				{
-					Type:       "GraphQLNonNull",
-					ImportPath: "graphql",
-				},
-				{
-					Type:       "GraphQLString",
-					ImportPath: "graphql",
-				},
+			Imports: []*tsimport.ImportPath{
+				tsimport.NewGQLImportPath("GraphQLNonNull"),
+				tsimport.NewGQLImportPath("GraphQLString"),
 			},
 		},
 	})
@@ -296,34 +286,22 @@ func TestCustomQuery(t *testing.T) {
 	assert.Equal(t, fcfg.Arg, "emailAvailableArgs")
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
-	assert.Equal(t, fcfg.TypeImports, []*fileImport{
-		{
-			Type:       "GraphQLNonNull",
-			ImportPath: "graphql",
-		},
-		{
-			Type:       "GraphQLBoolean",
-			ImportPath: "graphql",
-		},
+	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
+		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLImportPath("GraphQLBoolean"),
 	})
-	assert.Equal(t, fcfg.ArgImports, []*fileImport{
+	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
 		{
-			Type:       "AuthResolver",
+			Import:     "AuthResolver",
 			ImportPath: "../auth/auth",
 		},
 	})
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
 		{
 			Name: "email",
-			Imports: []*fileImport{
-				{
-					Type:       "GraphQLNonNull",
-					ImportPath: "graphql",
-				},
-				{
-					Type:       "GraphQLString",
-					ImportPath: "graphql",
-				},
+			Imports: []*tsimport.ImportPath{
+				tsimport.NewGQLImportPath("GraphQLNonNull"),
+				tsimport.NewGQLImportPath("GraphQLString"),
 			},
 		},
 	})
@@ -429,51 +407,26 @@ func TestCustomListQuery(t *testing.T) {
 	assert.Equal(t, fcfg.Arg, "emailsAvailableArgs")
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
-	assert.Equal(t, fcfg.TypeImports, []*fileImport{
-		{
-			Type:       "GraphQLNonNull",
-			ImportPath: "graphql",
-		},
-		{
-			Type:       "GraphQLList",
-			ImportPath: "graphql",
-		},
-		{
-			Type:       "GraphQLNonNull",
-			ImportPath: "graphql",
-		},
-		{
-			Type:       "GraphQLBoolean",
-			ImportPath: "graphql",
-		},
+	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
+		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLImportPath("GraphQLList"),
+		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLImportPath("GraphQLBoolean"),
 	})
-	assert.Equal(t, fcfg.ArgImports, []*fileImport{
+	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
 		{
-			Type:       "AuthResolver",
+			Import:     "AuthResolver",
 			ImportPath: "../auth/auth",
 		},
 	})
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
 		{
 			Name: "emails",
-			Imports: []*fileImport{
-				{
-					Type:       "GraphQLNonNull",
-					ImportPath: "graphql",
-				},
-				{
-					Type:       "GraphQLList",
-					ImportPath: "graphql",
-				},
-				{
-					Type:       "GraphQLNonNull",
-					ImportPath: "graphql",
-				},
-
-				{
-					Type:       "GraphQLString",
-					ImportPath: "graphql",
-				},
+			Imports: []*tsimport.ImportPath{
+				tsimport.NewGQLImportPath("GraphQLNonNull"),
+				tsimport.NewGQLImportPath("GraphQLList"),
+				tsimport.NewGQLImportPath("GraphQLNonNull"),
+				tsimport.NewGQLImportPath("GraphQLString"),
 			},
 		},
 	})
@@ -610,30 +563,24 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	assert.Equal(t, fcfg.Arg, "usernameArgs")
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
-	assert.Equal(t, fcfg.TypeImports, []*fileImport{
+	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
 		{
-			Type:       "UserType",
-			ImportPath: "src/graphql/resolvers/internal",
+			ImportPath: codepath.GetImportPathForInternalGQLFile(),
+			Import:     "UserType",
 		},
 	})
-	assert.Equal(t, fcfg.ArgImports, []*fileImport{
+	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
 		{
-			Type:       "UsernameResolver",
+			Import:     "UsernameResolver",
 			ImportPath: "../username/username",
 		},
 	})
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
 		{
 			Name: "username",
-			Imports: []*fileImport{
-				{
-					Type:       "GraphQLNonNull",
-					ImportPath: "graphql",
-				},
-				{
-					Type:       "GraphQLString",
-					ImportPath: "graphql",
-				},
+			Imports: []*tsimport.ImportPath{
+				tsimport.NewGQLImportPath("GraphQLNonNull"),
+				tsimport.NewGQLImportPath("GraphQLString"),
 			},
 		},
 	})
@@ -738,32 +685,23 @@ func TestCustomUploadType(t *testing.T) {
 	assert.Equal(t, fcfg.Arg, "profilePicUploadArgs")
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
-	assert.Equal(t, fcfg.TypeImports, []*fileImport{
-		{
-			Type:       "GraphQLNonNull",
-			ImportPath: "graphql",
-		},
-		{
-			Type:       "GraphQLBoolean",
-			ImportPath: "graphql",
-		},
+	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
+		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLImportPath("GraphQLBoolean"),
 	})
-	assert.Equal(t, fcfg.ArgImports, []*fileImport{
+	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
 		{
-			Type:       "ProfilePicResolver",
+			Import:     "ProfilePicResolver",
 			ImportPath: "../file/upload",
 		},
 	})
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
 		{
 			Name: "file",
-			Imports: []*fileImport{
+			Imports: []*tsimport.ImportPath{
+				tsimport.NewGQLImportPath("GraphQLNonNull"),
 				{
-					Type:       "GraphQLNonNull",
-					ImportPath: "graphql",
-				},
-				{
-					Type:       "GraphQLUpload",
+					Import:     "GraphQLUpload",
 					ImportPath: "graphql-upload",
 				},
 			},

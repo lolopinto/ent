@@ -1,19 +1,13 @@
 package file
 
 import (
-	"github.com/lolopinto/ent/internal/codegen"
 	yaml "gopkg.in/yaml.v3"
 )
 
 type YamlFileWriter struct {
-	Config            *codegen.Config
-	Data              interface{}
-	PathToFile        string
-	CreateDirIfNeeded bool
-}
-
-func (fw *YamlFileWriter) createDirIfNeeded() bool {
-	return fw.CreateDirIfNeeded
+	Config     Config
+	Data       interface{}
+	PathToFile string
 }
 
 func (fw *YamlFileWriter) getPathToFile() string {

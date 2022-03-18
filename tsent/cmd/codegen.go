@@ -1,6 +1,10 @@
 package cmd
 
 import (
+	"fmt"
+	"time"
+
+	"github.com/lolopinto/ent/internal/build_info"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/db"
 	"github.com/lolopinto/ent/internal/graphql"
@@ -9,7 +13,8 @@ import (
 )
 
 type codegenArgs struct {
-	step string
+	step     string
+	writeAll bool
 }
 
 var codegenInfo codegenArgs
@@ -20,19 +25,41 @@ var codegenCmd = &cobra.Command{
 	Long:  `This runs the codegen steps. It generates the ent, db, and graphql code based on the arguments passed in`,
 	//	Args:  configRequired,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		schema, err := parseSchema()
+		currentSchema, err := parseSchema()
 		if err != nil {
 			return err
 		}
 
 		// nothing to do here
-		if len(schema.Nodes) == 0 {
+		if len(currentSchema.Nodes) == 0 {
 			return nil
 		}
 
-		// module path empty because not go
+		cfg, err := codegen.NewConfig("src/schema", "")
+		if err != nil {
+			return err
+		}
+
+		t1 := time.Now()
+		bi := build_info.NewBuildInfo(cfg)
+		t2 := time.Now()
+		diff := t2.Sub(t1)
+		if rootInfo.debug {
+			fmt.Println("build info took", diff)
+		}
+
+		opts := []codegen.ConstructOption{
+			codegen.BuildInfo(bi),
+			codegen.ProcessorConfig(cfg),
+		}
+		if rootInfo.debug {
+			opts = append(opts, codegen.DebugMode())
+		}
+		if codegenInfo.writeAll {
+			opts = append(opts, codegen.WriteAll())
+		}
 		// same as ParseSchemaFromTSDir. default to schema. we want a flag here eventually
-		processor, err := codegen.NewCodegenProcessor(schema, "src/schema", "", rootInfo.debug)
+		processor, err := codegen.NewCodegenProcessor(currentSchema, "src/schema", opts...)
 		if err != nil {
 			return err
 		}

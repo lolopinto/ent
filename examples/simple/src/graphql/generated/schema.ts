@@ -105,6 +105,10 @@ import {
   UserCreatePayloadType,
 } from "../mutations/generated/user/user_create_type";
 import {
+  UserDelete2InputType,
+  UserDelete2PayloadType,
+} from "../mutations/generated/user/user_delete_2_type";
+import {
   UserDeleteInputType,
   UserDeletePayloadType,
 } from "../mutations/generated/user/user_delete_type";
@@ -253,6 +257,8 @@ export default new GraphQLSchema({
     PhoneNumberEditPayloadType,
     UserCreateInputType,
     UserCreatePayloadType,
+    UserDelete2InputType,
+    UserDelete2PayloadType,
     UserDeleteInputType,
     UserDeletePayloadType,
     UserEditInputType,

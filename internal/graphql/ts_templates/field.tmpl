@@ -5,8 +5,8 @@
 {{ range $field := $gqlNode.Fields -}}
   {{$field.Name}}: {
     {{range $import := $field.AllImports -}}
-      {{ if $baseObj.ForeignImport $import.Type -}}
-        {{$ignore := useImport $import.Type -}}
+      {{ if $baseObj.ForeignImport $import.Import -}}
+        {{$ignore := useImport $import.Import -}}
       {{end -}}
     {{end -}}
     {{ if $field.Description -}}

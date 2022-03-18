@@ -17,6 +17,7 @@ import { UserPrefs } from "../../../user_prefs";
 export interface UserCreateInput {
   firstName: string;
   lastName: string;
+  accountStatus?: string | null;
   emailAddress: string;
   phoneNumber: string;
   password: string;

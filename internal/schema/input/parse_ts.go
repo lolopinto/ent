@@ -49,6 +49,7 @@ func GetRawSchema(dirPath string, fromTest bool) ([]byte, error) {
 
 	cmdArgs = append(
 		cmdArgs,
+		"--swc",
 		util.GetPathToScript("scripts/read_schema.ts", fromTest),
 		"--path",
 		schemaPath,

@@ -371,9 +371,6 @@ func processEdgeActions(nodeName string, assocEdge *edge.AssociationEdge, lang b
 				typ,
 				edgeAction,
 				lang,
-				[]*edge.AssociationEdge{
-					assocEdge,
-				},
 			),
 		)
 	}
@@ -460,7 +457,6 @@ func processEdgeGroupActions(nodeName string, assocGroup *edge.AssociationEdgeGr
 	return actions, nil
 }
 
-// todo
 func getCreateAction(commonInfo commonActionInfo) *CreateAction {
 	return &CreateAction{
 		commonActionInfo: commonInfo,
@@ -487,12 +483,6 @@ func getAddEdgeAction(commonInfo commonActionInfo) *AddEdgeAction {
 
 func getRemoveEdgeAction(commonInfo commonActionInfo) *RemoveEdgeAction {
 	return &RemoveEdgeAction{
-		commonActionInfo: commonInfo,
-	}
-}
-
-func getGroupEdgeAction(commonInfo commonActionInfo) *EdgeGroupAction {
-	return &EdgeGroupAction{
 		commonActionInfo: commonInfo,
 	}
 }
@@ -526,8 +516,7 @@ func getCommonInfoForEdgeAction(
 	assocEdge *edge.AssociationEdge,
 	typ concreteEdgeActionType,
 	edgeAction *edge.EdgeAction,
-	lang base.Language,
-	edges []*edge.AssociationEdge) commonActionInfo {
+	lang base.Language) commonActionInfo {
 	var graphqlName string
 	if edgeAction.ExposeToGraphQL {
 		graphqlName = getGraphQLNameForEdgeActionType(typ, nodeName, assocEdge, edgeAction.CustomGraphQLName)
@@ -537,9 +526,11 @@ func getCommonInfoForEdgeAction(
 		GraphQLName:     graphqlName,
 		InputName:       typ.getDefaultInputName(nodeName, assocEdge),
 		ExposeToGraphQL: edgeAction.ExposeToGraphQL,
-		Edges:           edges,
-		NodeInfo:        nodeinfo.GetNodeInfo(nodeName),
-		Operation:       typ.getOperation(),
+		Edges: []*edge.AssociationEdge{
+			assocEdge,
+		},
+		NodeInfo:  nodeinfo.GetNodeInfo(nodeName),
+		Operation: typ.getOperation(),
 	}
 }
 

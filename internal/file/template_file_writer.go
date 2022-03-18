@@ -6,7 +6,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/lolopinto/ent/internal/codegen"
 	intimports "github.com/lolopinto/ent/internal/imports"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"golang.org/x/tools/imports"
@@ -18,17 +17,12 @@ type TemplatedBasedFileWriter struct {
 	OtherTemplateFiles []string // should also be an absolute path
 	TemplateName       string
 	PathToFile         string
-	CreateDirIfNeeded  bool
 	FuncMap            template.FuncMap
 	PackageName        string
 	Imports            *intimports.Imports
 	TsImports          *tsimport.Imports
-	Config             *codegen.Config
+	Config             Config
 	EditableCode       bool
-}
-
-func (fw *TemplatedBasedFileWriter) createDirIfNeeded() bool {
-	return fw.CreateDirIfNeeded
 }
 
 func (fw *TemplatedBasedFileWriter) getPathToFile() string {

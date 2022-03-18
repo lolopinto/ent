@@ -46,6 +46,8 @@ export default class User extends BaseEntSchema implements Schema {
     StringType({
       name: "AccountStatus",
       nullable: true,
+      // allows scripts, internal tools etc to set this but not graphql
+      disableUserGraphQLEditable: true,
       defaultValueOnCreate: () => "UNVERIFIED",
     }),
     BooleanType({
@@ -141,6 +143,7 @@ export default class User extends BaseEntSchema implements Schema {
       fields: [
         "FirstName",
         "LastName",
+        "AccountStatus",
         "EmailAddress",
         "PhoneNumber",
         "Password",
@@ -227,6 +230,19 @@ export default class User extends BaseEntSchema implements Schema {
     // delete user
     {
       operation: ActionOperation.Delete,
+    },
+    {
+      // contrived action that takes actionOnlyFields to add to input
+      operation: ActionOperation.Delete,
+      actionOnlyFields: [
+        {
+          type: "Boolean",
+          name: "log",
+        },
+      ],
+      actionName: "DeleteUserAction2",
+      inputName: "DeleteUserInput2",
+      graphQLName: "userDelete2",
     },
   ];
 }

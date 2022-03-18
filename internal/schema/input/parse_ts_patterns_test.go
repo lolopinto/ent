@@ -86,7 +86,8 @@ func TestPatternsWithEdge(t *testing.T) {
 			},
 			expectedPatterns: map[string]pattern{
 				"node": {
-					name: "node",
+					name:   "node",
+					fields: nodeFields(),
 				},
 				"feedback": {
 					name: "feedback",

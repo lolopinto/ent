@@ -6,8 +6,8 @@
 
 {{ range .RootQuery.Imports -}} 
   {{if .ImportPath -}}
-    {{reserveImport .ImportPath .Type}}
-    {{ $ignore := useImport .Type }}
+    {{reserveImport .ImportPath .Import}}
+    {{ $ignore := useImport .Import }}
   {{end -}}
 {{ end -}}
 

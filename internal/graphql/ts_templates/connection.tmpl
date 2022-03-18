@@ -5,7 +5,7 @@
 {{$baseObj := .BaseObj}}
 {{/* import types that we may need e.g. UserType, ContactType, etc */}}
 {{ range $conn.Imports -}} 
-  {{reserveImport .ImportPath .Type}}
+  {{reserveImport .ImportPath .Import}}
 {{ end -}}
 
 var connType: {{useImport "GraphQLConnectionType"}}<{{useImport "GraphQLObjectType"}}, {{useImport $conn.Edge.TsEdgeQueryEdgeName}}>;
@@ -20,12 +20,12 @@ export const {{ $conn.ConnType}} = () => {
     {{ if $obj -}}
       {{ range $obj.Imports -}} 
         {{if .ImportPath -}}
-          {{reserveImport .ImportPath .Type -}}
+          {{reserveImport .ImportPath .Import -}}
         {{end -}}
       {{ end -}}
       {{ range $obj.DefaultImports -}}    
         {{if .ImportPath -}}
-          {{reserveDefaultImport .ImportPath .Type -}}
+          {{reserveDefaultImport .ImportPath .Import -}}
         {{end -}}
       {{ end -}}
       {

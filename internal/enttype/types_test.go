@@ -9,13 +9,14 @@ import (
 
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schemaparser"
+	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/stretchr/testify/assert"
 )
 
 type expType struct {
 	db                  string
 	graphql             string
-	graphqlImports      []enttype.FileImport
+	graphqlImports      []*tsimport.ImportPath
 	graphqlPanics       bool
 	goTypePanics        bool
 	castToMethod        string
@@ -33,7 +34,7 @@ type expType struct {
 	tsTypePanics        bool
 	convertFn           string
 	importType          enttype.Import
-	tsTypeImports       []string
+	tsTypeImports       []*tsimport.ImportPath
 }
 
 func TestStringType(t *testing.T) {
@@ -47,9 +48,9 @@ func f() string {
 	testType(t, expType{
 		db:      "sa.Text()",
 		graphql: "String!",
-		graphqlImports: []enttype.FileImport{
-			enttype.NewGQLFileImport("GraphQLNonNull"),
-			enttype.NewGQLFileImport("GraphQLString"),
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		zeroValue:    strconv.Quote(""),
 		castToMethod: "cast.ToString",
@@ -69,9 +70,9 @@ func TestCustomTypes(t *testing.T) {
 				expType{
 					db:      "sa.Text()",
 					graphql: "String!",
-					graphqlImports: []enttype.FileImport{
-						enttype.NewGQLFileImport("GraphQLNonNull"),
-						enttype.NewGQLFileImport("GraphQLString"),
+					graphqlImports: []*tsimport.ImportPath{
+						tsimport.NewGQLImportPath("GraphQLNonNull"),
+						tsimport.NewGQLImportPath("GraphQLString"),
 					},
 					zeroValue:    strconv.Quote(""),
 					castToMethod: "cast.ToString",
@@ -87,8 +88,8 @@ func TestCustomTypes(t *testing.T) {
 				expType{
 					db:      "sa.Text()",
 					graphql: "String",
-					graphqlImports: []enttype.FileImport{
-						enttype.NewGQLFileImport("GraphQLString"),
+					graphqlImports: []*tsimport.ImportPath{
+						tsimport.NewGQLImportPath("GraphQLString"),
 					},
 					zeroValue:       strconv.Quote(""),
 					castToMethod:    "cast.ToNullableString",
@@ -104,9 +105,9 @@ func TestCustomTypes(t *testing.T) {
 				expType{
 					db:      "sa.Text()",
 					graphql: "String!",
-					graphqlImports: []enttype.FileImport{
-						enttype.NewGQLFileImport("GraphQLNonNull"),
-						enttype.NewGQLFileImport("GraphQLString"),
+					graphqlImports: []*tsimport.ImportPath{
+						tsimport.NewGQLImportPath("GraphQLNonNull"),
+						tsimport.NewGQLImportPath("GraphQLString"),
 					},
 					zeroValue:    strconv.Quote(""),
 					castToMethod: "cast.ToString",
@@ -122,8 +123,8 @@ func TestCustomTypes(t *testing.T) {
 				expType{
 					db:      "sa.Text()",
 					graphql: "String",
-					graphqlImports: []enttype.FileImport{
-						enttype.NewGQLFileImport("GraphQLString"),
+					graphqlImports: []*tsimport.ImportPath{
+						tsimport.NewGQLImportPath("GraphQLString"),
 					},
 					zeroValue:       strconv.Quote(""),
 					castToMethod:    "cast.ToNullableString",
@@ -139,9 +140,9 @@ func TestCustomTypes(t *testing.T) {
 				expType{
 					db:      "sa.Text()",
 					graphql: "String!",
-					graphqlImports: []enttype.FileImport{
-						enttype.NewGQLFileImport("GraphQLNonNull"),
-						enttype.NewGQLFileImport("GraphQLString"),
+					graphqlImports: []*tsimport.ImportPath{
+						tsimport.NewGQLImportPath("GraphQLNonNull"),
+						tsimport.NewGQLImportPath("GraphQLString"),
 					},
 					zeroValue:    strconv.Quote(""),
 					castToMethod: "cast.ToString",
@@ -157,8 +158,8 @@ func TestCustomTypes(t *testing.T) {
 				expType{
 					db:      "sa.Text()",
 					graphql: "String",
-					graphqlImports: []enttype.FileImport{
-						enttype.NewGQLFileImport("GraphQLString"),
+					graphqlImports: []*tsimport.ImportPath{
+						tsimport.NewGQLImportPath("GraphQLString"),
 					},
 					zeroValue:       strconv.Quote(""),
 					castToMethod:    "cast.ToNullableString",
@@ -186,9 +187,9 @@ func f() ent.NodeType {
 	testType(t, expType{
 		db:      "sa.Text()",
 		graphql: "String!",
-		graphqlImports: []enttype.FileImport{
-			enttype.NewGQLFileImport("GraphQLNonNull"),
-			enttype.NewGQLFileImport("GraphQLString"),
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		zeroValue: strconv.Quote(""),
 		// this probably doesn't work correctly in practice because strong types broken?
@@ -212,8 +213,8 @@ func f() *string {
 	testType(t, expType{
 		db:      "sa.Text()",
 		graphql: "String",
-		graphqlImports: []enttype.FileImport{
-			enttype.NewGQLFileImport("GraphQLString"),
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		zeroValue:       strconv.Quote(""),
 		castToMethod:    "cast.ToNullableString",
@@ -235,9 +236,9 @@ func f() bool {
 	testType(t, expType{
 		db:      "sa.Boolean()",
 		graphql: "Boolean!",
-		graphqlImports: []enttype.FileImport{
-			enttype.NewGQLFileImport("GraphQLNonNull"),
-			enttype.NewGQLFileImport("GraphQLBoolean"),
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLBoolean"),
 		},
 		zeroValue:    "false",
 		castToMethod: "cast.ToBool",
@@ -260,8 +261,8 @@ func f() *bool {
 	testType(t, expType{
 		db:      "sa.Boolean()",
 		graphql: "Boolean",
-		graphqlImports: []enttype.FileImport{
-			enttype.NewGQLFileImport("GraphQLBoolean"),
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLBoolean"),
 		},
 		zeroValue:       "false",
 		castToMethod:    "cast.ToNullableBool",
@@ -277,16 +278,18 @@ func TestIDType(t *testing.T) {
 	testType(t, expType{
 		db:      "postgresql.UUID()",
 		graphql: "ID!",
-		graphqlImports: []enttype.FileImport{
-			enttype.NewGQLFileImport("GraphQLNonNull"),
-			enttype.NewGQLFileImport("GraphQLID"),
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLID"),
 		},
-		zeroValue:     "",
-		castToMethod:  "cast.ToUUIDString",
-		nullableType:  &enttype.NullableIDType{},
-		tsType:        "ID",
-		tsTypeImports: []string{"ID"},
-		importType:    &enttype.UUIDImport{},
+		zeroValue:    "",
+		castToMethod: "cast.ToUUIDString",
+		nullableType: &enttype.NullableIDType{},
+		tsType:       "ID",
+		tsTypeImports: []*tsimport.ImportPath{
+			tsimport.NewEntImportPath("ID"),
+		},
+		importType: &enttype.UUIDImport{},
 	}, returnType{
 		entType: &enttype.IDType{},
 	})
@@ -296,15 +299,17 @@ func TestNullableIDType(t *testing.T) {
 	testType(t, expType{
 		db:      "postgresql.UUID()",
 		graphql: "ID",
-		graphqlImports: []enttype.FileImport{
-			enttype.NewGQLFileImport("GraphQLID"),
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLID"),
 		},
 		zeroValue:       "",
 		castToMethod:    "cast.ToNullableUUIDString",
 		nonNullableType: &enttype.IDType{},
 		tsType:          "ID | null",
-		tsTypeImports:   []string{"ID"},
-		importType:      &enttype.UUIDImport{},
+		tsTypeImports: []*tsimport.ImportPath{
+			tsimport.NewEntImportPath("ID"),
+		},
+		importType: &enttype.UUIDImport{},
 	}, returnType{
 		entType: &enttype.NullableIDType{},
 	})
@@ -321,9 +326,9 @@ func f() int {
 	testType(t, expType{
 		db:      "sa.Integer()",
 		graphql: "Int!",
-		graphqlImports: []enttype.FileImport{
-			enttype.NewGQLFileImport("GraphQLNonNull"),
-			enttype.NewGQLFileImport("GraphQLInt"),
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLInt"),
 		},
 		zeroValue:    "0",
 		castToMethod: "cast.ToInt",
@@ -345,9 +350,9 @@ func f() int64 {
 	testType(t, expType{
 		db:      "sa.BigInteger()",
 		graphql: "String!",
-		graphqlImports: []enttype.FileImport{
-			enttype.NewGQLFileImport("GraphQLNonNull"),
-			enttype.NewGQLFileImport("GraphQLString"),
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		zeroValue:    "0",
 		castToMethod: "cast.ToInt64",
@@ -370,8 +375,8 @@ func f() *int {
 	testType(t, expType{
 		db:      "sa.Integer()",
 		graphql: "Int",
-		graphqlImports: []enttype.FileImport{
-			enttype.NewGQLFileImport("GraphQLInt"),
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLInt"),
 		},
 		zeroValue:       "0",
 		castToMethod:    "cast.ToNullableInt",
@@ -393,8 +398,8 @@ func f() *int64 {
 	testType(t, expType{
 		db:      "sa.BigInteger()",
 		graphql: "String",
-		graphqlImports: []enttype.FileImport{
-			enttype.NewGQLFileImport("GraphQLString"),
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		zeroValue:       "0",
 		castToMethod:    "cast.ToNullableInt64",
@@ -429,9 +434,9 @@ func testFloatType(t *testing.T, ret returnType, goType string) {
 	testType(t, expType{
 		db:      "sa.Float()",
 		graphql: "Float!",
-		graphqlImports: []enttype.FileImport{
-			enttype.NewGQLFileImport("GraphQLNonNull"),
-			enttype.NewGQLFileImport("GraphQLFloat"),
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLFloat"),
 		},
 		zeroValue:    "0.0",
 		castToMethod: "cast.ToFloat",
@@ -465,8 +470,8 @@ func testNullableFloatType(t *testing.T, ret returnType, goType string) {
 	testType(t, expType{
 		db:      "sa.Float()",
 		graphql: "Float",
-		graphqlImports: []enttype.FileImport{
-			enttype.NewGQLFileImport("GraphQLFloat"),
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLFloat"),
 		},
 		zeroValue:       "0.0",
 		castToMethod:    "cast.ToNullableFloat",
@@ -490,12 +495,9 @@ func f() time.Time {
 	testType(t, expType{
 		db:      "sa.TIMESTAMP()",
 		graphql: "Time!",
-		graphqlImports: []enttype.FileImport{
-			enttype.NewGQLFileImport("GraphQLNonNull"),
-			{
-				Type:       "GraphQLTime",
-				ImportType: enttype.EntGraphQL,
-			},
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 		},
 		zeroValue:           "time.Time{}",
 		castToMethod:        "cast.ToTime",
@@ -521,11 +523,8 @@ func f() *time.Time {
 	testType(t, expType{
 		db:      "sa.TIMESTAMP()",
 		graphql: "Time",
-		graphqlImports: []enttype.FileImport{
-			{
-				Type:       "GraphQLTime",
-				ImportType: enttype.EntGraphQL,
-			},
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 		},
 		zeroValue:           "time.Time{}",
 		castToMethod:        "cast.ToNullableTime",
@@ -1080,16 +1079,15 @@ func TestEnumType(t *testing.T) {
 				expType{
 					db:      "sa.Text()",
 					graphql: "AccountStatus",
-					graphqlImports: []enttype.FileImport{
-						{
-							Type:       "AccountStatus",
-							ImportType: enttype.Enum,
-						},
+					graphqlImports: []*tsimport.ImportPath{
+						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
 					},
-					enumType:      true,
-					tsType:        "AccountStatus | null",
-					tsTypeImports: []string{"AccountStatus"},
-					goTypePanics:  true,
+					enumType: true,
+					tsType:   "AccountStatus | null",
+					tsTypeImports: []*tsimport.ImportPath{
+						tsimport.NewLocalEntImportPath("AccountStatus"),
+					},
+					goTypePanics: true,
 					nonNullableType: &enttype.EnumType{
 						Type:        "AccountStatus",
 						GraphQLType: "AccountStatus",
@@ -1117,17 +1115,16 @@ func TestEnumType(t *testing.T) {
 				expType{
 					db:      "sa.Text()",
 					graphql: "AccountStatus!",
-					graphqlImports: []enttype.FileImport{
-						enttype.NewGQLFileImport("GraphQLNonNull"),
-						{
-							Type:       "AccountStatus",
-							ImportType: enttype.Enum,
-						},
+					graphqlImports: []*tsimport.ImportPath{
+						tsimport.NewGQLImportPath("GraphQLNonNull"),
+						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
 					},
-					tsType:        "AccountStatus",
-					enumType:      true,
-					tsTypeImports: []string{"AccountStatus"},
-					goTypePanics:  true,
+					tsType:   "AccountStatus",
+					enumType: true,
+					tsTypeImports: []*tsimport.ImportPath{
+						tsimport.NewLocalEntImportPath("AccountStatus"),
+					},
+					goTypePanics: true,
 					nullableType: &enttype.NullableEnumType{
 						Type:        "AccountStatus",
 						GraphQLType: "AccountStatus",
@@ -1163,16 +1160,15 @@ func TestEnumType(t *testing.T) {
 					),
 					enumType: true,
 					graphql:  "AccountStatus!",
-					graphqlImports: []enttype.FileImport{
-						enttype.NewGQLFileImport("GraphQLNonNull"),
-						{
-							Type:       "AccountStatus",
-							ImportType: enttype.Enum,
-						},
+					graphqlImports: []*tsimport.ImportPath{
+						tsimport.NewGQLImportPath("GraphQLNonNull"),
+						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
 					},
-					tsType:        "AccountStatus",
-					tsTypeImports: []string{"AccountStatus"},
-					goTypePanics:  true,
+					tsType: "AccountStatus",
+					tsTypeImports: []*tsimport.ImportPath{
+						tsimport.NewLocalEntImportPath("AccountStatus"),
+					},
+					goTypePanics: true,
 					nullableType: &enttype.NullableEnumType{
 						Type:        "AccountStatus",
 						GraphQLType: "AccountStatus",
@@ -1208,15 +1204,14 @@ func TestEnumType(t *testing.T) {
 					),
 					enumType: true,
 					graphql:  "AccountStatus",
-					graphqlImports: []enttype.FileImport{
-						{
-							Type:       "AccountStatus",
-							ImportType: enttype.Enum,
-						},
+					graphqlImports: []*tsimport.ImportPath{
+						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
 					},
-					tsType:        "AccountStatus | null",
-					tsTypeImports: []string{"AccountStatus"},
-					goTypePanics:  true,
+					tsType: "AccountStatus | null",
+					tsTypeImports: []*tsimport.ImportPath{
+						tsimport.NewLocalEntImportPath("AccountStatus"),
+					},
+					goTypePanics: true,
 					nonNullableType: &enttype.EnumType{
 						Type:        "AccountStatus",
 						GraphQLType: "AccountStatus",
@@ -1241,11 +1236,8 @@ func TestTimestamptzType(t *testing.T) {
 			expType{
 				db:      "sa.TIMESTAMP(timezone=True)",
 				graphql: "Time",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLTime",
-						ImportType: enttype.EntGraphQL,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 				},
 				tsType:              "Date | null",
 				nonNullableType:     &enttype.TimestamptzType{},
@@ -1262,12 +1254,9 @@ func TestTimestamptzType(t *testing.T) {
 			expType{
 				db:      "sa.TIMESTAMP(timezone=True)",
 				graphql: "Time!",
-				graphqlImports: []enttype.FileImport{
-					enttype.NewGQLFileImport("GraphQLNonNull"),
-					{
-						Type:       "GraphQLTime",
-						ImportType: enttype.EntGraphQL,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 				},
 				tsType:              "Date",
 				nullableType:        &enttype.NullableTimestamptzType{},
@@ -1289,8 +1278,8 @@ func TestTimeType(t *testing.T) {
 			expType{
 				db:      "sa.Time()",
 				graphql: "String",
-				graphqlImports: []enttype.FileImport{
-					enttype.NewGQLFileImport("GraphQLString"),
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLString"),
 				},
 				tsType:              "string | null",
 				nonNullableType:     &enttype.TimeType{},
@@ -1306,9 +1295,9 @@ func TestTimeType(t *testing.T) {
 			expType{
 				db:      "sa.Time()",
 				graphql: "String!",
-				graphqlImports: []enttype.FileImport{
-					enttype.NewGQLFileImport("GraphQLNonNull"),
-					enttype.NewGQLFileImport("GraphQLString"),
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLString"),
 				},
 				tsType:              "string",
 				nullableType:        &enttype.NullableTimeType{},
@@ -1329,8 +1318,8 @@ func TestTimetzType(t *testing.T) {
 			expType{
 				db:      "sa.Time(timezone=True)",
 				graphql: "String",
-				graphqlImports: []enttype.FileImport{
-					enttype.NewGQLFileImport("GraphQLString"),
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLString"),
 				},
 				tsType:              "string | null",
 				nonNullableType:     &enttype.TimetzType{},
@@ -1346,9 +1335,9 @@ func TestTimetzType(t *testing.T) {
 			expType{
 				db:      "sa.Time(timezone=True)",
 				graphql: "String!",
-				graphqlImports: []enttype.FileImport{
-					enttype.NewGQLFileImport("GraphQLNonNull"),
-					enttype.NewGQLFileImport("GraphQLString"),
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLString"),
 				},
 				tsType:              "string",
 				nullableType:        &enttype.NullableTimetzType{},
@@ -1369,11 +1358,8 @@ func TestDateType(t *testing.T) {
 			expType{
 				db:      "sa.Date()",
 				graphql: "Time",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLTime",
-						ImportType: enttype.EntGraphQL,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 				},
 				tsType:              "Date | null",
 				nonNullableType:     &enttype.DateType{},
@@ -1390,12 +1376,9 @@ func TestDateType(t *testing.T) {
 			expType{
 				db:      "sa.Date()",
 				graphql: "Time!",
-				graphqlImports: []enttype.FileImport{
-					enttype.NewGQLFileImport("GraphQLNonNull"),
-					{
-						Type:       "GraphQLTime",
-						ImportType: enttype.EntGraphQL,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 				},
 				tsType:              "Date",
 				nullableType:        &enttype.NullableDateType{},
@@ -1575,7 +1558,7 @@ func testType(t *testing.T, exp expType, ret returnType) {
 
 	convType, ok := typ.(enttype.ConvertDataType)
 	if ok {
-		assert.Equal(t, exp.convertFn, convType.Convert().Type)
+		assert.Equal(t, exp.convertFn, convType.Convert().Import)
 	}
 
 	impType, ok := typ.(enttype.TSCodegenableType)

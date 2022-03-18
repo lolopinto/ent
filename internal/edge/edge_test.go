@@ -33,7 +33,8 @@ func TestAssociationEdge(t *testing.T) {
 	edge := edgeInfo.GetAssociationEdgeByName("Folders")
 
 	expectedAssocEdge := &AssociationEdge{
-		EdgeConst: "AccountToFoldersEdge",
+		EdgeConst:   "AccountToFoldersEdge",
+		TsEdgeConst: "AccountToFolders",
 		commonEdgeInfo: getCommonEdgeInfo(
 			"Folders",
 			schemaparser.GetEntConfigFromName("folder"),
@@ -64,13 +65,14 @@ func TestSymmetricAssociationEdge(t *testing.T) {
 	edge := edgeInfo.GetAssociationEdgeByName("Friends")
 
 	expectedAssocEdge := &AssociationEdge{
-		EdgeConst: "AccountToFriendsEdge",
+		EdgeConst:   "AccountToFriendsEdge",
+		TsEdgeConst: "AccountToFriends",
 		commonEdgeInfo: getCommonEdgeInfo(
 			"Friends",
 			schemaparser.GetEntConfigFromName("account"),
 		),
 		Symmetric: true,
-		TableName: "account_friends_edges",
+		TableName: "account_friendships_edges",
 	}
 
 	testAssocEdge(t, edge, expectedAssocEdge)
@@ -84,13 +86,14 @@ func TestUniqueAssociationEdge(t *testing.T) {
 	edge := edgeInfo.GetAssociationEdgeByName("Creator")
 
 	expectedAssocEdge := &AssociationEdge{
-		EdgeConst: "EventToCreatorEdge",
+		EdgeConst:   "EventToCreatorEdge",
+		TsEdgeConst: "EventToCreator",
 		commonEdgeInfo: getCommonEdgeInfo(
 			"Creator",
 			schemaparser.GetEntConfigFromName("account"),
 		),
 		Unique:    true,
-		TableName: "account_creator_edges",
+		TableName: "event_creator_edges",
 	}
 
 	testAssocEdge(t, edge, expectedAssocEdge)
@@ -104,7 +107,8 @@ func TestInverseAssociationEdge(t *testing.T) {
 	edge := edgeInfo.GetAssociationEdgeByName("Todos")
 
 	expectedAssocEdge := &AssociationEdge{
-		EdgeConst: "FolderToTodosEdge",
+		EdgeConst:   "FolderToTodosEdge",
+		TsEdgeConst: "FolderToTodos",
 		commonEdgeInfo: getCommonEdgeInfo(
 			"Todos",
 			schemaparser.GetEntConfigFromName("todo"),
@@ -136,13 +140,14 @@ func TestAddingInverseEdge(t *testing.T) {
 	edge2 := inverseEdgeInfo.GetAssociationEdgeByName("Folders")
 
 	expectedAssocEdge := &AssociationEdge{
-		EdgeConst: "TodoToFoldersEdge",
+		EdgeConst:   "TodoToFoldersEdge",
+		TsEdgeConst: "TodoToFolders",
 		commonEdgeInfo: getCommonEdgeInfo(
 			"Folders",
 			schemaparser.GetEntConfigFromName("folder"),
 		),
 		IsInverseEdge: true,
-		TableName:     "folder_tods_edges",
+		TableName:     "folder_todos_edges",
 	}
 
 	testAssocEdge(t, edge2, expectedAssocEdge)
@@ -156,7 +161,8 @@ func TestEdgeGroup(t *testing.T) {
 	friendsEdge := edgeInfo.GetAssociationEdgeByName("Friends")
 
 	expectedFriendRequestsEdge := &AssociationEdge{
-		EdgeConst: "AccountToFriendRequestsEdge",
+		EdgeConst:   "AccountToFriendRequestsEdge",
+		TsEdgeConst: "AccountToFriendRequests",
 		commonEdgeInfo: getCommonEdgeInfo(
 			"FriendRequests",
 			schemaparser.GetEntConfigFromName("account"),
@@ -208,7 +214,8 @@ func TestEdgeGroupWithCustomActionEdges(t *testing.T) {
 	declinedEdge := edgeInfo.GetAssociationEdgeByName("Declined")
 
 	expectedInvitedEdge := &AssociationEdge{
-		EdgeConst: "EventToInvitedEdge",
+		EdgeConst:   "EventToInvitedEdge",
+		TsEdgeConst: "EventToInvited",
 		commonEdgeInfo: getCommonEdgeInfo(
 			"Invited",
 			schemaparser.GetEntConfigFromName("account"),
@@ -280,6 +287,66 @@ func testAssocEdge(t *testing.T, edge, expectedAssocEdge *AssociationEdge) {
 
 	assert.Equal(
 		t,
+		expectedAssocEdge.TsEdgeConst,
+		edge.TsEdgeConst,
+		"TS edge const of edge %s was not as expected, expected %s, got %s instead",
+		edgeName,
+		expectedAssocEdge.TsEdgeConst,
+		edge.TsEdgeConst,
+	)
+
+	assert.Equal(
+		t,
+		expectedAssocEdge.TableName,
+		edge.TableName,
+		"table name of edge %s was not as expected, expected %s, got %s instead",
+		edgeName,
+		expectedAssocEdge.TableName,
+		edge.TableName,
+	)
+
+	assert.Equal(
+		t,
+		expectedAssocEdge.PatternName,
+		edge.PatternName,
+		"pattern name of edge %s was not as expected, expected %s, got %s instead",
+		edgeName,
+		expectedAssocEdge.PatternName,
+		edge.PatternName,
+	)
+
+	assert.Equal(
+		t,
+		expectedAssocEdge.overridenQueryName,
+		edge.overridenQueryName,
+		"overriden query name field of edge %s was not as expected, expected %s, got %s instead",
+		edgeName,
+		expectedAssocEdge.overridenQueryName,
+		edge.overridenQueryName,
+	)
+
+	assert.Equal(
+		t,
+		expectedAssocEdge.overridenEdgeName,
+		edge.overridenEdgeName,
+		"override edge name field of edge %s was not as expected, expected %s, got %s instead",
+		edgeName,
+		expectedAssocEdge.overridenEdgeName,
+		edge.overridenEdgeName,
+	)
+
+	assert.Equal(
+		t,
+		expectedAssocEdge.overridenGraphQLName,
+		edge.overridenGraphQLName,
+		"overriden graphql name field of edge %s was not as expected, expected %s, got %s instead",
+		edgeName,
+		expectedAssocEdge.overridenGraphQLName,
+		edge.overridenGraphQLName,
+	)
+
+	assert.Equal(
+		t,
 		expectedAssocEdge.Symmetric,
 		edge.Symmetric,
 		"assoc edge with name %s symmetric value was not as expected",
@@ -308,9 +375,7 @@ func testAssocEdge(t *testing.T, edge, expectedAssocEdge *AssociationEdge) {
 
 	testEdgeActions(t, edgeName, edge.EdgeActions, expectedAssocEdge.EdgeActions)
 
-	expectedPackageName := expectedAssocEdge.entConfig.PackageName
-	expectedConfigName := expectedAssocEdge.entConfig.ConfigName
-	testEntConfig(t, edge.entConfig, expectedPackageName, expectedConfigName)
+	testEntConfig(t, edge.entConfig, expectedAssocEdge.entConfig)
 
 	testNodeInfo(t, edge.NodeInfo, expectedAssocEdge.NodeInfo.Node)
 }
@@ -357,9 +422,7 @@ func testInverseAssociationEdge(t *testing.T, edgeName string, edge, expectedAss
 		expectedInverseEdge.EdgeConst,
 	)
 
-	expectedPackageName := inverseEdge.entConfig.PackageName
-	expectedConfigName := inverseEdge.entConfig.ConfigName
-	testEntConfig(t, inverseEdge.entConfig, expectedPackageName, expectedConfigName)
+	testEntConfig(t, inverseEdge.entConfig, inverseEdge.entConfig)
 
 	testNodeInfo(t, inverseEdge.NodeInfo, expectedInverseEdge.NodeInfo.Node)
 }
@@ -459,7 +522,15 @@ func testEdgeInfo(t *testing.T, edgeInfo *EdgeInfo, expAssocs int) {
 	)
 }
 
-func testEntConfig(t *testing.T, entConfig *schemaparser.EntConfigInfo, expectedPackageName, expectedConfigName string) {
+func testEntConfig(t *testing.T, entConfig, expectedEntConfig *schemaparser.EntConfigInfo) {
+	// apparently, this is how it should work?
+	if entConfig == nil {
+		require.Nil(t, expectedEntConfig)
+		return
+	}
+	expectedPackageName := expectedEntConfig.PackageName
+	expectedConfigName := expectedEntConfig.ConfigName
+
 	// TODO PackageName is useless and we should fix it/remove it in this instance
 	assert.Equal(
 		t,
@@ -546,6 +617,62 @@ func testAssocEdgeGroup(t *testing.T, edgeGroup, expectedAssocEdgeGroup *Associa
 	}
 
 	testEdgeActions(t, edgeGroup.GroupName, edgeGroup.EdgeActions, expectedAssocEdgeGroup.EdgeActions)
+}
+
+func testForeignKeyEdge(t *testing.T, edge, expectedEdge *ForeignKeyEdge) {
+	assert.Equal(t, expectedEdge.SourceNodeName, edge.SourceNodeName)
+
+	testDestinationEdge(t, expectedEdge.destinationEdge, edge.destinationEdge)
+}
+
+func testIndexedEdge(t *testing.T, edge, expectedEdge *IndexedEdge) {
+	assert.Equal(t, expectedEdge.SourceNodeName, edge.SourceNodeName)
+	assert.Equal(t, expectedEdge.tsEdgeName, edge.tsEdgeName)
+	assert.Equal(t, expectedEdge.foreignNode, edge.foreignNode)
+
+	testDestinationEdge(t, expectedEdge.destinationEdge, edge.destinationEdge)
+}
+
+func testDestinationEdge(t *testing.T, edge, expectedEdge destinationEdge) {
+	assert.Equal(t, expectedEdge.quotedDbColName, edge.quotedDbColName)
+
+	assert.Equal(t, expectedEdge.unique, edge.unique)
+
+	testEntConfig(t, edge.entConfig, expectedEdge.entConfig)
+
+	testNodeInfo(t, edge.NodeInfo, expectedEdge.NodeInfo.Node)
+}
+
+func testFieldEdge(t *testing.T, edge, expectedEdge *FieldEdge) {
+	assert.Equal(t, expectedEdge.FieldName, edge.FieldName)
+
+	assert.Equal(t, expectedEdge.TSFieldName, edge.TSFieldName)
+
+	assert.Equal(t, expectedEdge.Nullable, edge.Nullable)
+
+	if expectedEdge.InverseEdge == nil {
+		require.Nil(t, edge.InverseEdge)
+	} else {
+		assert.Equal(t, expectedEdge.InverseEdge.EdgeConstName, edge.InverseEdge.EdgeConstName)
+		assert.Equal(t, expectedEdge.InverseEdge.HideFromGraphQL, edge.InverseEdge.HideFromGraphQL)
+		assert.Equal(t, expectedEdge.InverseEdge.Name, edge.InverseEdge.Name)
+		assert.Equal(t, expectedEdge.InverseEdge.TableName, edge.InverseEdge.TableName)
+	}
+
+	if expectedEdge.Polymorphic == nil {
+		require.Nil(t, edge.Polymorphic)
+	} else {
+		assert.Equal(t, expectedEdge.Polymorphic.DisableBuilderType, edge.Polymorphic.DisableBuilderType)
+		assert.Equal(t, expectedEdge.Polymorphic.HideFromInverseGraphQL, edge.Polymorphic.HideFromInverseGraphQL)
+		assert.Equal(t, expectedEdge.Polymorphic.NodeTypeField, edge.Polymorphic.NodeTypeField)
+		assert.Equal(t, expectedEdge.Polymorphic.Types, edge.Polymorphic.Types)
+		assert.Equal(t, expectedEdge.Polymorphic.Unique, edge.Polymorphic.Unique)
+	}
+
+	testEntConfig(t, edge.entConfig, expectedEdge.entConfig)
+
+	testNodeInfo(t, edge.NodeInfo, expectedEdge.NodeInfo.Node)
+
 }
 
 var r *testsync.RunOnce

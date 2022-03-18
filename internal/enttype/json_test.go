@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/tsimport"
 )
 
 func TestJSONType(t *testing.T) {
@@ -14,15 +15,9 @@ func TestJSONType(t *testing.T) {
 				// TODO also do sqlite everywhere here...
 				db:      "postgresql.JSON",
 				graphql: "JSON!",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLJSON",
-						ImportType: enttype.GraphQLJSON,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
 				tsType:       "any",
 				nullableType: &enttype.NullableJSONType{},
@@ -37,15 +32,9 @@ func TestJSONType(t *testing.T) {
 			expType{
 				db:      "postgresql.JSONB",
 				graphql: "JSON!",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLJSON",
-						ImportType: enttype.GraphQLJSON,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
 				tsType:       "any",
 				nullableType: &enttype.NullableJSONBType{},
@@ -60,11 +49,8 @@ func TestJSONType(t *testing.T) {
 			expType{
 				db:      "postgresql.JSON",
 				graphql: "JSON",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLJSON",
-						ImportType: enttype.GraphQLJSON,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
 				// any works for null so keeping that
 				tsType:          "any",
@@ -80,11 +66,8 @@ func TestJSONType(t *testing.T) {
 			expType{
 				db:      "postgresql.JSONB",
 				graphql: "JSON",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLJSON",
-						ImportType: enttype.GraphQLJSON,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
 				// any works for null so keeping that
 				tsType:          "any",
@@ -97,129 +80,131 @@ func TestJSONType(t *testing.T) {
 		},
 		"json with import type": {
 			&enttype.JSONType{
-				ImportType: &enttype.InputImportType{
-					Type: "Foo",
-					Path: "path",
+				ImportType: &tsimport.ImportPath{
+					Import:     "Foo",
+					ImportPath: "path",
 				},
 			},
 			expType{
 				db:      "postgresql.JSON",
 				graphql: "JSON!",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLJSON",
-						ImportType: enttype.GraphQLJSON,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
 				tsType: "Foo",
 				nullableType: &enttype.NullableJSONType{
-					ImportType: &enttype.InputImportType{
-						Type: "Foo",
-						Path: "path",
+					ImportType: &tsimport.ImportPath{
+						Import:     "Foo",
+						ImportPath: "path",
 					},
 				},
-				goTypePanics:  true,
-				convertFn:     "convertJSON",
-				tsTypeImports: []string{"Foo"},
-				importType:    &enttype.JSONImport{},
+				goTypePanics: true,
+				convertFn:    "convertJSON",
+				tsTypeImports: []*tsimport.ImportPath{
+					{
+						ImportPath: "path",
+						Import:     "Foo",
+					},
+				},
+				importType: &enttype.JSONImport{},
 			},
 			nil,
 		},
 		"nullable json with import type": {
 			&enttype.NullableJSONType{
-				ImportType: &enttype.InputImportType{
-					Type: "Foo",
-					Path: "path",
+				ImportType: &tsimport.ImportPath{
+					Import:     "Foo",
+					ImportPath: "path",
 				},
 			},
 			expType{
 				db:      "postgresql.JSON",
 				graphql: "JSON",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLJSON",
-						ImportType: enttype.GraphQLJSON,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
 				tsType: "Foo | null",
 				nonNullableType: &enttype.JSONType{
-					ImportType: &enttype.InputImportType{
-						Type: "Foo",
-						Path: "path",
+					ImportType: &tsimport.ImportPath{
+						Import:     "Foo",
+						ImportPath: "path",
 					},
 				},
-				goTypePanics:  true,
-				convertFn:     "convertNullableJSON",
-				tsTypeImports: []string{"Foo"},
-				importType:    &enttype.JSONImport{},
+				goTypePanics: true,
+				convertFn:    "convertNullableJSON",
+				tsTypeImports: []*tsimport.ImportPath{
+					{
+						ImportPath: "path",
+						Import:     "Foo",
+					},
+				},
+				importType: &enttype.JSONImport{},
 			},
 			nil,
 		},
 		"jsonb with import type": {
 			&enttype.JSONBType{
-				ImportType: &enttype.InputImportType{
-					Type: "Foo",
-					Path: "path",
+				ImportType: &tsimport.ImportPath{
+					Import:     "Foo",
+					ImportPath: "path",
 				},
 			},
 			expType{
 				db:      "postgresql.JSONB",
 				graphql: "JSON!",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLJSON",
-						ImportType: enttype.GraphQLJSON,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
 				tsType: "Foo",
 				nullableType: &enttype.NullableJSONBType{
-					ImportType: &enttype.InputImportType{
-						Type: "Foo",
-						Path: "path",
+					ImportType: &tsimport.ImportPath{
+						Import:     "Foo",
+						ImportPath: "path",
 					},
 				},
-				goTypePanics:  true,
-				convertFn:     "convertJSON",
-				tsTypeImports: []string{"Foo"},
-				importType:    &enttype.JSONBImport{},
+				goTypePanics: true,
+				convertFn:    "convertJSON",
+				tsTypeImports: []*tsimport.ImportPath{
+					{
+						ImportPath: "path",
+						Import:     "Foo",
+					},
+				},
+				importType: &enttype.JSONBImport{},
 			},
 			nil,
 		},
 		"nullable jsonb with import type": {
 			&enttype.NullableJSONBType{
-				ImportType: &enttype.InputImportType{
-					Type: "Foo",
-					Path: "path",
+				ImportType: &tsimport.ImportPath{
+					Import:     "Foo",
+					ImportPath: "path",
 				},
 			},
 			expType{
 				db:      "postgresql.JSONB",
 				graphql: "JSON",
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLJSON",
-						ImportType: enttype.GraphQLJSON,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
 				tsType: "Foo | null",
 				nonNullableType: &enttype.JSONBType{
-					ImportType: &enttype.InputImportType{
-						Type: "Foo",
-						Path: "path",
+					ImportType: &tsimport.ImportPath{
+						Import:     "Foo",
+						ImportPath: "path",
 					},
 				},
-				goTypePanics:  true,
-				convertFn:     "convertNullableJSON",
-				tsTypeImports: []string{"Foo"},
-				importType:    &enttype.JSONBImport{},
+				goTypePanics: true,
+				convertFn:    "convertNullableJSON",
+				tsTypeImports: []*tsimport.ImportPath{
+					{
+						ImportPath: "path",
+						Import:     "Foo",
+					},
+				},
+				importType: &enttype.JSONBImport{},
 			},
 			nil,
 		},
