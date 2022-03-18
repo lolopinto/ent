@@ -49,7 +49,9 @@ var deleteSchemaCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		var opts []codegen.ConstructOption
+		opts := []codegen.ConstructOption{
+			codegen.WriteAll(),
+		}
 		if rootInfo.debug {
 			opts = append(opts, codegen.DebugMode())
 		}
@@ -125,6 +127,7 @@ func getFiles(nodeData *schema.NodeData) []string {
 	ret := []string{
 		fmt.Sprintf("src/schema/%s.ts", packageName),
 		fmt.Sprintf("src/ent/generated/%s_base.ts", packageName),
+		fmt.Sprintf("src/ent/generated/%s_query_base.ts", packageName),
 		fmt.Sprintf("src/ent/%s.ts", packageName),
 		fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", packageName),
 	}
