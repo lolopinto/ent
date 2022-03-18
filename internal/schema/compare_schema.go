@@ -97,47 +97,66 @@ func comparePatterns(m1, m2 map[string]*PatternInfo, m *change.ChangeMap) error 
 	return nil
 }
 
+func blankNodeDataInfo() *NodeDataInfo {
+	return &NodeDataInfo{
+		NodeData: &NodeData{},
+	}
+}
+
 func compareNodes(m1, m2 NodeMapInfo, m *change.ChangeMap) error {
 	ret := *m
 	getSchemaName := func(config string) string {
 		return strings.TrimSuffix(config, "Config")
 	}
-	for k, nm1 := range m1 {
-		nm2, ok := m2[k]
+	for k, ndi1 := range m1 {
+		ndi2, ok := m2[k]
 		name := getSchemaName(k)
+		var changes []change.Change
+		opts := compareNodeOptions{}
 		if !ok {
 			// in 1st but not 2nd, dropped
-			ret[k] = []change.Change{
-				{
-					Change:      change.RemoveNode,
-					Name:        name,
-					GraphQLName: name,
-				},
-			}
-		} else {
-			changes, err := compareNode(nm1.NodeData, nm2.NodeData)
-			if err != nil {
-				return err
-			}
-			if len(changes) != 0 {
-				ret[name] = changes
-			}
+			changes = append(changes, change.Change{
+				Change:      change.RemoveNode,
+				Name:        name,
+				GraphQLName: name,
+			})
+			ndi2 = blankNodeDataInfo()
+			opts.skipFields = true
+			opts.skipModifyNode = true
+		}
+		diff, err := compareNode(ndi1.NodeData, ndi2.NodeData, &opts)
+		if err != nil {
+			return err
+		}
+		changes = append(changes, diff...)
+		if len(changes) != 0 {
+			ret[name] = changes
 		}
 	}
 
 	// in 2nd but not first, added
-	for k := range m2 {
+	for k, ndi2 := range m2 {
 		_, ok := m1[k]
 		if !ok {
 			name := getSchemaName(k)
 
-			ret[k] = []change.Change{
+			changes := []change.Change{
 				{
 					Change:      change.AddNode,
 					Name:        name,
 					GraphQLName: name,
 				},
 			}
+			ndi1 := blankNodeDataInfo()
+			diff, err := compareNode(ndi1.NodeData, ndi2.NodeData, &compareNodeOptions{
+				skipFields:     true,
+				skipModifyNode: true,
+			})
+			if err != nil {
+				return err
+			}
+			changes = append(changes, diff...)
+			ret[name] = changes
 		}
 	}
 	return nil
@@ -146,10 +165,19 @@ func compareNodes(m1, m2 NodeMapInfo, m *change.ChangeMap) error {
 // only checking the things that affect file generation
 // not checking dbRows, indices, constraints etc...
 // also ignoring hideFromGraphQL for now but should eventually check it because can scope changes to just GraphQL
-func compareNode(n1, n2 *NodeData) ([]change.Change, error) {
+
+type compareNodeOptions struct {
+	// options: skipFields, skipModifyNode
+	skipFields     bool
+	skipModifyNode bool
+}
+
+func compareNode(n1, n2 *NodeData, opts *compareNodeOptions) ([]change.Change, error) {
 	var ret []change.Change
 
-	ret = append(ret, field.CompareFieldInfo(n1.FieldInfo, n2.FieldInfo)...)
+	if !opts.skipFields {
+		ret = append(ret, field.CompareFieldInfo(n1.FieldInfo, n2.FieldInfo)...)
+	}
 
 	ret = append(ret, edge.CompareEdgeInfo(n1.EdgeInfo, n2.EdgeInfo)...)
 
@@ -164,7 +192,7 @@ func compareNode(n1, n2 *NodeData) ([]change.Change, error) {
 	// if anything changes, just add ModifyNode
 	// eventually, we can make this smarter but want to slightly err on the side of caution here
 	// maybe move action changes after. can't think of a reason to have actions affect node file
-	if len(ret) != 0 {
+	if !opts.skipFields && len(ret) != 0 {
 		ret = append(ret, change.Change{
 			Change:      change.ModifyNode,
 			Name:        n2.Node,
