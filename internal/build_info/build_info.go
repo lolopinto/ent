@@ -10,7 +10,8 @@ import (
 )
 
 type BuildInfo struct {
-	Time          string `yaml:"time"`
+	BuildTime     string `yaml:"buildTime"`
+	ConfigTime    string `yaml:"configTime"` // ent.yml time
 	DockerVersion string `yaml:"dockerVersion"`
 	dev           bool   `yaml:"-"`
 	cfg           Config `yaml:"-"`
@@ -43,7 +44,7 @@ var Time string
 // bi.PostProcess
 func NewBuildInfo(cfg Config) *BuildInfo {
 	bi := &BuildInfo{
-		Time:          Time,
+		BuildTime:     Time,
 		DockerVersion: DockerVersion,
 		cfg:           cfg,
 	}
@@ -56,9 +57,15 @@ func NewBuildInfo(cfg Config) *BuildInfo {
 	} else if simulDev {
 		bi.dev = true
 	} else {
-		if bi.Time == "" || bi.DockerVersion == "" {
+		if bi.BuildTime == "" || bi.DockerVersion == "" {
 			bi.dev = true
 		}
+	}
+
+	// check ent.yml and store last time it was modified since changing it can change everything
+	fi, err := os.Stat("ent.yml")
+	if err == nil {
+		bi.ConfigTime = fi.ModTime().String()
 	}
 
 	prev := loadPreviousBI(cfg)
@@ -97,6 +104,7 @@ func buildInfoEqual(bi1, bi2 *BuildInfo) bool {
 	if ret != nil {
 		return *ret
 	}
-	return bi1.Time == bi2.Time &&
-		bi1.DockerVersion == bi2.DockerVersion
+	return bi1.BuildTime == bi2.BuildTime &&
+		bi1.DockerVersion == bi2.DockerVersion &&
+		bi1.ConfigTime == bi2.ConfigTime
 }
