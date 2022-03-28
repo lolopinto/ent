@@ -354,7 +354,8 @@ func mapifyFieldList(l []CustomField, references map[string]map[string]bool) map
 		subM[gqlName] = true
 		references[typ] = subM
 	}
-	for _, cf := range l {
+	for idx := range l {
+		cf := l[idx]
 		m[cf.GraphQLName] = &cf
 		for _, arg := range cf.Args {
 			addToMap(arg.Type, cf.GraphQLName)

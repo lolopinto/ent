@@ -159,19 +159,23 @@ func (p *TSStep) processEnums(processor *codegen.Processor, s *gqlSchema, writeA
 type writeOptions struct {
 	// anytime any boolean is added here, need to update the
 	// else case in processNode
-	writeNode           bool
-	writeAllMutations   bool
-	writeAllConnections bool
-	mutationFiles       map[string]bool
-	connectionFiles     map[string]bool
+	writeNode              bool
+	writeAllMutations      bool
+	writeAllConnections    bool
+	mutationFiles          map[string]bool
+	connectionFiles        map[string]bool
+	deletedConnectionFiles map[string]bool
+	deletedMutationFiles   map[string]bool
 
 	// nodeAdded, nodeRemoved, connectionAdded, rootQuery etc...
 }
 
 func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *gqlNode, writeAll bool) fns.FunctionList {
 	opts := &writeOptions{
-		mutationFiles:   map[string]bool{},
-		connectionFiles: map[string]bool{},
+		mutationFiles:          map[string]bool{},
+		connectionFiles:        map[string]bool{},
+		deletedConnectionFiles: map[string]bool{},
+		deletedMutationFiles:   map[string]bool{},
 	}
 	if writeAll {
 		opts.writeAllConnections = true
@@ -188,8 +192,14 @@ func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *g
 			case change.AddEdge, change.ModifyEdge:
 				opts.connectionFiles[c.GraphQLName] = true
 
+			case change.RemoveEdge:
+				opts.deletedConnectionFiles[c.GraphQLName] = true
+
 			case change.AddAction, change.ModifyAction:
 				opts.mutationFiles[c.GraphQLName] = true
+
+			case change.RemoveAction:
+				opts.deletedMutationFiles[c.GraphQLName] = true
 			}
 		}
 	}
@@ -239,6 +249,29 @@ func (p *TSStep) buildNodeWithOpts(processor *codegen.Processor, s *gqlSchema, n
 			})
 		}
 	}
+
+	// root queries it's "root"
+	for k := range opts.deletedConnectionFiles {
+		packageName := "root"
+		// for top level connections
+		if node.ObjData.NodeData != nil {
+			packageName = node.ObjData.NodeData.PackageName
+		}
+		ret = append(
+			ret,
+			file.GetDeleteFileFunction(
+				processor.Config,
+				getFilePathForConnection(
+					processor.Config,
+					packageName,
+					k),
+			),
+		)
+	}
+
+	for k := range opts.deletedMutationFiles {
+		ret = append(ret, file.GetDeleteFileFunction(processor.Config, getFilePathForAction(processor.Config, node.ObjData.NodeData, k)))
+	}
 	return ret
 }
 
@@ -246,8 +279,10 @@ func (p *TSStep) processCustomNode(processor *codegen.Processor, s *gqlSchema, n
 	cmp := s.customData.compareResult
 	all := writeAll || cmp == nil
 	opts := &writeOptions{
-		mutationFiles:   map[string]bool{},
-		connectionFiles: map[string]bool{},
+		mutationFiles:          map[string]bool{},
+		connectionFiles:        map[string]bool{},
+		deletedConnectionFiles: map[string]bool{},
+		deletedMutationFiles:   map[string]bool{},
 	}
 
 	if all {
@@ -281,16 +316,49 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 	hasCustomChanges := (customChanges != nil && customChanges.hasAnyChanges())
 	funcs = append(funcs, p.processEnums(processor, s, writeAll)...)
 
-	for _, node := range s.nodes {
+	for idx := range s.nodes {
+		node := s.nodes[idx]
 		funcs = append(funcs, p.processNode(processor, s, node, writeAll)...)
 	}
 
-	for _, node := range s.customMutations {
+	for idx := range s.customMutations {
+		node := s.customMutations[idx]
 		funcs = append(funcs, p.processCustomNode(processor, s, node, writeAll, true)...)
 	}
 
-	for _, node := range s.customQueries {
+	for idx := range s.customQueries {
+		node := s.customQueries[idx]
 		funcs = append(funcs, p.processCustomNode(processor, s, node, writeAll, false)...)
+	}
+
+	cmp := s.customData.compareResult
+	// delete custom queries|mutations
+	if cmp != nil {
+		for k := range cmp.customQueriesRemoved {
+			funcs = append(
+				funcs,
+				file.GetDeleteFileFunction(
+					processor.Config,
+					getFilePathForCustomQuery(
+						processor.Config,
+						k,
+					),
+				),
+			)
+		}
+
+		for k := range cmp.customMutationsRemoved {
+			funcs = append(
+				funcs,
+				file.GetDeleteFileFunction(
+					processor.Config,
+					getFilePathForCustomMutation(
+						processor.Config,
+						k,
+					),
+				),
+			)
+		}
 	}
 
 	if updateBecauseChanges {
@@ -405,8 +473,8 @@ func getSchemaFilePath(cfg *codegen.Config) string {
 	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/generated/schema.gql")
 }
 
-func getFilePathForAction(cfg *codegen.Config, nodeData *schema.NodeData, action action.Action) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type.ts", nodeData.PackageName, strcase.ToSnake(action.GetGraphQLName())))
+func getFilePathForAction(cfg *codegen.Config, nodeData *schema.NodeData, actionName string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type.ts", nodeData.PackageName, strcase.ToSnake(actionName)))
 }
 
 func getImportPathForAction(nodeData *schema.NodeData, action action.Action) string {
@@ -1105,7 +1173,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 								FieldConfig:  fieldCfg,
 								Package:      processor.Config.GetImportPackage(),
 							},
-							FilePath: getFilePathForAction(processor.Config, nodeData, action),
+							FilePath: getFilePathForAction(processor.Config, nodeData, action.GetGraphQLName()),
 							Data:     action,
 						}
 						obj.ActionDependents = append(obj.ActionDependents, &actionObj)

@@ -55,6 +55,8 @@ type Change struct {
 	Change      ChangeType
 	Name        string
 	GraphQLName string
+	// store anything extra here...
+	ExtraInfo   interface{}
 	GraphQLOnly bool
 	TSOnly      bool
 }

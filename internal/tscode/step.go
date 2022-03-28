@@ -41,19 +41,21 @@ var nodeType = regexp.MustCompile(`(\w+)Type`)
 type writeOptions struct {
 	// anytime any boolean is added here, need to update the
 	// else case in processNode
-	writeEnt        bool
-	writeBase       bool
-	writeAllActions bool
-	writeAllEdges   bool
-	writeBuilder    bool
-	actionBaseFiles map[string]bool
-	actionFiles     map[string]bool
-	edgeBaseFile    bool
-	edgeFiles       map[string]bool
-	entAdded        bool
-	entRemoved      bool
-	edgeAdded       bool
-	edgeRemoved     bool
+	writeEnt           bool
+	writeBase          bool
+	writeAllActions    bool
+	writeAllEdges      bool
+	writeBuilder       bool
+	actionBaseFiles    map[string]bool
+	actionFiles        map[string]bool
+	deletedActionFiles map[string]bool
+	edgeBaseFile       bool
+	edgeFiles          map[string]bool
+	deletedEdgeFiles   map[string]bool
+	entAdded           bool
+	entRemoved         bool
+	edgeAdded          bool
+	edgeRemoved        bool
 }
 
 func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataInfo, serr *syncerr.Error) (fns.FunctionList, *writeOptions) {
@@ -61,9 +63,11 @@ func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataIn
 	nodeData := info.NodeData
 
 	opts := &writeOptions{
-		actionBaseFiles: map[string]bool{},
-		actionFiles:     map[string]bool{},
-		edgeFiles:       map[string]bool{},
+		actionBaseFiles:    map[string]bool{},
+		actionFiles:        map[string]bool{},
+		edgeFiles:          map[string]bool{},
+		deletedActionFiles: map[string]bool{},
+		deletedEdgeFiles:   map[string]bool{},
 	}
 
 	if processor.Config.WriteAllFiles() {
@@ -102,6 +106,9 @@ func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataIn
 			case change.ModifyAction:
 				opts.actionBaseFiles[c.Name] = true
 
+			case change.RemoveAction:
+				opts.deletedActionFiles[c.Name] = true
+
 			case change.AddEdge:
 				opts.edgeBaseFile = true
 				opts.edgeFiles[c.Name] = true
@@ -112,6 +119,7 @@ func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataIn
 				opts.edgeBaseFile = true
 
 			case change.RemoveEdge:
+				opts.deletedEdgeFiles[fmt.Sprintf("%v", c.ExtraInfo)] = true
 				opts.edgeRemoved = true
 				opts.edgeBaseFile = true
 			}
@@ -209,7 +217,7 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 					processor,
 					edge,
 					"Ent",
-					getFilePathForPatternAssocEdgeQueryFile(processor.Config, pattern, edge),
+					getFilePathForPatternAssocEdgeQueryFile(processor.Config, pattern, edge.TsEdgeQueryName()),
 				)
 			})
 		}
@@ -220,10 +228,6 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 
 func (s *Step) processActions(processor *codegen.Processor, nodeData *schema.NodeData, opts *writeOptions) fns.FunctionList {
 	var ret fns.FunctionList
-
-	if len(nodeData.ActionInfo.Actions) == 0 {
-		return ret
-	}
 
 	if opts.writeBuilder {
 		ret = append(ret, func() error {
@@ -244,6 +248,11 @@ func (s *Step) processActions(processor *codegen.Processor, nodeData *schema.Nod
 				return writeActionFile(nodeData, processor, action)
 			})
 		}
+	}
+
+	for k := range opts.deletedActionFiles {
+		ret = append(ret, file.GetDeleteFileFunction(processor.Config, getFilePathForActionBaseFile(processor.Config, nodeData, k)))
+		ret = append(ret, file.GetDeleteFileFunction(processor.Config, getFilePathForActionFile(processor.Config, nodeData, k)))
 	}
 	return ret
 }
@@ -266,10 +275,23 @@ func (s *Step) processEdges(processor *codegen.Processor, nodeData *schema.NodeD
 					processor,
 					edge,
 					nodeData.Node,
-					getFilePathForAssocEdgeQueryFile(processor.Config, nodeData, edge),
+					getFilePathForAssocEdgeQueryFile(processor.Config, nodeData, edge.TsEdgeQueryName()),
 				)
 			})
 		}
+	}
+
+	for k := range opts.deletedEdgeFiles {
+		ret = append(ret,
+			file.GetDeleteFileFunction(
+				processor.Config,
+				getFilePathForAssocEdgeQueryFile(
+					processor.Config,
+					nodeData,
+					k,
+				),
+			),
+		)
 	}
 
 	// edges with IndexLoaderFactory
@@ -470,12 +492,13 @@ func getFilePathForBaseQueryFile(cfg *codegen.Config, nodeData *schema.NodeData)
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/%s_query_base.ts", nodeData.PackageName))
 }
 
-func getFilePathForAssocEdgeQueryFile(cfg *codegen.Config, nodeData *schema.NodeData, e *edge.AssociationEdge) string {
+// TODO combine with getFilePathForCustomEdgeQueryFile
+func getFilePathForAssocEdgeQueryFile(cfg *codegen.Config, nodeData *schema.NodeData, edgeQueryName string) string {
 	return path.Join(cfg.GetAbsPathToRoot(),
 		fmt.Sprintf(
 			"src/ent/%s/query/%s.ts",
 			nodeData.PackageName,
-			strcase.ToSnake(e.TsEdgeQueryName()),
+			strcase.ToSnake(edgeQueryName),
 		),
 	)
 }
@@ -485,25 +508,24 @@ func getFilePathForPatternBaseQueryFile(cfg *codegen.Config, pattern *schema.Pat
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/patterns/%s_query_base.ts", strcase.ToSnake(pattern.Name)))
 }
 
-func getFilePathForPatternAssocEdgeQueryFile(cfg *codegen.Config, pattern *schema.PatternInfo, e *edge.AssociationEdge) string {
+func getFilePathForPatternAssocEdgeQueryFile(cfg *codegen.Config, pattern *schema.PatternInfo, edgeQueryName string) string {
 	return path.Join(cfg.GetAbsPathToRoot(),
 		fmt.Sprintf(
 			"src/ent/%s/query/%s.ts",
 			// TODO there could be a conflict e.g. above...
 			"patterns",
-			//			pattern.Name,
-			strcase.ToSnake(e.TsEdgeQueryName()),
+			strcase.ToSnake(edgeQueryName),
 		),
 	)
 }
 
-func getFilePathForCustomEdgeQueryFile(cfg *codegen.Config, nodeData *schema.NodeData, e edge.ConnectionEdge) string {
+func getFilePathForCustomEdgeQueryFile(cfg *codegen.Config, nodeData *schema.NodeData, edgeQueryName string) string {
 	return path.Join(
 		cfg.GetAbsPathToRoot(),
 		fmt.Sprintf(
 			"src/ent/%s/query/%s.ts",
 			nodeData.PackageName,
-			strcase.ToSnake(e.TsEdgeQueryName()),
+			strcase.ToSnake(edgeQueryName),
 		),
 	)
 }
@@ -574,8 +596,8 @@ func getImportPathForBuilderFile(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/ent/%s/actions/generated/%s_builder", nodeData.PackageName, nodeData.PackageName)
 }
 
-func getFilePathForActionBaseFile(cfg *codegen.Config, nodeData *schema.NodeData, a action.Action) string {
-	fileName := strcase.ToSnake(a.GetActionName())
+func getFilePathForActionBaseFile(cfg *codegen.Config, nodeData *schema.NodeData, actionName string) string {
+	fileName := strcase.ToSnake(actionName)
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/%s/actions/generated/%s_base.ts", nodeData.PackageName, fileName))
 }
 
@@ -584,8 +606,8 @@ func getImportPathForActionBaseFile(nodeData *schema.NodeData, a action.Action) 
 	return fmt.Sprintf("src/ent/%s/actions/generated/%s_base", nodeData.PackageName, fileName)
 }
 
-func getFilePathForActionFile(cfg *codegen.Config, nodeData *schema.NodeData, a action.Action) string {
-	fileName := strcase.ToSnake(a.GetActionName())
+func getFilePathForActionFile(cfg *codegen.Config, nodeData *schema.NodeData, actionName string) string {
+	fileName := strcase.ToSnake(actionName)
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/%s/actions/%s.ts", nodeData.PackageName, fileName))
 }
 
@@ -688,7 +710,7 @@ func writeAssocEdgeQueryFile(processor *codegen.Processor, e *edge.AssociationEd
 
 func writeCustomEdgeQueryFile(processor *codegen.Processor, nodeData *schema.NodeData, e edge.ConnectionEdge) error {
 	cfg := processor.Config
-	filePath := getFilePathForCustomEdgeQueryFile(cfg, nodeData, e)
+	filePath := getFilePathForCustomEdgeQueryFile(cfg, nodeData, e.TsEdgeQueryName())
 	imps := tsimport.NewImports(processor.Config, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
