@@ -430,6 +430,11 @@ type Viewer {
   user: User
 }
 
+type Viewer {
+  viewerID: ID
+  user: User
+}
+
 input UserAuthInput {
   emailAddress: String!
   password: String!
@@ -770,6 +775,7 @@ type UserEditPayload {
 type Query {
   node(id: ID!): Node
   viewer: Viewer!
+  viewer2: Viewer!
 }
 
 type Mutation {

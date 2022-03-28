@@ -210,6 +210,14 @@ type compareCustomData struct {
 	customConnectionsChanged map[string]bool
 }
 
+func (c *compareCustomData) hasAnyChanges() bool {
+	return len(c.customQueriesChanged) > 0 ||
+		len(c.customMutationsChanged) > 0 ||
+		len(c.customQueriesRemoved) > 0 ||
+		len(c.customMutationsRemoved) > 0 ||
+		len(c.customConnectionsChanged) > 0
+}
+
 func CompareCustomData(processor *codegen.Processor, cd1, cd2 *CustomData, existingChangeMap change.ChangeMap) *compareCustomData {
 	ret := &compareCustomData{
 		customConnectionsChanged: map[string]bool{},
@@ -310,7 +318,7 @@ type compareListOptions struct {
 func compareCustomList(l1, l2 []CustomField, opts *compareListOptions, references map[string]map[string]bool) {
 	// intentionally only building references from current code instead of previous code
 	m1 := mapifyFieldList(l1, nil)
-	m2 := mapifyFieldList(l1, references)
+	m2 := mapifyFieldList(l2, references)
 
 	for k, cf1 := range m1 {
 		cf2, ok := m2[k]
@@ -318,14 +326,14 @@ func compareCustomList(l1, l2 []CustomField, opts *compareListOptions, reference
 		if !ok {
 			opts.removed[cf1.GraphQLName] = true
 		} else {
-			if !customFieldEqual(cf1, cf2) {
+			if !customFieldEqual(&cf1, &cf2) {
 				opts.changed[cf1.GraphQLName] = true
 			}
 		}
 	}
 
 	for k, cf2 := range m2 {
-		_, ok := m2[k]
+		_, ok := m1[k]
 		// in 2 but not 1. addeded
 		if !ok {
 			opts.changed[cf2.GraphQLName] = true
@@ -333,8 +341,8 @@ func compareCustomList(l1, l2 []CustomField, opts *compareListOptions, reference
 	}
 }
 
-func mapifyFieldList(l []CustomField, references map[string]map[string]bool) map[string]*CustomField {
-	m := make(map[string]*CustomField)
+func mapifyFieldList(l []CustomField, references map[string]map[string]bool) map[string]CustomField {
+	m := make(map[string]CustomField)
 	addToMap := func(typ, gqlName string) {
 		if references == nil {
 			return
@@ -347,7 +355,7 @@ func mapifyFieldList(l []CustomField, references map[string]map[string]bool) map
 		references[typ] = subM
 	}
 	for _, cf := range l {
-		m[cf.GraphQLName] = &cf
+		m[cf.GraphQLName] = cf
 		for _, arg := range cf.Args {
 			addToMap(arg.Type, cf.GraphQLName)
 		}
@@ -380,15 +388,15 @@ func customFieldListComparison(l1, l2 []CustomField) (bool, map[string]bool) {
 	for k, cf2 := range m2 {
 		cf1, ok := m1[k]
 
-		if !customFieldEqual(cf1, cf2) {
+		if !customFieldEqual(&cf1, &cf2) {
 			listEqual = false
 		}
-		if !isConnection(*cf2) {
+		if !isConnection(cf2) {
 			continue
 		}
 
-		if !ok || !isConnection(*cf1) {
-			edge := getGQLEdge(*cf2, cf2.Node)
+		if !ok || !isConnection(cf1) {
+			edge := getGQLEdge(cf2, cf2.Node)
 			conns[edge.GetGraphQLConnectionName()] = true
 		}
 	}
