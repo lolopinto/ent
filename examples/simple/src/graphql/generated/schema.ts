@@ -202,7 +202,6 @@ export default new GraphQLSchema({
     UserToLikesConnectionType(),
     UserToMaybeEventsConnectionType(),
     GQLViewerType,
-    GQLViewerType,
     UserAuthInputType,
     UserAuthJWTInputType,
     UserAuthJWTPayloadType,

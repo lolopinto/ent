@@ -326,7 +326,7 @@ func compareCustomList(l1, l2 []CustomField, opts *compareListOptions, reference
 		if !ok {
 			opts.removed[cf1.GraphQLName] = true
 		} else {
-			if !customFieldEqual(&cf1, &cf2) {
+			if !customFieldEqual(cf1, cf2) {
 				opts.changed[cf1.GraphQLName] = true
 			}
 		}
@@ -341,8 +341,8 @@ func compareCustomList(l1, l2 []CustomField, opts *compareListOptions, reference
 	}
 }
 
-func mapifyFieldList(l []CustomField, references map[string]map[string]bool) map[string]CustomField {
-	m := make(map[string]CustomField)
+func mapifyFieldList(l []CustomField, references map[string]map[string]bool) map[string]*CustomField {
+	m := make(map[string]*CustomField)
 	addToMap := func(typ, gqlName string) {
 		if references == nil {
 			return
@@ -355,7 +355,7 @@ func mapifyFieldList(l []CustomField, references map[string]map[string]bool) map
 		references[typ] = subM
 	}
 	for _, cf := range l {
-		m[cf.GraphQLName] = cf
+		m[cf.GraphQLName] = &cf
 		for _, arg := range cf.Args {
 			addToMap(arg.Type, cf.GraphQLName)
 		}
@@ -388,15 +388,15 @@ func customFieldListComparison(l1, l2 []CustomField) (bool, map[string]bool) {
 	for k, cf2 := range m2 {
 		cf1, ok := m1[k]
 
-		if !customFieldEqual(&cf1, &cf2) {
+		if !customFieldEqual(cf1, cf2) {
 			listEqual = false
 		}
-		if !isConnection(cf2) {
+		if !isConnection(*cf2) {
 			continue
 		}
 
-		if !ok || !isConnection(cf1) {
-			edge := getGQLEdge(cf2, cf2.Node)
+		if !ok || !isConnection(*cf1) {
+			edge := getGQLEdge(*cf2, cf2.Node)
 			conns[edge.GetGraphQLConnectionName()] = true
 		}
 	}

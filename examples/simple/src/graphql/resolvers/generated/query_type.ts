@@ -4,7 +4,7 @@
  */
 
 import { GraphQLObjectType } from "graphql";
-import { NodeQueryType, Viewer2QueryType, ViewerQueryType } from "../internal";
+import { NodeQueryType, ViewerQueryType } from "../internal";
 
 export const QueryType = new GraphQLObjectType({
   name: "Query",
@@ -12,6 +12,5 @@ export const QueryType = new GraphQLObjectType({
   fields: () => ({
     node: NodeQueryType,
     viewer: ViewerQueryType,
-    viewer2: Viewer2QueryType,
   }),
 });

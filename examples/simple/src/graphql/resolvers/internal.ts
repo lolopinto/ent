@@ -37,6 +37,5 @@ export * from "./generated/user/user_to_invited_events_connection_type";
 export * from "./generated/user/user_to_likers_connection_type";
 export * from "./generated/user/user_to_likes_connection_type";
 export * from "./generated/user/user_to_maybe_events_connection_type";
-export * from "./generated/viewer_2_query_type";
 export * from "./generated/viewer_query_type";
 export * from "./node_query_type";

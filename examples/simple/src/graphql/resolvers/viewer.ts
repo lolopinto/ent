@@ -40,9 +40,4 @@ export default class ViewerResolver {
   viewer(@gqlContextType() context: RequestContext): GQLViewer {
     return new GQLViewer(context.getViewer());
   }
-
-  @gqlQuery({ name: "viewer2", type: GQLViewer })
-  viewer2(@gqlContextType() context: RequestContext): GQLViewer {
-    return new GQLViewer(context.getViewer());
-  }
 }
