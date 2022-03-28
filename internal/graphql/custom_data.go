@@ -210,6 +210,14 @@ type compareCustomData struct {
 	customConnectionsChanged map[string]bool
 }
 
+func (c *compareCustomData) hasAnyChanges() bool {
+	return len(c.customQueriesChanged) > 0 ||
+		len(c.customMutationsChanged) > 0 ||
+		len(c.customQueriesRemoved) > 0 ||
+		len(c.customMutationsRemoved) > 0 ||
+		len(c.customConnectionsChanged) > 0
+}
+
 func CompareCustomData(processor *codegen.Processor, cd1, cd2 *CustomData, existingChangeMap change.ChangeMap) *compareCustomData {
 	ret := &compareCustomData{
 		customConnectionsChanged: map[string]bool{},
@@ -310,7 +318,7 @@ type compareListOptions struct {
 func compareCustomList(l1, l2 []CustomField, opts *compareListOptions, references map[string]map[string]bool) {
 	// intentionally only building references from current code instead of previous code
 	m1 := mapifyFieldList(l1, nil)
-	m2 := mapifyFieldList(l1, references)
+	m2 := mapifyFieldList(l2, references)
 
 	for k, cf1 := range m1 {
 		cf2, ok := m2[k]
@@ -325,7 +333,7 @@ func compareCustomList(l1, l2 []CustomField, opts *compareListOptions, reference
 	}
 
 	for k, cf2 := range m2 {
-		_, ok := m2[k]
+		_, ok := m1[k]
 		// in 2 but not 1. addeded
 		if !ok {
 			opts.changed[cf2.GraphQLName] = true
