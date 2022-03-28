@@ -277,6 +277,8 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 	writeAll := processor.Config.WriteAllFiles()
 	changes := processor.ChangeMap
 	updateBecauseChanges := writeAll || len(changes) > 0
+	customChanges := s.customData.compareResult
+	hasCustomChanges := (customChanges != nil && customChanges.hasAnyChanges())
 	funcs = append(funcs, p.processEnums(processor, s, writeAll)...)
 
 	for _, node := range s.nodes {
@@ -304,7 +306,7 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 	}
 
 	// simplify and only do this if there's changes, we can be smarter about this over time
-	if updateBecauseChanges {
+	if updateBecauseChanges || hasCustomChanges {
 		// Query|Mutation|Subscription
 		for idx := range s.rootDatas {
 			rootData := s.rootDatas[idx]
@@ -321,7 +323,7 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 			// graphql/resolvers/internal
 			// if any changes, update this
 			// eventually only wanna do this if add|remove something
-			if updateBecauseChanges {
+			if updateBecauseChanges || hasCustomChanges {
 				return writeInternalGQLResolversFile(s, processor)
 			}
 			return nil
@@ -334,7 +336,7 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 		func() error {
 			// graphql/schema.ts
 			// if any changes, just do this
-			if updateBecauseChanges {
+			if updateBecauseChanges || hasCustomChanges {
 				return writeTSSchemaFile(processor, s)
 			}
 			return nil
