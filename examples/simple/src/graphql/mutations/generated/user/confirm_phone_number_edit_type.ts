@@ -22,17 +22,17 @@ import ConfirmEditPhoneNumberAction, {
 } from "../../../../ent/user/actions/confirm_edit_phone_number_action";
 import { UserType } from "../../../resolvers";
 
-interface customConfirmPhoneNumberEditInput
+interface customConfirmEditPhoneNumberInput
   extends ConfirmEditPhoneNumberInput {
   userID: string;
 }
 
-interface ConfirmPhoneNumberEditPayload {
+interface ConfirmEditPhoneNumberPayload {
   user: User;
 }
 
-export const ConfirmPhoneNumberEditInputType = new GraphQLInputObjectType({
-  name: "ConfirmPhoneNumberEditInput",
+export const ConfirmEditPhoneNumberInputType = new GraphQLInputObjectType({
+  name: "ConfirmEditPhoneNumberInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     userID: {
       description: "id of User",
@@ -47,10 +47,10 @@ export const ConfirmPhoneNumberEditInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const ConfirmPhoneNumberEditPayloadType = new GraphQLObjectType({
-  name: "ConfirmPhoneNumberEditPayload",
+export const ConfirmEditPhoneNumberPayloadType = new GraphQLObjectType({
+  name: "ConfirmEditPhoneNumberPayload",
   fields: (): GraphQLFieldConfigMap<
-    ConfirmPhoneNumberEditPayload,
+    ConfirmEditPhoneNumberPayload,
     RequestContext
   > => ({
     user: {
@@ -62,13 +62,13 @@ export const ConfirmPhoneNumberEditPayloadType = new GraphQLObjectType({
 export const ConfirmPhoneNumberEditType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: customConfirmPhoneNumberEditInput }
+  { [input: string]: customConfirmEditPhoneNumberInput }
 > = {
-  type: GraphQLNonNull(ConfirmPhoneNumberEditPayloadType),
+  type: GraphQLNonNull(ConfirmEditPhoneNumberPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(ConfirmPhoneNumberEditInputType),
+      type: GraphQLNonNull(ConfirmEditPhoneNumberInputType),
     },
   },
   resolve: async (
@@ -76,7 +76,7 @@ export const ConfirmPhoneNumberEditType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<ConfirmPhoneNumberEditPayload> => {
+  ): Promise<ConfirmEditPhoneNumberPayload> => {
     const user = await ConfirmEditPhoneNumberAction.saveXFromID(
       context.getViewer(),
       mustDecodeIDFromGQLID(input.userID),

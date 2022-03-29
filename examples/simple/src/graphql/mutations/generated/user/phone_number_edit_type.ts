@@ -22,16 +22,16 @@ import EditPhoneNumberAction, {
 } from "../../../../ent/user/actions/edit_phone_number_action";
 import { UserType } from "../../../resolvers";
 
-interface customPhoneNumberEditInput extends EditPhoneNumberInput {
+interface customEditPhoneNumberInput extends EditPhoneNumberInput {
   userID: string;
 }
 
-interface PhoneNumberEditPayload {
+interface EditPhoneNumberPayload {
   user: User;
 }
 
-export const PhoneNumberEditInputType = new GraphQLInputObjectType({
-  name: "PhoneNumberEditInput",
+export const EditPhoneNumberInputType = new GraphQLInputObjectType({
+  name: "EditPhoneNumberInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     userID: {
       description: "id of User",
@@ -43,10 +43,10 @@ export const PhoneNumberEditInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const PhoneNumberEditPayloadType = new GraphQLObjectType({
-  name: "PhoneNumberEditPayload",
+export const EditPhoneNumberPayloadType = new GraphQLObjectType({
+  name: "EditPhoneNumberPayload",
   fields: (): GraphQLFieldConfigMap<
-    PhoneNumberEditPayload,
+    EditPhoneNumberPayload,
     RequestContext
   > => ({
     user: {
@@ -58,13 +58,13 @@ export const PhoneNumberEditPayloadType = new GraphQLObjectType({
 export const PhoneNumberEditType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: customPhoneNumberEditInput }
+  { [input: string]: customEditPhoneNumberInput }
 > = {
-  type: GraphQLNonNull(PhoneNumberEditPayloadType),
+  type: GraphQLNonNull(EditPhoneNumberPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(PhoneNumberEditInputType),
+      type: GraphQLNonNull(EditPhoneNumberInputType),
     },
   },
   resolve: async (
@@ -72,7 +72,7 @@ export const PhoneNumberEditType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<PhoneNumberEditPayload> => {
+  ): Promise<EditPhoneNumberPayload> => {
     const user = await EditPhoneNumberAction.saveXFromID(
       context.getViewer(),
       mustDecodeIDFromGQLID(input.userID),

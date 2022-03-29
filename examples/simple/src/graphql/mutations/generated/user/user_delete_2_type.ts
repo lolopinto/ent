@@ -20,16 +20,16 @@ import DeleteUserAction2, {
   DeleteUserInput2,
 } from "../../../../ent/user/actions/delete_user_action_2";
 
-interface customUserDelete2Input extends DeleteUserInput2 {
+interface customDeleteUserInput2 extends DeleteUserInput2 {
   userID: string;
 }
 
-interface UserDelete2Payload {
+interface DeleteUserInput2Payload {
   deletedUserID: string;
 }
 
-export const UserDelete2InputType = new GraphQLInputObjectType({
-  name: "UserDelete2Input",
+export const DeleteUserInput2Type = new GraphQLInputObjectType({
+  name: "DeleteUserInput2",
   fields: (): GraphQLInputFieldConfigMap => ({
     userID: {
       description: "id of User",
@@ -41,9 +41,12 @@ export const UserDelete2InputType = new GraphQLInputObjectType({
   }),
 });
 
-export const UserDelete2PayloadType = new GraphQLObjectType({
-  name: "UserDelete2Payload",
-  fields: (): GraphQLFieldConfigMap<UserDelete2Payload, RequestContext> => ({
+export const DeleteUserInput2PayloadType = new GraphQLObjectType({
+  name: "DeleteUserInput2Payload",
+  fields: (): GraphQLFieldConfigMap<
+    DeleteUserInput2Payload,
+    RequestContext
+  > => ({
     deletedUserID: {
       type: GraphQLID,
     },
@@ -53,13 +56,13 @@ export const UserDelete2PayloadType = new GraphQLObjectType({
 export const UserDelete2Type: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: customUserDelete2Input }
+  { [input: string]: customDeleteUserInput2 }
 > = {
-  type: GraphQLNonNull(UserDelete2PayloadType),
+  type: GraphQLNonNull(DeleteUserInput2PayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(UserDelete2InputType),
+      type: GraphQLNonNull(DeleteUserInput2Type),
     },
   },
   resolve: async (
@@ -67,7 +70,7 @@ export const UserDelete2Type: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<UserDelete2Payload> => {
+  ): Promise<DeleteUserInput2Payload> => {
     await DeleteUserAction2.saveXFromID(
       context.getViewer(),
       mustDecodeIDFromGQLID(input.userID),

@@ -85,28 +85,28 @@ import {
 } from "../mutations/generated/hours_of_operation/hours_of_operation_create_type";
 import { MutationType } from "../mutations/generated/mutation_type";
 import {
-  ConfirmEmailAddressEditInputType,
-  ConfirmEmailAddressEditPayloadType,
+  ConfirmEditEmailAddressInputType,
+  ConfirmEditEmailAddressPayloadType,
 } from "../mutations/generated/user/confirm_email_address_edit_type";
 import {
-  ConfirmPhoneNumberEditInputType,
-  ConfirmPhoneNumberEditPayloadType,
+  ConfirmEditPhoneNumberInputType,
+  ConfirmEditPhoneNumberPayloadType,
 } from "../mutations/generated/user/confirm_phone_number_edit_type";
 import {
-  EmailAddressEditInputType,
-  EmailAddressEditPayloadType,
+  EditEmailAddressInputType,
+  EditEmailAddressPayloadType,
 } from "../mutations/generated/user/email_address_edit_type";
 import {
-  PhoneNumberEditInputType,
-  PhoneNumberEditPayloadType,
+  EditPhoneNumberInputType,
+  EditPhoneNumberPayloadType,
 } from "../mutations/generated/user/phone_number_edit_type";
 import {
   UserCreateInputType,
   UserCreatePayloadType,
 } from "../mutations/generated/user/user_create_type";
 import {
-  UserDelete2InputType,
-  UserDelete2PayloadType,
+  DeleteUserInput2PayloadType,
+  DeleteUserInput2Type,
 } from "../mutations/generated/user/user_delete_2_type";
 import {
   UserDeleteInputType,
@@ -210,10 +210,10 @@ export default new GraphQLSchema({
     AddressCreatePayloadType,
     CommentCreateInputType,
     CommentCreatePayloadType,
-    ConfirmEmailAddressEditInputType,
-    ConfirmEmailAddressEditPayloadType,
-    ConfirmPhoneNumberEditInputType,
-    ConfirmPhoneNumberEditPayloadType,
+    ConfirmEditEmailAddressInputType,
+    ConfirmEditEmailAddressPayloadType,
+    ConfirmEditPhoneNumberInputType,
+    ConfirmEditPhoneNumberPayloadType,
     ContactCreateInputType,
     ContactCreatePayloadType,
     ContactDeleteInputType,
@@ -232,8 +232,12 @@ export default new GraphQLSchema({
     ContactPhoneNumberDeletePayloadType,
     ContactPhoneNumberEditInputType,
     ContactPhoneNumberEditPayloadType,
-    EmailAddressEditInputType,
-    EmailAddressEditPayloadType,
+    DeleteUserInput2PayloadType,
+    DeleteUserInput2Type,
+    EditEmailAddressInputType,
+    EditEmailAddressPayloadType,
+    EditPhoneNumberInputType,
+    EditPhoneNumberPayloadType,
     EmailContactCreateInput,
     EventAddHostInputType,
     EventAddHostPayloadType,
@@ -253,12 +257,8 @@ export default new GraphQLSchema({
     HoursOfOperationCreateInputType,
     HoursOfOperationCreatePayloadType,
     PhoneNumberContactCreateInput,
-    PhoneNumberEditInputType,
-    PhoneNumberEditPayloadType,
     UserCreateInputType,
     UserCreatePayloadType,
-    UserDelete2InputType,
-    UserDelete2PayloadType,
     UserDeleteInputType,
     UserDeletePayloadType,
     UserEditInputType,
