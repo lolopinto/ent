@@ -471,11 +471,12 @@ func GetNonEntFields(action Action) []FieldActionTemplateInfo {
 	// TODO this is only used by go so didn't update this
 	for _, f := range action.GetNonEntFields() {
 
+		fieldName := f.GetFieldName()
 		fields = append(fields, FieldActionTemplateInfo{
-			SetterMethodName: "Add" + f.FieldName,
-			InstanceName:     strcase.ToLowerCamel(f.FieldName),
+			SetterMethodName: "Add" + fieldName,
+			InstanceName:     strcase.ToLowerCamel(fieldName),
 			InstanceType:     "string", // TODO this needs to work for other
-			FieldName:        f.FieldName,
+			FieldName:        fieldName,
 			IsStatusEnum:     f.Flag == "Enum", // TODO best way?
 			IsGroupID:        f.Flag == "ID",
 			NodeType:         f.NodeType,

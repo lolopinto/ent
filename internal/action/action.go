@@ -404,35 +404,32 @@ func processEdgeGroupActions(cfg codegenapi.Config, nodeName string, assocGroup 
 		var fields []*field.NonEntField
 		if lang == base.GoLang {
 			fields = []*field.NonEntField{
-				{
-					FieldName: assocGroup.GroupStatusName,
-					FieldType: &enttype.StringType{},
-					Flag:      "Enum",
-				},
-				{
-					FieldName: strcase.ToCamel(assocGroup.DestNodeInfo.Node + "ID"),
-					FieldType: &enttype.StringType{},
-					Flag:      "ID",
-					NodeType:  fmt.Sprintf("models.%sType", assocGroup.DestNodeInfo.Node), // TODO should take it from codegenInfo
-				},
+				field.NewNonEntField(cfg, assocGroup.GroupStatusName, &enttype.StringType{}, false).SetFlag("Enum"),
+				field.NewNonEntField(cfg, strcase.ToCamel(assocGroup.DestNodeInfo.Node+"ID"), &enttype.StringType{}, false).
+					SetFlag("ID").
+					SetNodeType(fmt.Sprintf("models.%sType", assocGroup.DestNodeInfo.Node)),
 			}
 		} else {
 			values := assocGroup.GetStatusValues()
 			typ := fmt.Sprintf("%sInput", assocGroup.ConstType)
 
 			fields = []*field.NonEntField{
-				{
-					FieldName: assocGroup.TSGroupStatusName,
-					FieldType: &enttype.EnumType{
+				field.NewNonEntField(
+					cfg,
+					assocGroup.TSGroupStatusName,
+					&enttype.EnumType{
 						Values:      values,
 						Type:        typ,
 						GraphQLType: typ,
 					},
-				},
-				{
-					FieldName: assocGroup.GetIDArg(),
-					FieldType: &enttype.IDType{},
-				},
+					false,
+				),
+				field.NewNonEntField(
+					cfg,
+					assocGroup.GetIDArg(),
+					&enttype.IDType{},
+					false,
+				),
 			}
 
 			tsEnum, gqlEnum := enum.GetEnums(&enum.Input{

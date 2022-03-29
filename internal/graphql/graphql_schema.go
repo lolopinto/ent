@@ -507,7 +507,7 @@ func (s *graphQLSchema) addGraphQLInfoForType(nodeMap schema.NodeMapInfo, nodeDa
 			schemaInfo.addNonEntField(
 				&graphQLNonEntField{
 					fieldName: f.GetGraphQLName(),
-					fieldType: f.FieldType.GetGraphQLType(),
+					fieldType: f.GetGraphQLFieldType().GetGraphQLType(),
 				},
 			)
 		}
@@ -628,7 +628,7 @@ func (s *graphQLSchema) processAction(action action.Action) {
 	for _, f := range action.GetNonEntFields() {
 		inputSchemaInfo.addNonEntField(&graphQLNonEntField{
 			fieldName: f.GetGraphQLName(),
-			fieldType: f.FieldType.GetGraphQLType(),
+			fieldType: f.GetGraphQLFieldType().GetGraphQLType(),
 		})
 	}
 

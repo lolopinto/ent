@@ -8,9 +8,9 @@ import (
 
 type NonEntField struct {
 	// note that if this changes, need to update NonEntFieldEqual
-	FieldName   string
+	fieldName   string
 	graphqlName string
-	FieldType   enttype.TSGraphQLType
+	fieldType   enttype.TSGraphQLType
 	nullable    bool // required default = true
 	// TODO these are both go things. ignore
 	// Flag enum or ID
@@ -21,11 +21,25 @@ type NonEntField struct {
 
 func NewNonEntField(cfg codegenapi.Config, fieldName string, fieldType enttype.TSGraphQLType, nullable bool) *NonEntField {
 	return &NonEntField{
-		FieldName:   fieldName,
+		fieldName:   fieldName,
 		graphqlName: codegenapi.GraphQLName(cfg, fieldName),
-		FieldType:   fieldType,
+		fieldType:   fieldType,
 		nullable:    nullable,
 	}
+}
+
+func (f *NonEntField) SetFlag(flag string) *NonEntField {
+	f.Flag = flag
+	return f
+}
+
+func (f *NonEntField) SetNodeType(nodeType string) *NonEntField {
+	f.NodeType = nodeType
+	return f
+}
+
+func (f *NonEntField) GetFieldName() string {
+	return f.fieldName
 }
 
 func (f *NonEntField) Required() bool {
@@ -38,15 +52,19 @@ func (f *NonEntField) GetGraphQLName() string {
 
 // don't have to deal with all the id field stuff field.Field has to deal with
 func (f *NonEntField) GetTsType() string {
-	return f.FieldType.GetTSType()
+	return f.fieldType.GetTSType()
 }
 
 func (f *NonEntField) GetFieldType() enttype.EntType {
-	return f.FieldType
+	return f.fieldType
+}
+
+func (f *NonEntField) GetGraphQLFieldType() enttype.TSGraphQLType {
+	return f.fieldType
 }
 
 func (f *NonEntField) TsFieldName() string {
-	return strcase.ToLowerCamel(f.FieldName)
+	return strcase.ToLowerCamel(f.fieldName)
 }
 
 func (f *NonEntField) ForceRequiredInAction() bool {

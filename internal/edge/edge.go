@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/ent"
@@ -1352,6 +1353,9 @@ func getCommonEdgeInfo(
 	entConfig *schemaparser.EntConfigInfo,
 ) commonEdgeInfo {
 
+	if edgeName == "" {
+		spew.Dump("null edgeName")
+	}
 	ret := commonEdgeInfo{
 		EdgeName:        edgeName,
 		entConfig:       entConfig,

@@ -1019,7 +1019,7 @@ func (s *Schema) getNewEdge(edgeData *assocEdgeData, assocEdge *edge.Association
 func (s *Schema) addActionFields(info *NodeDataInfo) error {
 	for _, a := range info.NodeData.ActionInfo.Actions {
 		for _, f := range a.GetNonEntFields() {
-			typ := f.FieldType
+			typ := f.GetFieldType()
 			t, ok := typ.(enttype.TSTypeWithActionFields)
 			if !ok {
 				continue
@@ -1070,7 +1070,7 @@ func (s *Schema) addActionFields(info *NodeDataInfo) error {
 				break
 			}
 			if !foundAction {
-				return fmt.Errorf("invalid action only field %s. couldn't find action with name %s", f.FieldName, actionName)
+				return fmt.Errorf("invalid action only field %s. couldn't find action with name %s", f.GetFieldName(), actionName)
 			}
 		}
 	}

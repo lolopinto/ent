@@ -1813,7 +1813,7 @@ func buildCustomInputNode(c *custominterface.CustomInterface) *objectType {
 	for _, f := range c.NonEntFields {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.FieldType.GetTSGraphQLImports(), true),
+			FieldImports: getGQLFileImports(f.GetGraphQLFieldType().GetTSGraphQLImports(), true),
 		})
 	}
 	return result
@@ -1863,7 +1863,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	for _, f := range a.GetNonEntFields() {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.FieldType.GetTSGraphQLImports(), true),
+			FieldImports: getGQLFileImports(f.GetGraphQLFieldType().GetTSGraphQLImports(), true),
 		})
 	}
 
@@ -1929,7 +1929,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 
 		for _, f := range a.GetNonEntFields() {
 			// same logic above for regular fields
-			if enttype.IsIDType(f.FieldType) {
+			if enttype.IsIDType(f.GetFieldType()) {
 				intType.Fields = append(intType.Fields, &interfaceField{
 					Name: f.GetGraphQLName(),
 					Type: "string",
