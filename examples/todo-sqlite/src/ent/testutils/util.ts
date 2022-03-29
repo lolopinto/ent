@@ -5,6 +5,8 @@ import { validate } from "uuid";
 import CreateTodoAction, {
   TodoCreateInput,
 } from "src/ent/todo/actions/create_todo_action";
+import CreateTagAction from "../tag/actions/create_tag_action";
+import { Account } from "src/ent";
 
 function randomPhoneNumber(): string {
   const phone = Math.random().toString(10).substring(2, 12);
@@ -45,4 +47,19 @@ export async function createTodo(opts?: Partial<TodoCreateInput>) {
   expect(todo.completed).toBe(false);
 
   return todo;
+}
+
+export async function createTag(displayName: string, account?: Account) {
+  if (!account) {
+    account = await createAccount();
+  }
+
+  const tag = await CreateTagAction.create(account.viewer, {
+    ownerID: account.id,
+    displayName,
+  }).saveX();
+  expect(tag.displayName).toBe(displayName);
+  expect(tag.canonicalName).toBe(displayName.trim().toLowerCase());
+  expect(tag.ownerID).toBe(account.id);
+  return tag;
 }

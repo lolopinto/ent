@@ -5,7 +5,7 @@ import {
 } from "@snowtop/ent-graphql-tests";
 import schema from "src/graphql/generated/schema";
 import ChangeTodoStatusAction from "src/ent/todo/actions/change_todo_status_action";
-import { createAccount, createTodo } from "src/ent/testutils/util";
+import { createAccount, createTodo, createTag } from "src/ent/testutils/util";
 import { advanceBy } from "jest-date-mock";
 beforeAll(() => {
   process.env.DB_CONNECTION_STRING = `sqlite:///todo.db`;
@@ -269,5 +269,27 @@ test("delete", async () => {
       args: { todo_id: todo.id },
     },
     ["deleted_todo_id", todo.id],
+  );
+});
+
+test("todo tag", async () => {
+  const account = await createAccount();
+  const tag = await createTag("sports", account);
+  const todo = await createTodo({
+    creatorID: account.id,
+  });
+
+  await expectMutation(
+    {
+      viewer: account.viewer,
+      schema,
+      mutation: "addTodoTag",
+      args: {
+        todo_id: todo.id,
+        tag_id: tag.id,
+      },
+    },
+    ["todo.tags.rawCount", 1],
+    ["todo.tags.nodes[0].id", tag.id],
   );
 });
