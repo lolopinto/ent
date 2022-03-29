@@ -3,6 +3,7 @@ package field
 import (
 	"testing"
 
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/base"
@@ -266,15 +267,19 @@ func TestFieldEdgeWithUnequalPolymorphic(t *testing.T) {
 }
 
 func TestFieldWithInverseEdge(t *testing.T) {
-	edge1, err := edge.AssocEdgeFromInput("User", &input.AssocEdge{
-		Name:       "CreatedEvents",
-		SchemaName: "Event",
-	})
+	edge1, err := edge.AssocEdgeFromInput(
+		&codegenapi.DummyConfig{},
+		"User", &input.AssocEdge{
+			Name:       "CreatedEvents",
+			SchemaName: "Event",
+		})
 	require.Nil(t, err)
-	edge2, err := edge.AssocEdgeFromInput("User", &input.AssocEdge{
-		Name:       "CreatedEvents",
-		SchemaName: "Event",
-	})
+	edge2, err := edge.AssocEdgeFromInput(
+		&codegenapi.DummyConfig{},
+		"User", &input.AssocEdge{
+			Name:       "CreatedEvents",
+			SchemaName: "Event",
+		})
 	require.Nil(t, err)
 
 	f := &Field{
@@ -291,15 +296,19 @@ func TestFieldWithInverseEdge(t *testing.T) {
 }
 
 func TestFieldWithUnequalInverseEdge(t *testing.T) {
-	edge1, err := edge.AssocEdgeFromInput("User", &input.AssocEdge{
-		Name:       "CreatedEvents",
-		SchemaName: "Event",
-	})
+	edge1, err := edge.AssocEdgeFromInput(
+		&codegenapi.DummyConfig{},
+		"User", &input.AssocEdge{
+			Name:       "CreatedEvents",
+			SchemaName: "Event",
+		})
 	require.Nil(t, err)
-	edge2, err := edge.AssocEdgeFromInput("User", &input.AssocEdge{
-		Name:       "eventsCreated",
-		SchemaName: "Event",
-	})
+	edge2, err := edge.AssocEdgeFromInput(
+		&codegenapi.DummyConfig{},
+		"User", &input.AssocEdge{
+			Name:       "eventsCreated",
+			SchemaName: "Event",
+		})
 	require.Nil(t, err)
 
 	f := &Field{

@@ -1190,6 +1190,7 @@ func getDefaultGraphQLFieldName(typ types.Type) string {
 	if len(parts) != 2 {
 		return ""
 	}
+	// NB: this is not converted to use codegenapi.GraphQLName() because it seems like it's only used in the legacy go path
 	return strcase.ToLowerCamel(parts[1])
 }
 

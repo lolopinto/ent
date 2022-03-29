@@ -368,6 +368,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 
 		var err error
 		nodeData.FieldInfo, err = field.NewFieldInfoFromInputs(
+			cfg,
 			node.Fields,
 			&field.Options{},
 		)
@@ -397,7 +398,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 			}
 		}
 
-		nodeData.EdgeInfo, err = edge.EdgeInfoFromInput(packageName, node)
+		nodeData.EdgeInfo, err = edge.EdgeInfoFromInput(cfg, packageName, node)
 		if err != nil {
 			errs = append(errs, err)
 		} else {
@@ -432,7 +433,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 
 		if err := s.addConfig(&NodeDataInfo{
 			NodeData:      nodeData,
-			depgraph:      s.buildPostRunDepgraph(edgeData),
+			depgraph:      s.buildPostRunDepgraph(cfg, edgeData),
 			ShouldCodegen: true,
 		}); err != nil {
 			errs = append(errs, err)
@@ -445,7 +446,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 			AssocEdges: make(map[string]*edge.AssociationEdge),
 		}
 		for _, inpEdge := range pattern.AssocEdges {
-			assocEdge, err := edge.AssocEdgeFromInput("object", inpEdge)
+			assocEdge, err := edge.AssocEdgeFromInput(cfg, "object", inpEdge)
 			if err != nil {
 				errs = append(errs, err)
 				continue
@@ -468,6 +469,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 
 		// add enums from patterns
 		fieldInfo, err := field.NewFieldInfoFromInputs(
+			cfg,
 			pattern.Fields,
 			&field.Options{},
 		)
@@ -546,7 +548,10 @@ func (s *Schema) addConfig(info *NodeDataInfo) error {
 	return nil
 }
 
-func (s *Schema) buildPostRunDepgraph(edgeData *assocEdgeData) *depgraph.Depgraph {
+func (s *Schema) buildPostRunDepgraph(
+	cfg codegenapi.Config,
+	edgeData *assocEdgeData,
+) *depgraph.Depgraph {
 	// things that need all nodeDatas loaded
 	g := &depgraph.Depgraph{}
 
@@ -556,13 +561,13 @@ func (s *Schema) buildPostRunDepgraph(edgeData *assocEdgeData) *depgraph.Depgrap
 		// Actions depends on this.
 		// this adds the linked assoc edge to the field
 		"LinkedEdges", func(info *NodeDataInfo) error {
-			return s.addLinkedEdges(info)
+			return s.addLinkedEdges(cfg, info)
 		},
 		"EdgesFromFields",
 	)
 
 	g.AddItem("EdgesFromFields", func(info *NodeDataInfo) error {
-		return s.addEdgesFromFields(info)
+		return s.addEdgesFromFields(cfg, info)
 	})
 
 	// inverse edges also require everything to be loaded
@@ -712,7 +717,7 @@ func (s *Schema) processDepgrah(edgeData *assocEdgeData) (*assocEdgeData, error)
 }
 
 // this adds the linked assoc edge to the field
-func (s *Schema) addLinkedEdges(info *NodeDataInfo) error {
+func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error {
 	nodeData := info.NodeData
 	fieldInfo := nodeData.FieldInfo
 	edgeInfo := nodeData.EdgeInfo
@@ -726,6 +731,7 @@ func (s *Schema) addLinkedEdges(info *NodeDataInfo) error {
 		if e.Polymorphic != nil {
 			// so we want to add it to edges for
 			if err := edgeInfo.AddIndexedEdgeFromSource(
+				cfg,
 				f.TsFieldName(),
 				f.GetQuotedDBColName(),
 				nodeData.Node,
@@ -744,6 +750,7 @@ func (s *Schema) addLinkedEdges(info *NodeDataInfo) error {
 						fEdgeInfo := foreign.NodeData.EdgeInfo
 						//						spew.Dump(nodeData.Node, foreign.NodeData.Node)
 						if err := fEdgeInfo.AddDestinationEdgeFromPolymorphicOptions(
+							cfg,
 							f.TsFieldName(),
 							f.GetQuotedDBColName(),
 							nodeData.Node,
@@ -779,19 +786,22 @@ func (s *Schema) addLinkedEdges(info *NodeDataInfo) error {
 		if fEdge == nil {
 			// add from inverseEdge...
 			var err error
-			fEdge, err = foreignEdgeInfo.AddEdgeFromInverseFieldEdge(info.NodeData.Node, e.NodeInfo.PackageName, e.InverseEdge)
+			fEdge, err = foreignEdgeInfo.AddEdgeFromInverseFieldEdge(cfg, info.NodeData.Node, e.NodeInfo.PackageName, e.InverseEdge)
 			if err != nil {
 				return err
 			}
 		}
-		if err := f.AddInverseEdge(fEdge); err != nil {
+		if err := f.AddInverseEdge(cfg, fEdge); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (s *Schema) addEdgesFromFields(info *NodeDataInfo) error {
+func (s *Schema) addEdgesFromFields(
+	cfg codegenapi.Config,
+	info *NodeDataInfo,
+) error {
 	nodeData := info.NodeData
 	fieldInfo := nodeData.FieldInfo
 	edgeInfo := nodeData.EdgeInfo
@@ -799,14 +809,14 @@ func (s *Schema) addEdgesFromFields(info *NodeDataInfo) error {
 	for _, f := range fieldInfo.Fields {
 		fkeyInfo := f.ForeignKeyInfo()
 		if fkeyInfo != nil {
-			if err := s.addForeignKeyEdges(nodeData, fieldInfo, edgeInfo, f, fkeyInfo); err != nil {
+			if err := s.addForeignKeyEdges(cfg, nodeData, fieldInfo, edgeInfo, f, fkeyInfo); err != nil {
 				return err
 			}
 		}
 
 		fieldEdgeInfo := f.FieldEdgeInfo()
 		if fieldEdgeInfo != nil {
-			if err := s.addFieldEdge(edgeInfo, f); err != nil {
+			if err := s.addFieldEdge(cfg, edgeInfo, f); err != nil {
 				return err
 			}
 		}
@@ -815,6 +825,7 @@ func (s *Schema) addEdgesFromFields(info *NodeDataInfo) error {
 }
 
 func (s *Schema) addForeignKeyEdges(
+	cfg codegenapi.Config,
 	nodeData *NodeData,
 	fieldInfo *field.FieldInfo,
 	edgeInfo *edge.EdgeInfo,
@@ -838,16 +849,17 @@ func (s *Schema) addForeignKeyEdges(
 
 	// add a field edge on current config so we can load underlying user
 	// and return it in GraphQL appropriately
-	if err := f.AddForeignKeyFieldEdgeToEdgeInfo(edgeInfo); err != nil {
+	if err := f.AddForeignKeyFieldEdgeToEdgeInfo(cfg, edgeInfo); err != nil {
 		return err
 	}
 
 	// TODO need to make sure this is not nil if no fields
 	foreignEdgeInfo := foreignInfo.NodeData.EdgeInfo
-	return f.AddForeignKeyEdgeToInverseEdgeInfo(foreignEdgeInfo, nodeData.Node)
+	return f.AddForeignKeyEdgeToInverseEdgeInfo(cfg, foreignEdgeInfo, nodeData.Node)
 }
 
 func (s *Schema) addFieldEdge(
+	cfg codegenapi.Config,
 	edgeInfo *edge.EdgeInfo,
 	f *field.Field,
 ) error {
@@ -855,7 +867,7 @@ func (s *Schema) addFieldEdge(
 	// and return it in GraphQL appropriately
 	// this also flags that when we write data to this field, we write the inverse edge also
 	// e.g. writing user_id field on an event will also write corresponding user -> events edge
-	return f.AddFieldEdgeToEdgeInfo(edgeInfo)
+	return f.AddFieldEdgeToEdgeInfo(cfg, edgeInfo)
 }
 
 func (s *Schema) addInverseAssocEdgesFromInfo(info *NodeDataInfo) error {

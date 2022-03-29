@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/util"
@@ -23,7 +24,8 @@ type Options struct {
 // Decouples the parsing of fields from the logic associated with it
 // Means this can be called by multiple languages using this or different formats/sources
 // in each language e.g. golang supporting fields in a struct or the stronger API (ent.FieldMap)
-func NewFieldInfoFromInputs(fields []*input.Field, options *Options) (*FieldInfo, error) {
+
+func NewFieldInfoFromInputs(cfg codegenapi.Config, fields []*input.Field, options *Options) (*FieldInfo, error) {
 	fieldInfo := &FieldInfo{
 		fieldMap:       make(map[string]*Field),
 		emailFields:    make(map[string]bool),
@@ -43,7 +45,7 @@ func NewFieldInfoFromInputs(fields []*input.Field, options *Options) (*FieldInfo
 	}
 
 	for _, field := range fields {
-		f, err := newFieldFromInput(field)
+		f, err := newFieldFromInput(cfg, field)
 		if err != nil {
 			return nil, err
 		}
@@ -51,7 +53,7 @@ func NewFieldInfoFromInputs(fields []*input.Field, options *Options) (*FieldInfo
 			errs = append(errs, err)
 		}
 		for _, derivedField := range field.DerivedFields {
-			f2, err := newFieldFromInput(derivedField)
+			f2, err := newFieldFromInput(cfg, derivedField)
 			if err != nil {
 				errs = append(errs, err)
 			}
@@ -253,7 +255,7 @@ func GetNonNilableGoType(f *Field) string {
 func addBaseFields(fieldInfo *FieldInfo) error {
 	// TODO eventually get these from ent.Node instead of doing this manually
 	// add id field
-	idField := newField("ID")
+	idField := newField(&codegenapi.DummyConfig{}, "ID")
 	idField.exposeToActionsByDefault = false
 	idField.topLevelStructField = false
 	idField.singleFieldPrimaryKey = true
@@ -267,7 +269,7 @@ func addBaseFields(fieldInfo *FieldInfo) error {
 	// need to stop all this hardcoding going on
 
 	// add created_at and updated_at fields
-	createdAtField := newField("CreatedAt")
+	createdAtField := newField(&codegenapi.DummyConfig{}, "CreatedAt")
 	createdAtField.hideFromGraphQL = true
 	createdAtField.exposeToActionsByDefault = false
 	createdAtField.topLevelStructField = false
@@ -276,7 +278,7 @@ func addBaseFields(fieldInfo *FieldInfo) error {
 		return err
 	}
 
-	updatedAtField := newField("UpdatedAt")
+	updatedAtField := newField(&codegenapi.DummyConfig{}, "UpdatedAt")
 	updatedAtField.hideFromGraphQL = true
 	// immutable instead...?
 	updatedAtField.exposeToActionsByDefault = false
@@ -362,9 +364,12 @@ func GetFieldInfoForStruct(s *ast.StructType, info *types.Info) (*FieldInfo, err
 		return nil, nil
 	}
 
-	return NewFieldInfoFromInputs(fields, &Options{
-		AddBaseFields: true,
-	})
+	return NewFieldInfoFromInputs(
+		&codegenapi.DummyConfig{},
+		fields,
+		&Options{
+			AddBaseFields: true,
+		})
 }
 
 func parseFieldTag(fieldName string, tag *ast.BasicLit) map[string]string {

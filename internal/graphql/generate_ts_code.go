@@ -1871,6 +1871,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	// use singular version so that this is friendID instead of friendsID
 	for _, edge := range a.GetEdges() {
 		result.Fields = append(result.Fields, &fieldType{
+			// TODO
 			Name:         fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular())),
 			FieldImports: getGQLFileImportsFromStrings([]string{"GraphQLNonNull", "GraphQLID"}),
 		})
@@ -1899,6 +1900,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 		// usually only one edge e.g. addFriend or addAdmin etc
 		for _, edge := range a.GetEdges() {
 			intType.Fields = append(intType.Fields, &interfaceField{
+				// TODO
 				Name: fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular())),
 				// we're doing these as strings instead of ids because we're going to convert from gql id to ent id
 				Type: "string",
@@ -2218,11 +2220,13 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			if base64EncodeIDs {
 				result.FunctionContents = append(
 					result.FunctionContents,
+					// TODO?
 					fmt.Sprintf("const %s = await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%sID), mustDecodeIDFromGQLID(input.%sID));", nodeData.NodeInstance, a.GetActionName(), nodeData.NodeInstance, strcase.ToLowerCamel(edge.Singular())),
 				)
 			} else {
 				result.FunctionContents = append(
 					result.FunctionContents,
+					// TODO?
 					fmt.Sprintf("const %s = await %s.saveXFromID(context.getViewer(), input.%sID, input.%sID);", nodeData.NodeInstance, a.GetActionName(), nodeData.NodeInstance, strcase.ToLowerCamel(edge.Singular())),
 				)
 			}

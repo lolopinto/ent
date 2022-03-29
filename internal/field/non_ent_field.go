@@ -2,14 +2,16 @@ package field
 
 import (
 	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/enttype"
 )
 
 type NonEntField struct {
 	// note that if this changes, need to update NonEntFieldEqual
-	FieldName string
-	FieldType enttype.TSGraphQLType
-	nullable  bool // required default = true
+	FieldName   string
+	graphqlName string
+	FieldType   enttype.TSGraphQLType
+	nullable    bool // required default = true
 	// TODO these are both go things. ignore
 	// Flag enum or ID
 	Flag string
@@ -17,11 +19,12 @@ type NonEntField struct {
 	NodeType string
 }
 
-func NewNonEntField(fieldName string, fieldType enttype.TSGraphQLType, nullable bool) *NonEntField {
+func NewNonEntField(cfg codegenapi.Config, fieldName string, fieldType enttype.TSGraphQLType, nullable bool) *NonEntField {
 	return &NonEntField{
-		FieldName: fieldName,
-		FieldType: fieldType,
-		nullable:  nullable,
+		FieldName:   fieldName,
+		graphqlName: codegenapi.GraphQLName(cfg, fieldName),
+		FieldType:   fieldType,
+		nullable:    nullable,
 	}
 }
 
@@ -30,7 +33,7 @@ func (f *NonEntField) Required() bool {
 }
 
 func (f *NonEntField) GetGraphQLName() string {
-	return strcase.ToLowerCamel(f.FieldName)
+	return f.graphqlName
 }
 
 // don't have to deal with all the id field stuff field.Field has to deal with

@@ -317,7 +317,7 @@ func getNonEntFieldsFromInput(cfg codegenapi.Config, nodeName string, action *in
 			return nil, err
 		}
 
-		fields = append(fields, field.NewNonEntField(f.Name, typ, f.Nullable))
+		fields = append(fields, field.NewNonEntField(cfg, f.Name, typ, f.Nullable))
 	}
 	return fields, nil
 }
@@ -339,7 +339,7 @@ func getNonEntFieldsFromAssocGroup(
 		if err != nil {
 			return nil, err
 		}
-		fields = append(fields, field.NewNonEntField(f.Name, typ, f.Nullable))
+		fields = append(fields, field.NewNonEntField(cfg, f.Name, typ, f.Nullable))
 	}
 	return fields, nil
 }

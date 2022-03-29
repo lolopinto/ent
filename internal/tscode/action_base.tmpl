@@ -250,7 +250,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
       {{else if edgeAction $action -}}
         {{ range $edge := $edges -}}
           {{/* TODO this assumes there is only one edge */ -}}
-          {{$edge.TSGraphQLNodeID}}: {{useImport "ID"}},
+          {{$edge.TSNodeID}}: {{useImport "ID"}},
         {{end -}}
       {{ end -}}
       {{ if $action.IsDeletingNode -}}
@@ -266,9 +266,9 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
         {{ range $edge := $edges -}}
           {{/* TODO this assumes there is only one edge */ -}}
           {{if removeEdgeAction $action -}}
-            .{{$edge.TSRemoveMethodName}}({{$edge.TSGraphQLNodeID}})
+            .{{$edge.TSRemoveMethodName}}({{$edge.TSNodeID}})
           {{else -}}
-            .{{$edge.TSAddMethodName}}({{$edge.TSGraphQLNodeID}})
+            .{{$edge.TSAddMethodName}}({{$edge.TSNodeID}})
           {{end -}}
         {{end -}}
         .saveX();
