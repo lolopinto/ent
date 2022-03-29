@@ -193,7 +193,6 @@ func TestComparePatternsWithRemovedEdge(t *testing.T) {
 		Name:        "likes",
 		GraphQLName: "UserToLikesConnection",
 		ExtraInfo:   "UserToLikesQuery",
-		// we need edge query name...
 	}, feedback[0])
 }
 

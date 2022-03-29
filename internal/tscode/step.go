@@ -275,7 +275,7 @@ func (s *Step) processEdges(processor *codegen.Processor, nodeData *schema.NodeD
 					processor,
 					edge,
 					nodeData.Node,
-					getFilePathForAssocEdgeQueryFile(processor.Config, nodeData, edge.TsEdgeQueryName()),
+					getFilePathForEdgeQueryFile(processor.Config, nodeData, edge.TsEdgeQueryName()),
 				)
 			})
 		}
@@ -285,7 +285,7 @@ func (s *Step) processEdges(processor *codegen.Processor, nodeData *schema.NodeD
 		ret = append(ret,
 			file.GetDeleteFileFunction(
 				processor.Config,
-				getFilePathForAssocEdgeQueryFile(
+				getFilePathForEdgeQueryFile(
 					processor.Config,
 					nodeData,
 					k,
@@ -492,8 +492,7 @@ func getFilePathForBaseQueryFile(cfg *codegen.Config, nodeData *schema.NodeData)
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/%s_query_base.ts", nodeData.PackageName))
 }
 
-// TODO combine with getFilePathForCustomEdgeQueryFile
-func getFilePathForAssocEdgeQueryFile(cfg *codegen.Config, nodeData *schema.NodeData, edgeQueryName string) string {
+func getFilePathForEdgeQueryFile(cfg *codegen.Config, nodeData *schema.NodeData, edgeQueryName string) string {
 	return path.Join(cfg.GetAbsPathToRoot(),
 		fmt.Sprintf(
 			"src/ent/%s/query/%s.ts",
@@ -514,17 +513,6 @@ func getFilePathForPatternAssocEdgeQueryFile(cfg *codegen.Config, pattern *schem
 			"src/ent/%s/query/%s.ts",
 			// TODO there could be a conflict e.g. above...
 			"patterns",
-			strcase.ToSnake(edgeQueryName),
-		),
-	)
-}
-
-func getFilePathForCustomEdgeQueryFile(cfg *codegen.Config, nodeData *schema.NodeData, edgeQueryName string) string {
-	return path.Join(
-		cfg.GetAbsPathToRoot(),
-		fmt.Sprintf(
-			"src/ent/%s/query/%s.ts",
-			nodeData.PackageName,
 			strcase.ToSnake(edgeQueryName),
 		),
 	)
@@ -710,7 +698,7 @@ func writeAssocEdgeQueryFile(processor *codegen.Processor, e *edge.AssociationEd
 
 func writeCustomEdgeQueryFile(processor *codegen.Processor, nodeData *schema.NodeData, e edge.ConnectionEdge) error {
 	cfg := processor.Config
-	filePath := getFilePathForCustomEdgeQueryFile(cfg, nodeData, e.TsEdgeQueryName())
+	filePath := getFilePathForEdgeQueryFile(cfg, nodeData, e.TsEdgeQueryName())
 	imps := tsimport.NewImports(processor.Config, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
