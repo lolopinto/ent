@@ -31,11 +31,17 @@ export const TagType = new GraphQLObjectType({
     id: {
       type: GraphQLNonNull(GraphQLID),
     },
-    displayName: {
+    display_name: {
       type: GraphQLNonNull(GraphQLString),
+      resolve: (tag: Tag, args: {}, context: RequestContext) => {
+        return tag.displayName;
+      },
     },
-    canonicalName: {
+    canonical_name: {
       type: GraphQLNonNull(GraphQLString),
+      resolve: (tag: Tag, args: {}, context: RequestContext) => {
+        return tag.canonicalName;
+      },
     },
     todos: {
       type: GraphQLNonNull(TagToTodosConnectionType()),

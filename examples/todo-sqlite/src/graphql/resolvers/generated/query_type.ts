@@ -14,8 +14,8 @@ export const QueryType = new GraphQLObjectType({
   // @ts-ignore graphql-js TS #2152 2829
   fields: () => ({
     account: AccountQueryType,
-    openTodos: OpenTodosQueryType,
-    openTodosPlural: OpenTodosPluralQueryType,
+    open_todos: OpenTodosQueryType,
+    open_todos_plural: OpenTodosPluralQueryType,
     tag: TagQueryType,
     todo: TodoQueryType,
   }),

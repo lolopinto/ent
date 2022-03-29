@@ -17,6 +17,11 @@ import CreateAccountAction, {
 } from "src/ent/account/actions/create_account_action";
 import { AccountType } from "src/graphql/resolvers/";
 
+interface customCreateAccountInput
+  extends Omit<AccountCreateInput, "phoneNumber"> {
+  phone_number: string;
+}
+
 interface CreateAccountPayload {
   account: Account;
 }
@@ -27,7 +32,7 @@ export const CreateAccountInputType = new GraphQLInputObjectType({
     name: {
       type: GraphQLNonNull(GraphQLString),
     },
-    phoneNumber: {
+    phone_number: {
       type: GraphQLNonNull(GraphQLString),
     },
   }),
@@ -45,7 +50,7 @@ export const CreateAccountPayloadType = new GraphQLObjectType({
 export const CreateAccountType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: AccountCreateInput }
+  { [input: string]: customCreateAccountInput }
 > = {
   type: GraphQLNonNull(CreateAccountPayloadType),
   args: {
@@ -62,7 +67,7 @@ export const CreateAccountType: GraphQLFieldConfig<
   ): Promise<CreateAccountPayload> => {
     const account = await CreateAccountAction.create(context.getViewer(), {
       name: input.name,
-      phoneNumber: input.phoneNumber,
+      phoneNumber: input.phone_number,
     }).saveX();
     return { account: account };
   },

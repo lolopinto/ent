@@ -16,8 +16,8 @@ import TodoAddTagAction from "src/ent/todo/actions/todo_add_tag_action";
 import { TodoType } from "src/graphql/resolvers/";
 
 interface customAddTodoTagInput {
-  todoID: string;
-  tagID: string;
+  todo_id: string;
+  tag_id: string;
 }
 
 interface AddTodoTagPayload {
@@ -27,11 +27,11 @@ interface AddTodoTagPayload {
 export const AddTodoTagInputType = new GraphQLInputObjectType({
   name: "AddTodoTagInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    todoID: {
+    todo_id: {
       description: "id of Todo",
       type: GraphQLNonNull(GraphQLID),
     },
-    tagID: {
+    tag_id: {
       type: GraphQLNonNull(GraphQLID),
     },
   }),
@@ -66,8 +66,8 @@ export const AddTodoTagType: GraphQLFieldConfig<
   ): Promise<AddTodoTagPayload> => {
     const todo = await TodoAddTagAction.saveXFromID(
       context.getViewer(),
-      input.todoID,
-      input.tagID,
+      input.todo_id,
+      input.tag_id,
     );
     return { todo: todo };
   },

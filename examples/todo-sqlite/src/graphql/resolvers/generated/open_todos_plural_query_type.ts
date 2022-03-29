@@ -11,14 +11,14 @@ import { RequestContext } from "@snowtop/ent";
 import { TodoType } from "src/graphql/resolvers/internal";
 import { TodoResolver } from "../open_todos";
 
-interface openTodosPluralArgs {
+interface open_todos_pluralArgs {
   id: any;
 }
 
 export const OpenTodosPluralQueryType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  openTodosPluralArgs
+  open_todos_pluralArgs
 > = {
   type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TodoType))),
   args: {

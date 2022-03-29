@@ -18,8 +18,9 @@ import EditAccountAction, {
 } from "src/ent/account/actions/edit_account_action";
 import { AccountType } from "src/graphql/resolvers/";
 
-interface customEditAccountInput extends AccountEditInput {
-  accountID: string;
+interface customEditAccountInput extends Omit<AccountEditInput, "phoneNumber"> {
+  account_id: string;
+  phone_number?: string;
 }
 
 interface EditAccountPayload {
@@ -29,14 +30,14 @@ interface EditAccountPayload {
 export const EditAccountInputType = new GraphQLInputObjectType({
   name: "EditAccountInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    accountID: {
+    account_id: {
       description: "id of Account",
       type: GraphQLNonNull(GraphQLID),
     },
     name: {
       type: GraphQLString,
     },
-    phoneNumber: {
+    phone_number: {
       type: GraphQLString,
     },
   }),
@@ -71,10 +72,10 @@ export const EditAccountType: GraphQLFieldConfig<
   ): Promise<EditAccountPayload> => {
     const account = await EditAccountAction.saveXFromID(
       context.getViewer(),
-      input.accountID,
+      input.account_id,
       {
         name: input.name,
-        phoneNumber: input.phoneNumber,
+        phoneNumber: input.phone_number,
       },
     );
     return { account: account };

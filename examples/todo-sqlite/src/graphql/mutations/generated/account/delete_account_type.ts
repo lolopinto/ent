@@ -14,17 +14,17 @@ import { RequestContext } from "@snowtop/ent";
 import DeleteAccountAction from "src/ent/account/actions/delete_account_action";
 
 interface customDeleteAccountInput {
-  accountID: string;
+  account_id: string;
 }
 
 interface DeleteAccountPayload {
-  deletedAccountID: string;
+  deleted_account_id: string;
 }
 
 export const DeleteAccountInputType = new GraphQLInputObjectType({
   name: "DeleteAccountInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    accountID: {
+    account_id: {
       description: "id of Account",
       type: GraphQLNonNull(GraphQLID),
     },
@@ -34,7 +34,7 @@ export const DeleteAccountInputType = new GraphQLInputObjectType({
 export const DeleteAccountPayloadType = new GraphQLObjectType({
   name: "DeleteAccountPayload",
   fields: (): GraphQLFieldConfigMap<DeleteAccountPayload, RequestContext> => ({
-    deletedAccountID: {
+    deleted_account_id: {
       type: GraphQLID,
     },
   }),
@@ -58,7 +58,10 @@ export const DeleteAccountType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<DeleteAccountPayload> => {
-    await DeleteAccountAction.saveXFromID(context.getViewer(), input.accountID);
-    return { deletedAccountID: input.accountID };
+    await DeleteAccountAction.saveXFromID(
+      context.getViewer(),
+      input.account_id,
+    );
+    return { deleted_account_id: input.account_id };
   },
 };

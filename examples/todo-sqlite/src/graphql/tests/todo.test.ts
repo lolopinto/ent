@@ -41,7 +41,7 @@ test("mark all as completed", async () => {
     {
       viewer: account.viewer,
       schema: schema,
-      mutation: "todosMarkAllAs",
+      mutation: "markAllTodosAs",
       args: { accountID: account.id, completed: true },
       disableInputWrapping: true,
     },
@@ -59,7 +59,7 @@ test("mark all as completed", async () => {
     {
       viewer: account.viewer,
       schema: schema,
-      mutation: "todosMarkAllAs",
+      mutation: "markAllTodosAs",
       args: { accountID: account.id, completed: false },
       disableInputWrapping: true,
     },
@@ -92,7 +92,7 @@ test("remove completed", async () => {
     {
       viewer: account.viewer,
       schema: schema,
-      mutation: "todosRemoveCompleted",
+      mutation: "removeCompletedTodos",
       args: { accountID: account.id },
       disableInputWrapping: true,
     },
@@ -120,7 +120,7 @@ test("open todos plural from account", async () => {
       },
     },
     [
-      "openTodosPlural",
+      "open_todos_plural",
       todos.slice(1).map((todo) => {
         return {
           text: todo.text,
@@ -147,9 +147,9 @@ test("open todos connection from account", async () => {
         id: account.id,
       },
     },
-    ["openTodos.rawCount", todos.length - 1],
+    ["open_todos.rawCount", todos.length - 1],
     [
-      "openTodos.nodes",
+      "open_todos.nodes",
       todos.slice(1).map((todo) => {
         return {
           text: todo.text,
@@ -171,7 +171,7 @@ test("open todos plural from root", async () => {
     {
       viewer: account.viewer,
       schema: schema,
-      root: "openTodosPlural",
+      root: "open_todos_plural",
       args: {
         id: account.id,
       },
@@ -199,7 +199,7 @@ test("open todos connection from root", async () => {
     {
       viewer: account.viewer,
       schema: schema,
-      root: "openTodos",
+      root: "open_todos",
       args: {
         id: account.id,
       },
@@ -213,5 +213,61 @@ test("open todos connection from root", async () => {
         };
       }),
     ],
+  );
+});
+
+test("create", async () => {
+  const account = await createAccount();
+  await expectMutation(
+    {
+      viewer: account.viewer,
+      schema: schema,
+      mutation: "createTodo",
+      args: { creator_id: account.id, text: "watch GOT" },
+    },
+    [
+      "todo.id",
+      async (id: string) => {
+        await Todo.loadX(account.viewer, id);
+      },
+    ],
+    ["todo.text", "watch GOT"],
+    ["todo.creator.id", account.id],
+  );
+});
+
+test("edit", async () => {
+  const account = await createAccount();
+  const todo = await createTodo({
+    creatorID: account.id,
+    text: "watch GOT",
+  });
+  await expectMutation(
+    {
+      viewer: account.viewer,
+      schema: schema,
+      mutation: "renameTodo",
+      args: { todo_id: todo.id, text: "watch GOT tomorrow" },
+    },
+    ["todo.id", todo.id],
+    ["todo.text", "watch GOT tomorrow"],
+    ["todo.creator.id", account.id],
+  );
+});
+
+test("delete", async () => {
+  const account = await createAccount();
+  const todo = await createTodo({
+    creatorID: account.id,
+    text: "watch GOT",
+  });
+  await expectMutation(
+    {
+      viewer: account.viewer,
+      schema: schema,
+      mutation: "deleteTodo",
+      args: { todo_id: todo.id },
+    },
+    ["deleted_todo_id", todo.id],
   );
 });
