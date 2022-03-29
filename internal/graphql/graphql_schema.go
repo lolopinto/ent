@@ -667,7 +667,7 @@ func (s *graphQLSchema) processAction(action action.Action) {
 		fieldName: actionName,
 		fieldType: responseTypeName, // TODO should this be required?
 		args: []*graphQLArg{
-			&graphQLArg{
+			{
 				fieldName: "input",
 				fieldType: fmt.Sprintf("%s!", inputTypeName),
 			},

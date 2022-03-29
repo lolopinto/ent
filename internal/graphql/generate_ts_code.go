@@ -19,6 +19,7 @@ import (
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/cmd"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
@@ -1778,7 +1779,7 @@ func buildActionNodes(processor *codegen.Processor, nodeData *schema.NodeData, a
 	}
 	ret = append(ret,
 		buildActionInputNode(processor, nodeData, action),
-		buildActionPayloadNode(nodeData, action),
+		buildActionPayloadNode(processor, nodeData, action),
 	)
 	return ret
 }
@@ -1846,7 +1847,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	// add id field for edit and delete mutations
 	if a.MutatingExistingObject() {
 		result.Fields = append(result.Fields, &fieldType{
-			Name:         fmt.Sprintf("%sID", a.GetNodeInfo().NodeInstance),
+			Name:         getIDField(processor, a.GetNodeInfo().NodeInstance),
 			FieldImports: getGQLFileImportsFromStrings([]string{"GraphQLNonNull", "GraphQLID"}),
 			Description:  fmt.Sprintf("id of %s", nodeData.Node),
 		})
@@ -1871,8 +1872,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	// use singular version so that this is friendID instead of friendsID
 	for _, edge := range a.GetEdges() {
 		result.Fields = append(result.Fields, &fieldType{
-			// TODO
-			Name:         fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular())),
+			Name:         getEdgeField(processor, edge),
 			FieldImports: getGQLFileImportsFromStrings([]string{"GraphQLNonNull", "GraphQLID"}),
 		})
 	}
@@ -1890,7 +1890,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 		// only want the id field for the object when editing said object
 		if a.MutatingExistingObject() {
 			intType.Fields = append(intType.Fields, &interfaceField{
-				Name: fmt.Sprintf("%sID", a.GetNodeInfo().NodeInstance),
+				Name: getIDField(processor, a.GetNodeInfo().NodeInstance),
 				// we're doing these as strings instead of ids because we're going to convert from gql id to ent id
 				Type: "string",
 			})
@@ -1900,8 +1900,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 		// usually only one edge e.g. addFriend or addAdmin etc
 		for _, edge := range a.GetEdges() {
 			intType.Fields = append(intType.Fields, &interfaceField{
-				// TODO
-				Name: fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular())),
+				Name: getEdgeField(processor, edge),
 				// we're doing these as strings instead of ids because we're going to convert from gql id to ent id
 				Type: "string",
 			})
@@ -1916,8 +1915,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 					// we're doing these as strings instead of ids because we're going to convert from gql id to ent id
 					Type: "string",
 				})
-			}
-			if f.TsFieldName() != f.GetGraphQLName() {
+			} else if f.TsFieldName() != f.GetGraphQLName() {
 				omittedFields = append(omittedFields, f.TsFieldName())
 				intType.Fields = append(intType.Fields, &interfaceField{
 					Name:     f.GetGraphQLName(),
@@ -1956,7 +1954,7 @@ func getPayloadNameFromAction(a action.Action) string {
 	return strings.TrimSuffix(input, "Input") + "Payload"
 }
 
-func buildActionPayloadNode(nodeData *schema.NodeData, a action.Action) *objectType {
+func buildActionPayloadNode(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action) *objectType {
 	payload := getPayloadNameFromAction(a)
 	result := &objectType{
 		Type:     fmt.Sprintf("%sType", payload),
@@ -2024,8 +2022,9 @@ func buildActionPayloadNode(nodeData *schema.NodeData, a action.Action) *objectT
 			},
 		}
 	} else {
+		deleted := getDeletedField(processor, nodeInfo.Node)
 		result.Fields = append(result.Fields, &fieldType{
-			Name:         fmt.Sprintf("deleted%sID", nodeInfo.Node),
+			Name:         deleted,
 			FieldImports: getGQLFileImportsFromStrings([]string{"GraphQLID"}),
 		})
 
@@ -2035,7 +2034,7 @@ func buildActionPayloadNode(nodeData *schema.NodeData, a action.Action) *objectT
 				Name:     payload,
 				Fields: []*interfaceField{
 					{
-						Name: fmt.Sprintf("deleted%sID", nodeInfo.Node),
+						Name: deleted,
 						Type: "string",
 					},
 				},
@@ -2182,6 +2181,8 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			})
 		}
 
+		idField := getIDField(processor, nodeData.NodeInstance)
+
 		if action.HasInput(a) {
 			// have fields and therefore input
 			if !deleteAction {
@@ -2194,12 +2195,12 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			if base64EncodeIDs {
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%sID), {", a.GetActionName(), nodeData.NodeInstance),
+					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%s), {", a.GetActionName(), idField),
 				)
 			} else {
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), input.%sID, {", a.GetActionName(), nodeData.NodeInstance),
+					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), input.%s, {", a.GetActionName(), idField),
 				)
 			}
 			for _, f := range a.GetGraphQLFields() {
@@ -2217,17 +2218,16 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			}
 			edge := edges[0]
 			// have fields and therefore input
+			edgeField := getEdgeField(processor, edge)
 			if base64EncodeIDs {
 				result.FunctionContents = append(
 					result.FunctionContents,
-					// TODO?
-					fmt.Sprintf("const %s = await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%sID), mustDecodeIDFromGQLID(input.%sID));", nodeData.NodeInstance, a.GetActionName(), nodeData.NodeInstance, strcase.ToLowerCamel(edge.Singular())),
+					fmt.Sprintf("const %s = await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%s), mustDecodeIDFromGQLID(input.%s));", nodeData.NodeInstance, a.GetActionName(), idField, edgeField),
 				)
 			} else {
 				result.FunctionContents = append(
 					result.FunctionContents,
-					// TODO?
-					fmt.Sprintf("const %s = await %s.saveXFromID(context.getViewer(), input.%sID, input.%sID);", nodeData.NodeInstance, a.GetActionName(), nodeData.NodeInstance, strcase.ToLowerCamel(edge.Singular())),
+					fmt.Sprintf("const %s = await %s.saveXFromID(context.getViewer(), input.%s, input.%s);", nodeData.NodeInstance, a.GetActionName(), idField, edgeField),
 				)
 			}
 		} else {
@@ -2241,21 +2241,22 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 				// no fields
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%sID));", a.GetActionName(), nodeData.NodeInstance),
+					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%s));", a.GetActionName(), idField),
 				)
 			} else {
 				// no fields
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), input.%sID);", a.GetActionName(), nodeData.NodeInstance),
+					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), input.%s);", a.GetActionName(), idField),
 				)
 			}
 		}
 
 		if deleteAction {
+			deletedField := getDeletedField(processor, nodeData.Node)
 			result.FunctionContents = append(
 				result.FunctionContents,
-				fmt.Sprintf("return {deleted%sID: input.%sID};", nodeData.Node, nodeData.NodeInstance),
+				fmt.Sprintf("return {%s: input.%s};", deletedField, idField),
 			)
 		} else {
 
@@ -2270,6 +2271,20 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 	result.ArgImports = argImports
 
 	return result, nil
+}
+
+func getDeletedField(processor *codegen.Processor, node string) string {
+	return codegenapi.GraphQLName(processor.Config, fmt.Sprintf("deleted%sID", node))
+}
+
+func getIDField(processor *codegen.Processor, node string) string {
+	// TODO this should just be id but that should be a different PR
+	return codegenapi.GraphQLName(processor.Config, fmt.Sprintf("%sID", node))
+}
+
+func getEdgeField(processor *codegen.Processor, edge *edge.AssociationEdge) string {
+	field := fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular()))
+	return codegenapi.GraphQLName(processor.Config, field)
 }
 
 type objectType struct {
