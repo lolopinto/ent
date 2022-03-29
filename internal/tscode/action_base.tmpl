@@ -57,7 +57,7 @@
 {{$hasInput := hasInput $action -}}
 {{$inputName := "" -}}
 {{ if $hasInput -}}
-  {{$inputName = $action.GetInputName -}}
+  {{$inputName = $action.GetActionInputName -}}
 
   export interface {{$inputName}} {
     {{ range $field := $action.GetFields -}}

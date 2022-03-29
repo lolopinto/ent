@@ -6,6 +6,7 @@ import (
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
@@ -2224,7 +2225,9 @@ func marshallAndUnmarshallInputAssocEdge(t *testing.T, inputEdge *input.AssocEdg
 }
 
 func createActionInfoFromInput(t *testing.T, nodeName string, node *input.Node) *action.ActionInfo {
-	ai, err := action.ParseFromInputNode(nodeName, node, base.TypeScript)
+	ai, err := action.ParseFromInputNode(
+		&codegenapi.DummyConfig{},
+		nodeName, node, base.TypeScript)
 	require.Nil(t, err)
 	return ai
 }

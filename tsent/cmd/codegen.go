@@ -25,7 +25,12 @@ var codegenCmd = &cobra.Command{
 	Long:  `This runs the codegen steps. It generates the ent, db, and graphql code based on the arguments passed in`,
 	//	Args:  configRequired,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		currentSchema, err := parseSchema()
+		cfg, err := codegen.NewConfig("src/schema", "")
+		if err != nil {
+			return err
+		}
+
+		currentSchema, err := parseSchemaFromConfig(cfg)
 		if err != nil {
 			return err
 		}
@@ -33,11 +38,6 @@ var codegenCmd = &cobra.Command{
 		// nothing to do here
 		if len(currentSchema.Nodes) == 0 {
 			return nil
-		}
-
-		cfg, err := codegen.NewConfig("src/schema", "")
-		if err != nil {
-			return err
 		}
 
 		t1 := time.Now()

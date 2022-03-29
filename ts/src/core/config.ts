@@ -9,6 +9,11 @@ type logType = "query" | "warn" | "info" | "error" | "debug";
 // ent.config.ts eventually. for now ent.yml
 // or ent.yml?
 
+enum graphqlMutationName {
+  NOUN_VERB = "NOUN_VERB",
+  VERB_NOUN = "VERB_NOUN",
+}
+
 export interface Config {
   dbConnectionString?: string;
   dbFile?: string; // config/database.yml is default
@@ -53,6 +58,10 @@ interface CodegenConfig {
   // generateRootResolvers for each type exposed to GraphQL instead of node(). Should be used in combination with
   // disableBase64Encoding
   generateRootResolvers?: boolean;
+
+  // default names for graphql actions|mutations is nounVerb e.g. userCreate
+  // if you wanna change it to verbNoun e.g. createUser, set this field to VERB_NOUN
+  defaultGraphQLMutationName?: graphqlMutationName;
 }
 
 interface PrettierConfig {

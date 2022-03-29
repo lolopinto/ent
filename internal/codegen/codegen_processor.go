@@ -418,6 +418,6 @@ func parseExistingSchema(cfg *Config) *schema.Schema {
 	if err != nil {
 		return nil
 	}
-	s, _ := schema.ParseFromInputSchema(existingSchema, base.TypeScript)
+	s, _ := schema.ParseFromInputSchema(cfg, existingSchema, base.TypeScript)
 	return s
 }

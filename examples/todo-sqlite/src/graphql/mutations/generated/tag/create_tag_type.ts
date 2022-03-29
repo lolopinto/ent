@@ -18,12 +18,12 @@ import CreateTagAction, {
 } from "src/ent/tag/actions/create_tag_action";
 import { TagType } from "src/graphql/resolvers/";
 
-interface TagCreatePayload {
+interface CreateTagPayload {
   tag: Tag;
 }
 
-export const TagCreateInputType = new GraphQLInputObjectType({
-  name: "TagCreateInput",
+export const CreateTagInputType = new GraphQLInputObjectType({
+  name: "CreateTagInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     displayName: {
       type: GraphQLNonNull(GraphQLString),
@@ -34,25 +34,25 @@ export const TagCreateInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const TagCreatePayloadType = new GraphQLObjectType({
-  name: "TagCreatePayload",
-  fields: (): GraphQLFieldConfigMap<TagCreatePayload, RequestContext> => ({
+export const CreateTagPayloadType = new GraphQLObjectType({
+  name: "CreateTagPayload",
+  fields: (): GraphQLFieldConfigMap<CreateTagPayload, RequestContext> => ({
     tag: {
       type: GraphQLNonNull(TagType),
     },
   }),
 });
 
-export const TagCreateType: GraphQLFieldConfig<
+export const CreateTagType: GraphQLFieldConfig<
   undefined,
   RequestContext,
   { [input: string]: TagCreateInput }
 > = {
-  type: GraphQLNonNull(TagCreatePayloadType),
+  type: GraphQLNonNull(CreateTagPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(TagCreateInputType),
+      type: GraphQLNonNull(CreateTagInputType),
     },
   },
   resolve: async (
@@ -60,7 +60,7 @@ export const TagCreateType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<TagCreatePayload> => {
+  ): Promise<CreateTagPayload> => {
     const tag = await CreateTagAction.create(context.getViewer(), {
       displayName: input.displayName,
       ownerID: input.ownerID,

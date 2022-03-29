@@ -18,16 +18,16 @@ import EditAccountAction, {
 } from "src/ent/account/actions/edit_account_action";
 import { AccountType } from "src/graphql/resolvers/";
 
-interface customAccountEditInput extends AccountEditInput {
+interface customEditAccountInput extends AccountEditInput {
   accountID: string;
 }
 
-interface AccountEditPayload {
+interface EditAccountPayload {
   account: Account;
 }
 
-export const AccountEditInputType = new GraphQLInputObjectType({
-  name: "AccountEditInput",
+export const EditAccountInputType = new GraphQLInputObjectType({
+  name: "EditAccountInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     accountID: {
       description: "id of Account",
@@ -42,25 +42,25 @@ export const AccountEditInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const AccountEditPayloadType = new GraphQLObjectType({
-  name: "AccountEditPayload",
-  fields: (): GraphQLFieldConfigMap<AccountEditPayload, RequestContext> => ({
+export const EditAccountPayloadType = new GraphQLObjectType({
+  name: "EditAccountPayload",
+  fields: (): GraphQLFieldConfigMap<EditAccountPayload, RequestContext> => ({
     account: {
       type: GraphQLNonNull(AccountType),
     },
   }),
 });
 
-export const AccountEditType: GraphQLFieldConfig<
+export const EditAccountType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: customAccountEditInput }
+  { [input: string]: customEditAccountInput }
 > = {
-  type: GraphQLNonNull(AccountEditPayloadType),
+  type: GraphQLNonNull(EditAccountPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(AccountEditInputType),
+      type: GraphQLNonNull(EditAccountInputType),
     },
   },
   resolve: async (
@@ -68,7 +68,7 @@ export const AccountEditType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<AccountEditPayload> => {
+  ): Promise<EditAccountPayload> => {
     const account = await EditAccountAction.saveXFromID(
       context.getViewer(),
       input.accountID,

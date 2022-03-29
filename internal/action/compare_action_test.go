@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
@@ -914,6 +915,7 @@ func createNodeActionWithOptions(
 	typ concreteNodeActionType,
 	opt *actionOptions) Action {
 	ci := getCommonInfo(
+		&codegenapi.DummyConfig{},
 		nodeName,
 		typ,
 		opt.customActionName,
@@ -931,6 +933,7 @@ func createNodeActionWithOptions(
 
 func createEdgeActionWithOptions(nodeName string, assocEdge *edge.AssociationEdge, typ concreteEdgeActionType, opt *actionOptions) Action {
 	ci := getCommonInfoForEdgeAction(
+		&codegenapi.DummyConfig{},
 		nodeName,
 		assocEdge,
 		typ,
@@ -946,6 +949,7 @@ func createEdgeActionWithOptions(nodeName string, assocEdge *edge.AssociationEdg
 func createEdgeGroupActionWithOptions(nodeName string, edgeGroup *edge.AssociationEdgeGroup, opt *actionOptions) Action {
 	typ := groupEdgeActionType{}
 	ci := getCommonInfoForGroupEdgeAction(
+		&codegenapi.DummyConfig{},
 		nodeName,
 		edgeGroup,
 		&typ,

@@ -6,6 +6,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/parsehelper"
@@ -1027,7 +1028,9 @@ func verifyExpectedFields(t *testing.T, code, nodeName string, expActions []expe
 
 	require.NotNil(t, fnMap["GetActions"])
 
-	actionInfo, err := action.ParseActions(nodeName, fnMap["GetActions"], fieldInfo, nil, base.GoLang)
+	actionInfo, err := action.ParseActions(
+		&codegenapi.DummyConfig{},
+		nodeName, fnMap["GetActions"], fieldInfo, nil, base.GoLang)
 	require.Nil(t, err)
 	verifyExpectedActions(t, actionInfo, expActions)
 }
@@ -1136,7 +1139,9 @@ func initSyncs() {
 			// TODO need to fix this dissonance...
 			fieldInfo := getTestFieldInfo(t, strcase.ToCamel(configName)+"Config")
 			edgeInfo := getTestEdgeInfo(t, configName)
-			actionInfo, err := action.ParseActions("Account", fn, fieldInfo, edgeInfo, base.GoLang)
+			actionInfo, err := action.ParseActions(
+				&codegenapi.DummyConfig{},
+				"Account", fn, fieldInfo, edgeInfo, base.GoLang)
 			assert.NotNil(t, actionInfo, "invalid actionInfo retrieved")
 			require.NoError(t, err)
 			return actionInfo

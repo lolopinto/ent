@@ -11,6 +11,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
@@ -36,7 +37,8 @@ type Action interface {
 	GetActionName() string
 	ExposedToGraphQL() bool
 	GetGraphQLName() string
-	GetInputName() string         // only applies in TypeScript?
+	GetActionInputName() string
+	GetGraphQLInputName() string
 	MutatingExistingObject() bool // whether to add User, Note etc params
 	GetNodeInfo() nodeinfo.NodeInfo
 	GetOperation() ent.ActionOperation
@@ -113,7 +115,8 @@ func (info *ActionInfo) addActions(actions ...Action) error {
 type commonActionInfo struct {
 	ActionName       string
 	ExposeToGraphQL  bool
-	InputName        string
+	ActionInputName  string
+	GraphQLInputName string
 	GraphQLName      string
 	Fields           []*field.Field
 	NonEntFields     []*field.NonEntField
@@ -138,8 +141,12 @@ func (action *commonActionInfo) GetGraphQLName() string {
 	return action.GraphQLName
 }
 
-func (action *commonActionInfo) GetInputName() string {
-	return action.InputName
+func (action *commonActionInfo) GetActionInputName() string {
+	return action.ActionInputName
+}
+
+func (action *commonActionInfo) GetGraphQLInputName() string {
+	return action.GraphQLInputName
 }
 
 func (action *commonActionInfo) GetFields() []*field.Field {
@@ -318,7 +325,7 @@ type EdgeGroupAction struct {
 	mutationExistingObjAction
 }
 
-func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo, edgeInfo *edge.EdgeInfo, lang base.Language) (*ActionInfo, error) {
+func ParseActions(cfg codegenapi.Config, nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo, edgeInfo *edge.EdgeInfo, lang base.Language) (*ActionInfo, error) {
 	// get the actions in the function
 	elts := astparser.GetEltsInFunc(fn)
 
@@ -341,14 +348,14 @@ func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo,
 		inputActions = append(inputActions, inputAction)
 	}
 
-	return ParseFromInput(nodeName, inputActions, fieldInfo, edgeInfo, lang)
+	return ParseFromInput(cfg, nodeName, inputActions, fieldInfo, edgeInfo, lang)
 }
 
-func ParseFromInput(nodeName string, actions []*input.Action, fieldInfo *field.FieldInfo, edgeInfo *edge.EdgeInfo, lang base.Language) (*ActionInfo, error) {
+func ParseFromInput(cfg codegenapi.Config, nodeName string, actions []*input.Action, fieldInfo *field.FieldInfo, edgeInfo *edge.EdgeInfo, lang base.Language) (*ActionInfo, error) {
 	actionInfo := NewActionInfo()
 
 	for _, action := range actions {
-		actions, err := parseActionsFromInput(nodeName, action, fieldInfo)
+		actions, err := parseActionsFromInput(cfg, nodeName, action, fieldInfo)
 		if err != nil {
 			return nil, err
 		}
@@ -359,7 +366,7 @@ func ParseFromInput(nodeName string, actions []*input.Action, fieldInfo *field.F
 
 	if edgeInfo != nil {
 		for _, assocEdge := range edgeInfo.Associations {
-			actions, err := processEdgeActions(nodeName, assocEdge, lang)
+			actions, err := processEdgeActions(cfg, nodeName, assocEdge, lang)
 			if err != nil {
 				return nil, err
 			}
@@ -369,7 +376,7 @@ func ParseFromInput(nodeName string, actions []*input.Action, fieldInfo *field.F
 		}
 
 		for _, assocGroup := range edgeInfo.AssocGroups {
-			actions, err := processEdgeGroupActions(nodeName, assocGroup, lang)
+			actions, err := processEdgeGroupActions(cfg, nodeName, assocGroup, lang)
 			if err != nil {
 				return nil, err
 			}
@@ -382,7 +389,7 @@ func ParseFromInput(nodeName string, actions []*input.Action, fieldInfo *field.F
 	return actionInfo, nil
 }
 
-func ParseFromInputNode(nodeName string, node *input.Node, lang base.Language) (*ActionInfo, error) {
+func ParseFromInputNode(cfg codegenapi.Config, nodeName string, node *input.Node, lang base.Language) (*ActionInfo, error) {
 	fi, err := field.NewFieldInfoFromInputs(node.Fields, &field.Options{})
 	if err != nil {
 		return nil, err
@@ -391,7 +398,7 @@ func ParseFromInputNode(nodeName string, node *input.Node, lang base.Language) (
 	if err != nil {
 		return nil, err
 	}
-	return ParseFromInput(nodeName, node.Actions, fi, ei, lang)
+	return ParseFromInput(cfg, nodeName, node.Actions, fi, ei, lang)
 }
 
 // FieldActionTemplateInfo is passed to codegeneration template (both action and graphql) to generate

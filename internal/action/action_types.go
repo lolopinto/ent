@@ -5,6 +5,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/schema/base"
 )
@@ -21,35 +22,53 @@ type concreteActionType interface {
 
 type concreteNodeActionType interface {
 	concreteActionType
-	getDefaultActionName(nodeName string) string
-	getDefaultGraphQLName(nodeName string) string
-	getDefaultInputName(nodeName string) string
+	getDefaultActionName(cfg codegenapi.Config, nodeName string) string
+	getDefaultGraphQLName(cfg codegenapi.Config, nodeName string) string
+	getDefaultActionInputName(cfg codegenapi.Config, nodeName string) string
+	getDefaultGraphQLInputName(cfg codegenapi.Config, nodeName string) string
 	supportsFieldsFromEnt() bool
 }
 
 type concreteEdgeActionType interface {
 	concreteActionType
-	getDefaultActionName(nodeName string, edge edge.ActionableEdge, lang base.Language) string
-	getDefaultGraphQLName(nodeName string, edge edge.ActionableEdge) string
-	getDefaultInputName(nodeName string, edge edge.ActionableEdge) string
+	getDefaultActionName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge, lang base.Language) string
+	getDefaultGraphQLName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge) string
+	getDefaultActionInputName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge) string
+	getDefaultGraphQLInputName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge) string
+}
+
+func nounVerb(cfg codegenapi.Config) bool {
+	return cfg.DefaultGraphQLMutationName() == codegenapi.NounVerb
 }
 
 type createActionType struct {
 }
 
-func (action *createActionType) getDefaultActionName(nodeName string) string {
+func (action *createActionType) getDefaultActionName(cfg codegenapi.Config, nodeName string) string {
 	return "Create" + strcase.ToCamel(nodeName) + "Action"
 }
 
-func (action *createActionType) getDefaultGraphQLName(nodeName string) string {
-	return strcase.ToLowerCamel(nodeName) + "Create"
+func (action *createActionType) getDefaultGraphQLName(cfg codegenapi.Config, nodeName string) string {
+	if nounVerb(cfg) {
+		return strcase.ToLowerCamel(nodeName) + "Create"
+	}
+	return "create" + strcase.ToCamel(nodeName)
 }
 
 // CreateUserAction vs UserCreateInput is not consistent :(
 // need to figure out gql mutation vs action naming convention
 // but somehow choosing the same input type for both?
-func (action *createActionType) getDefaultInputName(nodeName string) string {
+// TODO https://github.com/lolopinto/ent/issues/594
+func (action *createActionType) getDefaultActionInputName(cfg codegenapi.Config, nodeName string) string {
 	return strcase.ToCamel(nodeName) + "CreateInput"
+}
+
+func (action *createActionType) getDefaultGraphQLInputName(cfg codegenapi.Config, nodeName string) string {
+	// match the format of the input.
+	// if verb_noun, change the graphql input to match the format
+	// userCreate -> UserCreateInput
+	// createUser -> CreateUserInput
+	return strcase.ToCamel(action.getDefaultGraphQLName(cfg, nodeName)) + "Input"
 }
 
 func (action *createActionType) getAction(commonInfo commonActionInfo) Action {
@@ -73,16 +92,27 @@ var _ concreteNodeActionType = &createActionType{}
 type editActionType struct {
 }
 
-func (action *editActionType) getDefaultActionName(nodeName string) string {
+func (action *editActionType) getDefaultActionName(cfg codegenapi.Config, nodeName string) string {
 	return "Edit" + strcase.ToCamel(nodeName) + "Action"
 }
 
-func (action *editActionType) getDefaultGraphQLName(nodeName string) string {
-	return strcase.ToLowerCamel(nodeName) + "Edit"
+func (action *editActionType) getDefaultGraphQLName(cfg codegenapi.Config, nodeName string) string {
+	if nounVerb(cfg) {
+		return strcase.ToLowerCamel(nodeName) + "Edit"
+	}
+	return "edit" + strcase.ToCamel(nodeName)
 }
 
-func (action *editActionType) getDefaultInputName(nodeName string) string {
+func (action *editActionType) getDefaultActionInputName(cfg codegenapi.Config, nodeName string) string {
 	return strcase.ToCamel(nodeName) + "EditInput"
+}
+
+func (action *editActionType) getDefaultGraphQLInputName(cfg codegenapi.Config, nodeName string) string {
+	// match the format of the input.
+	// if verb_noun, change the graphql input to match the format
+	// userEdit -> UserEditInput
+	// editUser -> EditUserInput
+	return strcase.ToCamel(action.getDefaultGraphQLName(cfg, nodeName)) + "Input"
 }
 
 func (action *editActionType) getAction(commonInfo commonActionInfo) Action {
@@ -106,17 +136,24 @@ var _ concreteNodeActionType = &editActionType{}
 type deleteActionType struct {
 }
 
-func (action *deleteActionType) getDefaultActionName(nodeName string) string {
+func (action *deleteActionType) getDefaultActionName(cfg codegenapi.Config, nodeName string) string {
 	return "Delete" + strcase.ToCamel(nodeName) + "Action"
 }
 
-func (action *deleteActionType) getDefaultGraphQLName(nodeName string) string {
-	return strcase.ToLowerCamel(nodeName) + "Delete"
+func (action *deleteActionType) getDefaultGraphQLName(cfg codegenapi.Config, nodeName string) string {
+	if nounVerb(cfg) {
+		return strcase.ToLowerCamel(nodeName) + "Delete"
+	}
+	return "delete" + strcase.ToCamel(nodeName)
 }
 
-func (action *deleteActionType) getDefaultInputName(nodeName string) string {
+func (action *deleteActionType) getDefaultActionInputName(cfg codegenapi.Config, nodeName string) string {
 	// TODO why is this being called?
 	return strcase.ToCamel(nodeName) + "DeleteInput"
+}
+
+func (action *deleteActionType) getDefaultGraphQLInputName(cfg codegenapi.Config, nodeName string) string {
+	return strcase.ToCamel(action.getDefaultGraphQLName(cfg, nodeName)) + "Input"
 }
 
 func (action *deleteActionType) getAction(commonInfo commonActionInfo) Action {
@@ -149,7 +186,7 @@ var _ actionType = &mutationsActionType{}
 type addEdgeActionType struct {
 }
 
-func (action *addEdgeActionType) getDefaultActionName(nodeName string, edge edge.ActionableEdge, lang base.Language) string {
+func (action *addEdgeActionType) getDefaultActionName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge, lang base.Language) string {
 	// in golang, it'll be referred to as user.AddFriend so we don't want the name in there
 	// but that's not the norm in TypeScript so we want the name in here for TypeScript
 	if lang == base.TypeScript {
@@ -158,14 +195,22 @@ func (action *addEdgeActionType) getDefaultActionName(nodeName string, edge edge
 	return "Add" + edge.EdgeIdentifier() + "Action"
 }
 
-func (action *addEdgeActionType) getDefaultGraphQLName(nodeName string, edge edge.ActionableEdge) string {
-	// eventAddInvitee
-	return strcase.ToLowerCamel(nodeName) + "Add" + strcase.ToCamel(edge.EdgeIdentifier())
+func (action *addEdgeActionType) getDefaultGraphQLName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge) string {
+	if nounVerb(cfg) {
+		// eventAddInvitee
+		return strcase.ToLowerCamel(nodeName) + "Add" + strcase.ToCamel(edge.EdgeIdentifier())
+	}
+	// addEventInvite
+	return "add" + strcase.ToCamel(nodeName) + strcase.ToCamel(edge.EdgeIdentifier())
 }
 
-func (action *addEdgeActionType) getDefaultInputName(nodeName string, edge edge.ActionableEdge) string {
+func (action *addEdgeActionType) getDefaultActionInputName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge) string {
 	// TODO only used in TS right now
 	return strcase.ToCamel(nodeName) + "Add" + strcase.ToCamel(edge.EdgeIdentifier()) + "Input"
+}
+
+func (action *addEdgeActionType) getDefaultGraphQLInputName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge) string {
+	return strcase.ToCamel(action.getDefaultGraphQLName(cfg, nodeName, edge)) + "Input"
 }
 
 func (action *addEdgeActionType) getAction(commonInfo commonActionInfo) Action {
@@ -190,7 +235,7 @@ var _ concreteEdgeActionType = &addEdgeActionType{}
 type removeEdgeActionType struct {
 }
 
-func (action *removeEdgeActionType) getDefaultActionName(nodeName string, edge edge.ActionableEdge, lang base.Language) string {
+func (action *removeEdgeActionType) getDefaultActionName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge, lang base.Language) string {
 	// see addEdgeActionType up
 	if lang == base.TypeScript {
 		return strcase.ToCamel(nodeName) + "Remove" + edge.EdgeIdentifier() + "Action"
@@ -198,14 +243,21 @@ func (action *removeEdgeActionType) getDefaultActionName(nodeName string, edge e
 	return "Remove" + strcase.ToCamel(edge.EdgeIdentifier()) + "Action"
 }
 
-func (action *removeEdgeActionType) getDefaultGraphQLName(nodeName string, edge edge.ActionableEdge) string {
+func (action *removeEdgeActionType) getDefaultGraphQLName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge) string {
 	// do we need the node?
-	return strcase.ToLowerCamel(nodeName) + "Remove" + strcase.ToCamel(edge.EdgeIdentifier())
+	if nounVerb(cfg) {
+		return strcase.ToLowerCamel(nodeName) + "Remove" + strcase.ToCamel(edge.EdgeIdentifier())
+	}
+	return "remove" + strcase.ToCamel(nodeName) + strcase.ToCamel(edge.EdgeIdentifier())
 }
 
-func (action *removeEdgeActionType) getDefaultInputName(nodeName string, edge edge.ActionableEdge) string {
+func (action *removeEdgeActionType) getDefaultActionInputName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge) string {
 	// TODO only used in TS for now
 	return strcase.ToCamel(nodeName) + "Remove" + strcase.ToCamel(edge.EdgeIdentifier()) + "Input"
+}
+
+func (action *removeEdgeActionType) getDefaultGraphQLInputName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge) string {
+	return strcase.ToCamel(action.getDefaultGraphQLName(cfg, nodeName, edge)) + "Input"
 }
 
 func (action *removeEdgeActionType) getAction(commonInfo commonActionInfo) Action {
@@ -230,16 +282,24 @@ var _ concreteEdgeActionType = &removeEdgeActionType{}
 type groupEdgeActionType struct {
 }
 
-func (action *groupEdgeActionType) getDefaultActionName(nodeName string, edge edge.ActionableEdge, lang base.Language) string {
+func (action *groupEdgeActionType) getDefaultActionName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge, lang base.Language) string {
 	return fmt.Sprintf("Edit%s%sAction", strcase.ToCamel(nodeName), strcase.ToCamel(edge.EdgeIdentifier()))
 }
 
-func (action *groupEdgeActionType) getDefaultInputName(nodeName string, edge edge.ActionableEdge) string {
+func (action *groupEdgeActionType) getDefaultActionInputName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge) string {
 	return fmt.Sprintf("Edit%s%sInput", strcase.ToCamel(nodeName), strcase.ToCamel(edge.EdgeIdentifier()))
 }
 
-func (action *groupEdgeActionType) getDefaultGraphQLName(nodeName string, edge edge.ActionableEdge) string {
-	return fmt.Sprintf("%s%sEdit", strcase.ToLowerCamel(nodeName), strcase.ToCamel(edge.EdgeIdentifier()))
+func (action *groupEdgeActionType) getDefaultGraphQLInputName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge) string {
+	// TODO
+	return fmt.Sprintf("Edit%s%sInput", strcase.ToCamel(nodeName), strcase.ToCamel(edge.EdgeIdentifier()))
+}
+
+func (action *groupEdgeActionType) getDefaultGraphQLName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge) string {
+	if nounVerb(cfg) {
+		return fmt.Sprintf("%s%sEdit", strcase.ToLowerCamel(nodeName), strcase.ToCamel(edge.EdgeIdentifier()))
+	}
+	return fmt.Sprintf("%s%sEdit", strcase.ToLowerCamel(edge.EdgeIdentifier()), strcase.ToCamel(nodeName))
 }
 
 func (action *groupEdgeActionType) getAction(commonInfo commonActionInfo) Action {
@@ -281,28 +341,36 @@ func getActionTypeFromOperation(op ent.ActionOperation) (actionType, error) {
 	return nil, fmt.Errorf("invalid action type passed %v", op)
 }
 
-func getActionNameForNodeActionType(typ concreteNodeActionType, nodeName, customName string) string {
+func getActionNameForNodeActionType(cfg codegenapi.Config, typ concreteNodeActionType, nodeName, customName string) string {
 	if customName != "" {
 		return customName
 	}
-	return typ.getDefaultActionName(nodeName)
+	return typ.getDefaultActionName(cfg, nodeName)
 }
 
-func getGraphQLNameForNodeActionType(typ concreteNodeActionType, nodeName, customName string) string {
+func getGraphQLNameForNodeActionType(cfg codegenapi.Config, typ concreteNodeActionType, nodeName, customName string) string {
 	if customName != "" {
 		return customName
 	}
-	return typ.getDefaultGraphQLName(nodeName)
+	return typ.getDefaultGraphQLName(cfg, nodeName)
 }
 
-func getInputNameForNodeActionType(typ concreteNodeActionType, nodeName, customName string) string {
+func getActionInputNameForNodeActionType(cfg codegenapi.Config, typ concreteNodeActionType, nodeName, customName string) string {
 	if customName != "" {
 		return customName
 	}
-	return typ.getDefaultInputName(nodeName)
+	return typ.getDefaultActionInputName(cfg, nodeName)
+}
+
+func getGraphQLInputNameForNodeActionType(cfg codegenapi.Config, typ concreteNodeActionType, nodeName, customName string) string {
+	if customName != "" {
+		return customName
+	}
+	return typ.getDefaultGraphQLInputName(cfg, nodeName)
 }
 
 func getActionNameForEdgeActionType(
+	cfg codegenapi.Config,
 	typ concreteEdgeActionType,
 	nodeName string,
 	assocEdge *edge.AssociationEdge,
@@ -312,10 +380,11 @@ func getActionNameForEdgeActionType(
 	if customName != "" {
 		return customName
 	}
-	return typ.getDefaultActionName(nodeName, assocEdge, lang)
+	return typ.getDefaultActionName(cfg, nodeName, assocEdge, lang)
 }
 
 func getGraphQLNameForEdgeActionType(
+	cfg codegenapi.Config,
 	typ concreteEdgeActionType,
 	nodeName string,
 	assocEdge *edge.AssociationEdge,
@@ -323,12 +392,19 @@ func getGraphQLNameForEdgeActionType(
 	if customName != "" {
 		return customName
 	}
-	return typ.getDefaultGraphQLName(nodeName, assocEdge)
+	return typ.getDefaultGraphQLName(cfg, nodeName, assocEdge)
 }
 
-func getInputNameForEdgeActionType(typ concreteEdgeActionType, edge edge.ActionableEdge, nodeName, customName string) string {
+func getActionInputNameForEdgeActionType(cfg codegenapi.Config, typ concreteEdgeActionType, edge edge.ActionableEdge, nodeName, customName string) string {
 	if customName != "" {
 		return customName
 	}
-	return typ.getDefaultInputName(nodeName, edge)
+	return typ.getDefaultActionInputName(cfg, nodeName, edge)
+}
+
+func getGraphQLInputNameForEdgeActionType(cfg codegenapi.Config, typ concreteEdgeActionType, edge edge.ActionableEdge, nodeName, customName string) string {
+	if customName != "" {
+		return customName
+	}
+	return typ.getDefaultGraphQLInputName(cfg, nodeName, edge)
 }

@@ -12,7 +12,7 @@ var printCustomSchemaCmd = &cobra.Command{
 	Use:   "print_custom_schema",
 	Short: "prints the parsed custom graphql schema. only exists for debugging purposes and not guaranteed to exist forever",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		currentSchema, err := parseSchema()
+		currentSchema, err := parseSchemaNoConfig()
 		if err != nil {
 			return err
 		}

@@ -11,6 +11,7 @@ import (
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/graphql"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
@@ -48,21 +49,22 @@ func runStepsWithProcessor(t *testing.T, s *schema.Schema, rootDir string, proce
 }
 
 func TestSimpleCodegen(t *testing.T) {
-	s, err := schema.ParseFromInputSchema(&input.Schema{
-		Nodes: map[string]*input.Node{
-			"User": {
-				Fields: []*input.Field{
-					{
-						Name: "name",
-						Type: &input.FieldType{
-							DBType: input.String,
+	s, err := schema.ParseFromInputSchema(&codegenapi.DummyConfig{},
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "name",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+							PrimaryKey: true,
 						},
-						PrimaryKey: true,
 					},
 				},
 			},
-		},
-	}, base.TypeScript)
+		}, base.TypeScript)
 	require.Nil(t, err)
 
 	rootDir, err := ioutil.TempDir(os.TempDir(), "root")
@@ -98,21 +100,23 @@ func TestSimpleCodegen(t *testing.T) {
 }
 
 func TestDisableGraphQLRoot(t *testing.T) {
-	s, err := schema.ParseFromInputSchema(&input.Schema{
-		Nodes: map[string]*input.Node{
-			"User": {
-				Fields: []*input.Field{
-					{
-						Name: "name",
-						Type: &input.FieldType{
-							DBType: input.String,
+	s, err := schema.ParseFromInputSchema(
+		&codegenapi.DummyConfig{},
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "name",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+							PrimaryKey: true,
 						},
-						PrimaryKey: true,
 					},
 				},
 			},
-		},
-	}, base.TypeScript)
+		}, base.TypeScript)
 	require.Nil(t, err)
 
 	rootDir, err := ioutil.TempDir(os.TempDir(), "root")
@@ -143,21 +147,23 @@ func TestDisableGraphQLRoot(t *testing.T) {
 }
 
 func TestGeneratedHeader(t *testing.T) {
-	s, err := schema.ParseFromInputSchema(&input.Schema{
-		Nodes: map[string]*input.Node{
-			"User": {
-				Fields: []*input.Field{
-					{
-						Name: "name",
-						Type: &input.FieldType{
-							DBType: input.String,
+	s, err := schema.ParseFromInputSchema(
+		&codegenapi.DummyConfig{},
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "name",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+							PrimaryKey: true,
 						},
-						PrimaryKey: true,
 					},
 				},
 			},
-		},
-	}, base.TypeScript)
+		}, base.TypeScript)
 	require.Nil(t, err)
 
 	rootDir, err := ioutil.TempDir(os.TempDir(), "root")
@@ -216,59 +222,61 @@ func TestGeneratedHeader(t *testing.T) {
 }
 
 func TestSchemaWithFkeyEdgeCodegen(t *testing.T) {
-	s, err := schema.ParseFromInputSchema(&input.Schema{
-		Nodes: map[string]*input.Node{
-			"User": {
-				Fields: []*input.Field{
-					{
-						Name: "ID",
-						Type: &input.FieldType{
-							DBType: input.UUID,
+	s, err := schema.ParseFromInputSchema(
+		&codegenapi.DummyConfig{},
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "ID",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
 						},
-						PrimaryKey: true,
+						{
+							Name: "name",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
 					},
-					{
-						Name: "name",
-						Type: &input.FieldType{
-							DBType: input.String,
+				},
+				"Contact": {
+					Fields: []*input.Field{
+						{
+							Name: "ID",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "UserID",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							ForeignKey: &input.ForeignKey{
+								Schema: "User",
+								Column: "ID",
+							},
+						},
+						{
+							Name: "DuplicateUserID",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							ForeignKey: &input.ForeignKey{
+								Schema: "User",
+								Column: "ID",
+								Name:   "duplicate_contacts",
+							},
 						},
 					},
 				},
 			},
-			"Contact": {
-				Fields: []*input.Field{
-					{
-						Name: "ID",
-						Type: &input.FieldType{
-							DBType: input.UUID,
-						},
-						PrimaryKey: true,
-					},
-					{
-						Name: "UserID",
-						Type: &input.FieldType{
-							DBType: input.UUID,
-						},
-						ForeignKey: &input.ForeignKey{
-							Schema: "User",
-							Column: "ID",
-						},
-					},
-					{
-						Name: "DuplicateUserID",
-						Type: &input.FieldType{
-							DBType: input.UUID,
-						},
-						ForeignKey: &input.ForeignKey{
-							Schema: "User",
-							Column: "ID",
-							Name:   "duplicate_contacts",
-						},
-					},
-				},
-			},
-		},
-	}, base.TypeScript)
+		}, base.TypeScript)
 	require.Nil(t, err)
 
 	rootDir, err := ioutil.TempDir(os.TempDir(), "root")
@@ -300,51 +308,53 @@ func TestSchemaWithFkeyEdgeCodegen(t *testing.T) {
 }
 
 func TestSchemaWithAssocEdgeCodegen(t *testing.T) {
-	s, err := schema.ParseFromInputSchema(&input.Schema{
-		Nodes: map[string]*input.Node{
-			"User": {
-				Fields: []*input.Field{
-					{
-						Name: "ID",
-						Type: &input.FieldType{
-							DBType: input.UUID,
+	s, err := schema.ParseFromInputSchema(
+		&codegenapi.DummyConfig{},
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "ID",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
 						},
-						PrimaryKey: true,
-					},
-					{
-						Name: "name",
-						Type: &input.FieldType{
-							DBType: input.String,
-						},
-					},
-				},
-				AssocEdges: []*input.AssocEdge{
-					{
-						Name:       "Friends",
-						SchemaName: "User",
-						Symmetric:  true,
-						EdgeActions: []*input.EdgeAction{
-							{
-								Operation: ent.AddEdgeAction,
+						{
+							Name: "name",
+							Type: &input.FieldType{
+								DBType: input.String,
 							},
 						},
 					},
-					{
-						Name:       "Followers",
-						SchemaName: "User",
-						InverseEdge: &input.InverseAssocEdge{
-							Name: "Followees",
+					AssocEdges: []*input.AssocEdge{
+						{
+							Name:       "Friends",
+							SchemaName: "User",
+							Symmetric:  true,
+							EdgeActions: []*input.EdgeAction{
+								{
+									Operation: ent.AddEdgeAction,
+								},
+							},
 						},
-						EdgeActions: []*input.EdgeAction{
-							{
-								Operation: ent.AddEdgeAction,
+						{
+							Name:       "Followers",
+							SchemaName: "User",
+							InverseEdge: &input.InverseAssocEdge{
+								Name: "Followees",
+							},
+							EdgeActions: []*input.EdgeAction{
+								{
+									Operation: ent.AddEdgeAction,
+								},
 							},
 						},
 					},
 				},
 			},
-		},
-	}, base.TypeScript)
+		}, base.TypeScript)
 	require.Nil(t, err)
 
 	rootDir, err := ioutil.TempDir(os.TempDir(), "root")
@@ -382,45 +392,47 @@ func TestSchemaWithAssocEdgeCodegen(t *testing.T) {
 }
 
 func TestSchemaWithActionsCodegen(t *testing.T) {
-	s, err := schema.ParseFromInputSchema(&input.Schema{
-		Nodes: map[string]*input.Node{
-			"User": {
-				Fields: []*input.Field{
-					{
-						Name: "ID",
-						Type: &input.FieldType{
-							DBType: input.UUID,
+	s, err := schema.ParseFromInputSchema(
+		&codegenapi.DummyConfig{},
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "ID",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
 						},
-						PrimaryKey: true,
-					},
-					{
-						Name: "name",
-						Type: &input.FieldType{
-							DBType: input.String,
+						{
+							Name: "name",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
 						},
 					},
-				},
-				Actions: []*input.Action{
-					{
-						Operation: ent.CreateAction,
-					},
-					{
-						Operation: ent.EditAction,
-					},
-					{
-						Operation: ent.DeleteAction,
-					},
-					{
-						Operation:         ent.EditAction,
-						Fields:            []string{"name"},
-						CustomActionName:  "EditUserNameAction",
-						CustomGraphQLName: "UserEditName",
-						CustomInputName:   "EditNameInput",
+					Actions: []*input.Action{
+						{
+							Operation: ent.CreateAction,
+						},
+						{
+							Operation: ent.EditAction,
+						},
+						{
+							Operation: ent.DeleteAction,
+						},
+						{
+							Operation:         ent.EditAction,
+							Fields:            []string{"name"},
+							CustomActionName:  "EditUserNameAction",
+							CustomGraphQLName: "UserEditName",
+							CustomInputName:   "EditNameInput",
+						},
 					},
 				},
 			},
-		},
-	}, base.TypeScript)
+		}, base.TypeScript)
 	require.Nil(t, err)
 
 	rootDir, err := ioutil.TempDir(os.TempDir(), "root")
@@ -456,45 +468,47 @@ func TestSchemaWithActionsCodegen(t *testing.T) {
 }
 
 func TestSchemaWithPattern(t *testing.T) {
-	s, err := schema.ParseFromInputSchema(&input.Schema{
-		Nodes: map[string]*input.Node{
-			"User": {
-				Fields: []*input.Field{
-					{
-						Name: "ID",
-						Type: &input.FieldType{
-							DBType: input.UUID,
+	s, err := schema.ParseFromInputSchema(
+		&codegenapi.DummyConfig{},
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "ID",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
 						},
-						PrimaryKey: true,
-					},
-					{
-						Name: "name",
-						Type: &input.FieldType{
-							DBType: input.String,
+						{
+							Name: "name",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
 						},
 					},
-				},
-				AssocEdges: []*input.AssocEdge{
-					{
-						Name:        "likes",
-						SchemaName:  "User",
-						PatternName: "feedbackTarget",
+					AssocEdges: []*input.AssocEdge{
+						{
+							Name:        "likes",
+							SchemaName:  "User",
+							PatternName: "feedbackTarget",
+						},
 					},
 				},
 			},
-		},
-		Patterns: map[string]*input.Pattern{
-			"feedbackTarget": {
-				Name: "feedbackTarget",
-				AssocEdges: []*input.AssocEdge{
-					{
-						Name:       "likes",
-						SchemaName: "User",
+			Patterns: map[string]*input.Pattern{
+				"feedbackTarget": {
+					Name: "feedbackTarget",
+					AssocEdges: []*input.AssocEdge{
+						{
+							Name:       "likes",
+							SchemaName: "User",
+						},
 					},
 				},
 			},
-		},
-	}, base.TypeScript)
+		}, base.TypeScript)
 	require.Nil(t, err)
 
 	rootDir, err := ioutil.TempDir(os.TempDir(), "root")
