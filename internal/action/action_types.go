@@ -291,8 +291,7 @@ func (action *groupEdgeActionType) getDefaultActionInputName(cfg codegenapi.Conf
 }
 
 func (action *groupEdgeActionType) getDefaultGraphQLInputName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge) string {
-	// TODO
-	return fmt.Sprintf("Edit%s%sInput", strcase.ToCamel(nodeName), strcase.ToCamel(edge.EdgeIdentifier()))
+	return strcase.ToCamel(action.getDefaultGraphQLName(cfg, nodeName, edge)) + "Input"
 }
 
 func (action *groupEdgeActionType) getDefaultGraphQLName(cfg codegenapi.Config, nodeName string, edge edge.ActionableEdge) string {
