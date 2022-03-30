@@ -10,6 +10,7 @@ import (
 	"sync"
 	"text/template"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
@@ -77,7 +78,9 @@ func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataIn
 		opts.writeBase = true
 		opts.writeBuilder = true
 		opts.edgeBaseFile = true
-	} else {
+	}
+
+	if processor.Config.UseChanges() {
 		changes := processor.ChangeMap
 		nodeChanges := changes[info.NodeData.Node]
 
@@ -108,6 +111,7 @@ func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataIn
 
 			case change.RemoveAction:
 				opts.deletedActionFiles[c.Name] = true
+				spew.Dump("removeAction", c.Name)
 
 			case change.AddEdge:
 				opts.edgeBaseFile = true
@@ -175,7 +179,8 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 	if processor.Config.WriteAllFiles() {
 		opts.writeAllEdges = true
 		opts.edgeBaseFile = true
-	} else {
+	}
+	if processor.Config.UseChanges() {
 		changes := processor.ChangeMap
 		nodeChanges := changes[pattern.Name]
 

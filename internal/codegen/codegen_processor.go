@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/lolopinto/ent/internal/build_info"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/fns"
 	"github.com/lolopinto/ent/internal/schema"
@@ -262,7 +263,7 @@ func postProcess(p *Processor) error {
 		},
 		func() error {
 			if p.buildInfo != nil {
-				return p.buildInfo.PostProcess()
+				return p.buildInfo.PostProcess(p.Config)
 			}
 			return nil
 		},
@@ -352,18 +353,25 @@ func NewCodegenProcessor(currentSchema *schema.Schema, configPath string, option
 	}
 	cfg.SetDebugMode(opt.debugMode)
 
-	existingSchema := parseExistingSchema(cfg)
+	existingSchema := parseExistingSchema(cfg, opt.buildInfo)
 	changes, err := schema.CompareSchemas(existingSchema, currentSchema)
 	if err != nil && opt.debugMode {
 		fmt.Printf("error %v comparing schemas \n", err)
 	}
 	// if changes == nil, don't use changes
 	useChanges := changes != nil
-	cfg.SetUseChanges(useChanges)
-	writeAll := !useChanges || opt.writeAll
+	writeAll := !useChanges
+	if opt.writeAll {
+		writeAll = true
+		useChanges = false
+	}
 	if !writeAll && opt.buildInfo != nil && opt.buildInfo.Changed() {
 		writeAll = true
 	}
+	if opt.buildInfo != nil && opt.buildInfo.CheckForDeletes() {
+		useChanges = true
+	}
+	cfg.SetUseChanges(useChanges)
 	cfg.SetWriteAll(writeAll)
 	cfg.SetChangeMap(changes)
 
@@ -403,7 +411,7 @@ func FormatTS(cfg *Config) error {
 	return p.FormatTS()
 }
 
-func parseExistingSchema(cfg *Config) *schema.Schema {
+func parseExistingSchema(cfg *Config, buildInfo *build_info.BuildInfo) *schema.Schema {
 	filepath := cfg.GetPathToSchemaFile()
 	fi, _ := os.Stat(filepath)
 	if fi == nil {
@@ -418,6 +426,15 @@ func parseExistingSchema(cfg *Config) *schema.Schema {
 	if err != nil {
 		return nil
 	}
-	s, _ := schema.ParseFromInputSchema(cfg, existingSchema, base.TypeScript)
+	mutationName := codegenapi.DefaultGraphQLMutationName
+	if buildInfo != nil {
+		mutationName = buildInfo.PrevGraphQLMutationName()
+	}
+	schemaCfg := cfg
+	if mutationName != cfg.DefaultGraphQLMutationName() {
+		schemaCfg = cfg.Clone()
+		schemaCfg.OverrideGraphQLMutationName(mutationName)
+	}
+	s, _ := schema.ParseFromInputSchema(schemaCfg, existingSchema, base.TypeScript)
 	return s
 }

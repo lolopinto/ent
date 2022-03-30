@@ -10,8 +10,8 @@ type logType = "query" | "warn" | "info" | "error" | "debug";
 // or ent.yml?
 
 enum graphqlMutationName {
-  NOUN_VERB = "NOUN_VERB",
-  VERB_NOUN = "VERB_NOUN",
+  NOUN_VERB = "NounVerb",
+  VERB_NOUN = "VerbNoun",
 }
 
 enum graphQLFieldFormat {
