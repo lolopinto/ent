@@ -19,6 +19,7 @@ import (
 	"github.com/lolopinto/ent/internal/schema/custominterface"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
+	"github.com/lolopinto/ent/internal/tsimport"
 
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/field"
@@ -61,6 +62,9 @@ type ActionField interface {
 	DefaultValue() interface{}
 	Nullable() bool
 	HasDefaultValueOnCreate() bool
+	GetTsType() string
+	IsEditableIDField() bool
+	GetTsTypeImports() []*tsimport.ImportPath
 }
 
 type ActionInfo struct {

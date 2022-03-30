@@ -247,7 +247,11 @@ test("edit", async () => {
       viewer: account.viewer,
       schema: schema,
       mutation: "renameTodo",
-      args: { todo_id: todo.id, text: "watch GOT tomorrow" },
+      args: {
+        todo_id: todo.id,
+        text: "watch GOT tomorrow",
+        reason_for_change: "time for fun",
+      },
     },
     ["todo.id", todo.id],
     ["todo.text", "watch GOT tomorrow"],

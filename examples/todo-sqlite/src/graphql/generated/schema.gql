@@ -225,6 +225,7 @@ input RenameTodoInput {
   """id of Todo"""
   todo_id: ID!
   text: String
+  reason_for_change: String
 }
 
 type RenameTodoPayload {
