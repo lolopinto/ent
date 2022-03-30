@@ -14,6 +14,11 @@ enum graphqlMutationName {
   VERB_NOUN = "VERB_NOUN",
 }
 
+enum graphQLFieldFormat {
+  LOWER_CAMEL = "lowerCamel",
+  SNAKE_CASE = "snake_case",
+}
+
 export interface Config {
   dbConnectionString?: string;
   dbFile?: string; // config/database.yml is default
@@ -62,6 +67,10 @@ interface CodegenConfig {
   // default names for graphql actions|mutations is nounVerb e.g. userCreate
   // if you wanna change it to verbNoun e.g. createUser, set this field to VERB_NOUN
   defaultGraphQLMutationName?: graphqlMutationName;
+
+  // default format for fields is lowerCamelCase e.g. firstName
+  // if you wanna change it to snake_case e.g. first_name, set this field to snake_case
+  defaultGraphQLFieldFormat?: graphQLFieldFormat;
 }
 
 interface PrettierConfig {

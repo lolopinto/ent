@@ -31,8 +31,11 @@ export const AccountType = new GraphQLObjectType({
     name: {
       type: GraphQLNonNull(GraphQLString),
     },
-    phoneNumber: {
+    phone_number: {
       type: GraphQLNonNull(GraphQLString),
+      resolve: (account: Account, args: {}, context: RequestContext) => {
+        return account.phoneNumber;
+      },
     },
     tags: {
       type: GraphQLNonNull(AccountToTagsConnectionType()),
@@ -92,13 +95,13 @@ export const AccountType = new GraphQLObjectType({
         );
       },
     },
-    openTodosPlural: {
+    open_todos_plural: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TodoType))),
       resolve: async (account: Account, args: {}, context: RequestContext) => {
         return account.openTodosPlural();
       },
     },
-    openTodos: {
+    open_todos: {
       type: GraphQLNonNull(AccountToOpenTodosConnectionType()),
       args: {
         first: {

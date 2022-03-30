@@ -18,6 +18,11 @@ import CreateTagAction, {
 } from "src/ent/tag/actions/create_tag_action";
 import { TagType } from "src/graphql/resolvers/";
 
+interface customCreateTagInput extends Omit<TagCreateInput, "displayName"> {
+  display_name: string;
+  owner_id: string;
+}
+
 interface CreateTagPayload {
   tag: Tag;
 }
@@ -25,10 +30,10 @@ interface CreateTagPayload {
 export const CreateTagInputType = new GraphQLInputObjectType({
   name: "CreateTagInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    displayName: {
+    display_name: {
       type: GraphQLNonNull(GraphQLString),
     },
-    ownerID: {
+    owner_id: {
       type: GraphQLNonNull(GraphQLID),
     },
   }),
@@ -46,7 +51,7 @@ export const CreateTagPayloadType = new GraphQLObjectType({
 export const CreateTagType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: TagCreateInput }
+  { [input: string]: customCreateTagInput }
 > = {
   type: GraphQLNonNull(CreateTagPayloadType),
   args: {
@@ -62,8 +67,8 @@ export const CreateTagType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ): Promise<CreateTagPayload> => {
     const tag = await CreateTagAction.create(context.getViewer(), {
-      displayName: input.displayName,
-      ownerID: input.ownerID,
+      displayName: input.display_name,
+      ownerID: input.owner_id,
     }).saveX();
     return { tag: tag };
   },

@@ -390,11 +390,11 @@ func ParseFromInput(cfg codegenapi.Config, nodeName string, actions []*input.Act
 }
 
 func ParseFromInputNode(cfg codegenapi.Config, nodeName string, node *input.Node, lang base.Language) (*ActionInfo, error) {
-	fi, err := field.NewFieldInfoFromInputs(node.Fields, &field.Options{})
+	fi, err := field.NewFieldInfoFromInputs(cfg, node.Fields, &field.Options{})
 	if err != nil {
 		return nil, err
 	}
-	ei, err := edge.EdgeInfoFromInput(nodeName, node)
+	ei, err := edge.EdgeInfoFromInput(cfg, nodeName, node)
 	if err != nil {
 		return nil, err
 	}
@@ -471,11 +471,12 @@ func GetNonEntFields(action Action) []FieldActionTemplateInfo {
 	// TODO this is only used by go so didn't update this
 	for _, f := range action.GetNonEntFields() {
 
+		fieldName := f.GetFieldName()
 		fields = append(fields, FieldActionTemplateInfo{
-			SetterMethodName: "Add" + f.FieldName,
-			InstanceName:     strcase.ToLowerCamel(f.FieldName),
+			SetterMethodName: "Add" + fieldName,
+			InstanceName:     strcase.ToLowerCamel(fieldName),
 			InstanceType:     "string", // TODO this needs to work for other
-			FieldName:        f.FieldName,
+			FieldName:        fieldName,
 			IsStatusEnum:     f.Flag == "Enum", // TODO best way?
 			IsGroupID:        f.Flag == "ID",
 			NodeType:         f.NodeType,
@@ -500,7 +501,7 @@ type EdgeActionTemplateInfo struct {
 	Node               string
 	GraphQLNodeID      string
 	TSEdgeConst        string
-	TSGraphQLNodeID    string
+	TSNodeID           string
 	TSAddMethodName    string
 	TSAddIDMethodName  string
 	TSRemoveMethodName string
@@ -536,7 +537,7 @@ func GetEdgesFromEdges(edges []*edge.AssociationEdge) []EdgeActionTemplateInfo {
 			NodeType: edge.NodeInfo.NodeType,
 			// matches what we do in graphQLSchema.processAction
 			GraphQLNodeID:      fmt.Sprintf("%sID", edge.Singular()),
-			TSGraphQLNodeID:    fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular())),
+			TSNodeID:           fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular())),
 			TSAddIDMethodName:  fmt.Sprintf("add%sID", edge.Singular()),
 			TSAddMethodName:    fmt.Sprintf("add%s", edge.Singular()),
 			TSRemoveMethodName: fmt.Sprintf("remove%s", edge.Singular()),

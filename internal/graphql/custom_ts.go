@@ -7,6 +7,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
@@ -230,7 +231,7 @@ type fieldConfigBuilder interface {
 	getArg() string
 	getName() string
 	getResolveMethodArg() string
-	getTypeImports(s *gqlSchema) []*tsimport.ImportPath
+	getTypeImports(processor *codegen.Processor, s *gqlSchema) []*tsimport.ImportPath
 	getArgs(s *gqlSchema) []*fieldConfigArg
 	getReturnTypeHint() string
 	getArgMap(cd *CustomData) map[string]*CustomObject
@@ -273,7 +274,7 @@ func (mfcg *mutationFieldConfigBuilder) getResolveMethodArg() string {
 	return mfcg.field.getResolveMethodArg()
 }
 
-func (mfcg *mutationFieldConfigBuilder) getTypeImports(s *gqlSchema) []*tsimport.ImportPath {
+func (mfcg *mutationFieldConfigBuilder) getTypeImports(processor *codegen.Processor, s *gqlSchema) []*tsimport.ImportPath {
 	if len(mfcg.field.Results) != 1 {
 		panic(fmt.Errorf("invalid number of results for custom field %s", mfcg.field.FunctionName))
 	}
@@ -359,13 +360,13 @@ func (qfcg *queryFieldConfigBuilder) getResolveMethodArg() string {
 	return qfcg.field.getResolveMethodArg()
 }
 
-func (qfcg *queryFieldConfigBuilder) getTypeImports(s *gqlSchema) []*tsimport.ImportPath {
+func (qfcg *queryFieldConfigBuilder) getTypeImports(processor *codegen.Processor, s *gqlSchema) []*tsimport.ImportPath {
 	if len(qfcg.field.Results) != 1 {
 		panic("invalid number of results for custom field")
 	}
 
 	if isConnection(qfcg.field) {
-		return getGQLFileImports(getRootGQLEdge(qfcg.field).GetTSGraphQLTypeImports(), false)
+		return getGQLFileImports(getRootGQLEdge(processor.Config, qfcg.field).GetTSGraphQLTypeImports(), false)
 	}
 	r := qfcg.field.Results[0]
 
@@ -521,7 +522,7 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 
 	if isConnection(field) {
 		// nodeName is root or something...
-		customEdge := getRootGQLEdge(field)
+		customEdge := getRootGQLEdge(processor.Config, field)
 		// RootQuery?
 		conn = getGqlConnection("root", customEdge, processor)
 
@@ -544,7 +545,7 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 		Name:             builder.getName(),
 		Arg:              builder.getArg(),
 		ResolveMethodArg: builder.getResolveMethodArg(),
-		TypeImports:      builder.getTypeImports(s),
+		TypeImports:      builder.getTypeImports(processor, s),
 		ArgImports:       argImports,
 		Args:             builder.getArgs(s),
 		ReturnTypeHint:   builder.getReturnTypeHint(),
@@ -718,7 +719,7 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 
 		for _, field := range fields {
 			if isConnection(field) {
-				customEdge := getGQLEdge(field, nodeName)
+				customEdge := getGQLEdge(processor.Config, field, nodeName)
 				nodeInfo.connections = append(nodeInfo.connections, getGqlConnection(nodeData.PackageName, customEdge, processor))
 				addConnection(nodeData, customEdge, &obj.Fields, nodeData.NodeInstance, &field)
 				continue
@@ -844,6 +845,7 @@ type customGraphQLEdge interface {
 type CustomEdge struct {
 	SourceNodeName string
 	EdgeName       string
+	graphqlName    string
 	Type           string
 }
 
@@ -864,7 +866,7 @@ func (e *CustomEdge) GetEntConfig() *schemaparser.EntConfigInfo {
 }
 
 func (e *CustomEdge) GraphQLEdgeName() string {
-	return strcase.ToLowerCamel(e.EdgeName)
+	return e.graphqlName
 }
 
 func (e *CustomEdge) CamelCaseEdgeName() string {
@@ -916,14 +918,15 @@ func (e *CustomEdge) UniqueEdge() bool {
 var _ edge.Edge = &CustomEdge{}
 var _ edge.ConnectionEdge = &CustomEdge{}
 
-func getGQLEdge(field CustomField, nodeName string) *CustomEdge {
+func getGQLEdge(cfg codegenapi.Config, field CustomField, nodeName string) *CustomEdge {
 	return &CustomEdge{
 		SourceNodeName: nodeName,
 		Type:           field.Results[0].Type,
-		EdgeName:       strcase.ToLowerCamel(field.GraphQLName),
+		graphqlName:    codegenapi.GraphQLName(cfg, field.GraphQLName),
+		EdgeName:       field.GraphQLName,
 	}
 }
 
-func getRootGQLEdge(field CustomField) *CustomEdge {
-	return getGQLEdge(field, "root")
+func getRootGQLEdge(cfg codegenapi.Config, field CustomField) *CustomEdge {
+	return getGQLEdge(cfg, field, "root")
 }

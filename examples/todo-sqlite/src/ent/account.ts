@@ -48,7 +48,7 @@ export class Account extends AccountBase {
   privacyPolicy = AlwaysAllowPrivacyPolicy;
 
   // showing plural
-  @gqlField({ name: "openTodosPlural", type: "[Todo]" })
+  @gqlField({ name: "open_todos_plural", type: "[Todo]" })
   async openTodosPlural() {
     return await Todo.loadCustom(
       this.viewer,
@@ -57,7 +57,7 @@ export class Account extends AccountBase {
   }
 
   // showing connection
-  @gqlField({ name: "openTodos", type: gqlConnection("Todo") })
+  @gqlField({ name: "open_todos", type: gqlConnection("Todo") })
   openTodos() {
     return new AccountToOpenTodosQuery(this.viewer, this);
   }

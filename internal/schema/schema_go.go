@@ -78,7 +78,7 @@ func (s *Schema) parseFile(
 	g := &depgraph.Depgraph{}
 
 	// things that need all nodeDatas loaded
-	g2 := s.buildPostRunDepgraph(edgeData)
+	g2 := s.buildPostRunDepgraph(&codegenapi.DummyConfig{}, edgeData)
 
 	var shouldCodegen bool
 

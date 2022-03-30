@@ -126,10 +126,13 @@ func TestComparePatternsWithEdgesNoChange(t *testing.T) {
 }
 
 func TestComparePatternsWithAddedEdge(t *testing.T) {
-	edge1, err := edge.AssocEdgeFromInput("user", &input.AssocEdge{
-		Name:       "Likes",
-		SchemaName: "User",
-	})
+	edge1, err := edge.AssocEdgeFromInput(
+		&codegenapi.DummyConfig{},
+		"user",
+		&input.AssocEdge{
+			Name:       "Likes",
+			SchemaName: "User",
+		})
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Patterns: map[string]*schema.PatternInfo{
@@ -162,10 +165,13 @@ func TestComparePatternsWithAddedEdge(t *testing.T) {
 }
 
 func TestComparePatternsWithRemovedEdge(t *testing.T) {
-	edge1, err := edge.AssocEdgeFromInput("user", &input.AssocEdge{
-		Name:       "Likes",
-		SchemaName: "User",
-	})
+	edge1, err := edge.AssocEdgeFromInput(
+		&codegenapi.DummyConfig{},
+		"user",
+		&input.AssocEdge{
+			Name:       "Likes",
+			SchemaName: "User",
+		})
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Patterns: map[string]*schema.PatternInfo{
@@ -198,18 +204,23 @@ func TestComparePatternsWithRemovedEdge(t *testing.T) {
 }
 
 func TestComparePatternsWithModifiedEdge(t *testing.T) {
-	edge1, err := edge.AssocEdgeFromInput("user", &input.AssocEdge{
-		Name:       "Likes",
-		SchemaName: "User",
-	})
+	edge1, err := edge.AssocEdgeFromInput(
+		&codegenapi.DummyConfig{},
+		"user", &input.AssocEdge{
+			Name:       "Likes",
+			SchemaName: "User",
+		})
 	require.Nil(t, err)
-	edge2, err := edge.AssocEdgeFromInput("user", &input.AssocEdge{
-		Name:       "Likes",
-		SchemaName: "User",
-		InverseEdge: &input.InverseAssocEdge{
-			Name: "likedObjects",
-		},
-	})
+	edge2, err := edge.AssocEdgeFromInput(
+		&codegenapi.DummyConfig{},
+		"user",
+		&input.AssocEdge{
+			Name:       "Likes",
+			SchemaName: "User",
+			InverseEdge: &input.InverseAssocEdge{
+				Name: "likedObjects",
+			},
+		})
 	require.Nil(t, err)
 
 	s1 := &schema.Schema{
@@ -333,20 +344,22 @@ func TestCompareNodesAddField(t *testing.T) {
 			},
 		},
 	}
-	fi, err := field.NewFieldInfoFromInputs([]*input.Field{
-		{
-			Name: "first_name",
-			Type: &input.FieldType{
-				DBType: input.String,
+	fi, err := field.NewFieldInfoFromInputs(
+		&codegenapi.DummyConfig{},
+		[]*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
 			},
-		},
-		{
-			Name: "last_name",
-			Type: &input.FieldType{
-				DBType: input.String,
+			{
+				Name: "last_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
 			},
-		},
-	}, &field.Options{})
+		}, &field.Options{})
 	require.Nil(t, err)
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -391,20 +404,22 @@ func TestCompareNodesAddField(t *testing.T) {
 }
 
 func TestCompareNodesRemoveField(t *testing.T) {
-	fi1, err := field.NewFieldInfoFromInputs([]*input.Field{
-		{
-			Name: "first_name",
-			Type: &input.FieldType{
-				DBType: input.String,
+	fi1, err := field.NewFieldInfoFromInputs(
+		&codegenapi.DummyConfig{},
+		[]*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
 			},
-		},
-		{
-			Name: "last_name",
-			Type: &input.FieldType{
-				DBType: input.String,
+			{
+				Name: "last_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
 			},
-		},
-	}, &field.Options{})
+		}, &field.Options{})
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -418,14 +433,16 @@ func TestCompareNodesRemoveField(t *testing.T) {
 		},
 	}
 
-	fi2, err := field.NewFieldInfoFromInputs([]*input.Field{
-		{
-			Name: "first_name",
-			Type: &input.FieldType{
-				DBType: input.String,
+	fi2, err := field.NewFieldInfoFromInputs(
+		&codegenapi.DummyConfig{},
+		[]*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
 			},
-		},
-	}, &field.Options{})
+		}, &field.Options{})
 	require.Nil(t, err)
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -457,14 +474,16 @@ func TestCompareNodesRemoveField(t *testing.T) {
 }
 
 func TestCompareNodesModifyField(t *testing.T) {
-	fi1, err := field.NewFieldInfoFromInputs([]*input.Field{
-		{
-			Name: "first_name",
-			Type: &input.FieldType{
-				DBType: input.String,
+	fi1, err := field.NewFieldInfoFromInputs(
+		&codegenapi.DummyConfig{},
+		[]*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
 			},
-		},
-	}, &field.Options{})
+		}, &field.Options{})
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -478,15 +497,17 @@ func TestCompareNodesModifyField(t *testing.T) {
 		},
 	}
 
-	fi2, err := field.NewFieldInfoFromInputs([]*input.Field{
-		{
-			Name: "first_name",
-			Type: &input.FieldType{
-				DBType: input.String,
+	fi2, err := field.NewFieldInfoFromInputs(
+		&codegenapi.DummyConfig{},
+		[]*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+				Nullable: true,
 			},
-			Nullable: true,
-		},
-	}, &field.Options{})
+		}, &field.Options{})
 	require.Nil(t, err)
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -518,23 +539,27 @@ func TestCompareNodesModifyField(t *testing.T) {
 }
 
 func TestCompareNodesWithEdgesNoChange(t *testing.T) {
-	e1, err := edge.EdgeInfoFromInput("user", &input.Node{
-		AssocEdges: []*input.AssocEdge{
-			{
-				Name:       "Likes",
-				SchemaName: "User",
+	e1, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user", &input.Node{
+			AssocEdges: []*input.AssocEdge{
+				{
+					Name:       "Likes",
+					SchemaName: "User",
+				},
 			},
-		},
-	})
+		})
 	require.Nil(t, err)
-	e2, err := edge.EdgeInfoFromInput("user", &input.Node{
-		AssocEdges: []*input.AssocEdge{
-			{
-				Name:       "Likes",
-				SchemaName: "User",
+	e2, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user", &input.Node{
+			AssocEdges: []*input.AssocEdge{
+				{
+					Name:       "Likes",
+					SchemaName: "User",
+				},
 			},
-		},
-	})
+		})
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -564,14 +589,16 @@ func TestCompareNodesWithEdgesNoChange(t *testing.T) {
 }
 
 func TestCompareNodesWithEdgesAdded(t *testing.T) {
-	e2, err := edge.EdgeInfoFromInput("user", &input.Node{
-		AssocEdges: []*input.AssocEdge{
-			{
-				Name:       "Likes",
-				SchemaName: "User",
+	e2, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user", &input.Node{
+			AssocEdges: []*input.AssocEdge{
+				{
+					Name:       "Likes",
+					SchemaName: "User",
+				},
 			},
-		},
-	})
+		})
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -615,14 +642,16 @@ func TestCompareNodesWithEdgesAdded(t *testing.T) {
 }
 
 func TestCompareNodesWithRemovedEdge(t *testing.T) {
-	e1, err := edge.EdgeInfoFromInput("user", &input.Node{
-		AssocEdges: []*input.AssocEdge{
-			{
-				Name:       "Likes",
-				SchemaName: "User",
+	e1, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user", &input.Node{
+			AssocEdges: []*input.AssocEdge{
+				{
+					Name:       "Likes",
+					SchemaName: "User",
+				},
 			},
-		},
-	})
+		})
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -665,26 +694,30 @@ func TestCompareNodesWithRemovedEdge(t *testing.T) {
 }
 
 func TestCompareNodesWithModifiedEdge(t *testing.T) {
-	e1, err := edge.EdgeInfoFromInput("user", &input.Node{
-		AssocEdges: []*input.AssocEdge{
-			{
-				Name:       "Likes",
-				SchemaName: "User",
-			},
-		},
-	})
-	require.Nil(t, err)
-	e2, err := edge.EdgeInfoFromInput("user", &input.Node{
-		AssocEdges: []*input.AssocEdge{
-			{
-				Name:       "Likes",
-				SchemaName: "User",
-				InverseEdge: &input.InverseAssocEdge{
-					Name: "likedObjects",
+	e1, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user", &input.Node{
+			AssocEdges: []*input.AssocEdge{
+				{
+					Name:       "Likes",
+					SchemaName: "User",
 				},
 			},
-		},
-	})
+		})
+	require.Nil(t, err)
+	e2, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user", &input.Node{
+			AssocEdges: []*input.AssocEdge{
+				{
+					Name:       "Likes",
+					SchemaName: "User",
+					InverseEdge: &input.InverseAssocEdge{
+						Name: "likedObjects",
+					},
+				},
+			},
+		})
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -728,23 +761,29 @@ func TestCompareNodesWithModifiedEdge(t *testing.T) {
 }
 
 func TestCompareNodesWithRenamedEdge(t *testing.T) {
-	e1, err := edge.EdgeInfoFromInput("user", &input.Node{
-		AssocEdges: []*input.AssocEdge{
-			{
-				Name:       "Likes",
-				SchemaName: "User",
+	e1, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user",
+		&input.Node{
+			AssocEdges: []*input.AssocEdge{
+				{
+					Name:       "Likes",
+					SchemaName: "User",
+				},
 			},
-		},
-	})
+		})
 	require.Nil(t, err)
-	e2, err := edge.EdgeInfoFromInput("user", &input.Node{
-		AssocEdges: []*input.AssocEdge{
-			{
-				Name:       "LikedPeople",
-				SchemaName: "User",
+	e2, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user",
+		&input.Node{
+			AssocEdges: []*input.AssocEdge{
+				{
+					Name:       "LikedPeople",
+					SchemaName: "User",
+				},
 			},
-		},
-	})
+		})
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -794,51 +833,56 @@ func TestCompareNodesWithRenamedEdge(t *testing.T) {
 }
 
 func TestCompareNodesWithEdgeGroupNoChange(t *testing.T) {
-	e1, err := edge.EdgeInfoFromInput("user", &input.Node{
-		AssocEdgeGroups: []*input.AssocEdgeGroup{
-			{
-				Name:            "Friendships",
-				GroupStatusName: "FriendshipStatus",
-				AssocEdges: []*input.AssocEdge{
-					{
-						Name:       "Friends",
-						SchemaName: "User",
-						Symmetric:  true,
-					},
-					{
-						Name:       "FriendRequestsSent",
-						SchemaName: "User",
-						InverseEdge: &input.InverseAssocEdge{
-							Name: "FriendRequestsReceived",
+	e1, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user",
+		&input.Node{
+			AssocEdgeGroups: []*input.AssocEdgeGroup{
+				{
+					Name:            "Friendships",
+					GroupStatusName: "FriendshipStatus",
+					AssocEdges: []*input.AssocEdge{
+						{
+							Name:       "Friends",
+							SchemaName: "User",
+							Symmetric:  true,
+						},
+						{
+							Name:       "FriendRequestsSent",
+							SchemaName: "User",
+							InverseEdge: &input.InverseAssocEdge{
+								Name: "FriendRequestsReceived",
+							},
 						},
 					},
 				},
 			},
-		},
-	})
+		})
 	require.Nil(t, err)
-	e2, err := edge.EdgeInfoFromInput("user", &input.Node{
-		AssocEdgeGroups: []*input.AssocEdgeGroup{
-			{
-				Name:            "Friendships",
-				GroupStatusName: "FriendshipStatus",
-				AssocEdges: []*input.AssocEdge{
-					{
-						Name:       "Friends",
-						SchemaName: "User",
-						Symmetric:  true,
-					},
-					{
-						Name:       "FriendRequestsSent",
-						SchemaName: "User",
-						InverseEdge: &input.InverseAssocEdge{
-							Name: "FriendRequestsReceived",
+	e2, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user", &input.Node{
+			AssocEdgeGroups: []*input.AssocEdgeGroup{
+				{
+					Name:            "Friendships",
+					GroupStatusName: "FriendshipStatus",
+					AssocEdges: []*input.AssocEdge{
+						{
+							Name:       "Friends",
+							SchemaName: "User",
+							Symmetric:  true,
+						},
+						{
+							Name:       "FriendRequestsSent",
+							SchemaName: "User",
+							InverseEdge: &input.InverseAssocEdge{
+								Name: "FriendRequestsReceived",
+							},
 						},
 					},
 				},
 			},
-		},
-	})
+		})
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -868,28 +912,31 @@ func TestCompareNodesWithEdgeGroupNoChange(t *testing.T) {
 }
 
 func TestCompareNodesWithEdgeGroupAdded(t *testing.T) {
-	e2, err := edge.EdgeInfoFromInput("user", &input.Node{
-		AssocEdgeGroups: []*input.AssocEdgeGroup{
-			{
-				Name:            "Friendships",
-				GroupStatusName: "FriendshipStatus",
-				AssocEdges: []*input.AssocEdge{
-					{
-						Name:       "Friends",
-						SchemaName: "User",
-						Symmetric:  true,
-					},
-					{
-						Name:       "FriendRequestsSent",
-						SchemaName: "User",
-						InverseEdge: &input.InverseAssocEdge{
-							Name: "FriendRequestsReceived",
+	e2, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user",
+		&input.Node{
+			AssocEdgeGroups: []*input.AssocEdgeGroup{
+				{
+					Name:            "Friendships",
+					GroupStatusName: "FriendshipStatus",
+					AssocEdges: []*input.AssocEdge{
+						{
+							Name:       "Friends",
+							SchemaName: "User",
+							Symmetric:  true,
+						},
+						{
+							Name:       "FriendRequestsSent",
+							SchemaName: "User",
+							InverseEdge: &input.InverseAssocEdge{
+								Name: "FriendRequestsReceived",
+							},
 						},
 					},
 				},
 			},
-		},
-	})
+		})
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -931,28 +978,31 @@ func TestCompareNodesWithEdgeGroupAdded(t *testing.T) {
 }
 
 func TestCompareNodesWithEdgeGroupRemoved(t *testing.T) {
-	e1, err := edge.EdgeInfoFromInput("user", &input.Node{
-		AssocEdgeGroups: []*input.AssocEdgeGroup{
-			{
-				Name:            "Friendships",
-				GroupStatusName: "FriendshipStatus",
-				AssocEdges: []*input.AssocEdge{
-					{
-						Name:       "Friends",
-						SchemaName: "User",
-						Symmetric:  true,
-					},
-					{
-						Name:       "FriendRequestsSent",
-						SchemaName: "User",
-						InverseEdge: &input.InverseAssocEdge{
-							Name: "FriendRequestsReceived",
+	e1, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user",
+		&input.Node{
+			AssocEdgeGroups: []*input.AssocEdgeGroup{
+				{
+					Name:            "Friendships",
+					GroupStatusName: "FriendshipStatus",
+					AssocEdges: []*input.AssocEdge{
+						{
+							Name:       "Friends",
+							SchemaName: "User",
+							Symmetric:  true,
+						},
+						{
+							Name:       "FriendRequestsSent",
+							SchemaName: "User",
+							InverseEdge: &input.InverseAssocEdge{
+								Name: "FriendRequestsReceived",
+							},
 						},
 					},
 				},
 			},
-		},
-	})
+		})
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -994,55 +1044,61 @@ func TestCompareNodesWithEdgeGroupRemoved(t *testing.T) {
 }
 
 func TestCompareNodesWithEdgeGroupModified(t *testing.T) {
-	e1, err := edge.EdgeInfoFromInput("user", &input.Node{
-		AssocEdgeGroups: []*input.AssocEdgeGroup{
-			{
-				Name:            "Friendships",
-				GroupStatusName: "FriendshipStatus",
-				AssocEdges: []*input.AssocEdge{
-					{
-						Name:       "Friends",
-						SchemaName: "User",
-						Symmetric:  true,
-					},
-					{
-						Name:       "FriendRequestsSent",
-						SchemaName: "User",
-						InverseEdge: &input.InverseAssocEdge{
-							Name: "FriendRequestsReceived",
+	e1, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user",
+		&input.Node{
+			AssocEdgeGroups: []*input.AssocEdgeGroup{
+				{
+					Name:            "Friendships",
+					GroupStatusName: "FriendshipStatus",
+					AssocEdges: []*input.AssocEdge{
+						{
+							Name:       "Friends",
+							SchemaName: "User",
+							Symmetric:  true,
+						},
+						{
+							Name:       "FriendRequestsSent",
+							SchemaName: "User",
+							InverseEdge: &input.InverseAssocEdge{
+								Name: "FriendRequestsReceived",
+							},
 						},
 					},
 				},
 			},
-		},
-	})
+		})
 	require.Nil(t, err)
-	e2, err := edge.EdgeInfoFromInput("user", &input.Node{
-		AssocEdgeGroups: []*input.AssocEdgeGroup{
-			{
-				// contrived change to show something simple changing. GroupStatusName is what we key by
-				Name:            "friends",
-				GroupStatusName: "FriendshipStatus",
-				// keep the table name the same since we should be storing the data in the same table
-				// TODO we should probably confirm this for any edge change as a prompt...
-				TableName: "user_friendships_edges",
-				AssocEdges: []*input.AssocEdge{
-					{
-						Name:       "Friends",
-						SchemaName: "User",
-						Symmetric:  true,
-					},
-					{
-						Name:       "FriendRequestsSent",
-						SchemaName: "User",
-						InverseEdge: &input.InverseAssocEdge{
-							Name: "FriendRequestsReceived",
+	e2, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user",
+		&input.Node{
+			AssocEdgeGroups: []*input.AssocEdgeGroup{
+				{
+					// contrived change to show something simple changing. GroupStatusName is what we key by
+					Name:            "friends",
+					GroupStatusName: "FriendshipStatus",
+					// keep the table name the same since we should be storing the data in the same table
+					// TODO we should probably confirm this for any edge change as a prompt...
+					TableName: "user_friendships_edges",
+					AssocEdges: []*input.AssocEdge{
+						{
+							Name:       "Friends",
+							SchemaName: "User",
+							Symmetric:  true,
+						},
+						{
+							Name:       "FriendRequestsSent",
+							SchemaName: "User",
+							InverseEdge: &input.InverseAssocEdge{
+								Name: "FriendRequestsReceived",
+							},
 						},
 					},
 				},
 			},
-		},
-	})
+		})
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -1084,58 +1140,64 @@ func TestCompareNodesWithEdgeGroupModified(t *testing.T) {
 }
 
 func TestCompareNodesWithEdgeGroupRenamed(t *testing.T) {
-	e1, err := edge.EdgeInfoFromInput("user", &input.Node{
-		AssocEdgeGroups: []*input.AssocEdgeGroup{
-			{
-				Name:            "Friendships",
-				GroupStatusName: "FriendshipStatus",
-				AssocEdges: []*input.AssocEdge{
-					{
-						Name:       "Friends",
-						SchemaName: "User",
-						Symmetric:  true,
-					},
-					{
-						Name:       "FriendRequestsSent",
-						SchemaName: "User",
-						InverseEdge: &input.InverseAssocEdge{
-							Name: "FriendRequestsReceived",
+	e1, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user",
+		&input.Node{
+			AssocEdgeGroups: []*input.AssocEdgeGroup{
+				{
+					Name:            "Friendships",
+					GroupStatusName: "FriendshipStatus",
+					AssocEdges: []*input.AssocEdge{
+						{
+							Name:       "Friends",
+							SchemaName: "User",
+							Symmetric:  true,
+						},
+						{
+							Name:       "FriendRequestsSent",
+							SchemaName: "User",
+							InverseEdge: &input.InverseAssocEdge{
+								Name: "FriendRequestsReceived",
+							},
 						},
 					},
 				},
 			},
-		},
-	})
+		})
 	require.Nil(t, err)
-	e2, err := edge.EdgeInfoFromInput("user", &input.Node{
-		AssocEdgeGroups: []*input.AssocEdgeGroup{
-			{
-				Name:            "connection",
-				GroupStatusName: "ConnectionStatus",
-				AssocEdges: []*input.AssocEdge{
-					{
-						Name:       "Friends",
-						SchemaName: "User",
-						Symmetric:  true,
-					},
-					{
-						Name:       "FriendRequestsSent",
-						SchemaName: "User",
-						InverseEdge: &input.InverseAssocEdge{
-							Name: "FriendRequestsReceived",
+	e2, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user",
+		&input.Node{
+			AssocEdgeGroups: []*input.AssocEdgeGroup{
+				{
+					Name:            "connection",
+					GroupStatusName: "ConnectionStatus",
+					AssocEdges: []*input.AssocEdge{
+						{
+							Name:       "Friends",
+							SchemaName: "User",
+							Symmetric:  true,
 						},
-					},
-					{
-						Name:       "Following",
-						SchemaName: "User",
-						InverseEdge: &input.InverseAssocEdge{
-							Name: "Followers",
+						{
+							Name:       "FriendRequestsSent",
+							SchemaName: "User",
+							InverseEdge: &input.InverseAssocEdge{
+								Name: "FriendRequestsReceived",
+							},
+						},
+						{
+							Name:       "Following",
+							SchemaName: "User",
+							InverseEdge: &input.InverseAssocEdge{
+								Name: "Followers",
+							},
 						},
 					},
 				},
 			},
-		},
-	})
+		})
 	require.Nil(t, err)
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -1568,10 +1630,18 @@ func TestCompareActionsGraphQLNameModified(t *testing.T) {
 
 func TestForeignKeyEdgeNoChange(t *testing.T) {
 	e1 := edge.NewEdgeInfo("user")
-	require.Nil(t, e1.AddEdgeFromForeignKeyIndex("user_id", "contacts", "User"))
+	require.Nil(t, e1.AddEdgeFromForeignKeyIndex(
+		&codegenapi.DummyConfig{},
+		"user_id",
+		"contacts",
+		"User",
+	))
 
 	e2 := edge.NewEdgeInfo("user")
-	require.Nil(t, e2.AddEdgeFromForeignKeyIndex("user_id", "contacts", "User"))
+	require.Nil(t, e2.AddEdgeFromForeignKeyIndex(&codegenapi.DummyConfig{},
+		"user_id",
+		"contacts",
+		"User"))
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -1602,7 +1672,9 @@ func TestForeignKeyEdgeNoChange(t *testing.T) {
 
 func TestForeignKeyEdgeAdded(t *testing.T) {
 	e2 := edge.NewEdgeInfo("user")
-	require.Nil(t, e2.AddEdgeFromForeignKeyIndex("user_id", "contacts", "User"))
+	require.Nil(t, e2.AddEdgeFromForeignKeyIndex(
+		&codegenapi.DummyConfig{},
+		"user_id", "contacts", "User"))
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -1646,7 +1718,9 @@ func TestForeignKeyEdgeAdded(t *testing.T) {
 
 func TestForeignKeyEdgeRemoved(t *testing.T) {
 	e1 := edge.NewEdgeInfo("user")
-	require.Nil(t, e1.AddEdgeFromForeignKeyIndex("user_id", "contacts", "User"))
+	require.Nil(t, e1.AddEdgeFromForeignKeyIndex(
+		&codegenapi.DummyConfig{},
+		"user_id", "contacts", "User"))
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -1691,9 +1765,16 @@ func TestForeignKeyEdgeRemoved(t *testing.T) {
 func TestForeignKeyEdgeModified(t *testing.T) {
 	// only thing that can really change here is name so instead of modified_edge, we're just going to treat it like dropped edge, added edge
 	e1 := edge.NewEdgeInfo("user")
-	require.Nil(t, e1.AddEdgeFromForeignKeyIndex("user_id", "contacts", "User"))
+	require.Nil(t, e1.AddEdgeFromForeignKeyIndex(&codegenapi.DummyConfig{},
+		"user_id",
+		"contacts",
+		"User"))
 	e2 := edge.NewEdgeInfo("user")
-	require.Nil(t, e2.AddEdgeFromForeignKeyIndex("user_id", "user_contacts", "User"))
+	require.Nil(t, e2.AddEdgeFromForeignKeyIndex(
+		&codegenapi.DummyConfig{},
+		"user_id",
+		"user_contacts",
+		"User"))
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -1744,14 +1825,24 @@ func TestForeignKeyEdgeModified(t *testing.T) {
 
 func TestIndexedEdgeNochange(t *testing.T) {
 	e1 := edge.NewEdgeInfo("user")
-	require.Nil(t, e1.AddIndexedEdgeFromSource("ownerID", "owner_id", "User", &base.PolymorphicOptions{
-		PolymorphicOptions: &input.PolymorphicOptions{},
-	}))
+	require.Nil(t, e1.AddIndexedEdgeFromSource(
+		&codegenapi.DummyConfig{},
+		"ownerID",
+		"owner_id",
+		"User",
+		&base.PolymorphicOptions{
+			PolymorphicOptions: &input.PolymorphicOptions{},
+		}))
 
 	e2 := edge.NewEdgeInfo("user")
-	require.Nil(t, e2.AddIndexedEdgeFromSource("ownerID", "owner_id", "User", &base.PolymorphicOptions{
-		PolymorphicOptions: &input.PolymorphicOptions{},
-	}))
+	require.Nil(t, e2.AddIndexedEdgeFromSource(
+		&codegenapi.DummyConfig{},
+		"ownerID",
+		"owner_id",
+		"User",
+		&base.PolymorphicOptions{
+			PolymorphicOptions: &input.PolymorphicOptions{},
+		}))
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -1783,9 +1874,14 @@ func TestIndexedEdgeNochange(t *testing.T) {
 // TODO testindexeEdge which is not polymorphic...
 func TestIndexedEdgeAdded(t *testing.T) {
 	e2 := edge.NewEdgeInfo("user")
-	require.Nil(t, e2.AddIndexedEdgeFromSource("ownerID", "owner_id", "User", &base.PolymorphicOptions{
-		PolymorphicOptions: &input.PolymorphicOptions{},
-	}))
+	require.Nil(t, e2.AddIndexedEdgeFromSource(
+		&codegenapi.DummyConfig{},
+		"ownerID",
+		"owner_id",
+		"User",
+		&base.PolymorphicOptions{
+			PolymorphicOptions: &input.PolymorphicOptions{},
+		}))
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -1830,9 +1926,14 @@ func TestIndexedEdgeAdded(t *testing.T) {
 
 func TestIndexedEdgeRemoved(t *testing.T) {
 	e1 := edge.NewEdgeInfo("user")
-	require.Nil(t, e1.AddIndexedEdgeFromSource("ownerID", "owner_id", "User", &base.PolymorphicOptions{
-		PolymorphicOptions: &input.PolymorphicOptions{},
-	}))
+	require.Nil(t, e1.AddIndexedEdgeFromSource(
+		&codegenapi.DummyConfig{},
+		"ownerID",
+		"owner_id",
+		"User",
+		&base.PolymorphicOptions{
+			PolymorphicOptions: &input.PolymorphicOptions{},
+		}))
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -1877,14 +1978,24 @@ func TestIndexedEdgeRemoved(t *testing.T) {
 
 func TestIndexedEdgeModified(t *testing.T) {
 	e1 := edge.NewEdgeInfo("user")
-	require.Nil(t, e1.AddIndexedEdgeFromSource("owner_id", "owner_id", "User", &base.PolymorphicOptions{
-		PolymorphicOptions: &input.PolymorphicOptions{},
-	}))
+	require.Nil(t, e1.AddIndexedEdgeFromSource(
+		&codegenapi.DummyConfig{},
+		"owner_id",
+		"owner_id",
+		"User",
+		&base.PolymorphicOptions{
+			PolymorphicOptions: &input.PolymorphicOptions{},
+		}))
 	// change field name, keep col name
 	e2 := edge.NewEdgeInfo("user")
-	require.Nil(t, e2.AddIndexedEdgeFromSource("ownerID", "owner_id", "User", &base.PolymorphicOptions{
-		PolymorphicOptions: &input.PolymorphicOptions{},
-	}))
+	require.Nil(t, e2.AddIndexedEdgeFromSource(
+		&codegenapi.DummyConfig{},
+		"ownerID",
+		"owner_id",
+		"User",
+		&base.PolymorphicOptions{
+			PolymorphicOptions: &input.PolymorphicOptions{},
+		}))
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -2020,30 +2131,34 @@ func TestEnumModified(t *testing.T) {
 }
 
 func TestCompareSchemaNewNodePlusActionsAndFields(t *testing.T) {
-	fi, err := field.NewFieldInfoFromInputs([]*input.Field{
-		{
-			Name: "first_name",
-			Type: &input.FieldType{
-				DBType: input.String,
+	fi, err := field.NewFieldInfoFromInputs(
+		&codegenapi.DummyConfig{},
+		[]*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
 			},
-		},
-		{
-			Name: "last_name",
-			Type: &input.FieldType{
-				DBType: input.String,
+			{
+				Name: "last_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
 			},
-		},
-	}, &field.Options{})
+		}, &field.Options{})
 	require.Nil(t, err)
 
-	e2, err := edge.EdgeInfoFromInput("user", &input.Node{
-		AssocEdges: []*input.AssocEdge{
-			{
-				Name:       "Likes",
-				SchemaName: "User",
+	e2, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user", &input.Node{
+			AssocEdges: []*input.AssocEdge{
+				{
+					Name:       "Likes",
+					SchemaName: "User",
+				},
 			},
-		},
-	})
+		})
 	require.Nil(t, err)
 	a2 := createActionInfoFromInput(t, "user", &input.Node{
 		Fields: []*input.Field{
@@ -2100,30 +2215,35 @@ func TestCompareSchemaNewNodePlusActionsAndFields(t *testing.T) {
 }
 
 func TestCompareSchemaRemoveNodePlusActionsAndFields(t *testing.T) {
-	fi, err := field.NewFieldInfoFromInputs([]*input.Field{
-		{
-			Name: "first_name",
-			Type: &input.FieldType{
-				DBType: input.String,
+	fi, err := field.NewFieldInfoFromInputs(
+		&codegenapi.DummyConfig{},
+		[]*input.Field{
+			{
+				Name: "first_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
 			},
-		},
-		{
-			Name: "last_name",
-			Type: &input.FieldType{
-				DBType: input.String,
+			{
+				Name: "last_name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
 			},
-		},
-	}, &field.Options{})
+		}, &field.Options{})
 	require.Nil(t, err)
 
-	e1, err := edge.EdgeInfoFromInput("user", &input.Node{
-		AssocEdges: []*input.AssocEdge{
-			{
-				Name:       "Likes",
-				SchemaName: "User",
+	e1, err := edge.EdgeInfoFromInput(
+		&codegenapi.DummyConfig{},
+		"user",
+		&input.Node{
+			AssocEdges: []*input.AssocEdge{
+				{
+					Name:       "Likes",
+					SchemaName: "User",
+				},
 			},
-		},
-	})
+		})
 	require.Nil(t, err)
 	a1 := createActionInfoFromInput(t, "user", &input.Node{
 		Fields: []*input.Field{
@@ -2206,10 +2326,16 @@ func getEnumInfo(m map[string]string) *schema.EnumInfo {
 }
 
 func createDuplicateAssocEdgeFromInput(t *testing.T, packageName string, inputEdge *input.AssocEdge) (*edge.AssociationEdge, *edge.AssociationEdge) {
-	edge1, err := edge.AssocEdgeFromInput(packageName, inputEdge)
+	edge1, err := edge.AssocEdgeFromInput(
+		&codegenapi.DummyConfig{},
+		packageName,
+		inputEdge)
 	require.Nil(t, err)
 	inputEdge2 := marshallAndUnmarshallInputAssocEdge(t, inputEdge)
-	edge2, err := edge.AssocEdgeFromInput(packageName, inputEdge2)
+	edge2, err := edge.AssocEdgeFromInput(
+		&codegenapi.DummyConfig{},
+		packageName,
+		inputEdge2)
 	require.Nil(t, err)
 
 	return edge1, edge2

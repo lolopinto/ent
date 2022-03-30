@@ -8,7 +8,7 @@ import { GraphQLID } from "graphql";
 import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
 
 export class TodosResolver {
-  @gqlMutation({ name: "todosMarkAllAs", type: Account })
+  @gqlMutation({ name: "markAllTodosAs", type: Account })
   async markAllTodos(
     // we're simplifying, no viewer or anything complicated and anyone can perform the action
     @gqlArg("accountID", { type: GraphQLID }) accountID: ID,
@@ -29,7 +29,7 @@ export class TodosResolver {
     return await bulk.saveX();
   }
 
-  @gqlMutation({ name: "todosRemoveCompleted", type: Account })
+  @gqlMutation({ name: "removeCompletedTodos", type: Account })
   async removeCompletedTodos(
     // we're simplifying, no viewer or anything complicated and anyone can perform the action
     @gqlArg("accountID", { type: GraphQLID }) accountID: ID,

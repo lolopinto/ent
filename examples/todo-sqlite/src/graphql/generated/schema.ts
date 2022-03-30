@@ -23,6 +23,10 @@ import {
   AddTodoTagPayloadType,
 } from "src/graphql/mutations/generated/todo/add_todo_tag_type";
 import {
+  ChangeTodoStatusInputType,
+  ChangeTodoStatusPayloadType,
+} from "src/graphql/mutations/generated/todo/change_todo_status_type";
+import {
   CreateTodoInputType,
   CreateTodoPayloadType,
 } from "src/graphql/mutations/generated/todo/create_todo_type";
@@ -35,13 +39,9 @@ import {
   RemoveTodoTagPayloadType,
 } from "src/graphql/mutations/generated/todo/remove_todo_tag_type";
 import {
-  ChangeTodoStatusInputType,
-  ChangeTodoStatusPayloadType,
-} from "src/graphql/mutations/generated/todo/todo_change_status_type";
-import {
   RenameTodoInputType,
   RenameTodoPayloadType,
-} from "src/graphql/mutations/generated/todo/todo_rename_type";
+} from "src/graphql/mutations/generated/todo/rename_todo_type";
 import {
   AccountToOpenTodosConnectionType,
   AccountToTagsConnectionType,

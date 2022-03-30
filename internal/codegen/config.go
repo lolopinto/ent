@@ -279,6 +279,15 @@ func (cfg *Config) DefaultGraphQLMutationName() codegenapi.GraphQLMutationName {
 	return codegenapi.NounVerb
 }
 
+func (cfg *Config) DefaultGraphQLFieldFormat() codegenapi.GraphQLFieldFormat {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		if codegen.DefaultGraphQLFieldFormat != "" {
+			return codegen.DefaultGraphQLFieldFormat
+		}
+	}
+	return codegenapi.LowerCamelCase
+}
+
 const DEFAULT_GLOB = "src/**/*.ts"
 const PRETTIER_FILE_CHUNKS = 20
 
@@ -407,6 +416,7 @@ type CodegenConfig struct {
 	DisableBase64Encoding      bool                           `yaml:"disableBase64Encoding"`
 	GenerateRootResolvers      bool                           `yaml:"generateRootResolvers"`
 	DefaultGraphQLMutationName codegenapi.GraphQLMutationName `yaml:"defaultGraphQLMutationName"`
+	DefaultGraphQLFieldFormat  codegenapi.GraphQLFieldFormat  `yaml:"defaultGraphQLFieldFormat"`
 }
 
 type PrivacyConfig struct {

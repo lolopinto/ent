@@ -13,6 +13,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/field"
@@ -637,10 +638,7 @@ func parse(t *testing.T, code, dirPath, packagePath string, nodes []string) {
 				PackageName: nodeSnake,
 				FieldInfo: &field.FieldInfo{
 					NonEntFields: []*field.NonEntField{
-						{
-							FieldName: "id",
-							FieldType: &enttype.IDType{},
-						},
+						field.NewNonEntField(&codegenapi.DummyConfig{}, "id", &enttype.IDType{}, false),
 					},
 				},
 			},
