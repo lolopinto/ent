@@ -1089,10 +1089,11 @@ func verifyNonEntFields(t *testing.T, nonEntFields []*field.NonEntField, expFiel
 
 	for idx, nonEntField := range nonEntFields {
 		actionOnlyField := expFields[idx]
-		require.Equal(t, actionOnlyField.name, nonEntField.FieldName, "name %s not equal. idx %d", nonEntField.FieldName, idx)
-		require.Equal(t, actionOnlyField.nullable, nonEntField.Nullable(), "fieldname %s not equal. idx %d", nonEntField.FieldName, idx)
-		require.Equal(t, actionOnlyField.typ.graphqlType, nonEntField.GetFieldType().GetGraphQLType(), "graphql type %s not equal. idx %d", nonEntField.FieldName, idx)
-		require.Equal(t, actionOnlyField.typ.tsType, nonEntField.GetFieldType().GetTSType(), "ts type %s not equal. idx %d", nonEntField.FieldName, idx)
+		fieldName := nonEntField.GetFieldName()
+		require.Equal(t, actionOnlyField.name, fieldName, "name %s not equal. idx %d", fieldName, idx)
+		require.Equal(t, actionOnlyField.nullable, nonEntField.Nullable(), "fieldname %s not equal. idx %d", fieldName, idx)
+		require.Equal(t, actionOnlyField.typ.graphqlType, nonEntField.GetFieldType().GetGraphQLType(), "graphql type %s not equal. idx %d", fieldName, idx)
+		require.Equal(t, actionOnlyField.typ.tsType, nonEntField.GetGraphQLFieldType().GetTSType(), "ts type %s not equal. idx %d", fieldName, idx)
 	}
 }
 
