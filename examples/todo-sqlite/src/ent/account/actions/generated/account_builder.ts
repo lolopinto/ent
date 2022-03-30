@@ -10,13 +10,14 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Account } from "src/ent/";
+import { Account, AccountState } from "src/ent/";
 import { NodeType } from "src/ent/generated/const";
 import schema from "src/schema/account";
 
 export interface AccountInput {
   name?: string;
   phoneNumber?: string;
+  accountState?: AccountState | null;
 }
 
 export interface AccountAction extends Action<Account> {
@@ -121,6 +122,7 @@ export class AccountBuilder implements Builder<Account> {
     };
     addField("Name", fields.name);
     addField("PhoneNumber", fields.phoneNumber);
+    addField("accountState", fields.accountState);
     return result;
   }
 
@@ -142,5 +144,13 @@ export class AccountBuilder implements Builder<Account> {
       return this.input.phoneNumber;
     }
     return this.existingEnt?.phoneNumber;
+  }
+
+  // get value of accountState. Retrieves it from the input if specified or takes it from existingEnt
+  getNewAccountStateValue(): AccountState | null | undefined {
+    if (this.input.accountState !== undefined) {
+      return this.input.accountState;
+    }
+    return this.existingEnt?.accountState;
   }
 }

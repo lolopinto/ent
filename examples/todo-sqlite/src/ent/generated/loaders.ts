@@ -10,6 +10,7 @@ const accountFields = [
   "updated_at",
   "name",
   "phone_number",
+  "account_state",
 ];
 
 export const accountLoader = new ObjectLoaderFactory({
@@ -41,6 +42,7 @@ const tagFields = [
   "display_name",
   "canonical_name",
   "owner_id",
+  "related_tag_ids",
 ];
 
 export const tagLoader = new ObjectLoaderFactory({

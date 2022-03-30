@@ -20,7 +20,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@snowtop/ent-graphql-tests": "^0.0.1",
+    "@snowtop/ent-graphql-tests": "^0.0.4",
     "@types/express": "^4.17.11",
     "@types/jest": "^27.0.1",
     "@types/jest-expect-message": "^1.0.3",

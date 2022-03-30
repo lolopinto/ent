@@ -12,15 +12,17 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { Account } from "src/ent/";
+import { Account, AccountState } from "src/ent/";
 import EditAccountAction, {
   AccountEditInput,
 } from "src/ent/account/actions/edit_account_action";
-import { AccountType } from "src/graphql/resolvers/";
+import { AccountStateType, AccountType } from "src/graphql/resolvers/";
 
-interface customEditAccountInput extends Omit<AccountEditInput, "phoneNumber"> {
+interface customEditAccountInput
+  extends Omit<AccountEditInput, "phoneNumber" | "accountState"> {
   account_id: string;
   phone_number?: string;
+  account_state?: AccountState | null;
 }
 
 interface EditAccountPayload {
@@ -39,6 +41,9 @@ export const EditAccountInputType = new GraphQLInputObjectType({
     },
     phone_number: {
       type: GraphQLString,
+    },
+    account_state: {
+      type: AccountStateType,
     },
   }),
 });
@@ -76,6 +81,7 @@ export const EditAccountType: GraphQLFieldConfig<
       {
         name: input.name,
         phoneNumber: input.phone_number,
+        accountState: input.account_state,
       },
     );
     return { account: account };

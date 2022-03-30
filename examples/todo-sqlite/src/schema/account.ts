@@ -1,3 +1,4 @@
+import { EnumType } from "@snowtop/ent";
 import {
   Action,
   ActionOperation,
@@ -11,6 +12,14 @@ export default class Account extends BaseEntSchema {
   fields: Field[] = [
     StringType({ name: "Name" }),
     PhoneNumberType({ name: "PhoneNumber", unique: true }),
+    EnumType({
+      nullable: true,
+      name: "accountState",
+      tsType: "AccountState",
+      graphQLType: "AccountState",
+      values: ["UNVERIFIED", "VERIFIED", "DEACTIVATED", "DISABLED"],
+      defaultValueOnCreate: () => "UNVERIFIED",
+    }),
   ];
   actions: Action[] = [
     {

@@ -1915,6 +1915,8 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 		for _, f := range a.GetGraphQLFields() {
 			// these conditions duplicated in hasCustomInput
 			if f.IsEditableIDField() {
+				// should probably also do this for id lists but not pressing
+				// ID[] -> string[]
 				intType.Fields = append(intType.Fields, &interfaceField{
 					Name:     f.GetGraphQLName(),
 					Optional: !action.IsRequiredField(a, f),
@@ -1922,11 +1924,21 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 					Type: "string",
 				})
 			} else if f.TsFieldName() != f.GetGraphQLName() {
+				// need imports...
 				omittedFields = append(omittedFields, f.TsFieldName())
+				var useImports []string
+				imps := f.GetTsTypeImports()
+				if len(imps) != 0 {
+					result.Imports = append(result.Imports, imps...)
+					for _, v := range imps {
+						useImports = append(useImports, v.Import)
+					}
+				}
 				intType.Fields = append(intType.Fields, &interfaceField{
-					Name:     f.GetGraphQLName(),
-					Optional: !action.IsRequiredField(a, f),
-					Type:     f.TsType(),
+					Name:       f.GetGraphQLName(),
+					Optional:   !action.IsRequiredField(a, f),
+					Type:       f.TsType(),
+					UseImports: useImports,
 				})
 			}
 		}
@@ -1943,6 +1955,8 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 
 		// TODO do we need to overwrite some fields?
 		if action.HasInput(a) {
+			// TODO? we should just skip this and have all the fields here if snake_case
+			// since long list of omitted fields
 			intType.Extends = []string{
 				a.GetActionInputName(),
 			}
@@ -2473,10 +2487,11 @@ func (it interfaceType) InterfaceDecl() (string, error) {
 }
 
 type interfaceField struct {
-	Name      string
-	Optional  bool
-	Type      string
-	UseImport bool
+	Name       string
+	Optional   bool
+	Type       string
+	UseImport  bool
+	UseImports []string
 }
 
 func typeFromImports(imports []string) string {

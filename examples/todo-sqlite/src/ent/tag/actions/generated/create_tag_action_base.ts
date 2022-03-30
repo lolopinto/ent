@@ -21,6 +21,7 @@ import {
 export interface TagCreateInput {
   displayName: string;
   ownerID: ID | Builder<Account>;
+  relatedTagIds?: ID[] | null;
 }
 
 export class CreateTagActionBase implements Action<Tag> {

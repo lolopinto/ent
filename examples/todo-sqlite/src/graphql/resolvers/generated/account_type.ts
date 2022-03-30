@@ -16,6 +16,7 @@ import {
 } from "@snowtop/ent/graphql";
 import { Account, AccountToTagsQuery, AccountToTodosQuery } from "src/ent/";
 import {
+  AccountStateType,
   AccountToOpenTodosConnectionType,
   AccountToTagsConnectionType,
   AccountToTodosConnectionType,
@@ -35,6 +36,12 @@ export const AccountType = new GraphQLObjectType({
       type: GraphQLNonNull(GraphQLString),
       resolve: (account: Account, args: {}, context: RequestContext) => {
         return account.phoneNumber;
+      },
+    },
+    account_state: {
+      type: AccountStateType,
+      resolve: (account: Account, args: {}, context: RequestContext) => {
+        return account.accountState;
       },
     },
     tags: {

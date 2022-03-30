@@ -6,7 +6,7 @@ import {
   Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
-import { Account } from "src/ent/";
+import { Account, AccountState } from "src/ent/";
 import {
   AccountBuilder,
   AccountInput,
@@ -15,6 +15,7 @@ import {
 export interface AccountCreateInput {
   name: string;
   phoneNumber: string;
+  accountState?: AccountState | null;
 }
 
 export class CreateAccountActionBase implements Action<Account> {
