@@ -142,9 +142,10 @@ func (p *TSStep) PostProcessData(processor *codegen.Processor) error {
 	})
 }
 
-func (p *TSStep) processEnums(processor *codegen.Processor, s *gqlSchema, writeAll bool) fns.FunctionList {
+func (p *TSStep) processEnums(processor *codegen.Processor, s *gqlSchema) fns.FunctionList {
 	var ret fns.FunctionList
 
+	writeAll := processor.Config.WriteAllFiles()
 	for idx := range s.enums {
 		enum := s.enums[idx]
 		if writeAll ||
@@ -171,21 +172,25 @@ type writeOptions struct {
 	// nodeAdded, nodeRemoved, connectionAdded, rootQuery etc...
 }
 
-func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *gqlNode, writeAll bool) fns.FunctionList {
+func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *gqlNode) fns.FunctionList {
 	opts := &writeOptions{
 		mutationFiles:          map[string]bool{},
 		connectionFiles:        map[string]bool{},
 		deletedConnectionFiles: map[string]bool{},
 		deletedMutationFiles:   map[string]bool{},
 	}
-	if writeAll {
+	if processor.Config.WriteAllFiles() {
 		opts.writeAllConnections = true
 		opts.writeAllMutations = true
 		opts.writeNode = true
-	} else {
+	}
+	if processor.Config.UseChanges() {
 		changemap := processor.ChangeMap
 		changes := changemap[node.ObjData.Node]
 		for _, c := range changes {
+			if c.TSOnly {
+				continue
+			}
 			switch c.Change {
 			case change.AddNode, change.ModifyNode:
 				opts.writeNode = true
@@ -276,9 +281,9 @@ func (p *TSStep) buildNodeWithOpts(processor *codegen.Processor, s *gqlSchema, n
 	return ret
 }
 
-func (p *TSStep) processCustomNode(processor *codegen.Processor, s *gqlSchema, node *gqlNode, writeAll bool, mutation bool) fns.FunctionList {
+func (p *TSStep) processCustomNode(processor *codegen.Processor, s *gqlSchema, node *gqlNode, mutation bool) fns.FunctionList {
 	cmp := s.customData.compareResult
-	all := writeAll || cmp == nil
+	all := processor.Config.WriteAllFiles() || cmp == nil
 	opts := &writeOptions{
 		mutationFiles:          map[string]bool{},
 		connectionFiles:        map[string]bool{},
@@ -289,7 +294,8 @@ func (p *TSStep) processCustomNode(processor *codegen.Processor, s *gqlSchema, n
 	if all {
 		opts.writeAllConnections = true
 		opts.writeNode = true
-	} else {
+	}
+	if cmp != nil {
 		gqlName := node.Field.GraphQLName
 
 		if (mutation && cmp.customMutationsChanged[gqlName]) ||
@@ -315,21 +321,21 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 	updateBecauseChanges := writeAll || len(changes) > 0
 	customChanges := s.customData.compareResult
 	hasCustomChanges := (customChanges != nil && customChanges.hasAnyChanges())
-	funcs = append(funcs, p.processEnums(processor, s, writeAll)...)
+	funcs = append(funcs, p.processEnums(processor, s)...)
 
 	for idx := range s.nodes {
 		node := s.nodes[idx]
-		funcs = append(funcs, p.processNode(processor, s, node, writeAll)...)
+		funcs = append(funcs, p.processNode(processor, s, node)...)
 	}
 
 	for idx := range s.customMutations {
 		node := s.customMutations[idx]
-		funcs = append(funcs, p.processCustomNode(processor, s, node, writeAll, true)...)
+		funcs = append(funcs, p.processCustomNode(processor, s, node, true)...)
 	}
 
 	for idx := range s.customQueries {
 		node := s.customQueries[idx]
-		funcs = append(funcs, p.processCustomNode(processor, s, node, writeAll, false)...)
+		funcs = append(funcs, p.processCustomNode(processor, s, node, false)...)
 	}
 
 	cmp := s.customData.compareResult

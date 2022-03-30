@@ -12,6 +12,8 @@ const (
 	VerbNoun GraphQLMutationName = "VerbNoun"
 )
 
+const DefaultGraphQLMutationName = NounVerb
+
 type GraphQLFieldFormat string
 
 const (

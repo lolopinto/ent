@@ -3,6 +3,7 @@ package build_info
 import (
 	"os"
 
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/util"
@@ -10,17 +11,34 @@ import (
 )
 
 type BuildInfo struct {
-	BuildTime     string `yaml:"buildTime"`
-	ConfigTime    string `yaml:"configTime"` // ent.yml time
-	DockerVersion string `yaml:"dockerVersion"`
-	dev           bool   `yaml:"-"`
-	cfg           Config `yaml:"-"`
-	prevEqual     bool   `yaml:"-"`
+	BuildTime       string     `yaml:"buildTime"`
+	ConfigTime      string     `yaml:"configTime"` // ent.yml time
+	DockerVersion   string     `yaml:"dockerVersion"`
+	dev             bool       `yaml:"-"`
+	cfg             Config     `yaml:"-"`
+	prevEqual       bool       `yaml:"-"`
+	checkForDeletes bool       `yaml:"-"`
+	prev            *BuildInfo `yaml:"-"`
+	// this is only public for yaml reasons
+	DefaultGraphQLMutationName codegenapi.GraphQLMutationName `yaml:"defaultGraphQLMutationName"`
 }
 
 // flag as Changed
 func (bi *BuildInfo) Changed() bool {
 	return bi.dev || !bi.prevEqual
+}
+
+func (bi *BuildInfo) CheckForDeletes() bool {
+	return bi.checkForDeletes
+}
+
+// returns value of DefaultGraphQLMutationName which is stored in build_info.yml
+// what was used for previous run. may differ from current value in ent.yml
+func (bi *BuildInfo) PrevGraphQLMutationName() codegenapi.GraphQLMutationName {
+	if bi.prev == nil {
+		return ""
+	}
+	return bi.prev.DefaultGraphQLMutationName
 }
 
 type Config interface {
@@ -69,6 +87,13 @@ func NewBuildInfo(cfg Config) *BuildInfo {
 	}
 
 	prev := loadPreviousBI(cfg)
+	if prev != nil {
+		if bi.ConfigTime != prev.ConfigTime {
+			// if configTime changed. need to flag that we should still process file deletions...
+			bi.checkForDeletes = true
+		}
+	}
+	bi.prev = prev
 	bi.prevEqual = buildInfoEqual(prev, bi)
 	return bi
 }
@@ -91,7 +116,14 @@ func loadPreviousBI(cfg Config) *BuildInfo {
 	return &bi
 }
 
-func (bi *BuildInfo) PostProcess() error {
+func (bi *BuildInfo) PostProcess(cfg codegenapi.Config) error {
+	val := cfg.DefaultGraphQLMutationName()
+	// store graphql mutation name because it affects files generated
+	// we may eventually need to store all of ent.yml but not doing
+	// that for now
+	if val != "" {
+		bi.DefaultGraphQLMutationName = val
+	}
 	return file.Write(&file.YamlFileWriter{
 		Config:     bi.cfg,
 		Data:       bi,

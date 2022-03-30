@@ -36,6 +36,34 @@ type Config struct {
 	changedTSFiles []string
 }
 
+// Clone doesn't clone changes and changedTSFiles
+func (cfg *Config) Clone() *Config {
+	return &Config{
+		relativePathToConfigs: cfg.relativePathToConfigs,
+		importPathToConfigs:   cfg.importPathToConfigs,
+		importPathToModels:    cfg.importPathToModels,
+		importPathToRoot:      cfg.importPathToRoot,
+		absPathToRoot:         cfg.absPathToRoot,
+		absPathToConfigs:      cfg.absPathToConfigs,
+		config:                cloneConfig(cfg.config),
+		debugMode:             cfg.debugMode,
+		writeAll:              cfg.writeAll,
+		useChanges:            cfg.useChanges,
+	}
+}
+
+func (cfg *Config) OverrideGraphQLMutationName(mutationName codegenapi.GraphQLMutationName) {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		codegen.DefaultGraphQLMutationName = mutationName
+		return
+	}
+	cfg.config = &config{
+		Codegen: &CodegenConfig{
+			DefaultGraphQLMutationName: mutationName,
+		},
+	}
+}
+
 func NewConfig(configPath, modulePath string) (*Config, error) {
 	// TODO all this logic is dependent on passing "models/configs". TODO fix it
 	rootPath, err := filepath.Abs(configPath)
@@ -89,8 +117,10 @@ func (cfg *Config) SetChangeMap(changes change.ChangeMap) {
 	cfg.changes = changes
 }
 
+// In rare scenarios, we can have UseChanges() and WriteAll() be true if
+// ent.yml changed so that we can process deletes also
 func (cfg *Config) UseChanges() bool {
-	return cfg.writeAll
+	return cfg.useChanges
 }
 
 func (cfg *Config) WriteAllFiles() bool {
@@ -406,6 +436,19 @@ type config struct {
 	Codegen *CodegenConfig `yaml:"codegen"`
 }
 
+func (cfg *config) Clone() *config {
+	return &config{
+		Codegen: cloneCodegen(cfg.Codegen),
+	}
+}
+
+func cloneConfig(cfg *config) *config {
+	if cfg == nil {
+		return nil
+	}
+	return cfg.Clone()
+}
+
 type CodegenConfig struct {
 	DefaultEntPolicy           *PrivacyConfig                 `yaml:"defaultEntPolicy"`
 	DefaultActionPolicy        *PrivacyConfig                 `yaml:"defaultActionPolicy"`
@@ -419,13 +462,64 @@ type CodegenConfig struct {
 	DefaultGraphQLFieldFormat  codegenapi.GraphQLFieldFormat  `yaml:"defaultGraphQLFieldFormat"`
 }
 
+func cloneCodegen(cfg *CodegenConfig) *CodegenConfig {
+	if cfg == nil {
+		return nil
+	}
+	return cfg.Clone()
+}
+
+func (cfg *CodegenConfig) Clone() *CodegenConfig {
+	return &CodegenConfig{
+		DefaultEntPolicy:           clonePrivacyConfig(cfg.DefaultEntPolicy),
+		DefaultActionPolicy:        clonePrivacyConfig(cfg.DefaultActionPolicy),
+		Prettier:                   clonePrettierConfig(cfg.Prettier),
+		RelativeImports:            cfg.RelativeImports,
+		DisableGraphQLRoot:         cfg.DisableGraphQLRoot,
+		GeneratedHeader:            cfg.GeneratedHeader,
+		DisableBase64Encoding:      cfg.DisableBase64Encoding,
+		GenerateRootResolvers:      cfg.GenerateRootResolvers,
+		DefaultGraphQLMutationName: cfg.DefaultGraphQLMutationName,
+		DefaultGraphQLFieldFormat:  cfg.DefaultGraphQLFieldFormat,
+	}
+}
+
+func clonePrivacyConfig(cfg *PrivacyConfig) *PrivacyConfig {
+	if cfg == nil {
+		return nil
+	}
+	return cfg.Clone()
+}
+
 type PrivacyConfig struct {
 	Path       string `yaml:"path"`
 	PolicyName string `yaml:"policyName"`
 	Class      bool   `yaml:"class"`
 }
 
+func (cfg *PrivacyConfig) Clone() *PrivacyConfig {
+	return &PrivacyConfig{
+		Path:       cfg.Path,
+		PolicyName: cfg.PolicyName,
+		Class:      cfg.Class,
+	}
+}
+
+func clonePrettierConfig(cfg *PrettierConfig) *PrettierConfig {
+	if cfg == nil {
+		return nil
+	}
+	return cfg.Clone()
+}
+
 type PrettierConfig struct {
 	Custom bool   `yaml:"custom"`
 	Glob   string `yaml:"glob"`
+}
+
+func (cfg *PrettierConfig) Clone() *PrettierConfig {
+	return &PrettierConfig{
+		Custom: cfg.Custom,
+		Glob:   cfg.Glob,
+	}
 }
