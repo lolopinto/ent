@@ -156,6 +156,7 @@ func TestComparePatternsWithAddedEdge(t *testing.T) {
 		Change:      change.AddEdge,
 		Name:        "likes",
 		GraphQLName: "UserToLikesConnection",
+		ExtraInfo:   "UserToLikesQuery",
 	}, feedback[0])
 }
 
@@ -191,6 +192,7 @@ func TestComparePatternsWithRemovedEdge(t *testing.T) {
 		Change:      change.RemoveEdge,
 		Name:        "likes",
 		GraphQLName: "UserToLikesConnection",
+		ExtraInfo:   "UserToLikesQuery",
 	}, feedback[0])
 }
 
@@ -238,6 +240,7 @@ func TestComparePatternsWithModifiedEdge(t *testing.T) {
 		Change:      change.ModifyEdge,
 		Name:        "likes",
 		GraphQLName: "UserToLikesConnection",
+		ExtraInfo:   "UserToLikesQuery",
 	}, feedback[0])
 }
 
@@ -601,6 +604,7 @@ func TestCompareNodesWithEdgesAdded(t *testing.T) {
 		Change:      change.AddEdge,
 		Name:        "Likes",
 		GraphQLName: "UserToLikesConnection",
+		ExtraInfo:   "UserToLikesQuery",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change:      change.ModifyNode,
@@ -650,6 +654,7 @@ func TestCompareNodesWithRemovedEdge(t *testing.T) {
 		Change:      change.RemoveEdge,
 		Name:        "Likes",
 		GraphQLName: "UserToLikesConnection",
+		ExtraInfo:   "UserToLikesQuery",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change:      change.ModifyNode,
@@ -712,6 +717,7 @@ func TestCompareNodesWithModifiedEdge(t *testing.T) {
 		Change:      change.ModifyEdge,
 		Name:        "Likes",
 		GraphQLName: "UserToLikesConnection",
+		ExtraInfo:   "UserToLikesQuery",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change:      change.ModifyNode,
@@ -1105,16 +1111,19 @@ func TestCompareNodesWithEdgeGroupRenamed(t *testing.T) {
 		Change:      change.ModifyEdge,
 		Name:        "Friends",
 		GraphQLName: "UserToFriendsConnection",
+		ExtraInfo:   "UserToFriendsQuery",
 	}, user[friendsIdx])
 	verifyChange(t, change.Change{
 		Change:      change.ModifyEdge,
 		Name:        "FriendRequestsSent",
 		GraphQLName: "UserToFriendRequestsSentConnection",
+		ExtraInfo:   "UserToFriendRequestsSentQuery",
 	}, user[friendsRequestSentIdx])
 	verifyChange(t, change.Change{
 		Change:      change.AddEdge,
 		Name:        "Following",
 		GraphQLName: "UserToFollowingConnection",
+		ExtraInfo:   "UserToFollowingQuery",
 	}, user[2])
 	verifyChange(t, change.Change{
 		Change: change.RemoveEdgeGroup,
@@ -1458,6 +1467,7 @@ func TestForeignKeyEdgeAdded(t *testing.T) {
 		Change:      change.AddEdge,
 		Name:        "contacts",
 		GraphQLName: "UserToContactsConnection",
+		ExtraInfo:   "UserToContactsQuery",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change:      change.ModifyNode,
@@ -1501,6 +1511,7 @@ func TestForeignKeyEdgeRemoved(t *testing.T) {
 		Change:      change.RemoveEdge,
 		Name:        "contacts",
 		GraphQLName: "UserToContactsConnection",
+		ExtraInfo:   "UserToContactsQuery",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change:      change.ModifyNode,
@@ -1548,11 +1559,13 @@ func TestForeignKeyEdgeModified(t *testing.T) {
 		Change:      change.RemoveEdge,
 		Name:        "contacts",
 		GraphQLName: "UserToContactsConnection",
+		ExtraInfo:   "UserToContactsQuery",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change:      change.AddEdge,
 		Name:        "user_contacts",
 		GraphQLName: "UserToUserContactsConnection",
+		ExtraInfo:   "UserToUserContactsQuery",
 	}, user[1])
 	verifyChange(t, change.Change{
 		Change:      change.ModifyNode,
@@ -1638,6 +1651,7 @@ func TestIndexedEdgeAdded(t *testing.T) {
 		Name:   "Users",
 		// no connection...
 		GraphQLName: "",
+		ExtraInfo:   "OwnerToUsersQuery",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change:      change.ModifyNode,
@@ -1684,6 +1698,7 @@ func TestIndexedEdgeRemoved(t *testing.T) {
 		Name:   "Users",
 		// no connection...
 		GraphQLName: "",
+		ExtraInfo:   "OwnerToUsersQuery",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change:      change.ModifyNode,
@@ -1736,6 +1751,7 @@ func TestIndexedEdgeModified(t *testing.T) {
 		Name:   "Users",
 		// no connection
 		GraphQLName: "",
+		ExtraInfo:   "OwnerIdToUsersQuery",
 	}, user[0])
 	verifyChange(t, change.Change{
 		Change:      change.ModifyNode,
@@ -1906,6 +1922,7 @@ func TestCompareSchemaNewNodePlusActionsAndFields(t *testing.T) {
 		Change:      change.AddEdge,
 		Name:        "Likes",
 		GraphQLName: "UserToLikesConnection",
+		ExtraInfo:   "UserToLikesQuery",
 	}, user[1])
 	verifyChange(t, change.Change{
 		Change:      change.AddAction,
@@ -1985,6 +2002,7 @@ func TestCompareSchemaRemoveNodePlusActionsAndFields(t *testing.T) {
 		Change:      change.RemoveEdge,
 		Name:        "Likes",
 		GraphQLName: "UserToLikesConnection",
+		ExtraInfo:   "UserToLikesQuery",
 	}, user[1])
 	verifyChange(t, change.Change{
 		Change:      change.RemoveAction,
@@ -2050,4 +2068,5 @@ func verifyChange(t *testing.T, expChange, change change.Change) {
 	assert.Equal(t, expChange.GraphQLName, change.GraphQLName)
 	assert.Equal(t, expChange.GraphQLOnly, change.GraphQLOnly)
 	assert.Equal(t, expChange.TSOnly, change.TSOnly)
+	assert.Equal(t, expChange.ExtraInfo, change.ExtraInfo)
 }
