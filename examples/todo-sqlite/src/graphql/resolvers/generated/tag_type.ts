@@ -4,6 +4,7 @@ import {
   GraphQLFieldConfigMap,
   GraphQLID,
   GraphQLInt,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
@@ -41,6 +42,12 @@ export const TagType = new GraphQLObjectType({
       type: GraphQLNonNull(GraphQLString),
       resolve: (tag: Tag, args: {}, context: RequestContext) => {
         return tag.canonicalName;
+      },
+    },
+    related_tag_ids: {
+      type: GraphQLList(GraphQLNonNull(GraphQLID)),
+      resolve: (tag: Tag, args: {}, context: RequestContext) => {
+        return tag.relatedTagIds;
       },
     },
     todos: {

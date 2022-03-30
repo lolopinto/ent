@@ -25,10 +25,18 @@ type PageInfo {
   endCursor: String!
 }
 
+enum AccountState {
+  UNVERIFIED
+  VERIFIED
+  DEACTIVATED
+  DISABLED
+}
+
 type Account implements Node {
   id: ID!
   name: String!
   phone_number: String!
+  account_state: AccountState
   tags(first: Int, after: String, last: Int, before: String): AccountToTagsConnection!
   todos(first: Int, after: String, last: Int, before: String): AccountToTodosConnection!
   open_todos_plural: [Todo!]!
@@ -40,6 +48,7 @@ type Tag implements Node {
   id: ID!
   display_name: String!
   canonical_name: String!
+  related_tag_ids: [ID!]
   todos(first: Int, after: String, last: Int, before: String): TagToTodosConnection!
 }
 
@@ -146,6 +155,7 @@ type ChangeTodoStatusPayload {
 input CreateAccountInput {
   name: String!
   phone_number: String!
+  account_state: AccountState
 }
 
 type CreateAccountPayload {
@@ -155,6 +165,7 @@ type CreateAccountPayload {
 input CreateTagInput {
   display_name: String!
   owner_id: ID!
+  related_tag_ids: [ID!]
 }
 
 type CreateTagPayload {
@@ -193,6 +204,7 @@ input EditAccountInput {
   account_id: ID!
   name: String
   phone_number: String
+  account_state: AccountState
 }
 
 type EditAccountPayload {

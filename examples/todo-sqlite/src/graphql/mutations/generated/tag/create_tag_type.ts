@@ -6,21 +6,24 @@ import {
   GraphQLID,
   GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/ent";
+import { ID, RequestContext } from "@snowtop/ent";
 import { Tag } from "src/ent/";
 import CreateTagAction, {
   TagCreateInput,
 } from "src/ent/tag/actions/create_tag_action";
 import { TagType } from "src/graphql/resolvers/";
 
-interface customCreateTagInput extends Omit<TagCreateInput, "displayName"> {
+interface customCreateTagInput
+  extends Omit<TagCreateInput, "displayName" | "relatedTagIds"> {
   display_name: string;
   owner_id: string;
+  related_tag_ids?: ID[] | null;
 }
 
 interface CreateTagPayload {
@@ -35,6 +38,9 @@ export const CreateTagInputType = new GraphQLInputObjectType({
     },
     owner_id: {
       type: GraphQLNonNull(GraphQLID),
+    },
+    related_tag_ids: {
+      type: GraphQLList(GraphQLNonNull(GraphQLID)),
     },
   }),
 });
@@ -69,6 +75,7 @@ export const CreateTagType: GraphQLFieldConfig<
     const tag = await CreateTagAction.create(context.getViewer(), {
       displayName: input.display_name,
       ownerID: input.owner_id,
+      relatedTagIds: input.related_tag_ids,
     }).saveX();
     return { tag: tag };
   },

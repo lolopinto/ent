@@ -1,3 +1,4 @@
+import { UUIDListType } from "@snowtop/ent";
 import {
   Action,
   ActionOperation,
@@ -17,6 +18,12 @@ export default class Tag extends BaseEntSchema {
       name: "ownerID",
       foreignKey: { schema: "Account", column: "ID" },
     }),
+    // contrived field
+    UUIDListType({
+      name: "relatedTagIds",
+      nullable: true,
+      fieldEdge: { schema: "Tag" },
+    }),
   ];
 
   constraints: Constraint[] = [
@@ -30,7 +37,7 @@ export default class Tag extends BaseEntSchema {
   actions: Action[] = [
     {
       operation: ActionOperation.Create,
-      fields: ["DisplayName", "ownerID"],
+      fields: ["DisplayName", "ownerID", "relatedTagIds"],
     },
   ];
 }

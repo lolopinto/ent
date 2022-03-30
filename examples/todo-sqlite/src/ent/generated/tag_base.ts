@@ -10,6 +10,7 @@ import {
   PrivacyPolicy,
   Viewer,
   convertDate,
+  convertNullableList,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -29,6 +30,7 @@ export class TagBase {
   readonly displayName: string;
   readonly canonicalName: string;
   readonly ownerID: ID;
+  readonly relatedTagIds: ID[] | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
@@ -37,6 +39,7 @@ export class TagBase {
     this.displayName = data.display_name;
     this.canonicalName = data.canonical_name;
     this.ownerID = data.owner_id;
+    this.relatedTagIds = convertNullableList(data.related_tag_ids);
   }
 
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;

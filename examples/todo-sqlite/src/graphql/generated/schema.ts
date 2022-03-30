@@ -43,6 +43,7 @@ import {
   RenameTodoPayloadType,
 } from "src/graphql/mutations/generated/todo/rename_todo_type";
 import {
+  AccountStateType,
   AccountToOpenTodosConnectionType,
   AccountToTagsConnectionType,
   AccountToTodosConnectionType,
@@ -59,6 +60,7 @@ export default new GraphQLSchema({
   query: QueryType,
   mutation: MutationType,
   types: [
+    AccountStateType,
     AccountType,
     TagType,
     TodoType,

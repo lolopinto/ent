@@ -8,7 +8,7 @@ import CreateTodoAction, {
 import CreateTagAction from "../tag/actions/create_tag_action";
 import { Account } from "src/ent";
 
-function randomPhoneNumber(): string {
+export function randomPhoneNumber(): string {
   const phone = Math.random().toString(10).substring(2, 12);
   const phoneNumber = parsePhoneNumberFromString(phone, "US");
   return phoneNumber!.format("E.164");
