@@ -1912,8 +1912,8 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 			})
 		}
 
-		for _, f := range a.GetGraphQLFields() {
-			// these conditions duplicated in hasCustomInput
+		// these conditions duplicated in hasCustomInput
+		processField := func(f action.ActionField) {
 			if f.IsEditableIDField() {
 				// should probably also do this for id lists but not pressing
 				// ID[] -> string[]
@@ -1937,20 +1937,17 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 				intType.Fields = append(intType.Fields, &interfaceField{
 					Name:       f.GetGraphQLName(),
 					Optional:   !action.IsRequiredField(a, f),
-					Type:       f.TsType(),
+					Type:       f.GetTsType(),
 					UseImports: useImports,
 				})
 			}
 		}
+		for _, f := range a.GetGraphQLFields() {
+			processField(f)
+		}
 
 		for _, f := range a.GetNonEntFields() {
-			// same logic above for regular fields
-			if enttype.IsIDType(f.GetFieldType()) {
-				intType.Fields = append(intType.Fields, &interfaceField{
-					Name: f.GetGraphQLName(),
-					Type: "string",
-				})
-			}
+			processField(f)
 		}
 
 		// TODO do we need to overwrite some fields?
@@ -2070,9 +2067,8 @@ func hasCustomInput(a action.Action, processor *codegen.Processor) bool {
 		return true
 	}
 
-	for _, f := range a.GetGraphQLFields() {
+	processField := func(f action.ActionField) bool {
 		// these conditions duplicated in hasInput in buildActionInputNode
-
 		// editable id field. needs custom input because we don't want to type as ID or Builder when we call base64encodeIDs
 		// mustDecodeIDFromGQLID
 		if f.IsEditableIDField() && processor.Config.Base64EncodeIDs() {
@@ -2080,6 +2076,19 @@ func hasCustomInput(a action.Action, processor *codegen.Processor) bool {
 		}
 		// if graphql name is not equal to typescript name, we need to add the new field here
 		if f.GetGraphQLName() != f.TsFieldName() {
+			return true
+		}
+		return false
+	}
+
+	for _, f := range a.GetGraphQLFields() {
+		if processField(f) {
+			return true
+		}
+	}
+
+	for _, f := range a.GetNonEntFields() {
+		if processField(f) {
 			return true
 		}
 	}

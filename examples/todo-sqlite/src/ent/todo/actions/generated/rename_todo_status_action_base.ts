@@ -15,6 +15,7 @@ import {
 
 export interface RenameTodoInput {
   text?: string;
+  reasonForChange?: string | null;
 }
 
 export class RenameTodoStatusActionBase implements Action<Todo> {

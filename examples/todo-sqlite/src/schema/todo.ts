@@ -64,6 +64,13 @@ export default class Todo extends BaseEntSchema {
       actionName: "RenameTodoStatusAction",
       graphQLName: "renameTodo",
       inputName: "RenameTodoInput",
+      actionOnlyFields: [
+        {
+          name: "reason_for_change",
+          type: "String",
+          nullable: true,
+        },
+      ],
     },
     {
       operation: ActionOperation.Delete,

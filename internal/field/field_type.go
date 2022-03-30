@@ -506,6 +506,10 @@ func (f *Field) TsType() string {
 	return f.fieldType.GetTSType()
 }
 
+func (f *Field) GetTsType() string {
+	return f.TsType()
+}
+
 func (f *Field) GetTsTypeImports() []*tsimport.ImportPath {
 	ret := []*tsimport.ImportPath{}
 	// field type requires imports. assumes it has been reserved separately
