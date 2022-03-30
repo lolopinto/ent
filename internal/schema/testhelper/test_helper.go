@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/internal/action"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
@@ -82,7 +83,7 @@ func ParseSchemaForTest(t *testing.T, code map[string]string, lang base.Language
 
 func ParseSchemaForTestFull(t *testing.T, code map[string]string, lang base.Language, opts ...func(*Options)) (*schema.Schema, error) {
 	inputSchema := ParseInputSchemaForTest(t, code, opts...)
-	return schema.ParseFromInputSchema(inputSchema, lang)
+	return schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, inputSchema, lang)
 }
 
 func ParseActionInfoForTest(t *testing.T, code map[string]string, lang base.Language, nodeName string) *action.ActionInfo {

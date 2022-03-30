@@ -19,7 +19,7 @@ var deleteSchemaCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		schemaName := args[0]
-		s, err := parseSchema()
+		s, err := parseSchemaNoConfig()
 		if err != nil {
 			return err
 		}
@@ -45,7 +45,7 @@ var deleteSchemaCmd = &cobra.Command{
 			return err
 		}
 
-		s2, err := parseSchema()
+		s2, err := parseSchemaNoConfig()
 		if err != nil {
 			return err
 		}

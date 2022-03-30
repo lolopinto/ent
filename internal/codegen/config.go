@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/pkg/errors"
@@ -269,6 +270,15 @@ func (cfg *Config) GeneratedHeader() string {
 	return ""
 }
 
+func (cfg *Config) DefaultGraphQLMutationName() codegenapi.GraphQLMutationName {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		if codegen.DefaultGraphQLMutationName != "" {
+			return codegen.DefaultGraphQLMutationName
+		}
+	}
+	return codegenapi.NounVerb
+}
+
 const DEFAULT_GLOB = "src/**/*.ts"
 const PRETTIER_FILE_CHUNKS = 20
 
@@ -388,14 +398,15 @@ type config struct {
 }
 
 type CodegenConfig struct {
-	DefaultEntPolicy      *PrivacyConfig  `yaml:"defaultEntPolicy"`
-	DefaultActionPolicy   *PrivacyConfig  `yaml:"defaultActionPolicy"`
-	Prettier              *PrettierConfig `yaml:"prettier"`
-	RelativeImports       bool            `yaml:"relativeImports"`
-	DisableGraphQLRoot    bool            `yaml:"disableGraphQLRoot"`
-	GeneratedHeader       string          `yaml:"generatedHeader"`
-	DisableBase64Encoding bool            `yaml:"disableBase64Encoding"`
-	GenerateRootResolvers bool            `yaml:"generateRootResolvers"`
+	DefaultEntPolicy           *PrivacyConfig                 `yaml:"defaultEntPolicy"`
+	DefaultActionPolicy        *PrivacyConfig                 `yaml:"defaultActionPolicy"`
+	Prettier                   *PrettierConfig                `yaml:"prettier"`
+	RelativeImports            bool                           `yaml:"relativeImports"`
+	DisableGraphQLRoot         bool                           `yaml:"disableGraphQLRoot"`
+	GeneratedHeader            string                         `yaml:"generatedHeader"`
+	DisableBase64Encoding      bool                           `yaml:"disableBase64Encoding"`
+	GenerateRootResolvers      bool                           `yaml:"generateRootResolvers"`
+	DefaultGraphQLMutationName codegenapi.GraphQLMutationName `yaml:"defaultGraphQLMutationName"`
 }
 
 type PrivacyConfig struct {

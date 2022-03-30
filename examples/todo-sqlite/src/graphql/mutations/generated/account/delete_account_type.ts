@@ -13,16 +13,16 @@ import {
 import { RequestContext } from "@snowtop/ent";
 import DeleteAccountAction from "src/ent/account/actions/delete_account_action";
 
-interface customAccountDeleteInput {
+interface customDeleteAccountInput {
   accountID: string;
 }
 
-interface AccountDeletePayload {
+interface DeleteAccountPayload {
   deletedAccountID: string;
 }
 
-export const AccountDeleteInputType = new GraphQLInputObjectType({
-  name: "AccountDeleteInput",
+export const DeleteAccountInputType = new GraphQLInputObjectType({
+  name: "DeleteAccountInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     accountID: {
       description: "id of Account",
@@ -31,25 +31,25 @@ export const AccountDeleteInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const AccountDeletePayloadType = new GraphQLObjectType({
-  name: "AccountDeletePayload",
-  fields: (): GraphQLFieldConfigMap<AccountDeletePayload, RequestContext> => ({
+export const DeleteAccountPayloadType = new GraphQLObjectType({
+  name: "DeleteAccountPayload",
+  fields: (): GraphQLFieldConfigMap<DeleteAccountPayload, RequestContext> => ({
     deletedAccountID: {
       type: GraphQLID,
     },
   }),
 });
 
-export const AccountDeleteType: GraphQLFieldConfig<
+export const DeleteAccountType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: customAccountDeleteInput }
+  { [input: string]: customDeleteAccountInput }
 > = {
-  type: GraphQLNonNull(AccountDeletePayloadType),
+  type: GraphQLNonNull(DeleteAccountPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(AccountDeleteInputType),
+      type: GraphQLNonNull(DeleteAccountInputType),
     },
   },
   resolve: async (
@@ -57,7 +57,7 @@ export const AccountDeleteType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<AccountDeletePayload> => {
+  ): Promise<DeleteAccountPayload> => {
     await DeleteAccountAction.saveXFromID(context.getViewer(), input.accountID);
     return { deletedAccountID: input.accountID };
   },

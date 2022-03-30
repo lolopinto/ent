@@ -12,20 +12,20 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { Todo } from "src/ent/";
-import TodoAddTagAction from "src/ent/todo/actions/todo_add_tag_action";
+import TodoRemoveTagAction from "src/ent/todo/actions/todo_remove_tag_action";
 import { TodoType } from "src/graphql/resolvers/";
 
-interface customTodoAddTagInput {
+interface customRemoveTodoTagInput {
   todoID: string;
   tagID: string;
 }
 
-interface TodoAddTagPayload {
+interface RemoveTodoTagPayload {
   todo: Todo;
 }
 
-export const TodoAddTagInputType = new GraphQLInputObjectType({
-  name: "TodoAddTagInput",
+export const RemoveTodoTagInputType = new GraphQLInputObjectType({
+  name: "RemoveTodoTagInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     todoID: {
       description: "id of Todo",
@@ -37,25 +37,25 @@ export const TodoAddTagInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const TodoAddTagPayloadType = new GraphQLObjectType({
-  name: "TodoAddTagPayload",
-  fields: (): GraphQLFieldConfigMap<TodoAddTagPayload, RequestContext> => ({
+export const RemoveTodoTagPayloadType = new GraphQLObjectType({
+  name: "RemoveTodoTagPayload",
+  fields: (): GraphQLFieldConfigMap<RemoveTodoTagPayload, RequestContext> => ({
     todo: {
       type: GraphQLNonNull(TodoType),
     },
   }),
 });
 
-export const TodoAddTagType: GraphQLFieldConfig<
+export const RemoveTodoTagType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: customTodoAddTagInput }
+  { [input: string]: customRemoveTodoTagInput }
 > = {
-  type: GraphQLNonNull(TodoAddTagPayloadType),
+  type: GraphQLNonNull(RemoveTodoTagPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(TodoAddTagInputType),
+      type: GraphQLNonNull(RemoveTodoTagInputType),
     },
   },
   resolve: async (
@@ -63,8 +63,8 @@ export const TodoAddTagType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<TodoAddTagPayload> => {
-    const todo = await TodoAddTagAction.saveXFromID(
+  ): Promise<RemoveTodoTagPayload> => {
+    const todo = await TodoRemoveTagAction.saveXFromID(
       context.getViewer(),
       input.todoID,
       input.tagID,

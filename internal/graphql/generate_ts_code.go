@@ -1157,9 +1157,8 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 							continue
 						}
 						hasMutations = true
-						actionPrefix := strcase.ToCamel(action.GetGraphQLName())
 
-						fieldCfg, err := buildActionFieldConfig(processor, nodeData, action, actionPrefix)
+						fieldCfg, err := buildActionFieldConfig(processor, nodeData, action)
 						if err != nil {
 							// TODO
 							panic(err)
@@ -1168,7 +1167,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 							ObjData: &gqlobjectData{
 								Node:         nodeData.Node,
 								NodeInstance: nodeData.NodeInstance,
-								GQLNodes:     buildActionNodes(processor, nodeData, action, actionPrefix),
+								GQLNodes:     buildActionNodes(processor, nodeData, action),
 								Enums:        buildActionEnums(nodeData, action),
 								FieldConfig:  fieldCfg,
 								Package:      processor.Config.GetImportPackage(),
@@ -1770,7 +1769,7 @@ func addConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, fields *
 	*fields = append(*fields, gqlField)
 }
 
-func buildActionNodes(processor *codegen.Processor, nodeData *schema.NodeData, action action.Action, actionPrefix string) []*objectType {
+func buildActionNodes(processor *codegen.Processor, nodeData *schema.NodeData, action action.Action) []*objectType {
 	var ret []*objectType
 	for _, c := range action.GetCustomInterfaces() {
 		if c.Action == nil {
@@ -1778,8 +1777,8 @@ func buildActionNodes(processor *codegen.Processor, nodeData *schema.NodeData, a
 		}
 	}
 	ret = append(ret,
-		buildActionInputNode(processor, nodeData, action, actionPrefix),
-		buildActionPayloadNode(nodeData, action, actionPrefix),
+		buildActionInputNode(processor, nodeData, action),
+		buildActionPayloadNode(nodeData, action),
 	)
 	return ret
 }
@@ -1820,12 +1819,12 @@ func buildCustomInputNode(c *custominterface.CustomInterface) *objectType {
 	return result
 }
 
-func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action, actionPrefix string) *objectType {
+func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action) *objectType {
 	// TODO shared input types across create/edit for example
-	node := fmt.Sprintf("%sInput", actionPrefix)
+	node := a.GetGraphQLInputName()
 
 	result := &objectType{
-		Type:     fmt.Sprintf("%sInputType", actionPrefix),
+		Type:     fmt.Sprintf("%sType", node),
 		Node:     node,
 		TSType:   node,
 		Exported: true,
@@ -1884,7 +1883,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 		// add adminID to interface assuming it's not already there
 		intType := &interfaceType{
 			Exported: false,
-			Name:     fmt.Sprintf("custom%sInput", actionPrefix),
+			Name:     fmt.Sprintf("custom%s", node),
 		}
 
 		// only want the id field for the object when editing said object
@@ -1939,7 +1938,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 		// TODO do we need to overwrite some fields?
 		if action.HasInput(a) {
 			intType.Extends = []string{
-				a.GetInputName(),
+				a.GetActionInputName(),
 			}
 			intType.Omitted = omittedFields
 		}
@@ -1950,12 +1949,17 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	return result
 }
 
-func buildActionPayloadNode(nodeData *schema.NodeData, a action.Action, actionPrefix string) *objectType {
-	node := fmt.Sprintf("%sPayload", actionPrefix)
+func getPayloadNameFromAction(a action.Action) string {
+	input := a.GetGraphQLInputName()
+	return strings.TrimSuffix(input, "Input") + "Payload"
+}
+
+func buildActionPayloadNode(nodeData *schema.NodeData, a action.Action) *objectType {
+	payload := getPayloadNameFromAction(a)
 	result := &objectType{
-		Type:     fmt.Sprintf("%sPayloadType", actionPrefix),
-		Node:     node,
-		TSType:   node,
+		Type:     fmt.Sprintf("%sType", payload),
+		Node:     payload,
+		TSType:   payload,
 		Exported: true,
 		GQLType:  "GraphQLObjectType",
 		DefaultImports: []*tsimport.ImportPath{
@@ -1984,7 +1988,7 @@ func buildActionPayloadNode(nodeData *schema.NodeData, a action.Action, actionPr
 	if action.HasInput(a) {
 		result.Imports = append(result.Imports, &tsimport.ImportPath{
 			ImportPath: getActionPath(nodeData, a),
-			Import:     a.GetInputName(),
+			Import:     a.GetActionInputName(),
 		})
 	}
 
@@ -2007,7 +2011,7 @@ func buildActionPayloadNode(nodeData *schema.NodeData, a action.Action, actionPr
 		result.TSInterfaces = []*interfaceType{
 			{
 				Exported: false,
-				Name:     fmt.Sprintf("%sPayload", actionPrefix),
+				Name:     payload,
 				Fields: []*interfaceField{
 					{
 						Name:      nodeData.NodeInstance,
@@ -2026,7 +2030,7 @@ func buildActionPayloadNode(nodeData *schema.NodeData, a action.Action, actionPr
 		result.TSInterfaces = []*interfaceType{
 			{
 				Exported: false,
-				Name:     fmt.Sprintf("%sPayload", actionPrefix),
+				Name:     payload,
 				Fields: []*interfaceField{
 					{
 						Name: fmt.Sprintf("deleted%sID", nodeInfo.Node),
@@ -2065,7 +2069,7 @@ func getActionPath(nodeData *schema.NodeData, a action.Action) string {
 	return fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(a.GetActionName()))
 }
 
-func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action, actionPrefix string) (*fieldConfig, error) {
+func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action) (*fieldConfig, error) {
 	// TODO this is so not obvious at all
 	// these are things that are automatically useImported....
 	argImports := []*tsimport.ImportPath{
@@ -2074,19 +2078,22 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			ImportPath: getActionPath(nodeData, a),
 		},
 	}
+	input := a.GetGraphQLInputName()
+	payload := getPayloadNameFromAction(a)
 	var argName string
 	if hasCustomInput(a, processor) {
-		argName = fmt.Sprintf("custom%sInput", actionPrefix)
+		argName = fmt.Sprintf("custom%s", input)
 	} else {
-		argName = a.GetInputName()
+		argName = a.GetActionInputName()
 		argImports = append(argImports, &tsimport.ImportPath{
 			Import:     argName,
 			ImportPath: getActionPath(nodeData, a),
 		})
 	}
+	prefix := strcase.ToCamel(a.GetGraphQLName())
 	result := &fieldConfig{
 		Exported:         true,
-		Name:             fmt.Sprintf("%sType", actionPrefix),
+		Name:             fmt.Sprintf("%sType", prefix),
 		Arg:              fmt.Sprintf("{ [input: string]: %s}", argName),
 		ResolveMethodArg: "{ input }",
 		TypeImports: []*tsimport.ImportPath{
@@ -2096,7 +2103,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			},
 			{
 				// local so it's fine
-				Import: fmt.Sprintf("%sPayloadType", actionPrefix),
+				Import: fmt.Sprintf("%sType", payload),
 			},
 		},
 		Args: []*fieldConfigArg{
@@ -2106,12 +2113,12 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 					getNativeGQLImportFor("GraphQLNonNull"),
 					{
 						// local
-						Import: fmt.Sprintf("%sInputType", actionPrefix),
+						Import: fmt.Sprintf("%sType", input),
 					},
 				},
 			},
 		},
-		ReturnTypeHint: fmt.Sprintf("Promise<%sPayload>", actionPrefix),
+		ReturnTypeHint: fmt.Sprintf("Promise<%s>", payload),
 	}
 
 	base64EncodeIDs := processor.Config.Base64EncodeIDs()

@@ -473,25 +473,25 @@ type CommentCreatePayload {
   comment: Comment!
 }
 
-input ConfirmEmailAddressEditInput {
+input ConfirmEditEmailAddressInput {
   """id of User"""
   userID: ID!
   emailAddress: String!
   code: String!
 }
 
-type ConfirmEmailAddressEditPayload {
+type ConfirmEditEmailAddressPayload {
   user: User!
 }
 
-input ConfirmPhoneNumberEditInput {
+input ConfirmEditPhoneNumberInput {
   """id of User"""
   userID: ID!
   phoneNumber: String!
   code: String!
 }
 
-type ConfirmPhoneNumberEditPayload {
+type ConfirmEditPhoneNumberPayload {
   user: User!
 }
 
@@ -592,13 +592,33 @@ type ContactPhoneNumberEditPayload {
   contactPhoneNumber: ContactPhoneNumber!
 }
 
-input EmailAddressEditInput {
+type DeleteUserInput2Payload {
+  deletedUserID: ID
+}
+
+input DeleteUserInput2 {
+  """id of User"""
+  userID: ID!
+  log: Boolean!
+}
+
+input EditEmailAddressInput {
   """id of User"""
   userID: ID!
   newEmail: String!
 }
 
-type EmailAddressEditPayload {
+type EditEmailAddressPayload {
+  user: User!
+}
+
+input EditPhoneNumberInput {
+  """id of User"""
+  userID: ID!
+  newPhoneNumber: String!
+}
+
+type EditPhoneNumberPayload {
   user: User!
 }
 
@@ -708,16 +728,6 @@ input PhoneNumberContactCreateInput {
   label: String!
 }
 
-input PhoneNumberEditInput {
-  """id of User"""
-  userID: ID!
-  newPhoneNumber: String!
-}
-
-type PhoneNumberEditPayload {
-  user: User!
-}
-
 input UserCreateInput {
   firstName: String!
   lastName: String!
@@ -735,16 +745,6 @@ input UserCreateInput {
 
 type UserCreatePayload {
   user: User!
-}
-
-input UserDelete2Input {
-  """id of User"""
-  userID: ID!
-  log: Boolean!
-}
-
-type UserDelete2Payload {
-  deletedUserID: ID
 }
 
 input UserDeleteInput {
@@ -776,8 +776,8 @@ type Mutation {
   addressCreate(input: AddressCreateInput!): AddressCreatePayload!
   bulkUploadContact(userID: ID!, file: Upload!): User!
   commentCreate(input: CommentCreateInput!): CommentCreatePayload!
-  confirmEmailAddressEdit(input: ConfirmEmailAddressEditInput!): ConfirmEmailAddressEditPayload!
-  confirmPhoneNumberEdit(input: ConfirmPhoneNumberEditInput!): ConfirmPhoneNumberEditPayload!
+  confirmEmailAddressEdit(input: ConfirmEditEmailAddressInput!): ConfirmEditEmailAddressPayload!
+  confirmPhoneNumberEdit(input: ConfirmEditPhoneNumberInput!): ConfirmEditPhoneNumberPayload!
   contactCreate(input: ContactCreateInput!): ContactCreatePayload!
   contactDelete(input: ContactDeleteInput!): ContactDeletePayload!
   contactEdit(input: ContactEditInput!): ContactEditPayload!
@@ -787,7 +787,7 @@ type Mutation {
   contactPhoneNumberCreate(input: ContactPhoneNumberCreateInput!): ContactPhoneNumberCreatePayload!
   contactPhoneNumberDelete(input: ContactPhoneNumberDeleteInput!): ContactPhoneNumberDeletePayload!
   contactPhoneNumberEdit(input: ContactPhoneNumberEditInput!): ContactPhoneNumberEditPayload!
-  emailAddressEdit(input: EmailAddressEditInput!): EmailAddressEditPayload!
+  emailAddressEdit(input: EditEmailAddressInput!): EditEmailAddressPayload!
   eventAddHost(input: EventAddHostInput!): EventAddHostPayload!
   eventCreate(input: EventCreateInput!): EventCreatePayload!
   eventDelete(input: EventDeleteInput!): EventDeletePayload!
@@ -796,12 +796,12 @@ type Mutation {
   eventRsvpStatusEdit(input: EventRsvpStatusEditInput!): EventRsvpStatusEditPayload!
   holidayCreate(input: HolidayCreateInput!): HolidayCreatePayload!
   hoursOfOperationCreate(input: HoursOfOperationCreateInput!): HoursOfOperationCreatePayload!
-  phoneNumberEdit(input: PhoneNumberEditInput!): PhoneNumberEditPayload!
+  phoneNumberEdit(input: EditPhoneNumberInput!): EditPhoneNumberPayload!
   userAuth(input: UserAuthInput!): UserAuthPayload!
   userAuthJWT(input: UserAuthJWTInput!): UserAuthJWTPayload!
   userCreate(input: UserCreateInput!): UserCreatePayload!
   userDelete(input: UserDeleteInput!): UserDeletePayload!
-  userDelete2(input: UserDelete2Input!): UserDelete2Payload!
+  userDelete2(input: DeleteUserInput2!): DeleteUserInput2Payload!
   userEdit(input: UserEditInput!): UserEditPayload!
 }
 

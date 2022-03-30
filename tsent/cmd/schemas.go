@@ -46,8 +46,13 @@ cat schema.json | tsent generate schemas --force`,
 		if err != nil {
 			return err
 		}
+
+		cfg, err := codegen.NewConfig("src/schema", "")
+		if err != nil {
+			return err
+		}
 		if !schemasInfo.force {
-			schema, err := parseSchema()
+			schema, err := parseSchemaFromConfig(cfg)
 			if err != nil {
 				return err
 			}
@@ -60,10 +65,6 @@ cat schema.json | tsent generate schemas --force`,
 			}
 		}
 
-		cfg, err := codegen.NewConfig("src/schema", "")
-		if err != nil {
-			return err
-		}
 		return generateschema.GenerateFromInputSchema(cfg, s)
 	},
 }

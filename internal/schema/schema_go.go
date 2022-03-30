@@ -10,6 +10,7 @@ import (
 
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/astparser"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/depgraph"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
@@ -142,7 +143,8 @@ func (s *Schema) parseFile(
 				g2.AddItem("GetActions", func(info *NodeDataInfo) error {
 					var err error
 					nodeData := info.NodeData
-					nodeData.ActionInfo, err = action.ParseActions(packageName, fn, nodeData.FieldInfo, nodeData.EdgeInfo, base.GoLang)
+					nodeData.ActionInfo, err = action.ParseActions(&codegenapi.DummyConfig{},
+						packageName, fn, nodeData.FieldInfo, nodeData.EdgeInfo, base.GoLang)
 					return err
 				}, "LinkedEdges")
 

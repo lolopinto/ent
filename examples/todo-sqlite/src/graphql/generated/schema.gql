@@ -123,99 +123,99 @@ type TodoToTagsConnection implements Connection {
   rawCount: Int!
 }
 
-input AccountCreateInput {
+input AddTodoTagInput {
+  """id of Todo"""
+  todoID: ID!
+  tagID: ID!
+}
+
+type AddTodoTagPayload {
+  todo: Todo!
+}
+
+input ChangeTodoStatusInput {
+  """id of Todo"""
+  todoID: ID!
+  completed: Boolean
+}
+
+type ChangeTodoStatusPayload {
+  todo: Todo!
+}
+
+input CreateAccountInput {
   name: String!
   phoneNumber: String!
 }
 
-type AccountCreatePayload {
+type CreateAccountPayload {
   account: Account!
 }
 
-input AccountDeleteInput {
+input CreateTagInput {
+  displayName: String!
+  ownerID: ID!
+}
+
+type CreateTagPayload {
+  tag: Tag!
+}
+
+input CreateTodoInput {
+  text: String!
+  creatorID: ID!
+}
+
+type CreateTodoPayload {
+  todo: Todo!
+}
+
+input DeleteAccountInput {
   """id of Account"""
   accountID: ID!
 }
 
-type AccountDeletePayload {
+type DeleteAccountPayload {
   deletedAccountID: ID
 }
 
-input AccountEditInput {
+input DeleteTodoInput {
+  """id of Todo"""
+  todoID: ID!
+}
+
+type DeleteTodoPayload {
+  deletedTodoID: ID
+}
+
+input EditAccountInput {
   """id of Account"""
   accountID: ID!
   name: String
   phoneNumber: String
 }
 
-type AccountEditPayload {
+type EditAccountPayload {
   account: Account!
 }
 
-input TagCreateInput {
-  displayName: String!
-  ownerID: ID!
-}
-
-type TagCreatePayload {
-  tag: Tag!
-}
-
-input TodoAddTagInput {
+input RemoveTodoTagInput {
   """id of Todo"""
   todoID: ID!
   tagID: ID!
 }
 
-type TodoAddTagPayload {
+type RemoveTodoTagPayload {
   todo: Todo!
 }
 
-input TodoChangeStatusInput {
-  """id of Todo"""
-  todoID: ID!
-  completed: Boolean
-}
-
-type TodoChangeStatusPayload {
-  todo: Todo!
-}
-
-input TodoCreateInput {
-  text: String!
-  creatorID: ID!
-}
-
-type TodoCreatePayload {
-  todo: Todo!
-}
-
-input TodoDeleteInput {
-  """id of Todo"""
-  todoID: ID!
-}
-
-type TodoDeletePayload {
-  deletedTodoID: ID
-}
-
-input TodoRemoveTagInput {
-  """id of Todo"""
-  todoID: ID!
-  tagID: ID!
-}
-
-type TodoRemoveTagPayload {
-  todo: Todo!
-}
-
-input TodoRenameInput {
+input RenameTodoInput {
   """id of Todo"""
   todoID: ID!
   text: String
 }
 
-type TodoRenamePayload {
+type RenameTodoPayload {
   todo: Todo!
 }
 
@@ -228,16 +228,16 @@ type Query {
 }
 
 type Mutation {
-  accountCreate(input: AccountCreateInput!): AccountCreatePayload!
-  accountDelete(input: AccountDeleteInput!): AccountDeletePayload!
-  accountEdit(input: AccountEditInput!): AccountEditPayload!
-  tagCreate(input: TagCreateInput!): TagCreatePayload!
-  todoAddTag(input: TodoAddTagInput!): TodoAddTagPayload!
-  todoChangeStatus(input: TodoChangeStatusInput!): TodoChangeStatusPayload!
-  todoCreate(input: TodoCreateInput!): TodoCreatePayload!
-  todoDelete(input: TodoDeleteInput!): TodoDeletePayload!
-  todoRemoveTag(input: TodoRemoveTagInput!): TodoRemoveTagPayload!
-  todoRename(input: TodoRenameInput!): TodoRenamePayload!
+  addTodoTag(input: AddTodoTagInput!): AddTodoTagPayload!
+  createAccount(input: CreateAccountInput!): CreateAccountPayload!
+  createTag(input: CreateTagInput!): CreateTagPayload!
+  createTodo(input: CreateTodoInput!): CreateTodoPayload!
+  deleteAccount(input: DeleteAccountInput!): DeleteAccountPayload!
+  deleteTodo(input: DeleteTodoInput!): DeleteTodoPayload!
+  editAccount(input: EditAccountInput!): EditAccountPayload!
+  removeTodoTag(input: RemoveTodoTagInput!): RemoveTodoTagPayload!
+  todoChangeStatus(input: ChangeTodoStatusInput!): ChangeTodoStatusPayload!
+  todoRename(input: RenameTodoInput!): RenameTodoPayload!
   todosMarkAllAs(accountID: ID!, completed: Boolean!): Account!
   todosRemoveCompleted(accountID: ID!): Account!
 }

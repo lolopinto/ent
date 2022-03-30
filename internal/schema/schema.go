@@ -12,6 +12,7 @@ import (
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/depgraph"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
@@ -239,9 +240,9 @@ func ParsePackage(pkg *packages.Package, specificConfigs ...string) (*Schema, er
 
 // ParseFromInputSchema takes the schema that has been parsed from whatever input source
 // and provides the schema we have that's checked and conforms to everything we expect
-func ParseFromInputSchema(schema *input.Schema, lang base.Language) (*Schema, error) {
+func ParseFromInputSchema(cfg codegenapi.Config, schema *input.Schema, lang base.Language) (*Schema, error) {
 	return parse(func(s *Schema) (*assocEdgeData, error) {
-		return s.parseInputSchema(schema, lang)
+		return s.parseInputSchema(cfg, schema, lang)
 	})
 }
 
@@ -333,7 +334,7 @@ func (s *Schema) GetEdgesToUpdate() []*ent.AssocEdgeData {
 	return s.edgesToUpdate
 }
 
-func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*assocEdgeData, error) {
+func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, lang base.Language) (*assocEdgeData, error) {
 	s.inputSchema = schema
 
 	// TODO right now this is also depending on config/database.yml
@@ -416,7 +417,7 @@ func (s *Schema) parseInputSchema(schema *input.Schema, lang base.Language) (*as
 			}
 		}
 
-		nodeData.ActionInfo, err = action.ParseFromInput(packageName, node.Actions, nodeData.FieldInfo, nodeData.EdgeInfo, lang)
+		nodeData.ActionInfo, err = action.ParseFromInput(cfg, packageName, node.Actions, nodeData.FieldInfo, nodeData.EdgeInfo, lang)
 		if err != nil {
 			errs = append(errs, err)
 		}

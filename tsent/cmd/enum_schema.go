@@ -25,7 +25,7 @@ e.g. tsent generate enum_schema RequestStatus status open,pending,closed`,
 	// RequestStatus status open,pending,closed
 	Args: cobra.ExactArgs(3),
 	RunE: func(_ *cobra.Command, args []string) error {
-		schema, err := parseSchema()
+		schema, err := parseSchemaNoConfig()
 		if err != nil {
 			return err
 		}

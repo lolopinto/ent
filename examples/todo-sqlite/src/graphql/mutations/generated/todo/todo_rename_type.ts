@@ -18,16 +18,16 @@ import RenameTodoStatusAction, {
 } from "src/ent/todo/actions/rename_todo_status_action";
 import { TodoType } from "src/graphql/resolvers/";
 
-interface customTodoRenameInput extends RenameTodoInput {
+interface customRenameTodoInput extends RenameTodoInput {
   todoID: string;
 }
 
-interface TodoRenamePayload {
+interface RenameTodoPayload {
   todo: Todo;
 }
 
-export const TodoRenameInputType = new GraphQLInputObjectType({
-  name: "TodoRenameInput",
+export const RenameTodoInputType = new GraphQLInputObjectType({
+  name: "RenameTodoInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     todoID: {
       description: "id of Todo",
@@ -39,9 +39,9 @@ export const TodoRenameInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const TodoRenamePayloadType = new GraphQLObjectType({
-  name: "TodoRenamePayload",
-  fields: (): GraphQLFieldConfigMap<TodoRenamePayload, RequestContext> => ({
+export const RenameTodoPayloadType = new GraphQLObjectType({
+  name: "RenameTodoPayload",
+  fields: (): GraphQLFieldConfigMap<RenameTodoPayload, RequestContext> => ({
     todo: {
       type: GraphQLNonNull(TodoType),
     },
@@ -51,13 +51,13 @@ export const TodoRenamePayloadType = new GraphQLObjectType({
 export const TodoRenameType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: customTodoRenameInput }
+  { [input: string]: customRenameTodoInput }
 > = {
-  type: GraphQLNonNull(TodoRenamePayloadType),
+  type: GraphQLNonNull(RenameTodoPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(TodoRenameInputType),
+      type: GraphQLNonNull(RenameTodoInputType),
     },
   },
   resolve: async (
@@ -65,7 +65,7 @@ export const TodoRenameType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<TodoRenamePayload> => {
+  ): Promise<RenameTodoPayload> => {
     const todo = await RenameTodoStatusAction.saveXFromID(
       context.getViewer(),
       input.todoID,

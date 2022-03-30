@@ -13,16 +13,16 @@ import {
 import { RequestContext } from "@snowtop/ent";
 import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
 
-interface customTodoDeleteInput {
+interface customDeleteTodoInput {
   todoID: string;
 }
 
-interface TodoDeletePayload {
+interface DeleteTodoPayload {
   deletedTodoID: string;
 }
 
-export const TodoDeleteInputType = new GraphQLInputObjectType({
-  name: "TodoDeleteInput",
+export const DeleteTodoInputType = new GraphQLInputObjectType({
+  name: "DeleteTodoInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     todoID: {
       description: "id of Todo",
@@ -31,25 +31,25 @@ export const TodoDeleteInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const TodoDeletePayloadType = new GraphQLObjectType({
-  name: "TodoDeletePayload",
-  fields: (): GraphQLFieldConfigMap<TodoDeletePayload, RequestContext> => ({
+export const DeleteTodoPayloadType = new GraphQLObjectType({
+  name: "DeleteTodoPayload",
+  fields: (): GraphQLFieldConfigMap<DeleteTodoPayload, RequestContext> => ({
     deletedTodoID: {
       type: GraphQLID,
     },
   }),
 });
 
-export const TodoDeleteType: GraphQLFieldConfig<
+export const DeleteTodoType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: customTodoDeleteInput }
+  { [input: string]: customDeleteTodoInput }
 > = {
-  type: GraphQLNonNull(TodoDeletePayloadType),
+  type: GraphQLNonNull(DeleteTodoPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(TodoDeleteInputType),
+      type: GraphQLNonNull(DeleteTodoInputType),
     },
   },
   resolve: async (
@@ -57,7 +57,7 @@ export const TodoDeleteType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<TodoDeletePayload> => {
+  ): Promise<DeleteTodoPayload> => {
     await DeleteTodoAction.saveXFromID(context.getViewer(), input.todoID);
     return { deletedTodoID: input.todoID };
   },

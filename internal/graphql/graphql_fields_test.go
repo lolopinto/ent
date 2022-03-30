@@ -59,7 +59,7 @@ func TestActionWithFieldEdgeFieldConfig(t *testing.T) {
 	createAction := profileCfg.NodeData.ActionInfo.GetByName("CreateProfileAction")
 	require.NotNil(t, createAction)
 
-	createActionCfg, err := buildActionFieldConfig(processor, profileCfg.NodeData, createAction, "Profile")
+	createActionCfg, err := buildActionFieldConfig(processor, profileCfg.NodeData, createAction)
 	require.Nil(t, err)
 
 	verifyFieldsOverlap(t, createAction, createActionCfg)
@@ -67,15 +67,15 @@ func TestActionWithFieldEdgeFieldConfig(t *testing.T) {
 	editAction := profileCfg.NodeData.ActionInfo.GetByName("EditProfileAction")
 	require.NotNil(t, createAction)
 
-	editActionCfg, err := buildActionFieldConfig(processor, profileCfg.NodeData, editAction, "Profile")
+	editActionCfg, err := buildActionFieldConfig(processor, profileCfg.NodeData, editAction)
 	require.Nil(t, err)
 
 	verifyFieldsOverlap(t, createAction, editActionCfg)
 
-	createNode := buildActionInputNode(processor, profileCfg.NodeData, createAction, "Profile")
+	createNode := buildActionInputNode(processor, profileCfg.NodeData, createAction)
 	assert.Len(t, createNode.Fields, len(createAction.GetFields())+len(createAction.GetNonEntFields()))
 
-	editNode := buildActionInputNode(processor, profileCfg.NodeData, editAction, "Profile")
+	editNode := buildActionInputNode(processor, profileCfg.NodeData, editAction)
 	assert.Len(t, editNode.Fields, len(editAction.GetFields())+len(editAction.GetNonEntFields())+1)
 }
 

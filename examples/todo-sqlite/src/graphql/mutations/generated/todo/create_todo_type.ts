@@ -18,12 +18,12 @@ import CreateTodoAction, {
 } from "src/ent/todo/actions/create_todo_action";
 import { TodoType } from "src/graphql/resolvers/";
 
-interface TodoCreatePayload {
+interface CreateTodoPayload {
   todo: Todo;
 }
 
-export const TodoCreateInputType = new GraphQLInputObjectType({
-  name: "TodoCreateInput",
+export const CreateTodoInputType = new GraphQLInputObjectType({
+  name: "CreateTodoInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     text: {
       type: GraphQLNonNull(GraphQLString),
@@ -34,25 +34,25 @@ export const TodoCreateInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const TodoCreatePayloadType = new GraphQLObjectType({
-  name: "TodoCreatePayload",
-  fields: (): GraphQLFieldConfigMap<TodoCreatePayload, RequestContext> => ({
+export const CreateTodoPayloadType = new GraphQLObjectType({
+  name: "CreateTodoPayload",
+  fields: (): GraphQLFieldConfigMap<CreateTodoPayload, RequestContext> => ({
     todo: {
       type: GraphQLNonNull(TodoType),
     },
   }),
 });
 
-export const TodoCreateType: GraphQLFieldConfig<
+export const CreateTodoType: GraphQLFieldConfig<
   undefined,
   RequestContext,
   { [input: string]: TodoCreateInput }
 > = {
-  type: GraphQLNonNull(TodoCreatePayloadType),
+  type: GraphQLNonNull(CreateTodoPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(TodoCreateInputType),
+      type: GraphQLNonNull(CreateTodoInputType),
     },
   },
   resolve: async (
@@ -60,7 +60,7 @@ export const TodoCreateType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<TodoCreatePayload> => {
+  ): Promise<CreateTodoPayload> => {
     const todo = await CreateTodoAction.create(context.getViewer(), {
       text: input.text,
       creatorID: input.creatorID,

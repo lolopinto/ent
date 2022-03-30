@@ -3,12 +3,17 @@ package schema_test
 import (
 	"testing"
 
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func parseFromInputSchema(inputSchema *input.Schema, lang base.Language) (*schema.Schema, error) {
+	return schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, inputSchema, lang)
+}
 
 func TestParseFromInputSchema(t *testing.T) {
 	inputSchema := &input.Schema{
@@ -33,7 +38,7 @@ func TestParseFromInputSchema(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
+	schema, err := parseFromInputSchema(inputSchema, base.GoLang)
 
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
@@ -72,7 +77,7 @@ func TestCompoundName(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
+	schema, err := parseFromInputSchema(inputSchema, base.GoLang)
 
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
@@ -112,7 +117,7 @@ func TestParseInputWithOverridenTable(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
+	schema, err := parseFromInputSchema(inputSchema, base.GoLang)
 
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
@@ -160,7 +165,7 @@ func TestParseInputWithForeignKey(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
+	schema, err := parseFromInputSchema(inputSchema, base.GoLang)
 
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
@@ -215,7 +220,7 @@ func TestParseInputWithForeignKeyIndexDisabled(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
+	schema, err := parseFromInputSchema(inputSchema, base.GoLang)
 
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
@@ -271,7 +276,7 @@ func TestParseInputWithForeignKeyWithCustomName(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
+	schema, err := parseFromInputSchema(inputSchema, base.GoLang)
 
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
@@ -335,7 +340,7 @@ func TestMultipleForeignKeysDuplicateEdgeName(t *testing.T) {
 	}
 
 	// errors because duplicate edge name since edgeName wasn't given for either
-	s, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
+	s, err := parseFromInputSchema(inputSchema, base.GoLang)
 	require.Error(t, err)
 	require.Nil(t, s)
 }
@@ -382,7 +387,7 @@ func TestMultipleForeignKeysOneEdgeName(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
+	schema, err := parseFromInputSchema(inputSchema, base.GoLang)
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
 
@@ -449,7 +454,7 @@ func TestMultipleForeignKeys(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
+	schema, err := parseFromInputSchema(inputSchema, base.GoLang)
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
 
@@ -517,7 +522,7 @@ func TestParseInputWithFieldEdge(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
+	schema, err := parseFromInputSchema(inputSchema, base.GoLang)
 
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
@@ -579,7 +584,7 @@ func TestParseInputWithFieldEdgeAndNoEdgeInSource(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
+	schema, err := parseFromInputSchema(inputSchema, base.GoLang)
 
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
@@ -643,7 +648,7 @@ func TestParseInputWithFieldEdgeAndNoEdgeInSourceMoreOptions(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
+	schema, err := parseFromInputSchema(inputSchema, base.GoLang)
 
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
@@ -712,7 +717,7 @@ func TestParseInputWithAssocEdgeGroup(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
+	schema, err := parseFromInputSchema(inputSchema, base.GoLang)
 
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
@@ -772,7 +777,7 @@ func TestParseInputWithPolymorphicFieldEdge(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema, base.TypeScript)
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
 
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
@@ -836,7 +841,7 @@ func TestParseInputWithPolymorphicFieldEdgeInverseTypes(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema, base.TypeScript)
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
 
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
@@ -916,7 +921,7 @@ func TestParseInputWithPolymorphicFieldEdgeNotIndexed(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema, base.TypeScript)
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
 
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
@@ -998,7 +1003,7 @@ func TestWithPatterns(t *testing.T) {
 			},
 		},
 	}
-	schema, err := schema.ParseFromInputSchema(inputSchema, base.TypeScript)
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 3)
 
@@ -1155,7 +1160,7 @@ func TestWithMultipleEnumsInPattern(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema, base.TypeScript)
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
 
@@ -1247,7 +1252,7 @@ func TestWithPatternsNoEdgeConstName(t *testing.T) {
 			},
 		},
 	}
-	schema, err := schema.ParseFromInputSchema(inputSchema, base.TypeScript)
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 3)
 

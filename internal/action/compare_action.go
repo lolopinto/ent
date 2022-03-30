@@ -12,7 +12,8 @@ import (
 func compareCommonActionInfo(action1, action2 commonActionInfo) bool {
 	return action1.ActionName == action2.ActionName &&
 		action1.ExposeToGraphQL == action2.ExposeToGraphQL &&
-		action1.InputName == action2.InputName &&
+		action1.ActionInputName == action2.ActionInputName &&
+		action1.GraphQLInputName == action2.GraphQLInputName &&
 		action1.GraphQLName == action2.GraphQLName &&
 		field.FieldsEqual(action1.Fields, action2.Fields) &&
 		field.NonEntFieldsEqual(action1.NonEntFields, action2.NonEntFields) &&

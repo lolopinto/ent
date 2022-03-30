@@ -17,12 +17,12 @@ import CreateAccountAction, {
 } from "src/ent/account/actions/create_account_action";
 import { AccountType } from "src/graphql/resolvers/";
 
-interface AccountCreatePayload {
+interface CreateAccountPayload {
   account: Account;
 }
 
-export const AccountCreateInputType = new GraphQLInputObjectType({
-  name: "AccountCreateInput",
+export const CreateAccountInputType = new GraphQLInputObjectType({
+  name: "CreateAccountInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     name: {
       type: GraphQLNonNull(GraphQLString),
@@ -33,25 +33,25 @@ export const AccountCreateInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const AccountCreatePayloadType = new GraphQLObjectType({
-  name: "AccountCreatePayload",
-  fields: (): GraphQLFieldConfigMap<AccountCreatePayload, RequestContext> => ({
+export const CreateAccountPayloadType = new GraphQLObjectType({
+  name: "CreateAccountPayload",
+  fields: (): GraphQLFieldConfigMap<CreateAccountPayload, RequestContext> => ({
     account: {
       type: GraphQLNonNull(AccountType),
     },
   }),
 });
 
-export const AccountCreateType: GraphQLFieldConfig<
+export const CreateAccountType: GraphQLFieldConfig<
   undefined,
   RequestContext,
   { [input: string]: AccountCreateInput }
 > = {
-  type: GraphQLNonNull(AccountCreatePayloadType),
+  type: GraphQLNonNull(CreateAccountPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(AccountCreateInputType),
+      type: GraphQLNonNull(CreateAccountInputType),
     },
   },
   resolve: async (
@@ -59,7 +59,7 @@ export const AccountCreateType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<AccountCreatePayload> => {
+  ): Promise<CreateAccountPayload> => {
     const account = await CreateAccountAction.create(context.getViewer(), {
       name: input.name,
       phoneNumber: input.phoneNumber,
