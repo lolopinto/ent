@@ -42,8 +42,6 @@ var _ Config = &DummyConfig{}
 
 func GraphQLName(cfg Config, name string) string {
 	if cfg.DefaultGraphQLFieldFormat() == LowerCamelCase {
-		// TODO audit strcase.ToLowerCamel everywhere
-		// field & non ent field name has been converted. edge hasn't. what else?
 		return strcase.ToLowerCamel(name)
 	}
 	return strcase.ToSnake(name)
