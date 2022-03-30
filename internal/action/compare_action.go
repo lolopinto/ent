@@ -43,11 +43,35 @@ func compareActionMap(m1, m2 map[string]Action) []change.Change {
 			})
 		} else {
 			if !ActionEqual(action1, action2) {
-				ret = append(ret, change.Change{
-					Change:      change.ModifyAction,
-					Name:        k,
-					GraphQLName: action1.GetGraphQLName(),
-				})
+				// action is different and graphql names changed
+				if action1.GetGraphQLName() != action2.GetGraphQLName() {
+					ret = append(
+						ret,
+						change.Change{
+							Change:      change.ModifyAction,
+							Name:        k,
+							GraphQLName: action1.GetGraphQLName(),
+							TSOnly:      true,
+						},
+						change.Change{
+							Change:      change.RemoveAction,
+							GraphQLOnly: true,
+							Name:        k,
+							GraphQLName: action1.GetGraphQLName(),
+						},
+						change.Change{
+							Change:      change.AddAction,
+							GraphQLOnly: true,
+							Name:        k,
+							GraphQLName: action2.GetGraphQLName(),
+						})
+				} else {
+					ret = append(ret, change.Change{
+						Change:      change.ModifyAction,
+						Name:        k,
+						GraphQLName: action1.GetGraphQLName(),
+					})
+				}
 			}
 		}
 	}

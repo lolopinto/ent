@@ -726,6 +726,72 @@ func TestCompareNodesWithModifiedEdge(t *testing.T) {
 	}, user[1])
 }
 
+func TestCompareNodesWithRenamedEdge(t *testing.T) {
+	e1, err := edge.EdgeInfoFromInput("user", &input.Node{
+		AssocEdges: []*input.AssocEdge{
+			{
+				Name:       "Likes",
+				SchemaName: "User",
+			},
+		},
+	})
+	require.Nil(t, err)
+	e2, err := edge.EdgeInfoFromInput("user", &input.Node{
+		AssocEdges: []*input.AssocEdge{
+			{
+				Name:       "LikedPeople",
+				SchemaName: "User",
+			},
+		},
+	})
+	require.Nil(t, err)
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"UserConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					EdgeInfo:    e1,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"UserConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					EdgeInfo:    e2,
+				},
+			},
+		},
+	}
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+
+	user := m["User"]
+	require.Len(t, user, 3)
+	verifyChange(t, change.Change{
+		Change:      change.RemoveEdge,
+		Name:        "Likes",
+		GraphQLName: "UserToLikesConnection",
+		ExtraInfo:   "UserToLikesQuery",
+	}, user[0])
+	verifyChange(t, change.Change{
+		Change:      change.AddEdge,
+		Name:        "LikedPeople",
+		GraphQLName: "UserToLikedPeopleConnection",
+		ExtraInfo:   "UserToLikedPeopleQuery",
+	}, user[1])
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[2])
+}
+
 func TestCompareNodesWithEdgeGroupNoChange(t *testing.T) {
 	e1, err := edge.EdgeInfoFromInput("user", &input.Node{
 		AssocEdgeGroups: []*input.AssocEdgeGroup{
@@ -1396,6 +1462,107 @@ func TestCompareActionsModified(t *testing.T) {
 		Name:        "User",
 		GraphQLName: "User",
 	}, user[1])
+}
+
+func TestCompareActionsGraphQLNameModified(t *testing.T) {
+	a1 := createActionInfoFromInput(t, "user", &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+			},
+			{
+				Name: "prefs",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+				Nullable: true,
+			},
+		},
+		Actions: []*input.Action{
+			{
+				Operation:         ent.CreateAction,
+				CustomGraphQLName: "userCreate",
+			},
+		},
+	})
+	a2 := createActionInfoFromInput(t, "user", &input.Node{
+		Fields: []*input.Field{
+			{
+				Name: "name",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+			},
+			{
+				Name: "prefs",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+				Nullable: true,
+			},
+		},
+		Actions: []*input.Action{
+			{
+				Operation:         ent.CreateAction,
+				CustomGraphQLName: "createUser",
+			},
+		},
+	})
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"UserConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					ActionInfo:  a1,
+				},
+			},
+		},
+	}
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"UserConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					ActionInfo:  a2,
+				},
+			},
+		},
+	}
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+
+	user := m["User"]
+	require.Len(t, user, 4)
+	verifyChange(t, change.Change{
+		Change:      change.ModifyAction,
+		Name:        "CreateUserAction",
+		GraphQLName: "userCreate",
+		TSOnly:      true,
+	}, user[0])
+	verifyChange(t, change.Change{
+		Change:      change.RemoveAction,
+		Name:        "CreateUserAction",
+		GraphQLName: "userCreate",
+		GraphQLOnly: true,
+	}, user[1])
+	verifyChange(t, change.Change{
+		Change:      change.AddAction,
+		Name:        "CreateUserAction",
+		GraphQLName: "createUser",
+		GraphQLOnly: true,
+	}, user[2])
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[3])
 }
 
 func TestForeignKeyEdgeNoChange(t *testing.T) {
