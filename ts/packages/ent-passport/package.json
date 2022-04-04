@@ -32,7 +32,7 @@
     "@snowtop/ent": ">= 0.0.1"
   },
   "devDependencies": {
-    "@snowtop/ent": "^0.0.1",
+    "@snowtop/ent": "^0.0.38",
     "@snowtop/ent-graphql-tests": "^0.0.1",
     "@types/express-session": "^1.17.3",
     "@types/jest": "^27.0.1",
