@@ -7,7 +7,6 @@ interface Node {
 }
 
 export interface NodeResolver {
-  encode(node: Node): string;
   decodeObj(viewer: Viewer, id: string): Promise<Node | null>;
 }
 
@@ -84,7 +83,7 @@ export const nodeIDEncoder: GraphQLFieldResolver<Ent, {}> = (
   source: Ent,
   _args: {},
 ) => {
-  const r = resolvers.get("entNode");
+  const r = resolvers.get("entNode") as EntNodeResolver;
   if (!r) {
     throw new Error(`cannot resolve id when entNode not previously registered`);
   }
