@@ -10,6 +10,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/base"
@@ -86,7 +87,7 @@ func NewFieldFromNameAndType(name string, typ enttype.TSGraphQLType) *Field {
 	}
 }
 
-func newFieldFromInput(f *input.Field) (*Field, error) {
+func newFieldFromInput(cfg codegenapi.Config, f *input.Field) (*Field, error) {
 	ret := &Field{
 		FieldName:                  f.Name,
 		nullable:                   f.Nullable,
@@ -124,7 +125,7 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 			// TODO come up with a better way of handling this
 			ret.graphQLName = "id"
 		} else {
-			ret.graphQLName = strcase.ToLowerCamel(ret.FieldName)
+			ret.graphQLName = codegenapi.GraphQLName(cfg, ret.FieldName)
 		}
 	}
 
@@ -210,8 +211,8 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 	return ret, nil
 }
 
-func newField(fieldName string) *Field {
-	graphQLName := strcase.ToLowerCamel(fieldName)
+func newField(cfg codegenapi.Config, fieldName string) *Field {
+	graphQLName := codegenapi.GraphQLName(cfg, fieldName)
 	// TODO come up with a better way of handling this
 	if fieldName == "ID" {
 		graphQLName = "id"
@@ -246,22 +247,28 @@ func (f *Field) GetQuotedDBColName() string {
 
 // We're going from field -> edge to be consistent and
 // not have circular dependencies
-func (f *Field) AddForeignKeyFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) error {
+func (f *Field) AddForeignKeyFieldEdgeToEdgeInfo(
+	cfg codegenapi.Config,
+	edgeInfo *edge.EdgeInfo) error {
 	fkeyInfo := f.ForeignKeyInfo()
 	if fkeyInfo == nil {
 		return fmt.Errorf("invalid field %s added", f.FieldName)
 	}
 
-	return edgeInfo.AddFieldEdgeFromForeignKeyInfo(f.FieldName, fkeyInfo.Schema+"Config", f.Nullable(), f.fieldType)
+	return edgeInfo.AddFieldEdgeFromForeignKeyInfo(cfg, f.FieldName, fkeyInfo.Schema+"Config", f.Nullable(), f.fieldType)
 }
 
-func (f *Field) AddFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) error {
+func (f *Field) AddFieldEdgeToEdgeInfo(
+	cfg codegenapi.Config,
+	edgeInfo *edge.EdgeInfo,
+) error {
 	fieldEdgeInfo := f.FieldEdgeInfo()
 	if fieldEdgeInfo == nil {
 		return fmt.Errorf("invalid field %s added", f.FieldName)
 	}
 
 	return edgeInfo.AddFieldEdgeFromFieldEdgeInfo(
+		cfg,
 		f.FieldName,
 		fieldEdgeInfo,
 		f.Nullable(),
@@ -269,7 +276,9 @@ func (f *Field) AddFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) error {
 	)
 }
 
-func (f *Field) AddForeignKeyEdgeToInverseEdgeInfo(edgeInfo *edge.EdgeInfo, nodeName string) error {
+func (f *Field) AddForeignKeyEdgeToInverseEdgeInfo(
+	cfg codegenapi.Config,
+	edgeInfo *edge.EdgeInfo, nodeName string) error {
 	fkeyInfo := f.ForeignKeyInfo()
 	if fkeyInfo == nil {
 		return fmt.Errorf("invalid field %s added", f.FieldName)
@@ -283,6 +292,7 @@ func (f *Field) AddForeignKeyEdgeToInverseEdgeInfo(edgeInfo *edge.EdgeInfo, node
 		edgeName = inflection.Plural(nodeName)
 	}
 	return edgeInfo.AddEdgeFromForeignKeyIndex(
+		cfg,
 		f.GetQuotedDBColName(),
 		edgeName,
 		nodeName,
@@ -496,6 +506,10 @@ func (f *Field) TsType() string {
 	return f.fieldType.GetTSType()
 }
 
+func (f *Field) GetTsType() string {
+	return f.TsType()
+}
+
 func (f *Field) GetTsTypeImports() []*tsimport.ImportPath {
 	ret := []*tsimport.ImportPath{}
 	// field type requires imports. assumes it has been reserved separately
@@ -615,12 +629,12 @@ func (f *Field) setPrivate() {
 	f.exposeToActionsByDefault = false
 }
 
-func (f *Field) AddInverseEdge(edge *edge.AssociationEdge) error {
+func (f *Field) AddInverseEdge(cfg codegenapi.Config, edge *edge.AssociationEdge) error {
 	if f.fieldEdge == nil {
 		return fmt.Errorf("cannot add an inverse edge on a field without a field edge")
 	}
 	var err error
-	f.inverseEdge, err = edge.CloneWithCommonInfo(f.fieldEdge.Schema + "Config")
+	f.inverseEdge, err = edge.CloneWithCommonInfo(cfg, f.fieldEdge.Schema+"Config")
 	return err
 }
 

@@ -25,21 +25,30 @@ type PageInfo {
   endCursor: String!
 }
 
+enum AccountState {
+  UNVERIFIED
+  VERIFIED
+  DEACTIVATED
+  DISABLED
+}
+
 type Account implements Node {
   id: ID!
   name: String!
-  phoneNumber: String!
+  phone_number: String!
+  account_state: AccountState
   tags(first: Int, after: String, last: Int, before: String): AccountToTagsConnection!
   todos(first: Int, after: String, last: Int, before: String): AccountToTodosConnection!
-  openTodosPlural: [Todo!]!
-  openTodos(first: Int, after: String, last: Int, before: String): AccountToOpenTodosConnection!
+  open_todos_plural: [Todo!]!
+  open_todos(first: Int, after: String, last: Int, before: String): AccountToOpenTodosConnection!
 }
 
 type Tag implements Node {
   owner: Account
   id: ID!
-  displayName: String!
-  canonicalName: String!
+  display_name: String!
+  canonical_name: String!
+  related_tag_ids: [ID!]
   todos(first: Int, after: String, last: Int, before: String): TagToTodosConnection!
 }
 
@@ -123,122 +132,126 @@ type TodoToTagsConnection implements Connection {
   rawCount: Int!
 }
 
-input AccountCreateInput {
-  name: String!
-  phoneNumber: String!
-}
-
-type AccountCreatePayload {
-  account: Account!
-}
-
-input AccountDeleteInput {
-  """id of Account"""
-  accountID: ID!
-}
-
-type AccountDeletePayload {
-  deletedAccountID: ID
-}
-
-input AccountEditInput {
-  """id of Account"""
-  accountID: ID!
-  name: String
-  phoneNumber: String
-}
-
-type AccountEditPayload {
-  account: Account!
-}
-
-input TagCreateInput {
-  displayName: String!
-  ownerID: ID!
-}
-
-type TagCreatePayload {
-  tag: Tag!
-}
-
-input TodoAddTagInput {
+input AddTodoTagInput {
   """id of Todo"""
-  todoID: ID!
-  tagID: ID!
+  todo_id: ID!
+  tag_id: ID!
 }
 
-type TodoAddTagPayload {
+type AddTodoTagPayload {
   todo: Todo!
 }
 
-input TodoChangeStatusInput {
+input ChangeTodoStatusInput {
   """id of Todo"""
-  todoID: ID!
+  todo_id: ID!
   completed: Boolean
 }
 
-type TodoChangeStatusPayload {
+type ChangeTodoStatusPayload {
   todo: Todo!
 }
 
-input TodoCreateInput {
+input CreateAccountInput {
+  name: String!
+  phone_number: String!
+  account_state: AccountState
+}
+
+type CreateAccountPayload {
+  account: Account!
+}
+
+input CreateTagInput {
+  display_name: String!
+  owner_id: ID!
+  related_tag_ids: [ID!]
+}
+
+type CreateTagPayload {
+  tag: Tag!
+}
+
+input CreateTodoInput {
   text: String!
-  creatorID: ID!
+  creator_id: ID!
 }
 
-type TodoCreatePayload {
+type CreateTodoPayload {
   todo: Todo!
 }
 
-input TodoDeleteInput {
+input DeleteAccountInput {
+  """id of Account"""
+  account_id: ID!
+}
+
+type DeleteAccountPayload {
+  deleted_account_id: ID
+}
+
+input DeleteTodoInput {
   """id of Todo"""
-  todoID: ID!
+  todo_id: ID!
 }
 
-type TodoDeletePayload {
-  deletedTodoID: ID
+type DeleteTodoPayload {
+  deleted_todo_id: ID
 }
 
-input TodoRemoveTagInput {
+input EditAccountInput {
+  """id of Account"""
+  account_id: ID!
+  name: String
+  phone_number: String
+  account_state: AccountState
+}
+
+type EditAccountPayload {
+  account: Account!
+}
+
+input RemoveTodoTagInput {
   """id of Todo"""
-  todoID: ID!
-  tagID: ID!
+  todo_id: ID!
+  tag_id: ID!
 }
 
-type TodoRemoveTagPayload {
+type RemoveTodoTagPayload {
   todo: Todo!
 }
 
-input TodoRenameInput {
+input RenameTodoInput {
   """id of Todo"""
-  todoID: ID!
+  todo_id: ID!
   text: String
+  reason_for_change: String
 }
 
-type TodoRenamePayload {
+type RenameTodoPayload {
   todo: Todo!
 }
 
 type Query {
   account(id: ID!): Account
-  openTodos(id: ID!, first: Int, after: String, last: Int, before: String): RootToOpenTodosConnection!
-  openTodosPlural(id: ID!): [Todo!]!
+  open_todos(id: ID!, first: Int, after: String, last: Int, before: String): RootToOpenTodosConnection!
+  open_todos_plural(id: ID!): [Todo!]!
   tag(id: ID!): Tag
   todo(id: ID!): Todo
 }
 
 type Mutation {
-  accountCreate(input: AccountCreateInput!): AccountCreatePayload!
-  accountDelete(input: AccountDeleteInput!): AccountDeletePayload!
-  accountEdit(input: AccountEditInput!): AccountEditPayload!
-  tagCreate(input: TagCreateInput!): TagCreatePayload!
-  todoAddTag(input: TodoAddTagInput!): TodoAddTagPayload!
-  todoChangeStatus(input: TodoChangeStatusInput!): TodoChangeStatusPayload!
-  todoCreate(input: TodoCreateInput!): TodoCreatePayload!
-  todoDelete(input: TodoDeleteInput!): TodoDeletePayload!
-  todoRemoveTag(input: TodoRemoveTagInput!): TodoRemoveTagPayload!
-  todoRename(input: TodoRenameInput!): TodoRenamePayload!
-  todosMarkAllAs(accountID: ID!, completed: Boolean!): Account!
-  todosRemoveCompleted(accountID: ID!): Account!
+  addTodoTag(input: AddTodoTagInput!): AddTodoTagPayload!
+  changeTodoStatus(input: ChangeTodoStatusInput!): ChangeTodoStatusPayload!
+  createAccount(input: CreateAccountInput!): CreateAccountPayload!
+  createTag(input: CreateTagInput!): CreateTagPayload!
+  createTodo(input: CreateTodoInput!): CreateTodoPayload!
+  deleteAccount(input: DeleteAccountInput!): DeleteAccountPayload!
+  deleteTodo(input: DeleteTodoInput!): DeleteTodoPayload!
+  editAccount(input: EditAccountInput!): EditAccountPayload!
+  markAllTodosAs(accountID: ID!, completed: Boolean!): Account!
+  removeCompletedTodos(accountID: ID!): Account!
+  removeTodoTag(input: RemoveTodoTagInput!): RemoveTodoTagPayload!
+  renameTodo(input: RenameTodoInput!): RenameTodoPayload!
 }
 

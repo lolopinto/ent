@@ -7,7 +7,7 @@
 {{/* import types that we may need e.g. UserType, ContactType, etc */}}
 {{ range $baseObj.Imports -}} 
   {{if .ImportPath -}}
-    {{reserveImport .ImportPath .Import}}
+    {{reserveImportPath . true}}
   {{end -}}
 {{ end -}}
 

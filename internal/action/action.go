@@ -7,6 +7,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
@@ -77,7 +78,7 @@ func getInputAction(nodeName string, result *astparser.Result) (*input.Action, e
 	return &action, nil
 }
 
-func parseActionsFromInput(nodeName string, action *input.Action, fieldInfo *field.FieldInfo) ([]Action, error) {
+func parseActionsFromInput(cfg codegenapi.Config, nodeName string, action *input.Action, fieldInfo *field.FieldInfo) ([]Action, error) {
 	// exposeToGraphQL is inverse of HideFromGraphQL
 	exposeToGraphQL := !action.HideFromGraphQL
 	typ, err := getActionTypeFromOperation(action.Operation)
@@ -93,12 +94,13 @@ func parseActionsFromInput(nodeName string, action *input.Action, fieldInfo *fie
 			return nil, err
 		}
 
-		nonEntFields, err := getNonEntFieldsFromInput(nodeName, action, concreteAction)
+		nonEntFields, err := getNonEntFieldsFromInput(cfg, nodeName, action, concreteAction)
 		if err != nil {
 			return nil, err
 		}
 
 		commonInfo := getCommonInfo(
+			cfg,
 			nodeName,
 			concreteAction,
 			action.CustomActionName,
@@ -122,13 +124,13 @@ func parseActionsFromInput(nodeName string, action *input.Action, fieldInfo *fie
 		if len(action.ActionOnlyFields) != 0 {
 			return nil, fmt.Errorf("cannot have action only fields when using default actions")
 		}
-		return getActionsForMutationsType(nodeName, fieldInfo, exposeToGraphQL, action)
+		return getActionsForMutationsType(cfg, nodeName, fieldInfo, exposeToGraphQL, action)
 	}
 
 	return nil, errors.New("unsupported action type")
 }
 
-func getActionsForMutationsType(nodeName string, fieldInfo *field.FieldInfo, exposeToGraphQL bool, action *input.Action) ([]Action, error) {
+func getActionsForMutationsType(cfg codegenapi.Config, nodeName string, fieldInfo *field.FieldInfo, exposeToGraphQL bool, action *input.Action) ([]Action, error) {
 	var actions []Action
 
 	createTyp := &createActionType{}
@@ -138,6 +140,7 @@ func getActionsForMutationsType(nodeName string, fieldInfo *field.FieldInfo, exp
 	}
 	actions = append(actions, getCreateAction(
 		getCommonInfo(
+			cfg,
 			nodeName,
 			createTyp,
 			"",
@@ -156,6 +159,7 @@ func getActionsForMutationsType(nodeName string, fieldInfo *field.FieldInfo, exp
 	}
 	actions = append(actions, getEditAction(
 		getCommonInfo(
+			cfg,
 			nodeName,
 			editTyp,
 			"",
@@ -174,6 +178,7 @@ func getActionsForMutationsType(nodeName string, fieldInfo *field.FieldInfo, exp
 	}
 	actions = append(actions, getDeleteAction(
 		getCommonInfo(
+			cfg,
 			nodeName,
 			deleteTyp,
 			"",
@@ -300,23 +305,25 @@ func getFieldsForAction(action *input.Action, fieldInfo *field.FieldInfo, typ co
 	return fields, nil
 }
 
-func getNonEntFieldsFromInput(nodeName string, action *input.Action, typ concreteNodeActionType) ([]*field.NonEntField, error) {
+func getNonEntFieldsFromInput(cfg codegenapi.Config, nodeName string, action *input.Action, typ concreteNodeActionType) ([]*field.NonEntField, error) {
 	var fields []*field.NonEntField
 
-	inputName := getInputNameForNodeActionType(typ, nodeName, action.CustomInputName)
+	inputName := getActionInputNameForNodeActionType(cfg, typ, nodeName, action.CustomInputName)
 
 	for _, f := range action.ActionOnlyFields {
+		// TODO we may want different names for graphql vs actions
 		typ, err := f.GetEntType(inputName)
 		if err != nil {
 			return nil, err
 		}
 
-		fields = append(fields, field.NewNonEntField(f.Name, typ, f.Nullable))
+		fields = append(fields, field.NewNonEntField(cfg, f.Name, typ, f.Nullable))
 	}
 	return fields, nil
 }
 
 func getNonEntFieldsFromAssocGroup(
+	cfg codegenapi.Config,
 	nodeName string,
 	assocGroup *edge.AssociationEdgeGroup,
 	action *edge.EdgeAction,
@@ -324,14 +331,15 @@ func getNonEntFieldsFromAssocGroup(
 ) ([]*field.NonEntField, error) {
 	var fields []*field.NonEntField
 
-	inputName := getInputNameForEdgeActionType(typ, assocGroup, nodeName, "")
+	inputName := getActionInputNameForEdgeActionType(cfg, typ, assocGroup, nodeName, "")
 
 	for _, f := range action.ActionOnlyFields {
+		// TODO we may want different names for graphql vs actions
 		typ, err := f.GetEntType(inputName)
 		if err != nil {
 			return nil, err
 		}
-		fields = append(fields, field.NewNonEntField(f.Name, typ, f.Nullable))
+		fields = append(fields, field.NewNonEntField(cfg, f.Name, typ, f.Nullable))
 	}
 	return fields, nil
 }
@@ -351,7 +359,7 @@ func getEdgeActionType(actionStr string) (concreteEdgeActionType, error) {
 	return typ, nil
 }
 
-func processEdgeActions(nodeName string, assocEdge *edge.AssociationEdge, lang base.Language) ([]Action, error) {
+func processEdgeActions(cfg codegenapi.Config, nodeName string, assocEdge *edge.AssociationEdge, lang base.Language) ([]Action, error) {
 	edgeActions := assocEdge.EdgeActions
 	if len(edgeActions) == 0 {
 		return nil, nil
@@ -366,6 +374,7 @@ func processEdgeActions(nodeName string, assocEdge *edge.AssociationEdge, lang b
 
 		actions[idx] = typ.getAction(
 			getCommonInfoForEdgeAction(
+				cfg,
 				nodeName,
 				assocEdge,
 				typ,
@@ -377,7 +386,7 @@ func processEdgeActions(nodeName string, assocEdge *edge.AssociationEdge, lang b
 	return actions, nil
 }
 
-func processEdgeGroupActions(nodeName string, assocGroup *edge.AssociationEdgeGroup, lang base.Language) ([]Action, error) {
+func processEdgeGroupActions(cfg codegenapi.Config, nodeName string, assocGroup *edge.AssociationEdgeGroup, lang base.Language) ([]Action, error) {
 	edgeActions := assocGroup.EdgeActions
 	if len(edgeActions) == 0 {
 		return nil, nil
@@ -395,35 +404,32 @@ func processEdgeGroupActions(nodeName string, assocGroup *edge.AssociationEdgeGr
 		var fields []*field.NonEntField
 		if lang == base.GoLang {
 			fields = []*field.NonEntField{
-				{
-					FieldName: assocGroup.GroupStatusName,
-					FieldType: &enttype.StringType{},
-					Flag:      "Enum",
-				},
-				{
-					FieldName: strcase.ToCamel(assocGroup.DestNodeInfo.Node + "ID"),
-					FieldType: &enttype.StringType{},
-					Flag:      "ID",
-					NodeType:  fmt.Sprintf("models.%sType", assocGroup.DestNodeInfo.Node), // TODO should take it from codegenInfo
-				},
+				field.NewNonEntField(cfg, assocGroup.GroupStatusName, &enttype.StringType{}, false).SetFlag("Enum"),
+				field.NewNonEntField(cfg, strcase.ToCamel(assocGroup.DestNodeInfo.Node+"ID"), &enttype.StringType{}, false).
+					SetFlag("ID").
+					SetNodeType(fmt.Sprintf("models.%sType", assocGroup.DestNodeInfo.Node)),
 			}
 		} else {
 			values := assocGroup.GetStatusValues()
 			typ := fmt.Sprintf("%sInput", assocGroup.ConstType)
 
 			fields = []*field.NonEntField{
-				{
-					FieldName: assocGroup.TSGroupStatusName,
-					FieldType: &enttype.EnumType{
+				field.NewNonEntField(
+					cfg,
+					assocGroup.TSGroupStatusName,
+					&enttype.EnumType{
 						Values:      values,
 						Type:        typ,
 						GraphQLType: typ,
 					},
-				},
-				{
-					FieldName: assocGroup.GetIDArg(),
-					FieldType: &enttype.IDType{},
-				},
+					false,
+				),
+				field.NewNonEntField(
+					cfg,
+					assocGroup.GetIDArg(),
+					&enttype.IDType{},
+					false,
+				),
 			}
 
 			tsEnum, gqlEnum := enum.GetEnums(&enum.Input{
@@ -435,13 +441,13 @@ func processEdgeGroupActions(nodeName string, assocGroup *edge.AssociationEdgeGr
 			tsEnums = append(tsEnums, tsEnum)
 			gqlEnums = append(gqlEnums, gqlEnum)
 		}
-		nonEntFields, err := getNonEntFieldsFromAssocGroup(nodeName, assocGroup, edgeAction, typ)
+		nonEntFields, err := getNonEntFieldsFromAssocGroup(cfg, nodeName, assocGroup, edgeAction, typ)
 		if err != nil {
 			return nil, err
 		}
 		fields = append(fields, nonEntFields...)
 
-		commonInfo := getCommonInfoForGroupEdgeAction(nodeName,
+		commonInfo := getCommonInfoForGroupEdgeAction(cfg, nodeName,
 			assocGroup,
 			typ,
 			edgeAction,
@@ -488,6 +494,7 @@ func getRemoveEdgeAction(commonInfo commonActionInfo) *RemoveEdgeAction {
 }
 
 func getCommonInfo(
+	cfg codegenapi.Config,
 	nodeName string,
 	typ concreteNodeActionType,
 	customActionName, customGraphQLName, customInputName string,
@@ -496,22 +503,23 @@ func getCommonInfo(
 	nonEntFields []*field.NonEntField) commonActionInfo {
 	var graphqlName string
 	if exposeToGraphQL {
-		graphqlName = getGraphQLNameForNodeActionType(typ, nodeName, customGraphQLName)
+		graphqlName = getGraphQLNameForNodeActionType(cfg, typ, nodeName, customGraphQLName)
 	}
 	return commonActionInfo{
-		ActionName:  getActionNameForNodeActionType(typ, nodeName, customActionName),
-		GraphQLName: graphqlName,
-		// TODO need to break into graphql vs not?
-		InputName:       getInputNameForNodeActionType(typ, nodeName, customInputName),
-		ExposeToGraphQL: exposeToGraphQL,
-		Fields:          fields,
-		NonEntFields:    nonEntFields,
-		NodeInfo:        nodeinfo.GetNodeInfo(nodeName),
-		Operation:       typ.getOperation(),
+		ActionName:       getActionNameForNodeActionType(cfg, typ, nodeName, customActionName),
+		GraphQLName:      graphqlName,
+		ActionInputName:  getActionInputNameForNodeActionType(cfg, typ, nodeName, customInputName),
+		GraphQLInputName: getGraphQLInputNameForNodeActionType(cfg, typ, nodeName, customInputName),
+		ExposeToGraphQL:  exposeToGraphQL,
+		Fields:           fields,
+		NonEntFields:     nonEntFields,
+		NodeInfo:         nodeinfo.GetNodeInfo(nodeName),
+		Operation:        typ.getOperation(),
 	}
 }
 
 func getCommonInfoForEdgeAction(
+	cfg codegenapi.Config,
 	nodeName string,
 	assocEdge *edge.AssociationEdge,
 	typ concreteEdgeActionType,
@@ -519,13 +527,14 @@ func getCommonInfoForEdgeAction(
 	lang base.Language) commonActionInfo {
 	var graphqlName string
 	if edgeAction.ExposeToGraphQL {
-		graphqlName = getGraphQLNameForEdgeActionType(typ, nodeName, assocEdge, edgeAction.CustomGraphQLName)
+		graphqlName = getGraphQLNameForEdgeActionType(cfg, typ, nodeName, assocEdge, edgeAction.CustomGraphQLName)
 	}
 	return commonActionInfo{
-		ActionName:      getActionNameForEdgeActionType(typ, nodeName, assocEdge, edgeAction.CustomActionName, lang),
-		GraphQLName:     graphqlName,
-		InputName:       typ.getDefaultInputName(nodeName, assocEdge),
-		ExposeToGraphQL: edgeAction.ExposeToGraphQL,
+		ActionName:       getActionNameForEdgeActionType(cfg, typ, nodeName, assocEdge, edgeAction.CustomActionName, lang),
+		GraphQLName:      graphqlName,
+		ActionInputName:  typ.getDefaultActionInputName(cfg, nodeName, assocEdge),
+		GraphQLInputName: typ.getDefaultGraphQLInputName(cfg, nodeName, assocEdge),
+		ExposeToGraphQL:  edgeAction.ExposeToGraphQL,
 		Edges: []*edge.AssociationEdge{
 			assocEdge,
 		},
@@ -535,6 +544,7 @@ func getCommonInfoForEdgeAction(
 }
 
 func getCommonInfoForGroupEdgeAction(
+	cfg codegenapi.Config,
 	nodeName string,
 	assocEdgeGroup *edge.AssociationEdgeGroup,
 	typ concreteEdgeActionType,
@@ -544,23 +554,24 @@ func getCommonInfoForGroupEdgeAction(
 	var graphqlName, actionName string
 	if edgeAction.ExposeToGraphQL {
 		if edgeAction.CustomGraphQLName == "" {
-			graphqlName = typ.getDefaultGraphQLName(nodeName, assocEdgeGroup)
+			graphqlName = typ.getDefaultGraphQLName(cfg, nodeName, assocEdgeGroup)
 		} else {
 			graphqlName = edgeAction.CustomGraphQLName
 		}
 	}
 	if edgeAction.CustomActionName == "" {
-		actionName = typ.getDefaultActionName(nodeName, assocEdgeGroup, lang)
+		actionName = typ.getDefaultActionName(cfg, nodeName, assocEdgeGroup, lang)
 	} else {
 		actionName = edgeAction.CustomActionName
 	}
 	return commonActionInfo{
-		ActionName:      actionName,
-		GraphQLName:     graphqlName,
-		InputName:       typ.getDefaultInputName(nodeName, assocEdgeGroup),
-		ExposeToGraphQL: edgeAction.ExposeToGraphQL,
-		NonEntFields:    fields,
-		NodeInfo:        nodeinfo.GetNodeInfo(nodeName),
-		Operation:       typ.getOperation(),
+		ActionName:       actionName,
+		GraphQLName:      graphqlName,
+		ActionInputName:  typ.getDefaultActionInputName(cfg, nodeName, assocEdgeGroup),
+		GraphQLInputName: typ.getDefaultGraphQLInputName(cfg, nodeName, assocEdgeGroup),
+		ExposeToGraphQL:  edgeAction.ExposeToGraphQL,
+		NonEntFields:     fields,
+		NodeInfo:         nodeinfo.GetNodeInfo(nodeName),
+		Operation:        typ.getOperation(),
 	}
 }

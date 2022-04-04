@@ -18,46 +18,51 @@ import RenameTodoStatusAction, {
 } from "src/ent/todo/actions/rename_todo_status_action";
 import { TodoType } from "src/graphql/resolvers/";
 
-interface customTodoRenameInput extends RenameTodoInput {
-  todoID: string;
+interface customRenameTodoInput
+  extends Omit<RenameTodoInput, "reasonForChange"> {
+  todo_id: string;
+  reason_for_change?: string | null;
 }
 
-interface TodoRenamePayload {
+interface RenameTodoPayload {
   todo: Todo;
 }
 
-export const TodoRenameInputType = new GraphQLInputObjectType({
-  name: "TodoRenameInput",
+export const RenameTodoInputType = new GraphQLInputObjectType({
+  name: "RenameTodoInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    todoID: {
+    todo_id: {
       description: "id of Todo",
       type: GraphQLNonNull(GraphQLID),
     },
     text: {
       type: GraphQLString,
     },
+    reason_for_change: {
+      type: GraphQLString,
+    },
   }),
 });
 
-export const TodoRenamePayloadType = new GraphQLObjectType({
-  name: "TodoRenamePayload",
-  fields: (): GraphQLFieldConfigMap<TodoRenamePayload, RequestContext> => ({
+export const RenameTodoPayloadType = new GraphQLObjectType({
+  name: "RenameTodoPayload",
+  fields: (): GraphQLFieldConfigMap<RenameTodoPayload, RequestContext> => ({
     todo: {
       type: GraphQLNonNull(TodoType),
     },
   }),
 });
 
-export const TodoRenameType: GraphQLFieldConfig<
+export const RenameTodoType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: customTodoRenameInput }
+  { [input: string]: customRenameTodoInput }
 > = {
-  type: GraphQLNonNull(TodoRenamePayloadType),
+  type: GraphQLNonNull(RenameTodoPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(TodoRenameInputType),
+      type: GraphQLNonNull(RenameTodoInputType),
     },
   },
   resolve: async (
@@ -65,12 +70,13 @@ export const TodoRenameType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<TodoRenamePayload> => {
+  ): Promise<RenameTodoPayload> => {
     const todo = await RenameTodoStatusAction.saveXFromID(
       context.getViewer(),
-      input.todoID,
+      input.todo_id,
       {
         text: input.text,
+        reasonForChange: input.reason_for_change,
       },
     );
     return { todo: todo };

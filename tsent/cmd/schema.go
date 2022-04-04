@@ -27,7 +27,12 @@ tsent generate schema User phone:phone:index email:email:unique password:passwor
 tsent generate schema User "account_status;string;serverDefault:DEACTIVATED email:email:unique accountId;uuid;foreignKey:{schema:Account;column:id};storageKey:user_id;defaultToViewerOnCreate"`,
 	Args: cobra.MinimumNArgs(2),
 	RunE: func(_ *cobra.Command, args []string) error {
-		schema, err := parseSchema()
+		cfg, err := codegen.NewConfig("src/schema", "")
+		if err != nil {
+			return err
+		}
+
+		schema, err := parseSchemaFromConfig(cfg)
 		if err != nil {
 			return err
 		}
@@ -36,11 +41,6 @@ tsent generate schema User "account_status;string;serverDefault:DEACTIVATED emai
 
 		if schema.NameExists(schemaName) {
 			return fmt.Errorf("cannot generate a schema for since schema with name %s already exists", schemaName)
-		}
-
-		cfg, err := codegen.NewConfig("src/schema", "")
-		if err != nil {
-			return err
 		}
 
 		// handle quoted strings because of ";" in command lines

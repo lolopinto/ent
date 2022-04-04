@@ -4,14 +4,13 @@ import {
   gqlConnection,
   gqlContextType,
   gqlQuery,
-  GraphQLEdgeConnection,
 } from "@snowtop/ent/graphql";
 import { GraphQLID } from "graphql";
-import { Todo, Account, AccountToOpenTodosQuery } from "src/ent";
+import { Todo, AccountToOpenTodosQuery } from "src/ent";
 
 export class TodoResolver {
   // showing plural
-  @gqlQuery({ name: "openTodosPlural", type: "[Todo]" })
+  @gqlQuery({ name: "open_todos_plural", type: "[Todo]" })
   async openTodosPlural(
     @gqlArg("id", { type: GraphQLID }) id: ID,
   ): Promise<Todo[]> {
@@ -23,7 +22,7 @@ export class TodoResolver {
   }
 
   // showing connection
-  @gqlQuery({ type: gqlConnection("Todo") })
+  @gqlQuery({ name: "open_todos", type: gqlConnection("Todo") })
   openTodos(
     // we're not using context but have it here to show that it works
     @gqlContextType() _context: RequestContext,

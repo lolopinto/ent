@@ -18,6 +18,7 @@ export interface TagInput {
   displayName?: string;
   canonicalName?: string;
   ownerID?: ID | Builder<Account>;
+  relatedTagIds?: ID[] | null;
 }
 
 export interface TagAction extends Action<Tag> {
@@ -170,6 +171,7 @@ export class TagBuilder implements Builder<Tag> {
     addField("DisplayName", fields.displayName);
     addField("canonicalName", fields.canonicalName);
     addField("ownerID", fields.ownerID);
+    addField("relatedTagIds", fields.relatedTagIds);
     return result;
   }
 
@@ -199,5 +201,13 @@ export class TagBuilder implements Builder<Tag> {
       return this.input.ownerID;
     }
     return this.existingEnt?.ownerID;
+  }
+
+  // get value of relatedTagIds. Retrieves it from the input if specified or takes it from existingEnt
+  getNewRelatedTagIdsValue(): ID[] | null | undefined {
+    if (this.input.relatedTagIds !== undefined) {
+      return this.input.relatedTagIds;
+    }
+    return this.existingEnt?.relatedTagIds;
   }
 }

@@ -22,16 +22,16 @@ import EditEmailAddressAction, {
 } from "../../../../ent/user/actions/edit_email_address_action";
 import { UserType } from "../../../resolvers";
 
-interface customEmailAddressEditInput extends EditEmailAddressInput {
+interface customEditEmailAddressInput extends EditEmailAddressInput {
   userID: string;
 }
 
-interface EmailAddressEditPayload {
+interface EditEmailAddressPayload {
   user: User;
 }
 
-export const EmailAddressEditInputType = new GraphQLInputObjectType({
-  name: "EmailAddressEditInput",
+export const EditEmailAddressInputType = new GraphQLInputObjectType({
+  name: "EditEmailAddressInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     userID: {
       description: "id of User",
@@ -43,10 +43,10 @@ export const EmailAddressEditInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const EmailAddressEditPayloadType = new GraphQLObjectType({
-  name: "EmailAddressEditPayload",
+export const EditEmailAddressPayloadType = new GraphQLObjectType({
+  name: "EditEmailAddressPayload",
   fields: (): GraphQLFieldConfigMap<
-    EmailAddressEditPayload,
+    EditEmailAddressPayload,
     RequestContext
   > => ({
     user: {
@@ -58,13 +58,13 @@ export const EmailAddressEditPayloadType = new GraphQLObjectType({
 export const EmailAddressEditType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: customEmailAddressEditInput }
+  { [input: string]: customEditEmailAddressInput }
 > = {
-  type: GraphQLNonNull(EmailAddressEditPayloadType),
+  type: GraphQLNonNull(EditEmailAddressPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(EmailAddressEditInputType),
+      type: GraphQLNonNull(EditEmailAddressInputType),
     },
   },
   resolve: async (
@@ -72,7 +72,7 @@ export const EmailAddressEditType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<EmailAddressEditPayload> => {
+  ): Promise<EditEmailAddressPayload> => {
     const user = await EditEmailAddressAction.saveXFromID(
       context.getViewer(),
       mustDecodeIDFromGQLID(input.userID),

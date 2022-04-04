@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/pkg/errors"
@@ -33,6 +34,34 @@ type Config struct {
 	changes    change.ChangeMap
 	// keep track of changed ts files to pass to prettier
 	changedTSFiles []string
+}
+
+// Clone doesn't clone changes and changedTSFiles
+func (cfg *Config) Clone() *Config {
+	return &Config{
+		relativePathToConfigs: cfg.relativePathToConfigs,
+		importPathToConfigs:   cfg.importPathToConfigs,
+		importPathToModels:    cfg.importPathToModels,
+		importPathToRoot:      cfg.importPathToRoot,
+		absPathToRoot:         cfg.absPathToRoot,
+		absPathToConfigs:      cfg.absPathToConfigs,
+		config:                cloneConfig(cfg.config),
+		debugMode:             cfg.debugMode,
+		writeAll:              cfg.writeAll,
+		useChanges:            cfg.useChanges,
+	}
+}
+
+func (cfg *Config) OverrideGraphQLMutationName(mutationName codegenapi.GraphQLMutationName) {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		codegen.DefaultGraphQLMutationName = mutationName
+		return
+	}
+	cfg.config = &config{
+		Codegen: &CodegenConfig{
+			DefaultGraphQLMutationName: mutationName,
+		},
+	}
 }
 
 func NewConfig(configPath, modulePath string) (*Config, error) {
@@ -88,8 +117,10 @@ func (cfg *Config) SetChangeMap(changes change.ChangeMap) {
 	cfg.changes = changes
 }
 
+// In rare scenarios, we can have UseChanges() and WriteAll() be true if
+// ent.yml changed so that we can process deletes also
 func (cfg *Config) UseChanges() bool {
-	return cfg.writeAll
+	return cfg.useChanges
 }
 
 func (cfg *Config) WriteAllFiles() bool {
@@ -269,6 +300,24 @@ func (cfg *Config) GeneratedHeader() string {
 	return ""
 }
 
+func (cfg *Config) DefaultGraphQLMutationName() codegenapi.GraphQLMutationName {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		if codegen.DefaultGraphQLMutationName != "" {
+			return codegen.DefaultGraphQLMutationName
+		}
+	}
+	return codegenapi.NounVerb
+}
+
+func (cfg *Config) DefaultGraphQLFieldFormat() codegenapi.GraphQLFieldFormat {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		if codegen.DefaultGraphQLFieldFormat != "" {
+			return codegen.DefaultGraphQLFieldFormat
+		}
+	}
+	return codegenapi.LowerCamelCase
+}
+
 const DEFAULT_GLOB = "src/**/*.ts"
 const PRETTIER_FILE_CHUNKS = 20
 
@@ -387,15 +436,59 @@ type config struct {
 	Codegen *CodegenConfig `yaml:"codegen"`
 }
 
+func (cfg *config) Clone() *config {
+	return &config{
+		Codegen: cloneCodegen(cfg.Codegen),
+	}
+}
+
+func cloneConfig(cfg *config) *config {
+	if cfg == nil {
+		return nil
+	}
+	return cfg.Clone()
+}
+
 type CodegenConfig struct {
-	DefaultEntPolicy      *PrivacyConfig  `yaml:"defaultEntPolicy"`
-	DefaultActionPolicy   *PrivacyConfig  `yaml:"defaultActionPolicy"`
-	Prettier              *PrettierConfig `yaml:"prettier"`
-	RelativeImports       bool            `yaml:"relativeImports"`
-	DisableGraphQLRoot    bool            `yaml:"disableGraphQLRoot"`
-	GeneratedHeader       string          `yaml:"generatedHeader"`
-	DisableBase64Encoding bool            `yaml:"disableBase64Encoding"`
-	GenerateRootResolvers bool            `yaml:"generateRootResolvers"`
+	DefaultEntPolicy           *PrivacyConfig                 `yaml:"defaultEntPolicy"`
+	DefaultActionPolicy        *PrivacyConfig                 `yaml:"defaultActionPolicy"`
+	Prettier                   *PrettierConfig                `yaml:"prettier"`
+	RelativeImports            bool                           `yaml:"relativeImports"`
+	DisableGraphQLRoot         bool                           `yaml:"disableGraphQLRoot"`
+	GeneratedHeader            string                         `yaml:"generatedHeader"`
+	DisableBase64Encoding      bool                           `yaml:"disableBase64Encoding"`
+	GenerateRootResolvers      bool                           `yaml:"generateRootResolvers"`
+	DefaultGraphQLMutationName codegenapi.GraphQLMutationName `yaml:"defaultGraphQLMutationName"`
+	DefaultGraphQLFieldFormat  codegenapi.GraphQLFieldFormat  `yaml:"defaultGraphQLFieldFormat"`
+}
+
+func cloneCodegen(cfg *CodegenConfig) *CodegenConfig {
+	if cfg == nil {
+		return nil
+	}
+	return cfg.Clone()
+}
+
+func (cfg *CodegenConfig) Clone() *CodegenConfig {
+	return &CodegenConfig{
+		DefaultEntPolicy:           clonePrivacyConfig(cfg.DefaultEntPolicy),
+		DefaultActionPolicy:        clonePrivacyConfig(cfg.DefaultActionPolicy),
+		Prettier:                   clonePrettierConfig(cfg.Prettier),
+		RelativeImports:            cfg.RelativeImports,
+		DisableGraphQLRoot:         cfg.DisableGraphQLRoot,
+		GeneratedHeader:            cfg.GeneratedHeader,
+		DisableBase64Encoding:      cfg.DisableBase64Encoding,
+		GenerateRootResolvers:      cfg.GenerateRootResolvers,
+		DefaultGraphQLMutationName: cfg.DefaultGraphQLMutationName,
+		DefaultGraphQLFieldFormat:  cfg.DefaultGraphQLFieldFormat,
+	}
+}
+
+func clonePrivacyConfig(cfg *PrivacyConfig) *PrivacyConfig {
+	if cfg == nil {
+		return nil
+	}
+	return cfg.Clone()
 }
 
 type PrivacyConfig struct {
@@ -404,7 +497,29 @@ type PrivacyConfig struct {
 	Class      bool   `yaml:"class"`
 }
 
+func (cfg *PrivacyConfig) Clone() *PrivacyConfig {
+	return &PrivacyConfig{
+		Path:       cfg.Path,
+		PolicyName: cfg.PolicyName,
+		Class:      cfg.Class,
+	}
+}
+
+func clonePrettierConfig(cfg *PrettierConfig) *PrettierConfig {
+	if cfg == nil {
+		return nil
+	}
+	return cfg.Clone()
+}
+
 type PrettierConfig struct {
 	Custom bool   `yaml:"custom"`
 	Glob   string `yaml:"glob"`
+}
+
+func (cfg *PrettierConfig) Clone() *PrettierConfig {
+	return &PrettierConfig{
+		Custom: cfg.Custom,
+		Glob:   cfg.Glob,
+	}
 }

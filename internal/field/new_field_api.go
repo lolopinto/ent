@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/lolopinto/ent/internal/astparser"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/syncerr"
 	"golang.org/x/tools/go/packages"
@@ -59,10 +60,12 @@ func ParseFieldsFunc(pkg *packages.Package, fn *ast.FuncDecl) (*FieldInfo, error
 		return nil, err
 	}
 
-	fieldInfo, err := NewFieldInfoFromInputs(fields, &Options{
-		AddBaseFields: true,
-		SortFields:    true,
-	})
+	fieldInfo, err := NewFieldInfoFromInputs(
+		&codegenapi.DummyConfig{},
+		fields, &Options{
+			AddBaseFields: true,
+			SortFields:    true,
+		})
 	if fieldInfo != nil {
 		fieldInfo.getFieldsFn = true
 	}

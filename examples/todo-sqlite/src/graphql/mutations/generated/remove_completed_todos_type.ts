@@ -10,14 +10,14 @@ import { RequestContext } from "@snowtop/ent";
 import { AccountType } from "src/graphql/resolvers/";
 import { TodosResolver } from "../todo/todo_resolver";
 
-interface todosRemoveCompletedArgs {
+interface removeCompletedTodosArgs {
   accountID: any;
 }
 
-export const TodosRemoveCompletedType: GraphQLFieldConfig<
+export const RemoveCompletedTodosType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  todosRemoveCompletedArgs
+  removeCompletedTodosArgs
 > = {
   type: GraphQLNonNull(AccountType),
   args: {

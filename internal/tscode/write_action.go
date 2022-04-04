@@ -24,7 +24,7 @@ type actionTemplate struct {
 
 func writeBaseActionFile(nodeData *schema.NodeData, processor *codegen.Processor, action action.Action) error {
 	cfg := processor.Config
-	filePath := getFilePathForActionBaseFile(cfg, nodeData, action)
+	filePath := getFilePathForActionBaseFile(cfg, nodeData, action.GetActionName())
 	imps := tsimport.NewImports(processor.Config, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
@@ -47,7 +47,7 @@ func writeBaseActionFile(nodeData *schema.NodeData, processor *codegen.Processor
 
 func writeActionFile(nodeData *schema.NodeData, processor *codegen.Processor, action action.Action) error {
 	cfg := processor.Config
-	filePath := getFilePathForActionFile(cfg, nodeData, action)
+	filePath := getFilePathForActionFile(cfg, nodeData, action.GetActionName())
 	imps := tsimport.NewImports(processor.Config, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{

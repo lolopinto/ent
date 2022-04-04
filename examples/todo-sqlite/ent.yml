@@ -1,3 +1,5 @@
 codegen:
   disableBase64Encoding: true
   generateRootResolvers: true
+  defaultGraphQLMutationName: VerbNoun
+  defaultGraphQLFieldFormat: snake_case

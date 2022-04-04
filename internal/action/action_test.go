@@ -6,6 +6,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/parsehelper"
@@ -1027,7 +1028,9 @@ func verifyExpectedFields(t *testing.T, code, nodeName string, expActions []expe
 
 	require.NotNil(t, fnMap["GetActions"])
 
-	actionInfo, err := action.ParseActions(nodeName, fnMap["GetActions"], fieldInfo, nil, base.GoLang)
+	actionInfo, err := action.ParseActions(
+		&codegenapi.DummyConfig{},
+		nodeName, fnMap["GetActions"], fieldInfo, nil, base.GoLang)
 	require.Nil(t, err)
 	verifyExpectedActions(t, actionInfo, expActions)
 }
@@ -1086,10 +1089,11 @@ func verifyNonEntFields(t *testing.T, nonEntFields []*field.NonEntField, expFiel
 
 	for idx, nonEntField := range nonEntFields {
 		actionOnlyField := expFields[idx]
-		require.Equal(t, actionOnlyField.name, nonEntField.FieldName, "name %s not equal. idx %d", nonEntField.FieldName, idx)
-		require.Equal(t, actionOnlyField.nullable, nonEntField.Nullable(), "fieldname %s not equal. idx %d", nonEntField.FieldName, idx)
-		require.Equal(t, actionOnlyField.typ.graphqlType, nonEntField.FieldType.GetGraphQLType(), "graphql type %s not equal. idx %d", nonEntField.FieldName, idx)
-		require.Equal(t, actionOnlyField.typ.tsType, nonEntField.FieldType.GetTSType(), "ts type %s not equal. idx %d", nonEntField.FieldName, idx)
+		fieldName := nonEntField.GetFieldName()
+		require.Equal(t, actionOnlyField.name, fieldName, "name %s not equal. idx %d", fieldName, idx)
+		require.Equal(t, actionOnlyField.nullable, nonEntField.Nullable(), "fieldname %s not equal. idx %d", fieldName, idx)
+		require.Equal(t, actionOnlyField.typ.graphqlType, nonEntField.GetFieldType().GetGraphQLType(), "graphql type %s not equal. idx %d", fieldName, idx)
+		require.Equal(t, actionOnlyField.typ.tsType, nonEntField.GetGraphQLFieldType().GetTSType(), "ts type %s not equal. idx %d", fieldName, idx)
 	}
 }
 
@@ -1136,7 +1140,9 @@ func initSyncs() {
 			// TODO need to fix this dissonance...
 			fieldInfo := getTestFieldInfo(t, strcase.ToCamel(configName)+"Config")
 			edgeInfo := getTestEdgeInfo(t, configName)
-			actionInfo, err := action.ParseActions("Account", fn, fieldInfo, edgeInfo, base.GoLang)
+			actionInfo, err := action.ParseActions(
+				&codegenapi.DummyConfig{},
+				"Account", fn, fieldInfo, edgeInfo, base.GoLang)
 			assert.NotNil(t, actionInfo, "invalid actionInfo retrieved")
 			require.NoError(t, err)
 			return actionInfo

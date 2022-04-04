@@ -13,43 +13,43 @@ import {
 import { RequestContext } from "@snowtop/ent";
 import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
 
-interface customTodoDeleteInput {
-  todoID: string;
+interface customDeleteTodoInput {
+  todo_id: string;
 }
 
-interface TodoDeletePayload {
-  deletedTodoID: string;
+interface DeleteTodoPayload {
+  deleted_todo_id: string;
 }
 
-export const TodoDeleteInputType = new GraphQLInputObjectType({
-  name: "TodoDeleteInput",
+export const DeleteTodoInputType = new GraphQLInputObjectType({
+  name: "DeleteTodoInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    todoID: {
+    todo_id: {
       description: "id of Todo",
       type: GraphQLNonNull(GraphQLID),
     },
   }),
 });
 
-export const TodoDeletePayloadType = new GraphQLObjectType({
-  name: "TodoDeletePayload",
-  fields: (): GraphQLFieldConfigMap<TodoDeletePayload, RequestContext> => ({
-    deletedTodoID: {
+export const DeleteTodoPayloadType = new GraphQLObjectType({
+  name: "DeleteTodoPayload",
+  fields: (): GraphQLFieldConfigMap<DeleteTodoPayload, RequestContext> => ({
+    deleted_todo_id: {
       type: GraphQLID,
     },
   }),
 });
 
-export const TodoDeleteType: GraphQLFieldConfig<
+export const DeleteTodoType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: customTodoDeleteInput }
+  { [input: string]: customDeleteTodoInput }
 > = {
-  type: GraphQLNonNull(TodoDeletePayloadType),
+  type: GraphQLNonNull(DeleteTodoPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(TodoDeleteInputType),
+      type: GraphQLNonNull(DeleteTodoInputType),
     },
   },
   resolve: async (
@@ -57,8 +57,8 @@ export const TodoDeleteType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<TodoDeletePayload> => {
-    await DeleteTodoAction.saveXFromID(context.getViewer(), input.todoID);
-    return { deletedTodoID: input.todoID };
+  ): Promise<DeleteTodoPayload> => {
+    await DeleteTodoAction.saveXFromID(context.getViewer(), input.todo_id);
+    return { deleted_todo_id: input.todo_id };
   },
 };

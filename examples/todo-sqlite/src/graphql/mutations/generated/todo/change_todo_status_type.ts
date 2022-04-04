@@ -18,18 +18,18 @@ import ChangeTodoStatusAction, {
 } from "src/ent/todo/actions/change_todo_status_action";
 import { TodoType } from "src/graphql/resolvers/";
 
-interface customTodoChangeStatusInput extends ChangeTodoStatusInput {
-  todoID: string;
+interface customChangeTodoStatusInput extends ChangeTodoStatusInput {
+  todo_id: string;
 }
 
-interface TodoChangeStatusPayload {
+interface ChangeTodoStatusPayload {
   todo: Todo;
 }
 
-export const TodoChangeStatusInputType = new GraphQLInputObjectType({
-  name: "TodoChangeStatusInput",
+export const ChangeTodoStatusInputType = new GraphQLInputObjectType({
+  name: "ChangeTodoStatusInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    todoID: {
+    todo_id: {
       description: "id of Todo",
       type: GraphQLNonNull(GraphQLID),
     },
@@ -39,10 +39,10 @@ export const TodoChangeStatusInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const TodoChangeStatusPayloadType = new GraphQLObjectType({
-  name: "TodoChangeStatusPayload",
+export const ChangeTodoStatusPayloadType = new GraphQLObjectType({
+  name: "ChangeTodoStatusPayload",
   fields: (): GraphQLFieldConfigMap<
-    TodoChangeStatusPayload,
+    ChangeTodoStatusPayload,
     RequestContext
   > => ({
     todo: {
@@ -51,16 +51,16 @@ export const TodoChangeStatusPayloadType = new GraphQLObjectType({
   }),
 });
 
-export const TodoChangeStatusType: GraphQLFieldConfig<
+export const ChangeTodoStatusType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: customTodoChangeStatusInput }
+  { [input: string]: customChangeTodoStatusInput }
 > = {
-  type: GraphQLNonNull(TodoChangeStatusPayloadType),
+  type: GraphQLNonNull(ChangeTodoStatusPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(TodoChangeStatusInputType),
+      type: GraphQLNonNull(ChangeTodoStatusInputType),
     },
   },
   resolve: async (
@@ -68,10 +68,10 @@ export const TodoChangeStatusType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<TodoChangeStatusPayload> => {
+  ): Promise<ChangeTodoStatusPayload> => {
     const todo = await ChangeTodoStatusAction.saveXFromID(
       context.getViewer(),
-      input.todoID,
+      input.todo_id,
       {
         completed: input.completed,
       },

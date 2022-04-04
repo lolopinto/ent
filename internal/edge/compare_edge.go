@@ -19,6 +19,7 @@ func CompareAssociationEdge(existingEdge, edge *AssociationEdge) []change.Change
 			Change:      change.ModifyEdge,
 			Name:        existingEdge.EdgeName,
 			GraphQLName: existingEdge.GetGraphQLConnectionName(),
+			ExtraInfo:   existingEdge.TsEdgeQueryName(),
 		})
 	}
 	return ret
@@ -69,6 +70,7 @@ func CompareAssocEdgesMap(m1, m2 map[string]*AssociationEdge) []change.Change {
 				Change:      change.RemoveEdge,
 				Name:        k,
 				GraphQLName: edge1.GetGraphQLConnectionName(),
+				ExtraInfo:   edge1.TsEdgeQueryName(),
 			})
 		} else {
 			if !AssocEdgeEqual(edge1, edge2) {
@@ -76,6 +78,7 @@ func CompareAssocEdgesMap(m1, m2 map[string]*AssociationEdge) []change.Change {
 					Change:      change.ModifyEdge,
 					Name:        k,
 					GraphQLName: edge1.GetGraphQLConnectionName(),
+					ExtraInfo:   edge1.TsEdgeQueryName(),
 				})
 			}
 		}
@@ -89,6 +92,7 @@ func CompareAssocEdgesMap(m1, m2 map[string]*AssociationEdge) []change.Change {
 				Change:      change.AddEdge,
 				Name:        k,
 				GraphQLName: edge2.GetGraphQLConnectionName(),
+				ExtraInfo:   edge2.TsEdgeQueryName(),
 			})
 		}
 	}
@@ -173,6 +177,7 @@ func compareIndexedConnectionEdgeMap(m1, m2 map[string]IndexedConnectionEdge) []
 				Change:      change.RemoveEdge,
 				Name:        k,
 				GraphQLName: edge1.GetGraphQLConnectionName(),
+				ExtraInfo:   edge1.TsEdgeQueryName(),
 			})
 		} else {
 			if !compareIndexedConnectionEdge(edge1, edge2) {
@@ -180,6 +185,7 @@ func compareIndexedConnectionEdgeMap(m1, m2 map[string]IndexedConnectionEdge) []
 					Change:      change.ModifyEdge,
 					Name:        k,
 					GraphQLName: edge1.GetGraphQLConnectionName(),
+					ExtraInfo:   edge1.TsEdgeQueryName(),
 				})
 			}
 		}
@@ -193,6 +199,7 @@ func compareIndexedConnectionEdgeMap(m1, m2 map[string]IndexedConnectionEdge) []
 				Change:      change.AddEdge,
 				Name:        k,
 				GraphQLName: edge2.GetGraphQLConnectionName(),
+				ExtraInfo:   edge2.TsEdgeQueryName(),
 			})
 		}
 	}
@@ -257,6 +264,7 @@ func compareIndexedEdge(existingEdge, edge *IndexedEdge) []change.Change {
 			Change:      change.ModifyEdge,
 			Name:        edge.EdgeName,
 			GraphQLName: edge.GetGraphQLConnectionName(),
+			ExtraInfo:   edge.TsEdgeQueryName(),
 		})
 	}
 	return ret

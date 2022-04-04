@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -255,7 +256,7 @@ func CompareCustomData(processor *codegen.Processor, cd1, cd2 *CustomData, exist
 	}
 	for k, l1 := range cd1.Fields {
 		l2 := cd2.Fields[k]
-		eq, conns := customFieldListComparison(l1, l2)
+		eq, conns := customFieldListComparison(processor.Config, l1, l2)
 		for k, v := range conns {
 			if v {
 				ret.customConnectionsChanged[k] = true
@@ -354,7 +355,8 @@ func mapifyFieldList(l []CustomField, references map[string]map[string]bool) map
 		subM[gqlName] = true
 		references[typ] = subM
 	}
-	for _, cf := range l {
+	for idx := range l {
+		cf := l[idx]
 		m[cf.GraphQLName] = &cf
 		for _, arg := range cf.Args {
 			addToMap(arg.Type, cf.GraphQLName)
@@ -379,7 +381,7 @@ func customFieldEqual(cf1, cf2 *CustomField) bool {
 		cf1.FieldType == cf2.FieldType
 }
 
-func customFieldListComparison(l1, l2 []CustomField) (bool, map[string]bool) {
+func customFieldListComparison(cfg codegenapi.Config, l1, l2 []CustomField) (bool, map[string]bool) {
 	listEqual := len(l1) == len(l2)
 	conns := make(map[string]bool)
 
@@ -396,7 +398,7 @@ func customFieldListComparison(l1, l2 []CustomField) (bool, map[string]bool) {
 		}
 
 		if !ok || !isConnection(*cf1) {
-			edge := getGQLEdge(*cf2, cf2.Node)
+			edge := getGQLEdge(cfg, *cf2, cf2.Node)
 			conns[edge.GetGraphQLConnectionName()] = true
 		}
 	}

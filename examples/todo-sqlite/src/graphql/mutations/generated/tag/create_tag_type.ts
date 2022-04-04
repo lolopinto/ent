@@ -6,53 +6,64 @@ import {
   GraphQLID,
   GraphQLInputFieldConfigMap,
   GraphQLInputObjectType,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLResolveInfo,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "@snowtop/ent";
+import { ID, RequestContext } from "@snowtop/ent";
 import { Tag } from "src/ent/";
 import CreateTagAction, {
   TagCreateInput,
 } from "src/ent/tag/actions/create_tag_action";
 import { TagType } from "src/graphql/resolvers/";
 
-interface TagCreatePayload {
+interface customCreateTagInput
+  extends Omit<TagCreateInput, "displayName" | "relatedTagIds"> {
+  display_name: string;
+  owner_id: string;
+  related_tag_ids?: ID[] | null;
+}
+
+interface CreateTagPayload {
   tag: Tag;
 }
 
-export const TagCreateInputType = new GraphQLInputObjectType({
-  name: "TagCreateInput",
+export const CreateTagInputType = new GraphQLInputObjectType({
+  name: "CreateTagInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    displayName: {
+    display_name: {
       type: GraphQLNonNull(GraphQLString),
     },
-    ownerID: {
+    owner_id: {
       type: GraphQLNonNull(GraphQLID),
+    },
+    related_tag_ids: {
+      type: GraphQLList(GraphQLNonNull(GraphQLID)),
     },
   }),
 });
 
-export const TagCreatePayloadType = new GraphQLObjectType({
-  name: "TagCreatePayload",
-  fields: (): GraphQLFieldConfigMap<TagCreatePayload, RequestContext> => ({
+export const CreateTagPayloadType = new GraphQLObjectType({
+  name: "CreateTagPayload",
+  fields: (): GraphQLFieldConfigMap<CreateTagPayload, RequestContext> => ({
     tag: {
       type: GraphQLNonNull(TagType),
     },
   }),
 });
 
-export const TagCreateType: GraphQLFieldConfig<
+export const CreateTagType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: TagCreateInput }
+  { [input: string]: customCreateTagInput }
 > = {
-  type: GraphQLNonNull(TagCreatePayloadType),
+  type: GraphQLNonNull(CreateTagPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(TagCreateInputType),
+      type: GraphQLNonNull(CreateTagInputType),
     },
   },
   resolve: async (
@@ -60,10 +71,11 @@ export const TagCreateType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<TagCreatePayload> => {
+  ): Promise<CreateTagPayload> => {
     const tag = await CreateTagAction.create(context.getViewer(), {
-      displayName: input.displayName,
-      ownerID: input.ownerID,
+      displayName: input.display_name,
+      ownerID: input.owner_id,
+      relatedTagIds: input.related_tag_ids,
     }).saveX();
     return { tag: tag };
   },

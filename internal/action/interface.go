@@ -11,6 +11,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
@@ -18,6 +19,7 @@ import (
 	"github.com/lolopinto/ent/internal/schema/custominterface"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
+	"github.com/lolopinto/ent/internal/tsimport"
 
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/field"
@@ -36,7 +38,8 @@ type Action interface {
 	GetActionName() string
 	ExposedToGraphQL() bool
 	GetGraphQLName() string
-	GetInputName() string         // only applies in TypeScript?
+	GetActionInputName() string
+	GetGraphQLInputName() string
 	MutatingExistingObject() bool // whether to add User, Note etc params
 	GetNodeInfo() nodeinfo.NodeInfo
 	GetOperation() ent.ActionOperation
@@ -59,6 +62,9 @@ type ActionField interface {
 	DefaultValue() interface{}
 	Nullable() bool
 	HasDefaultValueOnCreate() bool
+	GetTsType() string
+	IsEditableIDField() bool
+	GetTsTypeImports() []*tsimport.ImportPath
 }
 
 type ActionInfo struct {
@@ -113,7 +119,8 @@ func (info *ActionInfo) addActions(actions ...Action) error {
 type commonActionInfo struct {
 	ActionName       string
 	ExposeToGraphQL  bool
-	InputName        string
+	ActionInputName  string
+	GraphQLInputName string
 	GraphQLName      string
 	Fields           []*field.Field
 	NonEntFields     []*field.NonEntField
@@ -138,8 +145,12 @@ func (action *commonActionInfo) GetGraphQLName() string {
 	return action.GraphQLName
 }
 
-func (action *commonActionInfo) GetInputName() string {
-	return action.InputName
+func (action *commonActionInfo) GetActionInputName() string {
+	return action.ActionInputName
+}
+
+func (action *commonActionInfo) GetGraphQLInputName() string {
+	return action.GraphQLInputName
 }
 
 func (action *commonActionInfo) GetFields() []*field.Field {
@@ -318,7 +329,7 @@ type EdgeGroupAction struct {
 	mutationExistingObjAction
 }
 
-func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo, edgeInfo *edge.EdgeInfo, lang base.Language) (*ActionInfo, error) {
+func ParseActions(cfg codegenapi.Config, nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo, edgeInfo *edge.EdgeInfo, lang base.Language) (*ActionInfo, error) {
 	// get the actions in the function
 	elts := astparser.GetEltsInFunc(fn)
 
@@ -341,14 +352,14 @@ func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo,
 		inputActions = append(inputActions, inputAction)
 	}
 
-	return ParseFromInput(nodeName, inputActions, fieldInfo, edgeInfo, lang)
+	return ParseFromInput(cfg, nodeName, inputActions, fieldInfo, edgeInfo, lang)
 }
 
-func ParseFromInput(nodeName string, actions []*input.Action, fieldInfo *field.FieldInfo, edgeInfo *edge.EdgeInfo, lang base.Language) (*ActionInfo, error) {
+func ParseFromInput(cfg codegenapi.Config, nodeName string, actions []*input.Action, fieldInfo *field.FieldInfo, edgeInfo *edge.EdgeInfo, lang base.Language) (*ActionInfo, error) {
 	actionInfo := NewActionInfo()
 
 	for _, action := range actions {
-		actions, err := parseActionsFromInput(nodeName, action, fieldInfo)
+		actions, err := parseActionsFromInput(cfg, nodeName, action, fieldInfo)
 		if err != nil {
 			return nil, err
 		}
@@ -359,7 +370,7 @@ func ParseFromInput(nodeName string, actions []*input.Action, fieldInfo *field.F
 
 	if edgeInfo != nil {
 		for _, assocEdge := range edgeInfo.Associations {
-			actions, err := processEdgeActions(nodeName, assocEdge, lang)
+			actions, err := processEdgeActions(cfg, nodeName, assocEdge, lang)
 			if err != nil {
 				return nil, err
 			}
@@ -369,7 +380,7 @@ func ParseFromInput(nodeName string, actions []*input.Action, fieldInfo *field.F
 		}
 
 		for _, assocGroup := range edgeInfo.AssocGroups {
-			actions, err := processEdgeGroupActions(nodeName, assocGroup, lang)
+			actions, err := processEdgeGroupActions(cfg, nodeName, assocGroup, lang)
 			if err != nil {
 				return nil, err
 			}
@@ -382,16 +393,16 @@ func ParseFromInput(nodeName string, actions []*input.Action, fieldInfo *field.F
 	return actionInfo, nil
 }
 
-func ParseFromInputNode(nodeName string, node *input.Node, lang base.Language) (*ActionInfo, error) {
-	fi, err := field.NewFieldInfoFromInputs(node.Fields, &field.Options{})
+func ParseFromInputNode(cfg codegenapi.Config, nodeName string, node *input.Node, lang base.Language) (*ActionInfo, error) {
+	fi, err := field.NewFieldInfoFromInputs(cfg, node.Fields, &field.Options{})
 	if err != nil {
 		return nil, err
 	}
-	ei, err := edge.EdgeInfoFromInput(nodeName, node)
+	ei, err := edge.EdgeInfoFromInput(cfg, nodeName, node)
 	if err != nil {
 		return nil, err
 	}
-	return ParseFromInput(nodeName, node.Actions, fi, ei, lang)
+	return ParseFromInput(cfg, nodeName, node.Actions, fi, ei, lang)
 }
 
 // FieldActionTemplateInfo is passed to codegeneration template (both action and graphql) to generate
@@ -464,11 +475,12 @@ func GetNonEntFields(action Action) []FieldActionTemplateInfo {
 	// TODO this is only used by go so didn't update this
 	for _, f := range action.GetNonEntFields() {
 
+		fieldName := f.GetFieldName()
 		fields = append(fields, FieldActionTemplateInfo{
-			SetterMethodName: "Add" + f.FieldName,
-			InstanceName:     strcase.ToLowerCamel(f.FieldName),
+			SetterMethodName: "Add" + fieldName,
+			InstanceName:     strcase.ToLowerCamel(fieldName),
 			InstanceType:     "string", // TODO this needs to work for other
-			FieldName:        f.FieldName,
+			FieldName:        fieldName,
 			IsStatusEnum:     f.Flag == "Enum", // TODO best way?
 			IsGroupID:        f.Flag == "ID",
 			NodeType:         f.NodeType,
@@ -493,7 +505,7 @@ type EdgeActionTemplateInfo struct {
 	Node               string
 	GraphQLNodeID      string
 	TSEdgeConst        string
-	TSGraphQLNodeID    string
+	TSNodeID           string
 	TSAddMethodName    string
 	TSAddIDMethodName  string
 	TSRemoveMethodName string
@@ -529,7 +541,7 @@ func GetEdgesFromEdges(edges []*edge.AssociationEdge) []EdgeActionTemplateInfo {
 			NodeType: edge.NodeInfo.NodeType,
 			// matches what we do in graphQLSchema.processAction
 			GraphQLNodeID:      fmt.Sprintf("%sID", edge.Singular()),
-			TSGraphQLNodeID:    fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular())),
+			TSNodeID:           fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular())),
 			TSAddIDMethodName:  fmt.Sprintf("add%sID", edge.Singular()),
 			TSAddMethodName:    fmt.Sprintf("add%s", edge.Singular()),
 			TSRemoveMethodName: fmt.Sprintf("remove%s", edge.Singular()),

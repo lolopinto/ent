@@ -19,6 +19,7 @@ import (
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/cmd"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
@@ -141,9 +142,10 @@ func (p *TSStep) PostProcessData(processor *codegen.Processor) error {
 	})
 }
 
-func (p *TSStep) processEnums(processor *codegen.Processor, s *gqlSchema, writeAll bool) fns.FunctionList {
+func (p *TSStep) processEnums(processor *codegen.Processor, s *gqlSchema) fns.FunctionList {
 	var ret fns.FunctionList
 
+	writeAll := processor.Config.WriteAllFiles()
 	for idx := range s.enums {
 		enum := s.enums[idx]
 		if writeAll ||
@@ -159,28 +161,36 @@ func (p *TSStep) processEnums(processor *codegen.Processor, s *gqlSchema, writeA
 type writeOptions struct {
 	// anytime any boolean is added here, need to update the
 	// else case in processNode
-	writeNode           bool
-	writeAllMutations   bool
-	writeAllConnections bool
-	mutationFiles       map[string]bool
-	connectionFiles     map[string]bool
+	writeNode              bool
+	writeAllMutations      bool
+	writeAllConnections    bool
+	mutationFiles          map[string]bool
+	connectionFiles        map[string]bool
+	deletedConnectionFiles map[string]bool
+	deletedMutationFiles   map[string]bool
 
 	// nodeAdded, nodeRemoved, connectionAdded, rootQuery etc...
 }
 
-func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *gqlNode, writeAll bool) fns.FunctionList {
+func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *gqlNode) fns.FunctionList {
 	opts := &writeOptions{
-		mutationFiles:   map[string]bool{},
-		connectionFiles: map[string]bool{},
+		mutationFiles:          map[string]bool{},
+		connectionFiles:        map[string]bool{},
+		deletedConnectionFiles: map[string]bool{},
+		deletedMutationFiles:   map[string]bool{},
 	}
-	if writeAll {
+	if processor.Config.WriteAllFiles() {
 		opts.writeAllConnections = true
 		opts.writeAllMutations = true
 		opts.writeNode = true
-	} else {
+	}
+	if processor.Config.UseChanges() {
 		changemap := processor.ChangeMap
 		changes := changemap[node.ObjData.Node]
 		for _, c := range changes {
+			if c.TSOnly {
+				continue
+			}
 			switch c.Change {
 			case change.AddNode, change.ModifyNode:
 				opts.writeNode = true
@@ -188,8 +198,14 @@ func (p *TSStep) processNode(processor *codegen.Processor, s *gqlSchema, node *g
 			case change.AddEdge, change.ModifyEdge:
 				opts.connectionFiles[c.GraphQLName] = true
 
+			case change.RemoveEdge:
+				opts.deletedConnectionFiles[c.GraphQLName] = true
+
 			case change.AddAction, change.ModifyAction:
 				opts.mutationFiles[c.GraphQLName] = true
+
+			case change.RemoveAction:
+				opts.deletedMutationFiles[c.GraphQLName] = true
 			}
 		}
 	}
@@ -239,21 +255,47 @@ func (p *TSStep) buildNodeWithOpts(processor *codegen.Processor, s *gqlSchema, n
 			})
 		}
 	}
+
+	// root queries it's "root"
+	for k := range opts.deletedConnectionFiles {
+		packageName := "root"
+		// for top level connections
+		if node.ObjData.NodeData != nil {
+			packageName = node.ObjData.NodeData.PackageName
+		}
+		ret = append(
+			ret,
+			file.GetDeleteFileFunction(
+				processor.Config,
+				getFilePathForConnection(
+					processor.Config,
+					packageName,
+					k),
+			),
+		)
+	}
+
+	for k := range opts.deletedMutationFiles {
+		ret = append(ret, file.GetDeleteFileFunction(processor.Config, getFilePathForAction(processor.Config, node.ObjData.NodeData, k)))
+	}
 	return ret
 }
 
-func (p *TSStep) processCustomNode(processor *codegen.Processor, s *gqlSchema, node *gqlNode, writeAll bool, mutation bool) fns.FunctionList {
+func (p *TSStep) processCustomNode(processor *codegen.Processor, s *gqlSchema, node *gqlNode, mutation bool) fns.FunctionList {
 	cmp := s.customData.compareResult
-	all := writeAll || cmp == nil
+	all := processor.Config.WriteAllFiles() || cmp == nil
 	opts := &writeOptions{
-		mutationFiles:   map[string]bool{},
-		connectionFiles: map[string]bool{},
+		mutationFiles:          map[string]bool{},
+		connectionFiles:        map[string]bool{},
+		deletedConnectionFiles: map[string]bool{},
+		deletedMutationFiles:   map[string]bool{},
 	}
 
 	if all {
 		opts.writeAllConnections = true
 		opts.writeNode = true
-	} else {
+	}
+	if cmp != nil {
 		gqlName := node.Field.GraphQLName
 
 		if (mutation && cmp.customMutationsChanged[gqlName]) ||
@@ -279,18 +321,51 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 	updateBecauseChanges := writeAll || len(changes) > 0
 	customChanges := s.customData.compareResult
 	hasCustomChanges := (customChanges != nil && customChanges.hasAnyChanges())
-	funcs = append(funcs, p.processEnums(processor, s, writeAll)...)
+	funcs = append(funcs, p.processEnums(processor, s)...)
 
-	for _, node := range s.nodes {
-		funcs = append(funcs, p.processNode(processor, s, node, writeAll)...)
+	for idx := range s.nodes {
+		node := s.nodes[idx]
+		funcs = append(funcs, p.processNode(processor, s, node)...)
 	}
 
-	for _, node := range s.customMutations {
-		funcs = append(funcs, p.processCustomNode(processor, s, node, writeAll, true)...)
+	for idx := range s.customMutations {
+		node := s.customMutations[idx]
+		funcs = append(funcs, p.processCustomNode(processor, s, node, true)...)
 	}
 
-	for _, node := range s.customQueries {
-		funcs = append(funcs, p.processCustomNode(processor, s, node, writeAll, false)...)
+	for idx := range s.customQueries {
+		node := s.customQueries[idx]
+		funcs = append(funcs, p.processCustomNode(processor, s, node, false)...)
+	}
+
+	cmp := s.customData.compareResult
+	// delete custom queries|mutations
+	if cmp != nil {
+		for k := range cmp.customQueriesRemoved {
+			funcs = append(
+				funcs,
+				file.GetDeleteFileFunction(
+					processor.Config,
+					getFilePathForCustomQuery(
+						processor.Config,
+						k,
+					),
+				),
+			)
+		}
+
+		for k := range cmp.customMutationsRemoved {
+			funcs = append(
+				funcs,
+				file.GetDeleteFileFunction(
+					processor.Config,
+					getFilePathForCustomMutation(
+						processor.Config,
+						k,
+					),
+				),
+			)
+		}
 	}
 
 	if updateBecauseChanges {
@@ -405,8 +480,8 @@ func getSchemaFilePath(cfg *codegen.Config) string {
 	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/generated/schema.gql")
 }
 
-func getFilePathForAction(cfg *codegen.Config, nodeData *schema.NodeData, action action.Action) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type.ts", nodeData.PackageName, strcase.ToSnake(action.GetGraphQLName())))
+func getFilePathForAction(cfg *codegen.Config, nodeData *schema.NodeData, actionName string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type.ts", nodeData.PackageName, strcase.ToSnake(actionName)))
 }
 
 func getImportPathForAction(nodeData *schema.NodeData, action action.Action) string {
@@ -1089,9 +1164,8 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 							continue
 						}
 						hasMutations = true
-						actionPrefix := strcase.ToCamel(action.GetGraphQLName())
 
-						fieldCfg, err := buildActionFieldConfig(processor, nodeData, action, actionPrefix)
+						fieldCfg, err := buildActionFieldConfig(processor, nodeData, action)
 						if err != nil {
 							// TODO
 							panic(err)
@@ -1100,12 +1174,12 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 							ObjData: &gqlobjectData{
 								Node:         nodeData.Node,
 								NodeInstance: nodeData.NodeInstance,
-								GQLNodes:     buildActionNodes(processor, nodeData, action, actionPrefix),
+								GQLNodes:     buildActionNodes(processor, nodeData, action),
 								Enums:        buildActionEnums(nodeData, action),
 								FieldConfig:  fieldCfg,
 								Package:      processor.Config.GetImportPackage(),
 							},
-							FilePath: getFilePathForAction(processor.Config, nodeData, action),
+							FilePath: getFilePathForAction(processor.Config, nodeData, action.GetGraphQLName()),
 							Data:     action,
 						}
 						obj.ActionDependents = append(obj.ActionDependents, &actionObj)
@@ -1702,7 +1776,7 @@ func addConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, fields *
 	*fields = append(*fields, gqlField)
 }
 
-func buildActionNodes(processor *codegen.Processor, nodeData *schema.NodeData, action action.Action, actionPrefix string) []*objectType {
+func buildActionNodes(processor *codegen.Processor, nodeData *schema.NodeData, action action.Action) []*objectType {
 	var ret []*objectType
 	for _, c := range action.GetCustomInterfaces() {
 		if c.Action == nil {
@@ -1710,8 +1784,8 @@ func buildActionNodes(processor *codegen.Processor, nodeData *schema.NodeData, a
 		}
 	}
 	ret = append(ret,
-		buildActionInputNode(processor, nodeData, action, actionPrefix),
-		buildActionPayloadNode(nodeData, action, actionPrefix),
+		buildActionInputNode(processor, nodeData, action),
+		buildActionPayloadNode(processor, nodeData, action),
 	)
 	return ret
 }
@@ -1746,18 +1820,18 @@ func buildCustomInputNode(c *custominterface.CustomInterface) *objectType {
 	for _, f := range c.NonEntFields {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.FieldType.GetTSGraphQLImports(), true),
+			FieldImports: getGQLFileImports(f.GetGraphQLFieldType().GetTSGraphQLImports(), true),
 		})
 	}
 	return result
 }
 
-func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action, actionPrefix string) *objectType {
+func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action) *objectType {
 	// TODO shared input types across create/edit for example
-	node := fmt.Sprintf("%sInput", actionPrefix)
+	node := a.GetGraphQLInputName()
 
 	result := &objectType{
-		Type:     fmt.Sprintf("%sInputType", actionPrefix),
+		Type:     fmt.Sprintf("%sType", node),
 		Node:     node,
 		TSType:   node,
 		Exported: true,
@@ -1779,7 +1853,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	// add id field for edit and delete mutations
 	if a.MutatingExistingObject() {
 		result.Fields = append(result.Fields, &fieldType{
-			Name:         fmt.Sprintf("%sID", a.GetNodeInfo().NodeInstance),
+			Name:         getIDField(processor, a.GetNodeInfo().NodeInstance),
 			FieldImports: getGQLFileImportsFromStrings([]string{"GraphQLNonNull", "GraphQLID"}),
 			Description:  fmt.Sprintf("id of %s", nodeData.Node),
 		})
@@ -1796,7 +1870,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	for _, f := range a.GetNonEntFields() {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.FieldType.GetTSGraphQLImports(), true),
+			FieldImports: getGQLFileImports(f.GetGraphQLFieldType().GetTSGraphQLImports(), true),
 		})
 	}
 
@@ -1804,7 +1878,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	// use singular version so that this is friendID instead of friendsID
 	for _, edge := range a.GetEdges() {
 		result.Fields = append(result.Fields, &fieldType{
-			Name:         fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular())),
+			Name:         getEdgeField(processor, edge),
 			FieldImports: getGQLFileImportsFromStrings([]string{"GraphQLNonNull", "GraphQLID"}),
 		})
 	}
@@ -1816,13 +1890,13 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 		// add adminID to interface assuming it's not already there
 		intType := &interfaceType{
 			Exported: false,
-			Name:     fmt.Sprintf("custom%sInput", actionPrefix),
+			Name:     fmt.Sprintf("custom%s", node),
 		}
 
 		// only want the id field for the object when editing said object
 		if a.MutatingExistingObject() {
 			intType.Fields = append(intType.Fields, &interfaceField{
-				Name: fmt.Sprintf("%sID", a.GetNodeInfo().NodeInstance),
+				Name: getIDField(processor, a.GetNodeInfo().NodeInstance),
 				// we're doing these as strings instead of ids because we're going to convert from gql id to ent id
 				Type: "string",
 			})
@@ -1832,46 +1906,56 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 		// usually only one edge e.g. addFriend or addAdmin etc
 		for _, edge := range a.GetEdges() {
 			intType.Fields = append(intType.Fields, &interfaceField{
-				Name: fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular())),
+				Name: getEdgeField(processor, edge),
 				// we're doing these as strings instead of ids because we're going to convert from gql id to ent id
 				Type: "string",
 			})
 		}
 
-		for _, f := range a.GetGraphQLFields() {
-			// these conditions duplicated in hasCustomInput
+		// these conditions duplicated in hasCustomInput
+		processField := func(f action.ActionField) {
 			if f.IsEditableIDField() {
+				// should probably also do this for id lists but not pressing
+				// ID[] -> string[]
 				intType.Fields = append(intType.Fields, &interfaceField{
 					Name:     f.GetGraphQLName(),
 					Optional: !action.IsRequiredField(a, f),
 					// we're doing these as strings instead of ids because we're going to convert from gql id to ent id
 					Type: "string",
 				})
-			}
-			if f.TsFieldName() != f.GetGraphQLName() {
+			} else if f.TsFieldName() != f.GetGraphQLName() {
+				// need imports...
 				omittedFields = append(omittedFields, f.TsFieldName())
+				var useImports []string
+				imps := f.GetTsTypeImports()
+				if len(imps) != 0 {
+					result.Imports = append(result.Imports, imps...)
+					for _, v := range imps {
+						useImports = append(useImports, v.Import)
+					}
+				}
 				intType.Fields = append(intType.Fields, &interfaceField{
-					Name:     f.GetGraphQLName(),
-					Optional: !action.IsRequiredField(a, f),
-					Type:     f.TsType(),
+					Name:       f.GetGraphQLName(),
+					Optional:   !action.IsRequiredField(a, f),
+					Type:       f.GetTsType(),
+					UseImports: useImports,
 				})
 			}
 		}
+		for _, f := range a.GetGraphQLFields() {
+			processField(f)
+		}
 
 		for _, f := range a.GetNonEntFields() {
-			// same logic above for regular fields
-			if enttype.IsIDType(f.FieldType) {
-				intType.Fields = append(intType.Fields, &interfaceField{
-					Name: f.GetGraphQLName(),
-					Type: "string",
-				})
-			}
+			processField(f)
 		}
 
 		// TODO do we need to overwrite some fields?
 		if action.HasInput(a) {
+			// TODO? we should just skip this and have all the fields here if snake_case
+			// since long list of omitted fields
 			intType.Extends = []string{
-				a.GetInputName(),
+				a.GetActionInputName(),
 			}
 			intType.Omitted = omittedFields
 		}
@@ -1882,12 +1966,17 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	return result
 }
 
-func buildActionPayloadNode(nodeData *schema.NodeData, a action.Action, actionPrefix string) *objectType {
-	node := fmt.Sprintf("%sPayload", actionPrefix)
+func getPayloadNameFromAction(a action.Action) string {
+	input := a.GetGraphQLInputName()
+	return strings.TrimSuffix(input, "Input") + "Payload"
+}
+
+func buildActionPayloadNode(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action) *objectType {
+	payload := getPayloadNameFromAction(a)
 	result := &objectType{
-		Type:     fmt.Sprintf("%sPayloadType", actionPrefix),
-		Node:     node,
-		TSType:   node,
+		Type:     fmt.Sprintf("%sType", payload),
+		Node:     payload,
+		TSType:   payload,
 		Exported: true,
 		GQLType:  "GraphQLObjectType",
 		DefaultImports: []*tsimport.ImportPath{
@@ -1916,7 +2005,7 @@ func buildActionPayloadNode(nodeData *schema.NodeData, a action.Action, actionPr
 	if action.HasInput(a) {
 		result.Imports = append(result.Imports, &tsimport.ImportPath{
 			ImportPath: getActionPath(nodeData, a),
-			Import:     a.GetInputName(),
+			Import:     a.GetActionInputName(),
 		})
 	}
 
@@ -1939,7 +2028,7 @@ func buildActionPayloadNode(nodeData *schema.NodeData, a action.Action, actionPr
 		result.TSInterfaces = []*interfaceType{
 			{
 				Exported: false,
-				Name:     fmt.Sprintf("%sPayload", actionPrefix),
+				Name:     payload,
 				Fields: []*interfaceField{
 					{
 						Name:      nodeData.NodeInstance,
@@ -1950,18 +2039,19 @@ func buildActionPayloadNode(nodeData *schema.NodeData, a action.Action, actionPr
 			},
 		}
 	} else {
+		deleted := getDeletedField(processor, nodeInfo.Node)
 		result.Fields = append(result.Fields, &fieldType{
-			Name:         fmt.Sprintf("deleted%sID", nodeInfo.Node),
+			Name:         deleted,
 			FieldImports: getGQLFileImportsFromStrings([]string{"GraphQLID"}),
 		})
 
 		result.TSInterfaces = []*interfaceType{
 			{
 				Exported: false,
-				Name:     fmt.Sprintf("%sPayload", actionPrefix),
+				Name:     payload,
 				Fields: []*interfaceField{
 					{
-						Name: fmt.Sprintf("deleted%sID", nodeInfo.Node),
+						Name: deleted,
 						Type: "string",
 					},
 				},
@@ -1977,9 +2067,8 @@ func hasCustomInput(a action.Action, processor *codegen.Processor) bool {
 		return true
 	}
 
-	for _, f := range a.GetGraphQLFields() {
+	processField := func(f action.ActionField) bool {
 		// these conditions duplicated in hasInput in buildActionInputNode
-
 		// editable id field. needs custom input because we don't want to type as ID or Builder when we call base64encodeIDs
 		// mustDecodeIDFromGQLID
 		if f.IsEditableIDField() && processor.Config.Base64EncodeIDs() {
@@ -1987,6 +2076,19 @@ func hasCustomInput(a action.Action, processor *codegen.Processor) bool {
 		}
 		// if graphql name is not equal to typescript name, we need to add the new field here
 		if f.GetGraphQLName() != f.TsFieldName() {
+			return true
+		}
+		return false
+	}
+
+	for _, f := range a.GetGraphQLFields() {
+		if processField(f) {
+			return true
+		}
+	}
+
+	for _, f := range a.GetNonEntFields() {
+		if processField(f) {
 			return true
 		}
 	}
@@ -1997,7 +2099,7 @@ func getActionPath(nodeData *schema.NodeData, a action.Action) string {
 	return fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(a.GetActionName()))
 }
 
-func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action, actionPrefix string) (*fieldConfig, error) {
+func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action) (*fieldConfig, error) {
 	// TODO this is so not obvious at all
 	// these are things that are automatically useImported....
 	argImports := []*tsimport.ImportPath{
@@ -2006,19 +2108,22 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			ImportPath: getActionPath(nodeData, a),
 		},
 	}
+	input := a.GetGraphQLInputName()
+	payload := getPayloadNameFromAction(a)
 	var argName string
 	if hasCustomInput(a, processor) {
-		argName = fmt.Sprintf("custom%sInput", actionPrefix)
+		argName = fmt.Sprintf("custom%s", input)
 	} else {
-		argName = a.GetInputName()
+		argName = a.GetActionInputName()
 		argImports = append(argImports, &tsimport.ImportPath{
 			Import:     argName,
 			ImportPath: getActionPath(nodeData, a),
 		})
 	}
+	prefix := strcase.ToCamel(a.GetGraphQLName())
 	result := &fieldConfig{
 		Exported:         true,
-		Name:             fmt.Sprintf("%sType", actionPrefix),
+		Name:             fmt.Sprintf("%sType", prefix),
 		Arg:              fmt.Sprintf("{ [input: string]: %s}", argName),
 		ResolveMethodArg: "{ input }",
 		TypeImports: []*tsimport.ImportPath{
@@ -2028,7 +2133,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			},
 			{
 				// local so it's fine
-				Import: fmt.Sprintf("%sPayloadType", actionPrefix),
+				Import: fmt.Sprintf("%sType", payload),
 			},
 		},
 		Args: []*fieldConfigArg{
@@ -2038,12 +2143,12 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 					getNativeGQLImportFor("GraphQLNonNull"),
 					{
 						// local
-						Import: fmt.Sprintf("%sInputType", actionPrefix),
+						Import: fmt.Sprintf("%sType", input),
 					},
 				},
 			},
 		},
-		ReturnTypeHint: fmt.Sprintf("Promise<%sPayload>", actionPrefix),
+		ReturnTypeHint: fmt.Sprintf("Promise<%s>", payload),
 	}
 
 	base64EncodeIDs := processor.Config.Base64EncodeIDs()
@@ -2105,6 +2210,8 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			})
 		}
 
+		idField := getIDField(processor, nodeData.NodeInstance)
+
 		if action.HasInput(a) {
 			// have fields and therefore input
 			if !deleteAction {
@@ -2117,12 +2224,12 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			if base64EncodeIDs {
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%sID), {", a.GetActionName(), nodeData.NodeInstance),
+					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%s), {", a.GetActionName(), idField),
 				)
 			} else {
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), input.%sID, {", a.GetActionName(), nodeData.NodeInstance),
+					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), input.%s, {", a.GetActionName(), idField),
 				)
 			}
 			for _, f := range a.GetGraphQLFields() {
@@ -2140,15 +2247,16 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			}
 			edge := edges[0]
 			// have fields and therefore input
+			edgeField := getEdgeField(processor, edge)
 			if base64EncodeIDs {
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("const %s = await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%sID), mustDecodeIDFromGQLID(input.%sID));", nodeData.NodeInstance, a.GetActionName(), nodeData.NodeInstance, strcase.ToLowerCamel(edge.Singular())),
+					fmt.Sprintf("const %s = await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%s), mustDecodeIDFromGQLID(input.%s));", nodeData.NodeInstance, a.GetActionName(), idField, edgeField),
 				)
 			} else {
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("const %s = await %s.saveXFromID(context.getViewer(), input.%sID, input.%sID);", nodeData.NodeInstance, a.GetActionName(), nodeData.NodeInstance, strcase.ToLowerCamel(edge.Singular())),
+					fmt.Sprintf("const %s = await %s.saveXFromID(context.getViewer(), input.%s, input.%s);", nodeData.NodeInstance, a.GetActionName(), idField, edgeField),
 				)
 			}
 		} else {
@@ -2162,21 +2270,22 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 				// no fields
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%sID));", a.GetActionName(), nodeData.NodeInstance),
+					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), mustDecodeIDFromGQLID(input.%s));", a.GetActionName(), idField),
 				)
 			} else {
 				// no fields
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), input.%sID);", a.GetActionName(), nodeData.NodeInstance),
+					fmt.Sprintf("await %s.saveXFromID(context.getViewer(), input.%s);", a.GetActionName(), idField),
 				)
 			}
 		}
 
 		if deleteAction {
+			deletedField := getDeletedField(processor, nodeData.Node)
 			result.FunctionContents = append(
 				result.FunctionContents,
-				fmt.Sprintf("return {deleted%sID: input.%sID};", nodeData.Node, nodeData.NodeInstance),
+				fmt.Sprintf("return {%s: input.%s};", deletedField, idField),
 			)
 		} else {
 
@@ -2191,6 +2300,20 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 	result.ArgImports = argImports
 
 	return result, nil
+}
+
+func getDeletedField(processor *codegen.Processor, node string) string {
+	return codegenapi.GraphQLName(processor.Config, fmt.Sprintf("deleted%sID", node))
+}
+
+func getIDField(processor *codegen.Processor, node string) string {
+	// TODO this should just be id but that should be a different PR
+	return codegenapi.GraphQLName(processor.Config, fmt.Sprintf("%sID", node))
+}
+
+func getEdgeField(processor *codegen.Processor, edge *edge.AssociationEdge) string {
+	field := fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular()))
+	return codegenapi.GraphQLName(processor.Config, field)
 }
 
 type objectType struct {
@@ -2373,10 +2496,11 @@ func (it interfaceType) InterfaceDecl() (string, error) {
 }
 
 type interfaceField struct {
-	Name      string
-	Optional  bool
-	Type      string
-	UseImport bool
+	Name       string
+	Optional   bool
+	Type       string
+	UseImport  bool
+	UseImports []string
 }
 
 func typeFromImports(imports []string) string {

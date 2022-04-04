@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
@@ -85,10 +86,12 @@ func TestCompareDeleteActionWithNonEntFields(t *testing.T) {
 		&deleteActionType{},
 		&actionOptions{
 			nonEntFields: []*field.NonEntField{
-				{
-					FieldName: "log",
-					FieldType: &enttype.BoolType{},
-				},
+				field.NewNonEntField(
+					&codegenapi.DummyConfig{},
+					"log",
+					&enttype.BoolType{},
+					false,
+				),
 			},
 		},
 	)
@@ -98,10 +101,12 @@ func TestCompareDeleteActionWithNonEntFields(t *testing.T) {
 		&deleteActionType{},
 		&actionOptions{
 			nonEntFields: []*field.NonEntField{
-				{
-					FieldName: "log",
-					FieldType: &enttype.BoolType{},
-				},
+				field.NewNonEntField(
+					&codegenapi.DummyConfig{},
+					"log",
+					&enttype.BoolType{},
+					false,
+				),
 			},
 		},
 	)
@@ -159,12 +164,12 @@ func TestCompareCreateActionWithDiffFields(t *testing.T) {
 }
 
 func TestCompareAddEdgeAction(t *testing.T) {
-	edge1, err := edge.AssocEdgeFromInput("user", &input.AssocEdge{
+	edge1, err := edge.AssocEdgeFromInput(&codegenapi.DummyConfig{}, "user", &input.AssocEdge{
 		SchemaName: "User",
 		Name:       "createdEvents",
 	})
 	require.Nil(t, err)
-	edge2, err := edge.AssocEdgeFromInput("user", &input.AssocEdge{
+	edge2, err := edge.AssocEdgeFromInput(&codegenapi.DummyConfig{}, "user", &input.AssocEdge{
 		SchemaName: "User",
 		Name:       "createdEvents",
 	})
@@ -196,12 +201,12 @@ func TestCompareAddEdgeAction(t *testing.T) {
 }
 
 func TestCompareRemoveEdgeAction(t *testing.T) {
-	edge1, err := edge.AssocEdgeFromInput("user", &input.AssocEdge{
+	edge1, err := edge.AssocEdgeFromInput(&codegenapi.DummyConfig{}, "user", &input.AssocEdge{
 		SchemaName: "User",
 		Name:       "createdEvents",
 	})
 	require.Nil(t, err)
-	edge2, err := edge.AssocEdgeFromInput("user", &input.AssocEdge{
+	edge2, err := edge.AssocEdgeFromInput(&codegenapi.DummyConfig{}, "user", &input.AssocEdge{
 		SchemaName: "User",
 		Name:       "createdEvents",
 	})
@@ -796,12 +801,12 @@ func TestCompareUnequalCustomInterfaces(t *testing.T) {
 }
 
 func TestCompareEdgeGroupAction(t *testing.T) {
-	edge1, err := edge.AssocEdgeFromInput("user", &input.AssocEdge{
+	edge1, err := edge.AssocEdgeFromInput(&codegenapi.DummyConfig{}, "user", &input.AssocEdge{
 		SchemaName: "User",
 		Name:       "Declined",
 	})
 	require.Nil(t, err)
-	edge2, err := edge.AssocEdgeFromInput("user", &input.AssocEdge{
+	edge2, err := edge.AssocEdgeFromInput(&codegenapi.DummyConfig{}, "user", &input.AssocEdge{
 		SchemaName: "User",
 		Name:       "Attending",
 	})
@@ -844,17 +849,17 @@ func TestCompareEdgeGroupAction(t *testing.T) {
 }
 
 func TestCompareUnequalEdgeGroupAction(t *testing.T) {
-	edge1, err := edge.AssocEdgeFromInput("user", &input.AssocEdge{
+	edge1, err := edge.AssocEdgeFromInput(&codegenapi.DummyConfig{}, "user", &input.AssocEdge{
 		SchemaName: "User",
 		Name:       "Declined",
 	})
 	require.Nil(t, err)
-	edge2, err := edge.AssocEdgeFromInput("user", &input.AssocEdge{
+	edge2, err := edge.AssocEdgeFromInput(&codegenapi.DummyConfig{}, "user", &input.AssocEdge{
 		SchemaName: "User",
 		Name:       "Attending",
 	})
 	require.Nil(t, err)
-	edge3, err := edge.AssocEdgeFromInput("user", &input.AssocEdge{
+	edge3, err := edge.AssocEdgeFromInput(&codegenapi.DummyConfig{}, "user", &input.AssocEdge{
 		SchemaName: "User",
 		Name:       "Maybe",
 	})
@@ -914,6 +919,7 @@ func createNodeActionWithOptions(
 	typ concreteNodeActionType,
 	opt *actionOptions) Action {
 	ci := getCommonInfo(
+		&codegenapi.DummyConfig{},
 		nodeName,
 		typ,
 		opt.customActionName,
@@ -931,6 +937,7 @@ func createNodeActionWithOptions(
 
 func createEdgeActionWithOptions(nodeName string, assocEdge *edge.AssociationEdge, typ concreteEdgeActionType, opt *actionOptions) Action {
 	ci := getCommonInfoForEdgeAction(
+		&codegenapi.DummyConfig{},
 		nodeName,
 		assocEdge,
 		typ,
@@ -946,6 +953,7 @@ func createEdgeActionWithOptions(nodeName string, assocEdge *edge.AssociationEdg
 func createEdgeGroupActionWithOptions(nodeName string, edgeGroup *edge.AssociationEdgeGroup, opt *actionOptions) Action {
 	typ := groupEdgeActionType{}
 	ci := getCommonInfoForGroupEdgeAction(
+		&codegenapi.DummyConfig{},
 		nodeName,
 		edgeGroup,
 		&typ,

@@ -31,6 +31,13 @@ import {
 } from "src/ent/internal";
 import schema from "src/schema/account";
 
+export enum AccountState {
+  UNVERIFIED = "UNVERIFIED",
+  VERIFIED = "VERIFIED",
+  DEACTIVATED = "DEACTIVATED",
+  DISABLED = "DISABLED",
+}
+
 export class AccountBase {
   readonly nodeType = NodeType.Account;
   readonly id: ID;
@@ -38,6 +45,7 @@ export class AccountBase {
   readonly updatedAt: Date;
   readonly name: string;
   readonly phoneNumber: string;
+  readonly accountState: AccountState | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
@@ -45,6 +53,7 @@ export class AccountBase {
     this.updatedAt = convertDate(data.updated_at);
     this.name = data.name;
     this.phoneNumber = data.phone_number;
+    this.accountState = data.account_state;
   }
 
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
