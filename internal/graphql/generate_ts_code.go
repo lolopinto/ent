@@ -581,13 +581,18 @@ func searchForFiles(processor *codegen.Processor) []string {
 }
 
 func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, error) {
-	customFiles := searchForFiles(processor)
-	// no custom files, nothing to do here. we're done
-	if len(customFiles) == 0 {
-		if processor.Config.DebugMode() {
-			fmt.Println("no custom graphql files")
+	jsonPath := processor.Config.GetCustomGraphQLJSONPath()
+
+	var customFiles []string
+	if jsonPath == "" {
+		customFiles = searchForFiles(processor)
+		// no custom files, nothing to do here. we're done
+		if len(customFiles) == 0 {
+			if processor.Config.DebugMode() {
+				fmt.Println("no custom graphql files")
+			}
+			return nil, nil
 		}
-		return nil, nil
 	}
 
 	fmt.Println("checking for custom graphql definitions...")
@@ -644,9 +649,7 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 		"--files",
 		strings.Join(customFiles, ","),
 	)
-	// TODO...
-	if jsonPath := processor.Config.GetCustomGraphQLJSONPath(); jsonPath != "" {
-		spew.Dump(jsonPath)
+	if jsonPath != "" {
 		cmdArgs = append(cmdArgs, "--json_path", jsonPath)
 	}
 
