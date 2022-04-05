@@ -141,6 +141,24 @@ interface metadataIsh {
   isContextArg?: boolean;
 }
 
+export const knownAllowedNames: Map<string, string> = new Map([
+  ["Date", "Date"],
+  ["Boolean", "boolean"],
+  ["Number", "number"],
+  ["String", "string"],
+  // TODO not right to have this and Number
+  ["Int", "number"],
+  ["Float", "number"],
+  ["ID", "ID"],
+]);
+
+export const knownDisAllowedNames: Map<string, boolean> = new Map([
+  ["Function", true],
+  ["Object", true],
+  ["Array", true],
+  ["Promise", true],
+]);
+
 const isArray = (type: Type | Array<Type>): type is Array<Type> => {
   if (typeof type === "function") {
     return false;
@@ -164,7 +182,7 @@ const isString = (type: Type | Array<Type>): type is string => {
   return false;
 };
 
-const isCustomType = (type: Type): type is CustomType => {
+export const isCustomType = (type: Type): type is CustomType => {
   return (type as CustomType).importPath !== undefined;
 };
 
@@ -347,24 +365,6 @@ export class GQLCapture {
     });
   }
 
-  private static knownAllowedNames: Map<string, string> = new Map([
-    ["Date", "Date"],
-    ["Boolean", "boolean"],
-    ["Number", "number"],
-    ["String", "string"],
-    // TODO not right to have this and Number
-    ["Int", "number"],
-    ["Float", "number"],
-    ["ID", "ID"],
-  ]);
-
-  private static knownDisAllowedNames: Map<string, boolean> = new Map([
-    ["Function", true],
-    ["Object", true],
-    ["Array", true],
-    ["Promise", true],
-  ]);
-
   private static getResultFromMetadata(
     metadata: metadataIsh,
     options?: fieldOptions,
@@ -389,7 +389,7 @@ export class GQLCapture {
       type = r.type;
     }
 
-    if (GQLCapture.knownDisAllowedNames.has(type)) {
+    if (knownDisAllowedNames.has(type)) {
       throw new Error(
         `${type} isn't a valid type for accessor/function/property`,
       );
@@ -398,15 +398,14 @@ export class GQLCapture {
     let result: Field = {
       name: metadata.paramName || "",
       type,
-      tsType:
-        this.knownAllowedNames.get(type) || this.customTypes.get(type)?.tsType,
+      tsType: knownAllowedNames.get(type) || this.customTypes.get(type)?.tsType,
       nullable: options?.nullable,
       list: list,
       connection: connection,
       isContextArg: metadata.isContextArg,
     };
     // unknown type. we need to flag that this field needs to eventually be resolved
-    if (!GQLCapture.knownAllowedNames.has(type)) {
+    if (!knownAllowedNames.has(type)) {
       if (scalarType) {
         throw new Error(
           `custom scalar type ${type} is not supported this way. use CustomType syntax. see \`gqlFileUpload\` as an example`,

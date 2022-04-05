@@ -1,13 +1,20 @@
 #!/usr/bin/env node
 
 import glob from "glob";
+import JSON5 from "json5";
 import minimist from "minimist";
 import {
   // can use the local interfaces since it's just the API we're getting from here
   ProcessedField,
   ProcessedCustomField,
   addCustomType,
+  CustomObject,
+  CustomQuery,
+  CustomField,
+  knownAllowedNames,
+  isCustomType,
 } from "../graphql/graphql";
+import type { GQLCapture } from "../graphql/graphql";
 import * as readline from "readline";
 import * as path from "path";
 import * as fs from "fs";
@@ -43,7 +50,130 @@ async function readInputs(): Promise<{
   });
 }
 
-async function captureCustom(filePath: string, filesCsv: string | undefined) {
+function processCustomObjects(
+  l: any[],
+  gqlCapture: typeof GQLCapture,
+  input?: boolean,
+) {
+  let m: Map<string, CustomObject>;
+  if (input) {
+    m = gqlCapture.getCustomInputObjects();
+  } else {
+    m = gqlCapture.getCustomObjects();
+  }
+  for (const input of l) {
+    m.set(input.name, {
+      nodeName: input.graphQLName || input.name,
+      className: input.name,
+    });
+    if (input.fields) {
+      processCustomFields(input.fields, gqlCapture, input.name);
+    }
+  }
+}
+
+function transformArgs(f: any) {
+  return (f.args || []).map((v) => {
+    const ret = {
+      ...v,
+    };
+    // duplicated from getType in graphql.ts
+    if (isCustomType(ret.type)) {
+      ret.type = v.type.type;
+      addCustomType(v.type);
+    }
+    // scalar types not supported for now
+    ret.tsType = knownAllowedNames.get(v.type);
+    return ret;
+  });
+}
+
+function transformResultType(f: any) {
+  return f.resultType
+    ? [
+        {
+          name: "",
+          type: f.resultType,
+          tsType: knownAllowedNames.get(f.resultType),
+          list: f.list,
+          nullable: f.nullable,
+        },
+      ]
+    : [];
+}
+
+function processTopLevel(l: any[], l2: CustomQuery[]) {
+  for (const custom of l) {
+    l2.push({
+      nodeName: custom.class,
+      functionName: custom.functionName || custom.name,
+      gqlName: custom.graphQLName || custom.name,
+      fieldType: custom.fieldType,
+      args: transformArgs(custom),
+      results: transformResultType(custom),
+    });
+  }
+}
+
+function processCustomFields(
+  fields: any[],
+  gqlCapture: typeof GQLCapture,
+  nodeName?: string,
+) {
+  const m = gqlCapture.getCustomFields();
+  let results: CustomField[] = [];
+  for (const f of fields) {
+    if (f.nodeName && nodeName && nodeName !== f.nodeName) {
+      throw new Error(`nodeName  different ${nodeName}, ${f.nodeName}`);
+    }
+    if (f.nodeName) {
+      nodeName = f.nodeName;
+    }
+
+    results.push({
+      nodeName: f.nodeName || nodeName,
+      gqlName: f.graphQLName || f.name,
+      functionName: f.functionName || f.name,
+      fieldType: f.fieldType,
+      args: transformArgs(f),
+      results: transformResultType(f),
+    });
+  }
+  m.set(nodeName!, results);
+}
+
+async function captureCustom(
+  filePath: string,
+  filesCsv: string | undefined,
+  jsonPath: string | undefined,
+  gqlCapture: typeof GQLCapture,
+) {
+  if (jsonPath !== undefined) {
+    let json = JSON5.parse(
+      fs.readFileSync(jsonPath, {
+        encoding: "utf8",
+      }),
+    );
+    if (json.fields) {
+      for (const k in json.fields) {
+        processCustomFields(json.fields[k], gqlCapture, k);
+      }
+    }
+    if (json.inputs) {
+      processCustomObjects(json.inputs, gqlCapture, true);
+    }
+    if (json.objects) {
+      processCustomObjects(json.objects, gqlCapture);
+    }
+    if (json.queries) {
+      processTopLevel(json.queries, gqlCapture.getCustomQueries());
+    }
+    if (json.mutations) {
+      processTopLevel(json.mutations, gqlCapture.getCustomMutations());
+    }
+
+    return;
+  }
   if (filesCsv !== undefined) {
     let files = filesCsv.split(",");
     for (let i = 0; i < files.length; i++) {
@@ -162,16 +292,26 @@ async function main() {
   if (!gqlPath) {
     throw new Error("could not find graphql path");
   }
-  const r = require(gqlPath);
-  if (!r.GQLCapture) {
-    throw new Error("could not find GQLCapture in module");
+
+  // use different variable  so that we use the correct GQLCapture as needed
+  // for local dev, get the one from the file system. otherwise, get the one
+  // from node_modules
+  let gqlCapture: typeof GQLCapture;
+  if (process.env.LOCAL_SCRIPT_PATH) {
+    const r = require("../graphql/graphql");
+    gqlCapture = r.GQLCapture;
+  } else {
+    const r = require(gqlPath);
+    if (!r.GQLCapture) {
+      throw new Error("could not find GQLCapture in module");
+    }
+    gqlCapture = r.GQLCapture;
+    gqlCapture.enable(true);
   }
-  const GQLCapture = r.GQLCapture;
-  GQLCapture.enable(true);
 
   const [inputsRead, _, imports] = await Promise.all([
     readInputs(),
-    captureCustom(options.path, options.files),
+    captureCustom(options.path, options.files, options.json_path, gqlCapture),
     parseImports(options.path),
   ]);
   const { nodes, nodesMap } = inputsRead;
@@ -183,15 +323,15 @@ async function main() {
     }
     return result;
   }
-  GQLCapture.resolve(nodes);
+  gqlCapture.resolve(nodes);
 
-  let args = fromMap(GQLCapture.getCustomArgs());
-  let inputs = fromMap(GQLCapture.getCustomInputObjects());
-  let fields = GQLCapture.getProcessedCustomFields();
-  let queries = GQLCapture.getProcessedCustomQueries();
-  let mutations = GQLCapture.getProcessedCustomMutations();
-  let objects = fromMap(GQLCapture.getCustomObjects());
-  let customTypes = fromMap(GQLCapture.getCustomTypes());
+  let args = fromMap(gqlCapture.getCustomArgs());
+  let inputs = fromMap(gqlCapture.getCustomInputObjects());
+  let fields = gqlCapture.getProcessedCustomFields();
+  let queries = gqlCapture.getProcessedCustomQueries();
+  let mutations = gqlCapture.getProcessedCustomMutations();
+  let objects = fromMap(gqlCapture.getCustomObjects());
+  let customTypes = fromMap(gqlCapture.getCustomTypes());
 
   let classes: Data = {};
   let allFiles: Data = {};

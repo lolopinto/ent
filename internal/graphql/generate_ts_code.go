@@ -622,26 +622,32 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 		cmdArgs = []string{
 			"--compiler-options",
 			testingutils.DefaultCompilerOptions(),
-			scriptPath,
-			"--path",
-			filepath.Join(processor.Config.GetAbsPathToRoot(), "src"),
-			"--files",
-			strings.Join(customFiles, ","),
 		}
 	} else {
-		cmdArgs = append(
-			cmd.GetArgsForScript(processor.Config.GetAbsPathToRoot()),
-			// TODO https://github.com/lolopinto/ent/issues/792
-			//			"--swc",
-			scriptPath,
-			"--path",
-			// TODO this should be a configuration option to indicate where the code root is
-			filepath.Join(processor.Config.GetAbsPathToRoot(), "src"),
-			"--files",
-			strings.Join(customFiles, ","),
-		)
+		cmdArgs = cmd.GetArgsForScript(processor.Config.GetAbsPathToRoot())
 
 		cmdName = "ts-node-script"
+	}
+
+	// append LOCAL_SCRIPT_PATH so we know
+	if util.EnvIsTrue("LOCAL_SCRIPT_PATH") {
+		env = append(env, "LOCAL_SCRIPT_PATH=true")
+	}
+
+	cmdArgs = append(cmdArgs,
+		// TODO https://github.com/lolopinto/ent/issues/792
+		//			"--swc",
+		scriptPath,
+		"--path",
+		// TODO this should be a configuration option to indicate where the code root is
+		filepath.Join(processor.Config.GetAbsPathToRoot(), "src"),
+		"--files",
+		strings.Join(customFiles, ","),
+	)
+	// TODO...
+	if jsonPath := processor.Config.GetCustomGraphQLJSONPath(); jsonPath != "" {
+		spew.Dump(jsonPath)
+		cmdArgs = append(cmdArgs, "--json_path", jsonPath)
 	}
 
 	cmd := exec.Command(cmdName, cmdArgs...)

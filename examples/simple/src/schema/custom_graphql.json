@@ -1,0 +1,216 @@
+{
+  "queries":[
+    {
+      "class": "ViewerResolver",
+      "name": "viewer",
+      "args":[
+        {
+          "name": "context",
+          "type": "Context",
+          "isContextArg": true
+        }
+      ],
+      "resultType": "GQLViewer",
+      "fieldType": "FUNCTION"
+    }
+  ],
+  "mutations":[
+    {
+      "class": "AuthResolver",
+      "name": "userAuth",
+      "args":[
+        {
+          "name": "context",
+          "type": "Context",
+          "isContextArg": true
+        },
+        {
+          "name": "input",
+          "type": "UserAuthInput"
+        }
+      ],
+      "resultType": "UserAuthPayload",
+      "fieldType": "ASYNC_FUNCTION"
+    },
+    {
+      "class": "AuthResolver",
+      "name": "userAuthJWT",
+      "args":[
+        {
+          "name": "context",
+          "type": "Context",
+          "isContextArg": true
+        },
+        {
+          "name": "input",
+          "type": "UserAuthJWTInput"
+        }
+      ],
+      "resultType": "UserAuthJWTPayload",
+      "fieldType": "ASYNC_FUNCTION"
+    },
+    {
+      "class": "ImportContactResolver",
+      "name": "bulkUploadContact",
+      "args": [
+        {
+          "name": "context",
+          "type": "Context",
+          "isContextArg": true
+        },
+        {
+          "name": "userID",
+          "type": "ID"
+        },
+        {
+          "name": "file",
+          "type": {
+            "type": "GraphQLUpload",
+            "importPath": "graphql-upload",
+            "tsType": "FileUpload",
+            "tsImportPath": "graphql-upload"
+          }
+        }
+      ],
+      "resultType": "User"
+    }
+  ],
+  "inputs":[
+    {
+      "name": "UserAuthInput",
+      "fields":[
+        {
+          "name": "emailAddress",
+          "fieldType": "FIELD",
+          "resultType": "String"
+        },
+        {
+          "name": "password",
+          "fieldType": "FIELD",
+          "resultType": "String"
+        }
+      ]
+    },
+    {
+      "name": "UserAuthJWTInput",
+      "fields":[
+        {
+          "name": "emailAddress",
+          "fieldType": "FIELD",
+          "resultType": "String"
+        },
+        {
+          "name": "password",
+          "fieldType": "FIELD",
+          "resultType": "String"
+        }
+      ]
+    }
+  ],
+  "objects":[
+    {
+      "name": "UserAuthPayload",
+      "fields":[
+        {
+          "name": "viewerID",
+          "fieldType": "FIELD",
+          "resultType": "ID"
+        }
+      ]
+    },
+    {
+      "name": "UserAuthJWTPayload",
+      "fields":[
+        {
+          "name": "token",
+          "fieldType": "FIELD",
+          "resultType": "String"
+        },
+        {
+          "name": "viewerID",
+          "fieldType": "FIELD",
+          "resultType": "ID"
+        }
+      ]
+    },
+        {
+      "name": "GQLViewer",
+      "graphQLName": "Viewer",
+      "fields":[
+        {
+          "name": "viewerID",
+          "fieldType": "ASYNC_FUNCTION",
+          "resultType": "ID",
+          "nullable": true
+        },
+        {
+          "name": "user",
+          "fieldType": "ASYNC_FUNCTION",
+          "resultType": "User",
+          "nullable": true
+        }
+      ]
+    }
+  ],
+  "fields":{
+    "Contact": [
+      {
+        "name": "fullName",
+        "resultType": "String",
+        "fieldType": "ACCESSOR"
+      }
+    ],
+    "User": [
+      {
+        "name": "fullName",
+        "resultType": "String",
+        "fieldType": "ACCESSOR"
+      },
+      {
+        "name": "bar",
+        "functionName": "getUserBar",
+        "resultType": "String",
+        "nullable": true,
+        "fieldType": "FUNCTION"
+      },
+      {
+        "name": "contactSameDomain",
+        "functionName": "getFirstContactSameDomain",
+        "resultType": "Contact",
+        "nullable": true,
+        "fieldType": "ASYNC_FUNCTION"
+      },
+      {
+        "name": "contactsSameDomain",
+        "functionName": "getContactsSameDomain",
+        "resultType": "Contact",
+        "list": true,
+        "fieldType": "ASYNC_FUNCTION"
+      },
+      {
+        "name": "contactsSameDomainNullable",
+        "functionName": "getContactsSameDomainNullable",
+        "resultType": "Contact",
+        "list": true,
+        "fieldType": "ASYNC_FUNCTION",
+        "nullable": true
+      },
+      {
+        "name": "contactsSameDomainNullableContents",
+        "functionName": "getContactsSameDomainNullableContents",
+        "resultType": "Contact",
+        "list": true,
+        "fieldType": "ASYNC_FUNCTION",
+        "nullable": "contents"
+      },
+      {
+        "name": "contactsSameDomainNullableContentsAndList",
+        "functionName": "getContactsSameDomainNullableContentsAndList",
+        "resultType": "Contact",
+        "list": true,
+        "fieldType": "ASYNC_FUNCTION",
+        "nullable": "contentsAndList"
+      }
+    ]
+  }
+}
