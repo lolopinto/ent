@@ -118,20 +118,13 @@ function processTopLevel(l: any[], l2: CustomQuery[]) {
 function processCustomFields(
   fields: any[],
   gqlCapture: typeof GQLCapture,
-  nodeName?: string,
+  nodeName: string,
 ) {
   const m = gqlCapture.getCustomFields();
   let results: CustomField[] = [];
   for (const f of fields) {
-    if (f.nodeName && nodeName && nodeName !== f.nodeName) {
-      throw new Error(`nodeName  different ${nodeName}, ${f.nodeName}`);
-    }
-    if (f.nodeName) {
-      nodeName = f.nodeName;
-    }
-
     results.push({
-      nodeName: f.nodeName || nodeName,
+      nodeName: nodeName,
       gqlName: f.graphQLName || f.name,
       functionName: f.functionName || f.name,
       fieldType: f.fieldType,
@@ -139,7 +132,7 @@ function processCustomFields(
       results: transformResultType(f),
     });
   }
-  m.set(nodeName!, results);
+  m.set(nodeName, results);
 }
 
 async function captureCustom(
