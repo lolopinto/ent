@@ -17,7 +17,9 @@ export interface SensitiveValue {
 
 function isSensitive(val: any): val is SensitiveValue {
   return (
-    typeof val === "object" && (val as SensitiveValue).logValue !== undefined
+    val !== null &&
+    typeof val === "object" &&
+    (val as SensitiveValue).logValue !== undefined
   );
 }
 
@@ -54,6 +56,46 @@ class simpleClause implements Clause {
 
   instanceKey(): string {
     return `${this.col}${this.op}${rawValue(this.value)}`;
+  }
+}
+
+class isNullClause implements Clause {
+  constructor(protected col: string) {}
+
+  clause(idx: number): string {
+    return `${this.col} IS NULL`;
+  }
+
+  values(): any[] {
+    return [];
+  }
+
+  logValues(): any[] {
+    return [];
+  }
+
+  instanceKey(): string {
+    return `${this.col} IS NULL`;
+  }
+}
+
+class isNotNullClause implements Clause {
+  constructor(protected col: string) {}
+
+  clause(idx: number): string {
+    return `${this.col} IS NOT NULL`;
+  }
+
+  values(): any[] {
+    return [];
+  }
+
+  logValues(): any[] {
+    return [];
+  }
+
+  instanceKey(): string {
+    return `${this.col} IS NOT NULL`;
   }
 }
 
@@ -146,11 +188,17 @@ class compositeClause implements Clause {
   }
 }
 
-export function Eq(col: string, value: any): simpleClause {
+export function Eq(col: string, value: any): Clause {
+  if (value === null && DB.getDialect() === Dialect.SQLite) {
+    return new isNullClause(col);
+  }
   return new simpleClause(col, value, "=");
 }
 
-export function NotEq(col: string, value: any): simpleClause {
+export function NotEq(col: string, value: any): Clause {
+  if (value === null && DB.getDialect() === Dialect.SQLite) {
+    return new isNotNullClause(col);
+  }
   return new simpleClause(col, value, "!=");
 }
 

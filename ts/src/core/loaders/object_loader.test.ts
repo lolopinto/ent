@@ -6,7 +6,7 @@ import { createRowForTest } from "../../testutils/write";
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
-import { ID } from "../base";
+import { Data, ID } from "../base";
 import { buildQuery } from "../ent";
 import * as clause from "../clause";
 import {
@@ -20,7 +20,16 @@ import {
   userPhoneNumberLoader,
   FakeUser,
 } from "../../testutils/fake_data/";
-import { integer, setupSqlite, table, text } from "../../testutils/db/test_db";
+import {
+  integer,
+  setupSqlite,
+  table,
+  text,
+  timestamp,
+} from "../../testutils/db/test_db";
+import DB, { Dialect } from "../db";
+import { advanceTo } from "jest-date-mock";
+import { convertDate } from "../convert";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -32,6 +41,31 @@ const getNewLoader = (context: boolean = true) => {
     {
       tableName: "users",
       fields: ["id", "first_name"],
+      key: "id",
+    },
+    context ? new TestContext() : undefined,
+  );
+};
+
+const getNewLoaderWithCustomClause = (context: boolean = true) => {
+  return new ObjectLoader(
+    {
+      tableName: "users",
+      fields: ["id", "first_name", "deleted_at"],
+      key: "id",
+      clause: clause.Eq("deleted_at", null),
+    },
+    context ? new TestContext() : undefined,
+  );
+};
+
+// deleted_at field but no custom_clause
+// behavior when we're ignoring deleted_at. exception...
+const getNewLoaderWithDeletedAtField = (context: boolean = true) => {
+  return new ObjectLoader(
+    {
+      tableName: "users",
+      fields: ["id", "first_name", "deleted_at"],
       key: "id",
     },
     context ? new TestContext() : undefined,
@@ -51,6 +85,34 @@ async function create(id?: ID) {
   ml.clear();
 }
 
+async function createWithNullDeletedAt(id?: ID) {
+  await createRowForTest({
+    tableName: "users",
+    fields: {
+      id: id || 1,
+      first_name: "Jon",
+      deleted_at: null,
+    },
+  });
+
+  // clear post insert
+  ml.clear();
+}
+
+async function createWithDeletedAt(id?: ID) {
+  await createRowForTest({
+    tableName: "users",
+    fields: {
+      id: id || 1,
+      first_name: "Jon",
+      deleted_at: new Date(),
+    },
+  });
+
+  // clear post insert
+  ml.clear();
+}
+
 describe("postgres", () => {
   beforeAll(async () => {
     setLogLevels("query");
@@ -59,7 +121,7 @@ describe("postgres", () => {
     await createEdges();
   });
 
-  afterEach(() => {
+  beforeEach(() => {
     QueryRecorder.clear();
     ml.clear();
   });
@@ -74,7 +136,12 @@ describe("sqlite", () => {
   const tables = () => {
     const tables = tempDBTables();
     tables.push(
-      table("users", integer("id", { primaryKey: true }), text("first_name")),
+      table(
+        "users",
+        integer("id", { primaryKey: true }),
+        text("first_name"),
+        timestamp("deleted_at", { nullable: true }),
+      ),
     );
     return tables;
   };
@@ -100,6 +167,24 @@ describe("sqlite", () => {
   commonTests();
 });
 
+function filterNullIfSqlite(values: any[]) {
+  if (DB.getDialect() === Dialect.SQLite) {
+    return values.filter((f) => f !== null);
+  }
+  return values;
+}
+
+function transformDeletedAt(row: Data | null) {
+  if (row === null) {
+    return null;
+  }
+  if (row.deleted_at === null || row.deleted_at === undefined) {
+    return row;
+  }
+  row.deleted_at = convertDate(row.deleted_at);
+  return row;
+}
+
 function commonTests() {
   test("with context. cache hit", async () => {
     await create();
@@ -109,6 +194,46 @@ function commonTests() {
     expect(row).toEqual({
       id: 1,
       first_name: "Jon",
+    });
+    const row2 = await loader.load(1);
+    expect(row).toBe(row2);
+  });
+
+  test("with context custom clause. cache hit", async () => {
+    await createWithNullDeletedAt();
+    const loader = getNewLoaderWithCustomClause();
+
+    const row = await loader.load(1);
+    expect(row).toEqual({
+      id: 1,
+      first_name: "Jon",
+      deleted_at: null,
+    });
+    const row2 = await loader.load(1);
+    expect(row).toBe(row2);
+  });
+
+  test("with context. deleted at set. cache hit. normal query", async () => {
+    await createWithDeletedAt();
+    const loader = getNewLoaderWithCustomClause();
+
+    const row = await loader.load(1);
+    expect(row).toEqual(null);
+    const row2 = await loader.load(1);
+    expect(row2).toBe(null);
+  });
+
+  test("with context. deleted at set. cache hit. bypass transform", async () => {
+    const d = new Date();
+    advanceTo(d);
+    await createWithDeletedAt();
+    const loader = getNewLoaderWithDeletedAtField();
+
+    const row = await loader.load(1);
+    expect(transformDeletedAt(row)).toEqual({
+      id: 1,
+      first_name: "Jon",
+      deleted_at: d,
     });
     const row2 = await loader.load(1);
     expect(row).toBe(row2);
@@ -129,6 +254,32 @@ function commonTests() {
     expect(ml.logs[0]).toStrictEqual({
       query: expQuery,
       values: [1],
+    });
+
+    const row2 = await loader.load(1);
+    expect(row2).toBe(null);
+    expect(ml.logs.length).toBe(2);
+    expect(ml.logs[1]).toStrictEqual({
+      "dataloader-cache-hit": 1,
+      "tableName": "users",
+    });
+  });
+
+  test("with context custom clause. cache miss", async () => {
+    const loader = getNewLoaderWithCustomClause();
+
+    const expQuery = buildQuery({
+      tableName: "users",
+      fields: ["id", "first_name", "deleted_at"],
+      clause: clause.And(clause.Eq("deleted_at", null), clause.In("id", 1)),
+    });
+    const row = await loader.load(1);
+
+    expect(row).toBe(null);
+    expect(ml.logs.length).toBe(1);
+    expect(ml.logs[0]).toStrictEqual({
+      query: expQuery,
+      values: filterNullIfSqlite([null, 1]),
     });
 
     const row2 = await loader.load(1);
@@ -177,6 +328,114 @@ function commonTests() {
     });
   });
 
+  test("without context custom clause. cache hit", async () => {
+    await createWithNullDeletedAt();
+
+    const loader = getNewLoaderWithCustomClause(false);
+
+    const row = await loader.load(1);
+    expect(row).toEqual({
+      id: 1,
+      first_name: "Jon",
+      deleted_at: null,
+    });
+
+    const expQuery = buildQuery({
+      tableName: "users",
+      fields: ["id", "first_name", "deleted_at"],
+      clause: clause.And(clause.Eq("deleted_at", null), clause.Eq("id", 1)),
+    });
+    expect(ml.logs.length).toBe(1);
+    expect(ml.logs[0]).toStrictEqual({
+      query: expQuery,
+      values: filterNullIfSqlite([null, 1]),
+    });
+
+    // same data loaded  but not same row
+    const row2 = await loader.load(1);
+
+    expect(row).toStrictEqual(row2);
+    expect(row).not.toBe(row2);
+
+    // new query was made
+    expect(ml.logs.length).toBe(2);
+    expect(ml.logs[1]).toStrictEqual({
+      query: expQuery,
+      values: filterNullIfSqlite([null, 1]),
+    });
+  });
+
+  test("without context. deleted_at set. cache hit. normal query", async () => {
+    await createWithDeletedAt();
+
+    const loader = getNewLoaderWithCustomClause(false);
+
+    const row = await loader.load(1);
+    expect(row).toBe(null);
+
+    const expQuery = buildQuery({
+      tableName: "users",
+      fields: ["id", "first_name", "deleted_at"],
+      clause: clause.And(clause.Eq("deleted_at", null), clause.Eq("id", 1)),
+    });
+    expect(ml.logs.length).toBe(1);
+    expect(ml.logs[0]).toStrictEqual({
+      query: expQuery,
+      values: filterNullIfSqlite([null, 1]),
+    });
+
+    // same data loaded  but not same row
+    const row2 = await loader.load(1);
+
+    expect(row).toBe(null);
+
+    // new query was made
+    expect(ml.logs.length).toBe(2);
+    expect(ml.logs[1]).toStrictEqual({
+      query: expQuery,
+      values: filterNullIfSqlite([null, 1]),
+    });
+  });
+
+  test("without context. deleted_at set. cache hit. bypass transform", async () => {
+    const d = new Date();
+    advanceTo(d);
+    await createWithDeletedAt();
+
+    const loader = getNewLoaderWithDeletedAtField(false);
+
+    const row = await loader.load(1);
+    expect(transformDeletedAt(row)).toEqual({
+      id: 1,
+      first_name: "Jon",
+      deleted_at: d,
+    });
+
+    const expQuery = buildQuery({
+      tableName: "users",
+      fields: ["id", "first_name", "deleted_at"],
+      clause: clause.Eq("id", 1),
+    });
+    expect(ml.logs.length).toBe(1);
+    expect(ml.logs[0]).toStrictEqual({
+      query: expQuery,
+      values: [1],
+    });
+
+    // same data loaded  but not same row
+    const row2 = await loader.load(1);
+
+    expect(transformDeletedAt(row)).toStrictEqual(transformDeletedAt(row2));
+    expect(row).not.toBe(row2);
+
+    // new query was made
+    expect(ml.logs.length).toBe(2);
+    expect(ml.logs[1]).toStrictEqual({
+      query: expQuery,
+      values: [1],
+    });
+  });
+
   test("without context. cache miss", async () => {
     const loader = getNewLoader(false);
 
@@ -208,11 +467,50 @@ function commonTests() {
     });
   });
 
+  test("without context custom clause. cache miss", async () => {
+    const loader = getNewLoaderWithCustomClause(false);
+
+    const row = await loader.load(1);
+    expect(row).toBeNull();
+
+    const expQuery = buildQuery({
+      tableName: "users",
+      fields: ["id", "first_name", "deleted_at"],
+      clause: clause.And(clause.Eq("deleted_at", null), clause.Eq("id", 1)),
+    });
+    expect(ml.logs.length).toBe(1);
+    expect(ml.logs[0]).toStrictEqual({
+      query: expQuery,
+      values: filterNullIfSqlite([null, 1]),
+    });
+
+    // same data loaded  but not same row
+    const row2 = await loader.load(1);
+
+    expect(row2).toBeNull();
+
+    // new query was made
+    expect(ml.logs.length).toBe(2);
+    expect(ml.logs[1]).toStrictEqual({
+      query: expQuery,
+      values: filterNullIfSqlite([null, 1]),
+    });
+  });
+
   test("multi-ids. with context", async () => {
     await verifyMultiIDsDataAvail(
       getNewLoader,
       verifyMultiIDsGroupQuery,
       verifyMultiIDsCacheHit,
+    );
+  });
+
+  test("multi-ids custom clause. with context", async () => {
+    await verifyMultiIDsDataAvail(
+      getNewLoaderWithCustomClause,
+      verifyMultiIDsCustomClauseGroupQuery,
+      verifyMultiIDsCacheHit,
+      createWithNullDeletedAt,
     );
   });
 
@@ -224,10 +522,27 @@ function commonTests() {
     );
   });
 
+  test("multi-ids custom clause. without context", async () => {
+    await verifyMultiIDsDataAvail(
+      () => getNewLoaderWithCustomClause(false),
+      verifyMultiIDsCustomClauseGroupQueryMiss,
+      verifyMultiIDsCustomClauseGroupQueryMiss,
+      createWithNullDeletedAt,
+    );
+  });
+
   test("multi-ids.no data. with context", async () => {
     await verifyMultiIDsNoDataAvail(
       getNewLoader,
       verifyMultiIDsGroupQuery,
+      verifyMultiIDsCacheHit,
+    );
+  });
+
+  test("multi-ids. no data custom clause. with context", async () => {
+    await verifyMultiIDsNoDataAvail(
+      getNewLoaderWithCustomClause,
+      verifyMultiIDsCustomClauseGroupQuery,
       verifyMultiIDsCacheHit,
     );
   });
@@ -240,6 +555,15 @@ function commonTests() {
     );
   });
 
+  test("multi-ids. no data custom clause. without context", async () => {
+    await verifyMultiIDsNoDataAvail(
+      () => getNewLoaderWithCustomClause(false),
+      verifyMultiIDsCustomClauseGroupQueryMiss,
+      verifyMultiIDsCustomClauseGroupQueryMiss,
+    );
+  });
+
+  // custom clause check?
   describe("primed loaders", () => {
     test("id first", async () => {
       const user = await createTestUser();
@@ -465,9 +789,13 @@ async function verifyMultiIDsDataAvail(
   loaderFn: () => ObjectLoader<ID>,
   verifyPostFirstQuery: (ids: ID[]) => void,
   verifyPostSecondQuery: (ids: ID[]) => void,
+  createFn?: (id?: ID) => Promise<void> | undefined,
 ) {
+  if (createFn === undefined) {
+    createFn = create;
+  }
   const ids = [1, 2, 3, 4, 5];
-  await Promise.all(ids.map((id) => create(id)));
+  await Promise.all(ids.map((id) => createFn!(id)));
   const loader = loaderFn();
 
   const rows = await Promise.all(ids.map((id) => loader.load(id)));
@@ -516,7 +844,6 @@ function verifyMultiIDsGroupQuery(ids: ID[]) {
   const expQuery = buildQuery({
     tableName: "users",
     fields: ["id", "first_name"],
-
     clause: clause.In("id", ...ids),
   });
 
@@ -527,18 +854,49 @@ function verifyMultiIDsGroupQuery(ids: ID[]) {
   });
 }
 
+function verifyMultiIDsCustomClauseGroupQuery(ids: ID[]) {
+  const expQuery = buildQuery({
+    tableName: "users",
+    fields: ["id", "first_name", "deleted_at"],
+    clause: clause.And(clause.Eq("deleted_at", null), clause.In("id", ...ids)),
+  });
+
+  expect(ml.logs.length).toBe(1);
+  expect(ml.logs[0]).toStrictEqual({
+    query: expQuery,
+    values: filterNullIfSqlite([null, ...ids]),
+  });
+}
+
 function verifyMultiIDsGroupQueryMiss(ids: ID[]) {
   expect(ml.logs.length).toBe(ids.length);
   ml.logs.forEach((log, idx) => {
     const expQuery = buildQuery({
       tableName: "users",
       fields: ["id", "first_name"],
-
       clause: clause.Eq("id", ids[idx]),
     });
     expect(log).toStrictEqual({
       query: expQuery,
       values: [ids[idx]],
+    });
+  });
+}
+
+function verifyMultiIDsCustomClauseGroupQueryMiss(ids: ID[]) {
+  expect(ml.logs.length).toBe(ids.length);
+  ml.logs.forEach((log, idx) => {
+    const expQuery = buildQuery({
+      tableName: "users",
+      fields: ["id", "first_name", "deleted_at"],
+      clause: clause.And(
+        clause.Eq("deleted_at", null),
+        clause.Eq("id", ids[idx]),
+      ),
+    });
+    expect(log).toStrictEqual({
+      query: expQuery,
+      values: filterNullIfSqlite([null, ids[idx]]),
     });
   });
 }

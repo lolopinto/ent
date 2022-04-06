@@ -16,6 +16,9 @@ import { logEnabled } from "../logger";
 import { getLoader, cacheMap } from "./loader";
 import memoizee from "memoizee";
 
+// optional clause...
+// so ObjectLoaderFactory and createDataLoader need to take a new optional field which is a clause that's always added here
+// and we need a disableTransform which skips loader completely and uses loadRow...
 function createDataLoader(options: SelectDataOptions) {
   const loaderOptions: DataLoader.Options<any, any> = {};
 
@@ -29,9 +32,13 @@ function createDataLoader(options: SelectDataOptions) {
       return [];
     }
     let col = options.key;
+    let cls = clause.In(col, ...ids);
+    if (options.clause) {
+      cls = clause.And(options.clause, cls);
+    }
     const rowOptions: LoadRowOptions = {
       ...options,
-      clause: clause.In(col, ...ids),
+      clause: cls,
     };
 
     let m = new Map<ID, number>();
@@ -114,9 +121,13 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
       return result;
     }
 
+    let cls: clause.Clause = clause.Eq(this.options.key, key);
+    if (this.options.clause) {
+      cls = clause.And(this.options.clause, cls);
+    }
     const rowOptions: LoadRowOptions = {
       ...this.options,
-      clause: clause.Eq(this.options.key, key),
+      clause: cls,
       context: this.context,
     };
     return await loadRow(rowOptions);
@@ -131,9 +142,13 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
       return await this.loader.loadMany(keys);
     }
 
+    let cls = clause.In(this.options.key, ...keys);
+    if (this.options.clause) {
+      cls = clause.And(this.options.clause, cls);
+    }
     const rowOptions: LoadRowOptions = {
       ...this.options,
-      clause: clause.In(this.options.key, ...keys),
+      clause: cls,
       context: this.context,
     };
     return await loadRows(rowOptions);
@@ -154,7 +169,9 @@ export class ObjectLoaderFactory<T> implements LoaderFactory<T, Data | null> {
   private toPrime: ObjectLoaderFactory<T>[] = [];
 
   constructor(public options: SelectDataOptions) {
-    this.name = `${options.tableName}:${options.key}`;
+    this.name = `${options.tableName}:${options.key}:${
+      options.clause?.instanceKey() || ""
+    }`;
   }
 
   createLoader(context?: Context): ObjectLoader<T> {
