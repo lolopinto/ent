@@ -15,6 +15,7 @@ import {
 } from "../core/ent";
 import { Queryer } from "../core/db";
 import { log } from "../core/logger";
+import { TransformedUpdateOperation, UpdateOperation } from "src/schema";
 
 export enum WriteOperation {
   Insert = "insert",
@@ -100,6 +101,12 @@ export interface Action<T extends Ent> {
   observers?: Observer<T>[];
   validators?: Validator<T>[];
   getInput(): Data; // this input is passed to Triggers, Observers, Validators
+  transformWrite?: (
+    stmt: UpdateOperation<T>,
+  ) =>
+    | Promise<TransformedUpdateOperation<T>>
+    | TransformedUpdateOperation<T>
+    | undefined;
 
   valid(): Promise<boolean>;
   // throws if invalid

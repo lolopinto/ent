@@ -176,6 +176,11 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
       editedFields: () => {
         return this.fields;
       },
+      updateInput: (input: Data) => {
+        for (const k in input) {
+          this.fields.set(k, input[k]);
+        }
+      },
     });
   }
 

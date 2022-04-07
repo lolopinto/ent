@@ -18,7 +18,14 @@ import {
   applyPrivacyPolicyForRow,
   EditNodeOptions,
 } from "../core/ent";
-import { getFields, SchemaInputType, Field } from "../schema/schema";
+import {
+  getFields,
+  SchemaInputType,
+  Field,
+  getTransformedUpdateOp,
+  SQLStatementOperation,
+  TransformedUpdateOperation,
+} from "../schema/schema";
 import { Changeset, Executor, Validator } from "../action/action";
 import { WriteOperation, Builder, Action } from "../action";
 import { snakeCase } from "snake-case";
@@ -147,9 +154,17 @@ export class Orchestrator<T extends Ent> {
   viewer: Viewer;
   private defaultFieldsByFieldName: Data = {};
   private defaultFieldsByTSName: Data = {};
+  // we can transform from one update to another so we wanna differentiate
+  // btw the beginning op and the transformed one we end up using
+  private actualOperation: WriteOperation;
+  // same with existingEnt. can transform so we wanna know what we started with and now where we are.
+  private existingEnt?: T;
+  private disableTransformations: boolean;
 
   constructor(private options: OrchestratorOptions<T, Data>) {
     this.viewer = options.viewer;
+    this.actualOperation = this.options.operation;
+    this.existingEnt = this.options.builder.existingEnt;
   }
 
   private addEdge(edge: edgeInputData, op: WriteOperation) {
@@ -168,6 +183,10 @@ export class Orchestrator<T extends Ent> {
     m2.set(id, edge);
     m1.set(op, m2);
     this.edges.set(edge.edgeType, m1);
+  }
+
+  setDisableTransformations(val: boolean) {
+    this.disableTransformations = val;
   }
 
   addInboundEdge<T2 extends Ent>(
@@ -253,12 +272,17 @@ export class Orchestrator<T extends Ent> {
 
   private buildMainOp(): DataOperation {
     // this assumes we have validated fields
-    switch (this.options.operation) {
+    switch (this.actualOperation) {
       case WriteOperation.Delete:
-        return new DeleteNodeOperation(this.options.builder.existingEnt!.id, {
+        return new DeleteNodeOperation(this.existingEnt!.id, {
           tableName: this.options.tableName,
         });
       default:
+        if (this.actualOperation === WriteOperation.Edit && !this.existingEnt) {
+          throw new Error(
+            `existing ent required with operation ${this.actualOperation}`,
+          );
+        }
         const opts: EditNodeOptions<T> = {
           fields: this.validatedFields!,
           tableName: this.options.tableName,
@@ -270,10 +294,7 @@ export class Orchestrator<T extends Ent> {
         if (this.logValues) {
           opts.fieldsToLog = this.logValues;
         }
-        this.mainOp = new EditNodeOperation(
-          opts,
-          this.options.builder.existingEnt,
-        );
+        this.mainOp = new EditNodeOperation(opts, this.existingEnt);
         return this.mainOp;
     }
   }
@@ -370,25 +391,25 @@ export class Orchestrator<T extends Ent> {
       throw new Error(`shouldn't get here if no privacyPolicy for action`);
     }
 
-    if (this.options.operation === WriteOperation.Insert) {
+    if (this.actualOperation === WriteOperation.Insert) {
       return new EntCannotCreateEntError(privacyPolicy, action);
-    } else if (this.options.operation === WriteOperation.Edit) {
+    } else if (this.actualOperation === WriteOperation.Edit) {
       return new EntCannotEditEntError(
         privacyPolicy,
         action,
-        this.options.builder.existingEnt!,
+        this.existingEnt!,
       );
     }
     return new EntCannotDeleteEntError(
       privacyPolicy,
       action,
-      this.options.builder.existingEnt!,
+      this.existingEnt!,
     );
   }
 
   private getEntForPrivacyPolicy(editedData: Data) {
-    if (this.options.operation !== WriteOperation.Insert) {
-      return this.options.builder.existingEnt;
+    if (this.actualOperation !== WriteOperation.Insert) {
+      return this.existingEnt;
     }
     // we create an unsafe ent to be used for privacy policies
     return new this.options.builder.ent(
@@ -397,13 +418,39 @@ export class Orchestrator<T extends Ent> {
     );
   }
 
+  private getSQLStatementOperation(): SQLStatementOperation {
+    switch (this.actualOperation) {
+      case WriteOperation.Edit:
+        return SQLStatementOperation.Update;
+      case WriteOperation.Insert:
+        return SQLStatementOperation.Insert;
+      case WriteOperation.Delete:
+        return SQLStatementOperation.Delete;
+    }
+  }
+
+  private getWriteOpForSQLStamentOp(op: SQLStatementOperation): WriteOperation {
+    switch (op) {
+      case SQLStatementOperation.Update:
+        return WriteOperation.Edit;
+      case SQLStatementOperation.Insert:
+        return WriteOperation.Insert;
+      case SQLStatementOperation.Update:
+        return WriteOperation.Delete;
+      default:
+        throw new Error("invalid path");
+    }
+  }
+
   private async validate(): Promise<void> {
     // existing ent required for edit or delete operations
-    switch (this.options.operation) {
+    switch (this.actualOperation) {
       case WriteOperation.Delete:
       case WriteOperation.Edit:
-        if (!this.options.builder.existingEnt) {
-          throw new Error("existing ent required with operation");
+        if (!this.existingEnt) {
+          throw new Error(
+            `existing ent required with operation ${this.actualOperation}`,
+          );
         }
     }
 
@@ -413,7 +460,7 @@ export class Orchestrator<T extends Ent> {
     // future optimization: can get schemaFields to memoize based on different values
     const schemaFields = getFields(this.options.schema);
 
-    let editedData = this.getFieldsWithDefaultValues(
+    let editedData = await this.getFieldsWithDefaultValues(
       builder,
       schemaFields,
       action,
@@ -493,11 +540,11 @@ export class Orchestrator<T extends Ent> {
     return (val as Builder<Ent>).placeholderID !== undefined;
   }
 
-  private getFieldsWithDefaultValues(
+  private async getFieldsWithDefaultValues(
     builder: Builder<T>,
     schemaFields: Map<string, Field>,
     action?: Action<T> | undefined,
-  ): Data {
+  ): Promise<Data> {
     const editedFields = this.options.editedFields();
     let data: Data = {};
     let defaultData: Data = {};
@@ -505,13 +552,60 @@ export class Orchestrator<T extends Ent> {
     let input: Data = action?.getInput() || {};
 
     let updateInput = false;
+
+    // transformations
+    // if action transformations. always do it
+    // if disable transformations set, don't do schema transform and just do the right thing
+    // else apply schema tranformation if it exists
+    let transformed: TransformedUpdateOperation<T> | undefined;
+
+    if (action?.transformWrite) {
+      transformed = await action.transformWrite({
+        viewer: builder.viewer,
+        op: this.getSQLStatementOperation(),
+        data: editedFields,
+        existingEnt: this.existingEnt,
+      });
+    } else if (!this.disableTransformations) {
+      transformed = getTransformedUpdateOp(this.options.schema, {
+        viewer: builder.viewer,
+        op: this.getSQLStatementOperation(),
+        data: editedFields,
+        existingEnt: this.existingEnt,
+      });
+    }
+    if (transformed) {
+      if (transformed.data) {
+        updateInput = true;
+        for (const k in transformed.data) {
+          let field = schemaFields.get(k);
+          if (!field) {
+            throw new Error(`tried to transform field with unknown field ${k}`);
+          }
+          let val = transformed.data[k];
+          if (field.format) {
+            val = field.format(transformed.data[k]);
+          }
+          let dbKey = field.storageKey || snakeCase(field.name);
+          data[dbKey] = val;
+          this.defaultFieldsByTSName[k] = val;
+        }
+      }
+      this.actualOperation = this.getWriteOpForSQLStamentOp(transformed.op);
+      if (transformed.existingEnt) {
+        this.existingEnt = transformed.existingEnt;
+      }
+    }
+    // transforming before doing default fields so that we don't create a new id
+    // and anything that depends on the type of operations knows what it is
+
     for (const [fieldName, field] of schemaFields) {
       let value = editedFields.get(fieldName);
       let defaultValue: any = undefined;
       let dbKey = field.storageKey || snakeCase(field.name);
 
       if (value === undefined) {
-        if (this.options.operation === WriteOperation.Insert) {
+        if (this.actualOperation === WriteOperation.Insert) {
           if (field.defaultToViewerOnCreate && field.defaultValueOnCreate) {
             throw new Error(
               `cannot set both defaultToViewerOnCreate and defaultValueOnCreate`,
@@ -532,7 +626,7 @@ export class Orchestrator<T extends Ent> {
 
         if (
           field.defaultValueOnEdit &&
-          this.options.operation === WriteOperation.Edit
+          this.actualOperation === WriteOperation.Edit
         ) {
           defaultValue = field.defaultValueOnEdit(builder, input);
         }
@@ -589,7 +683,7 @@ export class Orchestrator<T extends Ent> {
         // not setting server default as we're depending on the database handling that.
         // server default allowed
         field.serverDefault === undefined &&
-        this.options.operation === WriteOperation.Insert
+        this.actualOperation === WriteOperation.Insert
       ) {
         throw new Error(`required field ${field.name} not set`);
       }
@@ -624,7 +718,7 @@ export class Orchestrator<T extends Ent> {
   private async formatAndValidateFields(
     schemaFields: Map<string, Field>,
   ): Promise<void> {
-    const op = this.options.operation;
+    const op = this.actualOperation;
     if (op === WriteOperation.Delete) {
       return;
     }
@@ -747,7 +841,7 @@ export class Orchestrator<T extends Ent> {
     );
 
     if (!ent) {
-      if (this.options.operation == WriteOperation.Insert) {
+      if (this.actualOperation == WriteOperation.Insert) {
         throw new Error(`was able to create ent but not load it`);
       } else {
         throw new Error(`was able to edit ent but not load it`);
