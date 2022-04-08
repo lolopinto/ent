@@ -15,7 +15,7 @@ import {
 } from "../core/ent";
 import { Queryer } from "../core/db";
 import { log } from "../core/logger";
-import { TransformedUpdateOperation, UpdateOperation } from "src/schema";
+import { TransformedUpdateOperation, UpdateOperation } from "../schema";
 
 export enum WriteOperation {
   Insert = "insert",

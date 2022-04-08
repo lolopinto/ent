@@ -10,6 +10,7 @@ import {
   PrivacyPolicy,
   Viewer,
   convertDate,
+  convertNullableDate,
   convertNullableList,
   loadCustomData,
   loadCustomEnts,
@@ -18,7 +19,11 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
-import { tagLoader, tagLoaderInfo } from "src/ent/generated/loaders";
+import {
+  tagLoader,
+  tagLoaderInfo,
+  tagNoTransformLoader,
+} from "src/ent/generated/loaders";
 import { Account, NodeType, TagToTodosQuery } from "src/ent/internal";
 import schema from "src/schema/tag";
 
@@ -27,6 +32,7 @@ export class TagBase {
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+  protected readonly deletedAt: Date | null;
   readonly displayName: string;
   readonly canonicalName: string;
   readonly ownerID: ID;
@@ -36,6 +42,7 @@ export class TagBase {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
+    this.deletedAt = convertNullableDate(data.deleted_at);
     this.displayName = data.display_name;
     this.canonicalName = data.canonical_name;
     this.ownerID = data.owner_id;
@@ -62,6 +69,35 @@ export class TagBase {
     id: ID,
   ): Promise<T> {
     return (await loadEntX(viewer, id, TagBase.loaderOptions.apply(this))) as T;
+  }
+
+  // loadNoTransform and loadNoTransformX exist to load the data from the db
+  // with no transformations which are currently done via an implicit trigger
+  // we don't generate the full complement of read-APIs
+  // but can easily query the data with tagNoTransformLoader
+  static async loadNoTransform<T extends TagBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
+    id: ID,
+  ): Promise<T | null> {
+    const opts = {
+      ...TagBase.loaderOptions.apply(this),
+      loaderFactory: tagNoTransformLoader,
+    };
+
+    return (await loadEnt(viewer, id, opts)) as T | null;
+  }
+
+  static async loadNoTransformX<T extends TagBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
+    id: ID,
+  ): Promise<T> {
+    const opts = {
+      ...TagBase.loaderOptions.apply(this),
+      loaderFactory: tagNoTransformLoader,
+    };
+    return (await loadEntX(viewer, id, opts)) as T;
   }
 
   static async loadMany<T extends TagBase>(
@@ -115,6 +151,8 @@ export class TagBase {
     }
     return row;
   }
+
+  // TODO index deleted_at not id... we want an indexQueryLoader...
 
   static loaderOptions<T extends TagBase>(
     this: new (viewer: Viewer, data: Data) => T,

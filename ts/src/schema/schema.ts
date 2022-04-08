@@ -161,9 +161,9 @@ export interface Pattern {
   ) => TransformedUpdateOperation<T> | undefined;
 
   // can only have one pattern in an object which transforms each
-  // if we do, it throws an object
+  // if we do, it throws an Error
   // it also simplifies what we call?
-  transformsSelect?: boolean;
+  //  transformsSelect?: boolean;
   transformsDelete?: boolean;
   transformsInsert?: boolean;
   transformsUpdate?: boolean;

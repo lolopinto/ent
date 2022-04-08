@@ -101,13 +101,21 @@ function processPattern(
   patterns: patternsDict,
   pattern: Pattern,
   processedSchema: ProcessedSchema,
-) {
+): TransformFlags {
+  let ret: TransformFlags = {
+    ...pattern,
+  };
   const name = pattern.name;
   const fields = processFields(pattern.fields, pattern.name);
   processedSchema.fields.push(...fields);
   if (pattern.edges) {
     const edges = processEdges(pattern.edges, pattern.name);
     processedSchema.assocEdges.push(...edges);
+  }
+
+  // flag transformsSelect
+  if (pattern.transformRead) {
+    ret.transformsSelect = true;
   }
 
   if (patterns[name] === undefined) {
@@ -122,6 +130,7 @@ function processPattern(
     // TODO ideally we want to make sure that different patterns don't have the same name
     // can't do a deepEqual check because function calls and therefore different instances in fields
   }
+  return ret;
 }
 
 enum NullableResult {
@@ -145,15 +154,29 @@ type ProcessedAssocEdge = Omit<
   edgeActions?: OutputAction[];
 };
 
+interface TransformFlags {
+  // we don't necessary use all of the below but we flag it for now
+  // in case we end up using it in the future
+  // we only care
+  // meaning there needs to be a way to load without transformation
+  transformsSelect?: boolean;
+  // meaning there needs to be a way to actually delete
+  transformsDelete?: boolean;
+
+  transformsInsert?: boolean;
+  transformsUpdate?: boolean;
+}
+
 type ProcessedSchema = Omit<
   Schema,
   "edges" | "actions" | "edgeGroups" | "fields"
-> & {
-  actions: OutputAction[];
-  assocEdges: ProcessedAssocEdge[];
-  assocEdgeGroups: ProcessedAssocEdgeGroup[];
-  fields: ProcessedField[];
-};
+> &
+  TransformFlags & {
+    actions: OutputAction[];
+    assocEdges: ProcessedAssocEdge[];
+    assocEdgeGroups: ProcessedAssocEdgeGroup[];
+    fields: ProcessedField[];
+  };
 
 type ProcessedAssocEdgeGroup = Omit<AssocEdgeGroup, "edgeAction"> & {
   edgeAction?: OutputAction;
@@ -253,7 +276,24 @@ export function parseSchema(potentialSchemas: {}): Result {
     // ¯\_(ツ)_/¯
     if (schema.patterns) {
       for (const pattern of schema.patterns) {
-        processPattern(patterns, pattern, processedSchema);
+        const ret = processPattern(patterns, pattern, processedSchema);
+        if (ret.transformsSelect) {
+          if (processedSchema.transformsSelect) {
+            throw new Error(
+              `can only have one pattern which transforms default querying behavior`,
+            );
+          }
+          processedSchema.transformsSelect = true;
+        }
+
+        if (ret.transformsDelete) {
+          if (processedSchema.transformsDelete) {
+            throw new Error(
+              `can only have one pattern which transforms default deletion behavior`,
+            );
+          }
+          processedSchema.transformsDelete = true;
+        }
       }
     }
     const fields = processFields(schema.fields);

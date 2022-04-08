@@ -11,6 +11,7 @@ import {
   Viewer,
   convertBool,
   convertDate,
+  convertNullableDate,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -18,7 +19,11 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
-import { todoLoader, todoLoaderInfo } from "src/ent/generated/loaders";
+import {
+  todoLoader,
+  todoLoaderInfo,
+  todoNoTransformLoader,
+} from "src/ent/generated/loaders";
 import { Account, NodeType, TodoToTagsQuery } from "src/ent/internal";
 import schema from "src/schema/todo";
 
@@ -27,6 +32,7 @@ export class TodoBase {
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+  protected readonly deletedAt: Date | null;
   readonly text: string;
   readonly completed: boolean;
   readonly creatorID: ID;
@@ -35,6 +41,7 @@ export class TodoBase {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
+    this.deletedAt = convertNullableDate(data.deleted_at);
     this.text = data.text;
     this.completed = convertBool(data.completed);
     this.creatorID = data.creator_id;
@@ -64,6 +71,35 @@ export class TodoBase {
       id,
       TodoBase.loaderOptions.apply(this),
     )) as T;
+  }
+
+  // loadNoTransform and loadNoTransformX exist to load the data from the db
+  // with no transformations which are currently done via an implicit trigger
+  // we don't generate the full complement of read-APIs
+  // but can easily query the data with todoNoTransformLoader
+  static async loadNoTransform<T extends TodoBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
+    id: ID,
+  ): Promise<T | null> {
+    const opts = {
+      ...TodoBase.loaderOptions.apply(this),
+      loaderFactory: todoNoTransformLoader,
+    };
+
+    return (await loadEnt(viewer, id, opts)) as T | null;
+  }
+
+  static async loadNoTransformX<T extends TodoBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
+    id: ID,
+  ): Promise<T> {
+    const opts = {
+      ...TodoBase.loaderOptions.apply(this),
+      loaderFactory: todoNoTransformLoader,
+    };
+    return (await loadEntX(viewer, id, opts)) as T;
   }
 
   static async loadMany<T extends TodoBase>(
@@ -117,6 +153,8 @@ export class TodoBase {
     }
     return row;
   }
+
+  // TODO index deleted_at not id... we want an indexQueryLoader...
 
   // TODO index Completed not id... we want an indexQueryLoader...
 

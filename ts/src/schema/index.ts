@@ -26,6 +26,7 @@ export {
   UpdateOperation,
   TransformedUpdateOperation,
   SQLStatementOperation,
+  getTransformedReadClause,
 } from "./schema";
 export {
   Timestamps,

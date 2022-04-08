@@ -33,6 +33,7 @@ import * as clause from "./clause";
 import { WriteOperation, Builder } from "../action";
 import { log, logEnabled, logTrace } from "./logger";
 import DataLoader from "dataloader";
+import { getSchema } from "../schema/schema";
 
 // TODO kill this and createDataLoader
 class cacheMap {
@@ -96,12 +97,61 @@ function createDataLoader(options: SelectDataOptions) {
   }, loaderOptions);
 }
 
+// TODO probably delete since we're going to generate it now
+// instead of passing this here.
+// async function doPerformQuery<T extends Ent>(
+//   viewer: Viewer,
+//   id: ID,
+//   options: LoadEntOptions<T>,
+// ): Promise<Data | null> {
+//   let newClause: clause.Clause | undefined = undefined;
+//   if (options.schema) {
+//     const schema = getSchema(options.schema);
+//     if (schema.patterns) {
+//       for (const p of schema.patterns) {
+//         if (p.transformRead) {
+//           newClause = p.transformRead({
+//             op: QueryOperation.Select,
+//             clause: clause.Eq("id", id),
+//           });
+//         }
+//       }
+//     }
+//   }
+
+//   // we want a loader if possible . we don't want this to slow
+//   // things down...
+//   // id = x and deleted_at == null
+//   if (newClause) {
+//     // loader
+//     //    return loadRow({});
+//     // TODO
+//   }
+
+//   // we want a deleted_at loader...
+//   return options.loaderFactory.createLoader(viewer.context).load(id);
+// }
+
 // Ent accessors
 export async function loadEnt<T extends Ent>(
   viewer: Viewer,
   id: ID,
   options: LoadEntOptions<T>,
 ): Promise<T | null> {
+  let newClause: clause.Clause;
+  // if (options.schema) {
+  //   const schema = getSchema(options.schema);
+  //   if (schema.patterns) {
+  //     for (const p of schema.patterns) {
+  //       if (p.transformRead) {
+  //         newClause = p.transformRead({
+  //           op: QueryOperation.Select,
+  //           clause: clause.Eq("id", id),
+  //         });
+  //       }
+  //     }
+  //   }
+  // }
   const row = await options.loaderFactory.createLoader(viewer.context).load(id);
   return await applyPrivacyPolicyForRow(viewer, options, row);
 }

@@ -8,8 +8,14 @@ import {
   StringType,
   UUIDType,
 } from "@snowtop/ent";
+import { DeletedAtPattern } from "@snowtop/ent-soft-delete";
 
 export default class Todo extends BaseEntSchema {
+  constructor() {
+    super();
+    this.addPatterns(new DeletedAtPattern());
+  }
+
   fields: Field[] = [
     StringType({ name: "Text" }),
     BooleanType({
