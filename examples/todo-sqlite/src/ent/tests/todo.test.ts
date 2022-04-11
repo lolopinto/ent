@@ -4,6 +4,7 @@ import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
 import { Todo } from "src/ent/internal";
 import { createAccount, createTodo } from "../testutils/util";
 import { query } from "@snowtop/ent";
+import { advanceTo } from "jest-date-mock";
 
 beforeAll(() => {
   process.env.DB_CONNECTION_STRING = `sqlite:///todo.db`;
@@ -43,11 +44,18 @@ test("rename todo", async () => {
 
 test("delete todo", async () => {
   let todo = await createTodo();
+  expect(todo.getDeletedAt()).toBeNull();
 
+  const d = new Date();
+  advanceTo(d);
   await DeleteTodoAction.create(todo.viewer, todo).saveX();
 
   const reloaded = await Todo.load(todo.viewer, todo.id);
   expect(reloaded).toBeNull();
+
+  const transformed = await Todo.loadNoTransform(todo.viewer, todo.id);
+  expect(transformed).not.toBeNull();
+  expect(transformed?.getDeletedAt()).toEqual(d);
 });
 
 test("querying todos", async () => {

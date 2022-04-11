@@ -61,4 +61,8 @@ export class Account extends AccountBase {
   openTodos() {
     return new AccountToOpenTodosQuery(this.viewer, this);
   }
+
+  getDeletedAt() {
+    return this.deletedAt;
+  }
 }
