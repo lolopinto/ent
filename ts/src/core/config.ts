@@ -30,6 +30,13 @@ export interface Config {
 
   // config for codegen
   codegen?: CodegenConfig;
+
+  // because of swc issues, we might not be able to
+  // parse custom graphql via decorators so we put this
+  // in a json file for now
+  // the path should be relative to the root
+  // this is hopefully a temporary solution...
+  customGraphQLJSONPath?: string;
 }
 
 interface CodegenConfig {

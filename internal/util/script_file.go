@@ -10,8 +10,6 @@ import (
 // path should be scripts/...
 // e.g. scripts/custom_graphql.ts
 func GetPathToScript(path string, fromTest bool) string {
-	// NOTE: be careful with this for custom_graphql since the instances of
-	// GQLCapture vary...
 	local := EnvIsTrue("LOCAL_SCRIPT_PATH")
 	if fromTest || local {
 		return GetAbsolutePath("../../ts/src/" + path)

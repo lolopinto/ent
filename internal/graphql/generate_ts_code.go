@@ -581,13 +581,18 @@ func searchForFiles(processor *codegen.Processor) []string {
 }
 
 func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, error) {
-	customFiles := searchForFiles(processor)
-	// no custom files, nothing to do here. we're done
-	if len(customFiles) == 0 {
-		if processor.Config.DebugMode() {
-			fmt.Println("no custom graphql files")
+	jsonPath := processor.Config.GetCustomGraphQLJSONPath()
+
+	var customFiles []string
+	if jsonPath == "" {
+		customFiles = searchForFiles(processor)
+		// no custom files, nothing to do here. we're done
+		if len(customFiles) == 0 {
+			if processor.Config.DebugMode() {
+				fmt.Println("no custom graphql files")
+			}
+			return nil, nil
 		}
-		return nil, nil
 	}
 
 	fmt.Println("checking for custom graphql definitions...")
@@ -622,26 +627,30 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 		cmdArgs = []string{
 			"--compiler-options",
 			testingutils.DefaultCompilerOptions(),
-			scriptPath,
-			"--path",
-			filepath.Join(processor.Config.GetAbsPathToRoot(), "src"),
-			"--files",
-			strings.Join(customFiles, ","),
 		}
 	} else {
-		cmdArgs = append(
-			cmd.GetArgsForScript(processor.Config.GetAbsPathToRoot()),
-			// TODO https://github.com/lolopinto/ent/issues/792
-			//			"--swc",
-			scriptPath,
-			"--path",
-			// TODO this should be a configuration option to indicate where the code root is
-			filepath.Join(processor.Config.GetAbsPathToRoot(), "src"),
-			"--files",
-			strings.Join(customFiles, ","),
-		)
+		cmdArgs = cmd.GetArgsForScript(processor.Config.GetAbsPathToRoot())
 
 		cmdName = "ts-node-script"
+	}
+
+	// append LOCAL_SCRIPT_PATH so we know
+	if util.EnvIsTrue("LOCAL_SCRIPT_PATH") {
+		env = append(env, "LOCAL_SCRIPT_PATH=true")
+	}
+
+	cmdArgs = append(cmdArgs,
+		// TODO https://github.com/lolopinto/ent/issues/792
+		//			"--swc",
+		scriptPath,
+		"--path",
+		// TODO this should be a configuration option to indicate where the code root is
+		filepath.Join(processor.Config.GetAbsPathToRoot(), "src"),
+		"--files",
+		strings.Join(customFiles, ","),
+	)
+	if jsonPath != "" {
+		cmdArgs = append(cmdArgs, "--json_path", jsonPath)
 	}
 
 	cmd := exec.Command(cmdName, cmdArgs...)
