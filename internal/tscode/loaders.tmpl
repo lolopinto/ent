@@ -1,7 +1,6 @@
 {{reserveImport "./const" "NodeType" }}
 {{ reserveImport .Package.PackagePath "ObjectLoaderFactory" }}
-// TODO .Package.SchemaPackagePath
-{{ reserveImport "@snowtop/ent/schema/schema" "getTransformedReadClause" }}
+{{ reserveImport .Package.SchemaPackagePath "getTransformedReadClause" }}
 
 {{ range .Schema.Nodes -}}
 {{ with .NodeData}}

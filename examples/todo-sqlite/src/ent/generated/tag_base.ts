@@ -72,9 +72,9 @@ export class TagBase {
   }
 
   // loadNoTransform and loadNoTransformX exist to load the data from the db
-  // with no transformations which are currently done via an implicit trigger
+  // with no transformations which are currently done implicitly
   // we don't generate the full complement of read-APIs
-  // but can easily query the data with tagNoTransformLoader
+  // but can easily query the raw data with tagNoTransformLoader
   static async loadNoTransform<T extends TagBase>(
     this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,

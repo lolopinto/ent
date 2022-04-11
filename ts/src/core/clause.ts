@@ -50,11 +50,10 @@ class simpleClause implements Clause {
   }
 
   private sqliteNull() {
-    if (!this.handleSqliteNull) {
+    if (!this.handleSqliteNull || this.value !== null) {
       return;
     }
-    const dialect = DB.getDialect();
-    if (this.value !== null || dialect !== Dialect.SQLite) {
+    if (DB.getDialect() !== Dialect.SQLite) {
       return;
     }
     return this.handleSqliteNull;

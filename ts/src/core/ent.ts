@@ -97,61 +97,12 @@ function createDataLoader(options: SelectDataOptions) {
   }, loaderOptions);
 }
 
-// TODO probably delete since we're going to generate it now
-// instead of passing this here.
-// async function doPerformQuery<T extends Ent>(
-//   viewer: Viewer,
-//   id: ID,
-//   options: LoadEntOptions<T>,
-// ): Promise<Data | null> {
-//   let newClause: clause.Clause | undefined = undefined;
-//   if (options.schema) {
-//     const schema = getSchema(options.schema);
-//     if (schema.patterns) {
-//       for (const p of schema.patterns) {
-//         if (p.transformRead) {
-//           newClause = p.transformRead({
-//             op: QueryOperation.Select,
-//             clause: clause.Eq("id", id),
-//           });
-//         }
-//       }
-//     }
-//   }
-
-//   // we want a loader if possible . we don't want this to slow
-//   // things down...
-//   // id = x and deleted_at == null
-//   if (newClause) {
-//     // loader
-//     //    return loadRow({});
-//     // TODO
-//   }
-
-//   // we want a deleted_at loader...
-//   return options.loaderFactory.createLoader(viewer.context).load(id);
-// }
-
 // Ent accessors
 export async function loadEnt<T extends Ent>(
   viewer: Viewer,
   id: ID,
   options: LoadEntOptions<T>,
 ): Promise<T | null> {
-  let newClause: clause.Clause;
-  // if (options.schema) {
-  //   const schema = getSchema(options.schema);
-  //   if (schema.patterns) {
-  //     for (const p of schema.patterns) {
-  //       if (p.transformRead) {
-  //         newClause = p.transformRead({
-  //           op: QueryOperation.Select,
-  //           clause: clause.Eq("id", id),
-  //         });
-  //       }
-  //     }
-  //   }
-  // }
   const row = await options.loaderFactory.createLoader(viewer.context).load(id);
   return await applyPrivacyPolicyForRow(viewer, options, row);
 }
@@ -658,7 +609,7 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
     };
     if (this.existingEnt) {
       if (this.hasData(options.fields)) {
-        // even this with returning * doesn't work if transformed...
+        // even this with returning * may not always work if transformed...
         // we can have a transformed flag to see if it should be returned?
         this.row = await editRow(
           queryer,
@@ -675,7 +626,7 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
   }
 
   private reloadRow(queryer: SyncQueryer, id: ID, options: EditNodeOptions<T>) {
-    // TODO this isn'talways an ObjectLoader. should throw or figure out a way to get query
+    // TODO this isn't always an ObjectLoader. should throw or figure out a way to get query
     // and run this on its own...
     const loader = this.options.loadEntOptions.loaderFactory.createLoader(
       options.context,

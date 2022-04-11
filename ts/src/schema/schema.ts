@@ -187,11 +187,6 @@ export enum SQLStatementOperation {
   Delete = "delete",
 }
 
-// interface SelectQueryInfo {
-//   op: QueryOperation;
-//   clause: Clause;
-// }
-
 export interface UpdateOperation<T extends Ent> {
   op: SQLStatementOperation;
   existingEnt?: T;
@@ -202,7 +197,6 @@ export interface UpdateOperation<T extends Ent> {
 export interface TransformedUpdateOperation<T extends Ent> {
   op: SQLStatementOperation;
 
-  // TODO change this too?
   data?: Data;
 
   // if changing to an update, we want to return the ent

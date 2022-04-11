@@ -66,6 +66,7 @@ export class DeleteTodoActionBase implements Action<Todo> {
     this.builder.orchestrator.setDisableTransformations(true);
     await this.builder.saveX();
   }
+
   static create<T extends DeleteTodoActionBase>(
     this: new (viewer: Viewer, todo: Todo) => T,
     viewer: Viewer,
