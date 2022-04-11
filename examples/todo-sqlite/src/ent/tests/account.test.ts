@@ -34,4 +34,33 @@ test("delete", async () => {
   const transformed = await Account.loadNoTransform(account.viewer, account.id);
   expect(transformed).not.toBeNull();
   expect(transformed?.getDeletedAt()).toEqual(d);
+
+  // then really delete
+  await DeleteAccountAction.create(
+    account.viewer,
+    account,
+  ).saveWithoutTransformX();
+  const transformed2 = await Account.loadNoTransform(
+    account.viewer,
+    account.id,
+  );
+  expect(transformed2).toBeNull();
+});
+
+test("really delete", async () => {
+  let account = await createAccount();
+  expect(account.getDeletedAt()).toBeNull();
+
+  const d = new Date();
+  advanceTo(d);
+
+  await DeleteAccountAction.create(
+    account.viewer,
+    account,
+  ).saveWithoutTransformX();
+  let reloaded = await Account.load(account.viewer, account.id);
+  expect(reloaded).toBeNull();
+
+  const transformed = await Account.loadNoTransform(account.viewer, account.id);
+  expect(transformed).toBeNull();
 });

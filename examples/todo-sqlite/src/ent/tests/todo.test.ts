@@ -56,6 +56,26 @@ test("delete todo", async () => {
   const transformed = await Todo.loadNoTransform(todo.viewer, todo.id);
   expect(transformed).not.toBeNull();
   expect(transformed?.getDeletedAt()).toEqual(d);
+
+  // then really delete
+  await DeleteTodoAction.create(todo.viewer, todo).saveWithoutTransformX();
+  const transformed2 = await Todo.loadNoTransform(todo.viewer, todo.id);
+  expect(transformed2).toBeNull();
+});
+
+test("really delete", async () => {
+  let todo = await createTodo();
+  expect(todo.getDeletedAt()).toBeNull();
+
+  const d = new Date();
+  advanceTo(d);
+  await DeleteTodoAction.create(todo.viewer, todo).saveWithoutTransformX();
+
+  const reloaded = await Todo.load(todo.viewer, todo.id);
+  expect(reloaded).toBeNull();
+
+  const transformed = await Todo.loadNoTransform(todo.viewer, todo.id);
+  expect(transformed).toBeNull();
 });
 
 test("querying todos", async () => {

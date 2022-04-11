@@ -57,6 +57,15 @@ export class DeleteAccountActionBase implements Action<Account> {
     await this.builder.saveX();
   }
 
+  async saveWithoutTransform(): Promise<void> {
+    this.builder.orchestrator.setDisableTransformations(true);
+    await this.builder.save();
+  }
+
+  async saveWithoutTransformX(): Promise<void> {
+    this.builder.orchestrator.setDisableTransformations(true);
+    await this.builder.saveX();
+  }
   static create<T extends DeleteAccountActionBase>(
     this: new (viewer: Viewer, account: Account) => T,
     viewer: Viewer,
