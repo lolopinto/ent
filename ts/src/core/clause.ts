@@ -31,16 +31,40 @@ function rawValue(val: any) {
 }
 
 class simpleClause implements Clause {
-  constructor(protected col: string, private value: any, private op: string) {}
+  constructor(
+    protected col: string,
+    private value: any,
+    private op: string,
+    private handleSqliteNull?: Clause,
+  ) {}
 
   clause(idx: number): string {
+    const sqliteClause = this.sqliteNull();
+    if (sqliteClause) {
+      return sqliteClause.clause(idx);
+    }
     if (DB.getDialect() === Dialect.Postgres) {
       return `${this.col} ${this.op} $${idx}`;
     }
     return `${this.col} ${this.op} ?`;
   }
 
+  private sqliteNull() {
+    if (!this.handleSqliteNull) {
+      return;
+    }
+    const dialect = DB.getDialect();
+    if (this.value !== null || dialect !== Dialect.SQLite) {
+      return;
+    }
+    return this.handleSqliteNull;
+  }
+
   values(): any[] {
+    const sqliteClause = this.sqliteNull();
+    if (sqliteClause) {
+      return sqliteClause.values();
+    }
     if (isSensitive(this.value)) {
       return [this.value.value()];
     }
@@ -48,6 +72,10 @@ class simpleClause implements Clause {
   }
 
   logValues(): any[] {
+    const sqliteClause = this.sqliteNull();
+    if (sqliteClause) {
+      return sqliteClause.logValues();
+    }
     if (isSensitive(this.value)) {
       return [this.value.logValue()];
     }
@@ -55,6 +83,10 @@ class simpleClause implements Clause {
   }
 
   instanceKey(): string {
+    const sqliteClause = this.sqliteNull();
+    if (sqliteClause) {
+      return sqliteClause.instanceKey();
+    }
     return `${this.col}${this.op}${rawValue(this.value)}`;
   }
 }
@@ -189,17 +221,11 @@ class compositeClause implements Clause {
 }
 
 export function Eq(col: string, value: any): Clause {
-  if (value === null && DB.getDialect() === Dialect.SQLite) {
-    return new isNullClause(col);
-  }
-  return new simpleClause(col, value, "=");
+  return new simpleClause(col, value, "=", new isNullClause(col));
 }
 
 export function NotEq(col: string, value: any): Clause {
-  if (value === null && DB.getDialect() === Dialect.SQLite) {
-    return new isNotNullClause(col);
-  }
-  return new simpleClause(col, value, "!=");
+  return new simpleClause(col, value, "!=", new isNotNullClause(col));
 }
 
 export function Greater(col: string, value: any): simpleClause {
