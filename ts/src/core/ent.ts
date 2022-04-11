@@ -33,7 +33,7 @@ import * as clause from "./clause";
 import { WriteOperation, Builder } from "../action";
 import { log, logEnabled, logTrace } from "./logger";
 import DataLoader from "dataloader";
-import { getSchema } from "../schema/schema";
+import { ObjectLoader } from "./loaders";
 
 // TODO kill this and createDataLoader
 class cacheMap {
@@ -605,7 +605,7 @@ export interface DataOperation<T extends Ent = Ent> {
 
 export interface EditNodeOptions<T extends Ent> extends EditRowOptions {
   fieldsToResolve: string[];
-  ent: EntConstructor<T>;
+  loadEntOptions: LoadEntOptions<T>;
   placeholderID?: ID;
 }
 
@@ -658,6 +658,8 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
     };
     if (this.existingEnt) {
       if (this.hasData(options.fields)) {
+        // even this with returning * doesn't work if transformed...
+        // we can have a transformed flag to see if it should be returned?
         this.row = await editRow(
           queryer,
           options,
@@ -673,20 +675,30 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
   }
 
   private reloadRow(queryer: SyncQueryer, id: ID, options: EditNodeOptions<T>) {
+    // TODO this isn'talways an ObjectLoader. should throw or figure out a way to get query
+    // and run this on its own...
+    const loader = this.options.loadEntOptions.loaderFactory.createLoader(
+      options.context,
+    ) as ObjectLoader<T>;
+    const opts = loader.getOptions();
+    let cls = clause.Eq(options.key, id);
+    if (opts.clause) {
+      cls = clause.And(opts.clause, cls);
+    }
+
     const query = buildQuery({
-      fields: ["*"],
+      fields: opts.fields.length ? opts.fields : ["*"],
       tableName: options.tableName,
-      clause: clause.Eq(options.key, id),
+      clause: cls,
     });
     // special case log here because we're not going through any of the normal
     // methods here because those are async and this is sync
     // this is the only place we're doing this so only handling here
     logQuery(query, [id]);
     const r = queryer.querySync(query, [id]);
-    if (r.rows.length !== 1) {
-      throw new Error(`couldn't reload row for ${id}`);
+    if (r.rows.length === 1) {
+      this.row = r.rows[0];
     }
-    this.row = r.rows[0];
   }
 
   performWriteSync(queryer: SyncQueryer, context?: Context): void {
@@ -716,7 +728,7 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
     if (!this.row) {
       return null;
     }
-    return new this.options.ent(viewer, this.row);
+    return new this.options.loadEntOptions.ent(viewer, this.row);
   }
 }
 

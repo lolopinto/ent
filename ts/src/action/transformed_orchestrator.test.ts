@@ -29,9 +29,13 @@ import {
   Table,
 } from "../testutils/db/test_db";
 import { convertDate } from "../core/convert";
+import { loadConfig } from "../core/config";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
+loadConfig({
+  //  log: ["query"],
+});
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
 beforeEach(async () => {
@@ -82,7 +86,9 @@ class DeletedAtPattern implements Pattern {
   name = "deleted_at";
   fields: Field[] = [
     TimestampType({
-      name: "deleted_at",
+      // need this to be lowerCamelCase because we do this based on field name
+      // #510
+      name: "deletedAt",
       nullable: true,
       index: true,
       defaultValueOnCreate: () => null,
@@ -90,6 +96,7 @@ class DeletedAtPattern implements Pattern {
   ];
 
   transformRead(): clause.Clause {
+    // this is based on sql. other is based on field
     return clause.Eq("deleted_at", null);
   }
 
@@ -102,7 +109,7 @@ class DeletedAtPattern implements Pattern {
           op: SQLStatementOperation.Update,
           data: {
             // this should return field, it'll be formatted as needed
-            deleted_at: new Date(),
+            deletedAt: new Date(),
           },
         };
     }

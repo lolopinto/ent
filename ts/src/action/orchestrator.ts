@@ -288,7 +288,7 @@ export class Orchestrator<T extends Ent> {
           tableName: this.options.tableName,
           fieldsToResolve: this.fieldsToResolve,
           key: this.options.key,
-          ent: this.options.loaderOptions.ent,
+          loadEntOptions: this.options.loaderOptions,
           placeholderID: this.options.builder.placeholderID,
         };
         if (this.logValues) {
@@ -588,7 +588,10 @@ export class Orchestrator<T extends Ent> {
           }
           let dbKey = field.storageKey || snakeCase(field.name);
           data[dbKey] = val;
-          this.defaultFieldsByTSName[k] = val;
+          this.defaultFieldsByTSName[camelCase(k)] = val;
+          // hmm do we need this?
+          // TODO how to do this for local tests?
+          //          this.defaultFieldsByFieldName[k] = val;
         }
       }
       this.actualOperation = this.getWriteOpForSQLStamentOp(transformed.op);

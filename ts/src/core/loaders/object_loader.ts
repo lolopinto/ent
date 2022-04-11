@@ -87,6 +87,10 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
     this.memoizedInitPrime = memoizee(this.initPrime.bind(this));
   }
 
+  getOptions(): SelectDataOptions {
+    return this.options;
+  }
+
   private initPrime() {
     if (!this.context || !this.toPrime) {
       return;
