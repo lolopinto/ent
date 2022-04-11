@@ -247,6 +247,15 @@ export function And(...args: Clause[]): compositeClause {
   return new compositeClause(args, " AND ");
 }
 
+export function AndOptional(...args: (Clause | undefined)[]): Clause {
+  // @ts-ignore
+  let filtered: Clause[] = args.filter((v) => v !== undefined);
+  if (filtered.length === 1) {
+    return filtered[0];
+  }
+  return And(...filtered);
+}
+
 export function Or(...args: Clause[]): compositeClause {
   return new compositeClause(args, " OR ");
 }
