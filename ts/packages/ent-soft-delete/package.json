@@ -1,6 +1,6 @@
 {
   "name": "@snowtop/ent-soft-delete",
-  "version": "0.0.1-alpha2",
+  "version": "0.0.1",
   "description": "snowtop ent soft delete",
   "main": "dist/soft_delete.js",
   "types": "dist/soft_delete.d.ts",
