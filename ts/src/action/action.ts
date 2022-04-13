@@ -101,11 +101,11 @@ export interface Action<T extends Ent> {
   observers?: Observer<T>[];
   validators?: Validator<T>[];
   getInput(): Data; // this input is passed to Triggers, Observers, Validators
-  transformWrite?: (
-    stmt: UpdateOperation<T>,
+  transformWrite?: <T2 extends Ent>(
+    stmt: UpdateOperation<T2>,
   ) =>
-    | Promise<TransformedUpdateOperation<T>>
-    | TransformedUpdateOperation<T>
+    | Promise<TransformedUpdateOperation<T2>>
+    | TransformedUpdateOperation<T2>
     | undefined;
 
   valid(): Promise<boolean>;
