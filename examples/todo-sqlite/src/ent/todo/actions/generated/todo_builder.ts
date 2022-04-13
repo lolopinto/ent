@@ -15,6 +15,7 @@ import { EdgeType, NodeType } from "src/ent/generated/const";
 import schema from "src/schema/todo";
 
 export interface TodoInput {
+  deletedAt?: Date | null;
   text?: string;
   completed?: boolean;
   creatorID?: ID | Builder<Account>;
@@ -167,6 +168,7 @@ export class TodoBuilder implements Builder<Todo> {
         result.set(key, value);
       }
     };
+    addField("deleted_at", fields.deletedAt);
     addField("Text", fields.text);
     addField("Completed", fields.completed);
     addField("creatorID", fields.creatorID);
@@ -175,6 +177,11 @@ export class TodoBuilder implements Builder<Todo> {
 
   isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
     return (node as Builder<Ent>).placeholderID !== undefined;
+  }
+
+  // get value of deleted_at. Retrieves it from the input if specified or takes it from existingEnt
+  getNewDeletedAtValue(): Date | null | undefined {
+    return this.input.deletedAt;
   }
 
   // get value of Text. Retrieves it from the input if specified or takes it from existingEnt

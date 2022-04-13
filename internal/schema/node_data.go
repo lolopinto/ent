@@ -67,6 +67,9 @@ type NodeData struct {
 	Constraints []*input.Constraint
 	// same as above. fine to just reuse
 	Indices []*input.Index
+
+	TransformsSelect bool
+	TransformsDelete bool
 }
 
 func newNodeData(packageName string) *NodeData {
@@ -385,31 +388,79 @@ func (nodeData *NodeData) getUniqueNodes(forceSelf bool) []uniqueNodeInfo {
 }
 
 type loader struct {
-	Name string
-	Pkey string
+	Name                 string
+	Pkey                 string
+	AddTransformedClause bool
 }
 
-func (nodeData *NodeData) GetNodeLoaders() []*loader {
-	ret := []*loader{
+func (nodeData *NodeData) GetSchemaPath() string {
+	return fmt.Sprintf("src/schema/%s", nodeData.PackageName)
+}
+
+func (nodeData *NodeData) GetLoaderName() string {
+	return fmt.Sprintf("%sLoader", nodeData.NodeInstance)
+}
+
+func (nodeData *NodeData) GetLoaderNoTransformName() string {
+	return fmt.Sprintf("%sNoTransformLoader", nodeData.NodeInstance)
+}
+
+// GetNodeLoaders returns groups of loaders that can be primed
+// e.g. if there's a transform, loaders which query with transformation
+// can prime the other but those which don't query with transformations
+// can't be
+func (nodeData *NodeData) GetNodeLoaders() [][]*loader {
+	var group1 []*loader
+	var group2 []*loader
+
+	group1 = []*loader{
 		{
-			Name: fmt.Sprintf("%sLoader", nodeData.NodeInstance),
-			Pkey: strconv.Quote("id"),
+			Name:                 nodeData.GetLoaderName(),
+			Pkey:                 strconv.Quote("id"),
+			AddTransformedClause: nodeData.TransformsSelect,
 		},
+	}
+	// if transforms select. generate different loader
+	// that skips it e.g. no deleted_at clause for said loader
+	if nodeData.TransformsSelect {
+		group2 = []*loader{
+			{
+				Name: nodeData.GetLoaderNoTransformName(),
+				Pkey: strconv.Quote("id"),
+			},
+		}
 	}
 
 	for _, field := range nodeData.FieldInfo.Fields {
 		if field.Unique() {
-			ret = append(ret, &loader{
-				Name: nodeData.GetFieldLoaderName(field),
-				Pkey: field.GetQuotedDBColName(),
+			group1 = append(group1, &loader{
+				Name:                 nodeData.GetFieldLoaderName(field),
+				Pkey:                 field.GetQuotedDBColName(),
+				AddTransformedClause: nodeData.TransformsSelect,
 			})
+			// if transforms select. generate different loader
+			// that skips it e.g. no deleted_at clause for said loader
+			if nodeData.TransformsSelect {
+				group2 = append(group2, &loader{
+					Name: nodeData.GetFieldLoaderNoTransformName(field),
+					Pkey: field.GetQuotedDBColName(),
+				})
+			}
 		}
+	}
+	ret := [][]*loader{group1}
+	if nodeData.TransformsSelect {
+		ret = append(ret, group2)
 	}
 	return ret
 }
 
 func (nodeData *NodeData) GetFieldLoaderName(field *field.Field) string {
 	return fmt.Sprintf("%s%sLoader", nodeData.NodeInstance, field.CamelCaseName())
+}
+
+func (nodeData *NodeData) GetFieldLoaderNoTransformName(field *field.Field) string {
+	return fmt.Sprintf("%s%sNoTransformLoader", nodeData.NodeInstance, field.CamelCaseName())
 }
 
 func (nodeData *NodeData) GetFieldQueryName(field *field.Field) (string, error) {

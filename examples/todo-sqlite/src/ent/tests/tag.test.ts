@@ -1,4 +1,3 @@
-import CreateTagAction from "src/ent/tag/actions/create_tag_action";
 import { createAccount, createTodo, createTag } from "../testutils/util";
 import { AccountToTagsQuery } from "../account/query/account_to_tags_query";
 import TodoAddTagAction from "../todo/actions/todo_add_tag_action";

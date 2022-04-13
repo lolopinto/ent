@@ -51,6 +51,7 @@ type Action interface {
 	GetTSEnums() []*enum.Enum
 	GetGQLEnums() []*enum.GQLEnum
 	getCommonInfo() commonActionInfo
+	TransformsDelete() bool
 }
 
 type ActionField interface {
@@ -131,6 +132,7 @@ type commonActionInfo struct {
 	tsEnums          []*enum.Enum
 	gqlEnums         []*enum.GQLEnum
 	nodeinfo.NodeInfo
+	tranformsDelete bool
 }
 
 func (action *commonActionInfo) GetActionName() string {
@@ -189,6 +191,10 @@ func (action *commonActionInfo) GetOperation() ent.ActionOperation {
 
 func (action *commonActionInfo) IsDeletingNode() bool {
 	return action.Operation == ent.DeleteAction
+}
+
+func (action *commonActionInfo) TransformsDelete() bool {
+	return action.tranformsDelete
 }
 
 func (action *commonActionInfo) getCommonInfo() commonActionInfo {
@@ -355,11 +361,27 @@ func ParseActions(cfg codegenapi.Config, nodeName string, fn *ast.FuncDecl, fiel
 	return ParseFromInput(cfg, nodeName, inputActions, fieldInfo, edgeInfo, lang)
 }
 
-func ParseFromInput(cfg codegenapi.Config, nodeName string, actions []*input.Action, fieldInfo *field.FieldInfo, edgeInfo *edge.EdgeInfo, lang base.Language) (*ActionInfo, error) {
+type option struct {
+	transformsDelete bool
+}
+
+type Option func(*option)
+
+func TransformsDelete() Option {
+	return func(opt *option) {
+		opt.transformsDelete = true
+	}
+}
+
+func ParseFromInput(cfg codegenapi.Config, nodeName string, actions []*input.Action, fieldInfo *field.FieldInfo, edgeInfo *edge.EdgeInfo, lang base.Language, opts ...Option) (*ActionInfo, error) {
+	o := &option{}
+	for _, opt := range opts {
+		opt(o)
+	}
 	actionInfo := NewActionInfo()
 
 	for _, action := range actions {
-		actions, err := parseActionsFromInput(cfg, nodeName, action, fieldInfo)
+		actions, err := parseActionsFromInput(cfg, nodeName, action, fieldInfo, o)
 		if err != nil {
 			return nil, err
 		}

@@ -1,5 +1,6 @@
-import { Data, Ent, LoaderInfo } from "../core/base";
+import { Data, Ent, LoaderInfo, Viewer } from "../core/base";
 import { Builder } from "../action/action";
+import { Clause } from "../core/clause";
 
 // Schema is the base for every schema in typescript
 export default interface Schema {
@@ -150,6 +151,57 @@ export interface Pattern {
   name: string;
   fields: Field[];
   edges?: Edge[];
+
+  // can only have one thing transforming a select
+  // transform to loader instead?
+  // we can change generated loader to do this instead of what we're doing here
+  transformRead?: () => Clause;
+  transformWrite?: <T extends Ent>(
+    stmt: UpdateOperation<T>,
+  ) => TransformedUpdateOperation<T> | undefined;
+
+  // can only have one pattern in an object which transforms each
+  // if we do, it throws an Error
+  // it also simplifies what we call?
+  //  transformsSelect?: boolean;
+  transformsDelete?: boolean;
+  transformsInsert?: boolean;
+  transformsUpdate?: boolean;
+}
+
+// we also want this transformation to exist on a per-action basis
+// if it exists on an action, we don't do the global schema transformation
+
+export enum SQLStatementOperation {
+  // transform insert e.g. to an update based on whatever logic
+  Insert = "insert",
+
+  // // transform select e.g. deleted_at. can't change from select to different query type
+  // // but can change the query
+  // Select = "select",
+
+  // e.g. change updated value
+  Update = "update",
+
+  // delete -> update theoretically e.g. deleted_at
+  Delete = "delete",
+}
+
+export interface UpdateOperation<T extends Ent> {
+  op: SQLStatementOperation;
+  existingEnt?: T;
+  viewer: Viewer;
+  data?: Map<string, any>;
+}
+
+export interface TransformedUpdateOperation<T extends Ent> {
+  op: SQLStatementOperation;
+
+  data?: Data;
+
+  // if changing to an update, we want to return the ent
+  // TODO don't have a way to delete the ent e.g. update -> insert
+  existingEnt?: T;
 }
 
 // we want --strictNullChecks flag so nullable is used to type graphql, ts, db
@@ -323,14 +375,16 @@ function isSchema(value: SchemaInputType): value is Schema {
   return (value as Schema).fields !== undefined;
 }
 
-export function getFields(value: SchemaInputType): Map<string, Field> {
-  let schema: Schema;
+export function getSchema(value: SchemaInputType): Schema {
   if (isSchema(value)) {
-    schema = value;
+    return value;
   } else {
-    schema = new value();
+    return new value();
   }
+}
 
+export function getFields(value: SchemaInputType): Map<string, Field> {
+  const schema = getSchema(value);
   function addFields(fields: Field[]) {
     for (const field of fields) {
       const derivedFields = field.derivedFields;
@@ -350,6 +404,39 @@ export function getFields(value: SchemaInputType): Map<string, Field> {
   addFields(schema.fields);
 
   return m;
+}
+
+export function getTransformedReadClause(
+  value: SchemaInputType,
+): Clause | undefined {
+  const schema = getSchema(value);
+  if (!schema.patterns) {
+    return;
+  }
+  for (const p of schema.patterns) {
+    // e.g. discarded_at, deleted_at, etc
+    if (p.transformRead) {
+      // return clause.Eq('deleted_at', null);
+      return p.transformRead();
+    }
+  }
+
+  return;
+}
+
+export function getTransformedUpdateOp<T extends Ent>(
+  value: SchemaInputType,
+  stmt: UpdateOperation<T>,
+): TransformedUpdateOperation<T> | undefined {
+  const schema = getSchema(value);
+  if (!schema.patterns) {
+    return;
+  }
+  for (const p of schema.patterns) {
+    if (p.transformWrite) {
+      return p.transformWrite(stmt);
+    }
+  }
 }
 
 // this maps to ActionOperation in ent/action.go

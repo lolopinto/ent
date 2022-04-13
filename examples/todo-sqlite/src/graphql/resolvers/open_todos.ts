@@ -1,4 +1,10 @@
-import { ID, IDViewer, query, RequestContext } from "@snowtop/ent";
+import {
+  getTransformedReadClause,
+  ID,
+  IDViewer,
+  query,
+  RequestContext,
+} from "@snowtop/ent";
 import {
   gqlArg,
   gqlConnection,
@@ -7,6 +13,7 @@ import {
 } from "@snowtop/ent/graphql";
 import { GraphQLID } from "graphql";
 import { Todo, AccountToOpenTodosQuery } from "src/ent";
+import TodoSchema from "src/schema/todo";
 
 export class TodoResolver {
   // showing plural
@@ -17,7 +24,11 @@ export class TodoResolver {
     const viewer = new IDViewer(id);
     return await Todo.loadCustom(
       viewer,
-      query.And(query.Eq("creator_id", id), query.Eq("completed", false)),
+      query.AndOptional(
+        query.Eq("creator_id", id),
+        query.Eq("completed", false),
+        getTransformedReadClause(TodoSchema),
+      ),
     );
   }
 

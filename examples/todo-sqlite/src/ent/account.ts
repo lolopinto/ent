@@ -6,17 +6,22 @@ import {
   QueryLoaderFactory,
   RawCountLoaderFactory,
   Viewer,
+  getTransformedReadClause,
 } from "@snowtop/ent";
 import { gqlConnection, gqlField } from "@snowtop/ent/graphql";
 import { AccountBase, todoLoader } from "src/ent/internal";
 import { Todo } from "./todo";
+import TodoSchema from "src/schema/todo";
 
 // we want to reuse these and not create a new one every time...
 // so that the cache is shared
 const openTodosLoader = new QueryLoaderFactory({
   ...Todo.loaderOptions(),
   groupCol: "creator_id",
-  clause: query.Eq("completed", false),
+  clause: query.AndOptional(
+    query.Eq("completed", false),
+    getTransformedReadClause(TodoSchema),
+  ),
   toPrime: [todoLoader],
 });
 
@@ -24,7 +29,10 @@ const openTodosCountLoader = new RawCountLoaderFactory({
   //  ...Todo.loaderOptions(),
   tableName: Todo.loaderOptions().tableName,
   groupCol: "creator_id",
-  clause: query.Eq("completed", false),
+  clause: query.AndOptional(
+    query.Eq("completed", false),
+    getTransformedReadClause(TodoSchema),
+  ),
 });
 
 export class AccountToOpenTodosQuery extends CustomEdgeQueryBase<
@@ -52,7 +60,11 @@ export class Account extends AccountBase {
   async openTodosPlural() {
     return await Todo.loadCustom(
       this.viewer,
-      query.And(query.Eq("creator_id", this.id), query.Eq("completed", false)),
+      query.AndOptional(
+        query.Eq("creator_id", this.id),
+        query.Eq("completed", false),
+        getTransformedReadClause(TodoSchema),
+      ),
     );
   }
 
@@ -60,5 +72,9 @@ export class Account extends AccountBase {
   @gqlField({ name: "open_todos", type: gqlConnection("Todo") })
   openTodos() {
     return new AccountToOpenTodosQuery(this.viewer, this);
+  }
+
+  getDeletedAt() {
+    return this.deletedAt;
   }
 }

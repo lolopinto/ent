@@ -1,8 +1,10 @@
 {{reserveImport "./const" "NodeType" }}
 {{ reserveImport .Package.PackagePath "ObjectLoaderFactory" }}
+{{ reserveImport .Package.SchemaPackagePath "getTransformedReadClause" }}
 
 {{ range .Schema.Nodes -}}
 {{ with .NodeData}}
+  {{$nodeData := . }}
   {{$instance := printf "%sLoaderInfo" .NodeInstance -}}
   {{$table := printf "%sTable" .NodeInstance -}}
   {{$fields := printf "%sFields" .NodeInstance -}}
@@ -14,12 +16,19 @@
     {{end}}
   ];
 
-  {{range .GetNodeLoaders -}}
-    export const {{.Name}} = new {{useImport "ObjectLoaderFactory"}}({
-      tableName: {{$table}},
-      fields: {{$fields}},
-      key: {{.Pkey}},
-    });
+  {{ $groups := .GetNodeLoaders }}
+  {{range $loaders := $groups}}
+    {{ range $loaders }}
+      export const {{.Name}} = new {{useImport "ObjectLoaderFactory"}}({
+        tableName: {{$table}},
+        fields: {{$fields}},
+        key: {{.Pkey}},
+        {{ if .AddTransformedClause -}}
+          {{ reserveDefaultImport $nodeData.GetSchemaPath $nodeData.Node -}}
+          clause: {{useImport "getTransformedReadClause"}}({{useImport $nodeData.Node}}),
+        {{ end -}}
+      });
+    {{end}}
   {{end}}
 
   export const {{$instance}} = {
@@ -29,14 +38,15 @@
     loaderFactory: {{printf "%sLoader" .NodeInstance }},
   }
 
-  {{$loaders := .GetNodeLoaders -}}
-  {{ range $loader := $loaders -}}
-    {{ range $loader2 := $loaders -}}
-      {{if ne $loader.Name $loader2.Name -}}
-        {{$loader.Name}}.addToPrime({{$loader2.Name}});
+  {{ range $loaders := $groups }}
+    {{ range $loader := $loaders -}}
+      {{ range $loader2 := $loaders -}}
+        {{if ne $loader.Name $loader2.Name -}}
+          {{$loader.Name}}.addToPrime({{$loader2.Name}});
+        {{end -}}
       {{end -}}
-    {{end -}}
-  {{end -}}
+    {{end}}
+  {{ end -}}
 {{ end -}}
 {{ end }}
 
