@@ -96,6 +96,12 @@ const query = {
   Less: q.Less,
   GreaterEq: q.GreaterEq,
   LessEq: q.LessEq,
+  ArrayEq: q.ArrayEq,
+  ArrayNotEq: q.ArrayNotEq,
+  ArrayGreater: q.ArrayGreater,
+  ArrayLess: q.ArrayLess,
+  ArrayGreaterEq: q.ArrayGreaterEq,
+  ArrayLessEq: q.ArrayLessEq,
 };
 
 export { query };
