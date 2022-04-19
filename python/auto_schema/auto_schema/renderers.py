@@ -11,17 +11,17 @@ _IGNORED_KEYS = ['created_at', 'updated_at']
 
 
 @renderers.dispatch_for(ops.AddEdgesOp)
-def render_add_edges(autogen_context: AutogenContext, op: ops.AddEdgesOp):
+def render_add_edges(autogen_context: AutogenContext, op: ops.AddEdgesOp) -> str:
     return _render_edge_from_edges(op.edges, "op.add_edges")
 
 
 @renderers.dispatch_for(ops.RemoveEdgesOp)
-def render_remove_edges(autogen_context: AutogenContext, op: ops.RemoveEdgesOp):
+def render_remove_edges(autogen_context: AutogenContext, op: ops.RemoveEdgesOp) -> str:
     return _render_edge_from_edges(op.edges, "op.remove_edges")
 
 
 @renderers.dispatch_for(ops.ModifyEdgeOp)
-def render_modify_edge(autogen_context: AutogenContext, op: ops.ModifyEdgeOp):
+def render_modify_edge(autogen_context: AutogenContext, op: ops.ModifyEdgeOp) -> str:
     return (
         "op.modify_edge(\n"
         "'%(edge_type)s',\n"
@@ -98,17 +98,17 @@ def _render_row(row):
 
 
 @renderers.dispatch_for(ops.AddRowsOp)
-def render_add_edges(autogen_context: AutogenContext, op: ops.AddRowsOp):
+def render_add_edges(autogen_context: AutogenContext, op: ops.AddRowsOp) -> str:
     return _render_row_from_op("op.add_rows", op.table_name, op.pkeys, op.rows)
 
 
 @renderers.dispatch_for(ops.RemoveRowsOp)
-def render_remove_edges(autogen_context: AutogenContext, op: ops.RemoveRowsOp):
+def render_remove_edges(autogen_context: AutogenContext, op: ops.RemoveRowsOp) -> str:
     return _render_row_from_op("op.remove_rows", op.table_name, op.pkeys, op.rows)
 
 
 @renderers.dispatch_for(ops.ModifyRowsOp)
-def render_modify_rows(autogen_context: AutogenContext, op: ops.ModifyRowsOp):
+def render_modify_rows(autogen_context: AutogenContext, op: ops.ModifyRowsOp) -> str:
     rows = [_render_row(row) for row in op.rows]
     old_rows = [_render_row(row) for row in op.old_rows]
 
@@ -126,7 +126,7 @@ def render_modify_rows(autogen_context: AutogenContext, op: ops.ModifyRowsOp):
 
 
 @renderers.dispatch_for(ops.AlterEnumOp)
-def render_alter_enum(autogen_context: AutogenContext, op: ops.AlterEnumOp):
+def render_alter_enum(autogen_context: AutogenContext, op: ops.AlterEnumOp) -> str:
     if op.before is None:
         return (
             # manual indentation
@@ -149,21 +149,61 @@ def render_alter_enum(autogen_context: AutogenContext, op: ops.AlterEnumOp):
 
 
 @renderers.dispatch_for(ops.NoDowngradeOp)
-def render_no_downgrade_op(autogen_context: AutogenContext, op: ops.NoDowngradeOp):
+def render_no_downgrade_op(autogen_context: AutogenContext, op: ops.NoDowngradeOp) -> str:
     return "raise ValueError('operation is not reversible')"
 
 
 @renderers.dispatch_for(ops.AddEnumOp)
-def render_add_enum_op(autogen_context: AutogenContext, op: ops.AddEnumOp):
+def render_add_enum_op(autogen_context: AutogenContext, op: ops.AddEnumOp) -> str:
     return "op.add_enum_type('%s', [%s])" % (op.enum_name, util.render_list_csv(op.values))
 
 
 @renderers.dispatch_for(ops.DropEnumOp)
-def render_drop_enum_op(autogen_context: AutogenContext, op: ops.DropEnumOp):
+def render_drop_enum_op(autogen_context: AutogenContext, op: ops.DropEnumOp) -> str:
     return "op.drop_enum_type('%s', [%s])" % (op.enum_name, util.render_list_csv(op.values))
 
 
 # hmm not sure why we need this. there's probably an easier way to do this that doesn't require this...
 @renderers.dispatch_for(ops.OurCreateCheckConstraintOp)
-def render_check_constraint(autogen_context: AutogenContext, op: ops.OurCreateCheckConstraintOp):
+def render_check_constraint(autogen_context: AutogenContext, op: ops.OurCreateCheckConstraintOp) -> str:
     return "op.create_check_constraint('%s', '%s', '%s')" % (op.constraint_name, op.table_name, op.condition)
+
+
+def _render_kw_args(d):
+    kv_pairs = []
+    for k, v in d.items():
+        kv_pairs.append("%s=%r" % (k, v))
+
+    return ", ".join(kv_pairs)
+
+
+@renderers.dispatch_for(ops.CreateFullTextIndexOp)
+def render_full_text_index(autogen_context: AutogenContext, op: ops.CreateFullTextIndexOp) -> str:
+    #    print(op.columns)
+    #    cols = [col for col in op.columns]
+    #    print("rendereer", op.info, op.kw)
+    # ignore info
+    # need unique=False and add kw
+    return (
+        "op.create_full_text_index('%(index_name)s', '%(table_name)s', "
+        "unique=%(unique)r, %(kwargs)s)" % {
+            "index_name": op.index_name,
+            "table_name": op.table_name,
+            # not plural?
+            #            "columns": "'%s'" % op.columns,
+            "unique": op.unique or False,
+            "kwargs": _render_kw_args(op.kw),
+        }
+    )
+
+
+@renderers.dispatch_for(ops.DropFullTextIndexOp)
+def render_drop_full_text_index(autogen_context: AutogenContext, op: ops.DropFullTextIndexOp) -> str:
+    return (
+        "op.drop_full_text_index('%(index_name)s', '%(table_name)s', "
+        "%(kwargs)s)" % {
+            "index_name": op.index_name,
+            "table_name": op.table_name,
+            "kwargs": _render_kw_args(op.kw),
+        }
+    )

@@ -1,8 +1,12 @@
+from typing import Any, Optional, Tuple
 import alembic.operations.ops as alembicops
 from alembic.operations import Operations, MigrateOperation
 import abc
+import sqlalchemy as sa
 
 from sqlalchemy.sql.sqltypes import String
+
+from auto_schema.schema_item import FullTextIndex
 from .change_type import ChangeType
 
 
@@ -323,6 +327,7 @@ class DropEnumOp(MigrateOpInterface):
 # alembic for some reason doesn't have it...
 
 
+# TODO rename these from Our to AutoSchema or reuse the same names if we don't care about names being unique
 class OurCreateCheckConstraintOp(MigrateOpInterface, alembicops.CreateCheckConstraintOp):
 
     def get_revision_message(self) -> String:
@@ -357,3 +362,165 @@ class OurDropConstraintOp(MigrateOpInterface, alembicops.DropConstraintOp):
 
     def get_table_name(self) -> String:
         return self.table_name
+
+
+# the real solution here is this doesn't need columns since we'll get all the information needed from
+@Operations.register_operation("create_full_text_index")
+class CreateFullTextIndexOp(MigrateOpInterface):
+
+    def __init__(
+        self,
+        index_name: str,
+        table_name: str,
+        schema: Optional[Any] = None,
+        unique: bool = False,
+        table: Optional[sa.Table] = None,
+        **kw
+    ) -> None:
+        print('constructor', index_name, table_name, schema, unique, kw)
+        self.index_name = index_name
+        self.table_name = table_name
+        self.schema = schema
+        self.unique = unique
+        self.kw = kw
+        self.table = table
+
+    def get_revision_message(self) -> String:
+        print("rev message", self.index_name, self.table_name)
+        return 'add full text index %s to %s' % (self.index_name, self.table_name)
+
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.CREATE_FULL_TEXT_INDEX
+
+    def get_table_name(self) -> String:
+        return self.table_name
+
+    def reverse(self):
+        return DropFullTextIndexOp.from_index(self.to_index())
+
+    def to_diff_tuple(self) -> Tuple[str, FullTextIndex]:
+        return ("add_full_text_index", self.to_index())
+
+    @classmethod
+    def from_index(cls, index: FullTextIndex):
+        assert index.table is not None
+        return cls(
+            index.name,
+            index.table.name,
+            schema=index.table.schema,
+            unique=index.unique,
+            **index.kwargs,
+        )
+
+    def to_index(
+        self, migration_context=None
+    ):
+        print("to_index in reverse", self.table_name, self.schema)
+        idx = FullTextIndex(
+            self.index_name,
+            #            self.table_name,
+            #            "",
+            # TODO
+
+            #            schema=self.schema,
+            unique=self.unique,
+            **self.kw,
+        )
+        if self.table is not None:
+            idx._set_parent(self.table)
+        return idx
+
+    @classmethod
+    def create_full_text_index(
+        cls,
+        operations: Operations,
+        index_name: str,
+        table_name: str,
+        schema=None,
+        unique: bool = False,
+        **kw
+    ):
+        op = cls(
+            index_name, table_name, schema=schema, unique=unique, **kw
+        )
+        return operations.invoke(op)
+
+
+@Operations.register_operation("drop_full_text_index")
+class DropFullTextIndexOp(MigrateOpInterface):
+
+    def __init__(
+        self,
+        index_name: str,
+        table_name: Optional[str] = None,
+        schema: Optional[Any] = None,
+        table: Optional[sa.Table] = None,
+        **kw
+    ) -> None:
+        self.index_name = index_name
+        self.table_name = table_name
+        self.schema = schema
+        self.table = table
+        self.kw = kw
+
+    def to_diff_tuple(self) -> Tuple[str, FullTextIndex]:
+        return ("remove_full_text_index", self.to_index())
+
+    def get_revision_message(self) -> String:
+        return 'drop full text index %s from %s' % (self.index_name, self.table_name)
+
+    def get_change_type(self) -> ChangeType:
+        return ChangeType.DROP_FULL_TEXT_INDEX
+
+    def get_table_name(self) -> String:
+        return self.table_name
+
+    def reverse(self) -> CreateFullTextIndexOp:
+        print("pre-to-index")
+        print("to_index", self.to_index())
+        return CreateFullTextIndexOp.from_index(self.to_index())
+
+    @classmethod
+    def from_index(cls, index: FullTextIndex):
+        # whelp....
+        # index.table is None...
+        # start from here...
+        assert index.table is not None
+        return cls(
+            index.name,
+            index.table.name,
+            #            schema=index.table.schema,
+            schema=None,
+            **index.kwargs,
+        )
+
+    def to_index(
+        self, migration_context=None
+    ):
+
+        print("to_index end", self.kw)
+        idx = FullTextIndex(
+            self.index_name,
+            #            self.table_name,
+            # TODO
+            #            "",
+            #            schema=self.schema,
+
+            **self.kw,
+        )
+        if self.table is not None:
+            idx._set_parent(self.table)
+        return idx
+
+    @classmethod
+    def drop_full_text_index(
+        cls,
+        operations: "Operations",
+        index_name: str,
+        table_name=None,
+        schema=None,
+        **kw
+    ):
+        op = cls(index_name, table_name=table_name,
+                 schema=schema, **kw)
+        return operations.invoke(op)

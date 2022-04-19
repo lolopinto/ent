@@ -12,6 +12,7 @@ import sqlalchemy as sa
 ## TODO: for down commans when removing edges, we add "UUID()" which is broken and unncessary :(
 ## from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.dialects import postgresql
+## TODO add custom import. this is where we'll add our own index...
 ${imports if imports else ""}
 
 # revision identifiers, used by Alembic.

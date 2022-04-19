@@ -1066,6 +1066,35 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_json, new_table_names=['tbl'])
 
+    # TODO only
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_full_text_index_added_and_removed(self, new_test_runner, metadata_with_table):
+        r = new_test_runner(metadata_with_table)
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_table)
+
+        r2 = testingutils.recreate_with_new_metadata(
+            r, new_test_runner, metadata_with_table, conftest.metadata_with_fulltext_search_index)
+
+        message = r2.revision_message()
+        assert message == "add full text index accounts_full_text_idx to accounts"
+
+        r2.run()
+        testingutils.assert_num_files(r2, 2)
+        testingutils.assert_num_tables(r2, 2)
+
+        r3 = testingutils.recreate_metadata_fixture(
+            new_test_runner, conftest.metadata_with_base_table_restored(), r2)
+
+        message = r3.revision_message()
+        assert message == "drop full text index accounts_full_text_idx from accounts"
+
+        r3.run()
+        testingutils.assert_num_files(r3, 3)
+        testingutils.assert_num_tables(r3, 2)
+
+        # TODO need to successfully downgrade because the generated create is wrong
+
 
 class TestSqliteRunner(BaseTestRunner):
     pass

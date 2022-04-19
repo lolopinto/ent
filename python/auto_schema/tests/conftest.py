@@ -14,6 +14,8 @@ import sqlalchemy as sa
 from auto_schema import runner
 from typing import List
 
+from auto_schema.schema_item import FullTextIndex
+
 
 class Postgres:
     def __init__(self) -> None:
@@ -115,8 +117,8 @@ def new_test_runner(request):
             path = r.get_schema_path()
 
             # delete temp directory which was created
-            if os.path.isdir(path):
-                shutil.rmtree(path)
+            # if os.path.isdir(path):
+            #     shutil.rmtree(path)
 
         request.addfinalizer(delete_path)
 
@@ -417,6 +419,33 @@ def metadata_with_multi_column_index(metadata_with_table):
                  "first_name", "last_name"),
     )
 
+# doesn't seem like we can do it  with schema so have to detect it and do op.add_Edge
+
+
+def metadata_with_fulltext_search_index(metadata_with_table):
+    return _add_index_to_metadata(
+        metadata_with_table,
+        # index the first and last name because we support searching by that
+        FullTextIndex("accounts_full_text_idx",
+                      # let's do just one col for now
+                      # TODO get rid of this...
+                      #                      "first_name",
+                      #                 func.to_tsvector(first_name).label(vectorized_name),
+                      # using postgresql_using so it keeps failing without FullTextIndex and we know our class does something...
+                      postgresql_using='gin',
+                      info={
+                          'postgresql_using': 'gin',
+                          'postgresql_using_internals': "to_tsvector('english', first_name)",
+                          'column': 'first_name',
+                      }
+                      #  postgresql_using="gin(to_tsvector('english', first_name))",
+                      #  postgresql_ops={
+                      #      'vectorized_name': "to_tsvector('english', first_name)"
+                      #  }
+                      ),
+
+    )
+
 
 @ pytest.fixture
 def metadata_with_multi_column_pkey_constraint(request):
@@ -613,7 +642,7 @@ def _metadata_assoc_edge_config(request):
     return metadata
 
 
-@pytest.fixture
+@ pytest.fixture
 def metadata_with_assoc_edge_config(request):
     return _metadata_assoc_edge_config(request)
 
@@ -1072,4 +1101,15 @@ def _add_constraint_to_metadata(metadata, constraint, table_name="accounts"):
     table = tables[0]
 
     table.append_constraint(constraint)
+    return metadata
+
+
+def _add_index_to_metadata(metadata, index: sa.Index, table_name="accounts"):
+    tables = [t for t in metadata.sorted_tables if t.name == table_name]
+    table: sa.Table = tables[0]
+
+    # append constraint above might be broken?
+    table.indexes.add(index)
+#    index.table
+    index._set_parent(table)
     return metadata

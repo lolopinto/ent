@@ -1,5 +1,7 @@
 import json
 from collections.abc import Mapping
+
+from auto_schema.schema_item import FullTextIndex
 from .diff import Diff
 from .clause_text import get_clause_text
 import sqlalchemy as sa
@@ -90,6 +92,15 @@ class Runner(object):
     @classmethod
     def include_object(cls, object, name, type, reflected, compare_to):
         exclude_tables = Runner.exclude_tables().split(',')
+
+        # if we return false here, can we keep track of this and use this later?
+        # can't do this because it removes it completely. you'd assume reflected is what we want but alas
+        if type == "index" and isinstance(object, FullTextIndex):
+            # print("include_index false")
+            #     # print("yes")
+            # print(cls, object, name, reflected, compare_to)
+            #     # will handle this later
+            return True
 
         if type == "table" and name in exclude_tables:
             return False

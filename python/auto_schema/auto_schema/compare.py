@@ -1,10 +1,20 @@
+# from curses import meta
+# from enum import auto, unique
+# from queue import Full
 from alembic.autogenerate import comparators
+from alembic.autogenerate.api import AutogenContext
+
+from auto_schema.schema_item import FullTextIndex
 from . import ops
 from alembic.operations import Operations, MigrateOperation
 import sqlalchemy as sa
+from sqlalchemy.engine import reflection
 import pprint
+import re
 from sqlalchemy.dialects import postgresql
 import alembic.operations.ops as alembicops
+from typing import Optional
+# from typing import Union
 
 
 @comparators.dispatch_for("schema")
@@ -86,6 +96,10 @@ def _process_edges(source_edges, compare_edges, upgrade_ops, upgrade_op, edge_mi
         [upgrade_ops.ops.append(alter_op) for alter_op in alter_ops]
 
 
+def _dialect_name(autogen_context: AutogenContext) -> str:
+    return autogen_context.metadata.bind.dialect.name
+
+
 # why isn't this just metadata.sorted_tables?
 def _table_exists(autogen_context):
     dialect_map = {
@@ -93,7 +107,7 @@ def _table_exists(autogen_context):
         'postgresql': _execute_postgres_dialect,
     }
 
-    dialect = autogen_context.metadata.bind.dialect.name
+    dialect = _dialect_name(autogen_context)
 
     if dialect_map[dialect] is None:
         raise Exception("unsupported dialect")
@@ -268,6 +282,7 @@ def _check_removed_table(metadata_table, upgrade_ops, sch):
         _check_removed_column(column, upgrade_ops, sch)
 
 
+# this should be in a table comparison...
 def _check_existing_table(conn_table, metadata_table, upgrade_ops, sch):
     conn_columns = {col.name: col for col in conn_table.columns}
     metadata_columns = {
@@ -311,6 +326,89 @@ def _check_existing_table(conn_table, metadata_table, upgrade_ops, sch):
             if not constraint._type_bound:
                 new_ops.append(
                     ops.OurCreateCheckConstraintOp.from_constraint(constraint))
+
+    conn_indexes = {
+        index.name: index for index in conn_table.indexes}
+    meta_indexes = {
+        index.name: index for index in metadata_table.indexes}
+
+    # full text index not even reflected omg
+#    print("indexesssss", conn_indexes, meta_indexes)
+
+    # TODO replace with our own index
+#     for name, index in conn_indexes.items():
+#         if not name in meta_indexes and isinstance(index, FullTextIndex):
+#             # DROP
+#             print("dropped index")
+#             new_ops.append(
+#                 ops.DropFullTextIndexOp(
+#                     index.name,
+#                     index.table.name,
+#                     info=index.info,
+#                     #                    *index.kw
+#                 )
+#             )
+
+#     for name, index in meta_indexes.items():
+#         if not name in conn_indexes and isinstance(index, FullTextIndex):
+#             print('meta full text index', index.name)
+
+#             cols = [col.name for col in index.columns]
+# #            print(cols, index.info, index.table, index.unique)
+#             new_ops.append(
+#                 ops.CreateFullTextIndexOp(
+#                     index.name,
+#                     index.table.name,
+#                     *cols,
+#                     unique=index.unique,
+#                     info=index.info,
+#                     #                    *index.kw
+#                 )
+#             )
+
+# To add
+#             print(index.info)
+#             for op in upgrade_ops.ops:
+#                 #                print(op)
+#                 if not isinstance(op, alembicops.ModifyTableOps):
+#                     continue
+
+# #                print(op.table_name, metadata_table.name)
+#                 if op.table_name != metadata_table.name:
+#                     continue
+
+#  #               if index.info is None:
+# #                    continue
+
+# #                print(len(op.ops))
+#                 for idx, op2 in enumerate(op.ops):
+#                     print(idx, op2)
+#                     if isinstance(
+#                             op2, alembicops.CreateIndexOp) and op2.index_name == index.name:
+#                         cols = [col.name for col in op2.columns]
+#                         # TODO need kw and info here so we can pass that
+#  #                       print(op2.kw, op2.info)
+# #                        op.ops[idx] =
+#                         ops.CreateFullTextIndexOp(
+#                             op2.index_name,
+#                             op2.table_name,
+#                             *cols,
+#                             info=op2.info,
+#                             *op2.kw
+#                         )
+
+#                            op2.index_name, *cols, info=op2.info, *op2.kw)
+    # print("ssssss")
+    # print(op2)
+#                print(index.info)
+
+    # l = [op for op in list(op.ops) if isinstance(
+    #     op, alembicops.CreateIndexOp) and op.index_name == index.name]
+    # # find existing create index, we need to replace it with ours
+    # if l:
+    #     # TODO replace with our own ...
+    #     # TODO ...
+    #     [print(op.info) for op in l]
 
     if len(new_ops) <= 0:
         return
@@ -407,3 +505,141 @@ def _check_if_enum_values_changed(upgrade_ops, conn_column, metadata_column, sch
                 upgrade_ops.ops.append(
                     ops.AlterEnumOp(conn_type.name, value, schema=sch)
                 )
+
+
+@comparators.dispatch_for("table")
+def _compare_indexes(autogen_context: AutogenContext,
+                     modify_table_ops: alembicops.ModifyTableOps,
+                     schema,
+                     tname: str,
+                     conn_table: Optional[sa.Table],
+                     metadata_table: sa.Table,
+                     ):
+
+    # print('dialect', autogen_context.dialect)
+    # print(conn_table is None, metadata_table is None)
+    #    autogen_context.
+
+    missing_conn_indexes = _get_raw_db_indexes(autogen_context, conn_table)
+    conn_indexes = {}
+    meta_indexes = {}
+    # if conn_table is not None:
+    #     print(len(conn_table.indexes), len(metadata_table.indexes))
+    if conn_table is not None:
+        # db_indexes = autogen_context.dialect.get_indexes(
+        #     autogen_context.connection, conn_table.name, schema)
+        # print("Db", db_indexes)
+
+        conn_indexes = {
+            index.name: index for index in conn_table.indexes}
+#         print("conn constraints", conn_table.constraints)
+
+    if metadata_table is not None:
+        # accounts_unique_phone_number not showing up in indexes and constraints is concerning
+        meta_indexes = {
+            index.name: index for index in metadata_table.indexes}
+
+    print("indexesssss",
+          conn_indexes,
+          meta_indexes,
+          #   metadata_table.indexes,
+          #   metadata_table.constraints,
+          )
+
+    # not getting this conn index from db. maybe related
+    for name, index in conn_indexes.items():
+        if not name in meta_indexes and isinstance(index, FullTextIndex):
+            # DROP
+            print("dropped index")
+#            modify_table_ops.ops
+            modify_table_ops.ops.append(
+                ops.DropFullTextIndexOp(
+                    index.name,
+                    index.table.name,
+                    info=index.info,
+                    table=conn_table,
+                    #                    *index.kw
+                )
+            )
+
+    for name, v in missing_conn_indexes.items():
+        if not name in meta_indexes:
+            print("vvvvv", v)
+            modify_table_ops.ops.append(
+                ops.DropFullTextIndexOp(
+                    name,
+                    conn_table.name,
+                    table=conn_table,
+                    info=v,
+                    # TODO info...
+                    #                    info=index.info,
+                    #                    *index.kw
+                )
+            )
+
+    for name, index in meta_indexes.items():
+        if not name in conn_indexes and isinstance(index, FullTextIndex):
+            print('meta full text index', index.name)
+
+            idx = None
+            for i in range(len(modify_table_ops.ops)):
+                op = modify_table_ops.ops[i]
+                if isinstance(op, alembicops.CreateIndexOp) and op.index_name == index.name:
+                    idx = i
+                    print("found!")
+                    break
+
+            # find existing create index op and replace with ours
+            if idx is not None:
+                cols = [col.name for col in index.columns]
+        #        print(cols, index.info, index.table, index.unique)
+
+                modify_table_ops.ops[idx] = ops.CreateFullTextIndexOp(
+                    index.name,
+                    index.table.name,
+                    #                    *cols,
+                    schema=schema,
+                    table=index.table,
+                    unique=index.unique,
+                    info=index.info,
+                    #                    *index.kw
+                )
+
+
+index_regex = re.compile('CREATE INDEX (.+) USING (gin|btree)(.+)')
+
+# TODO
+# @reflection.cache
+
+
+def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: Optional[sa.Table]):
+    if conn_table is None or _dialect_name(autogen_context) != 'postgresql':
+        return {}
+
+    ret = {}
+    names = set([index.name for index in conn_table.indexes] +
+                [constraint.name for constraint in conn_table.constraints])
+    print("names", names)
+    res = autogen_context.connection.execute(
+        "SELECT indexname, indexdef from pg_indexes where tablename = '%s'" % conn_table.name)
+    for row in res.fetchall():
+        (
+            name,
+            details
+        ) = row
+        if name not in names:
+            m = index_regex.match(details)
+            if m is None:
+                continue
+            r = m.groups()
+            # missing! TODO
+
+            # need _reverse, how to know what to reverse?
+            ret[name] = {
+                'postgresql_using': r[1],
+                'postgresql_using_internals': r[2],
+
+            }
+            print("missing!", name, details)
+
+    return ret
