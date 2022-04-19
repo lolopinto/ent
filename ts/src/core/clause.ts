@@ -130,6 +130,35 @@ class isNotNullClause implements Clause {
   }
 }
 
+class arraySimpleClause implements Clause {
+  constructor(protected col: string, private value: any, private op: string) {}
+
+  clause(idx: number): string {
+    if (DB.getDialect() === Dialect.Postgres) {
+      return `$${idx} ${this.op} ANY(${this.col})`;
+    }
+    return `${this.col} ${this.op} ?`;
+  }
+
+  values(): any[] {
+    if (isSensitive(this.value)) {
+      return [this.value.value()];
+    }
+    return [this.value];
+  }
+
+  logValues(): any[] {
+    if (isSensitive(this.value)) {
+      return [this.value.logValue()];
+    }
+    return [this.value];
+  }
+
+  instanceKey(): string {
+    return `${this.col}${this.op}${rawValue(this.value)}`;
+  }
+}
+
 class inClause implements Clause {
   constructor(private col: string, private value: any[]) {}
 
@@ -217,6 +246,31 @@ class compositeClause implements Clause {
     this.clauses.forEach((clause) => keys.push(clause.instanceKey()));
     return keys.join(this.sep);
   }
+}
+
+// TODO we need to check sqlite version...
+export function ArrayEq(col: string, value: any): Clause {
+  return new arraySimpleClause(col, value, "=");
+}
+
+export function ArrayNotEq(col: string, value: any): Clause {
+  return new arraySimpleClause(col, value, "!=");
+}
+
+export function ArrayGreater(col: string, value: any): Clause {
+  return new arraySimpleClause(col, value, ">");
+}
+
+export function ArrayLess(col: string, value: any): Clause {
+  return new arraySimpleClause(col, value, "<");
+}
+
+export function ArrayGreaterEq(col: string, value: any): Clause {
+  return new arraySimpleClause(col, value, ">=");
+}
+
+export function ArrayLessEq(col: string, value: any): Clause {
+  return new arraySimpleClause(col, value, "<=");
 }
 
 export function Eq(col: string, value: any): Clause {
