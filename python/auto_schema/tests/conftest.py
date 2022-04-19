@@ -425,27 +425,32 @@ def metadata_with_multi_column_index(metadata_with_table):
 def metadata_with_fulltext_search_index(metadata_with_table):
     return _add_index_to_metadata(
         metadata_with_table,
-        # index the first and last name because we support searching by that
-        FullTextIndex("accounts_full_text_idx",
-                      # let's do just one col for now
-                      # TODO get rid of this...
-                      #                      "first_name",
-                      #                 func.to_tsvector(first_name).label(vectorized_name),
-                      # using postgresql_using so it keeps failing without FullTextIndex and we know our class does something...
-                      #                      postgresql_using='gin',
+        FullTextIndex("accounts_first_name_idx",
                       info={
                           'postgresql_using': 'gin',
                           'postgresql_using_internals': "to_tsvector('english', first_name)",
                           'column': 'first_name',
-                          #                          'colums': ['first_name', 'last_name']
                       }
-                      #  postgresql_using="gin(to_tsvector('english', first_name))",
-                      #  postgresql_ops={
-                      #      'vectorized_name': "to_tsvector('english', first_name)"
-                      #  }
                       ),
 
     )
+
+
+def metadata_with_multicolumn_fulltext_search_index(metadata_with_table):
+    return _add_index_to_metadata(
+        metadata_with_table,
+        FullTextIndex("accounts_full_text_idx",
+                      info={
+                          'postgresql_using': 'gin',
+                          'postgresql_using_internals': "to_tsvector('english', first_name || ' ' || last_name)",
+                          'columns': ['first_name', 'last_name'],
+                      }
+                      ),
+
+    )
+
+
+# TODO generated stored column
 
 
 @ pytest.fixture

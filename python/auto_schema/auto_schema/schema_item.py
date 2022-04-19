@@ -8,5 +8,10 @@ from sqlalchemy import exc
 class FullTextIndex(Index):
 
     def __init__(self, name: str, **kw) -> None:
-        # no columns
-        super().__init__(name, kw.get('column', "id"), **kw)
+        # TODO make it required
+        cols = ['id']
+        if 'columns' in kw:
+            cols = kw.get('columns')
+        elif 'column' in kw:
+            cols = [kw.get('column')]
+        super().__init__(name, *cols, **kw)
