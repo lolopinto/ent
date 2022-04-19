@@ -432,11 +432,12 @@ def metadata_with_fulltext_search_index(metadata_with_table):
                       #                      "first_name",
                       #                 func.to_tsvector(first_name).label(vectorized_name),
                       # using postgresql_using so it keeps failing without FullTextIndex and we know our class does something...
-                      postgresql_using='gin',
+                      #                      postgresql_using='gin',
                       info={
                           'postgresql_using': 'gin',
                           'postgresql_using_internals': "to_tsvector('english', first_name)",
                           'column': 'first_name',
+                          #                          'colums': ['first_name', 'last_name']
                       }
                       #  postgresql_using="gin(to_tsvector('english', first_name))",
                       #  postgresql_ops={

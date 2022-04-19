@@ -377,7 +377,6 @@ class CreateFullTextIndexOp(MigrateOpInterface):
         table: Optional[sa.Table] = None,
         **kw
     ) -> None:
-        print('constructor', index_name, table_name, schema, unique, kw)
         self.index_name = index_name
         self.table_name = table_name
         self.schema = schema
@@ -386,7 +385,6 @@ class CreateFullTextIndexOp(MigrateOpInterface):
         self.table = table
 
     def get_revision_message(self) -> String:
-        print("rev message", self.index_name, self.table_name)
         return 'add full text index %s to %s' % (self.index_name, self.table_name)
 
     def get_change_type(self) -> ChangeType:
@@ -409,13 +407,12 @@ class CreateFullTextIndexOp(MigrateOpInterface):
             index.table.name,
             schema=index.table.schema,
             unique=index.unique,
-            **index.kwargs,
+            info=index.info
         )
 
     def to_index(
         self, migration_context=None
     ):
-        print("to_index in reverse", self.table_name, self.schema)
         idx = FullTextIndex(
             self.index_name,
             #            self.table_name,
@@ -440,6 +437,7 @@ class CreateFullTextIndexOp(MigrateOpInterface):
         unique: bool = False,
         **kw
     ):
+        # table_name here so can't make it table?
         op = cls(
             index_name, table_name, schema=schema, unique=unique, **kw
         )
@@ -449,6 +447,7 @@ class CreateFullTextIndexOp(MigrateOpInterface):
 @Operations.register_operation("drop_full_text_index")
 class DropFullTextIndexOp(MigrateOpInterface):
 
+    # TODO kill table_name and make it table?
     def __init__(
         self,
         index_name: str,
@@ -476,8 +475,6 @@ class DropFullTextIndexOp(MigrateOpInterface):
         return self.table_name
 
     def reverse(self) -> CreateFullTextIndexOp:
-        print("pre-to-index")
-        print("to_index", self.to_index())
         return CreateFullTextIndexOp.from_index(self.to_index())
 
     @classmethod
@@ -491,14 +488,13 @@ class DropFullTextIndexOp(MigrateOpInterface):
             index.table.name,
             #            schema=index.table.schema,
             schema=None,
-            **index.kwargs,
+            info=index.info,
         )
 
     def to_index(
         self, migration_context=None
     ):
 
-        print("to_index end", self.kw)
         idx = FullTextIndex(
             self.index_name,
             #            self.table_name,

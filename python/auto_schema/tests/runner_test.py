@@ -1083,6 +1083,10 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.assert_num_files(r2, 2)
         testingutils.assert_num_tables(r2, 2)
 
+        # downgrade and upgrade back should work
+        r2.downgrade(delete_files=False, revision='-1')
+        r2.upgrade()
+
         r3 = testingutils.recreate_metadata_fixture(
             new_test_runner, conftest.metadata_with_base_table_restored(), r2)
 
@@ -1093,7 +1097,9 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.assert_num_files(r3, 3)
         testingutils.assert_num_tables(r3, 2)
 
-        # TODO need to successfully downgrade because the generated create is wrong
+        # downgrade and upgrade back should work
+        r3.downgrade(delete_files=False, revision='-1')
+        r3.upgrade()
 
 
 class TestSqliteRunner(BaseTestRunner):
