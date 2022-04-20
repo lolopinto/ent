@@ -427,7 +427,15 @@ def _setup_assoc_edge_config(new_test_runner, metadata_with_assoc_edge_config):
     return r
 
 
-def make_changes_and_restore(new_test_runner, metadata_with_table, metadata_change_func, r2_message, r3_message, validate_schema=True):
+def make_changes_and_restore(
+    new_test_runner,
+    metadata_with_table,
+    metadata_change_func,
+    r2_message,
+    r3_message,
+    validate_schema=True,
+    post_r2_func=None,
+):
     r = new_test_runner(metadata_with_table)
     run_and_validate_with_standard_metadata_tables(
         r, metadata_with_table)
@@ -443,6 +451,9 @@ def make_changes_and_restore(new_test_runner, metadata_with_table, metadata_chan
     # should have the expected files with the expected tables
     assert_num_files(r2, 2)
     assert_num_tables(r2, 2, ['accounts', 'alembic_version'])
+
+    if post_r2_func is not None:
+        post_r2_func(r2)
 
     # downgrade and upgrade back should work
     r2.downgrade(delete_files=False, revision='-1')
