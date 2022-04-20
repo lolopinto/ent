@@ -457,13 +457,56 @@ def metadata_with_multicolumn_fulltext_search_index(metadata_with_table):
     return metadata_with_table
 
 
+@pytest.fixture
+def metadata_with_multicolumn_fulltext_search():
+    metadata = metadata_with_base_table_restored()
+    sa.Table('accounts',
+             metadata,
+             FullTextIndex("accounts_full_text_idx",
+                           info={
+                               'postgresql_using': 'gin',
+                               'postgresql_using_internals': "to_tsvector('english', first_name || ' ' || last_name)",
+                               'columns': ['first_name', 'last_name'],
+                           }
+                           ),
+             extend_existing=True
+             )
+    return metadata
+
+
+def metadata_with_multicolumn_fulltext_search_index_btree(metadata_with_table):
+    sa.Table('accounts',
+             metadata_with_table,
+             FullTextIndex("accounts_full_text_idx",
+                           info={
+                               'postgresql_using': 'btree',
+                               'postgresql_using_internals': "to_tsvector('english', first_name || ' ' || last_name)",
+                               'columns': ['first_name', 'last_name'],
+                           }
+                           ),
+             extend_existing=True
+             )
+    return metadata_with_table
+
+
 def metadata_with_generated_col_fulltext_search_index(metadata_with_table):
-    # this is the correct way to modify a table!
     sa.Table('accounts', metadata_with_table,
              sa.Column('full_name', postgresql.TSVECTOR(), sa.Computed(
                  "to_tsvector('english', first_name || ' ' || last_name)")),
              sa.Index('accounts_full_text_idx',
                       'full_name', postgresql_using='gin'),
+
+             extend_existing=True)
+
+    return metadata_with_table
+
+
+def metadata_with_generated_col_fulltext_search_index_btree(metadata_with_table):
+    sa.Table('accounts', metadata_with_table,
+             sa.Column('full_name', postgresql.TSVECTOR(), sa.Computed(
+                 "to_tsvector('english', first_name || ' ' || last_name)")),
+             sa.Index('accounts_full_text_idx',
+                      'full_name', postgresql_using='btree'),
 
              extend_existing=True)
 
