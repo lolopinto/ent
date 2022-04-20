@@ -834,34 +834,13 @@ class TestPostgresRunner(BaseTestRunner):
 
     @pytest.mark.usefixtures("metadata_with_table")
     def test_check_constraint_added_and_removed(self, new_test_runner, metadata_with_table):
-        r = new_test_runner(metadata_with_table)
-        testingutils.run_and_validate_with_standard_metadata_tables(
-            r, metadata_with_table)
-
-        r2 = testingutils.recreate_with_new_metadata(
-            r, new_test_runner, metadata_with_table, conftest.metadata_with_constraint_added_after)
-
-        message = r2.revision_message()
-        assert message == "add constraint meaning_of_life_correct to accounts"
-
-        r2.run()
-
-        # should have the expected files with the expected tables
-        testingutils.assert_num_files(r2, 2)
-        testingutils.assert_num_tables(r2, 2, ['accounts', 'alembic_version'])
-        testingutils.validate_metadata_after_change(r2, r2.get_metadata())
-
-        r3 = testingutils.recreate_metadata_fixture(
-            new_test_runner, conftest.metadata_with_base_table_restored(), r2)
-
-        message = r3.revision_message()
-        assert message == "drop constraint meaning_of_life_correct from accounts"
-
-        r3.run()
-
-        # should have the expected files with the expected tables
-        testingutils.assert_num_files(r3, 3)
-        testingutils.assert_num_tables(r3, 2, ['accounts', 'alembic_version'])
+        testingutils.make_changes_and_restore(
+            new_test_runner,
+            metadata_with_table,
+            conftest.metadata_with_constraint_added_after,
+            "add constraint meaning_of_life_correct to accounts",
+            "drop constraint meaning_of_life_correct from accounts"
+        )
 
     @pytest.mark.usefixtures('metadata_with_enum_type')
     def test_enum_type(self, new_test_runner, metadata_with_enum_type):
@@ -1068,115 +1047,41 @@ class TestPostgresRunner(BaseTestRunner):
 
     @pytest.mark.usefixtures("metadata_with_table")
     def test_full_text_index_added_and_removed(self, new_test_runner, metadata_with_table):
-        r = new_test_runner(metadata_with_table)
-        testingutils.run_and_validate_with_standard_metadata_tables(
-            r, metadata_with_table)
-
-        r2 = testingutils.recreate_with_new_metadata(
-            r, new_test_runner, metadata_with_table, conftest.metadata_with_fulltext_search_index)
-
-        message = r2.revision_message()
-        assert message == "add full text index accounts_first_name_idx to accounts"
-
-        r2.run()
-        testingutils.assert_num_files(r2, 2)
-        testingutils.assert_num_tables(r2, 2)
-
-        # downgrade and upgrade back should work
-        r2.downgrade(delete_files=False, revision='-1')
-        r2.upgrade()
-
-        r3 = testingutils.recreate_metadata_fixture(
-            new_test_runner, conftest.metadata_with_base_table_restored(), r2)
-
-        message = r3.revision_message()
-        assert message == "drop full text index accounts_first_name_idx from accounts"
-
-        r3.run()
-        testingutils.assert_num_files(r3, 3)
-        testingutils.assert_num_tables(r3, 2)
-
-        # downgrade and upgrade back should work
-        r3.downgrade(delete_files=False, revision='-1')
-        r3.upgrade()
-
-    # TODO abstract this out. common pattern
-    # start with something, make a change, restore it
-    # downgrade and upgrade along the way
+        testingutils.make_changes_and_restore(
+            new_test_runner,
+            metadata_with_table,
+            conftest.metadata_with_fulltext_search_index,
+            "add full text index accounts_first_name_idx to accounts",
+            "drop full text index accounts_first_name_idx from accounts",
+            # skip validation because of complications with idx
+            validate_schema=False
+        )
 
     # TODO need to test with this from the start
+
     @pytest.mark.usefixtures("metadata_with_table")
     def test_multi_col_full_text_index_added_and_removed(self, new_test_runner, metadata_with_table):
-        r = new_test_runner(metadata_with_table)
-        testingutils.run_and_validate_with_standard_metadata_tables(
-            r, metadata_with_table)
-
-        r2 = testingutils.recreate_with_new_metadata(
-            r, new_test_runner, metadata_with_table, conftest.metadata_with_multicolumn_fulltext_search_index)
-
-        message = r2.revision_message()
-        assert message == "add full text index accounts_full_text_idx to accounts"
-
-        r2.run()
-        testingutils.assert_num_files(r2, 2)
-        testingutils.assert_num_tables(r2, 2)
-
-        # downgrade and upgrade back should work
-        r2.downgrade(delete_files=False, revision='-1')
-        r2.upgrade()
-
-        r3 = testingutils.recreate_metadata_fixture(
-            new_test_runner, conftest.metadata_with_base_table_restored(), r2)
-
-        message = r3.revision_message()
-        assert message == "drop full text index accounts_full_text_idx from accounts"
-
-        r3.run()
-        testingutils.assert_num_files(r3, 3)
-        testingutils.assert_num_tables(r3, 2)
-
-        # downgrade and upgrade back should work
-        r3.downgrade(delete_files=False, revision='-1')
-        r3.upgrade()
+        testingutils.make_changes_and_restore(
+            new_test_runner,
+            metadata_with_table,
+            conftest.metadata_with_multicolumn_fulltext_search_index,
+            "add full text index accounts_full_text_idx to accounts",
+            "drop full text index accounts_full_text_idx from accounts",
+            # skip validation because of complications with idx
+            validate_schema=False
+        )
 
     @pytest.mark.usefixtures("metadata_with_table")
     def test_full_text_index_with_generated_column(self, new_test_runner, metadata_with_table):
-        r = new_test_runner(metadata_with_table)
-        testingutils.run_and_validate_with_standard_metadata_tables(
-            r, metadata_with_table)
-
-        r2 = testingutils.recreate_with_new_metadata(
-            r, new_test_runner, metadata_with_table, conftest.metadata_with_generated_col_fulltext_search_index)
-
-        message = r2.revision_message()
-        diff = r2.compute_changes()
-        print(diff)
-
-        print("message", message)
-        assert message == "add column full_name to table accounts\nadd index accounts_full_text_idx to accounts"
-
-        r2.run()
-        testingutils.assert_num_files(r2, 2)
-        testingutils.assert_num_tables(r2, 2)
-
-        # downgrade and upgrade back should work
-        r2.downgrade(delete_files=False, revision='-1')
-        r2.upgrade()
-
-        r3 = testingutils.recreate_metadata_fixture(
-            new_test_runner, conftest.metadata_with_base_table_restored(), r2)
-
-        message = r3.revision_message()
-        print(message)
-        assert message == "drop index accounts_full_text_idx from accounts\ndrop column full_name from table accounts"
-
-        r3.run()
-        testingutils.assert_num_files(r3, 3)
-        testingutils.assert_num_tables(r3, 2)
-
-        # downgrade and upgrade back should work
-        r3.downgrade(delete_files=False, revision='-1')
-        r3.upgrade()
+        testingutils.make_changes_and_restore(
+            new_test_runner,
+            metadata_with_table,
+            conftest.metadata_with_generated_col_fulltext_search_index,
+            "add column full_name to table accounts\nadd index accounts_full_text_idx to accounts",
+            "drop index accounts_full_text_idx from accounts\ndrop column full_name from table accounts",
+            # skip validation because of complications with idx
+            validate_schema=False
+        )
 
 
 class TestSqliteRunner(BaseTestRunner):
