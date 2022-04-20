@@ -450,7 +450,20 @@ def metadata_with_multicolumn_fulltext_search_index(metadata_with_table):
     )
 
 
-# TODO generated stored column
+def metadata_with_generated_col_fulltext_search_index(metadata_with_table):
+    # this is the correct way to modify a table!
+    sa.Table('accounts', metadata_with_table,
+             sa.Column('full_name', postgresql.TSVECTOR(), sa.Computed(
+                 "to_tsvector('english', first_name || ' ' || last_name)")),
+             extend_existing=True)
+
+    return _add_index_to_metadata(
+        metadata_with_table,
+        # when it's mapping to a generated column, let's just use regular sa.Index
+        # don't need the complexity we provide
+        sa.Index('accounts_full_text_idx',
+                 'full_name', postgresql_using='gin'),
+    )
 
 
 @ pytest.fixture

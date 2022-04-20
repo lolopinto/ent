@@ -1139,6 +1139,45 @@ class TestPostgresRunner(BaseTestRunner):
         r3.downgrade(delete_files=False, revision='-1')
         r3.upgrade()
 
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_full_text_index_with_generated_column(self, new_test_runner, metadata_with_table):
+        r = new_test_runner(metadata_with_table)
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_table)
+
+        r2 = testingutils.recreate_with_new_metadata(
+            r, new_test_runner, metadata_with_table, conftest.metadata_with_generated_col_fulltext_search_index)
+
+        message = r2.revision_message()
+        diff = r2.compute_changes()
+        print(diff)
+
+        print("message", message)
+        assert message == "add column full_name to table accounts\nadd index accounts_full_text_idx to accounts"
+
+        r2.run()
+        testingutils.assert_num_files(r2, 2)
+        testingutils.assert_num_tables(r2, 2)
+
+        # downgrade and upgrade back should work
+        r2.downgrade(delete_files=False, revision='-1')
+        r2.upgrade()
+
+        r3 = testingutils.recreate_metadata_fixture(
+            new_test_runner, conftest.metadata_with_base_table_restored(), r2)
+
+        message = r3.revision_message()
+        print(message)
+        assert message == "drop index accounts_full_text_idx from accounts\ndrop column full_name from table accounts"
+
+        r3.run()
+        testingutils.assert_num_files(r3, 3)
+        testingutils.assert_num_tables(r3, 2)
+
+        # downgrade and upgrade back should work
+        r3.downgrade(delete_files=False, revision='-1')
+        r3.upgrade()
+
 
 class TestSqliteRunner(BaseTestRunner):
     pass
