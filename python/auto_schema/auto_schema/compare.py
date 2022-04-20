@@ -479,7 +479,6 @@ def _compare_indexes(autogen_context: AutogenContext,
 
             # find existing create index op and replace with ours
             if idx is not None:
-
                 modify_table_ops.ops[idx] = ops.CreateFullTextIndexOp(
                     index.name,
                     index.table.name,
@@ -522,7 +521,7 @@ def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: Optional[sa
             ret[name] = {
                 'postgresql_using': r[1],
                 'postgresql_using_internals': r[2],
-
+                # TODO don't have columns|column to pass to FullTextIndex
             }
 
     return ret

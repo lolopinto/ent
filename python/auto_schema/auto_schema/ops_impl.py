@@ -148,10 +148,6 @@ def drop_enum_type(operations: ops.Operations, operation: ops.DropEnumOp):
 @Operations.implementation_for(ops.CreateFullTextIndexOp)
 def create_full_text_index(operations: ops.Operations, operation: ops.CreateFullTextIndexOp):
     connection = operations.get_bind()
-    # TODO
-    # print("kw", operation.kw, operation.columns,
-    #       operation.unique, operation.kw, operation.info)
-
     connection.execute(
         "CREATE INDEX %(index_name)s ON %(table_name)s USING %(using)s (%(using_internals)s);" % {
             'index_name': operation.index_name,

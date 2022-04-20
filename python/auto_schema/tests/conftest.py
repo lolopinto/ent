@@ -425,8 +425,6 @@ def metadata_with_multi_column_index(metadata_with_table):
              )
     return metadata_with_table
 
-# doesn't seem like we can do it  with schema so have to detect it and do op.add_Edge
-
 
 def metadata_with_fulltext_search_index(metadata_with_table):
     sa.Table('accounts',

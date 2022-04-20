@@ -179,18 +179,12 @@ def _render_kw_args(d):
 
 @renderers.dispatch_for(ops.CreateFullTextIndexOp)
 def render_full_text_index(autogen_context: AutogenContext, op: ops.CreateFullTextIndexOp) -> str:
-    #    print(op.columns)
-    #    cols = [col for col in op.columns]
-    #    print("rendereer", op.info, op.kw)
-    # ignore info
-    # need unique=False and add kw
+
     return (
         "op.create_full_text_index('%(index_name)s', '%(table_name)s', "
         "unique=%(unique)r, %(kwargs)s)" % {
             "index_name": op.index_name,
             "table_name": op.table_name,
-            # not plural?
-            #            "columns": "'%s'" % op.columns,
             "unique": op.unique or False,
             "kwargs": _render_kw_args(op.kw),
         }

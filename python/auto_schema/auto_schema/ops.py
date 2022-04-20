@@ -364,7 +364,6 @@ class OurDropConstraintOp(MigrateOpInterface, alembicops.DropConstraintOp):
         return self.table_name
 
 
-# the real solution here is this doesn't need columns since we'll get all the information needed from
 @Operations.register_operation("create_full_text_index")
 class CreateFullTextIndexOp(MigrateOpInterface):
 
@@ -415,11 +414,6 @@ class CreateFullTextIndexOp(MigrateOpInterface):
     ):
         idx = FullTextIndex(
             self.index_name,
-            #            self.table_name,
-            #            "",
-            # TODO
-
-            #            schema=self.schema,
             unique=self.unique,
             **self.kw,
         )
@@ -479,15 +473,11 @@ class DropFullTextIndexOp(MigrateOpInterface):
 
     @classmethod
     def from_index(cls, index: FullTextIndex):
-        # whelp....
-        # index.table is None...
-        # start from here...
         assert index.table is not None
         return cls(
             index.name,
             index.table.name,
-            #            schema=index.table.schema,
-            schema=None,
+            schema=index.table.schema,
             info=index.info,
         )
 
@@ -497,11 +487,6 @@ class DropFullTextIndexOp(MigrateOpInterface):
 
         idx = FullTextIndex(
             self.index_name,
-            #            self.table_name,
-            # TODO
-            #            "",
-            #            schema=self.schema,
-
             **self.kw,
         )
         if self.table is not None:
