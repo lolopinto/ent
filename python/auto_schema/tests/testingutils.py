@@ -5,6 +5,8 @@ from sqlalchemy.dialects import postgresql
 from auto_schema.clause_text import get_clause_text
 from auto_schema import runner
 from sqlalchemy.sql.sqltypes import String
+
+from auto_schema import compare
 from . import conftest
 
 

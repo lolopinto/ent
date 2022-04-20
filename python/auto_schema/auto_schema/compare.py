@@ -1,6 +1,4 @@
-# from curses import meta
-# from enum import auto, unique
-# from queue import Full
+import functools
 from alembic.autogenerate import comparators
 from alembic.autogenerate.api import AutogenContext
 
@@ -14,7 +12,7 @@ import re
 from sqlalchemy.dialects import postgresql
 import alembic.operations.ops as alembicops
 from typing import Optional
-# from typing import Union
+import functools
 
 
 @comparators.dispatch_for("schema")
@@ -97,11 +95,11 @@ def _process_edges(source_edges, compare_edges, upgrade_ops, upgrade_op, edge_mi
 
 
 def _dialect_name(autogen_context: AutogenContext) -> str:
-    return autogen_context.metadata.bind.dialect.name
+    return autogen_context.connection.dialect.name
 
 
 # why isn't this just metadata.sorted_tables?
-def _table_exists(autogen_context):
+def _table_exists(autogen_context: AutogenContext):
     dialect_map = {
         'sqlite': _execute_sqlite_dialect,
         'postgresql': _execute_postgres_dialect,
@@ -115,7 +113,7 @@ def _table_exists(autogen_context):
     return dialect_map[dialect](autogen_context.connection)
 
 
-def _execute_postgres_dialect(connection):
+def _execute_postgres_dialect(connection: sa.engine.Connection):
     row = connection.execute(
         "SELECT to_regclass('%s') IS NOT NULL as exists" % (
             "assoc_edge_config")
@@ -124,7 +122,7 @@ def _execute_postgres_dialect(connection):
     return res['exists']
 
 
-def _execute_sqlite_dialect(connection):
+def _execute_sqlite_dialect(connection: sa.engine.Connection):
     row = connection.execute(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='%s'" % (
             "assoc_edge_config")
@@ -433,7 +431,8 @@ def _compare_indexes(autogen_context: AutogenContext,
                      metadata_table: sa.Table,
                      ):
 
-    missing_conn_indexes = _get_raw_db_indexes(autogen_context, conn_table)
+    missing_conn_indexes = _get_raw_db_indexes(
+        autogen_context, conn_table)
     conn_indexes = {}
     meta_indexes = {}
 
@@ -476,7 +475,6 @@ def _compare_indexes(autogen_context: AutogenContext,
                 op = modify_table_ops.ops[i]
                 if isinstance(op, alembicops.CreateIndexOp) and op.index_name == index.name:
                     idx = i
-                    print("found!")
                     break
 
             # find existing create index op and replace with ours
@@ -494,19 +492,20 @@ def _compare_indexes(autogen_context: AutogenContext,
 
 index_regex = re.compile('CREATE INDEX (.+) USING (gin|btree)(.+)')
 
-# TODO
-# @reflection.cache
 
-
+# sqlalchemy doesn't reflect postgres indexes that have expressions in them so have to manually
+# fetch these indices from pg_indices to find them
 def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: Optional[sa.Table]):
     if conn_table is None or _dialect_name(autogen_context) != 'postgresql':
         return {}
 
     ret = {}
+    # we cache the db hit but the table seems to change across the same call and so we're
+    # just paying the CPU price. can probably be fixed in some way...
     names = set([index.name for index in conn_table.indexes] +
                 [constraint.name for constraint in conn_table.constraints])
-    res = autogen_context.connection.execute(
-        "SELECT indexname, indexdef from pg_indexes where tablename = '%s'" % conn_table.name)
+    res = get_db_indexes_for_table(autogen_context.connection, conn_table.name)
+
     for row in res.fetchall():
         (
             name,
@@ -526,3 +525,9 @@ def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: Optional[sa
             }
 
     return ret
+
+
+def get_db_indexes_for_table(connection: sa.engine.Connection, tname: str):
+    res = connection.execute(
+        "SELECT indexname, indexdef from pg_indexes where tablename = '%s'" % tname)
+    return res

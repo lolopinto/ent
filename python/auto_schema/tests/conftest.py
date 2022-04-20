@@ -15,6 +15,7 @@ from auto_schema import runner
 from typing import List
 
 from auto_schema.schema_item import FullTextIndex
+from auto_schema import compare
 
 
 class Postgres:
@@ -117,8 +118,8 @@ def new_test_runner(request):
             path = r.get_schema_path()
 
             # delete temp directory which was created
-            # if os.path.isdir(path):
-            #     shutil.rmtree(path)
+            if os.path.isdir(path):
+                shutil.rmtree(path)
 
         request.addfinalizer(delete_path)
 
