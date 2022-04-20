@@ -495,6 +495,7 @@ index_regex = re.compile('CREATE INDEX (.+) USING (gin|btree)(.+)')
 
 # sqlalchemy doesn't reflect postgres indexes that have expressions in them so have to manually
 # fetch these indices from pg_indices to find them
+# warning: "Skipped unsupported reflection of expression-based index accounts_full_text_idx"
 def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: Optional[sa.Table]):
     if conn_table is None or _dialect_name(autogen_context) != 'postgresql':
         return {}
@@ -527,6 +528,8 @@ def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: Optional[sa
     return ret
 
 
+# use a cache so we only hit the db once for each table
+# @functools.lru_cache()
 def get_db_indexes_for_table(connection: sa.engine.Connection, tname: str):
     res = connection.execute(
         "SELECT indexname, indexdef from pg_indexes where tablename = '%s'" % tname)
