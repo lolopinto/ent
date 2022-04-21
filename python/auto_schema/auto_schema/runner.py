@@ -1,10 +1,6 @@
 import json
 from collections.abc import Mapping
-from alembic.operations import Operations, MigrateOperation
-from alembic.script import ScriptDirectory
-
-
-from psycopg2 import connect
+from alembic.operations import Operations
 
 from .diff import Diff
 from .clause_text import get_clause_text
@@ -295,17 +291,11 @@ class Runner(object):
                 "compare_server_default": Runner.compare_server_default,
                 "transaction_per_migration": True,
                 "render_item": Runner.render_item,
-                # TODO need to do a fake as_sql with stdout
-                #                "as_sql": True,
             },
         )
         migrations = produce_migrations(mc, self.metadata)
-#        script = ScriptDirectory.from_config(config)
 
-        # change connection so we write to output buffer
-        mc.connection = mc._stdout_connection(connection)
-        mc.as_sql = True
-
+        # use different migrations context with as_sql so that we don't have issues
         mc2 = MigrationContext.configure(
             connection=connection,
             # note that any change here also needs a comparable change in env.py
@@ -313,9 +303,7 @@ class Runner(object):
                 "compare_type": Runner.compare_type,
                 "include_object": Runner.include_object,
                 "compare_server_default": Runner.compare_server_default,
-                #                "transaction_per_migration": True,
                 "render_item": Runner.render_item,
-                # TODO need to do a fake as_sql with stdout
                 "as_sql": True,
             },
         )
@@ -325,22 +313,8 @@ class Runner(object):
                 for op2 in op.ops:
                     invoke(op2)
             else:
-                #                print(op)
                 operations.invoke(op)
 
-        # use different migrations context with as_sql so that we don't have issues
         operations = Operations(mc2)
-        # TODO
-#        mc._version.create()
         for op in migrations.upgrade_ops.ops:
             invoke(op)
-            # if isinstance(op, alembicops.OpContainer):
-            #     for op2 in op.ops:
-            #         #                    print("op2", op2)
-            #         operations.invoke(op2)
-            # else:
-            #     #                print(op)
-            #     operations.invoke(op)
-#            print(op._to_impl)
-    #        [op for op in migrations.upgrade_ops.ops]
-#        print(migrations.upgrade_ops.ops)
