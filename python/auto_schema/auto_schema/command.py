@@ -67,7 +67,7 @@ class Command(object):
 
     # Simulates running the `alembic upgrade` command
 
-    def upgrade(self, revision='head'):
+    def upgrade(self, revision='head', sql=False):
         if revision == 'head':
             # check for current heads
             # if more than one, update to heads
@@ -78,7 +78,7 @@ class Command(object):
                 # need to change to upgrade to heads and then merge and upgrade that to head
                 revision = 'heads'
 
-        command.upgrade(self.alembic_cfg, revision)
+        command.upgrade(self.alembic_cfg, revision, sql)
 
     # Simulates running the `alembic downgrade` command
 

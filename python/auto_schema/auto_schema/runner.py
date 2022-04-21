@@ -1,5 +1,10 @@
 import json
 from collections.abc import Mapping
+from alembic.operations import Operations, MigrateOperation
+from alembic.script import ScriptDirectory
+
+
+from psycopg2 import connect
 
 from .diff import Diff
 from .clause_text import get_clause_text
@@ -233,8 +238,8 @@ class Runner(object):
         # understand diff and make changes as needed
         # pprint.pprint(migrations, indent=2, width=30)
 
-    def upgrade(self, revision='heads'):
-        return self.cmd.upgrade(revision)
+    def upgrade(self, revision='heads', sql=False):
+        return self.cmd.upgrade(revision, sql)
 
     def downgrade(self, revision, delete_files):
         self.cmd.downgrade(revision, delete_files=delete_files)
@@ -270,3 +275,72 @@ class Runner(object):
 
     def squash(self, squash):
         self.cmd.squash(self.revision, squash)
+
+    def all_sql(self):
+        dialect = self.connection.dialect.name
+        # TODO handle
+        if dialect != 'postgresql':
+            return
+
+        engine = sa.create_engine('postgresql://')
+        connection = engine.connect()
+
+        mc = MigrationContext.configure(
+            connection=connection,
+            dialect_name=dialect,
+            # note that any change here also needs a comparable change in env.py
+            opts={
+                "compare_type": Runner.compare_type,
+                "include_object": Runner.include_object,
+                "compare_server_default": Runner.compare_server_default,
+                "transaction_per_migration": True,
+                "render_item": Runner.render_item,
+                # TODO need to do a fake as_sql with stdout
+                #                "as_sql": True,
+            },
+        )
+        migrations = produce_migrations(mc, self.metadata)
+#        script = ScriptDirectory.from_config(config)
+
+        # change connection so we write to output buffer
+        mc.connection = mc._stdout_connection(connection)
+        mc.as_sql = True
+
+        mc2 = MigrationContext.configure(
+            connection=connection,
+            # note that any change here also needs a comparable change in env.py
+            opts={
+                "compare_type": Runner.compare_type,
+                "include_object": Runner.include_object,
+                "compare_server_default": Runner.compare_server_default,
+                #                "transaction_per_migration": True,
+                "render_item": Runner.render_item,
+                # TODO need to do a fake as_sql with stdout
+                "as_sql": True,
+            },
+        )
+
+        def invoke(op):
+            if isinstance(op, alembicops.OpContainer):
+                for op2 in op.ops:
+                    invoke(op2)
+            else:
+                #                print(op)
+                operations.invoke(op)
+
+        # use different migrations context with as_sql so that we don't have issues
+        operations = Operations(mc2)
+        # TODO
+#        mc._version.create()
+        for op in migrations.upgrade_ops.ops:
+            invoke(op)
+            # if isinstance(op, alembicops.OpContainer):
+            #     for op2 in op.ops:
+            #         #                    print("op2", op2)
+            #         operations.invoke(op2)
+            # else:
+            #     #                print(op)
+            #     operations.invoke(op)
+#            print(op._to_impl)
+    #        [op for op in migrations.upgrade_ops.ops]
+#        print(migrations.upgrade_ops.ops)

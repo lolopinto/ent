@@ -97,7 +97,7 @@ def run_migrations_offline():
         compare_type=runner.Runner.compare_type,
         include_object=runner.Runner.include_object,
         compare_server_default=runner.Runner.compare_server_default,
-        render_item=runner.Runner.render_server_default,
+        render_item=runner.Runner.render_item,
         # transaction_per_migration doesn't seem to apply offline
     )
 

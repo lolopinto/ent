@@ -1,6 +1,9 @@
 import os
 import sys
 import argparse
+import alembic
+
+import sqlalchemy
 
 # if env variable is set, manipulate the path to put local
 # current directory over possibly installed auto_schema so that we
@@ -46,50 +49,67 @@ parser.add_argument('--message', help='message if alembic merge is called')
 parser.add_argument('--squash', help='squash the last N changes into one')
 parser.add_argument(
     '--changes', help='get changes in schema', action='store_true')
+# this may not be what i want since it'll do all changes...
+parser.add_argument(
+    '--all_sql', help='get all the sql commands that should be run to create db', action='store_true'
+)
 
 
 def main():
-    try:
-        args = parser.parse_args()
+    # try:
+    args = parser.parse_args()
 
-        sys.path.append(os.path.relpath(args.schema))
+    sys.path.append(os.path.relpath(args.schema))
 
-        schema = import_module('schema')
-        metadata = schema.get_metadata()
+    schema = import_module('schema')
+    metadata = schema.get_metadata()
 
-        if args.fix_edges:
-            Runner.fix_edges(metadata, args)
+    if args.fix_edges:
+        Runner.fix_edges(metadata, args)
+    else:
+        print(args)
+        r = Runner.from_command_line(metadata, args)
+        if args.upgrade is not None:
+            r.upgrade(revision=args.upgrade)
+        elif args.downgrade is not None:
+            r.downgrade(args.downgrade, not args.keep_schema_files)
+        elif args.history is True:
+            r.history(verbose=args.verbose, last=args.last,
+                      rev_range=args.rev_range)
+        elif args.current is True:
+            r.current()
+        elif args.heads is True:
+            r.heads()
+        elif args.branches is True:
+            r.branches()
+        elif args.show is not None:
+            r.show(args.show)
+        elif args.stamp is not None:
+            r.stamp(args.stamp)
+        elif args.edit is not None:
+            r.edit(args.edit)
+        elif args.changes:
+            r.changes()
+        elif args.merge is not None:
+            r.merge(args.merge, args.message)
+        elif args.squash is not None:
+            r.squash(args.squash)
+        elif args.all_sql is True:
+            # need a compare None -> schema as it exists immediately
+
+            r.all_sql()
+
+#            r.upgrade('base:heads', sql=True)
+            # alembic_versions
+            # get each table -> output create().
+            # we need compare to work... because of things like index...
+            # get each edge -> output add edge
+            # get dbrows -> output insert into
+
         else:
-            r = Runner.from_command_line(metadata, args)
-            if args.upgrade is not None:
-                r.upgrade(revision=args.upgrade)
-            elif args.downgrade is not None:
-                r.downgrade(args.downgrade, not args.keep_schema_files)
-            elif args.history is True:
-                r.history(verbose=args.verbose, last=args.last,
-                          rev_range=args.rev_range)
-            elif args.current is True:
-                r.current()
-            elif args.heads is True:
-                r.heads()
-            elif args.branches is True:
-                r.branches()
-            elif args.show is not None:
-                r.show(args.show)
-            elif args.stamp is not None:
-                r.stamp(args.stamp)
-            elif args.edit is not None:
-                r.edit(args.edit)
-            elif args.changes:
-                r.changes()
-            elif args.merge is not None:
-                r.merge(args.merge, args.message)
-            elif args.squash is not None:
-                r.squash(args.squash)
-            else:
-                r.run()
-    except Exception as err:
-        sys.stderr.write("auto_schema error: "+str(err))
+            r.run()
+    # except Exception as err:
+    #     sys.stderr.write("auto_schema error: "+str(err))
 
 
 if __name__ == '__main__':
