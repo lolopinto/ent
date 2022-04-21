@@ -143,3 +143,25 @@ def add_enum_type(operations: ops.Operations, operation: ops.AddEnumOp):
 def drop_enum_type(operations: ops.Operations, operation: ops.DropEnumOp):
     postgresql.ENUM(*operation.values, name=operation.enum_name).drop(
         operations.get_bind())
+
+
+@Operations.implementation_for(ops.CreateFullTextIndexOp)
+def create_full_text_index(operations: ops.Operations, operation: ops.CreateFullTextIndexOp):
+    connection = operations.get_bind()
+    connection.execute(
+        "CREATE INDEX %(index_name)s ON %(table_name)s USING %(using)s (%(using_internals)s);" % {
+            'index_name': operation.index_name,
+            'table_name': operation.table_name,
+            'using': operation.kw.get('info').get('postgresql_using'),
+            # TODO should this work if empty?
+            'using_internals': operation.kw.get('info').get('postgresql_using_internals'),
+        }
+    )
+
+
+@Operations.implementation_for(ops.DropFullTextIndexOp)
+def create_full_text_index(operations: ops.Operations, operation: ops.CreateFullTextIndexOp):
+    connection = operations.get_bind()
+    connection.execute(
+        "DROP INDEX %s" % operation.index_name
+    )

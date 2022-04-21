@@ -5,6 +5,8 @@ from sqlalchemy.dialects import postgresql
 from auto_schema.clause_text import get_clause_text
 from auto_schema import runner
 from sqlalchemy.sql.sqltypes import String
+
+from auto_schema import compare
 from . import conftest
 
 
@@ -425,3 +427,55 @@ def _setup_assoc_edge_config(new_test_runner, metadata_with_assoc_edge_config):
     # r.get_metadata().reflect(bind=r.get_connection())
 
     return r
+
+
+def make_changes_and_restore(
+    new_test_runner,
+    metadata_with_table,
+    metadata_change_func,
+    r2_message,
+    r3_message,
+    validate_schema=True,
+    post_r2_func=None,
+):
+    r = new_test_runner(metadata_with_table)
+    run_and_validate_with_standard_metadata_tables(
+        r, metadata_with_table)
+
+    r2 = recreate_with_new_metadata(
+        r, new_test_runner, metadata_with_table, metadata_change_func)
+
+    message = r2.revision_message()
+    assert message == r2_message
+
+    r2.run()
+
+    # should have the expected files with the expected tables
+    assert_num_files(r2, 2)
+    assert_num_tables(r2, 2, ['accounts', 'alembic_version'])
+
+    if post_r2_func is not None:
+        post_r2_func(r2)
+
+    # downgrade and upgrade back should work
+    r2.downgrade(delete_files=False, revision='-1')
+    r2.upgrade()
+
+    if validate_schema:
+        validate_metadata_after_change(r2, r2.get_metadata())
+
+    r3 = recreate_metadata_fixture(
+        new_test_runner, conftest.metadata_with_base_table_restored(), r2)
+
+    message = r3.revision_message()
+    assert message == r3_message
+
+    r3.run()
+
+    # should have the expected files with the expected tables
+    assert_num_files(r3, 3)
+    assert_num_tables(r3, 2, ['accounts', 'alembic_version'])
+
+    # downgrade and upgrade back should work
+    r3.downgrade(delete_files=False, revision='-1')
+    r3.upgrade()

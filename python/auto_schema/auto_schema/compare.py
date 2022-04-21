@@ -1,10 +1,18 @@
+import functools
 from alembic.autogenerate import comparators
+from alembic.autogenerate.api import AutogenContext
+
+from auto_schema.schema_item import FullTextIndex
 from . import ops
 from alembic.operations import Operations, MigrateOperation
 import sqlalchemy as sa
+from sqlalchemy.engine import reflection
 import pprint
+import re
 from sqlalchemy.dialects import postgresql
 import alembic.operations.ops as alembicops
+from typing import Optional
+import functools
 
 
 @comparators.dispatch_for("schema")
@@ -86,14 +94,18 @@ def _process_edges(source_edges, compare_edges, upgrade_ops, upgrade_op, edge_mi
         [upgrade_ops.ops.append(alter_op) for alter_op in alter_ops]
 
 
+def _dialect_name(autogen_context: AutogenContext) -> str:
+    return autogen_context.connection.dialect.name
+
+
 # why isn't this just metadata.sorted_tables?
-def _table_exists(autogen_context):
+def _table_exists(autogen_context: AutogenContext):
     dialect_map = {
         'sqlite': _execute_sqlite_dialect,
         'postgresql': _execute_postgres_dialect,
     }
 
-    dialect = autogen_context.metadata.bind.dialect.name
+    dialect = _dialect_name(autogen_context)
 
     if dialect_map[dialect] is None:
         raise Exception("unsupported dialect")
@@ -101,7 +113,7 @@ def _table_exists(autogen_context):
     return dialect_map[dialect](autogen_context.connection)
 
 
-def _execute_postgres_dialect(connection):
+def _execute_postgres_dialect(connection: sa.engine.Connection):
     row = connection.execute(
         "SELECT to_regclass('%s') IS NOT NULL as exists" % (
             "assoc_edge_config")
@@ -110,7 +122,7 @@ def _execute_postgres_dialect(connection):
     return res['exists']
 
 
-def _execute_sqlite_dialect(connection):
+def _execute_sqlite_dialect(connection: sa.engine.Connection):
     row = connection.execute(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='%s'" % (
             "assoc_edge_config")
@@ -268,6 +280,7 @@ def _check_removed_table(metadata_table, upgrade_ops, sch):
         _check_removed_column(column, upgrade_ops, sch)
 
 
+# this should be in a table comparison...
 def _check_existing_table(conn_table, metadata_table, upgrade_ops, sch):
     conn_columns = {col.name: col for col in conn_table.columns}
     metadata_columns = {
@@ -407,3 +420,116 @@ def _check_if_enum_values_changed(upgrade_ops, conn_column, metadata_column, sch
                 upgrade_ops.ops.append(
                     ops.AlterEnumOp(conn_type.name, value, schema=sch)
                 )
+
+
+@comparators.dispatch_for("table")
+def _compare_indexes(autogen_context: AutogenContext,
+                     modify_table_ops: alembicops.ModifyTableOps,
+                     schema,
+                     tname: str,
+                     conn_table: Optional[sa.Table],
+                     metadata_table: sa.Table,
+                     ):
+
+    missing_conn_indexes = _get_raw_db_indexes(
+        autogen_context, conn_table)
+    conn_indexes = {}
+    meta_indexes = {}
+
+    if conn_table is not None:
+        conn_indexes = {
+            index.name: index for index in conn_table.indexes}
+
+    if metadata_table is not None:
+        meta_indexes = {
+            index.name: index for index in metadata_table.indexes}
+
+    # not getting this conn index from db. maybe related
+    for name, index in conn_indexes.items():
+        if not name in meta_indexes and isinstance(index, FullTextIndex):
+            modify_table_ops.ops.append(
+                ops.DropFullTextIndexOp(
+                    index.name,
+                    index.table.name,
+                    info=index.info,
+                    table=conn_table,
+                )
+            )
+
+    for name, v in missing_conn_indexes.items():
+        if not name in meta_indexes:
+            modify_table_ops.ops.append(
+                ops.DropFullTextIndexOp(
+                    name,
+                    conn_table.name,
+                    table=conn_table,
+                    info=v,
+                )
+            )
+
+    for name, index in meta_indexes.items():
+        if not name in conn_indexes and isinstance(index, FullTextIndex):
+
+            idx = None
+            for i in range(len(modify_table_ops.ops)):
+                op = modify_table_ops.ops[i]
+                if isinstance(op, alembicops.CreateIndexOp) and op.index_name == index.name:
+                    idx = i
+                    break
+
+            # find existing create index op and replace with ours
+            if idx is not None:
+                modify_table_ops.ops[idx] = ops.CreateFullTextIndexOp(
+                    index.name,
+                    index.table.name,
+                    schema=schema,
+                    table=index.table,
+                    unique=index.unique,
+                    info=index.info,
+                )
+
+
+index_regex = re.compile('CREATE INDEX (.+) USING (gin|btree)(.+)')
+
+
+# sqlalchemy doesn't reflect postgres indexes that have expressions in them so have to manually
+# fetch these indices from pg_indices to find them
+# warning: "Skipped unsupported reflection of expression-based index accounts_full_text_idx"
+def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: Optional[sa.Table]):
+    if conn_table is None or _dialect_name(autogen_context) != 'postgresql':
+        return {}
+
+    ret = {}
+    # we cache the db hit but the table seems to change across the same call and so we're
+    # just paying the CPU price. can probably be fixed in some way...
+    names = set([index.name for index in conn_table.indexes] +
+                [constraint.name for constraint in conn_table.constraints])
+    res = get_db_indexes_for_table(autogen_context.connection, conn_table.name)
+
+    for row in res.fetchall():
+        (
+            name,
+            details
+        ) = row
+        if name not in names:
+            m = index_regex.match(details)
+            if m is None:
+                continue
+            r = m.groups()
+            # missing!
+
+            ret[name] = {
+                'postgresql_using': r[1],
+                'postgresql_using_internals': r[2],
+                # TODO don't have columns|column to pass to FullTextIndex
+            }
+
+    return ret
+
+
+# use a cache so we only hit the db once for each table
+# @functools.lru_cache()
+def get_db_indexes_for_table(connection: sa.engine.Connection, tname: str):
+    res = connection.execute(
+        "SELECT indexname, indexdef from pg_indexes where tablename = '%s'" % tname)
+    return res

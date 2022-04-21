@@ -10,6 +10,9 @@ class ChangeType(str, Enum):
     DROP_COLUMN = "drop_column"
     CREATE_INDEX = "create_index"
     DROP_INDEX = "drop_index"
+    # TODO update go?
+    CREATE_FULL_TEXT_INDEX = "create_full_text_index"
+    DROP_FULL_TEXT_INDEX = "drop_full_text_index"
     CREATE_FOREIGN_KEY = "create_foreign_key"
     ALTER_COLUMN = "alter_column"
     CREATE_UNIQUE_CONSTRAINT = "create_unique_constraint"

@@ -1,5 +1,6 @@
 import json
 from collections.abc import Mapping
+
 from .diff import Diff
 from .clause_text import get_clause_text
 import sqlalchemy as sa
