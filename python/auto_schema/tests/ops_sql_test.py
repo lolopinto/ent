@@ -1,14 +1,11 @@
 from datetime import datetime
 from auto_schema import ops
-# from auto_schema.ops import AddEnumOp, DropEnumOp, AddEdgesOp, RemoveEdgesOp, ModifyEdgeOp, AddRowsOp
 from unittest import mock
-
-from auto_schema import ops_impl
 
 from . import conftest
 import sqlalchemy as sa
 from alembic.migration import MigrationContext
-from alembic.operations import Operations, MigrateOperation
+from alembic.operations import Operations
 import io
 
 
@@ -65,7 +62,7 @@ class OpsTest(object):
                 )
             )
 
-    def test_multiple_edges(self, new_test_runner):
+    def test_add_multiple_edges(self, new_test_runner):
         v = datetime.now().isoformat()
         with mock.patch('auto_schema.ops_impl.new_date', return_value=v):
             validate_op(
@@ -100,7 +97,7 @@ class OpsTest(object):
                 )
             )
 
-    def test_with_inverse(self, new_test_runner):
+    def test_add_with_inverse(self, new_test_runner):
         v = datetime.now().isoformat()
         with mock.patch('auto_schema.ops_impl.new_date', return_value=v):
             validate_op(

@@ -29,7 +29,7 @@ def _sql_version(val):
     return "%r" % val
 
 
-# need to use manual insert statemnt because of sql mode
+# need to use manual insert statement because of sql mode
 def _exec_insert_statement(
     operations: ops.Operations,
     table: sa.Table,
@@ -93,7 +93,6 @@ def _exec_delete_statement(operations: ops.Operations,
 
     else:
         # multiple clauses. send a sql statement for each row
-
         for row in data:
             clauses = []
             for pkey in pkeys:
