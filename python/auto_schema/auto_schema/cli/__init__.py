@@ -1,5 +1,6 @@
 import os
 import sys
+import traceback
 import argparse
 import alembic
 
@@ -49,67 +50,75 @@ parser.add_argument('--message', help='message if alembic merge is called')
 parser.add_argument('--squash', help='squash the last N changes into one')
 parser.add_argument(
     '--changes', help='get changes in schema', action='store_true')
-# this may not be what i want since it'll do all changes...
+
+# see https://alembic.sqlalchemy.org/en/latest/offline.html
+# if true, pased to u
+parser.add_argument(
+    '--sql', help='passed to upgrade to indicate that we should spit out sql needed for changes. if true, sql is output to stdout. if file, sql is stored in file')
+
+# spits out sql to create a new database from scratch. compares against the base postgres database
+# expects no types or databases
 parser.add_argument(
     '--all_sql', help='get all the sql commands that should be run to create db', action='store_true'
+)
+# spits out sql to incrementally update the database as needed
+# it goes through each revision and emits the change. much slower and all_sql should be preferred
+parser.add_argument(
+    '--progressive_sql', help='get all the sql commands that should be run to create db', action='store_true'
+)
+parser.add_argument(
+    '--file', help='output file for sql generated instead of output buffer. used w/ --all_sql, --progressive_sql or --sql'
 )
 
 
 def main():
-    # try:
-    args = parser.parse_args()
+    try:
+        args = parser.parse_args()
 
-    sys.path.append(os.path.relpath(args.schema))
+        sys.path.append(os.path.relpath(args.schema))
 
-    schema = import_module('schema')
-    metadata = schema.get_metadata()
+        schema = import_module('schema')
+        metadata = schema.get_metadata()
 
-    if args.fix_edges:
-        Runner.fix_edges(metadata, args)
-    else:
-        print(args)
-        r = Runner.from_command_line(metadata, args)
-        if args.upgrade is not None:
-            r.upgrade(revision=args.upgrade)
-        elif args.downgrade is not None:
-            r.downgrade(args.downgrade, not args.keep_schema_files)
-        elif args.history is True:
-            r.history(verbose=args.verbose, last=args.last,
-                      rev_range=args.rev_range)
-        elif args.current is True:
-            r.current()
-        elif args.heads is True:
-            r.heads()
-        elif args.branches is True:
-            r.branches()
-        elif args.show is not None:
-            r.show(args.show)
-        elif args.stamp is not None:
-            r.stamp(args.stamp)
-        elif args.edit is not None:
-            r.edit(args.edit)
-        elif args.changes:
-            r.changes()
-        elif args.merge is not None:
-            r.merge(args.merge, args.message)
-        elif args.squash is not None:
-            r.squash(args.squash)
-        elif args.all_sql is True:
-            # need a compare None -> schema as it exists immediately
-
-            r.all_sql()
-
-#            r.upgrade('base:heads', sql=True)
-            # alembic_versions
-            # get each table -> output create().
-            # we need compare to work... because of things like index...
-            # get each edge -> output add edge
-            # get dbrows -> output insert into
-
+        if args.fix_edges:
+            Runner.fix_edges(metadata, args)
         else:
-            r.run()
-    # except Exception as err:
-    #     sys.stderr.write("auto_schema error: "+str(err))
+            r = Runner.from_command_line(metadata, args)
+            if args.upgrade is not None:
+                r.upgrade(revision=args.upgrade, sql=args.sql)
+            elif args.downgrade is not None:
+                r.downgrade(args.downgrade, not args.keep_schema_files)
+            elif args.history is True:
+                r.history(verbose=args.verbose, last=args.last,
+                          rev_range=args.rev_range)
+            elif args.current is True:
+                r.current()
+            elif args.heads is True:
+                r.heads()
+            elif args.branches is True:
+                r.branches()
+            elif args.show is not None:
+                r.show(args.show)
+            elif args.stamp is not None:
+                r.stamp(args.stamp)
+            elif args.edit is not None:
+                r.edit(args.edit)
+            elif args.changes:
+                r.changes()
+            elif args.merge is not None:
+                r.merge(args.merge, args.message)
+            elif args.squash is not None:
+                r.squash(args.squash)
+            elif args.all_sql is True:
+                r.all_sql(file=args.file)
+            elif args.progressive_sql is True:
+                r.progressive_sql(file=args.file)
+            else:
+                r.run()
+    except Exception as err:
+        sys.stderr.write("auto_schema error: "+str(err))
+        if os.getenv('LOCAL_AUTO_SCHEMA') == 'true':
+            traceback.print_exception(*sys.exc_info())
 
 
 if __name__ == '__main__':
