@@ -3,10 +3,6 @@ import { AccountToTagsQuery } from "../account/query/account_to_tags_query";
 import TodoAddTagAction from "../todo/actions/todo_add_tag_action";
 import TodoRemoveTagAction from "../todo/actions/todo_remove_tag_action";
 
-beforeAll(() => {
-  process.env.DB_CONNECTION_STRING = `sqlite:///todo.db`;
-});
-
 test("create", async () => {
   await createTag("SPORTS");
 });

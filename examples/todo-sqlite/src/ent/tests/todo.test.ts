@@ -6,10 +6,6 @@ import { createAccount, createTodo } from "../testutils/util";
 import { query } from "@snowtop/ent";
 import { advanceTo } from "jest-date-mock";
 
-beforeAll(() => {
-  process.env.DB_CONNECTION_STRING = `sqlite:///todo.db`;
-});
-
 test("create", async () => {
   await createTodo();
 });
