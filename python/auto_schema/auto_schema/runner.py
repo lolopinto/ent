@@ -336,8 +336,10 @@ class Runner(object):
                 operations.invoke(op)
 
         operations = Operations(mc2)
+
         # create alembic table to start
         mc2._version.create(bind=mc2.connection)
+
         for op in migrations.upgrade_ops.ops:
             invoke(op)
 
