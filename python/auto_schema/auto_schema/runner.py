@@ -13,6 +13,7 @@ from alembic.util.exc import CommandError
 
 from sqlalchemy.dialects import postgresql
 import alembic.operations.ops as alembicops
+from alembic.operations import Operations
 
 from . import command
 from . import config
@@ -60,8 +61,12 @@ class Runner(object):
             engine = sa.create_engine(args.engine)
             connection = engine.connect()
 
+        mc = MigrationContext.configure(
+            connection=connection,
+        )
+        operations = Operations(mc)
         edges_map = metadata.info.setdefault("edges", {})
-        ops_impl.add_edges_from(connection, list(edges_map['public'].values()))
+        ops_impl.add_edges_from(operations, list(edges_map['public'].values()))
 
     @classmethod
     def exclude_tables(cls):
