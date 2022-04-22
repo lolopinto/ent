@@ -4,7 +4,7 @@ import {
   EventActivityToAttendingQuery,
   GuestToAttendingEventsQuery,
 } from "src/ent";
-import { DB, IDViewer } from "@snowtop/ent";
+import { IDViewer } from "@snowtop/ent";
 import CreateEventActivityAction from "../event_activity/actions/create_event_activity_action";
 import CreateGuestGroupAction from "../guest_group/actions/create_guest_group_action";
 import EventActivityAddInviteAction from "../event_activity/actions/event_activity_add_invite_action";
@@ -23,10 +23,6 @@ import {
   createAndInvitePlusGuests,
   createGuests,
 } from "src/testutils";
-
-afterAll(async () => {
-  await DB.getInstance().endPool();
-});
 
 describe("create event activity", () => {
   test("valid", async () => {

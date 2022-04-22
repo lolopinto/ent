@@ -1,14 +1,10 @@
 import { expectMutation } from "@snowtop/ent-graphql-tests";
-import { IDViewer, DB } from "@snowtop/ent";
+import { IDViewer } from "@snowtop/ent";
 import { encodeGQLID } from "@snowtop/ent/graphql";
 import { createEvent, createGuestPlus } from "src/testutils";
 // this needs to be the last line becasue of load order or at least after src/testutils
 import schema from "src/graphql/generated/schema";
 import { DateTime } from "luxon";
-
-afterAll(async () => {
-  await DB.getInstance().endPool();
-});
 
 test("create activity", async () => {
   const event = await createEvent();

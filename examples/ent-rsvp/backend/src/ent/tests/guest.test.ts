@@ -1,5 +1,5 @@
 import { GuestGroup } from "src/ent";
-import { DB, IDViewer } from "@snowtop/ent";
+import { IDViewer } from "@snowtop/ent";
 import { randomEmail } from "src/util/random";
 import CreateGuestGroupAction from "../guest_group/actions/create_guest_group_action";
 import CreateGuestAction, {
@@ -8,10 +8,6 @@ import CreateGuestAction, {
 import { Guest } from "../guest";
 import { AuthCode } from "../auth_code";
 import { createEvent } from "src/testutils";
-
-afterAll(async () => {
-  await DB.getInstance().endPool();
-});
 
 type input = Pick<GuestCreateInput, "name" | "emailAddress">;
 async function createGuestGroup(guests: input[]) {
