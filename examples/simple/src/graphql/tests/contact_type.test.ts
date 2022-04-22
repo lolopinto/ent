@@ -1,5 +1,5 @@
 import { advanceBy } from "jest-date-mock";
-import { DB, LoggedOutViewer, IDViewer, Viewer } from "@snowtop/ent";
+import { LoggedOutViewer, IDViewer, Viewer } from "@snowtop/ent";
 import {
   expectQueryFromRoot,
   queryRootConfig,
@@ -13,10 +13,6 @@ import { randomEmail, randomPhoneNumber } from "../../util/random";
 import EditUserAction from "src/ent/user/actions/edit_user_action";
 import CreateContactAction from "src/ent/contact/actions/create_contact_action";
 
-// TODO we need something that does this by default for all tests
-afterAll(async () => {
-  await DB.getInstance().endPool();
-});
 afterEach(() => {
   clearAuthHandlers();
 });

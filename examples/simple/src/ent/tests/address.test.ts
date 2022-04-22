@@ -1,11 +1,7 @@
-import { DB, LoggedOutViewer } from "@snowtop/ent";
+import { LoggedOutViewer } from "@snowtop/ent";
 import CreateAddressAction from "../address/actions/create_address_action";
 
 const vc = new LoggedOutViewer();
-
-afterAll(async () => {
-  await DB.getInstance().endPool();
-});
 
 test("create", async () => {
   const address = await CreateAddressAction.create(vc, {

@@ -1,4 +1,4 @@
-import { DB, LoggedOutViewer, IDViewer, Viewer } from "@snowtop/ent";
+import { LoggedOutViewer, IDViewer, Viewer } from "@snowtop/ent";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { encodeGQLID, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import {
@@ -15,10 +15,6 @@ import CreateEventAction, {
 } from "../../ent/event/actions/create_event_action";
 import CreateAddressAction from "src/ent/address/actions/create_address_action";
 
-// TODO we need something that does this by default for all tests
-afterAll(async () => {
-  await DB.getInstance().endPool();
-});
 afterEach(() => {
   clearAuthHandlers();
 });

@@ -1,13 +1,9 @@
-import { ID, DB, LoggedOutViewer } from "@snowtop/ent";
+import { ID, LoggedOutViewer } from "@snowtop/ent";
 import { expectMutation } from "@snowtop/ent-graphql-tests";
 import schema from "../generated/schema";
 import { DateTime } from "luxon";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { DayOfWeek, DayOfWeekAlt, HoursOfOperation } from "src/ent";
-
-afterAll(async () => {
-  await DB.getInstance().endPool();
-});
 
 // stolen from schema/field.ts
 export const leftPad = (val: number): string => {
