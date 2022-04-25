@@ -1,11 +1,7 @@
 import { Address, Event } from "src/ent";
-import { DB, IDViewer, LoggedOutViewer } from "@snowtop/ent";
+import { IDViewer, LoggedOutViewer } from "@snowtop/ent";
 import CreateEventAction from "../event/actions/create_event_action";
 import { createUser } from "src/testutils";
-
-afterAll(async () => {
-  await DB.getInstance().endPool();
-});
 
 describe("create event", () => {
   test("valid", async () => {

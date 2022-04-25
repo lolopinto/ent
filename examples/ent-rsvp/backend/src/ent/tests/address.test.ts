@@ -1,14 +1,10 @@
-import { DB, IDViewer } from "@snowtop/ent";
+import { IDViewer } from "@snowtop/ent";
 import CreateAddressAction from "../address/actions/create_address_action";
 import { Address } from "../internal";
 import EditAddressAction from "../address/actions/edit_address_action";
 import DeleteAddressAction from "../address/actions/delete_address_action";
 import { createUser, createActivity, createEvent } from "src/testutils";
 import CreateEventActivityAction from "../event_activity/actions/create_event_activity_action";
-
-afterAll(async () => {
-  await DB.getInstance().endPool();
-});
 
 async function createAddress() {
   const activiy = await createActivity();

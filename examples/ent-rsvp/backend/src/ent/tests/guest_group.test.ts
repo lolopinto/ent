@@ -1,15 +1,11 @@
 import { Event, GuestGroup } from "src/ent";
-import { DB, IDViewer } from "@snowtop/ent";
+import { IDViewer } from "@snowtop/ent";
 import { randomEmail } from "src/util/random";
 import CreateGuestGroupAction from "../guest_group/actions/create_guest_group_action";
 import EditGuestGroupAction from "../guest_group/actions/edit_guest_group_action";
 import DeleteGuestGroupAction from "../guest_group/actions/delete_guest_group_action";
 import CreateGuestAction from "../guest/actions/create_guest_action";
 import { createUser, createEvent, createActivity } from "src/testutils";
-
-afterAll(async () => {
-  await DB.getInstance().endPool();
-});
 
 async function createGuestGroup(event?: Event) {
   if (!event) {

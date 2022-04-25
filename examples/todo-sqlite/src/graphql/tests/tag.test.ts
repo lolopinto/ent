@@ -3,10 +3,6 @@ import { Tag } from "src/ent";
 import { createAccount, createTag } from "src/ent/testutils/util";
 import schema from "src/graphql/generated/schema";
 
-beforeAll(() => {
-  process.env.DB_CONNECTION_STRING = `sqlite:///todo.db`;
-});
-
 test("create", async () => {
   const account = await createAccount();
   const tag = await createTag("friend", account);

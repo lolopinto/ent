@@ -4,10 +4,6 @@ import { Account } from "../internal";
 import { createAccount } from "../testutils/util";
 import { advanceTo } from "jest-date-mock";
 
-beforeAll(() => {
-  process.env.DB_CONNECTION_STRING = `sqlite:///todo.db`;
-});
-
 test("create", async () => {
   await createAccount();
 });

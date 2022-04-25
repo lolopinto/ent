@@ -8,13 +8,6 @@ import ChangeTodoStatusAction from "src/ent/todo/actions/change_todo_status_acti
 import { createAccount, createTodo, createTag } from "src/ent/testutils/util";
 import { advanceBy } from "jest-date-mock";
 import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
-import { loadConfig } from "@snowtop/ent";
-beforeAll(() => {
-  process.env.DB_CONNECTION_STRING = `sqlite:///todo.db`;
-  loadConfig({
-    //    log: "query",
-  });
-});
 
 async function createTodos(): Promise<[Account, Todo[]]> {
   const account = await createAccount();
