@@ -55,6 +55,10 @@ func RunPythonCommandWriter(pathToConfigs string, w io.Writer, extraArgs ...stri
 
 	errMsg := strings.TrimSpace(berr.String())
 	if len(errMsg) != 0 {
+		// TODO https://github.com/lolopinto/ent/issues/763
+		if local && strings.Contains(errMsg, "the which -a system utility is required for Pipenv to find Python installations properly.") {
+			return nil
+		}
 		return errors.New(errMsg)
 	}
 	return nil

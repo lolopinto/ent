@@ -17,3 +17,5 @@ codegen:
   generatedHeader: "Copyright whaa whaa"
   prettier:
     custom: true
+  schemaSQLFilePath: "src/schema/schema.sql"
+  

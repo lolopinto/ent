@@ -98,6 +98,8 @@ func init() {
 
 	downgradeCmd.Flags().BoolVar(&downgradeInfo.keepSchemaFiles, "keep_schema_files", false, "keep schema files instead of deleting")
 
+	upgradeCmd.Flags().BoolVar(&upgradeInfo.sql, "sql", false, "--sql to generate sql for offline mode")
+
 	alembicCmd.DisableFlagParsing = true
 }
 

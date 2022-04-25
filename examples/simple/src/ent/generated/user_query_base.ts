@@ -131,6 +131,7 @@ export const userToAuthCodesDataLoaderFactory = new IndexLoaderFactory(
     toPrime: [authCodeLoader],
   },
 );
+
 export const userToContactsCountLoaderFactory = new RawCountLoaderFactory({
   ...Contact.loaderOptions(),
   groupCol: "user_id",

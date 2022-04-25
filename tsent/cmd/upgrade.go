@@ -6,12 +6,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type upgradeArgs struct {
+	sql bool
+}
+
+var upgradeInfo upgradeArgs
 var upgradeCmd = &cobra.Command{
 	Use:   "upgrade",
 	Short: "upgrade db",
 	Long:  `This upgrades the database to the latest version`,
 	Example: `tsent upgrade 
-tsent upgrade revision`,
+tsent upgrade revision
+tsent upgrade r1:r2 --sql`,
 	Args: cobra.RangeArgs(0, 1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// default to head if not passed in
@@ -25,6 +31,6 @@ tsent upgrade revision`,
 			return err
 		}
 
-		return db.UpgradeDB(cfg, revision)
+		return db.UpgradeDB(cfg, revision, upgradeInfo.sql)
 	},
 }

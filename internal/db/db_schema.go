@@ -3,6 +3,7 @@ package db
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -43,11 +44,11 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 	if s.db == nil {
 		return errors.New("weirdness. dbSchema is nil when it shouldn't be")
 	}
-	if processor.NoDBChanges() {
+	// if write all, process db changes also
+	if processor.NoDBChanges() && !processor.Config.WriteAllFiles() {
 		return nil
 	}
-	fmt.Println("updating db...")
-	return s.db.makeDBChanges()
+	return s.db.makeDBChanges(processor.Config)
 }
 
 var _ codegen.Step = &Step{}
@@ -415,12 +416,23 @@ func (s *dbSchema) generateShemaTables() error {
 	return nil
 }
 
-func (s *dbSchema) makeDBChanges() error {
-	return auto_schema.RunPythonCommand(s.pathToConfigs)
+func (s *dbSchema) makeDBChanges(cfg *codegen.Config) error {
+	var extraArgs []string
+	if file := cfg.SchemaSQLFilePath(); file != "" {
+		extraArgs = []string{
+			"--run_and_all_sql",
+			"--file",
+			filepath.Join(cfg.GetAbsPathToRoot(), file),
+		}
+	}
+	return auto_schema.RunPythonCommand(s.pathToConfigs, extraArgs...)
 }
 
-func UpgradeDB(cfg *codegen.Config, revision string) error {
+func UpgradeDB(cfg *codegen.Config, revision string, sql bool) error {
 	extraArgs := []string{fmt.Sprintf("-u=%s", revision)}
+	if sql {
+		extraArgs = append(extraArgs, "--sql=true")
+	}
 	return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), extraArgs...)
 }
 

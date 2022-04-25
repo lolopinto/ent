@@ -255,11 +255,13 @@ export const userLoader = new ObjectLoaderFactory({
   fields: userFields,
   key: "id",
 });
+
 export const userEmailAddressLoader = new ObjectLoaderFactory({
   tableName: userTable,
   fields: userFields,
   key: "email_address",
 });
+
 export const userPhoneNumberLoader = new ObjectLoaderFactory({
   tableName: userTable,
   fields: userFields,

@@ -78,6 +78,9 @@ interface CodegenConfig {
   // default format for fields is lowerCamelCase e.g. firstName
   // if you wanna change it to snake_case e.g. first_name, set this field to snake_case
   defaultGraphQLFieldFormat?: graphQLFieldFormat;
+
+  // if we should generate schema.sql file and path to generate it
+  schemaSQLFilePath?: boolean;
 }
 
 interface PrettierConfig {
