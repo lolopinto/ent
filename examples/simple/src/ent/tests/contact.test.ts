@@ -1,4 +1,4 @@
-import { DB, LoggedOutViewer, IDViewer } from "@snowtop/ent";
+import { LoggedOutViewer, IDViewer } from "@snowtop/ent";
 import { User, Contact } from "../../ent";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
 import CreateUserAction from "../user/actions/create_user_action";
@@ -9,11 +9,6 @@ import { UserToContactsQuery } from "../user/query/user_to_contacts_query";
 import EditContactAction from "../contact/actions/edit_contact_action";
 
 const loggedOutViewer = new LoggedOutViewer();
-
-// TODO we need something that does this by default for all tests
-afterAll(async () => {
-  await DB.getInstance().endPool();
-});
 
 async function createUser(): Promise<User> {
   return await CreateUserAction.create(loggedOutViewer, {

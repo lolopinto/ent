@@ -1,4 +1,4 @@
-import { DB, Viewer, LoggedOutViewer, IDViewer } from "@snowtop/ent";
+import { Viewer, LoggedOutViewer, IDViewer } from "@snowtop/ent";
 import { expectMutation, mutationRootConfig } from "@snowtop/ent-graphql-tests";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { mustDecodeIDFromGQLID, encodeGQLID } from "@snowtop/ent/graphql";
@@ -8,11 +8,6 @@ import { randomEmail, randomPhoneNumber } from "../../../util/random";
 import CreateUserAction, {
   UserCreateInput,
 } from "../../../ent/user/actions/create_user_action";
-
-// TODO we need something that does this by default for all tests
-afterAll(async () => {
-  await DB.getInstance().endPool();
-});
 
 afterEach(() => {
   clearAuthHandlers();
