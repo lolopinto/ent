@@ -328,6 +328,13 @@ class Runner(object):
             },
         )
 
+        # let's do a consistent (not runtime dependent) sort of constraints by using name instead of _creation_order
+        @property
+        def sort_constraints_by_name(self):
+            return sorted(self.constraints, key=lambda c: c.name)
+
+        sa.Table._sorted_constraints = sort_constraints_by_name
+
         def invoke(op):
             if isinstance(op, alembicops.OpContainer):
                 for op2 in op.ops:
