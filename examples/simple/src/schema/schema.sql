@@ -38,8 +38,8 @@ CREATE TABLE assoc_edge_config (
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
     updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
     CONSTRAINT assoc_edge_config_edge_type_pkey PRIMARY KEY (edge_type), 
-    CONSTRAINT assoc_edge_config_unique_edge_name UNIQUE (edge_name), 
-    CONSTRAINT assoc_edge_config_inverse_edge_type_fkey FOREIGN KEY(inverse_edge_type) REFERENCES assoc_edge_config (edge_type) ON DELETE RESTRICT
+    CONSTRAINT assoc_edge_config_inverse_edge_type_fkey FOREIGN KEY(inverse_edge_type) REFERENCES assoc_edge_config (edge_type) ON DELETE RESTRICT, 
+    CONSTRAINT assoc_edge_config_unique_edge_name UNIQUE (edge_name)
 );
 
 CREATE TABLE comments (
@@ -225,8 +225,8 @@ CREATE TABLE users (
     new_col TEXT, 
     new_col_2 TEXT, 
     CONSTRAINT users_id_pkey PRIMARY KEY (id), 
-    CONSTRAINT users_unique_phone_number UNIQUE (phone_number), 
-    CONSTRAINT users_unique_email_address UNIQUE (email_address)
+    CONSTRAINT users_unique_email_address UNIQUE (email_address), 
+    CONSTRAINT users_unique_phone_number UNIQUE (phone_number)
 );
 
 CREATE TABLE auth_codes (
@@ -238,9 +238,9 @@ CREATE TABLE auth_codes (
     email_address TEXT, 
     phone_number TEXT, 
     CONSTRAINT auth_codes_id_pkey PRIMARY KEY (id), 
-    CONSTRAINT "uniquePhoneCode" UNIQUE (phone_number, code), 
     CONSTRAINT auth_codes_user_id_fkey FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE, 
-    CONSTRAINT "uniqueCode" UNIQUE (email_address, code)
+    CONSTRAINT "uniqueCode" UNIQUE (email_address, code), 
+    CONSTRAINT "uniquePhoneCode" UNIQUE (phone_number, code)
 );
 
 CREATE INDEX auth_codes_user_id_idx ON auth_codes (user_id);
