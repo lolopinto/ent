@@ -1,6 +1,7 @@
 require("ts-node/register");
 import { execSync } from "child_process";
 import { Client as PGClient } from "pg";
+import * as path from "path";
 
 function randomDB(): string {
   let str = Math.random().toString(16).substring(2);
@@ -9,8 +10,7 @@ function randomDB(): string {
   return "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)] + str;
 }
 
-// TODO make this relative
-const path = "/Users/ola/code/ent/examples/simple/src/schema/schema.sql";
+const sqlPath = "../schema/schema.sql";
 
 // can be called by tests who want their own instance instead of global db
 // responsibility of caller to call end() on client
@@ -29,8 +29,9 @@ export async function createDB() {
 
   await client.query(`CREATE DATABASE ${db}`);
 
+  const fullPath = path.join(__dirname, sqlPath);
   // load into db
-  execSync(`psql ${db} < ${path}`);
+  execSync(`psql ${db} < ${fullPath}`);
 
   return { db, user, password, client };
 }
