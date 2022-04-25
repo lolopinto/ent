@@ -74,6 +74,15 @@ def _exec_insert_statement(
     connection.execute(stmt)
 
 
+def date(operations: ops.Operations):
+    connection = operations.get_bind()
+    dialect = connection.dialect.name
+    if dialect == 'postgresql':
+        return exact("now() AT TIME ZONE 'UTC'")
+    else:
+        return exact('datetime()')
+
+
 def _exec_delete_statement(operations: ops.Operations,
                            table: sa.Table,
                            pkeys: List[str],
@@ -136,8 +145,9 @@ def add_edges_from(operations: ops.Operations, edges):
     table = _get_table(operations)
 
     def modify_edge(edge):
-        edge['created_at'] = exact("now() AT TIME ZONE 'UTC'")
-        edge['updated_at'] = exact("now() AT TIME ZONE 'UTC'")
+        d = date(operations)
+        edge['created_at'] = d
+        edge['updated_at'] = d
         if isinstance(edge['edge_type'], postgresql.UUID) or isinstance(edge['edge_type'], uuid.UUID):
             edge['edge_type'] = str(edge['edge_type'])
         return edge
@@ -162,7 +172,7 @@ def modify_edge(operations: ops.Operations, operation: ops.ModifyEdgeOp):
     table = _get_table(operations)
 
     edge = operation.new_edge
-    edge['updated_at'] = exact("now() AT TIME ZONE 'UTC'")
+    edge['updated_at'] = date(operations)
 
     _exec_update_statement(operations, table, ['edge_type'], [edge])
 

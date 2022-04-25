@@ -39,6 +39,14 @@ def validate_op(new_test_runner, get_op, sql):
         assert v == exp
 
 
+def date_value(obj):
+    postgres = "Postgres" in type(obj).__name__
+    if postgres:
+        return "now() AT TIME ZONE 'UTC'"
+    else:
+        return 'datetime()'
+
+
 class OpsTest(object):
     def test_add_single_edge(self, new_test_runner):
         validate_op(
@@ -56,7 +64,9 @@ class OpsTest(object):
             format_insert_stmt(
                 self,
                 "INSERT INTO assoc_edge_config(edge_name, edge_type, symmetric_edge, edge_table, created_at, updated_at) VALUES('UserToFriendsEdge', 1, true, 'user_friends_edge', %s, %s)" % (
-                    "now() AT TIME ZONE 'UTC'", "now() AT TIME ZONE 'UTC'")
+                    date_value(self),
+                    date_value(self),
+                )
             )
         )
 
@@ -86,10 +96,12 @@ class OpsTest(object):
                 "INSERT INTO assoc_edge_config(edge_name, edge_type, symmetric_edge, edge_table, created_at, updated_at) " +
                 "VALUES" +
                 "('UserToFriendsEdge', 1, true, 'user_friends_edge', %s, %s)" % (
-                    "now() AT TIME ZONE 'UTC'", "now() AT TIME ZONE 'UTC'") +
+                    date_value(self), date_value(self)
+                ) +
                 ", " +
                 "('UserToFollowersEdge', 2, false, 'user_followers_edge', %s, %s)" % (
-                    "now() AT TIME ZONE 'UTC'", "now() AT TIME ZONE 'UTC'")
+                    date_value(self), date_value(self)
+                )
             )
         )
 
@@ -121,10 +133,12 @@ class OpsTest(object):
                 "INSERT INTO assoc_edge_config(edge_name, edge_type, symmetric_edge, inverse_edge_type, edge_table, created_at, updated_at) " +
                 "VALUES" +
                 "('UserToFollowersEdge', 1, false, 2, 'user_followers_edge', %s, %s)" % (
-                    "now() AT TIME ZONE 'UTC'", "now() AT TIME ZONE 'UTC'") +
+                    date_value(self), date_value(self)
+                ) +
                 ", " +
                 "('UserToFolloweesEdge', 2, false, 1, 'user_followees_edge', %s, %s)" % (
-                    "now() AT TIME ZONE 'UTC'", "now() AT TIME ZONE 'UTC'")
+                    date_value(self), date_value(self)
+                )
             )
         )
 
@@ -182,7 +196,8 @@ class OpsTest(object):
                     'edge_table': 'user_friends_edge',
                 },
             ),
-            "UPDATE assoc_edge_config SET edge_name = 'UserToFriendsEdge', edge_type = 1, symmetric_edge = true, edge_table = 'user_friends_edge', updated_at = %s WHERE edge_type = 1;" % "now() AT TIME ZONE 'UTC'"
+            "UPDATE assoc_edge_config SET edge_name = 'UserToFriendsEdge', edge_type = 1, symmetric_edge = true, edge_table = 'user_friends_edge', updated_at = %s WHERE edge_type = 1;" % date_value(
+                self)
         )
 
     def test_add_rows(self, new_test_runner):
