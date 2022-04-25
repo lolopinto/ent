@@ -41,98 +41,92 @@ def validate_op(new_test_runner, get_op, sql):
 
 class OpsTest(object):
     def test_add_single_edge(self, new_test_runner):
-        v = datetime.now().isoformat()
-        with mock.patch('auto_schema.ops_impl.new_date', return_value=v):
-            validate_op(
-                new_test_runner,
-                lambda operations:
-                ops.AddEdgesOp.add_edges(
-                    operations,
-                    [{
+        validate_op(
+            new_test_runner,
+            lambda operations:
+            ops.AddEdgesOp.add_edges(
+                operations,
+                [{
+                    'edge_name': 'UserToFriendsEdge',
+                    'edge_type': 1,
+                    'symmetric_edge': True,
+                    'edge_table': 'user_friends_edge',
+                }]
+            ),
+            format_insert_stmt(
+                self,
+                "INSERT INTO assoc_edge_config(edge_name, edge_type, symmetric_edge, edge_table, created_at, updated_at) VALUES('UserToFriendsEdge', 1, true, 'user_friends_edge', %s, %s)" % (
+                    "now() AT TIME ZONE 'UTC'", "now() AT TIME ZONE 'UTC'")
+            )
+        )
+
+    def test_add_multiple_edges(self, new_test_runner):
+        validate_op(
+            new_test_runner,
+            lambda operations:
+            ops.AddEdgesOp.add_edges(
+                operations,
+                [
+                    {
                         'edge_name': 'UserToFriendsEdge',
                         'edge_type': 1,
                         'symmetric_edge': True,
                         'edge_table': 'user_friends_edge',
-                    }]
-                ),
-                format_insert_stmt(
-                    self,
-                    "INSERT INTO assoc_edge_config(edge_name, edge_type, symmetric_edge, edge_table, created_at, updated_at) VALUES('UserToFriendsEdge', 1, true, 'user_friends_edge', '%s', '%s')" % (
-                        v, v)
-                )
+                    },
+                    {
+                        'edge_name': 'UserToFollowersEdge',
+                        'edge_type': 2,
+                        'symmetric_edge': False,
+                        'edge_table': 'user_followers_edge',
+                    },
+                ]
+            ),
+            format_insert_stmt(
+                self,
+                "INSERT INTO assoc_edge_config(edge_name, edge_type, symmetric_edge, edge_table, created_at, updated_at) " +
+                "VALUES" +
+                "('UserToFriendsEdge', 1, true, 'user_friends_edge', %s, %s)" % (
+                    "now() AT TIME ZONE 'UTC'", "now() AT TIME ZONE 'UTC'") +
+                ", " +
+                "('UserToFollowersEdge', 2, false, 'user_followers_edge', %s, %s)" % (
+                    "now() AT TIME ZONE 'UTC'", "now() AT TIME ZONE 'UTC'")
             )
-
-    def test_add_multiple_edges(self, new_test_runner):
-        v = datetime.now().isoformat()
-        with mock.patch('auto_schema.ops_impl.new_date', return_value=v):
-            validate_op(
-                new_test_runner,
-                lambda operations:
-                ops.AddEdgesOp.add_edges(
-                    operations,
-                    [
-                        {
-                            'edge_name': 'UserToFriendsEdge',
-                            'edge_type': 1,
-                            'symmetric_edge': True,
-                            'edge_table': 'user_friends_edge',
-                        },
-                        {
-                            'edge_name': 'UserToFollowersEdge',
-                            'edge_type': 2,
-                            'symmetric_edge': False,
-                            'edge_table': 'user_followers_edge',
-                        },
-                    ]
-                ),
-                format_insert_stmt(
-                    self,
-                    "INSERT INTO assoc_edge_config(edge_name, edge_type, symmetric_edge, edge_table, created_at, updated_at) " +
-                    "VALUES" +
-                    "('UserToFriendsEdge', 1, true, 'user_friends_edge', '%s', '%s')" % (
-                        v, v) +
-                    ", " +
-                    "('UserToFollowersEdge', 2, false, 'user_followers_edge', '%s', '%s')" % (
-                        v, v)
-                )
-            )
+        )
 
     def test_add_with_inverse(self, new_test_runner):
-        v = datetime.now().isoformat()
-        with mock.patch('auto_schema.ops_impl.new_date', return_value=v):
-            validate_op(
-                new_test_runner,
-                lambda operations:
-                ops.AddEdgesOp.add_edges(
-                    operations,
-                    [
-                        {
-                            'edge_name': 'UserToFollowersEdge',
-                            'edge_type': 1,
-                            'symmetric_edge': False,
-                            'inverse_edge_type': 2,
-                            'edge_table': 'user_followers_edge',
-                        },
-                        {
-                            'edge_name': 'UserToFolloweesEdge',
-                            'edge_type': 2,
-                            'symmetric_edge': False,
-                            'inverse_edge_Type': 1,
-                            'edge_table': 'user_followees_edge',
-                        },
-                    ]
-                ),
-                format_insert_stmt(
-                    self,
-                    "INSERT INTO assoc_edge_config(edge_name, edge_type, symmetric_edge, inverse_edge_type, edge_table, created_at, updated_at) " +
-                    "VALUES" +
-                    "('UserToFollowersEdge', 1, false, 2, 'user_followers_edge', '%s', '%s')" % (
-                        v, v) +
-                    ", " +
-                    "('UserToFolloweesEdge', 2, false, 1, 'user_followees_edge', '%s', '%s')" % (
-                        v, v)
-                )
+        validate_op(
+            new_test_runner,
+            lambda operations:
+            ops.AddEdgesOp.add_edges(
+                operations,
+                [
+                    {
+                        'edge_name': 'UserToFollowersEdge',
+                        'edge_type': 1,
+                        'symmetric_edge': False,
+                        'inverse_edge_type': 2,
+                        'edge_table': 'user_followers_edge',
+                    },
+                    {
+                        'edge_name': 'UserToFolloweesEdge',
+                        'edge_type': 2,
+                        'symmetric_edge': False,
+                        'inverse_edge_Type': 1,
+                        'edge_table': 'user_followees_edge',
+                    },
+                ]
+            ),
+            format_insert_stmt(
+                self,
+                "INSERT INTO assoc_edge_config(edge_name, edge_type, symmetric_edge, inverse_edge_type, edge_table, created_at, updated_at) " +
+                "VALUES" +
+                "('UserToFollowersEdge', 1, false, 2, 'user_followers_edge', %s, %s)" % (
+                    "now() AT TIME ZONE 'UTC'", "now() AT TIME ZONE 'UTC'") +
+                ", " +
+                "('UserToFolloweesEdge', 2, false, 1, 'user_followees_edge', %s, %s)" % (
+                    "now() AT TIME ZONE 'UTC'", "now() AT TIME ZONE 'UTC'")
             )
+        )
 
     def test_delete_single_edge(self, new_test_runner):
         validate_op(
@@ -175,23 +169,21 @@ class OpsTest(object):
         )
 
     def test_modify_edge(self, new_test_runner):
-        v = datetime.now().isoformat()
-        with mock.patch('auto_schema.ops_impl.new_date', return_value=v):
-            validate_op(
-                new_test_runner,
-                lambda operations:
-                ops.ModifyEdgeOp.modify_edge(
-                    operations,
-                    1,
-                    {
-                        'edge_name': 'UserToFriendsEdge',
-                        'edge_type': 1,
-                        'symmetric_edge': True,
-                        'edge_table': 'user_friends_edge',
-                    },
-                ),
-                "UPDATE assoc_edge_config SET edge_name = 'UserToFriendsEdge', edge_type = 1, symmetric_edge = true, edge_table = 'user_friends_edge', updated_at = '%s' WHERE edge_type = 1;" % v
-            )
+        validate_op(
+            new_test_runner,
+            lambda operations:
+            ops.ModifyEdgeOp.modify_edge(
+                operations,
+                1,
+                {
+                    'edge_name': 'UserToFriendsEdge',
+                    'edge_type': 1,
+                    'symmetric_edge': True,
+                    'edge_table': 'user_friends_edge',
+                },
+            ),
+            "UPDATE assoc_edge_config SET edge_name = 'UserToFriendsEdge', edge_type = 1, symmetric_edge = true, edge_table = 'user_friends_edge', updated_at = %s WHERE edge_type = 1;" % "now() AT TIME ZONE 'UTC'"
+        )
 
     def test_add_rows(self, new_test_runner):
         validate_op(

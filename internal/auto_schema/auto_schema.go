@@ -13,6 +13,8 @@ import (
 	"github.com/lolopinto/ent/internal/util"
 )
 
+const WHICH_ERROR = "Warning: the which -a system utility is required for Pipenv to find Python installations properly.\n  Please install it."
+
 func RunPythonCommand(pathToConfigs string, extraArgs ...string) error {
 	return RunPythonCommandWriter(pathToConfigs, os.Stdout, extraArgs...)
 }
@@ -56,8 +58,12 @@ func RunPythonCommandWriter(pathToConfigs string, w io.Writer, extraArgs ...stri
 	errMsg := strings.TrimSpace(berr.String())
 	if len(errMsg) != 0 {
 		// TODO https://github.com/lolopinto/ent/issues/763
-		if local && strings.Contains(errMsg, "the which -a system utility is required for Pipenv to find Python installations properly.") {
-			return nil
+		// ignore WHICH_ERROR, make sure real errors are shown
+		if local {
+			errMsg = strings.TrimPrefix(errMsg, WHICH_ERROR)
+			if len(errMsg) == 0 {
+				return nil
+			}
 		}
 		return errors.New(errMsg)
 	}

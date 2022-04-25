@@ -3,7 +3,6 @@ from typing import Any, List, Union
 from . import ops
 import uuid
 from alembic.operations import Operations, MigrateOperation
-import datetime
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.sql.schema import Table
@@ -11,11 +10,15 @@ from sqlalchemy.sql.sqltypes import String
 from auto_schema import config
 
 
-def new_date():
-    # we use isoformat to store in db. this is mocked in ops_sql_test
-    return datetime.datetime.now().isoformat()
-
 # TODO sql_compiler SQLCompiler
+
+# for scenarios where we just want to return exactly what was passed
+# specific strings and don't need %r
+# sa.sql.quoted_name may or may not do the same thing
+class exact(object):
+
+    def __init__(self, val) -> None:
+        self.val = val
 
 
 def _sql_version(val):
@@ -26,6 +29,8 @@ def _sql_version(val):
         return 'true'
     if val is False:
         return 'false'
+    if isinstance(val, exact):
+        return val.val
     return "%r" % val
 
 
@@ -128,12 +133,11 @@ def _exec_update_statement(operations: ops.Operations,
 
 
 def add_edges_from(operations: ops.Operations, edges):
-    t = new_date()
     table = _get_table(operations)
 
     def modify_edge(edge):
-        edge['created_at'] = t
-        edge['updated_at'] = t
+        edge['created_at'] = exact("now() AT TIME ZONE 'UTC'")
+        edge['updated_at'] = exact("now() AT TIME ZONE 'UTC'")
         if isinstance(edge['edge_type'], postgresql.UUID) or isinstance(edge['edge_type'], uuid.UUID):
             edge['edge_type'] = str(edge['edge_type'])
         return edge
@@ -156,10 +160,9 @@ def drop_edge(operations: ops.Operations, operation: ops.RemoveEdgesOp):
 @ Operations.implementation_for(ops.ModifyEdgeOp)
 def modify_edge(operations: ops.Operations, operation: ops.ModifyEdgeOp):
     table = _get_table(operations)
-    t = new_date()
 
     edge = operation.new_edge
-    edge['updated_at'] = t
+    edge['updated_at'] = exact("now() AT TIME ZONE 'UTC'")
 
     _exec_update_statement(operations, table, ['edge_type'], [edge])
 
