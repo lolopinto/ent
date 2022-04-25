@@ -69,6 +69,9 @@ parser.add_argument(
 parser.add_argument(
     '--file', help='output file for sql generated instead of output buffer. used w/ --all_sql, --progressive_sql or --sql'
 )
+parser.add_argument(
+    '--run_and_all_sql', help='run and all_sql combined so we do not call into this multiple times', action='store_true'
+)
 
 
 def main():
@@ -115,6 +118,9 @@ def main():
                 r.progressive_sql(file=args.file)
             else:
                 r.run()
+                if args.run_and_all_sql:
+                    r.all_sql(file=args.file)
+
     except Exception as err:
         sys.stderr.write("auto_schema error: "+str(err))
         if os.getenv('LOCAL_AUTO_SCHEMA') == 'true':

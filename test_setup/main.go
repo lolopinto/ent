@@ -21,7 +21,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := db.UpgradeDB(cfg, "head"); err != nil {
+	if err := db.UpgradeDB(cfg, "head", false); err != nil {
 		log.Fatal(err)
 	}
 

@@ -325,6 +325,13 @@ func (cfg *Config) DefaultGraphQLFieldFormat() codegenapi.GraphQLFieldFormat {
 	return codegenapi.LowerCamelCase
 }
 
+func (cfg *Config) SchemaSQLFilePath() string {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		return codegen.SchemaSQLFilePath
+	}
+	return ""
+}
+
 const DEFAULT_GLOB = "src/**/*.ts"
 const PRETTIER_FILE_CHUNKS = 20
 
@@ -469,6 +476,7 @@ type CodegenConfig struct {
 	GenerateRootResolvers      bool                           `yaml:"generateRootResolvers"`
 	DefaultGraphQLMutationName codegenapi.GraphQLMutationName `yaml:"defaultGraphQLMutationName"`
 	DefaultGraphQLFieldFormat  codegenapi.GraphQLFieldFormat  `yaml:"defaultGraphQLFieldFormat"`
+	SchemaSQLFilePath          string                         `yaml:"schemaSQLFilePath"`
 }
 
 func cloneCodegen(cfg *CodegenConfig) *CodegenConfig {
@@ -490,6 +498,7 @@ func (cfg *CodegenConfig) Clone() *CodegenConfig {
 		GenerateRootResolvers:      cfg.GenerateRootResolvers,
 		DefaultGraphQLMutationName: cfg.DefaultGraphQLMutationName,
 		DefaultGraphQLFieldFormat:  cfg.DefaultGraphQLFieldFormat,
+		SchemaSQLFilePath:          cfg.SchemaSQLFilePath,
 	}
 }
 
