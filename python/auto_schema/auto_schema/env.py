@@ -1,4 +1,4 @@
-
+import sys
 from logging.config import dictConfig
 
 from sqlalchemy import engine_from_config
@@ -78,7 +78,6 @@ connection = config.connection
 #     engine = engine
 
 
-# TODO this hasn't been fully tested or doesn't work...
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
 
@@ -91,13 +90,22 @@ def run_migrations_offline():
     script output.
 
     """
+    # default
+    output_buffer = sys.stdout
+
+    # could be set in Runner.progressive_sql
+    # or in Runner.__init__ for --upgrade foo:bar --sql=schema.sql
+    if config.output_buffer is not None:
+        output_buffer = config.output_buffer
+
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
         compare_type=runner.Runner.compare_type,
         include_object=runner.Runner.include_object,
         compare_server_default=runner.Runner.compare_server_default,
-        render_item=runner.Runner.render_server_default,
+        render_item=runner.Runner.render_item,
+        output_buffer=output_buffer
         # transaction_per_migration doesn't seem to apply offline
     )
 

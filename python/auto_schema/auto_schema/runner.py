@@ -1,5 +1,7 @@
 import json
+import sys
 from collections.abc import Mapping
+from alembic.operations import Operations
 
 from .diff import Diff
 from .clause_text import get_clause_text
@@ -25,13 +27,17 @@ from . import util
 
 
 class Runner(object):
-    def __init__(self, metadata, connection, schema_path):
+    def __init__(self, metadata, connection, schema_path, sql=None):
         self.metadata = metadata
         self.schema_path = schema_path
         self.connection = connection
+        self.sql = sql
 
         config.metadata = self.metadata
         config.connection = connection
+
+        if self.sql is not None and self.sql.lower() != 'true':
+            config.output_buffer = open(self.sql, 'w')
 
         self.mc = MigrationContext.configure(
             connection=self.connection,
@@ -51,7 +57,7 @@ class Runner(object):
         engine = sa.create_engine(args.engine)
         connection = engine.connect()
         metadata.bind = connection
-        return Runner(metadata, connection, args.schema)
+        return Runner(metadata, connection, args.schema, sql=args.sql)
 
     @classmethod
     def fix_edges(cls, metadata, args):
@@ -233,8 +239,8 @@ class Runner(object):
         # understand diff and make changes as needed
         # pprint.pprint(migrations, indent=2, width=30)
 
-    def upgrade(self, revision='heads'):
-        return self.cmd.upgrade(revision)
+    def upgrade(self, revision='heads', sql=False):
+        return self.cmd.upgrade(revision, sql)
 
     def downgrade(self, revision, delete_files):
         self.cmd.downgrade(revision, delete_files=delete_files)
@@ -270,3 +276,75 @@ class Runner(object):
 
     def squash(self, squash):
         self.cmd.squash(self.revision, squash)
+
+    # doesn't invoke env.py. completely different flow
+    # progressive_sql and upgrade range do go through offline path
+    def all_sql(self, file=None):
+        dialect = self.connection.dialect.name
+        # TODO handle
+        if dialect != 'postgresql':
+            return
+
+        # doing from empty db so need to confirm actually empty
+        engine = sa.create_engine('postgresql://')
+        connection = engine.connect()
+
+        metadata = sa.MetaData()
+        metadata.reflect(connection)
+        if len(metadata.sorted_tables) != 0:
+            raise Exception("to compare from base tables, cannot have any tables in database. have %d" % len(
+                metadata.sorted_tables))
+
+        mc = MigrationContext.configure(
+            connection=connection,
+            dialect_name=dialect,
+            # note that any change here also needs a comparable change in env.py
+            opts={
+                "compare_type": Runner.compare_type,
+                "include_object": Runner.include_object,
+                "compare_server_default": Runner.compare_server_default,
+                "transaction_per_migration": True,
+                "render_item": Runner.render_item,
+            },
+        )
+        migrations = produce_migrations(mc, self.metadata)
+
+        # default is stdout so let's use it
+        buffer = sys.stdout
+        if file is not None:
+            buffer = open(file, 'w')
+
+        # use different migrations context with as_sql so that we don't have issues
+        mc2 = MigrationContext.configure(
+            connection=connection,
+            # note that any change here also needs a comparable change in env.py
+            opts={
+                "compare_type": Runner.compare_type,
+                "include_object": Runner.include_object,
+                "compare_server_default": Runner.compare_server_default,
+                "render_item": Runner.render_item,
+                "as_sql": True,
+                "output_buffer": buffer,
+            },
+        )
+
+        def invoke(op):
+            if isinstance(op, alembicops.OpContainer):
+                for op2 in op.ops:
+                    invoke(op2)
+            else:
+                operations.invoke(op)
+
+        operations = Operations(mc2)
+
+        # create alembic table to start
+        mc2._version.create(bind=mc2.connection)
+
+        for op in migrations.upgrade_ops.ops:
+            invoke(op)
+
+    def progressive_sql(self, file=None):
+        if file is not None:
+            config.output_buffer = open(file, 'w')
+
+        self.upgrade('base:heads', sql=True)
