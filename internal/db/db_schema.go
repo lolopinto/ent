@@ -214,7 +214,7 @@ type indexConstraint struct {
 	name      string
 }
 
-func (constraint *indexConstraint) getConstraintString() string {
+func (constraint *indexConstraint) getInfo() (string, []string) {
 	idxNameParts := []string{
 		constraint.tableName,
 	}
@@ -230,10 +230,14 @@ func (constraint *indexConstraint) getConstraintString() string {
 		idxName = base.GetNameFromParts(idxNameParts)
 	}
 
-	args := []string{
-		strconv.Quote(idxName),
-	}
-	args = append(args, colNames...)
+	return strconv.Quote(idxName), colNames
+}
+
+func (constraint *indexConstraint) getConstraintString() string {
+	quotedName, quotedColNames := constraint.getInfo()
+
+	args := []string{quotedName}
+	args = append(args, quotedColNames...)
 	if constraint.unique {
 		args = append(args, "unique=True")
 	}
@@ -241,6 +245,68 @@ func (constraint *indexConstraint) getConstraintString() string {
 	return fmt.Sprintf(
 		"sa.Index(%s)", strings.Join(args, ", "),
 	)
+}
+
+type fullTextConstraint struct {
+	*indexConstraint
+	fullText *input.FullText
+}
+
+func (constraint *fullTextConstraint) getConstraintString() string {
+	quotedName, quotedColNames := constraint.getInfo()
+	postgresql_using := "gin"
+
+	fullText := constraint.fullText
+	if fullText.IndexType != "" {
+		postgresql_using = string(constraint.fullText.IndexType)
+	}
+
+	// simple just use sa.Index since that works
+	if fullText.GeneratedColumnName != "" {
+		args := []string{
+			quotedName,
+			strconv.Quote(fullText.GeneratedColumnName),
+			fmt.Sprintf("postgresql_using='%s'", postgresql_using),
+		}
+		return fmt.Sprintf(
+			"sa.Index(%s)", strings.Join(args, ", "),
+		)
+	}
+
+	// ignore weights for now
+	if len(fullText.Weights) == 0 {
+		var searchConfig string
+		if fullText.LanguageColumn == "" {
+			searchConfig = fmt.Sprintf("'%s'", fullText.Language)
+		} else {
+			searchConfig = fmt.Sprintf("%s::reconfig", fullText.LanguageColumn)
+		}
+
+		parts := make([]string, len(constraint.dbColumns))
+		for idx, col := range constraint.dbColumns {
+			parts[idx] = fmt.Sprintf("coalesce(%s, '')", col.DBColName)
+		}
+		postgresql_using_internals := fmt.Sprintf(
+			"to_tsvector(%s, %s)",
+			searchConfig,
+			strings.Join(parts, " || ' ' || "),
+		)
+		kvPairs := []string{
+			getKVPair("postgresql_using", strconv.Quote(postgresql_using)),
+			getKVPair("postgresql_using_internals", strconv.Quote(postgresql_using_internals)),
+		}
+		if len(quotedColNames) == 1 {
+			kvPairs = append(kvPairs,
+				getKVPair("column", quotedColNames[0]))
+		} else {
+			kvPairs = append(kvPairs,
+				getKVPair("columns", fmt.Sprintf("[%s]", strings.Join(quotedColNames, ", "))))
+		}
+		return fmt.Sprintf("FullTextIndex(%s, info=%s)", quotedName, getKVDict(kvPairs))
+	}
+	// TODO weights...
+
+	return ""
 }
 
 type checkConstraint struct {
@@ -337,13 +403,22 @@ func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbCo
 		if err != nil {
 			return err
 		}
+
 		constraint := &indexConstraint{
 			dbColumns: cols,
 			tableName: nodeData.GetTableName(),
 			unique:    index.Unique,
 			name:      index.Name,
 		}
-		*constraints = append(*constraints, constraint)
+		if index.FullText != nil {
+			fullText := &fullTextConstraint{
+				indexConstraint: constraint,
+				fullText:        index.FullText,
+			}
+			*constraints = append(*constraints, fullText)
+		} else {
+			*constraints = append(*constraints, constraint)
+		}
 	}
 	return nil
 }
@@ -596,17 +671,21 @@ func (s *dbSchema) getSchemaForTemplate() (*dbSchemaTemplate, error) {
 
 func (s *dbSchema) getEdgeLine(edge *ent.AssocEdgeData) string {
 	kvPairs := []string{
-		s.getEdgeKVPair("edge_name", strconv.Quote(edge.EdgeName)),
-		s.getEdgeKVPair("edge_type", strconv.Quote(string(edge.EdgeType))),
-		s.getEdgeKVPair("edge_table", strconv.Quote(edge.EdgeTable)),
-		s.getEdgeKVPair("symmetric_edge", s.getSymmetricEdgeValInEdge(edge)),
-		s.getEdgeKVPair("inverse_edge_type", s.getInverseEdgeValInEdge(edge)),
+		getKVPair("edge_name", strconv.Quote(edge.EdgeName)),
+		getKVPair("edge_type", strconv.Quote(string(edge.EdgeType))),
+		getKVPair("edge_table", strconv.Quote(edge.EdgeTable)),
+		getKVPair("symmetric_edge", s.getSymmetricEdgeValInEdge(edge)),
+		getKVPair("inverse_edge_type", s.getInverseEdgeValInEdge(edge)),
 	}
 
+	return getKVDict(kvPairs)
+}
+
+func getKVDict(kvPairs []string) string {
 	return fmt.Sprintf("{%s}", strings.Join(kvPairs, ", "))
 }
 
-func (s *dbSchema) getEdgeKVPair(key, val string) string {
+func getKVPair(key, val string) string {
 	return strconv.Quote(key) + ":" + val
 }
 

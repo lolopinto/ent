@@ -30,6 +30,7 @@ export default interface Schema {
   // constraints applied to the schema e.g. multi-fkey, multi-column unique keys, join table primary keys etc
   constraints?: Constraint[];
 
+  // should this be indexes?
   indices?: Index[];
 
   // hide a node from graphql
@@ -537,10 +538,28 @@ export interface Constraint {
   condition?: string; // only applies in check constraint
 }
 
+// use coalesce for all generated
+export interface FullText {
+  // create a generated computed stored text column for this named XXX
+  // TODO: should validate multiple columns?
+  generatedColumnName?: string;
+  // TODO full list
+  // TODO language can be from a column so maybe language be optional?
+  language?: "english" | "french" | "german";
+  languageColumn?: string;
+  // gin is default
+  indexType?: "gin" | "gist";
+
+  // ordered list of rankings A, B, C, D
+  // TODO: should it match list of columns?
+  weights?: string[];
+}
+
 export interface Index {
   name: string;
   columns: string[];
   unique?: boolean; // can also create a unique constraint this way because why not...
+  fulltext?: FullText;
 }
 
 export interface ForeignKeyInfo {

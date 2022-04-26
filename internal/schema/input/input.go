@@ -625,9 +625,33 @@ func (c *Constraint) GetConstraintTypeString() string {
 
 type Index struct {
 	// Note that anytime anything changes here, have to update indexEqual in compare.go
-	Name    string   `json:"name,omitempty"`
-	Columns []string `json:"columns,omitempty"`
-	Unique  bool     `json:"unique,omitempty"`
+	Name     string    `json:"name,omitempty"`
+	Columns  []string  `json:"columns,omitempty"`
+	Unique   bool      `json:"unique,omitempty"`
+	FullText *FullText `json:"fullText,omitempty"`
+}
+
+type FullTextLanguage string
+
+const (
+	English FullTextLanguage = "english"
+	French  FullTextLanguage = "french"
+	German  FullTextLanguage = "german"
+)
+
+type IndexType string
+
+const (
+	Gin  IndexType = "gin"
+	Gist IndexType = "gist"
+)
+
+type FullText struct {
+	GeneratedColumnName string           `json:"generatedColumnName,omitempty"`
+	Language            FullTextLanguage `json:"language,omitempty"`
+	LanguageColumn      string           `json:"languageColumn,omitempty"`
+	IndexType           IndexType        `json:"indexType,omitempty"`
+	Weights             []string         `json:"weights,omitempty"`
 }
 
 type ConstraintType string
