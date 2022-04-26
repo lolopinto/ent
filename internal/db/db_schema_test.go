@@ -9,10 +9,11 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/parsehelper"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
-	"github.com/lolopinto/ent/internal/schema/testhelper"
+	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -556,19 +557,31 @@ func TestInverseEdge(t *testing.T) {
 }
 
 func TestEnumType(t *testing.T) {
-	dbSchema := getSchemaFromCode(
+	dbSchema := getSchemaFromInput(
 		t,
-		map[string]string{
-			"request.ts": testhelper.GetCodeWithSchema(
-				`import {BaseEntSchema, Field, EnumType} from "{schema}";
-
-				export default class Request extends BaseEntSchema {
-					fields: Field[] = [
-						EnumType({name: "Status", values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus", createEnumType: true}),
-					]
-				}
-				`,
-			),
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"Request": {
+					Fields: []*input.Field{
+						{
+							Name:       "id",
+							PrimaryKey: true,
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+						},
+						{
+							Name: "Status",
+							Type: &input.FieldType{
+								DBType:      input.Enum,
+								Values:      []string{"OPEN", "PENDING", "CLOSED"},
+								Type:        "RequestStatus",
+								GraphQLType: "RequestStatus",
+							},
+						},
+					},
+				},
+			},
 		},
 	)
 
@@ -588,18 +601,32 @@ func TestEnumType(t *testing.T) {
 }
 
 func TestNullableEnumType(t *testing.T) {
-	dbSchema := getSchemaFromCode(t,
-		map[string]string{
-			"request.ts": testhelper.GetCodeWithSchema(
-				`import {BaseEntSchema, Field, EnumType} from "{schema}";
-
-				export default class Request extends BaseEntSchema {
-					fields: Field[] = [
-						EnumType({name: "Status", values: ["OPEN", "PENDING", "CLOSED"], createEnumType: true, nullable: true}),
-					]
-				}
-				`,
-			),
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"Request": {
+					Fields: []*input.Field{
+						{
+							Name:       "id",
+							PrimaryKey: true,
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+						},
+						{
+							Name:     "Status",
+							Nullable: true,
+							Type: &input.FieldType{
+								DBType:      input.Enum,
+								Values:      []string{"OPEN", "PENDING", "CLOSED"},
+								Type:        "Status",
+								GraphQLType: "Status",
+							},
+						},
+					},
+				},
+			},
 		},
 	)
 
@@ -620,50 +647,54 @@ func TestNullableEnumType(t *testing.T) {
 }
 
 func TestEnumTableInSchema(t *testing.T) {
-	dbSchema := getSchemaFromCode(
+	dbSchema := getSchemaFromInput(
 		t,
-		map[string]string{
-			"role.ts": testhelper.GetCodeWithSchema(
-				`import {Schema, Field, StringType, IntegerType} from "{schema}";
-
-				export default class Role implements Schema {
-					fields: Field[] = [
-						StringType({
-							name: 'role',
-							primaryKey: true,
-						}),
-						IntegerType({
-							name: 'random',
-						}),
-					];
-
-					enumTable = true;
-
-					dbRows = [
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"Role": {
+					EnumTable: true,
+					Fields: []*input.Field{
 						{
-							role: 'admin',
-							random: 1,
+							Name:       "role",
+							PrimaryKey: true,
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
 						},
 						{
-							role: 'member',
-							random: 2,
+							Name: "random",
+							Type: &input.FieldType{
+								DBType: input.Int,
+							},
+						},
+					},
+					DBRows: []map[string]interface{}{
+						{
+							"role":   "admin",
+							"random": 1,
 						},
 						{
-							role: 'archived_member',
-							random: 3,
+							"role":   "member",
+							"random": 2,
 						},
 						{
-							role: 'super_admin',
-							random: 4,
+							"role":   "archived_member",
+							"random": 3,
 						},
 						{
-							role: 'owner',
-							random: 5,
+							"role":   "super_admin",
+							"random": 4,
 						},
-					];
-				};`),
+						{
+							"role":   "owner",
+							"random": 5,
+						},
+					},
+				},
+			},
 		},
 	)
+
 	templateData, err := dbSchema.getSchemaForTemplate()
 	require.Nil(t, err)
 
@@ -700,33 +731,35 @@ func TestEnumTableInSchema(t *testing.T) {
 }
 
 func TestMultiColumnPrimaryKey(t *testing.T) {
-	dbSchema := getSchemaFromCode(
+	dbSchema := getSchemaFromInput(
 		t,
-		map[string]string{
-			"user_photo.ts": testhelper.GetCodeWithSchema(`
-				import {Schema, Field, UUIDType, Constraint, ConstraintType} from "{schema}";
-
-				export default class UserPhoto implements Schema {
-					fields: Field[] = [
-						UUIDType({
-							name: 'UserID',
-						}),
-						UUIDType({
-							name: 'PhotoID',
-						}),
-					];
-
-					constraints: Constraint[] = [
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"UserPhoto": {
+					Fields: []*input.Field{
 						{
-							name: "user_photos_pkey",
-							type: ConstraintType.PrimaryKey,
-							columns: ["UserID", "PhotoID"],
+							Name: "UserID",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
 						},
-					];
-				}
-			`),
-		},
-	)
+						{
+							Name: "PhotoID",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+						},
+					},
+					Constraints: []*input.Constraint{
+						{
+							Name:    "user_photos_pkey",
+							Type:    input.PrimaryKeyConstraint,
+							Columns: []string{"UserID", "PhotoID"},
+						},
+					},
+				},
+			},
+		})
 
 	table := getTestTableFromSchema("UserPhotoConfig", dbSchema, t)
 	constraints := table.Constraints
@@ -739,49 +772,82 @@ func TestMultiColumnPrimaryKey(t *testing.T) {
 	)
 }
 
-func TestMultiColumnUniqueKey(t *testing.T) {
-	dbSchema := getSchemaFromCode(
+func TestMultiColumnUniqueConstraint(t *testing.T) {
+	dbSchema := getSchemaFromInput(
 		t,
-		map[string]string{
-			"user.ts": testhelper.GetCodeWithSchema(`
-				import {Field, StringType, BaseEntSchema} from "{schema}";
-
-				export default class User extends BaseEntSchema {
-					fields: Field[] = [
-						StringType({
-							name: 'firstName',
-						}),
-						StringType({
-							name: 'lastName',
-						}),
-					];
-				}
-			`),
-			"contact.ts": testhelper.GetCodeWithSchema(`
-				import {BaseEntSchema, Field, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
-
-				export default class Contact extends BaseEntSchema {
-					fields: Field[] = [
-						StringType({
-							name: "emailAddress",
-						}),
-						UUIDType({
-							name: "userID",
-							foreignKey: {schema: "User", column:"ID"},
-						}),
-					];
-
-					constraints: Constraint[] = [
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
 						{
-							name: "contacts_unique_email",
-							type: ConstraintType.Unique,
-							columns: ["emailAddress", "userID"],
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
 						},
-					];
-				}
-			`),
-		},
-	)
+						{
+							Name: "firstName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "lastName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+					},
+				},
+				"Contact": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "firstName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "lastName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "emailAddress",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "userID",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							ForeignKey: &input.ForeignKey{
+								Schema: "User",
+								Column: "id",
+							},
+						},
+					},
+					Constraints: []*input.Constraint{
+						{
+							Name:    "contacts_unique_email",
+							Type:    input.UniqueConstraint,
+							Columns: []string{"emailAddress", "userID"},
+						},
+					},
+				},
+			},
+		})
 
 	table := getTestTableFromSchema("ContactConfig", dbSchema, t)
 	constraints := table.Constraints
@@ -797,64 +863,96 @@ func TestMultiColumnUniqueKey(t *testing.T) {
 }
 
 func TestMultiColumnForeignKey(t *testing.T) {
-	dbSchema := getSchemaFromCode(
+	dbSchema := getSchemaFromInput(
 		t,
-		map[string]string{
-			"user.ts": testhelper.GetCodeWithSchema(`
-				import {Field, StringType, BaseEntSchema, Constraint, ConstraintType} from "{schema}";
-
-				export default class User extends BaseEntSchema {
-					fields: Field[] = [
-						StringType({
-							name: 'firstName',
-						}),
-						StringType({
-							name: 'lastName',
-						}),
-						StringType({
-							name: 'emailAddress',
-							unique: true,
-						}),
-					];
-
-					constraints: Constraint[] = [
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
 						{
-							name: "users_unique",
-							type: ConstraintType.Unique,
-							columns: ["id", "emailAddress"],
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
 						},
-					];
-				}
-			`),
-			"contact.ts": testhelper.GetCodeWithSchema(`
-				import {BaseEntSchema, Field, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
-
-				export default class Contact extends BaseEntSchema {
-					fields: Field[] = [
-						StringType({
-							name: "emailAddress",
-						}),
-						UUIDType({
-							name: "userID",
-						}),
-					];
-
-					constraints: Constraint[] = [
 						{
-							name: "contacts_user_fkey",
-							type: ConstraintType.ForeignKey,
-							columns: ["userID", "emailAddress"],
-							fkey: {
-								tableName: "users", 
-								ondelete: "CASCADE",
-								columns: ["ID", "emailAddress"],
-							}
+							Name: "firstName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
 						},
-					];
-				}
-			`),
-		},
-	)
+						{
+							Name: "lastName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "emailAddress",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+							Unique: true,
+						},
+					},
+					Constraints: []*input.Constraint{
+						{
+							Name:    "users_unique",
+							Type:    input.UniqueConstraint,
+							Columns: []string{"id", "emailAddress"},
+						},
+					},
+				},
+				"Contact": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "firstName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "lastName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "emailAddress",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "userID",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+						},
+					},
+					Constraints: []*input.Constraint{
+						{
+							Name:    "contacts_user_fkey",
+							Type:    input.ForeignKeyConstraint,
+							Columns: []string{"userID", "emailAddress"},
+							ForeignKey: &input.ForeignKeyInfo{
+								TableName: "users",
+								OnDelete:  input.Cascade,
+								Columns:   []string{"id", "emailAddress"},
+							},
+						},
+					},
+				},
+			},
+		})
 
 	table := getTestTableFromSchema("ContactConfig", dbSchema, t)
 	constraints := table.Constraints
@@ -877,43 +975,51 @@ func TestMultiColumnForeignKey(t *testing.T) {
 }
 
 func TestCheckConstraint(t *testing.T) {
-	dbSchema := getSchemaFromCode(
+	dbSchema := getSchemaFromInput(
 		t,
-		map[string]string{
-			"item.ts": testhelper.GetCodeWithSchema(`
-				import {Field, FloatType, BaseEntSchema, Constraint, ConstraintType} from "{schema}";
-
-				export default class Item extends BaseEntSchema {
-					fields: Field[] = [
-						FloatType({
-							name: 'price',
-						}),
-						FloatType({
-							name: 'discount_price',
-						}),
-					];
-
-					constraints: Constraint[] = [
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"Item": {
+					Fields: []*input.Field{
 						{
-							name: "item_positive_price",
-							type: ConstraintType.Check,
-							condition: 'price > 0',
-							columns: [],
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
 						},
 						{
-							name: "item_positive_discount_price",
-							type: ConstraintType.Check,
-							condition: 'discount_price > 0',
-							columns: [],
+							Name: "price",
+							Type: &input.FieldType{
+								DBType: input.Float,
+							},
 						},
 						{
-							name: "item_price_greater_than_discount",
-							type: ConstraintType.Check,
-							condition: 'price > discount_price',
-							columns: [],
+							Name: "discount_price",
+							Type: &input.FieldType{
+								DBType: input.Float,
+							},
 						},
-					];
-				}`),
+					},
+					Constraints: []*input.Constraint{
+						{
+							Name:      "item_positive_price",
+							Type:      input.CheckConstraint,
+							Condition: "price > 0",
+						},
+						{
+							Name:      "item_positive_discount_price",
+							Type:      input.CheckConstraint,
+							Condition: "discount_price > 0",
+						},
+						{
+							Name:      "item_price_greater_than_discount",
+							Type:      input.CheckConstraint,
+							Condition: "price > discount_price",
+						},
+					},
+				},
+			},
 		},
 	)
 
@@ -937,46 +1043,80 @@ func TestCheckConstraint(t *testing.T) {
 }
 
 func TestPolymorphicField(t *testing.T) {
-	dbSchema := getSchemaFromCode(
+	dbSchema := getSchemaFromInput(
 		t,
-		map[string]string{
-			"user.ts": testhelper.GetCodeWithSchema(`
-				import {Field, StringType, BaseEntSchema} from "{schema}";
-
-				export default class User extends BaseEntSchema {
-					fields: Field[] = [
-						StringType({
-							name: 'firstName',
-						}),
-						StringType({
-							name: 'lastName',
-						}),
-					];
-				}
-			`),
-			"address.ts": testhelper.GetCodeWithSchema(`
-		import {BaseEntSchema, Field, StringType, UUIDType} from "{schema}";
-
-		export default class Address extends BaseEntSchema {
-			fields: Field[] = [
-				StringType({ name: "Street" }),
-				StringType({ name: "City" }),
-				StringType({ name: "State" }),
-				StringType({ name: "ZipCode" }), 
-				UUIDType({
-					name: "OwnerID",
-					index: true, 
-					polymorphic: true,
-				}),
-			];
-		}`),
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+					},
+				},
+				"Address": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "Street",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "City",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "State",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "ZipCode",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "OwnerID",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							Index:       true,
+							Polymorphic: &input.PolymorphicOptions{},
+							DerivedFields: []*input.Field{
+								{
+									Name: "OwnerType",
+									Type: &input.FieldType{
+										DBType: input.String,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	)
 
 	table := getTestTableFromSchema("AddressConfig", dbSchema, t)
 	columns := table.Columns
-	// address. 5 obvious fields + owner_type + id/created_at/updated_at
-	require.Len(t, columns, 9)
+	// address. id, street, city, state, zipcode, owner_id, owner_type
+	require.Len(t, columns, 7)
 
 	col := getTestColumnFromTable(t, table, "owner_type")
 	testColumn(
@@ -990,60 +1130,94 @@ func TestPolymorphicField(t *testing.T) {
 }
 
 func TestPolymorphicFieldWithRestrictedTypes(t *testing.T) {
-	dbSchema := getSchemaFromCode(
+	dbSchema := getSchemaFromInput(
 		t,
-		map[string]string{
-			"user.ts": testhelper.GetCodeWithSchema(`
-				import {Field, StringType, BaseEntSchema} from "{schema}";
-
-				export default class User extends BaseEntSchema {
-					fields: Field[] = [
-						StringType({
-							name: 'firstName',
-						}),
-						StringType({
-							name: 'lastName',
-						}),
-					];
-				}
-			`),
-			"location.ts": testhelper.GetCodeWithSchema(`
-				import {Field, StringType, BaseEntSchema} from "{schema}";
-
-				export default class Location extends BaseEntSchema {
-					fields: Field[] = [
-						StringType({
-							name: 'location',
-						}),
-					];
-				}
-			`),
-			"address.ts": testhelper.GetCodeWithSchema(`
-		import {BaseEntSchema, Field, StringType, UUIDType} from "{schema}";
-
-		export default class Address extends BaseEntSchema {
-			fields: Field[] = [
-				StringType({ name: "Street" }),
-				StringType({ name: "City" }),
-				StringType({ name: "State" }),
-				StringType({ name: "ZipCode" }), 
-				UUIDType({
-					name: "OwnerID",
-					index: true, 
-					polymorphic: {
-						// we enforce in typescript for now so no db changes...
-						types: ["User", "Location"],
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
 					},
-					}),
-			];
-		}`),
+				},
+				"Location": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+					},
+				},
+				"Address": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "Street",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "City",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "State",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "ZipCode",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "OwnerID",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							Index: true,
+							Polymorphic: &input.PolymorphicOptions{
+								// we enforce in typescript for now so no db changes...
+								Types: []string{"User", "Location"},
+							},
+							DerivedFields: []*input.Field{
+								{
+									Name: "OwnerType",
+									Type: &input.FieldType{
+										DBType: input.String,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	)
 
 	table := getTestTableFromSchema("AddressConfig", dbSchema, t)
 	columns := table.Columns
-	// address. 5 obvious fields + owner_type + id/created_at/updated_at
-	require.Len(t, columns, 9)
+	// address. id, street, city, state, zipcode, owner_id, owner_type
+	require.Len(t, columns, 7)
 
 	col := getTestColumnFromTable(t, table, "owner_type")
 	testColumn(
@@ -1057,38 +1231,43 @@ func TestPolymorphicFieldWithRestrictedTypes(t *testing.T) {
 }
 
 func TestForeignKeyTS(t *testing.T) {
-	dbSchema := getSchemaFromCode(
+	dbSchema := getSchemaFromInput(
 		t,
-		map[string]string{
-			"user.ts": testhelper.GetCodeWithSchema(`
-				import {Field, StringType, BaseEntSchema} from "{schema}";
-
-				export default class User extends BaseEntSchema {
-					fields: Field[] = [
-						StringType({
-							name: 'firstName',
-						}),
-						StringType({
-							name: 'lastName',
-						}),
-					];
-				}
-			`),
-			"contact.ts": testhelper.GetCodeWithSchema(`
-				import {BaseEntSchema, Field, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
-
-				export default class Contact extends BaseEntSchema {
-					fields: Field[] = [
-						StringType({
-							name: "emailAddress",
-						}),
-						UUIDType({
-							name: "userID",
-							foreignKey: {schema: "User", column:"ID"},
-						}),
-					];
-				}
-			`),
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+					},
+				},
+				"Contact": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "userID",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							ForeignKey: &input.ForeignKey{
+								Schema: "User",
+								Column: "id",
+							},
+						},
+					},
+				},
+			},
 		},
 	)
 
@@ -1120,38 +1299,44 @@ func TestForeignKeyTS(t *testing.T) {
 }
 
 func TestForeignKeyIndexDisabled(t *testing.T) {
-	dbSchema := getSchemaFromCode(
+	dbSchema := getSchemaFromInput(
 		t,
-		map[string]string{
-			"user.ts": testhelper.GetCodeWithSchema(`
-				import {Field, StringType, BaseEntSchema} from "{schema}";
-
-				export default class User extends BaseEntSchema {
-					fields: Field[] = [
-						StringType({
-							name: 'firstName',
-						}),
-						StringType({
-							name: 'lastName',
-						}),
-					];
-				}
-			`),
-			"contact.ts": testhelper.GetCodeWithSchema(`
-				import {BaseEntSchema, Field, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
-
-				export default class Contact extends BaseEntSchema {
-					fields: Field[] = [
-						StringType({
-							name: "emailAddress",
-						}),
-						UUIDType({
-							name: "userID",
-							foreignKey: {schema: "User", column:"ID", disableIndex:true},
-						}),
-					];
-				}
-			`),
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+					},
+				},
+				"Contact": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "userID",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							ForeignKey: &input.ForeignKey{
+								Schema:       "User",
+								Column:       "id",
+								DisableIndex: true,
+							},
+						},
+					},
+				},
+			},
 		},
 	)
 
@@ -1175,32 +1360,41 @@ func TestForeignKeyIndexDisabled(t *testing.T) {
 }
 
 func TestMultiColumnIndex(t *testing.T) {
-	dbSchema := getSchemaFromCode(
+	dbSchema := getSchemaFromInput(
 		t,
-		map[string]string{
-			"contact.ts": testhelper.GetCodeWithSchema(`
-					import {BaseEntSchema, Field, StringType, Index} from "{schema}";
-
-					export default class Contact extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: "firstName",
-							}),
-							StringType({
-								name: "lastName",
-							}),
-						];
-
-						indices: Index[] = [
-							{
-								name: "contacts_name_index",
-								columns: ["firstName", "lastName"],
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"Contact": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
 							},
-						];
-					}
-				`),
-		},
-	)
+							PrimaryKey: true,
+						},
+						{
+							Name: "firstName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "lastName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:    "contacts_name_index",
+							Columns: []string{"firstName", "lastName"},
+						},
+					},
+				},
+			},
+		})
 
 	table := getTestTableFromSchema("ContactConfig", dbSchema, t)
 	constraints := table.Constraints
@@ -1216,55 +1410,81 @@ func TestMultiColumnIndex(t *testing.T) {
 }
 
 func TestMultiColumnUniqueIndex(t *testing.T) {
-	dbSchema := getSchemaFromCode(
+	dbSchema := getSchemaFromInput(
 		t,
-		map[string]string{
-			"user.ts": testhelper.GetCodeWithSchema(`
-					import {Field, StringType, BaseEntSchema} from "{schema}";
-
-					export default class User extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: 'firstName',
-							}),
-							StringType({
-								name: 'lastName',
-							}),
-						];
-					}
-				`),
-			"contact.ts": testhelper.GetCodeWithSchema(`
-					import {BaseEntSchema, Field, UUIDType, StringType, Index} from "{schema}";
-
-					export default class Contact extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: "firstName",
-							}),
-							StringType({
-								name: "lastName",
-							}),
-							// this *should* be EmailType but not worth it
-							StringType({
-								name: "emailAddress",
-							}),
-							UUIDType({
-								name: "userID",
-								foreignKey: {schema: "User", column:"ID"},
-							}),
-						];
-
-						indices: Index[] = [
-							{
-								name: "contacts_unique_email",
-								columns: ["emailAddress", "userID"],
-								unique: true,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
 							},
-						];
-					}
-				`),
-		},
-	)
+							PrimaryKey: true,
+						},
+						{
+							Name: "firstName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "lastName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+					},
+				},
+				"Contact": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "firstName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "lastName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "emailAddress",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "userID",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							ForeignKey: &input.ForeignKey{
+								Schema: "User",
+								Column: "id",
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:    "contacts_unique_email",
+							Columns: []string{"emailAddress", "userID"},
+							Unique:  true,
+						},
+					},
+				},
+			},
+		})
 
 	table := getTestTableFromSchema("ContactConfig", dbSchema, t)
 	constraints := table.Constraints
@@ -1280,47 +1500,62 @@ func TestMultiColumnUniqueIndex(t *testing.T) {
 }
 
 func TestPatterns(t *testing.T) {
-	dbSchema := getSchemaFromCode(
+	dbSchema := getSchemaFromInput(
 		t,
-		map[string]string{
-			"patterns/feedback.ts": testhelper.GetCodeWithSchema(`
-				import { Edge, Field, Pattern } from "{schema}";
-
-				export default class Feedback implements Pattern {
-					name = "feedback";
-					fields: Field[] = [];
-					edges: Edge[] = [
+		&input.Schema{
+			Patterns: map[string]*input.Pattern{
+				"Feedback": {
+					Name: "feedback",
+					AssocEdges: []*input.AssocEdge{
 						{
-							name: "likers",
-							schemaName: "User",
-							inverseEdge: {
-								name: "likes",
-								edgeConstName: "UserToLikes",
+							Name:       "likers",
+							SchemaName: "User",
+							InverseEdge: &input.InverseAssocEdge{
+								Name:          "likes",
+								EdgeConstName: "UserToLikes",
 							},
-							edgeConstName: "ObjectToLikers",
+							EdgeConstName: "ObjectToLikers",
 						},
-					];
-				}`),
-			"user.ts": testhelper.GetCodeWithSchema(`
-				import {BaseEntSchema, Field} from "{schema}";
-
-				export default class User extends BaseEntSchema {
-					fields: Field[] = [];
-				}`),
-			"post.ts": testhelper.GetCodeWithSchema(`
-				import {BaseEntSchema, Field} from "{schema}";
-				import Feedback from "./patterns/feedback";
-
-				export default class Post extends BaseEntSchema {
-
-					constructor() {
-						super();
-						this.addPatterns(new Feedback());
-					}
-					fields: Field[] = [];
-				}`),
-		},
-	)
+					},
+				},
+			},
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+					},
+				},
+				"Post": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+					},
+					AssocEdges: []*input.AssocEdge{
+						{
+							PatternName: "feedback",
+							Name:        "likers",
+							SchemaName:  "User",
+							InverseEdge: &input.InverseAssocEdge{
+								Name:          "likes",
+								EdgeConstName: "UserToLikes",
+							},
+							EdgeConstName: "ObjectToLikers",
+						},
+					},
+				},
+			},
+		})
 
 	require.Len(t, dbSchema.tableMap, 4)
 
@@ -1336,15 +1571,12 @@ func TestPatterns(t *testing.T) {
 	}
 }
 
-func getSchemaFromCode(t *testing.T, code map[string]string) *dbSchema {
-	schema := testhelper.ParseSchemaForTest(
-		t,
-		code,
-		base.TypeScript,
-	)
-	dbSchema := newDBSchema(schema, "models/configs")
-	require.Nil(t, dbSchema.generateShemaTables())
+func getSchemaFromInput(t *testing.T, s *input.Schema) *dbSchema {
+	ss, err := schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, s, base.TypeScript)
+	require.Nil(t, err)
 
+	dbSchema := newDBSchema(ss, "models/configs")
+	require.Nil(t, dbSchema.generateShemaTables())
 	return dbSchema
 }
 
