@@ -252,6 +252,69 @@ type fullTextConstraint struct {
 	fullText *input.FullText
 }
 
+func getSearchConfigFromIndex(fullText *input.FullText) string {
+	if fullText.LanguageColumn == "" {
+		return fmt.Sprintf("'%s'", fullText.Language)
+	} else {
+		return fmt.Sprintf("%s::reconfig", fullText.LanguageColumn)
+	}
+}
+
+func getPostgresUsingInternals(fullText *input.FullText, cols, weights []string) string {
+	if len(weights) > 4 {
+		panic("more weights than expected. should have been caught earlier")
+	}
+
+	searchConfig := getSearchConfigFromIndex(fullText)
+
+	weightsOrder := "ABCD"
+
+	if len(weights) != 0 {
+		used := make(map[string]bool)
+		parts := []string{}
+		for i, col := range weights {
+			used[col] = true
+			parts = append(parts,
+				fmt.Sprintf(
+					"setweight(to_tsvector(%s, coalesce(%s, '')), '%s')",
+					searchConfig,
+					col,
+					string(weightsOrder[i]),
+				),
+			)
+		}
+		for _, col := range cols {
+			if used[col] {
+				continue
+			}
+			parts = append(parts,
+				fmt.Sprintf(
+					"to_tsvector(%s, coalesce(%s, ''))",
+					searchConfig,
+					col,
+				),
+			)
+		}
+
+		return fmt.Sprintf(
+			"(%s)",
+			strings.Join(parts, " || "),
+		)
+
+	}
+
+	parts := make([]string, len(cols))
+	for idx, col := range cols {
+		parts[idx] = fmt.Sprintf("coalesce(%s, '')", col)
+	}
+
+	return fmt.Sprintf(
+		"to_tsvector(%s, %s)",
+		searchConfig,
+		strings.Join(parts, " || ' ' || "),
+	)
+}
+
 func (constraint *fullTextConstraint) getConstraintString() string {
 	quotedName, quotedColNames := constraint.getInfo()
 	postgresql_using := "gin"
@@ -274,39 +337,29 @@ func (constraint *fullTextConstraint) getConstraintString() string {
 	}
 
 	// ignore weights for now
-	if len(fullText.Weights) == 0 {
-		var searchConfig string
-		if fullText.LanguageColumn == "" {
-			searchConfig = fmt.Sprintf("'%s'", fullText.Language)
-		} else {
-			searchConfig = fmt.Sprintf("%s::reconfig", fullText.LanguageColumn)
-		}
-
-		parts := make([]string, len(constraint.dbColumns))
-		for idx, col := range constraint.dbColumns {
-			parts[idx] = fmt.Sprintf("coalesce(%s, '')", col.DBColName)
-		}
-		postgresql_using_internals := fmt.Sprintf(
-			"to_tsvector(%s, %s)",
-			searchConfig,
-			strings.Join(parts, " || ' ' || "),
-		)
-		kvPairs := []string{
-			getKVPair("postgresql_using", strconv.Quote(postgresql_using)),
-			getKVPair("postgresql_using_internals", strconv.Quote(postgresql_using_internals)),
-		}
-		if len(quotedColNames) == 1 {
-			kvPairs = append(kvPairs,
-				getKVPair("column", quotedColNames[0]))
-		} else {
-			kvPairs = append(kvPairs,
-				getKVPair("columns", fmt.Sprintf("[%s]", strings.Join(quotedColNames, ", "))))
-		}
-		return fmt.Sprintf("FullTextIndex(%s, info=%s)", quotedName, getKVDict(kvPairs))
+	if len(fullText.Weights) != 0 {
+		panic("don't support weights when there's no generated column name")
 	}
-	// TODO weights...
 
-	return ""
+	cols := make([]string, len(constraint.dbColumns))
+	for i, col := range constraint.dbColumns {
+		cols[i] = col.DBColName
+	}
+	// if we ever support weights here, need to transform to db names
+	postgresql_using_internals := getPostgresUsingInternals(constraint.fullText, cols, []string{})
+
+	kvPairs := []string{
+		getKVPair("postgresql_using", strconv.Quote(postgresql_using)),
+		getKVPair("postgresql_using_internals", strconv.Quote(postgresql_using_internals)),
+	}
+	if len(quotedColNames) == 1 {
+		kvPairs = append(kvPairs,
+			getKVPair("column", quotedColNames[0]))
+	} else {
+		kvPairs = append(kvPairs,
+			getKVPair("columns", fmt.Sprintf("[%s]", strings.Join(quotedColNames, ", "))))
+	}
+	return fmt.Sprintf("FullTextIndex(%s, info=%s)", quotedName, getKVDict(kvPairs))
 }
 
 type checkConstraint struct {
@@ -351,6 +404,7 @@ func (s *dbSchema) getTableForNode(nodeData *schema.NodeData) *dbTable {
 
 func (s *dbSchema) createTableForNode(nodeData *schema.NodeData) *dbTable {
 	var columns []*dbColumn
+	colMap := make(map[string]*dbColumn)
 	var constraints []dbConstraint
 
 	for _, f := range nodeData.FieldInfo.Fields {
@@ -358,6 +412,16 @@ func (s *dbSchema) createTableForNode(nodeData *schema.NodeData) *dbTable {
 			continue
 		}
 		column := s.getColumnInfoForField(f, nodeData, &constraints)
+		columns = append(columns, column)
+		colMap[column.EntFieldName] = column
+	}
+
+	for _, index := range nodeData.Indices {
+
+		column := s.getGeneratedColumnFromIndex(nodeData, index, colMap)
+		if column == nil {
+			continue
+		}
 		columns = append(columns, column)
 	}
 
@@ -851,6 +915,36 @@ func (s *dbSchema) getColumnInfoForField(f *field.Field, nodeData *schema.NodeDa
 
 	// index is still on a per field type so we leave this here
 	s.addIndexConstraint(f, nodeData, col, constraints)
+
+	return col
+}
+
+func (s *dbSchema) getGeneratedColumnFromIndex(nodeData *schema.NodeData, index *input.Index, colMap map[string]*dbColumn) *dbColumn {
+	if index.FullText == nil || index.FullText.GeneratedColumnName == "" {
+		return nil
+	}
+
+	// convert to db col names
+	cols := make([]string, len(index.Columns))
+	for i, v := range index.Columns {
+		cols[i] = colMap[v].DBColName
+	}
+
+	weights := make([]string, len(index.FullText.Weights))
+	for i, v := range index.FullText.Weights {
+		weights[i] = colMap[v].DBColName
+	}
+	postgresql_using_internals := getPostgresUsingInternals(index.FullText, cols, weights)
+
+	col := &dbColumn{
+		DBColName: index.FullText.GeneratedColumnName,
+		DBType:    "postgresql.TSVECTOR",
+		extraParts: []string{
+			fmt.Sprintf("sa.Computed(%s)",
+				strconv.Quote(postgresql_using_internals),
+			),
+		},
+	}
 
 	return col
 }

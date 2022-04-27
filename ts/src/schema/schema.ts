@@ -544,7 +544,6 @@ export interface FullText {
   // TODO: should validate multiple columns?
   generatedColumnName?: string;
   // TODO full list
-  // TODO language can be from a column so maybe language be optional?
   language?: "english" | "french" | "german";
   languageColumn?: string;
   // gin is default
@@ -552,6 +551,8 @@ export interface FullText {
 
   // ordered list of rankings A, B, C, D
   // TODO: should it match list of columns?
+
+  // to simplify: we only allow weights when there's a generated column so that rank is easiest ts_rank(col, )
   weights?: string[];
 }
 

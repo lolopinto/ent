@@ -1844,6 +1844,7 @@ func TestFullTextIndexMultipleColsGeneratedColumn(t *testing.T) {
 							Columns: []string{"firstName", "lastName"},
 							FullText: &input.FullText{
 								GeneratedColumnName: "name_idx",
+								Language:            "english",
 							},
 						},
 					},
@@ -1867,7 +1868,147 @@ func TestFullTextIndexMultipleColsGeneratedColumn(t *testing.T) {
 		),
 	)
 
-	// TODO test generated column
+	column := getTestColumnFromTable(t, table, "name_idx")
+	testColumn(t, column, "name_idx", "", "name_idx", []string{
+		strconv.Quote("name_idx"),
+		"postgresql.TSVECTOR",
+		fmt.Sprintf("sa.Computed(%s)",
+			strconv.Quote("to_tsvector('english', coalesce(first_name, '') || ' ' || coalesce(last_name, ''))")),
+	})
+}
+
+func TestFullTextIndexMultipleColsGeneratedColumnWeights(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "firstName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "lastName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:    "users_name_idx",
+							Columns: []string{"firstName", "lastName"},
+							FullText: &input.FullText{
+								GeneratedColumnName: "name_idx",
+								Language:            "english",
+								Weights:             []string{"firstName", "lastName"},
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestFullTextIndexedConstraintFromTable(t, table, "firstName", "lastName")
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_using='%s')",
+			strconv.Quote("users_name_idx"),
+			strconv.Quote("name_idx"),
+			"gin",
+		),
+	)
+
+	column := getTestColumnFromTable(t, table, "name_idx")
+	testColumn(t, column, "name_idx", "", "name_idx", []string{
+		strconv.Quote("name_idx"),
+		"postgresql.TSVECTOR",
+		fmt.Sprintf("sa.Computed(%s)",
+			strconv.Quote("(setweight(to_tsvector('english', coalesce(first_name, '')), 'A') || setweight(to_tsvector('english', coalesce(last_name, '')), 'B'))")),
+	})
+}
+
+func TestFullTextIndexMultipleColsGeneratedColumnMisMatchedWeights(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "firstName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "lastName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:    "users_name_idx",
+							Columns: []string{"firstName", "lastName"},
+							FullText: &input.FullText{
+								GeneratedColumnName: "name_idx",
+								Language:            "english",
+								Weights:             []string{"firstName"},
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestFullTextIndexedConstraintFromTable(t, table, "firstName", "lastName")
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_using='%s')",
+			strconv.Quote("users_name_idx"),
+			strconv.Quote("name_idx"),
+			"gin",
+		),
+	)
+
+	column := getTestColumnFromTable(t, table, "name_idx")
+	testColumn(t, column, "name_idx", "", "name_idx", []string{
+		strconv.Quote("name_idx"),
+		"postgresql.TSVECTOR",
+		fmt.Sprintf("sa.Computed(%s)",
+			strconv.Quote("(setweight(to_tsvector('english', coalesce(first_name, '')), 'A') || to_tsvector('english', coalesce(last_name, '')))")),
+	})
 }
 
 func getSchemaFromInput(t *testing.T, s *input.Schema) *dbSchema {
