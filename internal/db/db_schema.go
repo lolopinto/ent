@@ -418,7 +418,6 @@ func (s *dbSchema) createTableForNode(nodeData *schema.NodeData) *dbTable {
 	}
 
 	for _, index := range nodeData.Indices {
-
 		column := s.getGeneratedColumnFromIndex(nodeData, index, colMap)
 		if column == nil {
 			continue
@@ -932,7 +931,6 @@ func (s *dbSchema) getGeneratedColumnFromIndex(nodeData *schema.NodeData, index 
 	}
 
 	weights := &input.FullTextWeight{}
-	//	weights := make([]string, len(index.FullText.Weights))
 	if index.FullText.Weights != nil {
 		convertWeights := func(input []string) []string {
 			output := make([]string, len(input))
