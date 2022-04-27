@@ -541,7 +541,6 @@ export interface Constraint {
 // use coalesce for all generated
 export interface FullText {
   // create a generated computed stored text column for this named XXX
-  // TODO: should validate multiple columns?
   generatedColumnName?: string;
   // TODO full list
   language?: "english" | "french" | "german";
@@ -550,7 +549,6 @@ export interface FullText {
   indexType?: "gin" | "gist";
 
   // ordered list of rankings A, B, C, D
-  // TODO: should it match list of columns?
 
   // to simplify: we only allow weights when there's a generated column so that rank is easiest ts_rank(col, )
   weights?: string[];
