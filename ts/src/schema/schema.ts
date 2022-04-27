@@ -30,6 +30,7 @@ export default interface Schema {
   // constraints applied to the schema e.g. multi-fkey, multi-column unique keys, join table primary keys etc
   constraints?: Constraint[];
 
+  // should this be indexes?
   indices?: Index[];
 
   // hide a node from graphql
@@ -537,10 +538,39 @@ export interface Constraint {
   condition?: string; // only applies in check constraint
 }
 
+export interface FullTextWeight {
+  // can have multiple columns with the same weight so we allow configuring this way
+  A?: string[];
+  B?: string[];
+  C?: string[];
+  D?: string[];
+}
+
+// use coalesce for all generated
+export interface FullText {
+  // create a generated computed stored text column for this named XXX
+  // https://www.postgresql.org/docs/current/ddl-generated-columns.html
+  // postgres 12+
+  generatedColumnName?: string;
+  // TODO full list
+  // simple is practical for names
+  // rename to search config
+  // may eventually need different languages depending on the column
+  language?: "english" | "french" | "german" | "simple";
+  // search config lang column
+  languageColumn?: string;
+  // gin is default
+  indexType?: "gin" | "gist";
+
+  // to simplify: we only allow weights when there's a generated column so that rank is easiest ts_rank(col, ...)
+  weights?: FullTextWeight;
+}
+
 export interface Index {
   name: string;
   columns: string[];
   unique?: boolean; // can also create a unique constraint this way because why not...
+  fulltext?: FullText;
 }
 
 export interface ForeignKeyInfo {

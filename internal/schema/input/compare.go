@@ -313,5 +313,31 @@ func indicesEqual(existing, indices []*Index) bool {
 func indexEqual(existing, index *Index) bool {
 	return existing.Name == index.Name &&
 		change.StringListEqual(existing.Columns, index.Columns) &&
-		existing.Unique == index.Unique
+		existing.Unique == index.Unique &&
+		fullTextEqual(existing.FullText, index.FullText)
+}
+
+func fullTextEqual(existing, fullText *FullText) bool {
+	ret := change.CompareNilVals(existing == nil, fullText == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return existing.GeneratedColumnName == fullText.GeneratedColumnName &&
+		existing.Language == fullText.Language &&
+		existing.LanguageColumn == fullText.LanguageColumn &&
+		existing.IndexType == fullText.IndexType &&
+		fullTextWeightEqual(existing.Weights, fullText.Weights)
+}
+
+func fullTextWeightEqual(existing, weights *FullTextWeight) bool {
+	ret := change.CompareNilVals(existing == nil, weights == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return change.StringListEqual(existing.A, weights.A) &&
+		change.StringListEqual(existing.A, weights.B) &&
+		change.StringListEqual(existing.A, weights.C) &&
+		change.StringListEqual(existing.A, weights.D)
 }

@@ -1571,6 +1571,520 @@ func TestPatterns(t *testing.T) {
 	}
 }
 
+func TestFullTextIndexSingleCol(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "firstName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:    "users_first_name_idx",
+							Columns: []string{"firstName"},
+							FullText: &input.FullText{
+								Language: "english",
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestFullTextIndexedConstraintFromTable(t, table, "firstName")
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("FullTextIndex(%s, info=%s)",
+			strconv.Quote("users_first_name_idx"),
+			getKVDict([]string{
+				getKVPair("postgresql_using", strconv.Quote("gin")),
+				getKVPair("postgresql_using_internals", strconv.Quote("to_tsvector('english', coalesce(first_name, ''))")),
+				getKVPair("column", strconv.Quote("first_name")),
+			})),
+	)
+}
+
+func TestFullTextIndexMultipleCols(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "firstName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "lastName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:    "users_name_idx",
+							Columns: []string{"firstName", "lastName"},
+							FullText: &input.FullText{
+								Language: "english",
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestFullTextIndexedConstraintFromTable(t, table, "firstName", "lastName")
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("FullTextIndex(%s, info=%s)",
+			strconv.Quote("users_name_idx"),
+			getKVDict([]string{
+				getKVPair("postgresql_using", strconv.Quote("gin")),
+				getKVPair("postgresql_using_internals", strconv.Quote("to_tsvector('english', coalesce(first_name, '') || ' ' || coalesce(last_name, ''))")),
+				getKVPair("columns",
+					fmt.Sprintf("[%s, %s]",
+						strconv.Quote("first_name"),
+						strconv.Quote("last_name"))),
+			})),
+	)
+}
+
+func TestFullTextIndexMultipleColsGist(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "firstName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "lastName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:    "users_name_idx",
+							Columns: []string{"firstName", "lastName"},
+							FullText: &input.FullText{
+								Language:  "english",
+								IndexType: input.Gist,
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestFullTextIndexedConstraintFromTable(t, table, "firstName", "lastName")
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("FullTextIndex(%s, info=%s)",
+			strconv.Quote("users_name_idx"),
+			getKVDict([]string{
+				getKVPair("postgresql_using", strconv.Quote("gist")),
+				getKVPair("postgresql_using_internals", strconv.Quote("to_tsvector('english', coalesce(first_name, '') || ' ' || coalesce(last_name, ''))")),
+				getKVPair("columns",
+					fmt.Sprintf("[%s, %s]",
+						strconv.Quote("first_name"),
+						strconv.Quote("last_name"))),
+			})),
+	)
+}
+
+func TestFullTextIndexMultipleColsLangColumn(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "firstName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "lastName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:    "users_name_idx",
+							Columns: []string{"firstName", "lastName"},
+							FullText: &input.FullText{
+								LanguageColumn: "language",
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestFullTextIndexedConstraintFromTable(t, table, "firstName", "lastName")
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("FullTextIndex(%s, info=%s)",
+			strconv.Quote("users_name_idx"),
+			getKVDict([]string{
+				getKVPair("postgresql_using", strconv.Quote("gin")),
+				getKVPair("postgresql_using_internals", strconv.Quote("to_tsvector(language::reconfig, coalesce(first_name, '') || ' ' || coalesce(last_name, ''))")),
+				getKVPair("columns",
+					fmt.Sprintf("[%s, %s]",
+						strconv.Quote("first_name"),
+						strconv.Quote("last_name"))),
+			})),
+	)
+}
+
+func TestFullTextIndexMultipleColsGeneratedColumn(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "firstName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "lastName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:    "users_name_idx",
+							Columns: []string{"firstName", "lastName"},
+							FullText: &input.FullText{
+								GeneratedColumnName: "name_idx",
+								Language:            "english",
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestFullTextIndexedConstraintFromTable(t, table, "firstName", "lastName")
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_using='%s')",
+			strconv.Quote("users_name_idx"),
+			strconv.Quote("name_idx"),
+			"gin",
+		),
+	)
+
+	column := getTestColumnFromTable(t, table, "name_idx")
+	testColumn(t, column, "name_idx", "", "name_idx", []string{
+		strconv.Quote("name_idx"),
+		"postgresql.TSVECTOR",
+		fmt.Sprintf("sa.Computed(%s)",
+			strconv.Quote("to_tsvector('english', coalesce(first_name, '') || ' ' || coalesce(last_name, ''))")),
+	})
+}
+
+func TestFullTextIndexMultipleColsGeneratedColumnWeights(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "firstName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "lastName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:    "users_name_idx",
+							Columns: []string{"firstName", "lastName"},
+							FullText: &input.FullText{
+								GeneratedColumnName: "name_idx",
+								Language:            "simple",
+								Weights: &input.FullTextWeight{
+									A: []string{"firstName", "lastName"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestFullTextIndexedConstraintFromTable(t, table, "firstName", "lastName")
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_using='%s')",
+			strconv.Quote("users_name_idx"),
+			strconv.Quote("name_idx"),
+			"gin",
+		),
+	)
+
+	column := getTestColumnFromTable(t, table, "name_idx")
+	testColumn(t, column, "name_idx", "", "name_idx", []string{
+		strconv.Quote("name_idx"),
+		"postgresql.TSVECTOR",
+		fmt.Sprintf("sa.Computed(%s)",
+			strconv.Quote("(setweight(to_tsvector('simple', coalesce(first_name, '')), 'A') || setweight(to_tsvector('simple', coalesce(last_name, '')), 'A'))")),
+	})
+}
+
+func TestFullTextIndexMultipleColsGeneratedColumnWeightsDiff(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "firstName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "lastName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:    "users_name_idx",
+							Columns: []string{"firstName", "lastName"},
+							FullText: &input.FullText{
+								GeneratedColumnName: "name_idx",
+								Language:            "simple",
+								Weights: &input.FullTextWeight{
+									A: []string{"firstName"},
+									B: []string{"lastName"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestFullTextIndexedConstraintFromTable(t, table, "firstName", "lastName")
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_using='%s')",
+			strconv.Quote("users_name_idx"),
+			strconv.Quote("name_idx"),
+			"gin",
+		),
+	)
+
+	column := getTestColumnFromTable(t, table, "name_idx")
+	testColumn(t, column, "name_idx", "", "name_idx", []string{
+		strconv.Quote("name_idx"),
+		"postgresql.TSVECTOR",
+		fmt.Sprintf("sa.Computed(%s)",
+			strconv.Quote("(setweight(to_tsvector('simple', coalesce(first_name, '')), 'A') || setweight(to_tsvector('simple', coalesce(last_name, '')), 'B'))")),
+	})
+}
+
+func TestFullTextIndexMultipleColsGeneratedColumnMisMatchedWeights(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "firstName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "lastName",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:    "users_name_idx",
+							Columns: []string{"firstName", "lastName"},
+							FullText: &input.FullText{
+								GeneratedColumnName: "name_idx",
+								Language:            "english",
+								Weights: &input.FullTextWeight{
+									A: []string{"firstName"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestFullTextIndexedConstraintFromTable(t, table, "firstName", "lastName")
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_using='%s')",
+			strconv.Quote("users_name_idx"),
+			strconv.Quote("name_idx"),
+			"gin",
+		),
+	)
+
+	column := getTestColumnFromTable(t, table, "name_idx")
+	testColumn(t, column, "name_idx", "", "name_idx", []string{
+		strconv.Quote("name_idx"),
+		"postgresql.TSVECTOR",
+		fmt.Sprintf("sa.Computed(%s)",
+			strconv.Quote("(setweight(to_tsvector('english', coalesce(first_name, '')), 'A') || to_tsvector('english', coalesce(last_name, '')))")),
+	})
+}
+
 func getSchemaFromInput(t *testing.T, s *input.Schema) *dbSchema {
 	ss, err := schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, s, base.TypeScript)
 	require.Nil(t, err)
@@ -1793,6 +2307,17 @@ func getTestUniqueKeyConstraintFromTable(t *testing.T, table *dbTable, colFieldN
 func getTestIndexedConstraintFromTable(t *testing.T, table *dbTable, colFieldName ...string) dbConstraint {
 	for _, constraint := range table.Constraints {
 		indConstraint, ok := constraint.(*indexConstraint)
+		if ok && util.StringsEqual(getColNames(indConstraint.dbColumns), colFieldName) {
+			return indConstraint
+		}
+	}
+	require.Fail(t, "no index constraint in table %s for column(s) %v", table.QuotedTableName, colFieldName)
+	return nil
+}
+
+func getTestFullTextIndexedConstraintFromTable(t *testing.T, table *dbTable, colFieldName ...string) dbConstraint {
+	for _, constraint := range table.Constraints {
+		indConstraint, ok := constraint.(*fullTextConstraint)
 		if ok && util.StringsEqual(getColNames(indConstraint.dbColumns), colFieldName) {
 			return indConstraint
 		}

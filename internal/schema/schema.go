@@ -420,6 +420,9 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 			}
 		}
 
+		if err := s.validateIndices(nodeData); err != nil {
+			return nil, err
+		}
 		opts := []action.Option{}
 		if nodeData.TransformsDelete {
 			opts = append(opts, action.TransformsDelete())
@@ -517,6 +520,56 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 	}
 
 	return s.processDepgrah(edgeData)
+}
+
+func (s *Schema) validateIndices(nodeData *NodeData) error {
+	for _, index := range nodeData.Indices {
+		if index.FullText == nil {
+			continue
+		}
+		fullText := index.FullText
+		if fullText.Language == "" && fullText.LanguageColumn == "" {
+			return fmt.Errorf("have to specify at least one of language and language column for index %s", index.Name)
+		}
+		if fullText.Language != "" && fullText.LanguageColumn != "" {
+			return fmt.Errorf("cannot specify both language and language column for index %s", index.Name)
+		}
+
+		if fullText.Weights != nil && fullText.Weights.HasWeights() && fullText.GeneratedColumnName == "" {
+			return fmt.Errorf("cannot specify weights if no generated column name for index %s", index.Name)
+		}
+		verifyWeights := func(weights []string) error {
+			for _, w := range weights {
+				f := nodeData.FieldInfo.GetFieldByName(w)
+				if f == nil {
+					return fmt.Errorf("invalid field %s passed as weight for index %s", w, index.Name)
+				}
+			}
+			return nil
+		}
+
+		if fullText.Weights != nil {
+			if err := verifyWeights(fullText.Weights.A); err != nil {
+				return err
+			}
+			if err := verifyWeights(fullText.Weights.B); err != nil {
+				return err
+			}
+			if err := verifyWeights(fullText.Weights.C); err != nil {
+				return err
+			}
+			if err := verifyWeights(fullText.Weights.D); err != nil {
+				return err
+			}
+		}
+		if fullText.GeneratedColumnName != "" {
+			f := nodeData.FieldInfo.GetFieldByName(fullText.GeneratedColumnName)
+			if f != nil {
+				return fmt.Errorf("name %s already exists for a field and cannot be used as a generated column name for index %s", fullText.GeneratedColumnName, index.Name)
+			}
+		}
+	}
+	return nil
 }
 
 func (s *Schema) loadExistingEdges() (*assocEdgeData, error) {
