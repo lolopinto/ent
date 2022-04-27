@@ -1,7 +1,7 @@
 require("ts-node/register");
-import { execSync } from "child_process";
 import { Client as PGClient } from "pg";
 import * as path from "path";
+import * as fs from "fs";
 
 function randomDB(): string {
   let str = Math.random().toString(16).substring(2);
@@ -30,8 +30,18 @@ export async function createDB() {
   await client.query(`CREATE DATABASE ${db}`);
 
   const fullPath = path.join(__dirname, sqlPath);
-  // load into db
-  execSync(`psql ${db} < ${fullPath}`);
+
+  const sql = fs.readFileSync(fullPath).toString();
+
+  const client2 = new PGClient({
+    host: "localhost",
+    user,
+    password,
+    database: db,
+  });
+  await client2.connect();
+  await client2.query(sql);
+  await client2.end();
 
   return { db, user, password, client };
 }
