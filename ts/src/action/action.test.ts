@@ -44,7 +44,7 @@ afterEach(() => {
 describe("postgres", () => {
   beforeAll(() => {
     ml.mock();
-    setLogLevels(["query", "error", "debug"]);
+    setLogLevels(["query", "error"]);
   });
 
   afterAll(() => {
@@ -61,7 +61,7 @@ describe("postgres", () => {
 describe("sqlite", () => {
   beforeAll(() => {
     ml.mock();
-    setLogLevels(["query", "error", "debug"]);
+    setLogLevels(["query", "error"]);
   });
 
   afterAll(() => {

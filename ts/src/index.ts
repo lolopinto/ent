@@ -102,6 +102,10 @@ const query = {
   ArrayLess: q.ArrayLess,
   ArrayGreaterEq: q.ArrayGreaterEq,
   ArrayLessEq: q.ArrayLessEq,
+  TsQuery: q.TsQuery,
+  PlainToTsQuery: q.PlainToTsQuery,
+  PhraseToTsQuery: q.PhraseToTsQuery,
+  WebsearchToTsQuery: q.WebsearchToTsQuery,
 };
 
 export { query };
