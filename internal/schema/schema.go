@@ -365,6 +365,8 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 		nodeData.Constraints = node.Constraints
 		nodeData.Indices = node.Indices
 		nodeData.HideFromGraphQL = node.HideFromGraphQL
+		nodeData.TransformsSelect = node.TransformsSelect
+		nodeData.TransformsDelete = node.TransformsDelete
 
 		var err error
 		nodeData.FieldInfo, err = field.NewFieldInfoFromInputs(
@@ -418,7 +420,12 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 			}
 		}
 
-		nodeData.ActionInfo, err = action.ParseFromInput(cfg, packageName, node.Actions, nodeData.FieldInfo, nodeData.EdgeInfo, lang)
+		opts := []action.Option{}
+		if nodeData.TransformsDelete {
+			opts = append(opts, action.TransformsDelete())
+		}
+
+		nodeData.ActionInfo, err = action.ParseFromInput(cfg, packageName, node.Actions, nodeData.FieldInfo, nodeData.EdgeInfo, lang, opts...)
 		if err != nil {
 			errs = append(errs, err)
 		}

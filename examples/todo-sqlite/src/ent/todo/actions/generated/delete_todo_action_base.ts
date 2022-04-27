@@ -57,6 +57,16 @@ export class DeleteTodoActionBase implements Action<Todo> {
     await this.builder.saveX();
   }
 
+  async saveWithoutTransform(): Promise<void> {
+    this.builder.orchestrator.setDisableTransformations(true);
+    await this.builder.save();
+  }
+
+  async saveWithoutTransformX(): Promise<void> {
+    this.builder.orchestrator.setDisableTransformations(true);
+    await this.builder.saveX();
+  }
+
   static create<T extends DeleteTodoActionBase>(
     this: new (viewer: Viewer, todo: Todo) => T,
     viewer: Viewer,

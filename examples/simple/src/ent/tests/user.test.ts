@@ -4,7 +4,6 @@ import {
   AssocEdgeInput,
   IDViewer,
   LoggedOutViewer,
-  DB,
 } from "@snowtop/ent";
 import {
   User,
@@ -38,9 +37,7 @@ import DeleteUserAction2 from "../user/actions/delete_user_action_2";
 
 const loggedOutViewer = new LoggedOutViewer();
 
-// TODO we need something that does this by default for all tests
 afterAll(async () => {
-  await DB.getInstance().endPool();
   FakeLogger.clear();
   FakeComms.clear();
 });

@@ -1,15 +1,10 @@
-import { DB, LoggedOutViewer } from "@snowtop/ent";
+import { LoggedOutViewer } from "@snowtop/ent";
 import { expectMutation } from "@snowtop/ent-graphql-tests";
 import { encodeGQLID } from "@snowtop/ent/graphql";
 import { graphqlUploadExpress } from "graphql-upload";
 import CreateUserAction from "../../ent/user/actions/create_user_action";
 import schema from "../generated/schema";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
-
-// TODO we need something that does this by default for all tests
-afterAll(async () => {
-  await DB.getInstance().endPool();
-});
 
 test("bulk upload", async () => {
   const user = await CreateUserAction.create(new LoggedOutViewer(), {

@@ -124,6 +124,8 @@ export interface SelectBaseDataOptions extends DataOptions {
 export interface SelectDataOptions extends SelectBaseDataOptions {
   // primary key we're selecting from most often 'id'
   key: string;
+  // if exists, we and with the primary key query
+  clause?: clause.Clause;
 }
 
 export interface QueryableDataOptions

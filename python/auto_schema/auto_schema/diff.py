@@ -2,7 +2,7 @@ from __future__ import annotations
 from sqlalchemy.sql.sqltypes import String
 from .clause_text import get_clause_text
 from .change_type import ChangeType
-from .ops import MigrateOpInterface
+from .ops import MigrateOpInterface, DropFullTextIndexOp, CreateFullTextIndexOp
 
 import alembic.operations.ops as alembicops
 
@@ -40,6 +40,8 @@ class Diff(object):
             'DropColumnOp': self._drop_column,
             'CreateIndexOp': self._create_index,
             'DropIndexOp': self._drop_index,
+            'CreateFullTextIndexOp': self._create_full_text_index,
+            'DropFullTextIndexOp': self._drop_full_text_index,
             'CreateForeignKeyOp': self._create_foreign_key,
             'AlterColumnOp': self._alter_column,
             'CreateUniqueConstraintOp': self._create_unique_constraint,
@@ -99,6 +101,18 @@ class Diff(object):
         self._append_change(op.table_name, {
             "change": ChangeType.DROP_INDEX,
             "desc": 'drop index %s from %s' % (op.index_name, op.table_name),
+        })
+
+    def _create_full_text_index(self: Diff, op: CreateFullTextIndexOp):
+        self._append_change(op.table_name, {
+            "change": ChangeType.CREATE_FULL_TEXT_INDEX,
+            "desc": 'add full text index %s to %s' % (op.index_name, op.table_name),
+        })
+
+    def _drop_full_text_index(self: Diff, op: DropFullTextIndexOp):
+        self._append_change(op.table_name, {
+            "change": ChangeType.DROP_FULL_TEXT_INDEX,
+            "desc": 'drop full text index %s from %s' % (op.index_name, op.table_name),
         })
 
     def _create_foreign_key(self: Diff, op: alembicops.CreateForeignKeyOp):

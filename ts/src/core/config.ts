@@ -30,6 +30,13 @@ export interface Config {
 
   // config for codegen
   codegen?: CodegenConfig;
+
+  // because of swc issues, we might not be able to
+  // parse custom graphql via decorators so we put this
+  // in a json file for now
+  // the path should be relative to the root
+  // this is hopefully a temporary solution...
+  customGraphQLJSONPath?: string;
 }
 
 interface CodegenConfig {
@@ -71,6 +78,9 @@ interface CodegenConfig {
   // default format for fields is lowerCamelCase e.g. firstName
   // if you wanna change it to snake_case e.g. first_name, set this field to snake_case
   defaultGraphQLFieldFormat?: graphQLFieldFormat;
+
+  // if we should generate schema.sql file and path to generate it
+  schemaSQLFilePath?: boolean;
 }
 
 interface PrettierConfig {

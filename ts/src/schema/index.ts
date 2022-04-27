@@ -23,6 +23,10 @@ export {
   ForeignKeyInfo,
   requiredField,
   optionalField,
+  UpdateOperation,
+  TransformedUpdateOperation,
+  SQLStatementOperation,
+  getTransformedReadClause,
 } from "./schema";
 export {
   Timestamps,

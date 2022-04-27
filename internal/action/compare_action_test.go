@@ -928,6 +928,7 @@ func createNodeActionWithOptions(
 		!opt.hideFromGraphQL,
 		opt.fields,
 		opt.nonEntFields,
+		&option{},
 	)
 	ci.tsEnums = opt.tsEnums
 	ci.gqlEnums = opt.gqlEnums

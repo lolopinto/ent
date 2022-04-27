@@ -233,6 +233,18 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
   {{ end -}}
   }
 
+  {{ if and $action.IsDeletingNode $action.TransformsDelete -}}
+  async saveWithoutTransform(): Promise<void> {
+    this.builder.orchestrator.setDisableTransformations(true);
+    await this.builder.save();
+  }
+
+  async saveWithoutTransformX(): Promise<void> {
+    this.builder.orchestrator.setDisableTransformations(true);
+    await this.builder.saveX();
+  }
+  {{ end}}
+
   static create<T extends {{$actionName}}>(
     this: new ({{$constructor}}) => T,
     {{$constructor}},

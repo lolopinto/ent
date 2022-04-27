@@ -78,7 +78,7 @@ func getInputAction(nodeName string, result *astparser.Result) (*input.Action, e
 	return &action, nil
 }
 
-func parseActionsFromInput(cfg codegenapi.Config, nodeName string, action *input.Action, fieldInfo *field.FieldInfo) ([]Action, error) {
+func parseActionsFromInput(cfg codegenapi.Config, nodeName string, action *input.Action, fieldInfo *field.FieldInfo, opt *option) ([]Action, error) {
 	// exposeToGraphQL is inverse of HideFromGraphQL
 	exposeToGraphQL := !action.HideFromGraphQL
 	typ, err := getActionTypeFromOperation(action.Operation)
@@ -109,7 +109,9 @@ func parseActionsFromInput(cfg codegenapi.Config, nodeName string, action *input
 			exposeToGraphQL,
 			fields,
 			nonEntFields,
+			opt,
 		)
+
 		return []Action{concreteAction.getAction(commonInfo)}, nil
 	}
 
@@ -124,13 +126,13 @@ func parseActionsFromInput(cfg codegenapi.Config, nodeName string, action *input
 		if len(action.ActionOnlyFields) != 0 {
 			return nil, fmt.Errorf("cannot have action only fields when using default actions")
 		}
-		return getActionsForMutationsType(cfg, nodeName, fieldInfo, exposeToGraphQL, action)
+		return getActionsForMutationsType(cfg, nodeName, fieldInfo, exposeToGraphQL, action, opt)
 	}
 
 	return nil, errors.New("unsupported action type")
 }
 
-func getActionsForMutationsType(cfg codegenapi.Config, nodeName string, fieldInfo *field.FieldInfo, exposeToGraphQL bool, action *input.Action) ([]Action, error) {
+func getActionsForMutationsType(cfg codegenapi.Config, nodeName string, fieldInfo *field.FieldInfo, exposeToGraphQL bool, action *input.Action, opt *option) ([]Action, error) {
 	var actions []Action
 
 	createTyp := &createActionType{}
@@ -149,6 +151,7 @@ func getActionsForMutationsType(cfg codegenapi.Config, nodeName string, fieldInf
 			exposeToGraphQL,
 			fields,
 			[]*field.NonEntField{},
+			opt,
 		),
 	))
 
@@ -168,6 +171,7 @@ func getActionsForMutationsType(cfg codegenapi.Config, nodeName string, fieldInf
 			exposeToGraphQL,
 			fields,
 			[]*field.NonEntField{},
+			opt,
 		),
 	))
 
@@ -187,6 +191,7 @@ func getActionsForMutationsType(cfg codegenapi.Config, nodeName string, fieldInf
 			exposeToGraphQL,
 			fields,
 			[]*field.NonEntField{},
+			opt,
 		),
 	))
 	return actions, nil
@@ -500,7 +505,8 @@ func getCommonInfo(
 	customActionName, customGraphQLName, customInputName string,
 	exposeToGraphQL bool,
 	fields []*field.Field,
-	nonEntFields []*field.NonEntField) commonActionInfo {
+	nonEntFields []*field.NonEntField,
+	opt *option) commonActionInfo {
 	var graphqlName string
 	if exposeToGraphQL {
 		graphqlName = getGraphQLNameForNodeActionType(cfg, typ, nodeName, customGraphQLName)
@@ -515,6 +521,7 @@ func getCommonInfo(
 		NonEntFields:     nonEntFields,
 		NodeInfo:         nodeinfo.GetNodeInfo(nodeName),
 		Operation:        typ.getOperation(),
+		tranformsDelete:  opt.transformsDelete,
 	}
 }
 

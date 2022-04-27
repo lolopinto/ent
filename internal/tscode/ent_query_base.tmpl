@@ -2,6 +2,7 @@
 {{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery" "AssocEdge" "AssocEdgeQueryBase" "CustomEdgeQueryBase" "query" "RawCountLoaderFactory" "AssocEdgeCountLoaderFactory" "AssocEdgeLoaderFactory" "IndexLoaderFactory" "loadEnt" "LoadEntOptions"}}
 {{$importPath := .Package.InternalImportPath -}}
 {{reserveImport "src/ent/generated/loadAny" "getLoaderOptions" -}}
+{{ reserveImport .Package.SchemaPackagePath "getTransformedReadClause" }}
 
 {{$schema := .Schema}}
 
@@ -30,15 +31,24 @@
 
   {{range $edge := .IndexedEdges -}}
     {{$node := useImport $edge.GetNodeInfo.Node -}}
+    {{$fNodeData := $schema.GetNodeDataForNode $node}}
+    {{$schema := printf "%sSchema" $node -}}
       export const {{$edge.GetCountFactoryName}} = new {{useImport "RawCountLoaderFactory"}}({
         ...{{$node}}.loaderOptions(),
         groupCol: {{$edge.QuotedDBColName}},
+        {{ if $fNodeData.TransformsSelect -}}
+          {{ reserveDefaultImport $fNodeData.GetSchemaPath $schema -}}
+          clause: {{useImport "getTransformedReadClause"}}({{useImport $schema}}),
+        {{ end -}}
       });
       export const {{$edge.GetDataFactoryName}} = new {{useImport "IndexLoaderFactory"}}(
         {{$node}}.loaderOptions(),
         {{$edge.QuotedDBColName}},
         {
           toPrime: [{{useImport (printf "%sLoader" $edge.GetNodeInfo.NodeInstance)}}],
+          {{ if $fNodeData.TransformsSelect -}}
+            extraClause: {{useImport "getTransformedReadClause"}}({{useImport $schema}}),
+          {{ end -}}
         }
       );
   {{end -}}

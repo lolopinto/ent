@@ -1640,7 +1640,7 @@ function commonTests() {
 
         throw new Error("should not get here");
       } catch (e) {
-        expect(e.message).toBe("existing ent required with operation");
+        expect(e.message).toBe("existing ent required with operation edit");
       }
     });
   });
@@ -1696,7 +1696,7 @@ function commonTests() {
         await builder.build();
         throw new Error("should not get here");
       } catch (e) {
-        expect(e.message).toBe("existing ent required with operation");
+        expect(e.message).toBe("existing ent required with operation edit");
       }
     });
   });

@@ -247,6 +247,13 @@ func (cfg *Config) AddChangedFile(filePath string) {
 	}
 }
 
+func (cfg *Config) GetCustomGraphQLJSONPath() string {
+	if cfg.config == nil {
+		return ""
+	}
+	return cfg.config.CustomGraphQLJSONPath
+}
+
 func init() {
 	impPkg = &ImportPackage{
 		PackagePath:        codepath.Package,
@@ -316,6 +323,13 @@ func (cfg *Config) DefaultGraphQLFieldFormat() codegenapi.GraphQLFieldFormat {
 		}
 	}
 	return codegenapi.LowerCamelCase
+}
+
+func (cfg *Config) SchemaSQLFilePath() string {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		return codegen.SchemaSQLFilePath
+	}
+	return ""
 }
 
 const DEFAULT_GLOB = "src/**/*.ts"
@@ -433,12 +447,14 @@ func parseConfig() (*config, error) {
 }
 
 type config struct {
-	Codegen *CodegenConfig `yaml:"codegen"`
+	Codegen               *CodegenConfig `yaml:"codegen"`
+	CustomGraphQLJSONPath string         `yaml:"customGraphQLJSONPath"`
 }
 
 func (cfg *config) Clone() *config {
 	return &config{
-		Codegen: cloneCodegen(cfg.Codegen),
+		Codegen:               cloneCodegen(cfg.Codegen),
+		CustomGraphQLJSONPath: cfg.CustomGraphQLJSONPath,
 	}
 }
 
@@ -460,6 +476,7 @@ type CodegenConfig struct {
 	GenerateRootResolvers      bool                           `yaml:"generateRootResolvers"`
 	DefaultGraphQLMutationName codegenapi.GraphQLMutationName `yaml:"defaultGraphQLMutationName"`
 	DefaultGraphQLFieldFormat  codegenapi.GraphQLFieldFormat  `yaml:"defaultGraphQLFieldFormat"`
+	SchemaSQLFilePath          string                         `yaml:"schemaSQLFilePath"`
 }
 
 func cloneCodegen(cfg *CodegenConfig) *CodegenConfig {
@@ -481,6 +498,7 @@ func (cfg *CodegenConfig) Clone() *CodegenConfig {
 		GenerateRootResolvers:      cfg.GenerateRootResolvers,
 		DefaultGraphQLMutationName: cfg.DefaultGraphQLMutationName,
 		DefaultGraphQLFieldFormat:  cfg.DefaultGraphQLFieldFormat,
+		SchemaSQLFilePath:          cfg.SchemaSQLFilePath,
 	}
 }
 

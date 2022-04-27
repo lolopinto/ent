@@ -17,7 +17,9 @@ export interface SensitiveValue {
 
 function isSensitive(val: any): val is SensitiveValue {
   return (
-    typeof val === "object" && (val as SensitiveValue).logValue !== undefined
+    val !== null &&
+    typeof val === "object" &&
+    (val as SensitiveValue).logValue !== undefined
   );
 }
 
@@ -29,11 +31,111 @@ function rawValue(val: any) {
 }
 
 class simpleClause implements Clause {
+  constructor(
+    protected col: string,
+    private value: any,
+    private op: string,
+    private handleSqliteNull?: Clause,
+  ) {}
+
+  clause(idx: number): string {
+    const sqliteClause = this.sqliteNull();
+    if (sqliteClause) {
+      return sqliteClause.clause(idx);
+    }
+    if (DB.getDialect() === Dialect.Postgres) {
+      return `${this.col} ${this.op} $${idx}`;
+    }
+    return `${this.col} ${this.op} ?`;
+  }
+
+  private sqliteNull() {
+    if (!this.handleSqliteNull || this.value !== null) {
+      return;
+    }
+    if (DB.getDialect() !== Dialect.SQLite) {
+      return;
+    }
+    return this.handleSqliteNull;
+  }
+
+  values(): any[] {
+    const sqliteClause = this.sqliteNull();
+    if (sqliteClause) {
+      return sqliteClause.values();
+    }
+    if (isSensitive(this.value)) {
+      return [this.value.value()];
+    }
+    return [this.value];
+  }
+
+  logValues(): any[] {
+    const sqliteClause = this.sqliteNull();
+    if (sqliteClause) {
+      return sqliteClause.logValues();
+    }
+    if (isSensitive(this.value)) {
+      return [this.value.logValue()];
+    }
+    return [this.value];
+  }
+
+  instanceKey(): string {
+    const sqliteClause = this.sqliteNull();
+    if (sqliteClause) {
+      return sqliteClause.instanceKey();
+    }
+    return `${this.col}${this.op}${rawValue(this.value)}`;
+  }
+}
+
+class isNullClause implements Clause {
+  constructor(protected col: string) {}
+
+  clause(idx: number): string {
+    return `${this.col} IS NULL`;
+  }
+
+  values(): any[] {
+    return [];
+  }
+
+  logValues(): any[] {
+    return [];
+  }
+
+  instanceKey(): string {
+    return `${this.col} IS NULL`;
+  }
+}
+
+class isNotNullClause implements Clause {
+  constructor(protected col: string) {}
+
+  clause(idx: number): string {
+    return `${this.col} IS NOT NULL`;
+  }
+
+  values(): any[] {
+    return [];
+  }
+
+  logValues(): any[] {
+    return [];
+  }
+
+  instanceKey(): string {
+    return `${this.col} IS NOT NULL`;
+  }
+}
+
+class arraySimpleClause implements Clause {
   constructor(protected col: string, private value: any, private op: string) {}
 
   clause(idx: number): string {
     if (DB.getDialect() === Dialect.Postgres) {
-      return `${this.col} ${this.op} $${idx}`;
+      return `$${idx} ${this.op} ANY(${this.col})`;
     }
     return `${this.col} ${this.op} ?`;
   }
@@ -146,12 +248,37 @@ class compositeClause implements Clause {
   }
 }
 
-export function Eq(col: string, value: any): simpleClause {
-  return new simpleClause(col, value, "=");
+// TODO we need to check sqlite version...
+export function ArrayEq(col: string, value: any): Clause {
+  return new arraySimpleClause(col, value, "=");
 }
 
-export function NotEq(col: string, value: any): simpleClause {
-  return new simpleClause(col, value, "!=");
+export function ArrayNotEq(col: string, value: any): Clause {
+  return new arraySimpleClause(col, value, "!=");
+}
+
+export function ArrayGreater(col: string, value: any): Clause {
+  return new arraySimpleClause(col, value, ">");
+}
+
+export function ArrayLess(col: string, value: any): Clause {
+  return new arraySimpleClause(col, value, "<");
+}
+
+export function ArrayGreaterEq(col: string, value: any): Clause {
+  return new arraySimpleClause(col, value, ">=");
+}
+
+export function ArrayLessEq(col: string, value: any): Clause {
+  return new arraySimpleClause(col, value, "<=");
+}
+
+export function Eq(col: string, value: any): Clause {
+  return new simpleClause(col, value, "=", new isNullClause(col));
+}
+
+export function NotEq(col: string, value: any): Clause {
+  return new simpleClause(col, value, "!=", new isNotNullClause(col));
 }
 
 export function Greater(col: string, value: any): simpleClause {
@@ -172,6 +299,15 @@ export function LessEq(col: string, value: any): simpleClause {
 
 export function And(...args: Clause[]): compositeClause {
   return new compositeClause(args, " AND ");
+}
+
+export function AndOptional(...args: (Clause | undefined)[]): Clause {
+  // @ts-ignore
+  let filtered: Clause[] = args.filter((v) => v !== undefined);
+  if (filtered.length === 1) {
+    return filtered[0];
+  }
+  return And(...filtered);
 }
 
 export function Or(...args: Clause[]): compositeClause {

@@ -10,6 +10,7 @@ import {
   PrivacyPolicy,
   Viewer,
   convertDate,
+  convertNullableDate,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -22,6 +23,7 @@ import { Field, getFields } from "@snowtop/ent/schema";
 import {
   accountLoader,
   accountLoaderInfo,
+  accountNoTransformLoader,
   accountPhoneNumberLoader,
 } from "src/ent/generated/loaders";
 import {
@@ -43,6 +45,7 @@ export class AccountBase {
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+  protected readonly deletedAt: Date | null;
   readonly name: string;
   readonly phoneNumber: string;
   readonly accountState: AccountState | null;
@@ -51,6 +54,7 @@ export class AccountBase {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
+    this.deletedAt = convertNullableDate(data.deleted_at);
     this.name = data.name;
     this.phoneNumber = data.phone_number;
     this.accountState = data.account_state;
@@ -80,6 +84,35 @@ export class AccountBase {
       id,
       AccountBase.loaderOptions.apply(this),
     )) as T;
+  }
+
+  // loadNoTransform and loadNoTransformX exist to load the data from the db
+  // with no transformations which are currently done implicitly
+  // we don't generate the full complement of read-APIs
+  // but can easily query the raw data with accountNoTransformLoader
+  static async loadNoTransform<T extends AccountBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
+    id: ID,
+  ): Promise<T | null> {
+    const opts = {
+      ...AccountBase.loaderOptions.apply(this),
+      loaderFactory: accountNoTransformLoader,
+    };
+
+    return (await loadEnt(viewer, id, opts)) as T | null;
+  }
+
+  static async loadNoTransformX<T extends AccountBase>(
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
+    id: ID,
+  ): Promise<T> {
+    const opts = {
+      ...AccountBase.loaderOptions.apply(this),
+      loaderFactory: accountNoTransformLoader,
+    };
+    return (await loadEntX(viewer, id, opts)) as T;
   }
 
   static async loadMany<T extends AccountBase>(
@@ -137,6 +170,8 @@ export class AccountBase {
     }
     return row;
   }
+
+  // TODO index deleted_at not id... we want an indexQueryLoader...
 
   static async loadFromPhoneNumber<T extends AccountBase>(
     this: new (viewer: Viewer, data: Data) => T,

@@ -1,6 +1,10 @@
 import os
 import sys
+import traceback
 import argparse
+import alembic
+
+import sqlalchemy
 
 # if env variable is set, manipulate the path to put local
 # current directory over possibly installed auto_schema so that we
@@ -47,6 +51,28 @@ parser.add_argument('--squash', help='squash the last N changes into one')
 parser.add_argument(
     '--changes', help='get changes in schema', action='store_true')
 
+# see https://alembic.sqlalchemy.org/en/latest/offline.html
+# if true, pased to u
+parser.add_argument(
+    '--sql', help='passed to upgrade to indicate that we should spit out sql needed for changes. if true, sql is output to stdout. if file, sql is stored in file')
+
+# spits out sql to create a new database from scratch. compares against the base postgres database
+# expects no types or databases
+parser.add_argument(
+    '--all_sql', help='get all the sql commands that should be run to create db', action='store_true'
+)
+# spits out sql to incrementally update the database as needed
+# it goes through each revision and emits the change. much slower and all_sql should be preferred
+parser.add_argument(
+    '--progressive_sql', help='get all the sql commands that should be run to create db', action='store_true'
+)
+parser.add_argument(
+    '--file', help='output file for sql generated instead of output buffer. used w/ --all_sql, --progressive_sql or --sql'
+)
+parser.add_argument(
+    '--run_and_all_sql', help='run and all_sql combined so we do not call into this multiple times', action='store_true'
+)
+
 
 def main():
     try:
@@ -62,7 +88,7 @@ def main():
         else:
             r = Runner.from_command_line(metadata, args)
             if args.upgrade is not None:
-                r.upgrade(revision=args.upgrade)
+                r.upgrade(revision=args.upgrade, sql=args.sql)
             elif args.downgrade is not None:
                 r.downgrade(args.downgrade, not args.keep_schema_files)
             elif args.history is True:
@@ -86,10 +112,19 @@ def main():
                 r.merge(args.merge, args.message)
             elif args.squash is not None:
                 r.squash(args.squash)
+            elif args.all_sql is True:
+                r.all_sql(file=args.file)
+            elif args.progressive_sql is True:
+                r.progressive_sql(file=args.file)
             else:
                 r.run()
+                if args.run_and_all_sql:
+                    r.all_sql(file=args.file)
+
     except Exception as err:
         sys.stderr.write("auto_schema error: "+str(err))
+        if os.getenv('LOCAL_AUTO_SCHEMA') == 'true':
+            traceback.print_exception(*sys.exc_info())
 
 
 if __name__ == '__main__':

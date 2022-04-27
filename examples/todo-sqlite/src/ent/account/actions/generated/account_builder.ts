@@ -15,6 +15,7 @@ import { NodeType } from "src/ent/generated/const";
 import schema from "src/schema/account";
 
 export interface AccountInput {
+  deletedAt?: Date | null;
   name?: string;
   phoneNumber?: string;
   accountState?: AccountState | null;
@@ -120,6 +121,7 @@ export class AccountBuilder implements Builder<Account> {
         result.set(key, value);
       }
     };
+    addField("deleted_at", fields.deletedAt);
     addField("Name", fields.name);
     addField("PhoneNumber", fields.phoneNumber);
     addField("accountState", fields.accountState);
@@ -128,6 +130,11 @@ export class AccountBuilder implements Builder<Account> {
 
   isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
     return (node as Builder<Ent>).placeholderID !== undefined;
+  }
+
+  // get value of deleted_at. Retrieves it from the input if specified or takes it from existingEnt
+  getNewDeletedAtValue(): Date | null | undefined {
+    return this.input.deletedAt;
   }
 
   // get value of Name. Retrieves it from the input if specified or takes it from existingEnt

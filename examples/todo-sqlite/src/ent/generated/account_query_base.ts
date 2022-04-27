@@ -7,28 +7,36 @@ import {
   RawCountLoaderFactory,
   Viewer,
 } from "@snowtop/ent";
+import { getTransformedReadClause } from "@snowtop/ent/schema";
 import { Account, Tag, Todo, tagLoader, todoLoader } from "src/ent/internal";
+import TagSchema from "src/schema/tag";
+import TodoSchema from "src/schema/todo";
 
 export const accountToTagsCountLoaderFactory = new RawCountLoaderFactory({
   ...Tag.loaderOptions(),
   groupCol: "owner_id",
+  clause: getTransformedReadClause(TagSchema),
 });
 export const accountToTagsDataLoaderFactory = new IndexLoaderFactory(
   Tag.loaderOptions(),
   "owner_id",
   {
     toPrime: [tagLoader],
+    extraClause: getTransformedReadClause(TagSchema),
   },
 );
+
 export const accountToTodosCountLoaderFactory = new RawCountLoaderFactory({
   ...Todo.loaderOptions(),
   groupCol: "creator_id",
+  clause: getTransformedReadClause(TodoSchema),
 });
 export const accountToTodosDataLoaderFactory = new IndexLoaderFactory(
   Todo.loaderOptions(),
   "creator_id",
   {
     toPrime: [todoLoader],
+    extraClause: getTransformedReadClause(TodoSchema),
   },
 );
 

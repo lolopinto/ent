@@ -15,6 +15,7 @@ import { EdgeType, NodeType } from "src/ent/generated/const";
 import schema from "src/schema/tag";
 
 export interface TagInput {
+  deletedAt?: Date | null;
   displayName?: string;
   canonicalName?: string;
   ownerID?: ID | Builder<Account>;
@@ -168,6 +169,7 @@ export class TagBuilder implements Builder<Tag> {
         result.set(key, value);
       }
     };
+    addField("deleted_at", fields.deletedAt);
     addField("DisplayName", fields.displayName);
     addField("canonicalName", fields.canonicalName);
     addField("ownerID", fields.ownerID);
@@ -177,6 +179,11 @@ export class TagBuilder implements Builder<Tag> {
 
   isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
     return (node as Builder<Ent>).placeholderID !== undefined;
+  }
+
+  // get value of deleted_at. Retrieves it from the input if specified or takes it from existingEnt
+  getNewDeletedAtValue(): Date | null | undefined {
+    return this.input.deletedAt;
   }
 
   // get value of DisplayName. Retrieves it from the input if specified or takes it from existingEnt

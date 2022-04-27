@@ -11,8 +11,11 @@
 #   defaultActionPolicy:
 #     path: '@snowtop/ent'
 #     policyName: 'AlwaysAllowPrivacyPolicy'
+customGraphQLJSONPath: "src/schema/custom_graphql.json"
 codegen:
   relativeImports: true
   generatedHeader: "Copyright whaa whaa"
   prettier:
     custom: true
+  schemaSQLFilePath: "src/schema/schema.sql"
+  

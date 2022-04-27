@@ -7,9 +7,7 @@ import schema from "src/graphql/generated/schema";
 import ChangeTodoStatusAction from "src/ent/todo/actions/change_todo_status_action";
 import { createAccount, createTodo, createTag } from "src/ent/testutils/util";
 import { advanceBy } from "jest-date-mock";
-beforeAll(() => {
-  process.env.DB_CONNECTION_STRING = `sqlite:///todo.db`;
-});
+import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
 
 async function createTodos(): Promise<[Account, Todo[]]> {
   const account = await createAccount();
@@ -104,11 +102,15 @@ test("remove completed", async () => {
 
 test("open todos plural from account", async () => {
   const [account, todos] = await createTodos();
+  expect(todos.length).toBe(4);
 
   // complete the first
   await ChangeTodoStatusAction.create(account.viewer, todos[0], {
     completed: true,
   }).saveX();
+
+  // soft delete the 2nd
+  await DeleteTodoAction.create(account.viewer, todos[1]).saveX();
 
   await expectQueryFromRoot(
     {
@@ -121,7 +123,7 @@ test("open todos plural from account", async () => {
     },
     [
       "open_todos_plural",
-      todos.slice(1).map((todo) => {
+      todos.slice(2).map((todo) => {
         return {
           text: todo.text,
         };
@@ -132,11 +134,15 @@ test("open todos plural from account", async () => {
 
 test("open todos connection from account", async () => {
   const [account, todos] = await createTodos();
+  expect(todos.length).toBe(4);
 
   // complete the first
   await ChangeTodoStatusAction.create(account.viewer, todos[0], {
     completed: true,
   }).saveX();
+
+  // soft delete the 2nd
+  await DeleteTodoAction.create(account.viewer, todos[1]).saveX();
 
   await expectQueryFromRoot(
     {
@@ -147,10 +153,10 @@ test("open todos connection from account", async () => {
         id: account.id,
       },
     },
-    ["open_todos.rawCount", todos.length - 1],
+    ["open_todos.rawCount", 2],
     [
       "open_todos.nodes",
-      todos.slice(1).map((todo) => {
+      todos.slice(2).map((todo) => {
         return {
           text: todo.text,
         };
@@ -161,11 +167,15 @@ test("open todos connection from account", async () => {
 
 test("open todos plural from root", async () => {
   const [account, todos] = await createTodos();
+  expect(todos.length).toBe(4);
 
   // complete the first
   await ChangeTodoStatusAction.create(account.viewer, todos[0], {
     completed: true,
   }).saveX();
+
+  // soft delete the 2nd
+  await DeleteTodoAction.create(account.viewer, todos[1]).saveX();
 
   await expectQueryFromRoot(
     {
@@ -178,7 +188,7 @@ test("open todos plural from root", async () => {
     },
     [
       "",
-      todos.slice(1).map((todo) => {
+      todos.slice(2).map((todo) => {
         return {
           text: todo.text,
         };
@@ -189,12 +199,17 @@ test("open todos plural from root", async () => {
 
 test("open todos connection from root", async () => {
   const [account, todos] = await createTodos();
+  expect(todos.length).toBe(4);
 
   // complete the first
   await ChangeTodoStatusAction.create(account.viewer, todos[0], {
     completed: true,
   }).saveX();
 
+  // soft delete the 2nd
+  await DeleteTodoAction.create(account.viewer, todos[1]).saveX();
+
+  // open todos returns non-deleted, non-complete things
   await expectQueryFromRoot(
     {
       viewer: account.viewer,
@@ -204,10 +219,10 @@ test("open todos connection from root", async () => {
         id: account.id,
       },
     },
-    ["rawCount", todos.length - 1],
+    ["rawCount", 2],
     [
       "nodes",
-      todos.slice(1).map((todo) => {
+      todos.slice(2).map((todo) => {
         return {
           text: todo.text,
         };

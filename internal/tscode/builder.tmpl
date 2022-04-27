@@ -2,7 +2,7 @@
 {{reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "saveBuilder" "saveBuilderX" "Orchestrator"}}
 
 {{with .NodeData -}}
-{{ $schemaPath := printf "src/schema/%s" .PackageName }}
+{{ $schemaPath := .GetSchemaPath }}
 {{ reserveDefaultImport $schemaPath "schema"}}
 {{ reserveImport "src/ent/generated/const" "EdgeType" "NodeType" }}
 

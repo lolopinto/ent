@@ -1,5 +1,5 @@
 import { advanceBy } from "jest-date-mock";
-import { DB, LoggedOutViewer, IDViewer, Viewer } from "@snowtop/ent";
+import { LoggedOutViewer, IDViewer, Viewer } from "@snowtop/ent";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { encodeGQLID, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import {
@@ -18,11 +18,6 @@ import CreateContactAction, {
   ContactCreateInput,
 } from "../../ent/contact/actions/create_contact_action";
 import { GraphQLObjectType } from "graphql";
-
-// TODO we need something that does this by default for all tests
-afterAll(async () => {
-  await DB.getInstance().endPool();
-});
 
 afterEach(() => {
   clearAuthHandlers();

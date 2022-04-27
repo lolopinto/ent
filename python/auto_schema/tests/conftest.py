@@ -14,6 +14,9 @@ import sqlalchemy as sa
 from auto_schema import runner
 from typing import List
 
+from auto_schema.schema_item import FullTextIndex
+from auto_schema import compare
+
 
 class Postgres:
     def __init__(self) -> None:
@@ -326,11 +329,12 @@ def metadata_with_server_default_dropped(metadata):
 
 
 def metadata_with_unique_constraint_added(metadata):
-    return _add_constraint_to_metadata(
-        metadata,    # and then unique constraint added afterwards
-        sa.UniqueConstraint(
-            "email_address", name="accounts_unique_email_address"),
-    )
+    sa.Table('accounts', metadata,
+             sa.UniqueConstraint(
+                 "email_address", name="accounts_unique_email_address"),
+             extend_existing=True
+             )
+    return metadata
 
 
 # takes the account table and converts the email_address type from String(255) to Text()
@@ -402,20 +406,110 @@ def _apply_func_on_metadata(metadata, col_name, table_name, fn):
 
 
 def metadata_with_table_with_index(metadata_with_table):
-    return _add_constraint_to_metadata(
-        metadata_with_table,
-        # index the first name because we support searching for some reason
-        sa.Index("accounts_first_name_idx", "first_name"),
-    )
+    sa.Table('accounts',
+             metadata_with_table,
+             # index the first name because we support searching for some reason
+             sa.Index("accounts_first_name_idx", "first_name"),
+             extend_existing=True
+             )
+    return metadata_with_table
 
 
 def metadata_with_multi_column_index(metadata_with_table):
-    return _add_constraint_to_metadata(
-        metadata_with_table,
-        # index the first and last name because we support searching by that
-        sa.Index("accounts_first_name_last_name_idx",
-                 "first_name", "last_name"),
-    )
+    sa.Table('accounts',
+             metadata_with_table,
+             # index the first and last name because we support searching by that
+             sa.Index("accounts_first_name_last_name_idx",
+                      "first_name", "last_name"),
+             extend_existing=True
+             )
+    return metadata_with_table
+
+
+def metadata_with_fulltext_search_index(metadata_with_table):
+    sa.Table('accounts',
+             metadata_with_table,
+             FullTextIndex("accounts_first_name_idx",
+                           info={
+                               'postgresql_using': 'gin',
+                               'postgresql_using_internals': "to_tsvector('english', first_name)",
+                               'column': 'first_name',
+                           }
+                           ),
+             extend_existing=True
+             )
+    return metadata_with_table
+
+
+def metadata_with_multicolumn_fulltext_search_index(metadata_with_table):
+    sa.Table('accounts',
+             metadata_with_table,
+             FullTextIndex("accounts_full_text_idx",
+                           info={
+                               'postgresql_using': 'gin',
+                               'postgresql_using_internals': "to_tsvector('english', first_name || ' ' || last_name)",
+                               'columns': ['first_name', 'last_name'],
+                           }
+                           ),
+             extend_existing=True
+             )
+    return metadata_with_table
+
+
+@pytest.fixture
+def metadata_with_multicolumn_fulltext_search():
+    metadata = metadata_with_base_table_restored()
+    sa.Table('accounts',
+             metadata,
+             FullTextIndex("accounts_full_text_idx",
+                           info={
+                               'postgresql_using': 'gin',
+                               'postgresql_using_internals': "to_tsvector('english', first_name || ' ' || last_name)",
+                               'columns': ['first_name', 'last_name'],
+                           }
+                           ),
+             extend_existing=True
+             )
+    return metadata
+
+
+def metadata_with_multicolumn_fulltext_search_index_btree(metadata_with_table):
+    sa.Table('accounts',
+             metadata_with_table,
+             FullTextIndex("accounts_full_text_idx",
+                           info={
+                               'postgresql_using': 'btree',
+                               'postgresql_using_internals': "to_tsvector('english', first_name || ' ' || last_name)",
+                               'columns': ['first_name', 'last_name'],
+                           }
+                           ),
+             extend_existing=True
+             )
+    return metadata_with_table
+
+
+def metadata_with_generated_col_fulltext_search_index(metadata_with_table):
+    sa.Table('accounts', metadata_with_table,
+             sa.Column('full_name', postgresql.TSVECTOR(), sa.Computed(
+                 "to_tsvector('english', first_name || ' ' || last_name)")),
+             sa.Index('accounts_full_text_idx',
+                      'full_name', postgresql_using='gin'),
+
+             extend_existing=True)
+
+    return metadata_with_table
+
+
+def metadata_with_generated_col_fulltext_search_index_btree(metadata_with_table):
+    sa.Table('accounts', metadata_with_table,
+             sa.Column('full_name', postgresql.TSVECTOR(), sa.Computed(
+                 "to_tsvector('english', first_name || ' ' || last_name)")),
+             sa.Index('accounts_full_text_idx',
+                      'full_name', postgresql_using='btree'),
+
+             extend_existing=True)
+
+    return metadata_with_table
 
 
 @ pytest.fixture
@@ -442,11 +536,13 @@ def metadata_with_multi_column_pkey_constraint(request):
 @ pytest.fixture()
 def metadata_with_multi_column_unique_constraint():
     metadata = metadata_with_contacts_table_with_no_unique_constraint()
-    return _add_constraint_to_metadata(metadata,
-                                       sa.UniqueConstraint(
-                                           "email_address", "user_id", name="contacts_unique_email_per_contact"
-                                       ), table_name='contacts'
-                                       )
+    sa.Table('contacts', metadata,
+             sa.UniqueConstraint(
+                 "email_address", "user_id", name="contacts_unique_email_per_contact"
+             ),
+             extend_existing=True
+             )
+    return metadata
 
 
 def metadata_with_contacts_table_with_no_unique_constraint():
@@ -560,10 +656,13 @@ def metadata_with_column_check_constraint():
 
 
 def metadata_with_constraint_added_after(metadata):
-    return _add_constraint_to_metadata(
-        metadata,
-        sa.CheckConstraint('meaning_of_life = 42', 'meaning_of_life_correct'),
-    )
+    sa.Table('accounts',
+             metadata,
+             sa.CheckConstraint('meaning_of_life = 42',
+                                'meaning_of_life_correct'),
+             extend_existing=True
+             )
+    return metadata
 
 
 @ pytest.fixture()
@@ -613,7 +712,7 @@ def _metadata_assoc_edge_config(request):
     return metadata
 
 
-@pytest.fixture
+@ pytest.fixture
 def metadata_with_assoc_edge_config(request):
     return _metadata_assoc_edge_config(request)
 
@@ -1065,11 +1164,3 @@ def assoc_edge_config_table(metadata, request):
              sa.ForeignKeyConstraint(['inverse_edge_type'], ['assoc_edge_config.edge_type'],
                                      name="assoc_edge_config_inverse_edge_type_fkey", ondelete="RESTRICT"),
              )
-
-
-def _add_constraint_to_metadata(metadata, constraint, table_name="accounts"):
-    tables = [t for t in metadata.sorted_tables if t.name == table_name]
-    table = tables[0]
-
-    table.append_constraint(constraint)
-    return metadata

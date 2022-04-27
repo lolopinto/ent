@@ -9,8 +9,14 @@ import {
   StringType,
   UUIDType,
 } from "@snowtop/ent";
+import { DeletedAtPattern } from "@snowtop/ent-soft-delete";
 
 export default class Tag extends BaseEntSchema {
+  constructor() {
+    super();
+    this.addPatterns(new DeletedAtPattern());
+  }
+
   fields: Field[] = [
     StringType({ name: "DisplayName" }),
     StringType({ name: "canonicalName" }).trim().toLowerCase(),

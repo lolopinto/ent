@@ -28,18 +28,23 @@ type Pattern struct {
 
 type Node struct {
 	// Note that anytime anything changes here, have to update nodeEqual in compare.go
-	TableName       string                   `json:"tableName,omitempty"`
-	Fields          []*Field                 `json:"fields,omitempty"`
-	AssocEdges      []*AssocEdge             `json:"assocEdges,omitempty"`
-	AssocEdgeGroups []*AssocEdgeGroup        `json:"assocEdgeGroups,omitempty"`
-	Actions         []*Action                `json:"actions,omitempty"`
-	EnumTable       bool                     `json:"enumTable,omitempty"`
-	DBRows          []map[string]interface{} `json:"dbRows,omitempty"`
-	Constraints     []*Constraint            `json:"constraints,omitempty"`
-	Indices         []*Index                 `json:"indices,omitempty"`
-	HideFromGraphQL bool                     `json:"hideFromGraphQL,omitempty"`
-	EdgeConstName   string                   `json:"edgeConstName,omitempty"`
-	PatternName     string                   `json:"patternName,omitempty"`
+	TableName        string                   `json:"tableName,omitempty"`
+	Fields           []*Field                 `json:"fields,omitempty"`
+	AssocEdges       []*AssocEdge             `json:"assocEdges,omitempty"`
+	AssocEdgeGroups  []*AssocEdgeGroup        `json:"assocEdgeGroups,omitempty"`
+	Actions          []*Action                `json:"actions,omitempty"`
+	EnumTable        bool                     `json:"enumTable,omitempty"`
+	DBRows           []map[string]interface{} `json:"dbRows,omitempty"`
+	Constraints      []*Constraint            `json:"constraints,omitempty"`
+	Indices          []*Index                 `json:"indices,omitempty"`
+	HideFromGraphQL  bool                     `json:"hideFromGraphQL,omitempty"`
+	EdgeConstName    string                   `json:"edgeConstName,omitempty"`
+	PatternName      string                   `json:"patternName,omitempty"`
+	TransformsSelect bool                     `json:"transformsSelect,omitempty"`
+	TransformsDelete bool                     `json:"transformsDelete,omitempty"`
+	// these 2 not used yet so ignoring for now
+	// TransformsInsert bool `json:"transformsInsert,omitempty"`
+	// TransformsUpdate bool `json:"transformsUpdate,omitempty"`
 }
 
 func (n *Node) AddAssocEdge(edge *AssocEdge) {

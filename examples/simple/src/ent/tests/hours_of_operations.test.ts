@@ -1,11 +1,6 @@
-import { LoggedOutViewer, DB } from "@snowtop/ent";
+import { LoggedOutViewer } from "@snowtop/ent";
 import { DayOfWeek, DayOfWeekAlt } from "../";
 import CreateHoursOfOperationAction from "../hours_of_operation/actions/create_hours_of_operation_action";
-
-// TODO we need something that does this by default for all tests
-afterAll(async () => {
-  await DB.getInstance().endPool();
-});
 
 test("create", async () => {
   const r = await CreateHoursOfOperationAction.create(new LoggedOutViewer(), {

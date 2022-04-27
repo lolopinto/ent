@@ -1,4 +1,4 @@
-import { Data, DB } from "@snowtop/ent";
+import { Data } from "@snowtop/ent";
 import {
   expectMutation,
   expectQueryFromRoot,
@@ -10,10 +10,6 @@ import { encodeGQLID } from "@snowtop/ent/graphql";
 import { PassportStrategyHandler } from "@snowtop/ent-passport";
 import supertest from "supertest";
 import { Guest, User } from "src/ent";
-
-afterAll(async () => {
-  await DB.getInstance().endPool();
-});
 
 async function confirmNoViewer(st?: supertest.SuperTest<supertest.Test>) {
   await expectQueryFromRoot(

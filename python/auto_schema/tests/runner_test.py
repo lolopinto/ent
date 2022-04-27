@@ -27,29 +27,14 @@ class BaseTestRunner(object):
 
     @pytest.mark.usefixtures("metadata_with_table")
     def test_index_added_and_removed(self, new_test_runner, metadata_with_table):
-        r = new_test_runner(metadata_with_table)
-        testingutils.run_and_validate_with_standard_metadata_tables(
-            r, metadata_with_table)
-
-        r2 = testingutils.recreate_with_new_metadata(
-            r, new_test_runner, metadata_with_table, conftest.metadata_with_table_with_index)
-
-        message = r2.revision_message()
-        assert message == "add index accounts_first_name_idx to accounts"
-
-        r2.run()
-        testingutils.assert_num_files(r2, 2)
-        testingutils.assert_num_tables(r2, 2)
-
-        r3 = testingutils.recreate_metadata_fixture(
-            new_test_runner, conftest.metadata_with_base_table_restored(), r2)
-
-        message = r3.revision_message()
-        assert message == "drop index accounts_first_name_idx from accounts"
-
-        r3.run()
-        testingutils.assert_num_files(r3, 3)
-        testingutils.assert_num_tables(r3, 2)
+        testingutils.make_changes_and_restore(
+            new_test_runner,
+            metadata_with_table,
+            conftest.metadata_with_table_with_index,
+            "add index accounts_first_name_idx to accounts",
+            "drop index accounts_first_name_idx from accounts",
+            validate_schema=False
+        )
 
     @pytest.mark.usefixtures("metadata_with_two_tables")
     def test_compute_changes_with_two_tables(self, new_test_runner, metadata_with_two_tables):
@@ -132,38 +117,25 @@ class BaseTestRunner(object):
 
     @pytest.mark.usefixtures("metadata_with_table")
     def test_multi_column_index_added_and_removed(self, new_test_runner, metadata_with_table):
-        r = new_test_runner(metadata_with_table)
-        testingutils.run_and_validate_with_standard_metadata_tables(
-            r, metadata_with_table)
+        def post_r2_func(r2):
+            tables = [t for t in r2.get_metadata(
+            ).sorted_tables if t.name == "accounts"]
+            assert len(tables) == 1
+            table = tables[0]
 
-        r2 = testingutils.recreate_with_new_metadata(
-            r, new_test_runner, metadata_with_table, conftest.metadata_with_multi_column_index)
+            assert len(table.indexes) == 1
+            index = table.indexes.pop()
+            assert len(index.columns) == 2
 
-        message = r2.revision_message()
-        assert message == "add index accounts_first_name_last_name_idx to accounts"
-
-        r2.run()
-        testingutils.assert_num_files(r2, 2)
-        testingutils.assert_num_tables(r2, 2)
-
-        tables = [t for t in r2.get_metadata(
-        ).sorted_tables if t.name == "accounts"]
-        assert len(tables) == 1
-        table = tables[0]
-
-        assert len(table.indexes) == 1
-        index = table.indexes.pop()
-        assert len(index.columns) == 2
-
-        r3 = testingutils.recreate_metadata_fixture(
-            new_test_runner, conftest.metadata_with_base_table_restored(), r2)
-
-        message = r3.revision_message()
-        assert message == "drop index accounts_first_name_last_name_idx from accounts"
-
-        r3.run()
-        testingutils.assert_num_files(r3, 3)
-        testingutils.assert_num_tables(r3, 2)
+        testingutils.make_changes_and_restore(
+            new_test_runner,
+            metadata_with_table,
+            conftest.metadata_with_multi_column_index,
+            "add index accounts_first_name_last_name_idx to accounts",
+            "drop index accounts_first_name_last_name_idx from accounts",
+            validate_schema=False,
+            post_r2_func=post_r2_func
+        )
 
     @pytest.mark.usefixtures("metadata_with_multi_column_pkey_constraint")
     def test_new_table_with_multi_column_pkey_constraint(self, new_test_runner, metadata_with_multi_column_pkey_constraint):
@@ -834,34 +806,13 @@ class TestPostgresRunner(BaseTestRunner):
 
     @pytest.mark.usefixtures("metadata_with_table")
     def test_check_constraint_added_and_removed(self, new_test_runner, metadata_with_table):
-        r = new_test_runner(metadata_with_table)
-        testingutils.run_and_validate_with_standard_metadata_tables(
-            r, metadata_with_table)
-
-        r2 = testingutils.recreate_with_new_metadata(
-            r, new_test_runner, metadata_with_table, conftest.metadata_with_constraint_added_after)
-
-        message = r2.revision_message()
-        assert message == "add constraint meaning_of_life_correct to accounts"
-
-        r2.run()
-
-        # should have the expected files with the expected tables
-        testingutils.assert_num_files(r2, 2)
-        testingutils.assert_num_tables(r2, 2, ['accounts', 'alembic_version'])
-        testingutils.validate_metadata_after_change(r2, r2.get_metadata())
-
-        r3 = testingutils.recreate_metadata_fixture(
-            new_test_runner, conftest.metadata_with_base_table_restored(), r2)
-
-        message = r3.revision_message()
-        assert message == "drop constraint meaning_of_life_correct from accounts"
-
-        r3.run()
-
-        # should have the expected files with the expected tables
-        testingutils.assert_num_files(r3, 3)
-        testingutils.assert_num_tables(r3, 2, ['accounts', 'alembic_version'])
+        testingutils.make_changes_and_restore(
+            new_test_runner,
+            metadata_with_table,
+            conftest.metadata_with_constraint_added_after,
+            "add constraint meaning_of_life_correct to accounts",
+            "drop constraint meaning_of_life_correct from accounts"
+        )
 
     @pytest.mark.usefixtures('metadata_with_enum_type')
     def test_enum_type(self, new_test_runner, metadata_with_enum_type):
@@ -1065,6 +1016,77 @@ class TestPostgresRunner(BaseTestRunner):
         r = new_test_runner(metadata_with_json)
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_json, new_table_names=['tbl'])
+
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_full_text_index_added_and_removed(self, new_test_runner, metadata_with_table):
+        testingutils.make_changes_and_restore(
+            new_test_runner,
+            metadata_with_table,
+            conftest.metadata_with_fulltext_search_index,
+            "add full text index accounts_first_name_idx to accounts",
+            "drop full text index accounts_first_name_idx from accounts",
+            # skip validation because of complications with idx
+            validate_schema=False
+        )
+
+    @pytest.mark.usefixtures("metadata_with_multicolumn_fulltext_search")
+    # TODO this is failed because of index comparisons
+    # this doesn't work because indexes are wrong. why we have validate false in
+    # make_changes_and_restore
+    @pytest.mark.xfail()
+    def test_multi_col_full_text_create(self, new_test_runner, metadata_with_multicolumn_fulltext_search):
+        r = new_test_runner(
+            metadata_with_multicolumn_fulltext_search)
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_multicolumn_fulltext_search)
+
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_multi_col_full_text_index_added_and_removed(self, new_test_runner, metadata_with_table):
+        testingutils.make_changes_and_restore(
+            new_test_runner,
+            metadata_with_table,
+            conftest.metadata_with_multicolumn_fulltext_search_index,
+            "add full text index accounts_full_text_idx to accounts",
+            "drop full text index accounts_full_text_idx from accounts",
+            # skip validation because of complications with idx
+            validate_schema=False
+        )
+
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_multi_col_full_text_index_added_and_removed_btree(self, new_test_runner, metadata_with_table):
+        testingutils.make_changes_and_restore(
+            new_test_runner,
+            metadata_with_table,
+            conftest.metadata_with_multicolumn_fulltext_search_index_btree,
+            "add full text index accounts_full_text_idx to accounts",
+            "drop full text index accounts_full_text_idx from accounts",
+            # skip validation because of complications with idx
+            validate_schema=False
+        )
+
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_full_text_index_with_generated_column(self, new_test_runner, metadata_with_table):
+        testingutils.make_changes_and_restore(
+            new_test_runner,
+            metadata_with_table,
+            conftest.metadata_with_generated_col_fulltext_search_index,
+            "add column full_name to table accounts\nadd index accounts_full_text_idx to accounts",
+            "drop index accounts_full_text_idx from accounts\ndrop column full_name from table accounts",
+            # skip validation because of complications with idx
+            validate_schema=False
+        )
+
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_full_text_index_with_generated_column_btree(self, new_test_runner, metadata_with_table):
+        testingutils.make_changes_and_restore(
+            new_test_runner,
+            metadata_with_table,
+            conftest.metadata_with_generated_col_fulltext_search_index_btree,
+            "add column full_name to table accounts\nadd index accounts_full_text_idx to accounts",
+            "drop index accounts_full_text_idx from accounts\ndrop column full_name from table accounts",
+            # skip validation because of complications with idx
+            validate_schema=False
+        )
 
 
 class TestSqliteRunner(BaseTestRunner):
