@@ -248,6 +248,68 @@ class compositeClause implements Clause {
   }
 }
 
+class tsQueryClause implements Clause {
+  constructor(protected col: string, protected val: string | TsQuery) {}
+
+  private isTsQuery(val: string | TsQuery): val is TsQuery {
+    return typeof val !== "string";
+  }
+
+  protected getInfo() {
+    if (this.isTsQuery(this.val)) {
+      return { value: this.val.value, language: this.val.language };
+    }
+    return {
+      language: "english",
+      value: this.val,
+    };
+  }
+  clause(idx: number): string {
+    const { language } = this.getInfo();
+    if (Dialect.Postgres === DB.getDialect()) {
+      return `${this.col} @@ ${this.getFunction()}('${language}', $${idx})`;
+    }
+    return `${this.col} @@ ${this.getFunction()}('${language}', ?)`;
+  }
+
+  values(): any[] {
+    const { value } = this.getInfo();
+    return [value];
+  }
+
+  logValues(): any[] {
+    const { value } = this.getInfo();
+    return [value];
+  }
+
+  protected getFunction(): string {
+    return "to_tsquery";
+  }
+
+  instanceKey(): string {
+    const { language, value } = this.getInfo();
+    return `${this.col} @@${this.getFunction()}:${language}:${value}`;
+  }
+}
+
+class plainToTsQueryClause extends tsQueryClause {
+  protected getFunction(): string {
+    return "plainto_tsquery";
+  }
+}
+
+class phraseToTsQueryClause extends tsQueryClause {
+  protected getFunction(): string {
+    return "phraseto_tsquery";
+  }
+}
+
+class websearchTosQueryClause extends tsQueryClause {
+  protected getFunction(): string {
+    return "websearch_to_tsquery";
+  }
+}
+
 // TODO we need to check sqlite version...
 export function ArrayEq(col: string, value: any): Clause {
   return new arraySimpleClause(col, value, "=");
@@ -318,6 +380,41 @@ export function Or(...args: Clause[]): compositeClause {
 export function In(col: string, ...values: any): Clause {
   return new inClause(col, values);
 }
+
+interface TsQuery {
+  // todo lang ::reconfig
+  language: "english" | "french" | "german" | "simple";
+  value: string;
+}
+
+// if string defaults to english
+// https://www.postgresql.org/docs/current/textsearch-controls.html#TEXTSEARCH-PARSING-QUERIES
+// to_tsquery
+// plainto_tsquery
+// phraseto_tsquery;
+// websearch_to_tsquery
+export function TsQuery(col: string, val: string | TsQuery): Clause {
+  return new tsQueryClause(col, val);
+}
+
+export function PlainToTsQuery(col: string, val: string | TsQuery): Clause {
+  return new plainToTsQueryClause(col, val);
+}
+
+export function PhraseToTsQuery(col: string, val: string | TsQuery): Clause {
+  return new phraseToTsQueryClause(col, val);
+}
+
+export function WebsearchToTsQuery(col: string, val: string | TsQuery): Clause {
+  return new websearchTosQueryClause(col, val);
+}
+
+// TODO would be nice to support this with building blocks but not supporting for now
+// AND: foo & bar,
+// OR: foo | bar
+// followed by: foo <-> bar
+// NOT: !foo
+// starts_with: theo:*
 
 // wrap a query in the db with this to ensure that it doesn't show up in the logs
 // e.g. if querying for password, SSN, etc

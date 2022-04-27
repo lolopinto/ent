@@ -2,6 +2,7 @@
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+from auto_schema.schema_item import FullTextIndex
 
 metadata = sa.MetaData()
 
@@ -247,9 +248,11 @@ sa.Table("users", metadata,
     sa.Column("fun_uuids", postgresql.ARRAY(postgresql.UUID()), nullable=True),
     sa.Column("new_col", sa.Text(), nullable=True),
     sa.Column("new_col_2", sa.Text(), nullable=True),
+    sa.Column("name_idx", postgresql.TSVECTOR, sa.Computed("to_tsvector('simple', coalesce(first_name, '') || ' ' || coalesce(last_name, ''))")),
     sa.PrimaryKeyConstraint("id", name="users_id_pkey"),
     sa.UniqueConstraint("email_address", name="users_unique_email_address"),
     sa.UniqueConstraint("phone_number", name="users_unique_phone_number"),
+    sa.Index("user_name_idx", "name_idx", postgresql_using='gin'),
 )
   
 

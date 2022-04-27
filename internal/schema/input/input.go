@@ -634,9 +634,11 @@ type Index struct {
 type FullTextLanguage string
 
 const (
+	// rename to search config?
 	English FullTextLanguage = "english"
 	French  FullTextLanguage = "french"
 	German  FullTextLanguage = "german"
+	Simple  FullTextLanguage = "simple"
 )
 
 type IndexType string
