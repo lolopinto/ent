@@ -1071,7 +1071,9 @@ func TestFullTextIndex(t *testing.T) {
 								columns: ["firstName"],
 								fullText: {
 									language: 'english',
-									weights: ['firstName'],
+									weights: {
+										A: ['firstName'],
+									},
 								},
 							},
 						];
@@ -1099,7 +1101,9 @@ func TestFullTextIndex(t *testing.T) {
 								fullText: {
 									language: 'english',
 									generatedColumnName: 'name_idx',
-									weights: ['fname'],
+									weights: {
+										A: ['fname'],
+									},
 								},
 							},
 						];

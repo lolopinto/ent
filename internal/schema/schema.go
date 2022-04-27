@@ -535,14 +535,31 @@ func (s *Schema) validateIndices(nodeData *NodeData) error {
 			return fmt.Errorf("cannot specify both language and language column for index %s", index.Name)
 		}
 
-		if len(fullText.Weights) != 0 && fullText.GeneratedColumnName == "" {
+		if fullText.Weights != nil && fullText.Weights.HasWeights() && fullText.GeneratedColumnName == "" {
 			return fmt.Errorf("cannot specify weights if no generated column name for index %s", index.Name)
 		}
+		verifyWeights := func(weights []string) error {
+			for _, w := range weights {
+				f := nodeData.FieldInfo.GetFieldByName(w)
+				if f == nil {
+					return fmt.Errorf("invalid field %s passed as weight for index %s", w, index.Name)
+				}
+			}
+			return nil
+		}
 
-		for _, w := range fullText.Weights {
-			f := nodeData.FieldInfo.GetFieldByName(w)
-			if f == nil {
-				return fmt.Errorf("invalid field %s passed as weight for index %s", w, index.Name)
+		if fullText.Weights != nil {
+			if err := verifyWeights(fullText.Weights.A); err != nil {
+				return err
+			}
+			if err := verifyWeights(fullText.Weights.B); err != nil {
+				return err
+			}
+			if err := verifyWeights(fullText.Weights.C); err != nil {
+				return err
+			}
+			if err := verifyWeights(fullText.Weights.D); err != nil {
+				return err
 			}
 		}
 		if fullText.GeneratedColumnName != "" {

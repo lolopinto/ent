@@ -327,5 +327,17 @@ func fullTextEqual(existing, fullText *FullText) bool {
 		existing.Language == fullText.Language &&
 		existing.LanguageColumn == fullText.LanguageColumn &&
 		existing.IndexType == fullText.IndexType &&
-		change.StringListEqual(existing.Weights, fullText.Weights)
+		fullTextWeightEqual(existing.Weights, fullText.Weights)
+}
+
+func fullTextWeightEqual(existing, weights *FullTextWeight) bool {
+	ret := change.CompareNilVals(existing == nil, weights == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return change.StringListEqual(existing.A, weights.A) &&
+		change.StringListEqual(existing.A, weights.B) &&
+		change.StringListEqual(existing.A, weights.C) &&
+		change.StringListEqual(existing.A, weights.D)
 }

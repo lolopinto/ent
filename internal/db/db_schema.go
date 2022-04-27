@@ -260,29 +260,30 @@ func getSearchConfigFromIndex(fullText *input.FullText) string {
 	}
 }
 
-func getPostgresUsingInternals(fullText *input.FullText, cols, weights []string) string {
-	if len(weights) > 4 {
-		panic("more weights than expected. should have been caught earlier")
-	}
-
+func getPostgresUsingInternals(fullText *input.FullText, cols []string, weights *input.FullTextWeight) string {
 	searchConfig := getSearchConfigFromIndex(fullText)
 
-	weightsOrder := "ABCD"
-
-	if len(weights) != 0 {
+	if weights.HasWeights() {
 		used := make(map[string]bool)
 		parts := []string{}
-		for i, col := range weights {
-			used[col] = true
-			parts = append(parts,
-				fmt.Sprintf(
-					"setweight(to_tsvector(%s, coalesce(%s, '')), '%s')",
-					searchConfig,
-					col,
-					string(weightsOrder[i]),
-				),
-			)
+		processWeights := func(weights []string, weight string) {
+			for _, col := range weights {
+				used[col] = true
+				parts = append(parts,
+					fmt.Sprintf(
+						"setweight(to_tsvector(%s, coalesce(%s, '')), '%s')",
+						searchConfig,
+						col,
+						weight,
+					),
+				)
+			}
 		}
+		processWeights(weights.A, "A")
+		processWeights(weights.B, "B")
+		processWeights(weights.C, "C")
+		processWeights(weights.D, "D")
+
 		for _, col := range cols {
 			if used[col] {
 				continue
@@ -337,7 +338,7 @@ func (constraint *fullTextConstraint) getConstraintString() string {
 	}
 
 	// ignore weights for now
-	if len(fullText.Weights) != 0 {
+	if fullText.Weights != nil && fullText.Weights.HasWeights() {
 		panic("don't support weights when there's no generated column name")
 	}
 
@@ -346,7 +347,7 @@ func (constraint *fullTextConstraint) getConstraintString() string {
 		cols[i] = col.DBColName
 	}
 	// if we ever support weights here, need to transform to db names
-	postgresql_using_internals := getPostgresUsingInternals(constraint.fullText, cols, []string{})
+	postgresql_using_internals := getPostgresUsingInternals(constraint.fullText, cols, &input.FullTextWeight{})
 
 	kvPairs := []string{
 		getKVPair("postgresql_using", strconv.Quote(postgresql_using)),
@@ -930,10 +931,22 @@ func (s *dbSchema) getGeneratedColumnFromIndex(nodeData *schema.NodeData, index 
 		cols[i] = colMap[v].DBColName
 	}
 
-	weights := make([]string, len(index.FullText.Weights))
-	for i, v := range index.FullText.Weights {
-		weights[i] = colMap[v].DBColName
+	weights := &input.FullTextWeight{}
+	//	weights := make([]string, len(index.FullText.Weights))
+	if index.FullText.Weights != nil {
+		convertWeights := func(input []string) []string {
+			output := make([]string, len(input))
+			for i, v := range input {
+				output[i] = colMap[v].DBColName
+			}
+			return output
+		}
+		weights.A = convertWeights(index.FullText.Weights.A)
+		weights.B = convertWeights(index.FullText.Weights.B)
+		weights.C = convertWeights(index.FullText.Weights.C)
+		weights.D = convertWeights(index.FullText.Weights.D)
 	}
+
 	postgresql_using_internals := getPostgresUsingInternals(index.FullText, cols, weights)
 
 	col := &dbColumn{

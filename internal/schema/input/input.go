@@ -646,12 +646,26 @@ const (
 	Gist IndexType = "gist"
 )
 
+type FullTextWeight struct {
+	A []string `json:"A,omitempty"`
+	B []string `json:"B,omitempty"`
+	C []string `json:"C,omitempty"`
+	D []string `json:"D,omitempty"`
+}
+
+func (w *FullTextWeight) HasWeights() bool {
+	return len(w.A) > 0 ||
+		len(w.B) > 0 ||
+		len(w.C) > 0 ||
+		len(w.D) > 0
+}
+
 type FullText struct {
 	GeneratedColumnName string           `json:"generatedColumnName,omitempty"`
 	Language            FullTextLanguage `json:"language,omitempty"`
 	LanguageColumn      string           `json:"languageColumn,omitempty"`
 	IndexType           IndexType        `json:"indexType,omitempty"`
-	Weights             []string         `json:"weights,omitempty"`
+	Weights             *FullTextWeight  `json:"weights,omitempty"`
 }
 
 type ConstraintType string
