@@ -286,7 +286,7 @@ class Runner(object):
 
     # doesn't invoke env.py. completely different flow
     # progressive_sql and upgrade range do go through offline path
-    def all_sql(self, file=None):
+    def all_sql(self, file=None, database=''):
         dialect = self.connection.dialect.name
         # TODO handle
         if dialect != 'postgresql':
@@ -301,7 +301,9 @@ class Runner(object):
         print(url, 'host:', url.host, 'pw:', url.password, 'port:', url.port,
               'db:', url.database, 'username:', url.username, 'drivername:', url.drivername)
 
-        url = make_url(raw_engine).set(database='')
+        # use passed in database
+        # TODO postgres placeholder for now. remove it when passed in
+        url = make_url(raw_engine).set(database=database or 'postgres')
 
         # doing from empty db so need to confirm actually empty
         print(url, 'host:', url.host, 'pw:', url.password, 'port:', url.port,
