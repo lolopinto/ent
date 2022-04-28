@@ -1,3 +1,4 @@
+from argparse import Namespace
 import json
 import sys
 from collections.abc import Mapping
@@ -7,6 +8,7 @@ from .diff import Diff
 from .clause_text import get_clause_text
 import sqlalchemy as sa
 from sqlalchemy.sql.elements import TextClause
+from sqlalchemy.engine.url import make_url
 
 from alembic.migration import MigrationContext
 from alembic.autogenerate import produce_migrations
@@ -16,6 +18,7 @@ from alembic.util.exc import CommandError
 from sqlalchemy.dialects import postgresql
 import alembic.operations.ops as alembicops
 from alembic.operations import Operations
+from typing import Optional
 
 from . import command
 from . import config
@@ -27,17 +30,21 @@ from . import util
 
 
 class Runner(object):
-    def __init__(self, metadata, connection, schema_path, sql=None):
+    def __init__(self, metadata, connection, schema_path, args: Optional[Namespace] = None):
         self.metadata = metadata
         self.schema_path = schema_path
         self.connection = connection
-        self.sql = sql
+        if args is None:
+            self.args = {}
+        else:
+            self.args = args.__dict__
 
         config.metadata = self.metadata
         config.connection = connection
 
-        if self.sql is not None and self.sql.lower() != 'true':
-            config.output_buffer = open(self.sql, 'w')
+        sql = self.args.get('sql', None)
+        if sql is not None and sql.lower() != 'true':
+            config.output_buffer = open(sql, 'w')
 
         self.mc = MigrationContext.configure(
             connection=self.connection,
@@ -57,7 +64,7 @@ class Runner(object):
         engine = sa.create_engine(args.engine)
         connection = engine.connect()
         metadata.bind = connection
-        return Runner(metadata, connection, args.schema, sql=args.sql)
+        return Runner(metadata, connection, args.schema, args=args)
 
     @classmethod
     def fix_edges(cls, metadata, args):
@@ -285,8 +292,15 @@ class Runner(object):
         if dialect != 'postgresql':
             return
 
+        raw_engine = self.args.get('engine', None)
+        if raw_engine is None:
+            return
+
+        # remove database from url
+        url = make_url(raw_engine).set(database='')
+
         # doing from empty db so need to confirm actually empty
-        engine = sa.create_engine('postgresql://')
+        engine = sa.create_engine(url)
         connection = engine.connect()
 
         metadata = sa.MetaData()
