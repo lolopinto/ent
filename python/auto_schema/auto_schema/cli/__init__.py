@@ -123,8 +123,8 @@ def main():
 
     except Exception as err:
         sys.stderr.write("auto_schema error: "+str(err))
-        if os.getenv('LOCAL_AUTO_SCHEMA') == 'true':
-            traceback.print_exception(*sys.exc_info())
+#        if os.getenv('LOCAL_AUTO_SCHEMA') == 'true':
+        traceback.print_exception(*sys.exc_info())
 
 
 if __name__ == '__main__':
