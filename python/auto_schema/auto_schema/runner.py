@@ -297,9 +297,15 @@ class Runner(object):
             return
 
         # remove database from url
+        url = make_url(raw_engine)
+        print(url, 'host:', url.host, 'pw:', url.password, 'port:', url.port,
+              'db:', url.database, 'username:', url.username, 'drivername:', url.drivername)
+
         url = make_url(raw_engine).set(database='')
 
         # doing from empty db so need to confirm actually empty
+        print(url, 'host:', url.host, 'pw:', url.password, 'port:', url.port,
+              'db:', url.database, 'username:', url.username, 'drivername:', url.drivername)
         engine = sa.create_engine(url)
         connection = engine.connect()
 
