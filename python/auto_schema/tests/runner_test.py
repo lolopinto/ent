@@ -124,7 +124,7 @@ class BaseTestRunner(object):
             table = tables[0]
 
             assert len(table.indexes) == 1
-            index = table.indexes.pop()
+            index = table.indexes.copy().pop()
             assert len(index.columns) == 2
 
         testingutils.make_changes_and_restore(
