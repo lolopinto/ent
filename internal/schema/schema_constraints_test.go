@@ -1142,6 +1142,44 @@ func TestFullTextIndex(t *testing.T) {
 			},
 			expectedErr: fmt.Errorf("name lastName already exists for a field and cannot be used as a generated column name for index users_first_name_idx"),
 		},
+		"duplicated-generated-name": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: 'firstName',
+							}),
+							StringType({
+								name: 'lastName',
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "users_first_name_idx",
+								columns: ["firstName", "english"],
+								fullText: {
+									language: 'english',
+									generatedColumnName: 'name_idx',
+								},
+							},
+							{
+								name: "users_first_name_idx",
+								columns: ["firstName"],
+								fullText: {
+									language: 'english',
+									generatedColumnName: 'name_idx',
+								},
+							},
+						];
+					}`,
+				),
+			},
+			expectedErr: fmt.Errorf("already have generated computed column name_idx"),
+		},
 	}
 
 	runTestCases(t, testCases)

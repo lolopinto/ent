@@ -32,6 +32,7 @@ func NewFieldInfoFromInputs(cfg codegenapi.Config, fields []*input.Field, option
 		passwordFields: make(map[string]bool),
 		names:          make(map[string]bool),
 		cols:           make(map[string]*Field),
+		computedFields: make(map[string]bool),
 	}
 	var errs []error
 
@@ -91,7 +92,9 @@ type FieldInfo struct {
 	fieldMap map[string]*Field
 	// really only used in tests and old go schema
 	NonEntFields []*NonEntField
-	getFieldsFn  bool
+	// keep track of computed fields just to know they exist
+	computedFields map[string]bool
+	getFieldsFn    bool
 
 	// go only
 	emailFields    map[string]bool
@@ -111,6 +114,18 @@ const (
 
 func NormalizedField(s string) string {
 	return strings.ToLower(s)
+}
+
+func (fieldInfo *FieldInfo) AddComputedField(f string) error {
+	if fieldInfo.computedFields[f] {
+		return fmt.Errorf("already have generated computed column %s", f)
+	}
+	fieldInfo.computedFields[f] = true
+	return nil
+}
+
+func (fieldInfo *FieldInfo) IsComputedField(f string) bool {
+	return fieldInfo.computedFields[f]
 }
 
 func (fieldInfo *FieldInfo) addField(f *Field) error {

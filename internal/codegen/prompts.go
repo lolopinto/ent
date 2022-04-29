@@ -71,6 +71,11 @@ func getPromptsFromDBChanges(s *schema.Schema, changes map[string][]deprecatedCh
 				return nil, fmt.Errorf("couldn't find node data for column %s", tableName)
 			}
 
+			// computed field. nothing to do here
+			if nodeData.FieldInfo.IsComputedField(change.Col) {
+				continue
+			}
+
 			field := nodeData.FieldInfo.GetFieldByColName(change.Col)
 			if field == nil {
 				return nil, fmt.Errorf("couldn't find field in node data %s for column %s", nodeData.Node, change.Col)
@@ -110,6 +115,11 @@ func getPromptsFromChanges(p *Processor) ([]prompt.Prompt, error) {
 				continue
 			}
 			nodeData := info.NodeData
+
+			// computed field. nothing to do here
+			if nodeData.FieldInfo.IsComputedField(c.Name) {
+				continue
+			}
 
 			field := nodeData.FieldInfo.GetFieldByName(c.Name)
 			if field == nil {
