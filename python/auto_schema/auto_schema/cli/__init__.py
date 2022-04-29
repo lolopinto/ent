@@ -3,6 +3,7 @@ import os
 import sys
 import traceback
 import argparse
+import warnings
 import alembic
 
 import sqlalchemy
@@ -135,4 +136,8 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    with warnings.catch_warnings():
+        # ignore warnings for now
+        # TODO https://github.com/lolopinto/ent/issues/852
+        warnings.simplefilter('ignore')
+        main()
