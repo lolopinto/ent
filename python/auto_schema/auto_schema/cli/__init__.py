@@ -1,3 +1,4 @@
+from ast import arg
 import os
 import sys
 import traceback
@@ -74,14 +75,13 @@ parser.add_argument(
 )
 # if none is provided, it defaults to the database associated with the username
 parser.add_argument(
-    '--empty_database', help='with --all_sql or --run_and_all_sql, we need an empty database to compare against', action='store_true'
+    '--empty_database', help='with --all_sql or --run_and_all_sql, we need an empty database to compare against',
 )
 
 
 def main():
     try:
         args = parser.parse_args()
-
         sys.path.append(os.path.relpath(args.schema))
 
         schema = import_module('schema')

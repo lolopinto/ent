@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 
 	"github.com/lolopinto/ent/ent"
@@ -562,6 +563,10 @@ func (s *dbSchema) makeDBChanges(cfg *codegen.Config) error {
 			"--run_and_all_sql",
 			"--file",
 			filepath.Join(cfg.GetAbsPathToRoot(), file),
+		}
+		if db := cfg.DatabaseToCompareTo(); db != "" {
+			spew.Dump(db)
+			extraArgs = append(extraArgs, "--empty_database", db)
 		}
 	}
 	return auto_schema.RunPythonCommand(s.pathToConfigs, extraArgs...)

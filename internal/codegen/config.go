@@ -332,6 +332,13 @@ func (cfg *Config) SchemaSQLFilePath() string {
 	return ""
 }
 
+func (cfg *Config) DatabaseToCompareTo() string {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		return codegen.DatabaseToCompareTo
+	}
+	return ""
+}
+
 const DEFAULT_GLOB = "src/**/*.ts"
 const PRETTIER_FILE_CHUNKS = 20
 
@@ -477,6 +484,7 @@ type CodegenConfig struct {
 	DefaultGraphQLMutationName codegenapi.GraphQLMutationName `yaml:"defaultGraphQLMutationName"`
 	DefaultGraphQLFieldFormat  codegenapi.GraphQLFieldFormat  `yaml:"defaultGraphQLFieldFormat"`
 	SchemaSQLFilePath          string                         `yaml:"schemaSQLFilePath"`
+	DatabaseToCompareTo        string                         `yaml:"databaseToCompareTo"`
 }
 
 func cloneCodegen(cfg *CodegenConfig) *CodegenConfig {
@@ -499,6 +507,7 @@ func (cfg *CodegenConfig) Clone() *CodegenConfig {
 		DefaultGraphQLMutationName: cfg.DefaultGraphQLMutationName,
 		DefaultGraphQLFieldFormat:  cfg.DefaultGraphQLFieldFormat,
 		SchemaSQLFilePath:          cfg.SchemaSQLFilePath,
+		DatabaseToCompareTo:        cfg.DatabaseToCompareTo,
 	}
 }
 
