@@ -18,4 +18,4 @@ codegen:
   prettier:
     custom: true
   schemaSQLFilePath: "src/schema/schema.sql"
-  databaseToCompareTo: "tsent_test"
+
