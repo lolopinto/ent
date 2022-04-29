@@ -82,62 +82,64 @@ parser.add_argument(
 
 
 def main():
-    try:
-        args = parser.parse_args()
-        sys.path.append(os.path.relpath(args.schema))
-
-        schema = import_module('schema')
-        metadata = schema.get_metadata()
-
-        if args.fix_edges:
-            Runner.fix_edges(metadata, args)
-        else:
-            r = Runner.from_command_line(metadata, args)
-            if args.upgrade is not None:
-                r.upgrade(revision=args.upgrade, sql=args.sql)
-            elif args.downgrade is not None:
-                r.downgrade(args.downgrade, not args.keep_schema_files)
-            elif args.history is True:
-                r.history(verbose=args.verbose, last=args.last,
-                          rev_range=args.rev_range)
-            elif args.current is True:
-                r.current()
-            elif args.heads is True:
-                r.heads()
-            elif args.branches is True:
-                r.branches()
-            elif args.show is not None:
-                r.show(args.show)
-            elif args.stamp is not None:
-                r.stamp(args.stamp)
-            elif args.edit is not None:
-                r.edit(args.edit)
-            elif args.changes:
-                r.changes()
-            elif args.merge is not None:
-                r.merge(args.merge, args.message)
-            elif args.squash is not None:
-                r.squash(args.squash)
-            elif args.all_sql is True:
-                r.all_sql(file=args.file, database=args.empty_database)
-            elif args.progressive_sql is True:
-                r.progressive_sql(file=args.file)
-            else:
-                r.run()
-                if args.run_and_all_sql:
-                    r.all_sql(file=args.file, database=args.empty_database)
-
-    except Exception as err:
-        if args.debug:
-            print(args)
-        sys.stderr.write("auto_schema error: "+str(err))
-        if args.debug or os.getenv('LOCAL_AUTO_SCHEMA') == 'true':
-            traceback.print_exception(*sys.exc_info())
-
-
-if __name__ == '__main__':
     with warnings.catch_warnings():
         # ignore warnings for now
         # TODO https://github.com/lolopinto/ent/issues/852
         warnings.simplefilter('ignore')
-        main()
+
+        try:
+            args = parser.parse_args()
+            sys.path.append(os.path.relpath(args.schema))
+
+            schema = import_module('schema')
+            metadata = schema.get_metadata()
+
+            if args.fix_edges:
+                Runner.fix_edges(metadata, args)
+            else:
+                r = Runner.from_command_line(metadata, args)
+                if args.upgrade is not None:
+                    r.upgrade(revision=args.upgrade, sql=args.sql)
+                elif args.downgrade is not None:
+                    r.downgrade(args.downgrade, not args.keep_schema_files)
+                elif args.history is True:
+                    r.history(verbose=args.verbose, last=args.last,
+                              rev_range=args.rev_range)
+                elif args.current is True:
+                    r.current()
+                elif args.heads is True:
+                    r.heads()
+                elif args.branches is True:
+                    r.branches()
+                elif args.show is not None:
+                    r.show(args.show)
+                elif args.stamp is not None:
+                    r.stamp(args.stamp)
+                elif args.edit is not None:
+                    r.edit(args.edit)
+                elif args.changes:
+                    r.changes()
+                elif args.merge is not None:
+                    r.merge(args.merge, args.message)
+                elif args.squash is not None:
+                    r.squash(args.squash)
+                elif args.all_sql is True:
+                    r.all_sql(file=args.file, database=args.empty_database)
+                elif args.progressive_sql is True:
+                    r.progressive_sql(file=args.file)
+                else:
+                    r.run()
+                    if args.run_and_all_sql:
+                        r.all_sql(file=args.file, database=args.empty_database)
+
+        except Exception as err:
+            if args.debug:
+                print(args)
+            sys.stderr.write("auto_schema error: "+str(err))
+            if args.debug or os.getenv('LOCAL_AUTO_SCHEMA') == 'true':
+                traceback.print_exception(*sys.exc_info())
+
+
+# no logic should be in here. everything in main()
+if __name__ == '__main__':
+    main()
