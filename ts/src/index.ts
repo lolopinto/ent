@@ -106,6 +106,10 @@ const query = {
   PlainToTsQuery: q.PlainToTsQuery,
   PhraseToTsQuery: q.PhraseToTsQuery,
   WebsearchToTsQuery: q.WebsearchToTsQuery,
+  TsVectorColTsQuery: q.TsVectorColTsQuery,
+  TsVectorPlainToTsQuery: q.TsVectorPlainToTsQuery,
+  TsVectorPhraseToTsQuery: q.TsVectorPhraseToTsQuery,
+  TsVectorWebsearchToTsQuery: q.TsVectorWebsearchToTsQuery,
 };
 
 export { query };
