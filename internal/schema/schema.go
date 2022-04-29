@@ -563,9 +563,13 @@ func (s *Schema) validateIndices(nodeData *NodeData) error {
 			}
 		}
 		if fullText.GeneratedColumnName != "" {
-			f := nodeData.FieldInfo.GetFieldByName(fullText.GeneratedColumnName)
+			fieldInfo := nodeData.FieldInfo
+			f := fieldInfo.GetFieldByName(fullText.GeneratedColumnName)
 			if f != nil {
 				return fmt.Errorf("name %s already exists for a field and cannot be used as a generated column name for index %s", fullText.GeneratedColumnName, index.Name)
+			}
+			if err := fieldInfo.AddComputedField(fullText.GeneratedColumnName); err != nil {
+				return err
 			}
 		}
 	}
