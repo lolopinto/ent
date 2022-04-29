@@ -563,6 +563,9 @@ func (s *dbSchema) makeDBChanges(cfg *codegen.Config) error {
 			"--file",
 			filepath.Join(cfg.GetAbsPathToRoot(), file),
 		}
+		if db := cfg.DatabaseToCompareTo(); db != "" {
+			extraArgs = append(extraArgs, "--empty_database", db)
+		}
 	}
 	return auto_schema.RunPythonCommand(s.pathToConfigs, extraArgs...)
 }

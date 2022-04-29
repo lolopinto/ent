@@ -2,7 +2,6 @@ package auto_schema
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/lolopinto/ent/ent/data"
 	"github.com/lolopinto/ent/internal/util"
+	"github.com/pkg/errors"
 )
 
 const WHICH_ERROR = "Warning: the which -a system utility is required for Pipenv to find Python installations properly.\n  Please install it."
@@ -51,21 +51,26 @@ func RunPythonCommandWriter(pathToConfigs string, w io.Writer, extraArgs ...stri
 	var berr bytes.Buffer
 	cmd.Stderr = &berr
 	err := cmd.Run()
+	errMsg := trimErrorMsg(&berr, local)
 	if err != nil {
+		if len(errMsg) != 0 {
+			return errors.Wrap(err, errMsg)
+		}
 		return err
 	}
 
-	errMsg := strings.TrimSpace(berr.String())
 	if len(errMsg) != 0 {
-		// TODO https://github.com/lolopinto/ent/issues/763
-		// ignore WHICH_ERROR, make sure real errors are shown
-		if local {
-			errMsg = strings.TrimPrefix(errMsg, WHICH_ERROR)
-			if len(errMsg) == 0 {
-				return nil
-			}
-		}
 		return errors.New(errMsg)
 	}
 	return nil
+}
+
+func trimErrorMsg(berr *bytes.Buffer, local bool) string {
+	errMsg := strings.TrimSpace(berr.String())
+	if !local {
+		return errMsg
+	}
+	// TODO https://github.com/lolopinto/ent/issues/763
+	// ignore WHICH_ERROR, make sure real errors are shown
+	return strings.TrimPrefix(errMsg, WHICH_ERROR)
 }

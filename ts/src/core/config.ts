@@ -81,6 +81,12 @@ interface CodegenConfig {
 
   // if we should generate schema.sql file and path to generate it
   schemaSQLFilePath?: boolean;
+
+  // TODO: would be ideal not to need this. so eventually make this work without
+  // if there's a schemaSQLFilePath, we compare against an empty database to see what
+  // has changed. we need this because if no database is provided, we'd then try and compare
+  // against database with same name as user
+  databaseToCompareTo?: string;
 }
 
 interface PrettierConfig {

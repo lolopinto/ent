@@ -2,6 +2,7 @@ import os
 import sys
 import traceback
 import argparse
+import warnings
 import alembic
 
 import sqlalchemy
@@ -72,12 +73,15 @@ parser.add_argument(
 parser.add_argument(
     '--run_and_all_sql', help='run and all_sql combined so we do not call into this multiple times', action='store_true'
 )
+# if none is provided, it defaults to the database associated with the username
+parser.add_argument(
+    '--empty_database', help='with --all_sql or --run_and_all_sql, we need an empty database to compare against',
+)
 
 
 def main():
     try:
         args = parser.parse_args()
-
         sys.path.append(os.path.relpath(args.schema))
 
         schema = import_module('schema')
@@ -113,13 +117,13 @@ def main():
             elif args.squash is not None:
                 r.squash(args.squash)
             elif args.all_sql is True:
-                r.all_sql(file=args.file)
+                r.all_sql(file=args.file, database=args.empty_database)
             elif args.progressive_sql is True:
                 r.progressive_sql(file=args.file)
             else:
                 r.run()
                 if args.run_and_all_sql:
-                    r.all_sql(file=args.file)
+                    r.all_sql(file=args.file, database=args.empty_database)
 
     except Exception as err:
         sys.stderr.write("auto_schema error: "+str(err))
@@ -128,4 +132,8 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    with warnings.catch_warnings():
+        # ignore warnings for now
+        # TODO https://github.com/lolopinto/ent/issues/852
+        warnings.simplefilter('ignore')
+        main()
