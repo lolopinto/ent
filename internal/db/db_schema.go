@@ -13,6 +13,7 @@ import (
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/auto_schema"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema/base"
@@ -34,7 +35,7 @@ func (s *Step) Name() string {
 
 func (s *Step) PreProcessData(processor *codegen.Processor) error {
 	// generate python schema file and then make changes to underlying db
-	db := newDBSchema(processor.Schema, processor.Config.GetRootPathToConfigs())
+	db := newDBSchema(processor.Schema, processor.Config)
 	s.db = db
 
 	return db.processSchema(processor.Config)
@@ -372,14 +373,14 @@ func (constraint *checkConstraint) getConstraintString() string {
 	return fmt.Sprintf("sa.CheckConstraint(%s, %s)", strconv.Quote(constraint.condition), strconv.Quote(constraint.name))
 }
 
-func newDBSchema(schema *schema.Schema, pathToConfigs string) *dbSchema {
+func newDBSchema(schema *schema.Schema, cfg codegenapi.Config) *dbSchema {
 	configTableMap := make(map[string]*dbTable)
 	tableMap := make(map[string]*dbTable)
 	return &dbSchema{
 		schema:         schema,
 		configTableMap: configTableMap,
 		tableMap:       tableMap,
-		pathToConfigs:  pathToConfigs,
+		cfg:            cfg,
 	}
 }
 
@@ -388,7 +389,7 @@ type dbSchema struct {
 	schema         *schema.Schema
 	configTableMap map[string]*dbTable
 	tableMap       map[string]*dbTable
-	pathToConfigs  string
+	cfg            codegenapi.Config
 }
 
 func (s *dbSchema) getTableForNode(nodeData *schema.NodeData) *dbTable {
@@ -567,7 +568,7 @@ func (s *dbSchema) makeDBChanges(cfg *codegen.Config) error {
 			extraArgs = append(extraArgs, "--empty_database", db)
 		}
 	}
-	return auto_schema.RunPythonCommand(s.pathToConfigs, extraArgs...)
+	return auto_schema.RunPythonCommand(s.cfg, extraArgs...)
 }
 
 func UpgradeDB(cfg *codegen.Config, revision string, sql bool) error {
@@ -575,7 +576,7 @@ func UpgradeDB(cfg *codegen.Config, revision string, sql bool) error {
 	if sql {
 		extraArgs = append(extraArgs, "--sql=true")
 	}
-	return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), extraArgs...)
+	return auto_schema.RunPythonCommand(cfg, extraArgs...)
 }
 
 func DowngradeDB(cfg *codegen.Config, revision string, keepSchemaFiles bool) error {
@@ -583,23 +584,23 @@ func DowngradeDB(cfg *codegen.Config, revision string, keepSchemaFiles bool) err
 	if keepSchemaFiles {
 		extraArgs = append(extraArgs, "--keep_schema_files")
 	}
-	return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), extraArgs...)
+	return auto_schema.RunPythonCommand(cfg, extraArgs...)
 }
 
 func Squash(cfg *codegen.Config, squash int) error {
 	extraArgs := []string{fmt.Sprintf("--squash=%d", squash)}
-	return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), extraArgs...)
+	return auto_schema.RunPythonCommand(cfg, extraArgs...)
 }
 
 func FixEdges(cfg *codegen.Config) error {
-	return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), "-f=True")
+	return auto_schema.RunPythonCommand(cfg, "-f=True")
 }
 
 func RunAlembicCommand(cfg *codegen.Config, command string, args ...string) error {
 	if len(args) == 0 {
-		return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), fmt.Sprintf("--%s", command))
+		return auto_schema.RunPythonCommand(cfg, fmt.Sprintf("--%s", command))
 	} else {
-		return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), fmt.Sprintf("--%s=%s", command, strings.Join(args, ",")))
+		return auto_schema.RunPythonCommand(cfg, fmt.Sprintf("--%s=%s", command, strings.Join(args, ",")))
 	}
 }
 
@@ -614,7 +615,7 @@ func (s *dbSchema) writeSchemaFile(cfg *codegen.Config) error {
 			Data:              data,
 			AbsPathToTemplate: util.GetAbsolutePath("db_schema.tmpl"),
 			TemplateName:      "db_schema.tmpl",
-			PathToFile:        fmt.Sprintf("%s/schema.py", s.pathToConfigs),
+			PathToFile:        fmt.Sprintf("%s/schema.py", s.cfg.GetRootPathToConfigs()),
 		},
 	)
 }

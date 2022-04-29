@@ -9,17 +9,19 @@ import (
 	"strings"
 
 	"github.com/lolopinto/ent/ent/data"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
 )
 
 const WHICH_ERROR = "Warning: the which -a system utility is required for Pipenv to find Python installations properly.\n  Please install it."
 
-func RunPythonCommand(pathToConfigs string, extraArgs ...string) error {
-	return RunPythonCommandWriter(pathToConfigs, os.Stdout, extraArgs...)
+func RunPythonCommand(cfg codegenapi.Config, extraArgs ...string) error {
+	return RunPythonCommandWriter(cfg, os.Stdout, extraArgs...)
 }
 
-func RunPythonCommandWriter(pathToConfigs string, w io.Writer, extraArgs ...string) error {
+func RunPythonCommandWriter(cfg codegenapi.Config, w io.Writer, extraArgs ...string) error {
+	pathToConfigs := cfg.GetRootPathToConfigs()
 	local := os.Getenv("LOCAL_AUTO_SCHEMA") == "true"
 
 	executable := "auto_schema"
@@ -27,6 +29,11 @@ func RunPythonCommandWriter(pathToConfigs string, w io.Writer, extraArgs ...stri
 		fmt.Sprintf("-s=%s", pathToConfigs),
 		fmt.Sprintf("-e=%s", data.GetSQLAlchemyDatabaseURIgo()),
 	}
+
+	if cfg.DebugMode() {
+		args = append(args, "--debug")
+	}
+
 	if local {
 		executable = "pipenv"
 		args = append(

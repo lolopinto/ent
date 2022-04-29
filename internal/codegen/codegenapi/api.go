@@ -26,6 +26,8 @@ const (
 type Config interface {
 	DefaultGraphQLMutationName() GraphQLMutationName
 	DefaultGraphQLFieldFormat() GraphQLFieldFormat
+	GetRootPathToConfigs() string
+	DebugMode() bool
 }
 
 // DummyConfig exists for tests/legacy paths which need Configs and don't want to create the production one
@@ -38,6 +40,14 @@ func (cfg *DummyConfig) DefaultGraphQLMutationName() GraphQLMutationName {
 
 func (cfg *DummyConfig) DefaultGraphQLFieldFormat() GraphQLFieldFormat {
 	return LowerCamelCase
+}
+
+func (cfg *DummyConfig) GetRootPathToConfigs() string {
+	return "src/schema"
+}
+
+func (cfg *DummyConfig) DebugMode() bool {
+	return false
 }
 
 var _ Config = &DummyConfig{}
