@@ -1,4 +1,3 @@
-from ast import arg
 import os
 import sys
 import traceback
@@ -127,12 +126,9 @@ def main():
                     r.all_sql(file=args.file, database=args.empty_database)
 
     except Exception as err:
-        # TODO need easy way to debug this
-        # so debug flag passed over here...
-        print(args)
         sys.stderr.write("auto_schema error: "+str(err))
-#        if os.getenv('LOCAL_AUTO_SCHEMA') == 'true':
-        traceback.print_exception(*sys.exc_info())
+        if os.getenv('LOCAL_AUTO_SCHEMA') == 'true':
+            traceback.print_exception(*sys.exc_info())
 
 
 if __name__ == '__main__':

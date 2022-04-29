@@ -18,7 +18,7 @@ from alembic.util.exc import CommandError
 from sqlalchemy.dialects import postgresql
 import alembic.operations.ops as alembicops
 from alembic.operations import Operations
-from typing import Optional
+from typing import Optional, Dict
 
 from . import command
 from . import config
@@ -30,14 +30,11 @@ from . import util
 
 
 class Runner(object):
-    def __init__(self, metadata, connection, schema_path, args: Optional[Namespace] = None):
+    def __init__(self, metadata, connection, schema_path, args: Optional[Dict] = None):
         self.metadata = metadata
         self.schema_path = schema_path
         self.connection = connection
-        if args is None:
-            self.args = {}
-        else:
-            self.args = args.__dict__
+        self.args = args or {}
 
         config.metadata = self.metadata
         config.connection = connection
@@ -60,11 +57,11 @@ class Runner(object):
         self.cmd = command.Command(self.connection, self.schema_path)
 
     @classmethod
-    def from_command_line(cls, metadata, args):
+    def from_command_line(cls, metadata, args: Namespace):
         engine = sa.create_engine(args.engine)
         connection = engine.connect()
         metadata.bind = connection
-        return Runner(metadata, connection, args.schema, args=args)
+        return Runner(metadata, connection, args.schema, args=args.__dict__)
 
     @classmethod
     def fix_edges(cls, metadata, args):
@@ -296,18 +293,9 @@ class Runner(object):
         if raw_engine is None:
             return
 
-        # remove database from url
-        url = make_url(raw_engine)
-        print(url, 'host:', url.host, 'pw:', url.password, 'port:', url.port,
-              'db:', url.database, 'username:', url.username, 'drivername:', url.drivername)
+        # use passed in database. make sure not None
+        url = make_url(raw_engine).set(database=database or '')
 
-        # use passed in database
-        # TODO postgres placeholder for now. remove it when passed in
-        url = make_url(raw_engine).set(database=database or 'postgres')
-
-        # doing from empty db so need to confirm actually empty
-        print(url, 'host:', url.host, 'pw:', url.password, 'port:', url.port,
-              'db:', url.database, 'username:', url.username, 'drivername:', url.drivername)
         engine = sa.create_engine(url)
         connection = engine.connect()
 

@@ -60,8 +60,7 @@ func RunPythonCommandWriter(pathToConfigs string, w io.Writer, extraArgs ...stri
 	}
 
 	if len(errMsg) != 0 {
-		// TODO
-		//		return errors.New(errMsg)
+		return errors.New(errMsg)
 	}
 	return nil
 }
