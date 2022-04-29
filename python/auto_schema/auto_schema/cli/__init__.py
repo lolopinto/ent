@@ -51,6 +51,8 @@ parser.add_argument('--message', help='message if alembic merge is called')
 parser.add_argument('--squash', help='squash the last N changes into one')
 parser.add_argument(
     '--changes', help='get changes in schema', action='store_true')
+parser.add_argument(
+    '--debug', help='if debug flag passed', action='store_true')
 
 # see https://alembic.sqlalchemy.org/en/latest/offline.html
 # if true, pased to u
@@ -126,8 +128,10 @@ def main():
                     r.all_sql(file=args.file, database=args.empty_database)
 
     except Exception as err:
+        if args.debug:
+            print(args)
         sys.stderr.write("auto_schema error: "+str(err))
-        if os.getenv('LOCAL_AUTO_SCHEMA') == 'true':
+        if args.debug or os.getenv('LOCAL_AUTO_SCHEMA') == 'true':
             traceback.print_exception(*sys.exc_info())
 
 

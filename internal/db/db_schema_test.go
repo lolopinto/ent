@@ -2089,7 +2089,7 @@ func getSchemaFromInput(t *testing.T, s *input.Schema) *dbSchema {
 	ss, err := schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, s, base.TypeScript)
 	require.Nil(t, err)
 
-	dbSchema := newDBSchema(ss, "models/configs")
+	dbSchema := newDBSchema(ss, &codegenapi.DummyConfig{})
 	require.Nil(t, dbSchema.generateShemaTables())
 	return dbSchema
 }
@@ -2187,7 +2187,7 @@ func getParsedTestSchema(t *testing.T) *schema.Schema {
 }
 
 func getTestSchema(t *testing.T) *dbSchema {
-	return newDBSchema(getParsedTestSchema(t), "models/configs")
+	return newDBSchema(getParsedTestSchema(t), &codegenapi.DummyConfig{})
 }
 
 func getTestTable(configName string, t *testing.T) *dbTable {
