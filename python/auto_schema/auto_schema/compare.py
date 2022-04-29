@@ -470,6 +470,7 @@ def _compare_indexes(autogen_context: AutogenContext,
     for name, index in meta_indexes.items():
         if not name in conn_indexes and isinstance(index, FullTextIndex):
 
+            to_remove = name in missing_conn_indexes
             idx = None
             for i in range(len(modify_table_ops.ops)):
                 op = modify_table_ops.ops[i]
@@ -479,14 +480,19 @@ def _compare_indexes(autogen_context: AutogenContext,
 
             # find existing create index op and replace with ours
             if idx is not None:
-                modify_table_ops.ops[idx] = ops.CreateFullTextIndexOp(
-                    index.name,
-                    index.table.name,
-                    schema=schema,
-                    table=index.table,
-                    unique=index.unique,
-                    info=index.info,
-                )
+                # not in conn.indexes but in missing_conn_indexes,
+                # automerge not aware of it and tries to add it again so we need to remove it instead
+                if to_remove:
+                    modify_table_ops.ops.pop(idx)
+                else:
+                    modify_table_ops.ops[idx] = ops.CreateFullTextIndexOp(
+                        index.name,
+                        index.table.name,
+                        schema=schema,
+                        table=index.table,
+                        unique=index.unique,
+                        info=index.info,
+                    )
 
 
 index_regex = re.compile('CREATE INDEX (.+) USING (gin|btree)(.+)')
