@@ -25,10 +25,10 @@ import {
   getTransformedUpdateOp,
   SQLStatementOperation,
   TransformedUpdateOperation,
+  getStorageKey,
 } from "../schema/schema";
 import { Changeset, Executor, Validator } from "../action/action";
 import { WriteOperation, Builder, Action } from "../action";
-import { snakeCase } from "snake-case";
 import { camelCase } from "camel-case";
 import { applyPrivacyPolicyX } from "../core/privacy";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
@@ -586,7 +586,7 @@ export class Orchestrator<T extends Ent> {
           if (field.format) {
             val = field.format(transformed.data[k]);
           }
-          let dbKey = field.storageKey || snakeCase(field.name);
+          let dbKey = getStorageKey(field);
           data[dbKey] = val;
           this.defaultFieldsByTSName[camelCase(k)] = val;
           // hmm do we need this?
@@ -605,7 +605,7 @@ export class Orchestrator<T extends Ent> {
     for (const [fieldName, field] of schemaFields) {
       let value = editedFields.get(fieldName);
       let defaultValue: any = undefined;
-      let dbKey = field.storageKey || snakeCase(field.name);
+      let dbKey = getStorageKey(field);
 
       if (value === undefined) {
         if (this.actualOperation === WriteOperation.Insert) {
@@ -738,7 +738,7 @@ export class Orchestrator<T extends Ent> {
         // null allowed
         value = this.defaultFieldsByFieldName[fieldName];
       }
-      let dbKey = field.storageKey || snakeCase(field.name);
+      let dbKey = getStorageKey(field);
 
       value = await this.transformFieldValue(field, dbKey, value);
 
@@ -755,7 +755,7 @@ export class Orchestrator<T extends Ent> {
         const defaultValue = this.defaultFieldsByFieldName[fieldName];
         let field = schemaFields.get(fieldName)!;
 
-        let dbKey = field.storageKey || snakeCase(field.name);
+        let dbKey = getStorageKey(field);
 
         // no value, let's just default
         if (data[dbKey] === undefined) {

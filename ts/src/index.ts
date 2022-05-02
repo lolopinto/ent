@@ -10,8 +10,6 @@ export {
   loadDerivedEntX,
   loadEntViaKey,
   loadEntXViaKey,
-  applyPrivacyPolicyForEnt,
-  applyPrivacyPolicyForEntX,
   performRawQuery,
   // even these 3 need to change...
   loadRowX,

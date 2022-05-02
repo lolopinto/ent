@@ -1,4 +1,5 @@
-import { Data, Ent, LoaderInfo, Viewer } from "../core/base";
+import { snakeCase } from "snake-case";
+import { Data, Ent, LoaderInfo, PrivacyPolicy, Viewer } from "../core/base";
 import { Builder } from "../action/action";
 import { Clause } from "../core/clause";
 
@@ -340,6 +341,16 @@ export interface FieldOptions {
 
   polymorphic?: boolean | PolymorphicOptions;
   derivedFields?: Field[];
+
+  // FYI. copied in config.ts
+  // field can have privacy policy
+  // there's 2 modes of how this is treated that can be configured in ent.yml because it affects codegen
+  // 1: evaluate at the time of ent load, we apply the privacy of each object and then apply the privacy of every
+  // field which has field privacy and set the property to null if the field is not visible to the viewer
+  // The underlying column is no longer in the `data` field of the object
+  // 2: generate accessors for the field and all callsites which reference that field will use that.
+  // the privacy will be evaluated on demand when needed
+  privacyPolicy?: PrivacyPolicy;
 }
 
 export interface PolymorphicOptions {
@@ -393,6 +404,38 @@ export function getFields(value: SchemaInputType): Map<string, Field> {
         addFields(derivedFields);
       }
       m.set(field.name, field);
+    }
+  }
+
+  let m = new Map();
+  if (schema.patterns) {
+    for (const pattern of schema.patterns) {
+      addFields(pattern.fields);
+    }
+  }
+  addFields(schema.fields);
+
+  return m;
+}
+
+export function getStorageKey(field: Field): string {
+  return field.storageKey || snakeCase(field.name);
+}
+
+// returns a mapping of storage key to field privacy
+export function getFieldsWithPrivacy(
+  value: SchemaInputType,
+): Map<string, PrivacyPolicy> {
+  const schema = getSchema(value);
+  function addFields(fields: Field[]) {
+    for (const field of fields) {
+      const derivedFields = field.derivedFields;
+      if (derivedFields !== undefined) {
+        addFields(derivedFields);
+      }
+      if (field.privacyPolicy) {
+        m.set(field.name, field.privacyPolicy);
+      }
     }
   }
 

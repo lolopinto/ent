@@ -184,6 +184,8 @@ export class AddressBase {
       fields: addressLoaderInfo.fields,
       ent: this,
       loaderFactory: addressLoader,
+      // if it has field Privacy, we specify this here and pass it on...
+      fieldPrivacy: new Map(),
     };
   }
 
