@@ -523,7 +523,22 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 }
 
 func (s *Schema) validateIndices(nodeData *NodeData) error {
+	verifyCols := func(cols []string, getError func(col string) error) error {
+		for _, col := range cols {
+			f := nodeData.FieldInfo.GetFieldByName(col)
+			if f == nil {
+				return getError(col)
+			}
+		}
+		return nil
+	}
 	for _, index := range nodeData.Indices {
+		if err := verifyCols(index.Columns, func(col string) error {
+			return fmt.Errorf("invalid field %s passed as col for index %s", col, index.Name)
+		}); err != nil {
+			return err
+		}
+
 		if index.FullText == nil {
 			continue
 		}
@@ -538,14 +553,11 @@ func (s *Schema) validateIndices(nodeData *NodeData) error {
 		if fullText.Weights != nil && fullText.Weights.HasWeights() && fullText.GeneratedColumnName == "" {
 			return fmt.Errorf("cannot specify weights if no generated column name for index %s", index.Name)
 		}
+
 		verifyWeights := func(weights []string) error {
-			for _, w := range weights {
-				f := nodeData.FieldInfo.GetFieldByName(w)
-				if f == nil {
-					return fmt.Errorf("invalid field %s passed as weight for index %s", w, index.Name)
-				}
-			}
-			return nil
+			return verifyCols(weights, func(col string) error {
+				return fmt.Errorf("invalid field %s passed as weight for index %s", col, index.Name)
+			})
 		}
 
 		if fullText.Weights != nil {

@@ -1160,7 +1160,7 @@ func TestFullTextIndex(t *testing.T) {
 						indices: Index[] = [
 							{
 								name: "users_first_name_idx",
-								columns: ["firstName", "english"],
+								columns: ["firstName", "lastName"],
 								fullText: {
 									language: 'english',
 									generatedColumnName: 'name_idx',
@@ -1183,7 +1183,71 @@ func TestFullTextIndex(t *testing.T) {
 	}
 
 	runTestCases(t, testCases)
+}
 
+func TestIndices(t *testing.T) {
+	testCases := map[string]testCase{
+		"valid-indices": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: 'email',
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "users_unique_email_idx",
+								columns: ["email"],
+								unique: true
+							},
+						];
+					}`,
+				),
+			},
+			expectedMap: map[string]*schema.NodeData{
+				"User": {
+					Constraints: constraintsWithNodeConstraints("users"),
+					Indices: []*input.Index{
+						{
+							Name:    "users_unique_email_idx",
+							Columns: []string{"email"},
+							Unique:  true,
+						},
+					},
+				},
+			},
+		},
+		"invalid-column": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: 'email',
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "users_unique_email_idx",
+								columns: ["email_address"],
+								unique: true
+							},
+						];
+					}`,
+				),
+			},
+			expectedErr: fmt.Errorf("invalid field email_address passed as col for index users_unique_email_idx"),
+		},
+	}
+	runTestCases(t, testCases)
 }
 
 type testCase struct {
