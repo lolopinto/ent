@@ -310,6 +310,87 @@ func indicesEqual(existing, indices []*Index) bool {
 	return true
 }
 
+func mapifyIndices(indices []*Index) map[string]*Index {
+	ret := make(map[string]*Index)
+	for _, index := range indices {
+		ret[index.Name] = index
+	}
+	return ret
+}
+
+func mapifyConstraints(constraints []*Constraint) map[string]*Constraint {
+	ret := make(map[string]*Constraint)
+	for _, c := range constraints {
+		ret[c.Name] = c
+	}
+	return ret
+}
+
+// TODO tests...
+func CompareIndices(existing, indices []*Index) []change.Change {
+	m1 := mapifyIndices(existing)
+	m2 := mapifyIndices(indices)
+
+	ret := []change.Change{}
+	for k, v := range m1 {
+		v2, ok := m2[k]
+		if !ok {
+			ret = append(ret, change.Change{
+				Change: change.RemoveIndex,
+				Name:   v.Name,
+			})
+		} else if !indexEqual(v, v2) {
+			ret = append(ret, change.Change{
+				Change: change.ModifyIndex,
+				Name:   v.Name,
+			})
+		}
+	}
+
+	for k, v2 := range m2 {
+		_, ok := m1[k]
+		if !ok {
+			ret = append(ret, change.Change{
+				Change: change.AddIndex,
+				Name:   v2.Name,
+			})
+		}
+	}
+	return ret
+}
+
+func CompareConstraints(existing, constraints []*Constraint) []change.Change {
+	m1 := mapifyConstraints(existing)
+	m2 := mapifyConstraints(constraints)
+
+	ret := []change.Change{}
+	for k, v := range m1 {
+		v2, ok := m2[k]
+		if !ok {
+			ret = append(ret, change.Change{
+				Change: change.RemoveConstraint,
+				Name:   v.Name,
+			})
+		} else if !constraintEqual(v, v2) {
+			ret = append(ret, change.Change{
+				Change: change.ModifyConstraint,
+				Name:   v.Name,
+			})
+		}
+	}
+
+	for k, v2 := range m2 {
+		_, ok := m1[k]
+		if !ok {
+			ret = append(ret, change.Change{
+				Change: change.AddConstraint,
+				Name:   v2.Name,
+			})
+		}
+	}
+	return ret
+}
+
 func indexEqual(existing, index *Index) bool {
 	return existing.Name == index.Name &&
 		change.StringListEqual(existing.Columns, index.Columns) &&

@@ -9,6 +9,7 @@ import (
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/enum"
+	"github.com/lolopinto/ent/internal/schema/input"
 )
 
 // CompareSchemas takes 2 schemas and returns a list of changes in the schema
@@ -187,6 +188,27 @@ func compareNode(n1, n2 *NodeData, opts *compareNodeOptions) ([]change.Change, e
 	if err != nil {
 		return nil, err
 	}
+
+	ret = append(ret, input.CompareIndices(n1.Indices, n2.Indices)...)
+
+	ret = append(ret, input.CompareConstraints(n1.Constraints, n2.Constraints)...)
+
+	if n1.TableName != n2.TableName {
+		return nil, fmt.Errorf("cannot change table name for node %s", n1.Node)
+	}
+
+	if n1.EnumTable != n2.EnumTable {
+		return nil, fmt.Errorf("cannot change enum table status for node %s", n1.Node)
+	}
+
+	if !change.MapListEqual(n1.DBRows, n2.DBRows) {
+		ret = append(ret, change.Change{
+			Change:      change.ModifiedDBRows,
+			Name:        n2.Node,
+			GraphQLName: n2.Node,
+		})
+	}
+
 	ret = append(ret, changes...)
 
 	// if anything changes, just add ModifyNode
@@ -197,6 +219,15 @@ func compareNode(n1, n2 *NodeData, opts *compareNodeOptions) ([]change.Change, e
 			Change:      change.ModifyNode,
 			Name:        n2.Node,
 			GraphQLName: n2.Node,
+		})
+	}
+
+	if n1.HideFromGraphQL != n2.HideFromGraphQL {
+		ret = append(ret, change.Change{
+			Change:      change.ModifyNode,
+			Name:        n2.Node,
+			GraphQLName: n2.Node,
+			GraphQLOnly: true,
 		})
 	}
 	return ret, nil
