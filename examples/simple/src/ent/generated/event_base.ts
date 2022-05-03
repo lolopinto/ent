@@ -167,8 +167,6 @@ export class EventBase {
       fields: eventLoaderInfo.fields,
       ent: this,
       loaderFactory: eventLoader,
-
-      //        fieldPrivacy: getFieldsWithPrivacy(schema),
     };
   }
 

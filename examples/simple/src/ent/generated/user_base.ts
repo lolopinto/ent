@@ -354,8 +354,6 @@ export class UserBase {
       fields: userLoaderInfo.fields,
       ent: this,
       loaderFactory: userLoader,
-
-      //        fieldPrivacy: getFieldsWithPrivacy(schema),
     };
   }
 

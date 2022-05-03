@@ -32,7 +32,7 @@ export interface UserInput {
   phoneNumber?: string | null;
   password?: string | null;
   accountStatus?: string | null;
-  emailVerified?: boolean | null;
+  emailVerified?: boolean;
   bio?: string | null;
   nicknames?: string[] | null;
   prefs?: UserPrefs | null;
