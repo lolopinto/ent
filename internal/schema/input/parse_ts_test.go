@@ -51,6 +51,7 @@ type field struct {
 	disableUserGraphQLEditable bool
 	hasDefaultValueOnCreate    bool
 	hasDefaultValueOnEdit      bool
+	hasFieldPrivacy            bool
 	polymorphic                *input.PolymorphicOptions
 	derivedFields              []field
 }
@@ -217,6 +218,7 @@ func verifyField(t *testing.T, expField field, field *input.Field) {
 	assert.Equal(t, expField.disableUserGraphQLEditable, field.DisableUserGraphQLEditable)
 	assert.Equal(t, expField.hasDefaultValueOnCreate, field.HasDefaultValueOnCreate)
 	assert.Equal(t, expField.hasDefaultValueOnEdit, field.HasDefaultValueOnEdit)
+	assert.Equal(t, expField.hasFieldPrivacy, field.HasFieldPrivacy)
 
 	assert.Equal(t, expField.foreignKey, field.ForeignKey)
 	assert.Equal(t, expField.fieldEdge, field.FieldEdge)

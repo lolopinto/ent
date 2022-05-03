@@ -32,7 +32,7 @@ export interface UserInput {
   phoneNumber?: string | null;
   password?: string | null;
   accountStatus?: string | null;
-  emailVerified?: boolean;
+  emailVerified?: boolean | null;
   bio?: string | null;
   nicknames?: string[] | null;
   prefs?: UserPrefs | null;
@@ -671,18 +671,12 @@ export class UserBuilder implements Builder<User> {
 
   // get value of AccountStatus. Retrieves it from the input if specified or takes it from existingEnt
   getNewAccountStatusValue(): string | null | undefined {
-    if (this.input.accountStatus !== undefined) {
-      return this.input.accountStatus;
-    }
-    return this.existingEnt?.accountStatus;
+    return this.input.accountStatus;
   }
 
   // get value of emailVerified. Retrieves it from the input if specified or takes it from existingEnt
-  getNewEmailVerifiedValue(): boolean | undefined {
-    if (this.input.emailVerified !== undefined) {
-      return this.input.emailVerified;
-    }
-    return this.existingEnt?.emailVerified;
+  getNewEmailVerifiedValue(): boolean | null | undefined {
+    return this.input.emailVerified;
   }
 
   // get value of Bio. Retrieves it from the input if specified or takes it from existingEnt
@@ -703,26 +697,17 @@ export class UserBuilder implements Builder<User> {
 
   // get value of prefs. Retrieves it from the input if specified or takes it from existingEnt
   getNewPrefsValue(): UserPrefs | null | undefined {
-    if (this.input.prefs !== undefined) {
-      return this.input.prefs;
-    }
-    return this.existingEnt?.prefs;
+    return this.input.prefs;
   }
 
   // get value of prefsList. Retrieves it from the input if specified or takes it from existingEnt
   getNewPrefsListValue(): UserPrefs[] | null | undefined {
-    if (this.input.prefsList !== undefined) {
-      return this.input.prefsList;
-    }
-    return this.existingEnt?.prefsList;
+    return this.input.prefsList;
   }
 
   // get value of prefs_diff. Retrieves it from the input if specified or takes it from existingEnt
   getNewPrefsDiffValue(): any | undefined {
-    if (this.input.prefsDiff !== undefined) {
-      return this.input.prefsDiff;
-    }
-    return this.existingEnt?.prefsDiff;
+    return this.input.prefsDiff;
   }
 
   // get value of daysOff. Retrieves it from the input if specified or takes it from existingEnt

@@ -1,6 +1,8 @@
 {{reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions"}}
 {{reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "saveBuilder" "saveBuilderX" "Orchestrator"}}
 
+{{ $cfg := .CodePath -}}
+
 {{with .NodeData -}}
 {{ $schemaPath := .GetSchemaPath }}
 {{ reserveDefaultImport $schemaPath "schema"}}
@@ -18,7 +20,7 @@ export interface {{.Node}}Input {
         {{ reserveImportPath . true -}}
         {{ $ignore := useImport .Import -}}
       {{end -}}
-    {{$field.TsFieldName}}?: {{$type}};
+    {{$field.TsBuilderFieldName}}?: {{$type}};
   {{end -}}
 }
 
@@ -218,7 +220,7 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
       }
     };
     {{range $field := .FieldInfo.GetEditableFields -}}
-      {{$tsFieldName := $field.TsFieldName -}}
+      {{$tsFieldName := $field.TsBuilderFieldName -}}
       addField("{{$field.FieldName}}", fields.{{$tsFieldName}});
       {{ $inverseEdge := $field.GetInverseEdge -}}
       {{ if $inverseEdge -}}
@@ -247,15 +249,17 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
   }
 
   {{range $field := .FieldInfo.GetEditableFields}}
+    {{$tsFieldName := $field.TsBuilderFieldName -}}
     // get value of {{$field.FieldName}}. Retrieves it from the input if specified or takes it from existingEnt
     getNew{{$field.CamelCaseName}}Value(): {{$field.TsBuilderType}} | undefined {
-      {{if $field.Private -}}
-        return this.input.{{$field.TsFieldName}};
+    {{/** hmm not ideal for these accessors to not work...*/}}
+      {{if $field.Private $cfg -}}
+        return this.input.{{$tsFieldName}};
       {{else -}}
-        if (this.input.{{$field.TsFieldName}} !== undefined) {
-          return this.input.{{$field.TsFieldName}}
+        if (this.input.{{$tsFieldName}} !== undefined) {
+          return this.input.{{$tsFieldName}}
         }
-        return this.existingEnt?.{{$field.TsFieldName}};
+        return this.existingEnt?.{{$tsFieldName}};
       {{end -}}
     }
 

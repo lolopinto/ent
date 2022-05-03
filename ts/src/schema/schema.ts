@@ -434,7 +434,7 @@ export function getFieldsWithPrivacy(
         addFields(derivedFields);
       }
       if (field.privacyPolicy) {
-        m.set(field.name, field.privacyPolicy);
+        m.set(getStorageKey(field), field.privacyPolicy);
       }
     }
   }

@@ -13,6 +13,7 @@ import {
   LoadEntOptions,
   PrivacyPolicy,
   Viewer,
+  applyPrivacyPolicy,
   convertBool,
   convertDate,
   convertNullableJSON,
@@ -28,7 +29,7 @@ import {
   loadUniqueEdge,
   loadUniqueNode,
 } from "@snowtop/ent";
-import { Field, getFields } from "@snowtop/ent/schema";
+import { Field, getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
 import {
   userEmailAddressLoader,
   userLoader,
@@ -82,13 +83,13 @@ export class UserBase {
   readonly emailAddress: string;
   readonly phoneNumber: string | null;
   protected readonly password: string | null;
-  readonly accountStatus: string | null;
-  readonly emailVerified: boolean;
+  protected readonly _accountStatus: string | null;
+  protected readonly _emailVerified: boolean | null;
   readonly bio: string | null;
   readonly nicknames: string[] | null;
-  readonly prefs: UserPrefs | null;
-  readonly prefsList: UserPrefs[] | null;
-  readonly prefsDiff: any;
+  protected readonly _prefs: UserPrefs | null;
+  protected readonly _prefsList: UserPrefs[] | null;
+  protected readonly _prefsDiff: any;
   readonly daysOff: DaysOff[] | null;
   readonly preferredShift: PreferredShift[] | null;
   readonly timeInMs: BigInt | null;
@@ -105,13 +106,13 @@ export class UserBase {
     this.emailAddress = data.email_address;
     this.phoneNumber = data.phone_number;
     this.password = data.password;
-    this.accountStatus = data.account_status;
-    this.emailVerified = convertBool(data.email_verified);
+    this._accountStatus = data.account_status;
+    this._emailVerified = convertBool(data.email_verified);
     this.bio = data.bio;
     this.nicknames = convertNullableList(data.nicknames);
-    this.prefs = convertNullableJSON(data.prefs);
-    this.prefsList = convertNullableJSONList(data.prefs_list);
-    this.prefsDiff = convertNullableJSON(data.prefs_diff);
+    this._prefs = convertNullableJSON(data.prefs);
+    this._prefsList = convertNullableJSONList(data.prefs_list);
+    this._prefsDiff = convertNullableJSON(data.prefs_diff);
     this.daysOff = convertNullableList(data.days_off);
     this.preferredShift = convertNullableList(data.preferred_shift);
     this.timeInMs = BigInt(data.time_in_ms);
@@ -121,6 +122,56 @@ export class UserBase {
   }
 
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+
+  async accountStatus(): Promise<string | null> {
+    const m = getFieldsWithPrivacy(schema);
+    const p = m.get("account_status");
+    if (!p) {
+      throw new Error(`couldn't get field privacy policy for accountStatus`);
+    }
+    const v = await applyPrivacyPolicy(this.viewer, p, this);
+    return v ? this._accountStatus : null;
+  }
+
+  async emailVerified(): Promise<boolean | null> {
+    const m = getFieldsWithPrivacy(schema);
+    const p = m.get("email_verified");
+    if (!p) {
+      throw new Error(`couldn't get field privacy policy for emailVerified`);
+    }
+    const v = await applyPrivacyPolicy(this.viewer, p, this);
+    return v ? this._emailVerified : null;
+  }
+
+  async prefs(): Promise<UserPrefs | null> {
+    const m = getFieldsWithPrivacy(schema);
+    const p = m.get("prefs");
+    if (!p) {
+      throw new Error(`couldn't get field privacy policy for prefs`);
+    }
+    const v = await applyPrivacyPolicy(this.viewer, p, this);
+    return v ? this._prefs : null;
+  }
+
+  async prefsList(): Promise<UserPrefs[] | null> {
+    const m = getFieldsWithPrivacy(schema);
+    const p = m.get("prefs_list");
+    if (!p) {
+      throw new Error(`couldn't get field privacy policy for prefsList`);
+    }
+    const v = await applyPrivacyPolicy(this.viewer, p, this);
+    return v ? this._prefsList : null;
+  }
+
+  async prefsDiff(): Promise<any> {
+    const m = getFieldsWithPrivacy(schema);
+    const p = m.get("prefs_diff");
+    if (!p) {
+      throw new Error(`couldn't get field privacy policy for prefsDiff`);
+    }
+    const v = await applyPrivacyPolicy(this.viewer, p, this);
+    return v ? this._prefsDiff : null;
+  }
 
   static async load<T extends UserBase>(
     this: new (viewer: Viewer, data: Data) => T,
@@ -288,6 +339,8 @@ export class UserBase {
       fields: userLoaderInfo.fields,
       ent: this,
       loaderFactory: userLoader,
+
+      //        fieldPrivacy: getFieldsWithPrivacy(schema),
     };
   }
 

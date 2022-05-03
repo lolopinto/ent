@@ -13,6 +13,7 @@ export {
   SchemaConstructor,
   SchemaInputType,
   getFields,
+  getFieldsWithPrivacy,
   ActionOperation,
   Action,
   EdgeAction,

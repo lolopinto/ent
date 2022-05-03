@@ -9,6 +9,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/internal/action"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
@@ -155,9 +156,9 @@ func (nodeData *NodeData) HasJSONField() bool {
 	return false
 }
 
-func (nodeData *NodeData) HasPrivateField() bool {
+func (nodeData *NodeData) HasPrivateField(cfg codegenapi.Config) bool {
 	for _, field := range nodeData.FieldInfo.Fields {
-		if field.Private() {
+		if field.Private(cfg) {
 			return true
 		}
 	}
@@ -174,6 +175,15 @@ func (nodeData *NodeData) HasAssocGroups() bool {
 		panic("TODO: fix EdgeGroupMuationBuilder to work for more than 1 assoc group")
 	}
 	return length > 0
+}
+
+func (nodeData *NodeData) FieldsWithFieldPrivacy() bool {
+	for _, f := range nodeData.FieldInfo.Fields {
+		if f.HasFieldPrivacy() {
+			return true
+		}
+	}
+	return false
 }
 
 // return the list of unique nodes at the end of an association

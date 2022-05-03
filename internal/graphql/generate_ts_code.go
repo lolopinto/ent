@@ -1654,10 +1654,12 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 
 	for _, field := range fieldInfo.GraphQLFields() {
 		gqlName := field.GetGraphQLName()
+		asyncAccessor := field.HasAsyncAccessor(processor.Config)
 		gqlField := &fieldType{
 			Name:               gqlName,
-			HasResolveFunction: gqlName != field.TsFieldName(),
+			HasResolveFunction: asyncAccessor || gqlName != field.TSPublicAPIName(),
 			FieldImports:       getGQLFileImports(field.GetTSGraphQLTypeForFieldImports(false), false),
+			HasAsyncModifier:   asyncAccessor,
 		}
 
 		if processor.Config.Base64EncodeIDs() && field.IDType() {
@@ -1665,7 +1667,11 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 		}
 
 		if gqlField.HasResolveFunction {
-			gqlField.FunctionContents = []string{fmt.Sprintf("return %s.%s;", instance, field.TsFieldName())}
+			if asyncAccessor {
+				gqlField.FunctionContents = []string{fmt.Sprintf("return %s.%s();", instance, field.TSPublicAPIName())}
+			} else {
+				gqlField.FunctionContents = []string{fmt.Sprintf("return %s.%s;", instance, field.TSPublicAPIName())}
+			}
 		}
 		fields = append(fields, gqlField)
 	}
@@ -1923,6 +1929,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 
 		// these conditions duplicated in hasCustomInput
 		processField := func(f action.ActionField) {
+			fieldName := f.TSPublicAPIName()
 			if f.IsEditableIDField() {
 				// should probably also do this for id lists but not pressing
 				// ID[] -> string[]
@@ -1932,9 +1939,9 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 					// we're doing these as strings instead of ids because we're going to convert from gql id to ent id
 					Type: "string",
 				})
-			} else if f.TsFieldName() != f.GetGraphQLName() {
+			} else if fieldName != f.GetGraphQLName() {
 				// need imports...
-				omittedFields = append(omittedFields, f.TsFieldName())
+				omittedFields = append(omittedFields, fieldName)
 				var useImports []string
 				imps := f.GetTsTypeImports()
 				if len(imps) != 0 {
@@ -2084,7 +2091,7 @@ func hasCustomInput(a action.Action, processor *codegen.Processor) bool {
 			return true
 		}
 		// if graphql name is not equal to typescript name, we need to add the new field here
-		if f.GetGraphQLName() != f.TsFieldName() {
+		if f.GetGraphQLName() != f.TSPublicAPIName() {
 			return true
 		}
 		return false
@@ -2183,7 +2190,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			result.FunctionContents,
 			fmt.Sprintf(
 				"%s: %s,",
-				f.TsFieldName(),
+				f.TSPublicAPIName(),
 				inputField,
 			))
 	}

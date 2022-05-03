@@ -65,8 +65,41 @@ test("query user", async () => {
     ["firstName", user.firstName],
     ["lastName", user.lastName],
     ["emailAddress", user.emailAddress],
-    ["accountStatus", user.accountStatus],
+    ["accountStatus", await user.accountStatus()],
     ["nicknames", null],
+  );
+});
+
+test("query other user", async () => {
+  let user1 = await create({
+    firstName: "ffirst",
+  });
+
+  let user2 = await create({
+    firstName: "ffirst",
+  });
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user1.id), user2, {
+      rootQueryNull: true,
+    }),
+    ["id", null],
+  );
+
+  const action = EditUserAction.create(user1.viewer, user1, {});
+  // for privacy
+  action.builder.addFriend(user2);
+  await action.saveX();
+
+  // user now visible because friends
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user1.id), user2),
+    ["id", encodeGQLID(user2)],
+    ["firstName", user2.firstName],
+    ["lastName", user2.lastName],
+    ["emailAddress", user2.emailAddress],
+    // field not visible because of privacy
+    ["accountStatus", null],
   );
 });
 
@@ -370,7 +403,7 @@ test("query user and nested object", async () => {
     ["firstName", user.firstName],
     ["lastName", user.lastName],
     ["emailAddress", user.emailAddress],
-    ["accountStatus", user.accountStatus],
+    ["accountStatus", await user.accountStatus()],
     ["selfContact.id", encodeGQLID(selfContact)],
     ["selfContact.firstName", selfContact.firstName],
     ["selfContact.lastName", selfContact.lastName],
@@ -416,7 +449,7 @@ test("load assoc connection", async () => {
     ["firstName", user.firstName],
     ["lastName", user.lastName],
     ["emailAddress", user.emailAddress],
-    ["accountStatus", user.accountStatus],
+    ["accountStatus", await user.accountStatus()],
     // most recent first
     ["friends.rawCount", 4],
     [
@@ -587,7 +620,7 @@ test("load fkey connection", async () => {
     ["firstName", user.firstName],
     ["lastName", user.lastName],
     ["emailAddress", user.emailAddress],
-    ["accountStatus", user.accountStatus],
+    ["accountStatus", await user.accountStatus()],
     ["contacts.rawCount", 6],
     [
       // most recent first
@@ -692,7 +725,7 @@ test("create with prefs", async () => {
         const user = await User.loadX(new IDViewer(entID), entID);
         // so graphql doesn't verify what's happening here because we depend on TS types. hmm
         // TODO fix https://github.com/lolopinto/ent/issues/470
-        expect(user.prefs).toBe(12232);
+        expect(await user.prefs()).toBe(12232);
       },
     ],
   );
@@ -720,7 +753,7 @@ test("create with prefs diff", async () => {
       async function (id: string) {
         const entID = mustDecodeIDFromGQLID(id);
         const user = await User.loadX(new IDViewer(entID), entID);
-        expect(user.prefsDiff).toStrictEqual({
+        expect(await user.prefsDiff()).toStrictEqual({
           type: "blah",
           foo: "foo",
         });

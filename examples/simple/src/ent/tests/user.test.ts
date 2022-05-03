@@ -68,8 +68,8 @@ test("create user", async () => {
 
   expect(user.firstName).toBe("Jon");
   expect(user.lastName).toBe("Snow");
-  expect(user.accountStatus).toBe("UNVERIFIED");
-  expect(user.emailVerified).toBeFalsy();
+  expect(await user.accountStatus()).toBe("UNVERIFIED");
+  expect(await user.emailVerified()).toBeFalsy();
 
   // confirm contact was automatically created
   let v = new IDViewer(user.id);
@@ -110,7 +110,7 @@ test("create user with accountstatus", async () => {
 
   expect(user.firstName).toBe("Jon");
   expect(user.lastName).toBe("Snow");
-  expect(user.accountStatus).toBe("VERIFIED");
+  expect(await user.accountStatus()).toBe("VERIFIED");
 });
 
 test("edit user", async () => {
@@ -263,7 +263,6 @@ describe("privacy", () => {
       lastName: "Targaryen",
     });
 
-    // we only do privacy checks when loading right now...
     let loadedUser = await User.loadX(
       new IDViewer(user.id, { ent: user }),
       user.id,
@@ -276,6 +275,31 @@ describe("privacy", () => {
       await User.loadX(new IDViewer(user2.id, { ent: user2 }), user.id);
       throw new Error("should have thrown exception");
     } catch (e) {}
+  });
+
+  test("field privacy", async () => {
+    let user1 = await create({
+      firstName: "Jon",
+      lastName: "Snow",
+    });
+    expect(await user1.accountStatus()).toBe("UNVERIFIED");
+    let user2 = await create({
+      firstName: "Daenerys",
+      lastName: "Targaryen",
+    });
+    expect(await user2.accountStatus()).toBe("UNVERIFIED");
+
+    // can't see user when not friends
+    expect(await User.load(user2.viewer, user1.id)).toBe(null);
+
+    const action = EditUserAction.create(user1.viewer, user1, {});
+    // for privacy
+    action.builder.addFriend(user2);
+    await action.saveX();
+
+    // can see users because friends but doesn't mean you can see their account status since privacy is set to just self
+    const fromUser2 = await User.loadX(user2.viewer, user1.id);
+    expect(await fromUser2.accountStatus()).toBe(null);
   });
 });
 
@@ -962,11 +986,11 @@ test("jsonb types", async () => {
       },
     ],
   }).saveX();
-  expect(user.prefs).toStrictEqual({
+  expect(await user.prefs()).toStrictEqual({
     finishedNux: true,
     notifTypes: [NotifType.EMAIL],
   });
-  expect(user.prefsList).toStrictEqual([
+  expect(await user.prefsList()).toStrictEqual([
     {
       finishedNux: true,
       notifTypes: [NotifType.EMAIL],
@@ -990,7 +1014,7 @@ test("json type", async () => {
       type: "finished_nux",
     },
   }).saveX();
-  expect(user.prefsDiff).toStrictEqual({
+  expect(await user.prefsDiff()).toStrictEqual({
     finishedNux: true,
     type: "finished_nux",
   });

@@ -71,6 +71,9 @@ export const UserType = new GraphQLObjectType({
     },
     accountStatus: {
       type: GraphQLString,
+      resolve: async (user: User, args: {}, context: RequestContext) => {
+        return user.accountStatus();
+      },
     },
     bio: {
       type: GraphQLString,
@@ -80,12 +83,21 @@ export const UserType = new GraphQLObjectType({
     },
     prefs: {
       type: GraphQLJSON,
+      resolve: async (user: User, args: {}, context: RequestContext) => {
+        return user.prefs();
+      },
     },
     prefsList: {
       type: GraphQLList(GraphQLNonNull(GraphQLJSON)),
+      resolve: async (user: User, args: {}, context: RequestContext) => {
+        return user.prefsList();
+      },
     },
     prefsDiff: {
       type: GraphQLJSON,
+      resolve: async (user: User, args: {}, context: RequestContext) => {
+        return user.prefsDiff();
+      },
     },
     daysOff: {
       type: GraphQLList(GraphQLNonNull(DaysOffType)),

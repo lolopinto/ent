@@ -34,17 +34,17 @@
         {{$ignore := useImport .Import -}}
       {{end -}}
       {{if $field.ForceRequiredInAction -}}
-        {{$field.TsFieldName}}: {{$type}};
+        {{$field.TsBuilderFieldName}}: {{$type}};
       {{else -}}
-        {{$field.TsFieldName}}?: {{$type}};
+        {{$field.TsBuilderFieldName}}?: {{$type}};
       {{end -}}
     {{end -}}
     {{ range $field := $int.NonEntFields -}}
       {{$type := $field.GetTsType -}}
       {{if $field.Required -}}
-        {{$field.TsFieldName}}: {{$type}};
+        {{$field.TsBuilderFieldName}}: {{$type}};
       {{else -}}
-        {{$field.TsFieldName}}?: {{$type}};
+        {{$field.TsBuilderFieldName}}?: {{$type}};
       {{end -}}
     {{end -}}
   }
@@ -67,18 +67,18 @@
         {{ $ignore := useImport .Import -}}
       {{end -}}
       {{if isRequiredField $action $field -}}
-        {{$field.TsFieldName}}: {{$type}};
+        {{$field.TsBuilderFieldName}}: {{$type}};
       {{else -}}
-        {{$field.TsFieldName}}?: {{$type}};
+        {{$field.TsBuilderFieldName}}?: {{$type}};
       {{end -}}
     {{end -}}
 
     {{ range $field := $action.GetNonEntFields -}}
       {{$type := $field.GetTsType -}}
       {{if $field.Required -}}
-        {{$field.TsFieldName}}: {{$type}};
+        {{$field.TsBuilderFieldName}}: {{$type}};
       {{else -}}
-        {{$field.TsFieldName}}?: {{$type}};
+        {{$field.TsBuilderFieldName}}?: {{$type}};
       {{end -}}
     {{end -}}
   }
