@@ -31,6 +31,7 @@ export const eventToEventActivitiesDataLoaderFactory = new IndexLoaderFactory(
     toPrime: [eventActivityLoader],
   },
 );
+
 export const eventToGuestDataCountLoaderFactory = new RawCountLoaderFactory({
   ...GuestData.loaderOptions(),
   groupCol: "event_id",
@@ -42,6 +43,7 @@ export const eventToGuestDataDataLoaderFactory = new IndexLoaderFactory(
     toPrime: [guestDataLoader],
   },
 );
+
 export const eventToGuestGroupsCountLoaderFactory = new RawCountLoaderFactory({
   ...GuestGroup.loaderOptions(),
   groupCol: "event_id",
@@ -53,6 +55,7 @@ export const eventToGuestGroupsDataLoaderFactory = new IndexLoaderFactory(
     toPrime: [guestGroupLoader],
   },
 );
+
 export const eventToGuestsCountLoaderFactory = new RawCountLoaderFactory({
   ...Guest.loaderOptions(),
   groupCol: "event_id",
