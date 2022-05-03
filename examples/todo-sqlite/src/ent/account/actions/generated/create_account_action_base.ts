@@ -14,7 +14,7 @@ import {
 
 export interface AccountCreateInput {
   name: string;
-  phoneNumber: string | null;
+  phoneNumber: string;
   accountState?: AccountState | null;
 }
 

@@ -17,7 +17,7 @@ import schema from "src/schema/account";
 export interface AccountInput {
   deletedAt?: Date | null;
   name?: string;
-  phoneNumber?: string | null;
+  phoneNumber?: string;
   accountState?: AccountState | null;
 }
 

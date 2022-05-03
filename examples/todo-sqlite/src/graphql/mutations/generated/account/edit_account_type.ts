@@ -21,7 +21,7 @@ import { AccountStateType, AccountType } from "src/graphql/resolvers/";
 interface customEditAccountInput
   extends Omit<AccountEditInput, "phoneNumber" | "accountState"> {
   account_id: string;
-  phone_number?: string | null;
+  phone_number?: string;
   account_state?: AccountState | null;
 }
 

@@ -265,7 +265,7 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
   {{range $field := .FieldInfo.GetEditableFields}}
     {{$tsFieldName := $field.TsBuilderFieldName -}}
     // get value of {{$field.FieldName}}. Retrieves it from the input if specified or takes it from existingEnt
-    getNew{{$field.CamelCaseName}}Value(): {{$field.TsBuilderType}} | undefined {
+    getNew{{$field.CamelCaseName}}Value(): {{$field.TsBuilderUnionType}} | undefined {
     {{/** hmm not ideal for these accessors to not work...*/}}
       {{if $field.Private $cfg -}}
         return this.input.{{$tsFieldName}};

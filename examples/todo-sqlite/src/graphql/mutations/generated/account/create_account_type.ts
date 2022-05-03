@@ -19,7 +19,7 @@ import { AccountStateType, AccountType } from "src/graphql/resolvers/";
 
 interface customCreateAccountInput
   extends Omit<AccountCreateInput, "phoneNumber" | "accountState"> {
-  phone_number: string | null;
+  phone_number: string;
   account_state?: AccountState | null;
 }
 

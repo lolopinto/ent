@@ -543,6 +543,13 @@ func (f *Field) CamelCaseName() string {
 }
 
 func (f *Field) TsType() string {
+	if f.tsFieldType != nil {
+		return f.tsFieldType.GetTSType()
+	}
+	return f.tsRawUnderlyingType()
+}
+
+func (f *Field) tsRawUnderlyingType() string {
 	return f.fieldType.GetTSType()
 }
 
@@ -599,7 +606,26 @@ func (f *Field) getIDFieldType() string {
 }
 
 func (f *Field) TsBuilderType() string {
-	typ := f.TsType()
+	typ := f.tsRawUnderlyingType()
+	typeName := f.getIDFieldType()
+	if typeName == "" || f.disableBuilderType {
+		return typ
+	}
+	return fmt.Sprintf("%s | Builder<%s>", typ, typeName)
+}
+
+// for getFooValue() where there's a nullable type but the input type isn't nullable
+// because the underlying db value isn't
+func (f *Field) TsBuilderUnionType() string {
+	if f.tsFieldType == nil {
+		return f.TsBuilderType()
+	}
+	// already null so we good
+	typWithNull, ok := f.tsFieldType.(enttype.NonNullableType)
+	if !ok {
+		return f.TsBuilderType()
+	}
+	typ := typWithNull.GetTSType()
 	typeName := f.getIDFieldType()
 	if typeName == "" || f.disableBuilderType {
 		return typ

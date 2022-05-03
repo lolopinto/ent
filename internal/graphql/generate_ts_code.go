@@ -1951,9 +1951,10 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 					}
 				}
 				intType.Fields = append(intType.Fields, &interfaceField{
-					Name:       f.GetGraphQLName(),
-					Optional:   !action.IsRequiredField(a, f),
-					Type:       f.GetTsType(),
+					Name:     f.GetGraphQLName(),
+					Optional: !action.IsRequiredField(a, f),
+					// TODO we want the same types without the Builder part if it's an id field...
+					Type:       f.TsBuilderType(),
 					UseImports: useImports,
 				})
 			}
