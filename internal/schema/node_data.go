@@ -186,6 +186,13 @@ func (nodeData *NodeData) FieldsWithFieldPrivacy() bool {
 	return false
 }
 
+func (nodeData *NodeData) OnEntLoadFieldPrivacy(cfg codegenapi.Config) bool {
+	if !nodeData.FieldsWithFieldPrivacy() {
+		return false
+	}
+	return cfg.FieldPrivacyEvaluated() == codegenapi.AtEntLoad
+}
+
 // return the list of unique nodes at the end of an association
 // needed to import what's needed in generated code
 type uniqueNodeInfo struct {

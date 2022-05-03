@@ -286,9 +286,8 @@ export class {{$baseClass}} {
       fields: {{useImport $loaderInfo}}.fields,
       ent: this,
       loaderFactory: {{useImport $loaderName}},
-      {{/* TODO this is on-demand vs on-load */}}
-      {{if .FieldsWithFieldPrivacy -}}
-//        fieldPrivacy: {{useImport "getFieldsWithPrivacy"}}({{useImport "schema"}}),
+      {{if .OnEntLoadFieldPrivacy $cfg -}}
+        fieldPrivacy: {{useImport "getFieldsWithPrivacy"}}({{useImport "schema"}}),
       {{end -}}
     };
   }

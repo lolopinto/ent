@@ -213,8 +213,8 @@ func newFieldFromInput(cfg codegenapi.Config, f *input.Field) (*Field, error) {
 		ret.disableBuilderType = ret.polymorphic.DisableBuilderType
 	}
 
-	if ret.HasAsyncAccessor(cfg) {
-		//		spew.Dump("has any", ret.FieldName)
+	// if field privacy, whether on demand or ent load, the type here is nullable
+	if ret.hasFieldPrivacy {
 		nullableType, ok := ret.fieldType.(enttype.NullableType)
 		if ok {
 			if err := ret.setGraphQLFieldType(nullableType.GetNullableType()); err != nil {
@@ -522,11 +522,19 @@ func (f *Field) TsFieldName(cfg codegenapi.Config) string {
 }
 
 func (f *Field) TsBuilderFieldName() string {
+	// TODO need to solve these id issues generally
+	if f.FieldName == "ID" {
+		return "id"
+	}
 	return strcase.ToLowerCamel(f.FieldName)
 }
 
 // either async function name or public field
 func (f *Field) TSPublicAPIName() string {
+	// TODO need to solve these id issues generally
+	if f.FieldName == "ID" {
+		return "id"
+	}
 	return strcase.ToLowerCamel(f.FieldName)
 }
 

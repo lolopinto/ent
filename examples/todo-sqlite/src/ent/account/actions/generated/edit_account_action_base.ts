@@ -15,7 +15,7 @@ import {
 
 export interface AccountEditInput {
   name?: string;
-  phoneNumber?: string;
+  phoneNumber?: string | null;
   accountState?: AccountState | null;
 }
 

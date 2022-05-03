@@ -4,6 +4,11 @@ import { Account } from "../internal";
 import { createAccount } from "../testutils/util";
 import { advanceTo } from "jest-date-mock";
 
+// TODO
+// tables don't exist for some reason
+// neither todo.db or todo22.db
+// also modify_edge loop forever
+// /# start with new auto_schema version
 test("create", async () => {
   await createAccount();
 });

@@ -3,3 +3,5 @@ codegen:
   generateRootResolvers: true
   defaultGraphQLMutationName: VerbNoun
   defaultGraphQLFieldFormat: snake_case
+  fieldPrivacyEvaluated: at_ent_load
+

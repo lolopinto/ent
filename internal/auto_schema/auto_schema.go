@@ -49,6 +49,7 @@ func RunPythonCommandWriter(cfg codegenapi.Config, w io.Writer, extraArgs ...str
 	if len(extraArgs) > 0 {
 		args = append(args, extraArgs...)
 	}
+
 	cmd := exec.Command(executable, args...)
 	if local {
 		cmd.Env = append(cmd.Env, "LOCAL_AUTO_SCHEMA=true")
