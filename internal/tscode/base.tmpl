@@ -48,11 +48,10 @@ export class {{$baseClass}} {
       {{end -}}
       {{$typ := useImportMaybe .Import -}}
     {{end -}}
-    {{/* TODO this needs to be originalTSType because some of these are non-nullable in the db... */ -}}
     {{ if $field.Private $cfg -}}
-      protected readonly {{$field.TsFieldName $cfg}}: {{$field.TsType}};
+      protected readonly {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
     {{ else -}}
-      readonly {{$field.TsFieldName $cfg}}: {{$field.TsType}};
+      readonly {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
     {{end -}}
   {{end}}
 

@@ -84,7 +84,7 @@ export class UserBase {
   readonly phoneNumber: string | null;
   protected readonly password: string | null;
   protected readonly _accountStatus: string | null;
-  protected readonly _emailVerified: boolean | null;
+  protected readonly _emailVerified: boolean;
   readonly bio: string | null;
   readonly nicknames: string[] | null;
   protected readonly _prefs: UserPrefs | null;

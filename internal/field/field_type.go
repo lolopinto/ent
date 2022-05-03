@@ -548,6 +548,15 @@ func (f *Field) TsType() string {
 	return f.tsRawUnderlyingType()
 }
 
+// type of the field in the class e.g. readonly name type;
+func (f *Field) TsFieldType(cfg codegenapi.Config) string {
+	// there's a method that's nullable so return raw type
+	if f.HasAsyncAccessor(cfg) {
+		return f.tsRawUnderlyingType()
+	}
+	return f.TsType()
+}
+
 func (f *Field) tsRawUnderlyingType() string {
 	return f.fieldType.GetTSType()
 }
