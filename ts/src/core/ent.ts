@@ -382,7 +382,7 @@ async function applyPrivacyPolicyForEnt<T extends Ent>(
     if (!visible) {
       return null;
     }
-    return doFieldPrivcy(viewer, ent, data, fieldPrivacyOptions);
+    return doFieldPrivacy(viewer, ent, data, fieldPrivacyOptions);
   }
   return null;
 }
@@ -395,10 +395,10 @@ async function applyPrivacyPolicyForEntX<T extends Ent>(
 ): Promise<T> {
   // this will throw
   await applyPrivacyPolicyX(viewer, ent.privacyPolicy, ent);
-  return doFieldPrivcy(viewer, ent, data, options);
+  return doFieldPrivacy(viewer, ent, data, options);
 }
 
-async function doFieldPrivcy<T extends Ent>(
+async function doFieldPrivacy<T extends Ent>(
   viewer: Viewer,
   ent: T,
   data: Data,
