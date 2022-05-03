@@ -47,7 +47,7 @@ export interface OrchestratorOptions<T extends Ent, TData extends Data> {
   builder: Builder<T>;
   action?: Action<T>;
   schema: SchemaInputType;
-  editedFields(): Map<string, any>;
+  editedFields(): Map<string, any> | Promise<Map<string, any>>;
   // this is called with fields with defaultValueOnCreate|Edit
   updateInput?: (data: TData) => void;
 }
@@ -460,9 +460,12 @@ export class Orchestrator<T extends Ent> {
     // future optimization: can get schemaFields to memoize based on different values
     const schemaFields = getFields(this.options.schema);
 
+    const editedFields = await this.options.editedFields();
+
     let editedData = await this.getFieldsWithDefaultValues(
       builder,
       schemaFields,
+      editedFields,
       action,
     );
 
@@ -491,7 +494,7 @@ export class Orchestrator<T extends Ent> {
     let validators = action?.validators || [];
 
     await Promise.all([
-      this.formatAndValidateFields(schemaFields),
+      this.formatAndValidateFields(schemaFields, editedFields),
       this.validators(validators, action!, builder),
     ]);
   }
@@ -543,9 +546,9 @@ export class Orchestrator<T extends Ent> {
   private async getFieldsWithDefaultValues(
     builder: Builder<T>,
     schemaFields: Map<string, Field>,
+    editedFields: Map<string, any>,
     action?: Action<T> | undefined,
   ): Promise<Data> {
-    const editedFields = this.options.editedFields();
     let data: Data = {};
     let defaultData: Data = {};
 
@@ -720,13 +723,13 @@ export class Orchestrator<T extends Ent> {
 
   private async formatAndValidateFields(
     schemaFields: Map<string, Field>,
+    editedFields: Map<string, any>,
   ): Promise<void> {
     const op = this.actualOperation;
     if (op === WriteOperation.Delete) {
       return;
     }
 
-    const editedFields = this.options.editedFields();
     // build up data to be saved...
     let data = {};
     let logValues = {};

@@ -139,7 +139,7 @@ test("change address", async () => {
   event = await EditEventAction.create(new IDViewer(event.creatorID), event, {
     addressID: address.id,
   }).saveX();
-  expect(event.addressID).toBe(address.id);
+  expect(await event.addressID()).toBe(address.id);
 
   let [hostedEvents, hostedEventsEdges] = await Promise.all([
     address.queryHostedEvents().queryEnts(),
@@ -157,7 +157,7 @@ test("change address", async () => {
       addressID: newAddress.id,
     },
   ).saveX();
-  expect(editedEvent.addressID).toBe(newAddress.id);
+  expect(await editedEvent.addressID()).toBe(newAddress.id);
 
   const oldAddress = address;
   let [hostedEvents2, hostedEventsEdges2] = await Promise.all([
@@ -192,7 +192,7 @@ test("change address", async () => {
       addressID: null,
     },
   ).saveX();
-  expect(editedEvent.addressID).toBe(null);
+  expect(await editedEvent.addressID()).toBe(null);
 
   let [hostedEvents4, hostedEventsEdges4] = await Promise.all([
     newAddress.queryHostedEvents().queryEnts(),
@@ -200,6 +200,34 @@ test("change address", async () => {
   ]);
   expect(hostedEvents4.length).toBe(0);
   expect(hostedEventsEdges4.length).toBe(0);
+});
+
+test("addressID privacy", async () => {
+  let date = new Date();
+  let event = await create(date);
+  let address = await createAddress();
+
+  event = await EditEventAction.create(new IDViewer(event.creatorID), event, {
+    addressID: address.id,
+  }).saveX();
+  expect(await event.addressID()).toBe(address.id);
+
+  const user = await createUser();
+  let eventFrom = await Event.loadX(user.viewer, event.id);
+  // not connected to event so can't see address
+  expect(await eventFrom.addressID()).toBeNull();
+  expect(await eventFrom.loadAddress()).toBeNull();
+
+  let action = EditEventAction.create(new IDViewer(event.creatorID), event, {});
+  action.builder.addAttending(user);
+  await action.saveX();
+
+  eventFrom = await Event.loadX(user.viewer, event.id);
+  // can now see address id
+  //  expect(await eventFrom.addressID()).toBe(address.id);
+  const addressFrom = await eventFrom.loadAddress();
+  expect(addressFrom).not.toBeNull();
+  expect(addressFrom?.id).toBe(address.id);
 });
 
 test("edit event", async () => {

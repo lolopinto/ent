@@ -12,6 +12,7 @@ import {
   LoadEntOptions,
   PrivacyPolicy,
   Viewer,
+  applyPrivacyPolicy,
   convertDate,
   convertNullableDate,
   getEdgeTypeInGroup,
@@ -21,7 +22,7 @@ import {
   loadEntX,
   loadEnts,
 } from "@snowtop/ent";
-import { Field, getFields } from "@snowtop/ent/schema";
+import { Field, getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
 import { eventLoader, eventLoaderInfo } from "./loaders";
 import {
   Address,
@@ -53,7 +54,7 @@ export class EventBase {
   readonly startTime: Date;
   readonly endTime: Date | null;
   readonly location: string;
-  readonly addressID: ID | null;
+  protected readonly _addressID: ID | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
@@ -64,10 +65,23 @@ export class EventBase {
     this.startTime = convertDate(data.start_time);
     this.endTime = convertNullableDate(data.end_time);
     this.location = data.location;
-    this.addressID = data.address_id;
+    this._addressID = data.address_id;
   }
 
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+
+  async addressID(): Promise<ID | null> {
+    if (this._addressID === null) {
+      return null;
+    }
+    const m = getFieldsWithPrivacy(schema);
+    const p = m.get("address_id");
+    if (!p) {
+      throw new Error(`couldn't get field privacy policy for addressID`);
+    }
+    const v = await applyPrivacyPolicy(this.viewer, p, this);
+    return v ? this._addressID : null;
+  }
 
   static async load<T extends EventBase>(
     this: new (viewer: Viewer, data: Data) => T,
@@ -153,6 +167,8 @@ export class EventBase {
       fields: eventLoaderInfo.fields,
       ent: this,
       loaderFactory: eventLoader,
+
+      //        fieldPrivacy: getFieldsWithPrivacy(schema),
     };
   }
 
@@ -215,10 +231,12 @@ export class EventBase {
   }
 
   async loadAddress(): Promise<Address | null> {
-    if (!this.addressID) {
+    const addressID = await this.addressID();
+    if (!addressID) {
       return null;
     }
-    return loadEnt(this.viewer, this.addressID, Address.loaderOptions());
+
+    return loadEnt(this.viewer, addressID, Address.loaderOptions());
   }
 
   async loadCreator(): Promise<User | null> {

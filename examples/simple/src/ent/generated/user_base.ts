@@ -124,6 +124,9 @@ export class UserBase {
   privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
 
   async accountStatus(): Promise<string | null> {
+    if (this._accountStatus === null) {
+      return null;
+    }
     const m = getFieldsWithPrivacy(schema);
     const p = m.get("account_status");
     if (!p) {
@@ -134,6 +137,9 @@ export class UserBase {
   }
 
   async emailVerified(): Promise<boolean | null> {
+    if (this._emailVerified === null) {
+      return null;
+    }
     const m = getFieldsWithPrivacy(schema);
     const p = m.get("email_verified");
     if (!p) {
@@ -144,6 +150,9 @@ export class UserBase {
   }
 
   async prefs(): Promise<UserPrefs | null> {
+    if (this._prefs === null) {
+      return null;
+    }
     const m = getFieldsWithPrivacy(schema);
     const p = m.get("prefs");
     if (!p) {
@@ -154,6 +163,9 @@ export class UserBase {
   }
 
   async prefsList(): Promise<UserPrefs[] | null> {
+    if (this._prefsList === null) {
+      return null;
+    }
     const m = getFieldsWithPrivacy(schema);
     const p = m.get("prefs_list");
     if (!p) {
@@ -164,6 +176,9 @@ export class UserBase {
   }
 
   async prefsDiff(): Promise<any> {
+    if (this._prefsDiff === null) {
+      return null;
+    }
     const m = getFieldsWithPrivacy(schema);
     const p = m.get("prefs_diff");
     if (!p) {

@@ -78,6 +78,10 @@ export class {{$baseClass}} {
   {{range $field := .FieldInfo.Fields -}}
     {{ if $field.HasAsyncAccessor $cfg -}}
       async {{$field.TSPublicAPIName}}(): Promise<{{$field.TsType}}> {
+        {{/* need to check if this can actually be null */ -}}
+        if (this.{{$field.TsFieldName $cfg}} === null) {
+          return null;
+        }
         const m = {{useImport "getFieldsWithPrivacy"}}({{useImport "schema"}});
         const p = m.get("{{$field.GetDbColName}}");
         if (!p) {
@@ -451,14 +455,26 @@ export class {{$baseClass}} {
     {{ if $edge.NonPolymorphicList -}}
       {{with .NodeInfo -}}
         async load{{$edgeName}}(): Promise<{{useImport .Node}}|null> {
-          {{ if $edge.Nullable -}}
-            if (!this.{{$edge.TSFieldName}}) {
+          {{ $field := $nodeData.GetFieldByName $edge.FieldName -}}
+          {{ if and $field ($field.HasAsyncAccessor $cfg) -}}
+            const {{$edge.TSFieldName}} = await this.{{$edge.TSFieldName}}();
+            if (!{{$edge.TSFieldName}}) {
               return null;
             }
-          {{end -}}
+          {{ else -}}
+            {{ if $edge.Nullable -}}
+              if (!this.{{$edge.TSFieldName}}) {
+                return null;
+              }
+            {{end -}}
+          {{ end}}
           return {{useImport "loadEnt"}}(
             this.viewer, 
-            this.{{$edge.TSFieldName}},
+            {{ if and $field ($field.HasAsyncAccessor $cfg) -}}
+              {{$edge.TSFieldName}},
+            {{ else -}}
+              this.{{$edge.TSFieldName}},
+            {{end -}}
             {{useImport .Node}}.loaderOptions(),
           );
         }
