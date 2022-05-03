@@ -1,6 +1,5 @@
 import {
   AllowIfViewerInboundEdgeExistsRule,
-  //  AllowIfViewerIsEntPropertyRule,
   AllowIfViewerIsRule,
   AlwaysDenyRule,
 } from "@snowtop/ent";
@@ -40,11 +39,11 @@ export default class Event extends BaseEntSchema implements Schema {
       graphqlName: "eventLocation",
     }),
     UUIDType({
-      // perfect, only creator or attendees can see event address
       name: "addressID",
       nullable: true,
       fieldEdge: { schema: "Address", inverseEdge: "hostedEvents" },
       privacyPolicy: {
+        // only creator or attendees can see event address
         rules: [
           new AllowIfViewerInboundEdgeExistsRule(
             EdgeType.UserToEventsAttending,

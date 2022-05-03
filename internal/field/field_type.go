@@ -26,7 +26,6 @@ type Field struct {
 	topLevelStructField bool       // id, updated_at, created_at no...
 	entType             types.Type // not all fields will have an entType. probably don't need this...
 
-	// TODO nullable version when privacy is nullable
 	fieldType enttype.TSGraphQLType // this is the underlying type for the field for graphql, db, etc
 	// in certain scenarios we need a different type for graphql vs typescript
 	graphqlFieldType enttype.TSGraphQLType

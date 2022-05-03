@@ -224,7 +224,7 @@ test("addressID privacy", async () => {
 
   eventFrom = await Event.loadX(user.viewer, event.id);
   // can now see address id
-  //  expect(await eventFrom.addressID()).toBe(address.id);
+  expect(await eventFrom.addressID()).toBe(address.id);
   const addressFrom = await eventFrom.loadAddress();
   expect(addressFrom).not.toBeNull();
   expect(addressFrom?.id).toBe(address.id);

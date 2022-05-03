@@ -9,7 +9,7 @@ test("create", async () => {
 });
 
 test("field privacy", async () => {
-  // viewer can see their own phone numbr and account state. no one else can
+  // viewer can see their own phone number and account state. no one else can
   const account1 = await createAccount();
   expect(account1.phoneNumber).not.toBeNull();
   expect(account1.accountState).not.toBeNull();

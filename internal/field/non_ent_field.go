@@ -59,6 +59,7 @@ func (f *NonEntField) GetTsType() string {
 func (f *NonEntField) TsBuilderType() string {
 	return f.fieldType.GetTSType()
 }
+
 func (f *NonEntField) GetFieldType() enttype.EntType {
 	return f.fieldType
 }
