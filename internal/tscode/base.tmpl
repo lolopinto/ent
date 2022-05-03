@@ -77,10 +77,12 @@ export class {{$baseClass}} {
   {{range $field := .FieldInfo.Fields -}}
     {{ if $field.HasAsyncAccessor $cfg -}}
       async {{$field.TSPublicAPIName}}(): Promise<{{$field.TsType}}> {
-        {{/* need to check if this can actually be null */ -}}
-        if (this.{{$field.TsFieldName $cfg}} === null) {
-          return null;
-        }
+        {{/* if underlying field can be null, we check for null */}}
+        {{ if $field.Nullable -}}
+          if (this.{{$field.TsFieldName $cfg}} === null) {
+            return null;
+          }
+        {{ end -}}
         const m = {{useImport "getFieldsWithPrivacy"}}({{useImport "schema"}});
         const p = m.get("{{$field.GetDbColName}}");
         if (!p) {

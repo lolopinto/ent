@@ -137,9 +137,6 @@ export class UserBase {
   }
 
   async emailVerified(): Promise<boolean | null> {
-    if (this._emailVerified === null) {
-      return null;
-    }
     const m = getFieldsWithPrivacy(schema);
     const p = m.get("email_verified");
     if (!p) {
