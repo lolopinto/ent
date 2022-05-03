@@ -35,7 +35,7 @@
     "uuid": "^8.3.2"
   },
   "dependencies": {
-    "@snowtop/ent": "^0.0.39-alpha5",
+    "@snowtop/ent": "^0.0.39-alpha14",
     "@snowtop/ent-phonenumber": "^0.0.1",
     "@snowtop/ent-soft-delete": "^0.0.1",
     "@types/node": "^15.0.3",

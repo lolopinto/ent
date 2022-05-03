@@ -22,7 +22,6 @@ export default class Account extends BaseEntSchema {
       name: "PhoneNumber",
       unique: true,
       // only viewer can see their phone number
-
       // TODO: builder type needs to not change. needs to be non-nullable if original field wasn't nullable
       privacyPolicy: AllowIfViewerPrivacyPolicy,
     }),

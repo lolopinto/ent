@@ -493,8 +493,12 @@ export class Orchestrator<T extends Ent> {
 
     let validators = action?.validators || [];
 
+    // TODO not ideal we're calling this twice. fix...
+    // TODO add core test for softe delete with soft_delete package duplicated?
+    // to confirm it works and things like this don't break it.
+    const editedFields2 = await this.options.editedFields();
     await Promise.all([
-      this.formatAndValidateFields(schemaFields, editedFields),
+      this.formatAndValidateFields(schemaFields, editedFields2),
       this.validators(validators, action!, builder),
     ]);
   }
