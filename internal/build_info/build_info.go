@@ -11,21 +11,23 @@ import (
 )
 
 type BuildInfo struct {
-	BuildTime       string     `yaml:"buildTime"`
-	ConfigTime      string     `yaml:"configTime"` // ent.yml time
-	DockerVersion   string     `yaml:"dockerVersion"`
-	dev             bool       `yaml:"-"`
-	cfg             Config     `yaml:"-"`
-	prevEqual       bool       `yaml:"-"`
-	checkForDeletes bool       `yaml:"-"`
-	prev            *BuildInfo `yaml:"-"`
+	BuildTime             string     `yaml:"buildTime"`
+	ConfigTime            string     `yaml:"configTime"` // ent.yml time
+	DockerVersion         string     `yaml:"dockerVersion"`
+	dev                   bool       `yaml:"-"`
+	cfg                   Config     `yaml:"-"`
+	prevEqual             bool       `yaml:"-"`
+	checkForDeletes       bool       `yaml:"-"`
+	prev                  *BuildInfo `yaml:"-"`
+	ForceWriteAllNextTime bool       `yaml:"forceWriteAllNextTime,omitempty"`
+	forceWriteAll         bool       `yaml:"-"`
 	// this is only public for yaml reasons
 	DefaultGraphQLMutationName codegenapi.GraphQLMutationName `yaml:"defaultGraphQLMutationName"`
 }
 
 // flag as Changed
 func (bi *BuildInfo) Changed() bool {
-	return bi.dev || !bi.prevEqual
+	return bi.dev || !bi.prevEqual || bi.forceWriteAll
 }
 
 func (bi *BuildInfo) CheckForDeletes() bool {
@@ -92,10 +94,26 @@ func NewBuildInfo(cfg Config) *BuildInfo {
 			// if configTime changed. need to flag that we should still process file deletions...
 			bi.checkForDeletes = true
 		}
+		if prev.ForceWriteAllNextTime {
+			bi.forceWriteAll = true
+		}
 	}
 	bi.prev = prev
 	bi.prevEqual = buildInfoEqual(prev, bi)
 	return bi
+}
+
+// FlagNextBuildInfoAsWriteAll used for one-off commands such as downgrade where the state
+// isn't pure and we wanna generate it all next time
+// usually the same.. being lazy
+func FlagNextBuildInfoAsWriteAll(cfg Config, cfg2 codegenapi.Config) error {
+	bi := loadPreviousBI(cfg)
+	if bi == nil {
+		return nil
+	}
+
+	bi.ForceWriteAllNextTime = true
+	return bi.PostProcess(cfg2)
 }
 
 func loadPreviousBI(cfg Config) *BuildInfo {
@@ -113,6 +131,7 @@ func loadPreviousBI(cfg Config) *BuildInfo {
 	if err != nil {
 		return nil
 	}
+	bi.cfg = cfg
 	return &bi
 }
 

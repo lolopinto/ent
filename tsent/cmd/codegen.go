@@ -58,6 +58,10 @@ var codegenCmd = &cobra.Command{
 		if codegenInfo.writeAll {
 			opts = append(opts, codegen.WriteAll())
 		}
+		// flag that next time we do this, we force write all
+		if codegenInfo.step != "" {
+			bi.ForceWriteAllNextTime = true
+		}
 		// same as ParseSchemaFromTSDir. default to schema. we want a flag here eventually
 		processor, err := codegen.NewCodegenProcessor(currentSchema, "src/schema", opts...)
 		if err != nil {

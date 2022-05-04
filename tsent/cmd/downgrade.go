@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/lolopinto/ent/internal/build_info"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/db"
 	"github.com/spf13/cobra"
@@ -35,6 +36,9 @@ tsent downgrade revision`,
 			return err
 		}
 
-		return db.DowngradeDB(cfg, args[0], downgradeInfo.keepSchemaFiles)
+		if err := db.DowngradeDB(cfg, args[0], downgradeInfo.keepSchemaFiles); err != nil {
+			return err
+		}
+		return build_info.FlagNextBuildInfoAsWriteAll(cfg, cfg)
 	},
 }
