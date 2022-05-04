@@ -174,11 +174,26 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
       action: action,
       schema: this.schema,
       editedFields: () => {
-        return this.fields;
+        // to simulate what we do in generated builders where we return a new Map
+        const m = new Map();
+        for (const [k, v] of this.fields) {
+          m.set(k, v);
+        }
+        return m;
       },
       updateInput: (input: Data) => {
+        const knownFields = getFields(this.schema);
         for (const k in input) {
-          this.fields.set(k, input[k]);
+          if (knownFields.has(k)) {
+            this.fields.set(k, input[k]);
+          } else {
+            // related to #510. we do camelCase to pass fields in here but fields may be snakeCase and we want that to pass in tests
+            // we do camelCase in
+            const sc = snakeCase(k);
+            if (knownFields.has(sc)) {
+              this.fields.set(sc, input[k]);
+            }
+          }
         }
       },
     });

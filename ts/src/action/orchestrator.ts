@@ -493,9 +493,8 @@ export class Orchestrator<T extends Ent> {
 
     let validators = action?.validators || [];
 
-    // TODO not ideal we're calling this twice. fix...
-    // TODO add core test for softe delete with soft_delete package duplicated?
-    // to confirm it works and things like this don't break it.
+    // not ideal we're calling this twice. fix...
+    // needed for now. may need to write somet of this?
     const editedFields2 = await this.options.editedFields();
     await Promise.all([
       this.formatAndValidateFields(schemaFields, editedFields2),
@@ -598,7 +597,7 @@ export class Orchestrator<T extends Ent> {
           this.defaultFieldsByTSName[camelCase(k)] = val;
           // hmm do we need this?
           // TODO how to do this for local tests?
-          //          this.defaultFieldsByFieldName[k] = val;
+          // this.defaultFieldsByFieldName[k] = val;
         }
       }
       this.actualOperation = this.getWriteOpForSQLStamentOp(transformed.op);

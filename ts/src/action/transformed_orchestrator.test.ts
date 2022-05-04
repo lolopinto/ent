@@ -11,7 +11,7 @@ import {
   TransformedUpdateOperation,
   SQLStatementOperation,
 } from "../schema";
-import { User, SimpleAction } from "../testutils/builder";
+import { User, SimpleAction, Contact } from "../testutils/builder";
 import { FakeComms } from "../testutils/fake_comms";
 import { Pool } from "pg";
 import { QueryRecorder } from "../testutils/db_mock";
@@ -34,7 +34,7 @@ import { loadConfig } from "../core/config";
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 loadConfig({
-  //  log: ["query"],
+  // log: ["query"],
 });
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
@@ -72,7 +72,7 @@ describe("sqlite", () => {
       tables.push(assoc_edge_table(`${snakeCase(edge)}_table`)),
     );
 
-    [new UserSchema()].map((s) =>
+    [new UserSchema(), new ContactSchema()].map((s) =>
       tables.push(getSchemaTable(s, Dialect.SQLite)),
     );
     return tables;
@@ -116,6 +116,38 @@ class DeletedAtPattern implements Pattern {
   }
 }
 
+class DeletedAtSnakeCasePattern implements Pattern {
+  name = "deleted_at";
+  fields: Field[] = [
+    TimestampType({
+      name: "deleted_at",
+      nullable: true,
+      index: true,
+      defaultValueOnCreate: () => null,
+    }),
+  ];
+
+  transformRead(): clause.Clause {
+    // this is based on sql. other is based on field
+    return clause.Eq("deleted_at", null);
+  }
+
+  transformWrite<T extends Ent>(
+    stmt: UpdateOperation<T>,
+  ): TransformedUpdateOperation<T> | undefined {
+    switch (stmt.op) {
+      case SQLStatementOperation.Delete:
+        return {
+          op: SQLStatementOperation.Update,
+          data: {
+            // this should return field, it'll be formatted as needed
+            deleted_at: new Date(),
+          },
+        };
+    }
+  }
+}
+
 class UserSchema extends BaseEntSchema {
   constructor() {
     super();
@@ -126,6 +158,18 @@ class UserSchema extends BaseEntSchema {
     StringType({ name: "LastName" }),
   ];
   ent = User;
+}
+
+class ContactSchema extends BaseEntSchema {
+  constructor() {
+    super();
+    this.addPatterns(new DeletedAtSnakeCasePattern());
+  }
+  fields: Field[] = [
+    StringType({ name: "first_name" }),
+    StringType({ name: "last_name" }),
+  ];
+  ent = Contact;
 }
 
 const getNewLoader = (context: boolean = true) => {
@@ -140,12 +184,35 @@ const getNewLoader = (context: boolean = true) => {
   );
 };
 
+const getContactNewLoader = (context: boolean = true) => {
+  return new ObjectLoader(
+    {
+      tableName: "contacts",
+      fields: ["id", "first_name", "last_name", "deleted_at"],
+      key: "id",
+      clause: clause.Eq("deleted_at", null),
+    },
+    context ? new TestContext() : undefined,
+  );
+};
+
 // deleted_at field but no custom_clause
 // behavior when we're ignoring deleted_at. exception...
 const getNewLoaderNoCustomClause = (context: boolean = true) => {
   return new ObjectLoader(
     {
       tableName: "users",
+      fields: ["id", "first_name", "last_name", "deleted_at"],
+      key: "id",
+    },
+    context ? new TestContext() : undefined,
+  );
+};
+
+const getContactNewLoaderNoCustomClause = (context: boolean = true) => {
+  return new ObjectLoader(
+    {
+      tableName: "contacts",
       fields: ["id", "first_name", "last_name", "deleted_at"],
       key: "id",
     },
@@ -339,6 +406,183 @@ function commonTests() {
     expect(user.id).not.toBe(user3.id);
     expect(user3.firstName).toBe("Sansa");
     expect(user3.data.last_name).toBe("Stark");
+    verifyPostgres(2);
+  });
+
+  test("delete -> update. snake_case", async () => {
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      new ContactSchema(),
+      new Map([
+        ["first_name", "Jon"],
+        ["last_name", "Snow"],
+      ]),
+      WriteOperation.Insert,
+    );
+    const contact = await action.saveX();
+    const loader = getContactNewLoader();
+
+    const row = await loader.load(contact.id);
+    expect(row).toEqual({
+      id: contact.id,
+      first_name: "Jon",
+      last_name: "Snow",
+      deleted_at: null,
+    });
+
+    const d = new Date();
+    advanceTo(d);
+    const action2 = new SimpleAction(
+      new LoggedOutViewer(),
+      new ContactSchema(),
+      new Map(),
+      WriteOperation.Delete,
+      contact,
+    );
+
+    await action2.save();
+
+    loader.clearAll();
+    const row2 = await loader.load(contact.id);
+    expect(row2).toBeNull();
+
+    // loader which bypasses transformations
+    const loader2 = getContactNewLoaderNoCustomClause();
+    const row3 = await loader2.load(contact.id);
+    expect(transformDeletedAt(row3)).toEqual({
+      id: contact.id,
+      first_name: "Jon",
+      last_name: "Snow",
+      deleted_at: d,
+    });
+  });
+
+  test("really delete. snake_case", async () => {
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      new ContactSchema(),
+      new Map([
+        ["first_name", "Jon"],
+        ["last_name", "Snow"],
+      ]),
+      WriteOperation.Insert,
+    );
+    const contact = await action.saveX();
+    const loader = getContactNewLoader();
+
+    const row = await loader.load(contact.id);
+    expect(row).toEqual({
+      id: contact.id,
+      first_name: "Jon",
+      last_name: "Snow",
+      deleted_at: null,
+    });
+
+    const action2 = new SimpleAction(
+      new LoggedOutViewer(),
+      new ContactSchema(),
+      new Map(),
+      WriteOperation.Delete,
+      contact,
+    );
+    action2.builder.orchestrator.setDisableTransformations(true);
+
+    await action2.save();
+
+    loader.clearAll();
+    const row2 = await loader.load(contact.id);
+    expect(row2).toBeNull();
+
+    // loader which bypasses transformations
+    const loader2 = getContactNewLoaderNoCustomClause();
+    const row3 = await loader2.load(contact.id);
+    expect(row3).toBe(null);
+  });
+
+  test("insert -> update", async () => {
+    const verifyPostgres = (ct: number) => {
+      const contacts = QueryRecorder.getData().get("contacts") || [];
+      if (DB.getDialect() !== Dialect.Postgres) {
+        return;
+      }
+      expect(contacts.length).toBe(ct);
+    };
+    verifyPostgres(0);
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      new ContactSchema(),
+      new Map([
+        ["first_name", "Jon"],
+        ["last_name", "Snow"],
+      ]),
+      WriteOperation.Insert,
+    );
+    const contact = await action.saveX();
+    verifyPostgres(1);
+
+    const loader = getContactNewLoader();
+
+    const row = await loader.load(contact.id);
+    expect(row).toEqual({
+      id: contact.id,
+      first_name: "Jon",
+      last_name: "Snow",
+      deleted_at: null,
+    });
+
+    const tranformJonToAegon = (
+      stmt: UpdateOperation<Contact>,
+    ): TransformedUpdateOperation<Contact> | undefined => {
+      if (stmt.op != SQLStatementOperation.Insert || !stmt.data) {
+        return;
+      }
+
+      const firstName = stmt.data.get("first_name");
+      const lastName = stmt.data.get("last_name");
+
+      if (firstName == "Aegon" && lastName == "Targaryen") {
+        return {
+          op: SQLStatementOperation.Update,
+          existingEnt: contact,
+        };
+      }
+    };
+
+    const action2 = new SimpleAction(
+      new LoggedOutViewer(),
+      new ContactSchema(),
+      new Map([
+        ["first_name", "Aegon"],
+        ["last_name", "Targaryen"],
+      ]),
+      WriteOperation.Insert,
+    );
+    // @ts-ignore
+    action2.transformWrite = tranformJonToAegon;
+
+    const contact2 = await action2.saveX();
+    expect(contact.id).toBe(contact2.id);
+    expect(contact2.data.first_name).toBe("Aegon");
+    expect(contact2.data.last_name).toBe("Targaryen");
+    verifyPostgres(1);
+
+    const action3 = new SimpleAction(
+      new LoggedOutViewer(),
+      new ContactSchema(),
+      new Map([
+        ["first_name", "Sansa"],
+        ["last_name", "Stark"],
+      ]),
+      WriteOperation.Insert,
+    );
+    // @ts-ignore
+    action3.transformWrite = tranformJonToAegon;
+
+    // new contact craeted
+    const contact3 = await action3.saveX();
+    expect(contact.id).not.toBe(contact3.id);
+    expect(contact3.data.first_name).toBe("Sansa");
+    expect(contact3.data.last_name).toBe("Stark");
     verifyPostgres(2);
   });
 }
