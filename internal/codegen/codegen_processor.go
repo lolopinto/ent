@@ -305,6 +305,7 @@ type StepWithPostProcess interface {
 type constructOption struct {
 	debugMode bool
 	writeAll  bool
+	step      string
 	buildInfo *build_info.BuildInfo
 	cfg       *Config
 }
