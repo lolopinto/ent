@@ -17,7 +17,7 @@ import (
 )
 
 // next tag
-const TAG = "0.0.38.alpha18"
+const TAG = "0.0.38.alpha19"
 
 // current node gets latest tag...
 const CURRENT_NODE_VERSION = 17
@@ -32,8 +32,8 @@ var NODE_VERSIONS = []int{
 }
 
 // test version
-const AUTO_SCHEMA_VERSION = "0.0.22"
-const TSENT_VERSION = "v0.0.39-alpha11"
+const AUTO_SCHEMA_VERSION = "0.0.18"
+const TSENT_VERSION = "v0.0.39-alpha12"
 
 var SUFFIXES = []string{
 	"dev",
