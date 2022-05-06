@@ -22,14 +22,14 @@ export const accountLoader = new ObjectLoaderFactory({
   tableName: accountTable,
   fields: accountFields,
   key: "id",
-  ...getObjectLoaderProperties(Account),
+  ...getObjectLoaderProperties(Account, accountTable),
 });
 
 export const accountPhoneNumberLoader = new ObjectLoaderFactory({
   tableName: accountTable,
   fields: accountFields,
   key: "phone_number",
-  ...getObjectLoaderProperties(Account),
+  ...getObjectLoaderProperties(Account, accountTable),
 });
 
 export const accountNoTransformLoader = new ObjectLoaderFactory({
@@ -73,7 +73,7 @@ export const tagLoader = new ObjectLoaderFactory({
   tableName: tagTable,
   fields: tagFields,
   key: "id",
-  ...getObjectLoaderProperties(Tag),
+  ...getObjectLoaderProperties(Tag, tagTable),
 });
 
 export const tagNoTransformLoader = new ObjectLoaderFactory({
@@ -104,7 +104,7 @@ export const todoLoader = new ObjectLoaderFactory({
   tableName: todoTable,
   fields: todoFields,
   key: "id",
-  ...getObjectLoaderProperties(Todo),
+  ...getObjectLoaderProperties(Todo, todoTable),
 });
 
 export const todoNoTransformLoader = new ObjectLoaderFactory({

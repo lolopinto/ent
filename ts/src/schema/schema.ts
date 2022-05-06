@@ -481,16 +481,11 @@ interface objectLoaderOptions {
 
 export function getObjectLoaderProperties(
   value: SchemaInputType,
+  tableName: string,
 ): objectLoaderOptions | undefined {
-  let clause = getTransformedReadClause(value);
-  if (!clause) {
-    return;
-  }
-  const schema = getSchema(value);
-
   return {
-    clause: () => clause,
-    instanceKey: `${schema.tableName}:transformedReadClause`,
+    clause: () => getTransformedReadClause(value),
+    instanceKey: `${tableName}:transformedReadClause`,
   };
 }
 
