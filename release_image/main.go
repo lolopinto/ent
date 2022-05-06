@@ -28,8 +28,8 @@ const UPDATE_LATEST = true
 var NODE_VERSIONS = []int{
 	14,
 	16,
-	// 17,
-	// 18,
+	17,
+	18,
 }
 
 const AUTO_SCHEMA_VERSION = "0.0.18"
