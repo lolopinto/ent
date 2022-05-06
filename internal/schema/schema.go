@@ -808,7 +808,7 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 			// so we want to add it to edges for
 			if err := edgeInfo.AddIndexedEdgeFromSource(
 				cfg,
-				f.TsFieldName(),
+				f.TsFieldName(cfg),
 				f.GetQuotedDBColName(),
 				nodeData.Node,
 				e.Polymorphic,
@@ -827,7 +827,7 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 						//						spew.Dump(nodeData.Node, foreign.NodeData.Node)
 						if err := fEdgeInfo.AddDestinationEdgeFromPolymorphicOptions(
 							cfg,
-							f.TsFieldName(),
+							f.TsFieldName(cfg),
 							f.GetQuotedDBColName(),
 							nodeData.Node,
 							e.Polymorphic,

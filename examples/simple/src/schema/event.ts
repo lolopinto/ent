@@ -1,4 +1,9 @@
 import {
+  AllowIfViewerInboundEdgeExistsRule,
+  AllowIfViewerIsRule,
+  AlwaysDenyRule,
+} from "@snowtop/ent";
+import {
   Schema,
   Action,
   Field,
@@ -10,6 +15,7 @@ import {
   UUIDType,
   AssocEdgeGroup,
 } from "@snowtop/ent/schema/";
+import { EdgeType } from "../ent/generated/const";
 
 /// explicit schema
 export default class Event extends BaseEntSchema implements Schema {
@@ -36,6 +42,16 @@ export default class Event extends BaseEntSchema implements Schema {
       name: "addressID",
       nullable: true,
       fieldEdge: { schema: "Address", inverseEdge: "hostedEvents" },
+      privacyPolicy: {
+        // only creator or attendees can see event address
+        rules: [
+          new AllowIfViewerInboundEdgeExistsRule(
+            EdgeType.UserToEventsAttending,
+          ),
+          new AllowIfViewerIsRule("creatorID"),
+          AlwaysDenyRule,
+        ],
+      },
     }),
   ];
 

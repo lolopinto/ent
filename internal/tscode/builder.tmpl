@@ -1,6 +1,8 @@
 {{reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions"}}
 {{reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "saveBuilder" "saveBuilderX" "Orchestrator"}}
 
+{{ $cfg := .CodePath -}}
+
 {{with .NodeData -}}
 {{ $schemaPath := .GetSchemaPath }}
 {{ reserveDefaultImport $schemaPath "schema"}}
@@ -18,7 +20,7 @@ export interface {{.Node}}Input {
         {{ reserveImportPath . true -}}
         {{ $ignore := useImport .Import -}}
       {{end -}}
-    {{$field.TsFieldName}}?: {{$type}};
+    {{$field.TsBuilderFieldName}}?: {{$type}};
   {{end -}}
 }
 
@@ -207,7 +209,7 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
     return this.orchestrator.editedEntX();
   }
 
-  private getEditedFields(): Map<string, any> {
+  private async getEditedFields(): Promise<Map<string, any>> {
     const fields = this.input;
 
     const result = new Map<string, any>();
@@ -218,7 +220,7 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
       }
     };
     {{range $field := .FieldInfo.GetEditableFields -}}
-      {{$tsFieldName := $field.TsFieldName -}}
+      {{$tsFieldName := $field.TsBuilderFieldName -}}
       addField("{{$field.FieldName}}", fields.{{$tsFieldName}});
       {{ $inverseEdge := $field.GetInverseEdge -}}
       {{ if $inverseEdge -}}
@@ -230,12 +232,26 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
               {{useImport "NodeType"}}.{{$inverseEdge.NodeInfo.Node}},
             );
           }
-          if (this.existingEnt && this.existingEnt.{{$tsFieldName}} && this.existingEnt.{{$tsFieldName}} !== fields.{{$tsFieldName}}) {
-            this.orchestrator.removeInboundEdge(
-              this.existingEnt.{{$tsFieldName}},
-              {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
-            );
-          }
+          {{ if $field.HasAsyncAccessor $cfg -}}
+            // can't have this be dependent on privacy so need to fetch the raw data...
+            if (this.existingEnt) {
+              {{/* TODO eventually this needs to be smart enough and parallelize with any other possible fields here */ -}}
+              const rawData = await {{$node}}.loadRawData(this.existingEnt.id, this.viewer.context);
+              if (rawData && rawData.{{$field.GetDbColName}} !== null && rawData.{{$field.GetDbColName}} !== undefined) {
+                this.orchestrator.removeInboundEdge(
+                  rawData.{{$field.GetDbColName}},
+                  {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
+                );
+              }
+            }
+          {{ else -}}
+            if (this.existingEnt && this.existingEnt.{{$tsFieldName}} && this.existingEnt.{{$tsFieldName}} !== fields.{{$tsFieldName}}) {
+              this.orchestrator.removeInboundEdge(
+                this.existingEnt.{{$tsFieldName}},
+                {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
+              );
+            }
+          {{ end -}}
         }
       {{end -}}
     {{end -}}
@@ -247,15 +263,17 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
   }
 
   {{range $field := .FieldInfo.GetEditableFields}}
+    {{$tsFieldName := $field.TsBuilderFieldName -}}
     // get value of {{$field.FieldName}}. Retrieves it from the input if specified or takes it from existingEnt
-    getNew{{$field.CamelCaseName}}Value(): {{$field.TsBuilderType}} | undefined {
-      {{if $field.Private -}}
-        return this.input.{{$field.TsFieldName}};
+    getNew{{$field.CamelCaseName}}Value(): {{$field.TsBuilderUnionType}} | undefined {
+    {{/** hmm not ideal for these accessors to not work...*/}}
+      {{if $field.Private $cfg -}}
+        return this.input.{{$tsFieldName}};
       {{else -}}
-        if (this.input.{{$field.TsFieldName}} !== undefined) {
-          return this.input.{{$field.TsFieldName}}
+        if (this.input.{{$tsFieldName}} !== undefined) {
+          return this.input.{{$tsFieldName}}
         }
-        return this.existingEnt?.{{$field.TsFieldName}};
+        return this.existingEnt?.{{$tsFieldName}};
       {{end -}}
     }
 

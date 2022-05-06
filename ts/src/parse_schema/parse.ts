@@ -14,6 +14,7 @@ function processFields(src: Field[], patternName?: string): ProcessedField[] {
     let f: ProcessedField = { ...field };
     f.hasDefaultValueOnCreate = field.defaultValueOnCreate != undefined;
     f.hasDefaultValueOnEdit = field.defaultValueOnEdit != undefined;
+    f.hasFieldPrivacy = field.privacyPolicy !== undefined;
     if (field.polymorphic) {
       // convert boolean into object
       // we keep boolean as an option to keep API simple
@@ -232,11 +233,12 @@ interface ProcessedPattern {
 
 type ProcessedField = Omit<
   Field,
-  "defaultValueOnEdit" | "defaultValueOnCreate"
+  "defaultValueOnEdit" | "defaultValueOnCreate" | "privacyPolicy"
 > & {
   hasDefaultValueOnCreate?: boolean;
   hasDefaultValueOnEdit?: boolean;
   patternName?: string;
+  hasFieldPrivacy?: boolean;
 };
 
 interface patternsDict {

@@ -1,4 +1,5 @@
 import { EnumType } from "@snowtop/ent";
+import { AllowIfViewerPrivacyPolicy } from "@snowtop/ent";
 import {
   Action,
   ActionOperation,
@@ -17,7 +18,12 @@ export default class Account extends BaseEntSchema {
 
   fields: Field[] = [
     StringType({ name: "Name" }),
-    PhoneNumberType({ name: "PhoneNumber", unique: true }),
+    PhoneNumberType({
+      name: "PhoneNumber",
+      unique: true,
+      // only viewer can see their phone number
+      privacyPolicy: AllowIfViewerPrivacyPolicy,
+    }),
     EnumType({
       nullable: true,
       name: "accountState",
@@ -25,8 +31,11 @@ export default class Account extends BaseEntSchema {
       graphQLType: "AccountState",
       values: ["UNVERIFIED", "VERIFIED", "DEACTIVATED", "DISABLED"],
       defaultValueOnCreate: () => "UNVERIFIED",
+      // only viewer can see their account state
+      privacyPolicy: AllowIfViewerPrivacyPolicy,
     }),
   ];
+
   actions: Action[] = [
     {
       operation: ActionOperation.Mutations,

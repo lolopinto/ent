@@ -22,6 +22,7 @@ export const addressLoader = new ObjectLoaderFactory({
   fields: addressFields,
   key: "id",
 });
+
 export const addressOwnerIDLoader = new ObjectLoaderFactory({
   tableName: addressTable,
   fields: addressFields,
@@ -54,6 +55,7 @@ export const authCodeLoader = new ObjectLoaderFactory({
   fields: authCodeFields,
   key: "id",
 });
+
 export const authCodeGuestIDLoader = new ObjectLoaderFactory({
   tableName: authCodeTable,
   fields: authCodeFields,
@@ -112,6 +114,7 @@ export const eventLoader = new ObjectLoaderFactory({
   fields: eventFields,
   key: "id",
 });
+
 export const eventSlugLoader = new ObjectLoaderFactory({
   tableName: eventTable,
   fields: eventFields,
@@ -215,6 +218,7 @@ export const userLoader = new ObjectLoaderFactory({
   fields: userFields,
   key: "id",
 });
+
 export const userEmailAddressLoader = new ObjectLoaderFactory({
   tableName: userTable,
   fields: userFields,

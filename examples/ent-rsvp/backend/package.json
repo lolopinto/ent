@@ -28,7 +28,7 @@
   "dependencies": {
     "@sentry/node": "^6.3.0",
     "@sentry/tracing": "^6.3.0",
-    "@snowtop/ent": "^0.0.38",
+    "@snowtop/ent": "^0.0.40-alpha",
     "@snowtop/ent-email": "0.0.1",
     "@snowtop/ent-passport": "0.0.1",
     "@snowtop/ent-password": "0.0.1",

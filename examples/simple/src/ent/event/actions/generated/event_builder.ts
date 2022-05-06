@@ -314,7 +314,7 @@ export class EventBuilder implements Builder<Event> {
     return this.orchestrator.editedEntX();
   }
 
-  private getEditedFields(): Map<string, any> {
+  private async getEditedFields(): Promise<Map<string, any>> {
     const fields = this.input;
 
     const result = new Map<string, any>();
@@ -357,15 +357,22 @@ export class EventBuilder implements Builder<Event> {
           NodeType.Address,
         );
       }
-      if (
-        this.existingEnt &&
-        this.existingEnt.addressID &&
-        this.existingEnt.addressID !== fields.addressID
-      ) {
-        this.orchestrator.removeInboundEdge(
-          this.existingEnt.addressID,
-          EdgeType.AddressToHostedEvents,
+      // can't have this be dependent on privacy so need to fetch the raw data...
+      if (this.existingEnt) {
+        const rawData = await Event.loadRawData(
+          this.existingEnt.id,
+          this.viewer.context,
         );
+        if (
+          rawData &&
+          rawData.address_id !== null &&
+          rawData.address_id !== undefined
+        ) {
+          this.orchestrator.removeInboundEdge(
+            rawData.address_id,
+            EdgeType.AddressToHostedEvents,
+          );
+        }
       }
     }
     return result;
@@ -417,9 +424,6 @@ export class EventBuilder implements Builder<Event> {
 
   // get value of addressID. Retrieves it from the input if specified or takes it from existingEnt
   getNewAddressIDValue(): ID | null | Builder<Address> | undefined {
-    if (this.input.addressID !== undefined) {
-      return this.input.addressID;
-    }
-    return this.existingEnt?.addressID;
+    return this.input.addressID;
   }
 }

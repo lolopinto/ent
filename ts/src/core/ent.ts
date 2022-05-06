@@ -24,6 +24,7 @@ import {
   CreateRowOptions,
   QueryDataOptions,
   EntConstructor,
+  PrivacyPolicy,
 } from "./base";
 
 import { applyPrivacyPolicy, applyPrivacyPolicyX } from "./privacy";
@@ -180,8 +181,7 @@ export async function loadEntXFromClause<T extends Ent>(
     context: viewer.context,
   };
   const row = await loadRowX(rowOptions);
-  const ent = new options.ent(viewer, row);
-  return await applyPrivacyPolicyForEntX(viewer, ent);
+  return await applyPrivacyPolicyForRowX(viewer, options, row);
 }
 
 export async function loadEnts<T extends Ent>(
@@ -269,7 +269,13 @@ export async function loadCustomEnts<T extends Ent>(
   await Promise.all(
     rows.map(async (row, idx) => {
       const ent = new options.ent(viewer, row);
-      let privacyEnt = await applyPrivacyPolicyForEnt(viewer, ent);
+      let privacyEnt = await applyPrivacyPolicyForEnt(
+        viewer,
+        ent,
+        row,
+        options,
+      );
+
       if (privacyEnt) {
         result[idx] = privacyEnt;
       }
@@ -344,7 +350,9 @@ export async function loadDerivedEnt<T extends Ent>(
   loader: new (viewer: Viewer, data: Data) => T,
 ): Promise<T | null> {
   const ent = new loader(viewer, data);
-  return await applyPrivacyPolicyForEnt(viewer, ent);
+  return await applyPrivacyPolicyForEnt(viewer, ent, data, {
+    ent: loader,
+  });
 }
 
 export async function loadDerivedEntX<T extends Ent>(
@@ -353,28 +361,70 @@ export async function loadDerivedEntX<T extends Ent>(
   loader: new (viewer: Viewer, data: Data) => T,
 ): Promise<T> {
   const ent = new loader(viewer, data);
-  return await applyPrivacyPolicyForEntX(viewer, ent);
+  return await applyPrivacyPolicyForEntX(viewer, ent, data, { ent: loader });
 }
 
-export async function applyPrivacyPolicyForEnt<T extends Ent>(
+interface FieldPrivacyOptions<T extends Ent> {
+  ent: EntConstructor<T>;
+  fieldPrivacy?: Map<string, PrivacyPolicy>;
+}
+
+// everything calls into this two so should be fine
+// TODO is there a smarter way to not instantiate two objects here?
+async function applyPrivacyPolicyForEnt<T extends Ent>(
   viewer: Viewer,
   ent: T | null,
+  data: Data,
+  fieldPrivacyOptions: FieldPrivacyOptions<T>,
 ): Promise<T | null> {
   if (ent) {
     const visible = await applyPrivacyPolicy(viewer, ent.privacyPolicy, ent);
-    if (visible) {
-      return ent;
+    if (!visible) {
+      return null;
     }
+    return doFieldPrivacy(viewer, ent, data, fieldPrivacyOptions);
   }
   return null;
 }
 
-export async function applyPrivacyPolicyForEntX<T extends Ent>(
+async function applyPrivacyPolicyForEntX<T extends Ent>(
   viewer: Viewer,
   ent: T,
+  data: Data,
+  options: FieldPrivacyOptions<T>,
 ): Promise<T> {
   // this will throw
   await applyPrivacyPolicyX(viewer, ent.privacyPolicy, ent);
+  return doFieldPrivacy(viewer, ent, data, options);
+}
+
+async function doFieldPrivacy<T extends Ent>(
+  viewer: Viewer,
+  ent: T,
+  data: Data,
+  options: FieldPrivacyOptions<T>,
+): Promise<T> {
+  if (!options.fieldPrivacy) {
+    return ent;
+  }
+  const promises: Promise<void>[] = [];
+  let somethingChanged = false;
+  for (const [k, policy] of options.fieldPrivacy) {
+    promises.push(
+      (async () => {
+        const r = await applyPrivacyPolicy(viewer, policy, ent);
+        if (!r) {
+          data[k] = null;
+          somethingChanged = true;
+        }
+      })(),
+    );
+  }
+  await Promise.all(promises);
+  if (somethingChanged) {
+    // have to create new instance
+    return new options.ent(viewer, data);
+  }
   return ent;
 }
 
@@ -1631,7 +1681,7 @@ export async function applyPrivacyPolicyForRow<T extends Ent>(
     return null;
   }
   const ent = new options.ent(viewer, row);
-  return await applyPrivacyPolicyForEnt(viewer, ent);
+  return await applyPrivacyPolicyForEnt(viewer, ent, row, options);
 }
 
 export async function applyPrivacyPolicyForRowX<T extends Ent>(
@@ -1640,7 +1690,7 @@ export async function applyPrivacyPolicyForRowX<T extends Ent>(
   row: Data,
 ): Promise<T> {
   const ent = new options.ent(viewer, row);
-  return await applyPrivacyPolicyForEntX(viewer, ent);
+  return await applyPrivacyPolicyForEntX(viewer, ent, row, options);
 }
 
 export async function applyPrivacyPolicyForRows<T extends Ent>(
@@ -1652,8 +1702,7 @@ export async function applyPrivacyPolicyForRows<T extends Ent>(
   // apply privacy logic
   await Promise.all(
     rows.map(async (row) => {
-      const ent = new options.ent(viewer, row);
-      let privacyEnt = await applyPrivacyPolicyForEnt(viewer, ent);
+      let privacyEnt = await applyPrivacyPolicyForRow(viewer, options, row);
       if (privacyEnt) {
         m.set(privacyEnt.id, privacyEnt);
       }

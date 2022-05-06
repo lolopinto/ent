@@ -29,10 +29,12 @@ type Field struct {
 	fieldType enttype.TSGraphQLType // this is the underlying type for the field for graphql, db, etc
 	// in certain scenarios we need a different type for graphql vs typescript
 	graphqlFieldType enttype.TSGraphQLType
-	dbColumn         bool
-	hideFromGraphQL  bool
-	private          bool
-	polymorphic      *input.PolymorphicOptions
+	tsFieldType      enttype.TSGraphQLType
+
+	dbColumn        bool
+	hideFromGraphQL bool
+	private         bool
+	polymorphic     *input.PolymorphicOptions
 	// optional (in action)
 	// need to break this into optional (not required in typescript actions)
 	// ts nullable
@@ -72,6 +74,7 @@ type Field struct {
 	disableUserGraphQLEditable bool
 	hasDefaultValueOnCreate    bool
 	hasDefaultValueOnEdit      bool
+	hasFieldPrivacy            bool
 
 	forceRequiredInAction bool
 	forceOptionalInAction bool
@@ -107,6 +110,7 @@ func newFieldFromInput(cfg codegenapi.Config, f *input.Field) (*Field, error) {
 		disableUserGraphQLEditable: f.DisableUserGraphQLEditable,
 		hasDefaultValueOnCreate:    f.HasDefaultValueOnCreate,
 		hasDefaultValueOnEdit:      f.HasDefaultValueOnEdit,
+		hasFieldPrivacy:            f.HasFieldPrivacy,
 		derivedWhenEmbedded:        f.DerivedWhenEmbedded,
 		patternName:                f.PatternName,
 
@@ -206,6 +210,19 @@ func newFieldFromInput(cfg codegenapi.Config, f *input.Field) (*Field, error) {
 		}
 		ret.fieldEdge = fieldEdge
 		ret.disableBuilderType = ret.polymorphic.DisableBuilderType
+	}
+
+	// if field privacy, whether on demand or ent load, the type here is nullable
+	if ret.hasFieldPrivacy {
+		nullableType, ok := ret.fieldType.(enttype.NullableType)
+		if ok {
+			if err := ret.setGraphQLFieldType(nullableType.GetNullableType()); err != nil {
+				return nil, err
+			}
+			if err := ret.setTsFieldType(nullableType.GetNullableType()); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	return ret, nil
@@ -345,8 +362,12 @@ func (f *Field) GetGraphQLName() string {
 	return f.graphQLName
 }
 
-func (f *Field) Private() bool {
-	return f.private
+func (f *Field) Private(cfg codegenapi.Config) bool {
+	return f.private || f.HasAsyncAccessor(cfg)
+}
+
+func (f *Field) HasAsyncAccessor(cfg codegenapi.Config) bool {
+	return f.hasFieldPrivacy && cfg.FieldPrivacyEvaluated() == codegenapi.OnDemand
 }
 
 // GetFieldNameInStruct returns the name of the field in the struct definition
@@ -393,6 +414,10 @@ func (f *Field) HasDefaultValueOnCreate() bool {
 
 func (f *Field) HasDefaultValueOnEdit() bool {
 	return f.hasDefaultValueOnEdit
+}
+
+func (f *Field) HasFieldPrivacy() bool {
+	return f.hasFieldPrivacy
 }
 
 func (f *Field) IDField() bool {
@@ -484,7 +509,27 @@ func (f *Field) GetFieldTag() string {
 }
 
 // TODO add GoFieldName and kill FieldName as public...
-func (f *Field) TsFieldName() string {
+func (f *Field) TsFieldName(cfg codegenapi.Config) string {
+	// TODO need to solve these id issues generally
+	if f.FieldName == "ID" {
+		return "id"
+	}
+	if f.HasAsyncAccessor(cfg) {
+		return "_" + strcase.ToLowerCamel(f.FieldName)
+	}
+	return strcase.ToLowerCamel(f.FieldName)
+}
+
+func (f *Field) TsBuilderFieldName() string {
+	// TODO need to solve these id issues generally
+	if f.FieldName == "ID" {
+		return "id"
+	}
+	return strcase.ToLowerCamel(f.FieldName)
+}
+
+// either async function name or public field
+func (f *Field) TSPublicAPIName() string {
 	// TODO need to solve these id issues generally
 	if f.FieldName == "ID" {
 		return "id"
@@ -497,6 +542,22 @@ func (f *Field) CamelCaseName() string {
 }
 
 func (f *Field) TsType() string {
+	if f.tsFieldType != nil {
+		return f.tsFieldType.GetTSType()
+	}
+	return f.tsRawUnderlyingType()
+}
+
+// type of the field in the class e.g. readonly name type;
+func (f *Field) TsFieldType(cfg codegenapi.Config) string {
+	// there's a method that's nullable so return raw type
+	if f.HasAsyncAccessor(cfg) {
+		return f.tsRawUnderlyingType()
+	}
+	return f.TsType()
+}
+
+func (f *Field) tsRawUnderlyingType() string {
 	return f.fieldType.GetTSType()
 }
 
@@ -553,7 +614,26 @@ func (f *Field) getIDFieldType() string {
 }
 
 func (f *Field) TsBuilderType() string {
-	typ := f.TsType()
+	typ := f.tsRawUnderlyingType()
+	typeName := f.getIDFieldType()
+	if typeName == "" || f.disableBuilderType {
+		return typ
+	}
+	return fmt.Sprintf("%s | Builder<%s>", typ, typeName)
+}
+
+// for getFooValue() where there's a nullable type but the input type isn't nullable
+// because the underlying db value isn't
+func (f *Field) TsBuilderUnionType() string {
+	if f.tsFieldType == nil {
+		return f.TsBuilderType()
+	}
+	// already null so we good
+	typWithNull, ok := f.tsFieldType.(enttype.NonNullableType)
+	if !ok {
+		return f.TsBuilderType()
+	}
+	typ := typWithNull.GetTSType()
 	typeName := f.getIDFieldType()
 	if typeName == "" || f.disableBuilderType {
 		return typ
@@ -614,6 +694,15 @@ func (f *Field) setGraphQLFieldType(fieldType enttype.Type) error {
 		return fmt.Errorf("invalid type %T that's not a graphql type", fieldType)
 	}
 	f.graphqlFieldType = gqlType
+	return nil
+}
+
+func (f *Field) setTsFieldType(fieldType enttype.Type) error {
+	gqlType, ok := fieldType.(enttype.TSGraphQLType)
+	if !ok {
+		return fmt.Errorf("invalid type %T that's not a graphql type", fieldType)
+	}
+	f.tsFieldType = gqlType
 	return nil
 }
 
@@ -719,6 +808,7 @@ func (f *Field) Clone(opts ...Option) (*Field, error) {
 		disableUserGraphQLEditable: f.disableUserGraphQLEditable,
 		hasDefaultValueOnCreate:    f.hasDefaultValueOnCreate,
 		hasDefaultValueOnEdit:      f.hasDefaultValueOnEdit,
+		hasFieldPrivacy:            f.hasFieldPrivacy,
 		forceRequiredInAction:      f.forceRequiredInAction,
 		forceOptionalInAction:      f.forceOptionalInAction,
 		derivedWhenEmbedded:        f.derivedWhenEmbedded,

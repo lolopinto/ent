@@ -2,6 +2,7 @@
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+from auto_schema.schema_item import FullTextIndex
 
 metadata = sa.MetaData()
 

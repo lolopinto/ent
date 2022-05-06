@@ -19,6 +19,11 @@ enum graphQLFieldFormat {
   SNAKE_CASE = "snake_case",
 }
 
+enum fieldPrivacyEvaluated {
+  AT_ENT_LOAD = "at_ent_load",
+  ON_DEMAND = "on_demand",
+}
+
 export interface Config {
   dbConnectionString?: string;
   dbFile?: string; // config/database.yml is default
@@ -87,6 +92,19 @@ interface CodegenConfig {
   // has changed. we need this because if no database is provided, we'd then try and compare
   // against database with same name as user
   databaseToCompareTo?: string;
+
+  // copied from schema.ts
+  // when field privacy is evaluated.
+  // field can have privacy policy
+  // there's 2 modes of how this is treated that can be configured in ent.yml because it affects codegen
+  // 1: evaluate at the time of ent load, we apply the privacy of each object and then apply the privacy of every
+  // field which has field privacy and set the property to null if the field is not visible to the viewer
+  // The underlying column is no longer in the `data` field of the object
+  // 2: generate accessors for the field and all callsites which reference that field will use that.
+  // the privacy will be evaluated on demand when needed
+
+  // default is on_demand
+  fieldPrivacyEvaluated?: fieldPrivacyEvaluated;
 }
 
 interface PrettierConfig {

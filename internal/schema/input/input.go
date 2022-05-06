@@ -125,6 +125,7 @@ type Field struct {
 	DisableUserGraphQLEditable bool `json:"disableUserGraphQLEditable,omitempty"`
 	HasDefaultValueOnCreate    bool `json:"hasDefaultValueOnCreate,omitempty"`
 	HasDefaultValueOnEdit      bool `json:"hasDefaultValueOnEdit,omitempty"`
+	HasFieldPrivacy            bool `json:"hasFieldPrivacy"`
 
 	Polymorphic         *PolymorphicOptions `json:"polymorphic,omitempty"`
 	DerivedWhenEmbedded bool                `json:"derivedWhenEmbedded,omitempty"`
