@@ -40,7 +40,7 @@ import DB from "./core/db";
 export * from "./core/loaders";
 export { DB };
 
-// TODO figure out if this should be its own
+// TODO figure out if this should be its own import path e.g. @snowtop/ent/privacy
 export {
   EntPrivacyError,
   AlwaysAllowRule,
