@@ -497,12 +497,6 @@ func (f *Field) CamelCaseName() string {
 }
 
 func (f *Field) TsType() string {
-	if f.EvolvedIDField() {
-		if f.Nullable() {
-			return (&enttype.NullableIDType{}).GetTSType()
-		}
-		return (&enttype.IDType{}).GetTSType()
-	}
 	return f.fieldType.GetTSType()
 }
 
