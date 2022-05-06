@@ -1,6 +1,6 @@
 {{reserveImport "./const" "NodeType" }}
 {{ reserveImport .Package.PackagePath "ObjectLoaderFactory" }}
-{{ reserveImport .Package.SchemaPackagePath "getTransformedReadClause" }}
+{{ reserveImport .Package.SchemaPackagePath "getTransformedReadClause" "getObjectLoaderProperties"}}
 
 {{ range .Schema.Nodes -}}
 {{ with .NodeData}}
@@ -25,7 +25,7 @@
         key: {{.Pkey}},
         {{ if .AddTransformedClause -}}
           {{ reserveDefaultImport $nodeData.GetSchemaPath $nodeData.Node -}}
-          clause: {{useImport "getTransformedReadClause"}}({{useImport $nodeData.Node}}),
+          ... {{useImport "getObjectLoaderProperties"}}({{useImport $nodeData.Node}}),
         {{ end -}}
       });
     {{end}}

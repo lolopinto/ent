@@ -350,7 +350,7 @@ export interface FieldOptions {
   // The underlying column is no longer in the `data` field of the object
   // 2: generate accessors for the field and all callsites which reference that field will use that.
   // the privacy will be evaluated on demand when needed
-  privacyPolicy?: PrivacyPolicy;
+  privacyPolicy?: PrivacyPolicy | (() => PrivacyPolicy);
 }
 
 export interface PolymorphicOptions {
@@ -434,7 +434,13 @@ export function getFieldsWithPrivacy(
         addFields(derivedFields);
       }
       if (field.privacyPolicy) {
-        m.set(getStorageKey(field), field.privacyPolicy);
+        let privacyPolicy: PrivacyPolicy;
+        if (typeof field.privacyPolicy === "function") {
+          privacyPolicy = field.privacyPolicy();
+        } else {
+          privacyPolicy = field.privacyPolicy;
+        }
+        m.set(getStorageKey(field), privacyPolicy);
       }
     }
   }
@@ -466,6 +472,26 @@ export function getTransformedReadClause(
   }
 
   return;
+}
+
+interface objectLoaderOptions {
+  clause?: () => Clause | undefined;
+  instanceKey?: string;
+}
+
+export function getObjectLoaderProperties(
+  value: SchemaInputType,
+): objectLoaderOptions | undefined {
+  let clause = getTransformedReadClause(value);
+  if (!clause) {
+    return;
+  }
+  const schema = getSchema(value);
+
+  return {
+    clause: () => clause,
+    instanceKey: `${schema.tableName}:transformedReadClause`,
+  };
 }
 
 export function getTransformedUpdateOp<T extends Ent>(

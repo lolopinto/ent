@@ -684,7 +684,15 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
     const opts = loader.getOptions();
     let cls = clause.Eq(options.key, id);
     if (opts.clause) {
-      cls = clause.And(opts.clause, cls);
+      let optionClause: clause.Clause | undefined;
+      if (typeof opts.clause === "function") {
+        optionClause = opts.clause();
+      } else {
+        optionClause = opts.clause;
+      }
+      if (optionClause) {
+        cls = clause.And(optionClause, cls);
+      }
     }
 
     const query = buildQuery({

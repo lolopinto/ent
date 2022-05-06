@@ -36,6 +36,7 @@ QueryRecorder.mockPool(Pool);
 
 const ml = new MockLogs();
 
+// TODO tests for clause as a function
 const getNewLoader = (context: boolean = true) => {
   return new ObjectLoader(
     {
