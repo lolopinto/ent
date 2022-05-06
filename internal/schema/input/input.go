@@ -625,9 +625,49 @@ func (c *Constraint) GetConstraintTypeString() string {
 
 type Index struct {
 	// Note that anytime anything changes here, have to update indexEqual in compare.go
-	Name    string   `json:"name,omitempty"`
-	Columns []string `json:"columns,omitempty"`
-	Unique  bool     `json:"unique,omitempty"`
+	Name     string    `json:"name,omitempty"`
+	Columns  []string  `json:"columns,omitempty"`
+	Unique   bool      `json:"unique,omitempty"`
+	FullText *FullText `json:"fullText,omitempty"`
+}
+
+type FullTextLanguage string
+
+const (
+	// rename to search config?
+	English FullTextLanguage = "english"
+	French  FullTextLanguage = "french"
+	German  FullTextLanguage = "german"
+	Simple  FullTextLanguage = "simple"
+)
+
+type IndexType string
+
+const (
+	Gin  IndexType = "gin"
+	Gist IndexType = "gist"
+)
+
+type FullTextWeight struct {
+	A []string `json:"A,omitempty"`
+	B []string `json:"B,omitempty"`
+	C []string `json:"C,omitempty"`
+	D []string `json:"D,omitempty"`
+}
+
+func (w *FullTextWeight) HasWeights() bool {
+	return len(w.A) > 0 ||
+		len(w.B) > 0 ||
+		len(w.C) > 0 ||
+		len(w.D) > 0
+}
+
+type FullText struct {
+	GeneratedColumnName string           `json:"generatedColumnName,omitempty"`
+	Language            FullTextLanguage `json:"language,omitempty"`
+	LanguageColumn      string           `json:"languageColumn,omitempty"`
+	IndexType           IndexType        `json:"indexType,omitempty"`
+	Weights             *FullTextWeight  `json:"weights,omitempty"`
 }
 
 type ConstraintType string

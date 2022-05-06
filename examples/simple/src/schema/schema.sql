@@ -224,10 +224,13 @@ CREATE TABLE users (
     fun_uuids UUID[], 
     new_col TEXT, 
     new_col_2 TEXT, 
+    name_idx TSVECTOR GENERATED ALWAYS AS (to_tsvector('simple', coalesce(first_name, '') || ' ' || coalesce(last_name, ''))) STORED, 
     CONSTRAINT users_id_pkey PRIMARY KEY (id), 
     CONSTRAINT users_unique_email_address UNIQUE (email_address), 
     CONSTRAINT users_unique_phone_number UNIQUE (phone_number)
 );
+
+CREATE INDEX user_name_idx ON users USING gin (name_idx);
 
 CREATE TABLE auth_codes (
     id UUID NOT NULL, 

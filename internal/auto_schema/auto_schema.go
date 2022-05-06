@@ -2,7 +2,6 @@ package auto_schema
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -10,16 +9,19 @@ import (
 	"strings"
 
 	"github.com/lolopinto/ent/ent/data"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/util"
+	"github.com/pkg/errors"
 )
 
 const WHICH_ERROR = "Warning: the which -a system utility is required for Pipenv to find Python installations properly.\n  Please install it."
 
-func RunPythonCommand(pathToConfigs string, extraArgs ...string) error {
-	return RunPythonCommandWriter(pathToConfigs, os.Stdout, extraArgs...)
+func RunPythonCommand(cfg codegenapi.Config, extraArgs ...string) error {
+	return RunPythonCommandWriter(cfg, os.Stdout, extraArgs...)
 }
 
-func RunPythonCommandWriter(pathToConfigs string, w io.Writer, extraArgs ...string) error {
+func RunPythonCommandWriter(cfg codegenapi.Config, w io.Writer, extraArgs ...string) error {
+	pathToConfigs := cfg.GetRootPathToConfigs()
 	local := os.Getenv("LOCAL_AUTO_SCHEMA") == "true"
 
 	executable := "auto_schema"
@@ -27,6 +29,11 @@ func RunPythonCommandWriter(pathToConfigs string, w io.Writer, extraArgs ...stri
 		fmt.Sprintf("-s=%s", pathToConfigs),
 		fmt.Sprintf("-e=%s", data.GetSQLAlchemyDatabaseURIgo()),
 	}
+
+	if cfg.DebugMode() {
+		args = append(args, "--debug")
+	}
+
 	if local {
 		executable = "pipenv"
 		args = append(
@@ -51,21 +58,26 @@ func RunPythonCommandWriter(pathToConfigs string, w io.Writer, extraArgs ...stri
 	var berr bytes.Buffer
 	cmd.Stderr = &berr
 	err := cmd.Run()
+	errMsg := trimErrorMsg(&berr, local)
 	if err != nil {
+		if len(errMsg) != 0 {
+			return errors.Wrap(err, errMsg)
+		}
 		return err
 	}
 
-	errMsg := strings.TrimSpace(berr.String())
 	if len(errMsg) != 0 {
-		// TODO https://github.com/lolopinto/ent/issues/763
-		// ignore WHICH_ERROR, make sure real errors are shown
-		if local {
-			errMsg = strings.TrimPrefix(errMsg, WHICH_ERROR)
-			if len(errMsg) == 0 {
-				return nil
-			}
-		}
 		return errors.New(errMsg)
 	}
 	return nil
+}
+
+func trimErrorMsg(berr *bytes.Buffer, local bool) string {
+	errMsg := strings.TrimSpace(berr.String())
+	if !local {
+		return errMsg
+	}
+	// TODO https://github.com/lolopinto/ent/issues/763
+	// ignore WHICH_ERROR, make sure real errors are shown
+	return strings.TrimPrefix(errMsg, WHICH_ERROR)
 }

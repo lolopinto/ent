@@ -13,6 +13,7 @@ import (
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/auto_schema"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema/base"
@@ -34,7 +35,7 @@ func (s *Step) Name() string {
 
 func (s *Step) PreProcessData(processor *codegen.Processor) error {
 	// generate python schema file and then make changes to underlying db
-	db := newDBSchema(processor.Schema, processor.Config.GetRootPathToConfigs())
+	db := newDBSchema(processor.Schema, processor.Config)
 	s.db = db
 
 	return db.processSchema(processor.Config)
@@ -214,7 +215,7 @@ type indexConstraint struct {
 	name      string
 }
 
-func (constraint *indexConstraint) getConstraintString() string {
+func (constraint *indexConstraint) getInfo() (string, []string) {
 	idxNameParts := []string{
 		constraint.tableName,
 	}
@@ -230,10 +231,14 @@ func (constraint *indexConstraint) getConstraintString() string {
 		idxName = base.GetNameFromParts(idxNameParts)
 	}
 
-	args := []string{
-		strconv.Quote(idxName),
-	}
-	args = append(args, colNames...)
+	return strconv.Quote(idxName), colNames
+}
+
+func (constraint *indexConstraint) getConstraintString() string {
+	quotedName, quotedColNames := constraint.getInfo()
+
+	args := []string{quotedName}
+	args = append(args, quotedColNames...)
 	if constraint.unique {
 		args = append(args, "unique=True")
 	}
@@ -241,6 +246,122 @@ func (constraint *indexConstraint) getConstraintString() string {
 	return fmt.Sprintf(
 		"sa.Index(%s)", strings.Join(args, ", "),
 	)
+}
+
+type fullTextConstraint struct {
+	*indexConstraint
+	fullText *input.FullText
+}
+
+func getSearchConfigFromIndex(fullText *input.FullText) string {
+	if fullText.LanguageColumn == "" {
+		return fmt.Sprintf("'%s'", fullText.Language)
+	} else {
+		return fmt.Sprintf("%s::reconfig", fullText.LanguageColumn)
+	}
+}
+
+func getPostgresUsingInternals(fullText *input.FullText, cols []string, weights *input.FullTextWeight) string {
+	searchConfig := getSearchConfigFromIndex(fullText)
+
+	if weights.HasWeights() {
+		used := make(map[string]bool)
+		parts := []string{}
+		processWeights := func(weights []string, weight string) {
+			for _, col := range weights {
+				used[col] = true
+				parts = append(parts,
+					fmt.Sprintf(
+						"setweight(to_tsvector(%s, coalesce(%s, '')), '%s')",
+						searchConfig,
+						col,
+						weight,
+					),
+				)
+			}
+		}
+		processWeights(weights.A, "A")
+		processWeights(weights.B, "B")
+		processWeights(weights.C, "C")
+		processWeights(weights.D, "D")
+
+		for _, col := range cols {
+			if used[col] {
+				continue
+			}
+			parts = append(parts,
+				fmt.Sprintf(
+					"to_tsvector(%s, coalesce(%s, ''))",
+					searchConfig,
+					col,
+				),
+			)
+		}
+
+		return fmt.Sprintf(
+			"(%s)",
+			strings.Join(parts, " || "),
+		)
+
+	}
+
+	parts := make([]string, len(cols))
+	for idx, col := range cols {
+		parts[idx] = fmt.Sprintf("coalesce(%s, '')", col)
+	}
+
+	return fmt.Sprintf(
+		"to_tsvector(%s, %s)",
+		searchConfig,
+		strings.Join(parts, " || ' ' || "),
+	)
+}
+
+func (constraint *fullTextConstraint) getConstraintString() string {
+	quotedName, quotedColNames := constraint.getInfo()
+	postgresql_using := "gin"
+
+	fullText := constraint.fullText
+	if fullText.IndexType != "" {
+		postgresql_using = string(constraint.fullText.IndexType)
+	}
+
+	// simple just use sa.Index since that works
+	if fullText.GeneratedColumnName != "" {
+		args := []string{
+			quotedName,
+			strconv.Quote(fullText.GeneratedColumnName),
+			fmt.Sprintf("postgresql_using='%s'", postgresql_using),
+		}
+		return fmt.Sprintf(
+			"sa.Index(%s)", strings.Join(args, ", "),
+		)
+	}
+
+	// ignore weights for now
+	if fullText.Weights != nil && fullText.Weights.HasWeights() {
+		panic("don't support weights when there's no generated column name")
+	}
+
+	cols := make([]string, len(constraint.dbColumns))
+	for i, col := range constraint.dbColumns {
+		cols[i] = col.DBColName
+	}
+	// if we ever support weights here, need to transform to db names
+	postgresql_using_internals := getPostgresUsingInternals(constraint.fullText, cols, &input.FullTextWeight{})
+
+	kvPairs := []string{
+		getKVPair("postgresql_using", strconv.Quote(postgresql_using)),
+		getKVPair("postgresql_using_internals", strconv.Quote(postgresql_using_internals)),
+	}
+	if len(quotedColNames) == 1 {
+		kvPairs = append(kvPairs,
+			getKVPair("column", quotedColNames[0]))
+	} else {
+		kvPairs = append(kvPairs,
+			getKVPair("columns", fmt.Sprintf("[%s]", strings.Join(quotedColNames, ", "))))
+	}
+	return fmt.Sprintf("FullTextIndex(%s, info=%s)", quotedName, getKVDict(kvPairs))
 }
 
 type checkConstraint struct {
@@ -252,14 +373,14 @@ func (constraint *checkConstraint) getConstraintString() string {
 	return fmt.Sprintf("sa.CheckConstraint(%s, %s)", strconv.Quote(constraint.condition), strconv.Quote(constraint.name))
 }
 
-func newDBSchema(schema *schema.Schema, pathToConfigs string) *dbSchema {
+func newDBSchema(schema *schema.Schema, cfg codegenapi.Config) *dbSchema {
 	configTableMap := make(map[string]*dbTable)
 	tableMap := make(map[string]*dbTable)
 	return &dbSchema{
 		schema:         schema,
 		configTableMap: configTableMap,
 		tableMap:       tableMap,
-		pathToConfigs:  pathToConfigs,
+		cfg:            cfg,
 	}
 }
 
@@ -268,7 +389,7 @@ type dbSchema struct {
 	schema         *schema.Schema
 	configTableMap map[string]*dbTable
 	tableMap       map[string]*dbTable
-	pathToConfigs  string
+	cfg            codegenapi.Config
 }
 
 func (s *dbSchema) getTableForNode(nodeData *schema.NodeData) *dbTable {
@@ -285,6 +406,7 @@ func (s *dbSchema) getTableForNode(nodeData *schema.NodeData) *dbTable {
 
 func (s *dbSchema) createTableForNode(nodeData *schema.NodeData) *dbTable {
 	var columns []*dbColumn
+	colMap := make(map[string]*dbColumn)
 	var constraints []dbConstraint
 
 	for _, f := range nodeData.FieldInfo.Fields {
@@ -292,6 +414,15 @@ func (s *dbSchema) createTableForNode(nodeData *schema.NodeData) *dbTable {
 			continue
 		}
 		column := s.getColumnInfoForField(f, nodeData, &constraints)
+		columns = append(columns, column)
+		colMap[column.EntFieldName] = column
+	}
+
+	for _, index := range nodeData.Indices {
+		column := s.getGeneratedColumnFromIndex(nodeData, index, colMap)
+		if column == nil {
+			continue
+		}
 		columns = append(columns, column)
 	}
 
@@ -337,13 +468,22 @@ func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbCo
 		if err != nil {
 			return err
 		}
+
 		constraint := &indexConstraint{
 			dbColumns: cols,
 			tableName: nodeData.GetTableName(),
 			unique:    index.Unique,
 			name:      index.Name,
 		}
-		*constraints = append(*constraints, constraint)
+		if index.FullText != nil {
+			fullText := &fullTextConstraint{
+				indexConstraint: constraint,
+				fullText:        index.FullText,
+			}
+			*constraints = append(*constraints, fullText)
+		} else {
+			*constraints = append(*constraints, constraint)
+		}
 	}
 	return nil
 }
@@ -424,8 +564,11 @@ func (s *dbSchema) makeDBChanges(cfg *codegen.Config) error {
 			"--file",
 			filepath.Join(cfg.GetAbsPathToRoot(), file),
 		}
+		if db := cfg.DatabaseToCompareTo(); db != "" {
+			extraArgs = append(extraArgs, "--empty_database", db)
+		}
 	}
-	return auto_schema.RunPythonCommand(s.pathToConfigs, extraArgs...)
+	return auto_schema.RunPythonCommand(s.cfg, extraArgs...)
 }
 
 func UpgradeDB(cfg *codegen.Config, revision string, sql bool) error {
@@ -433,7 +576,7 @@ func UpgradeDB(cfg *codegen.Config, revision string, sql bool) error {
 	if sql {
 		extraArgs = append(extraArgs, "--sql=true")
 	}
-	return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), extraArgs...)
+	return auto_schema.RunPythonCommand(cfg, extraArgs...)
 }
 
 func DowngradeDB(cfg *codegen.Config, revision string, keepSchemaFiles bool) error {
@@ -441,23 +584,23 @@ func DowngradeDB(cfg *codegen.Config, revision string, keepSchemaFiles bool) err
 	if keepSchemaFiles {
 		extraArgs = append(extraArgs, "--keep_schema_files")
 	}
-	return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), extraArgs...)
+	return auto_schema.RunPythonCommand(cfg, extraArgs...)
 }
 
 func Squash(cfg *codegen.Config, squash int) error {
 	extraArgs := []string{fmt.Sprintf("--squash=%d", squash)}
-	return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), extraArgs...)
+	return auto_schema.RunPythonCommand(cfg, extraArgs...)
 }
 
 func FixEdges(cfg *codegen.Config) error {
-	return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), "-f=True")
+	return auto_schema.RunPythonCommand(cfg, "-f=True")
 }
 
 func RunAlembicCommand(cfg *codegen.Config, command string, args ...string) error {
 	if len(args) == 0 {
-		return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), fmt.Sprintf("--%s", command))
+		return auto_schema.RunPythonCommand(cfg, fmt.Sprintf("--%s", command))
 	} else {
-		return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), fmt.Sprintf("--%s=%s", command, strings.Join(args, ",")))
+		return auto_schema.RunPythonCommand(cfg, fmt.Sprintf("--%s=%s", command, strings.Join(args, ",")))
 	}
 }
 
@@ -472,7 +615,7 @@ func (s *dbSchema) writeSchemaFile(cfg *codegen.Config) error {
 			Data:              data,
 			AbsPathToTemplate: util.GetAbsolutePath("db_schema.tmpl"),
 			TemplateName:      "db_schema.tmpl",
-			PathToFile:        fmt.Sprintf("%s/schema.py", s.pathToConfigs),
+			PathToFile:        fmt.Sprintf("%s/schema.py", s.cfg.GetRootPathToConfigs()),
 		},
 	)
 }
@@ -596,17 +739,21 @@ func (s *dbSchema) getSchemaForTemplate() (*dbSchemaTemplate, error) {
 
 func (s *dbSchema) getEdgeLine(edge *ent.AssocEdgeData) string {
 	kvPairs := []string{
-		s.getEdgeKVPair("edge_name", strconv.Quote(edge.EdgeName)),
-		s.getEdgeKVPair("edge_type", strconv.Quote(string(edge.EdgeType))),
-		s.getEdgeKVPair("edge_table", strconv.Quote(edge.EdgeTable)),
-		s.getEdgeKVPair("symmetric_edge", s.getSymmetricEdgeValInEdge(edge)),
-		s.getEdgeKVPair("inverse_edge_type", s.getInverseEdgeValInEdge(edge)),
+		getKVPair("edge_name", strconv.Quote(edge.EdgeName)),
+		getKVPair("edge_type", strconv.Quote(string(edge.EdgeType))),
+		getKVPair("edge_table", strconv.Quote(edge.EdgeTable)),
+		getKVPair("symmetric_edge", s.getSymmetricEdgeValInEdge(edge)),
+		getKVPair("inverse_edge_type", s.getInverseEdgeValInEdge(edge)),
 	}
 
+	return getKVDict(kvPairs)
+}
+
+func getKVDict(kvPairs []string) string {
 	return fmt.Sprintf("{%s}", strings.Join(kvPairs, ", "))
 }
 
-func (s *dbSchema) getEdgeKVPair(key, val string) string {
+func getKVPair(key, val string) string {
 	return strconv.Quote(key) + ":" + val
 }
 
@@ -772,6 +919,47 @@ func (s *dbSchema) getColumnInfoForField(f *field.Field, nodeData *schema.NodeDa
 
 	// index is still on a per field type so we leave this here
 	s.addIndexConstraint(f, nodeData, col, constraints)
+
+	return col
+}
+
+func (s *dbSchema) getGeneratedColumnFromIndex(nodeData *schema.NodeData, index *input.Index, colMap map[string]*dbColumn) *dbColumn {
+	if index.FullText == nil || index.FullText.GeneratedColumnName == "" {
+		return nil
+	}
+
+	// convert to db col names
+	cols := make([]string, len(index.Columns))
+	for i, v := range index.Columns {
+		cols[i] = colMap[v].DBColName
+	}
+
+	weights := &input.FullTextWeight{}
+	if index.FullText.Weights != nil {
+		convertWeights := func(input []string) []string {
+			output := make([]string, len(input))
+			for i, v := range input {
+				output[i] = colMap[v].DBColName
+			}
+			return output
+		}
+		weights.A = convertWeights(index.FullText.Weights.A)
+		weights.B = convertWeights(index.FullText.Weights.B)
+		weights.C = convertWeights(index.FullText.Weights.C)
+		weights.D = convertWeights(index.FullText.Weights.D)
+	}
+
+	postgresql_using_internals := getPostgresUsingInternals(index.FullText, cols, weights)
+
+	col := &dbColumn{
+		DBColName: index.FullText.GeneratedColumnName,
+		DBType:    "postgresql.TSVECTOR",
+		extraParts: []string{
+			fmt.Sprintf("sa.Computed(%s)",
+				strconv.Quote(postgresql_using_internals),
+			),
+		},
+	}
 
 	return col
 }

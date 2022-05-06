@@ -55,7 +55,7 @@ tsent alembic history --verbose --rev_range rev1:current
 
 		if command == "history" {
 			args[0] = "--history"
-			return auto_schema.RunPythonCommand(cfg.GetRootPathToConfigs(), args...)
+			return auto_schema.RunPythonCommand(cfg, args...)
 		}
 
 		return db.RunAlembicCommand(cfg, args[0], args[1:]...)

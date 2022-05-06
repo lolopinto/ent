@@ -457,6 +457,9 @@ def make_changes_and_restore(
     if post_r2_func is not None:
         post_r2_func(r2)
 
+    # run again. should be a no-op
+    r2.run()
+
     # downgrade and upgrade back should work
     r2.downgrade(delete_files=False, revision='-1')
     r2.upgrade()

@@ -15,6 +15,7 @@ import {
   BigIntegerType,
   JSONBListType,
   UUIDListType,
+  Index,
 } from "@snowtop/ent/schema";
 import { EmailType } from "@snowtop/ent-email";
 import { PasswordType } from "@snowtop/ent-password";
@@ -132,6 +133,18 @@ export default class User extends BaseEntSchema implements Schema {
       name: "selfContact",
       unique: true,
       schemaName: "Contact",
+    },
+  ];
+
+  indices: Index[] = [
+    {
+      name: "user_name_idx",
+      columns: ["FirstName", "LastName"],
+      fulltext: {
+        language: "simple",
+        indexType: "gin",
+        generatedColumnName: "name_idx",
+      },
     },
   ];
 

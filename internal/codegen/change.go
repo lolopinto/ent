@@ -23,6 +23,6 @@ type deprecatedChange struct {
 // get db changes and store in Buffer (output of auto_schema --changes)
 func dbChanges(cfg *Config) (*bytes.Buffer, error) {
 	var buf bytes.Buffer
-	err := auto_schema.RunPythonCommandWriter(cfg.GetRootPathToConfigs(), &buf, "--changes")
+	err := auto_schema.RunPythonCommandWriter(cfg, &buf, "--changes")
 	return &buf, err
 }

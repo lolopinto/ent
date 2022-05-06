@@ -303,6 +303,256 @@ describe("postgres", () => {
       expect(cls.instanceKey()).toEqual("in:id:1,2,3");
     });
   });
+
+  describe("array", () => {
+    test("eq", () => {
+      const cls = clause.ArrayEq("ids", 3);
+      expect(cls.clause(1)).toBe("$1 = ANY(ids)");
+      expect(cls.values()).toStrictEqual([3]);
+      expect(cls.logValues()).toStrictEqual([3]);
+      expect(cls.instanceKey()).toEqual("ids=3");
+    });
+
+    test("ne", () => {
+      const cls = clause.ArrayNotEq("ids", 3);
+      expect(cls.clause(1)).toBe("$1 != ANY(ids)");
+      expect(cls.values()).toStrictEqual([3]);
+      expect(cls.logValues()).toStrictEqual([3]);
+      expect(cls.instanceKey()).toEqual("ids!=3");
+    });
+
+    test("greater", () => {
+      const cls = clause.ArrayGreater("ids", 3);
+      expect(cls.clause(1)).toBe("$1 > ANY(ids)");
+      expect(cls.values()).toStrictEqual([3]);
+      expect(cls.logValues()).toStrictEqual([3]);
+      expect(cls.instanceKey()).toEqual("ids>3");
+    });
+
+    test("less", () => {
+      const cls = clause.ArrayLess("ids", 3);
+      expect(cls.clause(1)).toBe("$1 < ANY(ids)");
+      expect(cls.values()).toStrictEqual([3]);
+      expect(cls.logValues()).toStrictEqual([3]);
+      expect(cls.instanceKey()).toEqual("ids<3");
+    });
+
+    test("greater eq", () => {
+      const cls = clause.ArrayGreaterEq("ids", 3);
+      expect(cls.clause(1)).toBe("$1 >= ANY(ids)");
+      expect(cls.values()).toStrictEqual([3]);
+      expect(cls.logValues()).toStrictEqual([3]);
+      expect(cls.instanceKey()).toEqual("ids>=3");
+    });
+
+    test("less eq", () => {
+      const cls = clause.ArrayLessEq("ids", 3);
+      expect(cls.clause(1)).toBe("$1 <= ANY(ids)");
+      expect(cls.values()).toStrictEqual([3]);
+      expect(cls.logValues()).toStrictEqual([3]);
+      expect(cls.instanceKey()).toEqual("ids<=3");
+    });
+
+    test("tsquery string", () => {
+      const cls = clause.TsQuery("name_idx", "value");
+      expect(cls.clause(1)).toBe("name_idx @@ to_tsquery('english', $1)");
+      expect(cls.values()).toStrictEqual(["value"]);
+      expect(cls.logValues()).toStrictEqual(["value"]);
+      expect(cls.instanceKey()).toEqual("name_idx@@to_tsquery:english:value");
+    });
+
+    test("tsquery complex", () => {
+      const cls = clause.TsQuery("name_idx", {
+        language: "simple",
+        value: "value",
+      });
+      expect(cls.clause(1)).toBe("name_idx @@ to_tsquery('simple', $1)");
+      expect(cls.values()).toStrictEqual(["value"]);
+      expect(cls.logValues()).toStrictEqual(["value"]);
+      expect(cls.instanceKey()).toEqual("name_idx@@to_tsquery:simple:value");
+    });
+
+    test("plainto_tsquery string", () => {
+      const cls = clause.PlainToTsQuery("name_idx", "value");
+      expect(cls.clause(1)).toBe("name_idx @@ plainto_tsquery('english', $1)");
+      expect(cls.values()).toStrictEqual(["value"]);
+      expect(cls.logValues()).toStrictEqual(["value"]);
+      expect(cls.instanceKey()).toEqual(
+        "name_idx@@plainto_tsquery:english:value",
+      );
+    });
+
+    test("plainto_tsquery complex", () => {
+      const cls = clause.PlainToTsQuery("name_idx", {
+        language: "simple",
+        value: "value",
+      });
+      expect(cls.clause(1)).toBe("name_idx @@ plainto_tsquery('simple', $1)");
+      expect(cls.values()).toStrictEqual(["value"]);
+      expect(cls.logValues()).toStrictEqual(["value"]);
+      expect(cls.instanceKey()).toEqual(
+        "name_idx@@plainto_tsquery:simple:value",
+      );
+    });
+
+    test("phraseto_tsquery string", () => {
+      const cls = clause.PhraseToTsQuery("name_idx", "value");
+      expect(cls.clause(1)).toBe("name_idx @@ phraseto_tsquery('english', $1)");
+      expect(cls.values()).toStrictEqual(["value"]);
+      expect(cls.logValues()).toStrictEqual(["value"]);
+      expect(cls.instanceKey()).toEqual(
+        "name_idx@@phraseto_tsquery:english:value",
+      );
+    });
+
+    test("phraseto_tsquery complex", () => {
+      const cls = clause.PhraseToTsQuery("name_idx", {
+        language: "simple",
+        value: "value",
+      });
+      expect(cls.clause(1)).toBe("name_idx @@ phraseto_tsquery('simple', $1)");
+      expect(cls.values()).toStrictEqual(["value"]);
+      expect(cls.logValues()).toStrictEqual(["value"]);
+      expect(cls.instanceKey()).toEqual(
+        "name_idx@@phraseto_tsquery:simple:value",
+      );
+    });
+
+    test("websearch_to_tsquery string", () => {
+      const cls = clause.WebsearchToTsQuery("name_idx", "value");
+      expect(cls.clause(1)).toBe(
+        "name_idx @@ websearch_to_tsquery('english', $1)",
+      );
+      expect(cls.values()).toStrictEqual(["value"]);
+      expect(cls.logValues()).toStrictEqual(["value"]);
+      expect(cls.instanceKey()).toEqual(
+        "name_idx@@websearch_to_tsquery:english:value",
+      );
+    });
+
+    test("websearch_to_tsquery complex", () => {
+      const cls = clause.WebsearchToTsQuery("name_idx", {
+        language: "simple",
+        value: "value",
+      });
+      expect(cls.clause(1)).toBe(
+        "name_idx @@ websearch_to_tsquery('simple', $1)",
+      );
+      expect(cls.values()).toStrictEqual(["value"]);
+      expect(cls.logValues()).toStrictEqual(["value"]);
+      expect(cls.instanceKey()).toEqual(
+        "name_idx@@websearch_to_tsquery:simple:value",
+      );
+    });
+
+    test("tsvectorcol_tsquery string", () => {
+      const cls = clause.TsVectorColTsQuery("name_idx", "value");
+      expect(cls.clause(1)).toBe(
+        "to_tsvector(name_idx) @@ to_tsquery('english', $1)",
+      );
+      expect(cls.values()).toStrictEqual(["value"]);
+      expect(cls.logValues()).toStrictEqual(["value"]);
+      expect(cls.instanceKey()).toEqual(
+        "to_tsvector(name_idx)@@to_tsquery:english:value",
+      );
+    });
+
+    test("tsvectorcol_tsquery complex", () => {
+      const cls = clause.TsVectorColTsQuery("name_idx", {
+        language: "simple",
+        value: "value",
+      });
+      expect(cls.clause(1)).toBe(
+        "to_tsvector(name_idx) @@ to_tsquery('simple', $1)",
+      );
+      expect(cls.values()).toStrictEqual(["value"]);
+      expect(cls.logValues()).toStrictEqual(["value"]);
+      expect(cls.instanceKey()).toEqual(
+        "to_tsvector(name_idx)@@to_tsquery:simple:value",
+      );
+    });
+
+    test("tsvectorcol_plainto_tsquery string", () => {
+      const cls = clause.TsVectorPlainToTsQuery("name_idx", "value");
+      expect(cls.clause(1)).toBe(
+        "to_tsvector(name_idx) @@ plainto_tsquery('english', $1)",
+      );
+      expect(cls.values()).toStrictEqual(["value"]);
+      expect(cls.logValues()).toStrictEqual(["value"]);
+      expect(cls.instanceKey()).toEqual(
+        "to_tsvector(name_idx)@@plainto_tsquery:english:value",
+      );
+    });
+
+    test("tsvectorcol_plainto_tsquery complex", () => {
+      const cls = clause.TsVectorPlainToTsQuery("name_idx", {
+        language: "simple",
+        value: "value",
+      });
+      expect(cls.clause(1)).toBe(
+        "to_tsvector(name_idx) @@ plainto_tsquery('simple', $1)",
+      );
+      expect(cls.values()).toStrictEqual(["value"]);
+      expect(cls.logValues()).toStrictEqual(["value"]);
+      expect(cls.instanceKey()).toEqual(
+        "to_tsvector(name_idx)@@plainto_tsquery:simple:value",
+      );
+    });
+
+    test("tsvectorcol__phraseto_tsquery string", () => {
+      const cls = clause.TsVectorPhraseToTsQuery("name_idx", "value");
+      expect(cls.clause(1)).toBe(
+        "to_tsvector(name_idx) @@ phraseto_tsquery('english', $1)",
+      );
+      expect(cls.values()).toStrictEqual(["value"]);
+      expect(cls.logValues()).toStrictEqual(["value"]);
+      expect(cls.instanceKey()).toEqual(
+        "to_tsvector(name_idx)@@phraseto_tsquery:english:value",
+      );
+    });
+
+    test("tsvectorcol_phraseto_tsquery complex", () => {
+      const cls = clause.TsVectorPhraseToTsQuery("name_idx", {
+        language: "simple",
+        value: "value",
+      });
+      expect(cls.clause(1)).toBe(
+        "to_tsvector(name_idx) @@ phraseto_tsquery('simple', $1)",
+      );
+      expect(cls.values()).toStrictEqual(["value"]);
+      expect(cls.logValues()).toStrictEqual(["value"]);
+      expect(cls.instanceKey()).toEqual(
+        "to_tsvector(name_idx)@@phraseto_tsquery:simple:value",
+      );
+    });
+
+    test("tsvectorcol_websearch_to_tsquery string", () => {
+      const cls = clause.TsVectorWebsearchToTsQuery("name_idx", "value");
+      expect(cls.clause(1)).toBe(
+        "to_tsvector(name_idx) @@ websearch_to_tsquery('english', $1)",
+      );
+      expect(cls.values()).toStrictEqual(["value"]);
+      expect(cls.logValues()).toStrictEqual(["value"]);
+      expect(cls.instanceKey()).toEqual(
+        "to_tsvector(name_idx)@@websearch_to_tsquery:english:value",
+      );
+    });
+
+    test("websearch_to_tsquery complex", () => {
+      const cls = clause.TsVectorWebsearchToTsQuery("name_idx", {
+        language: "simple",
+        value: "value",
+      });
+      expect(cls.clause(1)).toBe(
+        "to_tsvector(name_idx) @@ websearch_to_tsquery('simple', $1)",
+      );
+      expect(cls.values()).toStrictEqual(["value"]);
+      expect(cls.logValues()).toStrictEqual(["value"]);
+      expect(cls.instanceKey()).toEqual(
+        "to_tsvector(name_idx)@@websearch_to_tsquery:simple:value",
+      );
+    });
+  });
 });
 
 describe("sqlite", () => {

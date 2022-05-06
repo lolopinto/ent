@@ -2299,6 +2299,495 @@ func TestCompareSchemaRemoveNodePlusActionsAndFields(t *testing.T) {
 	}, user[2])
 }
 
+func TestAddIndex(t *testing.T) {
+	fi, err := field.NewFieldInfoFromInputs(
+		&codegenapi.DummyConfig{},
+		[]*input.Field{
+			{
+				Name: "email",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+			},
+		}, &field.Options{})
+	require.Nil(t, err)
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"UserConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					FieldInfo:   fi,
+				},
+			},
+		},
+	}
+
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"UserConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					FieldInfo:   fi,
+					Indices: []*input.Index{
+						{
+							Name:    "unique_email_idx",
+							Unique:  true,
+							Columns: []string{"email"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 2)
+
+	verifyChange(t, change.Change{
+		Change: change.AddIndex,
+		Name:   "unique_email_idx",
+	}, user[0])
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[1])
+}
+
+func TestRemoveIndex(t *testing.T) {
+	fi, err := field.NewFieldInfoFromInputs(
+		&codegenapi.DummyConfig{},
+		[]*input.Field{
+			{
+				Name: "email",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+			},
+		}, &field.Options{})
+	require.Nil(t, err)
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"UserConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					FieldInfo:   fi,
+					Indices: []*input.Index{
+						{
+							Name:    "unique_email_idx",
+							Unique:  true,
+							Columns: []string{"email"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"UserConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					FieldInfo:   fi,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 2)
+
+	verifyChange(t, change.Change{
+		Change: change.RemoveIndex,
+		Name:   "unique_email_idx",
+	}, user[0])
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[1])
+}
+
+func TestModifyIndex(t *testing.T) {
+	fi, err := field.NewFieldInfoFromInputs(
+		&codegenapi.DummyConfig{},
+		[]*input.Field{
+			{
+				Name: "email",
+				Type: &input.FieldType{
+					DBType: input.String,
+				},
+			},
+		}, &field.Options{})
+	require.Nil(t, err)
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"UserConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					FieldInfo:   fi,
+					Indices: []*input.Index{
+						{
+							Name:    "unique_email_idx",
+							Unique:  true,
+							Columns: []string{"email"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"UserConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("user"),
+					PackageName: "user",
+					FieldInfo:   fi,
+					Indices: []*input.Index{
+						{
+							Name:    "unique_email_idx",
+							Columns: []string{"email"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	user := m["User"]
+	require.Len(t, user, 2)
+
+	verifyChange(t, change.Change{
+		Change: change.ModifyIndex,
+		Name:   "unique_email_idx",
+	}, user[0])
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "User",
+		GraphQLName: "User",
+	}, user[1])
+}
+
+func TestAddConstraint(t *testing.T) {
+	fi, err := field.NewFieldInfoFromInputs(
+		&codegenapi.DummyConfig{},
+		[]*input.Field{
+			{
+				Name: "price",
+				Type: &input.FieldType{
+					DBType: input.Float,
+				},
+			},
+		}, &field.Options{})
+	require.Nil(t, err)
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"ItemConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("item"),
+					PackageName: "item",
+					FieldInfo:   fi,
+				},
+			},
+		},
+	}
+
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"ItemConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("item"),
+					PackageName: "item",
+					FieldInfo:   fi,
+					Constraints: []*input.Constraint{
+						{
+							Name:      "item_positive_price",
+							Type:      input.CheckConstraint,
+							Condition: "price > 0",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	item := m["Item"]
+	require.Len(t, item, 2)
+
+	verifyChange(t, change.Change{
+		Change: change.AddConstraint,
+		Name:   "item_positive_price",
+	}, item[0])
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "Item",
+		GraphQLName: "Item",
+	}, item[1])
+}
+
+func TestRemoveConstraint(t *testing.T) {
+	fi, err := field.NewFieldInfoFromInputs(
+		&codegenapi.DummyConfig{},
+		[]*input.Field{
+			{
+				Name: "price",
+				Type: &input.FieldType{
+					DBType: input.Float,
+				},
+			},
+		}, &field.Options{})
+	require.Nil(t, err)
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"ItemConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("item"),
+					PackageName: "item",
+					FieldInfo:   fi,
+					Constraints: []*input.Constraint{
+						{
+							Name:      "item_positive_price",
+							Type:      input.CheckConstraint,
+							Condition: "price > 0",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"ItemConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("item"),
+					PackageName: "item",
+					FieldInfo:   fi,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	item := m["Item"]
+	require.Len(t, item, 2)
+
+	verifyChange(t, change.Change{
+		Change: change.RemoveConstraint,
+		Name:   "item_positive_price",
+	}, item[0])
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "Item",
+		GraphQLName: "Item",
+	}, item[1])
+}
+
+func TestModifyConstraint(t *testing.T) {
+	fi, err := field.NewFieldInfoFromInputs(
+		&codegenapi.DummyConfig{},
+		[]*input.Field{
+			{
+				Name: "price",
+				Type: &input.FieldType{
+					DBType: input.Float,
+				},
+			},
+			{
+				Name: "discount_price",
+				Type: &input.FieldType{
+					DBType: input.Float,
+				},
+			},
+		}, &field.Options{})
+	require.Nil(t, err)
+
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"ItemConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("item"),
+					PackageName: "item",
+					FieldInfo:   fi,
+					Constraints: []*input.Constraint{
+						{
+							Name:      "item_price_constraint",
+							Type:      input.CheckConstraint,
+							Condition: "price > 0",
+							Columns:   []string{"price"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"ItemConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("item"),
+					PackageName: "item",
+					FieldInfo:   fi,
+					Constraints: []*input.Constraint{
+						{
+							Name:      "item_price_constraint",
+							Type:      input.CheckConstraint,
+							Condition: "price > discount_price",
+							Columns:   []string{"price", "discount_price"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	item := m["Item"]
+	require.Len(t, item, 2)
+
+	verifyChange(t, change.Change{
+		Change: change.ModifyConstraint,
+		Name:   "item_price_constraint",
+	}, item[0])
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "Item",
+		GraphQLName: "Item",
+	}, item[1])
+}
+
+func TestAddDBRows(t *testing.T) {
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"RoleConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("role"),
+					PackageName: "role",
+					EnumTable:   true,
+				},
+			},
+		},
+	}
+
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"RoleConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("role"),
+					PackageName: "role",
+					EnumTable:   true,
+					DBRows: []map[string]interface{}{
+						{
+							"role": "admin",
+						},
+						{
+							"role": "member",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	item := m["Role"]
+	require.Len(t, item, 2)
+
+	verifyChange(t, change.Change{
+		Change:      change.ModifiedDBRows,
+		Name:        "Role",
+		GraphQLName: "Role",
+	}, item[0])
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "Role",
+		GraphQLName: "Role",
+	}, item[1])
+}
+
+func TestRemoveDBRows(t *testing.T) {
+	s1 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"RoleConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("role"),
+					PackageName: "role",
+					EnumTable:   true,
+					DBRows: []map[string]interface{}{
+						{
+							"role": "admin",
+						},
+						{
+							"role": "member",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	s2 := &schema.Schema{
+		Nodes: map[string]*schema.NodeDataInfo{
+			"RoleConfig": {
+				NodeData: &schema.NodeData{
+					NodeInfo:    nodeinfo.GetNodeInfo("role"),
+					PackageName: "role",
+					EnumTable:   true,
+				},
+			},
+		},
+	}
+
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+	item := m["Role"]
+	require.Len(t, item, 2)
+
+	verifyChange(t, change.Change{
+		Change:      change.ModifiedDBRows,
+		Name:        "Role",
+		GraphQLName: "Role",
+	}, item[0])
+	verifyChange(t, change.Change{
+		Change:      change.ModifyNode,
+		Name:        "Role",
+		GraphQLName: "Role",
+	}, item[1])
+}
+
 func getEnumInfo(m map[string]string) *schema.EnumInfo {
 	if m == nil {
 		m = map[string]string{

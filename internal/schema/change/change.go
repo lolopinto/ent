@@ -35,11 +35,21 @@ const (
 	AddEnum    ChangeType = "add_enum"
 	RemoveEnum ChangeType = "remove_enum"
 	ModifyEnum ChangeType = "modify_enum"
+
+	AddIndex    ChangeType = "add_index"
+	RemoveIndex ChangeType = "remove_index"
+	ModifyIndex ChangeType = "modify_index"
+
+	AddConstraint    ChangeType = "add_constraint"
+	RemoveConstraint ChangeType = "remove_constraint"
+	ModifyConstraint ChangeType = "modify_constraint"
+
+	// TODO need to break this up to AddRows, RemoveRows, ModifyRows
+	ModifiedDBRows ChangeType = "modified_dbrows"
+
 	// ^ everything above this is used/validated
 	// below is still TBD
 
-	CreateIndex      ChangeType = "create_index"
-	DropIndex        ChangeType = "drop_index"
 	CreateForeignKey ChangeType = "create_foreign_key"
 
 	AddRows    ChangeType = "add_rows"

@@ -784,6 +784,472 @@ func TestInvalidConstraints(t *testing.T) {
 	runTestCases(t, testCases)
 }
 
+func TestFullTextIndex(t *testing.T) {
+	testCases := map[string]testCase{
+		"single-column": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: 'firstName',
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "users_first_name_idx",
+								columns: ["firstName"],
+								fullText: {
+									language: 'english',
+								},
+							},
+						];
+					}`,
+				),
+			},
+			expectedMap: map[string]*schema.NodeData{
+				"User": {
+					Constraints: constraintsWithNodeConstraints("users"),
+					Indices: []*input.Index{
+						{
+							Name:    "users_first_name_idx",
+							Columns: []string{"firstName"},
+							FullText: &input.FullText{
+								Language: "english",
+							},
+						},
+					},
+				},
+			},
+		},
+		"multi-column": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: 'firstName',
+							}),
+							StringType({
+								name: 'lastName',
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "users_name_idx",
+								columns: ["firstName", "lastName"],
+								fullText: {
+									language: 'english',
+								},
+							},
+						];
+					}`,
+				),
+			},
+			expectedMap: map[string]*schema.NodeData{
+				"User": {
+					Constraints: constraintsWithNodeConstraints("users"),
+					Indices: []*input.Index{
+						{
+							Name:    "users_name_idx",
+							Columns: []string{"firstName", "lastName"},
+							FullText: &input.FullText{
+								Language: "english",
+							},
+						},
+					},
+				},
+			},
+		},
+		"multi-column-gist": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: 'firstName',
+							}),
+							StringType({
+								name: 'lastName',
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "users_name_idx",
+								columns: ["firstName", "lastName"],
+								fullText: {
+									language: 'english',
+									indexType: "gist",
+								},
+							},
+						];
+					}`,
+				),
+			},
+			expectedMap: map[string]*schema.NodeData{
+				"User": {
+					Constraints: constraintsWithNodeConstraints("users"),
+					Indices: []*input.Index{
+						{
+							Name:    "users_name_idx",
+							Columns: []string{"firstName", "lastName"},
+							FullText: &input.FullText{
+								Language:  "english",
+								IndexType: input.Gist,
+							},
+						},
+					},
+				},
+			},
+		},
+		"multi-column-lang-column": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: 'firstName',
+							}),
+							StringType({
+								name: 'lastName',
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "users_name_idx",
+								columns: ["firstName", "lastName"],
+								fullText: {
+									languageColumn: 'language',
+									indexType: "gist",
+								},
+							},
+						];
+					}`,
+				),
+			},
+			expectedMap: map[string]*schema.NodeData{
+				"User": {
+					Constraints: constraintsWithNodeConstraints("users"),
+					Indices: []*input.Index{
+						{
+							Name:    "users_name_idx",
+							Columns: []string{"firstName", "lastName"},
+							FullText: &input.FullText{
+								LanguageColumn: "language",
+								IndexType:      input.Gist,
+							},
+						},
+					},
+				},
+			},
+		},
+		"generated-column": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: 'firstName',
+							}),
+							StringType({
+								name: 'lastName',
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "users_name_idx",
+								columns: ["firstName", "lastName"],
+								fullText: {
+									generatedColumnName: 'name_idx',
+									languageColumn: 'language',
+									indexType: "gist",
+								},
+							},
+						];
+					}`,
+				),
+			},
+			expectedMap: map[string]*schema.NodeData{
+				"User": {
+					Constraints: constraintsWithNodeConstraints("users"),
+					Indices: []*input.Index{
+						{
+							Name:    "users_name_idx",
+							Columns: []string{"firstName", "lastName"},
+							FullText: &input.FullText{
+								LanguageColumn:      "language",
+								IndexType:           input.Gist,
+								GeneratedColumnName: "name_idx",
+							},
+						},
+					},
+				},
+			},
+		},
+		"lang-andlang-column": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: 'firstName',
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "users_first_name_idx",
+								columns: ["firstName"],
+								fullText: {
+									language: 'english',
+									languageColumn: 'language',
+								},
+							},
+						];
+					}`,
+				),
+			},
+			expectedErr: fmt.Errorf("cannot specify both language and language column for index users_first_name_idx"),
+		},
+		"neither-lang-and-lang-column": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: 'firstName',
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "users_first_name_idx",
+								columns: ["firstName"],
+								fullText: {
+								},
+							},
+						];
+					}`,
+				),
+			},
+			expectedErr: fmt.Errorf("have to specify at least one of language and language column for index users_first_name_idx"),
+		},
+		"weights-no-generated-column": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: 'firstName',
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "users_first_name_idx",
+								columns: ["firstName"],
+								fullText: {
+									language: 'english',
+									weights: {
+										A: ['firstName'],
+									},
+								},
+							},
+						];
+					}`,
+				),
+			},
+			expectedErr: fmt.Errorf("cannot specify weights if no generated column name for index users_first_name_idx"),
+		},
+		"invalid-weight-passed": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: 'firstName',
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "users_first_name_idx",
+								columns: ["firstName"],
+								fullText: {
+									language: 'english',
+									generatedColumnName: 'name_idx',
+									weights: {
+										A: ['fname'],
+									},
+								},
+							},
+						];
+					}`,
+				),
+			},
+			expectedErr: fmt.Errorf("invalid field fname passed as weight for index users_first_name_idx"),
+		},
+		"existing-col-passed-generated-name": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: 'firstName',
+							}),
+							StringType({
+								name: 'lastName',
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "users_first_name_idx",
+								columns: ["firstName"],
+								fullText: {
+									language: 'english',
+									generatedColumnName: 'lastName',
+								},
+							},
+						];
+					}`,
+				),
+			},
+			expectedErr: fmt.Errorf("name lastName already exists for a field and cannot be used as a generated column name for index users_first_name_idx"),
+		},
+		"duplicated-generated-name": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: 'firstName',
+							}),
+							StringType({
+								name: 'lastName',
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "users_first_name_idx",
+								columns: ["firstName", "lastName"],
+								fullText: {
+									language: 'english',
+									generatedColumnName: 'name_idx',
+								},
+							},
+							{
+								name: "users_first_name_idx",
+								columns: ["firstName"],
+								fullText: {
+									language: 'english',
+									generatedColumnName: 'name_idx',
+								},
+							},
+						];
+					}`,
+				),
+			},
+			expectedErr: fmt.Errorf("already have generated computed column name_idx"),
+		},
+	}
+
+	runTestCases(t, testCases)
+}
+
+func TestIndices(t *testing.T) {
+	testCases := map[string]testCase{
+		"valid-indices": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: 'email',
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "users_unique_email_idx",
+								columns: ["email"],
+								unique: true
+							},
+						];
+					}`,
+				),
+			},
+			expectedMap: map[string]*schema.NodeData{
+				"User": {
+					Constraints: constraintsWithNodeConstraints("users"),
+					Indices: []*input.Index{
+						{
+							Name:    "users_unique_email_idx",
+							Columns: []string{"email"},
+							Unique:  true,
+						},
+					},
+				},
+			},
+		},
+		"invalid-column": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import {Schema, Field, StringType, Index, BaseEntSchema} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: 'email',
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "users_unique_email_idx",
+								columns: ["email_address"],
+								unique: true
+							},
+						];
+					}`,
+				),
+			},
+			expectedErr: fmt.Errorf("invalid field email_address passed as col for index users_unique_email_idx"),
+		},
+	}
+	runTestCases(t, testCases)
+}
+
 type testCase struct {
 	code        map[string]string
 	only        bool
@@ -863,6 +1329,30 @@ func testConstraints(
 				assert.Equal(t, expConstraint.ForeignKey.TableName, constraint.ForeignKey.TableName)
 				assert.Equal(t, expConstraint.ForeignKey.OnDelete, constraint.ForeignKey.OnDelete)
 				assert.Equal(t, expConstraint.ForeignKey.Columns, constraint.ForeignKey.Columns)
+			}
+		}
+
+		expIndices := expNodeData.Indices
+		indices := nodeData.Indices
+		require.Len(t, indices, len(expIndices))
+
+		for i, expIndex := range expIndices {
+			index := indices[i]
+
+			assert.Equal(t, expIndex.Name, index.Name)
+			assert.Equal(t, expIndex.Unique, index.Unique)
+			assert.Equal(t, expIndex.Columns, index.Columns)
+
+			if expIndex.FullText == nil {
+				require.Nil(t, index.FullText)
+			} else {
+				require.NotNil(t, index.FullText)
+
+				assert.Equal(t, expIndex.FullText.GeneratedColumnName, index.FullText.GeneratedColumnName)
+				assert.Equal(t, expIndex.FullText.IndexType, index.FullText.IndexType)
+				assert.Equal(t, expIndex.FullText.Language, index.FullText.Language)
+				assert.Equal(t, expIndex.FullText.LanguageColumn, index.FullText.LanguageColumn)
+				assert.Equal(t, expIndex.FullText.Weights, index.FullText.Weights)
 			}
 		}
 	}
