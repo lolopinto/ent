@@ -5,6 +5,12 @@ import { log } from "./logger";
 import { DateTime } from "luxon";
 
 export interface Database extends PoolConfig {
+  database?: string;
+  user?: string;
+  password?: string;
+  host?: string;
+  port?: number;
+  ssl?: boolean;
   sslmode?: string;
 }
 
