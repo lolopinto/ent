@@ -18,8 +18,6 @@ import {
   createAllContacts,
   tempDBTables,
 } from "../testutils/fake_data/test_helpers";
-import { QueryRecorder } from "../testutils/db_mock";
-import { Pool } from "pg";
 import { Viewer, ID, Ent, LoadEntOptions } from "../core/base";
 import { loadEnt } from "../core/ent";
 import {
@@ -46,10 +44,7 @@ import {
   queryRootConfig,
   expectQueryFromRoot,
 } from "../testutils/ent-graphql-tests";
-import { setupSqlite } from "../testutils/db/temp_db";
-
-jest.mock("pg");
-QueryRecorder.mockPool(Pool);
+import { setupSqlite, setupPostgres } from "../testutils/db/temp_db";
 
 async function loadEntByType(
   viewer: Viewer,
@@ -388,19 +383,19 @@ function commonTests() {
 }
 
 describe("postgres", () => {
-  beforeEach(async () => {
-    QueryRecorder.clear();
-    await createEdges();
-    QueryRecorder.clearQueries();
-  });
-  commonTests();
-});
-
-describe("sqlite", () => {
-  setupSqlite(`sqlite:///node_resolver.db`, tempDBTables);
+  setupPostgres(tempDBTables);
 
   beforeEach(async () => {
     await createEdges();
   });
   commonTests();
 });
+
+// describe("sqlite", () => {
+//   setupSqlite(`sqlite:///node_resolver.db`, tempDBTables);
+
+//   beforeEach(async () => {
+//     await createEdges();
+//   });
+//   commonTests();
+// });

@@ -515,6 +515,7 @@ export class TempDB {
   }
 
   async afterAll() {
+    console.debug("tt");
     if (this.dialect === Dialect.SQLite) {
       this.sqlite.close();
       return;
@@ -523,12 +524,16 @@ export class TempDB {
     // end our connection to db
     await this.dbClient.end();
     // end any pool connection
+    console.debug("ss");
     await DB.getInstance().endPool();
 
+    console.debug("uuv");
     // drop db
     await this.client.query(`DROP DATABASE ${this.db}`);
+    console.debug("gg");
 
     await this.client.end();
+    console.debug("ssdsd");
   }
 
   getDB(): string {
@@ -610,13 +615,14 @@ export function assoc_edge_table(name: string, global?: boolean) {
   return t;
 }
 
-interface sqliteSetupOptions {
+interface setupOptions {
   disableDeleteAfterEachTest?: boolean;
 }
+
 export function setupSqlite(
   connString: string,
   tables: () => Table[],
-  opts?: sqliteSetupOptions,
+  opts?: setupOptions,
 ) {
   let tdb: TempDB = new TempDB(Dialect.SQLite, tables);
 
@@ -652,6 +658,29 @@ export function setupSqlite(
   });
 
   return tdb;
+}
+
+export function setupPostgres(tables: () => Table[], opts?: setupOptions) {
+  let tdb: TempDB;
+  beforeAll(async () => {
+    //    loadConfig();
+    tdb = new TempDB(Dialect.Postgres, tables());
+    await tdb.beforeAll();
+  });
+
+  if (!opts?.disableDeleteAfterEachTest) {
+    afterEach(async () => {
+      const client = await DB.getInstance().getNewClient();
+      for (const [key, _] of tdb.getTables()) {
+        const query = `delete from ${key}`;
+        await client.exec(query);
+      }
+    });
+  }
+
+  afterAll(async () => {
+    await tdb.afterAll();
+  });
 }
 
 export function getSchemaTable(schema: BuilderSchema<Ent>, dialect: Dialect) {
