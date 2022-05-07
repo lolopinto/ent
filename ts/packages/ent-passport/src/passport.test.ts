@@ -8,6 +8,7 @@ import {
   RequestContext,
   Viewer,
   loadRow,
+  DB,
   query,
   Ent,
   PrivacyPolicy,
@@ -17,6 +18,7 @@ import {
   expectMutation,
 } from "@snowtop/ent-graphql-tests";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
+import { TempDB, table, text } from "@snowtop/ent/testutils/db/test_db";
 import {
   GraphQLSchema,
   GraphQLObjectType,
@@ -25,21 +27,36 @@ import {
   GraphQLID,
   GraphQLFieldConfig,
 } from "graphql";
-import { QueryRecorder } from "@snowtop/ent/testutils/db_mock";
 import { createRowForTest } from "@snowtop/ent/testutils/write";
-import { Pool } from "pg";
 import { useAndVerifyAuth, useAndVerifyAuthJWT } from "./passport";
 import { PassportStrategyHandler, PassportAuthHandler } from "./passport";
 import { Express } from "express";
 import supertest from "supertest";
 import jwt from "jsonwebtoken";
+import { Dialect } from "@snowtop/ent/core/db";
 
-jest.mock("pg");
-QueryRecorder.mockPool(Pool);
+let tdb: TempDB;
+beforeAll(async () => {
+  tdb = new TempDB(Dialect.Postgres, [
+    table(
+      "users",
+      text("id", { primaryKey: true }),
+      text("first_name"),
+      text("last_name"),
+      text("email_address"),
+      text("password"),
+    ),
+  ]);
+  await tdb.beforeAll();
+});
 
-afterEach(() => {
+afterAll(async () => {
+  await tdb.afterAll();
+});
+
+afterEach(async () => {
   clearAuthHandlers();
-  QueryRecorder.clear();
+  await DB.getInstance().getPool().exec("DELETE FROM users");
 });
 
 let userType = new GraphQLObjectType({
@@ -80,7 +97,13 @@ class UserClass implements Ent {
 
   static loaderOptions(): LoadEntOptions<UserClass, any> {
     const tableName = "users";
-    const fields = ["id", "first_name", "last_name", "email_address"];
+    const fields = [
+      "id",
+      "first_name",
+      "last_name",
+      "email_address",
+      "password",
+    ];
 
     return {
       ent: UserClass,
