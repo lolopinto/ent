@@ -36,7 +36,6 @@ QueryRecorder.mockPool(Pool);
 
 const ml = new MockLogs();
 
-// TODO tests for clause as a function
 const getNewLoader = (context: boolean = true) => {
   return new ObjectLoader(
     {
@@ -55,6 +54,18 @@ const getNewLoaderWithCustomClause = (context: boolean = true) => {
       fields: ["id", "first_name", "deleted_at"],
       key: "id",
       clause: clause.Eq("deleted_at", null),
+    },
+    context ? new TestContext() : undefined,
+  );
+};
+
+const getNewLoaderWithCustomClauseFunc = (context: boolean = true) => {
+  return new ObjectLoader(
+    {
+      tableName: "users",
+      fields: ["id", "first_name", "deleted_at"],
+      key: "id",
+      clause: () => clause.Eq("deleted_at", null),
     },
     context ? new TestContext() : undefined,
   );
@@ -200,9 +211,9 @@ function commonTests() {
     expect(row).toBe(row2);
   });
 
-  test("with context custom clause. cache hit", async () => {
+  async function testWithCustomClause(getLoader: () => ObjectLoader<unknown>) {
     await createWithNullDeletedAt();
-    const loader = getNewLoaderWithCustomClause();
+    const loader = getLoader();
 
     const row = await loader.load(1);
     expect(row).toEqual({
@@ -212,16 +223,34 @@ function commonTests() {
     });
     const row2 = await loader.load(1);
     expect(row).toBe(row2);
+  }
+
+  test("with context custom clause. cache hit", async () => {
+    await testWithCustomClause(getNewLoaderWithCustomClause);
   });
 
-  test("with context. deleted at set. cache hit. normal query", async () => {
+  test("with context custom clause function. cache hit", async () => {
+    await testWithCustomClause(getNewLoaderWithCustomClauseFunc);
+  });
+
+  async function testWithCustomClauseDeletedAt(
+    getLoader: () => ObjectLoader<unknown>,
+  ) {
     await createWithDeletedAt();
-    const loader = getNewLoaderWithCustomClause();
+    const loader = getLoader();
 
     const row = await loader.load(1);
     expect(row).toEqual(null);
     const row2 = await loader.load(1);
     expect(row2).toBe(null);
+  }
+
+  test("with context. deleted at set. cache hit. normal query", async () => {
+    await testWithCustomClauseDeletedAt(getNewLoaderWithCustomClause);
+  });
+
+  test("with context. deleted at set. function. cache hit. normal query", async () => {
+    await testWithCustomClauseDeletedAt(getNewLoaderWithCustomClauseFunc);
   });
 
   test("with context. deleted at set. cache hit. bypass transform", async () => {
@@ -266,8 +295,10 @@ function commonTests() {
     });
   });
 
-  test("with context custom clause. cache miss", async () => {
-    const loader = getNewLoaderWithCustomClause();
+  async function testWithCustomClauseCacheMiss(
+    getLoader: () => ObjectLoader<unknown>,
+  ) {
+    const loader = getLoader();
 
     const expQuery = buildQuery({
       tableName: "users",
@@ -290,6 +321,14 @@ function commonTests() {
       "dataloader-cache-hit": 1,
       "tableName": "users",
     });
+  }
+
+  test("with context. custom clause. cache miss", async () => {
+    await testWithCustomClauseCacheMiss(getNewLoaderWithCustomClause);
+  });
+
+  test("with context. custom clause func. cache miss", async () => {
+    await testWithCustomClauseCacheMiss(getNewLoaderWithCustomClauseFunc);
   });
 
   test("without context. cache hit", async () => {
@@ -329,10 +368,12 @@ function commonTests() {
     });
   });
 
-  test("without context custom clause. cache hit", async () => {
+  async function testWithoutContextCustomClauseCacheHit(
+    getLoader: (context?: boolean) => ObjectLoader<unknown>,
+  ) {
     await createWithNullDeletedAt();
 
-    const loader = getNewLoaderWithCustomClause(false);
+    const loader = getLoader(false);
 
     const row = await loader.load(1);
     expect(row).toEqual({
@@ -364,12 +405,24 @@ function commonTests() {
       query: expQuery,
       values: filterNullIfSqlite([null, 1]),
     });
+  }
+
+  test("without context. custom clause. cache hit", async () => {
+    await testWithoutContextCustomClauseCacheHit(getNewLoaderWithCustomClause);
   });
 
-  test("without context. deleted_at set. cache hit. normal query", async () => {
+  test("without context. custom clause func. cache hit", async () => {
+    await testWithoutContextCustomClauseCacheHit(
+      getNewLoaderWithCustomClauseFunc,
+    );
+  });
+
+  async function withoutContextDeletedAtCacheHit(
+    getLoader: (context?: boolean) => ObjectLoader<unknown>,
+  ) {
     await createWithDeletedAt();
 
-    const loader = getNewLoaderWithCustomClause(false);
+    const loader = getLoader(false);
 
     const row = await loader.load(1);
     expect(row).toBe(null);
@@ -396,6 +449,14 @@ function commonTests() {
       query: expQuery,
       values: filterNullIfSqlite([null, 1]),
     });
+  }
+
+  test("without context. deleted_at set. cache hit. normal query", async () => {
+    await withoutContextDeletedAtCacheHit(getNewLoaderWithCustomClause);
+  });
+
+  test("without context. deleted_at set. custom clause func. cache hit. normal query", async () => {
+    await withoutContextDeletedAtCacheHit(getNewLoaderWithCustomClauseFunc);
   });
 
   test("without context. deleted_at set. cache hit. bypass transform", async () => {
@@ -468,8 +529,10 @@ function commonTests() {
     });
   });
 
-  test("without context custom clause. cache miss", async () => {
-    const loader = getNewLoaderWithCustomClause(false);
+  async function testWithoutContextCustomClauseCacheMiss(
+    getLoader: (context?: boolean) => ObjectLoader<unknown>,
+  ) {
+    const loader = getLoader(false);
 
     const row = await loader.load(1);
     expect(row).toBeNull();
@@ -496,6 +559,16 @@ function commonTests() {
       query: expQuery,
       values: filterNullIfSqlite([null, 1]),
     });
+  }
+
+  test("without context. custom clause. cache miss", async () => {
+    await testWithoutContextCustomClauseCacheMiss(getNewLoaderWithCustomClause);
+  });
+
+  test("without context. custom clause func. cache miss", async () => {
+    await testWithoutContextCustomClauseCacheMiss(
+      getNewLoaderWithCustomClauseFunc,
+    );
   });
 
   test("multi-ids. with context", async () => {
@@ -509,6 +582,15 @@ function commonTests() {
   test("multi-ids custom clause. with context", async () => {
     await verifyMultiIDsDataAvail(
       getNewLoaderWithCustomClause,
+      verifyMultiIDsCustomClauseGroupQuery,
+      verifyMultiIDsCacheHit,
+      createWithNullDeletedAt,
+    );
+  });
+
+  test("multi-ids custom clause func. with context", async () => {
+    await verifyMultiIDsDataAvail(
+      getNewLoaderWithCustomClauseFunc,
       verifyMultiIDsCustomClauseGroupQuery,
       verifyMultiIDsCacheHit,
       createWithNullDeletedAt,
@@ -532,6 +614,15 @@ function commonTests() {
     );
   });
 
+  test("multi-ids custom clause func. without context", async () => {
+    await verifyMultiIDsDataAvail(
+      () => getNewLoaderWithCustomClauseFunc(false),
+      verifyMultiIDsCustomClauseGroupQueryMiss,
+      verifyMultiIDsCustomClauseGroupQueryMiss,
+      createWithNullDeletedAt,
+    );
+  });
+
   test("multi-ids.no data. with context", async () => {
     await verifyMultiIDsNoDataAvail(
       getNewLoader,
@@ -548,6 +639,14 @@ function commonTests() {
     );
   });
 
+  test("multi-ids. no data custom clause func. with context", async () => {
+    await verifyMultiIDsNoDataAvail(
+      getNewLoaderWithCustomClauseFunc,
+      verifyMultiIDsCustomClauseGroupQuery,
+      verifyMultiIDsCacheHit,
+    );
+  });
+
   test("multi-ids. no data. without context", async () => {
     await verifyMultiIDsNoDataAvail(
       () => getNewLoader(false),
@@ -559,6 +658,14 @@ function commonTests() {
   test("multi-ids. no data custom clause. without context", async () => {
     await verifyMultiIDsNoDataAvail(
       () => getNewLoaderWithCustomClause(false),
+      verifyMultiIDsCustomClauseGroupQueryMiss,
+      verifyMultiIDsCustomClauseGroupQueryMiss,
+    );
+  });
+
+  test("multi-ids. no data custom clause func. without context", async () => {
+    await verifyMultiIDsNoDataAvail(
+      () => getNewLoaderWithCustomClauseFunc(false),
       verifyMultiIDsCustomClauseGroupQueryMiss,
       verifyMultiIDsCustomClauseGroupQueryMiss,
     );
