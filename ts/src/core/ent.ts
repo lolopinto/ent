@@ -412,6 +412,11 @@ async function doFieldPrivacy<T extends Ent>(
   for (const [k, policy] of options.fieldPrivacy) {
     promises.push(
       (async () => {
+        // don't do anything if key is null or for some reason missing
+        const curr = data[k];
+        if (curr === null || curr === undefined) {
+          return;
+        }
         const r = await applyPrivacyPolicy(viewer, policy, ent);
         if (!r) {
           data[k] = null;
