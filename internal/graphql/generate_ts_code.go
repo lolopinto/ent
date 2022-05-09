@@ -1658,7 +1658,7 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 		gqlField := &fieldType{
 			Name:               gqlName,
 			HasResolveFunction: asyncAccessor || gqlName != field.TSPublicAPIName(),
-			FieldImports:       getGQLFileImports(field.GetTSGraphQLTypeForFieldImports(false), false),
+			FieldImports:       getGQLFileImports(field.GetTSGraphQLTypeForFieldImports(), false),
 			HasAsyncModifier:   asyncAccessor,
 		}
 
@@ -1828,7 +1828,7 @@ func buildCustomInputNode(c *custominterface.CustomInterface) *objectType {
 	for _, f := range c.Fields {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(false), true),
+			FieldImports: getGQLFileImports(f.GetTSMutationGraphQLTypeForFieldImports(false), true),
 		})
 	}
 
@@ -1877,7 +1877,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	for _, f := range a.GetGraphQLFields() {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(!action.IsRequiredField(a, f)), true),
+			FieldImports: getGQLFileImports(f.GetTSMutationGraphQLTypeForFieldImports(!action.IsRequiredField(a, f)), true),
 		})
 	}
 
