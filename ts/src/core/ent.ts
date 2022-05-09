@@ -412,6 +412,11 @@ async function doFieldPrivacy<T extends Ent>(
   for (const [k, policy] of options.fieldPrivacy) {
     promises.push(
       (async () => {
+        // don't do anything if key is null or for some reason missing
+        const curr = data[k];
+        if (curr === null || curr === undefined) {
+          return;
+        }
         const r = await applyPrivacyPolicy(viewer, policy, ent);
         if (!r) {
           data[k] = null;
@@ -684,7 +689,15 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
     const opts = loader.getOptions();
     let cls = clause.Eq(options.key, id);
     if (opts.clause) {
-      cls = clause.And(opts.clause, cls);
+      let optionClause: clause.Clause | undefined;
+      if (typeof opts.clause === "function") {
+        optionClause = opts.clause();
+      } else {
+        optionClause = opts.clause;
+      }
+      if (optionClause) {
+        cls = clause.And(optionClause, cls);
+      }
     }
 
     const query = buildQuery({

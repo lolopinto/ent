@@ -6,93 +6,85 @@ from auto_schema.schema_item import FullTextIndex
 
 metadata = sa.MetaData()
 
-
+ 
 sa.Table("accounts", metadata,
-         sa.Column("id", sa.Text(), nullable=False),
-         sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
-         sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
-         sa.Column("deleted_at", sa.TIMESTAMP(), nullable=True),
-         sa.Column("name", sa.Text(), nullable=False),
-         sa.Column("phone_number", sa.Text(), nullable=False),
-         sa.Column("account_state", sa.Text(), nullable=True),
-         sa.Index("accounts_deleted_at_idx", "deleted_at"),
-         sa.PrimaryKeyConstraint("id", name="accounts_id_pkey"),
-         sa.UniqueConstraint(
-             "phone_number", name="accounts_unique_phone_number"),
-         )
-
+    sa.Column("id", sa.Text(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("deleted_at", sa.TIMESTAMP(), nullable=True),
+    sa.Column("name", sa.Text(), nullable=False),
+    sa.Column("phone_number", sa.Text(), nullable=False),
+    sa.Column("account_state", sa.Text(), nullable=True),
+    sa.Index("accounts_deleted_at_idx", "deleted_at"),
+    sa.PrimaryKeyConstraint("id", name="accounts_id_pkey"),
+    sa.UniqueConstraint("phone_number", name="accounts_unique_phone_number"),
+)
+   
 sa.Table("assoc_edge_config", metadata,
-         sa.Column("edge_type", sa.Text(), nullable=False),
-         sa.Column("edge_name", sa.Text(), nullable=False),
-         sa.Column("symmetric_edge", sa.Boolean(),
-                   nullable=False, server_default='false'),
-         sa.Column("inverse_edge_type", sa.Text(), nullable=True),
-         sa.Column("edge_table", sa.Text(), nullable=False),
-         sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
-         sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
-         sa.PrimaryKeyConstraint(
-             "edge_type", name="assoc_edge_config_edge_type_pkey"),
-         sa.UniqueConstraint(
-             "edge_name", name="assoc_edge_config_unique_edge_name"),
-         sa.ForeignKeyConstraint(["inverse_edge_type"], ["assoc_edge_config.edge_type"],
-                                 name="assoc_edge_config_inverse_edge_type_fkey", ondelete="RESTRICT"),
-         )
-
+    sa.Column("edge_type", sa.Text(), nullable=False),
+    sa.Column("edge_name", sa.Text(), nullable=False),
+    sa.Column("symmetric_edge", sa.Boolean(), nullable=False, server_default='false'),
+    sa.Column("inverse_edge_type", sa.Text(), nullable=True),
+    sa.Column("edge_table", sa.Text(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.PrimaryKeyConstraint("edge_type", name="assoc_edge_config_edge_type_pkey"),
+    sa.UniqueConstraint("edge_name", name="assoc_edge_config_unique_edge_name"),
+    sa.ForeignKeyConstraint(["inverse_edge_type"], ["assoc_edge_config.edge_type"], name="assoc_edge_config_inverse_edge_type_fkey", ondelete="RESTRICT"),
+)
+   
 sa.Table("tags", metadata,
-         sa.Column("id", sa.Text(), nullable=False),
-         sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
-         sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
-         sa.Column("deleted_at", sa.TIMESTAMP(), nullable=True),
-         sa.Column("display_name", sa.Text(), nullable=False),
-         sa.Column("canonical_name", sa.Text(), nullable=False),
-         sa.Column("owner_id", sa.Text(), nullable=False),
-         sa.Column("related_tag_ids", sa.Text(), nullable=True),
-         sa.Index("tags_deleted_at_idx", "deleted_at"),
-         sa.Index("tags_owner_id_idx", "owner_id"),
-         sa.PrimaryKeyConstraint("id", name="tags_id_pkey"),
-         sa.ForeignKeyConstraint(
-             ["owner_id"], ["accounts.id"], name="tags_owner_id_fkey", ondelete="CASCADE"),
-         sa.UniqueConstraint("canonical_name", "owner_id",
-                             name="uniqueForOwner"),
-         )
-
+    sa.Column("id", sa.Text(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("deleted_at", sa.TIMESTAMP(), nullable=True),
+    sa.Column("display_name", sa.Text(), nullable=False),
+    sa.Column("canonical_name", sa.Text(), nullable=False),
+    sa.Column("owner_id", sa.Text(), nullable=False),
+    sa.Column("related_tag_ids", sa.Text(), nullable=True),
+    sa.Index("tags_deleted_at_idx", "deleted_at"),
+    sa.Index("tags_owner_id_idx", "owner_id"),
+    sa.PrimaryKeyConstraint("id", name="tags_id_pkey"),
+    sa.ForeignKeyConstraint(["owner_id"], ["accounts.id"], name="tags_owner_id_fkey", ondelete="CASCADE"),
+    sa.UniqueConstraint("canonical_name", "owner_id", name="uniqueForOwner"),
+)
+   
 sa.Table("todo_tags_edges", metadata,
-         sa.Column("id1", sa.Text(), nullable=False),
-         sa.Column("id1_type", sa.Text(), nullable=False),
-         sa.Column("edge_type", sa.Text(), nullable=False),
-         sa.Column("id2", sa.Text(), nullable=False),
-         sa.Column("id2_type", sa.Text(), nullable=False),
-         sa.Column("time", sa.TIMESTAMP(), nullable=False),
-         sa.Column("data", sa.Text(), nullable=True),
-         sa.PrimaryKeyConstraint(
-             "id1", "edge_type", "id2", name="todo_tags_edges_id1_edge_type_id2_pkey"),
-         sa.Index("todo_tags_edges_time_idx", "time"),
-         )
-
+    sa.Column("id1", sa.Text(), nullable=False),
+    sa.Column("id1_type", sa.Text(), nullable=False),
+    sa.Column("edge_type", sa.Text(), nullable=False),
+    sa.Column("id2", sa.Text(), nullable=False),
+    sa.Column("id2_type", sa.Text(), nullable=False),
+    sa.Column("time", sa.TIMESTAMP(), nullable=False),
+    sa.Column("data", sa.Text(), nullable=True),
+    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="todo_tags_edges_id1_edge_type_id2_pkey"),
+    sa.Index("todo_tags_edges_time_idx", "time"),
+)
+   
 sa.Table("todos", metadata,
-         sa.Column("id", sa.Text(), nullable=False),
-         sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
-         sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
-         sa.Column("deleted_at", sa.TIMESTAMP(), nullable=True),
-         sa.Column("text", sa.Text(), nullable=False),
-         sa.Column("completed", sa.Boolean(), nullable=False),
-         sa.Column("creator_id", sa.Text(), nullable=False),
-         sa.Index("todos_deleted_at_idx", "deleted_at"),
-         sa.Index("todos_completed_idx", "completed"),
-         sa.Index("todos_creator_id_idx", "creator_id"),
-         sa.PrimaryKeyConstraint("id", name="todos_id_pkey"),
-         sa.ForeignKeyConstraint(["creator_id"], [
-                                 "accounts.id"], name="todos_creator_id_fkey", ondelete="CASCADE"),
-         )
-
+    sa.Column("id", sa.Text(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("deleted_at", sa.TIMESTAMP(), nullable=True),
+    sa.Column("text", sa.Text(), nullable=False),
+    sa.Column("completed", sa.Boolean(), nullable=False),
+    sa.Column("creator_id", sa.Text(), nullable=False),
+    sa.Index("todos_deleted_at_idx", "deleted_at"),
+    sa.Index("todos_completed_idx", "completed"),
+    sa.Index("todos_creator_id_idx", "creator_id"),
+    sa.PrimaryKeyConstraint("id", name="todos_id_pkey"),
+    sa.ForeignKeyConstraint(["creator_id"], ["accounts.id"], name="todos_creator_id_fkey", ondelete="CASCADE"),
+)
+  
 
 metadata.info["edges"] = {
-    'public': {
-        'TagToTodosEdge': {"edge_name": "TagToTodosEdge", "edge_type": "79af8e13-22a1-4462-97e9-56832c053aaf", "edge_table": "todo_tags_edges", "symmetric_edge": False, "inverse_edge_type": "7197f874-e259-45d1-9c1a-b0967c964507"},
-        'TodoToTagsEdge': {"edge_name": "TodoToTagsEdge", "edge_type": "7197f874-e259-45d1-9c1a-b0967c964507", "edge_table": "todo_tags_edges", "symmetric_edge": False, "inverse_edge_type": "79af8e13-22a1-4462-97e9-56832c053aaf"},
-    }
+  'public': {
+    'TagToTodosEdge': {"edge_name":"TagToTodosEdge", "edge_type":"79af8e13-22a1-4462-97e9-56832c053aaf", "edge_table":"todo_tags_edges", "symmetric_edge":False, "inverse_edge_type":"7197f874-e259-45d1-9c1a-b0967c964507"},
+    'TodoToTagsEdge': {"edge_name":"TodoToTagsEdge", "edge_type":"7197f874-e259-45d1-9c1a-b0967c964507", "edge_table":"todo_tags_edges", "symmetric_edge":False, "inverse_edge_type":"79af8e13-22a1-4462-97e9-56832c053aaf"},
+  }
 }
 
 
+
 def get_metadata():
-    return metadata
+  return metadata
