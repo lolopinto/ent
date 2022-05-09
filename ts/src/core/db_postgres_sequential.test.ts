@@ -23,8 +23,12 @@ afterAll(async () => {
 });
 
 test("sequential", async () => {
+  const user = process.env.POSTGRES_USER || "";
+  const password = process.env.POSTGRES_PASSWORD || "";
   loadConfig({
     db: {
+      user,
+      password,
       database: tdb.getDB(),
       host: "localhost",
     },

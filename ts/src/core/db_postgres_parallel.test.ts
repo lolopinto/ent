@@ -21,8 +21,13 @@ afterAll(async () => {
 });
 
 test("lots of writes at once", async () => {
+  const user = process.env.POSTGRES_USER || "";
+  const password = process.env.POSTGRES_PASSWORD || "";
+
   loadConfig({
     db: {
+      user,
+      password,
       database: tdb.getDB(),
       max: 100,
       host: "localhost",
