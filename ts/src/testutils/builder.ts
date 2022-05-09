@@ -12,7 +12,7 @@ import {
   saveBuilderX,
   Observer,
 } from "../action";
-import { getFields, Schema } from "../schema";
+import { getFields, getFieldsWithPrivacy, Schema } from "../schema";
 import { QueryRecorder } from "./db_mock";
 import pluralize from "pluralize";
 import { snakeCase } from "snake-case";
@@ -169,6 +169,7 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
         ent: schema.ent,
         tableName: tableName,
         fields: [],
+        fieldPrivacy: getFieldsWithPrivacy(schema),
       },
       builder: this,
       action: action,
