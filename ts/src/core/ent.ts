@@ -486,6 +486,8 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
 
     return res.rows[0];
   } catch (e) {
+    // an example of an error being suppressed
+    // another one. TODO https://github.com/lolopinto/ent/issues/862
     log("error", e);
     return null;
   }

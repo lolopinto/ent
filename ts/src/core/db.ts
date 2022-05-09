@@ -1,10 +1,10 @@
-import pg, { Pool, ClientConfig, PoolClient } from "pg";
+import pg, { Pool, PoolClient, PoolConfig } from "pg";
 import * as fs from "fs";
 import { load } from "js-yaml";
 import { log } from "./logger";
 import { DateTime } from "luxon";
 
-export interface Database {
+export interface Database extends PoolConfig {
   database?: string;
   user?: string;
   password?: string;
@@ -27,7 +27,7 @@ function isDbDict(v: Database | DBDict): v is DBDict {
   );
 }
 
-interface customClientConfig extends ClientConfig {
+interface customPoolConfig extends PoolConfig {
   sslmode?: string;
 }
 
@@ -59,7 +59,7 @@ function parseConnectionString(str: string): DatabaseInfo {
 
 interface DatabaseInfo {
   dialect: Dialect;
-  config: ClientConfig;
+  config: PoolConfig;
   /// filePath for sqlite
   filePath?: string;
 }
@@ -118,7 +118,7 @@ function getClientConfig(args?: {
     let data = fs.readFileSync(file, { encoding: "utf8" });
     let yaml = load(data);
     if (yaml && typeof yaml === "object") {
-      let cfg: customClientConfig = yaml;
+      let cfg: customPoolConfig = yaml;
       return {
         dialect: Dialect.Postgres,
         config: {
@@ -128,6 +128,8 @@ function getClientConfig(args?: {
           host: cfg.host,
           port: cfg.port,
           ssl: cfg.sslmode == "enable",
+          // max, min, etc
+          ...cfg,
         },
       };
     }
