@@ -725,17 +725,23 @@ func (f *Field) GetInverseEdge() *edge.AssociationEdge {
 	return f.inverseEdge
 }
 
+func (f *Field) GetTSGraphQLTypeForFieldImports() []*tsimport.ImportPath {
+	tsGQLType := f.fieldType
+	if f.graphqlFieldType != nil {
+		tsGQLType = f.graphqlFieldType
+	}
+	return tsGQLType.GetTSGraphQLImports()
+}
+
 // for non-required fields in actions, we want to make it optional if it's not a required field
 // in the action
-func (f *Field) GetTSGraphQLTypeForFieldImports(forceOptional bool) []*tsimport.ImportPath {
-	var tsGQLType enttype.TSGraphQLType
-	nullableType, ok := f.fieldType.(enttype.NullableType)
+// in mutations, we ignore any graphql specific nature of the field and use underlying API
+func (f *Field) GetTSMutationGraphQLTypeForFieldImports(forceOptional bool) []*tsimport.ImportPath {
+	tsGQLType := f.fieldType
+	nullableType, ok := tsGQLType.(enttype.NullableType)
 
 	if forceOptional && ok {
 		tsGQLType = nullableType.GetNullableType()
-	} else {
-		// already null and/or not forceOptional
-		tsGQLType = f.fieldType
 	}
 	return tsGQLType.GetTSGraphQLImports()
 }
