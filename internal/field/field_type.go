@@ -566,18 +566,27 @@ func (f *Field) GetTsType() string {
 }
 
 func (f *Field) GetTsTypeImports() []*tsimport.ImportPath {
-	ret := []*tsimport.ImportPath{}
-	// field type requires imports. assumes it has been reserved separately
-	typ, ok := f.fieldType.(enttype.TSTypeWithImports)
-	if ok {
-		ret = typ.GetTsTypeImports()
+	types := []enttype.EntType{
+		f.fieldType,
+		f.tsFieldType,
 	}
+	ret := []*tsimport.ImportPath{}
+	for _, t := range types {
+		if t == nil {
+			continue
+		}
+		// field type requires imports. assumes it has been reserved separately
+		typ, ok := t.(enttype.TSTypeWithImports)
+		if ok {
+			ret = append(ret, typ.GetTsTypeImports()...)
+		}
 
-	enumType, ok := f.fieldType.(enttype.EnumeratedType)
-	if ok && (f.fkey != nil || f.patternName != "") {
-		// foreign key with enum type requires an import
-		// if pattern enum, this is defined in its own file
-		ret = append(ret, tsimport.NewLocalEntImportPath(enumType.GetTSName()))
+		enumType, ok := t.(enttype.EnumeratedType)
+		if ok && (f.fkey != nil || f.patternName != "") {
+			// foreign key with enum type requires an import
+			// if pattern enum, this is defined in its own file
+			ret = append(ret, tsimport.NewLocalEntImportPath(enumType.GetTSName()))
+		}
 	}
 
 	return ret
