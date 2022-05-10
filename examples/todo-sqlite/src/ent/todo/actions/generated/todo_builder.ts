@@ -73,6 +73,10 @@ export class TodoBuilder implements Builder<Todo> {
     };
   }
 
+  overrideInput(input: TodoInput) {
+    this.input = input;
+  }
+
   // store data in Builder that can be retrieved by another validator, trigger, observer later in the action
   storeData(k: string, v: any) {
     this.m.set(k, v);
