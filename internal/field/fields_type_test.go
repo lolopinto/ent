@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
+	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/stretchr/testify/assert"
@@ -30,6 +31,9 @@ type expected struct {
 	graphqlMutationImports []*tsimport.ImportPath
 	// force optional
 	graphqlMutationImportsForceOptional []*tsimport.ImportPath
+
+	fieldTypeType   enttype.EntType
+	tsFieldTypeType enttype.EntType
 }
 
 func TestNonNullableField(t *testing.T) {
@@ -62,6 +66,8 @@ func TestNonNullableField(t *testing.T) {
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
+		fieldTypeType:   &enttype.StringType{},
+		tsFieldTypeType: &enttype.StringType{},
 	})
 }
 
@@ -94,6 +100,8 @@ func TestNullableField(t *testing.T) {
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
+		fieldTypeType:   &enttype.NullableStringType{},
+		tsFieldTypeType: &enttype.NullableStringType{},
 	})
 }
 
@@ -143,6 +151,9 @@ func TestNonNullableFieldOnDemand(t *testing.T) {
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
+		fieldTypeType: &enttype.StringType{},
+		// has async accessor so the type from the db is not null even though the public APi is null
+		tsFieldTypeType: &enttype.StringType{},
 	})
 }
 
@@ -176,6 +187,8 @@ func TestNonNullableFieldOnDemandNoFieldPrivacy(t *testing.T) {
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
+		fieldTypeType:   &enttype.StringType{},
+		tsFieldTypeType: &enttype.StringType{},
 	})
 }
 
@@ -209,6 +222,8 @@ func TestNullableFieldOnDemand(t *testing.T) {
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
+		fieldTypeType:   &enttype.NullableStringType{},
+		tsFieldTypeType: &enttype.NullableStringType{},
 	})
 }
 
@@ -241,6 +256,8 @@ func TestNullableFieldOnDemandNoFieldPrivacy(t *testing.T) {
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
+		fieldTypeType:   &enttype.NullableStringType{},
+		tsFieldTypeType: &enttype.NullableStringType{},
 	})
 }
 
@@ -274,6 +291,9 @@ func TestNonNullableFieldOnEntLoad(t *testing.T) {
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
+		fieldTypeType: &enttype.StringType{},
+		// nullable type since privacy check can make it null
+		tsFieldTypeType: &enttype.NullableStringType{},
 	})
 }
 
@@ -307,6 +327,8 @@ func TestNonNullableFieldOnEntLoadNoFieldPrivacy(t *testing.T) {
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
+		fieldTypeType:   &enttype.StringType{},
+		tsFieldTypeType: &enttype.StringType{},
 	})
 }
 
@@ -340,6 +362,8 @@ func TestNullableFieldOnEntLoad(t *testing.T) {
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
+		fieldTypeType:   &enttype.NullableStringType{},
+		tsFieldTypeType: &enttype.NullableStringType{},
 	})
 }
 
@@ -372,6 +396,8 @@ func TestNullableFieldOnEntLoadNoFieldPrivacy(t *testing.T) {
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
+		fieldTypeType:   &enttype.NullableStringType{},
+		tsFieldTypeType: &enttype.NullableStringType{},
 	})
 }
 
@@ -388,4 +414,6 @@ func doTestField(t *testing.T, cfg codegenapi.Config, f *Field, exp *expected) {
 	assert.Equal(t, exp.graphqlImports, f.GetTSGraphQLTypeForFieldImports())
 	assert.Equal(t, exp.graphqlMutationImports, f.GetTSMutationGraphQLTypeForFieldImports(false))
 	assert.Equal(t, exp.graphqlMutationImportsForceOptional, f.GetTSMutationGraphQLTypeForFieldImports(true))
+	assert.Equal(t, exp.fieldTypeType, f.GetFieldType())
+	assert.Equal(t, exp.tsFieldTypeType, f.GetTSFieldType(cfg))
 }
