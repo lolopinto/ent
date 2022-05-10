@@ -58,7 +58,7 @@ export class {{$baseClass}} {
   constructor(public viewer: {{$viewerType}}, protected data:{{$dataType}}) {
     {{range $field := .FieldInfo.Fields -}}
       {{$val := printf "data.%s" $field.GetDbColName -}}
-      {{$convertType := convertFunc $field.GetTSFieldType -}}
+      {{$convertType := convertFunc ($field.GetTSFieldType $cfg) -}}
       {{if $convertType -}} 
         {{/* could be BigInt which isn't reserved */ -}}
         this.{{$field.TsFieldName $cfg}} = {{useImportMaybe $convertType}}({{$val}});
