@@ -676,6 +676,18 @@ func (f *Field) GetFieldType() enttype.EntType {
 	return f.fieldType
 }
 
+// should mirror TsFieldType because it's used to determine if nullable and if
+// convertFunc
+func (f *Field) GetTSFieldType(cfg codegenapi.Config) enttype.EntType {
+	if f.HasAsyncAccessor(cfg) {
+		return f.fieldType
+	}
+	if f.tsFieldType != nil {
+		return f.tsFieldType
+	}
+	return f.fieldType
+}
+
 func (f *Field) setFieldType(fieldType enttype.Type) error {
 	// TODO does this break golang?
 	// if so, might be time?

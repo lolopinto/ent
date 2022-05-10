@@ -14,7 +14,6 @@ interface ContactPlusEmails {
   firstEmail: string;
 }
 
-// we're only writing this once except with --force and packageName provided
 export class Contact extends ContactBase {
   privacyPolicy: PrivacyPolicy = {
     rules: [new AllowIfViewerIsRule("userID"), AlwaysDenyRule],
