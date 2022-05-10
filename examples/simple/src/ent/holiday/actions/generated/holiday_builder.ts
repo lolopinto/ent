@@ -76,6 +76,10 @@ export class HolidayBuilder implements Builder<Holiday> {
     };
   }
 
+  overrideInput(input: HolidayInput) {
+    this.input = input;
+  }
+
   // store data in Builder that can be retrieved by another validator, trigger, observer later in the action
   storeData(k: string, v: any) {
     this.m.set(k, v);
