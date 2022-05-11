@@ -565,16 +565,19 @@ func (f *Field) GetTsType() string {
 	return f.TsType()
 }
 
-func (f *Field) GetTsTypeImports() []*tsimport.ImportPath {
-	types := []enttype.EntType{
-		f.fieldType,
-		f.tsFieldType,
+func (f *Field) GetPossibleTypes() []enttype.EntType {
+	typs := []enttype.EntType{f.fieldType}
+	if f.tsFieldType != nil {
+		typs = append(typs, f.tsFieldType)
 	}
+
+	return typs
+}
+
+func (f *Field) GetTsTypeImports() []*tsimport.ImportPath {
+	types := f.GetPossibleTypes()
 	ret := []*tsimport.ImportPath{}
 	for _, t := range types {
-		if t == nil {
-			continue
-		}
 		// field type requires imports. assumes it has been reserved separately
 		typ, ok := t.(enttype.TSTypeWithImports)
 		if ok {
