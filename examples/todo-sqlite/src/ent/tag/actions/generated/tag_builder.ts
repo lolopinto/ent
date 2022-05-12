@@ -74,7 +74,7 @@ export class TagBuilder implements Builder<Tag> {
     };
   }
 
-  deleteInputKey(key: string) {
+  deleteInputKey(key: keyof TagInput) {
     delete this.input[key];
   }
 

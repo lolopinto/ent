@@ -76,7 +76,7 @@ export class ContactEmailBuilder implements Builder<ContactEmail> {
     };
   }
 
-  deleteInputKey(key: string) {
+  deleteInputKey(key: keyof ContactEmailInput) {
     delete this.input[key];
   }
 

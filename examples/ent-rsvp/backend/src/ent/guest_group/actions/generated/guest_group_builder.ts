@@ -72,7 +72,7 @@ export class GuestGroupBuilder implements Builder<GuestGroup> {
     };
   }
 
-  deleteInputKey(key: string) {
+  deleteInputKey(key: keyof GuestGroupInput) {
     delete this.input[key];
   }
 

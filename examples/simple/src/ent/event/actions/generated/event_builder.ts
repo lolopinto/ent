@@ -78,7 +78,7 @@ export class EventBuilder implements Builder<Event> {
     };
   }
 
-  deleteInputKey(key: string) {
+  deleteInputKey(key: keyof EventInput) {
     delete this.input[key];
   }
 

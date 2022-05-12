@@ -74,7 +74,7 @@ export class GuestDataBuilder implements Builder<GuestData> {
     };
   }
 
-  deleteInputKey(key: string) {
+  deleteInputKey(key: keyof GuestDataInput) {
     delete this.input[key];
   }
 

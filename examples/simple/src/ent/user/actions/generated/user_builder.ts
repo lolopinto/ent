@@ -98,7 +98,7 @@ export class UserBuilder implements Builder<User> {
     };
   }
 
-  deleteInputKey(key: string) {
+  deleteInputKey(key: keyof UserInput) {
     delete this.input[key];
   }
 

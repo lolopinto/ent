@@ -77,7 +77,7 @@ export class HoursOfOperationBuilder implements Builder<HoursOfOperation> {
     };
   }
 
-  deleteInputKey(key: string) {
+  deleteInputKey(key: keyof HoursOfOperationInput) {
     delete this.input[key];
   }
 

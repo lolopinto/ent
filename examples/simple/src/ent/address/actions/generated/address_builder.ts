@@ -78,7 +78,7 @@ export class AddressBuilder implements Builder<Address> {
     };
   }
 
-  deleteInputKey(key: string) {
+  deleteInputKey(key: keyof AddressInput) {
     delete this.input[key];
   }
 

@@ -76,7 +76,7 @@ export class AuthCodeBuilder implements Builder<AuthCode> {
     };
   }
 
-  deleteInputKey(key: string) {
+  deleteInputKey(key: keyof AuthCodeInput) {
     delete this.input[key];
   }
 

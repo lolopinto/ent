@@ -83,7 +83,7 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
     };
   }
 
-  deleteInputKey(key: string) {
+  deleteInputKey(key: keyof {{.Node}}Input) {
     delete this.input[key];
   }
 

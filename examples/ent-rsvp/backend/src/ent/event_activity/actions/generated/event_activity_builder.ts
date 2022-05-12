@@ -77,7 +77,7 @@ export class EventActivityBuilder implements Builder<EventActivity> {
     };
   }
 
-  deleteInputKey(key: string) {
+  deleteInputKey(key: keyof EventActivityInput) {
     delete this.input[key];
   }
 
