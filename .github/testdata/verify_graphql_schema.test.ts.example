@@ -6,6 +6,7 @@ test("verify graphql", async () => {
   const fields = user.getFields();
 
   expect(Object.keys(fields).length).toBe(5);
+  console.debug(fields);
   expect(fields["id"]).toBeDefined();
   expect(fields["firstName"]).toBeDefined();
   expect(fields["lastName"]).toBeDefined();
