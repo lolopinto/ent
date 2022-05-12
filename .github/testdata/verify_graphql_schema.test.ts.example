@@ -1,0 +1,14 @@
+import { GraphQLObjectType } from "graphql";
+import schema from "./graphql/generated/schema";
+
+test("verify graphql", async () => {
+  const user = schema.getType("User") as GraphQLObjectType;
+  const fields = user.getFields();
+
+  expect(Object.keys(fields).length).toBe(5);
+  expect(fields["id"]).toBeDefined();
+  expect(fields["firstName"]).toBeDefined();
+  expect(fields["lastName"]).toBeDefined();
+  expect(fields["emailAddress"]).toBeDefined();
+  expect(fields["howLong"]).toBeDefined();
+});
