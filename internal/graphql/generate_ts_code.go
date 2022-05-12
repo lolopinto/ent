@@ -524,7 +524,7 @@ func getImportPathForModelFile(nodeData *schema.NodeData) string {
 func searchForFiles(processor *codegen.Processor) []string {
 	rootPath := processor.Config.GetAbsPathToRoot()
 
-	cmd := exec.Command("rg", "--debug", "-tts", "-l", strings.Join(searchFor, "|"))
+	cmd := exec.Command("rg", "-tts", "-l", strings.Join(searchFor, "|"))
 
 	// run in root dir
 	cmd.Dir = rootPath
