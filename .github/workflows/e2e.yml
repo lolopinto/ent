@@ -61,7 +61,7 @@ jobs:
       - name: Set up python
         uses: actions/setup-python@v2
         with:
-          python-version: '>3.6'
+          python-version: '3.8'
 
       - name: setup auto_schema dependencies
         run: |
@@ -72,7 +72,7 @@ jobs:
       - name: Setup nodejs
         uses: actions/setup-node@v2
         with:
-          node-version: 16.x
+          node-version: 18.x
       - run: npm install -g ts-node prettier typescript @swc/core @swc/cli jest
       - run: |
           cd ts 
@@ -115,10 +115,11 @@ jobs:
 
       - name: add and verify custom graphql
         run: |
+          cd ent-starter
           cp ../.github/testdata/user.ts.example src/ent/user.ts
           tsent codegen
           cp ../.github/testdata/jest.config.js.example jest.config.js
-          cp ../.github/testdata/verify_graphql_schema.test.example src/verify_graphql_schema.test.ts.example
+          cp ../.github/testdata/verify_graphql_schema.test.example src/verify_graphql_schema.test.ts
           npm install ts-jest jest
           jest
 
