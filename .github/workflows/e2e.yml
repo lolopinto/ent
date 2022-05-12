@@ -122,6 +122,10 @@ jobs:
           cp ../.github/testdata/verify_graphql_schema.test.example src/verify_graphql_schema.test.ts
           npm install ts-jest jest
           jest
+        env:
+          DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
+          LOCAL_AUTO_SCHEMA: 'true'
+
 
       - name: compile && run
         run: |
