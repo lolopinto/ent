@@ -76,7 +76,7 @@ export class CommentBuilder implements Builder<Comment> {
     };
   }
 
-  deleteInputKey(key: string) {
+  deleteInputKey(key: keyof CommentInput) {
     delete this.input[key];
   }
 

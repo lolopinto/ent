@@ -76,7 +76,7 @@ export class ContactPhoneNumberBuilder implements Builder<ContactPhoneNumber> {
     };
   }
 
-  deleteInputKey(key: string) {
+  deleteInputKey(key: keyof ContactPhoneNumberInput) {
     delete this.input[key];
   }
 

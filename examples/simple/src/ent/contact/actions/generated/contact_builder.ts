@@ -77,7 +77,7 @@ export class ContactBuilder implements Builder<Contact> {
     };
   }
 
-  deleteInputKey(key: string) {
+  deleteInputKey(key: keyof ContactInput) {
     delete this.input[key];
   }
 

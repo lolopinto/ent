@@ -76,7 +76,7 @@ export class HolidayBuilder implements Builder<Holiday> {
     };
   }
 
-  deleteInputKey(key: string) {
+  deleteInputKey(key: keyof HolidayInput) {
     delete this.input[key];
   }
 

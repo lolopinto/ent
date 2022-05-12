@@ -73,7 +73,7 @@ export class TodoBuilder implements Builder<Todo> {
     };
   }
 
-  deleteInputKey(key: string) {
+  deleteInputKey(key: keyof TodoInput) {
     delete this.input[key];
   }
 

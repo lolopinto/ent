@@ -73,7 +73,7 @@ export class AccountBuilder implements Builder<Account> {
     };
   }
 
-  deleteInputKey(key: string) {
+  deleteInputKey(key: keyof AccountInput) {
     delete this.input[key];
   }
 
