@@ -119,7 +119,7 @@ jobs:
           cp ../.github/testdata/user.ts.example src/ent/user.ts
           tsent codegen
           cp ../.github/testdata/jest.config.js.example jest.config.js
-          cp ../.github/testdata/verify_graphql_schema.test.example src/verify_graphql_schema.test.ts
+          cp ../.github/testdata/verify_graphql_schema.test.ts.example src/verify_graphql_schema.test.ts
           npm install ts-jest jest
           jest
         env:
