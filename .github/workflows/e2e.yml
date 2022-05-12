@@ -120,7 +120,7 @@ jobs:
           tsent codegen
           cp ../.github/testdata/jest.config.js.example jest.config.js
           cp ../.github/testdata/verify_graphql_schema.test.ts.example src/verify_graphql_schema.test.ts
-          npm install ts-jest jest
+          npm install ts-jest jest @types/jest
           jest
         env:
           DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
