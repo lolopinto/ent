@@ -61,7 +61,7 @@ jobs:
       - name: Set up python
         uses: actions/setup-python@v2
         with:
-          python-version: '>3.6'
+          python-version: '3.8'
 
       - name: setup auto_schema dependencies
         run: |
@@ -72,8 +72,8 @@ jobs:
       - name: Setup nodejs
         uses: actions/setup-node@v2
         with:
-          node-version: 16.x
-      - run: npm install -g ts-node prettier typescript @swc/core @swc/cli
+          node-version: 18.x
+      - run: npm install -g ts-node prettier typescript @swc/core @swc/cli jest
       - run: |
           cd ts 
           npm ci
@@ -89,7 +89,7 @@ jobs:
           # clone ent-starter
           git clone https://github.com/lolopinto/ent-starter.git 
           cd ent-starter
-          npm install @snowtop/ent '@snowtop/ent-email@0.0.x'
+          npm install @snowtop/ent '@snowtop/ent-email@0.0.x' 
           mkdir -p src/schema
           cat ../.github/testdata/schema1.json | tsent generate schemas 
           tsent codegen
@@ -112,6 +112,20 @@ jobs:
         env:
           DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
           LOCAL_AUTO_SCHEMA: 'true'
+
+      - name: add and verify custom graphql
+        run: |
+          cd ent-starter
+          cp ../.github/testdata/user.ts.example src/ent/user.ts
+          tsent codegen
+          cp ../.github/testdata/jest.config.js.example jest.config.js
+          cp ../.github/testdata/verify_graphql_schema.test.ts.example src/verify_graphql_schema.test.ts
+          npm install ts-jest jest @types/jest
+          jest
+        env:
+          DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
+          LOCAL_AUTO_SCHEMA: 'true'
+
 
       - name: compile && run
         run: |

@@ -524,7 +524,8 @@ func getImportPathForModelFile(nodeData *schema.NodeData) string {
 func searchForFiles(processor *codegen.Processor) []string {
 	rootPath := processor.Config.GetAbsPathToRoot()
 
-	cmd := exec.Command("rg", "-tts", "-l", strconv.Quote(strings.Join(searchFor, "|")))
+	cmd := exec.Command("rg", "-tts", "-l", strings.Join(searchFor, "|"))
+
 	// run in root dir
 	cmd.Dir = rootPath
 	b, err := cmd.CombinedOutput()
@@ -532,12 +533,16 @@ func searchForFiles(processor *codegen.Processor) []string {
 		exit, ok := err.(*exec.ExitError)
 		// exit code 1 is expected when there's no results. nothing to do here
 		if ok && exit.ExitCode() == 1 {
+			if processor.Config.DebugMode() {
+				fmt.Printf("no custom files found: %s\n", err.Error())
+			}
 			return nil
 		}
+		// this could be because no files exist at all e.g. when running codegen first time...
 		if processor.Config.DebugMode() {
 			fmt.Printf("error searching for custom files: %v, output: %s\n", err, string(b))
-			return nil
 		}
+		return nil
 	}
 	files := strings.Split(strings.TrimSpace(string(b)), "\n")
 
@@ -548,11 +553,12 @@ func searchForFiles(processor *codegen.Processor) []string {
 	// any custom objects that are referenced should be in the load path
 	indexFile := path.Join(rootPath, "src/ent/index.ts")
 	stat, _ := os.Stat(indexFile)
+	allEnt := false
 	if stat != nil {
+		allEnt = true
 		result = append(result, "src/ent/index.ts")
 	}
 
-	seen := make(map[string]bool)
 	entPaths := make(map[string]bool)
 
 	for _, info := range processor.Schema.Nodes {
@@ -561,20 +567,12 @@ func searchForFiles(processor *codegen.Processor) []string {
 		entPaths[entPath] = true
 	}
 
-	fileAdded := false
 	for _, file := range files {
 		// ignore entPaths since we're doing src/ent/index.ts to get all of ent
-		if file == "" || seen[file] || entPaths[file] {
+		if allEnt && entPaths[file] {
 			continue
 		}
-		seen[file] = true
-		fileAdded = true
 		result = append(result, file)
-	}
-
-	// no files, nothing to do here
-	if !fileAdded {
-		return []string{}
 	}
 
 	return result
