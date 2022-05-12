@@ -72,8 +72,8 @@ export class GuestGroupBuilder implements Builder<GuestGroup> {
     };
   }
 
-  overrideInput(input: GuestGroupInput) {
-    this.input = input;
+  deleteInputKey(key: string) {
+    delete this.input[key];
   }
 
   // store data in Builder that can be retrieved by another validator, trigger, observer later in the action
