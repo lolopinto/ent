@@ -105,6 +105,54 @@ func TestNullableField(t *testing.T) {
 	})
 }
 
+func TestNonNullableListField(t *testing.T) {
+	cfg := &codegenapi.DummyConfig{}
+	f, err := newFieldFromInput(cfg, &input.Field{
+		Name: "name",
+		Type: &input.FieldType{
+			DBType: input.List,
+			ListElemType: &input.FieldType{
+				DBType: input.String,
+			},
+		},
+	})
+	require.Nil(t, err)
+	doTestField(t, cfg, f, &expected{
+		private:            false,
+		asyncAccessor:      false,
+		tsFieldName:        "name",
+		tsBuilderFieldName: "name",
+		tsPublicAPIName:    "name",
+		tsType:             "string[]",
+		tsFieldType:        "string[]",
+		tsBuilderType:      "string[]",
+		tsBuilderUnionType: "string[]",
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLList"),
+			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLString"),
+		},
+		graphqlMutationImports: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLList"),
+			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLString"),
+		},
+		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
+			tsimport.NewGQLImportPath("GraphQLList"),
+			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLString"),
+		},
+		fieldTypeType: &enttype.ArrayListType{
+			ElemType: &enttype.StringType{},
+		},
+		tsFieldTypeType: &enttype.ArrayListType{
+			ElemType: &enttype.StringType{},
+		},
+	})
+}
+
 type onDemandConfig struct {
 	codegenapi.DummyConfig
 }
