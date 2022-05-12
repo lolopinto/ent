@@ -115,7 +115,7 @@ jobs:
 
       - name: add and verify custom graphql
         run: |
-          cat ../.github/testdata/user.ts.example > src/ent/user.ts
+          cp ../.github/testdata/user.ts.example src/ent/user.ts
           tsent codegen
           cp ../.github/testdata/jest.config.js.example jest.config.js
           cp ../.github/testdata/verify_graphql_schema.test.example src/verify_graphql_schema.test.ts.example
