@@ -73,8 +73,8 @@ export class AccountBuilder implements Builder<Account> {
     };
   }
 
-  overrideInput(input: AccountInput) {
-    this.input = input;
+  deleteInputKey(key: string) {
+    delete this.input[key];
   }
 
   // store data in Builder that can be retrieved by another validator, trigger, observer later in the action

@@ -77,8 +77,8 @@ export class ContactBuilder implements Builder<Contact> {
     };
   }
 
-  overrideInput(input: ContactInput) {
-    this.input = input;
+  deleteInputKey(key: string) {
+    delete this.input[key];
   }
 
   // store data in Builder that can be retrieved by another validator, trigger, observer later in the action

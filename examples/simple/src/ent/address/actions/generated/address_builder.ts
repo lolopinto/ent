@@ -78,8 +78,8 @@ export class AddressBuilder implements Builder<Address> {
     };
   }
 
-  overrideInput(input: AddressInput) {
-    this.input = input;
+  deleteInputKey(key: string) {
+    delete this.input[key];
   }
 
   // store data in Builder that can be retrieved by another validator, trigger, observer later in the action
