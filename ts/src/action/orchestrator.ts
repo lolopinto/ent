@@ -407,7 +407,7 @@ export class Orchestrator<T extends Ent> {
     );
   }
 
-  private getEntForPrivacyPolicy(editedData: Data) {
+  private getEntForPrivacyPolicyImpl(editedData: Data) {
     if (this.actualOperation !== WriteOperation.Insert) {
       return this.existingEnt;
     }
@@ -442,18 +442,17 @@ export class Orchestrator<T extends Ent> {
     }
   }
 
-  private async validate(): Promise<void> {
-    // existing ent required for edit or delete operations
-    switch (this.actualOperation) {
-      case WriteOperation.Delete:
-      case WriteOperation.Edit:
-        if (!this.existingEnt) {
-          throw new Error(
-            `existing ent required with operation ${this.actualOperation}`,
-          );
-        }
+  // if you're doing custom privacy within an action and want to
+  // get either the unsafe ent or the existing ent that's being edited
+  async getPossibleUnsafeEntForPrivacy() {
+    if (this.actualOperation !== WriteOperation.Insert) {
+      return this.existingEnt;
     }
+    const { editedData } = await this.getFieldsInfo();
+    return this.getEntForPrivacyPolicyImpl(editedData);
+  }
 
+  private async getFieldsInfo() {
     const action = this.options.action;
     const builder = this.options.builder;
 
@@ -469,6 +468,25 @@ export class Orchestrator<T extends Ent> {
       action,
     );
 
+    return { editedData, editedFields, schemaFields };
+  }
+
+  private async validate(): Promise<void> {
+    // existing ent required for edit or delete operations
+    switch (this.actualOperation) {
+      case WriteOperation.Delete:
+      case WriteOperation.Edit:
+        if (!this.existingEnt) {
+          throw new Error(
+            `existing ent required with operation ${this.actualOperation}`,
+          );
+        }
+    }
+
+    const { schemaFields, editedData } = await this.getFieldsInfo();
+    const action = this.options.action;
+    const builder = this.options.builder;
+
     // this runs in following phases:
     // * set default fields and pass to builder so the value can be checked by triggers/observers/validators
     // * privacy policy (use unsafe ent if we have it)
@@ -479,7 +497,7 @@ export class Orchestrator<T extends Ent> {
       await applyPrivacyPolicyX(
         this.options.viewer,
         privacyPolicy,
-        this.getEntForPrivacyPolicy(editedData),
+        this.getEntForPrivacyPolicyImpl(editedData),
         this.throwError.bind(this),
       );
     }
@@ -494,7 +512,7 @@ export class Orchestrator<T extends Ent> {
     let validators = action?.validators || [];
 
     // not ideal we're calling this twice. fix...
-    // needed for now. may need to write somet of this?
+    // needed for now. may need to rewrite some of this?
     const editedFields2 = await this.options.editedFields();
     await Promise.all([
       this.formatAndValidateFields(schemaFields, editedFields2),
