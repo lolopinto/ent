@@ -41,6 +41,16 @@ npm install -g typescript@4.4.2 prettier@2.3.2 ts-node@10.7 @swc/core@1.2.155 @s
 npm install --save-dev tsconfig-paths@3.11.0
 ```
 
+* Install `rg`
+
+If on OSX, the command is:
+
+```shell
+brew install ripgrep
+```
+
+For different OSes, check out  [github](https://github.com/BurntSushi/ripgrep#installation) for installation instructions.
+
 You should now have everything you need to run locally.
 
 You'd need to check this page regularly in case one of the dependencies has changed.
