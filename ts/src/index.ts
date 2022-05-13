@@ -10,8 +10,6 @@ export {
   loadDerivedEntX,
   loadEntViaKey,
   loadEntXViaKey,
-  applyPrivacyPolicyForEnt,
-  applyPrivacyPolicyForEntX,
   performRawQuery,
   // even these 3 need to change...
   loadRowX,
@@ -40,7 +38,7 @@ import DB from "./core/db";
 export * from "./core/loaders";
 export { DB };
 
-// TODO figure out if this should be its own
+// TODO figure out if this should be its own import path e.g. @snowtop/ent/privacy
 export {
   EntPrivacyError,
   AlwaysAllowRule,

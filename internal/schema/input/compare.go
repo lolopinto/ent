@@ -58,6 +58,7 @@ func fieldEqual(existingField, field *Field) bool {
 		existingField.DisableUserEditable == field.DisableUserEditable &&
 		existingField.HasDefaultValueOnCreate == field.HasDefaultValueOnCreate &&
 		existingField.HasDefaultValueOnEdit == field.HasDefaultValueOnEdit &&
+		existingField.HasFieldPrivacy == field.HasFieldPrivacy &&
 
 		PolymorphicOptionsEqual(existingField.Polymorphic, field.Polymorphic) &&
 		existingField.DerivedWhenEmbedded == field.DerivedWhenEmbedded &&

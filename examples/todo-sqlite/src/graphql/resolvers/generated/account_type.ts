@@ -33,7 +33,7 @@ export const AccountType = new GraphQLObjectType({
       type: GraphQLNonNull(GraphQLString),
     },
     phone_number: {
-      type: GraphQLNonNull(GraphQLString),
+      type: GraphQLString,
       resolve: (account: Account, args: {}, context: RequestContext) => {
         return account.phoneNumber;
       },

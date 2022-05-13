@@ -12,7 +12,7 @@ import {
   saveBuilderX,
   Observer,
 } from "../action";
-import { getFields, Schema } from "../schema";
+import { getFields, getFieldsWithPrivacy, Schema } from "../schema";
 import { QueryRecorder } from "./db_mock";
 import pluralize from "pluralize";
 import { snakeCase } from "snake-case";
@@ -169,16 +169,32 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
         ent: schema.ent,
         tableName: tableName,
         fields: [],
+        fieldPrivacy: getFieldsWithPrivacy(schema),
       },
       builder: this,
       action: action,
       schema: this.schema,
       editedFields: () => {
-        return this.fields;
+        // to simulate what we do in generated builders where we return a new Map
+        const m = new Map();
+        for (const [k, v] of this.fields) {
+          m.set(k, v);
+        }
+        return m;
       },
       updateInput: (input: Data) => {
+        const knownFields = getFields(this.schema);
         for (const k in input) {
-          this.fields.set(k, input[k]);
+          if (knownFields.has(k)) {
+            this.fields.set(k, input[k]);
+          } else {
+            // related to #510. we do camelCase to pass fields in here but fields may be snakeCase and we want that to pass in tests
+            // we do camelCase in
+            const sc = snakeCase(k);
+            if (knownFields.has(sc)) {
+              this.fields.set(sc, input[k]);
+            }
+          }
         }
       },
     });

@@ -26,6 +26,7 @@ beforeAll(async () => {
       password,
       port: 5432,
       sslmode: "disable",
+      max: 100,
     },
     //    log: ["query"],
   });
@@ -109,9 +110,7 @@ beforeAll(async () => {
     },
   ];
 
-  for (const input of inputs) {
-    await create(input);
-  }
+  await Promise.all(inputs.map((input) => create(input)));
 });
 
 afterAll(async () => {

@@ -25,10 +25,10 @@ import {
   getTransformedUpdateOp,
   SQLStatementOperation,
   TransformedUpdateOperation,
+  getStorageKey,
 } from "../schema/schema";
 import { Changeset, Executor, Validator } from "../action/action";
 import { WriteOperation, Builder, Action } from "../action";
-import { snakeCase } from "snake-case";
 import { camelCase } from "camel-case";
 import { applyPrivacyPolicyX } from "../core/privacy";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
@@ -47,7 +47,7 @@ export interface OrchestratorOptions<T extends Ent, TData extends Data> {
   builder: Builder<T>;
   action?: Action<T>;
   schema: SchemaInputType;
-  editedFields(): Map<string, any>;
+  editedFields(): Map<string, any> | Promise<Map<string, any>>;
   // this is called with fields with defaultValueOnCreate|Edit
   updateInput?: (data: TData) => void;
 }
@@ -407,7 +407,7 @@ export class Orchestrator<T extends Ent> {
     );
   }
 
-  private getEntForPrivacyPolicy(editedData: Data) {
+  private getEntForPrivacyPolicyImpl(editedData: Data) {
     if (this.actualOperation !== WriteOperation.Insert) {
       return this.existingEnt;
     }
@@ -442,6 +442,35 @@ export class Orchestrator<T extends Ent> {
     }
   }
 
+  // if you're doing custom privacy within an action and want to
+  // get either the unsafe ent or the existing ent that's being edited
+  async getPossibleUnsafeEntForPrivacy() {
+    if (this.actualOperation !== WriteOperation.Insert) {
+      return this.existingEnt;
+    }
+    const { editedData } = await this.getFieldsInfo();
+    return this.getEntForPrivacyPolicyImpl(editedData);
+  }
+
+  private async getFieldsInfo() {
+    const action = this.options.action;
+    const builder = this.options.builder;
+
+    // future optimization: can get schemaFields to memoize based on different values
+    const schemaFields = getFields(this.options.schema);
+
+    const editedFields = await this.options.editedFields();
+
+    let editedData = await this.getFieldsWithDefaultValues(
+      builder,
+      schemaFields,
+      editedFields,
+      action,
+    );
+
+    return { editedData, editedFields, schemaFields };
+  }
+
   private async validate(): Promise<void> {
     // existing ent required for edit or delete operations
     switch (this.actualOperation) {
@@ -454,17 +483,9 @@ export class Orchestrator<T extends Ent> {
         }
     }
 
+    const { schemaFields, editedData } = await this.getFieldsInfo();
     const action = this.options.action;
     const builder = this.options.builder;
-
-    // future optimization: can get schemaFields to memoize based on different values
-    const schemaFields = getFields(this.options.schema);
-
-    let editedData = await this.getFieldsWithDefaultValues(
-      builder,
-      schemaFields,
-      action,
-    );
 
     // this runs in following phases:
     // * set default fields and pass to builder so the value can be checked by triggers/observers/validators
@@ -476,7 +497,7 @@ export class Orchestrator<T extends Ent> {
       await applyPrivacyPolicyX(
         this.options.viewer,
         privacyPolicy,
-        this.getEntForPrivacyPolicy(editedData),
+        this.getEntForPrivacyPolicyImpl(editedData),
         this.throwError.bind(this),
       );
     }
@@ -490,8 +511,11 @@ export class Orchestrator<T extends Ent> {
 
     let validators = action?.validators || [];
 
+    // not ideal we're calling this twice. fix...
+    // needed for now. may need to rewrite some of this?
+    const editedFields2 = await this.options.editedFields();
     await Promise.all([
-      this.formatAndValidateFields(schemaFields),
+      this.formatAndValidateFields(schemaFields, editedFields2),
       this.validators(validators, action!, builder),
     ]);
   }
@@ -543,9 +567,9 @@ export class Orchestrator<T extends Ent> {
   private async getFieldsWithDefaultValues(
     builder: Builder<T>,
     schemaFields: Map<string, Field>,
+    editedFields: Map<string, any>,
     action?: Action<T> | undefined,
   ): Promise<Data> {
-    const editedFields = this.options.editedFields();
     let data: Data = {};
     let defaultData: Data = {};
 
@@ -586,12 +610,12 @@ export class Orchestrator<T extends Ent> {
           if (field.format) {
             val = field.format(transformed.data[k]);
           }
-          let dbKey = field.storageKey || snakeCase(field.name);
+          let dbKey = getStorageKey(field);
           data[dbKey] = val;
           this.defaultFieldsByTSName[camelCase(k)] = val;
           // hmm do we need this?
           // TODO how to do this for local tests?
-          //          this.defaultFieldsByFieldName[k] = val;
+          // this.defaultFieldsByFieldName[k] = val;
         }
       }
       this.actualOperation = this.getWriteOpForSQLStamentOp(transformed.op);
@@ -605,7 +629,7 @@ export class Orchestrator<T extends Ent> {
     for (const [fieldName, field] of schemaFields) {
       let value = editedFields.get(fieldName);
       let defaultValue: any = undefined;
-      let dbKey = field.storageKey || snakeCase(field.name);
+      let dbKey = getStorageKey(field);
 
       if (value === undefined) {
         if (this.actualOperation === WriteOperation.Insert) {
@@ -720,13 +744,13 @@ export class Orchestrator<T extends Ent> {
 
   private async formatAndValidateFields(
     schemaFields: Map<string, Field>,
+    editedFields: Map<string, any>,
   ): Promise<void> {
     const op = this.actualOperation;
     if (op === WriteOperation.Delete) {
       return;
     }
 
-    const editedFields = this.options.editedFields();
     // build up data to be saved...
     let data = {};
     let logValues = {};
@@ -738,7 +762,7 @@ export class Orchestrator<T extends Ent> {
         // null allowed
         value = this.defaultFieldsByFieldName[fieldName];
       }
-      let dbKey = field.storageKey || snakeCase(field.name);
+      let dbKey = getStorageKey(field);
 
       value = await this.transformFieldValue(field, dbKey, value);
 
@@ -755,7 +779,7 @@ export class Orchestrator<T extends Ent> {
         const defaultValue = this.defaultFieldsByFieldName[fieldName];
         let field = schemaFields.get(fieldName)!;
 
-        let dbKey = field.storageKey || snakeCase(field.name);
+        let dbKey = getStorageKey(field);
 
         // no value, let's just default
         if (data[dbKey] === undefined) {

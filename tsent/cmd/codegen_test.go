@@ -24,7 +24,6 @@ import (
 var codegenOptions = []codegen.Option{
 	codegen.DisablePrompts(),
 	codegen.DisableFormat(),
-	codegen.DisableCustomGraphQL(),
 	codegen.FromTest(),
 	codegen.DisableSchemaGQL(),
 }

@@ -34,7 +34,15 @@ function createDataLoader(options: SelectDataOptions) {
     let col = options.key;
     let cls = clause.In(col, ...ids);
     if (options.clause) {
-      cls = clause.And(options.clause, cls);
+      let optionClause: clause.Clause | undefined;
+      if (typeof options.clause === "function") {
+        optionClause = options.clause();
+      } else {
+        optionClause = options.clause;
+      }
+      if (optionClause) {
+        cls = clause.And(optionClause, cls);
+      }
     }
     const rowOptions: LoadRowOptions = {
       ...options,
@@ -127,7 +135,15 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
 
     let cls: clause.Clause = clause.Eq(this.options.key, key);
     if (this.options.clause) {
-      cls = clause.And(this.options.clause, cls);
+      let optionClause: clause.Clause | undefined;
+      if (typeof this.options.clause === "function") {
+        optionClause = this.options.clause();
+      } else {
+        optionClause = this.options.clause;
+      }
+      if (optionClause) {
+        cls = clause.And(optionClause, cls);
+      }
     }
     const rowOptions: LoadRowOptions = {
       ...this.options,
@@ -148,7 +164,15 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
 
     let cls = clause.In(this.options.key, ...keys);
     if (this.options.clause) {
-      cls = clause.And(this.options.clause, cls);
+      let optionClause: clause.Clause | undefined;
+      if (typeof this.options.clause === "function") {
+        optionClause = this.options.clause();
+      } else {
+        optionClause = this.options.clause;
+      }
+      if (optionClause) {
+        cls = clause.And(optionClause, cls);
+      }
     }
     const rowOptions: LoadRowOptions = {
       ...this.options,
@@ -168,14 +192,28 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
   }
 }
 
+interface ObjectLoaderOptions extends SelectDataOptions {
+  // needed when clause is a function...
+  instanceKey?: string;
+}
+
 export class ObjectLoaderFactory<T> implements LoaderFactory<T, Data | null> {
   name: string;
   private toPrime: ObjectLoaderFactory<T>[] = [];
 
-  constructor(public options: SelectDataOptions) {
-    this.name = `${options.tableName}:${options.key}:${
-      options.clause?.instanceKey() || ""
-    }`;
+  constructor(public options: ObjectLoaderOptions) {
+    // we don't wanna do it here because we want it to be delayed
+    let instanceKey = "";
+    if (typeof this.options.clause === "function") {
+      if (!options.instanceKey) {
+        throw new Error(
+          `need to pass an instanceKey to ObjectLoader if clause is a function`,
+        );
+      }
+    } else if (this.options.clause) {
+      instanceKey = this.options.clause.instanceKey();
+    }
+    this.name = `${options.tableName}:${options.key}:${instanceKey}`;
   }
 
   createLoader(context?: Context): ObjectLoader<T> {

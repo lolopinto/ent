@@ -35,7 +35,7 @@ enum AccountState {
 type Account implements Node {
   id: ID!
   name: String!
-  phone_number: String!
+  phone_number: String
   account_state: AccountState
   tags(first: Int, after: String, last: Int, before: String): AccountToTagsConnection!
   todos(first: Int, after: String, last: Int, before: String): AccountToTodosConnection!

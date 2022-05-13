@@ -339,6 +339,15 @@ func (cfg *Config) DatabaseToCompareTo() string {
 	return ""
 }
 
+func (cfg *Config) FieldPrivacyEvaluated() codegenapi.FieldPrivacyEvaluated {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		if codegen.DefaultGraphQLFieldFormat != "" {
+			return codegen.FieldPrivacyEvaluated
+		}
+	}
+	return codegenapi.OnDemand
+}
+
 const DEFAULT_GLOB = "src/**/*.ts"
 const PRETTIER_FILE_CHUNKS = 20
 
@@ -473,18 +482,19 @@ func cloneConfig(cfg *config) *config {
 }
 
 type CodegenConfig struct {
-	DefaultEntPolicy           *PrivacyConfig                 `yaml:"defaultEntPolicy"`
-	DefaultActionPolicy        *PrivacyConfig                 `yaml:"defaultActionPolicy"`
-	Prettier                   *PrettierConfig                `yaml:"prettier"`
-	RelativeImports            bool                           `yaml:"relativeImports"`
-	DisableGraphQLRoot         bool                           `yaml:"disableGraphQLRoot"`
-	GeneratedHeader            string                         `yaml:"generatedHeader"`
-	DisableBase64Encoding      bool                           `yaml:"disableBase64Encoding"`
-	GenerateRootResolvers      bool                           `yaml:"generateRootResolvers"`
-	DefaultGraphQLMutationName codegenapi.GraphQLMutationName `yaml:"defaultGraphQLMutationName"`
-	DefaultGraphQLFieldFormat  codegenapi.GraphQLFieldFormat  `yaml:"defaultGraphQLFieldFormat"`
-	SchemaSQLFilePath          string                         `yaml:"schemaSQLFilePath"`
-	DatabaseToCompareTo        string                         `yaml:"databaseToCompareTo"`
+	DefaultEntPolicy           *PrivacyConfig                   `yaml:"defaultEntPolicy"`
+	DefaultActionPolicy        *PrivacyConfig                   `yaml:"defaultActionPolicy"`
+	Prettier                   *PrettierConfig                  `yaml:"prettier"`
+	RelativeImports            bool                             `yaml:"relativeImports"`
+	DisableGraphQLRoot         bool                             `yaml:"disableGraphQLRoot"`
+	GeneratedHeader            string                           `yaml:"generatedHeader"`
+	DisableBase64Encoding      bool                             `yaml:"disableBase64Encoding"`
+	GenerateRootResolvers      bool                             `yaml:"generateRootResolvers"`
+	DefaultGraphQLMutationName codegenapi.GraphQLMutationName   `yaml:"defaultGraphQLMutationName"`
+	DefaultGraphQLFieldFormat  codegenapi.GraphQLFieldFormat    `yaml:"defaultGraphQLFieldFormat"`
+	SchemaSQLFilePath          string                           `yaml:"schemaSQLFilePath"`
+	DatabaseToCompareTo        string                           `yaml:"databaseToCompareTo"`
+	FieldPrivacyEvaluated      codegenapi.FieldPrivacyEvaluated `yaml:"fieldPrivacyEvaluated"`
 }
 
 func cloneCodegen(cfg *CodegenConfig) *CodegenConfig {
@@ -508,6 +518,7 @@ func (cfg *CodegenConfig) Clone() *CodegenConfig {
 		DefaultGraphQLFieldFormat:  cfg.DefaultGraphQLFieldFormat,
 		SchemaSQLFilePath:          cfg.SchemaSQLFilePath,
 		DatabaseToCompareTo:        cfg.DatabaseToCompareTo,
+		FieldPrivacyEvaluated:      cfg.FieldPrivacyEvaluated,
 	}
 }
 

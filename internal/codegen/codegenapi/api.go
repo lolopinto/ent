@@ -22,10 +22,18 @@ const (
 	SnakeCase GraphQLFieldFormat = "snake_case"
 )
 
+type FieldPrivacyEvaluated string
+
+const (
+	AtEntLoad FieldPrivacyEvaluated = "at_ent_load"
+	OnDemand  FieldPrivacyEvaluated = "on_demand"
+)
+
 // this file exists to simplify circular dependencies
 type Config interface {
 	DefaultGraphQLMutationName() GraphQLMutationName
 	DefaultGraphQLFieldFormat() GraphQLFieldFormat
+	FieldPrivacyEvaluated() FieldPrivacyEvaluated
 	GetRootPathToConfigs() string
 	DebugMode() bool
 }
@@ -48,6 +56,10 @@ func (cfg *DummyConfig) GetRootPathToConfigs() string {
 
 func (cfg *DummyConfig) DebugMode() bool {
 	return false
+}
+
+func (cfg DummyConfig) FieldPrivacyEvaluated() FieldPrivacyEvaluated {
+	return OnDemand
 }
 
 var _ Config = &DummyConfig{}

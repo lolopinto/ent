@@ -1,0 +1,13 @@
+import { UserBase } from "src/ent/internal";
+import { Interval } from "luxon";
+import { GraphQLInt } from "graphql";
+import { gqlField } from "@snowtop/ent/graphql";
+
+export class User extends UserBase {
+  @gqlField({
+    type: GraphQLInt,
+  })
+  howLong() {
+    return Interval.fromDateTimes(this.createdAt, new Date()).count("seconds");
+  }
+}

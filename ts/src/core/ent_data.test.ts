@@ -11,7 +11,12 @@ import {
   EditRowOptions,
 } from "./base";
 import { LoggedOutViewer, IDViewer } from "./viewer";
-import { AlwaysDenyRule, AllowIfViewerRule } from "./privacy";
+import {
+  AlwaysDenyRule,
+  AllowIfViewerRule,
+  AlwaysDenyPrivacyPolicy,
+  AlwaysAllowPrivacyPolicy,
+} from "./privacy";
 import { buildInsertQuery, buildUpdateQuery } from "./ent";
 import { QueryRecorder, queryOptions } from "../testutils/db_mock";
 import { createRowForTest, editRowForTest } from "../testutils/write";
@@ -34,10 +39,18 @@ const selectOptions: SelectDataOptions = {
   fields: ["bar", "baz", "foo"],
   key: "bar",
 };
+const selectOptionsContacts: SelectDataOptions = {
+  tableName: "contacts",
+  fields: ["bar", "baz", "foo"],
+  key: "bar",
+};
 const loaderFactory = new ObjectLoaderFactory(selectOptions);
+const loaderFactoryContacts = new ObjectLoaderFactory(selectOptionsContacts);
 
 class User implements Ent {
   id: ID;
+  baz: string | null;
+  foo: string | null;
   accountID: string;
   nodeType = "User";
   privacyPolicy: PrivacyPolicy = {
@@ -45,6 +58,8 @@ class User implements Ent {
   };
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data["bar"];
+    this.baz = data["baz"];
+    this.foo = data["foo"];
   }
 
   static async load(v: Viewer, id: ID): Promise<User | null> {
@@ -60,6 +75,46 @@ class User implements Ent {
       ...selectOptions,
       ent: this,
       loaderFactory,
+    };
+  }
+}
+
+// Contact has field privacy
+class Contact implements Ent {
+  id: ID;
+  baz: string | null;
+  foo: string | null;
+  accountID: string;
+  nodeType = "Contact";
+  privacyPolicy: PrivacyPolicy = {
+    rules: [AllowIfViewerRule, AlwaysDenyRule],
+  };
+  constructor(public viewer: Viewer, public data: Data) {
+    this.id = data["bar"];
+    this.baz = data["baz"];
+    this.foo = data["foo"];
+  }
+
+  static async load(v: Viewer, id: ID): Promise<Contact | null> {
+    return ent.loadEnt(v, id, Contact.loaderOptions());
+  }
+
+  static async loadX(v: Viewer, id: ID): Promise<Contact> {
+    return ent.loadEntX(v, id, Contact.loaderOptions());
+  }
+
+  static loaderOptions(): LoadEntOptions<Contact> {
+    return {
+      ...selectOptions,
+      tableName: "contacts",
+      ent: this,
+      loaderFactory: loaderFactoryContacts,
+      fieldPrivacy: new Map<string, PrivacyPolicy>([
+        // foo never visible
+        ["foo", AlwaysDenyPrivacyPolicy],
+        // baz always visible
+        ["baz", AlwaysAllowPrivacyPolicy],
+      ]),
     };
   }
 }
@@ -141,7 +196,7 @@ async function createRows(fields: Data[], tableName: string): Promise<void> {
       insertStatements.push({ query, values });
       return createRowForTest({
         fields: data,
-        tableName: selectOptions.tableName,
+        tableName: tableName,
         fieldsToLog: data,
       });
     }),
@@ -426,10 +481,24 @@ function commonTests() {
 
       // viewer, same data reused and privacy respected
       expect(ent3).not.toBe(null);
-      expect(ent4).not.toBe(null);
-
       expect(ent3?.id).toBe(1);
+      expect(ent3?.baz).toBe("baz");
+      expect(ent3?.foo).toBe("foo");
+      expect(ent3?.data).toEqual({
+        bar: 1,
+        baz: "baz",
+        foo: "foo",
+      });
+
+      expect(ent4).not.toBe(null);
       expect(ent4?.id).toBe(1);
+      expect(ent4?.data).toEqual({
+        bar: 1,
+        baz: "baz",
+        foo: "foo",
+      });
+      expect(ent4?.baz).toBe("baz");
+      expect(ent4?.foo).toBe("foo");
     });
 
     test("without context", async () => {
@@ -453,6 +522,94 @@ function commonTests() {
         },
         false,
       );
+    });
+  });
+
+  describe("loadEnt with field privacy", () => {
+    test("with context", async () => {
+      // write it once before all the checks since
+      // repeated calls to loadTestEnt
+      await createRows(
+        [
+          {
+            bar: 1,
+            baz: "baz",
+            foo: "foo",
+          },
+        ],
+        "contacts",
+      );
+
+      let ctx = getCtx();
+      const vc = new LoggedOutViewer(ctx);
+      ctx.setViewer(vc);
+
+      const options = {
+        ...Contact.loaderOptions(),
+        // gonna end up being a data loader...
+        clause: clause.In("bar", 1),
+      };
+
+      const testEnt = async (vc: Viewer) => {
+        return await loadTestEnt(
+          () => ent.loadEnt(vc, 1, Contact.loaderOptions()),
+          () => {
+            const queryOption = {
+              query: ent.buildQuery(options),
+              values: options.clause.values(),
+            };
+            // when there's a context cache, we only run the query once so should be the same result
+            const expQueries1: Data[] = [queryOption];
+            const cacheHit: Data = {
+              "dataloader-cache-hit": 1,
+              "tableName": options.tableName,
+            };
+            const expQueries2: Data[] = [queryOption, cacheHit];
+
+            // 2nd time. with different viewer. more hits
+            if (vc instanceof IDViewer) {
+              expQueries1.push(cacheHit, cacheHit);
+              expQueries2.push(cacheHit, cacheHit);
+            }
+            return [expQueries1, expQueries2];
+          },
+          true,
+          true,
+        );
+      };
+
+      const [ent1, ent2] = await testEnt(vc);
+
+      // // same context, change viewer
+      const vc2 = getIDViewer(1, ctx);
+
+      // // we still reuse the same raw-data query since it's viewer agnostic
+      // // context cache works as viewer is changed
+      const [ent3, ent4] = await testEnt(vc2);
+
+      // no viewer, nothing loaded
+      expect(ent1).toBe(null);
+      expect(ent2).toBe(null);
+
+      expect(ent3).not.toBe(null);
+      expect(ent3?.id).toBe(1);
+      expect(ent3?.baz).toBe("baz");
+      expect(ent3?.foo).toBeNull();
+      expect(ent3?.data).toEqual({
+        bar: 1,
+        baz: "baz",
+        foo: null,
+      });
+
+      expect(ent4).not.toBe(null);
+      expect(ent4?.id).toBe(1);
+      expect(ent4?.data).toEqual({
+        bar: 1,
+        baz: "baz",
+        foo: null,
+      });
+      expect(ent4?.baz).toBe("baz");
+      expect(ent4?.foo).toBeNull();
     });
   });
 
@@ -858,6 +1015,134 @@ function commonTests() {
     });
   });
 
+  describe("loadEnts with field privacy", () => {
+    beforeEach(async () => {
+      const fields: Data[] = [1, 2, 3].map((id) => {
+        return {
+          bar: id,
+          baz: "baz",
+          foo: "foo",
+        };
+      });
+      await createRows(fields, selectOptionsContacts.tableName);
+    });
+
+    test("with context", async () => {
+      const vc = getIDViewer(1);
+      const ents = await ent.loadEnts(vc, Contact.loaderOptions(), 1, 2, 3);
+
+      // only loading self worked because of privacy
+      expect(ents.length).toBe(1);
+      const contact = ents[0];
+
+      expect(contact.id).toBe(1);
+      expect(contact.data).toEqual({
+        bar: 1,
+        baz: "baz",
+        foo: null,
+      });
+      expect(contact.baz).toBe("baz");
+      expect(contact.foo).toBeNull();
+
+      const options = {
+        ...Contact.loaderOptions(),
+        clause: clause.In("bar", 1, 2, 3),
+      };
+      const expQueries = [
+        {
+          query: ent.buildQuery(options),
+          values: options.clause.values(),
+        },
+      ];
+
+      validateQueries(expQueries);
+
+      // reload each of these in a different place
+      await Promise.all([
+        ent.loadEnt(vc, 1, Contact.loaderOptions()),
+        ent.loadEnt(vc, 2, Contact.loaderOptions()),
+        ent.loadEnt(vc, 3, Contact.loaderOptions()),
+      ]);
+
+      const cacheHits = [
+        {
+          "dataloader-cache-hit": 1,
+          "tableName": options.tableName,
+        },
+        {
+          "dataloader-cache-hit": 2,
+          "tableName": options.tableName,
+        },
+        {
+          "dataloader-cache-hit": 3,
+          "tableName": options.tableName,
+        },
+      ];
+      const expQueries2 = [...expQueries, ...cacheHits];
+      validateQueries(expQueries2);
+
+      // reload all
+      await ent.loadEnts(vc, Contact.loaderOptions(), 1, 2, 3);
+
+      // more cache hits
+      validateQueries([...expQueries2, ...cacheHits]);
+    });
+
+    test("without context", async () => {
+      const vc = new IDViewer(1);
+      const ents = await ent.loadEnts(vc, Contact.loaderOptions(), 1, 2, 3);
+
+      // only loading self worked because of privacy
+      expect(ents.length).toBe(1);
+      expect(ents[0].id).toBe(1);
+
+      const options = {
+        ...Contact.loaderOptions(),
+        clause: clause.In("bar", 1, 2, 3),
+      };
+      const inQuery = {
+        query: ent.buildQuery(options),
+        values: options.clause.values(),
+      };
+      const expQueries = [inQuery];
+
+      validateQueries(expQueries);
+
+      // add each clause.Eq for the one-offs
+      const ids = [1, 2, 3];
+      let expQueries2 = expQueries.concat();
+      ids.map((id) => {
+        let cls = clause.Eq("bar", id);
+        let options = {
+          ...Contact.loaderOptions(),
+          clause: cls,
+        };
+        expQueries2.push({
+          query: ent.buildQuery(options),
+          values: options.clause.values(),
+        });
+      });
+
+      // reload each of these in a different place
+      await Promise.all([
+        ent.loadEnt(vc, 1, Contact.loaderOptions()),
+        ent.loadEnt(vc, 2, Contact.loaderOptions()),
+        ent.loadEnt(vc, 3, Contact.loaderOptions()),
+      ]);
+
+      // should now have 3 more queries
+      validateQueries(expQueries2);
+
+      // reload all
+      await ent.loadEnts(vc, Contact.loaderOptions(), 1, 2, 3);
+
+      const expQueries3 = expQueries2.concat(inQuery);
+
+      // in query added again
+      validateQueries(expQueries3);
+    });
+  });
+
   describe("loadEntsFromClause", () => {
     let idResults = [1, 2, 3];
     let cls: clause.Clause;
@@ -921,6 +1206,104 @@ function commonTests() {
       validateQueries([qOption]);
 
       const ents2 = await ent.loadEntsFromClause(vc, cls, User.loaderOptions());
+      // only loading self worked because of privacy
+      expect(ents2.size).toBe(1);
+      expect(ents2.has(1)).toBe(true);
+
+      validateQueries([qOption, qOption]);
+    });
+  });
+
+  describe("loadEntsFromClause with field Privacy", () => {
+    let idResults = [1, 2, 3];
+    let cls: clause.Clause;
+    let options, qOption: Data;
+
+    beforeEach(async () => {
+      cls = clause.Eq("baz", "baz");
+      const fields: Data[] = idResults.map((id) => {
+        return {
+          bar: id,
+          baz: "baz",
+          foo: "foo",
+        };
+      });
+      await createRows(fields, selectOptionsContacts.tableName);
+
+      options = {
+        ...Contact.loaderOptions(),
+        clause: cls!,
+      };
+      qOption = {
+        query: ent.buildQuery(options),
+        values: options.clause.values(),
+      };
+    });
+
+    test("with context", async () => {
+      const vc = getIDViewer(1);
+
+      const ents = await ent.loadEntsFromClause(
+        vc,
+        cls,
+        Contact.loaderOptions(),
+      );
+      // only loading self worked because of privacy
+      expect(ents.size).toBe(1);
+      expect(ents.has(1)).toBe(true);
+
+      validateQueries([qOption]);
+
+      const ents2 = await ent.loadEntsFromClause(
+        vc,
+        cls,
+        Contact.loaderOptions(),
+      );
+      // only loading self worked because of privacy
+      expect(ents2.size).toBe(1);
+      expect(ents2.has(1)).toBe(true);
+
+      const contact = ents2.get(1)!;
+      expect(contact).not.toBe(null);
+      expect(contact?.id).toBe(1);
+      expect(contact?.baz).toBe("baz");
+      expect(contact?.foo).toBeNull();
+      expect(contact?.data).toEqual({
+        bar: 1,
+        baz: "baz",
+        foo: null,
+      });
+
+      validateQueries([
+        qOption,
+        {
+          "cache-hit": "bar,baz,foo,baz=baz",
+          "tableName": options.tableName,
+        },
+      ]);
+    });
+
+    test("without context", async () => {
+      const vc = new IDViewer(1);
+
+      const ents = await ent.loadEntsFromClause(
+        vc,
+        cls,
+        Contact.loaderOptions(),
+      );
+      // only loading self worked because of privacy
+      expect(ents.size).toBe(1);
+      expect(ents.has(1)).toBe(true);
+
+      const expQueries = [qOption];
+
+      validateQueries([qOption]);
+
+      const ents2 = await ent.loadEntsFromClause(
+        vc,
+        cls,
+        Contact.loaderOptions(),
+      );
       // only loading self worked because of privacy
       expect(ents2.size).toBe(1);
       expect(ents2.has(1)).toBe(true);
@@ -1103,6 +1486,12 @@ describe("sqlite", () => {
   setupSqlite(`sqlite:///ent_data_test.db`, () => [
     table(
       "users",
+      integer("bar", { primaryKey: true }),
+      text("baz"),
+      text("foo"),
+    ),
+    table(
+      "contacts",
       integer("bar", { primaryKey: true }),
       text("baz"),
       text("foo"),

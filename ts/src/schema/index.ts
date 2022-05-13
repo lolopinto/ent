@@ -13,6 +13,8 @@ export {
   SchemaConstructor,
   SchemaInputType,
   getFields,
+  getFieldsWithPrivacy,
+  getStorageKey,
   ActionOperation,
   Action,
   EdgeAction,
@@ -27,6 +29,7 @@ export {
   TransformedUpdateOperation,
   SQLStatementOperation,
   getTransformedReadClause,
+  getObjectLoaderProperties,
 } from "./schema";
 export {
   Timestamps,

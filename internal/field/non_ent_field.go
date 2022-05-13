@@ -56,6 +56,10 @@ func (f *NonEntField) GetTsType() string {
 	return f.fieldType.GetTSType()
 }
 
+func (f *NonEntField) TsBuilderType() string {
+	return f.fieldType.GetTSType()
+}
+
 func (f *NonEntField) GetFieldType() enttype.EntType {
 	return f.fieldType
 }
@@ -64,7 +68,15 @@ func (f *NonEntField) GetGraphQLFieldType() enttype.TSGraphQLType {
 	return f.fieldType
 }
 
-func (f *NonEntField) TsFieldName() string {
+func (f *NonEntField) TsFieldName(cfg codegenapi.Config) string {
+	return strcase.ToLowerCamel(f.fieldName)
+}
+
+func (f *NonEntField) TsBuilderFieldName() string {
+	return strcase.ToLowerCamel(f.fieldName)
+}
+
+func (f *NonEntField) TSPublicAPIName() string {
 	return strcase.ToLowerCamel(f.fieldName)
 }
 

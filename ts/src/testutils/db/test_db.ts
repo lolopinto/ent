@@ -375,7 +375,7 @@ export class TempDB {
     return this.tables;
   }
 
-  async beforeAll() {
+  async beforeAll(setupConnString: boolean = true) {
     if (this.dialect === Dialect.Postgres) {
       const user = process.env.POSTGRES_USER || "";
       const password = process.env.POSTGRES_PASSWORD || "";
@@ -391,10 +391,15 @@ export class TempDB {
 
       await this.client.query(`CREATE DATABASE ${this.db}`);
 
-      if (user && password) {
-        process.env.DB_CONNECTION_STRING = `postgres://${user}:${password}@localhost:5432/${this.db}`;
+      if (setupConnString) {
+        if (user && password) {
+          process.env.DB_CONNECTION_STRING = `postgres://${user}:${password}@localhost:5432/${this.db}`;
+        } else {
+          process.env.DB_CONNECTION_STRING = `postgres://localhost/${this.db}?`;
+        }
       } else {
-        process.env.DB_CONNECTION_STRING = `postgres://localhost/${this.db}?`;
+        // will probably be setup via loadConfig
+        delete process.env.DB_CONNECTION_STRING;
       }
 
       this.dbClient = new PGClient({
@@ -444,6 +449,10 @@ export class TempDB {
     await this.client.query(`DROP DATABASE ${this.db}`);
 
     await this.client.end();
+  }
+
+  getDB(): string {
+    return this.db;
   }
 
   async dropAll() {

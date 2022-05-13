@@ -73,6 +73,10 @@ export class AccountBuilder implements Builder<Account> {
     };
   }
 
+  deleteInputKey(key: keyof AccountInput) {
+    delete this.input[key];
+  }
+
   // store data in Builder that can be retrieved by another validator, trigger, observer later in the action
   storeData(k: string, v: any) {
     this.m.set(k, v);
@@ -111,7 +115,7 @@ export class AccountBuilder implements Builder<Account> {
     return this.orchestrator.editedEntX();
   }
 
-  private getEditedFields(): Map<string, any> {
+  private async getEditedFields(): Promise<Map<string, any>> {
     const fields = this.input;
 
     const result = new Map<string, any>();
@@ -146,7 +150,7 @@ export class AccountBuilder implements Builder<Account> {
   }
 
   // get value of PhoneNumber. Retrieves it from the input if specified or takes it from existingEnt
-  getNewPhoneNumberValue(): string | undefined {
+  getNewPhoneNumberValue(): string | null | undefined {
     if (this.input.phoneNumber !== undefined) {
       return this.input.phoneNumber;
     }

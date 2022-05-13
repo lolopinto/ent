@@ -76,6 +76,10 @@ export class CommentBuilder implements Builder<Comment> {
     };
   }
 
+  deleteInputKey(key: keyof CommentInput) {
+    delete this.input[key];
+  }
+
   // store data in Builder that can be retrieved by another validator, trigger, observer later in the action
   storeData(k: string, v: any) {
     this.m.set(k, v);
@@ -168,7 +172,7 @@ export class CommentBuilder implements Builder<Comment> {
     return this.orchestrator.editedEntX();
   }
 
-  private getEditedFields(): Map<string, any> {
+  private async getEditedFields(): Promise<Map<string, any>> {
     const fields = this.input;
 
     const result = new Map<string, any>();

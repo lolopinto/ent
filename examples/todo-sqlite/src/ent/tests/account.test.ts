@@ -8,6 +8,21 @@ test("create", async () => {
   await createAccount();
 });
 
+test("field privacy", async () => {
+  // viewer can see their own phone number and account state. no one else can
+  const account1 = await createAccount();
+  expect(account1.phoneNumber).not.toBeNull();
+  expect(account1.accountState).not.toBeNull();
+
+  const account2 = await createAccount();
+  expect(account2.phoneNumber).not.toBeNull();
+  expect(account2.accountState).not.toBeNull();
+
+  const fromOther = await Account.loadX(account1.viewer, account2.id);
+  expect(fromOther.phoneNumber).toBeNull();
+  expect(fromOther.accountState).toBeNull();
+});
+
 test("edit", async () => {
   let account = await createAccount();
   account = await EditAccountAction.create(account.viewer, account, {

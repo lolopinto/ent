@@ -19,7 +19,7 @@ import {
   loadEntXViaKey,
   loadEnts,
 } from "@snowtop/ent";
-import { Field, getFields } from "@snowtop/ent/schema";
+import { Field, getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
 import {
   accountLoader,
   accountLoaderInfo,
@@ -47,7 +47,7 @@ export class AccountBase {
   readonly updatedAt: Date;
   protected readonly deletedAt: Date | null;
   readonly name: string;
-  readonly phoneNumber: string;
+  readonly phoneNumber: string | null;
   readonly accountState: AccountState | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
@@ -222,6 +222,7 @@ export class AccountBase {
       fields: accountLoaderInfo.fields,
       ent: this,
       loaderFactory: accountLoader,
+      fieldPrivacy: getFieldsWithPrivacy(schema),
     };
   }
 

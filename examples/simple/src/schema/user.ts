@@ -22,6 +22,7 @@ import { PasswordType } from "@snowtop/ent-password";
 import { PhoneNumberType } from "@snowtop/ent-phonenumber";
 import { StringListType } from "@snowtop/ent/schema/field";
 import Feedback from "./patterns/feedback";
+import { AllowIfViewerPrivacyPolicy } from "@snowtop/ent";
 
 export default class User extends BaseEntSchema implements Schema {
   constructor() {
@@ -50,6 +51,7 @@ export default class User extends BaseEntSchema implements Schema {
       // allows scripts, internal tools etc to set this but not graphql
       disableUserGraphQLEditable: true,
       defaultValueOnCreate: () => "UNVERIFIED",
+      privacyPolicy: AllowIfViewerPrivacyPolicy,
     }),
     BooleanType({
       name: "emailVerified",
@@ -57,6 +59,7 @@ export default class User extends BaseEntSchema implements Schema {
       serverDefault: "FALSE",
       // not needed because we have serverDefault but can also set it here.
       defaultValueOnCreate: () => false,
+      privacyPolicy: AllowIfViewerPrivacyPolicy,
     }),
     StringType({ name: "Bio", nullable: true }),
     StringListType({ name: "nicknames", nullable: true }),
@@ -67,6 +70,7 @@ export default class User extends BaseEntSchema implements Schema {
         path: "src/ent/user_prefs",
         type: "UserPrefs",
       },
+      privacyPolicy: AllowIfViewerPrivacyPolicy,
     }),
     JSONBListType({
       name: "prefsList",
@@ -75,10 +79,12 @@ export default class User extends BaseEntSchema implements Schema {
         path: "src/ent/user_prefs",
         type: "UserPrefs",
       },
+      privacyPolicy: AllowIfViewerPrivacyPolicy,
     }),
     JSONType({
       name: "prefs_diff",
       nullable: true,
+      privacyPolicy: AllowIfViewerPrivacyPolicy,
       validator: (val: any) => {
         if (typeof val != "object") {
           return false;

@@ -35,6 +35,11 @@ export class IDViewer implements Viewer {
     this.context = opts?.context;
   }
 
+  setContext(ctx: Context): this {
+    this.context = ctx;
+    return this;
+  }
+
   async viewer() {
     return this.ent;
   }

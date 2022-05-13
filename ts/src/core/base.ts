@@ -125,7 +125,7 @@ export interface SelectDataOptions extends SelectBaseDataOptions {
   // primary key we're selecting from most often 'id'
   key: string;
   // if exists, we and with the primary key query
-  clause?: clause.Clause;
+  clause?: clause.Clause | (() => clause.Clause | undefined);
 }
 
 export interface QueryableDataOptions
@@ -164,12 +164,17 @@ interface LoadableEntOptions<T extends Ent> {
 export interface LoadEntOptions<T extends Ent>
   extends LoadableEntOptions<T>,
     // extending DataOptions and fields is to make APIs like loadEntsFromClause work until we come up with a cleaner API
-    SelectBaseDataOptions {}
+    SelectBaseDataOptions {
+  // if passed in, it means there's field privacy on the ents *and* we want to apply it at ent load
+  // if there's field privacy on the ent and not passed in, it'll be applied on demand when we try and load the ent
+  fieldPrivacy?: Map<string, PrivacyPolicy>;
+}
 
 export interface LoadCustomEntOptions<T extends Ent>
   // extending DataOptions and fields is to make APIs like loadEntsFromClause work until we come up with a cleaner API
   extends SelectBaseDataOptions {
   ent: EntConstructor<T>;
+  fieldPrivacy?: Map<string, PrivacyPolicy>;
 }
 
 export interface LoaderInfo {

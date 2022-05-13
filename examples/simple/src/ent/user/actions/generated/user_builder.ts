@@ -98,6 +98,10 @@ export class UserBuilder implements Builder<User> {
     };
   }
 
+  deleteInputKey(key: keyof UserInput) {
+    delete this.input[key];
+  }
+
   // store data in Builder that can be retrieved by another validator, trigger, observer later in the action
   storeData(k: string, v: any) {
     this.m.set(k, v);
@@ -597,7 +601,7 @@ export class UserBuilder implements Builder<User> {
     return this.orchestrator.editedEntX();
   }
 
-  private getEditedFields(): Map<string, any> {
+  private async getEditedFields(): Promise<Map<string, any>> {
     const fields = this.input;
 
     const result = new Map<string, any>();
@@ -671,18 +675,12 @@ export class UserBuilder implements Builder<User> {
 
   // get value of AccountStatus. Retrieves it from the input if specified or takes it from existingEnt
   getNewAccountStatusValue(): string | null | undefined {
-    if (this.input.accountStatus !== undefined) {
-      return this.input.accountStatus;
-    }
-    return this.existingEnt?.accountStatus;
+    return this.input.accountStatus;
   }
 
   // get value of emailVerified. Retrieves it from the input if specified or takes it from existingEnt
-  getNewEmailVerifiedValue(): boolean | undefined {
-    if (this.input.emailVerified !== undefined) {
-      return this.input.emailVerified;
-    }
-    return this.existingEnt?.emailVerified;
+  getNewEmailVerifiedValue(): boolean | null | undefined {
+    return this.input.emailVerified;
   }
 
   // get value of Bio. Retrieves it from the input if specified or takes it from existingEnt
@@ -703,26 +701,17 @@ export class UserBuilder implements Builder<User> {
 
   // get value of prefs. Retrieves it from the input if specified or takes it from existingEnt
   getNewPrefsValue(): UserPrefs | null | undefined {
-    if (this.input.prefs !== undefined) {
-      return this.input.prefs;
-    }
-    return this.existingEnt?.prefs;
+    return this.input.prefs;
   }
 
   // get value of prefsList. Retrieves it from the input if specified or takes it from existingEnt
   getNewPrefsListValue(): UserPrefs[] | null | undefined {
-    if (this.input.prefsList !== undefined) {
-      return this.input.prefsList;
-    }
-    return this.existingEnt?.prefsList;
+    return this.input.prefsList;
   }
 
   // get value of prefs_diff. Retrieves it from the input if specified or takes it from existingEnt
   getNewPrefsDiffValue(): any | undefined {
-    if (this.input.prefsDiff !== undefined) {
-      return this.input.prefsDiff;
-    }
-    return this.existingEnt?.prefsDiff;
+    return this.input.prefsDiff;
   }
 
   // get value of daysOff. Retrieves it from the input if specified or takes it from existingEnt

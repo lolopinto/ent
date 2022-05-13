@@ -78,6 +78,10 @@ export class AddressBuilder implements Builder<Address> {
     };
   }
 
+  deleteInputKey(key: keyof AddressInput) {
+    delete this.input[key];
+  }
+
   // store data in Builder that can be retrieved by another validator, trigger, observer later in the action
   storeData(k: string, v: any) {
     this.m.set(k, v);
@@ -169,7 +173,7 @@ export class AddressBuilder implements Builder<Address> {
     return this.orchestrator.editedEntX();
   }
 
-  private getEditedFields(): Map<string, any> {
+  private async getEditedFields(): Promise<Map<string, any>> {
     const fields = this.input;
 
     const result = new Map<string, any>();

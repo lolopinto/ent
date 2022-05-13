@@ -524,7 +524,8 @@ func getImportPathForModelFile(nodeData *schema.NodeData) string {
 func searchForFiles(processor *codegen.Processor) []string {
 	rootPath := processor.Config.GetAbsPathToRoot()
 
-	cmd := exec.Command("rg", "-tts", "-l", strconv.Quote(strings.Join(searchFor, "|")))
+	cmd := exec.Command("rg", "-tts", "-l", strings.Join(searchFor, "|"))
+
 	// run in root dir
 	cmd.Dir = rootPath
 	b, err := cmd.CombinedOutput()
@@ -532,12 +533,16 @@ func searchForFiles(processor *codegen.Processor) []string {
 		exit, ok := err.(*exec.ExitError)
 		// exit code 1 is expected when there's no results. nothing to do here
 		if ok && exit.ExitCode() == 1 {
+			if processor.Config.DebugMode() {
+				fmt.Printf("no custom files found: %s\n", err.Error())
+			}
 			return nil
 		}
+		// this could be because no files exist at all e.g. when running codegen first time...
 		if processor.Config.DebugMode() {
 			fmt.Printf("error searching for custom files: %v, output: %s\n", err, string(b))
-			return nil
 		}
+		return nil
 	}
 	files := strings.Split(strings.TrimSpace(string(b)), "\n")
 
@@ -548,11 +553,12 @@ func searchForFiles(processor *codegen.Processor) []string {
 	// any custom objects that are referenced should be in the load path
 	indexFile := path.Join(rootPath, "src/ent/index.ts")
 	stat, _ := os.Stat(indexFile)
+	allEnt := false
 	if stat != nil {
+		allEnt = true
 		result = append(result, "src/ent/index.ts")
 	}
 
-	seen := make(map[string]bool)
 	entPaths := make(map[string]bool)
 
 	for _, info := range processor.Schema.Nodes {
@@ -561,20 +567,12 @@ func searchForFiles(processor *codegen.Processor) []string {
 		entPaths[entPath] = true
 	}
 
-	fileAdded := false
 	for _, file := range files {
 		// ignore entPaths since we're doing src/ent/index.ts to get all of ent
-		if file == "" || seen[file] || entPaths[file] {
+		if allEnt && entPaths[file] {
 			continue
 		}
-		seen[file] = true
-		fileAdded = true
 		result = append(result, file)
-	}
-
-	// no files, nothing to do here
-	if !fileAdded {
-		return []string{}
 	}
 
 	return result
@@ -1654,10 +1652,12 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 
 	for _, field := range fieldInfo.GraphQLFields() {
 		gqlName := field.GetGraphQLName()
+		asyncAccessor := field.HasAsyncAccessor(processor.Config)
 		gqlField := &fieldType{
 			Name:               gqlName,
-			HasResolveFunction: gqlName != field.TsFieldName(),
-			FieldImports:       getGQLFileImports(field.GetTSGraphQLTypeForFieldImports(false), false),
+			HasResolveFunction: asyncAccessor || gqlName != field.TSPublicAPIName(),
+			FieldImports:       getGQLFileImports(field.GetTSGraphQLTypeForFieldImports(), false),
+			HasAsyncModifier:   asyncAccessor,
 		}
 
 		if processor.Config.Base64EncodeIDs() && field.IDType() {
@@ -1665,7 +1665,11 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 		}
 
 		if gqlField.HasResolveFunction {
-			gqlField.FunctionContents = []string{fmt.Sprintf("return %s.%s;", instance, field.TsFieldName())}
+			if asyncAccessor {
+				gqlField.FunctionContents = []string{fmt.Sprintf("return %s.%s();", instance, field.TSPublicAPIName())}
+			} else {
+				gqlField.FunctionContents = []string{fmt.Sprintf("return %s.%s;", instance, field.TSPublicAPIName())}
+			}
 		}
 		fields = append(fields, gqlField)
 	}
@@ -1822,7 +1826,7 @@ func buildCustomInputNode(c *custominterface.CustomInterface) *objectType {
 	for _, f := range c.Fields {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(false), true),
+			FieldImports: getGQLFileImports(f.GetTSMutationGraphQLTypeForFieldImports(false), true),
 		})
 	}
 
@@ -1871,7 +1875,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	for _, f := range a.GetGraphQLFields() {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(!action.IsRequiredField(a, f)), true),
+			FieldImports: getGQLFileImports(f.GetTSMutationGraphQLTypeForFieldImports(!action.IsRequiredField(a, f)), true),
 		})
 	}
 
@@ -1923,6 +1927,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 
 		// these conditions duplicated in hasCustomInput
 		processField := func(f action.ActionField) {
+			fieldName := f.TSPublicAPIName()
 			if f.IsEditableIDField() {
 				// should probably also do this for id lists but not pressing
 				// ID[] -> string[]
@@ -1932,9 +1937,9 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 					// we're doing these as strings instead of ids because we're going to convert from gql id to ent id
 					Type: "string",
 				})
-			} else if f.TsFieldName() != f.GetGraphQLName() {
+			} else if fieldName != f.GetGraphQLName() {
 				// need imports...
-				omittedFields = append(omittedFields, f.TsFieldName())
+				omittedFields = append(omittedFields, fieldName)
 				var useImports []string
 				imps := f.GetTsTypeImports()
 				if len(imps) != 0 {
@@ -1944,9 +1949,10 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 					}
 				}
 				intType.Fields = append(intType.Fields, &interfaceField{
-					Name:       f.GetGraphQLName(),
-					Optional:   !action.IsRequiredField(a, f),
-					Type:       f.GetTsType(),
+					Name:     f.GetGraphQLName(),
+					Optional: !action.IsRequiredField(a, f),
+					// TODO we want the same types without the Builder part if it's an id field...
+					Type:       f.TsBuilderType(),
 					UseImports: useImports,
 				})
 			}
@@ -2084,7 +2090,7 @@ func hasCustomInput(a action.Action, processor *codegen.Processor) bool {
 			return true
 		}
 		// if graphql name is not equal to typescript name, we need to add the new field here
-		if f.GetGraphQLName() != f.TsFieldName() {
+		if f.GetGraphQLName() != f.TSPublicAPIName() {
 			return true
 		}
 		return false
@@ -2183,7 +2189,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			result.FunctionContents,
 			fmt.Sprintf(
 				"%s: %s,",
-				f.TsFieldName(),
+				f.TSPublicAPIName(),
 				inputField,
 			))
 	}
