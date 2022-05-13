@@ -17,7 +17,7 @@ import (
 )
 
 // next tag
-const TAG = "0.0.38"
+const TAG = "0.0.38-test"
 
 // current node gets latest tag...
 const CURRENT_NODE_VERSION = 18
@@ -46,14 +46,34 @@ var PLATFORMS = []string{
 	"linux/arm64",
 }
 
+// start with one node_version and 1 suffix
+// and then do the rest of the suffixes
+// and then all the node_versions and suffixes at the end
+
 func main() {
+	if len(NODE_VERSIONS) == 0 || len(SUFFIXES) == 0 {
+		return
+	}
+	initialNode := NODE_VERSIONS[0]
+	remainingNodes := NODE_VERSIONS[1:]
+	initialSuffix := SUFFIXES[0]
+	remainingSuffixes := SUFFIXES[1:]
+	if err := runWith(initialNode, initialSuffix); err != nil {
+		log.Fatal(err)
+	}
+	for _, suffix := range remainingSuffixes {
+		if err := runWith(initialNode, suffix); err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	var wg sync.WaitGroup
-	wg.Add(len(NODE_VERSIONS) * len(SUFFIXES))
-	errs := make([]error, len(NODE_VERSIONS)*len(SUFFIXES))
-	for i := range NODE_VERSIONS {
+	wg.Add(len(remainingNodes) * len(SUFFIXES))
+	errs := make([]error, len(remainingNodes)*len(SUFFIXES))
+	for i := range remainingNodes {
 		for j := range SUFFIXES {
 			go func(i, j int) {
-				v := NODE_VERSIONS[i]
+				v := remainingNodes[i]
 				suffix := SUFFIXES[j]
 				errs[i*len(SUFFIXES)+j] = run(dockerfileData{
 					NodeVersion:       v,
@@ -110,7 +130,7 @@ func getTags(d dockerfileData) []string {
 }
 
 func getCommandArgs(d dockerfileData, builder string) []string {
-	cacheTag := fmt.Sprintf("%s:cache-nodejs%d", REPO, d.NodeVersion)
+	cacheTag := fmt.Sprintf("%s:cache", REPO)
 	tags := getTags(d)
 	ret := []string{
 		"buildx",
@@ -135,8 +155,17 @@ func getCommandArgs(d dockerfileData, builder string) []string {
 	return ret
 }
 
-func run(d dockerfileData, wg *sync.WaitGroup) error {
-	defer wg.Done()
+func runWith(node int, suffix string) error {
+	return runImpl(dockerfileData{
+		NodeVersion:       node,
+		DockerTag:         TAG,
+		Suffix:            suffix,
+		TsentVersion:      TSENT_VERSION,
+		AutoSchemaVersion: AUTO_SCHEMA_VERSION,
+	})
+}
+
+func runImpl(d dockerfileData) error {
 	dir := fmt.Sprintf("node_%d_%s", d.NodeVersion, d.Suffix)
 	info, err := os.Stat(dir)
 	if err == nil {
@@ -194,4 +223,9 @@ func run(d dockerfileData, wg *sync.WaitGroup) error {
 	}
 
 	return nil
+}
+
+func run(d dockerfileData, wg *sync.WaitGroup) error {
+	defer wg.Done()
+	return runImpl(d)
 }
