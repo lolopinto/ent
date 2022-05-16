@@ -15,6 +15,7 @@ export interface Loader<T, V> {
   loadMany?(keys: T[]): Promise<(V | null)[]>;
   clearAll(): any;
 }
+// hi
 
 // A LoaderFactory is used to create a Loader
 // We cache data on a per-request basis therefore for each new request, createLoader
