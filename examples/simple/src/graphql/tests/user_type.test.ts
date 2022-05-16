@@ -34,11 +34,6 @@ import CreateContactAction, {
 import { GraphQLObjectType } from "graphql";
 import { v1 } from "uuid";
 
-// TODO we need something that does this by default for all tests
-afterAll(async () => {
-  await DB.getInstance().endPool();
-});
-
 afterEach(() => {
   clearAuthHandlers();
 });

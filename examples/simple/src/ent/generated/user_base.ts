@@ -154,7 +154,7 @@ export class UserBase {
     return v ? this._emailVerified : null;
   }
 
-  async prefs(): Promise<UserPrefs | null> {
+  async prefs(): Promise<UserPrefsStruct | null> {
     if (this._prefs === null) {
       return null;
     }
@@ -167,7 +167,7 @@ export class UserBase {
     return v ? this._prefs : null;
   }
 
-  async prefsList(): Promise<UserPrefs[] | null> {
+  async prefsList(): Promise<UserPrefsStruct2[] | null> {
     if (this._prefsList === null) {
       return null;
     }
@@ -180,7 +180,7 @@ export class UserBase {
     return v ? this._prefsList : null;
   }
 
-  async prefsDiff(): Promise<any> {
+  async prefsDiff(): Promise<UserPrefsDiff | null> {
     if (this._prefsDiff === null) {
       return null;
     }

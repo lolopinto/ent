@@ -723,17 +723,17 @@ export class UserBuilder<TData extends UserInput = UserInput>
 
   // get value of prefs. Retrieves it from the input if specified or takes it from existingEnt
   getNewPrefsValue(): UserPrefsStruct | null | undefined {
-      return this.input.prefs;
+    return this.input.prefs;
   }
 
   // get value of prefsList. Retrieves it from the input if specified or takes it from existingEnt
   getNewPrefsListValue(): UserPrefsStruct2[] | null | undefined {
-      return this.input.prefsList;
+    return this.input.prefsList;
   }
 
   // get value of prefs_diff. Retrieves it from the input if specified or takes it from existingEnt
   getNewPrefsDiffValue(): UserPrefsDiff | null | undefined {
-      return this.input.prefsDiff;
+    return this.input.prefsDiff;
   }
 
   // get value of daysOff. Retrieves it from the input if specified or takes it from existingEnt
