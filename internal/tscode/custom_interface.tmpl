@@ -2,6 +2,7 @@
 
 {{ $ci := .Interface}}
 {{ $pkg := .Package }}
+{{ $cfg := .Config }}
 {{ range $ci.GetAllEnums -}}
   {{/* TODO when imported here? */}}
   {{if not .Imported -}}
@@ -11,7 +12,7 @@
 
 {{ range $ci.GetAllCustomTypes -}}
   {{ if .IsCustomInterface -}}
-    {{ template "interface.tmpl" (dict "RootInterface" $ci "Interface" . "Package" $pkg)}}
+    {{ template "interface.tmpl" (dict "RootInterface" $ci "Interface" . "Package" $pkg "Config" $cfg)}}
   {{ end }}
   {{ if .IsCustomUnion -}}
     {{ .GetTypeDeclaration }}

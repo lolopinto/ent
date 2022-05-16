@@ -60,9 +60,9 @@ type writeOptions struct {
 	edgeRemoved        bool
 }
 
-
-func (s *Step) processCustomInterface(processor *codegen.Processor, ci *customtype.CustomInterface, serr *syncerr.Error) writeFileFnList {
-	var ret writeFileFnList
+func (s *Step) processCustomInterface(processor *codegen.Processor, ci *customtype.CustomInterface, serr *syncerr.Error) fns.FunctionList {
+	// TODO this needs to depend on if that has changed
+	var ret fns.FunctionList
 
 	ret = append(ret, func() error {
 		return writeCustomInterfaceFile(processor, ci)
@@ -71,7 +71,7 @@ func (s *Step) processCustomInterface(processor *codegen.Processor, ci *customty
 }
 
 func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataInfo, serr *syncerr.Error) (fns.FunctionList, *writeOptions) {
-	var ret writeFileFnList
+	var ret fns.FunctionList
 	nodeData := info.NodeData
 
 	opts := &writeOptions{
@@ -242,7 +242,6 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 	return ret, opts
 }
 
-
 func (s *Step) processActions(processor *codegen.Processor, nodeData *schema.NodeData, opts *writeOptions) fns.FunctionList {
 	var ret fns.FunctionList
 
@@ -353,10 +352,10 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 	var entAddedOrRemoved bool
 	var edgeAddedOrRemoved bool
 	var funcs fns.FunctionList
-	var funcs writeFileFnList
 	for _, ci := range processor.Schema.CustomInterfaces {
 		funcs = append(funcs, s.processCustomInterface(processor, ci, &serr)...)
 	}
+
 	for _, p := range processor.Schema.Patterns {
 		fns, opts := s.processPattern(processor, p, &serr)
 		funcs = append(funcs, fns...)
@@ -372,7 +371,7 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 		}
 		if opts.edgeAdded || opts.edgeRemoved {
 			edgeAddedOrRemoved = true
-		funcs = append(funcs, s.processNode(processor, info, &serr)...)
+		}
 	}
 
 	for k := range processor.Schema.Enums {
@@ -705,11 +704,12 @@ func writeCustomInterfaceFile(processor *codegen.Processor, ci *customtype.Custo
 		Data: struct {
 			Interface *customtype.CustomInterface
 			Package   *codegen.ImportPackage
+			Config    *codegen.Config
 		}{
 			Interface: ci,
 			Package:   processor.Config.GetImportPackage(),
+			Config:    processor.Config,
 		},
-		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("custom_interface.tmpl"),
 		OtherTemplateFiles: []string{
 			util.GetAbsolutePath("../schema/enum/enum.tmpl"),

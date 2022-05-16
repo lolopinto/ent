@@ -18,6 +18,7 @@ type actionTemplate struct {
 	NodeData      *schema.NodeData
 	BuilderPath   string
 	BasePath      string
+	CodePath      *codegen.Config
 	Package       *codegen.ImportPackage
 	PrivacyConfig *codegen.PrivacyConfig
 }
@@ -33,6 +34,7 @@ func writeBaseActionFile(nodeData *schema.NodeData, processor *codegen.Processor
 			NodeData:      nodeData,
 			Action:        action,
 			BuilderPath:   getImportPathForBuilderFile(nodeData),
+			CodePath:      processor.Config,
 			Package:       cfg.GetImportPackage(),
 			PrivacyConfig: cfg.GetDefaultActionPolicy(),
 		},

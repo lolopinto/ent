@@ -82,9 +82,9 @@ func TestJSONType(t *testing.T) {
 		"json with import type": {
 			&enttype.JSONType{
 				CommonJSONType: enttype.CommonJSONType{
-					ImportType: &enttype.InputImportType{
-						Type: "Foo",
-						Path: "path",
+					ImportType: &tsimport.ImportPath{
+						Import:     "Foo",
+						ImportPath: "path",
 					},
 				},
 			},
@@ -98,9 +98,9 @@ func TestJSONType(t *testing.T) {
 				tsType: "Foo",
 				nullableType: &enttype.NullableJSONType{
 					CommonJSONType: enttype.CommonJSONType{
-						ImportType: &enttype.InputImportType{
-							Type: "Foo",
-							Path: "path",
+						ImportType: &tsimport.ImportPath{
+							Import:     "Foo",
+							ImportPath: "path",
 						},
 					},
 				},
@@ -119,9 +119,9 @@ func TestJSONType(t *testing.T) {
 		"nullable json with import type": {
 			&enttype.NullableJSONType{
 				CommonJSONType: enttype.CommonJSONType{
-					ImportType: &enttype.InputImportType{
-						Type: "Foo",
-						Path: "path",
+					ImportType: &tsimport.ImportPath{
+						Import:     "Foo",
+						ImportPath: "path",
 					},
 				},
 			},
@@ -134,9 +134,9 @@ func TestJSONType(t *testing.T) {
 				tsType: "Foo | null",
 				nonNullableType: &enttype.JSONType{
 					CommonJSONType: enttype.CommonJSONType{
-						ImportType: &enttype.InputImportType{
-							Type: "Foo",
-							Path: "path",
+						ImportType: &tsimport.ImportPath{
+							Import:     "Foo",
+							ImportPath: "path",
 						},
 					},
 				},
@@ -155,9 +155,9 @@ func TestJSONType(t *testing.T) {
 		"jsonb with import type": {
 			&enttype.JSONBType{
 				CommonJSONType: enttype.CommonJSONType{
-					ImportType: &enttype.InputImportType{
-						Type: "Foo",
-						Path: "path",
+					ImportType: &tsimport.ImportPath{
+						Import:     "Foo",
+						ImportPath: "path",
 					},
 				},
 			},
@@ -171,9 +171,9 @@ func TestJSONType(t *testing.T) {
 				tsType: "Foo",
 				nullableType: &enttype.NullableJSONBType{
 					CommonJSONType: enttype.CommonJSONType{
-						ImportType: &enttype.InputImportType{
-							Type: "Foo",
-							Path: "path",
+						ImportType: &tsimport.ImportPath{
+							Import:     "Foo",
+							ImportPath: "path",
 						},
 					},
 				},
@@ -192,9 +192,9 @@ func TestJSONType(t *testing.T) {
 		"nullable jsonb with import type": {
 			&enttype.NullableJSONBType{
 				CommonJSONType: enttype.CommonJSONType{
-					ImportType: &enttype.InputImportType{
-						Type: "Foo",
-						Path: "path",
+					ImportType: &tsimport.ImportPath{
+						Import:     "Foo",
+						ImportPath: "path",
 					},
 				},
 			},
@@ -207,9 +207,9 @@ func TestJSONType(t *testing.T) {
 				tsType: "Foo | null",
 				nonNullableType: &enttype.JSONBType{
 					CommonJSONType: enttype.CommonJSONType{
-						ImportType: &enttype.InputImportType{
-							Type: "Foo",
-							Path: "path",
+						ImportType: &tsimport.ImportPath{
+							Import:     "Foo",
+							ImportPath: "path",
 						},
 					},
 				},
@@ -245,7 +245,7 @@ func TestJSONType(t *testing.T) {
 				graphql: "TypeWithSubFields!",
 				graphqlImports: []*tsimport.ImportPath{
 					tsimport.NewGQLImportPath("GraphQLNonNull"),
-					tsimport.NewEntImportPath("TypeWithSubFields"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithSubFields"),
 				},
 				tsType: "TypeWithSubFields",
 				nullableType: &enttype.NullableJSONBType{
@@ -265,7 +265,7 @@ func TestJSONType(t *testing.T) {
 				goTypePanics: true,
 				convertFn:    "convertJSON",
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewEntImportPath("TypeWithSubFields"),
+					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
 				},
 				importType: &enttype.JSONBImport{},
 				subFields: []*input.Field{
@@ -298,7 +298,7 @@ func TestJSONType(t *testing.T) {
 				db:      "postgresql.JSONB",
 				graphql: "TypeWithSubFields",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewEntImportPath("TypeWithSubFields"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithSubFields"),
 				},
 				tsType: "TypeWithSubFields | null",
 				nonNullableType: &enttype.JSONBType{
@@ -317,9 +317,8 @@ func TestJSONType(t *testing.T) {
 				},
 				goTypePanics: true,
 				convertFn:    "convertNullableJSON",
-
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewEntImportPath("TypeWithSubFields"),
+					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
 				},
 				importType: &enttype.JSONBImport{},
 				subFields: []*input.Field{
@@ -353,7 +352,7 @@ func TestJSONType(t *testing.T) {
 				graphql: "TypeWithSubFields!",
 				graphqlImports: []*tsimport.ImportPath{
 					tsimport.NewGQLImportPath("GraphQLNonNull"),
-					tsimport.NewEntImportPath("TypeWithSubFields"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithSubFields"),
 				},
 				tsType: "TypeWithSubFields",
 				nullableType: &enttype.NullableJSONType{
@@ -373,7 +372,7 @@ func TestJSONType(t *testing.T) {
 				goTypePanics: true,
 				convertFn:    "convertJSON",
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewEntImportPath("TypeWithSubFields"),
+					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
 				},
 				importType: &enttype.JSONImport{},
 				subFields: []*input.Field{
@@ -406,7 +405,7 @@ func TestJSONType(t *testing.T) {
 				db:      "postgresql.JSON",
 				graphql: "TypeWithSubFields",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewEntImportPath("TypeWithSubFields"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithSubFields"),
 				},
 				tsType: "TypeWithSubFields | null",
 				nonNullableType: &enttype.JSONType{
@@ -426,7 +425,7 @@ func TestJSONType(t *testing.T) {
 				goTypePanics: true,
 				convertFn:    "convertNullableJSON",
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewEntImportPath("TypeWithSubFields"),
+					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
 				},
 				importType: &enttype.JSONImport{},
 				subFields: []*input.Field{
@@ -466,7 +465,7 @@ func TestJSONType(t *testing.T) {
 									},
 								},
 							},
-							Name: "foo",
+							Name: "Foo",
 						},
 						{
 							Type: &input.FieldType{
@@ -496,7 +495,7 @@ func TestJSONType(t *testing.T) {
 				graphql: "TypeWithUnionFields!",
 				graphqlImports: []*tsimport.ImportPath{
 					tsimport.NewGQLImportPath("GraphQLNonNull"),
-					tsimport.NewEntImportPath("TypeWithUnionFields"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithUnionFields"),
 				},
 				tsType: "TypeWithUnionFields",
 				nullableType: &enttype.NullableJSONBType{
@@ -524,7 +523,7 @@ func TestJSONType(t *testing.T) {
 										},
 									},
 								},
-								Name: "foo",
+								Name: "Foo",
 							},
 							{
 								Type: &input.FieldType{
@@ -552,7 +551,7 @@ func TestJSONType(t *testing.T) {
 				goTypePanics: true,
 				convertFn:    "convertJSON",
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewEntImportPath("TypeWithUnionFields"),
+					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
 				},
 				importType: &enttype.JSONBImport{},
 				unionFields: []*input.Field{
@@ -574,7 +573,7 @@ func TestJSONType(t *testing.T) {
 								},
 							},
 						},
-						Name: "foo",
+						Name: "Foo",
 					},
 					{
 						Type: &input.FieldType{
@@ -626,7 +625,7 @@ func TestJSONType(t *testing.T) {
 									},
 								},
 							},
-							Name: "foo",
+							Name: "Foo",
 						},
 						{
 							Type: &input.FieldType{
@@ -655,7 +654,7 @@ func TestJSONType(t *testing.T) {
 				db:      "postgresql.JSONB",
 				graphql: "TypeWithUnionFields",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewEntImportPath("TypeWithUnionFields"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithUnionFields"),
 				},
 				tsType: "TypeWithUnionFields | null",
 				nonNullableType: &enttype.JSONBType{
@@ -683,7 +682,7 @@ func TestJSONType(t *testing.T) {
 										},
 									},
 								},
-								Name: "foo",
+								Name: "Foo",
 							},
 							{
 								Type: &input.FieldType{
@@ -711,7 +710,7 @@ func TestJSONType(t *testing.T) {
 				goTypePanics: true,
 				convertFn:    "convertNullableJSON",
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewEntImportPath("TypeWithUnionFields"),
+					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
 				},
 				importType: &enttype.JSONBImport{},
 				unionFields: []*input.Field{
@@ -735,7 +734,7 @@ func TestJSONType(t *testing.T) {
 								},
 							},
 						},
-						Name: "foo",
+						Name: "Foo",
 					},
 					{
 						Type: &input.FieldType{
@@ -787,7 +786,7 @@ func TestJSONType(t *testing.T) {
 									},
 								},
 							},
-							Name: "foo",
+							Name: "Foo",
 						},
 						{
 							Type: &input.FieldType{
@@ -817,7 +816,7 @@ func TestJSONType(t *testing.T) {
 				graphql: "TypeWithUnionFields!",
 				graphqlImports: []*tsimport.ImportPath{
 					tsimport.NewGQLImportPath("GraphQLNonNull"),
-					tsimport.NewEntImportPath("TypeWithUnionFields"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithUnionFields"),
 				},
 				tsType: "TypeWithUnionFields",
 				nullableType: &enttype.NullableJSONType{
@@ -845,7 +844,7 @@ func TestJSONType(t *testing.T) {
 										},
 									},
 								},
-								Name: "foo",
+								Name: "Foo",
 							},
 							{
 								Type: &input.FieldType{
@@ -873,7 +872,7 @@ func TestJSONType(t *testing.T) {
 				goTypePanics: true,
 				convertFn:    "convertJSON",
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewEntImportPath("TypeWithUnionFields"),
+					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
 				},
 				importType: &enttype.JSONImport{},
 				unionFields: []*input.Field{
@@ -895,7 +894,7 @@ func TestJSONType(t *testing.T) {
 								},
 							},
 						},
-						Name: "foo",
+						Name: "Foo",
 					},
 					{
 						Type: &input.FieldType{
@@ -947,7 +946,7 @@ func TestJSONType(t *testing.T) {
 									},
 								},
 							},
-							Name: "foo",
+							Name: "Foo",
 						},
 						{
 							Type: &input.FieldType{
@@ -976,7 +975,7 @@ func TestJSONType(t *testing.T) {
 				db:      "postgresql.JSON",
 				graphql: "TypeWithUnionFields",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewEntImportPath("TypeWithUnionFields"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithUnionFields"),
 				},
 				tsType: "TypeWithUnionFields | null",
 				nonNullableType: &enttype.JSONType{
@@ -1004,7 +1003,7 @@ func TestJSONType(t *testing.T) {
 										},
 									},
 								},
-								Name: "foo",
+								Name: "Foo",
 							},
 							{
 								Type: &input.FieldType{
@@ -1032,7 +1031,7 @@ func TestJSONType(t *testing.T) {
 				goTypePanics: true,
 				convertFn:    "convertNullableJSON",
 				tsTypeImports: []*tsimport.ImportPath{
-					tsimport.NewEntImportPath("TypeWithUnionFields"),
+					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
 				},
 				importType: &enttype.JSONImport{},
 				unionFields: []*input.Field{
@@ -1056,7 +1055,7 @@ func TestJSONType(t *testing.T) {
 								},
 							},
 						},
-						Name: "foo",
+						Name: "Foo",
 					},
 					{
 						Type: &input.FieldType{

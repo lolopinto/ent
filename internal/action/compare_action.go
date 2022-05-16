@@ -5,7 +5,7 @@ import (
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/change"
-	"github.com/lolopinto/ent/internal/schema/custominterface"
+	"github.com/lolopinto/ent/internal/schema/customtype"
 	"github.com/lolopinto/ent/internal/schema/enum"
 )
 
@@ -20,7 +20,7 @@ func compareCommonActionInfo(action1, action2 commonActionInfo) bool {
 		edge.AssocEdgesEqual(action1.Edges, action2.Edges) &&
 		edge.AssocEdgeGroupEqual(action1.EdgeGroup, action1.EdgeGroup) &&
 		action1.Operation == action2.Operation &&
-		custominterface.CompareInterfacesMapEqual(action1.customInterfaces, action2.customInterfaces) &&
+		customtype.CompareInterfacesMapEqual(action1.customInterfaces, action2.customInterfaces) &&
 		enum.EnumsEqual(action1.tsEnums, action2.tsEnums) &&
 		enum.GQLEnumsEqual(action1.gqlEnums, action2.gqlEnums) &&
 		nodeinfo.NodeInfoEqual(action1.NodeInfo, action2.NodeInfo)

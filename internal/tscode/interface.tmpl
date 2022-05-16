@@ -1,6 +1,7 @@
 {{$root := .RootInterface}}
 {{$int := .Interface}}
 {{$extImpPath := .Package.ExternalImportPath -}}
+{{$cfg := .Config}}
 {{ range $imp := $int.GetEnumImports -}}
   {{ reserveImport $extImpPath $imp -}}
 {{ end -}}
@@ -12,22 +13,22 @@
   {{ range $field := $int.Fields -}}
     {{$type := $field.TsBuilderType -}}
     {{range $import := $field.TsBuilderImports -}}
-      {{ if $root.ForeignImport $import -}}
-        {{ $ignore := useImportMaybe $import -}}
+      {{ if $root.ForeignImport $import.Import -}}
+        {{ $ignore := useImportMaybe $import.Import -}}
       {{ end -}}
     {{end -}}
     {{if $field.Nullable -}}
-      {{$field.TsFieldName}}?: {{$type}};
+      {{$field.TsFieldName $cfg}}?: {{$type}};
     {{else -}}
-      {{$field.TsFieldName}}: {{$type}};
+      {{$field.TsFieldName $cfg}}: {{$type}};
     {{end -}}
   {{end -}}
   {{ range $field := $int.NonEntFields -}}
     {{$type := $field.GetTsType -}}
     {{if $field.Required -}}
-      {{$field.TsFieldName}}: {{$type}};
+      {{$field.TsFieldName $cfg}}: {{$type}};
     {{else -}}
-      {{$field.TsFieldName}}?: {{$type}};
+      {{$field.TsFieldName $cfg}}?: {{$type}};
     {{end -}}
   {{end -}}
 }

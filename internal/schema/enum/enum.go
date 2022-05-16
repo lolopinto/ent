@@ -8,8 +8,8 @@ import (
 	"unicode"
 
 	"github.com/iancoleman/strcase"
-	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/schema/change"
 )
 
 type Enum struct {
@@ -105,6 +105,8 @@ func CompareEnums(l1, l2 []*Enum) ([]change.Change, error) {
 	}
 
 	return ret, nil
+}
+
 func (c *Enum) GetEnumValues() []string {
 	ret := make([]string, len(c.Values))
 	for i, v := range c.Values {

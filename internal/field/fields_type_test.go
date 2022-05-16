@@ -459,9 +459,9 @@ func doTestField(t *testing.T, cfg codegenapi.Config, f *Field, exp *expected) {
 	assert.Equal(t, exp.tsFieldType, f.TsFieldType(cfg))
 	assert.Equal(t, exp.tsBuilderType, f.TsBuilderType())
 	assert.Equal(t, exp.tsBuilderUnionType, f.TsBuilderUnionType())
-	assert.Equal(t, exp.graphqlImports, f.GetTSGraphQLTypeForFieldImports())
-	assert.Equal(t, exp.graphqlMutationImports, f.GetTSMutationGraphQLTypeForFieldImports(false))
-	assert.Equal(t, exp.graphqlMutationImportsForceOptional, f.GetTSMutationGraphQLTypeForFieldImports(true))
+	assert.Equal(t, exp.graphqlImports, f.GetTSGraphQLTypeForFieldImports(false))
+	assert.Equal(t, exp.graphqlMutationImports, f.GetTSMutationGraphQLTypeForFieldImports(false, false))
+	assert.Equal(t, exp.graphqlMutationImportsForceOptional, f.GetTSMutationGraphQLTypeForFieldImports(true, false))
 	assert.Equal(t, exp.fieldTypeType, f.GetFieldType())
 	assert.Equal(t, exp.tsFieldTypeType, f.GetTSFieldType(cfg))
 }
