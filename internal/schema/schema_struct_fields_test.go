@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/customtype"
@@ -72,7 +73,7 @@ func TestWithSubFields(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema, base.TypeScript)
+	schema, err := schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, inputSchema, base.TypeScript)
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
 
@@ -204,7 +205,7 @@ func TestWithNestedSubFields(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema, base.TypeScript)
+	schema, err := schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, inputSchema, base.TypeScript)
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
 
@@ -370,7 +371,7 @@ func TestWithUnionFields(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema, base.TypeScript)
+	schema, err := schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, inputSchema, base.TypeScript)
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
 

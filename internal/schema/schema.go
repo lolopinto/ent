@@ -401,7 +401,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 				}
 			}
 
-			if err := s.checkCustomInterface(f, nil); err != nil {
+			if err := s.checkCustomInterface(cfg, f, nil); err != nil {
 				errs = append(errs, err)
 			}
 		}
@@ -521,7 +521,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 
 	for _, ci := range s.CustomInterfaces {
 		for _, f := range ci.Fields {
-			if err := s.checkForEnum(f, ci); err != nil {
+			if err := s.checkForEnum(cfg, f, ci); err != nil {
 				errs = append(errs, err)
 			}
 		}
@@ -603,7 +603,7 @@ func (s *Schema) validateIndices(nodeData *NodeData) error {
 }
 
 // TODO combine with checkCustomInterface...
-func (s *Schema) checkForEnum(f *field.Field, ci *customtype.CustomInterface) error {
+func (s *Schema) checkForEnum(cfg codegenapi.Config, f *field.Field, ci *customtype.CustomInterface) error {
 	typ := f.GetFieldType()
 	enumTyp, ok := enttype.GetEnumType(typ)
 	if ok {
@@ -625,12 +625,12 @@ func (s *Schema) checkForEnum(f *field.Field, ci *customtype.CustomInterface) er
 		return nil
 	}
 	actualSubFields := subFields.([]*input.Field)
-	fi, err := field.NewFieldInfoFromInputs(actualSubFields, &field.Options{})
+	fi, err := field.NewFieldInfoFromInputs(cfg, actualSubFields, &field.Options{})
 	if err != nil {
 		return err
 	}
 	for _, f2 := range fi.Fields {
-		if err := s.checkForEnum(f2, ci); err != nil {
+		if err := s.checkForEnum(cfg, f2, ci); err != nil {
 			return err
 		}
 	}
@@ -742,7 +742,7 @@ func (s *Schema) getCustomUnion(cfg codegenapi.Config, f *field.Field) (*customt
 		// TODO getCustomInterfaceFromField needs to handle this all
 		// instead of this mess
 		for _, f3 := range ci.Fields {
-			if err := s.checkForEnum(f3, ci); err != nil {
+			if err := s.checkForEnum(cfg, f3, ci); err != nil {
 				return nil, err
 			}
 		}

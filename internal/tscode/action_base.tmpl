@@ -14,6 +14,7 @@
 
 {{ $action := .Action -}}
 {{ $actionName := printf "%sBase" $action.GetActionName -}}
+{{ $cfg := .CodePath -}}
 
 {{ range $action.GetTSEnums -}}
   {{if not .Imported -}}
@@ -22,37 +23,10 @@
 {{ end}}
 
 {{$extImpPath := .Package.ExternalImportPath -}}
-{{ range $int := $action.GetCustomInterfaces -}}
-  {{ range $imp := $int.GetEnumImports -}}
-    {{ reserveImport $extImpPath $imp -}}
-  {{ end -}}
-  interface {{$int.TSType}} {
-    {{ range $field := $int.Fields -}}
-      {{$type := $field.TsBuilderType -}}
-      {{range $field.TsBuilderImports -}}
-        {{ reserveImportPath . true -}}
-        {{$ignore := useImport .Import -}}
-      {{end -}}
-      {{if $field.ForceRequiredInAction -}}
-        {{$field.TsBuilderFieldName}}: {{$type}};
-      {{else -}}
-        {{$field.TsBuilderFieldName}}?: {{$type}};
-      {{end -}}
-    {{end -}}
-    {{ range $field := $int.NonEntFields -}}
-      {{$type := $field.GetTsType -}}
-      {{if $field.Required -}}
-        {{$field.TsBuilderFieldName}}: {{$type}};
-      {{else -}}
-        {{$field.TsBuilderFieldName}}?: {{$type}};
-      {{end -}}
-    {{end -}}
-  }
-{{end -}}
   
 {{$pkg := .Package -}}
 {{ range $action.GetCustomInterfaces -}}
-  {{template "interface.tmpl" (dict "RootInterface" . "Interface" . "Package" $pkg) }}  
+  {{template "interface.tmpl" (dict "RootInterface" . "Interface" . "Package" $pkg "Config" $cfg) }}  
 {{end -}}
 
 {{ $node := useImport .NodeData.Node -}}

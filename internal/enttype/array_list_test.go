@@ -617,23 +617,11 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(postgresql.JSONB)",
 				graphql:    "[TypeWithSubFields!]!",
 				tsListType: true,
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "TypeWithSubFields",
-						ImportType: enttype.CustomObject,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithSubFields"),
 				},
 				tsType: "TypeWithSubFields[]",
 				nullableType: &enttype.NullableArrayListType{
@@ -652,9 +640,11 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:  true,
-				convertFn:     "convertJSONList",
-				tsTypeImports: []string{"TypeWithSubFields"},
+				goTypePanics: true,
+				convertFn:    "convertJSONList",
+				tsTypeImports: []*tsimport.ImportPath{
+					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
+				},
 				subFields: []*input.Field{
 					{
 						Type: &input.FieldType{
@@ -687,19 +677,10 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(postgresql.JSONB)",
 				graphql:    "[TypeWithSubFields!]",
 				tsListType: true,
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "TypeWithSubFields",
-						ImportType: enttype.CustomObject,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithSubFields"),
 				},
 				tsType: "TypeWithSubFields[] | null",
 				nonNullableType: &enttype.ArrayListType{
@@ -718,9 +699,11 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:  true,
-				convertFn:     "convertNullableJSONList",
-				tsTypeImports: []string{"TypeWithSubFields"},
+				goTypePanics: true,
+				convertFn:    "convertNullableJSONList",
+				tsTypeImports: []*tsimport.ImportPath{
+					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
+				},
 				subFields: []*input.Field{
 					{
 						Type: &input.FieldType{
@@ -753,23 +736,11 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(postgresql.JSON)",
 				graphql:    "[TypeWithSubFields!]!",
 				tsListType: true,
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "TypeWithSubFields",
-						ImportType: enttype.CustomObject,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithSubFields"),
 				},
 				tsType: "TypeWithSubFields[]",
 				nullableType: &enttype.NullableArrayListType{
@@ -788,9 +759,11 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:  true,
-				convertFn:     "convertJSONList",
-				tsTypeImports: []string{"TypeWithSubFields"},
+				goTypePanics: true,
+				convertFn:    "convertJSONList",
+				tsTypeImports: []*tsimport.ImportPath{
+					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
+				},
 				subFields: []*input.Field{
 					{
 						Type: &input.FieldType{
@@ -823,19 +796,10 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(postgresql.JSON)",
 				graphql:    "[TypeWithSubFields!]",
 				tsListType: true,
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "TypeWithSubFields",
-						ImportType: enttype.CustomObject,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithSubFields"),
 				},
 				tsType: "TypeWithSubFields[] | null",
 				nonNullableType: &enttype.ArrayListType{
@@ -854,9 +818,11 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:  true,
-				convertFn:     "convertNullableJSONList",
-				tsTypeImports: []string{"TypeWithSubFields"},
+				goTypePanics: true,
+				convertFn:    "convertNullableJSONList",
+				tsTypeImports: []*tsimport.ImportPath{
+					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
+				},
 				subFields: []*input.Field{
 					{
 						Type: &input.FieldType{
@@ -926,23 +892,11 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(postgresql.JSONB)",
 				graphql:    "[TypeWithUnionFields!]!",
 				tsListType: true,
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "TypeWithUnionFields",
-						ImportType: enttype.CustomObject,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithUnionFields"),
 				},
 				tsType: "TypeWithUnionFields[]",
 				nullableType: &enttype.NullableArrayListType{
@@ -997,9 +951,11 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:  true,
-				convertFn:     "convertJSONList",
-				tsTypeImports: []string{"TypeWithUnionFields"},
+				goTypePanics: true,
+				convertFn:    "convertJSONList",
+				tsTypeImports: []*tsimport.ImportPath{
+					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
+				},
 				unionFields: []*input.Field{
 					{
 						Type: &input.FieldType{
@@ -1104,19 +1060,10 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(postgresql.JSONB)",
 				graphql:    "[TypeWithUnionFields!]",
 				tsListType: true,
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "TypeWithUnionFields",
-						ImportType: enttype.CustomObject,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithUnionFields"),
 				},
 				tsType: "TypeWithUnionFields[] | null",
 				nonNullableType: &enttype.ArrayListType{
@@ -1171,9 +1118,11 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:  true,
-				convertFn:     "convertNullableJSONList",
-				tsTypeImports: []string{"TypeWithUnionFields"},
+				goTypePanics: true,
+				convertFn:    "convertNullableJSONList",
+				tsTypeImports: []*tsimport.ImportPath{
+					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
+				},
 				unionFields: []*input.Field{
 					{
 						Type: &input.FieldType{
@@ -1278,23 +1227,11 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(postgresql.JSON)",
 				graphql:    "[TypeWithUnionFields!]!",
 				tsListType: true,
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "TypeWithUnionFields",
-						ImportType: enttype.CustomObject,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithUnionFields"),
 				},
 				tsType: "TypeWithUnionFields[]",
 				nullableType: &enttype.NullableArrayListType{
@@ -1349,9 +1286,11 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:  true,
-				convertFn:     "convertJSONList",
-				tsTypeImports: []string{"TypeWithUnionFields"},
+				goTypePanics: true,
+				convertFn:    "convertJSONList",
+				tsTypeImports: []*tsimport.ImportPath{
+					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
+				},
 				unionFields: []*input.Field{
 					{
 						Type: &input.FieldType{
@@ -1456,19 +1395,10 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(postgresql.JSON)",
 				graphql:    "[TypeWithUnionFields!]",
 				tsListType: true,
-				graphqlImports: []enttype.FileImport{
-					{
-						Type:       "GraphQLList",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "GraphQLNonNull",
-						ImportType: enttype.GraphQL,
-					},
-					{
-						Type:       "TypeWithUnionFields",
-						ImportType: enttype.CustomObject,
-					},
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLImportPath("GraphQLList"),
+					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithUnionFields"),
 				},
 				tsType: "TypeWithUnionFields[] | null",
 				nonNullableType: &enttype.ArrayListType{
@@ -1523,9 +1453,11 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
-				goTypePanics:  true,
-				convertFn:     "convertNullableJSONList",
-				tsTypeImports: []string{"TypeWithUnionFields"},
+				goTypePanics: true,
+				convertFn:    "convertNullableJSONList",
+				tsTypeImports: []*tsimport.ImportPath{
+					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
+				},
 				unionFields: []*input.Field{
 					{
 						Type: &input.FieldType{

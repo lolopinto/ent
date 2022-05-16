@@ -1,4 +1,4 @@
-package custominterface
+package customtype
 
 import (
 	"testing"

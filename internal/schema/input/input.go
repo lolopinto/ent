@@ -10,6 +10,7 @@ import (
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schemaparser"
+	"github.com/lolopinto/ent/internal/tsimport"
 )
 
 type Schema struct {
@@ -98,9 +99,7 @@ type FieldType struct {
 	// optional used by generator to specify different types e.g. email, phone, password
 	CustomType CustomType `json:"customType,omitempty"`
 
-	// ImportType *tsimport.ImportPath `json:"importType,omitempty"`
-	// TODO which one is it?
-	ImportType *enttype.InputImportType `json:"importType"`
+	ImportType *tsimport.ImportPath `json:"importType,omitempty"`
 
 	// list because go-lang map not stable and don't want generated fields to change ofte
 	SubFields   []*Field `json:"subFields"`
@@ -272,9 +271,9 @@ func getTypeFor(fieldName string, typ *FieldType, nullable bool, foreignKey *For
 			// only set this if we actually have fields. otherwise, we want this to be nil
 			subFields = typ.SubFields
 			if importType == nil && typ.Type != "" {
-				importType = &enttype.InputImportType{
-					Path: getImportPathForCustomInterfaceFile(typ.Type),
-					Type: typ.Type,
+				importType = &tsimport.ImportPath{
+					ImportPath: getImportPathForCustomInterfaceFile(typ.Type),
+					Import:     typ.Type,
 				}
 			}
 		}
@@ -282,9 +281,9 @@ func getTypeFor(fieldName string, typ *FieldType, nullable bool, foreignKey *For
 			// only set this if we actually have fields. otherwise, we want this to be nil
 			unionFields = typ.UnionFields
 			if importType == nil && typ.Type != "" {
-				importType = &enttype.InputImportType{
+				importType = &tsimport.ImportPath{
 					// intentionally no path since we don't support top level unions and this should lead to some kind of error
-					Type: typ.Type,
+					Import: typ.Type,
 				}
 			}
 		}

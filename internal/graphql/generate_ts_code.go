@@ -357,7 +357,8 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 	}
 
 	for idx := range s.otherObjects {
-		// TODO need to make this smarter
+		// TODO need to make this smarter and not always write files
+		// except when something changes
 		opts := &writeOptions{
 			writeNode: true,
 		}
@@ -1931,7 +1932,7 @@ func addConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, fields *
 	*fields = append(*fields, gqlField)
 }
 
-func buildActionNodes(processor *codegen.Processor, nodeData *schema.NodeData, action action.Action) []*objectType {
+func buildActionNodes(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action) []*objectType {
 	var ret []*objectType
 	for _, c := range a.GetCustomInterfaces() {
 		_, ok := c.Action.(action.Action)
@@ -1940,8 +1941,8 @@ func buildActionNodes(processor *codegen.Processor, nodeData *schema.NodeData, a
 		}
 	}
 	ret = append(ret,
-		buildActionInputNode(processor, nodeData, action),
-		buildActionPayloadNode(processor, nodeData, action),
+		buildActionInputNode(processor, nodeData, a),
+		buildActionPayloadNode(processor, nodeData, a),
 	)
 	return ret
 }
@@ -2257,7 +2258,7 @@ func getActionPath(nodeData *schema.NodeData, a action.Action) string {
 	return fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(a.GetActionName()))
 }
 
-func checkUnionType(f *field.Field, curr []string) ([]string, bool, error) {
+func checkUnionType(cfg codegenapi.Config, f *field.Field, curr []string) ([]string, bool, error) {
 	t := f.GetFieldType()
 
 	t2, ok := t.(enttype.TSWithSubFields)
@@ -2268,12 +2269,12 @@ func checkUnionType(f *field.Field, curr []string) ([]string, bool, error) {
 			newCurr := append(curr, f.GetGraphQLName())
 			actualSubFields := subFields.([]*input.Field)
 
-			fi, err := field.NewFieldInfoFromInputs(actualSubFields, &field.Options{})
+			fi, err := field.NewFieldInfoFromInputs(cfg, actualSubFields, &field.Options{})
 			if err != nil {
 				return nil, false, err
 			}
 			for _, v := range fi.Fields {
-				ret, done, err := checkUnionType(v, newCurr)
+				ret, done, err := checkUnionType(cfg, v, newCurr)
 				if err != nil {
 					return nil, false, err
 				}
@@ -2295,7 +2296,7 @@ func checkUnionType(f *field.Field, curr []string) ([]string, bool, error) {
 	return nil, false, nil
 }
 
-func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action, actionPrefix string) (*fieldConfig, error) {
+func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action) (*fieldConfig, error) {
 	// TODO this is so not obvious at all
 	// these are things that are automatically useImported....
 	argImports := []*tsimport.ImportPath{
@@ -2377,7 +2378,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 
 	lists := [][]string{}
 	for _, f := range a.GetFields() {
-		list, union, err := checkUnionType(f, []string{})
+		list, union, err := checkUnionType(processor.Config, f, []string{})
 
 		if err != nil {
 			return nil, err
@@ -2408,10 +2409,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			result.FunctionContents,
 			fmt.Sprintf("input = transformUnionTypes(input, %s);", sb.String()),
 		)
-		argImports = append(argImports, &fileImport{
-			Type:       "transformUnionTypes",
-			ImportPath: codepath.GraphQLPackage,
-		})
+		argImports = append(argImports, tsimport.NewEntGraphQLImportPath("transformUnionTypes"))
 	}
 
 	if a.GetOperation() == ent.CreateAction {
@@ -2577,31 +2575,31 @@ func buildCustomInterfaceNode(processor *codegen.Processor, ci *customtype.Custo
 	}
 	// top level
 	if ciInfo.exported {
-		result.Imports = []*fileImport{
+		result.Imports = []*tsimport.ImportPath{
 			{
 				ImportPath: codepath.GetExternalImportPath(),
-				Type:       ci.TSType,
+				Import:     ci.TSType,
 			},
 		}
 	}
 	for _, imp := range ciInfo.imports {
-		result.Imports = append(result.Imports, &fileImport{
+		result.Imports = append(result.Imports, &tsimport.ImportPath{
 			ImportPath: codepath.GetExternalImportPath(),
-			Type:       imp,
+			Import:     imp,
 		})
 	}
 
 	for _, f := range ci.Fields {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(false, ciInfo.input), ciInfo.input),
+			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(ciInfo.input), ciInfo.input),
 		})
 	}
 
 	for _, f := range ci.NonEntFields {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.FieldType.GetTSGraphQLImports(true), ciInfo.input),
+			FieldImports: getGQLFileImports(f.GetGraphQLFieldType().GetTSGraphQLImports(true), ciInfo.input),
 		})
 	}
 
@@ -2639,9 +2637,9 @@ func buildCustomUnionInputNode(processor *codegen.Processor, cu *customtype.Cust
 		}
 		result.Fields = append(result.Fields, &fieldType{
 			Name: ci.GraphQLFieldName,
-			FieldImports: []*fileImport{
+			FieldImports: []*tsimport.ImportPath{
 				{
-					Type: ci.GQLType + "InputType",
+					Import: ci.GQLType + "InputType",
 				},
 			},
 		})

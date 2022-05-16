@@ -1152,7 +1152,7 @@ func (t *ListWrapperType) GetCustomTypeInfo() *CustomTypeInfo {
 	return t2.GetCustomTypeInfo()
 }
 
-func (t *ListWrapperType) GetImportDepsType() *InputImportType {
+func (t *ListWrapperType) GetImportDepsType() *tsimport.ImportPath {
 	t2, ok := t.Type.(ImportDepsType)
 	if !ok {
 		return nil
@@ -1735,7 +1735,7 @@ func (t *ArrayListType) Convert() *tsimport.ImportPath {
 	return elem.convertListWithItem()
 }
 
-func (t *ArrayListType) GetImportDepsType() *InputImportType {
+func (t *ArrayListType) GetImportDepsType() *tsimport.ImportPath {
 	t2, ok := t.ElemType.(ImportDepsType)
 	if !ok {
 		return nil
@@ -1801,7 +1801,7 @@ func (t *NullableArrayListType) GetTSGraphQLImports(input bool) []*tsimport.Impo
 // TODO why is there ListWrapperType (for ActionFields)
 // and NullableArrayListType /ArrayListType for regular lists?
 // TODO GetCustomTypeInfo
-func (t *NullableArrayListType) Convert(input bool) *tsimport.ImportPath {
+func (t *NullableArrayListType) Convert() *tsimport.ImportPath {
 	elem, ok := t.ElemType.(convertListElemType)
 	if !ok {
 		return tsimport.NewEntImportPath("convertNullableList")
@@ -1809,7 +1809,7 @@ func (t *NullableArrayListType) Convert(input bool) *tsimport.ImportPath {
 	return elem.convertNullableListWithItem()
 }
 
-func (t *NullableArrayListType) GetImportDepsType() *InputImportType {
+func (t *NullableArrayListType) GetImportDepsType() *tsimport.ImportPath {
 	t2, ok := t.ElemType.(ImportDepsType)
 	if !ok {
 		return nil
@@ -1833,14 +1833,8 @@ func (t *NullableArrayListType) GetCustomTypeInfo() *CustomTypeInfo {
 	return t2.GetCustomTypeInfo()
 }
 
-// to resolve circular dependency btw input and this
-type InputImportType struct {
-	Path string `json:"path"`
-	Type string `json:"type"`
-}
-
 type CommonJSONType struct {
-	ImportType *InputImportType
+	ImportType *tsimport.ImportPath
 	// input SubFields. not typed because of circular dependencies
 	SubFields              interface{}
 	UnionFields            interface{}
@@ -1873,17 +1867,17 @@ func (t *CommonJSONType) GetGraphQLType() string {
 	return "JSON!"
 }
 
-func (t *CommonJSONType) getTSTypeFromInfo(impType *InputImportType) string {
+func (t *CommonJSONType) getTSTypeFromInfo(impType *tsimport.ImportPath) string {
 	var typ string
 	if impType != nil {
-		typ = impType.Type
+		typ = impType.Import
 	} else if t.CustomTsInterface != "" {
 		typ = t.CustomTsInterface
 	}
 	return typ
 }
 
-func (t *CommonJSONType) getTsType(nullable bool, impType *InputImportType) string {
+func (t *CommonJSONType) getTsType(nullable bool, impType *tsimport.ImportPath) string {
 	typ := t.getTSTypeFromInfo(impType)
 	if typ == "" {
 		return "any"
@@ -1894,14 +1888,28 @@ func (t *CommonJSONType) getTsType(nullable bool, impType *InputImportType) stri
 	return typ
 }
 
-func (t *CommonJSONType) getTsTypeImports(impType *InputImportType) []*tsimport.ImportPath {
+func (t *CommonJSONType) GetTsTypeImports() []*tsimport.ImportPath {
+	return t.getTsTypeImports(t.ImportType)
+}
+
+func (t *CommonJSONType) getTsTypeImports(impType *tsimport.ImportPath) []*tsimport.ImportPath {
+	if impType != nil {
+		return []*tsimport.ImportPath{
+			impType,
+		}
+	}
 	typ := t.getTSTypeFromInfo(impType)
 	if typ == "" {
 		return nil
 	}
+
 	return []*tsimport.ImportPath{
-		tsimport.NewEntImportPath(typ),
+		tsimport.NewLocalEntImportPath(typ),
 	}
+}
+
+func getImportPathForCustomInterfaceInputFile(gqlType string) string {
+	return fmt.Sprintf("src/graphql/mutations/generated/input/%s_type", strcase.ToSnake(gqlType))
 }
 
 func (t *CommonJSONType) getJSONGraphQLType(gqlType string, input bool) *tsimport.ImportPath {
@@ -1910,9 +1918,12 @@ func (t *CommonJSONType) getJSONGraphQLType(gqlType string, input bool) *tsimpor
 		return tsimport.NewGraphQLJSONImportPath("GraphQLJSON")
 	}
 	if input {
-		return tsimport.NewEntGraphQLImportPath(gqlType + "Input")
+		return &tsimport.ImportPath{
+			Import:     gqlType + "InputType",
+			ImportPath: getImportPathForCustomInterfaceInputFile(gqlType + "Input"),
+		}
 	}
-	return tsimport.NewEntGraphQLImportPath(gqlType)
+	return tsimport.NewLocalGraphQLEntImportPath(gqlType)
 }
 
 func (t *CommonJSONType) GetImportType() Import {
@@ -1927,7 +1938,7 @@ func (t *CommonJSONType) convertNullableListWithItem() *tsimport.ImportPath {
 	return tsimport.NewEntImportPath("convertNullableJSONList")
 }
 
-func (t *CommonJSONType) GetImportDepsType() *InputImportType {
+func (t *CommonJSONType) GetImportDepsType() *tsimport.ImportPath {
 	return t.ImportType
 }
 
@@ -1981,20 +1992,13 @@ func (t *JSONType) Convert() *tsimport.ImportPath {
 	return tsimport.NewEntImportPath("convertJSON")
 }
 
-func (t *JSONType) GetTsTypeImports() []*tsimport.ImportPath {
-	return t.getTsTypeImports(t.ImportType)
-}
-
 func (t *JSONType) GetImportDepsType() *tsimport.ImportPath {
 	return t.ImportType
 }
 
-func (t *JSONType) GetTSGraphQLImports(input bool) []FileImport {
-	return []FileImport{
-		{
-			Type:       "GraphQLNonNull",
-			ImportType: GraphQL,
-		},
+func (t *JSONType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
+	return []*tsimport.ImportPath{
+		tsimport.NewGQLImportPath("GraphQLNonNull"),
 		t.getJSONGraphQLType(t.CustomGraphQLInterface, input),
 	}
 }
@@ -2020,7 +2024,7 @@ func (t *NullableJSONType) GetGraphQLType() string {
 
 func (t *NullableJSONType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
+		t.getJSONGraphQLType(t.CustomGraphQLInterface, input),
 	}
 }
 
@@ -2038,11 +2042,7 @@ func (t *NullableJSONType) GetNonNullableType() TSGraphQLType {
 	return ret
 }
 
-func (t *NullableJSONType) GetTsTypeImports() []*tsimport.ImportPath {
-	return t.getTsTypeImports(t.ImportType)
-}
-
-func (t *NullableJSONType) GetImportDepsType() *InputImportType {
+func (t *NullableJSONType) GetImportDepsType() *tsimport.ImportPath {
 	return t.ImportType
 }
 
@@ -2072,11 +2072,7 @@ func (t *JSONBType) Convert() *tsimport.ImportPath {
 	return tsimport.NewEntImportPath("convertJSON")
 }
 
-func (t *JSONBType) GetTsTypeImports() []*tsimport.ImportPath {
-	return t.getTsTypeImports(t.ImportType)
-}
-
-func (t *JSONBType) GetImportDepsType() *InputImportType {
+func (t *JSONBType) GetImportDepsType() *tsimport.ImportPath {
 	return t.ImportType
 }
 
@@ -2128,10 +2124,6 @@ func (t *NullableJSONBType) GetNonNullableType() TSGraphQLType {
 
 func (t *NullableJSONBType) Convert() *tsimport.ImportPath {
 	return tsimport.NewEntImportPath("convertNullableJSON")
-}
-
-func (t *NullableJSONBType) GetTsTypeImports() []*tsimport.ImportPath {
-	return t.getTsTypeImports(t.ImportType)
 }
 
 func (t *NullableJSONBType) GetImportType() Import {
