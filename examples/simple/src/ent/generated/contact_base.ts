@@ -32,6 +32,17 @@ import {
 } from "../internal";
 import schema from "../../schema/contact";
 
+export interface ContactData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  email_ids: ID[];
+  phone_number_ids: ID[];
+  first_name: string;
+  last_name: string;
+  user_id: ID;
+}
+
 export class ContactBase {
   readonly nodeType = NodeType.Contact;
   readonly id: ID;
@@ -108,32 +119,36 @@ export class ContactBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<Data[]> {
-    return loadCustomData(
+  ): Promise<ContactData[]> {
+    return (await loadCustomData(
       ContactBase.loaderOptions.apply(this),
       query,
       context,
-    );
+    )) as ContactData[];
   }
 
   static async loadRawData<T extends ContactBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data | null> {
-    return contactLoader.createLoader(context).load(id);
+  ): Promise<ContactData | null> {
+    const row = await contactLoader.createLoader(context).load(id);
+    if (!row) {
+      return null;
+    }
+    return row as ContactData;
   }
 
   static async loadRawDataX<T extends ContactBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data> {
+  ): Promise<ContactData> {
     const row = await contactLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row;
+    return row as ContactData;
   }
 
   static loaderOptions<T extends ContactBase>(

@@ -77,6 +77,32 @@ export enum PreferredShift {
   Graveyard = "graveyard",
 }
 
+export interface UserData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  first_name: string;
+  last_name: string;
+  email_address: string;
+  phone_number: string | null;
+  password: string | null;
+  account_status: string | null;
+  email_verified: boolean | null;
+  bio: string | null;
+  nicknames: string[] | null;
+  prefs: UserPrefsStruct | null;
+  prefs_list: UserPrefsStruct2[] | null;
+  prefs_diff: UserPrefsDiff | null;
+  days_off: DaysOff[] | null;
+  preferred_shift: PreferredShift[] | null;
+  time_in_ms: BigInt | null;
+  fun_uuids: ID[] | null;
+  new_col: string | null;
+  new_col_2: string | null;
+  super_nested_object: UserSuperNestedObject | null;
+  nested_list: UserNestedObjectList[] | null;
+}
+
 export class UserBase {
   readonly nodeType = NodeType.User;
   readonly id: ID;
@@ -245,28 +271,36 @@ export class UserBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<Data[]> {
-    return loadCustomData(UserBase.loaderOptions.apply(this), query, context);
+  ): Promise<UserData[]> {
+    return (await loadCustomData(
+      UserBase.loaderOptions.apply(this),
+      query,
+      context,
+    )) as UserData[];
   }
 
   static async loadRawData<T extends UserBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data | null> {
-    return userLoader.createLoader(context).load(id);
+  ): Promise<UserData | null> {
+    const row = await userLoader.createLoader(context).load(id);
+    if (!row) {
+      return null;
+    }
+    return row as UserData;
   }
 
   static async loadRawDataX<T extends UserBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data> {
+  ): Promise<UserData> {
     const row = await userLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row;
+    return row as UserData;
   }
 
   static async loadFromEmailAddress<T extends UserBase>(
@@ -306,8 +340,14 @@ export class UserBase {
     this: new (viewer: Viewer, data: Data) => T,
     emailAddress: string,
     context?: Context,
-  ): Promise<Data | null> {
-    return userEmailAddressLoader.createLoader(context).load(emailAddress);
+  ): Promise<UserData | null> {
+    const row = await userEmailAddressLoader
+      .createLoader(context)
+      .load(emailAddress);
+    if (!row) {
+      return null;
+    }
+    return row as UserData;
   }
 
   static async loadFromPhoneNumber<T extends UserBase>(
@@ -347,8 +387,14 @@ export class UserBase {
     this: new (viewer: Viewer, data: Data) => T,
     phoneNumber: string,
     context?: Context,
-  ): Promise<Data | null> {
-    return userPhoneNumberLoader.createLoader(context).load(phoneNumber);
+  ): Promise<UserData | null> {
+    const row = await userPhoneNumberLoader
+      .createLoader(context)
+      .load(phoneNumber);
+    if (!row) {
+      return null;
+    }
+    return row as UserData;
   }
 
   static loaderOptions<T extends UserBase>(

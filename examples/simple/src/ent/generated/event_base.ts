@@ -44,6 +44,18 @@ export enum EventRsvpStatus {
   CanRsvp = "canRsvp",
 }
 
+export interface EventData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  name: string;
+  user_id: ID;
+  start_time: Date;
+  end_time: Date | null;
+  location: string;
+  address_id: ID | null;
+}
+
 export class EventBase {
   readonly nodeType = NodeType.Event;
   readonly id: ID;
@@ -135,28 +147,36 @@ export class EventBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<Data[]> {
-    return loadCustomData(EventBase.loaderOptions.apply(this), query, context);
+  ): Promise<EventData[]> {
+    return (await loadCustomData(
+      EventBase.loaderOptions.apply(this),
+      query,
+      context,
+    )) as EventData[];
   }
 
   static async loadRawData<T extends EventBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data | null> {
-    return eventLoader.createLoader(context).load(id);
+  ): Promise<EventData | null> {
+    const row = await eventLoader.createLoader(context).load(id);
+    if (!row) {
+      return null;
+    }
+    return row as EventData;
   }
 
   static async loadRawDataX<T extends EventBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data> {
+  ): Promise<EventData> {
     const row = await eventLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row;
+    return row as EventData;
   }
 
   static loaderOptions<T extends EventBase>(

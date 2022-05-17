@@ -24,6 +24,16 @@ import { holidayLoader, holidayLoaderInfo } from "./loaders";
 import { DayOfWeek, DayOfWeekAlt, NodeType } from "../internal";
 import schema from "../../schema/holiday";
 
+export interface HolidayData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  day_of_week: DayOfWeek;
+  day_of_week_alt: DayOfWeekAlt | null;
+  label: string;
+  date: Date;
+}
+
 export class HolidayBase {
   readonly nodeType = NodeType.Holiday;
   readonly id: ID;
@@ -98,32 +108,36 @@ export class HolidayBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<Data[]> {
-    return loadCustomData(
+  ): Promise<HolidayData[]> {
+    return (await loadCustomData(
       HolidayBase.loaderOptions.apply(this),
       query,
       context,
-    );
+    )) as HolidayData[];
   }
 
   static async loadRawData<T extends HolidayBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data | null> {
-    return holidayLoader.createLoader(context).load(id);
+  ): Promise<HolidayData | null> {
+    const row = await holidayLoader.createLoader(context).load(id);
+    if (!row) {
+      return null;
+    }
+    return row as HolidayData;
   }
 
   static async loadRawDataX<T extends HolidayBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data> {
+  ): Promise<HolidayData> {
     const row = await holidayLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row;
+    return row as HolidayData;
   }
 
   static loaderOptions<T extends HolidayBase>(

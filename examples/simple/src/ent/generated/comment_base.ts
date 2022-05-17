@@ -31,6 +31,16 @@ import {
 } from "../internal";
 import schema from "../../schema/comment";
 
+export interface CommentData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  author_id: ID;
+  body: string;
+  article_id: ID;
+  article_type: string;
+}
+
 export class CommentBase {
   readonly nodeType = NodeType.Comment;
   readonly id: ID;
@@ -105,32 +115,36 @@ export class CommentBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<Data[]> {
-    return loadCustomData(
+  ): Promise<CommentData[]> {
+    return (await loadCustomData(
       CommentBase.loaderOptions.apply(this),
       query,
       context,
-    );
+    )) as CommentData[];
   }
 
   static async loadRawData<T extends CommentBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data | null> {
-    return commentLoader.createLoader(context).load(id);
+  ): Promise<CommentData | null> {
+    const row = await commentLoader.createLoader(context).load(id);
+    if (!row) {
+      return null;
+    }
+    return row as CommentData;
   }
 
   static async loadRawDataX<T extends CommentBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data> {
+  ): Promise<CommentData> {
     const row = await commentLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row;
+    return row as CommentData;
   }
 
   static queryFromArticle<T extends CommentBase>(
