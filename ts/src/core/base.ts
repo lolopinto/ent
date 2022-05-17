@@ -63,8 +63,11 @@ interface queryOptions {
   orderby?: string;
 }
 
-export interface Context {
-  getViewer(): Viewer;
+export interface Context<
+  TID extends any = ID | null,
+  TEnt extends any = Ent | null,
+> {
+  getViewer(): Viewer<TID, TEnt>;
   // optional per (request)contet
   // absence means we are not doing any caching
   // presence means we have loader, ent cache etc
@@ -73,9 +76,12 @@ export interface Context {
   cache?: cache;
 }
 
-export interface Viewer {
-  viewerID: ID | null;
-  viewer: () => Promise<Ent | null>;
+export interface Viewer<
+  TID extends any = ID | null,
+  TEnt extends any = Ent | null,
+> {
+  viewerID: TID;
+  viewer: () => Promise<TEnt>;
   instanceKey: () => string;
   //  isOmniscient?(): boolean; // optional function to indicate a viewer that can see anything e.g. admin
   // TODO determine if we want this here.
@@ -86,7 +92,7 @@ export interface Viewer {
   // I want dataloaders to be created on demand as needed
   // so it seems having it in Context (per-request info makes sense)
   // so does that mean we should pass Context all the way down and not Viewer?
-  context?: Context;
+  context?: Context<TID, TEnt>;
 }
 
 export interface Ent {
