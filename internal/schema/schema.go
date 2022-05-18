@@ -375,48 +375,48 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 			&field.Options{},
 		)
 		if err != nil {
-			errs = append(errs, err)
-		} else {
-			for _, f := range nodeData.FieldInfo.Fields {
-				entType := f.GetFieldType()
-				enumType, ok := enttype.GetEnumType(entType)
-				// don't add enums which are defined in patterns
-				if ok {
-					if !f.PatternField() {
-						if err := s.addEnum(enumType, nodeData); err != nil {
-							errs = append(errs, err)
-						}
-					} else {
-						// keep track of NodeDatas that map to this enum...
-						patternName := f.GetPatternName()
-						list := patternMap[patternName]
-						if list == nil {
-							list = []*NodeData{}
-						}
-						list = append(list, nodeData)
-						patternMap[patternName] = list
+			// error here can break things later since no fieldInfo
+			return nil, err
+		}
+		for _, f := range nodeData.FieldInfo.Fields {
+			entType := f.GetFieldType()
+			enumType, ok := enttype.GetEnumType(entType)
+			// don't add enums which are defined in patterns
+			if ok {
+				if !f.PatternField() {
+					if err := s.addEnum(enumType, nodeData); err != nil {
+						errs = append(errs, err)
 					}
+				} else {
+					// keep track of NodeDatas that map to this enum...
+					patternName := f.GetPatternName()
+					list := patternMap[patternName]
+					if list == nil {
+						list = []*NodeData{}
+					}
+					list = append(list, nodeData)
+					patternMap[patternName] = list
 				}
 			}
 		}
 
 		nodeData.EdgeInfo, err = edge.EdgeInfoFromInput(cfg, packageName, node)
 		if err != nil {
-			errs = append(errs, err)
-		} else {
-			for _, group := range nodeData.EdgeInfo.AssocGroups {
-				if err := s.addEnumFrom(
-					&enum.Input{
-						TSName:  group.ConstType,
-						GQLName: group.ConstType,
-						GQLType: fmt.Sprintf("%s!", group.ConstType),
-						Values:  group.GetEnumValues(),
-					},
-					nodeData,
-					nil,
-				); err != nil {
-					errs = append(errs, err)
-				}
+			// error here can break things later since no edgeInfo
+			return nil, err
+		}
+		for _, group := range nodeData.EdgeInfo.AssocGroups {
+			if err := s.addEnumFrom(
+				&enum.Input{
+					TSName:  group.ConstType,
+					GQLName: group.ConstType,
+					GQLType: fmt.Sprintf("%s!", group.ConstType),
+					Values:  group.GetEnumValues(),
+				},
+				nodeData,
+				nil,
+			); err != nil {
+				errs = append(errs, err)
 			}
 		}
 
