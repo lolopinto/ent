@@ -181,7 +181,7 @@ type PolymorphicOptions struct {
 	DisableBuilderType     bool     `json:"disableBuilderType,omitempty"`
 }
 
-func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.TSGraphQLType, error) {
+func getTypeFor(fieldName string, typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.TSGraphQLType, error) {
 	switch typ.DBType {
 	case UUID:
 		if nullable {
@@ -285,10 +285,10 @@ func getTypeFor(typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.
 			graphqlType = foreignKey.Schema
 		}
 		if typ.Type == "" {
-			return nil, fmt.Errorf("enum type name is required")
+			return nil, fmt.Errorf("enum type name is required for field %s", fieldName)
 		}
 		if typ.GraphQLType == "" {
-			return nil, fmt.Errorf("enum graphql name is required")
+			return nil, fmt.Errorf("enum graphql name is required for field %s", fieldName)
 		}
 		if nullable {
 			return &enttype.NullableEnumType{
@@ -330,7 +330,7 @@ func (f *Field) GetEntType() (enttype.TSGraphQLType, error) {
 		if f.Type.ListElemType == nil {
 			return nil, fmt.Errorf("list elem type for list is nil")
 		}
-		elemType, err := getTypeFor(f.Type.ListElemType, false, nil)
+		elemType, err := getTypeFor(f.Name, f.Type.ListElemType, false, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -343,7 +343,7 @@ func (f *Field) GetEntType() (enttype.TSGraphQLType, error) {
 			ElemType: elemType,
 		}, nil
 	} else {
-		return getTypeFor(f.Type, f.Nullable, f.ForeignKey)
+		return getTypeFor(f.Name, f.Type, f.Nullable, f.ForeignKey)
 	}
 }
 
