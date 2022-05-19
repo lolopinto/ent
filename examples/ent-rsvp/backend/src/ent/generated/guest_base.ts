@@ -29,6 +29,17 @@ import {
 } from "src/ent/internal";
 import schema from "src/schema/guest";
 
+interface GuestDBData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  name: string;
+  event_id: ID;
+  email_address: string | null;
+  guest_group_id: ID;
+  title: string | null;
+}
+
 export class GuestBase {
   readonly nodeType = NodeType.Guest;
   readonly id: ID;
@@ -105,28 +116,36 @@ export class GuestBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<Data[]> {
-    return loadCustomData(GuestBase.loaderOptions.apply(this), query, context);
+  ): Promise<GuestDBData[]> {
+    return (await loadCustomData(
+      GuestBase.loaderOptions.apply(this),
+      query,
+      context,
+    )) as GuestDBData[];
   }
 
   static async loadRawData<T extends GuestBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data | null> {
-    return guestLoader.createLoader(context).load(id);
+  ): Promise<GuestDBData | null> {
+    const row = await guestLoader.createLoader(context).load(id);
+    if (!row) {
+      return null;
+    }
+    return row as GuestDBData;
   }
 
   static async loadRawDataX<T extends GuestBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data> {
+  ): Promise<GuestDBData> {
     const row = await guestLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row;
+    return row as GuestDBData;
   }
 
   static loaderOptions<T extends GuestBase>(

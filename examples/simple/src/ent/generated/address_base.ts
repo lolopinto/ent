@@ -24,6 +24,18 @@ import { addressLoader, addressLoaderInfo } from "./loaders";
 import { AddressToHostedEventsQuery, NodeType } from "../internal";
 import schema from "../../schema/address";
 
+interface AddressDBData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  street_name: string;
+  city: string;
+  state: string;
+  zip: string;
+  apartment: string | null;
+  country: string;
+}
+
 export class AddressBase {
   readonly nodeType = NodeType.Address;
   readonly id: ID;
@@ -102,32 +114,36 @@ export class AddressBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<Data[]> {
-    return loadCustomData(
+  ): Promise<AddressDBData[]> {
+    return (await loadCustomData(
       AddressBase.loaderOptions.apply(this),
       query,
       context,
-    );
+    )) as AddressDBData[];
   }
 
   static async loadRawData<T extends AddressBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data | null> {
-    return addressLoader.createLoader(context).load(id);
+  ): Promise<AddressDBData | null> {
+    const row = await addressLoader.createLoader(context).load(id);
+    if (!row) {
+      return null;
+    }
+    return row as AddressDBData;
   }
 
   static async loadRawDataX<T extends AddressBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data> {
+  ): Promise<AddressDBData> {
     const row = await addressLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row;
+    return row as AddressDBData;
   }
 
   static loaderOptions<T extends AddressBase>(
