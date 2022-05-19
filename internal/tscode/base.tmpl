@@ -24,10 +24,10 @@
 
 {{$viewerType := useImport "Viewer"}}
 {{$idType := useImport "ID" }}
-{{$dataType := useImport "Data" }}
 {{$this := .}}
 
 {{$baseClass := printf "%sBase" .Node -}}
+{{$ignore := useImport "Data" -}}
 {{$thisType := "new (viewer: Viewer, data: Data) => T" }}
 
 {{ range .GetTSEnums -}}
@@ -37,9 +37,9 @@
 {{ end}}
 {{$nodeData := .}}
 
-{{$dataType := printf "%sData" .Node -}}
+{{$dataType := printf "%sDBData" .Node -}}
 
-export interface {{.Node}}Data {
+interface {{$dataType}} {
   {{range $field := .FieldInfo.Fields -}}
     {{ range $field.GetTsTypeImports -}}
       {{ if ($nodeData.ForeignImport .Import) -}}

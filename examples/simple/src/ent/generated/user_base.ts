@@ -77,7 +77,7 @@ export enum PreferredShift {
   Graveyard = "graveyard",
 }
 
-export interface UserData {
+interface UserDBData {
   id: ID;
   created_at: Date;
   updated_at: Date;
@@ -271,36 +271,36 @@ export class UserBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<UserData[]> {
+  ): Promise<UserDBData[]> {
     return (await loadCustomData(
       UserBase.loaderOptions.apply(this),
       query,
       context,
-    )) as UserData[];
+    )) as UserDBData[];
   }
 
   static async loadRawData<T extends UserBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<UserData | null> {
+  ): Promise<UserDBData | null> {
     const row = await userLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as UserData;
+    return row as UserDBData;
   }
 
   static async loadRawDataX<T extends UserBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<UserData> {
+  ): Promise<UserDBData> {
     const row = await userLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as UserData;
+    return row as UserDBData;
   }
 
   static async loadFromEmailAddress<T extends UserBase>(
@@ -340,14 +340,14 @@ export class UserBase {
     this: new (viewer: Viewer, data: Data) => T,
     emailAddress: string,
     context?: Context,
-  ): Promise<UserData | null> {
+  ): Promise<UserDBData | null> {
     const row = await userEmailAddressLoader
       .createLoader(context)
       .load(emailAddress);
     if (!row) {
       return null;
     }
-    return row as UserData;
+    return row as UserDBData;
   }
 
   static async loadFromPhoneNumber<T extends UserBase>(
@@ -387,14 +387,14 @@ export class UserBase {
     this: new (viewer: Viewer, data: Data) => T,
     phoneNumber: string,
     context?: Context,
-  ): Promise<UserData | null> {
+  ): Promise<UserDBData | null> {
     const row = await userPhoneNumberLoader
       .createLoader(context)
       .load(phoneNumber);
     if (!row) {
       return null;
     }
-    return row as UserData;
+    return row as UserDBData;
   }
 
   static loaderOptions<T extends UserBase>(

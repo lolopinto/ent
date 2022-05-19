@@ -32,7 +32,7 @@ import {
 } from "../internal";
 import schema from "../../schema/contact";
 
-export interface ContactData {
+interface ContactDBData {
   id: ID;
   created_at: Date;
   updated_at: Date;
@@ -119,36 +119,36 @@ export class ContactBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<ContactData[]> {
+  ): Promise<ContactDBData[]> {
     return (await loadCustomData(
       ContactBase.loaderOptions.apply(this),
       query,
       context,
-    )) as ContactData[];
+    )) as ContactDBData[];
   }
 
   static async loadRawData<T extends ContactBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<ContactData | null> {
+  ): Promise<ContactDBData | null> {
     const row = await contactLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as ContactData;
+    return row as ContactDBData;
   }
 
   static async loadRawDataX<T extends ContactBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<ContactData> {
+  ): Promise<ContactDBData> {
     const row = await contactLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as ContactData;
+    return row as ContactDBData;
   }
 
   static loaderOptions<T extends ContactBase>(

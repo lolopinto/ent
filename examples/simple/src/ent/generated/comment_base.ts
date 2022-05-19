@@ -31,7 +31,7 @@ import {
 } from "../internal";
 import schema from "../../schema/comment";
 
-export interface CommentData {
+interface CommentDBData {
   id: ID;
   created_at: Date;
   updated_at: Date;
@@ -115,36 +115,36 @@ export class CommentBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<CommentData[]> {
+  ): Promise<CommentDBData[]> {
     return (await loadCustomData(
       CommentBase.loaderOptions.apply(this),
       query,
       context,
-    )) as CommentData[];
+    )) as CommentDBData[];
   }
 
   static async loadRawData<T extends CommentBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<CommentData | null> {
+  ): Promise<CommentDBData | null> {
     const row = await commentLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as CommentData;
+    return row as CommentDBData;
   }
 
   static async loadRawDataX<T extends CommentBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<CommentData> {
+  ): Promise<CommentDBData> {
     const row = await commentLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as CommentData;
+    return row as CommentDBData;
   }
 
   static queryFromArticle<T extends CommentBase>(

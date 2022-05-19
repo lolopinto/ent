@@ -24,7 +24,7 @@ import { hoursOfOperationLoader, hoursOfOperationLoaderInfo } from "./loaders";
 import { DayOfWeek, DayOfWeekAlt, NodeType } from "../internal";
 import schema from "../../schema/hours_of_operation";
 
-export interface HoursOfOperationData {
+interface HoursOfOperationDBData {
   id: ID;
   created_at: Date;
   updated_at: Date;
@@ -108,36 +108,36 @@ export class HoursOfOperationBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<HoursOfOperationData[]> {
+  ): Promise<HoursOfOperationDBData[]> {
     return (await loadCustomData(
       HoursOfOperationBase.loaderOptions.apply(this),
       query,
       context,
-    )) as HoursOfOperationData[];
+    )) as HoursOfOperationDBData[];
   }
 
   static async loadRawData<T extends HoursOfOperationBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<HoursOfOperationData | null> {
+  ): Promise<HoursOfOperationDBData | null> {
     const row = await hoursOfOperationLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as HoursOfOperationData;
+    return row as HoursOfOperationDBData;
   }
 
   static async loadRawDataX<T extends HoursOfOperationBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<HoursOfOperationData> {
+  ): Promise<HoursOfOperationDBData> {
     const row = await hoursOfOperationLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as HoursOfOperationData;
+    return row as HoursOfOperationDBData;
   }
 
   static loaderOptions<T extends HoursOfOperationBase>(

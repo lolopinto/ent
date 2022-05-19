@@ -44,7 +44,7 @@ export enum EventRsvpStatus {
   CanRsvp = "canRsvp",
 }
 
-export interface EventData {
+interface EventDBData {
   id: ID;
   created_at: Date;
   updated_at: Date;
@@ -147,36 +147,36 @@ export class EventBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<EventData[]> {
+  ): Promise<EventDBData[]> {
     return (await loadCustomData(
       EventBase.loaderOptions.apply(this),
       query,
       context,
-    )) as EventData[];
+    )) as EventDBData[];
   }
 
   static async loadRawData<T extends EventBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<EventData | null> {
+  ): Promise<EventDBData | null> {
     const row = await eventLoader.createLoader(context).load(id);
     if (!row) {
       return null;
     }
-    return row as EventData;
+    return row as EventDBData;
   }
 
   static async loadRawDataX<T extends EventBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<EventData> {
+  ): Promise<EventDBData> {
     const row = await eventLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as EventData;
+    return row as EventDBData;
   }
 
   static loaderOptions<T extends EventBase>(
