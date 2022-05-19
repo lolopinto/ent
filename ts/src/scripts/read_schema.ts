@@ -23,7 +23,12 @@ function main() {
     if (!match) {
       throw new Error(`non-typescript file ${p} returned by glob`);
     }
-    potentialSchemas[pascalCase(match[1])] = require(p).default;
+    let schema = match[1];
+    // convert foo_schema.ts -> foo
+    if (schema.endsWith("_schema")) {
+      schema = schema.slice(0, -7);
+    }
+    potentialSchemas[pascalCase(schema)] = require(p).default;
   }
   //  console.log(potentialSchemas);
 

@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "@snowtop/ent": "^0.1.0-alpha8",
-    "@snowtop/ent-email": "^0.0.1",
+    "@snowtop/ent-email": "^0.1.0-alpha1",
     "@snowtop/ent-passport": "^0.0.1",
     "@snowtop/ent-password": "^0.0.1",
     "@snowtop/ent-phonenumber": "^0.1.0-alpha1",
