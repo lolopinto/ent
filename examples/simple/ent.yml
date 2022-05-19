@@ -18,4 +18,6 @@ codegen:
   prettier:
     custom: true
   schemaSQLFilePath: "src/schema/schema.sql"
-
+  templatizedViewer:
+    path: src/viewer/viewer
+    name: ExampleViewer

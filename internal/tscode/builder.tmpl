@@ -191,7 +191,7 @@ export class {{$builder}}<
   {{end -}}
 
 
-  async build(): Promise<{{useImport "Changeset"}}<{{$node}}>> {
+  async build(): Promise<{{useImport "Changeset"}}> {
     return this.orchestrator.build();
   }
 

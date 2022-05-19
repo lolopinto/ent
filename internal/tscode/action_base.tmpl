@@ -164,7 +164,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
     {{end -}}
   {{end -}}
 
-  async changeset(): Promise<{{useImport "Changeset"}}<{{$node}}>> {
+  async changeset(): Promise<{{useImport "Changeset"}}> {
     return this.builder.build();
   }
 

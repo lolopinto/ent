@@ -507,7 +507,8 @@ var _ codegen.Step = &Step{}
 
 // todo standardize this? same as in internal/code
 type nodeTemplateCodePath struct {
-	NodeData      *schema.NodeData
+	NodeData *schema.NodeData
+	// TODO rename from CodePath to Config
 	CodePath      *codegen.Config
 	Package       *codegen.ImportPackage
 	Imports       []*tsimport.ImportPath
