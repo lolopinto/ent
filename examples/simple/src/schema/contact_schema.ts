@@ -7,7 +7,7 @@ import {
 } from "@snowtop/ent/schema/";
 import Feedback from "./patterns/feedback";
 
-const Contact = new EntSchema({
+const ContactSchema = new EntSchema({
   patterns: [new Feedback()],
 
   fields: {
@@ -56,4 +56,4 @@ const Contact = new EntSchema({
     },
   ],
 });
-export default Contact;
+export default ContactSchema;

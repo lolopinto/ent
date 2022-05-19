@@ -13,7 +13,7 @@ import {
 import { EdgeType } from "../ent/generated/const";
 
 /// explicit schema
-const Event = new EntSchema({
+const EventSchema = new EntSchema({
   // pre-fields comment. intentionally doesn't parse decorators since we don't need it
   fields: {
     name: StringType(),
@@ -122,4 +122,4 @@ const Event = new EntSchema({
     },
   ],
 });
-export default Event;
+export default EventSchema;

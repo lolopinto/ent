@@ -25,7 +25,7 @@ import { StringListType } from "@snowtop/ent/schema/field";
 import Feedback from "./patterns/feedback";
 import { AllowIfViewerPrivacyPolicy } from "@snowtop/ent";
 
-const User = new EntSchema({
+const UserSchema = new EntSchema({
   patterns: [new Feedback()],
 
   fields: {
@@ -410,4 +410,4 @@ const User = new EntSchema({
     },
   ],
 });
-export default User;
+export default UserSchema;

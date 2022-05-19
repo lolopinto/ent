@@ -7,7 +7,7 @@ import {
 import { PhoneNumberType } from "@snowtop/ent-phonenumber";
 import { getLoaderInfoFromSchema } from "../ent/generated/loaders";
 
-const ContactPhoneNumber = new EntSchema({
+const ContactPhoneNumberSchema = new EntSchema({
   fields: {
     phoneNumber: PhoneNumberType(),
     label: StringType(),
@@ -26,4 +26,4 @@ const ContactPhoneNumber = new EntSchema({
     },
   ],
 });
-export default ContactPhoneNumber;
+export default ContactPhoneNumberSchema;

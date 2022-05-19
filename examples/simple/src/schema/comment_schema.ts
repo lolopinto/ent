@@ -5,7 +5,7 @@ import {
   UUIDType,
 } from "@snowtop/ent/schema";
 
-const Comment = new EntSchema({
+const CommentSchema = new EntSchema({
   fields: {
     // don't want a foreign key but want to type the User
     AuthorID: UUIDType({ fieldEdge: { schema: "User" } }),
@@ -20,4 +20,4 @@ const Comment = new EntSchema({
     },
   ],
 });
-export default Comment;
+export default CommentSchema;

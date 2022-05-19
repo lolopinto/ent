@@ -7,7 +7,7 @@ import {
 import { EmailType } from "@snowtop/ent-email";
 import { getLoaderInfoFromSchema } from "../ent/generated/loaders";
 
-const ContactEmail = new EntSchema({
+const ContactEmailSchema = new EntSchema({
   fields: {
     emailAddress: EmailType(),
     label: StringType(),
@@ -26,4 +26,4 @@ const ContactEmail = new EntSchema({
     },
   ],
 });
-export default ContactEmail;
+export default ContactEmailSchema;

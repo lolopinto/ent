@@ -222,7 +222,10 @@ function getClassInfo(
   sourceFile: ts.SourceFile,
   node: ts.ClassDeclaration,
 ): classInfo | undefined {
-  const className = node.name?.text;
+  let className = node.name?.text;
+  if (!className?.endsWith("Schema")) {
+    className += "Schema";
+  }
 
   let classExtends: string | undefined;
   let implementsSchema = false;

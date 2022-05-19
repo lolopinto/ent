@@ -6,7 +6,7 @@ import {
 } from "@snowtop/ent";
 import DayOfWeek from "./patterns/day_of_week";
 
-const HoursOfOperation = new EntSchemaWithTZ({
+const HoursOfOperationSchema = new EntSchemaWithTZ({
   patterns: [new DayOfWeek()],
 
   fields: {
@@ -21,4 +21,4 @@ const HoursOfOperation = new EntSchemaWithTZ({
     },
   ],
 });
-export default HoursOfOperation;
+export default HoursOfOperationSchema;

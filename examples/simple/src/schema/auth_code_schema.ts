@@ -8,7 +8,7 @@ import {
 import { EmailType } from "@snowtop/ent-email";
 import { PhoneNumberType } from "@snowtop/ent-phonenumber";
 
-const AuthCode = new EntSchema({
+const AuthCodeSchema = new EntSchema({
   fields: {
     code: StringType(),
     userID: UUIDType({ foreignKey: { schema: "User", column: "ID" } }),
@@ -40,4 +40,4 @@ const AuthCode = new EntSchema({
     },
   ],
 });
-export default AuthCode;
+export default AuthCodeSchema;
