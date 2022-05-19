@@ -24,12 +24,11 @@
 
 {{$viewerType := useImport "Viewer"}}
 {{$idType := useImport "ID" }}
-{{$dataType := useImport "Data" }}
 {{$this := .}}
 
 {{$baseClass := printf "%sBase" .Node -}}
-{{$constructor := "arg: new (viewer: Viewer, data: Data) => T"}}
-{{$thisType := "new (viewer: Viewer, data: Data) => T"}}
+{{$ignore := useImport "Data" -}}
+{{$thisType := "new (viewer: Viewer, data: Data) => T" }}
 
 {{ range .GetTSEnums -}}
   {{if not .Imported -}}
@@ -37,6 +36,21 @@
   {{end -}}
 {{ end}}
 {{$nodeData := .}}
+
+{{$dataType := printf "%sDBData" .Node -}}
+
+interface {{$dataType}} {
+  {{range $field := .FieldInfo.Fields -}}
+    {{ range $field.GetTsTypeImports -}}
+      {{ if ($nodeData.ForeignImport .Import) -}}
+        {{ reserveImportPath . false -}}
+      {{end -}}
+      {{$typ := useImportMaybe .Import -}}
+    {{end -}}
+
+    {{$field.GetDbColName}}: {{$field.TsType}};
+  {{ end -}}
+}
 
 export class {{$baseClass}} {
 
@@ -55,7 +69,7 @@ export class {{$baseClass}} {
     {{end -}}
   {{end}}
 
-  constructor(public viewer: {{$viewerType}}, protected data:{{$dataType}}) {
+  constructor(public viewer: {{$viewerType}}, protected data:Data) {
     {{range $field := .FieldInfo.Fields -}}
       {{$val := printf "data.%s" $field.GetDbColName -}}
       {{$convertType := convertFunc ($field.GetTSFieldType $cfg) -}}
@@ -187,12 +201,12 @@ export class {{$baseClass}} {
     this: {{$thisType}},
     query: {{useImport "CustomQuery"}},
     context?: {{useImport "Context"}}
-  ): Promise<Data[]> {
-    return {{useImport "loadCustomData"}}(
+  ): Promise<{{$dataType}}[]> {
+    return  await {{useImport "loadCustomData"}}(
       {{$baseClass}}.loaderOptions.apply(this),
       query,
       context,
-    );
+    ) as {{$dataType}}[];
   }
 
   static async loadRawData<T extends {{$baseClass}}>(
@@ -200,7 +214,11 @@ export class {{$baseClass}} {
     id: ID,
     context?: {{useImport "Context"}},
   ): Promise<{{$dataType}} | null> {
-    return {{useImport $loaderName}}.createLoader(context).load(id);
+    const row = await {{useImport $loaderName}}.createLoader(context).load(id);
+    if (!row) {
+      return null;
+    }
+    return row as {{$dataType}};
   }
 
   static async loadRawDataX<T extends {{$baseClass}}>(
@@ -212,7 +230,7 @@ export class {{$baseClass}} {
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row;
+    return row as {{$dataType}};
   }
 
 
@@ -263,7 +281,11 @@ export class {{$baseClass}} {
         {{$field.TsFieldName $cfg}}: {{$field.GetNotNullableTsType}},
         context?: {{useImport "Context"}},
       ): Promise<{{$dataType}} | null> {
-        return {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName $cfg}});
+        const row = await {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName $cfg}});
+        if (!row) {
+          return null;
+        }
+        return row as {{$dataType}};
       }
     {{ else if $field.QueryFromEnt -}}
       {{$queryName := useImport ($this.GetFieldQueryName $field) -}}

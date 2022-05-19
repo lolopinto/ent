@@ -24,6 +24,15 @@ import { contactEmailLoader, contactEmailLoaderInfo } from "./loaders";
 import { Contact, NodeType } from "../internal";
 import schema from "../../schema/contact_email";
 
+interface ContactEmailDBData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  email_address: string;
+  label: string;
+  contact_id: ID;
+}
+
 export class ContactEmailBase {
   readonly nodeType = NodeType.ContactEmail;
   readonly id: ID;
@@ -96,32 +105,36 @@ export class ContactEmailBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<Data[]> {
-    return loadCustomData(
+  ): Promise<ContactEmailDBData[]> {
+    return (await loadCustomData(
       ContactEmailBase.loaderOptions.apply(this),
       query,
       context,
-    );
+    )) as ContactEmailDBData[];
   }
 
   static async loadRawData<T extends ContactEmailBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data | null> {
-    return contactEmailLoader.createLoader(context).load(id);
+  ): Promise<ContactEmailDBData | null> {
+    const row = await contactEmailLoader.createLoader(context).load(id);
+    if (!row) {
+      return null;
+    }
+    return row as ContactEmailDBData;
   }
 
   static async loadRawDataX<T extends ContactEmailBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data> {
+  ): Promise<ContactEmailDBData> {
     const row = await contactEmailLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row;
+    return row as ContactEmailDBData;
   }
 
   static loaderOptions<T extends ContactEmailBase>(

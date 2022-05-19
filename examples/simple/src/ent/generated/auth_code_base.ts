@@ -24,6 +24,16 @@ import { authCodeLoader, authCodeLoaderInfo } from "./loaders";
 import { NodeType, User } from "../internal";
 import schema from "../../schema/auth_code";
 
+interface AuthCodeDBData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  code: string;
+  user_id: ID;
+  email_address: string | null;
+  phone_number: string | null;
+}
+
 export class AuthCodeBase {
   readonly nodeType = NodeType.AuthCode;
   readonly id: ID;
@@ -98,32 +108,36 @@ export class AuthCodeBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<Data[]> {
-    return loadCustomData(
+  ): Promise<AuthCodeDBData[]> {
+    return (await loadCustomData(
       AuthCodeBase.loaderOptions.apply(this),
       query,
       context,
-    );
+    )) as AuthCodeDBData[];
   }
 
   static async loadRawData<T extends AuthCodeBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data | null> {
-    return authCodeLoader.createLoader(context).load(id);
+  ): Promise<AuthCodeDBData | null> {
+    const row = await authCodeLoader.createLoader(context).load(id);
+    if (!row) {
+      return null;
+    }
+    return row as AuthCodeDBData;
   }
 
   static async loadRawDataX<T extends AuthCodeBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data> {
+  ): Promise<AuthCodeDBData> {
     const row = await authCodeLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row;
+    return row as AuthCodeDBData;
   }
 
   static loaderOptions<T extends AuthCodeBase>(
