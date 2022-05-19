@@ -1,9 +1,5 @@
 import {
-  Schema,
-  Action,
-  Field,
-  Edge,
-  BaseEntSchema,
+  EntSchema,
   ActionOperation,
   StringType,
   BooleanType,
@@ -12,7 +8,6 @@ import {
   EnumListType,
   BigIntegerType,
   UUIDListType,
-  Index,
   StructType,
   UUIDType,
   StructListType,
@@ -30,47 +25,40 @@ import { StringListType } from "@snowtop/ent/schema/field";
 import Feedback from "./patterns/feedback";
 import { AllowIfViewerPrivacyPolicy } from "@snowtop/ent";
 
-export default class User extends BaseEntSchema implements Schema {
-  constructor() {
-    super();
-    this.addPatterns(new Feedback());
-  }
+const User = new EntSchema({
+  patterns: [new Feedback()],
 
-  fields: Field[] = [
-    StringType({ name: "FirstName" }),
-    StringType({ name: "LastName" }),
-    EmailType({ name: "EmailAddress", unique: true }),
+  fields: {
+    FirstName: StringType(),
+    LastName: StringType(),
+    EmailAddress: EmailType({ unique: true }),
     // TODO shouldn't really be nullable. same issue as #35
-    PhoneNumberType({
-      name: "PhoneNumber",
+    PhoneNumber: PhoneNumberType({
       unique: true,
       nullable: true,
     }),
     // TODO shouldn't really be nullable. same issue as #35
     // TODO we need a way to say a field can be nullable in db but required in actions for new actions
-    PasswordType({ name: "Password", nullable: true }),
+    Password: PasswordType({ nullable: true }),
     // TODO support enums: UNVERIFIED, VERIFIED, DEACTIVATED, DISABLED etc.
     // TODO shouldn't really be nullable. same issue as #35
-    StringType({
-      name: "AccountStatus",
+    AccountStatus: StringType({
       nullable: true,
       // allows scripts, internal tools etc to set this but not graphql
       disableUserGraphQLEditable: true,
       defaultValueOnCreate: () => "UNVERIFIED",
       privacyPolicy: AllowIfViewerPrivacyPolicy,
     }),
-    BooleanType({
-      name: "emailVerified",
+    emailVerified: BooleanType({
       hideFromGraphQL: true,
       serverDefault: "FALSE",
       // not needed because we have serverDefault but can also set it here.
       defaultValueOnCreate: () => false,
       privacyPolicy: AllowIfViewerPrivacyPolicy,
     }),
-    StringType({ name: "Bio", nullable: true }),
-    StringListType({ name: "nicknames", nullable: true }),
-    StructType({
-      name: "prefs",
+    Bio: StringType({ nullable: true }),
+    nicknames: StringListType({ nullable: true }),
+    prefs: StructType({
       tsType: "UserPrefsStruct",
       nullable: true,
       fields: {
@@ -87,8 +75,7 @@ export default class User extends BaseEntSchema implements Schema {
     // TODO there should be a way to share structs across types
     // this is the same type across multiple fields
     // more likely to be shared across types
-    StructListType({
-      name: "prefsList",
+    prefsList: StructListType({
       tsType: "UserPrefsStruct2",
       nullable: true,
       fields: {
@@ -102,8 +89,7 @@ export default class User extends BaseEntSchema implements Schema {
       },
       privacyPolicy: AllowIfViewerPrivacyPolicy,
     }),
-    StructType({
-      name: "prefs_diff",
+    prefs_diff: StructType({
       tsType: "UserPrefsDiff",
       nullable: true,
       privacyPolicy: AllowIfViewerPrivacyPolicy,
@@ -112,8 +98,7 @@ export default class User extends BaseEntSchema implements Schema {
         type: StringType(),
       },
     }),
-    EnumListType({
-      name: "daysOff",
+    daysOff: EnumListType({
       nullable: true,
       values: [
         "monday",
@@ -125,22 +110,19 @@ export default class User extends BaseEntSchema implements Schema {
         "sunday",
       ],
     }),
-    EnumListType({
-      name: "preferredShift",
+    preferredShift: EnumListType({
       nullable: true,
       values: ["morning", "afternoon", "evening", "graveyard"],
     }),
     // Date.now() is too big to store in int so have to use bigint. because of how big bigint could get, have to use BigInt instead of number
-    BigIntegerType({
-      name: "timeInMs",
+    timeInMs: BigIntegerType({
       nullable: true,
       defaultValueOnCreate: () => BigInt(Date.now()),
     }),
-    UUIDListType({ name: "fun_uuids", nullable: true }),
-    StringType({ name: "new_col", nullable: true }),
-    StringType({ name: "new_col2", nullable: true }),
-    StructType({
-      name: "superNestedObject",
+    fun_uuids: UUIDListType({ nullable: true }),
+    new_col: StringType({ nullable: true }),
+    new_col2: StringType({ nullable: true }),
+    superNestedObject: StructType({
       nullable: true,
       tsType: "UserSuperNestedObject",
       fields: {
@@ -270,8 +252,7 @@ export default class User extends BaseEntSchema implements Schema {
         }),
       },
     }),
-    StructListType({
-      name: "nestedList",
+    nestedList: StructListType({
       nullable: true,
       tsType: "UserNestedObjectList",
       fields: {
@@ -289,9 +270,9 @@ export default class User extends BaseEntSchema implements Schema {
         }),
       },
     }),
-  ];
+  },
 
-  edges: Edge[] = [
+  edges: [
     {
       name: "friends",
       schemaName: "User",
@@ -302,9 +283,9 @@ export default class User extends BaseEntSchema implements Schema {
       unique: true,
       schemaName: "Contact",
     },
-  ];
+  ],
 
-  indices: Index[] = [
+  indices: [
     {
       name: "user_name_idx",
       columns: ["FirstName", "LastName"],
@@ -314,9 +295,9 @@ export default class User extends BaseEntSchema implements Schema {
         generatedColumnName: "name_idx",
       },
     },
-  ];
+  ],
 
-  actions: Action[] = [
+  actions: [
     // create user
     {
       operation: ActionOperation.Create,
@@ -427,5 +408,6 @@ export default class User extends BaseEntSchema implements Schema {
       inputName: "DeleteUserInput2",
       graphQLName: "userDelete2",
     },
-  ];
-}
+  ],
+});
+export default User;

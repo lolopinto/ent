@@ -4,29 +4,23 @@ import {
   AlwaysDenyRule,
 } from "@snowtop/ent";
 import {
-  Schema,
-  Action,
-  Field,
-  Edge,
-  BaseEntSchema,
+  EntSchema,
   ActionOperation,
   StringType,
   TimestampType,
   UUIDType,
-  AssocEdgeGroup,
 } from "@snowtop/ent/schema/";
 import { EdgeType } from "../ent/generated/const";
 
 /// explicit schema
-export default class Event extends BaseEntSchema implements Schema {
+const Event = new EntSchema({
   // pre-fields comment. intentionally doesn't parse decorators since we don't need it
-  fields: Field[] = [
-    StringType({ name: "name" }),
+  fields: {
+    name: StringType(),
     // TODO this should be an id type...
     // we should warn when we see an "ID/id/Id" field as non-id type and ask if they wanna change it
-    UUIDType({
-      // name comment
-      name: "creatorID",
+    // name comment
+    creatorID: UUIDType({
       fieldEdge: {
         schema: "User",
         inverseEdge: "createdEvents",
@@ -37,14 +31,12 @@ export default class Event extends BaseEntSchema implements Schema {
       // TODO grab this
       storageKey: "user_id",
     }),
-    TimestampType({ name: "start_time" }),
-    TimestampType({ name: "end_time", nullable: true }),
-    StringType({
-      name: "location",
+    start_time: TimestampType(),
+    end_time: TimestampType({ nullable: true }),
+    location: StringType({
       graphqlName: "eventLocation",
     }),
-    UUIDType({
-      name: "addressID",
+    addressID: UUIDType({
       nullable: true,
       fieldEdge: { schema: "Address", inverseEdge: "hostedEvents" },
       privacyPolicy: {
@@ -58,9 +50,9 @@ export default class Event extends BaseEntSchema implements Schema {
         ],
       },
     }),
-  ];
+  },
 
-  edges: Edge[] = [
+  edges: [
     {
       name: "hosts",
       schemaName: "User",
@@ -76,9 +68,9 @@ export default class Event extends BaseEntSchema implements Schema {
         },
       ],
     },
-  ];
+  ],
 
-  edgeGroups: AssocEdgeGroup[] = [
+  edgeGroups: [
     {
       name: "rsvps",
       groupStatusName: "rsvpStatus",
@@ -121,12 +113,13 @@ export default class Event extends BaseEntSchema implements Schema {
         },
       ],
     },
-  ];
+  ],
 
   // create, edit, delete
-  actions: Action[] = [
+  actions: [
     {
       operation: ActionOperation.Mutations,
     },
-  ];
-}
+  ],
+});
+export default Event;
