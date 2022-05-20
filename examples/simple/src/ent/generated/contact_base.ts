@@ -30,7 +30,7 @@ import {
   NodeType,
   User,
 } from "../internal";
-import schema from "../../schema/contact";
+import schema from "../../schema/contact_schema";
 
 interface ContactDBData {
   id: ID;

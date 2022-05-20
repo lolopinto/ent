@@ -25,7 +25,7 @@ import {
   contactPhoneNumberLoaderInfo,
 } from "./loaders";
 import { Contact, NodeType } from "../internal";
-import schema from "../../schema/contact_phone_number";
+import schema from "../../schema/contact_phone_number_schema";
 
 interface ContactPhoneNumberDBData {
   id: ID;

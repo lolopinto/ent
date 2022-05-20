@@ -1,39 +1,31 @@
 import {
-  Schema,
-  Action,
   ActionOperation,
-  Field,
-  BaseEntSchema,
+  EntSchema,
   StringType,
   UUIDType,
   UUIDListType,
 } from "@snowtop/ent/schema/";
 import Feedback from "./patterns/feedback";
 
-export default class Contact extends BaseEntSchema implements Schema {
-  constructor() {
-    super();
-    this.addPatterns(new Feedback());
-  }
+const ContactSchema = new EntSchema({
+  patterns: [new Feedback()],
 
-  fields: Field[] = [
-    UUIDListType({
-      name: "email_ids",
+  fields: {
+    email_ids: UUIDListType({
       defaultValueOnCreate: () => [],
       fieldEdge: { schema: "ContactEmail" },
     }),
-    UUIDListType({
-      name: "phone_number_ids",
+    phone_number_ids: UUIDListType({
       defaultValueOnCreate: () => [],
       fieldEdge: { schema: "ContactPhoneNumber" },
     }),
-    StringType({ name: "firstName" }),
-    StringType({ name: "lastName" }),
-    UUIDType({ name: "userID", foreignKey: { schema: "User", column: "ID" } }),
-  ];
+    firstName: StringType(),
+    lastName: StringType(),
+    userID: UUIDType({ foreignKey: { schema: "User", column: "ID" } }),
+  },
 
   // create, edit, delete
-  actions: Action[] = [
+  actions: [
     {
       operation: ActionOperation.Create,
       excludedFields: ["email_ids", "phone_number_ids"],
@@ -62,5 +54,6 @@ export default class Contact extends BaseEntSchema implements Schema {
     {
       operation: ActionOperation.Delete,
     },
-  ];
-}
+  ],
+});
+export default ContactSchema;

@@ -1,36 +1,33 @@
 import {
-  Action,
   ActionOperation,
-  BaseEntSchema,
-  Constraint,
+  EntSchema,
   ConstraintType,
-  Field,
   StringType,
   UUIDType,
 } from "@snowtop/ent";
 import { EmailType } from "@snowtop/ent-email";
 import { PhoneNumberType } from "@snowtop/ent-phonenumber";
 
-export default class AuthCode extends BaseEntSchema {
-  fields: Field[] = [
-    StringType({ name: "code" }),
-    UUIDType({ name: "userID", foreignKey: { schema: "User", column: "ID" } }),
-    EmailType({ name: "emailAddress", nullable: true }),
-    PhoneNumberType({ name: "phoneNumber", nullable: true }),
-  ];
+const AuthCodeSchema = new EntSchema({
+  fields: {
+    code: StringType(),
+    userID: UUIDType({ foreignKey: { schema: "User", column: "ID" } }),
+    emailAddress: EmailType({ nullable: true }),
+    phoneNumber: PhoneNumberType({ nullable: true }),
+  },
 
-  hideFromGraphQL = true;
+  hideFromGraphQL: true,
 
-  actions: Action[] = [
+  actions: [
     {
       operation: ActionOperation.Create,
     },
     {
       operation: ActionOperation.Delete,
     },
-  ];
+  ],
 
-  constraints: Constraint[] = [
+  constraints: [
     {
       name: "uniqueCode",
       type: ConstraintType.Unique,
@@ -41,5 +38,6 @@ export default class AuthCode extends BaseEntSchema {
       type: ConstraintType.Unique,
       columns: ["phoneNumber", "code"],
     },
-  ];
-}
+  ],
+});
+export default AuthCodeSchema;

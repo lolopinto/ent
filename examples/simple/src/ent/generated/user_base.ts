@@ -58,7 +58,7 @@ import {
   UserToLikesQuery,
   UserToMaybeEventsQuery,
 } from "../internal";
-import schema from "../../schema/user";
+import schema from "../../schema/user_schema";
 
 export enum DaysOff {
   Monday = "monday",

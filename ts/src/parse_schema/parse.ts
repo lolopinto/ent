@@ -216,6 +216,8 @@ type ProcessedSchema = Omit<
     // and go maps don't support order
 
     fields: ProcessedField[];
+
+    schemaPath?: string;
   };
 
 type ProcessedAssocEdgeGroup = Omit<AssocEdgeGroup, "edgeAction"> & {
@@ -301,13 +303,21 @@ interface Result {
   patterns: patternsDict;
 }
 
-export function parseSchema(potentialSchemas: {}): Result {
+declare type PotentialSchemas = {
+  [key: string]: any;
+};
+
+interface InputSchema extends Schema {
+  schemaPath?: string;
+}
+
+export function parseSchema(potentialSchemas: PotentialSchemas): Result {
   let schemas: schemasDict = {};
   let patterns: patternsDict = {};
 
   for (const key in potentialSchemas) {
     const value = potentialSchemas[key];
-    let schema: Schema;
+    let schema: InputSchema;
     const name = value.constructor.name;
     // named class e.g. new BaseEntSchema
     switch (name) {
@@ -320,6 +330,7 @@ export function parseSchema(potentialSchemas: {}): Result {
     }
     let processedSchema: ProcessedSchema = {
       fields: [],
+      schemaPath: schema.schemaPath,
       tableName: schema.tableName,
       enumTable: schema.enumTable,
       dbRows: schema.dbRows,

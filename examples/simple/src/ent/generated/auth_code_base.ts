@@ -22,7 +22,7 @@ import {
 import { Field, getFields } from "@snowtop/ent/schema";
 import { authCodeLoader, authCodeLoaderInfo } from "./loaders";
 import { NodeType, User } from "../internal";
-import schema from "../../schema/auth_code";
+import schema from "../../schema/auth_code_schema";
 
 interface AuthCodeDBData {
   id: ID;

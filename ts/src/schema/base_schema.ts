@@ -118,7 +118,7 @@ export class EntSchema implements Schema {
   }
 }
 
-export class EntSchemaWithTZ {
+export class EntSchemaWithTZ implements Schema {
   // Field[] compatibility reasons
   fields: FieldMap | Field[];
 

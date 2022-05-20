@@ -15,7 +15,7 @@ import {
 } from "@snowtop/ent/action";
 import { DayOfWeek, DayOfWeekAlt, HoursOfOperation } from "../../..";
 import { NodeType } from "../../../generated/const";
-import schema from "../../../../schema/hours_of_operation";
+import schema from "../../../../schema/hours_of_operation_schema";
 
 export interface HoursOfOperationInput {
   dayOfWeek?: DayOfWeek;

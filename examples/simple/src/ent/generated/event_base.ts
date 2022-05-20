@@ -35,7 +35,7 @@ import {
   NodeType,
   User,
 } from "../internal";
-import schema from "../../schema/event";
+import schema from "../../schema/event_schema";
 
 export enum EventRsvpStatus {
   Attending = "attending",
