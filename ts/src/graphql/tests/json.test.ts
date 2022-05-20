@@ -90,19 +90,14 @@ test("jsonObject", async () => {
   );
 });
 
-test("jsonObjectList", async () => {
+test.only("jsonObjectList", async () => {
   await expectQueryFromRoot(
     {
       schema: schema,
       root: "jsonObjectList",
       args: {},
+      expectedError: /JSONObject cannot represent non-object value: 1,2,3/,
     },
-    [
-      ".",
-      function (expVal) {
-        // doesn't resolve
-        expect(expVal).toBeNull();
-      },
-    ],
+    [".", null],
   );
 });

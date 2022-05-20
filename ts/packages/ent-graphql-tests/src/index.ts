@@ -467,7 +467,9 @@ async function expectFromRoot(
     );
   }
 
-  if (!res.ok) {
+  // res.ok = true in graphql-helix when there's errors...
+  // res.ok = false in express-graphql when there's errors...
+  if (!res.ok || (res.body.errors && res.body.errors.length > 0)) {
     let errors: any[] = res.body.errors;
     expect(errors.length).toBeGreaterThan(0);
 
