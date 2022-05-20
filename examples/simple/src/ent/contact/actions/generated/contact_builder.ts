@@ -15,7 +15,7 @@ import {
 } from "@snowtop/ent/action";
 import { Comment, Contact, User } from "../../..";
 import { EdgeType, NodeType } from "../../../generated/const";
-import schema from "../../../../schema/contact";
+import schema from "../../../../schema/contact_schema";
 
 export interface ContactInput {
   emailIds?: ID[];

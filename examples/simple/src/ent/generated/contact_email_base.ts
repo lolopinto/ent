@@ -22,7 +22,7 @@ import {
 import { Field, getFields } from "@snowtop/ent/schema";
 import { contactEmailLoader, contactEmailLoaderInfo } from "./loaders";
 import { Contact, NodeType } from "../internal";
-import schema from "../../schema/contact_email";
+import schema from "../../schema/contact_email_schema";
 
 interface ContactEmailDBData {
   id: ID;

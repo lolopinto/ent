@@ -218,7 +218,7 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]*tsimport.ImportPath, error
 		{
 			Import:        "schema",
 			DefaultImport: true,
-			ImportPath:    fmt.Sprintf("src/schema/%s", nodeData.PackageName),
+			ImportPath:    nodeData.GetSchemaPath(),
 		},
 	}
 	for _, nodeInfo := range nodeData.getUniqueNodes(false) {
@@ -416,7 +416,7 @@ type loader struct {
 
 func (nodeData *NodeData) GetSchemaPath() string {
 	if nodeData.schemaPath != "" {
-		return nodeData.schemaPath
+		return strings.TrimSuffix(nodeData.schemaPath, ".ts")
 	}
 	return fmt.Sprintf("src/schema/%s", nodeData.PackageName)
 }

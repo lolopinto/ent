@@ -24,7 +24,6 @@
         fields: {{$fields}},
         key: {{.Pkey}},
         {{ if .AddTransformedClause -}}
-        // TODO this. GetSchemaPath needs to be aware of foo_schema.ts
           {{ reserveDefaultImport $nodeData.GetSchemaPath $nodeData.Node -}}
           ... {{useImport "getObjectLoaderProperties"}}({{useImport $nodeData.Node}}, {{$table}}),
         {{ end -}}

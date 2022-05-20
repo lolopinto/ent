@@ -73,7 +73,7 @@ function processCustomObjects(
 }
 
 function transformArgs(f: any) {
-  return (f.args || []).map((v) => {
+  return (f.args || []).map((v: any) => {
     const ret = {
       ...v,
     };

@@ -15,7 +15,7 @@ import {
 } from "@snowtop/ent/action";
 import { AuthCode, User } from "../../..";
 import { NodeType } from "../../../generated/const";
-import schema from "../../../../schema/auth_code";
+import schema from "../../../../schema/auth_code_schema";
 
 export interface AuthCodeInput {
   code?: string;

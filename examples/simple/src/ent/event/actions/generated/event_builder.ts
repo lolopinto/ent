@@ -15,7 +15,7 @@ import {
 } from "@snowtop/ent/action";
 import { Address, Event, User } from "../../..";
 import { EdgeType, NodeType } from "../../../generated/const";
-import schema from "../../../../schema/event";
+import schema from "../../../../schema/event_schema";
 
 export interface EventInput {
   name?: string;

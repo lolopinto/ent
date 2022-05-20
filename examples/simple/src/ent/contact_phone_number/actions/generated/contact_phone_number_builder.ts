@@ -15,7 +15,7 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, ContactPhoneNumber } from "../../..";
 import { NodeType } from "../../../generated/const";
-import schema from "../../../../schema/contact_phone_number";
+import schema from "../../../../schema/contact_phone_number_schema";
 
 export interface ContactPhoneNumberInput {
   phoneNumber?: string;
