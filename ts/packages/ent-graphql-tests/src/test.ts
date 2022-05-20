@@ -11,8 +11,6 @@ import {
 } from "graphql";
 import { GraphQLUpload, graphqlUploadExpress } from "graphql-upload";
 import * as fs from "fs";
-import { graphqlHTTP } from "express-graphql";
-import { IncomingMessage, ServerResponse } from "http";
 import supertest from "supertest";
 
 import {
@@ -24,6 +22,11 @@ import {
 
 import { GraphQLNodeInterface } from "@snowtop/ent/graphql";
 import { buildContext } from "@snowtop/ent/auth";
+import {
+  getGraphQLParameters,
+  processRequest,
+  sendResult,
+} from "graphql-helix";
 
 test("simplest query", async () => {
   let schema = new GraphQLSchema({
@@ -44,6 +47,7 @@ test("simplest query", async () => {
     schema: schema,
     args: {},
     root: "hello",
+    // debugMode: true,
   };
 
   // root query
@@ -156,19 +160,19 @@ let addressType = new GraphQLObjectType({
   name: "Address",
   fields: {
     id: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     street: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     city: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     state: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     zipCode: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     apartment: {
       type: GraphQLString,
@@ -181,7 +185,7 @@ let contactType = new GraphQLObjectType({
   name: "ContactType",
   fields: {
     id: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     firstName: {
       type: GraphQLString,
@@ -203,7 +207,7 @@ let userType = new GraphQLObjectType({
   name: "User",
   fields: {
     id: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     firstName: {
       type: GraphQLString,
@@ -215,15 +219,15 @@ let userType = new GraphQLObjectType({
       type: addressType,
     },
     contacts: {
-      type: GraphQLList(contactType),
+      type: new GraphQLList(contactType),
       args: {
         first: {
-          type: GraphQLNonNull(GraphQLInt),
+          type: new GraphQLNonNull(GraphQLInt),
         },
       },
     },
     nicknames: {
-      type: GraphQLList(GraphQLNonNull(GraphQLString)),
+      type: new GraphQLList(new GraphQLNonNull(GraphQLString)),
     },
   },
   interfaces: [GraphQLNodeInterface],
@@ -237,7 +241,7 @@ let viewerType = new GraphQLObjectType({
   name: "Viewer",
   fields: {
     user: {
-      type: GraphQLNonNull(userType),
+      type: new GraphQLNonNull(userType),
     },
   },
 });
@@ -248,7 +252,7 @@ let rootQuery = new GraphQLObjectType({
     user: {
       args: {
         id: {
-          type: GraphQLNonNull(GraphQLID),
+          type: new GraphQLNonNull(GraphQLID),
         },
       },
       type: userType,
@@ -367,7 +371,7 @@ test("mutation with args", async () => {
         userEdit: {
           args: {
             id: {
-              type: GraphQLNonNull(GraphQLID),
+              type: new GraphQLNonNull(GraphQLID),
             },
             firstName: {
               type: GraphQLString,
@@ -620,10 +624,12 @@ test("nullQueryPaths with nullable list contents", async () => {
       users: {
         args: {
           ids: {
-            type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLID))),
+            type: new GraphQLNonNull(
+              new GraphQLList(new GraphQLNonNull(GraphQLID)),
+            ),
           },
         },
-        type: GraphQLNonNull(GraphQLList(userType)),
+        type: new GraphQLNonNull(new GraphQLList(userType)),
         resolve(_source, { ids }) {
           let ret: (User | null)[] = [];
           for (const id of ids) {
@@ -739,7 +745,7 @@ describe("inline fragments", () => {
       node: {
         args: {
           id: {
-            type: GraphQLNonNull(GraphQLID),
+            type: new GraphQLNonNull(GraphQLID),
           },
         },
         type: GraphQLNodeInterface,
@@ -864,10 +870,10 @@ describe("file upload", () => {
       name: "RootMutationType",
       fields: {
         fileUpload: {
-          type: GraphQLNonNull(GraphQLBoolean),
+          type: new GraphQLNonNull(GraphQLBoolean),
           args: {
             file: {
-              type: GraphQLNonNull(GraphQLUpload),
+              type: new GraphQLNonNull(GraphQLUpload),
             },
           },
           async resolve(src, args) {
@@ -882,10 +888,12 @@ describe("file upload", () => {
           },
         },
         fileUploadMultiple: {
-          type: GraphQLNonNull(GraphQLBoolean),
+          type: new GraphQLNonNull(GraphQLBoolean),
           args: {
             files: {
-              type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLUpload))),
+              type: new GraphQLNonNull(
+                new GraphQLList(new GraphQLNonNull(GraphQLUpload)),
+              ),
             },
           },
           async resolve(src, args) {
@@ -1014,7 +1022,7 @@ test("false boolean", async () => {
         userEdit: {
           args: {
             id: {
-              type: GraphQLNonNull(GraphQLID),
+              type: new GraphQLNonNull(GraphQLID),
             },
             firstName: {
               type: GraphQLString,
@@ -1072,19 +1080,21 @@ test("custom server", async () => {
   });
 
   const app = express();
-  app.use(
-    "/custom_graphql",
-    graphqlHTTP((request: IncomingMessage, response: ServerResponse) => {
-      let doWork = async () => {
-        let context = await buildContext(request, response);
-        return {
-          schema: schema,
-          context,
-        };
-      };
-      return doWork();
-    }),
-  );
+  app.use(express.json());
+  app.use("/custom_graphql", async (req, res) => {
+    const { operationName, query, variables } = getGraphQLParameters(req);
+    const result = await processRequest({
+      operationName,
+      query,
+      variables,
+      request: req,
+      schema,
+      contextFactory: async () => {
+        return buildContext(req, res);
+      },
+    });
+    await sendResult(result, res);
+  });
 
   app.use("/hello", async (req, res) => res.json({ world: true }));
 
