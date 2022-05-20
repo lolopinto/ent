@@ -22,7 +22,7 @@ import {
 import { Field, getFields } from "@snowtop/ent/schema";
 import { hoursOfOperationLoader, hoursOfOperationLoaderInfo } from "./loaders";
 import { DayOfWeek, DayOfWeekAlt, NodeType } from "../internal";
-import schema from "../../schema/hours_of_operation";
+import schema from "../../schema/hours_of_operation_schema";
 
 interface HoursOfOperationDBData {
   id: ID;

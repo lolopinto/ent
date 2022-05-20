@@ -42,6 +42,7 @@ type Node struct {
 	PatternName      string                   `json:"patternName,omitempty"`
 	TransformsSelect bool                     `json:"transformsSelect,omitempty"`
 	TransformsDelete bool                     `json:"transformsDelete,omitempty"`
+	SchemaPath       string                   `json:"schemaPath,omitempty"`
 	// these 2 not used yet so ignoring for now
 	// TransformsInsert bool `json:"transformsInsert,omitempty"`
 	// TransformsUpdate bool `json:"transformsUpdate,omitempty"`

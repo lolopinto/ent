@@ -15,7 +15,7 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, ContactEmail } from "../../..";
 import { NodeType } from "../../../generated/const";
-import schema from "../../../../schema/contact_email";
+import schema from "../../../../schema/contact_email_schema";
 
 export interface ContactEmailInput {
   emailAddress?: string;

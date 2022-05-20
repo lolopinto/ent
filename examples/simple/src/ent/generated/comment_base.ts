@@ -29,7 +29,7 @@ import {
   NodeType,
   User,
 } from "../internal";
-import schema from "../../schema/comment";
+import schema from "../../schema/comment_schema";
 
 interface CommentDBData {
   id: ID;

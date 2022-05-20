@@ -27,7 +27,7 @@ import { UserPrefsDiff } from "../../../generated/user_prefs_diff";
 import { UserPrefsStruct } from "../../../generated/user_prefs_struct";
 import { UserPrefsStruct2 } from "../../../generated/user_prefs_struct_2";
 import { UserSuperNestedObject } from "../../../generated/user_super_nested_object";
-import schema from "../../../../schema/user";
+import schema from "../../../../schema/user_schema";
 
 export interface UserInput {
   firstName?: string;

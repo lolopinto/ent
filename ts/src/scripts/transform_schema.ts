@@ -4,6 +4,7 @@ import * as fs from "fs";
 import { readCompilerOptions } from "../tsc/compilerOptions";
 import { execSync } from "child_process";
 import { Data } from "../core/base";
+import path from "path";
 
 function getTarget(target: string) {
   switch (target.toLowerCase()) {
@@ -43,13 +44,17 @@ async function main() {
     : ts.ScriptTarget.ESNext;
 
   // filter to only event.ts e.g. for comments and whitespace...
-  // files = files.filter((f) => f.endsWith("user.ts"));
+  //  files = files.filter((f) => f.endsWith("event.ts"));
 
   files.forEach((file) => {
     // assume valid file since we do glob above
     //    const idx = file.lastIndexOf(".ts");
     //    const writeFile = file.substring(0, idx) + "2" + ".ts";
-    const writeFile = file;
+    //    console.debug(file);
+    const writeFile =
+      "src/schema/" + path.basename(file).slice(0, -3) + "_schema.ts";
+    // const writeFile = file;
+    //    console.debug(file, writeFile);
 
     let contents = fs.readFileSync(file).toString();
 
@@ -110,6 +115,7 @@ async function main() {
 
     // ideally there's a flag that indicates if we write
     fs.writeFileSync(writeFile, newContents);
+    fs.rmSync(file);
   });
 
   execSync("prettier src/schema/*.ts --write");
@@ -216,7 +222,10 @@ function getClassInfo(
   sourceFile: ts.SourceFile,
   node: ts.ClassDeclaration,
 ): classInfo | undefined {
-  const className = node.name?.text;
+  let className = node.name?.text;
+  if (!className?.endsWith("Schema")) {
+    className += "Schema";
+  }
 
   let classExtends: string | undefined;
   let implementsSchema = false;
@@ -548,7 +557,7 @@ function transformImport(
     importText.substring(end) +
     ' from "' +
     text +
-    '"'
+    '";'
   );
 }
 
