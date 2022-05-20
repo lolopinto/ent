@@ -65,7 +65,7 @@ function getInnerType(typ, list) {
 function makeGraphQLRequest(
   config: queryConfig,
   query: string,
-  fieldArgs: GraphQLArgument[],
+  fieldArgs: Readonly<GraphQLArgument[]>,
 ): [supertest.SuperTest<supertest.Test>, supertest.Test] {
   let test: supertest.SuperTest<supertest.Test>;
 

@@ -6,7 +6,7 @@ export const GraphQLNodeInterface = new GraphQLInterfaceType({
   description: "node interface",
   fields: () => ({
     id: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
   }),
 });
