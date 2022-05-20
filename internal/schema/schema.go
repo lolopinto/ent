@@ -362,6 +362,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 			nodeData.TableName = node.TableName
 		}
 
+		nodeData.schemaPath = node.SchemaPath
 		nodeData.EnumTable = node.EnumTable
 		nodeData.DBRows = node.DBRows
 		nodeData.Constraints = node.Constraints

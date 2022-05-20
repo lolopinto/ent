@@ -69,6 +69,8 @@ type NodeData struct {
 	// same as above. fine to just reuse
 	Indices []*input.Index
 
+	schemaPath string
+
 	TransformsSelect bool
 	TransformsDelete bool
 }
@@ -413,6 +415,9 @@ type loader struct {
 }
 
 func (nodeData *NodeData) GetSchemaPath() string {
+	if nodeData.schemaPath != "" {
+		return nodeData.schemaPath
+	}
 	return fmt.Sprintf("src/schema/%s", nodeData.PackageName)
 }
 
