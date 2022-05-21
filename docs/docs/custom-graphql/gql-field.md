@@ -15,15 +15,20 @@ export class User extends UserBase {
 
   @gqlField()
   howLong() {
+
     return Interval.fromDateTimes(this.createdAt, new Date()).count('seconds');
+
   }
 }
+
 ```
 
 For example, running `npm run codegen` on the above ends up throwing the following error because no type is explicitly specified:
 
 ```
+
 Error: Function isn't a valid type for accessor/function/property
+
 ```
 
 ```ts title="src/ent/user.ts"
@@ -43,17 +48,22 @@ So, the way to actually get this to work is as follows:
 ```ts title="src/ent/user.ts"
 export class User extends UserBase {
   @gqlField({
+
     type: GraphQLInt
+
   })
   howLong(): number {
+
     return Interval.fromDateTimes(this.createdAt, new Date()).count('seconds')
+
   }
 }
+
 ```
 
 which updates the GraphQL schema as follows:
 
-```ts title="src/graphql/schema.gql"
+```ts title="src/graphql/generated/schema.gql"
 
 type User implements Node {
   id: ID!
@@ -71,21 +81,26 @@ export class User extends UserBase {
 
   @gqlField()
   get fullName(): string {
+
     return this.firstName + " " + this.lastName;
+
   }
 
   // OR 
 
   @gqlField()
   fullName(): string {
+
     return this.firstName + " " + this.lastName;
+
   }
 }
+
 ```
 
 which updates the GraphQL schema as follows:
 
-```ts title="src/graphql/schema.gql"
+```ts title="src/graphql/generated/schema.gql"
 type User implements Node {
   id: ID!
   firstName: String!
@@ -95,7 +110,7 @@ type User implements Node {
 }
 ```
 
-Considering how annoying it is to remember, it's probably best to just always indicate the `type`.
+Considering how annoying it is to remember, it's probably best to just always indicate the `type` .
 
 ## name
 
@@ -134,7 +149,7 @@ Supported type formats:
 
 ### GraphQLScalarType
 
-`GraphQLScalarType` refers to a GraphQL Scalar like `GraphQLInt`, `GraphQLFloat`, `GraphQLBoolean` like seen above in `howLong`.
+`GraphQLScalarType` refers to a GraphQL Scalar like `GraphQLInt` , `GraphQLFloat` , `GraphQLBoolean` like seen above in `howLong` .
 
 ### ClassType
 
@@ -153,7 +168,7 @@ class User {
 
 updates the GraphQL schema as follows:
 
-```graphql title="src/graphql/schema.gql"
+```graphql title="src/graphql/generated/schema.gql"
 type User implements Node {
   id: ID!
   firstName: String!
@@ -161,6 +176,7 @@ type User implements Node {
   emailAddress: String!
   self: User!
 }
+
 ```
 
 And the list version:
@@ -176,7 +192,7 @@ class User {
 
 updates the GraphQL schema as follows:
 
-```graphql title="src/graphql/schema.gql"
+```graphql title="src/graphql/generated/schema.gql"
 type User implements Node {
   id: ID!
   firstName: String!
@@ -184,6 +200,7 @@ type User implements Node {
   emailAddress: String!
   selves: [User!]!
 }
+
 ```
 
 ### string
@@ -207,7 +224,7 @@ class User {
 
 updates the GraphQL schema as follows:
 
-```graphql title="src/graphql/schema.gql"
+```graphql title="src/graphql/generated/schema.gql"
 type User implements Node {
   id: ID!
   firstName: String!
@@ -215,6 +232,7 @@ type User implements Node {
   emailAddress: String!
   contactSameDomain: Contact
 }
+
 ```
 
 To provide the list version of this:
@@ -230,7 +248,7 @@ class User {
 
 updates the GraphQL schema as follows:
 
-```graphql title="src/graphql/schema.gql"
+```graphql title="src/graphql/generated/schema.gql"
 type User implements Node {
   id: ID!
   firstName: String!
@@ -238,6 +256,7 @@ type User implements Node {
   emailAddress: String!
   contactsSameDomain: [Contact!]!
 }
+
 ```
 
 ### CustomType
@@ -245,7 +264,6 @@ type User implements Node {
 This allows the flexibility for custom types that are not the built-in GraphQL Scalar Types.
 
 We'll dive into a specific example of this in [gqlFileUpload](/docs/custom-graphql/file-uploads#gqlfileupload).
-
 
 ## nullable
 
@@ -264,7 +282,7 @@ class User {
 
 updates the GraphQL schema as follows:
 
-```graphql title="src/graphql/schema.gql"
+```graphql title="src/graphql/generated/schema.gql"
 type User implements Node {
   id: ID!
   firstName: String!
@@ -272,6 +290,7 @@ type User implements Node {
   emailAddress: String!
   contactsSameDomain: [Contact!]
 }
+
 ```
 
 If not `true` and a list, there are two other options:
@@ -291,7 +310,7 @@ class User {
 
 updates the GraphQL schema as follows:
 
-```graphql title="src/graphql/schema.gql"
+```graphql title="src/graphql/generated/schema.gql"
 type User implements Node {
   id: ID!
   firstName: String!
@@ -299,6 +318,7 @@ type User implements Node {
   emailAddress: String!
   contactsSameDomain: [Contact]!
 }
+
 ```
 
 ### contentsAndList
@@ -316,7 +336,7 @@ class User {
 
 updates the GraphQL schema as follows:
 
-```graphql title="src/graphql/schema.gql"
+```graphql title="src/graphql/generated/schema.gql"
 type User implements Node {
   id: ID!
   firstName: String!

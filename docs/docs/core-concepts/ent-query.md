@@ -15,17 +15,22 @@ For example, given the following schema:
 ```ts title="src/schema/user.ts"
 export default class User extends BaseEntSchema implements Schema {
   fields: Field[] = [
+
     //...
-  ];
+
+  ]; 
 
   edges: Edge[] = [
+
     {
       name: "friends",
       schemaName: "User",
       symmetric: true,
     },
-  ];
+
+  ]; 
 }
+
 ```
 
 a `queryFriends` method is generated in the base class:
@@ -70,7 +75,7 @@ This EntQuery is also exposed as a GraphQL [Connection](https://graphql.org/lear
 
 The schema above leads to the following GraphQL schema
 
-```graphql title="src/graphql/schema.gql"
+```graphql title="src/graphql/generated/schema.gql"
 
 interface Edge {
   node: Node!
@@ -110,6 +115,7 @@ type UserToFriendsEdge implements Edge {
   node: User!
   cursor: String!
 }
+
 ```
 
 and to make the graphql query
@@ -142,9 +148,12 @@ For an [indexed foreign key](/docs/ent-schema/fields#foreignkey) or an [index](/
 ```ts title="src/schema/contact.ts"
 export default class Contact extends BaseEntSchema implements Schema {
   fields: Field[] = [
+
     UUIDType({ name: "userID", foreignKey: { schema: "User", column: "ID" } }),
-  ];
+
+  ]; 
 }
+
 ```
 
 a `queryContacts` method is generated in the referenced class
@@ -180,7 +189,7 @@ This EntQuery is also exposed as a GraphQL [Connection](https://graphql.org/lear
 
 The schema above leads to the following GraphQL schema
 
-```graphql title="src/graphql/schema.gql"
+```graphql title="src/graphql/generated/schema.gql"
 
 interface Edge {
   node: Node!
@@ -225,6 +234,7 @@ type UserToContactsEdge implements Edge {
   node: Contact!
   cursor: String!
 }
+
 ```
 
 and to make the graphql query
@@ -256,13 +266,14 @@ There's a base class where all queries starting from a node goes. From the examp
 
 ```ts title="src/ent/generated/user_query_base.ts"
 
-export class UserToFriendsQueryBase extends AssocEdgeQueryBase<User,User,AssocEdge
+export class UserToFriendsQueryBase extends AssocEdgeQueryBase<User, User, AssocEdge
  // ....
 }
 
 export class UserToContactsQueryBase extends CustomEdgeQueryBase<Contact> { 
  // ...
 }
+
 ```
 
 And then we have a subclass for each query which can be customized as needed. These subclasses are written **once** and not touched again.
@@ -279,8 +290,9 @@ export class UserToFriendsQuery extends UserToFriendsQueryBase {}
 and 
 
 ```ts title="src/ent/user/query/user_to_contacts_query.ts"
-import { UserToContactsQueryBase } from "src/ent/internal";
+import { UserToContactsQueryBase } from "src/ent/internal"; 
 export class UserToContactsQuery extends UserToContactsQueryBase {}
+
 ```
 
 ### customize
