@@ -36,13 +36,13 @@ export const ConfirmEditEmailAddressInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     userID: {
       description: "id of User",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     emailAddress: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     code: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
   }),
 });
@@ -54,7 +54,7 @@ export const ConfirmEditEmailAddressPayloadType = new GraphQLObjectType({
     RequestContext
   > => ({
     user: {
-      type: GraphQLNonNull(UserType),
+      type: new GraphQLNonNull(UserType),
     },
   }),
 });
@@ -64,11 +64,11 @@ export const ConfirmEmailAddressEditType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customConfirmEditEmailAddressInput }
 > = {
-  type: GraphQLNonNull(ConfirmEditEmailAddressPayloadType),
+  type: new GraphQLNonNull(ConfirmEditEmailAddressPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(ConfirmEditEmailAddressInputType),
+      type: new GraphQLNonNull(ConfirmEditEmailAddressInputType),
     },
   },
   resolve: async (

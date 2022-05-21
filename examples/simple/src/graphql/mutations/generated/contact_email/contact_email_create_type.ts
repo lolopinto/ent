@@ -34,13 +34,13 @@ export const ContactEmailCreateInputType = new GraphQLInputObjectType({
   name: "ContactEmailCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     emailAddress: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     label: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     contactID: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -52,7 +52,7 @@ export const ContactEmailCreatePayloadType = new GraphQLObjectType({
     RequestContext
   > => ({
     contactEmail: {
-      type: GraphQLNonNull(ContactEmailType),
+      type: new GraphQLNonNull(ContactEmailType),
     },
   }),
 });
@@ -62,11 +62,11 @@ export const ContactEmailCreateType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customContactEmailCreateInput }
 > = {
-  type: GraphQLNonNull(ContactEmailCreatePayloadType),
+  type: new GraphQLNonNull(ContactEmailCreatePayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(ContactEmailCreateInputType),
+      type: new GraphQLNonNull(ContactEmailCreateInputType),
     },
   },
   resolve: async (

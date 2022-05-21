@@ -19,20 +19,20 @@ export const HoursOfOperationType = new GraphQLObjectType({
   name: "HoursOfOperation",
   fields: (): GraphQLFieldConfigMap<HoursOfOperation, RequestContext> => ({
     id: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,
     },
     dayOfWeek: {
-      type: GraphQLNonNull(DayOfWeekType),
+      type: new GraphQLNonNull(DayOfWeekType),
     },
     dayOfWeekAlt: {
       type: DayOfWeekAltType,
     },
     open: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     close: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
   }),
   interfaces: [GraphQLNodeInterface],

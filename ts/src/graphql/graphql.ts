@@ -210,8 +210,8 @@ export const addCustomType = (type: CustomType) => {
         description: ct.description,
         name: ct.name,
       };
-      if (ct.specifiedByUrl) {
-        type.scalarInfo.specifiedByUrl = ct.specifiedByUrl;
+      if (ct.specifiedByURL) {
+        type.scalarInfo.specifiedByUrl = ct.specifiedByURL;
       }
     }
   } catch (e) {

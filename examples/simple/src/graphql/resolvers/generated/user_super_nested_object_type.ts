@@ -39,28 +39,30 @@ const UserNestedObjectType = new GraphQLObjectType({
   name: "UserNestedObject",
   fields: (): GraphQLFieldConfigMap<UserNestedObject, RequestContext> => ({
     nestedUuid: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     nestedInt: {
-      type: GraphQLNonNull(GraphQLInt),
+      type: new GraphQLNonNull(GraphQLInt),
     },
     nestedString: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     nestedBool: {
-      type: GraphQLNonNull(GraphQLBoolean),
+      type: new GraphQLNonNull(GraphQLBoolean),
     },
     nestedFloat: {
       type: GraphQLFloat,
     },
     nestedEnum: {
-      type: GraphQLNonNull(NestedEnumType),
+      type: new GraphQLNonNull(NestedEnumType),
     },
     nestedStringList: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))),
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(GraphQLString)),
+      ),
     },
     nestedIntList: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLInt))),
+      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(GraphQLInt))),
     },
     nestedObj: {
       type: UserNestedNestedObjectType,
@@ -75,28 +77,30 @@ const UserNestedNestedObjectType = new GraphQLObjectType({
     RequestContext
   > => ({
     nestedNestedUuid: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     nestedNestedInt: {
-      type: GraphQLNonNull(GraphQLInt),
+      type: new GraphQLNonNull(GraphQLInt),
     },
     nestedNestedString: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     nestedNestedBool: {
       type: GraphQLBoolean,
     },
     nestedNestedFloat: {
-      type: GraphQLNonNull(GraphQLFloat),
+      type: new GraphQLNonNull(GraphQLFloat),
     },
     nestedNestedEnum: {
-      type: GraphQLNonNull(NestedNestedEnumType),
+      type: new GraphQLNonNull(NestedNestedEnumType),
     },
     nestedNestedStringList: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))),
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(GraphQLString)),
+      ),
     },
     nestedNestedIntList: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLInt))),
+      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(GraphQLInt))),
     },
   }),
 });
@@ -105,16 +109,16 @@ const CatTypeType = new GraphQLObjectType({
   name: "CatType",
   fields: (): GraphQLFieldConfigMap<CatType, RequestContext> => ({
     name: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     birthday: {
-      type: GraphQLNonNull(GraphQLTime),
+      type: new GraphQLNonNull(GraphQLTime),
     },
     breed: {
-      type: GraphQLNonNull(CatBreedType),
+      type: new GraphQLNonNull(CatBreedType),
     },
     kitten: {
-      type: GraphQLNonNull(GraphQLBoolean),
+      type: new GraphQLNonNull(GraphQLBoolean),
     },
   }),
 });
@@ -123,19 +127,19 @@ const DogTypeType = new GraphQLObjectType({
   name: "DogType",
   fields: (): GraphQLFieldConfigMap<DogType, RequestContext> => ({
     name: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     birthday: {
-      type: GraphQLNonNull(GraphQLTime),
+      type: new GraphQLNonNull(GraphQLTime),
     },
     breed: {
-      type: GraphQLNonNull(DogBreedType),
+      type: new GraphQLNonNull(DogBreedType),
     },
     breedGroup: {
-      type: GraphQLNonNull(DogBreedGroupType),
+      type: new GraphQLNonNull(DogBreedGroupType),
     },
     puppy: {
-      type: GraphQLNonNull(GraphQLBoolean),
+      type: new GraphQLNonNull(GraphQLBoolean),
     },
   }),
 });
@@ -144,13 +148,13 @@ const RabbitTypeType = new GraphQLObjectType({
   name: "RabbitType",
   fields: (): GraphQLFieldConfigMap<RabbitType, RequestContext> => ({
     name: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     birthday: {
-      type: GraphQLNonNull(GraphQLTime),
+      type: new GraphQLNonNull(GraphQLTime),
     },
     breed: {
-      type: GraphQLNonNull(RabbitBreedType),
+      type: new GraphQLNonNull(RabbitBreedType),
     },
   }),
 });
@@ -164,28 +168,28 @@ export const UserSuperNestedObjectType = new GraphQLObjectType({
   name: "UserSuperNestedObject",
   fields: (): GraphQLFieldConfigMap<UserSuperNestedObject, RequestContext> => ({
     uuid: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     int: {
-      type: GraphQLNonNull(GraphQLInt),
+      type: new GraphQLNonNull(GraphQLInt),
     },
     string: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     bool: {
-      type: GraphQLNonNull(GraphQLBoolean),
+      type: new GraphQLNonNull(GraphQLBoolean),
     },
     float: {
-      type: GraphQLNonNull(GraphQLFloat),
+      type: new GraphQLNonNull(GraphQLFloat),
     },
     enum: {
-      type: GraphQLNonNull(EnumType),
+      type: new GraphQLNonNull(EnumType),
     },
     stringList: {
-      type: GraphQLList(GraphQLNonNull(GraphQLString)),
+      type: new GraphQLList(new GraphQLNonNull(GraphQLString)),
     },
     intList: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLInt))),
+      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(GraphQLInt))),
     },
     obj: {
       type: UserNestedObjectType,

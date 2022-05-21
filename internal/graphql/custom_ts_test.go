@@ -148,7 +148,7 @@ func TestCustomMutation(t *testing.T) {
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		tsimport.NewGQLImportPath("GraphQLBoolean"),
 	})
 	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
@@ -161,7 +161,7 @@ func TestCustomMutation(t *testing.T) {
 		{
 			Name: "email",
 			Imports: []*tsimport.ImportPath{
-				tsimport.NewGQLImportPath("GraphQLNonNull"),
+				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 				tsimport.NewGQLImportPath("GraphQLString"),
 			},
 		},
@@ -279,7 +279,7 @@ func TestCustomQuery(t *testing.T) {
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		tsimport.NewGQLImportPath("GraphQLBoolean"),
 	})
 	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
@@ -292,7 +292,7 @@ func TestCustomQuery(t *testing.T) {
 		{
 			Name: "email",
 			Imports: []*tsimport.ImportPath{
-				tsimport.NewGQLImportPath("GraphQLNonNull"),
+				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 				tsimport.NewGQLImportPath("GraphQLString"),
 			},
 		},
@@ -400,9 +400,9 @@ func TestCustomListQuery(t *testing.T) {
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
-		tsimport.NewGQLImportPath("GraphQLList"),
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLList"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		tsimport.NewGQLImportPath("GraphQLBoolean"),
 	})
 	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
@@ -415,9 +415,9 @@ func TestCustomListQuery(t *testing.T) {
 		{
 			Name: "emails",
 			Imports: []*tsimport.ImportPath{
-				tsimport.NewGQLImportPath("GraphQLNonNull"),
-				tsimport.NewGQLImportPath("GraphQLList"),
-				tsimport.NewGQLImportPath("GraphQLNonNull"),
+				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+				tsimport.NewGQLClassImportPath("GraphQLList"),
+				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 				tsimport.NewGQLImportPath("GraphQLString"),
 			},
 		},
@@ -565,7 +565,7 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 		{
 			Name: "username",
 			Imports: []*tsimport.ImportPath{
-				tsimport.NewGQLImportPath("GraphQLNonNull"),
+				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 				tsimport.NewGQLImportPath("GraphQLString"),
 			},
 		},
@@ -672,7 +672,7 @@ func TestCustomUploadType(t *testing.T) {
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		tsimport.NewGQLImportPath("GraphQLBoolean"),
 	})
 	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
@@ -685,7 +685,7 @@ func TestCustomUploadType(t *testing.T) {
 		{
 			Name: "file",
 			Imports: []*tsimport.ImportPath{
-				tsimport.NewGQLImportPath("GraphQLNonNull"),
+				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 				{
 					Import:     "GraphQLUpload",
 					ImportPath: "graphql-upload",

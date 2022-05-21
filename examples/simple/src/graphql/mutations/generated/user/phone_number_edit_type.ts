@@ -35,10 +35,10 @@ export const EditPhoneNumberInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     userID: {
       description: "id of User",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     newPhoneNumber: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
   }),
 });
@@ -50,7 +50,7 @@ export const EditPhoneNumberPayloadType = new GraphQLObjectType({
     RequestContext
   > => ({
     user: {
-      type: GraphQLNonNull(UserType),
+      type: new GraphQLNonNull(UserType),
     },
   }),
 });
@@ -60,11 +60,11 @@ export const PhoneNumberEditType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customEditPhoneNumberInput }
 > = {
-  type: GraphQLNonNull(EditPhoneNumberPayloadType),
+  type: new GraphQLNonNull(EditPhoneNumberPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(EditPhoneNumberInputType),
+      type: new GraphQLNonNull(EditPhoneNumberInputType),
     },
   },
   resolve: async (

@@ -39,7 +39,7 @@ export const ContactEmailEditInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     contactEmailID: {
       description: "id of ContactEmail",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     emailAddress: {
       type: GraphQLString,
@@ -60,7 +60,7 @@ export const ContactEmailEditPayloadType = new GraphQLObjectType({
     RequestContext
   > => ({
     contactEmail: {
-      type: GraphQLNonNull(ContactEmailType),
+      type: new GraphQLNonNull(ContactEmailType),
     },
   }),
 });
@@ -70,11 +70,11 @@ export const ContactEmailEditType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customContactEmailEditInput }
 > = {
-  type: GraphQLNonNull(ContactEmailEditPayloadType),
+  type: new GraphQLNonNull(ContactEmailEditPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(ContactEmailEditInputType),
+      type: new GraphQLNonNull(ContactEmailEditInputType),
     },
   },
   resolve: async (

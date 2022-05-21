@@ -40,7 +40,7 @@ export const ContactPhoneNumberEditInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     contactPhoneNumberID: {
       description: "id of ContactPhoneNumber",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     phoneNumber: {
       type: GraphQLString,
@@ -61,7 +61,7 @@ export const ContactPhoneNumberEditPayloadType = new GraphQLObjectType({
     RequestContext
   > => ({
     contactPhoneNumber: {
-      type: GraphQLNonNull(ContactPhoneNumberType),
+      type: new GraphQLNonNull(ContactPhoneNumberType),
     },
   }),
 });
@@ -71,11 +71,11 @@ export const ContactPhoneNumberEditType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customContactPhoneNumberEditInput }
 > = {
-  type: GraphQLNonNull(ContactPhoneNumberEditPayloadType),
+  type: new GraphQLNonNull(ContactPhoneNumberEditPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(ContactPhoneNumberEditInputType),
+      type: new GraphQLNonNull(ContactPhoneNumberEditInputType),
     },
   },
   resolve: async (

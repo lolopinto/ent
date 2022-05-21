@@ -35,10 +35,10 @@ export const EmailContactCreateInput = new GraphQLInputObjectType({
   name: "EmailContactCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     emailAddress: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     label: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
   }),
 });
@@ -47,10 +47,10 @@ export const PhoneNumberContactCreateInput = new GraphQLInputObjectType({
   name: "PhoneNumberContactCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     phoneNumber: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     label: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
   }),
 });
@@ -59,19 +59,19 @@ export const ContactCreateInputType = new GraphQLInputObjectType({
   name: "ContactCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     firstName: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     lastName: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     userID: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     emails: {
-      type: GraphQLList(GraphQLNonNull(EmailContactCreateInput)),
+      type: new GraphQLList(new GraphQLNonNull(EmailContactCreateInput)),
     },
     phoneNumbers: {
-      type: GraphQLList(GraphQLNonNull(PhoneNumberContactCreateInput)),
+      type: new GraphQLList(new GraphQLNonNull(PhoneNumberContactCreateInput)),
     },
   }),
 });
@@ -80,7 +80,7 @@ export const ContactCreatePayloadType = new GraphQLObjectType({
   name: "ContactCreatePayload",
   fields: (): GraphQLFieldConfigMap<ContactCreatePayload, RequestContext> => ({
     contact: {
-      type: GraphQLNonNull(ContactType),
+      type: new GraphQLNonNull(ContactType),
     },
   }),
 });
@@ -90,11 +90,11 @@ export const ContactCreateType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customContactCreateInput }
 > = {
-  type: GraphQLNonNull(ContactCreatePayloadType),
+  type: new GraphQLNonNull(ContactCreatePayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(ContactCreateInputType),
+      type: new GraphQLNonNull(ContactCreateInputType),
     },
   },
   resolve: async (

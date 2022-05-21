@@ -35,13 +35,13 @@ export const ContactPhoneNumberCreateInputType = new GraphQLInputObjectType({
   name: "ContactPhoneNumberCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     phoneNumber: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     label: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     contactID: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -53,7 +53,7 @@ export const ContactPhoneNumberCreatePayloadType = new GraphQLObjectType({
     RequestContext
   > => ({
     contactPhoneNumber: {
-      type: GraphQLNonNull(ContactPhoneNumberType),
+      type: new GraphQLNonNull(ContactPhoneNumberType),
     },
   }),
 });
@@ -63,11 +63,11 @@ export const ContactPhoneNumberCreateType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customContactPhoneNumberCreateInput }
 > = {
-  type: GraphQLNonNull(ContactPhoneNumberCreatePayloadType),
+  type: new GraphQLNonNull(ContactPhoneNumberCreatePayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(ContactPhoneNumberCreateInputType),
+      type: new GraphQLNonNull(ContactPhoneNumberCreateInputType),
     },
   },
   resolve: async (

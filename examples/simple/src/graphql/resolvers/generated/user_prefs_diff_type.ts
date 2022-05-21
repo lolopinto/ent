@@ -16,7 +16,7 @@ export const UserPrefsDiffType = new GraphQLObjectType({
   name: "UserPrefsDiff",
   fields: (): GraphQLFieldConfigMap<UserPrefsDiff, RequestContext> => ({
     type: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
   }),
 });

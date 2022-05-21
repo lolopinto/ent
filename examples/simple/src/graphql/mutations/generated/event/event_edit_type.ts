@@ -42,7 +42,7 @@ export const EventEditInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     eventID: {
       description: "id of Event",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     name: {
       type: GraphQLString,
@@ -69,7 +69,7 @@ export const EventEditPayloadType = new GraphQLObjectType({
   name: "EventEditPayload",
   fields: (): GraphQLFieldConfigMap<EventEditPayload, RequestContext> => ({
     event: {
-      type: GraphQLNonNull(EventType),
+      type: new GraphQLNonNull(EventType),
     },
   }),
 });
@@ -79,11 +79,11 @@ export const EventEditType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customEventEditInput }
 > = {
-  type: GraphQLNonNull(EventEditPayloadType),
+  type: new GraphQLNonNull(EventEditPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(EventEditInputType),
+      type: new GraphQLNonNull(EventEditInputType),
     },
   },
   resolve: async (

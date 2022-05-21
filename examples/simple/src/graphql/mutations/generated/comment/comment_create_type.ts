@@ -35,16 +35,16 @@ export const CommentCreateInputType = new GraphQLInputObjectType({
   name: "CommentCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     authorID: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     body: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     articleID: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     articleType: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
   }),
 });
@@ -53,7 +53,7 @@ export const CommentCreatePayloadType = new GraphQLObjectType({
   name: "CommentCreatePayload",
   fields: (): GraphQLFieldConfigMap<CommentCreatePayload, RequestContext> => ({
     comment: {
-      type: GraphQLNonNull(CommentType),
+      type: new GraphQLNonNull(CommentType),
     },
   }),
 });
@@ -63,11 +63,11 @@ export const CommentCreateType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customCommentCreateInput }
 > = {
-  type: GraphQLNonNull(CommentCreatePayloadType),
+  type: new GraphQLNonNull(CommentCreatePayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(CommentCreateInputType),
+      type: new GraphQLNonNull(CommentCreateInputType),
     },
   },
   resolve: async (

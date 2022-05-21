@@ -35,10 +35,10 @@ export const EditEmailAddressInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     userID: {
       description: "id of User",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     newEmail: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
   }),
 });
@@ -50,7 +50,7 @@ export const EditEmailAddressPayloadType = new GraphQLObjectType({
     RequestContext
   > => ({
     user: {
-      type: GraphQLNonNull(UserType),
+      type: new GraphQLNonNull(UserType),
     },
   }),
 });
@@ -60,11 +60,11 @@ export const EmailAddressEditType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customEditEmailAddressInput }
 > = {
-  type: GraphQLNonNull(EditEmailAddressPayloadType),
+  type: new GraphQLNonNull(EditEmailAddressPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(EditEmailAddressInputType),
+      type: new GraphQLNonNull(EditEmailAddressInputType),
     },
   },
   resolve: async (

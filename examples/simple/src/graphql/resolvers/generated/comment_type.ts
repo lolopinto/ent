@@ -36,14 +36,14 @@ export const CommentType = new GraphQLObjectType({
       },
     },
     id: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,
     },
     body: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     post: {
-      type: GraphQLNonNull(CommentToPostConnectionType()),
+      type: new GraphQLNonNull(CommentToPostConnectionType()),
       args: {
         first: {
           description: "",

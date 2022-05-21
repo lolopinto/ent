@@ -123,8 +123,8 @@ func getNodeInterfaceRenderer() renderer {
 			{
 				Name: "id",
 				FieldImports: []*tsimport.ImportPath{
-					getNativeGQLImportFor("GraphQLNonNull"),
-					getNativeGQLImportFor("GraphQLID"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLID"),
 				},
 			},
 		},
@@ -140,7 +140,7 @@ func getConnectionRenderer() renderer {
 			{
 				Name: "node",
 				FieldImports: []*tsimport.ImportPath{
-					getNativeGQLImportFor("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					{
 						Import: "Node",
 					},
@@ -149,8 +149,8 @@ func getConnectionRenderer() renderer {
 			{
 				Name: "cursor",
 				FieldImports: []*tsimport.ImportPath{
-					getNativeGQLImportFor("GraphQLNonNull"),
-					getNativeGQLImportFor("GraphQLString"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLString"),
 				},
 			},
 		},
@@ -164,9 +164,9 @@ func getConnectionRenderer() renderer {
 			{
 				Name: "edges",
 				FieldImports: []*tsimport.ImportPath{
-					getNativeGQLImportFor("GraphQLNonNull"),
-					getNativeGQLImportFor("GraphQLList"),
-					getNativeGQLImportFor("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					{
 						Import: "Edge",
 					},
@@ -175,9 +175,9 @@ func getConnectionRenderer() renderer {
 			{
 				Name: "nodes",
 				FieldImports: []*tsimport.ImportPath{
-					getNativeGQLImportFor("GraphQLNonNull"),
-					getNativeGQLImportFor("GraphQLList"),
-					getNativeGQLImportFor("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					{
 						Import: "Node",
 					},
@@ -186,7 +186,7 @@ func getConnectionRenderer() renderer {
 			{
 				Name: "pageInfo",
 				FieldImports: []*tsimport.ImportPath{
-					getNativeGQLImportFor("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					{
 						Import: "PageInfo",
 					},
@@ -201,29 +201,29 @@ func getConnectionRenderer() renderer {
 			{
 				Name: "hasNextPage",
 				FieldImports: []*tsimport.ImportPath{
-					getNativeGQLImportFor("GraphQLNonNull"),
-					getNativeGQLImportFor("GraphQLBoolean"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLBoolean"),
 				},
 			},
 			{
 				Name: "hasPreviousPage",
 				FieldImports: []*tsimport.ImportPath{
-					getNativeGQLImportFor("GraphQLNonNull"),
-					getNativeGQLImportFor("GraphQLBoolean"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLBoolean"),
 				},
 			},
 			{
 				Name: "startCursor",
 				FieldImports: []*tsimport.ImportPath{
-					getNativeGQLImportFor("GraphQLNonNull"),
-					getNativeGQLImportFor("GraphQLString"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLString"),
 				},
 			},
 			{
 				Name: "endCursor",
 				FieldImports: []*tsimport.ImportPath{
-					getNativeGQLImportFor("GraphQLNonNull"),
-					getNativeGQLImportFor("GraphQLString"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLImportPath("GraphQLString"),
 				},
 			},
 		},

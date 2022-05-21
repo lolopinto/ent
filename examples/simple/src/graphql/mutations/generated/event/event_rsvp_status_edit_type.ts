@@ -51,13 +51,13 @@ export const EventRsvpStatusEditInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     eventID: {
       description: "id of Event",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     rsvpStatus: {
-      type: GraphQLNonNull(EventRsvpStatusInputType),
+      type: new GraphQLNonNull(EventRsvpStatusInputType),
     },
     userID: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -69,7 +69,7 @@ export const EventRsvpStatusEditPayloadType = new GraphQLObjectType({
     RequestContext
   > => ({
     event: {
-      type: GraphQLNonNull(EventType),
+      type: new GraphQLNonNull(EventType),
     },
   }),
 });
@@ -79,11 +79,11 @@ export const EventRsvpStatusEditType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customEventRsvpStatusEditInput }
 > = {
-  type: GraphQLNonNull(EventRsvpStatusEditPayloadType),
+  type: new GraphQLNonNull(EventRsvpStatusEditPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(EventRsvpStatusEditInputType),
+      type: new GraphQLNonNull(EventRsvpStatusEditInputType),
     },
   },
   resolve: async (

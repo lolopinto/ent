@@ -31,10 +31,10 @@ export const UserAuthJWTInputType = new GraphQLInputObjectType({
   name: "UserAuthJWTInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     emailAddress: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     password: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
   }),
 });
@@ -43,10 +43,10 @@ export const UserAuthJWTPayloadType = new GraphQLObjectType({
   name: "UserAuthJWTPayload",
   fields: (): GraphQLFieldConfigMap<UserAuthJWTPayload, RequestContext> => ({
     token: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     viewerID: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -56,11 +56,11 @@ export const UserAuthJWTType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: UserAuthJWTInput }
 > = {
-  type: GraphQLNonNull(UserAuthJWTPayloadType),
+  type: new GraphQLNonNull(UserAuthJWTPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(UserAuthJWTInputType),
+      type: new GraphQLNonNull(UserAuthJWTInputType),
     },
   },
   resolve: async (

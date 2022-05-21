@@ -22,7 +22,9 @@ export const UserPrefsStruct2InputType = new GraphQLInputObjectType({
       type: GraphQLBoolean,
     },
     notifTypes: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(NotifType2Type))),
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(NotifType2Type)),
+      ),
     },
   }),
 });
