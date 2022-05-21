@@ -1,4 +1,4 @@
-import { Ent, ID, Viewer, Data } from "../core/base";
+import { Ent, ID, Viewer, Data, PrivacyPolicy } from "../core/base";
 import { DataOperation, loadEdges, loadEnts, loadRows } from "../core/ent";
 import * as clause from "../core/clause";
 import { ObjectLoaderFactory } from "../core/loaders/object_loader";
@@ -203,7 +203,9 @@ class Account implements Ent {
   id: ID;
   accountID: string = "";
   nodeType = "Account";
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
 
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data.id;
@@ -232,7 +234,9 @@ const GroupSchema = getBuilderSchemaFromFields(
 class GroupMembership implements Ent {
   id: ID;
   nodeType = "GroupMembership";
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
 
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data.id;
@@ -251,7 +255,9 @@ const GroupMembershipSchema = getBuilderSchemaFromFields(
 class Changelog implements Ent {
   id: ID;
   nodeType = "Changelog";
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
 
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data.id;

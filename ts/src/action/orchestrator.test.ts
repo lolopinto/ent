@@ -252,9 +252,11 @@ class CustomUser implements Ent {
   id: ID;
   accountID: string = "";
   nodeType = "User";
-  privacyPolicy: PrivacyPolicy = {
-    rules: [AllowIfViewerRule, AlwaysDenyRule],
-  };
+  getPrivacyPolicy() {
+    return {
+      rules: [AllowIfViewerRule, AlwaysDenyRule],
+    };
+  }
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data.id;
   }

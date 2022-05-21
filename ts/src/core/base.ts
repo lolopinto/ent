@@ -92,7 +92,7 @@ export interface Viewer {
 export interface Ent {
   id: ID;
   viewer: Viewer;
-  privacyPolicy: PrivacyPolicy<this>;
+  getPrivacyPolicy(): PrivacyPolicy<this>;
   nodeType: string;
 }
 

@@ -26,9 +26,11 @@ export class FakeContact implements Ent {
   readonly emailAddress: string;
   readonly userID: ID;
 
-  privacyPolicy: PrivacyPolicy = {
-    rules: [new AllowIfViewerIsRule("userID"), AlwaysDenyRule],
-  };
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return {
+      rules: [new AllowIfViewerIsRule("userID"), AlwaysDenyRule],
+    };
+  }
 
   constructor(public viewer: Viewer, data: Data) {
     this.data = data;

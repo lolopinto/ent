@@ -49,30 +49,32 @@ export class FakeUser implements Ent {
   readonly phoneNumber: string | null;
   protected readonly password: string | null;
 
-  privacyPolicy: PrivacyPolicy = {
-    rules: [
-      AllowIfViewerRule,
-      //can view user if friends
-      new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFriends),
-      //can view user if following
-      new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFollowing),
-      new AllowIfConditionAppliesRule((viewer: Viewer, ent: Ent) => {
-        if (!(viewer instanceof ViewerWithAccessToken)) {
-          return false;
-        }
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return {
+      rules: [
+        AllowIfViewerRule,
+        //can view user if friends
+        new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFriends),
+        //can view user if following
+        new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFollowing),
+        new AllowIfConditionAppliesRule((viewer: Viewer, ent: Ent) => {
+          if (!(viewer instanceof ViewerWithAccessToken)) {
+            return false;
+          }
 
-        return viewer.hasToken("allow_outbound_friend_request");
-      }, new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFriendRequests)),
-      new AllowIfConditionAppliesRule((viewer: Viewer, ent: Ent) => {
-        if (!(viewer instanceof ViewerWithAccessToken)) {
-          return false;
-        }
+          return viewer.hasToken("allow_outbound_friend_request");
+        }, new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFriendRequests)),
+        new AllowIfConditionAppliesRule((viewer: Viewer, ent: Ent) => {
+          if (!(viewer instanceof ViewerWithAccessToken)) {
+            return false;
+          }
 
-        return viewer.hasToken("allow_incoming_friend_request");
-      }, new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToIncomingFriendRequests)),
-      AlwaysDenyRule,
-    ],
-  };
+          return viewer.hasToken("allow_incoming_friend_request");
+        }, new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToIncomingFriendRequests)),
+        AlwaysDenyRule,
+      ],
+    };
+  }
 
   constructor(public viewer: Viewer, data: Data) {
     this.data = data;

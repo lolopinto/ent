@@ -1,4 +1,11 @@
-import { Ent, ID, Viewer, Data, EntConstructor } from "../core/base";
+import {
+  Ent,
+  ID,
+  Viewer,
+  Data,
+  EntConstructor,
+  PrivacyPolicy,
+} from "../core/base";
 import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
 import { Orchestrator } from "../action/orchestrator";
 import {
@@ -29,7 +36,9 @@ export class User implements Ent {
   id: ID;
   accountID: string = "";
   nodeType = "User";
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
   firstName: string;
 
   constructor(public viewer: Viewer, public data: Data) {
@@ -44,7 +53,9 @@ export class Event implements Ent {
   id: ID;
   accountID: string = "";
   nodeType = "Event";
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
 
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data.id;
@@ -55,7 +66,9 @@ export class Contact implements Ent {
   id: ID;
   accountID: string = "";
   nodeType = "Contact";
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
 
   constructor(public viewer: Viewer, public data: Data) {
     this.data.created_at = convertDate(data.created_at);
@@ -68,7 +81,9 @@ export class Group implements Ent {
   id: ID;
   accountID: string = "";
   nodeType = "Group";
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
 
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data.id;
@@ -79,7 +94,9 @@ export class Message implements Ent {
   id: ID;
   accountID: string = "";
   nodeType = "Message";
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
 
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data.id;
@@ -90,7 +107,9 @@ export class Address implements Ent {
   id: ID;
   accountID: string = "";
   nodeType = "Address";
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
 
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data.id;

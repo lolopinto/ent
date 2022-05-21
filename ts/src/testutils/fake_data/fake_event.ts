@@ -28,7 +28,9 @@ export class FakeEvent implements Ent {
   readonly description: string | null;
   readonly userID: ID;
 
-  privacyPolicy: PrivacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
 
   constructor(public viewer: Viewer, data: Data) {
     this.data = data;
