@@ -90,7 +90,7 @@ test("jsonObject", async () => {
   );
 });
 
-test.only("jsonObjectList", async () => {
+test("jsonObjectList", async () => {
   await expectQueryFromRoot(
     {
       schema: schema,
