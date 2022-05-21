@@ -19,11 +19,11 @@ export const RemoveCompletedTodosType: GraphQLFieldConfig<
   RequestContext,
   removeCompletedTodosArgs
 > = {
-  type: GraphQLNonNull(AccountType),
+  type: new GraphQLNonNull(AccountType),
   args: {
     accountID: {
       description: "",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
   },
   resolve: async (

@@ -7,9 +7,7 @@ import {
   shouldRenderGraphiQL,
   renderGraphiQL,
 } from "graphql-helix";
-
 import schema from "./generated/schema";
-import { IncomingMessage, ServerResponse } from "http";
 import passport from "passport";
 import session from "express-session";
 import { DB } from "@snowtop/ent";
