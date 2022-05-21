@@ -1,47 +1,21 @@
 import { glob } from "glob";
 import ts from "typescript";
 import * as fs from "fs";
-import { readCompilerOptions } from "../tsc/compilerOptions";
+import {
+  readCompilerOptions,
+  getTarget,
+  createSourceFile,
+} from "../tsc/compilerOptions";
 import { execSync } from "child_process";
 import { Data } from "../core/base";
 import path from "path";
-
-function getTarget(target: string) {
-  switch (target.toLowerCase()) {
-    case "es2015":
-      return ts.ScriptTarget.ES2015;
-    case "es2016":
-      return ts.ScriptTarget.ES2016;
-    case "es2017":
-      return ts.ScriptTarget.ES2017;
-    case "es2018":
-      return ts.ScriptTarget.ES2018;
-    case "es2019":
-      return ts.ScriptTarget.ES2019;
-    case "es2020":
-      return ts.ScriptTarget.ES2020;
-    case "es2021":
-      return ts.ScriptTarget.ES2021;
-    case "es3":
-      return ts.ScriptTarget.ES3;
-    case "es5":
-      return ts.ScriptTarget.ES5;
-    case "esnext":
-      return ts.ScriptTarget.ESNext;
-    default:
-      return ts.ScriptTarget.ESNext;
-  }
-}
 
 async function main() {
   // this assumes this is being run from root of directory
   const options = readCompilerOptions(".");
   let files = glob.sync("src/schema/*.ts");
 
-  const target = options.target
-    ? // @ts-ignore
-      getTarget(options.target)
-    : ts.ScriptTarget.ESNext;
+  const target = getTarget(options.target?.toString());
 
   // filter to only event.ts e.g. for comments and whitespace...
   //  files = files.filter((f) => f.endsWith("event.ts"));
@@ -56,16 +30,9 @@ async function main() {
     // const writeFile = file;
     //    console.debug(file, writeFile);
 
-    let contents = fs.readFileSync(file).toString();
-
     // go through the file and print everything back if not starting immediately after other position
-    const sourceFile = ts.createSourceFile(
-      file,
-      contents,
-      target,
-      false,
-      ts.ScriptKind.TS,
-    );
+    let { contents, sourceFile } = createSourceFile(target, file);
+
     const nodes: NodeInfo[] = [];
     let updateImport = false;
     let removeImports: string[] = [];
