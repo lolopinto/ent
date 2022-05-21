@@ -114,7 +114,6 @@ test("edit no permissions, logged out viewer", async () => {
       },
       loggedOutViewer,
       {
-        expectedStatus: 500,
         expectedError: /not visible for privacy reasons/,
       },
     ),
@@ -145,7 +144,6 @@ test("edit no permissions, other viewer", async () => {
       },
       new IDViewer(user2.id),
       {
-        expectedStatus: 500,
         expectedError: /not visible for privacy reasons/,
       },
     ),
@@ -236,7 +234,6 @@ test("delete. other user no permissions", async () => {
       },
       new IDViewer(user2.id),
       {
-        expectedStatus: 500,
         expectedError: /not visible for privacy reasons/,
       },
     ),

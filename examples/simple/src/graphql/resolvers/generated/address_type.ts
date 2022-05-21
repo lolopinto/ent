@@ -24,29 +24,29 @@ export const AddressType = new GraphQLObjectType({
   name: "Address",
   fields: (): GraphQLFieldConfigMap<Address, RequestContext> => ({
     id: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,
     },
     streetName: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     city: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     state: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     zip: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     apartment: {
       type: GraphQLString,
     },
     country: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     hostedEvents: {
-      type: GraphQLNonNull(AddressToHostedEventsConnectionType()),
+      type: new GraphQLNonNull(AddressToHostedEventsConnectionType()),
       args: {
         first: {
           description: "",

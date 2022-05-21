@@ -33,10 +33,10 @@ export const EventRemoveHostInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     eventID: {
       description: "id of Event",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     hostID: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -48,7 +48,7 @@ export const EventRemoveHostPayloadType = new GraphQLObjectType({
     RequestContext
   > => ({
     event: {
-      type: GraphQLNonNull(EventType),
+      type: new GraphQLNonNull(EventType),
     },
   }),
 });
@@ -58,11 +58,11 @@ export const EventRemoveHostType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customEventRemoveHostInput }
 > = {
-  type: GraphQLNonNull(EventRemoveHostPayloadType),
+  type: new GraphQLNonNull(EventRemoveHostPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(EventRemoveHostInputType),
+      type: new GraphQLNonNull(EventRemoveHostInputType),
     },
   },
   resolve: async (

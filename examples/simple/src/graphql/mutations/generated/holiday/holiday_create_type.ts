@@ -33,16 +33,16 @@ export const HolidayCreateInputType = new GraphQLInputObjectType({
   name: "HolidayCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     dayOfWeek: {
-      type: GraphQLNonNull(DayOfWeekType),
+      type: new GraphQLNonNull(DayOfWeekType),
     },
     dayOfWeekAlt: {
       type: DayOfWeekAltType,
     },
     label: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     date: {
-      type: GraphQLNonNull(GraphQLTime),
+      type: new GraphQLNonNull(GraphQLTime),
     },
   }),
 });
@@ -51,7 +51,7 @@ export const HolidayCreatePayloadType = new GraphQLObjectType({
   name: "HolidayCreatePayload",
   fields: (): GraphQLFieldConfigMap<HolidayCreatePayload, RequestContext> => ({
     holiday: {
-      type: GraphQLNonNull(HolidayType),
+      type: new GraphQLNonNull(HolidayType),
     },
   }),
 });
@@ -61,11 +61,11 @@ export const HolidayCreateType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: HolidayCreateInput }
 > = {
-  type: GraphQLNonNull(HolidayCreatePayloadType),
+  type: new GraphQLNonNull(HolidayCreatePayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(HolidayCreateInputType),
+      type: new GraphQLNonNull(HolidayCreateInputType),
     },
   },
   resolve: async (

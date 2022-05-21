@@ -17,7 +17,7 @@ const UserNestedNestedObjectListInputType = new GraphQLInputObjectType({
   name: "UserNestedNestedObjectListInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     int: {
-      type: GraphQLNonNull(GraphQLInt),
+      type: new GraphQLNonNull(GraphQLInt),
     },
   }),
 });
@@ -26,14 +26,16 @@ export const UserNestedObjectListInputType = new GraphQLInputObjectType({
   name: "UserNestedObjectListInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     type: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     enum: {
-      type: GraphQLNonNull(EnumUsedInListType),
+      type: new GraphQLNonNull(EnumUsedInListType),
     },
     objects: {
-      type: GraphQLNonNull(
-        GraphQLList(GraphQLNonNull(UserNestedNestedObjectListInputType)),
+      type: new GraphQLNonNull(
+        new GraphQLList(
+          new GraphQLNonNull(UserNestedNestedObjectListInputType),
+        ),
       ),
     },
   }),

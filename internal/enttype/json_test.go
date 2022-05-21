@@ -17,7 +17,7 @@ func TestJSONType(t *testing.T) {
 				db:      "postgresql.JSON",
 				graphql: "JSON!",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
 				tsType:       "any",
@@ -34,7 +34,7 @@ func TestJSONType(t *testing.T) {
 				db:      "postgresql.JSONB",
 				graphql: "JSON!",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
 				tsType:       "any",
@@ -92,7 +92,7 @@ func TestJSONType(t *testing.T) {
 				db:      "postgresql.JSON",
 				graphql: "JSON!",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
 				tsType: "Foo",
@@ -165,7 +165,7 @@ func TestJSONType(t *testing.T) {
 				db:      "postgresql.JSONB",
 				graphql: "JSON!",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
 				tsType: "Foo",
@@ -244,7 +244,7 @@ func TestJSONType(t *testing.T) {
 				db:      "postgresql.JSONB",
 				graphql: "TypeWithSubFields!",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewLocalGraphQLEntImportPath("TypeWithSubFields"),
 				},
 				tsType: "TypeWithSubFields",
@@ -351,7 +351,7 @@ func TestJSONType(t *testing.T) {
 				db:      "postgresql.JSON",
 				graphql: "TypeWithSubFields!",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewLocalGraphQLEntImportPath("TypeWithSubFields"),
 				},
 				tsType: "TypeWithSubFields",
@@ -494,7 +494,7 @@ func TestJSONType(t *testing.T) {
 				db:      "postgresql.JSONB",
 				graphql: "TypeWithUnionFields!",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewLocalGraphQLEntImportPath("TypeWithUnionFields"),
 				},
 				tsType: "TypeWithUnionFields",
@@ -815,7 +815,7 @@ func TestJSONType(t *testing.T) {
 				db:      "postgresql.JSON",
 				graphql: "TypeWithUnionFields!",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewLocalGraphQLEntImportPath("TypeWithUnionFields"),
 				},
 				tsType: "TypeWithUnionFields",

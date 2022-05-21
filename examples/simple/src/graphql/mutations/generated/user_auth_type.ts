@@ -21,10 +21,10 @@ export const UserAuthInputType = new GraphQLInputObjectType({
   name: "UserAuthInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     emailAddress: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     password: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
   }),
 });
@@ -33,7 +33,7 @@ export const UserAuthPayloadType = new GraphQLObjectType({
   name: "UserAuthPayload",
   fields: (): GraphQLFieldConfigMap<UserAuthPayload, RequestContext> => ({
     viewerID: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -43,11 +43,11 @@ export const UserAuthType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: UserAuthInput }
 > = {
-  type: GraphQLNonNull(UserAuthPayloadType),
+  type: new GraphQLNonNull(UserAuthPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(UserAuthInputType),
+      type: new GraphQLNonNull(UserAuthInputType),
     },
   },
   resolve: async (

@@ -32,16 +32,16 @@ export const HoursOfOperationCreateInputType = new GraphQLInputObjectType({
   name: "HoursOfOperationCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     dayOfWeek: {
-      type: GraphQLNonNull(DayOfWeekType),
+      type: new GraphQLNonNull(DayOfWeekType),
     },
     dayOfWeekAlt: {
       type: DayOfWeekAltType,
     },
     open: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     close: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
   }),
 });
@@ -53,7 +53,7 @@ export const HoursOfOperationCreatePayloadType = new GraphQLObjectType({
     RequestContext
   > => ({
     hoursOfOperation: {
-      type: GraphQLNonNull(HoursOfOperationType),
+      type: new GraphQLNonNull(HoursOfOperationType),
     },
   }),
 });
@@ -63,11 +63,11 @@ export const HoursOfOperationCreateType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: HoursOfOperationCreateInput }
 > = {
-  type: GraphQLNonNull(HoursOfOperationCreatePayloadType),
+  type: new GraphQLNonNull(HoursOfOperationCreatePayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(HoursOfOperationCreateInputType),
+      type: new GraphQLNonNull(HoursOfOperationCreateInputType),
     },
   },
   resolve: async (

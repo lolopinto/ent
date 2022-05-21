@@ -40,19 +40,19 @@ export const EventCreateInputType = new GraphQLInputObjectType({
   name: "EventCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     name: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     creatorID: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     startTime: {
-      type: GraphQLNonNull(GraphQLTime),
+      type: new GraphQLNonNull(GraphQLTime),
     },
     endTime: {
       type: GraphQLTime,
     },
     eventLocation: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     addressID: {
       type: GraphQLID,
@@ -64,7 +64,7 @@ export const EventCreatePayloadType = new GraphQLObjectType({
   name: "EventCreatePayload",
   fields: (): GraphQLFieldConfigMap<EventCreatePayload, RequestContext> => ({
     event: {
-      type: GraphQLNonNull(EventType),
+      type: new GraphQLNonNull(EventType),
     },
   }),
 });
@@ -74,11 +74,11 @@ export const EventCreateType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customEventCreateInput }
 > = {
-  type: GraphQLNonNull(EventCreatePayloadType),
+  type: new GraphQLNonNull(EventCreatePayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(EventCreateInputType),
+      type: new GraphQLNonNull(EventCreateInputType),
     },
   },
   resolve: async (

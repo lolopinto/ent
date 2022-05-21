@@ -53,26 +53,26 @@ export const EventType = new GraphQLObjectType({
       },
     },
     id: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,
     },
     name: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     startTime: {
-      type: GraphQLNonNull(GraphQLTime),
+      type: new GraphQLNonNull(GraphQLTime),
     },
     endTime: {
       type: GraphQLTime,
     },
     eventLocation: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
       resolve: (event: Event, args: {}, context: RequestContext) => {
         return event.location;
       },
     },
     attending: {
-      type: GraphQLNonNull(EventToAttendingConnectionType()),
+      type: new GraphQLNonNull(EventToAttendingConnectionType()),
       args: {
         first: {
           description: "",
@@ -101,7 +101,7 @@ export const EventType = new GraphQLObjectType({
       },
     },
     declined: {
-      type: GraphQLNonNull(EventToDeclinedConnectionType()),
+      type: new GraphQLNonNull(EventToDeclinedConnectionType()),
       args: {
         first: {
           description: "",
@@ -130,7 +130,7 @@ export const EventType = new GraphQLObjectType({
       },
     },
     hosts: {
-      type: GraphQLNonNull(EventToHostsConnectionType()),
+      type: new GraphQLNonNull(EventToHostsConnectionType()),
       args: {
         first: {
           description: "",
@@ -159,7 +159,7 @@ export const EventType = new GraphQLObjectType({
       },
     },
     invited: {
-      type: GraphQLNonNull(EventToInvitedConnectionType()),
+      type: new GraphQLNonNull(EventToInvitedConnectionType()),
       args: {
         first: {
           description: "",
@@ -188,7 +188,7 @@ export const EventType = new GraphQLObjectType({
       },
     },
     maybe: {
-      type: GraphQLNonNull(EventToMaybeConnectionType()),
+      type: new GraphQLNonNull(EventToMaybeConnectionType()),
       args: {
         first: {
           description: "",

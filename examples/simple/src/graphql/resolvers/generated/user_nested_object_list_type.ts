@@ -22,7 +22,7 @@ const UserNestedNestedObjectListType = new GraphQLObjectType({
     RequestContext
   > => ({
     int: {
-      type: GraphQLNonNull(GraphQLInt),
+      type: new GraphQLNonNull(GraphQLInt),
     },
   }),
 });
@@ -31,14 +31,14 @@ export const UserNestedObjectListType = new GraphQLObjectType({
   name: "UserNestedObjectList",
   fields: (): GraphQLFieldConfigMap<UserNestedObjectList, RequestContext> => ({
     type: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     enum: {
-      type: GraphQLNonNull(EnumUsedInListType),
+      type: new GraphQLNonNull(EnumUsedInListType),
     },
     objects: {
-      type: GraphQLNonNull(
-        GraphQLList(GraphQLNonNull(UserNestedNestedObjectListType)),
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(UserNestedNestedObjectListType)),
       ),
     },
   }),

@@ -25,15 +25,15 @@ export const BulkUploadContactType: GraphQLFieldConfig<
   RequestContext,
   bulkUploadContactArgs
 > = {
-  type: GraphQLNonNull(UserType),
+  type: new GraphQLNonNull(UserType),
   args: {
     userID: {
       description: "",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     file: {
       description: "",
-      type: GraphQLNonNull(GraphQLUpload),
+      type: new GraphQLNonNull(GraphQLUpload),
     },
   },
   resolve: async (

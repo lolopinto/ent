@@ -53,7 +53,7 @@ type TSTypeWithImports interface {
 type TSGraphQLType interface {
 	TSType
 	// returns imports from outside in
-	// e.g. required string => []tsimport.ImportPath{tsimport.NewGQLImportPath("GraphQLNonNull"), tsimport.NewGQLImportPath("GraphQLString")}
+	// e.g. required string => []tsimport.ImportPath{tsimport.NewGQLClassImportPath("GraphQLNonNull"), tsimport.NewGQLImportPath("GraphQLString")}
 	GetTSGraphQLImports(input bool) []*tsimport.ImportPath
 }
 
@@ -198,7 +198,7 @@ func (t *StringType) GetNullableType() TSGraphQLType {
 
 func (t *StringType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		tsimport.NewGQLImportPath("GraphQLString"),
 	}
 }
@@ -349,7 +349,7 @@ func (t *BoolType) GetNullableType() TSGraphQLType {
 
 func (t *BoolType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		tsimport.NewGQLImportPath("GraphQLBoolean"),
 	}
 }
@@ -438,7 +438,7 @@ func (t *IDType) GetNullableType() TSGraphQLType {
 
 func (t *IDType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		tsimport.NewGQLImportPath("GraphQLID"),
 	}
 }
@@ -539,7 +539,7 @@ func (t *IntegerType) GetNullableType() TSGraphQLType {
 
 func (t *IntegerType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		tsimport.NewGQLImportPath("GraphQLInt"),
 	}
 }
@@ -566,7 +566,7 @@ func (t *BigIntegerType) GetDBType() string {
 
 func (t *BigIntegerType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		tsimport.NewGQLImportPath("GraphQLString"),
 	}
 }
@@ -690,7 +690,7 @@ func (t *FloatType) GetNullableType() TSGraphQLType {
 
 func (t *FloatType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		tsimport.NewGQLImportPath("GraphQLFloat"),
 	}
 }
@@ -786,7 +786,7 @@ func (t *TimestampType) GetNullableType() TSGraphQLType {
 
 func (t *TimestampType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 	}
 }
@@ -907,7 +907,7 @@ func (t *TimeType) GetNullableType() TSGraphQLType {
 
 func (t *TimeType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		// string format for time. or do we want a new scalar time?
 		tsimport.NewGQLImportPath("GraphQLString"),
 	}
@@ -1044,7 +1044,7 @@ func (t *ObjectType) GetNullableType() TSGraphQLType {
 
 func (t *ObjectType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		{
 			Import: t.GraphQLType,
 		},
@@ -1129,9 +1129,9 @@ func (t *ListWrapperType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath
 	var ret = []*tsimport.ImportPath{}
 
 	if !t.Nullable {
-		ret = append(ret, tsimport.NewGQLImportPath("GraphQLNonNull"))
+		ret = append(ret, tsimport.NewGQLClassImportPath("GraphQLNonNull"))
 	}
-	ret = append(ret, tsimport.NewGQLImportPath("GraphQLList"))
+	ret = append(ret, tsimport.NewGQLClassImportPath("GraphQLList"))
 	ret = append(ret, t.Type.GetTSGraphQLImports(input)...)
 	return ret
 }
@@ -1589,7 +1589,7 @@ func (t *EnumType) GetNullableType() TSGraphQLType {
 
 func (t *EnumType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		tsimport.NewLocalGraphQLEntImportPath(t.GraphQLType),
 	}
 }
@@ -1720,8 +1720,8 @@ func (t *ArrayListType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 		panic(fmt.Sprintf("got TSType %v which is not a GraphQL type", t.ElemType))
 	}
 	ret := []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
-		tsimport.NewGQLImportPath("GraphQLList"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLList"),
 	}
 	ret = append(ret, gqlType.GetTSGraphQLImports(input)...)
 	return ret
@@ -1792,7 +1792,7 @@ func (t *NullableArrayListType) GetTSGraphQLImports(input bool) []*tsimport.Impo
 		panic(fmt.Sprintf("got TSType %v which is not a GraphQL type", t.ElemType))
 	}
 	ret := []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLList"),
+		tsimport.NewGQLClassImportPath("GraphQLList"),
 	}
 	ret = append(ret, gqlType.GetTSGraphQLImports(input)...)
 	return ret
@@ -1998,7 +1998,7 @@ func (t *JSONType) GetImportDepsType() *tsimport.ImportPath {
 
 func (t *JSONType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		t.getJSONGraphQLType(t.CustomGraphQLInterface, input),
 	}
 }
@@ -2082,7 +2082,7 @@ func (t *JSONBType) GetImportType() Import {
 
 func (t *JSONBType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		t.getJSONGraphQLType(t.CustomGraphQLInterface, input),
 	}
 }
