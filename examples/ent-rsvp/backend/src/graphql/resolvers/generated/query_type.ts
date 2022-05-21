@@ -11,7 +11,6 @@ import {
 
 export const QueryType = new GraphQLObjectType({
   name: "Query",
-  // @ts-ignore graphql-js TS #2152 2829
   fields: () => ({
     emailAvailable: EmailAvailableQueryType,
     event: EventQueryType,
