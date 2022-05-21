@@ -12,10 +12,11 @@ First, the base class:
 
 ```ts title="src/ent/event/actions/generated/event_remove_host_action_base.ts"
 export class EventRemoveHostActionBase implements Action<Event> {
-  public readonly builder: EventBuilder;
-  public readonly viewer: Viewer;
+  public readonly builder: EventBuilder; 
+  public readonly viewer: Viewer; 
 
   constructor(viewer: Viewer, event: Event) {
+
     this.viewer = viewer;
     this.builder = new EventBuilder(
       this.viewer,
@@ -23,17 +24,23 @@ export class EventRemoveHostActionBase implements Action<Event> {
       this,
       event,
     );
+
   }
 
   getPrivacyPolicy(): PrivacyPolicy {
+
     return AllowIfViewerHasIdentityPrivacyPolicy;
+
   }
 
   removeHost(id: ID) {
+
     //...
+
   }
   // ...
 }
+
 ```
 
 and then the subclass:
@@ -76,7 +83,7 @@ The subclass will be generated **once** and any customizations can be applied th
 
 The following GraphQL schema is generated which uses the above API.
 
-``` title="src/graphql/schema.gql"
+``` title="src/graphql/generated/schema.gql"
 type Mutation {
   eventRemoveHost(input: EventRemoveHostInput!): EventRemoveHostPayload!
 }
@@ -99,6 +106,7 @@ type Event implements Node {
   eventLocation: String!
   ///.... 
 }
+
 ```
 
 and called as follows:

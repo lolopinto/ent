@@ -13,6 +13,7 @@ In concrete terms, consider a `User` schema as follows:
 ```ts title="src/schema/user.ts"
 export default class User extends BaseEntSchema implements Schema {
   fields: Field[] = [
+
     StringType({ name: "firstName" }),
     StringType({ name: "lastName" }),
     EmailType({ name: "emailAddress", unique: true }),
@@ -27,13 +28,16 @@ export default class User extends BaseEntSchema implements Schema {
       hideFromGraphQL: true,
       serverDefault: "FALSE",
     }),
-  ];
+
+  ]; 
 }
+
 ```
 
 Here are a few of the actions that come to mind:
 
-* create user with fields `firstName`, `lastName`, `emailAddress`, `phoneNumber`, `password` 
+* create user with fields `firstName`, `lastName`, `emailAddress`, `phoneNumber`, `password`
+
 * edit profile fields `firstName`, `lastName`
 * edit `emailAddress` which may be broken into two actions:
   * `editEmailAddress` which actually means send confirmation code to new email address to verify that user has access to email and doesn't get locked out
@@ -64,7 +68,7 @@ actions: Action[] = [
 }
 ```
 
-That adds a `eventCreate`, `eventEdit` and `eventDelete` action with all the editable fields showing up in the create and delete actions.
+That adds a `eventCreate` , `eventEdit` and `eventDelete` action with all the editable fields showing up in the create and delete actions.
 
 And over time as the product evolves, the action(s) can be configured and updated to simplify or make things more complicated.
 
@@ -79,7 +83,7 @@ specifies the type of action that's created. We have the following types:
 * `ActionOperation.Create`: create an object. inserts a new row into the database.
 * `ActionOperation.Edit`: edits an object. edits an existing row in the database.
 * `ActionOperation.Delete`: deletes on object. deletes an existing row in the database.
-* `ActionOperation.Mutations`: shortcut to easily get `create`, `edit`, and `delete` actions. Cannot be customized. If you want to customize the actions, have to itemize
+* `ActionOperation.Mutations`: shortcut to easily get `create`,  `edit`, and `delete` actions. Cannot be customized. If you want to customize the actions, have to itemize
 * `ActionOperation.AddEdge`: adds a new [edge](/docs/ent-schema/edges)
 * `ActionOperation.RemoveEdge`: removes an [edge](/docs/ent-schema/edges)
 * `ActionOperation.EdgeGroup`: creates a new action for an [edge group](/docs/ent-schema/edge-groups)
@@ -130,10 +134,13 @@ For example, a possible confirm email address action which was referenced above,
 ```ts title="src/schema/user.ts"
 export default class User extends BaseEntSchema implements Schema {
   fields: Field[] = [
+
     //...
-  ];
+
+  ]; 
 
   actions: Action[] = [
+
     // confirm email address with code sent in last time
     {
       operation: ActionOperation.Edit,
@@ -144,8 +151,10 @@ export default class User extends BaseEntSchema implements Schema {
       // fields are default optional in edit mutation, this says make this required in here
       fields: [requiredField("EmailAddress")],
     },
-  ];
+
+  ]; 
 }
+
 ```
 
 This adds an additional required field `code` of type `String` to be generated for this action.
@@ -184,9 +193,9 @@ export default class Event extends BaseEntSchema {
 }
 ```
 
-results in this schema (assuming an `Address` object with the fields `street`, `city`, `state`, `zipCode`, `apartment`):
+results in this schema (assuming an `Address` object with the fields `street` , `city` , `state` , `zipCode` , `apartment` ):
 
-```graphql title="src/graphql/schema.gql"
+```graphql title="src/graphql/generated/schema.gql"
 input EventCreateInput {
   name: String!
   startTime: Time!
@@ -204,6 +213,7 @@ input AddressEventCreateInput {
   zipCode: String!
   apartment: String
 }
+
 ```
 
 This allows us to create the event and its associated address in the same request using [triggers](/docs/actions/triggers).
@@ -256,9 +266,10 @@ e.g.
 
 ```ts title="src/schema/user.ts"
 export default class User extends BaseEntSchema {
-  fields: Field[] = [];
+  fields: Field[] = []; 
 
   actions: Action[] = [
+
     // confirm email address with code sent in last time
     {
       operation: ActionOperation.Edit,
@@ -269,7 +280,8 @@ export default class User extends BaseEntSchema {
       // fields are default optional in edit mutation, this says make this required in here
       fields: [requiredField("EmailAddress")],
     },
-  ];
+
+  ]; 
 }
 ```
 
