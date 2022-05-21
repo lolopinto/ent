@@ -56,11 +56,11 @@ func TestNonNullableField(t *testing.T) {
 		tsBuilderType:      "string",
 		tsBuilderUnionType: "string",
 		graphqlImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
@@ -128,20 +128,20 @@ func TestNonNullableListField(t *testing.T) {
 		tsBuilderType:      "string[]",
 		tsBuilderUnionType: "string[]",
 		graphqlImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
-			tsimport.NewGQLImportPath("GraphQLList"),
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLList"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
-			tsimport.NewGQLImportPath("GraphQLList"),
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLList"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLList"),
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLList"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		fieldTypeType: &enttype.ArrayListType{
@@ -193,7 +193,7 @@ func TestNonNullableFieldOnDemand(t *testing.T) {
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
@@ -225,11 +225,11 @@ func TestNonNullableFieldOnDemandNoFieldPrivacy(t *testing.T) {
 		tsBuilderType:      "string",
 		tsBuilderUnionType: "string",
 		graphqlImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
@@ -333,7 +333,7 @@ func TestNonNullableFieldOnEntLoad(t *testing.T) {
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
@@ -365,11 +365,11 @@ func TestNonNullableFieldOnEntLoadNoFieldPrivacy(t *testing.T) {
 		tsBuilderType:      "string",
 		tsBuilderUnionType: "string",
 		graphqlImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{

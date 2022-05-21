@@ -30,7 +30,7 @@ export const ContactPhoneNumberDeleteInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     contactPhoneNumberID: {
       description: "id of ContactPhoneNumber",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -52,11 +52,11 @@ export const ContactPhoneNumberDeleteType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customContactPhoneNumberDeleteInput }
 > = {
-  type: GraphQLNonNull(ContactPhoneNumberDeletePayloadType),
+  type: new GraphQLNonNull(ContactPhoneNumberDeletePayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(ContactPhoneNumberDeleteInputType),
+      type: new GraphQLNonNull(ContactPhoneNumberDeleteInputType),
     },
   },
   resolve: async (

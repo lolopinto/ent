@@ -24,7 +24,9 @@ export const UserPrefsStruct2Type = new GraphQLObjectType({
       type: GraphQLBoolean,
     },
     notifTypes: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(NotifType2Type))),
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(NotifType2Type)),
+      ),
     },
   }),
 });

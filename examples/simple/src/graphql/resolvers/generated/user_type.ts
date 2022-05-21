@@ -58,17 +58,17 @@ export const UserType = new GraphQLObjectType({
   name: "User",
   fields: (): GraphQLFieldConfigMap<User, RequestContext> => ({
     id: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,
     },
     firstName: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     lastName: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     emailAddress: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     phoneNumber: {
       type: GraphQLString,
@@ -83,7 +83,7 @@ export const UserType = new GraphQLObjectType({
       type: GraphQLString,
     },
     nicknames: {
-      type: GraphQLList(GraphQLNonNull(GraphQLString)),
+      type: new GraphQLList(new GraphQLNonNull(GraphQLString)),
     },
     prefs: {
       type: UserPrefsStructType,
@@ -92,7 +92,7 @@ export const UserType = new GraphQLObjectType({
       },
     },
     prefsList: {
-      type: GraphQLList(GraphQLNonNull(UserPrefsStruct2Type)),
+      type: new GraphQLList(new GraphQLNonNull(UserPrefsStruct2Type)),
       resolve: async (user: User, args: {}, context: RequestContext) => {
         return user.prefsList();
       },
@@ -104,16 +104,16 @@ export const UserType = new GraphQLObjectType({
       },
     },
     daysOff: {
-      type: GraphQLList(GraphQLNonNull(DaysOffType)),
+      type: new GraphQLList(new GraphQLNonNull(DaysOffType)),
     },
     preferredShift: {
-      type: GraphQLList(GraphQLNonNull(PreferredShiftType)),
+      type: new GraphQLList(new GraphQLNonNull(PreferredShiftType)),
     },
     timeInMs: {
       type: GraphQLString,
     },
     funUuids: {
-      type: GraphQLList(GraphQLNonNull(GraphQLID)),
+      type: new GraphQLList(new GraphQLNonNull(GraphQLID)),
     },
     newCol: {
       type: GraphQLString,
@@ -125,7 +125,7 @@ export const UserType = new GraphQLObjectType({
       type: UserSuperNestedObjectType,
     },
     nestedList: {
-      type: GraphQLList(GraphQLNonNull(UserNestedObjectListType)),
+      type: new GraphQLList(new GraphQLNonNull(UserNestedObjectListType)),
     },
     selfContact: {
       type: ContactType,
@@ -134,7 +134,7 @@ export const UserType = new GraphQLObjectType({
       },
     },
     comments: {
-      type: GraphQLNonNull(UserToCommentsConnectionType()),
+      type: new GraphQLNonNull(UserToCommentsConnectionType()),
       args: {
         first: {
           description: "",
@@ -163,7 +163,7 @@ export const UserType = new GraphQLObjectType({
       },
     },
     createdEvents: {
-      type: GraphQLNonNull(UserToCreatedEventsConnectionType()),
+      type: new GraphQLNonNull(UserToCreatedEventsConnectionType()),
       args: {
         first: {
           description: "",
@@ -192,7 +192,7 @@ export const UserType = new GraphQLObjectType({
       },
     },
     declinedEvents: {
-      type: GraphQLNonNull(UserToDeclinedEventsConnectionType()),
+      type: new GraphQLNonNull(UserToDeclinedEventsConnectionType()),
       args: {
         first: {
           description: "",
@@ -221,7 +221,7 @@ export const UserType = new GraphQLObjectType({
       },
     },
     eventsAttending: {
-      type: GraphQLNonNull(UserToEventsAttendingConnectionType()),
+      type: new GraphQLNonNull(UserToEventsAttendingConnectionType()),
       args: {
         first: {
           description: "",
@@ -250,7 +250,7 @@ export const UserType = new GraphQLObjectType({
       },
     },
     friends: {
-      type: GraphQLNonNull(UserToFriendsConnectionType()),
+      type: new GraphQLNonNull(UserToFriendsConnectionType()),
       args: {
         first: {
           description: "",
@@ -279,7 +279,7 @@ export const UserType = new GraphQLObjectType({
       },
     },
     invitedEvents: {
-      type: GraphQLNonNull(UserToInvitedEventsConnectionType()),
+      type: new GraphQLNonNull(UserToInvitedEventsConnectionType()),
       args: {
         first: {
           description: "",
@@ -308,7 +308,7 @@ export const UserType = new GraphQLObjectType({
       },
     },
     likers: {
-      type: GraphQLNonNull(UserToLikersConnectionType()),
+      type: new GraphQLNonNull(UserToLikersConnectionType()),
       args: {
         first: {
           description: "",
@@ -337,7 +337,7 @@ export const UserType = new GraphQLObjectType({
       },
     },
     likes: {
-      type: GraphQLNonNull(UserToLikesConnectionType()),
+      type: new GraphQLNonNull(UserToLikesConnectionType()),
       args: {
         first: {
           description: "",
@@ -366,7 +366,7 @@ export const UserType = new GraphQLObjectType({
       },
     },
     maybeEvents: {
-      type: GraphQLNonNull(UserToMaybeEventsConnectionType()),
+      type: new GraphQLNonNull(UserToMaybeEventsConnectionType()),
       args: {
         first: {
           description: "",
@@ -395,7 +395,7 @@ export const UserType = new GraphQLObjectType({
       },
     },
     userToHostedEvents: {
-      type: GraphQLNonNull(UserToHostedEventsConnectionType()),
+      type: new GraphQLNonNull(UserToHostedEventsConnectionType()),
       args: {
         first: {
           description: "",
@@ -424,7 +424,7 @@ export const UserType = new GraphQLObjectType({
       },
     },
     contacts: {
-      type: GraphQLNonNull(UserToContactsConnectionType()),
+      type: new GraphQLNonNull(UserToContactsConnectionType()),
       args: {
         first: {
           description: "",
@@ -453,7 +453,7 @@ export const UserType = new GraphQLObjectType({
       },
     },
     fullName: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     bar: {
       type: GraphQLString,
@@ -468,25 +468,27 @@ export const UserType = new GraphQLObjectType({
       },
     },
     contactsSameDomain: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(ContactType))),
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(ContactType)),
+      ),
       resolve: async (user: User, args: {}, context: RequestContext) => {
         return user.getContactsSameDomain();
       },
     },
     contactsSameDomainNullable: {
-      type: GraphQLList(GraphQLNonNull(ContactType)),
+      type: new GraphQLList(new GraphQLNonNull(ContactType)),
       resolve: async (user: User, args: {}, context: RequestContext) => {
         return user.getContactsSameDomainNullable();
       },
     },
     contactsSameDomainNullableContents: {
-      type: GraphQLNonNull(GraphQLList(ContactType)),
+      type: new GraphQLNonNull(new GraphQLList(ContactType)),
       resolve: async (user: User, args: {}, context: RequestContext) => {
         return user.getContactsSameDomainNullableContents();
       },
     },
     contactsSameDomainNullableContentsAndList: {
-      type: GraphQLList(ContactType),
+      type: new GraphQLList(ContactType),
       resolve: async (user: User, args: {}, context: RequestContext) => {
         return user.getContactsSameDomainNullableContentsAndList();
       },

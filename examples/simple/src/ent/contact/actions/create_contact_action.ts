@@ -16,9 +16,9 @@ import {
   IDViewer,
 } from "@snowtop/ent";
 import { AllowIfBuilder, Observer, Trigger } from "@snowtop/ent/action";
-import CreateContactEmailAction from "src/ent/contact_email/actions/create_contact_email_action";
+import CreateContactEmailAction from "../../../ent/contact_email/actions/create_contact_email_action";
 import { ContactBuilder } from "./generated/contact_builder";
-import CreateContactPhoneNumberAction from "src/ent/contact_phone_number/actions/create_contact_phone_number_action";
+import CreateContactPhoneNumberAction from "../../../ent/contact_phone_number/actions/create_contact_phone_number_action";
 import EditContactAction from "./edit_contact_action";
 
 // we're only writing this once except with --force and packageName provided

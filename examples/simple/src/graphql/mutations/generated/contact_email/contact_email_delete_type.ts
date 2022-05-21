@@ -30,7 +30,7 @@ export const ContactEmailDeleteInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     contactEmailID: {
       description: "id of ContactEmail",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -52,11 +52,11 @@ export const ContactEmailDeleteType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customContactEmailDeleteInput }
 > = {
-  type: GraphQLNonNull(ContactEmailDeletePayloadType),
+  type: new GraphQLNonNull(ContactEmailDeletePayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(ContactEmailDeleteInputType),
+      type: new GraphQLNonNull(ContactEmailDeleteInputType),
     },
   },
   resolve: async (

@@ -25,16 +25,16 @@ export const UserCreateInputType = new GraphQLInputObjectType({
   name: "UserCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     firstName: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     lastName: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     emailAddress: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     password: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
   }),
 });
@@ -43,7 +43,7 @@ export const UserCreatePayloadType = new GraphQLObjectType({
   name: "UserCreatePayload",
   fields: (): GraphQLFieldConfigMap<UserCreatePayload, RequestContext> => ({
     user: {
-      type: GraphQLNonNull(UserType),
+      type: new GraphQLNonNull(UserType),
     },
   }),
 });
@@ -53,11 +53,11 @@ export const UserCreateType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: UserCreateInput }
 > = {
-  type: GraphQLNonNull(UserCreatePayloadType),
+  type: new GraphQLNonNull(UserCreatePayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(UserCreateInputType),
+      type: new GraphQLNonNull(UserCreateInputType),
     },
   },
   resolve: async (

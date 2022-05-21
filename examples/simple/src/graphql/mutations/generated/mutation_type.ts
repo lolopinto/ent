@@ -37,7 +37,6 @@ import { UserAuthType } from "./user_auth_type";
 
 export const MutationType = new GraphQLObjectType({
   name: "Mutation",
-  // @ts-ignore graphql-js TS #2152 2829
   fields: () => ({
     addressCreate: AddressCreateType,
     bulkUploadContact: BulkUploadContactType,

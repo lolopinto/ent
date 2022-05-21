@@ -36,22 +36,22 @@ export const UserCreateInputType = new GraphQLInputObjectType({
   name: "UserCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     firstName: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     lastName: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     emailAddress: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     phoneNumber: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     password: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     nicknames: {
-      type: GraphQLList(GraphQLNonNull(GraphQLString)),
+      type: new GraphQLList(new GraphQLNonNull(GraphQLString)),
     },
     prefs: {
       type: UserPrefsStructInputType,
@@ -60,22 +60,22 @@ export const UserCreateInputType = new GraphQLInputObjectType({
       type: UserPrefsDiffInputType,
     },
     daysOff: {
-      type: GraphQLList(GraphQLNonNull(DaysOffType)),
+      type: new GraphQLList(new GraphQLNonNull(DaysOffType)),
     },
     preferredShift: {
-      type: GraphQLList(GraphQLNonNull(PreferredShiftType)),
+      type: new GraphQLList(new GraphQLNonNull(PreferredShiftType)),
     },
     funUuids: {
-      type: GraphQLList(GraphQLNonNull(GraphQLID)),
+      type: new GraphQLList(new GraphQLNonNull(GraphQLID)),
     },
     prefsList: {
-      type: GraphQLList(GraphQLNonNull(UserPrefsStruct2InputType)),
+      type: new GraphQLList(new GraphQLNonNull(UserPrefsStruct2InputType)),
     },
     superNestedObject: {
       type: UserSuperNestedObjectInputType,
     },
     nestedList: {
-      type: GraphQLList(GraphQLNonNull(UserNestedObjectListInputType)),
+      type: new GraphQLList(new GraphQLNonNull(UserNestedObjectListInputType)),
     },
   }),
 });
@@ -84,7 +84,7 @@ export const UserCreatePayloadType = new GraphQLObjectType({
   name: "UserCreatePayload",
   fields: (): GraphQLFieldConfigMap<UserCreatePayload, RequestContext> => ({
     user: {
-      type: GraphQLNonNull(UserType),
+      type: new GraphQLNonNull(UserType),
     },
   }),
 });
@@ -94,11 +94,11 @@ export const UserCreateType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: UserCreateInput }
 > = {
-  type: GraphQLNonNull(UserCreatePayloadType),
+  type: new GraphQLNonNull(UserCreatePayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(UserCreateInputType),
+      type: new GraphQLNonNull(UserCreateInputType),
     },
   },
   resolve: async (

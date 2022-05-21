@@ -27,7 +27,7 @@ export const EventActivityDeleteInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     eventActivityID: {
       description: "id of EventActivity",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -49,11 +49,11 @@ export const EventActivityDeleteType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customEventActivityDeleteInput }
 > = {
-  type: GraphQLNonNull(EventActivityDeletePayloadType),
+  type: new GraphQLNonNull(EventActivityDeletePayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(EventActivityDeleteInputType),
+      type: new GraphQLNonNull(EventActivityDeleteInputType),
     },
   },
   resolve: async (

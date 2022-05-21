@@ -23,7 +23,7 @@ export const TagQueryType: GraphQLFieldConfig<
   args: {
     id: {
       description: "",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
   },
   resolve: async (

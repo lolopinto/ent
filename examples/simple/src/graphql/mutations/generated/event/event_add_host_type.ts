@@ -33,10 +33,10 @@ export const EventAddHostInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     eventID: {
       description: "id of Event",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     hostID: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -45,7 +45,7 @@ export const EventAddHostPayloadType = new GraphQLObjectType({
   name: "EventAddHostPayload",
   fields: (): GraphQLFieldConfigMap<EventAddHostPayload, RequestContext> => ({
     event: {
-      type: GraphQLNonNull(EventType),
+      type: new GraphQLNonNull(EventType),
     },
   }),
 });
@@ -55,11 +55,11 @@ export const EventAddHostType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customEventAddHostInput }
 > = {
-  type: GraphQLNonNull(EventAddHostPayloadType),
+  type: new GraphQLNonNull(EventAddHostPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(EventAddHostInputType),
+      type: new GraphQLNonNull(EventAddHostInputType),
     },
   },
   resolve: async (

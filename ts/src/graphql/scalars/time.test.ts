@@ -24,13 +24,13 @@ let schema = new GraphQLSchema({
     name: "mutation",
     fields: {
       logEvent: {
-        type: GraphQLNonNull(GraphQLTime),
+        type: new GraphQLNonNull(GraphQLTime),
         args: {
           time: {
-            type: GraphQLNonNull(GraphQLTime),
+            type: new GraphQLNonNull(GraphQLTime),
           },
           event: {
-            type: GraphQLNonNull(GraphQLString),
+            type: new GraphQLNonNull(GraphQLString),
           },
         },
         resolve(_, args) {

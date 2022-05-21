@@ -14,7 +14,7 @@ export const UserPrefsDiffInputType = new GraphQLInputObjectType({
   name: "UserPrefsDiffInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     type: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
   }),
 });

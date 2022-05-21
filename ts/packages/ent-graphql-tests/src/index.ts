@@ -1,5 +1,11 @@
 import express, { Express, RequestHandler } from "express";
-import { graphqlHTTP } from "express-graphql";
+import {
+  getGraphQLParameters,
+  processRequest,
+  ExecutionContext,
+  sendResult,
+} from "graphql-helix";
+
 import { Viewer } from "@snowtop/ent";
 import {
   GraphQLSchema,
@@ -13,7 +19,6 @@ import {
   GraphQLFieldMap,
 } from "graphql";
 import { buildContext, registerAuthHandler } from "@snowtop/ent/auth";
-import { IncomingMessage, ServerResponse } from "http";
 import supertest from "supertest";
 import * as fs from "fs";
 
@@ -34,19 +39,23 @@ function server(config: queryConfig): Express {
   if (config.init) {
     config.init(app);
   }
+  app.use(express.json());
+
   let handlers = config.customHandlers || [];
-  handlers.push(
-    graphqlHTTP((request: IncomingMessage, response: ServerResponse) => {
-      const doWork = async () => {
-        let context = await buildContext(request, response);
-        return {
-          schema: config.schema,
-          context,
-        };
-      };
-      return doWork();
-    }),
-  );
+  handlers.push(async (req, res) => {
+    const { operationName, query, variables } = getGraphQLParameters(req);
+    const result = await processRequest({
+      operationName,
+      query,
+      variables,
+      request: req,
+      schema: config.schema,
+      contextFactory: async (executionContext: ExecutionContext) => {
+        return buildContext(req, res);
+      },
+    });
+    await sendResult(result, res);
+  });
   app.use(config.graphQLPath || "/graphql", ...handlers);
 
   return app;
@@ -65,7 +74,7 @@ function getInnerType(typ, list) {
 function makeGraphQLRequest(
   config: queryConfig,
   query: string,
-  fieldArgs: GraphQLArgument[],
+  fieldArgs: Readonly<GraphQLArgument[]>,
 ): [supertest.SuperTest<supertest.Test>, supertest.Test] {
   let test: supertest.SuperTest<supertest.Test>;
 
@@ -458,7 +467,9 @@ async function expectFromRoot(
     );
   }
 
-  if (!res.ok) {
+  // res.ok = true in graphql-helix when there's errors...
+  // res.ok = false in express-graphql when there's errors...
+  if (!res.ok || (res.body.errors && res.body.errors.length > 0)) {
     let errors: any[] = res.body.errors;
     expect(errors.length).toBeGreaterThan(0);
 

@@ -23,20 +23,20 @@ export const HolidayType = new GraphQLObjectType({
   name: "Holiday",
   fields: (): GraphQLFieldConfigMap<Holiday, RequestContext> => ({
     id: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,
     },
     dayOfWeek: {
-      type: GraphQLNonNull(DayOfWeekType),
+      type: new GraphQLNonNull(DayOfWeekType),
     },
     dayOfWeekAlt: {
       type: DayOfWeekAltType,
     },
     label: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     date: {
-      type: GraphQLNonNull(GraphQLTime),
+      type: new GraphQLNonNull(GraphQLTime),
     },
   }),
   interfaces: [GraphQLNodeInterface],

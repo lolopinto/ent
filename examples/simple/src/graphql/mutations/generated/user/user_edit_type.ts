@@ -35,7 +35,7 @@ export const UserEditInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     userID: {
       description: "id of User",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     firstName: {
       type: GraphQLString,
@@ -50,7 +50,7 @@ export const UserEditPayloadType = new GraphQLObjectType({
   name: "UserEditPayload",
   fields: (): GraphQLFieldConfigMap<UserEditPayload, RequestContext> => ({
     user: {
-      type: GraphQLNonNull(UserType),
+      type: new GraphQLNonNull(UserType),
     },
   }),
 });
@@ -60,11 +60,11 @@ export const UserEditType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customUserEditInput }
 > = {
-  type: GraphQLNonNull(UserEditPayloadType),
+  type: new GraphQLNonNull(UserEditPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(UserEditInputType),
+      type: new GraphQLNonNull(UserEditInputType),
     },
   },
   resolve: async (

@@ -30,7 +30,7 @@ export const EventDeleteInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     eventID: {
       description: "id of Event",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -49,11 +49,11 @@ export const EventDeleteType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customEventDeleteInput }
 > = {
-  type: GraphQLNonNull(EventDeletePayloadType),
+  type: new GraphQLNonNull(EventDeletePayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(EventDeleteInputType),
+      type: new GraphQLNonNull(EventDeleteInputType),
     },
   },
   resolve: async (

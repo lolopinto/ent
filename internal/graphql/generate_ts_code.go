@@ -47,30 +47,16 @@ func (p *TSStep) Name() string {
 	return "graphql"
 }
 
-func getNativeGQLImportFor(typ string) *tsimport.ImportPath {
-	return &tsimport.ImportPath{
-		Import:     typ,
-		ImportPath: "graphql",
-	}
-}
-
-func getEntGQLImportFor(typ string) *tsimport.ImportPath {
-	return &tsimport.ImportPath{
-		Import:     typ,
-		ImportPath: codepath.GraphQLPackage,
-	}
-}
-
 var knownTypes = map[string]*tsimport.ImportPath{
-	"String":     getNativeGQLImportFor("GraphQLString"),
-	"Date":       getEntGQLImportFor("Time"),
-	"Int":        getNativeGQLImportFor("GraphQLInt"),
-	"Float":      getNativeGQLImportFor("GraphQLFloat"),
-	"Boolean":    getNativeGQLImportFor("GraphQLBoolean"),
-	"ID":         getNativeGQLImportFor("GraphQLID"),
-	"Node":       getEntGQLImportFor("GraphQLNodeInterface"),
-	"Edge":       getEntGQLImportFor("GraphQLEdgeInterface"),
-	"Connection": getEntGQLImportFor("GraphQLConnectionInterface"),
+	"String":     tsimport.NewGQLImportPath("GraphQLString"),
+	"Date":       tsimport.NewEntGraphQLImportPath("Time"),
+	"Int":        tsimport.NewGQLImportPath("GraphQLInt"),
+	"Float":      tsimport.NewGQLImportPath("GraphQLFloat"),
+	"Boolean":    tsimport.NewGQLImportPath("GraphQLBoolean"),
+	"ID":         tsimport.NewGQLImportPath("GraphQLID"),
+	"Node":       tsimport.NewEntGraphQLImportPath("GraphQLNodeInterface"),
+	"Edge":       tsimport.NewEntGraphQLImportPath("GraphQLEdgeInterface"),
+	"Connection": tsimport.NewEntGraphQLImportPath("GraphQLConnectionInterface"),
 }
 
 type NullableItem string
@@ -1668,15 +1654,7 @@ type fieldConfig struct {
 }
 
 func (f fieldConfig) FieldType() string {
-	imps := make([]string, len(f.TypeImports))
-	for i, imp := range f.TypeImports {
-		if imp.Function {
-			imps[i] = fmt.Sprintf("%s()", imp.Import)
-		} else {
-			imps[i] = imp.Import
-		}
-	}
-	return typeFromImports(imps)
+	return fieldTypeFromImports(f.TypeImports)
 }
 
 type fieldConfigArg struct {
@@ -1690,11 +1668,7 @@ func (f *fieldConfigArg) render(s *gqlSchema) string {
 }
 
 func (f fieldConfigArg) FieldType() string {
-	typs := make([]string, len(f.Imports))
-	for idx, imp := range f.Imports {
-		typs[idx] = imp.Import
-	}
-	return typeFromImports(typs)
+	return fieldTypeFromImports(f.Imports)
 }
 
 func getGQLFileImports(imps []*tsimport.ImportPath, mutation bool) []*tsimport.ImportPath {
@@ -1716,17 +1690,6 @@ func getGQLFileImports(imps []*tsimport.ImportPath, mutation bool) []*tsimport.I
 		}
 	}
 	return ret
-}
-
-func getGQLFileImportsFromStrings(imps []string) []*tsimport.ImportPath {
-	imports := make([]*tsimport.ImportPath, len(imps))
-	for idx, imp := range imps {
-		imports[idx] = &tsimport.ImportPath{
-			Import:     imp,
-			ImportPath: "graphql",
-		}
-	}
-	return imports
 }
 
 func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *objectType {
@@ -1872,19 +1835,19 @@ func getConnectionArgs() []*fieldConfigArg {
 	return []*fieldConfigArg{
 		{
 			Name:    "first",
-			Imports: []*tsimport.ImportPath{getNativeGQLImportFor("GraphQLInt")},
+			Imports: []*tsimport.ImportPath{tsimport.NewGQLImportPath("GraphQLInt")},
 		},
 		{
 			Name:    "after",
-			Imports: []*tsimport.ImportPath{getNativeGQLImportFor("GraphQLString")},
+			Imports: []*tsimport.ImportPath{tsimport.NewGQLImportPath("GraphQLString")},
 		},
 		{
 			Name:    "last",
-			Imports: []*tsimport.ImportPath{getNativeGQLImportFor("GraphQLInt")},
+			Imports: []*tsimport.ImportPath{tsimport.NewGQLImportPath("GraphQLInt")},
 		},
 		{
 			Name:    "before",
-			Imports: []*tsimport.ImportPath{getNativeGQLImportFor("GraphQLString")},
+			Imports: []*tsimport.ImportPath{tsimport.NewGQLImportPath("GraphQLString")},
 		},
 	}
 }
@@ -2010,9 +1973,12 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	// add id field for edit and delete mutations
 	if a.MutatingExistingObject() {
 		result.Fields = append(result.Fields, &fieldType{
-			Name:         getIDField(processor, a.GetNodeInfo().NodeInstance),
-			FieldImports: getGQLFileImportsFromStrings([]string{"GraphQLNonNull", "GraphQLID"}),
-			Description:  fmt.Sprintf("id of %s", nodeData.Node),
+			Name: getIDField(processor, a.GetNodeInfo().NodeInstance),
+			FieldImports: []*tsimport.ImportPath{
+				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+				tsimport.NewGQLImportPath("GraphQLID"),
+			},
+			Description: fmt.Sprintf("id of %s", nodeData.Node),
 		})
 	}
 
@@ -2035,8 +2001,11 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 	// use singular version so that this is friendID instead of friendsID
 	for _, edge := range a.GetEdges() {
 		result.Fields = append(result.Fields, &fieldType{
-			Name:         getEdgeField(processor, edge),
-			FieldImports: getGQLFileImportsFromStrings([]string{"GraphQLNonNull", "GraphQLID"}),
+			Name: getEdgeField(processor, edge),
+			FieldImports: []*tsimport.ImportPath{
+				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+				tsimport.NewGQLImportPath("GraphQLID"),
+			},
 		})
 	}
 
@@ -2173,10 +2142,7 @@ func buildActionPayloadNode(processor *codegen.Processor, nodeData *schema.NodeD
 		result.Fields = append(result.Fields, &fieldType{
 			Name: nodeInfo.NodeInstance,
 			FieldImports: []*tsimport.ImportPath{
-				{
-					Import:     "GraphQLNonNull",
-					ImportPath: "graphql",
-				},
+				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 				{
 					Import:     fmt.Sprintf("%sType", nodeInfo.Node),
 					ImportPath: codepath.GetImportPathForExternalGQLFile(),
@@ -2200,8 +2166,10 @@ func buildActionPayloadNode(processor *codegen.Processor, nodeData *schema.NodeD
 	} else {
 		deleted := getDeletedField(processor, nodeInfo.Node)
 		result.Fields = append(result.Fields, &fieldType{
-			Name:         deleted,
-			FieldImports: getGQLFileImportsFromStrings([]string{"GraphQLID"}),
+			Name: deleted,
+			FieldImports: []*tsimport.ImportPath{
+				tsimport.NewGQLImportPath("GraphQLID"),
+			},
 		})
 
 		result.TSInterfaces = []*interfaceType{
@@ -2324,10 +2292,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 		Arg:              fmt.Sprintf("{ [input: string]: %s}", argName),
 		ResolveMethodArg: "{ input }",
 		TypeImports: []*tsimport.ImportPath{
-			{
-				ImportPath: "graphql",
-				Import:     "GraphQLNonNull",
-			},
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			{
 				// local so it's fine
 				Import: fmt.Sprintf("%sType", payload),
@@ -2337,7 +2302,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			{
 				Name: "input",
 				Imports: []*tsimport.ImportPath{
-					getNativeGQLImportFor("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					{
 						// local
 						Import: fmt.Sprintf("%sType", input),
@@ -2837,6 +2802,7 @@ type interfaceField struct {
 	UseImports []string
 }
 
+// TODO inline this in fieldTypeFromImports
 func typeFromImports(imports []string) string {
 	var sb strings.Builder
 	var endSb strings.Builder
@@ -2852,16 +2818,22 @@ func typeFromImports(imports []string) string {
 	return sb.String()
 }
 
-func (f *fieldType) FieldType() string {
-	imps := make([]string, len(f.FieldImports))
-	for idx, imp := range f.FieldImports {
+func fieldTypeFromImports(imports []*tsimport.ImportPath) string {
+	imps := make([]string, len(imports))
+	for idx, imp := range imports {
 		if imp.Function {
 			imps[idx] = fmt.Sprintf("%s()", imp.Import)
+		} else if imp.Class {
+			imps[idx] = fmt.Sprintf("new %s", imp.Import)
 		} else {
 			imps[idx] = imp.Import
 		}
 	}
 	return typeFromImports(imps)
+}
+
+func (f *fieldType) FieldType() string {
+	return fieldTypeFromImports(f.FieldImports)
 }
 
 func (f *fieldType) AllImports() []*tsimport.ImportPath {
@@ -3033,7 +3005,7 @@ func buildNodeFieldConfig(processor *codegen.Processor) *fieldConfig {
 		Args: []*fieldConfigArg{
 			{
 				Name:    "id",
-				Imports: []*tsimport.ImportPath{getNativeGQLImportFor("GraphQLNonNull"), getNativeGQLImportFor("GraphQLID")},
+				Imports: []*tsimport.ImportPath{tsimport.NewGQLClassImportPath("GraphQLNonNull"), tsimport.NewGQLImportPath("GraphQLID")},
 			},
 		},
 		FunctionContents: []string{
@@ -3069,7 +3041,7 @@ func buildRootQuery(processor *codegen.Processor, nodeData *schema.NodeData) *ro
 			Args: []*fieldConfigArg{
 				{
 					Name:    "id",
-					Imports: []*tsimport.ImportPath{getNativeGQLImportFor("GraphQLNonNull"), getNativeGQLImportFor("GraphQLID")},
+					Imports: []*tsimport.ImportPath{tsimport.NewGQLClassImportPath("GraphQLNonNull"), tsimport.NewGQLImportPath("GraphQLID")},
 				},
 			},
 			ArgImports: []*tsimport.ImportPath{

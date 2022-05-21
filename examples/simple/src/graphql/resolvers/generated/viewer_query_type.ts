@@ -38,7 +38,7 @@ export const ViewerQueryType: GraphQLFieldConfig<
   RequestContext,
   {}
 > = {
-  type: GraphQLNonNull(GQLViewerType),
+  type: new GraphQLNonNull(GQLViewerType),
   resolve: async (
     _source,
     {},

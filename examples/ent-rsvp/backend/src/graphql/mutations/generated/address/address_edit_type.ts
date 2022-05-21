@@ -36,7 +36,7 @@ export const AddressEditInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     addressID: {
       description: "id of Address",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     street: {
       type: GraphQLString,
@@ -66,7 +66,7 @@ export const AddressEditPayloadType = new GraphQLObjectType({
   name: "AddressEditPayload",
   fields: (): GraphQLFieldConfigMap<AddressEditPayload, RequestContext> => ({
     address: {
-      type: GraphQLNonNull(AddressType),
+      type: new GraphQLNonNull(AddressType),
     },
   }),
 });
@@ -76,11 +76,11 @@ export const AddressEditType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customAddressEditInput }
 > = {
-  type: GraphQLNonNull(AddressEditPayloadType),
+  type: new GraphQLNonNull(AddressEditPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(AddressEditInputType),
+      type: new GraphQLNonNull(AddressEditInputType),
     },
   },
   resolve: async (

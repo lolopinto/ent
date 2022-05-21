@@ -36,13 +36,13 @@ export const ConfirmEditPhoneNumberInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     userID: {
       description: "id of User",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     phoneNumber: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     code: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
   }),
 });
@@ -54,7 +54,7 @@ export const ConfirmEditPhoneNumberPayloadType = new GraphQLObjectType({
     RequestContext
   > => ({
     user: {
-      type: GraphQLNonNull(UserType),
+      type: new GraphQLNonNull(UserType),
     },
   }),
 });
@@ -64,11 +64,11 @@ export const ConfirmPhoneNumberEditType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customConfirmEditPhoneNumberInput }
 > = {
-  type: GraphQLNonNull(ConfirmEditPhoneNumberPayloadType),
+  type: new GraphQLNonNull(ConfirmEditPhoneNumberPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(ConfirmEditPhoneNumberInputType),
+      type: new GraphQLNonNull(ConfirmEditPhoneNumberInputType),
     },
   },
   resolve: async (

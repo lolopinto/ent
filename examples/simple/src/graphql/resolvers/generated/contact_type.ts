@@ -35,13 +35,17 @@ export const ContactType = new GraphQLObjectType({
   name: "Contact",
   fields: (): GraphQLFieldConfigMap<Contact, RequestContext> => ({
     emails: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(ContactEmailType))),
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(ContactEmailType)),
+      ),
       resolve: (contact: Contact, args: {}, context: RequestContext) => {
         return contact.loadEmails();
       },
     },
     phoneNumbers: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(ContactPhoneNumberType))),
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(ContactPhoneNumberType)),
+      ),
       resolve: (contact: Contact, args: {}, context: RequestContext) => {
         return contact.loadPhoneNumbers();
       },
@@ -53,17 +57,17 @@ export const ContactType = new GraphQLObjectType({
       },
     },
     id: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,
     },
     firstName: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     lastName: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     comments: {
-      type: GraphQLNonNull(ContactToCommentsConnectionType()),
+      type: new GraphQLNonNull(ContactToCommentsConnectionType()),
       args: {
         first: {
           description: "",
@@ -92,7 +96,7 @@ export const ContactType = new GraphQLObjectType({
       },
     },
     likers: {
-      type: GraphQLNonNull(ContactToLikersConnectionType()),
+      type: new GraphQLNonNull(ContactToLikersConnectionType()),
       args: {
         first: {
           description: "",
@@ -121,7 +125,7 @@ export const ContactType = new GraphQLObjectType({
       },
     },
     fullName: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
   }),
   interfaces: [GraphQLNodeInterface],

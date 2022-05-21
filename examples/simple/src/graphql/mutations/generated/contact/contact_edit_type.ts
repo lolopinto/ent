@@ -40,13 +40,13 @@ export const ContactEditInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     contactID: {
       description: "id of Contact",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     emailIds: {
-      type: GraphQLList(GraphQLNonNull(GraphQLID)),
+      type: new GraphQLList(new GraphQLNonNull(GraphQLID)),
     },
     phoneNumberIds: {
-      type: GraphQLList(GraphQLNonNull(GraphQLID)),
+      type: new GraphQLList(new GraphQLNonNull(GraphQLID)),
     },
     firstName: {
       type: GraphQLString,
@@ -64,7 +64,7 @@ export const ContactEditPayloadType = new GraphQLObjectType({
   name: "ContactEditPayload",
   fields: (): GraphQLFieldConfigMap<ContactEditPayload, RequestContext> => ({
     contact: {
-      type: GraphQLNonNull(ContactType),
+      type: new GraphQLNonNull(ContactType),
     },
   }),
 });
@@ -74,11 +74,11 @@ export const ContactEditType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customContactEditInput }
 > = {
-  type: GraphQLNonNull(ContactEditPayloadType),
+  type: new GraphQLNonNull(ContactEditPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(ContactEditInputType),
+      type: new GraphQLNonNull(ContactEditInputType),
     },
   },
   resolve: async (
