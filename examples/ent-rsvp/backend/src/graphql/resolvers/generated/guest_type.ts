@@ -42,11 +42,11 @@ export const GuestType = new GraphQLObjectType({
       },
     },
     id: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,
     },
     name: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     emailAddress: {
       type: GraphQLString,
@@ -55,7 +55,7 @@ export const GuestType = new GraphQLObjectType({
       type: GraphQLString,
     },
     guestToAttendingEvents: {
-      type: GraphQLNonNull(GuestToAttendingEventsConnectionType()),
+      type: new GraphQLNonNull(GuestToAttendingEventsConnectionType()),
       args: {
         first: {
           description: "",
@@ -84,7 +84,7 @@ export const GuestType = new GraphQLObjectType({
       },
     },
     guestToDeclinedEvents: {
-      type: GraphQLNonNull(GuestToDeclinedEventsConnectionType()),
+      type: new GraphQLNonNull(GuestToDeclinedEventsConnectionType()),
       args: {
         first: {
           description: "",

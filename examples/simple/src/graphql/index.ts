@@ -64,7 +64,7 @@ app.use(
     }
   },
 );
-const server = app.listen(process.env.port || 4000);
+const server = app.listen(process.env.PORT || 4000);
 
 app.get("/healthz", async (req, res, params) => {
   try {

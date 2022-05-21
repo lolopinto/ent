@@ -38,7 +38,7 @@ export const EventActivityEditInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     eventActivityID: {
       description: "id of EventActivity",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     name: {
       type: GraphQLString,
@@ -71,7 +71,7 @@ export const EventActivityEditPayloadType = new GraphQLObjectType({
     RequestContext
   > => ({
     eventActivity: {
-      type: GraphQLNonNull(EventActivityType),
+      type: new GraphQLNonNull(EventActivityType),
     },
   }),
 });
@@ -81,11 +81,11 @@ export const EventActivityEditType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customEventActivityEditInput }
 > = {
-  type: GraphQLNonNull(EventActivityEditPayloadType),
+  type: new GraphQLNonNull(EventActivityEditPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(EventActivityEditInputType),
+      type: new GraphQLNonNull(EventActivityEditInputType),
     },
   },
   resolve: async (

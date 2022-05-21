@@ -30,10 +30,10 @@ export const EventActivityRemoveInviteInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     eventActivityID: {
       description: "id of EventActivity",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     inviteID: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -45,7 +45,7 @@ export const EventActivityRemoveInvitePayloadType = new GraphQLObjectType({
     RequestContext
   > => ({
     eventActivity: {
-      type: GraphQLNonNull(EventActivityType),
+      type: new GraphQLNonNull(EventActivityType),
     },
   }),
 });
@@ -55,11 +55,11 @@ export const EventActivityRemoveInviteType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customEventActivityRemoveInviteInput }
 > = {
-  type: GraphQLNonNull(EventActivityRemoveInvitePayloadType),
+  type: new GraphQLNonNull(EventActivityRemoveInvitePayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(EventActivityRemoveInviteInputType),
+      type: new GraphQLNonNull(EventActivityRemoveInviteInputType),
     },
   },
   resolve: async (

@@ -30,10 +30,10 @@ export const EventActivityAddInviteInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     eventActivityID: {
       description: "id of EventActivity",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     inviteID: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -45,7 +45,7 @@ export const EventActivityAddInvitePayloadType = new GraphQLObjectType({
     RequestContext
   > => ({
     eventActivity: {
-      type: GraphQLNonNull(EventActivityType),
+      type: new GraphQLNonNull(EventActivityType),
     },
   }),
 });
@@ -55,11 +55,11 @@ export const EventActivityAddInviteType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customEventActivityAddInviteInput }
 > = {
-  type: GraphQLNonNull(EventActivityAddInvitePayloadType),
+  type: new GraphQLNonNull(EventActivityAddInvitePayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(EventActivityAddInviteInputType),
+      type: new GraphQLNonNull(EventActivityAddInviteInputType),
     },
   },
   resolve: async (
