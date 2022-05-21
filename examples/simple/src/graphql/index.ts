@@ -22,6 +22,7 @@ import { graphqlUploadExpress } from "graphql-upload";
 import { User } from "../ent";
 
 let app = express();
+app.use(express.json());
 app.use(
   session({
     secret: "ss",
