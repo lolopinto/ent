@@ -12,11 +12,14 @@ Based on the [schema](/docs/actions/action#schema) with the following extra conf
 export default class Event extends BaseEntSchema implements Schema {
 
   actions: Action[] = [
+
     {
       operation: ActionOperation.Delete,
     },
-  ];
+
+  ]; 
 }
+
 ```
 
 leads to 2 classes.
@@ -49,9 +52,10 @@ and then the subclass:
 
 ```ts title="src/ent/event/actions/delete_event_action.ts"
 import {
-import { DeleteEventActionBase } from "src/ent/event/actions/generated/delete_event_action_base";
+import { DeleteEventActionBase } from "src/ent/event/actions/generated/delete_event_action_base"; 
 
 export default class DeleteEventAction extends DeleteEventActionBase {}
+
 ```
 
 The base class `DeleteEventActionBase` is where all shared functionality is and will be regenerated as the action configuration changes. It has the default privacy policy plus a bunch of other methods shown below.
@@ -74,7 +78,7 @@ The subclass will be generated **once** and any customizations can be applied th
 
 The following GraphQL schema is generated which uses the above API.
 
-``` title="src/graphql/schema.gql"
+``` title="src/graphql/generated/schema.gql"
 type Mutation {
   eventDelete(input: EventDeleteInput!): EventDeletePayload!
 }
@@ -96,6 +100,7 @@ type Event implements Node {
   eventLocation: String!
   ///.... 
 }
+
 ```
 
 and called as follows:

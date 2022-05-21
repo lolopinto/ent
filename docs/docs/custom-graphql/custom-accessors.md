@@ -9,23 +9,26 @@ We briefly showed how to add [custom functionality](/docs/core-concepts/ent#cust
 Given the following schema:
 
 ```ts title="src/schema/user.ts"
-import { BaseEntSchema, Field, StringType } from "@snowtop/ent";
-import { EmailType } from "@snowtop/ent-email";
-import { PasswordType } from "@snowtop/ent-password";
+import { BaseEntSchema, Field, StringType } from "@snowtop/ent"; 
+import { EmailType } from "@snowtop/ent-email"; 
+import { PasswordType } from "@snowtop/ent-password"; 
 
 export default class User extends BaseEntSchema {
   fields: Field[] = [
+
     StringType({ name: "FirstName" }),
     StringType({ name: "LastName" }),
     EmailType({ name: "EmailAddress" }),
     PasswordType({ name: "Password" }),
-  ];
+
+  ]; 
 }
+
 ```
 
 we'll end with the following GraphQL schema:
 
-```ts title="src/graphql/schema.gql"
+```ts title="src/graphql/generated/schema.gql"
 
 type User implements Node {
   id: ID!
@@ -38,15 +41,17 @@ type User implements Node {
 Even after the custom method `howLong` is added below, it's not exposed to the GraphQL schema yet.
 
 ```ts title="src/ent/user.ts"
-import { UserBase } from "src/ent/internal";
+import { UserBase } from "src/ent/internal"; 
 import { AlwaysAllowPrivacyPolicy, ID, LoggedOutViewer, PrivacyPolicy } from "@snowtop/ent"
-import { Interval } from "luxon";
+import { Interval } from "luxon"; 
 
 export class User extends UserBase {
-  privacyPolicy: PrivacyPolicy = AlwaysAllowPrivacyPolicy;
+  privacyPolicy: PrivacyPolicy = AlwaysAllowPrivacyPolicy; 
 
   howLong() {
+
     return Interval.fromDateTimes(this.createdAt, new Date()).count('seconds');
+
   }
 }
 ```

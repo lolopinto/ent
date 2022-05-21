@@ -12,22 +12,23 @@ First, the base class:
 
 ```ts title="src/ent/event/actions/generated/edit_event_rsvp_status_action_base.ts"
 export enum EventRsvpStatusInput {
-  Attending = "attending",
-  Declined = "declined",
-  Maybe = "maybe",
+  Attending = "attending", 
+  Declined = "declined", 
+  Maybe = "maybe", 
 }
 
 export interface EditEventRsvpStatusInput {
-  rsvpStatus: EventRsvpStatusInput;
-  userID: ID;
+  rsvpStatus: EventRsvpStatusInput; 
+  userID: ID; 
 }
 
 export class EditEventRsvpStatusActionBase implements Action<Event> {
-  public readonly builder: EventBuilder;
-  public readonly viewer: Viewer;
-  protected input: EditEventRsvpStatusInput;
+  public readonly builder: EventBuilder; 
+  public readonly viewer: Viewer; 
+  protected input: EditEventRsvpStatusInput; 
 
   constructor(viewer: Viewer, event: Event, input: EditEventRsvpStatusInput) {
+
     this.viewer = viewer;
     this.input = input;
     this.builder = new EventBuilder(
@@ -36,12 +37,16 @@ export class EditEventRsvpStatusActionBase implements Action<Event> {
       this,
       event,
     );
+
   }
 
   getPrivacyPolicy(): PrivacyPolicy {
+
     return AllowIfViewerHasIdentityPrivacyPolicy;
+
   }
 }
+
 ```
 
 and then the subclass:
@@ -86,7 +91,7 @@ The subclass will be generated **once** and any customizations can be applied th
 
 The following GraphQL schema is generated which uses the above API.
 
-``` title="src/graphql/schema.gql"
+``` title="src/graphql/generated/schema.gql"
 type Mutation {
   eventRsvpStatusEdit(input: EventRsvpStatusEditInput!): EventRsvpStatusEditPayload!
 
@@ -117,6 +122,7 @@ type Event implements Node {
   eventLocation: String!
   ///.... 
 }
+
 ```
 
 and called as follows:

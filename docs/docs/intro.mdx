@@ -98,7 +98,7 @@ After running `npm run codegen`, here's a list of generated files:
   new file:   src/ent/generated/user_base.ts
   new file:   src/ent/index.ts
   new file:   src/ent/internal.ts
-  new file:   src/ent/loadAny.ts
+  new file:   src/ent/generated/loadAny.ts
   new file:   src/ent/user.ts
   new file:   src/graphql/index.ts
   new file:   src/graphql/resolvers/generated/node_query_type.ts
@@ -106,8 +106,8 @@ After running `npm run codegen`, here's a list of generated files:
   new file:   src/graphql/resolvers/generated/user_type.ts
   new file:   src/graphql/resolvers/index.ts
   new file:   src/graphql/resolvers/internal.ts
-  new file:   src/graphql/schema.gql
-  new file:   src/graphql/schema.ts
+  new file:   src/graphql/generated/schema.gql
+  new file:   src/graphql/generated/schema.ts
   new file:   src/schema/schema.py
   new file:   src/schema/versions/e3b78fe1bfa3_2021518203057_add_users_table.py
 ```
@@ -119,7 +119,7 @@ Let's go over a few:
 * `src/schema/versions/*_add_users_tabl.py` is the generated database migration to add the `users` table
 * `src/graphql` is where all the generated GraphQL files are with the GraphQL schema file being:
 
-```graphql title="src/graphql/schema.gql"
+```graphql title="src/graphql/generated/schema.gql"
 type User implements Node {
   id: ID!
   firstName: String!
@@ -191,14 +191,14 @@ which leads to the following changed files:
   new file:   src/ent/user/actions/user_builder.ts
   new file:   src/graphql/mutations/generated/mutation_type.ts
   new file:   src/graphql/mutations/generated/user/user_create_type.ts
-  modified:   src/graphql/schema.gql
-  modified:   src/graphql/schema.ts
+  modified:   src/graphql/generated/schema.gql
+  modified:   src/graphql/generated/schema.ts
   modified:   src/schema/user.ts
 ```
 
 and the GraphQL schema updated as follows:
 
-```graphql title="src/graphql/schema.gql"
+```graphql title="src/graphql/generated/schema.gql"
 type Query {
   node(id: ID!): Node
 }
@@ -328,7 +328,7 @@ Then rerun the GraphQL query again and you should get a response similar to:
 
 The generated GraphQL schema allows you to access any node in your entity graph via the following Query:
 
-```graphql title="src/graphql/schema.gql"
+```graphql title="src/graphql/generated/schema.gql"
 type Query {
   node(id: ID!): Node
 }

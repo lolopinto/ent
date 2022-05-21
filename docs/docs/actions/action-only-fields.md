@@ -12,6 +12,7 @@ In the [address example](/docs/actions/triggers#changeset), with the Event schem
 export default class Event extends BaseEntSchema implements Schema {
 
   actions: Action[] = [
+
     {
       operation: ActionOperation.Create,
       actionOnlyFields: [
@@ -23,8 +24,10 @@ export default class Event extends BaseEntSchema implements Schema {
         },
       ],
     },
-  ];
+
+  ]; 
 }
+
 ```
 
 ```ts title="src/schema/address.ts"
@@ -56,24 +59,25 @@ we end up with the following changes:
 
 ```ts title="src/ent/event/actions/generated/create_event_action_base.ts"
 interface customAddressInput {
-  street: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  apartment?: string | null;
+  street: string; 
+  city: string; 
+  state: string; 
+  zipCode: string; 
+  apartment?: string | null; 
 }
 
 export interface EventCreateInput {
-  name: string;
-  creatorID: ID | Builder<User>;
-  startTime: Date;
-  endTime?: Date | null;
-  location: string;
-  address?: customAddressInput | null;
+  name: string; 
+  creatorID: ID | Builder<User>; 
+  startTime: Date; 
+  endTime?: Date | null; 
+  location: string; 
+  address?: customAddressInput | null; 
 }
+
 ```
 
-```graphql title="src/graphql/schema.gql"
+```graphql title="src/graphql/generated/schema.gql"
 input EventCreateInput {
   name: String!
   creatorID: ID!

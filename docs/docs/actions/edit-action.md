@@ -12,11 +12,14 @@ Based on the [schema](/docs/actions/action#schema) with the following extra conf
 export default class Event extends BaseEntSchema implements Schema {
 
   actions: Action[] = [
+
     {
       operation: ActionOperation.Edit,
     },
-  ];
+
+  ]; 
 }
+
 ```
 
 leads to 2 classes.
@@ -56,14 +59,15 @@ and then the subclass:
 
 ```ts title="src/ent/event/actions/edit_event_action.ts"
 import {
-  EditEventActionBase,
-  EventEditInput,
-} from "src/ent/event/actions/generated/edit_event_action_base";
+  EditEventActionBase, 
+  EventEditInput, 
+} from "src/ent/event/actions/generated/edit_event_action_base"; 
 
-export { EventEditInput };
+export { EventEditInput }; 
 
 export default class EditEventAction extends EditEventActionBase {
 }
+
 ```
 
 The base class `EditEventActionBase` is where all shared functionality is and will be regenerated as the action configuration changes. It has the default privacy policy plus a bunch of other methods shown below.
@@ -99,7 +103,7 @@ The subclass will be generated **once** and any customizations can be applied th
 
 The following GraphQL schema is generated which uses the above API.
 
-``` title="src/graphql/schema.gql"
+``` title="src/graphql/generated/schema.gql"
 type Mutation {
   eventEdit(input: EventEditInput!): EventEditPayload!
 }
@@ -126,6 +130,7 @@ type Event implements Node {
   eventLocation: String!
   ///.... 
 }
+
 ```
 
 and called as follows:
@@ -150,6 +155,6 @@ mutation eventEditMutation($input: EventEditInput!) {
 
 ## Input
 
-When editing an object, every field is optional and isn't required to be passed in. Only fields passed in will be changed. To set a nullable field to `null`, explicitly set it to null either via the API in TypeScript or GraphQL.
+When editing an object, every field is optional and isn't required to be passed in. Only fields passed in will be changed. To set a nullable field to `null` , explicitly set it to null either via the API in TypeScript or GraphQL.
 
 To explicitly make a field required in an action, use [requiredField](/docs/ent-schema/actions#requiredfield) when configuring it.

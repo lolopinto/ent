@@ -35,7 +35,7 @@ export class ImportGuestResolver {
 
 leads to this schema:
 
-```graphql title="src/graphql/schema.gql"
+```graphql title="src/graphql/generated/schema.gql"
 type Mutation {
   importGuests(eventID: ID!, file: Upload!): Event!
 }

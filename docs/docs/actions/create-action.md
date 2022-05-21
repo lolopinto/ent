@@ -12,11 +12,14 @@ Based on the [schema](/docs/actions/action#schema) with the following extra conf
 export default class Event extends BaseEntSchema implements Schema {
 
   actions: Action[] = [
+
     {
       operation: ActionOperation.Create,
     },
-  ];
+
+  ]; 
 }
+
 ```
 
 leads to 2 classes.
@@ -56,14 +59,15 @@ and then the subclass:
 
 ```ts title="src/ent/event/actions/create_event_action.ts"
 import {
-  CreateEventActionBase,
-  EventCreateInput,
-} from "src/ent/event/actions/generated/create_event_action_base";
+  CreateEventActionBase, 
+  EventCreateInput, 
+} from "src/ent/event/actions/generated/create_event_action_base"; 
 
-export { EventCreateInput };
+export { EventCreateInput }; 
 
 export default class CreateEventAction extends CreateEventActionBase {
 }
+
 ```
 
 The base class `CreateEventActionBase` is where all shared functionality is and will be regenerated as the action configuration changes. It has the default privacy policy plus a bunch of other methods shown below.
@@ -102,7 +106,7 @@ The subclass will be generated **once** and any customizations can be applied th
 
 The following GraphQL schema is generated which uses the above API.
 
-``` title="src/graphql/schema.gql"
+``` title="src/graphql/generated/schema.gql"
 type Mutation {
   eventCreate(input: EventCreateInput!): EventCreatePayload!
 }
@@ -128,6 +132,7 @@ type Event implements Node {
   eventLocation: String!
   ///.... 
 }
+
 ```
 
 and called as follows:
