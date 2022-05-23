@@ -80,7 +80,9 @@ export class EventBase {
     this._addressID = data.address_id;
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   async addressID(): Promise<ID | null> {
     if (this._addressID === null) {

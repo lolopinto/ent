@@ -155,7 +155,9 @@ export class UserBase {
     this.nestedList = convertNullableJSONList(data.nested_list);
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   async accountStatus(): Promise<string | null> {
     if (this._accountStatus === null) {
