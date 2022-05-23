@@ -9,6 +9,7 @@ import {
 import { execSync } from "child_process";
 import { Data } from "../core/base";
 import path from "path";
+import { getClassInfo, getPreText } from "../tsc/ast";
 
 async function main() {
   // this assumes this is being run from root of directory
@@ -132,7 +133,7 @@ function traverseClass(
   node: ts.ClassDeclaration,
   f: File,
 ): boolean {
-  const ci = getClassInfo(fileContents, sourceFile, node);
+  const ci = getTransformClassInfo(fileContents, sourceFile, node);
   if (!ci) {
     return false;
   }
@@ -184,40 +185,27 @@ function transformSchema(str: string): string {
   return str;
 }
 
-function getClassInfo(
+// TODO need to generify this...
+// and then have a schema specific version
+// may make sense to just duplicate this logic...
+function getTransformClassInfo(
   fileContents: string,
   sourceFile: ts.SourceFile,
   node: ts.ClassDeclaration,
 ): classInfo | undefined {
-  let className = node.name?.text;
+  const generic = getClassInfo(fileContents, sourceFile, node);
+  if (!generic) {
+    return;
+  }
+
+  let className = generic.name;
   if (!className?.endsWith("Schema")) {
     className += "Schema";
   }
-
-  let classExtends: string | undefined;
-  let implementsSchema = false;
-  if (node.heritageClauses) {
-    for (const hc of node.heritageClauses) {
-      if (hc.token === ts.SyntaxKind.ImplementsKeyword) {
-        for (const type of hc.types) {
-          if (type.expression.getText(sourceFile) === "Schema") {
-            implementsSchema = true;
-          }
-        }
-        continue;
-      }
-
-      // ts.SyntaxKind.ExtendsKeyword
-      // can only extend one class
-      for (const type of hc.types) {
-        const text = type.expression.getText(sourceFile);
-        const transformed = transformSchema(text);
-        if (transformed === text) {
-          return undefined;
-        }
-        classExtends = transformed;
-      }
-    }
+  let implementsSchema = generic.implements?.some((v) => v == "Schema");
+  let classExtends = generic.extends;
+  if (classExtends && classExtends === transformSchema(classExtends)) {
+    return undefined;
   }
 
   if (!className || !node.heritageClauses || !classExtends) {
@@ -225,22 +213,12 @@ function getClassInfo(
   }
 
   let ci: classInfo = {
+    ...generic,
     name: className,
     class: classExtends,
-    comment: getPreText(fileContents, node, sourceFile),
     implementsSchema,
   };
 
-  if (node.modifiers) {
-    for (const mod of node.modifiers) {
-      const text = mod.getText(sourceFile);
-      if (text === "export") {
-        ci.export = true;
-      } else if (text === "default") {
-        ci.default = true;
-      }
-    }
-  }
   return ci;
 }
 
@@ -526,14 +504,6 @@ function transformImport(
     text +
     '";'
   );
-}
-
-function getPreText(
-  fileContents: string,
-  node: ts.Node,
-  sourceFile: ts.SourceFile,
-): string {
-  return fileContents.substring(node.getFullStart(), node.getStart(sourceFile));
 }
 
 Promise.resolve(main());
