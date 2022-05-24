@@ -65,7 +65,9 @@ export class ContactBase {
     this.userID = data.user_id;
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   static async load<T extends ContactBase>(
     this: new (viewer: Viewer, data: Data) => T,

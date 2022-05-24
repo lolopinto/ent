@@ -12,7 +12,9 @@ class Account implements Ent {
   id: ID;
   accountID: string;
   nodeType = "Account";
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy() {
+    return AlwaysAllowPrivacyPolicy;
+  }
 
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data.id;

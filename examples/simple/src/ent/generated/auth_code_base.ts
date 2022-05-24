@@ -54,7 +54,9 @@ export class AuthCodeBase {
     this.phoneNumber = data.phone_number;
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   static async load<T extends AuthCodeBase>(
     this: new (viewer: Viewer, data: Data) => T,

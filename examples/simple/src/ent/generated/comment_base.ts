@@ -61,7 +61,9 @@ export class CommentBase {
     this.articleType = data.article_type;
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   static async load<T extends CommentBase>(
     this: new (viewer: Viewer, data: Data) => T,

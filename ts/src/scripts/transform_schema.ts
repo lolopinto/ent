@@ -1,47 +1,21 @@
 import { glob } from "glob";
 import ts from "typescript";
 import * as fs from "fs";
-import { readCompilerOptions } from "../tsc/compilerOptions";
+import {
+  readCompilerOptions,
+  getTarget,
+  createSourceFile,
+} from "../tsc/compilerOptions";
 import { execSync } from "child_process";
-import { Data } from "../core/base";
 import path from "path";
-
-function getTarget(target: string) {
-  switch (target.toLowerCase()) {
-    case "es2015":
-      return ts.ScriptTarget.ES2015;
-    case "es2016":
-      return ts.ScriptTarget.ES2016;
-    case "es2017":
-      return ts.ScriptTarget.ES2017;
-    case "es2018":
-      return ts.ScriptTarget.ES2018;
-    case "es2019":
-      return ts.ScriptTarget.ES2019;
-    case "es2020":
-      return ts.ScriptTarget.ES2020;
-    case "es2021":
-      return ts.ScriptTarget.ES2021;
-    case "es3":
-      return ts.ScriptTarget.ES3;
-    case "es5":
-      return ts.ScriptTarget.ES5;
-    case "esnext":
-      return ts.ScriptTarget.ESNext;
-    default:
-      return ts.ScriptTarget.ESNext;
-  }
-}
+import { getClassInfo, getPreText, transformImport } from "../tsc/ast";
 
 async function main() {
   // this assumes this is being run from root of directory
   const options = readCompilerOptions(".");
   let files = glob.sync("src/schema/*.ts");
 
-  const target = options.target
-    ? // @ts-ignore
-      getTarget(options.target)
-    : ts.ScriptTarget.ESNext;
+  const target = getTarget(options.target?.toString());
 
   // filter to only event.ts e.g. for comments and whitespace...
   //  files = files.filter((f) => f.endsWith("event.ts"));
@@ -56,16 +30,9 @@ async function main() {
     // const writeFile = file;
     //    console.debug(file, writeFile);
 
-    let contents = fs.readFileSync(file).toString();
-
     // go through the file and print everything back if not starting immediately after other position
-    const sourceFile = ts.createSourceFile(
-      file,
-      contents,
-      target,
-      false,
-      ts.ScriptKind.TS,
-    );
+    let { contents, sourceFile } = createSourceFile(target, file);
+
     const nodes: NodeInfo[] = [];
     let updateImport = false;
     let removeImports: string[] = [];
@@ -93,9 +60,13 @@ async function main() {
       if (updateImport && node.importNode) {
         const importNode = node.node as ts.ImportDeclaration;
         const transformedImport = transformImport(
+          contents,
           importNode,
           sourceFile,
-          removeImports,
+          {
+            removeImports,
+            transform: transformSchema,
+          },
         );
         if (transformedImport) {
           newContents += transformedImport;
@@ -165,7 +136,7 @@ function traverseClass(
   node: ts.ClassDeclaration,
   f: File,
 ): boolean {
-  const ci = getClassInfo(fileContents, sourceFile, node);
+  const ci = getTransformClassInfo(fileContents, sourceFile, node);
   if (!ci) {
     return false;
   }
@@ -217,40 +188,27 @@ function transformSchema(str: string): string {
   return str;
 }
 
-function getClassInfo(
+// TODO need to generify this...
+// and then have a schema specific version
+// may make sense to just duplicate this logic...
+function getTransformClassInfo(
   fileContents: string,
   sourceFile: ts.SourceFile,
   node: ts.ClassDeclaration,
 ): classInfo | undefined {
-  let className = node.name?.text;
+  const generic = getClassInfo(fileContents, sourceFile, node);
+  if (!generic) {
+    return;
+  }
+
+  let className = generic.name;
   if (!className?.endsWith("Schema")) {
     className += "Schema";
   }
-
-  let classExtends: string | undefined;
-  let implementsSchema = false;
-  if (node.heritageClauses) {
-    for (const hc of node.heritageClauses) {
-      if (hc.token === ts.SyntaxKind.ImplementsKeyword) {
-        for (const type of hc.types) {
-          if (type.expression.getText(sourceFile) === "Schema") {
-            implementsSchema = true;
-          }
-        }
-        continue;
-      }
-
-      // ts.SyntaxKind.ExtendsKeyword
-      // can only extend one class
-      for (const type of hc.types) {
-        const text = type.expression.getText(sourceFile);
-        const transformed = transformSchema(text);
-        if (transformed === text) {
-          return undefined;
-        }
-        classExtends = transformed;
-      }
-    }
+  let implementsSchema = generic.implements?.some((v) => v == "Schema");
+  let classExtends = generic.extends;
+  if (classExtends && classExtends === transformSchema(classExtends)) {
+    return undefined;
   }
 
   if (!className || !node.heritageClauses || !classExtends) {
@@ -258,22 +216,12 @@ function getClassInfo(
   }
 
   let ci: classInfo = {
+    ...generic,
     name: className,
     class: classExtends,
-    comment: getPreText(fileContents, node, sourceFile),
     implementsSchema,
   };
 
-  if (node.modifiers) {
-    for (const mod of node.modifiers) {
-      const text = mod.getText(sourceFile);
-      if (text === "export") {
-        ci.export = true;
-      } else if (text === "default") {
-        ci.default = true;
-      }
-    }
-  }
   return ci;
 }
 
@@ -512,61 +460,6 @@ function parseFieldElement(
     properties,
     nameComment: propertyComment,
   };
-}
-
-function transformImport(
-  importNode: ts.ImportDeclaration,
-  sourceFile: ts.SourceFile,
-  removeImports: string[],
-): string | undefined {
-  // remove quotes too
-  const text = importNode.moduleSpecifier.getText(sourceFile).slice(1, -1);
-  if (
-    text !== "@snowtop/ent" &&
-    text !== "@snowtop/ent/schema" &&
-    text !== "@snowtop/ent/schema/"
-  ) {
-    return;
-  }
-  const importText = importNode.importClause?.getText(sourceFile) || "";
-  const start = importText.indexOf("{");
-  const end = importText.lastIndexOf("}");
-  if (start === -1 || end === -1) {
-    return;
-  }
-  const imports = importText
-    .substring(start + 1, end)
-    //    .trim()
-    .split(",");
-
-  let removeImportsMap: Data = {};
-  removeImports.forEach((imp) => (removeImportsMap[imp] = true));
-  let newImports: string[] = [];
-  for (let i = 0; i < imports.length; i++) {
-    let imp = transformSchema(imports[i].trim());
-    if (removeImportsMap[imp]) {
-      continue;
-    }
-    newImports.push(imp);
-  }
-
-  return (
-    "import " +
-    importText.substring(0, start + 1) +
-    newImports.join(", ") +
-    importText.substring(end) +
-    ' from "' +
-    text +
-    '";'
-  );
-}
-
-function getPreText(
-  fileContents: string,
-  node: ts.Node,
-  sourceFile: ts.SourceFile,
-): string {
-  return fileContents.substring(node.getFullStart(), node.getStart(sourceFile));
 }
 
 Promise.resolve(main());

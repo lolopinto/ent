@@ -53,9 +53,11 @@ class User implements Ent {
   foo: string | null;
   accountID: string;
   nodeType = "User";
-  privacyPolicy: PrivacyPolicy = {
-    rules: [AllowIfViewerRule, AlwaysDenyRule],
-  };
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return {
+      rules: [AllowIfViewerRule, AlwaysDenyRule],
+    };
+  }
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data["bar"];
     this.baz = data["baz"];
@@ -86,9 +88,11 @@ class Contact implements Ent {
   foo: string | null;
   accountID: string;
   nodeType = "Contact";
-  privacyPolicy: PrivacyPolicy = {
-    rules: [AllowIfViewerRule, AlwaysDenyRule],
-  };
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return {
+      rules: [AllowIfViewerRule, AlwaysDenyRule],
+    };
+  }
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data["bar"];
     this.baz = data["baz"];

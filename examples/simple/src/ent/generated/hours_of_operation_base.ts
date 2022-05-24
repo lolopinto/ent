@@ -54,7 +54,9 @@ export class HoursOfOperationBase {
     this.close = data.close;
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   static async load<T extends HoursOfOperationBase>(
     this: new (viewer: Viewer, data: Data) => T,

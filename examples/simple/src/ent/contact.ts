@@ -15,9 +15,11 @@ interface ContactPlusEmails {
 }
 
 export class Contact extends ContactBase {
-  privacyPolicy: PrivacyPolicy = {
-    rules: [new AllowIfViewerIsRule("userID"), AlwaysDenyRule],
-  };
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return {
+      rules: [new AllowIfViewerIsRule("userID"), AlwaysDenyRule],
+    };
+  }
 
   @gqlField({
     type: GraphQLString,

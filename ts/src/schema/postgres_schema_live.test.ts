@@ -29,7 +29,7 @@ import pg from "pg";
 import { defaultTimestampParser, Dialect } from "../core/db";
 import { DBType, FieldMap } from "./schema";
 import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
-import { ID, Ent, Viewer, Data } from "../core/base";
+import { ID, Ent, Viewer, Data, PrivacyPolicy } from "../core/base";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -277,7 +277,9 @@ class Hours implements Ent {
   id: ID;
   accountID: string;
   nodeType = "Hours";
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
 
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data.id;
@@ -430,8 +432,9 @@ class Holiday implements Ent {
   id: ID;
   accountID: string;
   nodeType = "Holiday";
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
-
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data.id;
   }

@@ -385,7 +385,11 @@ async function applyPrivacyPolicyForEnt<T extends Ent>(
   fieldPrivacyOptions: FieldPrivacyOptions<T>,
 ): Promise<T | null> {
   if (ent) {
-    const visible = await applyPrivacyPolicy(viewer, ent.privacyPolicy, ent);
+    const visible = await applyPrivacyPolicy(
+      viewer,
+      ent.getPrivacyPolicy(),
+      ent,
+    );
     if (!visible) {
       return null;
     }
@@ -401,7 +405,7 @@ async function applyPrivacyPolicyForEntX<T extends Ent>(
   options: FieldPrivacyOptions<T>,
 ): Promise<T> {
   // this will throw
-  await applyPrivacyPolicyX(viewer, ent.privacyPolicy, ent);
+  await applyPrivacyPolicyX(viewer, ent.getPrivacyPolicy(), ent);
   return doFieldPrivacy(viewer, ent, data, options);
 }
 
