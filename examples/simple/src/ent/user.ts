@@ -1,6 +1,5 @@
 import { UserBase, Contact, EdgeType } from "./internal";
 import {
-  PrivacyPolicy,
   AllowIfViewerRule,
   AlwaysDenyRule,
   AllowIfViewerInboundEdgeExistsRule,
@@ -13,7 +12,7 @@ import * as bcrypt from "bcryptjs";
 
 // we're only writing this once except with --force and packageName provided
 export class User extends UserBase {
-  privacyPolicy: PrivacyPolicy = {
+  privacyPolicy = {
     rules: [
       AllowIfOmniRule,
       AllowIfViewerRule,
