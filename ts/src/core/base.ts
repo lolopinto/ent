@@ -258,7 +258,7 @@ export function DenyWithReason(e: PrivacyError | string): PrivacyResult {
   if (typeof e === "string") {
     return {
       result: privacyResult.Deny,
-      getError(policy: PrivacyPolicy, rule: PrivacyPolicyRule, ent?: Ent) {
+      getError(policy: PrivacyPolicy, rule: PrivacyPolicyRule, ent: Ent) {
         return new DenyWithReasonError(policy, rule, e, ent);
       },
     };
@@ -270,7 +270,7 @@ export function DenyWithReason(e: PrivacyError | string): PrivacyResult {
 }
 
 export interface PrivacyPolicyRule<TEnt extends Ent = Ent> {
-  apply(v: Viewer, ent?: TEnt): Promise<PrivacyResult>;
+  apply(v: Viewer, ent: TEnt): Promise<PrivacyResult>;
 }
 
 export interface PrivacyPolicy<TEnt extends Ent = Ent> {

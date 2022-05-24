@@ -532,6 +532,8 @@ async function applyPrivacyPolicyForEdgeQ<
       if (!ent) {
         ent = await edgeQ.sourceEnt(id);
       }
+      // this is the only reason we need ent to be optional now.
+      // we have unsafe ent for mutations...
       const r = await applyPrivacyPolicy(
         viewer,
         edgeQ.getPrivacyPolicy(),

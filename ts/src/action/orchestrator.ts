@@ -418,9 +418,9 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
     );
   }
 
-  private getEntForPrivacyPolicyImpl(editedData: Data) {
+  private getEntForPrivacyPolicyImpl(editedData: Data): TEnt {
     if (this.actualOperation !== WriteOperation.Insert) {
-      return this.existingEnt;
+      return this.existingEnt!;
     }
     // we create an unsafe ent to be used for privacy policies
     return new this.options.builder.ent(
@@ -455,9 +455,9 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
 
   // if you're doing custom privacy within an action and want to
   // get either the unsafe ent or the existing ent that's being edited
-  async getPossibleUnsafeEntForPrivacy() {
+  async getPossibleUnsafeEntForPrivacy(): Promise<TEnt> {
     if (this.actualOperation !== WriteOperation.Insert) {
-      return this.existingEnt;
+      return this.existingEnt!;
     }
     const { editedData } = await this.getFieldsInfo();
     return this.getEntForPrivacyPolicyImpl(editedData);
