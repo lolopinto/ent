@@ -154,7 +154,7 @@ func TestCustomMutation(t *testing.T) {
 	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
 		{
 			Import:     "AuthResolver",
-			ImportPath: "../auth/auth",
+			ImportPath: "../../mutations/auth/auth",
 		},
 	})
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
@@ -260,7 +260,7 @@ func TestCustomQuery(t *testing.T) {
 	assert.Len(t, gqlNode.connections, 0)
 	assert.Len(t, gqlNode.ActionDependents, 0)
 	assert.Equal(t, gqlNode.Field, &item)
-	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/generated/generated/email_available_query_type.ts"))
+	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/generated/resolvers/email_available_query_type.ts"))
 
 	objData := gqlNode.ObjData
 	require.NotNil(t, objData)
@@ -285,7 +285,7 @@ func TestCustomQuery(t *testing.T) {
 	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
 		{
 			Import:     "AuthResolver",
-			ImportPath: "../auth/auth",
+			ImportPath: "../../resolvers/auth/auth",
 		},
 	})
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
@@ -408,7 +408,7 @@ func TestCustomListQuery(t *testing.T) {
 	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
 		{
 			Import:     "AuthResolver",
-			ImportPath: "../auth/auth",
+			ImportPath: "../../resolvers/auth/auth",
 		},
 	})
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
@@ -558,7 +558,7 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
 		{
 			Import:     "UsernameResolver",
-			ImportPath: "../username/username",
+			ImportPath: "../../resolvers/username/username",
 		},
 	})
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
@@ -678,7 +678,7 @@ func TestCustomUploadType(t *testing.T) {
 	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
 		{
 			Import:     "ProfilePicResolver",
-			ImportPath: "../file/upload",
+			ImportPath: "../../mutations/file/upload",
 		},
 	})
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
