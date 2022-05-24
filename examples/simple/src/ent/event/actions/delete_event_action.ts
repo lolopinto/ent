@@ -1,4 +1,4 @@
-import { DeleteEventActionBase } from "./generated/delete_event_action_base";
+import { DeleteEventActionBase } from "../../generated/event/actions/delete_event_action_base";
 import {
   AllowIfViewerIsRule,
   AlwaysDenyRule,

@@ -1,7 +1,7 @@
 import {
-  CreateContactActionBase,
-  ContactCreateInput,
-} from "./generated/create_contact_action_base";
+  CreateContactActionBase, 
+  ContactCreateInput, 
+} from "../../generated/contact/actions/create_contact_action_base";
 
 export { ContactCreateInput };
 import { Contact, ContactEmail, ContactPhoneNumber } from "../../";
@@ -17,7 +17,7 @@ import {
 } from "@snowtop/ent";
 import { AllowIfBuilder, Observer, Trigger } from "@snowtop/ent/action";
 import CreateContactEmailAction from "../../../ent/contact_email/actions/create_contact_email_action";
-import { ContactBuilder } from "./generated/contact_builder";
+import { ContactBuilder } from "../../generated/contact/actions/contact_builder";
 import CreateContactPhoneNumberAction from "../../../ent/contact_phone_number/actions/create_contact_phone_number_action";
 import EditContactAction from "./edit_contact_action";
 

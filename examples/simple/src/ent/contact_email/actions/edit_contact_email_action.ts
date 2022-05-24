@@ -3,9 +3,9 @@
  */
 
 import {
-  ContactEmailEditInput,
-  EditContactEmailActionBase,
-} from "./generated/edit_contact_email_action_base";
+  ContactEmailEditInput, 
+  EditContactEmailActionBase, 
+} from "../../generated/contact_email/actions/edit_contact_email_action_base";
 
 export { ContactEmailEditInput };
 

@@ -12,8 +12,8 @@ import { Action } from "@snowtop/ent/action";
 import { BaseAction } from "@snowtop/ent/action/experimental_action";
 import { User } from "../../ent";
 import CreateContactAction from "../../ent/contact/actions/create_contact_action";
-import { UserBuilder } from "../../ent/user/actions/generated/user_builder";
-import { ContactBuilder } from "../../ent/contact/actions/generated/contact_builder";
+import { UserBuilder } from "../../ent/generated/user/actions/user_builder";
+import { ContactBuilder } from "../../ent/generated/contact/actions/contact_builder";
 
 export class ImportContactResolver {
   @gqlMutation({ type: User })

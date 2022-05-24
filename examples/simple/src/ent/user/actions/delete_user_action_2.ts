@@ -3,9 +3,9 @@
  */
 
 import {
-  DeleteUserAction2Base,
-  DeleteUserInput2,
-} from "./generated/delete_user_action_2_base";
+  DeleteUserAction2Base, 
+  DeleteUserInput2, 
+} from "../../generated/user/actions/delete_user_action_2_base";
 import { EditUserPrivacy } from "./edit_user_privacy";
 
 export { DeleteUserInput2 };
