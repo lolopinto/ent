@@ -173,3 +173,35 @@ export function transformImport(
     '";'
   );
 }
+
+export function updateImportPath(
+  fileContents: string,
+  importNode: ts.ImportDeclaration,
+  sourceFile: ts.SourceFile,
+  newPath: string,
+) {
+  const comment = getPreText(fileContents, importNode, sourceFile);
+
+  // all this copied from above...
+  const importText = importNode.importClause?.getText(sourceFile) || "";
+  const start = importText.indexOf("{");
+  const end = importText.lastIndexOf("}");
+  if (start === -1 || end === -1) {
+    return;
+  }
+  const imports = importText
+    .substring(start + 1, end)
+    //    .trim()
+    .split(",");
+
+  return (
+    comment +
+    "import " +
+    importText.substring(0, start + 1) +
+    Array.from(imports).join(", ") +
+    importText.substring(end) +
+    ' from "' +
+    newPath +
+    '";'
+  );
+}
