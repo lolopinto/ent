@@ -3,8 +3,7 @@ import * as path from "path";
 import * as fs from "fs";
 import {
   createSourceFile,
-  getTarget,
-  readCompilerOptions,
+  getTargetFromCurrentDir,
 } from "../tsc/compilerOptions";
 import ts from "typescript";
 import { updateImportPath } from "../tsc/ast";
@@ -54,35 +53,8 @@ function moveFiles(files: string[]) {
   });
 }
 
-// inspired by transform_schema
-// TODO refactor...
-interface NodeInfo {
-  node?: ts.Node;
-  rawString?: string;
-}
-
-function main() {
-  const entFiles = glob.sync("src/ent/**/generated/**/**.ts");
-  const graphqlFiles = glob.sync("src/graphql/**/generated/**/**.ts");
-
-  moveFiles(entFiles);
-  moveFiles(graphqlFiles);
-
-  // TODO this sequence is repeated...
-  const options = readCompilerOptions(".");
-  const target = getTarget(options.target?.toString());
-
-  const checkImports = glob.sync("src/ent/**/*.ts", {
-    ignore: ["**/generated/**", "node_modules/**"],
-  });
-  const checkImports2 = glob.sync("src/graphql/**/*.ts", {
-    ignore: ["**/generated/**", "node_modules/**"],
-  });
-
-  const cwd = process.cwd();
-
-  // TODO move into func and run for checkImports
-  checkImports.forEach((file) => {
+function updateImports(files: string[], target: ts.ScriptTarget, cwd: string) {
+  files.forEach((file) => {
     let { contents, sourceFile } = createSourceFile(target, file);
 
     let nodes: NodeInfo[] = [];
@@ -90,7 +62,6 @@ function main() {
     let updated = false;
     ts.forEachChild(sourceFile, function (node: ts.Node) {
       let dirPath = path.join(cwd, file, "..");
-      //      console.debug(dirPath);
       if (ts.isImportDeclaration(node)) {
         const conv = isGeneratedPath(node, sourceFile, dirPath);
         if (!conv) {
@@ -118,8 +89,39 @@ function main() {
       }
     }
 
-    fs.writeFileSync(file, newContents);
+    if (updated) {
+      fs.writeFileSync(file, newContents);
+    }
   });
+}
+
+// inspired by transform_schema
+// TODO refactor...
+interface NodeInfo {
+  node?: ts.Node;
+  rawString?: string;
+}
+
+function main() {
+  const entFiles = glob.sync("src/ent/**/generated/**/**.ts");
+  const graphqlFiles = glob.sync("src/graphql/**/generated/**/**.ts");
+
+  moveFiles(entFiles);
+  moveFiles(graphqlFiles);
+
+  const target = getTargetFromCurrentDir();
+
+  const entImportFiles = glob.sync("src/ent/**/*.ts", {
+    ignore: ["**/generated/**", "node_modules/**"],
+  });
+  const graphqlImportFiles = glob.sync("src/graphql/**/*.ts", {
+    ignore: ["**/generated/**", "node_modules/**"],
+  });
+
+  const cwd = process.cwd();
+
+  updateImports(entImportFiles, target, cwd);
+  updateImports(graphqlImportFiles, target, cwd);
 
   execSync("prettier src/ent/*.ts --write");
   execSync("prettier src/graphql/*.ts --write");
@@ -132,11 +134,16 @@ function isGeneratedPath(
 ) {
   const text = node.moduleSpecifier.getText(sourceFile).slice(1, -1);
 
-  if (text.indexOf("./generated") === -1) {
+  // it's relative and has generated in there, continue
+  if (
+    !(
+      (text.startsWith("..") || text.startsWith("./")) &&
+      text.indexOf("/generated") !== -1
+    )
+  ) {
     return;
   }
   const oldPath = path.join(dirPath, text);
-  //        oldPath = path.re
   const relFromRoot = path.relative(".", oldPath);
   const conv = transformPath(relFromRoot);
   if (!conv) {

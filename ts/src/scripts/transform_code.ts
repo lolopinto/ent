@@ -1,11 +1,10 @@
 import { glob } from "glob";
 import ts from "typescript";
 import {
-  readCompilerOptions,
-  getTarget,
+  getTargetFromCurrentDir,
   createSourceFile,
 } from "../tsc/compilerOptions";
-import { getClassInfo, getPreText, transformImport } from "../tsc/ast";
+import { getClassInfo, transformImport } from "../tsc/ast";
 import { execSync } from "child_process";
 import * as fs from "fs";
 
@@ -16,9 +15,8 @@ interface NodeInfo {
 }
 
 async function main() {
-  const options = readCompilerOptions(".");
   let files = glob.sync("src/ent/*.ts");
-  const target = getTarget(options.target?.toString());
+  const target = getTargetFromCurrentDir();
 
   files.forEach((file) => {
     let { contents, sourceFile } = createSourceFile(target, file);
