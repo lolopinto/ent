@@ -111,9 +111,11 @@ class DerivedUser implements Ent {
   id: ID;
   accountID: string;
   nodeType = "User";
-  privacyPolicy: PrivacyPolicy = {
-    rules: [AllowIfViewerRule, AlwaysDenyRule],
-  };
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return {
+      rules: [AllowIfViewerRule, AlwaysDenyRule],
+    };
+  }
   constructor(public viewer: Viewer, data: Data) {
     this.id = data["id"];
   }
@@ -328,9 +330,11 @@ function commonTests() {
       id: ID;
       accountID: string;
       nodeType = "User2";
-      privacyPolicy = {
-        rules: [AllowIfViewerRule, AlwaysDenyRule],
-      };
+      getPrivacyPolicy() {
+        return {
+          rules: [AllowIfViewerRule, AlwaysDenyRule],
+        };
+      }
 
       constructor(public viewer: Viewer, public data: Data) {
         this.id = data.id;

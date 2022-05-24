@@ -54,7 +54,9 @@ export class HolidayBase {
     this.date = convertDate(data.date);
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   static async load<T extends HolidayBase>(
     this: new (viewer: Viewer, data: Data) => T,

@@ -64,24 +64,26 @@ class User implements Ent {
   id: ID;
   accountID: string;
   nodeType = "User";
-  privacyPolicy: PrivacyPolicy = {
-    rules: [
-      {
-        async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
-          if (!v.viewerID) {
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return {
+      rules: [
+        {
+          async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
+            if (!v.viewerID) {
+              return Skip();
+            }
+            // can see each other if same modulus because we crazy
+            const vNum = v.viewerID as number;
+            if (vNum % 2 === (ent?.id as number) % 2) {
+              return Allow();
+            }
             return Skip();
-          }
-          // can see each other if same modulus because we crazy
-          const vNum = v.viewerID as number;
-          if (vNum % 2 === (ent?.id as number) % 2) {
-            return Allow();
-          }
-          return Skip();
+          },
         },
-      },
-      AlwaysDenyRule,
-    ],
-  };
+        AlwaysDenyRule,
+      ],
+    };
+  }
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data["id"];
   }

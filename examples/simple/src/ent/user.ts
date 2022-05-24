@@ -1,10 +1,10 @@
 import { UserBase, Contact, EdgeType } from "./internal";
 import {
-  PrivacyPolicy,
   AllowIfViewerRule,
   AlwaysDenyRule,
   AllowIfViewerInboundEdgeExistsRule,
   Data,
+  PrivacyPolicy,
 } from "@snowtop/ent";
 import { AllowIfOmniRule } from "./../privacy/omni";
 import { GraphQLString } from "graphql";
@@ -13,14 +13,16 @@ import * as bcrypt from "bcryptjs";
 
 // we're only writing this once except with --force and packageName provided
 export class User extends UserBase {
-  privacyPolicy: PrivacyPolicy = {
-    rules: [
-      AllowIfOmniRule,
-      AllowIfViewerRule,
-      new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFriends),
-      AlwaysDenyRule,
-    ],
-  };
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return {
+      rules: [
+        AllowIfOmniRule,
+        AllowIfViewerRule,
+        new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFriends),
+        AlwaysDenyRule,
+      ],
+    };
+  }
 
   @gqlField({
     type: GraphQLString,

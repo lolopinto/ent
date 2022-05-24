@@ -314,7 +314,7 @@ export class AllowIfEdgeExistsRule implements PrivacyPolicyRule {
 export class AllowIfViewerInboundEdgeExistsRule implements PrivacyPolicyRule {
   constructor(private edgeType: string) {}
 
-  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+  async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
     return allowIfEdgeExistsRule(v.viewerID, ent?.id, this.edgeType, v.context);
   }
 }

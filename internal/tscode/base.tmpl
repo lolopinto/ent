@@ -81,12 +81,14 @@ export class {{$baseClass}} {
       {{end -}}
     {{end}}
   }
-
-  {{ if $privacyCfg.Class }}
-    privacyPolicy: {{useImport "PrivacyPolicy"}} = new {{useImport $privacyCfg.PolicyName}}();
-  {{ else }}
-    privacyPolicy: {{useImport "PrivacyPolicy"}} = {{useImport $privacyCfg.PolicyName}};
-  {{ end }}
+  
+  getPrivacyPolicy(): {{useImport "PrivacyPolicy"}}<this> {
+    {{ if $privacyCfg.Class }}
+      return new {{useImport $privacyCfg.PolicyName}}();
+    {{ else }}
+      return {{useImport $privacyCfg.PolicyName}};
+    {{ end }}
+  }
 
   {{range $field := .FieldInfo.Fields -}}
     {{ if $field.HasAsyncAccessor $cfg -}}

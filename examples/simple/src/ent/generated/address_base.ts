@@ -60,7 +60,9 @@ export class AddressBase {
     this.country = data.country;
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   static async load<T extends AddressBase>(
     this: new (viewer: Viewer, data: Data) => T,
