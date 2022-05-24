@@ -5,9 +5,15 @@ import {
   getTarget,
   createSourceFile,
 } from "../tsc/compilerOptions";
-import { getClassInfo } from "../tsc/ast";
+import { getClassInfo, transformImport } from "../tsc/ast";
 import { execSync } from "child_process";
 import * as fs from "fs";
+
+// inspired by transform_schema
+interface NodeInfo {
+  node?: ts.Node;
+  rawString?: string;
+}
 
 async function main() {
   const options = readCompilerOptions(".");
@@ -17,11 +23,12 @@ async function main() {
   files.forEach((file) => {
     let { contents, sourceFile } = createSourceFile(target, file);
 
-    let newContents = "";
     let traversed = false;
+    let nodes: NodeInfo[] = [];
+
     ts.forEachChild(sourceFile, function (node: ts.Node) {
       if (!ts.isClassDeclaration(node) || !node.heritageClauses) {
-        newContents += node.getFullText(sourceFile);
+        nodes.push({ node });
         return;
       }
 
@@ -35,6 +42,7 @@ async function main() {
       traversed = true;
 
       let klassContents = "";
+
       for (const mm of node.members) {
         if (isPrivacyPolicy(mm)) {
           const property = mm as ts.PropertyDeclaration;
@@ -52,12 +60,36 @@ async function main() {
           klassContents += mm.getFullText(sourceFile);
         }
       }
+
       // wrap comments and transform to export class Foo extends Bar { ${inner} }
-      newContents += classInfo.wrapClassContents(klassContents);
+      nodes.push({ rawString: classInfo.wrapClassContents(klassContents) });
+      //      console.debug(classInfo.wrapClassContents(klassContents));
     });
 
     // if traversed, overwrite.
-    if (traversed) {
+    if (!traversed) {
+      return;
+    }
+
+    let newContents = "";
+    for (const node of nodes) {
+      if (node.node) {
+        if (ts.isImportDeclaration(node.node)) {
+          let transformed = transformImport(node.node, sourceFile, {
+            newImports: ["PrivacyPolicy"],
+          });
+          if (transformed) {
+            newContents += transformed;
+            continue;
+          }
+        }
+        newContents += node.node.getFullText(sourceFile);
+      } else if (node.rawString) {
+        newContents += node.rawString;
+      } else {
+        throw new Error(`malformed node with no node or rawString`);
+      }
+
       fs.writeFileSync(file, newContents);
     }
   });

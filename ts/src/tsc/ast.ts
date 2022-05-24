@@ -1,3 +1,4 @@
+import { Data } from "../core/base";
 import ts from "typescript";
 
 export function getPreText(
@@ -98,4 +99,70 @@ export function getClassInfo(
     export: hasExport,
     default: hasDefault,
   };
+}
+
+type transformImportFn = (imp: string) => string;
+
+interface transformOpts {
+  removeImports?: string[];
+  newImports?: string[];
+  transform?: transformImportFn;
+}
+
+export function transformImport(
+  importNode: ts.ImportDeclaration,
+  sourceFile: ts.SourceFile,
+  opts?: transformOpts,
+  // removeImports: string[],
+  // transform: transformImportFn = (v) => v,
+): string | undefined {
+  // remove quotes too
+  const text = importNode.moduleSpecifier.getText(sourceFile).slice(1, -1);
+  if (
+    text !== "@snowtop/ent" &&
+    text !== "@snowtop/ent/schema" &&
+    text !== "@snowtop/ent/schema/"
+  ) {
+    return;
+  }
+  const importText = importNode.importClause?.getText(sourceFile) || "";
+  const start = importText.indexOf("{");
+  const end = importText.lastIndexOf("}");
+  if (start === -1 || end === -1) {
+    return;
+  }
+  const imports = importText
+    .substring(start + 1, end)
+    //    .trim()
+    .split(",");
+
+  let removeImportsMap: Data = {};
+  if (opts?.removeImports) {
+    opts.removeImports.forEach((imp) => (removeImportsMap[imp] = true));
+  }
+  let finalImports = new Set<string>();
+
+  if (opts?.newImports) {
+    opts.newImports.forEach((imp) => finalImports.add(imp));
+  }
+  for (let i = 0; i < imports.length; i++) {
+    let imp = imports[i].trim();
+    if (opts?.transform) {
+      imp = opts.transform(imp);
+    }
+    if (removeImportsMap[imp]) {
+      continue;
+    }
+    finalImports.add(imp);
+  }
+
+  return (
+    "import " +
+    importText.substring(0, start + 1) +
+    Array.from(finalImports).join(", ") +
+    importText.substring(end) +
+    ' from "' +
+    text +
+    '";'
+  );
 }

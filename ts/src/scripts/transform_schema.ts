@@ -7,9 +7,8 @@ import {
   createSourceFile,
 } from "../tsc/compilerOptions";
 import { execSync } from "child_process";
-import { Data } from "../core/base";
 import path from "path";
-import { getClassInfo, getPreText } from "../tsc/ast";
+import { getClassInfo, getPreText, transformImport } from "../tsc/ast";
 
 async function main() {
   // this assumes this is being run from root of directory
@@ -60,11 +59,10 @@ async function main() {
     for (const node of nodes) {
       if (updateImport && node.importNode) {
         const importNode = node.node as ts.ImportDeclaration;
-        const transformedImport = transformImport(
-          importNode,
-          sourceFile,
+        const transformedImport = transformImport(importNode, sourceFile, {
           removeImports,
-        );
+          transform: transformSchema,
+        });
         if (transformedImport) {
           newContents += transformedImport;
           continue;
@@ -457,53 +455,6 @@ function parseFieldElement(
     properties,
     nameComment: propertyComment,
   };
-}
-
-function transformImport(
-  importNode: ts.ImportDeclaration,
-  sourceFile: ts.SourceFile,
-  removeImports: string[],
-): string | undefined {
-  // remove quotes too
-  const text = importNode.moduleSpecifier.getText(sourceFile).slice(1, -1);
-  if (
-    text !== "@snowtop/ent" &&
-    text !== "@snowtop/ent/schema" &&
-    text !== "@snowtop/ent/schema/"
-  ) {
-    return;
-  }
-  const importText = importNode.importClause?.getText(sourceFile) || "";
-  const start = importText.indexOf("{");
-  const end = importText.lastIndexOf("}");
-  if (start === -1 || end === -1) {
-    return;
-  }
-  const imports = importText
-    .substring(start + 1, end)
-    //    .trim()
-    .split(",");
-
-  let removeImportsMap: Data = {};
-  removeImports.forEach((imp) => (removeImportsMap[imp] = true));
-  let newImports: string[] = [];
-  for (let i = 0; i < imports.length; i++) {
-    let imp = transformSchema(imports[i].trim());
-    if (removeImportsMap[imp]) {
-      continue;
-    }
-    newImports.push(imp);
-  }
-
-  return (
-    "import " +
-    importText.substring(0, start + 1) +
-    newImports.join(", ") +
-    importText.substring(end) +
-    ' from "' +
-    text +
-    '";'
-  );
 }
 
 Promise.resolve(main());
