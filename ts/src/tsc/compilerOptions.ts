@@ -38,7 +38,7 @@ export function readCompilerOptions(filePath: string) {
   return options;
 }
 
-export function getTarget(target?: string) {
+export function getTarget(target?: string): ts.ScriptTarget {
   switch (target?.toLowerCase()) {
     case "es2015":
       return ts.ScriptTarget.ES2015;
@@ -63,6 +63,11 @@ export function getTarget(target?: string) {
     default:
       return ts.ScriptTarget.ESNext;
   }
+}
+
+export function getTargetFromCurrentDir(): ts.ScriptTarget {
+  const options = readCompilerOptions(".");
+  return getTarget(options.target?.toString());
 }
 
 export function createSourceFile(target: ts.ScriptTarget, file: string) {

@@ -8,10 +8,10 @@ import { Changeset } from "@snowtop/ent/action";
 import { EntCreationObserver } from "@snowtop/ent/testutils/fake_log";
 import { FakeComms, Mode } from "@snowtop/ent/testutils/fake_comms";
 import {
-  CreateUserActionBase,
-  UserCreateInput,
-} from "./generated/create_user_action_base";
-import { UserBuilder } from "./generated/user_builder";
+  CreateUserActionBase, 
+  UserCreateInput, 
+} from "../../generated/user/actions/create_user_action_base";
+import { UserBuilder } from "../../generated/user/actions/user_builder";
 import CreateContactAction from "../../contact/actions/create_contact_action";
 import { Contact, User } from "../../";
 

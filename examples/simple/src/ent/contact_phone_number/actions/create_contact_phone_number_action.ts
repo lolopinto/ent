@@ -12,9 +12,9 @@ import {
 import { AllowIfBuilder } from "@snowtop/ent/action";
 import { Contact } from "../..";
 import {
-  ContactPhoneNumberCreateInput,
-  CreateContactPhoneNumberActionBase,
-} from "./generated/create_contact_phone_number_action_base";
+  ContactPhoneNumberCreateInput, 
+  CreateContactPhoneNumberActionBase, 
+} from "../../generated/contact_phone_number/actions/create_contact_phone_number_action_base";
 
 export { ContactPhoneNumberCreateInput };
 

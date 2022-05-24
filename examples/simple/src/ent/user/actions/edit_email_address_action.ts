@@ -1,8 +1,8 @@
 import {
-  EditEmailAddressActionBase,
-  EditEmailAddressInput,
-} from "./generated/edit_email_address_action_base";
-import { UserBuilder } from "./generated/user_builder";
+  EditEmailAddressActionBase, 
+  EditEmailAddressInput, 
+} from "../../generated/user/actions/edit_email_address_action_base";
+import { UserBuilder } from "../../generated/user/actions/user_builder";
 import CreateAuthCodeAction from "../../auth_code/actions/create_auth_code_action";
 import { FakeComms, Mode } from "@snowtop/ent/testutils/fake_comms";
 import { User } from "../..";

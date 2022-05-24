@@ -441,32 +441,29 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 
 var _ codegen.Step = &TSStep{}
 
+// TODO
 func getFilePathForNode(cfg *codegen.Config, nodeData *schema.NodeData) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", nodeData.PackageName))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_type.ts", nodeData.PackageName))
 }
 
 func getFilePathForCustomInterfaceFile(cfg *codegen.Config, gqlType string) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", strcase.ToSnake(gqlType)))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_type.ts", strcase.ToSnake(gqlType)))
 }
 
 func getFilePathForCustomInterfaceInputFile(cfg *codegen.Config, gqlType string) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/mutations/generated/input/%s_type.ts", strcase.ToSnake(gqlType)))
-}
-
-func getImportPathForCustomInterfaceInputFile(gqlType string) string {
-	return fmt.Sprintf("src/graphql/mutations/generated/input/%s_type", strcase.ToSnake(gqlType))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/mutations/input/%s_type.ts", strcase.ToSnake(gqlType)))
 }
 
 func getFilePathForEnum(cfg *codegen.Config, name string) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", base.GetSnakeCaseName(name)))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_type.ts", base.GetSnakeCaseName(name)))
 }
 
 func getFilePathForConnection(cfg *codegen.Config, packageName string, connectionName string) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/resolvers/generated/%s/%s_type.ts", packageName, base.GetSnakeCaseName(connectionName)))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s/%s_type.ts", packageName, base.GetSnakeCaseName(connectionName)))
 }
 
 func getQueryFilePath(cfg *codegen.Config) string {
-	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/resolvers/generated/query_type.ts")
+	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/generated/resolvers/query_type.ts")
 }
 
 func getNodeQueryTypeFilePath(cfg *codegen.Config) string {
@@ -474,19 +471,19 @@ func getNodeQueryTypeFilePath(cfg *codegen.Config) string {
 }
 
 func getRootQueryFilePath(cfg *codegen.Config, nodeData *schema.NodeData) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/resolvers/generated/%s_query_type.ts", nodeData.PackageName))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_query_type.ts", nodeData.PackageName))
 }
 
 func getMutationFilePath(cfg *codegen.Config) string {
-	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/mutations/generated/mutation_type.ts")
+	return path.Join(cfg.GetAbsPathToRoot(), "src/graphql/generated/mutations/mutation_type.ts")
 }
 
 func getQueryImportPath() string {
-	return "src/graphql/resolvers/generated/query_type"
+	return "src/graphql/generated/resolvers/query_type"
 }
 
 func getMutationImportPath() string {
-	return "src/graphql/mutations/generated/mutation_type"
+	return "src/graphql/generated/mutations/mutation_type"
 }
 
 func getTSSchemaFilePath(cfg *codegen.Config) string {
@@ -506,27 +503,27 @@ func getSchemaFilePath(cfg *codegen.Config) string {
 }
 
 func getFilePathForAction(cfg *codegen.Config, nodeData *schema.NodeData, actionName string) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type.ts", nodeData.PackageName, strcase.ToSnake(actionName)))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/mutations/%s/%s_type.ts", nodeData.PackageName, strcase.ToSnake(actionName)))
 }
 
 func getImportPathForAction(nodeData *schema.NodeData, action action.Action) string {
-	return fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type", nodeData.PackageName, strcase.ToSnake(action.GetGraphQLName()))
+	return fmt.Sprintf("src/graphql/generated/mutations/%s/%s_type", nodeData.PackageName, strcase.ToSnake(action.GetGraphQLName()))
 }
 
 func getImportPathForActionFromPackage(packageName string, action action.Action) string {
-	return fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type", packageName, strcase.ToSnake(action.GetGraphQLName()))
+	return fmt.Sprintf("src/graphql/generated/mutations/%s/%s_type", packageName, strcase.ToSnake(action.GetGraphQLName()))
 }
 
 func getFilePathForCustomMutation(cfg *codegen.Config, name string) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/mutations/generated/%s_type.ts", strcase.ToSnake(name)))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/mutations/%s_type.ts", strcase.ToSnake(name)))
 }
 
 func getImportPathForCustomMutation(name string) string {
-	return fmt.Sprintf("src/graphql/mutations/generated/%s_type", strcase.ToSnake(name))
+	return fmt.Sprintf("src/graphql/generated/mutations/%s_type", strcase.ToSnake(name))
 }
 
 func getFilePathForCustomQuery(cfg *codegen.Config, name string) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/resolvers/generated/%s_query_type.ts", strcase.ToSnake(name)))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/resolvers/%s_query_type.ts", strcase.ToSnake(name)))
 }
 
 var searchFor = []string{

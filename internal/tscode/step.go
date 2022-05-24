@@ -623,22 +623,23 @@ func getFilePathForLoadAnyFile(cfg *codegen.Config) string {
 	return path.Join(cfg.GetAbsPathToRoot(), "src/ent/generated/loadAny.ts")
 }
 
+// TODO
 func getFilePathForBuilderFile(cfg *codegen.Config, nodeData *schema.NodeData) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/%s/actions/generated/%s_builder.ts", nodeData.PackageName, nodeData.PackageName))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/%s/actions/%s_builder.ts", nodeData.PackageName, nodeData.PackageName))
 }
 
 func getImportPathForBuilderFile(nodeData *schema.NodeData) string {
-	return fmt.Sprintf("src/ent/%s/actions/generated/%s_builder", nodeData.PackageName, nodeData.PackageName)
+	return fmt.Sprintf("src/ent/generated/%s/actions/%s_builder", nodeData.PackageName, nodeData.PackageName)
 }
 
 func getFilePathForActionBaseFile(cfg *codegen.Config, nodeData *schema.NodeData, actionName string) string {
 	fileName := strcase.ToSnake(actionName)
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/%s/actions/generated/%s_base.ts", nodeData.PackageName, fileName))
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/%s/actions/%s_base.ts", nodeData.PackageName, fileName))
 }
 
 func getImportPathForActionBaseFile(nodeData *schema.NodeData, a action.Action) string {
 	fileName := strcase.ToSnake(a.GetActionName())
-	return fmt.Sprintf("src/ent/%s/actions/generated/%s_base", nodeData.PackageName, fileName)
+	return fmt.Sprintf("src/ent/generated/%s/actions/%s_base", nodeData.PackageName, fileName)
 }
 
 func getFilePathForActionFile(cfg *codegen.Config, nodeData *schema.NodeData, actionName string) string {

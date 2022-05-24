@@ -2,8 +2,7 @@ import { glob } from "glob";
 import ts from "typescript";
 import * as fs from "fs";
 import {
-  readCompilerOptions,
-  getTarget,
+  getTargetFromCurrentDir,
   createSourceFile,
 } from "../tsc/compilerOptions";
 import { execSync } from "child_process";
@@ -11,11 +10,9 @@ import path from "path";
 import { getClassInfo, getPreText, transformImport } from "../tsc/ast";
 
 async function main() {
-  // this assumes this is being run from root of directory
-  const options = readCompilerOptions(".");
   let files = glob.sync("src/schema/*.ts");
 
-  const target = getTarget(options.target?.toString());
+  const target = getTargetFromCurrentDir();
 
   // filter to only event.ts e.g. for comments and whitespace...
   //  files = files.filter((f) => f.endsWith("event.ts"));
