@@ -129,7 +129,7 @@ func getFiles(nodeData *schema.NodeData) []string {
 		fmt.Sprintf("src/ent/generated/%s_base.ts", packageName),
 		fmt.Sprintf("src/ent/generated/%s_query_base.ts", packageName),
 		fmt.Sprintf("src/ent/%s.ts", packageName),
-		fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", packageName),
+		fmt.Sprintf("src/graphql/generated/resolvers/%s_type.ts", packageName),
 	}
 
 	return ret
@@ -139,8 +139,8 @@ func getFolders(nodeData *schema.NodeData) []string {
 	packageName := nodeData.PackageName
 	ret := []string{
 		fmt.Sprintf("src/ent/%s", packageName),
-		fmt.Sprintf("src/graphql/resolvers/generated/%s", packageName),
-		fmt.Sprintf("src/graphql/mutations/generated/%s", packageName),
+		fmt.Sprintf("src/graphql/generated/resolvers/%s", packageName),
+		fmt.Sprintf("src/graphql/generated/mutations/%s", packageName),
 	}
 
 	return ret
