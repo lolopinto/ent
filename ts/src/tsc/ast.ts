@@ -110,6 +110,7 @@ interface transformOpts {
 }
 
 export function transformImport(
+  fileContents: string,
   importNode: ts.ImportDeclaration,
   sourceFile: ts.SourceFile,
   opts?: transformOpts,
@@ -142,9 +143,6 @@ export function transformImport(
   }
   let finalImports = new Set<string>();
 
-  if (opts?.newImports) {
-    opts.newImports.forEach((imp) => finalImports.add(imp));
-  }
   for (let i = 0; i < imports.length; i++) {
     let imp = imports[i].trim();
     if (opts?.transform) {
@@ -155,8 +153,14 @@ export function transformImport(
     }
     finalImports.add(imp);
   }
+  if (opts?.newImports) {
+    opts.newImports.forEach((imp) => finalImports.add(imp));
+  }
+
+  const comment = getPreText(fileContents, importNode, sourceFile);
 
   return (
+    comment +
     "import " +
     importText.substring(0, start + 1) +
     Array.from(finalImports).join(", ") +

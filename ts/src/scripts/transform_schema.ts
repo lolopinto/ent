@@ -59,10 +59,15 @@ async function main() {
     for (const node of nodes) {
       if (updateImport && node.importNode) {
         const importNode = node.node as ts.ImportDeclaration;
-        const transformedImport = transformImport(importNode, sourceFile, {
-          removeImports,
-          transform: transformSchema,
-        });
+        const transformedImport = transformImport(
+          contents,
+          importNode,
+          sourceFile,
+          {
+            removeImports,
+            transform: transformSchema,
+          },
+        );
         if (transformedImport) {
           newContents += transformedImport;
           continue;

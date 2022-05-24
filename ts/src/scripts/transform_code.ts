@@ -5,7 +5,7 @@ import {
   getTarget,
   createSourceFile,
 } from "../tsc/compilerOptions";
-import { getClassInfo, transformImport } from "../tsc/ast";
+import { getClassInfo, getPreText, transformImport } from "../tsc/ast";
 import { execSync } from "child_process";
 import * as fs from "fs";
 
@@ -35,6 +35,9 @@ async function main() {
       let classInfo = getClassInfo(contents, sourceFile, node);
       // only do classes which extend a base class e.g. User extends UserBase
       if (!classInfo || classInfo.extends !== classInfo.name + "Base") {
+        return;
+      }
+      if (classInfo.name !== "ContactEmail") {
         return;
       }
 
@@ -75,7 +78,7 @@ async function main() {
     for (const node of nodes) {
       if (node.node) {
         if (ts.isImportDeclaration(node.node)) {
-          let transformed = transformImport(node.node, sourceFile, {
+          let transformed = transformImport(contents, node.node, sourceFile, {
             newImports: ["PrivacyPolicy"],
           });
           if (transformed) {
