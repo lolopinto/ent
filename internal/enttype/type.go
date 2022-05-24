@@ -1909,7 +1909,7 @@ func (t *CommonJSONType) getTsTypeImports(impType *tsimport.ImportPath) []*tsimp
 }
 
 func getImportPathForCustomInterfaceInputFile(gqlType string) string {
-	return fmt.Sprintf("src/graphql/mutations/generated/input/%s_type", strcase.ToSnake(gqlType))
+	return fmt.Sprintf("src/graphql/generated/mutations/input/%s_type", strcase.ToSnake(gqlType))
 }
 
 func (t *CommonJSONType) getJSONGraphQLType(gqlType string, input bool) *tsimport.ImportPath {

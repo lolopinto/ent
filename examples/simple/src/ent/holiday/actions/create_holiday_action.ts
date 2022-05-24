@@ -1,8 +1,8 @@
 import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
 import {
-  CreateHolidayActionBase,
-  HolidayCreateInput,
-} from "./generated/create_holiday_action_base";
+  CreateHolidayActionBase, 
+  HolidayCreateInput, 
+} from "../../generated/holiday/actions/create_holiday_action_base";
 
 export { HolidayCreateInput };
 

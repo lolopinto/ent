@@ -1,10 +1,10 @@
 import { Trigger, Validator } from "@snowtop/ent/action";
 import {
-  ConfirmEditPhoneNumberActionBase,
-  ConfirmEditPhoneNumberInput,
-} from "./generated/confirm_edit_phone_number_action_base";
+  ConfirmEditPhoneNumberActionBase, 
+  ConfirmEditPhoneNumberInput, 
+} from "../../generated/user/actions/confirm_edit_phone_number_action_base";
 import { User } from "../..";
-import { UserBuilder } from "./generated/user_builder";
+import { UserBuilder } from "../../generated/user/actions/user_builder";
 import DeleteAuthCodeAction from "../../auth_code/actions/delete_auth_code_action";
 
 export { ConfirmEditPhoneNumberInput };

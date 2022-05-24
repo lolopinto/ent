@@ -5,11 +5,11 @@
 import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
 import { Trigger } from "@snowtop/ent/action";
 import { NodeType } from "../../generated/const";
-import { CommentBuilder } from "./generated/comment_builder";
+import { CommentBuilder } from "../../generated/comment/actions/comment_builder";
 import {
-  CommentCreateInput,
-  CreateCommentActionBase,
-} from "./generated/create_comment_action_base";
+  CommentCreateInput, 
+  CreateCommentActionBase, 
+} from "../../generated/comment/actions/create_comment_action_base";
 
 export { CommentCreateInput };
 

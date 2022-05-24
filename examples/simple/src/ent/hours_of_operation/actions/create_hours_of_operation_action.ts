@@ -1,8 +1,8 @@
 import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
 import {
-  CreateHoursOfOperationActionBase,
-  HoursOfOperationCreateInput,
-} from "./generated/create_hours_of_operation_action_base";
+  CreateHoursOfOperationActionBase, 
+  HoursOfOperationCreateInput, 
+} from "../../generated/hours_of_operation/actions/create_hours_of_operation_action_base";
 
 export { HoursOfOperationCreateInput };
 
