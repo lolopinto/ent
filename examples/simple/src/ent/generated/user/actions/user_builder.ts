@@ -21,12 +21,12 @@ import {
   PreferredShift,
   User,
 } from "../../..";
-import { EdgeType, NodeType } from "../../../generated/const";
-import { UserNestedObjectList } from "../../../generated/user_nested_object_list";
-import { UserPrefsDiff } from "../../../generated/user_prefs_diff";
-import { UserPrefsStruct } from "../../../generated/user_prefs_struct";
-import { UserPrefsStruct2 } from "../../../generated/user_prefs_struct_2";
-import { UserSuperNestedObject } from "../../../generated/user_super_nested_object";
+import { EdgeType, NodeType } from "../../const";
+import { UserNestedObjectList } from "../../user_nested_object_list";
+import { UserPrefsDiff } from "../../user_prefs_diff";
+import { UserPrefsStruct } from "../../user_prefs_struct";
+import { UserPrefsStruct2 } from "../../user_prefs_struct_2";
+import { UserSuperNestedObject } from "../../user_super_nested_object";
 import schema from "../../../../schema/user_schema";
 
 export interface UserInput {

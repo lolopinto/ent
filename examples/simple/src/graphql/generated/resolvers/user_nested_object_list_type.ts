@@ -13,7 +13,7 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { UserNestedNestedObjectList, UserNestedObjectList } from "../../../ent";
-import { EnumUsedInListType } from "../internal";
+import { EnumUsedInListType } from "../../resolvers/internal";
 
 const UserNestedNestedObjectListType = new GraphQLObjectType({
   name: "UserNestedNestedObjectList",

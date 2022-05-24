@@ -15,7 +15,11 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { AuthResolver, UserAuthInput, UserAuthPayload } from "../auth";
+import {
+  AuthResolver,
+  UserAuthInput,
+  UserAuthPayload,
+} from "../../mutations/auth";
 
 export const UserAuthInputType = new GraphQLInputObjectType({
   name: "UserAuthInput",

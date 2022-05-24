@@ -13,7 +13,7 @@ import {
 import { RequestContext } from "@snowtop/ent";
 import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
 import { ContactEmail } from "../../../ent";
-import { ContactType } from "../internal";
+import { ContactType } from "../../resolvers/internal";
 
 export const ContactEmailType = new GraphQLObjectType({
   name: "ContactEmail",

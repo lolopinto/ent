@@ -11,12 +11,12 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { DaysOff, PreferredShift, User } from "../../..";
-import { UserNestedObjectList } from "../../../generated/user_nested_object_list";
-import { UserPrefsDiff } from "../../../generated/user_prefs_diff";
-import { UserPrefsStruct } from "../../../generated/user_prefs_struct";
-import { UserPrefsStruct2 } from "../../../generated/user_prefs_struct_2";
-import { UserSuperNestedObject } from "../../../generated/user_super_nested_object";
 import { UserBuilder } from "./user_builder";
+import { UserNestedObjectList } from "../../user_nested_object_list";
+import { UserPrefsDiff } from "../../user_prefs_diff";
+import { UserPrefsStruct } from "../../user_prefs_struct";
+import { UserPrefsStruct2 } from "../../user_prefs_struct_2";
+import { UserSuperNestedObject } from "../../user_super_nested_object";
 
 export interface UserCreateInput {
   firstName: string;

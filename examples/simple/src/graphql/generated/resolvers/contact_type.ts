@@ -29,7 +29,7 @@ import {
   ContactToCommentsConnectionType,
   ContactToLikersConnectionType,
   UserType,
-} from "../internal";
+} from "../../resolvers/internal";
 
 export const ContactType = new GraphQLObjectType({
   name: "Contact",

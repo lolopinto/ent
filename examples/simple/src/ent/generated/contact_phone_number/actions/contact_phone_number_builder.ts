@@ -14,7 +14,7 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Contact, ContactPhoneNumber } from "../../..";
-import { NodeType } from "../../../generated/const";
+import { NodeType } from "../../const";
 import schema from "../../../../schema/contact_phone_number_schema";
 
 export interface ContactPhoneNumberInput {

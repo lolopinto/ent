@@ -18,7 +18,7 @@ import {
   nodeIDEncoder,
 } from "@snowtop/ent/graphql";
 import { Address, AddressToHostedEventsQuery } from "../../../ent";
-import { AddressToHostedEventsConnectionType } from "../internal";
+import { AddressToHostedEventsConnectionType } from "../../resolvers/internal";
 
 export const AddressType = new GraphQLObjectType({
   name: "Address",

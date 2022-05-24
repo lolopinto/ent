@@ -13,7 +13,7 @@ import { GraphQLUpload } from "graphql-upload";
 import { RequestContext } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { UserType } from "../../resolvers";
-import { ImportContactResolver } from "../import_contact";
+import { ImportContactResolver } from "../../mutations/import_contact";
 
 interface bulkUploadContactArgs {
   userID: any;

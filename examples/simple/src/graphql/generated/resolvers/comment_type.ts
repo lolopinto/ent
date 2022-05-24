@@ -18,7 +18,10 @@ import {
   nodeIDEncoder,
 } from "@snowtop/ent/graphql";
 import { Comment, CommentToPostQuery } from "../../../ent";
-import { CommentToPostConnectionType, UserType } from "../internal";
+import {
+  CommentToPostConnectionType,
+  UserType,
+} from "../../resolvers/internal";
 
 export const CommentType = new GraphQLObjectType({
   name: "Comment",

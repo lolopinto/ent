@@ -15,7 +15,7 @@ import {
   GraphQLString,
 } from "graphql";
 import { ID, RequestContext } from "@snowtop/ent";
-import { AuthResolver } from "../auth";
+import { AuthResolver } from "../../mutations/auth";
 
 interface UserAuthJWTInput {
   emailAddress: string;

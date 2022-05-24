@@ -14,7 +14,7 @@ import {
   saveBuilderX,
 } from "@snowtop/ent/action";
 import { Address, Event } from "../../..";
-import { EdgeType, NodeType } from "../../../generated/const";
+import { EdgeType, NodeType } from "../../const";
 import schema from "../../../../schema/address";
 
 export interface AddressInput {

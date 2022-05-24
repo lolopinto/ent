@@ -13,7 +13,7 @@ import {
 import { RequestContext } from "@snowtop/ent";
 import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
 import { HoursOfOperation } from "../../../ent";
-import { DayOfWeekAltType, DayOfWeekType } from "../internal";
+import { DayOfWeekAltType, DayOfWeekType } from "../../resolvers/internal";
 
 export const HoursOfOperationType = new GraphQLObjectType({
   name: "HoursOfOperation",

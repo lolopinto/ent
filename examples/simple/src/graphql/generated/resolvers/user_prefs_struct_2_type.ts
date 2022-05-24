@@ -12,7 +12,7 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { UserPrefsStruct2 } from "../../../ent";
-import { NotifType2Type } from "../internal";
+import { NotifType2Type } from "../../resolvers/internal";
 
 export const UserPrefsStruct2Type = new GraphQLObjectType({
   name: "UserPrefsStruct2",

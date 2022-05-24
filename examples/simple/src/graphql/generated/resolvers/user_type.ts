@@ -52,7 +52,7 @@ import {
   UserToLikersConnectionType,
   UserToLikesConnectionType,
   UserToMaybeEventsConnectionType,
-} from "../internal";
+} from "../../resolvers/internal";
 
 export const UserType = new GraphQLObjectType({
   name: "User",

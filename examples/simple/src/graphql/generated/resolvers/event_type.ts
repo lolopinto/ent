@@ -35,7 +35,7 @@ import {
   EventToInvitedConnectionType,
   EventToMaybeConnectionType,
   UserType,
-} from "../internal";
+} from "../../resolvers/internal";
 
 export const EventType = new GraphQLObjectType({
   name: "Event",

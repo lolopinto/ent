@@ -6,7 +6,7 @@
 import { GraphQLObjectType } from "graphql";
 import { GraphQLConnectionType } from "@snowtop/ent/graphql";
 import { UserToMaybeEventsEdge } from "../../../../ent";
-import { EventType } from "../../internal";
+import { EventType } from "../../../resolvers/internal";
 
 var connType: GraphQLConnectionType<GraphQLObjectType, UserToMaybeEventsEdge>;
 

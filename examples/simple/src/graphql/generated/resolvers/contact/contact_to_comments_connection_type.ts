@@ -6,7 +6,7 @@
 import { GraphQLObjectType } from "graphql";
 import { GraphQLConnectionType } from "@snowtop/ent/graphql";
 import { ContactToCommentsEdge } from "../../../../ent";
-import { CommentType } from "../../internal";
+import { CommentType } from "../../../resolvers/internal";
 
 var connType: GraphQLConnectionType<GraphQLObjectType, ContactToCommentsEdge>;
 

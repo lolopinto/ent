@@ -33,7 +33,7 @@ import {
   NestedEnumType,
   NestedNestedEnumType,
   RabbitBreedType,
-} from "../internal";
+} from "../../resolvers/internal";
 
 const UserNestedObjectType = new GraphQLObjectType({
   name: "UserNestedObject",
