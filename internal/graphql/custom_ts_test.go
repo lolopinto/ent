@@ -129,7 +129,7 @@ func TestCustomMutation(t *testing.T) {
 	assert.Len(t, gqlNode.connections, 0)
 	assert.Len(t, gqlNode.ActionDependents, 0)
 	assert.Equal(t, gqlNode.Field, &item)
-	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/mutations/generated/email_available_type.ts"))
+	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/generated/mutations/email_available_type.ts"))
 
 	objData := gqlNode.ObjData
 	require.NotNil(t, objData)
@@ -260,7 +260,7 @@ func TestCustomQuery(t *testing.T) {
 	assert.Len(t, gqlNode.connections, 0)
 	assert.Len(t, gqlNode.ActionDependents, 0)
 	assert.Equal(t, gqlNode.Field, &item)
-	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/resolvers/generated/email_available_query_type.ts"))
+	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/generated/generated/email_available_query_type.ts"))
 
 	objData := gqlNode.ObjData
 	require.NotNil(t, objData)
@@ -381,7 +381,7 @@ func TestCustomListQuery(t *testing.T) {
 	assert.Len(t, gqlNode.connections, 0)
 	assert.Len(t, gqlNode.ActionDependents, 0)
 	assert.Equal(t, gqlNode.Field, &item)
-	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/resolvers/generated/emails_available_query_type.ts"))
+	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/generated/resolvers/emails_available_query_type.ts"))
 
 	objData := gqlNode.ObjData
 	require.NotNil(t, objData)
@@ -531,7 +531,7 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	assert.Len(t, gqlNode.connections, 0)
 	assert.Len(t, gqlNode.ActionDependents, 0)
 	assert.Equal(t, gqlNode.Field, &item)
-	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/resolvers/generated/username_query_type.ts"))
+	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/generated/resolvers/username_query_type.ts"))
 
 	objData := gqlNode.ObjData
 	require.NotNil(t, objData)
@@ -653,7 +653,7 @@ func TestCustomUploadType(t *testing.T) {
 	assert.Len(t, gqlNode.connections, 0)
 	assert.Len(t, gqlNode.ActionDependents, 0)
 	assert.Equal(t, gqlNode.Field, &item)
-	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/mutations/generated/profile_pic_upload_type.ts"))
+	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/generated/mutations/profile_pic_upload_type.ts"))
 
 	objData := gqlNode.ObjData
 	require.NotNil(t, objData)
