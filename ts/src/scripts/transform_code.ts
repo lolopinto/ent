@@ -37,9 +37,6 @@ async function main() {
       if (!classInfo || classInfo.extends !== classInfo.name + "Base") {
         return;
       }
-      if (classInfo.name !== "ContactEmail") {
-        return;
-      }
 
       // need to check for PrivacyPolicy import...
       traversed = true;

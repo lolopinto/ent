@@ -145,6 +145,9 @@ export function transformImport(
 
   for (let i = 0; i < imports.length; i++) {
     let imp = imports[i].trim();
+    if (imp === "") {
+      continue;
+    }
     if (opts?.transform) {
       imp = opts.transform(imp);
     }
