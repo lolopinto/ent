@@ -15,7 +15,6 @@ async function main() {
   const target = getTarget(options.target?.toString());
 
   files.forEach((file) => {
-    // go through the file and print everything back if not starting immediately after other position
     let { contents, sourceFile } = createSourceFile(target, file);
 
     let newContents = "";
@@ -26,81 +25,40 @@ async function main() {
         return;
       }
 
-      // TODO need to move all of this into a function so it's clear where we start doing things
-      if (!node.heritageClauses) {
-        return;
-      }
-      const klass = node.name?.getFullText(sourceFile).trim();
-      if (!klass) {
-        return;
-      }
-
-      const bases = node.heritageClauses
-        .filter((hc) => hc.token === ts.SyntaxKind.ExtendsKeyword)
-        .map((hc) =>
-          hc.types.map((type) => type.expression.getText(sourceFile)),
-        )
-        // @ts-ignore why is this missing?
-        .flat(1);
-      if (bases.length !== 1) {
-        return;
-      }
-
-      if (bases[0] !== klass + "Base") {
-        return;
-      }
-
       let classInfo = getClassInfo(contents, sourceFile, node);
-      if (!classInfo) {
+      // only do classes which extend a base class e.g. User extends UserBase
+      if (!classInfo || classInfo.extends !== classInfo.name + "Base") {
         return;
       }
 
+      // need to check for PrivacyPolicy import...
       traversed = true;
 
-      // TODO add comments
-      // add class export class User etc...
       let klassContents = "";
       for (const mm of node.members) {
         if (isPrivacyPolicy(mm)) {
           const property = mm as ts.PropertyDeclaration;
-          const initializer =
-            property.initializer as ts.ObjectLiteralExpression;
-          const pp = initializer.getFullText(sourceFile);
+          // if invalid privacy policy, bounce
+          if (!property.initializer) {
+            traversed = false;
+            return;
+          }
+          const pp = property.initializer.getFullText(sourceFile);
           const code = `getPrivacyPolicy(): PrivacyPolicy<this> {
             return ${pp}
           }`;
-          //          console.debug(klass, code);
           klassContents += code;
         } else {
           klassContents += mm.getFullText(sourceFile);
-          //          console.debug(mm.getFullText(sourceFile));
-          // TODO...
         }
       }
+      // wrap comments and transform to export class Foo extends Bar { ${inner} }
       newContents += classInfo.wrapClassContents(klassContents);
-      //      console.debug(klass, node.members.length);
-
-      // const pp = node.members.filter((mm) => {
-      //   const v =
-      //     mm.kind === ts.SyntaxKind.PropertyDeclaration &&
-      //     (mm.name as ts.Identifier).escapedText === "privacyPolicy";
-      //   if (!v) {
-      //     return false;
-      //   }
-      //   const property = mm as ts.PropertyDeclaration;
-      //   return (
-      //     property.initializer?.kind === ts.SyntaxKind.ObjectLiteralExpression
-      //   );
-      // });
-      // if (pp.length !== 1) {
-      //   return;
-      // }
-      //      console.debug(pp);
     });
 
+    // if traversed, overwrite.
     if (traversed) {
       fs.writeFileSync(file, newContents);
-      //      console.debug(newContents);
     }
   });
 
@@ -108,15 +66,10 @@ async function main() {
 }
 
 function isPrivacyPolicy(mm: ts.ClassElement) {
-  const v =
+  return (
     mm.kind === ts.SyntaxKind.PropertyDeclaration &&
-    (mm.name as ts.Identifier).escapedText === "privacyPolicy";
-  if (!v) {
-    return false;
-  }
-  // doesn't have to eb objectliteral
-  const property = mm as ts.PropertyDeclaration;
-  return property.initializer?.kind === ts.SyntaxKind.ObjectLiteralExpression;
+    (mm.name as ts.Identifier).escapedText === "privacyPolicy"
+  );
 }
 
 main()
