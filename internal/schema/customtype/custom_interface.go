@@ -33,9 +33,6 @@ type CustomInterface struct {
 
 	enumImports []string
 
-	SourceNodeName string
-	// should be parent...
-
 	// children of this interface. could be other interfaces or unions
 	Children []CustomType
 
