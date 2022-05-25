@@ -17,7 +17,6 @@ const EventSchema = new EntSchema({
   // pre-fields comment. intentionally doesn't parse decorators since we don't need it
   fields: {
     name: StringType(),
-    // TODO this should be an id type...
     // we should warn when we see an "ID/id/Id" field as non-id type and ask if they wanna change it
     // name comment
     creatorID: UUIDType({
@@ -28,7 +27,6 @@ const EventSchema = new EntSchema({
         disableBuilderType: true,
       },
       // storage_key chosen blah blah blah
-      // TODO grab this
       storageKey: "user_id",
     }),
     start_time: TimestampType(),

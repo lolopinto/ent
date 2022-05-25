@@ -409,7 +409,7 @@ func ParseFromInput(cfg codegenapi.Config, nodeName string, actions []*input.Act
 }
 
 func ParseFromInputNode(cfg codegenapi.Config, nodeName string, node *input.Node, lang base.Language) (*ActionInfo, error) {
-	fi, err := field.NewFieldInfoFromInputs(cfg, node.Fields, &field.Options{})
+	fi, err := field.NewFieldInfoFromInputs(cfg, nodeName, node.Fields, &field.Options{})
 	if err != nil {
 		return nil, err
 	}

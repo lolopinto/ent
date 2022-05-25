@@ -25,7 +25,7 @@ type Options struct {
 // Means this can be called by multiple languages using this or different formats/sources
 // in each language e.g. golang supporting fields in a struct or the stronger API (ent.FieldMap)
 
-func NewFieldInfoFromInputs(cfg codegenapi.Config, fields []*input.Field, options *Options) (*FieldInfo, error) {
+func NewFieldInfoFromInputs(cfg codegenapi.Config, nodeName string, fields []*input.Field, options *Options) (*FieldInfo, error) {
 	fieldInfo := &FieldInfo{
 		fieldMap:       make(map[string]*Field),
 		emailFields:    make(map[string]bool),
@@ -46,7 +46,7 @@ func NewFieldInfoFromInputs(cfg codegenapi.Config, fields []*input.Field, option
 	}
 
 	for _, field := range fields {
-		f, err := newFieldFromInput(cfg, field)
+		f, err := newFieldFromInput(cfg, nodeName, field)
 		if err != nil {
 			return nil, err
 		}
@@ -54,7 +54,7 @@ func NewFieldInfoFromInputs(cfg codegenapi.Config, fields []*input.Field, option
 			errs = append(errs, err)
 		}
 		for _, derivedField := range field.DerivedFields {
-			f2, err := newFieldFromInput(cfg, derivedField)
+			f2, err := newFieldFromInput(cfg, nodeName, derivedField)
 			if err != nil {
 				errs = append(errs, err)
 			}
@@ -381,6 +381,7 @@ func GetFieldInfoForStruct(s *ast.StructType, info *types.Info) (*FieldInfo, err
 
 	return NewFieldInfoFromInputs(
 		&codegenapi.DummyConfig{},
+		"",
 		fields,
 		&Options{
 			AddBaseFields: true,

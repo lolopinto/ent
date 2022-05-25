@@ -3,7 +3,10 @@ package input_test
 import (
 	"testing"
 
+	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/input"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEnumTable(t *testing.T) {
@@ -152,4 +155,57 @@ func TestEnumTable(t *testing.T) {
 	}
 
 	runTestCases(t, testCases)
+}
+
+func TestEnumTypes(t *testing.T) {
+	f := &input.Field{
+		Name: "role",
+		Type: &input.FieldType{
+			DBType: input.StringEnum,
+		},
+	}
+	validateEnumNames(t, f, "ItemRole", "ItemRole")
+}
+
+func TestEnumTypesTSTypeGiven(t *testing.T) {
+	f := &input.Field{
+		Name: "role",
+		Type: &input.FieldType{
+			DBType: input.StringEnum,
+			Type:   "ItemCustomRole",
+		},
+	}
+	validateEnumNames(t, f, "ItemCustomRole", "ItemRole")
+}
+
+func TestEnumTypesGraphQLTypeGiven(t *testing.T) {
+	f := &input.Field{
+		Name: "role",
+		Type: &input.FieldType{
+			DBType:      input.StringEnum,
+			GraphQLType: "ItemCustomRole",
+		},
+	}
+	validateEnumNames(t, f, "ItemRole", "ItemCustomRole")
+}
+
+func TestEnumTypesCustomTypesGiven(t *testing.T) {
+	f := &input.Field{
+		Name: "role",
+		Type: &input.FieldType{
+			DBType:      input.StringEnum,
+			Type:        "ItemCustomRole",
+			GraphQLType: "ItemCustomRole",
+		},
+	}
+	validateEnumNames(t, f, "ItemCustomRole", "ItemCustomRole")
+}
+
+func validateEnumNames(t *testing.T, f *input.Field, tsName, graphqlName string) {
+	entType, err := f.GetEntType("Item")
+	require.Nil(t, err)
+	enumType, ok := enttype.GetEnumType(entType)
+	require.True(t, ok)
+	assert.Equal(t, enumType.GetTSName(), tsName)
+	assert.Equal(t, enumType.GetGraphQLName(), graphqlName)
 }

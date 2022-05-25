@@ -103,8 +103,8 @@ type FieldType struct {
 	ImportType *tsimport.ImportPath `json:"importType,omitempty"`
 
 	// list because go-lang map not stable and don't want generated fields to change ofte
-	SubFields   []*Field `json:"subFields"`
-	UnionFields []*Field `json:"unionFields"`
+	SubFields   []*Field `json:"subFields,omitempty"`
+	UnionFields []*Field `json:"unionFields,omitempty"`
 }
 
 type Field struct {
@@ -130,7 +130,7 @@ type Field struct {
 	DisableUserGraphQLEditable bool `json:"disableUserGraphQLEditable,omitempty"`
 	HasDefaultValueOnCreate    bool `json:"hasDefaultValueOnCreate,omitempty"`
 	HasDefaultValueOnEdit      bool `json:"hasDefaultValueOnEdit,omitempty"`
-	HasFieldPrivacy            bool `json:"hasFieldPrivacy"`
+	HasFieldPrivacy            bool `json:"hasFieldPrivacy,omitempty"`
 
 	Polymorphic         *PolymorphicOptions `json:"polymorphic,omitempty"`
 	DerivedWhenEmbedded bool                `json:"derivedWhenEmbedded,omitempty"`
@@ -186,7 +186,7 @@ type PolymorphicOptions struct {
 	DisableBuilderType     bool     `json:"disableBuilderType,omitempty"`
 }
 
-func getTypeFor(fieldName string, typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.TSGraphQLType, error) {
+func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.TSGraphQLType, error) {
 	switch typ.DBType {
 	case UUID:
 		if nullable {
@@ -329,11 +329,12 @@ func getTypeFor(fieldName string, typ *FieldType, nullable bool, foreignKey *For
 	case StringEnum, Enum:
 		tsType := strcase.ToCamel(typ.Type)
 		graphqlType := strcase.ToCamel(typ.GraphQLType)
+		// if tsType and graphqlType not explicitly specified,add schema prefix to generated enums
 		if tsType == "" {
-			tsType = strcase.ToCamel(fieldName)
+			tsType = strcase.ToCamel(nodeName) + strcase.ToCamel(fieldName)
 		}
 		if graphqlType == "" {
-			graphqlType = strcase.ToCamel(fieldName)
+			graphqlType = strcase.ToCamel(nodeName) + strcase.ToCamel(fieldName)
 		}
 		if foreignKey != nil {
 			tsType = foreignKey.Schema
@@ -359,11 +360,11 @@ func getTypeFor(fieldName string, typ *FieldType, nullable bool, foreignKey *For
 	return nil, fmt.Errorf("unsupported type %s", typ.DBType)
 }
 
-func (f *Field) GetImport() (enttype.Import, error) {
+func (f *Field) GetImport(nodeName string) (enttype.Import, error) {
 	if f.Import != nil {
 		return f.Import, nil
 	}
-	typ, err := f.GetEntType()
+	typ, err := f.GetEntType(nodeName)
 	if err != nil {
 		return nil, err
 	}
@@ -374,12 +375,15 @@ func (f *Field) GetImport() (enttype.Import, error) {
 	return ctype.GetImportType(), nil
 }
 
-func (f *Field) GetEntType() (enttype.TSGraphQLType, error) {
+// need nodeName for enum
+// ideally, there's a more elegant way of doing this in the future
+// but we don't know the parent
+func (f *Field) GetEntType(nodeName string) (enttype.TSGraphQLType, error) {
 	if f.Type.DBType == List {
 		if f.Type.ListElemType == nil {
 			return nil, fmt.Errorf("list elem type for list is nil")
 		}
-		elemType, err := getTypeFor(f.Name, f.Type.ListElemType, false, nil)
+		elemType, err := getTypeFor(nodeName, f.Name, f.Type.ListElemType, false, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -392,7 +396,7 @@ func (f *Field) GetEntType() (enttype.TSGraphQLType, error) {
 			ElemType: elemType,
 		}, nil
 	} else {
-		return getTypeFor(f.Name, f.Type, f.Nullable, f.ForeignKey)
+		return getTypeFor(nodeName, f.Name, f.Type, f.Nullable, f.ForeignKey)
 	}
 }
 

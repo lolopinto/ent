@@ -90,7 +90,11 @@ func NewFieldFromNameAndType(name string, typ enttype.TSGraphQLType) *Field {
 	}
 }
 
-func newFieldFromInput(cfg codegenapi.Config, f *input.Field) (*Field, error) {
+func newFieldFromInputTest(cfg codegenapi.Config, f *input.Field) (*Field, error) {
+	return newFieldFromInput(cfg, "User", f)
+}
+
+func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (*Field, error) {
 	ret := &Field{
 		FieldName:                  f.Name,
 		nullable:                   f.Nullable,
@@ -156,7 +160,7 @@ func newFieldFromInput(cfg codegenapi.Config, f *input.Field) (*Field, error) {
 			}
 		}
 	} else if f.Type != nil {
-		typ, err := f.GetEntType()
+		typ, err := f.GetEntType(nodeName)
 		if err != nil {
 			return nil, err
 		}
