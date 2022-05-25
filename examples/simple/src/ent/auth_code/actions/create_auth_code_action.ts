@@ -1,6 +1,6 @@
 import {
-  CreateAuthCodeActionBase, 
-  AuthCodeCreateInput, 
+  CreateAuthCodeActionBase,
+  AuthCodeCreateInput,
 } from "../../generated/auth_code/actions/create_auth_code_action_base";
 import { AuthCodeBuilder } from "../../generated/auth_code/actions/auth_code_builder";
 

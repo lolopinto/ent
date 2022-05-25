@@ -1,7 +1,7 @@
 import { Trigger, Validator } from "@snowtop/ent/action";
 import {
-  ConfirmEditPhoneNumberActionBase, 
-  ConfirmEditPhoneNumberInput, 
+  ConfirmEditPhoneNumberActionBase,
+  ConfirmEditPhoneNumberInput,
 } from "../../generated/user/actions/confirm_edit_phone_number_action_base";
 import { User } from "../..";
 import { UserBuilder } from "../../generated/user/actions/user_builder";

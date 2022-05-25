@@ -1,6 +1,6 @@
 import {
-  CreateContactActionBase, 
-  ContactCreateInput, 
+  CreateContactActionBase,
+  ContactCreateInput,
 } from "../../generated/contact/actions/create_contact_action_base";
 
 export { ContactCreateInput };
