@@ -154,6 +154,10 @@ func (p *TSStep) processEnums(processor *codegen.Processor, s *gqlSchema) fns.Fu
 				return writeEnumFile(processor, enum)
 			})
 		}
+
+		if processor.ChangeMap.ChangesExist(enum.Enum.Name, change.RemoveEnum) {
+			ret = append(ret, file.GetDeleteFileFunction(processor.Config, enum.FilePath))
+		}
 	}
 	return ret
 }

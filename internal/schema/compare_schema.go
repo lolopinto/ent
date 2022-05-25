@@ -267,12 +267,36 @@ func compareEnums(m1, m2 map[string]*EnumInfo, m *change.ChangeMap) error {
 			}
 		} else {
 			if !enumInfoEqual(enum1, enum2) {
-				ret[k] = []change.Change{
-					{
-						Change:      change.ModifyEnum,
-						Name:        enum1.Enum.Name,
-						GraphQLName: enum1.GQLEnum.Name,
-					},
+				if enum1.GQLEnum.Name != enum2.GQLEnum.Name {
+					// graphql name changed so treat it differently
+					ret[k] = []change.Change{
+						{
+							Change:      change.ModifyEnum,
+							Name:        enum1.Enum.Name,
+							GraphQLName: enum1.GQLEnum.Name,
+							TSOnly:      true,
+						},
+						{
+							Change:      change.RemoveEnum,
+							Name:        enum1.Enum.Name,
+							GraphQLName: enum1.GQLEnum.Name,
+							GraphQLOnly: true,
+						},
+						{
+							Change:      change.AddEnum,
+							Name:        enum1.Enum.Name,
+							GraphQLName: enum1.GQLEnum.Name,
+							GraphQLOnly: true,
+						},
+					}
+				} else {
+					ret[k] = []change.Change{
+						{
+							Change:      change.ModifyEnum,
+							Name:        enum1.Enum.Name,
+							GraphQLName: enum1.GQLEnum.Name,
+						},
+					}
 				}
 			}
 		}

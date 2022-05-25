@@ -330,6 +330,11 @@ func (s *Step) processEnums(processor *codegen.Processor) fns.FunctionList {
 				return writeEnumFile(info, processor)
 			})
 		}
+
+		if processor.ChangeMap.ChangesExist(info.Enum.Name, change.RemoveEnum) {
+			filePath := getFilePathForEnumFile(processor.Config, info)
+			ret = append(ret, file.GetDeleteFileFunction(processor.Config, filePath))
+		}
 	}
 	return ret
 }
