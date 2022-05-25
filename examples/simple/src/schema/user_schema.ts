@@ -145,7 +145,7 @@ const UserSchema = new EntSchema({
             nested_string: StringType(),
             nested_bool: BooleanType(),
             nested_float: FloatType({ nullable: true }),
-            // UserSuperNestedObjectNestedEnum
+            // UserNestedObjectNestedEnum
             nested_enum: EnumType({ values: ["yes", "no", "maybe"] }),
             nested_string_list: StringListType(),
             nested_int_list: IntegerListType(),
@@ -158,7 +158,7 @@ const UserSchema = new EntSchema({
                 nested_nested_string: StringType(),
                 nested_nested_bool: BooleanType({ nullable: true }),
                 nested_nested_float: FloatType(),
-                // UserSuperObjectNestedNestedEnum
+                // UserNestedNestedObjectNestedNestedEnum
                 nested_nested_enum: EnumType({
                   values: ["yes", "no", "maybe"],
                 }),
