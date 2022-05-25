@@ -155,6 +155,18 @@ func (p *TSStep) processEnums(processor *codegen.Processor, s *gqlSchema) fns.Fu
 			})
 		}
 	}
+
+	// enum doesn't exist so won't be in s.enums anymore so have to go through all changes
+	// to delete the file
+	// TODO this isn't ideal. we should process this once and flag deleted ish separately
+	for k := range processor.ChangeMap {
+		if s.nodes[k] != nil || s.enums[k] != nil {
+			continue
+		}
+		if processor.ChangeMap.ChangesExist(k, change.RemoveEnum) {
+			ret = append(ret, file.GetDeleteFileFunction(processor.Config, getFilePathForEnum(processor.Config, k)))
+		}
+	}
 	return ret
 }
 
@@ -432,8 +444,8 @@ func getFilePathForNode(cfg *codegen.Config, nodeData *schema.NodeData) string {
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", nodeData.PackageName))
 }
 
-func getFilePathForEnum(cfg *codegen.Config, e *enum.GQLEnum) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", base.GetSnakeCaseName(e.Name)))
+func getFilePathForEnum(cfg *codegen.Config, name string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", base.GetSnakeCaseName(name)))
 }
 
 func getFilePathForConnection(cfg *codegen.Config, packageName string, connectionName string) string {
@@ -1136,7 +1148,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *gqlSchema {
 				enums[enumType.Name] = &gqlEnum{
 					Type:     fmt.Sprintf("%sType", enumType.Name),
 					Enum:     enumType,
-					FilePath: getFilePathForEnum(processor.Config, enumType),
+					FilePath: getFilePathForEnum(processor.Config, enumType.Name),
 				}
 			}(key)
 		}

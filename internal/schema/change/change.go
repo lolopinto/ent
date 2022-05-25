@@ -73,6 +73,7 @@ type Change struct {
 
 type ChangeMap map[string][]Change
 
+// TODO this needs to care about TSOnly and GraphQLOnly...
 func (cm ChangeMap) ChangesExist(key string, l ...ChangeType) bool {
 	if cm == nil || len(l) == 0 {
 		return false

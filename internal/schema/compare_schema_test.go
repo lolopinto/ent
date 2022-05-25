@@ -2130,6 +2130,84 @@ func TestEnumModified(t *testing.T) {
 	}, lang[0])
 }
 
+func TestEnumGQLNameChange(t *testing.T) {
+	s1 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfo(nil),
+		},
+	}
+	e2 := getEnumInfo(nil)
+	e2.GQLEnum.Name = "GraphQLLanguage"
+	s2 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": e2,
+		},
+	}
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+
+	lang := m["Language"]
+	require.Len(t, lang, 3)
+	verifyChange(t, change.Change{
+		Change:      change.ModifyEnum,
+		Name:        "Language",
+		GraphQLName: "Language",
+		TSOnly:      true,
+	}, lang[0])
+	verifyChange(t, change.Change{
+		Change:      change.RemoveEnum,
+		Name:        "Language",
+		GraphQLName: "Language",
+		GraphQLOnly: true,
+	}, lang[1])
+	verifyChange(t, change.Change{
+		Change:      change.AddEnum,
+		Name:        "Language",
+		GraphQLName: "GraphQLLanguage",
+		GraphQLOnly: true,
+	}, lang[2])
+}
+
+func TestEnumTSNameChange(t *testing.T) {
+	s1 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfo(nil),
+		},
+	}
+	e2 := getEnumInfo(nil)
+	e2.Enum.Name = "TSLanguage"
+	s2 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": e2,
+		},
+	}
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+
+	lang := m["Language"]
+	require.Len(t, lang, 3)
+	verifyChange(t, change.Change{
+		Change:      change.ModifyEnum,
+		Name:        "Language",
+		GraphQLName: "Language",
+		GraphQLOnly: true,
+	}, lang[0])
+	verifyChange(t, change.Change{
+		Change:      change.RemoveEnum,
+		Name:        "Language",
+		GraphQLName: "Language",
+		TSOnly:      true,
+	}, lang[1])
+	verifyChange(t, change.Change{
+		Change:      change.AddEnum,
+		Name:        "TSLanguage",
+		GraphQLName: "Language",
+		TSOnly:      true,
+	}, lang[2])
+}
+
 func TestCompareSchemaNewNodePlusActionsAndFields(t *testing.T) {
 	fi, err := field.NewFieldInfoFromInputs(
 		&codegenapi.DummyConfig{},

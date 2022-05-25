@@ -331,6 +331,17 @@ func (s *Step) processEnums(processor *codegen.Processor) fns.FunctionList {
 			})
 		}
 	}
+
+	// TODO this isn't ideal. we should process this once and flag deleted ish separately
+	for k := range processor.ChangeMap {
+		if processor.Schema.NodeNameExists(k) || processor.Schema.EnumNameExists(k) {
+			continue
+		}
+		if processor.ChangeMap.ChangesExist(k, change.RemoveEnum) {
+			filePath := getFilePathForEnumFile(processor.Config, k)
+			ret = append(ret, file.GetDeleteFileFunction(processor.Config, filePath))
+		}
+	}
 	return ret
 }
 
@@ -489,8 +500,8 @@ func getFilePathForModelFile(cfg *codegen.Config, nodeData *schema.NodeData) str
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/%s.ts", nodeData.PackageName))
 }
 
-func getFilePathForEnumFile(cfg *codegen.Config, info *schema.EnumInfo) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/%s.ts", strcase.ToSnake(info.Enum.Name)))
+func getFilePathForEnumFile(cfg *codegen.Config, name string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/%s.ts", strcase.ToSnake(name)))
 }
 
 func getFilePathForBaseQueryFile(cfg *codegen.Config, nodeData *schema.NodeData) string {
@@ -649,7 +660,7 @@ func writeEntFile(nodeData *schema.NodeData, processor *codegen.Processor) error
 }
 
 func writeEnumFile(enumInfo *schema.EnumInfo, processor *codegen.Processor) error {
-	filePath := getFilePathForEnumFile(processor.Config, enumInfo)
+	filePath := getFilePathForEnumFile(processor.Config, enumInfo.Enum.Name)
 	imps := tsimport.NewImports(processor.Config, filePath)
 	return file.Write(&file.TemplatedBasedFileWriter{
 		// enum file can be rendered on its own so just render it
