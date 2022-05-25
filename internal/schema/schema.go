@@ -403,7 +403,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 				}
 			}
 
-			if err := s.checkCustomInterface(cfg, nodeName, f, nil); err != nil {
+			if err := s.checkCustomInterface(cfg, f.FieldName, f, nil); err != nil {
 				errs = append(errs, err)
 			}
 		}
@@ -628,8 +628,8 @@ func (s *Schema) checkForEnum(cfg codegenapi.Config, f *field.Field, ci *customt
 		return nil
 	}
 	actualSubFields := subFields.([]*input.Field)
-	// TODO if graphqlType is different, we probably want different types here :(
-	fi, err := field.NewFieldInfoFromInputs(cfg, ci.TSType, actualSubFields, &field.Options{})
+	// use the parent of the field to determine or just nest it all the way based on parent
+	fi, err := field.NewFieldInfoFromInputs(cfg, f.FieldName, actualSubFields, &field.Options{})
 	if err != nil {
 		return err
 	}
@@ -641,7 +641,7 @@ func (s *Schema) checkForEnum(cfg codegenapi.Config, f *field.Field, ci *customt
 	return nil
 }
 
-func (s *Schema) getCustomInterfaceFromField(f *field.Field) (*customtype.CustomInterface, []*input.Field) {
+func (s *Schema) getCustomInterfaceFromField(f *field.Field, parent string) (*customtype.CustomInterface, []*input.Field) {
 	entType := f.GetFieldType()
 	subFieldsType, ok := entType.(enttype.TSWithSubFields)
 	if !ok {
@@ -654,17 +654,18 @@ func (s *Schema) getCustomInterfaceFromField(f *field.Field) (*customtype.Custom
 	cti := subFieldsType.GetCustomTypeInfo()
 
 	ci := &customtype.CustomInterface{
-		TSType:   cti.TSInterface,
-		GQLType:  cti.GraphQLInterface,
-		Exported: true,
+		TSType:         cti.TSInterface,
+		GQLType:        cti.GraphQLInterface,
+		SourceNodeName: parent,
+		Exported:       true,
 	}
 	actualSubFields := subFields.([]*input.Field)
 
 	return ci, actualSubFields
 }
 
-func (s *Schema) checkCustomInterface(cfg codegenapi.Config, nodeName string, f *field.Field, root *customtype.CustomInterface) error {
-	ci, subFields := s.getCustomInterfaceFromField(f)
+func (s *Schema) checkCustomInterface(cfg codegenapi.Config, parent string, f *field.Field, root *customtype.CustomInterface) error {
+	ci, subFields := s.getCustomInterfaceFromField(f, parent)
 	if ci == nil || subFields == nil {
 		return nil
 	}
@@ -679,18 +680,18 @@ func (s *Schema) checkCustomInterface(cfg codegenapi.Config, nodeName string, f 
 	} else {
 		root.Children = append(root.Children, ci)
 	}
-	fi, err := field.NewFieldInfoFromInputs(cfg, nodeName, subFields, &field.Options{})
+	fi, err := field.NewFieldInfoFromInputs(cfg, parent, subFields, &field.Options{})
 	if err != nil {
 		return err
 	}
 	for _, f2 := range fi.Fields {
 		ci.Fields = append(ci.Fields, f2)
 		// add custom interface maybe
-		if err := s.checkCustomInterface(cfg, nodeName, f2, root); err != nil {
+		if err := s.checkCustomInterface(cfg, f2.FieldName, f2, root); err != nil {
 			return err
 		}
 
-		cu, err := s.getCustomUnion(cfg, nodeName, f2)
+		cu, err := s.getCustomUnion(cfg, parent, f2)
 		if err != nil {
 			return err
 		}
@@ -701,7 +702,7 @@ func (s *Schema) checkCustomInterface(cfg codegenapi.Config, nodeName string, f 
 	return nil
 }
 
-func (s *Schema) getCustomUnion(cfg codegenapi.Config, nodeName string, f *field.Field) (*customtype.CustomUnion, error) {
+func (s *Schema) getCustomUnion(cfg codegenapi.Config, parent string, f *field.Field) (*customtype.CustomUnion, error) {
 	entType := f.GetFieldType()
 	unionFieldsType, ok := entType.(enttype.TSWithUnionFields)
 	if !ok {
@@ -726,19 +727,19 @@ func (s *Schema) getCustomUnion(cfg codegenapi.Config, nodeName string, f *field
 	}
 
 	actualSubFields := unionFields.([]*input.Field)
-	fi, err := field.NewFieldInfoFromInputs(cfg, nodeName, actualSubFields, &field.Options{})
+	fi, err := field.NewFieldInfoFromInputs(cfg, parent, actualSubFields, &field.Options{})
 	if err != nil {
 		return nil, err
 	}
 	for _, f2 := range fi.Fields {
-		ci, subFields := s.getCustomInterfaceFromField(f2)
+		ci, subFields := s.getCustomInterfaceFromField(f2, f2.FieldName)
 		if ci == nil || subFields == nil {
 			return nil, fmt.Errorf("couldn't get custom interface from field %s", f.FieldName)
 		}
 		ci.GraphQLFieldName = f2.GetGraphQLName()
 
 		// get the fields and add to custom interface
-		fi2, err := field.NewFieldInfoFromInputs(cfg, nodeName, subFields, &field.Options{})
+		fi2, err := field.NewFieldInfoFromInputs(cfg, f2.FieldName, subFields, &field.Options{})
 		if err != nil {
 			return nil, err
 		}
