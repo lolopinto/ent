@@ -9,17 +9,9 @@ import {
   User,
   Contact,
   Event,
-  DaysOff,
-  PreferredShift,
+  UserDaysOff,
+  UserPreferredShift,
   ArticleToCommentsQuery,
-  NestedNestedEnum,
-  UserSuperNestedObject,
-  Enum,
-  NestedEnum,
-  CatBreed,
-  DogBreed,
-  DogBreedGroup,
-  RabbitBreed,
 } from "..";
 
 import { v1 as uuidv1, v4 as uuidv4, validate } from "uuid";
@@ -45,9 +37,18 @@ import { NotifType } from "../generated/user_prefs_struct";
 import { NotifType2 } from "../generated/user_prefs_struct_2";
 import {
   EnumUsedInList,
-  UserNestedNestedObjectList,
   UserNestedObjectList,
 } from "../generated/user_nested_object_list";
+import {
+  CatBreed,
+  DogBreed,
+  DogBreedGroup,
+  NestedObjNestedNestedEnum,
+  ObjNestedEnum,
+  RabbitBreed,
+  SuperNestedObjectEnum,
+  UserSuperNestedObject,
+} from "../generated/user_super_nested_object";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -1040,20 +1041,20 @@ describe("super nested complex", () => {
       string: "whaa",
       float: 2.3,
       bool: false,
-      enum: Enum.Maybe,
+      enum: SuperNestedObjectEnum.Maybe,
       intList: [7, 8, 9],
       obj: {
         nestedBool: false,
         nestedIntList: [1, 2, 3],
         nestedUuid: uuidv1(),
-        nestedEnum: NestedEnum.No,
+        nestedEnum: ObjNestedEnum.No,
         nestedString: "stri",
         nestedInt: 24,
         nestedStringList: ["hello", "goodbye"],
         nestedObj: {
           nestedNestedUuid: uuidv1(),
           nestedNestedFloat: 4.2,
-          nestedNestedEnum: NestedNestedEnum.Maybe,
+          nestedNestedEnum: NestedObjNestedNestedEnum.Maybe,
           nestedNestedInt: 32,
           nestedNestedString: "whaa",
           nestedNestedIntList: [4, 5, 6],
@@ -1079,7 +1080,7 @@ describe("super nested complex", () => {
       string: "whaa",
       float: 2.3,
       bool: false,
-      enum: Enum.Maybe,
+      enum: SuperNestedObjectEnum.Maybe,
       intList: [7, 8, 9],
       union: {
         name: "tabby",
@@ -1113,7 +1114,7 @@ describe("super nested complex", () => {
       string: "whaa",
       float: 2.3,
       bool: false,
-      enum: Enum.Maybe,
+      enum: SuperNestedObjectEnum.Maybe,
       intList: [7, 8, 9],
       union: {
         name: "scout",
@@ -1148,7 +1149,7 @@ describe("super nested complex", () => {
       string: "whaa",
       float: 2.3,
       bool: false,
-      enum: Enum.Maybe,
+      enum: SuperNestedObjectEnum.Maybe,
       intList: [7, 8, 9],
       union: {
         name: "hallo",
@@ -1213,11 +1214,11 @@ test("enum list", async () => {
     emailAddress: randomEmail(),
     phoneNumber: randomPhoneNumber(),
     password: random(),
-    daysOff: [DaysOff.Saturday, DaysOff.Sunday],
-    preferredShift: [PreferredShift.Afternoon],
+    daysOff: [UserDaysOff.Saturday, UserDaysOff.Sunday],
+    preferredShift: [UserPreferredShift.Afternoon],
   }).saveX();
-  expect(user.daysOff).toEqual([DaysOff.Saturday, DaysOff.Sunday]);
-  expect(user.preferredShift).toEqual([PreferredShift.Afternoon]);
+  expect(user.daysOff).toEqual([UserDaysOff.Saturday, UserDaysOff.Sunday]);
+  expect(user.preferredShift).toEqual([UserPreferredShift.Afternoon]);
 });
 
 test("misc", async () => {

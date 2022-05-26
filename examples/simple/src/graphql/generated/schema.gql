@@ -56,16 +56,6 @@ enum DayOfWeek {
   SATURDAY
 }
 
-enum DaysOff {
-  MONDAY
-  TUESDAY
-  WEDNESDAY
-  THURSDAY
-  FRIDAY
-  SATURDAY
-  SUNDAY
-}
-
 enum DogBreedGroup {
   SPORTING
   HOUND
@@ -86,12 +76,6 @@ enum DogBreed {
   OTHER
 }
 
-enum Enum {
-  YES
-  NO
-  MAYBE
-}
-
 enum EnumUsedInList {
   YES
   NO
@@ -105,13 +89,7 @@ enum EventRsvpStatus {
   CAN_RSVP
 }
 
-enum NestedEnum {
-  YES
-  NO
-  MAYBE
-}
-
-enum NestedNestedEnum {
+enum NestedObjNestedNestedEnum {
   YES
   NO
   MAYBE
@@ -129,11 +107,10 @@ enum NotifType {
   EMAIL
 }
 
-enum PreferredShift {
-  MORNING
-  AFTERNOON
-  EVENING
-  GRAVEYARD
+enum ObjNestedEnum {
+  YES
+  NO
+  MAYBE
 }
 
 enum RabbitBreed {
@@ -145,6 +122,29 @@ enum RabbitBreed {
   BELGIAN_HARE
   BEVEREN
   OTHER
+}
+
+enum SuperNestedObjectEnum {
+  YES
+  NO
+  MAYBE
+}
+
+enum UserDaysOff {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum UserPreferredShift {
+  MORNING
+  AFTERNOON
+  EVENING
+  GRAVEYARD
 }
 
 type Address implements Node {
@@ -236,8 +236,8 @@ type User implements Node {
   prefs: UserPrefsStruct
   prefsList: [UserPrefsStruct2!]
   prefsDiff: UserPrefsDiff
-  daysOff: [DaysOff!]
-  preferredShift: [PreferredShift!]
+  daysOff: [UserDaysOff!]
+  preferredShift: [UserPreferredShift!]
   timeInMs: String
   funUuids: [ID!]
   newCol: String
@@ -817,8 +817,8 @@ input UserCreateInput {
   nicknames: [String!]
   prefs: UserPrefsStructInput
   prefsDiff: UserPrefsDiffInput
-  daysOff: [DaysOff!]
-  preferredShift: [PreferredShift!]
+  daysOff: [UserDaysOff!]
+  preferredShift: [UserPreferredShift!]
   funUuids: [ID!]
   prefsList: [UserPrefsStruct2Input!]
   superNestedObject: UserSuperNestedObjectInput

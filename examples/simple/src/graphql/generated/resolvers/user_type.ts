@@ -34,9 +34,9 @@ import {
 } from "../../../ent";
 import {
   ContactType,
-  DaysOffType,
-  PreferredShiftType,
+  UserDaysOffType,
   UserNestedObjectListType,
+  UserPreferredShiftType,
   UserPrefsDiffType,
   UserPrefsStruct2Type,
   UserPrefsStructType,
@@ -104,10 +104,10 @@ export const UserType = new GraphQLObjectType({
       },
     },
     daysOff: {
-      type: new GraphQLList(new GraphQLNonNull(DaysOffType)),
+      type: new GraphQLList(new GraphQLNonNull(UserDaysOffType)),
     },
     preferredShift: {
-      type: new GraphQLList(new GraphQLNonNull(PreferredShiftType)),
+      type: new GraphQLList(new GraphQLNonNull(UserPreferredShiftType)),
     },
     timeInMs: {
       type: GraphQLString,

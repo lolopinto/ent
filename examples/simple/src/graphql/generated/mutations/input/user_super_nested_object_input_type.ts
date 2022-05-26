@@ -19,10 +19,10 @@ import {
   CatBreedType,
   DogBreedGroupType,
   DogBreedType,
-  EnumType,
-  NestedEnumType,
-  NestedNestedEnumType,
+  NestedObjNestedNestedEnumType,
+  ObjNestedEnumType,
   RabbitBreedType,
+  SuperNestedObjectEnumType,
 } from "../../../resolvers";
 
 const UserNestedObjectInputType = new GraphQLInputObjectType({
@@ -44,7 +44,7 @@ const UserNestedObjectInputType = new GraphQLInputObjectType({
       type: GraphQLFloat,
     },
     nestedEnum: {
-      type: new GraphQLNonNull(NestedEnumType),
+      type: new GraphQLNonNull(ObjNestedEnumType),
     },
     nestedStringList: {
       type: new GraphQLNonNull(
@@ -79,7 +79,7 @@ const UserNestedNestedObjectInputType = new GraphQLInputObjectType({
       type: new GraphQLNonNull(GraphQLFloat),
     },
     nestedNestedEnum: {
-      type: new GraphQLNonNull(NestedNestedEnumType),
+      type: new GraphQLNonNull(NestedObjNestedNestedEnumType),
     },
     nestedNestedStringList: {
       type: new GraphQLNonNull(
@@ -180,7 +180,7 @@ export const UserSuperNestedObjectInputType = new GraphQLInputObjectType({
       type: new GraphQLNonNull(GraphQLFloat),
     },
     enum: {
-      type: new GraphQLNonNull(EnumType),
+      type: new GraphQLNonNull(SuperNestedObjectEnumType),
     },
     stringList: {
       type: new GraphQLList(new GraphQLNonNull(GraphQLString)),

@@ -10,7 +10,7 @@ import {
   Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
-import { DaysOff, PreferredShift, User } from "../../..";
+import { User, UserDaysOff, UserPreferredShift } from "../../..";
 import { UserBuilder } from "./user_builder";
 import { UserNestedObjectList } from "../../user_nested_object_list";
 import { UserPrefsDiff } from "../../user_prefs_diff";
@@ -28,8 +28,8 @@ export interface UserCreateInput {
   nicknames?: string[] | null;
   prefs?: UserPrefsStruct | null;
   prefsDiff?: UserPrefsDiff | null;
-  daysOff?: DaysOff[] | null;
-  preferredShift?: PreferredShift[] | null;
+  daysOff?: UserDaysOff[] | null;
+  preferredShift?: UserPreferredShift[] | null;
   funUuids?: ID[] | null;
   prefsList?: UserPrefsStruct2[] | null;
   superNestedObject?: UserSuperNestedObject | null;

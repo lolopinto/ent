@@ -16,10 +16,10 @@ import {
 import {
   Comment,
   Contact,
-  DaysOff,
   Event,
-  PreferredShift,
   User,
+  UserDaysOff,
+  UserPreferredShift,
 } from "../../..";
 import { EdgeType, NodeType } from "../../const";
 import { UserNestedObjectList } from "../../user_nested_object_list";
@@ -42,8 +42,8 @@ export interface UserInput {
   prefs?: UserPrefsStruct | null;
   prefsList?: UserPrefsStruct2[] | null;
   prefsDiff?: UserPrefsDiff | null;
-  daysOff?: DaysOff[] | null;
-  preferredShift?: PreferredShift[] | null;
+  daysOff?: UserDaysOff[] | null;
+  preferredShift?: UserPreferredShift[] | null;
   timeInMs?: BigInt | null;
   funUuids?: ID[] | null;
   newCol?: string | null;
@@ -737,7 +737,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
   }
 
   // get value of daysOff. Retrieves it from the input if specified or takes it from existingEnt
-  getNewDaysOffValue(): DaysOff[] | null | undefined {
+  getNewDaysOffValue(): UserDaysOff[] | null | undefined {
     if (this.input.daysOff !== undefined) {
       return this.input.daysOff;
     }
@@ -745,7 +745,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
   }
 
   // get value of preferredShift. Retrieves it from the input if specified or takes it from existingEnt
-  getNewPreferredShiftValue(): PreferredShift[] | null | undefined {
+  getNewPreferredShiftValue(): UserPreferredShift[] | null | undefined {
     if (this.input.preferredShift !== undefined) {
       return this.input.preferredShift;
     }
