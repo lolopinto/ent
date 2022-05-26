@@ -36,6 +36,9 @@ type Config interface {
 	FieldPrivacyEvaluated() FieldPrivacyEvaluated
 	GetRootPathToConfigs() string
 	DebugMode() bool
+	// doesn't actually writes the files, just keeps track of which files were going to be written
+	// used to detect dangling files...
+	DummyWrite() bool
 }
 
 // DummyConfig exists for tests/legacy paths which need Configs and don't want to create the production one
@@ -60,6 +63,10 @@ func (cfg *DummyConfig) DebugMode() bool {
 
 func (cfg DummyConfig) FieldPrivacyEvaluated() FieldPrivacyEvaluated {
 	return OnDemand
+}
+
+func (cfg DummyConfig) DummyWrite() bool {
+	return false
 }
 
 var _ Config = &DummyConfig{}

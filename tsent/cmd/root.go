@@ -80,6 +80,7 @@ func init() {
 		printSchemaCmd,
 		printCustomSchemaCmd,
 		deleteSchemaCmd,
+		detectDanglingFilesCmd,
 	})
 
 	addCommands(generateCmd, []*cobra.Command{
@@ -101,6 +102,8 @@ func init() {
 	upgradeCmd.Flags().BoolVar(&upgradeInfo.sql, "sql", false, "--sql to generate sql for offline mode")
 
 	alembicCmd.DisableFlagParsing = true
+
+	detectDanglingFilesCmd.Flags().BoolVar(&detectDanglingInfo.deleteFiles, "delete", false, "--delete to indicate that we should delete detected dangling files")
 }
 
 func Execute() {
