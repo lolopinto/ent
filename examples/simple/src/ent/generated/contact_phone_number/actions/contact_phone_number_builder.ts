@@ -15,6 +15,7 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, ContactPhoneNumber } from "../../..";
 import { NodeType } from "../../const";
+import { contactPhoneNumberLoaderInfo } from "../../loaders";
 import schema from "../../../../schema/contact_phone_number_schema";
 
 export interface ContactPhoneNumberInput {
@@ -62,6 +63,7 @@ export class ContactPhoneNumberBuilder<
       schema,
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
+      fieldInfo: contactPhoneNumberLoaderInfo.fieldInfo,
     });
   }
 

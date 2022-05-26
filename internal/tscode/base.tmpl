@@ -312,7 +312,7 @@ export class {{$baseClass}} {
       ent: this,
       loaderFactory: {{useImport $loaderName}},
       {{if .OnEntLoadFieldPrivacy $cfg -}}
-        fieldPrivacy: {{useImport "getFieldsWithPrivacy"}}({{useImport "schema"}}),
+        fieldPrivacy: {{useImport "getFieldsWithPrivacy"}}({{useImport "schema"}}, {{useImport $loaderInfo}}.fieldInfo),
       {{end -}}
     };
   }

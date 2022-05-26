@@ -15,6 +15,7 @@ import {
 } from "@snowtop/ent/action";
 import { Address, Event } from "../../..";
 import { EdgeType, NodeType } from "../../const";
+import { addressLoaderInfo } from "../../loaders";
 import schema from "../../../../schema/address";
 
 export interface AddressInput {
@@ -63,6 +64,7 @@ export class AddressBuilder<TData extends AddressInput = AddressInput>
       schema,
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
+      fieldInfo: addressLoaderInfo.fieldInfo,
     });
   }
 

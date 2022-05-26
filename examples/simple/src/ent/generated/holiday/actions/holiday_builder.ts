@@ -15,6 +15,7 @@ import {
 } from "@snowtop/ent/action";
 import { DayOfWeek, DayOfWeekAlt, Holiday } from "../../..";
 import { NodeType } from "../../const";
+import { holidayLoaderInfo } from "../../loaders";
 import schema from "../../../../schema/holiday_schema";
 
 export interface HolidayInput {
@@ -61,6 +62,7 @@ export class HolidayBuilder<TData extends HolidayInput = HolidayInput>
       schema,
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
+      fieldInfo: holidayLoaderInfo.fieldInfo,
     });
   }
 

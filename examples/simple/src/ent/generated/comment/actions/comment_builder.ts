@@ -15,6 +15,7 @@ import {
 } from "@snowtop/ent/action";
 import { Comment, User } from "../../..";
 import { EdgeType, NodeType } from "../../const";
+import { commentLoaderInfo } from "../../loaders";
 import schema from "../../../../schema/comment_schema";
 
 export interface CommentInput {
@@ -61,6 +62,7 @@ export class CommentBuilder<TData extends CommentInput = CommentInput>
       schema,
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
+      fieldInfo: commentLoaderInfo.fieldInfo,
     });
   }
 

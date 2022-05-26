@@ -30,6 +30,44 @@ export const addressLoaderInfo = {
   fields: addressFields,
   nodeType: NodeType.Address,
   loaderFactory: addressLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    street_name: {
+      dbCol: "street_name",
+      inputKey: "streetName",
+    },
+    city: {
+      dbCol: "city",
+      inputKey: "city",
+    },
+    state: {
+      dbCol: "state",
+      inputKey: "state",
+    },
+    zip: {
+      dbCol: "zip",
+      inputKey: "zip",
+    },
+    apartment: {
+      dbCol: "apartment",
+      inputKey: "apartment",
+    },
+    country: {
+      dbCol: "country",
+      inputKey: "country",
+    },
+  },
 };
 
 const authCodeTable = "auth_codes";
@@ -54,6 +92,36 @@ export const authCodeLoaderInfo = {
   fields: authCodeFields,
   nodeType: NodeType.AuthCode,
   loaderFactory: authCodeLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    code: {
+      dbCol: "code",
+      inputKey: "code",
+    },
+    userID: {
+      dbCol: "user_id",
+      inputKey: "userID",
+    },
+    emailAddress: {
+      dbCol: "email_address",
+      inputKey: "emailAddress",
+    },
+    phoneNumber: {
+      dbCol: "phone_number",
+      inputKey: "phoneNumber",
+    },
+  },
 };
 
 const commentTable = "comments";
@@ -78,6 +146,36 @@ export const commentLoaderInfo = {
   fields: commentFields,
   nodeType: NodeType.Comment,
   loaderFactory: commentLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    AuthorID: {
+      dbCol: "author_id",
+      inputKey: "authorID",
+    },
+    Body: {
+      dbCol: "body",
+      inputKey: "body",
+    },
+    ArticleID: {
+      dbCol: "article_id",
+      inputKey: "articleID",
+    },
+    ArticleType: {
+      dbCol: "article_type",
+      inputKey: "articleType",
+    },
+  },
 };
 
 const contactTable = "contacts";
@@ -103,6 +201,40 @@ export const contactLoaderInfo = {
   fields: contactFields,
   nodeType: NodeType.Contact,
   loaderFactory: contactLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    email_ids: {
+      dbCol: "email_ids",
+      inputKey: "emailIds",
+    },
+    phone_number_ids: {
+      dbCol: "phone_number_ids",
+      inputKey: "phoneNumberIds",
+    },
+    firstName: {
+      dbCol: "first_name",
+      inputKey: "firstName",
+    },
+    lastName: {
+      dbCol: "last_name",
+      inputKey: "lastName",
+    },
+    userID: {
+      dbCol: "user_id",
+      inputKey: "userID",
+    },
+  },
 };
 
 const contactEmailTable = "contact_emails";
@@ -126,6 +258,32 @@ export const contactEmailLoaderInfo = {
   fields: contactEmailFields,
   nodeType: NodeType.ContactEmail,
   loaderFactory: contactEmailLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    emailAddress: {
+      dbCol: "email_address",
+      inputKey: "emailAddress",
+    },
+    label: {
+      dbCol: "label",
+      inputKey: "label",
+    },
+    contactID: {
+      dbCol: "contact_id",
+      inputKey: "contactID",
+    },
+  },
 };
 
 const contactPhoneNumberTable = "contact_phone_numbers";
@@ -149,6 +307,32 @@ export const contactPhoneNumberLoaderInfo = {
   fields: contactPhoneNumberFields,
   nodeType: NodeType.ContactPhoneNumber,
   loaderFactory: contactPhoneNumberLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    phoneNumber: {
+      dbCol: "phone_number",
+      inputKey: "phoneNumber",
+    },
+    label: {
+      dbCol: "label",
+      inputKey: "label",
+    },
+    contactID: {
+      dbCol: "contact_id",
+      inputKey: "contactID",
+    },
+  },
 };
 
 const eventTable = "events";
@@ -175,6 +359,44 @@ export const eventLoaderInfo = {
   fields: eventFields,
   nodeType: NodeType.Event,
   loaderFactory: eventLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    name: {
+      dbCol: "name",
+      inputKey: "name",
+    },
+    creatorID: {
+      dbCol: "user_id",
+      inputKey: "creatorID",
+    },
+    start_time: {
+      dbCol: "start_time",
+      inputKey: "startTime",
+    },
+    end_time: {
+      dbCol: "end_time",
+      inputKey: "endTime",
+    },
+    location: {
+      dbCol: "location",
+      inputKey: "location",
+    },
+    addressID: {
+      dbCol: "address_id",
+      inputKey: "addressID",
+    },
+  },
 };
 
 const holidayTable = "holidays";
@@ -199,6 +421,36 @@ export const holidayLoaderInfo = {
   fields: holidayFields,
   nodeType: NodeType.Holiday,
   loaderFactory: holidayLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    dayOfWeek: {
+      dbCol: "day_of_week",
+      inputKey: "dayOfWeek",
+    },
+    dayOfWeekAlt: {
+      dbCol: "day_of_week_alt",
+      inputKey: "dayOfWeekAlt",
+    },
+    label: {
+      dbCol: "label",
+      inputKey: "label",
+    },
+    date: {
+      dbCol: "date",
+      inputKey: "date",
+    },
+  },
 };
 
 const hoursOfOperationTable = "hours_of_operations";
@@ -223,6 +475,36 @@ export const hoursOfOperationLoaderInfo = {
   fields: hoursOfOperationFields,
   nodeType: NodeType.HoursOfOperation,
   loaderFactory: hoursOfOperationLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    dayOfWeek: {
+      dbCol: "day_of_week",
+      inputKey: "dayOfWeek",
+    },
+    dayOfWeekAlt: {
+      dbCol: "day_of_week_alt",
+      inputKey: "dayOfWeekAlt",
+    },
+    open: {
+      dbCol: "open",
+      inputKey: "open",
+    },
+    close: {
+      dbCol: "close",
+      inputKey: "close",
+    },
+  },
 };
 
 const userTable = "users";
@@ -275,6 +557,100 @@ export const userLoaderInfo = {
   fields: userFields,
   nodeType: NodeType.User,
   loaderFactory: userLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    FirstName: {
+      dbCol: "first_name",
+      inputKey: "firstName",
+    },
+    LastName: {
+      dbCol: "last_name",
+      inputKey: "lastName",
+    },
+    EmailAddress: {
+      dbCol: "email_address",
+      inputKey: "emailAddress",
+    },
+    PhoneNumber: {
+      dbCol: "phone_number",
+      inputKey: "phoneNumber",
+    },
+    Password: {
+      dbCol: "password",
+      inputKey: "password",
+    },
+    AccountStatus: {
+      dbCol: "account_status",
+      inputKey: "accountStatus",
+    },
+    emailVerified: {
+      dbCol: "email_verified",
+      inputKey: "emailVerified",
+    },
+    Bio: {
+      dbCol: "bio",
+      inputKey: "bio",
+    },
+    nicknames: {
+      dbCol: "nicknames",
+      inputKey: "nicknames",
+    },
+    prefs: {
+      dbCol: "prefs",
+      inputKey: "prefs",
+    },
+    prefsList: {
+      dbCol: "prefs_list",
+      inputKey: "prefsList",
+    },
+    prefs_diff: {
+      dbCol: "prefs_diff",
+      inputKey: "prefsDiff",
+    },
+    daysOff: {
+      dbCol: "days_off",
+      inputKey: "daysOff",
+    },
+    preferredShift: {
+      dbCol: "preferred_shift",
+      inputKey: "preferredShift",
+    },
+    timeInMs: {
+      dbCol: "time_in_ms",
+      inputKey: "timeInMs",
+    },
+    fun_uuids: {
+      dbCol: "fun_uuids",
+      inputKey: "funUuids",
+    },
+    new_col: {
+      dbCol: "new_col",
+      inputKey: "newCol",
+    },
+    new_col2: {
+      dbCol: "new_col_2",
+      inputKey: "newCol2",
+    },
+    superNestedObject: {
+      dbCol: "super_nested_object",
+      inputKey: "superNestedObject",
+    },
+    nestedList: {
+      dbCol: "nested_list",
+      inputKey: "nestedList",
+    },
+  },
 };
 
 userLoader.addToPrime(userEmailAddressLoader);

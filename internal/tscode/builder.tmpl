@@ -7,6 +7,8 @@
 {{ $schemaPath := .GetSchemaPath }}
 {{ reserveDefaultImport $schemaPath "schema"}}
 {{ reserveImport "src/ent/generated/const" "EdgeType" "NodeType" }}
+{{$loaderInfo := printf "%sLoaderInfo" .NodeInstance -}}
+{{ reserveImport "src/ent/generated/loaders" $loaderInfo -}}
 
 
 {{ range .GetImportPathsForDependencies -}}
@@ -67,6 +69,7 @@ export class {{$builder}}<TData extends {{$input}} = {{$input}}> implements {{us
       {{useImport "schema"}},
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
+      fieldInfo: {{useImport $loaderInfo}}.fieldInfo,
     });
   }
 
