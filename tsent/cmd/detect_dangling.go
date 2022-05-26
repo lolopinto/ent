@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -19,6 +20,11 @@ type detectDanglingArgs struct {
 }
 
 var detectDanglingInfo detectDanglingArgs
+
+var paths = []string{
+	"src/ent/generated",
+	"src/graphql/generated",
+}
 
 // list or delete
 var detectDanglingFilesCmd = &cobra.Command{
@@ -58,24 +64,26 @@ var detectDanglingFilesCmd = &cobra.Command{
 		changed := make(map[string]bool)
 
 		root := cfg.GetAbsPathToRoot()
+		generated := getGeneratedPaths()
 		for _, f := range cfg.GetChangedTSFiles() {
 			rel, err := filepath.Rel(root, f)
 			if err != nil {
 				return err
 			}
-			// TODO sep...
-			if strings.HasPrefix(rel, "src/ent/generated") ||
-				strings.HasPrefix(rel, "src/graphql/generated") {
-				changed[rel] = true
+			for _, p := range generated {
+				if strings.HasPrefix(rel, p) {
+					changed[rel] = true
+					break
+				}
 			}
 		}
 
 		dangling := []string{}
-		if err := detectDangling("src/ent/generated", changed, &dangling); err != nil {
-			return err
-		}
-		if err := detectDangling("src/graphql/generated", changed, &dangling); err != nil {
-			return err
+		for _, p := range generated {
+			fmt.Println(p)
+			if err := detectDangling(p, changed, &dangling); err != nil {
+				return err
+			}
 		}
 
 		if len(dangling) == 0 {
@@ -105,7 +113,10 @@ var detectDanglingFilesCmd = &cobra.Command{
 }
 
 func detectDangling(root string, changed map[string]bool, dangling *[]string) error {
-	return filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
+	return filepath.WalkDir(root, func(path string, info fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
 		if info.IsDir() {
 			return nil
 		}
@@ -117,4 +128,17 @@ func detectDangling(root string, changed map[string]bool, dangling *[]string) er
 		}
 		return nil
 	})
+}
+
+func getGeneratedPaths() []string {
+	if os.IsPathSeparator('/') {
+		return paths
+	}
+
+	ret := make([]string, len(paths))
+	for i, p := range paths {
+		parts := strings.Split(p, "/")
+		ret[i] = strings.Join(parts, string(os.PathSeparator))
+	}
+	return ret
 }
