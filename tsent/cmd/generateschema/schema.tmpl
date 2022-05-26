@@ -42,9 +42,10 @@
 
   {{end -}}
 
+  {{$node := .Node -}}
   fields: {{useImport "FieldMap"}} = {
   {{ range $field := .Fields -}}
-    {{$imp := $field.GetImport -}}
+    {{$imp := $field.GetImport $node -}}
     {{- template "reserveImport" $imp -}}
     {{$field.Name}}: {{useImport $imp.Import}}({{fieldObjectCall $field}}),
   {{- end -}}

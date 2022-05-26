@@ -7,6 +7,8 @@ export default class DayOfWeek implements Pattern {
   fields: Field[] = [
     EnumType({
       name: "dayOfWeek",
+      tsType: "DayOfWeek",
+      graphQLType: "DayOfWeek",
       values: [
         "Sunday",
         "Monday",
@@ -19,6 +21,8 @@ export default class DayOfWeek implements Pattern {
     }),
     EnumType({
       name: "dayOfWeekAlt",
+      tsType: "DayOfWeekAlt",
+      graphQLType: "DayOfWeekAlt",
       map: {
         Sunday: "sun",
         Monday: "mon",

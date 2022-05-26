@@ -1,8 +1,8 @@
 import { FakeComms, Mode } from "@snowtop/ent/testutils/fake_comms";
 import CreateAuthCodeAction from "../../auth_code/actions/create_auth_code_action";
 import {
-  EditPhoneNumberActionBase, 
-  EditPhoneNumberInput, 
+  EditPhoneNumberActionBase,
+  EditPhoneNumberInput,
 } from "../../generated/user/actions/edit_phone_number_action_base";
 import { UserBuilder } from "../../generated/user/actions/user_builder";
 import { User } from "../..";

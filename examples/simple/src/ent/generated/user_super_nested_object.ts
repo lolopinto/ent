@@ -4,19 +4,19 @@
 
 import { ID } from "@snowtop/ent";
 
-export enum Enum {
+export enum SuperNestedObjectEnum {
   Yes = "yes",
   No = "no",
   Maybe = "maybe",
 }
 
-export enum NestedEnum {
+export enum ObjNestedEnum {
   Yes = "yes",
   No = "no",
   Maybe = "maybe",
 }
 
-export enum NestedNestedEnum {
+export enum NestedObjNestedNestedEnum {
   Yes = "yes",
   No = "no",
   Maybe = "maybe",
@@ -70,7 +70,7 @@ export interface UserNestedObject {
   nestedString: string;
   nestedBool: boolean;
   nestedFloat?: number | null;
-  nestedEnum: NestedEnum;
+  nestedEnum: ObjNestedEnum;
   nestedStringList: string[];
   nestedIntList: number[];
   nestedObj?: UserNestedNestedObject | null;
@@ -82,7 +82,7 @@ export interface UserNestedNestedObject {
   nestedNestedString: string;
   nestedNestedBool?: boolean | null;
   nestedNestedFloat: number;
-  nestedNestedEnum: NestedNestedEnum;
+  nestedNestedEnum: NestedObjNestedNestedEnum;
   nestedNestedStringList: string[];
   nestedNestedIntList: number[];
 }
@@ -116,7 +116,7 @@ export interface UserSuperNestedObject {
   string: string;
   bool: boolean;
   float: number;
-  enum: Enum;
+  enum: SuperNestedObjectEnum;
   stringList?: string[] | null;
   intList: number[];
   obj?: UserNestedObject | null;

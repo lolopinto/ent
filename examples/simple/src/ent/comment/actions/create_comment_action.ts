@@ -7,8 +7,8 @@ import { Trigger } from "@snowtop/ent/action";
 import { NodeType } from "../../generated/const";
 import { CommentBuilder } from "../../generated/comment/actions/comment_builder";
 import {
-  CommentCreateInput, 
-  CreateCommentActionBase, 
+  CommentCreateInput,
+  CreateCommentActionBase,
 } from "../../generated/comment/actions/create_comment_action_base";
 
 export { CommentCreateInput };

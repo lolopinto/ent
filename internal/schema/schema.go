@@ -374,6 +374,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 		var err error
 		nodeData.FieldInfo, err = field.NewFieldInfoFromInputs(
 			cfg,
+			nodeName,
 			node.Fields,
 			&field.Options{},
 		)
@@ -487,6 +488,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 		// add enums from patterns
 		fieldInfo, err := field.NewFieldInfoFromInputs(
 			cfg,
+			name,
 			pattern.Fields,
 			&field.Options{},
 		)
@@ -612,9 +614,8 @@ func (s *Schema) checkForEnum(cfg codegenapi.Config, f *field.Field, ci *customt
 		info, err := s.addEnumFromInput(input, nil)
 		if err != nil {
 			return err
-		} else {
-			ci.AddEnum(info.Enum, info.GQLEnum)
 		}
+		ci.AddEnum(info.Enum, info.GQLEnum)
 		return nil
 	}
 	subFieldsType, ok := typ.(enttype.TSWithSubFields)
@@ -626,7 +627,8 @@ func (s *Schema) checkForEnum(cfg codegenapi.Config, f *field.Field, ci *customt
 		return nil
 	}
 	actualSubFields := subFields.([]*input.Field)
-	fi, err := field.NewFieldInfoFromInputs(cfg, actualSubFields, &field.Options{})
+	// use the parent of the field to determine or just nest it all the way based on parent
+	fi, err := field.NewFieldInfoFromInputs(cfg, f.FieldName, actualSubFields, &field.Options{})
 	if err != nil {
 		return err
 	}
@@ -676,7 +678,7 @@ func (s *Schema) checkCustomInterface(cfg codegenapi.Config, f *field.Field, roo
 	} else {
 		root.Children = append(root.Children, ci)
 	}
-	fi, err := field.NewFieldInfoFromInputs(cfg, subFields, &field.Options{})
+	fi, err := field.NewFieldInfoFromInputs(cfg, f.FieldName, subFields, &field.Options{})
 	if err != nil {
 		return err
 	}
@@ -723,7 +725,7 @@ func (s *Schema) getCustomUnion(cfg codegenapi.Config, f *field.Field) (*customt
 	}
 
 	actualSubFields := unionFields.([]*input.Field)
-	fi, err := field.NewFieldInfoFromInputs(cfg, actualSubFields, &field.Options{})
+	fi, err := field.NewFieldInfoFromInputs(cfg, f.FieldName, actualSubFields, &field.Options{})
 	if err != nil {
 		return nil, err
 	}
@@ -735,7 +737,7 @@ func (s *Schema) getCustomUnion(cfg codegenapi.Config, f *field.Field) (*customt
 		ci.GraphQLFieldName = f2.GetGraphQLName()
 
 		// get the fields and add to custom interface
-		fi2, err := field.NewFieldInfoFromInputs(cfg, subFields, &field.Options{})
+		fi2, err := field.NewFieldInfoFromInputs(cfg, f2.FieldName, subFields, &field.Options{})
 		if err != nil {
 			return nil, err
 		}

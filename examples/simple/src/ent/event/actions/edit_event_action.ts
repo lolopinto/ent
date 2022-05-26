@@ -1,6 +1,6 @@
 import {
-  EditEventActionBase, 
-  EventEditInput, 
+  EditEventActionBase,
+  EventEditInput,
 } from "../../generated/event/actions/edit_event_action_base";
 import { Validator } from "@snowtop/ent/action";
 import { SharedValidators } from "./event_validators";

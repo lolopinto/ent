@@ -125,12 +125,14 @@ const UserSchema = new EntSchema({
     superNestedObject: StructType({
       nullable: true,
       tsType: "UserSuperNestedObject",
+      graphQLType: "UserSuperNestedObject",
       fields: {
         uuid: UUIDType(),
         int: IntegerType(),
         string: StringType(),
         bool: BooleanType(),
         float: FloatType(),
+        // this should be UserSuperNestedObject + Enum
         enum: EnumType({ values: ["yes", "no", "maybe"] }),
         string_list: StringListType({ nullable: true }),
         int_list: IntegerListType(),
@@ -143,6 +145,7 @@ const UserSchema = new EntSchema({
             nested_string: StringType(),
             nested_bool: BooleanType(),
             nested_float: FloatType({ nullable: true }),
+            // UserNestedObjectNestedEnum
             nested_enum: EnumType({ values: ["yes", "no", "maybe"] }),
             nested_string_list: StringListType(),
             nested_int_list: IntegerListType(),
@@ -155,6 +158,7 @@ const UserSchema = new EntSchema({
                 nested_nested_string: StringType(),
                 nested_nested_bool: BooleanType({ nullable: true }),
                 nested_nested_float: FloatType(),
+                // UserNestedNestedObjectNestedNestedEnum
                 nested_nested_enum: EnumType({
                   values: ["yes", "no", "maybe"],
                 }),
@@ -194,6 +198,7 @@ const UserSchema = new EntSchema({
             }),
             dog: StructType({
               tsType: "DogType",
+              graphQLType: "DogType",
               fields: {
                 name: StringType(),
                 birthday: TimestampType(),

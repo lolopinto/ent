@@ -60,7 +60,7 @@ import {
 } from "../internal";
 import schema from "../../schema/user_schema";
 
-export enum DaysOff {
+export enum UserDaysOff {
   Monday = "monday",
   Tuesday = "tuesday",
   Wednesday = "wednesday",
@@ -70,7 +70,7 @@ export enum DaysOff {
   Sunday = "sunday",
 }
 
-export enum PreferredShift {
+export enum UserPreferredShift {
   Morning = "morning",
   Afternoon = "afternoon",
   Evening = "evening",
@@ -93,8 +93,8 @@ interface UserDBData {
   prefs: UserPrefsStruct | null;
   prefs_list: UserPrefsStruct2[] | null;
   prefs_diff: UserPrefsDiff | null;
-  days_off: DaysOff[] | null;
-  preferred_shift: PreferredShift[] | null;
+  days_off: UserDaysOff[] | null;
+  preferred_shift: UserPreferredShift[] | null;
   time_in_ms: BigInt | null;
   fun_uuids: ID[] | null;
   new_col: string | null;
@@ -120,8 +120,8 @@ export class UserBase {
   protected readonly _prefs: UserPrefsStruct | null;
   protected readonly _prefsList: UserPrefsStruct2[] | null;
   protected readonly _prefsDiff: UserPrefsDiff | null;
-  readonly daysOff: DaysOff[] | null;
-  readonly preferredShift: PreferredShift[] | null;
+  readonly daysOff: UserDaysOff[] | null;
+  readonly preferredShift: UserPreferredShift[] | null;
   readonly timeInMs: BigInt | null;
   readonly funUuids: ID[] | null;
   readonly newCol: string | null;

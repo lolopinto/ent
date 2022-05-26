@@ -1,6 +1,6 @@
 import {
-  EditEmailAddressActionBase, 
-  EditEmailAddressInput, 
+  EditEmailAddressActionBase,
+  EditEmailAddressInput,
 } from "../../generated/user/actions/edit_email_address_action_base";
 import { UserBuilder } from "../../generated/user/actions/user_builder";
 import CreateAuthCodeAction from "../../auth_code/actions/create_auth_code_action";

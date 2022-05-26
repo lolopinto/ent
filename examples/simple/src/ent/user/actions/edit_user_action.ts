@@ -1,6 +1,6 @@
 import {
-  EditUserActionBase, 
-  UserEditInput, 
+  EditUserActionBase,
+  UserEditInput,
 } from "../../generated/user/actions/edit_user_action_base";
 import { EditUserPrivacy } from "./edit_user_privacy";
 

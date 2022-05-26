@@ -38,7 +38,7 @@ type expected struct {
 
 func TestNonNullableField(t *testing.T) {
 	cfg := &codegenapi.DummyConfig{}
-	f, err := newFieldFromInput(cfg, &input.Field{
+	f, err := newFieldFromInputTest(cfg, &input.Field{
 		Name: "name",
 		Type: &input.FieldType{
 			DBType: input.String,
@@ -73,7 +73,7 @@ func TestNonNullableField(t *testing.T) {
 
 func TestNullableField(t *testing.T) {
 	cfg := &codegenapi.DummyConfig{}
-	f, err := newFieldFromInput(cfg, &input.Field{
+	f, err := newFieldFromInputTest(cfg, &input.Field{
 		Name:     "name",
 		Nullable: true,
 		Type: &input.FieldType{
@@ -107,7 +107,7 @@ func TestNullableField(t *testing.T) {
 
 func TestNonNullableListField(t *testing.T) {
 	cfg := &codegenapi.DummyConfig{}
-	f, err := newFieldFromInput(cfg, &input.Field{
+	f, err := newFieldFromInputTest(cfg, &input.Field{
 		Name: "name",
 		Type: &input.FieldType{
 			DBType: input.List,
@@ -171,7 +171,7 @@ func (cfg *onEntLoadConfig) FieldPrivacyEvaluated() codegenapi.FieldPrivacyEvalu
 
 func TestNonNullableFieldOnDemand(t *testing.T) {
 	cfg := &onDemandConfig{}
-	f, err := newFieldFromInput(cfg, &input.Field{
+	f, err := newFieldFromInputTest(cfg, &input.Field{
 		Name: "name",
 		Type: &input.FieldType{
 			DBType: input.String,
@@ -207,7 +207,7 @@ func TestNonNullableFieldOnDemand(t *testing.T) {
 
 func TestNonNullableFieldOnDemandNoFieldPrivacy(t *testing.T) {
 	cfg := &onDemandConfig{}
-	f, err := newFieldFromInput(cfg, &input.Field{
+	f, err := newFieldFromInputTest(cfg, &input.Field{
 		Name: "name",
 		Type: &input.FieldType{
 			DBType: input.String,
@@ -242,7 +242,7 @@ func TestNonNullableFieldOnDemandNoFieldPrivacy(t *testing.T) {
 
 func TestNullableFieldOnDemand(t *testing.T) {
 	cfg := &onDemandConfig{}
-	f, err := newFieldFromInput(cfg, &input.Field{
+	f, err := newFieldFromInputTest(cfg, &input.Field{
 		Name:     "name",
 		Nullable: true,
 		Type: &input.FieldType{
@@ -277,7 +277,7 @@ func TestNullableFieldOnDemand(t *testing.T) {
 
 func TestNullableFieldOnDemandNoFieldPrivacy(t *testing.T) {
 	cfg := &onDemandConfig{}
-	f, err := newFieldFromInput(cfg, &input.Field{
+	f, err := newFieldFromInputTest(cfg, &input.Field{
 		Name:     "name",
 		Nullable: true,
 		Type: &input.FieldType{
@@ -311,7 +311,7 @@ func TestNullableFieldOnDemandNoFieldPrivacy(t *testing.T) {
 
 func TestNonNullableFieldOnEntLoad(t *testing.T) {
 	cfg := &onEntLoadConfig{}
-	f, err := newFieldFromInput(cfg, &input.Field{
+	f, err := newFieldFromInputTest(cfg, &input.Field{
 		Name: "name",
 		Type: &input.FieldType{
 			DBType: input.String,
@@ -347,7 +347,7 @@ func TestNonNullableFieldOnEntLoad(t *testing.T) {
 
 func TestNonNullableFieldOnEntLoadNoFieldPrivacy(t *testing.T) {
 	cfg := &onEntLoadConfig{}
-	f, err := newFieldFromInput(cfg, &input.Field{
+	f, err := newFieldFromInputTest(cfg, &input.Field{
 		Name: "name",
 		Type: &input.FieldType{
 			DBType: input.String,
@@ -382,7 +382,7 @@ func TestNonNullableFieldOnEntLoadNoFieldPrivacy(t *testing.T) {
 
 func TestNullableFieldOnEntLoad(t *testing.T) {
 	cfg := &onEntLoadConfig{}
-	f, err := newFieldFromInput(cfg, &input.Field{
+	f, err := newFieldFromInputTest(cfg, &input.Field{
 		Name:     "name",
 		Nullable: true,
 		Type: &input.FieldType{
@@ -417,7 +417,7 @@ func TestNullableFieldOnEntLoad(t *testing.T) {
 
 func TestNullableFieldOnEntLoadNoFieldPrivacy(t *testing.T) {
 	cfg := &onEntLoadConfig{}
-	f, err := newFieldFromInput(cfg, &input.Field{
+	f, err := newFieldFromInputTest(cfg, &input.Field{
 		Name:     "name",
 		Nullable: true,
 		Type: &input.FieldType{

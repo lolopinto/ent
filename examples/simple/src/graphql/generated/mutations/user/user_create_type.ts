@@ -26,7 +26,11 @@ import { UserPrefsDiffInputType } from "../input/user_prefs_diff_input_type";
 import { UserPrefsStruct2InputType } from "../input/user_prefs_struct_2_input_type";
 import { UserPrefsStructInputType } from "../input/user_prefs_struct_input_type";
 import { UserSuperNestedObjectInputType } from "../input/user_super_nested_object_input_type";
-import { DaysOffType, PreferredShiftType, UserType } from "../../../resolvers";
+import {
+  UserDaysOffType,
+  UserPreferredShiftType,
+  UserType,
+} from "../../../resolvers";
 
 interface UserCreatePayload {
   user: User;
@@ -60,10 +64,10 @@ export const UserCreateInputType = new GraphQLInputObjectType({
       type: UserPrefsDiffInputType,
     },
     daysOff: {
-      type: new GraphQLList(new GraphQLNonNull(DaysOffType)),
+      type: new GraphQLList(new GraphQLNonNull(UserDaysOffType)),
     },
     preferredShift: {
-      type: new GraphQLList(new GraphQLNonNull(PreferredShiftType)),
+      type: new GraphQLList(new GraphQLNonNull(UserPreferredShiftType)),
     },
     funUuids: {
       type: new GraphQLList(new GraphQLNonNull(GraphQLID)),

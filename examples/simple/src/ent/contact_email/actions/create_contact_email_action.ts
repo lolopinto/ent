@@ -12,8 +12,8 @@ import {
 import { AllowIfBuilder } from "@snowtop/ent/action";
 import { Contact } from "../../../ent";
 import {
-  ContactEmailCreateInput, 
-  CreateContactEmailActionBase, 
+  ContactEmailCreateInput,
+  CreateContactEmailActionBase,
 } from "../../generated/contact_email/actions/create_contact_email_action_base";
 
 export { ContactEmailCreateInput };

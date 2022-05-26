@@ -2223,7 +2223,7 @@ func getActionPath(nodeData *schema.NodeData, a action.Action) string {
 	return fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(a.GetActionName()))
 }
 
-func checkUnionType(cfg codegenapi.Config, f *field.Field, curr []string) ([]string, bool, error) {
+func checkUnionType(cfg codegenapi.Config, nodeName string, f *field.Field, curr []string) ([]string, bool, error) {
 	t := f.GetFieldType()
 
 	t2, ok := t.(enttype.TSWithSubFields)
@@ -2234,12 +2234,12 @@ func checkUnionType(cfg codegenapi.Config, f *field.Field, curr []string) ([]str
 			newCurr := append(curr, f.GetGraphQLName())
 			actualSubFields := subFields.([]*input.Field)
 
-			fi, err := field.NewFieldInfoFromInputs(cfg, actualSubFields, &field.Options{})
+			fi, err := field.NewFieldInfoFromInputs(cfg, nodeName, actualSubFields, &field.Options{})
 			if err != nil {
 				return nil, false, err
 			}
 			for _, v := range fi.Fields {
-				ret, done, err := checkUnionType(cfg, v, newCurr)
+				ret, done, err := checkUnionType(cfg, nodeName, v, newCurr)
 				if err != nil {
 					return nil, false, err
 				}
@@ -2340,7 +2340,7 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 
 	lists := [][]string{}
 	for _, f := range a.GetFields() {
-		list, union, err := checkUnionType(processor.Config, f, []string{})
+		list, union, err := checkUnionType(processor.Config, nodeData.Node, f, []string{})
 
 		if err != nil {
 			return nil, err

@@ -14,17 +14,10 @@ import CreateUserAction, {
 import {
   Contact,
   User,
-  DaysOff,
-  PreferredShift,
   NotifType,
   NotifType2,
-  Enum,
-  NestedEnum,
-  NestedNestedEnum,
-  CatBreed,
-  DogBreed,
-  DogBreedGroup,
-  RabbitBreed,
+  UserDaysOff,
+  UserPreferredShift,
 } from "../../ent/";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
 import EditUserAction from "../../ent/user/actions/edit_user_action";
@@ -33,6 +26,15 @@ import CreateContactAction, {
 } from "../../ent/contact/actions/create_contact_action";
 import { GraphQLObjectType } from "graphql";
 import { v1 } from "uuid";
+import {
+  CatBreed,
+  DogBreed,
+  DogBreedGroup,
+  NestedObjNestedNestedEnum,
+  ObjNestedEnum,
+  RabbitBreed,
+  SuperNestedObjectEnum,
+} from "../../ent/generated/user_super_nested_object";
 
 afterEach(() => {
   clearAuthHandlers();
@@ -848,8 +850,11 @@ test("enum list", async () => {
       async function (id: string) {
         const decoded = mustDecodeIDFromGQLID(id);
         const user = await User.loadX(new IDViewer(decoded), decoded);
-        expect(user.daysOff).toEqual([DaysOff.Saturday, DaysOff.Sunday]);
-        expect(user.preferredShift).toEqual([PreferredShift.Graveyard]);
+        expect(user.daysOff).toEqual([
+          UserDaysOff.Saturday,
+          UserDaysOff.Sunday,
+        ]);
+        expect(user.preferredShift).toEqual([UserPreferredShift.Graveyard]);
       },
     ],
   );
@@ -899,13 +904,13 @@ describe("super nested complex", () => {
     // graphql vs typescript
     const transformedObj = {
       ...obj,
-      enum: Enum.Maybe,
+      enum: SuperNestedObjectEnum.Maybe,
       obj: {
         ...obj.obj,
-        nestedEnum: NestedEnum.No,
+        nestedEnum: ObjNestedEnum.No,
         nestedObj: {
           ...obj.obj.nestedObj,
-          nestedNestedEnum: NestedNestedEnum.Yes,
+          nestedNestedEnum: NestedObjNestedNestedEnum.Yes,
         },
       },
     };
@@ -957,7 +962,7 @@ describe("super nested complex", () => {
     // union type is separate
     const transformedObj = {
       ...obj,
-      enum: Enum.Maybe,
+      enum: SuperNestedObjectEnum.Maybe,
       union: {
         ...obj.union.cat,
         breed: CatBreed.Bengal,
@@ -1013,7 +1018,7 @@ describe("super nested complex", () => {
     // union type is separate
     const transformedObj = {
       ...obj,
-      enum: Enum.Maybe,
+      enum: SuperNestedObjectEnum.Maybe,
       union: {
         ...obj.union.dog,
         breed: DogBreed.GermanShepherd,
@@ -1068,7 +1073,7 @@ describe("super nested complex", () => {
     // union type is separate
     const transformedObj = {
       ...obj,
-      enum: Enum.Maybe,
+      enum: SuperNestedObjectEnum.Maybe,
       union: {
         ...obj.union.rabbit,
         breed: RabbitBreed.AmericanChincilla,
