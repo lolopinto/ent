@@ -6,7 +6,7 @@ import {
   Validator,
   Observer,
 } from "../action";
-import { Ent, Viewer, ID, Data, PrivacyPolicy } from "../core/base";
+import { Ent, Viewer, ID, Data } from "../core/base";
 import {
   EditNodeOperation,
   DeleteNodeOperation,
@@ -14,10 +14,19 @@ import {
   EdgeOperation,
   loadEdges,
   loadRow,
+  loadRows,
 } from "../core/ent";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { Changeset } from "../action";
-import { StringType, TimestampType, UUIDType } from "../schema/field";
+import {
+  EnumField,
+  EnumOptions,
+  EnumType,
+  StringType,
+  TimestampType,
+  UUIDListType,
+  UUIDType,
+} from "../schema/field";
 import { JSONBType } from "../schema/json_field";
 import {
   User,
@@ -54,6 +63,8 @@ import {
   Table,
 } from "../testutils/db/test_db";
 import { Dialect } from "../core/db";
+import { convertList } from "../core/convert";
+import { FieldOptions } from "src/schema";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -105,7 +116,9 @@ describe("sqlite", () => {
       EventSchema,
       AddressSchemaDerivedFields,
       ContactSchema,
+      ContactSchema3,
       CustomUserSchema,
+      ContactEmailSchema,
       SensitiveValuesSchema,
     ].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));
     return tables;
@@ -233,6 +246,9 @@ const ContactSchema = getBuilderSchemaFromFields(
     UserID: StringType({
       defaultValueOnCreate: (builder) => builder.viewer.viewerID,
     }),
+    email_ids: UUIDListType({
+      nullable: true,
+    }),
   },
   Contact,
 );
@@ -246,6 +262,44 @@ const ContactSchema2 = getBuilderSchemaFromFields(
     }),
   },
   Contact,
+);
+
+class DefaultEnumField extends EnumField {
+  constructor(options?: EnumOptions) {
+    super({
+      ...options,
+    });
+  }
+
+  defaultValueOnCreate() {
+    return "default";
+  }
+}
+
+class CustomContact extends Contact {}
+
+const ContactSchema3 = getBuilderSchemaFromFields(
+  {
+    FirstName: StringType(),
+    LastName: StringType(),
+    UserID: StringType({
+      defaultToViewerOnCreate: true,
+    }),
+    label: new DefaultEnumField({
+      values: ["default", "work", "mobile"],
+    }),
+  },
+  CustomContact,
+);
+
+class ContactEmail extends Contact {}
+
+const ContactEmailSchema = getBuilderSchemaFromFields(
+  {
+    contactId: UUIDType(),
+    email: StringType(),
+  },
+  ContactEmail,
 );
 
 class CustomUser implements Ent {
@@ -2037,13 +2091,14 @@ function commonTests() {
       if (!user) {
         throw new Error("couldn't save user");
       }
-      expect(user.data).toEqual({
+      expect(user.data).toMatchObject({
         id: user.id,
         created_at: now,
         updated_at: now,
         first_name: "Jon",
         last_name: "Snow",
         account_status: "VALID",
+        // email_ids: null in sqlite
       });
 
       // let's inspect the created contact
@@ -2052,13 +2107,14 @@ function commonTests() {
       if (!contact) {
         throw new Error("couldn't save contact");
       }
-      expect(contact.data).toEqual({
+      expect(contact.data).toMatchObject({
         id: contact.id,
         created_at: now,
         updated_at: now,
         first_name: "Jon",
         last_name: "Snow",
         user_id: user.id, // created contact and set the user_id correctly
+        // email_ids: null in sqlite
       });
     });
   });
@@ -2553,7 +2609,125 @@ function commonTests() {
       expect(e.message).toBe("field UserID set to null for non-nullable field");
     }
   });
+
+  test("edited data", async () => {
+    const user = await createUser(
+      new Map([
+        ["FirstName", "Arya"],
+        ["LastName", "Stark"],
+      ]),
+    );
+
+    const action = new SimpleAction(
+      new IDViewer(user.id),
+      ContactSchema,
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+    );
+    action.triggers = [
+      {
+        changeset: async (builder: SimpleBuilder<Contact>) => {
+          const emailIDs: string[] = [];
+
+          const changesets = await Promise.all(
+            [1, 2, 3].map(async (v) => {
+              const action2 = new SimpleAction(
+                builder.viewer,
+                ContactEmailSchema,
+                new Map<string, any>([
+                  ["contactId", builder],
+                  ["email", `foo${v}@bar.com`],
+                ]),
+                WriteOperation.Insert,
+              );
+              const data = await action2.builder.orchestrator.getEditedData();
+              emailIDs.push(data.id);
+              return action2.changeset();
+            }),
+          );
+          builder.updateInput({ email_ids: emailIDs });
+
+          return changesets;
+        },
+      },
+    ];
+
+    const contact = await action.saveX();
+    const emails = convertList(contact.data.email_ids);
+    expect(emails.length).toBe(3);
+    // id gotten in trigger ends up being saved and references what we expect it to.
+    const rows = await loadRows({
+      tableName: "contact_emails",
+      fields: ["id", "contact_id"],
+      clause: clause.In("id", ...emails),
+    });
+    expect(rows.length).toBe(3);
+    expect(rows.every((row) => row.contact_id === contact.id)).toBe(true);
+  });
+
+  test("getPossibleUnsafeEntForPrivacy", async () => {
+    const user = await createUser(
+      new Map([
+        ["FirstName", "Arya"],
+        ["LastName", "Stark"],
+      ]),
+    );
+
+    const action = new SimpleAction(
+      new IDViewer(user.id),
+      ContactSchema3,
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+    );
+    const unsafe =
+      await action.builder.orchestrator.getPossibleUnsafeEntForPrivacy();
+    expect(unsafe).toBeDefined();
+
+    const contact = await action.saveX();
+    // id gotte from getPossibleUnsafeEntForPrivacy is still returned here
+    expect(contact.id).toBe(unsafe?.id);
+  });
+
+  test("edited data in trigger id unique", async () => {
+    const user = await createUser(
+      new Map([
+        ["FirstName", "Arya"],
+        ["LastName", "Stark"],
+      ]),
+    );
+
+    const action = new SimpleAction(
+      new IDViewer(user.id),
+      ContactSchema3,
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+    );
+
+    let idInTrigger: string | undefined;
+    action.triggers = [
+      {
+        changeset: async (builder: SimpleBuilder<Contact>) => {
+          const edited = await builder.orchestrator.getEditedData();
+          idInTrigger = edited.id;
+        },
+      },
+    ];
+
+    const contact = await action.saveX();
+    // explicit test that id gotten in trigger is still returned here
+    expect(contact.id).toBe(idInTrigger);
+  });
 }
+
 const getLoggedInBuilder = () => {
   const viewer = new IDViewer("1");
   const user = new User(viewer, { id: "1" });
