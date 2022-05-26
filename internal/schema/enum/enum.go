@@ -66,6 +66,7 @@ func mapifyList(l []*Enum) (map[string]*Enum, error) {
 	return ret, nil
 }
 
+// this is different from compareEnums in internal/schema/compare_schema.go...
 func CompareEnums(l1, l2 []*Enum) ([]change.Change, error) {
 	var ret []change.Change
 	m1, err := mapifyList(l1)

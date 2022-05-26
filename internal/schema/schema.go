@@ -614,9 +614,8 @@ func (s *Schema) checkForEnum(cfg codegenapi.Config, f *field.Field, ci *customt
 		info, err := s.addEnumFromInput(input, nil)
 		if err != nil {
 			return err
-		} else {
-			ci.AddEnum(info.Enum, info.GQLEnum)
 		}
+		ci.AddEnum(info.Enum, info.GQLEnum)
 		return nil
 	}
 	subFieldsType, ok := typ.(enttype.TSWithSubFields)

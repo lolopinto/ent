@@ -151,6 +151,7 @@ func (p *TSStep) processEnums(processor *codegen.Processor, s *gqlSchema) fns.Fu
 	// enum doesn't exist so won't be in s.enums anymore so have to go through all changes
 	// to delete the file
 	// TODO this isn't ideal. we should process this once and flag deleted ish separately
+	/// we need write_all but still process changes...
 	for k := range processor.ChangeMap {
 		if s.nodes[k] != nil || s.enums[k] != nil {
 			continue
