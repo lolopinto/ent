@@ -1,4 +1,9 @@
-import { User, SimpleAction, getTableName } from "../testutils/builder";
+import {
+  User,
+  SimpleAction,
+  getTableName,
+  getFieldInfo,
+} from "../testutils/builder";
 import {
   BaseEntSchema,
   BooleanType,
@@ -279,7 +284,7 @@ const userLoaderOptions = {
   fields: userFields,
   ent: User,
   loaderFactory: userLoaderFactory,
-  fieldPrivacy: getFieldsWithPrivacy(userSchema),
+  fieldPrivacy: getFieldsWithPrivacy(userSchema, getFieldInfo(userSchema)),
 };
 
 const accountSchema = new AccountSchema();
@@ -295,7 +300,10 @@ const accountLoaderOptions = {
   fields: userFields,
   ent: User,
   loaderFactory: accountLoaderFactory,
-  fieldPrivacy: getFieldsWithPrivacy(accountSchema),
+  fieldPrivacy: getFieldsWithPrivacy(
+    accountSchema,
+    getFieldInfo(accountSchema),
+  ),
 };
 
 let tdb: TempDB;

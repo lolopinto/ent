@@ -7,6 +7,15 @@ export declare type FieldMap = {
   [key: string]: Field;
 };
 
+interface FieldInfo {
+  dbCol: string;
+  inputKey: string;
+}
+
+export type FieldInfoMap = {
+  [key: string]: FieldInfo;
+};
+
 // Schema is the base for every schema in typescript
 export default interface Schema {
   // schema has list of fields that are unique to each node
@@ -449,6 +458,9 @@ export function getFields(value: SchemaInputType): Map<string, Field> {
   return m;
 }
 
+/**
+ * @deprecated should only be used by tests
+ */
 export function getStorageKey(field: Field, fieldName: string): string {
   return field.storageKey || snakeCase(fieldName);
 }
@@ -456,6 +468,7 @@ export function getStorageKey(field: Field, fieldName: string): string {
 // returns a mapping of storage key to field privacy
 export function getFieldsWithPrivacy(
   value: SchemaInputType,
+  fieldMap: FieldInfoMap,
 ): Map<string, PrivacyPolicy> {
   const schema = getSchema(value);
   function addFields(fields: FieldMap | Field[]) {
@@ -475,7 +488,11 @@ export function getFieldsWithPrivacy(
           } else {
             privacyPolicy = field.privacyPolicy;
           }
-          m.set(getStorageKey(field, name), privacyPolicy);
+          const info = fieldMap[name];
+          if (!info) {
+            throw new Error(`field with name ${name} not passed in fieldMap`);
+          }
+          m.set(info.dbCol, privacyPolicy);
         }
       }
     }
@@ -491,7 +508,11 @@ export function getFieldsWithPrivacy(
         } else {
           privacyPolicy = field.privacyPolicy;
         }
-        m.set(getStorageKey(field, name), privacyPolicy);
+        const info = fieldMap[name];
+        if (!info) {
+          throw new Error(`field with name ${name} not passed in fieldMap`);
+        }
+        m.set(info.dbCol, privacyPolicy);
       }
     }
   }

@@ -25,11 +25,10 @@ import {
   getTransformedUpdateOp,
   SQLStatementOperation,
   TransformedUpdateOperation,
-  getStorageKey,
+  FieldInfoMap,
 } from "../schema/schema";
 import { Changeset, Executor, Validator } from "../action/action";
 import { WriteOperation, Builder, Action } from "../action";
-import { camelCase } from "camel-case";
 import { applyPrivacyPolicyX } from "../core/privacy";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import { log } from "../core/logger";
@@ -51,6 +50,7 @@ export interface OrchestratorOptions<TEnt extends Ent, TData extends Data> {
   editedFields(): Map<string, any> | Promise<Map<string, any>>;
   // this is called with fields with defaultValueOnCreate|Edit
   updateInput?: (data: TData) => void;
+  fieldInfo: FieldInfoMap;
 }
 
 interface edgeInputDataOpts {
@@ -594,6 +594,13 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
     return (val as Builder<TEnt>).placeholderID !== undefined;
   }
 
+  private getInputKey(k: string) {
+    return this.options.fieldInfo[k].inputKey;
+  }
+  private getStorageKey(k: string) {
+    return this.options.fieldInfo[k].dbCol;
+  }
+
   private async getFieldsWithDefaultValues(
     builder: Builder<TEnt>,
     schemaFields: Map<string, Field>,
@@ -640,9 +647,8 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
           if (field.format) {
             val = field.format(transformed.data[k]);
           }
-          let dbKey = getStorageKey(field, k);
-          data[dbKey] = val;
-          this.defaultFieldsByTSName[camelCase(k)] = val;
+          data[this.getStorageKey(k)] = val;
+          this.defaultFieldsByTSName[this.getInputKey(k)] = val;
           // hmm do we need this?
           // TODO how to do this for local tests?
           // this.defaultFieldsByFieldName[k] = val;
@@ -659,7 +665,7 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
     for (const [fieldName, field] of schemaFields) {
       let value = editedFields.get(fieldName);
       let defaultValue: any = undefined;
-      let dbKey = getStorageKey(field, fieldName);
+      let dbKey = this.getStorageKey(fieldName);
 
       if (value === undefined) {
         if (this.actualOperation === WriteOperation.Insert) {
@@ -697,8 +703,7 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
         updateInput = true;
         defaultData[dbKey] = defaultValue;
         this.defaultFieldsByFieldName[fieldName] = defaultValue;
-        // TODO related to #510. we need this logic to be consistent so do this all in TypeScript or get it from go somehow
-        this.defaultFieldsByTSName[camelCase(fieldName)] = defaultValue;
+        this.defaultFieldsByTSName[this.getInputKey(fieldName)] = defaultValue;
       }
     }
 
@@ -796,7 +801,7 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
         // null allowed
         value = this.defaultFieldsByFieldName[fieldName];
       }
-      let dbKey = getStorageKey(field, fieldName);
+      let dbKey = this.getStorageKey(fieldName);
 
       value = await this.transformFieldValue(fieldName, field, dbKey, value);
 
@@ -813,7 +818,7 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
         const defaultValue = this.defaultFieldsByFieldName[fieldName];
         let field = schemaFields.get(fieldName)!;
 
-        let dbKey = getStorageKey(field, fieldName);
+        let dbKey = this.getStorageKey(fieldName);
 
         // no value, let's just default
         if (data[dbKey] === undefined) {
