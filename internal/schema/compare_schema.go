@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
@@ -269,7 +268,6 @@ func compareEnums(m1, m2 map[string]*EnumInfo, m *change.ChangeMap) error {
 		} else {
 			// we key by graphql name...
 			if !enumInfoEqual(enum1, enum2) {
-				spew.Dump("ne", enum1.Enum.Name)
 				if enum1.GQLEnum.Name != enum2.GQLEnum.Name {
 					// graphql name changed so treat it differently
 					ret[k] = []change.Change{
