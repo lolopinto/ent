@@ -31,6 +31,7 @@ type Config struct {
 	writeAll bool
 	// changes are valid
 	useChanges bool
+	dummyWrite bool
 	changes    change.ChangeMap
 	// keep track of changed ts files to pass to prettier
 	changedTSFiles []string
@@ -247,11 +248,23 @@ func (cfg *Config) AddChangedFile(filePath string) {
 	}
 }
 
+func (cfg *Config) GetChangedTSFiles() []string {
+	return cfg.changedTSFiles
+}
+
 func (cfg *Config) GetCustomGraphQLJSONPath() string {
 	if cfg.config == nil {
 		return ""
 	}
 	return cfg.config.CustomGraphQLJSONPath
+}
+
+func (cfg *Config) DummyWrite() bool {
+	return cfg.dummyWrite
+}
+
+func (cfg *Config) SetDummyWrite(val bool) {
+	cfg.dummyWrite = val
 }
 
 func init() {
