@@ -254,16 +254,6 @@ func enumInfoEqual(enum1, enum2 *EnumInfo) bool {
 }
 
 func compareEnums(m1, m2 map[string]*EnumInfo, m *change.ChangeMap) error {
-	m1keys := []string{}
-	for k := range m1 {
-		m1keys = append(m1keys, k)
-	}
-	m2keys := []string{}
-	for k := range m2 {
-		m2keys = append(m2keys, k)
-	}
-	spew.Dump("compare enums", len(m1), len(m2), m1keys, m2keys)
-
 	ret := *m
 	for k, enum1 := range m1 {
 		enum2, ok := m2[k]

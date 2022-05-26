@@ -357,7 +357,6 @@ func NewCodegenProcessor(currentSchema *schema.Schema, configPath string, option
 
 	existingSchema := parseExistingSchema(cfg, opt.buildInfo)
 	changes, err := schema.CompareSchemas(existingSchema, currentSchema)
-	spew.Dump(changes)
 	if err != nil && opt.debugMode {
 		fmt.Printf("error %v comparing schemas \n", err)
 	}
