@@ -236,22 +236,24 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
         }
         return m;
       },
-      updateInput: (input: Data) => {
-        const knownFields = getFields(this.schema);
-        for (const k in input) {
-          if (knownFields.has(k)) {
-            this.fields.set(k, input[k]);
-          } else {
-            // related to #510. we do camelCase to pass fields in here but fields may be snakeCase and we want that to pass in tests
-            // we do camelCase in
-            const sc = snakeCase(k);
-            if (knownFields.has(sc)) {
-              this.fields.set(sc, input[k]);
-            }
-          }
-        }
-      },
+      updateInput: this.updateInput.bind(this),
     });
+  }
+
+  updateInput(input: Data) {
+    const knownFields = getFields(this.schema);
+    for (const k in input) {
+      if (knownFields.has(k)) {
+        this.fields.set(k, input[k]);
+      } else {
+        // related to #510. we do camelCase to pass fields in here but fields may be snakeCase and we want that to pass in tests
+        // we do camelCase in
+        const sc = snakeCase(k);
+        if (knownFields.has(sc)) {
+          this.fields.set(sc, input[k]);
+        }
+      }
+    }
   }
 
   build(): Promise<Changeset<T>> {

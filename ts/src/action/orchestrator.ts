@@ -34,6 +34,7 @@ import { applyPrivacyPolicyX } from "../core/privacy";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import { log } from "../core/logger";
 import { Trigger } from "./action";
+import memoize from "memoizee";
 
 export interface OrchestratorOptions<TEnt extends Ent, TData extends Data> {
   viewer: Viewer;
@@ -153,6 +154,12 @@ class EntCannotDeleteEntError extends Error implements PrivacyError {
   }
 }
 
+interface fieldsInfo {
+  editedData: Data;
+  editedFields: Map<string, any>;
+  schemaFields: Map<string, Field>;
+}
+
 export class Orchestrator<TEnt extends Ent, TData extends Data> {
   private edgeSet: Set<string> = new Set<string>();
   private edges: EdgeMap = new Map();
@@ -171,11 +178,13 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
   // same with existingEnt. can transform so we wanna know what we started with and now where we are.
   private existingEnt?: TEnt;
   private disableTransformations: boolean;
+  private memoizedGetFields: () => Promise<fieldsInfo>;
 
   constructor(private options: OrchestratorOptions<TEnt, TData>) {
     this.viewer = options.viewer;
     this.actualOperation = this.options.operation;
     this.existingEnt = this.options.builder.existingEnt;
+    this.memoizedGetFields = memoize(this.getFieldsInfo.bind(this));
   }
 
   private addEdge(edge: edgeInputData, op: WriteOperation) {
@@ -418,9 +427,9 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
     );
   }
 
-  private getEntForPrivacyPolicyImpl(editedData: Data) {
+  private getEntForPrivacyPolicyImpl(editedData: Data): TEnt {
     if (this.actualOperation !== WriteOperation.Insert) {
-      return this.existingEnt;
+      return this.existingEnt!;
     }
     // we create an unsafe ent to be used for privacy policies
     return new this.options.builder.ent(
@@ -455,14 +464,24 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
 
   // if you're doing custom privacy within an action and want to
   // get either the unsafe ent or the existing ent that's being edited
-  async getPossibleUnsafeEntForPrivacy() {
+  async getPossibleUnsafeEntForPrivacy(): Promise<TEnt> {
     if (this.actualOperation !== WriteOperation.Insert) {
-      return this.existingEnt;
+      return this.existingEnt!;
     }
-    const { editedData } = await this.getFieldsInfo();
+    const { editedData } = await this.memoizedGetFields();
     return this.getEntForPrivacyPolicyImpl(editedData);
   }
 
+  // this gets the fields that were explicitly set plus any default or transformed values
+  // mainly exists to get default fields e.g. default id to be used in triggers
+  // NOTE: this API may change in the future
+  // doesn't work to get ids for autoincrement keys
+  async getEditedData() {
+    const { editedData } = await this.memoizedGetFields();
+    return editedData;
+  }
+
+  // Note: this is memoized. call memoizedGetFields instead
   private async getFieldsInfo() {
     const action = this.options.action;
     const builder = this.options.builder;
@@ -494,7 +513,7 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
         }
     }
 
-    const { schemaFields, editedData } = await this.getFieldsInfo();
+    const { schemaFields, editedData } = await this.memoizedGetFields();
     const action = this.options.action;
     const builder = this.options.builder;
 
@@ -751,8 +770,7 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
       }
 
       if (field.format) {
-        // TODO this could be async e.g. password. handle this better
-        value = await Promise.resolve(field.format(value));
+        value = await field.format(value);
       }
     }
     return value;

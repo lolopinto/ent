@@ -4,7 +4,7 @@ import {
 } from "../../generated/contact/actions/create_contact_action_base";
 
 export { ContactCreateInput };
-import { Contact, ContactEmail, ContactPhoneNumber } from "../../";
+import { Contact } from "../../";
 // TODO...
 import { EntCreationObserver } from "@snowtop/ent/testutils/fake_log";
 import {
@@ -14,12 +14,12 @@ import {
   PrivacyPolicy,
   Data,
   IDViewer,
+  ID,
 } from "@snowtop/ent";
 import { AllowIfBuilder, Observer, Trigger } from "@snowtop/ent/action";
 import CreateContactEmailAction from "../../../ent/contact_email/actions/create_contact_email_action";
 import { ContactBuilder } from "../../generated/contact/actions/contact_builder";
 import CreateContactPhoneNumberAction from "../../../ent/contact_phone_number/actions/create_contact_phone_number_action";
-import EditContactAction from "./edit_contact_action";
 
 // we're only writing this once except with --force and packageName provided
 export default class CreateContactAction extends CreateContactActionBase {
@@ -37,28 +37,39 @@ export default class CreateContactAction extends CreateContactActionBase {
   triggers: Trigger<ContactBuilder, ContactCreateInput>[] = [
     {
       async changeset(builder, input) {
-        if (input.emails) {
-          const emailActions: CreateContactEmailAction[] = [];
-          const changesets = input.emails.map(async (email) => {
+        if (!input.emails) {
+          return;
+        }
+        const emailIds: ID[] = [];
+        const changesets = await Promise.all(
+          input.emails.map(async (email) => {
             const action = CreateContactEmailAction.create(builder.viewer, {
               emailAddress: email.emailAddress,
               label: email.label,
               contactID: builder,
             });
-            emailActions.push(action);
+            // use getPossibleUnsafeEntForPrivacy for this
+            const unsafe =
+              await action.builder.orchestrator.getPossibleUnsafeEntForPrivacy();
+            emailIds.push(unsafe!.id);
             return action.changeset();
-          });
+          }),
+        );
 
-          builder.storeData("emailActions", emailActions);
-          return Promise.all(changesets);
-        }
+        builder.updateInput({
+          emailIds,
+        });
+        return changesets;
       },
     },
     {
       async changeset(builder, input) {
-        if (input.phoneNumbers) {
-          const phoneActions: CreateContactPhoneNumberAction[] = [];
-          const changesets = input.phoneNumbers.map(async (phone) => {
+        if (!input.phoneNumbers) {
+          return;
+        }
+        const phoneNumberIds: ID[] = [];
+        const changesets = await Promise.all(
+          input.phoneNumbers.map(async (phone) => {
             const action = CreateContactPhoneNumberAction.create(
               builder.viewer,
               {
@@ -67,77 +78,23 @@ export default class CreateContactAction extends CreateContactActionBase {
                 contactID: builder,
               },
             );
-            phoneActions.push(action);
+            const edited = await action.builder.orchestrator.getEditedData();
+            phoneNumberIds.push(edited.id);
             return action.changeset();
-          });
+          }),
+        );
 
-          builder.storeData("phoneActions", phoneActions);
-          return Promise.all(changesets);
-        }
+        builder.updateInput({
+          phoneNumberIds,
+        });
+
+        return changesets;
       },
     },
   ];
 
   observers: Observer<ContactBuilder, ContactCreateInput>[] = [
     new EntCreationObserver<Contact>(),
-    {
-      // TODO https://github.com/lolopinto/ent/issues/605 simplifies all this
-      async observe(builder: ContactBuilder) {
-        const actions: CreateContactEmailAction[] =
-          builder.getStoredData("emailActions") || [];
-        if (!actions.length) {
-          return;
-        }
-        const contact = await builder.editedEntX();
-        // use viewer of id for everything below...
-        const viewer = new IDViewer(contact.userID);
-
-        const ids = await Promise.all(
-          actions.map(async (action) => {
-            const returnedRow = await action.builder.orchestrator.returnedRow();
-            if (!returnedRow) {
-              throw new Error(`couldn't get returnedRow from action`);
-            }
-
-            const ent = await ContactEmail.loadX(viewer, returnedRow["id"]);
-            return ent.id;
-          }),
-        );
-        await EditContactAction.create(viewer, contact, {
-          emailIds: ids,
-        }).saveX();
-      },
-    },
-    {
-      async observe(builder: ContactBuilder) {
-        const actions: CreateContactPhoneNumberAction[] =
-          builder.getStoredData("phoneActions") || [];
-        if (!actions.length) {
-          return;
-        }
-        const contact = await builder.editedEntX();
-        // use viewer of id for everything below...
-        const viewer = new IDViewer(contact.userID);
-
-        const ids = await Promise.all(
-          actions.map(async (action) => {
-            const returnedRow = await action.builder.orchestrator.returnedRow();
-            if (!returnedRow) {
-              throw new Error(`couldn't get returnedRow from action`);
-            }
-
-            const ent = await ContactPhoneNumber.loadX(
-              viewer,
-              returnedRow["id"],
-            );
-            return ent.id;
-          }),
-        );
-        await EditContactAction.create(new IDViewer(contact.userID), contact, {
-          phoneNumberIds: ids,
-        }).saveX();
-      },
-    },
   ];
 
   viewerForEntLoad(data: Data) {

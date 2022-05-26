@@ -179,8 +179,6 @@ test("multiple emails", async () => {
     new IDViewer(user.id),
     input,
   ).saveX();
-  // reload contact
-  contact = await Contact.loadX(contact.viewer, contact.id);
 
   interface emailInfo {
     emailAddress: string;
@@ -222,8 +220,6 @@ test("multiple phonenumbers", async () => {
     new IDViewer(user.id),
     input,
   ).saveX();
-  // reload contact
-  contact = await Contact.loadX(contact.viewer, contact.id);
   interface phoneNmberInfo {
     phoneNumber: string;
     label: string;
