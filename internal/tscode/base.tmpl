@@ -99,7 +99,7 @@ export class {{$baseClass}} {
             return null;
           }
         {{ end -}}
-        const m = {{useImport "getFieldsWithPrivacy"}}({{useImport "schema"}});
+        const m = {{useImport "getFieldsWithPrivacy"}}({{useImport "schema"}},{{useImport $loaderInfo}}.fieldInfo);
         const p = m.get("{{$field.GetDbColName}}");
         if (!p) {
           throw new Error(`couldn't get field privacy policy for {{$field.TSPublicAPIName}}`);

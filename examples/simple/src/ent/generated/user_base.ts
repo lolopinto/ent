@@ -163,7 +163,7 @@ export class UserBase {
     if (this._accountStatus === null) {
       return null;
     }
-    const m = getFieldsWithPrivacy(schema);
+    const m = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
     const p = m.get("account_status");
     if (!p) {
       throw new Error(`couldn't get field privacy policy for accountStatus`);
@@ -173,7 +173,7 @@ export class UserBase {
   }
 
   async emailVerified(): Promise<boolean | null> {
-    const m = getFieldsWithPrivacy(schema);
+    const m = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
     const p = m.get("email_verified");
     if (!p) {
       throw new Error(`couldn't get field privacy policy for emailVerified`);
@@ -186,7 +186,7 @@ export class UserBase {
     if (this._prefs === null) {
       return null;
     }
-    const m = getFieldsWithPrivacy(schema);
+    const m = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
     const p = m.get("prefs");
     if (!p) {
       throw new Error(`couldn't get field privacy policy for prefs`);
@@ -199,7 +199,7 @@ export class UserBase {
     if (this._prefsList === null) {
       return null;
     }
-    const m = getFieldsWithPrivacy(schema);
+    const m = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
     const p = m.get("prefs_list");
     if (!p) {
       throw new Error(`couldn't get field privacy policy for prefsList`);
@@ -212,7 +212,7 @@ export class UserBase {
     if (this._prefsDiff === null) {
       return null;
     }
-    const m = getFieldsWithPrivacy(schema);
+    const m = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
     const p = m.get("prefs_diff");
     if (!p) {
       throw new Error(`couldn't get field privacy policy for prefsDiff`);
