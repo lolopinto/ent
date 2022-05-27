@@ -36,6 +36,14 @@
     fields: {{$fields}},
     nodeType: {{useImport "NodeType"}}.{{.Node}},
     loaderFactory: {{printf "%sLoader" .NodeInstance }},
+    fieldInfo: {
+      {{range $field := .FieldInfo.Fields -}}
+      {{$field.FieldName}}: {
+        dbCol: '{{$field.GetDbColName}}',
+        inputKey: '{{$field.TsBuilderFieldName}}',
+        },
+      {{end}}
+    },
   }
 
   {{ range $loaders := $groups }}

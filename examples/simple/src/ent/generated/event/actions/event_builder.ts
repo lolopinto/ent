@@ -15,6 +15,7 @@ import {
 } from "@snowtop/ent/action";
 import { Address, Event, User } from "../../..";
 import { EdgeType, NodeType } from "../../const";
+import { eventLoaderInfo } from "../../loaders";
 import schema from "../../../../schema/event_schema";
 
 export interface EventInput {
@@ -63,6 +64,7 @@ export class EventBuilder<TData extends EventInput = EventInput>
       schema,
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
+      fieldInfo: eventLoaderInfo.fieldInfo,
     });
   }
 

@@ -15,6 +15,7 @@ import {
 } from "@snowtop/ent/action";
 import { Comment, Contact, User } from "../../..";
 import { EdgeType, NodeType } from "../../const";
+import { contactLoaderInfo } from "../../loaders";
 import schema from "../../../../schema/contact_schema";
 
 export interface ContactInput {
@@ -62,6 +63,7 @@ export class ContactBuilder<TData extends ContactInput = ContactInput>
       schema,
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
+      fieldInfo: contactLoaderInfo.fieldInfo,
     });
   }
 

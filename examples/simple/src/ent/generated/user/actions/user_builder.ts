@@ -22,6 +22,7 @@ import {
   UserPreferredShift,
 } from "../../..";
 import { EdgeType, NodeType } from "../../const";
+import { userLoaderInfo } from "../../loaders";
 import { UserNestedObjectList } from "../../user_nested_object_list";
 import { UserPrefsDiff } from "../../user_prefs_diff";
 import { UserPrefsStruct } from "../../user_prefs_struct";
@@ -89,6 +90,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
       schema,
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
+      fieldInfo: userLoaderInfo.fieldInfo,
     });
   }
 

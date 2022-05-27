@@ -88,7 +88,7 @@ export class EventBase {
     if (this._addressID === null) {
       return null;
     }
-    const m = getFieldsWithPrivacy(schema);
+    const m = getFieldsWithPrivacy(schema, eventLoaderInfo.fieldInfo);
     const p = m.get("address_id");
     if (!p) {
       throw new Error(`couldn't get field privacy policy for addressID`);

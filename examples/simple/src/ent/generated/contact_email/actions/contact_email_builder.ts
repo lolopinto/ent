@@ -15,6 +15,7 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, ContactEmail } from "../../..";
 import { NodeType } from "../../const";
+import { contactEmailLoaderInfo } from "../../loaders";
 import schema from "../../../../schema/contact_email_schema";
 
 export interface ContactEmailInput {
@@ -62,6 +63,7 @@ export class ContactEmailBuilder<
       schema,
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
+      fieldInfo: contactEmailLoaderInfo.fieldInfo,
     });
   }
 

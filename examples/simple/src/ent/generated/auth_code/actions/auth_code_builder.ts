@@ -15,6 +15,7 @@ import {
 } from "@snowtop/ent/action";
 import { AuthCode, User } from "../../..";
 import { NodeType } from "../../const";
+import { authCodeLoaderInfo } from "../../loaders";
 import schema from "../../../../schema/auth_code_schema";
 
 export interface AuthCodeInput {
@@ -61,6 +62,7 @@ export class AuthCodeBuilder<TData extends AuthCodeInput = AuthCodeInput>
       schema,
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
+      fieldInfo: authCodeLoaderInfo.fieldInfo,
     });
   }
 

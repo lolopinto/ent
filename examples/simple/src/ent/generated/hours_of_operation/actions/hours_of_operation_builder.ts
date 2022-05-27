@@ -15,6 +15,7 @@ import {
 } from "@snowtop/ent/action";
 import { DayOfWeek, DayOfWeekAlt, HoursOfOperation } from "../../..";
 import { NodeType } from "../../const";
+import { hoursOfOperationLoaderInfo } from "../../loaders";
 import schema from "../../../../schema/hours_of_operation_schema";
 
 export interface HoursOfOperationInput {
@@ -63,6 +64,7 @@ export class HoursOfOperationBuilder<
       schema,
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
+      fieldInfo: hoursOfOperationLoaderInfo.fieldInfo,
     });
   }
 

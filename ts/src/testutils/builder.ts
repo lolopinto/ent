@@ -31,6 +31,7 @@ import {
   EntSchema,
   EntSchemaWithTZ,
 } from "../schema/base_schema";
+import { FieldInfoMap, getStorageKey } from "../schema/schema";
 
 export class User implements Ent {
   id: ID;
@@ -162,6 +163,18 @@ function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
+export function getFieldInfo(value: BuilderSchema<Ent>) {
+  const fields = getFields(value);
+  let ret: FieldInfoMap = {};
+  for (const [k, f] of fields) {
+    ret[k] = {
+      dbCol: getStorageKey(f, k),
+      inputKey: camelCase(k),
+    };
+  }
+  return ret;
+}
+
 // reuses orchestrator and standard things
 export class SimpleBuilder<T extends Ent> implements Builder<T> {
   ent: EntConstructor<T>;
@@ -209,11 +222,13 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
     this.ent = schema.ent;
     const tableName = getTableName(schema);
     this.nodeType = camelCase(schema.ent.name);
+    const fieldInfo = getFieldInfo(schema);
     this.orchestrator = new Orchestrator<T, Data>({
       viewer: this.viewer,
       operation: operation,
       tableName: tableName,
       key,
+      fieldInfo,
       loaderOptions: {
         loaderFactory: new ObjectLoaderFactory({
           tableName: tableName,
@@ -223,7 +238,7 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
         ent: schema.ent,
         tableName: tableName,
         fields: [],
-        fieldPrivacy: getFieldsWithPrivacy(schema),
+        fieldPrivacy: getFieldsWithPrivacy(schema, fieldInfo),
       },
       builder: this,
       action: action,
