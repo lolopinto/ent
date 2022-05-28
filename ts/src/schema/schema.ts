@@ -173,7 +173,7 @@ export interface Pattern {
   transformRead?: () => Clause;
   transformWrite?: <T extends Ent>(
     stmt: UpdateOperation<T>,
-  ) => TransformedUpdateOperation<T> | undefined;
+  ) => TransformedUpdateOperation<T> | null;
 
   // can only have one pattern in an object which transforms each
   // if we do, it throws an Error
@@ -216,7 +216,7 @@ export interface TransformedUpdateOperation<T extends Ent> {
 
   // if changing to an update, we want to return the ent
   // TODO don't have a way to delete the ent e.g. update -> insert
-  existingEnt: T | null;
+  existingEnt?: T | null;
 }
 
 // we want --strictNullChecks flag so nullable is used to type graphql, ts, db
@@ -564,16 +564,17 @@ export function getObjectLoaderProperties(
 export function getTransformedUpdateOp<T extends Ent>(
   value: SchemaInputType,
   stmt: UpdateOperation<T>,
-): TransformedUpdateOperation<T> | undefined {
+): TransformedUpdateOperation<T> | null {
   const schema = getSchema(value);
   if (!schema.patterns) {
-    return;
+    return null;
   }
   for (const p of schema.patterns) {
     if (p.transformWrite) {
       return p.transformWrite(stmt);
     }
   }
+  return null;
 }
 
 // this maps to ActionOperation in ent/action.go

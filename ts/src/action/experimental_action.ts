@@ -56,7 +56,7 @@ export class BaseAction<TEnt extends Ent, TData extends Data>
       viewer,
       operation,
       this,
-      options?.existingEnt || undefined,
+      options?.existingEnt || null,
     );
   }
 
@@ -121,7 +121,7 @@ interface BuilderConstructor<TEnt extends Ent, TData extends Data> {
     viewer: Viewer,
     operation: WriteOperation,
     action: Action<TEnt, EntBuilder<TEnt>, TData>,
-    existingEnt?: TEnt | undefined,
+    existingEnt: TEnt | null,
   ): EntBuilder<TEnt>;
 }
 

@@ -629,7 +629,7 @@ export class Orchestrator<
     // if action transformations. always do it
     // if disable transformations set, don't do schema transform and just do the right thing
     // else apply schema tranformation if it exists
-    let transformed: TransformedUpdateOperation<TEnt> | null;
+    let transformed: TransformedUpdateOperation<TEnt> | null = null;
 
     if (action?.transformWrite) {
       transformed = await action.transformWrite({
@@ -639,7 +639,7 @@ export class Orchestrator<
         existingEnt: this.existingEnt,
       });
     } else if (!this.disableTransformations) {
-      transformed = getTransformedUpdateOp(this.options.schema, {
+      transformed = getTransformedUpdateOp<TEnt>(this.options.schema, {
         viewer: builder.viewer,
         op: this.getSQLStatementOperation(),
         data: editedFields,
@@ -667,6 +667,7 @@ export class Orchestrator<
       }
       this.actualOperation = this.getWriteOpForSQLStamentOp(transformed.op);
       if (transformed.existingEnt) {
+        // @ts-ignore
         this.existingEnt = transformed.existingEnt;
       }
     }

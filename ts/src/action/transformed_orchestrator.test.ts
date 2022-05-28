@@ -102,7 +102,7 @@ class DeletedAtPattern implements Pattern {
 
   transformWrite<T extends Ent>(
     stmt: UpdateOperation<T>,
-  ): TransformedUpdateOperation<T> | undefined {
+  ): TransformedUpdateOperation<T> | null {
     switch (stmt.op) {
       case SQLStatementOperation.Delete:
         return {
@@ -113,6 +113,7 @@ class DeletedAtPattern implements Pattern {
           },
         };
     }
+    return null;
   }
 }
 
@@ -133,7 +134,7 @@ class DeletedAtSnakeCasePattern implements Pattern {
 
   transformWrite<T extends Ent>(
     stmt: UpdateOperation<T>,
-  ): TransformedUpdateOperation<T> | undefined {
+  ): TransformedUpdateOperation<T> | null {
     switch (stmt.op) {
       case SQLStatementOperation.Delete:
         return {
@@ -144,6 +145,7 @@ class DeletedAtSnakeCasePattern implements Pattern {
           },
         };
     }
+    return null;
   }
 }
 

@@ -116,11 +116,11 @@ export interface Action<
   observers?: Observer<TBuilder, TData>[];
   validators?: Validator<TBuilder, TData>[];
   getInput(): TData; // this input is passed to Triggers, Observers, Validators
-  transformWrite?: <T2 extends Ent>(
-    stmt: UpdateOperation<T2>,
+  transformWrite?: (
+    stmt: UpdateOperation<TEnt>,
   ) =>
-    | Promise<TransformedUpdateOperation<T2>>
-    | TransformedUpdateOperation<T2>
+    | Promise<TransformedUpdateOperation<TEnt>>
+    | TransformedUpdateOperation<TEnt>
     | null;
 
   valid(): Promise<boolean>;
