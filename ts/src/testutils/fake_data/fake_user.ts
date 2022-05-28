@@ -21,6 +21,7 @@ import { IDViewer, IDViewerOptions } from "../../core/viewer";
 import { table, uuid, text, timestamptz } from "../db/test_db";
 import { ObjectLoaderFactory } from "../../core/loaders";
 import { convertDate } from "../../core/convert";
+import { WriteOperation } from "../../action";
 
 interface TokenOptions extends IDViewerOptions {
   tokens?: {};
@@ -165,7 +166,13 @@ export function getUserAction(viewer: Viewer, input: UserCreateInput) {
   for (const key in input) {
     m.set(key, input[key]);
   }
-  const action = new SimpleAction(viewer, FakeUserSchema, m);
+  const action = new SimpleAction(
+    viewer,
+    FakeUserSchema,
+    m,
+    WriteOperation.Insert,
+    null,
+  );
   action.viewerForEntLoad = (data: Data) => {
     // load the created ent using a VC of the newly created user.
     return new IDViewer(data.id);

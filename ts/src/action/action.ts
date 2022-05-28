@@ -23,8 +23,14 @@ export enum WriteOperation {
   Delete = "delete",
 }
 
-export interface Builder<T extends Ent> {
-  existingEnt?: T;
+type MaybeNull<T extends Ent> = T | null;
+type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
+
+export interface Builder<
+  T extends Ent,
+  TExistingEnt extends TMaybleNullableEnt<T> = MaybeNull<T>,
+> {
+  existingEnt: TExistingEnt;
   ent: EntConstructor<T>;
   placeholderID: ID;
   readonly viewer: Viewer;
@@ -115,7 +121,7 @@ export interface Action<
   ) =>
     | Promise<TransformedUpdateOperation<T2>>
     | TransformedUpdateOperation<T2>
-    | undefined;
+    | null;
 
   valid(): Promise<boolean>;
   // throws if invalid

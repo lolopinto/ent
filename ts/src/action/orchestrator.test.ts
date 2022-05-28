@@ -333,11 +333,29 @@ const SensitiveValuesSchema = getBuilderSchemaFromFields(
   SensitiveUser,
 );
 
+function getInsertUserAction(
+  map: Map<string, any>,
+  viewer: Viewer = new LoggedOutViewer(),
+) {
+  return new SimpleAction(viewer, UserSchema, map, WriteOperation.Insert, null);
+}
+
+function getInsertUserBuilder(
+  map: Map<string, any>,
+  viewer: Viewer = new LoggedOutViewer(),
+) {
+  return new SimpleBuilder(
+    viewer,
+    UserSchema,
+    map,
+    WriteOperation.Insert,
+    null,
+  );
+}
+
 function commonTests() {
   test("schema on create", async () => {
-    const builder = new SimpleBuilder(
-      new LoggedOutViewer(),
-      UserSchema,
+    const builder = getInsertUserBuilder(
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
@@ -351,9 +369,7 @@ function commonTests() {
   });
 
   test("missing required field", async () => {
-    const builder = new SimpleBuilder(
-      new LoggedOutViewer(),
-      UserSchema,
+    const builder = getInsertUserBuilder(
       new Map([
         ["FirstName", "Jon"],
         // non-nullable field set to null
@@ -375,11 +391,7 @@ function commonTests() {
   // if somehow builder logic doesn't handle this, we still catch this for create
   // should this be default and simplify builders?
   test("required field not set", async () => {
-    const builder = new SimpleBuilder(
-      new LoggedOutViewer(),
-      UserSchema,
-      new Map([["FirstName", "Jon"]]),
-    );
+    const builder = getInsertUserBuilder(new Map([["FirstName", "Jon"]]));
 
     try {
       await builder.build();
@@ -397,6 +409,8 @@ function commonTests() {
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
+      WriteOperation.Insert,
+      null,
     );
 
     await builder.build();
@@ -410,6 +424,8 @@ function commonTests() {
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
+      WriteOperation.Insert,
+      null,
     );
 
     await builder.build();
@@ -423,6 +439,8 @@ function commonTests() {
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
+      WriteOperation.Insert,
+      null,
     );
 
     await builder.build();
@@ -436,6 +454,8 @@ function commonTests() {
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
+      WriteOperation.Insert,
+      null,
     );
 
     try {
@@ -496,6 +516,8 @@ function commonTests() {
       new LoggedOutViewer(),
       SchemaWithNullFields,
       new Map([["startTime", d]]),
+      WriteOperation.Insert,
+      null,
     );
 
     const fields = await getFieldsFromBuilder(builder);
@@ -511,6 +533,8 @@ function commonTests() {
         ["startTime", d],
         ["endTime", null],
       ]),
+      WriteOperation.Insert,
+      null,
     );
     const fields2 = await getFieldsFromBuilder(builder2);
     expect(fields2["start_time"]).toBeDefined();
@@ -531,6 +555,8 @@ function commonTests() {
       new LoggedOutViewer(),
       SchemaWithOverridenDBKey,
       new Map([["emailAddress", "test@email.com"]]),
+      WriteOperation.Insert,
+      null,
     );
 
     const fields = await getFieldsFromBuilder(builder);
@@ -547,6 +573,8 @@ function commonTests() {
           ["username", "lolopinto"],
           ["zip", "94114"],
         ]),
+        WriteOperation.Insert,
+        null,
       );
 
       const fields = await getFieldsFromBuilder(builder);
@@ -563,6 +591,8 @@ function commonTests() {
           ["username", "LOLOPINTO"],
           ["zip", "94114"],
         ]),
+        WriteOperation.Insert,
+        null,
       );
 
       const fields = await getFieldsFromBuilder(builder);
@@ -579,6 +609,8 @@ function commonTests() {
           ["username", "LOLOPINTO"],
           ["zip", "941"],
         ]),
+        WriteOperation.Insert,
+        null,
       );
 
       try {
@@ -903,27 +935,21 @@ function commonTests() {
         ]),
       );
 
-      const action = new SimpleAction(
-        new LoggedOutViewer(),
-        UserSchema,
+      const action = getInsertUserAction(
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
         ]),
-        WriteOperation.Insert,
       );
       action.builder.orchestrator.addInboundEdge(user.id, "edge", "User");
       action.triggers = [
         {
           changeset: (builder: SimpleBuilder<User>) => {
-            const derivedAction = new SimpleAction(
-              new LoggedOutViewer(),
-              UserSchema,
+            const derivedAction = getInsertUserAction(
               new Map([
                 ["FirstName", "Sansa"],
                 ["LastName", "Stark"],
               ]),
-              WriteOperation.Insert,
             );
 
             // take the edges and write it as 3 edge
@@ -990,14 +1016,11 @@ function commonTests() {
         ]),
       );
 
-      const action = new SimpleAction(
-        new LoggedOutViewer(),
-        UserSchema,
+      const action = getInsertUserAction(
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
         ]),
-        WriteOperation.Insert,
       );
       action.builder.orchestrator.addInboundEdge(
         user.id,
@@ -1007,14 +1030,11 @@ function commonTests() {
       action.triggers = [
         {
           changeset: (builder: SimpleBuilder<User>) => {
-            const derivedAction = new SimpleAction(
-              new LoggedOutViewer(),
-              UserSchema,
+            const derivedAction = getInsertUserAction(
               new Map([
                 ["FirstName", "Sansa"],
                 ["LastName", "Stark"],
               ]),
-              WriteOperation.Insert,
             );
 
             // take the edges and write it as 3 edge
@@ -1391,27 +1411,21 @@ function commonTests() {
         ]),
       );
 
-      const action = new SimpleAction(
-        new LoggedOutViewer(),
-        UserSchema,
+      const action = getInsertUserAction(
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
         ]),
-        WriteOperation.Insert,
       );
       action.builder.orchestrator.addOutboundEdge(user.id, "edge", "User");
       action.triggers = [
         {
           changeset: (builder: SimpleBuilder<User>) => {
-            const derivedAction = new SimpleAction(
-              new LoggedOutViewer(),
-              UserSchema,
+            const derivedAction = getInsertUserAction(
               new Map([
                 ["FirstName", "Sansa"],
                 ["LastName", "Stark"],
               ]),
-              WriteOperation.Insert,
             );
 
             // take the edges and write it as 3 edge
@@ -1480,14 +1494,11 @@ function commonTests() {
       ]),
     );
 
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
-      UserSchema,
+    const action = getInsertUserAction(
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
-      WriteOperation.Insert,
     );
     action.builder.orchestrator.addOutboundEdge(
       user.id,
@@ -1497,14 +1508,11 @@ function commonTests() {
     action.triggers = [
       {
         changeset: (builder: SimpleBuilder<User>) => {
-          const derivedAction = new SimpleAction(
-            new LoggedOutViewer(),
-            UserSchema,
+          const derivedAction = getInsertUserAction(
             new Map([
               ["FirstName", "Sansa"],
               ["LastName", "Stark"],
             ]),
-            WriteOperation.Insert,
           );
 
           // take the edges and write it as 3 edge
@@ -1684,6 +1692,7 @@ function commonTests() {
         UserSchema,
         new Map(),
         WriteOperation.Edit,
+        null,
       );
       builder.orchestrator.removeInboundEdge("2", "edge");
 
@@ -1741,6 +1750,7 @@ function commonTests() {
         UserSchema,
         new Map(),
         WriteOperation.Edit,
+        null,
       );
       builder.orchestrator.removeOutboundEdge("2", "edge");
 
@@ -1783,6 +1793,7 @@ function commonTests() {
           ["endTime", yesterday],
         ]),
         WriteOperation.Insert,
+        null,
       );
       action.validators = validators;
 
@@ -1806,6 +1817,7 @@ function commonTests() {
           ["endTime", now],
         ]),
         WriteOperation.Insert,
+        null,
       );
       action.validators = validators;
 
@@ -1818,14 +1830,11 @@ function commonTests() {
 
   describe("privacyPolicy", () => {
     test("valid", async () => {
-      let action = new SimpleAction(
-        new LoggedOutViewer(),
-        UserSchema,
+      let action = getInsertUserAction(
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
         ]),
-        WriteOperation.Insert,
       );
       action.getPrivacyPolicy = () => {
         return {
@@ -1838,14 +1847,12 @@ function commonTests() {
 
     test("invalid", async () => {
       const viewer = new IDViewer("1");
-      const action = new SimpleAction(
-        viewer,
-        UserSchema,
+      const action = getInsertUserAction(
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
         ]),
-        WriteOperation.Insert,
+        viewer,
       );
       action.getPrivacyPolicy = () => {
         return {
@@ -1858,14 +1865,12 @@ function commonTests() {
 
     test("invalidX. create", async () => {
       const viewer = new IDViewer("1");
-      const action = new SimpleAction(
-        viewer,
-        UserSchema,
+      const action = getInsertUserAction(
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
         ]),
-        WriteOperation.Insert,
+        viewer,
       );
       action.getPrivacyPolicy = () => {
         return {
@@ -1964,14 +1969,11 @@ function commonTests() {
     });
 
     test("unsafe ent in creation. valid", async () => {
-      let action = new SimpleAction(
-        new LoggedOutViewer(),
-        UserSchema,
+      let action = getInsertUserAction(
         new Map([
           ["FirstName", "Jon"],
           ["LastName", "Snow"],
         ]),
-        WriteOperation.Insert,
       );
       action.getPrivacyPolicy = () => {
         return {
@@ -1986,14 +1988,11 @@ function commonTests() {
     });
 
     test("unsafe ent in creation. invalid", async () => {
-      let action = new SimpleAction(
-        new LoggedOutViewer(),
-        UserSchema,
+      let action = getInsertUserAction(
         new Map([
           ["FirstName", "Sansa"],
           ["LastName", "Snow"],
         ]),
-        WriteOperation.Insert,
       );
       action.getPrivacyPolicy = () => {
         return {
@@ -2029,6 +2028,7 @@ function commonTests() {
           ["LastName", "Snow"],
         ]),
         WriteOperation.Insert,
+        null,
       );
 
       action.triggers = triggers;
@@ -2060,6 +2060,7 @@ function commonTests() {
           ["LastName", "Snow"],
         ]),
         WriteOperation.Insert,
+        null,
       );
       // also create a contact when we create a user
       action.triggers = [
@@ -2079,6 +2080,7 @@ function commonTests() {
                 ["UserID", builder],
               ]),
               WriteOperation.Insert,
+              null,
             );
             return contactAction.changeset();
           },
@@ -2134,6 +2136,7 @@ function commonTests() {
           ["account_status", "UNVERIFIED"],
         ]),
         WriteOperation.Insert,
+        null,
       );
       action.observers = [sendEmailObserver];
 
@@ -2166,6 +2169,7 @@ function commonTests() {
           ["account_status", "UNVERIFIED"],
         ]),
         WriteOperation.Insert,
+        null,
       );
       action.observers = [sendEmailObserver];
 
@@ -2203,6 +2207,7 @@ function commonTests() {
           ["account_status", "UNVERIFIED"],
         ]),
         WriteOperation.Insert,
+        null,
       );
       action.observers = [sendEmailObserverAsync];
 
@@ -2238,6 +2243,7 @@ function commonTests() {
         UserSchemaExtended,
         fields,
         WriteOperation.Insert,
+        null,
       );
       action.triggers = [
         {
@@ -2379,6 +2385,8 @@ function commonTests() {
         ["OwnerID", user.id],
         ["OwnerType", user.nodeType],
       ]),
+      WriteOperation.Insert,
+      null,
     );
 
     const fields = await getFieldsFromBuilder(builder);
@@ -2396,6 +2404,7 @@ function commonTests() {
           ["LastName", "Snow"],
         ]),
         WriteOperation.Insert,
+        null,
       );
       action.viewerForEntLoad = (data: Data) => {
         // load the created ent using a VC of the newly created user.
@@ -2423,6 +2432,7 @@ function commonTests() {
           ["LastName", "Snow"],
         ]),
         WriteOperation.Insert,
+        null,
       );
       try {
         await action.saveX();
@@ -2496,6 +2506,7 @@ function commonTests() {
           ["LastName", "Snow"],
         ]),
         WriteOperation.Insert,
+        null,
       );
       await action.saveX();
       expect(mockLog.logs.length).toBeGreaterThanOrEqual(1);
@@ -2515,6 +2526,7 @@ function commonTests() {
           ["LastName", "Snow"],
         ]),
         WriteOperation.Insert,
+        null,
       );
       await action.saveX();
       expect(mockLog.logs.length).toBeGreaterThanOrEqual(1);
@@ -2534,6 +2546,8 @@ function commonTests() {
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
+      WriteOperation.Insert,
+      null,
     );
     await builder.saveX();
     const user = await builder.editedEntX();
@@ -2545,6 +2559,8 @@ function commonTests() {
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
+      WriteOperation.Insert,
+      null,
     );
 
     await builder2.saveX();
@@ -2558,6 +2574,8 @@ function commonTests() {
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
+      WriteOperation.Insert,
+      null,
     );
     // logged out viewer with null viewer throws since it's still required
     try {
@@ -2576,6 +2594,8 @@ function commonTests() {
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
+      WriteOperation.Insert,
+      null,
     );
     await builder.saveX();
     const user = await builder.editedEntX();
@@ -2587,6 +2607,8 @@ function commonTests() {
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
+      WriteOperation.Insert,
+      null,
     );
 
     await builder2.saveX();
@@ -2600,6 +2622,8 @@ function commonTests() {
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
+      WriteOperation.Insert,
+      null,
     );
     // logged out viewer with null viewer throws since it's still required
     try {
@@ -2626,6 +2650,7 @@ function commonTests() {
         ["LastName", "Snow"],
       ]),
       WriteOperation.Insert,
+      null,
     );
     action.triggers = [
       {
@@ -2642,6 +2667,7 @@ function commonTests() {
                   ["email", `foo${v}@bar.com`],
                 ]),
                 WriteOperation.Insert,
+                null,
               );
               const data = await action2.builder.orchestrator.getEditedData();
               emailIDs.push(data.id);
@@ -2684,6 +2710,7 @@ function commonTests() {
         ["LastName", "Snow"],
       ]),
       WriteOperation.Insert,
+      null,
     );
     const unsafe =
       await action.builder.orchestrator.getPossibleUnsafeEntForPrivacy();
@@ -2710,6 +2737,7 @@ function commonTests() {
         ["LastName", "Snow"],
       ]),
       WriteOperation.Insert,
+      null,
     );
 
     let idInTrigger: string | undefined;
@@ -2746,6 +2774,7 @@ const getCreateBuilder = (map: Map<string, any>) => {
     UserSchema,
     map,
     WriteOperation.Insert,
+    null,
   );
 };
 

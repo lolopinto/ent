@@ -14,6 +14,7 @@ import { NodeType } from "./const";
 import { table, uuid, text, timestamptz } from "../db/test_db";
 import { ObjectLoaderFactory } from "../../core/loaders";
 import { convertDate, convertNullableDate } from "../../core/convert";
+import { WriteOperation } from "../../action";
 
 export class FakeEvent implements Ent {
   readonly id: ID;
@@ -130,7 +131,13 @@ export function getEventBuilder(viewer: Viewer, input: EventCreateInput) {
   for (const key in input) {
     m.set(key, input[key]);
   }
-  return new SimpleBuilder(viewer, FakeEventSchema, m);
+  return new SimpleBuilder(
+    viewer,
+    FakeEventSchema,
+    m,
+    WriteOperation.Insert,
+    null,
+  );
 }
 
 export async function createEvent(viewer: Viewer, input: EventCreateInput) {

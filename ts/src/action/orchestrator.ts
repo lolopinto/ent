@@ -35,7 +35,14 @@ import { log } from "../core/logger";
 import { Trigger } from "./action";
 import memoize from "memoizee";
 
-export interface OrchestratorOptions<TEnt extends Ent, TData extends Data> {
+type MaybeNull<T extends Ent> = T | null;
+type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
+
+export interface OrchestratorOptions<
+  TEnt extends Ent,
+  TData extends Data,
+  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
+> {
   viewer: Viewer;
   operation: WriteOperation;
   tableName: string;
@@ -44,7 +51,7 @@ export interface OrchestratorOptions<TEnt extends Ent, TData extends Data> {
   // key, usually 'id' that's being updated
   key: string;
 
-  builder: Builder<TEnt>;
+  builder: Builder<TEnt, TExistingEnt>;
   action?: Action<TEnt, Builder<TEnt>, TData>;
   schema: SchemaInputType;
   editedFields(): Map<string, any> | Promise<Map<string, any>>;
@@ -160,7 +167,11 @@ interface fieldsInfo {
   schemaFields: Map<string, Field>;
 }
 
-export class Orchestrator<TEnt extends Ent, TData extends Data> {
+export class Orchestrator<
+  TEnt extends Ent,
+  TData extends Data,
+  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
+> {
   private edgeSet: Set<string> = new Set<string>();
   private edges: EdgeMap = new Map();
   private validatedFields: Data | null;
@@ -176,11 +187,11 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
   // btw the beginning op and the transformed one we end up using
   private actualOperation: WriteOperation;
   // same with existingEnt. can transform so we wanna know what we started with and now where we are.
-  private existingEnt?: TEnt;
+  private existingEnt: TExistingEnt;
   private disableTransformations: boolean;
   private memoizedGetFields: () => Promise<fieldsInfo>;
 
-  constructor(private options: OrchestratorOptions<TEnt, TData>) {
+  constructor(private options: OrchestratorOptions<TEnt, TData, TExistingEnt>) {
     this.viewer = options.viewer;
     this.actualOperation = this.options.operation;
     this.existingEnt = this.options.builder.existingEnt;
@@ -618,7 +629,7 @@ export class Orchestrator<TEnt extends Ent, TData extends Data> {
     // if action transformations. always do it
     // if disable transformations set, don't do schema transform and just do the right thing
     // else apply schema tranformation if it exists
-    let transformed: TransformedUpdateOperation<TEnt> | undefined;
+    let transformed: TransformedUpdateOperation<TEnt> | null;
 
     if (action?.transformWrite) {
       transformed = await action.transformWrite({

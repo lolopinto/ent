@@ -14,6 +14,7 @@ import { NodeType } from "./const";
 import { table, uuid, text, timestamptz } from "../db/test_db";
 import { ObjectLoaderFactory } from "../../core/loaders";
 import { convertDate } from "../../core/convert";
+import { WriteOperation } from "../../action";
 
 export class FakeContact implements Ent {
   readonly id: ID;
@@ -117,7 +118,13 @@ export function getContactBuilder(viewer: Viewer, input: ContactCreateInput) {
   m.set("createdAt", new Date());
   m.set("updatedAt", new Date());
 
-  return new SimpleBuilder(viewer, FakeContactSchema, m);
+  return new SimpleBuilder(
+    viewer,
+    FakeContactSchema,
+    m,
+    WriteOperation.Insert,
+    null,
+  );
 }
 
 export async function createContact(viewer: Viewer, input: ContactCreateInput) {

@@ -289,7 +289,7 @@ class MessageAction extends SimpleAction<Message> {
     viewer: Viewer,
     fields: Map<string, any>,
     operation: WriteOperation,
-    existingEnt?: Message,
+    existingEnt: Message | null,
   ) {
     super(viewer, MessageSchema, fields, operation, existingEnt);
   }
@@ -322,7 +322,7 @@ class UserAction extends SimpleAction<User> {
     viewer: Viewer,
     fields: Map<string, any>,
     operation: WriteOperation,
-    existingEnt?: User,
+    existingEnt: User | null,
   ) {
     super(viewer, UserSchema, fields, operation, existingEnt);
   }
@@ -341,6 +341,7 @@ class UserAction extends SimpleAction<User> {
             ["UserID", builder],
           ]),
           WriteOperation.Insert,
+          null,
         );
 
         this.contactAction.observers = [new EntCreationObserver<Contact>()];
@@ -492,6 +493,7 @@ function commonTests() {
         ["LastName", "Snow"],
       ]),
       WriteOperation.Insert,
+      null,
     );
     const user = await action.saveX();
     expect(operations.length).toBe(1);
@@ -542,6 +544,7 @@ function commonTests() {
         ["LastName", "Snow"],
       ]),
       WriteOperation.Insert,
+      null,
     );
 
     const exec = await executeAction(action, ListBasedExecutor);
@@ -628,6 +631,7 @@ function commonTests() {
         ["LastName", "Snow"],
       ]),
       WriteOperation.Insert,
+      null,
     );
     let firstName = userBuilder.fields.get("FirstName");
     let lastName = userBuilder.fields.get("LastName");
@@ -640,6 +644,7 @@ function commonTests() {
         ["UserID", userBuilder],
       ]),
       WriteOperation.Insert,
+      null,
     );
 
     try {
@@ -662,6 +667,7 @@ function commonTests() {
         ["LastName", "Snow"],
       ]),
       WriteOperation.Insert,
+      null,
     );
 
     // expect ComplexExecutor because of complexity of what we have here
@@ -770,6 +776,7 @@ function commonTests() {
               ["EmailAddress", userInfo.emailAddress],
             ]),
             WriteOperation.Insert,
+            null,
           );
 
           for (let channel of autoJoinChannels) {
@@ -799,6 +806,7 @@ function commonTests() {
               ["expiresAt", new Date().setTime(new Date().getTime() + 86400)],
             ]),
             WriteOperation.Insert,
+            null,
           );
 
           return await Promise.all([
@@ -923,6 +931,7 @@ function commonTests() {
                 ["log", input],
               ]),
               WriteOperation.Insert,
+              null,
             );
             builder.orchestrator.addOutboundEdge(
               clAction.builder,
@@ -955,6 +964,7 @@ function commonTests() {
             ["notificationsEnabled", true],
           ]),
           WriteOperation.Insert,
+          null,
         );
       },
     );
@@ -991,6 +1001,7 @@ function commonTests() {
                 ["log", input],
               ]),
               WriteOperation.Insert,
+              null,
             );
             builder.orchestrator.addInboundEdge(
               clAction.builder,
@@ -1023,6 +1034,7 @@ function commonTests() {
             ["notificationsEnabled", true],
           ]),
           WriteOperation.Insert,
+          null,
         );
       },
     );
@@ -1078,6 +1090,7 @@ function commonTests() {
                 ["log", input],
               ]),
               WriteOperation.Insert,
+              null,
             );
             builder.orchestrator.addOutboundEdge(
               clAction.builder,
@@ -1112,6 +1125,7 @@ function commonTests() {
             ["notificationsEnabled", true],
           ]),
           WriteOperation.Insert,
+          null,
         );
       },
     );
@@ -1152,6 +1166,7 @@ function commonTests() {
         ["EmailAddress", randomEmail()],
       ]),
       WriteOperation.Insert,
+      null,
     );
 
     async function doNothing(): Promise<void> {}
@@ -1234,6 +1249,7 @@ function commonTests() {
       AccountSchema,
       new Map([]),
       WriteOperation.Insert,
+      null,
     );
 
     const actions: SimpleAction<Ent>[] = inputs.map(
@@ -1246,6 +1262,7 @@ function commonTests() {
             ["AccountID", accountAction.builder],
           ]),
           WriteOperation.Insert,
+          null,
         ),
     );
     actions.push(accountAction);
@@ -1255,7 +1272,7 @@ function commonTests() {
         viewer: Viewer,
         operation: WriteOperation,
         action: SimpleAction<Group>,
-        existingEnt?: Group,
+        existingEnt: Group | null,
       ) {
         super(viewer, GroupSchema, new Map(), operation, existingEnt, action);
       }
@@ -1274,6 +1291,7 @@ function commonTests() {
           ["expiresAt", new Date().setTime(new Date().getTime() + 86400)],
         ]),
         WriteOperation.Insert,
+        null,
       ),
     );
 

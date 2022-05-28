@@ -204,7 +204,7 @@ export enum SQLStatementOperation {
 
 export interface UpdateOperation<T extends Ent> {
   op: SQLStatementOperation;
-  existingEnt?: T;
+  existingEnt: T | null;
   viewer: Viewer;
   data?: Map<string, any>;
 }
@@ -216,7 +216,7 @@ export interface TransformedUpdateOperation<T extends Ent> {
 
   // if changing to an update, we want to return the ent
   // TODO don't have a way to delete the ent e.g. update -> insert
-  existingEnt?: T;
+  existingEnt: T | null;
 }
 
 // we want --strictNullChecks flag so nullable is used to type graphql, ts, db
