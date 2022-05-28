@@ -100,8 +100,9 @@ export interface Validator<TBuilder extends Builder<Ent>, TData extends Data> {
 
 export interface Action<
   TEnt extends Ent,
-  TBuilder extends Builder<TEnt>,
-  TData extends Data,
+  TBuilder extends Builder<TEnt, TExistingEnt>,
+  TInput extends Data,
+  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
 > {
   readonly viewer: Viewer;
   changeset(): Promise<Changeset<TEnt>>;
@@ -112,10 +113,10 @@ export interface Action<
   // TODO consider making these methods. maybe they'll be easier to use then?
   // performance implications of methods being called multiple times and new instances?
   // even when declared in base class, if overriden in subclasses, still need to type it...
-  triggers?: Trigger<TBuilder, TData>[];
-  observers?: Observer<TBuilder, TData>[];
-  validators?: Validator<TBuilder, TData>[];
-  getInput(): TData; // this input is passed to Triggers, Observers, Validators
+  triggers?: Trigger<TBuilder, TInput>[];
+  observers?: Observer<TBuilder, TInput>[];
+  validators?: Validator<TBuilder, TInput>[];
+  getInput(): TInput; // this input is passed to Triggers, Observers, Validators
   transformWrite?: (
     stmt: UpdateOperation<TEnt>,
   ) =>
