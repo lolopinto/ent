@@ -77,25 +77,40 @@ export type TriggerReturn =
   | Promise<Changeset<Ent> | void | (Changeset<Ent> | void)[]>
   | Promise<Changeset<Ent>>[];
 
-export interface Trigger<TBuilder extends Builder<Ent>, TData extends Data> {
+export interface Trigger<
+  TEnt extends Ent,
+  TBuilder extends Builder<TEnt, TExistingEnt>,
+  TInput extends Data = Data,
+  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
+> {
   // TODO: way in the future. detect any writes happening in changesets and optionally throw if configured to do so
   // can throw if it wants. not expected to throw tho.
   // input passed in here !== builder.getInput()
   // builder.getInput() can have other default fields
-  changeset(builder: TBuilder, input: TData): TriggerReturn;
+  changeset(builder: TBuilder, input: TInput): TriggerReturn;
 }
 
-export interface Observer<TBuilder extends Builder<Ent>, TData extends Data> {
+export interface Observer<
+  TEnt extends Ent,
+  TBuilder extends Builder<TEnt, TExistingEnt>,
+  TInput extends Data = Data,
+  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
+> {
   // input passed in here !== builder.getInput()
   // builder.getInput() can have other default fields
-  observe(builder: TBuilder, input: TData): void | Promise<void>;
+  observe(builder: TBuilder, input: TInput): void | Promise<void>;
 }
 
-export interface Validator<TBuilder extends Builder<Ent>, TData extends Data> {
+export interface Validator<
+  TEnt extends Ent,
+  TBuilder extends Builder<TEnt, TExistingEnt>,
+  TInput extends Data,
+  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
+> {
   // can throw if it wants
   // input passed in here !== builder.getInput()
   // builder.getInput() can have other default fields
-  validate(builder: TBuilder, input: TData): Promise<void> | void;
+  validate(builder: TBuilder, input: TInput): Promise<void> | void;
 }
 
 export interface Action<
@@ -113,9 +128,9 @@ export interface Action<
   // TODO consider making these methods. maybe they'll be easier to use then?
   // performance implications of methods being called multiple times and new instances?
   // even when declared in base class, if overriden in subclasses, still need to type it...
-  triggers?: Trigger<TBuilder, TInput>[];
-  observers?: Observer<TBuilder, TInput>[];
-  validators?: Validator<TBuilder, TInput>[];
+  triggers?: Trigger<TEnt, TBuilder, TInput, TExistingEnt>[];
+  observers?: Observer<TEnt, TBuilder, TInput, TExistingEnt>[];
+  validators?: Validator<TEnt, TBuilder, TInput, TExistingEnt>[];
   getInput(): TInput; // this input is passed to Triggers, Observers, Validators
   transformWrite?: (
     stmt: UpdateOperation<TEnt>,

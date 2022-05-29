@@ -564,7 +564,7 @@ export class Orchestrator<
   private async triggers(
     action: Action<TEnt, Builder<TEnt>, TData>,
     builder: Builder<TEnt>,
-    triggers: Trigger<Builder<TEnt>, TData>[],
+    triggers: Trigger<TEnt, Builder<TEnt>, TData>[],
   ): Promise<void> {
     await Promise.all(
       triggers.map(async (trigger) => {
@@ -587,7 +587,7 @@ export class Orchestrator<
   }
 
   private async validators(
-    validators: Validator<Builder<TEnt>, TData>[],
+    validators: Validator<TEnt, Builder<TEnt>, TData>[],
     action: Action<TEnt, Builder<TEnt>, TData>,
     builder: Builder<TEnt>,
   ): Promise<void> {

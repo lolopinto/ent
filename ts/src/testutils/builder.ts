@@ -314,12 +314,12 @@ interface viewerEntLoadFunc {
 export class SimpleAction<
   T extends Ent,
   TExistingEnt extends TMaybleNullableEnt<T> = MaybeNull<T>,
-> implements Action<T, SimpleBuilder<T>, Data>
+> implements Action<T, SimpleBuilder<T, TExistingEnt>, Data, TExistingEnt>
 {
-  builder: SimpleBuilder<T>;
-  validators: Validator<SimpleBuilder<T>, Data>[] = [];
-  triggers: Trigger<SimpleBuilder<T>, Data>[] = [];
-  observers: Observer<SimpleBuilder<T>, Data>[] = [];
+  builder: SimpleBuilder<T, TExistingEnt>;
+  validators: Validator<T, SimpleBuilder<T>, Data>[] = [];
+  triggers: Trigger<T, SimpleBuilder<T>, Data>[] = [];
+  observers: Observer<T, SimpleBuilder<T>, Data>[] = [];
   viewerForEntLoad: viewerEntLoadFunc | undefined;
 
   constructor(
@@ -329,7 +329,7 @@ export class SimpleAction<
     operation: WriteOperation = WriteOperation.Insert,
     existingEnt: TExistingEnt,
   ) {
-    this.builder = new SimpleBuilder<T>(
+    this.builder = new SimpleBuilder<T, TExistingEnt>(
       this.viewer,
       schema,
       fields,

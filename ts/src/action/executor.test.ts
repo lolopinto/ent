@@ -294,7 +294,7 @@ class MessageAction extends SimpleAction<Message> {
     super(viewer, MessageSchema, fields, operation, existingEnt);
   }
 
-  triggers: Trigger<SimpleBuilder<Message>, Data>[] = [
+  triggers: Trigger<Message, SimpleBuilder<Message>>[] = [
     {
       changeset: (builder, _input): void => {
         let sender = builder.fields.get("sender");
@@ -310,7 +310,7 @@ class MessageAction extends SimpleAction<Message> {
     },
   ];
 
-  observers: Observer<SimpleBuilder<Message>, Data>[] = [
+  observers: Observer<Message, SimpleBuilder<Message>>[] = [
     new EntCreationObserver<Message>(),
   ];
 }
@@ -327,7 +327,7 @@ class UserAction extends SimpleAction<User> {
     super(viewer, UserSchema, fields, operation, existingEnt);
   }
 
-  triggers: Trigger<SimpleBuilder<User>, Data>[] = [
+  triggers: Trigger<User, SimpleBuilder<User>, Data>[] = [
     {
       changeset: (builder): Promise<Changeset<Contact>> => {
         let firstName = builder.fields.get("FirstName");
@@ -356,7 +356,7 @@ class UserAction extends SimpleAction<User> {
     },
   ];
 
-  observers: Observer<SimpleBuilder<User>, Data>[] = [
+  observers: Observer<User, SimpleBuilder<User>, Data>[] = [
     new EntCreationObserver<User>(),
   ];
 }
@@ -366,7 +366,9 @@ type getMembershipFunction = (
   edge: EdgeInputData,
 ) => SimpleAction<Ent>;
 
-class GroupMembershipTrigger implements Trigger<SimpleBuilder<Group>, Data> {
+class GroupMembershipTrigger
+  implements Trigger<Group, SimpleBuilder<Group>, Data>
+{
   constructor(private getter: getMembershipFunction) {}
   changeset(builder: SimpleBuilder<Group>, input: Data): TriggerReturn {
     const inputEdges = builder.orchestrator.getInputEdges(
