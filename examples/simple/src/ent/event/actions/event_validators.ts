@@ -3,8 +3,11 @@ import {
   EventBuilder,
   EventInput,
 } from "../../generated/event/actions/event_builder";
+import { Event } from "../../../ent";
 
-export class EventTimeValidator implements Validator<EventBuilder, EventInput> {
+export class EventTimeValidator
+  implements Validator<Event, EventBuilder, EventInput>
+{
   validate(builder: EventBuilder): void {
     const startTime = builder.getNewStartTimeValue();
     const endTime = builder.getNewEndTimeValue();

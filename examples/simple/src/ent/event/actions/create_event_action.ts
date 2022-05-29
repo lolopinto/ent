@@ -6,6 +6,7 @@ import { Trigger, Validator } from "@snowtop/ent/action";
 import { SharedValidators } from "./event_validators";
 import { EventBuilder } from "../../generated/event/actions/event_builder";
 import { AlwaysAllowPrivacyPolicy, PrivacyPolicy } from "@snowtop/ent";
+import { Event } from "../../../ent";
 
 export { EventCreateInput };
 
@@ -17,11 +18,11 @@ export default class CreateEventAction extends CreateEventActionBase {
     return AlwaysAllowPrivacyPolicy;
   }
 
-  validators: Validator<EventBuilder, EventCreateInput>[] = [
+  validators: Validator<Event, EventBuilder, EventCreateInput>[] = [
     ...SharedValidators,
   ];
 
-  triggers: Trigger<EventBuilder, EventCreateInput>[] = [
+  triggers: Trigger<Event, EventBuilder, EventCreateInput>[] = [
     {
       changeset(
         builder: EventBuilder<EventCreateInput>,
