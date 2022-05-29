@@ -31,21 +31,26 @@ function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class CommentBuilder<TData extends CommentInput = CommentInput>
-  implements Builder<Comment>
+type MaybeNull<T extends Ent> = T | null;
+type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
+
+export class CommentBuilder<
+  TInput extends CommentInput = CommentInput,
+  TExistingEnt extends TMaybleNullableEnt<Comment> = Comment | null,
+> implements Builder<Comment, TExistingEnt>
 {
-  orchestrator: Orchestrator<Comment, TData>;
+  orchestrator: Orchestrator<Comment, TInput>;
   readonly placeholderID: ID;
   readonly ent = Comment;
   readonly nodeType = NodeType.Comment;
-  private input: TData;
+  private input: TInput;
   private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: Action<Comment, Builder<Comment>, TData>,
-    public readonly existingEnt?: Comment | undefined,
+    action: Action<Comment, Builder<Comment, TExistingEnt>, TInput>,
+    public readonly existingEnt: TExistingEnt,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Comment`;
     this.input = action.getInput();
@@ -66,7 +71,7 @@ export class CommentBuilder<TData extends CommentInput = CommentInput>
     });
   }
 
-  getInput(): TData {
+  getInput(): TInput {
     return this.input;
   }
 
@@ -101,7 +106,9 @@ export class CommentBuilder<TData extends CommentInput = CommentInput>
   clearInputEdges(edgeType: EdgeType, op: WriteOperation, id?: ID) {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
-  addPost(...nodes: (Ent | Builder<Ent>)[]): CommentBuilder<TData> {
+  addPost(
+    ...nodes: (Ent | Builder<Ent>)[]
+  ): CommentBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.orchestrator.addOutboundEdge(
@@ -125,7 +132,7 @@ export class CommentBuilder<TData extends CommentInput = CommentInput>
     id: ID | Builder<Ent>,
     nodeType: NodeType,
     options?: AssocEdgeInputOptions,
-  ): CommentBuilder<TData> {
+  ): CommentBuilder<TInput, TExistingEnt> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.CommentToPost,
@@ -135,7 +142,7 @@ export class CommentBuilder<TData extends CommentInput = CommentInput>
     return this;
   }
 
-  removePost(...nodes: (ID | Ent)[]): CommentBuilder<TData> {
+  removePost(...nodes: (ID | Ent)[]): CommentBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.CommentToPost);

@@ -22,11 +22,12 @@ export class ConfirmEditEmailAddressActionBase
   implements
     Action<
       User,
-      UserBuilder<ConfirmEditEmailAddressInput>,
-      ConfirmEditEmailAddressInput
+      UserBuilder<ConfirmEditEmailAddressInput, User>,
+      ConfirmEditEmailAddressInput,
+      User
     >
 {
-  public readonly builder: UserBuilder<ConfirmEditEmailAddressInput>;
+  public readonly builder: UserBuilder<ConfirmEditEmailAddressInput, User>;
   public readonly viewer: Viewer;
   protected input: ConfirmEditEmailAddressInput;
   protected user: User;

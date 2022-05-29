@@ -22,11 +22,12 @@ export class ConfirmEditPhoneNumberActionBase
   implements
     Action<
       User,
-      UserBuilder<ConfirmEditPhoneNumberInput>,
-      ConfirmEditPhoneNumberInput
+      UserBuilder<ConfirmEditPhoneNumberInput, User>,
+      ConfirmEditPhoneNumberInput,
+      User
     >
 {
-  public readonly builder: UserBuilder<ConfirmEditPhoneNumberInput>;
+  public readonly builder: UserBuilder<ConfirmEditPhoneNumberInput, User>;
   public readonly viewer: Viewer;
   protected input: ConfirmEditPhoneNumberInput;
   protected user: User;

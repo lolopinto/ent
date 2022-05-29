@@ -28,11 +28,15 @@ export class CreateContactEmailActionBase
   implements
     Action<
       ContactEmail,
-      ContactEmailBuilder<ContactEmailCreateInput>,
-      ContactEmailCreateInput
+      ContactEmailBuilder<ContactEmailCreateInput, ContactEmail | null>,
+      ContactEmailCreateInput,
+      ContactEmail | null
     >
 {
-  public readonly builder: ContactEmailBuilder<ContactEmailCreateInput>;
+  public readonly builder: ContactEmailBuilder<
+    ContactEmailCreateInput,
+    ContactEmail | null
+  >;
   public readonly viewer: Viewer;
   protected input: ContactEmailCreateInput;
 
@@ -43,6 +47,7 @@ export class CreateContactEmailActionBase
       this.viewer,
       WriteOperation.Insert,
       this,
+      null,
     );
   }
 

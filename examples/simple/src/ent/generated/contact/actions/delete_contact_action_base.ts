@@ -14,9 +14,15 @@ import { Contact } from "../../..";
 import { ContactBuilder, ContactInput } from "./contact_builder";
 
 export class DeleteContactActionBase
-  implements Action<Contact, ContactBuilder<ContactInput>, ContactInput>
+  implements
+    Action<
+      Contact,
+      ContactBuilder<ContactInput, Contact>,
+      ContactInput,
+      Contact
+    >
 {
-  public readonly builder: ContactBuilder<ContactInput>;
+  public readonly builder: ContactBuilder<ContactInput, Contact>;
   public readonly viewer: Viewer;
   protected contact: Contact;
 

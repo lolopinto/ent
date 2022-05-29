@@ -18,9 +18,10 @@ export interface DeleteUserInput2 {
 }
 
 export class DeleteUserAction2Base
-  implements Action<User, UserBuilder<DeleteUserInput2>, DeleteUserInput2>
+  implements
+    Action<User, UserBuilder<DeleteUserInput2, User>, DeleteUserInput2, User>
 {
-  public readonly builder: UserBuilder<DeleteUserInput2>;
+  public readonly builder: UserBuilder<DeleteUserInput2, User>;
   public readonly viewer: Viewer;
   protected input: DeleteUserInput2;
   protected user: User;

@@ -20,11 +20,12 @@ export class DeleteContactEmailActionBase
   implements
     Action<
       ContactEmail,
-      ContactEmailBuilder<ContactEmailInput>,
-      ContactEmailInput
+      ContactEmailBuilder<ContactEmailInput, ContactEmail>,
+      ContactEmailInput,
+      ContactEmail
     >
 {
-  public readonly builder: ContactEmailBuilder<ContactEmailInput>;
+  public readonly builder: ContactEmailBuilder<ContactEmailInput, ContactEmail>;
   public readonly viewer: Viewer;
   protected contactEmail: ContactEmail;
 

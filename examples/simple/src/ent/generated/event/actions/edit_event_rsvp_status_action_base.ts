@@ -33,11 +33,12 @@ export class EditEventRsvpStatusActionBase
   implements
     Action<
       Event,
-      EventBuilder<EditEventRsvpStatusInput>,
-      EditEventRsvpStatusInput
+      EventBuilder<EditEventRsvpStatusInput, Event>,
+      EditEventRsvpStatusInput,
+      Event
     >
 {
-  public readonly builder: EventBuilder<EditEventRsvpStatusInput>;
+  public readonly builder: EventBuilder<EditEventRsvpStatusInput, Event>;
   public readonly viewer: Viewer;
   protected input: EditEventRsvpStatusInput;
   protected event: Event;

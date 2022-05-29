@@ -37,16 +37,27 @@ export interface UserCreateInput {
 }
 
 export class CreateUserActionBase
-  implements Action<User, UserBuilder<UserCreateInput>, UserCreateInput>
+  implements
+    Action<
+      User,
+      UserBuilder<UserCreateInput, User | null>,
+      UserCreateInput,
+      User | null
+    >
 {
-  public readonly builder: UserBuilder<UserCreateInput>;
+  public readonly builder: UserBuilder<UserCreateInput, User | null>;
   public readonly viewer: Viewer;
   protected input: UserCreateInput;
 
   constructor(viewer: Viewer, input: UserCreateInput) {
     this.viewer = viewer;
     this.input = input;
-    this.builder = new UserBuilder(this.viewer, WriteOperation.Insert, this);
+    this.builder = new UserBuilder(
+      this.viewer,
+      WriteOperation.Insert,
+      this,
+      null,
+    );
   }
 
   getPrivacyPolicy(): PrivacyPolicy<User> {

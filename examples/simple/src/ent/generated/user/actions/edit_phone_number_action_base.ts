@@ -19,9 +19,14 @@ export interface EditPhoneNumberInput {
 
 export class EditPhoneNumberActionBase
   implements
-    Action<User, UserBuilder<EditPhoneNumberInput>, EditPhoneNumberInput>
+    Action<
+      User,
+      UserBuilder<EditPhoneNumberInput, User>,
+      EditPhoneNumberInput,
+      User
+    >
 {
-  public readonly builder: UserBuilder<EditPhoneNumberInput>;
+  public readonly builder: UserBuilder<EditPhoneNumberInput, User>;
   public readonly viewer: Viewer;
   protected input: EditPhoneNumberInput;
   protected user: User;

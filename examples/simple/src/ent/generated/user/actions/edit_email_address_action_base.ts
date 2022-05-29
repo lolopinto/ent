@@ -19,9 +19,14 @@ export interface EditEmailAddressInput {
 
 export class EditEmailAddressActionBase
   implements
-    Action<User, UserBuilder<EditEmailAddressInput>, EditEmailAddressInput>
+    Action<
+      User,
+      UserBuilder<EditEmailAddressInput, User>,
+      EditEmailAddressInput,
+      User
+    >
 {
-  public readonly builder: UserBuilder<EditEmailAddressInput>;
+  public readonly builder: UserBuilder<EditEmailAddressInput, User>;
   public readonly viewer: Viewer;
   protected input: EditEmailAddressInput;
   protected user: User;

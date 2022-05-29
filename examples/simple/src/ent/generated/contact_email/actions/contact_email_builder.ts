@@ -30,22 +30,26 @@ function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
+type MaybeNull<T extends Ent> = T | null;
+type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
+
 export class ContactEmailBuilder<
-  TData extends ContactEmailInput = ContactEmailInput,
-> implements Builder<ContactEmail>
+  TInput extends ContactEmailInput = ContactEmailInput,
+  TExistingEnt extends TMaybleNullableEnt<ContactEmail> = ContactEmail | null,
+> implements Builder<ContactEmail, TExistingEnt>
 {
-  orchestrator: Orchestrator<ContactEmail, TData>;
+  orchestrator: Orchestrator<ContactEmail, TInput>;
   readonly placeholderID: ID;
   readonly ent = ContactEmail;
   readonly nodeType = NodeType.ContactEmail;
-  private input: TData;
+  private input: TInput;
   private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: Action<ContactEmail, Builder<ContactEmail>, TData>,
-    public readonly existingEnt?: ContactEmail | undefined,
+    action: Action<ContactEmail, Builder<ContactEmail, TExistingEnt>, TInput>,
+    public readonly existingEnt: TExistingEnt,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-ContactEmail`;
     this.input = action.getInput();
@@ -67,7 +71,7 @@ export class ContactEmailBuilder<
     });
   }
 
-  getInput(): TData {
+  getInput(): TInput {
     return this.input;
   }
 

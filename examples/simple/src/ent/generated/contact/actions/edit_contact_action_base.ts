@@ -28,9 +28,14 @@ export interface ContactEditInput {
 
 export class EditContactActionBase
   implements
-    Action<Contact, ContactBuilder<ContactEditInput>, ContactEditInput>
+    Action<
+      Contact,
+      ContactBuilder<ContactEditInput, Contact>,
+      ContactEditInput,
+      Contact
+    >
 {
-  public readonly builder: ContactBuilder<ContactEditInput>;
+  public readonly builder: ContactBuilder<ContactEditInput, Contact>;
   public readonly viewer: Viewer;
   protected input: ContactEditInput;
   protected contact: Contact;

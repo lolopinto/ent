@@ -23,11 +23,18 @@ export class CreateHoursOfOperationActionBase
   implements
     Action<
       HoursOfOperation,
-      HoursOfOperationBuilder<HoursOfOperationCreateInput>,
-      HoursOfOperationCreateInput
+      HoursOfOperationBuilder<
+        HoursOfOperationCreateInput,
+        HoursOfOperation | null
+      >,
+      HoursOfOperationCreateInput,
+      HoursOfOperation | null
     >
 {
-  public readonly builder: HoursOfOperationBuilder<HoursOfOperationCreateInput>;
+  public readonly builder: HoursOfOperationBuilder<
+    HoursOfOperationCreateInput,
+    HoursOfOperation | null
+  >;
   public readonly viewer: Viewer;
   protected input: HoursOfOperationCreateInput;
 
@@ -38,6 +45,7 @@ export class CreateHoursOfOperationActionBase
       this.viewer,
       WriteOperation.Insert,
       this,
+      null,
     );
   }
 

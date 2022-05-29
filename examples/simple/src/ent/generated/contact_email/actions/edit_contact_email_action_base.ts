@@ -28,11 +28,15 @@ export class EditContactEmailActionBase
   implements
     Action<
       ContactEmail,
-      ContactEmailBuilder<ContactEmailEditInput>,
-      ContactEmailEditInput
+      ContactEmailBuilder<ContactEmailEditInput, ContactEmail>,
+      ContactEmailEditInput,
+      ContactEmail
     >
 {
-  public readonly builder: ContactEmailBuilder<ContactEmailEditInput>;
+  public readonly builder: ContactEmailBuilder<
+    ContactEmailEditInput,
+    ContactEmail
+  >;
   public readonly viewer: Viewer;
   protected input: ContactEmailEditInput;
   protected contactEmail: ContactEmail;

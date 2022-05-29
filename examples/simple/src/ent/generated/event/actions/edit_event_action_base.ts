@@ -28,9 +28,10 @@ export interface EventEditInput {
 }
 
 export class EditEventActionBase
-  implements Action<Event, EventBuilder<EventEditInput>, EventEditInput>
+  implements
+    Action<Event, EventBuilder<EventEditInput, Event>, EventEditInput, Event>
 {
-  public readonly builder: EventBuilder<EventEditInput>;
+  public readonly builder: EventBuilder<EventEditInput, Event>;
   public readonly viewer: Viewer;
   protected input: EventEditInput;
   protected event: Event;

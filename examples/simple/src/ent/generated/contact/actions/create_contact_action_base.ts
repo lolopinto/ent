@@ -38,16 +38,26 @@ export interface ContactCreateInput {
 
 export class CreateContactActionBase
   implements
-    Action<Contact, ContactBuilder<ContactCreateInput>, ContactCreateInput>
+    Action<
+      Contact,
+      ContactBuilder<ContactCreateInput, Contact | null>,
+      ContactCreateInput,
+      Contact | null
+    >
 {
-  public readonly builder: ContactBuilder<ContactCreateInput>;
+  public readonly builder: ContactBuilder<ContactCreateInput, Contact | null>;
   public readonly viewer: Viewer;
   protected input: ContactCreateInput;
 
   constructor(viewer: Viewer, input: ContactCreateInput) {
     this.viewer = viewer;
     this.input = input;
-    this.builder = new ContactBuilder(this.viewer, WriteOperation.Insert, this);
+    this.builder = new ContactBuilder(
+      this.viewer,
+      WriteOperation.Insert,
+      this,
+      null,
+    );
   }
 
   getPrivacyPolicy(): PrivacyPolicy<Contact> {

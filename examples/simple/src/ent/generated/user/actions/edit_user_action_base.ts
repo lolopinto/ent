@@ -19,9 +19,10 @@ export interface UserEditInput {
 }
 
 export class EditUserActionBase
-  implements Action<User, UserBuilder<UserEditInput>, UserEditInput>
+  implements
+    Action<User, UserBuilder<UserEditInput, User>, UserEditInput, User>
 {
-  public readonly builder: UserBuilder<UserEditInput>;
+  public readonly builder: UserBuilder<UserEditInput, User>;
   public readonly viewer: Viewer;
   protected input: UserEditInput;
   protected user: User;

@@ -21,16 +21,26 @@ export interface HolidayCreateInput {
 
 export class CreateHolidayActionBase
   implements
-    Action<Holiday, HolidayBuilder<HolidayCreateInput>, HolidayCreateInput>
+    Action<
+      Holiday,
+      HolidayBuilder<HolidayCreateInput, Holiday | null>,
+      HolidayCreateInput,
+      Holiday | null
+    >
 {
-  public readonly builder: HolidayBuilder<HolidayCreateInput>;
+  public readonly builder: HolidayBuilder<HolidayCreateInput, Holiday | null>;
   public readonly viewer: Viewer;
   protected input: HolidayCreateInput;
 
   constructor(viewer: Viewer, input: HolidayCreateInput) {
     this.viewer = viewer;
     this.input = input;
-    this.builder = new HolidayBuilder(this.viewer, WriteOperation.Insert, this);
+    this.builder = new HolidayBuilder(
+      this.viewer,
+      WriteOperation.Insert,
+      this,
+      null,
+    );
   }
 
   getPrivacyPolicy(): PrivacyPolicy<Holiday> {

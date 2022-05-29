@@ -33,21 +33,26 @@ function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class AddressBuilder<TData extends AddressInput = AddressInput>
-  implements Builder<Address>
+type MaybeNull<T extends Ent> = T | null;
+type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
+
+export class AddressBuilder<
+  TInput extends AddressInput = AddressInput,
+  TExistingEnt extends TMaybleNullableEnt<Address> = Address | null,
+> implements Builder<Address, TExistingEnt>
 {
-  orchestrator: Orchestrator<Address, TData>;
+  orchestrator: Orchestrator<Address, TInput>;
   readonly placeholderID: ID;
   readonly ent = Address;
   readonly nodeType = NodeType.Address;
-  private input: TData;
+  private input: TInput;
   private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: Action<Address, Builder<Address>, TData>,
-    public readonly existingEnt?: Address | undefined,
+    action: Action<Address, Builder<Address, TExistingEnt>, TInput>,
+    public readonly existingEnt: TExistingEnt,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Address`;
     this.input = action.getInput();
@@ -68,7 +73,7 @@ export class AddressBuilder<TData extends AddressInput = AddressInput>
     });
   }
 
-  getInput(): TData {
+  getInput(): TInput {
     return this.input;
   }
 
@@ -106,7 +111,7 @@ export class AddressBuilder<TData extends AddressInput = AddressInput>
 
   addHostedEvent(
     ...nodes: (ID | Event | Builder<Event>)[]
-  ): AddressBuilder<TData> {
+  ): AddressBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addHostedEventID(node);
@@ -122,7 +127,7 @@ export class AddressBuilder<TData extends AddressInput = AddressInput>
   addHostedEventID(
     id: ID | Builder<Event>,
     options?: AssocEdgeInputOptions,
-  ): AddressBuilder<TData> {
+  ): AddressBuilder<TInput, TExistingEnt> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.AddressToHostedEvents,
@@ -132,7 +137,9 @@ export class AddressBuilder<TData extends AddressInput = AddressInput>
     return this;
   }
 
-  removeHostedEvent(...nodes: (ID | Event)[]): AddressBuilder<TData> {
+  removeHostedEvent(
+    ...nodes: (ID | Event)[]
+  ): AddressBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
