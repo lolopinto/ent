@@ -7,7 +7,6 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   ID,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import {
   Action,
@@ -17,6 +16,7 @@ import {
 } from "@snowtop/ent/action";
 import { Address, Event } from "../../..";
 import { EventBuilder } from "./event_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export interface EventCreateInput {
   name: string;
@@ -24,7 +24,7 @@ export interface EventCreateInput {
   startTime: Date;
   endTime?: Date | null;
   location: string;
-  addressID?: ID | null | Builder<Address>;
+  addressID?: ID | null | Builder<Address, ExampleViewer>;
 }
 
 export class CreateEventActionBase
@@ -32,15 +32,16 @@ export class CreateEventActionBase
     Action<
       Event,
       EventBuilder<EventCreateInput, Event | null>,
+      ExampleViewer,
       EventCreateInput,
       Event | null
     >
 {
   public readonly builder: EventBuilder<EventCreateInput, Event | null>;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected input: EventCreateInput;
 
-  constructor(viewer: Viewer, input: EventCreateInput) {
+  constructor(viewer: ExampleViewer, input: EventCreateInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new EventBuilder(
@@ -59,7 +60,7 @@ export class CreateEventActionBase
     return this.input;
   }
 
-  async changeset(): Promise<Changeset<Event>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -82,8 +83,8 @@ export class CreateEventActionBase
   }
 
   static create<T extends CreateEventActionBase>(
-    this: new (viewer: Viewer, input: EventCreateInput) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, input: EventCreateInput) => T,
+    viewer: ExampleViewer,
     input: EventCreateInput,
   ): T {
     return new this(viewer, input);

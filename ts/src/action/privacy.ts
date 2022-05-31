@@ -10,12 +10,12 @@ import {
   Skip,
 } from "../core/base";
 
-function isBuilder(node: ID | Builder<Ent>): node is Builder<Ent> {
+function isBuilder(node: ID | Builder<Ent, any>): node is Builder<Ent, any> {
   return (node as Builder<Ent>).placeholderID !== undefined;
 }
 
 export class DenyIfBuilder implements PrivacyPolicyRule {
-  constructor(private id?: ID | Builder<Ent>) {}
+  constructor(private id?: ID | Builder<Ent, any>) {}
 
   async apply(_v: Viewer, _ent: Ent): Promise<PrivacyResult> {
     if (this.id && isBuilder(this.id)) {
@@ -26,7 +26,7 @@ export class DenyIfBuilder implements PrivacyPolicyRule {
 }
 
 export class AllowIfBuilder implements PrivacyPolicyRule {
-  constructor(private id?: ID | Builder<Ent>) {}
+  constructor(private id?: ID | Builder<Ent, any>) {}
 
   async apply(_v: Viewer, _ent: Ent): Promise<PrivacyResult> {
     if (this.id && isBuilder(this.id)) {

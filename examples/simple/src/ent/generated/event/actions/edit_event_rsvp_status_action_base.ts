@@ -7,7 +7,6 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   ID,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import {
   Action,
@@ -17,6 +16,7 @@ import {
 } from "@snowtop/ent/action";
 import { Event, NodeType } from "../../..";
 import { EventBuilder } from "./event_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export enum EventRsvpStatusInput {
   Attending = "attending",
@@ -34,16 +34,21 @@ export class EditEventRsvpStatusActionBase
     Action<
       Event,
       EventBuilder<EditEventRsvpStatusInput, Event>,
+      ExampleViewer,
       EditEventRsvpStatusInput,
       Event
     >
 {
   public readonly builder: EventBuilder<EditEventRsvpStatusInput, Event>;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected input: EditEventRsvpStatusInput;
   protected event: Event;
 
-  constructor(viewer: Viewer, event: Event, input: EditEventRsvpStatusInput) {
+  constructor(
+    viewer: ExampleViewer,
+    event: Event,
+    input: EditEventRsvpStatusInput,
+  ) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new EventBuilder(
@@ -63,7 +68,7 @@ export class EditEventRsvpStatusActionBase
     return this.input;
   }
 
-  async changeset(): Promise<Changeset<Event>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -102,11 +107,11 @@ export class EditEventRsvpStatusActionBase
 
   static create<T extends EditEventRsvpStatusActionBase>(
     this: new (
-      viewer: Viewer,
+      viewer: ExampleViewer,
       event: Event,
       input: EditEventRsvpStatusInput,
     ) => T,
-    viewer: Viewer,
+    viewer: ExampleViewer,
     event: Event,
     input: EditEventRsvpStatusInput,
   ): T {
@@ -115,11 +120,11 @@ export class EditEventRsvpStatusActionBase
 
   static async saveXFromID<T extends EditEventRsvpStatusActionBase>(
     this: new (
-      viewer: Viewer,
+      viewer: ExampleViewer,
       event: Event,
       input: EditEventRsvpStatusInput,
     ) => T,
-    viewer: Viewer,
+    viewer: ExampleViewer,
     id: ID,
     input: EditEventRsvpStatusInput,
   ): Promise<Event> {

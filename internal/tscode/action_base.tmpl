@@ -30,7 +30,6 @@
 {{end -}}
 
 {{ $node := useImport .NodeData.Node -}}
-{{ $viewer := useImport "Viewer"}}
 
 {{$hasInput := hasInput $action -}}
 {{$inputName := "" -}}
@@ -39,8 +38,8 @@
 
   export interface {{$inputName}} {
     {{ range $field := $action.GetFields -}}
-      {{$type := $field.TsBuilderType -}}
-      {{range $field.TsBuilderImports -}}
+      {{$type := $field.TsBuilderType $cfg -}}
+      {{range $field.TsBuilderImports $cfg -}}
         {{ reserveImportPath . true -}}
         {{ $ignore := useImport .Import -}}
       {{end -}}
@@ -67,18 +66,23 @@
 {{ $instance := .NodeData.NodeInstance}}
 {{ $hasSaveFromID := false }}
 
+{{$viewerInfo := $cfg.GetTemplatizedViewer -}}
+{{ reserveImport $viewerInfo.Path $viewerInfo.Name -}}
+{{$viewerType := useImport $viewerInfo.Name -}}
+
+
 {{/* edit, whole shebang */ -}}
 {{ if and $action.MutatingExistingObject $hasInput -}}
-  {{ $constructor = printf "viewer: %s, %s: %s, input: %s" $viewer $instance $node $inputName -}}
+  {{ $constructor = printf "viewer: %s, %s: %s, input: %s" $viewerType $instance $node $inputName -}}
   {{ $newArgs = printf "viewer, %s, input" $instance -}}
   {{ $hasSaveFromID = true}}
 {{/* create, no editing */ -}}
 {{ else if $hasInput -}} 
-  {{ $constructor = printf "viewer: %s, input: %s"  $viewer $inputName -}}
+  {{ $constructor = printf "viewer: %s, input: %s"  $viewerType $inputName -}}
   {{ $newArgs = "viewer, input" }}
 {{/* delete, no input */ -}}
 {{ else -}}
-  {{ $constructor = printf "viewer: %s, %s: %s" $viewer $instance $node -}}
+  {{ $constructor = printf "viewer: %s, %s: %s" $viewerType $instance $node -}}
   {{ $newArgs = printf "viewer, %s" $instance -}}
   {{ $hasSaveFromID = true}}
 {{end -}}
@@ -97,9 +101,10 @@
   {{$existingEnt = printf "%s | null" $node}}
 {{ end -}}
 
-export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useImport $builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$inputData}}, {{$existingEnt}}> {
+
+export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useImport $builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}> {
   public readonly builder: {{useImport $builderName}}<{{$inputData}}, {{$existingEnt}}>;
-  public readonly viewer: {{$viewer}}
+  public readonly viewer: {{$viewerType}}
   {{ if $hasInput -}}
     protected input: {{$inputName}};
   {{end -}}
@@ -244,7 +249,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
   {{if $hasSaveFromID -}}
     static async saveXFromID<T extends {{$actionName}}>(
       this: new ({{$constructor}}) => T,
-      viewer: {{useImport "Viewer"}},
+      viewer: {{$viewerType}},
       id: {{useImport "ID"}},
       {{if $hasInput -}}
         input: {{$inputName}},

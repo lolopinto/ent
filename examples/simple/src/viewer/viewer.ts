@@ -2,16 +2,16 @@ import { Context, ID } from "@snowtop/ent";
 import { Viewer } from "@snowtop/ent";
 import { User } from "src/ent";
 
-export interface ExampleViewerInt extends Viewer<ID | null, User | null> {
+export interface ExampleViewerInt extends Viewer<User | null, ID | null> {
   isOmniscient(): boolean;
   isLoggedOut(): boolean;
-  setContext(ctx: Context<ID | null, User | null>): any;
+  setContext(ctx: Context<ExampleViewer>): any;
 }
 
 export class ExampleViewer implements ExampleViewerInt {
-  public context?: Context<ID | null, User | null> | undefined;
+  public context?: Context<this> | undefined;
 
-  constructor(public viewerID: string | null) {}
+  constructor(public viewerID: ID | null) {}
 
   isOmniscient(): boolean {
     return false;
@@ -21,7 +21,7 @@ export class ExampleViewer implements ExampleViewerInt {
     return this.viewerID !== null;
   }
 
-  setContext(ctx: Context<ID | null, User | null>) {
+  setContext(ctx: Context<this>) {
     this.context = ctx;
   }
 
@@ -34,5 +34,11 @@ export class ExampleViewer implements ExampleViewerInt {
 
   instanceKey(): string {
     return `exampleViewer: ${this.viewerID}`;
+  }
+}
+
+export class LoggedOutExampleViewer extends ExampleViewer {
+  constructor() {
+    super(null);
   }
 }

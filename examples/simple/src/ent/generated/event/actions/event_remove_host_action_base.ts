@@ -7,20 +7,27 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   ID,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { Event, User } from "../../..";
 import { EventBuilder, EventInput } from "./event_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export class EventRemoveHostActionBase
-  implements Action<Event, EventBuilder<EventInput, Event>, EventInput, Event>
+  implements
+    Action<
+      Event,
+      EventBuilder<EventInput, Event>,
+      ExampleViewer,
+      EventInput,
+      Event
+    >
 {
   public readonly builder: EventBuilder<EventInput, Event>;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected event: Event;
 
-  constructor(viewer: Viewer, event: Event) {
+  constructor(viewer: ExampleViewer, event: Event) {
     this.viewer = viewer;
     this.builder = new EventBuilder(
       this.viewer,
@@ -43,7 +50,7 @@ export class EventRemoveHostActionBase
     nodes.forEach((node) => this.builder.removeHost(node));
     return this;
   }
-  async changeset(): Promise<Changeset<Event>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -66,16 +73,16 @@ export class EventRemoveHostActionBase
   }
 
   static create<T extends EventRemoveHostActionBase>(
-    this: new (viewer: Viewer, event: Event) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, event: Event) => T,
+    viewer: ExampleViewer,
     event: Event,
   ): T {
     return new this(viewer, event);
   }
 
   static async saveXFromID<T extends EventRemoveHostActionBase>(
-    this: new (viewer: Viewer, event: Event) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, event: Event) => T,
+    viewer: ExampleViewer,
     id: ID,
     hostID: ID,
   ): Promise<Event> {

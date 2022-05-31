@@ -1,4 +1,3 @@
-import { LoggedOutViewer, IDViewer } from "@snowtop/ent";
 import { User, Contact } from "../../ent";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
 import CreateUserAction from "../user/actions/create_user_action";
@@ -7,8 +6,9 @@ import CreateContactAction, {
 } from "../contact/actions/create_contact_action";
 import { UserToContactsQuery } from "../user/query/user_to_contacts_query";
 import EditContactAction from "../contact/actions/edit_contact_action";
+import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
 
-const loggedOutViewer = new LoggedOutViewer();
+const loggedOutViewer = new LoggedOutExampleViewer();
 
 async function createUser(): Promise<User> {
   return await CreateUserAction.create(loggedOutViewer, {
@@ -25,7 +25,7 @@ async function create(
   firstName: string,
   lastName: string,
 ): Promise<Contact> {
-  return await CreateContactAction.create(new IDViewer(user.id), {
+  return await CreateContactAction.create(new ExampleViewer(user.id), {
     emails: [
       {
         emailAddress: randomEmail(),
@@ -45,7 +45,7 @@ async function createMany(
   let results: Contact[] = [];
   for (const name of names) {
     // TODO eventually a multi-create API
-    let contact = await CreateContactAction.create(new IDViewer(user.id), {
+    let contact = await CreateContactAction.create(new ExampleViewer(user.id), {
       emails: [
         {
           emailAddress: randomEmail(),
@@ -98,7 +98,7 @@ test("create contacts", async () => {
   verifyContacts(contacts, inputs);
 
   const userId = contacts[0].userID;
-  const v = new IDViewer(userId);
+  const v = new ExampleViewer(userId);
   const loadedContact = await Contact.loadX(v, contacts[0].id);
   user = await loadedContact.loadUserX();
   expect(user).toBeInstanceOf(User);
@@ -127,7 +127,10 @@ test("create contacts", async () => {
   const ygritte = await action.saveX();
 
   // ygritte can load jon (because they are friends) but not his contacts
-  let jonFromYgritte = await User.loadX(new IDViewer(ygritte!.id), user.id);
+  let jonFromYgritte = await User.loadX(
+    new ExampleViewer(ygritte!.id),
+    user.id,
+  );
   const contactsViaYgritte = await jonFromYgritte.queryContacts().queryEnts();
   expect(contactsViaYgritte.length).toBe(0);
 });
@@ -176,7 +179,7 @@ test("multiple emails", async () => {
     userID: user.id,
   };
   let contact = await CreateContactAction.create(
-    new IDViewer(user.id),
+    new ExampleViewer(user.id),
     input,
   ).saveX();
 
@@ -217,7 +220,7 @@ test("multiple phonenumbers", async () => {
     userID: user.id,
   };
   let contact = await CreateContactAction.create(
-    new IDViewer(user.id),
+    new ExampleViewer(user.id),
     input,
   ).saveX();
   interface phoneNmberInfo {

@@ -1677,12 +1677,15 @@ export async function loadUniqueEdge(
   return new AssocEdge(row);
 }
 
-export async function loadUniqueNode<T extends Ent>(
-  viewer: Viewer,
+export async function loadUniqueNode<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+>(
+  viewer: TViewer,
   id1: ID,
   edgeType: string,
-  options: LoadEntOptions<T>,
-): Promise<T | null> {
+  options: LoadEntOptions<TEnt, TViewer>,
+): Promise<TEnt | null> {
   const edge = await loadUniqueEdge({
     id1,
     edgeType,

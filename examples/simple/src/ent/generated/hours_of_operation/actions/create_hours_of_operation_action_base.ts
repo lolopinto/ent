@@ -6,11 +6,11 @@
 import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { DayOfWeek, DayOfWeekAlt, HoursOfOperation } from "../../..";
 import { HoursOfOperationBuilder } from "./hours_of_operation_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export interface HoursOfOperationCreateInput {
   dayOfWeek: DayOfWeek;
@@ -27,6 +27,7 @@ export class CreateHoursOfOperationActionBase
         HoursOfOperationCreateInput,
         HoursOfOperation | null
       >,
+      ExampleViewer,
       HoursOfOperationCreateInput,
       HoursOfOperation | null
     >
@@ -35,10 +36,10 @@ export class CreateHoursOfOperationActionBase
     HoursOfOperationCreateInput,
     HoursOfOperation | null
   >;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected input: HoursOfOperationCreateInput;
 
-  constructor(viewer: Viewer, input: HoursOfOperationCreateInput) {
+  constructor(viewer: ExampleViewer, input: HoursOfOperationCreateInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new HoursOfOperationBuilder(
@@ -57,7 +58,7 @@ export class CreateHoursOfOperationActionBase
     return this.input;
   }
 
-  async changeset(): Promise<Changeset<HoursOfOperation>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -80,8 +81,8 @@ export class CreateHoursOfOperationActionBase
   }
 
   static create<T extends CreateHoursOfOperationActionBase>(
-    this: new (viewer: Viewer, input: HoursOfOperationCreateInput) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, input: HoursOfOperationCreateInput) => T,
+    viewer: ExampleViewer,
     input: HoursOfOperationCreateInput,
   ): T {
     return new this(viewer, input);

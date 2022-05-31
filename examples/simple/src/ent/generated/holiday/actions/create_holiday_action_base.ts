@@ -6,11 +6,11 @@
 import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { DayOfWeek, DayOfWeekAlt, Holiday } from "../../..";
 import { HolidayBuilder } from "./holiday_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export interface HolidayCreateInput {
   dayOfWeek: DayOfWeek;
@@ -24,15 +24,16 @@ export class CreateHolidayActionBase
     Action<
       Holiday,
       HolidayBuilder<HolidayCreateInput, Holiday | null>,
+      ExampleViewer,
       HolidayCreateInput,
       Holiday | null
     >
 {
   public readonly builder: HolidayBuilder<HolidayCreateInput, Holiday | null>;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected input: HolidayCreateInput;
 
-  constructor(viewer: Viewer, input: HolidayCreateInput) {
+  constructor(viewer: ExampleViewer, input: HolidayCreateInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new HolidayBuilder(
@@ -51,7 +52,7 @@ export class CreateHolidayActionBase
     return this.input;
   }
 
-  async changeset(): Promise<Changeset<Holiday>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -74,8 +75,8 @@ export class CreateHolidayActionBase
   }
 
   static create<T extends CreateHolidayActionBase>(
-    this: new (viewer: Viewer, input: HolidayCreateInput) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, input: HolidayCreateInput) => T,
+    viewer: ExampleViewer,
     input: HolidayCreateInput,
   ): T {
     return new this(viewer, input);

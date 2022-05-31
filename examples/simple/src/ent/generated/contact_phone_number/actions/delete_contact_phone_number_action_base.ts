@@ -7,7 +7,6 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   ID,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { ContactPhoneNumber } from "../../..";
@@ -15,12 +14,14 @@ import {
   ContactPhoneNumberBuilder,
   ContactPhoneNumberInput,
 } from "./contact_phone_number_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export class DeleteContactPhoneNumberActionBase
   implements
     Action<
       ContactPhoneNumber,
       ContactPhoneNumberBuilder<ContactPhoneNumberInput, ContactPhoneNumber>,
+      ExampleViewer,
       ContactPhoneNumberInput,
       ContactPhoneNumber
     >
@@ -29,10 +30,10 @@ export class DeleteContactPhoneNumberActionBase
     ContactPhoneNumberInput,
     ContactPhoneNumber
   >;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected contactPhoneNumber: ContactPhoneNumber;
 
-  constructor(viewer: Viewer, contactPhoneNumber: ContactPhoneNumber) {
+  constructor(viewer: ExampleViewer, contactPhoneNumber: ContactPhoneNumber) {
     this.viewer = viewer;
     this.builder = new ContactPhoneNumberBuilder(
       this.viewer,
@@ -51,7 +52,7 @@ export class DeleteContactPhoneNumberActionBase
     return {};
   }
 
-  async changeset(): Promise<Changeset<ContactPhoneNumber>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -72,16 +73,22 @@ export class DeleteContactPhoneNumberActionBase
   }
 
   static create<T extends DeleteContactPhoneNumberActionBase>(
-    this: new (viewer: Viewer, contactPhoneNumber: ContactPhoneNumber) => T,
-    viewer: Viewer,
+    this: new (
+      viewer: ExampleViewer,
+      contactPhoneNumber: ContactPhoneNumber,
+    ) => T,
+    viewer: ExampleViewer,
     contactPhoneNumber: ContactPhoneNumber,
   ): T {
     return new this(viewer, contactPhoneNumber);
   }
 
   static async saveXFromID<T extends DeleteContactPhoneNumberActionBase>(
-    this: new (viewer: Viewer, contactPhoneNumber: ContactPhoneNumber) => T,
-    viewer: Viewer,
+    this: new (
+      viewer: ExampleViewer,
+      contactPhoneNumber: ContactPhoneNumber,
+    ) => T,
+    viewer: ExampleViewer,
     id: ID,
   ): Promise<void> {
     const contactPhoneNumber = await ContactPhoneNumber.loadX(viewer, id);

@@ -7,7 +7,6 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   ID,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import {
   Action,
@@ -17,6 +16,7 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, User } from "../../..";
 import { ContactBuilder } from "./contact_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 interface customEmailInput {
   emailAddress: string;
@@ -27,11 +27,10 @@ interface customPhoneNumberInput {
   phoneNumber: string;
   label: string;
 }
-
 export interface ContactCreateInput {
   firstName: string;
   lastName: string;
-  userID: ID | Builder<User>;
+  userID: ID | Builder<User, ExampleViewer>;
   emails?: customEmailInput[] | null;
   phoneNumbers?: customPhoneNumberInput[] | null;
 }
@@ -41,15 +40,16 @@ export class CreateContactActionBase
     Action<
       Contact,
       ContactBuilder<ContactCreateInput, Contact | null>,
+      ExampleViewer,
       ContactCreateInput,
       Contact | null
     >
 {
   public readonly builder: ContactBuilder<ContactCreateInput, Contact | null>;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected input: ContactCreateInput;
 
-  constructor(viewer: Viewer, input: ContactCreateInput) {
+  constructor(viewer: ExampleViewer, input: ContactCreateInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new ContactBuilder(
@@ -68,7 +68,7 @@ export class CreateContactActionBase
     return this.input;
   }
 
-  async changeset(): Promise<Changeset<Contact>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -91,8 +91,8 @@ export class CreateContactActionBase
   }
 
   static create<T extends CreateContactActionBase>(
-    this: new (viewer: Viewer, input: ContactCreateInput) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, input: ContactCreateInput) => T,
+    viewer: ExampleViewer,
     input: ContactCreateInput,
   ): T {
     return new this(viewer, input);

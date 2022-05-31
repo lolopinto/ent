@@ -9,10 +9,10 @@ import {
   Context,
   CustomQuery,
   Data,
+  Ent,
   ID,
   LoadEntOptions,
   PrivacyPolicy,
-  Viewer,
   applyPrivacyPolicy,
   convertBool,
   convertDate,
@@ -59,6 +59,7 @@ import {
   UserToMaybeEventsQuery,
 } from "../internal";
 import schema from "../../schema/user_schema";
+import { ExampleViewer } from "../../viewer/viewer";
 
 export enum UserDaysOff {
   Monday = "monday",
@@ -103,7 +104,7 @@ interface UserDBData {
   nested_list: UserNestedObjectList[] | null;
 }
 
-export class UserBase {
+export class UserBase implements Ent<ExampleViewer> {
   readonly nodeType = NodeType.User;
   readonly id: ID;
   readonly createdAt: Date;
@@ -129,7 +130,7 @@ export class UserBase {
   readonly superNestedObject: UserSuperNestedObject | null;
   readonly nestedList: UserNestedObjectList[] | null;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: ExampleViewer, protected data: Data) {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
@@ -155,7 +156,7 @@ export class UserBase {
     this.nestedList = convertNullableJSONList(data.nested_list);
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<this> {
+  getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewer> {
     return AllowIfViewerPrivacyPolicy;
   }
 
@@ -222,8 +223,8 @@ export class UserBase {
   }
 
   static async load<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     id: ID,
   ): Promise<T | null> {
     return (await loadEnt(
@@ -234,8 +235,8 @@ export class UserBase {
   }
 
   static async loadX<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     id: ID,
   ): Promise<T> {
     return (await loadEntX(
@@ -246,8 +247,8 @@ export class UserBase {
   }
 
   static async loadMany<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
     return (await loadEnts(
@@ -258,8 +259,8 @@ export class UserBase {
   }
 
   static async loadCustom<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     query: CustomQuery,
   ): Promise<T[]> {
     return (await loadCustomEnts(
@@ -270,7 +271,7 @@ export class UserBase {
   }
 
   static async loadCustomData<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<UserDBData[]> {
@@ -282,7 +283,7 @@ export class UserBase {
   }
 
   static async loadRawData<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<UserDBData | null> {
@@ -294,7 +295,7 @@ export class UserBase {
   }
 
   static async loadRawDataX<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<UserDBData> {
@@ -306,8 +307,8 @@ export class UserBase {
   }
 
   static async loadFromEmailAddress<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     emailAddress: string,
   ): Promise<T | null> {
     return (await loadEntViaKey(viewer, emailAddress, {
@@ -317,8 +318,8 @@ export class UserBase {
   }
 
   static async loadFromEmailAddressX<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     emailAddress: string,
   ): Promise<T> {
     return (await loadEntXViaKey(viewer, emailAddress, {
@@ -328,7 +329,7 @@ export class UserBase {
   }
 
   static async loadIDFromEmailAddress<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewer, data: Data) => T,
     emailAddress: string,
     context?: Context,
   ): Promise<ID | undefined> {
@@ -339,7 +340,7 @@ export class UserBase {
   }
 
   static async loadRawDataFromEmailAddress<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewer, data: Data) => T,
     emailAddress: string,
     context?: Context,
   ): Promise<UserDBData | null> {
@@ -353,8 +354,8 @@ export class UserBase {
   }
 
   static async loadFromPhoneNumber<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     phoneNumber: string,
   ): Promise<T | null> {
     return (await loadEntViaKey(viewer, phoneNumber, {
@@ -364,8 +365,8 @@ export class UserBase {
   }
 
   static async loadFromPhoneNumberX<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     phoneNumber: string,
   ): Promise<T> {
     return (await loadEntXViaKey(viewer, phoneNumber, {
@@ -375,7 +376,7 @@ export class UserBase {
   }
 
   static async loadIDFromPhoneNumber<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewer, data: Data) => T,
     phoneNumber: string,
     context?: Context,
   ): Promise<ID | undefined> {
@@ -386,7 +387,7 @@ export class UserBase {
   }
 
   static async loadRawDataFromPhoneNumber<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewer, data: Data) => T,
     phoneNumber: string,
     context?: Context,
   ): Promise<UserDBData | null> {
@@ -400,8 +401,8 @@ export class UserBase {
   }
 
   static loaderOptions<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-  ): LoadEntOptions<T> {
+    this: new (viewer: ExampleViewer, data: Data) => T,
+  ): LoadEntOptions<T, ExampleViewer> {
     return {
       tableName: userLoaderInfo.tableName,
       fields: userLoaderInfo.fields,

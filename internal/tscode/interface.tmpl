@@ -11,8 +11,8 @@
   interface {{$int.TSType}} {
 {{ end -}}
   {{ range $field := $int.Fields -}}
-    {{$type := $field.TsBuilderType -}}
-    {{range $import := $field.TsBuilderImports -}}
+    {{$type := $field.TsBuilderType $cfg -}}
+    {{range $import := $field.TsBuilderImports $cfg -}}
       {{ if $root.ForeignImport $import.Import -}}
         {{ $ignore := useImportMaybe $import.Import -}}
       {{ end -}}

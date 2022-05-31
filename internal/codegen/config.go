@@ -361,11 +361,11 @@ func (cfg *Config) FieldPrivacyEvaluated() codegenapi.FieldPrivacyEvaluated {
 	return codegenapi.OnDemand
 }
 
-func (cfg *Config) GetTemplatizedViewer() *ViewerConfig {
+func (cfg *Config) GetTemplatizedViewer() *codegenapi.ViewerConfig {
 	if codegen := cfg.getCodegenConfig(); codegen != nil && codegen.TemplatizedViewer != nil {
 		return codegen.TemplatizedViewer
 	}
-	return &ViewerConfig{
+	return &codegenapi.ViewerConfig{
 		Path: codepath.Package,
 		Name: "Viewer",
 	}
@@ -518,7 +518,7 @@ type CodegenConfig struct {
 	SchemaSQLFilePath          string                           `yaml:"schemaSQLFilePath"`
 	DatabaseToCompareTo        string                           `yaml:"databaseToCompareTo"`
 	FieldPrivacyEvaluated      codegenapi.FieldPrivacyEvaluated `yaml:"fieldPrivacyEvaluated"`
-	TemplatizedViewer          *ViewerConfig                    `yaml:"templatizedViewer"`
+	TemplatizedViewer          *codegenapi.ViewerConfig         `yaml:"templatizedViewer"`
 }
 
 func cloneCodegen(cfg *CodegenConfig) *CodegenConfig {
@@ -568,23 +568,11 @@ func (cfg *PrivacyConfig) Clone() *PrivacyConfig {
 	}
 }
 
-func cloneViewerConfig(cfg *ViewerConfig) *ViewerConfig {
+func cloneViewerConfig(cfg *codegenapi.ViewerConfig) *codegenapi.ViewerConfig {
 	if cfg == nil {
 		return nil
 	}
 	return cfg.Clone()
-}
-
-type ViewerConfig struct {
-	Path string `yaml:"path"`
-	Name string `yaml:"name"`
-}
-
-func (cfg *ViewerConfig) Clone() *ViewerConfig {
-	return &ViewerConfig{
-		Path: cfg.Path,
-		Name: cfg.Name,
-	}
 }
 
 func clonePrettierConfig(cfg *PrettierConfig) *PrettierConfig {

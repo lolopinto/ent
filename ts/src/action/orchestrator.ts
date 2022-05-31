@@ -48,7 +48,7 @@ export interface OrchestratorOptions<
   operation: WriteOperation;
   tableName: string;
   // should we make it nullable for delete?
-  loaderOptions: LoadEntOptions<TEnt>;
+  loaderOptions: LoadEntOptions<TEnt, TViewer>;
   // key, usually 'id' that's being updated
   key: string;
 
@@ -223,7 +223,7 @@ export class Orchestrator<
   }
 
   addInboundEdge<T2 extends Ent>(
-    id1: ID | Builder<T2>,
+    id1: ID | Builder<T2, any>,
     edgeType: string,
     nodeType: string,
     options?: AssocEdgeInputOptions,
@@ -241,7 +241,7 @@ export class Orchestrator<
   }
 
   addOutboundEdge<T2 extends Ent>(
-    id2: ID | Builder<T2>,
+    id2: ID | Builder<T2, any>,
     edgeType: string,
     nodeType: string,
     options?: AssocEdgeInputOptions,

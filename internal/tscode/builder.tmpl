@@ -20,8 +20,8 @@
 
 export interface {{$input}} {
   {{range $field := .FieldInfo.GetEditableFields -}}
-    {{$type := $field.TsBuilderType -}}
-      {{range $field.TsBuilderImports -}}
+    {{$type := $field.TsBuilderType $cfg -}}
+      {{range $field.TsBuilderImports $cfg -}}
         {{ reserveImportPath . true -}}
         {{ $ignore := useImport .Import -}}
       {{end -}}
@@ -43,11 +43,15 @@ function randomNum(): string {
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 
+{{$viewerInfo := $cfg.GetTemplatizedViewer -}}
+{{ reserveImport $viewerInfo.Path $viewerInfo.Name -}}
+{{$viewerType := useImport $viewerInfo.Name -}}
+
 export class {{$builder}}<
   TInput extends {{$input}} = {{$input}},
   TExistingEnt extends TMaybleNullableEnt<{{$node}}> = {{$node}} | null,
-> implements {{useImport "Builder"}}<{{$node}}, TExistingEnt> {
-  orchestrator: {{useImport "Orchestrator"}}<{{$node}}, TInput>;
+> implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
+  orchestrator: {{useImport "Orchestrator"}}<{{$node}}, TInput, {{$viewerType}}, TExistingEnt>;
   readonly placeholderID: {{useImport "ID"}};
   readonly ent = {{$node}};
   readonly nodeType = {{useImport "NodeType"}}.{{$node}};
@@ -55,9 +59,9 @@ export class {{$builder}}<
   private m: Map<string, any> = new Map();
 
   public constructor(
-    public readonly viewer: {{useImport "Viewer"}},
+    public readonly viewer: {{$viewerType}},
     public readonly operation: {{useImport "WriteOperation"}},
-    action: {{useImport "Action"}}<{{$node}}, {{useImport "Builder"}}<{{$node}}, TExistingEnt>, TInput>,
+    action: {{useImport "Action"}}<{{$node}}, {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>, {{$viewerType}}, TInput, TExistingEnt>,
     public readonly existingEnt: TExistingEnt,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-{{$node}}`;
@@ -122,10 +126,10 @@ export class {{$builder}}<
     {{ $node := useImport .Node -}}
     {{ $polymorphicEdge := $edge.Edge.PolymorphicEdge -}}
   {{ if $polymorphicEdge -}}
-    {{$edge.TSAddMethodName}}(...nodes: ({{$node}} | Builder<{{$node}}>)[]): {{$builder}}<TInput, TExistingEnt> {
+    {{$edge.TSAddMethodName}}(...nodes: ({{$node}} | Builder<{{$node}}, any>)[]): {{$builder}}<TInput, TExistingEnt> {
   {{ else -}}
   {{/* for PolymorphicEdges, this API doesn't work since we don't know the type. callers should call addLikerID in a map */}}  
-    {{$edge.TSAddMethodName}}(...nodes: (ID | {{$node}} | Builder<{{$node}}>)[]): {{$builder}}<TInput, TExistingEnt> {
+    {{$edge.TSAddMethodName}}(...nodes: (ID | {{$node}} | Builder<{{$node}}, any>)[]): {{$builder}}<TInput, TExistingEnt> {
   {{ end -}}
     for (const node of nodes) {
       {{ if $polymorphicEdge -}}
@@ -157,7 +161,7 @@ export class {{$builder}}<
   }
 
   {{$edge.TSAddIDMethodName}}(
-    id: {{useImport "ID"}} | Builder<{{$node}}>, 
+    id: {{useImport "ID"}} | Builder<{{$node}}, any>, 
     {{ if $polymorphicEdge -}}
       nodeType: {{useImport "NodeType"}},
     {{ end -}}
@@ -270,14 +274,14 @@ export class {{$builder}}<
     return result;
   }
 
-  isBuilder(node: ID | {{useImport "Ent"}} | Builder<{{useImport "Ent"}}>): node is Builder<{{useImport "Ent"}}> {
-    return (node as Builder<{{useImport "Ent"}}>).placeholderID !== undefined;
+  isBuilder<T extends {{useImport "Ent"}}>(node: ID | T | Builder<T, any>): node is Builder<T, any> {
+    return (node as Builder<T, any>).placeholderID !== undefined;
   }
 
   {{range $field := .FieldInfo.GetEditableFields}}
     {{$tsFieldName := $field.TsBuilderFieldName -}}
     // get value of {{$field.FieldName}}. Retrieves it from the input if specified or takes it from existingEnt
-    getNew{{$field.CamelCaseName}}Value(): {{$field.TsBuilderUnionType}} | undefined {
+    getNew{{$field.CamelCaseName}}Value(): {{$field.TsBuilderUnionType $cfg}} | undefined {
     {{/** hmm not ideal for these accessors to not work...*/}}
       {{if $field.Private $cfg -}}
         return this.input.{{$tsFieldName}};

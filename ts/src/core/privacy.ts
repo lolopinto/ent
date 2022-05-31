@@ -214,12 +214,14 @@ export class DenyIfEntPropertyIsRule<T extends Ent>
   }
 }
 
-export class AllowIfEntIsVisibleRule<T extends Ent>
-  implements PrivacyPolicyRule
+export class AllowIfEntIsVisibleRule<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+> implements PrivacyPolicyRule
 {
-  constructor(private id: ID, private options: LoadEntOptions<T>) {}
+  constructor(private id: ID, private options: LoadEntOptions<TEnt, TViewer>) {}
 
-  async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
+  async apply(v: TViewer, _ent?: Ent): Promise<PrivacyResult> {
     const visible = await loadEnt(v, this.id, this.options);
     if (visible === null) {
       return Skip();
@@ -228,12 +230,14 @@ export class AllowIfEntIsVisibleRule<T extends Ent>
   }
 }
 
-export class AllowIfEntIsNotVisibleRule<T extends Ent>
-  implements PrivacyPolicyRule
+export class AllowIfEntIsNotVisibleRule<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+> implements PrivacyPolicyRule
 {
-  constructor(private id: ID, private options: LoadEntOptions<T>) {}
+  constructor(private id: ID, private options: LoadEntOptions<TEnt, TViewer>) {}
 
-  async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
+  async apply(v: TViewer, _ent?: Ent): Promise<PrivacyResult> {
     const visible = await loadEnt(v, this.id, this.options);
     if (visible === null) {
       return Allow();
@@ -242,24 +246,34 @@ export class AllowIfEntIsNotVisibleRule<T extends Ent>
   }
 }
 
-export class AllowIfEntIsVisiblePolicy<T extends Ent> implements PrivacyPolicy {
-  constructor(private id: ID, private options: LoadEntOptions<T>) {}
+export class AllowIfEntIsVisiblePolicy<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+> implements PrivacyPolicy<TEnt, TViewer>
+{
+  constructor(private id: ID, private options: LoadEntOptions<TEnt, TViewer>) {}
 
   rules = [new AllowIfEntIsVisibleRule(this.id, this.options), AlwaysDenyRule];
 }
 
-export class DenyIfEntIsVisiblePolicy<T extends Ent> implements PrivacyPolicy {
-  constructor(private id: ID, private options: LoadEntOptions<T>) {}
+export class DenyIfEntIsVisiblePolicy<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+> implements PrivacyPolicy<TEnt, TViewer>
+{
+  constructor(private id: ID, private options: LoadEntOptions<TEnt, TViewer>) {}
 
   rules = [new DenyIfEntIsVisibleRule(this.id, this.options), AlwaysAllowRule];
 }
 
-export class DenyIfEntIsVisibleRule<T extends Ent>
-  implements PrivacyPolicyRule
+export class DenyIfEntIsVisibleRule<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+> implements PrivacyPolicyRule<TEnt, TViewer>
 {
-  constructor(private id: ID, private options: LoadEntOptions<T>) {}
+  constructor(private id: ID, private options: LoadEntOptions<TEnt, TViewer>) {}
 
-  async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
+  async apply(v: TViewer, _ent?: Ent): Promise<PrivacyResult> {
     const visible = await loadEnt(v, this.id, this.options);
     if (visible === null) {
       return Skip();
@@ -268,12 +282,14 @@ export class DenyIfEntIsVisibleRule<T extends Ent>
   }
 }
 
-export class DenyIfEntIsNotVisibleRule<T extends Ent>
-  implements PrivacyPolicyRule
+export class DenyIfEntIsNotVisibleRule<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+> implements PrivacyPolicyRule
 {
-  constructor(private id: ID, private options: LoadEntOptions<T>) {}
+  constructor(private id: ID, private options: LoadEntOptions<TEnt, TViewer>) {}
 
-  async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
+  async apply(v: TViewer, _ent?: Ent): Promise<PrivacyResult> {
     const visible = await loadEnt(v, this.id, this.options);
     if (visible === null) {
       return Deny();

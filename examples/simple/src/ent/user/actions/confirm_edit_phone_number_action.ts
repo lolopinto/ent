@@ -6,6 +6,7 @@ import {
 import { User } from "../..";
 import { UserBuilder } from "../../generated/user/actions/user_builder";
 import DeleteAuthCodeAction from "../../auth_code/actions/delete_auth_code_action";
+import { ExampleViewer } from "../../../viewer/viewer";
 
 export { ConfirmEditPhoneNumberInput };
 
@@ -22,7 +23,12 @@ async function findAuthCode(
 }
 // we're only writing this once except with --force and packageName provided
 export default class ConfirmEditPhoneNumberAction extends ConfirmEditPhoneNumberActionBase {
-  validators: Validator<User, UserBuilder, ConfirmEditPhoneNumberInput>[] = [
+  validators: Validator<
+    User,
+    UserBuilder,
+    ExampleViewer,
+    ConfirmEditPhoneNumberInput
+  >[] = [
     {
       async validate(builder, input) {
         const authCode = await findAuthCode(
@@ -37,7 +43,12 @@ export default class ConfirmEditPhoneNumberAction extends ConfirmEditPhoneNumber
     },
   ];
 
-  triggers: Trigger<User, UserBuilder, ConfirmEditPhoneNumberInput>[] = [
+  triggers: Trigger<
+    User,
+    UserBuilder,
+    ExampleViewer,
+    ConfirmEditPhoneNumberInput
+  >[] = [
     {
       async changeset(builder, input) {
         const authCode = await findAuthCode(

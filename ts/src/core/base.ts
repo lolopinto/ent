@@ -63,11 +63,8 @@ interface queryOptions {
   orderby?: string;
 }
 
-export interface Context<
-  TEnt extends any = Ent | null,
-  TID extends any = ID | null,
-> {
-  getViewer(): Viewer<TEnt, TID>;
+export interface Context<TViewer extends Viewer = Viewer> {
+  getViewer(): TViewer;
   // optional per (request)contet
   // absence means we are not doing any caching
   // presence means we have loader, ent cache etc
@@ -92,7 +89,7 @@ export interface Viewer<
   // I want dataloaders to be created on demand as needed
   // so it seems having it in Context (per-request info makes sense)
   // so does that mean we should pass Context all the way down and not Viewer?
-  context?: Context<TEnt, TID>;
+  context?: Context<any>;
 }
 
 export interface Ent<TViewer extends Viewer = Viewer> {

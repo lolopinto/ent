@@ -7,11 +7,11 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   ID,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { User } from "../../..";
 import { UserBuilder } from "./user_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export interface UserEditInput {
   firstName?: string;
@@ -20,14 +20,20 @@ export interface UserEditInput {
 
 export class EditUserActionBase
   implements
-    Action<User, UserBuilder<UserEditInput, User>, UserEditInput, User>
+    Action<
+      User,
+      UserBuilder<UserEditInput, User>,
+      ExampleViewer,
+      UserEditInput,
+      User
+    >
 {
   public readonly builder: UserBuilder<UserEditInput, User>;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected input: UserEditInput;
   protected user: User;
 
-  constructor(viewer: Viewer, user: User, input: UserEditInput) {
+  constructor(viewer: ExampleViewer, user: User, input: UserEditInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new UserBuilder(
@@ -47,7 +53,7 @@ export class EditUserActionBase
     return this.input;
   }
 
-  async changeset(): Promise<Changeset<User>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -70,8 +76,8 @@ export class EditUserActionBase
   }
 
   static create<T extends EditUserActionBase>(
-    this: new (viewer: Viewer, user: User, input: UserEditInput) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, user: User, input: UserEditInput) => T,
+    viewer: ExampleViewer,
     user: User,
     input: UserEditInput,
   ): T {
@@ -79,8 +85,8 @@ export class EditUserActionBase
   }
 
   static async saveXFromID<T extends EditUserActionBase>(
-    this: new (viewer: Viewer, user: User, input: UserEditInput) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, user: User, input: UserEditInput) => T,
+    viewer: ExampleViewer,
     id: ID,
     input: UserEditInput,
   ): Promise<User> {

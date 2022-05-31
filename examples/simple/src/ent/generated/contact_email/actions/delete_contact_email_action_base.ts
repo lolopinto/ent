@@ -7,7 +7,6 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   ID,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { ContactEmail } from "../../..";
@@ -15,21 +14,23 @@ import {
   ContactEmailBuilder,
   ContactEmailInput,
 } from "./contact_email_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export class DeleteContactEmailActionBase
   implements
     Action<
       ContactEmail,
       ContactEmailBuilder<ContactEmailInput, ContactEmail>,
+      ExampleViewer,
       ContactEmailInput,
       ContactEmail
     >
 {
   public readonly builder: ContactEmailBuilder<ContactEmailInput, ContactEmail>;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected contactEmail: ContactEmail;
 
-  constructor(viewer: Viewer, contactEmail: ContactEmail) {
+  constructor(viewer: ExampleViewer, contactEmail: ContactEmail) {
     this.viewer = viewer;
     this.builder = new ContactEmailBuilder(
       this.viewer,
@@ -48,7 +49,7 @@ export class DeleteContactEmailActionBase
     return {};
   }
 
-  async changeset(): Promise<Changeset<ContactEmail>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -69,16 +70,16 @@ export class DeleteContactEmailActionBase
   }
 
   static create<T extends DeleteContactEmailActionBase>(
-    this: new (viewer: Viewer, contactEmail: ContactEmail) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, contactEmail: ContactEmail) => T,
+    viewer: ExampleViewer,
     contactEmail: ContactEmail,
   ): T {
     return new this(viewer, contactEmail);
   }
 
   static async saveXFromID<T extends DeleteContactEmailActionBase>(
-    this: new (viewer: Viewer, contactEmail: ContactEmail) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, contactEmail: ContactEmail) => T,
+    viewer: ExampleViewer,
     id: ID,
   ): Promise<void> {
     const contactEmail = await ContactEmail.loadX(viewer, id);

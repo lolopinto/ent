@@ -7,26 +7,27 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   ID,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { Contact } from "../../..";
 import { ContactBuilder, ContactInput } from "./contact_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export class DeleteContactActionBase
   implements
     Action<
       Contact,
       ContactBuilder<ContactInput, Contact>,
+      ExampleViewer,
       ContactInput,
       Contact
     >
 {
   public readonly builder: ContactBuilder<ContactInput, Contact>;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected contact: Contact;
 
-  constructor(viewer: Viewer, contact: Contact) {
+  constructor(viewer: ExampleViewer, contact: Contact) {
     this.viewer = viewer;
     this.builder = new ContactBuilder(
       this.viewer,
@@ -45,7 +46,7 @@ export class DeleteContactActionBase
     return {};
   }
 
-  async changeset(): Promise<Changeset<Contact>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -66,16 +67,16 @@ export class DeleteContactActionBase
   }
 
   static create<T extends DeleteContactActionBase>(
-    this: new (viewer: Viewer, contact: Contact) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, contact: Contact) => T,
+    viewer: ExampleViewer,
     contact: Contact,
   ): T {
     return new this(viewer, contact);
   }
 
   static async saveXFromID<T extends DeleteContactActionBase>(
-    this: new (viewer: Viewer, contact: Contact) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, contact: Contact) => T,
+    viewer: ExampleViewer,
     id: ID,
   ): Promise<void> {
     const contact = await Contact.loadX(viewer, id);

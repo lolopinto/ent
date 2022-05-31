@@ -8,10 +8,10 @@ import {
   Context,
   CustomQuery,
   Data,
+  Ent,
   ID,
   LoadEntOptions,
   PrivacyPolicy,
-  Viewer,
   applyPrivacyPolicy,
   convertDate,
   convertNullableDate,
@@ -36,6 +36,7 @@ import {
   User,
 } from "../internal";
 import schema from "../../schema/event_schema";
+import { ExampleViewer } from "../../viewer/viewer";
 
 export enum EventRsvpStatus {
   Attending = "attending",
@@ -56,7 +57,7 @@ interface EventDBData {
   address_id: ID | null;
 }
 
-export class EventBase {
+export class EventBase implements Ent<ExampleViewer> {
   readonly nodeType = NodeType.Event;
   readonly id: ID;
   readonly createdAt: Date;
@@ -68,7 +69,7 @@ export class EventBase {
   readonly location: string;
   protected readonly _addressID: ID | null;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: ExampleViewer, protected data: Data) {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
@@ -80,7 +81,7 @@ export class EventBase {
     this._addressID = data.address_id;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<this> {
+  getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewer> {
     return AllowIfViewerPrivacyPolicy;
   }
 
@@ -98,8 +99,8 @@ export class EventBase {
   }
 
   static async load<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     id: ID,
   ): Promise<T | null> {
     return (await loadEnt(
@@ -110,8 +111,8 @@ export class EventBase {
   }
 
   static async loadX<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     id: ID,
   ): Promise<T> {
     return (await loadEntX(
@@ -122,8 +123,8 @@ export class EventBase {
   }
 
   static async loadMany<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
     return (await loadEnts(
@@ -134,8 +135,8 @@ export class EventBase {
   }
 
   static async loadCustom<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     query: CustomQuery,
   ): Promise<T[]> {
     return (await loadCustomEnts(
@@ -146,7 +147,7 @@ export class EventBase {
   }
 
   static async loadCustomData<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<EventDBData[]> {
@@ -158,7 +159,7 @@ export class EventBase {
   }
 
   static async loadRawData<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<EventDBData | null> {
@@ -170,7 +171,7 @@ export class EventBase {
   }
 
   static async loadRawDataX<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<EventDBData> {
@@ -182,8 +183,8 @@ export class EventBase {
   }
 
   static loaderOptions<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-  ): LoadEntOptions<T> {
+    this: new (viewer: ExampleViewer, data: Data) => T,
+  ): LoadEntOptions<T, ExampleViewer> {
     return {
       tableName: eventLoaderInfo.tableName,
       fields: eventLoaderInfo.fields,

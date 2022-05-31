@@ -32,7 +32,7 @@ export interface Builder<
   TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
 > {
   existingEnt: TExistingEnt;
-  ent: EntConstructor<TEnt>;
+  ent: EntConstructor<TEnt, TViewer>;
   placeholderID: ID;
   readonly viewer: TViewer;
   build(): Promise<Changeset>;
@@ -161,15 +161,17 @@ export interface Action<
   // saveX(): Promise<T>;
 }
 
-export async function saveBuilder<T extends Ent>(
-  builder: Builder<T>,
-): Promise<void> {
+export async function saveBuilder<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+>(builder: Builder<TEnt, TViewer>): Promise<void> {
   await saveBuilderImpl(builder, false);
 }
 
-export async function saveBuilderX<T extends Ent>(
-  builder: Builder<T>,
-): Promise<void> {
+export async function saveBuilderX<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+>(builder: Builder<TEnt, TViewer>): Promise<void> {
   await saveBuilderImpl(builder, true);
 }
 

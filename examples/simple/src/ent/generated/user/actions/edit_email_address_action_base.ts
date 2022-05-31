@@ -7,11 +7,11 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   ID,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { User } from "../../..";
 import { UserBuilder } from "./user_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export interface EditEmailAddressInput {
   newEmail: string;
@@ -22,16 +22,17 @@ export class EditEmailAddressActionBase
     Action<
       User,
       UserBuilder<EditEmailAddressInput, User>,
+      ExampleViewer,
       EditEmailAddressInput,
       User
     >
 {
   public readonly builder: UserBuilder<EditEmailAddressInput, User>;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected input: EditEmailAddressInput;
   protected user: User;
 
-  constructor(viewer: Viewer, user: User, input: EditEmailAddressInput) {
+  constructor(viewer: ExampleViewer, user: User, input: EditEmailAddressInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new UserBuilder(
@@ -51,7 +52,7 @@ export class EditEmailAddressActionBase
     return this.input;
   }
 
-  async changeset(): Promise<Changeset<User>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -74,8 +75,12 @@ export class EditEmailAddressActionBase
   }
 
   static create<T extends EditEmailAddressActionBase>(
-    this: new (viewer: Viewer, user: User, input: EditEmailAddressInput) => T,
-    viewer: Viewer,
+    this: new (
+      viewer: ExampleViewer,
+      user: User,
+      input: EditEmailAddressInput,
+    ) => T,
+    viewer: ExampleViewer,
     user: User,
     input: EditEmailAddressInput,
   ): T {
@@ -83,8 +88,12 @@ export class EditEmailAddressActionBase
   }
 
   static async saveXFromID<T extends EditEmailAddressActionBase>(
-    this: new (viewer: Viewer, user: User, input: EditEmailAddressInput) => T,
-    viewer: Viewer,
+    this: new (
+      viewer: ExampleViewer,
+      user: User,
+      input: EditEmailAddressInput,
+    ) => T,
+    viewer: ExampleViewer,
     id: ID,
     input: EditEmailAddressInput,
   ): Promise<User> {

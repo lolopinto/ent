@@ -1,4 +1,3 @@
-import { LoggedOutViewer, IDViewer } from "@snowtop/ent";
 import { Event } from "../";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
 import CreateUserAction from "../user/actions/create_user_action";
@@ -6,8 +5,9 @@ import CreateEventAction from "../event/actions/create_event_action";
 import EditEventAction from "../event/actions/edit_event_action";
 import DeleteEventAction from "../event/actions/delete_event_action";
 import CreateAddressAction from "../address/actions/create_address_action";
+import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
 
-const loggedOutViewer = new LoggedOutViewer();
+const loggedOutViewer = new LoggedOutExampleViewer();
 
 async function createUser() {
   return await CreateUserAction.create(loggedOutViewer, {
@@ -51,7 +51,7 @@ test("create event", async () => {
   expect(event.endTime).toBe(null);
 
   // reload the event from the viewer's perspective
-  const v = new IDViewer(event.creatorID);
+  const v = new ExampleViewer(event.creatorID);
   event = await Event.loadX(v, event.id);
   const creator = await event.loadCreatorX();
   expect(creator.id).toBe(event.creatorID);
@@ -82,7 +82,7 @@ test("change creator for some reason", async () => {
   let event = await create(date);
 
   // reload the event from the viewer's perspective
-  const v = new IDViewer(event.creatorID);
+  const v = new ExampleViewer(event.creatorID);
   event = await Event.loadX(v, event.id);
   const creator = await event.loadCreatorX();
   expect(creator.id).toBe(event.creatorID);
@@ -97,7 +97,7 @@ test("change creator for some reason", async () => {
 
   let newCreator = await createUser();
   let editedEvent = await EditEventAction.create(
-    new IDViewer(event.creatorID),
+    new ExampleViewer(event.creatorID),
     event,
     {
       creatorID: newCreator.id,
@@ -136,9 +136,13 @@ test("change address", async () => {
   let event = await create(date);
   let address = await createAddress();
 
-  event = await EditEventAction.create(new IDViewer(event.creatorID), event, {
-    addressID: address.id,
-  }).saveX();
+  event = await EditEventAction.create(
+    new ExampleViewer(event.creatorID),
+    event,
+    {
+      addressID: address.id,
+    },
+  ).saveX();
   expect(await event.addressID()).toBe(address.id);
 
   let [hostedEvents, hostedEventsEdges] = await Promise.all([
@@ -151,7 +155,7 @@ test("change address", async () => {
 
   let newAddress = await createAddress();
   let editedEvent = await EditEventAction.create(
-    new IDViewer(event.creatorID),
+    new ExampleViewer(event.creatorID),
     event,
     {
       addressID: newAddress.id,
@@ -186,7 +190,7 @@ test("change address", async () => {
 
   // set to null
   editedEvent = await EditEventAction.create(
-    new IDViewer(event.creatorID),
+    new ExampleViewer(event.creatorID),
     editedEvent,
     {
       addressID: null,
@@ -207,9 +211,13 @@ test("addressID privacy", async () => {
   let event = await create(date);
   let address = await createAddress();
 
-  event = await EditEventAction.create(new IDViewer(event.creatorID), event, {
-    addressID: address.id,
-  }).saveX();
+  event = await EditEventAction.create(
+    new ExampleViewer(event.creatorID),
+    event,
+    {
+      addressID: address.id,
+    },
+  ).saveX();
   expect(await event.addressID()).toBe(address.id);
 
   const user = await createUser();
@@ -218,7 +226,11 @@ test("addressID privacy", async () => {
   expect(await eventFrom.addressID()).toBeNull();
   expect(await eventFrom.loadAddress()).toBeNull();
 
-  let action = EditEventAction.create(new IDViewer(event.creatorID), event, {});
+  let action = EditEventAction.create(
+    new ExampleViewer(event.creatorID),
+    event,
+    {},
+  );
   action.builder.addAttending(user);
   await action.saveX();
 
@@ -235,7 +247,7 @@ test("edit event", async () => {
   let event = await create(date);
 
   let editedEvent = await EditEventAction.create(
-    new IDViewer(event.creatorID),
+    new ExampleViewer(event.creatorID),
     event,
     {
       location: "fun location",
@@ -256,7 +268,7 @@ test("edit nullable field", async () => {
   let endTime = new Date(date.getTime());
   endTime.setTime(date.getTime() + 24 * 60 * 60);
 
-  const vc = new IDViewer(event.creatorID);
+  const vc = new ExampleViewer(event.creatorID);
   let editedEvent = await EditEventAction.create(vc, event, {
     endTime: endTime,
   }).saveX();
@@ -281,7 +293,7 @@ test("edit nullable field", async () => {
 
 test("delete event", async () => {
   let event = await create(new Date());
-  const vc = new IDViewer(event.creatorID);
+  const vc = new ExampleViewer(event.creatorID);
   await DeleteEventAction.create(vc, event).saveX();
 
   let loadEvent = await Event.load(vc, event.id);
@@ -348,9 +360,13 @@ describe("validators", () => {
       location: "location",
     }).saveX();
 
-    let action = EditEventAction.create(new IDViewer(event.creatorID), event, {
-      name: "fun event2",
-    });
+    let action = EditEventAction.create(
+      new ExampleViewer(event.creatorID),
+      event,
+      {
+        name: "fun event2",
+      },
+    );
 
     let valid = await action.valid();
     expect(valid).toBe(true);
@@ -359,9 +375,13 @@ describe("validators", () => {
   test("edit time not changed", async () => {
     let event = await create(new Date());
 
-    let action = EditEventAction.create(new IDViewer(event.creatorID), event, {
-      name: "fun event2",
-    });
+    let action = EditEventAction.create(
+      new ExampleViewer(event.creatorID),
+      event,
+      {
+        name: "fun event2",
+      },
+    );
 
     let valid = await action.valid();
     expect(valid).toBe(true);
@@ -370,9 +390,13 @@ describe("validators", () => {
   test("edit time not changed", async () => {
     let event = await create(new Date());
 
-    let action = EditEventAction.create(new IDViewer(event.creatorID), event, {
-      name: "fun event2",
-    });
+    let action = EditEventAction.create(
+      new ExampleViewer(event.creatorID),
+      event,
+      {
+        name: "fun event2",
+      },
+    );
 
     let valid = await action.valid();
     expect(valid).toBe(true);
@@ -383,9 +407,13 @@ describe("validators", () => {
 
     let yesterday = new Date(event.startTime.getTime() - 86400);
 
-    let action = EditEventAction.create(new IDViewer(event.creatorID), event, {
-      endTime: yesterday,
-    });
+    let action = EditEventAction.create(
+      new ExampleViewer(event.creatorID),
+      event,
+      {
+        endTime: yesterday,
+      },
+    );
 
     let valid = await action.valid();
     expect(valid).toBe(false);
@@ -397,10 +425,14 @@ describe("validators", () => {
     let yesterday = new Date(event.startTime.getTime() - 86400);
     let yesterdayPlus = new Date(yesterday.getTime() + 3600);
 
-    let action = EditEventAction.create(new IDViewer(event.creatorID), event, {
-      startTime: yesterday,
-      endTime: yesterdayPlus,
-    });
+    let action = EditEventAction.create(
+      new ExampleViewer(event.creatorID),
+      event,
+      {
+        startTime: yesterday,
+        endTime: yesterdayPlus,
+      },
+    );
 
     let valid = await action.valid();
     expect(valid).toBe(true);
@@ -412,15 +444,19 @@ describe("validators", () => {
     let yesterday = new Date(event.startTime.getTime() - 86400);
     let yesterdayPlus = new Date(yesterday.getTime() + 3600);
 
-    let action = EditEventAction.create(new IDViewer(event.creatorID), event, {
-      startTime: yesterday,
-      endTime: yesterdayPlus,
-    });
+    let action = EditEventAction.create(
+      new ExampleViewer(event.creatorID),
+      event,
+      {
+        startTime: yesterday,
+        endTime: yesterdayPlus,
+      },
+    );
 
     event = await action.saveX();
 
     // now changing startTime to be before endTime incorrect...
-    action = EditEventAction.create(new IDViewer(event.creatorID), event, {
+    action = EditEventAction.create(new ExampleViewer(event.creatorID), event, {
       startTime: new Date(),
     });
     let valid = await action.valid();

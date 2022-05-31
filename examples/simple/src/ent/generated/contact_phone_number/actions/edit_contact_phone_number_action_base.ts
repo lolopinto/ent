@@ -7,7 +7,6 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   ID,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import {
   Action,
@@ -17,11 +16,12 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, ContactPhoneNumber } from "../../..";
 import { ContactPhoneNumberBuilder } from "./contact_phone_number_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export interface ContactPhoneNumberEditInput {
   phoneNumber?: string;
   label?: string;
-  contactID?: ID | Builder<Contact>;
+  contactID?: ID | Builder<Contact, ExampleViewer>;
 }
 
 export class EditContactPhoneNumberActionBase
@@ -32,6 +32,7 @@ export class EditContactPhoneNumberActionBase
         ContactPhoneNumberEditInput,
         ContactPhoneNumber
       >,
+      ExampleViewer,
       ContactPhoneNumberEditInput,
       ContactPhoneNumber
     >
@@ -40,12 +41,12 @@ export class EditContactPhoneNumberActionBase
     ContactPhoneNumberEditInput,
     ContactPhoneNumber
   >;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected input: ContactPhoneNumberEditInput;
   protected contactPhoneNumber: ContactPhoneNumber;
 
   constructor(
-    viewer: Viewer,
+    viewer: ExampleViewer,
     contactPhoneNumber: ContactPhoneNumber,
     input: ContactPhoneNumberEditInput,
   ) {
@@ -68,7 +69,7 @@ export class EditContactPhoneNumberActionBase
     return this.input;
   }
 
-  async changeset(): Promise<Changeset<ContactPhoneNumber>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -92,11 +93,11 @@ export class EditContactPhoneNumberActionBase
 
   static create<T extends EditContactPhoneNumberActionBase>(
     this: new (
-      viewer: Viewer,
+      viewer: ExampleViewer,
       contactPhoneNumber: ContactPhoneNumber,
       input: ContactPhoneNumberEditInput,
     ) => T,
-    viewer: Viewer,
+    viewer: ExampleViewer,
     contactPhoneNumber: ContactPhoneNumber,
     input: ContactPhoneNumberEditInput,
   ): T {
@@ -105,11 +106,11 @@ export class EditContactPhoneNumberActionBase
 
   static async saveXFromID<T extends EditContactPhoneNumberActionBase>(
     this: new (
-      viewer: Viewer,
+      viewer: ExampleViewer,
       contactPhoneNumber: ContactPhoneNumber,
       input: ContactPhoneNumberEditInput,
     ) => T,
-    viewer: Viewer,
+    viewer: ExampleViewer,
     id: ID,
     input: ContactPhoneNumberEditInput,
   ): Promise<ContactPhoneNumber> {

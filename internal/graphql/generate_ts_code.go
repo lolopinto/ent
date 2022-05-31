@@ -2062,7 +2062,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 					Name:     f.GetGraphQLName(),
 					Optional: !action.IsRequiredField(a, f),
 					// TODO we want the same types without the Builder part if it's an id field...
-					Type:       f.TsBuilderType(),
+					Type:       f.TsBuilderType(processor.Config),
 					UseImports: useImports,
 				})
 			}

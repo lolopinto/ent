@@ -8,10 +8,10 @@ import {
   Context,
   CustomQuery,
   Data,
+  Ent,
   ID,
   LoadEntOptions,
   PrivacyPolicy,
-  Viewer,
   convertDate,
   loadCustomData,
   loadCustomEnts,
@@ -23,6 +23,7 @@ import { Field, getFields } from "@snowtop/ent/schema";
 import { contactEmailLoader, contactEmailLoaderInfo } from "./loaders";
 import { Contact, NodeType } from "../internal";
 import schema from "../../schema/contact_email_schema";
+import { ExampleViewer } from "../../viewer/viewer";
 
 interface ContactEmailDBData {
   id: ID;
@@ -33,7 +34,7 @@ interface ContactEmailDBData {
   contact_id: ID;
 }
 
-export class ContactEmailBase {
+export class ContactEmailBase implements Ent<ExampleViewer> {
   readonly nodeType = NodeType.ContactEmail;
   readonly id: ID;
   readonly createdAt: Date;
@@ -42,7 +43,7 @@ export class ContactEmailBase {
   readonly label: string;
   readonly contactID: ID;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: ExampleViewer, protected data: Data) {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
@@ -51,13 +52,13 @@ export class ContactEmailBase {
     this.contactID = data.contact_id;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<this> {
+  getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewer> {
     return AllowIfViewerPrivacyPolicy;
   }
 
   static async load<T extends ContactEmailBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     id: ID,
   ): Promise<T | null> {
     return (await loadEnt(
@@ -68,8 +69,8 @@ export class ContactEmailBase {
   }
 
   static async loadX<T extends ContactEmailBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     id: ID,
   ): Promise<T> {
     return (await loadEntX(
@@ -80,8 +81,8 @@ export class ContactEmailBase {
   }
 
   static async loadMany<T extends ContactEmailBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
     return (await loadEnts(
@@ -92,8 +93,8 @@ export class ContactEmailBase {
   }
 
   static async loadCustom<T extends ContactEmailBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     query: CustomQuery,
   ): Promise<T[]> {
     return (await loadCustomEnts(
@@ -104,7 +105,7 @@ export class ContactEmailBase {
   }
 
   static async loadCustomData<T extends ContactEmailBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<ContactEmailDBData[]> {
@@ -116,7 +117,7 @@ export class ContactEmailBase {
   }
 
   static async loadRawData<T extends ContactEmailBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<ContactEmailDBData | null> {
@@ -128,7 +129,7 @@ export class ContactEmailBase {
   }
 
   static async loadRawDataX<T extends ContactEmailBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<ContactEmailDBData> {
@@ -140,8 +141,8 @@ export class ContactEmailBase {
   }
 
   static loaderOptions<T extends ContactEmailBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-  ): LoadEntOptions<T> {
+    this: new (viewer: ExampleViewer, data: Data) => T,
+  ): LoadEntOptions<T, ExampleViewer> {
     return {
       tableName: contactEmailLoaderInfo.tableName,
       fields: contactEmailLoaderInfo.fields,

@@ -11,7 +11,6 @@ import {
   Ent,
   ID,
   LoadEntOptions,
-  Viewer,
   loadEnt,
 } from "@snowtop/ent";
 import {
@@ -33,6 +32,7 @@ import {
   UserToMaybeEventsQuery,
   UserToSelfContactQuery,
 } from "../../internal";
+import { ExampleViewer } from "../../../viewer/viewer";
 
 export const objectToCommentsCountLoaderFactory =
   new AssocEdgeCountLoaderFactory(EdgeType.ObjectToComments);
@@ -50,11 +50,15 @@ export const objectToLikersDataLoaderFactory = new AssocEdgeLoaderFactory(
 );
 
 export abstract class ObjectToCommentsQueryBase extends AssocEdgeQueryBase<
-  Ent,
+  Ent<ExampleViewer>,
   Comment,
-  ObjectToCommentsEdge
+  ObjectToCommentsEdge,
+  ExampleViewer
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<Ent, Comment>) {
+  constructor(
+    viewer: ExampleViewer,
+    src: EdgeQuerySource<Ent<ExampleViewer>, Comment, ExampleViewer>,
+  ) {
     super(
       viewer,
       src,
@@ -65,14 +69,20 @@ export abstract class ObjectToCommentsQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends ObjectToCommentsQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Ent, Comment>) => T,
-    viewer: Viewer,
-    src: EdgeQuerySource<Ent, Comment>,
+    this: new (
+      viewer: ExampleViewer,
+      src: EdgeQuerySource<Ent<ExampleViewer>, Comment>,
+    ) => T,
+    viewer: ExampleViewer,
+    src: EdgeQuerySource<Ent<ExampleViewer>, Comment>,
   ): T {
     return new this(viewer, src);
   }
 
-  protected abstract getSourceLoadEntOptions(): LoadEntOptions<Ent>;
+  protected abstract getSourceLoadEntOptions(): LoadEntOptions<
+    Ent<ExampleViewer>,
+    ExampleViewer
+  >;
 
   sourceEnt(id: ID) {
     return loadEnt(this.viewer, id, this.getSourceLoadEntOptions());
@@ -84,11 +94,15 @@ export abstract class ObjectToCommentsQueryBase extends AssocEdgeQueryBase<
 }
 
 export abstract class ObjectToLikersQueryBase extends AssocEdgeQueryBase<
-  Ent,
+  Ent<ExampleViewer>,
   User,
-  ObjectToLikersEdge
+  ObjectToLikersEdge,
+  ExampleViewer
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<Ent, User>) {
+  constructor(
+    viewer: ExampleViewer,
+    src: EdgeQuerySource<Ent<ExampleViewer>, User, ExampleViewer>,
+  ) {
     super(
       viewer,
       src,
@@ -99,14 +113,20 @@ export abstract class ObjectToLikersQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends ObjectToLikersQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Ent, User>) => T,
-    viewer: Viewer,
-    src: EdgeQuerySource<Ent, User>,
+    this: new (
+      viewer: ExampleViewer,
+      src: EdgeQuerySource<Ent<ExampleViewer>, User>,
+    ) => T,
+    viewer: ExampleViewer,
+    src: EdgeQuerySource<Ent<ExampleViewer>, User>,
   ): T {
     return new this(viewer, src);
   }
 
-  protected abstract getSourceLoadEntOptions(): LoadEntOptions<Ent>;
+  protected abstract getSourceLoadEntOptions(): LoadEntOptions<
+    Ent<ExampleViewer>,
+    ExampleViewer
+  >;
 
   sourceEnt(id: ID) {
     return loadEnt(this.viewer, id, this.getSourceLoadEntOptions());

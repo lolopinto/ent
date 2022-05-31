@@ -56,7 +56,7 @@ func (f *NonEntField) GetTsType() string {
 	return f.fieldType.GetTSType()
 }
 
-func (f *NonEntField) TsBuilderType() string {
+func (f *NonEntField) TsBuilderType(cfg codegenapi.Config) string {
 	return f.fieldType.GetTSType()
 }
 

@@ -84,7 +84,7 @@ export class {{$baseClass}} implements {{useImport "Ent"}}<{{$viewerType}}> {
     {{end}}
   }
   
-  getPrivacyPolicy(): {{useImport "PrivacyPolicy"}}<this> {
+  getPrivacyPolicy(): {{useImport "PrivacyPolicy"}}<this, {{$viewerType}}> {
     {{ if $privacyCfg.Class }}
       return new {{useImport $privacyCfg.PolicyName}}();
     {{ else }}
@@ -296,7 +296,7 @@ export class {{$baseClass}} implements {{useImport "Ent"}}<{{$viewerType}}> {
       static queryFrom{{$field.QueryFromEntName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         viewer: {{$viewerType}},
-        ent: {{useImport "Ent"}},
+        ent: {{useImport "Ent"}}<{{$viewerType}}>,
       ): {{$queryName}} {
         return {{$queryName}}.query(viewer, ent);
       }

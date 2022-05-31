@@ -56,7 +56,7 @@ type Action interface {
 type ActionField interface {
 	GetFieldType() enttype.EntType
 	TsFieldName(cfg codegenapi.Config) string
-	TsBuilderType() string
+	TsBuilderType(cfg codegenapi.Config) string
 	TSPublicAPIName() string
 	TsBuilderFieldName() string
 	GetGraphQLName() string

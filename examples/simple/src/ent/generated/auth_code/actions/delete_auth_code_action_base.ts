@@ -7,26 +7,27 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   ID,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { AuthCode } from "../../..";
 import { AuthCodeBuilder, AuthCodeInput } from "./auth_code_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export class DeleteAuthCodeActionBase
   implements
     Action<
       AuthCode,
       AuthCodeBuilder<AuthCodeInput, AuthCode>,
+      ExampleViewer,
       AuthCodeInput,
       AuthCode
     >
 {
   public readonly builder: AuthCodeBuilder<AuthCodeInput, AuthCode>;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected authCode: AuthCode;
 
-  constructor(viewer: Viewer, authCode: AuthCode) {
+  constructor(viewer: ExampleViewer, authCode: AuthCode) {
     this.viewer = viewer;
     this.builder = new AuthCodeBuilder(
       this.viewer,
@@ -45,7 +46,7 @@ export class DeleteAuthCodeActionBase
     return {};
   }
 
-  async changeset(): Promise<Changeset<AuthCode>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -66,16 +67,16 @@ export class DeleteAuthCodeActionBase
   }
 
   static create<T extends DeleteAuthCodeActionBase>(
-    this: new (viewer: Viewer, authCode: AuthCode) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, authCode: AuthCode) => T,
+    viewer: ExampleViewer,
     authCode: AuthCode,
   ): T {
     return new this(viewer, authCode);
   }
 
   static async saveXFromID<T extends DeleteAuthCodeActionBase>(
-    this: new (viewer: Viewer, authCode: AuthCode) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, authCode: AuthCode) => T,
+    viewer: ExampleViewer,
     id: ID,
   ): Promise<void> {
     const authCode = await AuthCode.loadX(viewer, id);

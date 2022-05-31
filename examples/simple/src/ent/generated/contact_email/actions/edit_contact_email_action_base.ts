@@ -7,7 +7,6 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   ID,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import {
   Action,
@@ -17,11 +16,12 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, ContactEmail } from "../../..";
 import { ContactEmailBuilder } from "./contact_email_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export interface ContactEmailEditInput {
   emailAddress?: string;
   label?: string;
-  contactID?: ID | Builder<Contact>;
+  contactID?: ID | Builder<Contact, ExampleViewer>;
 }
 
 export class EditContactEmailActionBase
@@ -29,6 +29,7 @@ export class EditContactEmailActionBase
     Action<
       ContactEmail,
       ContactEmailBuilder<ContactEmailEditInput, ContactEmail>,
+      ExampleViewer,
       ContactEmailEditInput,
       ContactEmail
     >
@@ -37,12 +38,12 @@ export class EditContactEmailActionBase
     ContactEmailEditInput,
     ContactEmail
   >;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected input: ContactEmailEditInput;
   protected contactEmail: ContactEmail;
 
   constructor(
-    viewer: Viewer,
+    viewer: ExampleViewer,
     contactEmail: ContactEmail,
     input: ContactEmailEditInput,
   ) {
@@ -65,7 +66,7 @@ export class EditContactEmailActionBase
     return this.input;
   }
 
-  async changeset(): Promise<Changeset<ContactEmail>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -89,11 +90,11 @@ export class EditContactEmailActionBase
 
   static create<T extends EditContactEmailActionBase>(
     this: new (
-      viewer: Viewer,
+      viewer: ExampleViewer,
       contactEmail: ContactEmail,
       input: ContactEmailEditInput,
     ) => T,
-    viewer: Viewer,
+    viewer: ExampleViewer,
     contactEmail: ContactEmail,
     input: ContactEmailEditInput,
   ): T {
@@ -102,11 +103,11 @@ export class EditContactEmailActionBase
 
   static async saveXFromID<T extends EditContactEmailActionBase>(
     this: new (
-      viewer: Viewer,
+      viewer: ExampleViewer,
       contactEmail: ContactEmail,
       input: ContactEmailEditInput,
     ) => T,
-    viewer: Viewer,
+    viewer: ExampleViewer,
     id: ID,
     input: ContactEmailEditInput,
   ): Promise<ContactEmail> {

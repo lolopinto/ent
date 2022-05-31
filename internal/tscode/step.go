@@ -842,10 +842,12 @@ func writeBaseQueryFileImpl(processor *codegen.Processor, info *BaseQueryEdgeInf
 			Info    *BaseQueryEdgeInfo
 			Schema  *schema.Schema
 			Package *codegen.ImportPackage
+			Config  *codegen.Config
 		}{
 			Schema:  s,
 			Info:    info,
 			Package: cfg.GetImportPackage(),
+			Config:  cfg,
 		},
 		AbsPathToTemplate: util.GetAbsolutePath("ent_query_base.tmpl"),
 		TemplateName:      "ent_query_base.tmpl",

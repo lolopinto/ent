@@ -3,6 +3,7 @@ package field_test
 import (
 	"testing"
 
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/testhelper"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -49,12 +50,14 @@ func TestDerivedFields(t *testing.T) {
 	f2 := fieldInfo.GetFieldByName("OwnerID")
 	require.NotNil(t, f2)
 
-	assert.Equal(t, f2.TsBuilderImports(), []*tsimport.ImportPath{
+	cfg := &codegenapi.DummyConfig{}
+	assert.Equal(t, f2.TsBuilderImports(cfg), []*tsimport.ImportPath{
 		tsimport.NewEntImportPath("ID"),
 		tsimport.NewEntImportPath("Ent"),
 		tsimport.NewEntActionImportPath("Builder"),
+		tsimport.NewEntImportPath("Viewer"),
 	})
-	assert.Equal(t, f2.TsBuilderType(), "ID | Builder<Ent>")
+	assert.Equal(t, f2.TsBuilderType(cfg), "ID | Builder<Ent<Viewer>, Viewer>")
 }
 
 func TestDuplicateFields(t *testing.T) {
@@ -109,10 +112,11 @@ func TestDisableBuilderIDField(t *testing.T) {
 	f2 := fieldInfo.GetFieldByName("OwnerID")
 	require.NotNil(t, f2)
 
-	assert.Equal(t, f2.TsBuilderImports(), []*tsimport.ImportPath{
+	cfg := &codegenapi.DummyConfig{}
+	assert.Equal(t, f2.TsBuilderImports(cfg), []*tsimport.ImportPath{
 		tsimport.NewEntImportPath("ID"),
 	})
-	assert.Equal(t, f2.TsBuilderType(), "ID")
+	assert.Equal(t, f2.TsBuilderType(cfg), "ID")
 }
 
 func TestUUIDFieldList(t *testing.T) {
@@ -154,10 +158,12 @@ func TestUUIDFieldList(t *testing.T) {
 	f := fieldInfo.GetFieldByName("contactEmailIDs")
 	require.NotNil(t, f)
 
-	assert.Equal(t, f.TsBuilderImports(), []*tsimport.ImportPath{
+	cfg := &codegenapi.DummyConfig{}
+
+	assert.Equal(t, f.TsBuilderImports(cfg), []*tsimport.ImportPath{
 		tsimport.NewEntImportPath("ID"),
 	})
-	assert.Equal(t, f.TsBuilderType(), "ID[]")
+	assert.Equal(t, f.TsBuilderType(cfg), "ID[]")
 	assert.Len(t, info.NodeData.EdgeInfo.FieldEdges, 1)
 	assert.True(t, info.NodeData.EdgeInfo.FieldEdges[0].IsList())
 
@@ -169,12 +175,13 @@ func TestUUIDFieldList(t *testing.T) {
 	f2 := fieldInfo2.GetFieldByName("OwnerID")
 	require.NotNil(t, f2)
 
-	assert.Equal(t, f2.TsBuilderImports(), []*tsimport.ImportPath{
+	assert.Equal(t, f2.TsBuilderImports(cfg), []*tsimport.ImportPath{
 		tsimport.NewEntImportPath("ID"),
 		tsimport.NewLocalEntImportPath("Contact"),
 		tsimport.NewEntActionImportPath("Builder"),
+		tsimport.NewEntImportPath("Viewer"),
 	})
-	assert.Equal(t, f2.TsBuilderType(), "ID | Builder<Contact>")
+	assert.Equal(t, f2.TsBuilderType(cfg), "ID | Builder<Contact, Viewer>")
 	assert.Len(t, info2.NodeData.EdgeInfo.FieldEdges, 1)
 	assert.False(t, info2.NodeData.EdgeInfo.FieldEdges[0].IsList())
 }
