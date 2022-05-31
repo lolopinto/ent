@@ -1,7 +1,7 @@
 import { User } from "../testutils/builder";
 import { ID, Viewer } from "./base";
 
-class LoggedInViewer implements Viewer<ID, User> {
+class LoggedInViewer implements Viewer<User, ID> {
   constructor(public viewerID: ID) {}
 
   async viewer(): Promise<User> {
