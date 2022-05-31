@@ -21,6 +21,7 @@ import CreateContactEmailAction, {
   ContactEmailCreateInput,
 } from "../../../../ent/contact_email/actions/create_contact_email_action";
 import { ContactEmailType } from "../../../resolvers";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 interface customContactEmailCreateInput extends ContactEmailCreateInput {
   contactID: string;
@@ -59,7 +60,7 @@ export const ContactEmailCreatePayloadType = new GraphQLObjectType({
 
 export const ContactEmailCreateType: GraphQLFieldConfig<
   undefined,
-  RequestContext,
+  RequestContext<ExampleViewer>,
   { [input: string]: customContactEmailCreateInput }
 > = {
   type: new GraphQLNonNull(ContactEmailCreatePayloadType),
@@ -72,7 +73,7 @@ export const ContactEmailCreateType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext,
+    context: RequestContext<ExampleViewer>,
     _info: GraphQLResolveInfo,
   ): Promise<ContactEmailCreatePayload> => {
     const contactEmail = await CreateContactEmailAction.create(

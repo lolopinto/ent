@@ -576,7 +576,7 @@ test("uniqueEdge|Node", async () => {
   expect(jon).toBeInstanceOf(User);
   expect(sansa).toBeInstanceOf(User);
 
-  let vc = new ExampleViewer(jon.id, { ent: jon });
+  let vc = new ExampleViewer(jon.id);
   jon = await User.loadX(vc, jon.id);
 
   // jon was created as his own contact

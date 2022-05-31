@@ -12,11 +12,12 @@ import { BaseAction } from "@snowtop/ent/action/experimental_action";
 import { User } from "../../ent";
 import CreateContactAction from "../../ent/contact/actions/create_contact_action";
 import { UserBuilder } from "../../ent/generated/user/actions/user_builder";
+import { ExampleViewer } from "../../viewer/viewer";
 
 export class ImportContactResolver {
   @gqlMutation({ type: User })
   async bulkUploadContact(
-    @gqlContextType() context: RequestContext,
+    @gqlContextType() context: RequestContext<ExampleViewer>,
     @gqlArg("userID", { type: GraphQLID }) userID: ID,
     @gqlArg("file", { type: gqlFileUpload }) file: Promise<FileUpload>,
   ) {

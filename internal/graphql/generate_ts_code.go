@@ -1352,8 +1352,14 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 func writeFile(processor *codegen.Processor, node *gqlNode) error {
 	imps := tsimport.NewImports(processor.Config, node.FilePath)
 	return file.Write((&file.TemplatedBasedFileWriter{
-		Config:            processor.Config,
-		Data:              node.ObjData,
+		Config: processor.Config,
+		Data: struct {
+			Data   *gqlobjectData
+			Config *codegen.Config
+		}{
+			node.ObjData,
+			processor.Config,
+		},
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/object.tmpl"),
 		TemplateName:      "object.tmpl",
 		OtherTemplateFiles: []string{
@@ -3135,9 +3141,11 @@ func writeRootQueryFile(processor *codegen.Processor, rq *rootQuery) error {
 		Data: struct {
 			RootQuery *rootQuery
 			Package   *codegen.ImportPackage
+			Config    *codegen.Config
 		}{
 			rq,
 			processor.Config.GetImportPackage(),
+			processor.Config,
 		},
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/root_query.tmpl"),
 		TemplateName:      "root_query.tmpl",

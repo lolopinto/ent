@@ -16,6 +16,7 @@ import {
 import { RequestContext } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import DeleteEventAction from "../../../../ent/event/actions/delete_event_action";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 interface customEventDeleteInput {
   eventID: string;
@@ -46,7 +47,7 @@ export const EventDeletePayloadType = new GraphQLObjectType({
 
 export const EventDeleteType: GraphQLFieldConfig<
   undefined,
-  RequestContext,
+  RequestContext<ExampleViewer>,
   { [input: string]: customEventDeleteInput }
 > = {
   type: new GraphQLNonNull(EventDeletePayloadType),
@@ -59,7 +60,7 @@ export const EventDeleteType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext,
+    context: RequestContext<ExampleViewer>,
     _info: GraphQLResolveInfo,
   ): Promise<EventDeletePayload> => {
     await DeleteEventAction.saveXFromID(

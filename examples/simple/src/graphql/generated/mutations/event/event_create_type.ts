@@ -25,6 +25,7 @@ import CreateEventAction, {
   EventCreateInput,
 } from "../../../../ent/event/actions/create_event_action";
 import { EventType } from "../../../resolvers";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 interface customEventCreateInput extends Omit<EventCreateInput, "location"> {
   creatorID: string;
@@ -71,7 +72,7 @@ export const EventCreatePayloadType = new GraphQLObjectType({
 
 export const EventCreateType: GraphQLFieldConfig<
   undefined,
-  RequestContext,
+  RequestContext<ExampleViewer>,
   { [input: string]: customEventCreateInput }
 > = {
   type: new GraphQLNonNull(EventCreatePayloadType),
@@ -84,7 +85,7 @@ export const EventCreateType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext,
+    context: RequestContext<ExampleViewer>,
     _info: GraphQLResolveInfo,
   ): Promise<EventCreatePayload> => {
     const event = await CreateEventAction.create(context.getViewer(), {

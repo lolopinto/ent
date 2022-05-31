@@ -18,6 +18,7 @@ import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { Event } from "../../../../ent";
 import EventRemoveHostAction from "../../../../ent/event/actions/event_remove_host_action";
 import { EventType } from "../../../resolvers";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 interface customEventRemoveHostInput {
   eventID: string;
@@ -55,7 +56,7 @@ export const EventRemoveHostPayloadType = new GraphQLObjectType({
 
 export const EventRemoveHostType: GraphQLFieldConfig<
   undefined,
-  RequestContext,
+  RequestContext<ExampleViewer>,
   { [input: string]: customEventRemoveHostInput }
 > = {
   type: new GraphQLNonNull(EventRemoveHostPayloadType),
@@ -68,7 +69,7 @@ export const EventRemoveHostType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext,
+    context: RequestContext<ExampleViewer>,
     _info: GraphQLResolveInfo,
   ): Promise<EventRemoveHostPayload> => {
     const event = await EventRemoveHostAction.saveXFromID(

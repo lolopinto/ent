@@ -25,6 +25,7 @@ import EditContactAction, {
   ContactEditInput,
 } from "../../../../ent/contact/actions/edit_contact_action";
 import { ContactType } from "../../../resolvers";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 interface customContactEditInput extends ContactEditInput {
   contactID: string;
@@ -71,7 +72,7 @@ export const ContactEditPayloadType = new GraphQLObjectType({
 
 export const ContactEditType: GraphQLFieldConfig<
   undefined,
-  RequestContext,
+  RequestContext<ExampleViewer>,
   { [input: string]: customContactEditInput }
 > = {
   type: new GraphQLNonNull(ContactEditPayloadType),
@@ -84,7 +85,7 @@ export const ContactEditType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext,
+    context: RequestContext<ExampleViewer>,
     _info: GraphQLResolveInfo,
   ): Promise<ContactEditPayload> => {
     const contact = await EditContactAction.saveXFromID(
