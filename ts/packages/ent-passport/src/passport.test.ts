@@ -46,7 +46,7 @@ let userType = new GraphQLObjectType({
   name: "User",
   fields: {
     id: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     firstName: {
       type: GraphQLString,
@@ -113,10 +113,10 @@ let authUserPayloadType = new GraphQLObjectType({
   name: "AuthUserPayload",
   fields: {
     token: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     viewer: {
-      type: GraphQLNonNull(viewerType),
+      type: new GraphQLNonNull(viewerType),
     },
   },
 });
@@ -124,13 +124,13 @@ let authUserPayloadType = new GraphQLObjectType({
 const authUserType: GraphQLFieldConfig<undefined, RequestContext, { args }> = {
   args: {
     emailAddress: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     password: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
   },
-  type: GraphQLNonNull(authUserPayloadType),
+  type: new GraphQLNonNull(authUserPayloadType),
   async resolve(_source, args, context) {
     const [viewer, token] = await useAndVerifyAuthJWT(
       context,
@@ -167,13 +167,13 @@ const authUserSessionType: GraphQLFieldConfig<
 > = {
   args: {
     emailAddress: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     password: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
   },
-  type: GraphQLNonNull(viewerType),
+  type: new GraphQLNonNull(viewerType),
   async resolve(_source, args, context) {
     return await useAndVerifyAuth(
       context,
