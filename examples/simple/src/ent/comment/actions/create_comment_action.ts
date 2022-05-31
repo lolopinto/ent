@@ -11,6 +11,7 @@ import {
   CreateCommentActionBase,
 } from "../../generated/comment/actions/create_comment_action_base";
 import { Comment } from "../../../ent";
+import { ExampleViewer } from "../../../viewer/viewer";
 
 export { CommentCreateInput };
 
@@ -22,6 +23,7 @@ export default class CreateCommentAction extends CreateCommentActionBase {
   triggers: Trigger<
     Comment,
     CommentBuilder<Comment, Comment>,
+    ExampleViewer,
     CommentCreateInput,
     Comment
   >[] = [

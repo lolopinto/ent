@@ -12,28 +12,30 @@ import { applyPrivacyPolicyForRows, DefaultLimit } from "../ent";
 import { BaseEdgeQuery, IDInfo, EdgeQuery } from "./query";
 
 export interface CustomEdgeQueryOptions<
-  TSource extends Ent,
-  TDest extends Ent,
+  TSource extends Ent<TViewer>,
+  TDest extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
 > {
   src: TSource | ID;
   countLoaderFactory: LoaderFactory<ID, number>;
   dataLoaderFactory: ConfigurableLoaderFactory<ID, Data[]>;
-  options: LoadEntOptions<TDest>;
+  options: LoadEntOptions<TDest, TViewer>;
   // // defaults to created_at
   sortColumn?: string;
 }
 
 export abstract class CustomEdgeQueryBase<
-    TSource extends Ent,
-    TDest extends Ent,
+    TSource extends Ent<TViewer>,
+    TDest extends Ent<TViewer>,
+    TViewer extends Viewer = Viewer,
   >
   extends BaseEdgeQuery<TSource, TDest, Data>
   implements EdgeQuery<TSource, TDest, Data>
 {
   private id: ID;
   constructor(
-    public viewer: Viewer,
-    private options: CustomEdgeQueryOptions<TSource, TDest>,
+    public viewer: TViewer,
+    private options: CustomEdgeQueryOptions<TSource, TDest, TViewer>,
   ) {
     super(viewer, options.sortColumn || "created_at");
     options.sortColumn = options.sortColumn || "created_at";

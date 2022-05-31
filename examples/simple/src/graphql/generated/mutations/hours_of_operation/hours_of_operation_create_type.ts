@@ -23,6 +23,7 @@ import {
   DayOfWeekType,
   HoursOfOperationType,
 } from "../../../resolvers";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 interface HoursOfOperationCreatePayload {
   hoursOfOperation: HoursOfOperation;
@@ -60,7 +61,7 @@ export const HoursOfOperationCreatePayloadType = new GraphQLObjectType({
 
 export const HoursOfOperationCreateType: GraphQLFieldConfig<
   undefined,
-  RequestContext,
+  RequestContext<ExampleViewer>,
   { [input: string]: HoursOfOperationCreateInput }
 > = {
   type: new GraphQLNonNull(HoursOfOperationCreatePayloadType),
@@ -73,7 +74,7 @@ export const HoursOfOperationCreateType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext,
+    context: RequestContext<ExampleViewer>,
     _info: GraphQLResolveInfo,
   ): Promise<HoursOfOperationCreatePayload> => {
     const hoursOfOperation = await CreateHoursOfOperationAction.create(

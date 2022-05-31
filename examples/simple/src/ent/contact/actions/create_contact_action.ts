@@ -20,6 +20,7 @@ import { AllowIfBuilder, Observer, Trigger } from "@snowtop/ent/action";
 import CreateContactEmailAction from "../../../ent/contact_email/actions/create_contact_email_action";
 import { ContactBuilder } from "../../generated/contact/actions/contact_builder";
 import CreateContactPhoneNumberAction from "../../../ent/contact_phone_number/actions/create_contact_phone_number_action";
+import { ExampleViewer } from "../../../viewer/viewer";
 
 // we're only writing this once except with --force and packageName provided
 export default class CreateContactAction extends CreateContactActionBase {
@@ -34,7 +35,12 @@ export default class CreateContactAction extends CreateContactActionBase {
     };
   }
 
-  triggers: Trigger<Contact, ContactBuilder, ContactCreateInput>[] = [
+  triggers: Trigger<
+    Contact,
+    ContactBuilder,
+    ExampleViewer,
+    ContactCreateInput
+  >[] = [
     {
       async changeset(builder, input) {
         if (!input.emails) {
@@ -93,9 +99,12 @@ export default class CreateContactAction extends CreateContactActionBase {
     },
   ];
 
-  observers: Observer<Contact, ContactBuilder, ContactCreateInput>[] = [
-    new EntCreationObserver<Contact>(),
-  ];
+  observers: Observer<
+    Contact,
+    ContactBuilder,
+    ExampleViewer,
+    ContactCreateInput
+  >[] = [new EntCreationObserver()];
 
   viewerForEntLoad(data: Data) {
     // needed if created in user action and we want to make sure this

@@ -507,7 +507,8 @@ var _ codegen.Step = &Step{}
 
 // todo standardize this? same as in internal/code
 type nodeTemplateCodePath struct {
-	NodeData      *schema.NodeData
+	NodeData *schema.NodeData
+	// TODO rename from CodePath to Config
 	CodePath      *codegen.Config
 	Package       *codegen.ImportPackage
 	Imports       []*tsimport.ImportPath
@@ -841,10 +842,12 @@ func writeBaseQueryFileImpl(processor *codegen.Processor, info *BaseQueryEdgeInf
 			Info    *BaseQueryEdgeInfo
 			Schema  *schema.Schema
 			Package *codegen.ImportPackage
+			Config  *codegen.Config
 		}{
 			Schema:  s,
 			Info:    info,
 			Package: cfg.GetImportPackage(),
+			Config:  cfg,
 		},
 		AbsPathToTemplate: util.GetAbsolutePath("ent_query_base.tmpl"),
 		TemplateName:      "ent_query_base.tmpl",

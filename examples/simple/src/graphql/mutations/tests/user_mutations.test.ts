@@ -1,4 +1,4 @@
-import { Viewer, LoggedOutViewer, IDViewer } from "@snowtop/ent";
+import { Viewer } from "@snowtop/ent";
 import { expectMutation, mutationRootConfig } from "@snowtop/ent-graphql-tests";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { mustDecodeIDFromGQLID, encodeGQLID } from "@snowtop/ent/graphql";
@@ -8,12 +8,13 @@ import { randomEmail, randomPhoneNumber } from "../../../util/random";
 import CreateUserAction, {
   UserCreateInput,
 } from "../../../ent/user/actions/create_user_action";
+import { LoggedOutExampleViewer, ExampleViewer } from "../../../viewer/viewer";
 
 afterEach(() => {
   clearAuthHandlers();
 });
 
-const loggedOutViewer = new LoggedOutViewer();
+const loggedOutViewer = new LoggedOutExampleViewer();
 async function create(opts: Partial<UserCreateInput>): Promise<User> {
   let input: UserCreateInput = {
     firstName: "first",
@@ -57,7 +58,7 @@ test("create", async () => {
       "user.id",
       async (id: string) => {
         const decoded = mustDecodeIDFromGQLID(id);
-        let vc = new IDViewer(decoded);
+        let vc = new ExampleViewer(decoded);
         await User.loadX(vc, decoded);
       },
     ],
@@ -85,7 +86,7 @@ test("edit", async () => {
         userID: encodeGQLID(user),
         firstName: "Jon2",
       },
-      new IDViewer(user.id),
+      new ExampleViewer(user.id),
     ),
     ["user.id", encodeGQLID(user)],
     ["user.firstName", "Jon2"],
@@ -142,7 +143,7 @@ test("edit no permissions, other viewer", async () => {
         userID: encodeGQLID(user),
         firstName: "Jon2",
       },
-      new IDViewer(user2.id),
+      new ExampleViewer(user2.id),
       {
         expectedError: /not visible for privacy reasons/,
       },
@@ -168,13 +169,13 @@ test("delete", async () => {
       {
         userID: encodeGQLID(user),
       },
-      new IDViewer(user.id),
+      new ExampleViewer(user.id),
     ),
     [
       "deletedUserID",
       async (id: string) => {
         expect(mustDecodeIDFromGQLID(id)).toBe(user.id);
-        let deletedUser = await User.load(new IDViewer(user.id), user.id);
+        let deletedUser = await User.load(new ExampleViewer(user.id), user.id);
         expect(deletedUser).toBe(null);
       },
     ],
@@ -199,13 +200,13 @@ test("delete 2", async () => {
         userID: encodeGQLID(user),
         log: true,
       },
-      new IDViewer(user.id),
+      new ExampleViewer(user.id),
     ),
     [
       "deletedUserID",
       async (id: string) => {
         expect(mustDecodeIDFromGQLID(id)).toBe(user.id);
-        let deletedUser = await User.load(new IDViewer(user.id), user.id);
+        let deletedUser = await User.load(new ExampleViewer(user.id), user.id);
         expect(deletedUser).toBe(null);
       },
     ],
@@ -232,7 +233,7 @@ test("delete. other user no permissions", async () => {
       {
         userID: encodeGQLID(user),
       },
-      new IDViewer(user2.id),
+      new ExampleViewer(user2.id),
       {
         expectedError: /not visible for privacy reasons/,
       },

@@ -13,7 +13,7 @@ import {
 } from "../../generated/user/actions/create_user_action_base";
 import { UserBuilder } from "../../generated/user/actions/user_builder";
 import CreateContactAction from "../../contact/actions/create_contact_action";
-import { Contact, User } from "../../";
+import { User } from "../../";
 
 export { UserCreateInput };
 
@@ -33,7 +33,7 @@ export default class CreateUserAction extends CreateUserActionBase {
       changeset: (
         builder: UserBuilder,
         input: UserCreateInput,
-      ): Promise<Changeset<Contact>> => {
+      ): Promise<Changeset> => {
         let action = CreateContactAction.create(this.builder.viewer, {
           firstName: input.firstName,
           lastName: input.lastName,

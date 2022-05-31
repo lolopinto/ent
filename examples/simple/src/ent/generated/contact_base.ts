@@ -8,10 +8,10 @@ import {
   Context,
   CustomQuery,
   Data,
+  Ent,
   ID,
   LoadEntOptions,
   PrivacyPolicy,
-  Viewer,
   convertDate,
   convertList,
   loadCustomData,
@@ -31,6 +31,7 @@ import {
   User,
 } from "../internal";
 import schema from "../../schema/contact_schema";
+import { ExampleViewer } from "../../viewer/viewer";
 
 interface ContactDBData {
   id: ID;
@@ -43,7 +44,7 @@ interface ContactDBData {
   user_id: ID;
 }
 
-export class ContactBase {
+export class ContactBase implements Ent<ExampleViewer> {
   readonly nodeType = NodeType.Contact;
   readonly id: ID;
   readonly createdAt: Date;
@@ -54,7 +55,7 @@ export class ContactBase {
   readonly lastName: string;
   readonly userID: ID;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: ExampleViewer, protected data: Data) {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
@@ -65,13 +66,13 @@ export class ContactBase {
     this.userID = data.user_id;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<this> {
+  getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewer> {
     return AllowIfViewerPrivacyPolicy;
   }
 
   static async load<T extends ContactBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     id: ID,
   ): Promise<T | null> {
     return (await loadEnt(
@@ -82,8 +83,8 @@ export class ContactBase {
   }
 
   static async loadX<T extends ContactBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     id: ID,
   ): Promise<T> {
     return (await loadEntX(
@@ -94,8 +95,8 @@ export class ContactBase {
   }
 
   static async loadMany<T extends ContactBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
     return (await loadEnts(
@@ -106,8 +107,8 @@ export class ContactBase {
   }
 
   static async loadCustom<T extends ContactBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     query: CustomQuery,
   ): Promise<T[]> {
     return (await loadCustomEnts(
@@ -118,7 +119,7 @@ export class ContactBase {
   }
 
   static async loadCustomData<T extends ContactBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<ContactDBData[]> {
@@ -130,7 +131,7 @@ export class ContactBase {
   }
 
   static async loadRawData<T extends ContactBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<ContactDBData | null> {
@@ -142,7 +143,7 @@ export class ContactBase {
   }
 
   static async loadRawDataX<T extends ContactBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<ContactDBData> {
@@ -154,8 +155,8 @@ export class ContactBase {
   }
 
   static loaderOptions<T extends ContactBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-  ): LoadEntOptions<T> {
+    this: new (viewer: ExampleViewer, data: Data) => T,
+  ): LoadEntOptions<T, ExampleViewer> {
     return {
       tableName: contactLoaderInfo.tableName,
       fields: contactLoaderInfo.fields,

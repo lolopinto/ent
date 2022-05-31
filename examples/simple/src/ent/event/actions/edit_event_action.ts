@@ -11,14 +11,14 @@ import {
 } from "@snowtop/ent";
 import { EventBuilder } from "../../generated/event/actions/event_builder";
 import { Event } from "../../../ent";
+import { ExampleViewer } from "../../../viewer/viewer";
 
 export { EventEditInput };
 
 // we're only writing this once except with --force and packageName provided
 export default class EditEventAction extends EditEventActionBase {
-  validators: Validator<Event, EventBuilder, EventEditInput>[] = [
-    ...SharedValidators,
-  ];
+  validators: Validator<Event, EventBuilder, ExampleViewer, EventEditInput>[] =
+    [...SharedValidators];
 
   getPrivacyPolicy(): PrivacyPolicy {
     return {

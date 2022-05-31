@@ -8,7 +8,6 @@ import {
   Ent,
   ID,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import {
   Action,
@@ -18,11 +17,12 @@ import {
 } from "@snowtop/ent/action";
 import { Comment, User } from "../../..";
 import { CommentBuilder } from "./comment_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export interface CommentCreateInput {
-  authorID: ID | Builder<User>;
+  authorID: ID | Builder<User, ExampleViewer>;
   body: string;
-  articleID: ID | Builder<Ent>;
+  articleID: ID | Builder<Ent<ExampleViewer>, ExampleViewer>;
   articleType: string;
 }
 
@@ -31,15 +31,16 @@ export class CreateCommentActionBase
     Action<
       Comment,
       CommentBuilder<CommentCreateInput, Comment | null>,
+      ExampleViewer,
       CommentCreateInput,
       Comment | null
     >
 {
   public readonly builder: CommentBuilder<CommentCreateInput, Comment | null>;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected input: CommentCreateInput;
 
-  constructor(viewer: Viewer, input: CommentCreateInput) {
+  constructor(viewer: ExampleViewer, input: CommentCreateInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new CommentBuilder(
@@ -58,7 +59,7 @@ export class CreateCommentActionBase
     return this.input;
   }
 
-  async changeset(): Promise<Changeset<Comment>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -81,8 +82,8 @@ export class CreateCommentActionBase
   }
 
   static create<T extends CreateCommentActionBase>(
-    this: new (viewer: Viewer, input: CommentCreateInput) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, input: CommentCreateInput) => T,
+    viewer: ExampleViewer,
     input: CommentCreateInput,
   ): T {
     return new this(viewer, input);

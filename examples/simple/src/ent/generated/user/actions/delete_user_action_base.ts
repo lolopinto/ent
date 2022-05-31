@@ -7,20 +7,21 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   ID,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { User } from "../../..";
 import { UserBuilder, UserInput } from "./user_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export class DeleteUserActionBase
-  implements Action<User, UserBuilder<UserInput, User>, UserInput, User>
+  implements
+    Action<User, UserBuilder<UserInput, User>, ExampleViewer, UserInput, User>
 {
   public readonly builder: UserBuilder<UserInput, User>;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected user: User;
 
-  constructor(viewer: Viewer, user: User) {
+  constructor(viewer: ExampleViewer, user: User) {
     this.viewer = viewer;
     this.builder = new UserBuilder(
       this.viewer,
@@ -39,7 +40,7 @@ export class DeleteUserActionBase
     return {};
   }
 
-  async changeset(): Promise<Changeset<User>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -60,16 +61,16 @@ export class DeleteUserActionBase
   }
 
   static create<T extends DeleteUserActionBase>(
-    this: new (viewer: Viewer, user: User) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, user: User) => T,
+    viewer: ExampleViewer,
     user: User,
   ): T {
     return new this(viewer, user);
   }
 
   static async saveXFromID<T extends DeleteUserActionBase>(
-    this: new (viewer: Viewer, user: User) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, user: User) => T,
+    viewer: ExampleViewer,
     id: ID,
   ): Promise<void> {
     const user = await User.loadX(viewer, id);

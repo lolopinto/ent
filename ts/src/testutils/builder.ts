@@ -186,7 +186,7 @@ export class SimpleBuilder<
 {
   ent: EntConstructor<T>;
   placeholderID: ID;
-  public orchestrator: Orchestrator<T, Data>;
+  public orchestrator: Orchestrator<T, Data, Viewer>;
   public fields: Map<string, any>;
   nodeType: string;
 
@@ -196,7 +196,7 @@ export class SimpleBuilder<
     fields: Map<string, any>,
     public operation: WriteOperation = WriteOperation.Insert,
     public existingEnt: TExistingEnt,
-    action?: Action<T, SimpleBuilder<T>, Data> | undefined,
+    action?: Action<T, SimpleBuilder<T>, Viewer, Data> | undefined,
   ) {
     // create dynamic placeholder
     // TODO: do we need to use this as the node when there's an existingEnt
@@ -230,7 +230,7 @@ export class SimpleBuilder<
     const tableName = getTableName(schema);
     this.nodeType = camelCase(schema.ent.name);
     const fieldInfo = getFieldInfo(schema);
-    this.orchestrator = new Orchestrator<T, Data>({
+    this.orchestrator = new Orchestrator<T, Data, Viewer>({
       viewer: this.viewer,
       operation: operation,
       tableName: tableName,
@@ -262,6 +262,13 @@ export class SimpleBuilder<
     });
   }
 
+  getInput(): Data {
+    let ret: Data = {};
+    for (const [k, v] of this.fields) {
+      ret[k] = v;
+    }
+    return ret;
+  }
   updateInput(input: Data) {
     const knownFields = getFields(this.schema);
     for (const k in input) {
@@ -278,7 +285,7 @@ export class SimpleBuilder<
     }
   }
 
-  build(): Promise<Changeset<T>> {
+  build(): Promise<Changeset> {
     return this.orchestrator.build();
   }
 
@@ -314,12 +321,13 @@ interface viewerEntLoadFunc {
 export class SimpleAction<
   T extends Ent,
   TExistingEnt extends TMaybleNullableEnt<T> = MaybeNull<T>,
-> implements Action<T, SimpleBuilder<T, TExistingEnt>, Data, TExistingEnt>
+> implements
+    Action<T, SimpleBuilder<T, TExistingEnt>, Viewer, Data, TExistingEnt>
 {
   builder: SimpleBuilder<T, TExistingEnt>;
-  validators: Validator<T, SimpleBuilder<T>, Data>[] = [];
-  triggers: Trigger<T, SimpleBuilder<T>, Data>[] = [];
-  observers: Observer<T, SimpleBuilder<T>, Data>[] = [];
+  validators: Validator<T, SimpleBuilder<T>>[] = [];
+  triggers: Trigger<T, SimpleBuilder<T>>[] = [];
+  observers: Observer<T, SimpleBuilder<T>>[] = [];
   viewerForEntLoad: viewerEntLoadFunc | undefined;
 
   constructor(
@@ -351,7 +359,7 @@ export class SimpleAction<
     return ret;
   }
 
-  changeset(): Promise<Changeset<T>> {
+  changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 

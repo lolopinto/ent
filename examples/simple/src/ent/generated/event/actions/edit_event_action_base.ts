@@ -7,7 +7,6 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   ID,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import {
   Action,
@@ -17,6 +16,7 @@ import {
 } from "@snowtop/ent/action";
 import { Address, Event } from "../../..";
 import { EventBuilder } from "./event_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export interface EventEditInput {
   name?: string;
@@ -24,19 +24,25 @@ export interface EventEditInput {
   startTime?: Date;
   endTime?: Date | null;
   location?: string;
-  addressID?: ID | null | Builder<Address>;
+  addressID?: ID | null | Builder<Address, ExampleViewer>;
 }
 
 export class EditEventActionBase
   implements
-    Action<Event, EventBuilder<EventEditInput, Event>, EventEditInput, Event>
+    Action<
+      Event,
+      EventBuilder<EventEditInput, Event>,
+      ExampleViewer,
+      EventEditInput,
+      Event
+    >
 {
   public readonly builder: EventBuilder<EventEditInput, Event>;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected input: EventEditInput;
   protected event: Event;
 
-  constructor(viewer: Viewer, event: Event, input: EventEditInput) {
+  constructor(viewer: ExampleViewer, event: Event, input: EventEditInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new EventBuilder(
@@ -56,7 +62,7 @@ export class EditEventActionBase
     return this.input;
   }
 
-  async changeset(): Promise<Changeset<Event>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -79,8 +85,8 @@ export class EditEventActionBase
   }
 
   static create<T extends EditEventActionBase>(
-    this: new (viewer: Viewer, event: Event, input: EventEditInput) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, event: Event, input: EventEditInput) => T,
+    viewer: ExampleViewer,
     event: Event,
     input: EventEditInput,
   ): T {
@@ -88,8 +94,8 @@ export class EditEventActionBase
   }
 
   static async saveXFromID<T extends EditEventActionBase>(
-    this: new (viewer: Viewer, event: Event, input: EventEditInput) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, event: Event, input: EventEditInput) => T,
+    viewer: ExampleViewer,
     id: ID,
     input: EventEditInput,
   ): Promise<Event> {

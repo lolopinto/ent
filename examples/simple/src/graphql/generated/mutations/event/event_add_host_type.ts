@@ -18,6 +18,7 @@ import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { Event } from "../../../../ent";
 import EventAddHostAction from "../../../../ent/event/actions/event_add_host_action";
 import { EventType } from "../../../resolvers";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 interface customEventAddHostInput {
   eventID: string;
@@ -52,7 +53,7 @@ export const EventAddHostPayloadType = new GraphQLObjectType({
 
 export const EventAddHostType: GraphQLFieldConfig<
   undefined,
-  RequestContext,
+  RequestContext<ExampleViewer>,
   { [input: string]: customEventAddHostInput }
 > = {
   type: new GraphQLNonNull(EventAddHostPayloadType),
@@ -65,7 +66,7 @@ export const EventAddHostType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext,
+    context: RequestContext<ExampleViewer>,
     _info: GraphQLResolveInfo,
   ): Promise<EventAddHostPayload> => {
     const event = await EventAddHostAction.saveXFromID(

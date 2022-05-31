@@ -16,6 +16,7 @@ import {
 import { RequestContext } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import DeleteContactAction from "../../../../ent/contact/actions/delete_contact_action";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 interface customContactDeleteInput {
   contactID: string;
@@ -46,7 +47,7 @@ export const ContactDeletePayloadType = new GraphQLObjectType({
 
 export const ContactDeleteType: GraphQLFieldConfig<
   undefined,
-  RequestContext,
+  RequestContext<ExampleViewer>,
   { [input: string]: customContactDeleteInput }
 > = {
   type: new GraphQLNonNull(ContactDeletePayloadType),
@@ -59,7 +60,7 @@ export const ContactDeleteType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext,
+    context: RequestContext<ExampleViewer>,
     _info: GraphQLResolveInfo,
   ): Promise<ContactDeletePayload> => {
     await DeleteContactAction.saveXFromID(

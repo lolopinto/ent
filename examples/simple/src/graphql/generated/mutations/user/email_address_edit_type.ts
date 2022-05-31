@@ -21,6 +21,7 @@ import EditEmailAddressAction, {
   EditEmailAddressInput,
 } from "../../../../ent/user/actions/edit_email_address_action";
 import { UserType } from "../../../resolvers";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 interface customEditEmailAddressInput extends EditEmailAddressInput {
   userID: string;
@@ -57,7 +58,7 @@ export const EditEmailAddressPayloadType = new GraphQLObjectType({
 
 export const EmailAddressEditType: GraphQLFieldConfig<
   undefined,
-  RequestContext,
+  RequestContext<ExampleViewer>,
   { [input: string]: customEditEmailAddressInput }
 > = {
   type: new GraphQLNonNull(EditEmailAddressPayloadType),
@@ -70,7 +71,7 @@ export const EmailAddressEditType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext,
+    context: RequestContext<ExampleViewer>,
     _info: GraphQLResolveInfo,
   ): Promise<EditEmailAddressPayload> => {
     const user = await EditEmailAddressAction.saveXFromID(

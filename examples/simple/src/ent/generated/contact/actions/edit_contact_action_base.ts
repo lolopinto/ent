@@ -7,7 +7,6 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   ID,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import {
   Action,
@@ -17,13 +16,14 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, User } from "../../..";
 import { ContactBuilder } from "./contact_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export interface ContactEditInput {
   emailIds?: ID[];
   phoneNumberIds?: ID[];
   firstName?: string;
   lastName?: string;
-  userID?: ID | Builder<User>;
+  userID?: ID | Builder<User, ExampleViewer>;
 }
 
 export class EditContactActionBase
@@ -31,16 +31,21 @@ export class EditContactActionBase
     Action<
       Contact,
       ContactBuilder<ContactEditInput, Contact>,
+      ExampleViewer,
       ContactEditInput,
       Contact
     >
 {
   public readonly builder: ContactBuilder<ContactEditInput, Contact>;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected input: ContactEditInput;
   protected contact: Contact;
 
-  constructor(viewer: Viewer, contact: Contact, input: ContactEditInput) {
+  constructor(
+    viewer: ExampleViewer,
+    contact: Contact,
+    input: ContactEditInput,
+  ) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new ContactBuilder(
@@ -60,7 +65,7 @@ export class EditContactActionBase
     return this.input;
   }
 
-  async changeset(): Promise<Changeset<Contact>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -83,8 +88,12 @@ export class EditContactActionBase
   }
 
   static create<T extends EditContactActionBase>(
-    this: new (viewer: Viewer, contact: Contact, input: ContactEditInput) => T,
-    viewer: Viewer,
+    this: new (
+      viewer: ExampleViewer,
+      contact: Contact,
+      input: ContactEditInput,
+    ) => T,
+    viewer: ExampleViewer,
     contact: Contact,
     input: ContactEditInput,
   ): T {
@@ -92,8 +101,12 @@ export class EditContactActionBase
   }
 
   static async saveXFromID<T extends EditContactActionBase>(
-    this: new (viewer: Viewer, contact: Contact, input: ContactEditInput) => T,
-    viewer: Viewer,
+    this: new (
+      viewer: ExampleViewer,
+      contact: Contact,
+      input: ContactEditInput,
+    ) => T,
+    viewer: ExampleViewer,
     id: ID,
     input: ContactEditInput,
   ): Promise<Contact> {

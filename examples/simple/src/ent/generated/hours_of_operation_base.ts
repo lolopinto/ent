@@ -8,10 +8,10 @@ import {
   Context,
   CustomQuery,
   Data,
+  Ent,
   ID,
   LoadEntOptions,
   PrivacyPolicy,
-  Viewer,
   convertDate,
   loadCustomData,
   loadCustomEnts,
@@ -23,6 +23,7 @@ import { Field, getFields } from "@snowtop/ent/schema";
 import { hoursOfOperationLoader, hoursOfOperationLoaderInfo } from "./loaders";
 import { DayOfWeek, DayOfWeekAlt, NodeType } from "../internal";
 import schema from "../../schema/hours_of_operation_schema";
+import { ExampleViewer } from "../../viewer/viewer";
 
 interface HoursOfOperationDBData {
   id: ID;
@@ -34,7 +35,7 @@ interface HoursOfOperationDBData {
   close: string;
 }
 
-export class HoursOfOperationBase {
+export class HoursOfOperationBase implements Ent<ExampleViewer> {
   readonly nodeType = NodeType.HoursOfOperation;
   readonly id: ID;
   readonly createdAt: Date;
@@ -44,7 +45,7 @@ export class HoursOfOperationBase {
   readonly open: string;
   readonly close: string;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: ExampleViewer, protected data: Data) {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
@@ -54,13 +55,13 @@ export class HoursOfOperationBase {
     this.close = data.close;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<this> {
+  getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewer> {
     return AllowIfViewerPrivacyPolicy;
   }
 
   static async load<T extends HoursOfOperationBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     id: ID,
   ): Promise<T | null> {
     return (await loadEnt(
@@ -71,8 +72,8 @@ export class HoursOfOperationBase {
   }
 
   static async loadX<T extends HoursOfOperationBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     id: ID,
   ): Promise<T> {
     return (await loadEntX(
@@ -83,8 +84,8 @@ export class HoursOfOperationBase {
   }
 
   static async loadMany<T extends HoursOfOperationBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
     return (await loadEnts(
@@ -95,8 +96,8 @@ export class HoursOfOperationBase {
   }
 
   static async loadCustom<T extends HoursOfOperationBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
     query: CustomQuery,
   ): Promise<T[]> {
     return (await loadCustomEnts(
@@ -107,7 +108,7 @@ export class HoursOfOperationBase {
   }
 
   static async loadCustomData<T extends HoursOfOperationBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<HoursOfOperationDBData[]> {
@@ -119,7 +120,7 @@ export class HoursOfOperationBase {
   }
 
   static async loadRawData<T extends HoursOfOperationBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<HoursOfOperationDBData | null> {
@@ -131,7 +132,7 @@ export class HoursOfOperationBase {
   }
 
   static async loadRawDataX<T extends HoursOfOperationBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewer, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<HoursOfOperationDBData> {
@@ -143,8 +144,8 @@ export class HoursOfOperationBase {
   }
 
   static loaderOptions<T extends HoursOfOperationBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-  ): LoadEntOptions<T> {
+    this: new (viewer: ExampleViewer, data: Data) => T,
+  ): LoadEntOptions<T, ExampleViewer> {
     return {
       tableName: hoursOfOperationLoaderInfo.tableName,
       fields: hoursOfOperationLoaderInfo.fields,

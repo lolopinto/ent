@@ -629,35 +629,42 @@ func (f *Field) getIDFieldType() string {
 	return f.getIDFieldTypeName()
 }
 
-func (f *Field) TsBuilderType() string {
+func (f *Field) TsBuilderType(cfg codegenapi.Config) string {
 	typ := f.tsRawUnderlyingType()
 	typeName := f.getIDFieldType()
 	if typeName == "" || f.disableBuilderType {
 		return typ
 	}
-	return fmt.Sprintf("%s | Builder<%s>", typ, typeName)
+	return fmt.Sprintf("%s | Builder<%s, %s>", typ, f.transformBuilderEnt(typeName, cfg), cfg.GetTemplatizedViewer().Name)
+}
+
+func (f *Field) transformBuilderEnt(typ string, cfg codegenapi.Config) string {
+	if typ != "Ent" {
+		return typ
+	}
+	return fmt.Sprintf("%s<%s>", typ, cfg.GetTemplatizedViewer().Name)
 }
 
 // for getFooValue() where there's a nullable type but the input type isn't nullable
 // because the underlying db value isn't
-func (f *Field) TsBuilderUnionType() string {
+func (f *Field) TsBuilderUnionType(cfg codegenapi.Config) string {
 	if f.tsFieldType == nil {
-		return f.TsBuilderType()
+		return f.TsBuilderType(cfg)
 	}
 	// already null so we good
 	typWithNull, ok := f.tsFieldType.(enttype.NonNullableType)
 	if !ok {
-		return f.TsBuilderType()
+		return f.TsBuilderType(cfg)
 	}
 	typ := typWithNull.GetTSType()
 	typeName := f.getIDFieldType()
 	if typeName == "" || f.disableBuilderType {
 		return typ
 	}
-	return fmt.Sprintf("%s | Builder<%s>", typ, typeName)
+	return fmt.Sprintf("%s | Builder<%s, %s>", typ, f.transformBuilderEnt(typeName, cfg), cfg.GetTemplatizedViewer().Name)
 }
 
-func (f *Field) TsBuilderImports() []*tsimport.ImportPath {
+func (f *Field) TsBuilderImports(cfg codegenapi.Config) []*tsimport.ImportPath {
 	ret := f.GetTsTypeImports()
 	typeName := f.getIDFieldType()
 	if typeName == "" || f.disableBuilderType {
@@ -670,10 +677,16 @@ func (f *Field) TsBuilderImports() []*tsimport.ImportPath {
 	} else {
 		entImportPath = tsimport.NewLocalEntImportPath(typeName)
 	}
+
+	viewer := cfg.GetTemplatizedViewer()
 	ret = append(
 		ret,
 		entImportPath,
 		tsimport.NewEntActionImportPath("Builder"),
+		&tsimport.ImportPath{
+			ImportPath: viewer.Path,
+			Import:     viewer.Name,
+		},
 	)
 	return ret
 }

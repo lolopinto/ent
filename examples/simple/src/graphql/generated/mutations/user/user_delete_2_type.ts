@@ -19,6 +19,7 @@ import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import DeleteUserAction2, {
   DeleteUserInput2,
 } from "../../../../ent/user/actions/delete_user_action_2";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 interface customDeleteUserInput2 extends DeleteUserInput2 {
   userID: string;
@@ -55,7 +56,7 @@ export const DeleteUserInput2PayloadType = new GraphQLObjectType({
 
 export const UserDelete2Type: GraphQLFieldConfig<
   undefined,
-  RequestContext,
+  RequestContext<ExampleViewer>,
   { [input: string]: customDeleteUserInput2 }
 > = {
   type: new GraphQLNonNull(DeleteUserInput2PayloadType),
@@ -68,7 +69,7 @@ export const UserDelete2Type: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext,
+    context: RequestContext<ExampleViewer>,
     _info: GraphQLResolveInfo,
   ): Promise<DeleteUserInput2Payload> => {
     await DeleteUserAction2.saveXFromID(

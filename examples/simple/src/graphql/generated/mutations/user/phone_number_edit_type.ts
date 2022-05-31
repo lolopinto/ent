@@ -21,6 +21,7 @@ import EditPhoneNumberAction, {
   EditPhoneNumberInput,
 } from "../../../../ent/user/actions/edit_phone_number_action";
 import { UserType } from "../../../resolvers";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 interface customEditPhoneNumberInput extends EditPhoneNumberInput {
   userID: string;
@@ -57,7 +58,7 @@ export const EditPhoneNumberPayloadType = new GraphQLObjectType({
 
 export const PhoneNumberEditType: GraphQLFieldConfig<
   undefined,
-  RequestContext,
+  RequestContext<ExampleViewer>,
   { [input: string]: customEditPhoneNumberInput }
 > = {
   type: new GraphQLNonNull(EditPhoneNumberPayloadType),
@@ -70,7 +71,7 @@ export const PhoneNumberEditType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext,
+    context: RequestContext<ExampleViewer>,
     _info: GraphQLResolveInfo,
   ): Promise<EditPhoneNumberPayload> => {
     const user = await EditPhoneNumberAction.saveXFromID(

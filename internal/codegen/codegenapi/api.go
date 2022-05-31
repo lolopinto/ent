@@ -1,6 +1,9 @@
 package codegenapi
 
-import "github.com/iancoleman/strcase"
+import (
+	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/internal/codepath"
+)
 
 type GraphQLMutationName string
 
@@ -29,6 +32,18 @@ const (
 	OnDemand  FieldPrivacyEvaluated = "on_demand"
 )
 
+type ViewerConfig struct {
+	Path string `yaml:"path"`
+	Name string `yaml:"name"`
+}
+
+func (cfg *ViewerConfig) Clone() *ViewerConfig {
+	return &ViewerConfig{
+		Path: cfg.Path,
+		Name: cfg.Name,
+	}
+}
+
 // this file exists to simplify circular dependencies
 type Config interface {
 	DefaultGraphQLMutationName() GraphQLMutationName
@@ -39,6 +54,7 @@ type Config interface {
 	// doesn't actually writes the files, just keeps track of which files were going to be written
 	// used to detect dangling files...
 	DummyWrite() bool
+	GetTemplatizedViewer() *ViewerConfig
 }
 
 // DummyConfig exists for tests/legacy paths which need Configs and don't want to create the production one
@@ -67,6 +83,13 @@ func (cfg DummyConfig) FieldPrivacyEvaluated() FieldPrivacyEvaluated {
 
 func (cfg DummyConfig) DummyWrite() bool {
 	return false
+}
+
+func (cfg DummyConfig) GetTemplatizedViewer() *ViewerConfig {
+	return &ViewerConfig{
+		Path: codepath.Package,
+		Name: "Viewer",
+	}
 }
 
 var _ Config = &DummyConfig{}

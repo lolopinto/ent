@@ -361,6 +361,16 @@ func (cfg *Config) FieldPrivacyEvaluated() codegenapi.FieldPrivacyEvaluated {
 	return codegenapi.OnDemand
 }
 
+func (cfg *Config) GetTemplatizedViewer() *codegenapi.ViewerConfig {
+	if codegen := cfg.getCodegenConfig(); codegen != nil && codegen.TemplatizedViewer != nil {
+		return codegen.TemplatizedViewer
+	}
+	return &codegenapi.ViewerConfig{
+		Path: codepath.Package,
+		Name: "Viewer",
+	}
+}
+
 const DEFAULT_GLOB = "src/**/*.ts"
 const PRETTIER_FILE_CHUNKS = 20
 
@@ -508,6 +518,7 @@ type CodegenConfig struct {
 	SchemaSQLFilePath          string                           `yaml:"schemaSQLFilePath"`
 	DatabaseToCompareTo        string                           `yaml:"databaseToCompareTo"`
 	FieldPrivacyEvaluated      codegenapi.FieldPrivacyEvaluated `yaml:"fieldPrivacyEvaluated"`
+	TemplatizedViewer          *codegenapi.ViewerConfig         `yaml:"templatizedViewer"`
 }
 
 func cloneCodegen(cfg *CodegenConfig) *CodegenConfig {
@@ -532,6 +543,7 @@ func (cfg *CodegenConfig) Clone() *CodegenConfig {
 		SchemaSQLFilePath:          cfg.SchemaSQLFilePath,
 		DatabaseToCompareTo:        cfg.DatabaseToCompareTo,
 		FieldPrivacyEvaluated:      cfg.FieldPrivacyEvaluated,
+		TemplatizedViewer:          cloneViewerConfig(cfg.TemplatizedViewer),
 	}
 }
 
@@ -554,6 +566,13 @@ func (cfg *PrivacyConfig) Clone() *PrivacyConfig {
 		PolicyName: cfg.PolicyName,
 		Class:      cfg.Class,
 	}
+}
+
+func cloneViewerConfig(cfg *codegenapi.ViewerConfig) *codegenapi.ViewerConfig {
+	if cfg == nil {
+		return nil
+	}
+	return cfg.Clone()
 }
 
 func clonePrettierConfig(cfg *PrettierConfig) *PrettierConfig {

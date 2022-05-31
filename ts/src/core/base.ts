@@ -63,8 +63,8 @@ interface queryOptions {
   orderby?: string;
 }
 
-export interface Context {
-  getViewer(): Viewer;
+export interface Context<TViewer extends Viewer = Viewer> {
+  getViewer(): TViewer;
   // optional per (request)contet
   // absence means we are not doing any caching
   // presence means we have loader, ent cache etc
@@ -73,9 +73,12 @@ export interface Context {
   cache?: cache;
 }
 
-export interface Viewer {
-  viewerID: ID | null;
-  viewer: () => Promise<Ent | null>;
+export interface Viewer<
+  TEnt extends any = Ent<any> | null,
+  TID extends any = ID | null,
+> {
+  viewerID: TID;
+  viewer: () => Promise<TEnt>;
   instanceKey: () => string;
   //  isOmniscient?(): boolean; // optional function to indicate a viewer that can see anything e.g. admin
   // TODO determine if we want this here.
@@ -86,13 +89,13 @@ export interface Viewer {
   // I want dataloaders to be created on demand as needed
   // so it seems having it in Context (per-request info makes sense)
   // so does that mean we should pass Context all the way down and not Viewer?
-  context?: Context;
+  context?: Context<any>;
 }
 
-export interface Ent {
+export interface Ent<TViewer extends Viewer = Viewer> {
   id: ID;
-  viewer: Viewer;
-  getPrivacyPolicy(): PrivacyPolicy<this>;
+  viewer: TViewer;
+  getPrivacyPolicy(): PrivacyPolicy<this, TViewer>;
   nodeType: string;
 }
 
@@ -100,8 +103,11 @@ export declare type Data = {
   [key: string]: any;
 };
 
-export interface EntConstructor<T extends Ent> {
-  new (viewer: Viewer, data: Data): T;
+export interface EntConstructor<
+  TEnt extends Ent,
+  TViewer extends Viewer = Viewer,
+> {
+  new (viewer: TViewer, data: Data): TEnt;
 }
 
 export type ID = string | number;
@@ -155,14 +161,19 @@ export interface EditRowOptions extends CreateRowOptions {
   key: string; // what key are we loading from. if not provided we're loading from column "id"
 }
 
-interface LoadableEntOptions<T extends Ent> {
+interface LoadableEntOptions<
+  TEnt extends Ent,
+  TViewer extends Viewer = Viewer,
+> {
   loaderFactory: LoaderFactory<any, Data | null>;
-  ent: EntConstructor<T>;
+  ent: EntConstructor<TEnt, TViewer>;
 }
 
 // information needed to load an ent from the databse
-export interface LoadEntOptions<T extends Ent>
-  extends LoadableEntOptions<T>,
+export interface LoadEntOptions<
+  TEnt extends Ent,
+  TViewer extends Viewer = Viewer,
+> extends LoadableEntOptions<TEnt, TViewer>,
     // extending DataOptions and fields is to make APIs like loadEntsFromClause work until we come up with a cleaner API
     SelectBaseDataOptions {
   // if passed in, it means there's field privacy on the ents *and* we want to apply it at ent load
@@ -170,10 +181,13 @@ export interface LoadEntOptions<T extends Ent>
   fieldPrivacy?: Map<string, PrivacyPolicy>;
 }
 
-export interface LoadCustomEntOptions<T extends Ent>
+export interface LoadCustomEntOptions<
+    TEnt extends Ent,
+    TViewer extends Viewer = Viewer,
+  >
   // extending DataOptions and fields is to make APIs like loadEntsFromClause work until we come up with a cleaner API
   extends SelectBaseDataOptions {
-  ent: EntConstructor<T>;
+  ent: EntConstructor<TEnt, TViewer>;
   fieldPrivacy?: Map<string, PrivacyPolicy>;
 }
 
@@ -269,10 +283,10 @@ export function DenyWithReason(e: PrivacyError | string): PrivacyResult {
   };
 }
 
-export interface PrivacyPolicyRule<TEnt extends Ent = Ent> {
-  apply(v: Viewer, ent?: TEnt): Promise<PrivacyResult>;
+export interface PrivacyPolicyRule<TEnt extends Ent = Ent, TViewer = Viewer> {
+  apply(v: TViewer, ent?: TEnt): Promise<PrivacyResult>;
 }
 
-export interface PrivacyPolicy<TEnt extends Ent = Ent> {
-  rules: PrivacyPolicyRule<TEnt>[];
+export interface PrivacyPolicy<TEnt extends Ent = Ent, TViewer = Viewer> {
+  rules: PrivacyPolicyRule<TEnt, TViewer>[];
 }

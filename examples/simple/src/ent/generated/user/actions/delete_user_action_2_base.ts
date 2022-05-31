@@ -7,11 +7,11 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   ID,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { User } from "../../..";
 import { UserBuilder } from "./user_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export interface DeleteUserInput2 {
   log: boolean;
@@ -19,14 +19,20 @@ export interface DeleteUserInput2 {
 
 export class DeleteUserAction2Base
   implements
-    Action<User, UserBuilder<DeleteUserInput2, User>, DeleteUserInput2, User>
+    Action<
+      User,
+      UserBuilder<DeleteUserInput2, User>,
+      ExampleViewer,
+      DeleteUserInput2,
+      User
+    >
 {
   public readonly builder: UserBuilder<DeleteUserInput2, User>;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected input: DeleteUserInput2;
   protected user: User;
 
-  constructor(viewer: Viewer, user: User, input: DeleteUserInput2) {
+  constructor(viewer: ExampleViewer, user: User, input: DeleteUserInput2) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new UserBuilder(
@@ -46,7 +52,7 @@ export class DeleteUserAction2Base
     return this.input;
   }
 
-  async changeset(): Promise<Changeset<User>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -67,8 +73,8 @@ export class DeleteUserAction2Base
   }
 
   static create<T extends DeleteUserAction2Base>(
-    this: new (viewer: Viewer, user: User, input: DeleteUserInput2) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, user: User, input: DeleteUserInput2) => T,
+    viewer: ExampleViewer,
     user: User,
     input: DeleteUserInput2,
   ): T {
@@ -76,8 +82,8 @@ export class DeleteUserAction2Base
   }
 
   static async saveXFromID<T extends DeleteUserAction2Base>(
-    this: new (viewer: Viewer, user: User, input: DeleteUserInput2) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, user: User, input: DeleteUserInput2) => T,
+    viewer: ExampleViewer,
     id: ID,
     input: DeleteUserInput2,
   ): Promise<void> {

@@ -1,4 +1,4 @@
-{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData" "applyPrivacyPolicy"}}
+{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data"  "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData" "applyPrivacyPolicy" "Ent"}}
 {{ reserveImport .Package.SchemaPackagePath "Field" "getFields" "getFieldsWithPrivacy"}}
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
 {{ reserveImport "src/ent/generated/loadAny" "loadEntByType" "loadEntXByType"}}
@@ -6,6 +6,9 @@
 
 {{ $privacyCfg := .PrivacyConfig -}}
 {{ $cfg := .CodePath -}}
+{{$viewerInfo := $cfg.GetTemplatizedViewer -}}
+{{ reserveImport $viewerInfo.Path $viewerInfo.Name -}}
+{{$viewerType := useImport $viewerInfo.Name -}}
 
 {{with .NodeData -}}
 {{$loaderInfo := printf "%sLoaderInfo" .NodeInstance -}}
@@ -22,13 +25,12 @@
   {{ reserveImportPath . false -}}
 {{ end}}
 
-{{$viewerType := useImport "Viewer"}}
 {{$idType := useImport "ID" }}
 {{$this := .}}
 
 {{$baseClass := printf "%sBase" .Node -}}
 {{$ignore := useImport "Data" -}}
-{{$thisType := "new (viewer: Viewer, data: Data) => T" }}
+{{$thisType := printf ("new (viewer: %s, data: Data) => T") $viewerType}}
 
 {{ range .GetTSEnums -}}
   {{if not .Imported -}}
@@ -52,7 +54,7 @@ interface {{$dataType}} {
   {{ end -}}
 }
 
-export class {{$baseClass}} {
+export class {{$baseClass}} implements {{useImport "Ent"}}<{{$viewerType}}> {
 
   readonly nodeType = {{useImport "NodeType"}}.{{.Node}};
   {{range $field := .FieldInfo.Fields -}}
@@ -82,7 +84,7 @@ export class {{$baseClass}} {
     {{end}}
   }
   
-  getPrivacyPolicy(): {{useImport "PrivacyPolicy"}}<this> {
+  getPrivacyPolicy(): {{useImport "PrivacyPolicy"}}<this, {{$viewerType}}> {
     {{ if $privacyCfg.Class }}
       return new {{useImport $privacyCfg.PolicyName}}();
     {{ else }}
@@ -256,7 +258,7 @@ export class {{$baseClass}} {
 
       static async loadFrom{{$field.CamelCaseName}}X<T extends {{$baseClass}}>(
         this: {{$thisType}},
-        viewer: Viewer,
+        viewer: {{$viewerType}},
         {{$field.TsFieldName $cfg}}: {{$field.GetNotNullableTsType}},
       ): Promise<T> {
         return await {{useImport "loadEntXViaKey"}}(
@@ -294,7 +296,7 @@ export class {{$baseClass}} {
       static queryFrom{{$field.QueryFromEntName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         viewer: {{$viewerType}},
-        ent: {{useImport "Ent"}},
+        ent: {{useImport "Ent"}}<{{$viewerType}}>,
       ): {{$queryName}} {
         return {{$queryName}}.query(viewer, ent);
       }
@@ -305,7 +307,7 @@ export class {{$baseClass}} {
 
   static loaderOptions<T extends {{$baseClass}}>(
     this: new (viewer: {{$viewerType}}, data: Data) => T,
-  ): {{useImport "LoadEntOptions"}}<T> {
+  ): {{useImport "LoadEntOptions"}}<T, {{$viewerType}}> {
     return {
       tableName: {{useImport $loaderInfo}}.tableName,
       fields: {{useImport $loaderInfo}}.fields,

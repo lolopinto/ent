@@ -25,6 +25,7 @@ import EditEventAction, {
   EventEditInput,
 } from "../../../../ent/event/actions/edit_event_action";
 import { EventType } from "../../../resolvers";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 interface customEventEditInput extends Omit<EventEditInput, "location"> {
   eventID: string;
@@ -76,7 +77,7 @@ export const EventEditPayloadType = new GraphQLObjectType({
 
 export const EventEditType: GraphQLFieldConfig<
   undefined,
-  RequestContext,
+  RequestContext<ExampleViewer>,
   { [input: string]: customEventEditInput }
 > = {
   type: new GraphQLNonNull(EventEditPayloadType),
@@ -89,7 +90,7 @@ export const EventEditType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext,
+    context: RequestContext<ExampleViewer>,
     _info: GraphQLResolveInfo,
   ): Promise<EventEditPayload> => {
     const event = await EditEventAction.saveXFromID(

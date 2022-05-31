@@ -11,14 +11,15 @@ import { AssocEdgeLoaderFactory } from "../loaders/assoc_edge_loader";
 import { EdgeQuery, BaseEdgeQuery, IDInfo } from "./query";
 
 // TODO no more plurals for privacy reasons?
-export type EdgeQuerySource<TSource extends Ent, TDest extends Ent = Ent> =
-  | TSource
-  | TSource[]
-  | ID
-  | ID[]
-  | EdgeQuery<TDest, Ent, AssocEdge>;
+export type EdgeQuerySource<
+  TSource extends Ent<TViewer>,
+  TDest extends Ent<TViewer> = Ent<any>,
+  TViewer extends Viewer = Viewer,
+> = TSource | TSource[] | ID | ID[] | EdgeQuery<TDest, Ent, AssocEdge>;
 
-type loaderOptionsFunc = (type: string) => LoadEntOptions<Ent>;
+type loaderOptionsFunc<TViewer extends Viewer> = (
+  type: string,
+) => LoadEntOptions<Ent, TViewer>;
 
 interface typeData {
   ids: ID[];
@@ -26,21 +27,24 @@ interface typeData {
 }
 
 export abstract class AssocEdgeQueryBase<
-    TSource extends Ent,
-    TDest extends Ent,
+    TSource extends Ent<TViewer>,
+    TDest extends Ent<TViewer>,
     TEdge extends AssocEdge,
+    TViewer extends Viewer = Viewer,
   >
   extends BaseEdgeQuery<TSource, TDest, TEdge>
   implements EdgeQuery<TSource, TDest, TEdge>
 {
   constructor(
-    public viewer: Viewer,
-    public src: EdgeQuerySource<TSource, TDest>,
+    public viewer: TViewer,
+    public src: EdgeQuerySource<TSource, TDest, TViewer>,
     private countLoaderFactory: AssocEdgeCountLoaderFactory,
     private dataLoaderFactory: AssocEdgeLoaderFactory<TEdge>,
     // if function, it's a polymorphic edge and need to provide
     // a function that goes from edgeType to LoadEntOptions
-    private options: LoadEntOptions<TDest> | loaderOptionsFunc,
+    private options:
+      | LoadEntOptions<TDest, TViewer>
+      | loaderOptionsFunc<TViewer>,
   ) {
     super(viewer, "time");
   }

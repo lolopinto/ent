@@ -6,6 +6,7 @@ import {
   ConfirmEditEmailAddressInput,
 } from "../../generated/user/actions/confirm_edit_email_address_action_base";
 import { UserBuilder } from "../../generated/user/actions/user_builder";
+import { ExampleViewer } from "../../../viewer/viewer";
 
 export { ConfirmEditEmailAddressInput };
 
@@ -23,7 +24,12 @@ async function findAuthCode(
 }
 
 export default class ConfirmEditEmailAddressAction extends ConfirmEditEmailAddressActionBase {
-  validators: Validator<User, UserBuilder, ConfirmEditEmailAddressInput>[] = [
+  validators: Validator<
+    User,
+    UserBuilder,
+    ExampleViewer,
+    ConfirmEditEmailAddressInput
+  >[] = [
     {
       async validate(builder, input) {
         const authCode = await findAuthCode(
@@ -38,7 +44,12 @@ export default class ConfirmEditEmailAddressAction extends ConfirmEditEmailAddre
     },
   ];
 
-  triggers: Trigger<User, UserBuilder, ConfirmEditEmailAddressInput>[] = [
+  triggers: Trigger<
+    User,
+    UserBuilder,
+    ExampleViewer,
+    ConfirmEditEmailAddressInput
+  >[] = [
     {
       async changeset(builder, input) {
         const authCode = await findAuthCode(

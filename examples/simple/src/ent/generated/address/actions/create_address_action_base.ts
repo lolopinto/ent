@@ -6,11 +6,11 @@
 import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { Address } from "../../..";
 import { AddressBuilder } from "./address_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export interface AddressCreateInput {
   streetName: string;
@@ -26,15 +26,16 @@ export class CreateAddressActionBase
     Action<
       Address,
       AddressBuilder<AddressCreateInput, Address | null>,
+      ExampleViewer,
       AddressCreateInput,
       Address | null
     >
 {
   public readonly builder: AddressBuilder<AddressCreateInput, Address | null>;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected input: AddressCreateInput;
 
-  constructor(viewer: Viewer, input: AddressCreateInput) {
+  constructor(viewer: ExampleViewer, input: AddressCreateInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new AddressBuilder(
@@ -53,7 +54,7 @@ export class CreateAddressActionBase
     return this.input;
   }
 
-  async changeset(): Promise<Changeset<Address>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -76,8 +77,8 @@ export class CreateAddressActionBase
   }
 
   static create<T extends CreateAddressActionBase>(
-    this: new (viewer: Viewer, input: AddressCreateInput) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, input: AddressCreateInput) => T,
+    viewer: ExampleViewer,
     input: AddressCreateInput,
   ): T {
     return new this(viewer, input);

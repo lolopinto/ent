@@ -7,7 +7,6 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   ID,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import {
   Action,
@@ -17,10 +16,11 @@ import {
 } from "@snowtop/ent/action";
 import { AuthCode, User } from "../../..";
 import { AuthCodeBuilder } from "./auth_code_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export interface AuthCodeCreateInput {
   code: string;
-  userID: ID | Builder<User>;
+  userID: ID | Builder<User, ExampleViewer>;
   emailAddress?: string | null;
   phoneNumber?: string | null;
 }
@@ -30,6 +30,7 @@ export class CreateAuthCodeActionBase
     Action<
       AuthCode,
       AuthCodeBuilder<AuthCodeCreateInput, AuthCode | null>,
+      ExampleViewer,
       AuthCodeCreateInput,
       AuthCode | null
     >
@@ -38,10 +39,10 @@ export class CreateAuthCodeActionBase
     AuthCodeCreateInput,
     AuthCode | null
   >;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected input: AuthCodeCreateInput;
 
-  constructor(viewer: Viewer, input: AuthCodeCreateInput) {
+  constructor(viewer: ExampleViewer, input: AuthCodeCreateInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new AuthCodeBuilder(
@@ -60,7 +61,7 @@ export class CreateAuthCodeActionBase
     return this.input;
   }
 
-  async changeset(): Promise<Changeset<AuthCode>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -83,8 +84,8 @@ export class CreateAuthCodeActionBase
   }
 
   static create<T extends CreateAuthCodeActionBase>(
-    this: new (viewer: Viewer, input: AuthCodeCreateInput) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, input: AuthCodeCreateInput) => T,
+    viewer: ExampleViewer,
     input: AuthCodeCreateInput,
   ): T {
     return new this(viewer, input);

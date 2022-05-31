@@ -1,10 +1,4 @@
-import {
-  Viewer,
-  AssocEdge,
-  AssocEdgeInput,
-  IDViewer,
-  LoggedOutViewer,
-} from "@snowtop/ent";
+import { AssocEdge, AssocEdgeInput } from "@snowtop/ent";
 import {
   User,
   Contact,
@@ -49,8 +43,9 @@ import {
   SuperNestedObjectEnum,
   UserSuperNestedObject,
 } from "../generated/user_super_nested_object";
+import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
 
-const loggedOutViewer = new LoggedOutViewer();
+const loggedOutViewer = new LoggedOutExampleViewer();
 
 afterAll(async () => {
   FakeLogger.clear();
@@ -69,7 +64,7 @@ async function create(opts: Partial<UserCreateInput>): Promise<User> {
   return await CreateUserAction.create(loggedOutViewer, input).saveX();
 }
 
-class OmniViewer extends IDViewer {
+class OmniViewer extends ExampleViewer {
   isOmniscient(): boolean {
     return true;
   }
@@ -87,7 +82,7 @@ test("create user", async () => {
   expect(await user.emailVerified()).toBeFalsy();
 
   // confirm contact was automatically created
-  let v = new IDViewer(user.id);
+  let v = new ExampleViewer(user.id);
   user = await User.loadX(v, user.id);
   let contacts = await user.queryContacts().queryEnts();
   expect(contacts.length).toBe(1);
@@ -145,7 +140,7 @@ test("edit user", async () => {
     );
   }
 
-  let vc = new IDViewer(user.id, { ent: user });
+  let vc = new ExampleViewer(user.id);
   let editedUser = await EditUserAction.create(vc, user, {
     firstName: "First of his name",
   }).saveX();
@@ -161,7 +156,7 @@ test("edit user. saveXFromID", async () => {
     lastName: "Snow",
   });
 
-  let vc = new IDViewer(user.id, { ent: user });
+  let vc = new ExampleViewer(user.id);
   let editedUser = await EditUserAction.saveXFromID(vc, user.id, {
     firstName: "First of his name",
   });
@@ -184,7 +179,7 @@ test("delete user", async () => {
       /Logged out Viewer does not have permission to delete User/,
     );
   }
-  let vc = new IDViewer(user.id, { ent: user });
+  let vc = new ExampleViewer(user.id);
   await DeleteUserAction.create(vc, user).saveX();
 
   let loadedUser = await User.load(vc, user.id);
@@ -207,7 +202,7 @@ test("delete user 2", async () => {
       /Logged out Viewer does not have permission to delete User/,
     );
   }
-  let vc = new IDViewer(user.id, { ent: user });
+  let vc = new ExampleViewer(user.id);
   await DeleteUserAction2.create(vc, user, { log: true }).saveX();
 
   let loadedUser = await User.load(vc, user.id);
@@ -220,7 +215,7 @@ test("delete user. saveXFromID", async () => {
     lastName: "Snow",
   });
 
-  let vc = new IDViewer(user.id, { ent: user });
+  let vc = new ExampleViewer(user.id);
   await DeleteUserAction.saveXFromID(vc, user.id);
 
   let loadedUser = await User.load(vc, user.id);
@@ -233,7 +228,7 @@ test("delete user 2. saveXFromID", async () => {
     lastName: "Snow",
   });
 
-  let vc = new IDViewer(user.id, { ent: user });
+  let vc = new ExampleViewer(user.id);
   await DeleteUserAction2.saveXFromID(vc, user.id, { log: true });
 
   let loadedUser = await User.load(vc, user.id);
@@ -252,19 +247,13 @@ describe("privacy", () => {
     });
 
     // we only do privacy checks when loading right now...
-    let loadedUser = await User.load(
-      new IDViewer(user.id, { ent: user }),
-      user.id,
-    );
+    let loadedUser = await User.load(new ExampleViewer(user.id), user.id);
     expect(loadedUser).toBeInstanceOf(User);
     expect(loadedUser).not.toBe(null);
     expect(loadedUser?.id).toBe(user.id);
 
     // privacy indicates other user cannot load
-    let loadedUser2 = await User.load(
-      new IDViewer(user2.id, { ent: user2 }),
-      user.id,
-    );
+    let loadedUser2 = await User.load(new ExampleViewer(user2.id), user.id);
     expect(loadedUser2).toBe(null);
   });
 
@@ -278,16 +267,13 @@ describe("privacy", () => {
       lastName: "Targaryen",
     });
 
-    let loadedUser = await User.loadX(
-      new IDViewer(user.id, { ent: user }),
-      user.id,
-    );
+    let loadedUser = await User.loadX(new ExampleViewer(user.id), user.id);
     expect(loadedUser).toBeInstanceOf(User);
     expect(loadedUser.id).toBe(user.id);
 
     try {
       // privacy indicates other user cannot load
-      await User.loadX(new IDViewer(user2.id, { ent: user2 }), user.id);
+      await User.loadX(new ExampleViewer(user2.id), user.id);
       throw new Error("should have thrown exception");
     } catch (e) {}
   });
@@ -390,7 +376,7 @@ test("symmetric edge", async () => {
   const friends = await jon.queryFriends().queryEnts();
   expect(friends.length).toBe(2);
 
-  let vc = new IDViewer(jon.id, { ent: jon });
+  let vc = new ExampleViewer(jon.id);
   // delete all the edges and let's confirm it works
   const action2 = EditUserAction.create(vc, jon, {});
   action2.builder.removeFriend(dany, sam);
@@ -421,7 +407,7 @@ test("inverse edge", async () => {
     firstName: "Jon",
     lastName: "Snow",
   });
-  const action = CreateEventAction.create(new LoggedOutViewer(), {
+  const action = CreateEventAction.create(new LoggedOutExampleViewer(), {
     creatorID: user.id,
     startTime: new Date(),
     name: "fun event",
@@ -457,7 +443,7 @@ test("inverse edge", async () => {
   });
 
   // privacy of event is everyone can see so can load events at end of edge
-  const v = new IDViewer(user.id);
+  const v = new ExampleViewer(user.id);
   const loadedEvent = await Event.load(v, event.id);
   expect(loadedEvent).not.toBe(null);
 
@@ -471,7 +457,7 @@ test("one-way + inverse edge", async () => {
     firstName: "Jon",
     lastName: "Snow",
   });
-  const event = await CreateEventAction.create(new LoggedOutViewer(), {
+  const event = await CreateEventAction.create(new LoggedOutExampleViewer(), {
     creatorID: user.id,
     startTime: new Date(),
     name: "fun event",
@@ -505,10 +491,10 @@ test("loadMultiUsers", async () => {
     lastName: "Tarly",
   });
 
-  const tests: [Viewer, number, string][] = [
+  const tests: [ExampleViewer, number, string][] = [
     [loggedOutViewer, 0, "logged out viewer"],
     [new OmniViewer(jon.id), 3, "omni viewer"],
-    [new IDViewer(jon.id), 1, "1 id"],
+    [new ExampleViewer(jon.id), 1, "1 id"],
   ];
 
   for (const testData of tests) {
@@ -548,7 +534,7 @@ test("loadFromEmailAddress", async () => {
   });
 
   const jonFromHimself = await User.loadFromEmailAddress(
-    new IDViewer(jon.id),
+    new ExampleViewer(jon.id),
     emailAddress,
   );
   expect(jonFromHimself).not.toBe(null);
@@ -556,7 +542,7 @@ test("loadFromEmailAddress", async () => {
   expect(jonFromHimself).toBeInstanceOf(User);
 
   const mustJon = await User.loadFromEmailAddressX(
-    new IDViewer(jon.id),
+    new ExampleViewer(jon.id),
     emailAddress,
   );
   expect(mustJon.id).toBe(jon.id);
@@ -590,7 +576,7 @@ test("uniqueEdge|Node", async () => {
   expect(jon).toBeInstanceOf(User);
   expect(sansa).toBeInstanceOf(User);
 
-  let vc = new IDViewer(jon.id, { ent: jon });
+  let vc = new ExampleViewer(jon.id);
   jon = await User.loadX(vc, jon.id);
 
   // jon was created as his own contact
@@ -598,7 +584,7 @@ test("uniqueEdge|Node", async () => {
   expect(contacts.length).toBe(1);
   let contact = contacts[0];
 
-  let contact2 = await CreateContactAction.create(new IDViewer(jon.id), {
+  let contact2 = await CreateContactAction.create(new ExampleViewer(jon.id), {
     emails: [
       {
         emailAddress: sansa.emailAddress,
@@ -632,7 +618,7 @@ test("uniqueEdge|Node", async () => {
     );
   }
 
-  const v = new IDViewer(jon.id);
+  const v = new ExampleViewer(jon.id);
   const jonFromHimself = await User.loadX(v, jon.id);
   const [jonContact, allContacts] = await Promise.all([
     jonFromHimself.loadSelfContact(),
@@ -643,7 +629,7 @@ test("uniqueEdge|Node", async () => {
   expect(allContacts.length).toBe(2);
 
   // sansa can load jon because friends but can't load his contact
-  const v2 = new IDViewer(sansa.id);
+  const v2 = new ExampleViewer(sansa.id);
   const jonFromSansa = await User.loadX(v2, jon.id);
   const jonContactFromSansa = await jonFromSansa.loadSelfContact();
   expect(jonContactFromSansa).toBe(null);
@@ -687,7 +673,7 @@ describe("edit email", () => {
       lastName: "Snow",
       emailAddress: randomEmail(),
     });
-    let vc = new IDViewer(user.id);
+    let vc = new ExampleViewer(user.id);
 
     try {
       await EditEmailAddressAction.create(vc, user, {
@@ -707,7 +693,7 @@ describe("edit email", () => {
       lastName: "Snow",
       emailAddress: email,
     });
-    let vc = new IDViewer(user.id);
+    let vc = new ExampleViewer(user.id);
 
     const newEmail = randomEmail();
 
@@ -793,7 +779,7 @@ describe("edit phone number", () => {
       emailAddress: randomEmail(),
       phoneNumber: randomPhoneNumber(),
     });
-    let vc = new IDViewer(user.id);
+    let vc = new ExampleViewer(user.id);
 
     try {
       await EditPhoneNumberAction.create(vc, user, {
@@ -814,7 +800,7 @@ describe("edit phone number", () => {
       emailAddress: randomEmail(),
       phoneNumber: phone,
     });
-    let vc = new IDViewer(user.id);
+    let vc = new ExampleViewer(user.id);
 
     const newPhoneNumber = randomPhoneNumber();
 
@@ -980,7 +966,7 @@ test("comments", async () => {
 });
 
 test("jsonb types", async () => {
-  const user = await CreateUserAction.create(new LoggedOutViewer(), {
+  const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {
     firstName: "Jane",
     lastName: "Doe",
     emailAddress: randomEmail(),
@@ -1018,7 +1004,7 @@ test("jsonb types", async () => {
 });
 
 test("json type", async () => {
-  const user = await CreateUserAction.create(new LoggedOutViewer(), {
+  const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {
     firstName: "Jane",
     lastName: "Doe",
     emailAddress: randomEmail(),
@@ -1062,7 +1048,7 @@ describe("super nested complex", () => {
         },
       },
     };
-    const user = await CreateUserAction.create(new LoggedOutViewer(), {
+    const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {
       firstName: "Jane",
       lastName: "Doe",
       emailAddress: randomEmail(),
@@ -1089,7 +1075,7 @@ describe("super nested complex", () => {
         kitten: true,
       },
     };
-    const user = await CreateUserAction.create(new LoggedOutViewer(), {
+    const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {
       firstName: "Jane",
       lastName: "Doe",
       emailAddress: randomEmail(),
@@ -1124,7 +1110,7 @@ describe("super nested complex", () => {
         puppy: false,
       },
     };
-    const user = await CreateUserAction.create(new LoggedOutViewer(), {
+    const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {
       firstName: "Jane",
       lastName: "Doe",
       emailAddress: randomEmail(),
@@ -1157,7 +1143,7 @@ describe("super nested complex", () => {
         breed: RabbitBreed.AmericanChincilla,
       },
     };
-    const user = await CreateUserAction.create(new LoggedOutViewer(), {
+    const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {
       firstName: "Jane",
       lastName: "Doe",
       emailAddress: randomEmail(),
@@ -1195,7 +1181,7 @@ describe("super nested complex", () => {
         objects: [],
       },
     ];
-    const user = await CreateUserAction.create(new LoggedOutViewer(), {
+    const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {
       firstName: "Jane",
       lastName: "Doe",
       emailAddress: randomEmail(),
@@ -1208,7 +1194,7 @@ describe("super nested complex", () => {
 });
 
 test("enum list", async () => {
-  const user = await CreateUserAction.create(new LoggedOutViewer(), {
+  const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {
     firstName: "Jane",
     lastName: "Doe",
     emailAddress: randomEmail(),
@@ -1222,7 +1208,7 @@ test("enum list", async () => {
 });
 
 test("misc", async () => {
-  const user = await CreateUserAction.create(new LoggedOutViewer(), {
+  const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {
     firstName: "Jane",
     lastName: "Doe",
     emailAddress: randomEmail(),

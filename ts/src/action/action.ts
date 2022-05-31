@@ -27,16 +27,17 @@ type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 
 export interface Builder<
-  T extends Ent,
-  TExistingEnt extends TMaybleNullableEnt<T> = MaybeNull<T>,
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
 > {
   existingEnt: TExistingEnt;
-  ent: EntConstructor<T>;
+  ent: EntConstructor<TEnt, TViewer>;
   placeholderID: ID;
-  readonly viewer: Viewer;
-  build(): Promise<Changeset<T>>;
+  readonly viewer: TViewer;
+  build(): Promise<Changeset>;
   operation: WriteOperation;
-  editedEnt?(): Promise<T | null>;
+  editedEnt?(): Promise<TEnt | null>;
   nodeType: string;
 }
 
@@ -63,23 +64,24 @@ export interface Executor
   executeObservers?(): Promise<void>;
 }
 
-export interface Changeset<T extends Ent> {
+export interface Changeset {
   executor(): Executor;
   viewer: Viewer;
   placeholderID: ID;
   //  ent: EntConstructor<T>;
-  changesets?: Changeset<Ent>[];
+  changesets?: Changeset[];
   dependencies?: Map<ID, Builder<Ent>>;
 }
 
 export type TriggerReturn =
   | void
-  | Promise<Changeset<Ent> | void | (Changeset<Ent> | void)[]>
-  | Promise<Changeset<Ent>>[];
+  | Promise<Changeset | void | (Changeset | void)[]>
+  | Promise<Changeset>[];
 
 export interface Trigger<
-  TEnt extends Ent,
-  TBuilder extends Builder<TEnt, TExistingEnt>,
+  TEnt extends Ent<TViewer>,
+  TBuilder extends Builder<TEnt, TViewer, TExistingEnt>,
+  TViewer extends Viewer = Viewer,
   TInput extends Data = Data,
   TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
 > {
@@ -91,8 +93,9 @@ export interface Trigger<
 }
 
 export interface Observer<
-  TEnt extends Ent,
-  TBuilder extends Builder<TEnt, TExistingEnt>,
+  TEnt extends Ent<TViewer>,
+  TBuilder extends Builder<TEnt, TViewer, TExistingEnt>,
+  TViewer extends Viewer = Viewer,
   TInput extends Data = Data,
   TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
 > {
@@ -102,9 +105,10 @@ export interface Observer<
 }
 
 export interface Validator<
-  TEnt extends Ent,
-  TBuilder extends Builder<TEnt, TExistingEnt>,
-  TInput extends Data,
+  TEnt extends Ent<TViewer>,
+  TBuilder extends Builder<TEnt, TViewer, TExistingEnt>,
+  TViewer extends Viewer = Viewer,
+  TInput extends Data = Data,
   TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
 > {
   // can throw if it wants
@@ -114,13 +118,14 @@ export interface Validator<
 }
 
 export interface Action<
-  TEnt extends Ent,
-  TBuilder extends Builder<TEnt, TExistingEnt>,
-  TInput extends Data,
+  TEnt extends Ent<TViewer>,
+  TBuilder extends Builder<TEnt, TViewer, TExistingEnt>,
+  TViewer extends Viewer = Viewer,
+  TInput extends Data = Data,
   TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
 > {
   readonly viewer: Viewer;
-  changeset(): Promise<Changeset<TEnt>>;
+  changeset(): Promise<Changeset>;
   builder: TBuilder;
   // TODO template ent
   getPrivacyPolicy(): PrivacyPolicy<TEnt>;
@@ -128,9 +133,9 @@ export interface Action<
   // TODO consider making these methods. maybe they'll be easier to use then?
   // performance implications of methods being called multiple times and new instances?
   // even when declared in base class, if overriden in subclasses, still need to type it...
-  triggers?: Trigger<TEnt, TBuilder, TInput, TExistingEnt>[];
-  observers?: Observer<TEnt, TBuilder, TInput, TExistingEnt>[];
-  validators?: Validator<TEnt, TBuilder, TInput, TExistingEnt>[];
+  triggers?: Trigger<TEnt, TBuilder, TViewer, TInput, TExistingEnt>[];
+  observers?: Observer<TEnt, TBuilder, TViewer, TInput, TExistingEnt>[];
+  validators?: Validator<TEnt, TBuilder, TViewer, TInput, TExistingEnt>[];
   getInput(): TInput; // this input is passed to Triggers, Observers, Validators
   transformWrite?: (
     stmt: UpdateOperation<TEnt>,
@@ -146,7 +151,7 @@ export interface Action<
   // this is used to load the ent after the action
   // you can imagine this being overwritten for a create user or create account
   // action to load the just-created user after the fact
-  viewerForEntLoad?(data: Data): Viewer | Promise<Viewer>;
+  viewerForEntLoad?(data: Data): TViewer | Promise<TViewer>;
 
   // if we have overloads we need to provide all which sucks
   // so maybe don't make the ones below required
@@ -156,15 +161,17 @@ export interface Action<
   // saveX(): Promise<T>;
 }
 
-export async function saveBuilder<T extends Ent>(
-  builder: Builder<T>,
-): Promise<void> {
+export async function saveBuilder<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+>(builder: Builder<TEnt, TViewer>): Promise<void> {
   await saveBuilderImpl(builder, false);
 }
 
-export async function saveBuilderX<T extends Ent>(
-  builder: Builder<T>,
-): Promise<void> {
+export async function saveBuilderX<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+>(builder: Builder<TEnt, TViewer>): Promise<void> {
   await saveBuilderImpl(builder, true);
 }
 
@@ -172,7 +179,7 @@ async function saveBuilderImpl<T extends Ent>(
   builder: Builder<T>,
   throwErr: boolean,
 ): Promise<void> {
-  let changeset: Changeset<T>;
+  let changeset: Changeset;
   try {
     changeset = await builder.build();
   } catch (e) {

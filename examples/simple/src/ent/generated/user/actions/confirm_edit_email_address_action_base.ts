@@ -7,11 +7,11 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   ID,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { User } from "../../..";
 import { UserBuilder } from "./user_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export interface ConfirmEditEmailAddressInput {
   emailAddress: string;
@@ -23,16 +23,21 @@ export class ConfirmEditEmailAddressActionBase
     Action<
       User,
       UserBuilder<ConfirmEditEmailAddressInput, User>,
+      ExampleViewer,
       ConfirmEditEmailAddressInput,
       User
     >
 {
   public readonly builder: UserBuilder<ConfirmEditEmailAddressInput, User>;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected input: ConfirmEditEmailAddressInput;
   protected user: User;
 
-  constructor(viewer: Viewer, user: User, input: ConfirmEditEmailAddressInput) {
+  constructor(
+    viewer: ExampleViewer,
+    user: User,
+    input: ConfirmEditEmailAddressInput,
+  ) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new UserBuilder(
@@ -52,7 +57,7 @@ export class ConfirmEditEmailAddressActionBase
     return this.input;
   }
 
-  async changeset(): Promise<Changeset<User>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -76,11 +81,11 @@ export class ConfirmEditEmailAddressActionBase
 
   static create<T extends ConfirmEditEmailAddressActionBase>(
     this: new (
-      viewer: Viewer,
+      viewer: ExampleViewer,
       user: User,
       input: ConfirmEditEmailAddressInput,
     ) => T,
-    viewer: Viewer,
+    viewer: ExampleViewer,
     user: User,
     input: ConfirmEditEmailAddressInput,
   ): T {
@@ -89,11 +94,11 @@ export class ConfirmEditEmailAddressActionBase
 
   static async saveXFromID<T extends ConfirmEditEmailAddressActionBase>(
     this: new (
-      viewer: Viewer,
+      viewer: ExampleViewer,
       user: User,
       input: ConfirmEditEmailAddressInput,
     ) => T,
-    viewer: Viewer,
+    viewer: ExampleViewer,
     id: ID,
     input: ConfirmEditEmailAddressInput,
   ): Promise<User> {

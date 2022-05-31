@@ -7,11 +7,11 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   ID,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { User } from "../../..";
 import { UserBuilder } from "./user_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export interface ConfirmEditPhoneNumberInput {
   phoneNumber: string;
@@ -23,16 +23,21 @@ export class ConfirmEditPhoneNumberActionBase
     Action<
       User,
       UserBuilder<ConfirmEditPhoneNumberInput, User>,
+      ExampleViewer,
       ConfirmEditPhoneNumberInput,
       User
     >
 {
   public readonly builder: UserBuilder<ConfirmEditPhoneNumberInput, User>;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected input: ConfirmEditPhoneNumberInput;
   protected user: User;
 
-  constructor(viewer: Viewer, user: User, input: ConfirmEditPhoneNumberInput) {
+  constructor(
+    viewer: ExampleViewer,
+    user: User,
+    input: ConfirmEditPhoneNumberInput,
+  ) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new UserBuilder(
@@ -52,7 +57,7 @@ export class ConfirmEditPhoneNumberActionBase
     return this.input;
   }
 
-  async changeset(): Promise<Changeset<User>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -76,11 +81,11 @@ export class ConfirmEditPhoneNumberActionBase
 
   static create<T extends ConfirmEditPhoneNumberActionBase>(
     this: new (
-      viewer: Viewer,
+      viewer: ExampleViewer,
       user: User,
       input: ConfirmEditPhoneNumberInput,
     ) => T,
-    viewer: Viewer,
+    viewer: ExampleViewer,
     user: User,
     input: ConfirmEditPhoneNumberInput,
   ): T {
@@ -89,11 +94,11 @@ export class ConfirmEditPhoneNumberActionBase
 
   static async saveXFromID<T extends ConfirmEditPhoneNumberActionBase>(
     this: new (
-      viewer: Viewer,
+      viewer: ExampleViewer,
       user: User,
       input: ConfirmEditPhoneNumberInput,
     ) => T,
-    viewer: Viewer,
+    viewer: ExampleViewer,
     id: ID,
     input: ConfirmEditPhoneNumberInput,
   ): Promise<User> {

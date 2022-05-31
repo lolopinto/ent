@@ -4,9 +4,10 @@ import {
   EventInput,
 } from "../../generated/event/actions/event_builder";
 import { Event } from "../../../ent";
+import { ExampleViewer } from "../../../viewer/viewer";
 
 export class EventTimeValidator
-  implements Validator<Event, EventBuilder, EventInput>
+  implements Validator<Event, EventBuilder, ExampleViewer, EventInput>
 {
   validate(builder: EventBuilder): void {
     const startTime = builder.getNewStartTimeValue();

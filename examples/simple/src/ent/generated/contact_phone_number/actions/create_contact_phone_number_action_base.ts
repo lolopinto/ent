@@ -7,7 +7,6 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   ID,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import {
   Action,
@@ -17,11 +16,12 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, ContactPhoneNumber } from "../../..";
 import { ContactPhoneNumberBuilder } from "./contact_phone_number_builder";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export interface ContactPhoneNumberCreateInput {
   phoneNumber: string;
   label: string;
-  contactID: ID | Builder<Contact>;
+  contactID: ID | Builder<Contact, ExampleViewer>;
 }
 
 export class CreateContactPhoneNumberActionBase
@@ -32,6 +32,7 @@ export class CreateContactPhoneNumberActionBase
         ContactPhoneNumberCreateInput,
         ContactPhoneNumber | null
       >,
+      ExampleViewer,
       ContactPhoneNumberCreateInput,
       ContactPhoneNumber | null
     >
@@ -40,10 +41,10 @@ export class CreateContactPhoneNumberActionBase
     ContactPhoneNumberCreateInput,
     ContactPhoneNumber | null
   >;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected input: ContactPhoneNumberCreateInput;
 
-  constructor(viewer: Viewer, input: ContactPhoneNumberCreateInput) {
+  constructor(viewer: ExampleViewer, input: ContactPhoneNumberCreateInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new ContactPhoneNumberBuilder(
@@ -62,7 +63,7 @@ export class CreateContactPhoneNumberActionBase
     return this.input;
   }
 
-  async changeset(): Promise<Changeset<ContactPhoneNumber>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -85,8 +86,11 @@ export class CreateContactPhoneNumberActionBase
   }
 
   static create<T extends CreateContactPhoneNumberActionBase>(
-    this: new (viewer: Viewer, input: ContactPhoneNumberCreateInput) => T,
-    viewer: Viewer,
+    this: new (
+      viewer: ExampleViewer,
+      input: ContactPhoneNumberCreateInput,
+    ) => T,
+    viewer: ExampleViewer,
     input: ContactPhoneNumberCreateInput,
   ): T {
     return new this(viewer, input);

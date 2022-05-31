@@ -1,5 +1,5 @@
 import { advanceBy } from "jest-date-mock";
-import { LoggedOutViewer, IDViewer, Viewer } from "@snowtop/ent";
+import { Viewer } from "@snowtop/ent";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { encodeGQLID, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import {
@@ -35,12 +35,13 @@ import {
   RabbitBreed,
   SuperNestedObjectEnum,
 } from "../../ent/generated/user_super_nested_object";
+import { LoggedOutExampleViewer, ExampleViewer } from "src/viewer/viewer";
 
 afterEach(() => {
   clearAuthHandlers();
 });
 
-const loggedOutViewer = new LoggedOutViewer();
+const loggedOutViewer = new LoggedOutExampleViewer();
 
 async function create(opts: Partial<UserCreateInput>): Promise<User> {
   let input: UserCreateInput = {
@@ -77,7 +78,7 @@ test("query user", async () => {
   });
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user),
+    getConfig(new ExampleViewer(user.id), user),
     ["id", encodeGQLID(user)],
     ["firstName", user.firstName],
     ["lastName", user.lastName],
@@ -97,7 +98,7 @@ test("query other user", async () => {
   });
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user1.id), user2, {
+    getConfig(new ExampleViewer(user1.id), user2, {
       rootQueryNull: true,
     }),
     ["id", null],
@@ -110,7 +111,7 @@ test("query other user", async () => {
 
   // user now visible because friends
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user1.id), user2),
+    getConfig(new ExampleViewer(user1.id), user2),
     ["id", encodeGQLID(user2)],
     ["firstName", user2.firstName],
     ["lastName", user2.lastName],
@@ -126,7 +127,7 @@ test("query custom field", async () => {
   });
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user),
+    getConfig(new ExampleViewer(user.id), user),
     ["id", encodeGQLID(user)],
     ["firstName", user.firstName],
     ["lastName", user.lastName],
@@ -143,7 +144,7 @@ test("query list", async () => {
   });
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user),
+    getConfig(new ExampleViewer(user.id), user),
     ["id", encodeGQLID(user)],
     ["firstName", user.firstName],
     ["lastName", user.lastName],
@@ -161,7 +162,7 @@ test("query custom function", async () => {
       firstName: "first2",
     }),
   ]);
-  let vc = new IDViewer(user.id);
+  let vc = new ExampleViewer(user.id);
   let action = EditUserAction.create(vc, user, {});
   action.builder.addFriend(user2);
   await action.saveX();
@@ -170,7 +171,7 @@ test("query custom function", async () => {
   expect(count).toBe(1);
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user),
+    getConfig(new ExampleViewer(user.id), user),
     ["id", encodeGQLID(user)],
     ["firstName", user.firstName],
     ["lastName", user.lastName],
@@ -182,7 +183,7 @@ test("query custom function", async () => {
 
   // got some reason, it thinks this person is logged out
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user2.id), user),
+    getConfig(new ExampleViewer(user2.id), user),
     ["id", encodeGQLID(user)],
     ["firstName", user.firstName],
     ["lastName", user.lastName],
@@ -196,7 +197,7 @@ test("query custom async function", async () => {
   let user = await create({
     firstName: "first",
   });
-  let vc = new IDViewer(user.id);
+  let vc = new ExampleViewer(user.id);
   await CreateContactAction.create(vc, {
     emails: [
       {
@@ -210,7 +211,7 @@ test("query custom async function", async () => {
   }).saveX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user, {
+    getConfig(new ExampleViewer(user.id), user, {
       nullQueryPaths: ["contactSameDomain"],
     }),
     ["id", encodeGQLID(user)],
@@ -230,7 +231,7 @@ test("query custom async function", async () => {
   }).saveX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user),
+    getConfig(new ExampleViewer(user.id), user),
     ["id", encodeGQLID(user)],
     ["contactSameDomain.id", encodeGQLID(contact)], // query again, new contact shows up
   );
@@ -242,7 +243,7 @@ test("query custom async function list", async () => {
     lastName: "last",
     emailAddress: randomEmail(),
   });
-  let vc = new IDViewer(user.id);
+  let vc = new ExampleViewer(user.id);
   user = await User.loadX(vc, user.id);
   let selfContact = await user.loadSelfContact();
   let contact = await CreateContactAction.create(vc, {
@@ -258,7 +259,7 @@ test("query custom async function list", async () => {
   }).saveX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user),
+    getConfig(new ExampleViewer(user.id), user),
     ["id", encodeGQLID(user)],
     ["contactsSameDomain[0].id", encodeGQLID(contact!)],
     ["contactsSameDomain[1].id", encodeGQLID(selfContact!)],
@@ -271,7 +272,7 @@ test("query custom async function nullable list", async () => {
   });
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user, {
+    getConfig(new ExampleViewer(user.id), user, {
       nullQueryPaths: ["contactsSameDomainNullable"],
     }),
     ["id", encodeGQLID(user)],
@@ -283,7 +284,7 @@ test("query custom async function nullable contents", async () => {
   let user = await create({
     firstName: "first",
   });
-  let vc = new IDViewer(user.id);
+  let vc = new ExampleViewer(user.id);
   user = await User.loadX(vc, user.id);
   let selfContact = await user.loadSelfContact();
   await CreateContactAction.create(vc, {
@@ -299,7 +300,7 @@ test("query custom async function nullable contents", async () => {
   }).saveX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user),
+    getConfig(new ExampleViewer(user.id), user),
     ["id", encodeGQLID(user)],
     [
       "contactsSameDomainNullableContents",
@@ -317,7 +318,7 @@ test("query custom async function nullable list contents", async () => {
   let user = await create({
     firstName: "first",
   });
-  let vc = new IDViewer(user.id);
+  let vc = new ExampleViewer(user.id);
   user = await User.loadX(vc, user.id);
   let selfContact = await user.loadSelfContact();
   await CreateContactAction.create(vc, {
@@ -333,7 +334,7 @@ test("query custom async function nullable list contents", async () => {
   }).saveX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user, {
+    getConfig(new ExampleViewer(user.id), user, {
       nullQueryPaths: ["contactsSameDomainNullableContents[0]"],
     }),
     ["id", encodeGQLID(user)],
@@ -346,7 +347,7 @@ test("query custom async function nullable list and contents", async () => {
   let user = await create({
     firstName: "first",
   });
-  let vc = new IDViewer(user.id);
+  let vc = new ExampleViewer(user.id);
   user = await User.loadX(vc, user.id);
 
   // not testing the null list case because it's hard
@@ -356,7 +357,7 @@ test("query custom async function nullable list and contents", async () => {
   let user2 = await create({
     firstName: "first",
   });
-  let vc2 = new IDViewer(user2.id);
+  let vc2 = new ExampleViewer(user2.id);
   user2 = await User.loadX(vc2, user2.id);
   let selfContact2 = await user2.loadSelfContact();
   await CreateContactAction.create(vc2, {
@@ -393,7 +394,7 @@ test("query user who's not visible", async () => {
   ]);
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user2, { rootQueryNull: true }),
+    getConfig(new ExampleViewer(user.id), user2, { rootQueryNull: true }),
     ["id", null],
     ["firstName", null],
     ["lastName", null],
@@ -406,7 +407,7 @@ test("query user and nested object", async () => {
   let user = await create({
     firstName: "ffirst",
   });
-  let vc = new IDViewer(user.id);
+  let vc = new ExampleViewer(user.id);
   user = await User.loadX(vc, user.id);
   let selfContact = await user.loadSelfContact();
   if (!selfContact) {
@@ -415,7 +416,7 @@ test("query user and nested object", async () => {
 
   const selfContactEmails = await selfContact.loadEmails();
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user),
+    getConfig(new ExampleViewer(user.id), user),
     ["id", encodeGQLID(user)],
     ["firstName", user.firstName],
     ["lastName", user.lastName],
@@ -448,7 +449,7 @@ test("load assoc connection", async () => {
     }),
   ]);
 
-  let vc = new IDViewer(user.id);
+  let vc = new ExampleViewer(user.id);
   let action = EditUserAction.create(vc, user, {});
   const friends = [user2, user3, user4, user5];
   for (const friend of friends) {
@@ -461,7 +462,7 @@ test("load assoc connection", async () => {
   await action.saveX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user),
+    getConfig(new ExampleViewer(user.id), user),
     ["id", encodeGQLID(user)],
     ["firstName", user.firstName],
     ["lastName", user.lastName],
@@ -523,7 +524,7 @@ test("load assoc connection", async () => {
 
   let cursor: string;
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user),
+    getConfig(new ExampleViewer(user.id), user),
     ["id", encodeGQLID(user)],
     ["friends(first:1).edges[0].node.id", encodeGQLID(user5)],
     [
@@ -536,7 +537,7 @@ test("load assoc connection", async () => {
   );
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user),
+    getConfig(new ExampleViewer(user.id), user),
     ["id", encodeGQLID(user)],
     [
       `friends(after: "${cursor!}", first:1).edges[0].node.id`,
@@ -552,7 +553,7 @@ test("load assoc connection", async () => {
   );
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user),
+    getConfig(new ExampleViewer(user.id), user),
     ["id", encodeGQLID(user)],
     [
       `friends(after: "${cursor!}", first:1).edges[0].node.id`,
@@ -568,7 +569,7 @@ test("load assoc connection", async () => {
   );
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user),
+    getConfig(new ExampleViewer(user.id), user),
     ["id", encodeGQLID(user)],
     [
       `friends(after: "${cursor!}", first:1).edges[0].node.id`,
@@ -584,7 +585,7 @@ test("load assoc connection", async () => {
   );
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user, {
+    getConfig(new ExampleViewer(user.id), user, {
       undefinedQueryPaths: [`friends(after: "${cursor!}", first:1).edges[0]`],
     }),
     ["id", encodeGQLID(user)],
@@ -602,7 +603,7 @@ async function createMany(
     // for deterministic sorting
     advanceBy(86400);
     // TODO eventually a multi-create API
-    let contact = await CreateContactAction.create(new IDViewer(user.id), {
+    let contact = await CreateContactAction.create(new ExampleViewer(user.id), {
       emails: [
         {
           emailAddress: randomEmail(),
@@ -632,7 +633,7 @@ test("load fkey connection", async () => {
   const selfContact = await user.loadSelfContact();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user),
+    getConfig(new ExampleViewer(user.id), user),
     ["id", encodeGQLID(user)],
     ["firstName", user.firstName],
     ["lastName", user.lastName],
@@ -685,7 +686,7 @@ test("likes", async () => {
   await action.saveX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user1.id), user1),
+    getConfig(new ExampleViewer(user1.id), user1),
     ["likers.rawCount", 3],
     [
       "likers.nodes",
@@ -707,7 +708,7 @@ test("likes", async () => {
   // query likes also
   for (const liker of [user2, user3, user4]) {
     await expectQueryFromRoot(
-      getConfig(new IDViewer(liker.id), liker),
+      getConfig(new ExampleViewer(liker.id), liker),
       ["likes.rawCount", 1],
       [
         "likes.nodes",
@@ -752,7 +753,7 @@ test("create with prefs+prefsList", async () => {
       "user.id",
       async function (id: string) {
         const entID = mustDecodeIDFromGQLID(id);
-        const user = await User.loadX(new IDViewer(entID), entID);
+        const user = await User.loadX(new ExampleViewer(entID), entID);
         expect(await user.prefs()).toStrictEqual({
           finishedNux: true,
           notifTypes: [NotifType.EMAIL],
@@ -792,7 +793,7 @@ test("create with prefs diff", async () => {
       "user.id",
       async function (id: string) {
         const entID = mustDecodeIDFromGQLID(id);
-        const user = await User.loadX(new IDViewer(entID), entID);
+        const user = await User.loadX(new ExampleViewer(entID), entID);
         expect(await user.prefsDiff()).toStrictEqual({
           type: "blah",
         });
@@ -849,7 +850,7 @@ test("enum list", async () => {
       "user.id",
       async function (id: string) {
         const decoded = mustDecodeIDFromGQLID(id);
-        const user = await User.loadX(new IDViewer(decoded), decoded);
+        const user = await User.loadX(new ExampleViewer(decoded), decoded);
         expect(user.daysOff).toEqual([
           UserDaysOff.Saturday,
           UserDaysOff.Sunday,
@@ -932,7 +933,7 @@ describe("super nested complex", () => {
         "user.id",
         async function (id: string) {
           const entID = mustDecodeIDFromGQLID(id);
-          const user = await User.loadX(new IDViewer(entID), entID);
+          const user = await User.loadX(new ExampleViewer(entID), entID);
           expect(user.superNestedObject).toStrictEqual(transformedObj);
         },
       ],
@@ -987,7 +988,7 @@ describe("super nested complex", () => {
         "user.id",
         async function (id: string) {
           const entID = mustDecodeIDFromGQLID(id);
-          const user = await User.loadX(new IDViewer(entID), entID);
+          const user = await User.loadX(new ExampleViewer(entID), entID);
           expect(user.superNestedObject).toStrictEqual(transformedObj);
         },
       ],
@@ -1044,7 +1045,7 @@ describe("super nested complex", () => {
         "user.id",
         async function (id: string) {
           const entID = mustDecodeIDFromGQLID(id);
-          const user = await User.loadX(new IDViewer(entID), entID);
+          const user = await User.loadX(new ExampleViewer(entID), entID);
           expect(user.superNestedObject).toStrictEqual(transformedObj);
         },
       ],
@@ -1098,7 +1099,7 @@ describe("super nested complex", () => {
         "user.id",
         async function (id: string) {
           const entID = mustDecodeIDFromGQLID(id);
-          const user = await User.loadX(new IDViewer(entID), entID);
+          const user = await User.loadX(new ExampleViewer(entID), entID);
           expect(user.superNestedObject).toStrictEqual(transformedObj);
         },
       ],

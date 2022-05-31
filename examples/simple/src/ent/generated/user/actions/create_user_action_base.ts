@@ -7,7 +7,6 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   ID,
   PrivacyPolicy,
-  Viewer,
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { User, UserDaysOff, UserPreferredShift } from "../../..";
@@ -17,6 +16,7 @@ import { UserPrefsDiff } from "../../user_prefs_diff";
 import { UserPrefsStruct } from "../../user_prefs_struct";
 import { UserPrefsStruct2 } from "../../user_prefs_struct_2";
 import { UserSuperNestedObject } from "../../user_super_nested_object";
+import { ExampleViewer } from "../../../../viewer/viewer";
 
 export interface UserCreateInput {
   firstName: string;
@@ -41,15 +41,16 @@ export class CreateUserActionBase
     Action<
       User,
       UserBuilder<UserCreateInput, User | null>,
+      ExampleViewer,
       UserCreateInput,
       User | null
     >
 {
   public readonly builder: UserBuilder<UserCreateInput, User | null>;
-  public readonly viewer: Viewer;
+  public readonly viewer: ExampleViewer;
   protected input: UserCreateInput;
 
-  constructor(viewer: Viewer, input: UserCreateInput) {
+  constructor(viewer: ExampleViewer, input: UserCreateInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new UserBuilder(
@@ -68,7 +69,7 @@ export class CreateUserActionBase
     return this.input;
   }
 
-  async changeset(): Promise<Changeset<User>> {
+  async changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
@@ -91,8 +92,8 @@ export class CreateUserActionBase
   }
 
   static create<T extends CreateUserActionBase>(
-    this: new (viewer: Viewer, input: UserCreateInput) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewer, input: UserCreateInput) => T,
+    viewer: ExampleViewer,
     input: UserCreateInput,
   ): T {
     return new this(viewer, input);
