@@ -21,7 +21,6 @@ import { Changeset } from "../action";
 import {
   EnumField,
   EnumOptions,
-  EnumType,
   StringType,
   TimestampType,
   UUIDListType,
@@ -64,7 +63,6 @@ import {
 } from "../testutils/db/test_db";
 import { Dialect } from "../core/db";
 import { convertList } from "../core/convert";
-import { FieldOptions } from "src/schema";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -1764,7 +1762,7 @@ function commonTests() {
   });
 
   describe("validators", () => {
-    const validators: Validator<Event, SimpleBuilder<Event>, Data>[] = [
+    const validators: Validator<Event, SimpleBuilder<Event>>[] = [
       {
         validate: async (builder): Promise<void> => {
           let startTime: Date = builder.fields.get("startTime");
@@ -2012,8 +2010,7 @@ function commonTests() {
 
     const accountStatusTrigger: Trigger<
       UserWithStatus,
-      SimpleBuilder<UserWithStatus>,
-      Data
+      SimpleBuilder<UserWithStatus>
     > = {
       changeset: (builder: SimpleBuilder<UserWithStatus>): void => {
         builder.fields.set("account_status", "VALID");
@@ -2850,7 +2847,7 @@ async function getEdgeOpFromBuilder<T extends Ent>(
   throw new Error(`could not find edge operation with edgeType ${edgeType}`);
 }
 
-let sendEmailObserver: Observer<User, SimpleBuilder<User>, Data> = {
+let sendEmailObserver: Observer<User, SimpleBuilder<User>> = {
   observe: (builder): void => {
     let email = builder.fields.get("EmailAddress");
     if (!email) {
@@ -2867,7 +2864,7 @@ let sendEmailObserver: Observer<User, SimpleBuilder<User>, Data> = {
   },
 };
 
-let sendEmailObserverAsync: Observer<User, SimpleBuilder<User>, Data> = {
+let sendEmailObserverAsync: Observer<User, SimpleBuilder<User>> = {
   observe: async (builder) => {
     let email = builder.fields.get("EmailAddress");
     if (!email) {

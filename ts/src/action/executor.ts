@@ -14,7 +14,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     private viewer: Viewer,
     public placeholderID: ID,
     private operations: DataOperation<T>[],
-    private options?: OrchestratorOptions<T, Data>,
+    private options?: OrchestratorOptions<T, Viewer, Data>,
   ) {}
   private lastOp: DataOperation<T> | undefined;
   private createdEnt: T | null = null;
@@ -115,7 +115,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     operations: DataOperation[],
     dependencies: Map<ID, Builder<T>>,
     changesets: Changeset[],
-    options?: OrchestratorOptions<T, Data>,
+    options?: OrchestratorOptions<T, Viewer, Data>,
   ) {
     let graph = Graph();
 

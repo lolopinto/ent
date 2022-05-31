@@ -39,8 +39,9 @@ type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 
 export interface OrchestratorOptions<
-  TEnt extends Ent,
-  TData extends Data,
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+  TInput extends Data,
   TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
 > {
   viewer: Viewer;
@@ -51,12 +52,12 @@ export interface OrchestratorOptions<
   // key, usually 'id' that's being updated
   key: string;
 
-  builder: Builder<TEnt, TExistingEnt>;
-  action?: Action<TEnt, Builder<TEnt>, TData>;
+  builder: Builder<TEnt, TViewer, TExistingEnt>;
+  action?: Action<TEnt, Builder<TEnt, TViewer>, TViewer, TInput>;
   schema: SchemaInputType;
   editedFields(): Map<string, any> | Promise<Map<string, any>>;
   // this is called with fields with defaultValueOnCreate|Edit
-  updateInput?: (data: TData) => void;
+  updateInput?: (data: TInput) => void;
   fieldInfo: FieldInfoMap;
 }
 
@@ -110,19 +111,17 @@ type OperationMap = Map<WriteOperation, IDMap>;
 // }
 type EdgeMap = Map<string, OperationMap>;
 
-function getViewer(action: Action<Ent, Builder<Ent>, Data>) {
+function getViewer(action: Action<Ent, Builder<Ent>>) {
   if (!action.viewer.viewerID) {
     return "Logged out Viewer";
   } else {
     return `Viewer with ID ${action.viewer.viewerID}`;
   }
 }
+
 class EntCannotCreateEntError extends Error implements PrivacyError {
   privacyPolicy: PrivacyPolicy;
-  constructor(
-    privacyPolicy: PrivacyPolicy,
-    action: Action<Ent, Builder<Ent>, Data>,
-  ) {
+  constructor(privacyPolicy: PrivacyPolicy, action: Action<Ent, Builder<Ent>>) {
     let msg = `${getViewer(action)} does not have permission to create ${
       action.builder.ent.name
     }`;
@@ -135,7 +134,7 @@ class EntCannotEditEntError extends Error implements PrivacyError {
   privacyPolicy: PrivacyPolicy;
   constructor(
     privacyPolicy: PrivacyPolicy,
-    action: Action<Ent, Builder<Ent>, Data>,
+    action: Action<Ent, Builder<Ent>>,
     ent: Ent,
   ) {
     let msg = `${getViewer(action)} does not have permission to edit ${
@@ -150,7 +149,7 @@ class EntCannotDeleteEntError extends Error implements PrivacyError {
   privacyPolicy: PrivacyPolicy;
   constructor(
     privacyPolicy: PrivacyPolicy,
-    action: Action<Ent, Builder<Ent>, Data>,
+    action: Action<Ent, Builder<Ent>>,
     ent: Ent,
   ) {
     let msg = `${getViewer(action)} does not have permission to delete ${
@@ -168,8 +167,9 @@ interface fieldsInfo {
 }
 
 export class Orchestrator<
-  TEnt extends Ent,
-  TData extends Data,
+  TEnt extends Ent<TViewer>,
+  TInput extends Data,
+  TViewer extends Viewer,
   TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
 > {
   private edgeSet: Set<string> = new Set<string>();
@@ -191,7 +191,9 @@ export class Orchestrator<
   private disableTransformations: boolean;
   private memoizedGetFields: () => Promise<fieldsInfo>;
 
-  constructor(private options: OrchestratorOptions<TEnt, TData, TExistingEnt>) {
+  constructor(
+    private options: OrchestratorOptions<TEnt, TViewer, TInput, TExistingEnt>,
+  ) {
     this.viewer = options.viewer;
     this.actualOperation = this.options.operation;
     this.existingEnt = this.options.builder.existingEnt;
@@ -562,9 +564,9 @@ export class Orchestrator<
   }
 
   private async triggers(
-    action: Action<TEnt, Builder<TEnt>, TData>,
-    builder: Builder<TEnt>,
-    triggers: Trigger<TEnt, Builder<TEnt>, TData>[],
+    action: Action<TEnt, Builder<TEnt, TViewer>, TViewer, TInput>,
+    builder: Builder<TEnt, TViewer>,
+    triggers: Trigger<TEnt, Builder<TEnt, TViewer>>[],
   ): Promise<void> {
     await Promise.all(
       triggers.map(async (trigger) => {
@@ -587,9 +589,9 @@ export class Orchestrator<
   }
 
   private async validators(
-    validators: Validator<TEnt, Builder<TEnt>, TData>[],
-    action: Action<TEnt, Builder<TEnt>, TData>,
-    builder: Builder<TEnt>,
+    validators: Validator<TEnt, Builder<TEnt, TViewer>, TViewer, TInput>[],
+    action: Action<TEnt, Builder<TEnt, TViewer>, TViewer, TInput>,
+    builder: Builder<TEnt, TViewer>,
   ): Promise<void> {
     let promises: Promise<void>[] = [];
     validators.forEach((validator) => {
@@ -616,7 +618,7 @@ export class Orchestrator<
     builder: Builder<TEnt>,
     schemaFields: Map<string, Field>,
     editedFields: Map<string, any>,
-    action?: Action<TEnt, Builder<TEnt>, TData> | undefined,
+    action?: Action<TEnt, Builder<TEnt, TViewer>, TViewer, TInput> | undefined,
   ): Promise<Data> {
     let data: Data = {};
     let defaultData: Data = {};
@@ -727,7 +729,7 @@ export class Orchestrator<
       };
       if (updateInput && this.options.updateInput) {
         // this basically fixes #605. just needs to be exposed correctly
-        this.options.updateInput(this.defaultFieldsByTSName as TData);
+        this.options.updateInput(this.defaultFieldsByTSName as TInput);
       }
     }
 
@@ -939,7 +941,7 @@ export class EntChangeset<T extends Ent> implements Changeset {
     public operations: DataOperation[],
     public dependencies?: Map<ID, Builder<Ent>>,
     public changesets?: Changeset[],
-    private options?: OrchestratorOptions<T, Data>,
+    private options?: OrchestratorOptions<T, Viewer, Data>,
   ) {}
 
   executor(): Executor {

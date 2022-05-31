@@ -148,7 +148,7 @@ async function saveBuilderX<T extends Ent>(builder: Builder<T>): Promise<void> {
 }
 
 async function executeAction<T extends Ent, E = any>(
-  action: Action<T, Builder<T>, Data>,
+  action: Action<T, Builder<T>>,
   name?: E,
 ): Promise<Executor> {
   const exec = await executor(action.builder);
@@ -327,7 +327,7 @@ class UserAction extends SimpleAction<User> {
     super(viewer, UserSchema, fields, operation, existingEnt);
   }
 
-  triggers: Trigger<User, SimpleBuilder<User>, Data>[] = [
+  triggers: Trigger<User, SimpleBuilder<User>>[] = [
     {
       changeset: (builder): Promise<Changeset> => {
         let firstName = builder.fields.get("FirstName");
@@ -356,7 +356,7 @@ class UserAction extends SimpleAction<User> {
     },
   ];
 
-  observers: Observer<User, SimpleBuilder<User>, Data>[] = [
+  observers: Observer<User, SimpleBuilder<User>>[] = [
     new EntCreationObserver<User>(),
   ];
 }
@@ -366,9 +366,7 @@ type getMembershipFunction = (
   edge: EdgeInputData,
 ) => SimpleAction<Ent>;
 
-class GroupMembershipTrigger
-  implements Trigger<Group, SimpleBuilder<Group>, Data>
-{
+class GroupMembershipTrigger implements Trigger<Group, SimpleBuilder<Group>> {
   constructor(private getter: getMembershipFunction) {}
   changeset(builder: SimpleBuilder<Group>, input: Data): TriggerReturn {
     const inputEdges = builder.orchestrator.getInputEdges(
