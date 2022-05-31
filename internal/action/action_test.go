@@ -1006,7 +1006,7 @@ func TestFieldEdgeFields(t *testing.T) {
 					},
 					{
 						name:    "addressID",
-						tsType:  "ID | Builder<Address>",
+						tsType:  "ID | Builder<Address, Viewer>",
 						gqlType: "ID!",
 					},
 				},
@@ -1080,7 +1080,7 @@ func verifyFields(t *testing.T, fields []*field.Field, expFields []expectedField
 		require.Equal(t, expField.name, field.FieldName, "fieldname %s not equal", field.FieldName)
 		require.Equal(t, expField.nullable, field.Nullable(), "fieldname %s not equal", field.FieldName)
 		require.Equal(t, expField.gqlType, field.GetGraphQLTypeForField(), "fieldname %s not equal", field.FieldName)
-		require.Equal(t, expField.tsType, field.TsBuilderType(), "fieldname %s not equal", field.FieldName)
+		require.Equal(t, expField.tsType, field.TsBuilderType(&codegenapi.DummyConfig{}), "fieldname %s not equal", field.FieldName)
 	}
 }
 
