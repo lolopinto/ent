@@ -2072,7 +2072,7 @@ function commonTests() {
         {
           changeset: (
             builder: SimpleBuilder<UserWithStatus>,
-          ): Promise<Changeset<Contact>> => {
+          ): Promise<Changeset> => {
             let firstName = builder.fields.get("FirstName");
             let lastName = builder.fields.get("LastName");
             contactAction = new SimpleAction(
@@ -2802,7 +2802,7 @@ function validateFieldsDoNotExist(fields: {}, ...names: string[]) {
   }
 }
 
-function getOperations<T extends Ent>(c: Changeset<T>): DataOperation[] {
+function getOperations(c: Changeset): DataOperation[] {
   let ops: DataOperation[] = [];
   for (let op of c.executor()) {
     ops.push(op);

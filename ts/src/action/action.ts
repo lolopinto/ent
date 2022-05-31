@@ -34,7 +34,7 @@ export interface Builder<
   ent: EntConstructor<T>;
   placeholderID: ID;
   readonly viewer: Viewer;
-  build(): Promise<Changeset<T>>;
+  build(): Promise<Changeset>;
   operation: WriteOperation;
   editedEnt?(): Promise<T | null>;
   nodeType: string;
@@ -63,19 +63,19 @@ export interface Executor
   executeObservers?(): Promise<void>;
 }
 
-export interface Changeset<T extends Ent> {
+export interface Changeset {
   executor(): Executor;
   viewer: Viewer;
   placeholderID: ID;
   //  ent: EntConstructor<T>;
-  changesets?: Changeset<Ent>[];
+  changesets?: Changeset[];
   dependencies?: Map<ID, Builder<Ent>>;
 }
 
 export type TriggerReturn =
   | void
-  | Promise<Changeset<Ent> | void | (Changeset<Ent> | void)[]>
-  | Promise<Changeset<Ent>>[];
+  | Promise<Changeset | void | (Changeset | void)[]>
+  | Promise<Changeset>[];
 
 export interface Trigger<
   TEnt extends Ent,
@@ -120,7 +120,7 @@ export interface Action<
   TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
 > {
   readonly viewer: Viewer;
-  changeset(): Promise<Changeset<TEnt>>;
+  changeset(): Promise<Changeset>;
   builder: TBuilder;
   // TODO template ent
   getPrivacyPolicy(): PrivacyPolicy<TEnt>;
@@ -172,7 +172,7 @@ async function saveBuilderImpl<T extends Ent>(
   builder: Builder<T>,
   throwErr: boolean,
 ): Promise<void> {
-  let changeset: Changeset<T>;
+  let changeset: Changeset;
   try {
     changeset = await builder.build();
   } catch (e) {

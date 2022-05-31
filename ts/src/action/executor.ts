@@ -114,14 +114,14 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     public placeholderID: ID,
     operations: DataOperation[],
     dependencies: Map<ID, Builder<T>>,
-    changesets: Changeset<T>[],
+    changesets: Changeset[],
     options?: OrchestratorOptions<T, Data>,
   ) {
     let graph = Graph();
 
-    const changesetMap: Map<string, Changeset<Ent>> = new Map();
+    const changesetMap: Map<string, Changeset> = new Map();
 
-    const impl = (c: Changeset<Ent>) => {
+    const impl = (c: Changeset) => {
       changesetMap.set(c.placeholderID.toString(), c);
 
       graph.addNode(c.placeholderID.toString());
@@ -142,7 +142,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
         });
       }
     };
-    let localChangesets = new Map<ID, Changeset<Ent>>();
+    let localChangesets = new Map<ID, Changeset>();
     changesets.forEach((c) => localChangesets.set(c.placeholderID, c));
 
     // create a new changeset representing the source changeset with the simple executor

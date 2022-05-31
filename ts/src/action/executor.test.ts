@@ -329,7 +329,7 @@ class UserAction extends SimpleAction<User> {
 
   triggers: Trigger<User, SimpleBuilder<User>, Data>[] = [
     {
-      changeset: (builder): Promise<Changeset<Contact>> => {
+      changeset: (builder): Promise<Changeset> => {
         let firstName = builder.fields.get("FirstName");
         let lastName = builder.fields.get("LastName");
         this.contactAction = new SimpleAction(
@@ -764,7 +764,7 @@ function commonTests() {
       {
         changeset: async (
           builder: SimpleBuilder<Group>,
-        ): Promise<Changeset<any>[]> => {
+        ): Promise<Changeset[]> => {
           let [userInfo, autoJoinChannels, invitee] = await Promise.all([
             fetchUserName(),
             getAutoJoinChannels(),

@@ -176,7 +176,7 @@ export class Orchestrator<
   private edges: EdgeMap = new Map();
   private validatedFields: Data | null;
   private logValues: Data | null;
-  private changesets: Changeset<Ent>[] = [];
+  private changesets: Changeset[] = [];
   private dependencies: Map<ID, Builder<TEnt>> = new Map();
   private fieldsToResolve: string[] = [];
   private mainOp: DataOperation<TEnt> | null;
@@ -930,7 +930,7 @@ export class Orchestrator<
   }
 }
 
-export class EntChangeset<T extends Ent> implements Changeset<T> {
+export class EntChangeset<T extends Ent> implements Changeset {
   private _executor: Executor | null;
   constructor(
     public viewer: Viewer,
@@ -938,7 +938,7 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
     public readonly ent: EntConstructor<T>,
     public operations: DataOperation[],
     public dependencies?: Map<ID, Builder<Ent>>,
-    public changesets?: Changeset<Ent>[],
+    public changesets?: Changeset[],
     private options?: OrchestratorOptions<T, Data>,
   ) {}
 

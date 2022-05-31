@@ -81,7 +81,7 @@ export class BaseAction<TEnt extends Ent, TData extends Data>
     });
     action.triggers = [
       {
-        changeset: (): Promise<Changeset<Ent>>[] => {
+        changeset: (): Promise<Changeset>[] => {
           return actions.map((action) => action.changeset());
         },
       },

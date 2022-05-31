@@ -278,7 +278,7 @@ export class SimpleBuilder<
     }
   }
 
-  build(): Promise<Changeset<T>> {
+  build(): Promise<Changeset> {
     return this.orchestrator.build();
   }
 
@@ -351,7 +351,7 @@ export class SimpleAction<
     return ret;
   }
 
-  changeset(): Promise<Changeset<T>> {
+  changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 
