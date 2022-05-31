@@ -262,6 +262,13 @@ export class SimpleBuilder<
     });
   }
 
+  getInput(): Data {
+    let ret: Data = {};
+    for (const [k, v] of this.fields) {
+      ret[k] = v;
+    }
+    return ret;
+  }
   updateInput(input: Data) {
     const knownFields = getFields(this.schema);
     for (const k in input) {

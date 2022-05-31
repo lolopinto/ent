@@ -10,6 +10,7 @@ import {
   loadRow,
   query,
   Ent,
+  PrivacyPolicy,
 } from "@snowtop/ent";
 import {
   expectQueryFromRoot,
@@ -62,7 +63,10 @@ let userType = new GraphQLObjectType({
 class UserClass implements Ent {
   id: ID;
   nodeType = "User";
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this, Viewer<Ent<any> | null, ID | null>> {
+    return AlwaysAllowPrivacyPolicy;
+  }
+
   firstName: string;
   lastName: string;
   emailAddress: string;
@@ -74,7 +78,7 @@ class UserClass implements Ent {
     this.emailAddress = options.email_address;
   }
 
-  static loaderOptions(): LoadEntOptions<UserClass> {
+  static loaderOptions(): LoadEntOptions<UserClass, any> {
     const tableName = "users";
     const fields = ["id", "first_name", "last_name", "email_address"];
 

@@ -16,28 +16,46 @@ export interface ActionOptions<T extends Ent, TData extends Data> {
   operation?: WriteOperation;
 }
 
-interface EntBuilder<TEnt extends Ent<TViewer>, TViewer extends Viewer>
-  extends Builder<TEnt, TViewer> {
+interface EntBuilder<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+  TInput extends Data,
+> extends Builder<TEnt, TViewer> {
   valid(): Promise<boolean>;
   validX(): Promise<void>;
   save(): Promise<void>;
   saveX(): Promise<void>;
   editedEnt(): Promise<TEnt | null>;
   editedEntX(): Promise<TEnt>;
+  getInput(): TInput;
 }
 
 export class BaseAction<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
   TInput extends Data,
-> implements Action<TEnt, EntBuilder<TEnt, TViewer>, TViewer, TInput>
+> implements Action<TEnt, EntBuilder<TEnt, TViewer, TInput>, TViewer, TInput>
 {
-  builder: EntBuilder<TEnt, TViewer>;
+  builder: EntBuilder<TEnt, TViewer, TInput>;
   private input: TInput;
-  triggers: Trigger<TEnt, EntBuilder<TEnt, TViewer>, TViewer, TInput>[] = [];
-  observers: Observer<TEnt, EntBuilder<TEnt, TViewer>, TViewer, TInput>[] = [];
-  validators: Validator<TEnt, EntBuilder<TEnt, TViewer>, TViewer, TInput>[] =
-    [];
+  triggers: Trigger<
+    TEnt,
+    EntBuilder<TEnt, TViewer, TInput>,
+    TViewer,
+    TInput
+  >[] = [];
+  observers: Observer<
+    TEnt,
+    EntBuilder<TEnt, TViewer, TInput>,
+    TViewer,
+    TInput
+  >[] = [];
+  validators: Validator<
+    TEnt,
+    EntBuilder<TEnt, TViewer, TInput>,
+    TViewer,
+    TInput
+  >[] = [];
 
   getPrivacyPolicy() {
     return AlwaysAllowPrivacyPolicy;
@@ -87,7 +105,7 @@ export class BaseAction<
   >(
     ent: TEnt,
     builderCtr: BuilderConstructor<TEnt, TViewer, TInput>,
-    ...actions: Action<Ent, Builder<Ent, Viewer>, Viewer, Data>[]
+    ...actions: Action<Ent, Builder<Ent, any>>[]
   ): BaseAction<TEnt, TViewer, TInput> {
     let action = new BaseAction(ent.viewer, builderCtr, {
       existingEnt: ent,
@@ -135,11 +153,11 @@ interface BuilderConstructor<
   TInput extends Data,
 > {
   new (
-    viewer: Viewer,
+    viewer: TViewer,
     operation: WriteOperation,
-    action: Action<TEnt, EntBuilder<TEnt, TViewer>, TViewer, TInput>,
+    action: Action<TEnt, EntBuilder<TEnt, TViewer, TInput>, TViewer, TInput>,
     existingEnt: TEnt | null,
-  ): EntBuilder<TEnt, TViewer>;
+  ): EntBuilder<TEnt, TViewer, TInput>;
 }
 
 // this provides a way to just update a row in the database.
