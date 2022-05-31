@@ -22,7 +22,7 @@ async function findAuthCode(
 }
 // we're only writing this once except with --force and packageName provided
 export default class ConfirmEditPhoneNumberAction extends ConfirmEditPhoneNumberActionBase {
-  validators: Validator<UserBuilder, ConfirmEditPhoneNumberInput>[] = [
+  validators: Validator<User, UserBuilder, ConfirmEditPhoneNumberInput>[] = [
     {
       async validate(builder, input) {
         const authCode = await findAuthCode(
@@ -37,7 +37,7 @@ export default class ConfirmEditPhoneNumberAction extends ConfirmEditPhoneNumber
     },
   ];
 
-  triggers: Trigger<UserBuilder, ConfirmEditPhoneNumberInput>[] = [
+  triggers: Trigger<User, UserBuilder, ConfirmEditPhoneNumberInput>[] = [
     {
       async changeset(builder, input) {
         const authCode = await findAuthCode(

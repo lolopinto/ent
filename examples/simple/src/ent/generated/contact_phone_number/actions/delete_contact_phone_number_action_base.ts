@@ -20,11 +20,15 @@ export class DeleteContactPhoneNumberActionBase
   implements
     Action<
       ContactPhoneNumber,
-      ContactPhoneNumberBuilder<ContactPhoneNumberInput>,
-      ContactPhoneNumberInput
+      ContactPhoneNumberBuilder<ContactPhoneNumberInput, ContactPhoneNumber>,
+      ContactPhoneNumberInput,
+      ContactPhoneNumber
     >
 {
-  public readonly builder: ContactPhoneNumberBuilder<ContactPhoneNumberInput>;
+  public readonly builder: ContactPhoneNumberBuilder<
+    ContactPhoneNumberInput,
+    ContactPhoneNumber
+  >;
   public readonly viewer: Viewer;
   protected contactPhoneNumber: ContactPhoneNumber;
 

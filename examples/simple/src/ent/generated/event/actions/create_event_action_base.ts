@@ -28,16 +28,27 @@ export interface EventCreateInput {
 }
 
 export class CreateEventActionBase
-  implements Action<Event, EventBuilder<EventCreateInput>, EventCreateInput>
+  implements
+    Action<
+      Event,
+      EventBuilder<EventCreateInput, Event | null>,
+      EventCreateInput,
+      Event | null
+    >
 {
-  public readonly builder: EventBuilder<EventCreateInput>;
+  public readonly builder: EventBuilder<EventCreateInput, Event | null>;
   public readonly viewer: Viewer;
   protected input: EventCreateInput;
 
   constructor(viewer: Viewer, input: EventCreateInput) {
     this.viewer = viewer;
     this.input = input;
-    this.builder = new EventBuilder(this.viewer, WriteOperation.Insert, this);
+    this.builder = new EventBuilder(
+      this.viewer,
+      WriteOperation.Insert,
+      this,
+      null,
+    );
   }
 
   getPrivacyPolicy(): PrivacyPolicy<Event> {

@@ -353,6 +353,7 @@ async function createUser(email: string) {
       ["birthday", "jan 1"],
     ]),
     WriteOperation.Insert,
+    null,
   );
   return action.saveX();
 }
@@ -371,6 +372,7 @@ async function createAccount(email: string) {
       ["birthday", "jan 1"],
     ]),
     WriteOperation.Insert,
+    null,
   );
   return action.saveX();
 }

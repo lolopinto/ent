@@ -1,6 +1,6 @@
 import { advanceTo } from "jest-date-mock";
 import { WriteOperation } from "../action";
-import { Data, Ent } from "../core/base";
+import { Data, Ent, Viewer } from "../core/base";
 import { LoggedOutViewer } from "../core/viewer";
 import { StringType, TimestampType } from "../schema/field";
 import {
@@ -102,7 +102,7 @@ class DeletedAtPattern implements Pattern {
 
   transformWrite<T extends Ent>(
     stmt: UpdateOperation<T>,
-  ): TransformedUpdateOperation<T> | undefined {
+  ): TransformedUpdateOperation<T> | null {
     switch (stmt.op) {
       case SQLStatementOperation.Delete:
         return {
@@ -113,6 +113,7 @@ class DeletedAtPattern implements Pattern {
           },
         };
     }
+    return null;
   }
 }
 
@@ -133,7 +134,7 @@ class DeletedAtSnakeCasePattern implements Pattern {
 
   transformWrite<T extends Ent>(
     stmt: UpdateOperation<T>,
-  ): TransformedUpdateOperation<T> | undefined {
+  ): TransformedUpdateOperation<T> | null {
     switch (stmt.op) {
       case SQLStatementOperation.Delete:
         return {
@@ -144,6 +145,7 @@ class DeletedAtSnakeCasePattern implements Pattern {
           },
         };
     }
+    return null;
   }
 }
 
@@ -230,16 +232,39 @@ function transformDeletedAt(row: Data | null) {
   return row;
 }
 
+function getInsertUserAction(
+  map: Map<string, any>,
+  viewer: Viewer = new LoggedOutViewer(),
+) {
+  return new SimpleAction(
+    viewer,
+    new UserSchema(),
+    map,
+    WriteOperation.Insert,
+    null,
+  );
+}
+
+function getInsertContactAction(
+  map: Map<string, any>,
+  viewer: Viewer = new LoggedOutViewer(),
+) {
+  return new SimpleAction(
+    viewer,
+    new ContactSchema(),
+    map,
+    WriteOperation.Insert,
+    null,
+  );
+}
+
 function commonTests() {
   test("delete -> update", async () => {
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
-      new UserSchema(),
+    const action = getInsertUserAction(
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
-      WriteOperation.Insert,
     );
     const user = await action.saveX();
     const loader = getNewLoader();
@@ -280,14 +305,11 @@ function commonTests() {
   });
 
   test("really delete", async () => {
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
-      new UserSchema(),
+    const action = getInsertUserAction(
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
-      WriteOperation.Insert,
     );
     const user = await action.saveX();
     const loader = getNewLoader();
@@ -330,14 +352,11 @@ function commonTests() {
       expect(users.length).toBe(ct);
     };
     verifyPostgres(0);
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
-      new UserSchema(),
+    const action = getInsertUserAction(
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
-      WriteOperation.Insert,
     );
     const user = await action.saveX();
     verifyPostgres(1);
@@ -370,14 +389,11 @@ function commonTests() {
       }
     };
 
-    const action2 = new SimpleAction(
-      new LoggedOutViewer(),
-      new UserSchema(),
+    const action2 = getInsertUserAction(
       new Map([
         ["FirstName", "Aegon"],
         ["LastName", "Targaryen"],
       ]),
-      WriteOperation.Insert,
     );
     // @ts-ignore
     action2.transformWrite = tranformJonToAegon;
@@ -388,14 +404,11 @@ function commonTests() {
     expect(user2.data.last_name).toBe("Targaryen");
     verifyPostgres(1);
 
-    const action3 = new SimpleAction(
-      new LoggedOutViewer(),
-      new UserSchema(),
+    const action3 = getInsertUserAction(
       new Map([
         ["FirstName", "Sansa"],
         ["LastName", "Stark"],
       ]),
-      WriteOperation.Insert,
     );
     // @ts-ignore
     action3.transformWrite = tranformJonToAegon;
@@ -409,14 +422,11 @@ function commonTests() {
   });
 
   test("delete -> update. snake_case", async () => {
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
-      new ContactSchema(),
+    const action = getInsertContactAction(
       new Map([
         ["first_name", "Jon"],
         ["last_name", "Snow"],
       ]),
-      WriteOperation.Insert,
     );
     const contact = await action.saveX();
     const loader = getContactNewLoader();
@@ -457,14 +467,11 @@ function commonTests() {
   });
 
   test("really delete. snake_case", async () => {
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
-      new ContactSchema(),
+    const action = getInsertContactAction(
       new Map([
         ["first_name", "Jon"],
         ["last_name", "Snow"],
       ]),
-      WriteOperation.Insert,
     );
     const contact = await action.saveX();
     const loader = getContactNewLoader();
@@ -507,14 +514,11 @@ function commonTests() {
       expect(contacts.length).toBe(ct);
     };
     verifyPostgres(0);
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
-      new ContactSchema(),
+    const action = getInsertContactAction(
       new Map([
         ["first_name", "Jon"],
         ["last_name", "Snow"],
       ]),
-      WriteOperation.Insert,
     );
     const contact = await action.saveX();
     verifyPostgres(1);
@@ -547,14 +551,11 @@ function commonTests() {
       }
     };
 
-    const action2 = new SimpleAction(
-      new LoggedOutViewer(),
-      new ContactSchema(),
+    const action2 = getInsertContactAction(
       new Map([
         ["first_name", "Aegon"],
         ["last_name", "Targaryen"],
       ]),
-      WriteOperation.Insert,
     );
     // @ts-ignore
     action2.transformWrite = tranformJonToAegon;
@@ -565,14 +566,11 @@ function commonTests() {
     expect(contact2.data.last_name).toBe("Targaryen");
     verifyPostgres(1);
 
-    const action3 = new SimpleAction(
-      new LoggedOutViewer(),
-      new ContactSchema(),
+    const action3 = getInsertContactAction(
       new Map([
         ["first_name", "Sansa"],
         ["last_name", "Stark"],
       ]),
-      WriteOperation.Insert,
     );
     // @ts-ignore
     action3.transformWrite = tranformJonToAegon;

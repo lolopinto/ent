@@ -90,8 +90,15 @@
   {{ $inputData = useImport $inputData -}}
 {{ end -}}
 
-export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useImport $builderName}}<{{$inputData}}>, {{$inputData}}> {
-  public readonly builder: {{useImport $builderName}}<{{$inputData}}>;
+{{ $existingEnt := "" -}}
+{{ if $action.MutatingExistingObject -}}
+  {{$existingEnt = $node}}
+{{ else -}}
+  {{$existingEnt = printf "%s | null" $node}}
+{{ end -}}
+
+export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useImport $builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$inputData}}, {{$existingEnt}}> {
+  public readonly builder: {{useImport $builderName}}<{{$inputData}}, {{$existingEnt}}>;
   public readonly viewer: {{$viewer}}
   {{ if $hasInput -}}
     protected input: {{$inputName}};
@@ -111,6 +118,8 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
       this,
       {{ if $action.MutatingExistingObject -}}
         {{$instance}},
+      {{ else -}}
+        null,
       {{end -}}
     );
     {{if $action.MutatingExistingObject -}}

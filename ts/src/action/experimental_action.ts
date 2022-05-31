@@ -30,9 +30,9 @@ export class BaseAction<TEnt extends Ent, TData extends Data>
 {
   builder: EntBuilder<TEnt>;
   private input: TData;
-  triggers: Trigger<EntBuilder<TEnt>, TData>[] = [];
-  observers: Observer<EntBuilder<TEnt>, TData>[] = [];
-  validators: Validator<EntBuilder<TEnt>, TData>[] = [];
+  triggers: Trigger<TEnt, EntBuilder<TEnt>, TData>[] = [];
+  observers: Observer<TEnt, EntBuilder<TEnt>, TData>[] = [];
+  validators: Validator<TEnt, EntBuilder<TEnt>, TData>[] = [];
 
   getPrivacyPolicy() {
     return AlwaysAllowPrivacyPolicy;
@@ -56,7 +56,7 @@ export class BaseAction<TEnt extends Ent, TData extends Data>
       viewer,
       operation,
       this,
-      options?.existingEnt || undefined,
+      options?.existingEnt || null,
     );
   }
 
@@ -121,7 +121,7 @@ interface BuilderConstructor<TEnt extends Ent, TData extends Data> {
     viewer: Viewer,
     operation: WriteOperation,
     action: Action<TEnt, EntBuilder<TEnt>, TData>,
-    existingEnt?: TEnt | undefined,
+    existingEnt: TEnt | null,
   ): EntBuilder<TEnt>;
 }
 

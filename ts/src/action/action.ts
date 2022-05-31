@@ -23,8 +23,14 @@ export enum WriteOperation {
   Delete = "delete",
 }
 
-export interface Builder<T extends Ent> {
-  existingEnt?: T;
+type MaybeNull<T extends Ent> = T | null;
+type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
+
+export interface Builder<
+  T extends Ent,
+  TExistingEnt extends TMaybleNullableEnt<T> = MaybeNull<T>,
+> {
+  existingEnt: TExistingEnt;
   ent: EntConstructor<T>;
   placeholderID: ID;
   readonly viewer: Viewer;
@@ -71,31 +77,47 @@ export type TriggerReturn =
   | Promise<Changeset<Ent> | void | (Changeset<Ent> | void)[]>
   | Promise<Changeset<Ent>>[];
 
-export interface Trigger<TBuilder extends Builder<Ent>, TData extends Data> {
+export interface Trigger<
+  TEnt extends Ent,
+  TBuilder extends Builder<TEnt, TExistingEnt>,
+  TInput extends Data = Data,
+  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
+> {
   // TODO: way in the future. detect any writes happening in changesets and optionally throw if configured to do so
   // can throw if it wants. not expected to throw tho.
   // input passed in here !== builder.getInput()
   // builder.getInput() can have other default fields
-  changeset(builder: TBuilder, input: TData): TriggerReturn;
+  changeset(builder: TBuilder, input: TInput): TriggerReturn;
 }
 
-export interface Observer<TBuilder extends Builder<Ent>, TData extends Data> {
+export interface Observer<
+  TEnt extends Ent,
+  TBuilder extends Builder<TEnt, TExistingEnt>,
+  TInput extends Data = Data,
+  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
+> {
   // input passed in here !== builder.getInput()
   // builder.getInput() can have other default fields
-  observe(builder: TBuilder, input: TData): void | Promise<void>;
+  observe(builder: TBuilder, input: TInput): void | Promise<void>;
 }
 
-export interface Validator<TBuilder extends Builder<Ent>, TData extends Data> {
+export interface Validator<
+  TEnt extends Ent,
+  TBuilder extends Builder<TEnt, TExistingEnt>,
+  TInput extends Data,
+  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
+> {
   // can throw if it wants
   // input passed in here !== builder.getInput()
   // builder.getInput() can have other default fields
-  validate(builder: TBuilder, input: TData): Promise<void> | void;
+  validate(builder: TBuilder, input: TInput): Promise<void> | void;
 }
 
 export interface Action<
   TEnt extends Ent,
-  TBuilder extends Builder<TEnt>,
-  TData extends Data,
+  TBuilder extends Builder<TEnt, TExistingEnt>,
+  TInput extends Data,
+  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
 > {
   readonly viewer: Viewer;
   changeset(): Promise<Changeset<TEnt>>;
@@ -106,16 +128,16 @@ export interface Action<
   // TODO consider making these methods. maybe they'll be easier to use then?
   // performance implications of methods being called multiple times and new instances?
   // even when declared in base class, if overriden in subclasses, still need to type it...
-  triggers?: Trigger<TBuilder, TData>[];
-  observers?: Observer<TBuilder, TData>[];
-  validators?: Validator<TBuilder, TData>[];
-  getInput(): TData; // this input is passed to Triggers, Observers, Validators
-  transformWrite?: <T2 extends Ent>(
-    stmt: UpdateOperation<T2>,
+  triggers?: Trigger<TEnt, TBuilder, TInput, TExistingEnt>[];
+  observers?: Observer<TEnt, TBuilder, TInput, TExistingEnt>[];
+  validators?: Validator<TEnt, TBuilder, TInput, TExistingEnt>[];
+  getInput(): TInput; // this input is passed to Triggers, Observers, Validators
+  transformWrite?: (
+    stmt: UpdateOperation<TEnt>,
   ) =>
-    | Promise<TransformedUpdateOperation<T2>>
-    | TransformedUpdateOperation<T2>
-    | undefined;
+    | Promise<TransformedUpdateOperation<TEnt>>
+    | TransformedUpdateOperation<TEnt>
+    | null;
 
   valid(): Promise<boolean>;
   // throws if invalid

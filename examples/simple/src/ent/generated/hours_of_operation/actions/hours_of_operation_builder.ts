@@ -31,22 +31,30 @@ function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
+type MaybeNull<T extends Ent> = T | null;
+type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
+
 export class HoursOfOperationBuilder<
-  TData extends HoursOfOperationInput = HoursOfOperationInput,
-> implements Builder<HoursOfOperation>
+  TInput extends HoursOfOperationInput = HoursOfOperationInput,
+  TExistingEnt extends TMaybleNullableEnt<HoursOfOperation> = HoursOfOperation | null,
+> implements Builder<HoursOfOperation, TExistingEnt>
 {
-  orchestrator: Orchestrator<HoursOfOperation, TData>;
+  orchestrator: Orchestrator<HoursOfOperation, TInput>;
   readonly placeholderID: ID;
   readonly ent = HoursOfOperation;
   readonly nodeType = NodeType.HoursOfOperation;
-  private input: TData;
+  private input: TInput;
   private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: Action<HoursOfOperation, Builder<HoursOfOperation>, TData>,
-    public readonly existingEnt?: HoursOfOperation | undefined,
+    action: Action<
+      HoursOfOperation,
+      Builder<HoursOfOperation, TExistingEnt>,
+      TInput
+    >,
+    public readonly existingEnt: TExistingEnt,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-HoursOfOperation`;
     this.input = action.getInput();
@@ -68,7 +76,7 @@ export class HoursOfOperationBuilder<
     });
   }
 
-  getInput(): TData {
+  getInput(): TInput {
     return this.input;
   }
 

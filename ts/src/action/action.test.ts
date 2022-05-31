@@ -106,6 +106,8 @@ function getUserCreateBuilder(): SimpleBuilder<User> {
       ["id", "{id}"],
       ["foo", "bar"],
     ]),
+    WriteOperation.Insert,
+    null,
   );
 }
 

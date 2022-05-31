@@ -10,6 +10,7 @@ import {
   CommentCreateInput,
   CreateCommentActionBase,
 } from "../../generated/comment/actions/create_comment_action_base";
+import { Comment } from "../../../ent";
 
 export { CommentCreateInput };
 
@@ -18,7 +19,12 @@ export default class CreateCommentAction extends CreateCommentActionBase {
     return AlwaysAllowPrivacyPolicy;
   }
 
-  triggers: Trigger<CommentBuilder, CommentCreateInput>[] = [
+  triggers: Trigger<
+    Comment,
+    CommentBuilder<Comment, Comment>,
+    CommentCreateInput,
+    Comment
+  >[] = [
     {
       changeset(builder, input) {
         // creating the comment automatically adds the needed edges

@@ -28,11 +28,18 @@ export class CreateContactPhoneNumberActionBase
   implements
     Action<
       ContactPhoneNumber,
-      ContactPhoneNumberBuilder<ContactPhoneNumberCreateInput>,
-      ContactPhoneNumberCreateInput
+      ContactPhoneNumberBuilder<
+        ContactPhoneNumberCreateInput,
+        ContactPhoneNumber | null
+      >,
+      ContactPhoneNumberCreateInput,
+      ContactPhoneNumber | null
     >
 {
-  public readonly builder: ContactPhoneNumberBuilder<ContactPhoneNumberCreateInput>;
+  public readonly builder: ContactPhoneNumberBuilder<
+    ContactPhoneNumberCreateInput,
+    ContactPhoneNumber | null
+  >;
   public readonly viewer: Viewer;
   protected input: ContactPhoneNumberCreateInput;
 
@@ -43,6 +50,7 @@ export class CreateContactPhoneNumberActionBase
       this.viewer,
       WriteOperation.Insert,
       this,
+      null,
     );
   }
 

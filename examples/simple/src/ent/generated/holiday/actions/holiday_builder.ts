@@ -31,21 +31,26 @@ function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class HolidayBuilder<TData extends HolidayInput = HolidayInput>
-  implements Builder<Holiday>
+type MaybeNull<T extends Ent> = T | null;
+type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
+
+export class HolidayBuilder<
+  TInput extends HolidayInput = HolidayInput,
+  TExistingEnt extends TMaybleNullableEnt<Holiday> = Holiday | null,
+> implements Builder<Holiday, TExistingEnt>
 {
-  orchestrator: Orchestrator<Holiday, TData>;
+  orchestrator: Orchestrator<Holiday, TInput>;
   readonly placeholderID: ID;
   readonly ent = Holiday;
   readonly nodeType = NodeType.Holiday;
-  private input: TData;
+  private input: TInput;
   private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: Action<Holiday, Builder<Holiday>, TData>,
-    public readonly existingEnt?: Holiday | undefined,
+    action: Action<Holiday, Builder<Holiday, TExistingEnt>, TInput>,
+    public readonly existingEnt: TExistingEnt,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Holiday`;
     this.input = action.getInput();
@@ -66,7 +71,7 @@ export class HolidayBuilder<TData extends HolidayInput = HolidayInput>
     });
   }
 
-  getInput(): TData {
+  getInput(): TInput {
     return this.input;
   }
 

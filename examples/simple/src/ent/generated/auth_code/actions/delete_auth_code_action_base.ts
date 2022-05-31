@@ -14,9 +14,15 @@ import { AuthCode } from "../../..";
 import { AuthCodeBuilder, AuthCodeInput } from "./auth_code_builder";
 
 export class DeleteAuthCodeActionBase
-  implements Action<AuthCode, AuthCodeBuilder<AuthCodeInput>, AuthCodeInput>
+  implements
+    Action<
+      AuthCode,
+      AuthCodeBuilder<AuthCodeInput, AuthCode>,
+      AuthCodeInput,
+      AuthCode
+    >
 {
-  public readonly builder: AuthCodeBuilder<AuthCodeInput>;
+  public readonly builder: AuthCodeBuilder<AuthCodeInput, AuthCode>;
   public readonly viewer: Viewer;
   protected authCode: AuthCode;
 

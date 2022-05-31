@@ -27,9 +27,17 @@ export interface AuthCodeCreateInput {
 
 export class CreateAuthCodeActionBase
   implements
-    Action<AuthCode, AuthCodeBuilder<AuthCodeCreateInput>, AuthCodeCreateInput>
+    Action<
+      AuthCode,
+      AuthCodeBuilder<AuthCodeCreateInput, AuthCode | null>,
+      AuthCodeCreateInput,
+      AuthCode | null
+    >
 {
-  public readonly builder: AuthCodeBuilder<AuthCodeCreateInput>;
+  public readonly builder: AuthCodeBuilder<
+    AuthCodeCreateInput,
+    AuthCode | null
+  >;
   public readonly viewer: Viewer;
   protected input: AuthCodeCreateInput;
 
@@ -40,6 +48,7 @@ export class CreateAuthCodeActionBase
       this.viewer,
       WriteOperation.Insert,
       this,
+      null,
     );
   }
 

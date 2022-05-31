@@ -28,6 +28,7 @@ import {
   convertList,
   convertJSON,
 } from "../core/convert";
+import { WriteOperation } from "../action";
 let tdb: TempDB;
 async function setupTempDB(dialect: Dialect, connString?: string) {
   beforeAll(async () => {
@@ -60,6 +61,19 @@ async function createTables(...schemas: BuilderSchema<Ent>[]) {
   }
 }
 
+function getInsertAction<T extends Ent>(
+  schema: BuilderSchema<T>,
+  map: Map<string, any>,
+) {
+  return new SimpleAction(
+    new LoggedOutViewer(),
+    schema,
+    map,
+    WriteOperation.Insert,
+    null,
+  );
+}
+
 describe("postgres", () => {
   setupTempDB(Dialect.Postgres);
   commonTests();
@@ -82,8 +96,7 @@ function commonTests() {
 
     const n = ["Lord Snow", "The Prince That was Promised"];
 
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
+    const action = getInsertAction(
       new AccountSchema(),
       new Map<string, any>([["Nicknames", n]]),
     );
@@ -105,8 +118,7 @@ function commonTests() {
     const input = ["US", "Uk", "fr"];
     const output = input.map((f) => f.toLowerCase());
 
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
+    const action = getInsertAction(
       new CountryCodeSchema(),
       new Map<string, any>([["codes", input]]),
     );
@@ -127,8 +139,7 @@ function commonTests() {
 
     const n = [4, 8, 15, 16, 23, 42];
 
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
+    const action = getInsertAction(
       new LotterySchema(),
       new Map<string, any>([["numbers", n]]),
     );
@@ -149,8 +160,7 @@ function commonTests() {
 
     const n = [98.0, 97.6, 93.2, 92.1];
 
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
+    const action = getInsertAction(
       new TempHistorySchema(),
       new Map<string, any>([["temps", n]]),
     );
@@ -174,8 +184,7 @@ function commonTests() {
     const holidays = ["2020-12-25", "2020-12-26", "2021-01-01"];
     const expected = holidays.map(convertDate);
 
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
+    const action = getInsertAction(
       new HolidaySchema(),
       new Map<string, any>([
         ["id", v4()],
@@ -201,8 +210,7 @@ function commonTests() {
     // TODO we don't support complicated time formats...
     const times = ["08:00:00", "10:00:00", "11:30:00"];
 
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
+    const action = getInsertAction(
       new AppointmentSchema(),
       new Map<string, any>([["availableTimes", times]]),
     );
@@ -235,8 +243,7 @@ function commonTests() {
     const times = [newDate(8), newDate(10), newDate(11, 30)];
     const expected = times.map((time) => TimeType().format(time));
 
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
+    const action = getInsertAction(
       new AppointmentSchema(),
       new Map<string, any>([["availableTimes", times]]),
     );
@@ -257,8 +264,7 @@ function commonTests() {
 
     const satisfied = [true, false, true];
 
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
+    const action = getInsertAction(
       new SurveySchema(),
       new Map<string, any>([["satisfied", satisfied]]),
     );
@@ -286,8 +292,7 @@ function commonTests() {
     ];
     const expected = visits.map(convertDate);
 
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
+    const action = getInsertAction(
       new VisitSchema(),
       new Map<string, any>([["visits", visits]]),
     );
@@ -318,8 +323,7 @@ function commonTests() {
   test("enum list", async () => {
     const weekend = ["Saturday", "Sunday"];
 
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
+    const action = getInsertAction(
       new AvailableSchema(),
       new Map<string, any>([["days", weekend]]),
     );
@@ -332,8 +336,7 @@ function commonTests() {
   test("invalid enum value", async () => {
     const weekend = ["red", "Tuesday"];
 
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
+    const action = getInsertAction(
       new AvailableSchema(),
       new Map<string, any>([["days", weekend]]),
     );
@@ -417,8 +420,7 @@ function commonTests() {
         bar3: null,
       },
     ];
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
+    const action = getInsertAction(
       new PreferencesSchema(),
       new Map<string, any>([["prefsList", prefsList]]),
     );
@@ -444,8 +446,7 @@ function commonTests() {
         bar3: null,
       },
     ];
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
+    const action = getInsertAction(
       new PreferencesJSONSchema(),
       new Map<string, any>([["prefsList", prefsList]]),
     );

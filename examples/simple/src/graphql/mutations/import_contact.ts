@@ -1,4 +1,4 @@
-import { ID, RequestContext, Ent, Data } from "@snowtop/ent";
+import { ID, RequestContext } from "@snowtop/ent";
 import {
   gqlArg,
   gqlContextType,
@@ -8,12 +8,10 @@ import {
 import { GraphQLID } from "graphql";
 import { FileUpload } from "graphql-upload";
 import parse from "csv-parse";
-import { Action } from "@snowtop/ent/action";
 import { BaseAction } from "@snowtop/ent/action/experimental_action";
 import { User } from "../../ent";
 import CreateContactAction from "../../ent/contact/actions/create_contact_action";
 import { UserBuilder } from "../../ent/generated/user/actions/user_builder";
-import { ContactBuilder } from "../../ent/generated/contact/actions/contact_builder";
 
 export class ImportContactResolver {
   @gqlMutation({ type: User })
@@ -25,7 +23,7 @@ export class ImportContactResolver {
     const file2 = await file;
 
     const user = await User.loadX(context.getViewer(), userID);
-    let actions: Action<Ent, ContactBuilder, Data>[] = [];
+    let actions: CreateContactAction[] = [];
 
     const parser = file2.createReadStream().pipe(
       parse({

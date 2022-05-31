@@ -23,16 +23,26 @@ export interface AddressCreateInput {
 
 export class CreateAddressActionBase
   implements
-    Action<Address, AddressBuilder<AddressCreateInput>, AddressCreateInput>
+    Action<
+      Address,
+      AddressBuilder<AddressCreateInput, Address | null>,
+      AddressCreateInput,
+      Address | null
+    >
 {
-  public readonly builder: AddressBuilder<AddressCreateInput>;
+  public readonly builder: AddressBuilder<AddressCreateInput, Address | null>;
   public readonly viewer: Viewer;
   protected input: AddressCreateInput;
 
   constructor(viewer: Viewer, input: AddressCreateInput) {
     this.viewer = viewer;
     this.input = input;
-    this.builder = new AddressBuilder(this.viewer, WriteOperation.Insert, this);
+    this.builder = new AddressBuilder(
+      this.viewer,
+      WriteOperation.Insert,
+      this,
+      null,
+    );
   }
 
   getPrivacyPolicy(): PrivacyPolicy<Address> {

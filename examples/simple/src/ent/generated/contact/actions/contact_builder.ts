@@ -32,21 +32,26 @@ function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class ContactBuilder<TData extends ContactInput = ContactInput>
-  implements Builder<Contact>
+type MaybeNull<T extends Ent> = T | null;
+type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
+
+export class ContactBuilder<
+  TInput extends ContactInput = ContactInput,
+  TExistingEnt extends TMaybleNullableEnt<Contact> = Contact | null,
+> implements Builder<Contact, TExistingEnt>
 {
-  orchestrator: Orchestrator<Contact, TData>;
+  orchestrator: Orchestrator<Contact, TInput>;
   readonly placeholderID: ID;
   readonly ent = Contact;
   readonly nodeType = NodeType.Contact;
-  private input: TData;
+  private input: TInput;
   private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: Action<Contact, Builder<Contact>, TData>,
-    public readonly existingEnt?: Contact | undefined,
+    action: Action<Contact, Builder<Contact, TExistingEnt>, TInput>,
+    public readonly existingEnt: TExistingEnt,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Contact`;
     this.input = action.getInput();
@@ -67,7 +72,7 @@ export class ContactBuilder<TData extends ContactInput = ContactInput>
     });
   }
 
-  getInput(): TData {
+  getInput(): TInput {
     return this.input;
   }
 
@@ -105,7 +110,7 @@ export class ContactBuilder<TData extends ContactInput = ContactInput>
 
   addComment(
     ...nodes: (ID | Comment | Builder<Comment>)[]
-  ): ContactBuilder<TData> {
+  ): ContactBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addCommentID(node);
@@ -121,7 +126,7 @@ export class ContactBuilder<TData extends ContactInput = ContactInput>
   addCommentID(
     id: ID | Builder<Comment>,
     options?: AssocEdgeInputOptions,
-  ): ContactBuilder<TData> {
+  ): ContactBuilder<TInput, TExistingEnt> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.ObjectToComments,
@@ -131,7 +136,9 @@ export class ContactBuilder<TData extends ContactInput = ContactInput>
     return this;
   }
 
-  removeComment(...nodes: (ID | Comment)[]): ContactBuilder<TData> {
+  removeComment(
+    ...nodes: (ID | Comment)[]
+  ): ContactBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -145,7 +152,9 @@ export class ContactBuilder<TData extends ContactInput = ContactInput>
     return this;
   }
 
-  addLiker(...nodes: (ID | User | Builder<User>)[]): ContactBuilder<TData> {
+  addLiker(
+    ...nodes: (ID | User | Builder<User>)[]
+  ): ContactBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addLikerID(node);
@@ -161,7 +170,7 @@ export class ContactBuilder<TData extends ContactInput = ContactInput>
   addLikerID(
     id: ID | Builder<User>,
     options?: AssocEdgeInputOptions,
-  ): ContactBuilder<TData> {
+  ): ContactBuilder<TInput, TExistingEnt> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.ObjectToLikers,
@@ -171,7 +180,7 @@ export class ContactBuilder<TData extends ContactInput = ContactInput>
     return this;
   }
 
-  removeLiker(...nodes: (ID | User)[]): ContactBuilder<TData> {
+  removeLiker(...nodes: (ID | User)[]): ContactBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.ObjectToLikers);

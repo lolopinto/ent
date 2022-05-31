@@ -6,10 +6,13 @@ import {
   User,
   SimpleAction,
   getBuilderSchemaFromFields,
+  BuilderSchema,
 } from "../testutils/builder";
 import { LoggedOutViewer } from "../core/viewer";
 import { QueryRecorder } from "../testutils/db_mock";
 import { ObjectLoaderFactory } from "../core/loaders/object_loader";
+import { Ent } from "../core/base";
+import { WriteOperation } from "../action";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -83,6 +86,19 @@ function doTest(
   expect(derived.nullable).toBe(opts?.nullable);
 }
 
+function getInsertAction<T extends Ent>(
+  schema: BuilderSchema<T>,
+  map: Map<string, any>,
+) {
+  return new SimpleAction(
+    new LoggedOutViewer(),
+    schema,
+    map,
+    WriteOperation.Insert,
+    null,
+  );
+}
+
 describe("fieldEdge no inverseEdge", () => {
   test("no checks", async () => {
     const UserSchema = getBuilderSchemaFromFields(
@@ -100,13 +116,11 @@ describe("fieldEdge no inverseEdge", () => {
       Account,
     );
 
-    const userAction = new SimpleAction(
-      new LoggedOutViewer(),
+    const userAction = getInsertAction(
       UserSchema,
       new Map<string, any>([["Name", "Jon Snow"]]),
     );
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
+    const action = getInsertAction(
       AccountSchema,
       new Map<string, any>([["userID", userAction.builder]]),
     );
@@ -157,13 +171,11 @@ describe("fieldEdge no inverseEdge", () => {
       Account,
     );
 
-    const userAction = new SimpleAction(
-      new LoggedOutViewer(),
+    const userAction = getInsertAction(
       UserSchema,
       new Map<string, any>([["Name", "Jon Snow"]]),
     );
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
+    const action = getInsertAction(
       AccountSchema,
       new Map<string, any>([["userID", userAction.builder]]),
     );
@@ -214,8 +226,7 @@ describe("fieldEdge no inverseEdge", () => {
       Account,
     );
 
-    const userAction = new SimpleAction(
-      new LoggedOutViewer(),
+    const userAction = getInsertAction(
       UserSchema,
       new Map<string, any>([["Name", "Jon Snow"]]),
     );
@@ -223,15 +234,13 @@ describe("fieldEdge no inverseEdge", () => {
     expect(user.data.name).toBe("Jon Snow");
 
     // action2 valid
-    const action2 = new SimpleAction(
-      new LoggedOutViewer(),
+    const action2 = getInsertAction(
       AccountSchema,
       new Map<string, any>([["userID", user.id]]),
     );
 
     // action3 invalid
-    const action3 = new SimpleAction(
-      new LoggedOutViewer(),
+    const action3 = getInsertAction(
       AccountSchema,
       new Map<string, any>([["userID", action2.builder]]),
     );
@@ -279,16 +288,14 @@ describe("fieldEdge no inverseEdge", () => {
       Account,
     );
 
-    const userAction = new SimpleAction(
-      new LoggedOutViewer(),
+    const userAction = getInsertAction(
       UserSchema,
       new Map<string, any>([["Name", "Jon Snow"]]),
     );
     const user = await userAction.saveX();
     expect(user.data.name).toBe("Jon Snow");
 
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
+    const action = getInsertAction(
       AccountSchema,
       new Map<string, any>([["userID", user.id]]),
     );
@@ -296,8 +303,7 @@ describe("fieldEdge no inverseEdge", () => {
     const account = await action.saveX();
     expect(account.data.user_id).toBe(user.id);
 
-    const action2 = new SimpleAction(
-      new LoggedOutViewer(),
+    const action2 = getInsertAction(
       AccountSchema,
       new Map<string, any>([["userID", account.id]]),
     );
@@ -348,23 +354,20 @@ describe("fieldEdge list", () => {
       Contact,
     );
 
-    const emailAction1 = new SimpleAction(
-      new LoggedOutViewer(),
+    const emailAction1 = getInsertAction(
       ContactEmailSchema,
       new Map<string, any>([["Email", "foo@bar.com"]]),
     );
     const email1 = await emailAction1.saveX();
     expect(email1.data.email).toBe("foo@bar.com");
-    const emailAction2 = new SimpleAction(
-      new LoggedOutViewer(),
+    const emailAction2 = getInsertAction(
       ContactEmailSchema,
       new Map<string, any>([["Email", "foo2@bar.com"]]),
     );
     const email2 = await emailAction2.saveX();
     expect(email2.data.email).toBe("foo2@bar.com");
 
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
+    const action = getInsertAction(
       ContactShema,
       new Map<string, any>([["emailIDs", [email1.id, email2.id]]]),
     );
@@ -372,8 +375,7 @@ describe("fieldEdge list", () => {
     const contact = await action.saveX();
     expect(contact.data.email_i_ds).toStrictEqual([email1.id, email2.id]);
 
-    const action2 = new SimpleAction(
-      new LoggedOutViewer(),
+    const action2 = getInsertAction(
       ContactShema,
       new Map<string, any>([["emailIDs", [email1.id, v1()]]]),
     );
@@ -409,15 +411,13 @@ describe("fieldEdge list", () => {
       Contact,
     );
 
-    const emailAction1 = new SimpleAction(
-      new LoggedOutViewer(),
+    const emailAction1 = getInsertAction(
       ContactEmailSchema,
       new Map<string, any>([["Email", "foo@bar.com"]]),
     );
     const email1 = await emailAction1.saveX();
     expect(email1.data.email).toBe("foo@bar.com");
-    const emailAction2 = new SimpleAction(
-      new LoggedOutViewer(),
+    const emailAction2 = getInsertAction(
       ContactEmailSchema,
       new Map<string, any>([["Email", "foo2@bar.com"]]),
     );
@@ -425,8 +425,7 @@ describe("fieldEdge list", () => {
     expect(email2.data.email).toBe("foo2@bar.com");
 
     const fakeID = v1();
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
+    const action = getInsertAction(
       ContactShema,
       new Map<string, any>([["emailIDs", [email1.id, email2.id, fakeID]]]),
     );

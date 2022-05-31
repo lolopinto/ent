@@ -59,6 +59,8 @@ function getUserCreateBuilder(): SimpleBuilder<User> {
       ["id", "{id}"],
       ["foo", "bar"],
     ]),
+    WriteOperation.Insert,
+    null,
   );
 }
 
@@ -357,6 +359,8 @@ function commonTests() {
           ["id", "{id}"],
           ["foo", "bar"],
         ]),
+        WriteOperation.Insert,
+        null,
       );
       action.viewerForEntLoad = (data: Data) => {
         return new IDViewer(data.id);

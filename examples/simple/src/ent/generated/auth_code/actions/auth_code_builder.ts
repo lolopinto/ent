@@ -31,21 +31,26 @@ function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class AuthCodeBuilder<TData extends AuthCodeInput = AuthCodeInput>
-  implements Builder<AuthCode>
+type MaybeNull<T extends Ent> = T | null;
+type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
+
+export class AuthCodeBuilder<
+  TInput extends AuthCodeInput = AuthCodeInput,
+  TExistingEnt extends TMaybleNullableEnt<AuthCode> = AuthCode | null,
+> implements Builder<AuthCode, TExistingEnt>
 {
-  orchestrator: Orchestrator<AuthCode, TData>;
+  orchestrator: Orchestrator<AuthCode, TInput>;
   readonly placeholderID: ID;
   readonly ent = AuthCode;
   readonly nodeType = NodeType.AuthCode;
-  private input: TData;
+  private input: TInput;
   private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: Action<AuthCode, Builder<AuthCode>, TData>,
-    public readonly existingEnt?: AuthCode | undefined,
+    action: Action<AuthCode, Builder<AuthCode, TExistingEnt>, TInput>,
+    public readonly existingEnt: TExistingEnt,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-AuthCode`;
     this.input = action.getInput();
@@ -66,7 +71,7 @@ export class AuthCodeBuilder<TData extends AuthCodeInput = AuthCodeInput>
     });
   }
 
-  getInput(): TData {
+  getInput(): TInput {
     return this.input;
   }
 

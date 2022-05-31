@@ -28,11 +28,18 @@ export class EditContactPhoneNumberActionBase
   implements
     Action<
       ContactPhoneNumber,
-      ContactPhoneNumberBuilder<ContactPhoneNumberEditInput>,
-      ContactPhoneNumberEditInput
+      ContactPhoneNumberBuilder<
+        ContactPhoneNumberEditInput,
+        ContactPhoneNumber
+      >,
+      ContactPhoneNumberEditInput,
+      ContactPhoneNumber
     >
 {
-  public readonly builder: ContactPhoneNumberBuilder<ContactPhoneNumberEditInput>;
+  public readonly builder: ContactPhoneNumberBuilder<
+    ContactPhoneNumberEditInput,
+    ContactPhoneNumber
+  >;
   public readonly viewer: Viewer;
   protected input: ContactPhoneNumberEditInput;
   protected contactPhoneNumber: ContactPhoneNumber;

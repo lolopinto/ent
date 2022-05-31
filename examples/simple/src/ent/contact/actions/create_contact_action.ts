@@ -34,7 +34,7 @@ export default class CreateContactAction extends CreateContactActionBase {
     };
   }
 
-  triggers: Trigger<ContactBuilder, ContactCreateInput>[] = [
+  triggers: Trigger<Contact, ContactBuilder, ContactCreateInput>[] = [
     {
       async changeset(builder, input) {
         if (!input.emails) {
@@ -93,7 +93,7 @@ export default class CreateContactAction extends CreateContactActionBase {
     },
   ];
 
-  observers: Observer<ContactBuilder, ContactCreateInput>[] = [
+  observers: Observer<Contact, ContactBuilder, ContactCreateInput>[] = [
     new EntCreationObserver<Contact>(),
   ];
 

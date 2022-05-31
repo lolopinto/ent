@@ -28,16 +28,26 @@ export interface CommentCreateInput {
 
 export class CreateCommentActionBase
   implements
-    Action<Comment, CommentBuilder<CommentCreateInput>, CommentCreateInput>
+    Action<
+      Comment,
+      CommentBuilder<CommentCreateInput, Comment | null>,
+      CommentCreateInput,
+      Comment | null
+    >
 {
-  public readonly builder: CommentBuilder<CommentCreateInput>;
+  public readonly builder: CommentBuilder<CommentCreateInput, Comment | null>;
   public readonly viewer: Viewer;
   protected input: CommentCreateInput;
 
   constructor(viewer: Viewer, input: CommentCreateInput) {
     this.viewer = viewer;
     this.input = input;
-    this.builder = new CommentBuilder(this.viewer, WriteOperation.Insert, this);
+    this.builder = new CommentBuilder(
+      this.viewer,
+      WriteOperation.Insert,
+      this,
+      null,
+    );
   }
 
   getPrivacyPolicy(): PrivacyPolicy<Comment> {

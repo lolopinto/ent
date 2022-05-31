@@ -40,19 +40,25 @@ function randomNum(): string {
 
 {{$node := useImport .Node}}
 
-export class {{$builder}}<TData extends {{$input}} = {{$input}}> implements {{useImport "Builder"}}<{{$node}}> {
-  orchestrator: {{useImport "Orchestrator"}}<{{$node}}, TData>;
+type MaybeNull<T extends Ent> = T | null;
+type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
+
+export class {{$builder}}<
+  TInput extends {{$input}} = {{$input}},
+  TExistingEnt extends TMaybleNullableEnt<{{$node}}> = {{$node}} | null,
+> implements {{useImport "Builder"}}<{{$node}}, TExistingEnt> {
+  orchestrator: {{useImport "Orchestrator"}}<{{$node}}, TInput>;
   readonly placeholderID: {{useImport "ID"}};
   readonly ent = {{$node}};
   readonly nodeType = {{useImport "NodeType"}}.{{$node}};
-  private input: TData;
+  private input: TInput;
   private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: {{useImport "Viewer"}},
     public readonly operation: {{useImport "WriteOperation"}},
-    action: {{useImport "Action"}}<{{$node}}, {{useImport "Builder"}}<{{$node}}>, TData>,
-    public readonly existingEnt?: {{$node}} | undefined,
+    action: {{useImport "Action"}}<{{$node}}, {{useImport "Builder"}}<{{$node}}, TExistingEnt>, TInput>,
+    public readonly existingEnt: TExistingEnt,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-{{$node}}`;
     this.input = action.getInput();
@@ -73,7 +79,7 @@ export class {{$builder}}<TData extends {{$input}} = {{$input}}> implements {{us
     });
   }
 
-  getInput(): TData {
+  getInput(): TInput {
     return this.input;
   }
 
@@ -116,10 +122,10 @@ export class {{$builder}}<TData extends {{$input}} = {{$input}}> implements {{us
     {{ $node := useImport .Node -}}
     {{ $polymorphicEdge := $edge.Edge.PolymorphicEdge -}}
   {{ if $polymorphicEdge -}}
-    {{$edge.TSAddMethodName}}(...nodes: ({{$node}} | Builder<{{$node}}>)[]): {{$builder}}<TData> {
+    {{$edge.TSAddMethodName}}(...nodes: ({{$node}} | Builder<{{$node}}>)[]): {{$builder}}<TInput, TExistingEnt> {
   {{ else -}}
   {{/* for PolymorphicEdges, this API doesn't work since we don't know the type. callers should call addLikerID in a map */}}  
-    {{$edge.TSAddMethodName}}(...nodes: (ID | {{$node}} | Builder<{{$node}}>)[]): {{$builder}}<TData> {
+    {{$edge.TSAddMethodName}}(...nodes: (ID | {{$node}} | Builder<{{$node}}>)[]): {{$builder}}<TInput, TExistingEnt> {
   {{ end -}}
     for (const node of nodes) {
       {{ if $polymorphicEdge -}}
@@ -156,7 +162,7 @@ export class {{$builder}}<TData extends {{$input}} = {{$input}}> implements {{us
       nodeType: {{useImport "NodeType"}},
     {{ end -}}
     options?: {{useImport "AssocEdgeInputOptions"}}
-  ): {{$builder}}<TData> {
+  ): {{$builder}}<TInput, TExistingEnt> {
     {{/* TODO need inbound edges also */}}
     this.orchestrator.addOutboundEdge(
       id, 
@@ -171,7 +177,7 @@ export class {{$builder}}<TData extends {{$input}} = {{$input}}> implements {{us
     return this;
   }
 
-  {{$edge.TSRemoveMethodName}}(...nodes: (ID | {{$node}})[]): {{$builder}}<TData> {
+  {{$edge.TSRemoveMethodName}}(...nodes: (ID | {{$node}})[]): {{$builder}}<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, {{useImport "EdgeType"}}.{{$edge.TSEdgeConst}});

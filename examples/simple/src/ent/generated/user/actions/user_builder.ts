@@ -59,21 +59,26 @@ function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class UserBuilder<TData extends UserInput = UserInput>
-  implements Builder<User>
+type MaybeNull<T extends Ent> = T | null;
+type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
+
+export class UserBuilder<
+  TInput extends UserInput = UserInput,
+  TExistingEnt extends TMaybleNullableEnt<User> = User | null,
+> implements Builder<User, TExistingEnt>
 {
-  orchestrator: Orchestrator<User, TData>;
+  orchestrator: Orchestrator<User, TInput>;
   readonly placeholderID: ID;
   readonly ent = User;
   readonly nodeType = NodeType.User;
-  private input: TData;
+  private input: TInput;
   private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: Action<User, Builder<User>, TData>,
-    public readonly existingEnt?: User | undefined,
+    action: Action<User, Builder<User, TExistingEnt>, TInput>,
+    public readonly existingEnt: TExistingEnt,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-User`;
     this.input = action.getInput();
@@ -94,7 +99,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
     });
   }
 
-  getInput(): TData {
+  getInput(): TInput {
     return this.input;
   }
 
@@ -132,7 +137,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
 
   addComment(
     ...nodes: (ID | Comment | Builder<Comment>)[]
-  ): UserBuilder<TData> {
+  ): UserBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addCommentID(node);
@@ -148,7 +153,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
   addCommentID(
     id: ID | Builder<Comment>,
     options?: AssocEdgeInputOptions,
-  ): UserBuilder<TData> {
+  ): UserBuilder<TInput, TExistingEnt> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.ObjectToComments,
@@ -158,7 +163,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
     return this;
   }
 
-  removeComment(...nodes: (ID | Comment)[]): UserBuilder<TData> {
+  removeComment(...nodes: (ID | Comment)[]): UserBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -174,7 +179,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
 
   addCreatedEvent(
     ...nodes: (ID | Event | Builder<Event>)[]
-  ): UserBuilder<TData> {
+  ): UserBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addCreatedEventID(node);
@@ -190,7 +195,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
   addCreatedEventID(
     id: ID | Builder<Event>,
     options?: AssocEdgeInputOptions,
-  ): UserBuilder<TData> {
+  ): UserBuilder<TInput, TExistingEnt> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.UserToCreatedEvents,
@@ -200,7 +205,9 @@ export class UserBuilder<TData extends UserInput = UserInput>
     return this;
   }
 
-  removeCreatedEvent(...nodes: (ID | Event)[]): UserBuilder<TData> {
+  removeCreatedEvent(
+    ...nodes: (ID | Event)[]
+  ): UserBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -219,7 +226,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
 
   addDeclinedEvent(
     ...nodes: (ID | Event | Builder<Event>)[]
-  ): UserBuilder<TData> {
+  ): UserBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addDeclinedEventID(node);
@@ -235,7 +242,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
   addDeclinedEventID(
     id: ID | Builder<Event>,
     options?: AssocEdgeInputOptions,
-  ): UserBuilder<TData> {
+  ): UserBuilder<TInput, TExistingEnt> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.UserToDeclinedEvents,
@@ -245,7 +252,9 @@ export class UserBuilder<TData extends UserInput = UserInput>
     return this;
   }
 
-  removeDeclinedEvent(...nodes: (ID | Event)[]): UserBuilder<TData> {
+  removeDeclinedEvent(
+    ...nodes: (ID | Event)[]
+  ): UserBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -264,7 +273,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
 
   addEventsAttending(
     ...nodes: (ID | Event | Builder<Event>)[]
-  ): UserBuilder<TData> {
+  ): UserBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addEventsAttendingID(node);
@@ -280,7 +289,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
   addEventsAttendingID(
     id: ID | Builder<Event>,
     options?: AssocEdgeInputOptions,
-  ): UserBuilder<TData> {
+  ): UserBuilder<TInput, TExistingEnt> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.UserToEventsAttending,
@@ -290,7 +299,9 @@ export class UserBuilder<TData extends UserInput = UserInput>
     return this;
   }
 
-  removeEventsAttending(...nodes: (ID | Event)[]): UserBuilder<TData> {
+  removeEventsAttending(
+    ...nodes: (ID | Event)[]
+  ): UserBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -307,7 +318,9 @@ export class UserBuilder<TData extends UserInput = UserInput>
     return this;
   }
 
-  addFriend(...nodes: (ID | User | Builder<User>)[]): UserBuilder<TData> {
+  addFriend(
+    ...nodes: (ID | User | Builder<User>)[]
+  ): UserBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addFriendID(node);
@@ -323,7 +336,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
   addFriendID(
     id: ID | Builder<User>,
     options?: AssocEdgeInputOptions,
-  ): UserBuilder<TData> {
+  ): UserBuilder<TInput, TExistingEnt> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.UserToFriends,
@@ -333,7 +346,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
     return this;
   }
 
-  removeFriend(...nodes: (ID | User)[]): UserBuilder<TData> {
+  removeFriend(...nodes: (ID | User)[]): UserBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.UserToFriends);
@@ -346,7 +359,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
 
   addInvitedEvent(
     ...nodes: (ID | Event | Builder<Event>)[]
-  ): UserBuilder<TData> {
+  ): UserBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addInvitedEventID(node);
@@ -362,7 +375,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
   addInvitedEventID(
     id: ID | Builder<Event>,
     options?: AssocEdgeInputOptions,
-  ): UserBuilder<TData> {
+  ): UserBuilder<TInput, TExistingEnt> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.UserToInvitedEvents,
@@ -372,7 +385,9 @@ export class UserBuilder<TData extends UserInput = UserInput>
     return this;
   }
 
-  removeInvitedEvent(...nodes: (ID | Event)[]): UserBuilder<TData> {
+  removeInvitedEvent(
+    ...nodes: (ID | Event)[]
+  ): UserBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -389,7 +404,9 @@ export class UserBuilder<TData extends UserInput = UserInput>
     return this;
   }
 
-  addLiker(...nodes: (ID | User | Builder<User>)[]): UserBuilder<TData> {
+  addLiker(
+    ...nodes: (ID | User | Builder<User>)[]
+  ): UserBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addLikerID(node);
@@ -405,7 +422,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
   addLikerID(
     id: ID | Builder<User>,
     options?: AssocEdgeInputOptions,
-  ): UserBuilder<TData> {
+  ): UserBuilder<TInput, TExistingEnt> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.ObjectToLikers,
@@ -415,7 +432,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
     return this;
   }
 
-  removeLiker(...nodes: (ID | User)[]): UserBuilder<TData> {
+  removeLiker(...nodes: (ID | User)[]): UserBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.ObjectToLikers);
@@ -426,7 +443,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
     return this;
   }
 
-  addLike(...nodes: (Ent | Builder<Ent>)[]): UserBuilder<TData> {
+  addLike(...nodes: (Ent | Builder<Ent>)[]): UserBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.orchestrator.addOutboundEdge(
@@ -450,7 +467,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
     id: ID | Builder<Ent>,
     nodeType: NodeType,
     options?: AssocEdgeInputOptions,
-  ): UserBuilder<TData> {
+  ): UserBuilder<TInput, TExistingEnt> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.UserToLikes,
@@ -460,7 +477,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
     return this;
   }
 
-  removeLike(...nodes: (ID | Ent)[]): UserBuilder<TData> {
+  removeLike(...nodes: (ID | Ent)[]): UserBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.UserToLikes);
@@ -471,7 +488,9 @@ export class UserBuilder<TData extends UserInput = UserInput>
     return this;
   }
 
-  addMaybeEvent(...nodes: (ID | Event | Builder<Event>)[]): UserBuilder<TData> {
+  addMaybeEvent(
+    ...nodes: (ID | Event | Builder<Event>)[]
+  ): UserBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addMaybeEventID(node);
@@ -487,7 +506,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
   addMaybeEventID(
     id: ID | Builder<Event>,
     options?: AssocEdgeInputOptions,
-  ): UserBuilder<TData> {
+  ): UserBuilder<TInput, TExistingEnt> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.UserToMaybeEvents,
@@ -497,7 +516,9 @@ export class UserBuilder<TData extends UserInput = UserInput>
     return this;
   }
 
-  removeMaybeEvent(...nodes: (ID | Event)[]): UserBuilder<TData> {
+  removeMaybeEvent(
+    ...nodes: (ID | Event)[]
+  ): UserBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -513,7 +534,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
 
   addSelfContact(
     ...nodes: (ID | Contact | Builder<Contact>)[]
-  ): UserBuilder<TData> {
+  ): UserBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addSelfContactID(node);
@@ -529,7 +550,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
   addSelfContactID(
     id: ID | Builder<Contact>,
     options?: AssocEdgeInputOptions,
-  ): UserBuilder<TData> {
+  ): UserBuilder<TInput, TExistingEnt> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.UserToSelfContact,
@@ -539,7 +560,9 @@ export class UserBuilder<TData extends UserInput = UserInput>
     return this;
   }
 
-  removeSelfContact(...nodes: (ID | Contact)[]): UserBuilder<TData> {
+  removeSelfContact(
+    ...nodes: (ID | Contact)[]
+  ): UserBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -555,7 +578,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
 
   addUserToHostedEvent(
     ...nodes: (ID | Event | Builder<Event>)[]
-  ): UserBuilder<TData> {
+  ): UserBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addUserToHostedEventID(node);
@@ -571,7 +594,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
   addUserToHostedEventID(
     id: ID | Builder<Event>,
     options?: AssocEdgeInputOptions,
-  ): UserBuilder<TData> {
+  ): UserBuilder<TInput, TExistingEnt> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.UserToHostedEvents,
@@ -581,7 +604,9 @@ export class UserBuilder<TData extends UserInput = UserInput>
     return this;
   }
 
-  removeUserToHostedEvent(...nodes: (ID | Event)[]): UserBuilder<TData> {
+  removeUserToHostedEvent(
+    ...nodes: (ID | Event)[]
+  ): UserBuilder<TInput, TExistingEnt> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
