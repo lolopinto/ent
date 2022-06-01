@@ -6,6 +6,7 @@
 
 {{ $privacyCfg := .PrivacyConfig -}}
 {{ $cfg := .CodePath -}}
+{{ $schema := .Schema -}}
 {{$viewerInfo := $cfg.GetTemplatizedViewer -}}
 {{ reserveImport $viewerInfo.Path $viewerInfo.Name -}}
 {{$viewerType := useImport $viewerInfo.Name -}}
@@ -21,7 +22,7 @@
   {{ end }}
 {{ end -}}
 
-{{ range .GetImportsForBaseFile -}} 
+{{ range .GetImportsForBaseFile  -}} 
   {{ reserveImportPath . false -}}
 {{ end}}
 
@@ -54,7 +55,16 @@ interface {{$dataType}} {
   {{ end -}}
 }
 
-export class {{$baseClass}} implements {{useImport "Ent"}}<{{$viewerType}}> {
+{{ if .HasMixins  -}}
+  export const {{$baseClass}} = 
+  {{ range $m := .GetMixins -}}
+    {{useImport $m}} (
+  {{ end -}}
+  {{/* can't have implements Ent<FooViewer> with a custom viewer which references this apparently */}}
+  class {{$baseClass}}  {
+{{ else -}}
+  export class {{$baseClass}} implements {{useImport "Ent"}}<{{$viewerType}}> {
+{{ end -}}
 
   readonly nodeType = {{useImport "NodeType"}}.{{.Node}};
   {{range $field := .FieldInfo.Fields -}}
@@ -64,23 +74,27 @@ export class {{$baseClass}} implements {{useImport "Ent"}}<{{$viewerType}}> {
       {{end -}}
       {{$typ := useImportMaybe .Import -}}
     {{end -}}
-    {{ if $field.Private $cfg -}}
-      protected readonly {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
-    {{ else -}}
-      readonly {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
-    {{end -}}
+    {{ if not ($schema.PatternFieldWithMixin $field) -}}
+      {{ if $field.Private $cfg -}}
+        protected readonly {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
+      {{ else -}}
+        readonly {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
+      {{end -}}
+    {{ end -}}
   {{end}}
 
   constructor(public viewer: {{$viewerType}}, protected data:Data) {
     {{range $field := .FieldInfo.Fields -}}
-      {{$val := printf "data.%s" $field.GetDbColName -}}
-      {{$convertType := convertFunc ($field.GetTSFieldType $cfg) -}}
-      {{if $convertType -}} 
-        {{/* could be BigInt which isn't reserved */ -}}
-        this.{{$field.TsFieldName $cfg}} = {{useImportMaybe $convertType}}({{$val}});
-      {{ else -}}
-        this.{{$field.TsFieldName $cfg}} = {{$val}};
-      {{end -}}
+      {{ if not ($schema.PatternFieldWithMixin $field) -}}
+        {{$val := printf "data.%s" $field.GetDbColName -}}
+        {{$convertType := convertFunc ($field.GetTSFieldType $cfg) -}}
+        {{if $convertType -}} 
+          {{/* could be BigInt which isn't reserved */ -}}
+          this.{{$field.TsFieldName $cfg}} = {{useImportMaybe $convertType}}({{$val}});
+        {{ else -}}
+          this.{{$field.TsFieldName $cfg}} = {{$val}};
+        {{end -}}
+      {{ end -}}
     {{end}}
   }
   
@@ -520,6 +534,13 @@ export class {{$baseClass}} implements {{useImport "Ent"}}<{{$viewerType}}> {
     {{end}}
   {{end}}
 }
+
+{{ if .HasMixins -}}
+  {{/* close each one opened earlier */}}
+  {{ range $m := .GetMixins -}}
+    )
+  {{ end -}}
+{{ end -}}
 
 {{end -}}
 

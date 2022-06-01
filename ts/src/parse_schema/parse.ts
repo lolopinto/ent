@@ -218,6 +218,7 @@ type ProcessedSchema = Omit<
     fields: ProcessedField[];
 
     schemaPath?: string;
+    patternNames?: string[];
   };
 
 type ProcessedAssocEdgeGroup = Omit<AssocEdgeGroup, "edgeAction"> & {
@@ -343,9 +344,11 @@ export function parseSchema(potentialSchemas: PotentialSchemas): Result {
     };
     // let's put patterns first just so we have id, created_at, updated_at first
     // ¯\_(ツ)_/¯
+    let patternNames: string[] = [];
     if (schema.patterns) {
       for (const pattern of schema.patterns) {
         const ret = processPattern(patterns, pattern, processedSchema);
+        patternNames.push(pattern.name);
         if (ret.transformsSelect) {
           if (processedSchema.transformsSelect) {
             throw new Error(
@@ -367,6 +370,7 @@ export function parseSchema(potentialSchemas: PotentialSchemas): Result {
     }
     const fields = processFields(schema.fields);
     processedSchema.fields.push(...fields);
+    processedSchema.patternNames = patternNames;
     if (schema.edges) {
       const edges = processEdges(schema.edges);
       processedSchema.assocEdges.push(...edges);

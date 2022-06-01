@@ -5,6 +5,10 @@
 
 export * from "./generated/const";
 export * from "./generated/loaders";
+export * from "./generated/day_of_week";
+export * from "./generated/day_of_week_alt";
+export * from "./generated/mixins/day_of_week";
+export * from "./generated/mixins/feedback";
 export * from "./generated/address_base";
 export * from "./generated/auth_code_base";
 export * from "./generated/comment_base";
@@ -33,8 +37,6 @@ export * from "./event";
 export * from "./holiday";
 export * from "./hours_of_operation";
 export * from "./user";
-export * from "./generated/day_of_week";
-export * from "./generated/day_of_week_alt";
 export * from "./generated/address_query_base";
 export * from "./generated/comment_query_base";
 export * from "./generated/event_query_base";

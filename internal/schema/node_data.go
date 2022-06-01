@@ -68,6 +68,7 @@ type NodeData struct {
 	Constraints []*input.Constraint
 	// same as above. fine to just reuse
 	Indices []*input.Index
+	Mixins  []string
 
 	schemaPath string
 
@@ -240,6 +241,13 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]*tsimport.ImportPath, error
 	for _, edge := range nodeData.EdgeInfo.GetConnectionEdges() {
 		ret = append(ret, &tsimport.ImportPath{
 			Import:     edge.TsEdgeQueryName(),
+			ImportPath: codepath.GetInternalImportPath(),
+		})
+	}
+
+	for _, p := range nodeData.Mixins {
+		ret = append(ret, &tsimport.ImportPath{
+			Import:     p,
 			ImportPath: codepath.GetInternalImportPath(),
 		})
 	}
@@ -494,4 +502,12 @@ func (nodeData *NodeData) GetFieldQueryName(field *field.Field) (string, error) 
 
 	fieldName := strcase.ToCamel(strings.TrimSuffix(field.FieldName, "ID"))
 	return fmt.Sprintf("%sTo%sQuery", fieldName, strcase.ToCamel(inflection.Plural(nodeData.Node))), nil
+}
+
+func (nodeData *NodeData) HasMixins() bool {
+	return len(nodeData.Mixins) > 0
+}
+
+func (nodeData *NodeData) GetMixins() []string {
+	return nodeData.Mixins
 }
