@@ -537,7 +537,7 @@ interface {{$dataType}} {
 
 {{ if .HasMixins -}}
   {{/* close each one opened earlier */}}
-  {{ range $m := .GetMixins -}}
+  {{ range .GetMixins -}}
     )
   {{ end -}}
 {{ end -}}

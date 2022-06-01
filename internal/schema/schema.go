@@ -374,6 +374,10 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 			if hasMixin(p) {
 				nodeData.Mixins = append(nodeData.Mixins, getMixinName(p))
 			}
+			pattern := schema.Patterns[p]
+			if pattern != nil && len(pattern.AssocEdges) > 0 {
+				nodeData.BuilderMixins = append(nodeData.BuilderMixins, getBuilderMixinName(p))
+			}
 		}
 
 		var err error

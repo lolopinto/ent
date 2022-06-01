@@ -36,6 +36,10 @@ func getMixinName(name string) string {
 	return fmt.Sprintf("%sMixin", strcase.ToCamel(name))
 }
 
+func getBuilderMixinName(name string) string {
+	return fmt.Sprintf("%sBuilder", strcase.ToCamel(name))
+}
+
 func (p *PatternInfo) HasMixin() bool {
 	return hasMixin(p.Name)
 
@@ -56,6 +60,7 @@ func (p *PatternInfo) GetSortedEdges() []*edge.AssociationEdge {
 	return ret
 }
 
+// borrowed for builder.tmpl
 func (p *PatternInfo) GetImportsForQueryBaseFile(s *Schema) ([]*tsimport.ImportPath, error) {
 	var ret []*tsimport.ImportPath
 
@@ -91,6 +96,22 @@ func (p *PatternInfo) GetImportsForQueryBaseFile(s *Schema) ([]*tsimport.ImportP
 
 func (p *PatternInfo) GetMixinInterfaceName() string {
 	return fmt.Sprintf("I%s", strcase.ToCamel(p.Name))
+}
+
+func (p *PatternInfo) GetMixinWithInterfaceName() string {
+	return fmt.Sprintf("IEntWith%s", strcase.ToCamel(p.Name))
+}
+
+func (p *PatternInfo) HasBuilder() bool {
+	return len(p.AssocEdges) > 0
+}
+
+func (p *PatternInfo) GetBuilderName() string {
+	return getBuilderMixinName(p.Name)
+}
+
+func (p *PatternInfo) GetBuilderInterfaceName() string {
+	return fmt.Sprintf("I%sBuilder", strcase.ToCamel(p.Name))
 }
 
 func (p *PatternInfo) GetMixinName() string {

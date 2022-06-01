@@ -1,0 +1,69 @@
+{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data"  "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData" "applyPrivacyPolicy" "Ent" "Viewer" "Data" "AssocEdgeInputOptions" }}
+{{reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "saveBuilder" "saveBuilderX" "Orchestrator"}}
+
+{{$p := .Pattern}}
+{{ $cfg := .Config -}}
+
+{{ reserveImport "src/ent/generated/const" "EdgeType" "NodeType" }}
+
+{{$viewerInfo := $cfg.GetTemplatizedViewer -}}
+{{ reserveImport $viewerInfo.Path $viewerInfo.Name -}}
+{{$viewerType := useImport $viewerInfo.Name -}}
+{{ reserveImport .Package.InternalImportPath $p.GetMixinInterfaceName -}}
+
+{{ range .Imports }}
+  {{reserveImportPath . false}}
+{{ end}}
+
+
+interface {{$p.GetMixinWithInterfaceName}} extends {{useImport "Ent"}}<{{$viewerType}}>, {{useImport $p.GetMixinInterfaceName}} {}
+
+interface {{$p.GetBuilderInterfaceName}}<T extends {{$p.GetMixinWithInterfaceName}}> {
+  {{/* if the logic in here changes, also have to update edge_builder.tmpl */ -}}
+  {{ $edgeInfos := edgeInfos $p.GetSortedEdges -}}
+  {{ range $edge := $edgeInfos -}}  
+    {{ $node := useImport .Node -}}
+    {{ $polymorphicEdge := $edge.Edge.PolymorphicEdge -}}
+    {{ if $polymorphicEdge -}}
+      {{$edge.TSAddMethodName}}(...nodes: ({{$node}} | Builder<{{$node}}, any>)[]): this;
+    {{ else -}}
+    {{/* for PolymorphicEdges, this API doesn't work since we don't know the type. callers should call addLikerID in a map */}}  
+      {{$edge.TSAddMethodName}}(...nodes: (ID | {{$node}} | Builder<{{$node}}, any>)[]): this;
+    {{ end -}}
+    {{$edge.TSAddIDMethodName}}(
+      id: {{useImport "ID"}} | Builder<{{$node}}, any>, 
+      {{ if $polymorphicEdge -}}
+        nodeType: {{useImport "NodeType"}},
+      {{ end -}}
+      options?: {{useImport "AssocEdgeInputOptions"}}
+    ): this;
+    {{$edge.TSRemoveMethodName}}(...nodes: (ID | {{$node}})[]): this;
+  {{end -}}
+}
+
+{{$builderName := printf "%sIsh" $p.GetBuilderName }}
+
+type Constructor<T = {}> = new (...args: any[]) => T;
+type {{$builderName}} = Constructor<{
+  orchestrator: {{useImport "Orchestrator"}}<{{$p.GetMixinWithInterfaceName}}, {{useImport "Data"}}, {{$viewerType}}>;
+  isBuilder<T extends {{useImport "Ent"}}>(
+    node: {{useImport "ID"}} | T | {{useImport "Builder"}}<T, any>,
+  ): node is {{useImport "Builder"}}<T, any>;
+}>;
+
+
+export function {{$p.GetBuilderName}}<
+  TBase extends {{$builderName}},
+  TEnt extends {{$p.GetMixinWithInterfaceName}},
+>(BaseClass: TBase) {
+  return class {{$p.GetBuilderName}}
+    extends BaseClass
+    implements {{$p.GetBuilderInterfaceName}}<TEnt>
+  {
+    constructor(...args: any[]) {
+      super(...args);
+    }
+
+  {{ template "edge_builder.tmpl" $p.GetSortedEdges -}}
+  }
+}

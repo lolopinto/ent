@@ -67,8 +67,9 @@ type NodeData struct {
 	// fine to just reuse input constraints for now
 	Constraints []*input.Constraint
 	// same as above. fine to just reuse
-	Indices []*input.Index
-	Mixins  []string
+	Indices       []*input.Index
+	Mixins        []string
+	BuilderMixins []string
 
 	schemaPath string
 
@@ -302,7 +303,7 @@ func (nodeData *NodeData) ForeignImport(imp string) bool {
 
 // TODO kill this
 // GetImportPathsForDependencies returns imports needed in dependencies e.g. actions and builders
-func (nodeData *NodeData) GetImportPathsForDependencies() []*tsimport.ImportPath {
+func (nodeData *NodeData) GetImportPathsForDependencies(s *Schema) []*tsimport.ImportPath {
 	var ret []*tsimport.ImportPath
 
 	for _, enum := range nodeData.GetTSEnums() {
@@ -332,7 +333,44 @@ func (nodeData *NodeData) GetImportPathsForDependencies() []*tsimport.ImportPath
 		}
 	}
 
+	for _, edge := range nodeData.EdgeInfo.Associations {
+		if edge.PatternName == "" {
+			continue
+		}
+		p := s.Patterns[edge.PatternName]
+		if p == nil || !p.HasBuilder() {
+			continue
+		}
+		ret = append(ret, &tsimport.ImportPath{
+			Import:     p.GetBuilderName(),
+			ImportPath: getImportPathForMixinBuilderFile(p),
+		})
+	}
+
 	return ret
+}
+
+// edges that are in the builder directly
+func (nodeData *NodeData) BuilderEdges(s *Schema) []*edge.AssociationEdge {
+	var ret []*edge.AssociationEdge
+
+	for _, edge := range nodeData.EdgeInfo.Associations {
+		if edge.PatternName == "" {
+			ret = append(ret, edge)
+			continue
+		}
+		p := s.Patterns[edge.PatternName]
+		if p == nil || !p.HasBuilder() {
+			ret = append(ret, edge)
+		}
+	}
+
+	return ret
+}
+
+func getImportPathForMixinBuilderFile(pattern *PatternInfo) string {
+	name := strcase.ToSnake(pattern.Name)
+	return fmt.Sprintf("src/ent/generated/mixins/%s/actions/%s_builder", name, name)
 }
 
 // TODO kill this

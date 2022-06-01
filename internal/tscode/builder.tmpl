@@ -2,6 +2,7 @@
 {{reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "saveBuilder" "saveBuilderX" "Orchestrator"}}
 
 {{ $cfg := .CodePath -}}
+{{ $schema := .Schema -}}
 
 {{with .NodeData -}}
 {{ $schemaPath := .GetSchemaPath }}
@@ -11,7 +12,7 @@
 {{ reserveImport "src/ent/generated/loaders" $loaderInfo -}}
 
 
-{{ range .GetImportPathsForDependencies -}}
+{{ range .GetImportPathsForDependencies $schema -}}
   {{ reserveImportPath . true}}
 {{ end}}
 
@@ -47,10 +48,22 @@ type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 {{ reserveImport $viewerInfo.Path $viewerInfo.Name -}}
 {{$viewerType := useImport $viewerInfo.Name -}}
 
+{{$mixins := .BuilderMixins -}}
+{{ if $mixins -}}
+  const {{$builder}}Base =
+  {{ range $mixins }}
+    {{useImport .}} (
+  {{ end -}}
+  class {{$builder}}<
+    TInput extends {{$input}} = {{$input}},
+    TExistingEnt extends TMaybleNullableEnt<{{$node}}> = {{$node}} | null,
+  > implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
+{{ else -}}
 export class {{$builder}}<
   TInput extends {{$input}} = {{$input}},
   TExistingEnt extends TMaybleNullableEnt<{{$node}}> = {{$node}} | null,
 > implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
+{{end -}}
   orchestrator: {{useImport "Orchestrator"}}<{{$node}}, TInput, {{$viewerType}}, TExistingEnt>;
   readonly placeholderID: {{useImport "ID"}};
   readonly ent = {{$node}};
@@ -121,79 +134,7 @@ export class {{$builder}}<
     }
   {{end -}}
 
-  {{ $edgeInfos := edgeInfos .EdgeInfo.Associations -}}
-  {{ range $edge := $edgeInfos -}}  
-    {{ $node := useImport .Node -}}
-    {{ $polymorphicEdge := $edge.Edge.PolymorphicEdge -}}
-  {{ if $polymorphicEdge -}}
-    {{$edge.TSAddMethodName}}(...nodes: ({{$node}} | Builder<{{$node}}, any>)[]): {{$builder}}<TInput, TExistingEnt> {
-  {{ else -}}
-  {{/* for PolymorphicEdges, this API doesn't work since we don't know the type. callers should call addLikerID in a map */}}  
-    {{$edge.TSAddMethodName}}(...nodes: (ID | {{$node}} | Builder<{{$node}}, any>)[]): {{$builder}}<TInput, TExistingEnt> {
-  {{ end -}}
-    for (const node of nodes) {
-      {{ if $polymorphicEdge -}}
-        if (this.isBuilder(node)) {
-          this.orchestrator.addOutboundEdge(
-            node, 
-            {{useImport "EdgeType"}}.{{$edge.TSEdgeConst}},
-            // nodeType will be gotten from Executor later
-            "",
-          );
-        } else {
-          this.orchestrator.addOutboundEdge(
-            node.id, 
-            {{useImport "EdgeType"}}.{{$edge.TSEdgeConst}},
-            node.nodeType,
-          );
-        }
-      {{ else -}}
-        if (this.isBuilder(node)) {
-          this.{{$edge.TSAddIDMethodName}}(node);
-        } else if (typeof node === "object") {
-          this.{{$edge.TSAddIDMethodName}}(node.id);
-        } else {
-          this.{{$edge.TSAddIDMethodName}}(node);
-        }
-      {{ end -}}
-    }
-    return this;
-  }
-
-  {{$edge.TSAddIDMethodName}}(
-    id: {{useImport "ID"}} | Builder<{{$node}}, any>, 
-    {{ if $polymorphicEdge -}}
-      nodeType: {{useImport "NodeType"}},
-    {{ end -}}
-    options?: {{useImport "AssocEdgeInputOptions"}}
-  ): {{$builder}}<TInput, TExistingEnt> {
-    {{/* TODO need inbound edges also */}}
-    this.orchestrator.addOutboundEdge(
-      id, 
-      {{useImport "EdgeType"}}.{{$edge.TSEdgeConst}},
-      {{ if $polymorphicEdge -}}
-        nodeType,
-      {{ else -}}
-        {{useImport "NodeType"}}.{{.Node}},
-      {{end -}}
-      options,
-    );
-    return this;
-  }
-
-  {{$edge.TSRemoveMethodName}}(...nodes: (ID | {{$node}})[]): {{$builder}}<TInput, TExistingEnt> {
-    for (const node of nodes) {
-      if (typeof node === "object") {
-        this.orchestrator.removeOutboundEdge(node.id, {{useImport "EdgeType"}}.{{$edge.TSEdgeConst}});
-      } else {
-        this.orchestrator.removeOutboundEdge(node, {{useImport "EdgeType"}}.{{$edge.TSEdgeConst}});
-      }
-    }
-    return this;
-  }
-
-  {{end -}}
-
+  {{ template "edge_builder.tmpl" .BuilderEdges $schema -}}
 
   async build(): Promise<{{useImport "Changeset"}}> {
     return this.orchestrator.build();
@@ -295,5 +236,13 @@ export class {{$builder}}<
 
   {{end}}
 }
+
+{{ if $mixins -}}
+  {{/* close each one opened earlier */}}
+  {{ range $mixins }}
+    )
+  {{ end -}}
+  export class {{$builder}} extends {{$builder}}Base {}
+{{ end -}}
 
 {{end -}}
