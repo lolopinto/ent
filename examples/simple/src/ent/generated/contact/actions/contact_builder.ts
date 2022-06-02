@@ -34,180 +34,195 @@ function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
+class Base {
+  // @ts-ignore
+  orchestrator: Orchestrator<Contact, any, ExampleViewer>;
+
+  constructor() {
+    // @ts-ignore overriden later...
+    //    this.orchestrator = new Orchestrator({});
+  }
+
+  isBuilder<T extends Ent>(
+    node: ID | T | Builder<T, any>,
+  ): node is Builder<T, any> {
+    return (node as Builder<T, any>).placeholderID !== undefined;
+  }
+}
+
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 
-const ContactBuilderBase = FeedbackBuilder(
-  class ContactBuilder<
+export class ContactBuilder<
     TInput extends ContactInput = ContactInput,
     TExistingEnt extends TMaybleNullableEnt<Contact> = Contact | null,
-  > implements Builder<Contact, ExampleViewer, TExistingEnt>
-  {
-    orchestrator: Orchestrator<Contact, TInput, ExampleViewer, TExistingEnt>;
-    readonly placeholderID: ID;
-    readonly ent = Contact;
-    readonly nodeType = NodeType.Contact;
-    private input: TInput;
-    private m: Map<string, any> = new Map();
+  >
+  extends FeedbackBuilder(Base)
+  implements Builder<Contact, ExampleViewer, TExistingEnt>
+{
+  orchestrator: Orchestrator<Contact, TInput, ExampleViewer, TExistingEnt>;
+  readonly placeholderID: ID;
+  readonly ent = Contact;
+  readonly nodeType = NodeType.Contact;
+  private input: TInput;
+  private m: Map<string, any> = new Map();
 
-    public constructor(
-      public readonly viewer: ExampleViewer,
-      public readonly operation: WriteOperation,
-      action: Action<
-        Contact,
-        Builder<Contact, ExampleViewer, TExistingEnt>,
-        ExampleViewer,
-        TInput,
-        TExistingEnt
-      >,
-      public readonly existingEnt: TExistingEnt,
-    ) {
-      this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Contact`;
-      this.input = action.getInput();
-      const updateInput = (d: ContactInput) =>
-        this.updateInput.apply(this, [d]);
+  public constructor(
+    public readonly viewer: ExampleViewer,
+    public readonly operation: WriteOperation,
+    action: Action<
+      Contact,
+      Builder<Contact, ExampleViewer, TExistingEnt>,
+      ExampleViewer,
+      TInput,
+      TExistingEnt
+    >,
+    public readonly existingEnt: TExistingEnt,
+  ) {
+    super();
+    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Contact`;
+    this.input = action.getInput();
+    const updateInput = (d: ContactInput) => this.updateInput.apply(this, [d]);
 
-      this.orchestrator = new Orchestrator({
-        viewer,
-        operation: this.operation,
-        tableName: "contacts",
-        key: "id",
-        loaderOptions: Contact.loaderOptions(),
-        builder: this,
-        action,
-        schema,
-        editedFields: () => this.getEditedFields.apply(this),
-        updateInput,
-        fieldInfo: contactLoaderInfo.fieldInfo,
-      });
-    }
+    this.orchestrator = new Orchestrator({
+      viewer,
+      operation: this.operation,
+      tableName: "contacts",
+      key: "id",
+      loaderOptions: Contact.loaderOptions(),
+      builder: this,
+      action,
+      schema,
+      editedFields: () => this.getEditedFields.apply(this),
+      updateInput,
+      fieldInfo: contactLoaderInfo.fieldInfo,
+    });
+  }
 
-    getInput(): TInput {
-      return this.input;
-    }
+  getInput(): TInput {
+    return this.input;
+  }
 
-    updateInput(input: ContactInput) {
-      // override input
-      this.input = {
-        ...this.input,
-        ...input,
-      };
-    }
+  updateInput(input: ContactInput) {
+    // override input
+    this.input = {
+      ...this.input,
+      ...input,
+    };
+  }
 
-    deleteInputKey(key: keyof ContactInput) {
-      delete this.input[key];
-    }
+  deleteInputKey(key: keyof ContactInput) {
+    delete this.input[key];
+  }
 
-    // store data in Builder that can be retrieved by another validator, trigger, observer later in the action
-    storeData(k: string, v: any) {
-      this.m.set(k, v);
-    }
+  // store data in Builder that can be retrieved by another validator, trigger, observer later in the action
+  storeData(k: string, v: any) {
+    this.m.set(k, v);
+  }
 
-    // retrieve data stored in this Builder with key
-    getStoredData(k: string) {
-      return this.m.get(k);
-    }
+  // retrieve data stored in this Builder with key
+  getStoredData(k: string) {
+    return this.m.get(k);
+  }
 
-    // this gets the inputs that have been written for a given edgeType and operation
-    // WriteOperation.Insert for adding an edge and WriteOperation.Delete for deleting an edge
-    getEdgeInputData(edgeType: EdgeType, op: WriteOperation) {
-      return this.orchestrator.getInputEdges(edgeType, op);
-    }
+  // this gets the inputs that have been written for a given edgeType and operation
+  // WriteOperation.Insert for adding an edge and WriteOperation.Delete for deleting an edge
+  getEdgeInputData(edgeType: EdgeType, op: WriteOperation) {
+    return this.orchestrator.getInputEdges(edgeType, op);
+  }
 
-    clearInputEdges(edgeType: EdgeType, op: WriteOperation, id?: ID) {
-      this.orchestrator.clearInputEdges(edgeType, op, id);
-    }
-    async build(): Promise<Changeset> {
-      return this.orchestrator.build();
-    }
+  clearInputEdges(edgeType: EdgeType, op: WriteOperation, id?: ID) {
+    this.orchestrator.clearInputEdges(edgeType, op, id);
+  }
+  async build(): Promise<Changeset> {
+    return this.orchestrator.build();
+  }
 
-    async valid(): Promise<boolean> {
-      return this.orchestrator.valid();
-    }
+  async valid(): Promise<boolean> {
+    return this.orchestrator.valid();
+  }
 
-    async validX(): Promise<void> {
-      return this.orchestrator.validX();
-    }
+  async validX(): Promise<void> {
+    return this.orchestrator.validX();
+  }
 
-    async save(): Promise<void> {
-      await saveBuilder(this);
-    }
+  async save(): Promise<void> {
+    await saveBuilder(this);
+  }
 
-    async saveX(): Promise<void> {
-      await saveBuilderX(this);
-    }
+  async saveX(): Promise<void> {
+    await saveBuilderX(this);
+  }
 
-    async editedEnt(): Promise<Contact | null> {
-      return this.orchestrator.editedEnt();
-    }
+  async editedEnt(): Promise<Contact | null> {
+    return this.orchestrator.editedEnt();
+  }
 
-    async editedEntX(): Promise<Contact> {
-      return this.orchestrator.editedEntX();
-    }
+  async editedEntX(): Promise<Contact> {
+    return this.orchestrator.editedEntX();
+  }
 
-    private async getEditedFields(): Promise<Map<string, any>> {
-      const fields = this.input;
+  private async getEditedFields(): Promise<Map<string, any>> {
+    const fields = this.input;
 
-      const result = new Map<string, any>();
+    const result = new Map<string, any>();
 
-      const addField = function (key: string, value: any) {
-        if (value !== undefined) {
-          result.set(key, value);
-        }
-      };
-      addField("email_ids", fields.emailIds);
-      addField("phone_number_ids", fields.phoneNumberIds);
-      addField("firstName", fields.firstName);
-      addField("lastName", fields.lastName);
-      addField("userID", fields.userID);
-      return result;
-    }
-
-    isBuilder<T extends Ent>(
-      node: ID | T | Builder<T, any>,
-    ): node is Builder<T, any> {
-      return (node as Builder<T, any>).placeholderID !== undefined;
-    }
-
-    // get value of email_ids. Retrieves it from the input if specified or takes it from existingEnt
-    getNewEmailIdsValue(): ID[] | undefined {
-      if (this.input.emailIds !== undefined) {
-        return this.input.emailIds;
+    const addField = function (key: string, value: any) {
+      if (value !== undefined) {
+        result.set(key, value);
       }
-      return this.existingEnt?.emailIds;
-    }
+    };
+    addField("email_ids", fields.emailIds);
+    addField("phone_number_ids", fields.phoneNumberIds);
+    addField("firstName", fields.firstName);
+    addField("lastName", fields.lastName);
+    addField("userID", fields.userID);
+    return result;
+  }
 
-    // get value of phone_number_ids. Retrieves it from the input if specified or takes it from existingEnt
-    getNewPhoneNumberIdsValue(): ID[] | undefined {
-      if (this.input.phoneNumberIds !== undefined) {
-        return this.input.phoneNumberIds;
-      }
-      return this.existingEnt?.phoneNumberIds;
-    }
+  isBuilder<T extends Ent>(
+    node: ID | T | Builder<T, any>,
+  ): node is Builder<T, any> {
+    return (node as Builder<T, any>).placeholderID !== undefined;
+  }
 
-    // get value of firstName. Retrieves it from the input if specified or takes it from existingEnt
-    getNewFirstNameValue(): string | undefined {
-      if (this.input.firstName !== undefined) {
-        return this.input.firstName;
-      }
-      return this.existingEnt?.firstName;
+  // get value of email_ids. Retrieves it from the input if specified or takes it from existingEnt
+  getNewEmailIdsValue(): ID[] | undefined {
+    if (this.input.emailIds !== undefined) {
+      return this.input.emailIds;
     }
+    return this.existingEnt?.emailIds;
+  }
 
-    // get value of lastName. Retrieves it from the input if specified or takes it from existingEnt
-    getNewLastNameValue(): string | undefined {
-      if (this.input.lastName !== undefined) {
-        return this.input.lastName;
-      }
-      return this.existingEnt?.lastName;
+  // get value of phone_number_ids. Retrieves it from the input if specified or takes it from existingEnt
+  getNewPhoneNumberIdsValue(): ID[] | undefined {
+    if (this.input.phoneNumberIds !== undefined) {
+      return this.input.phoneNumberIds;
     }
+    return this.existingEnt?.phoneNumberIds;
+  }
 
-    // get value of userID. Retrieves it from the input if specified or takes it from existingEnt
-    getNewUserIDValue(): ID | Builder<User, ExampleViewer> | undefined {
-      if (this.input.userID !== undefined) {
-        return this.input.userID;
-      }
-      return this.existingEnt?.userID;
+  // get value of firstName. Retrieves it from the input if specified or takes it from existingEnt
+  getNewFirstNameValue(): string | undefined {
+    if (this.input.firstName !== undefined) {
+      return this.input.firstName;
     }
-  },
-);
-export class ContactBuilder extends ContactBuilderBase {}
+    return this.existingEnt?.firstName;
+  }
+
+  // get value of lastName. Retrieves it from the input if specified or takes it from existingEnt
+  getNewLastNameValue(): string | undefined {
+    if (this.input.lastName !== undefined) {
+      return this.input.lastName;
+    }
+    return this.existingEnt?.lastName;
+  }
+
+  // get value of userID. Retrieves it from the input if specified or takes it from existingEnt
+  getNewUserIDValue(): ID | Builder<User, ExampleViewer> | undefined {
+    if (this.input.userID !== undefined) {
+      return this.input.userID;
+    }
+    return this.existingEnt?.userID;
+  }
+}
