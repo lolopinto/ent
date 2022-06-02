@@ -7,6 +7,8 @@ import { ObjectToCommentsQuery, ObjectToLikersQuery } from "../../internal";
 
 type Constructor<T = {}> = new (...args: any[]) => T;
 
+// no easy way to guarantee this from FeedbackMixin so we'll just do it
+// from the ent side
 export interface IFeedback {
   isFeedback(): boolean;
   queryComments(): ObjectToCommentsQuery;
@@ -14,21 +16,13 @@ export interface IFeedback {
 }
 
 export function FeedbackMixin<T extends Constructor>(BaseClass: T) {
-  return class FeedbackMixin extends BaseClass implements IFeedback {
+  return class FeedbackMixin extends BaseClass {
     constructor(...args: any[]) {
       super(...args);
     }
 
     isFeedback() {
       return true;
-    }
-
-    queryComments(): ObjectToCommentsQuery {
-      throw new Error(`Comments not implemented`);
-    }
-
-    queryLikers(): ObjectToLikersQuery {
-      throw new Error(`Likers not implemented`);
     }
   };
 }

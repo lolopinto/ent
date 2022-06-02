@@ -79,7 +79,7 @@ export function {{$p.GetMixinName}}<T extends Constructor>(BaseClass: T) {
       {{$queryName := useImport $edge.TsEdgeQueryName -}}
       {{/* can't return an instance here since it's most likely abstract */}}
       query{{$edgeName}}(): {{$queryName}} {
-        throw new Error(`{{$edgeName}} not implemented`);
+        throw new Error(`query{{$edgeName}} not implemented`);
       }
       {{end -}}
   };

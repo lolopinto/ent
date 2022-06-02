@@ -27,6 +27,7 @@ import {
   loadEnts,
   loadUniqueEdge,
   loadUniqueNode,
+  Ent,
 } from "@snowtop/ent";
 import { Field, getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
 import {
@@ -57,6 +58,7 @@ import {
   UserToLikersQuery,
   UserToLikesQuery,
   UserToMaybeEventsQuery,
+  IFeedback,
 } from "../internal";
 import schema from "../../schema/user_schema";
 import { ExampleViewer } from "../../viewer/viewer";
@@ -104,390 +106,392 @@ interface UserDBData {
   nested_list: UserNestedObjectList[] | null;
 }
 
-export const UserBase = FeedbackMixin(
-  class UserBase {
-    readonly nodeType = NodeType.User;
-    readonly id: ID;
-    readonly createdAt: Date;
-    readonly updatedAt: Date;
-    readonly firstName: string;
-    readonly lastName: string;
-    readonly emailAddress: string;
-    readonly phoneNumber: string | null;
-    protected readonly password: string | null;
-    protected readonly _accountStatus: string | null;
-    protected readonly _emailVerified: boolean;
-    readonly bio: string | null;
-    readonly nicknames: string[] | null;
-    protected readonly _prefs: UserPrefsStruct | null;
-    protected readonly _prefsList: UserPrefsStruct2[] | null;
-    protected readonly _prefsDiff: UserPrefsDiff | null;
-    readonly daysOff: UserDaysOff[] | null;
-    readonly preferredShift: UserPreferredShift[] | null;
-    readonly timeInMs: BigInt | null;
-    readonly funUuids: ID[] | null;
-    readonly newCol: string | null;
-    readonly newCol2: string | null;
-    readonly superNestedObject: UserSuperNestedObject | null;
-    readonly nestedList: UserNestedObjectList[] | null;
+export class UserBase
+  extends FeedbackMixin(class {})
+  implements Ent<ExampleViewer>, IFeedback
+{
+  readonly nodeType = NodeType.User;
+  readonly id: ID;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly emailAddress: string;
+  readonly phoneNumber: string | null;
+  protected readonly password: string | null;
+  protected readonly _accountStatus: string | null;
+  protected readonly _emailVerified: boolean;
+  readonly bio: string | null;
+  readonly nicknames: string[] | null;
+  protected readonly _prefs: UserPrefsStruct | null;
+  protected readonly _prefsList: UserPrefsStruct2[] | null;
+  protected readonly _prefsDiff: UserPrefsDiff | null;
+  readonly daysOff: UserDaysOff[] | null;
+  readonly preferredShift: UserPreferredShift[] | null;
+  readonly timeInMs: BigInt | null;
+  readonly funUuids: ID[] | null;
+  readonly newCol: string | null;
+  readonly newCol2: string | null;
+  readonly superNestedObject: UserSuperNestedObject | null;
+  readonly nestedList: UserNestedObjectList[] | null;
 
-    constructor(public viewer: ExampleViewer, protected data: Data) {
-      this.id = data.id;
-      this.createdAt = convertDate(data.created_at);
-      this.updatedAt = convertDate(data.updated_at);
-      this.firstName = data.first_name;
-      this.lastName = data.last_name;
-      this.emailAddress = data.email_address;
-      this.phoneNumber = data.phone_number;
-      this.password = data.password;
-      this._accountStatus = data.account_status;
-      this._emailVerified = convertBool(data.email_verified);
-      this.bio = data.bio;
-      this.nicknames = convertNullableList(data.nicknames);
-      this._prefs = convertNullableJSON(data.prefs);
-      this._prefsList = convertNullableJSONList(data.prefs_list);
-      this._prefsDiff = convertNullableJSON(data.prefs_diff);
-      this.daysOff = convertNullableList(data.days_off);
-      this.preferredShift = convertNullableList(data.preferred_shift);
-      this.timeInMs = BigInt(data.time_in_ms);
-      this.funUuids = convertNullableList(data.fun_uuids);
-      this.newCol = data.new_col;
-      this.newCol2 = data.new_col_2;
-      this.superNestedObject = convertNullableJSON(data.super_nested_object);
-      this.nestedList = convertNullableJSONList(data.nested_list);
+  constructor(public viewer: ExampleViewer, protected data: Data) {
+    super();
+    this.id = data.id;
+    this.createdAt = convertDate(data.created_at);
+    this.updatedAt = convertDate(data.updated_at);
+    this.firstName = data.first_name;
+    this.lastName = data.last_name;
+    this.emailAddress = data.email_address;
+    this.phoneNumber = data.phone_number;
+    this.password = data.password;
+    this._accountStatus = data.account_status;
+    this._emailVerified = convertBool(data.email_verified);
+    this.bio = data.bio;
+    this.nicknames = convertNullableList(data.nicknames);
+    this._prefs = convertNullableJSON(data.prefs);
+    this._prefsList = convertNullableJSONList(data.prefs_list);
+    this._prefsDiff = convertNullableJSON(data.prefs_diff);
+    this.daysOff = convertNullableList(data.days_off);
+    this.preferredShift = convertNullableList(data.preferred_shift);
+    this.timeInMs = BigInt(data.time_in_ms);
+    this.funUuids = convertNullableList(data.fun_uuids);
+    this.newCol = data.new_col;
+    this.newCol2 = data.new_col_2;
+    this.superNestedObject = convertNullableJSON(data.super_nested_object);
+    this.nestedList = convertNullableJSONList(data.nested_list);
+  }
+
+  getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewer> {
+    return AllowIfViewerPrivacyPolicy;
+  }
+
+  async accountStatus(): Promise<string | null> {
+    if (this._accountStatus === null) {
+      return null;
     }
-
-    getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewer> {
-      return AllowIfViewerPrivacyPolicy;
+    const m = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
+    const p = m.get("account_status");
+    if (!p) {
+      throw new Error(`couldn't get field privacy policy for accountStatus`);
     }
+    const v = await applyPrivacyPolicy(this.viewer, p, this);
+    return v ? this._accountStatus : null;
+  }
 
-    async accountStatus(): Promise<string | null> {
-      if (this._accountStatus === null) {
-        return null;
-      }
-      const m = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
-      const p = m.get("account_status");
-      if (!p) {
-        throw new Error(`couldn't get field privacy policy for accountStatus`);
-      }
-      const v = await applyPrivacyPolicy(this.viewer, p, this);
-      return v ? this._accountStatus : null;
+  async emailVerified(): Promise<boolean | null> {
+    const m = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
+    const p = m.get("email_verified");
+    if (!p) {
+      throw new Error(`couldn't get field privacy policy for emailVerified`);
     }
+    const v = await applyPrivacyPolicy(this.viewer, p, this);
+    return v ? this._emailVerified : null;
+  }
 
-    async emailVerified(): Promise<boolean | null> {
-      const m = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
-      const p = m.get("email_verified");
-      if (!p) {
-        throw new Error(`couldn't get field privacy policy for emailVerified`);
-      }
-      const v = await applyPrivacyPolicy(this.viewer, p, this);
-      return v ? this._emailVerified : null;
+  async prefs(): Promise<UserPrefsStruct | null> {
+    if (this._prefs === null) {
+      return null;
     }
-
-    async prefs(): Promise<UserPrefsStruct | null> {
-      if (this._prefs === null) {
-        return null;
-      }
-      const m = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
-      const p = m.get("prefs");
-      if (!p) {
-        throw new Error(`couldn't get field privacy policy for prefs`);
-      }
-      const v = await applyPrivacyPolicy(this.viewer, p, this);
-      return v ? this._prefs : null;
+    const m = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
+    const p = m.get("prefs");
+    if (!p) {
+      throw new Error(`couldn't get field privacy policy for prefs`);
     }
+    const v = await applyPrivacyPolicy(this.viewer, p, this);
+    return v ? this._prefs : null;
+  }
 
-    async prefsList(): Promise<UserPrefsStruct2[] | null> {
-      if (this._prefsList === null) {
-        return null;
-      }
-      const m = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
-      const p = m.get("prefs_list");
-      if (!p) {
-        throw new Error(`couldn't get field privacy policy for prefsList`);
-      }
-      const v = await applyPrivacyPolicy(this.viewer, p, this);
-      return v ? this._prefsList : null;
+  async prefsList(): Promise<UserPrefsStruct2[] | null> {
+    if (this._prefsList === null) {
+      return null;
     }
-
-    async prefsDiff(): Promise<UserPrefsDiff | null> {
-      if (this._prefsDiff === null) {
-        return null;
-      }
-      const m = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
-      const p = m.get("prefs_diff");
-      if (!p) {
-        throw new Error(`couldn't get field privacy policy for prefsDiff`);
-      }
-      const v = await applyPrivacyPolicy(this.viewer, p, this);
-      return v ? this._prefsDiff : null;
+    const m = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
+    const p = m.get("prefs_list");
+    if (!p) {
+      throw new Error(`couldn't get field privacy policy for prefsList`);
     }
+    const v = await applyPrivacyPolicy(this.viewer, p, this);
+    return v ? this._prefsList : null;
+  }
 
-    static async load<T extends UserBase>(
-      this: new (viewer: ExampleViewer, data: Data) => T,
-      viewer: ExampleViewer,
-      id: ID,
-    ): Promise<T | null> {
-      return (await loadEnt(
-        viewer,
-        id,
-        UserBase.loaderOptions.apply(this),
-      )) as T | null;
+  async prefsDiff(): Promise<UserPrefsDiff | null> {
+    if (this._prefsDiff === null) {
+      return null;
     }
-
-    static async loadX<T extends UserBase>(
-      this: new (viewer: ExampleViewer, data: Data) => T,
-      viewer: ExampleViewer,
-      id: ID,
-    ): Promise<T> {
-      return (await loadEntX(
-        viewer,
-        id,
-        UserBase.loaderOptions.apply(this),
-      )) as T;
+    const m = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
+    const p = m.get("prefs_diff");
+    if (!p) {
+      throw new Error(`couldn't get field privacy policy for prefsDiff`);
     }
+    const v = await applyPrivacyPolicy(this.viewer, p, this);
+    return v ? this._prefsDiff : null;
+  }
 
-    static async loadMany<T extends UserBase>(
-      this: new (viewer: ExampleViewer, data: Data) => T,
-      viewer: ExampleViewer,
-      ...ids: ID[]
-    ): Promise<Map<ID, T>> {
-      return (await loadEnts(
-        viewer,
-        UserBase.loaderOptions.apply(this),
-        ...ids,
-      )) as Map<ID, T>;
+  static async load<T extends UserBase>(
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
+    id: ID,
+  ): Promise<T | null> {
+    return (await loadEnt(
+      viewer,
+      id,
+      UserBase.loaderOptions.apply(this),
+    )) as T | null;
+  }
+
+  static async loadX<T extends UserBase>(
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
+    id: ID,
+  ): Promise<T> {
+    return (await loadEntX(
+      viewer,
+      id,
+      UserBase.loaderOptions.apply(this),
+    )) as T;
+  }
+
+  static async loadMany<T extends UserBase>(
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
+    ...ids: ID[]
+  ): Promise<Map<ID, T>> {
+    return (await loadEnts(
+      viewer,
+      UserBase.loaderOptions.apply(this),
+      ...ids,
+    )) as Map<ID, T>;
+  }
+
+  static async loadCustom<T extends UserBase>(
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
+    query: CustomQuery,
+  ): Promise<T[]> {
+    return (await loadCustomEnts(
+      viewer,
+      UserBase.loaderOptions.apply(this),
+      query,
+    )) as T[];
+  }
+
+  static async loadCustomData<T extends UserBase>(
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    query: CustomQuery,
+    context?: Context,
+  ): Promise<UserDBData[]> {
+    return (await loadCustomData(
+      UserBase.loaderOptions.apply(this),
+      query,
+      context,
+    )) as UserDBData[];
+  }
+
+  static async loadRawData<T extends UserBase>(
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    id: ID,
+    context?: Context,
+  ): Promise<UserDBData | null> {
+    const row = await userLoader.createLoader(context).load(id);
+    if (!row) {
+      return null;
     }
+    return row as UserDBData;
+  }
 
-    static async loadCustom<T extends UserBase>(
-      this: new (viewer: ExampleViewer, data: Data) => T,
-      viewer: ExampleViewer,
-      query: CustomQuery,
-    ): Promise<T[]> {
-      return (await loadCustomEnts(
-        viewer,
-        UserBase.loaderOptions.apply(this),
-        query,
-      )) as T[];
+  static async loadRawDataX<T extends UserBase>(
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    id: ID,
+    context?: Context,
+  ): Promise<UserDBData> {
+    const row = await userLoader.createLoader(context).load(id);
+    if (!row) {
+      throw new Error(`couldn't load row for ${id}`);
     }
+    return row as UserDBData;
+  }
 
-    static async loadCustomData<T extends UserBase>(
-      this: new (viewer: ExampleViewer, data: Data) => T,
-      query: CustomQuery,
-      context?: Context,
-    ): Promise<UserDBData[]> {
-      return (await loadCustomData(
-        UserBase.loaderOptions.apply(this),
-        query,
-        context,
-      )) as UserDBData[];
+  static async loadFromEmailAddress<T extends UserBase>(
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
+    emailAddress: string,
+  ): Promise<T | null> {
+    return (await loadEntViaKey(viewer, emailAddress, {
+      ...UserBase.loaderOptions.apply(this),
+      loaderFactory: userEmailAddressLoader,
+    })) as T | null;
+  }
+
+  static async loadFromEmailAddressX<T extends UserBase>(
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
+    emailAddress: string,
+  ): Promise<T> {
+    return (await loadEntXViaKey(viewer, emailAddress, {
+      ...UserBase.loaderOptions.apply(this),
+      loaderFactory: userEmailAddressLoader,
+    })) as T;
+  }
+
+  static async loadIDFromEmailAddress<T extends UserBase>(
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    emailAddress: string,
+    context?: Context,
+  ): Promise<ID | undefined> {
+    const row = await userEmailAddressLoader
+      .createLoader(context)
+      .load(emailAddress);
+    return row?.id;
+  }
+
+  static async loadRawDataFromEmailAddress<T extends UserBase>(
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    emailAddress: string,
+    context?: Context,
+  ): Promise<UserDBData | null> {
+    const row = await userEmailAddressLoader
+      .createLoader(context)
+      .load(emailAddress);
+    if (!row) {
+      return null;
     }
+    return row as UserDBData;
+  }
 
-    static async loadRawData<T extends UserBase>(
-      this: new (viewer: ExampleViewer, data: Data) => T,
-      id: ID,
-      context?: Context,
-    ): Promise<UserDBData | null> {
-      const row = await userLoader.createLoader(context).load(id);
-      if (!row) {
-        return null;
-      }
-      return row as UserDBData;
+  static async loadFromPhoneNumber<T extends UserBase>(
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
+    phoneNumber: string,
+  ): Promise<T | null> {
+    return (await loadEntViaKey(viewer, phoneNumber, {
+      ...UserBase.loaderOptions.apply(this),
+      loaderFactory: userPhoneNumberLoader,
+    })) as T | null;
+  }
+
+  static async loadFromPhoneNumberX<T extends UserBase>(
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    viewer: ExampleViewer,
+    phoneNumber: string,
+  ): Promise<T> {
+    return (await loadEntXViaKey(viewer, phoneNumber, {
+      ...UserBase.loaderOptions.apply(this),
+      loaderFactory: userPhoneNumberLoader,
+    })) as T;
+  }
+
+  static async loadIDFromPhoneNumber<T extends UserBase>(
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    phoneNumber: string,
+    context?: Context,
+  ): Promise<ID | undefined> {
+    const row = await userPhoneNumberLoader
+      .createLoader(context)
+      .load(phoneNumber);
+    return row?.id;
+  }
+
+  static async loadRawDataFromPhoneNumber<T extends UserBase>(
+    this: new (viewer: ExampleViewer, data: Data) => T,
+    phoneNumber: string,
+    context?: Context,
+  ): Promise<UserDBData | null> {
+    const row = await userPhoneNumberLoader
+      .createLoader(context)
+      .load(phoneNumber);
+    if (!row) {
+      return null;
     }
+    return row as UserDBData;
+  }
 
-    static async loadRawDataX<T extends UserBase>(
-      this: new (viewer: ExampleViewer, data: Data) => T,
-      id: ID,
-      context?: Context,
-    ): Promise<UserDBData> {
-      const row = await userLoader.createLoader(context).load(id);
-      if (!row) {
-        throw new Error(`couldn't load row for ${id}`);
-      }
-      return row as UserDBData;
+  static loaderOptions<T extends UserBase>(
+    this: new (viewer: ExampleViewer, data: Data) => T,
+  ): LoadEntOptions<T, ExampleViewer> {
+    return {
+      tableName: userLoaderInfo.tableName,
+      fields: userLoaderInfo.fields,
+      ent: this,
+      loaderFactory: userLoader,
+    };
+  }
+
+  private static schemaFields: Map<string, Field>;
+
+  private static getSchemaFields(): Map<string, Field> {
+    if (UserBase.schemaFields != null) {
+      return UserBase.schemaFields;
     }
+    return (UserBase.schemaFields = getFields(schema));
+  }
 
-    static async loadFromEmailAddress<T extends UserBase>(
-      this: new (viewer: ExampleViewer, data: Data) => T,
-      viewer: ExampleViewer,
-      emailAddress: string,
-    ): Promise<T | null> {
-      return (await loadEntViaKey(viewer, emailAddress, {
-        ...UserBase.loaderOptions.apply(this),
-        loaderFactory: userEmailAddressLoader,
-      })) as T | null;
-    }
+  static getField(key: string): Field | undefined {
+    return UserBase.getSchemaFields().get(key);
+  }
 
-    static async loadFromEmailAddressX<T extends UserBase>(
-      this: new (viewer: ExampleViewer, data: Data) => T,
-      viewer: ExampleViewer,
-      emailAddress: string,
-    ): Promise<T> {
-      return (await loadEntXViaKey(viewer, emailAddress, {
-        ...UserBase.loaderOptions.apply(this),
-        loaderFactory: userEmailAddressLoader,
-      })) as T;
-    }
+  queryComments(): UserToCommentsQuery {
+    return UserToCommentsQuery.query(this.viewer, this.id);
+  }
 
-    static async loadIDFromEmailAddress<T extends UserBase>(
-      this: new (viewer: ExampleViewer, data: Data) => T,
-      emailAddress: string,
-      context?: Context,
-    ): Promise<ID | undefined> {
-      const row = await userEmailAddressLoader
-        .createLoader(context)
-        .load(emailAddress);
-      return row?.id;
-    }
+  queryCreatedEvents(): UserToCreatedEventsQuery {
+    return UserToCreatedEventsQuery.query(this.viewer, this.id);
+  }
 
-    static async loadRawDataFromEmailAddress<T extends UserBase>(
-      this: new (viewer: ExampleViewer, data: Data) => T,
-      emailAddress: string,
-      context?: Context,
-    ): Promise<UserDBData | null> {
-      const row = await userEmailAddressLoader
-        .createLoader(context)
-        .load(emailAddress);
-      if (!row) {
-        return null;
-      }
-      return row as UserDBData;
-    }
+  queryDeclinedEvents(): UserToDeclinedEventsQuery {
+    return UserToDeclinedEventsQuery.query(this.viewer, this.id);
+  }
 
-    static async loadFromPhoneNumber<T extends UserBase>(
-      this: new (viewer: ExampleViewer, data: Data) => T,
-      viewer: ExampleViewer,
-      phoneNumber: string,
-    ): Promise<T | null> {
-      return (await loadEntViaKey(viewer, phoneNumber, {
-        ...UserBase.loaderOptions.apply(this),
-        loaderFactory: userPhoneNumberLoader,
-      })) as T | null;
-    }
+  queryEventsAttending(): UserToEventsAttendingQuery {
+    return UserToEventsAttendingQuery.query(this.viewer, this.id);
+  }
 
-    static async loadFromPhoneNumberX<T extends UserBase>(
-      this: new (viewer: ExampleViewer, data: Data) => T,
-      viewer: ExampleViewer,
-      phoneNumber: string,
-    ): Promise<T> {
-      return (await loadEntXViaKey(viewer, phoneNumber, {
-        ...UserBase.loaderOptions.apply(this),
-        loaderFactory: userPhoneNumberLoader,
-      })) as T;
-    }
+  queryFriends(): UserToFriendsQuery {
+    return UserToFriendsQuery.query(this.viewer, this.id);
+  }
 
-    static async loadIDFromPhoneNumber<T extends UserBase>(
-      this: new (viewer: ExampleViewer, data: Data) => T,
-      phoneNumber: string,
-      context?: Context,
-    ): Promise<ID | undefined> {
-      const row = await userPhoneNumberLoader
-        .createLoader(context)
-        .load(phoneNumber);
-      return row?.id;
-    }
+  queryInvitedEvents(): UserToInvitedEventsQuery {
+    return UserToInvitedEventsQuery.query(this.viewer, this.id);
+  }
 
-    static async loadRawDataFromPhoneNumber<T extends UserBase>(
-      this: new (viewer: ExampleViewer, data: Data) => T,
-      phoneNumber: string,
-      context?: Context,
-    ): Promise<UserDBData | null> {
-      const row = await userPhoneNumberLoader
-        .createLoader(context)
-        .load(phoneNumber);
-      if (!row) {
-        return null;
-      }
-      return row as UserDBData;
-    }
+  queryLikers(): UserToLikersQuery {
+    return UserToLikersQuery.query(this.viewer, this.id);
+  }
 
-    static loaderOptions<T extends UserBase>(
-      this: new (viewer: ExampleViewer, data: Data) => T,
-    ): LoadEntOptions<T, ExampleViewer> {
-      return {
-        tableName: userLoaderInfo.tableName,
-        fields: userLoaderInfo.fields,
-        ent: this,
-        loaderFactory: userLoader,
-      };
-    }
+  queryLikes(): UserToLikesQuery {
+    return UserToLikesQuery.query(this.viewer, this.id);
+  }
 
-    private static schemaFields: Map<string, Field>;
+  queryMaybeEvents(): UserToMaybeEventsQuery {
+    return UserToMaybeEventsQuery.query(this.viewer, this.id);
+  }
 
-    private static getSchemaFields(): Map<string, Field> {
-      if (UserBase.schemaFields != null) {
-        return UserBase.schemaFields;
-      }
-      return (UserBase.schemaFields = getFields(schema));
-    }
+  loadSelfContactEdge(): Promise<AssocEdge | null> {
+    return loadUniqueEdge({
+      id1: this.id,
+      edgeType: EdgeType.UserToSelfContact,
+      context: this.viewer.context,
+    });
+  }
 
-    static getField(key: string): Field | undefined {
-      return UserBase.getSchemaFields().get(key);
-    }
+  loadSelfContact(): Promise<Contact | null> {
+    return loadUniqueNode(
+      this.viewer,
+      this.id,
+      EdgeType.UserToSelfContact,
+      Contact.loaderOptions(),
+    );
+  }
 
-    queryComments(): UserToCommentsQuery {
-      return UserToCommentsQuery.query(this.viewer, this.id);
-    }
+  queryUserToHostedEvents(): UserToHostedEventsQuery {
+    return UserToHostedEventsQuery.query(this.viewer, this.id);
+  }
 
-    queryCreatedEvents(): UserToCreatedEventsQuery {
-      return UserToCreatedEventsQuery.query(this.viewer, this.id);
-    }
+  queryAuthCodes(): UserToAuthCodesQuery {
+    return UserToAuthCodesQuery.query(this.viewer, this.id);
+  }
 
-    queryDeclinedEvents(): UserToDeclinedEventsQuery {
-      return UserToDeclinedEventsQuery.query(this.viewer, this.id);
-    }
-
-    queryEventsAttending(): UserToEventsAttendingQuery {
-      return UserToEventsAttendingQuery.query(this.viewer, this.id);
-    }
-
-    queryFriends(): UserToFriendsQuery {
-      return UserToFriendsQuery.query(this.viewer, this.id);
-    }
-
-    queryInvitedEvents(): UserToInvitedEventsQuery {
-      return UserToInvitedEventsQuery.query(this.viewer, this.id);
-    }
-
-    queryLikers(): UserToLikersQuery {
-      return UserToLikersQuery.query(this.viewer, this.id);
-    }
-
-    queryLikes(): UserToLikesQuery {
-      return UserToLikesQuery.query(this.viewer, this.id);
-    }
-
-    queryMaybeEvents(): UserToMaybeEventsQuery {
-      return UserToMaybeEventsQuery.query(this.viewer, this.id);
-    }
-
-    loadSelfContactEdge(): Promise<AssocEdge | null> {
-      return loadUniqueEdge({
-        id1: this.id,
-        edgeType: EdgeType.UserToSelfContact,
-        context: this.viewer.context,
-      });
-    }
-
-    loadSelfContact(): Promise<Contact | null> {
-      return loadUniqueNode(
-        this.viewer,
-        this.id,
-        EdgeType.UserToSelfContact,
-        Contact.loaderOptions(),
-      );
-    }
-
-    queryUserToHostedEvents(): UserToHostedEventsQuery {
-      return UserToHostedEventsQuery.query(this.viewer, this.id);
-    }
-
-    queryAuthCodes(): UserToAuthCodesQuery {
-      return UserToAuthCodesQuery.query(this.viewer, this.id);
-    }
-
-    queryContacts(): UserToContactsQuery {
-      return UserToContactsQuery.query(this.viewer, this.id);
-    }
-  },
-);
+  queryContacts(): UserToContactsQuery {
+    return UserToContactsQuery.query(this.viewer, this.id);
+  }
+}
