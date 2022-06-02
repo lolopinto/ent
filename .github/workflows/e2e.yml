@@ -134,3 +134,8 @@ jobs:
           timeout --preserve-status 7 node dist/graphql/index.js
         env:
           DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
+
+      - name: delete schema
+        run: |
+          cd ent-starter
+          tsent delete_schema Contact --disable_prompts

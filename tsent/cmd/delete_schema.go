@@ -13,6 +13,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type deleteSchemaArgs struct {
+	disablePrompts bool
+}
+
+var deleteSchemaInfo deleteSchemaArgs
+
 var deleteSchemaCmd = &cobra.Command{
 	Use:   "delete_schema",
 	Short: "deletes the given schema",
@@ -29,13 +35,15 @@ var deleteSchemaCmd = &cobra.Command{
 			return fmt.Errorf("could not find schema %s", schemaName)
 		}
 
-		p := &prompt.YesNoQuestion{
-			Question:  fmt.Sprintf("Are you sure you want to delete the '%s' schema. Note that this deletes all known files. If still referenced in the schema by another schema, there'll be an error later on. Y/N:", schemaName),
-			NoHandler: prompt.ExitHandler,
-		}
+		if !deleteSchemaInfo.disablePrompts {
+			p := &prompt.YesNoQuestion{
+				Question:  fmt.Sprintf("Are you sure you want to delete the '%s' schema. Note that this deletes all known files. If still referenced in the schema by another schema, there'll be an error later on. Y/N:", schemaName),
+				NoHandler: prompt.ExitHandler,
+			}
 
-		if err := prompt.HandlePrompts([]prompt.Prompt{p}); err != nil {
-			return err
+			if err := prompt.HandlePrompts([]prompt.Prompt{p}); err != nil {
+				return err
+			}
 		}
 
 		if err := deleteFiles(nodeData); err != nil {
@@ -45,17 +53,18 @@ var deleteSchemaCmd = &cobra.Command{
 			return err
 		}
 
-		s2, err := parseSchemaNoConfig()
-		if err != nil {
-			return err
-		}
+		delete(s.Nodes, schemaName+"Config")
+		// s2, err := parseSchemaNoConfig()
+		// if err != nil {
+		// 	return err
+		// }
 		opts := []codegen.ConstructOption{
 			codegen.WriteAll(),
 		}
 		if rootInfo.debug {
 			opts = append(opts, codegen.DebugMode())
 		}
-		processor, err := codegen.NewCodegenProcessor(s2, "src/schema", opts...)
+		processor, err := codegen.NewCodegenProcessor(s, "src/schema", opts...)
 		if err != nil {
 			return err
 		}

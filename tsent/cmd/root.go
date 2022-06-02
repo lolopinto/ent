@@ -100,6 +100,8 @@ func init() {
 
 	upgradeCmd.Flags().BoolVar(&upgradeInfo.sql, "sql", false, "--sql to generate sql for offline mode")
 
+	deleteSchemaCmd.Flags().BoolVar(&deleteSchemaInfo.disablePrompts, "disable_prompts", false, "--disable_prompts to disable prompt verifying delete schema")
+
 	alembicCmd.DisableFlagParsing = true
 }
 
