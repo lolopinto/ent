@@ -22,7 +22,7 @@
   {{ end }}
 {{ end -}}
 
-{{ range .GetImportsForBaseFile  -}} 
+{{ range .GetImportsForBaseFile $schema -}} 
   {{ reserveImportPath . false -}}
 {{ end}}
 
@@ -56,22 +56,22 @@ interface {{$dataType}} {
 }
 
 
+{{$hasMixins := .HasMixins -}}
+{{$mixinInfo := .GetMixinInfo $schema -}}
 
 export class {{$baseClass}} 
-{{ if .HasMixins -}}
-  extends 
-  {{ range $m := .GetMixins -}}
-    {{useImport $m}} (
-  {{ end -}}
-  class {}
-  {{/* trailing ) */ -}}
-  {{ range $m := .GetMixins -}}
-    )
-  {{ end -}}
+{{ if $hasMixins -}}
+  {{ range $mixinInfo.Imports -}}
+    {{ $ignore := useImport .Import -}}
+  {{end -}}
+  extends {{$mixinInfo.Extends }}
 {{ end -}}
 
-// TODO implements IFeedback etc 
-implements {{useImport "Ent"}}<{{$viewerType}}> {
+implements {{useImport "Ent"}}<{{$viewerType}}> 
+{{ if $mixinInfo.Implements }}
+  , {{$mixinInfo.Implements}}
+{{ end -}}
+{
 
   readonly nodeType = {{useImport "NodeType"}}.{{.Node}};
   {{range $field := .FieldInfo.Fields -}}
@@ -91,7 +91,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}> {
   {{end}}
 
   constructor(public viewer: {{$viewerType}}, protected data:Data) {
-    {{ if .HasMixins -}}
+    {{ if $hasMixins -}}
       // @ts-ignore pass to mixin
       super(viewer, data);
     {{ end -}}

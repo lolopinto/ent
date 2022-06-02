@@ -37,10 +37,7 @@ interface AddressDBData {
   country: string;
 }
 
-export class AddressBase
-  // TODO implements IFeedback etc
-  implements Ent<ExampleViewer>
-{
+export class AddressBase implements Ent<ExampleViewer> {
   readonly nodeType = NodeType.Address;
   readonly id: ID;
   readonly createdAt: Date;

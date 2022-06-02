@@ -28,6 +28,7 @@ import {
   ContactToCommentsQuery,
   ContactToLikersQuery,
   FeedbackMixin,
+  IFeedback,
   NodeType,
   User,
 } from "../internal";
@@ -47,8 +48,7 @@ interface ContactDBData {
 
 export class ContactBase
   extends FeedbackMixin(class {})
-  // TODO implements IFeedback etc
-  implements Ent<ExampleViewer>
+  implements Ent<ExampleViewer>, IFeedback
 {
   readonly nodeType = NodeType.Contact;
   readonly id: ID;

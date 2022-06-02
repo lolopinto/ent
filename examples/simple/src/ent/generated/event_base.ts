@@ -57,10 +57,7 @@ interface EventDBData {
   address_id: ID | null;
 }
 
-export class EventBase
-  // TODO implements IFeedback etc
-  implements Ent<ExampleViewer>
-{
+export class EventBase implements Ent<ExampleViewer> {
   readonly nodeType = NodeType.Event;
   readonly id: ID;
   readonly createdAt: Date;

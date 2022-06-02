@@ -45,6 +45,7 @@ import {
   Contact,
   EdgeType,
   FeedbackMixin,
+  IFeedback,
   NodeType,
   UserToAuthCodesQuery,
   UserToCommentsQuery,
@@ -107,8 +108,7 @@ interface UserDBData {
 
 export class UserBase
   extends FeedbackMixin(class {})
-  // TODO implements IFeedback etc
-  implements Ent<ExampleViewer>
+  implements Ent<ExampleViewer>, IFeedback
 {
   readonly nodeType = NodeType.User;
   readonly id: ID;

@@ -21,7 +21,13 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import { holidayLoader, holidayLoaderInfo } from "./loaders";
-import { DayOfWeek, DayOfWeekAlt, DayOfWeekMixin, NodeType } from "../internal";
+import {
+  DayOfWeek,
+  DayOfWeekAlt,
+  DayOfWeekMixin,
+  IDayOfWeek,
+  NodeType,
+} from "../internal";
 import schema from "../../schema/holiday_schema";
 import { ExampleViewer } from "../../viewer/viewer";
 
@@ -37,8 +43,7 @@ interface HolidayDBData {
 
 export class HolidayBase
   extends DayOfWeekMixin(class {})
-  // TODO implements IFeedback etc
-  implements Ent<ExampleViewer>
+  implements Ent<ExampleViewer>, IDayOfWeek
 {
   readonly nodeType = NodeType.Holiday;
   readonly id: ID;

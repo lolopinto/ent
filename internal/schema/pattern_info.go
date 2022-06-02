@@ -24,16 +24,6 @@ func (p *PatternInfo) GetNodeInstance() string {
 	return "object"
 }
 
-func getMixinName(name string) string {
-	// TODO handle Name with conflicts...
-	// DayOfWeek mixin vs day of week enum...
-	return fmt.Sprintf("%sMixin", strcase.ToCamel(name))
-}
-
-func getBuilderMixinName(name string) string {
-	return fmt.Sprintf("%sBuilder", strcase.ToCamel(name))
-}
-
 // the main value that currently exists for mixins with no fields seems to be
 // marker interface
 func (p *PatternInfo) HasMixin() bool {
@@ -100,7 +90,7 @@ func (p *PatternInfo) HasBuilder() bool {
 }
 
 func (p *PatternInfo) GetBuilderName() string {
-	return getBuilderMixinName(p.Name)
+	return fmt.Sprintf("%sBuilder", strcase.ToCamel(p.Name))
 }
 
 func (p *PatternInfo) GetBuilderInterfaceName() string {
@@ -108,7 +98,9 @@ func (p *PatternInfo) GetBuilderInterfaceName() string {
 }
 
 func (p *PatternInfo) GetMixinName() string {
-	return getMixinName(p.Name)
+	// TODO handle Name with conflicts...
+	// DayOfWeek mixin vs day of week enum...
+	return fmt.Sprintf("%sMixin", strcase.ToCamel(p.Name))
 }
 
 func (p *PatternInfo) GetPatternMethod() string {

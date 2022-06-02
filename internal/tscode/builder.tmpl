@@ -45,8 +45,9 @@ function randomNum(): string {
 {{ reserveImport $viewerInfo.Path $viewerInfo.Name -}}
 {{$viewerType := useImport $viewerInfo.Name -}}
 
-{{$mixins := .BuilderMixins -}}
-{{ if $mixins -}}
+{{$mixinInfo := .GetBuilderMixinInfo $schema -}}
+{{$hasBuilderMixin := $mixinInfo.Imports -}}
+{{ if $hasBuilderMixin -}}
   class Base {
     // @ts-ignore
     orchestrator: {{useImport "Orchestrator"}}<{{$node}}, any, {{$viewerType}}>;
@@ -69,15 +70,11 @@ export class {{$builder}}<
   TExistingEnt extends TMaybleNullableEnt<{{$node}}> = {{$node}} | null,
 > 
 
-{{ if $mixins }}
-  extends 
-  {{range $mixins -}}
-    {{useImport .}} (
+{{ if $hasBuilderMixin }}
+  {{ range $mixinInfo.Imports -}}
+    {{ $ignore := useImport .Import -}}
   {{end -}}
-  Base 
-  {{range $mixins -}}
-    )
-  {{end -}}
+  extends {{$mixinInfo.Extends }}
 {{ end -}}
 
 implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
@@ -94,7 +91,7 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
     action: {{useImport "Action"}}<{{$node}}, {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>, {{$viewerType}}, TInput, TExistingEnt>,
     public readonly existingEnt: TExistingEnt,
   ) {
-    {{ if $mixins }}
+    {{ if $hasBuilderMixin }}
       super();
     {{ end -}}
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-{{$node}}`;

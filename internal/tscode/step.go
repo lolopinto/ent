@@ -1127,7 +1127,7 @@ func writeBuilderFile(nodeData *schema.NodeData, processor *codegen.Processor) e
 	filePath := getFilePathForBuilderFile(cfg, nodeData)
 	imps := tsimport.NewImports(processor.Config, filePath)
 
-	imports, err := nodeData.GetImportsForBaseFile()
+	imports, err := nodeData.GetImportsForBaseFile(processor.Schema)
 	if err != nil {
 		return err
 	}

@@ -41,10 +41,7 @@ interface CommentDBData {
   article_type: string;
 }
 
-export class CommentBase
-  // TODO implements IFeedback etc
-  implements Ent<ExampleViewer>
-{
+export class CommentBase implements Ent<ExampleViewer> {
   readonly nodeType = NodeType.Comment;
   readonly id: ID;
   readonly createdAt: Date;

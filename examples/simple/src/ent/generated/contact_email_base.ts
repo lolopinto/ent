@@ -34,10 +34,7 @@ interface ContactEmailDBData {
   contact_id: ID;
 }
 
-export class ContactEmailBase
-  // TODO implements IFeedback etc
-  implements Ent<ExampleViewer>
-{
+export class ContactEmailBase implements Ent<ExampleViewer> {
   readonly nodeType = NodeType.ContactEmail;
   readonly id: ID;
   readonly createdAt: Date;
