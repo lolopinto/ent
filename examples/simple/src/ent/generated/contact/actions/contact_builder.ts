@@ -35,7 +35,7 @@ function randomNum(): string {
 }
 
 class Base {
-  // @ts-ignore
+  // @ts-ignore not assigning. need for Mixin
   orchestrator: Orchestrator<Contact, any, ExampleViewer>;
 
   constructor() {}

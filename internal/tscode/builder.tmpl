@@ -49,7 +49,7 @@ function randomNum(): string {
 {{$hasBuilderMixin := $mixinInfo.Imports -}}
 {{ if $hasBuilderMixin -}}
   class Base {
-    // @ts-ignore
+    // @ts-ignore not assigning. need for Mixin
     orchestrator: {{useImport "Orchestrator"}}<{{$node}}, any, {{$viewerType}}>;
 
     constructor() {}
