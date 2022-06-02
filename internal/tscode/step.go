@@ -10,6 +10,7 @@ import (
 	"sync"
 	"text/template"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
@@ -58,7 +59,6 @@ type writeOptions struct {
 	entRemoved         bool
 	edgeAdded          bool
 	edgeRemoved        bool
-	deletedMixinFiles  map[string]bool
 }
 
 func (s *Step) processCustomInterface(processor *codegen.Processor, ci *customtype.CustomInterface, serr *syncerr.Error) fns.FunctionList {
@@ -81,7 +81,6 @@ func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataIn
 		edgeFiles:          map[string]bool{},
 		deletedActionFiles: map[string]bool{},
 		deletedEdgeFiles:   map[string]bool{},
-		deletedMixinFiles:  map[string]bool{},
 	}
 
 	if processor.Config.WriteAllFiles() {
@@ -178,10 +177,9 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 	var ret fns.FunctionList
 
 	opts := &writeOptions{
-		actionBaseFiles:   map[string]bool{},
-		actionFiles:       map[string]bool{},
-		edgeFiles:         map[string]bool{},
-		deletedMixinFiles: map[string]bool{},
+		actionBaseFiles: map[string]bool{},
+		actionFiles:     map[string]bool{},
+		edgeFiles:       map[string]bool{},
 	}
 
 	if err := s.accumulateConsts(pattern); err != nil {
@@ -216,9 +214,6 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 					opts.writeBuilder = true
 				}
 
-			case change.RemovePattern:
-				opts.deletedMixinFiles[c.Name] = true
-
 			case change.AddEdge:
 				opts.edgeBaseFile = true
 				opts.edgeFiles[c.Name] = true
@@ -246,17 +241,6 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 		})
 	}
 
-	if len(opts.deletedMixinFiles) > 0 {
-		for k := range opts.deletedMixinFiles {
-			ret = append(ret,
-				file.GetDeleteFileFunction(processor.Config, getFilePathForMixin(processor.Config, k)),
-			)
-			ret = append(ret,
-				file.GetDeleteFileFunction(processor.Config, getFilePathForMixinBuilderFile(processor.Config, k)),
-			)
-		}
-	}
-
 	if len(pattern.AssocEdges) == 0 {
 		return ret, opts
 	}
@@ -282,6 +266,31 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 	}
 
 	return ret, opts
+}
+
+func (s *Step) processDeletedPatterns(processor *codegen.Processor) fns.FunctionList {
+	var ret fns.FunctionList
+
+	spew.Dump(processor.ChangeMap)
+
+	// TODO not ideal we're doing it this way. we should process this once and flag deleted ish separately
+	schema := processor.Schema
+	for k := range processor.ChangeMap {
+		if schema.NodeNameExists(k) || schema.Patterns[k] != nil {
+			continue
+		}
+
+		if processor.ChangeMap.ChangesExist(k, change.RemovePattern) {
+			ret = append(ret,
+				file.GetDeleteFileFunction(processor.Config, getFilePathForMixin(processor.Config, k)),
+			)
+			ret = append(ret,
+				file.GetDeleteFileFunction(processor.Config, getFilePathForMixinBuilderFile(processor.Config, k)),
+			)
+		}
+	}
+
+	return ret
 }
 
 func (s *Step) processActions(processor *codegen.Processor, nodeData *schema.NodeData, opts *writeOptions) fns.FunctionList {
@@ -416,6 +425,7 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 			edgeAddedOrRemoved = true
 		}
 	}
+	funcs = append(funcs, s.processDeletedPatterns(processor)...)
 	for _, info := range processor.Schema.Nodes {
 		fns, opts := s.processNode(processor, info, &serr)
 		funcs = append(funcs, fns...)
