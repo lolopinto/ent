@@ -98,8 +98,6 @@ func (p *PatternInfo) GetBuilderInterfaceName() string {
 }
 
 func (p *PatternInfo) GetMixinName() string {
-	// TODO handle Name with conflicts...
-	// DayOfWeek mixin vs day of week enum...
 	return fmt.Sprintf("%sMixin", strcase.ToCamel(p.Name))
 }
 
@@ -132,3 +130,4 @@ func (p *PatternInfo) GetImportsForMixin() []*tsimport.ImportPath {
 // TODO prevent private fields in patterns??
 // or handle private fields in patterns and mixins...
 // or fields with fieldPrivacy
+// https://github.com/lolopinto/ent/issues/911
