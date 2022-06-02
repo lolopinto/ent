@@ -71,6 +71,7 @@ let nodeFieldsWithTZ: FieldMap = {
 export const Node: Pattern = {
   name: "node",
   fields: nodeFields,
+  disableMixin: true,
 };
 
 export interface SchemaConfig extends Schema {}
@@ -129,6 +130,7 @@ export class EntSchemaWithTZ implements Schema {
       // default schema added
       name: "nodeWithTZ",
       fields: nodeFieldsWithTZ,
+      disableMixin: true,
     },
   ];
 
@@ -185,6 +187,7 @@ export abstract class BaseEntSchemaWithTZ {
       // default schema added
       name: "nodeWithTZ",
       fields: nodeFieldsWithTZ,
+      disableMixin: true,
     },
   ];
 }

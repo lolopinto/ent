@@ -21,6 +21,7 @@ type actionTemplate struct {
 	CodePath      *codegen.Config
 	Package       *codegen.ImportPackage
 	PrivacyConfig *codegen.PrivacyConfig
+	Schema        *schema.Schema
 }
 
 func writeBaseActionFile(nodeData *schema.NodeData, processor *codegen.Processor, action action.Action) error {
@@ -37,6 +38,7 @@ func writeBaseActionFile(nodeData *schema.NodeData, processor *codegen.Processor
 			CodePath:      processor.Config,
 			Package:       cfg.GetImportPackage(),
 			PrivacyConfig: cfg.GetDefaultActionPolicy(),
+			Schema:        processor.Schema,
 		},
 		AbsPathToTemplate: util.GetAbsolutePath("action_base.tmpl"),
 		OtherTemplateFiles: []string{

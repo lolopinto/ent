@@ -165,6 +165,7 @@ export type Edge = AssocEdge;
 export interface Pattern {
   name: string;
   fields: FieldMap | Field[];
+  disableMixin?: boolean;
   edges?: Edge[];
 
   // can only have one thing transforming a select

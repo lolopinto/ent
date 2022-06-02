@@ -3,7 +3,7 @@
 {{ reserveImport "src/ent/" "NodeType"}}
 {{ reserveImport .PrivacyConfig.Path .PrivacyConfig.PolicyName }}
 
-{{ range .NodeData.GetImportPathsForDependencies -}}
+{{ range .NodeData.GetImportPathsForDependencies .Schema -}}
   {{ reserveImportPath . true -}}
 {{ end -}}
 

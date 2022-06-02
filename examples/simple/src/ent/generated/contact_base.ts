@@ -27,6 +27,8 @@ import {
   ContactPhoneNumber,
   ContactToCommentsQuery,
   ContactToLikersQuery,
+  FeedbackMixin,
+  IFeedback,
   NodeType,
   User,
 } from "../internal";
@@ -44,7 +46,10 @@ interface ContactDBData {
   user_id: ID;
 }
 
-export class ContactBase implements Ent<ExampleViewer> {
+export class ContactBase
+  extends FeedbackMixin(class {})
+  implements Ent<ExampleViewer>, IFeedback
+{
   readonly nodeType = NodeType.Contact;
   readonly id: ID;
   readonly createdAt: Date;
@@ -56,6 +61,8 @@ export class ContactBase implements Ent<ExampleViewer> {
   readonly userID: ID;
 
   constructor(public viewer: ExampleViewer, protected data: Data) {
+    // @ts-ignore pass to mixin
+    super(viewer, data);
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);

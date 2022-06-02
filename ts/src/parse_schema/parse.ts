@@ -162,6 +162,7 @@ function processPattern(
       name: pattern.name,
       assocEdges: edges,
       fields: fields,
+      disableMixin: pattern.disableMixin,
     };
   } else {
     // TODO ideally we want to make sure that different patterns don't have the same name
@@ -218,6 +219,7 @@ type ProcessedSchema = Omit<
     fields: ProcessedField[];
 
     schemaPath?: string;
+    patternNames?: string[];
   };
 
 type ProcessedAssocEdgeGroup = Omit<AssocEdgeGroup, "edgeAction"> & {
@@ -270,6 +272,7 @@ interface ProcessedPattern {
   name: string;
   assocEdges: ProcessedAssocEdge[];
   fields: ProcessedField[];
+  disableMixin?: boolean;
 }
 
 type ProcessedType = Omit<
@@ -343,9 +346,11 @@ export function parseSchema(potentialSchemas: PotentialSchemas): Result {
     };
     // let's put patterns first just so we have id, created_at, updated_at first
     // ¯\_(ツ)_/¯
+    let patternNames: string[] = [];
     if (schema.patterns) {
       for (const pattern of schema.patterns) {
         const ret = processPattern(patterns, pattern, processedSchema);
+        patternNames.push(pattern.name);
         if (ret.transformsSelect) {
           if (processedSchema.transformsSelect) {
             throw new Error(
@@ -367,6 +372,7 @@ export function parseSchema(potentialSchemas: PotentialSchemas): Result {
     }
     const fields = processFields(schema.fields);
     processedSchema.fields.push(...fields);
+    processedSchema.patternNames = patternNames;
     if (schema.edges) {
       const edges = processEdges(schema.edges);
       processedSchema.assocEdges.push(...edges);

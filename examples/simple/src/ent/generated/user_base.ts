@@ -44,6 +44,8 @@ import { UserSuperNestedObject } from "./user_super_nested_object";
 import {
   Contact,
   EdgeType,
+  FeedbackMixin,
+  IFeedback,
   NodeType,
   UserToAuthCodesQuery,
   UserToCommentsQuery,
@@ -104,7 +106,10 @@ interface UserDBData {
   nested_list: UserNestedObjectList[] | null;
 }
 
-export class UserBase implements Ent<ExampleViewer> {
+export class UserBase
+  extends FeedbackMixin(class {})
+  implements Ent<ExampleViewer>, IFeedback
+{
   readonly nodeType = NodeType.User;
   readonly id: ID;
   readonly createdAt: Date;
@@ -131,6 +136,8 @@ export class UserBase implements Ent<ExampleViewer> {
   readonly nestedList: UserNestedObjectList[] | null;
 
   constructor(public viewer: ExampleViewer, protected data: Data) {
+    // @ts-ignore pass to mixin
+    super(viewer, data);
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);

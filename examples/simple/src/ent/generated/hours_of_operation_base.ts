@@ -21,7 +21,13 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import { hoursOfOperationLoader, hoursOfOperationLoaderInfo } from "./loaders";
-import { DayOfWeek, DayOfWeekAlt, NodeType } from "../internal";
+import {
+  DayOfWeek,
+  DayOfWeekAlt,
+  DayOfWeekMixin,
+  IDayOfWeek,
+  NodeType,
+} from "../internal";
 import schema from "../../schema/hours_of_operation_schema";
 import { ExampleViewer } from "../../viewer/viewer";
 
@@ -35,22 +41,23 @@ interface HoursOfOperationDBData {
   close: string;
 }
 
-export class HoursOfOperationBase implements Ent<ExampleViewer> {
+export class HoursOfOperationBase
+  extends DayOfWeekMixin(class {})
+  implements Ent<ExampleViewer>, IDayOfWeek
+{
   readonly nodeType = NodeType.HoursOfOperation;
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
-  readonly dayOfWeek: DayOfWeek;
-  readonly dayOfWeekAlt: DayOfWeekAlt | null;
   readonly open: string;
   readonly close: string;
 
   constructor(public viewer: ExampleViewer, protected data: Data) {
+    // @ts-ignore pass to mixin
+    super(viewer, data);
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
-    this.dayOfWeek = data.day_of_week;
-    this.dayOfWeekAlt = data.day_of_week_alt;
     this.open = data.open;
     this.close = data.close;
   }

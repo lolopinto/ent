@@ -370,6 +370,13 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 		nodeData.HideFromGraphQL = node.HideFromGraphQL
 		nodeData.TransformsSelect = node.TransformsSelect
 		nodeData.TransformsDelete = node.TransformsDelete
+		for _, p := range node.Patterns {
+			pattern := schema.Patterns[p]
+			if pattern == nil || pattern.DisableMixin {
+				continue
+			}
+			nodeData.PatternsWithMixins = append(nodeData.PatternsWithMixins, p)
+		}
 
 		var err error
 		nodeData.FieldInfo, err = field.NewFieldInfoFromInputs(
@@ -460,8 +467,9 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 
 	for name, pattern := range schema.Patterns {
 		p := &PatternInfo{
-			Name:       pattern.Name,
-			AssocEdges: make(map[string]*edge.AssociationEdge),
+			Name:         pattern.Name,
+			AssocEdges:   make(map[string]*edge.AssociationEdge),
+			DisableMixin: pattern.DisableMixin,
 		}
 		for _, inpEdge := range pattern.AssocEdges {
 			assocEdge, err := edge.AssocEdgeFromInput(cfg, "object", inpEdge)
@@ -516,6 +524,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 				}
 			}
 		}
+		p.FieldInfo = fieldInfo
 
 		if err := s.addPattern(name, p); err != nil {
 			errs = append(errs, err)
@@ -1570,4 +1579,17 @@ func (s *Schema) runDepgraph(info *NodeDataInfo) error {
 		}
 		return nil
 	})
+}
+
+func (s *Schema) PatternFieldWithMixin(f *field.Field) bool {
+	name := f.GetPatternName()
+	if name == "" {
+		return false
+	}
+
+	p := s.Patterns[name]
+	if p == nil {
+		return false
+	}
+	return p.HasMixin()
 }

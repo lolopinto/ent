@@ -67,7 +67,8 @@ type NodeData struct {
 	// fine to just reuse input constraints for now
 	Constraints []*input.Constraint
 	// same as above. fine to just reuse
-	Indices []*input.Index
+	Indices            []*input.Index
+	PatternsWithMixins []string
 
 	schemaPath string
 
@@ -213,7 +214,7 @@ func (nodeData *NodeData) GetTSEnums() []*enum.Enum {
 
 // TODO kill this
 // GetImportsForBaseFile returns list of imports needed in the base generated file
-func (nodeData *NodeData) GetImportsForBaseFile() ([]*tsimport.ImportPath, error) {
+func (nodeData *NodeData) GetImportsForBaseFile(s *Schema) ([]*tsimport.ImportPath, error) {
 	ret := []*tsimport.ImportPath{
 		{
 			Import:        "schema",
@@ -240,6 +241,21 @@ func (nodeData *NodeData) GetImportsForBaseFile() ([]*tsimport.ImportPath, error
 	for _, edge := range nodeData.EdgeInfo.GetConnectionEdges() {
 		ret = append(ret, &tsimport.ImportPath{
 			Import:     edge.TsEdgeQueryName(),
+			ImportPath: codepath.GetInternalImportPath(),
+		})
+	}
+
+	for _, p := range nodeData.PatternsWithMixins {
+		pattern := s.Patterns[p]
+		if pattern == nil {
+			return nil, fmt.Errorf("couldn't find pattern info with name %s", p)
+		}
+		ret = append(ret, &tsimport.ImportPath{
+			Import:     pattern.GetMixinName(),
+			ImportPath: codepath.GetInternalImportPath(),
+		})
+		ret = append(ret, &tsimport.ImportPath{
+			Import:     pattern.GetMixinInterfaceName(),
 			ImportPath: codepath.GetInternalImportPath(),
 		})
 	}
@@ -294,7 +310,7 @@ func (nodeData *NodeData) ForeignImport(imp string) bool {
 
 // TODO kill this
 // GetImportPathsForDependencies returns imports needed in dependencies e.g. actions and builders
-func (nodeData *NodeData) GetImportPathsForDependencies() []*tsimport.ImportPath {
+func (nodeData *NodeData) GetImportPathsForDependencies(s *Schema) []*tsimport.ImportPath {
 	var ret []*tsimport.ImportPath
 
 	for _, enum := range nodeData.GetTSEnums() {
@@ -324,7 +340,44 @@ func (nodeData *NodeData) GetImportPathsForDependencies() []*tsimport.ImportPath
 		}
 	}
 
+	for _, edge := range nodeData.EdgeInfo.Associations {
+		if edge.PatternName == "" {
+			continue
+		}
+		p := s.Patterns[edge.PatternName]
+		if p == nil || !p.HasBuilder() {
+			continue
+		}
+		ret = append(ret, &tsimport.ImportPath{
+			Import:     p.GetBuilderName(),
+			ImportPath: getImportPathForMixinBuilderFile(p),
+		})
+	}
+
 	return ret
+}
+
+// edges that are in the builder directly
+func (nodeData *NodeData) BuilderEdges(s *Schema) []*edge.AssociationEdge {
+	var ret []*edge.AssociationEdge
+
+	for _, edge := range nodeData.EdgeInfo.Associations {
+		if edge.PatternName == "" {
+			ret = append(ret, edge)
+			continue
+		}
+		p := s.Patterns[edge.PatternName]
+		if p == nil || !p.HasBuilder() {
+			ret = append(ret, edge)
+		}
+	}
+
+	return ret
+}
+
+func getImportPathForMixinBuilderFile(pattern *PatternInfo) string {
+	name := strcase.ToSnake(pattern.Name)
+	return fmt.Sprintf("src/ent/generated/mixins/%s/actions/%s_builder", name, name)
 }
 
 // TODO kill this
@@ -494,4 +547,77 @@ func (nodeData *NodeData) GetFieldQueryName(field *field.Field) (string, error) 
 
 	fieldName := strcase.ToCamel(strings.TrimSuffix(field.FieldName, "ID"))
 	return fmt.Sprintf("%sTo%sQuery", fieldName, strcase.ToCamel(inflection.Plural(nodeData.Node))), nil
+}
+
+func (nodeData *NodeData) HasMixins() bool {
+	return len(nodeData.PatternsWithMixins) > 0
+}
+
+type mixinInfo struct {
+	Imports    []*tsimport.ImportPath
+	Extends    string
+	Implements string
+}
+
+func (nodeData *NodeData) GetMixinInfo(s *Schema) (*mixinInfo, error) {
+	var imps []*tsimport.ImportPath
+
+	var extends strings.Builder
+	var impls []string
+	for _, p := range nodeData.PatternsWithMixins {
+		pattern := s.Patterns[p]
+		if pattern == nil {
+			return nil, fmt.Errorf("couldn't find pattern info with name %s", p)
+		}
+		imps = append(imps, &tsimport.ImportPath{
+			ImportPath: codepath.GetInternalImportPath(),
+			Import:     pattern.GetMixinInterfaceName(),
+		})
+		imps = append(imps, &tsimport.ImportPath{
+			ImportPath: codepath.GetInternalImportPath(),
+			Import:     pattern.GetMixinName(),
+		})
+		extends.WriteString(pattern.GetMixinName())
+		extends.WriteString("(")
+		impls = append(impls, pattern.GetMixinInterfaceName())
+	}
+	extends.WriteString("class {}")
+	extends.WriteString(strings.Repeat(")", len(nodeData.PatternsWithMixins)))
+
+	return &mixinInfo{
+		Imports:    imps,
+		Extends:    extends.String(),
+		Implements: strings.Join(impls, ", "),
+	}, nil
+}
+
+func (nodeData *NodeData) GetBuilderMixinInfo(s *Schema) (*mixinInfo, error) {
+	var imps []*tsimport.ImportPath
+
+	var extends strings.Builder
+	ct := 0
+	for _, p := range nodeData.PatternsWithMixins {
+		pattern := s.Patterns[p]
+		if pattern == nil {
+			return nil, fmt.Errorf("couldn't find pattern info with name %s", p)
+		}
+		if !pattern.HasBuilder() {
+			continue
+		}
+		ct++
+		imps = append(imps, &tsimport.ImportPath{
+			ImportPath: getImportPathForMixinBuilderFile(pattern),
+			Import:     pattern.GetBuilderName(),
+		})
+		extends.WriteString(pattern.GetBuilderName())
+		extends.WriteString("(")
+	}
+	// generated by code
+	extends.WriteString("Base")
+	extends.WriteString(strings.Repeat(")", ct))
+
+	return &mixinInfo{
+		Imports: imps,
+		Extends: extends.String(),
+	}, nil
 }

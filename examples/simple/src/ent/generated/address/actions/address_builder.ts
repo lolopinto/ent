@@ -116,9 +116,7 @@ export class AddressBuilder<
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
 
-  addHostedEvent(
-    ...nodes: (ID | Event | Builder<Event, any>)[]
-  ): AddressBuilder<TInput, TExistingEnt> {
+  addHostedEvent(...nodes: (ID | Event | Builder<Event, any>)[]): this {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addHostedEventID(node);
@@ -134,7 +132,7 @@ export class AddressBuilder<
   addHostedEventID(
     id: ID | Builder<Event, any>,
     options?: AssocEdgeInputOptions,
-  ): AddressBuilder<TInput, TExistingEnt> {
+  ): this {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.AddressToHostedEvents,
@@ -144,9 +142,7 @@ export class AddressBuilder<
     return this;
   }
 
-  removeHostedEvent(
-    ...nodes: (ID | Event)[]
-  ): AddressBuilder<TInput, TExistingEnt> {
+  removeHostedEvent(...nodes: (ID | Event)[]): this {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
