@@ -48,7 +48,8 @@ export class HoursOfOperationBase
   readonly close: string;
 
   constructor(public viewer: ExampleViewer, protected data: Data) {
-    super();
+    // @ts-ignore pass to mixin
+    super(viewer, data);
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);

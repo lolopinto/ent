@@ -92,7 +92,8 @@ implements {{useImport "Ent"}}<{{$viewerType}}> {
 
   constructor(public viewer: {{$viewerType}}, protected data:Data) {
     {{ if .HasMixins -}}
-      super();
+      // @ts-ignore pass to mixin
+      super(viewer, data);
     {{ end -}}
     {{range $field := .FieldInfo.Fields -}}
       {{ if not ($schema.PatternFieldWithMixin $field) -}}
