@@ -21,6 +21,7 @@ export interface {{$p.GetMixinInterfaceName}} {
     {{end -}}
     {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
   {{end -}}
+  {{/* no easy way to guarantee this from the mixin so we'll just do it from the ent side */ -}}
   {{range $edge := $p.AssocEdges -}}
     {{$edgeName := .CamelCaseEdgeName -}}
     {{$queryName := useImport $edge.TsEdgeQueryName -}}
@@ -45,7 +46,7 @@ export interface {{$p.GetMixinInterfaceName}} {
 
 
 export function {{$p.GetMixinName}}<T extends Constructor>(BaseClass: T) {
-  return class {{$p.GetMixinName}} extends BaseClass implements {{$p.GetMixinInterfaceName}} {
+  return class {{$p.GetMixinName}} extends BaseClass {
 
     {{ range $field := $p.FieldInfo.Fields -}}
       readonly {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
@@ -73,14 +74,5 @@ export function {{$p.GetMixinName}}<T extends Constructor>(BaseClass: T) {
     {{$p.GetPatternMethod}}() {
       return true;
     }
-
-    {{range $edge := $p.AssocEdges -}}
-      {{$edgeName := .CamelCaseEdgeName -}}
-      {{$queryName := useImport $edge.TsEdgeQueryName -}}
-      {{/* can't return an instance here since it's most likely abstract */}}
-      query{{$edgeName}}(): {{$queryName}} {
-        throw new Error(`query{{$edgeName}} not implemented`);
-      }
-      {{end -}}
   };
 }
