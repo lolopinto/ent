@@ -10,7 +10,6 @@ import (
 	"sync"
 	"text/template"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
@@ -270,8 +269,6 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 
 func (s *Step) processDeletedPatterns(processor *codegen.Processor) fns.FunctionList {
 	var ret fns.FunctionList
-
-	spew.Dump(processor.ChangeMap)
 
 	// TODO not ideal we're doing it this way. we should process this once and flag deleted ish separately
 	schema := processor.Schema
