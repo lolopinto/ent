@@ -58,6 +58,7 @@ type writeOptions struct {
 	entRemoved         bool
 	edgeAdded          bool
 	edgeRemoved        bool
+	deletedMixinFiles  map[string]bool
 }
 
 func (s *Step) processCustomInterface(processor *codegen.Processor, ci *customtype.CustomInterface, serr *syncerr.Error) fns.FunctionList {
@@ -80,6 +81,7 @@ func (s *Step) processNode(processor *codegen.Processor, info *schema.NodeDataIn
 		edgeFiles:          map[string]bool{},
 		deletedActionFiles: map[string]bool{},
 		deletedEdgeFiles:   map[string]bool{},
+		deletedMixinFiles:  map[string]bool{},
 	}
 
 	if processor.Config.WriteAllFiles() {
@@ -176,9 +178,10 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 	var ret fns.FunctionList
 
 	opts := &writeOptions{
-		actionBaseFiles: map[string]bool{},
-		actionFiles:     map[string]bool{},
-		edgeFiles:       map[string]bool{},
+		actionBaseFiles:   map[string]bool{},
+		actionFiles:       map[string]bool{},
+		edgeFiles:         map[string]bool{},
+		deletedMixinFiles: map[string]bool{},
 	}
 
 	if err := s.accumulateConsts(pattern); err != nil {
@@ -213,6 +216,9 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 					opts.writeBuilder = true
 				}
 
+			case change.RemovePattern:
+				opts.deletedMixinFiles[c.Name] = true
+
 			case change.AddEdge:
 				opts.edgeBaseFile = true
 				opts.edgeFiles[c.Name] = true
@@ -238,6 +244,17 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 		ret = append(ret, func() error {
 			return writeMixinBuilderFile(processor, pattern)
 		})
+	}
+
+	if len(opts.deletedMixinFiles) > 0 {
+		for k := range opts.deletedMixinFiles {
+			ret = append(ret,
+				file.GetDeleteFileFunction(processor.Config, getFilePathForMixin(processor.Config, k)),
+			)
+			ret = append(ret,
+				file.GetDeleteFileFunction(processor.Config, getFilePathForMixinBuilderFile(processor.Config, k)),
+			)
+		}
 	}
 
 	if len(pattern.AssocEdges) == 0 {
@@ -545,8 +562,8 @@ func getFilePathForBaseModelFile(cfg *codegen.Config, nodeData *schema.NodeData)
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/%s_base.ts", nodeData.PackageName))
 }
 
-func getFilePathForMixin(cfg *codegen.Config, pattern *schema.PatternInfo) string {
-	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/mixins/%s.ts", strcase.ToSnake(pattern.Name)))
+func getFilePathForMixin(cfg *codegen.Config, name string) string {
+	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/mixins/%s.ts", strcase.ToSnake(name)))
 }
 
 func getImportPathForMixin(pattern *schema.PatternInfo) string {
@@ -663,8 +680,8 @@ func getFilePathForBuilderFile(cfg *codegen.Config, nodeData *schema.NodeData) s
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/%s/actions/%s_builder.ts", nodeData.PackageName, nodeData.PackageName))
 }
 
-func getFilePathForMixinBuilderFile(cfg *codegen.Config, pattern *schema.PatternInfo) string {
-	name := strcase.ToSnake(pattern.Name)
+func getFilePathForMixinBuilderFile(cfg *codegen.Config, name string) string {
+	name = strcase.ToSnake(name)
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/ent/generated/mixins/%s/actions/%s_builder.ts", name, name))
 }
 
@@ -719,7 +736,7 @@ type patternTemplateCodePath struct {
 
 func writeMixinFile(processor *codegen.Processor, pattern *schema.PatternInfo) error {
 	cfg := processor.Config
-	filePath := getFilePathForMixin(cfg, pattern)
+	filePath := getFilePathForMixin(cfg, pattern.Name)
 	imps := tsimport.NewImports(processor.Config, filePath)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
@@ -1153,7 +1170,7 @@ func writeBuilderFile(nodeData *schema.NodeData, processor *codegen.Processor) e
 
 func writeMixinBuilderFile(processor *codegen.Processor, pattern *schema.PatternInfo) error {
 	cfg := processor.Config
-	filePath := getFilePathForMixinBuilderFile(cfg, pattern)
+	filePath := getFilePathForMixinBuilderFile(cfg, pattern.Name)
 	imps := tsimport.NewImports(processor.Config, filePath)
 
 	imports, err := pattern.GetImportsForQueryBaseFile(processor.Schema)
