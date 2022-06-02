@@ -9,6 +9,7 @@ import {
   Context,
   CustomQuery,
   Data,
+  Ent,
   ID,
   LoadEntOptions,
   PrivacyPolicy,
@@ -27,7 +28,6 @@ import {
   loadEnts,
   loadUniqueEdge,
   loadUniqueNode,
-  Ent,
 } from "@snowtop/ent";
 import { Field, getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
 import {
@@ -58,7 +58,6 @@ import {
   UserToLikersQuery,
   UserToLikesQuery,
   UserToMaybeEventsQuery,
-  IFeedback,
 } from "../internal";
 import schema from "../../schema/user_schema";
 import { ExampleViewer } from "../../viewer/viewer";
@@ -108,7 +107,8 @@ interface UserDBData {
 
 export class UserBase
   extends FeedbackMixin(class {})
-  implements Ent<ExampleViewer>, IFeedback
+  // TODO implements IFeedback etc
+  implements Ent<ExampleViewer>
 {
   readonly nodeType = NodeType.User;
   readonly id: ID;

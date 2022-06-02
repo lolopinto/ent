@@ -41,29 +41,46 @@ function randomNum(): string {
 
 {{$node := useImport .Node}}
 
-type MaybeNull<T extends Ent> = T | null;
-type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
-
 {{$viewerInfo := $cfg.GetTemplatizedViewer -}}
 {{ reserveImport $viewerInfo.Path $viewerInfo.Name -}}
 {{$viewerType := useImport $viewerInfo.Name -}}
 
 {{$mixins := .BuilderMixins -}}
 {{ if $mixins -}}
-  const {{$builder}}Base =
-  {{ range $mixins }}
-    {{useImport .}} (
-  {{ end -}}
-  class {{$builder}}<
-    TInput extends {{$input}} = {{$input}},
-    TExistingEnt extends TMaybleNullableEnt<{{$node}}> = {{$node}} | null,
-  > implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
-{{ else -}}
+  class Base {
+    // @ts-ignore
+    orchestrator: {{useImport "Orchestrator"}}<{{$node}}, any, {{$viewerType}}>;
+
+    constructor() {}
+
+    isBuilder<T extends {{useImport "Ent"}}>(
+      node: {{useImport "ID"}} | T | {{useImport "Builder"}}<T, any>,
+    ): node is {{useImport "Builder"}}<T, any> {
+      return (node as {{useImport "Builder"}}<T, any>).placeholderID !== undefined;
+    }
+  }
+{{ end}}
+
+type MaybeNull<T extends Ent> = T | null;
+type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
+
 export class {{$builder}}<
   TInput extends {{$input}} = {{$input}},
   TExistingEnt extends TMaybleNullableEnt<{{$node}}> = {{$node}} | null,
-> implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
-{{end -}}
+> 
+
+{{ if $mixins }}
+  extends 
+  {{range $mixins -}}
+    {{useImport .}} (
+  {{end -}}
+  Base 
+  {{range $mixins -}}
+    )
+  {{end -}}
+{{ end -}}
+
+implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
   orchestrator: {{useImport "Orchestrator"}}<{{$node}}, TInput, {{$viewerType}}, TExistingEnt>;
   readonly placeholderID: {{useImport "ID"}};
   readonly ent = {{$node}};
@@ -77,6 +94,9 @@ export class {{$builder}}<
     action: {{useImport "Action"}}<{{$node}}, {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>, {{$viewerType}}, TInput, TExistingEnt>,
     public readonly existingEnt: TExistingEnt,
   ) {
+    {{ if $mixins }}
+      super();
+    {{ end -}}
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-{{$node}}`;
     this.input = action.getInput();
     const updateInput = (d: {{$input}}) => this.updateInput.apply(this, [d]);
@@ -236,13 +256,5 @@ export class {{$builder}}<
 
   {{end}}
 }
-
-{{ if $mixins -}}
-  {{/* close each one opened earlier */}}
-  {{ range $mixins }}
-    )
-  {{ end -}}
-  export class {{$builder}} extends {{$builder}}Base {}
-{{ end -}}
 
 {{end -}}

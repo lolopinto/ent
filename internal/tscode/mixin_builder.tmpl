@@ -44,17 +44,23 @@ interface {{$p.GetBuilderInterfaceName}}<T extends {{$p.GetMixinWithInterfaceNam
 {{$builderName := printf "%sIsh" $p.GetBuilderName }}
 
 type Constructor<T = {}> = new (...args: any[]) => T;
-type {{$builderName}} = Constructor<{
-  orchestrator: {{useImport "Orchestrator"}}<{{$p.GetMixinWithInterfaceName}}, {{useImport "Data"}}, {{$viewerType}}>;
+interface BuilderConstructor<T extends IEntWithFeedback, C = {}> {
+  orchestrator: {{useImport "Orchestrator"}}<T, any, {{$viewerType}}>;
   isBuilder<T extends {{useImport "Ent"}}>(
     node: {{useImport "ID"}} | T | {{useImport "Builder"}}<T, any>,
   ): node is {{useImport "Builder"}}<T, any>;
-}>;
+};
+
+{{$ishName := printf "%sIsh" $p.GetBuilderName -}} 
+
+type {{$ishName}}<T extends IEntWithFeedback> = Constructor<
+  BuilderConstructor<T>
+>;
 
 
 export function {{$p.GetBuilderName}}<
-  TBase extends {{$builderName}},
   TEnt extends {{$p.GetMixinWithInterfaceName}},
+  TBase extends {{$ishName}}<TEnt>,
 >(BaseClass: TBase) {
   return class {{$p.GetBuilderName}}
     extends BaseClass

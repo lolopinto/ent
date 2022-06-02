@@ -27,8 +27,7 @@ interface IFeedbackBuilder<T extends IEntWithFeedback> {
   removeLiker(...nodes: (ID | User)[]): this;
 }
 
-type Constructor<C = {}> = new (...args: any[]) => C;
-
+type Constructor<T = {}> = new (...args: any[]) => T;
 interface BuilderConstructor<T extends IEntWithFeedback, C = {}> {
   orchestrator: Orchestrator<T, any, ExampleViewer>;
   isBuilder<T extends Ent>(

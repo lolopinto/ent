@@ -7,8 +7,6 @@ import { ObjectToCommentsQuery, ObjectToLikersQuery } from "../../internal";
 
 type Constructor<T = {}> = new (...args: any[]) => T;
 
-// no easy way to guarantee this from FeedbackMixin so we'll just do it
-// from the ent side
 export interface IFeedback {
   isFeedback(): boolean;
   queryComments(): ObjectToCommentsQuery;

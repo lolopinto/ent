@@ -38,10 +38,7 @@ class Base {
   // @ts-ignore
   orchestrator: Orchestrator<Contact, any, ExampleViewer>;
 
-  constructor() {
-    // @ts-ignore overriden later...
-    //    this.orchestrator = new Orchestrator({});
-  }
+  constructor() {}
 
   isBuilder<T extends Ent>(
     node: ID | T | Builder<T, any>,

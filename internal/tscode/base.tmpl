@@ -55,16 +55,23 @@ interface {{$dataType}} {
   {{ end -}}
 }
 
-{{ if .HasMixins  -}}
-  export const {{$baseClass}} = 
+
+
+export class {{$baseClass}} 
+{{ if .HasMixins -}}
+  extends 
   {{ range $m := .GetMixins -}}
     {{useImport $m}} (
   {{ end -}}
-  {{/* can't have implements Ent<FooViewer> with a custom viewer which references this apparently */}}
-  class {{$baseClass}}  {
-{{ else -}}
-  export class {{$baseClass}} implements {{useImport "Ent"}}<{{$viewerType}}> {
+  class {}
+  {{/* trailing ) */ -}}
+  {{ range $m := .GetMixins -}}
+    )
+  {{ end -}}
 {{ end -}}
+
+// TODO implements IFeedback etc 
+implements {{useImport "Ent"}}<{{$viewerType}}> {
 
   readonly nodeType = {{useImport "NodeType"}}.{{.Node}};
   {{range $field := .FieldInfo.Fields -}}
@@ -84,6 +91,9 @@ interface {{$dataType}} {
   {{end}}
 
   constructor(public viewer: {{$viewerType}}, protected data:Data) {
+    {{ if .HasMixins -}}
+      super();
+    {{ end -}}
     {{range $field := .FieldInfo.Fields -}}
       {{ if not ($schema.PatternFieldWithMixin $field) -}}
         {{$val := printf "data.%s" $field.GetDbColName -}}
@@ -534,13 +544,6 @@ interface {{$dataType}} {
     {{end}}
   {{end}}
 }
-
-{{ if .HasMixins -}}
-  {{/* close each one opened earlier */}}
-  {{ range .GetMixins -}}
-    )
-  {{ end -}}
-{{ end -}}
 
 {{end -}}
 

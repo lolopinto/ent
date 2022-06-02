@@ -35,7 +35,10 @@ interface AuthCodeDBData {
   phone_number: string | null;
 }
 
-export class AuthCodeBase implements Ent<ExampleViewer> {
+export class AuthCodeBase
+  // TODO implements IFeedback etc
+  implements Ent<ExampleViewer>
+{
   readonly nodeType = NodeType.AuthCode;
   readonly id: ID;
   readonly createdAt: Date;

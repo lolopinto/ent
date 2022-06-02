@@ -28,7 +28,7 @@ function extractFromArgs<TViewer extends Viewer, TData extends Data>(
 }
 
 export function DayOfWeekMixin<T extends Constructor>(BaseClass: T) {
-  return class DayOfWeekMixin extends BaseClass implements IDayOfWeek {
+  return class DayOfWeekMixin extends BaseClass {
     readonly dayOfWeek: DayOfWeek;
     readonly dayOfWeekAlt: DayOfWeekAlt | null;
     constructor(...args: any[]) {

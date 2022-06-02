@@ -37,7 +37,10 @@ interface ContactPhoneNumberDBData {
   contact_id: ID;
 }
 
-export class ContactPhoneNumberBase implements Ent<ExampleViewer> {
+export class ContactPhoneNumberBase
+  // TODO implements IFeedback etc
+  implements Ent<ExampleViewer>
+{
   readonly nodeType = NodeType.ContactPhoneNumber;
   readonly id: ID;
   readonly createdAt: Date;
