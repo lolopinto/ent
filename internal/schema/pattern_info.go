@@ -3,7 +3,6 @@ package schema
 import (
 	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codepath"
@@ -14,20 +13,15 @@ import (
 
 type PatternInfo struct {
 	objWithConsts
-	Name       string
-	FieldInfo  *field.FieldInfo
-	AssocEdges map[string]*edge.AssociationEdge
+	Name         string
+	FieldInfo    *field.FieldInfo
+	AssocEdges   map[string]*edge.AssociationEdge
+	DisableMixin bool
 }
 
 func (p *PatternInfo) GetNodeInstance() string {
 	// TODO?...
 	return "object"
-}
-
-func hasMixin(name string) bool {
-	// TODO need a flag to disable this
-	// don't want this for node, etc
-	return !strings.Contains(name, "node")
 }
 
 func getMixinName(name string) string {
@@ -40,11 +34,10 @@ func getBuilderMixinName(name string) string {
 	return fmt.Sprintf("%sBuilder", strcase.ToCamel(name))
 }
 
+// the main value that currently exists for mixins with no fields seems to be
+// marker interface
 func (p *PatternInfo) HasMixin() bool {
-	return hasMixin(p.Name)
-
-	// TODO seemingly no value for mixins without fields
-	// only those with edges
+	return !p.DisableMixin
 }
 
 func (p *PatternInfo) GetSortedEdges() []*edge.AssociationEdge {

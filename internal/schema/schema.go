@@ -371,11 +371,12 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 		nodeData.TransformsSelect = node.TransformsSelect
 		nodeData.TransformsDelete = node.TransformsDelete
 		for _, p := range node.Patterns {
-			if hasMixin(p) {
-				nodeData.Mixins = append(nodeData.Mixins, getMixinName(p))
-			}
 			pattern := schema.Patterns[p]
-			if pattern != nil && len(pattern.AssocEdges) > 0 {
+			if pattern == nil || pattern.DisableMixin {
+				continue
+			}
+			nodeData.Mixins = append(nodeData.Mixins, getMixinName(p))
+			if len(pattern.AssocEdges) > 0 {
 				nodeData.BuilderMixins = append(nodeData.BuilderMixins, getBuilderMixinName(p))
 			}
 		}
@@ -469,8 +470,9 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 
 	for name, pattern := range schema.Patterns {
 		p := &PatternInfo{
-			Name:       pattern.Name,
-			AssocEdges: make(map[string]*edge.AssociationEdge),
+			Name:         pattern.Name,
+			AssocEdges:   make(map[string]*edge.AssociationEdge),
+			DisableMixin: pattern.DisableMixin,
 		}
 		for _, inpEdge := range pattern.AssocEdges {
 			assocEdge, err := edge.AssocEdgeFromInput(cfg, "object", inpEdge)

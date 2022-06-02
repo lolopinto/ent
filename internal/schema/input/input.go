@@ -22,8 +22,9 @@ type Pattern struct {
 	// Note that anytime anything changes here, have to update patternEqual in compare.go
 	Name string `json:"name,omitempty"`
 	// at this point, should we support everything in Node
-	Fields     []*Field     `json:"fields,omitempty"`
-	AssocEdges []*AssocEdge `json:"assocEdges,omitempty"`
+	Fields       []*Field     `json:"fields,omitempty"`
+	AssocEdges   []*AssocEdge `json:"assocEdges,omitempty"`
+	DisableMixin bool         `json:"disableMixin,omitempty"`
 }
 
 type Node struct {

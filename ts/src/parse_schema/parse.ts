@@ -162,6 +162,7 @@ function processPattern(
       name: pattern.name,
       assocEdges: edges,
       fields: fields,
+      disableMixin: pattern.disableMixin,
     };
   } else {
     // TODO ideally we want to make sure that different patterns don't have the same name
@@ -271,6 +272,7 @@ interface ProcessedPattern {
   name: string;
   assocEdges: ProcessedAssocEdge[];
   fields: ProcessedField[];
+  disableMixin?: boolean;
 }
 
 type ProcessedType = Omit<
