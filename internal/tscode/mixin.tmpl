@@ -30,7 +30,6 @@ export interface {{$p.GetMixinInterfaceName}} {
 }
 
 {{ if $p.HasFields -}}
-  // TODO type TData
   function extractFromArgs<TViewer extends {{useImport "Viewer"}}, TData extends {{useImport "Data"}}>(
     args: any[],
   ): { viewer: TViewer; data: TData } {

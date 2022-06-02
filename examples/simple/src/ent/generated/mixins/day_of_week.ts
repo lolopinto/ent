@@ -14,7 +14,6 @@ export interface IDayOfWeek {
   dayOfWeekAlt: DayOfWeekAlt | null;
 }
 
-// TODO type TData
 function extractFromArgs<TViewer extends Viewer, TData extends Data>(
   args: any[],
 ): { viewer: TViewer; data: TData } {
