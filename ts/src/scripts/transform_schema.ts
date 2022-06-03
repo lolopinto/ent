@@ -15,7 +15,7 @@ async function main() {
   const target = getTargetFromCurrentDir();
 
   // filter to only event.ts e.g. for comments and whitespace...
-  //  files = files.filter((f) => f.endsWith("event.ts"));
+  files = files.filter((f) => f.endsWith("tag.ts"));
 
   files.forEach((file) => {
     // assume valid file since we do glob above
@@ -114,10 +114,10 @@ function traverse(
   let traversed = false;
   ts.forEachChild(sourceFile, function (node: ts.Node) {
     if (ts.isClassDeclaration(node)) {
-      traversed = true;
       // TODO address implicit schema doesn't work here...
       //        console.debug(sourceFile.fileName, node.kind);
       if (traverseClass(fileContents, sourceFile, node, f)) {
+        traversed = true;
         f.flagUpdateImport();
         return;
       }
@@ -138,7 +138,9 @@ function traverseClass(
     return false;
   }
 
-  let klassContents = `${ci.comment}const ${ci.name} = new ${ci.class}({\n`;
+  let klassContents = `${ci.comment}const ${ci.name} = new ${transformSchema(
+    ci.class,
+  )}({\n`;
   let removeImports: string[] = [];
   if (ci.implementsSchema) {
     removeImports.push("Schema");
@@ -290,7 +292,7 @@ function getFieldElementInfo(
     if (parsed === null) {
       return;
     }
-    const { callEx, name, nameComment, properties } = parsed;
+    const { callEx, name, nameComment, properties, suffix } = parsed;
 
     let property = "";
     const fieldComment = getPreText(fileContents, element, sourceFile).trim();
@@ -307,7 +309,7 @@ function getFieldElementInfo(
     if (properties.length) {
       fnCall = `{${properties.join(",")}}`;
     }
-    property += `${name}:${call}(${fnCall}),`;
+    property += `${name}:${call}(${fnCall})${suffix || ""},`;
 
     fieldMap += property;
   }
@@ -404,12 +406,15 @@ interface ParsedFieldElement {
   nameComment?: string;
   // other properties (and their comments) e.g. nullable: true
   properties: string[];
+  // e.g. trim().toLowerCase()
+  suffix?: string;
 }
 
 function parseFieldElement(
   element: ts.Expression,
   sourceFile: ts.SourceFile,
   fileContents: string,
+  nested?: boolean,
 ): ParsedFieldElement | null {
   if (element.kind !== ts.SyntaxKind.CallExpression) {
     console.error("skipped non-call expression");
@@ -417,9 +422,30 @@ function parseFieldElement(
   }
   let callEx = element as ts.CallExpression;
   if (callEx.arguments.length !== 1) {
+    // have a situation like:     StringType({ name: "canonicalName" }).trim().toLowerCase(),
+    // need to keep calling this until we find what we want and then get the suffix we should just add to the end of the transformed code
+    if (callEx.expression.kind === ts.SyntaxKind.PropertyAccessExpression) {
+      const ret = parseFieldElement(
+        (callEx.expression as ts.PropertyAccessExpression).expression,
+        sourceFile,
+        fileContents,
+        true,
+      );
+      if (ret !== null) {
+        if (!nested) {
+          ret.suffix = fileContents.substring(
+            ret.callEx.getEnd(),
+            callEx.getEnd(),
+          );
+        }
+        return ret;
+      }
+    }
+
     console.error("callExpression with arguments not of length 1");
     return null;
   }
+
   let arg = callEx.arguments[0];
   if (arg.kind !== ts.SyntaxKind.ObjectLiteralExpression) {
     console.error("not objectLiteralExpression");
