@@ -25,30 +25,34 @@ interface NodeInfo {
   rawString?: string;
 }
 
-interface processImportInfo {
-  input?: string;
-  viewerImported?: boolean;
-}
-
-interface imports {
-  path: string;
-  import: string;
-}
-
-function processImports(
+function transformRelative(
   file: string,
-  sourceFile: ts.SourceFile,
-  viewerPath: string,
-  viewer: string,
-): processImportInfo {
+  importPath: string,
+  relative?: boolean,
+): string {
+  if (!relative || !importPath.startsWith("src")) {
+    return importPath;
+  }
+
+  const fileFullPath = path.join(process.cwd(), file);
+  const impFullPath = path.join(process.cwd(), importPath);
+  // relative path is from directory
+  return normalizePath(path.relative(path.dirname(fileFullPath), impFullPath));
+}
+
+function normalizePath(p: string) {
+  if (p.endsWith("..")) {
+    return p + "/";
+  }
+  return p;
+}
+
+function findInput(file: string, sourceFile: ts.SourceFile): string | null {
   // @ts-ignore
   const importStatements: ts.ImportDeclaration[] = sourceFile.statements.filter(
     (stmt) => ts.isImportDeclaration(stmt),
   );
-  let input: string | undefined;
-  let viewerImported = false;
 
-  //  console.debug(importStatements);
   for (const imp of importStatements) {
     const text = imp.moduleSpecifier.getText(sourceFile).slice(1, -1);
 
@@ -68,23 +72,11 @@ function processImports(
         .filter((imp) => imp.trim() && imp.endsWith("Input"))
         .map((v) => v.trim());
       if (inputs.length === 1) {
-        input = inputs[0];
+        return inputs[0];
       }
-    } else if (!viewerImported && text === viewerPath) {
-      // should work for both relative and absolute imports
-      const impInfo = getImportInfo(imp, sourceFile);
-      if (!impInfo) {
-        continue;
-      }
-      const inputs = impInfo.imports.filter((imp) => imp.trim() === viewer);
-      viewerImported = inputs.length === 1;
     }
   }
-
-  return {
-    viewerImported,
-    input,
-  };
+  return null;
 }
 
 interface customInfo {
@@ -131,10 +123,9 @@ async function main() {
   const viewerInfo = customInfo.viewerInfo;
 
   files.forEach((file) => {
-    if (!file.endsWith("create_auth_code_action.ts")) {
+    if (!file.endsWith("create_contact_action.ts")) {
       return;
     }
-    //    console.debug(file);
     let { contents, sourceFile } = createSourceFile(target, file);
 
     let traversed = false;
@@ -143,8 +134,6 @@ async function main() {
     // require action
     const p = require(path.join(process.cwd(), "./" + file.slice(0, -3)));
     const action: Action<any, any> = new p.default(new LoggedOutViewer(), {});
-    // const options: OrchestratorOptions<any, any, any> =
-    //   action.builder.orchestrator.options;
 
     const builder = action.builder.constructor.name;
     const nodeName = action.builder.ent.name;
@@ -153,33 +142,10 @@ async function main() {
         ? `${nodeName} | null`
         : nodeName;
     const viewer = customInfo.viewerInfo.name;
-    // input is all that's left...
-    // need to read ent.yml for custom viewer
 
-    let viewerPath = viewerInfo.path;
-
-    // find relative path and convert to relative import if needed
-    if (customInfo.relativeImports && viewerInfo.path.startsWith("src")) {
-      const fileFullPath = path.join(process.cwd(), file);
-      const viewerFullPath = path.join(process.cwd(), viewerInfo.path);
-      // relative path is from directory
-      viewerPath = path.relative(path.dirname(fileFullPath), viewerFullPath);
-    }
-
-    const importsInfo = processImports(file, sourceFile, viewerPath, viewer);
-    if (!importsInfo?.input) {
+    const input = findInput(file, sourceFile);
+    if (!input) {
       return;
-    }
-    const input = importsInfo.input;
-    // TODO User, AuthCode etc
-
-    let missingImports: imports[] = [];
-    // add viewer to list of missing imports
-    if (!importsInfo.viewerImported) {
-      missingImports.push({
-        path: viewerPath,
-        import: viewer,
-      });
     }
 
     let newImports: string[] = [];
@@ -232,35 +198,80 @@ async function main() {
     let newContents = "";
     let afterProcessed = false;
 
+    let imports: Map<string, string[]> = new Map([
+      [
+        transformRelative(file, viewerInfo.path, customInfo.relativeImports),
+        [viewer],
+      ],
+      [
+        transformRelative(file, "src/ent", customInfo.relativeImports),
+        [nodeName],
+      ],
+      ["@snowtop/ent/action", newImports],
+    ]);
+    let seen = new Map<string, boolean>();
+
     const processAfterImport = () => {
       // do this for the first non-import node we see
-      // we want to add it last and there's an assumption that imports are ordered.
-      if (!afterProcessed && missingImports.length) {
-        for (const imp of missingImports) {
-          newContents += `\nimport { ${imp.import} } from "${imp.path}"`;
+      // we want to add new imports to end of imports and there's an assumption that imports are ordered
+      // at top of file
+      if (!afterProcessed) {
+        console.debug(seen);
+        for (const [imp, list] of imports) {
+          if (seen.has(imp)) {
+            console.debug("seen", imp);
+            continue;
+          }
+          newContents += `\nimport { ${list.join(", ")} } from "${imp}"`;
         }
         afterProcessed = true;
       }
     };
+    console.debug(imports);
 
     for (const node of nodes) {
       if (node.node) {
         if (ts.isImportDeclaration(node.node)) {
-          console.debug(newImports);
-          let transformed = transformImport(contents, node.node, sourceFile, {
-            newImports,
-            transformPath: "@snowtop/ent/action",
-          });
-          console.debug(transformed);
-          if (transformed) {
-            newContents += transformed;
-            continue;
+          const impInfo = getImportInfo(node.node, sourceFile);
+          //          console.debug(impInfo);
+          if (impInfo) {
+            const impPath = normalizePath(impInfo.importPath);
+            // normalize paths...
+            const list = imports.get(impPath);
+            console.debug(impPath, list);
+            if (list) {
+              let transformed = transformImport(
+                contents,
+                node.node,
+                sourceFile,
+                {
+                  newImports: list,
+                  transformPath: impPath,
+                },
+              );
+              if (transformed) {
+                console.debug("transformed", impPath);
+                newContents += transformed;
+                seen.set(impPath, true);
+                console.debug("post seen", impPath);
+                continue;
+              } else {
+                console.debug("not transformed", impPath);
+              }
+            }
           }
         } else {
-          processAfterImport();
+          //          console.debug("process after", node);
+          // sometimes we have exports early...
+          if (!ts.isExportDeclaration(node.node)) {
+            processAfterImport();
+          }
+          //          continue;
         }
         newContents += node.node.getFullText(sourceFile);
       } else if (node.rawString) {
+        //        console.debug("process after raw ");
+
         processAfterImport();
         newContents += node.rawString;
       } else {

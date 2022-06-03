@@ -232,6 +232,7 @@ interface importInfo {
   start: number;
   end: number;
   importText: string;
+  importPath: string;
 }
 
 export function getImportInfo(
@@ -241,10 +242,13 @@ export function getImportInfo(
   const importText = imp.importClause?.getText(sourceFile) || "";
   const start = importText.indexOf("{");
   const end = importText.lastIndexOf("}");
+  const text = imp.moduleSpecifier.getText(sourceFile).slice(1, -1);
+
   if (start === -1 || end === -1) {
     return;
   }
   return {
+    importPath: text,
     importText,
     start,
     end,
