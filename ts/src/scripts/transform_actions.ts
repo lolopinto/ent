@@ -123,9 +123,6 @@ async function main() {
   const viewerInfo = customInfo.viewerInfo;
 
   files.forEach((file) => {
-    if (!file.endsWith("create_contact_action.ts")) {
-      return;
-    }
     let { contents, sourceFile } = createSourceFile(target, file);
 
     let traversed = false;
@@ -241,14 +238,14 @@ async function main() {
                 sourceFile,
                 {
                   newImports: list,
-                  transformPath: impPath,
+                  // don't use normalized path here, we wanna use the path that's in code...
+                  transformPath: impInfo.importPath,
                 },
               );
               if (transformed) {
                 newContents += transformed;
                 seen.set(impPath, true);
                 continue;
-              } else {
               }
             }
           }
