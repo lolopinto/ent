@@ -60,7 +60,7 @@ export class CreateCommentActionBase
 
   getTriggers(): Trigger<
     Comment,
-    CommentBuilder,
+    CommentBuilder<CommentCreateInput, Comment | null>,
     ExampleViewer,
     CommentCreateInput,
     Comment | null
@@ -70,7 +70,7 @@ export class CreateCommentActionBase
 
   getObservers(): Observer<
     Comment,
-    CommentBuilder,
+    CommentBuilder<CommentCreateInput, Comment | null>,
     ExampleViewer,
     CommentCreateInput,
     Comment | null
@@ -80,7 +80,7 @@ export class CreateCommentActionBase
 
   getValidators(): Validator<
     Comment,
-    CommentBuilder,
+    CommentBuilder<CommentCreateInput, Comment | null>,
     ExampleViewer,
     CommentCreateInput,
     Comment | null

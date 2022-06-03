@@ -69,7 +69,7 @@ export class CreateContactActionBase
 
   getTriggers(): Trigger<
     Contact,
-    ContactBuilder,
+    ContactBuilder<ContactCreateInput, Contact | null>,
     ExampleViewer,
     ContactCreateInput,
     Contact | null
@@ -79,7 +79,7 @@ export class CreateContactActionBase
 
   getObservers(): Observer<
     Contact,
-    ContactBuilder,
+    ContactBuilder<ContactCreateInput, Contact | null>,
     ExampleViewer,
     ContactCreateInput,
     Contact | null
@@ -89,7 +89,7 @@ export class CreateContactActionBase
 
   getValidators(): Validator<
     Contact,
-    ContactBuilder,
+    ContactBuilder<ContactCreateInput, Contact | null>,
     ExampleViewer,
     ContactCreateInput,
     Contact | null

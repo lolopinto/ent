@@ -62,7 +62,7 @@ export class ConfirmEditPhoneNumberActionBase
 
   getTriggers(): Trigger<
     User,
-    UserBuilder,
+    UserBuilder<ConfirmEditPhoneNumberInput, User>,
     ExampleViewer,
     ConfirmEditPhoneNumberInput,
     User
@@ -72,7 +72,7 @@ export class ConfirmEditPhoneNumberActionBase
 
   getObservers(): Observer<
     User,
-    UserBuilder,
+    UserBuilder<ConfirmEditPhoneNumberInput, User>,
     ExampleViewer,
     ConfirmEditPhoneNumberInput,
     User
@@ -82,7 +82,7 @@ export class ConfirmEditPhoneNumberActionBase
 
   getValidators(): Validator<
     User,
-    UserBuilder,
+    UserBuilder<ConfirmEditPhoneNumberInput, User>,
     ExampleViewer,
     ConfirmEditPhoneNumberInput,
     User

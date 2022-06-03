@@ -61,7 +61,7 @@ export class CreateContactEmailActionBase
 
   getTriggers(): Trigger<
     ContactEmail,
-    ContactEmailBuilder,
+    ContactEmailBuilder<ContactEmailCreateInput, ContactEmail | null>,
     ExampleViewer,
     ContactEmailCreateInput,
     ContactEmail | null
@@ -71,7 +71,7 @@ export class CreateContactEmailActionBase
 
   getObservers(): Observer<
     ContactEmail,
-    ContactEmailBuilder,
+    ContactEmailBuilder<ContactEmailCreateInput, ContactEmail | null>,
     ExampleViewer,
     ContactEmailCreateInput,
     ContactEmail | null
@@ -81,7 +81,7 @@ export class CreateContactEmailActionBase
 
   getValidators(): Validator<
     ContactEmail,
-    ContactEmailBuilder,
+    ContactEmailBuilder<ContactEmailCreateInput, ContactEmail | null>,
     ExampleViewer,
     ContactEmailCreateInput,
     ContactEmail | null

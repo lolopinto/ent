@@ -57,7 +57,7 @@ export class EditPhoneNumberActionBase
 
   getTriggers(): Trigger<
     User,
-    UserBuilder,
+    UserBuilder<EditPhoneNumberInput, User>,
     ExampleViewer,
     EditPhoneNumberInput,
     User
@@ -67,7 +67,7 @@ export class EditPhoneNumberActionBase
 
   getObservers(): Observer<
     User,
-    UserBuilder,
+    UserBuilder<EditPhoneNumberInput, User>,
     ExampleViewer,
     EditPhoneNumberInput,
     User
@@ -77,7 +77,7 @@ export class EditPhoneNumberActionBase
 
   getValidators(): Validator<
     User,
-    UserBuilder,
+    UserBuilder<EditPhoneNumberInput, User>,
     ExampleViewer,
     EditPhoneNumberInput,
     User

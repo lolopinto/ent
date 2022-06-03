@@ -57,7 +57,7 @@ export class DeleteUserAction2Base
 
   getTriggers(): Trigger<
     User,
-    UserBuilder,
+    UserBuilder<DeleteUserInput2, User>,
     ExampleViewer,
     DeleteUserInput2,
     User
@@ -67,7 +67,7 @@ export class DeleteUserAction2Base
 
   getObservers(): Observer<
     User,
-    UserBuilder,
+    UserBuilder<DeleteUserInput2, User>,
     ExampleViewer,
     DeleteUserInput2,
     User
@@ -77,7 +77,7 @@ export class DeleteUserAction2Base
 
   getValidators(): Validator<
     User,
-    UserBuilder,
+    UserBuilder<DeleteUserInput2, User>,
     ExampleViewer,
     DeleteUserInput2,
     User

@@ -51,7 +51,7 @@ export class DeleteAuthCodeActionBase
 
   getTriggers(): Trigger<
     AuthCode,
-    AuthCodeBuilder,
+    AuthCodeBuilder<AuthCodeInput, AuthCode>,
     ExampleViewer,
     AuthCodeInput,
     AuthCode
@@ -61,7 +61,7 @@ export class DeleteAuthCodeActionBase
 
   getObservers(): Observer<
     AuthCode,
-    AuthCodeBuilder,
+    AuthCodeBuilder<AuthCodeInput, AuthCode>,
     ExampleViewer,
     AuthCodeInput,
     AuthCode
@@ -71,7 +71,7 @@ export class DeleteAuthCodeActionBase
 
   getValidators(): Validator<
     AuthCode,
-    AuthCodeBuilder,
+    AuthCodeBuilder<AuthCodeInput, AuthCode>,
     ExampleViewer,
     AuthCodeInput,
     AuthCode

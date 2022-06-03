@@ -61,7 +61,7 @@ export class CreateEventActionBase
 
   getTriggers(): Trigger<
     Event,
-    EventBuilder,
+    EventBuilder<EventCreateInput, Event | null>,
     ExampleViewer,
     EventCreateInput,
     Event | null
@@ -71,7 +71,7 @@ export class CreateEventActionBase
 
   getObservers(): Observer<
     Event,
-    EventBuilder,
+    EventBuilder<EventCreateInput, Event | null>,
     ExampleViewer,
     EventCreateInput,
     Event | null
@@ -81,7 +81,7 @@ export class CreateEventActionBase
 
   getValidators(): Validator<
     Event,
-    EventBuilder,
+    EventBuilder<EventCreateInput, Event | null>,
     ExampleViewer,
     EventCreateInput,
     Event | null

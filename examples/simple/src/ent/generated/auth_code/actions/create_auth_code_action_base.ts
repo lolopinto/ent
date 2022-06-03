@@ -62,7 +62,7 @@ export class CreateAuthCodeActionBase
 
   getTriggers(): Trigger<
     AuthCode,
-    AuthCodeBuilder,
+    AuthCodeBuilder<AuthCodeCreateInput, AuthCode | null>,
     ExampleViewer,
     AuthCodeCreateInput,
     AuthCode | null
@@ -72,7 +72,7 @@ export class CreateAuthCodeActionBase
 
   getObservers(): Observer<
     AuthCode,
-    AuthCodeBuilder,
+    AuthCodeBuilder<AuthCodeCreateInput, AuthCode | null>,
     ExampleViewer,
     AuthCodeCreateInput,
     AuthCode | null
@@ -82,7 +82,7 @@ export class CreateAuthCodeActionBase
 
   getValidators(): Validator<
     AuthCode,
-    AuthCodeBuilder,
+    AuthCodeBuilder<AuthCodeCreateInput, AuthCode | null>,
     ExampleViewer,
     AuthCodeCreateInput,
     AuthCode | null

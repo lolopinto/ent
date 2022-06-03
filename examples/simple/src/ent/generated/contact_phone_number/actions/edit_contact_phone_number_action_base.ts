@@ -70,7 +70,7 @@ export class EditContactPhoneNumberActionBase
 
   getTriggers(): Trigger<
     ContactPhoneNumber,
-    ContactPhoneNumberBuilder,
+    ContactPhoneNumberBuilder<ContactPhoneNumberEditInput, ContactPhoneNumber>,
     ExampleViewer,
     ContactPhoneNumberEditInput,
     ContactPhoneNumber
@@ -80,7 +80,7 @@ export class EditContactPhoneNumberActionBase
 
   getObservers(): Observer<
     ContactPhoneNumber,
-    ContactPhoneNumberBuilder,
+    ContactPhoneNumberBuilder<ContactPhoneNumberEditInput, ContactPhoneNumber>,
     ExampleViewer,
     ContactPhoneNumberEditInput,
     ContactPhoneNumber
@@ -90,7 +90,7 @@ export class EditContactPhoneNumberActionBase
 
   getValidators(): Validator<
     ContactPhoneNumber,
-    ContactPhoneNumberBuilder,
+    ContactPhoneNumberBuilder<ContactPhoneNumberEditInput, ContactPhoneNumber>,
     ExampleViewer,
     ContactPhoneNumberEditInput,
     ContactPhoneNumber

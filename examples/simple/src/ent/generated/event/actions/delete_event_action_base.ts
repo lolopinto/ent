@@ -51,7 +51,7 @@ export class DeleteEventActionBase
 
   getTriggers(): Trigger<
     Event,
-    EventBuilder,
+    EventBuilder<EventInput, Event>,
     ExampleViewer,
     EventInput,
     Event
@@ -61,7 +61,7 @@ export class DeleteEventActionBase
 
   getObservers(): Observer<
     Event,
-    EventBuilder,
+    EventBuilder<EventInput, Event>,
     ExampleViewer,
     EventInput,
     Event
@@ -71,7 +71,7 @@ export class DeleteEventActionBase
 
   getValidators(): Validator<
     Event,
-    EventBuilder,
+    EventBuilder<EventInput, Event>,
     ExampleViewer,
     EventInput,
     Event

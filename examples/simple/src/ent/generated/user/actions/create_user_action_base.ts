@@ -74,7 +74,7 @@ export class CreateUserActionBase
 
   getTriggers(): Trigger<
     User,
-    UserBuilder,
+    UserBuilder<UserCreateInput, User | null>,
     ExampleViewer,
     UserCreateInput,
     User | null
@@ -84,7 +84,7 @@ export class CreateUserActionBase
 
   getObservers(): Observer<
     User,
-    UserBuilder,
+    UserBuilder<UserCreateInput, User | null>,
     ExampleViewer,
     UserCreateInput,
     User | null
@@ -94,7 +94,7 @@ export class CreateUserActionBase
 
   getValidators(): Validator<
     User,
-    UserBuilder,
+    UserBuilder<UserCreateInput, User | null>,
     ExampleViewer,
     UserCreateInput,
     User | null

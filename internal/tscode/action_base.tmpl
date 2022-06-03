@@ -141,15 +141,15 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
   };
 
 
-  getTriggers(): {{useImport "Trigger"}}<{{$node}}, {{$builderName}}, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[] {
+  getTriggers(): {{useImport "Trigger"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[] {
     return [];
   }
 
-  getObservers(): {{useImport "Observer"}}<{{$node}}, {{$builderName}}, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[] {
+  getObservers(): {{useImport "Observer"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[] {
     return [];
   }
 
-  getValidators(): {{useImport "Validator"}}<{{$node}}, {{$builderName}}, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[] {
+  getValidators(): {{useImport "Validator"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[] {
     return [];
   }
 

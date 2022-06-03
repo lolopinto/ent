@@ -53,7 +53,7 @@ export class EventAddHostActionBase
 
   getTriggers(): Trigger<
     Event,
-    EventBuilder,
+    EventBuilder<EventInput, Event>,
     ExampleViewer,
     EventInput,
     Event
@@ -63,7 +63,7 @@ export class EventAddHostActionBase
 
   getObservers(): Observer<
     Event,
-    EventBuilder,
+    EventBuilder<EventInput, Event>,
     ExampleViewer,
     EventInput,
     Event
@@ -73,7 +73,7 @@ export class EventAddHostActionBase
 
   getValidators(): Validator<
     Event,
-    EventBuilder,
+    EventBuilder<EventInput, Event>,
     ExampleViewer,
     EventInput,
     Event

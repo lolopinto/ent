@@ -62,7 +62,7 @@ export class ConfirmEditEmailAddressActionBase
 
   getTriggers(): Trigger<
     User,
-    UserBuilder,
+    UserBuilder<ConfirmEditEmailAddressInput, User>,
     ExampleViewer,
     ConfirmEditEmailAddressInput,
     User
@@ -72,7 +72,7 @@ export class ConfirmEditEmailAddressActionBase
 
   getObservers(): Observer<
     User,
-    UserBuilder,
+    UserBuilder<ConfirmEditEmailAddressInput, User>,
     ExampleViewer,
     ConfirmEditEmailAddressInput,
     User
@@ -82,7 +82,7 @@ export class ConfirmEditEmailAddressActionBase
 
   getValidators(): Validator<
     User,
-    UserBuilder,
+    UserBuilder<ConfirmEditEmailAddressInput, User>,
     ExampleViewer,
     ConfirmEditEmailAddressInput,
     User

@@ -57,7 +57,7 @@ export class EditEmailAddressActionBase
 
   getTriggers(): Trigger<
     User,
-    UserBuilder,
+    UserBuilder<EditEmailAddressInput, User>,
     ExampleViewer,
     EditEmailAddressInput,
     User
@@ -67,7 +67,7 @@ export class EditEmailAddressActionBase
 
   getObservers(): Observer<
     User,
-    UserBuilder,
+    UserBuilder<EditEmailAddressInput, User>,
     ExampleViewer,
     EditEmailAddressInput,
     User
@@ -77,7 +77,7 @@ export class EditEmailAddressActionBase
 
   getValidators(): Validator<
     User,
-    UserBuilder,
+    UserBuilder<EditEmailAddressInput, User>,
     ExampleViewer,
     EditEmailAddressInput,
     User

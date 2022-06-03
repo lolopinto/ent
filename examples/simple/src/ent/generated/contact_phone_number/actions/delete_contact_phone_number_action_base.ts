@@ -57,7 +57,7 @@ export class DeleteContactPhoneNumberActionBase
 
   getTriggers(): Trigger<
     ContactPhoneNumber,
-    ContactPhoneNumberBuilder,
+    ContactPhoneNumberBuilder<ContactPhoneNumberInput, ContactPhoneNumber>,
     ExampleViewer,
     ContactPhoneNumberInput,
     ContactPhoneNumber
@@ -67,7 +67,7 @@ export class DeleteContactPhoneNumberActionBase
 
   getObservers(): Observer<
     ContactPhoneNumber,
-    ContactPhoneNumberBuilder,
+    ContactPhoneNumberBuilder<ContactPhoneNumberInput, ContactPhoneNumber>,
     ExampleViewer,
     ContactPhoneNumberInput,
     ContactPhoneNumber
@@ -77,7 +77,7 @@ export class DeleteContactPhoneNumberActionBase
 
   getValidators(): Validator<
     ContactPhoneNumber,
-    ContactPhoneNumberBuilder,
+    ContactPhoneNumberBuilder<ContactPhoneNumberInput, ContactPhoneNumber>,
     ExampleViewer,
     ContactPhoneNumberInput,
     ContactPhoneNumber

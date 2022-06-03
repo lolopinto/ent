@@ -64,7 +64,10 @@ export class CreateContactPhoneNumberActionBase
 
   getTriggers(): Trigger<
     ContactPhoneNumber,
-    ContactPhoneNumberBuilder,
+    ContactPhoneNumberBuilder<
+      ContactPhoneNumberCreateInput,
+      ContactPhoneNumber | null
+    >,
     ExampleViewer,
     ContactPhoneNumberCreateInput,
     ContactPhoneNumber | null
@@ -74,7 +77,10 @@ export class CreateContactPhoneNumberActionBase
 
   getObservers(): Observer<
     ContactPhoneNumber,
-    ContactPhoneNumberBuilder,
+    ContactPhoneNumberBuilder<
+      ContactPhoneNumberCreateInput,
+      ContactPhoneNumber | null
+    >,
     ExampleViewer,
     ContactPhoneNumberCreateInput,
     ContactPhoneNumber | null
@@ -84,7 +90,10 @@ export class CreateContactPhoneNumberActionBase
 
   getValidators(): Validator<
     ContactPhoneNumber,
-    ContactPhoneNumberBuilder,
+    ContactPhoneNumberBuilder<
+      ContactPhoneNumberCreateInput,
+      ContactPhoneNumber | null
+    >,
     ExampleViewer,
     ContactPhoneNumberCreateInput,
     ContactPhoneNumber | null

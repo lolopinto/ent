@@ -54,7 +54,7 @@ export class DeleteContactEmailActionBase
 
   getTriggers(): Trigger<
     ContactEmail,
-    ContactEmailBuilder,
+    ContactEmailBuilder<ContactEmailInput, ContactEmail>,
     ExampleViewer,
     ContactEmailInput,
     ContactEmail
@@ -64,7 +64,7 @@ export class DeleteContactEmailActionBase
 
   getObservers(): Observer<
     ContactEmail,
-    ContactEmailBuilder,
+    ContactEmailBuilder<ContactEmailInput, ContactEmail>,
     ExampleViewer,
     ContactEmailInput,
     ContactEmail
@@ -74,7 +74,7 @@ export class DeleteContactEmailActionBase
 
   getValidators(): Validator<
     ContactEmail,
-    ContactEmailBuilder,
+    ContactEmailBuilder<ContactEmailInput, ContactEmail>,
     ExampleViewer,
     ContactEmailInput,
     ContactEmail

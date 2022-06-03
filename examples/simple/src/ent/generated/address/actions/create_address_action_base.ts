@@ -59,7 +59,7 @@ export class CreateAddressActionBase
 
   getTriggers(): Trigger<
     Address,
-    AddressBuilder,
+    AddressBuilder<AddressCreateInput, Address | null>,
     ExampleViewer,
     AddressCreateInput,
     Address | null
@@ -69,7 +69,7 @@ export class CreateAddressActionBase
 
   getObservers(): Observer<
     Address,
-    AddressBuilder,
+    AddressBuilder<AddressCreateInput, Address | null>,
     ExampleViewer,
     AddressCreateInput,
     Address | null
@@ -79,7 +79,7 @@ export class CreateAddressActionBase
 
   getValidators(): Validator<
     Address,
-    AddressBuilder,
+    AddressBuilder<AddressCreateInput, Address | null>,
     ExampleViewer,
     AddressCreateInput,
     Address | null

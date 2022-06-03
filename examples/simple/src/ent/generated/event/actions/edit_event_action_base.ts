@@ -63,7 +63,7 @@ export class EditEventActionBase
 
   getTriggers(): Trigger<
     Event,
-    EventBuilder,
+    EventBuilder<EventEditInput, Event>,
     ExampleViewer,
     EventEditInput,
     Event
@@ -73,7 +73,7 @@ export class EditEventActionBase
 
   getObservers(): Observer<
     Event,
-    EventBuilder,
+    EventBuilder<EventEditInput, Event>,
     ExampleViewer,
     EventEditInput,
     Event
@@ -83,7 +83,7 @@ export class EditEventActionBase
 
   getValidators(): Validator<
     Event,
-    EventBuilder,
+    EventBuilder<EventEditInput, Event>,
     ExampleViewer,
     EventEditInput,
     Event

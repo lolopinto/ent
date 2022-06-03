@@ -58,7 +58,7 @@ export class EditUserActionBase
 
   getTriggers(): Trigger<
     User,
-    UserBuilder,
+    UserBuilder<UserEditInput, User>,
     ExampleViewer,
     UserEditInput,
     User
@@ -68,7 +68,7 @@ export class EditUserActionBase
 
   getObservers(): Observer<
     User,
-    UserBuilder,
+    UserBuilder<UserEditInput, User>,
     ExampleViewer,
     UserEditInput,
     User
@@ -78,7 +78,7 @@ export class EditUserActionBase
 
   getValidators(): Validator<
     User,
-    UserBuilder,
+    UserBuilder<UserEditInput, User>,
     ExampleViewer,
     UserEditInput,
     User

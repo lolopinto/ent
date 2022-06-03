@@ -57,7 +57,7 @@ export class CreateHolidayActionBase
 
   getTriggers(): Trigger<
     Holiday,
-    HolidayBuilder,
+    HolidayBuilder<HolidayCreateInput, Holiday | null>,
     ExampleViewer,
     HolidayCreateInput,
     Holiday | null
@@ -67,7 +67,7 @@ export class CreateHolidayActionBase
 
   getObservers(): Observer<
     Holiday,
-    HolidayBuilder,
+    HolidayBuilder<HolidayCreateInput, Holiday | null>,
     ExampleViewer,
     HolidayCreateInput,
     Holiday | null
@@ -77,7 +77,7 @@ export class CreateHolidayActionBase
 
   getValidators(): Validator<
     Holiday,
-    HolidayBuilder,
+    HolidayBuilder<HolidayCreateInput, Holiday | null>,
     ExampleViewer,
     HolidayCreateInput,
     Holiday | null

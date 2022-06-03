@@ -51,7 +51,7 @@ export class DeleteContactActionBase
 
   getTriggers(): Trigger<
     Contact,
-    ContactBuilder,
+    ContactBuilder<ContactInput, Contact>,
     ExampleViewer,
     ContactInput,
     Contact
@@ -61,7 +61,7 @@ export class DeleteContactActionBase
 
   getObservers(): Observer<
     Contact,
-    ContactBuilder,
+    ContactBuilder<ContactInput, Contact>,
     ExampleViewer,
     ContactInput,
     Contact
@@ -71,7 +71,7 @@ export class DeleteContactActionBase
 
   getValidators(): Validator<
     Contact,
-    ContactBuilder,
+    ContactBuilder<ContactInput, Contact>,
     ExampleViewer,
     ContactInput,
     Contact

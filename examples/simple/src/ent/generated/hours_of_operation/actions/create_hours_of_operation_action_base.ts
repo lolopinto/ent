@@ -63,7 +63,10 @@ export class CreateHoursOfOperationActionBase
 
   getTriggers(): Trigger<
     HoursOfOperation,
-    HoursOfOperationBuilder,
+    HoursOfOperationBuilder<
+      HoursOfOperationCreateInput,
+      HoursOfOperation | null
+    >,
     ExampleViewer,
     HoursOfOperationCreateInput,
     HoursOfOperation | null
@@ -73,7 +76,10 @@ export class CreateHoursOfOperationActionBase
 
   getObservers(): Observer<
     HoursOfOperation,
-    HoursOfOperationBuilder,
+    HoursOfOperationBuilder<
+      HoursOfOperationCreateInput,
+      HoursOfOperation | null
+    >,
     ExampleViewer,
     HoursOfOperationCreateInput,
     HoursOfOperation | null
@@ -83,7 +89,10 @@ export class CreateHoursOfOperationActionBase
 
   getValidators(): Validator<
     HoursOfOperation,
-    HoursOfOperationBuilder,
+    HoursOfOperationBuilder<
+      HoursOfOperationCreateInput,
+      HoursOfOperation | null
+    >,
     ExampleViewer,
     HoursOfOperationCreateInput,
     HoursOfOperation | null

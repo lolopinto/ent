@@ -43,13 +43,19 @@ export class DeleteUserActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<User, UserBuilder, ExampleViewer, UserInput, User>[] {
+  getTriggers(): Trigger<
+    User,
+    UserBuilder<UserInput, User>,
+    ExampleViewer,
+    UserInput,
+    User
+  >[] {
     return [];
   }
 
   getObservers(): Observer<
     User,
-    UserBuilder,
+    UserBuilder<UserInput, User>,
     ExampleViewer,
     UserInput,
     User
@@ -59,7 +65,7 @@ export class DeleteUserActionBase
 
   getValidators(): Validator<
     User,
-    UserBuilder,
+    UserBuilder<UserInput, User>,
     ExampleViewer,
     UserInput,
     User

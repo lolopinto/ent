@@ -69,7 +69,7 @@ export class EditEventRsvpStatusActionBase
 
   getTriggers(): Trigger<
     Event,
-    EventBuilder,
+    EventBuilder<EditEventRsvpStatusInput, Event>,
     ExampleViewer,
     EditEventRsvpStatusInput,
     Event
@@ -79,7 +79,7 @@ export class EditEventRsvpStatusActionBase
 
   getObservers(): Observer<
     Event,
-    EventBuilder,
+    EventBuilder<EditEventRsvpStatusInput, Event>,
     ExampleViewer,
     EditEventRsvpStatusInput,
     Event
@@ -89,7 +89,7 @@ export class EditEventRsvpStatusActionBase
 
   getValidators(): Validator<
     Event,
-    EventBuilder,
+    EventBuilder<EditEventRsvpStatusInput, Event>,
     ExampleViewer,
     EditEventRsvpStatusInput,
     Event
