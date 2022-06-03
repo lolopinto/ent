@@ -216,10 +216,8 @@ async function main() {
       // we want to add new imports to end of imports and there's an assumption that imports are ordered
       // at top of file
       if (!afterProcessed) {
-        console.debug(seen);
         for (const [imp, list] of imports) {
           if (seen.has(imp)) {
-            console.debug("seen", imp);
             continue;
           }
           newContents += `\nimport { ${list.join(", ")} } from "${imp}"`;
@@ -227,18 +225,15 @@ async function main() {
         afterProcessed = true;
       }
     };
-    console.debug(imports);
 
     for (const node of nodes) {
       if (node.node) {
         if (ts.isImportDeclaration(node.node)) {
           const impInfo = getImportInfo(node.node, sourceFile);
-          //          console.debug(impInfo);
           if (impInfo) {
             const impPath = normalizePath(impInfo.importPath);
             // normalize paths...
             const list = imports.get(impPath);
-            console.debug(impPath, list);
             if (list) {
               let transformed = transformImport(
                 contents,
@@ -250,28 +245,20 @@ async function main() {
                 },
               );
               if (transformed) {
-                console.debug("transformed", impPath);
                 newContents += transformed;
                 seen.set(impPath, true);
-                console.debug("post seen", impPath);
                 continue;
               } else {
-                console.debug("not transformed", impPath);
               }
             }
           }
         } else {
-          //          console.debug("process after", node);
-          // sometimes we have exports early...
           if (!ts.isExportDeclaration(node.node)) {
             processAfterImport();
           }
-          //          continue;
         }
         newContents += node.node.getFullText(sourceFile);
       } else if (node.rawString) {
-        //        console.debug("process after raw ");
-
         processAfterImport();
         newContents += node.rawString;
       } else {
