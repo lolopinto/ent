@@ -14,11 +14,20 @@ import { Event } from "../../../ent";
 import { ExampleViewer } from "../../../viewer/viewer";
 
 export { EventEditInput };
+import { Event } from "../../";
 
 // we're only writing this once except with --force and packageName provided
 export default class EditEventAction extends EditEventActionBase {
-  validators: Validator<Event, EventBuilder, ExampleViewer, EventEditInput>[] =
+  getValidators(): Validator<
+    Event,
+    EventBuilder<EventEditInput, Event>,
+    ExampleViewer,
+    EventEditInput,
+    Event
+  >[] {
+    return;
     [...SharedValidators];
+  }
 
   getPrivacyPolicy(): PrivacyPolicy {
     return {

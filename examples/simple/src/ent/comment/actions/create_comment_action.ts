@@ -14,24 +14,27 @@ import { Comment } from "../../../ent";
 import { ExampleViewer } from "../../../viewer/viewer";
 
 export { CommentCreateInput };
+import { Comment } from "../../";
 
 export default class CreateCommentAction extends CreateCommentActionBase {
   getPrivacyPolicy() {
     return AlwaysAllowPrivacyPolicy;
   }
 
-  triggers: Trigger<
+  getTriggers(): Trigger<
     Comment,
-    CommentBuilder<Comment, Comment>,
+    CommentBuilder<CommentCreateInput, Comment | null>,
     ExampleViewer,
     CommentCreateInput,
-    Comment
-  >[] = [
-    {
-      changeset(builder, input) {
-        // creating the comment automatically adds the needed edges
-        builder.addPostID(input.articleID, input.articleType as NodeType);
+    Comment | null
+  >[] {
+    return [
+      {
+        changeset(builder, input) {
+          // creating the comment automatically adds the needed edges
+          builder.addPostID(input.articleID, input.articleType as NodeType);
+        },
       },
-    },
-  ];
+    ];
+  }
 }
