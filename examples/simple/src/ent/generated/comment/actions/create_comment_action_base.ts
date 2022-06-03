@@ -13,6 +13,9 @@ import {
   Action,
   Builder,
   Changeset,
+  Observer,
+  Trigger,
+  Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
 import { Comment, User } from "../../..";
@@ -53,6 +56,36 @@ export class CreateCommentActionBase
 
   getPrivacyPolicy(): PrivacyPolicy<Comment> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
+  }
+
+  getTriggers(): Trigger<
+    Comment,
+    CommentBuilder<CommentCreateInput, Comment | null>,
+    ExampleViewer,
+    CommentCreateInput,
+    Comment | null
+  >[] {
+    return [];
+  }
+
+  getObservers(): Observer<
+    Comment,
+    CommentBuilder<CommentCreateInput, Comment | null>,
+    ExampleViewer,
+    CommentCreateInput,
+    Comment | null
+  >[] {
+    return [];
+  }
+
+  getValidators(): Validator<
+    Comment,
+    CommentBuilder<CommentCreateInput, Comment | null>,
+    ExampleViewer,
+    CommentCreateInput,
+    Comment | null
+  >[] {
+    return [];
   }
 
   getInput(): CommentCreateInput {

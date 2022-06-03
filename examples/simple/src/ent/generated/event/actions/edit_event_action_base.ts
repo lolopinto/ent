@@ -12,6 +12,9 @@ import {
   Action,
   Builder,
   Changeset,
+  Observer,
+  Trigger,
+  Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
 import { Address, Event } from "../../..";
@@ -56,6 +59,36 @@ export class EditEventActionBase
 
   getPrivacyPolicy(): PrivacyPolicy<Event> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
+  }
+
+  getTriggers(): Trigger<
+    Event,
+    EventBuilder<EventEditInput, Event>,
+    ExampleViewer,
+    EventEditInput,
+    Event
+  >[] {
+    return [];
+  }
+
+  getObservers(): Observer<
+    Event,
+    EventBuilder<EventEditInput, Event>,
+    ExampleViewer,
+    EventEditInput,
+    Event
+  >[] {
+    return [];
+  }
+
+  getValidators(): Validator<
+    Event,
+    EventBuilder<EventEditInput, Event>,
+    ExampleViewer,
+    EventEditInput,
+    Event
+  >[] {
+    return [];
   }
 
   getInput(): EventEditInput {

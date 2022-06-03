@@ -11,6 +11,9 @@ import {
 import {
   Action,
   Changeset,
+  Observer,
+  Trigger,
+  Validator,
   WriteOperation,
   setEdgeTypeInGroup,
 } from "@snowtop/ent/action";
@@ -62,6 +65,36 @@ export class EditEventRsvpStatusActionBase
 
   getPrivacyPolicy(): PrivacyPolicy<Event> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
+  }
+
+  getTriggers(): Trigger<
+    Event,
+    EventBuilder<EditEventRsvpStatusInput, Event>,
+    ExampleViewer,
+    EditEventRsvpStatusInput,
+    Event
+  >[] {
+    return [];
+  }
+
+  getObservers(): Observer<
+    Event,
+    EventBuilder<EditEventRsvpStatusInput, Event>,
+    ExampleViewer,
+    EditEventRsvpStatusInput,
+    Event
+  >[] {
+    return [];
+  }
+
+  getValidators(): Validator<
+    Event,
+    EventBuilder<EditEventRsvpStatusInput, Event>,
+    ExampleViewer,
+    EditEventRsvpStatusInput,
+    Event
+  >[] {
+    return [];
   }
 
   getInput(): EditEventRsvpStatusInput {

@@ -12,6 +12,9 @@ import {
   Action,
   Builder,
   Changeset,
+  Observer,
+  Trigger,
+  Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
 import { Contact, ContactEmail } from "../../..";
@@ -54,6 +57,36 @@ export class CreateContactEmailActionBase
 
   getPrivacyPolicy(): PrivacyPolicy<ContactEmail> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
+  }
+
+  getTriggers(): Trigger<
+    ContactEmail,
+    ContactEmailBuilder<ContactEmailCreateInput, ContactEmail | null>,
+    ExampleViewer,
+    ContactEmailCreateInput,
+    ContactEmail | null
+  >[] {
+    return [];
+  }
+
+  getObservers(): Observer<
+    ContactEmail,
+    ContactEmailBuilder<ContactEmailCreateInput, ContactEmail | null>,
+    ExampleViewer,
+    ContactEmailCreateInput,
+    ContactEmail | null
+  >[] {
+    return [];
+  }
+
+  getValidators(): Validator<
+    ContactEmail,
+    ContactEmailBuilder<ContactEmailCreateInput, ContactEmail | null>,
+    ExampleViewer,
+    ContactEmailCreateInput,
+    ContactEmail | null
+  >[] {
+    return [];
   }
 
   getInput(): ContactEmailCreateInput {

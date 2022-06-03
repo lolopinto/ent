@@ -23,48 +23,58 @@ async function findAuthCode(
 }
 // we're only writing this once except with --force and packageName provided
 export default class ConfirmEditPhoneNumberAction extends ConfirmEditPhoneNumberActionBase {
-  validators: Validator<
+  getValidators(): Validator<
     User,
-    UserBuilder,
+    UserBuilder<ConfirmEditPhoneNumberInput, User>,
     ExampleViewer,
-    ConfirmEditPhoneNumberInput
-  >[] = [
-    {
-      async validate(builder, input) {
-        const authCode = await findAuthCode(
-          builder,
-          input.code,
-          input.phoneNumber,
-        );
-        if (!authCode) {
-          throw new Error(`code ${input.code} not found associated with user`);
-        }
+    ConfirmEditPhoneNumberInput,
+    User
+  >[] {
+    return [
+      {
+        async validate(builder, input) {
+          const authCode = await findAuthCode(
+            builder,
+            input.code,
+            input.phoneNumber,
+          );
+          if (!authCode) {
+            throw new Error(
+              `code ${input.code} not found associated with user`,
+            );
+          }
+        },
       },
-    },
-  ];
+    ];
+  }
 
-  triggers: Trigger<
+  getTriggers(): Trigger<
     User,
-    UserBuilder,
+    UserBuilder<ConfirmEditPhoneNumberInput, User>,
     ExampleViewer,
-    ConfirmEditPhoneNumberInput
-  >[] = [
-    {
-      async changeset(builder, input) {
-        const authCode = await findAuthCode(
-          builder,
-          input.code,
-          input.phoneNumber,
-        );
-        if (!authCode) {
-          throw new Error(`code ${input.code} not found associated with user`);
-        }
-        // delete the authCode
-        return await DeleteAuthCodeAction.create(
-          builder.viewer,
-          authCode,
-        ).changeset();
+    ConfirmEditPhoneNumberInput,
+    User
+  >[] {
+    return [
+      {
+        async changeset(builder, input) {
+          const authCode = await findAuthCode(
+            builder,
+            input.code,
+            input.phoneNumber,
+          );
+          if (!authCode) {
+            throw new Error(
+              `code ${input.code} not found associated with user`,
+            );
+          }
+          // delete the authCode
+          return await DeleteAuthCodeAction.create(
+            builder.viewer,
+            authCode,
+          ).changeset();
+        },
       },
-    },
-  ];
+    ];
+  }
 }

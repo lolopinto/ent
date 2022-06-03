@@ -4,7 +4,7 @@ import {
   getTargetFromCurrentDir,
   createSourceFile,
 } from "../tsc/compilerOptions";
-import { getClassInfo, transformImport } from "../tsc/ast";
+import { getClassInfo, getPreText, transformImport } from "../tsc/ast";
 import { execSync } from "child_process";
 import * as fs from "fs";
 
@@ -36,7 +36,6 @@ async function main() {
         return;
       }
 
-      // need to check for PrivacyPolicy import...
       traversed = true;
 
       let klassContents = "";
@@ -53,7 +52,7 @@ async function main() {
           const code = `getPrivacyPolicy(): PrivacyPolicy<this> {
             return ${pp}
           }`;
-          klassContents += code;
+          klassContents += getPreText(contents, mm, sourceFile) + code;
         } else {
           klassContents += mm.getFullText(sourceFile);
         }
@@ -61,7 +60,6 @@ async function main() {
 
       // wrap comments and transform to export class Foo extends Bar { ${inner} }
       nodes.push({ rawString: classInfo.wrapClassContents(klassContents) });
-      //      console.debug(classInfo.wrapClassContents(klassContents));
     });
 
     // if traversed, overwrite.

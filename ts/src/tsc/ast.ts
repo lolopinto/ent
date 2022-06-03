@@ -107,6 +107,7 @@ interface transformOpts {
   removeImports?: string[];
   newImports?: string[];
   transform?: transformImportFn;
+  transformPath?: string;
 }
 
 export function transformImport(
@@ -119,23 +120,24 @@ export function transformImport(
 ): string | undefined {
   // remove quotes too
   const text = importNode.moduleSpecifier.getText(sourceFile).slice(1, -1);
-  if (
-    text !== "@snowtop/ent" &&
-    text !== "@snowtop/ent/schema" &&
-    text !== "@snowtop/ent/schema/"
-  ) {
+  if (opts?.transformPath) {
+    if (text !== opts.transformPath) {
+      return;
+    }
+  } else {
+    if (
+      text !== "@snowtop/ent" &&
+      text !== "@snowtop/ent/schema" &&
+      text !== "@snowtop/ent/schema/"
+    ) {
+      return;
+    }
+  }
+  const impInfo = getImportInfo(importNode, sourceFile);
+  if (!impInfo) {
     return;
   }
-  const importText = importNode.importClause?.getText(sourceFile) || "";
-  const start = importText.indexOf("{");
-  const end = importText.lastIndexOf("}");
-  if (start === -1 || end === -1) {
-    return;
-  }
-  const imports = importText
-    .substring(start + 1, end)
-    //    .trim()
-    .split(",");
+  const { imports, start, end, importText } = impInfo;
 
   let removeImportsMap: Data = {};
   if (opts?.removeImports) {
@@ -204,4 +206,55 @@ export function updateImportPath(
     newPath +
     '";'
   );
+}
+
+export function isRelativeImport(
+  node: ts.ImportDeclaration,
+  sourceFile: ts.SourceFile,
+) {
+  const text = node.moduleSpecifier.getText(sourceFile).slice(1, -1);
+  return text.startsWith("..") || text.startsWith("./");
+}
+
+export function isRelativeGeneratedImport(
+  node: ts.ImportDeclaration,
+  sourceFile: ts.SourceFile,
+) {
+  const text = node.moduleSpecifier.getText(sourceFile).slice(1, -1);
+  return (
+    (text.startsWith("..") || text.startsWith("./")) &&
+    text.indexOf("/generated") !== -1
+  );
+}
+
+interface importInfo {
+  imports: string[];
+  start: number;
+  end: number;
+  importText: string;
+  importPath: string;
+}
+
+export function getImportInfo(
+  imp: ts.ImportDeclaration,
+  sourceFile: ts.SourceFile,
+): importInfo | undefined {
+  const importText = imp.importClause?.getText(sourceFile) || "";
+  const start = importText.indexOf("{");
+  const end = importText.lastIndexOf("}");
+  const text = imp.moduleSpecifier.getText(sourceFile).slice(1, -1);
+
+  if (start === -1 || end === -1) {
+    return;
+  }
+  return {
+    importPath: text,
+    importText,
+    start,
+    end,
+    imports: importText
+      .substring(start + 1, end)
+      //.trim()
+      .split(","),
+  };
 }

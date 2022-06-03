@@ -35,76 +35,82 @@ export default class CreateContactAction extends CreateContactActionBase {
     };
   }
 
-  triggers: Trigger<
+  getTriggers(): Trigger<
     Contact,
-    ContactBuilder,
+    ContactBuilder<ContactCreateInput, Contact | null>,
     ExampleViewer,
-    ContactCreateInput
-  >[] = [
-    {
-      async changeset(builder, input) {
-        if (!input.emails) {
-          return;
-        }
-        const emailIds: ID[] = [];
-        const changesets = await Promise.all(
-          input.emails.map(async (email) => {
-            const action = CreateContactEmailAction.create(builder.viewer, {
-              emailAddress: email.emailAddress,
-              label: email.label,
-              contactID: builder,
-            });
-            // use getPossibleUnsafeEntForPrivacy for this
-            const unsafe =
-              await action.builder.orchestrator.getPossibleUnsafeEntForPrivacy();
-            emailIds.push(unsafe!.id);
-            return action.changeset();
-          }),
-        );
-
-        builder.updateInput({
-          emailIds,
-        });
-        return changesets;
-      },
-    },
-    {
-      async changeset(builder, input) {
-        if (!input.phoneNumbers) {
-          return;
-        }
-        const phoneNumberIds: ID[] = [];
-        const changesets = await Promise.all(
-          input.phoneNumbers.map(async (phone) => {
-            const action = CreateContactPhoneNumberAction.create(
-              builder.viewer,
-              {
-                phoneNumber: phone.phoneNumber,
-                label: phone.label,
+    ContactCreateInput,
+    Contact | null
+  >[] {
+    return [
+      {
+        async changeset(builder, input) {
+          if (!input.emails) {
+            return;
+          }
+          const emailIds: ID[] = [];
+          const changesets = await Promise.all(
+            input.emails.map(async (email) => {
+              const action = CreateContactEmailAction.create(builder.viewer, {
+                emailAddress: email.emailAddress,
+                label: email.label,
                 contactID: builder,
-              },
-            );
-            const edited = await action.builder.orchestrator.getEditedData();
-            phoneNumberIds.push(edited.id);
-            return action.changeset();
-          }),
-        );
+              });
+              // use getPossibleUnsafeEntForPrivacy for this
+              const unsafe =
+                await action.builder.orchestrator.getPossibleUnsafeEntForPrivacy();
+              emailIds.push(unsafe!.id);
+              return action.changeset();
+            }),
+          );
 
-        builder.updateInput({
-          phoneNumberIds,
-        });
-
-        return changesets;
+          builder.updateInput({
+            emailIds,
+          });
+          return changesets;
+        },
       },
-    },
-  ];
+      {
+        async changeset(builder, input) {
+          if (!input.phoneNumbers) {
+            return;
+          }
+          const phoneNumberIds: ID[] = [];
+          const changesets = await Promise.all(
+            input.phoneNumbers.map(async (phone) => {
+              const action = CreateContactPhoneNumberAction.create(
+                builder.viewer,
+                {
+                  phoneNumber: phone.phoneNumber,
+                  label: phone.label,
+                  contactID: builder,
+                },
+              );
+              const edited = await action.builder.orchestrator.getEditedData();
+              phoneNumberIds.push(edited.id);
+              return action.changeset();
+            }),
+          );
 
-  observers: Observer<
+          builder.updateInput({
+            phoneNumberIds,
+          });
+
+          return changesets;
+        },
+      },
+    ];
+  }
+
+  getObservers(): Observer<
     Contact,
-    ContactBuilder,
+    ContactBuilder<ContactCreateInput, Contact | null>,
     ExampleViewer,
-    ContactCreateInput
-  >[] = [new EntCreationObserver()];
+    ContactCreateInput,
+    Contact | null
+  >[] {
+    return [new EntCreationObserver()];
+  }
 
   viewerForEntLoad(data: Data) {
     // needed if created in user action and we want to make sure this

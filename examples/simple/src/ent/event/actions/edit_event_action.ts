@@ -17,8 +17,15 @@ export { EventEditInput };
 
 // we're only writing this once except with --force and packageName provided
 export default class EditEventAction extends EditEventActionBase {
-  validators: Validator<Event, EventBuilder, ExampleViewer, EventEditInput>[] =
-    [...SharedValidators];
+  getValidators(): Validator<
+    Event,
+    EventBuilder<EventEditInput, Event>,
+    ExampleViewer,
+    EventEditInput,
+    Event
+  >[] {
+    return [...SharedValidators];
+  }
 
   getPrivacyPolicy(): PrivacyPolicy {
     return {

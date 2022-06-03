@@ -8,7 +8,14 @@ import {
   ID,
   PrivacyPolicy,
 } from "@snowtop/ent";
-import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
+import {
+  Action,
+  Changeset,
+  Observer,
+  Trigger,
+  Validator,
+  WriteOperation,
+} from "@snowtop/ent/action";
 import { Event } from "../../..";
 import { EventBuilder, EventInput } from "./event_builder";
 import { ExampleViewer } from "../../../../viewer/viewer";
@@ -40,6 +47,36 @@ export class DeleteEventActionBase
 
   getPrivacyPolicy(): PrivacyPolicy<Event> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
+  }
+
+  getTriggers(): Trigger<
+    Event,
+    EventBuilder<EventInput, Event>,
+    ExampleViewer,
+    EventInput,
+    Event
+  >[] {
+    return [];
+  }
+
+  getObservers(): Observer<
+    Event,
+    EventBuilder<EventInput, Event>,
+    ExampleViewer,
+    EventInput,
+    Event
+  >[] {
+    return [];
+  }
+
+  getValidators(): Validator<
+    Event,
+    EventBuilder<EventInput, Event>,
+    ExampleViewer,
+    EventInput,
+    Event
+  >[] {
+    return [];
   }
 
   getInput(): EventInput {

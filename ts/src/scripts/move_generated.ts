@@ -6,7 +6,7 @@ import {
   getTargetFromCurrentDir,
 } from "../tsc/compilerOptions";
 import ts from "typescript";
-import { updateImportPath } from "../tsc/ast";
+import { isRelativeGeneratedImport, updateImportPath } from "../tsc/ast";
 import { execSync } from "child_process";
 
 // src/ent/generated and src/graphql/generated
@@ -132,17 +132,12 @@ function isGeneratedPath(
   sourceFile: ts.SourceFile,
   dirPath: string,
 ) {
-  const text = node.moduleSpecifier.getText(sourceFile).slice(1, -1);
-
   // it's relative and has generated in there, continue
-  if (
-    !(
-      (text.startsWith("..") || text.startsWith("./")) &&
-      text.indexOf("/generated") !== -1
-    )
-  ) {
+  if (!isRelativeGeneratedImport(node, sourceFile)) {
     return;
   }
+
+  const text = node.moduleSpecifier.getText(sourceFile).slice(1, -1);
   const oldPath = path.join(dirPath, text);
   const relFromRoot = path.relative(".", oldPath);
   const conv = transformPath(relFromRoot);

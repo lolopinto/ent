@@ -7,7 +7,14 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   PrivacyPolicy,
 } from "@snowtop/ent";
-import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
+import {
+  Action,
+  Changeset,
+  Observer,
+  Trigger,
+  Validator,
+  WriteOperation,
+} from "@snowtop/ent/action";
 import { DayOfWeek, DayOfWeekAlt, HoursOfOperation } from "../../..";
 import { HoursOfOperationBuilder } from "./hours_of_operation_builder";
 import { ExampleViewer } from "../../../../viewer/viewer";
@@ -52,6 +59,45 @@ export class CreateHoursOfOperationActionBase
 
   getPrivacyPolicy(): PrivacyPolicy<HoursOfOperation> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
+  }
+
+  getTriggers(): Trigger<
+    HoursOfOperation,
+    HoursOfOperationBuilder<
+      HoursOfOperationCreateInput,
+      HoursOfOperation | null
+    >,
+    ExampleViewer,
+    HoursOfOperationCreateInput,
+    HoursOfOperation | null
+  >[] {
+    return [];
+  }
+
+  getObservers(): Observer<
+    HoursOfOperation,
+    HoursOfOperationBuilder<
+      HoursOfOperationCreateInput,
+      HoursOfOperation | null
+    >,
+    ExampleViewer,
+    HoursOfOperationCreateInput,
+    HoursOfOperation | null
+  >[] {
+    return [];
+  }
+
+  getValidators(): Validator<
+    HoursOfOperation,
+    HoursOfOperationBuilder<
+      HoursOfOperationCreateInput,
+      HoursOfOperation | null
+    >,
+    ExampleViewer,
+    HoursOfOperationCreateInput,
+    HoursOfOperation | null
+  >[] {
+    return [];
   }
 
   getInput(): HoursOfOperationCreateInput {

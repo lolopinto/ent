@@ -19,21 +19,32 @@ export default class CreateEventAction extends CreateEventActionBase {
     return AlwaysAllowPrivacyPolicy;
   }
 
-  validators: Validator<
+  getValidators(): Validator<
     Event,
-    EventBuilder,
+    EventBuilder<EventCreateInput, Event | null>,
     ExampleViewer,
-    EventCreateInput
-  >[] = [...SharedValidators];
+    EventCreateInput,
+    Event | null
+  >[] {
+    return [...SharedValidators];
+  }
 
-  triggers: Trigger<Event, EventBuilder, ExampleViewer, EventCreateInput>[] = [
-    {
-      changeset(
-        builder: EventBuilder<EventCreateInput>,
-        input: EventCreateInput,
-      ) {
-        builder.addHostID(input.creatorID);
+  getTriggers(): Trigger<
+    Event,
+    EventBuilder<EventCreateInput, Event | null>,
+    ExampleViewer,
+    EventCreateInput,
+    Event | null
+  >[] {
+    return [
+      {
+        changeset(
+          builder: EventBuilder<EventCreateInput>,
+          input: EventCreateInput,
+        ) {
+          builder.addHostID(input.creatorID);
+        },
       },
-    },
-  ];
+    ];
+  }
 }

@@ -38,27 +38,36 @@ export class BaseAction<
 {
   builder: EntBuilder<TEnt, TViewer, TInput>;
   private input: TInput;
-  triggers: Trigger<
-    TEnt,
-    EntBuilder<TEnt, TViewer, TInput>,
-    TViewer,
-    TInput
-  >[] = [];
-  observers: Observer<
-    TEnt,
-    EntBuilder<TEnt, TViewer, TInput>,
-    TViewer,
-    TInput
-  >[] = [];
-  validators: Validator<
-    TEnt,
-    EntBuilder<TEnt, TViewer, TInput>,
-    TViewer,
-    TInput
-  >[] = [];
 
   getPrivacyPolicy() {
     return AlwaysAllowPrivacyPolicy;
+  }
+
+  getTriggers(): Trigger<
+    TEnt,
+    EntBuilder<TEnt, TViewer, TInput>,
+    TViewer,
+    TInput
+  >[] {
+    return [];
+  }
+
+  getObservers(): Observer<
+    TEnt,
+    EntBuilder<TEnt, TViewer, TInput>,
+    TViewer,
+    TInput
+  >[] {
+    return [];
+  }
+
+  getValidators(): Validator<
+    TEnt,
+    EntBuilder<TEnt, TViewer, TInput>,
+    TViewer,
+    TInput
+  >[] {
+    return [];
   }
 
   constructor(
@@ -110,7 +119,7 @@ export class BaseAction<
     let action = new BaseAction(ent.viewer, builderCtr, {
       existingEnt: ent,
     });
-    action.triggers = [
+    action.getTriggers = () => [
       {
         changeset: (): Promise<Changeset>[] => {
           return actions.map((action) => action.changeset());

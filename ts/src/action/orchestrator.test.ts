@@ -940,7 +940,7 @@ function commonTests() {
         ]),
       );
       action.builder.orchestrator.addInboundEdge(user.id, "edge", "User");
-      action.triggers = [
+      action.getTriggers = () => [
         {
           changeset: (builder: SimpleBuilder<User>) => {
             const derivedAction = getInsertUserAction(
@@ -1025,7 +1025,7 @@ function commonTests() {
         "symmetricEdge",
         "User",
       );
-      action.triggers = [
+      action.getTriggers = () => [
         {
           changeset: (builder: SimpleBuilder<User>) => {
             const derivedAction = getInsertUserAction(
@@ -1416,7 +1416,7 @@ function commonTests() {
         ]),
       );
       action.builder.orchestrator.addOutboundEdge(user.id, "edge", "User");
-      action.triggers = [
+      action.getTriggers = () => [
         {
           changeset: (builder: SimpleBuilder<User>) => {
             const derivedAction = getInsertUserAction(
@@ -1503,7 +1503,7 @@ function commonTests() {
       "symmetricEdge",
       "User",
     );
-    action.triggers = [
+    action.getTriggers = () => [
       {
         changeset: (builder: SimpleBuilder<User>) => {
           const derivedAction = getInsertUserAction(
@@ -1793,7 +1793,7 @@ function commonTests() {
         WriteOperation.Insert,
         null,
       );
-      action.validators = validators;
+      action.getValidators = () => validators;
 
       try {
         await action.validX();
@@ -1817,7 +1817,7 @@ function commonTests() {
         WriteOperation.Insert,
         null,
       );
-      action.validators = validators;
+      action.getValidators = () => validators;
 
       await action.validX();
 
@@ -2032,7 +2032,7 @@ function commonTests() {
         null,
       );
 
-      action.triggers = triggers;
+      action.getTriggers = () => triggers;
       const user = await action.saveX();
       if (!user) {
         throw new Error("couldn't save user");
@@ -2064,7 +2064,7 @@ function commonTests() {
         null,
       );
       // also create a contact when we create a user
-      action.triggers = [
+      action.getTriggers = () => [
         accountStatusTrigger,
         {
           changeset: (
@@ -2139,7 +2139,7 @@ function commonTests() {
         WriteOperation.Insert,
         null,
       );
-      action.observers = [sendEmailObserver];
+      action.getObservers = () => [sendEmailObserver];
 
       const user = await action.saveX();
       if (!user) {
@@ -2172,7 +2172,7 @@ function commonTests() {
         WriteOperation.Insert,
         null,
       );
-      action.observers = [sendEmailObserver];
+      action.getObservers = () => [sendEmailObserver];
 
       const user = await action.saveX();
       if (!user) {
@@ -2210,7 +2210,7 @@ function commonTests() {
         WriteOperation.Insert,
         null,
       );
-      action.observers = [sendEmailObserverAsync];
+      action.getObservers = () => [sendEmailObserverAsync];
 
       const user = await action.saveX();
       if (!user) {
@@ -2246,7 +2246,7 @@ function commonTests() {
         WriteOperation.Insert,
         null,
       );
-      action.triggers = [
+      action.getTriggers = () => [
         {
           changeset: (builder: SimpleBuilder<UserExtended>): void => {
             builder.fields.set("account_status", "VALID");
@@ -2258,7 +2258,7 @@ function commonTests() {
           rules: [DenyIfLoggedInRule, AlwaysAllowRule],
         };
       };
-      action.validators = [
+      action.getValidators = () => [
         {
           validate: async (
             builder: SimpleBuilder<UserExtended>,
@@ -2270,7 +2270,7 @@ function commonTests() {
           },
         },
       ];
-      action.observers = [sendEmailObserver];
+      action.getObservers = () => [sendEmailObserver];
       return action;
     };
 
@@ -2653,7 +2653,7 @@ function commonTests() {
       WriteOperation.Insert,
       null,
     );
-    action.triggers = [
+    action.getTriggers = () => [
       {
         changeset: async (builder: SimpleBuilder<Contact>) => {
           const emailIDs: string[] = [];
@@ -2742,7 +2742,7 @@ function commonTests() {
     );
 
     let idInTrigger: string | undefined;
-    action.triggers = [
+    action.getTriggers = () => [
       {
         changeset: async (builder: SimpleBuilder<Contact>) => {
           const edited = await builder.orchestrator.getEditedData();
