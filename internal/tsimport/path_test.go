@@ -50,7 +50,6 @@ func TestImportPath(t *testing.T) {
 			filePath:   "src/ent/user/actions/generated/confirm_edit_email_address_action_base.ts",
 			importPath: "src/ent/",
 			expResult:  "../../..",
-			only:       true,
 		},
 		"action base from action": {
 			filePath:   "src/ent/user/actions/create_user_action.ts",
@@ -70,7 +69,7 @@ func TestImportPath(t *testing.T) {
 		"graphql internal from graphql": {
 			filePath:   "src/graphql/generated/resolvers/user_type.ts",
 			importPath: "src/graphql/resolvers/internal",
-			expResult:  "../internal",
+			expResult:  "../../resolvers/internal",
 		},
 		"directory root from nested path in dir": {
 			filePath:   "src/ent/user/actions/create_user_action.ts",
