@@ -124,7 +124,7 @@ describe("fieldEdge no inverseEdge", () => {
       AccountSchema,
       new Map<string, any>([["userID", userAction.builder]]),
     );
-    action.triggers = [
+    action.getTriggers = () => [
       {
         changeset() {
           return userAction.changeset();
@@ -179,7 +179,7 @@ describe("fieldEdge no inverseEdge", () => {
       AccountSchema,
       new Map<string, any>([["userID", userAction.builder]]),
     );
-    action.triggers = [
+    action.getTriggers = () => [
       {
         changeset() {
           return userAction.changeset();

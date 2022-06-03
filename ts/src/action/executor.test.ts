@@ -294,25 +294,31 @@ class MessageAction extends SimpleAction<Message> {
     super(viewer, MessageSchema, fields, operation, existingEnt);
   }
 
-  triggers: Trigger<Message, SimpleBuilder<Message>>[] = [
-    {
-      changeset: (builder, _input): void => {
-        let sender = builder.fields.get("sender");
-        let recipient = builder.fields.get("recipient");
+  getTriggers(): Trigger<Message, SimpleBuilder<Message, Message | null>>[] {
+    return [
+      {
+        changeset: (builder, _input): void => {
+          let sender = builder.fields.get("sender");
+          let recipient = builder.fields.get("recipient");
 
-        builder.orchestrator.addInboundEdge(sender, "senderToMessage", "user");
-        builder.orchestrator.addInboundEdge(
-          recipient,
-          "recipientToMessage",
-          "user",
-        );
+          builder.orchestrator.addInboundEdge(
+            sender,
+            "senderToMessage",
+            "user",
+          );
+          builder.orchestrator.addInboundEdge(
+            recipient,
+            "recipientToMessage",
+            "user",
+          );
+        },
       },
-    },
-  ];
+    ];
+  }
 
-  observers: Observer<Message, SimpleBuilder<Message>>[] = [
-    new EntCreationObserver<Message>(),
-  ];
+  getObservers(): Observer<Message, SimpleBuilder<Message>>[] {
+    return [new EntCreationObserver<Message>()];
+  }
 }
 
 class UserAction extends SimpleAction<User> {
@@ -327,38 +333,42 @@ class UserAction extends SimpleAction<User> {
     super(viewer, UserSchema, fields, operation, existingEnt);
   }
 
-  triggers: Trigger<User, SimpleBuilder<User>>[] = [
-    {
-      changeset: (builder): Promise<Changeset> => {
-        let firstName = builder.fields.get("FirstName");
-        let lastName = builder.fields.get("LastName");
-        this.contactAction = new SimpleAction(
-          builder.viewer,
-          ContactSchema,
-          new Map([
-            ["FirstName", firstName],
-            ["LastName", lastName],
-            ["UserID", builder],
-          ]),
-          WriteOperation.Insert,
-          null,
-        );
+  getTriggers(): Trigger<User, SimpleBuilder<User>>[] {
+    return [
+      {
+        changeset: (builder): Promise<Changeset> => {
+          let firstName = builder.fields.get("FirstName");
+          let lastName = builder.fields.get("LastName");
+          this.contactAction = new SimpleAction(
+            builder.viewer,
+            ContactSchema,
+            new Map([
+              ["FirstName", firstName],
+              ["LastName", lastName],
+              ["UserID", builder],
+            ]),
+            WriteOperation.Insert,
+            null,
+          );
 
-        this.contactAction.observers = [new EntCreationObserver<Contact>()];
+          this.contactAction.getObservers = () => [
+            new EntCreationObserver<Contact>(),
+          ];
 
-        builder.orchestrator.addOutboundEdge(
-          this.contactAction.builder,
-          "selfContact",
-          "contact",
-        );
-        return this.contactAction.changeset();
+          builder.orchestrator.addOutboundEdge(
+            this.contactAction.builder,
+            "selfContact",
+            "contact",
+          );
+          return this.contactAction.changeset();
+        },
       },
-    },
-  ];
+    ];
+  }
 
-  observers: Observer<User, SimpleBuilder<User>>[] = [
-    new EntCreationObserver<User>(),
-  ];
+  getObservers(): Observer<User, SimpleBuilder<User>>[] {
+    return [new EntCreationObserver<User>()];
+  }
 }
 
 type getMembershipFunction = (
@@ -398,7 +408,7 @@ class EditGroupAction extends SimpleAction<Group> {
   ) {
     super(viewer, schema, fields, operation, existingEnt);
   }
-  triggers = [new GroupMembershipTrigger(this.getter)];
+  getTriggers = () => [new GroupMembershipTrigger(this.getter)];
 }
 
 function randomEmail(): string {
@@ -758,7 +768,7 @@ function commonTests() {
       group,
     );
 
-    action.triggers = [
+    action.getTriggers = () => [
       {
         changeset: async (
           builder: SimpleBuilder<Group>,
@@ -816,7 +826,7 @@ function commonTests() {
         },
       },
     ];
-    action.observers = [new EntCreationObserver<Group>()];
+    action.getObservers = () => [new EntCreationObserver<Group>()];
 
     // expect ComplexExecutor because of complexity of what we have here
     // we have a Group action which has nested things in it
@@ -918,7 +928,7 @@ function commonTests() {
     class CreateChangelogAction extends SimpleAction<Changelog> {}
 
     class CreateMembershipAction extends SimpleAction<GroupMembership> {
-      triggers = [
+      getTriggers = () => [
         {
           async changeset(builder: SimpleBuilder<GroupMembership>, input) {
             const clAction = new CreateChangelogAction(
@@ -988,7 +998,7 @@ function commonTests() {
     class CreateChangelogAction extends SimpleAction<Changelog> {}
 
     class CreateMembershipAction extends SimpleAction<GroupMembership> {
-      triggers = [
+      getTriggers = () => [
         {
           async changeset(builder: SimpleBuilder<GroupMembership>, input) {
             const clAction = new CreateChangelogAction(
@@ -1078,7 +1088,7 @@ function commonTests() {
 
   test("nested with list + node + edge deps", async () => {
     class CreateMembershipAction extends SimpleAction<GroupMembership> {
-      triggers = [
+      getTriggers = () => [
         {
           async changeset(builder: SimpleBuilder<GroupMembership>, input) {
             const clAction = new CreateChangelogAction(
@@ -1170,9 +1180,9 @@ function commonTests() {
     );
 
     async function doNothing(): Promise<void> {}
-    action.triggers = [
+    action.getTriggers = () => [
       {
-        changeset: async (builder: SimpleBuilder<Group>) => {
+        changeset: async () => {
           return await Promise.all([userAction.changeset(), doNothing()]);
         },
       },
@@ -1205,7 +1215,7 @@ function commonTests() {
         setTimeout(() => resolve(null), 5);
       });
     }
-    action.triggers = [
+    action.getTriggers = () => [
       {
         changeset: async (builder: SimpleBuilder<Group>) => {
           await fetchFoo();

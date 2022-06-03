@@ -325,9 +325,6 @@ export class SimpleAction<
     Action<T, SimpleBuilder<T, TExistingEnt>, Viewer, Data, TExistingEnt>
 {
   builder: SimpleBuilder<T, TExistingEnt>;
-  validators: Validator<T, SimpleBuilder<T>>[] = [];
-  triggers: Trigger<T, SimpleBuilder<T>>[] = [];
-  observers: Observer<T, SimpleBuilder<T>>[] = [];
   viewerForEntLoad: viewerEntLoadFunc | undefined;
 
   constructor(
@@ -345,6 +342,18 @@ export class SimpleAction<
       existingEnt,
       this,
     );
+  }
+
+  getTriggers(): Trigger<T, SimpleBuilder<T>>[] {
+    return [];
+  }
+
+  getValidators(): Validator<T, SimpleBuilder<T>>[] {
+    return [];
+  }
+
+  getObservers(): Observer<T, SimpleBuilder<T>>[] {
+    return [];
   }
 
   getPrivacyPolicy() {

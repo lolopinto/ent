@@ -130,12 +130,9 @@ export interface Action<
   // TODO template ent
   getPrivacyPolicy(): PrivacyPolicy<TEnt>;
 
-  // TODO consider making these methods. maybe they'll be easier to use then?
-  // performance implications of methods being called multiple times and new instances?
-  // even when declared in base class, if overriden in subclasses, still need to type it...
-  triggers?: Trigger<TEnt, TBuilder, TViewer, TInput, TExistingEnt>[];
-  observers?: Observer<TEnt, TBuilder, TViewer, TInput, TExistingEnt>[];
-  validators?: Validator<TEnt, TBuilder, TViewer, TInput, TExistingEnt>[];
+  getTriggers?(): Trigger<TEnt, TBuilder, TViewer, TInput, TExistingEnt>[];
+  getObservers?(): Observer<TEnt, TBuilder, TViewer, TInput, TExistingEnt>[];
+  getValidators?(): Validator<TEnt, TBuilder, TViewer, TInput, TExistingEnt>[];
   getInput(): TInput; // this input is passed to Triggers, Observers, Validators
   transformWrite?: (
     stmt: UpdateOperation<TEnt>,

@@ -547,12 +547,15 @@ export class Orchestrator<
 
     // have to run triggers which update fields first before field and other validators
     // so running this first to build things up
-    let triggers = action?.triggers;
-    if (triggers) {
-      await this.triggers(action!, builder, triggers);
+    if (action?.getTriggers) {
+      await this.triggers(action!, builder, action.getTriggers());
     }
 
-    let validators = action?.validators || [];
+    let validators: Validator<TEnt, Builder<TEnt, TViewer>, TViewer, TInput>[] =
+      [];
+    if (action?.getValidators) {
+      validators = action.getValidators();
+    }
 
     // not ideal we're calling this twice. fix...
     // needed for now. may need to rewrite some of this?
