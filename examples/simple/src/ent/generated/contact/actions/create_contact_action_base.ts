@@ -12,6 +12,9 @@ import {
   Action,
   Builder,
   Changeset,
+  Observer,
+  Trigger,
+  Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
 import { Contact, User } from "../../..";
@@ -62,6 +65,36 @@ export class CreateContactActionBase
 
   getPrivacyPolicy(): PrivacyPolicy<Contact> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
+  }
+
+  getTriggers(): Trigger<
+    Contact,
+    ContactBuilder,
+    ExampleViewer,
+    ContactCreateInput,
+    Contact | null
+  >[] {
+    return [];
+  }
+
+  getObservers(): Observer<
+    Contact,
+    ContactBuilder,
+    ExampleViewer,
+    ContactCreateInput,
+    Contact | null
+  >[] {
+    return [];
+  }
+
+  getValidators(): Validator<
+    Contact,
+    ContactBuilder,
+    ExampleViewer,
+    ContactCreateInput,
+    Contact | null
+  >[] {
+    return [];
   }
 
   getInput(): ContactCreateInput {

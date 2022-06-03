@@ -8,7 +8,14 @@ import {
   ID,
   PrivacyPolicy,
 } from "@snowtop/ent";
-import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
+import {
+  Action,
+  Changeset,
+  Observer,
+  Trigger,
+  Validator,
+  WriteOperation,
+} from "@snowtop/ent/action";
 import { User, UserDaysOff, UserPreferredShift } from "../../..";
 import { UserBuilder } from "./user_builder";
 import { UserNestedObjectList } from "../../user_nested_object_list";
@@ -63,6 +70,36 @@ export class CreateUserActionBase
 
   getPrivacyPolicy(): PrivacyPolicy<User> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
+  }
+
+  getTriggers(): Trigger<
+    User,
+    UserBuilder,
+    ExampleViewer,
+    UserCreateInput,
+    User | null
+  >[] {
+    return [];
+  }
+
+  getObservers(): Observer<
+    User,
+    UserBuilder,
+    ExampleViewer,
+    UserCreateInput,
+    User | null
+  >[] {
+    return [];
+  }
+
+  getValidators(): Validator<
+    User,
+    UserBuilder,
+    ExampleViewer,
+    UserCreateInput,
+    User | null
+  >[] {
+    return [];
   }
 
   getInput(): UserCreateInput {

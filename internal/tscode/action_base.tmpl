@@ -1,4 +1,4 @@
-{{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "Builder" "setEdgeTypeInGroup" }}
+{{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "Builder" "setEdgeTypeInGroup" "Trigger" "Observer" "Validator"}}
 {{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions" "PrivacyPolicy"}}
 {{ reserveImport "src/ent/" "NodeType"}}
 {{ reserveImport .PrivacyConfig.Path .PrivacyConfig.PolicyName }}
@@ -139,6 +139,19 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
       return {{useImport .PrivacyConfig.PolicyName}};
     {{ end -}}
   };
+
+
+  getTriggers(): {{useImport "Trigger"}}<{{$node}}, {{$builderName}}, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[] {
+    return [];
+  }
+
+  getObservers(): {{useImport "Observer"}}<{{$node}}, {{$builderName}}, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[] {
+    return [];
+  }
+
+  getValidators(): {{useImport "Validator"}}<{{$node}}, {{$builderName}}, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[] {
+    return [];
+  }
 
   getInput(): {{$inputData}} {
     {{ if $hasInput -}}

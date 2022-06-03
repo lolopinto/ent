@@ -8,7 +8,14 @@ import {
   ID,
   PrivacyPolicy,
 } from "@snowtop/ent";
-import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
+import {
+  Action,
+  Changeset,
+  Observer,
+  Trigger,
+  Validator,
+  WriteOperation,
+} from "@snowtop/ent/action";
 import { User } from "../../..";
 import { UserBuilder } from "./user_builder";
 import { ExampleViewer } from "../../../../viewer/viewer";
@@ -46,6 +53,36 @@ export class EditPhoneNumberActionBase
 
   getPrivacyPolicy(): PrivacyPolicy<User> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
+  }
+
+  getTriggers(): Trigger<
+    User,
+    UserBuilder,
+    ExampleViewer,
+    EditPhoneNumberInput,
+    User
+  >[] {
+    return [];
+  }
+
+  getObservers(): Observer<
+    User,
+    UserBuilder,
+    ExampleViewer,
+    EditPhoneNumberInput,
+    User
+  >[] {
+    return [];
+  }
+
+  getValidators(): Validator<
+    User,
+    UserBuilder,
+    ExampleViewer,
+    EditPhoneNumberInput,
+    User
+  >[] {
+    return [];
   }
 
   getInput(): EditPhoneNumberInput {

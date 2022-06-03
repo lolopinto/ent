@@ -12,6 +12,9 @@ import {
   Action,
   Builder,
   Changeset,
+  Observer,
+  Trigger,
+  Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
 import { AuthCode, User } from "../../..";
@@ -55,6 +58,36 @@ export class CreateAuthCodeActionBase
 
   getPrivacyPolicy(): PrivacyPolicy<AuthCode> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
+  }
+
+  getTriggers(): Trigger<
+    AuthCode,
+    AuthCodeBuilder,
+    ExampleViewer,
+    AuthCodeCreateInput,
+    AuthCode | null
+  >[] {
+    return [];
+  }
+
+  getObservers(): Observer<
+    AuthCode,
+    AuthCodeBuilder,
+    ExampleViewer,
+    AuthCodeCreateInput,
+    AuthCode | null
+  >[] {
+    return [];
+  }
+
+  getValidators(): Validator<
+    AuthCode,
+    AuthCodeBuilder,
+    ExampleViewer,
+    AuthCodeCreateInput,
+    AuthCode | null
+  >[] {
+    return [];
   }
 
   getInput(): AuthCodeCreateInput {

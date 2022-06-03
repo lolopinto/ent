@@ -7,7 +7,14 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   PrivacyPolicy,
 } from "@snowtop/ent";
-import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
+import {
+  Action,
+  Changeset,
+  Observer,
+  Trigger,
+  Validator,
+  WriteOperation,
+} from "@snowtop/ent/action";
 import { Address } from "../../..";
 import { AddressBuilder } from "./address_builder";
 import { ExampleViewer } from "../../../../viewer/viewer";
@@ -48,6 +55,36 @@ export class CreateAddressActionBase
 
   getPrivacyPolicy(): PrivacyPolicy<Address> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
+  }
+
+  getTriggers(): Trigger<
+    Address,
+    AddressBuilder,
+    ExampleViewer,
+    AddressCreateInput,
+    Address | null
+  >[] {
+    return [];
+  }
+
+  getObservers(): Observer<
+    Address,
+    AddressBuilder,
+    ExampleViewer,
+    AddressCreateInput,
+    Address | null
+  >[] {
+    return [];
+  }
+
+  getValidators(): Validator<
+    Address,
+    AddressBuilder,
+    ExampleViewer,
+    AddressCreateInput,
+    Address | null
+  >[] {
+    return [];
   }
 
   getInput(): AddressCreateInput {

@@ -7,7 +7,14 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
   PrivacyPolicy,
 } from "@snowtop/ent";
-import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
+import {
+  Action,
+  Changeset,
+  Observer,
+  Trigger,
+  Validator,
+  WriteOperation,
+} from "@snowtop/ent/action";
 import { DayOfWeek, DayOfWeekAlt, Holiday } from "../../..";
 import { HolidayBuilder } from "./holiday_builder";
 import { ExampleViewer } from "../../../../viewer/viewer";
@@ -46,6 +53,36 @@ export class CreateHolidayActionBase
 
   getPrivacyPolicy(): PrivacyPolicy<Holiday> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
+  }
+
+  getTriggers(): Trigger<
+    Holiday,
+    HolidayBuilder,
+    ExampleViewer,
+    HolidayCreateInput,
+    Holiday | null
+  >[] {
+    return [];
+  }
+
+  getObservers(): Observer<
+    Holiday,
+    HolidayBuilder,
+    ExampleViewer,
+    HolidayCreateInput,
+    Holiday | null
+  >[] {
+    return [];
+  }
+
+  getValidators(): Validator<
+    Holiday,
+    HolidayBuilder,
+    ExampleViewer,
+    HolidayCreateInput,
+    Holiday | null
+  >[] {
+    return [];
   }
 
   getInput(): HolidayCreateInput {
