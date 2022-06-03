@@ -14,7 +14,6 @@ import { Event } from "../../../ent";
 import { ExampleViewer } from "../../../viewer/viewer";
 
 export { EventEditInput };
-import { Event } from "../../";
 
 // we're only writing this once except with --force and packageName provided
 export default class EditEventAction extends EditEventActionBase {
@@ -25,8 +24,7 @@ export default class EditEventAction extends EditEventActionBase {
     EventEditInput,
     Event
   >[] {
-    return;
-    [...SharedValidators];
+    return [...SharedValidators];
   }
 
   getPrivacyPolicy(): PrivacyPolicy {

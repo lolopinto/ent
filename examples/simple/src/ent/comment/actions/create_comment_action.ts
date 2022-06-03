@@ -14,7 +14,6 @@ import { Comment } from "../../../ent";
 import { ExampleViewer } from "../../../viewer/viewer";
 
 export { CommentCreateInput };
-import { Comment } from "../../";
 
 export default class CreateCommentAction extends CreateCommentActionBase {
   getPrivacyPolicy() {

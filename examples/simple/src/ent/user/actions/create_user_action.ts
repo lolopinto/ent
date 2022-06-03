@@ -82,7 +82,7 @@ export default class CreateUserAction extends CreateUserActionBase {
           });
         },
       },
-      new EntCreationObserver<User>(),
+      new EntCreationObserver(),
     ];
   }
 }

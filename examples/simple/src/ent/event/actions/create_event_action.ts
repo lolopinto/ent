@@ -10,7 +10,6 @@ import { Event } from "../../../ent";
 import { ExampleViewer } from "../../../viewer/viewer";
 
 export { EventCreateInput };
-import { Event } from "../../";
 
 // we're only writing this once except with --force and packageName provided
 export default class CreateEventAction extends CreateEventActionBase {
