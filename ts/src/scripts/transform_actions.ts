@@ -172,7 +172,7 @@ async function main() {
 
           traversed = true;
 
-          const pp = property.initializer.getFullText(sourceFile);
+          const pp = property.initializer.getFullText(sourceFile).trim();
           const code = `${conv.method}(): ${conv.interface}<${nodeName}, ${builder}<${input}, ${existingEnt}>, ${viewer}, ${input}, ${existingEnt}>[] {
             return ${pp}
           }`;
