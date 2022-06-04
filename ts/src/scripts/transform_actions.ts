@@ -138,7 +138,7 @@ async function main() {
       action.builder.operation === WriteOperation.Insert
         ? `${nodeName} | null`
         : nodeName;
-    const viewer = customInfo.viewerInfo.name;
+    const viewer = viewerInfo.name;
 
     const input = findInput(file, sourceFile);
     if (!input) {
@@ -154,7 +154,7 @@ async function main() {
 
       let classInfo = getClassInfo(contents, sourceFile, node);
       // only do classes
-      if (!classInfo) {
+      if (!classInfo || !classInfo.default) {
         return;
       }
 

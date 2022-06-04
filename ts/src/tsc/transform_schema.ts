@@ -8,93 +8,7 @@ import {
 import { execSync } from "child_process";
 import path from "path";
 import { getClassInfo, getPreText, transformImport } from "../tsc/ast";
-
-// next: rewrite transform_schema to use transform()
-
-async function main() {
-  let files = glob.sync("src/schema/*.ts");
-
-  const target = getTargetFromCurrentDir();
-
-  // filter to only event.ts e.g. for comments and whitespace...
-  files = files.filter((f) => f.endsWith("tag.ts"));
-
-  files.forEach((file) => {
-    // assume valid file since we do glob above
-    //    const idx = file.lastIndexOf(".ts");
-    //    const writeFile = file.substring(0, idx) + "2" + ".ts";
-    //    console.debug(file);
-    const writeFile =
-      "src/schema/" + path.basename(file).slice(0, -3) + "_schema.ts";
-    // const writeFile = file;
-    //    console.debug(file, writeFile);
-
-    // go through the file and print everything back if not starting immediately after other position
-    let { contents, sourceFile } = createSourceFile(target, file);
-
-    const nodes: NodeInfo[] = [];
-    let updateImport = false;
-    let removeImports: string[] = [];
-    const f = {
-      trackNode: function (tni: TrackNodeInfo) {
-        nodes.push({
-          node: tni.node,
-          importNode: tni.node && ts.isImportDeclaration(tni.node),
-          rawString: tni.rawString,
-        });
-        if (tni.removeImports) {
-          removeImports.push(...tni.removeImports);
-        }
-      },
-      flagUpdateImport() {
-        updateImport = true;
-      },
-    };
-    if (!traverse(contents, sourceFile, f)) {
-      return;
-    }
-
-    let newContents = "";
-    for (const node of nodes) {
-      if (updateImport && node.importNode) {
-        const importNode = node.node as ts.ImportDeclaration;
-        const transformedImport = transformImport(
-          contents,
-          importNode,
-          sourceFile,
-          {
-            removeImports,
-            transform: transformSchema,
-          },
-        );
-        if (transformedImport) {
-          newContents += transformedImport;
-          continue;
-        }
-      }
-
-      if (node.node) {
-        newContents += node.node.getFullText(sourceFile);
-      } else if (node.rawString) {
-        newContents += node.rawString;
-      } else {
-        console.error("invalid node");
-      }
-    }
-    //    console.debug(newContents);
-
-    // ideally there's a flag that indicates if we write
-    fs.writeFileSync(writeFile, newContents);
-    fs.rmSync(file);
-  });
-
-  execSync("prettier src/schema/*.ts --write");
-}
-
-interface File {
-  trackNode(tn: TrackNodeInfo): void;
-  flagUpdateImport(): void;
-}
+import { TransformFile } from "./transform";
 
 interface TrackNodeInfo {
   node?: ts.Node;
@@ -102,42 +16,19 @@ interface TrackNodeInfo {
   removeImports?: string[];
 }
 
-interface NodeInfo {
-  node?: ts.Node;
-  importNode?: boolean;
-  rawString?: string;
-}
-
-function traverse(
-  fileContents: string,
-  sourceFile: ts.SourceFile,
-  f: File,
-): boolean {
-  let traversed = false;
-  ts.forEachChild(sourceFile, function (node: ts.Node) {
-    if (ts.isClassDeclaration(node)) {
-      // TODO address implicit schema doesn't work here...
-      //        console.debug(sourceFile.fileName, node.kind);
-      if (traverseClass(fileContents, sourceFile, node, f)) {
-        traversed = true;
-        f.flagUpdateImport();
-        return;
-      }
-    }
-    f.trackNode({ node });
-  });
-  return traversed;
+interface traverseInfo {
+  rawString: string;
+  removeImports: string[];
 }
 
 function traverseClass(
   fileContents: string,
   sourceFile: ts.SourceFile,
   node: ts.ClassDeclaration,
-  f: File,
-): boolean {
+): traverseInfo | undefined {
   const ci = getTransformClassInfo(fileContents, sourceFile, node);
   if (!ci) {
-    return false;
+    return;
   }
 
   let klassContents = `${ci.comment}const ${ci.name} = new ${transformSchema(
@@ -151,7 +42,7 @@ function traverseClass(
   for (let member of node.members) {
     const fInfo = getClassElementInfo(fileContents, member, sourceFile);
     if (!fInfo) {
-      return false;
+      return;
     }
     klassContents += `${fInfo.comment}${fInfo.key}:${fInfo.value},\n`;
     if (fInfo.type) {
@@ -167,9 +58,10 @@ function traverseClass(
   }
   //  console.debug(klassContents);
 
-  f.trackNode({ rawString: klassContents, removeImports: removeImports });
-
-  return true;
+  return {
+    rawString: klassContents,
+    removeImports: removeImports,
+  };
 }
 
 interface classInfo {
@@ -487,4 +379,49 @@ function parseFieldElement(
   };
 }
 
-Promise.resolve(main());
+export class TransformSchema implements TransformFile {
+  glob = "src/schema/*.ts";
+
+  filter(files: string[]) {
+    return files.filter((f) => f.endsWith("tag.ts"));
+  }
+
+  traverseChild(
+    sourceFile: ts.SourceFile,
+    contents: string,
+    file: string,
+    node: ts.Node,
+  ) {
+    //    console.debug("ff");
+    if (!ts.isClassDeclaration(node)) {
+      return { node };
+    }
+
+    //    console.debug("gg");
+
+    // TODO address implicit schema doesn't work here...
+    //        console.debug(sourceFile.fileName, node.kind);
+    const ret = traverseClass(contents, sourceFile, node);
+    if (ret === undefined) {
+      return;
+    }
+    //    console.debug("sss");
+
+    return {
+      traversed: true,
+      rawString: ret.rawString,
+      removeImports: ret.removeImports,
+      transform: transformSchema,
+    };
+  }
+
+  fileToWrite(file: string) {
+    return "src/schema/" + path.basename(file).slice(0, -3) + "_schema.ts";
+  }
+
+  postProcess(file: string) {
+    fs.rmSync(file);
+  }
+
+  prettierGlob = "src/schema/*.ts";
+}
