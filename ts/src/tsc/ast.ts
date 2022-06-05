@@ -49,8 +49,7 @@ export function getClassInfo(
     }
   }
 
-  // we probably still don't need all of this...
-  if (!className || !node.heritageClauses || !classExtends) {
+  if (!className) {
     return undefined;
   }
 

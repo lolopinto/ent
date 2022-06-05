@@ -1,10 +1,10 @@
 import { transform } from "../tsc/transform";
-//import { TransformAction } from "../tsc/transform_action";
 import { TransformSchema } from "../tsc/transform_schema";
-//require("tsconfig-paths/register");
+import { TransformEnt } from "../tsc/transform_ent";
 
 async function main() {
   transform(new TransformSchema());
+  transform(new TransformEnt());
 }
 
 main()
@@ -21,6 +21,9 @@ main()
 // action may need to be last...
 
 // npm install to latest
+// codegen
+// move generated
+// then transform schema, ent, action
 
 // transform_schema first?
 // move generated
