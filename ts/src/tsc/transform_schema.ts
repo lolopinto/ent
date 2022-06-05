@@ -1,24 +1,14 @@
-import { glob } from "glob";
 import ts from "typescript";
 import * as fs from "fs";
-import {
-  getTargetFromCurrentDir,
-  createSourceFile,
-} from "../tsc/compilerOptions";
-import { execSync } from "child_process";
 import path from "path";
-import { getClassInfo, getPreText, transformImport } from "../tsc/ast";
+import { getClassInfo, getImportInfo, getPreText } from "../tsc/ast";
 import { TransformFile } from "./transform";
-
-interface TrackNodeInfo {
-  node?: ts.Node;
-  rawString?: string;
-  removeImports?: string[];
-}
+import { Data } from "../core/base";
 
 interface traverseInfo {
   rawString: string;
   removeImports: string[];
+  newImports: string[];
 }
 
 function traverseClass(
@@ -38,6 +28,8 @@ function traverseClass(
   if (ci.implementsSchema) {
     removeImports.push("Schema");
   }
+  removeImports.push(ci.class);
+  let newImports: string[] = [transformSchema(ci.class)];
 
   for (let member of node.members) {
     const fInfo = getClassElementInfo(fileContents, member, sourceFile);
@@ -61,6 +53,7 @@ function traverseClass(
   return {
     rawString: klassContents,
     removeImports: removeImports,
+    newImports,
   };
 }
 
@@ -379,11 +372,35 @@ function parseFieldElement(
   };
 }
 
+// find which of these importPaths is being used and use that to replace
+function findImportPath(sourceFile: ts.SourceFile) {
+  const paths: Data = {
+    "@snowtop/ent": true,
+    "@snowtop/ent/schema": true,
+    "@snowtop/ent/schema/": true,
+  };
+
+  // @ts-ignore
+  const importStatements: ts.ImportDeclaration[] = sourceFile.statements.filter(
+    (stmt) => ts.isImportDeclaration(stmt),
+  );
+
+  for (const imp of importStatements) {
+    const impInfo = getImportInfo(imp, sourceFile);
+    if (!impInfo) {
+      continue;
+    }
+    if (paths[impInfo.importPath] !== undefined) {
+      return impInfo.importPath;
+    }
+  }
+}
+
 export class TransformSchema implements TransformFile {
   glob = "src/schema/*.ts";
 
   filter(files: string[]) {
-    return files.filter((f) => f.endsWith("tag.ts"));
+    return files.filter((f) => f.endsWith("event.ts"));
   }
 
   traverseChild(
@@ -392,26 +409,28 @@ export class TransformSchema implements TransformFile {
     file: string,
     node: ts.Node,
   ) {
-    //    console.debug("ff");
     if (!ts.isClassDeclaration(node)) {
       return { node };
     }
 
-    //    console.debug("gg");
-
     // TODO address implicit schema doesn't work here...
-    //        console.debug(sourceFile.fileName, node.kind);
     const ret = traverseClass(contents, sourceFile, node);
     if (ret === undefined) {
       return;
     }
-    //    console.debug("sss");
+
+    let imports = new Map<string, string[]>();
+
+    const imp = findImportPath(sourceFile);
+    if (imp) {
+      imports.set(imp, ret.newImports);
+    }
 
     return {
       traversed: true,
       rawString: ret.rawString,
       removeImports: ret.removeImports,
-      transform: transformSchema,
+      imports: imports,
     };
   }
 

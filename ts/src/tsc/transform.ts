@@ -17,12 +17,10 @@ interface TraverseChildResponse {
   // if this is true, overwrite the file
   traversed?: boolean;
 
-  // imports to change
+  // if set, these imports will be added for sure regardless of if path is there
   imports?: Map<string, string[]>;
 
   removeImports?: string[];
-
-  transform?: transformImportFn;
 }
 
 interface NodeInfo {
@@ -78,7 +76,6 @@ export function transform(transform: TransformFile) {
     let imports: Map<string, string[]> = new Map();
     let removeImports: string[] = [];
     let traversed = false;
-    let transformFn: transformImportFn | undefined = undefined;
 
     ts.forEachChild(sourceFile, function (node: ts.Node) {
       const ret = transform.traverseChild(sourceFile, contents, file, node);
@@ -100,9 +97,6 @@ export function transform(transform: TransformFile) {
 
       if (ret.removeImports?.length) {
         removeImports.push(...ret.removeImports);
-      }
-      if (ret.transform) {
-        transformFn = ret.transform;
       }
     });
 
@@ -137,42 +131,23 @@ export function transform(transform: TransformFile) {
           if (impInfo) {
             const impPath = normalizePath(impInfo.importPath);
 
-            // default transform. used by schema
-            if (imports.size === 0) {
-              const transformedImport = transformImport(
+            const list = imports.get(impPath);
+            if (list) {
+              let transformed = transformImport(
                 contents,
                 node.node,
                 sourceFile,
                 {
+                  newImports: list,
                   removeImports,
-                  transform: transformFn,
+                  // don't use normalized path here, we wanna use the path that's in code...
+                  transformPath: impInfo.importPath,
                 },
               );
-              if (transformedImport) {
-                newContents += transformedImport;
+              if (transformed) {
+                newContents += transformed;
+                seen.set(impPath, true);
                 continue;
-              }
-            } else {
-              // transform list of imports.
-              // used by
-              // normalize paths...
-              const list = imports.get(impPath);
-              if (list) {
-                let transformed = transformImport(
-                  contents,
-                  node.node,
-                  sourceFile,
-                  {
-                    newImports: list,
-                    // don't use normalized path here, we wanna use the path that's in code...
-                    transformPath: impInfo.importPath,
-                  },
-                );
-                if (transformed) {
-                  newContents += transformed;
-                  seen.set(impPath, true);
-                  continue;
-                }
               }
             }
           }

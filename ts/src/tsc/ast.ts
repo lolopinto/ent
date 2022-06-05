@@ -115,8 +115,6 @@ export function transformImport(
   importNode: ts.ImportDeclaration,
   sourceFile: ts.SourceFile,
   opts?: transformOpts,
-  // removeImports: string[],
-  // transform: transformImportFn = (v) => v,
 ): string | undefined {
   // remove quotes too
   const text = importNode.moduleSpecifier.getText(sourceFile).slice(1, -1);
