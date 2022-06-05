@@ -12,10 +12,6 @@ function isPrivacyPolicy(mm: ts.ClassElement) {
 export class TransformEnt implements TransformFile {
   glob = "src/ent/*.ts";
 
-  // filter(files: string[]) {
-  //   return files.filter((f) => f.endsWith("user.ts"));
-  // }
-
   traverseChild(
     sourceFile: ts.SourceFile,
     contents: string,

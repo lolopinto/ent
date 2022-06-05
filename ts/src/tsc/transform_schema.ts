@@ -399,10 +399,6 @@ function findImportPath(sourceFile: ts.SourceFile) {
 export class TransformSchema implements TransformFile {
   glob = "src/schema/*.ts";
 
-  // filter(files: string[]) {
-  //   return files.filter((f) => f.endsWith("event.ts"));
-  // }
-
   traverseChild(
     sourceFile: ts.SourceFile,
     contents: string,
