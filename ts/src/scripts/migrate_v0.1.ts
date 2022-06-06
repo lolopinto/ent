@@ -5,8 +5,8 @@ import { moveGenerated } from "../tsc/move_generated";
 
 async function main() {
   // maybe provide options to make this easier if someone wants to do this in steps to see what's happening
-  // transform(new TransformSchema());
-  // transform(new TransformEnt());
+  transform(new TransformSchema());
+  transform(new TransformEnt());
 
   moveGenerated();
 }
