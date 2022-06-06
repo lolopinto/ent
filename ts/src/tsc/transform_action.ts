@@ -11,6 +11,7 @@ import { LoggedOutViewer } from "../core/viewer";
 import * as path from "path";
 import { load } from "js-yaml";
 import { Config } from "../core/config";
+import { Data } from "../core/base";
 
 interface customInfo {
   viewerInfo: {
@@ -58,7 +59,7 @@ function findInput(file: string, sourceFile: ts.SourceFile): string | null {
   for (const imp of importStatements) {
     const text = imp.moduleSpecifier.getText(sourceFile).slice(1, -1);
 
-    if (isRelativeGeneratedImport(imp, sourceFile)) {
+    if (true || isRelativeGeneratedImport(imp, sourceFile)) {
       // base file and we're importing from it
       // e.g. in create_user_action, we're importing from create_user_action_base
       if (path.basename(file).slice(0, -3) + "_base" !== path.basename(text)) {
@@ -87,7 +88,7 @@ interface convertReturnInfo {
   interface: string;
 }
 
-let m = {
+let m: Data = {
   triggers: {
     m: "getTriggers",
     i: "Trigger",

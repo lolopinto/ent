@@ -65,14 +65,15 @@ class cacheMap {
 }
 
 function createDataLoader(options: SelectDataOptions) {
-  const loaderOptions: DataLoader.Options<any, any> = {};
+  const loaderOptions: DataLoader.Options<ID, Data | null> = {};
 
   // if query logging is enabled, we should log what's happening with loader
   if (logEnabled("query")) {
     loaderOptions.cacheMap = new cacheMap(options);
   }
 
-  return new DataLoader(async (ids: ID[]) => {
+  // something here brokwn with strict:true
+  return new DataLoader<ID, Data | null>(async (ids: ID[]) => {
     if (!ids.length) {
       return [];
     }
