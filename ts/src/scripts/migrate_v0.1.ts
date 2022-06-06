@@ -2,13 +2,17 @@ import { transform } from "../tsc/transform";
 import { TransformSchema } from "../tsc/transform_schema";
 import { TransformEnt } from "../tsc/transform_ent";
 import { moveGenerated } from "../tsc/move_generated";
+import { TransformAction } from "../tsc/transform_action";
 
 async function main() {
   // maybe provide options to make this easier if someone wants to do this in steps to see what's happening
-  transform(new TransformSchema());
-  transform(new TransformEnt());
-
   moveGenerated();
+
+  // then codegen
+
+  // transform(new TransformSchema());
+  // transform(new TransformEnt());
+  // transform(new TransformAction());
 }
 
 main()

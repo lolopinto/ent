@@ -4,6 +4,8 @@ import * as fs from "fs";
 import ts from "typescript";
 import { isRelativeGeneratedImport, updateImportPath } from "./ast";
 import { transform, TransformFile } from "./transform";
+import { load } from "js-yaml";
+import { Config } from "../core/config";
 
 class MoveFiles {
   constructor(private globPath: string) {}
@@ -16,8 +18,10 @@ class MoveFiles {
 
 class TransformImports implements TransformFile {
   cwd: string;
+  relativeImports = false;
   constructor(public glob: string, public prettierGlob: string) {
     this.cwd = process.cwd();
+    this.relativeImports = relativeImports();
   }
 
   globOptions = {
@@ -35,12 +39,16 @@ class TransformImports implements TransformFile {
     }
     let dirPath = path.join(this.cwd, file, "..");
 
-    const conv = isGeneratedPath(node, sourceFile, dirPath);
-    if (!conv) {
+    const newImportPath = getNewImportPath(
+      node,
+      sourceFile,
+      dirPath,
+      this.relativeImports,
+    );
+    if (!newImportPath) {
       return { node };
     }
 
-    const newImportPath = path.relative(dirPath, conv.newFile);
     const v = updateImportPath(contents, node, sourceFile, newImportPath);
 
     return {
@@ -92,27 +100,57 @@ function moveFiles(files: string[]) {
   });
 }
 
-function isGeneratedPath(
+function relativeImports(): boolean {
+  let yaml: Config | undefined = {};
+
+  let relativeImports = false;
+  try {
+    yaml = load(
+      fs.readFileSync(path.join(process.cwd(), "ent.yml"), {
+        encoding: "utf8",
+      }),
+    ) as Config;
+
+    relativeImports = yaml?.codegen?.relativeImports || false;
+
+    return yaml?.codegen?.relativeImports || false;
+  } catch (e) {}
+  return false;
+}
+
+function getNewImportPath(
   node: ts.ImportDeclaration,
   sourceFile: ts.SourceFile,
   dirPath: string,
+  relativeImports: boolean,
 ) {
   // it's relative and has generated in there, continue
-  if (!isRelativeGeneratedImport(node, sourceFile)) {
+  const text = node.moduleSpecifier.getText(sourceFile).slice(1, -1);
+
+  if (relativeImports) {
+    if (!isRelativeGeneratedImport(node, sourceFile)) {
+      return;
+    }
+
+    const oldPath = path.join(dirPath, text);
+    const relFromRoot = path.relative(".", oldPath);
+    const conv = transformPath(relFromRoot);
+    if (!conv || conv.newFile === relFromRoot) {
+      return;
+    }
+    return path.relative(dirPath, conv.newFile);
+  }
+  // non relative, only transform src paths with generated
+
+  if (!text.startsWith("src") || text.indexOf("/generated") === -1) {
     return;
   }
 
-  const text = node.moduleSpecifier.getText(sourceFile).slice(1, -1);
-  const oldPath = path.join(dirPath, text);
-  const relFromRoot = path.relative(".", oldPath);
-  const conv = transformPath(relFromRoot);
-  if (!conv) {
+  const conv = transformPath(text);
+  if (!conv || conv.newFile === text) {
     return;
   }
-  if (relFromRoot === conv.newFile) {
-    return;
-  }
-  return conv;
+  return conv.newFile;
 }
 
 export function moveGenerated() {
