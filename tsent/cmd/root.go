@@ -93,6 +93,7 @@ func init() {
 
 	codegenCmd.Flags().StringVarP(&codegenInfo.step, "step", "s", "", "limit to only run a particular step e.g. db, graphql, codegen")
 	codegenCmd.Flags().BoolVar(&codegenInfo.writeAll, "write-all", false, "to force writing all files and skip the logic we have for only selectively writing some files")
+	codegenCmd.Flags().BoolVar(&codegenInfo.disableCustomGraphQL, "disable-custom-graphql", false, "to disable custom graphql during codegen. used when we need to rebuild everything and minimize parsing code")
 
 	generateSchemasCmd.Flags().StringVar(&schemasInfo.file, "file", "", "file to get data from. also supports piping it through")
 	generateSchemasCmd.Flags().BoolVar(&schemasInfo.force, "force", false, "if force is true, it overwrites existing schema, otherwise throws error")
