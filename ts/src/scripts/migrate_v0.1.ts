@@ -1,10 +1,14 @@
 import { transform } from "../tsc/transform";
 import { TransformSchema } from "../tsc/transform_schema";
 import { TransformEnt } from "../tsc/transform_ent";
+import { moveGenerated } from "../tsc/move_generated";
 
 async function main() {
-  transform(new TransformSchema());
-  transform(new TransformEnt());
+  // maybe provide options to make this easier if someone wants to do this in steps to see what's happening
+  // transform(new TransformSchema());
+  // transform(new TransformEnt());
+
+  moveGenerated();
 }
 
 main()

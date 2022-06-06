@@ -1,11 +1,9 @@
-import { glob } from "glob";
+import { glob, IOptions } from "glob";
 import ts from "typescript";
 import { execSync } from "child_process";
 import * as fs from "fs";
 import { getImportInfo, transformImport } from "./ast";
 import { createSourceFile, getTargetFromCurrentDir } from "./compilerOptions";
-
-type transformImportFn = (imp: string) => string;
 
 interface TraverseChildResponse {
   // keep this node, nothing to do here
@@ -30,6 +28,9 @@ interface NodeInfo {
 
 export interface TransformFile {
   glob: string;
+
+  globOptions?: IOptions;
+
   // constructor...
   //  preprocess(): void;
   preprocessFile?: (
@@ -62,7 +63,7 @@ function normalizePath(p: string) {
 }
 
 export function transform(transform: TransformFile) {
-  let files = glob.sync(transform.glob);
+  let files = glob.sync(transform.glob, transform.globOptions);
   const target = getTargetFromCurrentDir();
   if (transform.filter) {
     files = transform.filter(files);

@@ -106,6 +106,10 @@ function main() {
   const entFiles = glob.sync("src/ent/**/generated/**/**.ts");
   const graphqlFiles = glob.sync("src/graphql/**/generated/**/**.ts");
 
+  // multi-step process
+  // move files
+  // then update imports...
+
   moveFiles(entFiles);
   moveFiles(graphqlFiles);
 
@@ -123,8 +127,8 @@ function main() {
   updateImports(entImportFiles, target, cwd);
   updateImports(graphqlImportFiles, target, cwd);
 
-  execSync("prettier src/ent/*.ts --write");
-  execSync("prettier src/graphql/*.ts --write");
+  execSync("prettier src/ent/**.ts --write");
+  execSync("prettier src/graphql/**.ts --write");
 }
 
 function isGeneratedPath(
