@@ -13,6 +13,7 @@ import * as path from "path";
 import { load } from "js-yaml";
 import { Config } from "../core/config";
 import { Data } from "../core/base";
+import { TransformFile } from "./transform";
 
 interface customInfo {
   viewerInfo: {
@@ -145,13 +146,14 @@ function normalizePath(p: string) {
   return p;
 }
 
-export class TransformAction {
+export class TransformAction implements TransformFile {
   glob = "src/ent/**/actions/**/*_action.ts";
   customInfo: customInfo;
 
+  prettierGlob = "src/ent/**/actions/**.ts";
+
   constructor() {
     this.customInfo = getCustomInfo();
-    //    this.viewerInfo = customInfo.viewerInfo;
   }
 
   traverseChild(

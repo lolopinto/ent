@@ -31,14 +31,12 @@ export interface TransformFile {
 
   globOptions?: IOptions;
 
-  // constructor...
-  //  preprocess(): void;
   preprocessFile?: (
     contents: string,
     file: string,
     sourceFile: ts.SourceFile,
   ) => boolean;
-  // ts.Node,
+
   traverseChild(
     sourceFile: ts.SourceFile,
     contents: string,
