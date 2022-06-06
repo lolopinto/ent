@@ -18,6 +18,7 @@ import { LoggedOutViewer } from "../core/viewer";
 import * as path from "path";
 import { load } from "js-yaml";
 import { Config } from "../core/config";
+import { Data } from "../core/base";
 
 // inspired by transform_schema
 interface NodeInfo {
@@ -269,7 +270,7 @@ async function main() {
   execSync("prettier src/ent/**/actions/**/*.ts --write");
 }
 
-let m = {
+let m: Data = {
   triggers: {
     m: "getTriggers",
     i: "Trigger",
