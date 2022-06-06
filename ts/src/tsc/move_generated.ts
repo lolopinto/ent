@@ -2,7 +2,11 @@ import { glob } from "glob";
 import * as path from "path";
 import * as fs from "fs";
 import ts from "typescript";
-import { isRelativeGeneratedImport, updateImportPath } from "./ast";
+import {
+  isRelativeGeneratedImport,
+  isSrcGeneratedImport,
+  updateImportPath,
+} from "./ast";
 import { transform, TransformFile } from "./transform";
 import { load } from "js-yaml";
 import { Config } from "../core/config";
@@ -143,8 +147,7 @@ function getNewImportPath(
   }
 
   // non relative, only transform src paths with generated
-
-  if (text.startsWith("src") && text.includes("/generated")) {
+  if (isSrcGeneratedImport(node, sourceFile)) {
     const conv = transformPath(text);
     if (!conv || conv.newFile === text) {
       return;

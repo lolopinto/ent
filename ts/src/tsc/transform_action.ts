@@ -4,6 +4,7 @@ import {
   getImportInfo,
   getPreText,
   isRelativeGeneratedImport,
+  isSrcGeneratedImport,
 } from "../tsc/ast";
 import * as fs from "fs";
 import { Action, WriteOperation } from "../action";
@@ -59,7 +60,10 @@ function findInput(file: string, sourceFile: ts.SourceFile): string | null {
   for (const imp of importStatements) {
     const text = imp.moduleSpecifier.getText(sourceFile).slice(1, -1);
 
-    if (true || isRelativeGeneratedImport(imp, sourceFile)) {
+    if (
+      isSrcGeneratedImport(imp, sourceFile) ||
+      isRelativeGeneratedImport(imp, sourceFile)
+    ) {
       // base file and we're importing from it
       // e.g. in create_user_action, we're importing from create_user_action_base
       if (path.basename(file).slice(0, -3) + "_base" !== path.basename(text)) {

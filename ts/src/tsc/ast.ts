@@ -224,6 +224,14 @@ export function isRelativeGeneratedImport(
   );
 }
 
+export function isSrcGeneratedImport(
+  node: ts.ImportDeclaration,
+  sourceFile: ts.SourceFile,
+) {
+  const text = node.moduleSpecifier.getText(sourceFile).slice(1, -1);
+  return text.startsWith("src") && text.includes("/generated");
+}
+
 interface importInfo {
   imports: string[];
   start: number;
