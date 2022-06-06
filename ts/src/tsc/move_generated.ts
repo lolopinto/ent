@@ -25,7 +25,7 @@ class TransformImports implements TransformFile {
   }
 
   globOptions = {
-    ignore: ["**/generated/**", "node_modules/**"],
+    ignore: ["node_modules/**"],
   };
 
   traverseChild(
@@ -127,11 +127,8 @@ function getNewImportPath(
   // it's relative and has generated in there, continue
   const text = node.moduleSpecifier.getText(sourceFile).slice(1, -1);
 
-  if (relativeImports) {
-    if (!isRelativeGeneratedImport(node, sourceFile)) {
-      return;
-    }
-
+  // do relative imports path regardless of if relative imports is on or not
+  if (isRelativeGeneratedImport(node, sourceFile)) {
     const oldPath = path.join(dirPath, text);
     const relFromRoot = path.relative(".", oldPath);
     const conv = transformPath(relFromRoot);
@@ -140,17 +137,21 @@ function getNewImportPath(
     }
     return path.relative(dirPath, conv.newFile);
   }
+  // if relative imports, we done.
+  if (relativeImports) {
+    return;
+  }
+
   // non relative, only transform src paths with generated
 
-  if (!text.startsWith("src") || text.indexOf("/generated") === -1) {
-    return;
+  if (text.startsWith("src") && text.includes("/generated")) {
+    const conv = transformPath(text);
+    if (!conv || conv.newFile === text) {
+      return;
+    }
+    return conv.newFile;
   }
-
-  const conv = transformPath(text);
-  if (!conv || conv.newFile === text) {
-    return;
-  }
-  return conv.newFile;
+  return;
 }
 
 export function moveGenerated() {
