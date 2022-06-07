@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 
 	cmd2 "github.com/lolopinto/ent/internal/cmd"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/db"
 	"github.com/lolopinto/ent/internal/graphql"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/tscode"
@@ -30,39 +32,48 @@ var migratev1Cmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		fmt.Println("moving generated files (and fixing imports)")
 		if err := runNodeJSMigrateStep(p, "--move_generated"); err != nil {
 			return err
 		}
 
+		fmt.Println("codegen no custom")
 		if err := intermediateCodegen(s1); err != nil {
 			return err
 		}
 
+		fmt.Println("transform schema")
 		if err := runNodeJSMigrateStep(p, "--transform_schema"); err != nil {
 			return err
 		}
 
-		if err := intermediateCodegen(s1); err != nil {
+		// reparse schema since files should have moved from src/schema/foo.ts to src/schema/foo_schema.ts
+		s2, err := parseSchemaFromConfig(cfg)
+		if err != nil {
 			return err
 		}
 
-		// reparse schema since files should have moved from src/schema/foo.ts to src/schema/foo_schema.ts
-		// s2, err := parseSchemaFromConfig(cfg)
-		// if err != nil {
-		// 	return err
-		// }
+		fmt.Println("codegen no custom")
+		if err := intermediateCodegen(s2); err != nil {
+			return err
+		}
 
-		// these 2 can actually be run together
+		fmt.Println("transform ent")
+		// these 2 can actually be run together...
 		if err := runNodeJSMigrateStep(p, "--transform_ent"); err != nil {
 			return err
 		}
+
+		fmt.Println("transform actions")
 		if err := runNodeJSMigrateStep(p, "--transform_action"); err != nil {
 			return err
 		}
 
+		fmt.Println("full codegen")
 		// full codegen
-		return codegenCmd.RunE(cmd, args)
-
+		// this doesn't know to do full codegen because no flags...
+		return fullCodegen(s2)
+		//		return codegenCmd.RunE(cmd, args)
 	},
 }
 
@@ -83,6 +94,24 @@ func intermediateCodegen(s *schema.Schema) error {
 		codegen.DisableCustomGraphQL(),
 	}
 	return processor.Run(steps, "", opts2...)
+}
+
+func fullCodegen(s *schema.Schema) error {
+	opts := []codegen.ConstructOption{
+		codegen.WriteAll(),
+	}
+	processor, err := codegen.NewCodegenProcessor(s, "src/schema", opts...)
+	if err != nil {
+		return err
+	}
+
+	steps := []codegen.Step{
+		new(db.Step),
+		new(tscode.Step),
+		new(graphql.TSStep),
+	}
+	// TODO this should do the flag for full codegen needed
+	return processor.Run(steps, "")
 }
 
 func runNodeJSMigrateStep(p *codegen.Processor, step string) error {
