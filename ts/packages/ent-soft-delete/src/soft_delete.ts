@@ -29,7 +29,7 @@ export class DeletedAtPattern implements Pattern {
 
   transformWrite<T extends Ent>(
     stmt: UpdateOperation<T>,
-  ): TransformedUpdateOperation<T> | undefined {
+  ): TransformedUpdateOperation<T> | null {
     switch (stmt.op) {
       case SQLStatementOperation.Delete:
         return {
@@ -40,6 +40,7 @@ export class DeletedAtPattern implements Pattern {
           },
         };
     }
+    return null;
   }
 
   transformsDelete = true;

@@ -172,10 +172,10 @@ export async function saveBuilderX<
   await saveBuilderImpl(builder, true);
 }
 
-async function saveBuilderImpl<T extends Ent>(
-  builder: Builder<T>,
-  throwErr: boolean,
-): Promise<void> {
+async function saveBuilderImpl<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+>(builder: Builder<TEnt, TViewer>, throwErr: boolean): Promise<void> {
   let changeset: Changeset;
   try {
     changeset = await builder.build();

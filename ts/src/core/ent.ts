@@ -40,7 +40,7 @@ import { ObjectLoader } from "./loaders";
 class cacheMap {
   private m = new Map();
   constructor(private options: DataOptions) {}
-  get(key) {
+  get(key: string) {
     const ret = this.m.get(key);
     if (ret) {
       log("query", {
@@ -51,11 +51,11 @@ class cacheMap {
     return ret;
   }
 
-  set(key, value) {
+  set(key: string, value: any) {
     return this.m.set(key, value);
   }
 
-  delete(key) {
+  delete(key: string) {
     return this.m.delete(key);
   }
 
@@ -65,14 +65,15 @@ class cacheMap {
 }
 
 function createDataLoader(options: SelectDataOptions) {
-  const loaderOptions: DataLoader.Options<any, any> = {};
+  const loaderOptions: DataLoader.Options<ID, Data | null> = {};
 
   // if query logging is enabled, we should log what's happening with loader
   if (logEnabled("query")) {
     loaderOptions.cacheMap = new cacheMap(options);
   }
 
-  return new DataLoader(async (ids: ID[]) => {
+  // something here brokwn with strict:true
+  return new DataLoader<ID, Data | null>(async (ids: ID[]) => {
     if (!ids.length) {
       return [];
     }
@@ -677,7 +678,7 @@ export interface EditNodeOptions<T extends Ent> extends EditRowOptions {
 }
 
 export class EditNodeOperation<T extends Ent> implements DataOperation {
-  row: Data | null;
+  row: Data | null = null;
   placeholderID?: ID | undefined;
 
   constructor(
@@ -734,6 +735,7 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
           "RETURNING *",
         );
       } else {
+        // @ts-ignore
         this.row = this.existingEnt["data"];
       }
     } else {
@@ -786,6 +788,7 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
         editRowSync(queryer, options, this.existingEnt.id, "RETURNING *");
         this.reloadRow(queryer, this.existingEnt.id, options);
       } else {
+        // @ts-ignore
         this.row = this.existingEnt["data"];
       }
     } else {
@@ -922,7 +925,7 @@ export class EdgeOperation implements DataOperation {
     edge: AssocEdgeInput,
     context?: Context,
   ): [CreateRowOptions, string] {
-    const fields = {
+    const fields: Data = {
       id1: edge.id1,
       id2: edge.id2,
       id1_type: edge.id1Type,
@@ -1486,7 +1489,7 @@ interface cursorOptions {
   row: Data;
   col: string;
   cursorKey?: string; // used by tests. if cursor is from one column but the key in the name is different e.g. time for assocs and created_at when taken from the object
-  conv?: (any) => any;
+  conv?: (any: any) => any;
 }
 
 export function getCursor(opts: cursorOptions) {
@@ -1749,11 +1752,14 @@ export async function loadNodesByEdge<T extends Ent>(
   return loadEntsList(viewer, options, ...ids);
 }
 
-export async function applyPrivacyPolicyForRow<T extends Ent>(
-  viewer: Viewer,
-  options: LoadEntOptions<T>,
+export async function applyPrivacyPolicyForRow<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+>(
+  viewer: TViewer,
+  options: LoadEntOptions<TEnt, TViewer>,
   row: Data | null,
-): Promise<T | null> {
+): Promise<TEnt | null> {
   if (!row) {
     return null;
   }
@@ -1761,21 +1767,23 @@ export async function applyPrivacyPolicyForRow<T extends Ent>(
   return await applyPrivacyPolicyForEnt(viewer, ent, row, options);
 }
 
-export async function applyPrivacyPolicyForRowX<T extends Ent>(
-  viewer: Viewer,
-  options: LoadEntOptions<T>,
+export async function applyPrivacyPolicyForRowX<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+>(
+  viewer: TViewer,
+  options: LoadEntOptions<TEnt, TViewer>,
   row: Data,
-): Promise<T> {
+): Promise<TEnt> {
   const ent = new options.ent(viewer, row);
   return await applyPrivacyPolicyForEntX(viewer, ent, row, options);
 }
 
-export async function applyPrivacyPolicyForRows<T extends Ent>(
-  viewer: Viewer,
-  rows: Data[],
-  options: LoadEntOptions<T>,
-) {
-  let m: Map<ID, T> = new Map();
+export async function applyPrivacyPolicyForRows<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+>(viewer: TViewer, rows: Data[], options: LoadEntOptions<TEnt, TViewer>) {
+  let m: Map<ID, TEnt> = new Map();
   // apply privacy logic
   await Promise.all(
     rows.map(async (row) => {

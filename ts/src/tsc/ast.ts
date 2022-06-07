@@ -49,8 +49,7 @@ export function getClassInfo(
     }
   }
 
-  // we probably still don't need all of this...
-  if (!className || !node.heritageClauses || !classExtends) {
+  if (!className) {
     return undefined;
   }
 
@@ -115,8 +114,6 @@ export function transformImport(
   importNode: ts.ImportDeclaration,
   sourceFile: ts.SourceFile,
   opts?: transformOpts,
-  // removeImports: string[],
-  // transform: transformImportFn = (v) => v,
 ): string | undefined {
   // remove quotes too
   const text = importNode.moduleSpecifier.getText(sourceFile).slice(1, -1);
@@ -225,6 +222,14 @@ export function isRelativeGeneratedImport(
     (text.startsWith("..") || text.startsWith("./")) &&
     text.indexOf("/generated") !== -1
   );
+}
+
+export function isSrcGeneratedImport(
+  node: ts.ImportDeclaration,
+  sourceFile: ts.SourceFile,
+) {
+  const text = node.moduleSpecifier.getText(sourceFile).slice(1, -1);
+  return text.startsWith("src") && text.includes("/generated");
 }
 
 interface importInfo {
