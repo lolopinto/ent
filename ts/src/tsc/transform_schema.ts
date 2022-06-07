@@ -397,6 +397,8 @@ function findImportPath(sourceFile: ts.SourceFile) {
 }
 
 export class TransformSchema implements TransformFile {
+  // we only end up doing this once because we change the schema representation
+  // so safe to run this multiple times
   glob = "src/schema/*.ts";
 
   traverseChild(

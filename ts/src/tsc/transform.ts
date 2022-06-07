@@ -137,7 +137,10 @@ export function transform(transform: TransformFile) {
                 node.node,
                 sourceFile,
                 {
-                  newImports: list,
+                  // if we've done this path before, don't try and add
+                  // but still try and do any removals since we don't know which of the imports
+                  // has it
+                  newImports: seen.has(impPath) ? undefined : list,
                   removeImports,
                   // don't use normalized path here, we wanna use the path that's in code...
                   transformPath: impInfo.importPath,
