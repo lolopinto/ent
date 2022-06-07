@@ -69,10 +69,16 @@ var migratev1Cmd = &cobra.Command{
 			return err
 		}
 
+		// parse again, just incase
+		s3, err := parseSchemaFromConfig(cfg)
+		if err != nil {
+			return err
+		}
+
 		fmt.Println("full codegen")
 		// full codegen
 		// this doesn't know to do full codegen because no flags...
-		return fullCodegen(s2)
+		return fullCodegen(s3)
 		//		return codegenCmd.RunE(cmd, args)
 	},
 }

@@ -14,6 +14,7 @@ func GetTsconfigPaths() string {
 // we need tsconfig.json referenced because of relative paths like src/ent/generated/const.ts
 func GetArgsForScript(rootPath string) []string {
 	return []string{
+		// this seems to let the errors pass through s opposed to giving compile error
 		"--log-error", // TODO spend more time figuring this out
 		"--project",
 		// TODO this should find the tsconfig.json and not assume there's one at the root but fine for now
