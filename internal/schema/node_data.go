@@ -272,24 +272,7 @@ func (nodeData *NodeData) GetImportsForBaseFile(s *Schema) ([]*tsimport.ImportPa
 			})
 		}
 
-		tt := f.GetPossibleTypes()
-		for _, t := range tt {
-			if enttype.IsConvertDataType(t) {
-				t2 := t.(enttype.ConvertDataType)
-				c := t2.Convert()
-				if c.ImportPath != "" {
-					ret = append(ret, c)
-				}
-			}
-			if enttype.IsImportDepsType(t) {
-				t2 := t.(enttype.ImportDepsType)
-				imp := t2.GetImportDepsType()
-				if imp != nil {
-					// TODO ignoring relative. do we need it?
-					ret = append(ret, imp)
-				}
-			}
-		}
+		ret = append(ret, f.GetImportsForTypes()...)
 	}
 	return ret, nil
 }
