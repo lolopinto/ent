@@ -4,6 +4,7 @@ import * as fs from "fs";
 import ts from "typescript";
 import {
   isRelativeGeneratedImport,
+  isRelativeImport,
   isSrcGeneratedImport,
   updateImportPath,
 } from "./ast";
@@ -23,7 +24,11 @@ class MoveFiles {
 class TransformImports implements TransformFile {
   cwd: string;
   relativeImports = false;
-  constructor(public glob: string, public prettierGlob: string) {
+  constructor(
+    public glob: string,
+    public prettierGlob: string,
+    private checkRelativeImportsValid?: boolean,
+  ) {
     this.cwd = process.cwd();
     this.relativeImports = relativeImports();
   }
@@ -43,11 +48,11 @@ class TransformImports implements TransformFile {
     }
     let dirPath = path.join(this.cwd, file, "..");
 
-    const newImportPath = getNewImportPath(
+    const newImportPath = this.getNewImportPath(
       node,
+      file,
       sourceFile,
       dirPath,
-      this.relativeImports,
     );
     if (!newImportPath) {
       return { node };
@@ -59,6 +64,73 @@ class TransformImports implements TransformFile {
       traversed: true,
       rawString: v,
     };
+  }
+
+  getNewImportPath(
+    node: ts.ImportDeclaration,
+    file: string,
+    sourceFile: ts.SourceFile,
+    dirPath: string,
+  ) {
+    const text = node.moduleSpecifier.getText(sourceFile).slice(1, -1);
+
+    // it's relative and has generated in there, continue
+    // do relative imports path regardless of if relative imports is on or not
+    if (isRelativeGeneratedImport(node, sourceFile)) {
+      const oldPath = path.join(dirPath, text);
+      const relFromRoot = path.relative(".", oldPath);
+      const conv = transformPath(relFromRoot);
+      if (!conv || conv.newFile === relFromRoot) {
+        return;
+      }
+      return path.relative(dirPath, conv.newFile);
+    }
+
+    if (this.checkRelativeImportsValid && isRelativeImport(node, sourceFile)) {
+      const parts = file.split(path.sep);
+      if (
+        parts.length === 5 &&
+        parts.slice(0, 3).join(path.sep) ===
+          ["src", "graphql", "generated"].join(path.sep)
+      ) {
+        // we have custom graphql import paths
+        // src/graphql/generated/mutations|resolvers/foo_type.ts
+        // which used to be
+        // src/graphql/mutations|resolvers/generated/foo_type.ts
+
+        // we probably have a broken import.
+        // try and fix it...
+        let temp = parts[2];
+        parts[2] = parts[3];
+        parts[3] = temp;
+        const oldPath = parts.join(path.sep);
+
+        let oldDir = path.join(this.cwd, oldPath, "..");
+        let importPath = path.join(oldDir, text);
+        let exists = fs.statSync(importPath + ".ts", { throwIfNoEntry: false });
+        if (!exists) {
+          // doesn't exist. sadly has to be fixed manually. could theoretically also be a directory but we shouldn't have that
+          return;
+        }
+
+        return path.relative(dirPath, importPath);
+      }
+    }
+    // if relative imports, we done.
+    if (this.relativeImports) {
+      return;
+    }
+
+    // non relative, only transform src paths with generated
+    if (isSrcGeneratedImport(node, sourceFile)) {
+      const conv = transformPath(text);
+      if (!conv || conv.newFile === text) {
+        return;
+      }
+      return conv.newFile;
+    }
+
+    return;
   }
 }
 
@@ -122,45 +194,12 @@ function relativeImports(): boolean {
   return false;
 }
 
-function getNewImportPath(
-  node: ts.ImportDeclaration,
-  sourceFile: ts.SourceFile,
-  dirPath: string,
-  relativeImports: boolean,
-) {
-  // it's relative and has generated in there, continue
-  const text = node.moduleSpecifier.getText(sourceFile).slice(1, -1);
-
-  // do relative imports path regardless of if relative imports is on or not
-  if (isRelativeGeneratedImport(node, sourceFile)) {
-    const oldPath = path.join(dirPath, text);
-    const relFromRoot = path.relative(".", oldPath);
-    const conv = transformPath(relFromRoot);
-    if (!conv || conv.newFile === relFromRoot) {
-      return;
-    }
-    return path.relative(dirPath, conv.newFile);
-  }
-  // if relative imports, we done.
-  if (relativeImports) {
-    return;
-  }
-
-  // non relative, only transform src paths with generated
-  if (isSrcGeneratedImport(node, sourceFile)) {
-    const conv = transformPath(text);
-    if (!conv || conv.newFile === text) {
-      return;
-    }
-    return conv.newFile;
-  }
-  return;
-}
-
 export function moveGenerated() {
   new MoveFiles("src/ent/**/generated/**/**.ts").move();
   new MoveFiles("src/graphql/**/generated/**/**.ts").move();
 
   transform(new TransformImports("src/ent/**/*.ts", "src/ent/**.ts"));
-  transform(new TransformImports("src/graphql/**/*.ts", "src/graphql/**.ts"));
+  transform(
+    new TransformImports("src/graphql/**/*.ts", "src/graphql/**.ts", true),
+  );
 }
