@@ -81,6 +81,7 @@ func init() {
 		printCustomSchemaCmd,
 		deleteSchemaCmd,
 		detectDanglingFilesCmd,
+		migratev1Cmd,
 	})
 
 	addCommands(generateCmd, []*cobra.Command{
