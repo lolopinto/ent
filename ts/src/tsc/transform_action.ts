@@ -1,5 +1,6 @@
 import ts from "typescript";
 import {
+  ClassInfo,
   getClassInfo,
   getImportInfo,
   getPreText,
@@ -52,7 +53,11 @@ function getCustomInfo(): customInfo {
   };
 }
 
-function findInput(file: string, sourceFile: ts.SourceFile): string | null {
+function findInput(
+  file: string,
+  classInfo: ClassInfo,
+  sourceFile: ts.SourceFile,
+): string | null {
   // @ts-ignore
   const importStatements: ts.ImportDeclaration[] = sourceFile.statements.filter(
     (stmt) => ts.isImportDeclaration(stmt),
@@ -76,11 +81,20 @@ function findInput(file: string, sourceFile: ts.SourceFile): string | null {
         continue;
       }
 
-      const inputs = impInfo.imports
+      let inputs = impInfo.imports
         .filter((imp) => imp.trim() && imp.endsWith("Input"))
         .map((v) => v.trim());
       if (inputs.length === 1) {
         return inputs[0];
+      }
+      if (inputs.length && classInfo.name.endsWith("Action")) {
+        const prefix = classInfo.name.slice(0, classInfo.name.length - 6);
+        inputs = inputs.filter(
+          (imp) => imp.slice(0, imp.length - 5) === prefix,
+        );
+        if (inputs.length === 1) {
+          return inputs[0];
+        }
       }
     }
   }
@@ -184,7 +198,7 @@ export class TransformAction implements TransformFile {
         : nodeName;
     const viewer = this.customInfo.viewerInfo.name;
 
-    const input = findInput(file, sourceFile);
+    const input = findInput(file, classInfo, sourceFile);
     if (!input) {
       return;
     }
