@@ -578,6 +578,29 @@ func (f *Field) GetPossibleTypes() []enttype.EntType {
 	return typs
 }
 
+func (f *Field) GetImportsForTypes() []*tsimport.ImportPath {
+	var ret []*tsimport.ImportPath
+	tt := f.GetPossibleTypes()
+	for _, t := range tt {
+		if enttype.IsConvertDataType(t) {
+			t2 := t.(enttype.ConvertDataType)
+			c := t2.Convert()
+			if c.ImportPath != "" {
+				ret = append(ret, c)
+			}
+		}
+		if enttype.IsImportDepsType(t) {
+			t2 := t.(enttype.ImportDepsType)
+			imp := t2.GetImportDepsType()
+			if imp != nil {
+				// TODO ignoring relative. do we need it?
+				ret = append(ret, imp)
+			}
+		}
+	}
+	return ret
+}
+
 func (f *Field) GetTsTypeImports() []*tsimport.ImportPath {
 	types := f.GetPossibleTypes()
 	ret := []*tsimport.ImportPath{}

@@ -124,6 +124,10 @@ func (p *PatternInfo) GetImportsForMixin() []*tsimport.ImportPath {
 			ImportPath: codepath.GetInternalImportPath(),
 		})
 	}
+
+	for _, f := range p.FieldInfo.Fields {
+		ret = append(ret, f.GetImportsForTypes()...)
+	}
 	return ret
 }
 
