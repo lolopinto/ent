@@ -28,14 +28,10 @@ export class UserAuthPayload {
 export class AuthResolver {
   @gqlMutation({ name: "userAuth", type: UserAuthPayload })
   async userAuth(
-
     @gqlContextType() context: RequestContext,
     @gqlArg("input") input: UserAuthInput,
-
   ): Promise<UserAuthPayload> {
-
     return {viewerID : "1"};
-
   }
 }
 
@@ -63,11 +59,11 @@ Here's what's happening here:
 
 * This adds a new [input type](https://graphql.org/learn/schema/#input-types) `UserAuthInput` to the GraphQLSchema represented by the class `UserAuthInput`.
 * `UserAuthInput` object has 2 fields:
-  + `emailAddress` of type `String`
-  + `password` of type `String`
+  * `emailAddress` of type `String`
+  * `password` of type `String`
 * This adds a new [object type](https://graphql.org/learn/schema/#object-types-and-fields) `UserAuthPayload` to the GraphQLSchema represented by the class `UserAuthPayload`
 * `UserAuthPayload` object has 1 field:
-  + `viewerID` of type `ID`
+  * `viewerID` of type `ID`
 * New field `userAuth` added to `Mutation` Type which takes `UserAuthInput` input and returns `UserAuthPayload`.
 
 This uses the following concepts to implement this:

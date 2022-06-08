@@ -40,14 +40,13 @@ Note that at least one of `groupCol` and `clause` must be provided.
 
 ## Examples
 
-Given the following schema, 
+Given the following schema:
 
 ```ts title="src/schema/todo_schema.ts"
 const TodoSchema = new EntSchema({
   fields: {
-
-    Text: StringType(),
-    Completed: BooleanType({
+    text: StringType(),
+    completed: BooleanType({
       index: true,
       defaultValueOnCreate: () => {
         return false;
@@ -56,7 +55,6 @@ const TodoSchema = new EntSchema({
     creatorID: UUIDType({
       foreignKey: { schema: "Account", column: "ID" },
     }),
-
   }, 
 }); 
 export dfault TodoSchema; 

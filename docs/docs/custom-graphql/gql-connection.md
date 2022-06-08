@@ -19,9 +19,7 @@ export class Account extends AccountBase {
 
 @gqlField({ name: "openTodos", type: gqlConnection("Todo") })
   openTodos() {
-
     return new AccountToOpenTodosQuery(this.viewer, this);
-
   }
 }
 ```

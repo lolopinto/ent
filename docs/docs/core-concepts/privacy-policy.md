@@ -42,8 +42,8 @@ Guidelines:
 
 * The last rule in a policy should *always* allow or *always* deny. It shouldn't be ambiguous what the result is.
 * If not an always allow or always deny rule, a rule should return
-  + `Allow()` or `Skip()` or
-  + `Deny()` or `Skip()`
+  * `Allow()` or `Skip()` or
+  * `Deny()` or `Skip()`
 * For readability and reusability purposes, rules should be broken down into the simplest reusable components and not try to do too much.
 
 ## AlwaysAllowPrivacyPolicy
