@@ -168,7 +168,7 @@ export class ContactBase {
     return ContactToLikersQuery.query(this.viewer, this.id);
   }
 
-  async loadEmails(): Promise<ContactEmail[]> {
+  loadEmails(): Promise<ContactEmail[]> {
     return loadEnts(
       this.viewer,
       ContactEmail.loaderOptions(),
@@ -176,7 +176,7 @@ export class ContactBase {
     );
   }
 
-  async loadPhoneNumbers(): Promise<ContactPhoneNumber[]> {
+  loadPhoneNumbers(): Promise<ContactPhoneNumber[]> {
     return loadEnts(
       this.viewer,
       ContactPhoneNumber.loaderOptions(),
@@ -184,7 +184,7 @@ export class ContactBase {
     );
   }
 
-  async loadUser(): Promise<User | null> {
+  loadUser(): Promise<User | null> {
     return loadEnt(this.viewer, this.userID, User.loaderOptions());
   }
 

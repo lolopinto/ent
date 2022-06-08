@@ -193,7 +193,7 @@ export class AuthCodeBase {
     return AuthCodeBase.getSchemaFields().get(key);
   }
 
-  async loadGuest(): Promise<Guest | null> {
+  loadGuest(): Promise<Guest | null> {
     return loadEnt(this.viewer, this.guestID, Guest.loaderOptions());
   }
 
