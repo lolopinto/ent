@@ -12,6 +12,8 @@ import * as clause from "@snowtop/ent/core/clause";
 export class DeletedAtPattern implements Pattern {
   name = "deleted_at";
 
+  disableMixin = true;
+
   fields: Field[] = [
     TimestampType({
       name: "deleted_at",

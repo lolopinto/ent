@@ -22,8 +22,8 @@ go install github.com/lolopinto/ent/tsent@v0.0.39
 ```
 
 * Install [Python](https://www.python.org/downloads/) >= 3.8
-  + Ensure you have `pip` [installed](https://pip.pypa.io/en/stable/installing/)
-* Install [autoschema](https://pypi.org/project/auto-schema/):
+  * Ensure you have `pip` [installed](https://pip.pypa.io/en/stable/installing/)
+* Install [auto-schema](https://pypi.org/project/auto-schema/):
 
 ```shell
 python3 -m pip install auto_schema==0.0.18

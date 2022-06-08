@@ -8,17 +8,15 @@ This is done via the `ActionOperation.Edit` or `ActionOperation.Mutations` [oper
 
 Based on the [schema](/docs/actions/action#schema) with the following extra configuration:
 
-```ts title="src/event/schema.ts"
-export default class Event extends BaseEntSchema implements Schema {
-
-  actions: Action[] = [
-
+```ts title="src/schema/event_schema.ts"
+const EventSchema = new EntSchema({
+  actions: [
     {
       operation: ActionOperation.Edit,
     },
-
-  ]; 
-}
+  ], 
+}); 
+export default EventSchema; 
 
 ```
 
@@ -26,25 +24,36 @@ leads to 2 classes.
 
 First, the base class:
 
-```ts title="src/ent/event/actions/generated/edit_event_action_base.ts"
+```ts title="src/ent/generated/event/actions/edit_event_action_base.ts"
 
 export interface EventEditInput {
   name?: string;
-  creatorID?: ID | Builder<User>;
+  creatorID?: ID | Builder<User, Viewer>;
   startTime?: Date;
   endTime?: Date | null;
   location?: string;
 }
 
-export class EditEventActionBase implements Action<Event> {
-  public readonly builder: EventBuilder;
+export class EditEventActionBase 
+  implements
+    Action<
+      Event,
+      EventBuilder<EventEditInput, Event>,
+      Viewer,
+      EventEditInput,
+      Event
+    >
+{
+  public readonly builder: EventBuilder<EventEditInput, Event>;
   public readonly viewer: Viewer;
   protected input: EventEditInput;
+  protected event: Event;
 
   constructor(viewer: Viewer, event: Event, input: EventEditInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new EventBuilder(this.viewer, WriteOperation.Edit, this, event);
+    this.event = event;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {
@@ -61,7 +70,7 @@ and then the subclass:
 import {
   EditEventActionBase, 
   EventEditInput, 
-} from "src/ent/event/actions/generated/edit_event_action_base"; 
+} from "src/ent/generated/event/actions/edit_event_action_base"; 
 
 export { EventEditInput }; 
 

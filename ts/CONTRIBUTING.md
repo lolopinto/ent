@@ -15,6 +15,6 @@ To make local changes:
 * in `/ts`, run `tsc && cd dist && npm link @snowtop/ent`
 * Test in one of the example folders as follows:
 
-  + `npm link @snowtop/ent`
-  + `rm -rf node_modules/graphql`
-  + run `tsent codegen` or whatever command to see your changes
+  * `npm link @snowtop/ent`
+  * `rm -rf node_modules/graphql`
+  * run `tsent codegen` or whatever command to see your changes

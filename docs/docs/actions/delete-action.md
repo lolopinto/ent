@@ -8,17 +8,16 @@ This is done via the `ActionOperation.Delete` or `ActionOperation.Mutations` [op
 
 Based on the [schema](/docs/actions/action#schema) with the following extra configuration:
 
-```ts title="src/event/schema.ts"
-export default class Event extends BaseEntSchema implements Schema {
+```ts title="src/schema/event_schema.ts"
+const EventSchema = new EntSchema({
 
-  actions: Action[] = [
-
+actions: [
     {
       operation: ActionOperation.Delete,
     },
-
-  ]; 
-}
+  ], 
+}); 
+export default EventSchema; 
 
 ```
 
@@ -26,10 +25,20 @@ leads to 2 classes.
 
 First, the base class:
 
-```ts title="src/ent/event/actions/generated/delete_event_action_base.ts"
-export class DeleteEventActionBase implements Action<Event> {
-  public readonly builder: EventBuilder;
+```ts title="src/ent/generated/event/actions/delete_event_action_base.ts"
+export class DeleteEventActionBase 
+  implements
+    Action<
+      Event,
+      EventBuilder<EventInput, Event>,
+      Viewer,
+      EventInput,
+      Event
+    >
+{
+  public readonly builder: EventBuilder<EventInput, Event>;
   public readonly viewer: Viewer;
+  protected event: Event;
 
   constructor(viewer: Viewer, event: Event) {
     this.viewer = viewer;
@@ -39,6 +48,7 @@ export class DeleteEventActionBase implements Action<Event> {
       this,
       event,
     );
+    this.event = event;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {
@@ -52,7 +62,7 @@ and then the subclass:
 
 ```ts title="src/ent/event/actions/delete_event_action.ts"
 import {
-import { DeleteEventActionBase } from "src/ent/event/actions/generated/delete_event_action_base"; 
+import { DeleteEventActionBase } from "src/ent/generated/event/actions/delete_event_action_base"; 
 
 export default class DeleteEventAction extends DeleteEventActionBase {}
 

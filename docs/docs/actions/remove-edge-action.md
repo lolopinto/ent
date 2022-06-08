@@ -10,13 +10,21 @@ Based on the [schema](/docs/actions/action#schema) with the `RemoveEdge` action 
 
 First, the base class:
 
-```ts title="src/ent/event/actions/generated/event_remove_host_action_base.ts"
-export class EventRemoveHostActionBase implements Action<Event> {
-  public readonly builder: EventBuilder; 
+```ts title="src/ent/generated/event/actions/event_remove_host_action_base.ts"
+export class EventRemoveHostActionBase 
+  implements
+    Action<
+      Event,
+      EventBuilder<EventInput, Event>,
+      Viewer,
+      EventInput,
+      Event
+{
+  public readonly builder: EventBuilder<EventInput, Event>;
   public readonly viewer: Viewer; 
+  protected event: Event;
 
   constructor(viewer: Viewer, event: Event) {
-
     this.viewer = viewer;
     this.builder = new EventBuilder(
       this.viewer,
@@ -24,19 +32,15 @@ export class EventRemoveHostActionBase implements Action<Event> {
       this,
       event,
     );
-
+    this.event = event;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {
-
     return AllowIfViewerHasIdentityPrivacyPolicy;
-
   }
 
   removeHost(id: ID) {
-
     //...
-
   }
   // ...
 }
@@ -47,7 +51,7 @@ and then the subclass:
 
 ```ts title="src/ent/event/actions/event_remove_host_action.ts"
 import {
-import { EventRemoveHostActionBase } from "src/ent/event/actions/generated/event_remove_host_action_base";
+import { EventRemoveHostActionBase } from "src/ent/generated/event/actions/event_remove_host_action_base";
 
 export default class EventRemoveHostAction extends EventRemoveHostActionBase {}
 ```

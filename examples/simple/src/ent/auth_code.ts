@@ -1,5 +1,5 @@
 import {
-  AllowIfViewerIsRule,
+  AllowIfViewerIsEntPropertyRule,
   AlwaysDenyRule,
   PrivacyPolicy,
 } from "@snowtop/ent";
@@ -9,7 +9,7 @@ import { AuthCodeBase } from "../ent/internal";
 export class AuthCode extends AuthCodeBase {
   getPrivacyPolicy(): PrivacyPolicy<this> {
     return {
-      rules: [new AllowIfViewerIsRule("userID"), AlwaysDenyRule],
+      rules: [new AllowIfViewerIsEntPropertyRule("userID"), AlwaysDenyRule],
     };
   }
 }
