@@ -37,7 +37,7 @@ export class DeleteUserAction2Base
   public readonly builder: UserBuilder<DeleteUserInput2, User>;
   public readonly viewer: ExampleViewer;
   protected input: DeleteUserInput2;
-  protected user: User;
+  protected readonly user: User;
 
   constructor(viewer: ExampleViewer, user: User, input: DeleteUserInput2) {
     this.viewer = viewer;

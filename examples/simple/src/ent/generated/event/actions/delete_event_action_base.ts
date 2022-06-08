@@ -32,7 +32,7 @@ export class DeleteEventActionBase
 {
   public readonly builder: EventBuilder<EventInput, Event>;
   public readonly viewer: ExampleViewer;
-  protected event: Event;
+  protected readonly event: Event;
 
   constructor(viewer: ExampleViewer, event: Event) {
     this.viewer = viewer;

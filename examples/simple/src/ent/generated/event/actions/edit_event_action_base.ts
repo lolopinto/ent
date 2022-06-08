@@ -43,7 +43,7 @@ export class EditEventActionBase
   public readonly builder: EventBuilder<EventEditInput, Event>;
   public readonly viewer: ExampleViewer;
   protected input: EventEditInput;
-  protected event: Event;
+  protected readonly event: Event;
 
   constructor(viewer: ExampleViewer, event: Event, input: EventEditInput) {
     this.viewer = viewer;

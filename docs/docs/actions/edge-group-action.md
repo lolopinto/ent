@@ -33,7 +33,7 @@ export class EditEventRsvpStatusActionBase
 {
   public readonly builder: EventBuilder<EditEventRsvpStatusInput, Event>;
   public readonly viewer: Viewer; 
-  protected event: Event;
+  protected readonly event: Event;
 
   constructor(viewer: Viewer, event: Event, input: EditEventRsvpStatusInput) {
     this.viewer = viewer;

@@ -42,7 +42,7 @@ export class EditContactActionBase
   public readonly builder: ContactBuilder<ContactEditInput, Contact>;
   public readonly viewer: ExampleViewer;
   protected input: ContactEditInput;
-  protected contact: Contact;
+  protected readonly contact: Contact;
 
   constructor(
     viewer: ExampleViewer,

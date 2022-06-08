@@ -26,7 +26,7 @@ export class DeleteUserActionBase
 {
   public readonly builder: UserBuilder<UserInput, User>;
   public readonly viewer: ExampleViewer;
-  protected user: User;
+  protected readonly user: User;
 
   constructor(viewer: ExampleViewer, user: User) {
     this.viewer = viewer;

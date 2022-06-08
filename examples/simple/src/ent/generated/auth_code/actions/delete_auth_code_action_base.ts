@@ -32,7 +32,7 @@ export class DeleteAuthCodeActionBase
 {
   public readonly builder: AuthCodeBuilder<AuthCodeInput, AuthCode>;
   public readonly viewer: ExampleViewer;
-  protected authCode: AuthCode;
+  protected readonly authCode: AuthCode;
 
   constructor(viewer: ExampleViewer, authCode: AuthCode) {
     this.viewer = viewer;

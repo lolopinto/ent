@@ -109,7 +109,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
     protected input: {{$inputName}};
   {{end -}}
   {{if $action.MutatingExistingObject -}}
-    protected {{$instance}}: {{$node}};
+    protected readonly {{$instance}}: {{$node}};
   {{end}}
 
   constructor({{$constructor}}) {

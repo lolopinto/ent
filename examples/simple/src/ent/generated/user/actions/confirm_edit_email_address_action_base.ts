@@ -38,7 +38,7 @@ export class ConfirmEditEmailAddressActionBase
   public readonly builder: UserBuilder<ConfirmEditEmailAddressInput, User>;
   public readonly viewer: ExampleViewer;
   protected input: ConfirmEditEmailAddressInput;
-  protected user: User;
+  protected readonly user: User;
 
   constructor(
     viewer: ExampleViewer,

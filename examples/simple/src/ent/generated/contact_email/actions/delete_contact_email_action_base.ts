@@ -35,7 +35,7 @@ export class DeleteContactEmailActionBase
 {
   public readonly builder: ContactEmailBuilder<ContactEmailInput, ContactEmail>;
   public readonly viewer: ExampleViewer;
-  protected contactEmail: ContactEmail;
+  protected readonly contactEmail: ContactEmail;
 
   constructor(viewer: ExampleViewer, contactEmail: ContactEmail) {
     this.viewer = viewer;
