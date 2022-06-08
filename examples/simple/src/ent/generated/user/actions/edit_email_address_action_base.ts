@@ -37,7 +37,7 @@ export class EditEmailAddressActionBase
   public readonly builder: UserBuilder<EditEmailAddressInput, User>;
   public readonly viewer: ExampleViewer;
   protected input: EditEmailAddressInput;
-  protected user: User;
+  protected readonly user: User;
 
   constructor(viewer: ExampleViewer, user: User, input: EditEmailAddressInput) {
     this.viewer = viewer;

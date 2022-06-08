@@ -32,7 +32,7 @@ export class DeleteContactActionBase
 {
   public readonly builder: ContactBuilder<ContactInput, Contact>;
   public readonly viewer: ExampleViewer;
-  protected contact: Contact;
+  protected readonly contact: Contact;
 
   constructor(viewer: ExampleViewer, contact: Contact) {
     this.viewer = viewer;

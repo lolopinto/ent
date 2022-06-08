@@ -37,7 +37,7 @@ export class EditPhoneNumberActionBase
   public readonly builder: UserBuilder<EditPhoneNumberInput, User>;
   public readonly viewer: ExampleViewer;
   protected input: EditPhoneNumberInput;
-  protected user: User;
+  protected readonly user: User;
 
   constructor(viewer: ExampleViewer, user: User, input: EditPhoneNumberInput) {
     this.viewer = viewer;

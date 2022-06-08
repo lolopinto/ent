@@ -38,7 +38,7 @@ export class ConfirmEditPhoneNumberActionBase
   public readonly builder: UserBuilder<ConfirmEditPhoneNumberInput, User>;
   public readonly viewer: ExampleViewer;
   protected input: ConfirmEditPhoneNumberInput;
-  protected user: User;
+  protected readonly user: User;
 
   constructor(
     viewer: ExampleViewer,

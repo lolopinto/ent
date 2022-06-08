@@ -45,7 +45,7 @@ export class EditEventRsvpStatusActionBase
   public readonly builder: EventBuilder<EditEventRsvpStatusInput, Event>;
   public readonly viewer: ExampleViewer;
   protected input: EditEventRsvpStatusInput;
-  protected event: Event;
+  protected readonly event: Event;
 
   constructor(
     viewer: ExampleViewer,

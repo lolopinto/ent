@@ -43,7 +43,7 @@ export class EditContactEmailActionBase
   >;
   public readonly viewer: ExampleViewer;
   protected input: ContactEmailEditInput;
-  protected contactEmail: ContactEmail;
+  protected readonly contactEmail: ContactEmail;
 
   constructor(
     viewer: ExampleViewer,

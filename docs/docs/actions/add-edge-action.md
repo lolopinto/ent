@@ -22,7 +22,7 @@ export class EventAddHostActionBase
 {
   public readonly builder: EventBuilder<EventInput, Event>;
   public readonly viewer: Viewer; 
-  protected event: Event;
+  protected readonly event: Event;
 
   constructor(viewer: Viewer, event: Event) {
     this.viewer = viewer;

@@ -38,7 +38,7 @@ export class DeleteContactPhoneNumberActionBase
     ContactPhoneNumber
   >;
   public readonly viewer: ExampleViewer;
-  protected contactPhoneNumber: ContactPhoneNumber;
+  protected readonly contactPhoneNumber: ContactPhoneNumber;
 
   constructor(viewer: ExampleViewer, contactPhoneNumber: ContactPhoneNumber) {
     this.viewer = viewer;

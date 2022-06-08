@@ -46,7 +46,7 @@ export class EditContactPhoneNumberActionBase
   >;
   public readonly viewer: ExampleViewer;
   protected input: ContactPhoneNumberEditInput;
-  protected contactPhoneNumber: ContactPhoneNumber;
+  protected readonly contactPhoneNumber: ContactPhoneNumber;
 
   constructor(
     viewer: ExampleViewer,

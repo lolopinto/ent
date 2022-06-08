@@ -38,7 +38,7 @@ export class EditUserActionBase
   public readonly builder: UserBuilder<UserEditInput, User>;
   public readonly viewer: ExampleViewer;
   protected input: UserEditInput;
-  protected user: User;
+  protected readonly user: User;
 
   constructor(viewer: ExampleViewer, user: User, input: UserEditInput) {
     this.viewer = viewer;
