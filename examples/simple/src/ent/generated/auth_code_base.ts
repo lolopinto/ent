@@ -150,7 +150,7 @@ export class AuthCodeBase {
     return AuthCodeBase.getSchemaFields().get(key);
   }
 
-  async loadUser(): Promise<User | null> {
+  loadUser(): Promise<User | null> {
     return loadEnt(this.viewer, this.userID, User.loaderOptions());
   }
 

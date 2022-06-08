@@ -169,7 +169,7 @@ export class GuestBase {
     return GuestToGuestDataQuery.query(this.viewer, this.id);
   }
 
-  async loadEvent(): Promise<Event | null> {
+  loadEvent(): Promise<Event | null> {
     return loadEnt(this.viewer, this.eventID, Event.loaderOptions());
   }
 
@@ -177,7 +177,7 @@ export class GuestBase {
     return loadEntX(this.viewer, this.eventID, Event.loaderOptions());
   }
 
-  async loadGuestGroup(): Promise<GuestGroup | null> {
+  loadGuestGroup(): Promise<GuestGroup | null> {
     return loadEnt(this.viewer, this.guestGroupID, GuestGroup.loaderOptions());
   }
 
