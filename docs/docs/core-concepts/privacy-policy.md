@@ -28,31 +28,35 @@ Each rule takes a `Viewer` and an `Ent` (depending on where it's being called) a
 
 ### Allow
 
-When a rule returns `Allow()`, it's saying that it has enough information to pass this check.
+When a rule returns `Allow()` , it's saying that it has enough information to pass this check.
 
 ### Deny
 
-When a rule returns `Deny()`, it's saying that it has enough information to deny this check
+When a rule returns `Deny()` , it's saying that it has enough information to deny this check
 
 ### Skip
 
-When a rule returns `Skip()`, it's saying that it doesn't have enough information to make a decision, and you should go to the next rule.
+When a rule returns `Skip()` , it's saying that it doesn't have enough information to make a decision, and you should go to the next rule.
 
 Guidelines:
 
 * The last rule in a policy should *always* allow or *always* deny. It shouldn't be ambiguous what the result is.
 * If not an always allow or always deny rule, a rule should return
-  * `Allow()` or `Skip()` or
-  * `Deny()` or `Skip()`
+  + `Allow()` or `Skip()` or
+  + `Deny()` or `Skip()`
 * For readability and reusability purposes, rules should be broken down into the simplest reusable components and not try to do too much.
 
 ## AlwaysAllowPrivacyPolicy
 
-This is a simple policy that comes with the framework that has only one rule: `AlwaysAllowRule`. This *always* passes the privacy check
+This is a simple policy that comes with the framework that has only one rule: `AlwaysAllowRule` . This *always* passes the privacy check
 
 ## AlwaysDenyPrivacyPolicy
 
-This is a simple policy that comes with the framework that has only one rule: `AlwaysDenyRule`. This *always* denies the privacy check
+This is a simple policy that comes with the framework that has only one rule: `AlwaysDenyRule` . This *always* denies the privacy check
+
+## AllowIfViewerPrivacyPolicy
+
+This is a simple policy that comes with the framework that says the ent is visible if the id of the viewer is equal to the id of the ent.
 
 ## Examples
 
@@ -63,13 +67,16 @@ Consider a private social network where a user can only see another user if they
 ```ts title="src/ent/user.ts"
 export class User extends UserBase {
   privacyPolicy: PrivacyPolicy = {
+
     rules: [
       AllowIfViewerRule,
       new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFriends),
       AlwaysDenyRule,
     ],
-  };
+
+  }; 
 }
+
 ```
 
 This has 3 rules:
@@ -102,6 +109,7 @@ Event based system with guests.
 ```ts title="src/ent/guest.ts"
 export class Guest extends GuestBase {
   privacyPolicy: PrivacyPolicy = {
+
     rules: [
       // guest can view self
       AllowIfViewerRule,
@@ -110,8 +118,10 @@ export class Guest extends GuestBase {
       new AllowIfGuestInSameGuestGroupRule(),
       AlwaysDenyRule,
     ],
-  };
+
+  }; 
 }
+
 ```
 
 This has 4 rules:
@@ -152,9 +162,10 @@ enum Role {
   ///....
 }
 export class AllowIfViewerHasRoleRule {
-  constructor(private role:Role) {}
+  constructor(private role: Role) {}
 
   async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
+
     if (!v.viewerID) {
       return Skip();
     }
@@ -163,17 +174,21 @@ export class AllowIfViewerHasRoleRule {
       return Allow();
     }
     return Skip();
+
   }
 }
 
 export class AllowIfViewerHasRolePrivacyPolicy {
-  constructor(private role:Role) {}
+  constructor(private role: Role) {}
 
   rules: PrivacyPolicyRule[] = [
+
     new AllowIfViewerHasRoleRule(this.role),
     AlwaysDenyRule,
-  ];
+
+  ]; 
 }
+
 ```
 
 ```ts title="src/ent/post.ts"
@@ -184,6 +199,6 @@ export class Post extends PostBase {
 
 ```ts title="src/ent/blog.ts"
 export class Blog extends BlogBase {
-  privacyPolicy: PrivacyPolicy = new AllowIfViewerHasRolePrivacyPolicy(Role.PublishBlog);
+  privacyPolicy: PrivacyPolicy = new AllowIfViewerHasRolePrivacyPolicy(Role. PublishBlog); 
 }
 ```

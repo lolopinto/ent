@@ -8,17 +8,18 @@ This is done via the `ActionOperation.Create` or `ActionOperation.Mutations` [op
 
 Based on the [schema](/docs/actions/action#schema) with the following extra configuration:
 
-```ts title="src/event/schema.ts"
-export default class Event extends BaseEntSchema implements Schema {
+```ts title="src/schema/event_schema.ts"
+const EventSchema = new EntSchema({
 
-  actions: Action[] = [
+  actions: [
 
     {
       operation: ActionOperation.Create,
     },
 
-  ]; 
-}
+  ], 
+}); 
+export default EventSchema; 
 
 ```
 

@@ -42,25 +42,24 @@ Note that at least one of `groupCol` and `clause` must be provided.
 
 Given the following schema, 
 
-```ts title="src/schema/todo.ts"
-export default class Todo extends BaseEntSchema {
-  fields: Field[] = [
+```ts title="src/schema/todo_schema.ts"
+const TodoSchema = new EntSchema({
+  fields: {
 
-    StringType({ name: "Text" }),
-    BooleanType({
-      name: "Completed",
+    Text: StringType(),
+    Completed: BooleanType({
       index: true,
       defaultValueOnCreate: () => {
         return false;
       },
     }),
-    UUIDType({
-      name: "creatorID",
+    creatorID: UUIDType({
       foreignKey: { schema: "Account", column: "ID" },
     }),
 
-  ]; 
-}
+  }, 
+}); 
+export dfault TodoSchema; 
 
 ```
 

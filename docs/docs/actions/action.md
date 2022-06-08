@@ -15,14 +15,14 @@ There are high level 3 different modes when writing:
 There are however different configuration options that end up breaking down slightly differently:
 
 * creating a node
-  * [create action](/docs/actions/create-action)
+  + [create action](/docs/actions/create-action)
 * editing a node
-  * [edit action](/docs/actions/edit-action)
-  * [add edge action](/docs/actions/add-edge-action)
-  * [remove edge action](/docs/actions/remove-edge-action)
-  * [edge group action](/docs/actions/edge-group-action)
+  + [edit action](/docs/actions/edit-action)
+  + [add edge action](/docs/actions/add-edge-action)
+  + [remove edge action](/docs/actions/remove-edge-action)
+  + [edge group action](/docs/actions/edge-group-action)
 * deleting a node:
-  * [delete action](/docs/actions/delete-action)
+  + [delete action](/docs/actions/delete-action)
 
 ## Customizations
 
@@ -43,24 +43,25 @@ The default [privacy policy](/docs/core-concepts/privacy-policy) is that any log
 
 We'll use the following schema as our base example and go into each of them:
 
-```ts title="src/schema/event.ts"
-export default class Event extends BaseEntSchema implements Schema {
-  fields: Field[] = [
-    StringType({ name: "name" }),
-    UUIDType({
-      name: "creatorID",
+```ts title="src/schema/event_schema.ts"
+const EventSchema = new EntSchema({
+  fields: {
+
+    name: StringType(),
+    creatorID: UUIDType({
       fieldEdge: { schema: "User", inverseEdge: "createdEvents" },
       storageKey: "user_id",
     }),
-    TimestampType({ name: "start_time" }),
-    TimestampType({ name: "end_time", nullable: true }),
-    StringType({
-      name: "location",
+    start_time: TimestampType(),
+    end_time: TimestampType({ nullable: true}),
+    location: StringType({
       graphqlName: "eventLocation",
     }),
-  ];
 
-  edges: Edge[] = [
+  }, 
+
+  edges: [
+
     {
       name: "hosts",
       schemaName: "User",
@@ -76,9 +77,11 @@ export default class Event extends BaseEntSchema implements Schema {
         },
       ],
     },
-  ];
 
-  edgeGroups: AssocEdgeGroup[] = [
+  ], 
+
+  edgeGroups: [
+
     {
       name: "rsvps",
       groupStatusName: "rsvpStatus",
@@ -121,6 +124,8 @@ export default class Event extends BaseEntSchema implements Schema {
         },
       ],
     },
-  ];
-}
+
+  ], 
+}); 
+export default EventSchema; 
 ```

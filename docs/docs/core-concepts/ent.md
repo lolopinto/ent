@@ -25,7 +25,7 @@ id of the Ent. usually the primary key in the database.
 
 ### viewer
 
-The [`Viewer`](/docs/core-concepts/viewer) who loaded the Ent. The [Privacy Policy](/docs/core-concepts/privacy-policy) associated with this Ent must permit the viewer to see this Ent otherwise it's not returned by the system.
+The [ `Viewer` ](/docs/core-concepts/viewer) who loaded the Ent. The [Privacy Policy](/docs/core-concepts/privacy-policy) associated with this Ent must permit the viewer to see this Ent otherwise it's not returned by the system.
 
 ### privacyPolicy
 
@@ -43,19 +43,22 @@ Also used when this is id is stored in a [polymorphic](/docs/ent-schema/fields#p
 
 Given the following schema:
 
-```ts title="src/schema/user.ts"
-import { BaseEntSchema, Field, StringType } from "@snowtop/ent";
-import { EmailType } from "@snowtop/ent-email";
-import { PasswordType } from "@snowtop/ent-password";
+```ts title="src/schema/user_schema.ts"
+import { EntSchema, StringType } from "@snowtop/ent"; 
+import { EmailType } from "@snowtop/ent-email"; 
+import { PasswordType } from "@snowtop/ent-password"; 
 
-export default class User extends BaseEntSchema {
-  fields: Field[] = [
-    StringType({ name: "FirstName" }),
-    StringType({ name: "LastName" }),
-    EmailType({ name: "EmailAddress" }),
-    PasswordType({ name: "Password" }),
-  ];
-}
+const UserSchema = new EntSchema({
+  fields: {
+
+    FirstName: StringType({ name: "FirstName" }),
+    LastName: StringType({ name: "LastName" }),
+    EmailAddress: EmailType({ name: "EmailAddress" }),
+    Password: PasswordType({ name: "Password" }),
+
+  }, 
+}); 
+
 ```
 
 we have the following classes generated
@@ -83,7 +86,9 @@ export class UserBase {
   }
 
   // default privacyPolicy is Viewer can see themselves
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   static async load<T extends UserBase>(
     this: new (viewer: Viewer, data: Data) => T,
@@ -105,9 +110,10 @@ export class UserBase {
 ```
 
 ```ts title="src/ent/user.ts"
-import { UserBase } from "src/ent/internal";
+import { UserBase } from "src/ent/internal"; 
 
 export class User extends UserBase {}
+
 ```
 
 The `UserBase` class is where all generated code related to User is put and is regenerated everytime the schema is changed. The `User` class is generated **once** and then the developer can add new functionality there over time as needed.
@@ -123,7 +129,9 @@ import { UserBase } from "src/ent/internal";
 import { AlwaysAllowPrivacyPolicy, PrivacyPolicy } from "@snowtop/ent"
 
 export class User extends UserBase {
-  privacyPolicy: PrivacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy() {
+    return AlwaysAllowPrivacyPolicy;
+  }
 }
 ```
 
@@ -131,7 +139,7 @@ This new Policy takes precedence over the default one and now the User is visibl
 
 ## Loading
 
-To load a `User`, a [`Viewer`](/docs/core-concepts/viewer) and its id are needed
+To load a `User` , a [ `Viewer` ](/docs/core-concepts/viewer) and its id are needed
 
 ```ts
 const user: User | null = await User.load(viewer, id);
@@ -149,20 +157,27 @@ const user: User = await User.loadX(viewer, id);
 
 To add custom functionality, just add it in the `User` class.
 
-For example, to return how long the user's account has existed,
+For example, to return how long the user's account has existed, 
 
 ```ts title="src/ent/user.ts"
-import { UserBase } from "src/ent/internal";
+import { UserBase } from "src/ent/internal"; 
 import { AlwaysAllowPrivacyPolicy, ID, LoggedOutViewer, PrivacyPolicy } from "@snowtop/ent"
-import { Interval } from "luxon";
+import { Interval } from "luxon"; 
 
 export class User extends UserBase {
-  privacyPolicy: PrivacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy() {
+
+    return AlwaysAllowPrivacyPolicy;
+
+  }
 
   howLong() {
+
     return Interval.fromDateTimes(this.createdAt, new Date()).count('seconds');
+
   }
 }
+
 ```
 
 and when the `User` is loaded, can access the new method since an instance of `User` is what's returned.
@@ -178,20 +193,23 @@ Because the privacy policy is applied *everywhere* an object is loaded consisten
 
 For example, given the following schema:
 
-```ts  title="src/schema/event.ts"
-export default class Event extends BaseEntSchema implements Schema {
-  fields: Field[] = [
+```ts  title="src/schema/event_schema.ts"
+const EventSchema = new EntSchema({
+  fields: {
+
     /// ... more fields
-    UUIDType({
+    creatorID: UUIDType({
       foreignKey: { schema: "User", column: "id" },
-      name: "creatorID",
     }),
     // or 
-    UUIDType({
-      name: "creatorID",
+    creatorID: UUIDType({
       fieldEdge: { schema: "User", inverseEdge: "createdEvents" },
     }),
-  ];
+
+  }, 
+}); 
+export default EventSchema; 
+
 ```
 
 the following accessors are added:

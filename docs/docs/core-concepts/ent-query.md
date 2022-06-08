@@ -12,15 +12,15 @@ For every [edge](/docs/ent-schema/edges) configured, we generate an EntQuery for
 
 For example, given the following schema:
 
-```ts title="src/schema/user.ts"
-export default class User extends BaseEntSchema implements Schema {
-  fields: Field[] = [
+```ts title="src/schema/user_schema.ts"
+const UserSchema = new EntSchema({
+  fields: {
 
     //...
 
-  ]; 
+  }, 
 
-  edges: Edge[] = [
+  edges: [
 
     {
       name: "friends",
@@ -28,8 +28,9 @@ export default class User extends BaseEntSchema implements Schema {
       symmetric: true,
     },
 
-  ]; 
-}
+  ] 
+}); 
+export default UserSchema; 
 
 ```
 
@@ -145,14 +146,15 @@ query friendsQuery($id: ID!, $cursor: String!) {
 
 For an [indexed foreign key](/docs/ent-schema/fields#foreignkey) or an [index](/docs/ent-schema/fields#index) e.g.
 
-```ts title="src/schema/contact.ts"
-export default class Contact extends BaseEntSchema implements Schema {
-  fields: Field[] = [
+```ts title="src/schema/contact_schema.ts"
+const ContactSchema = new EntSchema({
+  fields: {
 
-    UUIDType({ name: "userID", foreignKey: { schema: "User", column: "ID" } }),
+    userID: UUIDType({ foreignKey: { schema: "User", column: "ID" } }),
 
-  ]; 
-}
+  }, 
+}); 
+export const ContactSchema; 
 
 ```
 
