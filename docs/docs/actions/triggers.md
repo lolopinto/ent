@@ -14,7 +14,7 @@ Any errors in Triggers fails the entire transaction.
 
 ```ts
 export interface Changeset {
-  // bunch of things that aren't currently relevant
+  //...
 }
 
 export interface Action< 
@@ -24,7 +24,7 @@ export interface Action<
   TInput extends Data = Data,
   TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
 > {
-  // bunch of other things that aren't relevant.
+  // ...
   changeset(): Promise<Changeset>;
 }
 
@@ -55,10 +55,9 @@ For example, in the example schema, to add the creator as a host of the event wh
 ```ts title="src/ent/events/action/create_event_action.ts"
 export default class CreateEventAction extends CreateEventActionBase {
   getTriggers() {
-
     return [
       {
-        changeset(builder: EventBuilder<EventCreateInput>, input: EventCreateInput) {
+        changeset(builder: EventBuilder<EventCreateInput, Viewer>, input: EventCreateInput) {
           builder.addHostID(input.creatorID);
         },
       },
@@ -106,7 +105,6 @@ and the Event schema modified as follows:
 const EventSchema = new EntSchema({
 
   actions: [
-
     {
       operation: ActionOperation.Create,
       actionOnlyFields: [
@@ -118,7 +116,6 @@ const EventSchema = new EntSchema({
         },
       ],
     },
-
   ], 
 }); 
 export default EventSchema; 
@@ -132,7 +129,7 @@ export default class CreateEventAction extends CreateEventActionBase {
   getTriggers() {
     return [
     {
-        changeset(builder: EventBuilder<EventCreateInput>, input: EventCreateInput) {
+        changeset(builder: EventBuilder<EventCreateInput, Viewer>, input: EventCreateInput) {
           if (!this.input.address) {
             return;
           }

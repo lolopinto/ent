@@ -4,7 +4,7 @@ sidebar_position: 4
 
 # Privacy Policy
 
-The `PrivacyPolicy` is used to apply permission checks on an object. It's used in [Ents](/docs/core-concepts/ent) and [Actions](/docs/actions/action).
+The `PrivacyPolicy` is used to apply permission checks on an object. It's used in [Ents](/docs/core-concepts/ent), [Actions](/docs/actions/action) and [Queries](/docs/core-concepts/ent-query).
 
 ```ts
 interface PrivacyPolicyRule {
@@ -66,15 +66,15 @@ Consider a private social network where a user can only see another user if they
 
 ```ts title="src/ent/user.ts"
 export class User extends UserBase {
-  privacyPolicy: PrivacyPolicy = {
-
-    rules: [
-      AllowIfViewerRule,
-      new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFriends),
-      AlwaysDenyRule,
-    ],
-
-  }; 
+  getPrivacyPolicy() {
+    return {
+      rules: [
+        AllowIfViewerRule,
+        new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFriends),
+        AlwaysDenyRule,
+      ],
+    };
+  }
 }
 
 ```
@@ -91,15 +91,17 @@ Or a User having a list of contacts and you want to ensure that only the owner o
 
 ```ts title="src/ent/contact.ts"
 export class Contact extends ContactBase {
-  privacyPolicy: PrivacyPolicy = {
-    rules: [new AllowIfViewerIsRule("userID"), AlwaysDenyRule],
-  };
+  getPrivacyPolicy() {
+    return {
+      rules: [new AllowIfViewerIsEntPropertyRule("userID"), AlwaysDenyRule],
+    };
+  }
 }
 ```
 
 This has 2 rules:
 
-* `AllowIfViewerIsRule`: this checks that the id of the `Viewer` is equal to the field `userID` of the ent. If so, ent is visible.
+* `AllowIfViewerIsEntPropertyRule`: this checks that the id of the `Viewer` is equal to the field `userID` of the ent. If so, ent is visible.
 * `AlwaysDenyRule`: otherwise, ent isn't visible.
 
 ### events based system
@@ -108,18 +110,18 @@ Event based system with guests.
 
 ```ts title="src/ent/guest.ts"
 export class Guest extends GuestBase {
-  privacyPolicy: PrivacyPolicy = {
-
-    rules: [
-      // guest can view self
-      AllowIfViewerRule,
-      // can view guest group if creator of event
-      new AllowIfEventCreatorRule(this.eventID),
-      new AllowIfGuestInSameGuestGroupRule(),
-      AlwaysDenyRule,
-    ],
-
-  }; 
+  getPrivacyPolicy() {
+    return {
+      rules: [
+        // guest can view self
+        AllowIfViewerRule,
+        // can view guest group if creator of event
+        new AllowIfEventCreatorRule(this.eventID),
+        new AllowIfGuestInSameGuestGroupRule(),
+        AlwaysDenyRule,
+      ],
+    };
+  }
 }
 
 ```
@@ -135,13 +137,15 @@ This has 4 rules:
 
 ```ts title="src/ent/user.ts"
 export class User extends UserBase {
-  privacyPolicy: PrivacyPolicy = {
-    rules: [
-      AllowIfViewerRule,
-      new DenyIfViewerOutboundEdgeExistsRule(EdgeType.UserToBlocks),
-      AlwaysAllowRule,
-    ],
-  };
+  getPrivacyPolicy() {
+    return {
+      rules: [
+        AllowIfViewerRule,
+        new DenyIfViewerOutboundEdgeExistsRule(EdgeType.UserToBlocks),
+        AlwaysAllowRule,
+      ],
+    };
+  }
 }
 ```
 
@@ -165,7 +169,6 @@ export class AllowIfViewerHasRoleRule {
   constructor(private role: Role) {}
 
   async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
-
     if (!v.viewerID) {
       return Skip();
     }
@@ -174,7 +177,6 @@ export class AllowIfViewerHasRoleRule {
       return Allow();
     }
     return Skip();
-
   }
 }
 
@@ -182,10 +184,8 @@ export class AllowIfViewerHasRolePrivacyPolicy {
   constructor(private role: Role) {}
 
   rules: PrivacyPolicyRule[] = [
-
     new AllowIfViewerHasRoleRule(this.role),
     AlwaysDenyRule,
-
   ]; 
 }
 
@@ -193,12 +193,16 @@ export class AllowIfViewerHasRolePrivacyPolicy {
 
 ```ts title="src/ent/post.ts"
 export class Post extends PostBase {
-  privacyPolicy: PrivacyPolicy = new AllowIfViewerHasRolePrivacyPolicy(Role.Post);
+  getPrivacyPolicy() {
+    return new AllowIfViewerHasRolePrivacyPolicy(Role.Post);
+  }
 }
 ```
 
 ```ts title="src/ent/blog.ts"
 export class Blog extends BlogBase {
-  privacyPolicy: PrivacyPolicy = new AllowIfViewerHasRolePrivacyPolicy(Role. PublishBlog); 
+  getPrivacyPolicy() {
+    return new AllowIfViewerHasRolePrivacyPolicy(Role.PublishBlog); 
+  }
 }
 ```

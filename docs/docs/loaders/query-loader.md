@@ -5,7 +5,7 @@ sidebar_label: "QueryLoader"
 
 # QueryLoader
 
-QueryLoader is a [ `Loader` ](/docs/loaders/loader) which is used to fetch multiple rows in the database.
+QueryLoader is a [`Loader`](/docs/loaders/loader) which is used to fetch multiple rows in the database.
 
 It's used by [index based queries](/docs/core-concepts/ent-query#index-based-query) as well as [custom ent queries](/docs/custom-data-access/custom-queries#custom-entquery).
 

@@ -5,7 +5,7 @@ sidebar_label: "RawCountLoader"
 
 # RawCountLoader
 
-RawCountLoader is a [ `Loader` ](/docs/loaders/loader) which is used to generate the rawCount for the number of rows in the database.
+RawCountLoader is a [`Loader`](/docs/loaders/loader) which is used to generate the rawCount for the number of rows in the database.
 
 It's used by [index based queries](/docs/core-concepts/ent-query#index-based-query) as well as [custom ent queries](/docs/custom-data-access/custom-queries#custom-entquery).
 

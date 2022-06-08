@@ -11,7 +11,6 @@ In the [address example](/docs/actions/triggers#changeset), with the Event schem
 ```ts title="src/schema/event_schema.ts"
 const EventSchema = new EntSchema({
   actions: [
-
     {
       operation: ActionOperation.Create,
       actionOnlyFields: [
@@ -23,12 +22,13 @@ const EventSchema = new EntSchema({
         },
       ],
     },
-
   ], 
 }); 
 export default EventSchema; 
 
 ```
+
+and the following `Address` schema:
 
 ```ts title="src/schema/address_schema.ts"
 const AddressSchema = new EntSchema({
@@ -57,7 +57,7 @@ export default AddressSchema
 
 we end up with the following changes:
 
-```ts title="src/ent/event/actions/generated/create_event_action_base.ts"
+```ts title="src/ent/generated/event/actions/create_event_action_base.ts"
 interface customAddressInput {
   street: string; 
   city: string; 
@@ -68,7 +68,7 @@ interface customAddressInput {
 
 export interface EventCreateInput {
   name: string; 
-  creatorID: ID | Builder<User>; 
+  creatorID: ID | Builder<User, Viewer>; 
   startTime: Date; 
   endTime?: Date | null; 
   location: string; 

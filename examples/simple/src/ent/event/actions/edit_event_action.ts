@@ -5,7 +5,7 @@ import {
 import { Validator } from "@snowtop/ent/action";
 import { SharedValidators } from "./event_validators";
 import {
-  AllowIfViewerIsRule,
+  AllowIfViewerIsEntPropertyRule,
   AlwaysDenyRule,
   PrivacyPolicy,
 } from "@snowtop/ent";
@@ -29,7 +29,10 @@ export default class EditEventAction extends EditEventActionBase {
 
   getPrivacyPolicy(): PrivacyPolicy {
     return {
-      rules: [new AllowIfViewerIsRule("creatorID"), AlwaysDenyRule],
+      rules: [
+        new AllowIfViewerIsEntPropertyRule<Event>("creatorID"),
+        AlwaysDenyRule,
+      ],
     };
   }
 }

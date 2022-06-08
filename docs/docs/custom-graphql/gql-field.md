@@ -15,9 +15,7 @@ export class User extends UserBase {
 
   @gqlField()
   howLong() {
-
     return Interval.fromDateTimes(this.createdAt, new Date()).count('seconds');
-
   }
 }
 
@@ -48,14 +46,10 @@ So, the way to actually get this to work is as follows:
 ```ts title="src/ent/user.ts"
 export class User extends UserBase {
   @gqlField({
-
     type: GraphQLInt
-
   })
   howLong(): number {
-
     return Interval.fromDateTimes(this.createdAt, new Date()).count('seconds')
-
   }
 }
 
@@ -81,18 +75,14 @@ export class User extends UserBase {
 
   @gqlField()
   get fullName(): string {
-
     return this.firstName + " " + this.lastName;
-
   }
 
   // OR 
 
   @gqlField()
   fullName(): string {
-
     return this.firstName + " " + this.lastName;
-
   }
 }
 
@@ -346,4 +336,4 @@ type User implements Node {
 }
 ```
 
-[Check out](https://graphql.org/learn/schema/#lists-and-non-null) for more about lists and null in GraphQL.
+View the [GraphQL documentation](https://graphql.org/learn/schema/#lists-and-non-null) to learn more about lists and null in GraphQL.

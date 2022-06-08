@@ -15,12 +15,10 @@ import { PasswordType } from "@snowtop/ent-password";
 
 const UserSchema = new EntSchema({
   fields: {
-
     FirstName: StringType(),
     LastName: StringType(),
     EmailAddress: EmailType(),
     Password: PasswordType(),
-
   }
 }); 
 export default UserSchema; 
@@ -48,15 +46,11 @@ import { Interval } from "luxon";
 
 export class User extends UserBase {
   getPRivacyPolicy() {
-
     return AlwaysAllowPrivacyPolicy;
-
   }
 
   howLong() {
-
     return Interval.fromDateTimes(this.createdAt, new Date()).count('seconds');
-
   }
 }
 ```

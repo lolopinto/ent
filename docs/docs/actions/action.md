@@ -15,14 +15,14 @@ There are high level 3 different modes when writing:
 There are however different configuration options that end up breaking down slightly differently:
 
 * creating a node
-  + [create action](/docs/actions/create-action)
+  * [create action](/docs/actions/create-action)
 * editing a node
-  + [edit action](/docs/actions/edit-action)
-  + [add edge action](/docs/actions/add-edge-action)
-  + [remove edge action](/docs/actions/remove-edge-action)
-  + [edge group action](/docs/actions/edge-group-action)
+  * [edit action](/docs/actions/edit-action)
+  * [add edge action](/docs/actions/add-edge-action)
+  * [remove edge action](/docs/actions/remove-edge-action)
+  * [edge group action](/docs/actions/edge-group-action)
 * deleting a node:
-  + [delete action](/docs/actions/delete-action)
+  * [delete action](/docs/actions/delete-action)
 
 ## Customizations
 
@@ -46,7 +46,6 @@ We'll use the following schema as our base example and go into each of them:
 ```ts title="src/schema/event_schema.ts"
 const EventSchema = new EntSchema({
   fields: {
-
     name: StringType(),
     creatorID: UUIDType({
       fieldEdge: { schema: "User", inverseEdge: "createdEvents" },
@@ -57,11 +56,9 @@ const EventSchema = new EntSchema({
     location: StringType({
       graphqlName: "eventLocation",
     }),
-
   }, 
 
   edges: [
-
     {
       name: "hosts",
       schemaName: "User",
@@ -77,11 +74,9 @@ const EventSchema = new EntSchema({
         },
       ],
     },
-
   ], 
 
   edgeGroups: [
-
     {
       name: "rsvps",
       groupStatusName: "rsvpStatus",
@@ -124,7 +119,6 @@ const EventSchema = new EntSchema({
         },
       ],
     },
-
   ], 
 }); 
 export default EventSchema; 
