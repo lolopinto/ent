@@ -37,7 +37,7 @@
   {{range $edge := .IndexedEdges -}}
     {{$node := useImport $edge.GetNodeInfo.Node -}}
     {{$fNodeData := $schema.GetNodeDataForNode $node}}
-    {{$schema := printf "%sSchema" $node -}}
+    {{$schema := $fNodeData.GetSchemaConst -}}
       export const {{$edge.GetCountFactoryName}} = new {{useImport "RawCountLoaderFactory"}}({
         ...{{$node}}.loaderOptions(),
         groupCol: {{$edge.QuotedDBColName}},

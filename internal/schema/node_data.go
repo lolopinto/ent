@@ -457,6 +457,10 @@ func (nodeData *NodeData) GetSchemaPath() string {
 	return fmt.Sprintf("src/schema/%s", nodeData.PackageName)
 }
 
+func (nodeData *NodeData) GetSchemaConst() string {
+	return nodeData.Node + "Schema"
+}
+
 func (nodeData *NodeData) GetLoaderName() string {
 	return fmt.Sprintf("%sLoader", nodeData.NodeInstance)
 }
