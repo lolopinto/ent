@@ -10,17 +10,19 @@ Run locally:
  DB_CONNECTION_STRING=sqlite:///todo.db tsent codegen
  ```
 
-v0.1 migration guide:
+## v0.1 migration guide
 
-run command:
+* run command:
 
 ```shell
 DB_CONNECTION_STRING=sqlite:///ent-starter.db tsent migrate_v0.1  --old_base_class BaseEntTodoSchema --new_schema_class TodoEntSchema  --transform_path src/schema/patterns/base
 ```
 
-fix imports in
+* fix schema imports in
+  * `src/ent/account.ts`
+  * `src/graphql/resolvers/open_todos.ts`
 
-* `src/ent/account.ts`
-* `src/graphql/resolvers/open_todos.ts`
+* rerun migration command above
 
-rerun migration command
+* tsc
+* jest
