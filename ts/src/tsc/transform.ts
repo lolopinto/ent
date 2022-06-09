@@ -169,7 +169,10 @@ export function transform(transform: TransformFile) {
             }
           }
         } else {
-          if (!ts.isExportDeclaration(node.node)) {
+          if (
+            !ts.isExportDeclaration(node.node) &&
+            !isRequireStatement(node.node, sourceFile)
+          ) {
             processAfterImport();
           }
         }
@@ -196,4 +199,13 @@ export function transform(transform: TransformFile) {
   if (transform.prettierGlob) {
     execSync(`prettier ${transform.prettierGlob} --write`);
   }
+}
+
+function isRequireStatement(node: ts.Node, sourceFile: ts.SourceFile) {
+  if (node.kind !== ts.SyntaxKind.VariableStatement) {
+    return false;
+  }
+  const v = node as ts.VariableStatement;
+  const text = v.declarationList.declarations[0].getFullText(sourceFile);
+  return text.includes("require(");
 }
