@@ -198,8 +198,8 @@ export function moveGenerated() {
   new MoveFiles("src/ent/**/generated/**/**.ts").move();
   new MoveFiles("src/graphql/**/generated/**/**.ts").move();
 
-  transform(new TransformImports("src/ent/**/*.ts", "src/ent/**.ts"));
+  transform(new TransformImports("src/ent/**/*.ts", "src/ent/**/*.ts"));
   transform(
-    new TransformImports("src/graphql/**/*.ts", "src/graphql/**.ts", true),
+    new TransformImports("src/graphql/**/*.ts", "src/graphql/**/*.ts", true),
   );
 }
