@@ -15,11 +15,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type migrateArgs struct {
+	oldBaseClass   string
+	newSchemaClass string
+	transformPath  string
+}
+
+var migrateInfo migrateArgs
+
 var migratev1Cmd = &cobra.Command{
 	Use:   "migrate_v0.1",
 	Short: "migrate v0.1",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// another hardcoded place
 		cfg, err := codegen.NewConfig("src/schema", "")
 		if err != nil {
 			return err
@@ -128,6 +135,20 @@ func runNodeJSMigrateStep(p *codegen.Processor, step string) error {
 		scriptPath,
 		step,
 	)
+
+	if step == "--transform_schema" {
+		if migrateInfo.newSchemaClass != "" && migrateInfo.oldBaseClass != "" && migrateInfo.transformPath != "" {
+			cmdArgs = append(
+				cmdArgs,
+				"--old_base_class",
+				migrateInfo.oldBaseClass,
+				"--new_schema_class",
+				migrateInfo.newSchemaClass,
+				"--transform_path",
+				migrateInfo.transformPath,
+			)
+		}
+	}
 
 	command := exec.Command("ts-node-script", cmdArgs...)
 	command.Dir = p.Config.GetAbsPathToRoot()

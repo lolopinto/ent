@@ -7,7 +7,7 @@ import minimist from "minimist";
 import { getCustomInfo } from "../tsc/ast";
 
 // todo-sqlite
-//  ts-node-script --swc --project ./tsconfig.json -r tsconfig-paths/register ../../ts/src/scripts/migrate_v0.1.ts --transform_schema --old_base_class BaseTodoSchema --new_schema_class TodoSchema  --transform_path src/schema/patterns/base
+//  ts-node-script --swc --project ./tsconfig.json -r tsconfig-paths/register ../../ts/src/scripts/migrate_v0.1.ts --transform_schema --old_base_class BaseEntTodoSchema --new_schema_class TodoEntSchema  --transform_path src/schema/patterns/base
 function main() {
   const customInfo = getCustomInfo();
   const options = minimist(process.argv.slice(2));
