@@ -496,6 +496,7 @@ export function getFieldsWithPrivacy(
           m.set(info.dbCol, privacyPolicy);
         }
       }
+      return;
     }
     for (const name in fields) {
       const field = fields[name];
