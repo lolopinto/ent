@@ -54,14 +54,15 @@ var migratev1Cmd = &cobra.Command{
 			return err
 		}
 
-		// reparse schema since files should have moved from src/schema/foo.ts to src/schema/foo_schema.ts
-		s2, err := parseSchemaFromConfig(cfg)
-		if err != nil {
-			return err
+		// schema may be broken and schema may import other things
+		// so override schema path and recodegen
+		for _, v := range s1.Nodes {
+			n := v.NodeData
+			n.OverrideSchemaPath(fmt.Sprintf("src/schema/%s_schema.ts", n.PackageName))
 		}
 
 		fmt.Println("codegen no custom")
-		if err := intermediateCodegen(s2); err != nil {
+		if err := intermediateCodegen(s1); err != nil {
 			return err
 		}
 
