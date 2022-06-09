@@ -172,7 +172,7 @@ export class TransformAction implements TransformFile {
 
     const builderPath = `src/ent/generated/${snakeCase(
       nodeName,
-    )}/actions/${snakeCase(builder)}.ts`;
+    )}/actions/${snakeCase(builder)}`;
 
     let imports: Map<string, string[]> = new Map([
       [
