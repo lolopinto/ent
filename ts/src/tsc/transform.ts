@@ -76,7 +76,17 @@ export function transform(transform: TransformFile) {
     let removeImports: string[] = [];
     let traversed = false;
 
+    let seenImports: Map<string, boolean> = new Map();
     ts.forEachChild(sourceFile, function (node: ts.Node) {
+      if (ts.isImportDeclaration(node)) {
+        const imp = getImportInfo(node, sourceFile);
+        if (imp) {
+          imp.imports.forEach((v) => {
+            v = v.trim();
+            v && seenImports.set(v, true);
+          });
+        }
+      }
       const ret = transform.traverseChild(sourceFile, contents, file, node);
       if (!ret) {
         return;
@@ -117,7 +127,10 @@ export function transform(transform: TransformFile) {
           if (seen.has(imp)) {
             continue;
           }
-          newContents += `\nimport { ${list.join(", ")} } from "${imp}"`;
+          const final = list.filter((v) => !seenImports.has(v));
+          if (final.length) {
+            newContents += `\nimport { ${final.join(", ")} } from "${imp}"`;
+          }
         }
         afterProcessed = true;
       }
