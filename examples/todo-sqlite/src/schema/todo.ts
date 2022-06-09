@@ -1,7 +1,6 @@
 import {
   Action,
   ActionOperation,
-  BaseEntSchema,
   BooleanType,
   Edge,
   Field,
@@ -9,8 +8,9 @@ import {
   UUIDType,
 } from "@snowtop/ent";
 import { DeletedAtPattern } from "@snowtop/ent-soft-delete";
+import BaseTodoSchema from "src/schema/patterns/base";
 
-export default class Todo extends BaseEntSchema {
+export default class Todo extends BaseTodoSchema {
   constructor() {
     super();
     this.addPatterns(new DeletedAtPattern());

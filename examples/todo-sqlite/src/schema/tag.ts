@@ -2,7 +2,6 @@ import { UUIDListType } from "@snowtop/ent";
 import {
   Action,
   ActionOperation,
-  BaseEntSchema,
   Constraint,
   ConstraintType,
   Field,
@@ -10,8 +9,9 @@ import {
   UUIDType,
 } from "@snowtop/ent";
 import { DeletedAtPattern } from "@snowtop/ent-soft-delete";
+import BaseTodoSchema from "src/schema/patterns/base";
 
-export default class Tag extends BaseEntSchema {
+export default class Tag extends BaseTodoSchema {
   constructor() {
     super();
     this.addPatterns(new DeletedAtPattern());
