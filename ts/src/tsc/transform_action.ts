@@ -15,6 +15,7 @@ import { load } from "js-yaml";
 import { Config } from "../core/config";
 import { Data } from "../core/base";
 import { TransformFile } from "./transform";
+import { snakeCase } from "snake-case";
 
 interface customInfo {
   viewerInfo: {
@@ -229,6 +230,10 @@ export class TransformAction implements TransformFile {
       }
     }
 
+    const builderPath = `src/ent/generated/${snakeCase(
+      nodeName,
+    )}/actions/${snakeCase(builder)}.ts`;
+
     let imports: Map<string, string[]> = new Map([
       [
         transformRelative(
@@ -243,6 +248,10 @@ export class TransformAction implements TransformFile {
         [nodeName],
       ],
       ["@snowtop/ent/action", newImports],
+      [
+        transformRelative(file, builderPath, this.customInfo.relativeImports),
+        [builder],
+      ],
     ]);
 
     // wrap comments and transform to export class Foo extends Bar { ${inner} }
