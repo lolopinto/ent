@@ -1,7 +1,12 @@
 import ts from "typescript";
 import * as fs from "fs";
 import path from "path";
-import { getClassInfo, getImportInfo, getPreText } from "../tsc/ast";
+import {
+  getClassInfo,
+  getImportInfo,
+  getPreText,
+  transformRelative,
+} from "../tsc/ast";
 import { TransformFile } from "./transform";
 import { Data } from "../core/base";
 
@@ -15,8 +20,14 @@ function traverseClass(
   fileContents: string,
   sourceFile: ts.SourceFile,
   node: ts.ClassDeclaration,
+  transformSchema: (s: string) => string,
 ): traverseInfo | undefined {
-  const ci = getTransformClassInfo(fileContents, sourceFile, node);
+  const ci = getTransformClassInfo(
+    fileContents,
+    sourceFile,
+    node,
+    transformSchema,
+  );
   if (!ci) {
     return;
   }
@@ -66,21 +77,11 @@ interface classInfo {
   implementsSchema?: boolean;
 }
 
-function transformSchema(str: string): string {
-  // only do known class names
-  if (str === "BaseEntSchema" || str === "BaseEntSchemaWithTZ") {
-    return str.substring(4);
-  }
-  return str;
-}
-
-// TODO need to generify this...
-// and then have a schema specific version
-// may make sense to just duplicate this logic...
 function getTransformClassInfo(
   fileContents: string,
   sourceFile: ts.SourceFile,
   node: ts.ClassDeclaration,
+  transformSchema: (s: string) => string,
 ): classInfo | undefined {
   const generic = getClassInfo(fileContents, sourceFile, node);
   if (!generic) {
@@ -93,6 +94,7 @@ function getTransformClassInfo(
   }
   let implementsSchema = generic.implements?.some((v) => v == "Schema");
   let classExtends = generic.extends;
+  // nothing transformed here, so nothing to do here
   if (classExtends && classExtends === transformSchema(classExtends)) {
     return undefined;
   }
@@ -373,7 +375,7 @@ function parseFieldElement(
 }
 
 // find which of these importPaths is being used and use that to replace
-function findImportPath(sourceFile: ts.SourceFile) {
+function findSchemaImportPath(sourceFile: ts.SourceFile) {
   const paths: Data = {
     "@snowtop/ent": true,
     "@snowtop/ent/schema": true,
@@ -399,7 +401,27 @@ function findImportPath(sourceFile: ts.SourceFile) {
 export class TransformSchema implements TransformFile {
   // we only end up doing this once because we change the schema representation
   // so safe to run this multiple times
+
+  constructor(
+    private relativeImports: boolean,
+    private oldBaseClass?: string,
+    private newSchemaClass?: string,
+    private transformPath?: string,
+  ) {}
+
   glob = "src/schema/*.ts";
+
+  private transformSchema(className: string) {
+    if (className === "BaseEntSchema" || className === "BaseEntSchemaWithTZ") {
+      return className.substring(4);
+    }
+
+    if (className === this.oldBaseClass && this.newSchemaClass) {
+      return this.newSchemaClass;
+    }
+
+    return className;
+  }
 
   traverseChild(
     sourceFile: ts.SourceFile,
@@ -412,16 +434,32 @@ export class TransformSchema implements TransformFile {
     }
 
     // TODO address implicit schema doesn't work here...
-    const ret = traverseClass(contents, sourceFile, node);
+    const ret = traverseClass(
+      contents,
+      sourceFile,
+      node,
+      this.transformSchema.bind(this),
+    );
     if (ret === undefined) {
       return;
     }
 
     let imports = new Map<string, string[]>();
 
-    const imp = findImportPath(sourceFile);
+    const imp = findSchemaImportPath(sourceFile);
     if (imp) {
-      imports.set(imp, ret.newImports);
+      if (this.transformPath) {
+        imports.set(imp, []);
+      } else {
+        imports.set(imp, ret.newImports);
+      }
+    }
+    if (this.transformPath) {
+      // add new imports to this path
+      imports.set(
+        transformRelative(file, this.transformPath, this.relativeImports),
+        ret.newImports,
+      );
     }
 
     return {

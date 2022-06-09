@@ -140,11 +140,13 @@ export function transform(transform: TransformFile) {
       if (node.node) {
         if (ts.isImportDeclaration(node.node)) {
           const impInfo = getImportInfo(node.node, sourceFile);
+          //          console.debug(impInfo);
           if (impInfo) {
             const impPath = normalizePath(impInfo.importPath);
 
             const list = imports.get(impPath);
-            if (list) {
+            // path exists, we care about it
+            if (list !== undefined) {
               let transformed = transformImport(
                 contents,
                 node.node,
@@ -184,7 +186,6 @@ export function transform(transform: TransformFile) {
     if (transform.fileToWrite) {
       writeFile = transform.fileToWrite(file);
     }
-    // TODO new file
     fs.writeFileSync(writeFile, newContents);
 
     if (transform.postProcess) {
