@@ -57,7 +57,7 @@ const TodoSchema = new EntSchema({
     }),
   }, 
 }); 
-export dfault TodoSchema; 
+export default TodoSchema; 
 
 ```
 

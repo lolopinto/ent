@@ -24,8 +24,8 @@
         fields: {{$fields}},
         key: {{.Pkey}},
         {{ if .AddTransformedClause -}}
-          {{ reserveDefaultImport $nodeData.GetSchemaPath $nodeData.Node -}}
-          ... {{useImport "getObjectLoaderProperties"}}({{useImport $nodeData.Node}}, {{$table}}),
+          {{ reserveDefaultImport $nodeData.GetSchemaPath $nodeData.GetSchemaConst -}}
+          ... {{useImport "getObjectLoaderProperties"}}({{useImport $nodeData.GetSchemaConst}}, {{$table}}),
         {{ end -}}
       });
     {{end}}
