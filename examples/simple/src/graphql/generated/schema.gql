@@ -158,6 +158,13 @@ type Address implements Node {
   hostedEvents(first: Int, after: String, last: Int, before: String): AddressToHostedEventsConnection!
 }
 
+type CatType {
+  name: String!
+  birthday: Time!
+  breed: CatBreed!
+  kitten: Boolean!
+}
+
 type Comment implements Node {
   article: Node
   author: User
@@ -192,6 +199,14 @@ type Contact implements Node {
   fullName: String!
 }
 
+type DogType {
+  name: String!
+  birthday: Time!
+  breed: DogBreed!
+  breedGroup: DogBreedGroup!
+  puppy: Boolean!
+}
+
 type Event implements Node {
   address: Address
   creator: User
@@ -222,6 +237,76 @@ type HoursOfOperation implements Node {
   dayOfWeekAlt: DayOfWeekAlt
   open: String!
   close: String!
+}
+
+union PetUnionType = CatType | DogType | RabbitType
+
+type RabbitType {
+  name: String!
+  birthday: Time!
+  breed: RabbitBreed!
+}
+
+type UserNestedNestedObjectList {
+  int: Int!
+}
+
+type UserNestedNestedObject {
+  nestedNestedUuid: ID!
+  nestedNestedInt: Int!
+  nestedNestedString: String!
+  nestedNestedBool: Boolean
+  nestedNestedFloat: Float!
+  nestedNestedEnum: NestedObjNestedNestedEnum!
+  nestedNestedStringList: [String!]!
+  nestedNestedIntList: [Int!]!
+}
+
+type UserNestedObjectList {
+  type: String!
+  enum: EnumUsedInList!
+  objects: [UserNestedNestedObjectList!]!
+}
+
+type UserNestedObject {
+  nestedUuid: ID!
+  nestedInt: Int!
+  nestedString: String!
+  nestedBool: Boolean!
+  nestedFloat: Float
+  nestedEnum: ObjNestedEnum!
+  nestedStringList: [String!]!
+  nestedIntList: [Int!]!
+  nestedObj: UserNestedNestedObject
+}
+
+type UserPrefsDiff {
+  type: String!
+}
+
+type UserPrefsStruct2 {
+  finishedNux: Boolean
+  enableNotifs: Boolean
+  notifTypes: [NotifType2!]!
+}
+
+type UserPrefsStruct {
+  finishedNux: Boolean
+  enableNotifs: Boolean
+  notifTypes: [NotifType!]!
+}
+
+type UserSuperNestedObject {
+  uuid: ID!
+  int: Int!
+  string: String!
+  bool: Boolean!
+  float: Float!
+  enum: SuperNestedObjectEnum!
+  stringList: [String!]
+  intList: [Int!]!
+  obj: UserNestedObject
+  union: PetUnionType
 }
 
 type User implements Node {
