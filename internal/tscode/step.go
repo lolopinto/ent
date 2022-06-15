@@ -293,6 +293,15 @@ func (s *Step) processDeletedPatterns(processor *codegen.Processor) fns.Function
 func (s *Step) processActions(processor *codegen.Processor, nodeData *schema.NodeData, opts *writeOptions) fns.FunctionList {
 	var ret fns.FunctionList
 
+	for k := range opts.deletedActionFiles {
+		ret = append(ret, file.GetDeleteFileFunction(processor.Config, getFilePathForActionBaseFile(processor.Config, nodeData, k)))
+		ret = append(ret, file.GetDeleteFileFunction(processor.Config, getFilePathForActionFile(processor.Config, nodeData, k)))
+	}
+
+	if len(nodeData.ActionInfo.Actions) == 0 {
+		return ret
+	}
+
 	if opts.writeBuilder {
 		ret = append(ret, func() error {
 			return writeBuilderFile(nodeData, processor)
@@ -314,10 +323,6 @@ func (s *Step) processActions(processor *codegen.Processor, nodeData *schema.Nod
 		}
 	}
 
-	for k := range opts.deletedActionFiles {
-		ret = append(ret, file.GetDeleteFileFunction(processor.Config, getFilePathForActionBaseFile(processor.Config, nodeData, k)))
-		ret = append(ret, file.GetDeleteFileFunction(processor.Config, getFilePathForActionFile(processor.Config, nodeData, k)))
-	}
 	return ret
 }
 
