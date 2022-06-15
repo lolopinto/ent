@@ -39,6 +39,7 @@ export {
   BaseEntSchemaWithTZ,
   EntSchema,
   EntSchemaWithTZ,
+  SchemaConfig,
 } from "./base_schema";
 
 export * from "./field";
