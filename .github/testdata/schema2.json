@@ -31,6 +31,24 @@
           "operation":8
         }
       ]
+    },
+    "Contact": {
+      "fields":[
+        {
+          "name": "name",
+          "type": {
+            "dbType": "String"
+          }
+        },
+        {
+          "name": "email",
+          "type": {
+            "dbType": "String",
+            "customType": "email"
+          },
+          "unique":true
+        }
+      ]
     }
   }
 }
