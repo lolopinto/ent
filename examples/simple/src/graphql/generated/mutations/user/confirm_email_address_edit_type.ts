@@ -21,7 +21,7 @@ import ConfirmEditEmailAddressAction, {
   ConfirmEditEmailAddressInput,
 } from "../../../../ent/user/actions/confirm_edit_email_address_action";
 import { UserType } from "../../../resolvers";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customConfirmEditEmailAddressInput
   extends ConfirmEditEmailAddressInput {
@@ -62,7 +62,7 @@ export const ConfirmEditEmailAddressPayloadType = new GraphQLObjectType({
 
 export const ConfirmEmailAddressEditType: GraphQLFieldConfig<
   undefined,
-  RequestContext<ExampleViewer>,
+  RequestContext<ExampleViewerAlias>,
   { [input: string]: customConfirmEditEmailAddressInput }
 > = {
   type: new GraphQLNonNull(ConfirmEditEmailAddressPayloadType),
@@ -75,7 +75,7 @@ export const ConfirmEmailAddressEditType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext<ExampleViewer>,
+    context: RequestContext<ExampleViewerAlias>,
     _info: GraphQLResolveInfo,
   ): Promise<ConfirmEditEmailAddressPayload> => {
     const user = await ConfirmEditEmailAddressAction.saveXFromID(

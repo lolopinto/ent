@@ -17,7 +17,7 @@ import { Address, Event, User } from "../../..";
 import { EdgeType, NodeType } from "../../const";
 import { eventLoaderInfo } from "../../loaders";
 import schema from "../../../../schema/event_schema";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface EventInput {
   name?: string;
@@ -25,7 +25,7 @@ export interface EventInput {
   startTime?: Date;
   endTime?: Date | null;
   location?: string;
-  addressID?: ID | null | Builder<Address, ExampleViewer>;
+  addressID?: ID | null | Builder<Address, ExampleViewerAlias>;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -40,9 +40,9 @@ type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 export class EventBuilder<
   TInput extends EventInput = EventInput,
   TExistingEnt extends TMaybleNullableEnt<Event> = Event | null,
-> implements Builder<Event, ExampleViewer, TExistingEnt>
+> implements Builder<Event, ExampleViewerAlias, TExistingEnt>
 {
-  orchestrator: Orchestrator<Event, TInput, ExampleViewer, TExistingEnt>;
+  orchestrator: Orchestrator<Event, TInput, ExampleViewerAlias, TExistingEnt>;
   readonly placeholderID: ID;
   readonly ent = Event;
   readonly nodeType = NodeType.Event;
@@ -50,12 +50,12 @@ export class EventBuilder<
   private m: Map<string, any> = new Map();
 
   public constructor(
-    public readonly viewer: ExampleViewer,
+    public readonly viewer: ExampleViewerAlias,
     public readonly operation: WriteOperation,
     action: Action<
       Event,
-      Builder<Event, ExampleViewer, TExistingEnt>,
-      ExampleViewer,
+      Builder<Event, ExampleViewerAlias, TExistingEnt>,
+      ExampleViewerAlias,
       TInput,
       TExistingEnt
     >,
@@ -446,7 +446,7 @@ export class EventBuilder<
   getNewAddressIDValue():
     | ID
     | null
-    | Builder<Address, ExampleViewer>
+    | Builder<Address, ExampleViewerAlias>
     | undefined {
     return this.input.addressID;
   }

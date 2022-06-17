@@ -29,7 +29,7 @@ import { UserPrefsStruct } from "../../user_prefs_struct";
 import { UserPrefsStruct2 } from "../../user_prefs_struct_2";
 import { UserSuperNestedObject } from "../../user_super_nested_object";
 import schema from "../../../../schema/user_schema";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface UserInput {
   firstName?: string;
@@ -62,7 +62,7 @@ function randomNum(): string {
 
 class Base {
   // @ts-ignore not assigning. need for Mixin
-  orchestrator: Orchestrator<User, any, ExampleViewer>;
+  orchestrator: Orchestrator<User, any, ExampleViewerAlias>;
 
   constructor() {}
 
@@ -81,9 +81,9 @@ export class UserBuilder<
     TExistingEnt extends TMaybleNullableEnt<User> = User | null,
   >
   extends FeedbackBuilder(Base)
-  implements Builder<User, ExampleViewer, TExistingEnt>
+  implements Builder<User, ExampleViewerAlias, TExistingEnt>
 {
-  orchestrator: Orchestrator<User, TInput, ExampleViewer, TExistingEnt>;
+  orchestrator: Orchestrator<User, TInput, ExampleViewerAlias, TExistingEnt>;
   readonly placeholderID: ID;
   readonly ent = User;
   readonly nodeType = NodeType.User;
@@ -91,12 +91,12 @@ export class UserBuilder<
   private m: Map<string, any> = new Map();
 
   public constructor(
-    public readonly viewer: ExampleViewer,
+    public readonly viewer: ExampleViewerAlias,
     public readonly operation: WriteOperation,
     action: Action<
       User,
-      Builder<User, ExampleViewer, TExistingEnt>,
-      ExampleViewer,
+      Builder<User, ExampleViewerAlias, TExistingEnt>,
+      ExampleViewerAlias,
       TInput,
       TExistingEnt
     >,

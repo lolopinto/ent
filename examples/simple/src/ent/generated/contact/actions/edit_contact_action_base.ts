@@ -19,14 +19,14 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, User } from "../../..";
 import { ContactBuilder } from "./contact_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ContactEditInput {
   emailIds?: ID[];
   phoneNumberIds?: ID[];
   firstName?: string;
   lastName?: string;
-  userID?: ID | Builder<User, ExampleViewer>;
+  userID?: ID | Builder<User, ExampleViewerAlias>;
 }
 
 export class EditContactActionBase
@@ -34,18 +34,18 @@ export class EditContactActionBase
     Action<
       Contact,
       ContactBuilder<ContactEditInput, Contact>,
-      ExampleViewer,
+      ExampleViewerAlias,
       ContactEditInput,
       Contact
     >
 {
   public readonly builder: ContactBuilder<ContactEditInput, Contact>;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected input: ContactEditInput;
   protected readonly contact: Contact;
 
   constructor(
-    viewer: ExampleViewer,
+    viewer: ExampleViewerAlias,
     contact: Contact,
     input: ContactEditInput,
   ) {
@@ -67,7 +67,7 @@ export class EditContactActionBase
   getTriggers(): Trigger<
     Contact,
     ContactBuilder<ContactEditInput, Contact>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ContactEditInput,
     Contact
   >[] {
@@ -77,7 +77,7 @@ export class EditContactActionBase
   getObservers(): Observer<
     Contact,
     ContactBuilder<ContactEditInput, Contact>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ContactEditInput,
     Contact
   >[] {
@@ -87,7 +87,7 @@ export class EditContactActionBase
   getValidators(): Validator<
     Contact,
     ContactBuilder<ContactEditInput, Contact>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ContactEditInput,
     Contact
   >[] {
@@ -122,11 +122,11 @@ export class EditContactActionBase
 
   static create<T extends EditContactActionBase>(
     this: new (
-      viewer: ExampleViewer,
+      viewer: ExampleViewerAlias,
       contact: Contact,
       input: ContactEditInput,
     ) => T,
-    viewer: ExampleViewer,
+    viewer: ExampleViewerAlias,
     contact: Contact,
     input: ContactEditInput,
   ): T {
@@ -135,11 +135,11 @@ export class EditContactActionBase
 
   static async saveXFromID<T extends EditContactActionBase>(
     this: new (
-      viewer: ExampleViewer,
+      viewer: ExampleViewerAlias,
       contact: Contact,
       input: ContactEditInput,
     ) => T,
-    viewer: ExampleViewer,
+    viewer: ExampleViewerAlias,
     id: ID,
     input: ContactEditInput,
   ): Promise<Contact> {

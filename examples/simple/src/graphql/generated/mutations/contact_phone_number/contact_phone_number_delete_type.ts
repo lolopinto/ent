@@ -16,7 +16,7 @@ import {
 import { RequestContext } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import DeleteContactPhoneNumberAction from "../../../../ent/contact_phone_number/actions/delete_contact_phone_number_action";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customContactPhoneNumberDeleteInput {
   contactPhoneNumberID: string;
@@ -50,7 +50,7 @@ export const ContactPhoneNumberDeletePayloadType = new GraphQLObjectType({
 
 export const ContactPhoneNumberDeleteType: GraphQLFieldConfig<
   undefined,
-  RequestContext<ExampleViewer>,
+  RequestContext<ExampleViewerAlias>,
   { [input: string]: customContactPhoneNumberDeleteInput }
 > = {
   type: new GraphQLNonNull(ContactPhoneNumberDeletePayloadType),
@@ -63,7 +63,7 @@ export const ContactPhoneNumberDeleteType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext<ExampleViewer>,
+    context: RequestContext<ExampleViewerAlias>,
     _info: GraphQLResolveInfo,
   ): Promise<ContactPhoneNumberDeletePayload> => {
     await DeleteContactPhoneNumberAction.saveXFromID(

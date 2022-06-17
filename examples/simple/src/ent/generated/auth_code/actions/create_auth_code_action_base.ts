@@ -19,11 +19,11 @@ import {
 } from "@snowtop/ent/action";
 import { AuthCode, User } from "../../..";
 import { AuthCodeBuilder } from "./auth_code_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface AuthCodeCreateInput {
   code: string;
-  userID: ID | Builder<User, ExampleViewer>;
+  userID: ID | Builder<User, ExampleViewerAlias>;
   emailAddress?: string | null;
   phoneNumber?: string | null;
 }
@@ -33,7 +33,7 @@ export class CreateAuthCodeActionBase
     Action<
       AuthCode,
       AuthCodeBuilder<AuthCodeCreateInput, AuthCode | null>,
-      ExampleViewer,
+      ExampleViewerAlias,
       AuthCodeCreateInput,
       AuthCode | null
     >
@@ -42,10 +42,10 @@ export class CreateAuthCodeActionBase
     AuthCodeCreateInput,
     AuthCode | null
   >;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected input: AuthCodeCreateInput;
 
-  constructor(viewer: ExampleViewer, input: AuthCodeCreateInput) {
+  constructor(viewer: ExampleViewerAlias, input: AuthCodeCreateInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new AuthCodeBuilder(
@@ -63,7 +63,7 @@ export class CreateAuthCodeActionBase
   getTriggers(): Trigger<
     AuthCode,
     AuthCodeBuilder<AuthCodeCreateInput, AuthCode | null>,
-    ExampleViewer,
+    ExampleViewerAlias,
     AuthCodeCreateInput,
     AuthCode | null
   >[] {
@@ -73,7 +73,7 @@ export class CreateAuthCodeActionBase
   getObservers(): Observer<
     AuthCode,
     AuthCodeBuilder<AuthCodeCreateInput, AuthCode | null>,
-    ExampleViewer,
+    ExampleViewerAlias,
     AuthCodeCreateInput,
     AuthCode | null
   >[] {
@@ -83,7 +83,7 @@ export class CreateAuthCodeActionBase
   getValidators(): Validator<
     AuthCode,
     AuthCodeBuilder<AuthCodeCreateInput, AuthCode | null>,
-    ExampleViewer,
+    ExampleViewerAlias,
     AuthCodeCreateInput,
     AuthCode | null
   >[] {
@@ -117,8 +117,8 @@ export class CreateAuthCodeActionBase
   }
 
   static create<T extends CreateAuthCodeActionBase>(
-    this: new (viewer: ExampleViewer, input: AuthCodeCreateInput) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, input: AuthCodeCreateInput) => T,
+    viewer: ExampleViewerAlias,
     input: AuthCodeCreateInput,
   ): T {
     return new this(viewer, input);

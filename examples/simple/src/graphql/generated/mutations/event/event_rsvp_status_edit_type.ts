@@ -21,7 +21,7 @@ import EditEventRsvpStatusAction, {
   EditEventRsvpStatusInput,
 } from "../../../../ent/event/actions/edit_event_rsvp_status_action";
 import { EventType } from "../../../resolvers";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customEventRsvpStatusEditInput extends EditEventRsvpStatusInput {
   eventID: string;
@@ -77,7 +77,7 @@ export const EventRsvpStatusEditPayloadType = new GraphQLObjectType({
 
 export const EventRsvpStatusEditType: GraphQLFieldConfig<
   undefined,
-  RequestContext<ExampleViewer>,
+  RequestContext<ExampleViewerAlias>,
   { [input: string]: customEventRsvpStatusEditInput }
 > = {
   type: new GraphQLNonNull(EventRsvpStatusEditPayloadType),
@@ -90,7 +90,7 @@ export const EventRsvpStatusEditType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext<ExampleViewer>,
+    context: RequestContext<ExampleViewerAlias>,
     _info: GraphQLResolveInfo,
   ): Promise<EventRsvpStatusEditPayload> => {
     const event = await EditEventRsvpStatusAction.saveXFromID(

@@ -20,12 +20,12 @@ import {
 } from "@snowtop/ent/action";
 import { Comment, User } from "../../..";
 import { CommentBuilder } from "./comment_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface CommentCreateInput {
-  authorID: ID | Builder<User, ExampleViewer>;
+  authorID: ID | Builder<User, ExampleViewerAlias>;
   body: string;
-  articleID: ID | Builder<Ent<ExampleViewer>, ExampleViewer>;
+  articleID: ID | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
   articleType: string;
 }
 
@@ -34,16 +34,16 @@ export class CreateCommentActionBase
     Action<
       Comment,
       CommentBuilder<CommentCreateInput, Comment | null>,
-      ExampleViewer,
+      ExampleViewerAlias,
       CommentCreateInput,
       Comment | null
     >
 {
   public readonly builder: CommentBuilder<CommentCreateInput, Comment | null>;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected input: CommentCreateInput;
 
-  constructor(viewer: ExampleViewer, input: CommentCreateInput) {
+  constructor(viewer: ExampleViewerAlias, input: CommentCreateInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new CommentBuilder(
@@ -61,7 +61,7 @@ export class CreateCommentActionBase
   getTriggers(): Trigger<
     Comment,
     CommentBuilder<CommentCreateInput, Comment | null>,
-    ExampleViewer,
+    ExampleViewerAlias,
     CommentCreateInput,
     Comment | null
   >[] {
@@ -71,7 +71,7 @@ export class CreateCommentActionBase
   getObservers(): Observer<
     Comment,
     CommentBuilder<CommentCreateInput, Comment | null>,
-    ExampleViewer,
+    ExampleViewerAlias,
     CommentCreateInput,
     Comment | null
   >[] {
@@ -81,7 +81,7 @@ export class CreateCommentActionBase
   getValidators(): Validator<
     Comment,
     CommentBuilder<CommentCreateInput, Comment | null>,
-    ExampleViewer,
+    ExampleViewerAlias,
     CommentCreateInput,
     Comment | null
   >[] {
@@ -115,8 +115,8 @@ export class CreateCommentActionBase
   }
 
   static create<T extends CreateCommentActionBase>(
-    this: new (viewer: ExampleViewer, input: CommentCreateInput) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, input: CommentCreateInput) => T,
+    viewer: ExampleViewerAlias,
     input: CommentCreateInput,
   ): T {
     return new this(viewer, input);

@@ -7,9 +7,9 @@ import { AssocEdgeInputOptions, Ent, ID } from "@snowtop/ent";
 import { Builder, Orchestrator } from "@snowtop/ent/action";
 import { EdgeType, NodeType } from "../../../const";
 import { Comment, IFeedback, User } from "../../../../internal";
-import { ExampleViewer } from "../../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../../viewer/viewer";
 
-interface IEntWithFeedback extends Ent<ExampleViewer>, IFeedback {}
+interface IEntWithFeedback extends Ent<ExampleViewerAlias>, IFeedback {}
 
 interface IFeedbackBuilder<T extends IEntWithFeedback> {
   addComment(...nodes: (ID | Comment | Builder<Comment, any>)[]): this;
@@ -29,7 +29,7 @@ interface IFeedbackBuilder<T extends IEntWithFeedback> {
 
 type Constructor<T = {}> = new (...args: any[]) => T;
 interface BuilderConstructor<T extends IEntWithFeedback, C = {}> {
-  orchestrator: Orchestrator<T, any, ExampleViewer>;
+  orchestrator: Orchestrator<T, any, ExampleViewerAlias>;
   isBuilder<T extends Ent>(
     node: ID | T | Builder<T, any>,
   ): node is Builder<T, any>;

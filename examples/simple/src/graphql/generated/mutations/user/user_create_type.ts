@@ -31,7 +31,7 @@ import {
   UserPreferredShiftType,
   UserType,
 } from "../../../resolvers";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface UserCreatePayload {
   user: User;
@@ -96,7 +96,7 @@ export const UserCreatePayloadType = new GraphQLObjectType({
 
 export const UserCreateType: GraphQLFieldConfig<
   undefined,
-  RequestContext<ExampleViewer>,
+  RequestContext<ExampleViewerAlias>,
   { [input: string]: UserCreateInput }
 > = {
   type: new GraphQLNonNull(UserCreatePayloadType),
@@ -109,7 +109,7 @@ export const UserCreateType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext<ExampleViewer>,
+    context: RequestContext<ExampleViewerAlias>,
     _info: GraphQLResolveInfo,
   ): Promise<UserCreatePayload> => {
     input = transformUnionTypes(input, [["superNestedObject", "union"]]);
