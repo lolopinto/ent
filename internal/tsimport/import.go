@@ -74,19 +74,27 @@ func (imps *Imports) ReserveImportPath(imp *ImportPath, external bool) (string, 
 	var defaultExport string
 	var imports []string
 
+	// we keep the complexity hidden in here so that callsites can just call useImport .Import
+	impStr := imp.Import
+	var alias string
+	if imp.OriginalImport != "" {
+		alias = impStr
+		impStr = imp.OriginalImport
+	}
 	if imp.DefaultImport {
-		defaultExport = imp.Import
+		defaultExport = impStr
 	} else {
-		imports = append(imports, imp.Import)
+		imports = append(imports, impStr)
 	}
 	importPath := imp.ImportPath
 	if external && imp.TransformedForExternalEnt {
 		importPath = codepath.GetExternalImportPath()
 	}
+
 	return imps.reserve(&importInfoInput{
 		path:          importPath,
 		defaultImport: defaultExport,
-		alias:         imp.Alias,
+		alias:         alias,
 		imports:       imports,
 	})
 }

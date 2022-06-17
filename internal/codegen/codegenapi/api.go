@@ -55,11 +55,15 @@ func (cfg *ViewerConfig) GetImport() string {
 }
 
 func (cfg *ViewerConfig) GetImportPath() *tsimport.ImportPath {
-	return &tsimport.ImportPath{
+	ret := &tsimport.ImportPath{
 		ImportPath: cfg.Path,
-		Alias:      cfg.Alias,
 		Import:     cfg.Name,
 	}
+	if cfg.Alias != "" {
+		ret.OriginalImport = cfg.Name
+		ret.Import = cfg.Alias
+	}
+	return ret
 }
 
 // this file exists to simplify circular dependencies
