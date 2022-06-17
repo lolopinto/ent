@@ -457,6 +457,10 @@ func (nodeData *NodeData) GetSchemaPath() string {
 	return fmt.Sprintf("src/schema/%s", nodeData.PackageName)
 }
 
+func (nodeData *NodeData) OverrideSchemaPath(schemaPath string) {
+	nodeData.schemaPath = schemaPath
+}
+
 func (nodeData *NodeData) GetSchemaConst() string {
 	return nodeData.Node + "Schema"
 }
@@ -607,4 +611,15 @@ func (nodeData *NodeData) GetBuilderMixinInfo(s *Schema) (*mixinInfo, error) {
 		Imports: imps,
 		Extends: extends.String(),
 	}, nil
+}
+
+func (nodeData *NodeData) GenerateGetIDInBuilder() bool {
+	idField := nodeData.FieldInfo.GetFieldByName("ID")
+	if idField == nil {
+		idField = nodeData.FieldInfo.GetFieldByName("id")
+	}
+	if idField == nil {
+		return false
+	}
+	return idField.HasDefaultValueOnCreate()
 }

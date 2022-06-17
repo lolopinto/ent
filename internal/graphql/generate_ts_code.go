@@ -1395,6 +1395,7 @@ type typeInfo struct {
 	Path       string
 	NodeType   string
 	Obj        interface{}
+	Exported   bool
 }
 
 const resolverPath = "src/graphql/resolvers"
@@ -1404,13 +1405,15 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 	var nodes []typeInfo
 	var conns []typeInfo
 	var actionTypes []typeInfo
-	for _, node := range s.nodes {
+
+	processNode := func(node *gqlNode, nodeType string) {
 		for _, n := range node.ObjData.GQLNodes {
 			nodes = append(nodes, typeInfo{
 				Type:       n.Type,
 				ImportPath: resolverPath,
-				NodeType:   "Node",
+				NodeType:   nodeType,
 				Obj:        n,
+				Exported:   n.Exported,
 			})
 		}
 		for _, conn := range node.connections {
@@ -1420,6 +1423,7 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 				Function:   true,
 				NodeType:   "Connection",
 				Obj:        conn,
+				Exported:   true,
 			})
 		}
 
@@ -1431,6 +1435,7 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 					ImportPath: trimPath(cfg, dep.FilePath),
 					NodeType:   "Mutation",
 					Obj:        depObj,
+					Exported:   depObj.Exported,
 				})
 			}
 
@@ -1441,9 +1446,20 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 					ImportPath: trimPath(cfg, dep.FilePath),
 					NodeType:   "Enum",
 					Obj:        depEnum,
+					Exported:   true,
 				})
 			}
 		}
+	}
+	for _, node := range s.nodes {
+		processNode(node, "Node")
+	}
+
+	for _, node := range s.otherObjects {
+		if otherObjectIsInput(node) {
+			continue
+		}
+		processNode(node, "CustomObject")
 	}
 	var enums []typeInfo
 	for _, enum := range s.enums {
@@ -1452,6 +1468,7 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 			ImportPath: resolverPath,
 			NodeType:   "Enum",
 			Obj:        enum,
+			Exported:   true,
 		})
 	}
 
@@ -1463,6 +1480,7 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 				ImportPath: resolverPath,
 				NodeType:   "CustomQuery",
 				Obj:        node,
+				Exported:   true,
 			})
 		}
 
@@ -1473,6 +1491,7 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 				Function:   true,
 				NodeType:   "CustomConn",
 				Obj:        conn,
+				Exported:   true,
 			})
 		}
 	}
@@ -1485,6 +1504,7 @@ func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
 				ImportPath: trimPath(cfg, node.FilePath),
 				NodeType:   "CustomMutation",
 				Obj:        n,
+				Exported:   true,
 			})
 		}
 	}
@@ -1520,6 +1540,12 @@ func trimPath(cfg *codegen.Config, path string) string {
 	return strings.TrimSuffix(rel, ".ts")
 }
 
+func otherObjectIsInput(node *gqlNode) bool {
+	// not the best check in the world...
+	// input file
+	return len(node.ObjData.GQLNodes) >= 1 && node.ObjData.GQLNodes[0].GQLType == "GraphQLInputObjectType"
+}
+
 func getSortedLines(s *gqlSchema, cfg *codegen.Config) []string {
 	// this works based on what we're currently doing
 	// if we eventually add other things here, may not work?
@@ -1528,9 +1554,7 @@ func getSortedLines(s *gqlSchema, cfg *codegen.Config) []string {
 	var conns []string
 	var otherObjs []string
 	for _, node := range s.otherObjects {
-		// not the best check in the world...
-		if len(node.ObjData.GQLNodes) >= 1 && node.ObjData.GQLNodes[0].GQLType == "GraphQLInputObjectType" {
-			// input file
+		if otherObjectIsInput(node) {
 			continue
 		}
 		otherObjs = append(otherObjs, trimPath(cfg, node.FilePath))
@@ -2641,11 +2665,18 @@ func (obj *objectType) getRenderer(s *gqlSchema) renderer {
 		interfaces[idx] = strings.TrimSuffix(strings.TrimPrefix(inter, "GraphQL"), "Interface")
 	}
 
+	unions := make([]string, len(obj.UnionTypes))
+	for idx, u := range obj.UnionTypes {
+		unions[idx] = strings.TrimSuffix(u, "Type")
+	}
+
 	return &elemRenderer{
 		input:      obj.GQLType == "GraphQLInputObjectType",
+		union:      obj.GQLType == "GraphQLUnionType",
 		name:       obj.Node,
 		interfaces: interfaces,
 		fields:     obj.Fields,
+		unionTypes: unions,
 	}
 }
 

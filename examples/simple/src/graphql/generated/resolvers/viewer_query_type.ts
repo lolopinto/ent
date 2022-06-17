@@ -13,7 +13,7 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { UserType } from "../../resolvers/internal";
-import { ExampleViewer } from "../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 import ViewerResolver, { GQLViewer } from "../../resolvers/viewer";
 
 export const GQLViewerType = new GraphQLObjectType({
@@ -36,14 +36,14 @@ export const GQLViewerType = new GraphQLObjectType({
 
 export const ViewerQueryType: GraphQLFieldConfig<
   undefined,
-  RequestContext<ExampleViewer>,
+  RequestContext<ExampleViewerAlias>,
   {}
 > = {
   type: new GraphQLNonNull(GQLViewerType),
   resolve: async (
     _source,
     {},
-    context: RequestContext<ExampleViewer>,
+    context: RequestContext<ExampleViewerAlias>,
     _info: GraphQLResolveInfo,
   ) => {
     const r = new ViewerResolver();

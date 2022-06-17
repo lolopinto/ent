@@ -16,12 +16,14 @@ type renderer interface {
 }
 
 type elemRenderer struct {
+	union       bool
 	input       bool
 	isInterface bool
 	name        string
 	description string
 	interfaces  []string
 	fields      []*fieldType
+	unionTypes  []string
 }
 
 func (r *elemRenderer) render(s *gqlSchema) string {
@@ -30,6 +32,15 @@ func (r *elemRenderer) render(s *gqlSchema) string {
 	if r.description != "" {
 		renderDescription(&sb, r.description)
 	}
+	if r.union {
+		sb.WriteString("union ")
+		sb.WriteString(r.name)
+		sb.WriteString(" = ")
+		sb.WriteString(strings.Join(r.unionTypes, " | "))
+		sb.WriteString("\n")
+		return sb.String()
+	}
+
 	if r.input {
 		sb.WriteString("input ")
 	} else if r.isInterface {
@@ -42,8 +53,8 @@ func (r *elemRenderer) render(s *gqlSchema) string {
 	if len(r.interfaces) > 0 {
 		sb.WriteString(" implements ")
 		sb.WriteString(strings.Join(r.interfaces, " & "))
-
 	}
+
 	sb.WriteString(" {\n")
 	for _, field := range r.fields {
 		sb.WriteString(field.render(s))

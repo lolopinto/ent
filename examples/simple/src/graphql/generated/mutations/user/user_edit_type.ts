@@ -21,7 +21,7 @@ import EditUserAction, {
   UserEditInput,
 } from "../../../../ent/user/actions/edit_user_action";
 import { UserType } from "../../../resolvers";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customUserEditInput extends UserEditInput {
   userID: string;
@@ -58,7 +58,7 @@ export const UserEditPayloadType = new GraphQLObjectType({
 
 export const UserEditType: GraphQLFieldConfig<
   undefined,
-  RequestContext<ExampleViewer>,
+  RequestContext<ExampleViewerAlias>,
   { [input: string]: customUserEditInput }
 > = {
   type: new GraphQLNonNull(UserEditPayloadType),
@@ -71,7 +71,7 @@ export const UserEditType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext<ExampleViewer>,
+    context: RequestContext<ExampleViewerAlias>,
     _info: GraphQLResolveInfo,
   ): Promise<UserEditPayload> => {
     const user = await EditUserAction.saveXFromID(

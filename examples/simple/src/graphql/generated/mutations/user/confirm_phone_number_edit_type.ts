@@ -21,7 +21,7 @@ import ConfirmEditPhoneNumberAction, {
   ConfirmEditPhoneNumberInput,
 } from "../../../../ent/user/actions/confirm_edit_phone_number_action";
 import { UserType } from "../../../resolvers";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customConfirmEditPhoneNumberInput
   extends ConfirmEditPhoneNumberInput {
@@ -62,7 +62,7 @@ export const ConfirmEditPhoneNumberPayloadType = new GraphQLObjectType({
 
 export const ConfirmPhoneNumberEditType: GraphQLFieldConfig<
   undefined,
-  RequestContext<ExampleViewer>,
+  RequestContext<ExampleViewerAlias>,
   { [input: string]: customConfirmEditPhoneNumberInput }
 > = {
   type: new GraphQLNonNull(ConfirmEditPhoneNumberPayloadType),
@@ -75,7 +75,7 @@ export const ConfirmPhoneNumberEditType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext<ExampleViewer>,
+    context: RequestContext<ExampleViewerAlias>,
     _info: GraphQLResolveInfo,
   ): Promise<ConfirmEditPhoneNumberPayload> => {
     const user = await ConfirmEditPhoneNumberAction.saveXFromID(

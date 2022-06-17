@@ -17,7 +17,7 @@ import { Address, Event } from "../../..";
 import { EdgeType, NodeType } from "../../const";
 import { addressLoaderInfo } from "../../loaders";
 import schema from "../../../../schema/address";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface AddressInput {
   streetName?: string;
@@ -40,9 +40,9 @@ type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 export class AddressBuilder<
   TInput extends AddressInput = AddressInput,
   TExistingEnt extends TMaybleNullableEnt<Address> = Address | null,
-> implements Builder<Address, ExampleViewer, TExistingEnt>
+> implements Builder<Address, ExampleViewerAlias, TExistingEnt>
 {
-  orchestrator: Orchestrator<Address, TInput, ExampleViewer, TExistingEnt>;
+  orchestrator: Orchestrator<Address, TInput, ExampleViewerAlias, TExistingEnt>;
   readonly placeholderID: ID;
   readonly ent = Address;
   readonly nodeType = NodeType.Address;
@@ -50,12 +50,12 @@ export class AddressBuilder<
   private m: Map<string, any> = new Map();
 
   public constructor(
-    public readonly viewer: ExampleViewer,
+    public readonly viewer: ExampleViewerAlias,
     public readonly operation: WriteOperation,
     action: Action<
       Address,
-      Builder<Address, ExampleViewer, TExistingEnt>,
-      ExampleViewer,
+      Builder<Address, ExampleViewerAlias, TExistingEnt>,
+      ExampleViewerAlias,
       TInput,
       TExistingEnt
     >,
@@ -106,6 +106,19 @@ export class AddressBuilder<
     return this.m.get(k);
   }
 
+  // this returns the id of the existing ent or the id of the ent that's being created
+  async getEntID() {
+    if (this.existingEnt) {
+      return this.existingEnt.id;
+    }
+    const edited = await this.orchestrator.getEditedData();
+    if (!edited.id) {
+      throw new Error(
+        `couldn't get the id field. should have been set by 'defaultValueOnCreate'`,
+      );
+    }
+    return edited.id;
+  }
   // this gets the inputs that have been written for a given edgeType and operation
   // WriteOperation.Insert for adding an edge and WriteOperation.Delete for deleting an edge
   getEdgeInputData(edgeType: EdgeType, op: WriteOperation) {

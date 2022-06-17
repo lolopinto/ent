@@ -7,8 +7,8 @@
 {{ reserveImport "src/ent/generated/const" "EdgeType" "NodeType" }}
 
 {{$viewerInfo := $cfg.GetTemplatizedViewer -}}
-{{ reserveImport $viewerInfo.Path $viewerInfo.Name -}}
-{{$viewerType := useImport $viewerInfo.Name -}}
+{{ reserveImportPath $viewerInfo.GetImportPath false -}}
+{{$viewerType := useImport $viewerInfo.GetImport -}}
 {{ reserveImport .Package.InternalImportPath $p.GetMixinInterfaceName -}}
 
 {{ range .Imports }}
@@ -44,7 +44,7 @@ interface {{$p.GetBuilderInterfaceName}}<T extends {{$p.GetMixinWithInterfaceNam
 {{$builderName := printf "%sIsh" $p.GetBuilderName }}
 
 type Constructor<T = {}> = new (...args: any[]) => T;
-interface BuilderConstructor<T extends IEntWithFeedback, C = {}> {
+interface BuilderConstructor<T extends {{$p.GetMixinWithInterfaceName}} , C = {}> {
   orchestrator: {{useImport "Orchestrator"}}<T, any, {{$viewerType}}>;
   isBuilder<T extends {{useImport "Ent"}}>(
     node: {{useImport "ID"}} | T | {{useImport "Builder"}}<T, any>,
@@ -53,7 +53,7 @@ interface BuilderConstructor<T extends IEntWithFeedback, C = {}> {
 
 {{$ishName := printf "%sIsh" $p.GetBuilderName -}} 
 
-type {{$ishName}}<T extends IEntWithFeedback> = Constructor<
+type {{$ishName}}<T extends {{$p.GetMixinWithInterfaceName}} > = Constructor<
   BuilderConstructor<T>
 >;
 

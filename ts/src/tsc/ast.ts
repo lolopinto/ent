@@ -1,5 +1,9 @@
 import { Data } from "../core/base";
 import ts from "typescript";
+import * as path from "path";
+import { load } from "js-yaml";
+import { Config } from "../core/config";
+import * as fs from "fs";
 
 export function getPreText(
   fileContents: string,
@@ -106,39 +110,35 @@ interface transformOpts {
   removeImports?: string[];
   newImports?: string[];
   transform?: transformImportFn;
-  transformPath?: string;
+  transformPath: string;
 }
 
 export function transformImport(
   fileContents: string,
   importNode: ts.ImportDeclaration,
   sourceFile: ts.SourceFile,
-  opts?: transformOpts,
+  opts: transformOpts,
 ): string | undefined {
   // remove quotes too
   const text = importNode.moduleSpecifier.getText(sourceFile).slice(1, -1);
-  if (opts?.transformPath) {
-    if (text !== opts.transformPath) {
-      return;
-    }
-  } else {
-    if (
-      text !== "@snowtop/ent" &&
-      text !== "@snowtop/ent/schema" &&
-      text !== "@snowtop/ent/schema/"
-    ) {
-      return;
-    }
+  if (text != opts.transformPath) {
+    return;
   }
+
   const impInfo = getImportInfo(importNode, sourceFile);
   if (!impInfo) {
     return;
   }
-  const { imports, start, end, importText } = impInfo;
+  let { imports, start, end, importText, default: def } = impInfo;
 
   let removeImportsMap: Data = {};
   if (opts?.removeImports) {
-    opts.removeImports.forEach((imp) => (removeImportsMap[imp] = true));
+    opts.removeImports.forEach((imp) => {
+      removeImportsMap[imp] = true;
+      if (def === imp) {
+        def = "";
+      }
+    });
   }
   let finalImports = new Set<string>();
 
@@ -164,9 +164,13 @@ export function transformImport(
   return (
     comment +
     "import " +
-    importText.substring(0, start + 1) +
+    // add default
+    (def || "") +
+    // should probably always be "{" now that we support default
+    (start >= 0 ? importText.substring(0, start + 1) : "{") +
     Array.from(finalImports).join(", ") +
-    importText.substring(end) +
+    // should probably always be "}"
+    (end >= 0 ? importText.substring(end) : "}") +
     ' from "' +
     text +
     '";'
@@ -238,8 +242,10 @@ interface importInfo {
   end: number;
   importText: string;
   importPath: string;
+  default?: string;
 }
 
+// TODO doesn't support default + {} yet
 export function getImportInfo(
   imp: ts.ImportDeclaration,
   sourceFile: ts.SourceFile,
@@ -249,17 +255,85 @@ export function getImportInfo(
   const end = importText.lastIndexOf("}");
   const text = imp.moduleSpecifier.getText(sourceFile).slice(1, -1);
 
-  if (start === -1 || end === -1) {
+  if ((start === -1 || end === -1) && !importText.length) {
     return;
   }
+  let imports: string[] = [];
+  let def: string | undefined;
+  if (start !== -1 && end !== -1) {
+    imports = importText
+      .substring(start + 1, end)
+      //.trim()
+      .split(",");
+  } else {
+    def = importText;
+  }
+
   return {
     importPath: text,
     importText,
     start,
     end,
-    imports: importText
-      .substring(start + 1, end)
-      //.trim()
-      .split(","),
+    imports,
+    default: def,
+  };
+}
+
+export function transformRelative(
+  file: string,
+  importPath: string,
+  relative?: boolean,
+): string {
+  if (!relative || !importPath.startsWith("src")) {
+    return importPath;
+  }
+
+  const fileFullPath = path.join(process.cwd(), file);
+  const impFullPath = path.join(process.cwd(), importPath);
+  // relative path is from directory
+  return normalizePath(path.relative(path.dirname(fileFullPath), impFullPath));
+}
+
+function normalizePath(p: string) {
+  if (p.endsWith("..")) {
+    return p + "/";
+  }
+  return p;
+}
+
+export interface customInfo {
+  viewerInfo: {
+    path: string;
+    name: string;
+  };
+  relativeImports?: boolean;
+}
+
+export function getCustomInfo(): customInfo {
+  let yaml: Config | undefined = {};
+
+  let relativeImports = false;
+  try {
+    yaml = load(
+      fs.readFileSync(path.join(process.cwd(), "ent.yml"), {
+        encoding: "utf8",
+      }),
+    ) as Config;
+
+    relativeImports = yaml?.codegen?.relativeImports || false;
+
+    if (yaml?.codegen?.templatizedViewer) {
+      return {
+        viewerInfo: yaml.codegen.templatizedViewer,
+        relativeImports,
+      };
+    }
+  } catch (e) {}
+  return {
+    viewerInfo: {
+      path: "@snowtop/ent",
+      name: "Viewer",
+    },
+    relativeImports,
   };
 }

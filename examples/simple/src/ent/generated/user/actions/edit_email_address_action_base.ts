@@ -18,7 +18,7 @@ import {
 } from "@snowtop/ent/action";
 import { User } from "../../..";
 import { UserBuilder } from "./user_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface EditEmailAddressInput {
   newEmail: string;
@@ -29,17 +29,21 @@ export class EditEmailAddressActionBase
     Action<
       User,
       UserBuilder<EditEmailAddressInput, User>,
-      ExampleViewer,
+      ExampleViewerAlias,
       EditEmailAddressInput,
       User
     >
 {
   public readonly builder: UserBuilder<EditEmailAddressInput, User>;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected input: EditEmailAddressInput;
   protected readonly user: User;
 
-  constructor(viewer: ExampleViewer, user: User, input: EditEmailAddressInput) {
+  constructor(
+    viewer: ExampleViewerAlias,
+    user: User,
+    input: EditEmailAddressInput,
+  ) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new UserBuilder(
@@ -58,7 +62,7 @@ export class EditEmailAddressActionBase
   getTriggers(): Trigger<
     User,
     UserBuilder<EditEmailAddressInput, User>,
-    ExampleViewer,
+    ExampleViewerAlias,
     EditEmailAddressInput,
     User
   >[] {
@@ -68,7 +72,7 @@ export class EditEmailAddressActionBase
   getObservers(): Observer<
     User,
     UserBuilder<EditEmailAddressInput, User>,
-    ExampleViewer,
+    ExampleViewerAlias,
     EditEmailAddressInput,
     User
   >[] {
@@ -78,7 +82,7 @@ export class EditEmailAddressActionBase
   getValidators(): Validator<
     User,
     UserBuilder<EditEmailAddressInput, User>,
-    ExampleViewer,
+    ExampleViewerAlias,
     EditEmailAddressInput,
     User
   >[] {
@@ -113,11 +117,11 @@ export class EditEmailAddressActionBase
 
   static create<T extends EditEmailAddressActionBase>(
     this: new (
-      viewer: ExampleViewer,
+      viewer: ExampleViewerAlias,
       user: User,
       input: EditEmailAddressInput,
     ) => T,
-    viewer: ExampleViewer,
+    viewer: ExampleViewerAlias,
     user: User,
     input: EditEmailAddressInput,
   ): T {
@@ -126,11 +130,11 @@ export class EditEmailAddressActionBase
 
   static async saveXFromID<T extends EditEmailAddressActionBase>(
     this: new (
-      viewer: ExampleViewer,
+      viewer: ExampleViewerAlias,
       user: User,
       input: EditEmailAddressInput,
     ) => T,
-    viewer: ExampleViewer,
+    viewer: ExampleViewerAlias,
     id: ID,
     input: EditEmailAddressInput,
   ): Promise<User> {

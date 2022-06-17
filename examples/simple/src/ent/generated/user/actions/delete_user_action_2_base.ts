@@ -18,7 +18,7 @@ import {
 } from "@snowtop/ent/action";
 import { User } from "../../..";
 import { UserBuilder } from "./user_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface DeleteUserInput2 {
   log: boolean;
@@ -29,17 +29,17 @@ export class DeleteUserAction2Base
     Action<
       User,
       UserBuilder<DeleteUserInput2, User>,
-      ExampleViewer,
+      ExampleViewerAlias,
       DeleteUserInput2,
       User
     >
 {
   public readonly builder: UserBuilder<DeleteUserInput2, User>;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected input: DeleteUserInput2;
   protected readonly user: User;
 
-  constructor(viewer: ExampleViewer, user: User, input: DeleteUserInput2) {
+  constructor(viewer: ExampleViewerAlias, user: User, input: DeleteUserInput2) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new UserBuilder(
@@ -58,7 +58,7 @@ export class DeleteUserAction2Base
   getTriggers(): Trigger<
     User,
     UserBuilder<DeleteUserInput2, User>,
-    ExampleViewer,
+    ExampleViewerAlias,
     DeleteUserInput2,
     User
   >[] {
@@ -68,7 +68,7 @@ export class DeleteUserAction2Base
   getObservers(): Observer<
     User,
     UserBuilder<DeleteUserInput2, User>,
-    ExampleViewer,
+    ExampleViewerAlias,
     DeleteUserInput2,
     User
   >[] {
@@ -78,7 +78,7 @@ export class DeleteUserAction2Base
   getValidators(): Validator<
     User,
     UserBuilder<DeleteUserInput2, User>,
-    ExampleViewer,
+    ExampleViewerAlias,
     DeleteUserInput2,
     User
   >[] {
@@ -110,8 +110,12 @@ export class DeleteUserAction2Base
   }
 
   static create<T extends DeleteUserAction2Base>(
-    this: new (viewer: ExampleViewer, user: User, input: DeleteUserInput2) => T,
-    viewer: ExampleViewer,
+    this: new (
+      viewer: ExampleViewerAlias,
+      user: User,
+      input: DeleteUserInput2,
+    ) => T,
+    viewer: ExampleViewerAlias,
     user: User,
     input: DeleteUserInput2,
   ): T {
@@ -119,8 +123,12 @@ export class DeleteUserAction2Base
   }
 
   static async saveXFromID<T extends DeleteUserAction2Base>(
-    this: new (viewer: ExampleViewer, user: User, input: DeleteUserInput2) => T,
-    viewer: ExampleViewer,
+    this: new (
+      viewer: ExampleViewerAlias,
+      user: User,
+      input: DeleteUserInput2,
+    ) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
     input: DeleteUserInput2,
   ): Promise<void> {

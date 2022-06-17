@@ -409,6 +409,10 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 					patternMap[patternName] = list
 				}
 			}
+			union, ok := entType.(enttype.TSWithUnionFields)
+			if ok && union.GetUnionFields() != nil {
+				errs = append(errs, fmt.Errorf("union fields aren't supported as top level fields at the moment. `%s` invalid field", f.FieldName))
+			}
 
 			if err := s.checkCustomInterface(cfg, f, nil); err != nil {
 				errs = append(errs, err)

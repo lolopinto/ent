@@ -17,12 +17,12 @@ import { Comment, User } from "../../..";
 import { EdgeType, NodeType } from "../../const";
 import { commentLoaderInfo } from "../../loaders";
 import schema from "../../../../schema/comment_schema";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface CommentInput {
-  authorID?: ID | Builder<User, ExampleViewer>;
+  authorID?: ID | Builder<User, ExampleViewerAlias>;
   body?: string;
-  articleID?: ID | Builder<Ent<ExampleViewer>, ExampleViewer>;
+  articleID?: ID | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
   articleType?: string;
   // allow other properties. useful for action-only fields
   [x: string]: any;
@@ -38,9 +38,9 @@ type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 export class CommentBuilder<
   TInput extends CommentInput = CommentInput,
   TExistingEnt extends TMaybleNullableEnt<Comment> = Comment | null,
-> implements Builder<Comment, ExampleViewer, TExistingEnt>
+> implements Builder<Comment, ExampleViewerAlias, TExistingEnt>
 {
-  orchestrator: Orchestrator<Comment, TInput, ExampleViewer, TExistingEnt>;
+  orchestrator: Orchestrator<Comment, TInput, ExampleViewerAlias, TExistingEnt>;
   readonly placeholderID: ID;
   readonly ent = Comment;
   readonly nodeType = NodeType.Comment;
@@ -48,12 +48,12 @@ export class CommentBuilder<
   private m: Map<string, any> = new Map();
 
   public constructor(
-    public readonly viewer: ExampleViewer,
+    public readonly viewer: ExampleViewerAlias,
     public readonly operation: WriteOperation,
     action: Action<
       Comment,
-      Builder<Comment, ExampleViewer, TExistingEnt>,
-      ExampleViewer,
+      Builder<Comment, ExampleViewerAlias, TExistingEnt>,
+      ExampleViewerAlias,
       TInput,
       TExistingEnt
     >,
@@ -104,6 +104,19 @@ export class CommentBuilder<
     return this.m.get(k);
   }
 
+  // this returns the id of the existing ent or the id of the ent that's being created
+  async getEntID() {
+    if (this.existingEnt) {
+      return this.existingEnt.id;
+    }
+    const edited = await this.orchestrator.getEditedData();
+    if (!edited.id) {
+      throw new Error(
+        `couldn't get the id field. should have been set by 'defaultValueOnCreate'`,
+      );
+    }
+    return edited.id;
+  }
   // this gets the inputs that have been written for a given edgeType and operation
   // WriteOperation.Insert for adding an edge and WriteOperation.Delete for deleting an edge
   getEdgeInputData(edgeType: EdgeType, op: WriteOperation) {
@@ -210,7 +223,7 @@ export class CommentBuilder<
   }
 
   // get value of AuthorID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewAuthorIDValue(): ID | Builder<User, ExampleViewer> | undefined {
+  getNewAuthorIDValue(): ID | Builder<User, ExampleViewerAlias> | undefined {
     if (this.input.authorID !== undefined) {
       return this.input.authorID;
     }
@@ -228,7 +241,7 @@ export class CommentBuilder<
   // get value of ArticleID. Retrieves it from the input if specified or takes it from existingEnt
   getNewArticleIDValue():
     | ID
-    | Builder<Ent<ExampleViewer>, ExampleViewer>
+    | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>
     | undefined {
     if (this.input.articleID !== undefined) {
       return this.input.articleID;

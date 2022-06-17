@@ -17,12 +17,12 @@ import { Contact, ContactPhoneNumber } from "../../..";
 import { NodeType } from "../../const";
 import { contactPhoneNumberLoaderInfo } from "../../loaders";
 import schema from "../../../../schema/contact_phone_number_schema";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ContactPhoneNumberInput {
   phoneNumber?: string;
   label?: string;
-  contactID?: ID | Builder<Contact, ExampleViewer>;
+  contactID?: ID | Builder<Contact, ExampleViewerAlias>;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -37,12 +37,12 @@ type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 export class ContactPhoneNumberBuilder<
   TInput extends ContactPhoneNumberInput = ContactPhoneNumberInput,
   TExistingEnt extends TMaybleNullableEnt<ContactPhoneNumber> = ContactPhoneNumber | null,
-> implements Builder<ContactPhoneNumber, ExampleViewer, TExistingEnt>
+> implements Builder<ContactPhoneNumber, ExampleViewerAlias, TExistingEnt>
 {
   orchestrator: Orchestrator<
     ContactPhoneNumber,
     TInput,
-    ExampleViewer,
+    ExampleViewerAlias,
     TExistingEnt
   >;
   readonly placeholderID: ID;
@@ -52,12 +52,12 @@ export class ContactPhoneNumberBuilder<
   private m: Map<string, any> = new Map();
 
   public constructor(
-    public readonly viewer: ExampleViewer,
+    public readonly viewer: ExampleViewerAlias,
     public readonly operation: WriteOperation,
     action: Action<
       ContactPhoneNumber,
-      Builder<ContactPhoneNumber, ExampleViewer, TExistingEnt>,
-      ExampleViewer,
+      Builder<ContactPhoneNumber, ExampleViewerAlias, TExistingEnt>,
+      ExampleViewerAlias,
       TInput,
       TExistingEnt
     >,
@@ -109,6 +109,19 @@ export class ContactPhoneNumberBuilder<
     return this.m.get(k);
   }
 
+  // this returns the id of the existing ent or the id of the ent that's being created
+  async getEntID() {
+    if (this.existingEnt) {
+      return this.existingEnt.id;
+    }
+    const edited = await this.orchestrator.getEditedData();
+    if (!edited.id) {
+      throw new Error(
+        `couldn't get the id field. should have been set by 'defaultValueOnCreate'`,
+      );
+    }
+    return edited.id;
+  }
   async build(): Promise<Changeset> {
     return this.orchestrator.build();
   }
@@ -176,7 +189,10 @@ export class ContactPhoneNumberBuilder<
   }
 
   // get value of contactID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewContactIDValue(): ID | Builder<Contact, ExampleViewer> | undefined {
+  getNewContactIDValue():
+    | ID
+    | Builder<Contact, ExampleViewerAlias>
+    | undefined {
     if (this.input.contactID !== undefined) {
       return this.input.contactID;
     }

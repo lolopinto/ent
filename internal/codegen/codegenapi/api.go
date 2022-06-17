@@ -3,6 +3,7 @@ package codegenapi
 import (
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codepath"
+	"github.com/lolopinto/ent/internal/tsimport"
 )
 
 type GraphQLMutationName string
@@ -33,15 +34,36 @@ const (
 )
 
 type ViewerConfig struct {
-	Path string `yaml:"path"`
-	Name string `yaml:"name"`
+	Path  string `yaml:"path"`
+	Name  string `yaml:"name"`
+	Alias string `yaml:"alias"`
 }
 
 func (cfg *ViewerConfig) Clone() *ViewerConfig {
 	return &ViewerConfig{
-		Path: cfg.Path,
-		Name: cfg.Name,
+		Path:  cfg.Path,
+		Name:  cfg.Name,
+		Alias: cfg.Alias,
 	}
+}
+
+func (cfg *ViewerConfig) GetImport() string {
+	if cfg.Alias != "" {
+		return cfg.Alias
+	}
+	return cfg.Name
+}
+
+func (cfg *ViewerConfig) GetImportPath() *tsimport.ImportPath {
+	ret := &tsimport.ImportPath{
+		ImportPath: cfg.Path,
+		Import:     cfg.Name,
+	}
+	if cfg.Alias != "" {
+		ret.OriginalImport = cfg.Name
+		ret.Import = cfg.Alias
+	}
+	return ret
 }
 
 // this file exists to simplify circular dependencies

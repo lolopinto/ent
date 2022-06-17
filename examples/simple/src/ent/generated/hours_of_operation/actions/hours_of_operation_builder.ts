@@ -17,7 +17,7 @@ import { DayOfWeek, DayOfWeekAlt, HoursOfOperation } from "../../..";
 import { NodeType } from "../../const";
 import { hoursOfOperationLoaderInfo } from "../../loaders";
 import schema from "../../../../schema/hours_of_operation_schema";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface HoursOfOperationInput {
   dayOfWeek?: DayOfWeek;
@@ -38,12 +38,12 @@ type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 export class HoursOfOperationBuilder<
   TInput extends HoursOfOperationInput = HoursOfOperationInput,
   TExistingEnt extends TMaybleNullableEnt<HoursOfOperation> = HoursOfOperation | null,
-> implements Builder<HoursOfOperation, ExampleViewer, TExistingEnt>
+> implements Builder<HoursOfOperation, ExampleViewerAlias, TExistingEnt>
 {
   orchestrator: Orchestrator<
     HoursOfOperation,
     TInput,
-    ExampleViewer,
+    ExampleViewerAlias,
     TExistingEnt
   >;
   readonly placeholderID: ID;
@@ -53,12 +53,12 @@ export class HoursOfOperationBuilder<
   private m: Map<string, any> = new Map();
 
   public constructor(
-    public readonly viewer: ExampleViewer,
+    public readonly viewer: ExampleViewerAlias,
     public readonly operation: WriteOperation,
     action: Action<
       HoursOfOperation,
-      Builder<HoursOfOperation, ExampleViewer, TExistingEnt>,
-      ExampleViewer,
+      Builder<HoursOfOperation, ExampleViewerAlias, TExistingEnt>,
+      ExampleViewerAlias,
       TInput,
       TExistingEnt
     >,
@@ -110,6 +110,19 @@ export class HoursOfOperationBuilder<
     return this.m.get(k);
   }
 
+  // this returns the id of the existing ent or the id of the ent that's being created
+  async getEntID() {
+    if (this.existingEnt) {
+      return this.existingEnt.id;
+    }
+    const edited = await this.orchestrator.getEditedData();
+    if (!edited.id) {
+      throw new Error(
+        `couldn't get the id field. should have been set by 'defaultValueOnCreate'`,
+      );
+    }
+    return edited.id;
+  }
   async build(): Promise<Changeset> {
     return this.orchestrator.build();
   }

@@ -18,7 +18,7 @@ import {
 } from "@snowtop/ent/action";
 import { User } from "../../..";
 import { UserBuilder } from "./user_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ConfirmEditEmailAddressInput {
   emailAddress: string;
@@ -30,18 +30,18 @@ export class ConfirmEditEmailAddressActionBase
     Action<
       User,
       UserBuilder<ConfirmEditEmailAddressInput, User>,
-      ExampleViewer,
+      ExampleViewerAlias,
       ConfirmEditEmailAddressInput,
       User
     >
 {
   public readonly builder: UserBuilder<ConfirmEditEmailAddressInput, User>;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected input: ConfirmEditEmailAddressInput;
   protected readonly user: User;
 
   constructor(
-    viewer: ExampleViewer,
+    viewer: ExampleViewerAlias,
     user: User,
     input: ConfirmEditEmailAddressInput,
   ) {
@@ -63,7 +63,7 @@ export class ConfirmEditEmailAddressActionBase
   getTriggers(): Trigger<
     User,
     UserBuilder<ConfirmEditEmailAddressInput, User>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ConfirmEditEmailAddressInput,
     User
   >[] {
@@ -73,7 +73,7 @@ export class ConfirmEditEmailAddressActionBase
   getObservers(): Observer<
     User,
     UserBuilder<ConfirmEditEmailAddressInput, User>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ConfirmEditEmailAddressInput,
     User
   >[] {
@@ -83,7 +83,7 @@ export class ConfirmEditEmailAddressActionBase
   getValidators(): Validator<
     User,
     UserBuilder<ConfirmEditEmailAddressInput, User>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ConfirmEditEmailAddressInput,
     User
   >[] {
@@ -118,11 +118,11 @@ export class ConfirmEditEmailAddressActionBase
 
   static create<T extends ConfirmEditEmailAddressActionBase>(
     this: new (
-      viewer: ExampleViewer,
+      viewer: ExampleViewerAlias,
       user: User,
       input: ConfirmEditEmailAddressInput,
     ) => T,
-    viewer: ExampleViewer,
+    viewer: ExampleViewerAlias,
     user: User,
     input: ConfirmEditEmailAddressInput,
   ): T {
@@ -131,11 +131,11 @@ export class ConfirmEditEmailAddressActionBase
 
   static async saveXFromID<T extends ConfirmEditEmailAddressActionBase>(
     this: new (
-      viewer: ExampleViewer,
+      viewer: ExampleViewerAlias,
       user: User,
       input: ConfirmEditEmailAddressInput,
     ) => T,
-    viewer: ExampleViewer,
+    viewer: ExampleViewerAlias,
     id: ID,
     input: ConfirmEditEmailAddressInput,
   ): Promise<User> {

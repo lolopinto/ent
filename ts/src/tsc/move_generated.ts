@@ -9,8 +9,6 @@ import {
   updateImportPath,
 } from "./ast";
 import { transform, TransformFile } from "./transform";
-import { load } from "js-yaml";
-import { Config } from "../core/config";
 
 class MoveFiles {
   constructor(private globPath: string) {}
@@ -23,14 +21,13 @@ class MoveFiles {
 
 class TransformImports implements TransformFile {
   cwd: string;
-  relativeImports = false;
   constructor(
     public glob: string,
     public prettierGlob: string,
+    private relativeImports: boolean,
     private checkRelativeImportsValid?: boolean,
   ) {
     this.cwd = process.cwd();
-    this.relativeImports = relativeImports();
   }
 
   globOptions = {
@@ -176,30 +173,19 @@ function moveFiles(files: string[]) {
   });
 }
 
-function relativeImports(): boolean {
-  let yaml: Config | undefined = {};
-
-  let relativeImports = false;
-  try {
-    yaml = load(
-      fs.readFileSync(path.join(process.cwd(), "ent.yml"), {
-        encoding: "utf8",
-      }),
-    ) as Config;
-
-    relativeImports = yaml?.codegen?.relativeImports || false;
-
-    return yaml?.codegen?.relativeImports || false;
-  } catch (e) {}
-  return false;
-}
-
-export function moveGenerated() {
+export function moveGenerated(relativeImports: boolean) {
   new MoveFiles("src/ent/**/generated/**/**.ts").move();
   new MoveFiles("src/graphql/**/generated/**/**.ts").move();
 
-  transform(new TransformImports("src/ent/**/*.ts", "src/ent/**.ts"));
   transform(
-    new TransformImports("src/graphql/**/*.ts", "src/graphql/**.ts", true),
+    new TransformImports("src/ent/**/*.ts", "src/ent/**/*.ts", relativeImports),
+  );
+  transform(
+    new TransformImports(
+      "src/graphql/**/*.ts",
+      "src/graphql/**/*.ts",
+      relativeImports,
+      true,
+    ),
   );
 }

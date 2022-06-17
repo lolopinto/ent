@@ -76,7 +76,17 @@ export function transform(transform: TransformFile) {
     let removeImports: string[] = [];
     let traversed = false;
 
+    let seenImports: Map<string, boolean> = new Map();
     ts.forEachChild(sourceFile, function (node: ts.Node) {
+      if (ts.isImportDeclaration(node)) {
+        const imp = getImportInfo(node, sourceFile);
+        if (imp) {
+          imp.imports.forEach((v) => {
+            v = v.trim();
+            v && seenImports.set(v, true);
+          });
+        }
+      }
       const ret = transform.traverseChild(sourceFile, contents, file, node);
       if (!ret) {
         return;
@@ -117,7 +127,10 @@ export function transform(transform: TransformFile) {
           if (seen.has(imp)) {
             continue;
           }
-          newContents += `\nimport { ${list.join(", ")} } from "${imp}"`;
+          const final = list.filter((v) => !seenImports.has(v));
+          if (final.length) {
+            newContents += `\nimport { ${final.join(", ")} } from "${imp}"`;
+          }
         }
         afterProcessed = true;
       }
@@ -127,11 +140,13 @@ export function transform(transform: TransformFile) {
       if (node.node) {
         if (ts.isImportDeclaration(node.node)) {
           const impInfo = getImportInfo(node.node, sourceFile);
+          //          console.debug(impInfo);
           if (impInfo) {
             const impPath = normalizePath(impInfo.importPath);
 
             const list = imports.get(impPath);
-            if (list) {
+            // path exists, we care about it
+            if (list !== undefined) {
               let transformed = transformImport(
                 contents,
                 node.node,
@@ -154,7 +169,10 @@ export function transform(transform: TransformFile) {
             }
           }
         } else {
-          if (!ts.isExportDeclaration(node.node)) {
+          if (
+            !ts.isExportDeclaration(node.node) &&
+            !isRequireStatement(node.node, sourceFile)
+          ) {
             processAfterImport();
           }
         }
@@ -171,7 +189,6 @@ export function transform(transform: TransformFile) {
     if (transform.fileToWrite) {
       writeFile = transform.fileToWrite(file);
     }
-    // TODO new file
     fs.writeFileSync(writeFile, newContents);
 
     if (transform.postProcess) {
@@ -182,4 +199,13 @@ export function transform(transform: TransformFile) {
   if (transform.prettierGlob) {
     execSync(`prettier ${transform.prettierGlob} --write`);
   }
+}
+
+function isRequireStatement(node: ts.Node, sourceFile: ts.SourceFile) {
+  if (node.kind !== ts.SyntaxKind.VariableStatement) {
+    return false;
+  }
+  const v = node as ts.VariableStatement;
+  const text = v.declarationList.declarations[0].getFullText(sourceFile);
+  return text.includes("require(");
 }

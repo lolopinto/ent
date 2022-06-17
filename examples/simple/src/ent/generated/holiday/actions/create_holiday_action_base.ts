@@ -17,7 +17,7 @@ import {
 } from "@snowtop/ent/action";
 import { DayOfWeek, DayOfWeekAlt, Holiday } from "../../..";
 import { HolidayBuilder } from "./holiday_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface HolidayCreateInput {
   dayOfWeek: DayOfWeek;
@@ -31,16 +31,16 @@ export class CreateHolidayActionBase
     Action<
       Holiday,
       HolidayBuilder<HolidayCreateInput, Holiday | null>,
-      ExampleViewer,
+      ExampleViewerAlias,
       HolidayCreateInput,
       Holiday | null
     >
 {
   public readonly builder: HolidayBuilder<HolidayCreateInput, Holiday | null>;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected input: HolidayCreateInput;
 
-  constructor(viewer: ExampleViewer, input: HolidayCreateInput) {
+  constructor(viewer: ExampleViewerAlias, input: HolidayCreateInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new HolidayBuilder(
@@ -58,7 +58,7 @@ export class CreateHolidayActionBase
   getTriggers(): Trigger<
     Holiday,
     HolidayBuilder<HolidayCreateInput, Holiday | null>,
-    ExampleViewer,
+    ExampleViewerAlias,
     HolidayCreateInput,
     Holiday | null
   >[] {
@@ -68,7 +68,7 @@ export class CreateHolidayActionBase
   getObservers(): Observer<
     Holiday,
     HolidayBuilder<HolidayCreateInput, Holiday | null>,
-    ExampleViewer,
+    ExampleViewerAlias,
     HolidayCreateInput,
     Holiday | null
   >[] {
@@ -78,7 +78,7 @@ export class CreateHolidayActionBase
   getValidators(): Validator<
     Holiday,
     HolidayBuilder<HolidayCreateInput, Holiday | null>,
-    ExampleViewer,
+    ExampleViewerAlias,
     HolidayCreateInput,
     Holiday | null
   >[] {
@@ -112,8 +112,8 @@ export class CreateHolidayActionBase
   }
 
   static create<T extends CreateHolidayActionBase>(
-    this: new (viewer: ExampleViewer, input: HolidayCreateInput) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, input: HolidayCreateInput) => T,
+    viewer: ExampleViewerAlias,
     input: HolidayCreateInput,
   ): T {
     return new this(viewer, input);

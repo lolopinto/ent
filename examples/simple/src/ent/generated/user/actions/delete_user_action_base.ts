@@ -18,17 +18,23 @@ import {
 } from "@snowtop/ent/action";
 import { User } from "../../..";
 import { UserBuilder, UserInput } from "./user_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export class DeleteUserActionBase
   implements
-    Action<User, UserBuilder<UserInput, User>, ExampleViewer, UserInput, User>
+    Action<
+      User,
+      UserBuilder<UserInput, User>,
+      ExampleViewerAlias,
+      UserInput,
+      User
+    >
 {
   public readonly builder: UserBuilder<UserInput, User>;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected readonly user: User;
 
-  constructor(viewer: ExampleViewer, user: User) {
+  constructor(viewer: ExampleViewerAlias, user: User) {
     this.viewer = viewer;
     this.builder = new UserBuilder(
       this.viewer,
@@ -46,7 +52,7 @@ export class DeleteUserActionBase
   getTriggers(): Trigger<
     User,
     UserBuilder<UserInput, User>,
-    ExampleViewer,
+    ExampleViewerAlias,
     UserInput,
     User
   >[] {
@@ -56,7 +62,7 @@ export class DeleteUserActionBase
   getObservers(): Observer<
     User,
     UserBuilder<UserInput, User>,
-    ExampleViewer,
+    ExampleViewerAlias,
     UserInput,
     User
   >[] {
@@ -66,7 +72,7 @@ export class DeleteUserActionBase
   getValidators(): Validator<
     User,
     UserBuilder<UserInput, User>,
-    ExampleViewer,
+    ExampleViewerAlias,
     UserInput,
     User
   >[] {
@@ -98,16 +104,16 @@ export class DeleteUserActionBase
   }
 
   static create<T extends DeleteUserActionBase>(
-    this: new (viewer: ExampleViewer, user: User) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, user: User) => T,
+    viewer: ExampleViewerAlias,
     user: User,
   ): T {
     return new this(viewer, user);
   }
 
   static async saveXFromID<T extends DeleteUserActionBase>(
-    this: new (viewer: ExampleViewer, user: User) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, user: User) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<void> {
     const user = await User.loadX(viewer, id);

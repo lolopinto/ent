@@ -19,12 +19,12 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, ContactEmail } from "../../..";
 import { ContactEmailBuilder } from "./contact_email_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ContactEmailEditInput {
   emailAddress?: string;
   label?: string;
-  contactID?: ID | Builder<Contact, ExampleViewer>;
+  contactID?: ID | Builder<Contact, ExampleViewerAlias>;
 }
 
 export class EditContactEmailActionBase
@@ -32,7 +32,7 @@ export class EditContactEmailActionBase
     Action<
       ContactEmail,
       ContactEmailBuilder<ContactEmailEditInput, ContactEmail>,
-      ExampleViewer,
+      ExampleViewerAlias,
       ContactEmailEditInput,
       ContactEmail
     >
@@ -41,12 +41,12 @@ export class EditContactEmailActionBase
     ContactEmailEditInput,
     ContactEmail
   >;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected input: ContactEmailEditInput;
   protected readonly contactEmail: ContactEmail;
 
   constructor(
-    viewer: ExampleViewer,
+    viewer: ExampleViewerAlias,
     contactEmail: ContactEmail,
     input: ContactEmailEditInput,
   ) {
@@ -68,7 +68,7 @@ export class EditContactEmailActionBase
   getTriggers(): Trigger<
     ContactEmail,
     ContactEmailBuilder<ContactEmailEditInput, ContactEmail>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ContactEmailEditInput,
     ContactEmail
   >[] {
@@ -78,7 +78,7 @@ export class EditContactEmailActionBase
   getObservers(): Observer<
     ContactEmail,
     ContactEmailBuilder<ContactEmailEditInput, ContactEmail>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ContactEmailEditInput,
     ContactEmail
   >[] {
@@ -88,7 +88,7 @@ export class EditContactEmailActionBase
   getValidators(): Validator<
     ContactEmail,
     ContactEmailBuilder<ContactEmailEditInput, ContactEmail>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ContactEmailEditInput,
     ContactEmail
   >[] {
@@ -123,11 +123,11 @@ export class EditContactEmailActionBase
 
   static create<T extends EditContactEmailActionBase>(
     this: new (
-      viewer: ExampleViewer,
+      viewer: ExampleViewerAlias,
       contactEmail: ContactEmail,
       input: ContactEmailEditInput,
     ) => T,
-    viewer: ExampleViewer,
+    viewer: ExampleViewerAlias,
     contactEmail: ContactEmail,
     input: ContactEmailEditInput,
   ): T {
@@ -136,11 +136,11 @@ export class EditContactEmailActionBase
 
   static async saveXFromID<T extends EditContactEmailActionBase>(
     this: new (
-      viewer: ExampleViewer,
+      viewer: ExampleViewerAlias,
       contactEmail: ContactEmail,
       input: ContactEmailEditInput,
     ) => T,
-    viewer: ExampleViewer,
+    viewer: ExampleViewerAlias,
     id: ID,
     input: ContactEmailEditInput,
   ): Promise<ContactEmail> {

@@ -6,6 +6,8 @@ import {
   getPreText,
   isRelativeGeneratedImport,
   isSrcGeneratedImport,
+  transformRelative,
+  customInfo,
 } from "../tsc/ast";
 import * as fs from "fs";
 import { Action, WriteOperation } from "../action";
@@ -15,43 +17,7 @@ import { load } from "js-yaml";
 import { Config } from "../core/config";
 import { Data } from "../core/base";
 import { TransformFile } from "./transform";
-
-interface customInfo {
-  viewerInfo: {
-    path: string;
-    name: string;
-  };
-  relativeImports?: boolean;
-}
-
-function getCustomInfo(): customInfo {
-  let yaml: Config | undefined = {};
-
-  let relativeImports = false;
-  try {
-    yaml = load(
-      fs.readFileSync(path.join(process.cwd(), "ent.yml"), {
-        encoding: "utf8",
-      }),
-    ) as Config;
-
-    relativeImports = yaml?.codegen?.relativeImports || false;
-
-    if (yaml?.codegen?.templatizedViewer) {
-      return {
-        viewerInfo: yaml.codegen.templatizedViewer,
-        relativeImports,
-      };
-    }
-  } catch (e) {}
-  return {
-    viewerInfo: {
-      path: "@snowtop/ent",
-      name: "Viewer",
-    },
-    relativeImports,
-  };
-}
+import { snakeCase } from "snake-case";
 
 function findInput(
   file: string,
@@ -138,37 +104,12 @@ function getConversionInfo(mm: ts.ClassElement): convertReturnInfo | null {
   };
 }
 
-function transformRelative(
-  file: string,
-  importPath: string,
-  relative?: boolean,
-): string {
-  if (!relative || !importPath.startsWith("src")) {
-    return importPath;
-  }
-
-  const fileFullPath = path.join(process.cwd(), file);
-  const impFullPath = path.join(process.cwd(), importPath);
-  // relative path is from directory
-  return normalizePath(path.relative(path.dirname(fileFullPath), impFullPath));
-}
-
-function normalizePath(p: string) {
-  if (p.endsWith("..")) {
-    return p + "/";
-  }
-  return p;
-}
-
 export class TransformAction implements TransformFile {
   glob = "src/ent/**/actions/**/*_action.ts";
-  customInfo: customInfo;
 
   prettierGlob = "src/ent/**/actions/**.ts";
 
-  constructor() {
-    this.customInfo = getCustomInfo();
-  }
+  constructor(private customInfo: customInfo) {}
 
   traverseChild(
     sourceFile: ts.SourceFile,
@@ -229,6 +170,10 @@ export class TransformAction implements TransformFile {
       }
     }
 
+    const builderPath = `src/ent/generated/${snakeCase(
+      nodeName,
+    )}/actions/${snakeCase(builder)}`;
+
     let imports: Map<string, string[]> = new Map([
       [
         transformRelative(
@@ -243,6 +188,10 @@ export class TransformAction implements TransformFile {
         [nodeName],
       ],
       ["@snowtop/ent/action", newImports],
+      [
+        transformRelative(file, builderPath, this.customInfo.relativeImports),
+        [builder],
+      ],
     ]);
 
     // wrap comments and transform to export class Foo extends Bar { ${inner} }

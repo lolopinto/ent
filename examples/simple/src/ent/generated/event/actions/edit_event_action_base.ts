@@ -19,7 +19,7 @@ import {
 } from "@snowtop/ent/action";
 import { Address, Event } from "../../..";
 import { EventBuilder } from "./event_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface EventEditInput {
   name?: string;
@@ -27,7 +27,7 @@ export interface EventEditInput {
   startTime?: Date;
   endTime?: Date | null;
   location?: string;
-  addressID?: ID | null | Builder<Address, ExampleViewer>;
+  addressID?: ID | null | Builder<Address, ExampleViewerAlias>;
 }
 
 export class EditEventActionBase
@@ -35,17 +35,17 @@ export class EditEventActionBase
     Action<
       Event,
       EventBuilder<EventEditInput, Event>,
-      ExampleViewer,
+      ExampleViewerAlias,
       EventEditInput,
       Event
     >
 {
   public readonly builder: EventBuilder<EventEditInput, Event>;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected input: EventEditInput;
   protected readonly event: Event;
 
-  constructor(viewer: ExampleViewer, event: Event, input: EventEditInput) {
+  constructor(viewer: ExampleViewerAlias, event: Event, input: EventEditInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new EventBuilder(
@@ -64,7 +64,7 @@ export class EditEventActionBase
   getTriggers(): Trigger<
     Event,
     EventBuilder<EventEditInput, Event>,
-    ExampleViewer,
+    ExampleViewerAlias,
     EventEditInput,
     Event
   >[] {
@@ -74,7 +74,7 @@ export class EditEventActionBase
   getObservers(): Observer<
     Event,
     EventBuilder<EventEditInput, Event>,
-    ExampleViewer,
+    ExampleViewerAlias,
     EventEditInput,
     Event
   >[] {
@@ -84,7 +84,7 @@ export class EditEventActionBase
   getValidators(): Validator<
     Event,
     EventBuilder<EventEditInput, Event>,
-    ExampleViewer,
+    ExampleViewerAlias,
     EventEditInput,
     Event
   >[] {
@@ -118,8 +118,12 @@ export class EditEventActionBase
   }
 
   static create<T extends EditEventActionBase>(
-    this: new (viewer: ExampleViewer, event: Event, input: EventEditInput) => T,
-    viewer: ExampleViewer,
+    this: new (
+      viewer: ExampleViewerAlias,
+      event: Event,
+      input: EventEditInput,
+    ) => T,
+    viewer: ExampleViewerAlias,
     event: Event,
     input: EventEditInput,
   ): T {
@@ -127,8 +131,12 @@ export class EditEventActionBase
   }
 
   static async saveXFromID<T extends EditEventActionBase>(
-    this: new (viewer: ExampleViewer, event: Event, input: EventEditInput) => T,
-    viewer: ExampleViewer,
+    this: new (
+      viewer: ExampleViewerAlias,
+      event: Event,
+      input: EventEditInput,
+    ) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
     input: EventEditInput,
   ): Promise<Event> {

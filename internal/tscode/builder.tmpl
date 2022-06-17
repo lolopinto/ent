@@ -42,8 +42,8 @@ function randomNum(): string {
 {{$node := useImport .Node}}
 
 {{$viewerInfo := $cfg.GetTemplatizedViewer -}}
-{{ reserveImport $viewerInfo.Path $viewerInfo.Name -}}
-{{$viewerType := useImport $viewerInfo.Name -}}
+{{ reserveImportPath $viewerInfo.GetImportPath false -}}
+{{$viewerType := useImport $viewerInfo.GetImport -}}
 
 {{$mixinInfo := .GetBuilderMixinInfo $schema -}}
 {{$hasBuilderMixin := $mixinInfo.Imports -}}
@@ -138,6 +138,20 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
   getStoredData(k: string) {
     return this.m.get(k);
   }
+
+  {{if .GenerateGetIDInBuilder -}}
+    // this returns the id of the existing ent or the id of the ent that's being created
+    async getEntID() {
+      if (this.existingEnt) {
+        return this.existingEnt.id;
+      }
+      const edited = await this.orchestrator.getEditedData();
+      if (!edited.id) {
+        throw new Error(`couldn't get the id field. should have been set by 'defaultValueOnCreate'`);
+      }
+      return edited.id;
+    }
+  {{ end -}}
 
   {{if .HasAssociationEdges -}}
     // this gets the inputs that have been written for a given edgeType and operation

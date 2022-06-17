@@ -17,7 +17,7 @@ import { DayOfWeek, DayOfWeekAlt, Holiday } from "../../..";
 import { NodeType } from "../../const";
 import { holidayLoaderInfo } from "../../loaders";
 import schema from "../../../../schema/holiday_schema";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface HolidayInput {
   dayOfWeek?: DayOfWeek;
@@ -38,9 +38,9 @@ type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 export class HolidayBuilder<
   TInput extends HolidayInput = HolidayInput,
   TExistingEnt extends TMaybleNullableEnt<Holiday> = Holiday | null,
-> implements Builder<Holiday, ExampleViewer, TExistingEnt>
+> implements Builder<Holiday, ExampleViewerAlias, TExistingEnt>
 {
-  orchestrator: Orchestrator<Holiday, TInput, ExampleViewer, TExistingEnt>;
+  orchestrator: Orchestrator<Holiday, TInput, ExampleViewerAlias, TExistingEnt>;
   readonly placeholderID: ID;
   readonly ent = Holiday;
   readonly nodeType = NodeType.Holiday;
@@ -48,12 +48,12 @@ export class HolidayBuilder<
   private m: Map<string, any> = new Map();
 
   public constructor(
-    public readonly viewer: ExampleViewer,
+    public readonly viewer: ExampleViewerAlias,
     public readonly operation: WriteOperation,
     action: Action<
       Holiday,
-      Builder<Holiday, ExampleViewer, TExistingEnt>,
-      ExampleViewer,
+      Builder<Holiday, ExampleViewerAlias, TExistingEnt>,
+      ExampleViewerAlias,
       TInput,
       TExistingEnt
     >,
@@ -104,6 +104,19 @@ export class HolidayBuilder<
     return this.m.get(k);
   }
 
+  // this returns the id of the existing ent or the id of the ent that's being created
+  async getEntID() {
+    if (this.existingEnt) {
+      return this.existingEnt.id;
+    }
+    const edited = await this.orchestrator.getEditedData();
+    if (!edited.id) {
+      throw new Error(
+        `couldn't get the id field. should have been set by 'defaultValueOnCreate'`,
+      );
+    }
+    return edited.id;
+  }
   async build(): Promise<Changeset> {
     return this.orchestrator.build();
   }

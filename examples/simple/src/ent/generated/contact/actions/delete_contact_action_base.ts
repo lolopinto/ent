@@ -18,23 +18,23 @@ import {
 } from "@snowtop/ent/action";
 import { Contact } from "../../..";
 import { ContactBuilder, ContactInput } from "./contact_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export class DeleteContactActionBase
   implements
     Action<
       Contact,
       ContactBuilder<ContactInput, Contact>,
-      ExampleViewer,
+      ExampleViewerAlias,
       ContactInput,
       Contact
     >
 {
   public readonly builder: ContactBuilder<ContactInput, Contact>;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected readonly contact: Contact;
 
-  constructor(viewer: ExampleViewer, contact: Contact) {
+  constructor(viewer: ExampleViewerAlias, contact: Contact) {
     this.viewer = viewer;
     this.builder = new ContactBuilder(
       this.viewer,
@@ -52,7 +52,7 @@ export class DeleteContactActionBase
   getTriggers(): Trigger<
     Contact,
     ContactBuilder<ContactInput, Contact>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ContactInput,
     Contact
   >[] {
@@ -62,7 +62,7 @@ export class DeleteContactActionBase
   getObservers(): Observer<
     Contact,
     ContactBuilder<ContactInput, Contact>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ContactInput,
     Contact
   >[] {
@@ -72,7 +72,7 @@ export class DeleteContactActionBase
   getValidators(): Validator<
     Contact,
     ContactBuilder<ContactInput, Contact>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ContactInput,
     Contact
   >[] {
@@ -104,16 +104,16 @@ export class DeleteContactActionBase
   }
 
   static create<T extends DeleteContactActionBase>(
-    this: new (viewer: ExampleViewer, contact: Contact) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, contact: Contact) => T,
+    viewer: ExampleViewerAlias,
     contact: Contact,
   ): T {
     return new this(viewer, contact);
   }
 
   static async saveXFromID<T extends DeleteContactActionBase>(
-    this: new (viewer: ExampleViewer, contact: Contact) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, contact: Contact) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<void> {
     const contact = await Contact.loadX(viewer, id);

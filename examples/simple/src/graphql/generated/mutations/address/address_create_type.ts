@@ -19,7 +19,7 @@ import CreateAddressAction, {
   AddressCreateInput,
 } from "../../../../ent/address/actions/create_address_action";
 import { AddressType } from "../../../resolvers";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface AddressCreatePayload {
   address: Address;
@@ -60,7 +60,7 @@ export const AddressCreatePayloadType = new GraphQLObjectType({
 
 export const AddressCreateType: GraphQLFieldConfig<
   undefined,
-  RequestContext<ExampleViewer>,
+  RequestContext<ExampleViewerAlias>,
   { [input: string]: AddressCreateInput }
 > = {
   type: new GraphQLNonNull(AddressCreatePayloadType),
@@ -73,7 +73,7 @@ export const AddressCreateType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext<ExampleViewer>,
+    context: RequestContext<ExampleViewerAlias>,
     _info: GraphQLResolveInfo,
   ): Promise<AddressCreatePayload> => {
     const address = await CreateAddressAction.create(context.getViewer(), {

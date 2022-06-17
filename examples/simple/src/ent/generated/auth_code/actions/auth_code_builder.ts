@@ -17,11 +17,11 @@ import { AuthCode, User } from "../../..";
 import { NodeType } from "../../const";
 import { authCodeLoaderInfo } from "../../loaders";
 import schema from "../../../../schema/auth_code_schema";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface AuthCodeInput {
   code?: string;
-  userID?: ID | Builder<User, ExampleViewer>;
+  userID?: ID | Builder<User, ExampleViewerAlias>;
   emailAddress?: string | null;
   phoneNumber?: string | null;
   // allow other properties. useful for action-only fields
@@ -38,9 +38,14 @@ type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 export class AuthCodeBuilder<
   TInput extends AuthCodeInput = AuthCodeInput,
   TExistingEnt extends TMaybleNullableEnt<AuthCode> = AuthCode | null,
-> implements Builder<AuthCode, ExampleViewer, TExistingEnt>
+> implements Builder<AuthCode, ExampleViewerAlias, TExistingEnt>
 {
-  orchestrator: Orchestrator<AuthCode, TInput, ExampleViewer, TExistingEnt>;
+  orchestrator: Orchestrator<
+    AuthCode,
+    TInput,
+    ExampleViewerAlias,
+    TExistingEnt
+  >;
   readonly placeholderID: ID;
   readonly ent = AuthCode;
   readonly nodeType = NodeType.AuthCode;
@@ -48,12 +53,12 @@ export class AuthCodeBuilder<
   private m: Map<string, any> = new Map();
 
   public constructor(
-    public readonly viewer: ExampleViewer,
+    public readonly viewer: ExampleViewerAlias,
     public readonly operation: WriteOperation,
     action: Action<
       AuthCode,
-      Builder<AuthCode, ExampleViewer, TExistingEnt>,
-      ExampleViewer,
+      Builder<AuthCode, ExampleViewerAlias, TExistingEnt>,
+      ExampleViewerAlias,
       TInput,
       TExistingEnt
     >,
@@ -104,6 +109,19 @@ export class AuthCodeBuilder<
     return this.m.get(k);
   }
 
+  // this returns the id of the existing ent or the id of the ent that's being created
+  async getEntID() {
+    if (this.existingEnt) {
+      return this.existingEnt.id;
+    }
+    const edited = await this.orchestrator.getEditedData();
+    if (!edited.id) {
+      throw new Error(
+        `couldn't get the id field. should have been set by 'defaultValueOnCreate'`,
+      );
+    }
+    return edited.id;
+  }
   async build(): Promise<Changeset> {
     return this.orchestrator.build();
   }
@@ -164,7 +182,7 @@ export class AuthCodeBuilder<
   }
 
   // get value of userID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewUserIDValue(): ID | Builder<User, ExampleViewer> | undefined {
+  getNewUserIDValue(): ID | Builder<User, ExampleViewerAlias> | undefined {
     if (this.input.userID !== undefined) {
       return this.input.userID;
     }

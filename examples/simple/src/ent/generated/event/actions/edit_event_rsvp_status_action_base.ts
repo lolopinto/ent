@@ -19,7 +19,7 @@ import {
 } from "@snowtop/ent/action";
 import { Event, NodeType } from "../../..";
 import { EventBuilder } from "./event_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export enum EventRsvpStatusInput {
   Attending = "attending",
@@ -37,18 +37,18 @@ export class EditEventRsvpStatusActionBase
     Action<
       Event,
       EventBuilder<EditEventRsvpStatusInput, Event>,
-      ExampleViewer,
+      ExampleViewerAlias,
       EditEventRsvpStatusInput,
       Event
     >
 {
   public readonly builder: EventBuilder<EditEventRsvpStatusInput, Event>;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected input: EditEventRsvpStatusInput;
   protected readonly event: Event;
 
   constructor(
-    viewer: ExampleViewer,
+    viewer: ExampleViewerAlias,
     event: Event,
     input: EditEventRsvpStatusInput,
   ) {
@@ -70,7 +70,7 @@ export class EditEventRsvpStatusActionBase
   getTriggers(): Trigger<
     Event,
     EventBuilder<EditEventRsvpStatusInput, Event>,
-    ExampleViewer,
+    ExampleViewerAlias,
     EditEventRsvpStatusInput,
     Event
   >[] {
@@ -80,7 +80,7 @@ export class EditEventRsvpStatusActionBase
   getObservers(): Observer<
     Event,
     EventBuilder<EditEventRsvpStatusInput, Event>,
-    ExampleViewer,
+    ExampleViewerAlias,
     EditEventRsvpStatusInput,
     Event
   >[] {
@@ -90,7 +90,7 @@ export class EditEventRsvpStatusActionBase
   getValidators(): Validator<
     Event,
     EventBuilder<EditEventRsvpStatusInput, Event>,
-    ExampleViewer,
+    ExampleViewerAlias,
     EditEventRsvpStatusInput,
     Event
   >[] {
@@ -140,11 +140,11 @@ export class EditEventRsvpStatusActionBase
 
   static create<T extends EditEventRsvpStatusActionBase>(
     this: new (
-      viewer: ExampleViewer,
+      viewer: ExampleViewerAlias,
       event: Event,
       input: EditEventRsvpStatusInput,
     ) => T,
-    viewer: ExampleViewer,
+    viewer: ExampleViewerAlias,
     event: Event,
     input: EditEventRsvpStatusInput,
   ): T {
@@ -153,11 +153,11 @@ export class EditEventRsvpStatusActionBase
 
   static async saveXFromID<T extends EditEventRsvpStatusActionBase>(
     this: new (
-      viewer: ExampleViewer,
+      viewer: ExampleViewerAlias,
       event: Event,
       input: EditEventRsvpStatusInput,
     ) => T,
-    viewer: ExampleViewer,
+    viewer: ExampleViewerAlias,
     id: ID,
     input: EditEventRsvpStatusInput,
   ): Promise<Event> {

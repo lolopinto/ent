@@ -18,14 +18,14 @@ import { EdgeType, NodeType } from "../../const";
 import { contactLoaderInfo } from "../../loaders";
 import { FeedbackBuilder } from "../../mixins/feedback/actions/feedback_builder";
 import schema from "../../../../schema/contact_schema";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ContactInput {
   emailIds?: ID[];
   phoneNumberIds?: ID[];
   firstName?: string;
   lastName?: string;
-  userID?: ID | Builder<User, ExampleViewer>;
+  userID?: ID | Builder<User, ExampleViewerAlias>;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -36,7 +36,7 @@ function randomNum(): string {
 
 class Base {
   // @ts-ignore not assigning. need for Mixin
-  orchestrator: Orchestrator<Contact, any, ExampleViewer>;
+  orchestrator: Orchestrator<Contact, any, ExampleViewerAlias>;
 
   constructor() {}
 
@@ -55,9 +55,9 @@ export class ContactBuilder<
     TExistingEnt extends TMaybleNullableEnt<Contact> = Contact | null,
   >
   extends FeedbackBuilder(Base)
-  implements Builder<Contact, ExampleViewer, TExistingEnt>
+  implements Builder<Contact, ExampleViewerAlias, TExistingEnt>
 {
-  orchestrator: Orchestrator<Contact, TInput, ExampleViewer, TExistingEnt>;
+  orchestrator: Orchestrator<Contact, TInput, ExampleViewerAlias, TExistingEnt>;
   readonly placeholderID: ID;
   readonly ent = Contact;
   readonly nodeType = NodeType.Contact;
@@ -65,12 +65,12 @@ export class ContactBuilder<
   private m: Map<string, any> = new Map();
 
   public constructor(
-    public readonly viewer: ExampleViewer,
+    public readonly viewer: ExampleViewerAlias,
     public readonly operation: WriteOperation,
     action: Action<
       Contact,
-      Builder<Contact, ExampleViewer, TExistingEnt>,
-      ExampleViewer,
+      Builder<Contact, ExampleViewerAlias, TExistingEnt>,
+      ExampleViewerAlias,
       TInput,
       TExistingEnt
     >,
@@ -122,6 +122,19 @@ export class ContactBuilder<
     return this.m.get(k);
   }
 
+  // this returns the id of the existing ent or the id of the ent that's being created
+  async getEntID() {
+    if (this.existingEnt) {
+      return this.existingEnt.id;
+    }
+    const edited = await this.orchestrator.getEditedData();
+    if (!edited.id) {
+      throw new Error(
+        `couldn't get the id field. should have been set by 'defaultValueOnCreate'`,
+      );
+    }
+    return edited.id;
+  }
   // this gets the inputs that have been written for a given edgeType and operation
   // WriteOperation.Insert for adding an edge and WriteOperation.Delete for deleting an edge
   getEdgeInputData(edgeType: EdgeType, op: WriteOperation) {
@@ -216,7 +229,7 @@ export class ContactBuilder<
   }
 
   // get value of userID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewUserIDValue(): ID | Builder<User, ExampleViewer> | undefined {
+  getNewUserIDValue(): ID | Builder<User, ExampleViewerAlias> | undefined {
     if (this.input.userID !== undefined) {
       return this.input.userID;
     }

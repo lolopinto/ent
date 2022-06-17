@@ -22,7 +22,7 @@ import CreateContactAction, {
   ContactCreateInput,
 } from "../../../../ent/contact/actions/create_contact_action";
 import { ContactType } from "../../../resolvers";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customContactCreateInput extends ContactCreateInput {
   userID: string;
@@ -88,7 +88,7 @@ export const ContactCreatePayloadType = new GraphQLObjectType({
 
 export const ContactCreateType: GraphQLFieldConfig<
   undefined,
-  RequestContext<ExampleViewer>,
+  RequestContext<ExampleViewerAlias>,
   { [input: string]: customContactCreateInput }
 > = {
   type: new GraphQLNonNull(ContactCreatePayloadType),
@@ -101,7 +101,7 @@ export const ContactCreateType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext<ExampleViewer>,
+    context: RequestContext<ExampleViewerAlias>,
     _info: GraphQLResolveInfo,
   ): Promise<ContactCreatePayload> => {
     const contact = await CreateContactAction.create(context.getViewer(), {

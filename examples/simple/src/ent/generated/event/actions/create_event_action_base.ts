@@ -19,7 +19,7 @@ import {
 } from "@snowtop/ent/action";
 import { Address, Event } from "../../..";
 import { EventBuilder } from "./event_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface EventCreateInput {
   name: string;
@@ -27,7 +27,7 @@ export interface EventCreateInput {
   startTime: Date;
   endTime?: Date | null;
   location: string;
-  addressID?: ID | null | Builder<Address, ExampleViewer>;
+  addressID?: ID | null | Builder<Address, ExampleViewerAlias>;
 }
 
 export class CreateEventActionBase
@@ -35,16 +35,16 @@ export class CreateEventActionBase
     Action<
       Event,
       EventBuilder<EventCreateInput, Event | null>,
-      ExampleViewer,
+      ExampleViewerAlias,
       EventCreateInput,
       Event | null
     >
 {
   public readonly builder: EventBuilder<EventCreateInput, Event | null>;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected input: EventCreateInput;
 
-  constructor(viewer: ExampleViewer, input: EventCreateInput) {
+  constructor(viewer: ExampleViewerAlias, input: EventCreateInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new EventBuilder(
@@ -62,7 +62,7 @@ export class CreateEventActionBase
   getTriggers(): Trigger<
     Event,
     EventBuilder<EventCreateInput, Event | null>,
-    ExampleViewer,
+    ExampleViewerAlias,
     EventCreateInput,
     Event | null
   >[] {
@@ -72,7 +72,7 @@ export class CreateEventActionBase
   getObservers(): Observer<
     Event,
     EventBuilder<EventCreateInput, Event | null>,
-    ExampleViewer,
+    ExampleViewerAlias,
     EventCreateInput,
     Event | null
   >[] {
@@ -82,7 +82,7 @@ export class CreateEventActionBase
   getValidators(): Validator<
     Event,
     EventBuilder<EventCreateInput, Event | null>,
-    ExampleViewer,
+    ExampleViewerAlias,
     EventCreateInput,
     Event | null
   >[] {
@@ -116,8 +116,8 @@ export class CreateEventActionBase
   }
 
   static create<T extends CreateEventActionBase>(
-    this: new (viewer: ExampleViewer, input: EventCreateInput) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, input: EventCreateInput) => T,
+    viewer: ExampleViewerAlias,
     input: EventCreateInput,
   ): T {
     return new this(viewer, input);

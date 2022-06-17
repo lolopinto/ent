@@ -205,7 +205,7 @@ export class BigIntegerField extends BaseField implements Field {
   type: Type = { dbType: DBType.BigInt };
 }
 
-export function BigIntegerType(options: FieldOptions): BigIntegerField {
+export function BigIntegerType(options?: FieldOptions): BigIntegerField {
   let result = new BigIntegerField();
   return Object.assign(result, options);
 }
