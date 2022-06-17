@@ -33,15 +33,24 @@ const (
 )
 
 type ViewerConfig struct {
-	Path string `yaml:"path"`
-	Name string `yaml:"name"`
+	Path  string `yaml:"path"`
+	Name  string `yaml:"name"`
+	Alias string `yaml:"alias"`
 }
 
 func (cfg *ViewerConfig) Clone() *ViewerConfig {
 	return &ViewerConfig{
-		Path: cfg.Path,
-		Name: cfg.Name,
+		Path:  cfg.Path,
+		Name:  cfg.Name,
+		Alias: cfg.Alias,
 	}
+}
+
+func (cfg *ViewerConfig) GetImport() string {
+	if cfg.Alias != "" {
+		return cfg.Alias
+	}
+	return cfg.Name
 }
 
 // this file exists to simplify circular dependencies

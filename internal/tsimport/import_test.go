@@ -40,23 +40,28 @@ func getLine(line string, paths ...string) string {
 	return r.Replace(line)
 }
 
-func reserveImport(imps *Imports, path string, exports ...string) error {
-	_, err := imps.Reserve(path, exports...)
+func reserveImport(imps *Imports, path string, imports ...string) error {
+	_, err := imps.Reserve(path, imports...)
 	return err
 }
 
-func useImport(imps *Imports, export string) error {
-	_, err := imps.Use(export)
+func useImport(imps *Imports, imp string) error {
+	_, err := imps.Use(imp)
 	return err
 }
 
-func reserveDefaultImport(imps *Imports, path, defaultExport string, exports ...string) error {
-	_, err := imps.ReserveDefault(path, defaultExport, exports...)
+func reserveDefaultImport(imps *Imports, path, defaultImport string, imports ...string) error {
+	_, err := imps.ReserveDefault(path, defaultImport, imports...)
 	return err
 }
 
 func reserveAllImport(imps *Imports, path, as string) error {
 	_, err := imps.ReserveAll(path, as)
+	return err
+}
+
+func reserveImportPath(imps *Imports, imp *ImportPath, external bool) error {
+	_, err := imps.ReserveImportPath(imp, external)
 	return err
 }
 
@@ -295,6 +300,59 @@ func TestImports(t *testing.T) {
 				require.Error(t, reserveDefaultImport(imps, "/user", "User"))
 			},
 			errorThrown: true,
+		},
+		"reserve import path": {
+			fn: func(imps *Imports) {
+				reserveImportPath(imps, &ImportPath{
+					ImportPath: "src/lib/viewer/viewer",
+					Import:     "Viewer",
+				}, false)
+				useImport(imps, "Viewer")
+			},
+			expectedLines: []string{
+				getLine("import {Viewer} from {path};", "src/lib/viewer/viewer"),
+			},
+		},
+		"reserve import path with alias": {
+			fn: func(imps *Imports) {
+				reserveImportPath(imps, &ImportPath{
+					ImportPath: "src/lib/viewer/viewer",
+					Import:     "Viewer",
+					Alias:      "FooViewer",
+				}, false)
+				useImport(imps, "FooViewer")
+			},
+			expectedLines: []string{
+				getLine("import {Viewer as FooViewer} from {path};", "src/lib/viewer/viewer"),
+			},
+		},
+		"reserve import path with alias. use non-alias": {
+			fn: func(imps *Imports) {
+				reserveImportPath(imps, &ImportPath{
+					ImportPath: "src/lib/viewer/viewer",
+					Import:     "Viewer",
+					Alias:      "FooViewer",
+				}, false)
+				require.Error(t, useImport(imps, "Viewer"))
+			},
+			errorThrown: true,
+		},
+		"reserve import path with alias + other imports same path": {
+			// TODO from here...
+			only: true,
+			fn: func(imps *Imports) {
+				reserveImportPath(imps, &ImportPath{
+					ImportPath: "src/lib/viewer/viewer",
+					Import:     "Viewer",
+					Alias:      "FooViewer",
+				}, false)
+				reserveImport(imps, "src/lib/viewer/Viewer", "ViewerFoo")
+				useImport(imps, "Viewer")
+				useImport(imps, "ViewerFoo")
+			},
+			expectedLines: []string{
+				getLine("import {Viewer as FooViewer, ViewerFoo} from {path};", "src/lib/viewer/viewer"),
+			},
 		},
 		"export all": {
 			fn: func(imps *Imports) {

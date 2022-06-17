@@ -9,6 +9,7 @@ type ImportPath struct {
 	ImportPath    string `json:"importPath"`
 	Import        string `json:"import"`
 	DefaultImport bool   `json:"defaultImport,omitempty"`
+	Alias         string `json:"alias,omitempty"`
 
 	// only used in graphql (at least for now)
 	// defaults to no. if function, call it instead of just referencing the import when used?
