@@ -3,6 +3,7 @@ package codegenapi
 import (
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codepath"
+	"github.com/lolopinto/ent/internal/tsimport"
 )
 
 type GraphQLMutationName string
@@ -51,6 +52,14 @@ func (cfg *ViewerConfig) GetImport() string {
 		return cfg.Alias
 	}
 	return cfg.Name
+}
+
+func (cfg *ViewerConfig) GetImportPath() *tsimport.ImportPath {
+	return &tsimport.ImportPath{
+		ImportPath: cfg.Path,
+		Alias:      cfg.Alias,
+		Import:     cfg.Name,
+	}
 }
 
 // this file exists to simplify circular dependencies

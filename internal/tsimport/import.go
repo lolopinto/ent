@@ -53,7 +53,7 @@ func (imps *Imports) Reserve(path string, imports ...string) (string, error) {
 func (imps *Imports) ReserveDefault(path, defaultImport string, imports ...string) (string, error) {
 	return imps.reserve(&importInfoInput{
 		path:          path,
-		defaultExport: defaultImport,
+		defaultImport: defaultImport,
 		imports:       imports,
 	})
 }
@@ -62,7 +62,7 @@ func (imps *Imports) ReserveDefault(path, defaultImport string, imports ...strin
 func (imps *Imports) ReserveAll(path, as string) (string, error) {
 	return imps.reserve(&importInfoInput{
 		path:          path,
-		defaultExport: "",
+		defaultImport: "",
 		importAll:     true,
 		imports:       []string{as},
 	})
@@ -85,7 +85,7 @@ func (imps *Imports) ReserveImportPath(imp *ImportPath, external bool) (string, 
 	}
 	return imps.reserve(&importInfoInput{
 		path:          importPath,
-		defaultExport: defaultExport,
+		defaultImport: defaultExport,
 		alias:         imp.Alias,
 		imports:       imports,
 	})
@@ -93,7 +93,7 @@ func (imps *Imports) ReserveImportPath(imp *ImportPath, external bool) (string, 
 
 type importInfoInput struct {
 	path          string
-	defaultExport string
+	defaultImport string
 	importAll     bool
 	imports       []string
 	// only works when there's 1 import
@@ -101,13 +101,11 @@ type importInfoInput struct {
 }
 
 func (imps *Imports) reserve(input *importInfoInput) (string, error) {
-	// TODO test
 	if input.alias != "" && len(input.imports) > 1 {
 		return "", fmt.Errorf("cannot have an alias with multiple imports")
 	}
 
-	// TODO test
-	if input.alias != "" && input.defaultExport != "" {
+	if input.alias != "" && input.defaultImport != "" {
 		return "", fmt.Errorf("cannot have an alias and default import at the sme time")
 	}
 
@@ -118,9 +116,9 @@ func (imps *Imports) reserve(input *importInfoInput) (string, error) {
 			alias: input.alias,
 		})
 	}
-	if input.defaultExport != "" {
+	if input.defaultImport != "" {
 		imports = append(imports, importedItem{
-			name: input.defaultExport,
+			name: input.defaultImport,
 		})
 	}
 
@@ -132,7 +130,7 @@ func (imps *Imports) reserve(input *importInfoInput) (string, error) {
 			path:          input.path,
 			imports:       imports,
 			importAll:     input.importAll,
-			defaultExport: input.defaultExport,
+			defaultExport: input.defaultImport,
 		}
 
 		imps.pathMap[input.path] = imp
@@ -140,11 +138,11 @@ func (imps *Imports) reserve(input *importInfoInput) (string, error) {
 
 	} else {
 		// update existing one...
-		if input.defaultExport != "" && imp.defaultExport != input.defaultExport && imp.defaultExport != "" {
-			return "", fmt.Errorf("can't set %s as new default export for %s. %s already default export", input.defaultExport, input.path, imp.defaultExport)
+		if input.defaultImport != "" && imp.defaultExport != input.defaultImport && imp.defaultExport != "" {
+			return "", fmt.Errorf("can't set %s as new default export for %s. %s already default export", input.defaultImport, input.path, imp.defaultExport)
 		}
-		if input.defaultExport != "" {
-			imp.defaultExport = input.defaultExport
+		if input.defaultImport != "" {
+			imp.defaultExport = input.defaultImport
 		}
 		imp.imports = append(imp.imports, imports...)
 		if input.importAll {

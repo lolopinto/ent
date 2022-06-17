@@ -658,14 +658,14 @@ func (f *Field) TsBuilderType(cfg codegenapi.Config) string {
 	if typeName == "" || f.disableBuilderType {
 		return typ
 	}
-	return fmt.Sprintf("%s | Builder<%s, %s>", typ, f.transformBuilderEnt(typeName, cfg), cfg.GetTemplatizedViewer().Name)
+	return fmt.Sprintf("%s | Builder<%s, %s>", typ, f.transformBuilderEnt(typeName, cfg), cfg.GetTemplatizedViewer().GetImport())
 }
 
 func (f *Field) transformBuilderEnt(typ string, cfg codegenapi.Config) string {
 	if typ != "Ent" {
 		return typ
 	}
-	return fmt.Sprintf("%s<%s>", typ, cfg.GetTemplatizedViewer().Name)
+	return fmt.Sprintf("%s<%s>", typ, cfg.GetTemplatizedViewer().GetImport())
 }
 
 // for getFooValue() where there's a nullable type but the input type isn't nullable
@@ -684,7 +684,7 @@ func (f *Field) TsBuilderUnionType(cfg codegenapi.Config) string {
 	if typeName == "" || f.disableBuilderType {
 		return typ
 	}
-	return fmt.Sprintf("%s | Builder<%s, %s>", typ, f.transformBuilderEnt(typeName, cfg), cfg.GetTemplatizedViewer().Name)
+	return fmt.Sprintf("%s | Builder<%s, %s>", typ, f.transformBuilderEnt(typeName, cfg), cfg.GetTemplatizedViewer().GetImport())
 }
 
 func (f *Field) TsBuilderImports(cfg codegenapi.Config) []*tsimport.ImportPath {
@@ -706,10 +706,7 @@ func (f *Field) TsBuilderImports(cfg codegenapi.Config) []*tsimport.ImportPath {
 		ret,
 		entImportPath,
 		tsimport.NewEntActionImportPath("Builder"),
-		&tsimport.ImportPath{
-			ImportPath: viewer.Path,
-			Import:     viewer.Name,
-		},
+		viewer.GetImportPath(),
 	)
 	return ret
 }

@@ -8,8 +8,8 @@
 {{ $cfg := .CodePath -}}
 {{ $schema := .Schema -}}
 {{$viewerInfo := $cfg.GetTemplatizedViewer -}}
-{{ reserveImport $viewerInfo.Path $viewerInfo.Name -}}
-{{$viewerType := useImport $viewerInfo.Name -}}
+{{ reserveImportPath $viewerInfo.GetImportPath false -}}
+{{$viewerType := useImport $viewerInfo.GetImport -}}
 
 {{with .NodeData -}}
 {{$loaderInfo := printf "%sLoaderInfo" .NodeInstance -}}

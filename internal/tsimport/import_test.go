@@ -338,21 +338,59 @@ func TestImports(t *testing.T) {
 			errorThrown: true,
 		},
 		"reserve import path with alias + other imports same path": {
-			// TODO from here...
-			only: true,
 			fn: func(imps *Imports) {
 				reserveImportPath(imps, &ImportPath{
 					ImportPath: "src/lib/viewer/viewer",
 					Import:     "Viewer",
 					Alias:      "FooViewer",
 				}, false)
-				reserveImport(imps, "src/lib/viewer/Viewer", "ViewerFoo")
-				useImport(imps, "Viewer")
+				reserveImport(imps, "src/lib/viewer/viewer", "ViewerFoo")
+				useImport(imps, "FooViewer")
 				useImport(imps, "ViewerFoo")
 			},
 			expectedLines: []string{
 				getLine("import {Viewer as FooViewer, ViewerFoo} from {path};", "src/lib/viewer/viewer"),
 			},
+		},
+		"reserve import path with alias + default": {
+			fn: func(imps *Imports) {
+				reserveImportPath(imps, &ImportPath{
+					ImportPath: "src/lib/viewer/viewer",
+					Import:     "Viewer",
+					Alias:      "FooViewer",
+				}, false)
+				reserveDefaultImport(imps, "src/lib/viewer/viewer", "ViewerDefault")
+				reserveImport(imps, "src/lib/viewer/viewer", "ViewerFoo")
+
+				useImport(imps, "FooViewer")
+				useImport(imps, "ViewerDefault")
+				useImport(imps, "ViewerFoo")
+			},
+			expectedLines: []string{
+				getLine("import ViewerDefault, {Viewer as FooViewer, ViewerFoo} from {path};", "src/lib/viewer/viewer"),
+			},
+		},
+		"reserve alias and multiple imports at same time": {
+			fn: func(imps *Imports) {
+				_, err := imps.reserve(&importInfoInput{
+					path:    "src/foo",
+					alias:   "Foo",
+					imports: []string{"Foo", "FooBar"},
+				})
+				require.Error(t, err)
+			},
+			errorThrown: true,
+		},
+		"reserve alias and default at same time": {
+			fn: func(imps *Imports) {
+				_, err := imps.reserve(&importInfoInput{
+					path:          "src/foo",
+					alias:         "Foo",
+					defaultImport: "Foo2",
+				})
+				require.Error(t, err)
+			},
+			errorThrown: true,
 		},
 		"export all": {
 			fn: func(imps *Imports) {
