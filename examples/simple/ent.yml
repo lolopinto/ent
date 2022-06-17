@@ -21,3 +21,5 @@ codegen:
   templatizedViewer:
     path: src/viewer/viewer
     name: ExampleViewer
+    # this is just to show that it works and fine with example code looking 👀
+    alias: ExampleViewerAlias

@@ -17,7 +17,7 @@ import {
 } from "@snowtop/ent/action";
 import { Address } from "../../..";
 import { AddressBuilder } from "./address_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface AddressCreateInput {
   streetName: string;
@@ -33,16 +33,16 @@ export class CreateAddressActionBase
     Action<
       Address,
       AddressBuilder<AddressCreateInput, Address | null>,
-      ExampleViewer,
+      ExampleViewerAlias,
       AddressCreateInput,
       Address | null
     >
 {
   public readonly builder: AddressBuilder<AddressCreateInput, Address | null>;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected input: AddressCreateInput;
 
-  constructor(viewer: ExampleViewer, input: AddressCreateInput) {
+  constructor(viewer: ExampleViewerAlias, input: AddressCreateInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new AddressBuilder(
@@ -60,7 +60,7 @@ export class CreateAddressActionBase
   getTriggers(): Trigger<
     Address,
     AddressBuilder<AddressCreateInput, Address | null>,
-    ExampleViewer,
+    ExampleViewerAlias,
     AddressCreateInput,
     Address | null
   >[] {
@@ -70,7 +70,7 @@ export class CreateAddressActionBase
   getObservers(): Observer<
     Address,
     AddressBuilder<AddressCreateInput, Address | null>,
-    ExampleViewer,
+    ExampleViewerAlias,
     AddressCreateInput,
     Address | null
   >[] {
@@ -80,7 +80,7 @@ export class CreateAddressActionBase
   getValidators(): Validator<
     Address,
     AddressBuilder<AddressCreateInput, Address | null>,
-    ExampleViewer,
+    ExampleViewerAlias,
     AddressCreateInput,
     Address | null
   >[] {
@@ -114,8 +114,8 @@ export class CreateAddressActionBase
   }
 
   static create<T extends CreateAddressActionBase>(
-    this: new (viewer: ExampleViewer, input: AddressCreateInput) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, input: AddressCreateInput) => T,
+    viewer: ExampleViewerAlias,
     input: AddressCreateInput,
   ): T {
     return new this(viewer, input);

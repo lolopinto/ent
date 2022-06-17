@@ -42,8 +42,8 @@ function randomNum(): string {
 {{$node := useImport .Node}}
 
 {{$viewerInfo := $cfg.GetTemplatizedViewer -}}
-{{ reserveImport $viewerInfo.Path $viewerInfo.Name -}}
-{{$viewerType := useImport $viewerInfo.Name -}}
+{{ reserveImportPath $viewerInfo.GetImportPath false -}}
+{{$viewerType := useImport $viewerInfo.GetImport -}}
 
 {{$mixinInfo := .GetBuilderMixinInfo $schema -}}
 {{$hasBuilderMixin := $mixinInfo.Imports -}}

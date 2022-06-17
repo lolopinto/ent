@@ -29,7 +29,7 @@ import {
   User,
 } from "../internal";
 import schema from "../../schema/comment_schema";
-import { ExampleViewer } from "../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 interface CommentDBData {
   id: ID;
@@ -41,7 +41,7 @@ interface CommentDBData {
   article_type: string;
 }
 
-export class CommentBase implements Ent<ExampleViewer> {
+export class CommentBase implements Ent<ExampleViewerAlias> {
   readonly nodeType = NodeType.Comment;
   readonly id: ID;
   readonly createdAt: Date;
@@ -51,7 +51,7 @@ export class CommentBase implements Ent<ExampleViewer> {
   readonly articleID: ID;
   readonly articleType: string;
 
-  constructor(public viewer: ExampleViewer, protected data: Data) {
+  constructor(public viewer: ExampleViewerAlias, protected data: Data) {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
@@ -61,13 +61,13 @@ export class CommentBase implements Ent<ExampleViewer> {
     this.articleType = data.article_type;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewer> {
+  getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {
     return AllowIfViewerPrivacyPolicy;
   }
 
   static async load<T extends CommentBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T | null> {
     return (await loadEnt(
@@ -78,8 +78,8 @@ export class CommentBase implements Ent<ExampleViewer> {
   }
 
   static async loadX<T extends CommentBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T> {
     return (await loadEntX(
@@ -90,8 +90,8 @@ export class CommentBase implements Ent<ExampleViewer> {
   }
 
   static async loadMany<T extends CommentBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
     return (await loadEnts(
@@ -102,8 +102,8 @@ export class CommentBase implements Ent<ExampleViewer> {
   }
 
   static async loadCustom<T extends CommentBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     query: CustomQuery,
   ): Promise<T[]> {
     return (await loadCustomEnts(
@@ -114,7 +114,7 @@ export class CommentBase implements Ent<ExampleViewer> {
   }
 
   static async loadCustomData<T extends CommentBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<CommentDBData[]> {
@@ -126,7 +126,7 @@ export class CommentBase implements Ent<ExampleViewer> {
   }
 
   static async loadRawData<T extends CommentBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<CommentDBData | null> {
@@ -138,7 +138,7 @@ export class CommentBase implements Ent<ExampleViewer> {
   }
 
   static async loadRawDataX<T extends CommentBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<CommentDBData> {
@@ -150,16 +150,16 @@ export class CommentBase implements Ent<ExampleViewer> {
   }
 
   static queryFromArticle<T extends CommentBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
-    viewer: ExampleViewer,
-    ent: Ent<ExampleViewer>,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
+    ent: Ent<ExampleViewerAlias>,
   ): ArticleToCommentsQuery {
     return ArticleToCommentsQuery.query(viewer, ent);
   }
 
   static loaderOptions<T extends CommentBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
-  ): LoadEntOptions<T, ExampleViewer> {
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+  ): LoadEntOptions<T, ExampleViewerAlias> {
     return {
       tableName: commentLoaderInfo.tableName,
       fields: commentLoaderInfo.fields,

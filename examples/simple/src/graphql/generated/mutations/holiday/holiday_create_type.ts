@@ -24,7 +24,7 @@ import {
   DayOfWeekType,
   HolidayType,
 } from "../../../resolvers";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface HolidayCreatePayload {
   holiday: Holiday;
@@ -59,7 +59,7 @@ export const HolidayCreatePayloadType = new GraphQLObjectType({
 
 export const HolidayCreateType: GraphQLFieldConfig<
   undefined,
-  RequestContext<ExampleViewer>,
+  RequestContext<ExampleViewerAlias>,
   { [input: string]: HolidayCreateInput }
 > = {
   type: new GraphQLNonNull(HolidayCreatePayloadType),
@@ -72,7 +72,7 @@ export const HolidayCreateType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext<ExampleViewer>,
+    context: RequestContext<ExampleViewerAlias>,
     _info: GraphQLResolveInfo,
   ): Promise<HolidayCreatePayload> => {
     const holiday = await CreateHolidayAction.create(context.getViewer(), {

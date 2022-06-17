@@ -36,7 +36,7 @@ import {
   User,
 } from "../internal";
 import schema from "../../schema/event_schema";
-import { ExampleViewer } from "../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export enum EventRsvpStatus {
   Attending = "attending",
@@ -57,7 +57,7 @@ interface EventDBData {
   address_id: ID | null;
 }
 
-export class EventBase implements Ent<ExampleViewer> {
+export class EventBase implements Ent<ExampleViewerAlias> {
   readonly nodeType = NodeType.Event;
   readonly id: ID;
   readonly createdAt: Date;
@@ -69,7 +69,7 @@ export class EventBase implements Ent<ExampleViewer> {
   readonly location: string;
   protected readonly _addressID: ID | null;
 
-  constructor(public viewer: ExampleViewer, protected data: Data) {
+  constructor(public viewer: ExampleViewerAlias, protected data: Data) {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
@@ -81,7 +81,7 @@ export class EventBase implements Ent<ExampleViewer> {
     this._addressID = data.address_id;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewer> {
+  getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {
     return AllowIfViewerPrivacyPolicy;
   }
 
@@ -99,8 +99,8 @@ export class EventBase implements Ent<ExampleViewer> {
   }
 
   static async load<T extends EventBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T | null> {
     return (await loadEnt(
@@ -111,8 +111,8 @@ export class EventBase implements Ent<ExampleViewer> {
   }
 
   static async loadX<T extends EventBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T> {
     return (await loadEntX(
@@ -123,8 +123,8 @@ export class EventBase implements Ent<ExampleViewer> {
   }
 
   static async loadMany<T extends EventBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
     return (await loadEnts(
@@ -135,8 +135,8 @@ export class EventBase implements Ent<ExampleViewer> {
   }
 
   static async loadCustom<T extends EventBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     query: CustomQuery,
   ): Promise<T[]> {
     return (await loadCustomEnts(
@@ -147,7 +147,7 @@ export class EventBase implements Ent<ExampleViewer> {
   }
 
   static async loadCustomData<T extends EventBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<EventDBData[]> {
@@ -159,7 +159,7 @@ export class EventBase implements Ent<ExampleViewer> {
   }
 
   static async loadRawData<T extends EventBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<EventDBData | null> {
@@ -171,7 +171,7 @@ export class EventBase implements Ent<ExampleViewer> {
   }
 
   static async loadRawDataX<T extends EventBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<EventDBData> {
@@ -183,8 +183,8 @@ export class EventBase implements Ent<ExampleViewer> {
   }
 
   static loaderOptions<T extends EventBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
-  ): LoadEntOptions<T, ExampleViewer> {
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+  ): LoadEntOptions<T, ExampleViewerAlias> {
     return {
       tableName: eventLoaderInfo.tableName,
       fields: eventLoaderInfo.fields,

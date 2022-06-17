@@ -13,7 +13,7 @@ import { GraphQLUpload } from "graphql-upload";
 import { RequestContext } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { UserType } from "../../resolvers";
-import { ExampleViewer } from "../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 import { ImportContactResolver } from "../../mutations/import_contact";
 
 interface bulkUploadContactArgs {
@@ -23,7 +23,7 @@ interface bulkUploadContactArgs {
 
 export const BulkUploadContactType: GraphQLFieldConfig<
   undefined,
-  RequestContext<ExampleViewer>,
+  RequestContext<ExampleViewerAlias>,
   bulkUploadContactArgs
 > = {
   type: new GraphQLNonNull(UserType),
@@ -40,7 +40,7 @@ export const BulkUploadContactType: GraphQLFieldConfig<
   resolve: async (
     _source,
     args,
-    context: RequestContext<ExampleViewer>,
+    context: RequestContext<ExampleViewerAlias>,
     _info: GraphQLResolveInfo,
   ) => {
     const r = new ImportContactResolver();

@@ -21,7 +21,7 @@ import CreateContactPhoneNumberAction, {
   ContactPhoneNumberCreateInput,
 } from "../../../../ent/contact_phone_number/actions/create_contact_phone_number_action";
 import { ContactPhoneNumberType } from "../../../resolvers";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customContactPhoneNumberCreateInput
   extends ContactPhoneNumberCreateInput {
@@ -61,7 +61,7 @@ export const ContactPhoneNumberCreatePayloadType = new GraphQLObjectType({
 
 export const ContactPhoneNumberCreateType: GraphQLFieldConfig<
   undefined,
-  RequestContext<ExampleViewer>,
+  RequestContext<ExampleViewerAlias>,
   { [input: string]: customContactPhoneNumberCreateInput }
 > = {
   type: new GraphQLNonNull(ContactPhoneNumberCreatePayloadType),
@@ -74,7 +74,7 @@ export const ContactPhoneNumberCreateType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext<ExampleViewer>,
+    context: RequestContext<ExampleViewerAlias>,
     _info: GraphQLResolveInfo,
   ): Promise<ContactPhoneNumberCreatePayload> => {
     const contactPhoneNumber = await CreateContactPhoneNumberAction.create(

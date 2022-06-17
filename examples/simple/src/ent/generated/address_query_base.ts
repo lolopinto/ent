@@ -21,7 +21,7 @@ import {
   EventToInvitedQuery,
   EventToMaybeQuery,
 } from "../internal";
-import { ExampleViewer } from "../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export const addressToHostedEventsCountLoaderFactory =
   new AssocEdgeCountLoaderFactory(EdgeType.AddressToHostedEvents);
@@ -35,11 +35,11 @@ export abstract class AddressToHostedEventsQueryBase extends AssocEdgeQueryBase<
   Address,
   Event,
   AddressToHostedEventsEdge,
-  ExampleViewer
+  ExampleViewerAlias
 > {
   constructor(
-    viewer: ExampleViewer,
-    src: EdgeQuerySource<Address, Event, ExampleViewer>,
+    viewer: ExampleViewerAlias,
+    src: EdgeQuerySource<Address, Event, ExampleViewerAlias>,
   ) {
     super(
       viewer,
@@ -52,10 +52,10 @@ export abstract class AddressToHostedEventsQueryBase extends AssocEdgeQueryBase<
 
   static query<T extends AddressToHostedEventsQueryBase>(
     this: new (
-      viewer: ExampleViewer,
+      viewer: ExampleViewerAlias,
       src: EdgeQuerySource<Address, Event>,
     ) => T,
-    viewer: ExampleViewer,
+    viewer: ExampleViewerAlias,
     src: EdgeQuerySource<Address, Event>,
   ): T {
     return new this(viewer, src);

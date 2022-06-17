@@ -23,7 +23,7 @@ import { Field, getFields } from "@snowtop/ent/schema";
 import { contactEmailLoader, contactEmailLoaderInfo } from "./loaders";
 import { Contact, NodeType } from "../internal";
 import schema from "../../schema/contact_email_schema";
-import { ExampleViewer } from "../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 interface ContactEmailDBData {
   id: ID;
@@ -34,7 +34,7 @@ interface ContactEmailDBData {
   contact_id: ID;
 }
 
-export class ContactEmailBase implements Ent<ExampleViewer> {
+export class ContactEmailBase implements Ent<ExampleViewerAlias> {
   readonly nodeType = NodeType.ContactEmail;
   readonly id: ID;
   readonly createdAt: Date;
@@ -43,7 +43,7 @@ export class ContactEmailBase implements Ent<ExampleViewer> {
   readonly label: string;
   readonly contactID: ID;
 
-  constructor(public viewer: ExampleViewer, protected data: Data) {
+  constructor(public viewer: ExampleViewerAlias, protected data: Data) {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
@@ -52,13 +52,13 @@ export class ContactEmailBase implements Ent<ExampleViewer> {
     this.contactID = data.contact_id;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewer> {
+  getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {
     return AllowIfViewerPrivacyPolicy;
   }
 
   static async load<T extends ContactEmailBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T | null> {
     return (await loadEnt(
@@ -69,8 +69,8 @@ export class ContactEmailBase implements Ent<ExampleViewer> {
   }
 
   static async loadX<T extends ContactEmailBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T> {
     return (await loadEntX(
@@ -81,8 +81,8 @@ export class ContactEmailBase implements Ent<ExampleViewer> {
   }
 
   static async loadMany<T extends ContactEmailBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     ...ids: ID[]
   ): Promise<Map<ID, T>> {
     return (await loadEnts(
@@ -93,8 +93,8 @@ export class ContactEmailBase implements Ent<ExampleViewer> {
   }
 
   static async loadCustom<T extends ContactEmailBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     query: CustomQuery,
   ): Promise<T[]> {
     return (await loadCustomEnts(
@@ -105,7 +105,7 @@ export class ContactEmailBase implements Ent<ExampleViewer> {
   }
 
   static async loadCustomData<T extends ContactEmailBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     query: CustomQuery,
     context?: Context,
   ): Promise<ContactEmailDBData[]> {
@@ -117,7 +117,7 @@ export class ContactEmailBase implements Ent<ExampleViewer> {
   }
 
   static async loadRawData<T extends ContactEmailBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<ContactEmailDBData | null> {
@@ -129,7 +129,7 @@ export class ContactEmailBase implements Ent<ExampleViewer> {
   }
 
   static async loadRawDataX<T extends ContactEmailBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     id: ID,
     context?: Context,
   ): Promise<ContactEmailDBData> {
@@ -141,8 +141,8 @@ export class ContactEmailBase implements Ent<ExampleViewer> {
   }
 
   static loaderOptions<T extends ContactEmailBase>(
-    this: new (viewer: ExampleViewer, data: Data) => T,
-  ): LoadEntOptions<T, ExampleViewer> {
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+  ): LoadEntOptions<T, ExampleViewerAlias> {
     return {
       tableName: contactEmailLoaderInfo.tableName,
       fields: contactEmailLoaderInfo.fields,

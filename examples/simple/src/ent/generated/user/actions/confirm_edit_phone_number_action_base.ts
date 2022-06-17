@@ -18,7 +18,7 @@ import {
 } from "@snowtop/ent/action";
 import { User } from "../../..";
 import { UserBuilder } from "./user_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ConfirmEditPhoneNumberInput {
   phoneNumber: string;
@@ -30,18 +30,18 @@ export class ConfirmEditPhoneNumberActionBase
     Action<
       User,
       UserBuilder<ConfirmEditPhoneNumberInput, User>,
-      ExampleViewer,
+      ExampleViewerAlias,
       ConfirmEditPhoneNumberInput,
       User
     >
 {
   public readonly builder: UserBuilder<ConfirmEditPhoneNumberInput, User>;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected input: ConfirmEditPhoneNumberInput;
   protected readonly user: User;
 
   constructor(
-    viewer: ExampleViewer,
+    viewer: ExampleViewerAlias,
     user: User,
     input: ConfirmEditPhoneNumberInput,
   ) {
@@ -63,7 +63,7 @@ export class ConfirmEditPhoneNumberActionBase
   getTriggers(): Trigger<
     User,
     UserBuilder<ConfirmEditPhoneNumberInput, User>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ConfirmEditPhoneNumberInput,
     User
   >[] {
@@ -73,7 +73,7 @@ export class ConfirmEditPhoneNumberActionBase
   getObservers(): Observer<
     User,
     UserBuilder<ConfirmEditPhoneNumberInput, User>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ConfirmEditPhoneNumberInput,
     User
   >[] {
@@ -83,7 +83,7 @@ export class ConfirmEditPhoneNumberActionBase
   getValidators(): Validator<
     User,
     UserBuilder<ConfirmEditPhoneNumberInput, User>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ConfirmEditPhoneNumberInput,
     User
   >[] {
@@ -118,11 +118,11 @@ export class ConfirmEditPhoneNumberActionBase
 
   static create<T extends ConfirmEditPhoneNumberActionBase>(
     this: new (
-      viewer: ExampleViewer,
+      viewer: ExampleViewerAlias,
       user: User,
       input: ConfirmEditPhoneNumberInput,
     ) => T,
-    viewer: ExampleViewer,
+    viewer: ExampleViewerAlias,
     user: User,
     input: ConfirmEditPhoneNumberInput,
   ): T {
@@ -131,11 +131,11 @@ export class ConfirmEditPhoneNumberActionBase
 
   static async saveXFromID<T extends ConfirmEditPhoneNumberActionBase>(
     this: new (
-      viewer: ExampleViewer,
+      viewer: ExampleViewerAlias,
       user: User,
       input: ConfirmEditPhoneNumberInput,
     ) => T,
-    viewer: ExampleViewer,
+    viewer: ExampleViewerAlias,
     id: ID,
     input: ConfirmEditPhoneNumberInput,
   ): Promise<User> {

@@ -3,8 +3,8 @@
 
 {{ $cfg := .Config -}}
 {{$viewerInfo := $cfg.GetTemplatizedViewer -}}
-{{ reserveImport $viewerInfo.Path $viewerInfo.Name -}}
-{{$viewerType := useImport $viewerInfo.Name -}}
+{{ reserveImportPath $viewerInfo.GetImportPath false -}}
+{{$viewerType := useImport $viewerInfo.GetImport -}}
 
 {{$prefix := printf "const %s" $fieldConfig.Name -}}
 {{ if $fieldConfig.Exported -}}

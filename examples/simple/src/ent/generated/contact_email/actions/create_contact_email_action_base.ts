@@ -19,12 +19,12 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, ContactEmail } from "../../..";
 import { ContactEmailBuilder } from "./contact_email_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ContactEmailCreateInput {
   emailAddress: string;
   label: string;
-  contactID: ID | Builder<Contact, ExampleViewer>;
+  contactID: ID | Builder<Contact, ExampleViewerAlias>;
 }
 
 export class CreateContactEmailActionBase
@@ -32,7 +32,7 @@ export class CreateContactEmailActionBase
     Action<
       ContactEmail,
       ContactEmailBuilder<ContactEmailCreateInput, ContactEmail | null>,
-      ExampleViewer,
+      ExampleViewerAlias,
       ContactEmailCreateInput,
       ContactEmail | null
     >
@@ -41,10 +41,10 @@ export class CreateContactEmailActionBase
     ContactEmailCreateInput,
     ContactEmail | null
   >;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected input: ContactEmailCreateInput;
 
-  constructor(viewer: ExampleViewer, input: ContactEmailCreateInput) {
+  constructor(viewer: ExampleViewerAlias, input: ContactEmailCreateInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new ContactEmailBuilder(
@@ -62,7 +62,7 @@ export class CreateContactEmailActionBase
   getTriggers(): Trigger<
     ContactEmail,
     ContactEmailBuilder<ContactEmailCreateInput, ContactEmail | null>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ContactEmailCreateInput,
     ContactEmail | null
   >[] {
@@ -72,7 +72,7 @@ export class CreateContactEmailActionBase
   getObservers(): Observer<
     ContactEmail,
     ContactEmailBuilder<ContactEmailCreateInput, ContactEmail | null>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ContactEmailCreateInput,
     ContactEmail | null
   >[] {
@@ -82,7 +82,7 @@ export class CreateContactEmailActionBase
   getValidators(): Validator<
     ContactEmail,
     ContactEmailBuilder<ContactEmailCreateInput, ContactEmail | null>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ContactEmailCreateInput,
     ContactEmail | null
   >[] {
@@ -116,8 +116,8 @@ export class CreateContactEmailActionBase
   }
 
   static create<T extends CreateContactEmailActionBase>(
-    this: new (viewer: ExampleViewer, input: ContactEmailCreateInput) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, input: ContactEmailCreateInput) => T,
+    viewer: ExampleViewerAlias,
     input: ContactEmailCreateInput,
   ): T {
     return new this(viewer, input);

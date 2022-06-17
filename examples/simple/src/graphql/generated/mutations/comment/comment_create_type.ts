@@ -21,7 +21,7 @@ import CreateCommentAction, {
   CommentCreateInput,
 } from "../../../../ent/comment/actions/create_comment_action";
 import { CommentType } from "../../../resolvers";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customCommentCreateInput extends CommentCreateInput {
   authorID: string;
@@ -61,7 +61,7 @@ export const CommentCreatePayloadType = new GraphQLObjectType({
 
 export const CommentCreateType: GraphQLFieldConfig<
   undefined,
-  RequestContext<ExampleViewer>,
+  RequestContext<ExampleViewerAlias>,
   { [input: string]: customCommentCreateInput }
 > = {
   type: new GraphQLNonNull(CommentCreatePayloadType),
@@ -74,7 +74,7 @@ export const CommentCreateType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext<ExampleViewer>,
+    context: RequestContext<ExampleViewerAlias>,
     _info: GraphQLResolveInfo,
   ): Promise<CommentCreatePayload> => {
     const comment = await CreateCommentAction.create(context.getViewer(), {

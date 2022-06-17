@@ -18,23 +18,23 @@ import {
 } from "@snowtop/ent/action";
 import { Event, User } from "../../..";
 import { EventBuilder, EventInput } from "./event_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export class EventRemoveHostActionBase
   implements
     Action<
       Event,
       EventBuilder<EventInput, Event>,
-      ExampleViewer,
+      ExampleViewerAlias,
       EventInput,
       Event
     >
 {
   public readonly builder: EventBuilder<EventInput, Event>;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected readonly event: Event;
 
-  constructor(viewer: ExampleViewer, event: Event) {
+  constructor(viewer: ExampleViewerAlias, event: Event) {
     this.viewer = viewer;
     this.builder = new EventBuilder(
       this.viewer,
@@ -52,7 +52,7 @@ export class EventRemoveHostActionBase
   getTriggers(): Trigger<
     Event,
     EventBuilder<EventInput, Event>,
-    ExampleViewer,
+    ExampleViewerAlias,
     EventInput,
     Event
   >[] {
@@ -62,7 +62,7 @@ export class EventRemoveHostActionBase
   getObservers(): Observer<
     Event,
     EventBuilder<EventInput, Event>,
-    ExampleViewer,
+    ExampleViewerAlias,
     EventInput,
     Event
   >[] {
@@ -72,7 +72,7 @@ export class EventRemoveHostActionBase
   getValidators(): Validator<
     Event,
     EventBuilder<EventInput, Event>,
-    ExampleViewer,
+    ExampleViewerAlias,
     EventInput,
     Event
   >[] {
@@ -110,16 +110,16 @@ export class EventRemoveHostActionBase
   }
 
   static create<T extends EventRemoveHostActionBase>(
-    this: new (viewer: ExampleViewer, event: Event) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, event: Event) => T,
+    viewer: ExampleViewerAlias,
     event: Event,
   ): T {
     return new this(viewer, event);
   }
 
   static async saveXFromID<T extends EventRemoveHostActionBase>(
-    this: new (viewer: ExampleViewer, event: Event) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, event: Event) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
     hostID: ID,
   ): Promise<Event> {

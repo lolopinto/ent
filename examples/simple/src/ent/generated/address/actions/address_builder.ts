@@ -17,7 +17,7 @@ import { Address, Event } from "../../..";
 import { EdgeType, NodeType } from "../../const";
 import { addressLoaderInfo } from "../../loaders";
 import schema from "../../../../schema/address";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface AddressInput {
   streetName?: string;
@@ -40,9 +40,9 @@ type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 export class AddressBuilder<
   TInput extends AddressInput = AddressInput,
   TExistingEnt extends TMaybleNullableEnt<Address> = Address | null,
-> implements Builder<Address, ExampleViewer, TExistingEnt>
+> implements Builder<Address, ExampleViewerAlias, TExistingEnt>
 {
-  orchestrator: Orchestrator<Address, TInput, ExampleViewer, TExistingEnt>;
+  orchestrator: Orchestrator<Address, TInput, ExampleViewerAlias, TExistingEnt>;
   readonly placeholderID: ID;
   readonly ent = Address;
   readonly nodeType = NodeType.Address;
@@ -50,12 +50,12 @@ export class AddressBuilder<
   private m: Map<string, any> = new Map();
 
   public constructor(
-    public readonly viewer: ExampleViewer,
+    public readonly viewer: ExampleViewerAlias,
     public readonly operation: WriteOperation,
     action: Action<
       Address,
-      Builder<Address, ExampleViewer, TExistingEnt>,
-      ExampleViewer,
+      Builder<Address, ExampleViewerAlias, TExistingEnt>,
+      ExampleViewerAlias,
       TInput,
       TExistingEnt
     >,

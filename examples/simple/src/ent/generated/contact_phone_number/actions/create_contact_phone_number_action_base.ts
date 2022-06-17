@@ -19,12 +19,12 @@ import {
 } from "@snowtop/ent/action";
 import { Contact, ContactPhoneNumber } from "../../..";
 import { ContactPhoneNumberBuilder } from "./contact_phone_number_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ContactPhoneNumberCreateInput {
   phoneNumber: string;
   label: string;
-  contactID: ID | Builder<Contact, ExampleViewer>;
+  contactID: ID | Builder<Contact, ExampleViewerAlias>;
 }
 
 export class CreateContactPhoneNumberActionBase
@@ -35,7 +35,7 @@ export class CreateContactPhoneNumberActionBase
         ContactPhoneNumberCreateInput,
         ContactPhoneNumber | null
       >,
-      ExampleViewer,
+      ExampleViewerAlias,
       ContactPhoneNumberCreateInput,
       ContactPhoneNumber | null
     >
@@ -44,10 +44,13 @@ export class CreateContactPhoneNumberActionBase
     ContactPhoneNumberCreateInput,
     ContactPhoneNumber | null
   >;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected input: ContactPhoneNumberCreateInput;
 
-  constructor(viewer: ExampleViewer, input: ContactPhoneNumberCreateInput) {
+  constructor(
+    viewer: ExampleViewerAlias,
+    input: ContactPhoneNumberCreateInput,
+  ) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new ContactPhoneNumberBuilder(
@@ -68,7 +71,7 @@ export class CreateContactPhoneNumberActionBase
       ContactPhoneNumberCreateInput,
       ContactPhoneNumber | null
     >,
-    ExampleViewer,
+    ExampleViewerAlias,
     ContactPhoneNumberCreateInput,
     ContactPhoneNumber | null
   >[] {
@@ -81,7 +84,7 @@ export class CreateContactPhoneNumberActionBase
       ContactPhoneNumberCreateInput,
       ContactPhoneNumber | null
     >,
-    ExampleViewer,
+    ExampleViewerAlias,
     ContactPhoneNumberCreateInput,
     ContactPhoneNumber | null
   >[] {
@@ -94,7 +97,7 @@ export class CreateContactPhoneNumberActionBase
       ContactPhoneNumberCreateInput,
       ContactPhoneNumber | null
     >,
-    ExampleViewer,
+    ExampleViewerAlias,
     ContactPhoneNumberCreateInput,
     ContactPhoneNumber | null
   >[] {
@@ -129,10 +132,10 @@ export class CreateContactPhoneNumberActionBase
 
   static create<T extends CreateContactPhoneNumberActionBase>(
     this: new (
-      viewer: ExampleViewer,
+      viewer: ExampleViewerAlias,
       input: ContactPhoneNumberCreateInput,
     ) => T,
-    viewer: ExampleViewer,
+    viewer: ExampleViewerAlias,
     input: ContactPhoneNumberCreateInput,
   ): T {
     return new this(viewer, input);

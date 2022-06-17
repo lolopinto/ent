@@ -7,8 +7,8 @@
 {{ reserveImport "src/ent/generated/const" "EdgeType" "NodeType" }}
 
 {{$viewerInfo := $cfg.GetTemplatizedViewer -}}
-{{ reserveImport $viewerInfo.Path $viewerInfo.Name -}}
-{{$viewerType := useImport $viewerInfo.Name -}}
+{{ reserveImportPath $viewerInfo.GetImportPath false -}}
+{{$viewerType := useImport $viewerInfo.GetImport -}}
 {{ reserveImport .Package.InternalImportPath $p.GetMixinInterfaceName -}}
 
 {{ range .Imports }}

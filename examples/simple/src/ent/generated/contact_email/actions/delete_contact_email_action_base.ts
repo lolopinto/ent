@@ -21,23 +21,23 @@ import {
   ContactEmailBuilder,
   ContactEmailInput,
 } from "./contact_email_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export class DeleteContactEmailActionBase
   implements
     Action<
       ContactEmail,
       ContactEmailBuilder<ContactEmailInput, ContactEmail>,
-      ExampleViewer,
+      ExampleViewerAlias,
       ContactEmailInput,
       ContactEmail
     >
 {
   public readonly builder: ContactEmailBuilder<ContactEmailInput, ContactEmail>;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected readonly contactEmail: ContactEmail;
 
-  constructor(viewer: ExampleViewer, contactEmail: ContactEmail) {
+  constructor(viewer: ExampleViewerAlias, contactEmail: ContactEmail) {
     this.viewer = viewer;
     this.builder = new ContactEmailBuilder(
       this.viewer,
@@ -55,7 +55,7 @@ export class DeleteContactEmailActionBase
   getTriggers(): Trigger<
     ContactEmail,
     ContactEmailBuilder<ContactEmailInput, ContactEmail>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ContactEmailInput,
     ContactEmail
   >[] {
@@ -65,7 +65,7 @@ export class DeleteContactEmailActionBase
   getObservers(): Observer<
     ContactEmail,
     ContactEmailBuilder<ContactEmailInput, ContactEmail>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ContactEmailInput,
     ContactEmail
   >[] {
@@ -75,7 +75,7 @@ export class DeleteContactEmailActionBase
   getValidators(): Validator<
     ContactEmail,
     ContactEmailBuilder<ContactEmailInput, ContactEmail>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ContactEmailInput,
     ContactEmail
   >[] {
@@ -107,16 +107,16 @@ export class DeleteContactEmailActionBase
   }
 
   static create<T extends DeleteContactEmailActionBase>(
-    this: new (viewer: ExampleViewer, contactEmail: ContactEmail) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, contactEmail: ContactEmail) => T,
+    viewer: ExampleViewerAlias,
     contactEmail: ContactEmail,
   ): T {
     return new this(viewer, contactEmail);
   }
 
   static async saveXFromID<T extends DeleteContactEmailActionBase>(
-    this: new (viewer: ExampleViewer, contactEmail: ContactEmail) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, contactEmail: ContactEmail) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<void> {
     const contactEmail = await ContactEmail.loadX(viewer, id);

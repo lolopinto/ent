@@ -17,7 +17,7 @@ import {
 } from "@snowtop/ent/action";
 import { DayOfWeek, DayOfWeekAlt, HoursOfOperation } from "../../..";
 import { HoursOfOperationBuilder } from "./hours_of_operation_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface HoursOfOperationCreateInput {
   dayOfWeek: DayOfWeek;
@@ -34,7 +34,7 @@ export class CreateHoursOfOperationActionBase
         HoursOfOperationCreateInput,
         HoursOfOperation | null
       >,
-      ExampleViewer,
+      ExampleViewerAlias,
       HoursOfOperationCreateInput,
       HoursOfOperation | null
     >
@@ -43,10 +43,10 @@ export class CreateHoursOfOperationActionBase
     HoursOfOperationCreateInput,
     HoursOfOperation | null
   >;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected input: HoursOfOperationCreateInput;
 
-  constructor(viewer: ExampleViewer, input: HoursOfOperationCreateInput) {
+  constructor(viewer: ExampleViewerAlias, input: HoursOfOperationCreateInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new HoursOfOperationBuilder(
@@ -67,7 +67,7 @@ export class CreateHoursOfOperationActionBase
       HoursOfOperationCreateInput,
       HoursOfOperation | null
     >,
-    ExampleViewer,
+    ExampleViewerAlias,
     HoursOfOperationCreateInput,
     HoursOfOperation | null
   >[] {
@@ -80,7 +80,7 @@ export class CreateHoursOfOperationActionBase
       HoursOfOperationCreateInput,
       HoursOfOperation | null
     >,
-    ExampleViewer,
+    ExampleViewerAlias,
     HoursOfOperationCreateInput,
     HoursOfOperation | null
   >[] {
@@ -93,7 +93,7 @@ export class CreateHoursOfOperationActionBase
       HoursOfOperationCreateInput,
       HoursOfOperation | null
     >,
-    ExampleViewer,
+    ExampleViewerAlias,
     HoursOfOperationCreateInput,
     HoursOfOperation | null
   >[] {
@@ -127,8 +127,11 @@ export class CreateHoursOfOperationActionBase
   }
 
   static create<T extends CreateHoursOfOperationActionBase>(
-    this: new (viewer: ExampleViewer, input: HoursOfOperationCreateInput) => T,
-    viewer: ExampleViewer,
+    this: new (
+      viewer: ExampleViewerAlias,
+      input: HoursOfOperationCreateInput,
+    ) => T,
+    viewer: ExampleViewerAlias,
     input: HoursOfOperationCreateInput,
   ): T {
     return new this(viewer, input);

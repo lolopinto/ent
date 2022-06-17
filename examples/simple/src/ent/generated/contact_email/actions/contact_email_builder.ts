@@ -17,12 +17,12 @@ import { Contact, ContactEmail } from "../../..";
 import { NodeType } from "../../const";
 import { contactEmailLoaderInfo } from "../../loaders";
 import schema from "../../../../schema/contact_email_schema";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface ContactEmailInput {
   emailAddress?: string;
   label?: string;
-  contactID?: ID | Builder<Contact, ExampleViewer>;
+  contactID?: ID | Builder<Contact, ExampleViewerAlias>;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -37,9 +37,14 @@ type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 export class ContactEmailBuilder<
   TInput extends ContactEmailInput = ContactEmailInput,
   TExistingEnt extends TMaybleNullableEnt<ContactEmail> = ContactEmail | null,
-> implements Builder<ContactEmail, ExampleViewer, TExistingEnt>
+> implements Builder<ContactEmail, ExampleViewerAlias, TExistingEnt>
 {
-  orchestrator: Orchestrator<ContactEmail, TInput, ExampleViewer, TExistingEnt>;
+  orchestrator: Orchestrator<
+    ContactEmail,
+    TInput,
+    ExampleViewerAlias,
+    TExistingEnt
+  >;
   readonly placeholderID: ID;
   readonly ent = ContactEmail;
   readonly nodeType = NodeType.ContactEmail;
@@ -47,12 +52,12 @@ export class ContactEmailBuilder<
   private m: Map<string, any> = new Map();
 
   public constructor(
-    public readonly viewer: ExampleViewer,
+    public readonly viewer: ExampleViewerAlias,
     public readonly operation: WriteOperation,
     action: Action<
       ContactEmail,
-      Builder<ContactEmail, ExampleViewer, TExistingEnt>,
-      ExampleViewer,
+      Builder<ContactEmail, ExampleViewerAlias, TExistingEnt>,
+      ExampleViewerAlias,
       TInput,
       TExistingEnt
     >,
@@ -171,7 +176,10 @@ export class ContactEmailBuilder<
   }
 
   // get value of contactID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewContactIDValue(): ID | Builder<Contact, ExampleViewer> | undefined {
+  getNewContactIDValue():
+    | ID
+    | Builder<Contact, ExampleViewerAlias>
+    | undefined {
     if (this.input.contactID !== undefined) {
       return this.input.contactID;
     }

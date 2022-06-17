@@ -15,7 +15,7 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
-import { ExampleViewer } from "../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 import {
   AuthResolver,
   UserAuthInput,
@@ -45,7 +45,7 @@ export const UserAuthPayloadType = new GraphQLObjectType({
 
 export const UserAuthType: GraphQLFieldConfig<
   undefined,
-  RequestContext<ExampleViewer>,
+  RequestContext<ExampleViewerAlias>,
   { [input: string]: UserAuthInput }
 > = {
   type: new GraphQLNonNull(UserAuthPayloadType),
@@ -58,7 +58,7 @@ export const UserAuthType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: RequestContext<ExampleViewer>,
+    context: RequestContext<ExampleViewerAlias>,
     _info: GraphQLResolveInfo,
   ): Promise<UserAuthPayload> => {
     const r = new AuthResolver();

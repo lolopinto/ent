@@ -18,23 +18,23 @@ import {
 } from "@snowtop/ent/action";
 import { AuthCode } from "../../..";
 import { AuthCodeBuilder, AuthCodeInput } from "./auth_code_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export class DeleteAuthCodeActionBase
   implements
     Action<
       AuthCode,
       AuthCodeBuilder<AuthCodeInput, AuthCode>,
-      ExampleViewer,
+      ExampleViewerAlias,
       AuthCodeInput,
       AuthCode
     >
 {
   public readonly builder: AuthCodeBuilder<AuthCodeInput, AuthCode>;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected readonly authCode: AuthCode;
 
-  constructor(viewer: ExampleViewer, authCode: AuthCode) {
+  constructor(viewer: ExampleViewerAlias, authCode: AuthCode) {
     this.viewer = viewer;
     this.builder = new AuthCodeBuilder(
       this.viewer,
@@ -52,7 +52,7 @@ export class DeleteAuthCodeActionBase
   getTriggers(): Trigger<
     AuthCode,
     AuthCodeBuilder<AuthCodeInput, AuthCode>,
-    ExampleViewer,
+    ExampleViewerAlias,
     AuthCodeInput,
     AuthCode
   >[] {
@@ -62,7 +62,7 @@ export class DeleteAuthCodeActionBase
   getObservers(): Observer<
     AuthCode,
     AuthCodeBuilder<AuthCodeInput, AuthCode>,
-    ExampleViewer,
+    ExampleViewerAlias,
     AuthCodeInput,
     AuthCode
   >[] {
@@ -72,7 +72,7 @@ export class DeleteAuthCodeActionBase
   getValidators(): Validator<
     AuthCode,
     AuthCodeBuilder<AuthCodeInput, AuthCode>,
-    ExampleViewer,
+    ExampleViewerAlias,
     AuthCodeInput,
     AuthCode
   >[] {
@@ -104,16 +104,16 @@ export class DeleteAuthCodeActionBase
   }
 
   static create<T extends DeleteAuthCodeActionBase>(
-    this: new (viewer: ExampleViewer, authCode: AuthCode) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, authCode: AuthCode) => T,
+    viewer: ExampleViewerAlias,
     authCode: AuthCode,
   ): T {
     return new this(viewer, authCode);
   }
 
   static async saveXFromID<T extends DeleteAuthCodeActionBase>(
-    this: new (viewer: ExampleViewer, authCode: AuthCode) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, authCode: AuthCode) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<void> {
     const authCode = await AuthCode.loadX(viewer, id);

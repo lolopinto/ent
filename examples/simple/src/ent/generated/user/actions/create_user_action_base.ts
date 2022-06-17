@@ -23,7 +23,7 @@ import { UserPrefsDiff } from "../../user_prefs_diff";
 import { UserPrefsStruct } from "../../user_prefs_struct";
 import { UserPrefsStruct2 } from "../../user_prefs_struct_2";
 import { UserSuperNestedObject } from "../../user_super_nested_object";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface UserCreateInput {
   firstName: string;
@@ -48,16 +48,16 @@ export class CreateUserActionBase
     Action<
       User,
       UserBuilder<UserCreateInput, User | null>,
-      ExampleViewer,
+      ExampleViewerAlias,
       UserCreateInput,
       User | null
     >
 {
   public readonly builder: UserBuilder<UserCreateInput, User | null>;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected input: UserCreateInput;
 
-  constructor(viewer: ExampleViewer, input: UserCreateInput) {
+  constructor(viewer: ExampleViewerAlias, input: UserCreateInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new UserBuilder(
@@ -75,7 +75,7 @@ export class CreateUserActionBase
   getTriggers(): Trigger<
     User,
     UserBuilder<UserCreateInput, User | null>,
-    ExampleViewer,
+    ExampleViewerAlias,
     UserCreateInput,
     User | null
   >[] {
@@ -85,7 +85,7 @@ export class CreateUserActionBase
   getObservers(): Observer<
     User,
     UserBuilder<UserCreateInput, User | null>,
-    ExampleViewer,
+    ExampleViewerAlias,
     UserCreateInput,
     User | null
   >[] {
@@ -95,7 +95,7 @@ export class CreateUserActionBase
   getValidators(): Validator<
     User,
     UserBuilder<UserCreateInput, User | null>,
-    ExampleViewer,
+    ExampleViewerAlias,
     UserCreateInput,
     User | null
   >[] {
@@ -129,8 +129,8 @@ export class CreateUserActionBase
   }
 
   static create<T extends CreateUserActionBase>(
-    this: new (viewer: ExampleViewer, input: UserCreateInput) => T,
-    viewer: ExampleViewer,
+    this: new (viewer: ExampleViewerAlias, input: UserCreateInput) => T,
+    viewer: ExampleViewerAlias,
     input: UserCreateInput,
   ): T {
     return new this(viewer, input);

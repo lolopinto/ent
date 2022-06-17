@@ -21,14 +21,14 @@ import {
   ContactPhoneNumberBuilder,
   ContactPhoneNumberInput,
 } from "./contact_phone_number_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export class DeleteContactPhoneNumberActionBase
   implements
     Action<
       ContactPhoneNumber,
       ContactPhoneNumberBuilder<ContactPhoneNumberInput, ContactPhoneNumber>,
-      ExampleViewer,
+      ExampleViewerAlias,
       ContactPhoneNumberInput,
       ContactPhoneNumber
     >
@@ -37,10 +37,13 @@ export class DeleteContactPhoneNumberActionBase
     ContactPhoneNumberInput,
     ContactPhoneNumber
   >;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected readonly contactPhoneNumber: ContactPhoneNumber;
 
-  constructor(viewer: ExampleViewer, contactPhoneNumber: ContactPhoneNumber) {
+  constructor(
+    viewer: ExampleViewerAlias,
+    contactPhoneNumber: ContactPhoneNumber,
+  ) {
     this.viewer = viewer;
     this.builder = new ContactPhoneNumberBuilder(
       this.viewer,
@@ -58,7 +61,7 @@ export class DeleteContactPhoneNumberActionBase
   getTriggers(): Trigger<
     ContactPhoneNumber,
     ContactPhoneNumberBuilder<ContactPhoneNumberInput, ContactPhoneNumber>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ContactPhoneNumberInput,
     ContactPhoneNumber
   >[] {
@@ -68,7 +71,7 @@ export class DeleteContactPhoneNumberActionBase
   getObservers(): Observer<
     ContactPhoneNumber,
     ContactPhoneNumberBuilder<ContactPhoneNumberInput, ContactPhoneNumber>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ContactPhoneNumberInput,
     ContactPhoneNumber
   >[] {
@@ -78,7 +81,7 @@ export class DeleteContactPhoneNumberActionBase
   getValidators(): Validator<
     ContactPhoneNumber,
     ContactPhoneNumberBuilder<ContactPhoneNumberInput, ContactPhoneNumber>,
-    ExampleViewer,
+    ExampleViewerAlias,
     ContactPhoneNumberInput,
     ContactPhoneNumber
   >[] {
@@ -111,10 +114,10 @@ export class DeleteContactPhoneNumberActionBase
 
   static create<T extends DeleteContactPhoneNumberActionBase>(
     this: new (
-      viewer: ExampleViewer,
+      viewer: ExampleViewerAlias,
       contactPhoneNumber: ContactPhoneNumber,
     ) => T,
-    viewer: ExampleViewer,
+    viewer: ExampleViewerAlias,
     contactPhoneNumber: ContactPhoneNumber,
   ): T {
     return new this(viewer, contactPhoneNumber);
@@ -122,10 +125,10 @@ export class DeleteContactPhoneNumberActionBase
 
   static async saveXFromID<T extends DeleteContactPhoneNumberActionBase>(
     this: new (
-      viewer: ExampleViewer,
+      viewer: ExampleViewerAlias,
       contactPhoneNumber: ContactPhoneNumber,
     ) => T,
-    viewer: ExampleViewer,
+    viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<void> {
     const contactPhoneNumber = await ContactPhoneNumber.loadX(viewer, id);

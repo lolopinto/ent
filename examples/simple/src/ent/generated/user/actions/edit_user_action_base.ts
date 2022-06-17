@@ -18,7 +18,7 @@ import {
 } from "@snowtop/ent/action";
 import { User } from "../../..";
 import { UserBuilder } from "./user_builder";
-import { ExampleViewer } from "../../../../viewer/viewer";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 export interface UserEditInput {
   firstName?: string;
@@ -30,17 +30,17 @@ export class EditUserActionBase
     Action<
       User,
       UserBuilder<UserEditInput, User>,
-      ExampleViewer,
+      ExampleViewerAlias,
       UserEditInput,
       User
     >
 {
   public readonly builder: UserBuilder<UserEditInput, User>;
-  public readonly viewer: ExampleViewer;
+  public readonly viewer: ExampleViewerAlias;
   protected input: UserEditInput;
   protected readonly user: User;
 
-  constructor(viewer: ExampleViewer, user: User, input: UserEditInput) {
+  constructor(viewer: ExampleViewerAlias, user: User, input: UserEditInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new UserBuilder(
@@ -59,7 +59,7 @@ export class EditUserActionBase
   getTriggers(): Trigger<
     User,
     UserBuilder<UserEditInput, User>,
-    ExampleViewer,
+    ExampleViewerAlias,
     UserEditInput,
     User
   >[] {
@@ -69,7 +69,7 @@ export class EditUserActionBase
   getObservers(): Observer<
     User,
     UserBuilder<UserEditInput, User>,
-    ExampleViewer,
+    ExampleViewerAlias,
     UserEditInput,
     User
   >[] {
@@ -79,7 +79,7 @@ export class EditUserActionBase
   getValidators(): Validator<
     User,
     UserBuilder<UserEditInput, User>,
-    ExampleViewer,
+    ExampleViewerAlias,
     UserEditInput,
     User
   >[] {
@@ -113,8 +113,12 @@ export class EditUserActionBase
   }
 
   static create<T extends EditUserActionBase>(
-    this: new (viewer: ExampleViewer, user: User, input: UserEditInput) => T,
-    viewer: ExampleViewer,
+    this: new (
+      viewer: ExampleViewerAlias,
+      user: User,
+      input: UserEditInput,
+    ) => T,
+    viewer: ExampleViewerAlias,
     user: User,
     input: UserEditInput,
   ): T {
@@ -122,8 +126,12 @@ export class EditUserActionBase
   }
 
   static async saveXFromID<T extends EditUserActionBase>(
-    this: new (viewer: ExampleViewer, user: User, input: UserEditInput) => T,
-    viewer: ExampleViewer,
+    this: new (
+      viewer: ExampleViewerAlias,
+      user: User,
+      input: UserEditInput,
+    ) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
     input: UserEditInput,
   ): Promise<User> {
