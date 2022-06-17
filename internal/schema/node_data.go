@@ -612,3 +612,14 @@ func (nodeData *NodeData) GetBuilderMixinInfo(s *Schema) (*mixinInfo, error) {
 		Extends: extends.String(),
 	}, nil
 }
+
+func (nodeData *NodeData) GenerateGetIDInBuilder() bool {
+	idField := nodeData.FieldInfo.GetFieldByName("ID")
+	if idField == nil {
+		idField = nodeData.FieldInfo.GetFieldByName("id")
+	}
+	if idField == nil {
+		return false
+	}
+	return idField.HasDefaultValueOnCreate()
+}

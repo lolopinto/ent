@@ -56,10 +56,8 @@ export default class CreateContactAction extends CreateContactActionBase {
                 label: email.label,
                 contactID: builder,
               });
-              // use getPossibleUnsafeEntForPrivacy for this
-              const unsafe =
-                await action.builder.orchestrator.getPossibleUnsafeEntForPrivacy();
-              emailIds.push(unsafe!.id);
+              const newId = await action.builder.getEntID();
+              emailIds.push(newId);
               return action.changeset();
             }),
           );
@@ -86,8 +84,8 @@ export default class CreateContactAction extends CreateContactActionBase {
                   contactID: builder,
                 },
               );
-              const edited = await action.builder.orchestrator.getEditedData();
-              phoneNumberIds.push(edited.id);
+              const newId = await action.builder.getEntID();
+              phoneNumberIds.push(newId);
               return action.changeset();
             }),
           );
