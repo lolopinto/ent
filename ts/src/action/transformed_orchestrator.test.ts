@@ -5,7 +5,6 @@ import { LoggedOutViewer } from "../core/viewer";
 import { StringType, TimestampType } from "../schema/field";
 import {
   BaseEntSchema,
-  Field,
   Pattern,
   UpdateOperation,
   TransformedUpdateOperation,
@@ -581,6 +580,65 @@ function commonTests() {
     expect(contact3.data.first_name).toBe("Sansa");
     expect(contact3.data.last_name).toBe("Stark");
     verifyPostgres(2);
+  });
+
+  test("insert -> update no existingEnt returned", async () => {
+    const verifyPostgres = (ct: number) => {
+      const contacts = QueryRecorder.getData().get("contacts") || [];
+      if (DB.getDialect() !== Dialect.Postgres) {
+        return;
+      }
+      expect(contacts.length).toBe(ct);
+    };
+    verifyPostgres(0);
+    const action = getInsertContactAction(
+      new Map([
+        ["first_name", "Jon"],
+        ["last_name", "Snow"],
+      ]),
+    );
+    const contact = await action.saveX();
+    verifyPostgres(1);
+
+    const loader = getContactNewLoader();
+
+    const row = await loader.load(contact.id);
+    expect(row).toEqual({
+      id: contact.id,
+      first_name: "Jon",
+      last_name: "Snow",
+      deleted_at: null,
+    });
+
+    const tranformJonToAegon = (
+      stmt: UpdateOperation<Contact>,
+    ): TransformedUpdateOperation<Contact> | undefined => {
+      if (stmt.op != SQLStatementOperation.Insert || !stmt.data) {
+        return;
+      }
+
+      const firstName = stmt.data.get("first_name");
+      const lastName = stmt.data.get("last_name");
+
+      if (firstName == "Aegon" && lastName == "Targaryen") {
+        return {
+          op: SQLStatementOperation.Update,
+        };
+      }
+    };
+
+    const action2 = getInsertContactAction(
+      new Map([
+        ["first_name", "Aegon"],
+        ["last_name", "Targaryen"],
+      ]),
+    );
+    // @ts-ignore
+    action2.transformWrite = tranformJonToAegon;
+
+    await expect(action2.saveX()).rejects.toThrow(
+      /cannot transform an insert operation without providing an existing ent/,
+    );
   });
 }
 

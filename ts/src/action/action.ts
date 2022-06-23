@@ -135,7 +135,7 @@ export interface Action<
   getValidators?(): Validator<TEnt, TBuilder, TViewer, TInput, TExistingEnt>[];
   getInput(): TInput; // this input is passed to Triggers, Observers, Validators
   transformWrite?: (
-    stmt: UpdateOperation<TEnt>,
+    stmt: UpdateOperation<TEnt, TViewer>,
   ) =>
     | Promise<TransformedUpdateOperation<TEnt>>
     | TransformedUpdateOperation<TEnt>

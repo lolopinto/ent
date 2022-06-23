@@ -203,10 +203,16 @@ export enum SQLStatementOperation {
   Delete = "delete",
 }
 
-export interface UpdateOperation<T extends Ent> {
+export interface UpdateOperation<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> {
+  // TODO how should this affect builder.operation?
   op: SQLStatementOperation;
-  existingEnt: T | null;
-  viewer: Viewer;
+  builder: Builder<TEnt, TViewer>;
+  // input. same input that's passed to Triggers, Observers, Validators. includes action-only fields
+  input: Data;
+  // data that'll be saved in the db
   data?: Map<string, any>;
 }
 
@@ -563,10 +569,13 @@ export function getObjectLoaderProperties(
   };
 }
 
-export function getTransformedUpdateOp<T extends Ent>(
+export function getTransformedUpdateOp<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+>(
   value: SchemaInputType,
-  stmt: UpdateOperation<T>,
-): TransformedUpdateOperation<T> | null {
+  stmt: UpdateOperation<TEnt, TViewer>,
+): TransformedUpdateOperation<TEnt> | null {
   const schema = getSchema(value);
   if (!schema.patterns) {
     return null;
