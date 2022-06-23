@@ -640,6 +640,52 @@ function commonTests() {
       /cannot transform an insert operation without providing an existing ent/,
     );
   });
+
+  test("throw in transformWrite", async () => {
+    const verifyPostgres = (ct: number) => {
+      const contacts = QueryRecorder.getData().get("contacts") || [];
+      if (DB.getDialect() !== Dialect.Postgres) {
+        return;
+      }
+      expect(contacts.length).toBe(ct);
+    };
+    verifyPostgres(0);
+    const action = getInsertContactAction(
+      new Map([
+        ["first_name", "Jon"],
+        ["last_name", "Snow"],
+      ]),
+    );
+    const contact = await action.saveX();
+    verifyPostgres(1);
+
+    const loader = getContactNewLoader();
+
+    const row = await loader.load(contact.id);
+    expect(row).toEqual({
+      id: contact.id,
+      first_name: "Jon",
+      last_name: "Snow",
+      deleted_at: null,
+    });
+
+    const tranformJonToAegon = (
+      stmt: UpdateOperation<Contact>,
+    ): TransformedUpdateOperation<Contact> | undefined => {
+      throw new Error("test failure");
+    };
+
+    const action2 = getInsertContactAction(
+      new Map([
+        ["first_name", "Aegon"],
+        ["last_name", "Targaryen"],
+      ]),
+    );
+    // @ts-ignore
+    action2.transformWrite = tranformJonToAegon;
+
+    await expect(action2.saveX()).rejects.toThrow(/test failure/);
+  });
 }
 
 // TODO trait implemented...
