@@ -167,7 +167,7 @@ export class ContactPhoneNumberBase implements Ent<ExampleViewerAlias> {
     return ContactPhoneNumberBase.getSchemaFields().get(key);
   }
 
-  async loadContact(): Promise<Contact | null> {
+  loadContact(): Promise<Contact | null> {
     return loadEnt(this.viewer, this.contactID, Contact.loaderOptions());
   }
 

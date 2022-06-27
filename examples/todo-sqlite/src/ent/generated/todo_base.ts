@@ -204,7 +204,7 @@ export class TodoBase {
     return TodoToTagsQuery.query(this.viewer, this.id);
   }
 
-  async loadCreator(): Promise<Account | null> {
+  loadCreator(): Promise<Account | null> {
     return loadEnt(this.viewer, this.creatorID, Account.loaderOptions());
   }
 

@@ -230,7 +230,7 @@ export class EventBase {
     return EventToGuestsQuery.query(this.viewer, this.id);
   }
 
-  async loadCreator(): Promise<User | null> {
+  loadCreator(): Promise<User | null> {
     return loadEnt(this.viewer, this.creatorID, User.loaderOptions());
   }
 

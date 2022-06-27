@@ -201,7 +201,7 @@ export class TagBase {
     return TagToTodosQuery.query(this.viewer, this.id);
   }
 
-  async loadOwner(): Promise<Account | null> {
+  loadOwner(): Promise<Account | null> {
     return loadEnt(this.viewer, this.ownerID, Account.loaderOptions());
   }
 
