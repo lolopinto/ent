@@ -6,9 +6,8 @@ import { log } from "./logger";
 import { Context } from "./base";
 
 // RequestBasedContext e.g. from an HTTP request with a server/response conponent
-export interface RequestContext<TViewer extends Viewer = Viewer>
-  extends Context<TViewer> {
-  authViewer(viewer: TViewer): Promise<void>; //logs user in and changes viewer to this
+export interface RequestContext extends Context {
+  authViewer(viewer: Viewer): Promise<void>; //logs user in and changes viewer to this
   logout(): Promise<void>;
   request: IncomingMessage;
   response: ServerResponse;

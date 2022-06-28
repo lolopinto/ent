@@ -13,7 +13,10 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { Event, GuestGroup } from "src/ent/";
-import { GuestGroupBuilder } from "src/ent/guest_group/actions/generated/guest_group_builder";
+import {
+  GuestGroupBuilder,
+  GuestGroupInput,
+} from "src/ent/guest_group/actions/generated/guest_group_builder";
 
 interface customGuestInput {
   name: string;
@@ -27,15 +30,8 @@ export interface GuestGroupCreateInput {
   guests?: customGuestInput[] | null;
 }
 
-export class CreateGuestGroupActionBase
-  implements
-    Action<
-      GuestGroup,
-      GuestGroupBuilder<GuestGroupCreateInput>,
-      GuestGroupCreateInput
-    >
-{
-  public readonly builder: GuestGroupBuilder<GuestGroupCreateInput>;
+export class CreateGuestGroupActionBase implements Action<GuestGroup> {
+  public readonly builder: GuestGroupBuilder;
   public readonly viewer: Viewer;
   protected input: GuestGroupCreateInput;
 
@@ -49,11 +45,11 @@ export class CreateGuestGroupActionBase
     );
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<GuestGroup> {
+  getPrivacyPolicy(): PrivacyPolicy {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): GuestGroupCreateInput {
+  getInput(): GuestGroupInput {
     return this.input;
   }
 

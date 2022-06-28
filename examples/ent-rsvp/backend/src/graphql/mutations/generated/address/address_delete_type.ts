@@ -27,7 +27,7 @@ export const AddressDeleteInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     addressID: {
       description: "id of Address",
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -46,11 +46,11 @@ export const AddressDeleteType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customAddressDeleteInput }
 > = {
-  type: new GraphQLNonNull(AddressDeletePayloadType),
+  type: GraphQLNonNull(AddressDeletePayloadType),
   args: {
     input: {
       description: "",
-      type: new GraphQLNonNull(AddressDeleteInputType),
+      type: GraphQLNonNull(AddressDeleteInputType),
     },
   },
   resolve: async (

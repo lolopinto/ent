@@ -2,34 +2,30 @@
 {{reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "saveBuilder" "saveBuilderX" "Orchestrator"}}
 
 {{ $cfg := .CodePath -}}
-{{ $schema := .Schema -}}
 
 {{with .NodeData -}}
 {{ $schemaPath := .GetSchemaPath }}
 {{ reserveDefaultImport $schemaPath "schema"}}
 {{ reserveImport "src/ent/generated/const" "EdgeType" "NodeType" }}
-{{$loaderInfo := printf "%sLoaderInfo" .NodeInstance -}}
-{{ reserveImport "src/ent/generated/loaders" $loaderInfo -}}
 
 
-{{ range .GetImportPathsForDependencies $schema -}}
+{{ range .GetImportPathsForDependencies -}}
   {{ reserveImportPath . true}}
 {{ end}}
 
-{{$builder := printf "%sBuilder" .Node}}
-{{$input := printf "%sInput" .Node}}
-
-export interface {{$input}} {
+export interface {{.Node}}Input {
   {{range $field := .FieldInfo.GetEditableFields -}}
-    {{$type := $field.TsBuilderType $cfg -}}
-      {{range $field.TsBuilderImports $cfg -}}
+    {{$type := $field.TsBuilderType -}}
+      {{range $field.TsBuilderImports -}}
         {{ reserveImportPath . true -}}
         {{ $ignore := useImport .Import -}}
       {{end -}}
     {{$field.TsBuilderFieldName}}?: {{$type}};
   {{end -}}
-  // allow other properties. useful for action-only fields
-  [x: string]: any;
+}
+
+export interface {{.Node}}Action extends {{useImport "Action"}}<{{useImport .Node}}> {
+  getInput(): {{.Node}}Input;
 }
 
 {{/* TODO better way of doing this? */}}
@@ -40,60 +36,23 @@ function randomNum(): string {
 }
 
 {{$node := useImport .Node}}
+{{$builder := printf "%sBuilder" .Node}}
+{{$input := printf "%sInput" .Node }}
 
-{{$viewerInfo := $cfg.GetTemplatizedViewer -}}
-{{ reserveImportPath $viewerInfo.GetImportPath false -}}
-{{$viewerType := useImport $viewerInfo.GetImport -}}
-
-{{$mixinInfo := .GetBuilderMixinInfo $schema -}}
-{{$hasBuilderMixin := $mixinInfo.Imports -}}
-{{ if $hasBuilderMixin -}}
-  class Base {
-    // @ts-ignore not assigning. need for Mixin
-    orchestrator: {{useImport "Orchestrator"}}<{{$node}}, any, {{$viewerType}}>;
-
-    constructor() {}
-
-    isBuilder<T extends {{useImport "Ent"}}>(
-      node: {{useImport "ID"}} | T | {{useImport "Builder"}}<T, any>,
-    ): node is {{useImport "Builder"}}<T, any> {
-      return (node as {{useImport "Builder"}}<T, any>).placeholderID !== undefined;
-    }
-  }
-{{ end}}
-
-type MaybeNull<T extends Ent> = T | null;
-type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
-
-export class {{$builder}}<
-  TInput extends {{$input}} = {{$input}},
-  TExistingEnt extends TMaybleNullableEnt<{{$node}}> = {{$node}} | null,
-> 
-
-{{ if $hasBuilderMixin }}
-  {{ range $mixinInfo.Imports -}}
-    {{ $ignore := useImport .Import -}}
-  {{end -}}
-  extends {{$mixinInfo.Extends }}
-{{ end -}}
-
-implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
-  orchestrator: {{useImport "Orchestrator"}}<{{$node}}, TInput, {{$viewerType}}, TExistingEnt>;
+export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
+  orchestrator: {{useImport "Orchestrator"}}<{{$node}}>;
   readonly placeholderID: {{useImport "ID"}};
   readonly ent = {{$node}};
   readonly nodeType = {{useImport "NodeType"}}.{{$node}};
-  private input: TInput;
+  private input: {{$input}};
   private m: Map<string, any> = new Map();
 
   public constructor(
-    public readonly viewer: {{$viewerType}},
+    public readonly viewer: {{useImport "Viewer"}},
     public readonly operation: {{useImport "WriteOperation"}},
-    action: {{useImport "Action"}}<{{$node}}, {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>, {{$viewerType}}, TInput, TExistingEnt>,
-    public readonly existingEnt: TExistingEnt,
+    action: {{.Node}}Action,
+    public readonly existingEnt?: {{$node}} | undefined,
   ) {
-    {{ if $hasBuilderMixin }}
-      super();
-    {{ end -}}
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-{{$node}}`;
     this.input = action.getInput();
     const updateInput = (d: {{$input}}) => this.updateInput.apply(this, [d]);
@@ -109,15 +68,14 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
       {{useImport "schema"}},
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
-      fieldInfo: {{useImport $loaderInfo}}.fieldInfo,
     });
   }
 
-  getInput(): TInput {
+  getInput(): {{.Node}}Input {
     return this.input;
   }
 
-  updateInput(input: {{$input}}) {
+  updateInput(input: {{.Node}}Input) {
     // override input
     this.input = {
       ...this.input,
@@ -139,20 +97,6 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
     return this.m.get(k);
   }
 
-  {{if .GenerateGetIDInBuilder -}}
-    // this returns the id of the existing ent or the id of the ent that's being created
-    async getEntID() {
-      if (this.existingEnt) {
-        return this.existingEnt.id;
-      }
-      const edited = await this.orchestrator.getEditedData();
-      if (!edited.id) {
-        throw new Error(`couldn't get the id field. should have been set by 'defaultValueOnCreate'`);
-      }
-      return edited.id;
-    }
-  {{ end -}}
-
   {{if .HasAssociationEdges -}}
     // this gets the inputs that have been written for a given edgeType and operation
     // WriteOperation.Insert for adding an edge and WriteOperation.Delete for deleting an edge
@@ -165,9 +109,81 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
     }
   {{end -}}
 
-  {{ template "edge_builder.tmpl" .BuilderEdges $schema -}}
+  {{ $edgeInfos := edgeInfos .EdgeInfo.Associations -}}
+  {{ range $edge := $edgeInfos -}}  
+    {{ $node := useImport .Node -}}
+    {{ $polymorphicEdge := $edge.Edge.PolymorphicEdge -}}
+  {{ if $polymorphicEdge -}}
+    {{$edge.TSAddMethodName}}(...nodes: ({{$node}} | Builder<{{$node}}>)[]): {{$builder}} {
+  {{ else -}}
+  {{/* for PolymorphicEdges, this API doesn't work since we don't know the type. callers should call addLikerID in a map */}}  
+    {{$edge.TSAddMethodName}}(...nodes: (ID | {{$node}} | Builder<{{$node}}>)[]): {{$builder}} {
+  {{ end -}}
+    for (const node of nodes) {
+      {{ if $polymorphicEdge -}}
+        if (this.isBuilder(node)) {
+          this.orchestrator.addOutboundEdge(
+            node, 
+            {{useImport "EdgeType"}}.{{$edge.TSEdgeConst}},
+            // nodeType will be gotten from Executor later
+            "",
+          );
+        } else {
+          this.orchestrator.addOutboundEdge(
+            node.id, 
+            {{useImport "EdgeType"}}.{{$edge.TSEdgeConst}},
+            node.nodeType,
+          );
+        }
+      {{ else -}}
+        if (this.isBuilder(node)) {
+          this.{{$edge.TSAddIDMethodName}}(node);
+        } else if (typeof node === "object") {
+          this.{{$edge.TSAddIDMethodName}}(node.id);
+        } else {
+          this.{{$edge.TSAddIDMethodName}}(node);
+        }
+      {{ end -}}
+    }
+    return this;
+  }
 
-  async build(): Promise<{{useImport "Changeset"}}> {
+  {{$edge.TSAddIDMethodName}}(
+    id: {{useImport "ID"}} | Builder<{{$node}}>, 
+    {{ if $polymorphicEdge -}}
+      nodeType: {{useImport "NodeType"}},
+    {{ end -}}
+    options?: {{useImport "AssocEdgeInputOptions"}}
+  ): {{$builder}} {
+    {{/* TODO need inbound edges also */}}
+    this.orchestrator.addOutboundEdge(
+      id, 
+      {{useImport "EdgeType"}}.{{$edge.TSEdgeConst}},
+      {{ if $polymorphicEdge -}}
+        nodeType,
+      {{ else -}}
+        {{useImport "NodeType"}}.{{.Node}},
+      {{end -}}
+      options,
+    );
+    return this;
+  }
+
+  {{$edge.TSRemoveMethodName}}(...nodes: (ID | {{$node}})[]): {{$builder}} {
+    for (const node of nodes) {
+      if (typeof node === "object") {
+        this.orchestrator.removeOutboundEdge(node.id, {{useImport "EdgeType"}}.{{$edge.TSEdgeConst}});
+      } else {
+        this.orchestrator.removeOutboundEdge(node, {{useImport "EdgeType"}}.{{$edge.TSEdgeConst}});
+      }
+    }
+    return this;
+  }
+
+  {{end -}}
+
+
+  async build(): Promise<{{useImport "Changeset"}}<{{$node}}>> {
     return this.orchestrator.build();
   }
 
@@ -246,14 +262,14 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
     return result;
   }
 
-  isBuilder<T extends {{useImport "Ent"}}>(node: ID | T | Builder<T, any>): node is Builder<T, any> {
-    return (node as Builder<T, any>).placeholderID !== undefined;
+  isBuilder(node: ID | {{useImport "Ent"}} | Builder<{{useImport "Ent"}}>): node is Builder<{{useImport "Ent"}}> {
+    return (node as Builder<{{useImport "Ent"}}>).placeholderID !== undefined;
   }
 
   {{range $field := .FieldInfo.GetEditableFields}}
     {{$tsFieldName := $field.TsBuilderFieldName -}}
     // get value of {{$field.FieldName}}. Retrieves it from the input if specified or takes it from existingEnt
-    getNew{{$field.CamelCaseName}}Value(): {{$field.TsBuilderUnionType $cfg}} | undefined {
+    getNew{{$field.CamelCaseName}}Value(): {{$field.TsBuilderUnionType}} | undefined {
     {{/** hmm not ideal for these accessors to not work...*/}}
       {{if $field.Private $cfg -}}
         return this.input.{{$tsFieldName}};

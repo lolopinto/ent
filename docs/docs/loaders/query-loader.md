@@ -5,7 +5,7 @@ sidebar_label: "QueryLoader"
 
 # QueryLoader
 
-QueryLoader is a [`Loader`](/docs/loaders/loader) which is used to fetch multiple rows in the database.
+QueryLoader is a [ `Loader` ](/docs/loaders/loader) which is used to fetch multiple rows in the database.
 
 It's used by [index based queries](/docs/core-concepts/ent-query#index-based-query) as well as [custom ent queries](/docs/custom-data-access/custom-queries#custom-entquery).
 
@@ -40,24 +40,27 @@ Note that at least one of `groupCol` and `clause` must be provided.
 
 ## Examples
 
-Given the following schema:
+Given the following schema, 
 
-```ts title="src/schema/todo_schema.ts"
-const TodoSchema = new EntSchema({
-  fields: {
-    text: StringType(),
-    completed: BooleanType({
+```ts title="src/schema/todo.ts"
+export default class Todo extends BaseEntSchema {
+  fields: Field[] = [
+
+    StringType({ name: "Text" }),
+    BooleanType({
+      name: "Completed",
       index: true,
       defaultValueOnCreate: () => {
         return false;
       },
     }),
-    creatorID: UUIDType({
+    UUIDType({
+      name: "creatorID",
       foreignKey: { schema: "Account", column: "ID" },
     }),
-  }, 
-}); 
-export default TodoSchema; 
+
+  ]; 
+}
 
 ```
 

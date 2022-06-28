@@ -12,11 +12,11 @@ The Input is usually a subset of all the fields exposed in the schema for the En
 
 For example, in the [create action](/docs/actions/create-action), the input looks as follows:
 
-```ts title="src/ent/generated/event/actions/create_event_action_base.ts"
+```ts title="src/ent/event/actions/generated/create_event_action_base.ts"
 
 export interface EventCreateInput {
   name: string;
-  creatorID: ID | Builder<User, Viewer>;
+  creatorID: ID | Builder<User>;
   startTime: Date;
   endTime?: Date | null;
   location: string;
@@ -25,10 +25,10 @@ export interface EventCreateInput {
 
 but in the [edit action](/docs/actions/edit-action), it looks slightly different with each field optional:
 
-```ts title="src/ent/generated/event/actions/edit_event_action_base.ts"
+```ts title="src/ent/event/actions/generated/edit_event_action_base.ts"
 export interface EventEditInput {
   name?: string;
-  creatorID?: ID | Builder<User, Viewer>;
+  creatorID?: ID | Builder<User>;
   startTime?: Date;
   endTime?: Date | null;
   location?: string;
@@ -49,16 +49,14 @@ For example, in a confirm email action, can update the `emailVerified` field as 
 
 export default ConfirmEmailAction extends ConfirmEmailActionBase {
 
-  getTriggers() {
-    return [
-      {
-        changeset(builder: UserBuilder<ConfirmEmailInput, Viewer>, input: ConfirmEmailInput) {
-          builder.updateInput({
-            emailVerified:true,
-          });
-        },
+  triggers: Trigger<User>[] = [
+    {
+      changeset(builder: UserBuilder, input: ConfirmEmailInput) {
+        builder.updateInput({
+          emailVerified:true,
+        });
       },
-    ];
-  }
+    },
+  ];
 }
 ```

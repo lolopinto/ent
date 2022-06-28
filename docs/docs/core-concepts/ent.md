@@ -9,10 +9,10 @@ The Ent represents a single node in the graph. Generated from the [schema](/docs
 Each generated `Ent` implements the following interface:
 
 ```ts
-interface Ent<TViewer extends Viewer = Viewer> {
+interface Ent {
   id: ID;
-  viewer: TViewer;
-  getPrivacyPolicy(): PrivacyPolicy<this, TViewer>;
+  viewer: Viewer;
+  privacyPolicy: PrivacyPolicy;
   nodeType: string;
 }
 ```
@@ -27,7 +27,7 @@ id of the Ent. usually the primary key in the database.
 
 The [`Viewer`](/docs/core-concepts/viewer) who loaded the Ent. The [Privacy Policy](/docs/core-concepts/privacy-policy) associated with this Ent must permit the viewer to see this Ent otherwise it's not returned by the system.
 
-### getPrivacyPolicy
+### privacyPolicy
 
 [Privacy Policy](/docs/core-concepts/privacy-policy) used to determine if the Viewer can see this object.
 
@@ -43,20 +43,19 @@ Also used when this is id is stored in a [polymorphic](/docs/ent-schema/fields#p
 
 Given the following schema:
 
-```ts title="src/schema/user_schema.ts"
-import { EntSchema, StringType } from "@snowtop/ent"; 
-import { EmailType } from "@snowtop/ent-email"; 
-import { PasswordType } from "@snowtop/ent-password"; 
+```ts title="src/schema/user.ts"
+import { BaseEntSchema, Field, StringType } from "@snowtop/ent";
+import { EmailType } from "@snowtop/ent-email";
+import { PasswordType } from "@snowtop/ent-password";
 
-const UserSchema = new EntSchema({
-  fields: {
-    FirstName: StringType(),
-    LastName: StringType(),
-    EmailAddress: EmailType(),
-    Password: PasswordType(),
-  }, 
-}); 
-
+export default class User extends BaseEntSchema {
+  fields: Field[] = [
+    StringType({ name: "FirstName" }),
+    StringType({ name: "LastName" }),
+    EmailType({ name: "EmailAddress" }),
+    PasswordType({ name: "Password" }),
+  ];
+}
 ```
 
 we have the following classes generated
@@ -84,9 +83,7 @@ export class UserBase {
   }
 
   // default privacyPolicy is Viewer can see themselves
-  getPrivacyPolicy(): PrivacyPolicy<this> {
-    return AllowIfViewerPrivacyPolicy;
-  }
+  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
 
   static async load<T extends UserBase>(
     this: new (viewer: Viewer, data: Data) => T,
@@ -108,17 +105,16 @@ export class UserBase {
 ```
 
 ```ts title="src/ent/user.ts"
-import { UserBase } from "src/ent/internal"; 
+import { UserBase } from "src/ent/internal";
 
 export class User extends UserBase {}
-
 ```
 
 The `UserBase` class is where all generated code related to User is put and is regenerated everytime the schema is changed. The `User` class is generated **once** and then the developer can add new functionality there over time as needed.
 
 ## Privacy Policy
 
-The default `PrivacyPolicy` that comes with the framework is that the `Viewer` can see themselves. This usually isn't sufficient for any real application so we provide a way to override that. This can be done by just overriding the `getPrivacyPolicy` method in the `User` class.
+The default `PrivacyPolicy` that comes with the framework is that the `Viewer` can see themselves. This usually isn't sufficient for any real application so we provide a way to override that. This can be done by just overriding the `privacyPolicy` field in the `User` class.
 
 For example, to make it so that anyone can see any `User`, you can change `src/ent/user.ts` as follows:
 
@@ -127,9 +123,7 @@ import { UserBase } from "src/ent/internal";
 import { AlwaysAllowPrivacyPolicy, PrivacyPolicy } from "@snowtop/ent"
 
 export class User extends UserBase {
-  getPrivacyPolicy() {
-    return AlwaysAllowPrivacyPolicy;
-  }
+  privacyPolicy: PrivacyPolicy = AlwaysAllowPrivacyPolicy;
 }
 ```
 
@@ -137,10 +131,10 @@ This new Policy takes precedence over the default one and now the User is visibl
 
 ## Loading
 
-To load a `User` , a [`Viewer`](/docs/core-concepts/viewer) and its id are needed
+To load a `User`, a [`Viewer`](/docs/core-concepts/viewer) and its id are needed
 
 ```ts
-const user = await User.load(viewer, id);
+const user: User | null = await User.load(viewer, id);
 ```
 
 That performs the privacy check and either returns the ent associated with the id or returns null.
@@ -148,30 +142,27 @@ That performs the privacy check and either returns the ent associated with the i
 If you know the ent is loadable or want to throw an exception if it's not, you can use the `loadX` variant of the same API:
 
 ```ts
-const user = await User.loadX(viewer, id);
+const user: User = await User.loadX(viewer, id);
 ```
 
 ## Custom functionality
 
 To add custom functionality, just add it in the `User` class.
 
-For example, to return how long the user's account has existed:
+For example, to return how long the user's account has existed,
 
 ```ts title="src/ent/user.ts"
-import { UserBase } from "src/ent/internal"; 
+import { UserBase } from "src/ent/internal";
 import { AlwaysAllowPrivacyPolicy, ID, LoggedOutViewer, PrivacyPolicy } from "@snowtop/ent"
-import { Interval } from "luxon"; 
+import { Interval } from "luxon";
 
 export class User extends UserBase {
-  getPrivacyPolicy() {
-    return AlwaysAllowPrivacyPolicy;
-  }
+  privacyPolicy: PrivacyPolicy = AlwaysAllowPrivacyPolicy;
 
   howLong() {
     return Interval.fromDateTimes(this.createdAt, new Date()).count('seconds');
   }
 }
-
 ```
 
 and when the `User` is loaded, can access the new method since an instance of `User` is what's returned.
@@ -187,30 +178,28 @@ Because the privacy policy is applied *everywhere* an object is loaded consisten
 
 For example, given the following schema:
 
-```ts  title="src/schema/event_schema.ts"
-const EventSchema = new EntSchema({
-  fields: {
+```ts  title="src/schema/event.ts"
+export default class Event extends BaseEntSchema implements Schema {
+  fields: Field[] = [
     /// ... more fields
-    creatorID: UUIDType({
+    UUIDType({
       foreignKey: { schema: "User", column: "id" },
+      name: "creatorID",
     }),
     // or 
-    creatorID: UUIDType({
+    UUIDType({
+      name: "creatorID",
       fieldEdge: { schema: "User", inverseEdge: "createdEvents" },
     }),
-  }, 
-}); 
-export default EventSchema; 
-
+  ];
 ```
 
 the following accessors are added:
 
-```ts title="src/ent/generated/event_base.ts"
+```ts title="src/schema/generated/event_base.ts"
 export class EventBase {
-  /// bunch of stuff
-  
-  loadCreator(): Promise<User | null> {
+/// bunch of stuff
+  async loadCreator(): Promise<User | null> {
     return loadEnt(this.viewer, this.creatorID, User.loaderOptions());
   }
 

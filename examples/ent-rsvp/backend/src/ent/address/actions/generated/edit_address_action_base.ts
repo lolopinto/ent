@@ -14,7 +14,10 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { Address } from "src/ent/";
-import { AddressBuilder } from "src/ent/address/actions/generated/address_builder";
+import {
+  AddressBuilder,
+  AddressInput,
+} from "src/ent/address/actions/generated/address_builder";
 
 export interface AddressEditInput {
   street?: string;
@@ -26,11 +29,8 @@ export interface AddressEditInput {
   ownerType?: string;
 }
 
-export class EditAddressActionBase
-  implements
-    Action<Address, AddressBuilder<AddressEditInput>, AddressEditInput>
-{
-  public readonly builder: AddressBuilder<AddressEditInput>;
+export class EditAddressActionBase implements Action<Address> {
+  public readonly builder: AddressBuilder;
   public readonly viewer: Viewer;
   protected input: AddressEditInput;
   protected address: Address;
@@ -47,11 +47,11 @@ export class EditAddressActionBase
     this.address = address;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Address> {
+  getPrivacyPolicy(): PrivacyPolicy {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): AddressEditInput {
+  getInput(): AddressInput {
     return this.input;
   }
 

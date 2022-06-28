@@ -1,11 +1,6 @@
 {{$fieldConfig := .FieldConfig -}}
 {{$baseObj := .Base -}}
 
-{{ $cfg := .Config -}}
-{{$viewerInfo := $cfg.GetTemplatizedViewer -}}
-{{ reserveImportPath $viewerInfo.GetImportPath false -}}
-{{$viewerType := useImport $viewerInfo.GetImport -}}
-
 {{$prefix := printf "const %s" $fieldConfig.Name -}}
 {{ if $fieldConfig.Exported -}}
   {{$prefix = printf "export %s" $prefix -}}
@@ -25,25 +20,25 @@
 {{$prefix}}: {{useImport "GraphQLFieldConfig"}}<
   undefined,
   {{ if ne $fieldConfig.Arg "" -}}
-    {{useImport "RequestContext"}}<{{$viewerType}}>,
+    {{useImport "RequestContext"}},
     {{$fieldConfig.Arg}}
   {{ else }}
-    {{useImport "RequestContext"}}<{{$viewerType}}>
+    {{useImport "RequestContext"}}
   {{ end -}}
 > = {
   type: {{$fieldConfig.FieldType}},
   {{ template "render_args.tmpl" (dict "Base" $baseObj "Args" $fieldConfig.Args) -}}
   {{if $fieldConfig.ReturnTypeHint -}}
     {{ if $fieldConfig.ResolveMethodArg -}}
-      resolve: async (_source, {{$fieldConfig.ResolveMethodArg}}, context:{{useImport "RequestContext"}}<{{$viewerType}}>, _info: {{useImport "GraphQLResolveInfo"}}): {{$fieldConfig.ReturnTypeHint}} => {
+      resolve: async (_source, {{$fieldConfig.ResolveMethodArg}}, context:{{useImport "RequestContext"}}, _info: {{useImport "GraphQLResolveInfo"}}): {{$fieldConfig.ReturnTypeHint}} => {
     {{ else -}}
-      resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useImport "RequestContext"}}<{{$viewerType}}>, _info: {{useImport "GraphQLResolveInfo"}}): {{$fieldConfig.ReturnTypeHint}} => {
+      resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useImport "RequestContext"}}, _info: {{useImport "GraphQLResolveInfo"}}): {{$fieldConfig.ReturnTypeHint}} => {
     {{end -}}
   {{ else -}}
     {{ if $fieldConfig.ResolveMethodArg -}}
-      resolve: async (_source, {{$fieldConfig.ResolveMethodArg}}, context:{{useImport "RequestContext"}}<{{$viewerType}}>, _info: {{useImport "GraphQLResolveInfo"}}) => {
+      resolve: async (_source, {{$fieldConfig.ResolveMethodArg}}, context:{{useImport "RequestContext"}}, _info: {{useImport "GraphQLResolveInfo"}}) => {
     {{else -}}
-      resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useImport "RequestContext"}}<{{$viewerType}}>, _info: {{useImport "GraphQLResolveInfo"}}) => {
+      resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useImport "RequestContext"}}, _info: {{useImport "GraphQLResolveInfo"}}) => {
     {{end -}}
   {{ end -}}
     {{range $line := $fieldConfig.FunctionContents -}}

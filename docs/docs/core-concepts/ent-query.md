@@ -12,19 +12,24 @@ For every [edge](/docs/ent-schema/edges) configured, we generate an EntQuery for
 
 For example, given the following schema:
 
-```ts title="src/schema/user_schema.ts"
-const UserSchema = new EntSchema({
-  fields: {}, 
+```ts title="src/schema/user.ts"
+export default class User extends BaseEntSchema implements Schema {
+  fields: Field[] = [
 
-  edges: [
+    //...
+
+  ]; 
+
+  edges: Edge[] = [
+
     {
       name: "friends",
       schemaName: "User",
       symmetric: true,
     },
-  ] 
-}); 
-export default UserSchema; 
+
+  ]; 
+}
 
 ```
 
@@ -140,13 +145,14 @@ query friendsQuery($id: ID!, $cursor: String!) {
 
 For an [indexed foreign key](/docs/ent-schema/fields#foreignkey) or an [index](/docs/ent-schema/fields#index) e.g.
 
-```ts title="src/schema/contact_schema.ts"
-const ContactSchema = new EntSchema({
-  fields: {
-    userID: UUIDType({ foreignKey: { schema: "User", column: "ID" } }),
-  }, 
-}); 
-export const ContactSchema; 
+```ts title="src/schema/contact.ts"
+export default class Contact extends BaseEntSchema implements Schema {
+  fields: Field[] = [
+
+    UUIDType({ name: "userID", foreignKey: { schema: "User", column: "ID" } }),
+
+  ]; 
+}
 
 ```
 
@@ -177,7 +183,7 @@ and we can then query all kinds of information from the query.
 
 Right now, the sort key is the `created_at` column which is **not** indexed so this query isn't as fast as it should be. Need feedback on best options here since we don't want to use `id` since it's not going to be a stable sort since we're not using an autoincrement id column.
 
-### index graphql
+### graphql
 
 This EntQuery is also exposed as a GraphQL [Connection](https://graphql.org/learn/pagination/#complete-connection-model) and follows the [Relay Spec](https://relay.dev/graphql/connections.htm).
 
@@ -315,23 +321,7 @@ and to query a user's oldest friends:
   edges.map(edge => edge.howLong());
 ```
 
-## privacy
-
-By default, there's no permissions for queries and the edge is always visible. This isn't always what we want so we provide the ability to indicate who can see the edge.
-
-This can be done by adding a [Privacy Policy](/docs/core-concepts/privacy-policy) to the query class.
-
-For example, to indicate that a user's bookmarks in a social app are visible just to the user:
-
-```ts
-class UserToBookmarksQuery extends UserToBookmarksQueryBase {
-  getPrivacyPolicy() {
-    return AllowIfViewerPrivacyPolicy;
-  }
-}
-```
-
-This indicates that just the user can see the edge from the user to their bookmarks. It doesn't affect the privacy of the underlying links, posts, tweets etc which have their own privacy.
+The Query class will eventually be customizable to add a [Privacy Policy](/docs/core-concepts/privacy-policy) which determines who can see the edge.
 
 ## ents
 

@@ -62,44 +62,40 @@ type CustomType struct {
 	TSImportPath string `json:"tsImportPath,omitempty"`
 }
 
+func (item *CustomItem) addImportImpl(imps ...string) {
+	for _, imp := range imps {
+		// TODO this doesn't work for the new custom types?
+		item.imports = append(item.imports, &tsimport.ImportPath{
+			ImportPath: "graphql",
+			Import:     imp,
+		})
+	}
+}
+
 func (item *CustomItem) initialize() error {
 	switch item.Nullable {
 	case NullableTrue:
 		if item.List {
-			item.imports = []*tsimport.ImportPath{
-				tsimport.NewGQLClassImportPath("GraphQLList"),
-				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-			}
+			item.addImportImpl("GraphQLList", "GraphQLNonNull")
 		}
 
 	case NullableContents:
 		if !item.List {
 			return fmt.Errorf("list required to use this option")
 		}
-		item.imports = []*tsimport.ImportPath{
-			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-			tsimport.NewGQLClassImportPath("GraphQLList"),
-		}
+		item.addImportImpl("GraphQLNonNull", "GraphQLList")
 
 	case NullableContentsAndList:
 		if !item.List {
 			return fmt.Errorf("list required to use this option")
 		}
-		item.imports = []*tsimport.ImportPath{
-			tsimport.NewGQLClassImportPath("GraphQLList"),
-		}
+		item.addImportImpl("GraphQLList")
 
 	default:
 		if item.List {
-			item.imports = []*tsimport.ImportPath{
-				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-				tsimport.NewGQLClassImportPath("GraphQLList"),
-				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-			}
+			item.addImportImpl("GraphQLNonNull", "GraphQLList", "GraphQLNonNull")
 		} else {
-			item.imports = []*tsimport.ImportPath{
-				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-			}
+			item.addImportImpl("GraphQLNonNull")
 		}
 	}
 

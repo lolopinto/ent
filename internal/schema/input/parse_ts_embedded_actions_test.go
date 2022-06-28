@@ -14,13 +14,13 @@ func TestParseEmbeddedActions(t *testing.T) {
 			code: map[string]string{
 				"address.ts": getAddressCode(),
 				"event.ts": getCodeWithSchema(`
-				import {Schema, Action, FieldMap, ActionOperation, StringType, TimestampType} from "{schema}";
+				import {Schema, Action, Field, ActionOperation, StringType, TimestampType} from "{schema}";
 
 				export default class Event implements Schema {
-					fields: FieldMap = {
-						name: StringType(),
-						start_time: TimestampType(),
-					};
+					fields: Field[] = [
+						StringType({name: "name"}),
+						TimestampType({name: "start_time"}),
+					];
 
 					actions: Action[] = [
 						{
@@ -74,13 +74,13 @@ func TestParseEmbeddedActions(t *testing.T) {
 			code: map[string]string{
 				"address.ts": getAddressCode(),
 				"event.ts": getCodeWithSchema(`
-				import {Schema, Action, FieldMap, ActionOperation, StringType, TimestampType} from "{schema}";
+				import {Schema, Action, Field, ActionOperation, StringType, TimestampType} from "{schema}";
 
 				export default class Event implements Schema {
-					fields: FieldMap = {
-						name: StringType(),
-						start_time: TimestampType(),
-					};
+					fields: Field[] = [
+						StringType({name: "name"}),
+						TimestampType({name: "start_time"}),
+					];
 
 					actions: Action[] = [
 						{
@@ -138,13 +138,13 @@ func TestParseEmbeddedActions(t *testing.T) {
 			code: map[string]string{
 				"address.ts": getAddressCode(),
 				"event.ts": getCodeWithSchema(`
-				import {Schema, Action, FieldMap, ActionOperation, StringType, TimestampType} from "{schema}";
+				import {Schema, Action, Field, ActionOperation, StringType, TimestampType} from "{schema}";
 
 				export default class Event implements Schema {
-					fields: FieldMap = {
-						name: StringType(),
-						start_time: TimestampType(),
-					};
+					fields: Field[] = [
+						StringType({name: "name"}),
+						TimestampType({name: "start_time"}),
+					];
 
 					actions: Action[] = [
 						{
@@ -202,13 +202,13 @@ func TestParseEmbeddedActions(t *testing.T) {
 			code: map[string]string{
 				"address.ts": getAddressCode(),
 				"event.ts": getCodeWithSchema(`
-				import {Schema, Action, FieldMap, ActionOperation, StringType, TimestampType} from "{schema}";
+				import {Schema, Action, Field, ActionOperation, StringType, TimestampType} from "{schema}";
 
 				export default class Event implements Schema {
-					fields: FieldMap = {
-						name: StringType(),
-						start_time: TimestampType(),
-					};
+					fields: Field[] = [
+						StringType({name: "name"}),
+						TimestampType({name: "start_time"}),
+					];
 
 					actions: Action[] = [
 						{
@@ -264,13 +264,13 @@ func TestParseEmbeddedActions(t *testing.T) {
 			code: map[string]string{
 				"address.ts": getAddressCode(),
 				"event.ts": getCodeWithSchema(`
-				import {Schema, Action, FieldMap, ActionOperation, StringType, TimestampType} from "{schema}";
+				import {Schema, Action, Field, ActionOperation, StringType, TimestampType} from "{schema}";
 
 				export default class Event implements Schema {
-					fields: FieldMap = {
-						name: StringType(),
-						start_time: TimestampType(),
-					};
+					fields: Field[] = [
+						StringType({name: "name"}),
+						TimestampType({name: "start_time"}),
+					];
 
 					actions: Action[] = [
 						{
@@ -325,13 +325,13 @@ func TestParseEmbeddedActions(t *testing.T) {
 			code: map[string]string{
 				"address.ts": getAddressCode(),
 				"event_activity.ts": getCodeWithSchema(`
-				import {Schema, Action, FieldMap, ActionOperation, StringType, TimestampType, UUIDType} from "{schema}";
+				import {Schema, Action, Field, ActionOperation, StringType, TimestampType, UUIDType} from "{schema}";
 
 				export default class EventActivity implements Schema {
-					fields: FieldMap = {
-						name: StringType(),
-						eventID: UUIDType(),
-					};
+					fields: Field[] = [
+						StringType({name: "name"}),
+						UUIDType({name: "eventID"}),
+					];
 
 					actions: Action[] = [
 						{
@@ -345,13 +345,13 @@ func TestParseEmbeddedActions(t *testing.T) {
 					];
 				};`),
 				"event.ts": getCodeWithSchema(`
-				import {Schema, Action, FieldMap, ActionOperation, StringType, TimestampType} from "{schema}";
+				import {Schema, Action, Field, ActionOperation, StringType, TimestampType} from "{schema}";
 
 				export default class Event implements Schema {
-					fields: FieldMap = {
-						name: StringType(),
-						start_time: TimestampType(),
-					};
+					fields: Field[] = [
+						StringType({name: "name"}),
+						TimestampType({name: "start_time"}),
+					];
 
 					actions: Action[] = [
 						{
@@ -438,15 +438,15 @@ func TestParseEmbeddedActions(t *testing.T) {
 
 func getAddressCode() string {
 	return getCodeWithSchema(`
-	import {Schema, Action, FieldMap, StringType, UUIDType, ActionOperation} from "{schema}";
+	import {Schema, Action, Field, StringType, UUIDType, ActionOperation} from "{schema}";
 
 	export default class Address implements Schema {
-		fields: FieldMap = {
-			Street: StringType(),
-			City: StringType(),
-			State: StringType(),
-			ZipCode: StringType(), 
-		};
+		fields: Field[] = [
+			StringType({ name: "Street" }),
+			StringType({ name: "City" }),
+			StringType({ name: "State" }),
+			StringType({ name: "ZipCode" }), 
+		];
 
 		actions: Action[] = [
 			{

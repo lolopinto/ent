@@ -7,7 +7,10 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { User } from "src/ent/";
-import { UserBuilder } from "src/ent/user/actions/generated/user_builder";
+import {
+  UserBuilder,
+  UserInput,
+} from "src/ent/user/actions/generated/user_builder";
 
 export interface UserCreateInput {
   firstName: string;
@@ -16,10 +19,8 @@ export interface UserCreateInput {
   password: string;
 }
 
-export class CreateUserActionBase
-  implements Action<User, UserBuilder<UserCreateInput>, UserCreateInput>
-{
-  public readonly builder: UserBuilder<UserCreateInput>;
+export class CreateUserActionBase implements Action<User> {
+  public readonly builder: UserBuilder;
   public readonly viewer: Viewer;
   protected input: UserCreateInput;
 
@@ -29,11 +30,11 @@ export class CreateUserActionBase
     this.builder = new UserBuilder(this.viewer, WriteOperation.Insert, this);
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<User> {
+  getPrivacyPolicy(): PrivacyPolicy {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): UserCreateInput {
+  getInput(): UserInput {
     return this.input;
   }
 

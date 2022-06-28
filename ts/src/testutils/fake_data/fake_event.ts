@@ -8,13 +8,18 @@ import {
 } from "../../core/base";
 import { loadEnt, loadEntX } from "../../core/ent";
 import { AlwaysAllowPrivacyPolicy } from "../../core/privacy";
-import { getBuilderSchemaFromFields, SimpleBuilder } from "../builder";
-import { StringType, UUIDType, TimestampType } from "../../schema";
+import { BuilderSchema, SimpleBuilder } from "../builder";
+import {
+  Field,
+  StringType,
+  BaseEntSchema,
+  UUIDType,
+  TimestampType,
+} from "../../schema";
 import { NodeType } from "./const";
 import { table, uuid, text, timestamptz } from "../db/test_db";
 import { ObjectLoaderFactory } from "../../core/loaders";
 import { convertDate, convertNullableDate } from "../../core/convert";
-import { WriteOperation } from "../../action";
 
 export class FakeEvent implements Ent {
   readonly id: ID;
@@ -29,9 +34,7 @@ export class FakeEvent implements Ent {
   readonly description: string | null;
   readonly userID: ID;
 
-  getPrivacyPolicy(): PrivacyPolicy<this> {
-    return AlwaysAllowPrivacyPolicy;
-  }
+  privacyPolicy: PrivacyPolicy = AlwaysAllowPrivacyPolicy;
 
   constructor(public viewer: Viewer, data: Data) {
     this.data = data;
@@ -97,25 +100,36 @@ export class FakeEvent implements Ent {
   }
 }
 
-export const FakeEventSchema = getBuilderSchemaFromFields(
-  {
-    startTime: TimestampType({
+export class FakeEventSchema
+  extends BaseEntSchema
+  implements BuilderSchema<FakeEvent>
+{
+  ent = FakeEvent;
+  fields: Field[] = [
+    TimestampType({
+      name: "startTime",
       index: true,
     }),
-    endTime: TimestampType({
+    TimestampType({
+      name: "endTime",
       nullable: true,
     }),
-    title: StringType(),
-    location: StringType(),
-    description: StringType({
+    StringType({
+      name: "title",
+    }),
+    StringType({
+      name: "location",
+    }),
+    StringType({
+      name: "description",
       nullable: true,
     }),
-    userID: UUIDType({
+    UUIDType({
+      name: "userID",
       foreignKey: { schema: "User", column: "ID" },
     }),
-  },
-  FakeEvent,
-);
+  ];
+}
 
 export interface EventCreateInput {
   startTime: Date;
@@ -131,13 +145,7 @@ export function getEventBuilder(viewer: Viewer, input: EventCreateInput) {
   for (const key in input) {
     m.set(key, input[key]);
   }
-  return new SimpleBuilder(
-    viewer,
-    FakeEventSchema,
-    m,
-    WriteOperation.Insert,
-    null,
-  );
+  return new SimpleBuilder(viewer, new FakeEventSchema(), m);
 }
 
 export async function createEvent(viewer: Viewer, input: EventCreateInput) {

@@ -5,7 +5,7 @@ import {
 } from "./phonenumber";
 
 function testCase(exp: expectedResult) {
-  let typ = PhoneNumberType();
+  let typ = PhoneNumberType({ name: "phone" });
   if (exp.pre) {
     typ = exp.pre(typ);
   }
@@ -236,18 +236,18 @@ describe("with numeric country code", () => {
 });
 
 describe("list", () => {
-  test("valid", async () => {
-    let typ = PhoneNumberListType();
+  test("valid", () => {
+    let typ = PhoneNumberListType({ name: "numbers" });
     const input = ["4159876543", "6501234567"];
     const expected = ["+14159876543", "+16501234567"];
-    expect(await typ.valid(input)).toBe(true);
+    expect(typ.valid(input)).toBe(true);
     // postgres stored in db style
     expect(typ.format(input)).toEqual(`{${expected.join(",")}}`);
   });
 
-  test("invalid", async () => {
-    let typ = PhoneNumberListType();
+  test("invalid", () => {
+    let typ = PhoneNumberListType({ name: "numbers" });
     const input = ["4159876543", "4152"];
-    expect(await typ.valid(input)).toBe(false);
+    expect(typ.valid(input)).toBe(false);
   });
 });

@@ -2,7 +2,7 @@ import exp from "constants";
 import { EmailType, EmailListType, Email } from "./email";
 
 function testCase(exp: expectedResult) {
-  let typ = EmailType();
+  let typ = EmailType({ name: "emailAddress" });
   if (exp.pre) {
     typ = exp.pre(typ);
   }
@@ -136,20 +136,20 @@ test("restrict domain. invalid ", () => {
   });
 });
 
-test("list", async () => {
-  const tt = EmailListType();
+test("list", () => {
+  const tt = EmailListType({ name: "emails" });
   const input = ["first_last@email.com", "first_last@bar.com"];
-  expect(await tt.valid(input)).toBe(true);
+  expect(tt.valid(input)).toBe(true);
   // postgres stored in db style
   expect(tt.format(input)).toEqual(`{${input.join(",")}}`);
 });
 
-test("list with invalid", async () => {
-  const tt = EmailListType();
+test("list with invalid", () => {
+  const tt = EmailListType({ name: "emails" });
   const input = [
     "first_last@email.com",
     "first_last@bar.com",
     "  first last(comment) < first.last@email.com>",
   ];
-  expect(await tt.valid(input)).toBe(false);
+  expect(tt.valid(input)).toBe(false);
 });

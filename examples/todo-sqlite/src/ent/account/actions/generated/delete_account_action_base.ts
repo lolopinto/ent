@@ -13,10 +13,8 @@ import {
   AccountInput,
 } from "src/ent/account/actions/generated/account_builder";
 
-export class DeleteAccountActionBase
-  implements Action<Account, AccountBuilder<AccountInput>, AccountInput>
-{
-  public readonly builder: AccountBuilder<AccountInput>;
+export class DeleteAccountActionBase implements Action<Account> {
+  public readonly builder: AccountBuilder;
   public readonly viewer: Viewer;
   protected account: Account;
 
@@ -31,7 +29,7 @@ export class DeleteAccountActionBase
     this.account = account;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Account> {
+  getPrivacyPolicy(): PrivacyPolicy {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

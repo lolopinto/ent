@@ -20,11 +20,11 @@ export const OpenTodosPluralQueryType: GraphQLFieldConfig<
   RequestContext,
   open_todos_pluralArgs
 > = {
-  type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(TodoType))),
+  type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TodoType))),
   args: {
     id: {
       description: "",
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
     },
   },
   resolve: async (

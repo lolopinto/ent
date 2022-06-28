@@ -25,17 +25,6 @@ type PageInfo {
   endCursor: String!
 }
 
-enum CatBreed {
-  BENGAL
-  BURMESE
-  HIMALAYAN
-  SOMALI
-  PERSIAN
-  SIAMESE
-  TABBY
-  OTHER
-}
-
 enum DayOfWeekAlt {
   FRIDAY
   MONDAY
@@ -56,81 +45,7 @@ enum DayOfWeek {
   SATURDAY
 }
 
-enum DogBreedGroup {
-  SPORTING
-  HOUND
-  WORKING
-  TERRIER
-  TOY
-  NON_SPORTING
-  HERDING
-}
-
-enum DogBreed {
-  GERMAN_SHEPHERD
-  LABRADOR
-  POMERIAN
-  SIBERIAN_HUSKY
-  POODLE
-  GOLDEN_RETRIEVER
-  OTHER
-}
-
-enum EnumUsedInList {
-  YES
-  NO
-  MAYBE
-}
-
-enum EventRsvpStatus {
-  ATTENDING
-  DECLINED
-  MAYBE
-  CAN_RSVP
-}
-
-enum NestedObjNestedNestedEnum {
-  YES
-  NO
-  MAYBE
-}
-
-enum NotifType2 {
-  MOBILE
-  WEB
-  EMAIL
-}
-
-enum NotifType {
-  MOBILE
-  WEB
-  EMAIL
-}
-
-enum ObjNestedEnum {
-  YES
-  NO
-  MAYBE
-}
-
-enum RabbitBreed {
-  AMERICAN_RABBIT
-  AMERICAN_CHINCILLA
-  AMERICAN_FUZZY_LOP
-  AMERICAN_SABLE
-  ARGENTE_BRUN
-  BELGIAN_HARE
-  BEVEREN
-  OTHER
-}
-
-enum SuperNestedObjectEnum {
-  YES
-  NO
-  MAYBE
-}
-
-enum UserDaysOff {
+enum DaysOff {
   MONDAY
   TUESDAY
   WEDNESDAY
@@ -140,7 +55,14 @@ enum UserDaysOff {
   SUNDAY
 }
 
-enum UserPreferredShift {
+enum EventRsvpStatus {
+  ATTENDING
+  DECLINED
+  MAYBE
+  CAN_RSVP
+}
+
+enum PreferredShift {
   MORNING
   AFTERNOON
   EVENING
@@ -156,13 +78,6 @@ type Address implements Node {
   apartment: String
   country: String!
   hostedEvents(first: Int, after: String, last: Int, before: String): AddressToHostedEventsConnection!
-}
-
-type CatType {
-  name: String!
-  birthday: Time!
-  breed: CatBreed!
-  kitten: Boolean!
 }
 
 type Comment implements Node {
@@ -199,14 +114,6 @@ type Contact implements Node {
   fullName: String!
 }
 
-type DogType {
-  name: String!
-  birthday: Time!
-  breed: DogBreed!
-  breedGroup: DogBreedGroup!
-  puppy: Boolean!
-}
-
 type Event implements Node {
   address: Address
   creator: User
@@ -239,76 +146,6 @@ type HoursOfOperation implements Node {
   close: String!
 }
 
-union PetUnionType = CatType | DogType | RabbitType
-
-type RabbitType {
-  name: String!
-  birthday: Time!
-  breed: RabbitBreed!
-}
-
-type UserNestedNestedObjectList {
-  int: Int!
-}
-
-type UserNestedNestedObject {
-  nestedNestedUuid: ID!
-  nestedNestedInt: Int!
-  nestedNestedString: String!
-  nestedNestedBool: Boolean
-  nestedNestedFloat: Float!
-  nestedNestedEnum: NestedObjNestedNestedEnum!
-  nestedNestedStringList: [String!]!
-  nestedNestedIntList: [Int!]!
-}
-
-type UserNestedObjectList {
-  type: String!
-  enum: EnumUsedInList!
-  objects: [UserNestedNestedObjectList!]!
-}
-
-type UserNestedObject {
-  nestedUuid: ID!
-  nestedInt: Int!
-  nestedString: String!
-  nestedBool: Boolean!
-  nestedFloat: Float
-  nestedEnum: ObjNestedEnum!
-  nestedStringList: [String!]!
-  nestedIntList: [Int!]!
-  nestedObj: UserNestedNestedObject
-}
-
-type UserPrefsDiff {
-  type: String!
-}
-
-type UserPrefsStruct2 {
-  finishedNux: Boolean
-  enableNotifs: Boolean
-  notifTypes: [NotifType2!]!
-}
-
-type UserPrefsStruct {
-  finishedNux: Boolean
-  enableNotifs: Boolean
-  notifTypes: [NotifType!]!
-}
-
-type UserSuperNestedObject {
-  uuid: ID!
-  int: Int!
-  string: String!
-  bool: Boolean!
-  float: Float!
-  enum: SuperNestedObjectEnum!
-  stringList: [String!]
-  intList: [Int!]!
-  obj: UserNestedObject
-  union: PetUnionType
-}
-
 type User implements Node {
   id: ID!
   firstName: String!
@@ -318,17 +155,15 @@ type User implements Node {
   accountStatus: String
   bio: String
   nicknames: [String!]
-  prefs: UserPrefsStruct
-  prefsList: [UserPrefsStruct2!]
-  prefsDiff: UserPrefsDiff
-  daysOff: [UserDaysOff!]
-  preferredShift: [UserPreferredShift!]
+  prefs: JSON
+  prefsList: [JSON!]
+  prefsDiff: JSON
+  daysOff: [DaysOff!]
+  preferredShift: [PreferredShift!]
   timeInMs: String
   funUuids: [ID!]
   newCol: String
   newCol2: String
-  superNestedObject: UserSuperNestedObject
-  nestedList: [UserNestedObjectList!]
   selfContact: Contact
   comments(first: Int, after: String, last: Int, before: String): UserToCommentsConnection!
   createdEvents(first: Int, after: String, last: Int, before: String): UserToCreatedEventsConnection!
@@ -900,14 +735,12 @@ input UserCreateInput {
   phoneNumber: String!
   password: String!
   nicknames: [String!]
-  prefs: UserPrefsStructInput
-  prefsDiff: UserPrefsDiffInput
-  daysOff: [UserDaysOff!]
-  preferredShift: [UserPreferredShift!]
+  prefs: JSON
+  prefsDiff: JSON
+  daysOff: [DaysOff!]
+  preferredShift: [PreferredShift!]
   funUuids: [ID!]
-  prefsList: [UserPrefsStruct2Input!]
-  superNestedObject: UserSuperNestedObjectInput
-  nestedList: [UserNestedObjectListInput!]
+  prefsList: [JSON!]
 }
 
 type UserCreatePayload {
@@ -973,7 +806,7 @@ type Mutation {
 }
 
 """The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf)."""
-scalar JSON
+scalar JSON @specifiedBy(url: "http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf")
 
 """Time scalar type"""
 scalar Time

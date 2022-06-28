@@ -97,11 +97,11 @@ export class PhoneNumber extends BaseField implements Field {
   }
 }
 
-export function PhoneNumberType(options?: FieldOptions): PhoneNumber {
+export function PhoneNumberType(options: FieldOptions): PhoneNumber {
   let result = new PhoneNumber();
   return Object.assign(result, options);
 }
 
-export function PhoneNumberListType(options?: FieldOptions) {
+export function PhoneNumberListType(options: FieldOptions) {
   return new ListField(PhoneNumberType(options), options);
 }

@@ -480,9 +480,9 @@ func (edge *FieldEdge) PolymorphicEdge() bool {
 func (edge *FieldEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 	if edge.IsList() {
 		return []*tsimport.ImportPath{
-			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-			tsimport.NewGQLClassImportPath("GraphQLList"),
-			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLImportPath("GraphQLList"),
+			tsimport.NewGQLImportPath("GraphQLNonNull"),
 			tsimport.NewLocalGraphQLEntImportPath(edge.NodeInfo.Node),
 		}
 	}
@@ -524,7 +524,7 @@ func (e *ForeignKeyEdge) PolymorphicEdge() bool {
 func (e *ForeignKeyEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 	// return a connection
 	return []*tsimport.ImportPath{
-		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+		tsimport.NewGQLImportPath("GraphQLNonNull"),
 		tsimport.NewLocalEntConnectionImportPath(e.GetGraphQLConnectionName()),
 	}
 }
@@ -615,7 +615,7 @@ func (e *IndexedEdge) PolymorphicEdge() bool {
 
 func (e *IndexedEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+		tsimport.NewGQLImportPath("GraphQLNonNull"),
 		tsimport.NewLocalEntConnectionImportPath(e.GetGraphQLConnectionName()),
 	}
 }
@@ -816,7 +816,7 @@ func (edge *AssociationEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 	}
 	// return a connection
 	return []*tsimport.ImportPath{
-		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+		tsimport.NewGQLImportPath("GraphQLNonNull"),
 		tsimport.NewLocalEntConnectionImportPath(edge.GetGraphQLConnectionName()),
 	}
 }

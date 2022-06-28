@@ -8,49 +8,37 @@ export interface GraphQLEdge<T extends Data> {
   cursor: string;
 }
 
-interface edgeQueryCtr<
-  T extends Ent,
-  TEdge extends Data,
-  TViewer extends Viewer,
-> {
-  (v: TViewer, src: T): EdgeQuery<T, Ent, TEdge>;
+interface edgeQueryCtr<T extends Ent, TEdge extends Data> {
+  (v: Viewer, src: T): EdgeQuery<T, Ent, TEdge>;
 }
 
-interface edgeQueryCtr2<
-  T extends Ent,
-  TEdge extends Data,
-  TViewer extends Viewer,
-> {
-  (v: TViewer): EdgeQuery<T, Ent, TEdge>;
+interface edgeQueryCtr2<T extends Ent, TEdge extends Data> {
+  (v: Viewer): EdgeQuery<T, Ent, TEdge>;
 }
 
 // TODO probably need to template Ent. maybe 2 ents?
-export class GraphQLEdgeConnection<
-  TSource extends Ent,
-  TEdge extends Data,
-  TViewer extends Viewer = Viewer,
-> {
+export class GraphQLEdgeConnection<TSource extends Ent, TEdge extends Data> {
   query: EdgeQuery<TSource, Ent, TEdge>;
   private results: GraphQLEdge<TEdge>[] = [];
-  private viewer: TViewer;
+  private viewer: Viewer;
   private source?: TSource;
   private args?: Data;
 
   constructor(
-    viewer: TViewer,
+    viewer: Viewer,
     source: TSource,
-    getQuery: edgeQueryCtr<TSource, TEdge, TViewer>,
+    getQuery: edgeQueryCtr<TSource, TEdge>,
     args?: Data,
   );
   constructor(
-    viewer: TViewer,
-    getQuery: edgeQueryCtr2<TSource, TEdge, TViewer>,
+    viewer: Viewer,
+    getQuery: edgeQueryCtr2<TSource, TEdge>,
     args?: Data,
   );
   constructor(
-    viewer: TViewer,
-    arg2: TSource | edgeQueryCtr2<TSource, TEdge, TViewer>,
-    arg3: edgeQueryCtr<TSource, TEdge, TViewer> | Data,
+    viewer: Viewer,
+    arg2: TSource | edgeQueryCtr2<TSource, TEdge>,
+    arg3: edgeQueryCtr<TSource, TEdge> | Data,
     args?: Data,
   ) {
     this.viewer = viewer;

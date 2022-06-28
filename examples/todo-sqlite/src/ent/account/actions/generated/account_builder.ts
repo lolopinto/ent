@@ -19,28 +19,28 @@ export interface AccountInput {
   name?: string;
   phoneNumber?: string;
   accountState?: AccountState | null;
-  // allow other properties. useful for action-only fields
-  [x: string]: any;
+}
+
+export interface AccountAction extends Action<Account> {
+  getInput(): AccountInput;
 }
 
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class AccountBuilder<TData extends AccountInput = AccountInput>
-  implements Builder<Account>
-{
-  orchestrator: Orchestrator<Account, TData>;
+export class AccountBuilder implements Builder<Account> {
+  orchestrator: Orchestrator<Account>;
   readonly placeholderID: ID;
   readonly ent = Account;
   readonly nodeType = NodeType.Account;
-  private input: TData;
+  private input: AccountInput;
   private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: Action<Account, Builder<Account>, TData>,
+    action: AccountAction,
     public readonly existingEnt?: Account | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Account`;
@@ -61,7 +61,7 @@ export class AccountBuilder<TData extends AccountInput = AccountInput>
     });
   }
 
-  getInput(): TData {
+  getInput(): AccountInput {
     return this.input;
   }
 

@@ -19,15 +19,8 @@ import {
   EventActivityInput,
 } from "src/ent/event_activity/actions/generated/event_activity_builder";
 
-export class EventActivityAddInviteActionBase
-  implements
-    Action<
-      EventActivity,
-      EventActivityBuilder<EventActivityInput>,
-      EventActivityInput
-    >
-{
-  public readonly builder: EventActivityBuilder<EventActivityInput>;
+export class EventActivityAddInviteActionBase implements Action<EventActivity> {
+  public readonly builder: EventActivityBuilder;
   public readonly viewer: Viewer;
   protected eventActivity: EventActivity;
 
@@ -42,7 +35,7 @@ export class EventActivityAddInviteActionBase
     this.eventActivity = eventActivity;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<EventActivity> {
+  getPrivacyPolicy(): PrivacyPolicy {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

@@ -19,11 +19,11 @@ export const EventSlugAvailableQueryType: GraphQLFieldConfig<
   RequestContext,
   eventSlugAvailableArgs
 > = {
-  type: new GraphQLNonNull(GraphQLBoolean),
+  type: GraphQLNonNull(GraphQLBoolean),
   args: {
     slug: {
       description: "",
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
   },
   resolve: async (

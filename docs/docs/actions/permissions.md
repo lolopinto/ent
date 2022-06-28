@@ -15,13 +15,15 @@ For example, to specify who can [create an event](/docs/actions/create-action), 
 ```ts title="src/ent/event/actions/create_event_action.ts"
 
 export default class CreateEventAction extends CreateEventActionBase {
-  getPrivacyPolicy(): PrivacyPolicy<this> {
+  getPrivacyPolicy(): PrivacyPolicy {
+
     return {
       rules: [
         new AllowIfViewerEqualsRule(this.input.creatorID),
         AlwaysDenyRule,
       ],
     };
+
   }
 }
 
@@ -38,9 +40,9 @@ For example, to specify who can [edit an event](/docs/actions/edit-action), it c
 ```ts title="src/ent/event/actions/edit_event_action.ts"
 
 export default class EditEventAction extends EditEventActionBase {
-  getPrivacyPolicy(): PrivacyPolicy<this> {
+  getPrivacyPolicy(): PrivacyPolicy {
     return {
-      rules: [new AllowIfViewerIsEntPropertyRule<Event>("creatorID"), AlwaysDenyRule],
+      rules: [new AllowIfViewerIsRule("creatorID"), AlwaysDenyRule],
     };
   }
 }
@@ -56,9 +58,11 @@ For example, to specify who can [delete an event](/docs/actions/delete-action), 
 
 export default class DeleteEventAction extends DeleteEventActionBase {
   getPrivacyPolicy(): PrivacyPolicy {
+
     return {
-      rules: [new AllowIfViewerIsEntPropertyRule<Event>("creatorID"), AlwaysDenyRule],
+      rules: [new AllowIfViewerIsRule("creatorID"), AlwaysDenyRule],
     };
+
   }
 }
 

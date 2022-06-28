@@ -18,7 +18,7 @@
     "skipLibCheck": true,
     "paths": {
       "ent/*": [
-        "@snowtop/ent/*"
+        "@snowtop/ent/*",
       ],
       "src/*": [
         "./src/*"

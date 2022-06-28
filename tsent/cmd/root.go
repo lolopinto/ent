@@ -80,8 +80,6 @@ func init() {
 		printSchemaCmd,
 		printCustomSchemaCmd,
 		deleteSchemaCmd,
-		detectDanglingFilesCmd,
-		migratev1Cmd,
 	})
 
 	addCommands(generateCmd, []*cobra.Command{
@@ -94,7 +92,6 @@ func init() {
 
 	codegenCmd.Flags().StringVarP(&codegenInfo.step, "step", "s", "", "limit to only run a particular step e.g. db, graphql, codegen")
 	codegenCmd.Flags().BoolVar(&codegenInfo.writeAll, "write-all", false, "to force writing all files and skip the logic we have for only selectively writing some files")
-	codegenCmd.Flags().BoolVar(&codegenInfo.disableCustomGraphQL, "disable-custom-graphql", false, "to disable custom graphql during codegen. used when we need to rebuild everything and minimize parsing code")
 
 	generateSchemasCmd.Flags().StringVar(&schemasInfo.file, "file", "", "file to get data from. also supports piping it through")
 	generateSchemasCmd.Flags().BoolVar(&schemasInfo.force, "force", false, "if force is true, it overwrites existing schema, otherwise throws error")
@@ -106,12 +103,6 @@ func init() {
 	deleteSchemaCmd.Flags().BoolVar(&deleteSchemaInfo.disablePrompts, "disable_prompts", false, "--disable_prompts to disable prompt verifying delete schema")
 
 	alembicCmd.DisableFlagParsing = true
-
-	detectDanglingFilesCmd.Flags().BoolVar(&detectDanglingInfo.deleteFiles, "delete", false, "--delete to indicate that we should delete detected dangling files")
-
-	migratev1Cmd.Flags().StringVar(&migrateInfo.newSchemaClass, "new_schema_class", "", "new base schema class instead of EntSchema")
-	migratev1Cmd.Flags().StringVar(&migrateInfo.oldBaseClass, "old_base_class", "", "old base schema class instead of BaseEntSchema")
-	migratev1Cmd.Flags().StringVar(&migrateInfo.transformPath, "transform_path", "", "path for new base class")
 }
 
 func Execute() {

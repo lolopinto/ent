@@ -7,7 +7,10 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { Event } from "src/ent/";
-import { EventBuilder } from "src/ent/event/actions/generated/event_builder";
+import {
+  EventBuilder,
+  EventInput,
+} from "src/ent/event/actions/generated/event_builder";
 
 interface customActivityInput {
   name: string;
@@ -15,7 +18,7 @@ interface customActivityInput {
   endTime?: Date | null;
   location: string;
   description?: string | null;
-  inviteAllGuests: boolean;
+  inviteAllGuests?: boolean;
   address?: customAddressInput | null;
 }
 
@@ -33,10 +36,8 @@ export interface EventCreateInput {
   activities?: customActivityInput[] | null;
 }
 
-export class CreateEventActionBase
-  implements Action<Event, EventBuilder<EventCreateInput>, EventCreateInput>
-{
-  public readonly builder: EventBuilder<EventCreateInput>;
+export class CreateEventActionBase implements Action<Event> {
+  public readonly builder: EventBuilder;
   public readonly viewer: Viewer;
   protected input: EventCreateInput;
 
@@ -46,11 +47,11 @@ export class CreateEventActionBase
     this.builder = new EventBuilder(this.viewer, WriteOperation.Insert, this);
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Event> {
+  getPrivacyPolicy(): PrivacyPolicy {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): EventCreateInput {
+  getInput(): EventInput {
     return this.input;
   }
 

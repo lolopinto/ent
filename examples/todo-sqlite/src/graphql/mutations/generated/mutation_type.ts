@@ -16,6 +16,7 @@ import { RenameTodoType } from "src/graphql/mutations/generated/todo/rename_todo
 
 export const MutationType = new GraphQLObjectType({
   name: "Mutation",
+  // @ts-ignore graphql-js TS #2152 2829
   fields: () => ({
     addTodoTag: AddTodoTagType,
     changeTodoStatus: ChangeTodoStatusType,

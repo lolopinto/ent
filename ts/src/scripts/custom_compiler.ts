@@ -2,8 +2,9 @@
 
 import ts from "typescript";
 import * as path from "path";
+import * as fs from "fs";
+import JSON5 from "json5";
 import glob from "glob";
-import { readCompilerOptions } from "../tsc/compilerOptions";
 
 // TODO this should probably be its own package but for now it's here
 
@@ -21,7 +22,7 @@ class Compiler {
     private sourceFiles: string[],
     private moduleSearchLocations: string[],
   ) {
-    this.options = readCompilerOptions(".");
+    this.options = this.readCompilerOptions();
     if (this.options.paths) {
       for (let key in this.options.paths) {
         if (key === "*") {
@@ -107,6 +108,24 @@ class Compiler {
       }
     }
     return undefined;
+  }
+
+  private readCompilerOptions(): ts.CompilerOptions {
+    let json = {};
+    try {
+      json = JSON5.parse(
+        fs.readFileSync("./tsconfig.json", {
+          encoding: "utf8",
+        }),
+      );
+    } catch (e) {
+      console.error("couldn't read tsconfig.json file");
+    }
+    let options = json["compilerOptions"] || {};
+    if (options.moduleResolution === "node") {
+      options.moduleResolution = ts.ModuleResolutionKind.NodeJs;
+    }
+    return options;
   }
 
   private createCompilerHost(): ts.CompilerHost {

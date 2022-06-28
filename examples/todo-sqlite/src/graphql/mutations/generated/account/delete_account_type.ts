@@ -26,7 +26,7 @@ export const DeleteAccountInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     account_id: {
       description: "id of Account",
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -45,11 +45,11 @@ export const DeleteAccountType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customDeleteAccountInput }
 > = {
-  type: new GraphQLNonNull(DeleteAccountPayloadType),
+  type: GraphQLNonNull(DeleteAccountPayloadType),
   args: {
     input: {
       description: "",
-      type: new GraphQLNonNull(DeleteAccountInputType),
+      type: GraphQLNonNull(DeleteAccountInputType),
     },
   },
   resolve: async (

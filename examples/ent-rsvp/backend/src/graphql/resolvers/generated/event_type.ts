@@ -37,17 +37,17 @@ export const EventType = new GraphQLObjectType({
       },
     },
     id: {
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,
     },
     name: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
     slug: {
       type: GraphQLString,
     },
     eventActivities: {
-      type: new GraphQLNonNull(EventToEventActivitiesConnectionType()),
+      type: GraphQLNonNull(EventToEventActivitiesConnectionType()),
       args: {
         first: {
           description: "",
@@ -76,7 +76,7 @@ export const EventType = new GraphQLObjectType({
       },
     },
     guestGroups: {
-      type: new GraphQLNonNull(EventToGuestGroupsConnectionType()),
+      type: GraphQLNonNull(EventToGuestGroupsConnectionType()),
       args: {
         first: {
           description: "",
@@ -105,7 +105,7 @@ export const EventType = new GraphQLObjectType({
       },
     },
     guests: {
-      type: new GraphQLNonNull(EventToGuestsConnectionType()),
+      type: GraphQLNonNull(EventToGuestsConnectionType()),
       args: {
         first: {
           description: "",

@@ -13,10 +13,8 @@ import {
   EventInput,
 } from "src/ent/event/actions/generated/event_builder";
 
-export class DeleteEventActionBase
-  implements Action<Event, EventBuilder<EventInput>, EventInput>
-{
-  public readonly builder: EventBuilder<EventInput>;
+export class DeleteEventActionBase implements Action<Event> {
+  public readonly builder: EventBuilder;
   public readonly viewer: Viewer;
   protected event: Event;
 
@@ -31,7 +29,7 @@ export class DeleteEventActionBase
     this.event = event;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Event> {
+  getPrivacyPolicy(): PrivacyPolicy {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

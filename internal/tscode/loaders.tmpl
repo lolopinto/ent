@@ -24,8 +24,8 @@
         fields: {{$fields}},
         key: {{.Pkey}},
         {{ if .AddTransformedClause -}}
-          {{ reserveDefaultImport $nodeData.GetSchemaPath $nodeData.GetSchemaConst -}}
-          ... {{useImport "getObjectLoaderProperties"}}({{useImport $nodeData.GetSchemaConst}}, {{$table}}),
+          {{ reserveDefaultImport $nodeData.GetSchemaPath $nodeData.Node -}}
+          ... {{useImport "getObjectLoaderProperties"}}({{useImport $nodeData.Node}}, {{$table}}),
         {{ end -}}
       });
     {{end}}
@@ -36,14 +36,6 @@
     fields: {{$fields}},
     nodeType: {{useImport "NodeType"}}.{{.Node}},
     loaderFactory: {{printf "%sLoader" .NodeInstance }},
-    fieldInfo: {
-      {{range $field := .FieldInfo.Fields -}}
-      {{$field.FieldName}}: {
-        dbCol: '{{$field.GetDbColName}}',
-        inputKey: '{{$field.TsBuilderFieldName}}',
-        },
-      {{end}}
-    },
   }
 
   {{ range $loaders := $groups }}

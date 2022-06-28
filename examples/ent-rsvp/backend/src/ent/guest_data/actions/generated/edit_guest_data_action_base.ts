@@ -13,7 +13,10 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { Event, Guest, GuestData, GuestDataSource } from "src/ent/";
-import { GuestDataBuilder } from "src/ent/guest_data/actions/generated/guest_data_builder";
+import {
+  GuestDataBuilder,
+  GuestDataInput,
+} from "src/ent/guest_data/actions/generated/guest_data_builder";
 
 export interface GuestDataEditInput {
   guestID?: ID | Builder<Guest>;
@@ -22,11 +25,8 @@ export interface GuestDataEditInput {
   source?: GuestDataSource | null;
 }
 
-export class EditGuestDataActionBase
-  implements
-    Action<GuestData, GuestDataBuilder<GuestDataEditInput>, GuestDataEditInput>
-{
-  public readonly builder: GuestDataBuilder<GuestDataEditInput>;
+export class EditGuestDataActionBase implements Action<GuestData> {
+  public readonly builder: GuestDataBuilder;
   public readonly viewer: Viewer;
   protected input: GuestDataEditInput;
   protected guestData: GuestData;
@@ -43,11 +43,11 @@ export class EditGuestDataActionBase
     this.guestData = guestData;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<GuestData> {
+  getPrivacyPolicy(): PrivacyPolicy {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): GuestDataEditInput {
+  getInput(): GuestDataInput {
     return this.input;
   }
 

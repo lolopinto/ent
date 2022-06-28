@@ -1,12 +1,12 @@
 import { DateTime } from "luxon";
 import { snakeCase } from "snake-case";
+import { camelCase } from "camel-case";
 import { Ent } from "../core/base";
 import { Builder } from "../action/action";
 import DB, { Dialect } from "../core/db";
 import {
   DBType,
   Field,
-  FieldMap,
   FieldOptions,
   ForeignKey,
   PolymorphicOptions,
@@ -36,7 +36,7 @@ export abstract class BaseField {
   // fields derived from this one. e.g. polymorphic id fields
   // add a _type field
   // e.g. a polymorphic user_id field adds a user_type field
-  //  derivedFields?(name: string): FieldMap;
+  derivedFields?: Field[];
   derivedWhenEmbedded?: boolean;
 
   logValue(val: any): any {
@@ -51,31 +51,20 @@ export abstract class BaseField {
 export class UUIDField extends BaseField implements Field {
   type: Type = { dbType: DBType.UUID };
 
-  constructor(private options?: FieldOptions) {
+  constructor(private options: FieldOptions) {
     super();
 
-    if (
-      options?.fieldEdge?.enforceSchema &&
-      !options.fieldEdge.getLoaderInfoFromSchema
-    ) {
-      throw new Error(
-        `cannot enforceSchema if getLoaderInfoFromSchema wasn't passed in`,
-      );
-    }
-  }
-
-  getDerivedFields(fieldName: string): FieldMap {
-    const polymorphic = this.options?.polymorphic;
+    const polymorphic = options.polymorphic;
     if (polymorphic) {
       let name = "";
-      if (fieldName.endsWith("_id")) {
-        let idx = fieldName.indexOf("_id");
-        name = fieldName.substring(0, idx) + "_type";
-      } else if (fieldName.endsWith("ID")) {
-        let idx = fieldName.indexOf("ID");
-        name = fieldName.substring(0, idx) + "Type";
+      if (options.name.endsWith("_id")) {
+        let idx = options.name.indexOf("_id");
+        name = options.name.substring(0, idx) + "_type";
+      } else if (options.name.endsWith("ID")) {
+        let idx = options.name.indexOf("ID");
+        name = options.name.substring(0, idx) + "Type";
       } else {
-        throw new Error(`unsupported id polymorhpic type ${fieldName}`);
+        throw new Error(`unsupported id polymorhpic type ${options.name}`);
       }
 
       // polymorphic field automatically hidden from GraphQL
@@ -84,26 +73,36 @@ export class UUIDField extends BaseField implements Field {
       // intentionally not made private as it doesn't seem like it needs to be hidden
       if (typeof polymorphic === "object" && polymorphic.types) {
         // an enum with types validated here
-        return {
-          [name]: EnumType({
+        this.derivedFields = [
+          EnumType({
+            name,
             values: polymorphic.types,
             hideFromGraphQL: true,
             derivedWhenEmbedded: true,
-            nullable: this.options?.nullable,
+            nullable: options.nullable,
           }),
-        };
+        ];
       } else {
         // just a string field...
-        return {
-          [name]: StringType({
+        this.derivedFields = [
+          StringType({
+            name,
             hideFromGraphQL: true,
             derivedWhenEmbedded: true,
-            nullable: this.options?.nullable,
+            nullable: options.nullable,
           }),
-        };
+        ];
       }
     }
-    return {};
+
+    if (
+      options.fieldEdge?.enforceSchema &&
+      !options.fieldEdge.getLoaderInfoFromSchema
+    ) {
+      throw new Error(
+        `cannot enforceSchema if getLoaderInfoFromSchema wasn't passed in`,
+      );
+    }
   }
 
   private isBuilder(val: Builder<Ent> | any): val is Builder<Ent> {
@@ -111,7 +110,7 @@ export class UUIDField extends BaseField implements Field {
   }
 
   async valid(val: any) {
-    if (!this.options?.fieldEdge?.enforceSchema) {
+    if (!this.options.fieldEdge?.enforceSchema) {
       return true;
     }
 
@@ -133,7 +132,7 @@ export class UUIDField extends BaseField implements Field {
   }
 }
 
-export function UUIDType(options?: FieldOptions): UUIDField {
+export function UUIDType(options: FieldOptions): UUIDField {
   let result = new UUIDField(options);
   return Object.assign(result, options);
 }
@@ -146,7 +145,7 @@ export interface IntegerOptions extends FieldOptions {
 export class IntegerField extends BaseField implements Field {
   type: Type = { dbType: DBType.Int };
   private validators: { (str: number): boolean }[] = [];
-  private options: IntegerOptions = {};
+  private options: IntegerOptions = { name: "field" };
 
   constructor(options?: IntegerOptions) {
     super();
@@ -196,7 +195,7 @@ export class IntegerField extends BaseField implements Field {
   }
 }
 
-export function IntegerType(options?: IntegerOptions): IntegerField {
+export function IntegerType(options: IntegerOptions): IntegerField {
   let result = new IntegerField(options);
   return Object.assign(result, options);
 }
@@ -205,7 +204,7 @@ export class BigIntegerField extends BaseField implements Field {
   type: Type = { dbType: DBType.BigInt };
 }
 
-export function BigIntegerType(options?: FieldOptions): BigIntegerField {
+export function BigIntegerType(options: FieldOptions): BigIntegerField {
   let result = new BigIntegerField();
   return Object.assign(result, options);
 }
@@ -214,7 +213,7 @@ export class FloatField extends BaseField implements Field {
   type: Type = { dbType: DBType.Float };
 }
 
-export function FloatType(options?: FieldOptions): FloatField {
+export function FloatType(options: FieldOptions): FloatField {
   let result = new FloatField();
   return Object.assign(result, options);
 }
@@ -223,7 +222,7 @@ export class BooleanField extends BaseField implements Field {
   type: Type = { dbType: DBType.Boolean };
 }
 
-export function BooleanType(options?: FieldOptions): BooleanField {
+export function BooleanType(options: FieldOptions): BooleanField {
   let result = new BooleanField();
   return Object.assign(result, options);
 }
@@ -245,12 +244,12 @@ export class StringField extends BaseField implements Field {
   type: Type = { dbType: DBType.String };
   private validators: { (str: string): boolean }[] = [];
   private formatters: { (str: string): string }[] = [];
-  private options: StringOptions = {};
+  private options: StringOptions = { name: "field" };
 
   constructor(options?: StringOptions) {
     super();
     // for legacy callers
-    this.handleOptions(options || {});
+    this.handleOptions(options || { name: "field" });
   }
 
   getOptions(): StringOptions {
@@ -366,7 +365,7 @@ export class StringField extends BaseField implements Field {
   }
 }
 
-export function StringType(options?: StringOptions): StringField {
+export function StringType(options: StringOptions): StringField {
   let result = new StringField(options);
   const options2 = { ...options };
   for (const key in options) {
@@ -413,12 +412,12 @@ export class TimestampField extends BaseField implements Field {
   }
 }
 
-export function TimestampType(options?: TimestampOptions): TimestampField {
-  let result = new TimestampField({ ...options });
+export function TimestampType(options: TimestampOptions): TimestampField {
+  let result = new TimestampField(options);
   return Object.assign(result, options);
 }
 
-export function TimestamptzType(options?: FieldOptions): TimestampField {
+export function TimestamptzType(options: FieldOptions): TimestampField {
   let opts: TimestampOptions = { withTimezone: true, ...options };
   let result = new TimestampField(opts);
   return Object.assign(result, opts);
@@ -446,9 +445,9 @@ export class TimeField extends BaseField implements Field {
   type: Type = { dbType: DBType.Time };
   withTimezone?: boolean;
 
-  constructor(options?: TimeOptions) {
+  constructor(options: TimeOptions) {
     super();
-    if (options?.withTimezone) {
+    if (options.withTimezone) {
       this.type = {
         dbType: DBType.Timetz,
       };
@@ -481,12 +480,12 @@ export class TimeField extends BaseField implements Field {
   }
 }
 
-export function TimeType(options?: TimeOptions): TimeField {
+export function TimeType(options: TimeOptions): TimeField {
   let result = new TimeField(options);
   return Object.assign(result, options);
 }
 
-export function TimetzType(options?: FieldOptions): TimeField {
+export function TimetzType(options: FieldOptions): TimeField {
   let opts: TimestampOptions = {
     withTimezone: true,
     ...options,
@@ -515,10 +514,14 @@ export class DateField extends BaseField implements Field {
   }
 }
 
-export function DateType(options?: FieldOptions): DateField {
+export function DateType(options: FieldOptions): DateField {
   let result = new DateField();
   return Object.assign(result, options);
 }
+
+// export class JSON extends BaseField implements Field {
+//   type: Type = {dbType: DBType.JSON}
+// }
 
 declare type EnumMap = {
   [key: string]: string;
@@ -553,8 +556,8 @@ export class EnumField extends BaseField implements Field {
       dbType: options.createEnumType ? DBType.Enum : DBType.StringEnum,
       values: options.values,
       enumMap: options.map,
-      type: options.tsType,
-      graphQLType: options.graphQLType,
+      type: options.tsType || options.name,
+      graphQLType: options.graphQLType || options.name,
     };
     if (!options.foreignKey) {
       if (!options.values && !options.map) {
@@ -669,7 +672,7 @@ export class ListField extends BaseField {
   type: Type;
   private validators: { (val: any[]): boolean }[] = [];
 
-  constructor(private field: Field, options?: FieldOptions) {
+  constructor(private field: Field, options: FieldOptions) {
     super();
     if (field.type.dbType === DBType.List) {
       throw new Error(`nested lists not currently supported`);
@@ -718,19 +721,14 @@ export class ListField extends BaseField {
     return JSON.stringify(val);
   }
 
-  format(val: any, nested?: boolean): any {
+  format(val: any): any {
     if (!Array.isArray(val)) {
       throw new Error(`need an array to format`);
     }
 
     const elemDBType = this.type.listElemType!.dbType;
     const jsonType = elemDBType === "JSON" || elemDBType === "JSONB";
-    // postgres ish doesn't apply when nested
-    const postgres = !nested && DB.getDialect() === Dialect.Postgres;
-
-    if (nested && !this.field.format) {
-      return val;
-    }
+    const postgres = DB.getDialect() === Dialect.Postgres;
 
     if (!postgres && !this.field.format) {
       return JSON.stringify(val);
@@ -741,7 +739,7 @@ export class ListField extends BaseField {
     for (let i = 0; i < val.length; i++) {
       let formatted = val[i];
       if (this.field.format) {
-        formatted = this.field.format(val[i], nested);
+        formatted = this.field.format(val[i]);
       }
 
       // postgres supports arrays natively so we
@@ -757,10 +755,6 @@ export class ListField extends BaseField {
     }
     if (postgres) {
       return postgresRet + "}";
-    }
-    // don't JSON.stringify if nested
-    if (nested) {
-      return ret;
     }
     return JSON.stringify(ret);
   }
@@ -791,7 +785,7 @@ export class ListField extends BaseField {
   }
 }
 
-export function StringListType(options?: StringOptions) {
+export function StringListType(options: StringOptions) {
   return new ListField(StringType(options), options);
 }
 
@@ -799,11 +793,11 @@ export function IntListType(options: FieldOptions) {
   return new ListField(IntegerType(options), options);
 }
 
-export function IntegerListType(options?: FieldOptions) {
+export function IntegerListType(options: FieldOptions) {
   return new ListField(IntegerType(options), options);
 }
 
-export function FloatListType(options?: FieldOptions) {
+export function FloatListType(options: FieldOptions) {
   return new ListField(FloatType(options), options);
 }
 
@@ -811,7 +805,7 @@ export function BigIntegerListType(options: FieldOptions) {
   return new ListField(BigIntegerType(options), options);
 }
 
-export function BooleanListType(options?: FieldOptions) {
+export function BooleanListType(options: FieldOptions) {
   return new ListField(BooleanType(options), options);
 }
 
@@ -819,11 +813,11 @@ export function TimestampListType(options: TimestampOptions) {
   return new ListField(TimestampType(options), options);
 }
 
-export function TimestamptzListType(options?: TimestampOptions) {
+export function TimestamptzListType(options: TimestampOptions) {
   return new ListField(TimestamptzType(options), options);
 }
 
-export function TimeListType(options?: TimeOptions) {
+export function TimeListType(options: TimeOptions) {
   return new ListField(TimeType(options), options);
 }
 
@@ -831,7 +825,7 @@ export function TimetzListType(options: TimeOptions) {
   return new ListField(TimetzType(options), options);
 }
 
-export function DateListType(options?: FieldOptions) {
+export function DateListType(options: FieldOptions) {
   return new ListField(DateType(options), options);
 }
 
@@ -850,6 +844,6 @@ export function EnumListType(options: EnumOptions) {
   return new ListField(EnumType(options), options);
 }
 
-export function UUIDListType(options?: FieldOptions) {
+export function UUIDListType(options: FieldOptions) {
   return new ListField(UUIDType(options), options);
 }

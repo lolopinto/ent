@@ -30,16 +30,16 @@ export const TodoType = new GraphQLObjectType({
       },
     },
     id: {
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
     },
     text: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
     completed: {
-      type: new GraphQLNonNull(GraphQLBoolean),
+      type: GraphQLNonNull(GraphQLBoolean),
     },
     tags: {
-      type: new GraphQLNonNull(TodoToTagsConnectionType()),
+      type: GraphQLNonNull(TodoToTagsConnectionType()),
       args: {
         first: {
           description: "",

@@ -1,13 +1,12 @@
 import {
   CreateEventActionBase,
   EventCreateInput,
-} from "../../generated/event/actions/create_event_action_base";
+} from "./generated/create_event_action_base";
 import { Trigger, Validator } from "@snowtop/ent/action";
 import { SharedValidators } from "./event_validators";
-import { EventBuilder } from "../../generated/event/actions/event_builder";
+import { Event } from "../../";
+import { EventBuilder } from "./generated/event_builder";
 import { AlwaysAllowPrivacyPolicy, PrivacyPolicy } from "@snowtop/ent";
-import { Event } from "../../../ent";
-import { ExampleViewer } from "../../../viewer/viewer";
 
 export { EventCreateInput };
 
@@ -19,32 +18,13 @@ export default class CreateEventAction extends CreateEventActionBase {
     return AlwaysAllowPrivacyPolicy;
   }
 
-  getValidators(): Validator<
-    Event,
-    EventBuilder<EventCreateInput, Event | null>,
-    ExampleViewer,
-    EventCreateInput,
-    Event | null
-  >[] {
-    return [...SharedValidators];
-  }
+  validators: Validator<Event>[] = [...SharedValidators];
 
-  getTriggers(): Trigger<
-    Event,
-    EventBuilder<EventCreateInput, Event | null>,
-    ExampleViewer,
-    EventCreateInput,
-    Event | null
-  >[] {
-    return [
-      {
-        changeset(
-          builder: EventBuilder<EventCreateInput>,
-          input: EventCreateInput,
-        ) {
-          builder.addHostID(input.creatorID);
-        },
+  triggers: Trigger<Event>[] = [
+    {
+      changeset(builder: EventBuilder, input: EventCreateInput) {
+        builder.addHostID(input.creatorID);
       },
-    ];
-  }
+    },
+  ];
 }

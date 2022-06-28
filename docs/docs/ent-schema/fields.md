@@ -31,40 +31,38 @@ It's easy to write your own custom types that can be written once and shared acr
 It's possible to configure fields based on the options provided. For example, a password field with a minimum length:
 
 ```ts
-  password: PasswordType().minLen(10);
+  PasswordType({ name: "password" }).minLen(10);
 ```
 
 or a username field configured as follows:
 
 ```ts
-  username: StringType({ minLen:3, maxLen:20 }).toLowerCase().trim(),
+  StringType({ name: "Username", minLen:3, maxLen:20 }).toLowerCase().trim(),
 ```
 
-Because we want to support chaining and make the API intuitive, there tends to be an associated `FooType` factory that goes with the `FooField` to make things like above readable and easy to use.
+Because we want to support chaining and make the API intuitive, there tends to be an associated`FooType` factory that goes with the `FooField` to make things like above readable and easy to use.
 
 ## Options
 
+### name
+
+Name of the field. Each name should be unique in the schema.
+
 ### nullable
 
-If field is nullable. If so, a `NULL` modifier is added to the database column. The `GraphQL` field generated is also nullable and the generated `TypeScript` type is nullable e.g. `string | null` .
+If field is nullable. If so, a `NULL` modifier is added to the database column. The `GraphQL` field generated is also nullable and the generated `TypeScript` type is nullable e.g. `string | null`.
 
 ### storageKey
 
-If provided, used as the name of the database column. Otherwise, a snake_case version of the name is used. e.g. `first_name` for `FirstName` or `firstName` or `firstname` .
+If provided, used as the name of the database column. Otherwise, a snake_case version of the name is used. e.g. `first_name` for `FirstName` or `firstName` or `firstname`.
 
-Can also be used to rename a field and not affect the database e.g. from `StringType({name:"userID"})` to `StringType({name:"accountID", storageKey:"user_id"})` changes the field to `accountID` in the Ent but keeps the column as `user_id` .
+Can also be used to rename a field and not affect the database e.g. from `StringType({name:"userID"})` to `StringType({name:"accountID", storageKey:"user_id"})` changes the field to `accountID` in the Ent but keeps the column as `user_id`.
 
 ### serverDefault
 
-default value stored on the database server. e.g.
+default value stored on the database server. e.g. `BooleanType({ name: "NeedsHelp", serverDefault: "FALSE" })`
 
-```ts
-needsHelp: BooleanType({ serverDefault: "FALSE" }),
-
-//or 
-
-createdTime: TimetzType({serverDefault: "NOW()"}),
-```
+or `TimetzType({name: "createdTime", serverDefault: "NOW()"})`
 
 ### unique
 
@@ -84,7 +82,7 @@ This field shouldn't be logged if we're logging fields e.g. password fields, soc
 
 ### graphqlName
 
-If provided, used as the name of the field in GraphQL. Otherwise, a lowerPascalCase version of the name is used. e.g. `firstName` for `FirstName` or `firstName` or `firstname` .
+If provided, used as the name of the field in GraphQL. Otherwise, a lowerPascalCase version of the name is used. e.g. `firstName` for `FirstName` or `firstName` or `firstname`.
 
 ### index
 
@@ -95,7 +93,7 @@ Adds an index on this column to the database.
 Adds a foreign key to another column in another table.
 
 ```ts
-creatorID: UUIDType({ foreignKey: { schema: "User", column: "ID" } }),
+UUIDType({ name: "CreatorID", foreignKey: { schema: "User", column: "ID" } }),
 ```
 
 adds a foreignKey on the `creator_id` column on the source table that references the `id` column in the `users` table.
@@ -104,39 +102,35 @@ By default, `foreignKey` creates an index on the source table because we expect 
 
 ### fieldEdge
 
-Only currently works with `UUIDType` . Indicates that an accessor on the source schema should be generated pointing to the other schema.
+Only currently works with `UUIDType`. Indicates that an accessor on the source schema should be generated pointing to the other schema.
 
 For example, given the following schemas:
 
-```ts title="src/schema/user_schema.ts"
-const UserSchema = new EntSchema({
-  fields: {},
-  edges: [
+```ts title="src/schema/user.ts"
+export default class User extends BaseEntSchema {
+  edges: Edge[] = [
     {
       name: "createdEvents",
       schemaName: "Event",
     }
-  ], 
-}); 
-export default UserSchema; 
-
+  ];
+}
 ```
 
-```ts title="src/schema/event_schema.ts"
-const EventSchema = new EntSchema({
-  fields: {
-    creatorID: UUIDType({
+```ts title="src/schema/event.ts"
+export default class Event extends BaseEntSchema implements Schema {
+  fields: Field[] = [
+    UUIDType({
+      name: "creatorID",
       fieldEdge: { schema: "User", inverseEdge: "createdEvents" },
     }),
-  },
-});
-export default EventSchema;
+  ]
 ```
 
 * we have a 1-many [Edge](/docs/ent-schema/edges) from `User` to `Event` for events the User has created.
 * we store the creator of the `Event` in the `creatorID` field of the `Event`.
 
-The `fieldEdge` tells us that this field references schema `User` and edge `createdEvents` in that schema. That ends up generating a `creator` accessor in the Ent and GraphQL instead of `creatorID` accessor.
+The `fieldEdge` tells us that this field references schema `User` and edge `createdEvents` in that schema. That ends up generating a `creator` accessor in the Ent and GraphQL instead of `creator_id` accessor.
 
 ```ts
 const event = await event.loadCreator();
@@ -150,7 +144,7 @@ type Event implements Node {
 
 ### primaryKey
 
-adds this column as a primary key on the table. There can be only one primary key on a table so if using `EntSchema` or `EntSchemaWithTZ`, can't use this.
+adds this column as a primary key on the table. should be used rarely
 
 ### disableUserEditable
 
@@ -158,10 +152,11 @@ indicates that this can't be edited by the user. must have a `defaultValueOnCrea
 
 ### defaultValueOnCreate
 
-method that returns a default value if none is provided when creating a new instance of the object. For example, a `completed` field in a simple todo app with a default value of false:
+method that returns a default value if none is provided when creating a new instance of the object. For example, a `Todo` in a simple todo app with a default value of false:
 
 ```ts
-  completed: BooleanType({
+  BooleanType({
+    name: "Completed",
     index: true,
     defaultValueOnCreate: () => {
       return false;
@@ -177,7 +172,8 @@ The `defaultValueOnCreate` method is passed 2 arguments that can be used to comp
 This can be used to compute a value at runtime. For example, to default to the [Viewer](/docs/core-concepts/viewer) in the todo app above, you can do:
 
 ```ts
-  creatorID: UUIDType({
+  UUIDType({
+    name: "creatorID",
     foreignKey: { schema: "Account", column: "ID" },
     defaultValueOnCreate: (builder) => builder.viewer.viewerID,
   }),
@@ -185,7 +181,7 @@ This can be used to compute a value at runtime. For example, to default to the [
 
 This can simplify your API so that you don't have to expose the `creatorID` above in your GraphQL mutation.
 
-PS: It's recommended to either use implicit typing here or if using explicit typing, to type with `Builder<Ent, Viewer>` or `Builder<NameOfEnt, Viewer>` as opposed to the generated `FooBuilder` so as to not run into issues with circular dependencies.
+PS: It's recommended to either use implicit typing here or if using explicit typing, to type with `Builder<Ent>` or `Builder<NameOfEnt>` as opposed to the generated `FooBuilder` so as to not run into issues with circular dependencies.
 
 ### defaultValueOnEdit
 
@@ -198,14 +194,16 @@ Like `defaultValueOnCreate` above, it's passed the builder and input.
 Boolean. Shorthand to default to the viewer when creating an object if field not provided. The following are equivalent:
 
 ```ts
-  creatorID: UUIDType({
+  UUIDType({
+    name: "creatorID",
     foreignKey: { schema: "Account", column: "ID" },
     defaultToViewerOnCreate: true,
   }),
 ```
 
 ```ts
-  creatorID: UUIDType({
+  UUIDType({
+    name: "creatorID",
     foreignKey: { schema: "Account", column: "ID" },
     defaultValueOnCreate: (builder) => builder.viewer.viewerID,
   }),
@@ -215,7 +213,7 @@ This exists because it's a common enough pattern for a field to default to the l
 
 ### polymorphic
 
-Only currently works with `UUIDType` .
+Only currently works with `UUIDType`.
 Indicates that this id field can represent different types and we need to keep track of the type so that we know how to find it.
 
 We end up generating a [derivedField](#derivedFields) to represent the `type` of the object set.

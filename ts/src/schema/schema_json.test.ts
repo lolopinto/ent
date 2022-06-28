@@ -9,11 +9,7 @@ import * as fs from "fs";
 import { loadConfig } from "../core/config";
 import { convertJSON } from "../core/convert";
 import { JSONType, JSONBType } from "./json_field";
-import { FieldMap } from "./schema";
-import { WriteOperation } from "../action";
-
 let tdb: TempDB;
-
 async function setupTempDB(dialect: Dialect, connString?: string) {
   beforeAll(async () => {
     if (connString) {
@@ -43,19 +39,6 @@ async function createTables(...schemas: BuilderSchema<Ent>[]) {
   for (const schema of schemas) {
     await tdb.create(getSchemaTable(schema, DB.getDialect()));
   }
-}
-
-function getInsertAction<T extends Ent>(
-  schema: BuilderSchema<T>,
-  map: Map<string, any>,
-) {
-  return new SimpleAction(
-    new LoggedOutViewer(),
-    schema,
-    map,
-    WriteOperation.Insert,
-    null,
-  );
 }
 
 describe("postgres", () => {
@@ -90,25 +73,28 @@ function commonTests() {
   }
   class Notification extends User {}
   class NotificationSchema implements Schema {
-    fields: FieldMap = {
-      col: JSONType({
+    fields: Field[] = [
+      JSONType({
+        name: "col",
         validator,
       }),
-    };
+    ];
     ent = Notification;
   }
 
   class NotificationJSONBSchema implements Schema {
-    fields: FieldMap = {
-      col: JSONBType({
+    fields: Field[] = [
+      JSONBType({
+        name: "col",
         validator,
       }),
-    };
+    ];
     ent = Notification;
   }
 
   test("json", async () => {
-    const action = getInsertAction(
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
       new NotificationSchema(),
       new Map<string, any>([
         [
@@ -131,7 +117,8 @@ function commonTests() {
   });
 
   test("json. invalid", async () => {
-    const action = getInsertAction(
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
       new NotificationSchema(),
       new Map<string, any>([
         [
@@ -154,7 +141,8 @@ function commonTests() {
   });
 
   test("jsonb", async () => {
-    const action = getInsertAction(
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
       new NotificationJSONBSchema(),
       new Map<string, any>([
         [
@@ -177,7 +165,8 @@ function commonTests() {
   });
 
   test("jsonb. invalid", async () => {
-    const action = getInsertAction(
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
       new NotificationJSONBSchema(),
       new Map<string, any>([
         [

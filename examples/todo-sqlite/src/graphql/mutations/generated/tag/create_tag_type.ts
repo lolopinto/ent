@@ -34,13 +34,13 @@ export const CreateTagInputType = new GraphQLInputObjectType({
   name: "CreateTagInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     display_name: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
     owner_id: {
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
     },
     related_tag_ids: {
-      type: new GraphQLList(new GraphQLNonNull(GraphQLID)),
+      type: GraphQLList(GraphQLNonNull(GraphQLID)),
     },
   }),
 });
@@ -49,7 +49,7 @@ export const CreateTagPayloadType = new GraphQLObjectType({
   name: "CreateTagPayload",
   fields: (): GraphQLFieldConfigMap<CreateTagPayload, RequestContext> => ({
     tag: {
-      type: new GraphQLNonNull(TagType),
+      type: GraphQLNonNull(TagType),
     },
   }),
 });
@@ -59,11 +59,11 @@ export const CreateTagType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customCreateTagInput }
 > = {
-  type: new GraphQLNonNull(CreateTagPayloadType),
+  type: GraphQLNonNull(CreateTagPayloadType),
   args: {
     input: {
       description: "",
-      type: new GraphQLNonNull(CreateTagInputType),
+      type: GraphQLNonNull(CreateTagInputType),
     },
   },
   resolve: async (

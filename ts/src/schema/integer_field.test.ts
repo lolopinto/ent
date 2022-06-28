@@ -11,70 +11,70 @@ const tests = new Map<string, testCase>([
   [
     "min property valid",
     {
-      fn: () => IntegerType({ min: 5 }),
+      fn: () => IntegerType({ name: "field", min: 5 }),
       valid: true,
     },
   ],
   [
     "min property equal valid",
     {
-      fn: () => IntegerType({ min: 10 }),
+      fn: () => IntegerType({ name: "field", min: 10 }),
       valid: true,
     },
   ],
   [
     "min property invalid",
     {
-      fn: () => IntegerType({ min: 50 }),
+      fn: () => IntegerType({ name: "field", min: 50 }),
       valid: false,
     },
   ],
   [
     "min method valid",
     {
-      fn: () => IntegerType().min(5),
+      fn: () => IntegerType({ name: "field" }).min(5),
       valid: true,
     },
   ],
   [
     "min method invalid",
     {
-      fn: () => IntegerType().min(50),
+      fn: () => IntegerType({ name: "field" }).min(50),
       valid: false,
     },
   ],
   [
     "max property valid",
     {
-      fn: () => IntegerType({ max: 50 }),
+      fn: () => IntegerType({ name: "field", max: 50 }),
       valid: true,
     },
   ],
   [
     "max property equal valid",
     {
-      fn: () => IntegerType({ max: 10 }),
+      fn: () => IntegerType({ name: "field", max: 10 }),
       valid: true,
     },
   ],
   [
     "max property invalid",
     {
-      fn: () => IntegerType({ max: 5 }),
+      fn: () => IntegerType({ name: "field", max: 5 }),
       valid: false,
     },
   ],
   [
     "max method valid",
     {
-      fn: () => IntegerType().max(50),
+      fn: () => IntegerType({ name: "field" }).max(50),
       valid: true,
     },
   ],
   [
     "max method invalid",
     {
-      fn: () => IntegerType().max(5),
+      fn: () => IntegerType({ name: "field" }).max(5),
       valid: false,
     },
   ],

@@ -8,7 +8,6 @@ import (
 	"unicode"
 
 	"github.com/iancoleman/strcase"
-	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/change"
 )
 
@@ -66,7 +65,6 @@ func mapifyList(l []*Enum) (map[string]*Enum, error) {
 	return ret, nil
 }
 
-// this is different from compareEnums in internal/schema/compare_schema.go...
 func CompareEnums(l1, l2 []*Enum) ([]change.Change, error) {
 	var ret []change.Change
 	m1, err := mapifyList(l1)
@@ -106,14 +104,6 @@ func CompareEnums(l1, l2 []*Enum) ([]change.Change, error) {
 	}
 
 	return ret, nil
-}
-
-func (c *Enum) GetEnumValues() []string {
-	ret := make([]string, len(c.Values))
-	for i, v := range c.Values {
-		ret[i] = v.Value
-	}
-	return ret
 }
 
 type GQLEnum struct {
@@ -259,16 +249,6 @@ func (i *Input) getValuesFromEnumMap() ([]Data, []Data) {
 		return gqlVals[i].Name < gqlVals[j].Name
 	})
 	return tsVals, gqlVals
-}
-
-func NewInputFromEnumType(enumType enttype.EnumeratedType) *Input {
-	return &Input{
-		TSName:  enumType.GetTSName(),
-		GQLName: enumType.GetGraphQLName(),
-		GQLType: enumType.GetTSType(),
-		Values:  enumType.GetEnumValues(),
-		EnumMap: enumType.GetEnumMap(),
-	}
 }
 
 func GetEnums(input *Input) (*Enum, *GQLEnum) {

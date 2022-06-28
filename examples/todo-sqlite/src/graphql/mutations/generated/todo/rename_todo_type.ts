@@ -33,7 +33,7 @@ export const RenameTodoInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     todo_id: {
       description: "id of Todo",
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
     },
     text: {
       type: GraphQLString,
@@ -48,7 +48,7 @@ export const RenameTodoPayloadType = new GraphQLObjectType({
   name: "RenameTodoPayload",
   fields: (): GraphQLFieldConfigMap<RenameTodoPayload, RequestContext> => ({
     todo: {
-      type: new GraphQLNonNull(TodoType),
+      type: GraphQLNonNull(TodoType),
     },
   }),
 });
@@ -58,11 +58,11 @@ export const RenameTodoType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customRenameTodoInput }
 > = {
-  type: new GraphQLNonNull(RenameTodoPayloadType),
+  type: GraphQLNonNull(RenameTodoPayloadType),
   args: {
     input: {
       description: "",
-      type: new GraphQLNonNull(RenameTodoInputType),
+      type: GraphQLNonNull(RenameTodoInputType),
     },
   },
   resolve: async (

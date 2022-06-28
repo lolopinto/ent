@@ -9,17 +9,13 @@ export const GraphQLConnectionInterface = new GraphQLInterfaceType({
   description: "connection interface",
   fields: () => ({
     edges: {
-      type: new GraphQLNonNull(
-        new GraphQLList(new GraphQLNonNull(GraphQLEdgeInterface)),
-      ),
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLEdgeInterface))),
     },
     nodes: {
-      type: new GraphQLNonNull(
-        new GraphQLList(new GraphQLNonNull(GraphQLNodeInterface)),
-      ),
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLNodeInterface))),
     },
     pageInfo: {
-      type: new GraphQLNonNull(GraphQLPageInfo),
+      type: GraphQLNonNull(GraphQLPageInfo),
     },
   }),
 });

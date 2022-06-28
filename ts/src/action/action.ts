@@ -23,21 +23,14 @@ export enum WriteOperation {
   Delete = "delete",
 }
 
-type MaybeNull<T extends Ent> = T | null;
-type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
-
-export interface Builder<
-  TEnt extends Ent<TViewer>,
-  TViewer extends Viewer = Viewer,
-  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
-> {
-  existingEnt: TExistingEnt;
-  ent: EntConstructor<TEnt, TViewer>;
+export interface Builder<T extends Ent> {
+  existingEnt?: T;
+  ent: EntConstructor<T>;
   placeholderID: ID;
-  readonly viewer: TViewer;
-  build(): Promise<Changeset>;
+  readonly viewer: Viewer;
+  build(): Promise<Changeset<T>>;
   operation: WriteOperation;
-  editedEnt?(): Promise<TEnt | null>;
+  editedEnt?(): Promise<T | null>;
   nodeType: string;
 }
 
@@ -64,82 +57,56 @@ export interface Executor
   executeObservers?(): Promise<void>;
 }
 
-export interface Changeset {
+export interface Changeset<T extends Ent> {
   executor(): Executor;
   viewer: Viewer;
   placeholderID: ID;
   //  ent: EntConstructor<T>;
-  changesets?: Changeset[];
+  changesets?: Changeset<Ent>[];
   dependencies?: Map<ID, Builder<Ent>>;
 }
 
 export type TriggerReturn =
   | void
-  | Promise<Changeset | void | (Changeset | void)[]>
-  | Promise<Changeset>[];
+  | Promise<Changeset<Ent> | void | (Changeset<Ent> | void)[]>
+  | Promise<Changeset<Ent>>[];
 
-export interface Trigger<
-  TEnt extends Ent<TViewer>,
-  TBuilder extends Builder<TEnt, TViewer, TExistingEnt>,
-  TViewer extends Viewer = Viewer,
-  TInput extends Data = Data,
-  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
-> {
+export interface Trigger<T extends Ent> {
   // TODO: way in the future. detect any writes happening in changesets and optionally throw if configured to do so
   // can throw if it wants. not expected to throw tho.
   // input passed in here !== builder.getInput()
   // builder.getInput() can have other default fields
-  changeset(builder: TBuilder, input: TInput): TriggerReturn;
+  changeset(builder: Builder<T>, input: Data): TriggerReturn;
 }
 
-export interface Observer<
-  TEnt extends Ent<TViewer>,
-  TBuilder extends Builder<TEnt, TViewer, TExistingEnt>,
-  TViewer extends Viewer = Viewer,
-  TInput extends Data = Data,
-  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
-> {
+export interface Observer<T extends Ent> {
   // input passed in here !== builder.getInput()
   // builder.getInput() can have other default fields
-  observe(builder: TBuilder, input: TInput): void | Promise<void>;
+  observe(builder: Builder<T>, input: Data): void | Promise<void>;
 }
 
-export interface Validator<
-  TEnt extends Ent<TViewer>,
-  TBuilder extends Builder<TEnt, TViewer, TExistingEnt>,
-  TViewer extends Viewer = Viewer,
-  TInput extends Data = Data,
-  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
-> {
+export interface Validator<T extends Ent> {
   // can throw if it wants
   // input passed in here !== builder.getInput()
   // builder.getInput() can have other default fields
-  validate(builder: TBuilder, input: TInput): Promise<void> | void;
+  validate(builder: Builder<T>, input: Data): Promise<void> | void;
 }
 
-export interface Action<
-  TEnt extends Ent<TViewer>,
-  TBuilder extends Builder<TEnt, TViewer, TExistingEnt>,
-  TViewer extends Viewer = Viewer,
-  TInput extends Data = Data,
-  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
-> {
+export interface Action<T extends Ent> {
   readonly viewer: Viewer;
-  changeset(): Promise<Changeset>;
-  builder: TBuilder;
-  // TODO template ent
-  getPrivacyPolicy(): PrivacyPolicy<TEnt>;
-
-  getTriggers?(): Trigger<TEnt, TBuilder, TViewer, TInput, TExistingEnt>[];
-  getObservers?(): Observer<TEnt, TBuilder, TViewer, TInput, TExistingEnt>[];
-  getValidators?(): Validator<TEnt, TBuilder, TViewer, TInput, TExistingEnt>[];
-  getInput(): TInput; // this input is passed to Triggers, Observers, Validators
-  transformWrite?: (
-    stmt: UpdateOperation<TEnt, TViewer>,
+  changeset(): Promise<Changeset<T>>;
+  builder: Builder<T>;
+  getPrivacyPolicy(): PrivacyPolicy;
+  triggers?: Trigger<T>[];
+  observers?: Observer<T>[];
+  validators?: Validator<T>[];
+  getInput(): Data; // this input is passed to Triggers, Observers, Validators
+  transformWrite?: <T2 extends Ent>(
+    stmt: UpdateOperation<T2>,
   ) =>
-    | Promise<TransformedUpdateOperation<TEnt>>
-    | TransformedUpdateOperation<TEnt>
-    | null;
+    | Promise<TransformedUpdateOperation<T2>>
+    | TransformedUpdateOperation<T2>
+    | undefined;
 
   valid(): Promise<boolean>;
   // throws if invalid
@@ -148,7 +115,7 @@ export interface Action<
   // this is used to load the ent after the action
   // you can imagine this being overwritten for a create user or create account
   // action to load the just-created user after the fact
-  viewerForEntLoad?(data: Data): TViewer | Promise<TViewer>;
+  viewerForEntLoad?(data: Data): Viewer | Promise<Viewer>;
 
   // if we have overloads we need to provide all which sucks
   // so maybe don't make the ones below required
@@ -158,25 +125,23 @@ export interface Action<
   // saveX(): Promise<T>;
 }
 
-export async function saveBuilder<
-  TEnt extends Ent<TViewer>,
-  TViewer extends Viewer,
->(builder: Builder<TEnt, TViewer>): Promise<void> {
+export async function saveBuilder<T extends Ent>(
+  builder: Builder<T>,
+): Promise<void> {
   await saveBuilderImpl(builder, false);
 }
 
-export async function saveBuilderX<
-  TEnt extends Ent<TViewer>,
-  TViewer extends Viewer,
->(builder: Builder<TEnt, TViewer>): Promise<void> {
+export async function saveBuilderX<T extends Ent>(
+  builder: Builder<T>,
+): Promise<void> {
   await saveBuilderImpl(builder, true);
 }
 
-async function saveBuilderImpl<
-  TEnt extends Ent<TViewer>,
-  TViewer extends Viewer,
->(builder: Builder<TEnt, TViewer>, throwErr: boolean): Promise<void> {
-  let changeset: Changeset;
+async function saveBuilderImpl<T extends Ent>(
+  builder: Builder<T>,
+  throwErr: boolean,
+): Promise<void> {
+  let changeset: Changeset<T>;
   try {
     changeset = await builder.build();
   } catch (e) {

@@ -2,7 +2,7 @@ import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
 import {
   CreateAddressActionBase,
   AddressCreateInput,
-} from "../../generated/address/actions/create_address_action_base";
+} from "./generated/create_address_action_base";
 
 export { AddressCreateInput };
 

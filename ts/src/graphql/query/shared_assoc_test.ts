@@ -175,7 +175,7 @@ export function sharedAssocTests() {
       name: "User",
       fields: {
         id: {
-          type: new GraphQLNonNull(GraphQLID),
+          type: GraphQLNonNull(GraphQLID),
         },
         firstName: {
           type: GraphQLString,
@@ -194,7 +194,7 @@ export function sharedAssocTests() {
       name: "Event",
       fields: {
         id: {
-          type: new GraphQLNonNull(GraphQLID),
+          type: GraphQLNonNull(GraphQLID),
         },
       },
       interfaces: [GraphQLNodeInterface],

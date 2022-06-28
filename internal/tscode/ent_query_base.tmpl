@@ -6,11 +6,6 @@
 
 {{$schema := .Schema}}
 
-{{ $cfg := .Config }}
-{{$viewerInfo := $cfg.GetTemplatizedViewer -}}
-{{ reserveImportPath $viewerInfo.GetImportPath false -}}
-{{$viewerType := useImport $viewerInfo.GetImport -}}
-
 {{with .Info -}}
 
   {{ range .Imports }} 
@@ -37,7 +32,7 @@
   {{range $edge := .IndexedEdges -}}
     {{$node := useImport $edge.GetNodeInfo.Node -}}
     {{$fNodeData := $schema.GetNodeDataForNode $node}}
-    {{$schema := $fNodeData.GetSchemaConst -}}
+    {{$schema := printf "%sSchema" $node -}}
       export const {{$edge.GetCountFactoryName}} = new {{useImport "RawCountLoaderFactory"}}({
         ...{{$node}}.loaderOptions(),
         groupCol: {{$edge.QuotedDBColName}},
@@ -63,19 +58,12 @@
     {{ reserveImport $importPath $edge.TsEdgeQueryEdgeName -}}
     {{$edgeName := useImport $edge.TsEdgeQueryEdgeName -}}
     {{$destNode := useImport .NodeInfo.Node -}}
-    {{$srcNode := $node -}}
-    {{ if eq $srcNode "Ent" -}}
-      {{$srcNode = printf "%s<%s>" $srcNode $viewerType -}}
-    {{ end -}}
-    {{ if eq $destNode "Ent" -}}
-      {{$destNode = printf "%s<%s>" $destNode  $viewerType -}}
-    {{ end -}}
-    {{$thisType := printf "new (viewer: %s, src: EdgeQuerySource<%s, %s>) => T" $viewerType $srcNode $destNode}}
+    {{$thisType := printf "new (viewer: Viewer, src: EdgeQuerySource<%s, %s>) => T" $node $destNode}}
 
-  export abstract class {{$name}} extends {{useImport "AssocEdgeQueryBase"}}<{{$srcNode}}, {{$destNode}}, {{$edgeName}}, {{$viewerType}}> {
+  export abstract class {{$name}} extends {{useImport "AssocEdgeQueryBase"}}<{{$node}}, {{$destNode}}, {{$edgeName}}> {
     constructor(
-      viewer: {{$viewerType}}, 
-      src: {{useImport "EdgeQuerySource"}}<{{$srcNode}}, {{$destNode}}, {{$viewerType}}>,
+      viewer: {{useImport "Viewer"}}, 
+      src: {{useImport "EdgeQuerySource"}}<{{$node}}, {{$destNode}}>,
     ) {
       super(
         viewer, 
@@ -92,14 +80,14 @@
 
     static query<T extends {{$name}}>(
       this: {{$thisType}},
-      viewer: {{$viewerType}},
-      src: {{useImport "EdgeQuerySource"}}<{{$srcNode}}, {{$destNode}}>,
+      viewer: {{useImport "Viewer"}},
+      src: {{useImport "EdgeQuerySource"}}<{{$node}}, {{$destNode}}>,
     ): T {
       return new this(viewer, src);
     }
 
     {{ if $sourcePolymorphic -}}
-      protected abstract getSourceLoadEntOptions(): {{useImport "LoadEntOptions"}}<{{useImport "Ent"}}<{{$viewerType}}>, {{$viewerType}}>;
+      protected abstract getSourceLoadEntOptions(): {{useImport "LoadEntOptions"}}<{{useImport "Ent"}}>;
     {{ end }}
 
     sourceEnt(id: {{useImport "ID"}}) {
@@ -129,25 +117,19 @@
     {{$node := useImport $edge.GetNodeInfo.Node -}}
     {{$srcPoly := $edge.SourceIsPolymorphic -}}
     {{$srcType := printf "%s | %s " $srcNode (useImport "ID") }}
-    {{ if eq $srcNode "Ent" -}}
-      {{$srcNode = printf "%s<%s>" $srcNode $viewerType -}}
-    {{ end -}}
-    {{ if eq $node "Ent" -}}
-      {{$node = printf "%s<%s>" $node  $viewerType -}}
-    {{ end -}}
     {{ if $srcPoly -}}
       {{$srcType = $srcNode }}
     {{ end -}}
 
-    {{$thisType := printf "new (viewer: %s, src: %s  ) => T" $viewerType $srcType }}
+    {{$thisType := printf "new (viewer: Viewer, src: %s  ) => T" $srcType }}
 
-    export class {{$name}} extends {{useImport "CustomEdgeQueryBase"}}<{{$srcNode}}, {{$node}}, {{$viewerType}}> {
+    export class {{$name}} extends {{useImport "CustomEdgeQueryBase"}}<{{$srcNode}}, {{$node}}> {
     {{ if $srcPoly -}}
-      constructor(viewer: {{$viewerType}}, private srcEnt: {{$srcType }}) {
+      constructor(viewer: {{useImport "Viewer"}}, private srcEnt: {{$srcType }}) {
         super(viewer, {
           src: srcEnt, 
     {{ else -}}
-      constructor(viewer: {{$viewerType}}, src: {{$srcType }}) {
+      constructor(viewer: {{useImport "Viewer"}}, src: {{$srcType }}) {
         super(viewer, {
           src: src, 
     {{ end -}}
@@ -159,7 +141,7 @@
 
       static query<T extends {{$name}}>(
         this: {{$thisType}},
-        viewer: {{$viewerType}},
+        viewer: {{useImport "Viewer"}},
         src: {{$srcType}},
       ): T {
         return new this(viewer, src);

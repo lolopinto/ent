@@ -14,11 +14,9 @@ This is helpful for a few reasons:
 
 For example, in an events management system
 
-```ts title="src/schema/event_schema.ts"
-const EventSchema = new EntSchema({
-  fields: {},
-
-  edgeGroups: [
+```ts title="src/schema/event.ts"
+export default class Event extends BaseEntSchema implements Schema {
+  edgeGroups: AssocEdgeGroup[] = [
     {
       name: "rsvps",
       groupStatusName: "rsvpStatus",
@@ -58,13 +56,11 @@ const EventSchema = new EntSchema({
         },
       ],
     },
-  ], 
-}); 
-export const EventSchema; 
-
+  ];
+}
 ```
 
-we have a group named **rsvps** with 4 connected edges:
+we have a group named *rsvps* with 4 connected edges:
 
 * invited
 * attending
@@ -116,21 +112,17 @@ This pattern is seen in other places such as:
 
 Edge Groups supports 1 [action](/docs/ent-schema/actions). It's configured as follows:
 
-```ts title="src/schema/event_schema.ts"
-const EventSchema = new EntSchema({
-  fields: {},
-
-edgeGroups: [
+```ts
+export default class Event extends BaseEntSchema implements Schema {
+  edgeGroups: AssocEdgeGroup[] = [
     {
       ...
       edgeAction: {
         operation: ActionOperation.EdgeGroup,
       },
     },
-  ], 
-}); 
-export default EventSchema; 
-
+  ];
+}
 ```
 
 This generates the action that's used to configure everything above.
@@ -197,7 +189,6 @@ class EventBase {
     return EventActivityRsvpStatus.CanRsvp;
   }
 }
-
 ```
 
 and can be overriden as follows:

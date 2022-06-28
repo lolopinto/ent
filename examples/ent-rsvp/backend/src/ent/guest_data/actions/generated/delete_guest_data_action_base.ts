@@ -13,11 +13,8 @@ import {
   GuestDataInput,
 } from "src/ent/guest_data/actions/generated/guest_data_builder";
 
-export class DeleteGuestDataActionBase
-  implements
-    Action<GuestData, GuestDataBuilder<GuestDataInput>, GuestDataInput>
-{
-  public readonly builder: GuestDataBuilder<GuestDataInput>;
+export class DeleteGuestDataActionBase implements Action<GuestData> {
+  public readonly builder: GuestDataBuilder;
   public readonly viewer: Viewer;
   protected guestData: GuestData;
 
@@ -32,7 +29,7 @@ export class DeleteGuestDataActionBase
     this.guestData = guestData;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<GuestData> {
+  getPrivacyPolicy(): PrivacyPolicy {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

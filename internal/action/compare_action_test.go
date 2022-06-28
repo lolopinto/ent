@@ -10,7 +10,7 @@ import (
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/base"
-	"github.com/lolopinto/ent/internal/schema/customtype"
+	"github.com/lolopinto/ent/internal/schema/custominterface"
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/stretchr/testify/require"
@@ -716,7 +716,7 @@ func TestCompareCustomInterfaces(t *testing.T) {
 			fields: []*field.Field{
 				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
 			},
-			customInterfaces: map[string]*customtype.CustomInterface{
+			customInterfaces: map[string]*custominterface.CustomInterface{
 				"Foo": {
 					TSType:  "Foo",
 					GQLType: "Foo",
@@ -737,7 +737,7 @@ func TestCompareCustomInterfaces(t *testing.T) {
 			fields: []*field.Field{
 				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
 			},
-			customInterfaces: map[string]*customtype.CustomInterface{
+			customInterfaces: map[string]*custominterface.CustomInterface{
 				"Foo": {
 					TSType:  "Foo",
 					GQLType: "Foo",
@@ -762,7 +762,7 @@ func TestCompareUnequalCustomInterfaces(t *testing.T) {
 			fields: []*field.Field{
 				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
 			},
-			customInterfaces: map[string]*customtype.CustomInterface{
+			customInterfaces: map[string]*custominterface.CustomInterface{
 				"Foo": {
 					TSType:  "Foo",
 					GQLType: "GQLFoo",
@@ -783,7 +783,7 @@ func TestCompareUnequalCustomInterfaces(t *testing.T) {
 			fields: []*field.Field{
 				field.NewFieldFromNameAndType("first_name", &enttype.StringType{}),
 			},
-			customInterfaces: map[string]*customtype.CustomInterface{
+			customInterfaces: map[string]*custominterface.CustomInterface{
 				"Foo": {
 					TSType:  "Foo",
 					GQLType: "Foo",
@@ -911,7 +911,7 @@ type actionOptions struct {
 	edgeAction                                           *edge.EdgeAction
 	tsEnums                                              []*enum.Enum
 	gqlEnums                                             []*enum.GQLEnum
-	customInterfaces                                     map[string]*customtype.CustomInterface
+	customInterfaces                                     map[string]*custominterface.CustomInterface
 }
 
 func createNodeActionWithOptions(

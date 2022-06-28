@@ -41,19 +41,6 @@ export enum EventActivityRsvpStatus {
   CannotRsvp = "cannotRsvp",
 }
 
-interface EventActivityDBData {
-  id: ID;
-  created_at: Date;
-  updated_at: Date;
-  name: string;
-  event_id: ID;
-  start_time: Date;
-  end_time: Date | null;
-  location: string;
-  description: string | null;
-  invite_all_guests: boolean;
-}
-
 export class EventActivityBase {
   readonly nodeType = NodeType.EventActivity;
   readonly id: ID;
@@ -110,12 +97,12 @@ export class EventActivityBase {
     this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
-  ): Promise<Map<ID, T>> {
+  ): Promise<T[]> {
     return (await loadEnts(
       viewer,
       EventActivityBase.loaderOptions.apply(this),
       ...ids,
-    )) as Map<ID, T>;
+    )) as T[];
   }
 
   static async loadCustom<T extends EventActivityBase>(
@@ -134,36 +121,32 @@ export class EventActivityBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<EventActivityDBData[]> {
-    return (await loadCustomData(
+  ): Promise<Data[]> {
+    return loadCustomData(
       EventActivityBase.loaderOptions.apply(this),
       query,
       context,
-    )) as EventActivityDBData[];
+    );
   }
 
   static async loadRawData<T extends EventActivityBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<EventActivityDBData | null> {
-    const row = await eventActivityLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row as EventActivityDBData;
+  ): Promise<Data | null> {
+    return eventActivityLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends EventActivityBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<EventActivityDBData> {
+  ): Promise<Data> {
     const row = await eventActivityLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as EventActivityDBData;
+    return row;
   }
 
   static loaderOptions<T extends EventActivityBase>(

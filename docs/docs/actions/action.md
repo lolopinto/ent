@@ -43,22 +43,24 @@ The default [privacy policy](/docs/core-concepts/privacy-policy) is that any log
 
 We'll use the following schema as our base example and go into each of them:
 
-```ts title="src/schema/event_schema.ts"
-const EventSchema = new EntSchema({
-  fields: {
-    name: StringType(),
-    creatorID: UUIDType({
+```ts title="src/schema/event.ts"
+export default class Event extends BaseEntSchema implements Schema {
+  fields: Field[] = [
+    StringType({ name: "name" }),
+    UUIDType({
+      name: "creatorID",
       fieldEdge: { schema: "User", inverseEdge: "createdEvents" },
       storageKey: "user_id",
     }),
-    start_time: TimestampType(),
-    end_time: TimestampType({ nullable: true}),
-    location: StringType({
+    TimestampType({ name: "start_time" }),
+    TimestampType({ name: "end_time", nullable: true }),
+    StringType({
+      name: "location",
       graphqlName: "eventLocation",
     }),
-  }, 
+  ];
 
-  edges: [
+  edges: Edge[] = [
     {
       name: "hosts",
       schemaName: "User",
@@ -74,9 +76,9 @@ const EventSchema = new EntSchema({
         },
       ],
     },
-  ], 
+  ];
 
-  edgeGroups: [
+  edgeGroups: AssocEdgeGroup[] = [
     {
       name: "rsvps",
       groupStatusName: "rsvpStatus",
@@ -119,7 +121,6 @@ const EventSchema = new EntSchema({
         },
       ],
     },
-  ], 
-}); 
-export default EventSchema; 
+  ];
+}
 ```

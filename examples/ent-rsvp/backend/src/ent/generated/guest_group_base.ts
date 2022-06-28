@@ -29,14 +29,6 @@ import {
 } from "src/ent/internal";
 import schema from "src/schema/guest_group";
 
-interface GuestGroupDBData {
-  id: ID;
-  created_at: Date;
-  updated_at: Date;
-  invitation_name: string;
-  event_id: ID;
-}
-
 export class GuestGroupBase {
   readonly nodeType = NodeType.GuestGroup;
   readonly id: ID;
@@ -83,12 +75,12 @@ export class GuestGroupBase {
     this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
-  ): Promise<Map<ID, T>> {
+  ): Promise<T[]> {
     return (await loadEnts(
       viewer,
       GuestGroupBase.loaderOptions.apply(this),
       ...ids,
-    )) as Map<ID, T>;
+    )) as T[];
   }
 
   static async loadCustom<T extends GuestGroupBase>(
@@ -107,36 +99,32 @@ export class GuestGroupBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<GuestGroupDBData[]> {
-    return (await loadCustomData(
+  ): Promise<Data[]> {
+    return loadCustomData(
       GuestGroupBase.loaderOptions.apply(this),
       query,
       context,
-    )) as GuestGroupDBData[];
+    );
   }
 
   static async loadRawData<T extends GuestGroupBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<GuestGroupDBData | null> {
-    const row = await guestGroupLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row as GuestGroupDBData;
+  ): Promise<Data | null> {
+    return guestGroupLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends GuestGroupBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<GuestGroupDBData> {
+  ): Promise<Data> {
     const row = await guestGroupLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as GuestGroupDBData;
+    return row;
   }
 
   static loaderOptions<T extends GuestGroupBase>(

@@ -1,4 +1,4 @@
-{{ reserveImport .Package.SchemaPackagePath "BaseEntSchema" "FieldMap" "Schema" "Edge" "AssocEdgeGroup" "Action" "Constraint" "Index" }}
+{{ reserveImport .Package.SchemaPackagePath "BaseEntSchema" "Field" "Schema" "Edge" "AssocEdgeGroup" "Action" "Constraint" "Index" }}
 
 {{/* takes an Import with ImportPath Import DefaultImport fields */ -}}
 {{define "reserveImport"}}
@@ -42,14 +42,13 @@
 
   {{end -}}
 
-  {{$node := .Node -}}
-  fields: {{useImport "FieldMap"}} = {
+  fields: {{useImport "Field"}} [] = [
   {{ range $field := .Fields -}}
-    {{$imp := $field.GetImport $node -}}
+    {{$imp := $field.GetImport -}}
     {{- template "reserveImport" $imp -}}
-    {{$field.Name}}: {{useImport $imp.Import}}({{fieldObjectCall $field}}),
+    {{useImport $imp.Import}}({{fieldObjectCall $field}}),
   {{- end -}}
-  };
+  ];
 
 
   {{ if gt .DBRows.Len 0 -}}

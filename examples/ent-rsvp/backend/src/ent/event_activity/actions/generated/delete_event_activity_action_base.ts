@@ -13,15 +13,8 @@ import {
   EventActivityInput,
 } from "src/ent/event_activity/actions/generated/event_activity_builder";
 
-export class DeleteEventActivityActionBase
-  implements
-    Action<
-      EventActivity,
-      EventActivityBuilder<EventActivityInput>,
-      EventActivityInput
-    >
-{
-  public readonly builder: EventActivityBuilder<EventActivityInput>;
+export class DeleteEventActivityActionBase implements Action<EventActivity> {
+  public readonly builder: EventActivityBuilder;
   public readonly viewer: Viewer;
   protected eventActivity: EventActivity;
 
@@ -36,7 +29,7 @@ export class DeleteEventActivityActionBase
     this.eventActivity = eventActivity;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<EventActivity> {
+  getPrivacyPolicy(): PrivacyPolicy {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

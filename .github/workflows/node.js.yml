@@ -5,7 +5,7 @@ name: Node.js CI
 
 on:
   pull_request:
-    branches: [ main, v0.1 ]
+    branches: [ main ]
     paths-ignore:
       - python/**
       - /examples/**

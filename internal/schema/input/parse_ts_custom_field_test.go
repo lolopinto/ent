@@ -90,7 +90,7 @@ func TestCustomFields(t *testing.T) {
 }
 
 func validateField(t *testing.T, f *input.Field, expType enttype.TSGraphQLType) {
-	typ, err := f.GetEntType("User")
+	typ, err := f.GetEntType()
 	require.Nil(t, err)
 	assert.Equal(t, expType, typ)
 }

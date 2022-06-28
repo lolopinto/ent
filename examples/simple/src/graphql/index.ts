@@ -1,13 +1,8 @@
 import express from "express";
-import {
-  getGraphQLParameters,
-  processRequest,
-  ExecutionContext,
-  sendResult,
-  shouldRenderGraphiQL,
-  renderGraphiQL,
-} from "graphql-helix";
+import { graphqlHTTP } from "express-graphql";
+
 import schema from "./generated/schema";
+import { IncomingMessage, ServerResponse } from "http";
 import passport from "passport";
 import session from "express-session";
 import { DB } from "@snowtop/ent";
@@ -20,7 +15,6 @@ import { graphqlUploadExpress } from "graphql-upload";
 import { User } from "../ent";
 
 let app = express();
-app.use(express.json());
 app.use(
   session({
     secret: "ss",
@@ -45,26 +39,19 @@ registerAuthHandler(
 app.use(
   "/graphql",
   graphqlUploadExpress({ maxFileSize: 10000000, maxFiles: 10 }),
-  async (req, res) => {
-    if (shouldRenderGraphiQL(req)) {
-      res.send(renderGraphiQL());
-    } else {
-      const { operationName, query, variables } = getGraphQLParameters(req);
-      const result = await processRequest({
-        operationName,
-        query,
-        variables,
-        request: req,
-        schema,
-        contextFactory: async (executionContext: ExecutionContext) => {
-          return buildContext(req, res);
-        },
-      });
-      await sendResult(result, res);
-    }
-  },
+  graphqlHTTP((request: IncomingMessage, response: ServerResponse) => {
+    let doWork = async () => {
+      let context = await buildContext(request, response);
+      return {
+        schema: schema,
+        graphiql: true,
+        context,
+      };
+    };
+    return doWork();
+  }),
 );
-const server = app.listen(process.env.PORT || 4000);
+const server = app.listen(process.env.port || 4000);
 
 app.get("/healthz", async (req, res, params) => {
   try {

@@ -17,7 +17,7 @@ export interface AuthHandler {
 }
 ```
 
-AuthHandler takes a [`RequestContext`](/docs/core-concepts/context#requestcontext) and returns a `Viewer` if that handler can successfully authenticate the Viewer. Otherwise, it returns `null`.
+AuthHandler takes a [`RequestContext`](/docs/core-concepts/context#requestcontext) and returns a `Viewer` or `null` if that handler can successfully authenticate the Viewer.
 
 ## registerAuthHandler
 

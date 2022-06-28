@@ -29,22 +29,22 @@ export const ActivityEventCreateInput = new GraphQLInputObjectType({
   name: "ActivityEventCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     name: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
     startTime: {
-      type: new GraphQLNonNull(GraphQLTime),
+      type: GraphQLNonNull(GraphQLTime),
     },
     endTime: {
       type: GraphQLTime,
     },
     location: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
     description: {
       type: GraphQLString,
     },
     inviteAllGuests: {
-      type: new GraphQLNonNull(GraphQLBoolean),
+      type: GraphQLNonNull(GraphQLBoolean),
     },
     address: {
       type: AddressEventActivityCreateInput,
@@ -56,13 +56,13 @@ export const EventCreateInputType = new GraphQLInputObjectType({
   name: "EventCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     name: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
     slug: {
       type: GraphQLString,
     },
     activities: {
-      type: new GraphQLList(new GraphQLNonNull(ActivityEventCreateInput)),
+      type: GraphQLList(GraphQLNonNull(ActivityEventCreateInput)),
     },
   }),
 });
@@ -71,7 +71,7 @@ export const EventCreatePayloadType = new GraphQLObjectType({
   name: "EventCreatePayload",
   fields: (): GraphQLFieldConfigMap<EventCreatePayload, RequestContext> => ({
     event: {
-      type: new GraphQLNonNull(EventType),
+      type: GraphQLNonNull(EventType),
     },
   }),
 });
@@ -81,11 +81,11 @@ export const EventCreateType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: EventCreateInput }
 > = {
-  type: new GraphQLNonNull(EventCreatePayloadType),
+  type: GraphQLNonNull(EventCreatePayloadType),
   args: {
     input: {
       description: "",
-      type: new GraphQLNonNull(EventCreateInputType),
+      type: GraphQLNonNull(EventCreateInputType),
     },
   },
   resolve: async (

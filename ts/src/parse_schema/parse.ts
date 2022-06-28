@@ -6,29 +6,12 @@ import {
   AssocEdgeGroup,
   Action,
 } from "../schema";
-import { ActionField, Type, FieldMap } from "../schema/schema";
+import { ActionField, Type } from "../schema/schema";
 
-function processFields(
-  src: FieldMap | Field[],
-  patternName?: string,
-): ProcessedField[] {
+function processFields(src: Field[], patternName?: string): ProcessedField[] {
   const ret: ProcessedField[] = [];
-  let m: FieldMap = {};
-  if (Array.isArray(src)) {
-    for (const field of src) {
-      const name = field.name;
-      if (!name) {
-        throw new Error(`name is required`);
-      }
-      m[name] = field;
-    }
-  } else {
-    m = src;
-  }
-  for (const name in m) {
-    const field = m[name];
-    //@ts-ignore type and other changed fields with different type in ProcessedField vs Field
-    let f: ProcessedField = { name, ...field };
+  for (const field of src) {
+    let f: ProcessedField = { ...field };
     f.hasDefaultValueOnCreate = field.defaultValueOnCreate != undefined;
     f.hasDefaultValueOnEdit = field.defaultValueOnEdit != undefined;
     f.hasFieldPrivacy = field.privacyPolicy !== undefined;
@@ -57,25 +40,6 @@ function processFields(
 
     transformType(field.type);
 
-    if (field.getDerivedFields) {
-      f.derivedFields = processFields(field.getDerivedFields(name));
-    }
-    if (field.type.subFields) {
-      f.type.subFields = processFields(field.type.subFields);
-    }
-    if (field.type.unionFields) {
-      f.type.unionFields = processFields(field.type.unionFields);
-    }
-    if (
-      field.type.listElemType &&
-      field.type.listElemType.subFields &&
-      // check to avoid ts-ignore below. exists just for tsc
-      f.type.listElemType
-    ) {
-      f.type.listElemType.subFields = processFields(
-        field.type.listElemType.subFields,
-      );
-    }
     ret.push(f);
   }
   return ret;
@@ -162,7 +126,6 @@ function processPattern(
       name: pattern.name,
       assocEdges: edges,
       fields: fields,
-      disableMixin: pattern.disableMixin,
     };
   } else {
     // TODO ideally we want to make sure that different patterns don't have the same name
@@ -213,13 +176,7 @@ type ProcessedSchema = Omit<
     actions: OutputAction[];
     assocEdges: ProcessedAssocEdge[];
     assocEdgeGroups: ProcessedAssocEdgeGroup[];
-    // converting to list for go because we want the order respected
-    // and go maps don't support order
-
     fields: ProcessedField[];
-
-    schemaPath?: string;
-    patternNames?: string[];
   };
 
 type ProcessedAssocEdgeGroup = Omit<AssocEdgeGroup, "edgeAction"> & {
@@ -272,29 +229,16 @@ interface ProcessedPattern {
   name: string;
   assocEdges: ProcessedAssocEdge[];
   fields: ProcessedField[];
-  disableMixin?: boolean;
 }
-
-type ProcessedType = Omit<
-  Type,
-  "subFields" | "listElemType" | "unionFields"
-> & {
-  subFields?: ProcessedField[];
-  listElemType?: ProcessedType;
-  unionFields?: ProcessedField[];
-};
 
 type ProcessedField = Omit<
   Field,
-  "defaultValueOnEdit" | "defaultValueOnCreate" | "privacyPolicy" | "type"
+  "defaultValueOnEdit" | "defaultValueOnCreate" | "privacyPolicy"
 > & {
-  name: string;
   hasDefaultValueOnCreate?: boolean;
   hasDefaultValueOnEdit?: boolean;
   patternName?: string;
   hasFieldPrivacy?: boolean;
-  derivedFields?: ProcessedField[];
-  type: ProcessedType;
 };
 
 interface patternsDict {
@@ -306,34 +250,20 @@ interface Result {
   patterns: patternsDict;
 }
 
-declare type PotentialSchemas = {
-  [key: string]: any;
-};
-
-interface InputSchema extends Schema {
-  schemaPath?: string;
-}
-
-export function parseSchema(potentialSchemas: PotentialSchemas): Result {
+export function parseSchema(potentialSchemas: {}): Result {
   let schemas: schemasDict = {};
   let patterns: patternsDict = {};
 
   for (const key in potentialSchemas) {
     const value = potentialSchemas[key];
-    let schema: InputSchema;
-    const name = value.constructor.name;
-    // named class e.g. new BaseEntSchema
-    switch (name) {
-      case "Function":
-        schema = new value();
-        break;
-      default:
-        // implicit schema or named class
-        schema = value;
+    let schema: Schema;
+    if (value.constructor == Object) {
+      schema = value;
+    } else {
+      schema = new value();
     }
     let processedSchema: ProcessedSchema = {
       fields: [],
-      schemaPath: schema.schemaPath,
       tableName: schema.tableName,
       enumTable: schema.enumTable,
       dbRows: schema.dbRows,
@@ -346,11 +276,9 @@ export function parseSchema(potentialSchemas: PotentialSchemas): Result {
     };
     // let's put patterns first just so we have id, created_at, updated_at first
     // ¯\_(ツ)_/¯
-    let patternNames: string[] = [];
     if (schema.patterns) {
       for (const pattern of schema.patterns) {
         const ret = processPattern(patterns, pattern, processedSchema);
-        patternNames.push(pattern.name);
         if (ret.transformsSelect) {
           if (processedSchema.transformsSelect) {
             throw new Error(
@@ -372,7 +300,6 @@ export function parseSchema(potentialSchemas: PotentialSchemas): Result {
     }
     const fields = processFields(schema.fields);
     processedSchema.fields.push(...fields);
-    processedSchema.patternNames = patternNames;
     if (schema.edges) {
       const edges = processEdges(schema.edges);
       processedSchema.assocEdges.push(...edges);

@@ -11,10 +11,9 @@ import {
   TimeType,
   TimestamptzListType,
   UUIDType,
-  StringField,
 } from "./field";
 import { JSONBListType, JSONListType } from "./json_field";
-import Schema from "./schema";
+import { Schema, Field } from ".";
 import { User, SimpleAction, BuilderSchema } from "../testutils/builder";
 import { TempDB, getSchemaTable } from "../testutils/db/test_db";
 import { v4 } from "uuid";
@@ -28,7 +27,6 @@ import {
   convertList,
   convertJSON,
 } from "../core/convert";
-import { WriteOperation } from "../action";
 let tdb: TempDB;
 async function setupTempDB(dialect: Dialect, connString?: string) {
   beforeAll(async () => {
@@ -61,19 +59,6 @@ async function createTables(...schemas: BuilderSchema<Ent>[]) {
   }
 }
 
-function getInsertAction<T extends Ent>(
-  schema: BuilderSchema<T>,
-  map: Map<string, any>,
-) {
-  return new SimpleAction(
-    new LoggedOutViewer(),
-    schema,
-    map,
-    WriteOperation.Insert,
-    null,
-  );
-}
-
 describe("postgres", () => {
   setupTempDB(Dialect.Postgres);
   commonTests();
@@ -88,15 +73,14 @@ function commonTests() {
   test("string list", async () => {
     class Account extends User {}
     class AccountSchema implements Schema {
-      fields = {
-        Nicknames: StringListType(),
-      };
+      fields: Field[] = [StringListType({ name: "Nicknames" })];
       ent = Account;
     }
 
     const n = ["Lord Snow", "The Prince That was Promised"];
 
-    const action = getInsertAction(
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
       new AccountSchema(),
       new Map<string, any>([["Nicknames", n]]),
     );
@@ -109,16 +93,15 @@ function commonTests() {
   test("formatted string list", async () => {
     class CountryCode extends User {}
     class CountryCodeSchema implements Schema {
-      fields = {
-        codes: StringListType({ toLowerCase: true }),
-      };
+      fields: Field[] = [StringListType({ name: "codes", toLowerCase: true })];
       ent = CountryCode;
     }
 
     const input = ["US", "Uk", "fr"];
     const output = input.map((f) => f.toLowerCase());
 
-    const action = getInsertAction(
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
       new CountryCodeSchema(),
       new Map<string, any>([["codes", input]]),
     );
@@ -131,15 +114,14 @@ function commonTests() {
   test("int list", async () => {
     class Lottery extends User {}
     class LotterySchema implements Schema {
-      fields = {
-        numbers: IntegerListType(),
-      };
+      fields: Field[] = [IntegerListType({ name: "numbers" })];
       ent = Lottery;
     }
 
     const n = [4, 8, 15, 16, 23, 42];
 
-    const action = getInsertAction(
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
       new LotterySchema(),
       new Map<string, any>([["numbers", n]]),
     );
@@ -152,15 +134,14 @@ function commonTests() {
   test("float list", async () => {
     class TempHistory extends User {}
     class TempHistorySchema implements Schema {
-      fields = {
-        temps: FloatListType(),
-      };
+      fields: Field[] = [FloatListType({ name: "temps" })];
       ent = TempHistory;
     }
 
     const n = [98.0, 97.6, 93.2, 92.1];
 
-    const action = getInsertAction(
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
       new TempHistorySchema(),
       new Map<string, any>([["temps", n]]),
     );
@@ -173,18 +154,19 @@ function commonTests() {
   test("date list", async () => {
     class Holiday extends User {}
     class HolidaySchema implements Schema {
-      fields = {
-        id: UUIDType(),
-        country: StringType(),
-        holidays: DateListType(),
-      };
+      fields: Field[] = [
+        UUIDType({ name: "id" }),
+        StringType({ name: "country" }),
+        DateListType({ name: "holidays" }),
+      ];
       ent = Holiday;
     }
 
     const holidays = ["2020-12-25", "2020-12-26", "2021-01-01"];
     const expected = holidays.map(convertDate);
 
-    const action = getInsertAction(
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
       new HolidaySchema(),
       new Map<string, any>([
         ["id", v4()],
@@ -201,16 +183,15 @@ function commonTests() {
   test("time list", async () => {
     class Appointment extends User {}
     class AppointmentSchema implements Schema {
-      fields = {
-        availableTimes: TimeListType(),
-      };
+      fields: Field[] = [TimeListType({ name: "availableTimes" })];
       ent = Appointment;
     }
 
     // TODO we don't support complicated time formats...
     const times = ["08:00:00", "10:00:00", "11:30:00"];
 
-    const action = getInsertAction(
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
       new AppointmentSchema(),
       new Map<string, any>([["availableTimes", times]]),
     );
@@ -223,9 +204,7 @@ function commonTests() {
   test("time via date list", async () => {
     class Appointment extends User {}
     class AppointmentSchema implements Schema {
-      fields = {
-        availableTimes: TimeListType(),
-      };
+      fields: Field[] = [TimeListType({ name: "availableTimes" })];
       ent = Appointment;
     }
 
@@ -241,9 +220,12 @@ function commonTests() {
     };
 
     const times = [newDate(8), newDate(10), newDate(11, 30)];
-    const expected = times.map((time) => TimeType().format(time));
+    const expected = times.map((time) =>
+      TimeType({ name: "foo" }).format(time),
+    );
 
-    const action = getInsertAction(
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
       new AppointmentSchema(),
       new Map<string, any>([["availableTimes", times]]),
     );
@@ -256,15 +238,14 @@ function commonTests() {
   test("boolean list", async () => {
     class Survey extends User {}
     class SurveySchema implements Schema {
-      fields = {
-        satisfied: BooleanListType(),
-      };
+      fields: Field[] = [BooleanListType({ name: "satisfied" })];
       ent = Survey;
     }
 
     const satisfied = [true, false, true];
 
-    const action = getInsertAction(
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
       new SurveySchema(),
       new Map<string, any>([["satisfied", satisfied]]),
     );
@@ -279,9 +260,7 @@ function commonTests() {
   test("timestamptz list", async () => {
     class Visit extends User {}
     class VisitSchema implements Schema {
-      fields = {
-        visits: TimestamptzListType(),
-      };
+      fields: Field[] = [TimestamptzListType({ name: "visits" })];
       ent = Visit;
     }
 
@@ -292,7 +271,8 @@ function commonTests() {
     ];
     const expected = visits.map(convertDate);
 
-    const action = getInsertAction(
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
       new VisitSchema(),
       new Map<string, any>([["visits", visits]]),
     );
@@ -304,8 +284,9 @@ function commonTests() {
 
   class Available extends User {}
   class AvailableSchema implements Schema {
-    fields = {
-      days: EnumListType({
+    fields: Field[] = [
+      EnumListType({
+        name: "days",
         values: [
           "Sunday",
           "Monday",
@@ -316,14 +297,15 @@ function commonTests() {
           "Saturday",
         ],
       }),
-    };
+    ];
     ent = Available;
   }
 
   test("enum list", async () => {
     const weekend = ["Saturday", "Sunday"];
 
-    const action = getInsertAction(
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
       new AvailableSchema(),
       new Map<string, any>([["days", weekend]]),
     );
@@ -336,7 +318,8 @@ function commonTests() {
   test("invalid enum value", async () => {
     const weekend = ["red", "Tuesday"];
 
-    const action = getInsertAction(
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
       new AvailableSchema(),
       new Map<string, any>([["days", weekend]]),
     );
@@ -351,7 +334,7 @@ function commonTests() {
   });
 
   test("list validation. minLen", async () => {
-    const t = IntegerListType().minLen(2);
+    const t = IntegerListType({ name: "foo" }).minLen(2);
 
     expect(await t.valid([1, 2, 3])).toBe(true);
     expect(await t.valid([1, 2])).toBe(true);
@@ -359,7 +342,7 @@ function commonTests() {
   });
 
   test("list validation. maxLen", async () => {
-    const t = IntegerListType().maxLen(2);
+    const t = IntegerListType({ name: "foo" }).maxLen(2);
 
     expect(await t.valid([1, 2, 3])).toBe(false);
     expect(await t.valid([1, 2])).toBe(true);
@@ -367,7 +350,7 @@ function commonTests() {
   });
 
   test("list validation. length", async () => {
-    const t = IntegerListType().length(2);
+    const t = IntegerListType({ name: "foo" }).length(2);
 
     expect(await t.valid([1, 2, 3])).toBe(false);
     expect(await t.valid([1, 2])).toBe(true);
@@ -375,7 +358,7 @@ function commonTests() {
   });
 
   test("list validation. range", async () => {
-    const t = IntegerListType().range(2, 10);
+    const t = IntegerListType({ name: "foo" }).range(2, 10);
 
     expect(await t.valid([1, 2, 3])).toBe(false);
     expect(await t.valid([3, 4, 5, 6])).toBe(true);
@@ -384,7 +367,7 @@ function commonTests() {
   });
 
   test("string list validation. range", async () => {
-    const t = StringListType().range("a", "z");
+    const t = StringListType({ name: "foo" }).range("a", "z");
 
     expect(await t.valid(["a", "c", "d"])).toBe(true);
     expect(await t.valid(["e", "f", "g", "h"])).toBe(true);
@@ -393,16 +376,20 @@ function commonTests() {
 
   class Preferences extends User {}
   class PreferencesSchema implements Schema {
-    fields = {
-      prefsList: JSONBListType(),
-    };
+    fields: Field[] = [
+      JSONBListType({
+        name: "prefsList",
+      }),
+    ];
     ent = Preferences;
   }
 
   class PreferencesJSONSchema implements Schema {
-    fields = {
-      prefsList: JSONListType(),
-    };
+    fields: Field[] = [
+      JSONListType({
+        name: "prefsList",
+      }),
+    ];
     ent = Preferences;
   }
 
@@ -420,7 +407,8 @@ function commonTests() {
         bar3: null,
       },
     ];
-    const action = getInsertAction(
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
       new PreferencesSchema(),
       new Map<string, any>([["prefsList", prefsList]]),
     );
@@ -446,7 +434,8 @@ function commonTests() {
         bar3: null,
       },
     ];
-    const action = getInsertAction(
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
       new PreferencesJSONSchema(),
       new Map<string, any>([["prefsList", prefsList]]),
     );

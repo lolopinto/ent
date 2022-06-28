@@ -22,11 +22,11 @@ export const OpenTodosQueryType: GraphQLFieldConfig<
   RequestContext,
   open_todosArgs
 > = {
-  type: new GraphQLNonNull(RootToOpenTodosConnectionType()),
+  type: GraphQLNonNull(RootToOpenTodosConnectionType()),
   args: {
     id: {
       description: "",
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
     },
     first: {
       description: "",

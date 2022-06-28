@@ -8,10 +8,10 @@ import {
   Context,
   CustomQuery,
   Data,
-  Ent,
   ID,
   LoadEntOptions,
   PrivacyPolicy,
+  Viewer,
   convertDate,
   loadCustomData,
   loadCustomEnts,
@@ -21,54 +21,34 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import { hoursOfOperationLoader, hoursOfOperationLoaderInfo } from "./loaders";
-import {
-  DayOfWeek,
-  DayOfWeekAlt,
-  DayOfWeekMixin,
-  IDayOfWeek,
-  NodeType,
-} from "../internal";
-import schema from "../../schema/hours_of_operation_schema";
-import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
+import { DayOfWeek, DayOfWeekAlt, NodeType } from "../internal";
+import schema from "../../schema/hours_of_operation";
 
-interface HoursOfOperationDBData {
-  id: ID;
-  created_at: Date;
-  updated_at: Date;
-  day_of_week: DayOfWeek;
-  day_of_week_alt: DayOfWeekAlt | null;
-  open: string;
-  close: string;
-}
-
-export class HoursOfOperationBase
-  extends DayOfWeekMixin(class {})
-  implements Ent<ExampleViewerAlias>, IDayOfWeek
-{
+export class HoursOfOperationBase {
   readonly nodeType = NodeType.HoursOfOperation;
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+  readonly dayOfWeek: DayOfWeek;
+  readonly dayOfWeekAlt: DayOfWeekAlt | null;
   readonly open: string;
   readonly close: string;
 
-  constructor(public viewer: ExampleViewerAlias, protected data: Data) {
-    // @ts-ignore pass to mixin
-    super(viewer, data);
+  constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
+    this.dayOfWeek = data.day_of_week;
+    this.dayOfWeekAlt = data.day_of_week_alt;
     this.open = data.open;
     this.close = data.close;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {
-    return AllowIfViewerPrivacyPolicy;
-  }
+  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
 
   static async load<T extends HoursOfOperationBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
-    viewer: ExampleViewerAlias,
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
     return (await loadEnt(
@@ -79,8 +59,8 @@ export class HoursOfOperationBase
   }
 
   static async loadX<T extends HoursOfOperationBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
-    viewer: ExampleViewerAlias,
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
     id: ID,
   ): Promise<T> {
     return (await loadEntX(
@@ -91,20 +71,20 @@ export class HoursOfOperationBase
   }
 
   static async loadMany<T extends HoursOfOperationBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
-    viewer: ExampleViewerAlias,
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
     ...ids: ID[]
-  ): Promise<Map<ID, T>> {
+  ): Promise<T[]> {
     return (await loadEnts(
       viewer,
       HoursOfOperationBase.loaderOptions.apply(this),
       ...ids,
-    )) as Map<ID, T>;
+    )) as T[];
   }
 
   static async loadCustom<T extends HoursOfOperationBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
-    viewer: ExampleViewerAlias,
+    this: new (viewer: Viewer, data: Data) => T,
+    viewer: Viewer,
     query: CustomQuery,
   ): Promise<T[]> {
     return (await loadCustomEnts(
@@ -115,44 +95,40 @@ export class HoursOfOperationBase
   }
 
   static async loadCustomData<T extends HoursOfOperationBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<HoursOfOperationDBData[]> {
-    return (await loadCustomData(
+  ): Promise<Data[]> {
+    return loadCustomData(
       HoursOfOperationBase.loaderOptions.apply(this),
       query,
       context,
-    )) as HoursOfOperationDBData[];
+    );
   }
 
   static async loadRawData<T extends HoursOfOperationBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<HoursOfOperationDBData | null> {
-    const row = await hoursOfOperationLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row as HoursOfOperationDBData;
+  ): Promise<Data | null> {
+    return hoursOfOperationLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends HoursOfOperationBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<HoursOfOperationDBData> {
+  ): Promise<Data> {
     const row = await hoursOfOperationLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as HoursOfOperationDBData;
+    return row;
   }
 
   static loaderOptions<T extends HoursOfOperationBase>(
-    this: new (viewer: ExampleViewerAlias, data: Data) => T,
-  ): LoadEntOptions<T, ExampleViewerAlias> {
+    this: new (viewer: Viewer, data: Data) => T,
+  ): LoadEntOptions<T> {
     return {
       tableName: hoursOfOperationLoaderInfo.tableName,
       fields: hoursOfOperationLoaderInfo.fields,

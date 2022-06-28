@@ -19,11 +19,11 @@ export const EmailAvailableType: GraphQLFieldConfig<
   RequestContext,
   emailAvailableArgs
 > = {
-  type: new GraphQLNonNull(GraphQLBoolean),
+  type: GraphQLNonNull(GraphQLBoolean),
   args: {
     email: {
       description: "",
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
   },
   resolve: async (

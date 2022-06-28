@@ -10,7 +10,6 @@ import {
   loadRow,
   query,
   Ent,
-  PrivacyPolicy,
 } from "@snowtop/ent";
 import {
   expectQueryFromRoot,
@@ -46,7 +45,7 @@ let userType = new GraphQLObjectType({
   name: "User",
   fields: {
     id: {
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
     },
     firstName: {
       type: GraphQLString,
@@ -63,10 +62,7 @@ let userType = new GraphQLObjectType({
 class UserClass implements Ent {
   id: ID;
   nodeType = "User";
-  getPrivacyPolicy(): PrivacyPolicy<this, Viewer<Ent<any> | null, ID | null>> {
-    return AlwaysAllowPrivacyPolicy;
-  }
-
+  privacyPolicy = AlwaysAllowPrivacyPolicy;
   firstName: string;
   lastName: string;
   emailAddress: string;
@@ -78,7 +74,7 @@ class UserClass implements Ent {
     this.emailAddress = options.email_address;
   }
 
-  static loaderOptions(): LoadEntOptions<UserClass, any> {
+  static loaderOptions(): LoadEntOptions<UserClass> {
     const tableName = "users";
     const fields = ["id", "first_name", "last_name", "email_address"];
 
@@ -113,10 +109,10 @@ let authUserPayloadType = new GraphQLObjectType({
   name: "AuthUserPayload",
   fields: {
     token: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
     viewer: {
-      type: new GraphQLNonNull(viewerType),
+      type: GraphQLNonNull(viewerType),
     },
   },
 });
@@ -124,13 +120,13 @@ let authUserPayloadType = new GraphQLObjectType({
 const authUserType: GraphQLFieldConfig<undefined, RequestContext, { args }> = {
   args: {
     emailAddress: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
     password: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
   },
-  type: new GraphQLNonNull(authUserPayloadType),
+  type: GraphQLNonNull(authUserPayloadType),
   async resolve(_source, args, context) {
     const [viewer, token] = await useAndVerifyAuthJWT(
       context,
@@ -167,13 +163,13 @@ const authUserSessionType: GraphQLFieldConfig<
 > = {
   args: {
     emailAddress: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
     password: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
   },
-  type: new GraphQLNonNull(viewerType),
+  type: GraphQLNonNull(viewerType),
   async resolve(_source, args, context) {
     return await useAndVerifyAuth(
       context,

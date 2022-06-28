@@ -31,7 +31,6 @@ type Config struct {
 	writeAll bool
 	// changes are valid
 	useChanges bool
-	dummyWrite bool
 	changes    change.ChangeMap
 	// keep track of changed ts files to pass to prettier
 	changedTSFiles []string
@@ -248,23 +247,11 @@ func (cfg *Config) AddChangedFile(filePath string) {
 	}
 }
 
-func (cfg *Config) GetChangedTSFiles() []string {
-	return cfg.changedTSFiles
-}
-
 func (cfg *Config) GetCustomGraphQLJSONPath() string {
 	if cfg.config == nil {
 		return ""
 	}
 	return cfg.config.CustomGraphQLJSONPath
-}
-
-func (cfg *Config) DummyWrite() bool {
-	return cfg.dummyWrite
-}
-
-func (cfg *Config) SetDummyWrite(val bool) {
-	cfg.dummyWrite = val
 }
 
 func init() {
@@ -359,16 +346,6 @@ func (cfg *Config) FieldPrivacyEvaluated() codegenapi.FieldPrivacyEvaluated {
 		}
 	}
 	return codegenapi.OnDemand
-}
-
-func (cfg *Config) GetTemplatizedViewer() *codegenapi.ViewerConfig {
-	if codegen := cfg.getCodegenConfig(); codegen != nil && codegen.TemplatizedViewer != nil {
-		return codegen.TemplatizedViewer
-	}
-	return &codegenapi.ViewerConfig{
-		Path: codepath.Package,
-		Name: "Viewer",
-	}
 }
 
 const DEFAULT_GLOB = "src/**/*.ts"
@@ -518,7 +495,6 @@ type CodegenConfig struct {
 	SchemaSQLFilePath          string                           `yaml:"schemaSQLFilePath"`
 	DatabaseToCompareTo        string                           `yaml:"databaseToCompareTo"`
 	FieldPrivacyEvaluated      codegenapi.FieldPrivacyEvaluated `yaml:"fieldPrivacyEvaluated"`
-	TemplatizedViewer          *codegenapi.ViewerConfig         `yaml:"templatizedViewer"`
 }
 
 func cloneCodegen(cfg *CodegenConfig) *CodegenConfig {
@@ -543,7 +519,6 @@ func (cfg *CodegenConfig) Clone() *CodegenConfig {
 		SchemaSQLFilePath:          cfg.SchemaSQLFilePath,
 		DatabaseToCompareTo:        cfg.DatabaseToCompareTo,
 		FieldPrivacyEvaluated:      cfg.FieldPrivacyEvaluated,
-		TemplatizedViewer:          cloneViewerConfig(cfg.TemplatizedViewer),
 	}
 }
 
@@ -566,13 +541,6 @@ func (cfg *PrivacyConfig) Clone() *PrivacyConfig {
 		PolicyName: cfg.PolicyName,
 		Class:      cfg.Class,
 	}
-}
-
-func cloneViewerConfig(cfg *codegenapi.ViewerConfig) *codegenapi.ViewerConfig {
-	if cfg == nil {
-		return nil
-	}
-	return cfg.Clone()
 }
 
 func clonePrettierConfig(cfg *PrettierConfig) *PrettierConfig {

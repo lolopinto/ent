@@ -214,14 +214,12 @@ export class DenyIfEntPropertyIsRule<T extends Ent>
   }
 }
 
-export class AllowIfEntIsVisibleRule<
-  TEnt extends Ent<TViewer>,
-  TViewer extends Viewer,
-> implements PrivacyPolicyRule
+export class AllowIfEntIsVisibleRule<T extends Ent>
+  implements PrivacyPolicyRule
 {
-  constructor(private id: ID, private options: LoadEntOptions<TEnt, TViewer>) {}
+  constructor(private id: ID, private options: LoadEntOptions<T>) {}
 
-  async apply(v: TViewer, _ent?: Ent): Promise<PrivacyResult> {
+  async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
     const visible = await loadEnt(v, this.id, this.options);
     if (visible === null) {
       return Skip();
@@ -230,14 +228,12 @@ export class AllowIfEntIsVisibleRule<
   }
 }
 
-export class AllowIfEntIsNotVisibleRule<
-  TEnt extends Ent<TViewer>,
-  TViewer extends Viewer,
-> implements PrivacyPolicyRule
+export class AllowIfEntIsNotVisibleRule<T extends Ent>
+  implements PrivacyPolicyRule
 {
-  constructor(private id: ID, private options: LoadEntOptions<TEnt, TViewer>) {}
+  constructor(private id: ID, private options: LoadEntOptions<T>) {}
 
-  async apply(v: TViewer, _ent?: Ent): Promise<PrivacyResult> {
+  async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
     const visible = await loadEnt(v, this.id, this.options);
     if (visible === null) {
       return Allow();
@@ -246,34 +242,24 @@ export class AllowIfEntIsNotVisibleRule<
   }
 }
 
-export class AllowIfEntIsVisiblePolicy<
-  TEnt extends Ent<TViewer>,
-  TViewer extends Viewer,
-> implements PrivacyPolicy<TEnt, TViewer>
-{
-  constructor(private id: ID, private options: LoadEntOptions<TEnt, TViewer>) {}
+export class AllowIfEntIsVisiblePolicy<T extends Ent> implements PrivacyPolicy {
+  constructor(private id: ID, private options: LoadEntOptions<T>) {}
 
   rules = [new AllowIfEntIsVisibleRule(this.id, this.options), AlwaysDenyRule];
 }
 
-export class DenyIfEntIsVisiblePolicy<
-  TEnt extends Ent<TViewer>,
-  TViewer extends Viewer,
-> implements PrivacyPolicy<TEnt, TViewer>
-{
-  constructor(private id: ID, private options: LoadEntOptions<TEnt, TViewer>) {}
+export class DenyIfEntIsVisiblePolicy<T extends Ent> implements PrivacyPolicy {
+  constructor(private id: ID, private options: LoadEntOptions<T>) {}
 
   rules = [new DenyIfEntIsVisibleRule(this.id, this.options), AlwaysAllowRule];
 }
 
-export class DenyIfEntIsVisibleRule<
-  TEnt extends Ent<TViewer>,
-  TViewer extends Viewer,
-> implements PrivacyPolicyRule<TEnt, TViewer>
+export class DenyIfEntIsVisibleRule<T extends Ent>
+  implements PrivacyPolicyRule
 {
-  constructor(private id: ID, private options: LoadEntOptions<TEnt, TViewer>) {}
+  constructor(private id: ID, private options: LoadEntOptions<T>) {}
 
-  async apply(v: TViewer, _ent?: Ent): Promise<PrivacyResult> {
+  async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
     const visible = await loadEnt(v, this.id, this.options);
     if (visible === null) {
       return Skip();
@@ -282,14 +268,12 @@ export class DenyIfEntIsVisibleRule<
   }
 }
 
-export class DenyIfEntIsNotVisibleRule<
-  TEnt extends Ent<TViewer>,
-  TViewer extends Viewer,
-> implements PrivacyPolicyRule
+export class DenyIfEntIsNotVisibleRule<T extends Ent>
+  implements PrivacyPolicyRule
 {
-  constructor(private id: ID, private options: LoadEntOptions<TEnt, TViewer>) {}
+  constructor(private id: ID, private options: LoadEntOptions<T>) {}
 
-  async apply(v: TViewer, _ent?: Ent): Promise<PrivacyResult> {
+  async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
     const visible = await loadEnt(v, this.id, this.options);
     if (visible === null) {
       return Deny();
@@ -330,7 +314,7 @@ export class AllowIfEdgeExistsRule implements PrivacyPolicyRule {
 export class AllowIfViewerInboundEdgeExistsRule implements PrivacyPolicyRule {
   constructor(private edgeType: string) {}
 
-  async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
+  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
     return allowIfEdgeExistsRule(v.viewerID, ent?.id, this.edgeType, v.context);
   }
 }
