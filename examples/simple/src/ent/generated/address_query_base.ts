@@ -9,7 +9,6 @@ import {
   AssocEdgeQueryBase,
   EdgeQuerySource,
   ID,
-  Viewer,
 } from "@snowtop/ent";
 import {
   Address,
@@ -22,6 +21,7 @@ import {
   EventToInvitedQuery,
   EventToMaybeQuery,
 } from "../internal";
+import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export const addressToHostedEventsCountLoaderFactory =
   new AssocEdgeCountLoaderFactory(EdgeType.AddressToHostedEvents);
@@ -34,9 +34,13 @@ export const addressToHostedEventsDataLoaderFactory =
 export abstract class AddressToHostedEventsQueryBase extends AssocEdgeQueryBase<
   Address,
   Event,
-  AddressToHostedEventsEdge
+  AddressToHostedEventsEdge,
+  ExampleViewerAlias
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<Address, Event>) {
+  constructor(
+    viewer: ExampleViewerAlias,
+    src: EdgeQuerySource<Address, Event, ExampleViewerAlias>,
+  ) {
     super(
       viewer,
       src,
@@ -47,8 +51,11 @@ export abstract class AddressToHostedEventsQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends AddressToHostedEventsQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Address, Event>) => T,
-    viewer: Viewer,
+    this: new (
+      viewer: ExampleViewerAlias,
+      src: EdgeQuerySource<Address, Event>,
+    ) => T,
+    viewer: ExampleViewerAlias,
     src: EdgeQuerySource<Address, Event>,
   ): T {
     return new this(viewer, src);

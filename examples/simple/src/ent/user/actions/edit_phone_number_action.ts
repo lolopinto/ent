@@ -3,12 +3,14 @@ import CreateAuthCodeAction from "../../auth_code/actions/create_auth_code_actio
 import {
   EditPhoneNumberActionBase,
   EditPhoneNumberInput,
-} from "./generated/edit_phone_number_action_base";
-import { UserBuilder } from "./generated/user_builder";
+} from "../../generated/user/actions/edit_phone_number_action_base";
+import { UserBuilder } from "../../generated/user/actions/user_builder";
 import { User } from "../..";
 import { EditUserPrivacy } from "./edit_user_privacy";
 
 export { EditPhoneNumberInput };
+import { ExampleViewer } from "../../../viewer/viewer";
+import { Validator, Trigger, Observer } from "@snowtop/ent/action";
 
 class NewAuthCode {
   private code: string = "";
@@ -48,22 +50,46 @@ class NewAuthCode {
 export default class EditPhoneNumberAction extends EditPhoneNumberActionBase {
   private generateNewCode = new NewAuthCode();
 
-  validators = [
-    {
-      // confirm email not being used
-      async validate(builder: UserBuilder, input: EditPhoneNumberInput) {
-        const id = await User.loadIDFromPhoneNumber(input.newPhoneNumber);
-        if (id) {
-          throw new Error(
-            `cannot change phoneNumber to ${input.newPhoneNumber}`,
-          );
-        }
+  getValidators(): Validator<
+    User,
+    UserBuilder<EditPhoneNumberInput, User>,
+    ExampleViewer,
+    EditPhoneNumberInput,
+    User
+  >[] {
+    return [
+      {
+        // confirm email not being used
+        async validate(builder: UserBuilder, input: EditPhoneNumberInput) {
+          const id = await User.loadIDFromPhoneNumber(input.newPhoneNumber);
+          if (id) {
+            throw new Error(
+              `cannot change phoneNumber to ${input.newPhoneNumber}`,
+            );
+          }
+        },
       },
-    },
-  ];
-  triggers = [this.generateNewCode];
+    ];
+  }
+  getTriggers(): Trigger<
+    User,
+    UserBuilder<EditPhoneNumberInput, User>,
+    ExampleViewer,
+    EditPhoneNumberInput,
+    User
+  >[] {
+    return [this.generateNewCode];
+  }
 
-  observers = [this.generateNewCode];
+  getObservers(): Observer<
+    User,
+    UserBuilder<EditPhoneNumberInput, User>,
+    ExampleViewer,
+    EditPhoneNumberInput,
+    User
+  >[] {
+    return [this.generateNewCode];
+  }
 
   getPrivacyPolicy() {
     return EditUserPrivacy;

@@ -13,6 +13,9 @@ type Config interface {
 	DebugMode() bool
 	GeneratedHeader() string
 	AddChangedFile(file string)
+	// doesn't actually writes the files, just keeps track of which files were going to be written
+	// used to detect dangling files...
+	DummyWrite() bool
 }
 
 type Writer interface {
@@ -88,7 +91,13 @@ func writeFile(w Writer, cfg Config, opts ...func(opt *Options)) error {
 		}
 	}
 
-	err = ioutil.WriteFile(fullPath, b, 0666)
+	if cfg.DummyWrite() {
+		err = nil
+	} else {
+		// skip writing
+		err = ioutil.WriteFile(fullPath, b, 0666)
+	}
+
 	if !option.disableLog {
 		if err == nil {
 			debugLogInfo(option, "wrote to file %s", pathToFile)

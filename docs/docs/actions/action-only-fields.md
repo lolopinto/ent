@@ -8,11 +8,9 @@ Allows [configuring](/docs/ent-schema/actions#actiononlyfields) other fields to 
 
 In the [address example](/docs/actions/triggers#changeset), with the Event schema configured as follows:
 
-```ts title="src/schema/event.ts"
-export default class Event extends BaseEntSchema implements Schema {
-
-  actions: Action[] = [
-
+```ts title="src/schema/event_schema.ts"
+const EventSchema = new EntSchema({
+  actions: [
     {
       operation: ActionOperation.Create,
       actionOnlyFields: [
@@ -24,40 +22,42 @@ export default class Event extends BaseEntSchema implements Schema {
         },
       ],
     },
-
-  ]; 
-}
+  ], 
+}); 
+export default EventSchema; 
 
 ```
 
-```ts title="src/schema/address.ts"
-export default class Address extends BaseEntSchema implements Schema {
-  fields: Field[] = [
-    StringType({ name: "Street" }),
-    StringType({ name: "City" }),
-    StringType({ name: "State" }),
-    StringType({ name: "ZipCode" }),
-    StringType({ name: "Apartment", nullable: true }),
-    UUIDType({
-      name: "OwnerID",
+and the following `Address` schema:
+
+```ts title="src/schema/address_schema.ts"
+const AddressSchema = new EntSchema({
+  fields: {
+    Street: StringType(),
+    City: StringType(),
+    State: StringType(),
+    ZipCode: StringType(),
+    Apartment: StringType({ nullable: true }),
+    OwnerID: UUIDType({
       index: true, 
       polymorphic: {
         types: [NodeType.Event],
       }
     }),
-  ];
+  },
 
-  actions: Action[] = [
+  actions: [
     {
       operation: ActionOperation.Create,
     },
-  ];
-}
+  ],
+});
+export default AddressSchema
 ```
 
 we end up with the following changes:
 
-```ts title="src/ent/event/actions/generated/create_event_action_base.ts"
+```ts title="src/ent/generated/event/actions/create_event_action_base.ts"
 interface customAddressInput {
   street: string; 
   city: string; 
@@ -68,7 +68,7 @@ interface customAddressInput {
 
 export interface EventCreateInput {
   name: string; 
-  creatorID: ID | Builder<User>; 
+  creatorID: ID | Builder<User, Viewer>; 
   startTime: Date; 
   endTime?: Date | null; 
   location: string; 

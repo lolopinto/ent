@@ -8,17 +8,15 @@ This is done via the `ActionOperation.Create` or `ActionOperation.Mutations` [op
 
 Based on the [schema](/docs/actions/action#schema) with the following extra configuration:
 
-```ts title="src/event/schema.ts"
-export default class Event extends BaseEntSchema implements Schema {
-
-  actions: Action[] = [
-
+```ts title="src/schema/event_schema.ts"
+const EventSchema = new EntSchema({
+  actions: [
     {
       operation: ActionOperation.Create,
     },
-
-  ]; 
-}
+  ], 
+}); 
+export default EventSchema; 
 
 ```
 
@@ -26,25 +24,34 @@ leads to 2 classes.
 
 First, the base class:
 
-```ts title="src/ent/event/actions/generated/create_event_action_base.ts"
+```ts title="src/ent/generated/event/actions/create_event_action_base.ts"
 
 export interface EventCreateInput {
   name: string;
-  creatorID: ID | Builder<User>;
+  creatorID: ID | Builder<User, Viewer>;
   startTime: Date;
   endTime?: Date | null;
   location: string;
 }
 
-export class CreateEventActionBase implements Action<Event> {
-  public readonly builder: EventBuilder;
+export class CreateEventActionBase 
+  implements  
+  Action<
+    Event,
+    EventBuilder<EventCreateInput, Event | null>,
+    Viewer,
+    EventCreateInput,
+    Event | null
+  > 
+{
+  public readonly builder: EventBuilder<EventCreateInput, Event | null>;
   public readonly viewer: Viewer;
   protected input: EventCreateInput;
 
   constructor(viewer: Viewer, input: EventCreateInput) {
     this.viewer = viewer;
     this.input = input;
-    this.builder = new EventBuilder(this.viewer, WriteOperation.Insert, this);
+    this.builder = new EventBuilder(this.viewer, WriteOperation.Insert, this, null);
   }
 
   getPrivacyPolicy(): PrivacyPolicy {
@@ -61,7 +68,7 @@ and then the subclass:
 import {
   CreateEventActionBase, 
   EventCreateInput, 
-} from "src/ent/event/actions/generated/create_event_action_base"; 
+} from "src/ent/generated/event/actions/create_event_action_base"; 
 
 export { EventCreateInput }; 
 

@@ -13,14 +13,10 @@ For example:
 export class AuthResolver {
   @gqlMutation({ name: "userAuth", type: UserAuthPayload })
   async userAuth(
-
     @gqlContextType() context: RequestContext,
     @gqlArg("input") input: UserAuthInput,
-
   ): Promise<UserAuthPayload> {
-
     return {viewerID : "1"};
-
   }
 }
 
@@ -42,25 +38,20 @@ export const UserAuthType: GraphQLFieldConfig<
   undefined, 
   RequestContext, 
   { [input: string]: UserAuthInput }
-
 > = {
 
   // ...
   resolve: async (
-
     _source,
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-
   ): Promise<UserAuthPayload> => {
-
     const r = new AuthResolver();
     return r.userAuth(context, {
       emailAddress: input.emailAddress,
       password: input.password,
     });
-
   }, 
 }; 
 ```

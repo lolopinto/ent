@@ -1,17 +1,18 @@
 import { Client } from "pg";
 import { createDB } from "src/testsetup/globalSetup";
-import { loadConfig, LoggedOutViewer } from "@snowtop/ent";
+import { loadConfig } from "@snowtop/ent";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
 import CreateUserAction, {
   UserCreateInput,
 } from "../user/actions/create_user_action";
 import { User } from "../../ent";
 import * as clause from "@snowtop/ent/core/clause";
+import { LoggedOutExampleViewer } from "../../viewer/viewer";
 
 let pgClient: Client;
 let globalDB: string;
 
-const loggedOutViewer = new LoggedOutViewer();
+const loggedOutViewer = new LoggedOutExampleViewer();
 
 beforeAll(async () => {
   const { db, user, password, client } = await createDB();

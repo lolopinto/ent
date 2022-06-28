@@ -8,18 +8,17 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { Todo } from "src/ent/";
-import {
-  TodoBuilder,
-  TodoInput,
-} from "src/ent/todo/actions/generated/todo_builder";
+import { TodoBuilder } from "src/ent/todo/actions/generated/todo_builder";
 
 export interface RenameTodoInput {
   text?: string;
   reasonForChange?: string | null;
 }
 
-export class RenameTodoStatusActionBase implements Action<Todo> {
-  public readonly builder: TodoBuilder;
+export class RenameTodoStatusActionBase
+  implements Action<Todo, TodoBuilder<RenameTodoInput>, RenameTodoInput>
+{
+  public readonly builder: TodoBuilder<RenameTodoInput>;
   public readonly viewer: Viewer;
   protected input: RenameTodoInput;
   protected todo: Todo;
@@ -36,11 +35,11 @@ export class RenameTodoStatusActionBase implements Action<Todo> {
     this.todo = todo;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<Todo> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): TodoInput {
+  getInput(): RenameTodoInput {
     return this.input;
   }
 

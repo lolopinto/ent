@@ -1,11 +1,10 @@
 import { advanceTo } from "jest-date-mock";
 import { WriteOperation } from "../action";
-import { Data, Ent } from "../core/base";
+import { Data, Ent, Viewer } from "../core/base";
 import { LoggedOutViewer } from "../core/viewer";
 import { StringType, TimestampType } from "../schema/field";
 import {
   BaseEntSchema,
-  Field,
   Pattern,
   UpdateOperation,
   TransformedUpdateOperation,
@@ -30,6 +29,7 @@ import {
 } from "../testutils/db/test_db";
 import { convertDate } from "../core/convert";
 import { loadConfig } from "../core/config";
+import { FieldMap } from "../schema";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -84,16 +84,15 @@ describe("sqlite", () => {
 
 class DeletedAtPattern implements Pattern {
   name = "deleted_at";
-  fields: Field[] = [
-    TimestampType({
-      // need this to be lowerCamelCase because we do this based on field name
-      // #510
-      name: "deletedAt",
+  fields: FieldMap = {
+    // need this to be lowerCamelCase because we do this based on field name
+    // #510
+    deletedAt: TimestampType({
       nullable: true,
       index: true,
       defaultValueOnCreate: () => null,
     }),
-  ];
+  };
 
   transformRead(): clause.Clause {
     // this is based on sql. other is based on field
@@ -102,7 +101,7 @@ class DeletedAtPattern implements Pattern {
 
   transformWrite<T extends Ent>(
     stmt: UpdateOperation<T>,
-  ): TransformedUpdateOperation<T> | undefined {
+  ): TransformedUpdateOperation<T> | null {
     switch (stmt.op) {
       case SQLStatementOperation.Delete:
         return {
@@ -113,19 +112,19 @@ class DeletedAtPattern implements Pattern {
           },
         };
     }
+    return null;
   }
 }
 
 class DeletedAtSnakeCasePattern implements Pattern {
   name = "deleted_at";
-  fields: Field[] = [
-    TimestampType({
-      name: "deleted_at",
+  fields: FieldMap = {
+    deleted_at: TimestampType({
       nullable: true,
       index: true,
       defaultValueOnCreate: () => null,
     }),
-  ];
+  };
 
   transformRead(): clause.Clause {
     // this is based on sql. other is based on field
@@ -134,7 +133,7 @@ class DeletedAtSnakeCasePattern implements Pattern {
 
   transformWrite<T extends Ent>(
     stmt: UpdateOperation<T>,
-  ): TransformedUpdateOperation<T> | undefined {
+  ): TransformedUpdateOperation<T> | null {
     switch (stmt.op) {
       case SQLStatementOperation.Delete:
         return {
@@ -145,6 +144,7 @@ class DeletedAtSnakeCasePattern implements Pattern {
           },
         };
     }
+    return null;
   }
 }
 
@@ -153,10 +153,10 @@ class UserSchema extends BaseEntSchema {
     super();
     this.addPatterns(new DeletedAtPattern());
   }
-  fields: Field[] = [
-    StringType({ name: "FirstName" }),
-    StringType({ name: "LastName" }),
-  ];
+  fields: FieldMap = {
+    FirstName: StringType(),
+    LastName: StringType(),
+  };
   ent = User;
 }
 
@@ -165,10 +165,10 @@ class ContactSchema extends BaseEntSchema {
     super();
     this.addPatterns(new DeletedAtSnakeCasePattern());
   }
-  fields: Field[] = [
-    StringType({ name: "first_name" }),
-    StringType({ name: "last_name" }),
-  ];
+  fields: FieldMap = {
+    first_name: StringType(),
+    last_name: StringType(),
+  };
   ent = Contact;
 }
 
@@ -231,16 +231,39 @@ function transformDeletedAt(row: Data | null) {
   return row;
 }
 
+function getInsertUserAction(
+  map: Map<string, any>,
+  viewer: Viewer = new LoggedOutViewer(),
+) {
+  return new SimpleAction(
+    viewer,
+    new UserSchema(),
+    map,
+    WriteOperation.Insert,
+    null,
+  );
+}
+
+function getInsertContactAction(
+  map: Map<string, any>,
+  viewer: Viewer = new LoggedOutViewer(),
+) {
+  return new SimpleAction(
+    viewer,
+    new ContactSchema(),
+    map,
+    WriteOperation.Insert,
+    null,
+  );
+}
+
 function commonTests() {
   test("delete -> update", async () => {
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
-      new UserSchema(),
+    const action = getInsertUserAction(
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
-      WriteOperation.Insert,
     );
     const user = await action.saveX();
     const loader = getNewLoader();
@@ -281,14 +304,11 @@ function commonTests() {
   });
 
   test("really delete", async () => {
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
-      new UserSchema(),
+    const action = getInsertUserAction(
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
-      WriteOperation.Insert,
     );
     const user = await action.saveX();
     const loader = getNewLoader();
@@ -331,14 +351,11 @@ function commonTests() {
       expect(users.length).toBe(ct);
     };
     verifyPostgres(0);
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
-      new UserSchema(),
+    const action = getInsertUserAction(
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
-      WriteOperation.Insert,
     );
     const user = await action.saveX();
     verifyPostgres(1);
@@ -371,14 +388,11 @@ function commonTests() {
       }
     };
 
-    const action2 = new SimpleAction(
-      new LoggedOutViewer(),
-      new UserSchema(),
+    const action2 = getInsertUserAction(
       new Map([
         ["FirstName", "Aegon"],
         ["LastName", "Targaryen"],
       ]),
-      WriteOperation.Insert,
     );
     // @ts-ignore
     action2.transformWrite = tranformJonToAegon;
@@ -389,14 +403,11 @@ function commonTests() {
     expect(user2.data.last_name).toBe("Targaryen");
     verifyPostgres(1);
 
-    const action3 = new SimpleAction(
-      new LoggedOutViewer(),
-      new UserSchema(),
+    const action3 = getInsertUserAction(
       new Map([
         ["FirstName", "Sansa"],
         ["LastName", "Stark"],
       ]),
-      WriteOperation.Insert,
     );
     // @ts-ignore
     action3.transformWrite = tranformJonToAegon;
@@ -410,14 +421,11 @@ function commonTests() {
   });
 
   test("delete -> update. snake_case", async () => {
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
-      new ContactSchema(),
+    const action = getInsertContactAction(
       new Map([
         ["first_name", "Jon"],
         ["last_name", "Snow"],
       ]),
-      WriteOperation.Insert,
     );
     const contact = await action.saveX();
     const loader = getContactNewLoader();
@@ -458,14 +466,11 @@ function commonTests() {
   });
 
   test("really delete. snake_case", async () => {
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
-      new ContactSchema(),
+    const action = getInsertContactAction(
       new Map([
         ["first_name", "Jon"],
         ["last_name", "Snow"],
       ]),
-      WriteOperation.Insert,
     );
     const contact = await action.saveX();
     const loader = getContactNewLoader();
@@ -508,14 +513,11 @@ function commonTests() {
       expect(contacts.length).toBe(ct);
     };
     verifyPostgres(0);
-    const action = new SimpleAction(
-      new LoggedOutViewer(),
-      new ContactSchema(),
+    const action = getInsertContactAction(
       new Map([
         ["first_name", "Jon"],
         ["last_name", "Snow"],
       ]),
-      WriteOperation.Insert,
     );
     const contact = await action.saveX();
     verifyPostgres(1);
@@ -548,14 +550,11 @@ function commonTests() {
       }
     };
 
-    const action2 = new SimpleAction(
-      new LoggedOutViewer(),
-      new ContactSchema(),
+    const action2 = getInsertContactAction(
       new Map([
         ["first_name", "Aegon"],
         ["last_name", "Targaryen"],
       ]),
-      WriteOperation.Insert,
     );
     // @ts-ignore
     action2.transformWrite = tranformJonToAegon;
@@ -566,14 +565,11 @@ function commonTests() {
     expect(contact2.data.last_name).toBe("Targaryen");
     verifyPostgres(1);
 
-    const action3 = new SimpleAction(
-      new LoggedOutViewer(),
-      new ContactSchema(),
+    const action3 = getInsertContactAction(
       new Map([
         ["first_name", "Sansa"],
         ["last_name", "Stark"],
       ]),
-      WriteOperation.Insert,
     );
     // @ts-ignore
     action3.transformWrite = tranformJonToAegon;
@@ -584,6 +580,111 @@ function commonTests() {
     expect(contact3.data.first_name).toBe("Sansa");
     expect(contact3.data.last_name).toBe("Stark");
     verifyPostgres(2);
+  });
+
+  test("insert -> update no existingEnt returned", async () => {
+    const verifyPostgres = (ct: number) => {
+      const contacts = QueryRecorder.getData().get("contacts") || [];
+      if (DB.getDialect() !== Dialect.Postgres) {
+        return;
+      }
+      expect(contacts.length).toBe(ct);
+    };
+    verifyPostgres(0);
+    const action = getInsertContactAction(
+      new Map([
+        ["first_name", "Jon"],
+        ["last_name", "Snow"],
+      ]),
+    );
+    const contact = await action.saveX();
+    verifyPostgres(1);
+
+    const loader = getContactNewLoader();
+
+    const row = await loader.load(contact.id);
+    expect(row).toEqual({
+      id: contact.id,
+      first_name: "Jon",
+      last_name: "Snow",
+      deleted_at: null,
+    });
+
+    const tranformJonToAegon = (
+      stmt: UpdateOperation<Contact>,
+    ): TransformedUpdateOperation<Contact> | undefined => {
+      if (stmt.op != SQLStatementOperation.Insert || !stmt.data) {
+        return;
+      }
+
+      const firstName = stmt.data.get("first_name");
+      const lastName = stmt.data.get("last_name");
+
+      if (firstName == "Aegon" && lastName == "Targaryen") {
+        return {
+          op: SQLStatementOperation.Update,
+        };
+      }
+    };
+
+    const action2 = getInsertContactAction(
+      new Map([
+        ["first_name", "Aegon"],
+        ["last_name", "Targaryen"],
+      ]),
+    );
+    // @ts-ignore
+    action2.transformWrite = tranformJonToAegon;
+
+    await expect(action2.saveX()).rejects.toThrow(
+      /cannot transform an insert operation without providing an existing ent/,
+    );
+  });
+
+  test("throw in transformWrite", async () => {
+    const verifyPostgres = (ct: number) => {
+      const contacts = QueryRecorder.getData().get("contacts") || [];
+      if (DB.getDialect() !== Dialect.Postgres) {
+        return;
+      }
+      expect(contacts.length).toBe(ct);
+    };
+    verifyPostgres(0);
+    const action = getInsertContactAction(
+      new Map([
+        ["first_name", "Jon"],
+        ["last_name", "Snow"],
+      ]),
+    );
+    const contact = await action.saveX();
+    verifyPostgres(1);
+
+    const loader = getContactNewLoader();
+
+    const row = await loader.load(contact.id);
+    expect(row).toEqual({
+      id: contact.id,
+      first_name: "Jon",
+      last_name: "Snow",
+      deleted_at: null,
+    });
+
+    const tranformJonToAegon = (
+      stmt: UpdateOperation<Contact>,
+    ): TransformedUpdateOperation<Contact> | undefined => {
+      throw new Error("test failure");
+    };
+
+    const action2 = getInsertContactAction(
+      new Map([
+        ["first_name", "Aegon"],
+        ["last_name", "Targaryen"],
+      ]),
+    );
+    // @ts-ignore
+    action2.transformWrite = tranformJonToAegon;
+
+    await expect(action2.saveX()).rejects.toThrow(/test failure/);
   });
 }
 

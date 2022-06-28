@@ -20,7 +20,7 @@ schema
   .has()
   .symbols();
 function pw(): Password {
-  return PasswordType({ name: "password" }).validate((val: string): boolean => {
+  return PasswordType().validate((val: string): boolean => {
     return !!schema.validate(val);
   });
 }
@@ -57,14 +57,14 @@ describe("password-validator", () => {
 
 describe("manual format", () => {
   test("min Len", async () => {
-    let pw = PasswordType({ name: "password" }).minLen(10);
+    let pw = PasswordType().minLen(10);
 
     expect(pw.valid("hello")).toBe(false);
     expect(pw.valid("hello123456")).toBe(true);
   });
 
   test("max Len", async () => {
-    let pw = PasswordType({ name: "password" }).maxLen(10);
+    let pw = PasswordType().maxLen(10);
 
     expect(pw.valid("hello")).toBe(true);
     expect(pw.valid("hellohello")).toBe(true);
@@ -72,14 +72,14 @@ describe("manual format", () => {
   });
 
   test("length", async () => {
-    let pw = PasswordType({ name: "password" }).length(10);
+    let pw = PasswordType().length(10);
 
     expect(pw.valid("hello")).toBe(false);
     expect(pw.valid("hellohello")).toBe(true);
   });
 
   test("regex match", async () => {
-    let pw = PasswordType({ name: "password" }).match(/^[a-zA-Z0-9_-]{5,20}$/);
+    let pw = PasswordType().match(/^[a-zA-Z0-9_-]{5,20}$/);
 
     // bad regex!
     expect(pw.valid("password")).toBe(true);
@@ -87,9 +87,7 @@ describe("manual format", () => {
   });
 
   test("regex does not match", async () => {
-    let pw = PasswordType({ name: "password" }).doesNotMatch(
-      /^[a-zA-Z0-9_-]{5,20}$/,
-    );
+    let pw = PasswordType().doesNotMatch(/^[a-zA-Z0-9_-]{5,20}$/);
 
     // bad regex!
     expect(pw.valid("password")).toBe(false);

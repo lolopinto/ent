@@ -30,10 +30,10 @@ export const CreateTodoInputType = new GraphQLInputObjectType({
   name: "CreateTodoInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     text: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     creator_id: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -42,7 +42,7 @@ export const CreateTodoPayloadType = new GraphQLObjectType({
   name: "CreateTodoPayload",
   fields: (): GraphQLFieldConfigMap<CreateTodoPayload, RequestContext> => ({
     todo: {
-      type: GraphQLNonNull(TodoType),
+      type: new GraphQLNonNull(TodoType),
     },
   }),
 });
@@ -52,11 +52,11 @@ export const CreateTodoType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customCreateTodoInput }
 > = {
-  type: GraphQLNonNull(CreateTodoPayloadType),
+  type: new GraphQLNonNull(CreateTodoPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(CreateTodoInputType),
+      type: new GraphQLNonNull(CreateTodoInputType),
     },
   },
   resolve: async (

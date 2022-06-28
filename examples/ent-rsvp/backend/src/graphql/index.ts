@@ -1,6 +1,12 @@
 import express from "express";
-import { graphqlHTTP } from "express-graphql";
-import { IncomingMessage, ServerResponse } from "http";
+import {
+  getGraphQLParameters,
+  processRequest,
+  ExecutionContext,
+  sendResult,
+  shouldRenderGraphiQL,
+  renderGraphiQL,
+} from "graphql-helix";
 import { buildContext, registerAuthHandler } from "@snowtop/ent/auth";
 import { PassportStrategyHandler } from "@snowtop/ent-passport";
 import passport from "passport";
@@ -39,6 +45,7 @@ Sentry.init({
 
 app.use(Sentry.Handlers.requestHandler());
 app.use(Sentry.Handlers.tracingHandler());
+app.use(express.json());
 
 app.disable("x-powered-by");
 
@@ -76,25 +83,32 @@ app.use(
   "/graphql",
   cors(delegagte),
   graphqlUploadExpress({ maxFileSize: 10000000, maxFiles: 10 }),
-  graphqlHTTP((request: IncomingMessage, response: ServerResponse, params) => {
-    if (params && params.query) {
-      const result = r.exec(params.query);
-      if (result) {
-        // set the query or mutation name as the sentry transaction name
-        //https://docs.sentry.io/platforms/node/guides/express/enriching-events/transaction-name/
-        Sentry.configureScope((scope) => scope.setTransactionName(result[2]));
+  async (req, res, params) => {
+    if (shouldRenderGraphiQL(req)) {
+      res.send(renderGraphiQL());
+    } else {
+      const { operationName, query, variables } = getGraphQLParameters(req);
+      if (query) {
+        const result = r.exec(query);
+        if (result) {
+          // set the query or mutation name as the sentry transaction name
+          //https://docs.sentry.io/platforms/node/guides/express/enriching-events/transaction-name/
+          Sentry.configureScope((scope) => scope.setTransactionName(result[2]));
+        }
       }
+      const result = await processRequest({
+        operationName,
+        query,
+        variables,
+        request: req,
+        schema,
+        contextFactory: async (executionContext: ExecutionContext) => {
+          return buildContext(req, res);
+        },
+      });
+      await sendResult(result, res);
     }
-    let doWork = async () => {
-      let context = await buildContext(request, response);
-      return {
-        schema: schema,
-        graphiql: true,
-        context,
-      };
-    };
-    return doWork();
-  }),
+  },
 );
 
 process.on("uncaughtException", (err) => {

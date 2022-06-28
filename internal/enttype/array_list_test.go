@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
 
@@ -19,9 +20,9 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(sa.Text())",
 				graphql:    "[String!]!",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGQLImportPath("GraphQLString"),
 				},
 				tsType: "string[]",
@@ -42,8 +43,8 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(sa.Text())",
 				graphql:    "[String!]",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGQLImportPath("GraphQLString"),
 				},
 				tsType: "string[] | null",
@@ -64,9 +65,9 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(sa.Integer())",
 				graphql:    "[Int!]!",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGQLImportPath("GraphQLInt"),
 				},
 				tsType: "number[]",
@@ -87,8 +88,8 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(sa.Integer())",
 				graphql:    "[Int!]",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGQLImportPath("GraphQLInt"),
 				},
 				tsType: "number[] | null",
@@ -109,9 +110,9 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(sa.Boolean())",
 				graphql:    "[Boolean!]!",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGQLImportPath("GraphQLBoolean"),
 				},
 				tsType: "boolean[]",
@@ -132,8 +133,8 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(sa.Boolean())",
 				graphql:    "[Boolean!]",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGQLImportPath("GraphQLBoolean"),
 				},
 				tsType: "boolean[] | null",
@@ -154,9 +155,9 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(sa.Float())",
 				graphql:    "[Float!]!",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGQLImportPath("GraphQLFloat"),
 				},
 				tsType: "number[]",
@@ -177,8 +178,8 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(sa.Float())",
 				graphql:    "[Float!]",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGQLImportPath("GraphQLFloat"),
 				},
 				tsType: "number[] | null",
@@ -199,9 +200,9 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(sa.Date())",
 				graphql:    "[Time!]!",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 				},
 				tsType: "Date[]",
@@ -222,8 +223,8 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(sa.Date())",
 				graphql:    "[Time!]",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 				},
 				tsType: "Date[] | null",
@@ -244,9 +245,9 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(sa.Time())",
 				graphql:    "[String!]!",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGQLImportPath("GraphQLString"),
 				},
 				tsType: "string[]",
@@ -267,8 +268,8 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(sa.Time())",
 				graphql:    "[String!]",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGQLImportPath("GraphQLString"),
 				},
 				tsType: "string[] | null",
@@ -289,9 +290,9 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(sa.Time(timezone=True))",
 				graphql:    "[String!]!",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGQLImportPath("GraphQLString"),
 				},
 				tsType: "string[]",
@@ -312,8 +313,8 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(sa.Time(timezone=True))",
 				graphql:    "[String!]",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGQLImportPath("GraphQLString"),
 				},
 				tsType: "string[] | null",
@@ -334,9 +335,9 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(sa.TIMESTAMP())",
 				graphql:    "[Time!]!",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 				},
 				tsType: "Date[]",
@@ -357,8 +358,8 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(sa.TIMESTAMP())",
 				graphql:    "[Time!]",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 				},
 				tsType: "Date[] | null",
@@ -379,9 +380,9 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(sa.TIMESTAMP(timezone=True))",
 				graphql:    "[Time!]!",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 				},
 				tsType: "Date[]",
@@ -402,8 +403,8 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(sa.TIMESTAMP(timezone=True))",
 				graphql:    "[Time!]",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 				},
 				tsType: "Date[] | null",
@@ -434,9 +435,9 @@ func TestArrayListType(t *testing.T) {
 				enumType:   true,
 				tsListType: true,
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
 				},
 				tsType: "AccountStatus[]",
@@ -479,8 +480,8 @@ func TestArrayListType(t *testing.T) {
 				db:         "postgresql.ARRAY(sa.Text())",
 				graphql:    "[AccountStatus!]",
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
 				},
 				tsType: "AccountStatus[] | null",
@@ -513,9 +514,9 @@ func TestArrayListType(t *testing.T) {
 				graphql:    "[JSON!]!",
 				tsListType: true,
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
 				tsType: "any[]",
@@ -536,9 +537,9 @@ func TestArrayListType(t *testing.T) {
 				graphql:    "[JSON!]!",
 				tsListType: true,
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
 				tsType: "any[]",
@@ -559,8 +560,8 @@ func TestArrayListType(t *testing.T) {
 				graphql:    "[JSON!]",
 				tsListType: true,
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
 				tsType: "any[] | null",
@@ -581,8 +582,8 @@ func TestArrayListType(t *testing.T) {
 				graphql:    "[JSON!]",
 				tsListType: true,
 				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLImportPath("GraphQLList"),
-					tsimport.NewGQLImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
 				},
 				tsType: "any[] | null",
@@ -591,6 +592,916 @@ func TestArrayListType(t *testing.T) {
 				},
 				goTypePanics: true,
 				convertFn:    "convertNullableJSONList",
+			},
+			nil,
+		},
+
+		"jsonb with sub fields list": {
+			&enttype.ArrayListType{
+				ElemType: &enttype.JSONBType{
+					CommonJSONType: enttype.CommonJSONType{
+						CustomTsInterface:      "TypeWithSubFields",
+						CustomGraphQLInterface: "TypeWithSubFields",
+						SubFields: []*input.Field{
+							{
+								Type: &input.FieldType{
+									DBType: input.String,
+								},
+								Name: "string",
+							},
+						},
+					},
+				},
+			},
+			expType{
+				db:         "postgresql.ARRAY(postgresql.JSONB)",
+				graphql:    "[TypeWithSubFields!]!",
+				tsListType: true,
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithSubFields"),
+				},
+				tsType: "TypeWithSubFields[]",
+				nullableType: &enttype.NullableArrayListType{
+					ElemType: &enttype.JSONBType{
+						CommonJSONType: enttype.CommonJSONType{
+							CustomTsInterface:      "TypeWithSubFields",
+							CustomGraphQLInterface: "TypeWithSubFields",
+							SubFields: []*input.Field{
+								{
+									Type: &input.FieldType{
+										DBType: input.String,
+									},
+									Name: "string",
+								},
+							},
+						},
+					},
+				},
+				goTypePanics: true,
+				convertFn:    "convertJSONList",
+				tsTypeImports: []*tsimport.ImportPath{
+					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
+				},
+				subFields: []*input.Field{
+					{
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+						Name: "string",
+					},
+				},
+			},
+			nil,
+		},
+		"nullable jsonb with sub fields list": {
+			&enttype.NullableArrayListType{
+				ElemType: &enttype.JSONBType{
+					CommonJSONType: enttype.CommonJSONType{
+						CustomTsInterface:      "TypeWithSubFields",
+						CustomGraphQLInterface: "TypeWithSubFields",
+						SubFields: []*input.Field{
+							{
+								Type: &input.FieldType{
+									DBType: input.String,
+								},
+								Name: "string",
+							},
+						},
+					},
+				},
+			},
+			expType{
+				db:         "postgresql.ARRAY(postgresql.JSONB)",
+				graphql:    "[TypeWithSubFields!]",
+				tsListType: true,
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithSubFields"),
+				},
+				tsType: "TypeWithSubFields[] | null",
+				nonNullableType: &enttype.ArrayListType{
+					ElemType: &enttype.JSONBType{
+						CommonJSONType: enttype.CommonJSONType{
+							CustomTsInterface:      "TypeWithSubFields",
+							CustomGraphQLInterface: "TypeWithSubFields",
+							SubFields: []*input.Field{
+								{
+									Type: &input.FieldType{
+										DBType: input.String,
+									},
+									Name: "string",
+								},
+							},
+						},
+					},
+				},
+				goTypePanics: true,
+				convertFn:    "convertNullableJSONList",
+				tsTypeImports: []*tsimport.ImportPath{
+					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
+				},
+				subFields: []*input.Field{
+					{
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+						Name: "string",
+					},
+				},
+			},
+			nil,
+		},
+		"json with sub fields list": {
+			&enttype.ArrayListType{
+				ElemType: &enttype.JSONType{
+					CommonJSONType: enttype.CommonJSONType{
+						CustomTsInterface:      "TypeWithSubFields",
+						CustomGraphQLInterface: "TypeWithSubFields",
+						SubFields: []*input.Field{
+							{
+								Type: &input.FieldType{
+									DBType: input.String,
+								},
+								Name: "string",
+							},
+						},
+					},
+				},
+			},
+			expType{
+				db:         "postgresql.ARRAY(postgresql.JSON)",
+				graphql:    "[TypeWithSubFields!]!",
+				tsListType: true,
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithSubFields"),
+				},
+				tsType: "TypeWithSubFields[]",
+				nullableType: &enttype.NullableArrayListType{
+					ElemType: &enttype.JSONType{
+						CommonJSONType: enttype.CommonJSONType{
+							CustomTsInterface:      "TypeWithSubFields",
+							CustomGraphQLInterface: "TypeWithSubFields",
+							SubFields: []*input.Field{
+								{
+									Type: &input.FieldType{
+										DBType: input.String,
+									},
+									Name: "string",
+								},
+							},
+						},
+					},
+				},
+				goTypePanics: true,
+				convertFn:    "convertJSONList",
+				tsTypeImports: []*tsimport.ImportPath{
+					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
+				},
+				subFields: []*input.Field{
+					{
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+						Name: "string",
+					},
+				},
+			},
+			nil,
+		},
+		"nullable json with sub fields list": {
+			&enttype.NullableArrayListType{
+				ElemType: &enttype.JSONType{
+					CommonJSONType: enttype.CommonJSONType{
+						CustomTsInterface:      "TypeWithSubFields",
+						CustomGraphQLInterface: "TypeWithSubFields",
+						SubFields: []*input.Field{
+							{
+								Type: &input.FieldType{
+									DBType: input.String,
+								},
+								Name: "string",
+							},
+						},
+					},
+				},
+			},
+			expType{
+				db:         "postgresql.ARRAY(postgresql.JSON)",
+				graphql:    "[TypeWithSubFields!]",
+				tsListType: true,
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithSubFields"),
+				},
+				tsType: "TypeWithSubFields[] | null",
+				nonNullableType: &enttype.ArrayListType{
+					ElemType: &enttype.JSONType{
+						CommonJSONType: enttype.CommonJSONType{
+							CustomTsInterface:      "TypeWithSubFields",
+							CustomGraphQLInterface: "TypeWithSubFields",
+							SubFields: []*input.Field{
+								{
+									Type: &input.FieldType{
+										DBType: input.String,
+									},
+									Name: "string",
+								},
+							},
+						},
+					},
+				},
+				goTypePanics: true,
+				convertFn:    "convertNullableJSONList",
+				tsTypeImports: []*tsimport.ImportPath{
+					tsimport.NewLocalEntImportPath("TypeWithSubFields"),
+				},
+				subFields: []*input.Field{
+					{
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+						Name: "string",
+					},
+				},
+			},
+			nil,
+		},
+
+		"jsonb with union fields list": {
+			&enttype.ArrayListType{
+				ElemType: &enttype.JSONBType{
+					CommonJSONType: enttype.CommonJSONType{
+						CustomTsInterface:      "TypeWithUnionFields",
+						CustomGraphQLInterface: "TypeWithUnionFields",
+						UnionFields: []*input.Field{
+							{
+								Type: &input.FieldType{
+									DBType:      input.JSONB,
+									Type:        "UnionField",
+									GraphQLType: "UnionField",
+									SubFields: []*input.Field{
+										{
+											Name: "string",
+											Type: &input.FieldType{
+												DBType: input.String,
+											},
+										},
+										{
+											Name: "int",
+											Type: &input.FieldType{
+												DBType: input.Int,
+											},
+										},
+									},
+								},
+								Name: "foo",
+							},
+							{
+								Type: &input.FieldType{
+									DBType: input.JSONB,
+									SubFields: []*input.Field{
+										{
+											Name: "string",
+											Type: &input.FieldType{
+												DBType: input.String,
+											},
+										},
+										{
+											Name: "int",
+											Type: &input.FieldType{
+												DBType: input.Int,
+											},
+										},
+									},
+								},
+								Name: "bar",
+							},
+						},
+					},
+				},
+			},
+			expType{
+				db:         "postgresql.ARRAY(postgresql.JSONB)",
+				graphql:    "[TypeWithUnionFields!]!",
+				tsListType: true,
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithUnionFields"),
+				},
+				tsType: "TypeWithUnionFields[]",
+				nullableType: &enttype.NullableArrayListType{
+					ElemType: &enttype.JSONBType{
+						CommonJSONType: enttype.CommonJSONType{
+							CustomTsInterface:      "TypeWithUnionFields",
+							CustomGraphQLInterface: "TypeWithUnionFields",
+							UnionFields: []*input.Field{
+								{
+									Type: &input.FieldType{
+										DBType:      input.JSONB,
+										Type:        "UnionField",
+										GraphQLType: "UnionField",
+										SubFields: []*input.Field{
+											{
+												Name: "string",
+												Type: &input.FieldType{
+													DBType: input.String,
+												},
+											},
+											{
+												Name: "int",
+												Type: &input.FieldType{
+													DBType: input.Int,
+												},
+											},
+										},
+									},
+									Name: "foo",
+								},
+								{
+									Type: &input.FieldType{
+										DBType: input.JSONB,
+										SubFields: []*input.Field{
+											{
+												Name: "string",
+												Type: &input.FieldType{
+													DBType: input.String,
+												},
+											},
+											{
+												Name: "int",
+												Type: &input.FieldType{
+													DBType: input.Int,
+												},
+											},
+										},
+									},
+									Name: "bar",
+								},
+							},
+						},
+					},
+				},
+				goTypePanics: true,
+				convertFn:    "convertJSONList",
+				tsTypeImports: []*tsimport.ImportPath{
+					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
+				},
+				unionFields: []*input.Field{
+					{
+						Type: &input.FieldType{
+							DBType:      input.JSONB,
+							Type:        "UnionField",
+							GraphQLType: "UnionField",
+							SubFields: []*input.Field{
+								{
+									Name: "string",
+									Type: &input.FieldType{
+										DBType: input.String,
+									},
+								},
+								{
+									Name: "int",
+									Type: &input.FieldType{
+										DBType: input.Int,
+									},
+								},
+							},
+						},
+						Name: "foo",
+					},
+					{
+						Type: &input.FieldType{
+							DBType: input.JSONB,
+							SubFields: []*input.Field{
+								{
+									Name: "string",
+									Type: &input.FieldType{
+										DBType: input.String,
+									},
+								},
+								{
+									Name: "int",
+									Type: &input.FieldType{
+										DBType: input.Int,
+									},
+								},
+							},
+						},
+						Name: "bar",
+					},
+				},
+			},
+			nil,
+		},
+		"nullable jsonb with union fields list": {
+			&enttype.NullableArrayListType{
+				ElemType: &enttype.JSONBType{
+					CommonJSONType: enttype.CommonJSONType{
+						CustomTsInterface:      "TypeWithUnionFields",
+						CustomGraphQLInterface: "TypeWithUnionFields",
+						UnionFields: []*input.Field{
+							{
+								Type: &input.FieldType{
+									DBType:      input.JSONB,
+									Type:        "UnionField",
+									GraphQLType: "UnionField",
+									SubFields: []*input.Field{
+										{
+											Name: "string",
+											Type: &input.FieldType{
+												DBType: input.String,
+											},
+										},
+										{
+											Name: "int",
+											Type: &input.FieldType{
+												DBType: input.Int,
+											},
+										},
+									},
+								},
+								Name: "foo",
+							},
+							{
+								Type: &input.FieldType{
+									DBType: input.JSONB,
+									SubFields: []*input.Field{
+										{
+											Name: "string",
+											Type: &input.FieldType{
+												DBType: input.String,
+											},
+										},
+										{
+											Name: "int",
+											Type: &input.FieldType{
+												DBType: input.Int,
+											},
+										},
+									},
+								},
+								Name: "bar",
+							},
+						},
+					},
+				},
+			},
+			expType{
+				db:         "postgresql.ARRAY(postgresql.JSONB)",
+				graphql:    "[TypeWithUnionFields!]",
+				tsListType: true,
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithUnionFields"),
+				},
+				tsType: "TypeWithUnionFields[] | null",
+				nonNullableType: &enttype.ArrayListType{
+					ElemType: &enttype.JSONBType{
+						CommonJSONType: enttype.CommonJSONType{
+							CustomTsInterface:      "TypeWithUnionFields",
+							CustomGraphQLInterface: "TypeWithUnionFields",
+							UnionFields: []*input.Field{
+								{
+									Type: &input.FieldType{
+										DBType:      input.JSONB,
+										Type:        "UnionField",
+										GraphQLType: "UnionField",
+										SubFields: []*input.Field{
+											{
+												Name: "string",
+												Type: &input.FieldType{
+													DBType: input.String,
+												},
+											},
+											{
+												Name: "int",
+												Type: &input.FieldType{
+													DBType: input.Int,
+												},
+											},
+										},
+									},
+									Name: "foo",
+								},
+								{
+									Type: &input.FieldType{
+										DBType: input.JSONB,
+										SubFields: []*input.Field{
+											{
+												Name: "string",
+												Type: &input.FieldType{
+													DBType: input.String,
+												},
+											},
+											{
+												Name: "int",
+												Type: &input.FieldType{
+													DBType: input.Int,
+												},
+											},
+										},
+									},
+									Name: "bar",
+								},
+							},
+						},
+					},
+				},
+				goTypePanics: true,
+				convertFn:    "convertNullableJSONList",
+				tsTypeImports: []*tsimport.ImportPath{
+					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
+				},
+				unionFields: []*input.Field{
+					{
+						Type: &input.FieldType{
+							DBType:      input.JSONB,
+							Type:        "UnionField",
+							GraphQLType: "UnionField",
+							SubFields: []*input.Field{
+								{
+									Name: "string",
+									Type: &input.FieldType{
+										DBType: input.String,
+									},
+								},
+								{
+									Name: "int",
+									Type: &input.FieldType{
+										DBType: input.Int,
+									},
+								},
+							},
+						},
+						Name: "foo",
+					},
+					{
+						Type: &input.FieldType{
+							DBType: input.JSONB,
+							SubFields: []*input.Field{
+								{
+									Name: "string",
+									Type: &input.FieldType{
+										DBType: input.String,
+									},
+								},
+								{
+									Name: "int",
+									Type: &input.FieldType{
+										DBType: input.Int,
+									},
+								},
+							},
+						},
+						Name: "bar",
+					},
+				},
+			},
+			nil,
+		},
+		"json with union fields list": {
+			&enttype.ArrayListType{
+				ElemType: &enttype.JSONType{
+					CommonJSONType: enttype.CommonJSONType{
+						CustomTsInterface:      "TypeWithUnionFields",
+						CustomGraphQLInterface: "TypeWithUnionFields",
+						UnionFields: []*input.Field{
+							{
+								Type: &input.FieldType{
+									DBType:      input.JSON,
+									Type:        "UnionField",
+									GraphQLType: "UnionField",
+									SubFields: []*input.Field{
+										{
+											Name: "string",
+											Type: &input.FieldType{
+												DBType: input.String,
+											},
+										},
+										{
+											Name: "int",
+											Type: &input.FieldType{
+												DBType: input.Int,
+											},
+										},
+									},
+								},
+								Name: "foo",
+							},
+							{
+								Type: &input.FieldType{
+									DBType: input.JSON,
+									SubFields: []*input.Field{
+										{
+											Name: "string",
+											Type: &input.FieldType{
+												DBType: input.String,
+											},
+										},
+										{
+											Name: "int",
+											Type: &input.FieldType{
+												DBType: input.Int,
+											},
+										},
+									},
+								},
+								Name: "bar",
+							},
+						},
+					},
+				},
+			},
+			expType{
+				db:         "postgresql.ARRAY(postgresql.JSON)",
+				graphql:    "[TypeWithUnionFields!]!",
+				tsListType: true,
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithUnionFields"),
+				},
+				tsType: "TypeWithUnionFields[]",
+				nullableType: &enttype.NullableArrayListType{
+					ElemType: &enttype.JSONType{
+						CommonJSONType: enttype.CommonJSONType{
+							CustomTsInterface:      "TypeWithUnionFields",
+							CustomGraphQLInterface: "TypeWithUnionFields",
+							UnionFields: []*input.Field{
+								{
+									Type: &input.FieldType{
+										DBType:      input.JSON,
+										Type:        "UnionField",
+										GraphQLType: "UnionField",
+										SubFields: []*input.Field{
+											{
+												Name: "string",
+												Type: &input.FieldType{
+													DBType: input.String,
+												},
+											},
+											{
+												Name: "int",
+												Type: &input.FieldType{
+													DBType: input.Int,
+												},
+											},
+										},
+									},
+									Name: "foo",
+								},
+								{
+									Type: &input.FieldType{
+										DBType: input.JSON,
+										SubFields: []*input.Field{
+											{
+												Name: "string",
+												Type: &input.FieldType{
+													DBType: input.String,
+												},
+											},
+											{
+												Name: "int",
+												Type: &input.FieldType{
+													DBType: input.Int,
+												},
+											},
+										},
+									},
+									Name: "bar",
+								},
+							},
+						},
+					},
+				},
+				goTypePanics: true,
+				convertFn:    "convertJSONList",
+				tsTypeImports: []*tsimport.ImportPath{
+					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
+				},
+				unionFields: []*input.Field{
+					{
+						Type: &input.FieldType{
+							DBType:      input.JSON,
+							Type:        "UnionField",
+							GraphQLType: "UnionField",
+							SubFields: []*input.Field{
+								{
+									Name: "string",
+									Type: &input.FieldType{
+										DBType: input.String,
+									},
+								},
+								{
+									Name: "int",
+									Type: &input.FieldType{
+										DBType: input.Int,
+									},
+								},
+							},
+						},
+						Name: "foo",
+					},
+					{
+						Type: &input.FieldType{
+							DBType: input.JSON,
+							SubFields: []*input.Field{
+								{
+									Name: "string",
+									Type: &input.FieldType{
+										DBType: input.String,
+									},
+								},
+								{
+									Name: "int",
+									Type: &input.FieldType{
+										DBType: input.Int,
+									},
+								},
+							},
+						},
+						Name: "bar",
+					},
+				},
+			},
+			nil,
+		},
+		"nullable json with union fields list": {
+			&enttype.NullableArrayListType{
+				ElemType: &enttype.JSONType{
+					CommonJSONType: enttype.CommonJSONType{
+						CustomTsInterface:      "TypeWithUnionFields",
+						CustomGraphQLInterface: "TypeWithUnionFields",
+						UnionFields: []*input.Field{
+							{
+								Type: &input.FieldType{
+									DBType:      input.JSON,
+									Type:        "UnionField",
+									GraphQLType: "UnionField",
+									SubFields: []*input.Field{
+										{
+											Name: "string",
+											Type: &input.FieldType{
+												DBType: input.String,
+											},
+										},
+										{
+											Name: "int",
+											Type: &input.FieldType{
+												DBType: input.Int,
+											},
+										},
+									},
+								},
+								Name: "foo",
+							},
+							{
+								Type: &input.FieldType{
+									DBType: input.JSON,
+									SubFields: []*input.Field{
+										{
+											Name: "string",
+											Type: &input.FieldType{
+												DBType: input.String,
+											},
+										},
+										{
+											Name: "int",
+											Type: &input.FieldType{
+												DBType: input.Int,
+											},
+										},
+									},
+								},
+								Name: "bar",
+							},
+						},
+					},
+				},
+			},
+			expType{
+				db:         "postgresql.ARRAY(postgresql.JSON)",
+				graphql:    "[TypeWithUnionFields!]",
+				tsListType: true,
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewLocalGraphQLEntImportPath("TypeWithUnionFields"),
+				},
+				tsType: "TypeWithUnionFields[] | null",
+				nonNullableType: &enttype.ArrayListType{
+					ElemType: &enttype.JSONType{
+						CommonJSONType: enttype.CommonJSONType{
+							CustomTsInterface:      "TypeWithUnionFields",
+							CustomGraphQLInterface: "TypeWithUnionFields",
+							UnionFields: []*input.Field{
+								{
+									Type: &input.FieldType{
+										DBType:      input.JSON,
+										Type:        "UnionField",
+										GraphQLType: "UnionField",
+										SubFields: []*input.Field{
+											{
+												Name: "string",
+												Type: &input.FieldType{
+													DBType: input.String,
+												},
+											},
+											{
+												Name: "int",
+												Type: &input.FieldType{
+													DBType: input.Int,
+												},
+											},
+										},
+									},
+									Name: "foo",
+								},
+								{
+									Type: &input.FieldType{
+										DBType: input.JSON,
+										SubFields: []*input.Field{
+											{
+												Name: "string",
+												Type: &input.FieldType{
+													DBType: input.String,
+												},
+											},
+											{
+												Name: "int",
+												Type: &input.FieldType{
+													DBType: input.Int,
+												},
+											},
+										},
+									},
+									Name: "bar",
+								},
+							},
+						},
+					},
+				},
+				goTypePanics: true,
+				convertFn:    "convertNullableJSONList",
+				tsTypeImports: []*tsimport.ImportPath{
+					tsimport.NewLocalEntImportPath("TypeWithUnionFields"),
+				},
+				unionFields: []*input.Field{
+					{
+						Type: &input.FieldType{
+							DBType:      input.JSON,
+							Type:        "UnionField",
+							GraphQLType: "UnionField",
+							SubFields: []*input.Field{
+								{
+									Name: "string",
+									Type: &input.FieldType{
+										DBType: input.String,
+									},
+								},
+								{
+									Name: "int",
+									Type: &input.FieldType{
+										DBType: input.Int,
+									},
+								},
+							},
+						},
+						Name: "foo",
+					},
+					{
+						Type: &input.FieldType{
+							DBType: input.JSON,
+							SubFields: []*input.Field{
+								{
+									Name: "string",
+									Type: &input.FieldType{
+										DBType: input.String,
+									},
+								},
+								{
+									Name: "int",
+									Type: &input.FieldType{
+										DBType: input.Int,
+									},
+								},
+							},
+						},
+						Name: "bar",
+					},
+				},
 			},
 			nil,
 		},

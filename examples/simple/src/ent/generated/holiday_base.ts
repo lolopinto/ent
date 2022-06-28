@@ -8,10 +8,10 @@ import {
   Context,
   CustomQuery,
   Data,
+  Ent,
   ID,
   LoadEntOptions,
   PrivacyPolicy,
-  Viewer,
   convertDate,
   loadCustomData,
   loadCustomEnts,
@@ -21,34 +21,54 @@ import {
 } from "@snowtop/ent";
 import { Field, getFields } from "@snowtop/ent/schema";
 import { holidayLoader, holidayLoaderInfo } from "./loaders";
-import { DayOfWeek, DayOfWeekAlt, NodeType } from "../internal";
-import schema from "../../schema/holiday";
+import {
+  DayOfWeek,
+  DayOfWeekAlt,
+  DayOfWeekMixin,
+  IDayOfWeek,
+  NodeType,
+} from "../internal";
+import schema from "../../schema/holiday_schema";
+import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
-export class HolidayBase {
+interface HolidayDBData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  day_of_week: DayOfWeek;
+  day_of_week_alt: DayOfWeekAlt | null;
+  label: string;
+  date: Date;
+}
+
+export class HolidayBase
+  extends DayOfWeekMixin(class {})
+  implements Ent<ExampleViewerAlias>, IDayOfWeek
+{
   readonly nodeType = NodeType.Holiday;
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
-  readonly dayOfWeek: DayOfWeek;
-  readonly dayOfWeekAlt: DayOfWeekAlt | null;
   readonly label: string;
   readonly date: Date;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: ExampleViewerAlias, protected data: Data) {
+    // @ts-ignore pass to mixin
+    super(viewer, data);
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
-    this.dayOfWeek = data.day_of_week;
-    this.dayOfWeekAlt = data.day_of_week_alt;
     this.label = data.label;
     this.date = convertDate(data.date);
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   static async load<T extends HolidayBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T | null> {
     return (await loadEnt(
@@ -59,8 +79,8 @@ export class HolidayBase {
   }
 
   static async loadX<T extends HolidayBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T> {
     return (await loadEntX(
@@ -71,20 +91,20 @@ export class HolidayBase {
   }
 
   static async loadMany<T extends HolidayBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     ...ids: ID[]
-  ): Promise<T[]> {
+  ): Promise<Map<ID, T>> {
     return (await loadEnts(
       viewer,
       HolidayBase.loaderOptions.apply(this),
       ...ids,
-    )) as T[];
+    )) as Map<ID, T>;
   }
 
   static async loadCustom<T extends HolidayBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     query: CustomQuery,
   ): Promise<T[]> {
     return (await loadCustomEnts(
@@ -95,40 +115,44 @@ export class HolidayBase {
   }
 
   static async loadCustomData<T extends HolidayBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<Data[]> {
-    return loadCustomData(
+  ): Promise<HolidayDBData[]> {
+    return (await loadCustomData(
       HolidayBase.loaderOptions.apply(this),
       query,
       context,
-    );
+    )) as HolidayDBData[];
   }
 
   static async loadRawData<T extends HolidayBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data | null> {
-    return holidayLoader.createLoader(context).load(id);
+  ): Promise<HolidayDBData | null> {
+    const row = await holidayLoader.createLoader(context).load(id);
+    if (!row) {
+      return null;
+    }
+    return row as HolidayDBData;
   }
 
   static async loadRawDataX<T extends HolidayBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data> {
+  ): Promise<HolidayDBData> {
     const row = await holidayLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row;
+    return row as HolidayDBData;
   }
 
   static loaderOptions<T extends HolidayBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-  ): LoadEntOptions<T> {
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+  ): LoadEntOptions<T, ExampleViewerAlias> {
     return {
       tableName: holidayLoaderInfo.tableName,
       fields: holidayLoaderInfo.fields,

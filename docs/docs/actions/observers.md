@@ -13,8 +13,14 @@ As of right now, errors in Observers don't fail the transaction and it's up to t
 ## Observer Interface
 
 ```ts
-export interface Observer<T extends Ent> {
-  observe(builder: Builder<T>, input: Data): void | Promise<void>;
+export interface Observer<
+  TEnt extends Ent<TViewer>,
+  TBuilder extends Builder<TEnt, TViewer, TExistingEnt>,
+  TViewer extends Viewer = Viewer,
+  TInput extends Data = Data,
+  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
+> {
+  observe(builder: TBuilder, input: TInput): void | Promise<void>;
 }
 ```
 
@@ -25,27 +31,32 @@ Here's an example in action:
 ```ts title="src/ent/user/actions/create_user_action.ts"
 export default class CreateUserAction extends CreateUserActionBase {
 
-  observers = [
-    {
-      observe: (_builder: UserBuilder, input: UserCreateInput): void => {
-        let email = input.emailAddress;
-        let firstName = input.firstName;
-        FakeComms.send({
-          from: "noreply@foo.com",
-          to: email,
-          subject: `Welcome, ${firstName}!`,
-          body: `Hi ${firstName}, thanks for joining fun app!`,
-          mode: Mode.EMAIL,
-        });
+  getObservers() {
+    return [
+      {
+        observe: (_builder: UserBuilder<UserCreateInput, Viewer>, input: UserCreateInput): void => {
+          let email = input.emailAddress;
+          let firstName = input.firstName;
+          FakeComms.send({
+            from: "noreply@foo.com",
+            to: email,
+            subject: `Welcome, ${firstName}!`,
+            body: `Hi ${firstName}, thanks for joining fun app!`,
+            mode: Mode.EMAIL,
+          });
+        },
       },
-    },
-    new EntCreationObserver<User>(),
-  ];
+      new EntCreationObserver(),
+    ];
+  }
 }
 
 // reusable observer that can be used across all objects
-export class EntCreationObserver<T extends Ent> {
-  async observe(builder: Builder<T>) {
+export class EntCreationObserver<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> {
+  async observe(builder: Builder<TEnt, TViewer>) {
     if (!builder.editedEnt) {
       return;
     }

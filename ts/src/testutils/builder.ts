@@ -1,4 +1,11 @@
-import { Ent, ID, Viewer, Data, EntConstructor } from "../core/base";
+import {
+  Ent,
+  ID,
+  Viewer,
+  Data,
+  EntConstructor,
+  PrivacyPolicy,
+} from "../core/base";
 import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
 import { Orchestrator } from "../action/orchestrator";
 import {
@@ -12,19 +19,27 @@ import {
   saveBuilderX,
   Observer,
 } from "../action";
-import { getFields, getFieldsWithPrivacy, Schema } from "../schema";
+import { getFields, getFieldsWithPrivacy, FieldMap, Schema } from "../schema";
 import { QueryRecorder } from "./db_mock";
 import pluralize from "pluralize";
 import { snakeCase } from "snake-case";
 import { ObjectLoaderFactory } from "../core/loaders";
 import { convertDate } from "../core/convert";
 import { camelCase } from "camel-case";
+import {
+  SchemaConfig,
+  EntSchema,
+  EntSchemaWithTZ,
+} from "../schema/base_schema";
+import { FieldInfoMap, getStorageKey } from "../schema/schema";
 
 export class User implements Ent {
   id: ID;
   accountID: string = "";
   nodeType = "User";
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
   firstName: string;
 
   constructor(public viewer: Viewer, public data: Data) {
@@ -39,7 +54,9 @@ export class Event implements Ent {
   id: ID;
   accountID: string = "";
   nodeType = "Event";
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
 
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data.id;
@@ -50,7 +67,9 @@ export class Contact implements Ent {
   id: ID;
   accountID: string = "";
   nodeType = "Contact";
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
 
   constructor(public viewer: Viewer, public data: Data) {
     this.data.created_at = convertDate(data.created_at);
@@ -63,7 +82,9 @@ export class Group implements Ent {
   id: ID;
   accountID: string = "";
   nodeType = "Group";
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
 
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data.id;
@@ -74,7 +95,9 @@ export class Message implements Ent {
   id: ID;
   accountID: string = "";
   nodeType = "Message";
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
 
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data.id;
@@ -85,7 +108,9 @@ export class Address implements Ent {
   id: ID;
   accountID: string = "";
   nodeType = "Address";
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
 
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data.id;
@@ -94,6 +119,36 @@ export class Address implements Ent {
 
 export interface BuilderSchema<T extends Ent> extends Schema {
   ent: EntConstructor<T>;
+}
+
+export function getBuilderSchema<T extends Ent>(
+  cfg: SchemaConfig,
+  ent: EntConstructor<T>,
+): BuilderSchema<T> {
+  return {
+    ...new EntSchema(cfg),
+    ent,
+  };
+}
+
+export function getBuilderSchemaFromFields<T extends Ent>(
+  fields: FieldMap,
+  ent: EntConstructor<T>,
+): BuilderSchema<T> {
+  return {
+    ...new EntSchema({ fields }),
+    ent,
+  };
+}
+
+export function getBuilderSchemaTZFromFields<T extends Ent>(
+  fields: FieldMap,
+  ent: EntConstructor<T>,
+): BuilderSchema<T> {
+  return {
+    ...new EntSchemaWithTZ({ fields }),
+    ent,
+  };
 }
 
 export function getSchemaName(value: BuilderSchema<Ent>) {
@@ -108,11 +163,30 @@ function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
+export function getFieldInfo(value: BuilderSchema<Ent>) {
+  const fields = getFields(value);
+  let ret: FieldInfoMap = {};
+  for (const [k, f] of fields) {
+    ret[k] = {
+      dbCol: getStorageKey(f, k),
+      inputKey: camelCase(k),
+    };
+  }
+  return ret;
+}
+
+type MaybeNull<T extends Ent> = T | null;
+type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
+
 // reuses orchestrator and standard things
-export class SimpleBuilder<T extends Ent> implements Builder<T> {
+export class SimpleBuilder<
+  T extends Ent,
+  TExistingEnt extends TMaybleNullableEnt<T> = MaybeNull<T>,
+> implements Builder<T>
+{
   ent: EntConstructor<T>;
   placeholderID: ID;
-  public orchestrator: Orchestrator<T>;
+  public orchestrator: Orchestrator<T, Data, Viewer>;
   public fields: Map<string, any>;
   nodeType: string;
 
@@ -121,8 +195,8 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
     private schema: BuilderSchema<T>,
     fields: Map<string, any>,
     public operation: WriteOperation = WriteOperation.Insert,
-    public existingEnt: T | undefined = undefined,
-    action?: Action<T> | undefined,
+    public existingEnt: TExistingEnt,
+    action?: Action<T, SimpleBuilder<T>, Viewer, Data> | undefined,
   ) {
     // create dynamic placeholder
     // TODO: do we need to use this as the node when there's an existingEnt
@@ -155,11 +229,13 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
     this.ent = schema.ent;
     const tableName = getTableName(schema);
     this.nodeType = camelCase(schema.ent.name);
-    this.orchestrator = new Orchestrator<T>({
+    const fieldInfo = getFieldInfo(schema);
+    this.orchestrator = new Orchestrator<T, Data, Viewer>({
       viewer: this.viewer,
       operation: operation,
       tableName: tableName,
       key,
+      fieldInfo,
       loaderOptions: {
         loaderFactory: new ObjectLoaderFactory({
           tableName: tableName,
@@ -169,7 +245,7 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
         ent: schema.ent,
         tableName: tableName,
         fields: [],
-        fieldPrivacy: getFieldsWithPrivacy(schema),
+        fieldPrivacy: getFieldsWithPrivacy(schema, fieldInfo),
       },
       builder: this,
       action: action,
@@ -182,25 +258,34 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
         }
         return m;
       },
-      updateInput: (input: Data) => {
-        const knownFields = getFields(this.schema);
-        for (const k in input) {
-          if (knownFields.has(k)) {
-            this.fields.set(k, input[k]);
-          } else {
-            // related to #510. we do camelCase to pass fields in here but fields may be snakeCase and we want that to pass in tests
-            // we do camelCase in
-            const sc = snakeCase(k);
-            if (knownFields.has(sc)) {
-              this.fields.set(sc, input[k]);
-            }
-          }
-        }
-      },
+      updateInput: this.updateInput.bind(this),
     });
   }
 
-  build(): Promise<Changeset<T>> {
+  getInput(): Data {
+    let ret: Data = {};
+    for (const [k, v] of this.fields) {
+      ret[k] = v;
+    }
+    return ret;
+  }
+  updateInput(input: Data) {
+    const knownFields = getFields(this.schema);
+    for (const k in input) {
+      if (knownFields.has(k)) {
+        this.fields.set(k, input[k]);
+      } else {
+        // related to #510. we do camelCase to pass fields in here but fields may be snakeCase and we want that to pass in tests
+        // we do camelCase in
+        const sc = snakeCase(k);
+        if (knownFields.has(sc)) {
+          this.fields.set(sc, input[k]);
+        }
+      }
+    }
+  }
+
+  build(): Promise<Changeset> {
     return this.orchestrator.build();
   }
 
@@ -233,11 +318,13 @@ interface viewerEntLoadFunc {
   (data: Data): Viewer | Promise<Viewer>;
 }
 
-export class SimpleAction<T extends Ent> implements Action<T> {
-  builder: SimpleBuilder<T>;
-  validators: Validator<T>[] = [];
-  triggers: Trigger<T>[] = [];
-  observers: Observer<T>[] = [];
+export class SimpleAction<
+  T extends Ent,
+  TExistingEnt extends TMaybleNullableEnt<T> = MaybeNull<T>,
+> implements
+    Action<T, SimpleBuilder<T, TExistingEnt>, Viewer, Data, TExistingEnt>
+{
+  builder: SimpleBuilder<T, TExistingEnt>;
   viewerForEntLoad: viewerEntLoadFunc | undefined;
 
   constructor(
@@ -245,9 +332,9 @@ export class SimpleAction<T extends Ent> implements Action<T> {
     schema: BuilderSchema<T>,
     private fields: Map<string, any>,
     operation: WriteOperation = WriteOperation.Insert,
-    existingEnt: T | undefined = undefined,
+    existingEnt: TExistingEnt,
   ) {
-    this.builder = new SimpleBuilder(
+    this.builder = new SimpleBuilder<T, TExistingEnt>(
       this.viewer,
       schema,
       fields,
@@ -255,6 +342,18 @@ export class SimpleAction<T extends Ent> implements Action<T> {
       existingEnt,
       this,
     );
+  }
+
+  getTriggers(): Trigger<T, SimpleBuilder<T>>[] {
+    return [];
+  }
+
+  getValidators(): Validator<T, SimpleBuilder<T>>[] {
+    return [];
+  }
+
+  getObservers(): Observer<T, SimpleBuilder<T>>[] {
+    return [];
   }
 
   getPrivacyPolicy() {
@@ -269,7 +368,7 @@ export class SimpleAction<T extends Ent> implements Action<T> {
     return ret;
   }
 
-  changeset(): Promise<Changeset<T>> {
+  changeset(): Promise<Changeset> {
     return this.builder.build();
   }
 

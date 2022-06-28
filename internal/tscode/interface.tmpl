@@ -1,0 +1,34 @@
+{{$root := .RootInterface}}
+{{$int := .Interface}}
+{{$extImpPath := .Package.ExternalImportPath -}}
+{{$cfg := .Config}}
+{{ range $imp := $int.GetEnumImports -}}
+  {{ reserveImport $extImpPath $imp -}}
+{{ end -}}
+ {{ if $int.Exported -}}
+  export interface {{$int.TSType}} {
+{{ else -}}
+  interface {{$int.TSType}} {
+{{ end -}}
+  {{ range $field := $int.Fields -}}
+    {{$type := $field.TsBuilderType $cfg -}}
+    {{range $import := $field.TsBuilderImports $cfg -}}
+      {{ if $root.ForeignImport $import.Import -}}
+        {{ $ignore := useImportMaybe $import.Import -}}
+      {{ end -}}
+    {{end -}}
+    {{if $field.Nullable -}}
+      {{$field.TsFieldName $cfg}}?: {{$type}};
+    {{else -}}
+      {{$field.TsFieldName $cfg}}: {{$type}};
+    {{end -}}
+  {{end -}}
+  {{ range $field := $int.NonEntFields -}}
+    {{$type := $field.GetTsType -}}
+    {{if $field.Required -}}
+      {{$field.TsFieldName $cfg}}: {{$type}};
+    {{else -}}
+      {{$field.TsFieldName $cfg}}?: {{$type}};
+    {{end -}}
+  {{end -}}
+}

@@ -3,6 +3,7 @@ package schema_test
 import (
 	"testing"
 
+	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
@@ -1337,4 +1338,86 @@ func TestWithPatternsNoEdgeConstName(t *testing.T) {
 	assert.Equal(t, "ObjectToLikersQuery", patternLikersEdge.TsEdgeQueryName())
 	assert.True(t, patternLikersEdge.CreateEdge())
 	assert.False(t, patternLikersEdge.PolymorphicEdge())
+}
+
+func TestDuplicateNames(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"Profile": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "firstName",
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+					},
+				},
+			},
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "userPrefs",
+						Type: &input.FieldType{
+							DBType: input.JSONB,
+							// should conflict
+							Type:        "Profile",
+							GraphQLType: "Profile",
+							SubFields: []*input.Field{
+								{
+									Name: "finishedNux",
+									Type: &input.FieldType{
+										DBType: input.Boolean,
+									},
+									Nullable: true,
+								},
+								{
+									Name: "enableNotifs",
+									Type: &input.FieldType{
+										DBType: input.Boolean,
+									},
+									Nullable: true,
+								},
+								{
+									Name: "notifTypes",
+									Type: &input.FieldType{
+										DBType: input.List,
+										ListElemType: &input.FieldType{
+											Type:        "NotifType",
+											GraphQLType: "NotifType",
+											DBType:      input.StringEnum,
+											Values:      []string{"MOBILE", "WEB", "EMAIL"},
+										},
+									},
+									Nullable: true,
+								},
+							},
+						},
+					},
+				},
+				Actions: []*input.Action{
+					{
+						Operation: ent.CreateAction,
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, inputSchema, base.GoLang)
+	require.Nil(t, schema)
+	require.Equal(t, err.Error(), "there's already an entity with GraphQL name Profile")
 }

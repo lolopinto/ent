@@ -8,10 +8,10 @@ import {
   Context,
   CustomQuery,
   Data,
+  Ent,
   ID,
   LoadEntOptions,
   PrivacyPolicy,
-  Viewer,
   convertDate,
   loadCustomData,
   loadCustomEnts,
@@ -23,8 +23,21 @@ import { Field, getFields } from "@snowtop/ent/schema";
 import { addressLoader, addressLoaderInfo } from "./loaders";
 import { AddressToHostedEventsQuery, NodeType } from "../internal";
 import schema from "../../schema/address";
+import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
-export class AddressBase {
+interface AddressDBData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  street_name: string;
+  city: string;
+  state: string;
+  zip: string;
+  apartment: string | null;
+  country: string;
+}
+
+export class AddressBase implements Ent<ExampleViewerAlias> {
   readonly nodeType = NodeType.Address;
   readonly id: ID;
   readonly createdAt: Date;
@@ -36,7 +49,7 @@ export class AddressBase {
   readonly apartment: string | null;
   readonly country: string;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: ExampleViewerAlias, protected data: Data) {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
@@ -48,11 +61,13 @@ export class AddressBase {
     this.country = data.country;
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   static async load<T extends AddressBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T | null> {
     return (await loadEnt(
@@ -63,8 +78,8 @@ export class AddressBase {
   }
 
   static async loadX<T extends AddressBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T> {
     return (await loadEntX(
@@ -75,20 +90,20 @@ export class AddressBase {
   }
 
   static async loadMany<T extends AddressBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     ...ids: ID[]
-  ): Promise<T[]> {
+  ): Promise<Map<ID, T>> {
     return (await loadEnts(
       viewer,
       AddressBase.loaderOptions.apply(this),
       ...ids,
-    )) as T[];
+    )) as Map<ID, T>;
   }
 
   static async loadCustom<T extends AddressBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     query: CustomQuery,
   ): Promise<T[]> {
     return (await loadCustomEnts(
@@ -99,40 +114,44 @@ export class AddressBase {
   }
 
   static async loadCustomData<T extends AddressBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<Data[]> {
-    return loadCustomData(
+  ): Promise<AddressDBData[]> {
+    return (await loadCustomData(
       AddressBase.loaderOptions.apply(this),
       query,
       context,
-    );
+    )) as AddressDBData[];
   }
 
   static async loadRawData<T extends AddressBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data | null> {
-    return addressLoader.createLoader(context).load(id);
+  ): Promise<AddressDBData | null> {
+    const row = await addressLoader.createLoader(context).load(id);
+    if (!row) {
+      return null;
+    }
+    return row as AddressDBData;
   }
 
   static async loadRawDataX<T extends AddressBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data> {
+  ): Promise<AddressDBData> {
     const row = await addressLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row;
+    return row as AddressDBData;
   }
 
   static loaderOptions<T extends AddressBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-  ): LoadEntOptions<T> {
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+  ): LoadEntOptions<T, ExampleViewerAlias> {
     return {
       tableName: addressLoaderInfo.tableName,
       fields: addressLoaderInfo.fields,

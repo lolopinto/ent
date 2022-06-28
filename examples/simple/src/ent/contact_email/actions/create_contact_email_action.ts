@@ -10,11 +10,11 @@ import {
   PrivacyPolicy,
 } from "@snowtop/ent";
 import { AllowIfBuilder } from "@snowtop/ent/action";
-import { Contact } from "src/ent";
+import { Contact } from "../../../ent";
 import {
   ContactEmailCreateInput,
   CreateContactEmailActionBase,
-} from "./generated/create_contact_email_action_base";
+} from "../../generated/contact_email/actions/create_contact_email_action_base";
 
 export { ContactEmailCreateInput };
 

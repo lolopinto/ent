@@ -53,9 +53,11 @@ class User implements Ent {
   foo: string | null;
   accountID: string;
   nodeType = "User";
-  privacyPolicy: PrivacyPolicy = {
-    rules: [AllowIfViewerRule, AlwaysDenyRule],
-  };
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return {
+      rules: [AllowIfViewerRule, AlwaysDenyRule],
+    };
+  }
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data["bar"];
     this.baz = data["baz"];
@@ -86,9 +88,11 @@ class Contact implements Ent {
   foo: string | null;
   accountID: string;
   nodeType = "Contact";
-  privacyPolicy: PrivacyPolicy = {
-    rules: [AllowIfViewerRule, AlwaysDenyRule],
-  };
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return {
+      rules: [AllowIfViewerRule, AlwaysDenyRule],
+    };
+  }
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data["bar"];
     this.baz = data["baz"];
@@ -910,7 +914,7 @@ function commonTests() {
 
     test("with context", async () => {
       const vc = getIDViewer(1);
-      const ents = await ent.loadEnts(vc, User.loaderOptions(), 1, 2, 3);
+      const ents = await ent.loadEntsList(vc, User.loaderOptions(), 1, 2, 3);
 
       // only loading self worked because of privacy
       expect(ents.length).toBe(1);
@@ -962,7 +966,7 @@ function commonTests() {
 
     test("without context", async () => {
       const vc = new IDViewer(1);
-      const ents = await ent.loadEnts(vc, User.loaderOptions(), 1, 2, 3);
+      const ents = await ent.loadEntsList(vc, User.loaderOptions(), 1, 2, 3);
 
       // only loading self worked because of privacy
       expect(ents.length).toBe(1);
@@ -1032,8 +1036,9 @@ function commonTests() {
       const ents = await ent.loadEnts(vc, Contact.loaderOptions(), 1, 2, 3);
 
       // only loading self worked because of privacy
-      expect(ents.length).toBe(1);
-      const contact = ents[0];
+      expect(ents.size).toBe(1);
+      expect(ents.has(1)).toBe(true);
+      const contact = ents.get(1)!;
 
       expect(contact.id).toBe(1);
       expect(contact.data).toEqual({
@@ -1093,8 +1098,8 @@ function commonTests() {
       const ents = await ent.loadEnts(vc, Contact.loaderOptions(), 1, 2, 3);
 
       // only loading self worked because of privacy
-      expect(ents.length).toBe(1);
-      expect(ents[0].id).toBe(1);
+      expect(ents.size).toBe(1);
+      expect(ents.has(1)).toBe(true);
 
       const options = {
         ...Contact.loaderOptions(),

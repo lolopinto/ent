@@ -565,8 +565,8 @@ export function getSchemaTable(schema: BuilderSchema<Ent>, dialect: Dialect) {
   const fields = getFields(schema);
 
   const columns: Column[] = [];
-  for (const [_, field] of fields) {
-    columns.push(getColumnFromField(field, dialect));
+  for (const [fieldName, field] of fields) {
+    columns.push(getColumnFromField(fieldName, field, dialect));
   }
   return table(getTableName(schema), ...columns);
 }
@@ -611,7 +611,7 @@ function getColumnForDbType(
   }
 }
 
-function getColumnFromField(f: Field, dialect: Dialect) {
+function getColumnFromField(fieldName: string, f: Field, dialect: Dialect) {
   switch (f.type.dbType) {
     case DBType.List:
       const elemType = f.type.listElemType;
@@ -622,19 +622,23 @@ function getColumnFromField(f: Field, dialect: Dialect) {
       if (elemFn === undefined) {
         throw new Error(`unsupported type for ${elemType}`);
       }
-      return list(storageKey(f), elemFn("ignore"), buildOpts(f));
+      return list(storageKey(fieldName, f), elemFn("ignore"), buildOpts(f));
 
     default:
       const fn = getColumnForDbType(f.type.dbType, dialect);
       if (fn === undefined) {
         throw new Error(`unsupported type ${f.type.dbType}`);
       }
-      return getColumn(f, fn);
+      return getColumn(fieldName, f, fn);
   }
 }
 
-function getColumn(f: Field, col: (name: string, opts?: options) => Column) {
-  return col(storageKey(f), buildOpts(f));
+function getColumn(
+  fieldName: string,
+  f: Field,
+  col: (name: string, opts?: options) => Column,
+) {
+  return col(storageKey(fieldName, f), buildOpts(f));
 }
 
 function buildOpts(f: Field): options {
@@ -655,12 +659,12 @@ function buildOpts(f: Field): options {
   return ret;
 }
 
-function storageKey(f: Field): string {
+function storageKey(fieldName: string, f: Field): string {
   if (f.storageKey) {
     return f.storageKey;
   }
 
-  return snakeCase(f.name);
+  return snakeCase(fieldName);
 }
 
 function isSyncClient(client: Client): client is SyncClient {

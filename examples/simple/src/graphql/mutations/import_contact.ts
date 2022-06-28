@@ -1,4 +1,4 @@
-import { ID, RequestContext, Ent } from "@snowtop/ent";
+import { ID, RequestContext } from "@snowtop/ent";
 import {
   gqlArg,
   gqlContextType,
@@ -8,23 +8,26 @@ import {
 import { GraphQLID } from "graphql";
 import { FileUpload } from "graphql-upload";
 import parse from "csv-parse";
-import { Action } from "@snowtop/ent/action";
 import { BaseAction } from "@snowtop/ent/action/experimental_action";
 import { User } from "../../ent";
 import CreateContactAction from "../../ent/contact/actions/create_contact_action";
-import { UserBuilder } from "../../ent/user/actions/generated/user_builder";
+import {
+  UserBuilder,
+  UserInput,
+} from "../../ent/generated/user/actions/user_builder";
+import { ExampleViewer } from "../../viewer/viewer";
 
 export class ImportContactResolver {
   @gqlMutation({ type: User })
   async bulkUploadContact(
-    @gqlContextType() context: RequestContext,
+    @gqlContextType() context: RequestContext<ExampleViewer>,
     @gqlArg("userID", { type: GraphQLID }) userID: ID,
     @gqlArg("file", { type: gqlFileUpload }) file: Promise<FileUpload>,
   ) {
     const file2 = await file;
 
     const user = await User.loadX(context.getViewer(), userID);
-    let actions: Action<Ent>[] = [];
+    let actions: CreateContactAction[] = [];
 
     const parser = file2.createReadStream().pipe(
       parse({
@@ -51,7 +54,12 @@ export class ImportContactResolver {
       );
     }
 
-    const action = BaseAction.bulkAction(user, UserBuilder, ...actions);
+    // not ideal we have to type this. should be able to get UserInput for free
+    const action = BaseAction.bulkAction<User, ExampleViewer, UserInput>(
+      user,
+      UserBuilder,
+      ...actions,
+    );
     return await action.saveX();
   }
 }

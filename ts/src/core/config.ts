@@ -105,6 +105,8 @@ interface CodegenConfig {
 
   // default is on_demand
   fieldPrivacyEvaluated?: fieldPrivacyEvaluated;
+
+  templatizedViewer?: templatizedViewer;
 }
 
 interface PrettierConfig {
@@ -119,6 +121,11 @@ interface PrivacyConfig {
   path: string; // e.g. "@snowtop/ent"
   policyName: string; // e.g. "AllowIfViewerHasIdentityPrivacyPolicy";
   class?: boolean;
+}
+
+interface templatizedViewer {
+  path: string;
+  name: string;
 }
 
 function setConfig(cfg: Config) {

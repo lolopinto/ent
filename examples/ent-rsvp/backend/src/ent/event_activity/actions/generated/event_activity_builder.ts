@@ -22,28 +22,29 @@ export interface EventActivityInput {
   location?: string;
   description?: string | null;
   inviteAllGuests?: boolean;
-}
-
-export interface EventActivityAction extends Action<EventActivity> {
-  getInput(): EventActivityInput;
+  // allow other properties. useful for action-only fields
+  [x: string]: any;
 }
 
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class EventActivityBuilder implements Builder<EventActivity> {
-  orchestrator: Orchestrator<EventActivity>;
+export class EventActivityBuilder<
+  TData extends EventActivityInput = EventActivityInput,
+> implements Builder<EventActivity>
+{
+  orchestrator: Orchestrator<EventActivity, TData>;
   readonly placeholderID: ID;
   readonly ent = EventActivity;
   readonly nodeType = NodeType.EventActivity;
-  private input: EventActivityInput;
+  private input: TData;
   private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: EventActivityAction,
+    action: Action<EventActivity, Builder<EventActivity>, TData>,
     public readonly existingEnt?: EventActivity | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-EventActivity`;
@@ -65,7 +66,7 @@ export class EventActivityBuilder implements Builder<EventActivity> {
     });
   }
 
-  getInput(): EventActivityInput {
+  getInput(): TData {
     return this.input;
   }
 
@@ -103,7 +104,7 @@ export class EventActivityBuilder implements Builder<EventActivity> {
 
   addAttending(
     ...nodes: (ID | Guest | Builder<Guest>)[]
-  ): EventActivityBuilder {
+  ): EventActivityBuilder<TData> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addAttendingID(node);
@@ -119,7 +120,7 @@ export class EventActivityBuilder implements Builder<EventActivity> {
   addAttendingID(
     id: ID | Builder<Guest>,
     options?: AssocEdgeInputOptions,
-  ): EventActivityBuilder {
+  ): EventActivityBuilder<TData> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.EventActivityToAttending,
@@ -129,7 +130,7 @@ export class EventActivityBuilder implements Builder<EventActivity> {
     return this;
   }
 
-  removeAttending(...nodes: (ID | Guest)[]): EventActivityBuilder {
+  removeAttending(...nodes: (ID | Guest)[]): EventActivityBuilder<TData> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -146,7 +147,9 @@ export class EventActivityBuilder implements Builder<EventActivity> {
     return this;
   }
 
-  addDeclined(...nodes: (ID | Guest | Builder<Guest>)[]): EventActivityBuilder {
+  addDeclined(
+    ...nodes: (ID | Guest | Builder<Guest>)[]
+  ): EventActivityBuilder<TData> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addDeclinedID(node);
@@ -162,7 +165,7 @@ export class EventActivityBuilder implements Builder<EventActivity> {
   addDeclinedID(
     id: ID | Builder<Guest>,
     options?: AssocEdgeInputOptions,
-  ): EventActivityBuilder {
+  ): EventActivityBuilder<TData> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.EventActivityToDeclined,
@@ -172,7 +175,7 @@ export class EventActivityBuilder implements Builder<EventActivity> {
     return this;
   }
 
-  removeDeclined(...nodes: (ID | Guest)[]): EventActivityBuilder {
+  removeDeclined(...nodes: (ID | Guest)[]): EventActivityBuilder<TData> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -191,7 +194,7 @@ export class EventActivityBuilder implements Builder<EventActivity> {
 
   addInvite(
     ...nodes: (ID | GuestGroup | Builder<GuestGroup>)[]
-  ): EventActivityBuilder {
+  ): EventActivityBuilder<TData> {
     for (const node of nodes) {
       if (this.isBuilder(node)) {
         this.addInviteID(node);
@@ -207,7 +210,7 @@ export class EventActivityBuilder implements Builder<EventActivity> {
   addInviteID(
     id: ID | Builder<GuestGroup>,
     options?: AssocEdgeInputOptions,
-  ): EventActivityBuilder {
+  ): EventActivityBuilder<TData> {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.EventActivityToInvites,
@@ -217,7 +220,7 @@ export class EventActivityBuilder implements Builder<EventActivity> {
     return this;
   }
 
-  removeInvite(...nodes: (ID | GuestGroup)[]): EventActivityBuilder {
+  removeInvite(...nodes: (ID | GuestGroup)[]): EventActivityBuilder<TData> {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(

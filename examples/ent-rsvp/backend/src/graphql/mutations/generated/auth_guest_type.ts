@@ -23,10 +23,10 @@ export const AuthGuestInputType = new GraphQLInputObjectType({
   name: "AuthGuestInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     emailAddress: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     code: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
   }),
 });
@@ -35,10 +35,10 @@ export const AuthGuestPayloadType = new GraphQLObjectType({
   name: "AuthGuestPayload",
   fields: (): GraphQLFieldConfigMap<AuthGuestPayload, RequestContext> => ({
     token: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     viewer: {
-      type: GraphQLNonNull(ViewerTypeType),
+      type: new GraphQLNonNull(ViewerTypeType),
     },
   }),
 });
@@ -48,11 +48,11 @@ export const AuthGuestType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: AuthGuestInput }
 > = {
-  type: GraphQLNonNull(AuthGuestPayloadType),
+  type: new GraphQLNonNull(AuthGuestPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(AuthGuestInputType),
+      type: new GraphQLNonNull(AuthGuestInputType),
     },
   },
   resolve: async (

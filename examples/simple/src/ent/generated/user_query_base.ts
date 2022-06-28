@@ -13,7 +13,6 @@ import {
   ID,
   IndexLoaderFactory,
   RawCountLoaderFactory,
-  Viewer,
 } from "@snowtop/ent";
 import { getLoaderOptions } from "./loadAny";
 import {
@@ -53,6 +52,7 @@ import {
   authCodeLoader,
   contactLoader,
 } from "../internal";
+import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export const userToCreatedEventsCountLoaderFactory =
   new AssocEdgeCountLoaderFactory(EdgeType.UserToCreatedEvents);
@@ -147,9 +147,13 @@ export const userToContactsDataLoaderFactory = new IndexLoaderFactory(
 export abstract class UserToCreatedEventsQueryBase extends AssocEdgeQueryBase<
   User,
   Event,
-  UserToCreatedEventsEdge
+  UserToCreatedEventsEdge,
+  ExampleViewerAlias
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<User, Event>) {
+  constructor(
+    viewer: ExampleViewerAlias,
+    src: EdgeQuerySource<User, Event, ExampleViewerAlias>,
+  ) {
     super(
       viewer,
       src,
@@ -160,8 +164,11 @@ export abstract class UserToCreatedEventsQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends UserToCreatedEventsQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<User, Event>) => T,
-    viewer: Viewer,
+    this: new (
+      viewer: ExampleViewerAlias,
+      src: EdgeQuerySource<User, Event>,
+    ) => T,
+    viewer: ExampleViewerAlias,
     src: EdgeQuerySource<User, Event>,
   ): T {
     return new this(viewer, src);
@@ -195,9 +202,13 @@ export abstract class UserToCreatedEventsQueryBase extends AssocEdgeQueryBase<
 export abstract class UserToDeclinedEventsQueryBase extends AssocEdgeQueryBase<
   User,
   Event,
-  UserToDeclinedEventsEdge
+  UserToDeclinedEventsEdge,
+  ExampleViewerAlias
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<User, Event>) {
+  constructor(
+    viewer: ExampleViewerAlias,
+    src: EdgeQuerySource<User, Event, ExampleViewerAlias>,
+  ) {
     super(
       viewer,
       src,
@@ -208,8 +219,11 @@ export abstract class UserToDeclinedEventsQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends UserToDeclinedEventsQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<User, Event>) => T,
-    viewer: Viewer,
+    this: new (
+      viewer: ExampleViewerAlias,
+      src: EdgeQuerySource<User, Event>,
+    ) => T,
+    viewer: ExampleViewerAlias,
     src: EdgeQuerySource<User, Event>,
   ): T {
     return new this(viewer, src);
@@ -243,9 +257,13 @@ export abstract class UserToDeclinedEventsQueryBase extends AssocEdgeQueryBase<
 export abstract class UserToEventsAttendingQueryBase extends AssocEdgeQueryBase<
   User,
   Event,
-  UserToEventsAttendingEdge
+  UserToEventsAttendingEdge,
+  ExampleViewerAlias
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<User, Event>) {
+  constructor(
+    viewer: ExampleViewerAlias,
+    src: EdgeQuerySource<User, Event, ExampleViewerAlias>,
+  ) {
     super(
       viewer,
       src,
@@ -256,8 +274,11 @@ export abstract class UserToEventsAttendingQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends UserToEventsAttendingQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<User, Event>) => T,
-    viewer: Viewer,
+    this: new (
+      viewer: ExampleViewerAlias,
+      src: EdgeQuerySource<User, Event>,
+    ) => T,
+    viewer: ExampleViewerAlias,
     src: EdgeQuerySource<User, Event>,
   ): T {
     return new this(viewer, src);
@@ -291,9 +312,13 @@ export abstract class UserToEventsAttendingQueryBase extends AssocEdgeQueryBase<
 export abstract class UserToFriendsQueryBase extends AssocEdgeQueryBase<
   User,
   User,
-  UserToFriendsEdge
+  UserToFriendsEdge,
+  ExampleViewerAlias
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<User, User>) {
+  constructor(
+    viewer: ExampleViewerAlias,
+    src: EdgeQuerySource<User, User, ExampleViewerAlias>,
+  ) {
     super(
       viewer,
       src,
@@ -304,8 +329,11 @@ export abstract class UserToFriendsQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends UserToFriendsQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<User, User>) => T,
-    viewer: Viewer,
+    this: new (
+      viewer: ExampleViewerAlias,
+      src: EdgeQuerySource<User, User>,
+    ) => T,
+    viewer: ExampleViewerAlias,
     src: EdgeQuerySource<User, User>,
   ): T {
     return new this(viewer, src);
@@ -363,9 +391,13 @@ export abstract class UserToFriendsQueryBase extends AssocEdgeQueryBase<
 export abstract class UserToInvitedEventsQueryBase extends AssocEdgeQueryBase<
   User,
   Event,
-  UserToInvitedEventsEdge
+  UserToInvitedEventsEdge,
+  ExampleViewerAlias
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<User, Event>) {
+  constructor(
+    viewer: ExampleViewerAlias,
+    src: EdgeQuerySource<User, Event, ExampleViewerAlias>,
+  ) {
     super(
       viewer,
       src,
@@ -376,8 +408,11 @@ export abstract class UserToInvitedEventsQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends UserToInvitedEventsQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<User, Event>) => T,
-    viewer: Viewer,
+    this: new (
+      viewer: ExampleViewerAlias,
+      src: EdgeQuerySource<User, Event>,
+    ) => T,
+    viewer: ExampleViewerAlias,
     src: EdgeQuerySource<User, Event>,
   ): T {
     return new this(viewer, src);
@@ -410,10 +445,14 @@ export abstract class UserToInvitedEventsQueryBase extends AssocEdgeQueryBase<
 
 export abstract class UserToLikesQueryBase extends AssocEdgeQueryBase<
   User,
-  Ent,
-  UserToLikesEdge
+  Ent<ExampleViewerAlias>,
+  UserToLikesEdge,
+  ExampleViewerAlias
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<User, Ent>) {
+  constructor(
+    viewer: ExampleViewerAlias,
+    src: EdgeQuerySource<User, Ent<ExampleViewerAlias>, ExampleViewerAlias>,
+  ) {
     super(
       viewer,
       src,
@@ -424,9 +463,12 @@ export abstract class UserToLikesQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends UserToLikesQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<User, Ent>) => T,
-    viewer: Viewer,
-    src: EdgeQuerySource<User, Ent>,
+    this: new (
+      viewer: ExampleViewerAlias,
+      src: EdgeQuerySource<User, Ent<ExampleViewerAlias>>,
+    ) => T,
+    viewer: ExampleViewerAlias,
+    src: EdgeQuerySource<User, Ent<ExampleViewerAlias>>,
   ): T {
     return new this(viewer, src);
   }
@@ -439,9 +481,13 @@ export abstract class UserToLikesQueryBase extends AssocEdgeQueryBase<
 export abstract class UserToMaybeEventsQueryBase extends AssocEdgeQueryBase<
   User,
   Event,
-  UserToMaybeEventsEdge
+  UserToMaybeEventsEdge,
+  ExampleViewerAlias
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<User, Event>) {
+  constructor(
+    viewer: ExampleViewerAlias,
+    src: EdgeQuerySource<User, Event, ExampleViewerAlias>,
+  ) {
     super(
       viewer,
       src,
@@ -452,8 +498,11 @@ export abstract class UserToMaybeEventsQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends UserToMaybeEventsQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<User, Event>) => T,
-    viewer: Viewer,
+    this: new (
+      viewer: ExampleViewerAlias,
+      src: EdgeQuerySource<User, Event>,
+    ) => T,
+    viewer: ExampleViewerAlias,
     src: EdgeQuerySource<User, Event>,
   ): T {
     return new this(viewer, src);
@@ -487,9 +536,13 @@ export abstract class UserToMaybeEventsQueryBase extends AssocEdgeQueryBase<
 export abstract class UserToSelfContactQueryBase extends AssocEdgeQueryBase<
   User,
   Contact,
-  UserToSelfContactEdge
+  UserToSelfContactEdge,
+  ExampleViewerAlias
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<User, Contact>) {
+  constructor(
+    viewer: ExampleViewerAlias,
+    src: EdgeQuerySource<User, Contact, ExampleViewerAlias>,
+  ) {
     super(
       viewer,
       src,
@@ -500,8 +553,11 @@ export abstract class UserToSelfContactQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends UserToSelfContactQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<User, Contact>) => T,
-    viewer: Viewer,
+    this: new (
+      viewer: ExampleViewerAlias,
+      src: EdgeQuerySource<User, Contact>,
+    ) => T,
+    viewer: ExampleViewerAlias,
     src: EdgeQuerySource<User, Contact>,
   ): T {
     return new this(viewer, src);
@@ -523,9 +579,13 @@ export abstract class UserToSelfContactQueryBase extends AssocEdgeQueryBase<
 export abstract class UserToHostedEventsQueryBase extends AssocEdgeQueryBase<
   User,
   Event,
-  UserToHostedEventsEdge
+  UserToHostedEventsEdge,
+  ExampleViewerAlias
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<User, Event>) {
+  constructor(
+    viewer: ExampleViewerAlias,
+    src: EdgeQuerySource<User, Event, ExampleViewerAlias>,
+  ) {
     super(
       viewer,
       src,
@@ -536,8 +596,11 @@ export abstract class UserToHostedEventsQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends UserToHostedEventsQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<User, Event>) => T,
-    viewer: Viewer,
+    this: new (
+      viewer: ExampleViewerAlias,
+      src: EdgeQuerySource<User, Event>,
+    ) => T,
+    viewer: ExampleViewerAlias,
     src: EdgeQuerySource<User, Event>,
   ): T {
     return new this(viewer, src);
@@ -570,9 +633,10 @@ export abstract class UserToHostedEventsQueryBase extends AssocEdgeQueryBase<
 
 export class UserToAuthCodesQueryBase extends CustomEdgeQueryBase<
   User,
-  AuthCode
+  AuthCode,
+  ExampleViewerAlias
 > {
-  constructor(viewer: Viewer, src: User | ID) {
+  constructor(viewer: ExampleViewerAlias, src: User | ID) {
     super(viewer, {
       src: src,
       countLoaderFactory: userToAuthCodesCountLoaderFactory,
@@ -582,8 +646,8 @@ export class UserToAuthCodesQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends UserToAuthCodesQueryBase>(
-    this: new (viewer: Viewer, src: User | ID) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, src: User | ID) => T,
+    viewer: ExampleViewerAlias,
     src: User | ID,
   ): T {
     return new this(viewer, src);
@@ -596,9 +660,10 @@ export class UserToAuthCodesQueryBase extends CustomEdgeQueryBase<
 
 export class UserToContactsQueryBase extends CustomEdgeQueryBase<
   User,
-  Contact
+  Contact,
+  ExampleViewerAlias
 > {
-  constructor(viewer: Viewer, src: User | ID) {
+  constructor(viewer: ExampleViewerAlias, src: User | ID) {
     super(viewer, {
       src: src,
       countLoaderFactory: userToContactsCountLoaderFactory,
@@ -608,8 +673,8 @@ export class UserToContactsQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends UserToContactsQueryBase>(
-    this: new (viewer: Viewer, src: User | ID) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, src: User | ID) => T,
+    viewer: ExampleViewerAlias,
     src: User | ID,
   ): T {
     return new this(viewer, src);

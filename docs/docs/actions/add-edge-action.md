@@ -10,13 +10,21 @@ Based on the [schema](/docs/actions/action#schema) with the `AddEdge` action in 
 
 First, the base class:
 
-```ts title="src/ent/event/actions/generated/event_add_host_action_base.ts"
-export class EventAddHostActionBase implements Action<Event> {
-  public readonly builder: EventBuilder; 
+```ts title="src/ent/generated/event/actions/event_add_host_action_base.ts"
+export class EventAddHostActionBase 
+  implements
+    Action<
+      Event,
+      EventBuilder<EventInput, Event>,
+      Viewer,
+      EventInput,
+      Event
+{
+  public readonly builder: EventBuilder<EventInput, Event>;
   public readonly viewer: Viewer; 
+  protected readonly event: Event;
 
   constructor(viewer: Viewer, event: Event) {
-
     this.viewer = viewer;
     this.builder = new EventBuilder(
       this.viewer,
@@ -24,19 +32,15 @@ export class EventAddHostActionBase implements Action<Event> {
       this,
       event,
     );
-
+    this.event = event;
   }
 
   getPrivacyPolicy(): PrivacyPolicy {
-
     return AllowIfViewerHasIdentityPrivacyPolicy;
-
   }
 
   addHost(id: ID) {
-
     //...
-
   }
   // ...
 }
@@ -47,7 +51,7 @@ and then the subclass:
 
 ```ts title="src/ent/event/actions/event_add_host_action.ts"
 import {
-import { EventAddHostActionBase } from "src/ent/event/actions/generated/event_add_host_action_base";
+import { EventAddHostActionBase } from "src/ent/generated/event/actions/event_add_host_action_base";
 
 export default class EventAddHostAction extends EventAddHostActionBase {}
 ```

@@ -13,8 +13,10 @@ import {
   AddressInput,
 } from "src/ent/address/actions/generated/address_builder";
 
-export class DeleteAddressActionBase implements Action<Address> {
-  public readonly builder: AddressBuilder;
+export class DeleteAddressActionBase
+  implements Action<Address, AddressBuilder<AddressInput>, AddressInput>
+{
+  public readonly builder: AddressBuilder<AddressInput>;
   public readonly viewer: Viewer;
   protected address: Address;
 
@@ -29,7 +31,7 @@ export class DeleteAddressActionBase implements Action<Address> {
     this.address = address;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<Address> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

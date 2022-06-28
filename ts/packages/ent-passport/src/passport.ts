@@ -35,7 +35,7 @@ export interface PassportAuthOptions {
   serializeViewer?(viewer: Viewer): unknown;
   deserializeViewer?(id: unknown): Promise<Viewer> | Viewer;
   userToViewer?: UserToViewerFunc;
-  loadOptions?: LoadEntOptions<Ent>; // helpful when userToViewer not passed
+  loadOptions?: LoadEntOptions<Ent, any>; // helpful when userToViewer not passed
 }
 
 // should this be renamed to session?
@@ -120,7 +120,7 @@ async function toViewer(
 // passportstrategyhandler
 // to be used for other requests when JWT is passed
 
-function defaultReqToViewer(loadOptions?: LoadEntOptions<Ent>) {
+function defaultReqToViewer(loadOptions?: LoadEntOptions<Ent, any>) {
   return async (context: RequestContext, viewerID: string | ID) => {
     let ent: Ent | null = null;
     if (loadOptions) {
@@ -202,7 +202,7 @@ export class PassportStrategyHandler implements AuthHandler {
 }
 
 interface JwtHandlerOptions {
-  loaderOptions?: LoadEntOptions<Ent>;
+  loaderOptions?: LoadEntOptions<Ent, any>;
   authOptions?: AuthenticateOptions;
   verifyFn?: VerifyCallback; // if not provided, a default one which takes viewerID from payload is used
   strategyOpts?: StrategyOptions;
@@ -230,7 +230,7 @@ export class LocalStrategy extends Strategy {
       this.success(viewer);
       return viewer;
     } else {
-      this.throw new Error(401); // TODO
+      this.fail(401); // TODO
       return null;
     }
   }
@@ -313,7 +313,7 @@ export async function useAndAuth(
 export async function useAndVerifyAuth(
   context: RequestContext,
   verifyFn: () => Promise<Viewer | ID | null>,
-  loadOptions?: LoadEntOptions<Ent>,
+  loadOptions?: LoadEntOptions<Ent, any>,
   options?: AuthenticateOptions,
 ): Promise<AuthViewer> {
   const strategy = new LocalStrategy({
@@ -350,7 +350,7 @@ export async function useAndVerifyAuthJWT(
   context: RequestContext,
   verifyFn: () => Promise<ID | Viewer | null>,
   jwtOptions: JWTOptions,
-  loadOptions?: LoadEntOptions<Ent>,
+  loadOptions?: LoadEntOptions<Ent, any>,
   options?: AuthenticateOptions,
 ): Promise<[AuthViewer, string]> {
   const viewer = await useAndVerifyAuth(

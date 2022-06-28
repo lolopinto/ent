@@ -19,33 +19,27 @@ export class ViewerType {
 
   @gqlField({ type: GraphQLID, nullable: true })
   async viewerID() {
-
     const user = await this.user();
     if (!user) {
       return null;
     }
     return encodeGQLID(user);
-
   }
 
   @gqlField({ type: User, nullable: true })
   async user(): Promise<User | null> {
-
     const v = this.viewer.viewerID;
     if (!v) {
       return null;
     }
     return User.loadX(this.viewer, v);
-
   }
 }
 
 export default class ViewerResolver {
   @gqlQuery({ name: "viewer", type: ViewerType })
   viewer(@gqlContextType() context: RequestContext): ViewerType {
-
     return new ViewerType(context.getViewer());
-
   }
 }
 
@@ -64,8 +58,8 @@ Here's what's happening here:
 
 * This adds a new [object](https://graphql.org/learn/schema/#object-types-and-fields) `Viewer` to the GraphQLSchema represented by the class `ViewerType`.
 * `Viewer` object has 2 fields:
-  + nullable `viewerID` of type `ID`
-  + nullable `user` of type `User`
+  * nullable `viewerID` of type `ID`
+  * nullable `user` of type `User`
 * New field `viewer` added to `Query` Type.
 
 This uses the following concepts to implement this:

@@ -9,10 +9,10 @@ import {
   Context,
   CustomQuery,
   Data,
+  Ent,
   ID,
   LoadEntOptions,
   PrivacyPolicy,
-  Viewer,
   applyPrivacyPolicy,
   convertBool,
   convertDate,
@@ -36,9 +36,16 @@ import {
   userLoaderInfo,
   userPhoneNumberLoader,
 } from "./loaders";
+import { UserNestedObjectList } from "./user_nested_object_list";
+import { UserPrefsDiff } from "./user_prefs_diff";
+import { UserPrefsStruct } from "./user_prefs_struct";
+import { UserPrefsStruct2 } from "./user_prefs_struct_2";
+import { UserSuperNestedObject } from "./user_super_nested_object";
 import {
   Contact,
   EdgeType,
+  FeedbackMixin,
+  IFeedback,
   NodeType,
   UserToAuthCodesQuery,
   UserToCommentsQuery,
@@ -53,10 +60,10 @@ import {
   UserToLikesQuery,
   UserToMaybeEventsQuery,
 } from "../internal";
-import { UserPrefs } from "../user_prefs";
-import schema from "../../schema/user";
+import schema from "../../schema/user_schema";
+import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
-export enum DaysOff {
+export enum UserDaysOff {
   Monday = "monday",
   Tuesday = "tuesday",
   Wednesday = "wednesday",
@@ -66,14 +73,43 @@ export enum DaysOff {
   Sunday = "sunday",
 }
 
-export enum PreferredShift {
+export enum UserPreferredShift {
   Morning = "morning",
   Afternoon = "afternoon",
   Evening = "evening",
   Graveyard = "graveyard",
 }
 
-export class UserBase {
+interface UserDBData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  first_name: string;
+  last_name: string;
+  email_address: string;
+  phone_number: string | null;
+  password: string | null;
+  account_status: string | null;
+  email_verified: boolean | null;
+  bio: string | null;
+  nicknames: string[] | null;
+  prefs: UserPrefsStruct | null;
+  prefs_list: UserPrefsStruct2[] | null;
+  prefs_diff: UserPrefsDiff | null;
+  days_off: UserDaysOff[] | null;
+  preferred_shift: UserPreferredShift[] | null;
+  time_in_ms: BigInt | null;
+  fun_uuids: ID[] | null;
+  new_col: string | null;
+  new_col_2: string | null;
+  super_nested_object: UserSuperNestedObject | null;
+  nested_list: UserNestedObjectList[] | null;
+}
+
+export class UserBase
+  extends FeedbackMixin(class {})
+  implements Ent<ExampleViewerAlias>, IFeedback
+{
   readonly nodeType = NodeType.User;
   readonly id: ID;
   readonly createdAt: Date;
@@ -87,17 +123,21 @@ export class UserBase {
   protected readonly _emailVerified: boolean;
   readonly bio: string | null;
   readonly nicknames: string[] | null;
-  protected readonly _prefs: UserPrefs | null;
-  protected readonly _prefsList: UserPrefs[] | null;
-  protected readonly _prefsDiff: any;
-  readonly daysOff: DaysOff[] | null;
-  readonly preferredShift: PreferredShift[] | null;
+  protected readonly _prefs: UserPrefsStruct | null;
+  protected readonly _prefsList: UserPrefsStruct2[] | null;
+  protected readonly _prefsDiff: UserPrefsDiff | null;
+  readonly daysOff: UserDaysOff[] | null;
+  readonly preferredShift: UserPreferredShift[] | null;
   readonly timeInMs: BigInt | null;
   readonly funUuids: ID[] | null;
   readonly newCol: string | null;
   readonly newCol2: string | null;
+  readonly superNestedObject: UserSuperNestedObject | null;
+  readonly nestedList: UserNestedObjectList[] | null;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: ExampleViewerAlias, protected data: Data) {
+    // @ts-ignore pass to mixin
+    super(viewer, data);
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
@@ -119,15 +159,19 @@ export class UserBase {
     this.funUuids = convertNullableList(data.fun_uuids);
     this.newCol = data.new_col;
     this.newCol2 = data.new_col_2;
+    this.superNestedObject = convertNullableJSON(data.super_nested_object);
+    this.nestedList = convertNullableJSONList(data.nested_list);
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   async accountStatus(): Promise<string | null> {
     if (this._accountStatus === null) {
       return null;
     }
-    const m = getFieldsWithPrivacy(schema);
+    const m = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
     const p = m.get("account_status");
     if (!p) {
       throw new Error(`couldn't get field privacy policy for accountStatus`);
@@ -137,7 +181,7 @@ export class UserBase {
   }
 
   async emailVerified(): Promise<boolean | null> {
-    const m = getFieldsWithPrivacy(schema);
+    const m = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
     const p = m.get("email_verified");
     if (!p) {
       throw new Error(`couldn't get field privacy policy for emailVerified`);
@@ -146,11 +190,11 @@ export class UserBase {
     return v ? this._emailVerified : null;
   }
 
-  async prefs(): Promise<UserPrefs | null> {
+  async prefs(): Promise<UserPrefsStruct | null> {
     if (this._prefs === null) {
       return null;
     }
-    const m = getFieldsWithPrivacy(schema);
+    const m = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
     const p = m.get("prefs");
     if (!p) {
       throw new Error(`couldn't get field privacy policy for prefs`);
@@ -159,11 +203,11 @@ export class UserBase {
     return v ? this._prefs : null;
   }
 
-  async prefsList(): Promise<UserPrefs[] | null> {
+  async prefsList(): Promise<UserPrefsStruct2[] | null> {
     if (this._prefsList === null) {
       return null;
     }
-    const m = getFieldsWithPrivacy(schema);
+    const m = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
     const p = m.get("prefs_list");
     if (!p) {
       throw new Error(`couldn't get field privacy policy for prefsList`);
@@ -172,11 +216,11 @@ export class UserBase {
     return v ? this._prefsList : null;
   }
 
-  async prefsDiff(): Promise<any> {
+  async prefsDiff(): Promise<UserPrefsDiff | null> {
     if (this._prefsDiff === null) {
       return null;
     }
-    const m = getFieldsWithPrivacy(schema);
+    const m = getFieldsWithPrivacy(schema, userLoaderInfo.fieldInfo);
     const p = m.get("prefs_diff");
     if (!p) {
       throw new Error(`couldn't get field privacy policy for prefsDiff`);
@@ -186,8 +230,8 @@ export class UserBase {
   }
 
   static async load<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T | null> {
     return (await loadEnt(
@@ -198,8 +242,8 @@ export class UserBase {
   }
 
   static async loadX<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T> {
     return (await loadEntX(
@@ -210,20 +254,20 @@ export class UserBase {
   }
 
   static async loadMany<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     ...ids: ID[]
-  ): Promise<T[]> {
+  ): Promise<Map<ID, T>> {
     return (await loadEnts(
       viewer,
       UserBase.loaderOptions.apply(this),
       ...ids,
-    )) as T[];
+    )) as Map<ID, T>;
   }
 
   static async loadCustom<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     query: CustomQuery,
   ): Promise<T[]> {
     return (await loadCustomEnts(
@@ -234,36 +278,44 @@ export class UserBase {
   }
 
   static async loadCustomData<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<Data[]> {
-    return loadCustomData(UserBase.loaderOptions.apply(this), query, context);
+  ): Promise<UserDBData[]> {
+    return (await loadCustomData(
+      UserBase.loaderOptions.apply(this),
+      query,
+      context,
+    )) as UserDBData[];
   }
 
   static async loadRawData<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data | null> {
-    return userLoader.createLoader(context).load(id);
+  ): Promise<UserDBData | null> {
+    const row = await userLoader.createLoader(context).load(id);
+    if (!row) {
+      return null;
+    }
+    return row as UserDBData;
   }
 
   static async loadRawDataX<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data> {
+  ): Promise<UserDBData> {
     const row = await userLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row;
+    return row as UserDBData;
   }
 
   static async loadFromEmailAddress<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     emailAddress: string,
   ): Promise<T | null> {
     return (await loadEntViaKey(viewer, emailAddress, {
@@ -273,8 +325,8 @@ export class UserBase {
   }
 
   static async loadFromEmailAddressX<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     emailAddress: string,
   ): Promise<T> {
     return (await loadEntXViaKey(viewer, emailAddress, {
@@ -284,7 +336,7 @@ export class UserBase {
   }
 
   static async loadIDFromEmailAddress<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     emailAddress: string,
     context?: Context,
   ): Promise<ID | undefined> {
@@ -295,16 +347,22 @@ export class UserBase {
   }
 
   static async loadRawDataFromEmailAddress<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     emailAddress: string,
     context?: Context,
-  ): Promise<Data | null> {
-    return userEmailAddressLoader.createLoader(context).load(emailAddress);
+  ): Promise<UserDBData | null> {
+    const row = await userEmailAddressLoader
+      .createLoader(context)
+      .load(emailAddress);
+    if (!row) {
+      return null;
+    }
+    return row as UserDBData;
   }
 
   static async loadFromPhoneNumber<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     phoneNumber: string,
   ): Promise<T | null> {
     return (await loadEntViaKey(viewer, phoneNumber, {
@@ -314,8 +372,8 @@ export class UserBase {
   }
 
   static async loadFromPhoneNumberX<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     phoneNumber: string,
   ): Promise<T> {
     return (await loadEntXViaKey(viewer, phoneNumber, {
@@ -325,7 +383,7 @@ export class UserBase {
   }
 
   static async loadIDFromPhoneNumber<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     phoneNumber: string,
     context?: Context,
   ): Promise<ID | undefined> {
@@ -336,16 +394,22 @@ export class UserBase {
   }
 
   static async loadRawDataFromPhoneNumber<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     phoneNumber: string,
     context?: Context,
-  ): Promise<Data | null> {
-    return userPhoneNumberLoader.createLoader(context).load(phoneNumber);
+  ): Promise<UserDBData | null> {
+    const row = await userPhoneNumberLoader
+      .createLoader(context)
+      .load(phoneNumber);
+    if (!row) {
+      return null;
+    }
+    return row as UserDBData;
   }
 
   static loaderOptions<T extends UserBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-  ): LoadEntOptions<T> {
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+  ): LoadEntOptions<T, ExampleViewerAlias> {
     return {
       tableName: userLoaderInfo.tableName,
       fields: userLoaderInfo.fields,

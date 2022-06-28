@@ -40,6 +40,16 @@ export enum AccountState {
   DISABLED = "DISABLED",
 }
 
+interface AccountDBData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  deleted_at: Date | null;
+  name: string;
+  phone_number: string | null;
+  account_state: AccountState | null;
+}
+
 export class AccountBase {
   readonly nodeType = NodeType.Account;
   readonly id: ID;
@@ -119,12 +129,12 @@ export class AccountBase {
     this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
-  ): Promise<T[]> {
+  ): Promise<Map<ID, T>> {
     return (await loadEnts(
       viewer,
       AccountBase.loaderOptions.apply(this),
       ...ids,
-    )) as T[];
+    )) as Map<ID, T>;
   }
 
   static async loadCustom<T extends AccountBase>(
@@ -143,32 +153,36 @@ export class AccountBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<Data[]> {
-    return loadCustomData(
+  ): Promise<AccountDBData[]> {
+    return (await loadCustomData(
       AccountBase.loaderOptions.apply(this),
       query,
       context,
-    );
+    )) as AccountDBData[];
   }
 
   static async loadRawData<T extends AccountBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data | null> {
-    return accountLoader.createLoader(context).load(id);
+  ): Promise<AccountDBData | null> {
+    const row = await accountLoader.createLoader(context).load(id);
+    if (!row) {
+      return null;
+    }
+    return row as AccountDBData;
   }
 
   static async loadRawDataX<T extends AccountBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data> {
+  ): Promise<AccountDBData> {
     const row = await accountLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row;
+    return row as AccountDBData;
   }
 
   // TODO index deleted_at not id... we want an indexQueryLoader...
@@ -210,8 +224,14 @@ export class AccountBase {
     this: new (viewer: Viewer, data: Data) => T,
     phoneNumber: string,
     context?: Context,
-  ): Promise<Data | null> {
-    return accountPhoneNumberLoader.createLoader(context).load(phoneNumber);
+  ): Promise<AccountDBData | null> {
+    const row = await accountPhoneNumberLoader
+      .createLoader(context)
+      .load(phoneNumber);
+    if (!row) {
+      return null;
+    }
+    return row as AccountDBData;
   }
 
   static loaderOptions<T extends AccountBase>(
