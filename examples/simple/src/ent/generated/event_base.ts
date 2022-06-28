@@ -260,7 +260,7 @@ export class EventBase implements Ent<ExampleViewerAlias> {
     return loadEnt(this.viewer, addressID, Address.loaderOptions());
   }
 
-  loadCreator(): Promise<User | null> {
+  async loadCreator(): Promise<User | null> {
     return loadEnt(this.viewer, this.creatorID, User.loaderOptions());
   }
 

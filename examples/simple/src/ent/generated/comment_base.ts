@@ -185,7 +185,7 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
     return CommentToPostQuery.query(this.viewer, this.id);
   }
 
-  loadArticle(): Promise<Ent | null> {
+  async loadArticle(): Promise<Ent | null> {
     return loadEntByType(
       this.viewer,
       this.articleType as unknown as NodeType,
@@ -201,7 +201,7 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
     );
   }
 
-  loadAuthor(): Promise<User | null> {
+  async loadAuthor(): Promise<User | null> {
     return loadEnt(this.viewer, this.authorID, User.loaderOptions());
   }
 
