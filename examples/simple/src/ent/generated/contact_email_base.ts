@@ -164,7 +164,7 @@ export class ContactEmailBase implements Ent<ExampleViewerAlias> {
     return ContactEmailBase.getSchemaFields().get(key);
   }
 
-  loadContact(): Promise<Contact | null> {
+  async loadContact(): Promise<Contact | null> {
     return loadEnt(this.viewer, this.contactID, Contact.loaderOptions());
   }
 
