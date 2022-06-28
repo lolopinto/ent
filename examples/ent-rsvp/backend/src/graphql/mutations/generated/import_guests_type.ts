@@ -22,15 +22,15 @@ export const ImportGuestsType: GraphQLFieldConfig<
   RequestContext,
   importGuestsArgs
 > = {
-  type: GraphQLNonNull(EventType),
+  type: new GraphQLNonNull(EventType),
   args: {
     eventID: {
       description: "",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     file: {
       description: "",
-      type: GraphQLNonNull(GraphQLUpload),
+      type: new GraphQLNonNull(GraphQLUpload),
     },
   },
   resolve: async (

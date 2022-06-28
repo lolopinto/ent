@@ -1,9 +1,10 @@
-import { ID, LoggedOutViewer } from "@snowtop/ent";
+import { ID } from "@snowtop/ent";
 import { expectMutation } from "@snowtop/ent-graphql-tests";
 import schema from "../generated/schema";
 import { DateTime } from "luxon";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { DayOfWeek, DayOfWeekAlt, Holiday } from "src/ent";
+import { LoggedOutExampleViewer } from "../../viewer/viewer";
 
 test("create holiday", async () => {
   let id: ID;
@@ -31,7 +32,7 @@ test("create holiday", async () => {
       },
     ],
   );
-  const ent = await Holiday.loadX(new LoggedOutViewer(), id!);
+  const ent = await Holiday.loadX(new LoggedOutExampleViewer(), id!);
   expect(ent.dayOfWeek).toBe(DayOfWeek.Wednesday);
   expect(ent.dayOfWeekAlt).toBe(DayOfWeekAlt.Wednesday);
 });

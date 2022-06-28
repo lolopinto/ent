@@ -1,18 +1,17 @@
-import { Field, Pattern } from "./schema";
+import { Field, FieldMap, Pattern } from "./schema";
 import { v4 as uuidv4 } from "uuid";
 import { TimestampType, UUIDType } from "./field";
+import { Action, AssocEdgeGroup, Constraint, Edge, Index, Schema } from ".";
 
-let tsFields: Field[] = [
-  TimestampType({
-    name: "createdAt",
+let tsFields: FieldMap = {
+  createdAt: TimestampType({
     hideFromGraphQL: true,
     disableUserEditable: true,
     defaultValueOnCreate: () => {
       return new Date();
     },
   }),
-  TimestampType({
-    name: "updatedAt",
+  updatedAt: TimestampType({
     hideFromGraphQL: true,
     disableUserEditable: true,
     defaultValueOnCreate: () => {
@@ -22,7 +21,7 @@ let tsFields: Field[] = [
       return new Date();
     },
   }),
-];
+};
 
 // Timestamps is a Pattern that adds a createdAt and updatedAt timestamp fields to the ent
 export const Timestamps: Pattern = {
@@ -31,7 +30,6 @@ export const Timestamps: Pattern = {
 };
 
 let nodeField = UUIDType({
-  name: "ID",
   primaryKey: true,
   disableUserEditable: true,
   defaultValueOnCreate: () => {
@@ -39,12 +37,16 @@ let nodeField = UUIDType({
   },
 });
 
-let nodeFields: Field[] = [nodeField, ...tsFields];
+let nodeFields: FieldMap = {
+  // inconsistent naming :(
+  ID: nodeField,
+  ...tsFields,
+};
 
-let nodeFieldsWithTZ: Field[] = [
-  nodeField,
-  TimestampType({
-    name: "createdAt",
+let nodeFieldsWithTZ: FieldMap = {
+  // inconsistent naming :(
+  ID: nodeField,
+  createdAt: TimestampType({
     hideFromGraphQL: true,
     disableUserEditable: true,
     defaultValueOnCreate: () => {
@@ -52,8 +54,7 @@ let nodeFieldsWithTZ: Field[] = [
     },
     withTimezone: true,
   }),
-  TimestampType({
-    name: "updatedAt",
+  updatedAt: TimestampType({
     hideFromGraphQL: true,
     disableUserEditable: true,
     defaultValueOnCreate: () => {
@@ -64,16 +65,109 @@ let nodeFieldsWithTZ: Field[] = [
     },
     withTimezone: true,
   }),
-];
+};
 
 // Node is a Pattern that adds 3 fields to the ent: (id, createdAt, and updatedAt timestamps)
 export const Node: Pattern = {
   name: "node",
   fields: nodeFields,
+  disableMixin: true,
 };
 
-// Base ent schema. has Node Pattern by default.
+export interface SchemaConfig extends Schema {}
+
+// Ent schema. has Node Pattern by default.
 // exists just to have less typing and easier for clients to implement
+export class EntSchema implements Schema {
+  // Field[] compatibility reasons
+  fields: FieldMap | Field[];
+
+  tableName: string | undefined;
+
+  patterns: Pattern[] = [Node];
+
+  edges: Edge[] | undefined;
+
+  edgeGroups: AssocEdgeGroup[] | undefined;
+
+  actions: Action[] | undefined;
+
+  enumTable: boolean | undefined;
+
+  dbRows: { [key: string]: any }[] | undefined;
+
+  constraints: Constraint[] | undefined;
+
+  indices: Index[] | undefined;
+
+  hideFromGraphQL?: boolean;
+
+  constructor(cfg: SchemaConfig) {
+    this.fields = cfg.fields;
+    this.tableName = cfg.tableName;
+    if (cfg.patterns) {
+      this.patterns.push(...cfg.patterns);
+    }
+    this.edges = cfg.edges;
+    this.edgeGroups = cfg.edgeGroups;
+    this.actions = cfg.actions;
+    this.enumTable = cfg.enumTable;
+    this.dbRows = cfg.dbRows;
+    this.constraints = cfg.constraints;
+    this.indices = cfg.indices;
+    this.hideFromGraphQL = cfg.hideFromGraphQL;
+  }
+}
+
+export class EntSchemaWithTZ implements Schema {
+  // Field[] compatibility reasons
+  fields: FieldMap | Field[];
+
+  tableName: string | undefined;
+
+  patterns: Pattern[] = [
+    {
+      // default schema added
+      name: "nodeWithTZ",
+      fields: nodeFieldsWithTZ,
+      disableMixin: true,
+    },
+  ];
+
+  edges: Edge[] | undefined;
+
+  edgeGroups: AssocEdgeGroup[] | undefined;
+
+  actions: Action[] | undefined;
+
+  enumTable: boolean | undefined;
+
+  dbRows: { [key: string]: any }[] | undefined;
+
+  constraints: Constraint[] | undefined;
+
+  indices: Index[] | undefined;
+
+  hideFromGraphQL?: boolean;
+
+  constructor(cfg: SchemaConfig) {
+    this.fields = cfg.fields;
+    this.tableName = cfg.tableName;
+    if (cfg.patterns) {
+      this.patterns.push(...cfg.patterns);
+    }
+    this.edges = cfg.edges;
+    this.edgeGroups = cfg.edgeGroups;
+    this.actions = cfg.actions;
+    this.enumTable = cfg.enumTable;
+    this.dbRows = cfg.dbRows;
+    this.constraints = cfg.constraints;
+    this.indices = cfg.indices;
+    this.hideFromGraphQL = cfg.hideFromGraphQL;
+  }
+}
+
+// @deprecated use EntSchema
 export abstract class BaseEntSchema {
   addPatterns(...patterns: Pattern[]) {
     this.patterns.push(...patterns);
@@ -82,6 +176,7 @@ export abstract class BaseEntSchema {
   patterns: Pattern[] = [Node];
 }
 
+// @deprecated use EntSchemaWithTZ
 export abstract class BaseEntSchemaWithTZ {
   addPatterns(...patterns: Pattern[]) {
     this.patterns.push(...patterns);
@@ -92,6 +187,7 @@ export abstract class BaseEntSchemaWithTZ {
       // default schema added
       name: "nodeWithTZ",
       fields: nodeFieldsWithTZ,
+      disableMixin: true,
     },
   ];
 }

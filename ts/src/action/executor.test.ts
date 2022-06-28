@@ -1,4 +1,4 @@
-import { Ent, ID, Viewer, Data } from "../core/base";
+import { Ent, ID, Viewer, Data, PrivacyPolicy } from "../core/base";
 import { DataOperation, loadEdges, loadEnts, loadRows } from "../core/ent";
 import * as clause from "../core/clause";
 import { ObjectLoaderFactory } from "../core/loaders/object_loader";
@@ -28,9 +28,9 @@ import {
   BuilderSchema,
   SimpleAction,
   getTableName,
+  getBuilderSchemaFromFields,
 } from "../testutils/builder";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
-import { BaseEntSchema, Field } from "../schema";
 import {
   StringType,
   TimestampType,
@@ -119,13 +119,13 @@ describe("sqlite", () => {
     edges.map((edge) => tables.push(assoc_edge_table(`${edge}_table`)));
 
     [
-      new AccountSchema(),
-      new ContactSchema(),
-      new GroupSchema(),
-      new UserSchema(),
-      new MessageSchema(),
-      new GroupMembershipSchema(),
-      new ChangelogSchema(),
+      AccountSchema,
+      ContactSchema,
+      GroupSchema,
+      UserSchema,
+      MessageSchema,
+      GroupMembershipSchema,
+      ChangelogSchema,
     ].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));
     return tables;
   };
@@ -148,7 +148,7 @@ async function saveBuilderX<T extends Ent>(builder: Builder<T>): Promise<void> {
 }
 
 async function executeAction<T extends Ent, E = any>(
-  action: Action<T>,
+  action: Action<T, Builder<T>>,
   name?: E,
 ): Promise<Executor> {
   const exec = await executor(action.builder);
@@ -189,125 +189,136 @@ async function createUser(): Promise<User> {
   return new User(new IDViewer(id), { id });
 }
 
-class UserSchema extends BaseEntSchema {
-  fields: Field[] = [
-    StringType({ name: "FirstName" }),
-    StringType({ name: "LastName" }),
-    StringType({ name: "EmailAddress", nullable: true }),
-    UUIDType({ name: "AccountID", nullable: true }),
-  ];
-  ent = User;
-}
+const UserSchema = getBuilderSchemaFromFields(
+  {
+    FirstName: StringType(),
+    LastName: StringType(),
+    EmailAddress: StringType({ nullable: true }),
+    AccountID: UUIDType({ nullable: true }),
+  },
+  User,
+);
 
 class Account implements Ent {
   id: ID;
   accountID: string = "";
   nodeType = "Account";
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
 
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data.id;
   }
 }
 
-class AccountSchema extends BaseEntSchema {
-  ent = Account;
-  fields: Field[] = [];
-}
+const AccountSchema = getBuilderSchemaFromFields({}, Account);
 
-class ContactSchema extends BaseEntSchema {
-  fields: Field[] = [
-    StringType({ name: "FirstName" }),
-    StringType({ name: "LastName" }),
-    StringType({ name: "UserID" }),
-  ];
-  ent = Contact;
-}
+const ContactSchema = getBuilderSchemaFromFields(
+  {
+    FirstName: StringType(),
+    LastName: StringType(),
+    UserID: StringType(),
+  },
+  Contact,
+);
 
-class GroupSchema extends BaseEntSchema {
-  fields: Field[] = [
-    StringType({ name: "name" }),
-    StringType({ name: "funField", nullable: true }),
-  ];
-  ent = Group;
-}
+const GroupSchema = getBuilderSchemaFromFields(
+  {
+    name: StringType(),
+    funField: StringType({ nullable: true }),
+  },
+  Group,
+);
 
 class GroupMembership implements Ent {
   id: ID;
   nodeType = "GroupMembership";
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
 
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data.id;
   }
 }
 
-class GroupMembershipSchema extends BaseEntSchema {
-  fields: Field[] = [
-    UUIDType({ name: "ownerID" }),
-    UUIDType({ name: "addedBy" }),
-    BooleanType({ name: "notificationsEnabled" }),
-  ];
-  ent = GroupMembership;
-}
+const GroupMembershipSchema = getBuilderSchemaFromFields(
+  {
+    ownerID: UUIDType(),
+    addedBy: UUIDType(),
+    notificationsEnabled: BooleanType(),
+  },
+  GroupMembership,
+);
 
 class Changelog implements Ent {
   id: ID;
   nodeType = "Changelog";
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
 
   constructor(public viewer: Viewer, public data: Data) {
     this.id = data.id;
   }
 }
 
-class ChangelogSchema extends BaseEntSchema {
-  fields: Field[] = [
-    UUIDType({ name: "parentID", polymorphic: true }),
-    JSONBType({ name: "log" }),
-  ];
-  ent = Changelog;
-}
+const ChangelogSchema = getBuilderSchemaFromFields(
+  {
+    parentID: UUIDType({ polymorphic: true }),
+    log: JSONBType(),
+  },
+  Changelog,
+);
 
-class MessageSchema extends BaseEntSchema {
-  fields: Field[] = [
+const MessageSchema = getBuilderSchemaFromFields(
+  {
     // TODO both id fields
-    StringType({ name: "sender" }), // can't use from
-    StringType({ name: "recipient" }), // can't use to in sqlite
-    StringType({ name: "message" }),
-    BooleanType({ name: "transient", nullable: true }),
-    TimestampType({ name: "expiresAt", nullable: true }),
-  ];
-  ent = Message;
-}
+    sender: StringType(), // can't use from
+    recipient: StringType(), // can't use to in sqlite
+    message: StringType(),
+    transient: BooleanType({ nullable: true }),
+    expiresAt: TimestampType({ nullable: true }),
+  },
+  Message,
+);
 
 class MessageAction extends SimpleAction<Message> {
   constructor(
     viewer: Viewer,
     fields: Map<string, any>,
     operation: WriteOperation,
-    existingEnt?: Message,
+    existingEnt: Message | null,
   ) {
-    super(viewer, new MessageSchema(), fields, operation, existingEnt);
+    super(viewer, MessageSchema, fields, operation, existingEnt);
   }
 
-  triggers: Trigger<Message>[] = [
-    {
-      changeset: (builder: SimpleBuilder<Message>, _input: Data): void => {
-        let sender = builder.fields.get("sender");
-        let recipient = builder.fields.get("recipient");
+  getTriggers(): Trigger<Message, SimpleBuilder<Message, Message | null>>[] {
+    return [
+      {
+        changeset: (builder, _input): void => {
+          let sender = builder.fields.get("sender");
+          let recipient = builder.fields.get("recipient");
 
-        builder.orchestrator.addInboundEdge(sender, "senderToMessage", "user");
-        builder.orchestrator.addInboundEdge(
-          recipient,
-          "recipientToMessage",
-          "user",
-        );
+          builder.orchestrator.addInboundEdge(
+            sender,
+            "senderToMessage",
+            "user",
+          );
+          builder.orchestrator.addInboundEdge(
+            recipient,
+            "recipientToMessage",
+            "user",
+          );
+        },
       },
-    },
-  ];
+    ];
+  }
 
-  observers: Observer<Message>[] = [new EntCreationObserver<Message>()];
+  getObservers(): Observer<Message, SimpleBuilder<Message>>[] {
+    return [new EntCreationObserver<Message>()];
+  }
 }
 
 class UserAction extends SimpleAction<User> {
@@ -317,42 +328,47 @@ class UserAction extends SimpleAction<User> {
     viewer: Viewer,
     fields: Map<string, any>,
     operation: WriteOperation,
-    existingEnt?: User,
+    existingEnt: User | null,
   ) {
-    super(viewer, new UserSchema(), fields, operation, existingEnt);
+    super(viewer, UserSchema, fields, operation, existingEnt);
   }
 
-  triggers: Trigger<User>[] = [
-    {
-      changeset: (
-        builder: SimpleBuilder<User>,
-      ): Promise<Changeset<Contact>> => {
-        let firstName = builder.fields.get("FirstName");
-        let lastName = builder.fields.get("LastName");
-        this.contactAction = new SimpleAction(
-          builder.viewer,
-          new ContactSchema(),
-          new Map([
-            ["FirstName", firstName],
-            ["LastName", lastName],
-            ["UserID", builder],
-          ]),
-          WriteOperation.Insert,
-        );
+  getTriggers(): Trigger<User, SimpleBuilder<User>>[] {
+    return [
+      {
+        changeset: (builder): Promise<Changeset> => {
+          let firstName = builder.fields.get("FirstName");
+          let lastName = builder.fields.get("LastName");
+          this.contactAction = new SimpleAction(
+            builder.viewer,
+            ContactSchema,
+            new Map([
+              ["FirstName", firstName],
+              ["LastName", lastName],
+              ["UserID", builder],
+            ]),
+            WriteOperation.Insert,
+            null,
+          );
 
-        this.contactAction.observers = [new EntCreationObserver<Contact>()];
+          this.contactAction.getObservers = () => [
+            new EntCreationObserver<Contact>(),
+          ];
 
-        builder.orchestrator.addOutboundEdge(
-          this.contactAction.builder,
-          "selfContact",
-          "contact",
-        );
-        return this.contactAction.changeset();
+          builder.orchestrator.addOutboundEdge(
+            this.contactAction.builder,
+            "selfContact",
+            "contact",
+          );
+          return this.contactAction.changeset();
+        },
       },
-    },
-  ];
+    ];
+  }
 
-  observers: Observer<User>[] = [new EntCreationObserver<User>()];
+  getObservers(): Observer<User, SimpleBuilder<User>>[] {
+    return [new EntCreationObserver<User>()];
+  }
 }
 
 type getMembershipFunction = (
@@ -360,7 +376,7 @@ type getMembershipFunction = (
   edge: EdgeInputData,
 ) => SimpleAction<Ent>;
 
-class GroupMembershipTrigger implements Trigger<Group> {
+class GroupMembershipTrigger implements Trigger<Group, SimpleBuilder<Group>> {
   constructor(private getter: getMembershipFunction) {}
   changeset(builder: SimpleBuilder<Group>, input: Data): TriggerReturn {
     const inputEdges = builder.orchestrator.getInputEdges(
@@ -392,7 +408,7 @@ class EditGroupAction extends SimpleAction<Group> {
   ) {
     super(viewer, schema, fields, operation, existingEnt);
   }
-  triggers = [new GroupMembershipTrigger(this.getter)];
+  getTriggers = () => [new GroupMembershipTrigger(this.getter)];
 }
 
 function randomEmail(): string {
@@ -416,8 +432,8 @@ async function verifyGroupMembers(group: Group, members: User[]) {
 }
 
 async function loadMemberships(viewer: Viewer, membershipids: ID[]) {
-  const tableName = getTableName(new GroupMembershipSchema());
-  return loadEnts(
+  const tableName = getTableName(GroupMembershipSchema);
+  const ents = await loadEnts(
     viewer,
     {
       tableName,
@@ -431,10 +447,11 @@ async function loadMemberships(viewer: Viewer, membershipids: ID[]) {
     },
     ...membershipids,
   );
+  return Array.from(ents.values());
 }
 
 async function loadChangelogs(viewer: Viewer, clids: ID[]) {
-  return loadEnts(
+  const ents = await loadEnts(
     viewer,
     {
       tableName: "changelogs",
@@ -448,6 +465,7 @@ async function loadChangelogs(viewer: Viewer, clids: ID[]) {
     },
     ...clids,
   );
+  return Array.from(ents.values());
 }
 
 async function verifyChangelogFromMeberships(
@@ -479,12 +497,13 @@ function commonTests() {
   test("empty", async () => {
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new UserSchema(),
+      UserSchema,
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
       WriteOperation.Insert,
+      null,
     );
     const user = await action.saveX();
     expect(operations.length).toBe(1);
@@ -507,7 +526,7 @@ function commonTests() {
 
     const builder = new SimpleBuilder(
       viewer,
-      new UserSchema(),
+      UserSchema,
       new Map(),
       WriteOperation.Edit,
       user,
@@ -529,12 +548,13 @@ function commonTests() {
   test("simple-one-op-created-ent", async () => {
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new UserSchema(),
+      UserSchema,
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
       WriteOperation.Insert,
+      null,
     );
 
     const exec = await executeAction(action, ListBasedExecutor);
@@ -582,7 +602,7 @@ function commonTests() {
     const user = new User(viewer, { id });
     const action = new SimpleAction(
       viewer,
-      new UserSchema(),
+      UserSchema,
       new Map(),
       WriteOperation.Edit,
       user,
@@ -615,24 +635,26 @@ function commonTests() {
   test("list-based-with-dependency", async () => {
     let userBuilder = new SimpleBuilder(
       new LoggedOutViewer(),
-      new UserSchema(),
+      UserSchema,
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
       ]),
       WriteOperation.Insert,
+      null,
     );
     let firstName = userBuilder.fields.get("FirstName");
     let lastName = userBuilder.fields.get("LastName");
     let contactAction = new SimpleAction(
       userBuilder.viewer,
-      new ContactSchema(),
+      ContactSchema,
       new Map([
         ["FirstName", firstName],
         ["LastName", lastName],
         ["UserID", userBuilder],
       ]),
       WriteOperation.Insert,
+      null,
     );
 
     try {
@@ -655,6 +677,7 @@ function commonTests() {
         ["LastName", "Snow"],
       ]),
       WriteOperation.Insert,
+      null,
     );
 
     // expect ComplexExecutor because of complexity of what we have here
@@ -739,17 +762,17 @@ function commonTests() {
 
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new GroupSchema(),
+      GroupSchema,
       new Map(),
       WriteOperation.Edit,
       group,
     );
 
-    action.triggers = [
+    action.getTriggers = () => [
       {
         changeset: async (
           builder: SimpleBuilder<Group>,
-        ): Promise<Changeset<any>[]> => {
+        ): Promise<Changeset[]> => {
           let [userInfo, autoJoinChannels, invitee] = await Promise.all([
             fetchUserName(),
             getAutoJoinChannels(),
@@ -763,6 +786,7 @@ function commonTests() {
               ["EmailAddress", userInfo.emailAddress],
             ]),
             WriteOperation.Insert,
+            null,
           );
 
           for (let channel of autoJoinChannels) {
@@ -792,6 +816,7 @@ function commonTests() {
               ["expiresAt", new Date().setTime(new Date().getTime() + 86400)],
             ]),
             WriteOperation.Insert,
+            null,
           );
 
           return await Promise.all([
@@ -801,7 +826,7 @@ function commonTests() {
         },
       },
     ];
-    action.observers = [new EntCreationObserver<Group>()];
+    action.getObservers = () => [new EntCreationObserver<Group>()];
 
     // expect ComplexExecutor because of complexity of what we have here
     // we have a Group action which has nested things in it
@@ -903,12 +928,12 @@ function commonTests() {
     class CreateChangelogAction extends SimpleAction<Changelog> {}
 
     class CreateMembershipAction extends SimpleAction<GroupMembership> {
-      triggers = [
+      getTriggers = () => [
         {
           async changeset(builder: SimpleBuilder<GroupMembership>, input) {
             const clAction = new CreateChangelogAction(
               builder.viewer,
-              new ChangelogSchema(),
+              ChangelogSchema,
               new Map([
                 // no dependency on fields. all new
                 ["parentID", QueryRecorder.newID()],
@@ -916,6 +941,7 @@ function commonTests() {
                 ["log", input],
               ]),
               WriteOperation.Insert,
+              null,
             );
             builder.orchestrator.addOutboundEdge(
               clAction.builder,
@@ -934,20 +960,21 @@ function commonTests() {
 
     const groupAction = new EditGroupAction(
       new IDViewer(user.id),
-      new GroupSchema(),
+      GroupSchema,
       new Map(),
       WriteOperation.Edit,
       group,
       (viewer, edge) => {
         return new CreateMembershipAction(
           viewer,
-          new GroupMembershipSchema(),
+          GroupMembershipSchema,
           new Map<string, any>([
             ["ownerID", edge.id],
             ["addedBy", viewer.viewerID!],
             ["notificationsEnabled", true],
           ]),
           WriteOperation.Insert,
+          null,
         );
       },
     );
@@ -971,12 +998,12 @@ function commonTests() {
     class CreateChangelogAction extends SimpleAction<Changelog> {}
 
     class CreateMembershipAction extends SimpleAction<GroupMembership> {
-      triggers = [
+      getTriggers = () => [
         {
           async changeset(builder: SimpleBuilder<GroupMembership>, input) {
             const clAction = new CreateChangelogAction(
               builder.viewer,
-              new ChangelogSchema(),
+              ChangelogSchema,
               new Map([
                 // no builder field
                 ["parentID", QueryRecorder.newID()],
@@ -984,6 +1011,7 @@ function commonTests() {
                 ["log", input],
               ]),
               WriteOperation.Insert,
+              null,
             );
             builder.orchestrator.addInboundEdge(
               clAction.builder,
@@ -1002,20 +1030,21 @@ function commonTests() {
 
     const groupAction = new EditGroupAction(
       new IDViewer(user.id),
-      new GroupSchema(),
+      GroupSchema,
       new Map(),
       WriteOperation.Edit,
       group,
       (viewer, edge) => {
         return new CreateMembershipAction(
           viewer,
-          new GroupMembershipSchema(),
+          GroupMembershipSchema,
           new Map<string, any>([
             ["ownerID", edge.id],
             ["addedBy", viewer.viewerID!],
             ["notificationsEnabled", true],
           ]),
           WriteOperation.Insert,
+          null,
         );
       },
     );
@@ -1034,7 +1063,7 @@ function commonTests() {
 
     // weird data model for test so we have to load it via a table scan. good old query
     await Promise.all(
-      memberships.map(async (membership) => {
+      Array.from(memberships.values()).map(async (membership) => {
         const edges = await loadRows({
           clause: clause.And(
             clause.Eq("edge_type", "changelogToParent"),
@@ -1059,18 +1088,19 @@ function commonTests() {
 
   test("nested with list + node + edge deps", async () => {
     class CreateMembershipAction extends SimpleAction<GroupMembership> {
-      triggers = [
+      getTriggers = () => [
         {
           async changeset(builder: SimpleBuilder<GroupMembership>, input) {
             const clAction = new CreateChangelogAction(
               builder.viewer,
-              new ChangelogSchema(),
+              ChangelogSchema,
               new Map([
                 ["parentID", builder],
                 ["parentType", "GroupMembership"],
                 ["log", input],
               ]),
               WriteOperation.Insert,
+              null,
             );
             builder.orchestrator.addOutboundEdge(
               clAction.builder,
@@ -1091,20 +1121,21 @@ function commonTests() {
 
     const groupAction = new EditGroupAction(
       new IDViewer(user.id),
-      new GroupSchema(),
+      GroupSchema,
       new Map(),
       WriteOperation.Edit,
       group,
       (viewer, edge) => {
         return new CreateMembershipAction(
           viewer,
-          new GroupMembershipSchema(),
+          GroupMembershipSchema,
           new Map<string, any>([
             ["ownerID", edge.id],
             ["addedBy", viewer.viewerID!],
             ["notificationsEnabled", true],
           ]),
           WriteOperation.Insert,
+          null,
         );
       },
     );
@@ -1131,7 +1162,7 @@ function commonTests() {
 
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new GroupSchema(),
+      GroupSchema,
       new Map(),
       WriteOperation.Edit,
       group,
@@ -1145,12 +1176,13 @@ function commonTests() {
         ["EmailAddress", randomEmail()],
       ]),
       WriteOperation.Insert,
+      null,
     );
 
     async function doNothing(): Promise<void> {}
-    action.triggers = [
+    action.getTriggers = () => [
       {
-        changeset: async (builder: SimpleBuilder<Group>) => {
+        changeset: async () => {
           return await Promise.all([userAction.changeset(), doNothing()]);
         },
       },
@@ -1172,7 +1204,7 @@ function commonTests() {
 
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      new GroupSchema(),
+      GroupSchema,
       new Map(),
       WriteOperation.Edit,
       group,
@@ -1183,7 +1215,7 @@ function commonTests() {
         setTimeout(() => resolve(null), 5);
       });
     }
-    action.triggers = [
+    action.getTriggers = () => [
       {
         changeset: async (builder: SimpleBuilder<Group>) => {
           await fetchFoo();
@@ -1224,9 +1256,10 @@ function commonTests() {
     ];
     const accountAction = new SimpleAction(
       new LoggedOutViewer(),
-      new AccountSchema(),
+      AccountSchema,
       new Map([]),
       WriteOperation.Insert,
+      null,
     );
 
     const actions: SimpleAction<Ent>[] = inputs.map(
@@ -1239,6 +1272,7 @@ function commonTests() {
             ["AccountID", accountAction.builder],
           ]),
           WriteOperation.Insert,
+          null,
         ),
     );
     actions.push(accountAction);
@@ -1248,16 +1282,9 @@ function commonTests() {
         viewer: Viewer,
         operation: WriteOperation,
         action: SimpleAction<Group>,
-        existingEnt?: Group,
+        existingEnt: Group | null,
       ) {
-        super(
-          viewer,
-          new GroupSchema(),
-          new Map(),
-          operation,
-          existingEnt,
-          action,
-        );
+        super(viewer, GroupSchema, new Map(), operation, existingEnt, action);
       }
     }
 
@@ -1274,6 +1301,7 @@ function commonTests() {
           ["expiresAt", new Date().setTime(new Date().getTime() + 86400)],
         ]),
         WriteOperation.Insert,
+        null,
       ),
     );
 

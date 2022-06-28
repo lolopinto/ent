@@ -16,5 +16,5 @@
   {{$customCode}}
 {{ end -}}
 
-{{ template "field_config.tmpl" (dict "Base" .RootQuery "FieldConfig" .RootQuery.FieldConfig) -}}
+{{ template "field_config.tmpl" (dict "Base" .RootQuery "FieldConfig" .RootQuery.FieldConfig "Config" .Config) -}}
 

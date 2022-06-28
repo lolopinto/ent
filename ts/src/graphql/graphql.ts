@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import { GraphQLScalarType } from "graphql";
+import { Data } from "../core/base";
 
 interface ClassType<T = any> {
   new (...args: any[]): T;
@@ -209,8 +210,8 @@ export const addCustomType = (type: CustomType) => {
         description: ct.description,
         name: ct.name,
       };
-      if (ct.specifiedByUrl) {
-        type.scalarInfo.specifiedByUrl = ct.specifiedByUrl;
+      if (ct.specifiedByURL) {
+        type.scalarInfo.specifiedByUrl = ct.specifiedByURL;
       }
     }
   } catch (e) {
@@ -229,7 +230,7 @@ interface typeInfo {
 const getType = (
   typ: Type | Array<Type> | GraphQLConnection<Type>,
   result: typeInfo,
-) => {
+): undefined => {
   if (isConnection(typ)) {
     result.connection = true;
     return getType(typ.node, result);
@@ -335,7 +336,7 @@ export class GQLCapture {
   }
 
   static getProcessedCustomFields(): ProcessCustomFieldMap {
-    let result = {};
+    let result: Data = {};
     for (const [key, value] of this.customFields) {
       result[key] = this.getProcessedCustomFieldsImpl(value);
     }
@@ -418,7 +419,7 @@ export class GQLCapture {
 
   static gqlField(options?: gqlFieldOptions): any {
     return function (
-      target,
+      target: any,
       propertyKey: string,
       descriptor: PropertyDescriptor,
     ): void {
@@ -469,7 +470,7 @@ export class GQLCapture {
   }
 
   private static getCustomField(
-    target,
+    target: any,
     propertyKey: string,
     descriptor: PropertyDescriptor,
     options?: fieldOptions,
@@ -575,7 +576,7 @@ export class GQLCapture {
     options?: gqlFieldOptions,
   ): any {
     return function (
-      target,
+      target: any,
       propertyKey: string,
       index: number, // not PropertyKeyDescriptor?
     ): void {

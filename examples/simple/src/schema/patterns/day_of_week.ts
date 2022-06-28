@@ -3,10 +3,12 @@ import { EnumType, Field, Pattern } from "@snowtop/ent";
 // extract into pattern so enum can be shared across multiple schemas
 // and confirm that we only create one enum
 export default class DayOfWeek implements Pattern {
-  name = "enums";
+  name = "day_of_week";
   fields: Field[] = [
     EnumType({
       name: "dayOfWeek",
+      tsType: "DayOfWeek",
+      graphQLType: "DayOfWeek",
       values: [
         "Sunday",
         "Monday",
@@ -19,6 +21,8 @@ export default class DayOfWeek implements Pattern {
     }),
     EnumType({
       name: "dayOfWeekAlt",
+      tsType: "DayOfWeekAlt",
+      graphQLType: "DayOfWeekAlt",
       map: {
         Sunday: "sun",
         Monday: "mon",

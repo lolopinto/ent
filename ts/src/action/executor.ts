@@ -1,6 +1,5 @@
 import Graph from "graph-data-structure";
-import { ID, Data, Ent, Viewer, Context } from "../core/base";
-
+import { ID, Ent, Viewer, Context, Data } from "../core/base";
 import { DataOperation } from "../core/ent";
 import { Changeset, Executor } from "../action/action";
 import { Builder } from "../action";
@@ -15,7 +14,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     private viewer: Viewer,
     public placeholderID: ID,
     private operations: DataOperation<T>[],
-    private options?: OrchestratorOptions<T, Data>,
+    private options?: OrchestratorOptions<T, Viewer, Data>,
   ) {}
   private lastOp: DataOperation<T> | undefined;
   private createdEnt: T | null = null;
@@ -55,12 +54,12 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
 
   async executeObservers() {
     const action = this.options?.action;
-    if (!this.options || !action || !action.observers) {
+    if (!this.options || !action || !action.getObservers) {
       return;
     }
     const builder = this.options.builder;
     await Promise.all(
-      action.observers.map(async (observer) => {
+      action.getObservers().map(async (observer) => {
         await observer.observe(builder, action.getInput());
       }),
     );
@@ -115,14 +114,14 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     public placeholderID: ID,
     operations: DataOperation[],
     dependencies: Map<ID, Builder<T>>,
-    changesets: Changeset<T>[],
-    options?: OrchestratorOptions<T, Data>,
+    changesets: Changeset[],
+    options?: OrchestratorOptions<T, Viewer, Data>,
   ) {
     let graph = Graph();
 
-    const changesetMap: Map<string, Changeset<Ent>> = new Map();
+    const changesetMap: Map<string, Changeset> = new Map();
 
-    const impl = (c: Changeset<Ent>) => {
+    const impl = (c: Changeset) => {
       changesetMap.set(c.placeholderID.toString(), c);
 
       graph.addNode(c.placeholderID.toString());
@@ -143,7 +142,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
         });
       }
     };
-    let localChangesets = new Map<ID, Changeset<Ent>>();
+    let localChangesets = new Map<ID, Changeset>();
     changesets.forEach((c) => localChangesets.set(c.placeholderID, c));
 
     // create a new changeset representing the source changeset with the simple executor

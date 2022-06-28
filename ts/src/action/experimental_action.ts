@@ -10,36 +10,70 @@ import {
   Validator,
 } from "./action";
 
-export interface ActionOptions<T extends Ent> {
+export interface ActionOptions<T extends Ent, TData extends Data> {
   existingEnt?: T | null;
-  input?: {};
+  input?: TData;
   operation?: WriteOperation;
 }
 
-interface EntBuilder<T extends Ent> extends Builder<T> {
+interface EntBuilder<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+  TInput extends Data,
+> extends Builder<TEnt, TViewer> {
   valid(): Promise<boolean>;
   validX(): Promise<void>;
   save(): Promise<void>;
   saveX(): Promise<void>;
-  editedEnt(): Promise<T | null>;
-  editedEntX(): Promise<T>;
+  editedEnt(): Promise<TEnt | null>;
+  editedEntX(): Promise<TEnt>;
+  getInput(): TInput;
 }
 
-export class BaseAction<T extends Ent> implements Action<T> {
-  builder: EntBuilder<T>;
-  private input: {};
-  triggers: Trigger<Ent>[] = [];
-  observers: Observer<Ent>[] = [];
-  validators: Validator<Ent>[] = [];
+export class BaseAction<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+  TInput extends Data,
+> implements Action<TEnt, EntBuilder<TEnt, TViewer, TInput>, TViewer, TInput>
+{
+  builder: EntBuilder<TEnt, TViewer, TInput>;
+  private input: TInput;
 
   getPrivacyPolicy() {
     return AlwaysAllowPrivacyPolicy;
   }
 
+  getTriggers(): Trigger<
+    TEnt,
+    EntBuilder<TEnt, TViewer, TInput>,
+    TViewer,
+    TInput
+  >[] {
+    return [];
+  }
+
+  getObservers(): Observer<
+    TEnt,
+    EntBuilder<TEnt, TViewer, TInput>,
+    TViewer,
+    TInput
+  >[] {
+    return [];
+  }
+
+  getValidators(): Validator<
+    TEnt,
+    EntBuilder<TEnt, TViewer, TInput>,
+    TViewer,
+    TInput
+  >[] {
+    return [];
+  }
+
   constructor(
-    public viewer: Viewer,
-    public builderCtr: BuilderConstructor<T>,
-    options?: ActionOptions<T> | null,
+    public viewer: TViewer,
+    public builderCtr: BuilderConstructor<TEnt, TViewer, TInput>,
+    options?: ActionOptions<TEnt, TInput> | null,
   ) {
     let operation = options?.operation;
     if (!operation) {
@@ -49,37 +83,45 @@ export class BaseAction<T extends Ent> implements Action<T> {
         operation = WriteOperation.Insert;
       }
     }
-    this.input = options?.input || {};
+    this.input = options?.input || ({} as TInput);
     this.builder = new builderCtr(
       viewer,
       operation,
       this,
-      options?.existingEnt || undefined,
+      options?.existingEnt || null,
     );
   }
 
-  static createBuilder<T extends Ent>(
+  static createBuilder<
+    TEnt extends Ent<TViewer>,
+    TViewer extends Viewer,
+    TInput extends Data,
+  >(
     viewer: Viewer,
-    builderCtr: BuilderConstructor<T>,
-    options?: ActionOptions<T> | null,
-  ): Builder<T> {
+    builderCtr: BuilderConstructor<TEnt, TViewer, TInput>,
+    options?: ActionOptions<TEnt, TInput> | null,
+  ): Builder<TEnt> {
     let action = new BaseAction(viewer, builderCtr, options);
     return action.builder;
   }
 
   // perform a bulk action in a transaction rooted on ent T
   // it ends up creating triggers and having all the given actions performed in a transaction
-  static bulkAction<T extends Ent>(
-    ent: T,
-    builderCtr: BuilderConstructor<T>,
-    ...actions: Action<Ent>[]
-  ): BaseAction<T> {
+  static bulkAction<
+    TEnt extends Ent<TViewer>,
+    TViewer extends Viewer,
+    TInput extends Data,
+  >(
+    ent: TEnt,
+    builderCtr: BuilderConstructor<TEnt, TViewer, TInput>,
+    ...actions: Action<Ent, Builder<Ent, any>>[]
+  ): BaseAction<TEnt, TViewer, TInput> {
     let action = new BaseAction(ent.viewer, builderCtr, {
       existingEnt: ent,
     });
-    action.triggers = [
+    action.getTriggers = () => [
       {
-        changeset: (builder: Builder<T>, _input): Promise<Changeset<Ent>>[] => {
+        changeset: (): Promise<Changeset>[] => {
           return actions.map((action) => action.changeset());
         },
       },
@@ -99,12 +141,12 @@ export class BaseAction<T extends Ent> implements Action<T> {
     return this.builder.validX();
   }
 
-  async save(): Promise<T | null> {
+  async save(): Promise<TEnt | null> {
     await this.builder.save();
     return await this.builder.editedEnt();
   }
 
-  async saveX(): Promise<T> {
+  async saveX(): Promise<TEnt> {
     await this.builder.saveX();
     return await this.builder.editedEntX();
   }
@@ -114,22 +156,30 @@ export class BaseAction<T extends Ent> implements Action<T> {
   }
 }
 
-interface BuilderConstructor<T extends Ent> {
+interface BuilderConstructor<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+  TInput extends Data,
+> {
   new (
-    viewer: Viewer,
+    viewer: TViewer,
     operation: WriteOperation,
-    action: Action<T>,
-    existingEnt?: T | undefined,
-  ): EntBuilder<T>;
+    action: Action<TEnt, EntBuilder<TEnt, TViewer, TInput>, TViewer, TInput>,
+    existingEnt: TEnt | null,
+  ): EntBuilder<TEnt, TViewer, TInput>;
 }
 
 // this provides a way to just update a row in the database.
 // skips privacy, triggers, observers, etc
 // does do field validation
 // note that only editable fields in the builder can be passed here
-export async function updateRawObject<TEnt extends Ent, TInput extends Data>(
-  viewer: Viewer,
-  builderCtr: BuilderConstructor<TEnt>,
+export async function updateRawObject<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+  TInput extends Data,
+>(
+  viewer: TViewer,
+  builderCtr: BuilderConstructor<TEnt, TViewer, TInput>,
   existingEnt: TEnt,
   input: TInput,
 ) {
@@ -145,12 +195,16 @@ export async function updateRawObject<TEnt extends Ent, TInput extends Data>(
 // does do field validation
 // useful to batch a bunch of writes together with BaseAction.bulkAction
 // note that only editable fields in the builder can be passed here
-export function getSimpleEditAction<TEnt extends Ent, TInput extends Data>(
-  viewer: Viewer,
-  builderCtr: BuilderConstructor<TEnt>,
+export function getSimpleEditAction<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+  TInput extends Data,
+>(
+  viewer: TViewer,
+  builderCtr: BuilderConstructor<TEnt, TViewer, TInput>,
   existingEnt: TEnt,
   input: TInput,
-): Action<TEnt> {
+): Action<TEnt, Builder<TEnt, TViewer>, TViewer, TInput> {
   return new BaseAction(viewer, builderCtr, {
     existingEnt: existingEnt,
     operation: WriteOperation.Edit,

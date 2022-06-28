@@ -1,9 +1,9 @@
-{{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "Builder" "setEdgeTypeInGroup" }}
+{{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "Builder" "setEdgeTypeInGroup" "Trigger" "Observer" "Validator"}}
 {{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions" "PrivacyPolicy"}}
 {{ reserveImport "src/ent/" "NodeType"}}
 {{ reserveImport .PrivacyConfig.Path .PrivacyConfig.PolicyName }}
 
-{{ range .NodeData.GetImportPathsForDependencies -}}
+{{ range .NodeData.GetImportPathsForDependencies .Schema -}}
   {{ reserveImportPath . true -}}
 {{ end -}}
 
@@ -14,6 +14,7 @@
 
 {{ $action := .Action -}}
 {{ $actionName := printf "%sBase" $action.GetActionName -}}
+{{ $cfg := .CodePath -}}
 
 {{ range $action.GetTSEnums -}}
   {{if not .Imported -}}
@@ -22,37 +23,13 @@
 {{ end}}
 
 {{$extImpPath := .Package.ExternalImportPath -}}
-{{ range $int := $action.GetCustomInterfaces -}}
-  {{ range $imp := $int.GetEnumImports -}}
-    {{ reserveImport $extImpPath $imp -}}
-  {{ end -}}
-  interface {{$int.TSType}} {
-    {{ range $field := $int.Fields -}}
-      {{$type := $field.TsBuilderType -}}
-      {{range $field.TsBuilderImports -}}
-        {{ reserveImportPath . true -}}
-        {{$ignore := useImport .Import -}}
-      {{end -}}
-      {{if $field.ForceRequiredInAction -}}
-        {{$field.TsBuilderFieldName}}: {{$type}};
-      {{else -}}
-        {{$field.TsBuilderFieldName}}?: {{$type}};
-      {{end -}}
-    {{end -}}
-    {{ range $field := $int.NonEntFields -}}
-      {{$type := $field.GetTsType -}}
-      {{if $field.Required -}}
-        {{$field.TsBuilderFieldName}}: {{$type}};
-      {{else -}}
-        {{$field.TsBuilderFieldName}}?: {{$type}};
-      {{end -}}
-    {{end -}}
-  }
   
+{{$pkg := .Package -}}
+{{ range $action.GetCustomInterfaces -}}
+  {{template "interface.tmpl" (dict "RootInterface" . "Interface" . "Package" $pkg "Config" $cfg) }}  
 {{end -}}
 
 {{ $node := useImport .NodeData.Node -}}
-{{ $viewer := useImport "Viewer"}}
 
 {{$hasInput := hasInput $action -}}
 {{$inputName := "" -}}
@@ -61,8 +38,8 @@
 
   export interface {{$inputName}} {
     {{ range $field := $action.GetFields -}}
-      {{$type := $field.TsBuilderType -}}
-      {{range $field.TsBuilderImports -}}
+      {{$type := $field.TsBuilderType $cfg -}}
+      {{range $field.TsBuilderImports $cfg -}}
         {{ reserveImportPath . true -}}
         {{ $ignore := useImport .Import -}}
       {{end -}}
@@ -89,30 +66,50 @@
 {{ $instance := .NodeData.NodeInstance}}
 {{ $hasSaveFromID := false }}
 
+{{$viewerInfo := $cfg.GetTemplatizedViewer -}}
+{{ reserveImportPath $viewerInfo.GetImportPath false -}}
+{{$viewerType := useImport $viewerInfo.GetImport -}}
+
+
 {{/* edit, whole shebang */ -}}
 {{ if and $action.MutatingExistingObject $hasInput -}}
-  {{ $constructor = printf "viewer: %s, %s: %s, input: %s" $viewer $instance $node $inputName -}}
+  {{ $constructor = printf "viewer: %s, %s: %s, input: %s" $viewerType $instance $node $inputName -}}
   {{ $newArgs = printf "viewer, %s, input" $instance -}}
   {{ $hasSaveFromID = true}}
 {{/* create, no editing */ -}}
 {{ else if $hasInput -}} 
-  {{ $constructor = printf "viewer: %s, input: %s"  $viewer $inputName -}}
+  {{ $constructor = printf "viewer: %s, input: %s"  $viewerType $inputName -}}
   {{ $newArgs = "viewer, input" }}
 {{/* delete, no input */ -}}
 {{ else -}}
-  {{ $constructor = printf "viewer: %s, %s: %s" $viewer $instance $node -}}
+  {{ $constructor = printf "viewer: %s, %s: %s" $viewerType $instance $node -}}
   {{ $newArgs = printf "viewer, %s" $instance -}}
   {{ $hasSaveFromID = true}}
 {{end -}}
 
-export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
-  public readonly builder: {{useImport $builderName}};
-  public readonly viewer: {{$viewer}}
+{{ $inputData := $builderInput -}}
+{{ if $hasInput -}}
+  {{ $inputData = $inputName -}}
+{{ else -}}
+  {{ $inputData = useImport $inputData -}}
+{{ end -}}
+
+{{ $existingEnt := "" -}}
+{{ if $action.MutatingExistingObject -}}
+  {{$existingEnt = $node}}
+{{ else -}}
+  {{$existingEnt = printf "%s | null" $node}}
+{{ end -}}
+
+
+export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useImport $builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}> {
+  public readonly builder: {{useImport $builderName}}<{{$inputData}}, {{$existingEnt}}>;
+  public readonly viewer: {{$viewerType}}
   {{ if $hasInput -}}
     protected input: {{$inputName}};
   {{end -}}
   {{if $action.MutatingExistingObject -}}
-    protected {{$instance}}: {{$node}};
+    protected readonly {{$instance}}: {{$node}};
   {{end}}
 
   constructor({{$constructor}}) {
@@ -126,6 +123,8 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
       this,
       {{ if $action.MutatingExistingObject -}}
         {{$instance}},
+      {{ else -}}
+        null,
       {{end -}}
     );
     {{if $action.MutatingExistingObject -}}
@@ -133,7 +132,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
     {{end -}}
   }
 
-  getPrivacyPolicy(): {{useImport "PrivacyPolicy"}} {
+  getPrivacyPolicy(): {{useImport "PrivacyPolicy"}}<{{$node}}> {
     {{ if .PrivacyConfig.Class }}
       return new {{useImport .PrivacyConfig.PolicyName}}();
     {{ else -}}
@@ -141,14 +140,22 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
     {{ end -}}
   };
 
-  getInput(): {{useImport $builderInput}} {
+
+  getTriggers(): {{useImport "Trigger"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[] {
+    return [];
+  }
+
+  getObservers(): {{useImport "Observer"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[] {
+    return [];
+  }
+
+  getValidators(): {{useImport "Validator"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[] {
+    return [];
+  }
+
+  getInput(): {{$inputData}} {
     {{ if $hasInput -}}
-      {{ if hasOnlyActionOnlyFields $action}}
-        // we use a type assertion to override the weak type detection here
-        return this.input as {{useImport $builderInput}};
-      {{ else -}}
-        return this.input;
-      {{end -}}
+      return this.input;
     {{ else -}}
       return {};
     {{end -}}
@@ -175,7 +182,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
     {{end -}}
   {{end -}}
 
-  async changeset(): Promise<{{useImport "Changeset"}}<{{$node}}>> {
+  async changeset(): Promise<{{useImport "Changeset"}}> {
     return this.builder.build();
   }
 
@@ -255,7 +262,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
   {{if $hasSaveFromID -}}
     static async saveXFromID<T extends {{$actionName}}>(
       this: new ({{$constructor}}) => T,
-      viewer: {{useImport "Viewer"}},
+      viewer: {{$viewerType}},
       id: {{useImport "ID"}},
       {{if $hasInput -}}
         input: {{$inputName}},

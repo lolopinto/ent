@@ -311,7 +311,7 @@ func (mfcg *mutationFieldConfigBuilder) getArgs(s *gqlSchema) []*fieldConfigArg 
 			{
 				Name: "input",
 				Imports: []*tsimport.ImportPath{
-					getNativeGQLImportFor("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 					// same for this about passing it in
 					{
 						Import: fmt.Sprintf("%sInputType", prefix),
@@ -534,7 +534,7 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 			),
 		)
 
-		argImports = append(argImports, getEntGQLImportFor("GraphQLEdgeConnection"))
+		argImports = append(argImports, tsimport.NewEntGraphQLImportPath("GraphQLEdgeConnection"))
 	} else {
 		functionContents = append(functionContents, fmt.Sprintf("return %s;", functionCall))
 	}
@@ -880,7 +880,7 @@ func (e *CustomEdge) HideFromGraphQL() bool {
 
 func (e *CustomEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		tsimport.NewLocalEntConnectionImportPath(e.GetGraphQLConnectionName()),
 	}
 }

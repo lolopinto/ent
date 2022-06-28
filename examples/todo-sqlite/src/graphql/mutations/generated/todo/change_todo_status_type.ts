@@ -31,7 +31,7 @@ export const ChangeTodoStatusInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     todo_id: {
       description: "id of Todo",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     completed: {
       type: GraphQLBoolean,
@@ -46,7 +46,7 @@ export const ChangeTodoStatusPayloadType = new GraphQLObjectType({
     RequestContext
   > => ({
     todo: {
-      type: GraphQLNonNull(TodoType),
+      type: new GraphQLNonNull(TodoType),
     },
   }),
 });
@@ -56,11 +56,11 @@ export const ChangeTodoStatusType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customChangeTodoStatusInput }
 > = {
-  type: GraphQLNonNull(ChangeTodoStatusPayloadType),
+  type: new GraphQLNonNull(ChangeTodoStatusPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(ChangeTodoStatusInputType),
+      type: new GraphQLNonNull(ChangeTodoStatusInputType),
     },
   },
   resolve: async (

@@ -1,4 +1,4 @@
-import { Ent } from "../core/base";
+import { Ent, Viewer } from "../core/base";
 import { Builder } from "./../action";
 
 export class FakeLogger {
@@ -36,8 +36,11 @@ export class FakeLogger {
 // we need to build a way to add global observers (and maybe triggers)
 // to be run on every action/mutation
 // logger is an obvious one that's needed/ wanted on every action
-export class EntCreationObserver<T extends Ent> {
-  async observe(builder: Builder<T>) {
+export class EntCreationObserver<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer = Viewer,
+> {
+  async observe(builder: Builder<TEnt, TViewer>) {
     if (!builder.editedEnt) {
       return;
     }

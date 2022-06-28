@@ -41,6 +41,19 @@ export enum EventActivityRsvpStatus {
   CannotRsvp = "cannotRsvp",
 }
 
+interface EventActivityDBData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  name: string;
+  event_id: ID;
+  start_time: Date;
+  end_time: Date | null;
+  location: string;
+  description: string | null;
+  invite_all_guests: boolean;
+}
+
 export class EventActivityBase {
   readonly nodeType = NodeType.EventActivity;
   readonly id: ID;
@@ -97,12 +110,12 @@ export class EventActivityBase {
     this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
-  ): Promise<T[]> {
+  ): Promise<Map<ID, T>> {
     return (await loadEnts(
       viewer,
       EventActivityBase.loaderOptions.apply(this),
       ...ids,
-    )) as T[];
+    )) as Map<ID, T>;
   }
 
   static async loadCustom<T extends EventActivityBase>(
@@ -121,32 +134,36 @@ export class EventActivityBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<Data[]> {
-    return loadCustomData(
+  ): Promise<EventActivityDBData[]> {
+    return (await loadCustomData(
       EventActivityBase.loaderOptions.apply(this),
       query,
       context,
-    );
+    )) as EventActivityDBData[];
   }
 
   static async loadRawData<T extends EventActivityBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data | null> {
-    return eventActivityLoader.createLoader(context).load(id);
+  ): Promise<EventActivityDBData | null> {
+    const row = await eventActivityLoader.createLoader(context).load(id);
+    if (!row) {
+      return null;
+    }
+    return row as EventActivityDBData;
   }
 
   static async loadRawDataX<T extends EventActivityBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data> {
+  ): Promise<EventActivityDBData> {
     const row = await eventActivityLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row;
+    return row as EventActivityDBData;
   }
 
   static loaderOptions<T extends EventActivityBase>(
@@ -214,7 +231,7 @@ export class EventActivityBase {
     return EventActivityToInvitesQuery.query(this.viewer, this.id);
   }
 
-  async loadEvent(): Promise<Event | null> {
+  loadEvent(): Promise<Event | null> {
     return loadEnt(this.viewer, this.eventID, Event.loaderOptions());
   }
 

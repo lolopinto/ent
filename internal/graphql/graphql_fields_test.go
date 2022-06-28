@@ -17,24 +17,24 @@ func TestActionWithFieldEdgeFieldConfig(t *testing.T) {
 		t,
 		map[string]string{
 			"address.ts": testhelper.GetCodeWithSchema(
-				`import {BaseEntSchema, Action, Field, StringType, UUIDType, ActionOperation} from "{schema}";
+				`import {BaseEntSchema, Action, FieldMap, StringType, UUIDType, ActionOperation} from "{schema}";
 
 		export default class Address extends BaseEntSchema {
-		fields: Field[] = [
-			StringType({ name: "Street" }),
-			StringType({ name: "City" }),
-			StringType({ name: "State" }),
-			StringType({ name: "ZipCode" }), 
-		];
+			fields: FieldMap = {
+				Street: StringType(),
+				City: StringType(),
+				State: StringType(),
+				ZipCode: StringType(), 
+			};
 	}`),
 			"profile.ts": testhelper.GetCodeWithSchema(`
-				import {BaseEntSchema, Action, Field, ActionOperation, StringType, TimestampType, UUIDType} from "{schema}";
+				import {BaseEntSchema, Action, FieldMap, ActionOperation, StringType, TimestampType, UUIDType} from "{schema}";
 
 				export default class Profile extends BaseEntSchema {
-					fields: Field[] = [
-						StringType({name: "name"}),
-						UUIDType({name: "addressID", fieldEdge: { schema: "Address", inverseEdge: "residents"}}),
-					];
+					fields: FieldMap = {
+						name: StringType(),
+						addressID: UUIDType({fieldEdge: { schema: "Address", inverseEdge: "residents"}}),
+					};
 
 					actions: Action[] = [
 						{

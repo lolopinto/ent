@@ -13,7 +13,6 @@ import {
   ID,
   IndexLoaderFactory,
   RawCountLoaderFactory,
-  Viewer,
 } from "@snowtop/ent";
 import { getLoaderOptions } from "./loadAny";
 import {
@@ -23,6 +22,7 @@ import {
   NodeType,
   commentLoader,
 } from "../internal";
+import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export const commentToPostCountLoaderFactory = new AssocEdgeCountLoaderFactory(
   EdgeType.CommentToPost,
@@ -46,10 +46,14 @@ export const articleToCommentsDataLoaderFactory = new IndexLoaderFactory(
 
 export abstract class CommentToPostQueryBase extends AssocEdgeQueryBase<
   Comment,
-  Ent,
-  CommentToPostEdge
+  Ent<ExampleViewerAlias>,
+  CommentToPostEdge,
+  ExampleViewerAlias
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<Comment, Ent>) {
+  constructor(
+    viewer: ExampleViewerAlias,
+    src: EdgeQuerySource<Comment, Ent<ExampleViewerAlias>, ExampleViewerAlias>,
+  ) {
     super(
       viewer,
       src,
@@ -60,9 +64,12 @@ export abstract class CommentToPostQueryBase extends AssocEdgeQueryBase<
   }
 
   static query<T extends CommentToPostQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Comment, Ent>) => T,
-    viewer: Viewer,
-    src: EdgeQuerySource<Comment, Ent>,
+    this: new (
+      viewer: ExampleViewerAlias,
+      src: EdgeQuerySource<Comment, Ent<ExampleViewerAlias>>,
+    ) => T,
+    viewer: ExampleViewerAlias,
+    src: EdgeQuerySource<Comment, Ent<ExampleViewerAlias>>,
   ): T {
     return new this(viewer, src);
   }
@@ -73,10 +80,14 @@ export abstract class CommentToPostQueryBase extends AssocEdgeQueryBase<
 }
 
 export class ArticleToCommentsQueryBase extends CustomEdgeQueryBase<
-  Ent,
-  Comment
+  Ent<ExampleViewerAlias>,
+  Comment,
+  ExampleViewerAlias
 > {
-  constructor(viewer: Viewer, private srcEnt: Ent) {
+  constructor(
+    viewer: ExampleViewerAlias,
+    private srcEnt: Ent<ExampleViewerAlias>,
+  ) {
     super(viewer, {
       src: srcEnt,
       countLoaderFactory: articleToCommentsCountLoaderFactory,
@@ -86,9 +97,9 @@ export class ArticleToCommentsQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends ArticleToCommentsQueryBase>(
-    this: new (viewer: Viewer, src: Ent) => T,
-    viewer: Viewer,
-    src: Ent,
+    this: new (viewer: ExampleViewerAlias, src: Ent<ExampleViewerAlias>) => T,
+    viewer: ExampleViewerAlias,
+    src: Ent<ExampleViewerAlias>,
   ): T {
     return new this(viewer, src);
   }

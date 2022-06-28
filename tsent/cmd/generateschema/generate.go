@@ -227,10 +227,9 @@ func appendQuotedList(o *kv.Object, key string, values []string) {
 	})
 }
 
-// returns {name: "sss"...}
+// returns "" or {primaryKey: true...}
 func FieldObjectCall(f *input.Field) string {
-	o := &kv.Object{}
-	appendQuotedValue(o, "name", f.Name)
+	o := &kv.Object{OptionalCurly: true}
 	appendBoolean(o, f.PrimaryKey, "primaryKey")
 	appendBoolean(o, f.Unique, "unique")
 	appendBoolean(o, f.Nullable, "nullable")

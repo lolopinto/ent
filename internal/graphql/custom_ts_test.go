@@ -44,17 +44,13 @@ func TestCustomMutation(t *testing.T) {
 	// very complicated but simplest no-frills way to test things
 	m := map[string]string{
 		"contact.ts": testhelper.GetCodeWithSchema(`
-			import {BaseEntSchema, Field, StringType} from "{schema}";
+			import {BaseEntSchema, FieldMap, StringType} from "{schema}";
 
 			export default class Contact extends BaseEntSchema {
-				fields: Field[] = [
-					StringType({
-						name: "firstName",
-					}),
-					StringType({
-						name: "lastName",
-					}),
-				];
+				fields: FieldMap = {
+					firstName: StringType(),
+					lastName: StringType(),
+				};
 			}
 		`),
 	}
@@ -133,7 +129,7 @@ func TestCustomMutation(t *testing.T) {
 	assert.Len(t, gqlNode.connections, 0)
 	assert.Len(t, gqlNode.ActionDependents, 0)
 	assert.Equal(t, gqlNode.Field, &item)
-	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/mutations/generated/email_available_type.ts"))
+	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/generated/mutations/email_available_type.ts"))
 
 	objData := gqlNode.ObjData
 	require.NotNil(t, objData)
@@ -152,20 +148,20 @@ func TestCustomMutation(t *testing.T) {
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		tsimport.NewGQLImportPath("GraphQLBoolean"),
 	})
 	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
 		{
 			Import:     "AuthResolver",
-			ImportPath: "../auth/auth",
+			ImportPath: "../../mutations/auth/auth",
 		},
 	})
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
 		{
 			Name: "email",
 			Imports: []*tsimport.ImportPath{
-				tsimport.NewGQLImportPath("GraphQLNonNull"),
+				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 				tsimport.NewGQLImportPath("GraphQLString"),
 			},
 		},
@@ -179,17 +175,13 @@ func TestCustomMutation(t *testing.T) {
 func TestCustomQuery(t *testing.T) {
 	m := map[string]string{
 		"contact.ts": testhelper.GetCodeWithSchema(`
-			import {BaseEntSchema, Field, StringType} from "{schema}";
+			import {BaseEntSchema, FieldMap, StringType} from "{schema}";
 
 			export default class Contact extends BaseEntSchema {
-				fields: Field[] = [
-					StringType({
-						name: "firstName",
-					}),
-					StringType({
-						name: "lastName",
-					}),
-				];
+				fields: FieldMap = {
+					firstName: StringType(),
+					lastName: StringType(),
+				};
 			}
 		`),
 	}
@@ -268,7 +260,7 @@ func TestCustomQuery(t *testing.T) {
 	assert.Len(t, gqlNode.connections, 0)
 	assert.Len(t, gqlNode.ActionDependents, 0)
 	assert.Equal(t, gqlNode.Field, &item)
-	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/resolvers/generated/email_available_query_type.ts"))
+	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/generated/resolvers/email_available_query_type.ts"))
 
 	objData := gqlNode.ObjData
 	require.NotNil(t, objData)
@@ -287,20 +279,20 @@ func TestCustomQuery(t *testing.T) {
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		tsimport.NewGQLImportPath("GraphQLBoolean"),
 	})
 	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
 		{
 			Import:     "AuthResolver",
-			ImportPath: "../auth/auth",
+			ImportPath: "../../resolvers/auth/auth",
 		},
 	})
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
 		{
 			Name: "email",
 			Imports: []*tsimport.ImportPath{
-				tsimport.NewGQLImportPath("GraphQLNonNull"),
+				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 				tsimport.NewGQLImportPath("GraphQLString"),
 			},
 		},
@@ -389,7 +381,7 @@ func TestCustomListQuery(t *testing.T) {
 	assert.Len(t, gqlNode.connections, 0)
 	assert.Len(t, gqlNode.ActionDependents, 0)
 	assert.Equal(t, gqlNode.Field, &item)
-	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/resolvers/generated/emails_available_query_type.ts"))
+	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/generated/resolvers/emails_available_query_type.ts"))
 
 	objData := gqlNode.ObjData
 	require.NotNil(t, objData)
@@ -408,24 +400,24 @@ func TestCustomListQuery(t *testing.T) {
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
-		tsimport.NewGQLImportPath("GraphQLList"),
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLList"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		tsimport.NewGQLImportPath("GraphQLBoolean"),
 	})
 	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
 		{
 			Import:     "AuthResolver",
-			ImportPath: "../auth/auth",
+			ImportPath: "../../resolvers/auth/auth",
 		},
 	})
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
 		{
 			Name: "emails",
 			Imports: []*tsimport.ImportPath{
-				tsimport.NewGQLImportPath("GraphQLNonNull"),
-				tsimport.NewGQLImportPath("GraphQLList"),
-				tsimport.NewGQLImportPath("GraphQLNonNull"),
+				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+				tsimport.NewGQLClassImportPath("GraphQLList"),
+				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 				tsimport.NewGQLImportPath("GraphQLString"),
 			},
 		},
@@ -439,33 +431,27 @@ func TestCustomListQuery(t *testing.T) {
 func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	m := map[string]string{
 		"user.ts": testhelper.GetCodeWithSchema(`
-			import {BaseEntSchema, Field, StringType} from "{schema}";
+			import {BaseEntSchema, FieldMap, StringType} from "{schema}";
 
 			export default class User extends BaseEntSchema {
-				fields: Field[] = [
-					StringType({
-						name: "firstName",
-					}),
-					StringType({
-						name: "lastName",
-					}),
-				];
+				fields: FieldMap = {
+					firstName: StringType(),
+					lastName: StringType(),
+				};
 			}
 		`),
 		"username.ts": testhelper.GetCodeWithSchema(`
-			import {BaseEntSchema, Field, StringType, UUIDType} from "{schema}";
+			import {BaseEntSchema, FieldMap, StringType, UUIDType} from "{schema}";
 
 			export default class Username extends BaseEntSchema {
-				fields: Field[] = [
-					StringType({
-						name: "username",
+				fields: FieldMap = {
+					username: StringType({
 						unique:true,
 					}),
-					UUIDType({
-						name: "userID",
+					userID: UUIDType({
 						foreignKey: {schema: "User", column: "ID"},
 					}),
-				];
+				};
 			}
 		`),
 	}
@@ -545,7 +531,7 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	assert.Len(t, gqlNode.connections, 0)
 	assert.Len(t, gqlNode.ActionDependents, 0)
 	assert.Equal(t, gqlNode.Field, &item)
-	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/resolvers/generated/username_query_type.ts"))
+	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/generated/resolvers/username_query_type.ts"))
 
 	objData := gqlNode.ObjData
 	require.NotNil(t, objData)
@@ -572,14 +558,14 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
 		{
 			Import:     "UsernameResolver",
-			ImportPath: "../username/username",
+			ImportPath: "../../resolvers/username/username",
 		},
 	})
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
 		{
 			Name: "username",
 			Imports: []*tsimport.ImportPath{
-				tsimport.NewGQLImportPath("GraphQLNonNull"),
+				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 				tsimport.NewGQLImportPath("GraphQLString"),
 			},
 		},
@@ -667,7 +653,7 @@ func TestCustomUploadType(t *testing.T) {
 	assert.Len(t, gqlNode.connections, 0)
 	assert.Len(t, gqlNode.ActionDependents, 0)
 	assert.Equal(t, gqlNode.Field, &item)
-	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/mutations/generated/profile_pic_upload_type.ts"))
+	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/generated/mutations/profile_pic_upload_type.ts"))
 
 	objData := gqlNode.ObjData
 	require.NotNil(t, objData)
@@ -686,20 +672,20 @@ func TestCustomUploadType(t *testing.T) {
 	assert.Equal(t, fcfg.ResolveMethodArg, "args")
 	assert.Equal(t, fcfg.ReturnTypeHint, "")
 	assert.Equal(t, fcfg.TypeImports, []*tsimport.ImportPath{
-		tsimport.NewGQLImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		tsimport.NewGQLImportPath("GraphQLBoolean"),
 	})
 	assert.Equal(t, fcfg.ArgImports, []*tsimport.ImportPath{
 		{
 			Import:     "ProfilePicResolver",
-			ImportPath: "../file/upload",
+			ImportPath: "../../mutations/file/upload",
 		},
 	})
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
 		{
 			Name: "file",
 			Imports: []*tsimport.ImportPath{
-				tsimport.NewGQLImportPath("GraphQLNonNull"),
+				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 				{
 					Import:     "GraphQLUpload",
 					ImportPath: "graphql-upload",

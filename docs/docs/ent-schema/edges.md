@@ -28,50 +28,51 @@ This is the default. This can be used for 1-many edges.
 
 For example, given an events based system, the creator can be stored in the `events` table and the list of created events for a user can be represented with an edge. This can also be represented with an [indexed foreign key](/docs/ent-schema/fields#foreignkey) on the `events` table but if you'd rather not have foreign keys, here's an easy alternative.
 
-```ts  title="src/schema/event.ts"
-export default class Event extends BaseEntSchema implements Schema {
-  fields: Field[] = [
-    //...
-    UUIDType({
-      name: "creatorID",
+```ts  title="src/schema/event_schema.ts"
+const EventSchema = new EntSchema({
+  fields: {
+    creatorID: UUIDType({
       fieldEdge: { schema: "User", inverseEdge: "createdEvents" },
       storageKey: "user_id",
     }),
-  ];
+  }, 
+}); 
+export default EventSchema; 
+
 ```
 
-```ts title="src/schema/user.ts"
-export default class User extends BaseEntSchema implements Schema {
-  fields: Field[] = [
-    // ...
-  ];
+```ts title="src/schema/user_schema.ts"
+const UserSchema = new EntSchema({
+  fields: {},
 
   edges: Edge[] = [
     {
       name: "createdEvents",
       schemaName: "Event",
     },
-  ];
+  ],
+});
+export default UserSchema;
 ```
 
 ### symmetric edge
 
-This represents an edge that has the same relationship on both sides. For example, friends in a social network system. 
+This represents an edge that has the same relationship on both sides. For example, friends in a social network system.
 
-```ts title="src/schema/user.ts"
-export default class User extends BaseEntSchema implements Schema {
-  fields: Field[] = [
-    //...
-  ];
+```ts title="src/schema/user_schema.ts"
+const UserSchema = new EntSchema({
+  fields: {}, 
 
-  edges: Edge[] = [
+  edges: [
     {
       name: "friends",
       schemaName: "User",
       symmetric: true,
     },
-  ];
-}
+  ], 
+}); 
+export default UserSchema; 
+
 ```
 
 Anytime an edge is written from `id1` to `id2`, the system automatically writes the inverse edge from `id2` to `id1` with the same `time` and `data` fields. This makes it easy to query from either side of the connection, e.g. fetching the list of friends of either user.
@@ -96,13 +97,11 @@ Inverse edge should be used if you ever want the count or to list the nodes at t
 
 To express the hosts of an event and the inverse, events hosted by a user, the schema is expressed as follows:
 
-```ts title="src/schema/event.ts"
-export default class Event extends BaseEntSchema implements Schema {
-  fields: Field[] = [
-//...
-  ];
+```ts title="src/schema/event_schema.ts"
+const EventSchema = new EntSchema({
+  fields: {},
 
-  edges: Edge[] = [
+  edges: [
     {
       name: "hosts",
       schemaName: "User",
@@ -110,10 +109,12 @@ export default class Event extends BaseEntSchema implements Schema {
         name: "userToHostedEvents",
       },
     },
-  ];
+  ],
+});
+export default EventSchema;
 ```
 
-Anytime an edge is written from `id1` to `id2`, the system automatically writes the inverse edge from `id2` to `id1` with the same `time` and `data` fields. This makes it easy to query from either side of the connection.
+Anytime an edge is written from `id1` to `id2` , the system automatically writes the inverse edge from `id2` to `id1` with the same `time` and `data` fields. This makes it easy to query from either side of the connection.
 
 In the future, once we support different shards, the benefit of this design will be seen even more as each edge would/should be collocated on the same shard.
 
@@ -121,9 +122,9 @@ In the future, once we support different shards, the benefit of this design will
 
 A standard edge table has the following columns:
 
-import DatabaseTabs from "../../src/components/DatabaseTabs";
-import PostgresEventRsvpsSrc from "./postgres_event_rsvps.txt";
-import SqliteEventRsvpsSrc from "./sqlite_event_rsvps.txt";
+import DatabaseTabs from "../../src/components/DatabaseTabs"; 
+import PostgresEventRsvpsSrc from "./postgres_event_rsvps.txt"; 
+import SqliteEventRsvpsSrc from "./sqlite_event_rsvps.txt"; 
 
 <DatabaseTabs postgres={PostgresEventRsvpsSrc} sqlite={SqliteEventRsvpsSrc} />
 
@@ -137,7 +138,7 @@ import SqliteEventRsvpsSrc from "./sqlite_event_rsvps.txt";
 
 ### indices
 
-There's a primary key on three fields: `id1`, `edge_type`, and `id2` because each edge is unique on those three fields.
+There's a primary key on three fields: `id1` , `edge_type` , and `id2` because each edge is unique on those three fields.
 
 The `time` field is indexed to optimize querying since edges are by default sorted by time in descending order.
 
@@ -151,7 +152,7 @@ name of the edge. Edge names should be unique in each schema.
 
 ### schemaName
 
-name of the schema at the end of the edge e.g. `User`, `Event`.
+name of the schema at the end of the edge e.g. `User` , `Event` .
 
 ### symmetric
 
@@ -164,24 +165,25 @@ boolean indicating edge is unique.
 
 In a contact management system, to represent an edge from the `User` to their own `Contact`
 
-```ts title="src/schema/user.ts"
-export default class User extends BaseEntSchema implements Schema {
-  fields: Field[] = [];
+```ts title="src/schema/user_schema.ts"
+const UserSchema = new EntSchema({
+  fields: {}, 
 
-  edges: Edge[] = [
+  edges: [
     {
       name: "selfContact",
       unique: true,
       schemaName: "Contact",
     },
-  ];
-}
+  ], 
+}); 
+export default UserSchema; 
 ```
 
 results in a unique constraint added to the db
 
-import PostgresUserSelfContactEdges from "./postgres_user_self_contact_edges.txt";
-import SqliteUserSelfContactEdges from "./sqlite_user_self_contact_edges.txt";
+import PostgresUserSelfContactEdges from "./postgres_user_self_contact_edges.txt"; 
+import SqliteUserSelfContactEdges from "./sqlite_user_self_contact_edges.txt"; 
 
 <DatabaseTabs postgres={PostgresUserSelfContactEdges} sqlite={SqliteUserSelfContactEdges} />
 
@@ -210,7 +212,7 @@ Each created edge is stored in the `assoc_edge_config` table. This is the source
 
 Here's what the table looks like:
 
-import PostgresAssocEdgeConfig from "./postgres_assoc_edge_config.txt";
-import SqliteAssocEdgeConfig from "./sqlite_assoc_edge_config.txt";
+import PostgresAssocEdgeConfig from "./postgres_assoc_edge_config.txt"; 
+import SqliteAssocEdgeConfig from "./sqlite_assoc_edge_config.txt"; 
 
 <DatabaseTabs postgres={PostgresAssocEdgeConfig} sqlite={SqliteAssocEdgeConfig} />

@@ -17,9 +17,9 @@ export default class CreateGuestAction extends CreateGuestActionBase {
     return new AllowIfEventCreatorPrivacyPolicy(this.input.eventID);
   }
 
-  triggers: Trigger<Ent>[] = [
+  triggers: Trigger<GuestBuilder, GuestCreateInput>[] = [
     {
-      async changeset(builder: GuestBuilder, input: GuestCreateInput) {
+      async changeset(builder, input) {
         if (!input.emailAddress) {
           return;
         }

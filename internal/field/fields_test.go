@@ -3,6 +3,7 @@ package field_test
 import (
 	"testing"
 
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/testhelper"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -14,20 +15,19 @@ func TestDerivedFields(t *testing.T) {
 	schema := testhelper.ParseSchemaForTest(t,
 		map[string]string{
 			"address.ts": testhelper.GetCodeWithSchema(`
-		import {BaseEntSchema, Field, StringType, UUIDType} from "{schema}";
+		import {BaseEntSchema, FieldMap, StringType, UUIDType} from "{schema}";
 
 		export default class Address extends BaseEntSchema {
-			fields: Field[] = [
-				StringType({ name: "Street" }),
-				StringType({ name: "City" }),
-				StringType({ name: "State" }),
-				StringType({ name: "ZipCode" }), 
-				UUIDType({
-					name: "OwnerID",
+			fields: FieldMap = {
+				Street: StringType(),
+				City: StringType(),
+				State: StringType(),
+				ZipCode: StringType(), 
+				OwnerID: UUIDType({
 					index: true, 
 					polymorphic: true,
 				}),
-			];
+			};
 		}`),
 		},
 		base.TypeScript,
@@ -50,25 +50,27 @@ func TestDerivedFields(t *testing.T) {
 	f2 := fieldInfo.GetFieldByName("OwnerID")
 	require.NotNil(t, f2)
 
-	assert.Equal(t, f2.TsBuilderImports(), []*tsimport.ImportPath{
+	cfg := &codegenapi.DummyConfig{}
+	assert.Equal(t, f2.TsBuilderImports(cfg), []*tsimport.ImportPath{
 		tsimport.NewEntImportPath("ID"),
 		tsimport.NewEntImportPath("Ent"),
 		tsimport.NewEntActionImportPath("Builder"),
+		tsimport.NewEntImportPath("Viewer"),
 	})
-	assert.Equal(t, f2.TsBuilderType(), "ID | Builder<Ent>")
+	assert.Equal(t, f2.TsBuilderType(cfg), "ID | Builder<Ent<Viewer>, Viewer>")
 }
 
 func TestDuplicateFields(t *testing.T) {
 	schema, err := testhelper.ParseSchemaForTestFull(t,
 		map[string]string{
 			"address.ts": testhelper.GetCodeWithSchema(`
-		import {Schema, Field, StringType, UUIDType} from "{schema}";
+		import {Schema, FieldMap, StringType, UUIDType} from "{schema}";
 
 		export default class Address implements Schema {
-			fields: Field[] = [
-				StringType({ name: "Street" }),
-				StringType({ name: "street" }),
-			];
+			fields: FieldMap = {
+				Street: StringType(),
+				street: StringType(),
+			};
 		}`),
 		},
 		base.TypeScript,
@@ -83,22 +85,21 @@ func TestDisableBuilderIDField(t *testing.T) {
 	schema := testhelper.ParseSchemaForTest(t,
 		map[string]string{
 			"address.ts": testhelper.GetCodeWithSchema(`
-		import {BaseEntSchema, Field, StringType, UUIDType} from "{schema}";
+		import {BaseEntSchema, FieldMap, StringType, UUIDType} from "{schema}";
 
 		export default class Address extends BaseEntSchema {
-			fields: Field[] = [
-				StringType({ name: "Street" }),
-				StringType({ name: "City" }),
-				StringType({ name: "State" }),
-				StringType({ name: "ZipCode" }), 
-				UUIDType({
-					name: "OwnerID",
+			fields: FieldMap = {
+				Street: StringType(),
+				City: StringType(),
+				State: StringType(),
+				ZipCode: StringType(), 
+				OwnerID: UUIDType({
 					index: true, 
 					polymorphic: {
 						disableBuilderType: true,
 					},
 				}),
-			];
+			};
 		}`),
 		},
 		base.TypeScript,
@@ -111,41 +112,40 @@ func TestDisableBuilderIDField(t *testing.T) {
 	f2 := fieldInfo.GetFieldByName("OwnerID")
 	require.NotNil(t, f2)
 
-	assert.Equal(t, f2.TsBuilderImports(), []*tsimport.ImportPath{
+	cfg := &codegenapi.DummyConfig{}
+	assert.Equal(t, f2.TsBuilderImports(cfg), []*tsimport.ImportPath{
 		tsimport.NewEntImportPath("ID"),
 	})
-	assert.Equal(t, f2.TsBuilderType(), "ID")
+	assert.Equal(t, f2.TsBuilderType(cfg), "ID")
 }
 
 func TestUUIDFieldList(t *testing.T) {
 	schema := testhelper.ParseSchemaForTest(t,
 		map[string]string{
 			"contact.ts": testhelper.GetCodeWithSchema(`
-		import {BaseEntSchema, Field, StringType, UUIDListType} from "{schema}";
+		import {BaseEntSchema, FieldMap, StringType, UUIDListType} from "{schema}";
 
 		export default class Contact extends BaseEntSchema {
-			fields: Field[] = [
-				StringType({ name: "FirstName" }),
-				StringType({ name: "LastName" }),
-				UUIDListType({
-					name: "contactEmailIDs",
+			fields: FieldMap = {
+				FirstName: StringType(),
+				LastName: StringType(),
+				contactEmailIDs: UUIDListType({
 					fieldEdge:{
 						schema: "ContactEmail",
 					},
 				}),
-			];
+			};
 		}`),
 			"contact_email.ts": testhelper.GetCodeWithSchema(`
-		import {BaseEntSchema, Field, StringType, UUIDType} from "{schema}";
+		import {BaseEntSchema, FieldMap, StringType, UUIDType} from "{schema}";
 
 		export default class ContactEmail extends BaseEntSchema {
-			fields: Field[] = [
-				StringType({ name: "EmailAddress" }),
-				UUIDType({
-					name: "OwnerID",
+			fields: FieldMap = {
+				EmailAddress: StringType(),
+				OwnerID: UUIDType({
 					fieldEdge: {schema: "Contact"},
 				}),
-			];
+			};
 		}`),
 		},
 		base.TypeScript,
@@ -158,10 +158,12 @@ func TestUUIDFieldList(t *testing.T) {
 	f := fieldInfo.GetFieldByName("contactEmailIDs")
 	require.NotNil(t, f)
 
-	assert.Equal(t, f.TsBuilderImports(), []*tsimport.ImportPath{
+	cfg := &codegenapi.DummyConfig{}
+
+	assert.Equal(t, f.TsBuilderImports(cfg), []*tsimport.ImportPath{
 		tsimport.NewEntImportPath("ID"),
 	})
-	assert.Equal(t, f.TsBuilderType(), "ID[]")
+	assert.Equal(t, f.TsBuilderType(cfg), "ID[]")
 	assert.Len(t, info.NodeData.EdgeInfo.FieldEdges, 1)
 	assert.True(t, info.NodeData.EdgeInfo.FieldEdges[0].IsList())
 
@@ -173,12 +175,13 @@ func TestUUIDFieldList(t *testing.T) {
 	f2 := fieldInfo2.GetFieldByName("OwnerID")
 	require.NotNil(t, f2)
 
-	assert.Equal(t, f2.TsBuilderImports(), []*tsimport.ImportPath{
+	assert.Equal(t, f2.TsBuilderImports(cfg), []*tsimport.ImportPath{
 		tsimport.NewEntImportPath("ID"),
 		tsimport.NewLocalEntImportPath("Contact"),
 		tsimport.NewEntActionImportPath("Builder"),
+		tsimport.NewEntImportPath("Viewer"),
 	})
-	assert.Equal(t, f2.TsBuilderType(), "ID | Builder<Contact>")
+	assert.Equal(t, f2.TsBuilderType(cfg), "ID | Builder<Contact, Viewer>")
 	assert.Len(t, info2.NodeData.EdgeInfo.FieldEdges, 1)
 	assert.False(t, info2.NodeData.EdgeInfo.FieldEdges[0].IsList())
 }

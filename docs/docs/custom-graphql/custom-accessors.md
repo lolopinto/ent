@@ -8,21 +8,20 @@ We briefly showed how to add [custom functionality](/docs/core-concepts/ent#cust
 
 Given the following schema:
 
-```ts title="src/schema/user.ts"
-import { BaseEntSchema, Field, StringType } from "@snowtop/ent"; 
+```ts title="src/schema/user_schema.ts"
+import { EntSchema, StringType } from "@snowtop/ent"; 
 import { EmailType } from "@snowtop/ent-email"; 
 import { PasswordType } from "@snowtop/ent-password"; 
 
-export default class User extends BaseEntSchema {
-  fields: Field[] = [
-
-    StringType({ name: "FirstName" }),
-    StringType({ name: "LastName" }),
-    EmailType({ name: "EmailAddress" }),
-    PasswordType({ name: "Password" }),
-
-  ]; 
-}
+const UserSchema = new EntSchema({
+  fields: {
+    FirstName: StringType(),
+    LastName: StringType(),
+    EmailAddress: EmailType(),
+    Password: PasswordType(),
+  }
+}); 
+export default UserSchema; 
 
 ```
 
@@ -46,12 +45,12 @@ import { AlwaysAllowPrivacyPolicy, ID, LoggedOutViewer, PrivacyPolicy } from "@s
 import { Interval } from "luxon"; 
 
 export class User extends UserBase {
-  privacyPolicy: PrivacyPolicy = AlwaysAllowPrivacyPolicy; 
+  getPRivacyPolicy() {
+    return AlwaysAllowPrivacyPolicy;
+  }
 
   howLong() {
-
     return Interval.fromDateTimes(this.createdAt, new Date()).count('seconds');
-
   }
 }
 ```

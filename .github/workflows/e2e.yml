@@ -2,7 +2,7 @@ name: End to end codegen
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, v0.1]
 
     
 jobs:
@@ -89,7 +89,8 @@ jobs:
           # clone ent-starter
           git clone https://github.com/lolopinto/ent-starter.git 
           cd ent-starter
-          npm install @snowtop/ent '@snowtop/ent-email@0.0.x' 
+          git checkout v0.1
+          npm install @snowtop/ent '@snowtop/ent-email@0.1.0-alpha1'
           mkdir -p src/schema
           cat ../.github/testdata/schema1.json | tsent generate schemas 
           tsent codegen
@@ -106,7 +107,7 @@ jobs:
       - name: add new field
         run: |
           cd ent-starter
-          npm install @snowtop/ent-phonenumber@0.0.x
+          npm install @snowtop/ent-phonenumber@0.1.0-alpha1
           cat ../.github/testdata/schema2.json | tsent generate schemas --force
           tsent codegen
         env:
@@ -134,3 +135,11 @@ jobs:
           timeout --preserve-status 7 node dist/graphql/index.js
         env:
           DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
+
+      - name: delete schema
+        run: |
+          cd ent-starter
+          tsent delete_schema Contact --disable_prompts
+        env:
+          DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
+          LOCAL_AUTO_SCHEMA: 'true'

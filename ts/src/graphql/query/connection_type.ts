@@ -40,10 +40,10 @@ export class GraphQLEdgeType<
         RequestContext
       > => ({
         node: {
-          type: GraphQLNonNull(nodeType),
+          type: new GraphQLNonNull(nodeType),
         },
         cursor: {
-          type: GraphQLNonNull(GraphQLString),
+          type: new GraphQLNonNull(GraphQLString),
         },
         ...optional,
       }),
@@ -75,25 +75,29 @@ export class GraphQLConnectionType<
         RequestContext
       > => ({
         edges: {
-          type: GraphQLNonNull(GraphQLList(GraphQLNonNull(edgeType))),
+          type: new GraphQLNonNull(
+            new GraphQLList(new GraphQLNonNull(edgeType)),
+          ),
           resolve: (source: GraphQLEdgeConnection<Ent, TEdge>) => {
             return source.queryEdges();
           },
         },
         nodes: {
-          type: GraphQLNonNull(GraphQLList(GraphQLNonNull(nodeType))),
+          type: new GraphQLNonNull(
+            new GraphQLList(new GraphQLNonNull(nodeType)),
+          ),
           resolve: (source: GraphQLEdgeConnection<Ent, TEdge>) => {
             return source.queryNodes();
           },
         },
         pageInfo: {
-          type: GraphQLNonNull(GraphQLPageInfo),
+          type: new GraphQLNonNull(GraphQLPageInfo),
           resolve: (source: GraphQLEdgeConnection<Ent, TEdge>) => {
             return source.queryPageInfo();
           },
         },
         rawCount: {
-          type: GraphQLNonNull(GraphQLInt),
+          type: new GraphQLNonNull(GraphQLInt),
           resolve: (source: GraphQLEdgeConnection<Ent, TEdge>) => {
             return source.queryTotalCount();
           },

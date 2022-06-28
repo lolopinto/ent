@@ -29,6 +29,19 @@ import {
 import { NodeType } from "src/ent/internal";
 import schema from "src/schema/address";
 
+interface AddressDBData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  street: string;
+  city: string;
+  state: string;
+  zip_code: string;
+  apartment: string | null;
+  owner_id: ID;
+  owner_type: string;
+}
+
 export class AddressBase {
   readonly nodeType = NodeType.Address;
   readonly id: ID;
@@ -85,12 +98,12 @@ export class AddressBase {
     this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
-  ): Promise<T[]> {
+  ): Promise<Map<ID, T>> {
     return (await loadEnts(
       viewer,
       AddressBase.loaderOptions.apply(this),
       ...ids,
-    )) as T[];
+    )) as Map<ID, T>;
   }
 
   static async loadCustom<T extends AddressBase>(
@@ -109,32 +122,36 @@ export class AddressBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<Data[]> {
-    return loadCustomData(
+  ): Promise<AddressDBData[]> {
+    return (await loadCustomData(
       AddressBase.loaderOptions.apply(this),
       query,
       context,
-    );
+    )) as AddressDBData[];
   }
 
   static async loadRawData<T extends AddressBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data | null> {
-    return addressLoader.createLoader(context).load(id);
+  ): Promise<AddressDBData | null> {
+    const row = await addressLoader.createLoader(context).load(id);
+    if (!row) {
+      return null;
+    }
+    return row as AddressDBData;
   }
 
   static async loadRawDataX<T extends AddressBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data> {
+  ): Promise<AddressDBData> {
     const row = await addressLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row;
+    return row as AddressDBData;
   }
 
   static async loadFromOwnerID<T extends AddressBase>(
@@ -172,8 +189,12 @@ export class AddressBase {
     this: new (viewer: Viewer, data: Data) => T,
     ownerID: ID,
     context?: Context,
-  ): Promise<Data | null> {
-    return addressOwnerIDLoader.createLoader(context).load(ownerID);
+  ): Promise<AddressDBData | null> {
+    const row = await addressOwnerIDLoader.createLoader(context).load(ownerID);
+    if (!row) {
+      return null;
+    }
+    return row as AddressDBData;
   }
 
   static loaderOptions<T extends AddressBase>(
@@ -200,7 +221,7 @@ export class AddressBase {
     return AddressBase.getSchemaFields().get(key);
   }
 
-  async loadOwner(): Promise<Ent | null> {
+  loadOwner(): Promise<Ent | null> {
     return loadEntByType(
       this.viewer,
       this.ownerType as unknown as NodeType,

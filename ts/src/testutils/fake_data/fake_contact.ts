@@ -8,12 +8,13 @@ import {
 } from "../../core/base";
 import { loadEnt, loadEntX } from "../../core/ent";
 import { AllowIfViewerIsRule, AlwaysDenyRule } from "../../core/privacy";
-import { BuilderSchema, SimpleBuilder } from "../builder";
-import { Field, StringType, BaseEntSchema, UUIDType } from "../../schema";
+import { getBuilderSchemaFromFields, SimpleBuilder } from "../builder";
+import { StringType, UUIDType } from "../../schema";
 import { NodeType } from "./const";
 import { table, uuid, text, timestamptz } from "../db/test_db";
 import { ObjectLoaderFactory } from "../../core/loaders";
 import { convertDate } from "../../core/convert";
+import { WriteOperation } from "../../action";
 
 export class FakeContact implements Ent {
   readonly id: ID;
@@ -26,9 +27,11 @@ export class FakeContact implements Ent {
   readonly emailAddress: string;
   readonly userID: ID;
 
-  privacyPolicy: PrivacyPolicy = {
-    rules: [new AllowIfViewerIsRule("userID"), AlwaysDenyRule],
-  };
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return {
+      rules: [new AllowIfViewerIsRule("userID"), AlwaysDenyRule],
+    };
+  }
 
   constructor(public viewer: Viewer, data: Data) {
     this.data = data;
@@ -87,27 +90,17 @@ export class FakeContact implements Ent {
   }
 }
 
-export class FakeContactSchema
-  extends BaseEntSchema
-  implements BuilderSchema<FakeContact>
-{
-  ent = FakeContact;
-  fields: Field[] = [
-    StringType({
-      name: "firstName",
-    }),
-    StringType({
-      name: "lastName",
-    }),
-    StringType({
-      name: "emailAddress",
-    }),
-    UUIDType({
-      name: "userID",
+export const FakeContactSchema = getBuilderSchemaFromFields(
+  {
+    firstName: StringType(),
+    lastName: StringType(),
+    emailAddress: StringType(),
+    userID: UUIDType({
       foreignKey: { schema: "User", column: "ID" },
     }),
-  ];
-}
+  },
+  FakeContact,
+);
 
 export interface ContactCreateInput {
   firstName: string;
@@ -125,7 +118,13 @@ export function getContactBuilder(viewer: Viewer, input: ContactCreateInput) {
   m.set("createdAt", new Date());
   m.set("updatedAt", new Date());
 
-  return new SimpleBuilder(viewer, new FakeContactSchema(), m);
+  return new SimpleBuilder(
+    viewer,
+    FakeContactSchema,
+    m,
+    WriteOperation.Insert,
+    null,
+  );
 }
 
 export async function createContact(viewer: Viewer, input: ContactCreateInput) {

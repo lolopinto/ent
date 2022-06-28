@@ -8,10 +8,10 @@ import {
   Context,
   CustomQuery,
   Data,
+  Ent,
   ID,
   LoadEntOptions,
   PrivacyPolicy,
-  Viewer,
   applyPrivacyPolicy,
   convertDate,
   convertNullableDate,
@@ -35,7 +35,8 @@ import {
   NodeType,
   User,
 } from "../internal";
-import schema from "../../schema/event";
+import schema from "../../schema/event_schema";
+import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export enum EventRsvpStatus {
   Attending = "attending",
@@ -44,7 +45,19 @@ export enum EventRsvpStatus {
   CanRsvp = "canRsvp",
 }
 
-export class EventBase {
+interface EventDBData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  name: string;
+  user_id: ID;
+  start_time: Date;
+  end_time: Date | null;
+  location: string;
+  address_id: ID | null;
+}
+
+export class EventBase implements Ent<ExampleViewerAlias> {
   readonly nodeType = NodeType.Event;
   readonly id: ID;
   readonly createdAt: Date;
@@ -56,7 +69,7 @@ export class EventBase {
   readonly location: string;
   protected readonly _addressID: ID | null;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: ExampleViewerAlias, protected data: Data) {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
@@ -68,13 +81,15 @@ export class EventBase {
     this._addressID = data.address_id;
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   async addressID(): Promise<ID | null> {
     if (this._addressID === null) {
       return null;
     }
-    const m = getFieldsWithPrivacy(schema);
+    const m = getFieldsWithPrivacy(schema, eventLoaderInfo.fieldInfo);
     const p = m.get("address_id");
     if (!p) {
       throw new Error(`couldn't get field privacy policy for addressID`);
@@ -84,8 +99,8 @@ export class EventBase {
   }
 
   static async load<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T | null> {
     return (await loadEnt(
@@ -96,8 +111,8 @@ export class EventBase {
   }
 
   static async loadX<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T> {
     return (await loadEntX(
@@ -108,20 +123,20 @@ export class EventBase {
   }
 
   static async loadMany<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     ...ids: ID[]
-  ): Promise<T[]> {
+  ): Promise<Map<ID, T>> {
     return (await loadEnts(
       viewer,
       EventBase.loaderOptions.apply(this),
       ...ids,
-    )) as T[];
+    )) as Map<ID, T>;
   }
 
   static async loadCustom<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     query: CustomQuery,
   ): Promise<T[]> {
     return (await loadCustomEnts(
@@ -132,36 +147,44 @@ export class EventBase {
   }
 
   static async loadCustomData<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<Data[]> {
-    return loadCustomData(EventBase.loaderOptions.apply(this), query, context);
+  ): Promise<EventDBData[]> {
+    return (await loadCustomData(
+      EventBase.loaderOptions.apply(this),
+      query,
+      context,
+    )) as EventDBData[];
   }
 
   static async loadRawData<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data | null> {
-    return eventLoader.createLoader(context).load(id);
+  ): Promise<EventDBData | null> {
+    const row = await eventLoader.createLoader(context).load(id);
+    if (!row) {
+      return null;
+    }
+    return row as EventDBData;
   }
 
   static async loadRawDataX<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data> {
+  ): Promise<EventDBData> {
     const row = await eventLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row;
+    return row as EventDBData;
   }
 
   static loaderOptions<T extends EventBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-  ): LoadEntOptions<T> {
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+  ): LoadEntOptions<T, ExampleViewerAlias> {
     return {
       tableName: eventLoaderInfo.tableName,
       fields: eventLoaderInfo.fields,
@@ -237,7 +260,7 @@ export class EventBase {
     return loadEnt(this.viewer, addressID, Address.loaderOptions());
   }
 
-  async loadCreator(): Promise<User | null> {
+  loadCreator(): Promise<User | null> {
     return loadEnt(this.viewer, this.creatorID, User.loaderOptions());
   }
 

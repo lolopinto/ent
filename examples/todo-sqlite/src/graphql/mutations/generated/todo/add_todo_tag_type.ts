@@ -29,10 +29,10 @@ export const AddTodoTagInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     todo_id: {
       description: "id of Todo",
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     tag_id: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -41,7 +41,7 @@ export const AddTodoTagPayloadType = new GraphQLObjectType({
   name: "AddTodoTagPayload",
   fields: (): GraphQLFieldConfigMap<AddTodoTagPayload, RequestContext> => ({
     todo: {
-      type: GraphQLNonNull(TodoType),
+      type: new GraphQLNonNull(TodoType),
     },
   }),
 });
@@ -51,11 +51,11 @@ export const AddTodoTagType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customAddTodoTagInput }
 > = {
-  type: GraphQLNonNull(AddTodoTagPayloadType),
+  type: new GraphQLNonNull(AddTodoTagPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(AddTodoTagInputType),
+      type: new GraphQLNonNull(AddTodoTagInputType),
     },
   },
   resolve: async (

@@ -23,7 +23,7 @@ export class Password extends BaseField implements Field {
 
   constructor() {
     super();
-    this.stringType = StringType({ name: "field" });
+    this.stringType = StringType();
   }
 
   cost(cost: number): this {
@@ -75,7 +75,7 @@ export class Password extends BaseField implements Field {
   }
 }
 
-export function PasswordType(options: FieldOptions): Password {
+export function PasswordType(options?: FieldOptions): Password {
   let result = new Password();
   return Object.assign(result, options);
 }

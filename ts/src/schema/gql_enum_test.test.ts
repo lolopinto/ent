@@ -39,7 +39,7 @@ const schema = new GraphQLSchema({
         type: GraphQLString,
         args: {
           lang: {
-            type: GraphQLNonNull(LangDifferentKVType),
+            type: new GraphQLNonNull(LangDifferentKVType),
           },
         },
         resolve: (src, args) => {
@@ -50,7 +50,7 @@ const schema = new GraphQLSchema({
         type: GraphQLString,
         args: {
           lang: {
-            type: GraphQLNonNull(LangSameKVType),
+            type: new GraphQLNonNull(LangSameKVType),
           },
         },
         resolve: (src, args) => {

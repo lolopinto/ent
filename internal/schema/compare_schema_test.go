@@ -19,6 +19,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func newFieldInfoTests(t *testing.T, fields []*input.Field) *field.FieldInfo {
+	fi, err := field.NewFieldInfoFromInputs(
+		&codegenapi.DummyConfig{},
+		"User",
+		fields,
+		&field.Options{})
+	require.Nil(t, err)
+	return fi
+}
+
 func TestCompareEmpty(t *testing.T) {
 	m, err := schema.CompareSchemas(nil, nil)
 	require.Nil(t, err)
@@ -344,8 +354,8 @@ func TestCompareNodesAddField(t *testing.T) {
 			},
 		},
 	}
-	fi, err := field.NewFieldInfoFromInputs(
-		&codegenapi.DummyConfig{},
+	fi := newFieldInfoTests(
+		t,
 		[]*input.Field{
 			{
 				Name: "first_name",
@@ -359,8 +369,7 @@ func TestCompareNodesAddField(t *testing.T) {
 					DBType: input.String,
 				},
 			},
-		}, &field.Options{})
-	require.Nil(t, err)
+		})
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
 			"UserConfig": {
@@ -404,8 +413,8 @@ func TestCompareNodesAddField(t *testing.T) {
 }
 
 func TestCompareNodesRemoveField(t *testing.T) {
-	fi1, err := field.NewFieldInfoFromInputs(
-		&codegenapi.DummyConfig{},
+	fi1 := newFieldInfoTests(
+		t,
 		[]*input.Field{
 			{
 				Name: "first_name",
@@ -419,8 +428,7 @@ func TestCompareNodesRemoveField(t *testing.T) {
 					DBType: input.String,
 				},
 			},
-		}, &field.Options{})
-	require.Nil(t, err)
+		})
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
 			"UserConfig": {
@@ -433,8 +441,8 @@ func TestCompareNodesRemoveField(t *testing.T) {
 		},
 	}
 
-	fi2, err := field.NewFieldInfoFromInputs(
-		&codegenapi.DummyConfig{},
+	fi2 := newFieldInfoTests(
+		t,
 		[]*input.Field{
 			{
 				Name: "first_name",
@@ -442,8 +450,7 @@ func TestCompareNodesRemoveField(t *testing.T) {
 					DBType: input.String,
 				},
 			},
-		}, &field.Options{})
-	require.Nil(t, err)
+		})
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
 			"UserConfig": {
@@ -474,8 +481,8 @@ func TestCompareNodesRemoveField(t *testing.T) {
 }
 
 func TestCompareNodesModifyField(t *testing.T) {
-	fi1, err := field.NewFieldInfoFromInputs(
-		&codegenapi.DummyConfig{},
+	fi1 := newFieldInfoTests(
+		t,
 		[]*input.Field{
 			{
 				Name: "first_name",
@@ -483,8 +490,7 @@ func TestCompareNodesModifyField(t *testing.T) {
 					DBType: input.String,
 				},
 			},
-		}, &field.Options{})
-	require.Nil(t, err)
+		})
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
 			"UserConfig": {
@@ -497,8 +503,8 @@ func TestCompareNodesModifyField(t *testing.T) {
 		},
 	}
 
-	fi2, err := field.NewFieldInfoFromInputs(
-		&codegenapi.DummyConfig{},
+	fi2 := newFieldInfoTests(
+		t,
 		[]*input.Field{
 			{
 				Name: "first_name",
@@ -507,8 +513,7 @@ func TestCompareNodesModifyField(t *testing.T) {
 				},
 				Nullable: true,
 			},
-		}, &field.Options{})
-	require.Nil(t, err)
+		})
 	s2 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
 			"UserConfig": {
@@ -2130,9 +2135,87 @@ func TestEnumModified(t *testing.T) {
 	}, lang[0])
 }
 
+func TestEnumGQLNameChange(t *testing.T) {
+	s1 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfo(nil),
+		},
+	}
+	e2 := getEnumInfo(nil)
+	e2.GQLEnum.Name = "GraphQLLanguage"
+	s2 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": e2,
+		},
+	}
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+
+	lang := m["Language"]
+	require.Len(t, lang, 3)
+	verifyChange(t, change.Change{
+		Change:      change.ModifyEnum,
+		Name:        "Language",
+		GraphQLName: "Language",
+		TSOnly:      true,
+	}, lang[0])
+	verifyChange(t, change.Change{
+		Change:      change.RemoveEnum,
+		Name:        "Language",
+		GraphQLName: "Language",
+		GraphQLOnly: true,
+	}, lang[1])
+	verifyChange(t, change.Change{
+		Change:      change.AddEnum,
+		Name:        "Language",
+		GraphQLName: "GraphQLLanguage",
+		GraphQLOnly: true,
+	}, lang[2])
+}
+
+func TestEnumTSNameChange(t *testing.T) {
+	s1 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfo(nil),
+		},
+	}
+	e2 := getEnumInfo(nil)
+	e2.Enum.Name = "TSLanguage"
+	s2 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": e2,
+		},
+	}
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+
+	lang := m["Language"]
+	require.Len(t, lang, 3)
+	verifyChange(t, change.Change{
+		Change:      change.ModifyEnum,
+		Name:        "Language",
+		GraphQLName: "Language",
+		GraphQLOnly: true,
+	}, lang[0])
+	verifyChange(t, change.Change{
+		Change:      change.RemoveEnum,
+		Name:        "Language",
+		GraphQLName: "Language",
+		TSOnly:      true,
+	}, lang[1])
+	verifyChange(t, change.Change{
+		Change:      change.AddEnum,
+		Name:        "TSLanguage",
+		GraphQLName: "Language",
+		TSOnly:      true,
+	}, lang[2])
+}
+
 func TestCompareSchemaNewNodePlusActionsAndFields(t *testing.T) {
-	fi, err := field.NewFieldInfoFromInputs(
-		&codegenapi.DummyConfig{},
+	fi := newFieldInfoTests(
+		t,
 		[]*input.Field{
 			{
 				Name: "first_name",
@@ -2146,8 +2229,7 @@ func TestCompareSchemaNewNodePlusActionsAndFields(t *testing.T) {
 					DBType: input.String,
 				},
 			},
-		}, &field.Options{})
-	require.Nil(t, err)
+		})
 
 	e2, err := edge.EdgeInfoFromInput(
 		&codegenapi.DummyConfig{},
@@ -2215,8 +2297,8 @@ func TestCompareSchemaNewNodePlusActionsAndFields(t *testing.T) {
 }
 
 func TestCompareSchemaRemoveNodePlusActionsAndFields(t *testing.T) {
-	fi, err := field.NewFieldInfoFromInputs(
-		&codegenapi.DummyConfig{},
+	fi := newFieldInfoTests(
+		t,
 		[]*input.Field{
 			{
 				Name: "first_name",
@@ -2230,8 +2312,7 @@ func TestCompareSchemaRemoveNodePlusActionsAndFields(t *testing.T) {
 					DBType: input.String,
 				},
 			},
-		}, &field.Options{})
-	require.Nil(t, err)
+		})
 
 	e1, err := edge.EdgeInfoFromInput(
 		&codegenapi.DummyConfig{},
@@ -2300,8 +2381,9 @@ func TestCompareSchemaRemoveNodePlusActionsAndFields(t *testing.T) {
 }
 
 func TestAddIndex(t *testing.T) {
-	fi, err := field.NewFieldInfoFromInputs(
-		&codegenapi.DummyConfig{},
+	fi := newFieldInfoTests(
+		t,
+
 		[]*input.Field{
 			{
 				Name: "email",
@@ -2309,8 +2391,7 @@ func TestAddIndex(t *testing.T) {
 					DBType: input.String,
 				},
 			},
-		}, &field.Options{})
-	require.Nil(t, err)
+		})
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -2361,8 +2442,8 @@ func TestAddIndex(t *testing.T) {
 }
 
 func TestRemoveIndex(t *testing.T) {
-	fi, err := field.NewFieldInfoFromInputs(
-		&codegenapi.DummyConfig{},
+	fi := newFieldInfoTests(
+		t,
 		[]*input.Field{
 			{
 				Name: "email",
@@ -2370,8 +2451,7 @@ func TestRemoveIndex(t *testing.T) {
 					DBType: input.String,
 				},
 			},
-		}, &field.Options{})
-	require.Nil(t, err)
+		})
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -2422,8 +2502,8 @@ func TestRemoveIndex(t *testing.T) {
 }
 
 func TestModifyIndex(t *testing.T) {
-	fi, err := field.NewFieldInfoFromInputs(
-		&codegenapi.DummyConfig{},
+	fi := newFieldInfoTests(
+		t,
 		[]*input.Field{
 			{
 				Name: "email",
@@ -2431,8 +2511,7 @@ func TestModifyIndex(t *testing.T) {
 					DBType: input.String,
 				},
 			},
-		}, &field.Options{})
-	require.Nil(t, err)
+		})
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -2489,8 +2568,8 @@ func TestModifyIndex(t *testing.T) {
 }
 
 func TestAddConstraint(t *testing.T) {
-	fi, err := field.NewFieldInfoFromInputs(
-		&codegenapi.DummyConfig{},
+	fi := newFieldInfoTests(
+		t,
 		[]*input.Field{
 			{
 				Name: "price",
@@ -2498,8 +2577,7 @@ func TestAddConstraint(t *testing.T) {
 					DBType: input.Float,
 				},
 			},
-		}, &field.Options{})
-	require.Nil(t, err)
+		})
 
 	s1 := &schema.Schema{
 		Nodes: map[string]*schema.NodeDataInfo{
@@ -2552,6 +2630,7 @@ func TestAddConstraint(t *testing.T) {
 func TestRemoveConstraint(t *testing.T) {
 	fi, err := field.NewFieldInfoFromInputs(
 		&codegenapi.DummyConfig{},
+		"Item",
 		[]*input.Field{
 			{
 				Name: "price",
@@ -2613,6 +2692,7 @@ func TestRemoveConstraint(t *testing.T) {
 func TestModifyConstraint(t *testing.T) {
 	fi, err := field.NewFieldInfoFromInputs(
 		&codegenapi.DummyConfig{},
+		"Item",
 		[]*input.Field{
 			{
 				Name: "price",

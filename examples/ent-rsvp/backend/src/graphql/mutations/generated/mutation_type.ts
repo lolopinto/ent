@@ -25,7 +25,6 @@ import { UserCreateType } from "src/graphql/mutations/generated/user/user_create
 
 export const MutationType = new GraphQLObjectType({
   name: "Mutation",
-  // @ts-ignore graphql-js TS #2152 2829
   fields: () => ({
     addressCreate: AddressCreateType,
     addressDelete: AddressDeleteType,

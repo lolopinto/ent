@@ -18,8 +18,10 @@ type actionTemplate struct {
 	NodeData      *schema.NodeData
 	BuilderPath   string
 	BasePath      string
+	CodePath      *codegen.Config
 	Package       *codegen.ImportPackage
 	PrivacyConfig *codegen.PrivacyConfig
+	Schema        *schema.Schema
 }
 
 func writeBaseActionFile(nodeData *schema.NodeData, processor *codegen.Processor, action action.Action) error {
@@ -33,15 +35,20 @@ func writeBaseActionFile(nodeData *schema.NodeData, processor *codegen.Processor
 			NodeData:      nodeData,
 			Action:        action,
 			BuilderPath:   getImportPathForBuilderFile(nodeData),
+			CodePath:      processor.Config,
 			Package:       cfg.GetImportPackage(),
 			PrivacyConfig: cfg.GetDefaultActionPolicy(),
+			Schema:        processor.Schema,
 		},
-		AbsPathToTemplate:  util.GetAbsolutePath("action_base.tmpl"),
-		OtherTemplateFiles: []string{util.GetAbsolutePath("../schema/enum/enum.tmpl")},
-		TemplateName:       "action_base.tmpl",
-		PathToFile:         filePath,
-		TsImports:          imps,
-		FuncMap:            getFuncMapForActionBase(imps),
+		AbsPathToTemplate: util.GetAbsolutePath("action_base.tmpl"),
+		OtherTemplateFiles: []string{
+			util.GetAbsolutePath("../schema/enum/enum.tmpl"),
+			util.GetAbsolutePath("interface.tmpl"),
+		},
+		TemplateName: "action_base.tmpl",
+		PathToFile:   filePath,
+		TsImports:    imps,
+		FuncMap:      getFuncMapForActionBase(imps),
 	})
 }
 

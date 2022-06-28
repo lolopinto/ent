@@ -29,6 +29,14 @@ import {
 } from "src/ent/internal";
 import schema from "src/schema/guest_group";
 
+interface GuestGroupDBData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  invitation_name: string;
+  event_id: ID;
+}
+
 export class GuestGroupBase {
   readonly nodeType = NodeType.GuestGroup;
   readonly id: ID;
@@ -75,12 +83,12 @@ export class GuestGroupBase {
     this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
-  ): Promise<T[]> {
+  ): Promise<Map<ID, T>> {
     return (await loadEnts(
       viewer,
       GuestGroupBase.loaderOptions.apply(this),
       ...ids,
-    )) as T[];
+    )) as Map<ID, T>;
   }
 
   static async loadCustom<T extends GuestGroupBase>(
@@ -99,32 +107,36 @@ export class GuestGroupBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<Data[]> {
-    return loadCustomData(
+  ): Promise<GuestGroupDBData[]> {
+    return (await loadCustomData(
       GuestGroupBase.loaderOptions.apply(this),
       query,
       context,
-    );
+    )) as GuestGroupDBData[];
   }
 
   static async loadRawData<T extends GuestGroupBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data | null> {
-    return guestGroupLoader.createLoader(context).load(id);
+  ): Promise<GuestGroupDBData | null> {
+    const row = await guestGroupLoader.createLoader(context).load(id);
+    if (!row) {
+      return null;
+    }
+    return row as GuestGroupDBData;
   }
 
   static async loadRawDataX<T extends GuestGroupBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data> {
+  ): Promise<GuestGroupDBData> {
     const row = await guestGroupLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row;
+    return row as GuestGroupDBData;
   }
 
   static loaderOptions<T extends GuestGroupBase>(
@@ -159,7 +171,7 @@ export class GuestGroupBase {
     return GuestGroupToGuestsQuery.query(this.viewer, this.id);
   }
 
-  async loadEvent(): Promise<Event | null> {
+  loadEvent(): Promise<Event | null> {
     return loadEnt(this.viewer, this.eventID, Event.loaderOptions());
   }
 

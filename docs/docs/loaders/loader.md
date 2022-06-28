@@ -15,6 +15,7 @@ The Loader API looks like this:
 export interface Loader<T, V> {
   context?: Context;
   load(key: T): Promise<V>;
+  loadMany?(keys: T[]): Promise<(V | null)[]>;
   clearAll(): any;
 }
 ```

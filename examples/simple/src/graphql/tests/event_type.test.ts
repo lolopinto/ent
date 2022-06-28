@@ -1,4 +1,4 @@
-import { LoggedOutViewer, IDViewer, Viewer } from "@snowtop/ent";
+import { Viewer } from "@snowtop/ent";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { encodeGQLID, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import {
@@ -13,12 +13,13 @@ import { randomEmail, randomPhoneNumber } from "../../util/random";
 import CreateEventAction, {
   EventCreateInput,
 } from "../../ent/event/actions/create_event_action";
-import CreateAddressAction from "src/ent/address/actions/create_address_action";
+import CreateAddressAction from "../../ent/address/actions/create_address_action";
+import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
 
 afterEach(() => {
   clearAuthHandlers();
 });
-const loggedOutViewer = new LoggedOutViewer();
+const loggedOutViewer = new LoggedOutExampleViewer();
 
 function getConfig(
   viewer: Viewer,
@@ -59,7 +60,7 @@ async function createAddress() {
 async function createEvent(options: Partial<EventCreateInput>): Promise<Event> {
   const user = await createUser();
 
-  let vc = new IDViewer(user.id);
+  let vc = new ExampleViewer(user.id);
   return await CreateEventAction.create(vc, {
     name: "event",
     creatorID: user.id,
@@ -74,7 +75,7 @@ test("event create nullable addressID", async () => {
   const user = await createUser();
   await expectMutation(
     {
-      viewer: new IDViewer(user.id),
+      viewer: new ExampleViewer(user.id),
       schema,
       mutation: "eventCreate",
       nullQueryPaths: ["event.address"],
@@ -89,7 +90,7 @@ test("event create nullable addressID", async () => {
       "event.id",
       async function (id: string) {
         const eventID = mustDecodeIDFromGQLID(id);
-        await Event.loadX(new IDViewer(user.id), eventID);
+        await Event.loadX(new ExampleViewer(user.id), eventID);
       },
     ],
     ["event.creator.id", encodeGQLID(user)],
@@ -105,7 +106,7 @@ test("event create addressID passed", async () => {
 
   await expectMutation(
     {
-      viewer: new IDViewer(user.id),
+      viewer: new ExampleViewer(user.id),
       schema,
       mutation: "eventCreate",
       args: {
@@ -120,7 +121,7 @@ test("event create addressID passed", async () => {
       "event.id",
       async function (id: string) {
         const eventID = mustDecodeIDFromGQLID(id);
-        await Event.loadX(new IDViewer(user.id), eventID);
+        await Event.loadX(new ExampleViewer(user.id), eventID);
       },
     ],
     ["event.creator.id", encodeGQLID(user)],
@@ -185,7 +186,7 @@ test("query event with startTime and endTime", async () => {
   let user = await event.loadCreatorX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), event),
+    getConfig(new ExampleViewer(user.id), event),
     ["id", encodeGQLID(event)],
     ["creator.id", encodeGQLID(user)],
     ["startTime", event.startTime.toISOString()],
@@ -200,7 +201,7 @@ test("query event with null endTime", async () => {
   let user = await event.loadCreatorX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), event),
+    getConfig(new ExampleViewer(user.id), event),
     ["id", encodeGQLID(event)],
     ["creator.id", encodeGQLID(user)],
     ["startTime", event.startTime.toISOString()],
@@ -221,7 +222,9 @@ test("query event with different viewer", async () => {
 
   // can load other events since privacy policy allows it
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), event, { nullQueryPaths: ["creator"] }),
+    getConfig(new ExampleViewer(user.id), event, {
+      nullQueryPaths: ["creator"],
+    }),
     ["id", encodeGQLID(event)],
     ["creator.id", null], // creator is not visible
     ["startTime", event.startTime.toISOString()],
@@ -235,7 +238,7 @@ test("event rsvp status edit", async () => {
   let event = await createEvent({});
   let user = await event.loadCreatorX();
 
-  await expectQueryFromRoot(getConfig(new IDViewer(user.id), event, {}), [
+  await expectQueryFromRoot(getConfig(new ExampleViewer(user.id), event, {}), [
     "viewerRsvpStatus",
     "CAN_RSVP",
   ]);

@@ -1,8 +1,9 @@
-{{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" "GraphQLBoolean" }}
-{{reserveImport .Package.PackagePath "ID" "RequestContext" }}
-{{reserveImport .Package.GraphQLPackagePath "GraphQLTime" "GraphQLNodeInterface" "GraphQLEdgeInterface" "GraphQLConnectionInterface" "nodeIDEncoder" "resolveID" "mustDecodeIDFromGQLID" "encodeGQLID" }}
+{{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" "GraphQLBoolean" "GraphQLUnionType" }}
+{{ $cfg := .Config -}}
+{{$baseObj := .Data -}}
 
-{{$baseObj := . -}}
+{{reserveImport $baseObj.Package.PackagePath "ID" "RequestContext" }}
+{{reserveImport $baseObj.Package.GraphQLPackagePath "GraphQLTime" "GraphQLNodeInterface" "GraphQLEdgeInterface" "GraphQLConnectionInterface" "nodeIDEncoder" "resolveID" "mustDecodeIDFromGQLID" "encodeGQLID" }}
 
 {{/* import types that we may need e.g. UserType, ContactType, etc */}}
 {{ range $baseObj.Imports -}} 
@@ -19,48 +20,59 @@
 
 {{ template "interfaces.tmpl" (dict "Base" $baseObj "Interfaces" $baseObj.TSInterfaces) -}}
 
-{{ range .Enums -}}
+{{ range $baseObj.Enums -}}
   {{ template "enum.tmpl" . -}}
 {{ end -}}
 
-{{$nodeInstance := .NodeInstance}}
+{{$nodeInstance := $baseObj.NodeInstance}}
 
-{{ range $gqlNode := .GQLNodes -}}
-  {{ if $gqlNode.Exported -}}
-    export const {{$gqlNode.Type}} = new {{useImport $gqlNode.GQLType}}({
-  {{ else -}}
-    const {{$gqlNode.Type}} = new {{useImport $gqlNode.GQLType}}({
-  {{ end -}}
-    name: "{{$gqlNode.Node}}",
-    {{ if eq $gqlNode.GQLType "GraphQLInputObjectType" -}}
-      fields: (): {{useImport "GraphQLInputFieldConfigMap"}} => ({
-    {{ else -}}
-      {{ $tsType := $gqlNode.TSType -}}
-      {{ if $baseObj.ForeignImport $tsType -}}
-         {{$tsType = useImport $tsType -}}
-      {{ end -}}
-      fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$tsType}}, {{useImport "RequestContext"}}> => ({
-    {{ end -}}
-      {{ template "field.tmpl" (dict "Base" $baseObj "Node" $gqlNode "NodeInstance" $nodeInstance) -}}
-      }),
-    {{if .GQLInterfaces -}}
-    interfaces: [
-      {{range $interface := .GQLInterfaces -}}
-        {{useImport $interface}},
-      {{end -}}
-    ],
-    {{end -}}
-    {{if .IsTypeOfMethod -}}
-      isTypeOf(obj) {
-        {{ range $line := .IsTypeOfMethod -}}
-          {{$line}}
+{{ range $gqlNode := $baseObj.GQLNodes -}}
+  {{if eq $gqlNode.GQLType "GraphQLUnionType" -}}
+    const {{$gqlNode.Type}} = new {{useImport "GraphQLUnionType"}}({
+      name: "{{$gqlNode.Node}}",
+      types: [
+        {{ range .UnionTypes}}
+          {{.}},
         {{ end -}}
-      },
-    {{end -}}
-  });
-  
+      ],
+    });
+
+  {{ else -}}
+    {{ if $gqlNode.Exported -}}
+      export const {{$gqlNode.Type}} = new {{useImport $gqlNode.GQLType}}({
+    {{ else -}}
+      const {{$gqlNode.Type}} = new {{useImport $gqlNode.GQLType}}({
+    {{ end -}}
+      name: "{{$gqlNode.Node}}",
+      {{ if eq $gqlNode.GQLType "GraphQLInputObjectType" -}}
+        fields: (): {{useImport "GraphQLInputFieldConfigMap"}} => ({
+      {{ else -}}
+        {{ $tsType := $gqlNode.TSType -}}
+        {{ if $baseObj.ForeignImport $tsType -}}
+          {{$tsType = useImport $tsType -}}
+        {{ end -}}
+        fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$tsType}}, {{useImport "RequestContext"}}> => ({
+      {{ end -}}
+        {{ template "field.tmpl" (dict "Base" $baseObj "Node" $gqlNode "NodeInstance" $nodeInstance) -}}
+        }),
+      {{if .GQLInterfaces -}}
+      interfaces: [
+        {{range $interface := .GQLInterfaces -}}
+          {{useImport $interface}},
+        {{end -}}
+      ],
+      {{end -}}
+      {{if .IsTypeOfMethod -}}
+        isTypeOf(obj) {
+          {{ range $line := .IsTypeOfMethod -}}
+            {{$line}}
+          {{ end -}}
+        },
+      {{end -}}
+    });
+  {{end}}
 {{end}}
 
-{{ if .FieldConfig}}
-  {{ template "field_config.tmpl" (dict "Base" $baseObj "FieldConfig" .FieldConfig) -}}
+{{ if $baseObj.FieldConfig}}
+  {{ template "field_config.tmpl" (dict "Base" $baseObj "FieldConfig" $baseObj.FieldConfig "Config" $cfg) -}}
 {{ end -}}

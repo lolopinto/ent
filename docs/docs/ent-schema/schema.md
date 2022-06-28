@@ -9,19 +9,21 @@ The `Schema` is the core building block that's used to configure each node in th
 Each unique object in the application should be represented by a schema item.
 
 The schema of the application should be in `src/schema` relative to the root of the application. For every schema in that directory, the following norms are expected:
-* a `TypeScript` file in snake_case format e.g. `user.ts`, `event.ts`, `pickup_location.ts`
-* It should have a default export which is an object (usually a class) that implements the `Schema` interface.
-* By convention, what's exported is the pascalCase version of the file e.g. `User`, `Event`, and `PickupLocation` respectively for the above files.
+
+* a `TypeScript` file in snake_case format e.g. `user_schema.ts`,                `event_schema.ts`,  `pickup_location_schema.ts` etc.
+* It should have a default export which is an object that implements the `Schema` interface. This is usually done by creating a new instance of `EntSchema`.
+* By convention, what's exported is the pascalCase version of the file e.g. `UserSchema`,              `EventSchema`, and `PickupLocationSchema` respectively for the above files.
 Since it's a default export, the actual name doesn't matter but that's the current convention.
 
-
 ## Schema interface
+
 The `Schema` interface referenced above:
+
 ```ts
 // Schema is the base for every schema in typescript
 export default interface Schema {
   // list of fields
-  fields: Field[];
+  fields: FieldMap{};
 
   // optional, can be overriden as needed
   tableName?: string;
@@ -52,68 +54,75 @@ export default interface Schema {
 }
 ```
 
-The only required field in the schema is `fields`. 
+The only required field in the schema is `fields`.
 
 ### fields
-Represents the list of items that are associated with this object. This usually maps 1:1 to a column in the database and a field in the GraphQL representation of this object.
+
+Represents the schema items that are associated with this object. This usually maps 1:1 to a column in the database and a field in the GraphQL representation of this object.
 
 For a deep dive into fields, you can learn more [here](/docs/ent-schema/fields).
 
-### tableName 
-Name of the table that should be generated in the database. If not overriden, it defaults to the pluralized version of the file e.g. `users`, `events`, or `pickup_locations`
+### tableName
 
+Name of the table that should be generated in the database. If not overriden, it defaults to the pluralized version of the file e.g. `users` , `events` , or `pickup_locations`.
 
 ### patterns
+
 Patterns are shared objects for reusable concepts across schemas.
 E.g. there's a default `Node` pattern that adds `id`, `createdAt` and `updatedAt` fields to any schema.
 
-For more on patterns, [visit](/docs/ent-schema/patterns).
+For more on patterns, [check out](/docs/ent-schema/patterns).
 
 ### edges
+
 Allows configuring relationships between different schemas without using database integrity
 
 For more on edges, [visit](/docs/ent-schema/edges).
 
 ### edgeGroups
+
 Allows configuring groups of edges together.
 
 For more on edge groups, [visit](/docs/ent-schema/edge-groups).
 
-
 ### actions
-Configures the types of writes that can be performed on this object. 
+
+Configures the types of writes that can be performed on this object.
 For a deep dive into actions, please [visit](/docs/actions/action).
 
-
 ### enumTable
+
 Visit [Enums](/docs/ent-schema/enums) to learn more.
 
-
 ### dbRows
+
 Visit [Enums](/docs/ent-schema/enums) to learn more.
 Can also be used without enums.
 
-
 ### constraints
+
 database constraints added to the table. [Visit](/docs/ent-schema/constraints) to learn more.
 
-
 ### indices
+
 database indices added to the table. [Visit](/docs/ent-schema/indices) to learn more.
 
-
 ### hideFromGraphQL
+
 hide this object from GraphQL. This automatically hides all related actions to it from GraphQL. It also hides all edges pointing to it since we can't return the object.
 
+## EntSchema
 
-## BaseEntSchema
-`BaseEntSchema` is a schema that uses a [Pattern](/docs/ent-schema/patterns) and adds 3 fields to the object:
+`EntSchema` is a class that uses a [Pattern](/docs/ent-schema/patterns) and adds 3 fields to the object:
+
 * `id` field of type `uuid`
 * `createdAt` field of type `timestamp`: `timestamp without time zone` in the database
 * `updatedAt` field of type `timestamp`: `timestamp without time zone` in the database.
 
-## BaseEntSchemaWithTZ
-`BaseEntSchema` is a schema that uses a [Pattern](/docs/ent-schema/patterns) and adds 3 fields to the object:
+## EntSchemaWithTZ
+
+`EntSchemaWithTZ` is a schema that uses a [Pattern](/docs/ent-schema/patterns) and adds 3 fields to the object:
+
 * `id` field of type `uuid`
 * `createdAt` field of type `timestamptz`: `timestamp with time zone` in the database
 * `updatedAt` field of type `timestamptz`: `timestamp with time zone` in the database.

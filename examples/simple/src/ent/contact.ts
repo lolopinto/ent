@@ -2,7 +2,7 @@ import { GraphQLString } from "graphql";
 import { ContactBase } from "./internal";
 import {
   PrivacyPolicy,
-  AllowIfViewerIsRule,
+  AllowIfViewerIsEntPropertyRule,
   AlwaysDenyRule,
 } from "@snowtop/ent";
 import { gqlField } from "@snowtop/ent/graphql";
@@ -15,9 +15,11 @@ interface ContactPlusEmails {
 }
 
 export class Contact extends ContactBase {
-  privacyPolicy: PrivacyPolicy = {
-    rules: [new AllowIfViewerIsRule("userID"), AlwaysDenyRule],
-  };
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return {
+      rules: [new AllowIfViewerIsEntPropertyRule("userID"), AlwaysDenyRule],
+    };
+  }
 
   @gqlField({
     type: GraphQLString,
