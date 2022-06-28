@@ -920,6 +920,8 @@ func (s *Schema) postProcess(nodeData *NodeData, edgeData *assocEdgeData) error 
 		return err
 	}
 
+	s.addActionFieldsPostProcess(nodeData)
+
 	// should there be a way to disable this eventually
 	// it's perfectly fine for a table with no primary key
 	// if we disable it, should be at most one
@@ -1285,16 +1287,38 @@ func (s *Schema) getNewEdge(edgeData *assocEdgeData, assocEdge *edge.Association
 	}, nil
 }
 
+func (s *Schema) nonEntFieldActionInfo(f *field.NonEntField) *enttype.ActionFieldsInfo {
+	typ := f.GetFieldType()
+	t, ok := typ.(enttype.TSTypeWithActionFields)
+	if !ok {
+		return nil
+	}
+	actionFieldsInfo := t.GetActionFieldsInfo()
+	if actionFieldsInfo == nil || actionFieldsInfo.ActionName == "" {
+		return nil
+	}
+	return actionFieldsInfo
+}
+
+func (s *Schema) findActionByName(currentConfigName, actionName string) action.Action {
+	for k, v := range s.Nodes {
+		if k == currentConfigName {
+			continue
+		}
+		a2 := v.NodeData.ActionInfo.GetByName(actionName)
+		if a2 != nil {
+			return a2
+		}
+		continue
+	}
+	return nil
+}
+
 func (s *Schema) addActionFields(info *NodeDataInfo) error {
 	for _, a := range info.NodeData.ActionInfo.Actions {
 		for _, f := range a.GetNonEntFields() {
-			typ := f.GetFieldType()
-			t, ok := typ.(enttype.TSTypeWithActionFields)
-			if !ok {
-				continue
-			}
-			actionFieldsInfo := t.GetActionFieldsInfo()
-			if actionFieldsInfo == nil || actionFieldsInfo.ActionName == "" {
+			actionFieldsInfo := s.nonEntFieldActionInfo(f)
+			if actionFieldsInfo == nil {
 				continue
 			}
 			actionName := actionFieldsInfo.ActionName
@@ -1303,47 +1327,56 @@ func (s *Schema) addActionFields(info *NodeDataInfo) error {
 				excludedFields[v] = true
 			}
 
-			foundAction := false
-			config := info.NodeData.Node + "Config"
-			for k, v := range s.Nodes {
-				if k == config {
-					continue
-				}
-				a2 := v.NodeData.ActionInfo.GetByName(actionName)
-				if a2 == nil {
-					continue
-				}
-				foundAction = true
-
-				for _, f2 := range a2.GetFields() {
-					if f2.EmbeddableInParentAction() && !excludedFields[f2.FieldName] {
-
-						f3 := f2
-						if action.IsRequiredField(a2, f2) {
-							var err error
-							f3, err = f2.Clone(field.Required())
-							if err != nil {
-								return err
-							}
-						}
-						a.AddCustomField(t, f3)
-					}
-				}
-
-				for _, f2 := range a2.GetNonEntFields() {
-					a.AddCustomNonEntField(t, f2)
-				}
-
-				a.AddCustomInterfaces(a2)
-
-				break
-			}
-			if !foundAction {
+			a2 := s.findActionByName(info.NodeData.Node+"Config", actionName)
+			if a2 == nil {
 				return fmt.Errorf("invalid action only field %s. couldn't find action with name %s", f.GetFieldName(), actionName)
+			}
+
+			typ := f.GetFieldType()
+			t := typ.(enttype.TSTypeWithActionFields)
+
+			for _, f2 := range a2.GetFields() {
+				if f2.EmbeddableInParentAction() && !excludedFields[f2.FieldName] {
+
+					f3 := f2
+					if action.IsRequiredField(a2, f2) {
+						var err error
+						f3, err = f2.Clone(field.Required())
+						if err != nil {
+							return err
+						}
+					}
+					a.AddCustomField(t, f3)
+				}
+			}
+
+			for _, f2 := range a2.GetNonEntFields() {
+				a.AddCustomNonEntField(t, f2)
 			}
 		}
 	}
 	return nil
+}
+
+func (s *Schema) addActionFieldsPostProcess(nodeData *NodeData) {
+	// break this up into its own function which is done in post-process **after**
+	// everything has been loaded because we want to make sure
+	// addActionFields has been called for every schema and action before we call
+	// AddCustomInterfaces
+	for _, a := range nodeData.ActionInfo.Actions {
+		for _, f := range a.GetNonEntFields() {
+			actionFieldsInfo := s.nonEntFieldActionInfo(f)
+
+			if actionFieldsInfo == nil {
+				continue
+			}
+			actionName := actionFieldsInfo.ActionName
+			a2 := s.findActionByName(nodeData.Node+"Config", actionName)
+			if a2 != nil {
+				a.AddCustomInterfaces(a2)
+			}
+		}
+	}
 }
 
 func (s *Schema) processConstraints(nodeData *NodeData) error {

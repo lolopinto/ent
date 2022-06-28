@@ -1050,7 +1050,7 @@ func verifyExpectedActions(t *testing.T, actionInfo *action.ActionInfo, expActio
 			// only do this for when we want to test this
 			// TODO we should change everywhere to test this
 			customInterfaces := a.GetCustomInterfaces()
-			require.Len(t, expAction.customInterfaces, len(customInterfaces))
+			require.Len(t, customInterfaces, len(expAction.customInterfaces))
 
 			for idx, customInt := range customInterfaces {
 				expCustomInt := expAction.customInterfaces[idx]
