@@ -69,7 +69,7 @@ rm -rf .ent
 * pull latest version of docker image
 
 ```shell
-docker pull ghcr.io/lolopinto/ent:0.1.0-alpha.4-nodejs-17-dev
+docker pull ghcr.io/lolopinto/ent:0.1.0-alpha.5-nodejs-17-dev
 ```
 
 * Update `develop.Dockerfile` and/or `Dockerfile` to get the latest docker image.
