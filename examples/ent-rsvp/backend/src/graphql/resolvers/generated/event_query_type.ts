@@ -23,7 +23,7 @@ export const EventQueryType: GraphQLFieldConfig<
   args: {
     slug: {
       description: "",
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
   },
   resolve: async (

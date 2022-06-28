@@ -9,12 +9,3 @@ tsc && cp -r dist/* ~/code/ent/examples/todo-sqlite/node_modules/@snowtop/snowto
 ```
 
 to update the version of the package. Update from todo-sqlite to the right path you want to see being used.
-
-To make local changes:
-
-* in `/ts`, run `tsc && cd dist && npm link @snowtop/ent`
-* Test in one of the example folders as follows:
-
-  * `npm link @snowtop/ent`
-  * `rm -rf node_modules/graphql`
-  * run `tsent codegen` or whatever command to see your changes

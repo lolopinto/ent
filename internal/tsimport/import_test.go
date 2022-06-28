@@ -40,28 +40,23 @@ func getLine(line string, paths ...string) string {
 	return r.Replace(line)
 }
 
-func reserveImport(imps *Imports, path string, imports ...string) error {
-	_, err := imps.Reserve(path, imports...)
+func reserveImport(imps *Imports, path string, exports ...string) error {
+	_, err := imps.Reserve(path, exports...)
 	return err
 }
 
-func useImport(imps *Imports, imp string) error {
-	_, err := imps.Use(imp)
+func useImport(imps *Imports, export string) error {
+	_, err := imps.Use(export)
 	return err
 }
 
-func reserveDefaultImport(imps *Imports, path, defaultImport string, imports ...string) error {
-	_, err := imps.ReserveDefault(path, defaultImport, imports...)
+func reserveDefaultImport(imps *Imports, path, defaultExport string, exports ...string) error {
+	_, err := imps.ReserveDefault(path, defaultExport, exports...)
 	return err
 }
 
 func reserveAllImport(imps *Imports, path, as string) error {
 	_, err := imps.ReserveAll(path, as)
-	return err
-}
-
-func reserveImportPath(imps *Imports, imp *ImportPath, external bool) error {
-	_, err := imps.ReserveImportPath(imp, external)
 	return err
 }
 
@@ -298,97 +293,6 @@ func TestImports(t *testing.T) {
 			fn: func(imps *Imports) {
 				require.Nil(t, reserveDefaultImport(imps, "src/ent/user", "User"))
 				require.Error(t, reserveDefaultImport(imps, "/user", "User"))
-			},
-			errorThrown: true,
-		},
-		"reserve import path": {
-			fn: func(imps *Imports) {
-				reserveImportPath(imps, &ImportPath{
-					ImportPath: "src/lib/viewer/viewer",
-					Import:     "Viewer",
-				}, false)
-				useImport(imps, "Viewer")
-			},
-			expectedLines: []string{
-				getLine("import {Viewer} from {path};", "src/lib/viewer/viewer"),
-			},
-		},
-		"reserve import path with alias": {
-			fn: func(imps *Imports) {
-				reserveImportPath(imps, &ImportPath{
-					ImportPath:     "src/lib/viewer/viewer",
-					Import:         "FooViewer",
-					OriginalImport: "Viewer",
-				}, false)
-				useImport(imps, "FooViewer")
-			},
-			expectedLines: []string{
-				getLine("import {Viewer as FooViewer} from {path};", "src/lib/viewer/viewer"),
-			},
-		},
-		"reserve import path with alias. use non-alias": {
-			fn: func(imps *Imports) {
-				reserveImportPath(imps, &ImportPath{
-					ImportPath:     "src/lib/viewer/viewer",
-					Import:         "FooViewer",
-					OriginalImport: "Viewer",
-				}, false)
-				require.Error(t, useImport(imps, "Viewer"))
-			},
-			errorThrown: true,
-		},
-		"reserve import path with alias + other imports same path": {
-			fn: func(imps *Imports) {
-				reserveImportPath(imps, &ImportPath{
-					ImportPath:     "src/lib/viewer/viewer",
-					Import:         "FooViewer",
-					OriginalImport: "Viewer",
-				}, false)
-				reserveImport(imps, "src/lib/viewer/viewer", "ViewerFoo")
-				useImport(imps, "FooViewer")
-				useImport(imps, "ViewerFoo")
-			},
-			expectedLines: []string{
-				getLine("import {Viewer as FooViewer, ViewerFoo} from {path};", "src/lib/viewer/viewer"),
-			},
-		},
-		"reserve import path with alias + default": {
-			fn: func(imps *Imports) {
-				reserveImportPath(imps, &ImportPath{
-					ImportPath:     "src/lib/viewer/viewer",
-					Import:         "FooViewer",
-					OriginalImport: "Viewer",
-				}, false)
-				reserveDefaultImport(imps, "src/lib/viewer/viewer", "ViewerDefault")
-				reserveImport(imps, "src/lib/viewer/viewer", "ViewerFoo")
-
-				useImport(imps, "FooViewer")
-				useImport(imps, "ViewerDefault")
-				useImport(imps, "ViewerFoo")
-			},
-			expectedLines: []string{
-				getLine("import ViewerDefault, {Viewer as FooViewer, ViewerFoo} from {path};", "src/lib/viewer/viewer"),
-			},
-		},
-		"reserve alias and multiple imports at same time": {
-			fn: func(imps *Imports) {
-				_, err := imps.reserve(&importInfoInput{
-					path:    "src/foo",
-					alias:   "Foo",
-					imports: []string{"Foo", "FooBar"},
-				})
-				require.Error(t, err)
-			},
-			errorThrown: true,
-		},
-		"reserve alias and default at same time": {
-			fn: func(imps *Imports) {
-				_, err := imps.reserve(&importInfoInput{
-					path:          "src/foo",
-					alias:         "Foo",
-					defaultImport: "Foo2",
-				})
-				require.Error(t, err)
 			},
 			errorThrown: true,
 		},

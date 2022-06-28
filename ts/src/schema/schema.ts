@@ -3,23 +3,10 @@ import { Data, Ent, LoaderInfo, PrivacyPolicy, Viewer } from "../core/base";
 import { Builder } from "../action/action";
 import { Clause } from "../core/clause";
 
-export declare type FieldMap = {
-  [key: string]: Field;
-};
-
-interface FieldInfo {
-  dbCol: string;
-  inputKey: string;
-}
-
-export type FieldInfoMap = {
-  [key: string]: FieldInfo;
-};
-
 // Schema is the base for every schema in typescript
 export default interface Schema {
   // schema has list of fields that are unique to each node
-  fields: FieldMap | Field[];
+  fields: Field[];
 
   // optional, can be overriden as needed
   tableName?: string;
@@ -164,8 +151,7 @@ export type Edge = AssocEdge;
 // which automatically provides 3 fields to every ent: id, created_at, updated_at
 export interface Pattern {
   name: string;
-  fields: FieldMap | Field[];
-  disableMixin?: boolean;
+  fields: Field[];
   edges?: Edge[];
 
   // can only have one thing transforming a select
@@ -174,7 +160,7 @@ export interface Pattern {
   transformRead?: () => Clause;
   transformWrite?: <T extends Ent>(
     stmt: UpdateOperation<T>,
-  ) => TransformedUpdateOperation<T> | null;
+  ) => TransformedUpdateOperation<T> | undefined;
 
   // can only have one pattern in an object which transforms each
   // if we do, it throws an Error
@@ -203,16 +189,10 @@ export enum SQLStatementOperation {
   Delete = "delete",
 }
 
-export interface UpdateOperation<
-  TEnt extends Ent<TViewer>,
-  TViewer extends Viewer = Viewer,
-> {
-  // TODO how should this affect builder.operation?
+export interface UpdateOperation<T extends Ent> {
   op: SQLStatementOperation;
-  builder: Builder<TEnt, TViewer>;
-  // input. same input that's passed to Triggers, Observers, Validators. includes action-only fields
-  input: Data;
-  // data that'll be saved in the db
+  existingEnt?: T;
+  viewer: Viewer;
   data?: Map<string, any>;
 }
 
@@ -223,7 +203,7 @@ export interface TransformedUpdateOperation<T extends Ent> {
 
   // if changing to an update, we want to return the ent
   // TODO don't have a way to delete the ent e.g. update -> insert
-  existingEnt?: T | null;
+  existingEnt?: T;
 }
 
 // we want --strictNullChecks flag so nullable is used to type graphql, ts, db
@@ -277,15 +257,7 @@ export interface Type {
   values?: string[]; // values e.g. enum values
   // TODO need to refactor this into type specific objects instead of killing the top level field like this.
   enumMap?: EnumMap; // enumMap e.g. k->v pair for enums
-
-  // @deprecated eventually kill this
   importType?: ImportType;
-
-  // StructType fields
-  subFields?: FieldMap;
-
-  // UnionType fields. really StructMap but don't want circular dependency...
-  unionFields?: FieldMap;
 }
 
 export interface ForeignKey {
@@ -334,6 +306,7 @@ export interface FieldEdge {
 // FieldOptions are configurable options for fields.
 // Can be combined with options for specific field types as neededs
 export interface FieldOptions {
+  name: string;
   // optional modification of fields: nullable/storagekey etc.
   nullable?: boolean;
   storageKey?: string; // db?
@@ -367,6 +340,7 @@ export interface FieldOptions {
   derivedWhenEmbedded?: boolean;
 
   polymorphic?: boolean | PolymorphicOptions;
+  derivedFields?: Field[];
 
   // FYI. copied in config.ts
   // field can have privacy policy
@@ -377,12 +351,6 @@ export interface FieldOptions {
   // 2: generate accessors for the field and all callsites which reference that field will use that.
   // the privacy will be evaluated on demand when needed
   privacyPolicy?: PrivacyPolicy | (() => PrivacyPolicy);
-
-  // takes the name of the field and returns any fields which are derived from current field
-  getDerivedFields?(name: string): FieldMap;
-
-  // allow name for now
-  [x: string]: any;
 }
 
 export interface PolymorphicOptions {
@@ -403,9 +371,8 @@ export interface Field extends FieldOptions {
 
   // optional valid and format to validate and format before storing
   valid?(val: any): Promise<boolean> | boolean;
-  // optional second param which if passed and true indicates that this is a nested object
-  // and should only format children and not format lists or objects
-  format?(val: any, nested?: boolean): any;
+  //valid?(val: any): Promise<boolean>;
+  format?(val: any): any;
 
   logValue(val: any): any;
 }
@@ -430,26 +397,13 @@ export function getSchema(value: SchemaInputType): Schema {
 
 export function getFields(value: SchemaInputType): Map<string, Field> {
   const schema = getSchema(value);
-  function addFields(fields: FieldMap | Field[]) {
-    if (Array.isArray(fields)) {
-      for (const field of fields) {
-        const name = field.name;
-        if (!name) {
-          throw new Error(`name required`);
-        }
-        if (field.getDerivedFields !== undefined) {
-          addFields(field.getDerivedFields(name));
-        }
-        m.set(name, field);
+  function addFields(fields: Field[]) {
+    for (const field of fields) {
+      const derivedFields = field.derivedFields;
+      if (derivedFields !== undefined) {
+        addFields(derivedFields);
       }
-      return;
-    }
-    for (const name in fields) {
-      const field = fields[name];
-      if (field.getDerivedFields !== undefined) {
-        addFields(field.getDerivedFields(name));
-      }
-      m.set(name, field);
+      m.set(field.name, field);
     }
   }
 
@@ -459,55 +413,25 @@ export function getFields(value: SchemaInputType): Map<string, Field> {
       addFields(pattern.fields);
     }
   }
-
   addFields(schema.fields);
 
   return m;
 }
 
-/**
- * @deprecated should only be used by tests
- */
-export function getStorageKey(field: Field, fieldName: string): string {
-  return field.storageKey || snakeCase(fieldName);
+export function getStorageKey(field: Field): string {
+  return field.storageKey || snakeCase(field.name);
 }
 
 // returns a mapping of storage key to field privacy
 export function getFieldsWithPrivacy(
   value: SchemaInputType,
-  fieldMap: FieldInfoMap,
 ): Map<string, PrivacyPolicy> {
   const schema = getSchema(value);
-  function addFields(fields: FieldMap | Field[]) {
-    if (Array.isArray(fields)) {
-      for (const field of fields) {
-        const name = field.name;
-        if (!field.name) {
-          throw new Error(`name required`);
-        }
-        if (field.getDerivedFields !== undefined) {
-          addFields(field.getDerivedFields(name));
-        }
-        if (field.privacyPolicy) {
-          let privacyPolicy: PrivacyPolicy;
-          if (typeof field.privacyPolicy === "function") {
-            privacyPolicy = field.privacyPolicy();
-          } else {
-            privacyPolicy = field.privacyPolicy;
-          }
-          const info = fieldMap[name];
-          if (!info) {
-            throw new Error(`field with name ${name} not passed in fieldMap`);
-          }
-          m.set(info.dbCol, privacyPolicy);
-        }
-      }
-      return;
-    }
-    for (const name in fields) {
-      const field = fields[name];
-      if (field.getDerivedFields !== undefined) {
-        addFields(field.getDerivedFields(name));
+  function addFields(fields: Field[]) {
+    for (const field of fields) {
+      const derivedFields = field.derivedFields;
+      if (derivedFields !== undefined) {
+        addFields(derivedFields);
       }
       if (field.privacyPolicy) {
         let privacyPolicy: PrivacyPolicy;
@@ -516,11 +440,7 @@ export function getFieldsWithPrivacy(
         } else {
           privacyPolicy = field.privacyPolicy;
         }
-        const info = fieldMap[name];
-        if (!info) {
-          throw new Error(`field with name ${name} not passed in fieldMap`);
-        }
-        m.set(info.dbCol, privacyPolicy);
+        m.set(getStorageKey(field), privacyPolicy);
       }
     }
   }
@@ -569,23 +489,19 @@ export function getObjectLoaderProperties(
   };
 }
 
-export function getTransformedUpdateOp<
-  TEnt extends Ent<TViewer>,
-  TViewer extends Viewer,
->(
+export function getTransformedUpdateOp<T extends Ent>(
   value: SchemaInputType,
-  stmt: UpdateOperation<TEnt, TViewer>,
-): TransformedUpdateOperation<TEnt> | null {
+  stmt: UpdateOperation<T>,
+): TransformedUpdateOperation<T> | undefined {
   const schema = getSchema(value);
   if (!schema.patterns) {
-    return null;
+    return;
   }
   for (const p of schema.patterns) {
     if (p.transformWrite) {
       return p.transformWrite(stmt);
     }
   }
-  return null;
 }
 
 // this maps to ActionOperation in ent/action.go

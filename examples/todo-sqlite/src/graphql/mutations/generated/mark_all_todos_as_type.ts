@@ -21,15 +21,15 @@ export const MarkAllTodosAsType: GraphQLFieldConfig<
   RequestContext,
   markAllTodosAsArgs
 > = {
-  type: new GraphQLNonNull(AccountType),
+  type: GraphQLNonNull(AccountType),
   args: {
     accountID: {
       description: "",
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
     },
     completed: {
       description: "",
-      type: new GraphQLNonNull(GraphQLBoolean),
+      type: GraphQLNonNull(GraphQLBoolean),
     },
   },
   resolve: async (

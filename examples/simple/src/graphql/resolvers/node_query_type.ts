@@ -37,7 +37,7 @@ export const NodeQueryType: GraphQLFieldConfig<
   args: {
     id: {
       description: "",
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
     },
   },
   resolve: async (

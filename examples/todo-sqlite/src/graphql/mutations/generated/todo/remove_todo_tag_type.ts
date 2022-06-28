@@ -29,10 +29,10 @@ export const RemoveTodoTagInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     todo_id: {
       description: "id of Todo",
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
     },
     tag_id: {
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -41,7 +41,7 @@ export const RemoveTodoTagPayloadType = new GraphQLObjectType({
   name: "RemoveTodoTagPayload",
   fields: (): GraphQLFieldConfigMap<RemoveTodoTagPayload, RequestContext> => ({
     todo: {
-      type: new GraphQLNonNull(TodoType),
+      type: GraphQLNonNull(TodoType),
     },
   }),
 });
@@ -51,11 +51,11 @@ export const RemoveTodoTagType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customRemoveTodoTagInput }
 > = {
-  type: new GraphQLNonNull(RemoveTodoTagPayloadType),
+  type: GraphQLNonNull(RemoveTodoTagPayloadType),
   args: {
     input: {
       description: "",
-      type: new GraphQLNonNull(RemoveTodoTagInputType),
+      type: GraphQLNonNull(RemoveTodoTagInputType),
     },
   },
   resolve: async (

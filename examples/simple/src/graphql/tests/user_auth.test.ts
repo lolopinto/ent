@@ -1,5 +1,6 @@
 import { Express } from "express";
 import supertest from "supertest";
+import { LoggedOutViewer } from "@snowtop/ent";
 import { encodeGQLID } from "@snowtop/ent/graphql";
 import schema from "../generated/schema";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
@@ -14,7 +15,6 @@ import CreateUserAction, {
 } from "../../ent/user/actions/create_user_action";
 import { randomEmail, random, randomPhoneNumber } from "../../util/random";
 import { User } from "../../ent/";
-import { LoggedOutExampleViewer } from "../../viewer/viewer";
 
 afterEach(() => {
   clearAuthHandlers();
@@ -35,7 +35,7 @@ function getUserRootConfig(
   };
 }
 
-const loggedOutViewer = new LoggedOutExampleViewer();
+const loggedOutViewer = new LoggedOutViewer();
 async function createUser(input?: Partial<UserCreateInput>): Promise<User> {
   return await CreateUserAction.create(loggedOutViewer, {
     firstName: "first",

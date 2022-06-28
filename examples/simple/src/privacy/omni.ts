@@ -5,7 +5,7 @@ interface OmniViewer extends Viewer {
 }
 
 export const AllowIfOmniRule = {
-  async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
+  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
     if (
       (v as OmniViewer).isOmniscient !== undefined &&
       (v as OmniViewer).isOmniscient()

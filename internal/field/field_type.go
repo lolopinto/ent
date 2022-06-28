@@ -90,11 +90,7 @@ func NewFieldFromNameAndType(name string, typ enttype.TSGraphQLType) *Field {
 	}
 }
 
-func newFieldFromInputTest(cfg codegenapi.Config, f *input.Field) (*Field, error) {
-	return newFieldFromInput(cfg, "User", f)
-}
-
-func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (*Field, error) {
+func newFieldFromInput(cfg codegenapi.Config, f *input.Field) (*Field, error) {
 	ret := &Field{
 		FieldName:                  f.Name,
 		nullable:                   f.Nullable,
@@ -160,7 +156,7 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 			}
 		}
 	} else if f.Type != nil {
-		typ, err := f.GetEntType(nodeName)
+		typ, err := f.GetEntType()
 		if err != nil {
 			return nil, err
 		}
@@ -578,29 +574,6 @@ func (f *Field) GetPossibleTypes() []enttype.EntType {
 	return typs
 }
 
-func (f *Field) GetImportsForTypes() []*tsimport.ImportPath {
-	var ret []*tsimport.ImportPath
-	tt := f.GetPossibleTypes()
-	for _, t := range tt {
-		if enttype.IsConvertDataType(t) {
-			t2 := t.(enttype.ConvertDataType)
-			c := t2.Convert()
-			if c.ImportPath != "" {
-				ret = append(ret, c)
-			}
-		}
-		if enttype.IsImportDepsType(t) {
-			t2 := t.(enttype.ImportDepsType)
-			imp := t2.GetImportDepsType()
-			if imp != nil {
-				// TODO ignoring relative. do we need it?
-				ret = append(ret, imp)
-			}
-		}
-	}
-	return ret
-}
-
 func (f *Field) GetTsTypeImports() []*tsimport.ImportPath {
 	types := f.GetPossibleTypes()
 	ret := []*tsimport.ImportPath{}
@@ -652,42 +625,35 @@ func (f *Field) getIDFieldType() string {
 	return f.getIDFieldTypeName()
 }
 
-func (f *Field) TsBuilderType(cfg codegenapi.Config) string {
+func (f *Field) TsBuilderType() string {
 	typ := f.tsRawUnderlyingType()
 	typeName := f.getIDFieldType()
 	if typeName == "" || f.disableBuilderType {
 		return typ
 	}
-	return fmt.Sprintf("%s | Builder<%s, %s>", typ, f.transformBuilderEnt(typeName, cfg), cfg.GetTemplatizedViewer().GetImport())
-}
-
-func (f *Field) transformBuilderEnt(typ string, cfg codegenapi.Config) string {
-	if typ != "Ent" {
-		return typ
-	}
-	return fmt.Sprintf("%s<%s>", typ, cfg.GetTemplatizedViewer().GetImport())
+	return fmt.Sprintf("%s | Builder<%s>", typ, typeName)
 }
 
 // for getFooValue() where there's a nullable type but the input type isn't nullable
 // because the underlying db value isn't
-func (f *Field) TsBuilderUnionType(cfg codegenapi.Config) string {
+func (f *Field) TsBuilderUnionType() string {
 	if f.tsFieldType == nil {
-		return f.TsBuilderType(cfg)
+		return f.TsBuilderType()
 	}
 	// already null so we good
 	typWithNull, ok := f.tsFieldType.(enttype.NonNullableType)
 	if !ok {
-		return f.TsBuilderType(cfg)
+		return f.TsBuilderType()
 	}
 	typ := typWithNull.GetTSType()
 	typeName := f.getIDFieldType()
 	if typeName == "" || f.disableBuilderType {
 		return typ
 	}
-	return fmt.Sprintf("%s | Builder<%s, %s>", typ, f.transformBuilderEnt(typeName, cfg), cfg.GetTemplatizedViewer().GetImport())
+	return fmt.Sprintf("%s | Builder<%s>", typ, typeName)
 }
 
-func (f *Field) TsBuilderImports(cfg codegenapi.Config) []*tsimport.ImportPath {
+func (f *Field) TsBuilderImports() []*tsimport.ImportPath {
 	ret := f.GetTsTypeImports()
 	typeName := f.getIDFieldType()
 	if typeName == "" || f.disableBuilderType {
@@ -700,13 +666,10 @@ func (f *Field) TsBuilderImports(cfg codegenapi.Config) []*tsimport.ImportPath {
 	} else {
 		entImportPath = tsimport.NewLocalEntImportPath(typeName)
 	}
-
-	viewer := cfg.GetTemplatizedViewer()
 	ret = append(
 		ret,
 		entImportPath,
 		tsimport.NewEntActionImportPath("Builder"),
-		viewer.GetImportPath(),
 	)
 	return ret
 }
@@ -786,29 +749,25 @@ func (f *Field) GetInverseEdge() *edge.AssociationEdge {
 	return f.inverseEdge
 }
 
-func (f *Field) GetTSGraphQLTypeForFieldImports(input bool) []*tsimport.ImportPath {
+func (f *Field) GetTSGraphQLTypeForFieldImports() []*tsimport.ImportPath {
 	tsGQLType := f.fieldType
 	if f.graphqlFieldType != nil {
 		tsGQLType = f.graphqlFieldType
 	}
-	return tsGQLType.GetTSGraphQLImports(input)
+	return tsGQLType.GetTSGraphQLImports()
 }
 
 // for non-required fields in actions, we want to make it optional if it's not a required field
 // in the action
 // in mutations, we ignore any graphql specific nature of the field and use underlying API
-// TODO multiple booleans is a horrible code-smell. fix with options or something
-func (f *Field) GetTSMutationGraphQLTypeForFieldImports(forceOptional, input bool) []*tsimport.ImportPath {
-	var tsGQLType enttype.TSGraphQLType
-	nullableType, ok := f.fieldType.(enttype.NullableType)
+func (f *Field) GetTSMutationGraphQLTypeForFieldImports(forceOptional bool) []*tsimport.ImportPath {
+	tsGQLType := f.fieldType
+	nullableType, ok := tsGQLType.(enttype.NullableType)
 
 	if forceOptional && ok {
 		tsGQLType = nullableType.GetNullableType()
-	} else {
-		// already null and/or not forceOptional
-		tsGQLType = f.fieldType
 	}
-	return tsGQLType.GetTSGraphQLImports(input)
+	return tsGQLType.GetTSGraphQLImports()
 }
 
 // note that this is different from PrimaryKeyIDField

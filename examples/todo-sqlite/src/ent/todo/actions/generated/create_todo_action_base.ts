@@ -13,17 +13,18 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { Account, Todo } from "src/ent/";
-import { TodoBuilder } from "src/ent/todo/actions/generated/todo_builder";
+import {
+  TodoBuilder,
+  TodoInput,
+} from "src/ent/todo/actions/generated/todo_builder";
 
 export interface TodoCreateInput {
   text: string;
   creatorID: ID | Builder<Account>;
 }
 
-export class CreateTodoActionBase
-  implements Action<Todo, TodoBuilder<TodoCreateInput>, TodoCreateInput>
-{
-  public readonly builder: TodoBuilder<TodoCreateInput>;
+export class CreateTodoActionBase implements Action<Todo> {
+  public readonly builder: TodoBuilder;
   public readonly viewer: Viewer;
   protected input: TodoCreateInput;
 
@@ -33,11 +34,11 @@ export class CreateTodoActionBase
     this.builder = new TodoBuilder(this.viewer, WriteOperation.Insert, this);
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Todo> {
+  getPrivacyPolicy(): PrivacyPolicy {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): TodoCreateInput {
+  getInput(): TodoInput {
     return this.input;
   }
 

@@ -11,7 +11,8 @@ Enums can be configured in three different ways.
 This is the default behavior for enum types because it's easy and not complicated. It's configured as follows:
 
 ```ts
-  Rainbow: EnumType({
+  EnumType({
+    name: "Rainbow",
     hideFromGraphQL: true,
     values: ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet'],
   })
@@ -30,7 +31,8 @@ These types [can't](https://github.com/lolopinto/ent/pull/113) be changed [easil
 Configured as follows:
 
 ```ts
-  Rainbow: EnumType({
+  EnumType({
+    name: "Rainbow",
     hideFromGraphQL: true,
     values: ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet'],
     createEnumType: true, // magic line 
@@ -56,17 +58,18 @@ ent-test=# \dT+ rainbow
 
 ## lookup tables
 
-```ts title="src/schema/request_status_schema.ts"
-const RequestStatusSchema = new EntSchema({
-  fields: {
-    status: StringType({
+```ts title="src/schema/request_status.ts"
+export default class RequestStatus implements Schema {
+  fields: Field[] = [
+    StringType({
+      name: "status",
       primaryKey: true,
     }),
-  }, 
+  ];
 
-  enumTable: true; 
+  enumTable = true;
 
-  dbRows: [
+  dbRows = [
     {
       status: "OPEN",
     },
@@ -76,10 +79,8 @@ const RequestStatusSchema = new EntSchema({
     {
       status: "CLOSED",
     },
-  ], 
-}); 
-export default RequestStatusSchema; 
-
+  ];
+}
 ```
 
 The schema above generates the following:
@@ -114,7 +115,8 @@ enum RequestStatus {
 To reference this enum in a different schema, use as follows:
 
 ```ts
-  Status: EnumType({
+  EnumType({
+    name: "Status",
     foreignKey: ["RequestStatus", "status"],
   })
 ```

@@ -30,15 +30,13 @@ export default class CreateUserAction extends CreateUserActionBase {
 
 ```ts title="src/ent/user.ts"
 export class User extends UserBase {
-  getPrivacyPolicy(): PrivacyPolicy<this> {
-    return {
-      rules: [
-        AllowIfViewerRule,
-        new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFriends),
-        AlwaysDenyRule,
-      ],
-    };
-  }
+  privacyPolicy: PrivacyPolicy = {
+    rules: [
+      AllowIfViewerRule,
+      new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFriends),
+      AlwaysDenyRule,
+    ],
+  };
 }
 ```
 

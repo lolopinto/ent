@@ -19,9 +19,12 @@ export default class CreateGuestGroupAction extends CreateGuestGroupActionBase {
     return new AllowIfEventCreatorPrivacyPolicy(this.input.eventID);
   }
 
-  triggers: Trigger<GuestGroupBuilder, GuestGroupCreateInput>[] = [
+  triggers: Trigger<Ent>[] = [
     {
-      async changeset(builder, input) {
+      async changeset(
+        builder: GuestGroupBuilder,
+        input: GuestGroupCreateInput,
+      ) {
         if (builder.isBuilder(input.eventID)) {
           return;
         }
@@ -44,7 +47,10 @@ export default class CreateGuestGroupAction extends CreateGuestGroupActionBase {
       },
     },
     {
-      async changeset(builder, input) {
+      async changeset(
+        builder: GuestGroupBuilder,
+        input: GuestGroupCreateInput,
+      ) {
         if (!input.guests) {
           return;
         }

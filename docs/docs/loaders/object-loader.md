@@ -15,20 +15,20 @@ For each node, an instance of `ObjectLoaderFactory` is generated which is used t
 
 For example:
 
-```ts title="src/ent/generated/loaders.ts"
+```ts title="src/ent/account_base.ts"
 export const accountLoader = new ObjectLoaderFactory({
-  tableName: accountTable,
-  fields: accountFields,
+  tableName,
+  fields,
   key: "id",
 });
 ```
 
 And if there are unique fields in the schema, a loader is also generated for that. So, for an account with a unique phone number, this is also generated:
 
-```ts title="src/ent/generated/loaders.ts"
+```ts title="src/ent/account_base.ts"
 export const accountPhoneNumberLoader = new ObjectLoaderFactory({
-  tableName: accountTable,
-  fields: accountFields,
+  tableName,
+  fields,
   key: "phone_number",
 });
 ```
@@ -37,7 +37,7 @@ We also make each loader aware of the other so that when data is fetched from th
 
 ```ts
   accountLoader.addToPrime(accountPhoneNumberLoader);
-  accountPhoneNumberLoader.addToPrime(accountLoader);
+accountPhoneNumberLoader.addToPrime(accountLoader);
 ```
 
 For example,

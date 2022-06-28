@@ -6,12 +6,11 @@ import {
   AllowIfSubPolicyAllowsRule,
 } from "@snowtop/ent";
 import { AddressBuilder } from "../generated/address_builder";
-import { Address } from "src/ent";
 
-export class EditAddressPrivacy implements PrivacyPolicy<Address> {
+export class EditAddressPrivacy implements PrivacyPolicy {
   constructor(private builder: AddressBuilder) {}
 
-  rules: PrivacyPolicyRule<Address>[] = [
+  rules: PrivacyPolicyRule[] = [
     new AllowIfSubPolicyAllowsRule({
       rules: [
         new AllowIfEventCreatorFromActivityRule(

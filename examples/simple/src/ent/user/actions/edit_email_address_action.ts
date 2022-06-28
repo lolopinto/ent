@@ -1,16 +1,14 @@
 import {
   EditEmailAddressActionBase,
   EditEmailAddressInput,
-} from "../../generated/user/actions/edit_email_address_action_base";
-import { UserBuilder } from "../../generated/user/actions/user_builder";
+} from "./generated/edit_email_address_action_base";
+import { UserBuilder } from "./generated/user_builder";
 import CreateAuthCodeAction from "../../auth_code/actions/create_auth_code_action";
 import { FakeComms, Mode } from "@snowtop/ent/testutils/fake_comms";
 import { User } from "../..";
 import { EditUserPrivacy } from "./edit_user_privacy";
 
 export { EditEmailAddressInput };
-import { ExampleViewer } from "../../../viewer/viewer";
-import { Validator, Trigger, Observer } from "@snowtop/ent/action";
 
 class NewAuthCode {
   private code: string = "";
@@ -53,44 +51,20 @@ class NewAuthCode {
 export default class EditEmailAddressAction extends EditEmailAddressActionBase {
   private generateNewCode = new NewAuthCode();
 
-  getValidators(): Validator<
-    User,
-    UserBuilder<EditEmailAddressInput, User>,
-    ExampleViewer,
-    EditEmailAddressInput,
-    User
-  >[] {
-    return [
-      {
-        // confirm email not being used
-        async validate(builder: UserBuilder, input: EditEmailAddressInput) {
-          const id = await User.loadIDFromEmailAddress(input.newEmail);
-          if (id) {
-            throw new Error(`cannot change email to ${input.newEmail}`);
-          }
-        },
+  validators = [
+    {
+      // confirm email not being used
+      async validate(builder: UserBuilder, input: EditEmailAddressInput) {
+        const id = await User.loadIDFromEmailAddress(input.newEmail);
+        if (id) {
+          throw new Error(`cannot change email to ${input.newEmail}`);
+        }
       },
-    ];
-  }
-  getTriggers(): Trigger<
-    User,
-    UserBuilder<EditEmailAddressInput, User>,
-    ExampleViewer,
-    EditEmailAddressInput,
-    User
-  >[] {
-    return [this.generateNewCode];
-  }
+    },
+  ];
+  triggers = [this.generateNewCode];
 
-  getObservers(): Observer<
-    User,
-    UserBuilder<EditEmailAddressInput, User>,
-    ExampleViewer,
-    EditEmailAddressInput,
-    User
-  >[] {
-    return [this.generateNewCode];
-  }
+  observers = [this.generateNewCode];
 
   getPrivacyPolicy() {
     return EditUserPrivacy;

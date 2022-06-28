@@ -2,7 +2,7 @@ import { User, BuilderSchema, SimpleBuilder } from "../testutils/builder";
 import { IDViewer, LoggedOutViewer } from "../core/viewer";
 import { Pool } from "pg";
 import { QueryRecorder } from "../testutils/db_mock";
-import { StringType, UUIDType, FieldMap } from "../schema";
+import { Field, StringType, UUIDType } from "../schema";
 import { createRowForTest } from "../testutils/write";
 import {
   AssocEdge,
@@ -90,10 +90,14 @@ describe("sqlite", () => {
 
 class UserSchema implements BuilderSchema<User> {
   ent = User;
-  fields: FieldMap = {
-    id: UUIDType(),
-    foo: StringType(),
-  };
+  fields: Field[] = [
+    UUIDType({
+      name: "id",
+    }),
+    StringType({
+      name: "foo",
+    }),
+  ];
 }
 const viewer = new LoggedOutViewer();
 const schema = new UserSchema();
@@ -106,8 +110,6 @@ function getUserCreateBuilder(): SimpleBuilder<User> {
       ["id", "{id}"],
       ["foo", "bar"],
     ]),
-    WriteOperation.Insert,
-    null,
   );
 }
 

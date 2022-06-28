@@ -13,12 +13,12 @@ export class JSONField extends BaseField implements Field {
     dbType: DBType.JSON,
   };
 
-  constructor(jsonb: boolean, private options?: JSONOptions) {
+  constructor(jsonb: boolean, private options: JSONOptions) {
     super();
     if (jsonb) {
       this.type.dbType = DBType.JSONB;
     }
-    if (options?.importType) {
+    if (options.importType) {
       this.type.importType = options.importType;
     }
   }
@@ -28,27 +28,27 @@ export class JSONField extends BaseField implements Field {
   }
 
   valid(val: any): boolean {
-    if (this.options?.validator) {
+    if (this.options.validator) {
       return this.options.validator(val);
     }
     return true;
   }
 }
 
-export function JSONType(options?: JSONOptions): JSONField {
+export function JSONType(options: JSONOptions): JSONField {
   let result = new JSONField(false, options);
   return Object.assign(result, options);
 }
 
-export function JSONBType(options?: JSONOptions): JSONField {
+export function JSONBType(options: JSONOptions): JSONField {
   let result = new JSONField(true, options);
   return Object.assign(result, options);
 }
 
-export function JSONBListType(options?: JSONOptions) {
+export function JSONBListType(options: JSONOptions) {
   return new ListField(JSONBType(options), options);
 }
 
-export function JSONListType(options?: JSONOptions) {
+export function JSONListType(options: JSONOptions) {
   return new ListField(JSONType(options), options);
 }

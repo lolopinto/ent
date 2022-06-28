@@ -27,16 +27,6 @@ import {
 import { NodeType, UserToEventsQuery } from "src/ent/internal";
 import schema from "src/schema/user";
 
-interface UserDBData {
-  id: ID;
-  created_at: Date;
-  updated_at: Date;
-  first_name: string;
-  last_name: string;
-  email_address: string;
-  password: string;
-}
-
 export class UserBase {
   readonly nodeType = NodeType.User;
   readonly id: ID;
@@ -87,12 +77,12 @@ export class UserBase {
     this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
-  ): Promise<Map<ID, T>> {
+  ): Promise<T[]> {
     return (await loadEnts(
       viewer,
       UserBase.loaderOptions.apply(this),
       ...ids,
-    )) as Map<ID, T>;
+    )) as T[];
   }
 
   static async loadCustom<T extends UserBase>(
@@ -111,36 +101,28 @@ export class UserBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<UserDBData[]> {
-    return (await loadCustomData(
-      UserBase.loaderOptions.apply(this),
-      query,
-      context,
-    )) as UserDBData[];
+  ): Promise<Data[]> {
+    return loadCustomData(UserBase.loaderOptions.apply(this), query, context);
   }
 
   static async loadRawData<T extends UserBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<UserDBData | null> {
-    const row = await userLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row as UserDBData;
+  ): Promise<Data | null> {
+    return userLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends UserBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<UserDBData> {
+  ): Promise<Data> {
     const row = await userLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as UserDBData;
+    return row;
   }
 
   static async loadFromEmailAddress<T extends UserBase>(
@@ -180,14 +162,8 @@ export class UserBase {
     this: new (viewer: Viewer, data: Data) => T,
     emailAddress: string,
     context?: Context,
-  ): Promise<UserDBData | null> {
-    const row = await userEmailAddressLoader
-      .createLoader(context)
-      .load(emailAddress);
-    if (!row) {
-      return null;
-    }
-    return row as UserDBData;
+  ): Promise<Data | null> {
+    return userEmailAddressLoader.createLoader(context).load(emailAddress);
   }
 
   static loaderOptions<T extends UserBase>(

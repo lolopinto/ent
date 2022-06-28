@@ -1,4 +1,4 @@
-{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data"  "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData" "applyPrivacyPolicy" "Ent"}}
+{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData" "applyPrivacyPolicy"}}
 {{ reserveImport .Package.SchemaPackagePath "Field" "getFields" "getFieldsWithPrivacy"}}
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
 {{ reserveImport "src/ent/generated/loadAny" "loadEntByType" "loadEntXByType"}}
@@ -6,10 +6,6 @@
 
 {{ $privacyCfg := .PrivacyConfig -}}
 {{ $cfg := .CodePath -}}
-{{ $schema := .Schema -}}
-{{$viewerInfo := $cfg.GetTemplatizedViewer -}}
-{{ reserveImportPath $viewerInfo.GetImportPath false -}}
-{{$viewerType := useImport $viewerInfo.GetImport -}}
 
 {{with .NodeData -}}
 {{$loaderInfo := printf "%sLoaderInfo" .NodeInstance -}}
@@ -22,16 +18,18 @@
   {{ end }}
 {{ end -}}
 
-{{ range .GetImportsForBaseFile $schema -}} 
+{{ range .GetImportsForBaseFile -}} 
   {{ reserveImportPath . false -}}
 {{ end}}
 
+{{$viewerType := useImport "Viewer"}}
 {{$idType := useImport "ID" }}
+{{$dataType := useImport "Data" }}
 {{$this := .}}
 
 {{$baseClass := printf "%sBase" .Node -}}
-{{$ignore := useImport "Data" -}}
-{{$thisType := printf ("new (viewer: %s, data: Data) => T") $viewerType}}
+{{$constructor := "arg: new (viewer: Viewer, data: Data) => T"}}
+{{$thisType := "new (viewer: Viewer, data: Data) => T"}}
 
 {{ range .GetTSEnums -}}
   {{if not .Imported -}}
@@ -40,38 +38,7 @@
 {{ end}}
 {{$nodeData := .}}
 
-{{$dataType := printf "%sDBData" .Node -}}
-
-interface {{$dataType}} {
-  {{range $field := .FieldInfo.Fields -}}
-    {{ range $field.GetTsTypeImports -}}
-      {{ if ($nodeData.ForeignImport .Import) -}}
-        {{ reserveImportPath . false -}}
-      {{end -}}
-      {{$typ := useImportMaybe .Import -}}
-    {{end -}}
-
-    {{$field.GetDbColName}}: {{$field.TsType}};
-  {{ end -}}
-}
-
-
-{{$hasMixins := .HasMixins -}}
-{{$mixinInfo := .GetMixinInfo $schema -}}
-
-export class {{$baseClass}} 
-{{ if $hasMixins -}}
-  {{ range $mixinInfo.Imports -}}
-    {{ $ignore := useImport .Import -}}
-  {{end -}}
-  extends {{$mixinInfo.Extends }}
-{{ end -}}
-
-implements {{useImport "Ent"}}<{{$viewerType}}> 
-{{ if $mixinInfo.Implements }}
-  , {{$mixinInfo.Implements}}
-{{ end -}}
-{
+export class {{$baseClass}} {
 
   readonly nodeType = {{useImport "NodeType"}}.{{.Node}};
   {{range $field := .FieldInfo.Fields -}}
@@ -81,41 +48,31 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
       {{end -}}
       {{$typ := useImportMaybe .Import -}}
     {{end -}}
-    {{ if not ($schema.PatternFieldWithMixin $field) -}}
-      {{ if $field.Private $cfg -}}
-        protected readonly {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
-      {{ else -}}
-        readonly {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
-      {{end -}}
-    {{ end -}}
+    {{ if $field.Private $cfg -}}
+      protected readonly {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
+    {{ else -}}
+      readonly {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
+    {{end -}}
   {{end}}
 
-  constructor(public viewer: {{$viewerType}}, protected data:Data) {
-    {{ if $hasMixins -}}
-      // @ts-ignore pass to mixin
-      super(viewer, data);
-    {{ end -}}
+  constructor(public viewer: {{$viewerType}}, protected data:{{$dataType}}) {
     {{range $field := .FieldInfo.Fields -}}
-      {{ if not ($schema.PatternFieldWithMixin $field) -}}
-        {{$val := printf "data.%s" $field.GetDbColName -}}
-        {{$convertType := convertFunc ($field.GetTSFieldType $cfg) -}}
-        {{if $convertType -}} 
-          {{/* could be BigInt which isn't reserved */ -}}
-          this.{{$field.TsFieldName $cfg}} = {{useImportMaybe $convertType}}({{$val}});
-        {{ else -}}
-          this.{{$field.TsFieldName $cfg}} = {{$val}};
-        {{end -}}
-      {{ end -}}
+      {{$val := printf "data.%s" $field.GetDbColName -}}
+      {{$convertType := convertFunc ($field.GetTSFieldType $cfg) -}}
+      {{if $convertType -}} 
+        {{/* could be BigInt which isn't reserved */ -}}
+        this.{{$field.TsFieldName $cfg}} = {{useImportMaybe $convertType}}({{$val}});
+      {{ else -}}
+        this.{{$field.TsFieldName $cfg}} = {{$val}};
+      {{end -}}
     {{end}}
   }
-  
-  getPrivacyPolicy(): {{useImport "PrivacyPolicy"}}<this, {{$viewerType}}> {
-    {{ if $privacyCfg.Class }}
-      return new {{useImport $privacyCfg.PolicyName}}();
-    {{ else }}
-      return {{useImport $privacyCfg.PolicyName}};
-    {{ end }}
-  }
+
+  {{ if $privacyCfg.Class }}
+    privacyPolicy: {{useImport "PrivacyPolicy"}} = new {{useImport $privacyCfg.PolicyName}}();
+  {{ else }}
+    privacyPolicy: {{useImport "PrivacyPolicy"}} = {{useImport $privacyCfg.PolicyName}};
+  {{ end }}
 
   {{range $field := .FieldInfo.Fields -}}
     {{ if $field.HasAsyncAccessor $cfg -}}
@@ -126,7 +83,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
             return null;
           }
         {{ end -}}
-        const m = {{useImport "getFieldsWithPrivacy"}}({{useImport "schema"}},{{useImport $loaderInfo}}.fieldInfo);
+        const m = {{useImport "getFieldsWithPrivacy"}}({{useImport "schema"}});
         const p = m.get("{{$field.GetDbColName}}");
         if (!p) {
           throw new Error(`couldn't get field privacy policy for {{$field.TSPublicAPIName}}`);
@@ -206,12 +163,12 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     this: {{$thisType}},
     viewer: {{$viewerType}},
     ...ids: {{$idType}}[]
-  ): Promise<Map<ID, T>> {
+  ): Promise<T[]> {
     return await {{useImport "loadEnts"}}(
       viewer, 
       {{$baseClass}}.loaderOptions.apply(this), 
       ...ids,
-    ) as Map<ID, T>;
+    ) as T[];
   }
 
   static async loadCustom<T extends {{$baseClass}}>(
@@ -230,12 +187,12 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     this: {{$thisType}},
     query: {{useImport "CustomQuery"}},
     context?: {{useImport "Context"}}
-  ): Promise<{{$dataType}}[]> {
-    return  await {{useImport "loadCustomData"}}(
+  ): Promise<Data[]> {
+    return {{useImport "loadCustomData"}}(
       {{$baseClass}}.loaderOptions.apply(this),
       query,
       context,
-    ) as {{$dataType}}[];
+    );
   }
 
   static async loadRawData<T extends {{$baseClass}}>(
@@ -243,11 +200,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     id: ID,
     context?: {{useImport "Context"}},
   ): Promise<{{$dataType}} | null> {
-    const row = await {{useImport $loaderName}}.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row as {{$dataType}};
+    return {{useImport $loaderName}}.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends {{$baseClass}}>(
@@ -259,7 +212,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as {{$dataType}};
+    return row;
   }
 
 
@@ -283,7 +236,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
 
       static async loadFrom{{$field.CamelCaseName}}X<T extends {{$baseClass}}>(
         this: {{$thisType}},
-        viewer: {{$viewerType}},
+        viewer: Viewer,
         {{$field.TsFieldName $cfg}}: {{$field.GetNotNullableTsType}},
       ): Promise<T> {
         return await {{useImport "loadEntXViaKey"}}(
@@ -310,18 +263,14 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
         {{$field.TsFieldName $cfg}}: {{$field.GetNotNullableTsType}},
         context?: {{useImport "Context"}},
       ): Promise<{{$dataType}} | null> {
-        const row = await {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName $cfg}});
-        if (!row) {
-          return null;
-        }
-        return row as {{$dataType}};
+        return {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName $cfg}});
       }
     {{ else if $field.QueryFromEnt -}}
       {{$queryName := useImport ($this.GetFieldQueryName $field) -}}
       static queryFrom{{$field.QueryFromEntName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         viewer: {{$viewerType}},
-        ent: {{useImport "Ent"}}<{{$viewerType}}>,
+        ent: {{useImport "Ent"}},
       ): {{$queryName}} {
         return {{$queryName}}.query(viewer, ent);
       }
@@ -332,14 +281,14 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
 
   static loaderOptions<T extends {{$baseClass}}>(
     this: new (viewer: {{$viewerType}}, data: Data) => T,
-  ): {{useImport "LoadEntOptions"}}<T, {{$viewerType}}> {
+  ): {{useImport "LoadEntOptions"}}<T> {
     return {
       tableName: {{useImport $loaderInfo}}.tableName,
       fields: {{useImport $loaderInfo}}.fields,
       ent: this,
       loaderFactory: {{useImport $loaderName}},
       {{if .OnEntLoadFieldPrivacy $cfg -}}
-        fieldPrivacy: {{useImport "getFieldsWithPrivacy"}}({{useImport "schema"}}, {{useImport $loaderInfo}}.fieldInfo),
+        fieldPrivacy: {{useImport "getFieldsWithPrivacy"}}({{useImport "schema"}}),
       {{end -}}
     };
   }
@@ -486,21 +435,19 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
           if (!this.{{$edge.TSFieldName}}) {
             return null;
           } 
-          const ents = await {{useImport "loadEnts"}}(
+          return {{useImport "loadEnts"}}(
             this.viewer, 
             {{useImport $edgeNode}}.loaderOptions(),
             ...this.{{$edge.TSFieldName}},
           );
-          return Array.from(ents.values());
         }
       {{ else -}}
-        async load{{$edgeName}}(): Promise<{{useImport $edgeNode}}[]> {
-          const ents = await {{useImport "loadEnts"}}(
+        load{{$edgeName}}(): Promise<{{useImport $edgeNode}}[]> {
+          return {{useImport "loadEnts"}}(
             this.viewer, 
             {{useImport $edgeNode}}.loaderOptions(),
             ...this.{{$edge.TSFieldName}},
           );
-          return Array.from(ents.values());
         }
       {{ end -}}
     {{ end -}}

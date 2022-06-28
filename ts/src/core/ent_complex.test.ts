@@ -1,21 +1,15 @@
-import {
-  User,
-  SimpleAction,
-  getTableName,
-  getFieldInfo,
-} from "../testutils/builder";
+import { User, SimpleAction, getTableName } from "../testutils/builder";
 import {
   BaseEntSchema,
   BooleanType,
   EnumType,
+  Field,
   JSONBType,
   StringType,
   UUIDType,
   getFields,
   getFieldsWithPrivacy,
   getStorageKey,
-  FieldMap,
-  Schema,
 } from "../schema";
 import {
   AllowIfViewerInboundEdgeExistsRule,
@@ -148,131 +142,150 @@ const sharedPolicyLoadEnt: PrivacyPolicy = {
 class UserSchema extends BaseEntSchema {
   ent = User;
 
-  fields: FieldMap = {
-    firstName: StringType({
+  fields: Field[] = [
+    StringType({
+      name: "firstName",
       privacyPolicy: sharedPolicy,
     }),
-    lastName: StringType({
+    StringType({
+      name: "lastName",
       privacyPolicy: sharedPolicy,
     }),
-    emailAddress: StringType({
+    StringType({
+      name: "emailAddress",
       privacyPolicy: sharedPolicy,
     }),
-    phoneNumber: StringType({
+    StringType({
+      name: "phoneNumber",
       privacyPolicy: sharedPolicy,
     }),
-    bio: StringType({
+    StringType({
+      name: "bio",
       privacyPolicy: sharedPolicy,
     }),
-    password: StringType({
+    StringType({
+      name: "password",
       private: true,
       hideFromGraphQL: true,
       privacyPolicy: AlwaysDenyPrivacyPolicy,
     }),
-    accountStatus: EnumType({
+    EnumType({
+      name: "accountStatus",
       nullable: true,
       values: ["UNVERIFIED", "VERIFIED", "DEACTIVATED", "DISABLED"],
       defaultValueOnCreate: () => "UNVERIFIED",
       privacyPolicy: sharedPolicy,
     }),
-    emailVerified: BooleanType({
+    BooleanType({
+      name: "emailVerified",
       hideFromGraphQL: true,
       serverDefault: "FALSE",
       defaultValueOnCreate: () => false,
       privacyPolicy: sharedPolicy,
     }),
-    birthday: StringType({
+    StringType({
+      name: "birthday",
       privacyPolicy: sharedPolicy,
     }),
-    prefs: JSONBType({
+    JSONBType({
+      name: "prefs",
       nullable: true,
       privacyPolicy: sharedPolicy,
     }),
-    foo_id: UUIDType({
+    UUIDType({
+      name: "foo_id",
       nullable: true,
       privacyPolicy: sharedPolicy,
     }),
-    bar_id: UUIDType({
+    UUIDType({
+      name: "bar_id",
       nullable: true,
       privacyPolicy: sharedPolicy,
     }),
-    baz_id: UUIDType({
+    UUIDType({
+      name: "baz_id",
       nullable: true,
       privacyPolicy: sharedPolicy,
     }),
-  };
+  ];
 }
 
 // basically same as UserSchema but more complicated privacy policy
 class AccountSchema extends BaseEntSchema {
   ent = User;
 
-  fields: FieldMap = {
-    firstName: StringType({
+  fields: Field[] = [
+    StringType({
+      name: "firstName",
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-    lastName: StringType({
+    StringType({
+      name: "lastName",
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-    emailAddress: StringType({
+    StringType({
+      name: "emailAddress",
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-    phoneNumber: StringType({
+    StringType({
+      name: "phoneNumber",
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-    bio: StringType({
+    StringType({
+      name: "bio",
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-    password: StringType({
+    StringType({
+      name: "password",
       private: true,
       hideFromGraphQL: true,
       privacyPolicy: AlwaysDenyPrivacyPolicy,
     }),
-    accountStatus: EnumType({
+    EnumType({
+      name: "accountStatus",
       nullable: true,
       values: ["UNVERIFIED", "VERIFIED", "DEACTIVATED", "DISABLED"],
       defaultValueOnCreate: () => "UNVERIFIED",
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-    emailVerified: BooleanType({
+    BooleanType({
+      name: "emailVerified",
       hideFromGraphQL: true,
       serverDefault: "FALSE",
       defaultValueOnCreate: () => false,
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-    birthday: StringType({
+    StringType({
+      name: "birthday",
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-    prefs: JSONBType({
+    JSONBType({
+      name: "prefs",
       nullable: true,
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-    foo_id: UUIDType({
+    UUIDType({
+      name: "foo_id",
       nullable: true,
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-    bar_id: UUIDType({
+    UUIDType({
+      name: "bar_id",
       nullable: true,
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-    baz_id: UUIDType({
+    UUIDType({
+      name: "baz_id",
       nullable: true,
       privacyPolicy: sharedPolicyLoadEnt,
     }),
-  };
-}
-
-function getCols(schema: Schema) {
-  const fields = getFields(schema);
-  let cols: string[] = [];
-  for (const [k, f] of fields) {
-    cols.push(getStorageKey(f, k));
-  }
-  return cols;
+  ];
 }
 
 const userSchema = new UserSchema();
-const userFields = getCols(userSchema);
+const userFields = Array.from(getFields(userSchema).values()).map(
+  getStorageKey,
+);
 const userTableName = getTableName(userSchema);
 const userLoaderFactory = new ObjectLoaderFactory({
   tableName: userTableName,
@@ -284,11 +297,13 @@ const userLoaderOptions = {
   fields: userFields,
   ent: User,
   loaderFactory: userLoaderFactory,
-  fieldPrivacy: getFieldsWithPrivacy(userSchema, getFieldInfo(userSchema)),
+  fieldPrivacy: getFieldsWithPrivacy(userSchema),
 };
 
 const accountSchema = new AccountSchema();
-const accountFields = getCols(accountSchema);
+const accountFields = Array.from(getFields(userSchema).values()).map(
+  getStorageKey,
+);
 const accountTableName = getTableName(accountSchema);
 const accountLoaderFactory = new ObjectLoaderFactory({
   tableName: accountTableName,
@@ -300,10 +315,7 @@ const accountLoaderOptions = {
   fields: userFields,
   ent: User,
   loaderFactory: accountLoaderFactory,
-  fieldPrivacy: getFieldsWithPrivacy(
-    accountSchema,
-    getFieldInfo(accountSchema),
-  ),
+  fieldPrivacy: getFieldsWithPrivacy(accountSchema),
 };
 
 let tdb: TempDB;
@@ -336,7 +348,7 @@ afterAll(async () => {
 });
 
 loadConfig({
-  // log: "query",
+  //  log: "query",
 });
 
 async function createUser(email: string) {
@@ -353,7 +365,6 @@ async function createUser(email: string) {
       ["birthday", "jan 1"],
     ]),
     WriteOperation.Insert,
-    null,
   );
   return action.saveX();
 }
@@ -372,7 +383,6 @@ async function createAccount(email: string) {
       ["birthday", "jan 1"],
     ]),
     WriteOperation.Insert,
-    null,
   );
   return action.saveX();
 }

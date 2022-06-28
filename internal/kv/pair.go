@@ -26,8 +26,6 @@ func NewObjectFromPairs(p ...Pair) Object {
 type Object struct {
 	list []Pair
 	imps []*Import
-	// if no children and true, doesn't render the {}
-	OptionalCurly bool
 }
 
 func (o *Object) Append(p ...Pair) {
@@ -61,10 +59,7 @@ func (o *Object) GetImports() []*Import {
 
 func (o *Object) String() string {
 	var sb strings.Builder
-	renderCurly := len(o.list) > 0 || (len(o.list) == 0 && !o.OptionalCurly)
-	if renderCurly {
-		sb.WriteString("{")
-	}
+	sb.WriteString("{")
 	for idx, v := range o.list {
 		if idx != 0 {
 			sb.WriteString(", ")
@@ -73,9 +68,7 @@ func (o *Object) String() string {
 		sb.WriteString(": ")
 		sb.WriteString(v.Value)
 	}
-	if renderCurly {
-		sb.WriteString("}")
-	}
+	sb.WriteString("}")
 	return sb.String()
 }
 

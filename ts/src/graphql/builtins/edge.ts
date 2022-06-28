@@ -7,10 +7,10 @@ export const GraphQLEdgeInterface = new GraphQLInterfaceType({
   description: "edge interface",
   fields: () => ({
     node: {
-      type: new GraphQLNonNull(GraphQLNodeInterface),
+      type: GraphQLNonNull(GraphQLNodeInterface),
     },
     cursor: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
   }),
 });

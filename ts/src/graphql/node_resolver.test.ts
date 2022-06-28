@@ -204,7 +204,7 @@ function commonTests() {
     const vc = new IDViewer(user.id);
     const builder = new SimpleBuilder(
       vc,
-      FakeUserSchema,
+      new FakeUserSchema(),
       new Map(),
       WriteOperation.Edit,
       user,
@@ -294,7 +294,7 @@ function commonTests() {
       name: "User",
       fields: {
         id: {
-          type: new GraphQLNonNull(GraphQLID),
+          type: GraphQLNonNull(GraphQLID),
           resolve: nodeIDEncoder,
         },
         firstName: {
@@ -314,7 +314,7 @@ function commonTests() {
       name: "Viewer",
       fields: {
         user: {
-          type: new GraphQLNonNull(userType),
+          type: GraphQLNonNull(userType),
           resolve: (_source, {}, context: RequestContext) => {
             const v = context.getViewer();
             if (!v.viewerID) {
@@ -333,7 +333,7 @@ function commonTests() {
         node: {
           args: {
             id: {
-              type: new GraphQLNonNull(GraphQLID),
+              type: GraphQLNonNull(GraphQLID),
             },
           },
           type: GraphQLNodeInterface,

@@ -13,7 +13,10 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { AuthCode, Guest } from "src/ent/";
-import { AuthCodeBuilder } from "src/ent/auth_code/actions/generated/auth_code_builder";
+import {
+  AuthCodeBuilder,
+  AuthCodeInput,
+} from "src/ent/auth_code/actions/generated/auth_code_builder";
 
 export interface AuthCodeCreateInput {
   code: string;
@@ -22,11 +25,8 @@ export interface AuthCodeCreateInput {
   sentCode?: boolean;
 }
 
-export class CreateAuthCodeActionBase
-  implements
-    Action<AuthCode, AuthCodeBuilder<AuthCodeCreateInput>, AuthCodeCreateInput>
-{
-  public readonly builder: AuthCodeBuilder<AuthCodeCreateInput>;
+export class CreateAuthCodeActionBase implements Action<AuthCode> {
+  public readonly builder: AuthCodeBuilder;
   public readonly viewer: Viewer;
   protected input: AuthCodeCreateInput;
 
@@ -40,11 +40,11 @@ export class CreateAuthCodeActionBase
     );
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<AuthCode> {
+  getPrivacyPolicy(): PrivacyPolicy {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): AuthCodeCreateInput {
+  getInput(): AuthCodeInput {
     return this.input;
   }
 

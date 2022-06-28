@@ -13,9 +13,9 @@ import (
 
 // Imports keeps track of imports in a generated typescript file
 type Imports struct {
-	importMap   map[string]*importInfo
+	exportMap   map[string]*importInfo
 	pathMap     map[string]*importInfo
-	usedImports map[string]bool
+	usedExports map[string]bool
 	imports     []*importInfo
 	exports     []*exportInfo
 	filePath    string
@@ -32,8 +32,8 @@ type Config interface {
 // filePath is path that's currently being written
 func NewImports(cfg Config, filePath string) *Imports {
 	return &Imports{
-		importMap:   make(map[string]*importInfo),
-		usedImports: make(map[string]bool),
+		exportMap:   make(map[string]*importInfo),
+		usedExports: make(map[string]bool),
 		pathMap:     make(map[string]*importInfo),
 		filePath:    filePath,
 		errorPath:   getErrorPath(cfg, filePath),
@@ -41,130 +41,79 @@ func NewImports(cfg Config, filePath string) *Imports {
 	}
 }
 
-// Reserve reserves a path and list of imports
-func (imps *Imports) Reserve(path string, imports ...string) (string, error) {
-	return imps.reserve(&importInfoInput{
-		path:    path,
-		imports: imports,
-	})
+// Reserve reserves a path and list of exports
+func (imps *Imports) Reserve(path string, exports ...string) (string, error) {
+	return imps.reserve(path, "", false, exports)
 }
 
 // ReserveDefault reserves the default export from a path and a list of exports
-func (imps *Imports) ReserveDefault(path, defaultImport string, imports ...string) (string, error) {
-	return imps.reserve(&importInfoInput{
-		path:          path,
-		defaultImport: defaultImport,
-		imports:       imports,
-	})
+func (imps *Imports) ReserveDefault(path, defaultExport string, exports ...string) (string, error) {
+	return imps.reserve(path, defaultExport, false, exports)
 }
 
 // ReserveAll reserves importing all from a path as the alias
 func (imps *Imports) ReserveAll(path, as string) (string, error) {
-	return imps.reserve(&importInfoInput{
-		path:          path,
-		defaultImport: "",
-		importAll:     true,
-		imports:       []string{as},
-	})
+	return imps.reserve(path, "", true, []string{as})
 }
 
 // ReserveImportPath takes an instance of importPath and reserves importing from it
 // should be default eventually
 func (imps *Imports) ReserveImportPath(imp *ImportPath, external bool) (string, error) {
 	var defaultExport string
-	var imports []string
+	var exports []string
 
-	// we keep the complexity hidden in here so that callsites can just call useImport .Import
-	impStr := imp.Import
-	var alias string
-	if imp.OriginalImport != "" {
-		alias = impStr
-		impStr = imp.OriginalImport
-	}
 	if imp.DefaultImport {
-		defaultExport = impStr
+		defaultExport = imp.Import
 	} else {
-		imports = append(imports, impStr)
+		exports = append(exports, imp.Import)
 	}
 	importPath := imp.ImportPath
 	if external && imp.TransformedForExternalEnt {
 		importPath = codepath.GetExternalImportPath()
 	}
-
-	return imps.reserve(&importInfoInput{
-		path:          importPath,
-		defaultImport: defaultExport,
-		alias:         alias,
-		imports:       imports,
-	})
+	return imps.reserve(importPath, defaultExport, false, exports)
 }
 
-type importInfoInput struct {
-	path          string
-	defaultImport string
-	importAll     bool
-	imports       []string
-	// only works when there's 1 import
-	alias string
-}
+func (imps *Imports) reserve(path string, defaultExport string, importAll bool, exports []string) (string, error) {
+	var imp *importInfo
+	imp = imps.pathMap[path]
 
-func (imps *Imports) reserve(input *importInfoInput) (string, error) {
-	if input.alias != "" && len(input.imports) > 1 {
-		return "", fmt.Errorf("cannot have an alias with multiple imports")
+	if defaultExport != "" {
+		exports = append(exports, defaultExport)
 	}
-
-	if input.alias != "" && input.defaultImport != "" {
-		return "", fmt.Errorf("cannot have an alias and default import at the sme time")
-	}
-
-	var imports []importedItem
-	for _, v := range input.imports {
-		imports = append(imports, importedItem{
-			name:  v,
-			alias: input.alias,
-		})
-	}
-	if input.defaultImport != "" {
-		imports = append(imports, importedItem{
-			name: input.defaultImport,
-		})
-	}
-
-	imp := imps.pathMap[input.path]
 
 	// not there, create a new one...
 	if imp == nil {
 		imp = &importInfo{
-			path:          input.path,
-			imports:       imports,
-			importAll:     input.importAll,
-			defaultExport: input.defaultImport,
+			path:          path,
+			exports:       exports,
+			importAll:     importAll,
+			defaultExport: defaultExport,
 		}
 
-		imps.pathMap[input.path] = imp
+		imps.pathMap[path] = imp
 		imps.imports = append(imps.imports, imp)
 
 	} else {
 		// update existing one...
-		if input.defaultImport != "" && imp.defaultExport != input.defaultImport && imp.defaultExport != "" {
-			return "", fmt.Errorf("can't set %s as new default export for %s. %s already default export", input.defaultImport, input.path, imp.defaultExport)
+		if defaultExport != "" && imp.defaultExport != defaultExport && imp.defaultExport != "" {
+			return "", fmt.Errorf("can't set %s as new default export for %s. %s already default export", defaultExport, path, imp.defaultExport)
 		}
-		if input.defaultImport != "" {
-			imp.defaultExport = input.defaultImport
+		if defaultExport != "" {
+			imp.defaultExport = defaultExport
 		}
-		imp.imports = append(imp.imports, imports...)
-		if input.importAll {
+		imp.exports = append(imp.exports, exports...)
+		if importAll {
 			imp.importAll = true
 		}
 	}
 
-	for _, item := range imports {
-		ident := item.getIdent()
-		existingImport := imps.importMap[ident]
+	for _, export := range exports {
+		existingImport := imps.exportMap[export]
 		if existingImport != nil && existingImport != imp {
-			return "", fmt.Errorf("%s is already imported from path %s. duplicate path: %s", ident, existingImport.path, imp.path)
+			return "", fmt.Errorf("%s is already exported from path %s. duplicate path: %s", export, existingImport.path, imp.path)
 		}
-		imps.importMap[ident] = imp
+		imps.exportMap[export] = imp
 	}
 	return "", nil
 }
@@ -225,23 +174,23 @@ func dict(values ...interface{}) (map[string]interface{}, error) {
 }
 
 // Use makes use of an export and ensures that's imported
-func (imps *Imports) Use(impItem string) (string, error) {
-	if imps.importMap[impItem] == nil {
-		return "", fmt.Errorf("tried to use import %s at path %s even though it was never reserved", impItem, imps.errorPath)
+func (imps *Imports) Use(export string) (string, error) {
+	if imps.exportMap[export] == nil {
+		return "", fmt.Errorf("tried to use export %s at path %s even though it was never reserved", export, imps.errorPath)
 	}
 
-	imps.usedImports[impItem] = true
-	return impItem, nil
+	imps.usedExports[export] = true
+	return export, nil
 }
 
 func (imps *Imports) UseMaybe(export string) (string, error) {
 	// nothing to do here
 	// for scenarios where there's a local import
-	if imps.importMap[export] == nil {
+	if imps.exportMap[export] == nil {
 		return export, nil
 	}
 
-	imps.usedImports[export] = true
+	imps.usedExports[export] = true
 	return export, nil
 }
 
@@ -301,7 +250,7 @@ func (imps *Imports) String() (string, error) {
 
 	for _, imp := range imps.imports {
 
-		str, err := imp.String(imps.cfg, imps.filePath, imps.usedImports)
+		str, err := imp.String(imps.cfg, imps.filePath, imps.usedExports)
 
 		if err != nil {
 			return "", err
@@ -319,86 +268,58 @@ func (imps *Imports) String() (string, error) {
 	return sb.String(), nil
 }
 
-type importedItem struct {
-	name  string
-	alias string
-}
-
-func (i importedItem) getIdent() string {
-	if i.alias != "" {
-		return i.alias
-	}
-	return i.name
-}
-
-func (i importedItem) String() string {
-	if i.alias != "" {
-		return fmt.Sprintf("%s as %s", i.name, i.alias)
-	}
-	return i.name
-}
-
 type importInfo struct {
 	path          string
-	imports       []importedItem
+	exports       []string
 	defaultExport string
 	importAll     bool
 }
 
 func (imp *importInfo) String(cfg Config, filePath string, usedExportsMap map[string]bool) (string, error) {
-	var usedImports []importedItem
+	var usedExports []string
 	var defaultExport string
 	seen := make(map[string]bool)
-	for _, item := range imp.imports {
-		ident := item.getIdent()
-		if !usedExportsMap[ident] {
+	for _, export := range imp.exports {
+		if !usedExportsMap[export] {
 			continue
 		}
-		if seen[ident] {
+		if seen[export] {
 			continue
 		}
 
 		// to keep track of duplicates
-		seen[ident] = true
+		seen[export] = true
 
-		if imp.defaultExport == ident && imp.defaultExport != "" {
+		if imp.defaultExport == export && imp.defaultExport != "" {
 			// default export
 			defaultExport = imp.defaultExport
 		} else {
 			// no default export nothing to do here
-			usedImports = append(usedImports, item)
+			usedExports = append(usedExports, export)
 		}
 	}
 
 	// not using anything here, we're done with this one
-	if len(usedImports) == 0 && defaultExport == "" {
+	if len(usedExports) == 0 && defaultExport == "" {
 		return "", nil
 	}
 
 	var imports []string
 
 	if imp.importAll {
-		if defaultExport != "" || len(usedImports) != 1 {
+		if defaultExport != "" || len(usedExports) != 1 {
 			return "", fmt.Errorf("when importing all, expect 1 export. something broken for %s", imp.path)
 		}
 
-		imports = append(imports, fmt.Sprintf("* as %s", usedImports[0]))
+		imports = append(imports, fmt.Sprintf("* as %s", usedExports[0]))
 
 	} else {
 		if defaultExport != "" {
 			imports = append(imports, defaultExport)
 		}
-		if len(usedImports) != 0 {
-			sort.Slice(usedImports, func(i, j int) bool {
-				idx := strings.Compare(usedImports[i].getIdent(), usedImports[j].getIdent())
-				return idx < 0
-			})
-
-			imps := make([]string, len(usedImports))
-			for i, imp := range usedImports {
-				imps[i] = imp.String()
-			}
-			imports = append(imports, fmt.Sprintf("{%s}", strings.Join(imps, ", ")))
+		if len(usedExports) != 0 {
+			sort.Strings(usedExports)
+			imports = append(imports, fmt.Sprintf("{%s}", strings.Join(usedExports, ", ")))
 		}
 	}
 	sort.Strings(imports)

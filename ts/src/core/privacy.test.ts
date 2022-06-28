@@ -37,9 +37,7 @@ const loggedOutViewer = new LoggedOutViewer();
 class User implements Ent {
   id: ID;
   accountID: string;
-  getPrivacyPolicy(): PrivacyPolicy<this> {
-    return { rules: [] };
-  }
+  privacyPolicy: PrivacyPolicy;
   nodeType = "User";
   // TODO add policy here
   constructor(public viewer: Viewer, data: Data) {
@@ -54,9 +52,7 @@ const getUser = function (
   accountID: string = "2",
 ): User {
   const user = new User(v, { id });
-  user.getPrivacyPolicy = () => {
-    return privacyPolicy;
-  };
+  user.privacyPolicy = privacyPolicy;
   user.accountID = accountID;
   return user;
 };
@@ -289,11 +285,9 @@ async function createUser() {
 }
 
 class DefinedUser extends User {
-  getPrivacyPolicy(): PrivacyPolicy<this> {
-    return {
-      rules: [AllowIfViewerRule, AlwaysDenyRule],
-    };
-  }
+  privacyPolicy: PrivacyPolicy = {
+    rules: [AllowIfViewerRule, AlwaysDenyRule],
+  };
   static loaderOptions(): LoadEntOptions<DefinedUser> {
     return {
       tableName: "users",

@@ -1,10 +1,16 @@
-import { AssocEdge, AssocEdgeInput } from "@snowtop/ent";
+import {
+  Viewer,
+  AssocEdge,
+  AssocEdgeInput,
+  IDViewer,
+  LoggedOutViewer,
+} from "@snowtop/ent";
 import {
   User,
   Contact,
   Event,
-  UserDaysOff,
-  UserPreferredShift,
+  DaysOff,
+  PreferredShift,
   ArticleToCommentsQuery,
 } from "..";
 
@@ -26,26 +32,10 @@ import ConfirmEditEmailAddressAction from "../user/actions/confirm_edit_email_ad
 import EditPhoneNumberAction from "../user/actions/edit_phone_number_action";
 import ConfirmEditPhoneNumberAction from "../user/actions/confirm_edit_phone_number_action";
 import CreateCommentAction from "../comment/actions/create_comment_action";
+import { NotifType } from "../user_prefs";
 import DeleteUserAction2 from "../user/actions/delete_user_action_2";
-import { NotifType } from "../generated/user_prefs_struct";
-import { NotifType2 } from "../generated/user_prefs_struct_2";
-import {
-  EnumUsedInList,
-  UserNestedObjectList,
-} from "../generated/user_nested_object_list";
-import {
-  CatBreed,
-  DogBreed,
-  DogBreedGroup,
-  NestedObjNestedNestedEnum,
-  ObjNestedEnum,
-  RabbitBreed,
-  SuperNestedObjectEnum,
-  UserSuperNestedObject,
-} from "../generated/user_super_nested_object";
-import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
 
-const loggedOutViewer = new LoggedOutExampleViewer();
+const loggedOutViewer = new LoggedOutViewer();
 
 afterAll(async () => {
   FakeLogger.clear();
@@ -64,7 +54,7 @@ async function create(opts: Partial<UserCreateInput>): Promise<User> {
   return await CreateUserAction.create(loggedOutViewer, input).saveX();
 }
 
-class OmniViewer extends ExampleViewer {
+class OmniViewer extends IDViewer {
   isOmniscient(): boolean {
     return true;
   }
@@ -82,7 +72,7 @@ test("create user", async () => {
   expect(await user.emailVerified()).toBeFalsy();
 
   // confirm contact was automatically created
-  let v = new ExampleViewer(user.id);
+  let v = new IDViewer(user.id);
   user = await User.loadX(v, user.id);
   let contacts = await user.queryContacts().queryEnts();
   expect(contacts.length).toBe(1);
@@ -140,7 +130,7 @@ test("edit user", async () => {
     );
   }
 
-  let vc = new ExampleViewer(user.id);
+  let vc = new IDViewer(user.id, { ent: user });
   let editedUser = await EditUserAction.create(vc, user, {
     firstName: "First of his name",
   }).saveX();
@@ -156,7 +146,7 @@ test("edit user. saveXFromID", async () => {
     lastName: "Snow",
   });
 
-  let vc = new ExampleViewer(user.id);
+  let vc = new IDViewer(user.id, { ent: user });
   let editedUser = await EditUserAction.saveXFromID(vc, user.id, {
     firstName: "First of his name",
   });
@@ -179,7 +169,7 @@ test("delete user", async () => {
       /Logged out Viewer does not have permission to delete User/,
     );
   }
-  let vc = new ExampleViewer(user.id);
+  let vc = new IDViewer(user.id, { ent: user });
   await DeleteUserAction.create(vc, user).saveX();
 
   let loadedUser = await User.load(vc, user.id);
@@ -202,7 +192,7 @@ test("delete user 2", async () => {
       /Logged out Viewer does not have permission to delete User/,
     );
   }
-  let vc = new ExampleViewer(user.id);
+  let vc = new IDViewer(user.id, { ent: user });
   await DeleteUserAction2.create(vc, user, { log: true }).saveX();
 
   let loadedUser = await User.load(vc, user.id);
@@ -215,7 +205,7 @@ test("delete user. saveXFromID", async () => {
     lastName: "Snow",
   });
 
-  let vc = new ExampleViewer(user.id);
+  let vc = new IDViewer(user.id, { ent: user });
   await DeleteUserAction.saveXFromID(vc, user.id);
 
   let loadedUser = await User.load(vc, user.id);
@@ -228,7 +218,7 @@ test("delete user 2. saveXFromID", async () => {
     lastName: "Snow",
   });
 
-  let vc = new ExampleViewer(user.id);
+  let vc = new IDViewer(user.id, { ent: user });
   await DeleteUserAction2.saveXFromID(vc, user.id, { log: true });
 
   let loadedUser = await User.load(vc, user.id);
@@ -247,13 +237,19 @@ describe("privacy", () => {
     });
 
     // we only do privacy checks when loading right now...
-    let loadedUser = await User.load(new ExampleViewer(user.id), user.id);
+    let loadedUser = await User.load(
+      new IDViewer(user.id, { ent: user }),
+      user.id,
+    );
     expect(loadedUser).toBeInstanceOf(User);
     expect(loadedUser).not.toBe(null);
     expect(loadedUser?.id).toBe(user.id);
 
     // privacy indicates other user cannot load
-    let loadedUser2 = await User.load(new ExampleViewer(user2.id), user.id);
+    let loadedUser2 = await User.load(
+      new IDViewer(user2.id, { ent: user2 }),
+      user.id,
+    );
     expect(loadedUser2).toBe(null);
   });
 
@@ -267,13 +263,16 @@ describe("privacy", () => {
       lastName: "Targaryen",
     });
 
-    let loadedUser = await User.loadX(new ExampleViewer(user.id), user.id);
+    let loadedUser = await User.loadX(
+      new IDViewer(user.id, { ent: user }),
+      user.id,
+    );
     expect(loadedUser).toBeInstanceOf(User);
     expect(loadedUser.id).toBe(user.id);
 
     try {
       // privacy indicates other user cannot load
-      await User.loadX(new ExampleViewer(user2.id), user.id);
+      await User.loadX(new IDViewer(user2.id, { ent: user2 }), user.id);
       throw new Error("should have thrown exception");
     } catch (e) {}
   });
@@ -376,7 +375,7 @@ test("symmetric edge", async () => {
   const friends = await jon.queryFriends().queryEnts();
   expect(friends.length).toBe(2);
 
-  let vc = new ExampleViewer(jon.id);
+  let vc = new IDViewer(jon.id, { ent: jon });
   // delete all the edges and let's confirm it works
   const action2 = EditUserAction.create(vc, jon, {});
   action2.builder.removeFriend(dany, sam);
@@ -407,7 +406,7 @@ test("inverse edge", async () => {
     firstName: "Jon",
     lastName: "Snow",
   });
-  const action = CreateEventAction.create(new LoggedOutExampleViewer(), {
+  const action = CreateEventAction.create(new LoggedOutViewer(), {
     creatorID: user.id,
     startTime: new Date(),
     name: "fun event",
@@ -443,7 +442,7 @@ test("inverse edge", async () => {
   });
 
   // privacy of event is everyone can see so can load events at end of edge
-  const v = new ExampleViewer(user.id);
+  const v = new IDViewer(user.id);
   const loadedEvent = await Event.load(v, event.id);
   expect(loadedEvent).not.toBe(null);
 
@@ -457,7 +456,7 @@ test("one-way + inverse edge", async () => {
     firstName: "Jon",
     lastName: "Snow",
   });
-  const event = await CreateEventAction.create(new LoggedOutExampleViewer(), {
+  const event = await CreateEventAction.create(new LoggedOutViewer(), {
     creatorID: user.id,
     startTime: new Date(),
     name: "fun event",
@@ -491,10 +490,10 @@ test("loadMultiUsers", async () => {
     lastName: "Tarly",
   });
 
-  const tests: [ExampleViewer, number, string][] = [
+  const tests: [Viewer, number, string][] = [
     [loggedOutViewer, 0, "logged out viewer"],
     [new OmniViewer(jon.id), 3, "omni viewer"],
-    [new ExampleViewer(jon.id), 1, "1 id"],
+    [new IDViewer(jon.id), 1, "1 id"],
   ];
 
   for (const testData of tests) {
@@ -502,9 +501,9 @@ test("loadMultiUsers", async () => {
     const expectedCount = testData[1];
     const users = await User.loadMany(v, jon.id, dany.id, sam.id);
 
-    expect(users.size, testData[2]).toBe(expectedCount);
+    expect(users.length, testData[2]).toBe(expectedCount);
 
-    for (const [_id, user] of users) {
+    for (const user of users) {
       // confirm they're the right type
       expect(user).toBeInstanceOf(User);
     }
@@ -534,7 +533,7 @@ test("loadFromEmailAddress", async () => {
   });
 
   const jonFromHimself = await User.loadFromEmailAddress(
-    new ExampleViewer(jon.id),
+    new IDViewer(jon.id),
     emailAddress,
   );
   expect(jonFromHimself).not.toBe(null);
@@ -542,7 +541,7 @@ test("loadFromEmailAddress", async () => {
   expect(jonFromHimself).toBeInstanceOf(User);
 
   const mustJon = await User.loadFromEmailAddressX(
-    new ExampleViewer(jon.id),
+    new IDViewer(jon.id),
     emailAddress,
   );
   expect(mustJon.id).toBe(jon.id);
@@ -576,7 +575,7 @@ test("uniqueEdge|Node", async () => {
   expect(jon).toBeInstanceOf(User);
   expect(sansa).toBeInstanceOf(User);
 
-  let vc = new ExampleViewer(jon.id);
+  let vc = new IDViewer(jon.id, { ent: jon });
   jon = await User.loadX(vc, jon.id);
 
   // jon was created as his own contact
@@ -584,7 +583,7 @@ test("uniqueEdge|Node", async () => {
   expect(contacts.length).toBe(1);
   let contact = contacts[0];
 
-  let contact2 = await CreateContactAction.create(new ExampleViewer(jon.id), {
+  let contact2 = await CreateContactAction.create(new IDViewer(jon.id), {
     emails: [
       {
         emailAddress: sansa.emailAddress,
@@ -618,7 +617,7 @@ test("uniqueEdge|Node", async () => {
     );
   }
 
-  const v = new ExampleViewer(jon.id);
+  const v = new IDViewer(jon.id);
   const jonFromHimself = await User.loadX(v, jon.id);
   const [jonContact, allContacts] = await Promise.all([
     jonFromHimself.loadSelfContact(),
@@ -629,7 +628,7 @@ test("uniqueEdge|Node", async () => {
   expect(allContacts.length).toBe(2);
 
   // sansa can load jon because friends but can't load his contact
-  const v2 = new ExampleViewer(sansa.id);
+  const v2 = new IDViewer(sansa.id);
   const jonFromSansa = await User.loadX(v2, jon.id);
   const jonContactFromSansa = await jonFromSansa.loadSelfContact();
   expect(jonContactFromSansa).toBe(null);
@@ -673,7 +672,7 @@ describe("edit email", () => {
       lastName: "Snow",
       emailAddress: randomEmail(),
     });
-    let vc = new ExampleViewer(user.id);
+    let vc = new IDViewer(user.id);
 
     try {
       await EditEmailAddressAction.create(vc, user, {
@@ -693,7 +692,7 @@ describe("edit email", () => {
       lastName: "Snow",
       emailAddress: email,
     });
-    let vc = new ExampleViewer(user.id);
+    let vc = new IDViewer(user.id);
 
     const newEmail = randomEmail();
 
@@ -779,7 +778,7 @@ describe("edit phone number", () => {
       emailAddress: randomEmail(),
       phoneNumber: randomPhoneNumber(),
     });
-    let vc = new ExampleViewer(user.id);
+    let vc = new IDViewer(user.id);
 
     try {
       await EditPhoneNumberAction.create(vc, user, {
@@ -800,7 +799,7 @@ describe("edit phone number", () => {
       emailAddress: randomEmail(),
       phoneNumber: phone,
     });
-    let vc = new ExampleViewer(user.id);
+    let vc = new IDViewer(user.id);
 
     const newPhoneNumber = randomPhoneNumber();
 
@@ -966,7 +965,7 @@ test("comments", async () => {
 });
 
 test("jsonb types", async () => {
-  const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {
+  const user = await CreateUserAction.create(new LoggedOutViewer(), {
     firstName: "Jane",
     lastName: "Doe",
     emailAddress: randomEmail(),
@@ -979,11 +978,11 @@ test("jsonb types", async () => {
     prefsList: [
       {
         finishedNux: true,
-        notifTypes: [NotifType2.EMAIL],
+        notifTypes: [NotifType.EMAIL],
       },
       {
         finishedNux: false,
-        notifTypes: [NotifType2.MOBILE],
+        notifTypes: [NotifType.MOBILE],
       },
     ],
   }).saveX();
@@ -1004,211 +1003,59 @@ test("jsonb types", async () => {
 });
 
 test("json type", async () => {
-  const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {
+  const user = await CreateUserAction.create(new LoggedOutViewer(), {
     firstName: "Jane",
     lastName: "Doe",
     emailAddress: randomEmail(),
     phoneNumber: randomPhoneNumber(),
     password: random(),
     prefsDiff: {
+      finishedNux: true,
       type: "finished_nux",
     },
   }).saveX();
   expect(await user.prefsDiff()).toStrictEqual({
+    finishedNux: true,
     type: "finished_nux",
   });
 });
 
-describe("super nested complex", () => {
-  test("super nested", async () => {
-    const obj: UserSuperNestedObject = {
-      uuid: uuidv1(),
-      int: 34,
-      string: "whaa",
-      float: 2.3,
-      bool: false,
-      enum: SuperNestedObjectEnum.Maybe,
-      intList: [7, 8, 9],
-      obj: {
-        nestedBool: false,
-        nestedIntList: [1, 2, 3],
-        nestedUuid: uuidv1(),
-        nestedEnum: ObjNestedEnum.No,
-        nestedString: "stri",
-        nestedInt: 24,
-        nestedStringList: ["hello", "goodbye"],
-        nestedObj: {
-          nestedNestedUuid: uuidv1(),
-          nestedNestedFloat: 4.2,
-          nestedNestedEnum: NestedObjNestedNestedEnum.Maybe,
-          nestedNestedInt: 32,
-          nestedNestedString: "whaa",
-          nestedNestedIntList: [4, 5, 6],
-          nestedNestedStringList: ["sss"],
-        },
-      },
-    };
-    const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {
+test("json type throw new Error", async () => {
+  try {
+    await CreateUserAction.create(new LoggedOutViewer(), {
       firstName: "Jane",
       lastName: "Doe",
       emailAddress: randomEmail(),
       phoneNumber: randomPhoneNumber(),
       password: random(),
-      superNestedObject: obj,
+      prefsDiff: {
+        finishedNux: true,
+      },
     }).saveX();
-    expect(user.superNestedObject).toStrictEqual(obj);
-  });
-
-  test("union. cat", async () => {
-    const obj: UserSuperNestedObject = {
-      uuid: uuidv1(),
-      int: 34,
-      string: "whaa",
-      float: 2.3,
-      bool: false,
-      enum: SuperNestedObjectEnum.Maybe,
-      intList: [7, 8, 9],
-      union: {
-        name: "tabby",
-        birthday: new Date(),
-        breed: CatBreed.Bengal,
-        kitten: true,
-      },
-    };
-    const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {
-      firstName: "Jane",
-      lastName: "Doe",
-      emailAddress: randomEmail(),
-      phoneNumber: randomPhoneNumber(),
-      password: random(),
-      superNestedObject: obj,
-    }).saveX();
-    const formattedObj = {
-      ...obj,
-      union: {
-        ...obj.union,
-        birthday: obj.union?.birthday.toISOString(),
-      },
-    };
-    expect(user.superNestedObject).toStrictEqual(formattedObj);
-  });
-
-  test("union. dog", async () => {
-    const obj: UserSuperNestedObject = {
-      uuid: uuidv1(),
-      int: 34,
-      string: "whaa",
-      float: 2.3,
-      bool: false,
-      enum: SuperNestedObjectEnum.Maybe,
-      intList: [7, 8, 9],
-      union: {
-        name: "scout",
-        birthday: new Date(),
-        breed: DogBreed.GermanShepherd,
-        breedGroup: DogBreedGroup.Herding,
-        puppy: false,
-      },
-    };
-    const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {
-      firstName: "Jane",
-      lastName: "Doe",
-      emailAddress: randomEmail(),
-      phoneNumber: randomPhoneNumber(),
-      password: random(),
-      superNestedObject: obj,
-    }).saveX();
-    const formattedObj = {
-      ...obj,
-      union: {
-        ...obj.union,
-        birthday: obj.union?.birthday.toISOString(),
-      },
-    };
-    expect(user.superNestedObject).toStrictEqual(formattedObj);
-  });
-
-  test("union. rabbit", async () => {
-    const obj: UserSuperNestedObject = {
-      uuid: uuidv1(),
-      int: 34,
-      string: "whaa",
-      float: 2.3,
-      bool: false,
-      enum: SuperNestedObjectEnum.Maybe,
-      intList: [7, 8, 9],
-      union: {
-        name: "hallo",
-        birthday: new Date(),
-        breed: RabbitBreed.AmericanChincilla,
-      },
-    };
-    const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {
-      firstName: "Jane",
-      lastName: "Doe",
-      emailAddress: randomEmail(),
-      phoneNumber: randomPhoneNumber(),
-      password: random(),
-      superNestedObject: obj,
-    }).saveX();
-    const formattedObj = {
-      ...obj,
-      union: {
-        ...obj.union,
-        birthday: obj.union?.birthday.toISOString(),
-      },
-    };
-    expect(user.superNestedObject).toStrictEqual(formattedObj);
-  });
-
-  test("nested list", async () => {
-    const objs: UserNestedObjectList[] = [
-      {
-        type: "foo",
-        enum: EnumUsedInList.Maybe,
-        objects: [
-          {
-            int: 2,
-          },
-          {
-            int: 3,
-          },
-        ],
-      },
-      {
-        type: "bar",
-        enum: EnumUsedInList.No,
-        objects: [],
-      },
-    ];
-    const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {
-      firstName: "Jane",
-      lastName: "Doe",
-      emailAddress: randomEmail(),
-      phoneNumber: randomPhoneNumber(),
-      password: random(),
-      nestedList: objs,
-    }).saveX();
-    expect(user.nestedList).toStrictEqual(objs);
-  });
+    throw new Error("should throw");
+  } catch (err) {
+    expect((err as Error).message).toMatch(
+      /invalid field prefs_diff with value/,
+    );
+  }
 });
 
 test("enum list", async () => {
-  const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {
+  const user = await CreateUserAction.create(new LoggedOutViewer(), {
     firstName: "Jane",
     lastName: "Doe",
     emailAddress: randomEmail(),
     phoneNumber: randomPhoneNumber(),
     password: random(),
-    daysOff: [UserDaysOff.Saturday, UserDaysOff.Sunday],
-    preferredShift: [UserPreferredShift.Afternoon],
+    daysOff: [DaysOff.Saturday, DaysOff.Sunday],
+    preferredShift: [PreferredShift.Afternoon],
   }).saveX();
-  expect(user.daysOff).toEqual([UserDaysOff.Saturday, UserDaysOff.Sunday]);
-  expect(user.preferredShift).toEqual([UserPreferredShift.Afternoon]);
+  expect(user.daysOff).toEqual([DaysOff.Saturday, DaysOff.Sunday]);
+  expect(user.preferredShift).toEqual([PreferredShift.Afternoon]);
 });
 
 test("misc", async () => {
-  const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {
+  const user = await CreateUserAction.create(new LoggedOutViewer(), {
     firstName: "Jane",
     lastName: "Doe",
     emailAddress: randomEmail(),

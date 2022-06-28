@@ -10,7 +10,7 @@ Based on the [schema](/docs/actions/action#schema) with the `edgeAction` propert
 
 First, the base class:
 
-```ts title="src/ent/generated/event/actions/edit_event_rsvp_status_action_base.ts"
+```ts title="src/ent/event/actions/generated/edit_event_rsvp_status_action_base.ts"
 export enum EventRsvpStatusInput {
   Attending = "attending", 
   Declined = "declined", 
@@ -22,20 +22,13 @@ export interface EditEventRsvpStatusInput {
   userID: ID; 
 }
 
-export class EditEventRsvpStatusActionBase 
-  implements
-    Action<
-      Event,
-      EventBuilder<EditEventRsvpStatusInput, Event>,
-      Viewer,
-      EventInput,
-      Event
-{
-  public readonly builder: EventBuilder<EditEventRsvpStatusInput, Event>;
+export class EditEventRsvpStatusActionBase implements Action<Event> {
+  public readonly builder: EventBuilder; 
   public readonly viewer: Viewer; 
-  protected readonly event: Event;
+  protected input: EditEventRsvpStatusInput; 
 
   constructor(viewer: Viewer, event: Event, input: EditEventRsvpStatusInput) {
+
     this.viewer = viewer;
     this.input = input;
     this.builder = new EventBuilder(
@@ -44,11 +37,13 @@ export class EditEventRsvpStatusActionBase
       this,
       event,
     );
-    this.event = event;
+
   }
 
   getPrivacyPolicy(): PrivacyPolicy {
+
     return AllowIfViewerHasIdentityPrivacyPolicy;
+
   }
 }
 
@@ -60,7 +55,7 @@ and then the subclass:
 import {
   EditEventRsvpStatusActionBase,
   EditEventRsvpStatusInput,
-} from "src/ent/generated/event/actions/edit_event_rsvp_status_action_base";
+} from "src/ent/event/actions/generated/edit_event_rsvp_status_action_base";
 
 export { EditEventRsvpStatusInput };
 
@@ -99,6 +94,7 @@ The following GraphQL schema is generated which uses the above API.
 ``` title="src/graphql/generated/schema.gql"
 type Mutation {
   eventRsvpStatusEdit(input: EventRsvpStatusEditInput!): EventRsvpStatusEditPayload!
+
 }
 
 type EventRsvpStatusEditPayload {

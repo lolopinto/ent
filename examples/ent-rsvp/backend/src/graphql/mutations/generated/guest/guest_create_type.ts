@@ -32,16 +32,16 @@ export const GuestCreateInputType = new GraphQLInputObjectType({
   name: "GuestCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     name: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
     eventID: {
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
     },
     emailAddress: {
       type: GraphQLString,
     },
     guestGroupID: {
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
     },
     title: {
       type: GraphQLString,
@@ -53,7 +53,7 @@ export const GuestCreatePayloadType = new GraphQLObjectType({
   name: "GuestCreatePayload",
   fields: (): GraphQLFieldConfigMap<GuestCreatePayload, RequestContext> => ({
     guest: {
-      type: new GraphQLNonNull(GuestType),
+      type: GraphQLNonNull(GuestType),
     },
   }),
 });
@@ -63,11 +63,11 @@ export const GuestCreateType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customGuestCreateInput }
 > = {
-  type: new GraphQLNonNull(GuestCreatePayloadType),
+  type: GraphQLNonNull(GuestCreatePayloadType),
   args: {
     input: {
       description: "",
-      type: new GraphQLNonNull(GuestCreateInputType),
+      type: GraphQLNonNull(GuestCreateInputType),
     },
   },
   resolve: async (

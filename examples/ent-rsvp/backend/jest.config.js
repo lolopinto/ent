@@ -8,10 +8,7 @@ module.exports = {
     // map to src/ so that we don't have relative paths like "./../"
     "^src/(.*)": "<rootDir>/src/$1",
   },
-  setupFilesAfterEnv: [
-    "@alex_neo/jest-expect-message",
-    "./src/testsetup/setup.ts",
-  ],
+  setupFilesAfterEnv: ["jest-expect-message", "./src/testsetup/setup.ts"],
   testPathIgnorePatterns: ["dist"],
   transformIgnorePatterns: ["<rootDir>/node_modules/"],
 };

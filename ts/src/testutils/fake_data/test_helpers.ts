@@ -157,7 +157,7 @@ export async function createUserPlusFriendRequests(
 
   await addEdge(
     user,
-    FakeUserSchema,
+    new FakeUserSchema(),
     EdgeType.UserToFriendRequests,
     true,
     ...friendRequests,

@@ -7,10 +7,8 @@ import { Contact } from ".";
 import { ContactPhoneNumberBase } from "./internal";
 
 export class ContactPhoneNumber extends ContactPhoneNumberBase {
-  getPrivacyPolicy(): PrivacyPolicy<this> {
-    return new AllowIfEntIsVisiblePolicy(
-      this.contactID,
-      Contact.loaderOptions(),
-    );
-  }
+  privacyPolicy: PrivacyPolicy = new AllowIfEntIsVisiblePolicy(
+    this.contactID,
+    Contact.loaderOptions(),
+  );
 }

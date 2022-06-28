@@ -19,9 +19,9 @@ export default class CreateEventAction extends CreateEventActionBase {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  triggers: Trigger<EventBuilder, EventCreateInput>[] = [
+  triggers: Trigger<Ent>[] = [
     {
-      async changeset(builder, input) {
+      async changeset(builder: EventBuilder, input: EventCreateInput) {
         if (!input.activities) {
           return;
         }

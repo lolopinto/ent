@@ -1,12 +1,12 @@
+import { Ent } from "@snowtop/ent";
 import { Trigger, Validator } from "@snowtop/ent/action";
 import {
   ConfirmEditPhoneNumberActionBase,
   ConfirmEditPhoneNumberInput,
-} from "../../generated/user/actions/confirm_edit_phone_number_action_base";
+} from "./generated/confirm_edit_phone_number_action_base";
 import { User } from "../..";
-import { UserBuilder } from "../../generated/user/actions/user_builder";
+import { UserBuilder } from "./generated/user_builder";
 import DeleteAuthCodeAction from "../../auth_code/actions/delete_auth_code_action";
-import { ExampleViewer } from "../../../viewer/viewer";
 
 export { ConfirmEditPhoneNumberInput };
 
@@ -23,58 +23,41 @@ async function findAuthCode(
 }
 // we're only writing this once except with --force and packageName provided
 export default class ConfirmEditPhoneNumberAction extends ConfirmEditPhoneNumberActionBase {
-  getValidators(): Validator<
-    User,
-    UserBuilder<ConfirmEditPhoneNumberInput, User>,
-    ExampleViewer,
-    ConfirmEditPhoneNumberInput,
-    User
-  >[] {
-    return [
-      {
-        async validate(builder, input) {
-          const authCode = await findAuthCode(
-            builder,
-            input.code,
-            input.phoneNumber,
-          );
-          if (!authCode) {
-            throw new Error(
-              `code ${input.code} not found associated with user`,
-            );
-          }
-        },
+  validators: Validator<User>[] = [
+    {
+      async validate(builder: UserBuilder, input: ConfirmEditPhoneNumberInput) {
+        const authCode = await findAuthCode(
+          builder,
+          input.code,
+          input.phoneNumber,
+        );
+        if (!authCode) {
+          throw new Error(`code ${input.code} not found associated with user`);
+        }
       },
-    ];
-  }
+    },
+  ];
 
-  getTriggers(): Trigger<
-    User,
-    UserBuilder<ConfirmEditPhoneNumberInput, User>,
-    ExampleViewer,
-    ConfirmEditPhoneNumberInput,
-    User
-  >[] {
-    return [
-      {
-        async changeset(builder, input) {
-          const authCode = await findAuthCode(
-            builder,
-            input.code,
-            input.phoneNumber,
-          );
-          if (!authCode) {
-            throw new Error(
-              `code ${input.code} not found associated with user`,
-            );
-          }
-          // delete the authCode
-          return await DeleteAuthCodeAction.create(
-            builder.viewer,
-            authCode,
-          ).changeset();
-        },
+  triggers: Trigger<Ent>[] = [
+    {
+      async changeset(
+        builder: UserBuilder,
+        input: ConfirmEditPhoneNumberInput,
+      ) {
+        const authCode = await findAuthCode(
+          builder,
+          input.code,
+          input.phoneNumber,
+        );
+        if (!authCode) {
+          throw new Error(`code ${input.code} not found associated with user`);
+        }
+        // delete the authCode
+        return await DeleteAuthCodeAction.create(
+          builder.viewer,
+          authCode,
+        ).changeset();
       },
-    ];
-  }
+    },
+  ];
 }

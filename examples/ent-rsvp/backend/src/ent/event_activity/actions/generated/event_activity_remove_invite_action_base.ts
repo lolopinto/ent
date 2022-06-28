@@ -14,14 +14,9 @@ import {
 } from "src/ent/event_activity/actions/generated/event_activity_builder";
 
 export class EventActivityRemoveInviteActionBase
-  implements
-    Action<
-      EventActivity,
-      EventActivityBuilder<EventActivityInput>,
-      EventActivityInput
-    >
+  implements Action<EventActivity>
 {
-  public readonly builder: EventActivityBuilder<EventActivityInput>;
+  public readonly builder: EventActivityBuilder;
   public readonly viewer: Viewer;
   protected eventActivity: EventActivity;
 
@@ -36,7 +31,7 @@ export class EventActivityRemoveInviteActionBase
     this.eventActivity = eventActivity;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<EventActivity> {
+  getPrivacyPolicy(): PrivacyPolicy {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

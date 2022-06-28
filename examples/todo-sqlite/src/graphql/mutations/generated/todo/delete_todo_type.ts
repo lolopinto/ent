@@ -26,7 +26,7 @@ export const DeleteTodoInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     todo_id: {
       description: "id of Todo",
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -45,11 +45,11 @@ export const DeleteTodoType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customDeleteTodoInput }
 > = {
-  type: new GraphQLNonNull(DeleteTodoPayloadType),
+  type: GraphQLNonNull(DeleteTodoPayloadType),
   args: {
     input: {
       description: "",
-      type: new GraphQLNonNull(DeleteTodoInputType),
+      type: GraphQLNonNull(DeleteTodoInputType),
     },
   },
   resolve: async (

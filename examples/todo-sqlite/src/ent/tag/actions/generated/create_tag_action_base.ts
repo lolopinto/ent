@@ -13,7 +13,10 @@ import {
   WriteOperation,
 } from "@snowtop/ent/action";
 import { Account, Tag } from "src/ent/";
-import { TagBuilder } from "src/ent/tag/actions/generated/tag_builder";
+import {
+  TagBuilder,
+  TagInput,
+} from "src/ent/tag/actions/generated/tag_builder";
 
 export interface TagCreateInput {
   displayName: string;
@@ -21,10 +24,8 @@ export interface TagCreateInput {
   relatedTagIds?: ID[] | null;
 }
 
-export class CreateTagActionBase
-  implements Action<Tag, TagBuilder<TagCreateInput>, TagCreateInput>
-{
-  public readonly builder: TagBuilder<TagCreateInput>;
+export class CreateTagActionBase implements Action<Tag> {
+  public readonly builder: TagBuilder;
   public readonly viewer: Viewer;
   protected input: TagCreateInput;
 
@@ -34,11 +35,11 @@ export class CreateTagActionBase
     this.builder = new TagBuilder(this.viewer, WriteOperation.Insert, this);
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Tag> {
+  getPrivacyPolicy(): PrivacyPolicy {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): TagCreateInput {
+  getInput(): TagInput {
     return this.input;
   }
 

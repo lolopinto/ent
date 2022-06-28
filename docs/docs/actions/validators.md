@@ -7,25 +7,18 @@ sidebar_position: 8
 Sometimes you need more than [per-field validation](/docs/ent-schema/fields#valid) in an action and Validators associated with an action enables that.
 
 ```ts
-export interface Validator<
-  TEnt extends Ent<TViewer>,
-  TBuilder extends Builder<TEnt, TViewer, TExistingEnt>,
-  TViewer extends Viewer = Viewer,
-  TInput extends Data = Data,
-  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
-> {
-  validate(builder: TBuilder, input: TInput): Promise<void> | void;
+interface Validator<T extends Ent> {
+  // can throw if it wants
+  validate(builder: Builder<T>, input: Data): Promise<void> | void;
 }
-
 ```
 
-Each Validator takes the [Builder](/docs/actions/builder) and the [Input](/docs/actions/input).
+Each Validator takes the [Builder](/docs/actions/builder) and the [Input](/docs/actions/input). 
 
 For example, to validate that the start time is before the end time in the example schema
 
 ```ts title="src/ent/event/actions/event_validators.ts"
-export class EventTimeValidator
-  implements Validator<Event, EventBuilder, Viewer, EventInput> {
+export class EventTimeValidator implements Validator<Event> {
   validate(builder: EventBuilder): void {
     const startTime = builder.getNewStartTimeValue();
     const endTime = builder.getNewEndTimeValue();
@@ -50,21 +43,15 @@ and then update the actions as follows:
 
 ```ts title="/src/ent/event/actions/create_event_action.ts"
 export default class CreateEventAction extends CreateEventActionBase {
-  getValidators() {
-    return [
-      new EventTimeValidator(),
-    ];
-  }
+
+  validators: Validator<Event>[] = [new EventTimeValidator()];
 }
 ```
 
 ```ts title="/src/ent/event/actions/edit_event_action.ts"
 export default class EditEventAction extends EditEventActionBase {
-  getValidators() {
-    return [
-      new EventTimeValidator(),
-    ];
-  }
+
+  validators: Validator<Event>[] = [new EventTimeValidator()];
 }
 ```
 

@@ -62,7 +62,6 @@ func ParseFieldsFunc(pkg *packages.Package, fn *ast.FuncDecl) (*FieldInfo, error
 
 	fieldInfo, err := NewFieldInfoFromInputs(
 		&codegenapi.DummyConfig{},
-		"",
 		fields, &Options{
 			AddBaseFields: true,
 			SortFields:    true,

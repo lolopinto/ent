@@ -6,7 +6,7 @@ import {
   expectQueryFromRoot,
   expectMutation,
 } from "@snowtop/ent-graphql-tests";
-import { Data } from "@snowtop/ent";
+import { Data, LoggedOutViewer } from "@snowtop/ent";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { encodeGQLID } from "@snowtop/ent/graphql";
 import { PassportStrategyHandler } from "@snowtop/ent-passport";
@@ -16,7 +16,6 @@ import CreateUserAction, {
 } from "../../ent/user/actions/create_user_action";
 import { randomEmail, random, randomPhoneNumber } from "../../util/random";
 import { User } from "../../ent";
-import { LoggedOutExampleViewer } from "../../viewer/viewer";
 
 afterEach(() => {
   clearAuthHandlers();
@@ -37,7 +36,7 @@ function getUserRootConfig(
   };
 }
 
-const loggedOutViewer = new LoggedOutExampleViewer();
+const loggedOutViewer = new LoggedOutViewer();
 async function createUser(input?: Partial<UserCreateInput>): Promise<User> {
   return await CreateUserAction.create(loggedOutViewer, {
     firstName: "first",

@@ -1,5 +1,5 @@
 import { advanceBy } from "jest-date-mock";
-import { Viewer } from "@snowtop/ent";
+import { LoggedOutViewer, IDViewer, Viewer } from "@snowtop/ent";
 import {
   expectQueryFromRoot,
   queryRootConfig,
@@ -10,15 +10,14 @@ import schema from "../generated/schema";
 import CreateUserAction from "../../ent/user/actions/create_user_action";
 import { Contact, User } from "../../ent";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
-import EditUserAction from "../../ent/user/actions/edit_user_action";
-import CreateContactAction from "../../ent/contact/actions/create_contact_action";
-import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
+import EditUserAction from "src/ent/user/actions/edit_user_action";
+import CreateContactAction from "src/ent/contact/actions/create_contact_action";
 
 afterEach(() => {
   clearAuthHandlers();
 });
 
-const loggedOutViewer = new LoggedOutExampleViewer();
+const loggedOutViewer = new LoggedOutViewer();
 
 function getConfig(
   viewer: Viewer,
@@ -67,7 +66,7 @@ async function createContact(user?: User): Promise<Contact> {
   if (!user) {
     user = await createUser();
   }
-  const contact = await CreateContactAction.create(new ExampleViewer(user.id), {
+  const contact = await CreateContactAction.create(new IDViewer(user.id), {
     emails: [
       {
         emailAddress: randomEmail(),
@@ -88,7 +87,7 @@ test("query contact", async () => {
   let emails = await contact.loadEmails();
 
   await expectQueryFromRoot(
-    getConfig(new ExampleViewer(user.id), contact),
+    getConfig(new IDViewer(user.id), contact),
     ["id", encodeGQLID(contact)],
     ["user.id", encodeGQLID(user)],
     ["user.firstName", contact.firstName],
@@ -110,7 +109,7 @@ test("query contact with different viewer", async () => {
 
   // can't load someone else's contact
   await expectQueryFromRoot(
-    getConfig(new ExampleViewer(user.id), contact, { rootQueryNull: true }),
+    getConfig(new IDViewer(user.id), contact, { rootQueryNull: true }),
     ["id", null],
   );
 });
@@ -133,7 +132,7 @@ test("likes", async () => {
   await action.saveX();
 
   await expectQueryFromRoot(
-    getConfig(new ExampleViewer(user.id), contact1),
+    getConfig(new IDViewer(user.id), contact1),
     ["likers.rawCount", 1],
     [
       "likers.nodes",
@@ -146,7 +145,7 @@ test("likes", async () => {
   );
 
   await expectQueryFromRoot(
-    getUserConfig(new ExampleViewer(user.id), user),
+    getUserConfig(new IDViewer(user.id), user),
     ["likes.rawCount", 3],
     // most recent first
     [

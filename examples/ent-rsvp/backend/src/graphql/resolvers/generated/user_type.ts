@@ -21,20 +21,20 @@ export const UserType = new GraphQLObjectType({
   name: "User",
   fields: (): GraphQLFieldConfigMap<User, RequestContext> => ({
     id: {
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,
     },
     firstName: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
     lastName: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
     emailAddress: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
     events: {
-      type: new GraphQLNonNull(UserToEventsConnectionType()),
+      type: GraphQLNonNull(UserToEventsConnectionType()),
       args: {
         first: {
           description: "",

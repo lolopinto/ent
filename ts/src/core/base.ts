@@ -63,8 +63,8 @@ interface queryOptions {
   orderby?: string;
 }
 
-export interface Context<TViewer extends Viewer = Viewer> {
-  getViewer(): TViewer;
+export interface Context {
+  getViewer(): Viewer;
   // optional per (request)contet
   // absence means we are not doing any caching
   // presence means we have loader, ent cache etc
@@ -73,12 +73,9 @@ export interface Context<TViewer extends Viewer = Viewer> {
   cache?: cache;
 }
 
-export interface Viewer<
-  TEnt extends any = Ent<any> | null,
-  TID extends any = ID | null,
-> {
-  viewerID: TID;
-  viewer: () => Promise<TEnt>;
+export interface Viewer {
+  viewerID: ID | null;
+  viewer: () => Promise<Ent | null>;
   instanceKey: () => string;
   //  isOmniscient?(): boolean; // optional function to indicate a viewer that can see anything e.g. admin
   // TODO determine if we want this here.
@@ -89,13 +86,13 @@ export interface Viewer<
   // I want dataloaders to be created on demand as needed
   // so it seems having it in Context (per-request info makes sense)
   // so does that mean we should pass Context all the way down and not Viewer?
-  context?: Context<any>;
+  context?: Context;
 }
 
-export interface Ent<TViewer extends Viewer = Viewer> {
+export interface Ent {
   id: ID;
-  viewer: TViewer;
-  getPrivacyPolicy(): PrivacyPolicy<this, TViewer>;
+  viewer: Viewer;
+  privacyPolicy: PrivacyPolicy;
   nodeType: string;
 }
 
@@ -103,11 +100,8 @@ export declare type Data = {
   [key: string]: any;
 };
 
-export interface EntConstructor<
-  TEnt extends Ent,
-  TViewer extends Viewer = Viewer,
-> {
-  new (viewer: TViewer, data: Data): TEnt;
+export interface EntConstructor<T extends Ent> {
+  new (viewer: Viewer, data: Data): T;
 }
 
 export type ID = string | number;
@@ -161,19 +155,14 @@ export interface EditRowOptions extends CreateRowOptions {
   key: string; // what key are we loading from. if not provided we're loading from column "id"
 }
 
-interface LoadableEntOptions<
-  TEnt extends Ent,
-  TViewer extends Viewer = Viewer,
-> {
+interface LoadableEntOptions<T extends Ent> {
   loaderFactory: LoaderFactory<any, Data | null>;
-  ent: EntConstructor<TEnt, TViewer>;
+  ent: EntConstructor<T>;
 }
 
 // information needed to load an ent from the databse
-export interface LoadEntOptions<
-  TEnt extends Ent,
-  TViewer extends Viewer = Viewer,
-> extends LoadableEntOptions<TEnt, TViewer>,
+export interface LoadEntOptions<T extends Ent>
+  extends LoadableEntOptions<T>,
     // extending DataOptions and fields is to make APIs like loadEntsFromClause work until we come up with a cleaner API
     SelectBaseDataOptions {
   // if passed in, it means there's field privacy on the ents *and* we want to apply it at ent load
@@ -181,13 +170,10 @@ export interface LoadEntOptions<
   fieldPrivacy?: Map<string, PrivacyPolicy>;
 }
 
-export interface LoadCustomEntOptions<
-    TEnt extends Ent,
-    TViewer extends Viewer = Viewer,
-  >
+export interface LoadCustomEntOptions<T extends Ent>
   // extending DataOptions and fields is to make APIs like loadEntsFromClause work until we come up with a cleaner API
   extends SelectBaseDataOptions {
-  ent: EntConstructor<TEnt, TViewer>;
+  ent: EntConstructor<T>;
   fieldPrivacy?: Map<string, PrivacyPolicy>;
 }
 
@@ -222,7 +208,7 @@ export interface PrivacyResult {
 }
 
 export interface PrivacyError extends Error {
-  privacyPolicy: PrivacyPolicy<Ent>;
+  privacyPolicy: PrivacyPolicy;
   ent?: Ent;
 }
 
@@ -283,10 +269,15 @@ export function DenyWithReason(e: PrivacyError | string): PrivacyResult {
   };
 }
 
-export interface PrivacyPolicyRule<TEnt extends Ent = Ent, TViewer = Viewer> {
-  apply(v: TViewer, ent?: TEnt): Promise<PrivacyResult>;
+export interface PrivacyPolicyRule {
+  apply(v: Viewer, ent?: Ent): Promise<PrivacyResult>;
 }
 
-export interface PrivacyPolicy<TEnt extends Ent = Ent, TViewer = Viewer> {
-  rules: PrivacyPolicyRule<TEnt, TViewer>[];
+// export interface PrivacyPolicyRuleSync {
+//   apply(v: Viewer, ent: Ent): PrivacyResult;
+// }
+
+export interface PrivacyPolicy {
+  //  rules: PrivacyPolicyRule | PrivacyPolicyRuleSync[];
+  rules: PrivacyPolicyRule[];
 }

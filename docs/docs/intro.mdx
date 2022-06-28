@@ -30,7 +30,7 @@ The easiest way to get started is by using the template from the `ent-starter` [
 This requires the following:
 
 * [Docker](https://docs.docker.com/get-docker/) installed.
-* [Node 16](https://nodejs.org/en/download/) or later installed.
+* [Node 14](https://nodejs.org/en/download/) or later installed.
 * And one of the database options from below.
 
 There are 3 Database options:
@@ -46,7 +46,7 @@ There are 3 Database options:
 
 ## Your first schema
 
-In the root of your application, create the schema directory:
+In the root of your application, run to create the schema directory:
 
 ```shell
 mkdir -p src/schema
@@ -54,31 +54,30 @@ mkdir -p src/schema
 
 After setting the environment up, make your first change by specifying a schema as follows:
 
-```ts title="src/schema/user_schema.ts"
-import { EntSchema, StringType } from "@snowtop/ent";
+```ts title="src/schema/user.ts"
+import { BaseEntSchema, Field, StringType } from "@snowtop/ent";
 import { EmailType } from "@snowtop/ent-email";
 import { PasswordType } from "@snowtop/ent-password";
 
-const UserSchema = new EntSchema({
-  fields: {
-    firstName: StringType(),
-    lastName: StringType(),
-    emailAddress: EmailType({ unique: true  }),
-    password: PasswordType(),
-  },
-});
-export default UserSchema;
+export default class User extends BaseEntSchema {
+  fields: Field[] = [
+    StringType({ name: "FirstName" }),
+    StringType({ name: "LastName" }),
+    EmailType({ name: "EmailAddress", unique: true  }),
+    PasswordType({ name: "Password" }),
+  ];
+}
 ```
 
 This does a few things:
 
 * It specifies a new node in the schema called `User`.
-* It adds 4 explicitly listed fields here: `firstName`, `lastName`, `emailAddress`, `password`.
-* and 3 implicitly listed by virtue of creating a new instance of `EntSchema`: `id`, `createdAt`, `updatedAt`.
-* `firstName` and `lastName` are strings.
-* `emailAddress` is of type `email` and will be [parsed](https://www.npmjs.com/package/email-addresses) to be a "valid" email address before storing in the database.
-* `emailAddress` field is marked as unique so we don't have multiple users with the same email address.
-* `password` is of type `password` and hashed and salted using [`bcrypt`](https://www.npmjs.com/package/bcryptjs) before storing in the database.
+* It adds 4 explicitly listed fields here: `FirstName`, `LastName`, `EmailAddress`, `Password`.
+* and 3 implicitly listed by virtue of extending `BaseEntSchema`: `id`, `createdAt`, `updatedAt`.
+* `FirstName` and `LastName` are strings.
+* `EmailAddress` is of type `email` and will be [parsed](https://www.npmjs.com/package/email-addresses) to be a "valid" email address before storing in the database.
+* `EmailAddress` field is marked as unique so we don't have multiple users with the same email address.
+* `Password` is of type `password` and hashed and salted using [`bcrypt`](https://www.npmjs.com/package/bcryptjs) before storing in the database.
 * The implicit fields are exactly what you'd expect. The default `id` provided by the framework is of type `uuid`.
 
 Then run the following commands:
@@ -95,21 +94,20 @@ After running `npm run codegen`, here's a list of generated files:
 (The first time this is run, it'll take a while because it's downloading the base Docker image).
 
 ```shell
-  new file:   src/ent/generated/const.ts
-  new file:   src/ent/generated/loadAny.ts
-  new file:   src/ent/generated/loaders.ts
+  new file:   src/ent/const.ts
   new file:   src/ent/generated/user_base.ts
   new file:   src/ent/index.ts
   new file:   src/ent/internal.ts
+  new file:   src/ent/generated/loadAny.ts
   new file:   src/ent/user.ts
   new file:   src/graphql/index.ts
-  new file:   src/graphql/generated/resolvers/query_type.ts
-  new file:   src/graphql/generated/resolvers/user_type.ts
-  new file:   src/graphql/generated/schema.gql
-  new file:   src/graphql/generated/schema.ts
+  new file:   src/graphql/resolvers/generated/node_query_type.ts
+  new file:   src/graphql/resolvers/generated/query_type.ts
+  new file:   src/graphql/resolvers/generated/user_type.ts
   new file:   src/graphql/resolvers/index.ts
   new file:   src/graphql/resolvers/internal.ts
-  new file:   src/graphql/generated/resolvers/node_query_type.ts
+  new file:   src/graphql/generated/schema.gql
+  new file:   src/graphql/generated/schema.ts
   new file:   src/schema/schema.py
   new file:   src/schema/versions/e3b78fe1bfa3_2021518203057_add_users_table.py
 ```
@@ -161,27 +159,26 @@ import SqliteUsersSrc from "./sqlite_users.txt";
 
 To support writes, update the schema as follows:
 
-```ts title="src/schema/user_schema.ts"
-import { EntSchema, StringType, ActionOperation } from "@snowtop/ent/schema";
+```ts title="src/schema/user.ts"
+import { BaseEntSchema, Field, StringType, Action, ActionOperation } from "@snowtop/ent/schema";
 import { EmailType } from "@snowtop/ent-email";
 import { PasswordType } from "@snowtop/ent-password";
 
-const UserSchema = new EntSchema({
-  fields: {
-    firstName: StringType(),
-    lastName: StringType(),
-    emailAddress: EmailType({ unique: true  }),
-    password: PasswordType(),
-  },
+export default class User extends BaseEntSchema {
+  fields: Field[] = [
+    StringType({ name: "FirstName" }),
+    StringType({ name: "LastName" }),
+    EmailType({ name: "EmailAddress", unique: true  }),
+    PasswordType({ name: "Password" }),
+  ];
 
-  actions: [
+  actions: Action[] = [
     {
       operation: ActionOperation.Create,
-      fields: ["firstName", "lastName", "emailAddress", "password"],
+      fields: ["FirstName", "LastName", "EmailAddress", "Password"],
     }
-  ],
-});
-export default UserSchema;
+  ];
+}
 ```
 
 re-run ```npm run codegen```
@@ -189,14 +186,14 @@ re-run ```npm run codegen```
 which leads to the following changed files:
 
 ```
-  new file:   src/ent/generated/user/actions/create_user_action_base.ts
-  new file:   src/ent/generated/user/actions/user_builder.ts
   new file:   src/ent/user/actions/create_user_action.ts
-  new file:   src/graphql/generated/mutations/mutation_type.ts
-  new file:   src/graphql/generated/mutations/user/user_create_type.ts
+  new file:   src/ent/user/actions/generated/create_user_action_base.ts
+  new file:   src/ent/user/actions/user_builder.ts
+  new file:   src/graphql/mutations/generated/mutation_type.ts
+  new file:   src/graphql/mutations/generated/user/user_create_type.ts
   modified:   src/graphql/generated/schema.gql
   modified:   src/graphql/generated/schema.ts
-  modified:   src/schema/user_schema.ts
+  modified:   src/schema/user.ts
 ```
 
 and the GraphQL schema updated as follows:
@@ -284,7 +281,7 @@ import { Data, IDViewer, AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
 import {
   CreateUserActionBase,
   UserCreateInput,
-} from "src/ent/generated/user/actions/create_user_action_base";
+} from "src/ent/user/actions/generated/create_user_action_base";
 
 export { UserCreateInput };
 
@@ -339,33 +336,6 @@ type Query {
 
 `Node` is a polymorphic type and can accept an ID for any type of object. You can query for the User you just created with the following GraphQL query - replacing the ID with the ID returned when you created the user!
 
-
-
-we get this response back.
-
-```json
-{
-  "data": {
-    "node": null
-  }
-}
-```
-
-Update `src/ent/user.ts` as follows: 
-
-```ts title="src/ent/user.ts"
-import { PrivacyPolicy, AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
-import { UserBase } from "src/ent/internal";
-
-export class User extends UserBase {
-  getPrivacyPolicy(): PrivacyPolicy<this> {
-    return AlwaysAllowPrivacyPolicy;
-  }
-}
-```
-
-we get the right result back:
-
 ```graphql
 query ByID {
   node(id:"bm9kZTp1c2VyOjQ1Y2RkNmUyLWY2ZmItNDVlMC1iNWIwLWEwN2JlZWVmM2QxOQ==") {
@@ -378,8 +348,6 @@ query ByID {
   }
 }
 ```
-
-Like the change in `create_user_action.ts` above, we've added a `getPrivacyPolicy` method to change [permissions](/docs/core-concepts/privacy-policy) of who can load the ent. The default generated privacy policy for each ent is [`AllowIfViewerPrivacyPolicy`](/docs/core-concepts/privacy-policy#allowifviewerprivacypolicy).
 
 Note: The ID exposed to GraphQL is not the same as the ID for the row in the database. GraphQL IDs should be considered opaque by clients of your service. Learn more in the [GraphQL Docs](https://graphql.org/learn/global-object-identification/).
 
@@ -475,7 +443,7 @@ mutation {
 }
 ```
 
-should end with this error because we identified the `emailAddress` as `unique` in the schema above:
+should end with this error because we identified the `EmailAddress` as `unique` in the schema above:
 
 ```json
 {

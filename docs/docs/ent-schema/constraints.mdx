@@ -12,24 +12,24 @@ The easiest way to add a unique constraint on a single column is to use the [uni
 
 However, to add a multi-column constraint:
 
-```ts title="src/schema/guest_schema.ts"
-const GuestSchema = new EntSchema({
-  fields: [
-    eventID: UUIDType({
+```ts title="src/schema/guest.ts"
+export default class Guest extends BaseEntSchema {
+  fields: Field[] = [
+    UUIDType({
+      name: "eventID",
       foreignKey: { schema: "Event", column: "ID" },
     }),
-    emailAddress: EmailType({ nullable: true }),
-  ],
+    EmailType({ name: "EmailAddress", nullable: true }),
+  ];
 
-  constraints: [
+  constraints: Constraint[] = [
     {
       name: "uniqueEmail",
       type: ConstraintType.Unique,
-      columns: ["eventID", "emailAddress"],
+      columns: ["eventID", "EmailAddress"],
     },
-  ],
-});
-export default GuestSchema;
+  ];
+}
 ```
 
 leads to database change
@@ -46,24 +46,27 @@ The easiest way to add a primary key constraint on a single column is to use the
 
 To add a multi-column constraint:
 
-```ts title="src/schema/user_photo_schema.ts"
-import { EntSchema, UUIDType, ConstraintType } from "@snowtop/ent";
+```ts title="src/schema/user_photo.ts"
+import { Schema, Field, UUIDType, Constraint, ConstraintType } from "@snowtop/ent";
 
-const UserPhotoSchema = new EntSchema({
-  fields: {
-    UserID: UUIDType(),
-    PhotoID: UUIDType(),
-  },
+export default class UserPhoto implements Schema {
+  fields: Field[] = [
+    UUIDType({
+      name: 'UserID',
+    }),
+    UUIDType({
+      name: 'PhotoID',
+    }),
+  ];
 
-  constraints: [
+  constraints: Constraint[] = [
     {
       name: "user_photos_pkey",
       type: ConstraintType.PrimaryKey,
       columns: ["UserID", "PhotoID"],
     },
-  ],
-});
-export default UserPhotoSchema;
+  ];
+}
 ```
 
 leads to database change:
@@ -84,40 +87,43 @@ The columns being referenced on the other table need to be unique either via a m
 
 In this contrived example with the following schema,
 
-```ts title="src/schema/user_schema.ts"
-import { EntSchema, StringType, ConstraintType } from "@snowtop/ent/schema";
+```ts title="src/schema/user.ts"
+import { BaseEntSchema, Field, StringType, Pattern, Action, ActionOperation, TimestampType, Node, Constraint, ConstraintType } from "@snowtop/ent/schema";
 import { EmailType } from "@snowtop/ent-email";
 import { PasswordType } from "@snowtop/ent-password";
 
-const UserSchema = new EntSchema({
-  fields: {
-    FirstName: StringType(),
-    LastName: StringType(),
-    EmailAddress: EmailType(),
-    Password: PasswordType(),
-  },
+export default class User extends BaseEntSchema {
+  fields: Field[] = [
+    StringType({ name: "FirstName" }),
+    StringType({ name: "LastName" }),
+    EmailType({ name: "EmailAddress" }),
+    PasswordType({ name: "Password" }),
+  ];
 
-  constraints: [
+  constraints: Constraint[] = [
     {
       name: "user_uniqueEmail",
       type: ConstraintType.Unique,
       columns: ["ID", "EmailAddress"],
     },
-  ],
-});
-export default UserSchema;
+  ];
+}
 ```
 
-```ts title="src/schema/contact_schema.ts"
-import { EntSchema, UUIDType, StringType, ConstraintType } from "@snowtop/ent";
+```ts title="src/schema/contact.ts"
+import { BaseEntSchema, Field, UUIDType, StringType, Constraint, ConstraintType } from "@snowtop/ent";
 
-const ContactSchema = new EntSchema({
-  fields: {
-    emailAddress: StringType(),
-    userID: UUIDType(),
-  };
+export default class Contact extends BaseEntSchema {
+  fields: Field[] = [
+    StringType({
+      name: "emailAddress",
+    }),
+    UUIDType({
+      name: "userID",
+    }),
+  ];
 
-  constraints: [
+  constraints: Constraint[] = [
     {
       name: "contacts_user_fkey",
       type: ConstraintType.ForeignKey,
@@ -128,9 +134,8 @@ const ContactSchema = new EntSchema({
         columns: ["ID", "EmailAddress"],
       }
     },
-  ],
-});
-export default ContactSchema;
+  ];
+}
 ```
 
 leads to
@@ -146,24 +151,25 @@ adds a [check constraint](https://www.postgresql.org/docs/current/ddl-constraint
 
 For example,
 
-```ts title="src/schema/item_schema.ts"
-import { FloatType, EntSchema, ConstraintType } from "@snowtop/ent";
+```ts title="src/schema/item.ts"
+import { Field, FloatType, BaseEntSchema, Constraint, ConstraintType } from "@snowtop/ent";
 
-const ItemSchema = new EntSchema({
-  fields: {
-    price: FloatType(),
-  },
+export default class Item extends BaseEntSchema {
+  fields: Field[] = [
+    FloatType({
+      name: 'price',
+    }),
+  ];
 
-  constraints: [
+  constraints: Constraint[] = [
     {
       name: "item_positive_price",
       type: ConstraintType.Check,
       condition: 'price > 0',
       columns: [],
     },
-  ],
-});
-export default ItemSchema;
+  ];
+}
 ```
 
 leads to
@@ -175,16 +181,20 @@ import SqliteCheckSrc from "./sqlite_check_constraint.txt";
 
 or for something more complicated
 
-```ts title="src/schema/product_item_schema.ts"
-import { FloatType, EntSchema, ConstraintType } from "@snowtop/ent";
+```ts title="src/schema/product_item.ts"
+import { Field, FloatType, BaseEntSchema, Constraint, ConstraintType } from "@snowtop/ent";
 
-const ProductItemSchema = new EntSchema({
-  fields: {
-    price: FloatType(),
-    discount_price: FloatType(),
-  },
+export default class ProductItem extends BaseEntSchema {
+  fields: Field[] = [
+    FloatType({
+      name: 'price',
+    }),
+    FloatType({
+      name: 'discount_price',
+    }),
+  ];
 
-  constraints: [
+  constraints: Constraint[] = [
     {
       name: "item_positive_price",
       type: ConstraintType.Check,
@@ -203,9 +213,8 @@ const ProductItemSchema = new EntSchema({
       condition: 'price > discount_price',
       columns: [],
     },
-  ],
-});
-export default ProductItemSchema;
+  ];
+}
 ```
 
 leads to

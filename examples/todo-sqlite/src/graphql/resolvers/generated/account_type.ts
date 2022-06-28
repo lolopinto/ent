@@ -27,10 +27,10 @@ export const AccountType = new GraphQLObjectType({
   name: "Account",
   fields: (): GraphQLFieldConfigMap<Account, RequestContext> => ({
     id: {
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
     },
     name: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
     phone_number: {
       type: GraphQLString,
@@ -45,7 +45,7 @@ export const AccountType = new GraphQLObjectType({
       },
     },
     tags: {
-      type: new GraphQLNonNull(AccountToTagsConnectionType()),
+      type: GraphQLNonNull(AccountToTagsConnectionType()),
       args: {
         first: {
           description: "",
@@ -74,7 +74,7 @@ export const AccountType = new GraphQLObjectType({
       },
     },
     todos: {
-      type: new GraphQLNonNull(AccountToTodosConnectionType()),
+      type: GraphQLNonNull(AccountToTodosConnectionType()),
       args: {
         first: {
           description: "",
@@ -103,13 +103,13 @@ export const AccountType = new GraphQLObjectType({
       },
     },
     open_todos_plural: {
-      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(TodoType))),
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TodoType))),
       resolve: async (account: Account, args: {}, context: RequestContext) => {
         return account.openTodosPlural();
       },
     },
     open_todos: {
-      type: new GraphQLNonNull(AccountToOpenTodosConnectionType()),
+      type: GraphQLNonNull(AccountToOpenTodosConnectionType()),
       args: {
         first: {
           description: "",

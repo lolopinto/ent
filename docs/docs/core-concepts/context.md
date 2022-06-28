@@ -7,11 +7,11 @@ sidebar_position: 2
 Context is a simple object that represents, well, the context of what's happening.
 
 ```ts
-export interface Context<TViewer extends Viewer = Viewer> {
-  getViewer(): TViewer;
+export interface Context {
+  getViewer(): Viewer;
+
   cache?: cache;
 }
-
 ```
 
 There's the simple `Context` interface shown above which has a `getViewer` method which returns the [`Viewer`](/docs/core-concepts/viewer) and a `cache` property which is used for [context-caching](/docs/core-concepts/context-caching).
@@ -31,7 +31,7 @@ export interface RequestContext extends Context {
 
 ### authViewer
 
-`authViewer` is used to change who the currently logged in `Viewer` is. It's called by the built-in [auth](/docs/core-concepts/authentication) to change the viewer from the previous one - often the [LoggedOutViewer](/docs/core-concepts/viewer#loggedoutviewer) - to the newly logged in `Viewer`.
+`authViewer` is used to change who the currently logged in `Viewer` is. It's called by the built-in [auth](/docs/core-concepts/authentication) to change the viewer from the previous one -often the [LoggedOutViewer](/docs/core-concepts/viewer#loggedoutviewer) - to the newly logged in `Viewer`.
 
 ### logout
 
@@ -57,27 +57,20 @@ The default generated GraphQL handler helps with that:
 //...
 app.use(
   "/graphql",
-  async (req, res) => {
-    if (shouldRenderGraphiQL(req)) {
-      res.send(renderGraphiQL());
-    } else {
-      const { operationName, query, variables } = getGraphQLParameters(req);
-      const result = await processRequest({
-        operationName,
-        query,
-        variables,
-        request: req,
-        schema,
-        contextFactory: async (executionContext: ExecutionContext) => {
-          return buildContext(req, res);
-        },
-      });
-      await sendResult(result, res);
-    }
-  },
+  graphqlHTTP((request: IncomingMessage, response: ServerResponse) => {
+    let doWork = async () => {
+      let context = await buildContext(request, response);
+      return {
+        schema: schema,
+        graphiql: true,
+        context,
+      };
+    };
+    return doWork();
+  }),
 );
 ```
 
-This is an [express](https://github.com/expressjs/express) handler which uses a few methods from [graphql-helix](https://github.com/contra/graphql-helix), builds the `context` via `buildContext` and that context is passed all the way down to each GraphQL resolver.
+This is an [express](https://github.com/expressjs/express) handler which uses `graphqlHTTP` from [express-graphql](https://github.com/graphql/express-graphql), builds the `context` via `buildContext` and that context is passed all the way down to each GraphQL resolver.
 
 All of the above can be overriden or changed as needed if your needs are more complicated. The `src/graphql/index.ts` file is generated only once.

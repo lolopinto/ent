@@ -31,11 +31,11 @@ async function readStream(file): Promise<string> {
   return await new Promise((resolve) => {
     const stream = file.createReadStream();
     let data: string[] = [];
-    stream.on("data", function (chunk) {
+    stream.on("data", function(chunk) {
       data.push(chunk.toString());
     });
 
-    stream.on("close", function () {
+    stream.on("close", function() {
       return resolve(data.join(""));
     });
   });
@@ -57,10 +57,10 @@ const schema = new GraphQLSchema({
     name: "RootMutationType",
     fields: {
       fileUpload: {
-        type: new GraphQLNonNull(GraphQLBoolean),
+        type: GraphQLNonNull(GraphQLBoolean),
         args: {
           file: {
-            type: new GraphQLNonNull(GraphQLUpload),
+            type: GraphQLNonNull(GraphQLUpload),
           },
         },
         async resolve(src, args) {
@@ -75,12 +75,10 @@ const schema = new GraphQLSchema({
         },
       },
       fileUploadMultiple: {
-        type: new GraphQLNonNull(GraphQLBoolean),
+        type: GraphQLNonNull(GraphQLBoolean),
         args: {
           files: {
-            type: new GraphQLNonNull(
-              new GraphQLList(new GraphQLNonNull(GraphQLUpload)),
-            ),
+            type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLUpload))),
           },
         },
         async resolve(src, args) {

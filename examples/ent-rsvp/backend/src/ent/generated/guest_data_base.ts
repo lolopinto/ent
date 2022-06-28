@@ -29,16 +29,6 @@ export enum GuestDataSource {
   HomePage = "home_page",
 }
 
-interface GuestDataDBData {
-  id: ID;
-  created_at: Date;
-  updated_at: Date;
-  guest_id: ID;
-  event_id: ID;
-  dietary_restrictions: string;
-  source: GuestDataSource | null;
-}
-
 export class GuestDataBase {
   readonly nodeType = NodeType.GuestData;
   readonly id: ID;
@@ -89,12 +79,12 @@ export class GuestDataBase {
     this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
-  ): Promise<Map<ID, T>> {
+  ): Promise<T[]> {
     return (await loadEnts(
       viewer,
       GuestDataBase.loaderOptions.apply(this),
       ...ids,
-    )) as Map<ID, T>;
+    )) as T[];
   }
 
   static async loadCustom<T extends GuestDataBase>(
@@ -113,36 +103,32 @@ export class GuestDataBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<GuestDataDBData[]> {
-    return (await loadCustomData(
+  ): Promise<Data[]> {
+    return loadCustomData(
       GuestDataBase.loaderOptions.apply(this),
       query,
       context,
-    )) as GuestDataDBData[];
+    );
   }
 
   static async loadRawData<T extends GuestDataBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<GuestDataDBData | null> {
-    const row = await guestDataLoader.createLoader(context).load(id);
-    if (!row) {
-      return null;
-    }
-    return row as GuestDataDBData;
+  ): Promise<Data | null> {
+    return guestDataLoader.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends GuestDataBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<GuestDataDBData> {
+  ): Promise<Data> {
     const row = await guestDataLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row as GuestDataDBData;
+    return row;
   }
 
   static loaderOptions<T extends GuestDataBase>(

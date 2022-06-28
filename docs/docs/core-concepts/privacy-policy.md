@@ -4,7 +4,7 @@ sidebar_position: 4
 
 # Privacy Policy
 
-The `PrivacyPolicy` is used to apply permission checks on an object. It's used in [Ents](/docs/core-concepts/ent), [Actions](/docs/actions/action) and [Queries](/docs/core-concepts/ent-query).
+The `PrivacyPolicy` is used to apply permission checks on an object. It's used in [Ents](/docs/core-concepts/ent) and [Actions](/docs/actions/action).
 
 ```ts
 interface PrivacyPolicyRule {
@@ -28,15 +28,15 @@ Each rule takes a `Viewer` and an `Ent` (depending on where it's being called) a
 
 ### Allow
 
-When a rule returns `Allow()` , it's saying that it has enough information to pass this check.
+When a rule returns `Allow()`, it's saying that it has enough information to pass this check.
 
 ### Deny
 
-When a rule returns `Deny()` , it's saying that it has enough information to deny this check
+When a rule returns `Deny()`, it's saying that it has enough information to deny this check
 
 ### Skip
 
-When a rule returns `Skip()` , it's saying that it doesn't have enough information to make a decision, and you should go to the next rule.
+When a rule returns `Skip()`, it's saying that it doesn't have enough information to make a decision, and you should go to the next rule.
 
 Guidelines:
 
@@ -48,15 +48,11 @@ Guidelines:
 
 ## AlwaysAllowPrivacyPolicy
 
-This is a simple policy that comes with the framework that has only one rule: `AlwaysAllowRule` . This *always* passes the privacy check
+This is a simple policy that comes with the framework that has only one rule: `AlwaysAllowRule`. This *always* passes the privacy check
 
 ## AlwaysDenyPrivacyPolicy
 
-This is a simple policy that comes with the framework that has only one rule: `AlwaysDenyRule` . This *always* denies the privacy check
-
-## AllowIfViewerPrivacyPolicy
-
-This is a simple policy that comes with the framework that says the ent is visible if the id of the viewer is equal to the id of the ent.
+This is a simple policy that comes with the framework that has only one rule: `AlwaysDenyRule`. This *always* denies the privacy check
 
 ## Examples
 
@@ -66,17 +62,14 @@ Consider a private social network where a user can only see another user if they
 
 ```ts title="src/ent/user.ts"
 export class User extends UserBase {
-  getPrivacyPolicy() {
-    return {
-      rules: [
-        AllowIfViewerRule,
-        new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFriends),
-        AlwaysDenyRule,
-      ],
-    };
-  }
+  privacyPolicy: PrivacyPolicy = {
+    rules: [
+      AllowIfViewerRule,
+      new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFriends),
+      AlwaysDenyRule,
+    ],
+  };
 }
-
 ```
 
 This has 3 rules:
@@ -91,17 +84,15 @@ Or a User having a list of contacts and you want to ensure that only the owner o
 
 ```ts title="src/ent/contact.ts"
 export class Contact extends ContactBase {
-  getPrivacyPolicy() {
-    return {
-      rules: [new AllowIfViewerIsEntPropertyRule("userID"), AlwaysDenyRule],
-    };
-  }
+  privacyPolicy: PrivacyPolicy = {
+    rules: [new AllowIfViewerIsRule("userID"), AlwaysDenyRule],
+  };
 }
 ```
 
 This has 2 rules:
 
-* `AllowIfViewerIsEntPropertyRule`: this checks that the id of the `Viewer` is equal to the field `userID` of the ent. If so, ent is visible.
+* `AllowIfViewerIsRule`: this checks that the id of the `Viewer` is equal to the field `userID` of the ent. If so, ent is visible.
 * `AlwaysDenyRule`: otherwise, ent isn't visible.
 
 ### events based system
@@ -110,20 +101,17 @@ Event based system with guests.
 
 ```ts title="src/ent/guest.ts"
 export class Guest extends GuestBase {
-  getPrivacyPolicy() {
-    return {
-      rules: [
-        // guest can view self
-        AllowIfViewerRule,
-        // can view guest group if creator of event
-        new AllowIfEventCreatorRule(this.eventID),
-        new AllowIfGuestInSameGuestGroupRule(),
-        AlwaysDenyRule,
-      ],
-    };
-  }
+  privacyPolicy: PrivacyPolicy = {
+    rules: [
+      // guest can view self
+      AllowIfViewerRule,
+      // can view guest group if creator of event
+      new AllowIfEventCreatorRule(this.eventID),
+      new AllowIfGuestInSameGuestGroupRule(),
+      AlwaysDenyRule,
+    ],
+  };
 }
-
 ```
 
 This has 4 rules:
@@ -137,15 +125,13 @@ This has 4 rules:
 
 ```ts title="src/ent/user.ts"
 export class User extends UserBase {
-  getPrivacyPolicy() {
-    return {
-      rules: [
-        AllowIfViewerRule,
-        new DenyIfViewerOutboundEdgeExistsRule(EdgeType.UserToBlocks),
-        AlwaysAllowRule,
-      ],
-    };
-  }
+  privacyPolicy: PrivacyPolicy = {
+    rules: [
+      AllowIfViewerRule,
+      new DenyIfViewerOutboundEdgeExistsRule(EdgeType.UserToBlocks),
+      AlwaysAllowRule,
+    ],
+  };
 }
 ```
 
@@ -166,7 +152,7 @@ enum Role {
   ///....
 }
 export class AllowIfViewerHasRoleRule {
-  constructor(private role: Role) {}
+  constructor(private role:Role) {}
 
   async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
     if (!v.viewerID) {
@@ -181,28 +167,23 @@ export class AllowIfViewerHasRoleRule {
 }
 
 export class AllowIfViewerHasRolePrivacyPolicy {
-  constructor(private role: Role) {}
+  constructor(private role:Role) {}
 
   rules: PrivacyPolicyRule[] = [
     new AllowIfViewerHasRoleRule(this.role),
     AlwaysDenyRule,
-  ]; 
+  ];
 }
-
 ```
 
 ```ts title="src/ent/post.ts"
 export class Post extends PostBase {
-  getPrivacyPolicy() {
-    return new AllowIfViewerHasRolePrivacyPolicy(Role.Post);
-  }
+  privacyPolicy: PrivacyPolicy = new AllowIfViewerHasRolePrivacyPolicy(Role.Post);
 }
 ```
 
 ```ts title="src/ent/blog.ts"
 export class Blog extends BlogBase {
-  getPrivacyPolicy() {
-    return new AllowIfViewerHasRolePrivacyPolicy(Role.PublishBlog); 
-  }
+  privacyPolicy: PrivacyPolicy = new AllowIfViewerHasRolePrivacyPolicy(Role.PublishBlog);
 }
 ```

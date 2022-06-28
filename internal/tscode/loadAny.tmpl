@@ -21,7 +21,7 @@ export async function loadEntXByType(
   return {{useImport "loadEntX"}}(viewer, id, getLoaderOptions(type));
 }
 
-export function getLoaderOptions(type: {{useImport "NodeType"}}): {{useImport "LoadEntOptions"}}<{{useImport "Ent"}}, any> {
+export function getLoaderOptions(type: {{useImport "NodeType"}}): {{useImport "LoadEntOptions"}}<{{useImport "Ent"}}> {
   switch (type) {
   {{ range .NodeData -}}
     case {{useImport "NodeType"}}.{{.Name}}:

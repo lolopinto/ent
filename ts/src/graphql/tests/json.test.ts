@@ -96,8 +96,13 @@ test("jsonObjectList", async () => {
       schema: schema,
       root: "jsonObjectList",
       args: {},
-      expectedError: /JSONObject cannot represent non-object value: 1,2,3/,
     },
-    [".", null],
+    [
+      ".",
+      function (expVal) {
+        // doesn't resolve
+        expect(expVal).toBeNull();
+      },
+    ],
   );
 });

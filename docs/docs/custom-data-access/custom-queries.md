@@ -14,22 +14,25 @@ There are multiple ways of doing this:
 
 We'll be using the following schema in all the examples below:
 
-```ts title="src/schema/todo_schema.ts"
-const TodoSchema = new EntSchema({
-  fields: {
-    text: StringType(),
-    completed: BooleanType({
+```ts title="src/schema/todo.ts"
+export default class Todo extends BaseEntSchema {
+  fields: Field[] = [
+
+    StringType({ name: "Text" }),
+    BooleanType({
+      name: "Completed",
       index: true,
       defaultValueOnCreate: () => {
         return false;
       },
     }),
-    creatorID: UUIDType({
+    UUIDType({
+      name: "creatorID",
       foreignKey: { schema: "Account", column: "ID" },
     }),
-  }, 
-}); 
-export default TodoSchema; 
+
+  ]; 
+}
 
 ```
 
@@ -61,7 +64,7 @@ const closedTodos = await Todo.loadCustom(
 
 ### query with clause
 
-To query all open todos of an account:
+To query all open todos of a user:
 
 ```ts
 const openTodos = await Todo.loadCustom(
@@ -76,15 +79,15 @@ const openTodos = await Todo.loadCustom(
 // sqlite
 // like the first example but using prepared queries
 const closedTodos = await Todo.loadCustom(account.viewer, {
-  query: `SELECT * FROM todos where completed = ?`,
-  values: [1],
-});
+    query: `SELECT * FROM todos where completed = ?`,
+    values: [1],
+  });
 
 // postgres
 const closedTodos = await Todo.loadCustom(account.viewer, {
-  query: `SELECT * FROM todos where completed = $1`,
-  values: [true],
-});
+    query: `SELECT * FROM todos where completed = $1`,
+    values: [true],
+  });
 ```
 
 This uses [prepared queries](https://en.wikipedia.org/wiki/Prepared_statement).
@@ -93,12 +96,12 @@ This uses [prepared queries](https://en.wikipedia.org/wiki/Prepared_statement).
 
 ```ts
 const orderedOpenedTodos = await Todo.loadCustom(account.viewer, {
-  clause: query.And(
-    query.Eq("creator_id", account.id),
-    query.Eq("completed", false),
-  ),
-  orderby: "created_at desc",
-});
+    clause: query.And(
+      query.Eq("creator_id", account.id),
+      query.Eq("completed", false),
+    ),
+    orderby: "created_at desc",
+  });
 ```
 
 Other options supported here are:
@@ -119,10 +122,10 @@ Any of the above can be used with `loadCustomData` instead of `loadCustom` to ju
 
 ```ts
 const closedTodos: Data[] = await Todo.loadCustomData({
-  clause: query.Eq("completed", false),
-  query: `SELECT * FROM todos where completed = ?`,
-  values: [1],
-});
+    clause: query.Eq("completed", false),
+    query: `SELECT * FROM todos where completed = ?`,
+    values: [1],
+  });
 ```
 
 ### expose to graphql
@@ -134,10 +137,12 @@ export class Account extends AccountBase {
 
 @gqlField({ name: "openTodosPlural", type: "[Todo]" })
   async openTodosPlural() {
-    return Todo.loadCustom(
+
+    return await Todo.loadCustom(
       this.viewer,
       query.And(query.Eq("creator_id", this.id), query.Eq("completed", false)),
     );
+
   }
 
 ```
@@ -190,25 +195,20 @@ This is the base class of a custom EntQuery that needs to be implemented. This i
 The relevant API is as follows:
 
 ```ts
-interface CustomEdgeQueryOptions<
-  TSource extends Ent<TViewer>,
-  TDest extends Ent<TViewer>,
-  TViewer extends Viewer = Viewer,
-> {
-  src: TSource | ID;
-  countLoaderFactory: LoaderFactory<ID, number>;
-  dataLoaderFactory: ConfigurableLoaderFactory<ID, Data[]>;
-  options: LoadEntOptions<TDest, TViewer>;
-  // // defaults to created_at
-  sortColumn?: string;
+interface CustomEdgeQueryOptions<T extends Ent> {
+    src: Ent | ID;
+    countLoaderFactory: LoaderFactory<ID, number>;
+    dataLoaderFactory: ConfigurableLoaderFactory<ID, Data[]>;
+    options: LoadEntOptions<T>;
+    sortColumn?: string;
 }
 
 declare class CustomEdgeQueryBase<TDest extends Ent> extends BaseEdgeQuery<TDest, Data> {
-  constructor(viewer: TViewer, options: CustomEdgeQueryOptions<TSource, TDest, TViewer>);
+    constructor(viewer: Viewer, options: CustomEdgeQueryOptions<TDest>);
 }
 ```
 
-`CustomEdgeQueryOptions` has the following properties:
+CustomEdgeQueryOptions has the following properties:
 
 * `src`: The source ent of the query
 * `countLoaderFactory`: [LoaderFactory](/docs/loaders/loader#loaderfactory) used to get the `rawCount`
@@ -218,14 +218,16 @@ declare class CustomEdgeQueryBase<TDest extends Ent> extends BaseEdgeQuery<TDest
 
 ### expose query to graphql
 
-To expose the custom ent query above to GraphQL as a connection, use [`gqlConnection`](/docs/custom-graphql/gql-connection).
+To expose the custom ent query above to GraphQL as a connection, use [ `gqlConnection` ](/docs/custom-graphql/gql-connection).
 
 ```ts title="src/account.ts"
 export class Account extends AccountBase {
 
 @gqlField({ name: "openTodos", type: gqlConnection("Todo") })
   openTodos() {
+
     return new AccountToOpenTodosQuery(this.viewer, this);
+
   }
 }
 ```

@@ -13,10 +13,8 @@ import {
   TodoInput,
 } from "src/ent/todo/actions/generated/todo_builder";
 
-export class DeleteTodoActionBase
-  implements Action<Todo, TodoBuilder<TodoInput>, TodoInput>
-{
-  public readonly builder: TodoBuilder<TodoInput>;
+export class DeleteTodoActionBase implements Action<Todo> {
+  public readonly builder: TodoBuilder;
   public readonly viewer: Viewer;
   protected todo: Todo;
 
@@ -31,7 +29,7 @@ export class DeleteTodoActionBase
     this.todo = todo;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Todo> {
+  getPrivacyPolicy(): PrivacyPolicy {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

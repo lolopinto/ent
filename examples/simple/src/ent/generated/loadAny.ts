@@ -41,7 +41,7 @@ export async function loadEntXByType(
   return loadEntX(viewer, id, getLoaderOptions(type));
 }
 
-export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent, any> {
+export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent> {
   switch (type) {
     case NodeType.Address:
       return Address.loaderOptions();

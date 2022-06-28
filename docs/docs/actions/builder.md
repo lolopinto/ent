@@ -9,21 +9,15 @@ The Builder is the building block for Actions. Even though Action provides the a
 ## Builder Interface
 
 ```ts
-export interface Builder<
-  TEnt extends Ent<TViewer>,
-  TViewer extends Viewer = Viewer,
-  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
-> {
-  existingEnt: TExistingEnt;
-  ent: EntConstructor<TEnt, TViewer>;
+interface Builder<T extends Ent> {
+  existingEnt?: Ent;
+  ent: EntConstructor<T>;
   placeholderID: ID;
-  readonly viewer: TViewer;
-  build(): Promise<Changeset>;
+  readonly viewer: Viewer;
+  build(): Promise<Changeset<T>>;
   operation: WriteOperation;
-  editedEnt?(): Promise<TEnt | null>;
-  nodeType: string;
+  editedEnt?(): Promise<T | null>;
 }
-
 ```
 
 ## Generated Builder
@@ -33,48 +27,39 @@ For the [Schema](/docs/actions/action#schema), the generated builder looks as fo
 ```ts title="src/ent/event/actions/event_builder.ts"
 export interface EventInput {
   name?: string;
-  creatorID?: ID | Builder<User, Viewer>;
+  creatorID?: ID | Builder<User>;
   startTime?: Date;
   endTime?: Date | null;
   location?: string;
 }
 
-export class EventBuilder<
-  TInput extends EventInput = EventInput,
-  TExistingEnt extends TMaybleNullableEnt<Event> = Event | null,
-> implements Builder<Event, ExampleViewer, TExistingEnt>
-{
+export interface EventAction extends Action<Event> {
+  getInput(): EventInput;
+}
+
+export class EventBuilder implements Builder<Event> {
+
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: Action<
-      Event,
-      Builder<Event, ExampleViewer, TExistingEnt>,
-      ExampleViewer,
-      TInput,
-      TExistingEnt
-    >,
-    public readonly existingEnt: TExistingEnt,
+    action: EventAction,
+    public readonly existingEnt?: Event | undefined,
   ) {
     //...
-  }
-
-  getInput(): TInput {
-    return this.input;
   }
 
   // override input
   updateInput(input: EventInput);
 
   // repeat for every edge...
-  addAttending(...nodes: (ID | User | Builder<User, any>)[]): this;
+  addAttending(...nodes: ID[] | User[] | Builder<User>[]): EventBuilder;
   addAttendingID(
-    id: ID | Builder<User, any>,
+    id: ID | Builder<User>,
     options?: AssocEdgeInputOptions,
-  ): this;
-  removeAttending(...nodes: (ID | User)[]): this;
+  ): EventBuilder;
+  removeAttending(...nodes: ID[] | User[]): EventBuilder;
 
-  async build(): Promise<Changeset>;
+  async build(): Promise<Changeset<Event>>;
   async valid(): Promise<boolean>;
   async validX(): Promise<void>;
   async save(): Promise<void>;

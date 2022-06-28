@@ -19,28 +19,28 @@ export interface GuestDataInput {
   eventID?: ID | Builder<Event>;
   dietaryRestrictions?: string;
   source?: GuestDataSource | null;
-  // allow other properties. useful for action-only fields
-  [x: string]: any;
+}
+
+export interface GuestDataAction extends Action<GuestData> {
+  getInput(): GuestDataInput;
 }
 
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class GuestDataBuilder<TData extends GuestDataInput = GuestDataInput>
-  implements Builder<GuestData>
-{
-  orchestrator: Orchestrator<GuestData, TData>;
+export class GuestDataBuilder implements Builder<GuestData> {
+  orchestrator: Orchestrator<GuestData>;
   readonly placeholderID: ID;
   readonly ent = GuestData;
   readonly nodeType = NodeType.GuestData;
-  private input: TData;
+  private input: GuestDataInput;
   private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: Action<GuestData, Builder<GuestData>, TData>,
+    action: GuestDataAction,
     public readonly existingEnt?: GuestData | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-GuestData`;
@@ -62,7 +62,7 @@ export class GuestDataBuilder<TData extends GuestDataInput = GuestDataInput>
     });
   }
 
-  getInput(): TData {
+  getInput(): GuestDataInput {
     return this.input;
   }
 

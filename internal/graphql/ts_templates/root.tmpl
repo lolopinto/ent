@@ -6,6 +6,7 @@
 
 export const {{.Type}} = new {{useImport "GraphQLObjectType"}}({
   name: "{{.Node}}",
+  // @ts-ignore graphql-js TS #2152 2829
   fields: () => ({
     {{ range $field := .RootFields -}} 
       {{$field.Name}}: {{useImport $field.Type}},

@@ -11,14 +11,14 @@ func TestHideFromGraphQL(t *testing.T) {
 		"hidden node": {
 			code: map[string]string{
 				"auth_code.ts": getCodeWithSchema(`
-				import {Schema, FieldMap, StringType} from "{schema}";
+				import {Schema, Field, StringType} from "{schema}";
 
 				export default class AuthCode implements Schema {
 					tableName: string = "auth_codes";
 
-					fields: FieldMap = {
-				    code: StringType(),
-					};
+					fields: Field[] = [
+				    StringType({ name: "code" }),
+					];
 
 					hideFromGraphQL = true;
 				}`),

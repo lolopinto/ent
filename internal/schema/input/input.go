@@ -22,9 +22,8 @@ type Pattern struct {
 	// Note that anytime anything changes here, have to update patternEqual in compare.go
 	Name string `json:"name,omitempty"`
 	// at this point, should we support everything in Node
-	Fields       []*Field     `json:"fields,omitempty"`
-	AssocEdges   []*AssocEdge `json:"assocEdges,omitempty"`
-	DisableMixin bool         `json:"disableMixin,omitempty"`
+	Fields     []*Field     `json:"fields,omitempty"`
+	AssocEdges []*AssocEdge `json:"assocEdges,omitempty"`
 }
 
 type Node struct {
@@ -43,8 +42,6 @@ type Node struct {
 	PatternName      string                   `json:"patternName,omitempty"`
 	TransformsSelect bool                     `json:"transformsSelect,omitempty"`
 	TransformsDelete bool                     `json:"transformsDelete,omitempty"`
-	SchemaPath       string                   `json:"schemaPath,omitempty"`
-	Patterns         []string                 `json:"patternNames,omitempty"`
 	// these 2 not used yet so ignoring for now
 	// TransformsInsert bool `json:"transformsInsert,omitempty"`
 	// TransformsUpdate bool `json:"transformsUpdate,omitempty"`
@@ -103,10 +100,6 @@ type FieldType struct {
 	CustomType CustomType `json:"customType,omitempty"`
 
 	ImportType *tsimport.ImportPath `json:"importType,omitempty"`
-
-	// list because go-lang map not stable and don't want generated fields to change ofte
-	SubFields   []*Field `json:"subFields,omitempty"`
-	UnionFields []*Field `json:"unionFields,omitempty"`
 }
 
 type Field struct {
@@ -132,7 +125,7 @@ type Field struct {
 	DisableUserGraphQLEditable bool `json:"disableUserGraphQLEditable,omitempty"`
 	HasDefaultValueOnCreate    bool `json:"hasDefaultValueOnCreate,omitempty"`
 	HasDefaultValueOnEdit      bool `json:"hasDefaultValueOnEdit,omitempty"`
-	HasFieldPrivacy            bool `json:"hasFieldPrivacy,omitempty"`
+	HasFieldPrivacy            bool `json:"hasFieldPrivacy"`
 
 	Polymorphic         *PolymorphicOptions `json:"polymorphic,omitempty"`
 	DerivedWhenEmbedded bool                `json:"derivedWhenEmbedded,omitempty"`
@@ -188,7 +181,7 @@ type PolymorphicOptions struct {
 	DisableBuilderType     bool     `json:"disableBuilderType,omitempty"`
 }
 
-func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.TSGraphQLType, error) {
+func getTypeFor(fieldName string, typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.TSGraphQLType, error) {
 	switch typ.DBType {
 	case UUID:
 		if nullable {
@@ -265,82 +258,37 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 			return &enttype.NullableDateType{}, nil
 		}
 		return &enttype.DateType{}, nil
-	case JSON, JSONB:
-
-		importType := typ.ImportType
-		var subFields interface{}
-		var unionFields interface{}
-		if len(typ.SubFields) != 0 {
-			// only set this if we actually have fields. otherwise, we want this to be nil
-			subFields = typ.SubFields
-			if importType == nil && typ.Type != "" {
-				importType = &tsimport.ImportPath{
-					ImportPath: getImportPathForCustomInterfaceFile(typ.Type),
-					Import:     typ.Type,
-				}
-			}
-		}
-		if len(typ.UnionFields) != 0 {
-			// only set this if we actually have fields. otherwise, we want this to be nil
-			unionFields = typ.UnionFields
-			if importType == nil && typ.Type != "" {
-				importType = &tsimport.ImportPath{
-					// intentionally no path since we don't support top level unions and this should lead to some kind of error
-					Import: typ.Type,
-				}
-			}
-		}
-
-		if typ.DBType == JSON {
-			if nullable {
-				ret := &enttype.NullableJSONType{}
-				ret.ImportType = importType
-				ret.CustomTsInterface = typ.Type
-				ret.CustomGraphQLInterface = typ.GraphQLType
-				ret.SubFields = subFields
-				ret.UnionFields = unionFields
-				return ret, nil
-			}
-			ret := &enttype.JSONType{}
-			ret.ImportType = importType
-			ret.CustomTsInterface = typ.Type
-			ret.CustomGraphQLInterface = typ.GraphQLType
-			ret.SubFields = subFields
-			ret.UnionFields = unionFields
-			return ret, nil
-		}
-
-		//	case JSONB:
+	case JSON:
 		if nullable {
-			ret := &enttype.NullableJSONBType{}
-			ret.ImportType = importType
-			ret.CustomTsInterface = typ.Type
-			ret.CustomGraphQLInterface = typ.GraphQLType
-			ret.SubFields = subFields
-			ret.UnionFields = unionFields
-			return ret, nil
+			return &enttype.NullableJSONType{
+				ImportType: typ.ImportType,
+			}, nil
 		}
-		ret := &enttype.JSONBType{}
-		ret.ImportType = importType
-		ret.CustomTsInterface = typ.Type
-		ret.CustomGraphQLInterface = typ.GraphQLType
-		ret.SubFields = subFields
-		ret.UnionFields = unionFields
-		return ret, nil
+		return &enttype.JSONType{
+			ImportType: typ.ImportType,
+		}, nil
+	case JSONB:
+		if nullable {
+			return &enttype.NullableJSONBType{
+				ImportType: typ.ImportType,
+			}, nil
+		}
+		return &enttype.JSONBType{
+			ImportType: typ.ImportType,
+		}, nil
 
 	case StringEnum, Enum:
 		tsType := strcase.ToCamel(typ.Type)
 		graphqlType := strcase.ToCamel(typ.GraphQLType)
-		// if tsType and graphqlType not explicitly specified,add schema prefix to generated enums
-		if tsType == "" {
-			tsType = strcase.ToCamel(nodeName) + strcase.ToCamel(fieldName)
-		}
-		if graphqlType == "" {
-			graphqlType = strcase.ToCamel(nodeName) + strcase.ToCamel(fieldName)
-		}
 		if foreignKey != nil {
 			tsType = foreignKey.Schema
 			graphqlType = foreignKey.Schema
+		}
+		if typ.Type == "" {
+			return nil, fmt.Errorf("enum type name is required for field %s", fieldName)
+		}
+		if typ.GraphQLType == "" {
+			return nil, fmt.Errorf("enum graphql name is required for field %s", fieldName)
 		}
 		if nullable {
 			return &enttype.NullableEnumType{
@@ -362,11 +310,11 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 	return nil, fmt.Errorf("unsupported type %s", typ.DBType)
 }
 
-func (f *Field) GetImport(nodeName string) (enttype.Import, error) {
+func (f *Field) GetImport() (enttype.Import, error) {
 	if f.Import != nil {
 		return f.Import, nil
 	}
-	typ, err := f.GetEntType(nodeName)
+	typ, err := f.GetEntType()
 	if err != nil {
 		return nil, err
 	}
@@ -377,15 +325,12 @@ func (f *Field) GetImport(nodeName string) (enttype.Import, error) {
 	return ctype.GetImportType(), nil
 }
 
-// need nodeName for enum
-// ideally, there's a more elegant way of doing this in the future
-// but we don't know the parent
-func (f *Field) GetEntType(nodeName string) (enttype.TSGraphQLType, error) {
+func (f *Field) GetEntType() (enttype.TSGraphQLType, error) {
 	if f.Type.DBType == List {
 		if f.Type.ListElemType == nil {
 			return nil, fmt.Errorf("list elem type for list is nil")
 		}
-		elemType, err := getTypeFor(nodeName, f.Name, f.Type.ListElemType, false, nil)
+		elemType, err := getTypeFor(f.Name, f.Type.ListElemType, false, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -398,7 +343,7 @@ func (f *Field) GetEntType(nodeName string) (enttype.TSGraphQLType, error) {
 			ElemType: elemType,
 		}, nil
 	} else {
-		return getTypeFor(nodeName, f.Name, f.Type, f.Nullable, f.ForeignKey)
+		return getTypeFor(f.Name, f.Type, f.Nullable, f.ForeignKey)
 	}
 }
 
@@ -772,9 +717,4 @@ func ParseSchema(input []byte) (*Schema, error) {
 		return nil, err
 	}
 	return s, nil
-}
-
-// copied from step.go
-func getImportPathForCustomInterfaceFile(tsType string) string {
-	return fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(tsType))
 }

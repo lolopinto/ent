@@ -30,28 +30,28 @@ export const TagType = new GraphQLObjectType({
       },
     },
     id: {
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
     },
     display_name: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
       resolve: (tag: Tag, args: {}, context: RequestContext) => {
         return tag.displayName;
       },
     },
     canonical_name: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
       resolve: (tag: Tag, args: {}, context: RequestContext) => {
         return tag.canonicalName;
       },
     },
     related_tag_ids: {
-      type: new GraphQLList(new GraphQLNonNull(GraphQLID)),
+      type: GraphQLList(GraphQLNonNull(GraphQLID)),
       resolve: (tag: Tag, args: {}, context: RequestContext) => {
         return tag.relatedTagIds;
       },
     },
     todos: {
-      type: new GraphQLNonNull(TagToTodosConnectionType()),
+      type: GraphQLNonNull(TagToTodosConnectionType()),
       args: {
         first: {
           description: "",

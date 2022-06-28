@@ -27,7 +27,7 @@ export const GuestDeleteInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     guestID: {
       description: "id of Guest",
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -46,11 +46,11 @@ export const GuestDeleteType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customGuestDeleteInput }
 > = {
-  type: new GraphQLNonNull(GuestDeletePayloadType),
+  type: GraphQLNonNull(GuestDeletePayloadType),
   args: {
     input: {
       description: "",
-      type: new GraphQLNonNull(GuestDeleteInputType),
+      type: GraphQLNonNull(GuestDeleteInputType),
     },
   },
   resolve: async (

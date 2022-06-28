@@ -32,7 +32,7 @@ export const GuestGroupEditInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     guestGroupID: {
       description: "id of GuestGroup",
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
     },
     invitationName: {
       type: GraphQLString,
@@ -44,7 +44,7 @@ export const GuestGroupEditPayloadType = new GraphQLObjectType({
   name: "GuestGroupEditPayload",
   fields: (): GraphQLFieldConfigMap<GuestGroupEditPayload, RequestContext> => ({
     guestGroup: {
-      type: new GraphQLNonNull(GuestGroupType),
+      type: GraphQLNonNull(GuestGroupType),
     },
   }),
 });
@@ -54,11 +54,11 @@ export const GuestGroupEditType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customGuestGroupEditInput }
 > = {
-  type: new GraphQLNonNull(GuestGroupEditPayloadType),
+  type: GraphQLNonNull(GuestGroupEditPayloadType),
   args: {
     input: {
       description: "",
-      type: new GraphQLNonNull(GuestGroupEditInputType),
+      type: GraphQLNonNull(GuestGroupEditInputType),
     },
   },
   resolve: async (

@@ -1,13 +1,12 @@
-import { ID } from "@snowtop/ent";
+import { IDViewer, LoggedOutViewer, ID } from "@snowtop/ent";
 import { User, UserToFriendsQuery, UserToSelfContactQuery } from "..";
 import CreateUserAction, {
   UserCreateInput,
 } from "../user/actions/create_user_action";
 import CreateEventAction from "../event/actions/create_event_action";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
-import { LoggedOutExampleViewer, ExampleViewer } from "src/viewer/viewer";
 
-const loggedOutViewer = new LoggedOutExampleViewer();
+const loggedOutViewer = new LoggedOutViewer();
 
 async function create(opts: Partial<UserCreateInput>): Promise<User> {
   let input: UserCreateInput = {
@@ -26,7 +25,7 @@ test("self contact query", async () => {
     firstName: "Jon",
     lastName: "Snow",
   });
-  let vc = new ExampleViewer(user.id);
+  let vc = new IDViewer(user.id);
   user = await User.loadX(vc, user.id);
   let selfContact = await user.loadSelfContact();
 
@@ -59,7 +58,7 @@ test("friends query", async () => {
   });
   const jon = await action.saveX();
 
-  const vc = new ExampleViewer(jon.id);
+  const vc = new IDViewer(jon.id);
   const query = UserToFriendsQuery.query(vc, jon.id);
 
   const [count, ids] = await Promise.all([
@@ -106,7 +105,7 @@ test("chained queries", async () => {
     }).saveX(),
   ]);
 
-  const vc = new ExampleViewer(jon.id);
+  const vc = new IDViewer(jon.id);
   const chainedIDs = await UserToFriendsQuery.query(vc, jon.id)
     .queryUserToHostedEvents()
     .queryAllIDs();

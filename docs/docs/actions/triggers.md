@@ -13,34 +13,22 @@ Any errors in Triggers fails the entire transaction.
 ## Trigger Interface
 
 ```ts
-export interface Changeset {
-  //...
+export interface Changeset<T extends Ent> {
+  // bunch of things that aren't currently relevant
 }
 
-export interface Action< 
-  TEnt extends Ent<TViewer>,
-  TBuilder extends Builder<TEnt, TViewer, TExistingEnt>,
-  TViewer extends Viewer = Viewer,
-  TInput extends Data = Data,
-  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
-> {
-  // ...
-  changeset(): Promise<Changeset>;
+export interface Action<T extends Ent> {
+  // bunch of other things that aren't relevant.
+  changeset(): Promise<Changeset<T>>;
 }
 
 export type TriggerReturn =
   | void
-  | Promise<Changeset | void | (Changeset | void)[]>
-  | Promise<Changeset>[];
+  | Promise<Changeset<Ent> | void | Changeset<Ent>[] | Changeset<Ent>>
+  | Promise<Changeset<Ent>>[];
 
-export interface Trigger<
-  TEnt extends Ent<TViewer>,
-  TBuilder extends Builder<TEnt, TViewer, TExistingEnt>,
-  TViewer extends Viewer = Viewer,
-  TInput extends Data = Data,
-  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
-> {
-  changeset(builder: TBuilder, input: TInput): TriggerReturn;
+export interface Trigger<T extends Ent> {
+  changeset(builder: Builder<T>, input: Data): TriggerReturn;
 }
 ```
 
@@ -54,18 +42,14 @@ For example, in the example schema, to add the creator as a host of the event wh
 
 ```ts title="src/ent/events/action/create_event_action.ts"
 export default class CreateEventAction extends CreateEventActionBase {
-  getTriggers() {
-    return [
-      {
-        changeset(builder: EventBuilder<EventCreateInput, Viewer>, input: EventCreateInput) {
-          builder.addHostID(input.creatorID);
-        },
+  triggers: Trigger<Event>[] = [
+    {
+      changeset(builder: EventBuilder, input: EventCreateInput) {
+        builder.addHostID(input.creatorID);
       },
-    ]; 
-
-  }
+    },
+  ];
 }
-
 ```
 
 ## Changeset
@@ -74,37 +58,37 @@ The full power of Triggers is seen when there are dependent objects that need to
 
 Assume there's an `Address` associated with the `Event` with multiple objects possibly having an Address so we have a separate object for it.
 
-```ts title="src/schema/address_schema.ts"
-const AddressSchema = new EntSchema({
-  fields: {
-    Street: StringType(),
-    City: StringType(),
-    State: StringType(),
-    ZipCode: StringType(),
-    Apartment: StringType({ nullable: true }),
-    OwnerID: UUIDType({
+```ts title="src/schema/address.ts"
+export default class Address extends BaseEntSchema implements Schema {
+  fields: Field[] = [
+    StringType({ name: "Street" }),
+    StringType({ name: "City" }),
+    StringType({ name: "State" }),
+    StringType({ name: "ZipCode" }),
+    StringType({ name: "Apartment", nullable: true }),
+    UUIDType({
+      name: "OwnerID",
       index: true, 
       polymorphic: {
         types: [NodeType.Event],
       }
     }),
-  ],
+  ];
 
-  actions: [
+  actions: Action[] = [
     {
       operation: ActionOperation.Create,
     },
-  ],
-});
-export default AddressSchema;
+  ];
+}
 ```
 
 and the Event schema modified as follows:
 
-```ts title="src/schema/event_schema.ts"
-const EventSchema = new EntSchema({
+```ts title="src/schema/event.ts"
+export default class Event extends BaseEntSchema implements Schema {
 
-  actions: [
+  actions: Action[] = [
     {
       operation: ActionOperation.Create,
       actionOnlyFields: [
@@ -116,31 +100,27 @@ const EventSchema = new EntSchema({
         },
       ],
     },
-  ], 
-}); 
-export default EventSchema; 
-
+  ];
+}
 ```
 
 and `CreateEventAction` modified as follows:
 
 ```ts title="src/ent/events/action/create_event_action.ts"
 export default class CreateEventAction extends CreateEventActionBase {
-  getTriggers() {
-    return [
+  triggers: Trigger<Event>[] = [
     {
-        changeset(builder: EventBuilder<EventCreateInput, Viewer>, input: EventCreateInput) {
-          if (!this.input.address) {
-            return;
-          }
-          return await CreateAddressAction.create(builder.viewer, {
-            ...this.input.address,
-            ownerID: builder,
-            ownerType: NodeType.Event,
-          }).changeset();      },
-      },
-    ];
-  }
+      changeset(builder: EventBuilder, input: EventCreateInput) {
+        if (!this.input.address) {
+          return;
+        }
+        return await CreateAddressAction.create(builder.viewer, {
+          ...this.input.address,
+          ownerID: builder,
+          ownerType: NodeType.Event,
+        }).changeset();      },
+    },
+  ];
 }
 ```
 

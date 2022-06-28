@@ -40,7 +40,6 @@ describe("create event", () => {
           inviteAllGuests: true,
         },
         {
-          inviteAllGuests: false,
           startTime: new Date(),
           name: "closing brunch",
           location: "whaa",

@@ -4,30 +4,33 @@ sidebar_position: 6
 
 # Actions
 
-Actions are the way to configure writes in the system. Instead of just a blanket create, edit and delete option, we believe it makes more sense to have more nuanced options when it makes sense.
+Actions are the way to configure writes in the system. Instead of just a blanket create, edit and delete option, we believe it makes more sense to have more nuanced options.
 
 You can think of an action as a singular action (pun intended!) performed by a user. For example, consider a `User` object, there's different things that can be done by the user with very different permission checks or side effects based on what fields are being changed.
 
 In concrete terms, consider a `User` schema as follows:
 
-```ts title="src/schema/user_schema.ts"
-const UserSchema = new EntSchema({
-  fields: {
-    firstName: StringType(),
-    lastName: StringType(),
-    emailAddress: EmailType({ unique: true }),
-    PhoneNumber: PhoneNumberType({
+```ts title="src/schema/user.ts"
+export default class User extends BaseEntSchema implements Schema {
+  fields: Field[] = [
+
+    StringType({ name: "firstName" }),
+    StringType({ name: "lastName" }),
+    EmailType({ name: "emailAddress", unique: true }),
+    PhoneNumberType({
+      name: "PhoneNumber",
       unique: true,
     }),
-    password: PasswordType(),
-    accountStatus: EnumType({ values: ["UNVERIFIED", "VERIFIED", "DEACTIVATED", "DISABLED"],          serverDefault: "UNVERIFIED" }),
-    emailVerified: BooleanType({
+    PasswordType({ name: "password"}),
+    EnumType({ name: "accountStatus", values: ["UNVERIFIED", "VERIFIED", "DEACTIVATED", "DISABLED"], serverDefault: "UNVERIFIED" }),
+    BooleanType({
+      name: "emailVerified",
       hideFromGraphQL: true,
       serverDefault: "FALSE",
     }),
-  }, 
-}); 
-export default UserSchema; 
+
+  ]; 
+}
 
 ```
 
@@ -51,22 +54,21 @@ Having just one big edit mutation that handles all this gets complicated really 
 
 With all that said, most objects don't need this level of complexity and just need the CUD in CRUD. That can be configured as follows:
 
-```ts title="src/schema/event_schema.ts"
-const EventSchema = new EntSchema({
-  fields: {
+```ts title="src/schema/event.ts"
+export default class Event extends BaseEntSchema implements Schema {
+  fields: Field[] = [
     //...
-  },
+  ];
 
-  actions: [
+actions: Action[] = [
     {
       operation: ActionOperation.Mutations,
     },
-  ],
-});
-export default EventSchema;
+  ];
+}
 ```
 
-That adds `eventCreate` , `eventEdit` and `eventDelete` actions with all the editable fields showing up in the create and delete actions.
+That adds a `eventCreate` , `eventEdit` and `eventDelete` action with all the editable fields showing up in the create and delete actions.
 
 And over time as the product evolves, the action(s) can be configured and updated to simplify or make things more complicated.
 
@@ -81,7 +83,7 @@ specifies the type of action that's created. We have the following types:
 * `ActionOperation.Create`: create an object. inserts a new row into the database.
 * `ActionOperation.Edit`: edits an object. edits an existing row in the database.
 * `ActionOperation.Delete`: deletes on object. deletes an existing row in the database.
-* `ActionOperation.Mutations`: shortcut to easily get `create`,     `edit`, and `delete` actions. Cannot be customized. If you want to customize the actions, have to itemize
+* `ActionOperation.Mutations`: shortcut to easily get `create`,  `edit`, and `delete` actions. Cannot be customized. If you want to customize the actions, have to itemize
 * `ActionOperation.AddEdge`: adds a new [edge](/docs/ent-schema/edges)
 * `ActionOperation.RemoveEdge`: removes an [edge](/docs/ent-schema/edges)
 * `ActionOperation.EdgeGroup`: creates a new action for an [edge group](/docs/ent-schema/edge-groups)
@@ -129,13 +131,16 @@ sometimes, we need fields that are not in the schema that need to be generated i
 
 For example, a possible confirm email address action which was referenced above, can be configured as follows:
 
-```ts title="src/schema/user_schema.ts"
-const UserSchema = new EntSchema({
-  fields: {
-    //...
-  }, 
+```ts title="src/schema/user.ts"
+export default class User extends BaseEntSchema implements Schema {
+  fields: Field[] = [
 
-  actions: [
+    //...
+
+  ]; 
+
+  actions: Action[] = [
+
     // confirm email address with code sent in last time
     {
       operation: ActionOperation.Edit,
@@ -146,9 +151,9 @@ const UserSchema = new EntSchema({
       // fields are default optional in edit mutation, this says make this required in here
       fields: [requiredField("EmailAddress")],
     },
-  ], 
-}); 
-export default UserSchema; 
+
+  ]; 
+}
 
 ```
 
@@ -168,11 +173,11 @@ This adds an additional required field `code` of type `String` to be generated f
 
 For example,
 
-```ts title="src/schema/event_schema.ts"
-const EventSchema = new EntSchema({
-  fields: {},
+```ts title="src/schema/event.ts"
+export default class Event extends BaseEntSchema {
+  fields: Field[] = [];
 
-  actions: [
+  actions: Action[] = [
     {
       operation: ActionOperation.Create,
       actionOnlyFields: [
@@ -184,9 +189,8 @@ const EventSchema = new EntSchema({
         },
       ],
     },
-  ],
-}).
-export default EventSchema;
+  ];
+}
 ```
 
 results in this schema (assuming an `Address` object with the fields `street` , `city` , `state` , `zipCode` , `apartment` ):
@@ -224,11 +228,11 @@ Sometimes, there's scenarios where we want no fields associated with the schema 
 
 For example. an edit email address action that takes an email address and generates a unique code, stores the code somewhere e.g. redis and sends a confirmation email with the code embedded can be represented as follows:
 
-```ts title="src/schema/user_schema.ts"
-const UserSchema = new EntSchema({
-  fields: {},
+```ts title="src/schema/user.ts"
+export default class User extends BaseEntSchema {
+  fields: Field[] = [];
 
-  actions: [
+  actions: Action[] = [
     // send confirmation code for email address
     {
       // we're not saving anything in the db so we use actionOnlyField to specify a required email address
@@ -244,9 +248,8 @@ const UserSchema = new EntSchema({
       // we use a different field name so that field is not saved
       actionOnlyFields: [{ name: "newEmail", type: "String" }],
     },
-  ],
-});
-export default UserSchema;
+  ];
+}
 ```
 
 We make sure to use a different field name with the action only field such as `newEmail` so that the email address isn't saved yet.
@@ -261,11 +264,12 @@ makes a field *required* in an action. Needed in the following cases:
 
 e.g.
 
-```ts title="src/schema/user_schema.ts"
-const UserSchema = new EntSchema({
-  fields: {}, 
+```ts title="src/schema/user.ts"
+export default class User extends BaseEntSchema {
+  fields: Field[] = []; 
 
-  actions: [
+  actions: Action[] = [
+
     // confirm email address with code sent in last time
     {
       operation: ActionOperation.Edit,
@@ -276,8 +280,9 @@ const UserSchema = new EntSchema({
       // fields are default optional in edit mutation, this says make this required in here
       fields: [requiredField("EmailAddress")],
     },
-  ], 
-}); 
+
+  ]; 
+}
 ```
 
 ## optionalField

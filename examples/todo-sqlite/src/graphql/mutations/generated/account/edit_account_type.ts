@@ -34,7 +34,7 @@ export const EditAccountInputType = new GraphQLInputObjectType({
   fields: (): GraphQLInputFieldConfigMap => ({
     account_id: {
       description: "id of Account",
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
     },
     name: {
       type: GraphQLString,
@@ -52,7 +52,7 @@ export const EditAccountPayloadType = new GraphQLObjectType({
   name: "EditAccountPayload",
   fields: (): GraphQLFieldConfigMap<EditAccountPayload, RequestContext> => ({
     account: {
-      type: new GraphQLNonNull(AccountType),
+      type: GraphQLNonNull(AccountType),
     },
   }),
 });
@@ -62,11 +62,11 @@ export const EditAccountType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customEditAccountInput }
 > = {
-  type: new GraphQLNonNull(EditAccountPayloadType),
+  type: GraphQLNonNull(EditAccountPayloadType),
   args: {
     input: {
       description: "",
-      type: new GraphQLNonNull(EditAccountInputType),
+      type: GraphQLNonNull(EditAccountInputType),
     },
   },
   resolve: async (

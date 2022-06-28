@@ -19,28 +19,28 @@ export interface UserInput {
   lastName?: string;
   emailAddress?: string;
   password?: string;
-  // allow other properties. useful for action-only fields
-  [x: string]: any;
+}
+
+export interface UserAction extends Action<User> {
+  getInput(): UserInput;
 }
 
 function randomNum(): string {
   return Math.random().toString(10).substring(2);
 }
 
-export class UserBuilder<TData extends UserInput = UserInput>
-  implements Builder<User>
-{
-  orchestrator: Orchestrator<User, TData>;
+export class UserBuilder implements Builder<User> {
+  orchestrator: Orchestrator<User>;
   readonly placeholderID: ID;
   readonly ent = User;
   readonly nodeType = NodeType.User;
-  private input: TData;
+  private input: UserInput;
   private m: Map<string, any> = new Map();
 
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    action: Action<User, Builder<User>, TData>,
+    action: UserAction,
     public readonly existingEnt?: User | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-User`;
@@ -61,7 +61,7 @@ export class UserBuilder<TData extends UserInput = UserInput>
     });
   }
 
-  getInput(): TData {
+  getInput(): UserInput {
     return this.input;
   }
 

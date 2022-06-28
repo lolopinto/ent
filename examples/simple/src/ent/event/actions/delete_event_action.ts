@@ -1,19 +1,15 @@
-import { DeleteEventActionBase } from "../../generated/event/actions/delete_event_action_base";
+import { DeleteEventActionBase } from "./generated/delete_event_action_base";
 import {
-  AllowIfViewerIsEntPropertyRule,
+  AllowIfViewerIsRule,
   AlwaysDenyRule,
   PrivacyPolicy,
 } from "@snowtop/ent";
-import { Event } from "../../../ent";
 
 // we're only writing this once except with --force and packageName provided
 export default class DeleteEventAction extends DeleteEventActionBase {
   getPrivacyPolicy(): PrivacyPolicy {
     return {
-      rules: [
-        new AllowIfViewerIsEntPropertyRule<Event>("creatorID"),
-        AlwaysDenyRule,
-      ],
+      rules: [new AllowIfViewerIsRule("creatorID"), AlwaysDenyRule],
     };
   }
 }

@@ -38,4 +38,3 @@ export {
   encodeGQLID,
 } from "./node_resolver";
 export { convertFromGQLEnum, convertToGQLEnum } from "./enums";
-export { transformUnionTypes } from "./mutations/union";

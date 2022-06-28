@@ -31,25 +31,25 @@ export const AddressCreateInputType = new GraphQLInputObjectType({
   name: "AddressCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     street: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
     city: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
     state: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
     zipCode: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
     apartment: {
       type: GraphQLString,
     },
     ownerID: {
-      type: new GraphQLNonNull(GraphQLID),
+      type: GraphQLNonNull(GraphQLID),
     },
     ownerType: {
-      type: new GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLString),
     },
   }),
 });
@@ -58,7 +58,7 @@ export const AddressCreatePayloadType = new GraphQLObjectType({
   name: "AddressCreatePayload",
   fields: (): GraphQLFieldConfigMap<AddressCreatePayload, RequestContext> => ({
     address: {
-      type: new GraphQLNonNull(AddressType),
+      type: GraphQLNonNull(AddressType),
     },
   }),
 });
@@ -68,11 +68,11 @@ export const AddressCreateType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customAddressCreateInput }
 > = {
-  type: new GraphQLNonNull(AddressCreatePayloadType),
+  type: GraphQLNonNull(AddressCreatePayloadType),
   args: {
     input: {
       description: "",
-      type: new GraphQLNonNull(AddressCreateInputType),
+      type: GraphQLNonNull(AddressCreateInputType),
     },
   },
   resolve: async (

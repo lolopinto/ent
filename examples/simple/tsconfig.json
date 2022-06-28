@@ -13,8 +13,7 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "strict": true,
-    "noUnusedLocals": true,
-    "skipLibCheck": true
+    "noUnusedLocals": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "tests/**/*"]
