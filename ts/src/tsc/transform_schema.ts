@@ -126,7 +126,7 @@ function getClassElementInfo(
   member: ts.ClassElement,
   sourceFile: ts.SourceFile,
 ): propertyInfo | undefined {
-  if (isFieldElement(member, sourceFile)) {
+  if (isFieldElement(fileContents, member, sourceFile)) {
     return getFieldElementInfo(fileContents, member, sourceFile);
   }
   if (member.kind === ts.SyntaxKind.Constructor) {
@@ -261,6 +261,7 @@ function getConstructorElementInfo(
 }
 
 function isFieldElement(
+  fileContents: string,
   member: ts.ClassElement,
   sourceFile: ts.SourceFile,
 ): boolean {
@@ -279,7 +280,7 @@ function isFieldElement(
   }
 
   if (property.initializer?.kind !== ts.SyntaxKind.ArrayLiteralExpression) {
-    console.error("invalid array type");
+    throwErr(fileContents, member, "invalid array type");
     return false;
   }
 
@@ -299,15 +300,51 @@ interface ParsedFieldElement {
   suffix?: string;
 }
 
+// if there's an error transforming any of the schemas, we should stop...
+function throwErr(fileContents: string, node: ts.Node, error: string) {
+  console.error(error);
+  throw new Error(
+    `error transforming this field ${fileContents.substring(
+      node.getFullStart(),
+      node.getEnd(),
+    )}`,
+  );
+}
+
 function parseFieldElement(
   element: ts.Expression,
   sourceFile: ts.SourceFile,
   fileContents: string,
   nested?: boolean,
 ): ParsedFieldElement | null {
-  if (element.kind !== ts.SyntaxKind.CallExpression) {
-    console.error("skipped non-call expression");
+  if (
+    element.kind !== ts.SyntaxKind.CallExpression &&
+    element.kind !== ts.SyntaxKind.PropertyAccessExpression
+  ) {
+    throwErr(
+      fileContents,
+      element,
+      `skipped unknown (non-call|non-property) expression ${element.kind}`,
+    );
     return null;
+  }
+
+  if (element.kind === ts.SyntaxKind.PropertyAccessExpression) {
+    const ret = parseFieldElement(
+      (element as ts.PropertyAccessExpression).expression,
+      sourceFile,
+      fileContents,
+      true,
+    );
+    if (ret !== null) {
+      if (!nested) {
+        ret.suffix = fileContents.substring(
+          ret.callEx.getEnd(),
+          element.getEnd(),
+        );
+      }
+      return ret;
+    }
   }
   let callEx = element as ts.CallExpression;
   if (callEx.arguments.length !== 1) {
@@ -331,13 +368,39 @@ function parseFieldElement(
       }
     }
 
-    console.error("callExpression with arguments not of length 1");
-    return null;
+    throwErr(
+      fileContents,
+      element,
+      "callExpression with arguments not of length 1",
+    );
   }
 
   let arg = callEx.arguments[0];
   if (arg.kind !== ts.SyntaxKind.ObjectLiteralExpression) {
-    console.error("not objectLiteralExpression");
+    // this and the check above for PropertyAccessExpression are to handle things like
+    // FooType({
+    /// ...
+    // }).function(blah)
+    const ret = parseFieldElement(
+      callEx.expression,
+      sourceFile,
+      fileContents,
+      true,
+    );
+    if (ret !== null) {
+      if (!nested) {
+        ret.suffix = fileContents.substring(
+          ret.callEx.getEnd(),
+          callEx.getEnd(),
+        );
+      }
+      return ret;
+    }
+    throwErr(
+      fileContents,
+      element,
+      `not objectLiteralExpression. kind ${arg.kind}`,
+    );
     return null;
   }
 
@@ -360,7 +423,7 @@ function parseFieldElement(
   }
 
   if (!name) {
-    console.error(`couldn't find name property`);
+    throwErr(fileContents, element, `couldn't find name property`);
     return null;
   }
   // remove quotes
