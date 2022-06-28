@@ -1,0 +1,77 @@
+{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data"  "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData" "applyPrivacyPolicy" "Ent" "Viewer" "Data"}}
+
+{{$p := .Pattern}}
+{{$cfg := .Config}}
+
+type Constructor<T = {}> = new (...args: any[]) => T;
+
+{{ range $p.GetImportsForMixin -}} 
+  {{ reserveImportPath . false -}}
+{{ end}}
+
+
+export interface {{$p.GetMixinInterfaceName}} {
+  {{$p.GetPatternMethod}}(): boolean;
+  {{ range $field := $p.FieldInfo.Fields -}}
+    {{ range $field.GetTsTypeImports -}}
+      {{ if ($p.ForeignImport .Import) -}}
+        {{ reserveImportPath . false -}}
+      {{end -}}
+      {{$typ := useImportMaybe .Import -}}
+    {{end -}}
+    {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
+  {{end -}}
+  {{/* no easy way to guarantee this from the mixin so we'll just do it from the ent side */ -}}
+  {{range $edge := $p.AssocEdges -}}
+    {{$edgeName := .CamelCaseEdgeName -}}
+    {{$queryName := useImport $edge.TsEdgeQueryName -}}
+    query{{$edgeName}}(): {{$queryName}};
+  {{end -}}
+}
+
+{{ if $p.HasFields -}}
+  function extractFromArgs<TViewer extends {{useImport "Viewer"}}, TData extends {{useImport "Data"}}>(
+    args: any[],
+  ): { viewer: TViewer; data: TData } {
+    if (args.length !== 2) {
+      throw new Error("args should be length 2");
+    }
+    return {
+      viewer: args[0],
+      data: args[1],
+    };
+  }
+{{ end}}
+
+
+export function {{$p.GetMixinName}}<T extends Constructor>(BaseClass: T) {
+  return class {{$p.GetMixinName}} extends BaseClass {
+
+    {{ range $field := $p.FieldInfo.Fields -}}
+      readonly {{$field.TsFieldName $cfg}}: {{$field.TsFieldType $cfg}};
+    {{end -}}
+  
+    constructor(...args: any[]) {
+      super(...args);
+      {{ if $p.HasFields -}}
+        const { data } = extractFromArgs(args);
+      {{ end -}}
+
+      {{ range $field := $p.FieldInfo.Fields -}}
+        {{$val := printf "data.%s" $field.GetDbColName -}}
+        {{$convertType := convertFunc ($field.GetTSFieldType $cfg) -}}
+
+        {{if $convertType -}} 
+          {{/* could be BigInt which isn't reserved */ -}}
+          this.{{$field.TsFieldName $cfg}} = {{useImportMaybe $convertType}}({{$val}});
+        {{ else -}}
+          this.{{$field.TsFieldName $cfg}} = {{$val}};
+        {{end -}}
+      {{end -}}
+    }
+
+    {{$p.GetPatternMethod}}() {
+      return true;
+    }
+  };
+}

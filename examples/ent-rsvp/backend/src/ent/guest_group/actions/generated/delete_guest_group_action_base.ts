@@ -13,8 +13,11 @@ import {
   GuestGroupInput,
 } from "src/ent/guest_group/actions/generated/guest_group_builder";
 
-export class DeleteGuestGroupActionBase implements Action<GuestGroup> {
-  public readonly builder: GuestGroupBuilder;
+export class DeleteGuestGroupActionBase
+  implements
+    Action<GuestGroup, GuestGroupBuilder<GuestGroupInput>, GuestGroupInput>
+{
+  public readonly builder: GuestGroupBuilder<GuestGroupInput>;
   public readonly viewer: Viewer;
   protected guestGroup: GuestGroup;
 
@@ -29,7 +32,7 @@ export class DeleteGuestGroupActionBase implements Action<GuestGroup> {
     this.guestGroup = guestGroup;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<GuestGroup> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

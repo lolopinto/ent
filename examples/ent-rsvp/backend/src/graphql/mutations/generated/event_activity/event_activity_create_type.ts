@@ -32,16 +32,16 @@ export const AddressEventActivityCreateInput = new GraphQLInputObjectType({
   name: "AddressEventActivityCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     street: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     city: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     state: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     zipCode: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     apartment: {
       type: GraphQLString,
@@ -53,19 +53,19 @@ export const EventActivityCreateInputType = new GraphQLInputObjectType({
   name: "EventActivityCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     name: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     eventID: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
     },
     startTime: {
-      type: GraphQLNonNull(GraphQLTime),
+      type: new GraphQLNonNull(GraphQLTime),
     },
     endTime: {
       type: GraphQLTime,
     },
     location: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     description: {
       type: GraphQLString,
@@ -86,7 +86,7 @@ export const EventActivityCreatePayloadType = new GraphQLObjectType({
     RequestContext
   > => ({
     eventActivity: {
-      type: GraphQLNonNull(EventActivityType),
+      type: new GraphQLNonNull(EventActivityType),
     },
   }),
 });
@@ -96,11 +96,11 @@ export const EventActivityCreateType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customEventActivityCreateInput }
 > = {
-  type: GraphQLNonNull(EventActivityCreatePayloadType),
+  type: new GraphQLNonNull(EventActivityCreatePayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(EventActivityCreateInputType),
+      type: new GraphQLNonNull(EventActivityCreateInputType),
     },
   },
   resolve: async (

@@ -62,12 +62,12 @@ func TestImportPath(t *testing.T) {
 			expResult:  "../../contact/actions/create_contact_action",
 		},
 		"ent from graphql": {
-			filePath:   "src/graphql/resolvers/generated/user_type.ts",
+			filePath:   "src/graphql/generated/resolvers/user_type.ts",
 			importPath: "src/ent",
 			expResult:  "../../../ent",
 		},
 		"graphql internal from graphql": {
-			filePath:   "src/graphql/resolvers/generated/user_type.ts",
+			filePath:   "src/graphql/generated/resolvers/user_type.ts",
 			importPath: "src/graphql/resolvers/internal",
 			expResult:  "../../resolvers/internal",
 		},

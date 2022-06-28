@@ -1,5 +1,5 @@
 {{reserveDefaultImport "express" "express"}}
-{{reserveImport "express-graphql" "graphqlHTTP"}}
+{{reserveImport "graphql-helix" "getGraphQLParameters" "processRequest" "sendResult" "shouldRenderGraphiQL" "renderGraphiQL"}}
 {{reserveDefaultImport "./generated/schema" "schema"}}
 
 {{reserveImport "http" "IncomingMessage" "ServerResponse" }}
@@ -7,22 +7,29 @@
 {{reserveImport .AuthPackage "buildContext" }}
 
 let app = {{useImport "express"}}();
-
+app.use(express.json());
 app.use(
   "/graphql",
-  {{useImport "graphqlHTTP"}}((request: {{useImport "IncomingMessage"}}, response: {{useImport "ServerResponse"}}) => {
-    let doWork = async () => {
-      let context = await {{useImport "buildContext"}}(request, response);
-      return {
-        schema: {{useImport "schema"}},
-        graphiql: true,
-        context,
-      };
-    };
-    return doWork();
-  })
+  async (req, res) => {
+    if ({{useImport "shouldRenderGraphiQL"}}(req)) {
+      res.send({{useImport "renderGraphiQL"}}());
+    } else {
+      const { operationName, query, variables } = {{useImport "getGraphQLParameters"}}(req);
+      const result = await {{useImport "processRequest"}}({
+        operationName,
+        query,
+        variables,
+        request: req,
+        {{useImport "schema"}},
+        contextFactory: async () => {
+          return {{useImport "buildContext"}}(req, res);
+        },
+      });
+      await {{useImport "sendResult"}}(result, res);
+    }
+  },
 );
-const server = app.listen(process.env.port || 4000);
+const server = app.listen(process.env.PORT || 4000);
 
 app.get("/healthz", async (req, res, params) => {
   try {

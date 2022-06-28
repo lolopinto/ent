@@ -8,10 +8,10 @@ import {
   Context,
   CustomQuery,
   Data,
+  Ent,
   ID,
   LoadEntOptions,
   PrivacyPolicy,
-  Viewer,
   convertDate,
   loadCustomData,
   loadCustomEnts,
@@ -25,9 +25,19 @@ import {
   contactPhoneNumberLoaderInfo,
 } from "./loaders";
 import { Contact, NodeType } from "../internal";
-import schema from "../../schema/contact_phone_number";
+import schema from "../../schema/contact_phone_number_schema";
+import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
-export class ContactPhoneNumberBase {
+interface ContactPhoneNumberDBData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  phone_number: string;
+  label: string;
+  contact_id: ID;
+}
+
+export class ContactPhoneNumberBase implements Ent<ExampleViewerAlias> {
   readonly nodeType = NodeType.ContactPhoneNumber;
   readonly id: ID;
   readonly createdAt: Date;
@@ -36,7 +46,7 @@ export class ContactPhoneNumberBase {
   readonly label: string;
   readonly contactID: ID;
 
-  constructor(public viewer: Viewer, protected data: Data) {
+  constructor(public viewer: ExampleViewerAlias, protected data: Data) {
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
@@ -45,11 +55,13 @@ export class ContactPhoneNumberBase {
     this.contactID = data.contact_id;
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   static async load<T extends ContactPhoneNumberBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T | null> {
     return (await loadEnt(
@@ -60,8 +72,8 @@ export class ContactPhoneNumberBase {
   }
 
   static async loadX<T extends ContactPhoneNumberBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     id: ID,
   ): Promise<T> {
     return (await loadEntX(
@@ -72,20 +84,20 @@ export class ContactPhoneNumberBase {
   }
 
   static async loadMany<T extends ContactPhoneNumberBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     ...ids: ID[]
-  ): Promise<T[]> {
+  ): Promise<Map<ID, T>> {
     return (await loadEnts(
       viewer,
       ContactPhoneNumberBase.loaderOptions.apply(this),
       ...ids,
-    )) as T[];
+    )) as Map<ID, T>;
   }
 
   static async loadCustom<T extends ContactPhoneNumberBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-    viewer: Viewer,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+    viewer: ExampleViewerAlias,
     query: CustomQuery,
   ): Promise<T[]> {
     return (await loadCustomEnts(
@@ -96,40 +108,44 @@ export class ContactPhoneNumberBase {
   }
 
   static async loadCustomData<T extends ContactPhoneNumberBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<Data[]> {
-    return loadCustomData(
+  ): Promise<ContactPhoneNumberDBData[]> {
+    return (await loadCustomData(
       ContactPhoneNumberBase.loaderOptions.apply(this),
       query,
       context,
-    );
+    )) as ContactPhoneNumberDBData[];
   }
 
   static async loadRawData<T extends ContactPhoneNumberBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data | null> {
-    return contactPhoneNumberLoader.createLoader(context).load(id);
+  ): Promise<ContactPhoneNumberDBData | null> {
+    const row = await contactPhoneNumberLoader.createLoader(context).load(id);
+    if (!row) {
+      return null;
+    }
+    return row as ContactPhoneNumberDBData;
   }
 
   static async loadRawDataX<T extends ContactPhoneNumberBase>(
-    this: new (viewer: Viewer, data: Data) => T,
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data> {
+  ): Promise<ContactPhoneNumberDBData> {
     const row = await contactPhoneNumberLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row;
+    return row as ContactPhoneNumberDBData;
   }
 
   static loaderOptions<T extends ContactPhoneNumberBase>(
-    this: new (viewer: Viewer, data: Data) => T,
-  ): LoadEntOptions<T> {
+    this: new (viewer: ExampleViewerAlias, data: Data) => T,
+  ): LoadEntOptions<T, ExampleViewerAlias> {
     return {
       tableName: contactPhoneNumberLoaderInfo.tableName,
       fields: contactPhoneNumberLoaderInfo.fields,

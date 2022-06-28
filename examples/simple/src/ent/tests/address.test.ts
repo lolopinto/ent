@@ -1,7 +1,7 @@
-import { LoggedOutViewer } from "@snowtop/ent";
+import { LoggedOutExampleViewer } from "../../viewer/viewer";
 import CreateAddressAction from "../address/actions/create_address_action";
 
-const vc = new LoggedOutViewer();
+const vc = new LoggedOutExampleViewer();
 
 test("create", async () => {
   const address = await CreateAddressAction.create(vc, {

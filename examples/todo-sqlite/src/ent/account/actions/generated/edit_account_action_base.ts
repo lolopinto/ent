@@ -8,10 +8,7 @@ import {
 } from "@snowtop/ent";
 import { Action, Changeset, WriteOperation } from "@snowtop/ent/action";
 import { Account, AccountState } from "src/ent/";
-import {
-  AccountBuilder,
-  AccountInput,
-} from "src/ent/account/actions/generated/account_builder";
+import { AccountBuilder } from "src/ent/account/actions/generated/account_builder";
 
 export interface AccountEditInput {
   name?: string;
@@ -19,8 +16,11 @@ export interface AccountEditInput {
   accountState?: AccountState | null;
 }
 
-export class EditAccountActionBase implements Action<Account> {
-  public readonly builder: AccountBuilder;
+export class EditAccountActionBase
+  implements
+    Action<Account, AccountBuilder<AccountEditInput>, AccountEditInput>
+{
+  public readonly builder: AccountBuilder<AccountEditInput>;
   public readonly viewer: Viewer;
   protected input: AccountEditInput;
   protected account: Account;
@@ -37,11 +37,11 @@ export class EditAccountActionBase implements Action<Account> {
     this.account = account;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy {
+  getPrivacyPolicy(): PrivacyPolicy<Account> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getInput(): AccountInput {
+  getInput(): AccountEditInput {
     return this.input;
   }
 

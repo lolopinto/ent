@@ -11,11 +11,14 @@ Viewer is just an interface that can easily be implemented by any object and is 
 Here's what the Viewer interface looks like:
 
 ```ts
-interface Viewer {
-  viewerID: ID | null;
-  viewer: () => Promise<Ent | null>;
+export interface Viewer<
+  TEnt extends any = Ent<any> | null,
+  TID extends any = ID | null,
+> {
+  viewerID: TID;
+  viewer: () => Promise<TEnt>;
   instanceKey: () => string;
-  context?: Context;
+  context?: Context<any>;
 }
 ```
 
@@ -56,3 +59,5 @@ const vc1 = new IDViewer(id);
 const vc2 = new IDViewer(id, {context: context, ent: user});
 const vc3 = new IDViewer({viewerID: id, context: context, ent: user});
 ```
+
+It exists as an example of what a simple implementation of Viewer looks like. It probably doesn't suffice for complex applications so feel free to implement `Viewer` that works for your use-case.

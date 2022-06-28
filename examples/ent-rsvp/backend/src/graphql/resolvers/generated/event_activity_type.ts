@@ -45,29 +45,29 @@ export const EventActivityType = new GraphQLObjectType({
       },
     },
     id: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,
     },
     name: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     startTime: {
-      type: GraphQLNonNull(GraphQLTime),
+      type: new GraphQLNonNull(GraphQLTime),
     },
     endTime: {
       type: GraphQLTime,
     },
     location: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     description: {
       type: GraphQLString,
     },
     inviteAllGuests: {
-      type: GraphQLNonNull(GraphQLBoolean),
+      type: new GraphQLNonNull(GraphQLBoolean),
     },
     attending: {
-      type: GraphQLNonNull(EventActivityToAttendingConnectionType()),
+      type: new GraphQLNonNull(EventActivityToAttendingConnectionType()),
       args: {
         first: {
           description: "",
@@ -101,7 +101,7 @@ export const EventActivityType = new GraphQLObjectType({
       },
     },
     declined: {
-      type: GraphQLNonNull(EventActivityToDeclinedConnectionType()),
+      type: new GraphQLNonNull(EventActivityToDeclinedConnectionType()),
       args: {
         first: {
           description: "",
@@ -135,7 +135,7 @@ export const EventActivityType = new GraphQLObjectType({
       },
     },
     invites: {
-      type: GraphQLNonNull(EventActivityToInvitesConnectionType()),
+      type: new GraphQLNonNull(EventActivityToInvitesConnectionType()),
       args: {
         first: {
           description: "",

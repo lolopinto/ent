@@ -1,9 +1,10 @@
-import { ID, LoggedOutViewer } from "@snowtop/ent";
+import { ID } from "@snowtop/ent";
 import { expectMutation } from "@snowtop/ent-graphql-tests";
 import schema from "../generated/schema";
 import { DateTime } from "luxon";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { DayOfWeek, DayOfWeekAlt, HoursOfOperation } from "src/ent";
+import { LoggedOutExampleViewer } from "../../viewer/viewer";
 
 // stolen from schema/field.ts
 export const leftPad = (val: number): string => {
@@ -47,7 +48,7 @@ test("create hours of operation", async () => {
       `17:00:00${leftPad(DateTime.local().offset / 60)}`,
     ],
   );
-  const ent = await HoursOfOperation.loadX(new LoggedOutViewer(), id!);
+  const ent = await HoursOfOperation.loadX(new LoggedOutExampleViewer(), id!);
   expect(ent.dayOfWeek).toBe(DayOfWeek.Sunday);
   expect(ent.dayOfWeekAlt).toBe(DayOfWeekAlt.Sunday);
 });

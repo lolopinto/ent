@@ -2,9 +2,11 @@
  * Copyright whaa whaa
  */
 
-import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
+import { AlwaysAllowPrivacyPolicy, PrivacyPolicy } from "@snowtop/ent";
 import { CommentBase } from "./internal";
 
 export class Comment extends CommentBase {
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
 }

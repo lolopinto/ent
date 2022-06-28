@@ -8,7 +8,7 @@ import {
 import { IDViewer, LoggedOutViewer } from "./viewer";
 import { Pool } from "pg";
 import { QueryRecorder } from "../testutils/db_mock";
-import { Field, StringType, UUIDType } from "../schema";
+import { Field, FieldMap, StringType, UUIDType } from "../schema";
 import { createRowForTest } from "../testutils/write";
 import { ID, Ent, Data, PrivacyPolicy, Viewer, LoadEntOptions } from "./base";
 import {
@@ -43,14 +43,10 @@ afterEach(() => {
 
 class UserSchema implements BuilderSchema<User> {
   ent = User;
-  fields: Field[] = [
-    UUIDType({
-      name: "id",
-    }),
-    StringType({
-      name: "foo",
-    }),
-  ];
+  fields: FieldMap = {
+    id: UUIDType(),
+    foo: StringType(),
+  };
 }
 const viewer = new LoggedOutViewer();
 const schema = new UserSchema();
@@ -63,6 +59,8 @@ function getUserCreateBuilder(): SimpleBuilder<User> {
       ["id", "{id}"],
       ["foo", "bar"],
     ]),
+    WriteOperation.Insert,
+    null,
   );
 }
 
@@ -115,9 +113,11 @@ class DerivedUser implements Ent {
   id: ID;
   accountID: string;
   nodeType = "User";
-  privacyPolicy: PrivacyPolicy = {
-    rules: [AllowIfViewerRule, AlwaysDenyRule],
-  };
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return {
+      rules: [AllowIfViewerRule, AlwaysDenyRule],
+    };
+  }
   constructor(public viewer: Viewer, data: Data) {
     this.id = data["id"];
   }
@@ -332,9 +332,11 @@ function commonTests() {
       id: ID;
       accountID: string;
       nodeType = "User2";
-      privacyPolicy = {
-        rules: [AllowIfViewerRule, AlwaysDenyRule],
-      };
+      getPrivacyPolicy() {
+        return {
+          rules: [AllowIfViewerRule, AlwaysDenyRule],
+        };
+      }
 
       constructor(public viewer: Viewer, public data: Data) {
         this.id = data.id;
@@ -343,14 +345,10 @@ function commonTests() {
 
     class User2Schema implements BuilderSchema<User2> {
       ent = User2;
-      fields: Field[] = [
-        UUIDType({
-          name: "id",
-        }),
-        StringType({
-          name: "foo",
-        }),
-      ];
+      fields: FieldMap = {
+        id: UUIDType(),
+        foo: StringType(),
+      };
     }
 
     function getBuilder() {
@@ -361,6 +359,8 @@ function commonTests() {
           ["id", "{id}"],
           ["foo", "bar"],
         ]),
+        WriteOperation.Insert,
+        null,
       );
       action.viewerForEntLoad = (data: Data) => {
         return new IDViewer(data.id);

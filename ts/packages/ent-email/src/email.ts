@@ -45,18 +45,18 @@ export class Email extends BaseField implements Field {
 
   format(val: any): any {
     // always trim and store in lowercase
-    const type = StringType({ name: "s" }).toLowerCase().trim();
+    const type = StringType().toLowerCase().trim();
     return type.format(val);
   }
 
   type: Type = { dbType: DBType.String };
 }
 
-export function EmailType(options: FieldOptions): Email {
+export function EmailType(options?: FieldOptions): Email {
   let result = new Email();
   return Object.assign(result, options);
 }
 
-export function EmailListType(options: FieldOptions) {
+export function EmailListType(options?: FieldOptions) {
   return new ListField(EmailType(options), options);
 }

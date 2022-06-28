@@ -25,31 +25,40 @@ import {
   getTransformedUpdateOp,
   SQLStatementOperation,
   TransformedUpdateOperation,
-  getStorageKey,
+  FieldInfoMap,
 } from "../schema/schema";
 import { Changeset, Executor, Validator } from "../action/action";
 import { WriteOperation, Builder, Action } from "../action";
-import { camelCase } from "camel-case";
 import { applyPrivacyPolicyX } from "../core/privacy";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import { log } from "../core/logger";
 import { Trigger } from "./action";
+import memoize from "memoizee";
 
-export interface OrchestratorOptions<T extends Ent, TData extends Data> {
+type MaybeNull<T extends Ent> = T | null;
+type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
+
+export interface OrchestratorOptions<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+  TInput extends Data,
+  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
+> {
   viewer: Viewer;
   operation: WriteOperation;
   tableName: string;
   // should we make it nullable for delete?
-  loaderOptions: LoadEntOptions<T>;
+  loaderOptions: LoadEntOptions<TEnt, TViewer>;
   // key, usually 'id' that's being updated
   key: string;
 
-  builder: Builder<T>;
-  action?: Action<T>;
+  builder: Builder<TEnt, TViewer, TExistingEnt>;
+  action?: Action<TEnt, Builder<TEnt, TViewer>, TViewer, TInput>;
   schema: SchemaInputType;
   editedFields(): Map<string, any> | Promise<Map<string, any>>;
   // this is called with fields with defaultValueOnCreate|Edit
-  updateInput?: (data: TData) => void;
+  updateInput?: (data: TInput) => void;
+  fieldInfo: FieldInfoMap;
 }
 
 interface edgeInputDataOpts {
@@ -102,16 +111,17 @@ type OperationMap = Map<WriteOperation, IDMap>;
 // }
 type EdgeMap = Map<string, OperationMap>;
 
-function getViewer(action: Action<Ent>) {
+function getViewer(action: Action<Ent, Builder<Ent>>) {
   if (!action.viewer.viewerID) {
     return "Logged out Viewer";
   } else {
     return `Viewer with ID ${action.viewer.viewerID}`;
   }
 }
+
 class EntCannotCreateEntError extends Error implements PrivacyError {
   privacyPolicy: PrivacyPolicy;
-  constructor(privacyPolicy: PrivacyPolicy, action: Action<Ent>) {
+  constructor(privacyPolicy: PrivacyPolicy, action: Action<Ent, Builder<Ent>>) {
     let msg = `${getViewer(action)} does not have permission to create ${
       action.builder.ent.name
     }`;
@@ -122,7 +132,11 @@ class EntCannotCreateEntError extends Error implements PrivacyError {
 
 class EntCannotEditEntError extends Error implements PrivacyError {
   privacyPolicy: PrivacyPolicy;
-  constructor(privacyPolicy: PrivacyPolicy, action: Action<Ent>, ent: Ent) {
+  constructor(
+    privacyPolicy: PrivacyPolicy,
+    action: Action<Ent, Builder<Ent>>,
+    ent: Ent,
+  ) {
     let msg = `${getViewer(action)} does not have permission to edit ${
       ent.constructor.name
     }`;
@@ -133,7 +147,11 @@ class EntCannotEditEntError extends Error implements PrivacyError {
 
 class EntCannotDeleteEntError extends Error implements PrivacyError {
   privacyPolicy: PrivacyPolicy;
-  constructor(privacyPolicy: PrivacyPolicy, action: Action<Ent>, ent: Ent) {
+  constructor(
+    privacyPolicy: PrivacyPolicy,
+    action: Action<Ent, Builder<Ent>>,
+    ent: Ent,
+  ) {
     let msg = `${getViewer(action)} does not have permission to delete ${
       ent.constructor.name
     }`;
@@ -142,15 +160,26 @@ class EntCannotDeleteEntError extends Error implements PrivacyError {
   }
 }
 
-export class Orchestrator<T extends Ent> {
+interface fieldsInfo {
+  editedData: Data;
+  editedFields: Map<string, any>;
+  schemaFields: Map<string, Field>;
+}
+
+export class Orchestrator<
+  TEnt extends Ent<TViewer>,
+  TInput extends Data,
+  TViewer extends Viewer,
+  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
+> {
   private edgeSet: Set<string> = new Set<string>();
   private edges: EdgeMap = new Map();
   private validatedFields: Data | null;
   private logValues: Data | null;
-  private changesets: Changeset<Ent>[] = [];
-  private dependencies: Map<ID, Builder<Ent>> = new Map();
+  private changesets: Changeset[] = [];
+  private dependencies: Map<ID, Builder<TEnt>> = new Map();
   private fieldsToResolve: string[] = [];
-  private mainOp: DataOperation<T> | null;
+  private mainOp: DataOperation<TEnt> | null;
   viewer: Viewer;
   private defaultFieldsByFieldName: Data = {};
   private defaultFieldsByTSName: Data = {};
@@ -158,13 +187,17 @@ export class Orchestrator<T extends Ent> {
   // btw the beginning op and the transformed one we end up using
   private actualOperation: WriteOperation;
   // same with existingEnt. can transform so we wanna know what we started with and now where we are.
-  private existingEnt?: T;
+  private existingEnt: TExistingEnt;
   private disableTransformations: boolean;
+  private memoizedGetFields: () => Promise<fieldsInfo>;
 
-  constructor(private options: OrchestratorOptions<T, Data>) {
+  constructor(
+    private options: OrchestratorOptions<TEnt, TViewer, TInput, TExistingEnt>,
+  ) {
     this.viewer = options.viewer;
     this.actualOperation = this.options.operation;
     this.existingEnt = this.options.builder.existingEnt;
+    this.memoizedGetFields = memoize(this.getFieldsInfo.bind(this));
   }
 
   private addEdge(edge: edgeInputData, op: WriteOperation) {
@@ -190,7 +223,7 @@ export class Orchestrator<T extends Ent> {
   }
 
   addInboundEdge<T2 extends Ent>(
-    id1: ID | Builder<T2>,
+    id1: ID | Builder<T2, any>,
     edgeType: string,
     nodeType: string,
     options?: AssocEdgeInputOptions,
@@ -208,7 +241,7 @@ export class Orchestrator<T extends Ent> {
   }
 
   addOutboundEdge<T2 extends Ent>(
-    id2: ID | Builder<T2>,
+    id2: ID | Builder<T2, any>,
     edgeType: string,
     nodeType: string,
     options?: AssocEdgeInputOptions,
@@ -283,7 +316,7 @@ export class Orchestrator<T extends Ent> {
             `existing ent required with operation ${this.actualOperation}`,
           );
         }
-        const opts: EditNodeOptions<T> = {
+        const opts: EditNodeOptions<TEnt> = {
           fields: this.validatedFields!,
           tableName: this.options.tableName,
           fieldsToResolve: this.fieldsToResolve,
@@ -407,9 +440,9 @@ export class Orchestrator<T extends Ent> {
     );
   }
 
-  private getEntForPrivacyPolicyImpl(editedData: Data) {
+  private getEntForPrivacyPolicyImpl(editedData: Data): TEnt {
     if (this.actualOperation !== WriteOperation.Insert) {
-      return this.existingEnt;
+      return this.existingEnt!;
     }
     // we create an unsafe ent to be used for privacy policies
     return new this.options.builder.ent(
@@ -444,14 +477,24 @@ export class Orchestrator<T extends Ent> {
 
   // if you're doing custom privacy within an action and want to
   // get either the unsafe ent or the existing ent that's being edited
-  async getPossibleUnsafeEntForPrivacy() {
+  async getPossibleUnsafeEntForPrivacy(): Promise<TEnt> {
     if (this.actualOperation !== WriteOperation.Insert) {
-      return this.existingEnt;
+      return this.existingEnt!;
     }
-    const { editedData } = await this.getFieldsInfo();
+    const { editedData } = await this.memoizedGetFields();
     return this.getEntForPrivacyPolicyImpl(editedData);
   }
 
+  // this gets the fields that were explicitly set plus any default or transformed values
+  // mainly exists to get default fields e.g. default id to be used in triggers
+  // NOTE: this API may change in the future
+  // doesn't work to get ids for autoincrement keys
+  async getEditedData() {
+    const { editedData } = await this.memoizedGetFields();
+    return editedData;
+  }
+
+  // Note: this is memoized. call memoizedGetFields instead
   private async getFieldsInfo() {
     const action = this.options.action;
     const builder = this.options.builder;
@@ -483,7 +526,7 @@ export class Orchestrator<T extends Ent> {
         }
     }
 
-    const { schemaFields, editedData } = await this.getFieldsInfo();
+    const { schemaFields, editedData } = await this.memoizedGetFields();
     const action = this.options.action;
     const builder = this.options.builder;
 
@@ -504,12 +547,15 @@ export class Orchestrator<T extends Ent> {
 
     // have to run triggers which update fields first before field and other validators
     // so running this first to build things up
-    let triggers = action?.triggers;
-    if (triggers) {
-      await this.triggers(action!, builder, triggers);
+    if (action?.getTriggers) {
+      await this.triggers(action!, builder, action.getTriggers());
     }
 
-    let validators = action?.validators || [];
+    let validators: Validator<TEnt, Builder<TEnt, TViewer>, TViewer, TInput>[] =
+      [];
+    if (action?.getValidators) {
+      validators = action.getValidators();
+    }
 
     // not ideal we're calling this twice. fix...
     // needed for now. may need to rewrite some of this?
@@ -521,9 +567,9 @@ export class Orchestrator<T extends Ent> {
   }
 
   private async triggers(
-    action: Action<T>,
-    builder: Builder<T>,
-    triggers: Trigger<T>[],
+    action: Action<TEnt, Builder<TEnt, TViewer>, TViewer, TInput>,
+    builder: Builder<TEnt, TViewer>,
+    triggers: Trigger<TEnt, Builder<TEnt, TViewer>>[],
   ): Promise<void> {
     await Promise.all(
       triggers.map(async (trigger) => {
@@ -546,9 +592,9 @@ export class Orchestrator<T extends Ent> {
   }
 
   private async validators(
-    validators: Validator<T>[],
-    action: Action<T>,
-    builder: Builder<T>,
+    validators: Validator<TEnt, Builder<TEnt, TViewer>, TViewer, TInput>[],
+    action: Action<TEnt, Builder<TEnt, TViewer>, TViewer, TInput>,
+    builder: Builder<TEnt, TViewer>,
   ): Promise<void> {
     let promises: Promise<void>[] = [];
     validators.forEach((validator) => {
@@ -560,15 +606,22 @@ export class Orchestrator<T extends Ent> {
     await Promise.all(promises);
   }
 
-  private isBuilder(val: Builder<Ent> | any): val is Builder<Ent> {
-    return (val as Builder<Ent>).placeholderID !== undefined;
+  private isBuilder(val: Builder<TEnt> | any): val is Builder<TEnt> {
+    return (val as Builder<TEnt>).placeholderID !== undefined;
+  }
+
+  private getInputKey(k: string) {
+    return this.options.fieldInfo[k].inputKey;
+  }
+  private getStorageKey(k: string) {
+    return this.options.fieldInfo[k].dbCol;
   }
 
   private async getFieldsWithDefaultValues(
-    builder: Builder<T>,
+    builder: Builder<TEnt, TViewer>,
     schemaFields: Map<string, Field>,
     editedFields: Map<string, any>,
-    action?: Action<T> | undefined,
+    action?: Action<TEnt, Builder<TEnt, TViewer>, TViewer, TInput> | undefined,
   ): Promise<Data> {
     let data: Data = {};
     let defaultData: Data = {};
@@ -581,24 +634,32 @@ export class Orchestrator<T extends Ent> {
     // if action transformations. always do it
     // if disable transformations set, don't do schema transform and just do the right thing
     // else apply schema tranformation if it exists
-    let transformed: TransformedUpdateOperation<T> | undefined;
+    let transformed: TransformedUpdateOperation<TEnt> | null = null;
 
+    const sqlOp = this.getSQLStatementOperation();
     if (action?.transformWrite) {
       transformed = await action.transformWrite({
-        viewer: builder.viewer,
-        op: this.getSQLStatementOperation(),
+        builder,
+        input,
+        op: sqlOp,
         data: editedFields,
-        existingEnt: this.existingEnt,
       });
     } else if (!this.disableTransformations) {
-      transformed = getTransformedUpdateOp(this.options.schema, {
-        viewer: builder.viewer,
-        op: this.getSQLStatementOperation(),
+      transformed = getTransformedUpdateOp<TEnt, TViewer>(this.options.schema, {
+        builder,
+        input,
+        op: sqlOp,
         data: editedFields,
-        existingEnt: this.existingEnt,
       });
     }
     if (transformed) {
+      if (sqlOp === SQLStatementOperation.Insert && sqlOp !== transformed.op) {
+        if (!transformed.existingEnt) {
+          throw new Error(
+            `cannot transform an insert operation without providing an existing ent`,
+          );
+        }
+      }
       if (transformed.data) {
         updateInput = true;
         for (const k in transformed.data) {
@@ -610,9 +671,8 @@ export class Orchestrator<T extends Ent> {
           if (field.format) {
             val = field.format(transformed.data[k]);
           }
-          let dbKey = getStorageKey(field);
-          data[dbKey] = val;
-          this.defaultFieldsByTSName[camelCase(k)] = val;
+          data[this.getStorageKey(k)] = val;
+          this.defaultFieldsByTSName[this.getInputKey(k)] = val;
           // hmm do we need this?
           // TODO how to do this for local tests?
           // this.defaultFieldsByFieldName[k] = val;
@@ -620,7 +680,10 @@ export class Orchestrator<T extends Ent> {
       }
       this.actualOperation = this.getWriteOpForSQLStamentOp(transformed.op);
       if (transformed.existingEnt) {
+        // @ts-ignore
         this.existingEnt = transformed.existingEnt;
+        // modify existing ent in builder. it's readonly in generated ents but doesn't apply here
+        builder.existingEnt = transformed.existingEnt;
       }
     }
     // transforming before doing default fields so that we don't create a new id
@@ -629,7 +692,7 @@ export class Orchestrator<T extends Ent> {
     for (const [fieldName, field] of schemaFields) {
       let value = editedFields.get(fieldName);
       let defaultValue: any = undefined;
-      let dbKey = getStorageKey(field);
+      let dbKey = this.getStorageKey(fieldName);
 
       if (value === undefined) {
         if (this.actualOperation === WriteOperation.Insert) {
@@ -645,7 +708,7 @@ export class Orchestrator<T extends Ent> {
             defaultValue = field.defaultValueOnCreate(builder, input);
             if (defaultValue === undefined) {
               throw new Error(
-                `defaultValueOnCreate() returned undefined for field ${field.name}`,
+                `defaultValueOnCreate() returned undefined for field ${fieldName}`,
               );
             }
           }
@@ -667,8 +730,7 @@ export class Orchestrator<T extends Ent> {
         updateInput = true;
         defaultData[dbKey] = defaultValue;
         this.defaultFieldsByFieldName[fieldName] = defaultValue;
-        // TODO related to #510. we need this logic to be consistent so do this all in TypeScript or get it from go somehow
-        this.defaultFieldsByTSName[camelCase(fieldName)] = defaultValue;
+        this.defaultFieldsByTSName[this.getInputKey(fieldName)] = defaultValue;
       }
     }
 
@@ -680,7 +742,7 @@ export class Orchestrator<T extends Ent> {
       };
       if (updateInput && this.options.updateInput) {
         // this basically fixes #605. just needs to be exposed correctly
-        this.options.updateInput(this.defaultFieldsByTSName);
+        this.options.updateInput(this.defaultFieldsByTSName as TInput);
       }
     }
 
@@ -694,12 +756,17 @@ export class Orchestrator<T extends Ent> {
     return false;
   }
 
-  private async transformFieldValue(field: Field, dbKey: string, value: any) {
+  private async transformFieldValue(
+    fieldName: string,
+    field: Field,
+    dbKey: string,
+    value: any,
+  ) {
     // now format and validate...
     if (value === null) {
       if (!field.nullable) {
         throw new Error(
-          `field ${field.name} set to null for non-nullable field`,
+          `field ${fieldName} set to null for non-nullable field`,
         );
       }
     } else if (value === undefined) {
@@ -712,13 +779,13 @@ export class Orchestrator<T extends Ent> {
         field.serverDefault === undefined &&
         this.actualOperation === WriteOperation.Insert
       ) {
-        throw new Error(`required field ${field.name} not set`);
+        throw new Error(`required field ${fieldName} not set`);
       }
     } else if (this.isBuilder(value)) {
       if (field.valid) {
-        const valid = await Promise.resolve(field.valid(value));
+        const valid = await field.valid(value);
         if (!valid) {
-          throw new Error(`invalid field ${field.name} with value ${value}`);
+          throw new Error(`invalid field ${fieldName} with value ${value}`);
         }
       }
       // keep track of dependencies to resolve
@@ -728,15 +795,14 @@ export class Orchestrator<T extends Ent> {
     } else {
       if (field.valid) {
         // TODO this could be async. handle this better
-        const valid = await Promise.resolve(field.valid(value));
+        const valid = await field.valid(value);
         if (!valid) {
-          throw new Error(`invalid field ${field.name} with value ${value}`);
+          throw new Error(`invalid field ${fieldName} with value ${value}`);
         }
       }
 
       if (field.format) {
-        // TODO this could be async e.g. password. handle this better
-        value = await Promise.resolve(field.format(value));
+        value = await field.format(value);
       }
     }
     return value;
@@ -762,9 +828,9 @@ export class Orchestrator<T extends Ent> {
         // null allowed
         value = this.defaultFieldsByFieldName[fieldName];
       }
-      let dbKey = getStorageKey(field);
+      let dbKey = this.getStorageKey(fieldName);
 
-      value = await this.transformFieldValue(field, dbKey, value);
+      value = await this.transformFieldValue(fieldName, field, dbKey, value);
 
       if (value !== undefined) {
         data[dbKey] = value;
@@ -779,11 +845,12 @@ export class Orchestrator<T extends Ent> {
         const defaultValue = this.defaultFieldsByFieldName[fieldName];
         let field = schemaFields.get(fieldName)!;
 
-        let dbKey = getStorageKey(field);
+        let dbKey = this.getStorageKey(fieldName);
 
         // no value, let's just default
         if (data[dbKey] === undefined) {
           const value = await this.transformFieldValue(
+            fieldName,
             field,
             dbKey,
             defaultValue,
@@ -812,7 +879,7 @@ export class Orchestrator<T extends Ent> {
     return this.validate();
   }
 
-  async build(): Promise<EntChangeset<T>> {
+  async build(): Promise<EntChangeset<TEnt>> {
     // validate everything first
     await this.validX();
 
@@ -846,7 +913,7 @@ export class Orchestrator<T extends Ent> {
     return null;
   }
 
-  async editedEnt(): Promise<T | null> {
+  async editedEnt(): Promise<TEnt | null> {
     const row = await this.returnedRow();
     if (!row) {
       return null;
@@ -855,7 +922,7 @@ export class Orchestrator<T extends Ent> {
     return applyPrivacyPolicyForRow(viewer, this.options.loaderOptions, row);
   }
 
-  async editedEntX(): Promise<T> {
+  async editedEntX(): Promise<TEnt> {
     const row = await this.returnedRow();
     if (!row) {
       throw new Error(`ent was not created`);
@@ -878,7 +945,7 @@ export class Orchestrator<T extends Ent> {
   }
 }
 
-export class EntChangeset<T extends Ent> implements Changeset<T> {
+export class EntChangeset<T extends Ent> implements Changeset {
   private _executor: Executor | null;
   constructor(
     public viewer: Viewer,
@@ -886,8 +953,8 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
     public readonly ent: EntConstructor<T>,
     public operations: DataOperation[],
     public dependencies?: Map<ID, Builder<Ent>>,
-    public changesets?: Changeset<Ent>[],
-    private options?: OrchestratorOptions<T, Data>,
+    public changesets?: Changeset[],
+    private options?: OrchestratorOptions<T, Viewer, Data>,
   ) {}
 
   executor(): Executor {

@@ -27,6 +27,17 @@ import {
 import { Account, NodeType, TagToTodosQuery } from "src/ent/internal";
 import schema from "src/schema/tag";
 
+interface TagDBData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  deleted_at: Date | null;
+  display_name: string;
+  canonical_name: string;
+  owner_id: ID;
+  related_tag_ids: ID[] | null;
+}
+
 export class TagBase {
   readonly nodeType = NodeType.Tag;
   readonly id: ID;
@@ -104,12 +115,12 @@ export class TagBase {
     this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
-  ): Promise<T[]> {
+  ): Promise<Map<ID, T>> {
     return (await loadEnts(
       viewer,
       TagBase.loaderOptions.apply(this),
       ...ids,
-    )) as T[];
+    )) as Map<ID, T>;
   }
 
   static async loadCustom<T extends TagBase>(
@@ -128,28 +139,36 @@ export class TagBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<Data[]> {
-    return loadCustomData(TagBase.loaderOptions.apply(this), query, context);
+  ): Promise<TagDBData[]> {
+    return (await loadCustomData(
+      TagBase.loaderOptions.apply(this),
+      query,
+      context,
+    )) as TagDBData[];
   }
 
   static async loadRawData<T extends TagBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data | null> {
-    return tagLoader.createLoader(context).load(id);
+  ): Promise<TagDBData | null> {
+    const row = await tagLoader.createLoader(context).load(id);
+    if (!row) {
+      return null;
+    }
+    return row as TagDBData;
   }
 
   static async loadRawDataX<T extends TagBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data> {
+  ): Promise<TagDBData> {
     const row = await tagLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row;
+    return row as TagDBData;
   }
 
   // TODO index deleted_at not id... we want an indexQueryLoader...

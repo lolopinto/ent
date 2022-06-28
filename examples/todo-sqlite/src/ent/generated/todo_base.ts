@@ -27,6 +27,16 @@ import {
 import { Account, NodeType, TodoToTagsQuery } from "src/ent/internal";
 import schema from "src/schema/todo";
 
+interface TodoDBData {
+  id: ID;
+  created_at: Date;
+  updated_at: Date;
+  deleted_at: Date | null;
+  text: string;
+  completed: boolean;
+  creator_id: ID;
+}
+
 export class TodoBase {
   readonly nodeType = NodeType.Todo;
   readonly id: ID;
@@ -106,12 +116,12 @@ export class TodoBase {
     this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
-  ): Promise<T[]> {
+  ): Promise<Map<ID, T>> {
     return (await loadEnts(
       viewer,
       TodoBase.loaderOptions.apply(this),
       ...ids,
-    )) as T[];
+    )) as Map<ID, T>;
   }
 
   static async loadCustom<T extends TodoBase>(
@@ -130,28 +140,36 @@ export class TodoBase {
     this: new (viewer: Viewer, data: Data) => T,
     query: CustomQuery,
     context?: Context,
-  ): Promise<Data[]> {
-    return loadCustomData(TodoBase.loaderOptions.apply(this), query, context);
+  ): Promise<TodoDBData[]> {
+    return (await loadCustomData(
+      TodoBase.loaderOptions.apply(this),
+      query,
+      context,
+    )) as TodoDBData[];
   }
 
   static async loadRawData<T extends TodoBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data | null> {
-    return todoLoader.createLoader(context).load(id);
+  ): Promise<TodoDBData | null> {
+    const row = await todoLoader.createLoader(context).load(id);
+    if (!row) {
+      return null;
+    }
+    return row as TodoDBData;
   }
 
   static async loadRawDataX<T extends TodoBase>(
     this: new (viewer: Viewer, data: Data) => T,
     id: ID,
     context?: Context,
-  ): Promise<Data> {
+  ): Promise<TodoDBData> {
     const row = await todoLoader.createLoader(context).load(id);
     if (!row) {
       throw new Error(`couldn't load row for ${id}`);
     }
-    return row;
+    return row as TodoDBData;
   }
 
   // TODO index deleted_at not id... we want an indexQueryLoader...

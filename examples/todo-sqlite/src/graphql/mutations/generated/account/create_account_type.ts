@@ -31,10 +31,10 @@ export const CreateAccountInputType = new GraphQLInputObjectType({
   name: "CreateAccountInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     name: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     phone_number: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     account_state: {
       type: AccountStateType,
@@ -46,7 +46,7 @@ export const CreateAccountPayloadType = new GraphQLObjectType({
   name: "CreateAccountPayload",
   fields: (): GraphQLFieldConfigMap<CreateAccountPayload, RequestContext> => ({
     account: {
-      type: GraphQLNonNull(AccountType),
+      type: new GraphQLNonNull(AccountType),
     },
   }),
 });
@@ -56,11 +56,11 @@ export const CreateAccountType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customCreateAccountInput }
 > = {
-  type: GraphQLNonNull(CreateAccountPayloadType),
+  type: new GraphQLNonNull(CreateAccountPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(CreateAccountInputType),
+      type: new GraphQLNonNull(CreateAccountInputType),
     },
   },
   resolve: async (

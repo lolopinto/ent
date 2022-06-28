@@ -16,12 +16,14 @@ export default new {{useImport "GraphQLSchema"}}({
   {{end -}}
   types: [
     {{range $typ := .AllTypes -}}
-    {{if $typ.Function -}}
-      {{useImport $typ.Type}}(),
-    {{else -}}
-      {{useImport $typ.Type}},
+      {{ if $typ.Exported -}}
+        {{if $typ.Function -}}
+          {{useImport $typ.Type}}(),
+        {{else -}}
+          {{useImport $typ.Type}},
+        {{end -}}
+      {{ end -}} 
     {{end -}}
-    {{ end -}} 
   ],
 });
 

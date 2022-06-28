@@ -12,7 +12,7 @@ const tests = new Map<string, testCase>([
   [
     "toLowerCase property",
     {
-      fn: () => StringType({ name: "field", toLowerCase: true }),
+      fn: () => StringType({ toLowerCase: true }),
       format: "hallo",
       valid: true,
     },
@@ -20,7 +20,7 @@ const tests = new Map<string, testCase>([
   [
     "tolowerCase method",
     {
-      fn: () => StringType({ name: "field" }).toLowerCase(),
+      fn: () => StringType().toLowerCase(),
       format: "hallo",
       valid: true,
     },
@@ -28,7 +28,7 @@ const tests = new Map<string, testCase>([
   [
     "toUpperCase property",
     {
-      fn: () => StringType({ name: "field", toUpperCase: true }),
+      fn: () => StringType({ toUpperCase: true }),
       format: "HALLO",
       valid: true,
     },
@@ -36,7 +36,7 @@ const tests = new Map<string, testCase>([
   [
     "toUpperCase method",
     {
-      fn: () => StringType({ name: "field" }).toUpperCase(),
+      fn: () => StringType().toUpperCase(),
       format: "HALLO",
       valid: true,
     },
@@ -44,7 +44,7 @@ const tests = new Map<string, testCase>([
   [
     "minLen property valid",
     {
-      fn: () => StringType({ name: "field", minLen: 5 }),
+      fn: () => StringType({ minLen: 5 }),
       format: input,
       valid: true,
     },
@@ -52,7 +52,7 @@ const tests = new Map<string, testCase>([
   [
     "minLen property invalid",
     {
-      fn: () => StringType({ name: "field", minLen: 7 }),
+      fn: () => StringType({ minLen: 7 }),
       format: input,
       valid: false,
     },
@@ -60,7 +60,7 @@ const tests = new Map<string, testCase>([
   [
     "minLen method valid",
     {
-      fn: () => StringType({ name: "field" }).minLen(5),
+      fn: () => StringType().minLen(5),
       format: input,
       valid: true,
     },
@@ -68,7 +68,7 @@ const tests = new Map<string, testCase>([
   [
     "minLen method invalid",
     {
-      fn: () => StringType({ name: "field" }).minLen(7),
+      fn: () => StringType().minLen(7),
       format: input,
       valid: false,
     },
@@ -76,7 +76,7 @@ const tests = new Map<string, testCase>([
   [
     "maxLen property valid",
     {
-      fn: () => StringType({ name: "field", maxLen: 5 }),
+      fn: () => StringType({ maxLen: 5 }),
       format: input,
       valid: true,
     },
@@ -84,7 +84,7 @@ const tests = new Map<string, testCase>([
   [
     "maxLen property invalid",
     {
-      fn: () => StringType({ name: "field", maxLen: 3 }),
+      fn: () => StringType({ maxLen: 3 }),
       format: input,
       valid: false,
     },
@@ -92,7 +92,7 @@ const tests = new Map<string, testCase>([
   [
     "maxLen method valid",
     {
-      fn: () => StringType({ name: "field" }).maxLen(5),
+      fn: () => StringType().maxLen(5),
       format: input,
       valid: true,
     },
@@ -100,7 +100,7 @@ const tests = new Map<string, testCase>([
   [
     "maxLen method invalid",
     {
-      fn: () => StringType({ name: "field" }).maxLen(3),
+      fn: () => StringType().maxLen(3),
       format: input,
       valid: false,
     },
@@ -108,7 +108,7 @@ const tests = new Map<string, testCase>([
   [
     "length property valid",
     {
-      fn: () => StringType({ name: "field", length: 5 }),
+      fn: () => StringType({ length: 5 }),
       format: input,
       valid: true,
     },
@@ -116,7 +116,7 @@ const tests = new Map<string, testCase>([
   [
     "length property invalid",
     {
-      fn: () => StringType({ name: "field", length: 3 }),
+      fn: () => StringType({ length: 3 }),
       format: input,
       valid: false,
     },
@@ -124,7 +124,7 @@ const tests = new Map<string, testCase>([
   [
     "length method valid",
     {
-      fn: () => StringType({ name: "field" }).length(5),
+      fn: () => StringType().length(5),
       format: input,
       valid: true,
     },
@@ -132,7 +132,7 @@ const tests = new Map<string, testCase>([
   [
     "length method invalid",
     {
-      fn: () => StringType({ name: "field" }).length(3),
+      fn: () => StringType().length(3),
       format: input,
       valid: false,
     },
@@ -140,7 +140,7 @@ const tests = new Map<string, testCase>([
   [
     "match property valid",
     {
-      fn: () => StringType({ name: "field", match: /\w/ }),
+      fn: () => StringType({ match: /\w/ }),
       format: input,
       valid: true,
     },
@@ -148,7 +148,7 @@ const tests = new Map<string, testCase>([
   [
     "match property invalid",
     {
-      fn: () => StringType({ name: "field", match: /\d+/ }),
+      fn: () => StringType({ match: /\d+/ }),
       format: input,
       valid: false,
     },
@@ -156,7 +156,7 @@ const tests = new Map<string, testCase>([
   [
     "match method valid",
     {
-      fn: () => StringType({ name: "field" }).match(/\w/),
+      fn: () => StringType().match(/\w/),
       format: input,
       valid: true,
     },
@@ -164,7 +164,7 @@ const tests = new Map<string, testCase>([
   [
     "match method invalid",
     {
-      fn: () => StringType({ name: "field" }).match(/\d+/),
+      fn: () => StringType().match(/\d+/),
       format: input,
       valid: false,
     },
@@ -172,7 +172,7 @@ const tests = new Map<string, testCase>([
   [
     "doesNotMatch property valid",
     {
-      fn: () => StringType({ name: "field", doesNotMatch: /\d+/ }),
+      fn: () => StringType({ doesNotMatch: /\d+/ }),
       format: input,
       valid: true,
     },
@@ -180,7 +180,7 @@ const tests = new Map<string, testCase>([
   [
     "doesNotMatch property invalid",
     {
-      fn: () => StringType({ name: "field", doesNotMatch: /\w/ }),
+      fn: () => StringType({ doesNotMatch: /\w/ }),
       format: input,
       valid: false,
     },
@@ -188,7 +188,7 @@ const tests = new Map<string, testCase>([
   [
     "doesNotMatch method valid",
     {
-      fn: () => StringType({ name: "field" }).doesNotMatch(/\d+/),
+      fn: () => StringType().doesNotMatch(/\d+/),
       format: input,
       valid: true,
     },
@@ -196,7 +196,7 @@ const tests = new Map<string, testCase>([
   [
     "doesNotMatch method invalid",
     {
-      fn: () => StringType({ name: "field" }).doesNotMatch(/\w/),
+      fn: () => StringType().doesNotMatch(/\w/),
       format: input,
       valid: false,
     },
@@ -204,7 +204,7 @@ const tests = new Map<string, testCase>([
   [
     "trim property",
     {
-      fn: () => StringType({ name: "field", trim: true }),
+      fn: () => StringType({ trim: true }),
       format: "hallo",
       valid: true,
       customInput: " hallo ",
@@ -213,7 +213,7 @@ const tests = new Map<string, testCase>([
   [
     "trim method",
     {
-      fn: () => StringType({ name: "field" }).trim(),
+      fn: () => StringType().trim(),
       format: "hallo",
       valid: true,
       customInput: " hallo ",
@@ -222,7 +222,7 @@ const tests = new Map<string, testCase>([
   [
     "trimLeft property",
     {
-      fn: () => StringType({ name: "field", trimLeft: true }),
+      fn: () => StringType({ trimLeft: true }),
       format: "hallo",
       valid: true,
       customInput: " hallo",
@@ -231,7 +231,7 @@ const tests = new Map<string, testCase>([
   [
     "trimLeft method",
     {
-      fn: () => StringType({ name: "field" }).trimLeft(),
+      fn: () => StringType().trimLeft(),
       format: "hallo",
       valid: true,
       customInput: " hallo",
@@ -240,7 +240,7 @@ const tests = new Map<string, testCase>([
   [
     "trimRight property",
     {
-      fn: () => StringType({ name: "field", trimRight: true }),
+      fn: () => StringType({ trimRight: true }),
       format: "hallo",
       valid: true,
       customInput: "hallo ",
@@ -249,7 +249,7 @@ const tests = new Map<string, testCase>([
   [
     "trimRight method",
     {
-      fn: () => StringType({ name: "field" }).trimRight(),
+      fn: () => StringType().trimRight(),
       format: "hallo",
       valid: true,
       customInput: "hallo ",

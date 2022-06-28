@@ -1,9 +1,8 @@
 import glob from "glob";
 import ts from "typescript";
-import JSON5 from "json5";
 import * as fs from "fs";
 import * as path from "path";
-import { Data } from "../core/base";
+import { readCompilerOptions } from "../tsc/compilerOptions";
 
 function getFiles(filePath: string, opts?: Options): string[] {
   if (!path.isAbsolute(filePath)) {
@@ -86,41 +85,6 @@ export function parseCustomImports(
       };
     },
   };
-}
-
-export function findTSConfigFile(filePath: string): string | null {
-  while (filePath != "/") {
-    let configPath = `${filePath}/tsconfig.json`;
-    if (fs.existsSync(configPath)) {
-      return configPath;
-    }
-    filePath = path.join(filePath, "..");
-  }
-  return null;
-}
-
-// inspiration taken from compiler.ts
-function readCompilerOptions(filePath: string): ts.CompilerOptions {
-  let configPath = findTSConfigFile(filePath);
-  if (!configPath) {
-    return {};
-  }
-  let json: Data = {};
-  try {
-    json = JSON5.parse(
-      fs.readFileSync(configPath, {
-        encoding: "utf8",
-      }),
-    );
-  } catch (e) {
-    console.error("couldn't read tsconfig.json file");
-    return {};
-  }
-  let options = json["compilerOptions"] || {};
-  if (options.moduleResolution === "node") {
-    options.moduleResolution = ts.ModuleResolutionKind.NodeJs;
-  }
-  return options;
 }
 
 export interface importInfo {

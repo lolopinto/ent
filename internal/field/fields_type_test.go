@@ -38,7 +38,7 @@ type expected struct {
 
 func TestNonNullableField(t *testing.T) {
 	cfg := &codegenapi.DummyConfig{}
-	f, err := newFieldFromInput(cfg, &input.Field{
+	f, err := newFieldFromInputTest(cfg, &input.Field{
 		Name: "name",
 		Type: &input.FieldType{
 			DBType: input.String,
@@ -56,11 +56,11 @@ func TestNonNullableField(t *testing.T) {
 		tsBuilderType:      "string",
 		tsBuilderUnionType: "string",
 		graphqlImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
@@ -73,7 +73,7 @@ func TestNonNullableField(t *testing.T) {
 
 func TestNullableField(t *testing.T) {
 	cfg := &codegenapi.DummyConfig{}
-	f, err := newFieldFromInput(cfg, &input.Field{
+	f, err := newFieldFromInputTest(cfg, &input.Field{
 		Name:     "name",
 		Nullable: true,
 		Type: &input.FieldType{
@@ -107,7 +107,7 @@ func TestNullableField(t *testing.T) {
 
 func TestNonNullableListField(t *testing.T) {
 	cfg := &codegenapi.DummyConfig{}
-	f, err := newFieldFromInput(cfg, &input.Field{
+	f, err := newFieldFromInputTest(cfg, &input.Field{
 		Name: "name",
 		Type: &input.FieldType{
 			DBType: input.List,
@@ -128,20 +128,20 @@ func TestNonNullableListField(t *testing.T) {
 		tsBuilderType:      "string[]",
 		tsBuilderUnionType: "string[]",
 		graphqlImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
-			tsimport.NewGQLImportPath("GraphQLList"),
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLList"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
-			tsimport.NewGQLImportPath("GraphQLList"),
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLList"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLList"),
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLList"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		fieldTypeType: &enttype.ArrayListType{
@@ -171,7 +171,7 @@ func (cfg *onEntLoadConfig) FieldPrivacyEvaluated() codegenapi.FieldPrivacyEvalu
 
 func TestNonNullableFieldOnDemand(t *testing.T) {
 	cfg := &onDemandConfig{}
-	f, err := newFieldFromInput(cfg, &input.Field{
+	f, err := newFieldFromInputTest(cfg, &input.Field{
 		Name: "name",
 		Type: &input.FieldType{
 			DBType: input.String,
@@ -193,7 +193,7 @@ func TestNonNullableFieldOnDemand(t *testing.T) {
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
@@ -207,7 +207,7 @@ func TestNonNullableFieldOnDemand(t *testing.T) {
 
 func TestNonNullableFieldOnDemandNoFieldPrivacy(t *testing.T) {
 	cfg := &onDemandConfig{}
-	f, err := newFieldFromInput(cfg, &input.Field{
+	f, err := newFieldFromInputTest(cfg, &input.Field{
 		Name: "name",
 		Type: &input.FieldType{
 			DBType: input.String,
@@ -225,11 +225,11 @@ func TestNonNullableFieldOnDemandNoFieldPrivacy(t *testing.T) {
 		tsBuilderType:      "string",
 		tsBuilderUnionType: "string",
 		graphqlImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
@@ -242,7 +242,7 @@ func TestNonNullableFieldOnDemandNoFieldPrivacy(t *testing.T) {
 
 func TestNullableFieldOnDemand(t *testing.T) {
 	cfg := &onDemandConfig{}
-	f, err := newFieldFromInput(cfg, &input.Field{
+	f, err := newFieldFromInputTest(cfg, &input.Field{
 		Name:     "name",
 		Nullable: true,
 		Type: &input.FieldType{
@@ -277,7 +277,7 @@ func TestNullableFieldOnDemand(t *testing.T) {
 
 func TestNullableFieldOnDemandNoFieldPrivacy(t *testing.T) {
 	cfg := &onDemandConfig{}
-	f, err := newFieldFromInput(cfg, &input.Field{
+	f, err := newFieldFromInputTest(cfg, &input.Field{
 		Name:     "name",
 		Nullable: true,
 		Type: &input.FieldType{
@@ -311,7 +311,7 @@ func TestNullableFieldOnDemandNoFieldPrivacy(t *testing.T) {
 
 func TestNonNullableFieldOnEntLoad(t *testing.T) {
 	cfg := &onEntLoadConfig{}
-	f, err := newFieldFromInput(cfg, &input.Field{
+	f, err := newFieldFromInputTest(cfg, &input.Field{
 		Name: "name",
 		Type: &input.FieldType{
 			DBType: input.String,
@@ -333,7 +333,7 @@ func TestNonNullableFieldOnEntLoad(t *testing.T) {
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
@@ -347,7 +347,7 @@ func TestNonNullableFieldOnEntLoad(t *testing.T) {
 
 func TestNonNullableFieldOnEntLoadNoFieldPrivacy(t *testing.T) {
 	cfg := &onEntLoadConfig{}
-	f, err := newFieldFromInput(cfg, &input.Field{
+	f, err := newFieldFromInputTest(cfg, &input.Field{
 		Name: "name",
 		Type: &input.FieldType{
 			DBType: input.String,
@@ -365,11 +365,11 @@ func TestNonNullableFieldOnEntLoadNoFieldPrivacy(t *testing.T) {
 		tsBuilderType:      "string",
 		tsBuilderUnionType: "string",
 		graphqlImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImports: []*tsimport.ImportPath{
-			tsimport.NewGQLImportPath("GraphQLNonNull"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLImportPath("GraphQLString"),
 		},
 		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
@@ -382,7 +382,7 @@ func TestNonNullableFieldOnEntLoadNoFieldPrivacy(t *testing.T) {
 
 func TestNullableFieldOnEntLoad(t *testing.T) {
 	cfg := &onEntLoadConfig{}
-	f, err := newFieldFromInput(cfg, &input.Field{
+	f, err := newFieldFromInputTest(cfg, &input.Field{
 		Name:     "name",
 		Nullable: true,
 		Type: &input.FieldType{
@@ -417,7 +417,7 @@ func TestNullableFieldOnEntLoad(t *testing.T) {
 
 func TestNullableFieldOnEntLoadNoFieldPrivacy(t *testing.T) {
 	cfg := &onEntLoadConfig{}
-	f, err := newFieldFromInput(cfg, &input.Field{
+	f, err := newFieldFromInputTest(cfg, &input.Field{
 		Name:     "name",
 		Nullable: true,
 		Type: &input.FieldType{
@@ -457,11 +457,11 @@ func doTestField(t *testing.T, cfg codegenapi.Config, f *Field, exp *expected) {
 	assert.Equal(t, exp.tsPublicAPIName, f.TSPublicAPIName())
 	assert.Equal(t, exp.tsType, f.TsType())
 	assert.Equal(t, exp.tsFieldType, f.TsFieldType(cfg))
-	assert.Equal(t, exp.tsBuilderType, f.TsBuilderType())
-	assert.Equal(t, exp.tsBuilderUnionType, f.TsBuilderUnionType())
-	assert.Equal(t, exp.graphqlImports, f.GetTSGraphQLTypeForFieldImports())
-	assert.Equal(t, exp.graphqlMutationImports, f.GetTSMutationGraphQLTypeForFieldImports(false))
-	assert.Equal(t, exp.graphqlMutationImportsForceOptional, f.GetTSMutationGraphQLTypeForFieldImports(true))
+	assert.Equal(t, exp.tsBuilderType, f.TsBuilderType(cfg))
+	assert.Equal(t, exp.tsBuilderUnionType, f.TsBuilderUnionType(cfg))
+	assert.Equal(t, exp.graphqlImports, f.GetTSGraphQLTypeForFieldImports(false))
+	assert.Equal(t, exp.graphqlMutationImports, f.GetTSMutationGraphQLTypeForFieldImports(false, false))
+	assert.Equal(t, exp.graphqlMutationImportsForceOptional, f.GetTSMutationGraphQLTypeForFieldImports(true, false))
 	assert.Equal(t, exp.fieldTypeType, f.GetFieldType())
 	assert.Equal(t, exp.tsFieldTypeType, f.GetTSFieldType(cfg))
 }

@@ -224,6 +224,8 @@ CREATE TABLE users (
     fun_uuids UUID[], 
     new_col TEXT, 
     new_col_2 TEXT, 
+    super_nested_object JSONB, 
+    nested_list JSONB[], 
     name_idx TSVECTOR GENERATED ALWAYS AS (to_tsvector('simple', coalesce(first_name, '') || ' ' || coalesce(last_name, ''))) STORED, 
     CONSTRAINT users_id_pkey PRIMARY KEY (id), 
     CONSTRAINT users_unique_email_address UNIQUE (email_address), 

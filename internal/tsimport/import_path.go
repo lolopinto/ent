@@ -9,10 +9,14 @@ type ImportPath struct {
 	ImportPath    string `json:"importPath"`
 	Import        string `json:"import"`
 	DefaultImport bool   `json:"defaultImport,omitempty"`
+	// we name this originalImport so that clients everywhere can just keep calling useImport .Import
+	OriginalImport string `json:"originalImport,omitempty"`
 
 	// only used in graphql (at least for now)
 	// defaults to no. if function, call it instead of just referencing the import when used?
 	Function bool `json:"function,omitempty"`
+
+	Class bool `json:"class,omitempty"`
 
 	TransformedForGraphQLMutation bool `json:"transformedForGraphQLMutation,omitempty"`
 	TransformedForExternalEnt     bool `json:"transformedForExternalEnt,omitempty"`
@@ -23,6 +27,14 @@ func NewGQLImportPath(typ string) *ImportPath {
 	return &ImportPath{
 		Import:     typ,
 		ImportPath: "graphql",
+	}
+}
+
+func NewGQLClassImportPath(typ string) *ImportPath {
+	return &ImportPath{
+		Import:     typ,
+		ImportPath: "graphql",
+		Class:      true,
 	}
 }
 
@@ -94,6 +106,7 @@ func ImportPathEqual(ip1, ip2 *ImportPath) bool {
 		ip1.Import == ip2.Import &&
 		ip1.DefaultImport == ip2.DefaultImport &&
 		ip1.Function == ip2.Function &&
+		ip1.Class == ip2.Class &&
 		ip1.TransformedForGraphQLMutation == ip2.TransformedForGraphQLMutation &&
 		ip1.TransformedForExternalEnt == ip2.TransformedForExternalEnt
 }

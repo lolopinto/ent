@@ -35,14 +35,14 @@ export const GuestGroupType = new GraphQLObjectType({
       },
     },
     id: {
-      type: GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,
     },
     invitationName: {
-      type: GraphQLNonNull(GraphQLString),
+      type: new GraphQLNonNull(GraphQLString),
     },
     guestGroupToInvitedEvents: {
-      type: GraphQLNonNull(GuestGroupToInvitedEventsConnectionType()),
+      type: new GraphQLNonNull(GuestGroupToInvitedEventsConnectionType()),
       args: {
         first: {
           description: "",
@@ -72,7 +72,7 @@ export const GuestGroupType = new GraphQLObjectType({
       },
     },
     guests: {
-      type: GraphQLNonNull(GuestGroupToGuestsConnectionType()),
+      type: new GraphQLNonNull(GuestGroupToGuestsConnectionType()),
       args: {
         first: {
           description: "",

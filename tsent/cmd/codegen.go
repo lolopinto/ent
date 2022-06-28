@@ -13,8 +13,9 @@ import (
 )
 
 type codegenArgs struct {
-	step     string
-	writeAll bool
+	step                 string
+	writeAll             bool
+	disableCustomGraphQL bool
 }
 
 var codegenInfo codegenArgs
@@ -74,6 +75,11 @@ var codegenCmd = &cobra.Command{
 			new(graphql.TSStep),
 		}
 
-		return processor.Run(steps, codegenInfo.step)
+		// TODO why do we have these 2 different sets of options? very confusing...
+		opts2 := []codegen.Option{}
+		if codegenInfo.disableCustomGraphQL {
+			opts2 = append(opts2, codegen.DisableCustomGraphQL())
+		}
+		return processor.Run(steps, codegenInfo.step, opts2...)
 	},
 }
