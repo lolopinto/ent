@@ -317,9 +317,34 @@ function parseFieldElement(
   fileContents: string,
   nested?: boolean,
 ): ParsedFieldElement | null {
-  if (element.kind !== ts.SyntaxKind.CallExpression) {
-    throwErr(fileContents, element, "skipped non-call expression");
+  if (
+    element.kind !== ts.SyntaxKind.CallExpression &&
+    element.kind !== ts.SyntaxKind.PropertyAccessExpression
+  ) {
+    throwErr(
+      fileContents,
+      element,
+      `skipped unknown (non-call|non-property) expression ${element.kind}`,
+    );
     return null;
+  }
+
+  if (element.kind === ts.SyntaxKind.PropertyAccessExpression) {
+    const ret = parseFieldElement(
+      (element as ts.PropertyAccessExpression).expression,
+      sourceFile,
+      fileContents,
+      true,
+    );
+    if (ret !== null) {
+      if (!nested) {
+        ret.suffix = fileContents.substring(
+          ret.callEx.getEnd(),
+          element.getEnd(),
+        );
+      }
+      return ret;
+    }
   }
   let callEx = element as ts.CallExpression;
   if (callEx.arguments.length !== 1) {
@@ -352,6 +377,25 @@ function parseFieldElement(
 
   let arg = callEx.arguments[0];
   if (arg.kind !== ts.SyntaxKind.ObjectLiteralExpression) {
+    // this and the check above for PropertyAccessExpression are to handle things like
+    // FooType({
+    /// ...
+    // }).function(blah)
+    const ret = parseFieldElement(
+      callEx.expression,
+      sourceFile,
+      fileContents,
+      true,
+    );
+    if (ret !== null) {
+      if (!nested) {
+        ret.suffix = fileContents.substring(
+          ret.callEx.getEnd(),
+          callEx.getEnd(),
+        );
+      }
+      return ret;
+    }
     throwErr(
       fileContents,
       element,
