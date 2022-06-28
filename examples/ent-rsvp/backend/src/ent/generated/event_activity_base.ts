@@ -231,7 +231,7 @@ export class EventActivityBase {
     return EventActivityToInvitesQuery.query(this.viewer, this.id);
   }
 
-  async loadEvent(): Promise<Event | null> {
+  loadEvent(): Promise<Event | null> {
     return loadEnt(this.viewer, this.eventID, Event.loaderOptions());
   }
 

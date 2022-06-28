@@ -169,7 +169,7 @@ export class GuestDataBase {
     return GuestDataBase.getSchemaFields().get(key);
   }
 
-  async loadEvent(): Promise<Event | null> {
+  loadEvent(): Promise<Event | null> {
     return loadEnt(this.viewer, this.eventID, Event.loaderOptions());
   }
 
@@ -177,7 +177,7 @@ export class GuestDataBase {
     return loadEntX(this.viewer, this.eventID, Event.loaderOptions());
   }
 
-  async loadGuest(): Promise<Guest | null> {
+  loadGuest(): Promise<Guest | null> {
     return loadEnt(this.viewer, this.guestID, Guest.loaderOptions());
   }
 

@@ -178,7 +178,7 @@ export async function updateRawObject<
   TViewer extends Viewer,
   TInput extends Data,
 >(
-  viewer: Viewer,
+  viewer: TViewer,
   builderCtr: BuilderConstructor<TEnt, TViewer, TInput>,
   existingEnt: TEnt,
   input: TInput,

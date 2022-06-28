@@ -221,7 +221,7 @@ export class AddressBase {
     return AddressBase.getSchemaFields().get(key);
   }
 
-  async loadOwner(): Promise<Ent | null> {
+  loadOwner(): Promise<Ent | null> {
     return loadEntByType(
       this.viewer,
       this.ownerType as unknown as NodeType,

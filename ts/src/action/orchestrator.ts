@@ -618,7 +618,7 @@ export class Orchestrator<
   }
 
   private async getFieldsWithDefaultValues(
-    builder: Builder<TEnt>,
+    builder: Builder<TEnt, TViewer>,
     schemaFields: Map<string, Field>,
     editedFields: Map<string, any>,
     action?: Action<TEnt, Builder<TEnt, TViewer>, TViewer, TInput> | undefined,
@@ -636,22 +636,30 @@ export class Orchestrator<
     // else apply schema tranformation if it exists
     let transformed: TransformedUpdateOperation<TEnt> | null = null;
 
+    const sqlOp = this.getSQLStatementOperation();
     if (action?.transformWrite) {
       transformed = await action.transformWrite({
-        viewer: builder.viewer,
-        op: this.getSQLStatementOperation(),
+        builder,
+        input,
+        op: sqlOp,
         data: editedFields,
-        existingEnt: this.existingEnt,
       });
     } else if (!this.disableTransformations) {
-      transformed = getTransformedUpdateOp<TEnt>(this.options.schema, {
-        viewer: builder.viewer,
-        op: this.getSQLStatementOperation(),
+      transformed = getTransformedUpdateOp<TEnt, TViewer>(this.options.schema, {
+        builder,
+        input,
+        op: sqlOp,
         data: editedFields,
-        existingEnt: this.existingEnt,
       });
     }
     if (transformed) {
+      if (sqlOp === SQLStatementOperation.Insert && sqlOp !== transformed.op) {
+        if (!transformed.existingEnt) {
+          throw new Error(
+            `cannot transform an insert operation without providing an existing ent`,
+          );
+        }
+      }
       if (transformed.data) {
         updateInput = true;
         for (const k in transformed.data) {
@@ -674,6 +682,8 @@ export class Orchestrator<
       if (transformed.existingEnt) {
         // @ts-ignore
         this.existingEnt = transformed.existingEnt;
+        // modify existing ent in builder. it's readonly in generated ents but doesn't apply here
+        builder.existingEnt = transformed.existingEnt;
       }
     }
     // transforming before doing default fields so that we don't create a new id
