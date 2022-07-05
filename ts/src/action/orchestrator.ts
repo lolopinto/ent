@@ -574,36 +574,36 @@ export class Orchestrator<
   private async triggers(
     action: Action<TEnt, Builder<TEnt, TViewer>, TViewer, TInput>,
     builder: Builder<TEnt, TViewer>,
-    triggers: Trigger<TEnt, Builder<TEnt, TViewer>>[],
+    triggers: Array<
+      | Trigger<TEnt, Builder<TEnt, TViewer>>
+      | Array<Trigger<TEnt, Builder<TEnt, TViewer>>>
+    >,
   ): Promise<void> {
-    interface triggerGroup {
-      priority: number;
-      triggers: Trigger<TEnt, Builder<TEnt, TViewer>>[];
+    let groups: Trigger<TEnt, Builder<TEnt, TViewer>>[][] = [];
+    let lastSingle = -1;
+    for (let i = 0; i < triggers.length; i++) {
+      let t = triggers[i];
+      if (Array.isArray(t)) {
+        if (i !== lastSingle) {
+          // @ts-ignore
+          groups.push(triggers.slice(lastSingle, i + 1));
+        }
+        groups.push(t);
+
+        // mark next one as last single
+        lastSingle = i + 1;
+      } else {
+        if (i === triggers.length - 1) {
+          // @ts-ignore
+          groups.push(triggers.slice(lastSingle, i + 1));
+        }
+        lastSingle++;
+      }
     }
 
-    let groups: triggerGroup[] = [];
-    let map = new Map<number, triggerGroup>();
-    triggers.forEach((t) => {
-      let priority = t.priority || DEFAULT_DEFCON_PRIORITY;
-      let tg = map.get(priority);
-      if (!tg) {
-        tg = {
-          priority,
-          triggers: [],
-        };
-        map.set(priority, tg);
-        groups.push(tg);
-      }
-      tg.triggers.push(t);
-    });
-
-    groups.sort((a, b) => {
-      return a.priority - b.priority;
-    });
-
-    for (const g of groups) {
+    for (const triggers of groups) {
       await Promise.all(
-        g.triggers.map(async (trigger) => {
+        triggers.map(async (trigger) => {
           let ret = await trigger.changeset(builder, action.getInput());
           if (Array.isArray(ret)) {
             ret = await Promise.all(ret);

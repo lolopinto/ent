@@ -355,7 +355,8 @@ export class SimpleAction<
     );
   }
 
-  getTriggers(): Trigger<T, SimpleBuilder<T>>[] {
+  getTriggers():
+    | (Trigger<T, SimpleBuilder<T>> | Array<Trigger<T, SimpleBuilder<T>>>)[] {
     return [];
   }
 

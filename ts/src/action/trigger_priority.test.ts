@@ -56,7 +56,7 @@ function getInsertUserAction(
 }
 
 function commonTests() {
-  test("with explicity priority for 1", async () => {
+  test("with one list depending on the other list", async () => {
     const action = getInsertUserAction(
       new Map([
         ["FirstName", "Jon"],
@@ -64,13 +64,78 @@ function commonTests() {
       ]),
     );
     action.getTriggers = () => [
+      [
+        {
+          changeset: (builder: SimpleBuilder<User>) => {
+            const val = builder.getStoredData("key");
+            expect(val).toBeUndefined();
+            builder.storeData("key", "priority-1");
+          },
+        },
+      ],
+      [
+        {
+          changeset: (builder: SimpleBuilder<User>) => {
+            const val = builder.getStoredData("key");
+            expect(val).toBe("priority-1");
+          },
+        },
+      ],
+    ];
+
+    await action.saveX();
+  });
+
+  test("with one depending on prior list", async () => {
+    const action = getInsertUserAction(
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+    action.getTriggers = () => [
+      [
+        {
+          changeset: (builder: SimpleBuilder<User>) => {
+            const val = builder.getStoredData("key");
+            expect(val).toBeUndefined();
+            builder.storeData("key", "priority-1");
+          },
+        },
+      ],
       {
         changeset: (builder: SimpleBuilder<User>) => {
           const val = builder.getStoredData("key");
-          expect(val).toBeUndefined();
-          builder.storeData("key", "priority-1");
+          expect(val).toBe("priority-1");
         },
-        priority: 1,
+      },
+    ];
+
+    await action.saveX();
+  });
+
+  test("with multiple which depend on higher priority list", async () => {
+    const action = getInsertUserAction(
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+    action.getTriggers = () => [
+      [
+        {
+          changeset: (builder: SimpleBuilder<User>) => {
+            const val = builder.getStoredData("key");
+            expect(val).toBeUndefined();
+            builder.storeData("key", "priority-1");
+          },
+        },
+      ],
+      {
+        changeset: (builder: SimpleBuilder<User>) => {
+          const val = builder.getStoredData("key");
+          expect(val).toBe("priority-1");
+        },
       },
       {
         changeset: (builder: SimpleBuilder<User>) => {
@@ -83,7 +148,7 @@ function commonTests() {
     await action.saveX();
   });
 
-  test("with explicity priority for 2", async () => {
+  test("with multiple in list which depend on higher priority one", async () => {
     const action = getInsertUserAction(
       new Map([
         ["FirstName", "Jon"],
@@ -91,54 +156,29 @@ function commonTests() {
       ]),
     );
     action.getTriggers = () => [
-      {
-        changeset: (builder: SimpleBuilder<User>) => {
-          const val = builder.getStoredData("key");
-          expect(val).toBeUndefined();
-          builder.storeData("key", "priority-1");
+      [
+        {
+          changeset: (builder: SimpleBuilder<User>) => {
+            const val = builder.getStoredData("key");
+            expect(val).toBeUndefined();
+            builder.storeData("key", "priority-1");
+          },
         },
-        priority: 1,
-      },
-      {
-        changeset: (builder: SimpleBuilder<User>) => {
-          const val = builder.getStoredData("key");
-          expect(val).toBe("priority-1");
+      ],
+      [
+        {
+          changeset: (builder: SimpleBuilder<User>) => {
+            const val = builder.getStoredData("key");
+            expect(val).toBe("priority-1");
+          },
         },
-        priority: 2,
-      },
-    ];
-
-    await action.saveX();
-  });
-
-  test("with multiple which depend on higher priority one", async () => {
-    const action = getInsertUserAction(
-      new Map([
-        ["FirstName", "Jon"],
-        ["LastName", "Snow"],
-      ]),
-    );
-    action.getTriggers = () => [
-      {
-        changeset: (builder: SimpleBuilder<User>) => {
-          const val = builder.getStoredData("key");
-          expect(val).toBeUndefined();
-          builder.storeData("key", "priority-1");
+        {
+          changeset: (builder: SimpleBuilder<User>) => {
+            const val = builder.getStoredData("key");
+            expect(val).toBe("priority-1");
+          },
         },
-        priority: 1,
-      },
-      {
-        changeset: (builder: SimpleBuilder<User>) => {
-          const val = builder.getStoredData("key");
-          expect(val).toBe("priority-1");
-        },
-      },
-      {
-        changeset: (builder: SimpleBuilder<User>) => {
-          const val = builder.getStoredData("key");
-          expect(val).toBe("priority-1");
-        },
-      },
+      ],
     ];
 
     await action.saveX();

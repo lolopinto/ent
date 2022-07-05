@@ -90,16 +90,6 @@ export interface Trigger<
   // input passed in here !== builder.getInput()
   // builder.getInput() can have other default fields
   changeset(builder: TBuilder, input: TInput): TriggerReturn;
-
-  // This allows us to group triggers of the same priority together
-  // if no priority is given, the default value when no priority is given is 5
-  // we default to the defcon system
-  // choosing a default of 5 allows the developer to easily prioritize one trigger
-  // https://en.wikipedia.org/wiki/DEFCON
-  // in a group by giving it a lower positive number instead of having to deal with negative numbers
-  // It's also possible to provide priorities for every trigger and indicate
-  // when they should be run relative to each other.
-  priority?: number;
 }
 
 export const DEFAULT_DEFCON_PRIORITY = 5;
@@ -139,10 +129,14 @@ export interface Action<
   readonly viewer: Viewer;
   changeset(): Promise<Changeset>;
   builder: TBuilder;
-  // TODO template ent
   getPrivacyPolicy(): PrivacyPolicy<TEnt>;
 
-  getTriggers?(): Trigger<TEnt, TBuilder, TViewer, TInput, TExistingEnt>[];
+  // this is the more extensible approach
+  // but more annoying
+  getTriggers?(): (
+    | Trigger<TEnt, TBuilder, TViewer, TInput, TExistingEnt>
+    | Trigger<TEnt, TBuilder, TViewer, TInput, TExistingEnt>[]
+  )[];
   getObservers?(): Observer<TEnt, TBuilder, TViewer, TInput, TExistingEnt>[];
   getValidators?(): Validator<TEnt, TBuilder, TViewer, TInput, TExistingEnt>[];
   getInput(): TInput; // this input is passed to Triggers, Observers, Validators
