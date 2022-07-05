@@ -32,6 +32,39 @@ export interface EditEventRsvpStatusInput {
   userID: ID;
 }
 
+export type EditEventRsvpStatusActionTriggers = (
+  | Trigger<
+      Event,
+      EventBuilder<EditEventRsvpStatusInput, Event>,
+      ExampleViewerAlias,
+      EditEventRsvpStatusInput,
+      Event
+    >
+  | Trigger<
+      Event,
+      EventBuilder<EditEventRsvpStatusInput, Event>,
+      ExampleViewerAlias,
+      EditEventRsvpStatusInput,
+      Event
+    >[]
+)[];
+
+export type EditEventRsvpStatusActionObservers = Observer<
+  Event,
+  EventBuilder<EditEventRsvpStatusInput, Event>,
+  ExampleViewerAlias,
+  EditEventRsvpStatusInput,
+  Event
+>[];
+
+export type EditEventRsvpStatusActionValidators = Validator<
+  Event,
+  EventBuilder<EditEventRsvpStatusInput, Event>,
+  ExampleViewerAlias,
+  EditEventRsvpStatusInput,
+  Event
+>[];
+
 export class EditEventRsvpStatusActionBase
   implements
     Action<
@@ -67,33 +100,15 @@ export class EditEventRsvpStatusActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    Event,
-    EventBuilder<EditEventRsvpStatusInput, Event>,
-    ExampleViewerAlias,
-    EditEventRsvpStatusInput,
-    Event
-  >[] {
+  getTriggers(): EditEventRsvpStatusActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    Event,
-    EventBuilder<EditEventRsvpStatusInput, Event>,
-    ExampleViewerAlias,
-    EditEventRsvpStatusInput,
-    Event
-  >[] {
+  getObservers(): EditEventRsvpStatusActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    Event,
-    EventBuilder<EditEventRsvpStatusInput, Event>,
-    ExampleViewerAlias,
-    EditEventRsvpStatusInput,
-    Event
-  >[] {
+  getValidators(): EditEventRsvpStatusActionValidators {
     return [];
   }
 

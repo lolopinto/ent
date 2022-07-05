@@ -20,6 +20,39 @@ import { Contact } from "../../..";
 import { ContactBuilder, ContactInput } from "./contact_builder";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
+export type DeleteContactActionTriggers = (
+  | Trigger<
+      Contact,
+      ContactBuilder<ContactInput, Contact>,
+      ExampleViewerAlias,
+      ContactInput,
+      Contact
+    >
+  | Trigger<
+      Contact,
+      ContactBuilder<ContactInput, Contact>,
+      ExampleViewerAlias,
+      ContactInput,
+      Contact
+    >[]
+)[];
+
+export type DeleteContactActionObservers = Observer<
+  Contact,
+  ContactBuilder<ContactInput, Contact>,
+  ExampleViewerAlias,
+  ContactInput,
+  Contact
+>[];
+
+export type DeleteContactActionValidators = Validator<
+  Contact,
+  ContactBuilder<ContactInput, Contact>,
+  ExampleViewerAlias,
+  ContactInput,
+  Contact
+>[];
+
 export class DeleteContactActionBase
   implements
     Action<
@@ -49,33 +82,15 @@ export class DeleteContactActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    Contact,
-    ContactBuilder<ContactInput, Contact>,
-    ExampleViewerAlias,
-    ContactInput,
-    Contact
-  >[] {
+  getTriggers(): DeleteContactActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    Contact,
-    ContactBuilder<ContactInput, Contact>,
-    ExampleViewerAlias,
-    ContactInput,
-    Contact
-  >[] {
+  getObservers(): DeleteContactActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    Contact,
-    ContactBuilder<ContactInput, Contact>,
-    ExampleViewerAlias,
-    ContactInput,
-    Contact
-  >[] {
+  getValidators(): DeleteContactActionValidators {
     return [];
   }
 

@@ -20,6 +20,39 @@ import { AuthCode } from "../../..";
 import { AuthCodeBuilder, AuthCodeInput } from "./auth_code_builder";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
+export type DeleteAuthCodeActionTriggers = (
+  | Trigger<
+      AuthCode,
+      AuthCodeBuilder<AuthCodeInput, AuthCode>,
+      ExampleViewerAlias,
+      AuthCodeInput,
+      AuthCode
+    >
+  | Trigger<
+      AuthCode,
+      AuthCodeBuilder<AuthCodeInput, AuthCode>,
+      ExampleViewerAlias,
+      AuthCodeInput,
+      AuthCode
+    >[]
+)[];
+
+export type DeleteAuthCodeActionObservers = Observer<
+  AuthCode,
+  AuthCodeBuilder<AuthCodeInput, AuthCode>,
+  ExampleViewerAlias,
+  AuthCodeInput,
+  AuthCode
+>[];
+
+export type DeleteAuthCodeActionValidators = Validator<
+  AuthCode,
+  AuthCodeBuilder<AuthCodeInput, AuthCode>,
+  ExampleViewerAlias,
+  AuthCodeInput,
+  AuthCode
+>[];
+
 export class DeleteAuthCodeActionBase
   implements
     Action<
@@ -49,33 +82,15 @@ export class DeleteAuthCodeActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    AuthCode,
-    AuthCodeBuilder<AuthCodeInput, AuthCode>,
-    ExampleViewerAlias,
-    AuthCodeInput,
-    AuthCode
-  >[] {
+  getTriggers(): DeleteAuthCodeActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    AuthCode,
-    AuthCodeBuilder<AuthCodeInput, AuthCode>,
-    ExampleViewerAlias,
-    AuthCodeInput,
-    AuthCode
-  >[] {
+  getObservers(): DeleteAuthCodeActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    AuthCode,
-    AuthCodeBuilder<AuthCodeInput, AuthCode>,
-    ExampleViewerAlias,
-    AuthCodeInput,
-    AuthCode
-  >[] {
+  getValidators(): DeleteAuthCodeActionValidators {
     return [];
   }
 

@@ -24,6 +24,39 @@ export interface DeleteUserInput2 {
   log: boolean;
 }
 
+export type DeleteUserAction2Triggers = (
+  | Trigger<
+      User,
+      UserBuilder<DeleteUserInput2, User>,
+      ExampleViewerAlias,
+      DeleteUserInput2,
+      User
+    >
+  | Trigger<
+      User,
+      UserBuilder<DeleteUserInput2, User>,
+      ExampleViewerAlias,
+      DeleteUserInput2,
+      User
+    >[]
+)[];
+
+export type DeleteUserAction2Observers = Observer<
+  User,
+  UserBuilder<DeleteUserInput2, User>,
+  ExampleViewerAlias,
+  DeleteUserInput2,
+  User
+>[];
+
+export type DeleteUserAction2Validators = Validator<
+  User,
+  UserBuilder<DeleteUserInput2, User>,
+  ExampleViewerAlias,
+  DeleteUserInput2,
+  User
+>[];
+
 export class DeleteUserAction2Base
   implements
     Action<
@@ -55,33 +88,15 @@ export class DeleteUserAction2Base
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    User,
-    UserBuilder<DeleteUserInput2, User>,
-    ExampleViewerAlias,
-    DeleteUserInput2,
-    User
-  >[] {
+  getTriggers(): DeleteUserAction2Triggers {
     return [];
   }
 
-  getObservers(): Observer<
-    User,
-    UserBuilder<DeleteUserInput2, User>,
-    ExampleViewerAlias,
-    DeleteUserInput2,
-    User
-  >[] {
+  getObservers(): DeleteUserAction2Observers {
     return [];
   }
 
-  getValidators(): Validator<
-    User,
-    UserBuilder<DeleteUserInput2, User>,
-    ExampleViewerAlias,
-    DeleteUserInput2,
-    User
-  >[] {
+  getValidators(): DeleteUserAction2Validators {
     return [];
   }
 
