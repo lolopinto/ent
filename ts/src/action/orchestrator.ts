@@ -27,12 +27,7 @@ import {
   TransformedUpdateOperation,
   FieldInfoMap,
 } from "../schema/schema";
-import {
-  Changeset,
-  DEFAULT_DEFCON_PRIORITY,
-  Executor,
-  Validator,
-} from "../action/action";
+import { Changeset, Executor, Validator } from "../action/action";
 import { WriteOperation, Builder, Action } from "../action";
 import { applyPrivacyPolicyX } from "../core/privacy";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
