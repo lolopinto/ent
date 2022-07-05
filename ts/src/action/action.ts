@@ -131,8 +131,10 @@ export interface Action<
   builder: TBuilder;
   getPrivacyPolicy(): PrivacyPolicy<TEnt>;
 
-  // this is the more extensible approach
-  // but more annoying
+  // we allow grouping triggers to indicate dependency trees
+  // so that you can say one or more triggers is higher priority
+  // than the others and should be run first
+  // any encountered list is a different priority from prior and subsequent triggers
   getTriggers?(): (
     | Trigger<TEnt, TBuilder, TViewer, TInput, TExistingEnt>
     | Trigger<TEnt, TBuilder, TViewer, TInput, TExistingEnt>[]
