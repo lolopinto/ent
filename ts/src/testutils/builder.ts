@@ -189,6 +189,7 @@ export class SimpleBuilder<
   public orchestrator: Orchestrator<T, Data, Viewer>;
   public fields: Map<string, any>;
   nodeType: string;
+  private m: Map<string, any> = new Map();
 
   constructor(
     public viewer: Viewer,
@@ -283,6 +284,16 @@ export class SimpleBuilder<
         }
       }
     }
+  }
+
+  // store data in Builder that can be retrieved by another validator, trigger, observer later in the action
+  storeData(k: string, v: any) {
+    this.m.set(k, v);
+  }
+
+  // retrieve data stored in this Builder with key
+  getStoredData(k: string) {
+    return this.m.get(k);
   }
 
   build(): Promise<Changeset> {

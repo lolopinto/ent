@@ -41,12 +41,18 @@ export interface Trigger<
   TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
 > {
   changeset(builder: TBuilder, input: TInput): TriggerReturn;
+
+  priority?: number;
 }
 ```
 
 Each Trigger takes the [Builder](/docs/actions/builder) and the [Input](/docs/actions/input).
 
 A Trigger can update the Builder of the ent that's being edited or it can return the [Changeset](#changeset) of another Action.
+
+### changeset
+
+The `changeset` method is where the logic 
 
 ## Update Builder
 

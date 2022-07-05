@@ -27,7 +27,12 @@ import {
   TransformedUpdateOperation,
   FieldInfoMap,
 } from "../schema/schema";
-import { Changeset, Executor, Validator } from "../action/action";
+import {
+  Changeset,
+  DEFAULT_DEFCON_PRIORITY,
+  Executor,
+  Validator,
+} from "../action/action";
 import { WriteOperation, Builder, Action } from "../action";
 import { applyPrivacyPolicyX } from "../core/privacy";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
@@ -571,24 +576,51 @@ export class Orchestrator<
     builder: Builder<TEnt, TViewer>,
     triggers: Trigger<TEnt, Builder<TEnt, TViewer>>[],
   ): Promise<void> {
-    await Promise.all(
-      triggers.map(async (trigger) => {
-        let ret = await trigger.changeset(builder, action.getInput());
-        if (Array.isArray(ret)) {
-          ret = await Promise.all(ret);
-        }
+    interface triggerGroup {
+      priority: number;
+      triggers: Trigger<TEnt, Builder<TEnt, TViewer>>[];
+    }
 
-        if (Array.isArray(ret)) {
-          for (const v of ret) {
-            if (typeof v === "object") {
-              this.changesets.push(v);
-            }
+    let groups: triggerGroup[] = [];
+    let map = new Map<number, triggerGroup>();
+    triggers.forEach((t) => {
+      let priority = t.priority || DEFAULT_DEFCON_PRIORITY;
+      let tg = map.get(priority);
+      if (!tg) {
+        tg = {
+          priority,
+          triggers: [],
+        };
+        map.set(priority, tg);
+        groups.push(tg);
+      }
+      tg.triggers.push(t);
+    });
+
+    groups.sort((a, b) => {
+      return a.priority - b.priority;
+    });
+
+    for (const g of groups) {
+      await Promise.all(
+        g.triggers.map(async (trigger) => {
+          let ret = await trigger.changeset(builder, action.getInput());
+          if (Array.isArray(ret)) {
+            ret = await Promise.all(ret);
           }
-        } else if (ret) {
-          this.changesets.push(ret);
-        }
-      }),
-    );
+
+          if (Array.isArray(ret)) {
+            for (const v of ret) {
+              if (typeof v === "object") {
+                this.changesets.push(v);
+              }
+            }
+          } else if (ret) {
+            this.changesets.push(ret);
+          }
+        }),
+      );
+    }
   }
 
   private async validators(
