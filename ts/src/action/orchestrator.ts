@@ -575,24 +575,25 @@ export class Orchestrator<
     >,
   ): Promise<void> {
     let groups: Trigger<TEnt, Builder<TEnt, TViewer>>[][] = [];
-    let lastSingle = -1;
+    let lastArray = 0;
+    let prevWasArray = false;
     for (let i = 0; i < triggers.length; i++) {
       let t = triggers[i];
       if (Array.isArray(t)) {
-        if (i !== lastSingle) {
+        if (!prevWasArray) {
           // @ts-ignore
-          groups.push(triggers.slice(lastSingle, i + 1));
+          groups.push(triggers.slice(lastArray, i));
         }
         groups.push(t);
 
-        // mark next one as last single
-        lastSingle = i + 1;
+        prevWasArray = true;
+        lastArray++;
       } else {
         if (i === triggers.length - 1) {
           // @ts-ignore
-          groups.push(triggers.slice(lastSingle, i + 1));
+          groups.push(triggers.slice(lastArray, i + 1));
         }
-        lastSingle++;
+        prevWasArray = false;
       }
     }
 

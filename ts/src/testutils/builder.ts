@@ -189,7 +189,7 @@ export class SimpleBuilder<
   public orchestrator: Orchestrator<T, Data, Viewer>;
   public fields: Map<string, any>;
   nodeType: string;
-  private m: Map<string, any> = new Map();
+  m: Map<string, any> = new Map();
 
   constructor(
     public viewer: Viewer,

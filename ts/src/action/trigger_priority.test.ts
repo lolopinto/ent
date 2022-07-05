@@ -9,6 +9,7 @@ import { QueryRecorder } from "../testutils/db_mock";
 import { Dialect } from "../core/db";
 import { getSchemaTable, setupSqlite, Table } from "../testutils/db/test_db";
 import { FieldMap } from "../schema";
+import exp from "constants";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -56,6 +57,35 @@ function getInsertUserAction(
 }
 
 function commonTests() {
+  test("with one list depending on individual higher priority", async () => {
+    const action = getInsertUserAction(
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+    action.getTriggers = () => [
+      {
+        changeset: (builder: SimpleBuilder<User>) => {
+          expect(builder.getStoredData("key1")).toBeUndefined();
+          builder.storeData("key1", "called");
+        },
+      },
+      [
+        {
+          changeset: (builder: SimpleBuilder<User>) => {
+            expect(builder.getStoredData("key1")).toBe("called");
+            builder.storeData("key2", "called");
+          },
+        },
+      ],
+    ];
+
+    await action.saveX();
+    expect(action.builder.getStoredData("key1")).toBe("called");
+    expect(action.builder.getStoredData("key2")).toBe("called");
+  });
+
   test("with one list depending on the other list", async () => {
     const action = getInsertUserAction(
       new Map([
@@ -67,23 +97,24 @@ function commonTests() {
       [
         {
           changeset: (builder: SimpleBuilder<User>) => {
-            const val = builder.getStoredData("key");
-            expect(val).toBeUndefined();
-            builder.storeData("key", "priority-1");
+            expect(builder.getStoredData("key1")).toBeUndefined();
+            builder.storeData("key1", "called");
           },
         },
       ],
       [
         {
           changeset: (builder: SimpleBuilder<User>) => {
-            const val = builder.getStoredData("key");
-            expect(val).toBe("priority-1");
+            expect(builder.getStoredData("key1")).toBe("called");
+            builder.storeData("key2", "called");
           },
         },
       ],
     ];
 
     await action.saveX();
+    expect(action.builder.getStoredData("key1")).toBe("called");
+    expect(action.builder.getStoredData("key2")).toBe("called");
   });
 
   test("with one depending on prior list", async () => {
@@ -97,21 +128,22 @@ function commonTests() {
       [
         {
           changeset: (builder: SimpleBuilder<User>) => {
-            const val = builder.getStoredData("key");
-            expect(val).toBeUndefined();
-            builder.storeData("key", "priority-1");
+            expect(builder.getStoredData("key1")).toBeUndefined();
+            builder.storeData("key1", "called");
           },
         },
       ],
       {
         changeset: (builder: SimpleBuilder<User>) => {
-          const val = builder.getStoredData("key");
-          expect(val).toBe("priority-1");
+          expect(builder.getStoredData("key1")).toBe("called");
+          builder.storeData("key2", "called");
         },
       },
     ];
 
     await action.saveX();
+    expect(action.builder.getStoredData("key1")).toBe("called");
+    expect(action.builder.getStoredData("key2")).toBe("called");
   });
 
   test("with multiple which depend on higher priority list", async () => {
@@ -125,30 +157,32 @@ function commonTests() {
       [
         {
           changeset: (builder: SimpleBuilder<User>) => {
-            const val = builder.getStoredData("key");
-            expect(val).toBeUndefined();
-            builder.storeData("key", "priority-1");
+            expect(builder.getStoredData("key")).toBeUndefined();
+            builder.storeData("key1", "called");
           },
         },
       ],
       {
         changeset: (builder: SimpleBuilder<User>) => {
-          const val = builder.getStoredData("key");
-          expect(val).toBe("priority-1");
+          expect(builder.getStoredData("key1")).toBe("called");
+          builder.storeData("key2a", "called");
         },
       },
       {
         changeset: (builder: SimpleBuilder<User>) => {
-          const val = builder.getStoredData("key");
-          expect(val).toBe("priority-1");
+          expect(builder.getStoredData("key1")).toBe("called");
+          builder.storeData("key2b", "called");
         },
       },
     ];
 
     await action.saveX();
+    expect(action.builder.getStoredData("key1")).toBe("called");
+    expect(action.builder.getStoredData("key2a")).toBe("called");
+    expect(action.builder.getStoredData("key2b")).toBe("called");
   });
 
-  test("with multiple in list which depend on higher priority one", async () => {
+  test("with multiple in list which depend on higher priority one in list", async () => {
     const action = getInsertUserAction(
       new Map([
         ["FirstName", "Jon"],
@@ -159,29 +193,67 @@ function commonTests() {
       [
         {
           changeset: (builder: SimpleBuilder<User>) => {
-            const val = builder.getStoredData("key");
-            expect(val).toBeUndefined();
-            builder.storeData("key", "priority-1");
+            expect(builder.getStoredData("key")).toBeUndefined();
+            builder.storeData("key1", "called");
           },
         },
       ],
       [
         {
           changeset: (builder: SimpleBuilder<User>) => {
-            const val = builder.getStoredData("key");
-            expect(val).toBe("priority-1");
+            expect(builder.getStoredData("key1")).toBe("called");
+            builder.storeData("key2a", "called");
           },
         },
         {
           changeset: (builder: SimpleBuilder<User>) => {
-            const val = builder.getStoredData("key");
-            expect(val).toBe("priority-1");
+            expect(builder.getStoredData("key1")).toBe("called");
+            builder.storeData("key2b", "called");
           },
         },
       ],
     ];
 
     await action.saveX();
+    expect(action.builder.getStoredData("key1")).toBe("called");
+    expect(action.builder.getStoredData("key2a")).toBe("called");
+    expect(action.builder.getStoredData("key2b")).toBe("called");
+  });
+
+  test("with multiple in list which depend on higher priority one", async () => {
+    const action = getInsertUserAction(
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+    action.getTriggers = () => [
+      {
+        changeset: (builder: SimpleBuilder<User>) => {
+          expect(builder.getStoredData("key")).toBeUndefined();
+          builder.storeData("key1", "called");
+        },
+      },
+      [
+        {
+          changeset: (builder: SimpleBuilder<User>) => {
+            expect(builder.getStoredData("key1")).toBe("called");
+            builder.storeData("key2a", "called");
+          },
+        },
+        {
+          changeset: (builder: SimpleBuilder<User>) => {
+            expect(builder.getStoredData("key1")).toBe("called");
+            builder.storeData("key2b", "called");
+          },
+        },
+      ],
+    ];
+
+    await action.saveX();
+    expect(action.builder.getStoredData("key1")).toBe("called");
+    expect(action.builder.getStoredData("key2a")).toBe("called");
+    expect(action.builder.getStoredData("key2b")).toBe("called");
   });
 
   test("combine all the things", async () => {
@@ -195,60 +267,53 @@ function commonTests() {
       [
         {
           changeset: (builder: SimpleBuilder<User>) => {
-            const val = builder.getStoredData("key");
-            const val2 = builder.getStoredData("key2");
-            expect(val).toBeUndefined();
-            expect(val2).toBeUndefined();
-            builder.storeData("key", "priority-1");
+            expect(builder.getStoredData("key1")).toBeUndefined();
+            expect(builder.getStoredData("key2")).toBeUndefined();
+            builder.storeData("key1", "called");
           },
         },
       ],
       [
         {
           changeset: (builder: SimpleBuilder<User>) => {
-            const val = builder.getStoredData("key");
-            const val2 = builder.getStoredData("key2");
-            expect(val).toBe("priority-1");
-            expect(val2).toBeUndefined();
-            builder.storeData("key2", "priority-2");
+            expect(builder.getStoredData("key1")).toBe("called");
+            expect(builder.getStoredData("key2")).toBeUndefined();
+            builder.storeData("key2", "called");
           },
         },
       ],
       [
         {
           changeset: (builder: SimpleBuilder<User>) => {
-            const val = builder.getStoredData("key");
-            const val2 = builder.getStoredData("key2");
-            expect(val).toBe("priority-1");
-            expect(val2).toBe("priority-2");
-            builder.storeData("key3a", "priority-3a");
+            expect(builder.getStoredData("key1")).toBe("called");
+            expect(builder.getStoredData("key2")).toBe("called");
+            builder.storeData("key3a", "called");
           },
         },
         {
           changeset: (builder: SimpleBuilder<User>) => {
-            const val = builder.getStoredData("key");
-            const val2 = builder.getStoredData("key2");
-            expect(val).toBe("priority-1");
-            expect(val2).toBe("priority-2");
-            builder.storeData("key3b", "priority-3b");
+            expect(builder.getStoredData("key1")).toBe("called");
+            expect(builder.getStoredData("key2")).toBe("called");
+            builder.storeData("key3b", "called");
           },
         },
       ],
       {
         changeset: (builder: SimpleBuilder<User>) => {
-          const val = builder.getStoredData("key");
-          const val2 = builder.getStoredData("key2");
-          const val3a = builder.getStoredData("key3a");
-          const val3b = builder.getStoredData("key3b");
-
-          expect(val).toBe("priority-1");
-          expect(val2).toBe("priority-2");
-          expect(val3a).toBe("priority-3a");
-          expect(val3b).toBe("priority-3b");
+          expect(builder.getStoredData("key1")).toBe("called");
+          expect(builder.getStoredData("key2")).toBe("called");
+          expect(builder.getStoredData("key3a")).toBe("called");
+          expect(builder.getStoredData("key3b")).toBe("called");
+          builder.storeData("key4", "called");
         },
       },
     ];
 
     await action.saveX();
+    expect(action.builder.getStoredData("key1")).toBe("called");
+    expect(action.builder.getStoredData("key2")).toBe("called");
+    expect(action.builder.getStoredData("key3a")).toBe("called");
+    expect(action.builder.getStoredData("key3b")).toBe("called");
+    expect(action.builder.getStoredData("key4")).toBe("called");
   });
 }
