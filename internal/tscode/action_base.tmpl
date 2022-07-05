@@ -107,7 +107,6 @@ export type {{$triggersType }} = ({{useImport "Trigger"}}<{{$node}}, {{$builderN
 {{$observersType := printf "%sObservers" $action.GetActionName}}
 export type {{$observersType }} = {{useImport "Observer"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[];
 
-
 {{$validatorsType := printf "%sValidators" $action.GetActionName}}
 export type {{$validatorsType }} = {{useImport "Validator"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[];
 

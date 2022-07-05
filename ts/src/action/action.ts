@@ -92,8 +92,6 @@ export interface Trigger<
   changeset(builder: TBuilder, input: TInput): TriggerReturn;
 }
 
-export const DEFAULT_DEFCON_PRIORITY = 5;
-
 export interface Observer<
   TEnt extends Ent<TViewer>,
   TBuilder extends Builder<TEnt, TViewer, TExistingEnt>,
