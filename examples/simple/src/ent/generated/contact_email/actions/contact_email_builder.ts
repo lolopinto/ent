@@ -173,29 +173,44 @@ export class ContactEmailBuilder<
   }
 
   // get value of emailAddress. Retrieves it from the input if specified or takes it from existingEnt
-  getNewEmailAddressValue(): string | undefined {
+  getNewEmailAddressValue(): string {
     if (this.input.emailAddress !== undefined) {
       return this.input.emailAddress;
     }
-    return this.existingEnt?.emailAddress;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `emailAddress` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.emailAddress;
   }
 
   // get value of label. Retrieves it from the input if specified or takes it from existingEnt
-  getNewLabelValue(): string | undefined {
+  getNewLabelValue(): string {
     if (this.input.label !== undefined) {
       return this.input.label;
     }
-    return this.existingEnt?.label;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `label` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.label;
   }
 
   // get value of contactID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewContactIDValue():
-    | ID
-    | Builder<Contact, ExampleViewerAlias>
-    | undefined {
+  getNewContactIDValue(): ID | Builder<Contact, ExampleViewerAlias> {
     if (this.input.contactID !== undefined) {
       return this.input.contactID;
     }
-    return this.existingEnt?.contactID;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `contactID` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.contactID;
   }
 }

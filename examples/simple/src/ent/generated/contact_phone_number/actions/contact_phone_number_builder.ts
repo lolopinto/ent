@@ -173,29 +173,44 @@ export class ContactPhoneNumberBuilder<
   }
 
   // get value of phoneNumber. Retrieves it from the input if specified or takes it from existingEnt
-  getNewPhoneNumberValue(): string | undefined {
+  getNewPhoneNumberValue(): string {
     if (this.input.phoneNumber !== undefined) {
       return this.input.phoneNumber;
     }
-    return this.existingEnt?.phoneNumber;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `phoneNumber` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.phoneNumber;
   }
 
   // get value of label. Retrieves it from the input if specified or takes it from existingEnt
-  getNewLabelValue(): string | undefined {
+  getNewLabelValue(): string {
     if (this.input.label !== undefined) {
       return this.input.label;
     }
-    return this.existingEnt?.label;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `label` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.label;
   }
 
   // get value of contactID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewContactIDValue():
-    | ID
-    | Builder<Contact, ExampleViewerAlias>
-    | undefined {
+  getNewContactIDValue(): ID | Builder<Contact, ExampleViewerAlias> {
     if (this.input.contactID !== undefined) {
       return this.input.contactID;
     }
-    return this.existingEnt?.contactID;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `contactID` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.contactID;
   }
 }

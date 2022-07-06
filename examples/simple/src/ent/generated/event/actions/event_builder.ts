@@ -416,46 +416,72 @@ export class EventBuilder<
   }
 
   // get value of name. Retrieves it from the input if specified or takes it from existingEnt
-  getNewNameValue(): string | undefined {
+  getNewNameValue(): string {
     if (this.input.name !== undefined) {
       return this.input.name;
     }
-    return this.existingEnt?.name;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `name` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.name;
   }
 
   // get value of creatorID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewCreatorIDValue(): ID | undefined {
+  getNewCreatorIDValue(): ID {
     if (this.input.creatorID !== undefined) {
       return this.input.creatorID;
     }
-    return this.existingEnt?.creatorID;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `creatorID` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.creatorID;
   }
 
   // get value of start_time. Retrieves it from the input if specified or takes it from existingEnt
-  getNewStartTimeValue(): Date | undefined {
+  getNewStartTimeValue(): Date {
     if (this.input.startTime !== undefined) {
       return this.input.startTime;
     }
-    return this.existingEnt?.startTime;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `startTime` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.startTime;
   }
 
   // get value of end_time. Retrieves it from the input if specified or takes it from existingEnt
-  getNewEndTimeValue(): Date | null | undefined {
+  getNewEndTimeValue(): Date | null {
     if (this.input.endTime !== undefined) {
       return this.input.endTime;
     }
-    return this.existingEnt?.endTime;
+
+    return this.existingEnt?.endTime ?? null;
   }
 
   // get value of location. Retrieves it from the input if specified or takes it from existingEnt
-  getNewLocationValue(): string | undefined {
+  getNewLocationValue(): string {
     if (this.input.location !== undefined) {
       return this.input.location;
     }
-    return this.existingEnt?.location;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `location` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.location;
   }
 
   // get value of addressID. Retrieves it from the input if specified or takes it from existingEnt
+
   getNewAddressIDValue():
     | ID
     | null

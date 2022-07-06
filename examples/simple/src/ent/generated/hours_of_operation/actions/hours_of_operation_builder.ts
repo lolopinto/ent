@@ -175,34 +175,53 @@ export class HoursOfOperationBuilder<
   }
 
   // get value of dayOfWeek. Retrieves it from the input if specified or takes it from existingEnt
-  getNewDayOfWeekValue(): DayOfWeek | undefined {
+  getNewDayOfWeekValue(): DayOfWeek {
     if (this.input.dayOfWeek !== undefined) {
       return this.input.dayOfWeek;
     }
-    return this.existingEnt?.dayOfWeek;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `dayOfWeek` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.dayOfWeek;
   }
 
   // get value of dayOfWeekAlt. Retrieves it from the input if specified or takes it from existingEnt
-  getNewDayOfWeekAltValue(): DayOfWeekAlt | null | undefined {
+  getNewDayOfWeekAltValue(): DayOfWeekAlt | null {
     if (this.input.dayOfWeekAlt !== undefined) {
       return this.input.dayOfWeekAlt;
     }
-    return this.existingEnt?.dayOfWeekAlt;
+
+    return this.existingEnt?.dayOfWeekAlt ?? null;
   }
 
   // get value of open. Retrieves it from the input if specified or takes it from existingEnt
-  getNewOpenValue(): string | undefined {
+  getNewOpenValue(): string {
     if (this.input.open !== undefined) {
       return this.input.open;
     }
-    return this.existingEnt?.open;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `open` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.open;
   }
 
   // get value of close. Retrieves it from the input if specified or takes it from existingEnt
-  getNewCloseValue(): string | undefined {
+  getNewCloseValue(): string {
     if (this.input.close !== undefined) {
       return this.input.close;
     }
-    return this.existingEnt?.close;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `close` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.close;
   }
 }

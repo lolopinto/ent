@@ -223,37 +223,60 @@ export class CommentBuilder<
   }
 
   // get value of AuthorID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewAuthorIDValue(): ID | Builder<User, ExampleViewerAlias> | undefined {
+  getNewAuthorIDValue(): ID | Builder<User, ExampleViewerAlias> {
     if (this.input.authorID !== undefined) {
       return this.input.authorID;
     }
-    return this.existingEnt?.authorID;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `authorID` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.authorID;
   }
 
   // get value of Body. Retrieves it from the input if specified or takes it from existingEnt
-  getNewBodyValue(): string | undefined {
+  getNewBodyValue(): string {
     if (this.input.body !== undefined) {
       return this.input.body;
     }
-    return this.existingEnt?.body;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `body` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.body;
   }
 
   // get value of ArticleID. Retrieves it from the input if specified or takes it from existingEnt
   getNewArticleIDValue():
     | ID
-    | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>
-    | undefined {
+    | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias> {
     if (this.input.articleID !== undefined) {
       return this.input.articleID;
     }
-    return this.existingEnt?.articleID;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `articleID` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.articleID;
   }
 
   // get value of ArticleType. Retrieves it from the input if specified or takes it from existingEnt
-  getNewArticleTypeValue(): string | undefined {
+  getNewArticleTypeValue(): string {
     if (this.input.articleType !== undefined) {
       return this.input.articleType;
     }
-    return this.existingEnt?.articleType;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `articleType` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.articleType;
   }
 }

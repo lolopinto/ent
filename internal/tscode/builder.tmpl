@@ -253,17 +253,27 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
   {{range $field := .FieldInfo.GetEditableFields}}
     {{$tsFieldName := $field.TsBuilderFieldName -}}
     // get value of {{$field.FieldName}}. Retrieves it from the input if specified or takes it from existingEnt
-    getNew{{$field.CamelCaseName}}Value(): {{$field.TsBuilderUnionType $cfg}} | undefined {
-    {{/** hmm not ideal for these accessors to not work...*/}}
-      {{if $field.Private $cfg -}}
+    {{ if $field.Private $cfg -}}
+      {{/** hmm not ideal for these accessors to not work...*/}}
+      getNew{{$field.CamelCaseName}}Value(): {{$field.TsBuilderUnionType $cfg}} | undefined{
         return this.input.{{$tsFieldName}};
-      {{else -}}
+      }
+    {{ else -}}
+      getNew{{$field.CamelCaseName}}Value(): {{$field.TsBuilderUnionType $cfg}} {
         if (this.input.{{$tsFieldName}} !== undefined) {
           return this.input.{{$tsFieldName}}
         }
-        return this.existingEnt?.{{$tsFieldName}};
-      {{end -}}
-    }
+
+        {{if $field.Nullable}}
+          return this.existingEnt?.{{$tsFieldName}} ?? null;
+        {{ else -}}
+          if (!this.existingEnt) {
+            throw new Error('no value to return for `{{$tsFieldName}}` since not in input and no existingEnt');
+          }
+          return this.existingEnt.{{$tsFieldName}};
+        {{end -}}
+      }
+    {{end -}}
 
   {{end}}
 }
