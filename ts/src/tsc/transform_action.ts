@@ -217,6 +217,8 @@ export class TransformAction implements TransformFile {
       rawString: classInfo.wrapClassContents(klassContents),
       traversed,
       imports,
+      removeImports: ["Trigger", "Observer", "Validator"],
+      // not removing FooBuilder incase it's still somehow used in type of inline builders
     };
   }
 }
