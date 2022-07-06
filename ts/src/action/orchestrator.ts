@@ -569,26 +569,54 @@ export class Orchestrator<
   private async triggers(
     action: Action<TEnt, Builder<TEnt, TViewer>, TViewer, TInput>,
     builder: Builder<TEnt, TViewer>,
-    triggers: Trigger<TEnt, Builder<TEnt, TViewer>>[],
+    triggers: Array<
+      | Trigger<TEnt, Builder<TEnt, TViewer>>
+      | Array<Trigger<TEnt, Builder<TEnt, TViewer>>>
+    >,
   ): Promise<void> {
-    await Promise.all(
-      triggers.map(async (trigger) => {
-        let ret = await trigger.changeset(builder, action.getInput());
-        if (Array.isArray(ret)) {
-          ret = await Promise.all(ret);
+    let groups: Trigger<TEnt, Builder<TEnt, TViewer>>[][] = [];
+    let lastArray = 0;
+    let prevWasArray = false;
+    for (let i = 0; i < triggers.length; i++) {
+      let t = triggers[i];
+      if (Array.isArray(t)) {
+        if (!prevWasArray) {
+          // @ts-ignore
+          groups.push(triggers.slice(lastArray, i));
         }
+        groups.push(t);
 
-        if (Array.isArray(ret)) {
-          for (const v of ret) {
-            if (typeof v === "object") {
-              this.changesets.push(v);
-            }
-          }
-        } else if (ret) {
-          this.changesets.push(ret);
+        prevWasArray = true;
+        lastArray++;
+      } else {
+        if (i === triggers.length - 1) {
+          // @ts-ignore
+          groups.push(triggers.slice(lastArray, i + 1));
         }
-      }),
-    );
+        prevWasArray = false;
+      }
+    }
+
+    for (const triggers of groups) {
+      await Promise.all(
+        triggers.map(async (trigger) => {
+          let ret = await trigger.changeset(builder, action.getInput());
+          if (Array.isArray(ret)) {
+            ret = await Promise.all(ret);
+          }
+
+          if (Array.isArray(ret)) {
+            for (const v of ret) {
+              if (typeof v === "object") {
+                this.changesets.push(v);
+              }
+            }
+          } else if (ret) {
+            this.changesets.push(ret);
+          }
+        }),
+      );
+    }
   }
 
   private async validators(

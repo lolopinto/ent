@@ -29,6 +29,39 @@ export interface CommentCreateInput {
   articleType: string;
 }
 
+export type CreateCommentActionTriggers = (
+  | Trigger<
+      Comment,
+      CommentBuilder<CommentCreateInput, Comment | null>,
+      ExampleViewerAlias,
+      CommentCreateInput,
+      Comment | null
+    >
+  | Trigger<
+      Comment,
+      CommentBuilder<CommentCreateInput, Comment | null>,
+      ExampleViewerAlias,
+      CommentCreateInput,
+      Comment | null
+    >[]
+)[];
+
+export type CreateCommentActionObservers = Observer<
+  Comment,
+  CommentBuilder<CommentCreateInput, Comment | null>,
+  ExampleViewerAlias,
+  CommentCreateInput,
+  Comment | null
+>[];
+
+export type CreateCommentActionValidators = Validator<
+  Comment,
+  CommentBuilder<CommentCreateInput, Comment | null>,
+  ExampleViewerAlias,
+  CommentCreateInput,
+  Comment | null
+>[];
+
 export class CreateCommentActionBase
   implements
     Action<
@@ -58,33 +91,15 @@ export class CreateCommentActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    Comment,
-    CommentBuilder<CommentCreateInput, Comment | null>,
-    ExampleViewerAlias,
-    CommentCreateInput,
-    Comment | null
-  >[] {
+  getTriggers(): CreateCommentActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    Comment,
-    CommentBuilder<CommentCreateInput, Comment | null>,
-    ExampleViewerAlias,
-    CommentCreateInput,
-    Comment | null
-  >[] {
+  getObservers(): CreateCommentActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    Comment,
-    CommentBuilder<CommentCreateInput, Comment | null>,
-    ExampleViewerAlias,
-    CommentCreateInput,
-    Comment | null
-  >[] {
+  getValidators(): CreateCommentActionValidators {
     return [];
   }
 

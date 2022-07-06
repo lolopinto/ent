@@ -28,6 +28,39 @@ export interface AuthCodeCreateInput {
   phoneNumber?: string | null;
 }
 
+export type CreateAuthCodeActionTriggers = (
+  | Trigger<
+      AuthCode,
+      AuthCodeBuilder<AuthCodeCreateInput, AuthCode | null>,
+      ExampleViewerAlias,
+      AuthCodeCreateInput,
+      AuthCode | null
+    >
+  | Trigger<
+      AuthCode,
+      AuthCodeBuilder<AuthCodeCreateInput, AuthCode | null>,
+      ExampleViewerAlias,
+      AuthCodeCreateInput,
+      AuthCode | null
+    >[]
+)[];
+
+export type CreateAuthCodeActionObservers = Observer<
+  AuthCode,
+  AuthCodeBuilder<AuthCodeCreateInput, AuthCode | null>,
+  ExampleViewerAlias,
+  AuthCodeCreateInput,
+  AuthCode | null
+>[];
+
+export type CreateAuthCodeActionValidators = Validator<
+  AuthCode,
+  AuthCodeBuilder<AuthCodeCreateInput, AuthCode | null>,
+  ExampleViewerAlias,
+  AuthCodeCreateInput,
+  AuthCode | null
+>[];
+
 export class CreateAuthCodeActionBase
   implements
     Action<
@@ -60,33 +93,15 @@ export class CreateAuthCodeActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    AuthCode,
-    AuthCodeBuilder<AuthCodeCreateInput, AuthCode | null>,
-    ExampleViewerAlias,
-    AuthCodeCreateInput,
-    AuthCode | null
-  >[] {
+  getTriggers(): CreateAuthCodeActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    AuthCode,
-    AuthCodeBuilder<AuthCodeCreateInput, AuthCode | null>,
-    ExampleViewerAlias,
-    AuthCodeCreateInput,
-    AuthCode | null
-  >[] {
+  getObservers(): CreateAuthCodeActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    AuthCode,
-    AuthCodeBuilder<AuthCodeCreateInput, AuthCode | null>,
-    ExampleViewerAlias,
-    AuthCodeCreateInput,
-    AuthCode | null
-  >[] {
+  getValidators(): CreateAuthCodeActionValidators {
     return [];
   }
 

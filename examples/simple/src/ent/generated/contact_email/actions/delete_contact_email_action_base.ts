@@ -23,6 +23,39 @@ import {
 } from "./contact_email_builder";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
+export type DeleteContactEmailActionTriggers = (
+  | Trigger<
+      ContactEmail,
+      ContactEmailBuilder<ContactEmailInput, ContactEmail>,
+      ExampleViewerAlias,
+      ContactEmailInput,
+      ContactEmail
+    >
+  | Trigger<
+      ContactEmail,
+      ContactEmailBuilder<ContactEmailInput, ContactEmail>,
+      ExampleViewerAlias,
+      ContactEmailInput,
+      ContactEmail
+    >[]
+)[];
+
+export type DeleteContactEmailActionObservers = Observer<
+  ContactEmail,
+  ContactEmailBuilder<ContactEmailInput, ContactEmail>,
+  ExampleViewerAlias,
+  ContactEmailInput,
+  ContactEmail
+>[];
+
+export type DeleteContactEmailActionValidators = Validator<
+  ContactEmail,
+  ContactEmailBuilder<ContactEmailInput, ContactEmail>,
+  ExampleViewerAlias,
+  ContactEmailInput,
+  ContactEmail
+>[];
+
 export class DeleteContactEmailActionBase
   implements
     Action<
@@ -52,33 +85,15 @@ export class DeleteContactEmailActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    ContactEmail,
-    ContactEmailBuilder<ContactEmailInput, ContactEmail>,
-    ExampleViewerAlias,
-    ContactEmailInput,
-    ContactEmail
-  >[] {
+  getTriggers(): DeleteContactEmailActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    ContactEmail,
-    ContactEmailBuilder<ContactEmailInput, ContactEmail>,
-    ExampleViewerAlias,
-    ContactEmailInput,
-    ContactEmail
-  >[] {
+  getObservers(): DeleteContactEmailActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    ContactEmail,
-    ContactEmailBuilder<ContactEmailInput, ContactEmail>,
-    ExampleViewerAlias,
-    ContactEmailInput,
-    ContactEmail
-  >[] {
+  getValidators(): DeleteContactEmailActionValidators {
     return [];
   }
 

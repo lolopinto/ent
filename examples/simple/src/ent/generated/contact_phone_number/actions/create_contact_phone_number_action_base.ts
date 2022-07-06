@@ -27,6 +27,51 @@ export interface ContactPhoneNumberCreateInput {
   contactID: ID | Builder<Contact, ExampleViewerAlias>;
 }
 
+export type CreateContactPhoneNumberActionTriggers = (
+  | Trigger<
+      ContactPhoneNumber,
+      ContactPhoneNumberBuilder<
+        ContactPhoneNumberCreateInput,
+        ContactPhoneNumber | null
+      >,
+      ExampleViewerAlias,
+      ContactPhoneNumberCreateInput,
+      ContactPhoneNumber | null
+    >
+  | Trigger<
+      ContactPhoneNumber,
+      ContactPhoneNumberBuilder<
+        ContactPhoneNumberCreateInput,
+        ContactPhoneNumber | null
+      >,
+      ExampleViewerAlias,
+      ContactPhoneNumberCreateInput,
+      ContactPhoneNumber | null
+    >[]
+)[];
+
+export type CreateContactPhoneNumberActionObservers = Observer<
+  ContactPhoneNumber,
+  ContactPhoneNumberBuilder<
+    ContactPhoneNumberCreateInput,
+    ContactPhoneNumber | null
+  >,
+  ExampleViewerAlias,
+  ContactPhoneNumberCreateInput,
+  ContactPhoneNumber | null
+>[];
+
+export type CreateContactPhoneNumberActionValidators = Validator<
+  ContactPhoneNumber,
+  ContactPhoneNumberBuilder<
+    ContactPhoneNumberCreateInput,
+    ContactPhoneNumber | null
+  >,
+  ExampleViewerAlias,
+  ContactPhoneNumberCreateInput,
+  ContactPhoneNumber | null
+>[];
+
 export class CreateContactPhoneNumberActionBase
   implements
     Action<
@@ -65,42 +110,15 @@ export class CreateContactPhoneNumberActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    ContactPhoneNumber,
-    ContactPhoneNumberBuilder<
-      ContactPhoneNumberCreateInput,
-      ContactPhoneNumber | null
-    >,
-    ExampleViewerAlias,
-    ContactPhoneNumberCreateInput,
-    ContactPhoneNumber | null
-  >[] {
+  getTriggers(): CreateContactPhoneNumberActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    ContactPhoneNumber,
-    ContactPhoneNumberBuilder<
-      ContactPhoneNumberCreateInput,
-      ContactPhoneNumber | null
-    >,
-    ExampleViewerAlias,
-    ContactPhoneNumberCreateInput,
-    ContactPhoneNumber | null
-  >[] {
+  getObservers(): CreateContactPhoneNumberActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    ContactPhoneNumber,
-    ContactPhoneNumberBuilder<
-      ContactPhoneNumberCreateInput,
-      ContactPhoneNumber | null
-    >,
-    ExampleViewerAlias,
-    ContactPhoneNumberCreateInput,
-    ContactPhoneNumber | null
-  >[] {
+  getValidators(): CreateContactPhoneNumberActionValidators {
     return [];
   }
 

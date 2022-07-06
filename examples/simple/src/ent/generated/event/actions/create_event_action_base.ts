@@ -30,6 +30,39 @@ export interface EventCreateInput {
   addressID?: ID | null | Builder<Address, ExampleViewerAlias>;
 }
 
+export type CreateEventActionTriggers = (
+  | Trigger<
+      Event,
+      EventBuilder<EventCreateInput, Event | null>,
+      ExampleViewerAlias,
+      EventCreateInput,
+      Event | null
+    >
+  | Trigger<
+      Event,
+      EventBuilder<EventCreateInput, Event | null>,
+      ExampleViewerAlias,
+      EventCreateInput,
+      Event | null
+    >[]
+)[];
+
+export type CreateEventActionObservers = Observer<
+  Event,
+  EventBuilder<EventCreateInput, Event | null>,
+  ExampleViewerAlias,
+  EventCreateInput,
+  Event | null
+>[];
+
+export type CreateEventActionValidators = Validator<
+  Event,
+  EventBuilder<EventCreateInput, Event | null>,
+  ExampleViewerAlias,
+  EventCreateInput,
+  Event | null
+>[];
+
 export class CreateEventActionBase
   implements
     Action<
@@ -59,33 +92,15 @@ export class CreateEventActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    Event,
-    EventBuilder<EventCreateInput, Event | null>,
-    ExampleViewerAlias,
-    EventCreateInput,
-    Event | null
-  >[] {
+  getTriggers(): CreateEventActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    Event,
-    EventBuilder<EventCreateInput, Event | null>,
-    ExampleViewerAlias,
-    EventCreateInput,
-    Event | null
-  >[] {
+  getObservers(): CreateEventActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    Event,
-    EventBuilder<EventCreateInput, Event | null>,
-    ExampleViewerAlias,
-    EventCreateInput,
-    Event | null
-  >[] {
+  getValidators(): CreateEventActionValidators {
     return [];
   }
 

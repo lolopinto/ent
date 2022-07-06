@@ -127,10 +127,16 @@ export interface Action<
   readonly viewer: Viewer;
   changeset(): Promise<Changeset>;
   builder: TBuilder;
-  // TODO template ent
   getPrivacyPolicy(): PrivacyPolicy<TEnt>;
 
-  getTriggers?(): Trigger<TEnt, TBuilder, TViewer, TInput, TExistingEnt>[];
+  // we allow grouping triggers to indicate dependency trees
+  // so that you can say one or more triggers is higher priority
+  // than the others and should be run first
+  // any encountered list is a different priority from prior and subsequent triggers
+  getTriggers?(): (
+    | Trigger<TEnt, TBuilder, TViewer, TInput, TExistingEnt>
+    | Trigger<TEnt, TBuilder, TViewer, TInput, TExistingEnt>[]
+  )[];
   getObservers?(): Observer<TEnt, TBuilder, TViewer, TInput, TExistingEnt>[];
   getValidators?(): Validator<TEnt, TBuilder, TViewer, TInput, TExistingEnt>[];
   getInput(): TInput; // this input is passed to Triggers, Observers, Validators

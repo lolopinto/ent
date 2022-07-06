@@ -26,6 +26,45 @@ export interface HoursOfOperationCreateInput {
   close: string;
 }
 
+export type CreateHoursOfOperationActionTriggers = (
+  | Trigger<
+      HoursOfOperation,
+      HoursOfOperationBuilder<
+        HoursOfOperationCreateInput,
+        HoursOfOperation | null
+      >,
+      ExampleViewerAlias,
+      HoursOfOperationCreateInput,
+      HoursOfOperation | null
+    >
+  | Trigger<
+      HoursOfOperation,
+      HoursOfOperationBuilder<
+        HoursOfOperationCreateInput,
+        HoursOfOperation | null
+      >,
+      ExampleViewerAlias,
+      HoursOfOperationCreateInput,
+      HoursOfOperation | null
+    >[]
+)[];
+
+export type CreateHoursOfOperationActionObservers = Observer<
+  HoursOfOperation,
+  HoursOfOperationBuilder<HoursOfOperationCreateInput, HoursOfOperation | null>,
+  ExampleViewerAlias,
+  HoursOfOperationCreateInput,
+  HoursOfOperation | null
+>[];
+
+export type CreateHoursOfOperationActionValidators = Validator<
+  HoursOfOperation,
+  HoursOfOperationBuilder<HoursOfOperationCreateInput, HoursOfOperation | null>,
+  ExampleViewerAlias,
+  HoursOfOperationCreateInput,
+  HoursOfOperation | null
+>[];
+
 export class CreateHoursOfOperationActionBase
   implements
     Action<
@@ -61,42 +100,15 @@ export class CreateHoursOfOperationActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    HoursOfOperation,
-    HoursOfOperationBuilder<
-      HoursOfOperationCreateInput,
-      HoursOfOperation | null
-    >,
-    ExampleViewerAlias,
-    HoursOfOperationCreateInput,
-    HoursOfOperation | null
-  >[] {
+  getTriggers(): CreateHoursOfOperationActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    HoursOfOperation,
-    HoursOfOperationBuilder<
-      HoursOfOperationCreateInput,
-      HoursOfOperation | null
-    >,
-    ExampleViewerAlias,
-    HoursOfOperationCreateInput,
-    HoursOfOperation | null
-  >[] {
+  getObservers(): CreateHoursOfOperationActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    HoursOfOperation,
-    HoursOfOperationBuilder<
-      HoursOfOperationCreateInput,
-      HoursOfOperation | null
-    >,
-    ExampleViewerAlias,
-    HoursOfOperationCreateInput,
-    HoursOfOperation | null
-  >[] {
+  getValidators(): CreateHoursOfOperationActionValidators {
     return [];
   }
 

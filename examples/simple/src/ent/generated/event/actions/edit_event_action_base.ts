@@ -30,6 +30,39 @@ export interface EventEditInput {
   addressID?: ID | null | Builder<Address, ExampleViewerAlias>;
 }
 
+export type EditEventActionTriggers = (
+  | Trigger<
+      Event,
+      EventBuilder<EventEditInput, Event>,
+      ExampleViewerAlias,
+      EventEditInput,
+      Event
+    >
+  | Trigger<
+      Event,
+      EventBuilder<EventEditInput, Event>,
+      ExampleViewerAlias,
+      EventEditInput,
+      Event
+    >[]
+)[];
+
+export type EditEventActionObservers = Observer<
+  Event,
+  EventBuilder<EventEditInput, Event>,
+  ExampleViewerAlias,
+  EventEditInput,
+  Event
+>[];
+
+export type EditEventActionValidators = Validator<
+  Event,
+  EventBuilder<EventEditInput, Event>,
+  ExampleViewerAlias,
+  EventEditInput,
+  Event
+>[];
+
 export class EditEventActionBase
   implements
     Action<
@@ -61,33 +94,15 @@ export class EditEventActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    Event,
-    EventBuilder<EventEditInput, Event>,
-    ExampleViewerAlias,
-    EventEditInput,
-    Event
-  >[] {
+  getTriggers(): EditEventActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    Event,
-    EventBuilder<EventEditInput, Event>,
-    ExampleViewerAlias,
-    EventEditInput,
-    Event
-  >[] {
+  getObservers(): EditEventActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    Event,
-    EventBuilder<EventEditInput, Event>,
-    ExampleViewerAlias,
-    EventEditInput,
-    Event
-  >[] {
+  getValidators(): EditEventActionValidators {
     return [];
   }
 
