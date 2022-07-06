@@ -9,21 +9,24 @@ import {
   transformRelative,
   customInfo,
 } from "../tsc/ast";
-import * as fs from "fs";
-import { Action, WriteOperation } from "../action";
+import { Action } from "../action";
 import { LoggedOutViewer } from "../core/viewer";
 import * as path from "path";
-import { load } from "js-yaml";
-import { Config } from "../core/config";
 import { Data } from "../core/base";
 import { TransformFile } from "./transform";
 import { snakeCase } from "snake-case";
 
-function findInput(
+interface baseFileInfo {
+  input: string;
+  importPath: string;
+}
+
+// returns input and importPath
+function getBaseFileInfo(
   file: string,
   classInfo: ClassInfo,
   sourceFile: ts.SourceFile,
-): string | null {
+): baseFileInfo | null {
   // @ts-ignore
   const importStatements: ts.ImportDeclaration[] = sourceFile.statements.filter(
     (stmt) => ts.isImportDeclaration(stmt),
@@ -51,7 +54,10 @@ function findInput(
         .filter((imp) => imp.trim() && imp.endsWith("Input"))
         .map((v) => v.trim());
       if (inputs.length === 1) {
-        return inputs[0];
+        return {
+          input: inputs[0],
+          importPath: impInfo.importPath,
+        };
       }
       if (inputs.length && classInfo.name.endsWith("Action")) {
         const prefix = classInfo.name.slice(0, classInfo.name.length - 6);
@@ -59,7 +65,10 @@ function findInput(
           (imp) => imp.slice(0, imp.length - 5) === prefix,
         );
         if (inputs.length === 1) {
-          return inputs[0];
+          return {
+            input: inputs[0],
+            importPath: impInfo.importPath,
+          };
         }
       }
     }
@@ -71,24 +80,31 @@ interface convertReturnInfo {
   text: string;
   method: string;
   interface: string;
+  methodType: string;
 }
 
 let m: Data = {
   triggers: {
     m: "getTriggers",
     i: "Trigger",
+    suffix: "Triggers",
   },
   observers: {
     m: "getObservers",
     i: "Observer",
+    suffix: "Observers",
   },
   validators: {
     m: "getValidators",
     i: "Validator",
+    suffix: "Validators",
   },
 };
 
-function getConversionInfo(mm: ts.ClassElement): convertReturnInfo | null {
+function getConversionInfo(
+  mm: ts.ClassElement,
+  actionName: string,
+): convertReturnInfo | null {
   if (mm.kind !== ts.SyntaxKind.PropertyDeclaration) {
     return null;
   }
@@ -101,6 +117,8 @@ function getConversionInfo(mm: ts.ClassElement): convertReturnInfo | null {
     text,
     method: v.m,
     interface: v.i,
+    // CreateFooActionTriggers etc
+    methodType: actionName + v.suffix,
   };
 }
 
@@ -130,17 +148,14 @@ export class TransformAction implements TransformFile {
     // require action
     const p = require(path.join(process.cwd(), "./" + file.slice(0, -3)));
     const action: Action<any, any> = new p.default(new LoggedOutViewer(), {});
+    const actionName = action.constructor.name;
 
     const builder = action.builder.constructor.name;
     const nodeName = action.builder.ent.name;
-    const existingEnt =
-      action.builder.operation === WriteOperation.Insert
-        ? `${nodeName} | null`
-        : nodeName;
     const viewer = this.customInfo.viewerInfo.name;
 
-    const input = findInput(file, classInfo, sourceFile);
-    if (!input) {
+    const baseInfo = getBaseFileInfo(file, classInfo, sourceFile);
+    if (!baseInfo) {
       return;
     }
 
@@ -149,7 +164,7 @@ export class TransformAction implements TransformFile {
     let traversed = false;
     let newImports: string[] = [];
     for (const mm of node.members) {
-      const conv = getConversionInfo(mm);
+      const conv = getConversionInfo(mm, actionName);
       if (conv !== null) {
         const property = mm as ts.PropertyDeclaration;
         // if invalid, bounce
@@ -160,10 +175,10 @@ export class TransformAction implements TransformFile {
         traversed = true;
 
         const pp = property.initializer.getFullText(sourceFile).trim();
-        const code = `${conv.method}(): ${conv.interface}<${nodeName}, ${builder}<${input}, ${existingEnt}>, ${viewer}, ${input}, ${existingEnt}>[] {
+        const code = `${conv.method}(): ${conv.methodType} {
             return ${pp}
           }`;
-        newImports.push(conv.interface);
+        newImports.push(conv.methodType);
         klassContents += getPreText(contents, mm, sourceFile) + code;
       } else {
         klassContents += mm.getFullText(sourceFile);
@@ -187,7 +202,14 @@ export class TransformAction implements TransformFile {
         transformRelative(file, "src/ent", this.customInfo.relativeImports),
         [nodeName],
       ],
-      ["@snowtop/ent/action", newImports],
+      [
+        transformRelative(
+          file,
+          baseInfo.importPath,
+          this.customInfo.relativeImports,
+        ),
+        newImports,
+      ],
       [
         transformRelative(file, builderPath, this.customInfo.relativeImports),
         [builder],
