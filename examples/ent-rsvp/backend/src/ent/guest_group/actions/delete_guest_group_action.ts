@@ -1,4 +1,4 @@
-import { DeleteGuestGroupActionBase } from "src/ent/guest_group/actions/generated/delete_guest_group_action_base";
+import { DeleteGuestGroupActionBase } from "src/ent/generated/guest_group/actions/delete_guest_group_action_base";
 import { AllowIfEventCreatorPrivacyPolicy } from "src/ent/event/privacy/event_creator";
 
 // we're only writing this once except with --force and packageName provided

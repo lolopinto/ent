@@ -1,7 +1,7 @@
 import {
   EditGuestGroupActionBase,
   GuestGroupEditInput,
-} from "src/ent/guest_group/actions/generated/edit_guest_group_action_base";
+} from "src/ent/generated/guest_group/actions/edit_guest_group_action_base";
 import { AllowIfEventCreatorPrivacyPolicy } from "src/ent/event/privacy/event_creator";
 
 export { GuestGroupEditInput };

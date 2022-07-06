@@ -21,7 +21,11 @@ export const userToEventsDataLoaderFactory = new IndexLoaderFactory(
   },
 );
 
-export class UserToEventsQueryBase extends CustomEdgeQueryBase<User, Event> {
+export class UserToEventsQueryBase extends CustomEdgeQueryBase<
+  User,
+  Event,
+  Viewer
+> {
   constructor(viewer: Viewer, src: User | ID) {
     super(viewer, {
       src: src,

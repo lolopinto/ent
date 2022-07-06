@@ -27,13 +27,15 @@ class AllowIfGuestInGuestGroupRule implements PrivacyPolicyRule {
 export class GuestGroup extends GuestGroupBase {
   // can view guest group if creator of event
   // guests in same guest group need to be able to see this...
-  privacyPolicy: PrivacyPolicy = {
-    rules: [
-      // can view guest group if creator of event
-      new AllowIfEventCreatorRule(this.eventID),
-      // can view guest group if guest
-      new AllowIfGuestInGuestGroupRule(),
-      AlwaysDenyRule,
-    ],
-  };
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return {
+      rules: [
+        // can view guest group if creator of event
+        new AllowIfEventCreatorRule(this.eventID),
+        // can view guest group if guest
+        new AllowIfGuestInGuestGroupRule(),
+        AlwaysDenyRule,
+      ],
+    };
+  }
 }

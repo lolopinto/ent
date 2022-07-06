@@ -5,6 +5,7 @@ import {
   Context,
   CustomQuery,
   Data,
+  Ent,
   ID,
   LoadEntOptions,
   PrivacyPolicy,
@@ -22,7 +23,7 @@ import {
   guestDataLoaderInfo,
 } from "src/ent/generated/loaders";
 import { Event, Guest, NodeType } from "src/ent/internal";
-import schema from "src/schema/guest_data";
+import schema from "src/schema/guest_data_schema";
 
 export enum GuestDataSource {
   EventPage = "event_page",
@@ -39,7 +40,7 @@ interface GuestDataDBData {
   source: GuestDataSource | null;
 }
 
-export class GuestDataBase {
+export class GuestDataBase implements Ent<Viewer> {
   readonly nodeType = NodeType.GuestData;
   readonly id: ID;
   readonly createdAt: Date;
@@ -59,7 +60,9 @@ export class GuestDataBase {
     this.source = data.source;
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   static async load<T extends GuestDataBase>(
     this: new (viewer: Viewer, data: Data) => T,
@@ -147,7 +150,7 @@ export class GuestDataBase {
 
   static loaderOptions<T extends GuestDataBase>(
     this: new (viewer: Viewer, data: Data) => T,
-  ): LoadEntOptions<T> {
+  ): LoadEntOptions<T, Viewer> {
     return {
       tableName: guestDataLoaderInfo.tableName,
       fields: guestDataLoaderInfo.fields,
@@ -169,7 +172,7 @@ export class GuestDataBase {
     return GuestDataBase.getSchemaFields().get(key);
   }
 
-  loadEvent(): Promise<Event | null> {
+  async loadEvent(): Promise<Event | null> {
     return loadEnt(this.viewer, this.eventID, Event.loaderOptions());
   }
 
@@ -177,7 +180,7 @@ export class GuestDataBase {
     return loadEntX(this.viewer, this.eventID, Event.loaderOptions());
   }
 
-  loadGuest(): Promise<Guest | null> {
+  async loadGuest(): Promise<Guest | null> {
     return loadEnt(this.viewer, this.guestID, Guest.loaderOptions());
   }
 
