@@ -13,7 +13,7 @@ import parse from "csv-parse";
 import CreateGuestGroupAction from "src/ent/guest_group/actions/create_guest_group_action";
 import CreateGuestAction from "src/ent/guest/actions/create_guest_action";
 import { BaseAction } from "@snowtop/ent/action/experimental_action";
-import { EventBuilder } from "src/ent/event/actions/generated/event_builder";
+import { EventBuilder } from "src/ent/generated/event/actions/event_builder";
 
 export class ImportGuestResolver {
   @gqlMutation({ type: Event })
@@ -35,7 +35,7 @@ export class ImportGuestResolver {
 
     let requiredColumns = new Set(["invitationName", "name", "emailAddress"]);
 
-    let actions: Action<Ent, Builder<Ent>, Data>[] = [];
+    let actions: Action<Ent, Builder<Ent>>[] = [];
 
     let parsedHeaders = false;
     let columns: string[] = [];

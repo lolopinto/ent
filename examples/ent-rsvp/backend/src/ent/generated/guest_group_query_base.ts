@@ -46,9 +46,13 @@ export const guestGroupToGuestsDataLoaderFactory = new IndexLoaderFactory(
 export abstract class GuestGroupToInvitedEventsQueryBase extends AssocEdgeQueryBase<
   GuestGroup,
   EventActivity,
-  GuestGroupToInvitedEventsEdge
+  GuestGroupToInvitedEventsEdge,
+  Viewer
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<GuestGroup, EventActivity>) {
+  constructor(
+    viewer: Viewer,
+    src: EdgeQuerySource<GuestGroup, EventActivity, Viewer>,
+  ) {
     super(
       viewer,
       src,
@@ -88,7 +92,8 @@ export abstract class GuestGroupToInvitedEventsQueryBase extends AssocEdgeQueryB
 
 export class GuestGroupToGuestsQueryBase extends CustomEdgeQueryBase<
   GuestGroup,
-  Guest
+  Guest,
+  Viewer
 > {
   constructor(viewer: Viewer, src: GuestGroup | ID) {
     super(viewer, {

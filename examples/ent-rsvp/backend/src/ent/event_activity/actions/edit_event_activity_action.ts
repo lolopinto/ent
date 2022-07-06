@@ -1,7 +1,7 @@
 import {
   EditEventActivityActionBase,
   EventActivityEditInput,
-} from "src/ent/event_activity/actions/generated/edit_event_activity_action_base";
+} from "src/ent/generated/event_activity/actions/edit_event_activity_action_base";
 
 export { EventActivityEditInput };
 

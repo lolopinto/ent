@@ -5,6 +5,7 @@ import {
   Context,
   CustomQuery,
   Data,
+  Ent,
   ID,
   LoadEntOptions,
   PrivacyPolicy,
@@ -27,7 +28,7 @@ import {
   GuestGroupToInvitedEventsQuery,
   NodeType,
 } from "src/ent/internal";
-import schema from "src/schema/guest_group";
+import schema from "src/schema/guest_group_schema";
 
 interface GuestGroupDBData {
   id: ID;
@@ -37,7 +38,7 @@ interface GuestGroupDBData {
   event_id: ID;
 }
 
-export class GuestGroupBase {
+export class GuestGroupBase implements Ent<Viewer> {
   readonly nodeType = NodeType.GuestGroup;
   readonly id: ID;
   readonly createdAt: Date;
@@ -53,7 +54,9 @@ export class GuestGroupBase {
     this.eventID = data.event_id;
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   static async load<T extends GuestGroupBase>(
     this: new (viewer: Viewer, data: Data) => T,
@@ -141,7 +144,7 @@ export class GuestGroupBase {
 
   static loaderOptions<T extends GuestGroupBase>(
     this: new (viewer: Viewer, data: Data) => T,
-  ): LoadEntOptions<T> {
+  ): LoadEntOptions<T, Viewer> {
     return {
       tableName: guestGroupLoaderInfo.tableName,
       fields: guestGroupLoaderInfo.fields,
@@ -171,7 +174,7 @@ export class GuestGroupBase {
     return GuestGroupToGuestsQuery.query(this.viewer, this.id);
   }
 
-  loadEvent(): Promise<Event | null> {
+  async loadEvent(): Promise<Event | null> {
     return loadEnt(this.viewer, this.eventID, Event.loaderOptions());
   }
 
