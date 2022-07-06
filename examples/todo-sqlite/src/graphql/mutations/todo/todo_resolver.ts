@@ -2,7 +2,7 @@ import { ID, IDViewer } from "@snowtop/ent";
 import { gqlArg, gqlMutation } from "@snowtop/ent/graphql";
 import { Account, AccountToTodosQuery, Todo } from "src/ent";
 import { BaseAction } from "@snowtop/ent/action/experimental_action";
-import { AccountBuilder } from "src/ent/account/actions/generated/account_builder";
+import { AccountBuilder } from "src/ent/generated/account/actions/account_builder";
 import ChangeTodoStatusAction from "src/ent/todo/actions/change_todo_status_action";
 import { GraphQLID } from "graphql";
 import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";

@@ -9,8 +9,8 @@ import {
 } from "@snowtop/ent";
 import { getTransformedReadClause } from "@snowtop/ent/schema";
 import { Account, Tag, Todo, tagLoader, todoLoader } from "src/ent/internal";
-import TagSchema from "src/schema/tag";
-import TodoSchema from "src/schema/todo";
+import TagSchema from "src/schema/tag_schema";
+import TodoSchema from "src/schema/todo_schema";
 
 export const accountToTagsCountLoaderFactory = new RawCountLoaderFactory({
   ...Tag.loaderOptions(),
@@ -40,7 +40,11 @@ export const accountToTodosDataLoaderFactory = new IndexLoaderFactory(
   },
 );
 
-export class AccountToTagsQueryBase extends CustomEdgeQueryBase<Account, Tag> {
+export class AccountToTagsQueryBase extends CustomEdgeQueryBase<
+  Account,
+  Tag,
+  Viewer
+> {
   constructor(viewer: Viewer, src: Account | ID) {
     super(viewer, {
       src: src,
@@ -65,7 +69,8 @@ export class AccountToTagsQueryBase extends CustomEdgeQueryBase<Account, Tag> {
 
 export class AccountToTodosQueryBase extends CustomEdgeQueryBase<
   Account,
-  Todo
+  Todo,
+  Viewer
 > {
   constructor(viewer: Viewer, src: Account | ID) {
     super(viewer, {

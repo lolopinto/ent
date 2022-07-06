@@ -2,7 +2,7 @@ import { AlwaysAllowPrivacyPolicy, IDViewer, Data } from "@snowtop/ent";
 import {
   AccountCreateInput,
   CreateAccountActionBase,
-} from "src/ent/account/actions/generated/create_account_action_base";
+} from "src/ent/generated/account/actions/create_account_action_base";
 
 export { AccountCreateInput };
 

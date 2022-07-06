@@ -27,9 +27,10 @@ export const tagToTodosDataLoaderFactory = new AssocEdgeLoaderFactory(
 export abstract class TagToTodosQueryBase extends AssocEdgeQueryBase<
   Tag,
   Todo,
-  TagToTodosEdge
+  TagToTodosEdge,
+  Viewer
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<Tag, Todo>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<Tag, Todo, Viewer>) {
     super(
       viewer,
       src,

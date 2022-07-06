@@ -1,5 +1,5 @@
 import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
-import { DeleteAccountActionBase } from "src/ent/account/actions/generated/delete_account_action_base";
+import { DeleteAccountActionBase } from "src/ent/generated/account/actions/delete_account_action_base";
 
 export default class DeleteAccountAction extends DeleteAccountActionBase {
   getPrivacyPolicy() {

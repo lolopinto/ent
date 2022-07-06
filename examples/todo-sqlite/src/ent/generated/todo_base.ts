@@ -5,13 +5,13 @@ import {
   Context,
   CustomQuery,
   Data,
+  Ent,
   ID,
   LoadEntOptions,
   PrivacyPolicy,
   Viewer,
   convertBool,
   convertDate,
-  convertNullableDate,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -24,8 +24,14 @@ import {
   todoLoaderInfo,
   todoNoTransformLoader,
 } from "src/ent/generated/loaders";
-import { Account, NodeType, TodoToTagsQuery } from "src/ent/internal";
-import schema from "src/schema/todo";
+import {
+  Account,
+  DeletedAtMixin,
+  IDeletedAt,
+  NodeType,
+  TodoToTagsQuery,
+} from "src/ent/internal";
+import schema from "src/schema/todo_schema";
 
 interface TodoDBData {
   id: ID;
@@ -37,27 +43,32 @@ interface TodoDBData {
   creator_id: ID;
 }
 
-export class TodoBase {
+export class TodoBase
+  extends DeletedAtMixin(class {})
+  implements Ent<Viewer>, IDeletedAt
+{
   readonly nodeType = NodeType.Todo;
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
-  protected readonly deletedAt: Date | null;
   readonly text: string;
   readonly completed: boolean;
   readonly creatorID: ID;
 
   constructor(public viewer: Viewer, protected data: Data) {
+    // @ts-ignore pass to mixin
+    super(viewer, data);
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
-    this.deletedAt = convertNullableDate(data.deleted_at);
     this.text = data.text;
     this.completed = convertBool(data.completed);
     this.creatorID = data.creator_id;
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   static async load<T extends TodoBase>(
     this: new (viewer: Viewer, data: Data) => T,
@@ -178,7 +189,7 @@ export class TodoBase {
 
   static loaderOptions<T extends TodoBase>(
     this: new (viewer: Viewer, data: Data) => T,
-  ): LoadEntOptions<T> {
+  ): LoadEntOptions<T, Viewer> {
     return {
       tableName: todoLoaderInfo.tableName,
       fields: todoLoaderInfo.fields,
@@ -204,7 +215,7 @@ export class TodoBase {
     return TodoToTagsQuery.query(this.viewer, this.id);
   }
 
-  loadCreator(): Promise<Account | null> {
+  async loadCreator(): Promise<Account | null> {
     return loadEnt(this.viewer, this.creatorID, Account.loaderOptions());
   }
 
