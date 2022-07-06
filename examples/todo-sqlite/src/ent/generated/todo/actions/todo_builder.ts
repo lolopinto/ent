@@ -214,26 +214,44 @@ export class TodoBuilder<
   }
 
   // get value of Text. Retrieves it from the input if specified or takes it from existingEnt
-  getNewTextValue(): string | undefined {
+  getNewTextValue(): string {
     if (this.input.text !== undefined) {
       return this.input.text;
     }
-    return this.existingEnt?.text;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `text` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.text;
   }
 
   // get value of Completed. Retrieves it from the input if specified or takes it from existingEnt
-  getNewCompletedValue(): boolean | undefined {
+  getNewCompletedValue(): boolean {
     if (this.input.completed !== undefined) {
       return this.input.completed;
     }
-    return this.existingEnt?.completed;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `completed` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.completed;
   }
 
   // get value of creatorID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewCreatorIDValue(): ID | Builder<Account, Viewer> | undefined {
+  getNewCreatorIDValue(): ID | Builder<Account, Viewer> {
     if (this.input.creatorID !== undefined) {
       return this.input.creatorID;
     }
-    return this.existingEnt?.creatorID;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `creatorID` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.creatorID;
   }
 }

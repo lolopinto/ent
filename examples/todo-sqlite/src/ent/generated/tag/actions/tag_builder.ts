@@ -219,34 +219,53 @@ export class TagBuilder<
   }
 
   // get value of DisplayName. Retrieves it from the input if specified or takes it from existingEnt
-  getNewDisplayNameValue(): string | undefined {
+  getNewDisplayNameValue(): string {
     if (this.input.displayName !== undefined) {
       return this.input.displayName;
     }
-    return this.existingEnt?.displayName;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `displayName` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.displayName;
   }
 
   // get value of canonicalName. Retrieves it from the input if specified or takes it from existingEnt
-  getNewCanonicalNameValue(): string | undefined {
+  getNewCanonicalNameValue(): string {
     if (this.input.canonicalName !== undefined) {
       return this.input.canonicalName;
     }
-    return this.existingEnt?.canonicalName;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `canonicalName` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.canonicalName;
   }
 
   // get value of ownerID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewOwnerIDValue(): ID | Builder<Account, Viewer> | undefined {
+  getNewOwnerIDValue(): ID | Builder<Account, Viewer> {
     if (this.input.ownerID !== undefined) {
       return this.input.ownerID;
     }
-    return this.existingEnt?.ownerID;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `ownerID` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.ownerID;
   }
 
   // get value of relatedTagIds. Retrieves it from the input if specified or takes it from existingEnt
-  getNewRelatedTagIdsValue(): ID[] | null | undefined {
+  getNewRelatedTagIdsValue(): ID[] | null {
     if (this.input.relatedTagIds !== undefined) {
       return this.input.relatedTagIds;
     }
-    return this.existingEnt?.relatedTagIds;
+
+    return this.existingEnt?.relatedTagIds ?? null;
   }
 }

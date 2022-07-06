@@ -254,7 +254,7 @@ implements {{useImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt> {
     {{$tsFieldName := $field.TsBuilderFieldName -}}
     // get value of {{$field.FieldName}}. Retrieves it from the input if specified or takes it from existingEnt
     {{ if $field.Private $cfg -}}
-      {{/** hmm not ideal for these accessors to not work...*/}}
+      {{/** hmm not ideal for these accessors to not work...*/ -}}
       getNew{{$field.CamelCaseName}}Value(): {{$field.TsBuilderUnionType $cfg}} | undefined{
         return this.input.{{$tsFieldName}};
       }
