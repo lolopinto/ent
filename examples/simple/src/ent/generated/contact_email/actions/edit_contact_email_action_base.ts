@@ -27,6 +27,39 @@ export interface ContactEmailEditInput {
   contactID?: ID | Builder<Contact, ExampleViewerAlias>;
 }
 
+export type EditContactEmailActionTriggers = (
+  | Trigger<
+      ContactEmail,
+      ContactEmailBuilder<ContactEmailEditInput, ContactEmail>,
+      ExampleViewerAlias,
+      ContactEmailEditInput,
+      ContactEmail
+    >
+  | Trigger<
+      ContactEmail,
+      ContactEmailBuilder<ContactEmailEditInput, ContactEmail>,
+      ExampleViewerAlias,
+      ContactEmailEditInput,
+      ContactEmail
+    >[]
+)[];
+
+export type EditContactEmailActionObservers = Observer<
+  ContactEmail,
+  ContactEmailBuilder<ContactEmailEditInput, ContactEmail>,
+  ExampleViewerAlias,
+  ContactEmailEditInput,
+  ContactEmail
+>[];
+
+export type EditContactEmailActionValidators = Validator<
+  ContactEmail,
+  ContactEmailBuilder<ContactEmailEditInput, ContactEmail>,
+  ExampleViewerAlias,
+  ContactEmailEditInput,
+  ContactEmail
+>[];
+
 export class EditContactEmailActionBase
   implements
     Action<
@@ -65,33 +98,15 @@ export class EditContactEmailActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    ContactEmail,
-    ContactEmailBuilder<ContactEmailEditInput, ContactEmail>,
-    ExampleViewerAlias,
-    ContactEmailEditInput,
-    ContactEmail
-  >[] {
+  getTriggers(): EditContactEmailActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    ContactEmail,
-    ContactEmailBuilder<ContactEmailEditInput, ContactEmail>,
-    ExampleViewerAlias,
-    ContactEmailEditInput,
-    ContactEmail
-  >[] {
+  getObservers(): EditContactEmailActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    ContactEmail,
-    ContactEmailBuilder<ContactEmailEditInput, ContactEmail>,
-    ExampleViewerAlias,
-    ContactEmailEditInput,
-    ContactEmail
-  >[] {
+  getValidators(): EditContactEmailActionValidators {
     return [];
   }
 

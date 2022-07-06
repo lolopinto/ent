@@ -1,5 +1,5 @@
 import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
-import { TodoRemoveTagActionBase } from "src/ent/todo/actions/generated/todo_remove_tag_action_base";
+import { TodoRemoveTagActionBase } from "src/ent/generated/todo/actions/todo_remove_tag_action_base";
 
 export default class TodoRemoveTagAction extends TodoRemoveTagActionBase {
   getPrivacyPolicy() {

@@ -1,4 +1,4 @@
-import { EventActivityRemoveInviteActionBase } from "src/ent/event_activity/actions/generated/event_activity_remove_invite_action_base";
+import { EventActivityRemoveInviteActionBase } from "src/ent/generated/event_activity/actions/event_activity_remove_invite_action_base";
 import { AlwaysDenyRule } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
 import { EdgeType } from "src/ent/";

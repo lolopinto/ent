@@ -2,7 +2,7 @@ import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
 import {
   AccountEditInput,
   EditAccountActionBase,
-} from "src/ent/account/actions/generated/edit_account_action_base";
+} from "src/ent/generated/account/actions/edit_account_action_base";
 
 export { AccountEditInput };
 

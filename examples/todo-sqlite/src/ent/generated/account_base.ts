@@ -5,12 +5,12 @@ import {
   Context,
   CustomQuery,
   Data,
+  Ent,
   ID,
   LoadEntOptions,
   PrivacyPolicy,
   Viewer,
   convertDate,
-  convertNullableDate,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -29,9 +29,11 @@ import {
 import {
   AccountToTagsQuery,
   AccountToTodosQuery,
+  DeletedAtMixin,
+  IDeletedAt,
   NodeType,
 } from "src/ent/internal";
-import schema from "src/schema/account";
+import schema from "src/schema/account_schema";
 
 export enum AccountState {
   UNVERIFIED = "UNVERIFIED",
@@ -50,27 +52,32 @@ interface AccountDBData {
   account_state: AccountState | null;
 }
 
-export class AccountBase {
+export class AccountBase
+  extends DeletedAtMixin(class {})
+  implements Ent<Viewer>, IDeletedAt
+{
   readonly nodeType = NodeType.Account;
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
-  protected readonly deletedAt: Date | null;
   readonly name: string;
   readonly phoneNumber: string | null;
   readonly accountState: AccountState | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
+    // @ts-ignore pass to mixin
+    super(viewer, data);
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
-    this.deletedAt = convertNullableDate(data.deleted_at);
     this.name = data.name;
     this.phoneNumber = data.phone_number;
     this.accountState = data.account_state;
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   static async load<T extends AccountBase>(
     this: new (viewer: Viewer, data: Data) => T,
@@ -236,13 +243,13 @@ export class AccountBase {
 
   static loaderOptions<T extends AccountBase>(
     this: new (viewer: Viewer, data: Data) => T,
-  ): LoadEntOptions<T> {
+  ): LoadEntOptions<T, Viewer> {
     return {
       tableName: accountLoaderInfo.tableName,
       fields: accountLoaderInfo.fields,
       ent: this,
       loaderFactory: accountLoader,
-      fieldPrivacy: getFieldsWithPrivacy(schema),
+      fieldPrivacy: getFieldsWithPrivacy(schema, accountLoaderInfo.fieldInfo),
     };
   }
 

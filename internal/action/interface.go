@@ -222,6 +222,7 @@ func (action *commonActionInfo) getCustomInterface(typ enttype.TSTypeWithCustomT
 			GQLType: gqlType,
 		}
 	}
+
 	action.customInterfaces[tsTyp] = ci
 	return ci
 }

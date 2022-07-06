@@ -24,6 +24,39 @@ export interface EditEmailAddressInput {
   newEmail: string;
 }
 
+export type EditEmailAddressActionTriggers = (
+  | Trigger<
+      User,
+      UserBuilder<EditEmailAddressInput, User>,
+      ExampleViewerAlias,
+      EditEmailAddressInput,
+      User
+    >
+  | Trigger<
+      User,
+      UserBuilder<EditEmailAddressInput, User>,
+      ExampleViewerAlias,
+      EditEmailAddressInput,
+      User
+    >[]
+)[];
+
+export type EditEmailAddressActionObservers = Observer<
+  User,
+  UserBuilder<EditEmailAddressInput, User>,
+  ExampleViewerAlias,
+  EditEmailAddressInput,
+  User
+>[];
+
+export type EditEmailAddressActionValidators = Validator<
+  User,
+  UserBuilder<EditEmailAddressInput, User>,
+  ExampleViewerAlias,
+  EditEmailAddressInput,
+  User
+>[];
+
 export class EditEmailAddressActionBase
   implements
     Action<
@@ -59,33 +92,15 @@ export class EditEmailAddressActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    User,
-    UserBuilder<EditEmailAddressInput, User>,
-    ExampleViewerAlias,
-    EditEmailAddressInput,
-    User
-  >[] {
+  getTriggers(): EditEmailAddressActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    User,
-    UserBuilder<EditEmailAddressInput, User>,
-    ExampleViewerAlias,
-    EditEmailAddressInput,
-    User
-  >[] {
+  getObservers(): EditEmailAddressActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    User,
-    UserBuilder<EditEmailAddressInput, User>,
-    ExampleViewerAlias,
-    EditEmailAddressInput,
-    User
-  >[] {
+  getValidators(): EditEmailAddressActionValidators {
     return [];
   }
 

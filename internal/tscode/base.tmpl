@@ -455,7 +455,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
   {{ range $edge := .EdgeInfo.FieldEdges -}}
     {{  $edgeName := .CamelCaseEdgeName -}}
     {{ if $edge.Polymorphic}}
-      load{{$edgeName}}(): Promise<{{useImport "Ent"}}| null>{
+      async load{{$edgeName}}(): Promise<{{useImport "Ent"}}| null>{
         {{ if $edge.Nullable -}}
           if (!this.{{$edge.TSFieldName}}) {
             return null;
@@ -482,7 +482,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     {{if $edge.IsList -}}
       {{$edgeNode := .NodeInfo.Node -}}
       {{if $edge.Nullable -}} 
-        load{{$edgeName}}(): Promise<{{useImport $edgeNode}}[]|null> {
+        async load{{$edgeName}}(): Promise<{{useImport $edgeNode}}[]|null> {
           if (!this.{{$edge.TSFieldName}}) {
             return null;
           } 
@@ -508,18 +508,17 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     {{ if $edge.NonPolymorphicList -}}
       {{with .NodeInfo -}}
         {{ $field := $nodeData.GetFieldByName $edge.FieldName -}}
-        {{ if and $field ($field.HasAsyncAccessor $cfg) -}}
           async load{{$edgeName}}(): Promise<{{useImport .Node}}|null> {
+          {{ if and $field ($field.HasAsyncAccessor $cfg) -}}
             const {{$edge.TSFieldName}} = await this.{{$edge.TSFieldName}}();
             if (!{{$edge.TSFieldName}}) {
               return null;
             }
-        {{ else -}}
-          load{{$edgeName}}(): Promise<{{useImport .Node}}|null> {
-          {{ if $edge.Nullable -}}
-            if (!this.{{$edge.TSFieldName}}) {
-              return null;
-            }
+          {{ else -}}
+            {{ if $edge.Nullable -}}
+              if (!this.{{$edge.TSFieldName}}) {
+                return null;
+              }
           {{end -}}
         {{ end}}
           return {{useImport "loadEnt"}}(

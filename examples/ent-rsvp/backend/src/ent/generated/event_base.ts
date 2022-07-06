@@ -5,6 +5,7 @@ import {
   Context,
   CustomQuery,
   Data,
+  Ent,
   ID,
   LoadEntOptions,
   PrivacyPolicy,
@@ -32,7 +33,7 @@ import {
   NodeType,
   User,
 } from "src/ent/internal";
-import schema from "src/schema/event";
+import schema from "src/schema/event_schema";
 
 interface EventDBData {
   id: ID;
@@ -43,7 +44,7 @@ interface EventDBData {
   creator_id: ID;
 }
 
-export class EventBase {
+export class EventBase implements Ent<Viewer> {
   readonly nodeType = NodeType.Event;
   readonly id: ID;
   readonly createdAt: Date;
@@ -61,7 +62,9 @@ export class EventBase {
     this.creatorID = data.creator_id;
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   static async load<T extends EventBase>(
     this: new (viewer: Viewer, data: Data) => T,
@@ -192,7 +195,7 @@ export class EventBase {
 
   static loaderOptions<T extends EventBase>(
     this: new (viewer: Viewer, data: Data) => T,
-  ): LoadEntOptions<T> {
+  ): LoadEntOptions<T, Viewer> {
     return {
       tableName: eventLoaderInfo.tableName,
       fields: eventLoaderInfo.fields,
@@ -230,7 +233,7 @@ export class EventBase {
     return EventToGuestsQuery.query(this.viewer, this.id);
   }
 
-  loadCreator(): Promise<User | null> {
+  async loadCreator(): Promise<User | null> {
     return loadEnt(this.viewer, this.creatorID, User.loaderOptions());
   }
 

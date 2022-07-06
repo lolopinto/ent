@@ -25,6 +25,39 @@ export interface UserEditInput {
   lastName?: string;
 }
 
+export type EditUserActionTriggers = (
+  | Trigger<
+      User,
+      UserBuilder<UserEditInput, User>,
+      ExampleViewerAlias,
+      UserEditInput,
+      User
+    >
+  | Trigger<
+      User,
+      UserBuilder<UserEditInput, User>,
+      ExampleViewerAlias,
+      UserEditInput,
+      User
+    >[]
+)[];
+
+export type EditUserActionObservers = Observer<
+  User,
+  UserBuilder<UserEditInput, User>,
+  ExampleViewerAlias,
+  UserEditInput,
+  User
+>[];
+
+export type EditUserActionValidators = Validator<
+  User,
+  UserBuilder<UserEditInput, User>,
+  ExampleViewerAlias,
+  UserEditInput,
+  User
+>[];
+
 export class EditUserActionBase
   implements
     Action<
@@ -56,33 +89,15 @@ export class EditUserActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    User,
-    UserBuilder<UserEditInput, User>,
-    ExampleViewerAlias,
-    UserEditInput,
-    User
-  >[] {
+  getTriggers(): EditUserActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    User,
-    UserBuilder<UserEditInput, User>,
-    ExampleViewerAlias,
-    UserEditInput,
-    User
-  >[] {
+  getObservers(): EditUserActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    User,
-    UserBuilder<UserEditInput, User>,
-    ExampleViewerAlias,
-    UserEditInput,
-    User
-  >[] {
+  getValidators(): EditUserActionValidators {
     return [];
   }
 

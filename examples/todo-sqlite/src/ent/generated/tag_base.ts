@@ -5,12 +5,12 @@ import {
   Context,
   CustomQuery,
   Data,
+  Ent,
   ID,
   LoadEntOptions,
   PrivacyPolicy,
   Viewer,
   convertDate,
-  convertNullableDate,
   convertNullableList,
   loadCustomData,
   loadCustomEnts,
@@ -24,8 +24,14 @@ import {
   tagLoaderInfo,
   tagNoTransformLoader,
 } from "src/ent/generated/loaders";
-import { Account, NodeType, TagToTodosQuery } from "src/ent/internal";
-import schema from "src/schema/tag";
+import {
+  Account,
+  DeletedAtMixin,
+  IDeletedAt,
+  NodeType,
+  TagToTodosQuery,
+} from "src/ent/internal";
+import schema from "src/schema/tag_schema";
 
 interface TagDBData {
   id: ID;
@@ -38,29 +44,34 @@ interface TagDBData {
   related_tag_ids: ID[] | null;
 }
 
-export class TagBase {
+export class TagBase
+  extends DeletedAtMixin(class {})
+  implements Ent<Viewer>, IDeletedAt
+{
   readonly nodeType = NodeType.Tag;
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
-  protected readonly deletedAt: Date | null;
   readonly displayName: string;
   readonly canonicalName: string;
   readonly ownerID: ID;
   readonly relatedTagIds: ID[] | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
+    // @ts-ignore pass to mixin
+    super(viewer, data);
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
-    this.deletedAt = convertNullableDate(data.deleted_at);
     this.displayName = data.display_name;
     this.canonicalName = data.canonical_name;
     this.ownerID = data.owner_id;
     this.relatedTagIds = convertNullableList(data.related_tag_ids);
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   static async load<T extends TagBase>(
     this: new (viewer: Viewer, data: Data) => T,
@@ -175,7 +186,7 @@ export class TagBase {
 
   static loaderOptions<T extends TagBase>(
     this: new (viewer: Viewer, data: Data) => T,
-  ): LoadEntOptions<T> {
+  ): LoadEntOptions<T, Viewer> {
     return {
       tableName: tagLoaderInfo.tableName,
       fields: tagLoaderInfo.fields,
@@ -201,7 +212,7 @@ export class TagBase {
     return TagToTodosQuery.query(this.viewer, this.id);
   }
 
-  loadOwner(): Promise<Account | null> {
+  async loadOwner(): Promise<Account | null> {
     return loadEnt(this.viewer, this.ownerID, Account.loaderOptions());
   }
 

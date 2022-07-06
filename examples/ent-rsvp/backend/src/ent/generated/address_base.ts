@@ -27,7 +27,7 @@ import {
   addressOwnerIDLoader,
 } from "src/ent/generated/loaders";
 import { NodeType } from "src/ent/internal";
-import schema from "src/schema/address";
+import schema from "src/schema/address_schema";
 
 interface AddressDBData {
   id: ID;
@@ -42,7 +42,7 @@ interface AddressDBData {
   owner_type: string;
 }
 
-export class AddressBase {
+export class AddressBase implements Ent<Viewer> {
   readonly nodeType = NodeType.Address;
   readonly id: ID;
   readonly createdAt: Date;
@@ -68,7 +68,9 @@ export class AddressBase {
     this.ownerType = data.owner_type;
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   static async load<T extends AddressBase>(
     this: new (viewer: Viewer, data: Data) => T,
@@ -199,7 +201,7 @@ export class AddressBase {
 
   static loaderOptions<T extends AddressBase>(
     this: new (viewer: Viewer, data: Data) => T,
-  ): LoadEntOptions<T> {
+  ): LoadEntOptions<T, Viewer> {
     return {
       tableName: addressLoaderInfo.tableName,
       fields: addressLoaderInfo.fields,
@@ -221,7 +223,7 @@ export class AddressBase {
     return AddressBase.getSchemaFields().get(key);
   }
 
-  loadOwner(): Promise<Ent | null> {
+  async loadOwner(): Promise<Ent | null> {
     return loadEntByType(
       this.viewer,
       this.ownerType as unknown as NodeType,

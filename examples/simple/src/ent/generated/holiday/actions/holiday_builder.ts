@@ -169,34 +169,53 @@ export class HolidayBuilder<
   }
 
   // get value of dayOfWeek. Retrieves it from the input if specified or takes it from existingEnt
-  getNewDayOfWeekValue(): DayOfWeek | undefined {
+  getNewDayOfWeekValue(): DayOfWeek {
     if (this.input.dayOfWeek !== undefined) {
       return this.input.dayOfWeek;
     }
-    return this.existingEnt?.dayOfWeek;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `dayOfWeek` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.dayOfWeek;
   }
 
   // get value of dayOfWeekAlt. Retrieves it from the input if specified or takes it from existingEnt
-  getNewDayOfWeekAltValue(): DayOfWeekAlt | null | undefined {
+  getNewDayOfWeekAltValue(): DayOfWeekAlt | null {
     if (this.input.dayOfWeekAlt !== undefined) {
       return this.input.dayOfWeekAlt;
     }
-    return this.existingEnt?.dayOfWeekAlt;
+
+    return this.existingEnt?.dayOfWeekAlt ?? null;
   }
 
   // get value of label. Retrieves it from the input if specified or takes it from existingEnt
-  getNewLabelValue(): string | undefined {
+  getNewLabelValue(): string {
     if (this.input.label !== undefined) {
       return this.input.label;
     }
-    return this.existingEnt?.label;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `label` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.label;
   }
 
   // get value of date. Retrieves it from the input if specified or takes it from existingEnt
-  getNewDateValue(): Date | undefined {
+  getNewDateValue(): Date {
     if (this.input.date !== undefined) {
       return this.input.date;
     }
-    return this.existingEnt?.date;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `date` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.date;
   }
 }

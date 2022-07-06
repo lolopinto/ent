@@ -5,6 +5,7 @@ import {
   Context,
   CustomQuery,
   Data,
+  Ent,
   ID,
   LoadEntOptions,
   PrivacyPolicy,
@@ -32,7 +33,7 @@ import {
   EventActivityToInvitesQuery,
   NodeType,
 } from "src/ent/internal";
-import schema from "src/schema/event_activity";
+import schema from "src/schema/event_activity_schema";
 
 export enum EventActivityRsvpStatus {
   Attending = "attending",
@@ -54,7 +55,7 @@ interface EventActivityDBData {
   invite_all_guests: boolean;
 }
 
-export class EventActivityBase {
+export class EventActivityBase implements Ent<Viewer> {
   readonly nodeType = NodeType.EventActivity;
   readonly id: ID;
   readonly createdAt: Date;
@@ -80,7 +81,9 @@ export class EventActivityBase {
     this.inviteAllGuests = convertBool(data.invite_all_guests);
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   static async load<T extends EventActivityBase>(
     this: new (viewer: Viewer, data: Data) => T,
@@ -168,7 +171,7 @@ export class EventActivityBase {
 
   static loaderOptions<T extends EventActivityBase>(
     this: new (viewer: Viewer, data: Data) => T,
-  ): LoadEntOptions<T> {
+  ): LoadEntOptions<T, Viewer> {
     return {
       tableName: eventActivityLoaderInfo.tableName,
       fields: eventActivityLoaderInfo.fields,
@@ -231,7 +234,7 @@ export class EventActivityBase {
     return EventActivityToInvitesQuery.query(this.viewer, this.id);
   }
 
-  loadEvent(): Promise<Event | null> {
+  async loadEvent(): Promise<Event | null> {
     return loadEnt(this.viewer, this.eventID, Event.loaderOptions());
   }
 

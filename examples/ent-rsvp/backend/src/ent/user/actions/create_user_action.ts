@@ -1,7 +1,7 @@
 import {
   CreateUserActionBase,
   UserCreateInput,
-} from "src/ent/user/actions/generated/create_user_action_base";
+} from "src/ent/generated/user/actions/create_user_action_base";
 import { Data, IDViewer, AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
 
 export { UserCreateInput };

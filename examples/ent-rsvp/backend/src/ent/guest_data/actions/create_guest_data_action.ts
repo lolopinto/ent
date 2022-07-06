@@ -2,7 +2,7 @@ import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
 import {
   CreateGuestDataActionBase,
   GuestDataCreateInput,
-} from "src/ent/guest_data/actions/generated/create_guest_data_action_base";
+} from "src/ent/generated/guest_data/actions/create_guest_data_action_base";
 
 export { GuestDataCreateInput };
 

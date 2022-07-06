@@ -1,4 +1,10 @@
-import { AlwaysDenyRule, AssocEdge, Ent, loadEdgeForID2 } from "@snowtop/ent";
+import {
+  AlwaysDenyRule,
+  AssocEdge,
+  Ent,
+  loadEdgeForID2,
+  Viewer,
+} from "@snowtop/ent";
 import { Changeset, Trigger, WriteOperation } from "@snowtop/ent/action";
 import {
   DenyIfEdgeDoesNotExistRule,
@@ -11,11 +17,12 @@ import {
   EditEventActivityRsvpStatusActionBase,
   EditEventActivityRsvpStatusInput,
   EventActivityRsvpStatusInput,
-} from "src/ent/event_activity/actions/generated/edit_event_activity_rsvp_status_action_base";
+  EditEventActivityRsvpStatusActionTriggers,
+} from "src/ent/generated/event_activity/actions/edit_event_activity_rsvp_status_action_base";
 import { AllowIfGuestInSameGuestGroupRule } from "src/ent/guest/privacy/guest_rule_privacy";
 import DeleteGuestDataAction from "src/ent/guest_data/actions/delete_guest_data_action";
 import CreateGuestDataAction from "../../guest_data/actions/create_guest_data_action";
-import { EventActivityBuilder } from "./generated/event_activity_builder";
+import { EventActivityBuilder } from "../../generated/event_activity/actions/event_activity_builder";
 
 export { EditEventActivityRsvpStatusInput };
 export { EventActivityRsvpStatusInput };
@@ -45,84 +52,89 @@ export default class EditEventActivityRsvpStatusAction extends EditEventActivity
     };
   }
 
-  triggers = [
-    // this addds the 3-way edge if it exists...
-    {
-      changeset: async (
-        builder: EventActivityBuilder,
-        input: EditEventActivityRsvpStatusInput,
-      ): Promise<void | Changeset<Ent>[]> => {
-        if (!input.dietaryRestrictions || !builder.existingEnt) {
-          return;
-        }
-        const ent = builder.existingEnt;
-        const dietaryRestrictions = input.dietaryRestrictions;
+  getTriggers(): EditEventActivityRsvpStatusActionTriggers {
+    return [
+      // this addds the 3-way edge if it exists...
+      {
+        changeset: async (
+          builder: EventActivityBuilder,
+          input: EditEventActivityRsvpStatusInput,
+        ): Promise<void | Changeset[]> => {
+          if (!input.dietaryRestrictions || !builder.existingEnt) {
+            return;
+          }
+          const ent = builder.existingEnt;
+          const dietaryRestrictions = input.dietaryRestrictions;
 
-        const edges = builder.getEdgeInputData(
-          EdgeType.EventActivityToAttending,
-          WriteOperation.Insert,
-        );
-        return await Promise.all(
-          edges.map(async (edge) => {
-            if (edge.isBuilder(edge.id)) {
-              throw new Error("edge should not be a builder");
-            }
-            const action = CreateGuestDataAction.create(builder.viewer, {
-              guestID: edge.id,
-              eventID: ent.eventID,
-              dietaryRestrictions: dietaryRestrictions,
-            });
-            builder.addAttendingID(edge.id, {
-              data: action.builder,
-              time: edge.options?.time,
-            });
-            return action.changeset();
-          }),
-        );
+          const edges = builder.getEdgeInputData(
+            EdgeType.EventActivityToAttending,
+            WriteOperation.Insert,
+          );
+          return await Promise.all(
+            edges.map(async (edge) => {
+              if (edge.isBuilder(edge.id)) {
+                throw new Error("edge should not be a builder");
+              }
+              const action = CreateGuestDataAction.create(builder.viewer, {
+                guestID: edge.id,
+                eventID: ent.eventID,
+                dietaryRestrictions: dietaryRestrictions,
+              });
+              builder.addAttendingID(edge.id, {
+                data: action.builder,
+                time: edge.options?.time,
+              });
+              return action.changeset();
+            }),
+          );
+        },
       },
-    },
-    {
-      // this is less important but we have this to clear any hanging objects as we delete the edge
-      changeset: async (
-        builder: EventActivityBuilder,
-        input: EditEventActivityRsvpStatusInput,
-      ): Promise<void | Changeset<Ent>[]> => {
-        if (!builder.existingEnt) {
-          return;
-        }
-        const edges = builder.getEdgeInputData(
-          EdgeType.EventActivityToAttending,
-          WriteOperation.Delete,
-        );
-        const ent = builder.existingEnt;
+      {
+        // this is less important but we have this to clear any hanging objects as we delete the edge
+        changeset: async (
+          builder: EventActivityBuilder,
+          input: EditEventActivityRsvpStatusInput,
+        ): Promise<void | Changeset[]> => {
+          if (!builder.existingEnt) {
+            return;
+          }
+          const edges = builder.getEdgeInputData(
+            EdgeType.EventActivityToAttending,
+            WriteOperation.Delete,
+          );
+          const ent = builder.existingEnt;
 
-        let c = await Promise.all(
-          edges.map(async (edge) => {
-            if (edge.isBuilder(edge.id)) {
-              throw new Error("edge should not be a builder");
-            }
+          let c = await Promise.all(
+            edges.map(async (edge) => {
+              if (edge.isBuilder(edge.id)) {
+                throw new Error("edge should not be a builder");
+              }
 
-            const edgeData = await loadEdgeForID2({
-              id1: ent.id,
-              id2: edge.id,
-              edgeType: EdgeType.EventActivityToAttending,
-              ctr: AssocEdge,
-            });
+              const edgeData = await loadEdgeForID2({
+                id1: ent.id,
+                id2: edge.id,
+                edgeType: EdgeType.EventActivityToAttending,
+                ctr: AssocEdge,
+              });
 
-            if (!edgeData || !edgeData.data) {
-              return;
-            }
+              if (!edgeData || !edgeData.data) {
+                return;
+              }
 
-            const gData = await GuestData.loadX(builder.viewer, edgeData.data);
+              const gData = await GuestData.loadX(
+                builder.viewer,
+                edgeData.data,
+              );
 
-            return DeleteGuestDataAction.create(
-              builder.viewer,
-              gData,
-            ).changeset();
-          }),
-        );
-        return c.filter((c) => c) as Changeset<Ent>[];
+              return DeleteGuestDataAction.create(
+                builder.viewer,
+                gData,
+              ).changeset();
+            }),
+          );
+          return c.filter((c) => c) as Changeset[];
+        },
       },
-    },
-  ];
+    ];
+  }
 }

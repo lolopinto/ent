@@ -20,6 +20,39 @@ import { Event } from "../../..";
 import { EventBuilder, EventInput } from "./event_builder";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
+export type DeleteEventActionTriggers = (
+  | Trigger<
+      Event,
+      EventBuilder<EventInput, Event>,
+      ExampleViewerAlias,
+      EventInput,
+      Event
+    >
+  | Trigger<
+      Event,
+      EventBuilder<EventInput, Event>,
+      ExampleViewerAlias,
+      EventInput,
+      Event
+    >[]
+)[];
+
+export type DeleteEventActionObservers = Observer<
+  Event,
+  EventBuilder<EventInput, Event>,
+  ExampleViewerAlias,
+  EventInput,
+  Event
+>[];
+
+export type DeleteEventActionValidators = Validator<
+  Event,
+  EventBuilder<EventInput, Event>,
+  ExampleViewerAlias,
+  EventInput,
+  Event
+>[];
+
 export class DeleteEventActionBase
   implements
     Action<
@@ -49,33 +82,15 @@ export class DeleteEventActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    Event,
-    EventBuilder<EventInput, Event>,
-    ExampleViewerAlias,
-    EventInput,
-    Event
-  >[] {
+  getTriggers(): DeleteEventActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    Event,
-    EventBuilder<EventInput, Event>,
-    ExampleViewerAlias,
-    EventInput,
-    Event
-  >[] {
+  getObservers(): DeleteEventActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    Event,
-    EventBuilder<EventInput, Event>,
-    ExampleViewerAlias,
-    EventInput,
-    Event
-  >[] {
+  getValidators(): DeleteEventActionValidators {
     return [];
   }
 

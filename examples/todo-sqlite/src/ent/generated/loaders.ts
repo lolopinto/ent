@@ -2,9 +2,9 @@
 
 import { ObjectLoaderFactory } from "@snowtop/ent";
 import { getObjectLoaderProperties } from "@snowtop/ent/schema";
-import Account from "src/schema/account";
-import Tag from "src/schema/tag";
-import Todo from "src/schema/todo";
+import AccountSchema from "src/schema/account_schema";
+import TagSchema from "src/schema/tag_schema";
+import TodoSchema from "src/schema/todo_schema";
 import { NodeType } from "./const";
 
 const accountTable = "accounts";
@@ -22,14 +22,14 @@ export const accountLoader = new ObjectLoaderFactory({
   tableName: accountTable,
   fields: accountFields,
   key: "id",
-  ...getObjectLoaderProperties(Account, accountTable),
+  ...getObjectLoaderProperties(AccountSchema, accountTable),
 });
 
 export const accountPhoneNumberLoader = new ObjectLoaderFactory({
   tableName: accountTable,
   fields: accountFields,
   key: "phone_number",
-  ...getObjectLoaderProperties(Account, accountTable),
+  ...getObjectLoaderProperties(AccountSchema, accountTable),
 });
 
 export const accountNoTransformLoader = new ObjectLoaderFactory({
@@ -49,6 +49,36 @@ export const accountLoaderInfo = {
   fields: accountFields,
   nodeType: NodeType.Account,
   loaderFactory: accountLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    deleted_at: {
+      dbCol: "deleted_at",
+      inputKey: "deletedAt",
+    },
+    Name: {
+      dbCol: "name",
+      inputKey: "name",
+    },
+    PhoneNumber: {
+      dbCol: "phone_number",
+      inputKey: "phoneNumber",
+    },
+    accountState: {
+      dbCol: "account_state",
+      inputKey: "accountState",
+    },
+  },
 };
 
 accountLoader.addToPrime(accountPhoneNumberLoader);
@@ -73,7 +103,7 @@ export const tagLoader = new ObjectLoaderFactory({
   tableName: tagTable,
   fields: tagFields,
   key: "id",
-  ...getObjectLoaderProperties(Tag, tagTable),
+  ...getObjectLoaderProperties(TagSchema, tagTable),
 });
 
 export const tagNoTransformLoader = new ObjectLoaderFactory({
@@ -87,6 +117,40 @@ export const tagLoaderInfo = {
   fields: tagFields,
   nodeType: NodeType.Tag,
   loaderFactory: tagLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    deleted_at: {
+      dbCol: "deleted_at",
+      inputKey: "deletedAt",
+    },
+    DisplayName: {
+      dbCol: "display_name",
+      inputKey: "displayName",
+    },
+    canonicalName: {
+      dbCol: "canonical_name",
+      inputKey: "canonicalName",
+    },
+    ownerID: {
+      dbCol: "owner_id",
+      inputKey: "ownerID",
+    },
+    relatedTagIds: {
+      dbCol: "related_tag_ids",
+      inputKey: "relatedTagIds",
+    },
+  },
 };
 
 const todoTable = "todos";
@@ -104,7 +168,7 @@ export const todoLoader = new ObjectLoaderFactory({
   tableName: todoTable,
   fields: todoFields,
   key: "id",
-  ...getObjectLoaderProperties(Todo, todoTable),
+  ...getObjectLoaderProperties(TodoSchema, todoTable),
 });
 
 export const todoNoTransformLoader = new ObjectLoaderFactory({
@@ -118,6 +182,36 @@ export const todoLoaderInfo = {
   fields: todoFields,
   nodeType: NodeType.Todo,
   loaderFactory: todoLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    deleted_at: {
+      dbCol: "deleted_at",
+      inputKey: "deletedAt",
+    },
+    Text: {
+      dbCol: "text",
+      inputKey: "text",
+    },
+    Completed: {
+      dbCol: "completed",
+      inputKey: "completed",
+    },
+    creatorID: {
+      dbCol: "creator_id",
+      inputKey: "creatorID",
+    },
+  },
 };
 
 export function getLoaderInfoFromSchema(schema: string) {

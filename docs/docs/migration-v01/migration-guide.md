@@ -27,13 +27,13 @@ fields: {
 ```
 
 * update to GraphQL 16 which has different/breaking change API
-* more heavily templated objects/fields/etc which means we have stronger typing for things
+* more heavily TypeScript templated objects/fields/etc which means we have stronger typing across the board.
 * change privacy of ents from `privacyPolicy` to `getPrivacyPolicy`
 * change triggers, observers, validators to `getTriggers`, `getObservers`, `getValidators`
 * `Foo.loadMany` API changes from returning list to Map which is a breaking change
 * moving all generated files to `src/ent/generated` and `src/graphql/generated` so easier to see in PRs and VSCode
 * enums are now prefixed with schemaName
-* and more including lots of TypeScript templating changes.
+* and more 
 
 ## Migration steps
 
@@ -60,7 +60,7 @@ yarn add graphql@16.5.0 @snowtop/ent@0.1.0-alpha34 @snowtop/ent-email@0.1.0-alph
 
 * If using a custom base class that's not `BaseEntSchema` or `BaseEntSchemaWithTZ`, implement your new version of the class, we'll pass that to a migration script later.
 
-* Remove the `.ent` file 
+* Remove the `.ent` file
 
 ```shell
 rm -rf .ent
@@ -69,7 +69,7 @@ rm -rf .ent
 * pull latest version of docker image
 
 ```shell
-docker pull ghcr.io/lolopinto/ent:0.1.0-alpha.4-nodejs-17-dev
+docker pull ghcr.io/lolopinto/ent:0.1.0-alpha.5-nodejs-17-dev
 ```
 
 * Update `develop.Dockerfile` and/or `Dockerfile` to get the latest docker image.
@@ -106,4 +106,17 @@ git add . && git commit --all -m "migration changes"
 
 * Fix rest of your custom code until `tsc` is happy and tests pass
 
+e.g.
+
+  1. `Changeset` no longer templated. Any references to it must be fixed.
+  
+  2. Fix any broken imports in `src/schema` if you reference another schema file or generated code.
+
 * If there were errors in the migration path, file a bug or see if there's anything you need to change in your code to make things work.
+
+* Recommend clearing all generated changes if attempting to change your code to prevent errors so you can commit those changes in isolation before running migration again
+
+```shell
+git checkout src
+git clean -fd
+```

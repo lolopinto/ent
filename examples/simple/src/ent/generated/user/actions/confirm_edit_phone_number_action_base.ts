@@ -25,6 +25,39 @@ export interface ConfirmEditPhoneNumberInput {
   code: string;
 }
 
+export type ConfirmEditPhoneNumberActionTriggers = (
+  | Trigger<
+      User,
+      UserBuilder<ConfirmEditPhoneNumberInput, User>,
+      ExampleViewerAlias,
+      ConfirmEditPhoneNumberInput,
+      User
+    >
+  | Trigger<
+      User,
+      UserBuilder<ConfirmEditPhoneNumberInput, User>,
+      ExampleViewerAlias,
+      ConfirmEditPhoneNumberInput,
+      User
+    >[]
+)[];
+
+export type ConfirmEditPhoneNumberActionObservers = Observer<
+  User,
+  UserBuilder<ConfirmEditPhoneNumberInput, User>,
+  ExampleViewerAlias,
+  ConfirmEditPhoneNumberInput,
+  User
+>[];
+
+export type ConfirmEditPhoneNumberActionValidators = Validator<
+  User,
+  UserBuilder<ConfirmEditPhoneNumberInput, User>,
+  ExampleViewerAlias,
+  ConfirmEditPhoneNumberInput,
+  User
+>[];
+
 export class ConfirmEditPhoneNumberActionBase
   implements
     Action<
@@ -60,33 +93,15 @@ export class ConfirmEditPhoneNumberActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    User,
-    UserBuilder<ConfirmEditPhoneNumberInput, User>,
-    ExampleViewerAlias,
-    ConfirmEditPhoneNumberInput,
-    User
-  >[] {
+  getTriggers(): ConfirmEditPhoneNumberActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    User,
-    UserBuilder<ConfirmEditPhoneNumberInput, User>,
-    ExampleViewerAlias,
-    ConfirmEditPhoneNumberInput,
-    User
-  >[] {
+  getObservers(): ConfirmEditPhoneNumberActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    User,
-    UserBuilder<ConfirmEditPhoneNumberInput, User>,
-    ExampleViewerAlias,
-    ConfirmEditPhoneNumberInput,
-    User
-  >[] {
+  getValidators(): ConfirmEditPhoneNumberActionValidators {
     return [];
   }
 

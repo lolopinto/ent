@@ -167,7 +167,7 @@ export class AuthCodeBase implements Ent<ExampleViewerAlias> {
     return AuthCodeBase.getSchemaFields().get(key);
   }
 
-  loadUser(): Promise<User | null> {
+  async loadUser(): Promise<User | null> {
     return loadEnt(this.viewer, this.userID, User.loaderOptions());
   }
 

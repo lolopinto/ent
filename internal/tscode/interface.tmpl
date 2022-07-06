@@ -12,9 +12,10 @@
 {{ end -}}
   {{ range $field := $int.Fields -}}
     {{$type := $field.TsBuilderType $cfg -}}
-    {{range $import := $field.TsBuilderImports $cfg -}}
-      {{ if $root.ForeignImport $import.Import -}}
-        {{ $ignore := useImportMaybe $import.Import -}}
+    {{range $field.TsBuilderImports $cfg -}}
+      {{ if $root.ForeignImport .Import -}}
+        {{ reserveImportPath . true -}}
+        {{ $ignore := useImportMaybe .Import -}}
       {{ end -}}
     {{end -}}
     {{if $field.Nullable -}}

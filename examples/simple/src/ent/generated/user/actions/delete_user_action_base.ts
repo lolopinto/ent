@@ -20,6 +20,39 @@ import { User } from "../../..";
 import { UserBuilder, UserInput } from "./user_builder";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
+export type DeleteUserActionTriggers = (
+  | Trigger<
+      User,
+      UserBuilder<UserInput, User>,
+      ExampleViewerAlias,
+      UserInput,
+      User
+    >
+  | Trigger<
+      User,
+      UserBuilder<UserInput, User>,
+      ExampleViewerAlias,
+      UserInput,
+      User
+    >[]
+)[];
+
+export type DeleteUserActionObservers = Observer<
+  User,
+  UserBuilder<UserInput, User>,
+  ExampleViewerAlias,
+  UserInput,
+  User
+>[];
+
+export type DeleteUserActionValidators = Validator<
+  User,
+  UserBuilder<UserInput, User>,
+  ExampleViewerAlias,
+  UserInput,
+  User
+>[];
+
 export class DeleteUserActionBase
   implements
     Action<
@@ -49,33 +82,15 @@ export class DeleteUserActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    User,
-    UserBuilder<UserInput, User>,
-    ExampleViewerAlias,
-    UserInput,
-    User
-  >[] {
+  getTriggers(): DeleteUserActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    User,
-    UserBuilder<UserInput, User>,
-    ExampleViewerAlias,
-    UserInput,
-    User
-  >[] {
+  getObservers(): DeleteUserActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    User,
-    UserBuilder<UserInput, User>,
-    ExampleViewerAlias,
-    UserInput,
-    User
-  >[] {
+  getValidators(): DeleteUserActionValidators {
     return [];
   }
 

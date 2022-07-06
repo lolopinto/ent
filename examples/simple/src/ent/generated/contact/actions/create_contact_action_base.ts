@@ -38,6 +38,39 @@ export interface ContactCreateInput {
   phoneNumbers?: customPhoneNumberInput[] | null;
 }
 
+export type CreateContactActionTriggers = (
+  | Trigger<
+      Contact,
+      ContactBuilder<ContactCreateInput, Contact | null>,
+      ExampleViewerAlias,
+      ContactCreateInput,
+      Contact | null
+    >
+  | Trigger<
+      Contact,
+      ContactBuilder<ContactCreateInput, Contact | null>,
+      ExampleViewerAlias,
+      ContactCreateInput,
+      Contact | null
+    >[]
+)[];
+
+export type CreateContactActionObservers = Observer<
+  Contact,
+  ContactBuilder<ContactCreateInput, Contact | null>,
+  ExampleViewerAlias,
+  ContactCreateInput,
+  Contact | null
+>[];
+
+export type CreateContactActionValidators = Validator<
+  Contact,
+  ContactBuilder<ContactCreateInput, Contact | null>,
+  ExampleViewerAlias,
+  ContactCreateInput,
+  Contact | null
+>[];
+
 export class CreateContactActionBase
   implements
     Action<
@@ -67,33 +100,15 @@ export class CreateContactActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    Contact,
-    ContactBuilder<ContactCreateInput, Contact | null>,
-    ExampleViewerAlias,
-    ContactCreateInput,
-    Contact | null
-  >[] {
+  getTriggers(): CreateContactActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    Contact,
-    ContactBuilder<ContactCreateInput, Contact | null>,
-    ExampleViewerAlias,
-    ContactCreateInput,
-    Contact | null
-  >[] {
+  getObservers(): CreateContactActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    Contact,
-    ContactBuilder<ContactCreateInput, Contact | null>,
-    ExampleViewerAlias,
-    ContactCreateInput,
-    Contact | null
-  >[] {
+  getValidators(): CreateContactActionValidators {
     return [];
   }
 

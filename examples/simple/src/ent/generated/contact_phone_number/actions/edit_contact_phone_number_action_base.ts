@@ -27,6 +27,45 @@ export interface ContactPhoneNumberEditInput {
   contactID?: ID | Builder<Contact, ExampleViewerAlias>;
 }
 
+export type EditContactPhoneNumberActionTriggers = (
+  | Trigger<
+      ContactPhoneNumber,
+      ContactPhoneNumberBuilder<
+        ContactPhoneNumberEditInput,
+        ContactPhoneNumber
+      >,
+      ExampleViewerAlias,
+      ContactPhoneNumberEditInput,
+      ContactPhoneNumber
+    >
+  | Trigger<
+      ContactPhoneNumber,
+      ContactPhoneNumberBuilder<
+        ContactPhoneNumberEditInput,
+        ContactPhoneNumber
+      >,
+      ExampleViewerAlias,
+      ContactPhoneNumberEditInput,
+      ContactPhoneNumber
+    >[]
+)[];
+
+export type EditContactPhoneNumberActionObservers = Observer<
+  ContactPhoneNumber,
+  ContactPhoneNumberBuilder<ContactPhoneNumberEditInput, ContactPhoneNumber>,
+  ExampleViewerAlias,
+  ContactPhoneNumberEditInput,
+  ContactPhoneNumber
+>[];
+
+export type EditContactPhoneNumberActionValidators = Validator<
+  ContactPhoneNumber,
+  ContactPhoneNumberBuilder<ContactPhoneNumberEditInput, ContactPhoneNumber>,
+  ExampleViewerAlias,
+  ContactPhoneNumberEditInput,
+  ContactPhoneNumber
+>[];
+
 export class EditContactPhoneNumberActionBase
   implements
     Action<
@@ -68,33 +107,15 @@ export class EditContactPhoneNumberActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    ContactPhoneNumber,
-    ContactPhoneNumberBuilder<ContactPhoneNumberEditInput, ContactPhoneNumber>,
-    ExampleViewerAlias,
-    ContactPhoneNumberEditInput,
-    ContactPhoneNumber
-  >[] {
+  getTriggers(): EditContactPhoneNumberActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    ContactPhoneNumber,
-    ContactPhoneNumberBuilder<ContactPhoneNumberEditInput, ContactPhoneNumber>,
-    ExampleViewerAlias,
-    ContactPhoneNumberEditInput,
-    ContactPhoneNumber
-  >[] {
+  getObservers(): EditContactPhoneNumberActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    ContactPhoneNumber,
-    ContactPhoneNumberBuilder<ContactPhoneNumberEditInput, ContactPhoneNumber>,
-    ExampleViewerAlias,
-    ContactPhoneNumberEditInput,
-    ContactPhoneNumber
-  >[] {
+  getValidators(): EditContactPhoneNumberActionValidators {
     return [];
   }
 

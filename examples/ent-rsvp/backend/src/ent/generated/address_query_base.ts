@@ -23,10 +23,11 @@ export const ownerToAddressesDataLoaderFactory = new IndexLoaderFactory(
 );
 
 export class OwnerToAddressesQueryBase extends CustomEdgeQueryBase<
-  Ent,
-  Address
+  Ent<Viewer>,
+  Address,
+  Viewer
 > {
-  constructor(viewer: Viewer, private srcEnt: Ent) {
+  constructor(viewer: Viewer, private srcEnt: Ent<Viewer>) {
     super(viewer, {
       src: srcEnt,
       countLoaderFactory: ownerToAddressesCountLoaderFactory,
@@ -36,9 +37,9 @@ export class OwnerToAddressesQueryBase extends CustomEdgeQueryBase<
   }
 
   static query<T extends OwnerToAddressesQueryBase>(
-    this: new (viewer: Viewer, src: Ent) => T,
+    this: new (viewer: Viewer, src: Ent<Viewer>) => T,
     viewer: Viewer,
-    src: Ent,
+    src: Ent<Viewer>,
   ): T {
     return new this(viewer, src);
   }
