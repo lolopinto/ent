@@ -199,10 +199,6 @@ export class TransformAction implements TransformFile {
         [viewer],
       ],
       [
-        transformRelative(file, "src/ent", this.customInfo.relativeImports),
-        [nodeName],
-      ],
-      [
         transformRelative(
           file,
           baseInfo.importPath,
