@@ -101,6 +101,15 @@
   {{$existingEnt = printf "%s | null" $node}}
 {{ end -}}
 
+{{$triggersType := printf "%sTriggers" $action.GetActionName}}
+export type {{$triggersType }} = ({{useImport "Trigger"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}> | {{useImport "Trigger"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[])[];
+
+{{$observersType := printf "%sObservers" $action.GetActionName}}
+export type {{$observersType }} = {{useImport "Observer"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[];
+
+{{$validatorsType := printf "%sValidators" $action.GetActionName}}
+export type {{$validatorsType }} = {{useImport "Validator"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[];
+
 
 export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useImport $builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}> {
   public readonly builder: {{useImport $builderName}}<{{$inputData}}, {{$existingEnt}}>;
@@ -141,15 +150,15 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
   };
 
 
-  getTriggers(): {{useImport "Trigger"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[] {
+  getTriggers(): {{$triggersType}} {
     return [];
   }
 
-  getObservers(): {{useImport "Observer"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[] {
+  getObservers(): {{$observersType}} {
     return [];
   }
 
-  getValidators(): {{useImport "Validator"}}<{{$node}}, {{$builderName}}<{{$inputData}}, {{$existingEnt}}>, {{$viewerType}}, {{$inputData}}, {{$existingEnt}}>[] {
+  getValidators(): {{$validatorsType}} {
     return [];
   }
 

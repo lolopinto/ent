@@ -29,6 +29,39 @@ export interface ContactEditInput {
   userID?: ID | Builder<User, ExampleViewerAlias>;
 }
 
+export type EditContactActionTriggers = (
+  | Trigger<
+      Contact,
+      ContactBuilder<ContactEditInput, Contact>,
+      ExampleViewerAlias,
+      ContactEditInput,
+      Contact
+    >
+  | Trigger<
+      Contact,
+      ContactBuilder<ContactEditInput, Contact>,
+      ExampleViewerAlias,
+      ContactEditInput,
+      Contact
+    >[]
+)[];
+
+export type EditContactActionObservers = Observer<
+  Contact,
+  ContactBuilder<ContactEditInput, Contact>,
+  ExampleViewerAlias,
+  ContactEditInput,
+  Contact
+>[];
+
+export type EditContactActionValidators = Validator<
+  Contact,
+  ContactBuilder<ContactEditInput, Contact>,
+  ExampleViewerAlias,
+  ContactEditInput,
+  Contact
+>[];
+
 export class EditContactActionBase
   implements
     Action<
@@ -64,33 +97,15 @@ export class EditContactActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    Contact,
-    ContactBuilder<ContactEditInput, Contact>,
-    ExampleViewerAlias,
-    ContactEditInput,
-    Contact
-  >[] {
+  getTriggers(): EditContactActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    Contact,
-    ContactBuilder<ContactEditInput, Contact>,
-    ExampleViewerAlias,
-    ContactEditInput,
-    Contact
-  >[] {
+  getObservers(): EditContactActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    Contact,
-    ContactBuilder<ContactEditInput, Contact>,
-    ExampleViewerAlias,
-    ContactEditInput,
-    Contact
-  >[] {
+  getValidators(): EditContactActionValidators {
     return [];
   }
 

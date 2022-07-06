@@ -27,6 +27,39 @@ export interface ContactEmailCreateInput {
   contactID: ID | Builder<Contact, ExampleViewerAlias>;
 }
 
+export type CreateContactEmailActionTriggers = (
+  | Trigger<
+      ContactEmail,
+      ContactEmailBuilder<ContactEmailCreateInput, ContactEmail | null>,
+      ExampleViewerAlias,
+      ContactEmailCreateInput,
+      ContactEmail | null
+    >
+  | Trigger<
+      ContactEmail,
+      ContactEmailBuilder<ContactEmailCreateInput, ContactEmail | null>,
+      ExampleViewerAlias,
+      ContactEmailCreateInput,
+      ContactEmail | null
+    >[]
+)[];
+
+export type CreateContactEmailActionObservers = Observer<
+  ContactEmail,
+  ContactEmailBuilder<ContactEmailCreateInput, ContactEmail | null>,
+  ExampleViewerAlias,
+  ContactEmailCreateInput,
+  ContactEmail | null
+>[];
+
+export type CreateContactEmailActionValidators = Validator<
+  ContactEmail,
+  ContactEmailBuilder<ContactEmailCreateInput, ContactEmail | null>,
+  ExampleViewerAlias,
+  ContactEmailCreateInput,
+  ContactEmail | null
+>[];
+
 export class CreateContactEmailActionBase
   implements
     Action<
@@ -59,33 +92,15 @@ export class CreateContactEmailActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    ContactEmail,
-    ContactEmailBuilder<ContactEmailCreateInput, ContactEmail | null>,
-    ExampleViewerAlias,
-    ContactEmailCreateInput,
-    ContactEmail | null
-  >[] {
+  getTriggers(): CreateContactEmailActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    ContactEmail,
-    ContactEmailBuilder<ContactEmailCreateInput, ContactEmail | null>,
-    ExampleViewerAlias,
-    ContactEmailCreateInput,
-    ContactEmail | null
-  >[] {
+  getObservers(): CreateContactEmailActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    ContactEmail,
-    ContactEmailBuilder<ContactEmailCreateInput, ContactEmail | null>,
-    ExampleViewerAlias,
-    ContactEmailCreateInput,
-    ContactEmail | null
-  >[] {
+  getValidators(): CreateContactEmailActionValidators {
     return [];
   }
 

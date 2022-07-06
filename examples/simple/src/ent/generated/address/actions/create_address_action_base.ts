@@ -28,6 +28,39 @@ export interface AddressCreateInput {
   country?: string;
 }
 
+export type CreateAddressActionTriggers = (
+  | Trigger<
+      Address,
+      AddressBuilder<AddressCreateInput, Address | null>,
+      ExampleViewerAlias,
+      AddressCreateInput,
+      Address | null
+    >
+  | Trigger<
+      Address,
+      AddressBuilder<AddressCreateInput, Address | null>,
+      ExampleViewerAlias,
+      AddressCreateInput,
+      Address | null
+    >[]
+)[];
+
+export type CreateAddressActionObservers = Observer<
+  Address,
+  AddressBuilder<AddressCreateInput, Address | null>,
+  ExampleViewerAlias,
+  AddressCreateInput,
+  Address | null
+>[];
+
+export type CreateAddressActionValidators = Validator<
+  Address,
+  AddressBuilder<AddressCreateInput, Address | null>,
+  ExampleViewerAlias,
+  AddressCreateInput,
+  Address | null
+>[];
+
 export class CreateAddressActionBase
   implements
     Action<
@@ -57,33 +90,15 @@ export class CreateAddressActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    Address,
-    AddressBuilder<AddressCreateInput, Address | null>,
-    ExampleViewerAlias,
-    AddressCreateInput,
-    Address | null
-  >[] {
+  getTriggers(): CreateAddressActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    Address,
-    AddressBuilder<AddressCreateInput, Address | null>,
-    ExampleViewerAlias,
-    AddressCreateInput,
-    Address | null
-  >[] {
+  getObservers(): CreateAddressActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    Address,
-    AddressBuilder<AddressCreateInput, Address | null>,
-    ExampleViewerAlias,
-    AddressCreateInput,
-    Address | null
-  >[] {
+  getValidators(): CreateAddressActionValidators {
     return [];
   }
 

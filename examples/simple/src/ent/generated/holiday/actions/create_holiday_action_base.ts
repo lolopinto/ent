@@ -26,6 +26,39 @@ export interface HolidayCreateInput {
   date: Date;
 }
 
+export type CreateHolidayActionTriggers = (
+  | Trigger<
+      Holiday,
+      HolidayBuilder<HolidayCreateInput, Holiday | null>,
+      ExampleViewerAlias,
+      HolidayCreateInput,
+      Holiday | null
+    >
+  | Trigger<
+      Holiday,
+      HolidayBuilder<HolidayCreateInput, Holiday | null>,
+      ExampleViewerAlias,
+      HolidayCreateInput,
+      Holiday | null
+    >[]
+)[];
+
+export type CreateHolidayActionObservers = Observer<
+  Holiday,
+  HolidayBuilder<HolidayCreateInput, Holiday | null>,
+  ExampleViewerAlias,
+  HolidayCreateInput,
+  Holiday | null
+>[];
+
+export type CreateHolidayActionValidators = Validator<
+  Holiday,
+  HolidayBuilder<HolidayCreateInput, Holiday | null>,
+  ExampleViewerAlias,
+  HolidayCreateInput,
+  Holiday | null
+>[];
+
 export class CreateHolidayActionBase
   implements
     Action<
@@ -55,33 +88,15 @@ export class CreateHolidayActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    Holiday,
-    HolidayBuilder<HolidayCreateInput, Holiday | null>,
-    ExampleViewerAlias,
-    HolidayCreateInput,
-    Holiday | null
-  >[] {
+  getTriggers(): CreateHolidayActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    Holiday,
-    HolidayBuilder<HolidayCreateInput, Holiday | null>,
-    ExampleViewerAlias,
-    HolidayCreateInput,
-    Holiday | null
-  >[] {
+  getObservers(): CreateHolidayActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    Holiday,
-    HolidayBuilder<HolidayCreateInput, Holiday | null>,
-    ExampleViewerAlias,
-    HolidayCreateInput,
-    Holiday | null
-  >[] {
+  getValidators(): CreateHolidayActionValidators {
     return [];
   }
 

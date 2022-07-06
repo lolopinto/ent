@@ -25,6 +25,39 @@ export interface ConfirmEditEmailAddressInput {
   code: string;
 }
 
+export type ConfirmEditEmailAddressActionTriggers = (
+  | Trigger<
+      User,
+      UserBuilder<ConfirmEditEmailAddressInput, User>,
+      ExampleViewerAlias,
+      ConfirmEditEmailAddressInput,
+      User
+    >
+  | Trigger<
+      User,
+      UserBuilder<ConfirmEditEmailAddressInput, User>,
+      ExampleViewerAlias,
+      ConfirmEditEmailAddressInput,
+      User
+    >[]
+)[];
+
+export type ConfirmEditEmailAddressActionObservers = Observer<
+  User,
+  UserBuilder<ConfirmEditEmailAddressInput, User>,
+  ExampleViewerAlias,
+  ConfirmEditEmailAddressInput,
+  User
+>[];
+
+export type ConfirmEditEmailAddressActionValidators = Validator<
+  User,
+  UserBuilder<ConfirmEditEmailAddressInput, User>,
+  ExampleViewerAlias,
+  ConfirmEditEmailAddressInput,
+  User
+>[];
+
 export class ConfirmEditEmailAddressActionBase
   implements
     Action<
@@ -60,33 +93,15 @@ export class ConfirmEditEmailAddressActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    User,
-    UserBuilder<ConfirmEditEmailAddressInput, User>,
-    ExampleViewerAlias,
-    ConfirmEditEmailAddressInput,
-    User
-  >[] {
+  getTriggers(): ConfirmEditEmailAddressActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    User,
-    UserBuilder<ConfirmEditEmailAddressInput, User>,
-    ExampleViewerAlias,
-    ConfirmEditEmailAddressInput,
-    User
-  >[] {
+  getObservers(): ConfirmEditEmailAddressActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    User,
-    UserBuilder<ConfirmEditEmailAddressInput, User>,
-    ExampleViewerAlias,
-    ConfirmEditEmailAddressInput,
-    User
-  >[] {
+  getValidators(): ConfirmEditEmailAddressActionValidators {
     return [];
   }
 

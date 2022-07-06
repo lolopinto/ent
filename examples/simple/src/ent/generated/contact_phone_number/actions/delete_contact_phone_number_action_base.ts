@@ -23,6 +23,39 @@ import {
 } from "./contact_phone_number_builder";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
+export type DeleteContactPhoneNumberActionTriggers = (
+  | Trigger<
+      ContactPhoneNumber,
+      ContactPhoneNumberBuilder<ContactPhoneNumberInput, ContactPhoneNumber>,
+      ExampleViewerAlias,
+      ContactPhoneNumberInput,
+      ContactPhoneNumber
+    >
+  | Trigger<
+      ContactPhoneNumber,
+      ContactPhoneNumberBuilder<ContactPhoneNumberInput, ContactPhoneNumber>,
+      ExampleViewerAlias,
+      ContactPhoneNumberInput,
+      ContactPhoneNumber
+    >[]
+)[];
+
+export type DeleteContactPhoneNumberActionObservers = Observer<
+  ContactPhoneNumber,
+  ContactPhoneNumberBuilder<ContactPhoneNumberInput, ContactPhoneNumber>,
+  ExampleViewerAlias,
+  ContactPhoneNumberInput,
+  ContactPhoneNumber
+>[];
+
+export type DeleteContactPhoneNumberActionValidators = Validator<
+  ContactPhoneNumber,
+  ContactPhoneNumberBuilder<ContactPhoneNumberInput, ContactPhoneNumber>,
+  ExampleViewerAlias,
+  ContactPhoneNumberInput,
+  ContactPhoneNumber
+>[];
+
 export class DeleteContactPhoneNumberActionBase
   implements
     Action<
@@ -58,33 +91,15 @@ export class DeleteContactPhoneNumberActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    ContactPhoneNumber,
-    ContactPhoneNumberBuilder<ContactPhoneNumberInput, ContactPhoneNumber>,
-    ExampleViewerAlias,
-    ContactPhoneNumberInput,
-    ContactPhoneNumber
-  >[] {
+  getTriggers(): DeleteContactPhoneNumberActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    ContactPhoneNumber,
-    ContactPhoneNumberBuilder<ContactPhoneNumberInput, ContactPhoneNumber>,
-    ExampleViewerAlias,
-    ContactPhoneNumberInput,
-    ContactPhoneNumber
-  >[] {
+  getObservers(): DeleteContactPhoneNumberActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    ContactPhoneNumber,
-    ContactPhoneNumberBuilder<ContactPhoneNumberInput, ContactPhoneNumber>,
-    ExampleViewerAlias,
-    ContactPhoneNumberInput,
-    ContactPhoneNumber
-  >[] {
+  getValidators(): DeleteContactPhoneNumberActionValidators {
     return [];
   }
 

@@ -24,6 +24,39 @@ export interface EditPhoneNumberInput {
   newPhoneNumber: string;
 }
 
+export type EditPhoneNumberActionTriggers = (
+  | Trigger<
+      User,
+      UserBuilder<EditPhoneNumberInput, User>,
+      ExampleViewerAlias,
+      EditPhoneNumberInput,
+      User
+    >
+  | Trigger<
+      User,
+      UserBuilder<EditPhoneNumberInput, User>,
+      ExampleViewerAlias,
+      EditPhoneNumberInput,
+      User
+    >[]
+)[];
+
+export type EditPhoneNumberActionObservers = Observer<
+  User,
+  UserBuilder<EditPhoneNumberInput, User>,
+  ExampleViewerAlias,
+  EditPhoneNumberInput,
+  User
+>[];
+
+export type EditPhoneNumberActionValidators = Validator<
+  User,
+  UserBuilder<EditPhoneNumberInput, User>,
+  ExampleViewerAlias,
+  EditPhoneNumberInput,
+  User
+>[];
+
 export class EditPhoneNumberActionBase
   implements
     Action<
@@ -59,33 +92,15 @@ export class EditPhoneNumberActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    User,
-    UserBuilder<EditPhoneNumberInput, User>,
-    ExampleViewerAlias,
-    EditPhoneNumberInput,
-    User
-  >[] {
+  getTriggers(): EditPhoneNumberActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    User,
-    UserBuilder<EditPhoneNumberInput, User>,
-    ExampleViewerAlias,
-    EditPhoneNumberInput,
-    User
-  >[] {
+  getObservers(): EditPhoneNumberActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    User,
-    UserBuilder<EditPhoneNumberInput, User>,
-    ExampleViewerAlias,
-    EditPhoneNumberInput,
-    User
-  >[] {
+  getValidators(): EditPhoneNumberActionValidators {
     return [];
   }
 

@@ -43,6 +43,39 @@ export interface UserCreateInput {
   nestedList?: UserNestedObjectList[] | null;
 }
 
+export type CreateUserActionTriggers = (
+  | Trigger<
+      User,
+      UserBuilder<UserCreateInput, User | null>,
+      ExampleViewerAlias,
+      UserCreateInput,
+      User | null
+    >
+  | Trigger<
+      User,
+      UserBuilder<UserCreateInput, User | null>,
+      ExampleViewerAlias,
+      UserCreateInput,
+      User | null
+    >[]
+)[];
+
+export type CreateUserActionObservers = Observer<
+  User,
+  UserBuilder<UserCreateInput, User | null>,
+  ExampleViewerAlias,
+  UserCreateInput,
+  User | null
+>[];
+
+export type CreateUserActionValidators = Validator<
+  User,
+  UserBuilder<UserCreateInput, User | null>,
+  ExampleViewerAlias,
+  UserCreateInput,
+  User | null
+>[];
+
 export class CreateUserActionBase
   implements
     Action<
@@ -72,33 +105,15 @@ export class CreateUserActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    User,
-    UserBuilder<UserCreateInput, User | null>,
-    ExampleViewerAlias,
-    UserCreateInput,
-    User | null
-  >[] {
+  getTriggers(): CreateUserActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    User,
-    UserBuilder<UserCreateInput, User | null>,
-    ExampleViewerAlias,
-    UserCreateInput,
-    User | null
-  >[] {
+  getObservers(): CreateUserActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    User,
-    UserBuilder<UserCreateInput, User | null>,
-    ExampleViewerAlias,
-    UserCreateInput,
-    User | null
-  >[] {
+  getValidators(): CreateUserActionValidators {
     return [];
   }
 

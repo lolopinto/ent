@@ -22,6 +22,39 @@ import { Event, User } from "../../..";
 import { EventBuilder, EventInput } from "./event_builder";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
+export type EventAddHostActionTriggers = (
+  | Trigger<
+      Event,
+      EventBuilder<EventInput, Event>,
+      ExampleViewerAlias,
+      EventInput,
+      Event
+    >
+  | Trigger<
+      Event,
+      EventBuilder<EventInput, Event>,
+      ExampleViewerAlias,
+      EventInput,
+      Event
+    >[]
+)[];
+
+export type EventAddHostActionObservers = Observer<
+  Event,
+  EventBuilder<EventInput, Event>,
+  ExampleViewerAlias,
+  EventInput,
+  Event
+>[];
+
+export type EventAddHostActionValidators = Validator<
+  Event,
+  EventBuilder<EventInput, Event>,
+  ExampleViewerAlias,
+  EventInput,
+  Event
+>[];
+
 export class EventAddHostActionBase
   implements
     Action<
@@ -51,33 +84,15 @@ export class EventAddHostActionBase
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
-  getTriggers(): Trigger<
-    Event,
-    EventBuilder<EventInput, Event>,
-    ExampleViewerAlias,
-    EventInput,
-    Event
-  >[] {
+  getTriggers(): EventAddHostActionTriggers {
     return [];
   }
 
-  getObservers(): Observer<
-    Event,
-    EventBuilder<EventInput, Event>,
-    ExampleViewerAlias,
-    EventInput,
-    Event
-  >[] {
+  getObservers(): EventAddHostActionObservers {
     return [];
   }
 
-  getValidators(): Validator<
-    Event,
-    EventBuilder<EventInput, Event>,
-    ExampleViewerAlias,
-    EventInput,
-    Event
-  >[] {
+  getValidators(): EventAddHostActionValidators {
     return [];
   }
 
