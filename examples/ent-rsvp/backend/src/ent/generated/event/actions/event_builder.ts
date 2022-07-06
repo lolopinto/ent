@@ -163,26 +163,39 @@ export class EventBuilder<
   }
 
   // get value of Name. Retrieves it from the input if specified or takes it from existingEnt
-  getNewNameValue(): string | undefined {
+  getNewNameValue(): string {
     if (this.input.name !== undefined) {
       return this.input.name;
     }
-    return this.existingEnt?.name;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `name` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.name;
   }
 
   // get value of Slug. Retrieves it from the input if specified or takes it from existingEnt
-  getNewSlugValue(): string | null | undefined {
+  getNewSlugValue(): string | null {
     if (this.input.slug !== undefined) {
       return this.input.slug;
     }
-    return this.existingEnt?.slug;
+
+    return this.existingEnt?.slug ?? null;
   }
 
   // get value of creatorID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewCreatorIDValue(): ID | Builder<User, Viewer> | undefined {
+  getNewCreatorIDValue(): ID | Builder<User, Viewer> {
     if (this.input.creatorID !== undefined) {
       return this.input.creatorID;
     }
-    return this.existingEnt?.creatorID;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `creatorID` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.creatorID;
   }
 }

@@ -226,50 +226,81 @@ export class AddressBuilder<
   }
 
   // get value of street_name. Retrieves it from the input if specified or takes it from existingEnt
-  getNewStreetNameValue(): string | undefined {
+  getNewStreetNameValue(): string {
     if (this.input.streetName !== undefined) {
       return this.input.streetName;
     }
-    return this.existingEnt?.streetName;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `streetName` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.streetName;
   }
 
   // get value of city. Retrieves it from the input if specified or takes it from existingEnt
-  getNewCityValue(): string | undefined {
+  getNewCityValue(): string {
     if (this.input.city !== undefined) {
       return this.input.city;
     }
-    return this.existingEnt?.city;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `city` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.city;
   }
 
   // get value of state. Retrieves it from the input if specified or takes it from existingEnt
-  getNewStateValue(): string | undefined {
+  getNewStateValue(): string {
     if (this.input.state !== undefined) {
       return this.input.state;
     }
-    return this.existingEnt?.state;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `state` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.state;
   }
 
   // get value of zip. Retrieves it from the input if specified or takes it from existingEnt
-  getNewZipValue(): string | undefined {
+  getNewZipValue(): string {
     if (this.input.zip !== undefined) {
       return this.input.zip;
     }
-    return this.existingEnt?.zip;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `zip` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.zip;
   }
 
   // get value of apartment. Retrieves it from the input if specified or takes it from existingEnt
-  getNewApartmentValue(): string | null | undefined {
+  getNewApartmentValue(): string | null {
     if (this.input.apartment !== undefined) {
       return this.input.apartment;
     }
-    return this.existingEnt?.apartment;
+
+    return this.existingEnt?.apartment ?? null;
   }
 
   // get value of country. Retrieves it from the input if specified or takes it from existingEnt
-  getNewCountryValue(): string | undefined {
+  getNewCountryValue(): string {
     if (this.input.country !== undefined) {
       return this.input.country;
     }
-    return this.existingEnt?.country;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `country` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.country;
   }
 }

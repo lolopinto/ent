@@ -267,42 +267,62 @@ export class GuestBuilder<
   }
 
   // get value of Name. Retrieves it from the input if specified or takes it from existingEnt
-  getNewNameValue(): string | undefined {
+  getNewNameValue(): string {
     if (this.input.name !== undefined) {
       return this.input.name;
     }
-    return this.existingEnt?.name;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `name` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.name;
   }
 
   // get value of eventID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewEventIDValue(): ID | Builder<Event, Viewer> | undefined {
+  getNewEventIDValue(): ID | Builder<Event, Viewer> {
     if (this.input.eventID !== undefined) {
       return this.input.eventID;
     }
-    return this.existingEnt?.eventID;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `eventID` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.eventID;
   }
 
   // get value of EmailAddress. Retrieves it from the input if specified or takes it from existingEnt
-  getNewEmailAddressValue(): string | null | undefined {
+  getNewEmailAddressValue(): string | null {
     if (this.input.emailAddress !== undefined) {
       return this.input.emailAddress;
     }
-    return this.existingEnt?.emailAddress;
+
+    return this.existingEnt?.emailAddress ?? null;
   }
 
   // get value of guestGroupID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewGuestGroupIDValue(): ID | Builder<GuestGroup, Viewer> | undefined {
+  getNewGuestGroupIDValue(): ID | Builder<GuestGroup, Viewer> {
     if (this.input.guestGroupID !== undefined) {
       return this.input.guestGroupID;
     }
-    return this.existingEnt?.guestGroupID;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `guestGroupID` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.guestGroupID;
   }
 
   // get value of title. Retrieves it from the input if specified or takes it from existingEnt
-  getNewTitleValue(): string | null | undefined {
+  getNewTitleValue(): string | null {
     if (this.input.title !== undefined) {
       return this.input.title;
     }
-    return this.existingEnt?.title;
+
+    return this.existingEnt?.title ?? null;
   }
 }

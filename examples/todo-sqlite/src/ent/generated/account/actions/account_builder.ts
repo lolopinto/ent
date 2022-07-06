@@ -170,26 +170,39 @@ export class AccountBuilder<
   }
 
   // get value of Name. Retrieves it from the input if specified or takes it from existingEnt
-  getNewNameValue(): string | undefined {
+  getNewNameValue(): string {
     if (this.input.name !== undefined) {
       return this.input.name;
     }
-    return this.existingEnt?.name;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `name` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.name;
   }
 
   // get value of PhoneNumber. Retrieves it from the input if specified or takes it from existingEnt
-  getNewPhoneNumberValue(): string | null | undefined {
+  getNewPhoneNumberValue(): string | null {
     if (this.input.phoneNumber !== undefined) {
       return this.input.phoneNumber;
     }
-    return this.existingEnt?.phoneNumber;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `phoneNumber` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.phoneNumber;
   }
 
   // get value of accountState. Retrieves it from the input if specified or takes it from existingEnt
-  getNewAccountStateValue(): AccountState | null | undefined {
+  getNewAccountStateValue(): AccountState | null {
     if (this.input.accountState !== undefined) {
       return this.input.accountState;
     }
-    return this.existingEnt?.accountState;
+
+    return this.existingEnt?.accountState ?? null;
   }
 }

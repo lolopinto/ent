@@ -197,42 +197,72 @@ export class ContactBuilder<
   }
 
   // get value of email_ids. Retrieves it from the input if specified or takes it from existingEnt
-  getNewEmailIdsValue(): ID[] | undefined {
+  getNewEmailIdsValue(): ID[] {
     if (this.input.emailIds !== undefined) {
       return this.input.emailIds;
     }
-    return this.existingEnt?.emailIds;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `emailIds` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.emailIds;
   }
 
   // get value of phone_number_ids. Retrieves it from the input if specified or takes it from existingEnt
-  getNewPhoneNumberIdsValue(): ID[] | undefined {
+  getNewPhoneNumberIdsValue(): ID[] {
     if (this.input.phoneNumberIds !== undefined) {
       return this.input.phoneNumberIds;
     }
-    return this.existingEnt?.phoneNumberIds;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `phoneNumberIds` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.phoneNumberIds;
   }
 
   // get value of firstName. Retrieves it from the input if specified or takes it from existingEnt
-  getNewFirstNameValue(): string | undefined {
+  getNewFirstNameValue(): string {
     if (this.input.firstName !== undefined) {
       return this.input.firstName;
     }
-    return this.existingEnt?.firstName;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `firstName` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.firstName;
   }
 
   // get value of lastName. Retrieves it from the input if specified or takes it from existingEnt
-  getNewLastNameValue(): string | undefined {
+  getNewLastNameValue(): string {
     if (this.input.lastName !== undefined) {
       return this.input.lastName;
     }
-    return this.existingEnt?.lastName;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `lastName` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.lastName;
   }
 
   // get value of userID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewUserIDValue(): ID | Builder<User, ExampleViewerAlias> | undefined {
+  getNewUserIDValue(): ID | Builder<User, ExampleViewerAlias> {
     if (this.input.userID !== undefined) {
       return this.input.userID;
     }
-    return this.existingEnt?.userID;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `userID` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.userID;
   }
 }

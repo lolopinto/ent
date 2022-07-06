@@ -174,34 +174,48 @@ export class AuthCodeBuilder<
   }
 
   // get value of code. Retrieves it from the input if specified or takes it from existingEnt
-  getNewCodeValue(): string | undefined {
+  getNewCodeValue(): string {
     if (this.input.code !== undefined) {
       return this.input.code;
     }
-    return this.existingEnt?.code;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `code` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.code;
   }
 
   // get value of userID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewUserIDValue(): ID | Builder<User, ExampleViewerAlias> | undefined {
+  getNewUserIDValue(): ID | Builder<User, ExampleViewerAlias> {
     if (this.input.userID !== undefined) {
       return this.input.userID;
     }
-    return this.existingEnt?.userID;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `userID` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.userID;
   }
 
   // get value of emailAddress. Retrieves it from the input if specified or takes it from existingEnt
-  getNewEmailAddressValue(): string | null | undefined {
+  getNewEmailAddressValue(): string | null {
     if (this.input.emailAddress !== undefined) {
       return this.input.emailAddress;
     }
-    return this.existingEnt?.emailAddress;
+
+    return this.existingEnt?.emailAddress ?? null;
   }
 
   // get value of phoneNumber. Retrieves it from the input if specified or takes it from existingEnt
-  getNewPhoneNumberValue(): string | null | undefined {
+  getNewPhoneNumberValue(): string | null {
     if (this.input.phoneNumber !== undefined) {
       return this.input.phoneNumber;
     }
-    return this.existingEnt?.phoneNumber;
+
+    return this.existingEnt?.phoneNumber ?? null;
   }
 }
