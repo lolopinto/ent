@@ -165,34 +165,58 @@ export class AuthCodeBuilder<
   }
 
   // get value of code. Retrieves it from the input if specified or takes it from existingEnt
-  getNewCodeValue(): string | undefined {
+  getNewCodeValue(): string {
     if (this.input.code !== undefined) {
       return this.input.code;
     }
-    return this.existingEnt?.code;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `code` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.code;
   }
 
   // get value of guestID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewGuestIDValue(): ID | Builder<Guest, Viewer> | undefined {
+  getNewGuestIDValue(): ID | Builder<Guest, Viewer> {
     if (this.input.guestID !== undefined) {
       return this.input.guestID;
     }
-    return this.existingEnt?.guestID;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `guestID` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.guestID;
   }
 
   // get value of emailAddress. Retrieves it from the input if specified or takes it from existingEnt
-  getNewEmailAddressValue(): string | undefined {
+  getNewEmailAddressValue(): string {
     if (this.input.emailAddress !== undefined) {
       return this.input.emailAddress;
     }
-    return this.existingEnt?.emailAddress;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `emailAddress` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.emailAddress;
   }
 
   // get value of sentCode. Retrieves it from the input if specified or takes it from existingEnt
-  getNewSentCodeValue(): boolean | undefined {
+  getNewSentCodeValue(): boolean {
     if (this.input.sentCode !== undefined) {
       return this.input.sentCode;
     }
-    return this.existingEnt?.sentCode;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `sentCode` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.sentCode;
   }
 }

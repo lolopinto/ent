@@ -171,58 +171,95 @@ export class AddressBuilder<
   }
 
   // get value of Street. Retrieves it from the input if specified or takes it from existingEnt
-  getNewStreetValue(): string | undefined {
+  getNewStreetValue(): string {
     if (this.input.street !== undefined) {
       return this.input.street;
     }
-    return this.existingEnt?.street;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `street` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.street;
   }
 
   // get value of City. Retrieves it from the input if specified or takes it from existingEnt
-  getNewCityValue(): string | undefined {
+  getNewCityValue(): string {
     if (this.input.city !== undefined) {
       return this.input.city;
     }
-    return this.existingEnt?.city;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `city` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.city;
   }
 
   // get value of State. Retrieves it from the input if specified or takes it from existingEnt
-  getNewStateValue(): string | undefined {
+  getNewStateValue(): string {
     if (this.input.state !== undefined) {
       return this.input.state;
     }
-    return this.existingEnt?.state;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `state` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.state;
   }
 
   // get value of ZipCode. Retrieves it from the input if specified or takes it from existingEnt
-  getNewZipCodeValue(): string | undefined {
+  getNewZipCodeValue(): string {
     if (this.input.zipCode !== undefined) {
       return this.input.zipCode;
     }
-    return this.existingEnt?.zipCode;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `zipCode` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.zipCode;
   }
 
   // get value of Apartment. Retrieves it from the input if specified or takes it from existingEnt
-  getNewApartmentValue(): string | null | undefined {
+  getNewApartmentValue(): string | null {
     if (this.input.apartment !== undefined) {
       return this.input.apartment;
     }
-    return this.existingEnt?.apartment;
+
+    return this.existingEnt?.apartment ?? null;
   }
 
   // get value of OwnerID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewOwnerIDValue(): ID | Builder<Ent<Viewer>, Viewer> | undefined {
+  getNewOwnerIDValue(): ID | Builder<Ent<Viewer>, Viewer> {
     if (this.input.ownerID !== undefined) {
       return this.input.ownerID;
     }
-    return this.existingEnt?.ownerID;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `ownerID` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.ownerID;
   }
 
   // get value of OwnerType. Retrieves it from the input if specified or takes it from existingEnt
-  getNewOwnerTypeValue(): string | undefined {
+  getNewOwnerTypeValue(): string {
     if (this.input.ownerType !== undefined) {
       return this.input.ownerType;
     }
-    return this.existingEnt?.ownerType;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `ownerType` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.ownerType;
   }
 }

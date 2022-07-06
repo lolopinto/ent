@@ -217,18 +217,30 @@ export class GuestGroupBuilder<
   }
 
   // get value of InvitationName. Retrieves it from the input if specified or takes it from existingEnt
-  getNewInvitationNameValue(): string | undefined {
+  getNewInvitationNameValue(): string {
     if (this.input.invitationName !== undefined) {
       return this.input.invitationName;
     }
-    return this.existingEnt?.invitationName;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `invitationName` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.invitationName;
   }
 
   // get value of EventID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewEventIDValue(): ID | Builder<Event, Viewer> | undefined {
+  getNewEventIDValue(): ID | Builder<Event, Viewer> {
     if (this.input.eventID !== undefined) {
       return this.input.eventID;
     }
-    return this.existingEnt?.eventID;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `eventID` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.eventID;
   }
 }

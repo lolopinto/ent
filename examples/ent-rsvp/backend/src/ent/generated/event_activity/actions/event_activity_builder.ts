@@ -311,58 +311,90 @@ export class EventActivityBuilder<
   }
 
   // get value of Name. Retrieves it from the input if specified or takes it from existingEnt
-  getNewNameValue(): string | undefined {
+  getNewNameValue(): string {
     if (this.input.name !== undefined) {
       return this.input.name;
     }
-    return this.existingEnt?.name;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `name` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.name;
   }
 
   // get value of eventID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewEventIDValue(): ID | Builder<Event, Viewer> | undefined {
+  getNewEventIDValue(): ID | Builder<Event, Viewer> {
     if (this.input.eventID !== undefined) {
       return this.input.eventID;
     }
-    return this.existingEnt?.eventID;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `eventID` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.eventID;
   }
 
   // get value of StartTime. Retrieves it from the input if specified or takes it from existingEnt
-  getNewStartTimeValue(): Date | undefined {
+  getNewStartTimeValue(): Date {
     if (this.input.startTime !== undefined) {
       return this.input.startTime;
     }
-    return this.existingEnt?.startTime;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `startTime` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.startTime;
   }
 
   // get value of EndTime. Retrieves it from the input if specified or takes it from existingEnt
-  getNewEndTimeValue(): Date | null | undefined {
+  getNewEndTimeValue(): Date | null {
     if (this.input.endTime !== undefined) {
       return this.input.endTime;
     }
-    return this.existingEnt?.endTime;
+
+    return this.existingEnt?.endTime ?? null;
   }
 
   // get value of Location. Retrieves it from the input if specified or takes it from existingEnt
-  getNewLocationValue(): string | undefined {
+  getNewLocationValue(): string {
     if (this.input.location !== undefined) {
       return this.input.location;
     }
-    return this.existingEnt?.location;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `location` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.location;
   }
 
   // get value of Description. Retrieves it from the input if specified or takes it from existingEnt
-  getNewDescriptionValue(): string | null | undefined {
+  getNewDescriptionValue(): string | null {
     if (this.input.description !== undefined) {
       return this.input.description;
     }
-    return this.existingEnt?.description;
+
+    return this.existingEnt?.description ?? null;
   }
 
   // get value of InviteAllGuests. Retrieves it from the input if specified or takes it from existingEnt
-  getNewInviteAllGuestsValue(): boolean | undefined {
+  getNewInviteAllGuestsValue(): boolean {
     if (this.input.inviteAllGuests !== undefined) {
       return this.input.inviteAllGuests;
     }
-    return this.existingEnt?.inviteAllGuests;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `inviteAllGuests` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.inviteAllGuests;
   }
 }

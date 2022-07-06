@@ -165,27 +165,45 @@ export class UserBuilder<
   }
 
   // get value of FirstName. Retrieves it from the input if specified or takes it from existingEnt
-  getNewFirstNameValue(): string | undefined {
+  getNewFirstNameValue(): string {
     if (this.input.firstName !== undefined) {
       return this.input.firstName;
     }
-    return this.existingEnt?.firstName;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `firstName` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.firstName;
   }
 
   // get value of LastName. Retrieves it from the input if specified or takes it from existingEnt
-  getNewLastNameValue(): string | undefined {
+  getNewLastNameValue(): string {
     if (this.input.lastName !== undefined) {
       return this.input.lastName;
     }
-    return this.existingEnt?.lastName;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `lastName` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.lastName;
   }
 
   // get value of EmailAddress. Retrieves it from the input if specified or takes it from existingEnt
-  getNewEmailAddressValue(): string | undefined {
+  getNewEmailAddressValue(): string {
     if (this.input.emailAddress !== undefined) {
       return this.input.emailAddress;
     }
-    return this.existingEnt?.emailAddress;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `emailAddress` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.emailAddress;
   }
 
   // get value of Password. Retrieves it from the input if specified or takes it from existingEnt

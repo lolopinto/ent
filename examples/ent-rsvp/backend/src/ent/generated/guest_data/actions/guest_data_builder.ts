@@ -166,34 +166,53 @@ export class GuestDataBuilder<
   }
 
   // get value of guestID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewGuestIDValue(): ID | Builder<Guest, Viewer> | undefined {
+  getNewGuestIDValue(): ID | Builder<Guest, Viewer> {
     if (this.input.guestID !== undefined) {
       return this.input.guestID;
     }
-    return this.existingEnt?.guestID;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `guestID` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.guestID;
   }
 
   // get value of eventID. Retrieves it from the input if specified or takes it from existingEnt
-  getNewEventIDValue(): ID | Builder<Event, Viewer> | undefined {
+  getNewEventIDValue(): ID | Builder<Event, Viewer> {
     if (this.input.eventID !== undefined) {
       return this.input.eventID;
     }
-    return this.existingEnt?.eventID;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `eventID` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.eventID;
   }
 
   // get value of dietaryRestrictions. Retrieves it from the input if specified or takes it from existingEnt
-  getNewDietaryRestrictionsValue(): string | undefined {
+  getNewDietaryRestrictionsValue(): string {
     if (this.input.dietaryRestrictions !== undefined) {
       return this.input.dietaryRestrictions;
     }
-    return this.existingEnt?.dietaryRestrictions;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `dietaryRestrictions` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.dietaryRestrictions;
   }
 
   // get value of source. Retrieves it from the input if specified or takes it from existingEnt
-  getNewSourceValue(): GuestDataSource | null | undefined {
+  getNewSourceValue(): GuestDataSource | null {
     if (this.input.source !== undefined) {
       return this.input.source;
     }
-    return this.existingEnt?.source;
+
+    return this.existingEnt?.source ?? null;
   }
 }
