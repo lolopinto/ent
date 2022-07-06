@@ -7,11 +7,12 @@ import {
   RawCountLoaderFactory,
   Viewer,
   getTransformedReadClause,
+  PrivacyPolicy,
 } from "@snowtop/ent";
 import { gqlConnection, gqlField } from "@snowtop/ent/graphql";
 import { AccountBase, todoLoader } from "src/ent/internal";
 import { Todo } from "./todo";
-import TodoSchema from "src/schema/todo";
+import TodoSchema from "src/schema/todo_schema";
 
 // we want to reuse these and not create a new one every time...
 // so that the cache is shared
@@ -53,7 +54,9 @@ export class AccountToOpenTodosQuery extends CustomEdgeQueryBase<
 }
 
 export class Account extends AccountBase {
-  privacyPolicy = AlwaysAllowPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return AlwaysAllowPrivacyPolicy;
+  }
 
   // showing plural
   @gqlField({ name: "open_todos_plural", type: "[Todo]" })

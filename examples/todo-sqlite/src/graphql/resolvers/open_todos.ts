@@ -13,7 +13,7 @@ import {
 } from "@snowtop/ent/graphql";
 import { GraphQLID } from "graphql";
 import { Todo, AccountToOpenTodosQuery } from "src/ent";
-import TodoSchema from "src/schema/todo";
+import TodoSchema from "src/schema/todo_schema";
 
 export class TodoResolver {
   // showing plural
