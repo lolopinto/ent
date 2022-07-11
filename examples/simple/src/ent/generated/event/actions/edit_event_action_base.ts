@@ -90,7 +90,7 @@ export class EditEventActionBase
     this.event = event;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Event> {
+  getPrivacyPolicy(): PrivacyPolicy<Event, ExampleViewerAlias> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

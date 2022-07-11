@@ -87,7 +87,7 @@ export class CreateCommentActionBase
     );
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Comment> {
+  getPrivacyPolicy(): PrivacyPolicy<Comment, ExampleViewerAlias> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

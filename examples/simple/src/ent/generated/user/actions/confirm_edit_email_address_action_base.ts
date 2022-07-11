@@ -89,7 +89,7 @@ export class ConfirmEditEmailAddressActionBase
     this.user = user;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<User> {
+  getPrivacyPolicy(): PrivacyPolicy<User, ExampleViewerAlias> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

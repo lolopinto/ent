@@ -78,7 +78,7 @@ export class DeleteAccountActionBase
     this.account = account;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Account> {
+  getPrivacyPolicy(): PrivacyPolicy<Account, Viewer> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

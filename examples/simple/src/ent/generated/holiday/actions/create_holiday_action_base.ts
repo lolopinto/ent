@@ -84,7 +84,7 @@ export class CreateHolidayActionBase
     );
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Holiday> {
+  getPrivacyPolicy(): PrivacyPolicy<Holiday, ExampleViewerAlias> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

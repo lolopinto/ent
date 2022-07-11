@@ -78,7 +78,7 @@ export class DeleteAuthCodeActionBase
     this.authCode = authCode;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<AuthCode> {
+  getPrivacyPolicy(): PrivacyPolicy<AuthCode, ExampleViewerAlias> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

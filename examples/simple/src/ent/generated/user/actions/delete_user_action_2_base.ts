@@ -84,7 +84,7 @@ export class DeleteUserAction2Base
     this.user = user;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<User> {
+  getPrivacyPolicy(): PrivacyPolicy<User, ExampleViewerAlias> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

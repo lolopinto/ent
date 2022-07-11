@@ -60,7 +60,7 @@ export class DeleteGuestActionBase
     this.guest = guest;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Guest> {
+  getPrivacyPolicy(): PrivacyPolicy<Guest, Viewer> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
