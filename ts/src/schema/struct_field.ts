@@ -96,6 +96,12 @@ export class StructField extends BaseField implements Field {
       }
       promises.push(field.valid(val));
     }
+    for (const k in obj) {
+      // extra undefined fields are invalid
+      if (this.options.fields[k] === undefined) {
+        return false;
+      }
+    }
     if (!valid) {
       return valid;
     }
