@@ -481,7 +481,6 @@ export class EventBuilder<
   }
 
   // get value of addressID. Retrieves it from the input if specified or takes it from existingEnt
-
   getNewAddressIDValue():
     | ID
     | null
