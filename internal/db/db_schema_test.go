@@ -274,7 +274,7 @@ type TodoConfig struct {
 
 	s, err := parseSchemaFull(t, sources, "InvalidForeignKeyConfig")
 	require.Error(t, err)
-	require.Equal(t, err.Error(), "could not find the EntConfig codegen info for accounts")
+	require.Equal(t, err.Error(), "invalid schema accounts for foreign key ")
 	require.Nil(t, s)
 }
 
