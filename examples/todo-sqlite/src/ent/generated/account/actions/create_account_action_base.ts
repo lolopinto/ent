@@ -80,7 +80,7 @@ export class CreateAccountActionBase
     );
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Account> {
+  getPrivacyPolicy(): PrivacyPolicy<Account, Viewer> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

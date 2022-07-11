@@ -90,7 +90,7 @@ export class CreateGuestGroupActionBase
     );
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<GuestGroup> {
+  getPrivacyPolicy(): PrivacyPolicy<GuestGroup, Viewer> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

@@ -96,7 +96,7 @@ export class CreateContactActionBase
     );
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Contact> {
+  getPrivacyPolicy(): PrivacyPolicy<Contact, ExampleViewerAlias> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

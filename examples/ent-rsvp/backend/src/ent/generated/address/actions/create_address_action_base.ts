@@ -87,7 +87,7 @@ export class CreateAddressActionBase
     );
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Address> {
+  getPrivacyPolicy(): PrivacyPolicy<Address, Viewer> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

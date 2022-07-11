@@ -141,7 +141,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}, {{useI
     {{end -}}
   }
 
-  getPrivacyPolicy(): {{useImport "PrivacyPolicy"}}<{{$node}}> {
+  getPrivacyPolicy(): {{useImport "PrivacyPolicy"}}<{{$node}},{{$viewerType}}> {
     {{ if .PrivacyConfig.Class }}
       return new {{useImport .PrivacyConfig.PolicyName}}();
     {{ else -}}

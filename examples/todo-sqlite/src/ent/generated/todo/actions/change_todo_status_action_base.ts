@@ -81,7 +81,7 @@ export class ChangeTodoStatusActionBase
     this.todo = todo;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Todo> {
+  getPrivacyPolicy(): PrivacyPolicy<Todo, Viewer> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

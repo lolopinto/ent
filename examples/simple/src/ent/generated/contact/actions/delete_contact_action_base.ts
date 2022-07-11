@@ -78,7 +78,7 @@ export class DeleteContactActionBase
     this.contact = contact;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Contact> {
+  getPrivacyPolicy(): PrivacyPolicy<Contact, ExampleViewerAlias> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

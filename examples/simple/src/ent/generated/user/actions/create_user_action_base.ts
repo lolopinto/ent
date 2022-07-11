@@ -101,7 +101,7 @@ export class CreateUserActionBase
     );
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<User> {
+  getPrivacyPolicy(): PrivacyPolicy<User, ExampleViewerAlias> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

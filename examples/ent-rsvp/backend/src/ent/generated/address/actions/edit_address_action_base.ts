@@ -89,7 +89,7 @@ export class EditAddressActionBase
     this.address = address;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Address> {
+  getPrivacyPolicy(): PrivacyPolicy<Address, Viewer> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
