@@ -270,18 +270,21 @@ func (f *Field) GetQuotedDBColName() string {
 // not have circular dependencies
 func (f *Field) AddForeignKeyFieldEdgeToEdgeInfo(
 	cfg codegenapi.Config,
-	edgeInfo *edge.EdgeInfo) error {
+	edgeInfo *edge.EdgeInfo,
+	validSchema func(str string) bool,
+) error {
 	fkeyInfo := f.ForeignKeyInfo()
 	if fkeyInfo == nil {
 		return fmt.Errorf("invalid field %s added", f.FieldName)
 	}
 
-	return edgeInfo.AddFieldEdgeFromForeignKeyInfo(cfg, f.FieldName, fkeyInfo.Schema+"Config", f.Nullable(), f.fieldType)
+	return edgeInfo.AddFieldEdgeFromForeignKeyInfo(cfg, f.FieldName, fkeyInfo.Schema+"Config", f.Nullable(), f.fieldType, validSchema)
 }
 
 func (f *Field) AddFieldEdgeToEdgeInfo(
 	cfg codegenapi.Config,
 	edgeInfo *edge.EdgeInfo,
+	validSchema func(str string) bool,
 ) error {
 	fieldEdgeInfo := f.FieldEdgeInfo()
 	if fieldEdgeInfo == nil {
@@ -294,6 +297,7 @@ func (f *Field) AddFieldEdgeToEdgeInfo(
 		fieldEdgeInfo,
 		f.Nullable(),
 		f.fieldType,
+		validSchema,
 	)
 }
 

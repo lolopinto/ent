@@ -1103,15 +1103,14 @@ func (s *Schema) addForeignKeyEdges(
 	f *field.Field,
 	fkeyInfo *field.ForeignKeyInfo,
 ) error {
-	// TODO s.Nodes still keyed by Config
+	// this seems like it's verified...
 	foreignInfo, ok := s.Nodes[fkeyInfo.Schema+"Config"]
 	if !ok {
 		// enum, that's ok. nothing to do here
-		_, ok := s.Enums[fkeyInfo.Schema]
-		if ok {
+		if s.EnumNameExists(fkeyInfo.Schema) {
 			return nil
 		}
-		return fmt.Errorf("could not find the EntConfig codegen info for %s", fkeyInfo.Schema)
+		return fmt.Errorf("invalid schema %s for foreign key %s", fkeyInfo.Schema, fkeyInfo.Name)
 	}
 
 	if f := foreignInfo.NodeData.GetFieldByName(fkeyInfo.Field); f == nil {
@@ -1120,7 +1119,7 @@ func (s *Schema) addForeignKeyEdges(
 
 	// add a field edge on current config so we can load underlying user
 	// and return it in GraphQL appropriately
-	if err := f.AddForeignKeyFieldEdgeToEdgeInfo(cfg, edgeInfo); err != nil {
+	if err := f.AddForeignKeyFieldEdgeToEdgeInfo(cfg, edgeInfo, s.NameExists); err != nil {
 		return err
 	}
 
@@ -1138,7 +1137,7 @@ func (s *Schema) addFieldEdge(
 	// and return it in GraphQL appropriately
 	// this also flags that when we write data to this field, we write the inverse edge also
 	// e.g. writing user_id field on an event will also write corresponding user -> events edge
-	return f.AddFieldEdgeToEdgeInfo(cfg, edgeInfo)
+	return f.AddFieldEdgeToEdgeInfo(cfg, edgeInfo, s.NameExists)
 }
 
 func (s *Schema) addInverseAssocEdgesFromInfo(info *NodeDataInfo) error {
