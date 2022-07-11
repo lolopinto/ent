@@ -51,6 +51,29 @@ test("scalars", async () => {
   expect(f.format(val)).toBe(JSON.stringify(formatted));
 });
 
+test("extra info added", async () => {
+  const f = structTypeF({
+    uuid: UUIDType(),
+    int: IntegerType(),
+    string: StringType(),
+    bool: BooleanType(),
+    float: FloatType(),
+    enum: EnumType({ values: ["yes", "no", "maybe"] }),
+  });
+
+  const val = {
+    uuid: v1(),
+    int: 2,
+    string: "string",
+    bool: false,
+    float: 1.0,
+    enum: "yes",
+    extra: "wut",
+  };
+
+  expect(await f.valid(val)).toBe(false);
+});
+
 test("missing field", async () => {
   const f = structTypeF({
     uuid: UUIDType(),
