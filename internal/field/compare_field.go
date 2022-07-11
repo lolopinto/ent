@@ -109,14 +109,19 @@ func foreignKeyInfoEqual(existing, fkey *ForeignKeyInfo) bool {
 
 func compareFieldMap(m1, m2 map[string]*Field) []change.Change {
 	var ret []change.Change
+
+	// db col to old name
+	removedStorageKeys := make(map[string]string)
+	removals := make(map[string]bool)
+
 	for k, f1 := range m1 {
 		f2, ok := m2[k]
 		// in 1st but not 2nd, dropped
 		if !ok {
-			ret = append(ret, change.Change{
-				Change: change.RemoveField,
-				Name:   k,
-			})
+			// keep track of removals and mapping of storage key to old name
+			removedStorageKeys[f1.GetDbColName()] = k
+			removals[k] = true
+
 		} else {
 			if !FieldEqual(f1, f2) {
 				ret = append(ret, change.Change{
@@ -127,17 +132,41 @@ func compareFieldMap(m1, m2 map[string]*Field) []change.Change {
 		}
 	}
 
-	for k := range m2 {
+	for k, f2 := range m2 {
 		_, ok := m1[k]
 		// in 2nd but not first, added
 		if !ok {
-			ret = append(ret, change.Change{
-				Change: change.AddField,
-				Name:   k,
-			})
+
+			oldName := removedStorageKeys[f2.GetDbColName()]
+			if oldName != "" {
+				// not actually removing a field but renaming, remove from removals
+				delete(removals, oldName)
+
+				// we just changed names e.g. creator_id -> creatorId
+				// since storage_key remained the same
+				ret = append(ret, change.Change{
+					Change: change.ModifyField,
+					Name:   k,
+				})
+			} else {
+				ret = append(ret, change.Change{
+					Change: change.AddField,
+					Name:   k,
+				})
+			}
 		}
 	}
-	return ret
+
+	// add removals to front of list of returned changes
+	var temp []change.Change
+	for k := range removals {
+		temp = append(temp, change.Change{
+			Change: change.RemoveField,
+			Name:   k,
+		})
+	}
+
+	return append(temp, ret...)
 }
 
 func CompareFieldInfo(f1, f2 *FieldInfo) []change.Change {
