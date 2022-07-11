@@ -10,6 +10,7 @@ import { RequestContext } from "@snowtop/ent";
 
 import { User } from "../../ent";
 import { ExampleViewer } from "../../viewer/viewer";
+import { DateTime } from "luxon";
 
 @gqlObjectType({ name: "Viewer" })
 // TODO when this wasn't exported, it didn't work...
@@ -36,9 +37,14 @@ export class GQLViewer {
   }
 }
 
-export default class ViewerResolver {
+export class ViewerResolver {
   @gqlQuery({ name: "viewer", type: GQLViewer })
   viewer(@gqlContextType() context: RequestContext<ExampleViewer>): GQLViewer {
     return new GQLViewer(context.getViewer());
+  }
+
+  timeDiff(time: Date) {
+    const diff = DateTime.now().diff(DateTime.fromJSDate(time));
+    return diff.toString();
   }
 }
