@@ -186,6 +186,49 @@ func TestParseInputWithForeignKey(t *testing.T) {
 	assert.NotNil(t, eventsEdge)
 }
 
+func TestParseInputWithInvalidForeignKeySchema(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+				},
+			},
+			"Event": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "UserID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						ForeignKey: &input.ForeignKey{Schema: "FakeUser", Column: "id"},
+						Index:      true,
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.GoLang)
+
+	require.Error(t, err)
+	require.Equal(t, err.Error(), "invalid schema FakeUser for foreign key ")
+	require.Nil(t, schema)
+}
+
 func TestParseInputWithForeignKeyIndexDisabled(t *testing.T) {
 	inputSchema := &input.Schema{
 		Nodes: map[string]*input.Node{
@@ -548,6 +591,48 @@ func TestParseInputWithFieldEdge(t *testing.T) {
 	// 2 nodes, 1 edge
 	testConsts(t, eventConfig.NodeData.ConstantGroups, 1, 0)
 	testConsts(t, userConfig.NodeData.ConstantGroups, 1, 1)
+}
+
+func TestParseInputWithInvalidFieldEdgeSchema(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+				},
+			},
+			"Event": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "UserID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						FieldEdge: &input.FieldEdge{Schema: "FakeUser", InverseEdge: &input.InverseFieldEdge{Name: "CreatedEvents"}},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.GoLang)
+
+	require.Error(t, err)
+	require.Equal(t, err.Error(), "invalid schema FakeUser")
+	require.Nil(t, schema)
 }
 
 func TestParseInputWithFieldEdgeAndNoEdgeInSource(t *testing.T) {
