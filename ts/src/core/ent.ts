@@ -43,7 +43,7 @@ class cacheMap {
   get(key: string) {
     const ret = this.m.get(key);
     if (ret) {
-      log("query", {
+      log("cache", {
         "dataloader-cache-hit": key,
         "tableName": this.options.tableName,
       });

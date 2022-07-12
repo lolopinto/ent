@@ -54,7 +54,7 @@ export class ContextCache {
     const key = this.getkey(options);
     let rows = m.get(key);
     if (rows) {
-      log("query", {
+      log("cache", {
         "cache-hit": key,
         "tableName": options.tableName,
       });
@@ -70,7 +70,7 @@ export class ContextCache {
     const key = this.getkey(options);
     let row = m.get(key);
     if (row) {
-      log("query", {
+      log("cache", {
         "cache-hit": key,
         "tableName": options.tableName,
       });

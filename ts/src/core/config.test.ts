@@ -1,6 +1,6 @@
 import { loadConfig } from "./config";
 import DB, { Dialect } from "./db";
-import { logEnabled, logIf, setLogLevels } from "./logger";
+import { logEnabled, logIf } from "./logger";
 import { MockLogs } from "../testutils/mock_log";
 
 afterEach(() => {
