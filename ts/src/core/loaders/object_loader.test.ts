@@ -127,7 +127,7 @@ async function createWithDeletedAt(id?: ID) {
 
 describe("postgres", () => {
   beforeAll(async () => {
-    setLogLevels("query");
+    setLogLevels(["query", "cache"]);
     ml.mock();
 
     await createEdges();
@@ -160,7 +160,7 @@ describe("sqlite", () => {
   setupSqlite(`sqlite:///object_loader.db`, tables);
 
   beforeAll(async () => {
-    setLogLevels(["query", "error"]);
+    setLogLevels(["query", "error", "cache"]);
     ml.mock();
   });
 

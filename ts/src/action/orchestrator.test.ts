@@ -2486,7 +2486,7 @@ function commonTests() {
 
     beforeAll(() => {
       mockLog.mock();
-      setLogLevels("query");
+      setLogLevels(["query", "cache"]);
     });
 
     afterAll(() => {

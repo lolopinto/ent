@@ -1,10 +1,12 @@
-type logType = "query" | "warn" | "info" | "error" | "debug";
-var m = {
+// query are things that go in database
+type logType = "query" | "warn" | "info" | "error" | "debug" | "cache";
+var m: { [key in logType]: string } = {
   query: "log",
   warn: "warn",
   info: "log",
   error: "error",
   debug: "debug",
+  cache: "log",
 };
 var logLevels = new Map<logType, boolean>();
 

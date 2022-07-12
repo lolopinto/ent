@@ -46,7 +46,7 @@ afterAll(() => {
 });
 
 beforeEach(() => {
-  setLogLevels(["query", "error"]);
+  setLogLevels(["query", "error", "cache"]);
   ml.clear();
 });
 
