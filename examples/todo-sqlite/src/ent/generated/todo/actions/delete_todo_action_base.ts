@@ -60,7 +60,7 @@ export class DeleteTodoActionBase
     this.todo = todo;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Todo> {
+  getPrivacyPolicy(): PrivacyPolicy<Todo, Viewer> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

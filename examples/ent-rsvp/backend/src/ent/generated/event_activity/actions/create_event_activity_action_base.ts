@@ -97,7 +97,7 @@ export class CreateEventActivityActionBase
     );
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<EventActivity> {
+  getPrivacyPolicy(): PrivacyPolicy<EventActivity, Viewer> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

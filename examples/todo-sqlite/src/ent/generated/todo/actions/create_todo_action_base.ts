@@ -81,7 +81,7 @@ export class CreateTodoActionBase
     );
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Todo> {
+  getPrivacyPolicy(): PrivacyPolicy<Todo, Viewer> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

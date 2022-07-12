@@ -78,7 +78,7 @@ export class EventRemoveHostActionBase
     this.event = event;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Event> {
+  getPrivacyPolicy(): PrivacyPolicy<Event, ExampleViewerAlias> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

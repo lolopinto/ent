@@ -82,7 +82,7 @@ export class CreateTagActionBase
     );
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Tag> {
+  getPrivacyPolicy(): PrivacyPolicy<Tag, Viewer> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

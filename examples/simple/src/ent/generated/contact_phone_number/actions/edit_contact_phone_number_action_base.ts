@@ -103,7 +103,7 @@ export class EditContactPhoneNumberActionBase
     this.contactPhoneNumber = contactPhoneNumber;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<ContactPhoneNumber> {
+  getPrivacyPolicy(): PrivacyPolicy<ContactPhoneNumber, ExampleViewerAlias> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

@@ -78,7 +78,7 @@ export class DeleteGuestDataActionBase
     this.guestData = guestData;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<GuestData> {
+  getPrivacyPolicy(): PrivacyPolicy<GuestData, Viewer> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

@@ -94,7 +94,7 @@ export class EditContactEmailActionBase
     this.contactEmail = contactEmail;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<ContactEmail> {
+  getPrivacyPolicy(): PrivacyPolicy<ContactEmail, ExampleViewerAlias> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 
