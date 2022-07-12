@@ -202,8 +202,7 @@ export class ObjectLoaderFactory<T> implements LoaderFactory<T, Data | null> {
   private toPrime: ObjectLoaderFactory<T>[] = [];
 
   constructor(public options: ObjectLoaderOptions) {
-    // we don't wanna do it here because we want it to be delayed
-    let instanceKey = "";
+    let instanceKey = options.instanceKey || "";
     if (typeof this.options.clause === "function") {
       if (!options.instanceKey) {
         throw new Error(
