@@ -35,7 +35,7 @@ func validateDefaultCustomTypes(t *testing.T, customData *CustomData) {
 	time := customData.CustomTypes["GraphQLTime"]
 	require.NotNil(t, time)
 	assert.Equal(t, time.Type, "GraphQLTime")
-	assert.Equal(t, time.ImportPath, "../graphql/scalars/time")
+	assert.Equal(t, time.ImportPath, codepath.GraphQLPackage)
 	assert.NotNil(t, time.ScalarInfo)
 }
 
