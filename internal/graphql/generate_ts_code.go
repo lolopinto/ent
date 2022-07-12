@@ -48,8 +48,8 @@ func (p *TSStep) Name() string {
 }
 
 var knownTypes = map[string]*tsimport.ImportPath{
-	"String":     tsimport.NewGQLImportPath("GraphQLString"),
-	"Date":       tsimport.NewEntGraphQLImportPath("GraphQLTime"),
+	"String": tsimport.NewGQLImportPath("GraphQLString"),
+	//	"Date":       tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 	"Int":        tsimport.NewGQLImportPath("GraphQLInt"),
 	"Float":      tsimport.NewGQLImportPath("GraphQLFloat"),
 	"Boolean":    tsimport.NewGQLImportPath("GraphQLBoolean"),
@@ -57,6 +57,10 @@ var knownTypes = map[string]*tsimport.ImportPath{
 	"Node":       tsimport.NewEntGraphQLImportPath("GraphQLNodeInterface"),
 	"Edge":       tsimport.NewEntGraphQLImportPath("GraphQLEdgeInterface"),
 	"Connection": tsimport.NewEntGraphQLImportPath("GraphQLConnectionInterface"),
+}
+
+var knownCustomTypes = map[string]string{
+	"Date": "GraphQLTime",
 }
 
 type NullableItem string
@@ -867,6 +871,18 @@ type gqlSchema struct {
 }
 
 func (s *gqlSchema) getImportFor(typ string, mutation bool) *tsimport.ImportPath {
+	// handle Date super special
+	typ2, ok := knownCustomTypes[typ]
+	if ok {
+		customTyp, ok := s.customData.CustomTypes[typ2]
+		if ok {
+			return &tsimport.ImportPath{
+				ImportPath: customTyp.ImportPath,
+				Import:     customTyp.Type,
+			}
+		}
+
+	}
 	// known type e.g. boolean, string, etc
 	knownType, ok := knownTypes[typ]
 	if ok {
