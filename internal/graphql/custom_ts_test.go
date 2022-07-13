@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/schema/base"
@@ -25,7 +24,6 @@ func getCodePath(t *testing.T, dirPath string) *codegen.Config {
 
 func validateDefaultCustomTypes(t *testing.T, customData *CustomData) {
 	// GraphQLJSON and GraphQLTime
-	spew.Dump(customData.CustomTypes)
 	require.GreaterOrEqual(t, len(customData.CustomTypes), 2)
 
 	json := customData.CustomTypes["GraphQLJSON"]
@@ -37,7 +35,8 @@ func validateDefaultCustomTypes(t *testing.T, customData *CustomData) {
 	time := customData.CustomTypes["GraphQLTime"]
 	require.NotNil(t, time)
 	assert.Equal(t, time.Type, "GraphQLTime")
-	assert.Equal(t, time.ImportPath, codepath.GraphQLPackage)
+	// see custom_graphql.ts for blah here
+	assert.Contains(t, []string{codepath.GraphQLPackage, "../graphql/scalars/time"}, time.ImportPath)
 	assert.NotNil(t, time.ScalarInfo)
 }
 
