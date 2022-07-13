@@ -679,7 +679,7 @@ declare type IntEnumMap = {
   [key: string]: number;
 };
 
-export interface IntEnumOptions extends FieldOptions {
+export interface IntegerEnumOptions extends FieldOptions {
   // used when we're migrating from old -> new values and want to reuse the values but the values may not be the best keys so this is preferred
   // instead of values.
   // GRAPHQL will take the key and use it as the value here instead o
@@ -691,11 +691,11 @@ export interface IntEnumOptions extends FieldOptions {
   graphQLType?: string;
 }
 
-export class IntEnumField extends BaseField implements Field {
+export class IntegerEnumField extends BaseField implements Field {
   type: Type;
   private map: IntEnumMap;
 
-  constructor(options: IntEnumOptions) {
+  constructor(options: IntegerEnumOptions) {
     super();
     this.type = {
       dbType: DBType.IntEnum,
@@ -735,8 +735,8 @@ export class IntEnumField extends BaseField implements Field {
   }
 }
 
-export function IntEnumType(options: IntEnumOptions): IntEnumField {
-  let result = new IntEnumField(options);
+export function IntegerEnumType(options: IntegerEnumOptions): IntegerEnumField {
+  let result = new IntegerEnumField(options);
   return Object.assign(result, options);
 }
 
@@ -910,7 +910,7 @@ export function DateListType(options?: FieldOptions) {
   return new ListField(DateType(options), options);
 }
 
-export function EnumListType(options: EnumOptions) {
+export function EnumListType(options: StringEnumOptions) {
   if (options.createEnumType) {
     throw new Error(`createEnumType is currently unsupported in enum list`);
   }
@@ -923,6 +923,14 @@ export function EnumListType(options: EnumOptions) {
   // developer can try to work around it by calling below on their own.
   // unclear what the behavior is
   return new ListField(EnumType(options), options);
+}
+
+export function IntegerEnumListType(options: IntegerEnumOptions) {
+  // not all of these will make sense in a list...
+  // can make it work eventually but involves work we're not currently trying to do
+  // developer can try to work around it by calling below on their own.
+  // unclear what the behavior is
+  return new ListField(IntegerEnumType(options), options);
 }
 
 export function UUIDListType(options?: FieldOptions) {

@@ -1,4 +1,10 @@
-import { EnumField, EnumType, IntEnumField, IntEnumType } from "./field";
+import {
+  EnumField,
+  EnumType,
+  IntegerEnumField,
+  IntegerEnumListType,
+  IntegerEnumType,
+} from "./field";
 import { Field } from "./schema";
 
 function enumF(values: string[]): EnumField {
@@ -16,12 +22,19 @@ interface testValue {
 }
 
 interface TestField extends Field {
-  valid(val: any): boolean;
+  valid(val: any): boolean | Promise<boolean>;
   format(val: any): any;
 }
 
 function testEnum(e: TestField, val: testValue) {
   expect(e.valid(val.value)).toBe(val.valid);
+  if (val.valid) {
+    expect(e.format(val.value), val.value).toBe(val.formatted);
+  }
+}
+
+async function testListEnum(e: TestField, val: testValue) {
+  expect(await e.valid(val.value)).toBe(val.valid);
   if (val.valid) {
     expect(e.format(val.value), val.value).toBe(val.formatted);
   }
@@ -460,11 +473,20 @@ describe("errors", () => {
 });
 
 describe("int enum", () => {
-  function intEnumMapF(map: {}): IntEnumField {
-    return IntEnumType({ map });
+  function intEnumF(map: {}): IntegerEnumField {
+    return IntegerEnumType({ map });
   }
 
-  let e = intEnumMapF({
+  function intEnumListF(map: {}) {
+    return IntegerEnumListType({ map });
+  }
+
+  let e = intEnumF({
+    VERIFIED: 0,
+    UNVERIFIED: 1,
+  });
+
+  let list = intEnumListF({
     VERIFIED: 0,
     UNVERIFIED: 1,
   });
@@ -493,6 +515,37 @@ describe("int enum", () => {
     testEnum(e, {
       valid: false,
       value: 2,
+    });
+  });
+
+  test("list valid", async () => {
+    await Promise.all(
+      [[0, 1], [0], [1]].map(async (val) => {
+        await testListEnum(list, {
+          valid: true,
+          value: val,
+          formatted: `{${val.map((v) => v).join(",")}}`,
+        });
+      }),
+    );
+  });
+
+  test("list valid strings", async () => {
+    await Promise.all(
+      [["0", "1"], ["0"], ["1"]].map(async (val) => {
+        await testListEnum(list, {
+          valid: true,
+          value: val,
+          formatted: `{${val.map((v) => parseInt(v)).join(",")}}`,
+        });
+      }),
+    );
+  });
+
+  test("list invalid", async () => {
+    await testListEnum(list, {
+      valid: false,
+      value: [2],
     });
   });
 });
