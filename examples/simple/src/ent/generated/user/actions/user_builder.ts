@@ -664,19 +664,16 @@ export class UserBuilder<
   }
 
   // get value of Password. Retrieves it from the input if specified or takes it from existingEnt
-
   getNewPasswordValue(): string | null | undefined {
     return this.input.password;
   }
 
   // get value of AccountStatus. Retrieves it from the input if specified or takes it from existingEnt
-
   getNewAccountStatusValue(): string | null | undefined {
     return this.input.accountStatus;
   }
 
   // get value of emailVerified. Retrieves it from the input if specified or takes it from existingEnt
-
   getNewEmailVerifiedValue(): boolean | null | undefined {
     return this.input.emailVerified;
   }
@@ -700,19 +697,16 @@ export class UserBuilder<
   }
 
   // get value of prefs. Retrieves it from the input if specified or takes it from existingEnt
-
   getNewPrefsValue(): UserPrefsStruct | null | undefined {
     return this.input.prefs;
   }
 
   // get value of prefsList. Retrieves it from the input if specified or takes it from existingEnt
-
   getNewPrefsListValue(): UserPrefsStruct2[] | null | undefined {
     return this.input.prefsList;
   }
 
   // get value of prefs_diff. Retrieves it from the input if specified or takes it from existingEnt
-
   getNewPrefsDiffValue(): UserPrefsDiff | null | undefined {
     return this.input.prefsDiff;
   }
