@@ -1,4 +1,5 @@
-import { EnumField, EnumType } from "./field";
+import { EnumField, EnumType, IntEnumField, IntEnumType } from "./field";
+import { Field } from "./schema";
 
 function enumF(values: string[]): EnumField {
   return EnumType({ values });
@@ -9,12 +10,17 @@ function enumMapF(map: {}): EnumField {
 }
 
 interface testValue {
-  value: string;
+  value: any;
   valid: boolean;
-  formatted?: string;
+  formatted?: any;
 }
 
-function testEnum(e: EnumField, val: testValue) {
+interface TestField extends Field {
+  valid(val: any): boolean;
+  format(val: any): any;
+}
+
+function testEnum(e: TestField, val: testValue) {
   expect(e.valid(val.value)).toBe(val.valid);
   if (val.valid) {
     expect(e.format(val.value), val.value).toBe(val.formatted);
@@ -450,5 +456,43 @@ describe("errors", () => {
         /cannot specify graphQLType without specifying values/,
       );
     }
+  });
+});
+
+describe("int enum", () => {
+  function intEnumMapF(map: {}): IntEnumField {
+    return IntEnumType({ map });
+  }
+
+  let e = intEnumMapF({
+    VERIFIED: 0,
+    UNVERIFIED: 1,
+  });
+
+  test("valid", () => {
+    [0, 1].forEach((val) => {
+      testEnum(e, {
+        valid: true,
+        value: val,
+        formatted: val,
+      });
+    });
+  });
+
+  test("valid strings", () => {
+    ["0", "1"].forEach((val) => {
+      testEnum(e, {
+        valid: true,
+        value: val,
+        formatted: parseInt(val),
+      });
+    });
+  });
+
+  test("invalid", () => {
+    testEnum(e, {
+      valid: false,
+      value: 2,
+    });
   });
 });

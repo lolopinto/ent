@@ -78,6 +78,7 @@ const (
 	JSONB       DBType = "JSONB"
 	Enum        DBType = "Enum"
 	StringEnum  DBType = "StringEnum"
+	IntEnum     DBType = "IntEnum"
 	List        DBType = "List"
 )
 
@@ -97,6 +98,7 @@ type FieldType struct {
 	// required when DBType == DBType.Enum || DBType.StringEnum
 	Values      []string          `json:"values,omitempty"`
 	EnumMap     map[string]string `json:"enumMap,omitempty"`
+	IntEnumMap  map[string]int    `json:"intEnumMap,omitempty"`
 	Type        string            `json:"type,omitempty"`
 	GraphQLType string            `json:"graphQLType,omitempty"`
 	// optional used by generator to specify different types e.g. email, phone, password
@@ -343,7 +345,7 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 			graphqlType = foreignKey.Schema
 		}
 		if nullable {
-			return &enttype.NullableEnumType{
+			return &enttype.NullableStringEnumType{
 				EnumDBType:  typ.DBType == Enum,
 				Type:        tsType,
 				GraphQLType: graphqlType,
@@ -351,13 +353,37 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 				EnumMap:     typ.EnumMap,
 			}, nil
 		}
-		return &enttype.EnumType{
+		return &enttype.StringEnumType{
 			EnumDBType:  typ.DBType == Enum,
 			Type:        tsType,
 			GraphQLType: graphqlType,
 			Values:      typ.Values,
 			EnumMap:     typ.EnumMap,
 		}, nil
+
+	case IntEnum:
+		tsType := strcase.ToCamel(typ.Type)
+		graphqlType := strcase.ToCamel(typ.GraphQLType)
+		// if tsType and graphqlType not explicitly specified,add schema prefix to generated enums
+		if tsType == "" {
+			tsType = strcase.ToCamel(nodeName) + strcase.ToCamel(fieldName)
+		}
+		if graphqlType == "" {
+			graphqlType = strcase.ToCamel(nodeName) + strcase.ToCamel(fieldName)
+		}
+		if nullable {
+			return &enttype.NullableIntegerEnumType{
+				Type:        tsType,
+				GraphQLType: graphqlType,
+				EnumMap:     typ.IntEnumMap,
+			}, nil
+		}
+		return &enttype.IntegerEnumType{
+			Type:        tsType,
+			GraphQLType: graphqlType,
+			EnumMap:     typ.IntEnumMap,
+		}, nil
+
 	}
 	return nil, fmt.Errorf("unsupported type %s", typ.DBType)
 }

@@ -108,8 +108,8 @@ func CompareEnums(l1, l2 []*Enum) ([]change.Change, error) {
 	return ret, nil
 }
 
-func (c *Enum) GetEnumValues() []string {
-	ret := make([]string, len(c.Values))
+func (c *Enum) GetEnumValues() []interface{} {
+	ret := make([]interface{}, len(c.Values))
 	for i, v := range c.Values {
 		ret[i] = v.Value
 	}
@@ -155,7 +155,7 @@ func GQLEnumsEqual(l1, l2 []*GQLEnum) bool {
 
 type Data struct {
 	Name        string
-	Value       string
+	Value       interface{}
 	Comment     string
 	PackagePath string
 }
@@ -199,11 +199,12 @@ func GetTSEnumNameForVal(val string) string {
 }
 
 type Input struct {
-	TSName  string
-	GQLName string
-	GQLType string
-	Values  []string
-	EnumMap map[string]string
+	TSName     string
+	GQLName    string
+	GQLType    string
+	Values     []string
+	EnumMap    map[string]string
+	IntEnumMap map[string]int
 }
 
 func (i *Input) HasValues() bool {
@@ -251,7 +252,36 @@ func (i *Input) getValuesFromEnumMap() ([]Data, []Data) {
 		}
 		j++
 	}
-	// golang maps are not stabe so sort for stability
+	// golang maps are not stable so sort for stability
+	sort.Slice(tsVals, func(i, j int) bool {
+		return tsVals[i].Name < tsVals[j].Name
+	})
+	sort.Slice(gqlVals, func(i, j int) bool {
+		return gqlVals[i].Name < gqlVals[j].Name
+	})
+	return tsVals, gqlVals
+}
+
+func (i *Input) getValuesFromIntEnumMap() ([]Data, []Data) {
+	tsVals := make([]Data, len(i.IntEnumMap))
+	gqlVals := make([]Data, len(i.IntEnumMap))
+	j := 0
+	for k, val := range i.IntEnumMap {
+		tsName := GetTSEnumNameForVal(k)
+
+		gqlVals[j] = Data{
+			// norm for graphql enums is all caps
+			Name:  strings.ToUpper(strcase.ToSnake(k)),
+			Value: val,
+		}
+
+		tsVals[j] = Data{
+			Name:  tsName,
+			Value: val,
+		}
+		j++
+	}
+	// golang maps are not stable so sort for stability
 	sort.Slice(tsVals, func(i, j int) bool {
 		return tsVals[i].Name < tsVals[j].Name
 	})
@@ -262,12 +292,14 @@ func (i *Input) getValuesFromEnumMap() ([]Data, []Data) {
 }
 
 func NewInputFromEnumType(enumType enttype.EnumeratedType) *Input {
+	data := enumType.GetEnumData()
 	return &Input{
-		TSName:  enumType.GetTSName(),
-		GQLName: enumType.GetGraphQLName(),
-		GQLType: enumType.GetTSType(),
-		Values:  enumType.GetEnumValues(),
-		EnumMap: enumType.GetEnumMap(),
+		TSName:     enumType.GetTSName(),
+		GQLName:    enumType.GetGraphQLName(),
+		GQLType:    enumType.GetTSType(),
+		Values:     data.Values,
+		EnumMap:    data.EnumMap,
+		IntEnumMap: data.IntEnumMap,
 	}
 }
 
@@ -276,6 +308,8 @@ func GetEnums(input *Input) (*Enum, *GQLEnum) {
 	var gqlVals []Data
 	if len(input.EnumMap) > 0 {
 		tsVals, gqlVals = input.getValuesFromEnumMap()
+	} else if len(input.IntEnumMap) > 0 {
+		tsVals, gqlVals = input.getValuesFromIntEnumMap()
 	} else {
 		tsVals, gqlVals = input.getValuesFromValues()
 	}

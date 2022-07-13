@@ -418,7 +418,7 @@ func TestArrayListType(t *testing.T) {
 		},
 		"enum list": {
 			&enttype.ArrayListType{
-				ElemType: &enttype.EnumType{
+				ElemType: &enttype.StringEnumType{
 					Type:        "AccountStatus",
 					GraphQLType: "AccountStatus",
 					Values: []string{
@@ -445,7 +445,7 @@ func TestArrayListType(t *testing.T) {
 					tsimport.NewLocalEntImportPath("AccountStatus"),
 				},
 				nullableType: &enttype.NullableArrayListType{
-					ElemType: &enttype.EnumType{
+					ElemType: &enttype.StringEnumType{
 						Type:        "AccountStatus",
 						GraphQLType: "AccountStatus",
 						Values: []string{
@@ -463,7 +463,7 @@ func TestArrayListType(t *testing.T) {
 		},
 		"nullable enum list": {
 			&enttype.NullableArrayListType{
-				ElemType: &enttype.EnumType{
+				ElemType: &enttype.StringEnumType{
 					Type:        "AccountStatus",
 					GraphQLType: "AccountStatus",
 					Values: []string{
@@ -489,7 +489,7 @@ func TestArrayListType(t *testing.T) {
 					tsimport.NewLocalEntImportPath("AccountStatus"),
 				},
 				nonNullableType: &enttype.ArrayListType{
-					ElemType: &enttype.EnumType{
+					ElemType: &enttype.StringEnumType{
 						Type:        "AccountStatus",
 						GraphQLType: "AccountStatus",
 						Values: []string{

@@ -149,14 +149,20 @@ type DefaulFieldNameType interface {
 	DefaultGraphQLFieldName() string
 }
 
+type EnumData struct {
+	Values     []string
+	EnumMap    map[string]string
+	IntEnumMap map[string]int
+}
+
 // EnumeratedType indicates that this is an enum type
 type EnumeratedType interface {
 	TSType
 	// GetTSName refers to the name of the generated enum
 	GetTSName() string
 	GetGraphQLName() string
-	GetEnumValues() []string
-	GetEnumMap() map[string]string
+
+	GetEnumData() *EnumData
 }
 
 type stringType struct {
@@ -1529,7 +1535,7 @@ func (t *enumType) getDBTypeForEnumDBType(values []string, typ string) string {
 
 }
 
-type EnumType struct {
+type StringEnumType struct {
 	enumType
 	EnumDBType  bool
 	Type        string
@@ -1538,63 +1544,64 @@ type EnumType struct {
 	EnumMap     map[string]string
 }
 
-func (t *EnumType) GetDBType() string {
+func (t *StringEnumType) GetDBType() string {
 	if t.EnumDBType {
 		return t.getDBTypeForEnumDBType(t.Values, t.Type)
 	}
 	return "sa.Text()"
 }
 
-func (t *EnumType) GetEnumValues() []string {
-	return t.Values
+func (t *StringEnumType) GetEnumData() *EnumData {
+	return &EnumData{
+		Values:  t.Values,
+		EnumMap: t.EnumMap,
+	}
 }
 
-func (t *EnumType) GetEnumMap() map[string]string {
-	return t.EnumMap
-}
-
-func (t *EnumType) GetGraphQLType() string {
+func (t *StringEnumType) GetGraphQLType() string {
 	return fmt.Sprintf("%s!", t.GraphQLType)
 }
 
-func (t *EnumType) GetTSName() string {
+func (t *StringEnumType) GetTSName() string {
 	return t.Type
 }
 
-func (t *EnumType) GetGraphQLName() string {
+func (t *StringEnumType) GetGraphQLName() string {
 	return t.GraphQLType
 }
 
-func (t *EnumType) GetTSType() string {
+func (t *StringEnumType) GetTSType() string {
 	return t.Type
 }
 
-func (t *EnumType) GetTsTypeImports() []*tsimport.ImportPath {
+func (t *StringEnumType) GetTsTypeImports() []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
 		tsimport.NewLocalEntImportPath(t.Type),
 	}
 }
 
-func (t *EnumType) GetCastToMethod() string {
+func (t *StringEnumType) GetCastToMethod() string {
 	panic("enum type not supported in go-lang yet")
 }
 
-func (t *EnumType) GetNullableType() TSGraphQLType {
-	return &NullableEnumType{
+func (t *StringEnumType) GetNullableType() TSGraphQLType {
+	return &NullableStringEnumType{
 		Type:        t.Type,
 		GraphQLType: t.GraphQLType,
 		Values:      t.Values,
 	}
 }
 
-func (t *EnumType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
+func (t *StringEnumType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
 		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 		tsimport.NewLocalGraphQLEntImportPath(t.GraphQLType),
 	}
 }
 
-type NullableEnumType struct {
+var _ EnumeratedType = &StringEnumType{}
+
+type NullableStringEnumType struct {
 	enumType
 	EnumDBType  bool
 	Type        string
@@ -1603,60 +1610,186 @@ type NullableEnumType struct {
 	EnumMap     map[string]string
 }
 
-func (t *NullableEnumType) GetDBType() string {
+func (t *NullableStringEnumType) GetDBType() string {
 	if t.EnumDBType {
 		return t.getDBTypeForEnumDBType(t.Values, t.Type)
 	}
 	return "sa.Text()"
 }
 
-func (t *NullableEnumType) GetEnumValues() []string {
-	return t.Values
+func (t *NullableStringEnumType) GetEnumData() *EnumData {
+	return &EnumData{
+		Values:  t.Values,
+		EnumMap: t.EnumMap,
+	}
 }
 
-func (t *NullableEnumType) GetEnumMap() map[string]string {
-	return t.EnumMap
-}
-
-func (t *NullableEnumType) GetGraphQLType() string {
+func (t *NullableStringEnumType) GetGraphQLType() string {
 	return t.GraphQLType
 }
 
-func (t *NullableEnumType) GetTSName() string {
+func (t *NullableStringEnumType) GetTSName() string {
 	return t.Type
 }
 
-func (t *NullableEnumType) GetGraphQLName() string {
+func (t *NullableStringEnumType) GetGraphQLName() string {
 	return t.GraphQLType
 }
 
-func (t *NullableEnumType) GetTSType() string {
+func (t *NullableStringEnumType) GetTSType() string {
 	return fmt.Sprintf("%s | null", t.Type)
 }
 
-func (t *NullableEnumType) GetTsTypeImports() []*tsimport.ImportPath {
+func (t *NullableStringEnumType) GetTsTypeImports() []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
 		tsimport.NewLocalEntImportPath(t.Type),
 	}
 }
 
-func (t *NullableEnumType) GetCastToMethod() string {
+func (t *NullableStringEnumType) GetCastToMethod() string {
 	panic("enum type not supported in go-lang yet")
 }
 
-func (t *NullableEnumType) GetNonNullableType() TSGraphQLType {
-	return &EnumType{
+func (t *NullableStringEnumType) GetNonNullableType() TSGraphQLType {
+	return &StringEnumType{
 		Type:        t.Type,
 		GraphQLType: t.GraphQLType,
 		Values:      t.Values,
 	}
 }
 
-func (t *NullableEnumType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
+func (t *NullableStringEnumType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 	return []*tsimport.ImportPath{
 		tsimport.NewLocalGraphQLEntImportPath(t.GraphQLType),
 	}
 }
+
+var _ EnumeratedType = &NullableStringEnumType{}
+
+type IntegerEnumType struct {
+	Type        string
+	GraphQLType string
+	EnumMap     map[string]int
+}
+
+func (t *IntegerEnumType) GetZeroValue() string {
+	panic("enum type not supported in go-lang yet")
+}
+
+func (t *IntegerEnumType) GetDBType() string {
+	return "sa.Integer()"
+}
+
+func (t *IntegerEnumType) GetEnumData() *EnumData {
+	return &EnumData{
+		IntEnumMap: t.EnumMap,
+	}
+}
+
+func (t *IntegerEnumType) GetGraphQLType() string {
+	return fmt.Sprintf("%s!", t.GraphQLType)
+}
+
+func (t *IntegerEnumType) GetTSName() string {
+	return t.Type
+}
+
+func (t *IntegerEnumType) GetGraphQLName() string {
+	return t.GraphQLType
+}
+
+func (t *IntegerEnumType) GetTSType() string {
+	return t.Type
+}
+
+func (t *IntegerEnumType) GetTsTypeImports() []*tsimport.ImportPath {
+	return []*tsimport.ImportPath{
+		tsimport.NewLocalEntImportPath(t.Type),
+	}
+}
+
+func (t *IntegerEnumType) GetCastToMethod() string {
+	panic("enum type not supported in go-lang yet")
+}
+
+func (t *IntegerEnumType) GetNullableType() TSGraphQLType {
+	return &NullableIntegerEnumType{
+		Type:        t.Type,
+		GraphQLType: t.GraphQLType,
+		EnumMap:     t.EnumMap,
+	}
+}
+
+func (t *IntegerEnumType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
+	return []*tsimport.ImportPath{
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+		tsimport.NewLocalGraphQLEntImportPath(t.GraphQLType),
+	}
+}
+
+var _ EnumeratedType = &IntegerEnumType{}
+
+type NullableIntegerEnumType struct {
+	Type        string
+	GraphQLType string
+	EnumMap     map[string]int
+}
+
+func (t *NullableIntegerEnumType) GetZeroValue() string {
+	panic("enum type not supported in go-lang yet")
+}
+
+func (t *NullableIntegerEnumType) GetDBType() string {
+	return "sa.Integer()"
+}
+
+func (t *NullableIntegerEnumType) GetEnumData() *EnumData {
+	return &EnumData{
+		IntEnumMap: t.EnumMap,
+	}
+}
+
+func (t *NullableIntegerEnumType) GetGraphQLType() string {
+	return t.GraphQLType
+}
+
+func (t *NullableIntegerEnumType) GetTSName() string {
+	return t.Type
+}
+
+func (t *NullableIntegerEnumType) GetGraphQLName() string {
+	return t.GraphQLType
+}
+
+func (t *NullableIntegerEnumType) GetTSType() string {
+	return fmt.Sprintf("%s | null", t.Type)
+}
+
+func (t *NullableIntegerEnumType) GetTsTypeImports() []*tsimport.ImportPath {
+	return []*tsimport.ImportPath{
+		tsimport.NewLocalEntImportPath(t.Type),
+	}
+}
+
+func (t *NullableIntegerEnumType) GetCastToMethod() string {
+	panic("enum type not supported in go-lang yet")
+}
+
+func (t *NullableIntegerEnumType) GetNonNullableType() TSGraphQLType {
+	return &IntegerEnumType{
+		Type:        t.Type,
+		GraphQLType: t.GraphQLType,
+		EnumMap:     t.EnumMap,
+	}
+}
+
+func (t *NullableIntegerEnumType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
+	return []*tsimport.ImportPath{
+		tsimport.NewLocalGraphQLEntImportPath(t.GraphQLType),
+	}
+}
+
+var _ EnumeratedType = &NullableIntegerEnumType{}
 
 type arrayListType struct {
 }
