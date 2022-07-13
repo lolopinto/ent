@@ -268,6 +268,8 @@ async function main() {
   // TODO foreign non-scalars eventually
   addCustomType({
     importPath: MODULE_PATH,
+    // for go tests...
+    secondaryImportPath: "../graphql/scalars/time",
     type: "GraphQLTime",
   });
   addCustomType({
