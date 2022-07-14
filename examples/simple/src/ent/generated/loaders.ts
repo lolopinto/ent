@@ -532,6 +532,7 @@ const userFields = [
   "new_col_2",
   "super_nested_object",
   "nested_list",
+  "int_enum",
 ];
 
 export const userLoader = new ObjectLoaderFactory({
@@ -649,6 +650,10 @@ export const userLoaderInfo = {
     nestedList: {
       dbCol: "nested_list",
       inputKey: "nestedList",
+    },
+    int_enum: {
+      dbCol: "int_enum",
+      inputKey: "intEnum",
     },
   },
 };

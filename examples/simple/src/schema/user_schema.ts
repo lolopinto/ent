@@ -17,6 +17,8 @@ import {
   IntegerListType,
   UnionType,
   TimestampType,
+  IntegerEnumType,
+  IntegerEnumListType,
 } from "@snowtop/ent/schema";
 import { EmailType } from "@snowtop/ent-email";
 import { PasswordType } from "@snowtop/ent-password";
@@ -273,6 +275,24 @@ const UserSchema = new EntSchema({
             int: IntegerType(),
           },
         }),
+        enumList: IntegerEnumListType({
+          tsType: "IntEnumUsedInList",
+          graphQLType: "IntEnumUsedInList",
+          map: {
+            Yes: 1,
+            No: 2,
+            Maybe: 3,
+          },
+        }),
+      },
+    }),
+    int_enum: IntegerEnumType({
+      nullable: true,
+      map: {
+        VERIFIED: 1,
+        UNVERIFIED: 2,
+        DISABLED: 3,
+        DEACTIVATED: 4,
       },
     }),
   },
@@ -323,6 +343,7 @@ const UserSchema = new EntSchema({
         "prefsList",
         "superNestedObject",
         "nestedList",
+        "int_enum",
       ],
     },
 

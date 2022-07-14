@@ -16,7 +16,7 @@ import {
   Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { User, UserDaysOff, UserPreferredShift } from "../../..";
+import { User, UserDaysOff, UserIntEnum, UserPreferredShift } from "../../..";
 import { UserBuilder } from "./user_builder";
 import { UserNestedObjectList } from "../../user_nested_object_list";
 import { UserPrefsDiff } from "../../user_prefs_diff";
@@ -41,6 +41,7 @@ export interface UserCreateInput {
   prefsList?: UserPrefsStruct2[] | null;
   superNestedObject?: UserSuperNestedObject | null;
   nestedList?: UserNestedObjectList[] | null;
+  intEnum?: UserIntEnum | null;
 }
 
 export type CreateUserActionTriggers = (
