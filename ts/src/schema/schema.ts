@@ -283,6 +283,7 @@ export interface Type {
   // TODO need to refactor this into type specific objects instead of killing the top level field like this.
   enumMap?: EnumMap; // enumMap e.g. k->v pair for enums
   intEnumMap?: IntEnumMap;
+  deprecatedIntEnumMap?: IntEnumMap;
 
   // @deprecated eventually kill this
   importType?: ImportType;

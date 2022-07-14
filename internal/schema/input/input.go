@@ -96,11 +96,12 @@ type FieldType struct {
 	// required when DBType == DBType.List
 	ListElemType *FieldType `json:"listElemType,omitempty"`
 	// required when DBType == DBType.Enum || DBType.StringEnum
-	Values      []string          `json:"values,omitempty"`
-	EnumMap     map[string]string `json:"enumMap,omitempty"`
-	IntEnumMap  map[string]int    `json:"intEnumMap,omitempty"`
-	Type        string            `json:"type,omitempty"`
-	GraphQLType string            `json:"graphQLType,omitempty"`
+	Values               []string          `json:"values,omitempty"`
+	EnumMap              map[string]string `json:"enumMap,omitempty"`
+	IntEnumMap           map[string]int    `json:"intEnumMap,omitempty"`
+	DeprecatedIntEnumMap map[string]int    `json:"deprecatedIntEnumMap,omitempty"`
+	Type                 string            `json:"type,omitempty"`
+	GraphQLType          string            `json:"graphQLType,omitempty"`
 	// optional used by generator to specify different types e.g. email, phone, password
 	CustomType CustomType `json:"customType,omitempty"`
 
@@ -373,15 +374,17 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 		}
 		if nullable {
 			return &enttype.NullableIntegerEnumType{
-				Type:        tsType,
-				GraphQLType: graphqlType,
-				EnumMap:     typ.IntEnumMap,
+				Type:              tsType,
+				GraphQLType:       graphqlType,
+				EnumMap:           typ.IntEnumMap,
+				DeprecatedEnumMap: typ.DeprecatedIntEnumMap,
 			}, nil
 		}
 		return &enttype.IntegerEnumType{
-			Type:        tsType,
-			GraphQLType: graphqlType,
-			EnumMap:     typ.IntEnumMap,
+			Type:              tsType,
+			GraphQLType:       graphqlType,
+			EnumMap:           typ.IntEnumMap,
+			DeprecatedEnumMap: typ.DeprecatedIntEnumMap,
 		}, nil
 
 	}

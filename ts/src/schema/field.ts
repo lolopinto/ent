@@ -684,6 +684,7 @@ export interface IntegerEnumOptions extends FieldOptions {
   // instead of values.
   // GRAPHQL will take the key and use it as the value here instead o
   map: IntEnumMap;
+  deprecated?: IntEnumMap;
 
   // by default the type is the name as the field
   // it's recommended to scope the enum names in scenarios where it makes sense
@@ -702,6 +703,7 @@ export class IntegerEnumField extends BaseField implements Field {
       intEnumMap: options.map,
       type: options.tsType,
       graphQLType: options.graphQLType,
+      deprecatedIntEnumMap: options.deprecated,
     };
 
     let count = 0;

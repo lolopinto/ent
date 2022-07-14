@@ -1309,6 +1309,87 @@ func TestIntEnumType(t *testing.T) {
 				},
 				nil,
 			},
+			"nullable w deprecated": {
+				&enttype.NullableIntegerEnumType{
+					Type:        "AccountStatus",
+					GraphQLType: "AccountStatus",
+					EnumMap: map[string]int{
+						"VERIFIED":    1,
+						"DEACTIVATED": 2,
+						"DISABLED":    3,
+					},
+					DeprecatedEnumMap: map[string]int{
+						"UNVERIFIED": 0,
+					},
+				},
+				expType{
+					db:      "sa.Integer()",
+					graphql: "AccountStatus",
+					graphqlImports: []*tsimport.ImportPath{
+						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
+					},
+					enumType: true,
+					tsType:   "AccountStatus | null",
+					tsTypeImports: []*tsimport.ImportPath{
+						tsimport.NewLocalEntImportPath("AccountStatus"),
+					},
+					goTypePanics: true,
+					nonNullableType: &enttype.IntegerEnumType{
+						Type:        "AccountStatus",
+						GraphQLType: "AccountStatus",
+						EnumMap: map[string]int{
+							"VERIFIED":    1,
+							"DEACTIVATED": 2,
+							"DISABLED":    3,
+						},
+						DeprecatedEnumMap: map[string]int{
+							"UNVERIFIED": 0,
+						},
+					},
+				},
+				nil,
+			},
+			"not nullable w depreated": {
+				&enttype.IntegerEnumType{
+					Type:        "AccountStatus",
+					GraphQLType: "AccountStatus",
+					EnumMap: map[string]int{
+						"VERIFIED":    1,
+						"DEACTIVATED": 2,
+						"DISABLED":    3,
+					},
+					DeprecatedEnumMap: map[string]int{
+						"UNVERIFIED": 0,
+					},
+				},
+				expType{
+					db:      "sa.Integer()",
+					graphql: "AccountStatus!",
+					graphqlImports: []*tsimport.ImportPath{
+						tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
+					},
+					tsType:   "AccountStatus",
+					enumType: true,
+					tsTypeImports: []*tsimport.ImportPath{
+						tsimport.NewLocalEntImportPath("AccountStatus"),
+					},
+					goTypePanics: true,
+					nullableType: &enttype.NullableIntegerEnumType{
+						Type:        "AccountStatus",
+						GraphQLType: "AccountStatus",
+						EnumMap: map[string]int{
+							"VERIFIED":    1,
+							"DEACTIVATED": 2,
+							"DISABLED":    3,
+						},
+						DeprecatedEnumMap: map[string]int{
+							"UNVERIFIED": 0,
+						},
+					},
+				},
+				nil,
+			},
 		},
 	)
 }

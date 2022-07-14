@@ -85,6 +85,7 @@ export enum UserIntEnum {
   UNVERIFIED = 2,
   DISABLED = 3,
   DEACTIVATED = 4,
+  // @deprecated FOO = 5,
 }
 
 interface UserDBData {

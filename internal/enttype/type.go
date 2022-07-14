@@ -150,9 +150,10 @@ type DefaulFieldNameType interface {
 }
 
 type EnumData struct {
-	Values     []string
-	EnumMap    map[string]string
-	IntEnumMap map[string]int
+	Values               []string
+	EnumMap              map[string]string
+	IntEnumMap           map[string]int
+	DeprecatedIntEnumMap map[string]int
 }
 
 // EnumeratedType indicates that this is an enum type
@@ -1667,9 +1668,10 @@ func (t *NullableStringEnumType) GetTSGraphQLImports(input bool) []*tsimport.Imp
 var _ EnumeratedType = &NullableStringEnumType{}
 
 type IntegerEnumType struct {
-	Type        string
-	GraphQLType string
-	EnumMap     map[string]int
+	Type              string
+	GraphQLType       string
+	EnumMap           map[string]int
+	DeprecatedEnumMap map[string]int
 }
 
 func (t *IntegerEnumType) GetZeroValue() string {
@@ -1682,7 +1684,8 @@ func (t *IntegerEnumType) GetDBType() string {
 
 func (t *IntegerEnumType) GetEnumData() *EnumData {
 	return &EnumData{
-		IntEnumMap: t.EnumMap,
+		IntEnumMap:           t.EnumMap,
+		DeprecatedIntEnumMap: t.DeprecatedEnumMap,
 	}
 }
 
@@ -1714,9 +1717,10 @@ func (t *IntegerEnumType) GetCastToMethod() string {
 
 func (t *IntegerEnumType) GetNullableType() TSGraphQLType {
 	return &NullableIntegerEnumType{
-		Type:        t.Type,
-		GraphQLType: t.GraphQLType,
-		EnumMap:     t.EnumMap,
+		Type:              t.Type,
+		GraphQLType:       t.GraphQLType,
+		EnumMap:           t.EnumMap,
+		DeprecatedEnumMap: t.DeprecatedEnumMap,
 	}
 }
 
@@ -1730,9 +1734,10 @@ func (t *IntegerEnumType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath
 var _ EnumeratedType = &IntegerEnumType{}
 
 type NullableIntegerEnumType struct {
-	Type        string
-	GraphQLType string
-	EnumMap     map[string]int
+	Type              string
+	GraphQLType       string
+	EnumMap           map[string]int
+	DeprecatedEnumMap map[string]int
 }
 
 func (t *NullableIntegerEnumType) GetZeroValue() string {
@@ -1745,7 +1750,8 @@ func (t *NullableIntegerEnumType) GetDBType() string {
 
 func (t *NullableIntegerEnumType) GetEnumData() *EnumData {
 	return &EnumData{
-		IntEnumMap: t.EnumMap,
+		IntEnumMap:           t.EnumMap,
+		DeprecatedIntEnumMap: t.DeprecatedEnumMap,
 	}
 }
 
@@ -1777,9 +1783,10 @@ func (t *NullableIntegerEnumType) GetCastToMethod() string {
 
 func (t *NullableIntegerEnumType) GetNonNullableType() TSGraphQLType {
 	return &IntegerEnumType{
-		Type:        t.Type,
-		GraphQLType: t.GraphQLType,
-		EnumMap:     t.EnumMap,
+		Type:              t.Type,
+		GraphQLType:       t.GraphQLType,
+		EnumMap:           t.EnumMap,
+		DeprecatedEnumMap: t.DeprecatedEnumMap,
 	}
 }
 
