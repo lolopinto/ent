@@ -208,7 +208,7 @@ type Input struct {
 }
 
 func (i *Input) HasValues() bool {
-	return len(i.Values) > 0 || len(i.EnumMap) > 0
+	return len(i.Values) > 0 || len(i.EnumMap) > 0 || len(i.IntEnumMap) > 0
 }
 
 func (i *Input) getValuesFromValues() ([]Data, []Data) {
@@ -266,6 +266,7 @@ func (i *Input) getValuesFromIntEnumMap() ([]Data, []Data) {
 	tsVals := make([]Data, len(i.IntEnumMap))
 	gqlVals := make([]Data, len(i.IntEnumMap))
 	j := 0
+
 	for k, val := range i.IntEnumMap {
 		tsName := GetTSEnumNameForVal(k)
 
@@ -283,10 +284,10 @@ func (i *Input) getValuesFromIntEnumMap() ([]Data, []Data) {
 	}
 	// golang maps are not stable so sort for stability
 	sort.Slice(tsVals, func(i, j int) bool {
-		return tsVals[i].Name < tsVals[j].Name
+		return tsVals[i].Value.(int) < tsVals[j].Value.(int)
 	})
 	sort.Slice(gqlVals, func(i, j int) bool {
-		return gqlVals[i].Name < gqlVals[j].Name
+		return gqlVals[i].Value.(int) < gqlVals[j].Value.(int)
 	})
 	return tsVals, gqlVals
 }
