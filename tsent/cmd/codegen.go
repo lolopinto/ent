@@ -56,6 +56,7 @@ var codegenCmd = &cobra.Command{
 		if rootInfo.debug {
 			opts = append(opts, codegen.DebugMode())
 		}
+
 		if codegenInfo.writeAll {
 			opts = append(opts, codegen.WriteAll())
 		}
@@ -79,6 +80,9 @@ var codegenCmd = &cobra.Command{
 		opts2 := []codegen.Option{}
 		if codegenInfo.disableCustomGraphQL {
 			opts2 = append(opts2, codegen.DisableCustomGraphQL())
+		}
+		if rootInfo.disablePrompts {
+			opts2 = append(opts2, codegen.DisablePrompts())
 		}
 		return processor.Run(steps, codegenInfo.step, opts2...)
 	},
