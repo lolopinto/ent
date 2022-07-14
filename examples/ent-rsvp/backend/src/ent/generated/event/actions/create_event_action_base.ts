@@ -97,7 +97,7 @@ export class CreateEventActionBase
     );
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<Event> {
+  getPrivacyPolicy(): PrivacyPolicy<Event, Viewer> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

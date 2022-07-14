@@ -219,14 +219,20 @@ func (e *EdgeInfo) CreateEdgeBaseFile() bool {
 	return false
 }
 
-func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(cfg codegenapi.Config, fieldName, configName string, nullable bool, fieldType enttype.EntType) error {
+func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(cfg codegenapi.Config, fieldName, configName string, nullable bool, fieldType enttype.EntType, validSchema func(str string) bool,
+) error {
 	node, err := schemaparser.GetNodeNameFromEntConfig(configName)
 	if err != nil {
 		return err
 	}
-	return e.AddFieldEdgeFromFieldEdgeInfo(cfg, fieldName, &base.FieldEdgeInfo{
-		Schema: node,
-	}, nullable, fieldType)
+	return e.AddFieldEdgeFromFieldEdgeInfo(cfg,
+		fieldName,
+		&base.FieldEdgeInfo{
+			Schema: node,
+		},
+		nullable,
+		fieldType,
+		validSchema)
 }
 
 func getFieldEdge(cfg codegenapi.Config,
@@ -298,10 +304,15 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(
 	fieldEdgeInfo *base.FieldEdgeInfo,
 	nullable bool,
 	fieldType enttype.EntType,
+	validSchema func(str string) bool,
 ) error {
 	edge, err := getFieldEdge(cfg, fieldName, fieldEdgeInfo, nullable, fieldType)
 	if err != nil || edge == nil {
 		return err
+	}
+	if edge.Polymorphic == nil &&
+		!validSchema(edge.commonEdgeInfo.NodeInfo.Node) {
+		return fmt.Errorf("invalid schema %s", edge.commonEdgeInfo.NodeInfo.Node)
 	}
 	return e.addEdge(edge)
 }

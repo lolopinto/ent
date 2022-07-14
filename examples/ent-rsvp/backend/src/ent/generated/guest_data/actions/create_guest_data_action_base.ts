@@ -86,7 +86,7 @@ export class CreateGuestDataActionBase
     );
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<GuestData> {
+  getPrivacyPolicy(): PrivacyPolicy<GuestData, Viewer> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

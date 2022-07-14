@@ -48,7 +48,7 @@ const getConfigurableLoader = (
 
 describe("postgres", () => {
   beforeAll(async () => {
-    setLogLevels(["query", "error"]);
+    setLogLevels(["query", "error", "cache"]);
     ml.mock();
 
     tdb = await setupTempDB();
@@ -74,7 +74,7 @@ describe("sqlite", () => {
   setupSqlite(`sqlite:///index_loader.db`, tempDBTables);
 
   beforeAll(async () => {
-    setLogLevels(["query", "error"]);
+    setLogLevels(["query", "error", "cache"]);
     ml.mock();
   });
 

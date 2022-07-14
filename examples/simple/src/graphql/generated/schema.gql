@@ -89,6 +89,12 @@ enum EventRsvpStatus {
   CAN_RSVP
 }
 
+enum IntEnumUsedInList {
+  YES
+  NO
+  MAYBE
+}
+
 enum NestedObjNestedNestedEnum {
   YES
   NO
@@ -138,6 +144,13 @@ enum UserDaysOff {
   FRIDAY
   SATURDAY
   SUNDAY
+}
+
+enum UserIntEnum {
+  VERIFIED
+  UNVERIFIED
+  DISABLED
+  DEACTIVATED
 }
 
 enum UserPreferredShift {
@@ -266,6 +279,7 @@ type UserNestedObjectList {
   type: String!
   enum: EnumUsedInList!
   objects: [UserNestedNestedObjectList!]!
+  enumList: [IntEnumUsedInList!]!
 }
 
 type UserNestedObject {
@@ -329,6 +343,7 @@ type User implements Node {
   newCol2: String
   superNestedObject: UserSuperNestedObject
   nestedList: [UserNestedObjectList!]
+  intEnum: UserIntEnum
   selfContact: Contact
   comments(first: Int, after: String, last: Int, before: String): UserToCommentsConnection!
   createdEvents(first: Int, after: String, last: Int, before: String): UserToCreatedEventsConnection!
@@ -908,6 +923,7 @@ input UserCreateInput {
   prefsList: [UserPrefsStruct2Input!]
   superNestedObject: UserSuperNestedObjectInput
   nestedList: [UserNestedObjectListInput!]
+  intEnum: UserIntEnum
 }
 
 type UserCreatePayload {
@@ -936,6 +952,7 @@ type UserEditPayload {
 
 type Query {
   node(id: ID!): Node
+  timeDiff(time: Time!): String!
   viewer: Viewer!
 }
 

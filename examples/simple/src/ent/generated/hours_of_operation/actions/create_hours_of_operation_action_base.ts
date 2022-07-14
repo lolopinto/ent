@@ -96,7 +96,7 @@ export class CreateHoursOfOperationActionBase
     );
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<HoursOfOperation> {
+  getPrivacyPolicy(): PrivacyPolicy<HoursOfOperation, ExampleViewerAlias> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

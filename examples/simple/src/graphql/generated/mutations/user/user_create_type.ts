@@ -28,6 +28,7 @@ import { UserPrefsStructInputType } from "../input/user_prefs_struct_input_type"
 import { UserSuperNestedObjectInputType } from "../input/user_super_nested_object_input_type";
 import {
   UserDaysOffType,
+  UserIntEnumType,
   UserPreferredShiftType,
   UserType,
 } from "../../../resolvers";
@@ -82,6 +83,9 @@ export const UserCreateInputType = new GraphQLInputObjectType({
     nestedList: {
       type: new GraphQLList(new GraphQLNonNull(UserNestedObjectListInputType)),
     },
+    intEnum: {
+      type: UserIntEnumType,
+    },
   }),
 });
 
@@ -128,6 +132,7 @@ export const UserCreateType: GraphQLFieldConfig<
       prefsList: input.prefsList,
       superNestedObject: input.superNestedObject,
       nestedList: input.nestedList,
+      intEnum: input.intEnum,
     }).saveX();
     return { user: user };
   },

@@ -44,12 +44,12 @@ export class cacheMap {
       // might be a lot?
       // TODO this is not the best log format
       // was designed for ObjectLoader time. Now we have different needs e.g. count, assoc etc
-      log("query", {
+      log("cache", {
         "dataloader-cache-hit": key,
         "tableName": this.options.tableName,
       });
       // } else {
-      //   log("query", {
+      //   log("cache", {
       //     "dataloader-cache-miss": key,
       //     "tableName": options.tableName,
       //   });
@@ -58,7 +58,7 @@ export class cacheMap {
   }
 
   set(key, value) {
-    // log("query", {
+    // log("cache", {
     //   "dataloader-cache-set": key,
     //   "tableName": options.tableName,
     // });
@@ -66,7 +66,7 @@ export class cacheMap {
   }
 
   delete(key) {
-    // log("query", {
+    // log("cache", {
     //   "dataloader-cache-delete": key,
     //   "tableName": options.tableName,
     // });
@@ -74,7 +74,7 @@ export class cacheMap {
   }
 
   clear() {
-    // log("query", {
+    // log("cache", {
     //   "dataloader-cache-clear": true,
     //   "tableName": options.tableName,
     // });

@@ -201,6 +201,50 @@ func TestEnumTypesCustomTypesGiven(t *testing.T) {
 	validateEnumNames(t, f, "ItemCustomRole", "ItemCustomRole")
 }
 
+func TestIntEnumTypes(t *testing.T) {
+	f := &input.Field{
+		Name: "role",
+		Type: &input.FieldType{
+			DBType: input.IntEnum,
+		},
+	}
+	validateEnumNames(t, f, "ItemRole", "ItemRole")
+}
+
+func TestIntEnumTypesTSTypeGiven(t *testing.T) {
+	f := &input.Field{
+		Name: "role",
+		Type: &input.FieldType{
+			DBType: input.IntEnum,
+			Type:   "ItemCustomRole",
+		},
+	}
+	validateEnumNames(t, f, "ItemCustomRole", "ItemRole")
+}
+
+func TestIntEnumTypesGraphQLTypeGiven(t *testing.T) {
+	f := &input.Field{
+		Name: "role",
+		Type: &input.FieldType{
+			DBType:      input.IntEnum,
+			GraphQLType: "ItemCustomRole",
+		},
+	}
+	validateEnumNames(t, f, "ItemRole", "ItemCustomRole")
+}
+
+func TestIntEnumTypesCustomTypesGiven(t *testing.T) {
+	f := &input.Field{
+		Name: "role",
+		Type: &input.FieldType{
+			DBType:      input.IntEnum,
+			Type:        "ItemCustomRole",
+			GraphQLType: "ItemCustomRole",
+		},
+	}
+	validateEnumNames(t, f, "ItemCustomRole", "ItemCustomRole")
+}
+
 func validateEnumNames(t *testing.T, f *input.Field, tsName, graphqlName string) {
 	entType, err := f.GetEntType("Item")
 	require.Nil(t, err)

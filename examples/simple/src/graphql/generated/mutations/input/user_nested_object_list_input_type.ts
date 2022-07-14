@@ -11,7 +11,7 @@ import {
   GraphQLNonNull,
   GraphQLString,
 } from "graphql";
-import { EnumUsedInListType } from "../../../resolvers";
+import { EnumUsedInListType, IntEnumUsedInListType } from "../../../resolvers";
 
 const UserNestedNestedObjectListInputType = new GraphQLInputObjectType({
   name: "UserNestedNestedObjectListInput",
@@ -36,6 +36,11 @@ export const UserNestedObjectListInputType = new GraphQLInputObjectType({
         new GraphQLList(
           new GraphQLNonNull(UserNestedNestedObjectListInputType),
         ),
+      ),
+    },
+    enumList: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(IntEnumUsedInListType)),
       ),
     },
   }),

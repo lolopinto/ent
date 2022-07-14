@@ -18,6 +18,7 @@ import {
   NotifType2,
   UserDaysOff,
   UserPreferredShift,
+  UserIntEnum,
 } from "../../ent/";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
 import EditUserAction from "../../ent/user/actions/edit_user_action";
@@ -856,6 +857,32 @@ test("enum list", async () => {
           UserDaysOff.Sunday,
         ]);
         expect(user.preferredShift).toEqual([UserPreferredShift.Graveyard]);
+      },
+    ],
+  );
+});
+
+test("int enum", async () => {
+  await expectMutation(
+    {
+      schema: schema,
+      mutation: "userCreate",
+      args: {
+        firstName: "Jon",
+        lastName: "Snow",
+        emailAddress: randomEmail(),
+        phoneNumber: randomPhoneNumber(),
+        password: "pa$$w0rd",
+        intEnum: "VERIFIED",
+      },
+    },
+    ["user.intEnum", "VERIFIED"],
+    [
+      "user.id",
+      async function (id: string) {
+        const decoded = mustDecodeIDFromGQLID(id);
+        const user = await User.loadX(new ExampleViewer(decoded), decoded);
+        expect(user.intEnum).toEqual(UserIntEnum.VERIFIED);
       },
     ],
   );

@@ -31,6 +31,18 @@ const LangSameKVType = new GraphQLEnumType({
   },
 });
 
+const LangIntType = new GraphQLEnumType({
+  name: "langInt",
+  values: {
+    C_PLUS_PLUS: {
+      value: 0,
+    },
+    C_SHARP: {
+      value: 1,
+    },
+  },
+});
+
 const schema = new GraphQLSchema({
   query: new GraphQLObjectType({
     name: "Query",
@@ -54,6 +66,18 @@ const schema = new GraphQLSchema({
           },
         },
         resolve: (src, args) => {
+          return `${args.lang} world`;
+        },
+      },
+      hello3: {
+        type: GraphQLString,
+        args: {
+          lang: {
+            type: new GraphQLNonNull(LangIntType),
+          },
+        },
+        resolve: (src, args) => {
+          expect(typeof args.lang).toBe("number");
           return `${args.lang} world`;
         },
       },
@@ -112,6 +136,24 @@ test("same key and value", async () => {
       ".",
       function (r) {
         expect(r).toBe("C_SHARP world");
+      },
+    ],
+  );
+});
+
+test("string key and int value", async () => {
+  await expectQueryFromRoot(
+    {
+      schema,
+      args: {
+        lang: "C_SHARP",
+      },
+      root: "hello3",
+    },
+    [
+      ".",
+      function (r) {
+        expect(r).toBe("1 world");
       },
     ],
   );

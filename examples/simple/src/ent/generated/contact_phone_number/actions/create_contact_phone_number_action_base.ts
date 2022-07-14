@@ -106,7 +106,7 @@ export class CreateContactPhoneNumberActionBase
     );
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<ContactPhoneNumber> {
+  getPrivacyPolicy(): PrivacyPolicy<ContactPhoneNumber, ExampleViewerAlias> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

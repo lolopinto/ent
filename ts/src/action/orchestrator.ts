@@ -931,7 +931,7 @@ export class Orchestrator<
     if (!action || !action.viewerForEntLoad) {
       return this.options.viewer;
     }
-    return action.viewerForEntLoad(data);
+    return action.viewerForEntLoad(data, action.builder.viewer.context);
   }
 
   async returnedRow(): Promise<Data | null> {

@@ -13,7 +13,10 @@ import {
 } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 import { UserNestedNestedObjectList, UserNestedObjectList } from "../../../ent";
-import { EnumUsedInListType } from "../../resolvers/internal";
+import {
+  EnumUsedInListType,
+  IntEnumUsedInListType,
+} from "../../resolvers/internal";
 
 const UserNestedNestedObjectListType = new GraphQLObjectType({
   name: "UserNestedNestedObjectList",
@@ -39,6 +42,11 @@ export const UserNestedObjectListType = new GraphQLObjectType({
     objects: {
       type: new GraphQLNonNull(
         new GraphQLList(new GraphQLNonNull(UserNestedNestedObjectListType)),
+      ),
+    },
+    enumList: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(IntEnumUsedInListType)),
       ),
     },
   }),

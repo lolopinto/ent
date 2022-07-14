@@ -65,7 +65,7 @@ const getNonGroupableLoader = (id: ID, context: boolean = true) => {
 
 describe("postgres", () => {
   beforeAll(async () => {
-    setLogLevels(["query", "error"]);
+    setLogLevels(["query", "error", "cache"]);
     ml.mock();
 
     tdb = await setupTempDB();
@@ -91,7 +91,7 @@ describe("sqlite", () => {
   setupSqlite(`sqlite:///query_loader.db`, tempDBTables);
 
   beforeAll(async () => {
-    setLogLevels(["query", "error"]);
+    setLogLevels(["query", "error", "cache"]);
     ml.mock();
   });
 
