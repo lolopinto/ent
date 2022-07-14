@@ -18,6 +18,7 @@ import {
   Event,
   User,
   UserDaysOff,
+  UserIntEnum,
   UserPreferredShift,
 } from "../../..";
 import { EdgeType, NodeType } from "../../const";
@@ -52,6 +53,7 @@ export interface UserInput {
   newCol2?: string | null;
   superNestedObject?: UserSuperNestedObject | null;
   nestedList?: UserNestedObjectList[] | null;
+  intEnum?: UserIntEnum | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -603,6 +605,7 @@ export class UserBuilder<
     addField("new_col2", fields.newCol2);
     addField("superNestedObject", fields.superNestedObject);
     addField("nestedList", fields.nestedList);
+    addField("int_enum", fields.intEnum);
     return result;
   }
 
@@ -781,5 +784,14 @@ export class UserBuilder<
     }
 
     return this.existingEnt?.nestedList ?? null;
+  }
+
+  // get value of int_enum. Retrieves it from the input if specified or takes it from existingEnt
+  getNewIntEnumValue(): UserIntEnum | null {
+    if (this.input.intEnum !== undefined) {
+      return this.input.intEnum;
+    }
+
+    return this.existingEnt?.intEnum ?? null;
   }
 }

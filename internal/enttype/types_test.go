@@ -1066,11 +1066,11 @@ func TestMapType(t *testing.T) {
 	)
 }
 
-func TestEnumType(t *testing.T) {
+func TestStringEnumType(t *testing.T) {
 	testTypeDirectly(t,
 		map[string]*typeTestCase{
 			"nullable": {
-				&enttype.NullableEnumType{
+				&enttype.NullableStringEnumType{
 					Type:        "AccountStatus",
 					GraphQLType: "AccountStatus",
 					Values: []string{
@@ -1092,7 +1092,7 @@ func TestEnumType(t *testing.T) {
 						tsimport.NewLocalEntImportPath("AccountStatus"),
 					},
 					goTypePanics: true,
-					nonNullableType: &enttype.EnumType{
+					nonNullableType: &enttype.StringEnumType{
 						Type:        "AccountStatus",
 						GraphQLType: "AccountStatus",
 						Values: []string{
@@ -1106,7 +1106,7 @@ func TestEnumType(t *testing.T) {
 				nil,
 			},
 			"not nullable": {
-				&enttype.EnumType{
+				&enttype.StringEnumType{
 					Type:        "AccountStatus",
 					GraphQLType: "AccountStatus",
 					Values: []string{
@@ -1129,7 +1129,7 @@ func TestEnumType(t *testing.T) {
 						tsimport.NewLocalEntImportPath("AccountStatus"),
 					},
 					goTypePanics: true,
-					nullableType: &enttype.NullableEnumType{
+					nullableType: &enttype.NullableStringEnumType{
 						Type:        "AccountStatus",
 						GraphQLType: "AccountStatus",
 						Values: []string{
@@ -1143,7 +1143,7 @@ func TestEnumType(t *testing.T) {
 				nil,
 			},
 			"not nullable db enum": {
-				&enttype.EnumType{
+				&enttype.StringEnumType{
 					Type:        "AccountStatus",
 					GraphQLType: "AccountStatus",
 					Values: []string{
@@ -1173,7 +1173,7 @@ func TestEnumType(t *testing.T) {
 						tsimport.NewLocalEntImportPath("AccountStatus"),
 					},
 					goTypePanics: true,
-					nullableType: &enttype.NullableEnumType{
+					nullableType: &enttype.NullableStringEnumType{
 						Type:        "AccountStatus",
 						GraphQLType: "AccountStatus",
 						Values: []string{
@@ -1187,7 +1187,7 @@ func TestEnumType(t *testing.T) {
 				nil,
 			},
 			"nullable db enum": {
-				&enttype.NullableEnumType{
+				&enttype.NullableStringEnumType{
 					Type:        "AccountStatus",
 					GraphQLType: "AccountStatus",
 					Values: []string{
@@ -1216,7 +1216,7 @@ func TestEnumType(t *testing.T) {
 						tsimport.NewLocalEntImportPath("AccountStatus"),
 					},
 					goTypePanics: true,
-					nonNullableType: &enttype.EnumType{
+					nonNullableType: &enttype.StringEnumType{
 						Type:        "AccountStatus",
 						GraphQLType: "AccountStatus",
 						Values: []string{
@@ -1224,6 +1224,167 @@ func TestEnumType(t *testing.T) {
 							"VERIFIED",
 							"DEACTIVATED",
 							"DISABLED",
+						},
+					},
+				},
+				nil,
+			},
+		},
+	)
+}
+
+func TestIntEnumType(t *testing.T) {
+	testTypeDirectly(t,
+		map[string]*typeTestCase{
+			"nullable": {
+				&enttype.NullableIntegerEnumType{
+					Type:        "AccountStatus",
+					GraphQLType: "AccountStatus",
+					EnumMap: map[string]int{
+						"UNVERIFIED":  0,
+						"VERIFIED":    1,
+						"DEACTIVATED": 2,
+						"DISABLED":    3,
+					},
+				},
+				expType{
+					db:      "sa.Integer()",
+					graphql: "AccountStatus",
+					graphqlImports: []*tsimport.ImportPath{
+						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
+					},
+					enumType: true,
+					tsType:   "AccountStatus | null",
+					tsTypeImports: []*tsimport.ImportPath{
+						tsimport.NewLocalEntImportPath("AccountStatus"),
+					},
+					goTypePanics: true,
+					nonNullableType: &enttype.IntegerEnumType{
+						Type:        "AccountStatus",
+						GraphQLType: "AccountStatus",
+						EnumMap: map[string]int{
+							"UNVERIFIED":  0,
+							"VERIFIED":    1,
+							"DEACTIVATED": 2,
+							"DISABLED":    3,
+						},
+					},
+				},
+				nil,
+			},
+			"not nullable": {
+				&enttype.IntegerEnumType{
+					Type:        "AccountStatus",
+					GraphQLType: "AccountStatus",
+					EnumMap: map[string]int{
+						"UNVERIFIED":  0,
+						"VERIFIED":    1,
+						"DEACTIVATED": 2,
+						"DISABLED":    3,
+					},
+				},
+				expType{
+					db:      "sa.Integer()",
+					graphql: "AccountStatus!",
+					graphqlImports: []*tsimport.ImportPath{
+						tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
+					},
+					tsType:   "AccountStatus",
+					enumType: true,
+					tsTypeImports: []*tsimport.ImportPath{
+						tsimport.NewLocalEntImportPath("AccountStatus"),
+					},
+					goTypePanics: true,
+					nullableType: &enttype.NullableIntegerEnumType{
+						Type:        "AccountStatus",
+						GraphQLType: "AccountStatus",
+						EnumMap: map[string]int{
+							"UNVERIFIED":  0,
+							"VERIFIED":    1,
+							"DEACTIVATED": 2,
+							"DISABLED":    3,
+						},
+					},
+				},
+				nil,
+			},
+			"nullable w deprecated": {
+				&enttype.NullableIntegerEnumType{
+					Type:        "AccountStatus",
+					GraphQLType: "AccountStatus",
+					EnumMap: map[string]int{
+						"VERIFIED":    1,
+						"DEACTIVATED": 2,
+						"DISABLED":    3,
+					},
+					DeprecatedEnumMap: map[string]int{
+						"UNVERIFIED": 0,
+					},
+				},
+				expType{
+					db:      "sa.Integer()",
+					graphql: "AccountStatus",
+					graphqlImports: []*tsimport.ImportPath{
+						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
+					},
+					enumType: true,
+					tsType:   "AccountStatus | null",
+					tsTypeImports: []*tsimport.ImportPath{
+						tsimport.NewLocalEntImportPath("AccountStatus"),
+					},
+					goTypePanics: true,
+					nonNullableType: &enttype.IntegerEnumType{
+						Type:        "AccountStatus",
+						GraphQLType: "AccountStatus",
+						EnumMap: map[string]int{
+							"VERIFIED":    1,
+							"DEACTIVATED": 2,
+							"DISABLED":    3,
+						},
+						DeprecatedEnumMap: map[string]int{
+							"UNVERIFIED": 0,
+						},
+					},
+				},
+				nil,
+			},
+			"not nullable w depreated": {
+				&enttype.IntegerEnumType{
+					Type:        "AccountStatus",
+					GraphQLType: "AccountStatus",
+					EnumMap: map[string]int{
+						"VERIFIED":    1,
+						"DEACTIVATED": 2,
+						"DISABLED":    3,
+					},
+					DeprecatedEnumMap: map[string]int{
+						"UNVERIFIED": 0,
+					},
+				},
+				expType{
+					db:      "sa.Integer()",
+					graphql: "AccountStatus!",
+					graphqlImports: []*tsimport.ImportPath{
+						tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+						tsimport.NewLocalGraphQLEntImportPath("AccountStatus"),
+					},
+					tsType:   "AccountStatus",
+					enumType: true,
+					tsTypeImports: []*tsimport.ImportPath{
+						tsimport.NewLocalEntImportPath("AccountStatus"),
+					},
+					goTypePanics: true,
+					nullableType: &enttype.NullableIntegerEnumType{
+						Type:        "AccountStatus",
+						GraphQLType: "AccountStatus",
+						EnumMap: map[string]int{
+							"VERIFIED":    1,
+							"DEACTIVATED": 2,
+							"DISABLED":    3,
+						},
+						DeprecatedEnumMap: map[string]int{
+							"UNVERIFIED": 0,
 						},
 					},
 				},

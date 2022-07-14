@@ -13,9 +13,10 @@ import (
 )
 
 type Enum struct {
-	Name     string
-	Values   []Data
-	Imported bool // Imported enum that's not in this file
+	Name             string
+	Values           []Data
+	DeprecatedValues []Data
+	Imported         bool // Imported enum that's not in this file
 }
 
 func (c *Enum) Clone() *Enum {
@@ -108,8 +109,8 @@ func CompareEnums(l1, l2 []*Enum) ([]change.Change, error) {
 	return ret, nil
 }
 
-func (c *Enum) GetEnumValues() []string {
-	ret := make([]string, len(c.Values))
+func (c *Enum) GetEnumValues() []interface{} {
+	ret := make([]interface{}, len(c.Values))
 	for i, v := range c.Values {
 		ret[i] = v.Value
 	}
@@ -117,9 +118,10 @@ func (c *Enum) GetEnumValues() []string {
 }
 
 type GQLEnum struct {
-	Name   string // Name is the name of the enum
-	Type   string // type of the enum e.g. nullable or not
-	Values []Data
+	Name             string // Name is the name of the enum
+	Type             string // type of the enum e.g. nullable or not
+	Values           []Data
+	DeprecatedValues []Data
 }
 
 func (g GQLEnum) GetGraphQLNames() []string {
@@ -155,7 +157,7 @@ func GQLEnumsEqual(l1, l2 []*GQLEnum) bool {
 
 type Data struct {
 	Name        string
-	Value       string
+	Value       interface{}
 	Comment     string
 	PackagePath string
 }
@@ -199,15 +201,17 @@ func GetTSEnumNameForVal(val string) string {
 }
 
 type Input struct {
-	TSName  string
-	GQLName string
-	GQLType string
-	Values  []string
-	EnumMap map[string]string
+	TSName               string
+	GQLName              string
+	GQLType              string
+	Values               []string
+	EnumMap              map[string]string
+	IntEnumMap           map[string]int
+	DeprecatedIntEnumMap map[string]int
 }
 
 func (i *Input) HasValues() bool {
-	return len(i.Values) > 0 || len(i.EnumMap) > 0
+	return len(i.Values) > 0 || len(i.EnumMap) > 0 || len(i.IntEnumMap) > 0
 }
 
 func (i *Input) getValuesFromValues() ([]Data, []Data) {
@@ -251,7 +255,7 @@ func (i *Input) getValuesFromEnumMap() ([]Data, []Data) {
 		}
 		j++
 	}
-	// golang maps are not stabe so sort for stability
+	// golang maps are not stable so sort for stability
 	sort.Slice(tsVals, func(i, j int) bool {
 		return tsVals[i].Name < tsVals[j].Name
 	})
@@ -261,35 +265,75 @@ func (i *Input) getValuesFromEnumMap() ([]Data, []Data) {
 	return tsVals, gqlVals
 }
 
+func (i *Input) getValuesFromIntEnumMap(m map[string]int) ([]Data, []Data) {
+	tsVals := make([]Data, len(m))
+	gqlVals := make([]Data, len(m))
+	j := 0
+
+	for k, val := range m {
+		tsName := GetTSEnumNameForVal(k)
+
+		gqlVals[j] = Data{
+			// norm for graphql enums is all caps
+			Name:  strings.ToUpper(strcase.ToSnake(k)),
+			Value: val,
+		}
+
+		tsVals[j] = Data{
+			Name:  tsName,
+			Value: val,
+		}
+		j++
+	}
+	// golang maps are not stable so sort for stability
+	sort.Slice(tsVals, func(i, j int) bool {
+		return tsVals[i].Value.(int) < tsVals[j].Value.(int)
+	})
+	sort.Slice(gqlVals, func(i, j int) bool {
+		return gqlVals[i].Value.(int) < gqlVals[j].Value.(int)
+	})
+	return tsVals, gqlVals
+}
+
 func NewInputFromEnumType(enumType enttype.EnumeratedType) *Input {
+	data := enumType.GetEnumData()
 	return &Input{
-		TSName:  enumType.GetTSName(),
-		GQLName: enumType.GetGraphQLName(),
-		GQLType: enumType.GetTSType(),
-		Values:  enumType.GetEnumValues(),
-		EnumMap: enumType.GetEnumMap(),
+		TSName:               enumType.GetTSName(),
+		GQLName:              enumType.GetGraphQLName(),
+		GQLType:              enumType.GetTSType(),
+		Values:               data.Values,
+		EnumMap:              data.EnumMap,
+		IntEnumMap:           data.IntEnumMap,
+		DeprecatedIntEnumMap: data.DeprecatedIntEnumMap,
 	}
 }
 
 func GetEnums(input *Input) (*Enum, *GQLEnum) {
 	var tsVals []Data
 	var gqlVals []Data
+	var deprecatedTSVals []Data
+	var deprecatedgqlVals []Data
 	if len(input.EnumMap) > 0 {
 		tsVals, gqlVals = input.getValuesFromEnumMap()
+	} else if len(input.IntEnumMap) > 0 {
+		tsVals, gqlVals = input.getValuesFromIntEnumMap(input.IntEnumMap)
+		deprecatedTSVals, deprecatedgqlVals = input.getValuesFromIntEnumMap(input.DeprecatedIntEnumMap)
 	} else {
 		tsVals, gqlVals = input.getValuesFromValues()
 	}
 	gqlEnum := &GQLEnum{
-		Name:   input.GQLName,
-		Type:   input.GQLType,
-		Values: gqlVals,
+		Name:             input.GQLName,
+		Type:             input.GQLType,
+		Values:           gqlVals,
+		DeprecatedValues: deprecatedgqlVals,
 	}
 
 	tsEnum := &Enum{
 		Name:   input.TSName,
 		Values: tsVals,
 		// not the best way to determine this but works for now
-		Imported: len(tsVals) == 0,
+		Imported:         len(tsVals) == 0,
+		DeprecatedValues: deprecatedTSVals,
 	}
 	return tsEnum, gqlEnum
 }

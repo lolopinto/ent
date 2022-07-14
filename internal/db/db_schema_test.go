@@ -646,6 +646,91 @@ func TestNullableEnumType(t *testing.T) {
 	})
 }
 
+func TestIntEnum(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"Request": {
+					Fields: []*input.Field{
+						{
+							Name:       "id",
+							PrimaryKey: true,
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+						},
+						{
+							Name: "Status",
+							Type: &input.FieldType{
+								DBType: input.IntEnum,
+								IntEnumMap: map[string]int{
+									"OPEN":    1,
+									"PENDING": 2,
+									"CLOSED":  3,
+								},
+								Type:        "RequestStatus",
+								GraphQLType: "RequestStatus",
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	col := getTestColumnFromSchema(t, dbSchema, "requests", "status")
+
+	testColumn(t, col, "status", "Status", "status", []string{
+		strconv.Quote("status"),
+		"sa.Integer()",
+		"nullable=False",
+	})
+}
+
+func TestNullableIntEnum(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"Request": {
+					Fields: []*input.Field{
+						{
+							Name:       "id",
+							PrimaryKey: true,
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+						},
+						{
+							Name:     "Status",
+							Nullable: true,
+							Type: &input.FieldType{
+								DBType:      input.IntEnum,
+								Type:        "Status",
+								GraphQLType: "Status",
+								IntEnumMap: map[string]int{
+									"OPEN":    1,
+									"PENDING": 2,
+									"CLOSED":  3,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	col := getTestColumnFromSchema(t, dbSchema, "requests", "status")
+
+	testColumn(t, col, "status", "Status", "status", []string{
+		strconv.Quote("status"),
+		"sa.Integer()",
+		"nullable=True",
+	})
+}
+
 func TestEnumTableInSchema(t *testing.T) {
 	dbSchema := getSchemaFromInput(
 		t,

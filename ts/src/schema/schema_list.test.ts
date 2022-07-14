@@ -11,7 +11,6 @@ import {
   TimeType,
   TimestamptzListType,
   UUIDType,
-  StringField,
 } from "./field";
 import { JSONBListType, JSONListType } from "./json_field";
 import Schema from "./schema";

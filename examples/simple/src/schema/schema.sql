@@ -226,6 +226,7 @@ CREATE TABLE users (
     new_col_2 TEXT, 
     super_nested_object JSONB, 
     nested_list JSONB[], 
+    int_enum INTEGER, 
     name_idx TSVECTOR GENERATED ALWAYS AS (to_tsvector('simple', coalesce(first_name, '') || ' ' || coalesce(last_name, ''))) STORED, 
     CONSTRAINT users_id_pkey PRIMARY KEY (id), 
     CONSTRAINT users_unique_email_address UNIQUE (email_address), 

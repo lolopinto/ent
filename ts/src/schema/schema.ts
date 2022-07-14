@@ -245,6 +245,7 @@ export enum DBType {
   JSONB = "JSONB", // JSONB type in the database Postgres
   Enum = "Enum", // enum type in the database
   StringEnum = "StringEnum", // string type in the database
+  IntEnum = "IntEnum", // int type in the database
 
   Date = "Date",
   Time = "Time",
@@ -264,6 +265,10 @@ declare type EnumMap = {
   [key: string]: string;
 };
 
+declare type IntEnumMap = {
+  [key: string]: number;
+};
+
 // represents the type of each field
 export interface Type {
   dbType: DBType; // type in the db
@@ -277,6 +282,8 @@ export interface Type {
   values?: string[]; // values e.g. enum values
   // TODO need to refactor this into type specific objects instead of killing the top level field like this.
   enumMap?: EnumMap; // enumMap e.g. k->v pair for enums
+  intEnumMap?: IntEnumMap;
+  deprecatedIntEnumMap?: IntEnumMap;
 
   // @deprecated eventually kill this
   importType?: ImportType;

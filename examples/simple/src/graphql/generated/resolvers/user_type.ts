@@ -35,6 +35,7 @@ import {
 import {
   ContactType,
   UserDaysOffType,
+  UserIntEnumType,
   UserNestedObjectListType,
   UserPreferredShiftType,
   UserPrefsDiffType,
@@ -126,6 +127,9 @@ export const UserType = new GraphQLObjectType({
     },
     nestedList: {
       type: new GraphQLList(new GraphQLNonNull(UserNestedObjectListType)),
+    },
+    intEnum: {
+      type: UserIntEnumType,
     },
     selfContact: {
       type: ContactType,

@@ -422,7 +422,7 @@ func processEdgeGroupActions(cfg codegenapi.Config, nodeName string, assocGroup 
 				field.NewNonEntField(
 					cfg,
 					assocGroup.TSGroupStatusName,
-					&enttype.EnumType{
+					&enttype.StringEnumType{
 						Values:      values,
 						Type:        typ,
 						GraphQLType: typ,

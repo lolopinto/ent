@@ -6,6 +6,8 @@ import {
   UserDaysOff,
   UserPreferredShift,
   ArticleToCommentsQuery,
+  IntEnumUsedInList,
+  UserIntEnum,
 } from "..";
 
 import { v1 as uuidv1, v4 as uuidv4, validate } from "uuid";
@@ -1174,11 +1176,13 @@ describe("super nested complex", () => {
             int: 3,
           },
         ],
+        enumList: [IntEnumUsedInList.No],
       },
       {
         type: "bar",
         enum: EnumUsedInList.No,
         objects: [],
+        enumList: [IntEnumUsedInList.Maybe],
       },
     ];
     const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {
@@ -1205,6 +1209,18 @@ test("enum list", async () => {
   }).saveX();
   expect(user.daysOff).toEqual([UserDaysOff.Saturday, UserDaysOff.Sunday]);
   expect(user.preferredShift).toEqual([UserPreferredShift.Afternoon]);
+});
+
+test("int enum", async () => {
+  const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {
+    firstName: "Jane",
+    lastName: "Doe",
+    emailAddress: randomEmail(),
+    phoneNumber: randomPhoneNumber(),
+    password: random(),
+    intEnum: UserIntEnum.DEACTIVATED,
+  }).saveX();
+  expect(user.intEnum).toEqual(UserIntEnum.DEACTIVATED);
 });
 
 test("misc", async () => {

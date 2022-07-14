@@ -9,6 +9,7 @@ import (
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/customtype"
+	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -92,7 +93,7 @@ func TestWithSubFields(t *testing.T) {
 
 	enum := ci.GetTSEnums()[0]
 	require.Equal(t, enum.Name, "NotifType")
-	require.Equal(t, enum.GetEnumValues(), quoteAll([]string{"MOBILE", "WEB", "EMAIL"}))
+	validateEnumValuesEqual(t, enum, []string{"MOBILE", "WEB", "EMAIL"})
 }
 
 func TestWithNestedSubFields(t *testing.T) {
@@ -244,11 +245,11 @@ func TestWithNestedSubFields(t *testing.T) {
 
 	enum := ci.GetTSEnums()[0]
 	require.Equal(t, enum.Name, "NotifType")
-	require.Equal(t, enum.GetEnumValues(), quoteAll([]string{"MOBILE", "WEB", "EMAIL"}))
+	validateEnumValuesEqual(t, enum, []string{"MOBILE", "WEB", "EMAIL"})
 
 	enum2 := ci.GetTSEnums()[1]
 	require.Equal(t, enum2.Name, "NotifType2")
-	require.Equal(t, enum2.GetEnumValues(), quoteAll([]string{"MOBILE", "WEB", "EMAIL"}))
+	validateEnumValuesEqual(t, enum2, []string{"MOBILE", "WEB", "EMAIL"})
 }
 
 func TestWithUnionFields(t *testing.T) {
@@ -426,17 +427,19 @@ func TestWithUnionFields(t *testing.T) {
 
 	enum := ci.GetAllEnums()[0]
 	require.Equal(t, enum.Name, "NotifType")
-	require.Equal(t, enum.GetEnumValues(), quoteAll([]string{"MOBILE", "WEB", "EMAIL"}))
+	validateEnumValuesEqual(t, enum, []string{"MOBILE", "WEB", "EMAIL"})
 
 	enum2 := ci.GetAllEnums()[1]
 	require.Equal(t, enum2.Name, "NotifType2")
-	require.Equal(t, enum2.GetEnumValues(), quoteAll([]string{"MOBILE", "WEB", "EMAIL"}))
+	validateEnumValuesEqual(t, enum2, []string{"MOBILE", "WEB", "EMAIL"})
 }
 
-func quoteAll(l []string) []string {
-	ret := make([]string, len(l))
-	for i, v := range l {
-		ret[i] = strconv.Quote(v)
+func validateEnumValuesEqual(t *testing.T, enum *enum.Enum, values []string) {
+	enumValues := enum.GetEnumValues()
+	require.Equal(t, len(values), len(enumValues))
+
+	for i, enumV := range enumValues {
+		v := values[i]
+		require.Equal(t, enumV.(string), strconv.Quote(v))
 	}
-	return ret
 }
