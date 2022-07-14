@@ -952,6 +952,7 @@ type UserEditPayload {
 
 type Query {
   node(id: ID!): Node
+  timeDiff(time: Time!): String!
   viewer: Viewer!
 }
 
