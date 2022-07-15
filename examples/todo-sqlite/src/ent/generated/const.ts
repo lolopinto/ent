@@ -11,7 +11,7 @@ export enum NodeType {
 
 export enum EdgeType {
   // TagToTodos is the edgeType for the tag to todos edge.
-  TagToTodos = "79af8e13-22a1-4462-97e9-56832c053aaf",
+  TagToTodos = "33dd169d-a290-4d3f-8b09-b74628bec247",
   // TodoToTags is the edgeType for the todo to tags edge.
-  TodoToTags = "7197f874-e259-45d1-9c1a-b0967c964507",
+  TodoToTags = "546160e1-224a-42ef-92c7-46089ab5e06e",
 }

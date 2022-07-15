@@ -12,6 +12,18 @@
       ],
       "resultType": "GQLViewer",
       "fieldType": "FUNCTION"
+    },
+    {
+      "class": "ViewerResolver",
+      "name": "timeDiff",
+      "args":[
+        {
+          "name": "time",
+          "type": "Date"
+        }
+      ],
+      "resultType": "String",
+      "fieldType": "FUNCTION"
     }
   ],
   "mutations":[

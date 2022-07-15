@@ -520,10 +520,13 @@ export function DateType(options?: FieldOptions): DateField {
   return Object.assign(result, options);
 }
 
-declare type EnumMap = {
+declare type StringEnumMap = {
   [key: string]: string;
 };
 
+/**
+ * @deprecated use StringEnumOptions
+ */
 export interface EnumOptions extends FieldOptions {
   // required when not a reference to a lookup table
   // when using a lookup table enum, we should use all caps because we don't have the values to translate back
@@ -531,7 +534,7 @@ export interface EnumOptions extends FieldOptions {
   // used when we're migrating from old -> new values and want to reuse the values but the values may not be the best keys so this is preferred
   // instead of values.
   // GRAPHQL will take the key and use it as the value here instead o
-  map?: EnumMap;
+  map?: StringEnumMap;
 
   // by default the type is the name as the field
   // it's recommended to scope the enum names in scenarios where it makes sense
@@ -541,12 +544,17 @@ export interface EnumOptions extends FieldOptions {
   createEnumType?: boolean;
 }
 
+export interface StringEnumOptions extends EnumOptions {}
+
+/**
+ * @deprecated Use StringEnumField
+ */
 export class EnumField extends BaseField implements Field {
   type: Type;
   private values?: string[];
-  private map?: EnumMap;
+  private map?: StringEnumMap;
 
-  constructor(options: EnumOptions) {
+  constructor(options: StringEnumOptions) {
     super();
     this.type = {
       // if createEnumType boolean, we create postgres enum otherwise we use a string for it
@@ -660,8 +668,77 @@ export class EnumField extends BaseField implements Field {
   }
 }
 
-export function EnumType(options: EnumOptions): EnumField {
-  let result = new EnumField(options);
+export class StringEnumField extends EnumField {}
+
+export function EnumType(options: StringEnumOptions): EnumField {
+  let result = new StringEnumField(options);
+  return Object.assign(result, options);
+}
+
+declare type IntEnumMap = {
+  [key: string]: number;
+};
+
+export interface IntegerEnumOptions extends FieldOptions {
+  // used when we're migrating from old -> new values and want to reuse the values but the values may not be the best keys so this is preferred
+  // instead of values.
+  // GRAPHQL will take the key and use it as the value here instead o
+  map: IntEnumMap;
+  deprecated?: IntEnumMap;
+
+  // by default the type is the name as the field
+  // it's recommended to scope the enum names in scenarios where it makes sense
+  tsType?: string;
+  graphQLType?: string;
+}
+
+export class IntegerEnumField extends BaseField implements Field {
+  type: Type;
+  private map: IntEnumMap;
+
+  constructor(options: IntegerEnumOptions) {
+    super();
+    this.type = {
+      dbType: DBType.IntEnum,
+      intEnumMap: options.map,
+      type: options.tsType,
+      graphQLType: options.graphQLType,
+      deprecatedIntEnumMap: options.deprecated,
+    };
+
+    let count = 0;
+    for (const k in options.map) {
+      count++;
+      break;
+    }
+    if (!count) {
+      throw new Error("need at least one entry in enum map");
+    }
+    if (options.foreignKey) {
+      throw new Error(`foreignKey on intEnum not supported`);
+    }
+    this.map = options.map;
+  }
+
+  valid(val: any): boolean {
+    // lookup table enum and indicated via presence of foreignKey
+
+    for (const k in this.map) {
+      const v = this.map[k];
+      if (v === val || v === parseInt(val)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  format(val: any): any {
+    return parseInt(val);
+  }
+}
+
+export function IntegerEnumType(options: IntegerEnumOptions): IntegerEnumField {
+  let result = new IntegerEnumField(options);
   return Object.assign(result, options);
 }
 
@@ -835,7 +912,7 @@ export function DateListType(options?: FieldOptions) {
   return new ListField(DateType(options), options);
 }
 
-export function EnumListType(options: EnumOptions) {
+export function EnumListType(options: StringEnumOptions) {
   if (options.createEnumType) {
     throw new Error(`createEnumType is currently unsupported in enum list`);
   }
@@ -848,6 +925,14 @@ export function EnumListType(options: EnumOptions) {
   // developer can try to work around it by calling below on their own.
   // unclear what the behavior is
   return new ListField(EnumType(options), options);
+}
+
+export function IntegerEnumListType(options: IntegerEnumOptions) {
+  // not all of these will make sense in a list...
+  // can make it work eventually but involves work we're not currently trying to do
+  // developer can try to work around it by calling below on their own.
+  // unclear what the behavior is
+  return new ListField(IntegerEnumType(options), options);
 }
 
 export function UUIDListType(options?: FieldOptions) {

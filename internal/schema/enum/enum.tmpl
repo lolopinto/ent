@@ -6,4 +6,10 @@ export enum {{.Name}} {
     {{ end -}}
     {{.Name}} = {{.Value}},
   {{ end -}}
+  {{ range $data := .DeprecatedValues -}}
+    {{ if .Comment -}}
+      // {{.Comment}}
+    {{ end -}}
+    // @deprecated {{.Name}} = {{.Value}},
+  {{ end -}}
 }

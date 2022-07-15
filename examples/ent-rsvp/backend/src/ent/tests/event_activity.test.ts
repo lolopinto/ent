@@ -11,7 +11,7 @@ import EventActivityAddInviteAction from "../event_activity/actions/event_activi
 import EventActivityRemoveInviteAction from "../event_activity/actions/event_activity_remove_invite_action";
 import { Guest } from "../guest";
 import EditEventActivityRsvpStatusAction from "../event_activity/actions/edit_event_activity_rsvp_status_action";
-import { EventActivityRsvpStatusInput } from "../event_activity/actions/generated/edit_event_activity_rsvp_status_action_base";
+import { EventActivityRsvpStatusInput } from "../generated/event_activity/actions/edit_event_activity_rsvp_status_action_base";
 import { EventActivityRsvpStatus } from "../generated/event_activity_base";
 
 import {

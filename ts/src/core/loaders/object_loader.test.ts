@@ -2,7 +2,11 @@ import { ObjectLoader, ObjectLoaderFactory } from "./object_loader";
 import { Pool } from "pg";
 import { QueryRecorder } from "../../testutils/db_mock";
 
-import { createRowForTest } from "../../testutils/write";
+import {
+  createRowForTest,
+  deleteRowsForTest,
+  editRowForTest,
+} from "../../testutils/write";
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
@@ -36,38 +40,52 @@ QueryRecorder.mockPool(Pool);
 
 const ml = new MockLogs();
 
-const getNewLoader = (context: boolean = true) => {
-  return new ObjectLoader(
-    {
-      tableName: "users",
-      fields: ["id", "first_name"],
-      key: "id",
-    },
-    context ? new TestContext() : undefined,
+const getNewLoader = (context: boolean | TestContext = true) => {
+  return new ObjectLoaderFactory({
+    tableName: "users",
+    fields: ["id", "first_name"],
+    key: "id",
+  }).createLoader(
+    context
+      ? typeof context === "boolean"
+        ? new TestContext()
+        : context
+      : undefined,
   );
 };
 
-const getNewLoaderWithCustomClause = (context: boolean = true) => {
-  return new ObjectLoader(
-    {
-      tableName: "users",
-      fields: ["id", "first_name", "deleted_at"],
-      key: "id",
-      clause: clause.Eq("deleted_at", null),
-    },
-    context ? new TestContext() : undefined,
+const getNewLoaderWithCustomClause = (
+  context: boolean | TestContext = true,
+) => {
+  return new ObjectLoaderFactory({
+    tableName: "users",
+    fields: ["id", "first_name", "deleted_at"],
+    key: "id",
+    clause: clause.Eq("deleted_at", null),
+  }).createLoader(
+    context
+      ? typeof context === "boolean"
+        ? new TestContext()
+        : context
+      : undefined,
   );
 };
 
-const getNewLoaderWithCustomClauseFunc = (context: boolean = true) => {
-  return new ObjectLoader(
-    {
-      tableName: "users",
-      fields: ["id", "first_name", "deleted_at"],
-      key: "id",
-      clause: () => clause.Eq("deleted_at", null),
-    },
-    context ? new TestContext() : undefined,
+const getNewLoaderWithCustomClauseFunc = (
+  context: boolean | TestContext = true,
+) => {
+  return new ObjectLoaderFactory({
+    tableName: "users",
+    fields: ["id", "first_name", "deleted_at"],
+    key: "id",
+    clause: () => clause.Eq("deleted_at", null),
+    instanceKey: "users:transformedReadClause",
+  }).createLoader(
+    context
+      ? typeof context === "boolean"
+        ? new TestContext()
+        : context
+      : undefined,
   );
 };
 
@@ -127,7 +145,7 @@ async function createWithDeletedAt(id?: ID) {
 
 describe("postgres", () => {
   beforeAll(async () => {
-    setLogLevels("query");
+    setLogLevels(["query", "cache"]);
     ml.mock();
 
     await createEdges();
@@ -160,7 +178,7 @@ describe("sqlite", () => {
   setupSqlite(`sqlite:///object_loader.db`, tables);
 
   beforeAll(async () => {
-    setLogLevels(["query", "error"]);
+    setLogLevels(["query", "error", "cache"]);
     ml.mock();
   });
 
@@ -669,6 +687,55 @@ function commonTests() {
       verifyMultiIDsCustomClauseGroupQueryMiss,
       verifyMultiIDsCustomClauseGroupQueryMiss,
     );
+  });
+
+  test("different loaders with clause, custom clause, custom clause with func. cache hit", async () => {
+    await createWithNullDeletedAt();
+    const ctx = new TestContext();
+    const loader = getNewLoader(ctx);
+
+    const row = await loader.load(1);
+    expect(row).toEqual({
+      id: 1,
+      first_name: "Jon",
+    });
+
+    const customLoader = getNewLoaderWithCustomClause(ctx);
+    const row2 = await customLoader.load(1);
+    expect(row2).toEqual({
+      id: 1,
+      first_name: "Jon",
+      deleted_at: null,
+    });
+
+    const customLoaderFunc = getNewLoaderWithCustomClauseFunc(ctx);
+    const row3 = await customLoaderFunc.load(1);
+    expect(row3).toEqual({
+      id: 1,
+      first_name: "Jon",
+      deleted_at: null,
+    });
+
+    await editRowForTest(
+      {
+        tableName: "users",
+        key: "id",
+        fields: {
+          deleted_at: new Date(),
+        },
+      },
+      1,
+    );
+
+    ctx.cache.clearCache();
+    const rowPostDelete = await loader.load(1);
+    expect(rowPostDelete).toEqual({ id: 1, first_name: "Jon" });
+
+    const row2PostDelete = await customLoader.load(1);
+    expect(row2PostDelete).toBe(null);
+
+    const row3PostDelete = await customLoaderFunc.load(1);
+    expect(row3PostDelete).toBe(null);
   });
 
   // custom clause check?

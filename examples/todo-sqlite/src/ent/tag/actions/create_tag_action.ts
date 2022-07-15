@@ -1,10 +1,9 @@
-import { AlwaysAllowPrivacyPolicy, Ent } from "@snowtop/ent";
-import { Trigger } from "@snowtop/ent/action";
+import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
 import {
   CreateTagActionBase,
   TagCreateInput,
-} from "src/ent/tag/actions/generated/create_tag_action_base";
-import { TagBuilder } from "./generated/tag_builder";
+  CreateTagActionTriggers,
+} from "src/ent/generated/tag/actions/create_tag_action_base";
 
 export { TagCreateInput };
 
@@ -13,13 +12,15 @@ export default class CreateTagAction extends CreateTagActionBase {
     return AlwaysAllowPrivacyPolicy;
   }
 
-  triggers: Trigger<TagBuilder, TagCreateInput>[] = [
-    {
-      async changeset(builder, input) {
-        builder.updateInput({
-          canonicalName: input.displayName,
-        });
+  getTriggers(): CreateTagActionTriggers {
+    return [
+      {
+        async changeset(builder, input) {
+          builder.updateInput({
+            canonicalName: input.displayName,
+          });
+        },
       },
-    },
-  ];
+    ];
+  }
 }

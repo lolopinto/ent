@@ -1,7 +1,7 @@
 import {
   EditAddressActionBase,
   AddressEditInput,
-} from "src/ent/address/actions/generated/edit_address_action_base";
+} from "src/ent/generated/address/actions/edit_address_action_base";
 import { EditAddressPrivacy } from "src/ent/address/actions/privacy/edit_address_privacy";
 export { AddressEditInput };
 

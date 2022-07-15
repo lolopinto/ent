@@ -18,6 +18,7 @@ import {
   Event,
   User,
   UserDaysOff,
+  UserIntEnum,
   UserPreferredShift,
 } from "../../..";
 import { EdgeType, NodeType } from "../../const";
@@ -52,6 +53,7 @@ export interface UserInput {
   newCol2?: string | null;
   superNestedObject?: UserSuperNestedObject | null;
   nestedList?: UserNestedObjectList[] | null;
+  intEnum?: UserIntEnum | null;
   // allow other properties. useful for action-only fields
   [x: string]: any;
 }
@@ -603,6 +605,7 @@ export class UserBuilder<
     addField("new_col2", fields.newCol2);
     addField("superNestedObject", fields.superNestedObject);
     addField("nestedList", fields.nestedList);
+    addField("int_enum", fields.intEnum);
     return result;
   }
 
@@ -613,35 +616,54 @@ export class UserBuilder<
   }
 
   // get value of FirstName. Retrieves it from the input if specified or takes it from existingEnt
-  getNewFirstNameValue(): string | undefined {
+  getNewFirstNameValue(): string {
     if (this.input.firstName !== undefined) {
       return this.input.firstName;
     }
-    return this.existingEnt?.firstName;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `firstName` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.firstName;
   }
 
   // get value of LastName. Retrieves it from the input if specified or takes it from existingEnt
-  getNewLastNameValue(): string | undefined {
+  getNewLastNameValue(): string {
     if (this.input.lastName !== undefined) {
       return this.input.lastName;
     }
-    return this.existingEnt?.lastName;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `lastName` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.lastName;
   }
 
   // get value of EmailAddress. Retrieves it from the input if specified or takes it from existingEnt
-  getNewEmailAddressValue(): string | undefined {
+  getNewEmailAddressValue(): string {
     if (this.input.emailAddress !== undefined) {
       return this.input.emailAddress;
     }
-    return this.existingEnt?.emailAddress;
+
+    if (!this.existingEnt) {
+      throw new Error(
+        "no value to return for `emailAddress` since not in input and no existingEnt",
+      );
+    }
+    return this.existingEnt.emailAddress;
   }
 
   // get value of PhoneNumber. Retrieves it from the input if specified or takes it from existingEnt
-  getNewPhoneNumberValue(): string | null | undefined {
+  getNewPhoneNumberValue(): string | null {
     if (this.input.phoneNumber !== undefined) {
       return this.input.phoneNumber;
     }
-    return this.existingEnt?.phoneNumber;
+
+    return this.existingEnt?.phoneNumber ?? null;
   }
 
   // get value of Password. Retrieves it from the input if specified or takes it from existingEnt
@@ -660,19 +682,21 @@ export class UserBuilder<
   }
 
   // get value of Bio. Retrieves it from the input if specified or takes it from existingEnt
-  getNewBioValue(): string | null | undefined {
+  getNewBioValue(): string | null {
     if (this.input.bio !== undefined) {
       return this.input.bio;
     }
-    return this.existingEnt?.bio;
+
+    return this.existingEnt?.bio ?? null;
   }
 
   // get value of nicknames. Retrieves it from the input if specified or takes it from existingEnt
-  getNewNicknamesValue(): string[] | null | undefined {
+  getNewNicknamesValue(): string[] | null {
     if (this.input.nicknames !== undefined) {
       return this.input.nicknames;
     }
-    return this.existingEnt?.nicknames;
+
+    return this.existingEnt?.nicknames ?? null;
   }
 
   // get value of prefs. Retrieves it from the input if specified or takes it from existingEnt
@@ -691,66 +715,83 @@ export class UserBuilder<
   }
 
   // get value of daysOff. Retrieves it from the input if specified or takes it from existingEnt
-  getNewDaysOffValue(): UserDaysOff[] | null | undefined {
+  getNewDaysOffValue(): UserDaysOff[] | null {
     if (this.input.daysOff !== undefined) {
       return this.input.daysOff;
     }
-    return this.existingEnt?.daysOff;
+
+    return this.existingEnt?.daysOff ?? null;
   }
 
   // get value of preferredShift. Retrieves it from the input if specified or takes it from existingEnt
-  getNewPreferredShiftValue(): UserPreferredShift[] | null | undefined {
+  getNewPreferredShiftValue(): UserPreferredShift[] | null {
     if (this.input.preferredShift !== undefined) {
       return this.input.preferredShift;
     }
-    return this.existingEnt?.preferredShift;
+
+    return this.existingEnt?.preferredShift ?? null;
   }
 
   // get value of timeInMs. Retrieves it from the input if specified or takes it from existingEnt
-  getNewTimeInMsValue(): BigInt | null | undefined {
+  getNewTimeInMsValue(): BigInt | null {
     if (this.input.timeInMs !== undefined) {
       return this.input.timeInMs;
     }
-    return this.existingEnt?.timeInMs;
+
+    return this.existingEnt?.timeInMs ?? null;
   }
 
   // get value of fun_uuids. Retrieves it from the input if specified or takes it from existingEnt
-  getNewFunUuidsValue(): ID[] | null | undefined {
+  getNewFunUuidsValue(): ID[] | null {
     if (this.input.funUuids !== undefined) {
       return this.input.funUuids;
     }
-    return this.existingEnt?.funUuids;
+
+    return this.existingEnt?.funUuids ?? null;
   }
 
   // get value of new_col. Retrieves it from the input if specified or takes it from existingEnt
-  getNewNewColValue(): string | null | undefined {
+  getNewNewColValue(): string | null {
     if (this.input.newCol !== undefined) {
       return this.input.newCol;
     }
-    return this.existingEnt?.newCol;
+
+    return this.existingEnt?.newCol ?? null;
   }
 
   // get value of new_col2. Retrieves it from the input if specified or takes it from existingEnt
-  getNewNewCol2Value(): string | null | undefined {
+  getNewNewCol2Value(): string | null {
     if (this.input.newCol2 !== undefined) {
       return this.input.newCol2;
     }
-    return this.existingEnt?.newCol2;
+
+    return this.existingEnt?.newCol2 ?? null;
   }
 
   // get value of superNestedObject. Retrieves it from the input if specified or takes it from existingEnt
-  getNewSuperNestedObjectValue(): UserSuperNestedObject | null | undefined {
+  getNewSuperNestedObjectValue(): UserSuperNestedObject | null {
     if (this.input.superNestedObject !== undefined) {
       return this.input.superNestedObject;
     }
-    return this.existingEnt?.superNestedObject;
+
+    return this.existingEnt?.superNestedObject ?? null;
   }
 
   // get value of nestedList. Retrieves it from the input if specified or takes it from existingEnt
-  getNewNestedListValue(): UserNestedObjectList[] | null | undefined {
+  getNewNestedListValue(): UserNestedObjectList[] | null {
     if (this.input.nestedList !== undefined) {
       return this.input.nestedList;
     }
-    return this.existingEnt?.nestedList;
+
+    return this.existingEnt?.nestedList ?? null;
+  }
+
+  // get value of int_enum. Retrieves it from the input if specified or takes it from existingEnt
+  getNewIntEnumValue(): UserIntEnum | null {
+    if (this.input.intEnum !== undefined) {
+      return this.input.intEnum;
+    }
+
+    return this.existingEnt?.intEnum ?? null;
   }
 }

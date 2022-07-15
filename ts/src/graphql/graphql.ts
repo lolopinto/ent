@@ -215,6 +215,12 @@ export const addCustomType = (type: CustomType) => {
       }
     }
   } catch (e) {
+    if (type.secondaryImportPath) {
+      addCustomType({
+        ...type,
+        importPath: type.secondaryImportPath,
+      });
+    }
     return;
   }
   GQLCapture.getCustomTypes().set(type.type, type);

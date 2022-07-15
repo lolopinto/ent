@@ -5,6 +5,7 @@ import {
   Context,
   CustomQuery,
   Data,
+  Ent,
   ID,
   LoadEntOptions,
   PrivacyPolicy,
@@ -26,7 +27,7 @@ import {
   authCodeLoaderInfo,
 } from "src/ent/generated/loaders";
 import { Guest, NodeType } from "src/ent/internal";
-import schema from "src/schema/auth_code";
+import schema from "src/schema/auth_code_schema";
 
 interface AuthCodeDBData {
   id: ID;
@@ -38,7 +39,7 @@ interface AuthCodeDBData {
   sent_code: boolean;
 }
 
-export class AuthCodeBase {
+export class AuthCodeBase implements Ent<Viewer> {
   readonly nodeType = NodeType.AuthCode;
   readonly id: ID;
   readonly createdAt: Date;
@@ -58,7 +59,9 @@ export class AuthCodeBase {
     this.sentCode = convertBool(data.sent_code);
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   static async load<T extends AuthCodeBase>(
     this: new (viewer: Viewer, data: Data) => T,
@@ -189,7 +192,7 @@ export class AuthCodeBase {
 
   static loaderOptions<T extends AuthCodeBase>(
     this: new (viewer: Viewer, data: Data) => T,
-  ): LoadEntOptions<T> {
+  ): LoadEntOptions<T, Viewer> {
     return {
       tableName: authCodeLoaderInfo.tableName,
       fields: authCodeLoaderInfo.fields,
@@ -211,7 +214,7 @@ export class AuthCodeBase {
     return AuthCodeBase.getSchemaFields().get(key);
   }
 
-  loadGuest(): Promise<Guest | null> {
+  async loadGuest(): Promise<Guest | null> {
     return loadEnt(this.viewer, this.guestID, Guest.loaderOptions());
   }
 

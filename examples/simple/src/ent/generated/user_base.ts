@@ -80,6 +80,14 @@ export enum UserPreferredShift {
   Graveyard = "graveyard",
 }
 
+export enum UserIntEnum {
+  VERIFIED = 1,
+  UNVERIFIED = 2,
+  DISABLED = 3,
+  DEACTIVATED = 4,
+  // @deprecated FOO = 5,
+}
+
 interface UserDBData {
   id: ID;
   created_at: Date;
@@ -104,6 +112,7 @@ interface UserDBData {
   new_col_2: string | null;
   super_nested_object: UserSuperNestedObject | null;
   nested_list: UserNestedObjectList[] | null;
+  int_enum: UserIntEnum | null;
 }
 
 export class UserBase
@@ -134,6 +143,7 @@ export class UserBase
   readonly newCol2: string | null;
   readonly superNestedObject: UserSuperNestedObject | null;
   readonly nestedList: UserNestedObjectList[] | null;
+  readonly intEnum: UserIntEnum | null;
 
   constructor(public viewer: ExampleViewerAlias, protected data: Data) {
     // @ts-ignore pass to mixin
@@ -161,6 +171,7 @@ export class UserBase
     this.newCol2 = data.new_col_2;
     this.superNestedObject = convertNullableJSON(data.super_nested_object);
     this.nestedList = convertNullableJSONList(data.nested_list);
+    this.intEnum = data.int_enum;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {

@@ -92,7 +92,7 @@ beforeEach(async () => {
 });
 
 beforeAll(() => {
-  setLogLevels(["query", "error"]);
+  setLogLevels(["query", "error", "cache"]);
   ml.mock();
 });
 

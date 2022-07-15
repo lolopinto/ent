@@ -5,6 +5,7 @@ import {
   Context,
   CustomQuery,
   Data,
+  Ent,
   ID,
   LoadEntOptions,
   PrivacyPolicy,
@@ -25,7 +26,7 @@ import {
   userLoaderInfo,
 } from "src/ent/generated/loaders";
 import { NodeType, UserToEventsQuery } from "src/ent/internal";
-import schema from "src/schema/user";
+import schema from "src/schema/user_schema";
 
 interface UserDBData {
   id: ID;
@@ -37,7 +38,7 @@ interface UserDBData {
   password: string;
 }
 
-export class UserBase {
+export class UserBase implements Ent<Viewer> {
   readonly nodeType = NodeType.User;
   readonly id: ID;
   readonly createdAt: Date;
@@ -57,7 +58,9 @@ export class UserBase {
     this.password = data.password;
   }
 
-  privacyPolicy: PrivacyPolicy = AllowIfViewerPrivacyPolicy;
+  getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {
+    return AllowIfViewerPrivacyPolicy;
+  }
 
   static async load<T extends UserBase>(
     this: new (viewer: Viewer, data: Data) => T,
@@ -192,7 +195,7 @@ export class UserBase {
 
   static loaderOptions<T extends UserBase>(
     this: new (viewer: Viewer, data: Data) => T,
-  ): LoadEntOptions<T> {
+  ): LoadEntOptions<T, Viewer> {
     return {
       tableName: userLoaderInfo.tableName,
       fields: userLoaderInfo.fields,

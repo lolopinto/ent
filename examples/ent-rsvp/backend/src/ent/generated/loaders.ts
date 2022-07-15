@@ -34,6 +34,48 @@ export const addressLoaderInfo = {
   fields: addressFields,
   nodeType: NodeType.Address,
   loaderFactory: addressLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    Street: {
+      dbCol: "street",
+      inputKey: "street",
+    },
+    City: {
+      dbCol: "city",
+      inputKey: "city",
+    },
+    State: {
+      dbCol: "state",
+      inputKey: "state",
+    },
+    ZipCode: {
+      dbCol: "zip_code",
+      inputKey: "zipCode",
+    },
+    Apartment: {
+      dbCol: "apartment",
+      inputKey: "apartment",
+    },
+    OwnerID: {
+      dbCol: "owner_id",
+      inputKey: "ownerID",
+    },
+    OwnerType: {
+      dbCol: "owner_type",
+      inputKey: "ownerType",
+    },
+  },
 };
 
 addressLoader.addToPrime(addressOwnerIDLoader);
@@ -67,6 +109,36 @@ export const authCodeLoaderInfo = {
   fields: authCodeFields,
   nodeType: NodeType.AuthCode,
   loaderFactory: authCodeLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    code: {
+      dbCol: "code",
+      inputKey: "code",
+    },
+    guestID: {
+      dbCol: "guest_id",
+      inputKey: "guestID",
+    },
+    emailAddress: {
+      dbCol: "email_address",
+      inputKey: "emailAddress",
+    },
+    sentCode: {
+      dbCol: "sent_code",
+      inputKey: "sentCode",
+    },
+  },
 };
 
 authCodeLoader.addToPrime(authCodeGuestIDLoader);
@@ -97,6 +169,48 @@ export const eventActivityLoaderInfo = {
   fields: eventActivityFields,
   nodeType: NodeType.EventActivity,
   loaderFactory: eventActivityLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    Name: {
+      dbCol: "name",
+      inputKey: "name",
+    },
+    eventID: {
+      dbCol: "event_id",
+      inputKey: "eventID",
+    },
+    StartTime: {
+      dbCol: "start_time",
+      inputKey: "startTime",
+    },
+    EndTime: {
+      dbCol: "end_time",
+      inputKey: "endTime",
+    },
+    Location: {
+      dbCol: "location",
+      inputKey: "location",
+    },
+    Description: {
+      dbCol: "description",
+      inputKey: "description",
+    },
+    InviteAllGuests: {
+      dbCol: "invite_all_guests",
+      inputKey: "inviteAllGuests",
+    },
+  },
 };
 
 const eventTable = "events";
@@ -126,6 +240,32 @@ export const eventLoaderInfo = {
   fields: eventFields,
   nodeType: NodeType.Event,
   loaderFactory: eventLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    Name: {
+      dbCol: "name",
+      inputKey: "name",
+    },
+    Slug: {
+      dbCol: "slug",
+      inputKey: "slug",
+    },
+    creatorID: {
+      dbCol: "creator_id",
+      inputKey: "creatorID",
+    },
+  },
 };
 
 eventLoader.addToPrime(eventSlugLoader);
@@ -154,6 +294,40 @@ export const guestLoaderInfo = {
   fields: guestFields,
   nodeType: NodeType.Guest,
   loaderFactory: guestLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    Name: {
+      dbCol: "name",
+      inputKey: "name",
+    },
+    eventID: {
+      dbCol: "event_id",
+      inputKey: "eventID",
+    },
+    EmailAddress: {
+      dbCol: "email_address",
+      inputKey: "emailAddress",
+    },
+    guestGroupID: {
+      dbCol: "guest_group_id",
+      inputKey: "guestGroupID",
+    },
+    title: {
+      dbCol: "title",
+      inputKey: "title",
+    },
+  },
 };
 
 const guestDataTable = "guest_data";
@@ -178,6 +352,36 @@ export const guestDataLoaderInfo = {
   fields: guestDataFields,
   nodeType: NodeType.GuestData,
   loaderFactory: guestDataLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    guestID: {
+      dbCol: "guest_id",
+      inputKey: "guestID",
+    },
+    eventID: {
+      dbCol: "event_id",
+      inputKey: "eventID",
+    },
+    dietaryRestrictions: {
+      dbCol: "dietary_restrictions",
+      inputKey: "dietaryRestrictions",
+    },
+    source: {
+      dbCol: "source",
+      inputKey: "source",
+    },
+  },
 };
 
 const guestGroupTable = "guest_groups";
@@ -200,6 +404,28 @@ export const guestGroupLoaderInfo = {
   fields: guestGroupFields,
   nodeType: NodeType.GuestGroup,
   loaderFactory: guestGroupLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    InvitationName: {
+      dbCol: "invitation_name",
+      inputKey: "invitationName",
+    },
+    EventID: {
+      dbCol: "event_id",
+      inputKey: "eventID",
+    },
+  },
 };
 
 const userTable = "users";
@@ -230,6 +456,36 @@ export const userLoaderInfo = {
   fields: userFields,
   nodeType: NodeType.User,
   loaderFactory: userLoader,
+  fieldInfo: {
+    ID: {
+      dbCol: "id",
+      inputKey: "id",
+    },
+    createdAt: {
+      dbCol: "created_at",
+      inputKey: "createdAt",
+    },
+    updatedAt: {
+      dbCol: "updated_at",
+      inputKey: "updatedAt",
+    },
+    FirstName: {
+      dbCol: "first_name",
+      inputKey: "firstName",
+    },
+    LastName: {
+      dbCol: "last_name",
+      inputKey: "lastName",
+    },
+    EmailAddress: {
+      dbCol: "email_address",
+      inputKey: "emailAddress",
+    },
+    Password: {
+      dbCol: "password",
+      inputKey: "password",
+    },
+  },
 };
 
 userLoader.addToPrime(userEmailAddressLoader);

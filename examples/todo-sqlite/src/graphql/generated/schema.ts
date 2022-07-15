@@ -4,44 +4,45 @@ import { GraphQLSchema } from "graphql";
 import {
   CreateAccountInputType,
   CreateAccountPayloadType,
-} from "src/graphql/mutations/generated/account/create_account_type";
+} from "src/graphql/generated/mutations/account/create_account_type";
 import {
   DeleteAccountInputType,
   DeleteAccountPayloadType,
-} from "src/graphql/mutations/generated/account/delete_account_type";
+} from "src/graphql/generated/mutations/account/delete_account_type";
 import {
   EditAccountInputType,
   EditAccountPayloadType,
-} from "src/graphql/mutations/generated/account/edit_account_type";
-import { MutationType } from "src/graphql/mutations/generated/mutation_type";
+} from "src/graphql/generated/mutations/account/edit_account_type";
+import { MutationType } from "src/graphql/generated/mutations/mutation_type";
 import {
   CreateTagInputType,
   CreateTagPayloadType,
-} from "src/graphql/mutations/generated/tag/create_tag_type";
+} from "src/graphql/generated/mutations/tag/create_tag_type";
 import {
   AddTodoTagInputType,
   AddTodoTagPayloadType,
-} from "src/graphql/mutations/generated/todo/add_todo_tag_type";
+} from "src/graphql/generated/mutations/todo/add_todo_tag_type";
 import {
   ChangeTodoStatusInputType,
   ChangeTodoStatusPayloadType,
-} from "src/graphql/mutations/generated/todo/change_todo_status_type";
+} from "src/graphql/generated/mutations/todo/change_todo_status_type";
 import {
   CreateTodoInputType,
   CreateTodoPayloadType,
-} from "src/graphql/mutations/generated/todo/create_todo_type";
+} from "src/graphql/generated/mutations/todo/create_todo_type";
 import {
   DeleteTodoInputType,
   DeleteTodoPayloadType,
-} from "src/graphql/mutations/generated/todo/delete_todo_type";
+} from "src/graphql/generated/mutations/todo/delete_todo_type";
 import {
   RemoveTodoTagInputType,
   RemoveTodoTagPayloadType,
-} from "src/graphql/mutations/generated/todo/remove_todo_tag_type";
+} from "src/graphql/generated/mutations/todo/remove_todo_tag_type";
 import {
   RenameTodoInputType,
   RenameTodoPayloadType,
-} from "src/graphql/mutations/generated/todo/rename_todo_type";
+} from "src/graphql/generated/mutations/todo/rename_todo_type";
+import { QueryType } from "src/graphql/generated/resolvers/query_type";
 import {
   AccountStateType,
   AccountToOpenTodosConnectionType,
@@ -54,7 +55,6 @@ import {
   TodoToTagsConnectionType,
   TodoType,
 } from "src/graphql/resolvers";
-import { QueryType } from "src/graphql/resolvers/generated/query_type";
 
 export default new GraphQLSchema({
   query: QueryType,

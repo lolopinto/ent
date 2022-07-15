@@ -1,7 +1,7 @@
 import {
   EditGuestActionBase,
   GuestEditInput,
-} from "src/ent/guest/actions/generated/edit_guest_action_base";
+} from "src/ent/generated/guest/actions/edit_guest_action_base";
 import { AllowIfEventCreatorRule } from "src/ent/event/privacy/event_creator";
 import { AllowIfGuestInSameGuestGroupRule } from "src/ent/guest/privacy/guest_rule_privacy";
 import { AlwaysDenyRule } from "@snowtop/ent";

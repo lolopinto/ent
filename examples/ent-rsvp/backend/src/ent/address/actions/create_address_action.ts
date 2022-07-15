@@ -6,7 +6,7 @@ import {
 import {
   CreateAddressActionBase,
   AddressCreateInput,
-} from "src/ent/address/actions/generated/create_address_action_base";
+} from "src/ent/generated/address/actions/create_address_action_base";
 import { AllowIfBuilder, Builder } from "@snowtop/ent/action";
 import { getLoaderOptions } from "src/ent/generated/loadAny";
 import { NodeType } from "src/ent/generated/const";

@@ -274,7 +274,7 @@ type TodoConfig struct {
 
 	s, err := parseSchemaFull(t, sources, "InvalidForeignKeyConfig")
 	require.Error(t, err)
-	require.Equal(t, err.Error(), "could not find the EntConfig codegen info for accounts")
+	require.Equal(t, err.Error(), "invalid schema accounts for foreign key ")
 	require.Nil(t, s)
 }
 
@@ -642,6 +642,91 @@ func TestNullableEnumType(t *testing.T) {
 			// in this case TypeScript Type is Status and we're taking the enum type based on that
 			strconv.Quote("status"),
 		),
+		"nullable=True",
+	})
+}
+
+func TestIntEnum(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"Request": {
+					Fields: []*input.Field{
+						{
+							Name:       "id",
+							PrimaryKey: true,
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+						},
+						{
+							Name: "Status",
+							Type: &input.FieldType{
+								DBType: input.IntEnum,
+								IntEnumMap: map[string]int{
+									"OPEN":    1,
+									"PENDING": 2,
+									"CLOSED":  3,
+								},
+								Type:        "RequestStatus",
+								GraphQLType: "RequestStatus",
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	col := getTestColumnFromSchema(t, dbSchema, "requests", "status")
+
+	testColumn(t, col, "status", "Status", "status", []string{
+		strconv.Quote("status"),
+		"sa.Integer()",
+		"nullable=False",
+	})
+}
+
+func TestNullableIntEnum(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"Request": {
+					Fields: []*input.Field{
+						{
+							Name:       "id",
+							PrimaryKey: true,
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+						},
+						{
+							Name:     "Status",
+							Nullable: true,
+							Type: &input.FieldType{
+								DBType:      input.IntEnum,
+								Type:        "Status",
+								GraphQLType: "Status",
+								IntEnumMap: map[string]int{
+									"OPEN":    1,
+									"PENDING": 2,
+									"CLOSED":  3,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	col := getTestColumnFromSchema(t, dbSchema, "requests", "status")
+
+	testColumn(t, col, "status", "Status", "status", []string{
+		strconv.Quote("status"),
+		"sa.Integer()",
 		"nullable=True",
 	})
 }

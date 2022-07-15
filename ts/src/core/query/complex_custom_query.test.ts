@@ -28,7 +28,7 @@ let ml = new MockLogs();
 let tdb: TempDB;
 
 beforeAll(async () => {
-  setLogLevels(["query", "error"]);
+  setLogLevels(["query", "error", "cache"]);
   ml.mock();
 
   tdb = await setupTempDB();

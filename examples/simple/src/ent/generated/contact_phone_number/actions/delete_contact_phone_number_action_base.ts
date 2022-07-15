@@ -87,7 +87,7 @@ export class DeleteContactPhoneNumberActionBase
     this.contactPhoneNumber = contactPhoneNumber;
   }
 
-  getPrivacyPolicy(): PrivacyPolicy<ContactPhoneNumber> {
+  getPrivacyPolicy(): PrivacyPolicy<ContactPhoneNumber, ExampleViewerAlias> {
     return AllowIfViewerHasIdentityPrivacyPolicy;
   }
 

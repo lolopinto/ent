@@ -58,25 +58,3 @@ It currently doesn't send an email to guests so the login link isn't available f
 * Run `npm run dev` from `ent-rsvp-web` for the web
 * Run `npm run start-fast` from `backend` to start the web server.
 
-## v0.1 migration guide
-
-* run command
-
-```shell
-tsent migrate_v0.1
-```
-
-* change `Changeset<Ent>` to `Changeset` in 3 locations
-* in `import_guests.ts`, change `Action<Ent, Builder<Ent>, Data>` to `Action<Ent, Builder<Ent>>`
-* in `create_event_activity_action.ts` and `create_guest_group_action.ts`, define this function either in changeset or somewhere in the file, fix the imports and call `isBuilder` instead of `builder.isBuilder`
-
-```ts
-const isBuilder = (
-  v: ID | Builder<Event, Viewer>,
-): v is Builder<Event, Viewer> => {
-  return (v as Builder<Event, Viewer>).placeholderID !== undefined;
-};
-```
-
-* tsc
-* jest

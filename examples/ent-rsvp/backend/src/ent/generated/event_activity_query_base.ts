@@ -48,9 +48,13 @@ export const eventActivityToInvitesDataLoaderFactory =
 export abstract class EventActivityToAttendingQueryBase extends AssocEdgeQueryBase<
   EventActivity,
   Guest,
-  EventActivityToAttendingEdge
+  EventActivityToAttendingEdge,
+  Viewer
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<EventActivity, Guest>) {
+  constructor(
+    viewer: Viewer,
+    src: EdgeQuerySource<EventActivity, Guest, Viewer>,
+  ) {
     super(
       viewer,
       src,
@@ -84,9 +88,13 @@ export abstract class EventActivityToAttendingQueryBase extends AssocEdgeQueryBa
 export abstract class EventActivityToDeclinedQueryBase extends AssocEdgeQueryBase<
   EventActivity,
   Guest,
-  EventActivityToDeclinedEdge
+  EventActivityToDeclinedEdge,
+  Viewer
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<EventActivity, Guest>) {
+  constructor(
+    viewer: Viewer,
+    src: EdgeQuerySource<EventActivity, Guest, Viewer>,
+  ) {
     super(
       viewer,
       src,
@@ -120,9 +128,13 @@ export abstract class EventActivityToDeclinedQueryBase extends AssocEdgeQueryBas
 export abstract class EventActivityToInvitesQueryBase extends AssocEdgeQueryBase<
   EventActivity,
   GuestGroup,
-  EventActivityToInvitesEdge
+  EventActivityToInvitesEdge,
+  Viewer
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<EventActivity, GuestGroup>) {
+  constructor(
+    viewer: Viewer,
+    src: EdgeQuerySource<EventActivity, GuestGroup, Viewer>,
+  ) {
     super(
       viewer,
       src,

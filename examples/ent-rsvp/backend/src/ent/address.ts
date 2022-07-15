@@ -4,8 +4,10 @@ import { getLoaderOptions } from "./generated/loadAny";
 
 // we're only writing this once except with --force and packageName provided
 export class Address extends AddressBase {
-  privacyPolicy: PrivacyPolicy = new AllowIfEntIsVisiblePolicy(
-    this.ownerID,
-    getLoaderOptions(this.ownerType as NodeType),
-  );
+  getPrivacyPolicy(): PrivacyPolicy<this> {
+    return new AllowIfEntIsVisiblePolicy(
+      this.ownerID,
+      getLoaderOptions(this.ownerType as NodeType),
+    );
+  }
 }

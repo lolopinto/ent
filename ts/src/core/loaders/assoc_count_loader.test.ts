@@ -29,7 +29,7 @@ const getNewLoader = (context: boolean = true) => {
 describe("postgres", () => {
   let tdb: TempDB;
   beforeAll(async () => {
-    setLogLevels(["query", "error"]);
+    setLogLevels(["query", "error", "cache"]);
     ml.mock();
 
     tdb = await setupTempDB();
@@ -50,7 +50,7 @@ describe("sqlite", () => {
   setupSqlite(`sqlite:///assoc_count_loader.db`, tempDBTables);
 
   beforeAll(async () => {
-    setLogLevels(["query", "error"]);
+    setLogLevels(["query", "error", "cache"]);
     ml.mock();
   });
 
