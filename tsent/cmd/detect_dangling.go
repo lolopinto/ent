@@ -80,7 +80,6 @@ var detectDanglingFilesCmd = &cobra.Command{
 
 		dangling := []string{}
 		for _, p := range generated {
-			fmt.Println(p)
 			if err := detectDangling(p, changed, &dangling); err != nil {
 				return err
 			}
