@@ -47,6 +47,20 @@ To run just one step:
 tsent codegen --step graphql
 ```
 
+Other flags:
+
+### write-all
+
+To speed up codegen, we don't always generate all the files anytime codegen is run. We try and detect changes between current and last codegen run and only touch files based on what has changed. It's possible there are bugs and we need to generate everything, this allows one to do that.
+
+### disable_custom_graphql
+
+To disable custom graphql during codegen. Used when we need to rebuild everything and minimize parsing code. Can be used when there's conflicts and you want to regenerate the generated code first
+
+### disable_prompts
+
+Disables prompts which asks the developer interactive questions. Use with care.
+
 ## upgrade
 
 `upgrade` is used to update the database. Most commonly used after pulling from `main` or [when deploying](/docs/advanced-topics/deploying) to upgrade the database in case there have been any changes.
@@ -67,7 +81,7 @@ docker-compose -f docker-compose.dev.yml run --rm app tsent upgrade
 To upgrade to a specific revision, possibly after [downgrading](#downgrade):
 
 ```shell
-docker-compose -f docker-compose.dev.yml run --rm app tsent upgrade {rev}
+tsent upgrade {rev}
 ```
 
 or via docker:
@@ -80,7 +94,7 @@ docker-compose -f docker-compose.dev.yml run --rm app tsent upgrade {rev}
 
 `downgrade` is used to downgrade the database. Used to revert back to a previous database revision.
 
-To downgrade 1 revision:
+### downgrade 1 revision
 
 ```shell:
 tsent downgrade -- -1
@@ -92,16 +106,70 @@ or via docker:
 docker-compose -f docker-compose.dev.yml run --rm app tsent downgrade -- -1
 ```
 
-To downgrade to a specific revision:
+### downgrade 2 revisions
+
+```shell:
+tsent downgrade -- -2
+```
+
+or via docker:
 
 ```shell
-docker-compose -f docker-compose.dev.yml run --rm app tsent downgrade {rev}
+docker-compose -f docker-compose.dev.yml run --rm app tsent downgrade -- -2
+```
+
+### downgrade to a specific revision
+
+```shell
+tsent downgrade {rev}
 ```
 
 or via docker:
 
 ```shell
 docker-compose -f docker-compose.dev.yml run --rm app tsent downgrade {rev}
+```
+
+### downgrade and keep schema files
+
+This can be used when working on multiple branches at the same time.
+
+If you want to switch from one branch to another and want to change database back to a common ancestor:
+
+```shell
+tsent downgrade --keep_schema_files -- -1
+```
+
+or via docker:
+
+```shell
+docker-compose -f docker-compose.dev.yml run --rm app tsent downgrade --keep_schema_files -- -1
+```
+
+### downgrade one revision in a branch
+
+It's possible to end up with multiple branches. This can happen when multiple people make changes to the database from a common ancestor.
+
+For example, git branch `main` is at `rev1`.
+
+Developer A makes a change in a feature branch with rev `rev2a` e.g. adding a nullable column `foo` to table `users`.
+
+Developer B makes a change in a feature branch with rev `rev2b` e.g. adding a nullable column `bar` to table `users`.
+
+Both are committed to main.
+
+Main now has 2 heads: `rev2a` and `rev2b`.
+
+If you want to downgrade for any reason, the basic downgrade doesn't work. You'll have to be more specific and can do so as follows:
+
+```shell
+tsent downgrade rev2a@rev1
+```
+
+or via docker:
+
+```shell
+docker-compose -f docker-compose.dev.yml run --rm app tsent downgrade rev2a@rev1
 ```
 
 ## fix-edges
@@ -122,72 +190,77 @@ or to show the database history:
 
 ```shell
 tsent alembic history
+tsent alembic history --verbose 
+tsent alembic history --verbose --last 4
+tsent alembic history --verbose --rev_range rev1:current
 ```
 
-## generate
+Current supported commands:
 
-`generate` is used to generate schema file(s). After generating schema files, it doesn't run the `codegen` command so that still needs to be run.
+* upgrade
+* downgrade
+* history
+* current
+* heads
+* branches
+* show
+* stamp
 
-There are three subcommands:
+## delete_schema
 
-### schema
+Deletes the given schema.
 
 ```shell
-tsent generate schema
+tsent delete_schema Holiday
 ```
 
-takes schemaName and 0 or more field specifications separated by a space. field specification has three different formats:
-
-* `name:type`
+or via docker
 
 ```shell
-tsent generate schema User name:string email:email
+docker-compose -f docker-compose.dev.yml run --rm app tsent delete_schema Holiday
 ```
 
-generates schema file`user.ts` of node `User` with 2 fields.
+## squash
 
-* `name:type:booleanprop[:booleanprop]`
+Squashes the last N revisions into one. It's mainly used to make it easier to keep a clean history. It's currently implemented naively by downgrading the last N and detecting all the most recent changes into one.
+
+Consider these workflows for example when iterating:
+
+* add nullable column `foo_id` and run `codegen`
+* add nullable column `bar_id` and run `codegen`
+* add nullable column `status` and run `codegen`
+* decide you don't actually need `bar_id` and run `codegen`
+
+now you have 4 changes when it'd be more ideal to just have 1 change:
+
+you can run
 
 ```shell
-tsent generate schema User phone:phone:index email:email:unique password:password:private:hideFromGraphQL age:int:nullable activated:bool
+tsent squash 4
 ```
-  
-generates schema file `user.ts` of node `User` with a few fields and some properties set for those files
 
-* `name;type;key:column`
+or via docker
 
 ```shell
-tsent generate schema User "account_status;string;serverDefault:DEACTIVATED email:email:unique accountId;uuid;foreignKey:{schema:Account;column:id};storageKey:user_id;defaultToViewerOnCreate"
+docker-compose -f docker-compose.dev.yml run --rm app tsent squash 4
 ```
 
-Supported types: `string`, `uuid`, `int`, `float`, `bool`, `timestamp`, `timestamptz`, `time`, `timetz`, `date`, `email`, `phone`, and `password`.
+which will take the last 4 changes and combine them into one migration file
 
-### enum_schema
+Another common reason for squash is getting feedback during code review about changes in the schema and you want to commit a simple final version instead of N changes.
+
+## detect_dangling
+
+Detects any dangling schema files. We try and delete unused generated files but may miss some. This goes through the codegen process and detects files which were generated and flags those which weren't changed.
 
 ```shell
-tsent generate enum_schema
+tsent detect_dangling
 ```
 
-takes 3 arguments enumSchema name, enum column, csv list of values and generates an [enum schema](/docs/ent-schema/enums#lookup-tables).
-
-e.g.
+or via docker
 
 ```shell
-tsent generate enum_schema RequestStatus status open,pending,closed
+docker-compose -f docker-compose.dev.yml run --rm app tsent detect_dangling
 ```
 
-generates an enum `RequestStatus` with column `status` and three values: `open`, `pending`, and `closed`.
-
-### schemas
-
-```shell
- tsent generate schemas
-```
-
-takes a json file and generates N schemas based on the JSON generated by the TypeScript parse code.
-
-```shell
-tsent generate schemas --file schema.json 
-// OR
-cat schema.json | tsent generate schemas
-```
+It takes a flag `--delete` to indicate if we should delete any detected files.

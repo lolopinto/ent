@@ -18,8 +18,8 @@ var validCmds = map[string]int{
 	"branches":  0,
 	"show":      1,
 	"stamp":     1, // stamp --purge option may be needed. would need a child command or simple flag parsing here
-	"edit":      1,
-	"merge":     1,
+	"edit":      1, // TODO should we support this? didn't document
+	"merge":     1, // TODO should we support this?
 }
 
 var variableArgs = map[string]bool{
