@@ -16,7 +16,7 @@ export interface ActionOptions<T extends Ent, TData extends Data> {
   operation?: WriteOperation;
 }
 
-interface EntBuilder<
+export interface EntBuilder<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
   TInput extends Data,
@@ -156,7 +156,7 @@ export class BaseAction<
   }
 }
 
-interface BuilderConstructor<
+export interface BuilderConstructor<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
   TInput extends Data,
@@ -191,6 +191,8 @@ export async function updateRawObject<
   return action.saveX();
 }
 
+// TODO need to fix types for all these
+
 // creates an action which has no privacy, triggers, observers etc
 // does do field validation
 // useful to batch a bunch of writes together with BaseAction.bulkAction
@@ -204,10 +206,42 @@ export function getSimpleEditAction<
   builderCtr: BuilderConstructor<TEnt, TViewer, TInput>,
   existingEnt: TEnt,
   input: TInput,
-): Action<TEnt, Builder<TEnt, TViewer>, TViewer, TInput> {
+): BaseAction<TEnt, TViewer, TInput> {
   return new BaseAction(viewer, builderCtr, {
     existingEnt: existingEnt,
     operation: WriteOperation.Edit,
+    input,
+  });
+}
+
+export function getSimpleDeleteAction<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+  TInput extends Data,
+>(
+  viewer: TViewer,
+  builderCtr: BuilderConstructor<TEnt, TViewer, TInput>,
+  existingEnt: TEnt,
+  input: TInput,
+): BaseAction<TEnt, TViewer, TInput> {
+  return new BaseAction(viewer, builderCtr, {
+    existingEnt: existingEnt,
+    operation: WriteOperation.Delete,
+    input,
+  });
+}
+
+export function getSimpleInsertAction<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+  TInput extends Data,
+>(
+  viewer: TViewer,
+  builderCtr: BuilderConstructor<TEnt, TViewer, TInput>,
+  input: TInput,
+): BaseAction<TEnt, TViewer, TInput> {
+  return new BaseAction(viewer, builderCtr, {
+    operation: WriteOperation.Insert,
     input,
   });
 }
