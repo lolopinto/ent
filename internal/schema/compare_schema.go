@@ -270,7 +270,7 @@ func compareEnums(m1, m2 map[string]*EnumInfo, m *change.ChangeMap) error {
 			// we key by graphql name...
 			if !enumInfoEqual(enum1, enum2) {
 				if enum1.GQLEnum == nil || enum2.GQLEnum == nil {
-					spew.Dump(k, enum1, enum2)
+					spew.Dump(k, enum1.Enum, enum1.GQLEnum, enum2.Enum, enum2.GQLEnum)
 				}
 				if enum1.GQLEnum != nil &&
 					enum2.GQLEnum != nil &&
