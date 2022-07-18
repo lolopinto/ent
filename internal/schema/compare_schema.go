@@ -268,7 +268,9 @@ func compareEnums(m1, m2 map[string]*EnumInfo, m *change.ChangeMap) error {
 		} else {
 			// we key by graphql name...
 			if !enumInfoEqual(enum1, enum2) {
-				if enum1.GQLEnum.Name != enum2.GQLEnum.Name {
+				if enum1.GQLEnum != nil &&
+					enum2.GQLEnum != nil &&
+					enum1.GQLEnum.Name != enum2.GQLEnum.Name {
 					// graphql name changed so treat it differently
 					ret[k] = []change.Change{
 						{
