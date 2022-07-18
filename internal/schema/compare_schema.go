@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
@@ -259,19 +258,19 @@ func compareEnums(m1, m2 map[string]*EnumInfo, m *change.ChangeMap) error {
 		enum2, ok := m2[k]
 		if !ok {
 			// in 1st but not 2nd, dropped
-			ret[k] = []change.Change{
-				{
-					Change:      change.RemoveEnum,
-					Name:        enum1.Enum.Name,
-					GraphQLName: enum1.GQLEnum.Name,
-				},
+			c := change.Change{
+				Change: change.RemoveEnum,
+				Name:   enum1.Enum.Name,
 			}
+			if enum1.GQLEnum != nil {
+				c.GraphQLName = enum1.GQLEnum.Name
+			} else {
+				c.TSOnly = true
+			}
+			ret[k] = []change.Change{c}
 		} else {
 			// we key by graphql name...
 			if !enumInfoEqual(enum1, enum2) {
-				if enum1.GQLEnum == nil || enum2.GQLEnum == nil {
-					spew.Dump(k, enum1.Enum, enum1.GQLEnum, enum2.Enum, enum2.GQLEnum)
-				}
 				if enum1.GQLEnum != nil &&
 					enum2.GQLEnum != nil &&
 					enum1.GQLEnum.Name != enum2.GQLEnum.Name {
@@ -298,34 +297,54 @@ func compareEnums(m1, m2 map[string]*EnumInfo, m *change.ChangeMap) error {
 					}
 				} else if enum1.Enum.Name != enum2.Enum.Name {
 					// TS enum name changed so treat it differently
-					ret[k] = []change.Change{
-						{
-							Change:      change.ModifyEnum,
-							Name:        enum1.Enum.Name,
-							GraphQLName: enum1.GQLEnum.Name,
-							GraphQLOnly: true,
-						},
-						{
-							Change:      change.RemoveEnum,
-							Name:        enum1.Enum.Name,
-							GraphQLName: enum1.GQLEnum.Name,
-							TSOnly:      true,
-						},
-						{
-							Change:      change.AddEnum,
-							Name:        enum2.Enum.Name,
-							GraphQLName: enum2.GQLEnum.Name,
-							TSOnly:      true,
-						},
+
+					if enum1.GQLEnum == nil {
+						ret[k] = []change.Change{
+							{
+								Change: change.RemoveEnum,
+								Name:   enum1.Enum.Name,
+								TSOnly: true,
+							},
+							{
+								Change: change.AddEnum,
+								Name:   enum2.Enum.Name,
+								TSOnly: true,
+							},
+						}
+					} else {
+
+						ret[k] = []change.Change{
+							{
+								Change:      change.ModifyEnum,
+								Name:        enum1.Enum.Name,
+								GraphQLName: enum1.GQLEnum.Name,
+								GraphQLOnly: true,
+							},
+							{
+								Change:      change.RemoveEnum,
+								Name:        enum1.Enum.Name,
+								GraphQLName: enum1.GQLEnum.Name,
+								TSOnly:      true,
+							},
+							{
+								Change:      change.AddEnum,
+								Name:        enum2.Enum.Name,
+								GraphQLName: enum2.GQLEnum.Name,
+								TSOnly:      true,
+							},
+						}
 					}
 				} else {
-					ret[k] = []change.Change{
-						{
-							Change:      change.ModifyEnum,
-							Name:        enum1.Enum.Name,
-							GraphQLName: enum1.GQLEnum.Name,
-						},
+					c := change.Change{
+						Change: change.ModifyEnum,
+						Name:   enum1.Enum.Name,
 					}
+					if enum1.GQLEnum != nil {
+						c.GraphQLName = enum1.GQLEnum.Name
+					} else {
+						c.TSOnly = true
+					}
+					ret[k] = []change.Change{c}
 				}
 			}
 		}
@@ -335,13 +354,16 @@ func compareEnums(m1, m2 map[string]*EnumInfo, m *change.ChangeMap) error {
 	for k, enum2 := range m2 {
 		_, ok := m1[k]
 		if !ok {
-			ret[k] = []change.Change{
-				{
-					Change:      change.AddEnum,
-					Name:        enum2.Enum.Name,
-					GraphQLName: enum2.GQLEnum.Name,
-				},
+			c := change.Change{
+				Change: change.AddEnum,
+				Name:   enum2.Enum.Name,
 			}
+			if enum2.GQLEnum != nil {
+				c.GraphQLName = enum2.GQLEnum.Name
+			} else {
+				c.TSOnly = true
+			}
+			ret[k] = []change.Change{c}
 		}
 	}
 	return nil

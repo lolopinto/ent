@@ -2123,6 +2123,22 @@ func TestEnumNoChange(t *testing.T) {
 	require.Len(t, m, 0)
 }
 
+func TestEnumNoChangeNoGQL(t *testing.T) {
+	s1 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfoNoGQL(nil),
+		},
+	}
+	s2 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfoNoGQL(nil),
+		},
+	}
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 0)
+}
+
 func TestEnumAdded(t *testing.T) {
 	s1 := &schema.Schema{}
 	s2 := &schema.Schema{
@@ -2143,6 +2159,26 @@ func TestEnumAdded(t *testing.T) {
 	}, lang[0])
 }
 
+func TestEnumAddedNoGQL(t *testing.T) {
+	s1 := &schema.Schema{}
+	s2 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfoNoGQL(nil),
+		},
+	}
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+
+	lang := m["Language"]
+	require.Len(t, lang, 1)
+	verifyChange(t, change.Change{
+		Change: change.AddEnum,
+		Name:   "Language",
+		TSOnly: true,
+	}, lang[0])
+}
+
 func TestEnumRemoved(t *testing.T) {
 	s1 := &schema.Schema{
 		Enums: map[string]*schema.EnumInfo{
@@ -2160,6 +2196,26 @@ func TestEnumRemoved(t *testing.T) {
 		Change:      change.RemoveEnum,
 		Name:        "Language",
 		GraphQLName: "Language",
+	}, lang[0])
+}
+
+func TestEnumRemovedNoGQL(t *testing.T) {
+	s1 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfoNoGQL(nil),
+		},
+	}
+	s2 := &schema.Schema{}
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+
+	lang := m["Language"]
+	require.Len(t, lang, 1)
+	verifyChange(t, change.Change{
+		Change: change.RemoveEnum,
+		Name:   "Language",
+		TSOnly: true,
 	}, lang[0])
 }
 
@@ -2195,6 +2251,41 @@ func TestEnumModified(t *testing.T) {
 		Change:      change.ModifyEnum,
 		Name:        "Language",
 		GraphQLName: "Language",
+	}, lang[0])
+}
+
+func TestEnumModifiedNoGQL(t *testing.T) {
+	s1 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfoNoGQL(nil),
+		},
+	}
+
+	s2 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfoNoGQL(
+				map[string]string{
+					"Java":       "java",
+					"CPlusPlus":  "c++",
+					"CSharp":     "c#",
+					"JavaScript": "js",
+					"TypeScript": "ts",
+					"GoLang":     "go",
+					"Python":     "python",
+					"Rust":       "rust",
+				}),
+		},
+	}
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+
+	lang := m["Language"]
+	require.Len(t, lang, 1)
+	verifyChange(t, change.Change{
+		Change: change.ModifyEnum,
+		Name:   "Language",
+		TSOnly: true,
 	}, lang[0])
 }
 
@@ -2274,6 +2365,37 @@ func TestEnumTSNameChange(t *testing.T) {
 		GraphQLName: "Language",
 		TSOnly:      true,
 	}, lang[2])
+}
+
+func TestEnumTSNameChangeNoGQL(t *testing.T) {
+	s1 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": getEnumInfoNoGQL(nil),
+		},
+	}
+	e2 := getEnumInfoNoGQL(nil)
+	e2.Enum.Name = "TSLanguage"
+	s2 := &schema.Schema{
+		Enums: map[string]*schema.EnumInfo{
+			"Language": e2,
+		},
+	}
+	m, err := schema.CompareSchemas(s1, s2)
+	require.Nil(t, err)
+	require.Len(t, m, 1)
+
+	lang := m["Language"]
+	require.Len(t, lang, 2)
+	verifyChange(t, change.Change{
+		Change: change.RemoveEnum,
+		Name:   "Language",
+		TSOnly: true,
+	}, lang[0])
+	verifyChange(t, change.Change{
+		Change: change.AddEnum,
+		Name:   "TSLanguage",
+		TSOnly: true,
+	}, lang[1])
 }
 
 func TestCompareSchemaNewNodePlusActionsAndFields(t *testing.T) {
@@ -2954,6 +3076,13 @@ func getEnumInfo(m map[string]string) *schema.EnumInfo {
 	return &schema.EnumInfo{
 		Enum:    tsEnum,
 		GQLEnum: gqlEnum,
+	}
+}
+
+func getEnumInfoNoGQL(m map[string]string) *schema.EnumInfo {
+	ret := getEnumInfo(m)
+	return &schema.EnumInfo{
+		Enum: ret.Enum,
 	}
 }
 
