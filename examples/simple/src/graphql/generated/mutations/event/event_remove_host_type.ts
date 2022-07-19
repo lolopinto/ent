@@ -21,7 +21,7 @@ import { EventType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customEventRemoveHostInput {
-  eventID: string;
+  id: string;
   hostID: string;
 }
 
@@ -32,7 +32,7 @@ interface EventRemoveHostPayload {
 export const EventRemoveHostInputType = new GraphQLInputObjectType({
   name: "EventRemoveHostInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    eventID: {
+    id: {
       description: "id of Event",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -74,7 +74,7 @@ export const EventRemoveHostType: GraphQLFieldConfig<
   ): Promise<EventRemoveHostPayload> => {
     const event = await EventRemoveHostAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.eventID),
+      mustDecodeIDFromGQLID(input.id),
       mustDecodeIDFromGQLID(input.hostID),
     );
     return { event: event };

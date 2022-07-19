@@ -25,7 +25,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customConfirmEditPhoneNumberInput
   extends ConfirmEditPhoneNumberInput {
-  userID: string;
+  id: string;
 }
 
 interface ConfirmEditPhoneNumberPayload {
@@ -35,7 +35,7 @@ interface ConfirmEditPhoneNumberPayload {
 export const ConfirmEditPhoneNumberInputType = new GraphQLInputObjectType({
   name: "ConfirmEditPhoneNumberInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    userID: {
+    id: {
       description: "id of User",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -80,7 +80,7 @@ export const ConfirmPhoneNumberEditType: GraphQLFieldConfig<
   ): Promise<ConfirmEditPhoneNumberPayload> => {
     const user = await ConfirmEditPhoneNumberAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.userID),
+      mustDecodeIDFromGQLID(input.id),
       {
         phoneNumber: input.phoneNumber,
         code: input.code,

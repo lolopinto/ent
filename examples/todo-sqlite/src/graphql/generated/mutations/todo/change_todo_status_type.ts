@@ -19,7 +19,7 @@ import ChangeTodoStatusAction, {
 import { TodoType } from "src/graphql/resolvers/";
 
 interface customChangeTodoStatusInput extends ChangeTodoStatusInput {
-  todo_id: string;
+  id: string;
 }
 
 interface ChangeTodoStatusPayload {
@@ -29,7 +29,7 @@ interface ChangeTodoStatusPayload {
 export const ChangeTodoStatusInputType = new GraphQLInputObjectType({
   name: "ChangeTodoStatusInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    todo_id: {
+    id: {
       description: "id of Todo",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -71,7 +71,7 @@ export const ChangeTodoStatusType: GraphQLFieldConfig<
   ): Promise<ChangeTodoStatusPayload> => {
     const todo = await ChangeTodoStatusAction.saveXFromID(
       context.getViewer(),
-      input.todo_id,
+      input.id,
       {
         completed: input.completed,
       },

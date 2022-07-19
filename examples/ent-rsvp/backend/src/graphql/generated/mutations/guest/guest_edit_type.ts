@@ -20,7 +20,7 @@ import EditGuestAction, {
 import { GuestType } from "src/graphql/resolvers/";
 
 interface customGuestEditInput extends GuestEditInput {
-  guestID: string;
+  id: string;
 }
 
 interface GuestEditPayload {
@@ -30,7 +30,7 @@ interface GuestEditPayload {
 export const GuestEditInputType = new GraphQLInputObjectType({
   name: "GuestEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    guestID: {
+    id: {
       description: "id of Guest",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -72,7 +72,7 @@ export const GuestEditType: GraphQLFieldConfig<
   ): Promise<GuestEditPayload> => {
     const guest = await EditGuestAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.guestID),
+      mustDecodeIDFromGQLID(input.id),
       {
         name: input.name,
         emailAddress: input.emailAddress,

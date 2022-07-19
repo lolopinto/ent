@@ -25,7 +25,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customConfirmEditEmailAddressInput
   extends ConfirmEditEmailAddressInput {
-  userID: string;
+  id: string;
 }
 
 interface ConfirmEditEmailAddressPayload {
@@ -35,7 +35,7 @@ interface ConfirmEditEmailAddressPayload {
 export const ConfirmEditEmailAddressInputType = new GraphQLInputObjectType({
   name: "ConfirmEditEmailAddressInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    userID: {
+    id: {
       description: "id of User",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -80,7 +80,7 @@ export const ConfirmEmailAddressEditType: GraphQLFieldConfig<
   ): Promise<ConfirmEditEmailAddressPayload> => {
     const user = await ConfirmEditEmailAddressAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.userID),
+      mustDecodeIDFromGQLID(input.id),
       {
         emailAddress: input.emailAddress,
         code: input.code,

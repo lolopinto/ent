@@ -46,8 +46,8 @@ type EventActivity implements Node {
   event: Event
   id: ID!
   name: String!
-  startTime: Date!
-  endTime: Date
+  startTime: Time!
+  endTime: Time
   location: String!
   description: String
   inviteAllGuests: Boolean!
@@ -256,8 +256,8 @@ type AuthUserPayload {
 
 input ActivityEventCreateInput {
   name: String!
-  startTime: Date!
-  endTime: Date
+  startTime: Time!
+  endTime: Time
   location: String!
   description: String
   inviteAllGuests: Boolean!
@@ -280,7 +280,7 @@ type AddressCreatePayload {
 
 input AddressDeleteInput {
   """id of Address"""
-  addressID: ID!
+  id: ID!
 }
 
 type AddressDeletePayload {
@@ -289,7 +289,7 @@ type AddressDeletePayload {
 
 input AddressEditInput {
   """id of Address"""
-  addressID: ID!
+  id: ID!
   street: String
   city: String
   state: String
@@ -313,7 +313,7 @@ input AddressEventActivityCreateInput {
 
 input EventActivityAddInviteInput {
   """id of EventActivity"""
-  eventActivityID: ID!
+  id: ID!
   inviteID: ID!
 }
 
@@ -324,8 +324,8 @@ type EventActivityAddInvitePayload {
 input EventActivityCreateInput {
   name: String!
   eventID: ID!
-  startTime: Date!
-  endTime: Date
+  startTime: Time!
+  endTime: Time
   location: String!
   description: String
   inviteAllGuests: Boolean
@@ -338,7 +338,7 @@ type EventActivityCreatePayload {
 
 input EventActivityDeleteInput {
   """id of EventActivity"""
-  eventActivityID: ID!
+  id: ID!
 }
 
 type EventActivityDeletePayload {
@@ -347,11 +347,11 @@ type EventActivityDeletePayload {
 
 input EventActivityEditInput {
   """id of EventActivity"""
-  eventActivityID: ID!
+  id: ID!
   name: String
   eventID: ID
-  startTime: Date
-  endTime: Date
+  startTime: Time
+  endTime: Time
   location: String
   description: String
   inviteAllGuests: Boolean
@@ -363,7 +363,7 @@ type EventActivityEditPayload {
 
 input EventActivityRemoveInviteInput {
   """id of EventActivity"""
-  eventActivityID: ID!
+  id: ID!
   inviteID: ID!
 }
 
@@ -373,7 +373,7 @@ type EventActivityRemoveInvitePayload {
 
 input EventActivityRsvpStatusEditInput {
   """id of EventActivity"""
-  eventActivityID: ID!
+  id: ID!
   rsvpStatus: EventActivityRsvpStatusInput!
   guestID: ID!
   dietaryRestrictions: String
@@ -412,7 +412,7 @@ type GuestCreatePayload {
 
 input GuestDeleteInput {
   """id of Guest"""
-  guestID: ID!
+  id: ID!
 }
 
 type GuestDeletePayload {
@@ -421,7 +421,7 @@ type GuestDeletePayload {
 
 input GuestEditInput {
   """id of Guest"""
-  guestID: ID!
+  id: ID!
   name: String
   emailAddress: String
 }
@@ -442,7 +442,7 @@ type GuestGroupCreatePayload {
 
 input GuestGroupDeleteInput {
   """id of GuestGroup"""
-  guestGroupID: ID!
+  id: ID!
 }
 
 type GuestGroupDeletePayload {
@@ -451,7 +451,7 @@ type GuestGroupDeletePayload {
 
 input GuestGroupEditInput {
   """id of GuestGroup"""
-  guestGroupID: ID!
+  id: ID!
   invitationName: String
 }
 
@@ -507,6 +507,9 @@ type Mutation {
   importGuests(eventID: ID!, file: Upload!): Event!
   userCreate(input: UserCreateInput!): UserCreatePayload!
 }
+
+"""Time scalar type"""
+scalar Time
 
 """The `Upload` scalar type represents a file upload."""
 scalar Upload

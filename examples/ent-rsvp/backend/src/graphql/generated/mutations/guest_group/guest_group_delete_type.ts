@@ -15,7 +15,7 @@ import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import DeleteGuestGroupAction from "src/ent/guest_group/actions/delete_guest_group_action";
 
 interface customGuestGroupDeleteInput {
-  guestGroupID: string;
+  id: string;
 }
 
 interface GuestGroupDeletePayload {
@@ -25,7 +25,7 @@ interface GuestGroupDeletePayload {
 export const GuestGroupDeleteInputType = new GraphQLInputObjectType({
   name: "GuestGroupDeleteInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    guestGroupID: {
+    id: {
       description: "id of GuestGroup",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -64,8 +64,8 @@ export const GuestGroupDeleteType: GraphQLFieldConfig<
   ): Promise<GuestGroupDeletePayload> => {
     await DeleteGuestGroupAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.guestGroupID),
+      mustDecodeIDFromGQLID(input.id),
     );
-    return { deletedGuestGroupID: input.guestGroupID };
+    return { deletedGuestGroupID: input.id };
   },
 };

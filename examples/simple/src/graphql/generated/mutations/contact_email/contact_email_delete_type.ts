@@ -19,7 +19,7 @@ import DeleteContactEmailAction from "../../../../ent/contact_email/actions/dele
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customContactEmailDeleteInput {
-  contactEmailID: string;
+  id: string;
 }
 
 interface ContactEmailDeletePayload {
@@ -29,7 +29,7 @@ interface ContactEmailDeletePayload {
 export const ContactEmailDeleteInputType = new GraphQLInputObjectType({
   name: "ContactEmailDeleteInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    contactEmailID: {
+    id: {
       description: "id of ContactEmail",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -68,8 +68,8 @@ export const ContactEmailDeleteType: GraphQLFieldConfig<
   ): Promise<ContactEmailDeletePayload> => {
     await DeleteContactEmailAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.contactEmailID),
+      mustDecodeIDFromGQLID(input.id),
     );
-    return { deletedContactEmailID: input.contactEmailID };
+    return { deletedContactEmailID: input.id };
   },
 };

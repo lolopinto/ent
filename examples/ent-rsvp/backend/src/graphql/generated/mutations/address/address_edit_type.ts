@@ -23,7 +23,7 @@ import EditAddressAction, {
 import { AddressType } from "src/graphql/resolvers/";
 
 interface customAddressEditInput extends AddressEditInput {
-  addressID: string;
+  id: string;
   ownerID?: string;
 }
 
@@ -34,7 +34,7 @@ interface AddressEditPayload {
 export const AddressEditInputType = new GraphQLInputObjectType({
   name: "AddressEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    addressID: {
+    id: {
       description: "id of Address",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -91,7 +91,7 @@ export const AddressEditType: GraphQLFieldConfig<
   ): Promise<AddressEditPayload> => {
     const address = await EditAddressAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.addressID),
+      mustDecodeIDFromGQLID(input.id),
       {
         street: input.street,
         city: input.city,

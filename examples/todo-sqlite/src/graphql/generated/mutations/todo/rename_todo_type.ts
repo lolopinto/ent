@@ -20,7 +20,7 @@ import { TodoType } from "src/graphql/resolvers/";
 
 interface customRenameTodoInput
   extends Omit<RenameTodoInput, "reasonForChange"> {
-  todo_id: string;
+  id: string;
   reason_for_change?: string | null;
 }
 
@@ -31,7 +31,7 @@ interface RenameTodoPayload {
 export const RenameTodoInputType = new GraphQLInputObjectType({
   name: "RenameTodoInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    todo_id: {
+    id: {
       description: "id of Todo",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -73,7 +73,7 @@ export const RenameTodoType: GraphQLFieldConfig<
   ): Promise<RenameTodoPayload> => {
     const todo = await RenameTodoStatusAction.saveXFromID(
       context.getViewer(),
-      input.todo_id,
+      input.id,
       {
         text: input.text,
         reasonForChange: input.reason_for_change,

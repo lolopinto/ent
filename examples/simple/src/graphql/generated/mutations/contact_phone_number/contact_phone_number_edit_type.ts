@@ -28,7 +28,7 @@ import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customContactPhoneNumberEditInput
   extends ContactPhoneNumberEditInput {
-  contactPhoneNumberID: string;
+  id: string;
   contactID?: string;
 }
 
@@ -39,7 +39,7 @@ interface ContactPhoneNumberEditPayload {
 export const ContactPhoneNumberEditInputType = new GraphQLInputObjectType({
   name: "ContactPhoneNumberEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    contactPhoneNumberID: {
+    id: {
       description: "id of ContactPhoneNumber",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -87,7 +87,7 @@ export const ContactPhoneNumberEditType: GraphQLFieldConfig<
   ): Promise<ContactPhoneNumberEditPayload> => {
     const contactPhoneNumber = await EditContactPhoneNumberAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.contactPhoneNumberID),
+      mustDecodeIDFromGQLID(input.id),
       {
         phoneNumber: input.phoneNumber,
         label: input.label,

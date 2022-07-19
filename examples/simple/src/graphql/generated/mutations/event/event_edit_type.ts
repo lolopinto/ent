@@ -28,7 +28,7 @@ import { EventType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customEventEditInput extends Omit<EventEditInput, "location"> {
-  eventID: string;
+  id: string;
   creatorID?: string;
   eventLocation?: string;
   addressID?: string;
@@ -41,7 +41,7 @@ interface EventEditPayload {
 export const EventEditInputType = new GraphQLInputObjectType({
   name: "EventEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    eventID: {
+    id: {
       description: "id of Event",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -95,7 +95,7 @@ export const EventEditType: GraphQLFieldConfig<
   ): Promise<EventEditPayload> => {
     const event = await EditEventAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.eventID),
+      mustDecodeIDFromGQLID(input.id),
       {
         name: input.name,
         creatorID: mustDecodeNullableIDFromGQLID(input.creatorID),

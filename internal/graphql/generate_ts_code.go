@@ -510,10 +510,6 @@ func getFilePathForAction(cfg *codegen.Config, nodeData *schema.NodeData, action
 	return path.Join(cfg.GetAbsPathToRoot(), fmt.Sprintf("src/graphql/generated/mutations/%s/%s_type.ts", nodeData.PackageName, strcase.ToSnake(actionName)))
 }
 
-func getImportPathForAction(nodeData *schema.NodeData, action action.Action) string {
-	return fmt.Sprintf("src/graphql/generated/mutations/%s/%s_type", nodeData.PackageName, strcase.ToSnake(action.GetGraphQLName()))
-}
-
 func getImportPathForActionFromPackage(packageName string, action action.Action) string {
 	return fmt.Sprintf("src/graphql/generated/mutations/%s/%s_type", packageName, strcase.ToSnake(action.GetGraphQLName()))
 }
@@ -1223,11 +1219,15 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 						if err != nil {
 							serr.Append(err)
 						}
+						nodes, err := buildActionNodes(processor, nodeData, action)
+						if err != nil {
+							serr.Append(err)
+						}
 						actionObj := gqlNode{
 							ObjData: &gqlobjectData{
 								Node:         nodeData.Node,
 								NodeInstance: nodeData.NodeInstance,
-								GQLNodes:     buildActionNodes(processor, nodeData, action),
+								GQLNodes:     nodes,
 								Enums:        buildActionEnums(nodeData, action),
 								FieldConfig:  fieldCfg,
 								Package:      processor.Config.GetImportPackage(),
@@ -1938,7 +1938,7 @@ func addConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, fields *
 	*fields = append(*fields, gqlField)
 }
 
-func buildActionNodes(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action) []*objectType {
+func buildActionNodes(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action) ([]*objectType, error) {
 	var ret []*objectType
 	for _, c := range a.GetCustomInterfaces() {
 		_, ok := c.Action.(action.Action)
@@ -1946,11 +1946,16 @@ func buildActionNodes(processor *codegen.Processor, nodeData *schema.NodeData, a
 			ret = append(ret, buildCustomInputNode(c))
 		}
 	}
+	input, err := buildActionInputNode(processor, nodeData, a)
+	if err != nil {
+		return nil, err
+	}
+
 	ret = append(ret,
-		buildActionInputNode(processor, nodeData, a),
+		input,
 		buildActionPayloadNode(processor, nodeData, a),
 	)
-	return ret
+	return ret, nil
 }
 
 func buildActionEnums(nodeData *schema.NodeData, action action.Action) []*gqlEnum {
@@ -1989,7 +1994,7 @@ func buildCustomInputNode(c *customtype.CustomInterface) *objectType {
 	return result
 }
 
-func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action) *objectType {
+func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action) (*objectType, error) {
 	// TODO shared input types across create/edit for example
 	node := a.GetGraphQLInputName()
 
@@ -2015,8 +2020,12 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 
 	// add id field for edit and delete mutations
 	if a.MutatingExistingObject() {
+		id, err := getIDField(processor, nodeData)
+		if err != nil {
+			return nil, err
+		}
 		result.Fields = append(result.Fields, &fieldType{
-			Name: getIDField(processor, a.GetNodeInfo().NodeInstance),
+			Name: id,
 			FieldImports: []*tsimport.ImportPath{
 				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 				tsimport.NewGQLImportPath("GraphQLID"),
@@ -2064,8 +2073,12 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 
 		// only want the id field for the object when editing said object
 		if a.MutatingExistingObject() {
+			id, err := getIDField(processor, nodeData)
+			if err != nil {
+				return nil, err
+			}
 			intType.Fields = append(intType.Fields, &interfaceField{
-				Name: getIDField(processor, a.GetNodeInfo().NodeInstance),
+				Name: id,
 				// we're doing these as strings instead of ids because we're going to convert from gql id to ent id
 				Type: "string",
 			})
@@ -2134,7 +2147,7 @@ func buildActionInputNode(processor *codegen.Processor, nodeData *schema.NodeDat
 		result.TSInterfaces = []*interfaceType{intType}
 	}
 
-	return result
+	return result, nil
 }
 
 func getPayloadNameFromAction(a action.Action) string {
@@ -2451,7 +2464,10 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			})
 		}
 
-		idField := getIDField(processor, nodeData.NodeInstance)
+		idField, err := getIDField(processor, nodeData)
+		if err != nil {
+			return nil, err
+		}
 
 		if action.HasInput(a) {
 			// have fields and therefore input
@@ -2547,9 +2563,12 @@ func getDeletedField(processor *codegen.Processor, node string) string {
 	return codegenapi.GraphQLName(processor.Config, fmt.Sprintf("deleted%sID", node))
 }
 
-func getIDField(processor *codegen.Processor, node string) string {
-	// TODO this should just be id but that should be a different PR
-	return codegenapi.GraphQLName(processor.Config, fmt.Sprintf("%sID", node))
+func getIDField(processor *codegen.Processor, nodeData *schema.NodeData) (string, error) {
+	pkey := nodeData.FieldInfo.SingleFieldPrimaryKey()
+	if pkey == "" {
+		return "", fmt.Errorf("no single field primary key for %s", nodeData.Node)
+	}
+	return codegenapi.GraphQLName(processor.Config, pkey), nil
 }
 
 func getEdgeField(processor *codegen.Processor, edge *edge.AssociationEdge) string {

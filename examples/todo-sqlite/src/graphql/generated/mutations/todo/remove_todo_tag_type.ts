@@ -16,7 +16,7 @@ import TodoRemoveTagAction from "src/ent/todo/actions/todo_remove_tag_action";
 import { TodoType } from "src/graphql/resolvers/";
 
 interface customRemoveTodoTagInput {
-  todo_id: string;
+  id: string;
   tag_id: string;
 }
 
@@ -27,7 +27,7 @@ interface RemoveTodoTagPayload {
 export const RemoveTodoTagInputType = new GraphQLInputObjectType({
   name: "RemoveTodoTagInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    todo_id: {
+    id: {
       description: "id of Todo",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -66,7 +66,7 @@ export const RemoveTodoTagType: GraphQLFieldConfig<
   ): Promise<RemoveTodoTagPayload> => {
     const todo = await TodoRemoveTagAction.saveXFromID(
       context.getViewer(),
-      input.todo_id,
+      input.id,
       input.tag_id,
     );
     return { todo: todo };
