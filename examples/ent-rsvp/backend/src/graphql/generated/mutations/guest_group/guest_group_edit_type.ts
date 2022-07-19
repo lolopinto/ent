@@ -20,7 +20,7 @@ import EditGuestGroupAction, {
 import { GuestGroupType } from "src/graphql/resolvers/";
 
 interface customGuestGroupEditInput extends GuestGroupEditInput {
-  guestGroupID: string;
+  id: string;
 }
 
 interface GuestGroupEditPayload {
@@ -30,7 +30,7 @@ interface GuestGroupEditPayload {
 export const GuestGroupEditInputType = new GraphQLInputObjectType({
   name: "GuestGroupEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    guestGroupID: {
+    id: {
       description: "id of GuestGroup",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -69,7 +69,7 @@ export const GuestGroupEditType: GraphQLFieldConfig<
   ): Promise<GuestGroupEditPayload> => {
     const guestGroup = await EditGuestGroupAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.guestGroupID),
+      mustDecodeIDFromGQLID(input.id),
       {
         invitationName: input.invitationName,
       },

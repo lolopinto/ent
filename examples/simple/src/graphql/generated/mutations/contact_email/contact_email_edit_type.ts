@@ -27,7 +27,7 @@ import { ContactEmailType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customContactEmailEditInput extends ContactEmailEditInput {
-  contactEmailID: string;
+  id: string;
   contactID?: string;
 }
 
@@ -38,7 +38,7 @@ interface ContactEmailEditPayload {
 export const ContactEmailEditInputType = new GraphQLInputObjectType({
   name: "ContactEmailEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    contactEmailID: {
+    id: {
       description: "id of ContactEmail",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -86,7 +86,7 @@ export const ContactEmailEditType: GraphQLFieldConfig<
   ): Promise<ContactEmailEditPayload> => {
     const contactEmail = await EditContactEmailAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.contactEmailID),
+      mustDecodeIDFromGQLID(input.id),
       {
         emailAddress: input.emailAddress,
         label: input.label,

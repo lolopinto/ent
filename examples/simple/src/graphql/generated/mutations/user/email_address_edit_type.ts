@@ -24,7 +24,7 @@ import { UserType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customEditEmailAddressInput extends EditEmailAddressInput {
-  userID: string;
+  id: string;
 }
 
 interface EditEmailAddressPayload {
@@ -34,7 +34,7 @@ interface EditEmailAddressPayload {
 export const EditEmailAddressInputType = new GraphQLInputObjectType({
   name: "EditEmailAddressInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    userID: {
+    id: {
       description: "id of User",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -76,7 +76,7 @@ export const EmailAddressEditType: GraphQLFieldConfig<
   ): Promise<EditEmailAddressPayload> => {
     const user = await EditEmailAddressAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.userID),
+      mustDecodeIDFromGQLID(input.id),
       {
         newEmail: input.newEmail,
       },

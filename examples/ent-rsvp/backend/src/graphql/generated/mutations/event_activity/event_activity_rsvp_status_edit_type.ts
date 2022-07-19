@@ -22,7 +22,7 @@ import { EventActivityType } from "src/graphql/resolvers/";
 
 interface customEventActivityRsvpStatusEditInput
   extends EditEventActivityRsvpStatusInput {
-  eventActivityID: string;
+  id: string;
   guestID: string;
 }
 
@@ -45,7 +45,7 @@ export const EventActivityRsvpStatusInputType = new GraphQLEnumType({
 export const EventActivityRsvpStatusEditInputType = new GraphQLInputObjectType({
   name: "EventActivityRsvpStatusEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    eventActivityID: {
+    id: {
       description: "id of EventActivity",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -93,7 +93,7 @@ export const EventActivityRsvpStatusEditType: GraphQLFieldConfig<
   ): Promise<EventActivityRsvpStatusEditPayload> => {
     const eventActivity = await EditEventActivityRsvpStatusAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.eventActivityID),
+      mustDecodeIDFromGQLID(input.id),
       {
         rsvpStatus: input.rsvpStatus,
         guestID: mustDecodeIDFromGQLID(input.guestID),

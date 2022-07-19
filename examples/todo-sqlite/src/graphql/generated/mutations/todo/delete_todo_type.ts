@@ -14,7 +14,7 @@ import { RequestContext, Viewer } from "@snowtop/ent";
 import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
 
 interface customDeleteTodoInput {
-  todo_id: string;
+  id: string;
 }
 
 interface DeleteTodoPayload {
@@ -24,7 +24,7 @@ interface DeleteTodoPayload {
 export const DeleteTodoInputType = new GraphQLInputObjectType({
   name: "DeleteTodoInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    todo_id: {
+    id: {
       description: "id of Todo",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -58,7 +58,7 @@ export const DeleteTodoType: GraphQLFieldConfig<
     context: RequestContext<Viewer>,
     _info: GraphQLResolveInfo,
   ): Promise<DeleteTodoPayload> => {
-    await DeleteTodoAction.saveXFromID(context.getViewer(), input.todo_id);
-    return { deleted_todo_id: input.todo_id };
+    await DeleteTodoAction.saveXFromID(context.getViewer(), input.id);
+    return { deleted_todo_id: input.id };
   },
 };

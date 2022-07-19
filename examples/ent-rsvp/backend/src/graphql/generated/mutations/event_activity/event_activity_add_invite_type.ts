@@ -17,7 +17,7 @@ import EventActivityAddInviteAction from "src/ent/event_activity/actions/event_a
 import { EventActivityType } from "src/graphql/resolvers/";
 
 interface customEventActivityAddInviteInput {
-  eventActivityID: string;
+  id: string;
   inviteID: string;
 }
 
@@ -28,7 +28,7 @@ interface EventActivityAddInvitePayload {
 export const EventActivityAddInviteInputType = new GraphQLInputObjectType({
   name: "EventActivityAddInviteInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    eventActivityID: {
+    id: {
       description: "id of EventActivity",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -70,7 +70,7 @@ export const EventActivityAddInviteType: GraphQLFieldConfig<
   ): Promise<EventActivityAddInvitePayload> => {
     const eventActivity = await EventActivityAddInviteAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.eventActivityID),
+      mustDecodeIDFromGQLID(input.id),
       mustDecodeIDFromGQLID(input.inviteID),
     );
     return { eventActivity: eventActivity };

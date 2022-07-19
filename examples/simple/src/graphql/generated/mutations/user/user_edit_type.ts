@@ -24,7 +24,7 @@ import { UserType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customUserEditInput extends UserEditInput {
-  userID: string;
+  id: string;
 }
 
 interface UserEditPayload {
@@ -34,7 +34,7 @@ interface UserEditPayload {
 export const UserEditInputType = new GraphQLInputObjectType({
   name: "UserEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    userID: {
+    id: {
       description: "id of User",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -76,7 +76,7 @@ export const UserEditType: GraphQLFieldConfig<
   ): Promise<UserEditPayload> => {
     const user = await EditUserAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.userID),
+      mustDecodeIDFromGQLID(input.id),
       {
         firstName: input.firstName,
         lastName: input.lastName,

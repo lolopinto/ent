@@ -24,7 +24,7 @@ import { UserType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customEditPhoneNumberInput extends EditPhoneNumberInput {
-  userID: string;
+  id: string;
 }
 
 interface EditPhoneNumberPayload {
@@ -34,7 +34,7 @@ interface EditPhoneNumberPayload {
 export const EditPhoneNumberInputType = new GraphQLInputObjectType({
   name: "EditPhoneNumberInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    userID: {
+    id: {
       description: "id of User",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -76,7 +76,7 @@ export const PhoneNumberEditType: GraphQLFieldConfig<
   ): Promise<EditPhoneNumberPayload> => {
     const user = await EditPhoneNumberAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.userID),
+      mustDecodeIDFromGQLID(input.id),
       {
         newPhoneNumber: input.newPhoneNumber,
       },

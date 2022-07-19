@@ -21,7 +21,7 @@ import { EventType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customEventAddHostInput {
-  eventID: string;
+  id: string;
   hostID: string;
 }
 
@@ -32,7 +32,7 @@ interface EventAddHostPayload {
 export const EventAddHostInputType = new GraphQLInputObjectType({
   name: "EventAddHostInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    eventID: {
+    id: {
       description: "id of Event",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -71,7 +71,7 @@ export const EventAddHostType: GraphQLFieldConfig<
   ): Promise<EventAddHostPayload> => {
     const event = await EventAddHostAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.eventID),
+      mustDecodeIDFromGQLID(input.id),
       mustDecodeIDFromGQLID(input.hostID),
     );
     return { event: event };

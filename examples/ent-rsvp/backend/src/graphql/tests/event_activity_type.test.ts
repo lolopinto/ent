@@ -57,7 +57,7 @@ test("rsvp", async () => {
       mutation: "eventActivityRsvpStatusEdit",
       schema,
       args: {
-        eventActivityID: encodeGQLID(activity),
+        id: encodeGQLID(activity),
         rsvpStatus: "ATTENDING",
         guestID: encodeGQLID(guest),
       },
@@ -84,7 +84,7 @@ test("rsvp", async () => {
       mutation: "eventActivityRsvpStatusEdit",
       schema,
       args: {
-        eventActivityID: encodeGQLID(activity),
+        id: encodeGQLID(activity),
         rsvpStatus: "DECLINED",
         guestID: encodeGQLID(guest),
       },
@@ -103,7 +103,7 @@ test("rsvp with dietary restrictions", async () => {
       mutation: "eventActivityRsvpStatusEdit",
       schema,
       args: {
-        eventActivityID: encodeGQLID(activity),
+        id: encodeGQLID(activity),
         rsvpStatus: "ATTENDING",
         guestID: encodeGQLID(guest),
         dietaryRestrictions: "shellfish",

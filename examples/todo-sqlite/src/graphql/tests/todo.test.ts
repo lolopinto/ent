@@ -263,7 +263,7 @@ test("edit", async () => {
       schema: schema,
       mutation: "renameTodo",
       args: {
-        todo_id: todo.id,
+        id: todo.id,
         text: "watch GOT tomorrow",
         reason_for_change: "time for fun",
       },
@@ -285,7 +285,7 @@ test("delete", async () => {
       viewer: account.viewer,
       schema: schema,
       mutation: "deleteTodo",
-      args: { todo_id: todo.id },
+      args: { id: todo.id },
     },
     ["deleted_todo_id", todo.id],
   );
@@ -304,7 +304,7 @@ test("todo tag", async () => {
       schema,
       mutation: "addTodoTag",
       args: {
-        todo_id: todo.id,
+        id: todo.id,
         tag_id: tag.id,
       },
     },

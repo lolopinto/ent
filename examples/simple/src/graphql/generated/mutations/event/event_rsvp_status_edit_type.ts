@@ -24,7 +24,7 @@ import { EventType } from "../../../resolvers";
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customEventRsvpStatusEditInput extends EditEventRsvpStatusInput {
-  eventID: string;
+  id: string;
   userID: string;
 }
 
@@ -50,7 +50,7 @@ export const EventRsvpStatusInputType = new GraphQLEnumType({
 export const EventRsvpStatusEditInputType = new GraphQLInputObjectType({
   name: "EventRsvpStatusEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    eventID: {
+    id: {
       description: "id of Event",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -95,7 +95,7 @@ export const EventRsvpStatusEditType: GraphQLFieldConfig<
   ): Promise<EventRsvpStatusEditPayload> => {
     const event = await EditEventRsvpStatusAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.eventID),
+      mustDecodeIDFromGQLID(input.id),
       {
         rsvpStatus: input.rsvpStatus,
         userID: mustDecodeIDFromGQLID(input.userID),
