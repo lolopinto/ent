@@ -83,7 +83,7 @@ test("edit", async () => {
     getConfig(
       "userEdit",
       {
-        userID: encodeGQLID(user),
+        id: encodeGQLID(user),
         firstName: "Jon2",
       },
       new ExampleViewer(user.id),
@@ -110,7 +110,7 @@ test("edit no permissions, logged out viewer", async () => {
     getConfig(
       "userEdit",
       {
-        userID: encodeGQLID(user),
+        id: encodeGQLID(user),
         firstName: "Jon2",
       },
       loggedOutViewer,
@@ -140,7 +140,7 @@ test("edit no permissions, other viewer", async () => {
     getConfig(
       "userEdit",
       {
-        userID: encodeGQLID(user),
+        id: encodeGQLID(user),
         firstName: "Jon2",
       },
       new ExampleViewer(user2.id),
@@ -167,7 +167,7 @@ test("delete", async () => {
     getConfig(
       "userDelete",
       {
-        userID: encodeGQLID(user),
+        id: encodeGQLID(user),
       },
       new ExampleViewer(user.id),
     ),
@@ -197,7 +197,7 @@ test("delete 2", async () => {
     getConfig(
       "userDelete2",
       {
-        userID: encodeGQLID(user),
+        id: encodeGQLID(user),
         log: true,
       },
       new ExampleViewer(user.id),
@@ -231,7 +231,7 @@ test("delete. other user no permissions", async () => {
     getConfig(
       "userDelete",
       {
-        userID: encodeGQLID(user),
+        id: encodeGQLID(user),
       },
       new ExampleViewer(user2.id),
       {
