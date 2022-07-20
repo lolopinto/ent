@@ -4,7 +4,7 @@
 
 import { ConcreteRequest } from "relay-runtime";
 export type AddressEditInput = {
-    addressID: string;
+    id: string;
     street?: string | null;
     city?: string | null;
     state?: string | null;

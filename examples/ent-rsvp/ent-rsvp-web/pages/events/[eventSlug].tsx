@@ -212,9 +212,8 @@ function Guests({ event, reloadData }) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [currentDeletedGuestGroup, setCurrentDeletedGuestGroup] = useState(
-    null,
-  );
+  const [currentDeletedGuestGroup, setCurrentDeletedGuestGroup] =
+    useState(null);
 
   const onDelete = (e, guestGroup) => {
     setCurrentDeletedGuestGroup(guestGroup);
@@ -306,7 +305,7 @@ function Invites({ event, reloadData }) {
       eventActivityAddInvite(
         environment,
         {
-          eventActivityID: selectedActivity,
+          id: selectedActivity,
           inviteID: id,
         },
         function (r, errs) {
@@ -320,7 +319,7 @@ function Invites({ event, reloadData }) {
       eventActivityRemoveInvite(
         environment,
         {
-          eventActivityID: selectedActivity,
+          id: selectedActivity,
           inviteID: id,
         },
         function (r, errs) {
@@ -428,7 +427,7 @@ function ConfirmDelete({ guestGroup, eventID, showModal, setShowModal }) {
       environment,
       eventID,
       {
-        guestGroupID: guestGroup.id,
+        id: guestGroup.id,
       },
       function (r, errs) {
         if (errs && errs.length) {
@@ -653,7 +652,7 @@ function ConfirmActivityDelete({
       environment,
       eventID,
       {
-        eventActivityID: eventActivity.id,
+        id: eventActivity.id,
       },
       function (r, errs) {
         if (errs && errs.length) {
@@ -741,7 +740,7 @@ function EventActivity({ activity, reloadData, event }) {
     activityEdit(
       environment,
       {
-        eventActivityID: activity.id,
+        id: activity.id,
         name: editedActivity.name,
         startTime: editedActivity.startTime,
         endTime: editedActivity.endTime,
@@ -760,7 +759,7 @@ function EventActivity({ activity, reloadData, event }) {
     addressEdit(
       environment,
       {
-        addressID: activity.address.id,
+        id: activity.address.id,
         street: editedActivity.street,
         city: editedActivity.city,
         state: editedActivity.state,

@@ -4,7 +4,7 @@
 
 import { ConcreteRequest } from "relay-runtime";
 export type GuestEditInput = {
-    guestID: string;
+    id: string;
     name?: string | null;
     emailAddress?: string | null;
 };

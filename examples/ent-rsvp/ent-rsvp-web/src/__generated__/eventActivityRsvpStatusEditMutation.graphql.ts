@@ -5,7 +5,7 @@
 import { ConcreteRequest } from "relay-runtime";
 export type EventActivityRsvpStatusInput = "ATTENDING" | "DECLINED" | "%future added value";
 export type EventActivityRsvpStatusEditInput = {
-    eventActivityID: string;
+    id: string;
     rsvpStatus: EventActivityRsvpStatusInput;
     guestID: string;
     dietaryRestrictions?: string | null;

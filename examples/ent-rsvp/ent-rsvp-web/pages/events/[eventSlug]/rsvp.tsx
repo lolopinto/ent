@@ -177,9 +177,8 @@ function Time({ activity }) {
 function Guest({ guest, activity, reloadData }) {
   const [name, setName] = useState(guest.name);
   const [editingName, setEditingName] = useState(false);
-  const [editingDietaryRestrictions, setEditingDietaryRestrictions] = useState(
-    false,
-  );
+  const [editingDietaryRestrictions, setEditingDietaryRestrictions] =
+    useState(false);
   const [dietaryRestrictions, setDietaryRestrictions] = useState("");
   const [attendingVariant, setAttendingVariant] = useState("outline-danger");
   const [declinedVariant, setDeclinedVariant] = useState("outline-danger");
@@ -206,7 +205,7 @@ function Guest({ guest, activity, reloadData }) {
     eventActivityRsvp(
       environment,
       {
-        eventActivityID: activity.id,
+        id: activity.id,
         guestID: guest.id,
         rsvpStatus: input,
       },
@@ -239,7 +238,7 @@ function Guest({ guest, activity, reloadData }) {
     guestEdit(
       environment,
       {
-        guestID: guest.id,
+        id: guest.id,
         name: name,
       },
       function (r, errs) {
@@ -259,7 +258,7 @@ function Guest({ guest, activity, reloadData }) {
     eventActivityRsvp(
       environment,
       {
-        eventActivityID: activity.id,
+        id: activity.id,
         guestID: guest.id,
         rsvpStatus: "ATTENDING",
         dietaryRestrictions: dietaryRestrictions,
