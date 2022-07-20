@@ -4,7 +4,7 @@
 
 import { ConcreteRequest } from "relay-runtime";
 export type EventActivityAddInviteInput = {
-    eventActivityID: string;
+    id: string;
     inviteID: string;
 };
 export type eventActivityAddInviteMutationVariables = {

@@ -4,7 +4,7 @@
 
 import { ConcreteRequest } from "relay-runtime";
 export type EventActivityDeleteInput = {
-    eventActivityID: string;
+    id: string;
 };
 export type eventActivityDeleteMutationVariables = {
     input: EventActivityDeleteInput;
