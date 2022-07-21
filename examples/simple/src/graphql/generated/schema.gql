@@ -655,7 +655,7 @@ type CommentCreatePayload {
 
 input ConfirmEditEmailAddressInput {
   """id of User"""
-  userID: ID!
+  id: ID!
   emailAddress: String!
   code: String!
 }
@@ -666,7 +666,7 @@ type ConfirmEditEmailAddressPayload {
 
 input ConfirmEditPhoneNumberInput {
   """id of User"""
-  userID: ID!
+  id: ID!
   phoneNumber: String!
   code: String!
 }
@@ -689,7 +689,7 @@ type ContactCreatePayload {
 
 input ContactDeleteInput {
   """id of Contact"""
-  contactID: ID!
+  id: ID!
 }
 
 type ContactDeletePayload {
@@ -698,7 +698,7 @@ type ContactDeletePayload {
 
 input ContactEditInput {
   """id of Contact"""
-  contactID: ID!
+  id: ID!
   emailIds: [ID!]
   phoneNumberIds: [ID!]
   firstName: String
@@ -722,7 +722,7 @@ type ContactEmailCreatePayload {
 
 input ContactEmailDeleteInput {
   """id of ContactEmail"""
-  contactEmailID: ID!
+  id: ID!
 }
 
 type ContactEmailDeletePayload {
@@ -731,7 +731,7 @@ type ContactEmailDeletePayload {
 
 input ContactEmailEditInput {
   """id of ContactEmail"""
-  contactEmailID: ID!
+  id: ID!
   emailAddress: String
   label: String
   contactID: ID
@@ -753,7 +753,7 @@ type ContactPhoneNumberCreatePayload {
 
 input ContactPhoneNumberDeleteInput {
   """id of ContactPhoneNumber"""
-  contactPhoneNumberID: ID!
+  id: ID!
 }
 
 type ContactPhoneNumberDeletePayload {
@@ -762,7 +762,7 @@ type ContactPhoneNumberDeletePayload {
 
 input ContactPhoneNumberEditInput {
   """id of ContactPhoneNumber"""
-  contactPhoneNumberID: ID!
+  id: ID!
   phoneNumber: String
   label: String
   contactID: ID
@@ -778,13 +778,13 @@ type DeleteUserInput2Payload {
 
 input DeleteUserInput2 {
   """id of User"""
-  userID: ID!
+  id: ID!
   log: Boolean!
 }
 
 input EditEmailAddressInput {
   """id of User"""
-  userID: ID!
+  id: ID!
   newEmail: String!
 }
 
@@ -794,7 +794,7 @@ type EditEmailAddressPayload {
 
 input EditPhoneNumberInput {
   """id of User"""
-  userID: ID!
+  id: ID!
   newPhoneNumber: String!
 }
 
@@ -809,7 +809,7 @@ input EmailContactCreateInput {
 
 input EventAddHostInput {
   """id of Event"""
-  eventID: ID!
+  id: ID!
   hostID: ID!
 }
 
@@ -832,7 +832,7 @@ type EventCreatePayload {
 
 input EventDeleteInput {
   """id of Event"""
-  eventID: ID!
+  id: ID!
 }
 
 type EventDeletePayload {
@@ -841,7 +841,7 @@ type EventDeletePayload {
 
 input EventEditInput {
   """id of Event"""
-  eventID: ID!
+  id: ID!
   name: String
   creatorID: ID
   startTime: Time
@@ -856,7 +856,7 @@ type EventEditPayload {
 
 input EventRemoveHostInput {
   """id of Event"""
-  eventID: ID!
+  id: ID!
   hostID: ID!
 }
 
@@ -866,7 +866,7 @@ type EventRemoveHostPayload {
 
 input EventRsvpStatusEditInput {
   """id of Event"""
-  eventID: ID!
+  id: ID!
   rsvpStatus: EventRsvpStatusInput!
   userID: ID!
 }
@@ -932,7 +932,7 @@ type UserCreatePayload {
 
 input UserDeleteInput {
   """id of User"""
-  userID: ID!
+  id: ID!
 }
 
 type UserDeletePayload {
@@ -941,7 +941,7 @@ type UserDeletePayload {
 
 input UserEditInput {
   """id of User"""
-  userID: ID!
+  id: ID!
   firstName: String
   lastName: String
 }

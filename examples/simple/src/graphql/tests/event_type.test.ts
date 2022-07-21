@@ -141,7 +141,7 @@ test("event edit", async () => {
       schema,
       mutation: "eventEdit",
       args: {
-        eventID: encodeGQLID(event),
+        id: encodeGQLID(event),
         name: "event2",
       },
     },
@@ -155,7 +155,7 @@ test("event edit", async () => {
       schema,
       mutation: "eventEdit",
       args: {
-        eventID: encodeGQLID(event),
+        id: encodeGQLID(event),
         addressID: encodeGQLID(address),
       },
     },
@@ -170,7 +170,7 @@ test("event edit", async () => {
       mutation: "eventEdit",
       nullQueryPaths: ["event.address"],
       args: {
-        eventID: encodeGQLID(event),
+        id: encodeGQLID(event),
         addressID: null,
       },
     },
@@ -248,7 +248,7 @@ test("event rsvp status edit", async () => {
       mutation: "eventRsvpStatusEdit",
       schema,
       args: {
-        eventID: encodeGQLID(event),
+        id: encodeGQLID(event),
         userID: encodeGQLID(user),
         rsvpStatus: "MAYBE",
       },

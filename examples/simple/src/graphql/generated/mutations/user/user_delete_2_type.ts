@@ -22,7 +22,7 @@ import DeleteUserAction2, {
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customDeleteUserInput2 extends DeleteUserInput2 {
-  userID: string;
+  id: string;
 }
 
 interface DeleteUserInput2Payload {
@@ -32,7 +32,7 @@ interface DeleteUserInput2Payload {
 export const DeleteUserInput2Type = new GraphQLInputObjectType({
   name: "DeleteUserInput2",
   fields: (): GraphQLInputFieldConfigMap => ({
-    userID: {
+    id: {
       description: "id of User",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -74,11 +74,11 @@ export const UserDelete2Type: GraphQLFieldConfig<
   ): Promise<DeleteUserInput2Payload> => {
     await DeleteUserAction2.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.userID),
+      mustDecodeIDFromGQLID(input.id),
       {
         log: input.log,
       },
     );
-    return { deletedUserID: input.userID };
+    return { deletedUserID: input.id };
   },
 };

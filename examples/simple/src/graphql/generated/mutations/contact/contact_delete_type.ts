@@ -19,7 +19,7 @@ import DeleteContactAction from "../../../../ent/contact/actions/delete_contact_
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customContactDeleteInput {
-  contactID: string;
+  id: string;
 }
 
 interface ContactDeletePayload {
@@ -29,7 +29,7 @@ interface ContactDeletePayload {
 export const ContactDeleteInputType = new GraphQLInputObjectType({
   name: "ContactDeleteInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    contactID: {
+    id: {
       description: "id of Contact",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -65,8 +65,8 @@ export const ContactDeleteType: GraphQLFieldConfig<
   ): Promise<ContactDeletePayload> => {
     await DeleteContactAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.contactID),
+      mustDecodeIDFromGQLID(input.id),
     );
-    return { deletedContactID: input.contactID };
+    return { deletedContactID: input.id };
   },
 };

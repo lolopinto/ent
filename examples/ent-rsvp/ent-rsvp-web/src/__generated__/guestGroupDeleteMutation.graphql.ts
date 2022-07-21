@@ -4,7 +4,7 @@
 
 import { ConcreteRequest } from "relay-runtime";
 export type GuestGroupDeleteInput = {
-    guestGroupID: string;
+    id: string;
 };
 export type guestGroupDeleteMutationVariables = {
     input: GuestGroupDeleteInput;

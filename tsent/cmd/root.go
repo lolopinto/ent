@@ -21,7 +21,8 @@ var rootCmd = &cobra.Command{
 }
 
 type rootArgs struct {
-	debug bool
+	debug          bool
+	disablePrompts bool
 }
 
 var rootInfo rootArgs
@@ -95,6 +96,7 @@ func init() {
 	codegenCmd.Flags().StringVarP(&codegenInfo.step, "step", "s", "", "limit to only run a particular step e.g. db, graphql, codegen")
 	codegenCmd.Flags().BoolVar(&codegenInfo.writeAll, "write-all", false, "to force writing all files and skip the logic we have for only selectively writing some files")
 	codegenCmd.Flags().BoolVar(&codegenInfo.disableCustomGraphQL, "disable-custom-graphql", false, "to disable custom graphql during codegen. used when we need to rebuild everything and minimize parsing code")
+	codegenCmd.Flags().BoolVar(&codegenInfo.disablePrompts, "disable_prompts", false, "disable prompts")
 
 	generateSchemasCmd.Flags().StringVar(&schemasInfo.file, "file", "", "file to get data from. also supports piping it through")
 	generateSchemasCmd.Flags().BoolVar(&schemasInfo.force, "force", false, "if force is true, it overwrites existing schema, otherwise throws error")

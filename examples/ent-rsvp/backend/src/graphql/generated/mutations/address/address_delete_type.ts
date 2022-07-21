@@ -15,7 +15,7 @@ import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import DeleteAddressAction from "src/ent/address/actions/delete_address_action";
 
 interface customAddressDeleteInput {
-  addressID: string;
+  id: string;
 }
 
 interface AddressDeletePayload {
@@ -25,7 +25,7 @@ interface AddressDeletePayload {
 export const AddressDeleteInputType = new GraphQLInputObjectType({
   name: "AddressDeleteInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    addressID: {
+    id: {
       description: "id of Address",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -61,8 +61,8 @@ export const AddressDeleteType: GraphQLFieldConfig<
   ): Promise<AddressDeletePayload> => {
     await DeleteAddressAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.addressID),
+      mustDecodeIDFromGQLID(input.id),
     );
-    return { deletedAddressID: input.addressID };
+    return { deletedAddressID: input.id };
   },
 };

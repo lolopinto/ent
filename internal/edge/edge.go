@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/ent"
@@ -247,6 +246,7 @@ func getFieldEdge(cfg codegenapi.Config,
 		"ID":  "ID",
 		"IDs": "IDs",
 		"ids": "_ids",
+		"Ids": "Ids",
 	}
 	// well this is dumb
 	// not an id field, do nothing
@@ -490,6 +490,13 @@ func (edge *FieldEdge) PolymorphicEdge() bool {
 
 func (edge *FieldEdge) GetTSGraphQLTypeImports() []*tsimport.ImportPath {
 	if edge.IsList() {
+		if edge.Nullable {
+			return []*tsimport.ImportPath{
+				tsimport.NewGQLClassImportPath("GraphQLList"),
+				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+				tsimport.NewLocalGraphQLEntImportPath(edge.NodeInfo.Node),
+			}
+		}
 		return []*tsimport.ImportPath{
 			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 			tsimport.NewGQLClassImportPath("GraphQLList"),
@@ -1364,9 +1371,6 @@ func getCommonEdgeInfo(
 	entConfig *schemaparser.EntConfigInfo,
 ) commonEdgeInfo {
 
-	if edgeName == "" {
-		spew.Dump("null edgeName")
-	}
 	ret := commonEdgeInfo{
 		EdgeName:        edgeName,
 		entConfig:       entConfig,

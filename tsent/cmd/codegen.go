@@ -16,6 +16,7 @@ type codegenArgs struct {
 	step                 string
 	writeAll             bool
 	disableCustomGraphQL bool
+	disablePrompts       bool
 }
 
 var codegenInfo codegenArgs
@@ -56,6 +57,7 @@ var codegenCmd = &cobra.Command{
 		if rootInfo.debug {
 			opts = append(opts, codegen.DebugMode())
 		}
+
 		if codegenInfo.writeAll {
 			opts = append(opts, codegen.WriteAll())
 		}
@@ -79,6 +81,9 @@ var codegenCmd = &cobra.Command{
 		opts2 := []codegen.Option{}
 		if codegenInfo.disableCustomGraphQL {
 			opts2 = append(opts2, codegen.DisableCustomGraphQL())
+		}
+		if codegenInfo.disablePrompts {
+			opts2 = append(opts2, codegen.DisablePrompts())
 		}
 		return processor.Run(steps, codegenInfo.step, opts2...)
 	},

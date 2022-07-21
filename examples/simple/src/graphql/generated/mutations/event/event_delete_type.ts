@@ -19,7 +19,7 @@ import DeleteEventAction from "../../../../ent/event/actions/delete_event_action
 import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 
 interface customEventDeleteInput {
-  eventID: string;
+  id: string;
 }
 
 interface EventDeletePayload {
@@ -29,7 +29,7 @@ interface EventDeletePayload {
 export const EventDeleteInputType = new GraphQLInputObjectType({
   name: "EventDeleteInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    eventID: {
+    id: {
       description: "id of Event",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -65,8 +65,8 @@ export const EventDeleteType: GraphQLFieldConfig<
   ): Promise<EventDeletePayload> => {
     await DeleteEventAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.eventID),
+      mustDecodeIDFromGQLID(input.id),
     );
-    return { deletedEventID: input.eventID };
+    return { deletedEventID: input.id };
   },
 };

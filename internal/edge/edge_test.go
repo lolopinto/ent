@@ -669,6 +669,8 @@ func testFieldEdge(t *testing.T, edge, expectedEdge *FieldEdge) {
 		assert.Equal(t, expectedEdge.Polymorphic.Unique, edge.Polymorphic.Unique)
 	}
 
+	assert.Equal(t, expectedEdge.GetTSGraphQLTypeImports(), edge.GetTSGraphQLTypeImports())
+
 	testEntConfig(t, edge.entConfig, expectedEdge.entConfig)
 
 	testNodeInfo(t, edge.NodeInfo, expectedEdge.NodeInfo.Node)

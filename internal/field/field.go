@@ -45,10 +45,14 @@ func NewFieldInfoFromInputs(cfg codegenapi.Config, nodeName string, fields []*in
 		}
 	}
 
+	var primaryKeys []string
 	for _, field := range fields {
 		f, err := newFieldFromInput(cfg, nodeName, field)
 		if err != nil {
 			return nil, err
+		}
+		if f.SingleFieldPrimaryKey() {
+			primaryKeys = append(primaryKeys, f.FieldName)
 		}
 		if err := fieldInfo.addField(f); err != nil {
 			errs = append(errs, err)
@@ -63,6 +67,7 @@ func NewFieldInfoFromInputs(cfg codegenapi.Config, nodeName string, fields []*in
 			}
 		}
 	}
+	fieldInfo.primaryKeys = primaryKeys
 
 	if len(errs) > 0 {
 		// we're getting list of errors and coalescing
@@ -96,6 +101,8 @@ type FieldInfo struct {
 	computedFields map[string]bool
 	getFieldsFn    bool
 
+	primaryKeys []string
+
 	// go only
 	emailFields    map[string]bool
 	passwordFields map[string]bool
@@ -126,6 +133,13 @@ func (fieldInfo *FieldInfo) AddComputedField(f string) error {
 
 func (fieldInfo *FieldInfo) IsComputedField(f string) bool {
 	return fieldInfo.computedFields[f]
+}
+
+func (fieldInfo *FieldInfo) SingleFieldPrimaryKey() string {
+	if len(fieldInfo.primaryKeys) == 1 {
+		return fieldInfo.primaryKeys[0]
+	}
+	return ""
 }
 
 func (fieldInfo *FieldInfo) addField(f *Field) error {

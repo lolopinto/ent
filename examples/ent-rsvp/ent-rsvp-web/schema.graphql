@@ -1,6 +1,6 @@
-"""Exposes a URL that specifies the behaviour of this scalar."""
+"""Exposes a URL that specifies the behavior of this scalar."""
 directive @specifiedBy(
-  """The URL that specifies the behaviour of this scalar."""
+  """The URL that specifies the behavior of this scalar."""
   url: String!
 ) on SCALAR
 
@@ -39,7 +39,8 @@ type AddressCreatePayload {
 }
 
 input AddressDeleteInput {
-  addressID: ID!
+  """id of Address"""
+  id: ID!
 }
 
 type AddressDeletePayload {
@@ -47,7 +48,8 @@ type AddressDeletePayload {
 }
 
 input AddressEditInput {
-  addressID: ID!
+  """id of Address"""
+  id: ID!
   street: String
   city: String
   state: String
@@ -129,7 +131,8 @@ type EventActivity implements Node {
 }
 
 input EventActivityAddInviteInput {
-  eventActivityID: ID!
+  """id of EventActivity"""
+  id: ID!
   inviteID: ID!
 }
 
@@ -153,7 +156,8 @@ type EventActivityCreatePayload {
 }
 
 input EventActivityDeleteInput {
-  eventActivityID: ID!
+  """id of EventActivity"""
+  id: ID!
 }
 
 type EventActivityDeletePayload {
@@ -161,7 +165,8 @@ type EventActivityDeletePayload {
 }
 
 input EventActivityEditInput {
-  eventActivityID: ID!
+  """id of EventActivity"""
+  id: ID!
   name: String
   eventID: ID
   startTime: Time
@@ -176,7 +181,8 @@ type EventActivityEditPayload {
 }
 
 input EventActivityRemoveInviteInput {
-  eventActivityID: ID!
+  """id of EventActivity"""
+  id: ID!
   inviteID: ID!
 }
 
@@ -192,7 +198,8 @@ enum EventActivityRsvpStatus {
 }
 
 input EventActivityRsvpStatusEditInput {
-  eventActivityID: ID!
+  """id of EventActivity"""
+  id: ID!
   rsvpStatus: EventActivityRsvpStatusInput!
   guestID: ID!
   dietaryRestrictions: String
@@ -314,7 +321,8 @@ type GuestCreatePayload {
 }
 
 input GuestDeleteInput {
-  guestID: ID!
+  """id of Guest"""
+  id: ID!
 }
 
 type GuestDeletePayload {
@@ -322,7 +330,8 @@ type GuestDeletePayload {
 }
 
 input GuestEditInput {
-  guestID: ID!
+  """id of Guest"""
+  id: ID!
   name: String
   emailAddress: String
 }
@@ -350,7 +359,8 @@ type GuestGroupCreatePayload {
 }
 
 input GuestGroupDeleteInput {
-  guestGroupID: ID!
+  """id of GuestGroup"""
+  id: ID!
 }
 
 type GuestGroupDeletePayload {
@@ -358,7 +368,8 @@ type GuestGroupDeletePayload {
 }
 
 input GuestGroupEditInput {
-  guestGroupID: ID!
+  """id of GuestGroup"""
+  id: ID!
   invitationName: String
 }
 

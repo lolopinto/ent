@@ -17,7 +17,7 @@ import EventActivityRemoveInviteAction from "src/ent/event_activity/actions/even
 import { EventActivityType } from "src/graphql/resolvers/";
 
 interface customEventActivityRemoveInviteInput {
-  eventActivityID: string;
+  id: string;
   inviteID: string;
 }
 
@@ -28,7 +28,7 @@ interface EventActivityRemoveInvitePayload {
 export const EventActivityRemoveInviteInputType = new GraphQLInputObjectType({
   name: "EventActivityRemoveInviteInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    eventActivityID: {
+    id: {
       description: "id of EventActivity",
       type: new GraphQLNonNull(GraphQLID),
     },
@@ -70,7 +70,7 @@ export const EventActivityRemoveInviteType: GraphQLFieldConfig<
   ): Promise<EventActivityRemoveInvitePayload> => {
     const eventActivity = await EventActivityRemoveInviteAction.saveXFromID(
       context.getViewer(),
-      mustDecodeIDFromGQLID(input.eventActivityID),
+      mustDecodeIDFromGQLID(input.id),
       mustDecodeIDFromGQLID(input.inviteID),
     );
     return { eventActivity: eventActivity };

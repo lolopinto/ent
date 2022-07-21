@@ -33,7 +33,8 @@ fields: {
 * `Foo.loadMany` API changes from returning list to Map which is a breaking change
 * moving all generated files to `src/ent/generated` and `src/graphql/generated` so easier to see in PRs and VSCode
 * enums are now prefixed with schemaName
-* and more 
+* change id field in edit and delete graphql mutations from `fooID` to `id`
+* and more
 
 ## Migration steps
 

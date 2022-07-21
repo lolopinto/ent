@@ -45,10 +45,10 @@ type Account implements Node {
 
 type Tag implements Node {
   owner: Account
+  related_tags: [Tag!]
   id: ID!
   display_name: String!
   canonical_name: String!
-  related_tag_ids: [ID!]
   todos(first: Int, after: String, last: Int, before: String): TagToTodosConnection!
 }
 
@@ -134,7 +134,7 @@ type TodoToTagsConnection implements Connection {
 
 input AddTodoTagInput {
   """id of Todo"""
-  todo_id: ID!
+  id: ID!
   tag_id: ID!
 }
 
@@ -144,7 +144,7 @@ type AddTodoTagPayload {
 
 input ChangeTodoStatusInput {
   """id of Todo"""
-  todo_id: ID!
+  id: ID!
   completed: Boolean
 }
 
@@ -183,7 +183,7 @@ type CreateTodoPayload {
 
 input DeleteAccountInput {
   """id of Account"""
-  account_id: ID!
+  id: ID!
 }
 
 type DeleteAccountPayload {
@@ -192,7 +192,7 @@ type DeleteAccountPayload {
 
 input DeleteTodoInput {
   """id of Todo"""
-  todo_id: ID!
+  id: ID!
 }
 
 type DeleteTodoPayload {
@@ -201,7 +201,7 @@ type DeleteTodoPayload {
 
 input EditAccountInput {
   """id of Account"""
-  account_id: ID!
+  id: ID!
   name: String
   phone_number: String
   account_state: AccountState
@@ -213,7 +213,7 @@ type EditAccountPayload {
 
 input RemoveTodoTagInput {
   """id of Todo"""
-  todo_id: ID!
+  id: ID!
   tag_id: ID!
 }
 
@@ -223,7 +223,7 @@ type RemoveTodoTagPayload {
 
 input RenameTodoInput {
   """id of Todo"""
-  todo_id: ID!
+  id: ID!
   text: String
   reason_for_change: String
 }
