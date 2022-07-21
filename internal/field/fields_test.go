@@ -184,4 +184,89 @@ func TestUUIDFieldList(t *testing.T) {
 	assert.Equal(t, f2.TsBuilderType(cfg), "ID | Builder<Contact, Viewer>")
 	assert.Len(t, info2.NodeData.EdgeInfo.FieldEdges, 1)
 	assert.False(t, info2.NodeData.EdgeInfo.FieldEdges[0].IsList())
+
+	edge := info.NodeData.EdgeInfo.GetFieldEdgeByName("contactEmails")
+	require.NotNil(t, edge)
+	require.Equal(t, edge.GetTSGraphQLTypeImports(), []*tsimport.ImportPath{
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+		tsimport.NewGQLClassImportPath("GraphQLList"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+		tsimport.NewLocalGraphQLEntImportPath(edge.NodeInfo.Node),
+	})
+}
+
+func TestNullableUUIDFieldList(t *testing.T) {
+	schema := testhelper.ParseSchemaForTest(t,
+		map[string]string{
+			"contact.ts": testhelper.GetCodeWithSchema(`
+		import {BaseEntSchema, FieldMap, StringType, UUIDListType} from "{schema}";
+
+		export default class Contact extends BaseEntSchema {
+			fields: FieldMap = {
+				FirstName: StringType(),
+				LastName: StringType(),
+				contactEmailIDs: UUIDListType({
+					nullable: true,
+					fieldEdge:{
+						schema: "ContactEmail",
+					},
+				}),
+			};
+		}`),
+			"contact_email.ts": testhelper.GetCodeWithSchema(`
+		import {BaseEntSchema, FieldMap, StringType, UUIDType} from "{schema}";
+
+		export default class ContactEmail extends BaseEntSchema {
+			fields: FieldMap = {
+				EmailAddress: StringType(),
+				OwnerID: UUIDType({
+					fieldEdge: {schema: "Contact"},
+				}),
+			};
+		}`),
+		},
+		base.TypeScript,
+	)
+	info := schema.Nodes["ContactConfig"]
+	require.NotNil(t, info)
+
+	fieldInfo := info.NodeData.FieldInfo
+
+	f := fieldInfo.GetFieldByName("contactEmailIDs")
+	require.NotNil(t, f)
+
+	cfg := &codegenapi.DummyConfig{}
+
+	assert.Equal(t, f.TsBuilderImports(cfg), []*tsimport.ImportPath{
+		tsimport.NewEntImportPath("ID"),
+	})
+	assert.Equal(t, f.TsBuilderType(cfg), "ID[] | null")
+	assert.Len(t, info.NodeData.EdgeInfo.FieldEdges, 1)
+	assert.True(t, info.NodeData.EdgeInfo.FieldEdges[0].IsList())
+
+	info2 := schema.Nodes["ContactEmailConfig"]
+	require.NotNil(t, info2)
+
+	fieldInfo2 := info2.NodeData.FieldInfo
+
+	f2 := fieldInfo2.GetFieldByName("OwnerID")
+	require.NotNil(t, f2)
+
+	assert.Equal(t, f2.TsBuilderImports(cfg), []*tsimport.ImportPath{
+		tsimport.NewEntImportPath("ID"),
+		tsimport.NewLocalEntImportPath("Contact"),
+		tsimport.NewEntActionImportPath("Builder"),
+		tsimport.NewEntImportPath("Viewer"),
+	})
+	assert.Equal(t, f2.TsBuilderType(cfg), "ID | Builder<Contact, Viewer>")
+	assert.Len(t, info2.NodeData.EdgeInfo.FieldEdges, 1)
+	assert.False(t, info2.NodeData.EdgeInfo.FieldEdges[0].IsList())
+
+	edge := info.NodeData.EdgeInfo.GetFieldEdgeByName("contactEmails")
+	require.NotNil(t, edge)
+	require.Equal(t, edge.GetTSGraphQLTypeImports(), []*tsimport.ImportPath{
+		tsimport.NewGQLClassImportPath("GraphQLList"),
+		tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+		tsimport.NewLocalGraphQLEntImportPath(edge.NodeInfo.Node),
+	})
 }

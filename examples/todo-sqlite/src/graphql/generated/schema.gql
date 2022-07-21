@@ -45,10 +45,10 @@ type Account implements Node {
 
 type Tag implements Node {
   owner: Account
+  related_tags: [Tag!]
   id: ID!
   display_name: String!
   canonical_name: String!
-  related_tag_ids: [ID!]
   todos(first: Int, after: String, last: Int, before: String): TagToTodosConnection!
 }
 
