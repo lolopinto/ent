@@ -29,6 +29,7 @@ import {
   DeletedAtMixin,
   IDeletedAt,
   NodeType,
+  Tag,
   TagToTodosQuery,
 } from "src/ent/internal";
 import schema from "src/schema/tag_schema";
@@ -218,5 +219,17 @@ export class TagBase
 
   loadOwnerX(): Promise<Account> {
     return loadEntX(this.viewer, this.ownerID, Account.loaderOptions());
+  }
+
+  async loadRelatedTags(): Promise<Tag[] | null> {
+    if (!this.relatedTagIds) {
+      return null;
+    }
+    const ents = await loadEnts(
+      this.viewer,
+      Tag.loaderOptions(),
+      ...this.relatedTagIds,
+    );
+    return Array.from(ents.values());
   }
 }

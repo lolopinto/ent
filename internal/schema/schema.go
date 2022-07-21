@@ -1019,7 +1019,6 @@ func (s *Schema) addLinkedEdges(cfg codegenapi.Config, info *NodeDataInfo) error
 					// only add polymorphic accessors on foreign if index or unique
 					if f.Index() || f.Unique() {
 						fEdgeInfo := foreign.NodeData.EdgeInfo
-						//						spew.Dump(nodeData.Node, foreign.NodeData.Node)
 						if err := fEdgeInfo.AddDestinationEdgeFromPolymorphicOptions(
 							cfg,
 							f.TsFieldName(cfg),
