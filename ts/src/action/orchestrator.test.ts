@@ -386,6 +386,23 @@ function commonTests() {
     }
   });
 
+  test("missing required field with validWithError", async () => {
+    const builder = getInsertUserBuilder(
+      new Map([
+        ["FirstName", "Jon"],
+        // non-nullable field set to null
+        // simulating what the generated builder will do
+        ["LastName", null],
+      ]),
+    );
+
+    const errors = await builder.orchestrator.validWithErrors();
+    expect(errors.length).toBe(1);
+    expect(errors[0].message).toBe(
+      "field LastName set to null for non-nullable field",
+    );
+  });
+
   // if somehow builder logic doesn't handle this, we still catch this for create
   // should this be default and simplify builders?
   test("required field not set", async () => {
@@ -617,6 +634,23 @@ function commonTests() {
       } catch (e) {
         expect(e.message).toBe("invalid field zip with value 941");
       }
+    });
+
+    test("invalid zip with validWithErrors", async () => {
+      const builder = new SimpleBuilder(
+        new LoggedOutViewer(),
+        SchemaWithProcessors,
+        new Map([
+          ["username", "LOLOPINTO"],
+          ["zip", "941"],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+
+      const errors = await builder.orchestrator.validWithErrors();
+      expect(errors.length).toBe(1);
+      expect(errors[0].message).toBe("invalid field zip with value 941");
     });
   });
 
@@ -1859,6 +1893,24 @@ function commonTests() {
       };
       let valid = await action.valid();
       expect(valid).toBe(false);
+    });
+
+    test("validWithErrors", async () => {
+      const viewer = new IDViewer("1");
+      const action = getInsertUserAction(
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+        ]),
+        viewer,
+      );
+      action.getPrivacyPolicy = () => {
+        return {
+          rules: [DenyIfLoggedInRule, AlwaysAllowRule],
+        };
+      };
+      let errors = await action.validWithErrors();
+      expect(errors.length).toBe(1);
     });
 
     test("invalidX. create", async () => {

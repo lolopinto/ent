@@ -1,3 +1,4 @@
+import { Orchestrator } from "@snowtop/ent/action";
 import { Viewer, Ent, Data } from "../core/base";
 import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
 import {
@@ -10,17 +11,26 @@ import {
   Validator,
 } from "./action";
 
-export interface ActionOptions<T extends Ent, TData extends Data> {
-  existingEnt?: T | null;
+export interface ActionOptions<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+  TData extends Data,
+  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
+> {
+  existingEnt: TExistingEnt;
   input?: TData;
   operation?: WriteOperation;
 }
+
+type MaybeNull<T extends Ent> = T | null;
+type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 
 export interface EntBuilder<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
   TInput extends Data,
-> extends Builder<TEnt, TViewer> {
+  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
+> extends Builder<TEnt, TViewer, TExistingEnt> {
   valid(): Promise<boolean>;
   validX(): Promise<void>;
   save(): Promise<void>;
@@ -28,15 +38,24 @@ export interface EntBuilder<
   editedEnt(): Promise<TEnt | null>;
   editedEntX(): Promise<TEnt>;
   getInput(): TInput;
+  orchestrator: Orchestrator<TEnt, TInput, TViewer, TExistingEnt>;
 }
 
 export class BaseAction<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
   TInput extends Data,
-> implements Action<TEnt, EntBuilder<TEnt, TViewer, TInput>, TViewer, TInput>
+  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
+> implements
+    Action<
+      TEnt,
+      EntBuilder<TEnt, TViewer, TInput, TExistingEnt>,
+      TViewer,
+      TInput,
+      TExistingEnt
+    >
 {
-  builder: EntBuilder<TEnt, TViewer, TInput>;
+  builder: EntBuilder<TEnt, TViewer, TInput, TExistingEnt>;
   private input: TInput;
 
   getPrivacyPolicy() {
@@ -45,35 +64,38 @@ export class BaseAction<
 
   getTriggers(): Trigger<
     TEnt,
-    EntBuilder<TEnt, TViewer, TInput>,
+    EntBuilder<TEnt, TViewer, TInput, TExistingEnt>,
     TViewer,
-    TInput
+    TInput,
+    TExistingEnt
   >[] {
     return [];
   }
 
   getObservers(): Observer<
     TEnt,
-    EntBuilder<TEnt, TViewer, TInput>,
+    EntBuilder<TEnt, TViewer, TInput, TExistingEnt>,
     TViewer,
-    TInput
+    TInput,
+    TExistingEnt
   >[] {
     return [];
   }
 
   getValidators(): Validator<
     TEnt,
-    EntBuilder<TEnt, TViewer, TInput>,
+    EntBuilder<TEnt, TViewer, TInput, TExistingEnt>,
     TViewer,
-    TInput
+    TInput,
+    TExistingEnt
   >[] {
     return [];
   }
 
   constructor(
     public viewer: TViewer,
-    public builderCtr: BuilderConstructor<TEnt, TViewer, TInput>,
-    options?: ActionOptions<TEnt, TInput> | null,
+    public builderCtr: BuilderConstructor<TEnt, TViewer, TInput, TExistingEnt>,
+    options: ActionOptions<TEnt, TViewer, TInput, TExistingEnt>,
   ) {
     let operation = options?.operation;
     if (!operation) {
@@ -84,22 +106,18 @@ export class BaseAction<
       }
     }
     this.input = options?.input || ({} as TInput);
-    this.builder = new builderCtr(
-      viewer,
-      operation,
-      this,
-      options?.existingEnt || null,
-    );
+    this.builder = new builderCtr(viewer, operation, this, options.existingEnt);
   }
 
   static createBuilder<
     TEnt extends Ent<TViewer>,
     TViewer extends Viewer,
     TInput extends Data,
+    TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
   >(
     viewer: Viewer,
-    builderCtr: BuilderConstructor<TEnt, TViewer, TInput>,
-    options?: ActionOptions<TEnt, TInput> | null,
+    builderCtr: BuilderConstructor<TEnt, TViewer, TInput, TExistingEnt>,
+    options: ActionOptions<TEnt, TViewer, TInput, TExistingEnt>,
   ): Builder<TEnt> {
     let action = new BaseAction(viewer, builderCtr, options);
     return action.builder;
@@ -113,9 +131,9 @@ export class BaseAction<
     TInput extends Data,
   >(
     ent: TEnt,
-    builderCtr: BuilderConstructor<TEnt, TViewer, TInput>,
+    builderCtr: BuilderConstructor<TEnt, TViewer, TInput, TEnt>,
     ...actions: Action<Ent, Builder<Ent, any>>[]
-  ): BaseAction<TEnt, TViewer, TInput> {
+  ): BaseAction<TEnt, TViewer, TInput, TEnt> {
     let action = new BaseAction(ent.viewer, builderCtr, {
       existingEnt: ent,
     });
@@ -160,13 +178,21 @@ export interface BuilderConstructor<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
   TInput extends Data,
+  TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
 > {
   new (
     viewer: TViewer,
     operation: WriteOperation,
-    action: Action<TEnt, EntBuilder<TEnt, TViewer, TInput>, TViewer, TInput>,
-    existingEnt: TEnt | null,
-  ): EntBuilder<TEnt, TViewer, TInput>;
+    action: Action<
+      TEnt,
+      any,
+      //      EntBuilder<TEnt, TViewer, TInput, TExistingEnt>,
+      TViewer,
+      TInput,
+      TExistingEnt
+    >,
+    existingEnt: TExistingEnt,
+  ): EntBuilder<TEnt, TViewer, TInput, TExistingEnt>;
 }
 
 // this provides a way to just update a row in the database.
@@ -179,7 +205,7 @@ export async function updateRawObject<
   TInput extends Data,
 >(
   viewer: TViewer,
-  builderCtr: BuilderConstructor<TEnt, TViewer, TInput>,
+  builderCtr: BuilderConstructor<TEnt, TViewer, TInput, TEnt>,
   existingEnt: TEnt,
   input: TInput,
 ) {
@@ -203,10 +229,10 @@ export function getSimpleEditAction<
   TInput extends Data,
 >(
   viewer: TViewer,
-  builderCtr: BuilderConstructor<TEnt, TViewer, TInput>,
+  builderCtr: BuilderConstructor<TEnt, TViewer, TInput, TEnt>,
   existingEnt: TEnt,
   input: TInput,
-): BaseAction<TEnt, TViewer, TInput> {
+): BaseAction<TEnt, TViewer, TInput, TEnt> {
   return new BaseAction(viewer, builderCtr, {
     existingEnt: existingEnt,
     operation: WriteOperation.Edit,
@@ -220,10 +246,10 @@ export function getSimpleDeleteAction<
   TInput extends Data,
 >(
   viewer: TViewer,
-  builderCtr: BuilderConstructor<TEnt, TViewer, TInput>,
+  builderCtr: BuilderConstructor<TEnt, TViewer, TInput, TEnt>,
   existingEnt: TEnt,
   input: TInput,
-): BaseAction<TEnt, TViewer, TInput> {
+): BaseAction<TEnt, TViewer, TInput, TEnt> {
   return new BaseAction(viewer, builderCtr, {
     existingEnt: existingEnt,
     operation: WriteOperation.Delete,
@@ -237,11 +263,12 @@ export function getSimpleInsertAction<
   TInput extends Data,
 >(
   viewer: TViewer,
-  builderCtr: BuilderConstructor<TEnt, TViewer, TInput>,
+  builderCtr: BuilderConstructor<TEnt, TViewer, TInput, null>,
   input: TInput,
-): BaseAction<TEnt, TViewer, TInput> {
+): BaseAction<TEnt, TViewer, TInput, null> {
   return new BaseAction(viewer, builderCtr, {
     operation: WriteOperation.Insert,
     input,
+    existingEnt: null,
   });
 }
