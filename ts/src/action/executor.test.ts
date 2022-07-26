@@ -1277,12 +1277,17 @@ function commonTests() {
     );
     actions.push(accountAction);
 
-    class GroupBuilder extends SimpleBuilder<Group> {
+    type MaybeNull<T extends Ent> = T | null;
+    type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
+
+    class GroupBuilder<
+      TExistingEnt extends TMaybleNullableEnt<Group> = MaybeNull<Group>,
+    > extends SimpleBuilder<Group, TExistingEnt> {
       constructor(
         viewer: Viewer,
         operation: WriteOperation,
-        action: SimpleAction<Group>,
-        existingEnt: Group | null,
+        action: SimpleAction<Group, TExistingEnt>,
+        existingEnt: TExistingEnt,
       ) {
         super(viewer, GroupSchema, new Map(), operation, existingEnt, action);
       }
@@ -1305,6 +1310,7 @@ function commonTests() {
       ),
     );
 
+    // @ts-ignore why??
     const action = BaseAction.bulkAction(group, GroupBuilder, ...actions);
     await action.saveX();
 
