@@ -29,6 +29,7 @@ import {
 } from "../core/convert";
 import { WriteOperation } from "../action";
 let tdb: TempDB;
+
 async function setupTempDB(dialect: Dialect, connString?: string) {
   beforeAll(async () => {
     if (connString) {
@@ -94,6 +95,48 @@ function commonTests() {
     }
 
     const n = ["Lord Snow", "The Prince That was Promised"];
+
+    const action = getInsertAction(
+      new AccountSchema(),
+      new Map<string, any>([["Nicknames", n]]),
+    );
+    await createTables(new AccountSchema());
+
+    const account = await action.saveX();
+    expect(convertList(account.data.nicknames)).toEqual(n);
+  });
+
+  test("string list with empty value at end", async () => {
+    class Account extends User {}
+    class AccountSchema implements Schema {
+      fields = {
+        Nicknames: StringListType(),
+      };
+      ent = Account;
+    }
+
+    const n = ["Lord Snow", "The Prince That was Promised", ""];
+
+    const action = getInsertAction(
+      new AccountSchema(),
+      new Map<string, any>([["Nicknames", n]]),
+    );
+    await createTables(new AccountSchema());
+
+    const account = await action.saveX();
+    expect(convertList(account.data.nicknames)).toEqual(n);
+  });
+
+  test("string list with empty value mixed in ", async () => {
+    class Account extends User {}
+    class AccountSchema implements Schema {
+      fields = {
+        Nicknames: StringListType(),
+      };
+      ent = Account;
+    }
+
+    const n = ["Lord Snow", "", "The Prince That was Promised"];
 
     const action = getInsertAction(
       new AccountSchema(),
