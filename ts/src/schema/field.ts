@@ -13,6 +13,7 @@ import {
   Type,
 } from "./schema";
 import { types } from "util";
+import { validate } from "uuid";
 
 export abstract class BaseField {
   name: string;
@@ -111,6 +112,9 @@ export class UUIDField extends BaseField implements Field {
   }
 
   async valid(val: any) {
+    if (typeof val === "string" && !validate(val)) {
+      return false;
+    }
     if (!this.options?.fieldEdge?.enforceSchema) {
       return true;
     }
