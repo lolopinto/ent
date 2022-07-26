@@ -438,3 +438,61 @@ describe("fieldEdge list", () => {
     ]);
   });
 });
+
+test("invalid uuid", async () => {
+  class Account extends User {}
+  const AccountSchema = getBuilderSchemaFromFields(
+    {
+      fake_id: UUIDType(),
+    },
+    Account,
+  );
+
+  const accountAction = getInsertAction(
+    AccountSchema,
+    new Map<string, any>([["fake_id", "Jon Snow"]]),
+  );
+
+  try {
+    await accountAction.saveX();
+    throw new Error(`should have thrown`);
+  } catch (e) {
+    expect((e as Error).message).toBe(
+      "invalid field fake_id with value Jon Snow",
+    );
+  }
+});
+
+test("builder vlid uuid", async () => {
+  const UserSchema = getBuilderSchemaFromFields(
+    {
+      Name: StringType(),
+    },
+    User,
+  );
+  class Account extends User {}
+  const AccountSchema = getBuilderSchemaFromFields(
+    {
+      fake_id: UUIDType(),
+    },
+    Account,
+  );
+
+  const userAction = getInsertAction(
+    UserSchema,
+    new Map([["Name", "Jon Snow"]]),
+  );
+  const accountAction = getInsertAction(
+    AccountSchema,
+    new Map([["fake_id", userAction.builder]]),
+  );
+  accountAction.getTriggers = () => [
+    {
+      changeset() {
+        return userAction.changeset();
+      },
+    },
+  ];
+
+  await accountAction.saveX();
+});

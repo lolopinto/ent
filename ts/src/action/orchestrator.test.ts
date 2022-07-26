@@ -63,6 +63,7 @@ import {
 } from "../testutils/db/test_db";
 import { Dialect } from "../core/db";
 import { convertList } from "../core/convert";
+import { v4 } from "uuid";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -2425,7 +2426,7 @@ function commonTests() {
   // TODO serverDefault change...
 
   test("schema with derived fields", async () => {
-    const user = new User(new LoggedOutViewer(), { id: "1" });
+    const user = new User(new LoggedOutViewer(), { id: v4() });
 
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
