@@ -1,4 +1,4 @@
-import { Orchestrator } from "@snowtop/ent/action";
+import { Orchestrator } from "./orchestrator";
 import { Viewer, Ent, Data } from "../core/base";
 import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
 import {
