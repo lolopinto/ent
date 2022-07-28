@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/google/uuid"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
@@ -29,12 +30,16 @@ import (
 
 // Schema is the representation of the parsed schema. Has everything needed to
 type Schema struct {
-	Nodes         NodeMapInfo
-	Patterns      map[string]*PatternInfo
-	tables        NodeMapInfo
-	edges         map[string]*ent.AssocEdgeData
-	newEdges      []*ent.AssocEdgeData
-	edgesToUpdate []*ent.AssocEdgeData
+	Nodes           NodeMapInfo
+	Patterns        map[string]*PatternInfo
+	globalEdges     []*edge.AssociationEdge
+	globalConsts    *objWithConsts
+	extraEdgeFields []*field.Field
+	initForEdges    bool
+	tables          NodeMapInfo
+	edges           map[string]*ent.AssocEdgeData
+	newEdges        []*ent.AssocEdgeData
+	edgesToUpdate   []*ent.AssocEdgeData
 	// unlike Nodes, the key is "EnumName" instead of "EnumNameConfig"
 	// confusing but gets us closer to what we want
 	Enums            map[string]*EnumInfo
@@ -48,6 +53,22 @@ type Schema struct {
 
 func (s *Schema) GetInputSchema() *input.Schema {
 	return s.inputSchema
+}
+
+func (s *Schema) GetGlobalEdges() []*edge.AssociationEdge {
+	return s.globalEdges
+}
+
+func (s *Schema) InitForEdges() bool {
+	return s.initForEdges
+}
+
+func (s *Schema) ExtraEdgeFields() []*field.Field {
+	return s.extraEdgeFields
+}
+
+func (s *Schema) GetGlobalConsts() WithConst {
+	return s.globalConsts
 }
 
 func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData) error {
@@ -267,6 +288,7 @@ func (s *Schema) init() {
 	s.Patterns = map[string]*PatternInfo{}
 	s.CustomInterfaces = map[string]*customtype.CustomInterface{}
 	s.gqlNameMap = make(map[string]bool)
+	s.globalConsts = &objWithConsts{}
 }
 
 func (s *Schema) GetNodeDataFromTableName(tableName string) *NodeData {
@@ -462,7 +484,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 
 		if err := s.addConfig(&NodeDataInfo{
 			NodeData:      nodeData,
-			depgraph:      s.buildPostRunDepgraph(cfg, edgeData),
+			depgraph:      s.buildPostRunDepgraph(cfg),
 			ShouldCodegen: true,
 		}); err != nil {
 			errs = append(errs, err)
@@ -489,6 +511,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 				if err != nil {
 					errs = append(errs, err)
 				} else {
+					// TODO should this be in postProcess???
 					s.addNewEdgeType(p, newEdge.constName, newEdge.constValue, assocEdge)
 				}
 			}
@@ -543,6 +566,10 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 		}
 	}
 
+	if schema.GlobalSchema != nil {
+		errs = append(errs, s.parseGlobalSchema(cfg, schema.GlobalSchema)...)
+	}
+
 	// TODO convert more things to do something like this?
 	if len(errs) > 0 {
 		// we're getting list of errors and coalescing
@@ -550,6 +577,32 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 	}
 
 	return s.processDepgrah(edgeData)
+}
+
+func (s *Schema) parseGlobalSchema(cfg codegenapi.Config, gs *input.GlobalSchema) []error {
+	var errs []error
+	for _, inputEdge := range gs.GlobalEdges {
+		newEdge, err := edge.AssocEdgeFromInput(cfg, "global", inputEdge)
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			s.globalEdges = append(s.globalEdges, newEdge)
+		}
+	}
+
+	if len(gs.ExtraEdgeFields) > 0 {
+		fi, err := field.NewFieldInfoFromInputs(cfg, "global", gs.ExtraEdgeFields, &field.Options{
+			SortFields: true,
+		})
+		if err != nil {
+			errs = append(errs, err)
+		}
+		s.extraEdgeFields = fi.Fields
+	}
+
+	s.initForEdges = gs.InitForEdges
+
+	return errs
 }
 
 func (s *Schema) validateIndices(nodeData *NodeData) error {
@@ -819,7 +872,6 @@ func (s *Schema) addConfig(info *NodeDataInfo) error {
 
 func (s *Schema) buildPostRunDepgraph(
 	cfg codegenapi.Config,
-	edgeData *assocEdgeData,
 ) *depgraph.Depgraph {
 	// things that need all nodeDatas loaded
 	g := &depgraph.Depgraph{}
@@ -980,6 +1032,21 @@ func (s *Schema) processDepgrah(edgeData *assocEdgeData) (*assocEdgeData, error)
 	// need to run this after running everything above
 	for _, info := range s.Nodes {
 		if err := s.postProcess(info.NodeData, edgeData); err != nil {
+			return nil, err
+		}
+	}
+
+	// same logic of what we do for patterns
+	for _, assocEdge := range s.globalEdges {
+		if assocEdge.CreateEdge() {
+			newEdge, err := s.getNewEdge(edgeData, assocEdge)
+			if err != nil {
+				return nil, err
+			}
+			s.addNewEdgeType(s.globalConsts, newEdge.constName, newEdge.constValue, assocEdge)
+		}
+		spew.Dump(assocEdge)
+		if err := s.maybeAddInverseAssocEdge(assocEdge); err != nil {
 			return nil, err
 		}
 	}

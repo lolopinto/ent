@@ -307,8 +307,10 @@ export interface customInfo {
     name: string;
   };
   relativeImports?: boolean;
+  globalSchemaPath?: string;
 }
 
+// also used in parse schema logic
 export function getCustomInfo(): customInfo {
   let yaml: Config | undefined = {};
 

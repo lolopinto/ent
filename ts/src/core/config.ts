@@ -42,6 +42,9 @@ export interface Config {
   // the path should be relative to the root
   // this is hopefully a temporary solution...
   customGraphQLJSONPath?: string;
+
+  // defaults to __global__schema.ts if not provided
+  globalSchemaPath?: string;
 }
 
 interface CodegenConfig {

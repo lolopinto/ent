@@ -505,10 +505,10 @@ func (s *dbSchema) processSchema(cfg *codegen.Config) error {
 
 func (s *dbSchema) generateShemaTables() error {
 
-	addedAtLeastOneTable := false
+	addedAtLeastOneEdgeTable := false
 	for _, p := range s.schema.Patterns {
 		if s.addEdgeTablesFromPattern(p) {
-			addedAtLeastOneTable = true
+			addedAtLeastOneEdgeTable = true
 		}
 	}
 	for _, info := range s.schema.Nodes {
@@ -516,7 +516,13 @@ func (s *dbSchema) generateShemaTables() error {
 		s.addTable(s.getTableForNode(nodeData))
 
 		if s.addEdgeTables(nodeData) {
-			addedAtLeastOneTable = true
+			addedAtLeastOneEdgeTable = true
+		}
+	}
+
+	for _, edge := range s.schema.GetGlobalEdges() {
+		if s.addEdgeTable(edge) {
+			addedAtLeastOneEdgeTable = true
 		}
 	}
 
@@ -545,7 +551,8 @@ func (s *dbSchema) generateShemaTables() error {
 		}
 	}
 
-	if addedAtLeastOneTable {
+	// TODO based on extra edge columns
+	if addedAtLeastOneEdgeTable {
 		s.addEdgeConfigTable()
 	}
 
@@ -883,6 +890,10 @@ func (s *dbSchema) createEdgeTable(assocEdge *edge.AssociationEdge) *dbTable {
 		},
 	}
 
+	for _, f := range s.schema.ExtraEdgeFields() {
+		columns = append(columns, s.getColumnInfoForFieldWithTable(f, tableName, &constraints))
+	}
+
 	// add unique constraint for edge
 	// TODO this only works when it's one table per edge
 	// we need to add logic to deal with this
@@ -905,6 +916,10 @@ func (s *dbSchema) createEdgeTable(assocEdge *edge.AssociationEdge) *dbTable {
 }
 
 func (s *dbSchema) getColumnInfoForField(f *field.Field, nodeData *schema.NodeData, constraints *[]dbConstraint) *dbColumn {
+	return s.getColumnInfoForFieldWithTable(f, nodeData.GetTableName(), constraints)
+}
+
+func (s *dbSchema) getColumnInfoForFieldWithTable(f *field.Field, tableName string, constraints *[]dbConstraint) *dbColumn {
 	dbType := f.GetDbTypeForField()
 	var extraParts []string
 	if f.Nullable() {
@@ -918,7 +933,7 @@ func (s *dbSchema) getColumnInfoForField(f *field.Field, nodeData *schema.NodeDa
 	col := s.getColumn(f.FieldName, f.GetDbColName(), dbType, extraParts)
 
 	// index is still on a per field type so we leave this here
-	s.addIndexConstraint(f, nodeData, col, constraints)
+	s.addIndexConstraint(f, tableName, col, constraints)
 
 	return col
 }
@@ -1065,13 +1080,13 @@ func (s *dbSchema) addUniqueConstraint(nodeData *schema.NodeData, inputConstrain
 	return nil
 }
 
-func (s *dbSchema) addIndexConstraint(f *field.Field, nodeData *schema.NodeData, col *dbColumn, constraints *[]dbConstraint) {
+func (s *dbSchema) addIndexConstraint(f *field.Field, tableName string, col *dbColumn, constraints *[]dbConstraint) {
 	if !f.Index() {
 		return
 	}
 	constraint := &indexConstraint{
 		dbColumns: []*dbColumn{col},
-		tableName: nodeData.GetTableName(),
+		tableName: tableName,
 	}
 	*constraints = append(*constraints, constraint)
 }

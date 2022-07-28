@@ -59,3 +59,8 @@ func (obj *objWithConsts) GetSortedConstantGroups() []*ConstGroupInfo {
 
 	return sorted
 }
+
+func (obj *objWithConsts) GetNodeInstance() string {
+	// TODO?? do we care about this?
+	return ""
+}

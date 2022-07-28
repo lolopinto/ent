@@ -14,8 +14,9 @@ import (
 )
 
 type Schema struct {
-	Nodes    map[string]*Node    `json:"schemas,omitempty"`
-	Patterns map[string]*Pattern `json:"patterns,omitempty"`
+	Nodes        map[string]*Node    `json:"schemas,omitempty"`
+	Patterns     map[string]*Pattern `json:"patterns,omitempty"`
+	GlobalSchema *GlobalSchema       `json:"globalSchema"`
 }
 
 type Pattern struct {
@@ -56,6 +57,12 @@ func (n *Node) AddAssocEdge(edge *AssocEdge) {
 
 func (n *Node) AddAssocEdgeGroup(edgeGroup *AssocEdgeGroup) {
 	n.AssocEdgeGroups = append(n.AssocEdgeGroups, edgeGroup)
+}
+
+type GlobalSchema struct {
+	ExtraEdgeFields []*Field     `json:"extraEdgeFields,omitempty"`
+	GlobalEdges     []*AssocEdge `json:"globalEdges,omitempty"`
+	InitForEdges    bool         `json:"initForEdges,omitempty"`
 }
 
 type DBType string

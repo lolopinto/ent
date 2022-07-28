@@ -16,6 +16,22 @@ export type FieldInfoMap = {
   [key: string]: FieldInfo;
 };
 
+export interface GlobalSchema {
+  // source is ¯\_(ツ)_/¯
+  // this api works fine for external to int
+  // internal to external, we need to solve ala polymorphic
+  // internal to internal, why is this here
+  edges?: Edge[];
+
+  // e.g. deleted_at for edges
+  extraEdgeFields?: FieldMap;
+
+  transformEdgeRead?: () => Clause;
+  transformEdgeWrite?: <T extends Ent>(
+    stmt: UpdateOperation<T>,
+  ) => TransformedUpdateOperation<T> | null;
+}
+
 // Schema is the base for every schema in typescript
 export default interface Schema {
   // schema has list of fields that are unique to each node

@@ -22,6 +22,16 @@ import { logEnabled } from "../logger";
 import { cacheMap, getCustomLoader } from "./loader";
 import memoizee from "memoizee";
 
+// everything here already works with clause so just need to generate with the 'status' in there...
+// or need a global edge clause registered somewhere...
+// global runtime configuration put somewhere in initialization phase which is guaranteed to be called?
+
+// which is different than codegen|db runtime which is used everywhere
+
+// codegen could do that based on configuration...
+
+// edges are used everywhere and aren't for sure used by one plae Q
+
 function createLoader<T extends AssocEdge>(
   options: EdgeQueryableDataOptions,
   edgeType: string,

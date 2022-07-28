@@ -525,6 +525,7 @@ func (s *Step) addEdgeType(name, value, comment string) {
 
 // take what exists for go and convert it to typescript format
 // should probably fix this at some point upstream
+// TODO call this for global edges...
 func (s *Step) accumulateConsts(wc schema.WithConst) error {
 	for key, group := range wc.GetConstantGroups() {
 		if key != "ent.NodeType" && key != "ent.EdgeType" {
