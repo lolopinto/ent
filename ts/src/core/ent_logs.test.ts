@@ -149,8 +149,8 @@ function commonTests() {
         tableName: "t1",
         whereClause: clause.Eq("id", "1"),
       };
-      await editRowForTest(options, "1");
-      const [expQuery] = buildUpdateQuery(options, "1");
+      await editRowForTest(options);
+      const [expQuery] = buildUpdateQuery(options);
 
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
@@ -170,8 +170,8 @@ function commonTests() {
         fieldsToLog: fields,
         whereClause: clause.Eq("id", "1"),
       };
-      await editRowForTest(options, "1");
-      const [expQuery] = buildUpdateQuery(options, "1");
+      await editRowForTest(options);
+      const [expQuery] = buildUpdateQuery(options);
 
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
@@ -194,8 +194,8 @@ function commonTests() {
           col2: "***",
         },
       };
-      await editRowForTest(options, "1");
-      const [expQuery] = buildUpdateQuery(options, "1");
+      await editRowForTest(options);
+      const [expQuery] = buildUpdateQuery(options);
 
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
@@ -217,7 +217,6 @@ function commonTests() {
       };
       clearLogLevels();
       await editRowForTest(options);
-      const [expQuery] = buildUpdateQuery(options, "1");
 
       expect(ml.logs.length).toEqual(0);
     });

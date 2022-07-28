@@ -197,13 +197,6 @@ describe("sqlite", () => {
   commonTests();
 });
 
-function filterNullIfSqlite(values: any[]) {
-  if (DB.getDialect() === Dialect.SQLite) {
-    return values.filter((f) => f !== null);
-  }
-  return values;
-}
-
 function transformDeletedAt(row: Data | null) {
   if (row === null) {
     return null;
@@ -329,7 +322,7 @@ function commonTests() {
     expect(ml.logs.length).toBe(1);
     expect(ml.logs[0]).toStrictEqual({
       query: expQuery,
-      values: filterNullIfSqlite([null, 1]),
+      values: [1],
     });
 
     const row2 = await loader.load(1);
@@ -408,7 +401,7 @@ function commonTests() {
     expect(ml.logs.length).toBe(1);
     expect(ml.logs[0]).toStrictEqual({
       query: expQuery,
-      values: filterNullIfSqlite([null, 1]),
+      values: [1],
     });
 
     // same data loaded  but not same row
@@ -421,7 +414,7 @@ function commonTests() {
     expect(ml.logs.length).toBe(2);
     expect(ml.logs[1]).toStrictEqual({
       query: expQuery,
-      values: filterNullIfSqlite([null, 1]),
+      values: [1],
     });
   }
 
@@ -453,7 +446,7 @@ function commonTests() {
     expect(ml.logs.length).toBe(1);
     expect(ml.logs[0]).toStrictEqual({
       query: expQuery,
-      values: filterNullIfSqlite([null, 1]),
+      values: [1],
     });
 
     // same data loaded  but not same row
@@ -465,7 +458,7 @@ function commonTests() {
     expect(ml.logs.length).toBe(2);
     expect(ml.logs[1]).toStrictEqual({
       query: expQuery,
-      values: filterNullIfSqlite([null, 1]),
+      values: [1],
     });
   }
 
@@ -563,7 +556,7 @@ function commonTests() {
     expect(ml.logs.length).toBe(1);
     expect(ml.logs[0]).toStrictEqual({
       query: expQuery,
-      values: filterNullIfSqlite([null, 1]),
+      values: [1],
     });
 
     // same data loaded  but not same row
@@ -575,7 +568,7 @@ function commonTests() {
     expect(ml.logs.length).toBe(2);
     expect(ml.logs[1]).toStrictEqual({
       query: expQuery,
-      values: filterNullIfSqlite([null, 1]),
+      values: [1],
     });
   }
 
@@ -1036,7 +1029,7 @@ function verifyMultiIDsCustomClauseGroupQuery(ids: ID[]) {
   expect(ml.logs.length).toBe(1);
   expect(ml.logs[0]).toStrictEqual({
     query: expQuery,
-    values: filterNullIfSqlite([null, ...ids]),
+    values: ids,
   });
 }
 
@@ -1068,7 +1061,7 @@ function verifyMultiIDsCustomClauseGroupQueryMiss(ids: ID[]) {
     });
     expect(log).toStrictEqual({
       query: expQuery,
-      values: filterNullIfSqlite([null, ids[idx]]),
+      values: [ids[idx]],
     });
   });
 }

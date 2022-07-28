@@ -687,13 +687,16 @@ describe("update", () => {
   });
 
   test("returning cols", async () => {
-    const row = await editRowForTest({
-      tableName: "t",
-      fields: {
-        bar: "bar2",
+    const row = await editRowForTest(
+      {
+        tableName: "t",
+        fields: {
+          bar: "bar2",
+        },
+        whereClause: clause.Eq("id", 1),
       },
-      whereClause: clause.Eq("id", 1),
-    });
+      "RETURNING id, bar",
+    );
     expect(row).toStrictEqual({ id: 1, bar: "bar2" });
     verifyIDRowWritten({ id: 1, bar: "bar2", baz: "baz", name: "John" }, 1);
   });
