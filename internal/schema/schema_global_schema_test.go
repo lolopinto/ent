@@ -3,7 +3,6 @@ package schema_test
 import (
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/stretchr/testify/assert"
@@ -96,9 +95,67 @@ func TestGlobalEdgeWithInverse(t *testing.T) {
 	require.Len(t, groups, 1)
 
 	edgeConsts := groups["ent.EdgeType"]
-	require.Len(t, edgeConsts.Constants, 2)
+	require.Len(t, edgeConsts.Constants, 1)
 
 	require.NotNil(t, edgeConsts.Constants["GlobalToExternalInfoEdge"])
-	spew.Dump(edgeConsts.Constants)
-	t.Fail()
+
+	user := schema.Nodes["UserConfig"]
+	userGroups := user.NodeData.GetConstantGroups()
+	require.Len(t, userGroups, 2)
+
+	useEdgeConsts := userGroups["ent.EdgeType"]
+	require.Len(t, useEdgeConsts.Constants, 1)
+
+	require.NotNil(t, useEdgeConsts.Constants["UserToUserExternalInfoEdge"])
+}
+
+func TestExtraEdgeCols(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+				},
+				AssocEdges: []*input.AssocEdge{
+					{
+						Name:       "friends",
+						SchemaName: "User",
+					},
+				},
+			},
+		},
+		GlobalSchema: &input.GlobalSchema{
+			ExtraEdgeFields: []*input.Field{
+				{
+					Name: "deleted_at",
+					Type: &input.FieldType{
+						DBType: input.Timestamp,
+					},
+				},
+			},
+			GlobalEdges: []*input.AssocEdge{
+				{
+					Name:       "external_info",
+					SchemaName: "User",
+					InverseEdge: &input.InverseAssocEdge{
+						Name: "user_external_info",
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 1)
+
+	extraFields := schema.ExtraEdgeFields()
+	require.Len(t, extraFields, 1)
+	require.Equal(t, extraFields[0].FieldName, "deleted_at")
 }

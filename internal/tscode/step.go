@@ -439,6 +439,10 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 		}
 	}
 
+	if err := s.accumulateConsts(processor.Schema.GetGlobalConsts()); err != nil {
+		serr.Append(err)
+	}
+
 	for k := range processor.Schema.Enums {
 		info := processor.Schema.Enums[k]
 		if !info.OwnEnumFile() {

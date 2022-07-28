@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/google/uuid"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
@@ -567,7 +566,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 	}
 
 	if schema.GlobalSchema != nil {
-		errs = append(errs, s.parseGlobalSchema(cfg, schema.GlobalSchema)...)
+		errs = append(errs, s.parseGlobalSchema(cfg, schema.GlobalSchema, edgeData)...)
 	}
 
 	// TODO convert more things to do something like this?
@@ -579,14 +578,25 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 	return s.processDepgrah(edgeData)
 }
 
-func (s *Schema) parseGlobalSchema(cfg codegenapi.Config, gs *input.GlobalSchema) []error {
+func (s *Schema) parseGlobalSchema(cfg codegenapi.Config, gs *input.GlobalSchema, edgeData *assocEdgeData) []error {
 	var errs []error
 	for _, inputEdge := range gs.GlobalEdges {
-		newEdge, err := edge.AssocEdgeFromInput(cfg, "global", inputEdge)
+		assocEdge, err := edge.AssocEdgeFromInput(cfg, "global", inputEdge)
 		if err != nil {
 			errs = append(errs, err)
 		} else {
-			s.globalEdges = append(s.globalEdges, newEdge)
+			s.globalEdges = append(s.globalEdges, assocEdge)
+			if assocEdge.CreateEdge() {
+				newEdge, err := s.getNewEdge(edgeData, assocEdge)
+				if err != nil {
+					errs = append(errs, err)
+				} else {
+					s.addNewEdgeType(s.globalConsts, newEdge.constName, newEdge.constValue, assocEdge)
+				}
+				if err := s.maybeAddInverseAssocEdge(assocEdge); err != nil {
+					errs = append(errs, err)
+				}
+			}
 		}
 	}
 
@@ -1032,21 +1042,6 @@ func (s *Schema) processDepgrah(edgeData *assocEdgeData) (*assocEdgeData, error)
 	// need to run this after running everything above
 	for _, info := range s.Nodes {
 		if err := s.postProcess(info.NodeData, edgeData); err != nil {
-			return nil, err
-		}
-	}
-
-	// same logic of what we do for patterns
-	for _, assocEdge := range s.globalEdges {
-		if assocEdge.CreateEdge() {
-			newEdge, err := s.getNewEdge(edgeData, assocEdge)
-			if err != nil {
-				return nil, err
-			}
-			s.addNewEdgeType(s.globalConsts, newEdge.constName, newEdge.constValue, assocEdge)
-		}
-		spew.Dump(assocEdge)
-		if err := s.maybeAddInverseAssocEdge(assocEdge); err != nil {
 			return nil, err
 		}
 	}

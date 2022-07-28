@@ -2337,8 +2337,6 @@ func TestExtraEdgeCols(t *testing.T) {
 	}
 }
 
-// TODO test above in schema folder with schema specific tests
-
 func getSchemaFromInput(t *testing.T, s *input.Schema) *dbSchema {
 	ss, err := schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, s, base.TypeScript)
 	require.Nil(t, err)
