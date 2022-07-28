@@ -8,17 +8,21 @@ import { commonTests } from "./shared_test";
 import { assocTests } from "./shared_assoc_test";
 import { loadCustomEdges } from "../ent";
 import { EdgeWithDeletedAt } from "../../testutils/test_edge_global_schema";
+import { inputs } from "../../testutils/fake_data/test_helpers";
+import { convertDate } from "../../core/convert";
 
+// deleted_at column added for this case and assoc tests should work
 commonTests({
   newQuery(viewer: Viewer, user: FakeUser) {
     return UserToContactsQuery.query(viewer, user);
   },
   tableName: "user_to_contacts_table",
-  uniqKey: "user_to_contacts_table_sqlite",
+  uniqKey: "user_to_contacts_table_global",
   entsLength: 2,
-  where: "id1 = ? AND edge_type = ?",
+  where: "id1 = ? AND edge_type = ? AND deleted_at IS NULL",
   sortCol: "time",
   sqlite: true,
+  globalSchema: true,
   rawDataVerify: async (user: FakeUser) => {
     const [raw, withDeleted] = await Promise.all([
       loadCustomEdges({
@@ -34,7 +38,11 @@ commonTests({
       }),
     ]);
     expect(raw.length).toBe(0);
-    expect(withDeleted.length).toBe(0);
+    expect(withDeleted.length).toBe(inputs.length);
+    withDeleted.map((edge) => {
+      expect(edge.deletedAt).not.toBe(null);
+      expect(convertDate(edge.deletedAt!)).toBeInstanceOf(Date);
+    });
   },
 });
 

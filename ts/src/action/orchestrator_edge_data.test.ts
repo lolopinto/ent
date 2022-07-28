@@ -4,21 +4,14 @@ import DB, { Dialect } from "../core/db";
 import {
   assoc_edge_config_table,
   assoc_edge_table,
-  getColumnFromField,
   getSchemaTable,
   setupSqlite,
   Table,
   TempDB,
 } from "../testutils/db/temp_db";
-import { Data, Viewer } from "../core/base";
+import { Viewer } from "../core/base";
 import { LoggedOutViewer } from "../core/viewer";
-import {
-  SQLStatementOperation,
-  StringType,
-  TimestampType,
-  TransformedUpdateOperation,
-  UpdateOperation,
-} from "../schema";
+import { StringType } from "../schema";
 import {
   User,
   SimpleAction,
@@ -30,12 +23,14 @@ import {
   AssocEdgeConstructor,
   clearGlobalSchema,
   loadCustomEdges,
-  loadEdgeData,
   loadEdges,
+  loadRawEdgeCountX,
   setGlobalSchema,
 } from "../core/ent";
-import * as clause from "../core/clause";
-import { create } from "domain";
+import {
+  EdgeWithDeletedAt,
+  testEdgeGlobalSchema,
+} from "../testutils/test_edge_global_schema";
 
 const UserSchema = getBuilderSchemaFromFields(
   {
@@ -54,38 +49,6 @@ function getInsertUserAction(
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
 
-const globalSchema = {
-  extraEdgeFields: {
-    // need this to be lowerCamelCase because we do this based on field name
-    // #510
-    deletedAt: TimestampType({
-      nullable: true,
-      index: true,
-      defaultValueOnCreate: () => null,
-    }),
-  },
-
-  transformEdgeRead(): clause.Clause {
-    return clause.Eq("deleted_at", null);
-  },
-
-  transformEdgeWrite(
-    stmt: UpdateOperation<any>,
-  ): TransformedUpdateOperation<any> | null {
-    switch (stmt.op) {
-      case SQLStatementOperation.Delete:
-        return {
-          op: SQLStatementOperation.Update,
-          data: {
-            // this should return field, it'll be formatted as needed
-            deleted_at: new Date(),
-          },
-        };
-    }
-    return null;
-  },
-};
-
 const getInitialTables = (dialect: Dialect) => {
   const tables: Table[] = [assoc_edge_config_table()];
 
@@ -97,7 +60,7 @@ const getInitialTables = (dialect: Dialect) => {
 function setupEdgeTables(tdb: TempDB, global = false) {
   if (global) {
     beforeAll(() => {
-      setGlobalSchema(globalSchema);
+      setGlobalSchema(testEdgeGlobalSchema);
     });
     afterAll(() => {
       clearGlobalSchema();
@@ -114,18 +77,7 @@ function setupEdgeTables(tdb: TempDB, global = false) {
   beforeEach(async () => {
     const tables: Table[] = [];
     edges.map((edge) => {
-      const t = assoc_edge_table(`${snakeCase(edge)}_table`);
-
-      if (global) {
-        for (const k in globalSchema.extraEdgeFields) {
-          const col = getColumnFromField(
-            k,
-            globalSchema.extraEdgeFields[k],
-            Dialect.Postgres,
-          );
-          t.columns.push(col);
-        }
-      }
+      const t = assoc_edge_table(`${snakeCase(edge)}_table`, global);
       tables.push(t);
     });
     await tdb.create(...tables);
@@ -239,8 +191,13 @@ async function doTestAddEdge<T extends AssocEdge>(
     edgeType: "edge",
     ctr,
   });
+  const edgesCount = await loadRawEdgeCountX({
+    id1: user3.id,
+    edgeType: "edge",
+  });
   verifyEdges(edges);
   expect(edges.length).toBe(2);
+  expect(edgesCount).toBe(2);
   expect(
     edges
       .map((edge) => edge.id2)
@@ -256,6 +213,11 @@ async function doTestAddEdge<T extends AssocEdge>(
 
   expect(symmetricEdges.length).toBe(1);
   expect(symmetricEdges[0].id2).toBe(user1.id);
+  const symmetricEdgesCount = await loadRawEdgeCountX({
+    id1: user3.id,
+    edgeType: "symmetricEdge",
+  });
+  expect(symmetricEdgesCount).toBe(1);
 
   for (const id of [user1.id, user2.id]) {
     const inverseEdges = await loadCustomEdges({
@@ -267,6 +229,12 @@ async function doTestAddEdge<T extends AssocEdge>(
     expect(inverseEdges[0].id2).toBe(user3.id);
     verifyEdges(inverseEdges);
 
+    const inverseEdgesCount = await loadRawEdgeCountX({
+      id1: id,
+      edgeType: "inverseEdge",
+    });
+    expect(inverseEdgesCount).toBe(1);
+
     if (id === user1.id) {
       const symmetricEdges = await loadCustomEdges({
         id1: id,
@@ -276,6 +244,12 @@ async function doTestAddEdge<T extends AssocEdge>(
       expect(symmetricEdges.length).toBe(1);
       expect(symmetricEdges[0].id2).toBe(user3.id);
       verifyEdges(symmetricEdges);
+
+      const symmetricEdgesCount = await loadRawEdgeCountX({
+        id1: id,
+        edgeType: "symmetricEdge",
+      });
+      expect(symmetricEdgesCount).toBe(1);
     }
   }
 
@@ -324,7 +298,19 @@ function commonTestsNoGlobalSchema() {
       // shouldn't do anything
       disableTransformations: true,
     });
+    const reloadEdgesCount = await loadRawEdgeCountX({
+      id1: user.id,
+      edgeType: "edge",
+      // shouldn't do anything
+      disableTransformations: true,
+    });
     const reloadSymmetricEdges = await loadEdges({
+      id1: user.id,
+      edgeType: "symmetricEdge",
+      // shouldn't do anything
+      disableTransformations: true,
+    });
+    const reloadSymmetricEdgesCount = await loadRawEdgeCountX({
       id1: user.id,
       edgeType: "symmetricEdge",
       // shouldn't do anything
@@ -332,19 +318,13 @@ function commonTestsNoGlobalSchema() {
     });
     expect(reloadEdges.length).toBe(0);
     expect(reloadSymmetricEdges.length).toBe(0);
+
+    expect(reloadEdgesCount).toBe(0);
+    expect(reloadSymmetricEdgesCount).toBe(0);
   });
 }
 
 function commonTestsGlobalSchema() {
-  class EdgeWithDeletedAt extends AssocEdge {
-    deletedAt: Date | null;
-
-    constructor(data: Data) {
-      super(data);
-      this.deletedAt = data.deleted_at;
-    }
-  }
-
   async function verifyEdge(edge: EdgeWithDeletedAt) {
     expect(edge.deletedAt).toBe(null);
   }
@@ -362,13 +342,23 @@ function commonTestsGlobalSchema() {
       edgeType: "edge",
       ctr: EdgeWithDeletedAt,
     });
+    const reloadEdgesCount = await loadRawEdgeCountX({
+      id1: user.id,
+      edgeType: "edge",
+    });
     const reloadSymmetricEdges = await loadCustomEdges({
       id1: user.id,
       edgeType: "symmetricEdge",
       ctr: EdgeWithDeletedAt,
     });
+    const reloadSymmetricEdgesCount = await loadRawEdgeCountX({
+      id1: user.id,
+      edgeType: "symmetricEdge",
+    });
     expect(reloadEdges.length).toBe(0);
     expect(reloadSymmetricEdges.length).toBe(0);
+    expect(reloadEdgesCount).toBe(0);
+    expect(reloadSymmetricEdgesCount).toBe(0);
 
     // reload with no transformations and we can get the raw data out of it and see the deleted_at flag set to a given time
     const reloadEdges2 = await loadCustomEdges({
@@ -377,15 +367,28 @@ function commonTestsGlobalSchema() {
       disableTransformations: true,
       ctr: EdgeWithDeletedAt,
     });
+    const reloadEdges2Count = await loadRawEdgeCountX({
+      id1: user.id,
+      edgeType: "edge",
+      disableTransformations: true,
+    });
     const reloadSymmetricEdges2 = await loadCustomEdges({
       id1: user.id,
       edgeType: "symmetricEdge",
       disableTransformations: true,
       ctr: EdgeWithDeletedAt,
     });
+    const reloadSymmetricEdges2Count = await loadRawEdgeCountX({
+      id1: user.id,
+      edgeType: "symmetricEdge",
+      disableTransformations: true,
+    });
     expect(reloadEdges2.length).toBe(2);
+    expect(reloadEdges2Count).toBe(2);
     reloadEdges2.map((edge) => expect(edge.deletedAt).not.toBeNull());
+
     expect(reloadSymmetricEdges2.length).toBe(1);
+    expect(reloadSymmetricEdges2Count).toBe(1);
     reloadSymmetricEdges2.map((edge) => expect(edge.deletedAt).not.toBeNull());
   });
 }

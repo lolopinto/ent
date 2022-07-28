@@ -316,7 +316,7 @@ export async function setupTempDB() {
   return tdb;
 }
 
-export function tempDBTables() {
+export function tempDBTables(global: boolean = false) {
   const tables = [
     FakeUser.getTestTable(),
     FakeContact.getTestTable(),
@@ -324,7 +324,7 @@ export function tempDBTables() {
     assoc_edge_config_table(),
   ];
   edgeTableNames().forEach((tableName) =>
-    tables.push(assoc_edge_table(tableName)),
+    tables.push(assoc_edge_table(tableName, global)),
   );
 
   return tables;

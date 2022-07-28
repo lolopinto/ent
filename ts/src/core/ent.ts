@@ -1546,6 +1546,8 @@ export class AssocEdge {
   time: Date;
   data?: string | null;
 
+  private rawData: Data;
+
   constructor(data: Data) {
     this.id1 = data.id1;
     this.id1Type = data.id1_type;
@@ -1554,6 +1556,13 @@ export class AssocEdge {
     this.edgeType = data.edge_type;
     this.time = data.time;
     this.data = data.data;
+    this.rawData = data;
+  }
+
+  __getRawData() {
+    // incase there's extra db fields. useful for tests
+    // in production, a subclass of this should be in use so we won't need this...
+    return this.rawData;
   }
 
   getCursor(): string {
@@ -1718,6 +1727,25 @@ export async function loadEdges(
   return loadCustomEdges({ ...options, ctr: AssocEdge });
 }
 
+export function getEdgeClauseAndFields(
+  cls: clause.Clause,
+  options: loadEdgesOptions,
+) {
+  let fields = edgeFields;
+
+  if (globalSchema?.transformEdgeRead) {
+    const transformClause = globalSchema.transformEdgeRead();
+    if (!options.disableTransformations) {
+      cls = clause.And(cls, transformClause);
+    }
+    fields = edgeFields.concat(transformClause.columns());
+  }
+  return {
+    cls,
+    fields,
+  };
+}
+
 export async function loadCustomEdges<T extends AssocEdge>(
   options: loadCustomEdgesOptions<T>,
 ): Promise<T[]> {
@@ -1732,20 +1760,13 @@ export async function loadCustomEdges<T extends AssocEdge>(
   if (options.queryOptions?.clause) {
     cls = clause.And(cls, options.queryOptions.clause);
   }
-  let fields = edgeFields;
 
-  if (globalSchema?.transformEdgeRead) {
-    const transformClause = globalSchema.transformEdgeRead();
-    if (!options.disableTransformations) {
-      cls = clause.And(cls, transformClause);
-    }
-    fields = edgeFields.concat(transformClause.columns());
-  }
+  const { cls: actualClause, fields } = getEdgeClauseAndFields(cls, options);
 
   const rows = await loadRows({
     tableName: edgeData.edgeTable,
     fields: fields,
-    clause: cls,
+    clause: actualClause,
     orderby: options.queryOptions?.orderby || defaultOptions.orderby,
     limit: options.queryOptions?.limit || defaultOptions.limit,
     context,
@@ -1764,10 +1785,15 @@ export async function loadUniqueEdge(
   if (!edgeData) {
     throw new Error(`error loading edge data for ${edgeType}`);
   }
+  const { cls, fields } = getEdgeClauseAndFields(
+    clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
+    options,
+  );
+
   const row = await loadRow({
     tableName: edgeData.edgeTable,
-    fields: edgeFields,
-    clause: clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
+    fields: fields,
+    clause: cls,
     context,
   });
   if (!row) {
@@ -1805,11 +1831,15 @@ export async function loadRawEdgeCountX(
     throw new Error(`error loading edge data for ${edgeType}`);
   }
 
+  const { cls } = getEdgeClauseAndFields(
+    clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
+    options,
+  );
   const row = await loadRowX({
     tableName: edgeData.edgeTable,
     // sqlite needs as count otherwise it returns count(1)
     fields: ["count(1) as count"],
-    clause: clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
+    clause: cls,
     context,
   });
   return parseInt(row["count"], 10) || 0;
