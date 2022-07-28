@@ -1,3 +1,4 @@
+globalSchemaPath: global_schema.ts
 codegen:
   disableBase64Encoding: true
   generateRootResolvers: true

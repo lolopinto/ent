@@ -44,6 +44,7 @@ export interface Config {
   customGraphQLJSONPath?: string;
 
   // defaults to __global__schema.ts if not provided
+  // relative to src/schema for now
   globalSchemaPath?: string;
 }
 

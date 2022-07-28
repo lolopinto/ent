@@ -406,7 +406,6 @@ function parseGlobalSchema(s: GlobalSchema): ProcessedGlobalSchema {
     globalEdges: [],
     extraEdgeFields: [],
     initForEdges:
-      !!s.edges?.length ||
       !!s.extraEdgeFields ||
       s.transformEdgeRead !== undefined ||
       s.transformEdgeWrite !== undefined,

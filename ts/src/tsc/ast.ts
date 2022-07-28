@@ -328,6 +328,7 @@ export function getCustomInfo(): customInfo {
       return {
         viewerInfo: yaml.codegen.templatizedViewer,
         relativeImports,
+        globalSchemaPath: yaml.globalSchemaPath,
       };
     }
   } catch (e) {}
@@ -337,5 +338,6 @@ export function getCustomInfo(): customInfo {
       name: "Viewer",
     },
     relativeImports,
+    globalSchemaPath: yaml.globalSchemaPath,
   };
 }
