@@ -31,6 +31,7 @@ export {
   SQLStatementOperation,
   getTransformedReadClause,
   getObjectLoaderProperties,
+  GlobalSchema,
 } from "./schema";
 export {
   Timestamps,
