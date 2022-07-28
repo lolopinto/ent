@@ -356,6 +356,11 @@ function getOp(where: any, values: any[]): Where {
     case "OR":
       return new OrOp([getOp(where.left, values), getOp(where.right, values)]);
 
+    case "IS":
+      if (where.right?.value === null) {
+        return new EqOp(getColumnFromRef(where.left), null);
+      }
+
     default:
       console.log(where);
       throw new Error(`unsupported op ${where.operator}`);

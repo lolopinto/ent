@@ -21,6 +21,14 @@ describe("postgres", () => {
   commonTests();
 });
 
+class UserSchema extends BaseEntSchema {
+  fields: FieldMap = {
+    FirstName: StringType(),
+    LastName: StringType(),
+  };
+  ent = User;
+}
+
 describe("sqlite", () => {
   const getTables = () => {
     const tables: Table[] = [];
@@ -33,14 +41,6 @@ describe("sqlite", () => {
   setupSqlite(`sqlite:///trigger-priority-test.db`, getTables);
   commonTests();
 });
-
-class UserSchema extends BaseEntSchema {
-  fields: FieldMap = {
-    FirstName: StringType(),
-    LastName: StringType(),
-  };
-  ent = User;
-}
 
 function getInsertUserAction(
   map: Map<string, any>,

@@ -61,27 +61,6 @@ afterEach(() => {
   FakeComms.clear();
 });
 
-describe("postgres", () => {
-  commonTests();
-});
-
-describe("sqlite", () => {
-  const getTables = () => {
-    const tables: Table[] = [assoc_edge_config_table()];
-    edges.map((edge) =>
-      tables.push(assoc_edge_table(`${snakeCase(edge)}_table`)),
-    );
-
-    [new UserSchema(), new ContactSchema()].map((s) =>
-      tables.push(getSchemaTable(s, Dialect.SQLite)),
-    );
-    return tables;
-  };
-
-  setupSqlite(`sqlite:///transformed-orchestrator-test.db`, getTables);
-  commonTests();
-});
-
 class DeletedAtPattern implements Pattern {
   name = "deleted_at";
   fields: FieldMap = {
@@ -171,6 +150,27 @@ class ContactSchema extends BaseEntSchema {
   };
   ent = Contact;
 }
+
+describe("postgres", () => {
+  commonTests();
+});
+
+describe("sqlite", () => {
+  const getTables = () => {
+    const tables: Table[] = [assoc_edge_config_table()];
+    edges.map((edge) =>
+      tables.push(assoc_edge_table(`${snakeCase(edge)}_table`)),
+    );
+
+    [new UserSchema(), new ContactSchema()].map((s) =>
+      tables.push(getSchemaTable(s, Dialect.SQLite)),
+    );
+    return tables;
+  };
+
+  setupSqlite(`sqlite:///transformed-orchestrator-test.db`, getTables);
+  commonTests();
+});
 
 const getNewLoader = (context: boolean = true) => {
   return new ObjectLoader(

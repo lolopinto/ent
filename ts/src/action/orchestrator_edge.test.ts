@@ -53,6 +53,14 @@ afterEach(() => {
   FakeComms.clear();
 });
 
+const UserSchema = getBuilderSchemaFromFields(
+  {
+    FirstName: StringType(),
+    LastName: StringType(),
+  },
+  User,
+);
+
 describe("postgres", () => {
   commonTests();
 });
@@ -72,14 +80,6 @@ describe("sqlite", () => {
   setupSqlite(`sqlite:///orchestrator-edge-test.db`, getTables);
   commonTests();
 });
-
-const UserSchema = getBuilderSchemaFromFields(
-  {
-    FirstName: StringType(),
-    LastName: StringType(),
-  },
-  User,
-);
 
 const getLoggedInBuilder = () => {
   const viewer = new IDViewer("1");

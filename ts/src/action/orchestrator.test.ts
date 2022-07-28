@@ -89,41 +89,6 @@ afterEach(() => {
   FakeComms.clear();
 });
 
-describe("postgres", () => {
-  commonTests();
-});
-
-describe("sqlite", () => {
-  const getTables = () => {
-    const tables: Table[] = [assoc_edge_config_table()];
-    edges.map((edge) =>
-      tables.push(assoc_edge_table(`${snakeCase(edge)}_table`)),
-    );
-
-    [
-      UserSchema,
-      UserSchemaWithStatus,
-      UserSchemaExtended,
-      UserSchemaServerDefault,
-      UserSchemaDefaultValueOnCreate,
-      UserSchemaDefaultValueOnCreateJSON,
-      UserSchemaDefaultValueOnCreateInvalidJSON,
-      SchemaWithProcessors,
-      EventSchema,
-      AddressSchemaDerivedFields,
-      ContactSchema,
-      ContactSchema3,
-      CustomUserSchema,
-      ContactEmailSchema,
-      SensitiveValuesSchema,
-    ].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));
-    return tables;
-  };
-
-  setupSqlite(`sqlite:///orchestrator-test.db`, getTables);
-  commonTests();
-});
-
 const UserSchema = getBuilderSchemaFromFields(
   {
     FirstName: StringType(),
@@ -328,6 +293,41 @@ const SensitiveValuesSchema = getBuilderSchemaFromFields(
   },
   SensitiveUser,
 );
+
+describe("postgres", () => {
+  commonTests();
+});
+
+describe("sqlite", () => {
+  const getTables = () => {
+    const tables: Table[] = [assoc_edge_config_table()];
+    edges.map((edge) =>
+      tables.push(assoc_edge_table(`${snakeCase(edge)}_table`)),
+    );
+
+    [
+      UserSchema,
+      UserSchemaWithStatus,
+      UserSchemaExtended,
+      UserSchemaServerDefault,
+      UserSchemaDefaultValueOnCreate,
+      UserSchemaDefaultValueOnCreateJSON,
+      UserSchemaDefaultValueOnCreateInvalidJSON,
+      SchemaWithProcessors,
+      EventSchema,
+      AddressSchemaDerivedFields,
+      ContactSchema,
+      ContactSchema3,
+      CustomUserSchema,
+      ContactEmailSchema,
+      SensitiveValuesSchema,
+    ].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));
+    return tables;
+  };
+
+  setupSqlite(`sqlite:///orchestrator-test.db`, getTables);
+  commonTests();
+});
 
 function getInsertUserAction(
   map: Map<string, any>,

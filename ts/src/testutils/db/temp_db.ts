@@ -533,7 +533,6 @@ export function setupSqlite(
   beforeAll(async () => {
     process.env.DB_CONNECTION_STRING = connString;
     loadConfig();
-    // tdb = new TempDB(Dialect.SQLite, tables());
     await tdb.beforeAll();
 
     const conn = DB.getInstance().getConnection();

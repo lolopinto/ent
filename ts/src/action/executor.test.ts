@@ -109,86 +109,6 @@ afterEach(() => {
   operations = [];
 });
 
-describe("postgres", () => {
-  commonTests();
-});
-
-describe("sqlite", () => {
-  const getTables = () => {
-    const tables: Table[] = [assoc_edge_config_table()];
-    edges.map((edge) => tables.push(assoc_edge_table(`${edge}_table`)));
-
-    [
-      AccountSchema,
-      ContactSchema,
-      GroupSchema,
-      UserSchema,
-      MessageSchema,
-      GroupMembershipSchema,
-      ChangelogSchema,
-    ].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));
-    return tables;
-  };
-
-  setupSqlite(`sqlite:///executor-test.db`, getTables);
-  commonTests();
-});
-
-jest.spyOn(action, "saveBuilder").mockImplementation(saveBuilder);
-jest.spyOn(action, "saveBuilderX").mockImplementation(saveBuilderX);
-
-async function saveBuilder<T extends Ent>(builder: Builder<T>): Promise<void> {
-  const changeset = await builder.build();
-  const executor = changeset.executor();
-  operations = await executeOperations(executor, builder.viewer.context, true);
-}
-
-async function saveBuilderX<T extends Ent>(builder: Builder<T>): Promise<void> {
-  return saveBuilder(builder);
-}
-
-async function executeAction<T extends Ent, E = any>(
-  action: Action<T, Builder<T>>,
-  name?: E,
-): Promise<Executor> {
-  const exec = await executor(action.builder);
-  if (name !== undefined) {
-    expect(exec).toBeInstanceOf(name);
-  }
-  operations = await executeOperations(
-    exec,
-    action.builder.viewer.context,
-    true,
-  );
-  return exec;
-}
-
-async function executor<T extends Ent>(builder: Builder<T>): Promise<Executor> {
-  const changeset = await builder.build();
-  return changeset.executor();
-}
-
-async function createGroup() {
-  let groupID = QueryRecorder.newID();
-  let groupFields = {
-    id: groupID,
-    name: "group",
-    created_at: new Date(),
-    updated_at: new Date(),
-  };
-  // need to create the group first
-  await createRowForTest({
-    tableName: "groups",
-    fields: groupFields,
-  });
-  return new Group(new LoggedOutViewer(), groupFields);
-}
-
-async function createUser(): Promise<User> {
-  const id = QueryRecorder.newID();
-  return new User(new IDViewer(id), { id });
-}
-
 const UserSchema = getBuilderSchemaFromFields(
   {
     FirstName: StringType(),
@@ -283,6 +203,86 @@ const MessageSchema = getBuilderSchemaFromFields(
   },
   Message,
 );
+
+describe("postgres", () => {
+  commonTests();
+});
+
+describe("sqlite", () => {
+  const getTables = () => {
+    const tables: Table[] = [assoc_edge_config_table()];
+    edges.map((edge) => tables.push(assoc_edge_table(`${edge}_table`)));
+
+    [
+      AccountSchema,
+      ContactSchema,
+      GroupSchema,
+      UserSchema,
+      MessageSchema,
+      GroupMembershipSchema,
+      ChangelogSchema,
+    ].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));
+    return tables;
+  };
+
+  setupSqlite(`sqlite:///executor-test.db`, getTables);
+  commonTests();
+});
+
+jest.spyOn(action, "saveBuilder").mockImplementation(saveBuilder);
+jest.spyOn(action, "saveBuilderX").mockImplementation(saveBuilderX);
+
+async function saveBuilder<T extends Ent>(builder: Builder<T>): Promise<void> {
+  const changeset = await builder.build();
+  const executor = changeset.executor();
+  operations = await executeOperations(executor, builder.viewer.context, true);
+}
+
+async function saveBuilderX<T extends Ent>(builder: Builder<T>): Promise<void> {
+  return saveBuilder(builder);
+}
+
+async function executeAction<T extends Ent, E = any>(
+  action: Action<T, Builder<T>>,
+  name?: E,
+): Promise<Executor> {
+  const exec = await executor(action.builder);
+  if (name !== undefined) {
+    expect(exec).toBeInstanceOf(name);
+  }
+  operations = await executeOperations(
+    exec,
+    action.builder.viewer.context,
+    true,
+  );
+  return exec;
+}
+
+async function executor<T extends Ent>(builder: Builder<T>): Promise<Executor> {
+  const changeset = await builder.build();
+  return changeset.executor();
+}
+
+async function createGroup() {
+  let groupID = QueryRecorder.newID();
+  let groupFields = {
+    id: groupID,
+    name: "group",
+    created_at: new Date(),
+    updated_at: new Date(),
+  };
+  // need to create the group first
+  await createRowForTest({
+    tableName: "groups",
+    fields: groupFields,
+  });
+  return new Group(new LoggedOutViewer(), groupFields);
+}
+
+async function createUser(): Promise<User> {
+  const id = QueryRecorder.newID();
+  return new User(new IDViewer(id), { id });
+}
 
 class MessageAction extends SimpleAction<Message> {
   constructor(
