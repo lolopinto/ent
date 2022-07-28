@@ -8,7 +8,7 @@ import {
   TempDB,
   assoc_edge_config_table,
   assoc_edge_table,
-} from "../db/test_db";
+} from "../db/temp_db";
 
 import {
   createUser,

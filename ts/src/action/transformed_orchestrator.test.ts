@@ -26,7 +26,7 @@ import {
   getSchemaTable,
   setupSqlite,
   Table,
-} from "../testutils/db/test_db";
+} from "../testutils/db/temp_db";
 import { convertDate } from "../core/convert";
 import { loadConfig } from "../core/config";
 import { FieldMap } from "../schema";

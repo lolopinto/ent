@@ -18,7 +18,7 @@ import {
   tempDBTables,
 } from "../../testutils/fake_data/test_helpers";
 import { EdgeQuery } from "./query";
-import { setupSqlite, TempDB } from "../../testutils/db/test_db";
+import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 

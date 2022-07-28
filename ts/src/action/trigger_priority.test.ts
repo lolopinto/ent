@@ -7,9 +7,8 @@ import { User, SimpleAction, SimpleBuilder } from "../testutils/builder";
 import { Pool } from "pg";
 import { QueryRecorder } from "../testutils/db_mock";
 import { Dialect } from "../core/db";
-import { getSchemaTable, setupSqlite, Table } from "../testutils/db/test_db";
+import { getSchemaTable, setupSqlite, Table } from "../testutils/db/temp_db";
 import { FieldMap } from "../schema";
-import exp from "constants";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);

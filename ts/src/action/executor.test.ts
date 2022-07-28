@@ -51,7 +51,7 @@ import {
   getSchemaTable,
   setupSqlite,
   Table,
-} from "../testutils/db/test_db";
+} from "../testutils/db/temp_db";
 import * as action from "../action";
 
 jest.mock("pg");

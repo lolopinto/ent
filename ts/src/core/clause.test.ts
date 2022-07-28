@@ -1,6 +1,8 @@
 import * as clause from "./clause";
 import { loadConfig } from "./config";
 
+// TODO test columns...
+
 describe("postgres", () => {
   beforeAll(() => {
     // specify dialect as postgres

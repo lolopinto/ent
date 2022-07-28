@@ -158,7 +158,7 @@ export interface CreateRowOptions extends DataOptions {
 }
 
 export interface EditRowOptions extends CreateRowOptions {
-  key: string; // what key are we loading from. if not provided we're loading from column "id"
+  whereClause: clause.Clause;
 }
 
 interface LoadableEntOptions<

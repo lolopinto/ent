@@ -30,7 +30,7 @@ import {
   table,
   text,
   timestamp,
-} from "../../testutils/db/test_db";
+} from "../../testutils/db/temp_db";
 import DB, { Dialect } from "../db";
 import { advanceTo } from "jest-date-mock";
 import { convertDate } from "../convert";
@@ -716,16 +716,13 @@ function commonTests() {
       deleted_at: null,
     });
 
-    await editRowForTest(
-      {
-        tableName: "users",
-        key: "id",
-        fields: {
-          deleted_at: new Date(),
-        },
+    await editRowForTest({
+      tableName: "users",
+      whereClause: clause.Eq("id", 1),
+      fields: {
+        deleted_at: new Date(),
       },
-      1,
-    );
+    });
 
     ctx.cache.clearCache();
     const rowPostDelete = await loader.load(1);

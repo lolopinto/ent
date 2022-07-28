@@ -539,17 +539,14 @@ describe("ops", () => {
   test("AND 2 ops", async () => {
     await Promise.all(
       [4, 8].map(async (id) => {
-        return await editRowForTest(
-          {
-            tableName: "t",
-            fields: {
-              bar: "bar2",
-              baz: "baz3",
-            },
-            key: "id",
+        return await editRowForTest({
+          tableName: "t",
+          fields: {
+            bar: "bar2",
+            baz: "baz3",
           },
-          id,
-        );
+          whereClause: clause.Eq("id", id),
+        });
       }),
     );
     const rows = await loadRows({
@@ -569,17 +566,14 @@ describe("ops", () => {
   test("AND 3 ops", async () => {
     await Promise.all(
       [4, 8].map(async (id) => {
-        return await editRowForTest(
-          {
-            tableName: "t",
-            fields: {
-              bar: "bar2",
-              baz: "baz3",
-            },
-            key: "id",
+        return await editRowForTest({
+          tableName: "t",
+          fields: {
+            bar: "bar2",
+            baz: "baz3",
           },
-          id,
-        );
+          whereClause: clause.Eq("id", id),
+        });
       }),
     );
     const rows = await loadRows({
@@ -628,17 +622,14 @@ describe("ops", () => {
   test("OR 4 ops", async () => {
     await Promise.all(
       [4, 8].map(async (id) => {
-        return await editRowForTest(
-          {
-            tableName: "t",
-            fields: {
-              bar: "bar2",
-              baz: "baz3",
-            },
-            key: "id",
+        return await editRowForTest({
+          tableName: "t",
+          fields: {
+            bar: "bar2",
+            baz: "baz3",
           },
-          id,
-        );
+          whereClause: clause.Eq("id", id),
+        });
       }),
     );
     const rows = await loadRows({
@@ -669,16 +660,13 @@ describe("update", () => {
   });
 
   test("simple update", async () => {
-    const row = await editRowForTest(
-      {
-        tableName: "t",
-        fields: {
-          bar: "bar2",
-        },
-        key: "id",
+    const row = await editRowForTest({
+      tableName: "t",
+      fields: {
+        bar: "bar2",
       },
-      1,
-    );
+      whereClause: clause.Eq("id", 1),
+    });
     expect(row).toBeNull();
     verifyIDRowWritten({ id: 1, bar: "bar2", baz: "baz", name: "John" }, 1);
   });
@@ -690,9 +678,8 @@ describe("update", () => {
         fields: {
           bar: "bar2",
         },
-        key: "id",
+        whereClause: clause.Eq("id", 1),
       },
-      1,
       "RETURNING *",
     );
     expect(row).toStrictEqual({ id: 1, bar: "bar2", baz: "baz", name: "John" });
@@ -700,17 +687,13 @@ describe("update", () => {
   });
 
   test("returning cols", async () => {
-    const row = await editRowForTest(
-      {
-        tableName: "t",
-        fields: {
-          bar: "bar2",
-        },
-        key: "id",
+    const row = await editRowForTest({
+      tableName: "t",
+      fields: {
+        bar: "bar2",
       },
-      1,
-      "RETURNING id, bar",
-    );
+      whereClause: clause.Eq("id", 1),
+    });
     expect(row).toStrictEqual({ id: 1, bar: "bar2" });
     verifyIDRowWritten({ id: 1, bar: "bar2", baz: "baz", name: "John" }, 1);
   });

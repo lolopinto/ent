@@ -25,11 +25,11 @@ export class DeletedAtPattern implements Pattern {
     }),
   ];
 
-  transformRead(): clause.Clause {
+  transformEdgeRead(): clause.Clause {
     return clause.Eq("deleted_at", null);
   }
 
-  transformWrite<T extends Ent>(
+  transformEdgeWrite<T extends Ent>(
     stmt: UpdateOperation<T>,
   ): TransformedUpdateOperation<T> | null {
     switch (stmt.op) {

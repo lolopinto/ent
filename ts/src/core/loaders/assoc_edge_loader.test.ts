@@ -7,7 +7,7 @@ import { AssocEdge, buildQuery, DefaultLimit } from "../ent";
 import * as clause from "../clause";
 
 import { EdgeQueryableDataOptions, ID, Loader } from "../base";
-import { setupSqlite, TempDB } from "../../testutils/db/test_db";
+import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
 import {
   FakeUser,
   FakeContact,

@@ -22,7 +22,7 @@ import {
   setupSqlite,
   table,
   text,
-} from "../testutils/db/test_db";
+} from "../testutils/db/temp_db";
 import DB, { Dialect } from "../core/db";
 import * as clause from "../core/clause";
 
@@ -132,7 +132,6 @@ function getInsertQuery(id: ID) {
 function getUpdateQuery(ent: User) {
   const [query, _, logValues] = buildUpdateQuery(
     {
-      key: "id",
       tableName: "users",
       fields: {
         foo: "bar",
@@ -140,8 +139,8 @@ function getUpdateQuery(ent: User) {
       fieldsToLog: {
         foo: "bar",
       },
+      whereClause: clause.Eq("id", ent.id),
     },
-    ent.id,
     "RETURNING *",
   );
   return { query, values: logValues };

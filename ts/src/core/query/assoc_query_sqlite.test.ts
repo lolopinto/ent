@@ -3,7 +3,7 @@ import { FakeUser, UserToContactsQuery } from "../../testutils/fake_data/index";
 import { tempDBTables } from "../../testutils/fake_data/test_helpers";
 import { commonTests } from "./shared_test";
 import { assocTests } from "./shared_assoc_test";
-import { setupSqlite } from "../../testutils/db/test_db";
+import { setupSqlite } from "../../testutils/db/temp_db";
 
 commonTests({
   newQuery(viewer: Viewer, user: FakeUser) {

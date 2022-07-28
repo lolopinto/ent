@@ -6,7 +6,7 @@ import {
   setupSqlite,
   timestamp,
   bool,
-} from "../testutils/db/test_db";
+} from "../testutils/db/temp_db";
 import {
   createRowForTest,
   deleteRowsForTest,
@@ -57,16 +57,13 @@ describe("sqlite", () => {
       tableName: "users",
     });
 
-    await editRowForTest(
-      {
-        fields: {
-          bar: "bar2",
-        },
-        tableName: "users",
-        key: "id",
+    await editRowForTest({
+      fields: {
+        bar: "bar2",
       },
-      1,
-    );
+      tableName: "users",
+      whereClause: clause.Eq("id", 1),
+    });
 
     const r = await DB.getInstance()
       .getPool()

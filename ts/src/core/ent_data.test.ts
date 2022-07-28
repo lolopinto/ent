@@ -28,7 +28,7 @@ import DB from "./db";
 import each from "jest-each";
 import { ObjectLoaderFactory } from "./loaders";
 
-import { integer, table, text, setupSqlite } from "../testutils/db/test_db";
+import { integer, table, text, setupSqlite } from "../testutils/db/temp_db";
 import { MockLogs } from "../testutils/mock_log";
 import { clearLogLevels, setLogLevels } from "./logger";
 
@@ -1329,7 +1329,7 @@ function commonTests() {
       options = {
         fields: fields,
         fieldsToLog: fields,
-        key: "bar",
+        whereClause: clause.Eq("bar", 1),
         tableName: selectOptions.tableName,
         context: ctx!, // reuse "global" context
       };
@@ -1367,18 +1367,15 @@ function commonTests() {
           options2.fields = { ...options.fields, baz: "baz3" };
           options2.fieldsToLog = options2.fields;
           // we need a different row so that querying after still returns one row
-          return editRowForTest(options2, 1);
+          return editRowForTest(options2);
         },
         () => {
-          const [query, _, logValues] = buildUpdateQuery(
-            {
-              fields: { ...fields, baz: "baz3" },
-              fieldsToLog: { ...fields, baz: "baz3" },
-              tableName: selectOptions.tableName,
-              key: "bar",
-            },
-            1,
-          );
+          const [query, _, logValues] = buildUpdateQuery({
+            fields: { ...fields, baz: "baz3" },
+            fieldsToLog: { ...fields, baz: "baz3" },
+            tableName: selectOptions.tableName,
+            whereClause: clause.Eq("bar", 1),
+          });
           return { query, values: logValues };
         },
       ],

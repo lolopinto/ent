@@ -2,7 +2,7 @@ import { LoggedOutViewer } from "../core/viewer";
 
 import { Schema, Field } from ".";
 import { User, SimpleAction, BuilderSchema } from "../testutils/builder";
-import { TempDB, getSchemaTable } from "../testutils/db/test_db";
+import { TempDB, getSchemaTable } from "../testutils/db/temp_db";
 import DB, { Dialect } from "../core/db";
 import { Ent } from "../core/base";
 import * as fs from "fs";

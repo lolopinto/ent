@@ -528,11 +528,12 @@ export function setupSqlite(
   tables: () => Table[],
   opts?: sqliteSetupOptions,
 ) {
-  let tdb: TempDB;
+  let tdb: TempDB = new TempDB(Dialect.SQLite, tables());
+
   beforeAll(async () => {
     process.env.DB_CONNECTION_STRING = connString;
     loadConfig();
-    tdb = new TempDB(Dialect.SQLite, tables());
+    // tdb = new TempDB(Dialect.SQLite, tables());
     await tdb.beforeAll();
 
     const conn = DB.getInstance().getConnection();
@@ -559,6 +560,8 @@ export function setupSqlite(
 
     fs.rmSync(tdb.getSqliteClient().name);
   });
+
+  return tdb;
 }
 
 export function getSchemaTable(schema: BuilderSchema<Ent>, dialect: Dialect) {
@@ -611,7 +614,11 @@ function getColumnForDbType(
   }
 }
 
-function getColumnFromField(fieldName: string, f: Field, dialect: Dialect) {
+export function getColumnFromField(
+  fieldName: string,
+  f: Field,
+  dialect: Dialect,
+) {
   switch (f.type.dbType) {
     case DBType.List:
       const elemType = f.type.listElemType;
