@@ -16,8 +16,6 @@ const glo: GlobalSchema = {
     }),
   },
 
-  // TODO use these in edges
-  // write tests
   transformEdgeRead(): clause.Clause {
     return clause.Eq("deleted_at", null);
   },

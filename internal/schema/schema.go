@@ -510,7 +510,6 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 				if err != nil {
 					errs = append(errs, err)
 				} else {
-					// TODO should this be in postProcess???
 					s.addNewEdgeType(p, newEdge.constName, newEdge.constValue, assocEdge)
 				}
 			}

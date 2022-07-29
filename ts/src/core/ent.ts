@@ -37,8 +37,6 @@ import DataLoader from "dataloader";
 import { ObjectLoader } from "./loaders";
 import { getStorageKey, GlobalSchema, SQLStatementOperation } from "../schema/";
 import { TransformedUpdateOperation } from "@snowtop/ent";
-import { glob } from "glob";
-import { textSpanOverlapsWith } from "typescript";
 
 // TODO kill this and createDataLoader
 class cacheMap {

@@ -61,6 +61,7 @@ func (obj *objWithConsts) GetSortedConstantGroups() []*ConstGroupInfo {
 }
 
 func (obj *objWithConsts) GetNodeInstance() string {
-	// TODO?? do we care about this?
+	// would be ideal to have a default value used here so comments for global edges
+	// don't look weird. not high pri
 	return ""
 }

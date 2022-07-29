@@ -551,7 +551,6 @@ func (s *dbSchema) generateShemaTables() error {
 		}
 	}
 
-	// TODO based on extra edge columns
 	if addedAtLeastOneEdgeTable {
 		s.addEdgeConfigTable()
 	}
