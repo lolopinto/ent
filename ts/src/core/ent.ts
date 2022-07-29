@@ -35,8 +35,12 @@ import { WriteOperation, Builder } from "../action";
 import { log, logEnabled, logTrace } from "./logger";
 import DataLoader from "dataloader";
 import { ObjectLoader } from "./loaders";
-import { getStorageKey, GlobalSchema, SQLStatementOperation } from "../schema/";
-import { TransformedUpdateOperation } from "@snowtop/ent";
+import {
+  getStorageKey,
+  GlobalSchema,
+  SQLStatementOperation,
+  TransformedUpdateOperation,
+} from "../schema/";
 
 // TODO kill this and createDataLoader
 class cacheMap {

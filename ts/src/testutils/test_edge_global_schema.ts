@@ -16,6 +16,7 @@ export class EdgeWithDeletedAt extends AssocEdge {
     this.deletedAt = data.deleted_at;
   }
 }
+
 export const testEdgeGlobalSchema = {
   extraEdgeFields: {
     // need this to be lowerCamelCase because we do this based on field name
@@ -39,7 +40,6 @@ export const testEdgeGlobalSchema = {
         return {
           op: SQLStatementOperation.Update,
           data: {
-            // this should return field, it'll be formatted as needed
             deleted_at: new Date(),
           },
         };

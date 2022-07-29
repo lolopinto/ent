@@ -286,8 +286,6 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
   let tdb: TempDB;
   if (opts.sqlite) {
-    // tableName just to make it unique
-    // TODOOO
     setupSqlite(`sqlite:///shared_test+${opts.uniqKey}.db`, () =>
       tempDBTables(opts.globalSchema),
     );
@@ -317,7 +315,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   describe("simple queries", () => {
     const filter = new TestQueryFilter(
       (q: EdgeQuery<FakeUser, FakeContact, TData>) => {
-        // no filterzs
+        // no filters
         return q;
       },
       opts.newQuery,
@@ -366,11 +364,12 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   describe("after delete", () => {
     const filter = new TestQueryFilter(
       (q: EdgeQuery<FakeUser, FakeContact, TData>) => {
-        // no filterzs
+        // no filters
         return q;
       },
       opts.newQuery,
       (contacts: FakeContact[]) => {
+        // nothing expected since deleted
         return [];
       },
       getViewer(),
