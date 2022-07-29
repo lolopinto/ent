@@ -16,3 +16,7 @@ export * from "src/ent/account/query/account_to_tags_query";
 export * from "src/ent/account/query/account_to_todos_query";
 export * from "src/ent/tag/query/tag_to_todos_query";
 export * from "src/ent/todo/query/todo_to_tags_query";
+import { setGlobalSchema } from "@snowtop/ent";
+import globalSchema from "src/schema/global_schema";
+
+setGlobalSchema(globalSchema);

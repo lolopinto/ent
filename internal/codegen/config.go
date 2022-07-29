@@ -371,6 +371,15 @@ func (cfg *Config) GetTemplatizedViewer() *codegenapi.ViewerConfig {
 	}
 }
 
+func (cfg *Config) GetGlobalSchemaImportPath() string {
+	if cfg.config != nil {
+		if cfg.config.GlobalSchemaPath != "" {
+			return filepath.Join("src/schema", strings.Trim(cfg.config.GlobalSchemaPath, ".ts"))
+		}
+	}
+	return "src/schema/__global__schema"
+}
+
 const DEFAULT_GLOB = "src/**/*.ts"
 const PRETTIER_FILE_CHUNKS = 20
 
@@ -488,12 +497,14 @@ func parseConfig() (*config, error) {
 type config struct {
 	Codegen               *CodegenConfig `yaml:"codegen"`
 	CustomGraphQLJSONPath string         `yaml:"customGraphQLJSONPath"`
+	GlobalSchemaPath      string         `yaml:"globalSchemaPath"`
 }
 
 func (cfg *config) Clone() *config {
 	return &config{
 		Codegen:               cloneCodegen(cfg.Codegen),
 		CustomGraphQLJSONPath: cfg.CustomGraphQLJSONPath,
+		GlobalSchemaPath:      cfg.GlobalSchemaPath,
 	}
 }
 
