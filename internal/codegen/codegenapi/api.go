@@ -58,7 +58,7 @@ func (cfg *ImportedObject) GetImport() string {
 
 func (cfg *ImportedObject) GetImportPath() *tsimport.ImportPath {
 	ret := &tsimport.ImportPath{
-		ImportPath: cfg.Path,
+		ImportPath: strings.TrimSuffix(cfg.Path, ".ts"),
 		Import:     cfg.Name,
 	}
 	if cfg.Alias != "" {

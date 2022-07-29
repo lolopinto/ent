@@ -3,11 +3,12 @@ import RenameTodoStatusAction from "src/ent/todo/actions/rename_todo_status_acti
 import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
 import { Todo, EdgeType } from "src/ent/";
 import { createAccount, createTag, createTodo } from "../testutils/util";
-import { AssocEdge, loadEdges, query } from "@snowtop/ent";
+import { query } from "@snowtop/ent";
 import { advanceTo } from "jest-date-mock";
 import TodoAddTagAction from "../todo/actions/todo_add_tag_action";
 import TodoRemoveTagAction from "../todo/actions/todo_remove_tag_action";
 import { loadCustomEdges } from "@snowtop/ent/core/ent";
+import { CustomTodoEdge } from "../edge/custom_edge";
 
 test("create", async () => {
   await createTodo();
@@ -132,9 +133,7 @@ test("tags", async () => {
   expect(count).toBe(4);
   expect(tags.length).toBe(4);
   expect(edges.length).toBe(4);
-  expect(edges.every((edge) => edge.__getRawData().deleted_at === null)).toBe(
-    true,
-  );
+  expect(edges.every((edge) => edge.deletedAt === null)).toBe(true);
 
   await TodoRemoveTagAction.create(todo.viewer, todo).removeTag(tag).saveX();
 
@@ -143,20 +142,17 @@ test("tags", async () => {
   const edges2 = await todo.queryTags().queryEdges();
 
   expect(edges2.length).toBe(3);
-  expect(edges2.every((edge) => edge.__getRawData().deleted_at === null)).toBe(
-    true,
-  );
+  expect(edges2.every((edge) => edge.deletedAt === null)).toBe(true);
   expect(count2).toBe(3);
   expect(tags2.length).toBe(3);
 
   // the deleted one is still in the db, just not returned by queries
-  const rawDB = await loadEdges({
+  const rawDB = await loadCustomEdges({
     edgeType: EdgeType.TodoToTags,
     id1: todo.id,
+    ctr: CustomTodoEdge,
     disableTransformations: true,
   });
   expect(rawDB.length).toBe(4);
-  expect(
-    rawDB.filter((edge) => edge.__getRawData().deleted_at !== null).length,
-  ).toBe(1);
+  expect(rawDB.filter((edge) => edge.deletedAt !== null).length).toBe(1);
 });

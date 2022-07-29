@@ -372,7 +372,7 @@ func (cfg *Config) GetTemplatizedViewer() *codegenapi.ImportedObject {
 }
 
 func (cfg *Config) GetAssocEdgePath() *codegenapi.ImportedObject {
-	if codegen := cfg.getCodegenConfig(); codegen != nil && codegen.TemplatizedViewer != nil {
+	if codegen := cfg.getCodegenConfig(); codegen != nil && codegen.CustomAssocEdgePath != nil {
 		return codegen.CustomAssocEdgePath
 	}
 	return &codegenapi.ImportedObject{
@@ -565,7 +565,8 @@ func (cfg *CodegenConfig) Clone() *CodegenConfig {
 		SchemaSQLFilePath:          cfg.SchemaSQLFilePath,
 		DatabaseToCompareTo:        cfg.DatabaseToCompareTo,
 		FieldPrivacyEvaluated:      cfg.FieldPrivacyEvaluated,
-		TemplatizedViewer:          cloneViewerConfig(cfg.TemplatizedViewer),
+		TemplatizedViewer:          cloneImportedObject(cfg.TemplatizedViewer),
+		CustomAssocEdgePath:        cloneImportedObject(cfg.CustomAssocEdgePath),
 	}
 }
 
@@ -590,7 +591,7 @@ func (cfg *PrivacyConfig) Clone() *PrivacyConfig {
 	}
 }
 
-func cloneViewerConfig(cfg *codegenapi.ImportedObject) *codegenapi.ImportedObject {
+func cloneImportedObject(cfg *codegenapi.ImportedObject) *codegenapi.ImportedObject {
 	if cfg == nil {
 		return nil
 	}

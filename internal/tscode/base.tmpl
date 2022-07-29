@@ -402,7 +402,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     {{with .NodeInfo -}}
      {{ if $uniqueEdge -}}
        {{ $imp := $edge.AssocEdgeBaseImport $cfg}}
-       {{ $reserveImportPath $imp false }}
+       {{ reserveImportPath $imp false }}
       {{$assocEdgeType := useImport $imp.Import }}
       {{$edgeType := useImport "EdgeType"}}
       load{{$edgeName}}Edge(): Promise<{{$assocEdgeType}} | null> {
