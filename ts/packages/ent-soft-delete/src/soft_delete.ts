@@ -49,6 +49,13 @@ export class DeletedAtPattern implements Pattern {
 }
 
 export const GlobalDeletedEdge = {
+  extraEdgeFields: {
+    deleted_at: TimestampType({
+      nullable: true,
+      defaultValueOnCreate: () => null,
+    }),
+  },
+
   transformEdgeRead(): clause.Clause {
     return clause.Eq("deleted_at", null);
   },
