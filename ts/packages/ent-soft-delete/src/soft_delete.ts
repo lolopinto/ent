@@ -25,11 +25,11 @@ export class DeletedAtPattern implements Pattern {
     }),
   ];
 
-  transformEdgeRead(): clause.Clause {
+  transformRead(): clause.Clause {
     return clause.Eq("deleted_at", null);
   }
 
-  transformEdgeWrite<T extends Ent>(
+  transformWrite<T extends Ent>(
     stmt: UpdateOperation<T>,
   ): TransformedUpdateOperation<T> | null {
     switch (stmt.op) {
@@ -37,7 +37,6 @@ export class DeletedAtPattern implements Pattern {
         return {
           op: SQLStatementOperation.Update,
           data: {
-            // this should return field, it'll be formatted as needed
             deleted_at: new Date(),
           },
         };
