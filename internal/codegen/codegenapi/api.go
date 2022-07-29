@@ -35,28 +35,28 @@ const (
 	OnDemand  FieldPrivacyEvaluated = "on_demand"
 )
 
-type ViewerConfig struct {
+type ImportedObject struct {
 	Path  string `yaml:"path"`
 	Name  string `yaml:"name"`
 	Alias string `yaml:"alias"`
 }
 
-func (cfg *ViewerConfig) Clone() *ViewerConfig {
-	return &ViewerConfig{
+func (cfg *ImportedObject) Clone() *ImportedObject {
+	return &ImportedObject{
 		Path:  cfg.Path,
 		Name:  cfg.Name,
 		Alias: cfg.Alias,
 	}
 }
 
-func (cfg *ViewerConfig) GetImport() string {
+func (cfg *ImportedObject) GetImport() string {
 	if cfg.Alias != "" {
 		return cfg.Alias
 	}
 	return cfg.Name
 }
 
-func (cfg *ViewerConfig) GetImportPath() *tsimport.ImportPath {
+func (cfg *ImportedObject) GetImportPath() *tsimport.ImportPath {
 	ret := &tsimport.ImportPath{
 		ImportPath: cfg.Path,
 		Import:     cfg.Name,
@@ -78,7 +78,8 @@ type Config interface {
 	// doesn't actually writes the files, just keeps track of which files were going to be written
 	// used to detect dangling files...
 	DummyWrite() bool
-	GetTemplatizedViewer() *ViewerConfig
+	GetTemplatizedViewer() *ImportedObject
+	GetAssocEdgePath() *ImportedObject
 }
 
 // DummyConfig exists for tests/legacy paths which need Configs and don't want to create the production one
@@ -109,10 +110,17 @@ func (cfg DummyConfig) DummyWrite() bool {
 	return false
 }
 
-func (cfg DummyConfig) GetTemplatizedViewer() *ViewerConfig {
-	return &ViewerConfig{
+func (cfg DummyConfig) GetTemplatizedViewer() *ImportedObject {
+	return &ImportedObject{
 		Path: codepath.Package,
 		Name: "Viewer",
+	}
+}
+
+func (cfg DummyConfig) GetAssocEdgePath() *ImportedObject {
+	return &ImportedObject{
+		Path: codepath.Package,
+		Name: "AssocEdge",
 	}
 }
 

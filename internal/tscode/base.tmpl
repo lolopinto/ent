@@ -1,4 +1,4 @@
-{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data"  "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData" "applyPrivacyPolicy" "Ent"}}
+{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data"  "loadEntX" "loadEnts" "LoadEntOptions" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData" "applyPrivacyPolicy" "Ent"}}
 {{ reserveImport .Package.SchemaPackagePath "Field" "getFields" "getFieldsWithPrivacy"}}
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
 {{ reserveImport "src/ent/generated/loadAny" "loadEntByType" "loadEntXByType"}}
@@ -401,7 +401,9 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     {{$uniqueEdge := .Unique -}}
     {{with .NodeInfo -}}
      {{ if $uniqueEdge -}}
-      {{$assocEdgeType := useImport "AssocEdge"}}
+       {{ $imp := $edge.AssocEdgeBaseImport $cfg}}
+       {{ $reserveImportPath $imp false }}
+      {{$assocEdgeType := useImport $imp.Import }}
       {{$edgeType := useImport "EdgeType"}}
       load{{$edgeName}}Edge(): Promise<{{$assocEdgeType}} | null> {
         return {{useImport "loadUniqueEdge"}}({

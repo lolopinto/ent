@@ -361,13 +361,23 @@ func (cfg *Config) FieldPrivacyEvaluated() codegenapi.FieldPrivacyEvaluated {
 	return codegenapi.OnDemand
 }
 
-func (cfg *Config) GetTemplatizedViewer() *codegenapi.ViewerConfig {
+func (cfg *Config) GetTemplatizedViewer() *codegenapi.ImportedObject {
 	if codegen := cfg.getCodegenConfig(); codegen != nil && codegen.TemplatizedViewer != nil {
 		return codegen.TemplatizedViewer
 	}
-	return &codegenapi.ViewerConfig{
+	return &codegenapi.ImportedObject{
 		Path: codepath.Package,
 		Name: "Viewer",
+	}
+}
+
+func (cfg *Config) GetAssocEdgePath() *codegenapi.ImportedObject {
+	if codegen := cfg.getCodegenConfig(); codegen != nil && codegen.TemplatizedViewer != nil {
+		return codegen.CustomAssocEdgePath
+	}
+	return &codegenapi.ImportedObject{
+		Path: codepath.Package,
+		Name: "AssocEdge",
 	}
 }
 
@@ -529,7 +539,8 @@ type CodegenConfig struct {
 	SchemaSQLFilePath          string                           `yaml:"schemaSQLFilePath"`
 	DatabaseToCompareTo        string                           `yaml:"databaseToCompareTo"`
 	FieldPrivacyEvaluated      codegenapi.FieldPrivacyEvaluated `yaml:"fieldPrivacyEvaluated"`
-	TemplatizedViewer          *codegenapi.ViewerConfig         `yaml:"templatizedViewer"`
+	TemplatizedViewer          *codegenapi.ImportedObject       `yaml:"templatizedViewer"`
+	CustomAssocEdgePath        *codegenapi.ImportedObject       `yaml:"customAssocEdgePath"`
 }
 
 func cloneCodegen(cfg *CodegenConfig) *CodegenConfig {
@@ -579,7 +590,7 @@ func (cfg *PrivacyConfig) Clone() *PrivacyConfig {
 	}
 }
 
-func cloneViewerConfig(cfg *codegenapi.ViewerConfig) *codegenapi.ViewerConfig {
+func cloneViewerConfig(cfg *codegenapi.ImportedObject) *codegenapi.ImportedObject {
 	if cfg == nil {
 		return nil
 	}

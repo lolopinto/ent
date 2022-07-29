@@ -5,4 +5,7 @@ codegen:
   defaultGraphQLMutationName: VerbNoun
   defaultGraphQLFieldFormat: snake_case
   fieldPrivacyEvaluated: at_ent_load
+  customAssocEdgePath:
+    path: 'src/ent/edge/custom_edge.ts'
+    name: 'CustomTodoEdge'
 

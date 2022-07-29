@@ -861,10 +861,12 @@ func writeAssocEdgeQueryFile(processor *codegen.Processor, e *edge.AssociationEd
 			Edge       *edge.AssociationEdge
 			Package    *codegen.ImportPackage
 			SourceNode string
+			Config     *codegen.Config
 		}{
 			Edge:       e,
 			Package:    cfg.GetImportPackage(),
 			SourceNode: sourceNode,
+			Config:     cfg,
 		},
 		AbsPathToTemplate: util.GetAbsolutePath("assoc_ent_query.tmpl"),
 		TemplateName:      "assoc_ent_query.tmpl",

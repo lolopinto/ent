@@ -159,3 +159,5 @@ func TestExtraEdgeCols(t *testing.T) {
 	require.Len(t, extraFields, 1)
 	require.Equal(t, extraFields[0].FieldName, "deleted_at")
 }
+
+// TODO AssocEdgeBaseImport test based on what we do in ent.yml??
