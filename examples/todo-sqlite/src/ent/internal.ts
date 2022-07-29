@@ -2,7 +2,6 @@
 
 export * from "src/ent/generated/const";
 export * from "src/ent/generated/loaders";
-export * from "src/ent/generated/mixins/deleted_at";
 export * from "src/ent/generated/account_base";
 export * from "src/ent/generated/tag_base";
 export * from "src/ent/generated/todo_base";

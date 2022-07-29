@@ -29,6 +29,8 @@ export {
   UpdateOperation,
   TransformedUpdateOperation,
   SQLStatementOperation,
+  EdgeUpdateOperation,
+  TransformedEdgeUpdateOperation,
   getTransformedReadClause,
   getObjectLoaderProperties,
   GlobalSchema,

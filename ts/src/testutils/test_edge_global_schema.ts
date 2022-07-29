@@ -1,8 +1,8 @@
 import {
-  UpdateOperation,
   SQLStatementOperation,
   TimestampType,
-  TransformedUpdateOperation,
+  EdgeUpdateOperation,
+  TransformedEdgeUpdateOperation,
 } from "../schema";
 import * as clause from "../core/clause";
 import { AssocEdge } from "../core/ent";
@@ -33,8 +33,8 @@ export const testEdgeGlobalSchema = {
   },
 
   transformEdgeWrite(
-    stmt: UpdateOperation<any>,
-  ): TransformedUpdateOperation<any> | null {
+    stmt: EdgeUpdateOperation,
+  ): TransformedEdgeUpdateOperation | null {
     switch (stmt.op) {
       case SQLStatementOperation.Delete:
         return {

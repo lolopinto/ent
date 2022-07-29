@@ -6,34 +6,17 @@ import {
   TransformedUpdateOperation,
   SQLStatementOperation,
 } from "@snowtop/ent";
+import { GlobalDeletedEdge } from "@snowtop/ent-soft-delete";
 
 const glo: GlobalSchema = {
+  ...GlobalDeletedEdge,
+
   extraEdgeFields: {
     // same energy as soft_delete pattern but implemented manually
     deleted_at: TimestampType({
       nullable: true,
       defaultValueOnCreate: () => null,
     }),
-  },
-
-  transformEdgeRead(): clause.Clause {
-    return clause.Eq("deleted_at", null);
-  },
-
-  transformEdgeWrite<T extends Ent>(
-    stmt: UpdateOperation<T>,
-  ): TransformedUpdateOperation<T> | null {
-    switch (stmt.op) {
-      case SQLStatementOperation.Delete:
-        return {
-          op: SQLStatementOperation.Update,
-          data: {
-            // this should return field, it'll be formatted as needed
-            deleted_at: new Date(),
-          },
-        };
-    }
-    return null;
   },
 };
 export default glo;

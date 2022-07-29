@@ -39,7 +39,7 @@ import {
   getStorageKey,
   GlobalSchema,
   SQLStatementOperation,
-  TransformedUpdateOperation,
+  TransformedEdgeUpdateOperation,
 } from "../schema/";
 
 // TODO kill this and createDataLoader
@@ -899,22 +899,15 @@ export class EdgeOperation implements DataOperation {
     edge: AssocEdgeInput,
     context?: Context,
   ) {
-    // TODO need different types for edge than what we use for object data...
-    let transformed: TransformedUpdateOperation<any> | null = null;
+    let transformed: TransformedEdgeUpdateOperation | null = null;
     let op = SQLStatementOperation.Delete;
     let updateData: Data | null = null;
 
     // TODO respect disableTransformations
     if (globalSchema?.transformEdgeWrite) {
-      const m = new Map();
-      for (const k in edge) {
-        m.set(k, edge[k]);
-      }
       transformed = globalSchema.transformEdgeWrite({
-        builder: this.builder,
-        input: edge,
-        data: m,
         op: SQLStatementOperation.Delete,
+        edge,
       });
       if (transformed) {
         op = transformed.op;
@@ -1022,18 +1015,11 @@ export class EdgeOperation implements DataOperation {
 
     // TODO respect disableTransformations
 
-    // TODO need different types for edge than what we use for object data...
-    let transformed: TransformedUpdateOperation<any> | null = null;
+    let transformed: TransformedEdgeUpdateOperation | null = null;
     if (globalSchema?.transformEdgeWrite) {
-      const m = new Map();
-      for (const k in fields) {
-        m.set(k, fields[k]);
-      }
       transformed = globalSchema.transformEdgeWrite({
-        builder: this.builder,
-        input: fields,
-        data: m,
         op: SQLStatementOperation.Insert,
+        edge,
       });
       if (transformed) {
         throw new Error(`transforming an insert edge not currently supported`);

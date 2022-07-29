@@ -6,6 +6,8 @@ import {
   TransformedUpdateOperation,
   SQLStatementOperation,
   FieldMap,
+  EdgeUpdateOperation,
+  TransformedEdgeUpdateOperation,
 } from "@snowtop/ent";
 import * as clause from "@snowtop/ent/core/clause";
 
@@ -51,9 +53,9 @@ export const GlobalDeletedEdge = {
     return clause.Eq("deleted_at", null);
   },
 
-  transformEdgeWrite<T extends Ent>(
-    stmt: UpdateOperation<T>,
-  ): TransformedUpdateOperation<T> | null {
+  transformEdgeWrite(
+    stmt: EdgeUpdateOperation,
+  ): TransformedEdgeUpdateOperation | null {
     switch (stmt.op) {
       case SQLStatementOperation.Delete:
         return {
