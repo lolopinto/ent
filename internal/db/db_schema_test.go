@@ -2170,6 +2170,199 @@ func TestFullTextIndexMultipleColsGeneratedColumnMisMatchedWeights(t *testing.T)
 	})
 }
 
+func TestExplicitIndexBtree(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "email",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:      "users_email_idx",
+							Columns:   []string{"email"},
+							IndexType: input.Btree,
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestIndexedConstraintFromTable(t, table, "email")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_using=%s)",
+			strconv.Quote("users_email_idx"),
+			strconv.Quote("email"),
+			strconv.Quote("btree"),
+		),
+	)
+}
+
+func TestExplicitIndexGin(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "emails",
+							Type: &input.FieldType{
+								DBType: input.List,
+								ListElemType: &input.FieldType{
+									DBType: input.String,
+								},
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:      "users_emails_idx",
+							Columns:   []string{"emails"},
+							IndexType: input.Gin,
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestIndexedConstraintFromTable(t, table, "emails")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_using=%s)",
+			strconv.Quote("users_emails_idx"),
+			strconv.Quote("emails"),
+			strconv.Quote("gin"),
+		),
+	)
+}
+
+func TestImplicitIndex(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "email",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+							Index: true,
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestIndexedConstraintFromTable(t, table, "email")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s)",
+			strconv.Quote("users_email_idx"),
+			strconv.Quote("email"),
+		),
+	)
+}
+
+func TestImplicitIndexGin(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "emails",
+							Type: &input.FieldType{
+								DBType: input.List,
+								ListElemType: &input.FieldType{
+									DBType: input.String,
+								},
+							},
+							Index: true,
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestIndexedConstraintFromTable(t, table, "emails")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_using=%s)",
+			strconv.Quote("users_emails_idx"),
+			strconv.Quote("emails"),
+			strconv.Quote("gin"),
+		),
+	)
+}
+
 func getSchemaFromInput(t *testing.T, s *input.Schema) *dbSchema {
 	ss, err := schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, s, base.TypeScript)
 	require.Nil(t, err)

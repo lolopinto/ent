@@ -714,6 +714,8 @@ type Index struct {
 	Columns  []string  `json:"columns,omitempty"`
 	Unique   bool      `json:"unique,omitempty"`
 	FullText *FullText `json:"fullText,omitempty"`
+	// for regular indices. doesn't apply for full text...
+	IndexType IndexType `json:"indexType,omitempty"`
 }
 
 type FullTextLanguage string
@@ -726,11 +728,15 @@ const (
 	Simple  FullTextLanguage = "simple"
 )
 
+// full text only supports gin | gist
+// TODO https://github.com/lolopinto/ent/issues/1029
+// Index only currently supports gin | btree (will eventually support gist)
 type IndexType string
 
 const (
-	Gin  IndexType = "gin"
-	Gist IndexType = "gist"
+	Gin   IndexType = "gin"
+	Gist  IndexType = "gist"
+	Btree IndexType = "btree"
 )
 
 type FullTextWeight struct {
