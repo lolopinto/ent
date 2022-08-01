@@ -288,7 +288,7 @@ def metadata_with_arrays():
                  sa.TIMESTAMP), nullable=False),
              sa.Column('timestamptz_list', postgresql.ARRAY(
                  sa.TIMESTAMP(timezone=True)), nullable=False),
-             # TODO support gist here
+             # TODO https://github.com/lolopinto/ent/issues/1029 support gist here
              # need to support operators...
              sa.Column('float_list', postgresql.ARRAY(
                  sa.Float), nullable=False),

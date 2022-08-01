@@ -728,6 +728,7 @@ export interface Index {
   fulltext?: FullText;
   // TODO support gist soon...
   // need operator class too
+  // TODO https://github.com/lolopinto/ent/issues/1029
   indexType?: "gin" | "btree";
 }
 

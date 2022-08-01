@@ -540,19 +540,21 @@ def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: Optional[sa
         if m is None:
             continue
         r = m.groups()
-        # missing!
 
+        all[name] = {
+            'postgresql_using': r[1],
+            'postgresql_using_internals': r[2],
+            # TODO don't have columns|column to pass to FullTextIndex
+        }
+
+        # missing!
         if name not in names:
             missing[name] = {
                 'postgresql_using': r[1],
                 'postgresql_using_internals': r[2],
                 # TODO don't have columns|column to pass to FullTextIndex
             }
-        all[name] = {
-            'postgresql_using': r[1],
-            'postgresql_using_internals': r[2],
-            # TODO don't have columns|column to pass to FullTextIndex
-        }
+
     return {'missing': missing, 'all': all}
 
 

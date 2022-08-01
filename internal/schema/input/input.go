@@ -729,7 +729,8 @@ const (
 )
 
 // full text only supports gin | gist
-// Index only currently supports gin | btree (will eventually support btree)
+// TODO https://github.com/lolopinto/ent/issues/1029
+// Index only currently supports gin | btree (will eventually support gist)
 type IndexType string
 
 const (
