@@ -6,9 +6,8 @@ with open("README.md", "r") as fh:
 # https://pypi.org/project/auto-schema/#history
 # https://test.pypi.org/project/auto-schema-test/#history
 setuptools.setup(
-    name="auto_schema_test",  # auto_schema_test to test
-    # 0.0.18 is last production
-    version="0.0.23",  # 0.0.22 was last test version
+    name="auto_schema",  # auto_schema_test to test
+    version="0.0.19",  # 0.0.23 was last test version
     author="Ola Okelola",
     author_email="email@email.com",
     description="auto schema for a db",
