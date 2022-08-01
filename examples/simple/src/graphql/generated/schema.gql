@@ -173,7 +173,7 @@ type Address implements Node {
 
 type CatType {
   name: String!
-  birthday: Time!
+  birthday: Date!
   breed: CatBreed!
   kitten: Boolean!
 }
@@ -214,7 +214,7 @@ type Contact implements Node {
 
 type DogType {
   name: String!
-  birthday: Time!
+  birthday: Date!
   breed: DogBreed!
   breedGroup: DogBreedGroup!
   puppy: Boolean!
@@ -225,8 +225,8 @@ type Event implements Node {
   creator: User
   id: ID!
   name: String!
-  startTime: Time!
-  endTime: Time
+  startTime: Date!
+  endTime: Date
   eventLocation: String!
   attending(first: Int, after: String, last: Int, before: String): EventToAttendingConnection!
   declined(first: Int, after: String, last: Int, before: String): EventToDeclinedConnection!
@@ -241,7 +241,7 @@ type Holiday implements Node {
   dayOfWeek: DayOfWeek!
   dayOfWeekAlt: DayOfWeekAlt
   label: String!
-  date: Time!
+  date: Date!
 }
 
 type HoursOfOperation implements Node {
@@ -256,7 +256,7 @@ union PetUnionType = CatType | DogType | RabbitType
 
 type RabbitType {
   name: String!
-  birthday: Time!
+  birthday: Date!
   breed: RabbitBreed!
 }
 
@@ -820,8 +820,8 @@ type EventAddHostPayload {
 input EventCreateInput {
   name: String!
   creatorID: ID!
-  startTime: Time!
-  endTime: Time
+  startTime: Date!
+  endTime: Date
   eventLocation: String!
   addressID: ID
 }
@@ -844,8 +844,8 @@ input EventEditInput {
   id: ID!
   name: String
   creatorID: ID
-  startTime: Time
-  endTime: Time
+  startTime: Date
+  endTime: Date
   eventLocation: String
   addressID: ID
 }
@@ -885,7 +885,7 @@ input HolidayCreateInput {
   dayOfWeek: DayOfWeek!
   dayOfWeekAlt: DayOfWeekAlt
   label: String!
-  date: Time!
+  date: Date!
 }
 
 type HolidayCreatePayload {
@@ -952,7 +952,7 @@ type UserEditPayload {
 
 type Query {
   node(id: ID!): Node
-  timeDiff(time: Time!): String!
+  timeDiff(time: Date!): String!
   viewer: Viewer!
 }
 
@@ -991,9 +991,6 @@ type Mutation {
 
 """The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf)."""
 scalar JSON
-
-"""Time scalar type"""
-scalar Time
 
 """The `Upload` scalar type represents a file upload."""
 scalar Upload

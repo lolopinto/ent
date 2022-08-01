@@ -49,7 +49,7 @@ func (p *TSStep) Name() string {
 
 var knownTypes = map[string]*tsimport.ImportPath{
 	"String": tsimport.NewGQLImportPath("GraphQLString"),
-	//	"Date":       tsimport.NewEntGraphQLImportPath("GraphQLTime"),
+	// "Date":       tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 	"Int":        tsimport.NewGQLImportPath("GraphQLInt"),
 	"Float":      tsimport.NewGQLImportPath("GraphQLFloat"),
 	"Boolean":    tsimport.NewGQLImportPath("GraphQLBoolean"),

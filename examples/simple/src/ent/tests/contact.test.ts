@@ -7,6 +7,7 @@ import CreateContactAction, {
 import { UserToContactsQuery } from "../user/query/user_to_contacts_query";
 import EditContactAction from "../contact/actions/edit_contact_action";
 import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
+import { query } from "@snowtop/ent";
 
 const loggedOutViewer = new LoggedOutExampleViewer();
 
@@ -200,6 +201,22 @@ test("multiple emails", async () => {
       })
       .sort(sortFn),
   );
+
+  const r = await Contact.loadCustom(
+    contact.viewer,
+    query.PostgresArrayContainsValue("email_ids", emails[0].id),
+  );
+  expect(r.length).toBe(1);
+  expect(r[0].id).toBe(contact.id);
+  const r2 = await Contact.loadCustom(
+    contact.viewer,
+    query.PostgresArrayContains(
+      "email_ids",
+      emails.map((email) => email.id),
+    ),
+  );
+  expect(r2.length).toBe(1);
+  expect(r2[0].id).toBe(contact.id);
 });
 
 test("multiple phonenumbers", async () => {
@@ -241,4 +258,20 @@ test("multiple phonenumbers", async () => {
       })
       .sort(sortFn),
   );
+
+  const r = await Contact.loadCustom(
+    contact.viewer,
+    query.PostgresArrayContainsValue("phone_number_ids", phoneNumbers[0].id),
+  );
+  expect(r.length).toBe(1);
+  expect(r[0].id).toBe(contact.id);
+  const r2 = await Contact.loadCustom(
+    contact.viewer,
+    query.PostgresArrayContains(
+      "phone_number_ids",
+      phoneNumbers.map((p) => p.id),
+    ),
+  );
+  expect(r2.length).toBe(1);
+  expect(r2[0].id).toBe(contact.id);
 });

@@ -320,39 +320,57 @@ describe("postgres", () => {
       expect(cls.logValues()).toStrictEqual([3]);
       expect(cls.instanceKey()).toEqual("ids!=3");
     });
+  });
 
-    test("greater", () => {
-      const cls = clause.ArrayGreater("ids", 3);
-      expect(cls.clause(1)).toBe("$1 > ANY(ids)");
-      expect(cls.values()).toStrictEqual([3]);
-      expect(cls.logValues()).toStrictEqual([3]);
-      expect(cls.instanceKey()).toEqual("ids>3");
-    });
+  test("contains val", () => {
+    const cls = clause.PostgresArrayContainsValue("ids", 3);
+    expect(cls.clause(1)).toBe("ids @> $1");
+    expect(cls.values()).toStrictEqual([`{3}`]);
+    expect(cls.logValues()).toStrictEqual([3]);
+    expect(cls.instanceKey()).toEqual("ids@>3");
+  });
 
-    test("less", () => {
-      const cls = clause.ArrayLess("ids", 3);
-      expect(cls.clause(1)).toBe("$1 < ANY(ids)");
-      expect(cls.values()).toStrictEqual([3]);
-      expect(cls.logValues()).toStrictEqual([3]);
-      expect(cls.instanceKey()).toEqual("ids<3");
-    });
+  test("contains val:string", () => {
+    const cls = clause.PostgresArrayContainsValue("ids", "foo");
+    expect(cls.clause(1)).toBe("ids @> $1");
+    expect(cls.values()).toStrictEqual([`{foo}`]);
+    expect(cls.logValues()).toStrictEqual(["foo"]);
+    expect(cls.instanceKey()).toEqual("ids@>foo");
+  });
 
-    test("greater eq", () => {
-      const cls = clause.ArrayGreaterEq("ids", 3);
-      expect(cls.clause(1)).toBe("$1 >= ANY(ids)");
-      expect(cls.values()).toStrictEqual([3]);
-      expect(cls.logValues()).toStrictEqual([3]);
-      expect(cls.instanceKey()).toEqual("ids>=3");
-    });
+  test("contains list", () => {
+    const cls = clause.PostgresArrayContains("ids", [3, 4]);
+    expect(cls.clause(1)).toBe("ids @> $1");
+    expect(cls.values()).toStrictEqual([`{3, 4}`]);
+    expect(cls.logValues()).toStrictEqual([[3, 4]]);
+    expect(cls.instanceKey()).toEqual("ids@>3,4");
+  });
 
-    test("less eq", () => {
-      const cls = clause.ArrayLessEq("ids", 3);
-      expect(cls.clause(1)).toBe("$1 <= ANY(ids)");
-      expect(cls.values()).toStrictEqual([3]);
-      expect(cls.logValues()).toStrictEqual([3]);
-      expect(cls.instanceKey()).toEqual("ids<=3");
-    });
+  test("contains list string", () => {
+    const cls = clause.PostgresArrayContains("ids", ["foo", "bar"]);
+    expect(cls.clause(1)).toBe("ids @> $1");
+    expect(cls.values()).toStrictEqual([`{foo, bar}`]);
+    expect(cls.logValues()).toStrictEqual([["foo", "bar"]]);
+    expect(cls.instanceKey()).toEqual("ids@>foo,bar");
+  });
 
+  test("not contains val", () => {
+    const cls = clause.PostgresArrayNotContainsValue("ids", 3);
+    expect(cls.clause(1)).toBe("NOT ids @> $1");
+    expect(cls.values()).toStrictEqual([`{3}`]);
+    expect(cls.logValues()).toStrictEqual([3]);
+    expect(cls.instanceKey()).toEqual("NOT:ids@>3");
+  });
+
+  test("not contains list", () => {
+    const cls = clause.PostgresArrayNotContains("ids", [3, 4]);
+    expect(cls.clause(1)).toBe("NOT ids @> $1");
+    expect(cls.values()).toStrictEqual([`{3, 4}`]);
+    expect(cls.logValues()).toStrictEqual([[3, 4]]);
+    expect(cls.instanceKey()).toEqual("NOT:ids@>3,4");
+  });
+
+  describe("full text", () => {
     test("tsquery string", () => {
       const cls = clause.TsQuery("name_idx", "value");
       expect(cls.clause(1)).toBe("name_idx @@ to_tsquery('english', $1)");

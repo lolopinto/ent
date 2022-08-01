@@ -569,9 +569,20 @@ func (s *Schema) validateIndices(nodeData *NodeData) error {
 			return err
 		}
 
+		if index.IndexType != "" {
+			if index.IndexType == input.Gist {
+				return fmt.Errorf("gist index currently only supported for full text indexes")
+			}
+		}
+
 		if index.FullText == nil {
 			continue
 		}
+
+		if index.IndexType != "" {
+			return fmt.Errorf("if you want to specify the full text index type, specify it in FullText object")
+		}
+
 		fullText := index.FullText
 		if fullText.Language == "" && fullText.LanguageColumn == "" {
 			return fmt.Errorf("have to specify at least one of language and language column for index %s", index.Name)
