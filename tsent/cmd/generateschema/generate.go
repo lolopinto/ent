@@ -147,7 +147,7 @@ func setBooleanValue(f *input.Field, key string) {
 	case "nullable":
 		f.Nullable = true
 	case "private":
-		f.Private = true
+		f.Private = &input.PrivateOptions{}
 	case "hideFromGraphQL":
 		f.HideFromGraphQL = true
 	case "defaultToViewerOnCreate":
