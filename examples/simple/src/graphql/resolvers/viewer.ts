@@ -43,7 +43,7 @@ export class ViewerResolver {
     return new GQLViewer(context.getViewer());
   }
 
-  timeDiff(time: Date) {
+  timeDiff(time: Date, _log: any) {
     const diff = DateTime.now().diff(DateTime.fromJSDate(time));
     return diff.toString();
   }
