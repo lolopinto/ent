@@ -118,7 +118,7 @@ func init() {
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Printf("\033[31mError:\033[0m \n  %s\n", err.Error())
+		fmt.Printf("\u001b[31mError:\u001b[0m \n  %s\n", err.Error())
 		fmt.Println(rootCmd.UsageString())
 		os.Exit(1)
 	}

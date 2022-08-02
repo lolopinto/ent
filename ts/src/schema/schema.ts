@@ -755,6 +755,10 @@ export interface Index {
   columns: string[];
   unique?: boolean; // can also create a unique constraint this way because why not...
   fulltext?: FullText;
+  // TODO support gist soon...
+  // need operator class too
+  // TODO https://github.com/lolopinto/ent/issues/1029
+  indexType?: "gin" | "btree";
 }
 
 export interface ForeignKeyInfo {

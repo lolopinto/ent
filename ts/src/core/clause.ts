@@ -173,6 +173,68 @@ class arraySimpleClause implements Clause {
   }
 }
 
+class postgresArrayContains implements Clause {
+  constructor(
+    protected col: string,
+    protected value: any,
+    private not?: boolean,
+  ) {}
+
+  clause(idx: number): string {
+    if (DB.getDialect() === Dialect.Postgres) {
+      if (this.not) {
+        return `NOT ${this.col} @> $${idx}`;
+      }
+      return `${this.col} @> $${idx}`;
+    }
+    throw new Error(`not supported`);
+  }
+
+  columns(): string[] {
+    return [this.col];
+  }
+
+  values(): any[] {
+    if (isSensitive(this.value)) {
+      return [`{${this.value.value()}}`];
+    }
+    return [`{${this.value}}`];
+  }
+
+  logValues(): any[] {
+    if (isSensitive(this.value)) {
+      return [this.value.logValue()];
+    }
+    return [this.value];
+  }
+
+  instanceKey(): string {
+    if (this.not) {
+      return `NOT:${this.col}@>${rawValue(this.value)}`;
+    }
+    return `${this.col}@>${rawValue(this.value)}`;
+  }
+}
+
+class postgresArrayContainsList extends postgresArrayContains {
+  constructor(col: string, value: any[], not?: boolean) {
+    super(col, value, not);
+  }
+
+  values(): any[] {
+    return [
+      `{${this.value
+        .map((v: any) => {
+          if (isSensitive(v)) {
+            return v.value();
+          }
+          return v;
+        })
+        .join(", ")}}`,
+    ];
+  }
+}
+
 class inClause implements Clause {
   constructor(private col: string, private value: any[]) {}
 
@@ -356,29 +418,54 @@ class websearchTosQueryClause extends tsQueryClause {
   }
 }
 
-// TODO we need to check sqlite version...
+/**
+ * creates a clause to determine if the given value is contained in the array stored in the column in the db
+ * only works with postgres gin indexes
+ * https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-GIN
+ */
+export function PostgresArrayContainsValue(col: string, value: any): Clause {
+  return new postgresArrayContains(col, value);
+}
+
+/**
+ * creates a clause to determine if every item in the list is stored in the array stored in the column in the db
+ * only works with postgres gin indexes
+ * https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-GIN
+ */
+export function PostgresArrayContains(col: string, value: any[]): Clause {
+  return new postgresArrayContainsList(col, value);
+}
+
+/**
+ * creates a clause to determine if the given value is NOT contained in the array stored in the column in the db
+ * only works with postgres gin indexes
+ * https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-GIN
+ */
+export function PostgresArrayNotContainsValue(col: string, value: any): Clause {
+  return new postgresArrayContains(col, value, true);
+}
+
+/**
+ * creates a clause to determine if every item in the list is NOT stored in the array stored in the column in the db
+ * only works with postgres gin indexes
+ * https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-GIN
+ */
+export function PostgresArrayNotContains(col: string, value: any[]): Clause {
+  return new postgresArrayContainsList(col, value, true);
+}
+
+/**
+ * @deprecated use PostgresArrayContainsValue
+ */
 export function ArrayEq(col: string, value: any): Clause {
   return new arraySimpleClause(col, value, "=");
 }
 
+/**
+ * @deprecated use PostgresNotArrayContains
+ */
 export function ArrayNotEq(col: string, value: any): Clause {
   return new arraySimpleClause(col, value, "!=");
-}
-
-export function ArrayGreater(col: string, value: any): Clause {
-  return new arraySimpleClause(col, value, ">");
-}
-
-export function ArrayLess(col: string, value: any): Clause {
-  return new arraySimpleClause(col, value, "<");
-}
-
-export function ArrayGreaterEq(col: string, value: any): Clause {
-  return new arraySimpleClause(col, value, ">=");
-}
-
-export function ArrayLessEq(col: string, value: any): Clause {
-  return new arraySimpleClause(col, value, "<=");
 }
 
 export function Eq(col: string, value: any): Clause {

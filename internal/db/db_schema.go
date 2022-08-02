@@ -15,6 +15,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/edge"
+	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
@@ -213,6 +214,7 @@ type indexConstraint struct {
 	tableName string
 	unique    bool
 	name      string
+	indexType input.IndexType
 }
 
 func (constraint *indexConstraint) getInfo() (string, []string) {
@@ -241,6 +243,9 @@ func (constraint *indexConstraint) getConstraintString() string {
 	args = append(args, quotedColNames...)
 	if constraint.unique {
 		args = append(args, "unique=True")
+	}
+	if constraint.indexType != "" {
+		args = append(args, fmt.Sprintf("postgresql_using=%s", strconv.Quote(string(constraint.indexType))))
 	}
 
 	return fmt.Sprintf(
@@ -474,6 +479,7 @@ func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbCo
 			tableName: nodeData.GetTableName(),
 			unique:    index.Unique,
 			name:      index.Name,
+			indexType: index.IndexType,
 		}
 		if index.FullText != nil {
 			fullText := &fullTextConstraint{
@@ -1086,6 +1092,10 @@ func (s *dbSchema) addIndexConstraint(f *field.Field, tableName string, col *dbC
 	constraint := &indexConstraint{
 		dbColumns: []*dbColumn{col},
 		tableName: tableName,
+	}
+	// default index type for lists when not specified is gin type
+	if enttype.IsListType(f.GetFieldType()) {
+		constraint.indexType = input.Gin
 	}
 	*constraints = append(*constraints, constraint)
 }
