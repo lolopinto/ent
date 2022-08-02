@@ -59,7 +59,7 @@ import {
   Table,
 } from "../testutils/db/temp_db";
 import { Dialect } from "../core/db";
-import { convertList } from "../core/convert";
+import { convertDate, convertList } from "../core/convert";
 import { v4 } from "uuid";
 
 jest.mock("pg");
@@ -294,6 +294,18 @@ const SensitiveValuesSchema = getBuilderSchemaFromFields(
   SensitiveUser,
 );
 
+class NullableEvent extends Event {}
+
+const SchemaWithNullFields = getBuilderSchemaFromFields(
+  {
+    startTime: TimestampType(),
+    endTime: TimestampType({
+      nullable: true,
+    }),
+  },
+  NullableEvent,
+);
+
 describe("postgres", () => {
   commonTests();
 });
@@ -321,6 +333,7 @@ describe("sqlite", () => {
       CustomUserSchema,
       ContactEmailSchema,
       SensitiveValuesSchema,
+      SchemaWithNullFields,
     ].map((s) => tables.push(getSchemaTable(s, Dialect.SQLite)));
     return tables;
   };
@@ -516,14 +529,6 @@ function commonTests() {
   });
 
   test("schema with null fields", async () => {
-    const SchemaWithNullFields = getBuilderSchemaFromFields(
-      {
-        startTime: TimestampType(),
-        endTime: TimestampType({ nullable: true }),
-      },
-      User,
-    );
-
     const d = new Date();
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
@@ -539,12 +544,20 @@ function commonTests() {
     validateFieldsExist(fields, "id", "created_at", "updated_at");
     validateFieldsDoNotExist(fields, "end_time");
 
+    await builder.saveX();
+    const evt = await builder.editedEntX();
+    expect(convertDate(evt.data.start_time).toISOString()).toBe(
+      d.toISOString(),
+    );
+    // undefined in fake postgres, null in sqlite
+    expect(evt.data.end_time).toBeFalsy();
+
     const builder2 = new SimpleBuilder(
       new LoggedOutViewer(),
       SchemaWithNullFields,
       new Map([
         ["startTime", d],
-        ["endTime", null],
+        ["endTime", d],
       ]),
       WriteOperation.Insert,
       null,
@@ -554,6 +567,28 @@ function commonTests() {
     expect(fields2["start_time"]).toEqual(d.toISOString());
 
     validateFieldsExist(fields2, "id", "created_at", "updated_at");
+
+    await builder2.saveX();
+    const evt2 = await builder2.editedEntX();
+    expect(convertDate(evt2.data.start_time).toISOString()).toBe(
+      d.toISOString(),
+    );
+    expect(convertDate(evt2.data.end_time).toISOString()).toBe(d.toISOString());
+
+    const builder3 = new SimpleBuilder(
+      new LoggedOutViewer(),
+      SchemaWithNullFields,
+      new Map([["endTime", null]]),
+      WriteOperation.Edit,
+      evt2,
+    );
+
+    await builder3.saveX();
+    const evt3 = await builder3.editedEntX();
+    expect(convertDate(evt3.data.start_time).toISOString()).toBe(
+      d.toISOString(),
+    );
+    expect(evt3.data.end_time).toBeNull();
   });
 
   test("schema_with_overriden_storage_key", async () => {

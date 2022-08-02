@@ -1425,6 +1425,7 @@ export function buildUpdateQuery(
   let valsString: string[] = [];
   let values: any[] = [];
   let logValues: any[] = [];
+  const dialect = DB.getDialect();
 
   let idx = 1;
   for (const key in options.fields) {
@@ -1433,7 +1434,15 @@ export function buildUpdateQuery(
     if (options.fieldsToLog) {
       logValues.push(options.fieldsToLog[key]);
     }
-    valsString.push(clause.Eq(key, val).clause(idx));
+    // TODO would be nice to use clause here. need update version of the queries so that
+    // we don't have to handle dialect specifics here
+    // can't use clause because of IS NULL
+    // valsString.push(clause.Eq(key, val).clause(idx));
+    if (dialect === Dialect.Postgres) {
+      valsString.push(`${key} = $${idx}`);
+    } else {
+      valsString.push(`${key} = ?`);
+    }
     idx++;
   }
 
