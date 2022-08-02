@@ -43,6 +43,17 @@ function processFields(
     } else {
       delete f.polymorphic;
     }
+    if (field.private) {
+      // convert boolean into object
+      // we keep boolean as an option to keep API simple
+      if (typeof field.private === "boolean") {
+        f.private = {};
+      } else {
+        f.private = field.private;
+      }
+    } else {
+      delete f.private;
+    }
     // convert string to object to make API consumed by go simple
     if (f.fieldEdge && f.fieldEdge.inverseEdge) {
       if (typeof f.fieldEdge.inverseEdge === "string") {

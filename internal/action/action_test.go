@@ -579,6 +579,129 @@ func TestOverriddenRequiredActionField(t *testing.T) {
 	)
 }
 
+func TestPrivateFieldExposedToActions(t *testing.T) {
+	actionInfo := testhelper.ParseActionInfoForTest(
+		t,
+		map[string]string{
+			"user.ts": testhelper.GetCodeWithSchema(
+				`import {Schema, FieldMap, StringType, Action, ActionOperation, BaseEntSchema, requiredField} from "{schema}";
+
+				export default class User extends BaseEntSchema {
+					fields: FieldMap = {
+						FirstName: StringType(),
+						LastName: StringType(),
+						EmailAddress: StringType(),
+						Password: StringType({
+							private: {
+								exposeToActions: true,
+							},
+						}),
+					};
+
+					actions: Action[] = [
+						{
+							operation: ActionOperation.Create, 
+						},
+					];
+				}
+				`,
+			),
+		},
+		base.TypeScript,
+		"UserConfig",
+	)
+
+	verifyExpectedActions(
+		t,
+		actionInfo,
+		[]expectedAction{
+			{
+				name: "CreateUserAction",
+				fields: []expectedField{
+					{
+						name:    "FirstName",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+					{
+						name:    "LastName",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+					{
+						name:    "EmailAddress",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+					{
+						name:    "Password",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+				},
+			},
+		},
+	)
+}
+
+func TestPrivateField(t *testing.T) {
+	actionInfo := testhelper.ParseActionInfoForTest(
+		t,
+		map[string]string{
+			"user.ts": testhelper.GetCodeWithSchema(
+				`import {Schema, FieldMap, StringType, Action, ActionOperation, BaseEntSchema, requiredField} from "{schema}";
+
+				export default class User extends BaseEntSchema {
+					fields: FieldMap = {
+						FirstName: StringType(),
+						LastName: StringType(),
+						EmailAddress: StringType(),
+						Password: StringType({
+							private: true,
+						}),
+					};
+
+					actions: Action[] = [
+						{
+							operation: ActionOperation.Create, 
+						},
+					];
+				}
+				`,
+			),
+		},
+		base.TypeScript,
+		"UserConfig",
+	)
+
+	verifyExpectedActions(
+		t,
+		actionInfo,
+		[]expectedAction{
+			{
+				name: "CreateUserAction",
+				fields: []expectedField{
+					{
+						name:    "FirstName",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+					{
+						name:    "LastName",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+					{
+						name:    "EmailAddress",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+				},
+			},
+		},
+	)
+}
+
 func TestOverriddenOptionalActionField(t *testing.T) {
 	actionInfo := testhelper.ParseActionInfoForTest(
 		t,

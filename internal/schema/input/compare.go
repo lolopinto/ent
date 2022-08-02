@@ -45,7 +45,7 @@ func fieldEqual(existingField, field *Field) bool {
 		existingField.StorageKey == field.StorageKey &&
 		existingField.Unique == field.Unique &&
 		existingField.HideFromGraphQL == field.HideFromGraphQL &&
-		existingField.Private == field.Private &&
+		PrivateOptionsEqual(existingField.Private, field.Private) &&
 		existingField.GraphQLName == field.GraphQLName &&
 		existingField.Index == field.Index &&
 		existingField.PrimaryKey == field.PrimaryKey &&
@@ -130,6 +130,15 @@ func PolymorphicOptionsEqual(existing, p *PolymorphicOptions) bool {
 	return change.StringListEqual(existing.Types, p.Types) &&
 		existing.HideFromInverseGraphQL == p.HideFromInverseGraphQL &&
 		existing.DisableBuilderType == p.DisableBuilderType
+}
+
+func PrivateOptionsEqual(existing, p *PrivateOptions) bool {
+	ret := change.CompareNilVals(existing == nil, p == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return existing.ExposeToActions == p.ExposeToActions
 }
 
 func assocEdgesEqual(existing, edges []*AssocEdge) bool {
