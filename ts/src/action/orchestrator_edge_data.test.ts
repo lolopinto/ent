@@ -148,16 +148,97 @@ describe("sqlite", () => {
   });
 });
 
+interface VerifyOptions<T extends AssocEdge> {
+  symmetric: User;
+  inverse: User;
+  verifyEdge?: (edge: T) => void;
+}
+
+async function doVerifyAddedEdges<T extends AssocEdge>(
+  user: User,
+  ctr: AssocEdgeConstructor<T>,
+  opts: VerifyOptions<T>,
+) {
+  const verifyEdges = (edges: T[]) => {
+    if (!opts.verifyEdge) {
+      return;
+    }
+    edges.map((edge) => opts.verifyEdge!(edge));
+  };
+  const edges = await loadCustomEdges({
+    id1: user.id,
+    edgeType: "edge",
+    ctr,
+  });
+  const edgesCount = await loadRawEdgeCountX({
+    id1: user.id,
+    edgeType: "edge",
+  });
+  verifyEdges(edges);
+  expect(edges.length).toBe(2);
+  expect(edgesCount).toBe(2);
+  expect(
+    edges
+      .map((edge) => edge.id2)
+      .every((id) => [opts.symmetric.id, opts.inverse.id].includes(id)),
+  ).toBe(true);
+
+  const symmetricEdges = await loadCustomEdges({
+    id1: user.id,
+    edgeType: "symmetricEdge",
+    ctr,
+  });
+  verifyEdges(symmetricEdges);
+
+  expect(symmetricEdges.length).toBe(1);
+  expect(symmetricEdges[0].id2).toBe(opts.symmetric.id);
+  const symmetricEdgesCount = await loadRawEdgeCountX({
+    id1: user.id,
+    edgeType: "symmetricEdge",
+  });
+  expect(symmetricEdgesCount).toBe(1);
+
+  for (const id of [opts.symmetric.id, opts.inverse.id]) {
+    const inverseEdges = await loadCustomEdges({
+      id1: id,
+      edgeType: "inverseEdge",
+      ctr,
+    });
+    expect(inverseEdges.length).toBe(1);
+    expect(inverseEdges[0].id2).toBe(user.id);
+    verifyEdges(inverseEdges);
+
+    const inverseEdgesCount = await loadRawEdgeCountX({
+      id1: id,
+      edgeType: "inverseEdge",
+    });
+    expect(inverseEdgesCount).toBe(1);
+
+    if (id === opts.symmetric.id) {
+      const symmetricEdges = await loadCustomEdges({
+        id1: id,
+        edgeType: "symmetricEdge",
+        ctr,
+      });
+      expect(symmetricEdges.length).toBe(1);
+      expect(symmetricEdges[0].id2).toBe(user.id);
+      verifyEdges(symmetricEdges);
+
+      const symmetricEdgesCount = await loadRawEdgeCountX({
+        id1: id,
+        edgeType: "symmetricEdge",
+      });
+      expect(symmetricEdgesCount).toBe(1);
+    }
+  }
+
+  return { edges, symmetricEdges };
+}
+
 async function doTestAddEdge<T extends AssocEdge>(
   ctr: AssocEdgeConstructor<T>,
   verifyEdge?: (edge: T) => void,
 ) {
-  const verifyEdges = (edges: T[]) => {
-    if (!verifyEdge) {
-      return;
-    }
-    edges.map((edge) => verifyEdge(edge));
-  };
   const user1 = await getInsertUserAction(
     new Map([
       ["FirstName", "Jon"],
@@ -186,76 +267,17 @@ async function doTestAddEdge<T extends AssocEdge>(
   );
   const user3 = await action.saveX();
 
-  const edges = await loadCustomEdges({
-    id1: user3.id,
-    edgeType: "edge",
-    ctr,
+  const { edges, symmetricEdges } = await doVerifyAddedEdges(user3, ctr, {
+    symmetric: user1,
+    inverse: user2,
+    verifyEdge,
   });
-  const edgesCount = await loadRawEdgeCountX({
-    id1: user3.id,
-    edgeType: "edge",
-  });
-  verifyEdges(edges);
-  expect(edges.length).toBe(2);
-  expect(edgesCount).toBe(2);
-  expect(
-    edges
-      .map((edge) => edge.id2)
-      .every((id) => [user1.id, user2.id].includes(id)),
-  ).toBe(true);
-
-  const symmetricEdges = await loadCustomEdges({
-    id1: user3.id,
-    edgeType: "symmetricEdge",
-    ctr,
-  });
-  verifyEdges(symmetricEdges);
-
-  expect(symmetricEdges.length).toBe(1);
-  expect(symmetricEdges[0].id2).toBe(user1.id);
-  const symmetricEdgesCount = await loadRawEdgeCountX({
-    id1: user3.id,
-    edgeType: "symmetricEdge",
-  });
-  expect(symmetricEdgesCount).toBe(1);
-
-  for (const id of [user1.id, user2.id]) {
-    const inverseEdges = await loadCustomEdges({
-      id1: id,
-      edgeType: "inverseEdge",
-      ctr,
-    });
-    expect(inverseEdges.length).toBe(1);
-    expect(inverseEdges[0].id2).toBe(user3.id);
-    verifyEdges(inverseEdges);
-
-    const inverseEdgesCount = await loadRawEdgeCountX({
-      id1: id,
-      edgeType: "inverseEdge",
-    });
-    expect(inverseEdgesCount).toBe(1);
-
-    if (id === user1.id) {
-      const symmetricEdges = await loadCustomEdges({
-        id1: id,
-        edgeType: "symmetricEdge",
-        ctr,
-      });
-      expect(symmetricEdges.length).toBe(1);
-      expect(symmetricEdges[0].id2).toBe(user3.id);
-      verifyEdges(symmetricEdges);
-
-      const symmetricEdgesCount = await loadRawEdgeCountX({
-        id1: id,
-        edgeType: "symmetricEdge",
-      });
-      expect(symmetricEdgesCount).toBe(1);
-    }
-  }
 
   return {
     user: user3,
     edges,
+    symmetric: user1,
+    inverse: user2,
     symmetricEdges,
   };
 }
@@ -264,7 +286,8 @@ async function doTestRemoveEdge<T extends AssocEdge>(
   ctr: AssocEdgeConstructor<T>,
   verifyEdge?: (edge: T) => void,
 ) {
-  const { user, edges, symmetricEdges } = await doTestAddEdge(ctr, verifyEdge);
+  const { user, symmetric, inverse, edges, symmetricEdges } =
+    await doTestAddEdge(ctr, verifyEdge);
 
   const action = new SimpleAction(
     user.viewer,
@@ -281,7 +304,45 @@ async function doTestRemoveEdge<T extends AssocEdge>(
   }
   await action.saveX();
 
-  return { user, edges, symmetricEdges };
+  return { user, edges, symmetricEdges, symmetric, inverse };
+}
+
+async function doTestAddAndRemoveEdge<T extends AssocEdge>(
+  ctr: AssocEdgeConstructor<T>,
+  verifyEdge?: (edge: T) => void,
+) {
+  const { user, edges, symmetricEdges, symmetric, inverse } =
+    await doTestRemoveEdge(ctr, verifyEdge);
+
+  const action = new SimpleAction(
+    user.viewer,
+    UserSchema,
+    new Map(),
+    WriteOperation.Edit,
+    user,
+  );
+
+  for (const edge of edges) {
+    action.builder.orchestrator.addOutboundEdge(
+      edge.id2,
+      edge.edgeType,
+      "user",
+    );
+  }
+  for (const edge of symmetricEdges) {
+    action.builder.orchestrator.addOutboundEdge(
+      edge.id2,
+      edge.edgeType,
+      "symmetricEdge",
+    );
+  }
+  await action.saveX();
+
+  await doVerifyAddedEdges(user, ctr, {
+    symmetric,
+    inverse,
+    verifyEdge,
+  });
 }
 
 function commonTestsNoGlobalSchema() {
@@ -321,6 +382,10 @@ function commonTestsNoGlobalSchema() {
 
     expect(reloadEdgesCount).toBe(0);
     expect(reloadSymmetricEdgesCount).toBe(0);
+  });
+
+  test("add and remove edge", async () => {
+    await doTestAddAndRemoveEdge(AssocEdge);
   });
 }
 
@@ -390,5 +455,9 @@ function commonTestsGlobalSchema() {
     expect(reloadSymmetricEdges2.length).toBe(1);
     expect(reloadSymmetricEdges2Count).toBe(1);
     reloadSymmetricEdges2.map((edge) => expect(edge.deletedAt).not.toBeNull());
+  });
+
+  test("add and remove edge", async () => {
+    await doTestAddAndRemoveEdge(EdgeWithDeletedAt, verifyEdge);
   });
 }

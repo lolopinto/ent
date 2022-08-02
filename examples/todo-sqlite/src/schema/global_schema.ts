@@ -1,4 +1,4 @@
-import { GlobalSchema, TimestampType } from "@snowtop/ent/schema/";
+import { GlobalSchema } from "@snowtop/ent/schema/";
 import { GlobalDeletedEdge } from "@snowtop/ent-soft-delete";
 
 const glo: GlobalSchema = {

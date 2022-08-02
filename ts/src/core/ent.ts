@@ -828,6 +828,11 @@ export function clearGlobalSchema() {
   globalSchema = undefined;
 }
 
+// used by tests. no guarantee will always exist
+export function __hasGlobalSchema() {
+  return globalSchema !== undefined;
+}
+
 export class EdgeOperation implements DataOperation {
   private edgeData: AssocEdgeData | undefined;
   private constructor(
@@ -1003,12 +1008,17 @@ export class EdgeOperation implements DataOperation {
       fields["time"] = new Date().toISOString();
     }
 
+    const onConflictFields = ["data"];
+
     if (globalSchema?.extraEdgeFields) {
       for (const name in globalSchema.extraEdgeFields) {
         const f = globalSchema.extraEdgeFields[name];
         if (f.defaultValueOnCreate) {
           const storageKey = getStorageKey(f, name);
           fields[storageKey] = f.defaultValueOnCreate(this.builder, {});
+          // onconflict make sure we override the default values
+          // e.g. setting deleted_at = null for soft delete
+          onConflictFields.push(storageKey);
         }
       }
     }
@@ -1033,7 +1043,9 @@ export class EdgeOperation implements DataOperation {
         fieldsToLog: fields,
         context,
       },
-      "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
+      `ON CONFLICT(id1, edge_type, id2) DO UPDATE SET ${onConflictFields
+        .map((f) => `${f} = EXCLUDED.${f}`)
+        .join(", ")}`,
     ];
   }
 
