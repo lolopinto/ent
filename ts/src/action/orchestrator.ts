@@ -34,6 +34,7 @@ import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import { log } from "../core/logger";
 import { Trigger } from "./action";
 import memoize from "memoizee";
+import * as clause from "../core/clause";
 
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
@@ -323,6 +324,7 @@ export class Orchestrator<
           key: this.options.key,
           loadEntOptions: this.options.loaderOptions,
           placeholderID: this.options.builder.placeholderID,
+          whereClause: clause.Eq(this.options.key, this.existingEnt?.id),
         };
         if (this.logValues) {
           opts.fieldsToLog = this.logValues;

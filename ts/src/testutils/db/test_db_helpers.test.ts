@@ -5,7 +5,7 @@ import {
   getSchemaName,
   getTableName,
 } from "../builder";
-import { getSchemaTable } from "./test_db";
+import { getSchemaTable } from "./temp_db";
 import { Dialect } from "../../core/db";
 
 class Account implements Ent {

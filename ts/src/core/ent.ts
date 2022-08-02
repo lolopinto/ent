@@ -35,6 +35,12 @@ import { WriteOperation, Builder } from "../action";
 import { log, logEnabled, logTrace } from "./logger";
 import DataLoader from "dataloader";
 import { ObjectLoader } from "./loaders";
+import {
+  getStorageKey,
+  GlobalSchema,
+  SQLStatementOperation,
+  TransformedEdgeUpdateOperation,
+} from "../schema/";
 
 // TODO kill this and createDataLoader
 class cacheMap {
@@ -675,6 +681,7 @@ export interface EditNodeOptions<T extends Ent> extends EditRowOptions {
   fieldsToResolve: string[];
   loadEntOptions: LoadEntOptions<T>;
   placeholderID?: ID;
+  key: string;
 }
 
 export class EditNodeOperation<T extends Ent> implements DataOperation {
@@ -728,12 +735,7 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
       if (this.hasData(options.fields)) {
         // even this with returning * may not always work if transformed...
         // we can have a transformed flag to see if it should be returned?
-        this.row = await editRow(
-          queryer,
-          options,
-          this.existingEnt.id,
-          "RETURNING *",
-        );
+        this.row = await editRow(queryer, options, "RETURNING *");
       } else {
         // @ts-ignore
         this.row = this.existingEnt["data"];
@@ -785,7 +787,7 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
     };
     if (this.existingEnt) {
       if (this.hasData(this.options.fields)) {
-        editRowSync(queryer, options, this.existingEnt.id, "RETURNING *");
+        editRowSync(queryer, options, "RETURNING *");
         this.reloadRow(queryer, this.existingEnt.id, options);
       } else {
         // @ts-ignore
@@ -817,9 +819,24 @@ interface EdgeOperationOptions {
   dataPlaceholder?: boolean;
 }
 
+let globalSchema: GlobalSchema | undefined;
+export function setGlobalSchema(val: GlobalSchema) {
+  globalSchema = val;
+}
+
+export function clearGlobalSchema() {
+  globalSchema = undefined;
+}
+
+// used by tests. no guarantee will always exist
+export function __hasGlobalSchema() {
+  return globalSchema !== undefined;
+}
+
 export class EdgeOperation implements DataOperation {
   private edgeData: AssocEdgeData | undefined;
   private constructor(
+    private builder: Builder<any>,
     public edgeInput: AssocEdgeInput,
     private options: EdgeOperationOptions,
   ) {}
@@ -887,7 +904,35 @@ export class EdgeOperation implements DataOperation {
     edge: AssocEdgeInput,
     context?: Context,
   ) {
+    let transformed: TransformedEdgeUpdateOperation | null = null;
+    let op = SQLStatementOperation.Delete;
+    let updateData: Data | null = null;
+
+    // TODO respect disableTransformations
+    if (globalSchema?.transformEdgeWrite) {
+      transformed = globalSchema.transformEdgeWrite({
+        op: SQLStatementOperation.Delete,
+        edge,
+      });
+      if (transformed) {
+        op = transformed.op;
+        if (transformed.op === SQLStatementOperation.Insert) {
+          throw new Error(`cannot currently transform a delete into an insert`);
+        }
+        if (transformed.op === SQLStatementOperation.Update) {
+          if (!transformed.data) {
+            throw new Error(
+              `cannot transform a delete into an update without providing data`,
+            );
+          }
+          updateData = transformed.data;
+        }
+      }
+    }
+
     return {
+      op,
+      updateData,
       options: {
         tableName: edgeData.edgeTable,
         context,
@@ -907,7 +952,18 @@ export class EdgeOperation implements DataOperation {
     context?: Context,
   ): Promise<void> {
     const params = this.getDeleteRowParams(edgeData, edge, context);
-    return deleteRows(q, params.options, params.clause);
+    if (params.op === SQLStatementOperation.Delete) {
+      return deleteRows(q, params.options, params.clause);
+    } else {
+      if (params.op !== SQLStatementOperation.Update) {
+        throw new Error(`invalid operation ${params.op}`);
+      }
+      await editRow(q, {
+        tableName: params.options.tableName,
+        whereClause: params.clause,
+        fields: params.updateData!,
+      });
+    }
   }
 
   private performDeleteWriteSync(
@@ -917,7 +973,18 @@ export class EdgeOperation implements DataOperation {
     context?: Context,
   ): void {
     const params = this.getDeleteRowParams(edgeData, edge, context);
-    return deleteRowsSync(q, params.options, params.clause);
+    if (params.op === SQLStatementOperation.Delete) {
+      return deleteRowsSync(q, params.options, params.clause);
+    } else {
+      if (params.op !== SQLStatementOperation.Update) {
+        throw new Error(`invalid operation ${params.op}`);
+      }
+      editRowSync(q, {
+        tableName: params.options.tableName,
+        whereClause: params.clause,
+        fields: params.updateData!,
+      });
+    }
   }
 
   private getInsertRowParams(
@@ -941,6 +1008,34 @@ export class EdgeOperation implements DataOperation {
       fields["time"] = new Date().toISOString();
     }
 
+    const onConflictFields = ["data"];
+
+    if (globalSchema?.extraEdgeFields) {
+      for (const name in globalSchema.extraEdgeFields) {
+        const f = globalSchema.extraEdgeFields[name];
+        if (f.defaultValueOnCreate) {
+          const storageKey = getStorageKey(f, name);
+          fields[storageKey] = f.defaultValueOnCreate(this.builder, {});
+          // onconflict make sure we override the default values
+          // e.g. setting deleted_at = null for soft delete
+          onConflictFields.push(storageKey);
+        }
+      }
+    }
+
+    // TODO respect disableTransformations
+
+    let transformed: TransformedEdgeUpdateOperation | null = null;
+    if (globalSchema?.transformEdgeWrite) {
+      transformed = globalSchema.transformEdgeWrite({
+        op: SQLStatementOperation.Insert,
+        edge,
+      });
+      if (transformed) {
+        throw new Error(`transforming an insert edge not currently supported`);
+      }
+    }
+
     return [
       {
         tableName: edgeData.edgeTable,
@@ -948,7 +1043,9 @@ export class EdgeOperation implements DataOperation {
         fieldsToLog: fields,
         context,
       },
-      "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
+      `ON CONFLICT(id1, edge_type, id2) DO UPDATE SET ${onConflictFields
+        .map((f) => `${f} = EXCLUDED.${f}`)
+        .join(", ")}`,
     ];
   }
 
@@ -962,6 +1059,7 @@ export class EdgeOperation implements DataOperation {
 
     await createRow(q, options, suffix);
   }
+
   private performInsertWriteSync(
     q: SyncQueryer,
     edgeData: AssocEdgeData,
@@ -1020,6 +1118,7 @@ export class EdgeOperation implements DataOperation {
 
   symmetricEdge(): EdgeOperation {
     return new EdgeOperation(
+      this.builder,
       {
         id1: this.edgeInput.id2,
         id1Type: this.edgeInput.id2Type,
@@ -1040,6 +1139,7 @@ export class EdgeOperation implements DataOperation {
 
   inverseEdge(edgeData: AssocEdgeData): EdgeOperation {
     return new EdgeOperation(
+      this.builder,
       {
         id1: this.edgeInput.id2,
         id1Type: this.edgeInput.id2Type,
@@ -1128,7 +1228,7 @@ export class EdgeOperation implements DataOperation {
       edge.data = data;
     }
 
-    return new EdgeOperation(edge, {
+    return new EdgeOperation(builder, edge, {
       operation: WriteOperation.Insert,
       id2Placeholder,
       id1Placeholder,
@@ -1159,7 +1259,7 @@ export class EdgeOperation implements DataOperation {
       edge.data = data;
     }
 
-    return new EdgeOperation(edge, {
+    return new EdgeOperation(builder, edge, {
       operation: WriteOperation.Insert,
       id1Placeholder,
       id2Placeholder,
@@ -1182,7 +1282,7 @@ export class EdgeOperation implements DataOperation {
       id2Type: "", // these 2 shouldn't matter
       id1Type: "",
     };
-    return new EdgeOperation(edge, {
+    return new EdgeOperation(builder, edge, {
       operation: WriteOperation.Delete,
     });
   }
@@ -1202,7 +1302,7 @@ export class EdgeOperation implements DataOperation {
       id2Type: "", // these 2 shouldn't matter
       id1Type: "",
     };
-    return new EdgeOperation(edge, {
+    return new EdgeOperation(builder, edge, {
       operation: WriteOperation.Delete,
     });
   }
@@ -1332,7 +1432,6 @@ export function createRowSync(
 
 export function buildUpdateQuery(
   options: EditRowOptions,
-  id: ID,
   suffix?: string,
 ): [string, any[], any[]] {
   let valsString: string[] = [];
@@ -1342,27 +1441,30 @@ export function buildUpdateQuery(
 
   let idx = 1;
   for (const key in options.fields) {
-    values.push(options.fields[key]);
+    const val = options.fields[key];
+    values.push(val);
     if (options.fieldsToLog) {
       logValues.push(options.fieldsToLog[key]);
     }
+    // TODO would be nice to use clause here. need update version of the queries so that
+    // we don't have to handle dialect specifics here
+    // can't use clause because of IS NULL
+    // valsString.push(clause.Eq(key, val).clause(idx));
     if (dialect === Dialect.Postgres) {
       valsString.push(`${key} = $${idx}`);
-      idx++;
     } else {
       valsString.push(`${key} = ?`);
     }
+    idx++;
   }
 
   const vals = valsString.join(", ");
 
   let query = `UPDATE ${options.tableName} SET ${vals} WHERE `;
 
-  if (dialect === Dialect.Postgres) {
-    query = query + `${options.key} = $${idx}`;
-  } else {
-    query = query + `${options.key} = ?`;
-  }
+  query = query + options.whereClause.clause(idx);
+  values.push(...options.whereClause.values());
+
   if (suffix) {
     query = query + " " + suffix;
   }
@@ -1373,13 +1475,9 @@ export function buildUpdateQuery(
 export async function editRow(
   queryer: Queryer,
   options: EditRowOptions,
-  id: ID,
   suffix?: string,
 ): Promise<Data | null> {
-  const [query, values, logValues] = buildUpdateQuery(options, id, suffix);
-
-  // add id as value to prepared query
-  values.push(id);
+  const [query, values, logValues] = buildUpdateQuery(options, suffix);
 
   const res = await mutateRow(queryer, query, values, logValues, options);
 
@@ -1395,13 +1493,9 @@ export async function editRow(
 export function editRowSync(
   queryer: SyncQueryer,
   options: EditRowOptions,
-  id: ID,
   suffix?: string,
 ): Data | null {
-  const [query, values, logValues] = buildUpdateQuery(options, id, suffix);
-
-  // add id as value to prepared query
-  values.push(id);
+  const [query, values, logValues] = buildUpdateQuery(options, suffix);
 
   const res = mutateRowSync(queryer, query, values, logValues, options);
 
@@ -1461,6 +1555,8 @@ export class AssocEdge {
   time: Date;
   data?: string | null;
 
+  private rawData: Data;
+
   constructor(data: Data) {
     this.id1 = data.id1;
     this.id1Type = data.id1_type;
@@ -1469,6 +1565,13 @@ export class AssocEdge {
     this.edgeType = data.edge_type;
     this.time = data.time;
     this.data = data.data;
+    this.rawData = data;
+  }
+
+  __getRawData() {
+    // incase there's extra db fields. useful for tests
+    // in production, a subclass of this should be in use so we won't need this...
+    return this.rawData;
   }
 
   getCursor(): string {
@@ -1606,6 +1709,7 @@ interface loadEdgesOptions {
   edgeType: string;
   context?: Context;
   queryOptions?: EdgeQueryableDataOptions;
+  disableTransformations?: boolean;
 }
 
 interface loadCustomEdgesOptions<T extends AssocEdge> extends loadEdgesOptions {
@@ -1632,6 +1736,25 @@ export async function loadEdges(
   return loadCustomEdges({ ...options, ctr: AssocEdge });
 }
 
+export function getEdgeClauseAndFields(
+  cls: clause.Clause,
+  options: loadEdgesOptions,
+) {
+  let fields = edgeFields;
+
+  if (globalSchema?.transformEdgeRead) {
+    const transformClause = globalSchema.transformEdgeRead();
+    if (!options.disableTransformations) {
+      cls = clause.And(cls, transformClause);
+    }
+    fields = edgeFields.concat(transformClause.columns());
+  }
+  return {
+    cls,
+    fields,
+  };
+}
+
 export async function loadCustomEdges<T extends AssocEdge>(
   options: loadCustomEdgesOptions<T>,
 ): Promise<T[]> {
@@ -1646,10 +1769,13 @@ export async function loadCustomEdges<T extends AssocEdge>(
   if (options.queryOptions?.clause) {
     cls = clause.And(cls, options.queryOptions.clause);
   }
+
+  const { cls: actualClause, fields } = getEdgeClauseAndFields(cls, options);
+
   const rows = await loadRows({
     tableName: edgeData.edgeTable,
-    fields: edgeFields,
-    clause: cls,
+    fields: fields,
+    clause: actualClause,
     orderby: options.queryOptions?.orderby || defaultOptions.orderby,
     limit: options.queryOptions?.limit || defaultOptions.limit,
     context,
@@ -1668,10 +1794,15 @@ export async function loadUniqueEdge(
   if (!edgeData) {
     throw new Error(`error loading edge data for ${edgeType}`);
   }
+  const { cls, fields } = getEdgeClauseAndFields(
+    clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
+    options,
+  );
+
   const row = await loadRow({
     tableName: edgeData.edgeTable,
-    fields: edgeFields,
-    clause: clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
+    fields: fields,
+    clause: cls,
     context,
   });
   if (!row) {
@@ -1709,11 +1840,15 @@ export async function loadRawEdgeCountX(
     throw new Error(`error loading edge data for ${edgeType}`);
   }
 
+  const { cls } = getEdgeClauseAndFields(
+    clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
+    options,
+  );
   const row = await loadRowX({
     tableName: edgeData.edgeTable,
     // sqlite needs as count otherwise it returns count(1)
     fields: ["count(1) as count"],
-    clause: clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
+    clause: cls,
     context,
   });
   return parseInt(row["count"], 10) || 0;

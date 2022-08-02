@@ -57,6 +57,7 @@ sa.Table("todo_tags_edges", metadata,
     sa.Column("id2_type", sa.Text(), nullable=False),
     sa.Column("time", sa.TIMESTAMP(), nullable=False),
     sa.Column("data", sa.Text(), nullable=True),
+    sa.Column("deleted_at", sa.TIMESTAMP(), nullable=True),
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="todo_tags_edges_id1_edge_type_id2_pkey"),
     sa.Index("todo_tags_edges_time_idx", "time"),
 )

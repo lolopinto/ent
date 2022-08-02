@@ -5,7 +5,7 @@ import {
 } from "../../testutils/fake_data/test_helpers";
 import { commonTests } from "./shared_edge_connection";
 import { sharedAssocTests } from "./shared_assoc_test";
-import { setupSqlite } from "../../testutils/db/test_db";
+import { setupSqlite } from "../../testutils/db/temp_db";
 
 beforeEach(async () => {
   await createEdges();

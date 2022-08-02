@@ -11,6 +11,7 @@ import {
   PrivacyPolicy,
   Viewer,
   convertDate,
+  convertNullableDate,
   convertNullableList,
   loadCustomData,
   loadCustomEnts,
@@ -24,14 +25,7 @@ import {
   tagLoaderInfo,
   tagNoTransformLoader,
 } from "src/ent/generated/loaders";
-import {
-  Account,
-  DeletedAtMixin,
-  IDeletedAt,
-  NodeType,
-  Tag,
-  TagToTodosQuery,
-} from "src/ent/internal";
+import { Account, NodeType, Tag, TagToTodosQuery } from "src/ent/internal";
 import schema from "src/schema/tag_schema";
 
 interface TagDBData {
@@ -45,25 +39,22 @@ interface TagDBData {
   related_tag_ids: ID[] | null;
 }
 
-export class TagBase
-  extends DeletedAtMixin(class {})
-  implements Ent<Viewer>, IDeletedAt
-{
+export class TagBase implements Ent<Viewer> {
   readonly nodeType = NodeType.Tag;
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+  protected readonly deletedAt: Date | null;
   readonly displayName: string;
   readonly canonicalName: string;
   readonly ownerID: ID;
   readonly relatedTagIds: ID[] | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
-    // @ts-ignore pass to mixin
-    super(viewer, data);
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
+    this.deletedAt = convertNullableDate(data.deleted_at);
     this.displayName = data.display_name;
     this.canonicalName = data.canonical_name;
     this.ownerID = data.owner_id;

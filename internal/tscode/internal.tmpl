@@ -1,3 +1,9 @@
-{{range . -}}
+{{range .SortedLines -}}
   {{exportAll .}}
 {{end -}}
+
+{{ if .Schema.InitForEdges -}}
+  {{reserveImport .Package.PackagePath "setGlobalSchema"}}
+  {{ reserveDefaultImport .Config.GetGlobalSchemaImportPath "globalSchema"}}
+  {{ useImport "setGlobalSchema"}}({{useImport "globalSchema"}});
+{{ end -}}

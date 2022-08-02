@@ -1,5 +1,5 @@
 import { Dialect } from "./db";
-import { table, text, uuidList, TempDB, uuid } from "../testutils/db/test_db";
+import { table, text, uuidList, TempDB, uuid } from "../testutils/db/temp_db";
 import { createRowForTest } from "../testutils/write";
 import { loadConfig } from "./config";
 import { loadRows } from "./ent";

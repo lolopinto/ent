@@ -19,7 +19,7 @@ import { Pool } from "pg";
 import { ContextCache } from "./context";
 import * as clause from "./clause";
 
-import { integer, table, text, setupSqlite } from "../testutils/db/test_db";
+import { integer, table, text, setupSqlite } from "../testutils/db/temp_db";
 import { MockLogs } from "../testutils/mock_log";
 import { clearLogLevels, setLogLevels } from "./logger";
 

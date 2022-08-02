@@ -6,7 +6,7 @@ import {
   AssocEdgeGroup,
   Action,
 } from "../schema";
-import { ActionField, Type, FieldMap } from "../schema/schema";
+import { ActionField, Type, FieldMap, GlobalSchema } from "../schema/schema";
 
 function processFields(
   src: FieldMap | Field[],
@@ -304,6 +304,7 @@ interface patternsDict {
 interface Result {
   schemas: schemasDict;
   patterns: patternsDict;
+  globalSchema?: ProcessedGlobalSchema;
 }
 
 declare type PotentialSchemas = {
@@ -314,10 +315,17 @@ interface InputSchema extends Schema {
   schemaPath?: string;
 }
 
-export function parseSchema(potentialSchemas: PotentialSchemas): Result {
+export function parseSchema(
+  potentialSchemas: PotentialSchemas,
+  globalSchema?: GlobalSchema,
+): Result {
   let schemas: schemasDict = {};
   let patterns: patternsDict = {};
+  let parsedGlobalSchema: ProcessedGlobalSchema | undefined;
 
+  if (globalSchema) {
+    parsedGlobalSchema = parseGlobalSchema(globalSchema);
+  }
   for (const key in potentialSchemas) {
     const value = potentialSchemas[key];
     let schema: InputSchema;
@@ -384,5 +392,32 @@ export function parseSchema(potentialSchemas: PotentialSchemas): Result {
     schemas[key] = processedSchema;
   }
 
-  return { schemas, patterns };
+  return { schemas, patterns, globalSchema: parsedGlobalSchema };
+}
+
+interface ProcessedGlobalSchema {
+  globalEdges: ProcessedAssocEdge[];
+  extraEdgeFields: ProcessedField[];
+  initForEdges?: boolean;
+}
+
+function parseGlobalSchema(s: GlobalSchema): ProcessedGlobalSchema {
+  const ret: ProcessedGlobalSchema = {
+    globalEdges: [],
+    extraEdgeFields: [],
+    initForEdges:
+      !!s.extraEdgeFields ||
+      s.transformEdgeRead !== undefined ||
+      s.transformEdgeWrite !== undefined,
+  };
+
+  if (s.extraEdgeFields) {
+    ret.extraEdgeFields = processFields(s.extraEdgeFields);
+  }
+
+  if (s.edges) {
+    ret.globalEdges = processEdges(s.edges);
+  }
+
+  return ret;
 }

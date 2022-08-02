@@ -2,6 +2,7 @@ import { snakeCase } from "snake-case";
 import { Data, Ent, LoaderInfo, PrivacyPolicy, Viewer } from "../core/base";
 import { Builder } from "../action/action";
 import { Clause } from "../core/clause";
+import { AssocEdgeInput } from "../core/ent";
 
 export declare type FieldMap = {
   [key: string]: Field;
@@ -15,6 +16,22 @@ interface FieldInfo {
 export type FieldInfoMap = {
   [key: string]: FieldInfo;
 };
+
+export interface GlobalSchema {
+  // source is ¯\_(ツ)_/¯
+  // this api works fine for external to int
+  // internal to external, we need to solve ala polymorphic
+  // internal to internal, why is this here
+  edges?: Edge[];
+
+  // e.g. deleted_at for edges
+  extraEdgeFields?: FieldMap;
+
+  transformEdgeRead?: () => Clause;
+  transformEdgeWrite?: (
+    stmt: EdgeUpdateOperation,
+  ) => TransformedEdgeUpdateOperation | null;
+}
 
 // Schema is the base for every schema in typescript
 export default interface Schema {
@@ -201,6 +218,18 @@ export enum SQLStatementOperation {
 
   // delete -> update theoretically e.g. deleted_at
   Delete = "delete",
+}
+
+export interface EdgeUpdateOperation {
+  op: SQLStatementOperation;
+  edge: AssocEdgeInput;
+}
+
+export interface TransformedEdgeUpdateOperation {
+  op: SQLStatementOperation;
+
+  // data to write to db for this edge
+  data?: Data;
 }
 
 export interface UpdateOperation<

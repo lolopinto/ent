@@ -4,6 +4,7 @@ import DB, { Dialect } from "./db";
 
 export interface Clause {
   clause(idx: number): string;
+  columns(): string[];
   values(): any[];
   instanceKey(): string;
   // values to log when querying
@@ -35,13 +36,13 @@ class simpleClause implements Clause {
     protected col: string,
     private value: any,
     private op: string,
-    private handleSqliteNull?: Clause,
+    private handleNull?: Clause,
   ) {}
 
   clause(idx: number): string {
-    const sqliteClause = this.sqliteNull();
-    if (sqliteClause) {
-      return sqliteClause.clause(idx);
+    const nullClause = this.nullClause();
+    if (nullClause) {
+      return nullClause.clause(idx);
     }
     if (DB.getDialect() === Dialect.Postgres) {
       return `${this.col} ${this.op} $${idx}`;
@@ -49,18 +50,19 @@ class simpleClause implements Clause {
     return `${this.col} ${this.op} ?`;
   }
 
-  private sqliteNull() {
-    if (!this.handleSqliteNull || this.value !== null) {
+  private nullClause() {
+    if (!this.handleNull || this.value !== null) {
       return;
     }
-    if (DB.getDialect() !== Dialect.SQLite) {
-      return;
-    }
-    return this.handleSqliteNull;
+    return this.handleNull;
+  }
+
+  columns(): string[] {
+    return [this.col];
   }
 
   values(): any[] {
-    const sqliteClause = this.sqliteNull();
+    const sqliteClause = this.nullClause();
     if (sqliteClause) {
       return sqliteClause.values();
     }
@@ -71,7 +73,7 @@ class simpleClause implements Clause {
   }
 
   logValues(): any[] {
-    const sqliteClause = this.sqliteNull();
+    const sqliteClause = this.nullClause();
     if (sqliteClause) {
       return sqliteClause.logValues();
     }
@@ -82,7 +84,7 @@ class simpleClause implements Clause {
   }
 
   instanceKey(): string {
-    const sqliteClause = this.sqliteNull();
+    const sqliteClause = this.nullClause();
     if (sqliteClause) {
       return sqliteClause.instanceKey();
     }
@@ -95,6 +97,10 @@ class isNullClause implements Clause {
 
   clause(idx: number): string {
     return `${this.col} IS NULL`;
+  }
+
+  columns(): string[] {
+    return [];
   }
 
   values(): any[] {
@@ -115,6 +121,10 @@ class isNotNullClause implements Clause {
 
   clause(idx: number): string {
     return `${this.col} IS NOT NULL`;
+  }
+
+  columns(): string[] {
+    return [];
   }
 
   values(): any[] {
@@ -138,6 +148,10 @@ class arraySimpleClause implements Clause {
       return `$${idx} ${this.op} ANY(${this.col})`;
     }
     return `${this.col} ${this.op} ?`;
+  }
+
+  columns(): string[] {
+    return [this.col];
   }
 
   values(): any[] {
@@ -174,6 +188,10 @@ class postgresArrayContains implements Clause {
       return `${this.col} @> $${idx}`;
     }
     throw new Error(`not supported`);
+  }
+
+  columns(): string[] {
+    return [this.col];
   }
 
   values(): any[] {
@@ -242,6 +260,10 @@ class inClause implements Clause {
     // here's what sqlx does: https://play.golang.org/p/vPzvYqeAcP0
   }
 
+  columns(): string[] {
+    return [this.col];
+  }
+
   values(): any[] {
     const result: any[] = [];
     for (const value of this.value) {
@@ -281,6 +303,14 @@ class compositeClause implements Clause {
       idx = idx + clause.values().length;
     }
     return clauses.join(this.sep);
+  }
+
+  columns(): string[] {
+    const ret: string[] = [];
+    for (const cls of this.clauses) {
+      ret.push(...cls.columns());
+    }
+    return ret;
   }
 
   values(): any[] {
@@ -326,6 +356,7 @@ class tsQueryClause implements Clause {
       value: this.val,
     };
   }
+
   clause(idx: number): string {
     const { language } = this.getInfo();
     if (Dialect.Postgres === DB.getDialect()) {
@@ -338,6 +369,10 @@ class tsQueryClause implements Clause {
     }
     // FYI this doesn't actually work for sqlite since different
     return `${this.col} @@ ${this.getFunction()}('${language}', ?)`;
+  }
+
+  columns(): string[] {
+    return [this.col];
   }
 
   values(): any[] {

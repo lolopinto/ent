@@ -15,7 +15,7 @@ import {
 import { JSONBListType, JSONListType } from "./json_field";
 import Schema from "./schema";
 import { User, SimpleAction, BuilderSchema } from "../testutils/builder";
-import { TempDB, getSchemaTable } from "../testutils/db/test_db";
+import { TempDB, getSchemaTable } from "../testutils/db/temp_db";
 import { v4 } from "uuid";
 import DB, { Dialect } from "../core/db";
 import { Ent } from "../core/base";

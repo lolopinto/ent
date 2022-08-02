@@ -8,7 +8,7 @@ import { buildQuery } from "../ent";
 
 import * as clause from "../clause";
 
-import { setupSqlite, TempDB } from "../../testutils/db/test_db";
+import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
 import { EdgeType, FakeContact } from "../../testutils/fake_data/index";
 import {
   createAllContacts,

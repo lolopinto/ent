@@ -20,6 +20,7 @@ commonTests({
     return UserToContactsQuery.query(viewer, user);
   },
   tableName: "user_to_contacts_table",
+  uniqKey: "user_to_contacts_table",
   entsLength: 2,
   where: "id1 = $1 AND edge_type = $2",
   sortCol: "time",

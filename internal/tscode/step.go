@@ -439,6 +439,10 @@ func (s *Step) ProcessData(processor *codegen.Processor) error {
 		}
 	}
 
+	if err := s.accumulateConsts(processor.Schema.GetGlobalConsts()); err != nil {
+		serr.Append(err)
+	}
+
 	for k := range processor.Schema.Enums {
 		info := processor.Schema.Enums[k]
 		if !info.OwnEnumFile() {
@@ -857,10 +861,12 @@ func writeAssocEdgeQueryFile(processor *codegen.Processor, e *edge.AssociationEd
 			Edge       *edge.AssociationEdge
 			Package    *codegen.ImportPackage
 			SourceNode string
+			Config     *codegen.Config
 		}{
 			Edge:       e,
 			Package:    cfg.GetImportPackage(),
 			SourceNode: sourceNode,
+			Config:     cfg,
 		},
 		AbsPathToTemplate: util.GetAbsolutePath("assoc_ent_query.tmpl"),
 		TemplateName:      "assoc_ent_query.tmpl",
@@ -1123,8 +1129,18 @@ func writeInternalEntFile(s *schema.Schema, processor *codegen.Processor) error 
 	imps := tsimport.NewImports(processor.Config, path)
 
 	return file.Write(&file.TemplatedBasedFileWriter{
-		Config:            processor.Config,
-		Data:              getSortedInternalEntFileLines(s),
+		Config: processor.Config,
+		Data: struct {
+			SortedLines []string
+			Schema      *schema.Schema
+			Config      *codegen.Config
+			Package     *codegen.ImportPackage
+		}{
+			getSortedInternalEntFileLines(s),
+			s,
+			processor.Config,
+			cfg.GetImportPackage(),
+		},
 		AbsPathToTemplate: util.GetAbsolutePath("internal.tmpl"),
 		TemplateName:      "internal.tmpl",
 		PathToFile:        path,

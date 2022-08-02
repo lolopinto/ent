@@ -1,4 +1,4 @@
-import { Field, DBType, FieldMap } from "../schema/schema";
+import { DBType, FieldMap } from "../schema/schema";
 import { BaseEntSchema } from "../schema/base_schema";
 import { parseSchema } from "./parse";
 import { JSONBType, JSONBListType } from "../schema/json_field";

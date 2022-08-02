@@ -145,6 +145,18 @@ sa.Table("events", metadata,
     sa.PrimaryKeyConstraint("id", name="events_id_pkey"),
 )
    
+sa.Table("global_login_auth_edges", metadata,
+    sa.Column("id1", postgresql.UUID(), nullable=False),
+    sa.Column("id1_type", sa.Text(), nullable=False),
+    sa.Column("edge_type", postgresql.UUID(), nullable=False),
+    sa.Column("id2", postgresql.UUID(), nullable=False),
+    sa.Column("id2_type", sa.Text(), nullable=False),
+    sa.Column("time", sa.TIMESTAMP(), nullable=False),
+    sa.Column("data", sa.Text(), nullable=True),
+    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="global_login_auth_edges_id1_edge_type_id2_pkey"),
+    sa.Index("global_login_auth_edges_time_idx", "time"),
+)
+   
 sa.Table("holidays", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
@@ -270,6 +282,7 @@ metadata.info["edges"] = {
     'EventToHostsEdge': {"edge_name":"EventToHostsEdge", "edge_type":"ebe3e709-845c-4723-ac9c-29f983f2b8ea", "edge_table":"event_hosts_edges", "symmetric_edge":False, "inverse_edge_type":"cf6542a4-8bae-427f-8a1f-01194047afb3"},
     'EventToInvitedEdge': {"edge_name":"EventToInvitedEdge", "edge_type":"a72f5f64-3580-44fd-9bd0-d1335b803a46", "edge_table":"event_rsvps_edges", "symmetric_edge":False, "inverse_edge_type":"e439f2b2-d93a-4d1a-83f0-865bda5c8337"},
     'EventToMaybeEdge': {"edge_name":"EventToMaybeEdge", "edge_type":"b0f6311b-fdab-4c26-b6bf-b751e0997735", "edge_table":"event_rsvps_edges", "symmetric_edge":False, "inverse_edge_type":"8d5b1dee-ce65-452e-9f8d-78eca1993800"},
+    'GlobalToLoginAuthEdge': {"edge_name":"GlobalToLoginAuthEdge", "edge_type":"13eb6687-d226-4272-ba65-d5e33e00954c", "edge_table":"global_login_auth_edges", "symmetric_edge":False, "inverse_edge_type":None},
     'ObjectToCommentsEdge': {"edge_name":"ObjectToCommentsEdge", "edge_type":"8caba9c4-8035-447f-9eb1-4dd09a2d250c", "edge_table":"object_comments_edges", "symmetric_edge":False, "inverse_edge_type":"f430af94-d38a-4aaa-a92f-cfc56b6f811b"},
     'ObjectToLikersEdge': {"edge_name":"ObjectToLikersEdge", "edge_type":"c9ccdad9-7aff-40e4-9a69-2c29cfa19763", "edge_table":"object_likers_edges", "symmetric_edge":False, "inverse_edge_type":"745a20bf-4fdc-4862-b39f-569c4451db8f"},
     'UserToCreatedEventsEdge': {"edge_name":"UserToCreatedEventsEdge", "edge_type":"daa3b2a3-8245-40ca-ae77-25bfb82578a7", "edge_table":"user_created_events_edges", "symmetric_edge":False, "inverse_edge_type":None},

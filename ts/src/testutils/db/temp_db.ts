@@ -8,6 +8,7 @@ import { DBType, Field, getFields } from "../../schema";
 import { snakeCase } from "snake-case";
 import { BuilderSchema, getTableName } from "../builder";
 import { Ent } from "../../core/base";
+import { testEdgeGlobalSchema } from "../test_edge_global_schema";
 
 interface SchemaItem {
   name: string;
@@ -560,8 +561,10 @@ export function assoc_edge_config_table() {
   );
 }
 
-export function assoc_edge_table(name: string) {
-  return table(
+// if global flag is true, add any column from testEdgeGlobalSchema
+// up to caller to set/clear that as needed
+export function assoc_edge_table(name: string, global?: boolean) {
+  const t = table(
     name,
     uuid("id1"),
     text("id1_type"),
@@ -573,6 +576,18 @@ export function assoc_edge_table(name: string) {
     text("data", { nullable: true }),
     primaryKey(`${name}_pkey`, ["id1", "id2", "edge_type"]),
   );
+
+  if (global) {
+    for (const k in testEdgeGlobalSchema.extraEdgeFields) {
+      const col = getColumnFromField(
+        k,
+        testEdgeGlobalSchema.extraEdgeFields[k],
+        Dialect.Postgres,
+      );
+      t.columns.push(col);
+    }
+  }
+  return t;
 }
 
 interface sqliteSetupOptions {
@@ -583,11 +598,11 @@ export function setupSqlite(
   tables: () => Table[],
   opts?: sqliteSetupOptions,
 ) {
-  let tdb: TempDB;
+  let tdb: TempDB = new TempDB(Dialect.SQLite, tables());
+
   beforeAll(async () => {
     process.env.DB_CONNECTION_STRING = connString;
     loadConfig();
-    tdb = new TempDB(Dialect.SQLite, tables());
     await tdb.beforeAll();
 
     const conn = DB.getInstance().getConnection();
@@ -614,6 +629,8 @@ export function setupSqlite(
 
     fs.rmSync(tdb.getSqliteClient().name);
   });
+
+  return tdb;
 }
 
 export function getSchemaTable(schema: BuilderSchema<Ent>, dialect: Dialect) {
@@ -666,7 +683,11 @@ function getColumnForDbType(
   }
 }
 
-function getColumnFromField(fieldName: string, f: Field, dialect: Dialect) {
+export function getColumnFromField(
+  fieldName: string,
+  f: Field,
+  dialect: Dialect,
+) {
   switch (f.type.dbType) {
     case DBType.List:
       const elemType = f.type.listElemType;

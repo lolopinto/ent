@@ -32,7 +32,7 @@ import {
   setupSqlite,
   assoc_edge_config_table,
   assoc_edge_table,
-} from "../testutils/db/test_db";
+} from "../testutils/db/temp_db";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);

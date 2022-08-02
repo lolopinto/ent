@@ -12,6 +12,7 @@ import {
   Viewer,
   convertBool,
   convertDate,
+  convertNullableDate,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -24,13 +25,7 @@ import {
   todoLoaderInfo,
   todoNoTransformLoader,
 } from "src/ent/generated/loaders";
-import {
-  Account,
-  DeletedAtMixin,
-  IDeletedAt,
-  NodeType,
-  TodoToTagsQuery,
-} from "src/ent/internal";
+import { Account, NodeType, TodoToTagsQuery } from "src/ent/internal";
 import schema from "src/schema/todo_schema";
 
 interface TodoDBData {
@@ -43,24 +38,21 @@ interface TodoDBData {
   creator_id: ID;
 }
 
-export class TodoBase
-  extends DeletedAtMixin(class {})
-  implements Ent<Viewer>, IDeletedAt
-{
+export class TodoBase implements Ent<Viewer> {
   readonly nodeType = NodeType.Todo;
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+  protected readonly deletedAt: Date | null;
   readonly text: string;
   readonly completed: boolean;
   readonly creatorID: ID;
 
   constructor(public viewer: Viewer, protected data: Data) {
-    // @ts-ignore pass to mixin
-    super(viewer, data);
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
+    this.deletedAt = convertNullableDate(data.deleted_at);
     this.text = data.text;
     this.completed = convertBool(data.completed);
     this.creatorID = data.creator_id;

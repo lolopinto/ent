@@ -45,7 +45,7 @@ import {
   queryRootConfig,
   expectQueryFromRoot,
 } from "../testutils/ent-graphql-tests";
-import { setupSqlite } from "../testutils/db/test_db";
+import { setupSqlite } from "../testutils/db/temp_db";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);

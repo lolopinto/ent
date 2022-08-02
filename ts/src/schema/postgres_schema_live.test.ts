@@ -24,7 +24,7 @@ import {
   timestamptz,
   uuid,
   getSchemaTable,
-} from "../testutils/db/test_db";
+} from "../testutils/db/temp_db";
 import { v4 as uuidv4 } from "uuid";
 import pg from "pg";
 import { defaultTimestampParser, Dialect } from "../core/db";

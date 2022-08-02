@@ -33,6 +33,7 @@ export {
   loadEdgeForID2,
   loadNodesByEdge,
   getEdgeTypeInGroup,
+  setGlobalSchema,
 } from "./core/ent";
 import DB from "./core/db";
 export * from "./core/loaders";

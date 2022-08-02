@@ -41,6 +41,8 @@ export enum EdgeType {
   EventToInvited = "a72f5f64-3580-44fd-9bd0-d1335b803a46",
   // EventToMaybe is the edgeType for the event to maybe edge.
   EventToMaybe = "b0f6311b-fdab-4c26-b6bf-b751e0997735",
+  // GlobalToLoginAuth is the edgeType for the  to loginauth edge.
+  GlobalToLoginAuth = "13eb6687-d226-4272-ba65-d5e33e00954c",
   // ObjectToComments is the edgeType for the object to comments edge.
   ObjectToComments = "8caba9c4-8035-447f-9eb1-4dd09a2d250c",
   // ObjectToLikers is the edgeType for the object to likers edge.

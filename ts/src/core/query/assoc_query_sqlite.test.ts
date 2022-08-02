@@ -1,19 +1,41 @@
 import { Viewer } from "../base";
-import { FakeUser, UserToContactsQuery } from "../../testutils/fake_data/index";
-import { tempDBTables } from "../../testutils/fake_data/test_helpers";
+import {
+  EdgeType,
+  FakeUser,
+  UserToContactsQuery,
+} from "../../testutils/fake_data/index";
 import { commonTests } from "./shared_test";
 import { assocTests } from "./shared_assoc_test";
-import { setupSqlite } from "../../testutils/db/test_db";
+import { loadCustomEdges } from "../ent";
+import { EdgeWithDeletedAt } from "../../testutils/test_edge_global_schema";
 
 commonTests({
   newQuery(viewer: Viewer, user: FakeUser) {
     return UserToContactsQuery.query(viewer, user);
   },
   tableName: "user_to_contacts_table",
+  uniqKey: "user_to_contacts_table_sqlite",
   entsLength: 2,
   where: "id1 = ? AND edge_type = ?",
   sortCol: "time",
   sqlite: true,
+  rawDataVerify: async (user: FakeUser) => {
+    const [raw, withDeleted] = await Promise.all([
+      loadCustomEdges({
+        id1: user.id,
+        edgeType: EdgeType.UserToContacts,
+        ctr: EdgeWithDeletedAt,
+      }),
+      loadCustomEdges({
+        id1: user.id,
+        edgeType: EdgeType.UserToContacts,
+        ctr: EdgeWithDeletedAt,
+        disableTransformations: true,
+      }),
+    ]);
+    expect(raw.length).toBe(0);
+    expect(withDeleted.length).toBe(0);
+  },
 });
 
 describe("custom assoc", () => {

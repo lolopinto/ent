@@ -29,12 +29,16 @@ import (
 
 // Schema is the representation of the parsed schema. Has everything needed to
 type Schema struct {
-	Nodes         NodeMapInfo
-	Patterns      map[string]*PatternInfo
-	tables        NodeMapInfo
-	edges         map[string]*ent.AssocEdgeData
-	newEdges      []*ent.AssocEdgeData
-	edgesToUpdate []*ent.AssocEdgeData
+	Nodes           NodeMapInfo
+	Patterns        map[string]*PatternInfo
+	globalEdges     []*edge.AssociationEdge
+	globalConsts    *objWithConsts
+	extraEdgeFields []*field.Field
+	initForEdges    bool
+	tables          NodeMapInfo
+	edges           map[string]*ent.AssocEdgeData
+	newEdges        []*ent.AssocEdgeData
+	edgesToUpdate   []*ent.AssocEdgeData
 	// unlike Nodes, the key is "EnumName" instead of "EnumNameConfig"
 	// confusing but gets us closer to what we want
 	Enums            map[string]*EnumInfo
@@ -48,6 +52,22 @@ type Schema struct {
 
 func (s *Schema) GetInputSchema() *input.Schema {
 	return s.inputSchema
+}
+
+func (s *Schema) GetGlobalEdges() []*edge.AssociationEdge {
+	return s.globalEdges
+}
+
+func (s *Schema) InitForEdges() bool {
+	return s.initForEdges
+}
+
+func (s *Schema) ExtraEdgeFields() []*field.Field {
+	return s.extraEdgeFields
+}
+
+func (s *Schema) GetGlobalConsts() WithConst {
+	return s.globalConsts
 }
 
 func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData) error {
@@ -267,6 +287,7 @@ func (s *Schema) init() {
 	s.Patterns = map[string]*PatternInfo{}
 	s.CustomInterfaces = map[string]*customtype.CustomInterface{}
 	s.gqlNameMap = make(map[string]bool)
+	s.globalConsts = &objWithConsts{}
 }
 
 func (s *Schema) GetNodeDataFromTableName(tableName string) *NodeData {
@@ -462,7 +483,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 
 		if err := s.addConfig(&NodeDataInfo{
 			NodeData:      nodeData,
-			depgraph:      s.buildPostRunDepgraph(cfg, edgeData),
+			depgraph:      s.buildPostRunDepgraph(cfg),
 			ShouldCodegen: true,
 		}); err != nil {
 			errs = append(errs, err)
@@ -543,6 +564,10 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 		}
 	}
 
+	if schema.GlobalSchema != nil {
+		errs = append(errs, s.parseGlobalSchema(cfg, schema.GlobalSchema, edgeData)...)
+	}
+
 	// TODO convert more things to do something like this?
 	if len(errs) > 0 {
 		// we're getting list of errors and coalescing
@@ -550,6 +575,43 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 	}
 
 	return s.processDepgrah(edgeData)
+}
+
+func (s *Schema) parseGlobalSchema(cfg codegenapi.Config, gs *input.GlobalSchema, edgeData *assocEdgeData) []error {
+	var errs []error
+	for _, inputEdge := range gs.GlobalEdges {
+		assocEdge, err := edge.AssocEdgeFromInput(cfg, "global", inputEdge)
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			s.globalEdges = append(s.globalEdges, assocEdge)
+			if assocEdge.CreateEdge() {
+				newEdge, err := s.getNewEdge(edgeData, assocEdge)
+				if err != nil {
+					errs = append(errs, err)
+				} else {
+					s.addNewEdgeType(s.globalConsts, newEdge.constName, newEdge.constValue, assocEdge)
+				}
+				if err := s.maybeAddInverseAssocEdge(assocEdge); err != nil {
+					errs = append(errs, err)
+				}
+			}
+		}
+	}
+
+	if len(gs.ExtraEdgeFields) > 0 {
+		fi, err := field.NewFieldInfoFromInputs(cfg, "global", gs.ExtraEdgeFields, &field.Options{
+			SortFields: true,
+		})
+		if err != nil {
+			errs = append(errs, err)
+		}
+		s.extraEdgeFields = fi.Fields
+	}
+
+	s.initForEdges = gs.InitForEdges
+
+	return errs
 }
 
 func (s *Schema) validateIndices(nodeData *NodeData) error {
@@ -830,7 +892,6 @@ func (s *Schema) addConfig(info *NodeDataInfo) error {
 
 func (s *Schema) buildPostRunDepgraph(
 	cfg codegenapi.Config,
-	edgeData *assocEdgeData,
 ) *depgraph.Depgraph {
 	// things that need all nodeDatas loaded
 	g := &depgraph.Depgraph{}

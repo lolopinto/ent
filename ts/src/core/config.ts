@@ -42,6 +42,10 @@ export interface Config {
   // the path should be relative to the root
   // this is hopefully a temporary solution...
   customGraphQLJSONPath?: string;
+
+  // defaults to __global__schema.ts if not provided
+  // relative to src/schema for now
+  globalSchemaPath?: string;
 }
 
 interface CodegenConfig {
@@ -106,7 +110,10 @@ interface CodegenConfig {
   // default is on_demand
   fieldPrivacyEvaluated?: fieldPrivacyEvaluated;
 
-  templatizedViewer?: templatizedViewer;
+  templatizedViewer?: importedObject;
+
+  // if you want a new base class for AssocEdge e.g. to get extra data stored in custom assoc table
+  customAssocEdgePath?: importedObject;
 }
 
 interface PrettierConfig {
@@ -123,9 +130,10 @@ interface PrivacyConfig {
   class?: boolean;
 }
 
-interface templatizedViewer {
+interface importedObject {
   path: string;
   name: string;
+  alias?: string;
 }
 
 function setConfig(cfg: Config) {

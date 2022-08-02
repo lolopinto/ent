@@ -1,4 +1,4 @@
-import { setupSqlite } from "../../testutils/db/test_db";
+import { setupSqlite } from "../../testutils/db/temp_db";
 import {
   FakeUser,
   UserToContactsFkeyQuery,

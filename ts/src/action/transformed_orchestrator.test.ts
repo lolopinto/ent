@@ -26,7 +26,7 @@ import {
   getSchemaTable,
   setupSqlite,
   Table,
-} from "../testutils/db/test_db";
+} from "../testutils/db/temp_db";
 import { convertDate } from "../core/convert";
 import { loadConfig } from "../core/config";
 import { FieldMap } from "../schema";
@@ -59,27 +59,6 @@ beforeEach(async () => {
 afterEach(() => {
   QueryRecorder.clear();
   FakeComms.clear();
-});
-
-describe("postgres", () => {
-  commonTests();
-});
-
-describe("sqlite", () => {
-  const getTables = () => {
-    const tables: Table[] = [assoc_edge_config_table()];
-    edges.map((edge) =>
-      tables.push(assoc_edge_table(`${snakeCase(edge)}_table`)),
-    );
-
-    [new UserSchema(), new ContactSchema()].map((s) =>
-      tables.push(getSchemaTable(s, Dialect.SQLite)),
-    );
-    return tables;
-  };
-
-  setupSqlite(`sqlite:///transformed-orchestrator-test.db`, getTables);
-  commonTests();
 });
 
 class DeletedAtPattern implements Pattern {
@@ -171,6 +150,27 @@ class ContactSchema extends BaseEntSchema {
   };
   ent = Contact;
 }
+
+describe("postgres", () => {
+  commonTests();
+});
+
+describe("sqlite", () => {
+  const getTables = () => {
+    const tables: Table[] = [assoc_edge_config_table()];
+    edges.map((edge) =>
+      tables.push(assoc_edge_table(`${snakeCase(edge)}_table`)),
+    );
+
+    [new UserSchema(), new ContactSchema()].map((s) =>
+      tables.push(getSchemaTable(s, Dialect.SQLite)),
+    );
+    return tables;
+  };
+
+  setupSqlite(`sqlite:///transformed-orchestrator-test.db`, getTables);
+  commonTests();
+});
 
 const getNewLoader = (context: boolean = true) => {
   return new ObjectLoader(
