@@ -126,13 +126,13 @@ type Field struct {
 	Nullable   bool       `json:"nullable,omitempty"`
 	StorageKey string     `json:"storageKey,omitempty"`
 	// TODO need a way to indicate unique edge is Required also. this changes type generated in ent and graphql
-	Unique                  bool   `json:"unique,omitempty"`
-	HideFromGraphQL         bool   `json:"hideFromGraphQL,omitempty"`
-	Private                 bool   `json:"private,omitempty"`
-	GraphQLName             string `json:"graphqlName,omitempty"`
-	Index                   bool   `json:"index,omitempty"`
-	PrimaryKey              bool   `json:"primaryKey,omitempty"`
-	DefaultToViewerOnCreate bool   `json:"defaultToViewerOnCreate,omitempty"`
+	Unique                  bool            `json:"unique,omitempty"`
+	HideFromGraphQL         bool            `json:"hideFromGraphQL,omitempty"`
+	Private                 *PrivateOptions `json:"private,omitempty"`
+	GraphQLName             string          `json:"graphqlName,omitempty"`
+	Index                   bool            `json:"index,omitempty"`
+	PrimaryKey              bool            `json:"primaryKey,omitempty"`
+	DefaultToViewerOnCreate bool            `json:"defaultToViewerOnCreate,omitempty"`
 
 	FieldEdge     *FieldEdge  `json:"fieldEdge,omitempty"` // this only really makes sense on id fields...
 	ForeignKey    *ForeignKey `json:"foreignKey,omitempty"`
@@ -196,6 +196,10 @@ type PolymorphicOptions struct {
 	Types                  []string `json:"types,omitempty"`
 	HideFromInverseGraphQL bool     `json:"hideFromInverseGraphQL,omitempty"`
 	DisableBuilderType     bool     `json:"disableBuilderType,omitempty"`
+}
+
+type PrivateOptions struct {
+	ExposeToActions bool `json:"exposeToActions,omitempty"`
 }
 
 func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.TSGraphQLType, error) {

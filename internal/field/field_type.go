@@ -100,7 +100,7 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 		nullable:                   f.Nullable,
 		dbName:                     f.StorageKey,
 		hideFromGraphQL:            f.HideFromGraphQL,
-		private:                    f.Private,
+		private:                    f.Private != nil,
 		polymorphic:                f.Polymorphic,
 		index:                      f.Index,
 		graphQLName:                f.GraphQLName,
@@ -172,7 +172,7 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 	}
 
 	if ret.private {
-		ret.setPrivate()
+		ret.setPrivate(f.Private)
 	}
 
 	getSchemaName := func(config string) string {
@@ -771,10 +771,10 @@ func (f *Field) setTsFieldType(fieldType enttype.Type) error {
 	return nil
 }
 
-func (f *Field) setPrivate() {
+func (f *Field) setPrivate(p *input.PrivateOptions) {
 	f.private = true
 	f.hideFromGraphQL = true
-	f.exposeToActionsByDefault = false
+	f.exposeToActionsByDefault = p.ExposeToActions
 }
 
 func (f *Field) AddInverseEdge(cfg codegenapi.Config, edge *edge.AssociationEdge) error {

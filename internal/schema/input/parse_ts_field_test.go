@@ -200,7 +200,34 @@ func TestParseFields(t *testing.T) {
 						{
 							name:    "password",
 							dbType:  input.String,
-							private: true,
+							private: &input.PrivateOptions{},
+						},
+					},
+				},
+			},
+		},
+		"private field exposed to actions": {
+			code: map[string]string{
+				"user.ts": getCodeWithSchema(`
+				import {Schema, FieldMap, StringType} from "{schema}";
+
+				export default class User implements Schema {
+					fields: FieldMap = {
+						password: StringType({private: {
+							exposeToActions: true,
+						}}),
+					};
+				}`),
+			},
+			expectedNodes: map[string]node{
+				"User": {
+					fields: []field{
+						{
+							name:   "password",
+							dbType: input.String,
+							private: &input.PrivateOptions{
+								ExposeToActions: true,
+							},
 						},
 					},
 				},
@@ -331,7 +358,7 @@ func TestParseFields(t *testing.T) {
 						field{
 							name:            "password",
 							dbType:          input.String,
-							private:         true,
+							private:         &input.PrivateOptions{},
 							hideFromGraphQL: true,
 						},
 					),

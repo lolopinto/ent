@@ -126,7 +126,7 @@ func modifyFieldForDataType(
 		}
 		// if the datatype is specifically private, field makes it private
 		if res.private {
-			f.Private = true
+			f.Private = &input.PrivateOptions{}
 		}
 
 		f.DataTypePkgPath = getImportedPackageThatMatchesIdent(pkg, info.PkgName, info.IdentName).PkgPath

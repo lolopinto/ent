@@ -367,6 +367,10 @@ export interface FieldEdge {
   disableBuilderType?: boolean;
 }
 
+interface PrivateOptions {
+  exposeToActions?: boolean;
+}
+
 // FieldOptions are configurable options for fields.
 // Can be combined with options for specific field types as neededs
 export interface FieldOptions {
@@ -376,7 +380,10 @@ export interface FieldOptions {
   serverDefault?: any;
   unique?: boolean;
   hideFromGraphQL?: boolean;
-  private?: boolean;
+  // private automatically hides from graphql and actions
+  // but you may want something which is private and visible in actions
+  // e.g. because you have custom code you want to run in the accessors
+  private?: boolean | PrivateOptions;
   sensitive?: boolean;
   graphqlName?: string;
   index?: boolean;

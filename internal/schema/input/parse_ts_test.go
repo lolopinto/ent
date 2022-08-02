@@ -40,7 +40,7 @@ type field struct {
 	storageKey                 string
 	unique                     bool
 	hideFromGraphQL            bool
-	private                    bool
+	private                    *input.PrivateOptions
 	graphqlName                string
 	index                      bool
 	primaryKey                 bool
@@ -210,7 +210,12 @@ func verifyField(t *testing.T, expField field, field *input.Field) {
 	assert.Equal(t, expField.nullable, field.Nullable)
 	assert.Equal(t, expField.unique, field.Unique)
 	assert.Equal(t, expField.hideFromGraphQL, field.HideFromGraphQL)
-	assert.Equal(t, expField.private, field.Private)
+	if expField.private == nil {
+		require.Nil(t, field.Private)
+	} else {
+		require.NotNil(t, field.Private)
+		assert.Equal(t, expField.private, field.Private)
+	}
 	assert.Equal(t, expField.graphqlName, field.GraphQLName)
 	assert.Equal(t, expField.index, field.Index)
 	assert.Equal(t, expField.primaryKey, field.PrimaryKey)
