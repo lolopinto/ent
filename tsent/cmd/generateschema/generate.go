@@ -234,7 +234,7 @@ func FieldObjectCall(f *input.Field) string {
 	appendBoolean(o, f.Unique, "unique")
 	appendBoolean(o, f.Nullable, "nullable")
 	appendBoolean(o, f.Index, "index")
-	appendBoolean(o, f.Private, "private")
+	appendBoolean(o, f.Private != nil, "private")
 	appendBoolean(o, f.HideFromGraphQL, "hideFromGraphQL")
 	appendBoolean(o, f.DefaultToViewerOnCreate, "defaultToViewerOnCreate")
 
