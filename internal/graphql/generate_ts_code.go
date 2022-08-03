@@ -61,6 +61,7 @@ var knownTypes = map[string]*tsimport.ImportPath{
 
 var knownCustomTypes = map[string]string{
 	"Date": "GraphQLTime",
+	"JSON": "GraphQLJSON",
 }
 
 type NullableItem string
