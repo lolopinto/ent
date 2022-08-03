@@ -10,7 +10,6 @@ export interface Database extends PoolConfig {
   password?: string;
   host?: string;
   port?: number;
-  ssl?: boolean;
   sslmode?: string;
 }
 
