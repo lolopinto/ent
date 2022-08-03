@@ -363,6 +363,9 @@ func (f *Field) ForeignKeyInfo() *ForeignKeyInfo {
 }
 
 func (f *Field) FieldEdgeInfo() *base.FieldEdgeInfo {
+	if f.private {
+		return nil
+	}
 	return f.fieldEdge
 }
 
