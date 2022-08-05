@@ -322,6 +322,9 @@ export interface Type {
 
   // UnionType fields. really StructMap but don't want circular dependency...
   unionFields?: FieldMap;
+
+  // allow other keys
+  [x: string]: any;
 }
 
 export interface ForeignKey {
@@ -334,6 +337,9 @@ export interface ForeignKey {
   // to simplify the code when it's known that the object here
   // would always have been previously created. simplifies validation
   disableBuilderType?: boolean;
+
+  // allow other keys
+  [x: string]: any;
 }
 
 type getLoaderInfoFn = (type: string) => LoaderInfo;
@@ -682,6 +688,9 @@ export interface ActionField {
   // either because they can be derived or optional and don't need it
   // no validation on what can be excluded is done. things will eventually fail if done incorrectly
   excludedFields?: string[];
+
+  // allow other keys
+  [x: string]: any;
 }
 
 // provides a way to configure the actions generated for the ent
@@ -704,6 +713,9 @@ export interface Action {
   optionalFields?: string[];
   requiredFields?: string[];
   noFields?: boolean;
+
+  // allow other keys
+  [x: string]: any;
 }
 
 // sentinel that indicates an action has no fields
@@ -727,6 +739,9 @@ export interface Constraint {
   columns: string[];
   fkey?: ForeignKeyInfo;
   condition?: string; // only applies in check constraint
+
+  // allow other keys
+  [x: string]: any;
 }
 
 export interface FullTextWeight {
@@ -755,6 +770,9 @@ export interface FullText {
 
   // to simplify: we only allow weights when there's a generated column so that rank is easiest ts_rank(col, ...)
   weights?: FullTextWeight;
+
+  // allow other keys
+  [x: string]: any;
 }
 
 export interface Index {
@@ -766,6 +784,9 @@ export interface Index {
   // need operator class too
   // TODO https://github.com/lolopinto/ent/issues/1029
   indexType?: "gin" | "btree";
+
+  // allow other keys
+  [x: string]: any;
 }
 
 export interface ForeignKeyInfo {
@@ -773,6 +794,9 @@ export interface ForeignKeyInfo {
   ondelete?: "RESTRICT" | "CASCADE" | "SET NULL" | "SET DEFAULT" | "NO ACTION";
   columns: string[];
   // no on update, match full etc
+
+  // allow other keys
+  [x: string]: any;
 }
 
 export enum ConstraintType {
