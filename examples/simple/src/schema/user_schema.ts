@@ -322,6 +322,7 @@ const UserSchema = new EntSchema({
         indexType: "gin",
         generatedColumnName: "name_idx",
       },
+      test_random_other_key: "whaaa",
     },
   ],
 
