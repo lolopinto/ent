@@ -173,19 +173,20 @@ class arraySimpleClause implements Clause {
   }
 }
 
-class postgresArrayContains implements Clause {
+class postgresArrayOperator implements Clause {
   constructor(
     protected col: string,
     protected value: any,
+    private op: string,
     private not?: boolean,
   ) {}
 
   clause(idx: number): string {
     if (DB.getDialect() === Dialect.Postgres) {
       if (this.not) {
-        return `NOT ${this.col} @> $${idx}`;
+        return `NOT ${this.col} ${this.op} $${idx}`;
       }
-      return `${this.col} @> $${idx}`;
+      return `${this.col} ${this.op} $${idx}`;
     }
     throw new Error(`not supported`);
   }
@@ -210,15 +211,15 @@ class postgresArrayContains implements Clause {
 
   instanceKey(): string {
     if (this.not) {
-      return `NOT:${this.col}@>${rawValue(this.value)}`;
+      return `NOT:${this.col}${this.op}${rawValue(this.value)}`;
     }
-    return `${this.col}@>${rawValue(this.value)}`;
+    return `${this.col}${this.op}${rawValue(this.value)}`;
   }
 }
 
-class postgresArrayContainsList extends postgresArrayContains {
-  constructor(col: string, value: any[], not?: boolean) {
-    super(col, value, not);
+class postgresArrayOperatorList extends postgresArrayOperator {
+  constructor(col: string, value: any[], op: string, not?: boolean) {
+    super(col, value, op, not);
   }
 
   values(): any[] {
@@ -418,13 +419,16 @@ class websearchTosQueryClause extends tsQueryClause {
   }
 }
 
+// postgres array operators
+// https://www.postgresql.org/docs/current/functions-array.html
+
 /**
  * creates a clause to determine if the given value is contained in the array stored in the column in the db
  * only works with postgres gin indexes
  * https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-GIN
  */
 export function PostgresArrayContainsValue(col: string, value: any): Clause {
-  return new postgresArrayContains(col, value);
+  return new postgresArrayOperator(col, value, "@>");
 }
 
 /**
@@ -433,7 +437,7 @@ export function PostgresArrayContainsValue(col: string, value: any): Clause {
  * https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-GIN
  */
 export function PostgresArrayContains(col: string, value: any[]): Clause {
-  return new postgresArrayContainsList(col, value);
+  return new postgresArrayOperatorList(col, value, "@>");
 }
 
 /**
@@ -442,7 +446,7 @@ export function PostgresArrayContains(col: string, value: any[]): Clause {
  * https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-GIN
  */
 export function PostgresArrayNotContainsValue(col: string, value: any): Clause {
-  return new postgresArrayContains(col, value, true);
+  return new postgresArrayOperator(col, value, "@>", true);
 }
 
 /**
@@ -451,7 +455,25 @@ export function PostgresArrayNotContainsValue(col: string, value: any): Clause {
  * https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-GIN
  */
 export function PostgresArrayNotContains(col: string, value: any[]): Clause {
-  return new postgresArrayContainsList(col, value, true);
+  return new postgresArrayOperatorList(col, value, "@>", true);
+}
+
+/**
+ * creates a clause to determine if the arrays overlap, that is, do they have any elements in common
+ * only works with postgres gin indexes
+ * https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-GIN
+ */
+export function PostgresArrayOverlaps(col: string, value: any[]): Clause {
+  return new postgresArrayOperatorList(col, value, "&&");
+}
+
+/**
+ * creates a clause to determine if the arrays do not overlap, that is, do they have any elements in common
+ * only works with postgres gin indexes
+ * https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-GIN
+ */
+export function PostgresArrayNotOverlaps(col: string, value: any[]): Clause {
+  return new postgresArrayOperatorList(col, value, "&&", true);
 }
 
 /**
