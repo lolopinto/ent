@@ -101,6 +101,8 @@ const query = {
   PostgresArrayContains: q.PostgresArrayContains,
   PostgresArrayNotContainsValue: q.PostgresArrayNotContainsValue,
   PostgresArrayNotContains: q.PostgresArrayNotContains,
+  PostgresArrayOverlaps: q.PostgresArrayOverlaps,
+  PostgresArrayNotOverlaps: q.PostgresArrayNotOverlaps,
   TsQuery: q.TsQuery,
   PlainToTsQuery: q.PlainToTsQuery,
   PhraseToTsQuery: q.PhraseToTsQuery,

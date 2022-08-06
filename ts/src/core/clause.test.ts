@@ -404,6 +404,24 @@ describe("postgres", () => {
       expect(cls.logValues()).toStrictEqual([[3, 4]]);
       expect(cls.instanceKey()).toEqual("NOT:ids@>3,4");
     });
+
+    test("overlaps", () => {
+      const cls = clause.PostgresArrayOverlaps("ids", [3, 4]);
+      expect(cls.clause(1)).toBe("ids && $1");
+      expect(cls.columns()).toStrictEqual(["ids"]);
+      expect(cls.values()).toStrictEqual([`{3, 4}`]);
+      expect(cls.logValues()).toStrictEqual([[3, 4]]);
+      expect(cls.instanceKey()).toEqual("ids&&3,4");
+    });
+
+    test("not overlaps", () => {
+      const cls = clause.PostgresArrayNotOverlaps("ids", [3, 4]);
+      expect(cls.clause(1)).toBe("NOT ids && $1");
+      expect(cls.columns()).toStrictEqual(["ids"]);
+      expect(cls.values()).toStrictEqual([`{3, 4}`]);
+      expect(cls.logValues()).toStrictEqual([[3, 4]]);
+      expect(cls.instanceKey()).toEqual("NOT:ids&&3,4");
+    });
   });
 
   describe("full text", () => {
