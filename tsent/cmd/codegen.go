@@ -17,6 +17,7 @@ type codegenArgs struct {
 	writeAll             bool
 	disableCustomGraphQL bool
 	disablePrompts       bool
+	disableUpgrade       bool
 }
 
 var codegenInfo codegenArgs
@@ -27,6 +28,12 @@ var codegenCmd = &cobra.Command{
 	Long:  `This runs the codegen steps. It generates the ent, db, and graphql code based on the arguments passed in`,
 	//	Args:  configRequired,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		t1 := time.Now()
+		if !codegenInfo.disableUpgrade {
+			if err := upgradeCmd.RunE(cmd, nil); err != nil {
+				return err
+			}
+		}
 		cfg, err := codegen.NewConfig("src/schema", "")
 		if err != nil {
 			return err
@@ -42,7 +49,6 @@ var codegenCmd = &cobra.Command{
 			return nil
 		}
 
-		t1 := time.Now()
 		bi := build_info.NewBuildInfo(cfg)
 		t2 := time.Now()
 		diff := t2.Sub(t1)
