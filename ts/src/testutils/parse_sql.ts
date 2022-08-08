@@ -234,6 +234,14 @@ export class EqOp {
   }
 }
 
+export class NotEqOp {
+  constructor(private col: string, private value: any) {}
+
+  apply(data: Data): boolean {
+    return data[this.col] !== this.value;
+  }
+}
+
 export class GreaterOp {
   constructor(private col: string, private value: any) {}
 
@@ -357,12 +365,13 @@ function getOp(where: any, values: any[]): Where {
       return new OrOp([getOp(where.left, values), getOp(where.right, values)]);
 
     case "IS":
-      if (where.right?.value === null) {
-        return new EqOp(getColumnFromRef(where.left), null);
-      }
+      return new EqOp(getColumnFromRef(where.left), where.right?.value);
+
+    case "IS NOT":
+      return new NotEqOp(getColumnFromRef(where.left), where.right?.value);
 
     default:
-      console.log(where);
+      console.debug(where);
       throw new Error(`unsupported op ${where.operator}`);
   }
 }

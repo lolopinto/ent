@@ -8,6 +8,7 @@ import ChangeTodoStatusAction from "src/ent/todo/actions/change_todo_status_acti
 import { createAccount, createTodo, createTag } from "src/ent/testutils/util";
 import { advanceBy } from "jest-date-mock";
 import DeleteTodoAction from "src/ent/todo/actions/delete_todo_action";
+import { setLogLevels } from "@snowtop/ent";
 
 async function createTodos(): Promise<[Account, Todo[]]> {
   const account = await createAccount();

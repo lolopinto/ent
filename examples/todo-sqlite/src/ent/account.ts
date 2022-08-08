@@ -26,6 +26,7 @@ const openTodosLoader = new QueryLoaderFactory({
   toPrime: [todoLoader],
 });
 
+// TODO can we skip getTransformedReadClause
 const openTodosCountLoader = new RawCountLoaderFactory({
   //  ...Todo.loaderOptions(),
   tableName: Todo.loaderOptions().tableName,
@@ -63,11 +64,7 @@ export class Account extends AccountBase {
   async openTodosPlural() {
     return await Todo.loadCustom(
       this.viewer,
-      query.AndOptional(
-        query.Eq("creator_id", this.id),
-        query.Eq("completed", false),
-        getTransformedReadClause(TodoSchema),
-      ),
+      query.And(query.Eq("creator_id", this.id), query.Eq("completed", false)),
     );
   }
 

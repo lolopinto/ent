@@ -13,7 +13,6 @@ import {
 } from "@snowtop/ent/graphql";
 import { GraphQLID } from "graphql";
 import { Todo, AccountToOpenTodosQuery } from "src/ent";
-import TodoSchema from "src/schema/todo_schema";
 
 export class TodoResolver {
   // showing plural
@@ -24,11 +23,7 @@ export class TodoResolver {
     const viewer = new IDViewer(id);
     return await Todo.loadCustom(
       viewer,
-      query.AndOptional(
-        query.Eq("creator_id", id),
-        query.Eq("completed", false),
-        getTransformedReadClause(TodoSchema),
-      ),
+      query.And(query.Eq("creator_id", id), query.Eq("completed", false)),
     );
   }
 

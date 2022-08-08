@@ -628,6 +628,7 @@ export function setupSqlite(
     await tdb.afterAll();
 
     fs.rmSync(tdb.getSqliteClient().name);
+    delete process.env.DB_CONNECTION_STRING;
   });
 
   return tdb;

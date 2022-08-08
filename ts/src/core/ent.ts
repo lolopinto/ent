@@ -25,6 +25,7 @@ import {
   QueryDataOptions,
   EntConstructor,
   PrivacyPolicy,
+  SelectCustomDataOptions,
 } from "./base";
 
 import { applyPrivacyPolicy, applyPrivacyPolicyX } from "./privacy";
@@ -329,7 +330,7 @@ export async function loadCustomEnts<
   return result.filter((r) => r !== undefined);
 }
 
-interface rawQueryOptions {
+interface parameterizedQueryOptions {
   query: string;
   values?: any[];
   logValues?: any[];
@@ -337,40 +338,83 @@ interface rawQueryOptions {
 
 export type CustomQuery =
   | string
-  | rawQueryOptions
+  | parameterizedQueryOptions
   | clause.Clause
   | QueryDataOptions;
 
 function isClause(
-  opts: clause.Clause | QueryDataOptions | rawQueryOptions,
+  opts: clause.Clause | QueryDataOptions | parameterizedQueryOptions,
 ): opts is clause.Clause {
   const cls = opts as clause.Clause;
 
   return cls.clause !== undefined && cls.values !== undefined;
 }
 
-function isRawQuery(
-  opts: QueryDataOptions | rawQueryOptions,
-): opts is rawQueryOptions {
-  return (opts as rawQueryOptions).query !== undefined;
+function isParameterizedQuery(
+  opts: QueryDataOptions | parameterizedQueryOptions,
+): opts is parameterizedQueryOptions {
+  return (opts as parameterizedQueryOptions).query !== undefined;
 }
 
+/**
+ * Note that if there's default read transformations (e.g. soft delete) and a clause is passed in
+ * either as Clause or QueryDataOptions without {disableTransformations: true}, the default transformation
+ * (e.g. soft delete) is applied.
+ *
+ * Passing a full SQL string or Paramterized SQL string doesn't apply it and the given string is sent to the
+ * database as written.
+ *
+ * e.g.
+ * Foo.loadCustom(opts, 'SELECT * FROM foo') // doesn't change the query
+ * Foo.loadCustom(opts, { query: 'SELECT * FROM foo WHERE id = ?', values: [1]}) // doesn't change the query
+ * Foo.loadCustom(opts, query.Eq('time', Date.now())) // changes the query
+ * Foo.loadCustom(opts, {
+ *   clause:  query.LessEq('time', Date.now()),
+ *   limit: 100,
+ *   orderby: 'time',
+ *  }) // changes the query
+ * Foo.loadCustom(opts, {
+ *   clause:  query.LessEq('time', Date.now()),
+ *   limit: 100,
+ *   orderby: 'time',
+ *   disableTransformations: false
+ *  }) // doesn't change the query
+ */
 export async function loadCustomData(
-  options: SelectBaseDataOptions,
+  options: SelectCustomDataOptions,
   query: CustomQuery,
   context: Context | undefined,
 ): Promise<Data[]> {
+  //loaderFactory not here...
+  //  options.
+
+  function getClause(cls: clause.Clause) {
+    let optClause = options.clause || options.loaderFactory?.options?.clause;
+    if (typeof optClause === "function") {
+      optClause = optClause();
+    }
+    if (!optClause) {
+      return cls;
+    }
+
+    return clause.And(cls, optClause);
+  }
+
   if (typeof query === "string") {
     // no caching, perform raw query
     return await performRawQuery(query, [], []);
   } else if (isClause(query)) {
+    // if a Clause is passed in and we have a default clause
+    // associated with the query, pass that in
+    // if we want to disableTransformations, need to indicate that with
+    // disableTransformations option
     // this will have rudimentary caching but nothing crazy
     return await loadRows({
       ...options,
-      clause: query,
+      clause: getClause(query),
       context: context,
     });
-  } else if (isRawQuery(query)) {
+  } else if (isParameterizedQuery(query)) {
     // no caching, perform raw query
     return await performRawQuery(
       query.query,
@@ -378,11 +422,16 @@ export async function loadCustomData(
       query.logValues,
     );
   } else {
+    let cls = query.clause;
+    if (!query.disableTransformations) {
+      cls = getClause(cls);
+    }
     // this will have rudimentary caching but nothing crazy
     return await loadRows({
       ...query,
       ...options,
       context: context,
+      clause: cls,
     });
   }
 }
