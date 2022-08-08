@@ -36,7 +36,7 @@ func newRunE(fn func(cmd *cobra.Command, args []string) error) func(cmd *cobra.C
 		err := fn(cmd, args)
 		t2 := time.Now()
 		diff := t2.Sub(t1)
-		fmt.Println("total time elapsed", diff)
+		fmt.Println("total codegen time elapsed", diff)
 		return err
 	}
 }
@@ -51,7 +51,7 @@ func newRun(fn func(cmd *cobra.Command, args []string)) func(cmd *cobra.Command,
 		fn(cmd, args)
 		t2 := time.Now()
 		diff := t2.Sub(t1)
-		fmt.Println("total time elapsed", diff)
+		fmt.Println("total codegen time elapsed", diff)
 	}
 }
 

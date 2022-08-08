@@ -28,10 +28,16 @@ var codegenCmd = &cobra.Command{
 	Long:  `This runs the codegen steps. It generates the ent, db, and graphql code based on the arguments passed in`,
 	//	Args:  configRequired,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		t1 := time.Now()
 		if !codegenInfo.disableUpgrade {
+			t1 := time.Now()
+
 			if err := upgradeCmd.RunE(cmd, nil); err != nil {
 				return err
+			}
+			if rootInfo.debug {
+				t2 := time.Now()
+				diff := t2.Sub(t1)
+				fmt.Println("maybe update took", diff)
 			}
 		}
 		cfg, err := codegen.NewConfig("src/schema", "")
@@ -49,6 +55,7 @@ var codegenCmd = &cobra.Command{
 			return nil
 		}
 
+		t1 := time.Now()
 		bi := build_info.NewBuildInfo(cfg)
 		t2 := time.Now()
 		diff := t2.Sub(t1)
