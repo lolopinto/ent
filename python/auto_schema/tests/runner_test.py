@@ -1099,6 +1099,88 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_json, new_table_names=['tbl'])
 
+    @pytest.mark.usefixtures("metadata_with_json")
+    def test_change_jsonb_index_type_explicit(self, new_test_runner, metadata_with_json):
+        r = new_test_runner(metadata_with_json)
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_json, new_table_names=['tbl'])
+
+        t = r.get_metadata().tables.get('tbl')
+        indexes = {
+            index.name: index for index in t.indexes}
+
+        index = indexes.get('tbl_nullable_jsonb_idx')
+        assert index.kwargs.get('postgresql_using') == 'btree'
+        index.kwargs['postgresql_using'] = 'gin'
+        r2 = testingutils.recreate_with_new_metadata(
+            r, new_test_runner, metadata_with_json, lambda _: t)
+
+        diff = r2.compute_changes()
+        assert len(diff) == 1
+        assert isinstance(diff[0], alembicops.ModifyTableOps)
+        modify_op = diff[0]
+        assert len(modify_op.ops) == 2
+        # we drop and recreate index
+        assert isinstance(modify_op.ops[0], alembicops.DropIndexOp)
+        assert isinstance(modify_op.ops[1], alembicops.CreateIndexOp)
+
+        r2.run()
+        testingutils.assert_num_files(r2, 2)
+        testingutils.validate_metadata_after_change(r2, r2.get_metadata())
+
+    @pytest.mark.usefixtures("metadata_with_json")
+    def test_change_jsonb_index_type_no_explicit(self, new_test_runner, metadata_with_json):
+        r = new_test_runner(metadata_with_json)
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_json, new_table_names=['tbl'])
+
+        t = r.get_metadata().tables.get('tbl')
+        indexes = {
+            index.name: index for index in t.indexes}
+
+        index = indexes.get('tbl_default_jsonb_idx')
+        assert index.kwargs.get('postgresql_using') == False
+        index.kwargs['postgresql_using'] = 'gin'
+        r2 = testingutils.recreate_with_new_metadata(
+            r, new_test_runner, metadata_with_json, lambda _: t)
+
+        diff = r2.compute_changes()
+        assert len(diff) == 1
+        r2.run()
+        assert isinstance(diff[0], alembicops.ModifyTableOps)
+        modify_op = diff[0]
+        assert len(modify_op.ops) == 2
+        # we drop and recreate index
+        assert isinstance(modify_op.ops[0], alembicops.DropIndexOp)
+        assert isinstance(modify_op.ops[1], alembicops.CreateIndexOp)
+
+        r2.run()
+        testingutils.assert_num_files(r2, 2)
+        testingutils.validate_metadata_after_change(r2, r2.get_metadata())
+
+    @pytest.mark.usefixtures("metadata_with_json")
+    def test_change_jsonb_index_type_implicit_explicit_btree(self, new_test_runner, metadata_with_json):
+        r = new_test_runner(metadata_with_json)
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_json, new_table_names=['tbl'])
+
+        t = r.get_metadata().tables.get('tbl')
+        indexes = {
+            index.name: index for index in t.indexes}
+
+        index = indexes.get('tbl_default_jsonb_idx')
+        assert index.kwargs.get('postgresql_using') == False
+        index.kwargs['postgresql_using'] = 'btree'
+        r2 = testingutils.recreate_with_new_metadata(
+            r, new_test_runner, metadata_with_json, lambda _: t)
+
+        diff = r2.compute_changes()
+        assert len(diff) == 0
+
+        r2.run()
+        testingutils.assert_num_files(r2, 1)
+        testingutils.validate_metadata_after_change(r2, r2.get_metadata())
+
     @pytest.mark.usefixtures("metadata_with_table")
     def test_full_text_index_added_and_removed(self, new_test_runner, metadata_with_table):
         testingutils.make_changes_and_restore(

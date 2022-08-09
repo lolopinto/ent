@@ -1171,7 +1171,7 @@ func TestIndices(t *testing.T) {
 				},
 			},
 		},
-		"index-type-specified": {
+		"list-index-type-specified": {
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(
 					`import {Schema, Field, StringListType, Index, BaseEntSchema} from "{schema}";
@@ -1200,6 +1200,47 @@ func TestIndices(t *testing.T) {
 						{
 							Name:      "users_emails_idx",
 							Columns:   []string{"emails"},
+							IndexType: input.Gin,
+						},
+					},
+				},
+			},
+		},
+		"jsonb-index-type": {
+			code: map[string]string{
+				"user.ts": testhelper.GetCodeWithSchema(
+					`import { StructType, StringType, EntSchema} from "{schema}";
+
+					const User = new EntSchema({
+						fields: {
+							foo: StructType({
+								tsType: 'FooType',
+								fields: {
+									bar: StringType(),
+								},
+								name: 'foo',
+							}),
+						},
+												
+						indices: [
+							{
+								name: "users_foo_idx",
+								columns: ["foo"],
+								indexType: 'gin',
+							},
+						],
+					});
+					
+					export default User;`,
+				),
+			},
+			expectedMap: map[string]*schema.NodeData{
+				"User": {
+					Constraints: constraintsWithNodeConstraints("users"),
+					Indices: []*input.Index{
+						{
+							Name:      "users_foo_idx",
+							Columns:   []string{"foo"},
 							IndexType: input.Gin,
 						},
 					},

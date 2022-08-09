@@ -318,10 +318,18 @@ def metadata_with_arrays():
 def metadata_with_json():
     metadata = sa.MetaData()
     sa.Table("tbl", metadata,
+             # json indexes need work...
              sa.Column('jsonb', postgresql.JSONB, nullable=False),
              sa.Column('jsonb_null', postgresql.JSONB, nullable=True),
+             sa.Column('jsonb2_null', postgresql.JSONB, nullable=True),
              sa.Column('json', postgresql.JSON, nullable=False),
-             sa.Column('json_null', postgresql.JSON, nullable=True)
+             sa.Column('json_null', postgresql.JSON, nullable=True),
+             sa.Index('tbl_jsonb_idx', 'jsonb', postgresql_using='gin'),
+             # just to confirm btree works
+             sa.Index('tbl_nullable_jsonb_idx', 'jsonb_null',
+                      postgresql_using='btree'),
+             # index with no type..
+             sa.Index('tbl_default_jsonb_idx', 'jsonb2_null'),
              )
     return metadata
 

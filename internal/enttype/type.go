@@ -2478,6 +2478,12 @@ func IsListType(t Type) bool {
 	return ok || ok2
 }
 
+func IsJSONBType(t Type) bool {
+	_, ok := t.(*JSONBType)
+	_, ok2 := t.(*NullableJSONBType)
+	return ok || ok2
+}
+
 func IsIDType(t Type) bool {
 	_, ok := t.(*IDType)
 	_, ok2 := t.(*NullableIDType)

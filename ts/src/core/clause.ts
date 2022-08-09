@@ -1,3 +1,4 @@
+import * as pgp from "pg-promise";
 import DB, { Dialect } from "./db";
 
 // NOTE: we use ? for sqlite dialect even though it supports $1 like postgres so that it'll be easier to support different dialects down the line
@@ -618,4 +619,80 @@ export function sensitiveValue(val: any): SensitiveValue {
       return "*".repeat(`${val}`.length);
     },
   };
+}
+
+// https://www.postgresql.org/docs/12/functions-json.html#FUNCTIONS-JSON-OP-TABLE
+// e.g. useful for IS NULL check
+export function JSONObjectFieldKeyASJSON(col: string, field: string) {
+  return `${col}->'${field}'`;
+}
+
+export function JSONObjectFieldKeyAsText(col: string, field: string) {
+  return `${col}->>'${field}'`;
+}
+
+export function ArrayIndexAsText(col: string, index: number) {
+  return `${col}->>${index}`;
+}
+
+type predicate = "==" | ">" | "<" | "!=" | ">=" | "<=";
+
+class jSONPathValuePredicateClause implements Clause {
+  private idx: number = 1;
+  constructor(
+    protected col: string,
+    protected path: string,
+    protected value: string | number,
+    private pred: predicate,
+  ) {}
+
+  clause(idx: number): string {
+    this.idx = idx;
+    if (DB.getDialect() !== Dialect.Postgres) {
+      throw new Error(`not supported`);
+    }
+    // TODO custom type formatting
+    // https://stackoverflow.com/questions/65200620/bind-message-supplies-2-parameters-but-prepared-statement-requires-1
+    return `${this.col} @@ '${this.path} ${this.pred} $${idx}'`;
+  }
+
+  columns(): string[] {
+    return [this.col];
+  }
+
+  values(): any[] {
+    if (isSensitive(this.value)) {
+      // TODO
+      return [this.value.value()];
+    }
+    const wrap = (a: any) => {
+      return {
+        rawType: true,
+        toPostgres: () => pgp.as.format(`{$${this.idx}#}`, [a]),
+      };
+    };
+
+    return [wrap(this.value)];
+  }
+
+  logValues(): any[] {
+    if (isSensitive(this.value)) {
+      return [this.value.logValue()];
+    }
+    return [this.value];
+  }
+
+  instanceKey(): string {
+    return `${this.col}${this.path}${rawValue(this.value)}${this.pred}`;
+  }
+}
+
+// https://www.postgresql.org/docs/12/functions-json.html#FUNCTIONS-JSON-OP-TABLE
+export function JSONPathValuePredicate(
+  dbCol: string,
+  path: string,
+  val: string | number,
+  pred: predicate,
+): Clause {
+  return new jSONPathValuePredicateClause(dbCol, path, val, pred);
 }
