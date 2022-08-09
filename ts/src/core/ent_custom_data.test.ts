@@ -31,6 +31,7 @@ import { MockLogs } from "../testutils/mock_log";
 import { clearLogLevels, setLogLevels } from "./logger";
 import DB, { Dialect } from "./db";
 import { loadConfig } from "./config";
+import { ObjectLoaderFactory } from "./loaders";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -80,16 +81,18 @@ const softDeleteOptions: LoadCustomEntOptions<User> = {
   clause: clause.Eq("deleted_at", null),
 };
 
-// TODO new test for this
 const softDeleteWithLoaderFactoryOptions: LoadCustomEntOptions<User> = {
   tableName: "users",
   fields: ["*"],
   ent: User,
-  //  clause: clause.Eq("deleted_at", null),
-  // TODO loaderFactory with clause...
+  loaderFactory: new ObjectLoaderFactory({
+    tableName: "users",
+    fields: ["*"],
+    key: "id",
+    clause: clause.Eq("deleted_at", null),
+    instanceKey: "loader-factory-deleted-at",
+  }),
 };
-
-// TODO function should throw if we have clause both ways
 
 describe("postgres no soft delete", () => {
   beforeAll(async () => {
@@ -106,7 +109,6 @@ describe("postgres no soft delete", () => {
   commonTests(options);
 });
 
-// TODO...
 describe("sqlite no soft delete", () => {
   setupSqlite(
     `sqlite:///ent_custom_data_test.db`,
@@ -148,7 +150,27 @@ describe("postgres with soft delete", () => {
   });
 
   commonTests(softDeleteOptions);
-  softDeleteTests();
+  softDeleteTests(softDeleteOptions);
+});
+
+describe("postgres with soft delete loader factory", () => {
+  beforeAll(() => {
+    loadConfig({
+      dbConnectionString: "postgresql:///foo",
+    });
+  });
+
+  beforeEach(async () => {
+    await createAllRows(true);
+    ml.clear();
+  });
+
+  afterEach(() => {
+    QueryRecorder.clear();
+  });
+
+  commonTests(softDeleteWithLoaderFactoryOptions);
+  softDeleteTests(softDeleteWithLoaderFactoryOptions);
 });
 
 describe("sqlite with soft delete", () => {
@@ -174,7 +196,59 @@ describe("sqlite with soft delete", () => {
   });
 
   commonTests(softDeleteOptions);
-  softDeleteTests();
+  softDeleteTests(softDeleteOptions);
+});
+
+describe("sqlite with soft delete loader factory", () => {
+  setupSqlite(
+    `sqlite:///ent_custom_data_soft_deletetest.db`,
+    () => [
+      table(
+        "users",
+        integer("id", { primaryKey: true }),
+        text("baz"),
+        text("bar"),
+        text("foo"),
+        timestamp("deleted_at", { nullable: true }),
+      ),
+    ],
+    {
+      disableDeleteAfterEachTest: true,
+    },
+  );
+
+  beforeAll(async () => {
+    await createAllRows();
+  });
+
+  commonTests(softDeleteWithLoaderFactoryOptions);
+  softDeleteTests(softDeleteWithLoaderFactoryOptions);
+});
+
+test("load custom data with both", async () => {
+  try {
+    await loadCustomData(
+      {
+        tableName: "users",
+        fields: ["*"],
+        loaderFactory: new ObjectLoaderFactory({
+          tableName: "users",
+          fields: ["*"],
+          key: "id",
+          clause: clause.Eq("deleted_at", null),
+          instanceKey: "loader-factory-deleted-at",
+        }),
+        clause: clause.Eq("deleted_at", null),
+      },
+      clause.Eq("id", 2),
+      getCtx(undefined),
+    );
+    throw new Error("should have thrown");
+  } catch (err) {
+    expect((err as Error).message).toBe(
+      "cannot pass both options.clause && optsions.loaderFactory.options.clause",
+    );
+  }
 });
 
 const ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -290,9 +364,12 @@ async function queryViaSQLQuery(
   expect(ml.logs.length).toBe(2);
 }
 
-async function querySoftDeleteViaSQLQuery(ctx: Context | undefined) {
+async function querySoftDeleteViaSQLQuery(
+  opts: LoadCustomEntOptions<User>,
+  ctx: Context | undefined,
+) {
   const data = await loadCustomData(
-    softDeleteOptions,
+    opts,
     "select * from users where deleted_at IS NOT NULL order by id desc",
     ctx,
   );
@@ -301,7 +378,7 @@ async function querySoftDeleteViaSQLQuery(ctx: Context | undefined) {
 
   // re-query. hits the db
   const data2 = await loadCustomData(
-    softDeleteOptions,
+    opts,
     "select * from users where deleted_at IS NOT NULL order by id desc",
     ctx,
   );
@@ -343,10 +420,13 @@ async function queryViaParameterizedQuery(
   expect(ml.logs.length).toBe(2);
 }
 
-async function querySoftDeleteViaParameterizedQuery(ctx: Context | undefined) {
+async function querySoftDeleteViaParameterizedQuery(
+  opts: LoadCustomEntOptions<User>,
+  ctx: Context | undefined,
+) {
   const dialect = DB.getDialect();
   const data = await loadCustomData(
-    softDeleteOptions,
+    opts,
     {
       query: `select * from users where deleted_at IS NOT NULL AND id > ${
         dialect === Dialect.Postgres ? "$1" : "?"
@@ -360,7 +440,7 @@ async function querySoftDeleteViaParameterizedQuery(ctx: Context | undefined) {
 
   // re-query. hits the db
   const data2 = await loadCustomData(
-    softDeleteOptions,
+    opts,
     {
       query: `select * from users where deleted_at IS NOT NULL AND id > ${
         dialect === Dialect.Postgres ? "$1" : "?"
@@ -536,7 +616,7 @@ function commonTests(opts: LoadCustomEntOptions<User>) {
   });
 }
 
-function softDeleteTests() {
+function softDeleteTests(opts: LoadCustomEntOptions<User>) {
   describe("loadCustomData soft delete", () => {
     beforeEach(async () => {
       await softDelete(softDeleteIds);
@@ -545,67 +625,64 @@ function softDeleteTests() {
 
     test("query via SQL with context", async () => {
       // query via sql doesn't affect soft delete so query is the same.
-      await queryViaSQLQuery(softDeleteOptions, getCtx(undefined));
+      await queryViaSQLQuery(opts, getCtx(undefined));
       ml.clear();
 
-      await querySoftDeleteViaSQLQuery(getCtx(undefined));
+      await querySoftDeleteViaSQLQuery(opts, getCtx(undefined));
     });
 
     test("query via SQL without context", async () => {
       // query via sql doesn't affect soft delete so query is the same.
-      await queryViaSQLQuery(softDeleteOptions, undefined);
+      await queryViaSQLQuery(opts, undefined);
       ml.clear();
 
-      await querySoftDeleteViaSQLQuery(undefined);
+      await querySoftDeleteViaSQLQuery(opts, undefined);
     });
 
     test("clause with context", async () => {
       // clause automatically adds transformed clause so we end up subtracting deleted_ids 7,8,9,10
-      await queryViaClause(softDeleteOptions, getCtx(undefined), [6]);
+      await queryViaClause(opts, getCtx(undefined), [6]);
     });
 
     test("clause without context", async () => {
       // clause automatically adds transformed clause so we end up subtracting deleted_ids 7,8,9,10
-      await queryViaClause(softDeleteOptions, undefined, [6]);
+      await queryViaClause(opts, undefined, [6]);
     });
 
     test("options with context", async () => {
-      await queryViaOptions(softDeleteOptions, getCtx(undefined), [6]);
+      await queryViaOptions(opts, getCtx(undefined), [6]);
     });
 
     test("options without context", async () => {
-      await queryViaOptions(softDeleteOptions, undefined, [6]);
+      await queryViaOptions(opts, undefined, [6]);
     });
 
     test("options disable transformations with context", async () => {
-      await queryViaOptionsDisableTransformations(
-        softDeleteOptions,
-        getCtx(undefined),
-      );
+      await queryViaOptionsDisableTransformations(opts, getCtx(undefined));
     });
 
     test("options disable transformations without context", async () => {
-      await queryViaOptionsDisableTransformations(softDeleteOptions, undefined);
+      await queryViaOptionsDisableTransformations(opts, undefined);
     });
 
     test("query via parameterized query with context", async () => {
       // query via parameterized query doesn't affect soft delete so query is the same.
 
-      await queryViaParameterizedQuery(softDeleteOptions, getCtx(undefined));
+      await queryViaParameterizedQuery(opts, getCtx(undefined));
 
       ml.clear();
 
-      await querySoftDeleteViaParameterizedQuery(getCtx(undefined));
+      await querySoftDeleteViaParameterizedQuery(opts, getCtx(undefined));
     });
 
     test("query via parameterized query without context", async () => {
       // query via parameterized doesn't affect soft delete so query is the same.
 
-      await queryViaParameterizedQuery(softDeleteOptions, undefined);
+      await queryViaParameterizedQuery(opts, undefined);
 
       ml.clear();
 
-      await querySoftDeleteViaParameterizedQuery(undefined);
+      await querySoftDeleteViaParameterizedQuery(opts, undefined);
     });
   });
 
@@ -621,7 +698,7 @@ function softDeleteTests() {
       // soft deleted items are included...
       const ents = await loadCustomEnts(
         v,
-        softDeleteOptions,
+        opts,
         "select * from users order by id desc",
       );
       expect(ents.length).toBe(5);
@@ -629,7 +706,7 @@ function softDeleteTests() {
 
       const ents2 = await loadCustomEnts(
         v,
-        softDeleteOptions,
+        opts,
         "select * from users WHERE deleted_at is NULL order by id desc",
       );
       expect(ents2.length).toBe(3);
@@ -639,22 +716,14 @@ function softDeleteTests() {
     test("clause", async () => {
       const v = getIDViewer(1, getCtx());
 
-      const ents = await loadCustomEnts(
-        v,
-        softDeleteOptions,
-        clause.Eq("bar", "bar2"),
-      );
+      const ents = await loadCustomEnts(v, opts, clause.Eq("bar", "bar2"));
       // not visible... all even
       expect(ents.length).toBe(0);
 
       // reload with different viewer and we should get data now
       const v2 = getIDViewer(2, getCtx());
 
-      const ents2 = await loadCustomEnts(
-        v2,
-        softDeleteOptions,
-        clause.Eq("bar", "bar2"),
-      );
+      const ents2 = await loadCustomEnts(v2, opts, clause.Eq("bar", "bar2"));
       // soft deleted items not included...
       expect(ents2.length).toBe(3);
       // order not actually guaranteed so this may eventually break
@@ -664,8 +733,8 @@ function softDeleteTests() {
     test("options", async () => {
       const v = getIDViewer(1, getCtx());
 
-      const ents = await loadCustomEnts(v, softDeleteOptions, {
-        ...options,
+      const ents = await loadCustomEnts(v, opts, {
+        ...opts,
         // deleted_at automatically added...
         clause: clause.GreaterEq("id", 5),
         orderby: "id desc",
@@ -675,8 +744,8 @@ function softDeleteTests() {
       // only odd numbers visible
       expect(ents.map((ent) => ent.id)).toEqual([5]);
 
-      const ents2 = await loadCustomEnts(v, softDeleteOptions, {
-        ...options,
+      const ents2 = await loadCustomEnts(v, opts, {
+        ...opts,
         // deleted_at automatically added...
         clause: clause.GreaterEq("id", 5),
         orderby: "id desc",

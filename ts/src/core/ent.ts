@@ -19,7 +19,6 @@ import {
   LoadCustomEntOptions,
   EdgeQueryableDataOptions,
   Context,
-  SelectBaseDataOptions,
   SelectDataOptions,
   CreateRowOptions,
   QueryDataOptions,
@@ -385,10 +384,12 @@ export async function loadCustomData(
   query: CustomQuery,
   context: Context | undefined,
 ): Promise<Data[]> {
-  //loaderFactory not here...
-  //  options.
-
   function getClause(cls: clause.Clause) {
+    if (options.clause && options.loaderFactory?.options?.clause) {
+      throw new Error(
+        `cannot pass both options.clause && optsions.loaderFactory.options.clause`,
+      );
+    }
     let optClause = options.clause || options.loaderFactory?.options?.clause;
     if (typeof optClause === "function") {
       optClause = optClause();
