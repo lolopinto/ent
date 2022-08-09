@@ -80,6 +80,17 @@ const softDeleteOptions: LoadCustomEntOptions<User> = {
   clause: clause.Eq("deleted_at", null),
 };
 
+// TODO new test for this
+const softDeleteWithLoaderFactoryOptions: LoadCustomEntOptions<User> = {
+  tableName: "users",
+  fields: ["*"],
+  ent: User,
+  //  clause: clause.Eq("deleted_at", null),
+  // TODO loaderFactory with clause...
+};
+
+// TODO function should throw if we have clause both ways
+
 describe("postgres no soft delete", () => {
   beforeAll(async () => {
     loadConfig({

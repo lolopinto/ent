@@ -16,6 +16,7 @@ import TodoSchema from "src/schema/todo_schema";
 
 // we want to reuse these and not create a new one every time...
 // so that the cache is shared
+// TODO https://github.com/lolopinto/ent/issues/1048 can we skip getTransformedReadClause
 const openTodosLoader = new QueryLoaderFactory({
   ...Todo.loaderOptions(),
   groupCol: "creator_id",
@@ -26,7 +27,7 @@ const openTodosLoader = new QueryLoaderFactory({
   toPrime: [todoLoader],
 });
 
-// TODO can we skip getTransformedReadClause
+// TODO https://github.com/lolopinto/ent/issues/1048 can we skip getTransformedReadClause
 const openTodosCountLoader = new RawCountLoaderFactory({
   //  ...Todo.loaderOptions(),
   tableName: Todo.loaderOptions().tableName,
@@ -46,6 +47,8 @@ export class AccountToOpenTodosQuery extends CustomEdgeQueryBase<
       src,
       countLoaderFactory: openTodosCountLoader,
       dataLoaderFactory: openTodosLoader,
+      // TODO https://github.com/lolopinto/ent/issues/1048 can we skip getTransformedReadClause
+      // have the info here and can use loaderFactory...
       options: Todo.loaderOptions(),
     });
   }
