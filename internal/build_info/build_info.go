@@ -51,6 +51,9 @@ type Config interface {
 // next 2 set via:
 // go install -v -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=v0.ss' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'"
 
+// local version (in development):
+// go install -v -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=v0.ss' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'" .
+
 // DockerVersion encompasses go or auto_schema
 var DockerVersion string
 
