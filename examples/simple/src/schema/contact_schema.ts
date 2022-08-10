@@ -12,10 +12,12 @@ const ContactSchema = new EntSchema({
 
   fields: {
     email_ids: UUIDListType({
+      index: true,
       defaultValueOnCreate: () => [],
       fieldEdge: { schema: "ContactEmail" },
     }),
     phone_number_ids: UUIDListType({
+      index: true,
       defaultValueOnCreate: () => [],
       fieldEdge: { schema: "ContactPhoneNumber" },
     }),

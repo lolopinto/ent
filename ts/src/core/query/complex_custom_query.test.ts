@@ -13,7 +13,7 @@ import {
   setupTempDB,
 } from "../../testutils/fake_data/test_helpers";
 import { setLogLevels } from "../logger";
-import { TempDB } from "../../testutils/db/test_db";
+import { TempDB } from "../../testutils/db/temp_db";
 import { buildQuery } from "../ent";
 import * as clause from "../clause";
 import { Viewer } from "../base";

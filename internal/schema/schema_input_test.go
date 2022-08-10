@@ -536,14 +536,6 @@ func TestParseInputWithFieldEdge(t *testing.T) {
 						PrimaryKey: true,
 					},
 				},
-				// this is no longer needed. see test below.
-				// we still support this if it exists for backwards compatibility
-				AssocEdges: []*input.AssocEdge{
-					{
-						Name:       "CreatedEvents",
-						SchemaName: "Event",
-					},
-				},
 			},
 			"Event": {
 				Fields: []*input.Field{
@@ -591,6 +583,57 @@ func TestParseInputWithFieldEdge(t *testing.T) {
 	// 2 nodes, 1 edge
 	testConsts(t, eventConfig.NodeData.ConstantGroups, 1, 0)
 	testConsts(t, userConfig.NodeData.ConstantGroups, 1, 1)
+}
+
+func TestParseInputWitPrivateFieldEdge(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+				},
+			},
+			"Event": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "UserID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						FieldEdge: &input.FieldEdge{
+							Schema: "User",
+						},
+						Private: &input.PrivateOptions{},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.GoLang)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	// still config name because of artifact of go and old schema
+	eventConfig := schema.Nodes["EventConfig"]
+	assert.NotNil(t, eventConfig)
+
+	userEdge := eventConfig.NodeData.EdgeInfo.GetFieldEdgeByName("User")
+	assert.Nil(t, userEdge)
 }
 
 func TestParseInputWithInvalidFieldEdgeSchema(t *testing.T) {
@@ -1125,7 +1168,7 @@ func TestWithPatterns(t *testing.T) {
 	require.NotNil(t, likesEdge)
 	assert.Len(t, userCfg.NodeData.EdgeInfo.Associations, 1)
 	assert.Equal(t, "UserToLikedObjects", likesEdge.TsEdgeConst)
-	assert.Equal(t, "AssocEdge", likesEdge.AssocEdgeBase())
+	assert.Equal(t, "AssocEdge", likesEdge.AssocEdgeBaseImport(&codegenapi.DummyConfig{}).Import)
 	assert.Equal(t, "UserToLikedObjectsQueryBase", likesEdge.EdgeQueryBase())
 	assert.Equal(t, "UserToLikedObjectsEdge", likesEdge.TsEdgeQueryEdgeName())
 	assert.Equal(t, "UserToLikedObjectsQuery", likesEdge.TsEdgeQueryName())
@@ -1139,7 +1182,7 @@ func TestWithPatterns(t *testing.T) {
 	require.NotNil(t, likersEdge)
 	assert.Len(t, postCfg.NodeData.EdgeInfo.Associations, 1)
 	assert.Equal(t, "LikedPostToLikers", likersEdge.TsEdgeConst)
-	assert.Equal(t, "LikedPostToLikersEdge", likersEdge.AssocEdgeBase())
+	assert.Equal(t, "LikedPostToLikersEdge", likersEdge.AssocEdgeBaseImport(&codegenapi.DummyConfig{}).Import)
 	assert.Equal(t, "LikedPostToLikersQuery", likersEdge.EdgeQueryBase())
 	assert.Equal(t, "PostToLikersEdge", likersEdge.TsEdgeQueryEdgeName())
 	assert.Equal(t, "PostToLikersQuery", likersEdge.TsEdgeQueryName())
@@ -1153,7 +1196,7 @@ func TestWithPatterns(t *testing.T) {
 	require.NotNil(t, likersEdge2)
 	assert.Len(t, groupCfg.NodeData.EdgeInfo.Associations, 1)
 	assert.Equal(t, "LikedPostToLikers", likersEdge2.TsEdgeConst)
-	assert.Equal(t, "LikedPostToLikersEdge", likersEdge2.AssocEdgeBase())
+	assert.Equal(t, "LikedPostToLikersEdge", likersEdge2.AssocEdgeBaseImport(&codegenapi.DummyConfig{}).Import)
 	assert.Equal(t, "LikedPostToLikersQuery", likersEdge2.EdgeQueryBase())
 	assert.Equal(t, "GroupToLikersEdge", likersEdge2.TsEdgeQueryEdgeName())
 	assert.Equal(t, "GroupToLikersQuery", likersEdge2.TsEdgeQueryName())
@@ -1169,7 +1212,7 @@ func TestWithPatterns(t *testing.T) {
 	patternLikersEdge := likersPattern.AssocEdges["likers"]
 	require.NotNil(t, patternLikersEdge)
 	assert.Equal(t, "LikedPostToLikers", patternLikersEdge.TsEdgeConst)
-	assert.Equal(t, "AssocEdge", patternLikersEdge.AssocEdgeBase())
+	assert.Equal(t, "AssocEdge", patternLikersEdge.AssocEdgeBaseImport(&codegenapi.DummyConfig{}).Import)
 	assert.Equal(t, "LikedPostToLikersQueryBase", patternLikersEdge.EdgeQueryBase())
 	assert.Equal(t, "LikedPostToLikersEdge", patternLikersEdge.TsEdgeQueryEdgeName())
 	assert.Equal(t, "LikedPostToLikersQuery", patternLikersEdge.TsEdgeQueryName())
@@ -1372,7 +1415,7 @@ func TestWithPatternsNoEdgeConstName(t *testing.T) {
 	require.NotNil(t, likesEdge)
 	assert.Len(t, userCfg.NodeData.EdgeInfo.Associations, 1)
 	assert.Equal(t, "UserToLikes", likesEdge.TsEdgeConst)
-	assert.Equal(t, "AssocEdge", likesEdge.AssocEdgeBase())
+	assert.Equal(t, "AssocEdge", likesEdge.AssocEdgeBaseImport(&codegenapi.DummyConfig{}).Import)
 	assert.Equal(t, "UserToLikesQueryBase", likesEdge.EdgeQueryBase())
 	assert.Equal(t, "UserToLikesEdge", likesEdge.TsEdgeQueryEdgeName())
 	assert.Equal(t, "UserToLikesQuery", likesEdge.TsEdgeQueryName())
@@ -1387,7 +1430,7 @@ func TestWithPatternsNoEdgeConstName(t *testing.T) {
 	assert.Len(t, postCfg.NodeData.EdgeInfo.Associations, 1)
 	// these 3 are wrong and lead to codegen issues
 	assert.Equal(t, "ObjectToLikers", likersEdge.TsEdgeConst)
-	assert.Equal(t, "ObjectToLikersEdge", likersEdge.AssocEdgeBase())
+	assert.Equal(t, "ObjectToLikersEdge", likersEdge.AssocEdgeBaseImport(&codegenapi.DummyConfig{}).Import)
 	assert.Equal(t, "ObjectToLikersQuery", likersEdge.EdgeQueryBase())
 	assert.Equal(t, "PostToLikersEdge", likersEdge.TsEdgeQueryEdgeName())
 	assert.Equal(t, "PostToLikersQuery", likersEdge.TsEdgeQueryName())
@@ -1401,7 +1444,7 @@ func TestWithPatternsNoEdgeConstName(t *testing.T) {
 	require.NotNil(t, likersEdge2)
 	assert.Len(t, groupCfg.NodeData.EdgeInfo.Associations, 1)
 	assert.Equal(t, "ObjectToLikers", likersEdge2.TsEdgeConst)
-	assert.Equal(t, "ObjectToLikersEdge", likersEdge2.AssocEdgeBase())
+	assert.Equal(t, "ObjectToLikersEdge", likersEdge2.AssocEdgeBaseImport(&codegenapi.DummyConfig{}).Import)
 	assert.Equal(t, "ObjectToLikersQuery", likersEdge2.EdgeQueryBase())
 	assert.Equal(t, "GroupToLikersEdge", likersEdge2.TsEdgeQueryEdgeName())
 	assert.Equal(t, "GroupToLikersQuery", likersEdge2.TsEdgeQueryName())
@@ -1417,7 +1460,7 @@ func TestWithPatternsNoEdgeConstName(t *testing.T) {
 	patternLikersEdge := likersPattern.AssocEdges["likers"]
 	require.NotNil(t, patternLikersEdge)
 	assert.Equal(t, "ObjectToLikers", patternLikersEdge.TsEdgeConst)
-	assert.Equal(t, "AssocEdge", patternLikersEdge.AssocEdgeBase())
+	assert.Equal(t, "AssocEdge", patternLikersEdge.AssocEdgeBaseImport(&codegenapi.DummyConfig{}).Import)
 	assert.Equal(t, "ObjectToLikersQueryBase", patternLikersEdge.EdgeQueryBase())
 	assert.Equal(t, "ObjectToLikersEdge", patternLikersEdge.TsEdgeQueryEdgeName())
 	assert.Equal(t, "ObjectToLikersQuery", patternLikersEdge.TsEdgeQueryName())

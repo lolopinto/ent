@@ -4,6 +4,7 @@ import DB, { Dialect } from "./db";
 
 export interface Clause {
   clause(idx: number): string;
+  columns(): string[];
   values(): any[];
   instanceKey(): string;
   // values to log when querying
@@ -35,13 +36,13 @@ class simpleClause implements Clause {
     protected col: string,
     private value: any,
     private op: string,
-    private handleSqliteNull?: Clause,
+    private handleNull?: Clause,
   ) {}
 
   clause(idx: number): string {
-    const sqliteClause = this.sqliteNull();
-    if (sqliteClause) {
-      return sqliteClause.clause(idx);
+    const nullClause = this.nullClause();
+    if (nullClause) {
+      return nullClause.clause(idx);
     }
     if (DB.getDialect() === Dialect.Postgres) {
       return `${this.col} ${this.op} $${idx}`;
@@ -49,18 +50,19 @@ class simpleClause implements Clause {
     return `${this.col} ${this.op} ?`;
   }
 
-  private sqliteNull() {
-    if (!this.handleSqliteNull || this.value !== null) {
+  private nullClause() {
+    if (!this.handleNull || this.value !== null) {
       return;
     }
-    if (DB.getDialect() !== Dialect.SQLite) {
-      return;
-    }
-    return this.handleSqliteNull;
+    return this.handleNull;
+  }
+
+  columns(): string[] {
+    return [this.col];
   }
 
   values(): any[] {
-    const sqliteClause = this.sqliteNull();
+    const sqliteClause = this.nullClause();
     if (sqliteClause) {
       return sqliteClause.values();
     }
@@ -71,7 +73,7 @@ class simpleClause implements Clause {
   }
 
   logValues(): any[] {
-    const sqliteClause = this.sqliteNull();
+    const sqliteClause = this.nullClause();
     if (sqliteClause) {
       return sqliteClause.logValues();
     }
@@ -82,7 +84,7 @@ class simpleClause implements Clause {
   }
 
   instanceKey(): string {
-    const sqliteClause = this.sqliteNull();
+    const sqliteClause = this.nullClause();
     if (sqliteClause) {
       return sqliteClause.instanceKey();
     }
@@ -95,6 +97,10 @@ class isNullClause implements Clause {
 
   clause(idx: number): string {
     return `${this.col} IS NULL`;
+  }
+
+  columns(): string[] {
+    return [];
   }
 
   values(): any[] {
@@ -115,6 +121,10 @@ class isNotNullClause implements Clause {
 
   clause(idx: number): string {
     return `${this.col} IS NOT NULL`;
+  }
+
+  columns(): string[] {
+    return [];
   }
 
   values(): any[] {
@@ -140,6 +150,10 @@ class arraySimpleClause implements Clause {
     return `${this.col} ${this.op} ?`;
   }
 
+  columns(): string[] {
+    return [this.col];
+  }
+
   values(): any[] {
     if (isSensitive(this.value)) {
       return [this.value.value()];
@@ -156,6 +170,69 @@ class arraySimpleClause implements Clause {
 
   instanceKey(): string {
     return `${this.col}${this.op}${rawValue(this.value)}`;
+  }
+}
+
+class postgresArrayOperator implements Clause {
+  constructor(
+    protected col: string,
+    protected value: any,
+    private op: string,
+    private not?: boolean,
+  ) {}
+
+  clause(idx: number): string {
+    if (DB.getDialect() === Dialect.Postgres) {
+      if (this.not) {
+        return `NOT ${this.col} ${this.op} $${idx}`;
+      }
+      return `${this.col} ${this.op} $${idx}`;
+    }
+    throw new Error(`not supported`);
+  }
+
+  columns(): string[] {
+    return [this.col];
+  }
+
+  values(): any[] {
+    if (isSensitive(this.value)) {
+      return [`{${this.value.value()}}`];
+    }
+    return [`{${this.value}}`];
+  }
+
+  logValues(): any[] {
+    if (isSensitive(this.value)) {
+      return [this.value.logValue()];
+    }
+    return [this.value];
+  }
+
+  instanceKey(): string {
+    if (this.not) {
+      return `NOT:${this.col}${this.op}${rawValue(this.value)}`;
+    }
+    return `${this.col}${this.op}${rawValue(this.value)}`;
+  }
+}
+
+class postgresArrayOperatorList extends postgresArrayOperator {
+  constructor(col: string, value: any[], op: string, not?: boolean) {
+    super(col, value, op, not);
+  }
+
+  values(): any[] {
+    return [
+      `{${this.value
+        .map((v: any) => {
+          if (isSensitive(v)) {
+            return v.value();
+          }
+          return v;
+        })
+        .join(", ")}}`,
+    ];
   }
 }
 
@@ -182,6 +259,10 @@ class inClause implements Clause {
     // or anything that's doing a composite query so next clause knows where to start
     // or change to a sqlx.Rebind format
     // here's what sqlx does: https://play.golang.org/p/vPzvYqeAcP0
+  }
+
+  columns(): string[] {
+    return [this.col];
   }
 
   values(): any[] {
@@ -223,6 +304,14 @@ class compositeClause implements Clause {
       idx = idx + clause.values().length;
     }
     return clauses.join(this.sep);
+  }
+
+  columns(): string[] {
+    const ret: string[] = [];
+    for (const cls of this.clauses) {
+      ret.push(...cls.columns());
+    }
+    return ret;
   }
 
   values(): any[] {
@@ -268,6 +357,7 @@ class tsQueryClause implements Clause {
       value: this.val,
     };
   }
+
   clause(idx: number): string {
     const { language } = this.getInfo();
     if (Dialect.Postgres === DB.getDialect()) {
@@ -280,6 +370,10 @@ class tsQueryClause implements Clause {
     }
     // FYI this doesn't actually work for sqlite since different
     return `${this.col} @@ ${this.getFunction()}('${language}', ?)`;
+  }
+
+  columns(): string[] {
+    return [this.col];
   }
 
   values(): any[] {
@@ -325,29 +419,75 @@ class websearchTosQueryClause extends tsQueryClause {
   }
 }
 
-// TODO we need to check sqlite version...
+// postgres array operators
+// https://www.postgresql.org/docs/current/functions-array.html
+
+/**
+ * creates a clause to determine if the given value is contained in the array stored in the column in the db
+ * only works with postgres gin indexes
+ * https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-GIN
+ */
+export function PostgresArrayContainsValue(col: string, value: any): Clause {
+  return new postgresArrayOperator(col, value, "@>");
+}
+
+/**
+ * creates a clause to determine if every item in the list is stored in the array stored in the column in the db
+ * only works with postgres gin indexes
+ * https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-GIN
+ */
+export function PostgresArrayContains(col: string, value: any[]): Clause {
+  return new postgresArrayOperatorList(col, value, "@>");
+}
+
+/**
+ * creates a clause to determine if the given value is NOT contained in the array stored in the column in the db
+ * only works with postgres gin indexes
+ * https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-GIN
+ */
+export function PostgresArrayNotContainsValue(col: string, value: any): Clause {
+  return new postgresArrayOperator(col, value, "@>", true);
+}
+
+/**
+ * creates a clause to determine if every item in the list is NOT stored in the array stored in the column in the db
+ * only works with postgres gin indexes
+ * https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-GIN
+ */
+export function PostgresArrayNotContains(col: string, value: any[]): Clause {
+  return new postgresArrayOperatorList(col, value, "@>", true);
+}
+
+/**
+ * creates a clause to determine if the arrays overlap, that is, do they have any elements in common
+ * only works with postgres gin indexes
+ * https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-GIN
+ */
+export function PostgresArrayOverlaps(col: string, value: any[]): Clause {
+  return new postgresArrayOperatorList(col, value, "&&");
+}
+
+/**
+ * creates a clause to determine if the arrays do not overlap, that is, do they have any elements in common
+ * only works with postgres gin indexes
+ * https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-GIN
+ */
+export function PostgresArrayNotOverlaps(col: string, value: any[]): Clause {
+  return new postgresArrayOperatorList(col, value, "&&", true);
+}
+
+/**
+ * @deprecated use PostgresArrayContainsValue
+ */
 export function ArrayEq(col: string, value: any): Clause {
   return new arraySimpleClause(col, value, "=");
 }
 
+/**
+ * @deprecated use PostgresNotArrayContains
+ */
 export function ArrayNotEq(col: string, value: any): Clause {
   return new arraySimpleClause(col, value, "!=");
-}
-
-export function ArrayGreater(col: string, value: any): Clause {
-  return new arraySimpleClause(col, value, ">");
-}
-
-export function ArrayLess(col: string, value: any): Clause {
-  return new arraySimpleClause(col, value, "<");
-}
-
-export function ArrayGreaterEq(col: string, value: any): Clause {
-  return new arraySimpleClause(col, value, ">=");
-}
-
-export function ArrayLessEq(col: string, value: any): Clause {
-  return new arraySimpleClause(col, value, "<=");
 }
 
 export function Eq(col: string, value: any): Clause {
@@ -478,4 +618,78 @@ export function sensitiveValue(val: any): SensitiveValue {
       return "*".repeat(`${val}`.length);
     },
   };
+}
+
+// These don't return Clauses but return helpful things that can be passed to clauses
+
+// https://www.postgresql.org/docs/12/functions-json.html#FUNCTIONS-JSON-OP-TABLE
+// see test in db_clause.test.ts
+// unclear best time to use this...
+export function JSONObjectFieldKeyASJSON(col: string, field: string) {
+  return `${col}->'${field}'`;
+}
+
+export function JSONObjectFieldKeyAsText(col: string, field: string) {
+  return `${col}->>'${field}'`;
+}
+
+// can't get this to work...
+// https://www.postgresql.org/docs/12/functions-json.html#FUNCTIONS-JSON-OP-TABLE
+// export function ArrayIndexAsText(col: string, index: number) {
+//   return `${col}->>${index}`;
+// }
+
+type predicate = "==" | ">" | "<" | "!=" | ">=" | "<=";
+
+class jSONPathValuePredicateClause implements Clause {
+  constructor(
+    protected col: string,
+    protected path: string,
+    protected value: any,
+    private pred: predicate,
+  ) {}
+
+  clause(idx: number): string {
+    if (DB.getDialect() !== Dialect.Postgres) {
+      throw new Error(`not supported`);
+    }
+    return `${this.col} @@ $${idx}`;
+  }
+
+  columns(): string[] {
+    return [this.col];
+  }
+
+  private wrap(val: any) {
+    return `${this.path} ${this.pred} ${JSON.stringify(val)}`;
+  }
+
+  values(): any[] {
+    if (isSensitive(this.value)) {
+      return [this.wrap(this.value.value())];
+    }
+
+    return [this.wrap(this.value)];
+  }
+
+  logValues(): any[] {
+    if (isSensitive(this.value)) {
+      return [this.wrap(this.value.logValue())];
+    }
+    return [this.wrap(this.value)];
+  }
+
+  instanceKey(): string {
+    return `${this.col}${this.path}${rawValue(this.value)}${this.pred}`;
+  }
+}
+
+// https://www.postgresql.org/docs/12/functions-json.html#FUNCTIONS-JSON-OP-TABLE
+export function JSONPathValuePredicate(
+  dbCol: string,
+  path: string,
+  val: any,
+  pred: predicate,
+): Clause {
+  return new jSONPathValuePredicateClause(dbCol, path, val, pred);
 }

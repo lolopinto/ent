@@ -33,6 +33,7 @@ export {
   loadEdgeForID2,
   loadNodesByEdge,
   getEdgeTypeInGroup,
+  setGlobalSchema,
 } from "./core/ent";
 import DB from "./core/db";
 export * from "./core/loaders";
@@ -96,10 +97,15 @@ const query = {
   LessEq: q.LessEq,
   ArrayEq: q.ArrayEq,
   ArrayNotEq: q.ArrayNotEq,
-  ArrayGreater: q.ArrayGreater,
-  ArrayLess: q.ArrayLess,
-  ArrayGreaterEq: q.ArrayGreaterEq,
-  ArrayLessEq: q.ArrayLessEq,
+  PostgresArrayContainsValue: q.PostgresArrayContainsValue,
+  PostgresArrayContains: q.PostgresArrayContains,
+  PostgresArrayNotContainsValue: q.PostgresArrayNotContainsValue,
+  PostgresArrayNotContains: q.PostgresArrayNotContains,
+  PostgresArrayOverlaps: q.PostgresArrayOverlaps,
+  PostgresArrayNotOverlaps: q.PostgresArrayNotOverlaps,
+  JSONPathValuePredicate: q.JSONPathValuePredicate,
+  JSONObjectFieldKeyASJSON: q.JSONObjectFieldKeyASJSON,
+  JSONObjectFieldKeyAsText: q.JSONObjectFieldKeyAsText,
   TsQuery: q.TsQuery,
   PlainToTsQuery: q.PlainToTsQuery,
   PhraseToTsQuery: q.PhraseToTsQuery,

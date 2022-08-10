@@ -764,11 +764,11 @@ func (e *AssociationEdge) EdgeQueryBase() string {
 	return e.TsEdgeQueryName() + "Base"
 }
 
-func (e *AssociationEdge) AssocEdgeBase() string {
+func (e *AssociationEdge) AssocEdgeBaseImport(cfg codegenapi.Config) *tsimport.ImportPath {
 	if e.patternEdgeConst != "" {
-		return fmt.Sprintf("%sEdge", e.patternEdgeConst)
+		return tsimport.NewEntImportPath(fmt.Sprintf("%sEdge", e.patternEdgeConst))
 	}
-	return "AssocEdge"
+	return cfg.GetAssocEdgePath().GetImportPath()
 }
 
 func (e *AssociationEdge) PolymorphicEdge() bool {

@@ -7,7 +7,7 @@ import { MockLogs } from "../../testutils/mock_log";
 import { ID } from "../base";
 import { buildQuery } from "../ent";
 import * as clause from "../clause";
-import { setupSqlite, TempDB } from "../../testutils/db/test_db";
+import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
 import {
   FakeContact,
   getCompleteClause,

@@ -11,6 +11,7 @@ import {
   PrivacyPolicy,
   Viewer,
   convertDate,
+  convertNullableDate,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -29,8 +30,6 @@ import {
 import {
   AccountToTagsQuery,
   AccountToTodosQuery,
-  DeletedAtMixin,
-  IDeletedAt,
   NodeType,
 } from "src/ent/internal";
 import schema from "src/schema/account_schema";
@@ -52,24 +51,21 @@ interface AccountDBData {
   account_state: AccountState | null;
 }
 
-export class AccountBase
-  extends DeletedAtMixin(class {})
-  implements Ent<Viewer>, IDeletedAt
-{
+export class AccountBase implements Ent<Viewer> {
   readonly nodeType = NodeType.Account;
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+  protected readonly deletedAt: Date | null;
   readonly name: string;
   readonly phoneNumber: string | null;
   readonly accountState: AccountState | null;
 
   constructor(public viewer: Viewer, protected data: Data) {
-    // @ts-ignore pass to mixin
-    super(viewer, data);
     this.id = data.id;
     this.createdAt = convertDate(data.created_at);
     this.updatedAt = convertDate(data.updated_at);
+    this.deletedAt = convertNullableDate(data.deleted_at);
     this.name = data.name;
     this.phoneNumber = data.phone_number;
     this.accountState = data.account_state;

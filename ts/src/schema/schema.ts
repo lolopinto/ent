@@ -2,6 +2,7 @@ import { snakeCase } from "snake-case";
 import { Data, Ent, LoaderInfo, PrivacyPolicy, Viewer } from "../core/base";
 import { Builder } from "../action/action";
 import { Clause } from "../core/clause";
+import { AssocEdgeInput } from "../core/ent";
 
 export declare type FieldMap = {
   [key: string]: Field;
@@ -15,6 +16,22 @@ interface FieldInfo {
 export type FieldInfoMap = {
   [key: string]: FieldInfo;
 };
+
+export interface GlobalSchema {
+  // source is ¯\_(ツ)_/¯
+  // this api works fine for external to int
+  // internal to external, we need to solve ala polymorphic
+  // internal to internal, why is this here
+  edges?: Edge[];
+
+  // e.g. deleted_at for edges
+  extraEdgeFields?: FieldMap;
+
+  transformEdgeRead?: () => Clause;
+  transformEdgeWrite?: (
+    stmt: EdgeUpdateOperation,
+  ) => TransformedEdgeUpdateOperation | null;
+}
 
 // Schema is the base for every schema in typescript
 export default interface Schema {
@@ -203,6 +220,18 @@ export enum SQLStatementOperation {
   Delete = "delete",
 }
 
+export interface EdgeUpdateOperation {
+  op: SQLStatementOperation;
+  edge: AssocEdgeInput;
+}
+
+export interface TransformedEdgeUpdateOperation {
+  op: SQLStatementOperation;
+
+  // data to write to db for this edge
+  data?: Data;
+}
+
 export interface UpdateOperation<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer = Viewer,
@@ -261,6 +290,13 @@ export interface ImportType {
   [x: string]: any;
 }
 
+// TODO make this have an async flag and an accessor will be generated
+// for it that does this instead of doing in constructor
+export interface ConvertType {
+  path: string;
+  function: string;
+}
+
 declare type EnumMap = {
   [key: string]: string;
 };
@@ -293,6 +329,13 @@ export interface Type {
 
   // UnionType fields. really StructMap but don't want circular dependency...
   unionFields?: FieldMap;
+
+  // to convert the field in some way
+  // should be the same type e.g. Date to Date
+  convert?: ConvertType;
+
+  // allow other keys
+  [x: string]: any;
 }
 
 export interface ForeignKey {
@@ -305,6 +348,9 @@ export interface ForeignKey {
   // to simplify the code when it's known that the object here
   // would always have been previously created. simplifies validation
   disableBuilderType?: boolean;
+
+  // allow other keys
+  [x: string]: any;
 }
 
 type getLoaderInfoFn = (type: string) => LoaderInfo;
@@ -338,6 +384,10 @@ export interface FieldEdge {
   disableBuilderType?: boolean;
 }
 
+interface PrivateOptions {
+  exposeToActions?: boolean;
+}
+
 // FieldOptions are configurable options for fields.
 // Can be combined with options for specific field types as neededs
 export interface FieldOptions {
@@ -347,7 +397,10 @@ export interface FieldOptions {
   serverDefault?: any;
   unique?: boolean;
   hideFromGraphQL?: boolean;
-  private?: boolean;
+  // private automatically hides from graphql and actions
+  // but you may want something which is private and visible in actions
+  // e.g. because you have custom code you want to run in the accessors
+  private?: boolean | PrivateOptions;
   sensitive?: boolean;
   graphqlName?: string;
   index?: boolean;
@@ -646,6 +699,9 @@ export interface ActionField {
   // either because they can be derived or optional and don't need it
   // no validation on what can be excluded is done. things will eventually fail if done incorrectly
   excludedFields?: string[];
+
+  // allow other keys
+  [x: string]: any;
 }
 
 // provides a way to configure the actions generated for the ent
@@ -668,6 +724,9 @@ export interface Action {
   optionalFields?: string[];
   requiredFields?: string[];
   noFields?: boolean;
+
+  // allow other keys
+  [x: string]: any;
 }
 
 // sentinel that indicates an action has no fields
@@ -691,6 +750,9 @@ export interface Constraint {
   columns: string[];
   fkey?: ForeignKeyInfo;
   condition?: string; // only applies in check constraint
+
+  // allow other keys
+  [x: string]: any;
 }
 
 export interface FullTextWeight {
@@ -719,6 +781,9 @@ export interface FullText {
 
   // to simplify: we only allow weights when there's a generated column so that rank is easiest ts_rank(col, ...)
   weights?: FullTextWeight;
+
+  // allow other keys
+  [x: string]: any;
 }
 
 export interface Index {
@@ -726,6 +791,13 @@ export interface Index {
   columns: string[];
   unique?: boolean; // can also create a unique constraint this way because why not...
   fulltext?: FullText;
+  // TODO support gist soon...
+  // need operator class too
+  // TODO https://github.com/lolopinto/ent/issues/1029
+  indexType?: "gin" | "btree";
+
+  // allow other keys
+  [x: string]: any;
 }
 
 export interface ForeignKeyInfo {
@@ -733,6 +805,9 @@ export interface ForeignKeyInfo {
   ondelete?: "RESTRICT" | "CASCADE" | "SET NULL" | "SET DEFAULT" | "NO ACTION";
   columns: string[];
   // no on update, match full etc
+
+  // allow other keys
+  [x: string]: any;
 }
 
 export enum ConstraintType {

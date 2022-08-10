@@ -49,7 +49,7 @@ func (p *TSStep) Name() string {
 
 var knownTypes = map[string]*tsimport.ImportPath{
 	"String": tsimport.NewGQLImportPath("GraphQLString"),
-	//	"Date":       tsimport.NewEntGraphQLImportPath("GraphQLTime"),
+	// "Date":       tsimport.NewEntGraphQLImportPath("GraphQLTime"),
 	"Int":        tsimport.NewGQLImportPath("GraphQLInt"),
 	"Float":      tsimport.NewGQLImportPath("GraphQLFloat"),
 	"Boolean":    tsimport.NewGQLImportPath("GraphQLBoolean"),
@@ -61,6 +61,7 @@ var knownTypes = map[string]*tsimport.ImportPath{
 
 var knownCustomTypes = map[string]string{
 	"Date": "GraphQLTime",
+	"JSON": "GraphQLJSON",
 }
 
 type NullableItem string
@@ -558,6 +559,10 @@ func searchForFiles(processor *codegen.Processor) []string {
 			if processor.Config.DebugMode() {
 				fmt.Printf("no custom files found: %s\n", err.Error())
 			}
+			return nil
+		}
+		if strings.Contains(err.Error(), "executable file not found") {
+			fmt.Print("\u001b[31mrg executable not found so can't search for custom files. local development error?\u001b[0m\n")
 			return nil
 		}
 		// this could be because no files exist at all e.g. when running codegen first time...

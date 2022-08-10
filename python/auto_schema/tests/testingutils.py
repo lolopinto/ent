@@ -211,7 +211,7 @@ def _validate_table(schema_table: sa.Table, db_table: sa.Table, dialect: String,
 
     _validate_columns(schema_table, db_table, metadata, dialect)
     _validate_constraints(schema_table, db_table, dialect, metadata)
-    _validate_indexes(schema_table, db_table, metadata)
+    _validate_indexes(schema_table, db_table, metadata, dialect)
 
 
 def _validate_columns(schema_table: sa.Table, db_table: sa.Table, metadata: sa.MetaData, dialect: String):
@@ -332,7 +332,7 @@ def _sort_fn(item):
     return type(item).__name__ + item.name
 
 
-def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.MetaData):
+def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.MetaData, dialect: String):
     # sort indexes so that the order for both are the same
     schema_indexes = sorted(schema_table.indexes, key=_sort_fn)
     db_indexes = sorted(db_table.indexes, key=_sort_fn)
@@ -345,7 +345,7 @@ def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.M
         schema_index_columns = schema_index.columns
         db_index_columns = db_index.columns
         for schema_column, db_column in zip(schema_index_columns, db_index_columns):
-            _validate_column(schema_column, db_column, metadata)
+            _validate_column(schema_column, db_column, metadata, dialect)
 
 
 def _validate_constraints(schema_table: sa.Table, db_table: sa.Table, dialect: String, metadata: sa.MetaData):

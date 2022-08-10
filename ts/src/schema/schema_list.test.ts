@@ -15,7 +15,7 @@ import {
 import { JSONBListType, JSONListType } from "./json_field";
 import Schema from "./schema";
 import { User, SimpleAction, BuilderSchema } from "../testutils/builder";
-import { TempDB, getSchemaTable } from "../testutils/db/test_db";
+import { TempDB, getSchemaTable } from "../testutils/db/temp_db";
 import { v4 } from "uuid";
 import DB, { Dialect } from "../core/db";
 import { Ent } from "../core/base";
@@ -29,6 +29,7 @@ import {
 } from "../core/convert";
 import { WriteOperation } from "../action";
 let tdb: TempDB;
+
 async function setupTempDB(dialect: Dialect, connString?: string) {
   beforeAll(async () => {
     if (connString) {
@@ -94,6 +95,48 @@ function commonTests() {
     }
 
     const n = ["Lord Snow", "The Prince That was Promised"];
+
+    const action = getInsertAction(
+      new AccountSchema(),
+      new Map<string, any>([["Nicknames", n]]),
+    );
+    await createTables(new AccountSchema());
+
+    const account = await action.saveX();
+    expect(convertList(account.data.nicknames)).toEqual(n);
+  });
+
+  test("string list with empty value at end", async () => {
+    class Account extends User {}
+    class AccountSchema implements Schema {
+      fields = {
+        Nicknames: StringListType(),
+      };
+      ent = Account;
+    }
+
+    const n = ["Lord Snow", "The Prince That was Promised", ""];
+
+    const action = getInsertAction(
+      new AccountSchema(),
+      new Map<string, any>([["Nicknames", n]]),
+    );
+    await createTables(new AccountSchema());
+
+    const account = await action.saveX();
+    expect(convertList(account.data.nicknames)).toEqual(n);
+  });
+
+  test("string list with empty value mixed in ", async () => {
+    class Account extends User {}
+    class AccountSchema implements Schema {
+      fields = {
+        Nicknames: StringListType(),
+      };
+      ent = Account;
+    }
+
+    const n = ["Lord Snow", "", "The Prince That was Promised"];
 
     const action = getInsertAction(
       new AccountSchema(),

@@ -61,6 +61,10 @@ import {
   UserToMaybeEventsQuery,
 } from "../internal";
 import schema from "../../schema/user_schema";
+import {
+  convertAccountStatus,
+  convertSuperNestedObject,
+} from "../../util/convert_user_fields";
 import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 
 export enum UserDaysOff {
@@ -156,7 +160,7 @@ export class UserBase
     this.emailAddress = data.email_address;
     this.phoneNumber = data.phone_number;
     this.password = data.password;
-    this._accountStatus = data.account_status;
+    this._accountStatus = convertAccountStatus(data.account_status);
     this._emailVerified = convertBool(data.email_verified);
     this.bio = data.bio;
     this.nicknames = convertNullableList(data.nicknames);
@@ -169,7 +173,9 @@ export class UserBase
     this.funUuids = convertNullableList(data.fun_uuids);
     this.newCol = data.new_col;
     this.newCol2 = data.new_col_2;
-    this.superNestedObject = convertNullableJSON(data.super_nested_object);
+    this.superNestedObject = convertSuperNestedObject(convertNullableJSON)(
+      data.super_nested_object,
+    );
     this.nestedList = convertNullableJSONList(data.nested_list);
     this.intEnum = data.int_enum;
   }

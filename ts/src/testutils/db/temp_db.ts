@@ -8,6 +8,7 @@ import { DBType, Field, getFields } from "../../schema";
 import { snakeCase } from "snake-case";
 import { BuilderSchema, getTableName } from "../builder";
 import { Ent } from "../../core/base";
+import { testEdgeGlobalSchema } from "../test_edge_global_schema";
 
 interface SchemaItem {
   name: string;
@@ -19,10 +20,15 @@ interface Column extends SchemaItem {
   primaryKey?: boolean;
   unique?: boolean;
   default?: string;
+  index?: boolean | indexOptions;
   foreignKey?: { table: string; col: string };
 }
 
 interface Constraint extends SchemaItem {
+  generate(): string;
+}
+
+interface Index extends SchemaItem {
   generate(): string;
 }
 
@@ -31,6 +37,7 @@ export interface CoreConcept {
   name: string;
 
   create(): string;
+  postCreate?(): string[];
   drop(): string;
 }
 
@@ -41,7 +48,7 @@ export interface Table extends CoreConcept {
 
 type options = Pick<
   Column,
-  "nullable" | "primaryKey" | "default" | "foreignKey" | "unique"
+  "nullable" | "primaryKey" | "default" | "foreignKey" | "unique" | "index"
 >;
 
 export function primaryKey(name: string, cols: string[]): Constraint {
@@ -64,6 +71,26 @@ export function foreignKey(
       return `CONSTRAINT ${name} FOREIGN KEY(${cols.join(",")}) REFERENCES ${
         fkey.table
       }(${fkey.cols.join(",")})`;
+    },
+  };
+}
+
+interface indexOptions {
+  type: string;
+}
+
+export function index(
+  tableName: string,
+  cols: string[],
+  opts?: indexOptions,
+): Index {
+  const name = `${tableName}_${cols.join("_")}_idx`;
+  return {
+    name,
+    generate() {
+      return `CREATE INDEX ${name} ON ${tableName} USING ${
+        opts?.type || "btree"
+      } (${cols.join(",")});`;
     },
   };
 }
@@ -266,9 +293,25 @@ export function boolList(name: string, opts?: options): Column {
 export function table(name: string, ...items: SchemaItem[]): Table {
   let cols: Column[] = [];
   let constraints: Constraint[] = [];
+  let indexes: Index[] = [];
+
   for (const item of items) {
     if ((item as Column).datatype !== undefined) {
       const col = item as Column;
+      if (col.index) {
+        let opts: indexOptions = {
+          type: "btree",
+        };
+        if (col.index === true) {
+          opts = {
+            type: "btree",
+          };
+        } else {
+          opts = col.index;
+        }
+        indexes.push(index(name, [col.name], opts));
+      }
+
       // add it as a constraint
       if (col.foreignKey) {
         constraints.push(
@@ -311,6 +354,9 @@ export function table(name: string, ...items: SchemaItem[]): Table {
       );
 
       return `CREATE TABLE IF NOT EXISTS ${name} (\n ${schemaStr})`;
+    },
+    postCreate() {
+      return indexes.map((index) => index.generate());
     },
     drop() {
       return `DROP TABLE IF EXISTS ${name}`;
@@ -418,10 +464,24 @@ export class TempDB {
     }
 
     for (const [_, table] of this.tables) {
-      if (this.dialect == Dialect.Postgres) {
-        await this.dbClient.query(table.create());
-      } else {
-        this.sqlite.exec(table.create());
+      await this.createImpl(table);
+    }
+  }
+
+  async createImpl(table: CoreConcept) {
+    if (this.dialect == Dialect.Postgres) {
+      await this.dbClient.query(table.create());
+      if (table.postCreate) {
+        for (const q of table.postCreate()) {
+          await this.dbClient.query(q);
+        }
+      }
+    } else {
+      this.sqlite.exec(table.create());
+      if (table.postCreate) {
+        for (const q of table.postCreate()) {
+          this.sqlite.exec(q);
+        }
       }
     }
   }
@@ -481,11 +541,7 @@ export class TempDB {
       if (this.tables.has(table.name)) {
         throw new Error(`table with name ${table.name} already exists`);
       }
-      if (this.dialect === Dialect.Postgres) {
-        await this.dbClient.query(table.create());
-      } else {
-        this.sqlite.exec(table.create());
-      }
+      await this.createImpl(table);
       this.tables.set(table.name, table);
     }
   }
@@ -505,8 +561,10 @@ export function assoc_edge_config_table() {
   );
 }
 
-export function assoc_edge_table(name: string) {
-  return table(
+// if global flag is true, add any column from testEdgeGlobalSchema
+// up to caller to set/clear that as needed
+export function assoc_edge_table(name: string, global?: boolean) {
+  const t = table(
     name,
     uuid("id1"),
     text("id1_type"),
@@ -518,6 +576,18 @@ export function assoc_edge_table(name: string) {
     text("data", { nullable: true }),
     primaryKey(`${name}_pkey`, ["id1", "id2", "edge_type"]),
   );
+
+  if (global) {
+    for (const k in testEdgeGlobalSchema.extraEdgeFields) {
+      const col = getColumnFromField(
+        k,
+        testEdgeGlobalSchema.extraEdgeFields[k],
+        Dialect.Postgres,
+      );
+      t.columns.push(col);
+    }
+  }
+  return t;
 }
 
 interface sqliteSetupOptions {
@@ -528,11 +598,11 @@ export function setupSqlite(
   tables: () => Table[],
   opts?: sqliteSetupOptions,
 ) {
-  let tdb: TempDB;
+  let tdb: TempDB = new TempDB(Dialect.SQLite, tables());
+
   beforeAll(async () => {
     process.env.DB_CONNECTION_STRING = connString;
     loadConfig();
-    tdb = new TempDB(Dialect.SQLite, tables());
     await tdb.beforeAll();
 
     const conn = DB.getInstance().getConnection();
@@ -558,7 +628,10 @@ export function setupSqlite(
     await tdb.afterAll();
 
     fs.rmSync(tdb.getSqliteClient().name);
+    delete process.env.DB_CONNECTION_STRING;
   });
+
+  return tdb;
 }
 
 export function getSchemaTable(schema: BuilderSchema<Ent>, dialect: Dialect) {
@@ -611,7 +684,11 @@ function getColumnForDbType(
   }
 }
 
-function getColumnFromField(fieldName: string, f: Field, dialect: Dialect) {
+export function getColumnFromField(
+  fieldName: string,
+  f: Field,
+  dialect: Dialect,
+) {
   switch (f.type.dbType) {
     case DBType.List:
       const elemType = f.type.listElemType;

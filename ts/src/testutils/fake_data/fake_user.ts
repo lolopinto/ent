@@ -18,7 +18,7 @@ import { StringType } from "../../schema";
 import { EdgeType } from "./internal";
 import { NodeType } from "./const";
 import { IDViewer, IDViewerOptions } from "../../core/viewer";
-import { table, uuid, text, timestamptz } from "../db/test_db";
+import { table, uuid, text, timestamptz } from "../db/temp_db";
 import { ObjectLoaderFactory } from "../../core/loaders";
 import { convertDate } from "../../core/convert";
 import { WriteOperation } from "../../action";

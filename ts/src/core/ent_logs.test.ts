@@ -27,7 +27,7 @@ import {
   LoadRowOptions,
   LoadRowsOptions,
 } from "./base";
-import { integer, table, text, setupSqlite } from "../testutils/db/test_db";
+import { integer, table, text, setupSqlite } from "../testutils/db/temp_db";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -146,11 +146,11 @@ function commonTests() {
       };
       const options: EditRowOptions = {
         fields: fields,
-        key: "id",
         tableName: "t1",
+        whereClause: clause.Eq("id", "1"),
       };
-      await editRowForTest(options, "1");
-      const [expQuery] = buildUpdateQuery(options, "1");
+      await editRowForTest(options);
+      const [expQuery] = buildUpdateQuery(options);
 
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
@@ -166,12 +166,12 @@ function commonTests() {
       };
       const options: EditRowOptions = {
         fields: fields,
-        key: "id",
         tableName: "t1",
         fieldsToLog: fields,
+        whereClause: clause.Eq("id", "1"),
       };
-      await editRowForTest(options, "1");
-      const [expQuery] = buildUpdateQuery(options, "1");
+      await editRowForTest(options);
+      const [expQuery] = buildUpdateQuery(options);
 
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
@@ -187,15 +187,15 @@ function commonTests() {
       };
       const options: EditRowOptions = {
         fields: fields,
-        key: "id",
         tableName: "t1",
+        whereClause: clause.Eq("id", "1"),
         fieldsToLog: {
           col1: "bar",
           col2: "***",
         },
       };
-      await editRowForTest(options, "1");
-      const [expQuery] = buildUpdateQuery(options, "1");
+      await editRowForTest(options);
+      const [expQuery] = buildUpdateQuery(options);
 
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
@@ -211,13 +211,12 @@ function commonTests() {
       };
       const options: EditRowOptions = {
         fields: fields,
-        key: "id",
         tableName: "t1",
         fieldsToLog: fields,
+        whereClause: clause.Eq("id", "1"),
       };
       clearLogLevels();
-      await editRowForTest(options, "1");
-      const [expQuery] = buildUpdateQuery(options, "1");
+      await editRowForTest(options);
 
       expect(ml.logs.length).toEqual(0);
     });

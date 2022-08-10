@@ -269,6 +269,8 @@ async function main() {
   addCustomType({
     importPath: MODULE_PATH,
     // for go tests...
+    // TODO need a flag that only does this for go tests
+    // breaks when running locally sometimes...
     secondaryImportPath: "../graphql/scalars/time",
     type: "GraphQLTime",
   });

@@ -144,6 +144,7 @@ export interface QueryDataOptions {
   orderby?: string; // this technically doesn't make sense when querying just one row but whatevs
   groupby?: string;
   limit?: number;
+  disableTransformations?: boolean;
 }
 
 // For loading data from database
@@ -158,15 +159,19 @@ export interface CreateRowOptions extends DataOptions {
 }
 
 export interface EditRowOptions extends CreateRowOptions {
-  key: string; // what key are we loading from. if not provided we're loading from column "id"
+  whereClause: clause.Clause;
 }
 
 interface LoadableEntOptions<
   TEnt extends Ent,
   TViewer extends Viewer = Viewer,
 > {
-  loaderFactory: LoaderFactory<any, Data | null>;
+  loaderFactory: LoaderFactoryWithOptions;
   ent: EntConstructor<TEnt, TViewer>;
+}
+
+interface LoaderFactoryWithOptions extends LoaderFactory<any, Data | null> {
+  options?: SelectDataOptions;
 }
 
 // information needed to load an ent from the databse
@@ -181,12 +186,18 @@ export interface LoadEntOptions<
   fieldPrivacy?: Map<string, PrivacyPolicy>;
 }
 
+export interface SelectCustomDataOptions extends SelectBaseDataOptions {
+  // defaultClause that's added to the query. automatically added
+  clause?: clause.Clause;
+  loaderFactory?: LoaderFactoryWithOptions;
+}
+
 export interface LoadCustomEntOptions<
     TEnt extends Ent,
     TViewer extends Viewer = Viewer,
   >
   // extending DataOptions and fields is to make APIs like loadEntsFromClause work until we come up with a cleaner API
-  extends SelectBaseDataOptions {
+  extends SelectCustomDataOptions {
   ent: EntConstructor<TEnt, TViewer>;
   fieldPrivacy?: Map<string, PrivacyPolicy>;
 }

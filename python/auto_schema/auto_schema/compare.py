@@ -431,8 +431,10 @@ def _compare_indexes(autogen_context: AutogenContext,
                      metadata_table: sa.Table,
                      ):
 
-    missing_conn_indexes = _get_raw_db_indexes(
+    raw_db_indexes = _get_raw_db_indexes(
         autogen_context, conn_table)
+    missing_conn_indexes = raw_db_indexes.get('missing')
+    all_conn_indexes = raw_db_indexes.get('all')
     conn_indexes = {}
     meta_indexes = {}
 
@@ -468,6 +470,22 @@ def _compare_indexes(autogen_context: AutogenContext,
             )
 
     for name, index in meta_indexes.items():
+
+        # if index is there and postgresql_using changes, drop the index and add it again
+        # should hopefully be a one-time migration change...
+        if name in conn_indexes and isinstance(index, sa.Index):
+            meta_postgresql_using = index.kwargs.get('postgresql_using')
+            conn_postgresql_using = all_conn_indexes.get(
+                name, {}).get('postgresql_using')
+            if isinstance(meta_postgresql_using, str) and conn_postgresql_using is not None and meta_postgresql_using != conn_postgresql_using:
+                conn_index = conn_indexes[name]
+                conn_index.kwargs['postgresql_using'] = conn_postgresql_using
+
+                modify_table_ops.ops.append(
+                    alembicops.DropIndexOp.from_index(conn_index))
+                modify_table_ops.ops.append(
+                    alembicops.CreateIndexOp(name, index.table.name, index.columns, postgresql_using=index.kwargs.get('postgresql_using')))
+
         if not name in conn_indexes and isinstance(index, FullTextIndex):
 
             to_remove = name in missing_conn_indexes
@@ -503,9 +521,10 @@ index_regex = re.compile('CREATE INDEX (.+) USING (gin|btree)(.+)')
 # warning: "Skipped unsupported reflection of expression-based index accounts_full_text_idx"
 def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: Optional[sa.Table]):
     if conn_table is None or _dialect_name(autogen_context) != 'postgresql':
-        return {}
+        return {'missing': {}, 'all': {}}
 
-    ret = {}
+    missing = {}
+    all = {}
     # we cache the db hit but the table seems to change across the same call and so we're
     # just paying the CPU price. can probably be fixed in some way...
     names = set([index.name for index in conn_table.indexes] +
@@ -517,20 +536,26 @@ def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: Optional[sa
             name,
             details
         ) = row
-        if name not in names:
-            m = index_regex.match(details)
-            if m is None:
-                continue
-            r = m.groups()
-            # missing!
+        m = index_regex.match(details)
+        if m is None:
+            continue
+        r = m.groups()
 
-            ret[name] = {
+        all[name] = {
+            'postgresql_using': r[1],
+            'postgresql_using_internals': r[2],
+            # TODO don't have columns|column to pass to FullTextIndex
+        }
+
+        # missing!
+        if name not in names:
+            missing[name] = {
                 'postgresql_using': r[1],
                 'postgresql_using_internals': r[2],
                 # TODO don't have columns|column to pass to FullTextIndex
             }
 
-    return ret
+    return {'missing': missing, 'all': all}
 
 
 # use a cache so we only hit the db once for each table

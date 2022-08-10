@@ -1,6 +1,10 @@
 import DataLoader from "dataloader";
 import { ID, Context, Loader, LoaderFactory } from "../base";
-import { loadEdgeData, loadRawEdgeCountX } from "../ent";
+import {
+  getEdgeClauseAndFields,
+  loadEdgeData,
+  loadRawEdgeCountX,
+} from "../ent";
 import * as clause from "../clause";
 import { getLoader } from "./loader";
 import { createCountDataLoader } from "./raw_count_loader";
@@ -21,11 +25,19 @@ export class AssocEdgeCountLoader implements Loader<ID, number> {
     if (!edgeData) {
       throw new Error(`error loading edge data for ${this.edgeType}`);
     }
+    const { cls } = getEdgeClauseAndFields(
+      clause.Eq("edge_type", this.edgeType),
+      {
+        // don't need this..
+        id1: "1",
+        edgeType: this.edgeType,
+      },
+    );
 
     this.loader = createCountDataLoader({
       tableName: edgeData.edgeTable,
       groupCol: "id1",
-      clause: clause.Eq("edge_type", this.edgeType),
+      clause: cls,
     });
     return this.loader;
   }

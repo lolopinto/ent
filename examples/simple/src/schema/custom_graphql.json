@@ -20,6 +20,10 @@
         {
           "name": "time",
           "type": "Date"
+        },
+        {
+          "name": "log",
+          "type": "JSON"
         }
       ],
       "resultType": "String",

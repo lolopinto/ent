@@ -1,4 +1,4 @@
-{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data"  "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData" "applyPrivacyPolicy" "Ent"}}
+{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data"  "loadEntX" "loadEnts" "LoadEntOptions" "loadNodesByEdge" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AllowIfViewerPrivacyPolicy" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "IndexLoaderFactory" "loadEntViaKey" "loadEntXViaKey" "CustomQuery" "loadCustomEnts" "loadCustomData" "applyPrivacyPolicy" "Ent"}}
 {{ reserveImport .Package.SchemaPackagePath "Field" "getFields" "getFieldsWithPrivacy"}}
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
 {{ reserveImport "src/ent/generated/loadAny" "loadEntByType" "loadEntXByType"}}
@@ -98,10 +98,9 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     {{range $field := .FieldInfo.Fields -}}
       {{ if not ($schema.PatternFieldWithMixin $field) -}}
         {{$val := printf "data.%s" $field.GetDbColName -}}
-        {{$convertType := convertFunc ($field.GetTSFieldType $cfg) -}}
+        {{$convertType := convertFunc $field $cfg  -}}
         {{if $convertType -}} 
-          {{/* could be BigInt which isn't reserved */ -}}
-          this.{{$field.TsFieldName $cfg}} = {{useImportMaybe $convertType}}({{$val}});
+          this.{{$field.TsFieldName $cfg}} = {{printf "%s(%v)" $convertType $val}};
         {{ else -}}
           this.{{$field.TsFieldName $cfg}} = {{$val}};
         {{end -}}
@@ -401,7 +400,9 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     {{$uniqueEdge := .Unique -}}
     {{with .NodeInfo -}}
      {{ if $uniqueEdge -}}
-      {{$assocEdgeType := useImport "AssocEdge"}}
+       {{ $imp := $edge.AssocEdgeBaseImport $cfg}}
+       {{ reserveImportPath $imp false }}
+      {{$assocEdgeType := useImport $imp.Import }}
       {{$edgeType := useImport "EdgeType"}}
       load{{$edgeName}}Edge(): Promise<{{$assocEdgeType}} | null> {
         return {{useImport "loadUniqueEdge"}}({

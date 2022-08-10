@@ -50,6 +50,10 @@ const UserSchema = new EntSchema({
       disableUserGraphQLEditable: true,
       defaultValueOnCreate: () => "UNVERIFIED",
       privacyPolicy: AllowIfViewerPrivacyPolicy,
+      convert: {
+        path: "src/util/convert_user_fields",
+        function: "convertAccountStatus",
+      },
     }),
     emailVerified: BooleanType({
       hideFromGraphQL: true,
@@ -128,6 +132,10 @@ const UserSchema = new EntSchema({
       nullable: true,
       tsType: "UserSuperNestedObject",
       graphQLType: "UserSuperNestedObject",
+      convert: {
+        path: "src/util/convert_user_fields",
+        function: "convertSuperNestedObject",
+      },
       fields: {
         uuid: UUIDType(),
         int: IntegerType(),
@@ -322,6 +330,7 @@ const UserSchema = new EntSchema({
         indexType: "gin",
         generatedColumnName: "name_idx",
       },
+      test_random_other_key: "whaaa",
     },
   ],
 

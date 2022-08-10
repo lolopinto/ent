@@ -11,7 +11,7 @@ import { AlwaysAllowPrivacyPolicy } from "../../core/privacy";
 import { getBuilderSchemaFromFields, SimpleBuilder } from "../builder";
 import { StringType, UUIDType, TimestampType } from "../../schema";
 import { NodeType } from "./const";
-import { table, uuid, text, timestamptz } from "../db/test_db";
+import { table, uuid, text, timestamptz } from "../db/temp_db";
 import { ObjectLoaderFactory } from "../../core/loaders";
 import { convertDate, convertNullableDate } from "../../core/convert";
 import { WriteOperation } from "../../action";

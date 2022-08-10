@@ -1,11 +1,14 @@
 import { QueryRecorder } from "../../testutils/db_mock";
-import { Ent, Data, ID, Viewer } from "../base";
-import { DefaultLimit, AssocEdge, getCursor } from "../ent";
+import { Data, ID, Viewer } from "../base";
+import { DefaultLimit, AssocEdge, getCursor, setGlobalSchema } from "../ent";
 import { IDViewer, LoggedOutViewer } from "../viewer";
 import {
   FakeUser,
   FakeContact,
   UserToContactsFkeyQuery,
+  FakeUserSchema,
+  EdgeType,
+  FakeContactSchema,
 } from "../../testutils/fake_data/index";
 import {
   inputs,
@@ -18,14 +21,17 @@ import {
   tempDBTables,
 } from "../../testutils/fake_data/test_helpers";
 import { EdgeQuery } from "./query";
-import { setupSqlite, TempDB } from "../../testutils/db/test_db";
+import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
+import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
+import { SimpleAction } from "../../testutils/builder";
+import { WriteOperation } from "../../action";
 
 class TestQueryFilter<TData extends Data> {
-  private allContacts: FakeContact[] = [];
+  allContacts: FakeContact[] = [];
   private filteredContacts: FakeContact[] = [];
-  private user: FakeUser;
+  user: FakeUser;
   constructor(
     private filter: (
       q: EdgeQuery<FakeUser, FakeContact, TData>,
@@ -67,22 +73,22 @@ class TestQueryFilter<TData extends Data> {
   }
 
   // rawCount isn't affected by filters...
-  async testRawCount() {
+  async testRawCount(expectedCount?: number) {
     const count = await this.getQuery().queryRawCount();
-    this.verifyRawCount(count);
+    this.verifyRawCount(count, expectedCount);
   }
 
-  private verifyRawCount(count: number) {
-    expect(count).toBe(inputs.length);
+  private verifyRawCount(count: number, expectedCount?: number) {
+    expect(count).toBe(expectedCount ?? inputs.length);
   }
 
-  async testCount() {
+  async testCount(expectedCount?: number) {
     const count = await this.getQuery().queryCount();
-    this.verifyCount(count);
+    this.verifyCount(count, expectedCount);
   }
 
-  private verifyCount(count: number) {
-    expect(count).toBe(this.filteredContacts.length);
+  private verifyCount(count: number, expectedCount?: number) {
+    expect(count).toBe(expectedCount ?? this.filteredContacts.length);
   }
 
   async testEdges() {
@@ -114,7 +120,7 @@ class TestQueryFilter<TData extends Data> {
     verifyUserToContacts(this.user, ents, this.filteredContacts);
   }
 
-  async testAll() {
+  async testAll(expectedCount?: number) {
     const query = this.getQuery(new IDViewer(this.user.id));
     const [edges, count, ids, rawCount, ents] = await Promise.all([
       query.queryEdges(),
@@ -123,10 +129,10 @@ class TestQueryFilter<TData extends Data> {
       query.queryRawCount(),
       query.queryEnts(),
     ]);
-    this.verifyCount(count);
+    this.verifyCount(count, expectedCount);
     this.verifyEdges(edges);
     this.verifyIDs(ids);
-    this.verifyRawCount(rawCount);
+    this.verifyRawCount(rawCount, expectedCount);
     this.verifyEnts(ents);
   }
 }
@@ -139,12 +145,15 @@ interface options<TData extends Data> {
     user: FakeUser,
   ) => EdgeQuery<FakeUser, FakeContact, TData>;
   tableName: string;
+  uniqKey: string;
 
   entsLength?: number;
   where: string;
   sortCol: string;
   livePostgresDB?: boolean; // if livedb creates temp db and not depending on mock
   sqlite?: boolean; // do this in sqlite
+  globalSchema?: boolean;
+  rawDataVerify?(user: FakeUser): Promise<void>;
 }
 
 export const commonTests = <TData extends Data>(opts: options<TData>) => {
@@ -192,10 +201,20 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     const query = queries[0];
     const result = [...opts.where.matchAll(preparedVar)];
 
+    let parts = opts.where.split(" AND ");
+    if (parts[parts.length - 1] === "deleted_at IS NULL") {
+      parts = parts
+        .slice(0, parts.length - 1)
+        .concat([
+          `${opts.sortCol} < $${result.length + 1}`,
+          "deleted_at IS NULL",
+        ]);
+    } else {
+      parts.push(`${opts.sortCol} < $${result.length + 1}`);
+    }
+
     expect(query.qs?.whereClause).toBe(
-      `${opts.where} AND ${opts.sortCol} < $${result.length + 1} ORDER BY ${
-        opts.sortCol
-      } DESC LIMIT 4`,
+      `${parts.join(" AND ")} ORDER BY ${opts.sortCol} DESC LIMIT 4`,
     );
   }
 
@@ -208,11 +227,21 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     const query = queries[0];
     const result = [...opts.where.matchAll(preparedVar)];
 
+    let parts = opts.where.split(" AND ");
+    if (parts[parts.length - 1] === "deleted_at IS NULL") {
+      parts = parts
+        .slice(0, parts.length - 1)
+        .concat([
+          `${opts.sortCol} > $${result.length + 1}`,
+          "deleted_at IS NULL",
+        ]);
+    } else {
+      parts.push(`${opts.sortCol} > $${result.length + 1}`);
+    }
+
     expect(query.qs?.whereClause).toBe(
       // extra fetched for pagination
-      `${opts.where} AND ${opts.sortCol} > $${result.length + 1} ORDER BY ${
-        opts.sortCol
-      } ASC LIMIT 4`,
+      `${parts.join(" AND ")} ORDER BY ${opts.sortCol} ASC LIMIT 4`,
     );
   }
 
@@ -251,10 +280,15 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     });
   }
 
+  if (opts.globalSchema) {
+    setGlobalSchema(testEdgeGlobalSchema);
+  }
+
   let tdb: TempDB;
   if (opts.sqlite) {
-    // tableName just to make it unique
-    setupSqlite(`sqlite:///shared_test+${opts.tableName}.db`, tempDBTables);
+    setupSqlite(`sqlite:///shared_test+${opts.uniqKey}.db`, () =>
+      tempDBTables(opts.globalSchema),
+    );
   }
 
   beforeAll(async () => {
@@ -281,7 +315,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   describe("simple queries", () => {
     const filter = new TestQueryFilter(
       (q: EdgeQuery<FakeUser, FakeContact, TData>) => {
-        // no filterzs
+        // no filters
         return q;
       },
       opts.newQuery,
@@ -324,6 +358,87 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
     test("all", async () => {
       await filter.testAll();
+    });
+  });
+
+  describe("after delete", () => {
+    const filter = new TestQueryFilter(
+      (q: EdgeQuery<FakeUser, FakeContact, TData>) => {
+        // no filters
+        return q;
+      },
+      opts.newQuery,
+      (contacts: FakeContact[]) => {
+        // nothing expected since deleted
+        return [];
+      },
+      getViewer(),
+    );
+
+    beforeEach(async () => {
+      await filter.beforeEach();
+      const action = new SimpleAction(
+        filter.user.viewer,
+        FakeUserSchema,
+        new Map(),
+        WriteOperation.Edit,
+        filter.user,
+      );
+      await Promise.all(
+        filter.allContacts.map(async (contact) => {
+          action.builder.orchestrator.removeOutboundEdge(
+            contact.id,
+            EdgeType.UserToContacts,
+          );
+
+          const action2 = new SimpleAction(
+            filter.user.viewer,
+            FakeContactSchema,
+            new Map(),
+            WriteOperation.Delete,
+            contact,
+          );
+          await action2.save();
+        }),
+      );
+      await action.save();
+      QueryRecorder.clearQueries();
+    });
+
+    test("ids", async () => {
+      await filter.testIDs();
+      verifyQuery({});
+    });
+
+    test("rawCount", async () => {
+      await filter.testRawCount(0);
+      verifyCountQuery({});
+    });
+
+    test("count", async () => {
+      await filter.testCount(0);
+      verifyQuery({});
+    });
+
+    test("edges", async () => {
+      await filter.testEdges();
+      verifyQuery({});
+    });
+
+    test("ents", async () => {
+      await filter.testEnts();
+      // no ents so no subsequent query. just the edge query
+      verifyQuery({ length: 1 });
+    });
+
+    test("all", async () => {
+      await filter.testAll(0);
+    });
+
+    test("raw_data", async () => {
+      if (opts.rawDataVerify) {
+        await opts.rawDataVerify(filter.user);
+      }
     });
   });
 

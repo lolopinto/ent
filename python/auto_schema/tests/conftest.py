@@ -288,25 +288,53 @@ def metadata_with_arrays():
                  sa.TIMESTAMP), nullable=False),
              sa.Column('timestamptz_list', postgresql.ARRAY(
                  sa.TIMESTAMP(timezone=True)), nullable=False),
+             # TODO https://github.com/lolopinto/ent/issues/1029 support gist here
+             # need to support operators...
              sa.Column('float_list', postgresql.ARRAY(
-                 sa.Float), nullable=False)
+                 sa.Float), nullable=False),
+             sa.Column('uuid_list', postgresql.ARRAY(
+                 postgresql.UUID), nullable=False),
+             sa.Index('tbl_string_list_idx', 'string_list',
+                      postgresql_using='gin'),
+             sa.Index('tbl_uuid_list_idx', 'uuid_list',
+                      postgresql_using='gin'),
+             sa.Index('tbl_int_list_idx', 'int_list',
+                      postgresql_using='gin'),
+             sa.Index('tbl_time_list_idx', 'time_list',
+                      postgresql_using='gin'),
+             sa.Index('tbl_timetz_list_idx', 'timetz_list',
+                      postgresql_using='gin'),
+             # just to confirm btree works...
+             sa.Index('tbl_float_list_idx', 'float_list',
+                      postgresql_using='btree'),
+             # index with no type..
+             sa.Index('tbl_date_list_idx', 'date_list'),
+
              )
     return metadata
 
 
-@pytest.fixture
+@ pytest.fixture
 def metadata_with_json():
     metadata = sa.MetaData()
     sa.Table("tbl", metadata,
+             # json indexes need work...
              sa.Column('jsonb', postgresql.JSONB, nullable=False),
              sa.Column('jsonb_null', postgresql.JSONB, nullable=True),
+             sa.Column('jsonb2_null', postgresql.JSONB, nullable=True),
              sa.Column('json', postgresql.JSON, nullable=False),
-             sa.Column('json_null', postgresql.JSON, nullable=True)
+             sa.Column('json_null', postgresql.JSON, nullable=True),
+             sa.Index('tbl_jsonb_idx', 'jsonb', postgresql_using='gin'),
+             # just to confirm btree works
+             sa.Index('tbl_nullable_jsonb_idx', 'jsonb_null',
+                      postgresql_using='btree'),
+             # index with no type..
+             sa.Index('tbl_default_jsonb_idx', 'jsonb2_null'),
              )
     return metadata
 
 
-@pytest.fixture
+@ pytest.fixture
 def metadata_with_bigint():
     metadata = sa.MetaData()
     sa.Table("tbl", metadata,
@@ -456,7 +484,7 @@ def metadata_with_multicolumn_fulltext_search_index(metadata_with_table):
     return metadata_with_table
 
 
-@pytest.fixture
+@ pytest.fixture
 def metadata_with_multicolumn_fulltext_search():
     metadata = metadata_with_base_table_restored()
     sa.Table('accounts',

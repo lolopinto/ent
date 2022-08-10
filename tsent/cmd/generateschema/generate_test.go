@@ -165,7 +165,7 @@ func TestParse(t *testing.T) {
 					&input.Field{
 						Name:            "baz",
 						Import:          &enttype.PasswordImport{},
-						Private:         true,
+						Private:         &input.PrivateOptions{},
 						HideFromGraphQL: true,
 					},
 					"{private: true, hideFromGraphQL: true}",

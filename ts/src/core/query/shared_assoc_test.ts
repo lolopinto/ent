@@ -37,7 +37,7 @@ import {
 } from "../../testutils/fake_data/test_helpers";
 import DB, { Dialect } from "../db";
 
-export function assocTests() {
+export function assocTests(global = false) {
   describe("custom edge", () => {
     let user1, user2: FakeUser;
 
@@ -112,10 +112,17 @@ export function assocTests() {
     for (let i = 0; i < numQueries; i++) {
       const query = queries[i];
       let expLimit = disablePaginationBump ? limit : limit + 1;
-      expect(query.qs?.whereClause, `${i}`).toBe(
-        // default limit
-        `id1 = $1 AND edge_type = $2 ORDER BY time DESC LIMIT ${expLimit}`,
-      );
+      if (global) {
+        expect(query.qs?.whereClause, `${i}`).toBe(
+          // default limit
+          `id1 = $1 AND edge_type = $2 AND deleted_at IS NULL ORDER BY time DESC LIMIT ${expLimit}`,
+        );
+      } else {
+        expect(query.qs?.whereClause, `${i}`).toBe(
+          // default limit
+          `id1 = $1 AND edge_type = $2 ORDER BY time DESC LIMIT ${expLimit}`,
+        );
+      }
     }
   }
 
@@ -127,7 +134,13 @@ export function assocTests() {
     expect(queries.length).toBe(length);
     for (let i = 0; i < numQueries; i++) {
       const query = queries[i];
-      expect(query.qs?.whereClause).toBe(`id1 = $1 AND edge_type = $2`);
+      if (global) {
+        expect(query.qs?.whereClause).toBe(
+          `id1 = $1 AND edge_type = $2 AND deleted_at IS NULL`,
+        );
+      } else {
+        expect(query.qs?.whereClause).toBe(`id1 = $1 AND edge_type = $2`);
+      }
     }
   }
 

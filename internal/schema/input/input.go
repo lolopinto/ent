@@ -14,8 +14,9 @@ import (
 )
 
 type Schema struct {
-	Nodes    map[string]*Node    `json:"schemas,omitempty"`
-	Patterns map[string]*Pattern `json:"patterns,omitempty"`
+	Nodes        map[string]*Node    `json:"schemas,omitempty"`
+	Patterns     map[string]*Pattern `json:"patterns,omitempty"`
+	GlobalSchema *GlobalSchema       `json:"globalSchema"`
 }
 
 type Pattern struct {
@@ -56,6 +57,12 @@ func (n *Node) AddAssocEdge(edge *AssocEdge) {
 
 func (n *Node) AddAssocEdgeGroup(edgeGroup *AssocEdgeGroup) {
 	n.AssocEdgeGroups = append(n.AssocEdgeGroups, edgeGroup)
+}
+
+type GlobalSchema struct {
+	ExtraEdgeFields []*Field     `json:"extraEdgeFields,omitempty"`
+	GlobalEdges     []*AssocEdge `json:"globalEdges,omitempty"`
+	InitForEdges    bool         `json:"initForEdges,omitempty"`
 }
 
 type DBType string
@@ -112,6 +119,11 @@ type FieldType struct {
 	UnionFields []*Field `json:"unionFields,omitempty"`
 }
 
+type UserConvertType struct {
+	Path     string `json:"path,omitempty"`
+	Function string `json:"function,omitempty"`
+}
+
 type Field struct {
 	// Note that anytime anything changes here, have to update fieldEqual in compare.go
 	Name       string     `json:"name,omitempty"`
@@ -119,13 +131,13 @@ type Field struct {
 	Nullable   bool       `json:"nullable,omitempty"`
 	StorageKey string     `json:"storageKey,omitempty"`
 	// TODO need a way to indicate unique edge is Required also. this changes type generated in ent and graphql
-	Unique                  bool   `json:"unique,omitempty"`
-	HideFromGraphQL         bool   `json:"hideFromGraphQL,omitempty"`
-	Private                 bool   `json:"private,omitempty"`
-	GraphQLName             string `json:"graphqlName,omitempty"`
-	Index                   bool   `json:"index,omitempty"`
-	PrimaryKey              bool   `json:"primaryKey,omitempty"`
-	DefaultToViewerOnCreate bool   `json:"defaultToViewerOnCreate,omitempty"`
+	Unique                  bool            `json:"unique,omitempty"`
+	HideFromGraphQL         bool            `json:"hideFromGraphQL,omitempty"`
+	Private                 *PrivateOptions `json:"private,omitempty"`
+	GraphQLName             string          `json:"graphqlName,omitempty"`
+	Index                   bool            `json:"index,omitempty"`
+	PrimaryKey              bool            `json:"primaryKey,omitempty"`
+	DefaultToViewerOnCreate bool            `json:"defaultToViewerOnCreate,omitempty"`
 
 	FieldEdge     *FieldEdge  `json:"fieldEdge,omitempty"` // this only really makes sense on id fields...
 	ForeignKey    *ForeignKey `json:"foreignKey,omitempty"`
@@ -140,6 +152,7 @@ type Field struct {
 	Polymorphic         *PolymorphicOptions `json:"polymorphic,omitempty"`
 	DerivedWhenEmbedded bool                `json:"derivedWhenEmbedded,omitempty"`
 	DerivedFields       []*Field            `json:"derivedFields,omitempty"`
+	UserConvert         *UserConvertType    `json:"convert,omitempty"`
 
 	// Go specific information here
 	TagMap          map[string]string `json:"-"`
@@ -189,6 +202,10 @@ type PolymorphicOptions struct {
 	Types                  []string `json:"types,omitempty"`
 	HideFromInverseGraphQL bool     `json:"hideFromInverseGraphQL,omitempty"`
 	DisableBuilderType     bool     `json:"disableBuilderType,omitempty"`
+}
+
+type PrivateOptions struct {
+	ExposeToActions bool `json:"exposeToActions,omitempty"`
 }
 
 func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.TSGraphQLType, error) {
@@ -714,6 +731,8 @@ type Index struct {
 	Columns  []string  `json:"columns,omitempty"`
 	Unique   bool      `json:"unique,omitempty"`
 	FullText *FullText `json:"fullText,omitempty"`
+	// for regular indices. doesn't apply for full text...
+	IndexType IndexType `json:"indexType,omitempty"`
 }
 
 type FullTextLanguage string
@@ -726,11 +745,15 @@ const (
 	Simple  FullTextLanguage = "simple"
 )
 
+// full text only supports gin | gist
+// TODO https://github.com/lolopinto/ent/issues/1029
+// Index only currently supports gin | btree (will eventually support gist)
 type IndexType string
 
 const (
-	Gin  IndexType = "gin"
-	Gist IndexType = "gist"
+	Gin   IndexType = "gin"
+	Gist  IndexType = "gist"
+	Btree IndexType = "btree"
 )
 
 type FullTextWeight struct {
