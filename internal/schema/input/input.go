@@ -119,6 +119,11 @@ type FieldType struct {
 	UnionFields []*Field `json:"unionFields,omitempty"`
 }
 
+type UserConvertType struct {
+	Path     string `json:"path,omitempty"`
+	Function string `json:"function,omitempty"`
+}
+
 type Field struct {
 	// Note that anytime anything changes here, have to update fieldEqual in compare.go
 	Name       string     `json:"name,omitempty"`
@@ -147,6 +152,7 @@ type Field struct {
 	Polymorphic         *PolymorphicOptions `json:"polymorphic,omitempty"`
 	DerivedWhenEmbedded bool                `json:"derivedWhenEmbedded,omitempty"`
 	DerivedFields       []*Field            `json:"derivedFields,omitempty"`
+	UserConvert         *UserConvertType    `json:"convert,omitempty"`
 
 	// Go specific information here
 	TagMap          map[string]string `json:"-"`

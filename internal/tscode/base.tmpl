@@ -98,10 +98,9 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     {{range $field := .FieldInfo.Fields -}}
       {{ if not ($schema.PatternFieldWithMixin $field) -}}
         {{$val := printf "data.%s" $field.GetDbColName -}}
-        {{$convertType := convertFunc ($field.GetTSFieldType $cfg) -}}
+        {{$convertType := convertFunc $field $cfg  -}}
         {{if $convertType -}} 
-          {{/* could be BigInt which isn't reserved */ -}}
-          this.{{$field.TsFieldName $cfg}} = {{useImportMaybe $convertType}}({{$val}});
+          this.{{$field.TsFieldName $cfg}} = {{printf "%s(%v)" $convertType $val}};
         {{ else -}}
           this.{{$field.TsFieldName $cfg}} = {{$val}};
         {{end -}}

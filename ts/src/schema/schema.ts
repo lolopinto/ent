@@ -290,6 +290,13 @@ export interface ImportType {
   [x: string]: any;
 }
 
+// TODO make this have an async flag and an accessor will be generated
+// for it that does this instead of doing in constructor
+export interface ConvertType {
+  path: string;
+  function: string;
+}
+
 declare type EnumMap = {
   [key: string]: string;
 };
@@ -322,6 +329,10 @@ export interface Type {
 
   // UnionType fields. really StructMap but don't want circular dependency...
   unionFields?: FieldMap;
+
+  // to convert the field in some way
+  // should be the same type e.g. Date to Date
+  convert?: ConvertType;
 
   // allow other keys
   [x: string]: any;

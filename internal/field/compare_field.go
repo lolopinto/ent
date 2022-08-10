@@ -81,7 +81,8 @@ func FieldEqual(existing, field *Field) bool {
 		existing.hasFieldPrivacy == field.hasFieldPrivacy &&
 		existing.forceRequiredInAction == field.forceRequiredInAction &&
 		existing.forceOptionalInAction == field.forceOptionalInAction &&
-		existing.patternName == field.patternName
+		existing.patternName == field.patternName &&
+		input.UserConvertTypeEqual(existing.userConvert, field.userConvert)
 }
 
 func FieldsEqual(fields1, fields2 []*Field) bool {
