@@ -59,13 +59,7 @@ export function {{$p.GetMixinName}}<T extends Constructor>(BaseClass: T) {
 
       {{ range $field := $p.FieldInfo.Fields -}}
         {{$val := printf "data.%s" $field.GetDbColName -}}
-        {{$convertType := convertFunc $field $cfg -}}
-
-        {{if $convertType -}} 
-          this.{{$field.TsFieldName $cfg}} = {{printf "%s(%v)" $convertType $val}};
-        {{ else -}}
-          this.{{$field.TsFieldName $cfg}} = {{$val}};
-        {{end -}}
+        this.{{$field.TsFieldName $cfg}} = {{callAndConvertFunc $field $cfg  $val }}
       {{end -}}
     }
 

@@ -173,8 +173,8 @@ export class UserBase
     this.funUuids = convertNullableList(data.fun_uuids);
     this.newCol = data.new_col;
     this.newCol2 = data.new_col_2;
-    this.superNestedObject = convertSuperNestedObject(convertNullableJSON)(
-      data.super_nested_object,
+    this.superNestedObject = convertSuperNestedObject(
+      convertNullableJSON(data.super_nested_object),
     );
     this.nestedList = convertNullableJSONList(data.nested_list);
     this.intEnum = data.int_enum;
