@@ -1,4 +1,4 @@
-import { Dialect } from "./db";
+import DB, { Dialect } from "./db";
 import {
   table,
   text,
@@ -75,6 +75,10 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await tdb.afterAll();
+});
+
+afterEach(async () => {
+  await DB.getInstance().getPool().exec(`DELETE FROM ${tableName}`);
 });
 
 test("create + array query", async () => {
@@ -154,9 +158,11 @@ test("create + array query", async () => {
     clause: clause.PostgresArrayNotContains("emails", row.emails),
   });
   expect(notFromAllEmails.length).toBe(19);
+
+  //  const
 });
 
-test.only("jsonb", async () => {
+test("jsonb", async () => {
   for (let i = 0; i < 20; i++) {
     const data: Data = {
       id: v1(),
@@ -192,47 +198,50 @@ test.only("jsonb", async () => {
     });
   }
 
-  setLogLevels(["query", "error"]);
-  // const nullableBazRows = await loadRows({
-  //   tableName,
-  //   fields,
-  //   // TODO...
-  //   clause: clause.Eq(clause.JSONObjectFieldKeyASJSON("foo", "baz"), null),
-  // });
-  // // hmm 7 instead of 14...
-  // expect(nullableBazRows.length).toEqual(7);
+  const nullableBazRows = await loadRows({
+    tableName,
+    fields,
+    // this stops at null fields
+    clause: clause.Eq(clause.JSONObjectFieldKeyASJSON("foo", "baz"), null),
+  });
+  expect(nullableBazRows.length).toEqual(7);
 
-  // const fooFoo1Rows = await loadRows({
-  //   tableName,
-  //   fields,
-  //   clause: clause.Eq(clause.JSONObjectFieldKeyAsText("foo", "foo"), "foo1"),
-  // });
-  // expect(fooFoo1Rows.length).toEqual(7);
+  // this is actually what you want
+  const nullableBazRows2 = await loadRows({
+    tableName,
+    fields,
+    clause: clause.Eq(clause.JSONObjectFieldKeyAsText("foo", "baz"), null),
+  });
+  expect(nullableBazRows2.length).toEqual(14);
 
-  // const fooFoo2Rows = await loadRows({
-  //   tableName,
-  //   fields,
-  //   clause: clause.Eq(clause.JSONObjectFieldKeyAsText("foo", "bar"), "bar2"),
-  // });
-  // expect(fooFoo2Rows.length).toEqual(6);
+  const fooFoo1Rows = await loadRows({
+    tableName,
+    fields,
+    clause: clause.Eq(clause.JSONObjectFieldKeyAsText("foo", "foo"), "foo1"),
+  });
+  expect(fooFoo1Rows.length).toEqual(7);
 
-  // // TODO...
-  // const arrGreater5Rows = await loadRows({
-  //   tableName,
-  //   fields,
-  //   clause: clause.JSONPathValuePredicate("foo", "$.arr[*]", 5, ">"),
-  // });
-  // // expect(arrGreater5Rows.length).toEqual(6);
+  const fooFoo2Rows = await loadRows({
+    tableName,
+    fields,
+    clause: clause.Eq(clause.JSONObjectFieldKeyAsText("foo", "bar"), "bar2"),
+  });
+  expect(fooFoo2Rows.length).toEqual(6);
 
-  // //TODO...
-  // const arrLess5Rows = await loadRows({
-  //   tableName,
-  //   fields,
-  //   clause: clause.JSONPathValuePredicate("foo", "$.arr[*]", 5, "<"),
-  // });
-  // // expect(arrLess5Rows.length).toEqual(6);
+  const arrGreater5Rows = await loadRows({
+    tableName,
+    fields,
+    clause: clause.JSONPathValuePredicate("foo", "$.arr[*]", 5, ">"),
+  });
+  expect(arrGreater5Rows.length).toEqual(6);
 
-  // ok this is just broken...
+  const arrLess5Rows = await loadRows({
+    tableName,
+    fields,
+    clause: clause.JSONPathValuePredicate("foo", "$.arr[*]", 5, "<"),
+  });
+  expect(arrLess5Rows.length).toEqual(7);
+
   const helloRows = await loadRows({
     tableName,
     fields,
