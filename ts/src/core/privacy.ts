@@ -527,13 +527,8 @@ export async function applyPrivacyPolicyX(
   ent: Ent | undefined,
   throwErr?: () => Error,
 ): Promise<boolean> {
-  // right now we apply all at same time. todo: be smart about this in the future
-  const results = await Promise.all(
-    policy.rules.map((rule) => rule.apply(v, ent)),
-  );
-  for (let i = 0; i < results.length; i++) {
-    const res = results[i];
-    const rule = policy.rules[i];
+  for (const rule of policy.rules) {
+    const res = await rule.apply(v, ent);
     if (res.result == privacyResult.Allow) {
       return true;
     } else if (res.result == privacyResult.Deny) {
