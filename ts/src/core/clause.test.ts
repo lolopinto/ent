@@ -424,6 +424,62 @@ describe("postgres", () => {
     });
   });
 
+  describe("jsonb", () => {
+    test("eq", () => {
+      const cls = clause.JSONPathValuePredicate("jsonb", "$.*", 3, "==");
+      expect(cls.clause(1)).toBe("jsonb @@ $1");
+      expect(cls.columns()).toStrictEqual(["jsonb"]);
+      expect(cls.values()).toStrictEqual(["$.* == 3"]);
+      expect(cls.logValues()).toStrictEqual(["$.* == 3"]);
+      expect(cls.instanceKey()).toEqual("jsonb$.*3==");
+    });
+
+    test("eq string", () => {
+      const cls = clause.JSONPathValuePredicate("jsonb", "$.*", "hello", "==");
+      expect(cls.clause(1)).toBe("jsonb @@ $1");
+      expect(cls.columns()).toStrictEqual(["jsonb"]);
+      expect(cls.values()).toStrictEqual(['$.* == "hello"']);
+      expect(cls.logValues()).toStrictEqual(['$.* == "hello"']);
+      expect(cls.instanceKey()).toEqual("jsonb$.*hello==");
+    });
+
+    test("ge", () => {
+      const cls = clause.JSONPathValuePredicate("jsonb", "$.*", 3, ">");
+      expect(cls.clause(1)).toBe("jsonb @@ $1");
+      expect(cls.columns()).toStrictEqual(["jsonb"]);
+      expect(cls.values()).toStrictEqual(["$.* > 3"]);
+      expect(cls.logValues()).toStrictEqual(["$.* > 3"]);
+      expect(cls.instanceKey()).toEqual("jsonb$.*3>");
+    });
+
+    test("ne", () => {
+      const cls = clause.JSONPathValuePredicate("jsonb", "$.*", 3, "!=");
+      expect(cls.clause(1)).toBe("jsonb @@ $1");
+      expect(cls.columns()).toStrictEqual(["jsonb"]);
+      expect(cls.values()).toStrictEqual(["$.* != 3"]);
+      expect(cls.logValues()).toStrictEqual(["$.* != 3"]);
+      expect(cls.instanceKey()).toEqual("jsonb$.*3!=");
+    });
+
+    test("specific path", () => {
+      const cls = clause.JSONPathValuePredicate("jsonb", "$.col", 3, "!=");
+      expect(cls.clause(1)).toBe("jsonb @@ $1");
+      expect(cls.columns()).toStrictEqual(["jsonb"]);
+      expect(cls.values()).toStrictEqual(["$.col != 3"]);
+      expect(cls.logValues()).toStrictEqual(["$.col != 3"]);
+      expect(cls.instanceKey()).toEqual("jsonb$.col3!=");
+    });
+
+    test("specific path arr idx", () => {
+      const cls = clause.JSONPathValuePredicate("jsonb", "$.col[*]", 3, "!=");
+      expect(cls.clause(1)).toBe("jsonb @@ $1");
+      expect(cls.columns()).toStrictEqual(["jsonb"]);
+      expect(cls.values()).toStrictEqual(["$.col[*] != 3"]);
+      expect(cls.logValues()).toStrictEqual(["$.col[*] != 3"]);
+      expect(cls.instanceKey()).toEqual("jsonb$.col[*]3!=");
+    });
+  });
+
   describe("full text", () => {
     test("tsquery string", () => {
       const cls = clause.TsQuery("name_idx", "value");

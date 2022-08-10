@@ -1,14 +1,30 @@
-import { Dialect } from "./db";
-import { table, text, uuidList, TempDB, uuid } from "../testutils/db/temp_db";
+import DB, { Dialect } from "./db";
+import {
+  table,
+  text,
+  uuidList,
+  TempDB,
+  uuid,
+  jsonb,
+} from "../testutils/db/temp_db";
 import { createRowForTest } from "../testutils/write";
 import { loadConfig } from "./config";
 import { loadRows } from "./ent";
 import * as clause from "./clause";
 import { Data } from "./base";
 import { v1 } from "uuid";
+import { setLogLevels } from "./logger";
 
 const tableName = "contacts";
-const fields = ["id", "first_name", "last_name", "emails", "phones", "random"];
+const fields = [
+  "id",
+  "first_name",
+  "last_name",
+  "emails",
+  "phones",
+  "random",
+  "foo",
+];
 
 const tdb = new TempDB(Dialect.Postgres, [
   table(
@@ -32,18 +48,18 @@ const tdb = new TempDB(Dialect.Postgres, [
       },
       nullable: true,
     }),
+    jsonb("foo", {
+      index: {
+        type: "gin",
+      },
+      nullable: true,
+    }),
   ),
 ]);
 
 beforeAll(async () => {
   await tdb.beforeAll(false);
-});
 
-afterAll(async () => {
-  await tdb.afterAll();
-});
-
-test("create + array query", async () => {
   const user = process.env.POSTGRES_USER || "";
   const password = process.env.POSTGRES_PASSWORD || "";
 
@@ -55,6 +71,17 @@ test("create + array query", async () => {
       host: "localhost",
     },
   });
+});
+
+afterAll(async () => {
+  await tdb.afterAll();
+});
+
+afterEach(async () => {
+  await DB.getInstance().getPool().exec(`DELETE FROM ${tableName}`);
+});
+
+test("create + array query", async () => {
   let random = v1();
   for (let i = 0; i < 20; i++) {
     const data: Data = {
@@ -131,4 +158,96 @@ test("create + array query", async () => {
     clause: clause.PostgresArrayNotContains("emails", row.emails),
   });
   expect(notFromAllEmails.length).toBe(19);
+
+  //  const
+});
+
+test("jsonb", async () => {
+  for (let i = 0; i < 20; i++) {
+    const data: Data = {
+      id: v1(),
+      first_name: "Jon",
+      last_name: "Snow",
+      emails: [],
+      phones: [],
+      random: null,
+      foo: null,
+    };
+
+    if (i % 3 === 1) {
+      data.foo = {
+        foo: "foo1",
+        bar: "bar1",
+        arr: [1, 2, 3, 4, 5],
+        baz: null,
+        wildcard: "hello",
+      };
+    }
+    if (i % 3 === 2) {
+      data.foo = {
+        foo: "foo2",
+        bar: "bar2",
+        arr: [6, 7, 8, 9, 10],
+        baz: "hello",
+      };
+    }
+
+    await createRowForTest({
+      tableName,
+      fields: data,
+    });
+  }
+
+  const nullableBazRows = await loadRows({
+    tableName,
+    fields,
+    // this stops at null fields
+    clause: clause.Eq(clause.JSONObjectFieldKeyASJSON("foo", "baz"), null),
+  });
+  expect(nullableBazRows.length).toEqual(7);
+
+  // this is actually what you want
+  const nullableBazRows2 = await loadRows({
+    tableName,
+    fields,
+    clause: clause.Eq(clause.JSONObjectFieldKeyAsText("foo", "baz"), null),
+  });
+  expect(nullableBazRows2.length).toEqual(14);
+
+  const fooFoo1Rows = await loadRows({
+    tableName,
+    fields,
+    clause: clause.Eq(clause.JSONObjectFieldKeyAsText("foo", "foo"), "foo1"),
+  });
+  expect(fooFoo1Rows.length).toEqual(7);
+
+  const fooFoo2Rows = await loadRows({
+    tableName,
+    fields,
+    clause: clause.Eq(clause.JSONObjectFieldKeyAsText("foo", "bar"), "bar2"),
+  });
+  expect(fooFoo2Rows.length).toEqual(6);
+
+  const arrGreater5Rows = await loadRows({
+    tableName,
+    fields,
+    clause: clause.JSONPathValuePredicate("foo", "$.arr[*]", 5, ">"),
+  });
+  expect(arrGreater5Rows.length).toEqual(6);
+
+  const arrLess5Rows = await loadRows({
+    tableName,
+    fields,
+    clause: clause.JSONPathValuePredicate("foo", "$.arr[*]", 5, "<"),
+  });
+  expect(arrLess5Rows.length).toEqual(7);
+
+  const helloRows = await loadRows({
+    tableName,
+    fields,
+    clause: clause.JSONPathValuePredicate("foo", "$.*", "hello", "=="),
+  });
+  expect(helloRows.length).toEqual(13);
+
+  // TODO check to make sure we tested it all...
 });

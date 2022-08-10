@@ -619,3 +619,77 @@ export function sensitiveValue(val: any): SensitiveValue {
     },
   };
 }
+
+// These don't return Clauses but return helpful things that can be passed to clauses
+
+// https://www.postgresql.org/docs/12/functions-json.html#FUNCTIONS-JSON-OP-TABLE
+// see test in db_clause.test.ts
+// unclear best time to use this...
+export function JSONObjectFieldKeyASJSON(col: string, field: string) {
+  return `${col}->'${field}'`;
+}
+
+export function JSONObjectFieldKeyAsText(col: string, field: string) {
+  return `${col}->>'${field}'`;
+}
+
+// can't get this to work...
+// https://www.postgresql.org/docs/12/functions-json.html#FUNCTIONS-JSON-OP-TABLE
+// export function ArrayIndexAsText(col: string, index: number) {
+//   return `${col}->>${index}`;
+// }
+
+type predicate = "==" | ">" | "<" | "!=" | ">=" | "<=";
+
+class jSONPathValuePredicateClause implements Clause {
+  constructor(
+    protected col: string,
+    protected path: string,
+    protected value: any,
+    private pred: predicate,
+  ) {}
+
+  clause(idx: number): string {
+    if (DB.getDialect() !== Dialect.Postgres) {
+      throw new Error(`not supported`);
+    }
+    return `${this.col} @@ $${idx}`;
+  }
+
+  columns(): string[] {
+    return [this.col];
+  }
+
+  private wrap(val: any) {
+    return `${this.path} ${this.pred} ${JSON.stringify(val)}`;
+  }
+
+  values(): any[] {
+    if (isSensitive(this.value)) {
+      return [this.wrap(this.value.value())];
+    }
+
+    return [this.wrap(this.value)];
+  }
+
+  logValues(): any[] {
+    if (isSensitive(this.value)) {
+      return [this.wrap(this.value.logValue())];
+    }
+    return [this.wrap(this.value)];
+  }
+
+  instanceKey(): string {
+    return `${this.col}${this.path}${rawValue(this.value)}${this.pred}`;
+  }
+}
+
+// https://www.postgresql.org/docs/12/functions-json.html#FUNCTIONS-JSON-OP-TABLE
+export function JSONPathValuePredicate(
+  dbCol: string,
+  path: string,
+  val: any,
+  pred: predicate,
+): Clause {
+  return new jSONPathValuePredicateClause(dbCol, path, val, pred);
+}

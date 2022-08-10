@@ -2337,7 +2337,7 @@ func TestExtraEdgeCols(t *testing.T) {
 	}
 }
 
-func TestExplicitIndexBtree(t *testing.T) {
+func TestExplicitScalarIndexBtree(t *testing.T) {
 	dbSchema := getSchemaFromInput(
 		t,
 		&input.Schema{
@@ -2387,7 +2387,7 @@ func TestExplicitIndexBtree(t *testing.T) {
 	)
 }
 
-func TestExplicitIndexGin(t *testing.T) {
+func TestExplicitListIndexGin(t *testing.T) {
 	dbSchema := getSchemaFromInput(
 		t,
 		&input.Schema{
@@ -2440,7 +2440,7 @@ func TestExplicitIndexGin(t *testing.T) {
 	)
 }
 
-func TestImplicitIndex(t *testing.T) {
+func TestImplicitScalarIndex(t *testing.T) {
 	dbSchema := getSchemaFromInput(
 		t,
 		&input.Schema{
@@ -2483,7 +2483,7 @@ func TestImplicitIndex(t *testing.T) {
 	)
 }
 
-func TestImplicitIndexGin(t *testing.T) {
+func TestImplicitListIndexGin(t *testing.T) {
 	dbSchema := getSchemaFromInput(
 		t,
 		&input.Schema{
@@ -2525,6 +2525,201 @@ func TestImplicitIndexGin(t *testing.T) {
 		fmt.Sprintf("sa.Index(%s, %s, postgresql_using=%s)",
 			strconv.Quote("users_emails_idx"),
 			strconv.Quote("emails"),
+			strconv.Quote("gin"),
+		),
+	)
+}
+
+func TestImplicitListIndexGinNoIndexType(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "emails",
+							Type: &input.FieldType{
+								DBType: input.List,
+								ListElemType: &input.FieldType{
+									DBType: input.String,
+								},
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:    "users_emails_idx",
+							Columns: []string{"emails"},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestIndexedConstraintFromTable(t, table, "emails")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_using=%s)",
+			strconv.Quote("users_emails_idx"),
+			strconv.Quote("emails"),
+			strconv.Quote("gin"),
+		),
+	)
+}
+
+func TestExplicitJSONBIndexGin(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "foo",
+							Type: &input.FieldType{
+								DBType: input.JSONB,
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:      "users_foo_idx",
+							Columns:   []string{"foo"},
+							IndexType: input.Gin,
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestIndexedConstraintFromTable(t, table, "foo")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_using=%s)",
+			strconv.Quote("users_foo_idx"),
+			strconv.Quote("foo"),
+			strconv.Quote("gin"),
+		),
+	)
+}
+
+func TestImplicitJSONBIndexGin(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "foo",
+							Type: &input.FieldType{
+								DBType: input.JSONB,
+							},
+							Index: true,
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestIndexedConstraintFromTable(t, table, "foo")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_using=%s)",
+			strconv.Quote("users_foo_idx"),
+			strconv.Quote("foo"),
+			strconv.Quote("gin"),
+		),
+	)
+}
+
+func TestImplicitJSONBNoIndexType(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "foo",
+							Type: &input.FieldType{
+								DBType: input.JSONB,
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:    "users_foo_idx",
+							Columns: []string{"foo"},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("UserConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestIndexedConstraintFromTable(t, table, "foo")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_using=%s)",
+			strconv.Quote("users_foo_idx"),
+			strconv.Quote("foo"),
 			strconv.Quote("gin"),
 		),
 	)

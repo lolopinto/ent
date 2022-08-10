@@ -439,6 +439,15 @@ func (s *dbSchema) createTableForNode(nodeData *schema.NodeData) *dbTable {
 	}
 }
 
+func (s *dbSchema) findFieldForCol(nodeData *schema.NodeData, col string) *field.Field {
+	for _, f := range nodeData.FieldInfo.Fields {
+		if f.GetDbColName() == col {
+			return f
+		}
+	}
+	return nil
+}
+
 func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbColumn, constraints *[]dbConstraint) error {
 	for _, constraint := range nodeData.Constraints {
 		switch constraint.Type {
@@ -481,6 +490,15 @@ func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbCo
 			name:      index.Name,
 			indexType: index.IndexType,
 		}
+		if index.IndexType == "" {
+			if len(cols) == 1 {
+				f := s.findFieldForCol(nodeData, cols[0].DBColName)
+				if f != nil {
+					constraint.indexType = s.getDefaultIndexType(f)
+				}
+			}
+		}
+
 		if index.FullText != nil {
 			fullText := &fullTextConstraint{
 				indexConstraint: constraint,
@@ -1085,6 +1103,16 @@ func (s *dbSchema) addUniqueConstraint(nodeData *schema.NodeData, inputConstrain
 	return nil
 }
 
+func (s *dbSchema) getDefaultIndexType(f *field.Field) input.IndexType {
+	// default index type for lists|jsonb when not specified is gin type
+	typ := f.GetFieldType()
+	if enttype.IsListType(typ) || enttype.IsJSONBType(typ) {
+		return input.Gin
+	}
+
+	return ""
+}
+
 func (s *dbSchema) addIndexConstraint(f *field.Field, tableName string, col *dbColumn, constraints *[]dbConstraint) {
 	if !f.Index() {
 		return
@@ -1094,7 +1122,8 @@ func (s *dbSchema) addIndexConstraint(f *field.Field, tableName string, col *dbC
 		tableName: tableName,
 	}
 	// default index type for lists when not specified is gin type
-	if enttype.IsListType(f.GetFieldType()) {
+	idxType := s.getDefaultIndexType(f)
+	if idxType != "" {
 		constraint.indexType = input.Gin
 	}
 	*constraints = append(*constraints, constraint)
