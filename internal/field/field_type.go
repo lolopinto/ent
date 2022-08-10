@@ -80,6 +80,7 @@ type Field struct {
 	forceOptionalInAction bool
 
 	patternName string
+	userConvert *input.UserConvertType
 }
 
 // mostly used by tests
@@ -117,6 +118,7 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 		hasFieldPrivacy:            f.HasFieldPrivacy,
 		derivedWhenEmbedded:        f.DerivedWhenEmbedded,
 		patternName:                f.PatternName,
+		userConvert:                f.UserConvert,
 
 		// go specific things
 		entType:         f.GoType,
@@ -605,6 +607,14 @@ func (f *Field) GetImportsForTypes() []*tsimport.ImportPath {
 			}
 		}
 	}
+
+	if f.userConvert != nil {
+		ret = append(ret, &tsimport.ImportPath{
+			ImportPath: f.userConvert.Path,
+			Import:     f.userConvert.Function,
+		})
+	}
+
 	return ret
 }
 
@@ -846,6 +856,10 @@ func (f *Field) PatternField() bool {
 
 func (f *Field) GetPatternName() string {
 	return f.patternName
+}
+
+func (f *Field) GetUserConvert() *input.UserConvertType {
+	return f.userConvert
 }
 
 type Option func(*Field)

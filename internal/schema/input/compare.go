@@ -63,7 +63,18 @@ func fieldEqual(existingField, field *Field) bool {
 		PolymorphicOptionsEqual(existingField.Polymorphic, field.Polymorphic) &&
 		existingField.DerivedWhenEmbedded == field.DerivedWhenEmbedded &&
 		fieldsEqual(existingField.DerivedFields, field.DerivedFields) &&
-		existingField.PatternName == field.PatternName
+		existingField.PatternName == field.PatternName &&
+		UserConvertTypeEqual(existingField.UserConvert, field.UserConvert)
+}
+
+func UserConvertTypeEqual(existing, convert *UserConvertType) bool {
+	ret := change.CompareNilVals(existing == nil, convert == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return existing.Function == convert.Function &&
+		existing.Path == convert.Path
 }
 
 func fieldTypeEqual(existing, fieldType *FieldType) bool {

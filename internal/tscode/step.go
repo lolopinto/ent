@@ -13,9 +13,11 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/fns"
 	"github.com/lolopinto/ent/internal/schema"
@@ -1233,7 +1235,40 @@ func getBuilderFuncs(imps *tsimport.Imports) template.FuncMap {
 
 func getBaseFuncs(imps *tsimport.Imports) template.FuncMap {
 	m := imps.FuncMap()
-	m["convertFunc"] = enttype.ConvertFunc
+	m["convertFunc"] = func(f *field.Field, cfg codegenapi.Config) (string, error) {
+		conv1 := enttype.ConvertFunc(f.GetTSFieldType(cfg))
+		conv2 := ""
+		userConv := f.GetUserConvert()
+		if userConv != nil {
+			conv2 = userConv.Function
+		}
+		if conv1 == conv2 && conv1 == "" {
+			return "", nil
+		}
+
+		// could be BigInt which isn't reserved
+		if conv2 != "" {
+			_, err := imps.UseMaybe(conv2)
+			if err != nil {
+				return "", err
+			}
+		}
+		if conv1 != "" {
+			_, err := imps.UseMaybe(conv1)
+
+			if err != nil {
+				return "", err
+			}
+		}
+
+		if conv2 != "" && conv1 != "" {
+			return fmt.Sprintf("%s(%s)", conv2, conv1), nil
+		}
+		if conv2 != "" {
+			return conv2, nil
+		}
+		return conv1, nil
+	}
 
 	return m
 }
