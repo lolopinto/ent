@@ -16,6 +16,10 @@ export interface Loader<T, V> {
   clearAll(): any;
 }
 
+interface LoaderWithLoadMany<T, V> extends Loader<T, V> {
+  loadMany(keys: T[]): Promise<(V | null)[]>;
+}
+
 // A LoaderFactory is used to create a Loader
 // We cache data on a per-request basis therefore for each new request, createLoader
 // is called to get a new instance of Loader which will then be used to load data as needed
@@ -27,6 +31,10 @@ export interface LoaderFactory<T, V> {
   // request
   // when no context is passed, no batching possible (except with explicit call to loadMany API)
   createLoader(context?: Context): Loader<T, V>;
+}
+
+interface LoaderFactoryWithLoaderMany<T, V> extends LoaderFactory<T, V> {
+  createLoader(context?: Context): LoaderWithLoadMany<T, V>;
 }
 
 // better name for this?
@@ -46,6 +54,8 @@ export type EdgeQueryableDataOptions = Partial<
 // other sources
 export interface PrimableLoader<T, V> extends Loader<T, V> {
   prime(d: Data): void;
+  // prime this loader and any other loader it's aware of
+  primeAll?(d: Data): void;
 }
 
 interface cache {
@@ -171,7 +181,8 @@ interface LoadableEntOptions<
   ent: EntConstructor<TEnt, TViewer>;
 }
 
-interface LoaderFactoryWithOptions extends LoaderFactory<any, Data | null> {
+interface LoaderFactoryWithOptions
+  extends LoaderFactoryWithLoaderMany<any, Data | null> {
   options?: SelectDataOptions;
 }
 
@@ -189,8 +200,17 @@ export interface LoadEntOptions<
 
 export interface SelectCustomDataOptions extends SelectBaseDataOptions {
   // defaultClause that's added to the query. automatically added
-  clause?: clause.Clause;
-  loaderFactory?: LoaderFactoryWithOptions;
+  // TODO kill the tests testing for this.
+  // only in loaderFactory
+  // clause?: clause.Clause;
+
+  // main loader factory for the ent, passed in for priming the data so subsequent fetches of this id don't reload
+  // only pass prime if we load all the data
+
+  loaderFactory: LoaderFactoryWithOptions;
+
+  // should we prime the ent after loading. uses loaderFactory above
+  prime?: boolean;
 }
 
 export interface LoadCustomEntOptions<

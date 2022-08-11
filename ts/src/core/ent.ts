@@ -25,6 +25,8 @@ import {
   EntConstructor,
   PrivacyPolicy,
   SelectCustomDataOptions,
+  PrimableLoader,
+  Loader,
 } from "./base";
 
 import { applyPrivacyPolicy, applyPrivacyPolicyX } from "./privacy";
@@ -113,17 +115,18 @@ function getEntKey<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
   return `${viewer.instanceKey()}:${options.tableName}:${id}`;
 }
 
-interface cacheInfo {
+interface EntCacheInfo {
   ent?: Ent | null;
   key?: string;
   cache?: Map<string, Ent<any> | null>;
 }
 
-function entFromCache<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
+// fetches the ent from cache if cache exists.
+function entFromCacheMaybe<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
   viewer: TViewer,
   id: ID,
   options: LoadEntOptions<TEnt, TViewer>,
-): cacheInfo {
+): EntCacheInfo {
   const cache = viewer.context?.cache?.getEntCache();
   if (!cache) {
     return {};
@@ -146,7 +149,7 @@ async function applyPrivacyPolicyForRowAndStoreInCache<
   viewer: TViewer,
   options: LoadEntOptions<TEnt, TViewer>,
   row: Data | null,
-  info: cacheInfo,
+  info: EntCacheInfo,
 ): Promise<TEnt | null> {
   const ent = await applyPrivacyPolicyForRow(viewer, options, row);
   if (info.cache && info.key) {
@@ -163,7 +166,7 @@ export async function loadEnt<
   id: ID,
   options: LoadEntOptions<TEnt, TViewer>,
 ): Promise<TEnt | null> {
-  const info = entFromCache(viewer, id, options);
+  const info = entFromCacheMaybe(viewer, id, options);
   if (info.ent !== undefined) {
     return info.ent as TEnt | null;
   }
@@ -188,7 +191,7 @@ export async function loadEntViaKey<
   if (!row) {
     return null;
   }
-  const info = entFromCache(viewer, row.id, options);
+  const info = entFromCacheMaybe(viewer, row.id, options);
   if (info.ent !== undefined) {
     return info.ent as TEnt | null;
   }
@@ -238,7 +241,6 @@ export async function loadEntXViaKey<
 }
 
 /**
- *
  * @deprecated use loadCustomEnts
  */
 export async function loadEntFromClause<
@@ -292,38 +294,56 @@ export async function loadEnts<
   if (!ids.length) {
     return new Map();
   }
-  let loaded = false;
-  let rows: (Error | Data | null)[] = [];
-  // TODO loadMany everywhere
-  const l = options.loaderFactory.createLoader(viewer.context);
-  if (l.loadMany) {
-    loaded = true;
-    rows = await l.loadMany(ids);
-  }
 
-  // TODO rewrite all of this
+  // result
   let m: Map<ID, TEnt> = new Map();
 
-  if (loaded) {
-    let rows2: Data[] = [];
-    for (const row of rows) {
-      if (!row) {
-        continue;
+  const cache = viewer.context?.cache?.getEntCache();
+  const toFetch: ID[] = [];
+  if (cache) {
+    for (const id of ids) {
+      const key = getEntKey(viewer, id, options);
+      const ent = cache.get(key);
+      if (ent !== undefined) {
+        if (ent === null) {
+          // TODO this should return null if not loadable...
+          continue;
+        }
+        // @ts-ignore
+        m.set(id, ent);
+      } else {
+        toFetch.push(id);
       }
-      if (row instanceof Error) {
-        throw row;
-      }
-      rows2.push(row);
     }
-    m = await applyPrivacyPolicyForRows(viewer, rows2, options);
-  } else {
-    m = await loadEntsFromClause(
-      viewer,
-      // this is always "id" if not using an ObjectLoaderFactory
-      clause.In("id", ...ids),
-      options,
-    );
   }
+
+  // all in ent cache!
+  if (!toFetch.length) {
+    return m;
+  }
+
+  const l = options.loaderFactory.createLoader(viewer.context);
+  const rows: (Error | Data | null)[] = await l.loadMany(ids);
+
+  let rows2: Data[] = [];
+  for (const row of rows) {
+    if (!row) {
+      continue;
+    }
+    if (row instanceof Error) {
+      throw row;
+    }
+    rows2.push(row);
+  }
+  const m2 = await applyPrivacyPolicyForRows(viewer, rows2, options);
+  for (const [k, ent] of m2) {
+    if (cache) {
+      // put back in cache...
+      cache.set(getEntKey(viewer, ent.id, options), ent);
+    }
+    m.set(k, ent);
+  }
+
   return m;
 
   // TODO do we want to change this to be a map not a list so that it's easy to check for existence?
@@ -353,6 +373,9 @@ export async function loadEntsList<
 
 // we return a map here so that any sorting for queries that exist
 // can be done in O(N) time
+/**
+ * @deperecated use loadCustomEnts
+ */
 export async function loadEntsFromClause<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
@@ -371,7 +394,6 @@ export async function loadEntsFromClause<
   return await applyPrivacyPolicyForRows(viewer, rows, options);
 }
 
-// another multi-id API
 export async function loadCustomEnts<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
@@ -385,14 +407,25 @@ export async function loadCustomEnts<
   const result: TEnt[] = new Array(rows.length);
   await Promise.all(
     rows.map(async (row, idx) => {
-      const ent = new options.ent(viewer, row);
-      let privacyEnt = await applyPrivacyPolicyForEnt(
-        viewer,
-        ent,
-        row,
-        options,
-      );
+      // TODO key is different??
+      const info = entFromCacheMaybe(viewer, row.id, options);
+      if (info.ent !== undefined) {
+        if (info.ent === null) {
+          // we're done here
+          return;
+        }
+        // @ts-ignore
+        result[idx] = ent;
+        return;
+      }
 
+      const privacyEnt = await applyPrivacyPolicyForRowAndStoreInCache(
+        viewer,
+        options,
+        // TODO row.id. what if key is different
+        row.id,
+        info,
+      );
       if (privacyEnt) {
         result[idx] = privacyEnt;
       }
@@ -457,13 +490,33 @@ export async function loadCustomData(
   query: CustomQuery,
   context: Context | undefined,
 ): Promise<Data[]> {
-  function getClause(cls: clause.Clause) {
-    if (options.clause && options.loaderFactory?.options?.clause) {
-      throw new Error(
-        `cannot pass both options.clause && optsions.loaderFactory.options.clause`,
-      );
+  const rows = await loadCustomDataImpl(options, query, context);
+
+  // prime the data so that subsequent fetches of the row with this id are a cache hit.
+  if (options.prime) {
+    const loader = options.loaderFactory.createLoader(context);
+    if (isPrimableLoader(loader) && loader.primeAll !== undefined) {
+      for (const row of rows) {
+        loader.primeAll(row);
+      }
     }
-    let optClause = options.clause || options.loaderFactory?.options?.clause;
+  }
+  return rows;
+}
+
+function isPrimableLoader(
+  loader: Loader<any, Data | null>,
+): loader is PrimableLoader<any, Data> {
+  return (loader as PrimableLoader<any, Data>) != undefined;
+}
+
+async function loadCustomDataImpl(
+  options: SelectCustomDataOptions,
+  query: CustomQuery,
+  context: Context | undefined,
+): Promise<Data[]> {
+  function getClause(cls: clause.Clause) {
+    let optClause = options.loaderFactory?.options?.clause;
     if (typeof optClause === "function") {
       optClause = optClause();
     }
@@ -476,32 +529,28 @@ export async function loadCustomData(
 
   if (typeof query === "string") {
     // no caching, perform raw query
-    return await performRawQuery(query, [], []);
+    return performRawQuery(query, [], []);
   } else if (isClause(query)) {
     // if a Clause is passed in and we have a default clause
     // associated with the query, pass that in
     // if we want to disableTransformations, need to indicate that with
     // disableTransformations option
     // this will have rudimentary caching but nothing crazy
-    return await loadRows({
+    return loadRows({
       ...options,
       clause: getClause(query),
       context: context,
     });
   } else if (isParameterizedQuery(query)) {
     // no caching, perform raw query
-    return await performRawQuery(
-      query.query,
-      query.values || [],
-      query.logValues,
-    );
+    return performRawQuery(query.query, query.values || [], query.logValues);
   } else {
     let cls = query.clause;
     if (!query.disableTransformations) {
       cls = getClause(cls);
     }
     // this will have rudimentary caching but nothing crazy
-    return await loadRows({
+    return loadRows({
       ...query,
       ...options,
       context: context,
@@ -510,8 +559,8 @@ export async function loadCustomData(
   }
 }
 
-// doesn't have caching yet
 // Derived ents
+// no ent caching
 export async function loadDerivedEnt<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
