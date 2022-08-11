@@ -72,16 +72,15 @@ const options: LoadCustomEntOptions<User> = {
   tableName: "users",
   fields: ["*"],
   ent: User,
+  loaderFactory: new ObjectLoaderFactory({
+    tableName: "users",
+    fields: ["*"],
+    key: "id",
+    instanceKey: "loader-factory-deleted-at",
+  }),
 };
 
 const softDeleteOptions: LoadCustomEntOptions<User> = {
-  tableName: "users",
-  fields: ["*"],
-  ent: User,
-  clause: clause.Eq("deleted_at", null),
-};
-
-const softDeleteWithLoaderFactoryOptions: LoadCustomEntOptions<User> = {
   tableName: "users",
   fields: ["*"],
   ent: User,
@@ -153,26 +152,6 @@ describe("postgres with soft delete", () => {
   softDeleteTests(softDeleteOptions);
 });
 
-describe("postgres with soft delete loader factory", () => {
-  beforeAll(() => {
-    loadConfig({
-      dbConnectionString: "postgresql:///foo",
-    });
-  });
-
-  beforeEach(async () => {
-    await createAllRows(true);
-    ml.clear();
-  });
-
-  afterEach(() => {
-    QueryRecorder.clear();
-  });
-
-  commonTests(softDeleteWithLoaderFactoryOptions);
-  softDeleteTests(softDeleteWithLoaderFactoryOptions);
-});
-
 describe("sqlite with soft delete", () => {
   setupSqlite(
     `sqlite:///ent_custom_data_soft_deletetest.db`,
@@ -197,58 +176,6 @@ describe("sqlite with soft delete", () => {
 
   commonTests(softDeleteOptions);
   softDeleteTests(softDeleteOptions);
-});
-
-describe("sqlite with soft delete loader factory", () => {
-  setupSqlite(
-    `sqlite:///ent_custom_data_soft_deletetest.db`,
-    () => [
-      table(
-        "users",
-        integer("id", { primaryKey: true }),
-        text("baz"),
-        text("bar"),
-        text("foo"),
-        timestamp("deleted_at", { nullable: true }),
-      ),
-    ],
-    {
-      disableDeleteAfterEachTest: true,
-    },
-  );
-
-  beforeAll(async () => {
-    await createAllRows();
-  });
-
-  commonTests(softDeleteWithLoaderFactoryOptions);
-  softDeleteTests(softDeleteWithLoaderFactoryOptions);
-});
-
-test("load custom data with both", async () => {
-  try {
-    await loadCustomData(
-      {
-        tableName: "users",
-        fields: ["*"],
-        loaderFactory: new ObjectLoaderFactory({
-          tableName: "users",
-          fields: ["*"],
-          key: "id",
-          clause: clause.Eq("deleted_at", null),
-          instanceKey: "loader-factory-deleted-at",
-        }),
-        clause: clause.Eq("deleted_at", null),
-      },
-      clause.Eq("id", 2),
-      getCtx(undefined),
-    );
-    throw new Error("should have thrown");
-  } catch (err) {
-    expect((err as Error).message).toBe(
-      "cannot pass both options.clause && optsions.loaderFactory.options.clause",
-    );
-  }
 });
 
 const ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -758,3 +685,15 @@ function softDeleteTests(opts: LoadCustomEntOptions<User>) {
     });
   });
 }
+
+// TODO test that we hit cache and don't create new instances with context...
+
+// TODO test prime vs not prime.
+
+// TODO test that custom loader with prime and then fetching just id after works...
+
+// TODO test interaction of ent soft delete and no soft delete
+// do we return the same rows. deletedAt flag will be different and maybe we don't want the same row so may need different clause
+// instanceKey of clause matters???
+
+// TODO prime logic with disableTransformations and different combos...

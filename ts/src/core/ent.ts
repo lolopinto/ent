@@ -107,7 +107,7 @@ function createDataLoader(options: SelectDataOptions) {
   }, loaderOptions);
 }
 
-function getEntKey<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
+export function getEntKey<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
   viewer: TViewer,
   id: ID,
   options: LoadEntOptions<TEnt, TViewer>,
@@ -133,6 +133,11 @@ function entFromCacheMaybe<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
   }
   const key = getEntKey(viewer, id, options);
   const r = cache.get(key);
+  if (r !== undefined) {
+    log("cache", {
+      "ent-cache-hit": key,
+    });
+  }
   return {
     key,
     ent: r,
@@ -299,12 +304,15 @@ export async function loadEnts<
   let m: Map<ID, TEnt> = new Map();
 
   const cache = viewer.context?.cache?.getEntCache();
-  const toFetch: ID[] = [];
+  let toFetch: ID[] = [];
   if (cache) {
     for (const id of ids) {
       const key = getEntKey(viewer, id, options);
       const ent = cache.get(key);
       if (ent !== undefined) {
+        log("cache", {
+          "ent-cache-hit": key,
+        });
         if (ent === null) {
           // TODO this should return null if not loadable...
           continue;
@@ -315,6 +323,8 @@ export async function loadEnts<
         toFetch.push(id);
       }
     }
+  } else {
+    toFetch = ids;
   }
 
   // all in ent cache!
@@ -323,7 +333,7 @@ export async function loadEnts<
   }
 
   const l = options.loaderFactory.createLoader(viewer.context);
-  const rows: (Error | Data | null)[] = await l.loadMany(ids);
+  const rows: (Error | Data | null)[] = await l.loadMany(toFetch);
 
   let rows2: Data[] = [];
   for (const row of rows) {
@@ -336,12 +346,19 @@ export async function loadEnts<
     rows2.push(row);
   }
   const m2 = await applyPrivacyPolicyForRows(viewer, rows2, options);
-  for (const [k, ent] of m2) {
+  for (const row of rows2) {
+    const id = row[options.loaderFactory.options?.key || "id"];
+    const ent = m2.get(id);
+
     if (cache) {
       // put back in cache...
-      cache.set(getEntKey(viewer, ent.id, options), ent);
+      // store null for rows that can't be seen
+      cache.set(getEntKey(viewer, id, options), ent ?? null);
     }
-    m.set(k, ent);
+    if (ent !== undefined) {
+      // TODO this should return null if not loadable...?
+      m.set(id, ent);
+    }
   }
 
   return m;
@@ -407,7 +424,7 @@ export async function loadCustomEnts<
   const result: TEnt[] = new Array(rows.length);
   await Promise.all(
     rows.map(async (row, idx) => {
-      // TODO key is different??
+      // TODO what if key is different
       const info = entFromCacheMaybe(viewer, row.id, options);
       if (info.ent !== undefined) {
         if (info.ent === null) {
@@ -415,15 +432,14 @@ export async function loadCustomEnts<
           return;
         }
         // @ts-ignore
-        result[idx] = ent;
+        result[idx] = info.ent;
         return;
       }
 
       const privacyEnt = await applyPrivacyPolicyForRowAndStoreInCache(
         viewer,
         options,
-        // TODO row.id. what if key is different
-        row.id,
+        row,
         info,
       );
       if (privacyEnt) {
@@ -2075,7 +2091,7 @@ export async function applyPrivacyPolicyForRow<
     return null;
   }
   const ent = new options.ent(viewer, row);
-  return await applyPrivacyPolicyForEnt(viewer, ent, row, options);
+  return applyPrivacyPolicyForEnt(viewer, ent, row, options);
 }
 
 export async function applyPrivacyPolicyForRowX<

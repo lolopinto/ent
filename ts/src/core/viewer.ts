@@ -45,6 +45,6 @@ export class IDViewer implements Viewer {
   }
 
   instanceKey(): string {
-    return `idViewer: ${this.viewerID}`;
+    return `idViewer:${this.viewerID}`;
   }
 }
