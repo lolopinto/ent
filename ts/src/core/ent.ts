@@ -105,7 +105,56 @@ function createDataLoader(options: SelectDataOptions) {
   }, loaderOptions);
 }
 
+function getEntKey<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
+  viewer: TViewer,
+  id: ID,
+  options: LoadEntOptions<TEnt, TViewer>,
+) {
+  return `${viewer.instanceKey()}:${options.tableName}:${id}`;
+}
+
+interface cacheInfo {
+  ent?: Ent | null;
+  key?: string;
+  cache?: Map<string, Ent<any> | null>;
+}
+
+function entFromCache<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
+  viewer: TViewer,
+  id: ID,
+  options: LoadEntOptions<TEnt, TViewer>,
+): cacheInfo {
+  const cache = viewer.context?.cache?.getEntCache();
+  if (!cache) {
+    return {};
+  }
+  const key = getEntKey(viewer, id, options);
+  const r = cache.get(key);
+  return {
+    key,
+    ent: r,
+    cache,
+  };
+}
+
 // Ent accessors
+
+async function applyPrivacyPolicyForRowAndStoreInCache<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+>(
+  viewer: TViewer,
+  options: LoadEntOptions<TEnt, TViewer>,
+  row: Data | null,
+  info: cacheInfo,
+): Promise<TEnt | null> {
+  const ent = await applyPrivacyPolicyForRow(viewer, options, row);
+  if (info.cache && info.key) {
+    info.cache.set(info.key, ent);
+  }
+  return ent;
+}
+
 export async function loadEnt<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
@@ -114,8 +163,13 @@ export async function loadEnt<
   id: ID,
   options: LoadEntOptions<TEnt, TViewer>,
 ): Promise<TEnt | null> {
+  const info = entFromCache(viewer, id, options);
+  if (info.ent !== undefined) {
+    return info.ent as TEnt | null;
+  }
+
   const row = await options.loaderFactory.createLoader(viewer.context).load(id);
-  return await applyPrivacyPolicyForRow(viewer, options, row);
+  return applyPrivacyPolicyForRowAndStoreInCache(viewer, options, row, info);
 }
 
 // this is the same implementation-wise (right now) as loadEnt. it's just clearer that it's not loaded via ID.
@@ -131,9 +185,18 @@ export async function loadEntViaKey<
   const row = await options.loaderFactory
     .createLoader(viewer.context)
     .load(key);
-  return await applyPrivacyPolicyForRow(viewer, options, row);
+  if (!row) {
+    return null;
+  }
+  const info = entFromCache(viewer, row.id, options);
+  if (info.ent !== undefined) {
+    return info.ent as TEnt | null;
+  }
+
+  return applyPrivacyPolicyForRowAndStoreInCache(viewer, options, row, info);
 }
 
+// need a cached error...
 export async function loadEntX<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
@@ -152,6 +215,8 @@ export async function loadEntX<
   return await applyPrivacyPolicyForRowX(viewer, options, row);
 }
 
+// TODO need a cached error
+// TODO everything from here
 export async function loadEntXViaKey<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
@@ -172,6 +237,10 @@ export async function loadEntXViaKey<
   return await applyPrivacyPolicyForRowX(viewer, options, row);
 }
 
+/**
+ *
+ * @deprecated use loadCustomEnts
+ */
 export async function loadEntFromClause<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
@@ -192,6 +261,9 @@ export async function loadEntFromClause<
 // same as loadEntFromClause
 // only works for ents where primary key is "id"
 // use loadEnt with a loaderFactory if different
+/**
+ * @deprecated use loadCustomEnts
+ */
 export async function loadEntXFromClause<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
@@ -299,6 +371,7 @@ export async function loadEntsFromClause<
   return await applyPrivacyPolicyForRows(viewer, rows, options);
 }
 
+// another multi-id API
 export async function loadCustomEnts<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
@@ -437,6 +510,7 @@ export async function loadCustomData(
   }
 }
 
+// doesn't have caching yet
 // Derived ents
 export async function loadDerivedEnt<
   TEnt extends Ent<TViewer>,
@@ -452,6 +526,7 @@ export async function loadDerivedEnt<
   });
 }
 
+// won't have caching yet either
 export async function loadDerivedEntX<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,

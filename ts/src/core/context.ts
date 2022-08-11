@@ -1,4 +1,4 @@
-import { Viewer, Data, Loader } from "./base";
+import { Viewer, Data, Loader, Ent } from "./base";
 import { IncomingMessage, ServerResponse } from "http";
 
 import * as clause from "./clause";
@@ -31,6 +31,7 @@ export class ContextCache {
   // we have a per-table map to make it easier to purge and have less things to compare with
   private itemMap: Map<string, Map<string, Data>> = new Map();
   private listMap: Map<string, Map<string, Data[]>> = new Map();
+  private entCache: Map<string, Ent<any> | null> = new Map();
 
   // tableName is ignored bcos already indexed on that
   // maybe we just want to store sql queries???
@@ -101,6 +102,11 @@ export class ContextCache {
     this.loaders.clear();
     this.itemMap.clear();
     this.listMap.clear();
+    this.entCache.clear();
+  }
+
+  getEntCache() {
+    return this.entCache;
   }
 }
 

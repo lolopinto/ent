@@ -55,6 +55,7 @@ interface cache {
   primeCache(options: queryOptions, rows: Data[]): void;
   primeCache(options: queryOptions, rows: Data): void;
   clearCache(): void;
+  getEntCache(): Map<string, Ent | null>;
 }
 interface queryOptions {
   fields: string[];
