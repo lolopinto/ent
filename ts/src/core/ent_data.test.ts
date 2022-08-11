@@ -183,7 +183,6 @@ function validateQueries(expQueries: Data[]) {
     console.debug(ml.logs, expQueries);
   }
   expect(ml.logs.length).toBe(expQueries.length);
-  console.debug(ml.logs, expQueries);
   expect(ml.logs).toStrictEqual(expQueries);
 }
 
@@ -325,12 +324,10 @@ async function loadTestEnt(
   const [expQueries1, expQueries2] = getExpQueries();
 
   const ent1 = await fn();
-  console.debug(ent1?.viewer, ml.logs, expQueries1);
   expect(ml.logs.length).toBe(expQueries1.length);
   expect(ml.logs).toStrictEqual(expQueries1);
 
   const ent2 = await fn();
-  console.debug(ml.logs, expQueries2);
   expect(ml.logs.length).toBe(expQueries2.length);
   expect(ml.logs).toStrictEqual(expQueries2);
 
@@ -430,7 +427,9 @@ function commonTests() {
   });
 
   describe("loadEnt", () => {
-    test.only("with context", async () => {
+    // TODO this is all confusing
+    // not 100% sure it's doing the right thing
+    test("with context", async () => {
       // write it once before all the checks since
       // repeated calls to loadTestEnt
       await createDefaultRow();
@@ -474,8 +473,8 @@ function commonTests() {
 
             // 2nd time. with different viewer. more hits
             if (vc instanceof IDViewer) {
-              // first time hit cacheHit, second time ent cache
-              expQueries1.push(cacheHit, entCacheHit);
+              // ent logged out cache hit of second one, then ent cache hit
+              expQueries1.push(entLoggedoutCacheHit, cacheHit);
               // first time hit cacheHit, second time ent cache
               expQueries2.push(cacheHit, entCacheHit);
             }
@@ -706,16 +705,13 @@ function commonTests() {
       const expQueries2 = [
         ...expQueries,
         {
-          "dataloader-cache-hit": 1,
-          "tableName": options.tableName,
+          "ent-cache-hit": ent.getEntKey(vc, 1, User.loaderOptions()),
         },
         {
-          "dataloader-cache-hit": 2,
-          "tableName": options.tableName,
+          "ent-cache-hit": ent.getEntKey(vc, 2, User.loaderOptions()),
         },
         {
-          "dataloader-cache-hit": 3,
-          "tableName": options.tableName,
+          "ent-cache-hit": ent.getEntKey(vc, 3, User.loaderOptions()),
         },
       ];
       validateQueries(expQueries2);
@@ -1096,16 +1092,13 @@ function commonTests() {
 
       const cacheHits = [
         {
-          "dataloader-cache-hit": 1,
-          "tableName": options.tableName,
+          "ent-cache-hit": ent.getEntKey(vc, 1, Contact.loaderOptions()),
         },
         {
-          "dataloader-cache-hit": 2,
-          "tableName": options.tableName,
+          "ent-cache-hit": ent.getEntKey(vc, 2, Contact.loaderOptions()),
         },
         {
-          "dataloader-cache-hit": 3,
-          "tableName": options.tableName,
+          "ent-cache-hit": ent.getEntKey(vc, 3, Contact.loaderOptions()),
         },
       ];
       const expQueries2 = [...expQueries, ...cacheHits];
