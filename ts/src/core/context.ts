@@ -31,7 +31,7 @@ export class ContextCache {
   // we have a per-table map to make it easier to purge and have less things to compare with
   private itemMap: Map<string, Map<string, Data>> = new Map();
   private listMap: Map<string, Map<string, Data[]>> = new Map();
-  private entCache: Map<string, Ent<any> | null> = new Map();
+  private entCache: Map<string, Ent<any> | null | Error> = new Map();
 
   // tableName is ignored bcos already indexed on that
   // maybe we just want to store sql queries???

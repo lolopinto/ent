@@ -13,6 +13,7 @@ import {
   buildQuery,
   loadEnt,
   loadEnts,
+  getEntKey,
 } from "./ent";
 import { clearLogLevels, setLogLevels } from "./logger";
 import * as clause from "./clause";
@@ -507,9 +508,13 @@ function commonTests() {
       // fetch again
       const ent2 = await loadEnt(ctx.getViewer(), 1, options);
 
-      expect(ml.logs.length).toEqual(0);
-      // ent cache hit so nothing queried, just get back from cache
+      expect(ml.logs.length).toEqual(1);
+      expect(ml.logs[0]).toStrictEqual({
+        "ent-cache-hit": getEntKey(ctx.getViewer(), 1, options),
+      });
+      // ent cache hit
       expect(ent1).toBe(ent2);
+      ml.clear();
 
       // now this should hit the dataloader cache
       await options.loaderFactory.createLoader(ctx).load(1);
@@ -555,8 +560,12 @@ function commonTests() {
       expect(ents.get(1)).toBe(ents2.get(1));
 
       // should hit ent cache so nothing in the logs
-      expect(ml.logs.length).toEqual(0);
+      expect(ml.logs.length).toEqual(1);
+      expect(ml.logs[0]).toStrictEqual({
+        "ent-cache-hit": getEntKey(ctx.getViewer(), 1, options),
+      });
 
+      ml.clear();
       await options.loaderFactory.createLoader(ctx).loadMany([1]);
 
       // now should hit data loader cache

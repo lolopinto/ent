@@ -29,7 +29,7 @@ import {
   Loader,
 } from "./base";
 
-import { applyPrivacyPolicy, applyPrivacyPolicyX } from "./privacy";
+import { applyPrivacyPolicy, applyPrivacyPolicyImpl } from "./privacy";
 import { Executor } from "../action/action";
 
 import * as clause from "./clause";
@@ -117,8 +117,9 @@ export function getEntKey<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
 
 interface EntCacheInfo {
   ent?: Ent | null;
+  error?: Error;
   key?: string;
-  cache?: Map<string, Ent<any> | null>;
+  cache?: Map<string, Ent<any> | Error | null>;
 }
 
 // fetches the ent from cache if cache exists.
@@ -140,7 +141,8 @@ function entFromCacheMaybe<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
   }
   return {
     key,
-    ent: r,
+    ent: r instanceof Error ? undefined : r,
+    error: r instanceof Error ? r : undefined,
     cache,
   };
 }
@@ -159,6 +161,28 @@ async function applyPrivacyPolicyForRowAndStoreInCache<
   const ent = await applyPrivacyPolicyForRow(viewer, options, row);
   if (info.cache && info.key) {
     info.cache.set(info.key, ent);
+  }
+  return ent instanceof Error ? null : ent;
+}
+
+async function applyPrivacyPolicyForRowAndStoreInCacheX<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+>(
+  viewer: TViewer,
+  options: LoadEntOptions<TEnt, TViewer>,
+  row: Data | null,
+  info: EntCacheInfo,
+): Promise<TEnt> {
+  const ent = await applyPrivacyPolicyForRowImpl(viewer, options, row);
+  if (info.cache && info.key) {
+    info.cache.set(info.key, ent);
+  }
+  if (ent instanceof Error) {
+    throw ent;
+  }
+  if (ent === null) {
+    throw new Error(`TODO`);
   }
   return ent;
 }
@@ -196,6 +220,7 @@ export async function loadEntViaKey<
   if (!row) {
     return null;
   }
+  // TODO every row.id needs to be audited...
   const info = entFromCacheMaybe(viewer, row.id, options);
   if (info.ent !== undefined) {
     return info.ent as TEnt | null;
@@ -213,6 +238,14 @@ export async function loadEntX<
   id: ID,
   options: LoadEntOptions<TEnt, TViewer>,
 ): Promise<TEnt> {
+  const info = entFromCacheMaybe(viewer, id, options);
+  if (info.error !== undefined) {
+    throw info.error;
+  }
+  if (info.ent !== undefined && info.ent !== null) {
+    return info.ent as TEnt;
+  }
+
   const row = await options.loaderFactory.createLoader(viewer.context).load(id);
   if (!row) {
     // todo make this better
@@ -220,11 +253,11 @@ export async function loadEntX<
       `${options.loaderFactory.name}: couldn't find row for value ${id}`,
     );
   }
-  return await applyPrivacyPolicyForRowX(viewer, options, row);
+  return applyPrivacyPolicyForRowAndStoreInCacheX(viewer, options, row, info);
 }
 
-// TODO need a cached error
-// TODO everything from here
+// TODO test this and loadEntViaKey
+// replace loadEntViaClause??
 export async function loadEntXViaKey<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
@@ -242,7 +275,15 @@ export async function loadEntXViaKey<
       `${options.loaderFactory.name}: couldn't find row for value ${key}`,
     );
   }
-  return await applyPrivacyPolicyForRowX(viewer, options, row);
+  const info = entFromCacheMaybe(viewer, row.id, options);
+  if (info.error !== undefined) {
+    throw info.error;
+  }
+  if (info.ent !== undefined && info.ent !== null) {
+    return info.ent as TEnt;
+  }
+
+  return applyPrivacyPolicyForRowAndStoreInCacheX(viewer, options, row, info);
 }
 
 /**
@@ -262,7 +303,7 @@ export async function loadEntFromClause<
     context: viewer.context,
   };
   const row = await loadRow(rowOptions);
-  return await applyPrivacyPolicyForRow(viewer, options, row);
+  return applyPrivacyPolicyForRow(viewer, options, row);
 }
 
 // same as loadEntFromClause
@@ -586,9 +627,13 @@ export async function loadDerivedEnt<
   loader: new (viewer: TViewer, data: Data) => TEnt,
 ): Promise<TEnt | null> {
   const ent = new loader(viewer, data);
-  return await applyPrivacyPolicyForEnt(viewer, ent, data, {
+  const r = await applyPrivacyPolicyForEnt(viewer, ent, data, {
     ent: loader,
   });
+  if (r instanceof Error) {
+    return null;
+  }
+  return r as TEnt | null;
 }
 
 // won't have caching yet either
@@ -622,17 +667,17 @@ async function applyPrivacyPolicyForEnt<
   ent: TEnt | null,
   data: Data,
   fieldPrivacyOptions: FieldPrivacyOptions<TEnt, TViewer>,
-): Promise<TEnt | null> {
+): Promise<TEnt | Error | null> {
   if (ent) {
-    const visible = await applyPrivacyPolicy(
+    const error = await applyPrivacyPolicyImpl(
       viewer,
       ent.getPrivacyPolicy(),
       ent,
     );
-    if (!visible) {
-      return null;
+    if (error === null) {
+      return doFieldPrivacy(viewer, ent, data, fieldPrivacyOptions);
     }
-    return doFieldPrivacy(viewer, ent, data, fieldPrivacyOptions);
+    return error;
   }
   return null;
 }
@@ -646,9 +691,14 @@ async function applyPrivacyPolicyForEntX<
   data: Data,
   options: FieldPrivacyOptions<TEnt, TViewer>,
 ): Promise<TEnt> {
-  // this will throw
-  await applyPrivacyPolicyX(viewer, ent.getPrivacyPolicy(), ent);
-  return doFieldPrivacy(viewer, ent, data, options);
+  const r = await applyPrivacyPolicyForEnt(viewer, ent, data, options);
+  if (r instanceof Error) {
+    throw r;
+  }
+  if (r === null) {
+    throw new Error(`couldn't apply privacyPoliy for ent ${ent.id}`);
+  }
+  return r;
 }
 
 async function doFieldPrivacy<
@@ -2087,6 +2137,18 @@ export async function applyPrivacyPolicyForRow<
   options: LoadEntOptions<TEnt, TViewer>,
   row: Data | null,
 ): Promise<TEnt | null> {
+  const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
+  return r instanceof Error ? null : r;
+}
+
+async function applyPrivacyPolicyForRowImpl<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+>(
+  viewer: TViewer,
+  options: LoadEntOptions<TEnt, TViewer>,
+  row: Data | null,
+): Promise<TEnt | Error | null> {
   if (!row) {
     return null;
   }
@@ -2094,7 +2156,7 @@ export async function applyPrivacyPolicyForRow<
   return applyPrivacyPolicyForEnt(viewer, ent, row, options);
 }
 
-export async function applyPrivacyPolicyForRowX<
+async function applyPrivacyPolicyForRowX<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
 >(
@@ -2106,6 +2168,7 @@ export async function applyPrivacyPolicyForRowX<
   return await applyPrivacyPolicyForEntX(viewer, ent, row, options);
 }
 
+// TODO this needs to be changed to use ent cache as needed...
 export async function applyPrivacyPolicyForRows<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,

@@ -316,6 +316,7 @@ async function loadTestEnt(
   getExpQueries: getEntQueriesFn,
   addCtx?: boolean,
   disableWrite?: boolean,
+  throwsErr?: boolean,
 ): Promise<[User | null, User | null]> {
   if (!disableWrite) {
     await createDefaultRow();
@@ -323,11 +324,27 @@ async function loadTestEnt(
 
   const [expQueries1, expQueries2] = getExpQueries();
 
-  const ent1 = await fn();
+  let ent1: User | null = null;
+  let ent2: User | null = null;
+  if (throwsErr) {
+    try {
+      ent1 = await fn();
+      throw Error(`should have thrown`);
+    } catch (err) {}
+  } else {
+    ent1 = await fn();
+  }
   expect(ml.logs.length).toBe(expQueries1.length);
   expect(ml.logs).toStrictEqual(expQueries1);
 
-  const ent2 = await fn();
+  if (throwsErr) {
+    try {
+      ent2 = await fn();
+      throw Error(`should have thrown`);
+    } catch (err) {}
+  } else {
+    ent2 = await fn();
+  }
   expect(ml.logs.length).toBe(expQueries2.length);
   expect(ml.logs).toStrictEqual(expQueries2);
 
@@ -789,7 +806,9 @@ function commonTests() {
               [qOption],
               [
                 qOption,
-                { "dataloader-cache-hit": 1, "tableName": options.tableName },
+                {
+                  "ent-cache-hit": ent.getEntKey(vc, 1, User.loaderOptions()),
+                },
               ],
             ];
           },
@@ -804,6 +823,48 @@ function commonTests() {
 
       expect(ent1?.id).toBe(1);
       expect(ent2?.id).toBe(1);
+    });
+
+    test("with context error", async () => {
+      const vc = getIDViewer(2);
+
+      const options = {
+        ...User.loaderOptions(),
+        // context. dataloader. in query
+        clause: clause.In("bar", 1),
+      };
+
+      const testEnt = async (vc: Viewer) => {
+        return await loadTestEnt(
+          () => ent.loadEntX(vc, 1, User.loaderOptions()),
+          () => {
+            const qOption = {
+              query: ent.buildQuery(options),
+              values: options.clause.values(),
+            };
+            // when there's a context cache, we only run the query once
+            // 2nd time there's a ent cache hit
+            return [
+              [qOption],
+              [
+                qOption,
+                {
+                  "ent-cache-hit": ent.getEntKey(vc, 1, User.loaderOptions()),
+                },
+              ],
+            ];
+          },
+          true,
+          false,
+          true,
+        );
+      };
+
+      const [ent1, ent2] = await testEnt(vc);
+
+      // it threw internally and has been handled supposedly
+      expect(ent1).toBe(null);
+      expect(ent2).toBe(null);
     });
 
     test("without context", async () => {

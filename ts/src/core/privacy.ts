@@ -527,7 +527,7 @@ export async function applyPrivacyPolicyX(
 }
 
 // this will throw an exception if fails or return error | null?
-async function applyPrivacyPolicyImpl(
+export async function applyPrivacyPolicyImpl(
   v: Viewer,
   policy: PrivacyPolicy,
   ent: Ent | undefined,
