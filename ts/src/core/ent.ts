@@ -526,13 +526,14 @@ async function doFieldPrivacy<
   const promises: Promise<void>[] = [];
   let somethingChanged = false;
   for (const [k, policy] of options.fieldPrivacy) {
+    const curr = data[k];
+    if (curr === null || curr === undefined) {
+      continue;
+    }
+
     promises.push(
       (async () => {
         // don't do anything if key is null or for some reason missing
-        const curr = data[k];
-        if (curr === null || curr === undefined) {
-          return;
-        }
         const r = await applyPrivacyPolicy(viewer, policy, ent);
         if (!r) {
           data[k] = null;

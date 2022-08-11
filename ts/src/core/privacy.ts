@@ -509,44 +509,50 @@ export async function applyPrivacyPolicy(
   policy: PrivacyPolicy,
   ent: Ent | undefined,
 ): Promise<boolean> {
-  try {
-    return await applyPrivacyPolicyX(v, policy, ent);
-  } catch (e) {
-    // TODO privacy errors should not throw
-    // but other expected errors should throw...
-    // we shouldn't just hide them
-    log("debug", e);
-    return false;
-  }
+  const err = await applyPrivacyPolicyImpl(v, policy, ent);
+  return err === null;
 }
 
-// this will throw an exception if fails or return error | null?
 export async function applyPrivacyPolicyX(
   v: Viewer,
   policy: PrivacyPolicy,
   ent: Ent | undefined,
   throwErr?: () => Error,
 ): Promise<boolean> {
+  const err = await applyPrivacyPolicyImpl(v, policy, ent, throwErr);
+  if (err !== null) {
+    throw err;
+  }
+  return true;
+}
+
+// this will throw an exception if fails or return error | null?
+async function applyPrivacyPolicyImpl(
+  v: Viewer,
+  policy: PrivacyPolicy,
+  ent: Ent | undefined,
+  throwErr?: () => Error,
+): Promise<Error | null> {
   for (const rule of policy.rules) {
     const res = await rule.apply(v, ent);
     if (res.result == privacyResult.Allow) {
-      return true;
+      return null;
     } else if (res.result == privacyResult.Deny) {
       // specific error throw that
       if (res.error) {
-        throw res.error;
+        return res.error;
       }
       if (res.getError) {
-        throw res.getError(policy, rule, ent);
+        return res.getError(policy, rule, ent);
       }
       if (throwErr) {
-        throw throwErr();
+        return throwErr();
       }
-      throw new EntPrivacyError(policy, rule, ent);
+      return new EntPrivacyError(policy, rule, ent);
     }
   }
 
-  throw new EntInvalidPrivacyPolicyError(policy, ent);
+  return new EntInvalidPrivacyPolicyError(policy, ent);
 }
 
 export const AlwaysAllowPrivacyPolicy: PrivacyPolicy = {
