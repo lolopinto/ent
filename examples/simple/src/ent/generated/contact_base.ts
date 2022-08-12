@@ -161,10 +161,6 @@ export class ContactBase
     return row as ContactDBData;
   }
 
-  // TODO index email_ids not id... we want an indexQueryLoader...
-
-  // TODO index phone_number_ids not id... we want an indexQueryLoader...
-
   static loaderOptions<T extends ContactBase>(
     this: new (viewer: ExampleViewerAlias, data: Data) => T,
   ): LoadEntOptions<T, ExampleViewerAlias> {

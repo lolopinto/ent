@@ -174,8 +174,6 @@ export class TagBase implements Ent<Viewer> {
     return row as TagDBData;
   }
 
-  // TODO index deleted_at not id... we want an indexQueryLoader...
-
   static loaderOptions<T extends TagBase>(
     this: new (viewer: Viewer, data: Data) => T,
   ): LoadEntOptions<T, Viewer> {

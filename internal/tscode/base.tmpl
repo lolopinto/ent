@@ -320,7 +320,6 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
         return {{$queryName}}.query(viewer, ent);
       }
     {{ else if $field.QueryFrom -}}
-    // TODO index {{$field.FieldName}} not id... we want an indexQueryLoader...
     {{end}}
   {{end -}}
 
