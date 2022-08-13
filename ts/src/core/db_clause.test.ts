@@ -159,8 +159,6 @@ test("create + array query", async () => {
     clause: clause.PostgresArrayNotContains("emails", row.emails),
   });
   expect(notFromAllEmails.length).toBe(19);
-
-  //  const
 });
 
 test("jsonb", async () => {
@@ -253,14 +251,10 @@ test("jsonb", async () => {
   // TODO check to make sure we tested it all...
 });
 
-test.only("in clause", async () => {
+test("in clause", async () => {
   const ids: string[] = [];
-  for (
-    let i = 0;
-    // i < 70;
-    i < clause.inClause.getPostgresInClauseValuesThreshold() * 1.5;
-    i++
-  ) {
+  const count = clause.inClause.getPostgresInClauseValuesThreshold();
+  for (let i = 0; i < count; i++) {
     const data: Data = {
       id: v1(),
       first_name: "Jon",
@@ -283,8 +277,9 @@ test.only("in clause", async () => {
   const allIds = await loadRows({
     tableName,
     fields,
-    clause: clause.In("id", ids),
+    clause: clause.In("id", ids, "uuid"),
   });
-  console.debug(ml.logs, ml.errors);
-  console.debug(allIds.length);
+  expect(ml.logs.length).toBe(1);
+  expect(ml.errors.length).toBe(0);
+  expect(allIds.length).toBe(count);
 });
