@@ -304,6 +304,7 @@ describe("postgres", () => {
       expect(cls.logValues()).toStrictEqual([1]);
       expect(cls.instanceKey()).toEqual("in:id:1");
     });
+
     test("spread args", () => {
       const cls = clause.In("id", 1, 2, 3);
       expect(cls.clause(1)).toBe("id IN ($1, $2, $3)");
@@ -353,16 +354,11 @@ describe("postgres", () => {
         const ids = [1, 2, 3, 4, 5].map((_) => v1());
 
         const cls = clause.In("id", ids);
-        expect(cls.clause(1)).toBe("id IN (VALUES($1, $2, $3, $4, $5))");
-        expect(cls.columns()).toStrictEqual(["id"]);
-        expect(cls.values()).toStrictEqual(
-          ids.map((id, idx) => {
-            if (idx === 0) {
-              return `${id}::uuid`;
-            }
-            return id;
-          }),
+        expect(cls.clause(1)).toBe(
+          "id IN (VALUES($1::uuid), ($2), ($3), ($4), ($5))",
         );
+        expect(cls.columns()).toStrictEqual(["id"]);
+        expect(cls.values()).toStrictEqual(ids);
         expect(cls.logValues()).toStrictEqual(ids);
         expect(cls.instanceKey()).toEqual(`in:id:${ids.join(",")}`);
       });
@@ -371,16 +367,11 @@ describe("postgres", () => {
         const ids = [1, 2, 3, 4, 5];
 
         const cls = clause.In("id", ids, "int");
-        expect(cls.clause(1)).toBe("id IN (VALUES($1, $2, $3, $4, $5))");
-        expect(cls.columns()).toStrictEqual(["id"]);
-        expect(cls.values()).toStrictEqual(
-          ids.map((id, idx) => {
-            if (idx === 0) {
-              return `${id}::int`;
-            }
-            return id;
-          }),
+        expect(cls.clause(1)).toBe(
+          "id IN (VALUES($1::int), ($2), ($3), ($4), ($5))",
         );
+        expect(cls.columns()).toStrictEqual(["id"]);
+        expect(cls.values()).toStrictEqual(ids);
         expect(cls.logValues()).toStrictEqual(ids);
         expect(cls.instanceKey()).toEqual(`in:id:${ids.join(",")}`);
       });
@@ -389,16 +380,11 @@ describe("postgres", () => {
         const ids = [1, 2, 3, 4, 5];
 
         const cls = clause.In("id", ids, "integer");
-        expect(cls.clause(1)).toBe("id IN (VALUES($1, $2, $3, $4, $5))");
-        expect(cls.columns()).toStrictEqual(["id"]);
-        expect(cls.values()).toStrictEqual(
-          ids.map((id, idx) => {
-            if (idx === 0) {
-              return `${id}::integer`;
-            }
-            return id;
-          }),
+        expect(cls.clause(1)).toBe(
+          "id IN (VALUES($1::integer), ($2), ($3), ($4), ($5))",
         );
+        expect(cls.columns()).toStrictEqual(["id"]);
+        expect(cls.values()).toStrictEqual(ids);
         expect(cls.logValues()).toStrictEqual(ids);
         expect(cls.instanceKey()).toEqual(`in:id:${ids.join(",")}`);
       });
@@ -407,16 +393,11 @@ describe("postgres", () => {
         const ids = [1, 2, 3, 4, 5].map((_) => v1());
 
         const cls = clause.In("id", ids, "uuid");
-        expect(cls.clause(1)).toBe("id IN (VALUES($1, $2, $3, $4, $5))");
-        expect(cls.columns()).toStrictEqual(["id"]);
-        expect(cls.values()).toStrictEqual(
-          ids.map((id, idx) => {
-            if (idx === 0) {
-              return `${id}::uuid`;
-            }
-            return id;
-          }),
+        expect(cls.clause(1)).toBe(
+          "id IN (VALUES($1::uuid), ($2), ($3), ($4), ($5))",
         );
+        expect(cls.columns()).toStrictEqual(["id"]);
+        expect(cls.values()).toStrictEqual(ids);
         expect(cls.logValues()).toStrictEqual(ids);
         expect(cls.instanceKey()).toEqual(`in:id:${ids.join(",")}`);
       });

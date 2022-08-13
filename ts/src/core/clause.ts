@@ -257,14 +257,18 @@ export class inClause implements Clause {
     const postgres = DB.getDialect() === Dialect.Postgres;
     const postgresValuesList =
       postgres &&
-      this.value.length > inClause.getPostgresInClauseValuesThreshold();
+      this.value.length >= inClause.getPostgresInClauseValuesThreshold();
 
     let indices: string[];
     if (postgres) {
       indices = [];
       for (let i = 0; i < this.value.length; i++) {
         if (postgresValuesList) {
-          indices.push(`($${idx})`);
+          if (i === 0) {
+            indices.push(`($${idx}::${this.type})`);
+          } else {
+            indices.push(`($${idx})`);
+          }
         } else {
           indices.push(`$${idx}`);
         }
@@ -282,7 +286,7 @@ export class inClause implements Clause {
       inValue = `VALUES${inValue}`;
     }
 
-    return `${this.col}::text IN (${inValue})`;
+    return `${this.col} IN (${inValue})`;
     // TODO we need to return idx at end to query builder...
     // or anything that's doing a composite query so next clause knows where to start
     // or change to a sqlx.Rebind format
@@ -293,7 +297,7 @@ export class inClause implements Clause {
     return [this.col];
   }
 
-  private rawValues(): any[] {
+  values(): any[] {
     const result: any[] = [];
     for (let i = 0; i < this.value.length; i++) {
       let value = this.value[i];
@@ -302,20 +306,6 @@ export class inClause implements Clause {
       }
       result.push(value);
     }
-    return result;
-  }
-
-  values(): any[] {
-    const result = this.rawValues();
-    // if postgres and greater, cast first item in list so it can be used in values query
-    if (
-      DB.getDialect() === Dialect.Postgres &&
-      this.value.length >= inClause.getPostgresInClauseValuesThreshold()
-    ) {
-      // TODO this maybe only works for strings...
-      // result[0] = `'${result[0]}'::${this.type}`;
-    }
-    console.debug(result);
     return result;
   }
 
@@ -332,7 +322,7 @@ export class inClause implements Clause {
   }
 
   instanceKey(): string {
-    return `in:${this.col}:${this.rawValues().join(",")}`;
+    return `in:${this.col}:${this.values().join(",")}`;
   }
 }
 
