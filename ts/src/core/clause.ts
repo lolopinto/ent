@@ -1,3 +1,4 @@
+import e from "express";
 import DB, { Dialect } from "./db";
 
 // NOTE: we use ? for sqlite dialect even though it supports $1 like postgres so that it'll be easier to support different dialects down the line
@@ -236,16 +237,37 @@ class postgresArrayOperatorList extends postgresArrayOperator {
   }
 }
 
-class inClause implements Clause {
-  constructor(private col: string, private value: any[]) {}
+export class inClause implements Clause {
+  static getPostgresInClauseValuesThreshold() {
+    return 70;
+  }
+
+  constructor(
+    private col: string,
+    private value: any[],
+    private type = "uuid",
+  ) {}
 
   clause(idx: number): string {
-    const dialect = DB.getDialect();
+    // do a simple = when only one item
+    if (this.value.length === 1) {
+      return new simpleClause(this.col, this.value[0], "=").clause(idx);
+    }
+
+    const postgres = DB.getDialect() === Dialect.Postgres;
+    const postgresValuesList =
+      postgres &&
+      this.value.length > inClause.getPostgresInClauseValuesThreshold();
+
     let indices: string[];
-    if (dialect === Dialect.Postgres) {
+    if (postgres) {
       indices = [];
       for (let i = 0; i < this.value.length; i++) {
-        indices.push(`$${idx}`);
+        if (postgresValuesList) {
+          indices.push(`($${idx})`);
+        } else {
+          indices.push(`$${idx}`);
+        }
         idx++;
       }
     } else {
@@ -253,8 +275,14 @@ class inClause implements Clause {
       indices.fill("?", 0);
     }
 
-    const inValue = indices.join(", ");
-    return `${this.col} IN (${inValue})`;
+    let inValue = indices.join(", ");
+
+    // wrap in VALUES list for postgres...
+    if (postgresValuesList) {
+      inValue = `VALUES${inValue}`;
+    }
+
+    return `${this.col}::text IN (${inValue})`;
     // TODO we need to return idx at end to query builder...
     // or anything that's doing a composite query so next clause knows where to start
     // or change to a sqlx.Rebind format
@@ -265,15 +293,29 @@ class inClause implements Clause {
     return [this.col];
   }
 
-  values(): any[] {
+  private rawValues(): any[] {
     const result: any[] = [];
-    for (const value of this.value) {
+    for (let i = 0; i < this.value.length; i++) {
+      let value = this.value[i];
       if (isSensitive(value)) {
-        result.push(value.value());
-      } else {
-        result.push(value);
+        value = value.value();
       }
+      result.push(value);
     }
+    return result;
+  }
+
+  values(): any[] {
+    const result = this.rawValues();
+    // if postgres and greater, cast first item in list so it can be used in values query
+    if (
+      DB.getDialect() === Dialect.Postgres &&
+      this.value.length >= inClause.getPostgresInClauseValuesThreshold()
+    ) {
+      // TODO this maybe only works for strings...
+      // result[0] = `'${result[0]}'::${this.type}`;
+    }
+    console.debug(result);
     return result;
   }
 
@@ -290,7 +332,7 @@ class inClause implements Clause {
   }
 
   instanceKey(): string {
-    return `in:${this.col}:${this.values().join(",")}`;
+    return `in:${this.col}:${this.rawValues().join(",")}`;
   }
 }
 
@@ -531,9 +573,19 @@ export function Or(...args: Clause[]): compositeClause {
   return new compositeClause(args, " OR ");
 }
 
-// TODO this breaks if values.length ===1 and array. todo fix
-export function In(col: string, ...values: any): Clause {
-  return new inClause(col, values);
+export function In(col: string, ...values: any): Clause;
+
+export function In(col: string, values: any[], type?: string): Clause;
+
+export function In(...args: any[]): Clause {
+  if (args.length < 2) {
+    throw new Error(`invalid args passed to In`);
+  }
+  // 2nd overload
+  if (Array.isArray(args[1])) {
+    return new inClause(args[0], args[1], args[2]);
+  }
+  return new inClause(args[0], args.slice(1));
 }
 
 interface TsQuery {
