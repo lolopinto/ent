@@ -188,8 +188,6 @@ export class AccountBase implements Ent<Viewer> {
     return row as AccountDBData;
   }
 
-  // TODO index deleted_at not id... we want an indexQueryLoader...
-
   static async loadFromPhoneNumber<T extends AccountBase>(
     this: new (viewer: Viewer, data: Data) => T,
     viewer: Viewer,
