@@ -18,19 +18,20 @@ function getConfig(
     root: "timeDiff",
     args: {
       time,
+      log: {},
     },
     ...partialConfig,
   };
 }
 
-test("query no time", async () => {
+test("query no time. Date", async () => {
   await expectQueryFromRoot(getConfig(new ExampleViewer(null), new Date()), [
     ".",
     (v: string) => expect(v.startsWith("PT")),
   ]);
 });
 
-test("query no time", async () => {
+test("query no time. future", async () => {
   const d = DateTime.fromJSDate(new Date()).plus({ day: 1 });
   await expectQueryFromRoot(getConfig(new ExampleViewer(null), d.toJSDate()), [
     ".",
