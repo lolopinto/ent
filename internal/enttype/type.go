@@ -341,12 +341,12 @@ func (t *boolType) Convert() ConvertDataTypeRet {
 	return getSqliteImportMap(tsimport.NewEntImportPath("convertBool"))
 }
 
-func (t *boolType) convertListWithItem() *tsimport.ImportPath {
-	return tsimport.NewEntImportPath("convertBoolList")
+func (t *boolType) convertListWithItem() ConvertDataTypeRet {
+	return getSqliteImportMap(tsimport.NewEntImportPath("convertBoolList"))
 }
 
-func (t *boolType) convertNullableListWithItem() *tsimport.ImportPath {
-	return tsimport.NewEntImportPath("convertNullableBoolList")
+func (t *boolType) convertNullableListWithItem() ConvertDataTypeRet {
+	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableBoolList"))
 }
 
 type BoolType struct {
@@ -773,12 +773,12 @@ func (t *dateType) Convert() ConvertDataTypeRet {
 	return getSqliteImportMap(tsimport.NewEntImportPath("convertDate"))
 }
 
-func (t *dateType) convertListWithItem() *tsimport.ImportPath {
-	return tsimport.NewEntImportPath("convertDateList")
+func (t *dateType) convertListWithItem() ConvertDataTypeRet {
+	return getSqliteImportMap(tsimport.NewEntImportPath("convertDateList"))
 }
 
-func (t *dateType) convertNullableListWithItem() *tsimport.ImportPath {
-	return tsimport.NewEntImportPath("convertNullableDateList")
+func (t *dateType) convertNullableListWithItem() ConvertDataTypeRet {
+	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableDateList"))
 }
 
 func (t *dateType) GetTSType() string {
@@ -2095,12 +2095,12 @@ func (t *CommonJSONType) GetImportType() Import {
 	return &JSONImport{}
 }
 
-func (t *CommonJSONType) convertListWithItem() *tsimport.ImportPath {
-	return tsimport.NewEntImportPath("convertJSONList")
+func (t *CommonJSONType) convertListWithItem() ConvertDataTypeRet {
+	return getSqliteImportMap(tsimport.NewEntImportPath("convertJSONList"))
 }
 
-func (t *CommonJSONType) convertNullableListWithItem() *tsimport.ImportPath {
-	return tsimport.NewEntImportPath("convertNullableJSONList")
+func (t *CommonJSONType) convertNullableListWithItem() ConvertDataTypeRet {
+	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableJSONList"))
 }
 
 func (t *CommonJSONType) GetImportDepsType() *tsimport.ImportPath {
