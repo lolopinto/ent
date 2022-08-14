@@ -528,6 +528,31 @@ func TestArrayListType(t *testing.T) {
 			},
 			nil,
 		},
+		"jsonb as list": {
+			&enttype.ArrayListType{
+				ElemType:           &enttype.JSONBType{},
+				ElemDBTypeNotArray: true,
+			},
+			expType{
+				db:         "postgresql.JSONB",
+				graphql:    "[JSON!]!",
+				tsListType: true,
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
+				},
+				tsType: "any[]",
+				nullableType: &enttype.NullableArrayListType{
+					ElemType:           &enttype.JSONBType{},
+					ElemDBTypeNotArray: true,
+				},
+				goTypePanics: true,
+				convertFn:    "convertJSONList",
+			},
+			nil,
+		},
 		"json list": {
 			&enttype.ArrayListType{
 				ElemType: &enttype.JSONType{},
@@ -545,6 +570,31 @@ func TestArrayListType(t *testing.T) {
 				tsType: "any[]",
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.JSONType{},
+				},
+				goTypePanics: true,
+				convertFn:    "convertJSONList",
+			},
+			nil,
+		},
+		"json as list": {
+			&enttype.ArrayListType{
+				ElemType:           &enttype.JSONType{},
+				ElemDBTypeNotArray: true,
+			},
+			expType{
+				db:         "postgresql.JSON",
+				graphql:    "[JSON!]!",
+				tsListType: true,
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
+				},
+				tsType: "any[]",
+				nullableType: &enttype.NullableArrayListType{
+					ElemType:           &enttype.JSONType{},
+					ElemDBTypeNotArray: true,
 				},
 				goTypePanics: true,
 				convertFn:    "convertJSONList",
@@ -573,6 +623,30 @@ func TestArrayListType(t *testing.T) {
 			},
 			nil,
 		},
+		"nullable jsonb as list": {
+			&enttype.NullableArrayListType{
+				ElemType:           &enttype.JSONBType{},
+				ElemDBTypeNotArray: true,
+			},
+			expType{
+				db:         "postgresql.JSONB",
+				graphql:    "[JSON!]",
+				tsListType: true,
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
+				},
+				tsType: "any[] | null",
+				nonNullableType: &enttype.ArrayListType{
+					ElemType:           &enttype.JSONBType{},
+					ElemDBTypeNotArray: true,
+				},
+				goTypePanics: true,
+				convertFn:    "convertNullableJSONList",
+			},
+			nil,
+		},
 		"nullable json list": {
 			&enttype.NullableArrayListType{
 				ElemType: &enttype.JSONType{},
@@ -595,8 +669,31 @@ func TestArrayListType(t *testing.T) {
 			},
 			nil,
 		},
-
-		"jsonb with sub fields list": {
+		"nullable json as list": {
+			&enttype.NullableArrayListType{
+				ElemType:           &enttype.JSONType{},
+				ElemDBTypeNotArray: true,
+			},
+			expType{
+				db:         "postgresql.JSON",
+				graphql:    "[JSON!]",
+				tsListType: true,
+				graphqlImports: []*tsimport.ImportPath{
+					tsimport.NewGQLClassImportPath("GraphQLList"),
+					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
+				},
+				tsType: "any[] | null",
+				nonNullableType: &enttype.ArrayListType{
+					ElemType:           &enttype.JSONType{},
+					ElemDBTypeNotArray: true,
+				},
+				goTypePanics: true,
+				convertFn:    "convertNullableJSONList",
+			},
+			nil,
+		},
+		"jsonb with sub fields as list": {
 			&enttype.ArrayListType{
 				ElemType: &enttype.JSONBType{
 					CommonJSONType: enttype.CommonJSONType{
@@ -612,9 +709,10 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
+				ElemDBTypeNotArray: true,
 			},
 			expType{
-				db:         "postgresql.ARRAY(postgresql.JSONB)",
+				db:         "postgresql.JSONB",
 				graphql:    "[TypeWithSubFields!]!",
 				tsListType: true,
 				graphqlImports: []*tsimport.ImportPath{
@@ -639,6 +737,7 @@ func TestArrayListType(t *testing.T) {
 							},
 						},
 					},
+					ElemDBTypeNotArray: true,
 				},
 				goTypePanics: true,
 				convertFn:    "convertJSONList",
@@ -656,7 +755,7 @@ func TestArrayListType(t *testing.T) {
 			},
 			nil,
 		},
-		"nullable jsonb with sub fields list": {
+		"nullable jsonb with sub fields as list": {
 			&enttype.NullableArrayListType{
 				ElemType: &enttype.JSONBType{
 					CommonJSONType: enttype.CommonJSONType{
@@ -672,9 +771,10 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
+				ElemDBTypeNotArray: true,
 			},
 			expType{
-				db:         "postgresql.ARRAY(postgresql.JSONB)",
+				db:         "postgresql.JSONB",
 				graphql:    "[TypeWithSubFields!]",
 				tsListType: true,
 				graphqlImports: []*tsimport.ImportPath{
@@ -698,6 +798,7 @@ func TestArrayListType(t *testing.T) {
 							},
 						},
 					},
+					ElemDBTypeNotArray: true,
 				},
 				goTypePanics: true,
 				convertFn:    "convertNullableJSONList",
