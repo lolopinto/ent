@@ -811,7 +811,7 @@ export class EditNodeOperation<T extends Ent> implements DataOperation {
         optionClause = opts.clause;
       }
       if (optionClause) {
-        cls = clause.And(optionClause, cls);
+        cls = clause.And(cls, optionClause);
       }
     }
 

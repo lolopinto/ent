@@ -41,7 +41,7 @@ function createDataLoader(options: SelectDataOptions) {
         optionClause = options.clause;
       }
       if (optionClause) {
-        cls = clause.And(optionClause, cls);
+        cls = clause.And(cls, optionClause);
       }
     }
     const rowOptions: LoadRowOptions = {
@@ -142,7 +142,7 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
         optionClause = this.options.clause;
       }
       if (optionClause) {
-        cls = clause.And(optionClause, cls);
+        cls = clause.And(cls, optionClause);
       }
     }
     const rowOptions: LoadRowOptions = {
@@ -171,7 +171,7 @@ export class ObjectLoader<T> implements Loader<T, Data | null> {
         optionClause = this.options.clause;
       }
       if (optionClause) {
-        cls = clause.And(optionClause, cls);
+        cls = clause.And(cls, optionClause);
       }
     }
     const rowOptions: LoadRowOptions = {

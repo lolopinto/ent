@@ -314,7 +314,7 @@ function commonTests() {
     const expQuery = buildQuery({
       tableName: "users",
       fields: ["id", "first_name", "deleted_at"],
-      clause: clause.And(clause.Eq("deleted_at", null), clause.In("id", 1)),
+      clause: clause.And(clause.In("id", 1), clause.Eq("deleted_at", null)),
     });
     const row = await loader.load(1);
 
@@ -396,7 +396,7 @@ function commonTests() {
     const expQuery = buildQuery({
       tableName: "users",
       fields: ["id", "first_name", "deleted_at"],
-      clause: clause.And(clause.Eq("deleted_at", null), clause.Eq("id", 1)),
+      clause: clause.And(clause.Eq("id", 1), clause.Eq("deleted_at", null)),
     });
     expect(ml.logs.length).toBe(1);
     expect(ml.logs[0]).toStrictEqual({
@@ -441,7 +441,7 @@ function commonTests() {
     const expQuery = buildQuery({
       tableName: "users",
       fields: ["id", "first_name", "deleted_at"],
-      clause: clause.And(clause.Eq("deleted_at", null), clause.Eq("id", 1)),
+      clause: clause.And(clause.Eq("id", 1), clause.Eq("deleted_at", null)),
     });
     expect(ml.logs.length).toBe(1);
     expect(ml.logs[0]).toStrictEqual({
@@ -551,7 +551,7 @@ function commonTests() {
     const expQuery = buildQuery({
       tableName: "users",
       fields: ["id", "first_name", "deleted_at"],
-      clause: clause.And(clause.Eq("deleted_at", null), clause.Eq("id", 1)),
+      clause: clause.And(clause.Eq("id", 1), clause.Eq("deleted_at", null)),
     });
     expect(ml.logs.length).toBe(1);
     expect(ml.logs[0]).toStrictEqual({
@@ -1023,7 +1023,7 @@ function verifyMultiIDsCustomClauseGroupQuery(ids: ID[]) {
   const expQuery = buildQuery({
     tableName: "users",
     fields: ["id", "first_name", "deleted_at"],
-    clause: clause.And(clause.Eq("deleted_at", null), clause.In("id", ...ids)),
+    clause: clause.And(clause.In("id", ...ids), clause.Eq("deleted_at", null)),
   });
 
   expect(ml.logs.length).toBe(1);
@@ -1055,8 +1055,8 @@ function verifyMultiIDsCustomClauseGroupQueryMiss(ids: ID[]) {
       tableName: "users",
       fields: ["id", "first_name", "deleted_at"],
       clause: clause.And(
-        clause.Eq("deleted_at", null),
         clause.Eq("id", ids[idx]),
+        clause.Eq("deleted_at", null),
       ),
     });
     expect(log).toStrictEqual({
