@@ -19,6 +19,7 @@ import {
   TimestampType,
   IntegerEnumType,
   IntegerEnumListType,
+  StructTypeAsList,
 } from "@snowtop/ent/schema";
 import { EmailType } from "@snowtop/ent-email";
 import { PasswordType } from "@snowtop/ent-password";
@@ -81,7 +82,7 @@ const UserSchema = new EntSchema({
     // TODO there should be a way to share structs across types
     // this is the same type across multiple fields
     // more likely to be shared across types
-    prefsList: StructListType({
+    prefsList: StructTypeAsList({
       tsType: "UserPrefsStruct2",
       nullable: true,
       fields: {

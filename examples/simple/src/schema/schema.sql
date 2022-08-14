@@ -229,7 +229,7 @@ CREATE TABLE users (
     bio TEXT, 
     nicknames TEXT[], 
     prefs JSONB, 
-    prefs_list JSONB[], 
+    prefs_list JSONB, 
     prefs_diff JSON, 
     days_off TEXT[], 
     preferred_shift TEXT[], 
