@@ -10,7 +10,6 @@ import {
   LoadEntOptions,
   PrivacyPolicy,
   Viewer,
-  convertDate,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -55,8 +54,8 @@ export class EventBase implements Ent<Viewer> {
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
-    this.createdAt = convertDate(data.created_at);
-    this.updatedAt = convertDate(data.updated_at);
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
     this.name = data.name;
     this.slug = data.slug;
     this.creatorID = data.creator_id;
