@@ -10,8 +10,6 @@ import {
   LoadEntOptions,
   PrivacyPolicy,
   Viewer,
-  convertBool,
-  convertDate,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -51,12 +49,12 @@ export class AuthCodeBase implements Ent<Viewer> {
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
-    this.createdAt = convertDate(data.created_at);
-    this.updatedAt = convertDate(data.updated_at);
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
     this.code = data.code;
     this.guestID = data.guest_id;
     this.emailAddress = data.email_address;
-    this.sentCode = convertBool(data.sent_code);
+    this.sentCode = data.sent_code;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {

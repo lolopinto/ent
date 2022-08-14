@@ -12,7 +12,6 @@ import {
   ID,
   LoadEntOptions,
   PrivacyPolicy,
-  convertDate,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -53,8 +52,8 @@ export class CommentBase implements Ent<ExampleViewerAlias> {
 
   constructor(public viewer: ExampleViewerAlias, protected data: Data) {
     this.id = data.id;
-    this.createdAt = convertDate(data.created_at);
-    this.updatedAt = convertDate(data.updated_at);
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
     this.authorID = data.author_id;
     this.body = data.body;
     this.articleID = data.article_id;
