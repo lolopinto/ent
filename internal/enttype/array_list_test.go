@@ -693,7 +693,7 @@ func TestArrayListType(t *testing.T) {
 			},
 			nil,
 		},
-		"jsonb with sub fields list": {
+		"jsonb with sub fields as list": {
 			&enttype.ArrayListType{
 				ElemType: &enttype.JSONBType{
 					CommonJSONType: enttype.CommonJSONType{
@@ -709,9 +709,10 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
+				ElemDBTypeNotArray: true,
 			},
 			expType{
-				db:         "postgresql.ARRAY(postgresql.JSONB)",
+				db:         "postgresql.JSONB",
 				graphql:    "[TypeWithSubFields!]!",
 				tsListType: true,
 				graphqlImports: []*tsimport.ImportPath{
@@ -736,6 +737,7 @@ func TestArrayListType(t *testing.T) {
 							},
 						},
 					},
+					ElemDBTypeNotArray: true,
 				},
 				goTypePanics: true,
 				convertFn:    "convertJSONList",
@@ -753,7 +755,7 @@ func TestArrayListType(t *testing.T) {
 			},
 			nil,
 		},
-		"nullable jsonb with sub fields list": {
+		"nullable jsonb with sub fields as list": {
 			&enttype.NullableArrayListType{
 				ElemType: &enttype.JSONBType{
 					CommonJSONType: enttype.CommonJSONType{
@@ -769,9 +771,10 @@ func TestArrayListType(t *testing.T) {
 						},
 					},
 				},
+				ElemDBTypeNotArray: true,
 			},
 			expType{
-				db:         "postgresql.ARRAY(postgresql.JSONB)",
+				db:         "postgresql.JSONB",
 				graphql:    "[TypeWithSubFields!]",
 				tsListType: true,
 				graphqlImports: []*tsimport.ImportPath{
@@ -795,6 +798,7 @@ func TestArrayListType(t *testing.T) {
 							},
 						},
 					},
+					ElemDBTypeNotArray: true,
 				},
 				goTypePanics: true,
 				convertFn:    "convertNullableJSONList",

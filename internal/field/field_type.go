@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
@@ -746,11 +747,14 @@ func (f *Field) GetFieldType() enttype.EntType {
 // convertFunc
 func (f *Field) GetTSFieldType(cfg codegenapi.Config) enttype.EntType {
 	if f.HasAsyncAccessor(cfg) {
+		spew.Dump("async ", f.fieldType)
 		return f.fieldType
 	}
 	if f.tsFieldType != nil {
+		spew.Dump("ts field type")
 		return f.tsFieldType
 	}
+	spew.Dump("field type")
 	return f.fieldType
 }
 
