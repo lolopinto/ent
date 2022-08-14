@@ -299,24 +299,16 @@ export class inClause implements Clause {
 
   values(): any[] {
     const result: any[] = [];
-    for (let i = 0; i < this.value.length; i++) {
-      let value = this.value[i];
-      if (isSensitive(value)) {
-        value = value.value();
-      }
-      result.push(value);
+    for (let value of this.value) {
+      result.push(rawValue(value));
     }
     return result;
   }
 
   logValues(): any[] {
     const result: any[] = [];
-    for (const value of this.value) {
-      if (isSensitive(value)) {
-        result.push(value.logValue());
-      } else {
-        result.push(value);
-      }
+    for (let value of this.value) {
+      result.push(isSensitive(value) ? value.logValue() : value);
     }
     return result;
   }
