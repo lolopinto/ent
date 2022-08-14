@@ -12,8 +12,6 @@ import {
   ID,
   LoadEntOptions,
   PrivacyPolicy,
-  convertDate,
-  convertList,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -64,10 +62,10 @@ export class ContactBase
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;
-    this.createdAt = convertDate(data.created_at);
-    this.updatedAt = convertDate(data.updated_at);
-    this.emailIds = convertList(data.email_ids);
-    this.phoneNumberIds = convertList(data.phone_number_ids);
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
+    this.emailIds = data.email_ids;
+    this.phoneNumberIds = data.phone_number_ids;
     this.firstName = data.first_name;
     this.lastName = data.last_name;
     this.userID = data.user_id;
@@ -160,10 +158,6 @@ export class ContactBase
     }
     return row as ContactDBData;
   }
-
-  // TODO index email_ids not id... we want an indexQueryLoader...
-
-  // TODO index phone_number_ids not id... we want an indexQueryLoader...
 
   static loaderOptions<T extends ContactBase>(
     this: new (viewer: ExampleViewerAlias, data: Data) => T,

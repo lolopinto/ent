@@ -12,7 +12,6 @@ import {
   ID,
   LoadEntOptions,
   PrivacyPolicy,
-  convertDate,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -56,10 +55,10 @@ export class HolidayBase
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;
-    this.createdAt = convertDate(data.created_at);
-    this.updatedAt = convertDate(data.updated_at);
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
     this.label = data.label;
-    this.date = convertDate(data.date);
+    this.date = data.date;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewerAlias> {

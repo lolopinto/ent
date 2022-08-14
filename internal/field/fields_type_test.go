@@ -449,6 +449,116 @@ func TestNullableFieldOnEntLoadNoFieldPrivacy(t *testing.T) {
 	})
 }
 
+func TestNullableJSONBAsListFieldOnDemand(t *testing.T) {
+	cfg := &onDemandConfig{}
+	f, err := newFieldFromInputTest(cfg, &input.Field{
+		Name:     "foo",
+		Nullable: true,
+		Type: &input.FieldType{
+			DBType: input.JSONB,
+			ListElemType: &input.FieldType{
+				DBType: input.JSONB,
+			},
+			Type:        "Foo",
+			GraphQLType: "Foo",
+			UnionFields: []*input.Field{
+				{
+					Name: "bar",
+					Type: &input.FieldType{
+						DBType: input.String,
+					},
+				},
+				{
+					Name: "baz",
+					Type: &input.FieldType{
+						DBType: input.Int,
+					},
+				},
+			},
+		},
+		HasFieldPrivacy: true,
+	})
+	require.Nil(t, err)
+	doTestField(t, cfg, f, &expected{
+		private:            true,
+		asyncAccessor:      true,
+		tsFieldName:        "_foo",
+		tsBuilderFieldName: "foo",
+		tsPublicAPIName:    "foo",
+		tsType:             "Foo[] | null",
+		tsFieldType:        "Foo[] | null",
+		tsBuilderType:      "Foo[] | null",
+		tsBuilderUnionType: "Foo[] | null",
+		graphqlImports: []*tsimport.ImportPath{
+			tsimport.NewGQLClassImportPath("GraphQLList"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewLocalGraphQLEntImportPath("Foo"),
+		},
+		graphqlMutationImports: []*tsimport.ImportPath{
+			tsimport.NewGQLClassImportPath("GraphQLList"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewLocalGraphQLEntImportPath("Foo"),
+		},
+		graphqlMutationImportsForceOptional: []*tsimport.ImportPath{
+			tsimport.NewGQLClassImportPath("GraphQLList"),
+			tsimport.NewGQLClassImportPath("GraphQLNonNull"),
+			tsimport.NewLocalGraphQLEntImportPath("Foo"),
+		},
+		fieldTypeType: &enttype.NullableArrayListType{
+			ElemType: &enttype.JSONBType{
+				CommonJSONType: enttype.CommonJSONType{
+					CustomTsInterface:      "Foo",
+					CustomGraphQLInterface: "Foo",
+					ImportType: &tsimport.ImportPath{
+						Import: "Foo",
+					},
+					UnionFields: []*input.Field{
+						{
+							Name: "bar",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "baz",
+							Type: &input.FieldType{
+								DBType: input.Int,
+							},
+						},
+					},
+				},
+			},
+			ElemDBTypeNotArray: true,
+		},
+		tsFieldTypeType: &enttype.NullableArrayListType{
+			ElemType: &enttype.JSONBType{
+				CommonJSONType: enttype.CommonJSONType{
+					CustomTsInterface:      "Foo",
+					CustomGraphQLInterface: "Foo",
+					ImportType: &tsimport.ImportPath{
+						Import: "Foo",
+					},
+					UnionFields: []*input.Field{
+						{
+							Name: "bar",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							Name: "baz",
+							Type: &input.FieldType{
+								DBType: input.Int,
+							},
+						},
+					},
+				},
+			},
+			ElemDBTypeNotArray: true,
+		},
+	})
+}
+
 func doTestField(t *testing.T, cfg codegenapi.Config, f *Field, exp *expected) {
 	assert.Equal(t, exp.private, f.Private(cfg))
 	assert.Equal(t, exp.asyncAccessor, f.HasAsyncAccessor(cfg))

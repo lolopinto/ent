@@ -101,6 +101,8 @@ type FieldType struct {
 	// Note that anytime anything changes here, have to update fieldTypeEqual in compare.go
 	DBType DBType `json:"dbType,omitempty"`
 	// required when DBType == DBType.List
+	// also sometimes used when DBType == JSON or JSONB for json that we store as json(b) in the db but represent as lists
+	// in graphql and typescript
 	ListElemType *FieldType `json:"listElemType,omitempty"`
 	// required when DBType == DBType.Enum || DBType.StringEnum
 	Values               []string          `json:"values,omitempty"`
@@ -208,6 +210,60 @@ type PrivateOptions struct {
 	ExposeToActions bool `json:"exposeToActions,omitempty"`
 }
 
+func getJSONOrJSONBType(typ *FieldType, nullable bool) enttype.TSGraphQLType {
+	importType := typ.ImportType
+	var subFields interface{}
+	var unionFields interface{}
+	if len(typ.SubFields) != 0 {
+		// only set this if we actually have fields. otherwise, we want this to be nil
+		subFields = typ.SubFields
+		if importType == nil && typ.Type != "" {
+			importType = &tsimport.ImportPath{
+				ImportPath: getImportPathForCustomInterfaceFile(typ.Type),
+				Import:     typ.Type,
+			}
+		}
+	}
+	if len(typ.UnionFields) != 0 {
+		// only set this if we actually have fields. otherwise, we want this to be nil
+		unionFields = typ.UnionFields
+		if importType == nil && typ.Type != "" {
+			importType = &tsimport.ImportPath{
+				// intentionally no path since we don't support top level unions and this should lead to some kind of error
+				Import: typ.Type,
+			}
+		}
+	}
+
+	common := enttype.CommonJSONType{}
+	common.ImportType = importType
+	common.CustomTsInterface = typ.Type
+	common.CustomGraphQLInterface = typ.GraphQLType
+	common.SubFields = subFields
+	common.UnionFields = unionFields
+
+	if typ.DBType == JSON {
+		if nullable {
+			return &enttype.NullableJSONType{
+				CommonJSONType: common,
+			}
+		}
+		return &enttype.JSONType{
+			CommonJSONType: common,
+		}
+	}
+
+	//	case JSONB:
+	if nullable {
+		return &enttype.NullableJSONBType{
+			CommonJSONType: common,
+		}
+	}
+	return &enttype.JSONBType{
+		CommonJSONType: common,
+	}
+}
+
 func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, foreignKey *ForeignKey) (enttype.TSGraphQLType, error) {
 	switch typ.DBType {
 	case UUID:
@@ -287,66 +343,20 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 		return &enttype.DateType{}, nil
 	case JSON, JSONB:
 
-		importType := typ.ImportType
-		var subFields interface{}
-		var unionFields interface{}
-		if len(typ.SubFields) != 0 {
-			// only set this if we actually have fields. otherwise, we want this to be nil
-			subFields = typ.SubFields
-			if importType == nil && typ.Type != "" {
-				importType = &tsimport.ImportPath{
-					ImportPath: getImportPathForCustomInterfaceFile(typ.Type),
-					Import:     typ.Type,
-				}
-			}
-		}
-		if len(typ.UnionFields) != 0 {
-			// only set this if we actually have fields. otherwise, we want this to be nil
-			unionFields = typ.UnionFields
-			if importType == nil && typ.Type != "" {
-				importType = &tsimport.ImportPath{
-					// intentionally no path since we don't support top level unions and this should lead to some kind of error
-					Import: typ.Type,
-				}
-			}
-		}
-
-		if typ.DBType == JSON {
+		if typ.ListElemType != nil {
 			if nullable {
-				ret := &enttype.NullableJSONType{}
-				ret.ImportType = importType
-				ret.CustomTsInterface = typ.Type
-				ret.CustomGraphQLInterface = typ.GraphQLType
-				ret.SubFields = subFields
-				ret.UnionFields = unionFields
-				return ret, nil
+				return &enttype.NullableArrayListType{
+					ElemType:           getJSONOrJSONBType(typ, false),
+					ElemDBTypeNotArray: true,
+				}, nil
 			}
-			ret := &enttype.JSONType{}
-			ret.ImportType = importType
-			ret.CustomTsInterface = typ.Type
-			ret.CustomGraphQLInterface = typ.GraphQLType
-			ret.SubFields = subFields
-			ret.UnionFields = unionFields
-			return ret, nil
+			return &enttype.ArrayListType{
+				ElemType:           getJSONOrJSONBType(typ, false),
+				ElemDBTypeNotArray: true,
+			}, nil
 		}
 
-		//	case JSONB:
-		if nullable {
-			ret := &enttype.NullableJSONBType{}
-			ret.ImportType = importType
-			ret.CustomTsInterface = typ.Type
-			ret.CustomGraphQLInterface = typ.GraphQLType
-			ret.SubFields = subFields
-			ret.UnionFields = unionFields
-			return ret, nil
-		}
-		ret := &enttype.JSONBType{}
-		ret.ImportType = importType
-		ret.CustomTsInterface = typ.Type
-		ret.CustomGraphQLInterface = typ.GraphQLType
-		ret.SubFields = subFields
-		ret.UnionFields = unionFields
-		return ret, nil
+		return getJSONOrJSONBType(typ, nullable), nil
 
 	case StringEnum, Enum:
 		tsType := strcase.ToCamel(typ.Type)

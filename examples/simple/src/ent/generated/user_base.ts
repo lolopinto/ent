@@ -14,11 +14,6 @@ import {
   LoadEntOptions,
   PrivacyPolicy,
   applyPrivacyPolicy,
-  convertBool,
-  convertDate,
-  convertNullableJSON,
-  convertNullableJSONList,
-  convertNullableList,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -153,30 +148,28 @@ export class UserBase
     // @ts-ignore pass to mixin
     super(viewer, data);
     this.id = data.id;
-    this.createdAt = convertDate(data.created_at);
-    this.updatedAt = convertDate(data.updated_at);
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
     this.firstName = data.first_name;
     this.lastName = data.last_name;
     this.emailAddress = data.email_address;
     this.phoneNumber = data.phone_number;
     this.password = data.password;
     this._accountStatus = convertAccountStatus(data.account_status);
-    this._emailVerified = convertBool(data.email_verified);
+    this._emailVerified = data.email_verified;
     this.bio = data.bio;
-    this.nicknames = convertNullableList(data.nicknames);
-    this._prefs = convertNullableJSON(data.prefs);
-    this._prefsList = convertNullableJSONList(data.prefs_list);
-    this._prefsDiff = convertNullableJSON(data.prefs_diff);
-    this.daysOff = convertNullableList(data.days_off);
-    this.preferredShift = convertNullableList(data.preferred_shift);
+    this.nicknames = data.nicknames;
+    this._prefs = data.prefs;
+    this._prefsList = data.prefs_list;
+    this._prefsDiff = data.prefs_diff;
+    this.daysOff = data.days_off;
+    this.preferredShift = data.preferred_shift;
     this.timeInMs = BigInt(data.time_in_ms);
-    this.funUuids = convertNullableList(data.fun_uuids);
+    this.funUuids = data.fun_uuids;
     this.newCol = data.new_col;
     this.newCol2 = data.new_col_2;
-    this.superNestedObject = convertSuperNestedObject(convertNullableJSON)(
-      data.super_nested_object,
-    );
-    this.nestedList = convertNullableJSONList(data.nested_list);
+    this.superNestedObject = convertSuperNestedObject(data.super_nested_object);
+    this.nestedList = data.nested_list;
     this.intEnum = data.int_enum;
   }
 

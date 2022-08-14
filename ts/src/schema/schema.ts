@@ -330,10 +330,6 @@ export interface Type {
   // UnionType fields. really StructMap but don't want circular dependency...
   unionFields?: FieldMap;
 
-  // to convert the field in some way
-  // should be the same type e.g. Date to Date
-  convert?: ConvertType;
-
   // allow other keys
   [x: string]: any;
 }
@@ -440,6 +436,10 @@ export interface FieldOptions {
 
   // takes the name of the field and returns any fields which are derived from current field
   getDerivedFields?(name: string): FieldMap;
+
+  // to convert the field in some way
+  // should be the same type e.g. Date to Date
+  convert?: ConvertType;
 
   // allow name for now
   [x: string]: any;

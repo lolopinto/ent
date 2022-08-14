@@ -591,11 +591,10 @@ func (f *Field) GetImportsForTypes() []*tsimport.ImportPath {
 	var ret []*tsimport.ImportPath
 	tt := f.GetPossibleTypes()
 	for _, t := range tt {
-		if enttype.IsConvertDataType(t) {
-			t2 := t.(enttype.ConvertDataType)
-			c := t2.Convert()
-			if c.ImportPath != "" {
-				ret = append(ret, c)
+		imp := enttype.ConvertImportPath(t)
+		if imp != nil {
+			if imp.ImportPath != "" {
+				ret = append(ret, imp)
 			}
 		}
 		if enttype.IsImportDepsType(t) {

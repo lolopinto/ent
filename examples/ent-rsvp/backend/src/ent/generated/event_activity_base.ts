@@ -10,9 +10,6 @@ import {
   LoadEntOptions,
   PrivacyPolicy,
   Viewer,
-  convertBool,
-  convertDate,
-  convertNullableDate,
   getEdgeTypeInGroup,
   loadCustomData,
   loadCustomEnts,
@@ -70,15 +67,15 @@ export class EventActivityBase implements Ent<Viewer> {
 
   constructor(public viewer: Viewer, protected data: Data) {
     this.id = data.id;
-    this.createdAt = convertDate(data.created_at);
-    this.updatedAt = convertDate(data.updated_at);
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
     this.name = data.name;
     this.eventID = data.event_id;
-    this.startTime = convertDate(data.start_time);
-    this.endTime = convertNullableDate(data.end_time);
+    this.startTime = data.start_time;
+    this.endTime = data.end_time;
     this.location = data.location;
     this.description = data.description;
-    this.inviteAllGuests = convertBool(data.invite_all_guests);
+    this.inviteAllGuests = data.invite_all_guests;
   }
 
   getPrivacyPolicy(): PrivacyPolicy<this, Viewer> {

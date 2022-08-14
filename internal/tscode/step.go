@@ -1235,7 +1235,7 @@ func getBuilderFuncs(imps *tsimport.Imports) template.FuncMap {
 
 func getBaseFuncs(imps *tsimport.Imports) template.FuncMap {
 	m := imps.FuncMap()
-	m["convertFunc"] = func(f *field.Field, cfg codegenapi.Config) (string, error) {
+	m["callAndConvertFunc"] = func(f *field.Field, cfg codegenapi.Config, val string) (string, error) {
 		conv1 := enttype.ConvertFunc(f.GetTSFieldType(cfg))
 		conv2 := ""
 		userConv := f.GetUserConvert()
@@ -1243,7 +1243,7 @@ func getBaseFuncs(imps *tsimport.Imports) template.FuncMap {
 			conv2 = userConv.Function
 		}
 		if conv1 == conv2 && conv1 == "" {
-			return "", nil
+			return val, nil
 		}
 
 		// could be BigInt which isn't reserved
@@ -1262,12 +1262,12 @@ func getBaseFuncs(imps *tsimport.Imports) template.FuncMap {
 		}
 
 		if conv2 != "" && conv1 != "" {
-			return fmt.Sprintf("%s(%s)", conv2, conv1), nil
+			return fmt.Sprintf("%s(%s(%s))", conv2, conv1, val), nil
 		}
 		if conv2 != "" {
-			return conv2, nil
+			return fmt.Sprintf("%s(%s)", conv2, val), nil
 		}
-		return conv1, nil
+		return fmt.Sprintf("%s(%s)", conv1, val), nil
 	}
 
 	return m

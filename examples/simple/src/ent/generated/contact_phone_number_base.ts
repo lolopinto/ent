@@ -12,7 +12,6 @@ import {
   ID,
   LoadEntOptions,
   PrivacyPolicy,
-  convertDate,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
@@ -48,8 +47,8 @@ export class ContactPhoneNumberBase implements Ent<ExampleViewerAlias> {
 
   constructor(public viewer: ExampleViewerAlias, protected data: Data) {
     this.id = data.id;
-    this.createdAt = convertDate(data.created_at);
-    this.updatedAt = convertDate(data.updated_at);
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
     this.phoneNumber = data.phone_number;
     this.label = data.label;
     this.contactID = data.contact_id;

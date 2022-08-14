@@ -142,8 +142,26 @@ func Get() *Config {
 	return cfg
 }
 
+type Dialect string
+
+const (
+	SQLite   Dialect = "sqlite"
+	Postgres Dialect = "postgres"
+)
+
+func GetAllDialects() []Dialect {
+	return []Dialect{
+		SQLite,
+		Postgres,
+	}
+}
+
 func IsSQLiteDialect() bool {
-	return Get().DB.Dialect == "sqlite"
+	return Get().DB.Dialect == string(SQLite)
+}
+
+func GetDialect() Dialect {
+	return Dialect(Get().DB.Dialect)
 }
 
 func GetConnectionStr() string {

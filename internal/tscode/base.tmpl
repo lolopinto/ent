@@ -98,12 +98,7 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     {{range $field := .FieldInfo.Fields -}}
       {{ if not ($schema.PatternFieldWithMixin $field) -}}
         {{$val := printf "data.%s" $field.GetDbColName -}}
-        {{$convertType := convertFunc $field $cfg  -}}
-        {{if $convertType -}} 
-          this.{{$field.TsFieldName $cfg}} = {{printf "%s(%v)" $convertType $val}};
-        {{ else -}}
-          this.{{$field.TsFieldName $cfg}} = {{$val}};
-        {{end -}}
+        this.{{$field.TsFieldName $cfg}} = {{callAndConvertFunc $field $cfg  $val }}
       {{ end -}}
     {{end}}
   }
@@ -325,7 +320,6 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
         return {{$queryName}}.query(viewer, ent);
       }
     {{ else if $field.QueryFrom -}}
-    // TODO index {{$field.FieldName}} not id... we want an indexQueryLoader...
     {{end}}
   {{end -}}
 

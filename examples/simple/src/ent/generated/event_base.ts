@@ -13,8 +13,6 @@ import {
   LoadEntOptions,
   PrivacyPolicy,
   applyPrivacyPolicy,
-  convertDate,
-  convertNullableDate,
   getEdgeTypeInGroup,
   loadCustomData,
   loadCustomEnts,
@@ -71,12 +69,12 @@ export class EventBase implements Ent<ExampleViewerAlias> {
 
   constructor(public viewer: ExampleViewerAlias, protected data: Data) {
     this.id = data.id;
-    this.createdAt = convertDate(data.created_at);
-    this.updatedAt = convertDate(data.updated_at);
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
     this.name = data.name;
     this.creatorID = data.user_id;
-    this.startTime = convertDate(data.start_time);
-    this.endTime = convertNullableDate(data.end_time);
+    this.startTime = data.start_time;
+    this.endTime = data.end_time;
     this.location = data.location;
     this._addressID = data.address_id;
   }
