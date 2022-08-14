@@ -715,7 +715,7 @@ func TestParseFields(t *testing.T) {
 				},
 			},
 		},
-		"jsonb import ype": {
+		"jsonb import type": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
 				import {Schema, Field, BaseEntSchema, JSONBType } from "{schema}"
@@ -743,6 +743,47 @@ func TestParseFields(t *testing.T) {
 							dbType: input.JSONB,
 							typ: &input.FieldType{
 								DBType: input.JSONB,
+								ImportType: &tsimport.ImportPath{
+									ImportPath: "path/to_foo.ts",
+									Import:     "Foo",
+								},
+							},
+						},
+					),
+				},
+			},
+		},
+		"jsonb import type as list": {
+			code: map[string]string{
+				"user.ts": getCodeWithSchema(`
+				import {Schema, Field, BaseEntSchema, JSONBTypeAsList } from "{schema}"
+
+				export default class User extends BaseEntSchema implements Schema {
+					fields: Field[] = [
+						JSONBTypeAsList({name: "foo", importType: {
+							type: "Foo",
+							path: "path/to_foo.ts",
+						} }),
+					]
+				}`),
+			},
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name:   "node",
+					fields: nodeFields(),
+				},
+			},
+			expectedNodes: map[string]node{
+				"User": {
+					fields: fieldsWithNodeFields(
+						field{
+							name:   "foo",
+							dbType: input.JSONB,
+							typ: &input.FieldType{
+								DBType: input.JSONB,
+								ListElemType: &input.FieldType{
+									DBType: input.JSONB,
+								},
 								ImportType: &tsimport.ImportPath{
 									ImportPath: "path/to_foo.ts",
 									Import:     "Foo",

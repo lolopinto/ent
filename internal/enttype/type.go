@@ -1829,10 +1829,14 @@ func (t *arrayListType) getTsTypeImports(elemType TSType) []*tsimport.ImportPath
 // not ArrayType or SliceType
 type ArrayListType struct {
 	arrayListType
-	ElemType TSType
+	ElemType           TSType
+	ElemDBTypeNotArray bool
 }
 
 func (t *ArrayListType) GetDBType() string {
+	if t.ElemDBTypeNotArray {
+		return t.ElemType.GetDBType()
+	}
 	return t.getDBType(t.ElemType)
 }
 
@@ -1850,7 +1854,8 @@ func (t *ArrayListType) GetTsTypeImports() []*tsimport.ImportPath {
 
 func (t *ArrayListType) GetNullableType() TSGraphQLType {
 	return &NullableArrayListType{
-		ElemType: t.ElemType,
+		ElemType:           t.ElemType,
+		ElemDBTypeNotArray: t.ElemDBTypeNotArray,
 	}
 }
 
@@ -1901,10 +1906,14 @@ func (t *ArrayListType) GetCustomTypeInfo() *CustomTypeInfo {
 
 type NullableArrayListType struct {
 	arrayListType
-	ElemType TSType
+	ElemType           TSType
+	ElemDBTypeNotArray bool
 }
 
 func (t *NullableArrayListType) GetDBType() string {
+	if t.ElemDBTypeNotArray {
+		return t.ElemType.GetDBType()
+	}
 	return t.getDBType(t.ElemType)
 }
 
@@ -1914,7 +1923,8 @@ func (t *NullableArrayListType) GetTsTypeImports() []*tsimport.ImportPath {
 
 func (t *NullableArrayListType) GetNonNullableType() TSGraphQLType {
 	return &ArrayListType{
-		ElemType: t.ElemType,
+		ElemType:           t.ElemType,
+		ElemDBTypeNotArray: t.ElemDBTypeNotArray,
 	}
 }
 

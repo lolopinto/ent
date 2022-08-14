@@ -8,18 +8,27 @@ export interface JSONOptions extends FieldOptions {
   importType?: ImportType;
 }
 
+interface allJSONOptions extends JSONOptions {
+  jsonAsList?: boolean;
+}
+
 export class JSONField extends BaseField implements Field {
   type: Type = {
     dbType: DBType.JSON,
   };
 
-  constructor(jsonb: boolean, private options?: JSONOptions) {
+  constructor(jsonb: boolean, private options?: allJSONOptions) {
     super();
     if (jsonb) {
       this.type.dbType = DBType.JSONB;
     }
     if (options?.importType) {
       this.type.importType = options.importType;
+    }
+    if (options?.jsonAsList) {
+      this.type.listElemType = {
+        dbType: DBType.JSONB,
+      };
     }
   }
 
@@ -45,10 +54,32 @@ export function JSONBType(options?: JSONOptions): JSONField {
   return Object.assign(result, options);
 }
 
+/**
+ * @deprecated use JSONBTypeAsList
+ */
 export function JSONBListType(options?: JSONOptions) {
   return new ListField(JSONBType(options), options);
 }
 
+/**
+ * @deprecated use JSONTypeAsList
+ */
 export function JSONListType(options?: JSONOptions) {
   return new ListField(JSONType(options), options);
+}
+
+export function JSONBTypeAsList(options?: JSONOptions) {
+  let result = new JSONField(true, {
+    ...options,
+    jsonAsList: true,
+  });
+  return Object.assign(result, options);
+}
+
+export function JSONTypeAsList(options?: JSONOptions) {
+  let result = new JSONField(false, {
+    ...options,
+    jsonAsList: true,
+  });
+  return Object.assign(result, options);
 }

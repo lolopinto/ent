@@ -12,7 +12,12 @@ import {
   TimestamptzListType,
   UUIDType,
 } from "./field";
-import { JSONBListType, JSONListType } from "./json_field";
+import {
+  JSONBListType,
+  JSONBTypeAsList,
+  JSONListType,
+  JSONTypeAsList,
+} from "./json_field";
 import Schema from "./schema";
 import { User, SimpleAction, BuilderSchema } from "../testutils/builder";
 import { TempDB, getSchemaTable } from "../testutils/db/temp_db";
@@ -448,6 +453,20 @@ function commonTests() {
     ent = Preferences;
   }
 
+  class PreferencesJSONBAsListSchema implements Schema {
+    fields = {
+      prefsList: JSONBTypeAsList(),
+    };
+    ent = Preferences;
+  }
+
+  class PreferencesJSONAsListSchema implements Schema {
+    fields = {
+      prefsList: JSONTypeAsList(),
+    };
+    ent = Preferences;
+  }
+
   test("jsonb list", async () => {
     const prefsList = [
       {
@@ -498,5 +517,53 @@ function commonTests() {
     expect(convertList(ent.data.prefs_list, convertJSON)).toStrictEqual(
       prefsList,
     );
+  });
+
+  test.only("jsonb as list", async () => {
+    const prefsList = [
+      {
+        key1: "1",
+        key2: 2,
+        key3: false,
+        key4: [1, 2, 3, 4],
+      },
+      {
+        bar: "ff",
+        bar2: "gg",
+        bar3: null,
+      },
+    ];
+    const action = getInsertAction(
+      new PreferencesJSONBAsListSchema(),
+      new Map<string, any>([["prefsList", prefsList]]),
+    );
+    await createTables(new PreferencesJSONBAsListSchema());
+
+    const ent = await action.saveX();
+    expect(convertJSON(ent.data.prefs_list)).toStrictEqual(prefsList);
+  });
+
+  test("json as list", async () => {
+    const prefsList = [
+      {
+        key1: "1",
+        key2: 2,
+        key3: false,
+        key4: [1, 2, 3, 4],
+      },
+      {
+        bar: "ff",
+        bar2: "gg",
+        bar3: null,
+      },
+    ];
+    const action = getInsertAction(
+      new PreferencesJSONAsListSchema(),
+      new Map<string, any>([["prefsList", prefsList]]),
+    );
+    await createTables(new PreferencesJSONAsListSchema());
+
+    const ent = await action.saveX();
+    expect(convertJSON(ent.data.prefs_list)).toStrictEqual(prefsList);
   });
 }

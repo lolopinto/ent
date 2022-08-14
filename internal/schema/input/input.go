@@ -101,6 +101,8 @@ type FieldType struct {
 	// Note that anytime anything changes here, have to update fieldTypeEqual in compare.go
 	DBType DBType `json:"dbType,omitempty"`
 	// required when DBType == DBType.List
+	// also sometimes used when DBType == JSON or JSONB for json that we store as json(b) in the db but represent as lists
+	// in graphql and typescript
 	ListElemType *FieldType `json:"listElemType,omitempty"`
 	// required when DBType == DBType.Enum || DBType.StringEnum
 	Values               []string          `json:"values,omitempty"`
@@ -319,6 +321,12 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 				ret.CustomGraphQLInterface = typ.GraphQLType
 				ret.SubFields = subFields
 				ret.UnionFields = unionFields
+				if typ.ListElemType != nil {
+					return &enttype.NullableArrayListType{
+						ElemType:           ret,
+						ElemDBTypeNotArray: true,
+					}, nil
+				}
 				return ret, nil
 			}
 			ret := &enttype.JSONType{}
@@ -327,6 +335,12 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 			ret.CustomGraphQLInterface = typ.GraphQLType
 			ret.SubFields = subFields
 			ret.UnionFields = unionFields
+			if typ.ListElemType != nil {
+				return &enttype.ArrayListType{
+					ElemType:           ret,
+					ElemDBTypeNotArray: true,
+				}, nil
+			}
 			return ret, nil
 		}
 
@@ -338,6 +352,12 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 			ret.CustomGraphQLInterface = typ.GraphQLType
 			ret.SubFields = subFields
 			ret.UnionFields = unionFields
+			if typ.ListElemType != nil {
+				return &enttype.NullableArrayListType{
+					ElemType:           ret,
+					ElemDBTypeNotArray: true,
+				}, nil
+			}
 			return ret, nil
 		}
 		ret := &enttype.JSONBType{}
@@ -346,6 +366,12 @@ func getTypeFor(nodeName, fieldName string, typ *FieldType, nullable bool, forei
 		ret.CustomGraphQLInterface = typ.GraphQLType
 		ret.SubFields = subFields
 		ret.UnionFields = unionFields
+		if typ.ListElemType != nil {
+			return &enttype.ArrayListType{
+				ElemType:           ret,
+				ElemDBTypeNotArray: true,
+			}, nil
+		}
 		return ret, nil
 
 	case StringEnum, Enum:
