@@ -794,6 +794,66 @@ func TestParseFields(t *testing.T) {
 				},
 			},
 		},
+		"struct type as list": {
+			only: true,
+			code: map[string]string{
+				"user.ts": getCodeWithSchema(`
+				import { EntSchema, StructTypeAsList, StringType, IntegerType } from "{schema}"
+
+				const UserSchema = new EntSchema({
+					fields: {
+						foo: StructTypeAsList({
+							tsType: 'FooType',
+							graphQLType: 'FooType',
+							fields: {
+								bar: StringType(),
+								baz: IntegerType(),
+							},
+						}),
+					}
+				});
+				export default UserSchema;
+				`),
+			},
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name:   "node",
+					fields: nodeFields(),
+				},
+			},
+			expectedNodes: map[string]node{
+				"User": {
+					fields: fieldsWithNodeFields(
+						field{
+							name:   "foo",
+							dbType: input.JSONB,
+							typ: &input.FieldType{
+								Type:        "FooType",
+								GraphQLType: "FooType",
+								DBType:      input.JSONB,
+								ListElemType: &input.FieldType{
+									DBType: input.JSONB,
+								},
+								SubFields: []*input.Field{
+									{
+										Name: "bar",
+										Type: &input.FieldType{
+											DBType: input.String,
+										},
+									},
+									{
+										Name: "baz",
+										Type: &input.FieldType{
+											DBType: input.Int,
+										},
+									},
+								},
+							},
+						},
+					),
+				},
+			},
+		},
 	}
 
 	runTestCases(t, testCases)

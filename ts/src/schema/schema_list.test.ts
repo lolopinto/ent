@@ -11,6 +11,8 @@ import {
   TimeType,
   TimestamptzListType,
   UUIDType,
+  IntegerType,
+  BooleanType,
 } from "./field";
 import {
   JSONBListType,
@@ -33,6 +35,7 @@ import {
   convertJSON,
 } from "../core/convert";
 import { WriteOperation } from "../action";
+import { StructTypeAsList } from "./struct_field";
 let tdb: TempDB;
 
 async function setupTempDB(dialect: Dialect, connString?: string) {
@@ -467,6 +470,37 @@ function commonTests() {
     ent = Preferences;
   }
 
+  class PreferencesStructAsListSchema implements Schema {
+    fields = {
+      prefsList: StructTypeAsList({
+        tsType: "",
+        fields: {
+          key1: StringType(),
+          key2: IntegerType(),
+          key3: BooleanType(),
+          key4: IntegerListType(),
+        },
+      }),
+    };
+    ent = Preferences;
+  }
+
+  class PreferencesStructAsListJSONSchema implements Schema {
+    fields = {
+      prefsList: StructTypeAsList({
+        jsonNotJSONB: true,
+        tsType: "",
+        fields: {
+          key1: StringType(),
+          key2: IntegerType(),
+          key3: BooleanType(),
+          key4: IntegerListType(),
+        },
+      }),
+    };
+    ent = Preferences;
+  }
+
   test("jsonb list", async () => {
     const prefsList = [
       {
@@ -519,7 +553,7 @@ function commonTests() {
     );
   });
 
-  test.only("jsonb as list", async () => {
+  test("jsonb as list", async () => {
     const prefsList = [
       {
         key1: "1",
@@ -562,6 +596,56 @@ function commonTests() {
       new Map<string, any>([["prefsList", prefsList]]),
     );
     await createTables(new PreferencesJSONAsListSchema());
+
+    const ent = await action.saveX();
+    expect(convertJSON(ent.data.prefs_list)).toStrictEqual(prefsList);
+  });
+
+  test("struct as list jsonb", async () => {
+    const prefsList = [
+      {
+        key1: "1",
+        key2: 2,
+        key3: false,
+        key4: [1, 2, 3, 4],
+      },
+      {
+        key1: "2",
+        key2: 3,
+        key3: true,
+        key4: [5, 6, 7, 8],
+      },
+    ];
+    const action = getInsertAction(
+      new PreferencesStructAsListSchema(),
+      new Map<string, any>([["prefsList", prefsList]]),
+    );
+    await createTables(new PreferencesStructAsListSchema());
+
+    const ent = await action.saveX();
+    expect(convertJSON(ent.data.prefs_list)).toStrictEqual(prefsList);
+  });
+
+  test("struct as list json", async () => {
+    const prefsList = [
+      {
+        key1: "1",
+        key2: 2,
+        key3: false,
+        key4: [1, 2, 3, 4],
+      },
+      {
+        key1: "2",
+        key2: 3,
+        key3: true,
+        key4: [5, 6, 7, 8],
+      },
+    ];
+    const action = getInsertAction(
+      new PreferencesStructAsListJSONSchema(),
+      new Map<string, any>([["prefsList", prefsList]]),
+    );
+    await createTables(new PreferencesStructAsListJSONSchema());
 
     const ent = await action.saveX();
     expect(convertJSON(ent.data.prefs_list)).toStrictEqual(prefsList);
