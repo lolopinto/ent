@@ -669,30 +669,6 @@ func TestArrayListType(t *testing.T) {
 			},
 			nil,
 		},
-		"nullable json as list": {
-			&enttype.NullableArrayListType{
-				ElemType:           &enttype.JSONType{},
-				ElemDBTypeNotArray: true,
-			},
-			expType{
-				db:         "postgresql.JSON",
-				graphql:    "[JSON!]",
-				tsListType: true,
-				graphqlImports: []*tsimport.ImportPath{
-					tsimport.NewGQLClassImportPath("GraphQLList"),
-					tsimport.NewGQLClassImportPath("GraphQLNonNull"),
-					tsimport.NewGraphQLJSONImportPath("GraphQLJSON"),
-				},
-				tsType: "any[] | null",
-				nonNullableType: &enttype.ArrayListType{
-					ElemType:           &enttype.JSONType{},
-					ElemDBTypeNotArray: true,
-				},
-				goTypePanics:    true,
-				convertSqliteFn: "convertNullableJSONList",
-			},
-			nil,
-		},
 		"jsonb with sub fields as list": {
 			&enttype.ArrayListType{
 				ElemType: &enttype.JSONBType{
