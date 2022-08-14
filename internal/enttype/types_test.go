@@ -1723,6 +1723,7 @@ func testType(t *testing.T, exp expType, ret returnType) {
 
 	convType, ok := typ.(enttype.ConvertDataType)
 	if ok {
+		// TODO change this and all the tests...
 		assert.Equal(t, exp.convertFn, convType.Convert().Import)
 	}
 

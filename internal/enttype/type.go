@@ -72,15 +72,17 @@ type CustomGQLRenderer interface {
 	ArgImports(cfg Config) []*tsimport.ImportPath
 }
 
+type ConvertDataTypeRet map[config.Dialect]*tsimport.ImportPath
 type ConvertDataType interface {
 	TSType
-	Convert() *tsimport.ImportPath
+	// return convert info for each dialect. a lot of these only apply for one dialect
+	Convert() ConvertDataTypeRet
 }
 
 type convertListElemType interface {
 	ConvertDataType
-	convertListWithItem() *tsimport.ImportPath
-	convertNullableListWithItem() *tsimport.ImportPath
+	convertListWithItem() ConvertDataTypeRet
+	convertNullableListWithItem() ConvertDataTypeRet
 }
 
 type ActionFieldsInfo struct {
@@ -322,8 +324,21 @@ func (t *boolType) GetImportType() Import {
 	return &BoolImport{}
 }
 
-func (t *boolType) Convert() *tsimport.ImportPath {
-	return tsimport.NewEntImportPath("convertBool")
+func getSqliteImportMap(imp *tsimport.ImportPath) ConvertDataTypeRet {
+	return map[config.Dialect]*tsimport.ImportPath{
+		config.SQLite: imp,
+	}
+}
+
+func getAllDialectsImportMap(imp *tsimport.ImportPath) ConvertDataTypeRet {
+	return map[config.Dialect]*tsimport.ImportPath{
+		config.SQLite:   imp,
+		config.Postgres: imp,
+	}
+}
+
+func (t *boolType) Convert() ConvertDataTypeRet {
+	return getSqliteImportMap(tsimport.NewEntImportPath("convertBool"))
 }
 
 func (t *boolType) convertListWithItem() *tsimport.ImportPath {
@@ -387,8 +402,8 @@ func (t *NullableBoolType) GetTSGraphQLImports(input bool) []*tsimport.ImportPat
 	}
 }
 
-func (t *NullableBoolType) Convert() *tsimport.ImportPath {
-	return tsimport.NewEntImportPath("convertNullableBool")
+func (t *NullableBoolType) Convert() ConvertDataTypeRet {
+	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableBool"))
 }
 
 // TODO uuid support needed
@@ -578,10 +593,10 @@ func (t *BigIntegerType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath 
 	}
 }
 
-func (t *BigIntegerType) Convert() *tsimport.ImportPath {
-	return &tsimport.ImportPath{
+func (t *BigIntegerType) Convert() ConvertDataTypeRet {
+	return getAllDialectsImportMap(&tsimport.ImportPath{
 		Import: "BigInt",
-	}
+	})
 }
 
 func (t *BigIntegerType) GetTSType() string {
@@ -637,10 +652,10 @@ func (t *NullableBigIntegerType) GetGraphQLType() string {
 	return "String"
 }
 
-func (t *NullableBigIntegerType) Convert() *tsimport.ImportPath {
-	return &tsimport.ImportPath{
+func (t *NullableBigIntegerType) Convert() ConvertDataTypeRet {
+	return getAllDialectsImportMap(&tsimport.ImportPath{
 		Import: "BigInt",
-	}
+	})
 }
 
 func (t *NullableBigIntegerType) GetTSType() string {
@@ -754,8 +769,8 @@ type dateType struct {
 	timestampType
 }
 
-func (t *dateType) Convert() *tsimport.ImportPath {
-	return tsimport.NewEntImportPath("convertDate")
+func (t *dateType) Convert() ConvertDataTypeRet {
+	return getSqliteImportMap(tsimport.NewEntImportPath("convertDate"))
 }
 
 func (t *dateType) convertListWithItem() *tsimport.ImportPath {
@@ -860,8 +875,8 @@ func (t *NullableTimestampType) GetTSGraphQLImports(input bool) []*tsimport.Impo
 	}
 }
 
-func (t *NullableTimestampType) Convert() *tsimport.ImportPath {
-	return tsimport.NewEntImportPath("convertNullableDate")
+func (t *NullableTimestampType) Convert() ConvertDataTypeRet {
+	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableDate"))
 }
 
 type NullableTimestamptzType struct {
@@ -1872,10 +1887,10 @@ func (t *ArrayListType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 	return ret
 }
 
-func (t *ArrayListType) Convert() *tsimport.ImportPath {
+func (t *ArrayListType) Convert() ConvertDataTypeRet {
 	elem, ok := t.ElemType.(convertListElemType)
 	if !ok {
-		return tsimport.NewEntImportPath("convertList")
+		return getSqliteImportMap(tsimport.NewEntImportPath("convertList"))
 	}
 	return elem.convertListWithItem()
 }
@@ -1951,10 +1966,10 @@ func (t *NullableArrayListType) GetTSGraphQLImports(input bool) []*tsimport.Impo
 // TODO why is there ListWrapperType (for ActionFields)
 // and NullableArrayListType /ArrayListType for regular lists?
 // TODO GetCustomTypeInfo
-func (t *NullableArrayListType) Convert() *tsimport.ImportPath {
+func (t *NullableArrayListType) Convert() ConvertDataTypeRet {
 	elem, ok := t.ElemType.(convertListElemType)
 	if !ok {
-		return tsimport.NewEntImportPath("convertNullableList")
+		return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableList"))
 	}
 	return elem.convertNullableListWithItem()
 }
@@ -2138,8 +2153,8 @@ func (t *JSONType) GetNullableType() TSGraphQLType {
 	return ret
 }
 
-func (t *JSONType) Convert() *tsimport.ImportPath {
-	return tsimport.NewEntImportPath("convertJSON")
+func (t *JSONType) Convert() ConvertDataTypeRet {
+	return getSqliteImportMap(tsimport.NewEntImportPath("convertJSON"))
 }
 
 func (t *JSONType) GetImportDepsType() *tsimport.ImportPath {
@@ -2178,8 +2193,8 @@ func (t *NullableJSONType) GetTSGraphQLImports(input bool) []*tsimport.ImportPat
 	}
 }
 
-func (t *NullableJSONType) Convert() *tsimport.ImportPath {
-	return tsimport.NewEntImportPath("convertNullableJSON")
+func (t *NullableJSONType) Convert() ConvertDataTypeRet {
+	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableJSON"))
 }
 
 func (t *NullableJSONType) GetNonNullableType() TSGraphQLType {
@@ -2218,8 +2233,8 @@ func (t *JSONBType) GetNullableType() TSGraphQLType {
 	return ret
 }
 
-func (t *JSONBType) Convert() *tsimport.ImportPath {
-	return tsimport.NewEntImportPath("convertJSON")
+func (t *JSONBType) Convert() ConvertDataTypeRet {
+	return getSqliteImportMap(tsimport.NewEntImportPath("convertJSON"))
 }
 
 func (t *JSONBType) GetImportDepsType() *tsimport.ImportPath {
@@ -2272,8 +2287,8 @@ func (t *NullableJSONBType) GetNonNullableType() TSGraphQLType {
 	return ret
 }
 
-func (t *NullableJSONBType) Convert() *tsimport.ImportPath {
-	return tsimport.NewEntImportPath("convertNullableJSON")
+func (t *NullableJSONBType) Convert() ConvertDataTypeRet {
+	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableJSON"))
 }
 
 func (t *NullableJSONBType) GetImportType() Import {
@@ -2450,11 +2465,21 @@ func IsImportDepsType(t EntType) bool {
 }
 
 func ConvertFunc(t EntType) string {
-	tt, ok := t.(ConvertDataType)
-	if !ok {
+	imp := ConvertImportPath(t)
+	if imp == nil {
 		return ""
 	}
-	return tt.Convert().Import
+	return imp.Import
+}
+
+func ConvertImportPath(t EntType) *tsimport.ImportPath {
+	tt, ok := t.(ConvertDataType)
+	if !ok {
+		return nil
+	}
+
+	m := tt.Convert()
+	return m[config.GetDialect()]
 }
 
 // this exists because we need to account for lists...
