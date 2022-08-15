@@ -948,6 +948,39 @@ function commonTests() {
       values: [user.emailAddress],
     });
   });
+
+  test("partial field query with context", async () => {
+    const user = await createTestUser();
+    ml.clear();
+
+    try {
+      await new ObjectLoaderFactory({
+        tableName: userLoader.options.tableName,
+        fields: ["first_name"],
+        key: "id",
+      })
+        .createLoader(new TestContext())
+        .load(user.id);
+      throw new Error(`should have thrown`);
+    } catch (err) {
+      expect((err as Error).message).toMatch(/need to query for column id/);
+    }
+  });
+
+  test("partial field query without context", async () => {
+    const user = await createTestUser();
+    ml.clear();
+
+    // currently fine without context see different path...
+    const row = await new ObjectLoaderFactory({
+      tableName: userLoader.options.tableName,
+      fields: ["first_name"],
+      key: "id",
+    })
+      .createLoader(undefined)
+      .load(user.id);
+    expect(row?.first_name).toBe(user.firstName);
+  });
 }
 
 async function verifyMultiIDsDataAvail(
