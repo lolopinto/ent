@@ -244,7 +244,10 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
   ): Promise<T[]> {
     return await {{useImport "loadCustomEnts"}}(
       viewer,
-      {{$baseClass}}.loaderOptions.apply(this),
+      {
+      ...{{$baseClass}}.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
     ) as T[];
   }
@@ -255,7 +258,10 @@ implements {{useImport "Ent"}}<{{$viewerType}}>
     context?: {{useImport "Context"}}
   ): Promise<{{$dataType}}[]> {
     return  await {{useImport "loadCustomData"}}(
-      {{$baseClass}}.loaderOptions.apply(this),
+      {
+        ...{{$baseClass}}.loaderOptions.apply(this),
+        prime: true,
+      },
       query,
       context,
     ) as {{$dataType}}[];

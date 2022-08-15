@@ -112,7 +112,7 @@ export function getEntKey<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
   id: ID,
   options: LoadEntOptions<TEnt, TViewer>,
 ) {
-  return `${viewer.instanceKey()}:${options.tableName}:${id}`;
+  return `${viewer.instanceKey()}:${options.loaderFactory.name}:${id}`;
 }
 
 interface EntCacheInfo {

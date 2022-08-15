@@ -13,7 +13,7 @@ import {
 } from "./base";
 import { LoggedOutViewer, IDViewer } from "./viewer";
 import { AlwaysDenyRule } from "./privacy";
-import { loadCustomData, loadCustomEnts } from "./ent";
+import { loadCustomData, loadCustomEnts, loadEnts } from "./ent";
 import { QueryRecorder } from "../testutils/db_mock";
 import { createRowForTest, editRowForTest } from "../testutils/write";
 import { Pool } from "pg";
@@ -32,6 +32,7 @@ import { clearLogLevels, setLogLevels } from "./logger";
 import DB, { Dialect } from "./db";
 import { loadConfig } from "./config";
 import { ObjectLoaderFactory } from "./loaders";
+import { isConstValueNode, printSchema } from "graphql";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -76,7 +77,7 @@ const options: LoadCustomEntOptions<User> = {
     tableName: "users",
     fields: ["*"],
     key: "id",
-    instanceKey: "loader-factory-deleted-at",
+    // instanceKey: "loader-factory-deleted-at",
   }),
 };
 
@@ -179,6 +180,7 @@ describe("sqlite with soft delete", () => {
 });
 
 const ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const even = [2, 4, 6, 8, 10];
 const softDeleteIds = [7, 8, 9, 10];
 const reversed = [...ids].reverse();
 
@@ -524,7 +526,7 @@ function commonTests(opts: LoadCustomEntOptions<User>) {
       const ents2 = await loadCustomEnts(v2, opts, clause.Eq("bar", "bar2"));
       expect(ents2.length).toBe(5);
       // order not actually guaranteed so this may eventually break
-      expect(ents2.map((ent) => ent.id)).toEqual([2, 4, 6, 8, 10]);
+      expect(ents2.map((ent) => ent.id)).toEqual(even);
     });
 
     test("options", async () => {
@@ -539,6 +541,113 @@ function commonTests(opts: LoadCustomEntOptions<User>) {
 
       // only even numbers visible
       expect(ents.map((ent) => ent.id)).toEqual([5, 3, 1]);
+    });
+
+    test("with prime", async () => {
+      const opts2 = {
+        ...opts,
+        prime: true,
+      };
+      const v = getIDViewer(2, getCtx());
+
+      const ents = await loadCustomEnts(
+        v,
+        opts2,
+        "select * from users order by id desc",
+      );
+      expect(ents.length).toBe(5);
+      // order not actually guaranteed so this may eventually break
+      expect(ents.map((ent) => ent.id)).toEqual([10, 8, 6, 4, 2]);
+      // just a select *
+      expect(ml.logs.length).toBe(1);
+      expect(ml.logs).toStrictEqual([
+        { query: "select * from users order by id desc", values: [] },
+      ]);
+
+      ml.clear();
+
+      // load ids after. no new queries. all cache hits even the null ones
+      const ents2 = await loadEnts(v, opts2, ...ids);
+      expect(ents2.size).toBe(5);
+      for (const ent of ents) {
+        expect(ent).toBe(ents2.get(ent.id));
+      }
+      expect(ml.logs.length).toBe(ids.length);
+      expect(ml.logs).toStrictEqual(
+        ids.map((id) => ({
+          "ent-cache-hit": `idViewer:2:${opts.loaderFactory.name}:${id}`,
+        })),
+      );
+    });
+
+    test("prime. with partial hit", async () => {
+      const opts2 = {
+        ...opts,
+        prime: true,
+      };
+      const v = getIDViewer(2, getCtx());
+
+      const ents = await loadCustomEnts(v, opts2, {
+        clause: clause.Eq("bar", "bar2"),
+        orderby: "id desc",
+      });
+      expect(ents.length).toBe(5);
+      expect(ents.map((ent) => ent.id)).toEqual([10, 8, 6, 4, 2]);
+      expect(ml.logs.length).toBe(1);
+      expect(ml.logs[0].query).toMatch(
+        /SELECT \* FROM users WHERE bar = .+ ORDER BY id desc/,
+      );
+
+      ml.clear();
+
+      // load ids after. no new queries. correct values hit the cache
+      const ents2 = await loadEnts(v, opts2, ...ids);
+      expect(ents2.size).toBe(5);
+      for (const ent of ents) {
+        expect(ent).toBe(ents2.get(ent.id));
+      }
+
+      expect(ml.logs.length).toBe(6);
+      expect(ml.logs.slice(0, 5)).toStrictEqual(
+        even.map((id) => ({
+          "ent-cache-hit": `idViewer:2:${opts.loaderFactory.name}:${id}`,
+        })),
+      );
+      expect(ml.logs[5].query).toMatch(/SELECT \* FROM users WHERE id IN/);
+      expect(ml.logs[5].values).toStrictEqual([1, 3, 5, 7, 9]);
+    });
+
+    test("no prime. query after", async () => {
+      const v = getIDViewer(2, getCtx());
+
+      const ents = await loadCustomEnts(v, opts, {
+        clause: clause.Eq("bar", "bar2"),
+        orderby: "id desc",
+      });
+      expect(ents.length).toBe(5);
+      expect(ents.map((ent) => ent.id)).toEqual([10, 8, 6, 4, 2]);
+      expect(ml.logs.length).toBe(1);
+      expect(ml.logs[0].query).toMatch(
+        /SELECT \* FROM users WHERE bar = .+ ORDER BY id desc/,
+      );
+
+      ml.clear();
+
+      const ents2 = await loadEnts(v, opts, ...ids);
+      expect(ents2.size).toBe(5);
+      for (const ent of ents) {
+        expect(ent).toBe(ents2.get(ent.id));
+      }
+
+      // even with no prime. partial hit because of ent cache
+      expect(ml.logs.length).toBe(6);
+      expect(ml.logs.slice(0, 5)).toStrictEqual(
+        even.map((id) => ({
+          "ent-cache-hit": `idViewer:2:${opts.loaderFactory.name}:${id}`,
+        })),
+      );
+      expect(ml.logs[5].query).toMatch(/SELECT \* FROM users WHERE id IN/);
+      expect(ml.logs[5].values).toStrictEqual([1, 3, 5, 7, 9]);
     });
   });
 }
@@ -685,12 +794,6 @@ function softDeleteTests(opts: LoadCustomEntOptions<User>) {
     });
   });
 }
-
-// TODO test that we hit cache and don't create new instances with context...
-
-// TODO test prime vs not prime.
-
-// TODO test that custom loader with prime and then fetching just id after works...
 
 // TODO test interaction of ent soft delete and no soft delete
 // do we return the same rows. deletedAt flag will be different and maybe we don't want the same row so may need different clause
