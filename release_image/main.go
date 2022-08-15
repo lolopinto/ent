@@ -33,7 +33,7 @@ var NODE_VERSIONS = []int{
 }
 
 const AUTO_SCHEMA_VERSION = "0.0.19"
-const TSENT_VERSION = "v0.1.0-alpha.31"
+const TSENT_VERSION = "v0.1.0-alpha.32"
 
 var SUFFIXES = []string{
 	"dev",
